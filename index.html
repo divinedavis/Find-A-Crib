@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Rent-Stabilized NYC — Manhattan + Brooklyn</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+<style>
+  :root {
+    --blue: #006aff;
+    --blue-dark: #0052cc;
+    --blue-soft: #e8f0fe;
+    --ink: #0a0a23;
+    --ink-2: #4a4a68;
+    --line: #e2e6ea;
+    --bg: #f7f8fa;
+    --pill: #6b3df5;
+    --pill-bg: #6b3df5;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: var(--ink); background: #fff; }
+  a { color: var(--blue); text-decoration: none; }
+
+  header.topbar {
+    position: sticky; top: 0; z-index: 1000;
+    background: #fff; border-bottom: 1px solid var(--line);
+    padding: 10px 20px; display: flex; align-items: center; gap: 16px;
+  }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 800; color: var(--blue); font-size: 22px; letter-spacing: -0.5px; }
+  .brand-dot { width: 22px; height: 22px; background: var(--blue); border-radius: 6px; display: inline-block; transform: rotate(45deg); }
+  .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; flex: 1; align-items: center; }
+  .filter-bar input.search-input {
+    flex: 1 1 280px; min-width: 220px; max-width: 380px;
+    padding: 9px 14px; font-size: 14px; border: 1px solid var(--line); border-radius: 999px;
+    outline: none; transition: border-color .15s;
+  }
+  .filter-bar input.search-input:focus { border-color: var(--blue); }
+  .filter-pill {
+    position: relative;
+    padding: 9px 14px; font-size: 13px; font-weight: 600; border: 1px solid var(--line); border-radius: 999px;
+    background: #fff; cursor: pointer; white-space: nowrap; user-select: none;
+    color: var(--ink);
+  }
+  .filter-pill:hover { border-color: #b8c3d0; }
+  .filter-pill.active { border-color: var(--blue); color: var(--blue); }
+  .filter-pill .caret { font-size: 9px; opacity: .6; margin-left: 4px; }
+  .filter-pill .count-badge { display: inline-block; background: var(--blue); color: #fff; font-size: 11px; padding: 1px 6px; border-radius: 10px; margin-left: 6px; font-weight: 700; }
+  .pill-popover {
+    position: absolute; top: calc(100% + 6px); left: 0; min-width: 280px; max-width: 360px;
+    background: #fff; border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    padding: 12px; z-index: 1100; display: none;
+  }
+  .filter-pill.open .pill-popover { display: block; }
+  .pill-popover label.row { display: flex; align-items: center; gap: 8px; padding: 4px 2px; font-size: 13px; font-weight: 500; cursor: pointer; }
+  .pill-popover label.row:hover { background: var(--blue-soft); border-radius: 4px; }
+  .pill-popover input[type=checkbox] { accent-color: var(--blue); }
+  .pill-popover .scroll { max-height: 320px; overflow-y: auto; margin: 0 -6px; padding: 0 6px; }
+  .pill-popover .actions { display: flex; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+  .pill-popover .actions button { flex: 1; padding: 7px 10px; font-size: 12px; font-weight: 600; border-radius: 6px; cursor: pointer; border: 1px solid var(--line); background: #fff; }
+  .pill-popover .actions button.primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+  main { display: grid; grid-template-columns: 1.05fr 1fr; height: calc(100vh - 56px); }
+  #map { height: 100%; }
+
+  aside.results { display: flex; flex-direction: column; min-height: 0; border-left: 1px solid var(--line); background: #fff; }
+  .results-head { padding: 14px 20px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: baseline; }
+  .results-head h1 { margin: 0; font-size: 22px; letter-spacing: -0.5px; }
+  .results-head .sub { font-size: 13px; color: var(--ink-2); margin-top: 2px; }
+  .results-head .sort { font-size: 13px; color: var(--ink-2); }
+  .results-grid { flex: 1 1 auto; overflow-y: auto; padding: 14px 16px 24px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; align-content: start; }
+  .results-grid.empty-state { display: block; }
+  .empty { padding: 60px 20px; text-align: center; color: var(--ink-2); }
+
+  .card {
+    background: #fff; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; cursor: pointer;
+    transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+    display: block; min-height: 290px;
+  }
+  .card:hover { box-shadow: 0 8px 24px rgba(10,10,35,0.12); border-color: #c5d0db; transform: translateY(-1px); }
+  .card .photo {
+    flex: 0 0 150px; height: 150px; background: linear-gradient(135deg, #1f3a8a 0%, #3151c8 50%, #6b3df5 100%);
+    color: #fff; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden;
+  }
+  .card .photo img.streetview {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;
+    transition: opacity .25s ease;
+  }
+  .card .photo .photo-shade {
+    position: absolute; inset: 0; z-index: 1;
+    background: linear-gradient(180deg, rgba(0,0,0,0.45) 0%, transparent 35%, transparent 55%, rgba(0,0,0,0.7) 100%);
+  }
+  .card .photo > .badge-row, .card .photo > .addr-overlay { position: relative; z-index: 2; }
+  .card .photo .badge-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .card .photo .listed-pill {
+    background: rgba(255,255,255,0.95); color: var(--pill); font-weight: 700; font-size: 11px;
+    padding: 3px 9px; border-radius: 999px; box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+  }
+  .card .photo .borough-pill {
+    font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; letter-spacing: .5px;
+    background: rgba(0,0,0,0.35); color: #fff;
+  }
+  .card .photo .addr-overlay { font-size: 14px; font-weight: 700; line-height: 1.2; text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
+  .card .body { padding: 12px 14px 14px; }
+  .card .price { font-size: 16px; font-weight: 800; letter-spacing: -.4px; color: var(--ink); margin-bottom: 2px; }
+  .card .units-line { font-size: 13px; color: var(--ink-2); margin-bottom: 4px; }
+  .card .nb { font-size: 12px; font-weight: 600; color: var(--blue); margin-bottom: 6px; }
+  .card .statuses { font-size: 11px; color: var(--ink-2); display: flex; gap: 4px; flex-wrap: wrap; }
+  .card .statuses .tag { background: var(--bg); padding: 2px 7px; border-radius: 4px; }
+  .card .actions { display: flex; gap: 6px; margin-top: 10px; }
+  .card .actions a, .card .actions button {
+    flex: 1; padding: 7px 8px; font-size: 12px; font-weight: 700; text-align: center;
+    border-radius: 6px; border: 1px solid var(--blue); cursor: pointer;
+  }
+  .card .actions .btn-primary { background: var(--blue); color: #fff; }
+  .card .actions .btn-primary:hover { background: var(--blue-dark); }
+  .card .actions .btn-secondary { background: #fff; color: var(--blue); }
+  .card .actions .btn-secondary:hover { background: var(--blue-soft); }
+
+  /* leaflet marker overrides */
+  .price-pill {
+    background: var(--pill-bg); color: #fff; font-weight: 700; font-size: 11px;
+    padding: 4px 8px; border-radius: 999px; white-space: nowrap;
+    box-shadow: 0 2px 6px rgba(0,0,0,.25); border: 2px solid #fff;
+    display: inline-block;
+  }
+  .building-dot {
+    width: 8px; height: 8px; background: #7c8aa3; border: 1px solid #fff;
+    border-radius: 50%; box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+  .leaflet-div-icon { background: transparent; border: none; }
+  .leaflet-popup-content { font-family: inherit; }
+  .popup-addr { font-weight: 700; font-size: 15px; }
+  .popup-meta { font-size: 12px; color: var(--ink-2); margin-top: 4px; }
+  .popup-status { font-size: 11px; padding: 2px 6px; background: var(--blue-soft); color: var(--blue); border-radius: 4px; display: inline-block; margin: 4px 4px 0 0; font-weight: 600; }
+  .popup-actions { display: flex; gap: 6px; margin-top: 10px; }
+  .popup-actions a { flex: 1; padding: 7px 8px; font-size: 12px; font-weight: 700; text-align: center; border-radius: 6px; border: 1px solid var(--blue); text-decoration: none; }
+  .popup-actions a.primary { background: var(--blue); color: #fff; }
+  .popup-actions a.primary:hover { background: var(--blue-dark); }
+  .popup-actions a.secondary { background: #fff; color: var(--blue); }
+  .popup-actions a.secondary:hover { background: var(--blue-soft); }
+  .leaflet-popup-content-wrapper { min-width: 240px; }
+
+  .footer-credit { font-size: 11px; color: var(--ink-2); padding: 8px 16px; border-top: 1px solid var(--line); background: var(--bg); }
+  .footer-credit a { color: var(--ink-2); text-decoration: underline; }
+
+  @media (max-width: 900px) {
+    main { grid-template-columns: 1fr; grid-template-rows: 50vh 50vh; }
+    aside.results { border-left: none; border-top: 1px solid var(--line); }
+    .results-grid { grid-template-columns: 1fr; }
+    header.topbar { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="brand-dot"></span>StableNYC</div>
+  <div class="filter-bar">
+    <input class="search-input" id="q" type="text" placeholder="Address, neighborhood, ZIP, or BBL" />
+    <div class="filter-pill" id="pill-borough">
+      Borough <span class="count-badge" id="badge-borough">2</span><span class="caret">▾</span>
+      <div class="pill-popover">
+        <div class="scroll" id="borough-list">
+          <label class="row"><input type="checkbox" data-b="M" checked> Manhattan</label>
+          <label class="row"><input type="checkbox" data-b="Bk" checked> Brooklyn</label>
+        </div>
+      </div>
+    </div>
+    <div class="filter-pill" id="pill-nb">
+      Neighborhood<span class="caret">▾</span>
+      <div class="pill-popover">
+        <div class="scroll" id="nb-list"></div>
+        <div class="actions">
+          <button id="nb-presets">Presets · BS+WB+EV+SoHo+NoLi</button>
+          <button id="nb-clear">Clear</button>
+        </div>
+      </div>
+    </div>
+    <div class="filter-pill" id="pill-listed">
+      Recently advertised<span class="caret">▾</span>
+      <div class="pill-popover">
+        <label class="row"><input type="radio" name="listed" value="any" checked> Any</label>
+        <label class="row"><input type="radio" name="listed" value="yes"> Recently advertised on Zumper</label>
+        <label class="row"><input type="radio" name="listed" value="no"> Not recently advertised</label>
+      </div>
+    </div>
+  </div>
+</header>
+<main>
+  <div id="map"></div>
+  <aside class="results">
+    <div class="results-head">
+      <div>
+        <h1 id="results-title">Rent-Stabilized Buildings</h1>
+        <div class="sub" id="results-sub">Loading…</div>
+      </div>
+      <div class="sort">Sort: <strong>By location</strong></div>
+    </div>
+    <div class="results-grid empty-state" id="grid"><div class="empty">Loading 30k buildings…</div></div>
+    <div class="footer-credit" id="credit">Source: NYC Rent Guidelines Board / DHCR 2024 · Coordinates from <a href="https://www.nyc.gov/site/planning/data-maps/open-data.page" target="_blank" rel="noopener">NYC PLUTO</a> · Listings via Zumper (nightly)</div>
+  </aside>
+</main>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="config.js"></script>
+<script>
+(async function () {
+  // ---------- map ----------
+  const map = L.map('map', { preferCanvas: true, doubleClickZoom: false, zoomControl: true }).setView([40.72, -73.97], 12);
+  map.on('dblclick', () => {
+    const z = map.getZoom();
+    if (z < map.getMaxZoom()) map.setZoom(z + 1, { animate: false });
+  });
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    maxZoom: 20, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  }).addTo(map);
+
+  // ---------- data ----------
+  // GMAPS_KEY is provided by config.js (gitignored). See config.example.js.
+  const GMAPS_KEY = window.GMAPS_KEY || '';
+  function streetviewUrl(lat, lng, w = 400, h = 240) {
+    return `https://maps.googleapis.com/maps/api/streetview?size=${w}x${h}&location=${lat},${lng}&fov=80&pitch=0&source=outdoor&key=${GMAPS_KEY}`;
+  }
+  const resultsTitle = document.getElementById('results-title');
+  const resultsSub = document.getElementById('results-sub');
+  const grid = document.getElementById('grid');
+
+  const [data, listingsBlob] = await Promise.all([
+    fetch('buildings.min.json').then(r => r.json()),
+    fetch('listings.json').then(r => r.ok ? r.json() : { counts: {} }).catch(() => ({ counts: {} })),
+  ]);
+  const listingCounts = listingsBlob.counts || {};
+
+  // ---------- markers ----------
+  const cluster = L.markerClusterGroup({
+    chunkedLoading: true,
+    spiderfyOnMaxZoom: true,
+    maxClusterRadius: 60,
+    iconCreateFunction: (c) => {
+      const n = c.getChildCount();
+      const w = String(n).length * 8 + 22;
+      return L.divIcon({
+        html: `<div class="price-pill">${n.toLocaleString()}</div>`,
+        className: '', iconSize: [w, 22], iconAnchor: [w/2, 11],
+      });
+    },
+  });
+
+  const dotIcon = L.divIcon({ className: '', html: '<div class="building-dot"></div>', iconSize: [10, 10], iconAnchor: [5, 5] });
+  function listedIcon(n) {
+    const text = `${n} listed`;
+    const w = text.length * 6 + 16;
+    return L.divIcon({
+      className: '',
+      html: `<div class="price-pill">${text}</div>`,
+      iconSize: [w, 22], iconAnchor: [w/2, 11],
+    });
+  }
+
+  const markerByBbl = new Map();
+  for (const rec of data) {
+    const listed = listingCounts[rec.bbl] || 0;
+    const m = L.marker([rec.lat, rec.lng], { icon: listed > 0 ? listedIcon(listed) : dotIcon });
+    m.bindPopup(() => buildPopup(rec, listed));
+    m._rec = rec;
+    markerByBbl.set(rec.bbl, m);
+  }
+
+  function buildPopup(rec, listed) {
+    const borough = rec.b === 'M' ? 'Manhattan' : 'Brooklyn';
+    const boroughSlug = rec.b === 'M' ? 'manhattan-ny' : 'brooklyn-ny';
+    const meta = [];
+    if (rec.nb) meta.push(rec.nb);
+    if (rec.z) meta.push(`ZIP ${rec.z}`);
+    meta.push(borough);
+    if (rec.yr) meta.push(`built ${rec.yr}`);
+    if (rec.u != null) meta.push(`${rec.u} residential units`);
+    const statusHtml = (rec.s || []).map(s => `<span class="popup-status">${esc(s)}</span>`).join('');
+    const listedHtml = listed ? `<div style="margin-top:8px;color:#6b3df5;font-weight:700">Recently advertised on Zumper (${listed} listing${listed===1?'':'s'})</div>` : '';
+    const googleQ = encodeURIComponent(`${rec.a} ${borough} NY ${rec.z || ''}`.trim());
+    // Use Google site-search for Zumper since Zumper has no constructable deep-link pattern.
+    // If the scraper captured a direct URL for this BBL, prefer it.
+    const directUrl = (listingsBlob.urls && listingsBlob.urls[rec.bbl]) || null;
+    const zumperQ = encodeURIComponent(`site:zumper.com "${rec.a}" ${borough} NY`);
+    const zumperHref = directUrl || `https://www.google.com/search?q=${zumperQ}`;
+    return `
+      <div class="popup-addr">${esc(rec.a)}</div>
+      <div class="popup-meta">${meta.join(' · ')}</div>
+      ${listedHtml}
+      <div style="margin-top:6px">${statusHtml}</div>
+      <div class="popup-meta" style="margin-top:6px">BBL ${rec.bbl}</div>
+      <div class="popup-actions">
+        <a class="secondary" href="${zumperHref}" target="_blank" rel="noopener">${listed > 0 ? 'View on Zumper' : 'Search Zumper'}</a>
+        <a class="primary" href="https://www.google.com/search?q=${googleQ}" target="_blank" rel="noopener">Search Google</a>
+      </div>
+    `;
+  }
+
+  function esc(s){return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+  // ---------- filters ----------
+  const PRESET_NB = ['Bed-Stuy (West)', 'Bed-Stuy (East)', 'Williamsburg', 'East Village', 'SoHo', 'Nolita'];
+  // Build neighborhood list
+  const nbCounts = {};
+  for (const rec of data) if (rec.nb) nbCounts[rec.nb] = (nbCounts[rec.nb]||0) + 1;
+  const nbList = Object.entries(nbCounts).sort((a, b) => a[0].localeCompare(b[0]));
+  const nbListEl = document.getElementById('nb-list');
+  for (const [name, n] of nbList) {
+    const id = 'nb-' + name.replace(/[^a-z0-9]/gi,'_');
+    const lab = document.createElement('label');
+    lab.className = 'row';
+    lab.innerHTML = `<input type="checkbox" value="${esc(name)}"> <span>${esc(name)} <span style="color:#888;font-weight:400">(${n.toLocaleString()})</span></span>`;
+    nbListEl.appendChild(lab);
+  }
+
+  // popover behavior
+  document.querySelectorAll('.filter-pill').forEach(p => {
+    p.addEventListener('click', e => {
+      if (e.target.closest('.pill-popover')) return;  // clicking inside popover doesn't close
+      document.querySelectorAll('.filter-pill.open').forEach(o => { if (o !== p) o.classList.remove('open'); });
+      p.classList.toggle('open');
+      e.stopPropagation();
+    });
+  });
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.filter-pill.open').forEach(o => o.classList.remove('open'));
+  });
+
+  // borough toggles
+  document.querySelectorAll('#borough-list input').forEach(cb => cb.addEventListener('change', () => { updateBoroughBadge(); applyFilters(); }));
+  function updateBoroughBadge() {
+    const n = document.querySelectorAll('#borough-list input:checked').length;
+    document.getElementById('badge-borough').textContent = n;
+    document.getElementById('pill-borough').classList.toggle('active', n !== 2);
+  }
+
+  // neighborhood checkboxes
+  nbListEl.addEventListener('change', () => { updateNbBadge(); applyFilters(); });
+  function updateNbBadge() {
+    const n = document.querySelectorAll('#nb-list input:checked').length;
+    const pill = document.getElementById('pill-nb');
+    pill.classList.toggle('active', n > 0);
+    let badge = pill.querySelector('.count-badge');
+    if (n > 0) {
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'count-badge';
+        pill.insertBefore(badge, pill.querySelector('.caret'));
+      }
+      badge.textContent = n;
+    } else if (badge) {
+      badge.remove();
+    }
+  }
+  document.getElementById('nb-presets').addEventListener('click', e => {
+    e.stopPropagation();
+    nbListEl.querySelectorAll('input').forEach(cb => { cb.checked = PRESET_NB.includes(cb.value); });
+    updateNbBadge(); applyFilters();
+  });
+  document.getElementById('nb-clear').addEventListener('click', e => {
+    e.stopPropagation();
+    nbListEl.querySelectorAll('input').forEach(cb => cb.checked = false);
+    updateNbBadge(); applyFilters();
+  });
+
+  // listed radio
+  document.querySelectorAll('input[name="listed"]').forEach(r => r.addEventListener('change', () => {
+    const v = document.querySelector('input[name="listed"]:checked').value;
+    document.getElementById('pill-listed').classList.toggle('active', v !== 'any');
+    applyFilters();
+  }));
+
+  // search
+  let qTimer;
+  document.getElementById('q').addEventListener('input', () => {
+    clearTimeout(qTimer);
+    qTimer = setTimeout(applyFilters, 200);
+  });
+
+  // ---------- filter / refresh ----------
+  let filtered = [];
+  function applyFilters() {
+    const boroughs = new Set([...document.querySelectorAll('#borough-list input:checked')].map(c => c.dataset.b));
+    const selectedNbs = new Set([...nbListEl.querySelectorAll('input:checked')].map(c => c.value));
+    const listedMode = document.querySelector('input[name="listed"]:checked').value;
+    const q = document.getElementById('q').value.trim().toUpperCase();
+
+    filtered = [];
+    cluster.clearLayers();
+    const layers = [];
+    for (const rec of data) {
+      if (!boroughs.has(rec.b)) continue;
+      if (selectedNbs.size && !selectedNbs.has(rec.nb)) continue;
+      const listed = listingCounts[rec.bbl] || 0;
+      if (listedMode === 'yes' && !listed) continue;
+      if (listedMode === 'no' && listed) continue;
+      if (q) {
+        const inAddr = rec.a && rec.a.toUpperCase().includes(q);
+        const inZip = rec.z && rec.z.includes(q);
+        const inBbl = rec.bbl.includes(q);
+        const inNb = rec.nb && rec.nb.toUpperCase().includes(q);
+        if (!inAddr && !inZip && !inBbl && !inNb) continue;
+      }
+      layers.push(markerByBbl.get(rec.bbl));
+      filtered.push(rec);
+    }
+    cluster.addLayers(layers);
+
+    if (selectedNbs.size > 0 && filtered.length && filtered.length < 5000) {
+      const bounds = L.latLngBounds(filtered.map(r => [r.lat, r.lng]));
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15, animate: false });
+    }
+    refreshGrid();
+  }
+
+  const MAX_CARDS = 200;
+  function refreshGrid() {
+    const b = map.getBounds();
+    const visible = [];
+    for (const rec of filtered) {
+      if (b.contains([rec.lat, rec.lng])) {
+        visible.push(rec);
+        if (visible.length > MAX_CARDS + 1) break;
+      }
+    }
+    const totalListings = visible.reduce((s, r) => s + (listingCounts[r.bbl]||0), 0);
+    resultsSub.textContent = `${visible.length.toLocaleString()} buildings in view · ${filtered.length.toLocaleString()} match filters · ${totalListings.toLocaleString()} recently advertised on Zumper`;
+    if (!visible.length) {
+      grid.classList.add('empty-state');
+      grid.innerHTML = '<div class="empty">No buildings in view. Pan or zoom out, or change filters.</div>';
+      return;
+    }
+    grid.classList.remove('empty-state');
+    const truncated = visible.length > MAX_CARDS;
+    const shown = truncated ? visible.slice(0, MAX_CARDS) : visible;
+    grid.innerHTML = shown.map(rec => cardHtml(rec)).join('') + (truncated
+      ? `<div class="empty" style="grid-column:1/-1;padding:18px">Zoom in to see more — ${MAX_CARDS}+ buildings in view.</div>`
+      : '');
+  }
+
+  function cardHtml(rec) {
+    const borough = rec.b === 'M' ? 'MANHATTAN' : 'BROOKLYN';
+    const listed = listingCounts[rec.bbl] || 0;
+    const listedHtml = listed > 0 ? `<span class="listed-pill">Recently advertised</span>` : `<span></span>`;
+    const stats = [];
+    if (rec.u != null) stats.push(`${rec.u} units`);
+    if (rec.yr) stats.push(`built ${rec.yr}`);
+    if (rec.z) stats.push(`ZIP ${rec.z}`);
+    const statuses = (rec.s || []).slice(0, 3).map(s => `<span class="tag">${esc(s)}</span>`).join('');
+    const googleQ = encodeURIComponent(`${rec.a} ${rec.b === 'M' ? 'Manhattan' : 'Brooklyn'} NY ${rec.z || ''}`.trim());
+    const sv = streetviewUrl(rec.lat, rec.lng);
+    return `<div class="card" data-bbl="${rec.bbl}">
+      <div class="photo">
+        <img class="streetview" loading="lazy" src="${sv}" alt="" onerror="this.style.display='none'">
+        <div class="photo-shade"></div>
+        <div class="badge-row">
+          <span class="borough-pill">${borough}</span>
+          ${listedHtml}
+        </div>
+        <div class="addr-overlay">${esc(rec.a)}</div>
+      </div>
+      <div class="body">
+        ${rec.nb ? `<div class="nb">${esc(rec.nb)}</div>` : ''}
+        ${listed > 0 ? `<div class="price">Recently advertised on Zumper · ${listed} listing${listed===1?'':'s'}</div>` : ''}
+        <div class="units-line">${stats.join(' · ')}</div>
+        <div class="statuses">${statuses}</div>
+        <div class="actions">
+          <button class="btn-secondary" data-action="map">View on map</button>
+          <a class="btn-primary" data-action="search" target="_blank" rel="noopener" href="https://www.google.com/search?q=${googleQ}">Search Google</a>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ---------- card interactions ----------
+  grid.addEventListener('click', e => {
+    const card = e.target.closest('.card');
+    if (!card) return;
+    const bbl = card.dataset.bbl;
+    const m = markerByBbl.get(bbl);
+    if (!m) return;
+    const rec = m._rec;
+    const action = e.target.dataset.action;
+    // Search button: let the link do its thing
+    if (action === 'search') return;
+    // map button or anywhere else on card → fly to and open popup
+    e.preventDefault();
+    const ll = (m.getLatLng ? m.getLatLng() : L.latLng(rec.lat, rec.lng));
+    if (map.getZoom() < 16) map.setView(ll, 17, { animate: false });
+    else map.panTo(ll);
+    if (m.openPopup) {
+      cluster.zoomToShowLayer(m, () => m.openPopup());
+    }
+  });
+
+  map.addLayer(cluster);
+  map.on('moveend', refreshGrid);
+
+  // ---------- init ----------
+  updateBoroughBadge();
+  updateNbBadge();
+  applyFilters();
+})();
+</script>
+</body>
+</html>

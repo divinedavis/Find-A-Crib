@@ -75,7 +75,8 @@
     font-size: 13px; font-weight: 700; color: var(--ink); margin-left: 4px;
     border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; background: #fff; cursor: pointer;
   }
-  .results-grid { flex: 1 1 auto; overflow-y: auto; padding: 14px 16px 24px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-content: start; }
+  /* flexbox wrap (not grid): wrapped flex lines stack and never overlap, even with variable card heights */
+  .results-grid { flex: 1 1 auto; overflow-y: auto; padding: 14px 16px 24px; display: flex; flex-wrap: wrap; gap: 14px; align-content: flex-start; }
   .results-grid.empty-state { display: block; }
   .empty { padding: 60px 20px; text-align: center; color: var(--ink-2); }
 
@@ -83,6 +84,7 @@
     background: #fff; border: 1px solid var(--line); border-radius: 10px; cursor: pointer;
     transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
     display: block; min-width: 0; min-height: 290px;
+    flex: 0 1 calc(50% - 7px);
   }
   .card:hover { box-shadow: 0 8px 24px rgba(10,10,35,0.12); border-color: #c5d0db; transform: translateY(-1px); }
   .card .photo {
@@ -156,7 +158,7 @@
   @media (max-width: 900px) {
     main { grid-template-columns: 1fr; grid-template-rows: 50vh 50vh; }
     aside.results { border-left: none; border-top: 1px solid var(--line); }
-    .results-grid { grid-template-columns: 1fr; }
+    .card { flex-basis: 100%; }
     header.topbar { flex-wrap: wrap; }
   }
 </style>
@@ -495,7 +497,7 @@
     const truncated = visible.length > MAX_CARDS;
     const shown = truncated ? visible.slice(0, MAX_CARDS) : visible;
     grid.innerHTML = shown.map(rec => cardHtml(rec)).join('') + (truncated
-      ? `<div class="empty" style="grid-column:1/-1;padding:18px">Zoom in to see more — ${MAX_CARDS}+ buildings in view.</div>`
+      ? `<div class="empty" style="flex-basis:100%;padding:18px">Zoom in to see more — ${MAX_CARDS}+ buildings in view.</div>`
       : '');
   }
 

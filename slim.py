@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
-"""Reduce buildings_geo.json to a compact, map-ready format."""
+"""Reduce buildings_geo.json to a compact, map-ready format and merge HPD data."""
 import json
 from pathlib import Path
 
 HERE = Path(__file__).parent
 SRC = HERE / "buildings_geo_nta.json"
+HPD = HERE / "buildings_hpd.json"
 OUT = HERE / "buildings.min.json"
 
 records = json.loads(SRC.read_text())
+hpd = json.loads(HPD.read_text()) if HPD.exists() else {}
+
 slim = []
 for r in records:
     addr = r.get("address") or r.get("address_alt") or r.get("pluto_address") or ""
-    slim.append({
+    rec = {
         "bbl": r["bbl"],
         "b": "M" if r["borough"] == "manhattan" else "Bk",
         "a": addr,
@@ -22,7 +25,13 @@ for r in records:
         "yr": int(r["yearbuilt"]) if r.get("yearbuilt") and str(r["yearbuilt"]).isdigit() else None,
         "u": int(r["unitsres"]) if r.get("unitsres") and str(r["unitsres"]).isdigit() else None,
         "nb": r.get("nb"),
-    })
+    }
+    h = hpd.get(r["bbl"])
+    if h:
+        rec["h"] = h
+    slim.append(rec)
 
 OUT.write_text(json.dumps(slim, separators=(",", ":")))
-print(f"Wrote {OUT} ({OUT.stat().st_size/1024/1024:.2f} MB) with {len(slim)} records")
+hpd_matched = sum(1 for s in slim if "h" in s)
+print(f"Wrote {OUT} ({OUT.stat().st_size/1024/1024:.2f} MB) with {len(slim)} records "
+      f"({hpd_matched:,} with HPD data)")

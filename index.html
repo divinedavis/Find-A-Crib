@@ -150,7 +150,21 @@
   .popup-actions a.primary:hover { background: var(--blue-dark); }
   .popup-actions a.secondary { background: #fff; color: var(--blue); }
   .popup-actions a.secondary:hover { background: var(--blue-soft); }
-  .leaflet-popup-content-wrapper { min-width: 240px; }
+  .leaflet-popup-content-wrapper { min-width: 260px; max-width: 360px; }
+  .leaflet-popup-content { max-height: 520px; overflow-y: auto; }
+
+  .hpd-section { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+  .hpd-section h4 { margin: 0 0 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--ink-2); }
+  .hpd-row { font-size: 12px; line-height: 1.45; margin-bottom: 4px; }
+  .hpd-row .label { color: var(--ink-2); font-weight: 600; }
+  .hpd-row .addr { color: var(--ink-2); display: block; font-size: 11px; }
+  .hpd-stat { display: inline-block; background: var(--bg); padding: 2px 7px; border-radius: 4px; font-size: 11px; margin-right: 4px; margin-top: 2px; }
+  .hpd-stat.warn { background: #fff2dc; color: #8a5a00; }
+  .hpd-stat.bad { background: #ffe2e2; color: #a40000; }
+  .hpd-link { font-size: 11px; margin-top: 6px; }
+  .card .hpd-mini { font-size: 11px; color: var(--ink-2); margin-top: 4px; }
+  .card .hpd-mini .bad { color: #a40000; font-weight: 700; }
+  .card .hpd-mini .warn { color: #8a5a00; font-weight: 700; }
 
   .footer-credit { font-size: 11px; color: var(--ink-2); padding: 8px 16px; border-top: 1px solid var(--line); background: var(--bg); }
   .footer-credit a { color: var(--ink-2); text-decoration: underline; }
@@ -225,7 +239,7 @@
       </div>
     </div>
     <div class="results-grid empty-state" id="grid"><div class="empty">Loading 30k buildings…</div></div>
-    <div class="footer-credit" id="credit">Source: NYC Rent Guidelines Board / DHCR 2024 · Coordinates from <a href="https://www.nyc.gov/site/planning/data-maps/open-data.page" target="_blank" rel="noopener">NYC PLUTO</a> · Listings via Zumper (nightly)</div>
+    <div class="footer-credit" id="credit">Source: NYC Rent Guidelines Board / DHCR 2024 · Coordinates from <a href="https://www.nyc.gov/site/planning/data-maps/open-data.page" target="_blank" rel="noopener">NYC PLUTO</a> · Listings via Zumper (nightly) · Owner/violation/complaint data from <a href="https://data.cityofnewyork.us/" target="_blank" rel="noopener">NYC Open Data — HPD</a></div>
   </aside>
 </main>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -319,9 +333,66 @@
       ${listedHtml}
       <div style="margin-top:6px">${statusHtml}</div>
       <div class="popup-meta" style="margin-top:6px">BBL ${rec.bbl}</div>
+      ${hpdHtml(rec)}
       <div class="popup-actions">
         <a class="secondary" href="${zumperHref}" target="_blank" rel="noopener">${listed > 0 ? 'View on Zumper' : 'Search Zumper'}</a>
         <a class="primary" href="https://www.google.com/search?q=${googleQ}" target="_blank" rel="noopener">Search Google</a>
+      </div>
+    `;
+  }
+
+  function hpdContact(c) {
+    if (!c || !c.name) return '';
+    const addr = c.address ? `<span class="addr">${esc(c.address)}</span>` : '';
+    return `<div>${esc(c.name)}</div>${addr}`;
+  }
+
+  function hpdHtml(rec) {
+    const h = rec.h;
+    if (!h) {
+      return `<div class="hpd-section"><h4>HPD Record</h4>
+        <div class="hpd-row" style="color:var(--ink-2)">Not registered with HPD (typically owner-occupied or fewer than 3 units).</div>
+        <div class="hpd-link"><a href="https://hpdonline.nyc.gov/hpdonline/" target="_blank" rel="noopener">Search HPD Online ↗</a></div>
+      </div>`;
+    }
+    const ownerRow = h.owner ? `<div class="hpd-row"><span class="label">Owner</span> · ${esc(h.owner.type || '')}<br>${hpdContact(h.owner)}</div>` : '';
+    const managerRow = h.manager ? `<div class="hpd-row"><span class="label">Managing agent</span><br>${hpdContact(h.manager)}</div>` : '';
+    const officerRow = h.officer ? `<div class="hpd-row"><span class="label">${esc(h.officer.type || 'Head officer')}</span><br>${hpdContact(h.officer)}</div>` : '';
+    const v = h.violations;
+    const c = h.complaints;
+    const vChips = v ? `
+      <span class="hpd-stat ${v.open > 5 ? 'bad' : (v.open > 0 ? 'warn' : '')}">${v.open} open</span>
+      <span class="hpd-stat">${v.total} all-time</span>
+      ${v.c ? `<span class="hpd-stat bad">Class C: ${v.c}</span>` : ''}
+      ${v.b ? `<span class="hpd-stat warn">Class B: ${v.b}</span>` : ''}
+      ${v.a ? `<span class="hpd-stat">Class A: ${v.a}</span>` : ''}
+      ${v.last_12mo ? `<span class="hpd-stat">${v.last_12mo} in last 12mo</span>` : ''}
+    ` : '<span style="color:var(--ink-2);font-size:11px">No violations on file.</span>';
+    const cChips = c ? `
+      <span class="hpd-stat ${c.open > 10 ? 'bad' : (c.open > 0 ? 'warn' : '')}">${c.open} open</span>
+      <span class="hpd-stat">${c.total} all-time</span>
+      ${c.last_12mo ? `<span class="hpd-stat">${c.last_12mo} in last 12mo</span>` : ''}
+    ` : '<span style="color:var(--ink-2);font-size:11px">No complaints on file.</span>';
+    const link = h.hpd_url
+      ? `<div class="hpd-link"><a href="${h.hpd_url}" target="_blank" rel="noopener">Full HPD Online record ↗</a></div>`
+      : `<div class="hpd-link"><a href="https://hpdonline.nyc.gov/hpdonline/" target="_blank" rel="noopener">Search HPD Online ↗</a></div>`;
+    const regDate = h.lastregistration ? `<div class="popup-meta" style="margin-top:4px;font-size:11px">Last registered ${esc(h.lastregistration)}</div>` : '';
+    return `
+      <div class="hpd-section">
+        <h4>Building operator</h4>
+        ${ownerRow}
+        ${managerRow}
+        ${officerRow}
+        ${regDate}
+      </div>
+      <div class="hpd-section">
+        <h4>HPD violations</h4>
+        <div class="hpd-row">${vChips}</div>
+      </div>
+      <div class="hpd-section">
+        <h4>HPD complaints</h4>
+        <div class="hpd-row">${cChips}</div>
+        ${link}
       </div>
     `;
   }
@@ -505,6 +576,26 @@
     return arr.map(n => n === 0 ? 'Studio' : (n >= 4 ? '4+' : n) + ' BR').join(' · ');
   }
 
+  function cardHpdLine(rec) {
+    const h = rec.h;
+    if (!h) return '';
+    const bits = [];
+    if (h.owner && h.owner.name) bits.push(`Owner: ${esc(h.owner.name)}`);
+    else if (h.manager && h.manager.name) bits.push(`Manager: ${esc(h.manager.name)}`);
+    const v = h.violations;
+    const c = h.complaints;
+    if (v && v.open) {
+      const cls = v.open > 5 ? 'bad' : 'warn';
+      bits.push(`<span class="${cls}">${v.open} open violation${v.open===1?'':'s'}</span>`);
+    }
+    if (c && c.open) {
+      const cls = c.open > 10 ? 'bad' : 'warn';
+      bits.push(`<span class="${cls}">${c.open} open complaint${c.open===1?'':'s'}</span>`);
+    }
+    if (!bits.length) return '';
+    return `<div class="hpd-mini">${bits.join(' · ')}</div>`;
+  }
+
   function cardHtml(rec) {
     const borough = rec.b === 'M' ? 'MANHATTAN' : 'BROOKLYN';
     const listed = listingCounts[rec.bbl] || 0;
@@ -533,6 +624,7 @@
         ${listed > 0 ? `<div class="price">${price ? '$' + price.toLocaleString() + '/mo · ' : ''}Recently advertised on Zumper · ${listed} listing${listed===1?'':'s'}</div>` : ''}
         ${beds && beds.length ? `<div class="beds-line">${bedsLabel(beds)} available</div>` : ''}
         <div class="units-line">${stats.join(' · ')}</div>
+        ${cardHpdLine(rec)}
         <div class="statuses">${statuses}</div>
         <div class="actions">
           <button class="btn-secondary" data-action="map">View on map</button>

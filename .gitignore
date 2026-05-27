@@ -1,13 +1,15 @@
-# Regenerable pipeline intermediates (rebuild via parse_pdfs.py + geocode.py + assign_nta.py)
+# Regenerable pipeline intermediates (rebuild via parse_pdfs.py + geocode.py + assign_nta.py + fetch_hpd.py)
 buildings.json
 buildings_geo.json
 buildings_geo_nta.json
+buildings_hpd.json
 
 # Secrets — local-only config (API keys). Use config.example.js as the template.
 config.js
 
-# Scraper log
+# Scraper / fetcher logs
 scrape.log
+fetch_hpd.log
 
 # OS / editor cruft
 .DS_Store

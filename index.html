@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Rent-Stabilized NYC — Manhattan + Brooklyn</title>
+<title>Rent-Stabilized NYC — Manhattan, Bronx, Brooklyn + Queens</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
@@ -183,11 +183,13 @@
   <div class="filter-bar">
     <input class="search-input" id="q" type="text" placeholder="Address, neighborhood, ZIP, or BBL" />
     <div class="filter-pill" id="pill-borough">
-      Borough <span class="count-badge" id="badge-borough">2</span><span class="caret">▾</span>
+      Borough <span class="count-badge" id="badge-borough">4</span><span class="caret">▾</span>
       <div class="pill-popover">
         <div class="scroll" id="borough-list">
           <label class="row"><input type="checkbox" data-b="M" checked> Manhattan</label>
+          <label class="row"><input type="checkbox" data-b="Bx" checked> Bronx</label>
           <label class="row"><input type="checkbox" data-b="Bk" checked> Brooklyn</label>
+          <label class="row"><input type="checkbox" data-b="Q" checked> Queens</label>
         </div>
       </div>
     </div>
@@ -235,6 +237,8 @@
           <option value="loc">By location</option>
           <option value="price-asc">Price (low → high)</option>
           <option value="price-desc">Price (high → low)</option>
+          <option value="viol-desc">Open violations (high → low)</option>
+          <option value="viol-asc">Open violations (low → high)</option>
         </select>
       </div>
     </div>
@@ -260,6 +264,9 @@
   // ---------- data ----------
   // GMAPS_KEY is provided by config.js (gitignored). See config.example.js.
   const GMAPS_KEY = window.GMAPS_KEY || '';
+  // short borough code -> display name / Zumper city slug
+  const BORO_NAME = { M: 'Manhattan', Bx: 'Bronx', Bk: 'Brooklyn', Q: 'Queens' };
+  const BORO_SLUG = { M: 'manhattan-ny', Bx: 'bronx-ny', Bk: 'brooklyn-ny', Q: 'queens-ny' };
   function streetviewUrl(lat, lng, w = 400, h = 240) {
     return `https://maps.googleapis.com/maps/api/streetview?size=${w}x${h}&location=${lat},${lng}&fov=80&pitch=0&source=outdoor&key=${GMAPS_KEY}`;
   }
@@ -311,8 +318,8 @@
   }
 
   function buildPopup(rec, listed) {
-    const borough = rec.b === 'M' ? 'Manhattan' : 'Brooklyn';
-    const boroughSlug = rec.b === 'M' ? 'manhattan-ny' : 'brooklyn-ny';
+    const borough = BORO_NAME[rec.b] || '';
+    const boroughSlug = BORO_SLUG[rec.b] || '';
     const meta = [];
     if (rec.nb) meta.push(rec.nb);
     if (rec.z) meta.push(`ZIP ${rec.z}`);
@@ -432,7 +439,7 @@
   function updateBoroughBadge() {
     const n = document.querySelectorAll('#borough-list input:checked').length;
     document.getElementById('badge-borough').textContent = n;
-    document.getElementById('pill-borough').classList.toggle('active', n !== 2);
+    document.getElementById('pill-borough').classList.toggle('active', n !== 4);
   }
 
   // neighborhood checkboxes
@@ -556,6 +563,11 @@
         if (py == null) return -1;
         return (px - py) * dir;
       });
+    } else if (sortMode === 'viol-asc' || sortMode === 'viol-desc') {
+      const dir = sortMode === 'viol-asc' ? 1 : -1;
+      // open HPD violations; buildings with no HPD record count as 0
+      const openViols = rec => (rec.h && rec.h.violations && rec.h.violations.open) || 0;
+      visible.sort((x, y) => (openViols(x) - openViols(y)) * dir);
     }
     const totalListings = visible.reduce((s, r) => s + (listingCounts[r.bbl]||0), 0);
     resultsSub.textContent = `${visible.length.toLocaleString()} buildings in view · ${filtered.length.toLocaleString()} match filters · ${totalListings.toLocaleString()} recently advertised on Zumper`;
@@ -597,7 +609,7 @@
   }
 
   function cardHtml(rec) {
-    const borough = rec.b === 'M' ? 'MANHATTAN' : 'BROOKLYN';
+    const borough = (BORO_NAME[rec.b] || '').toUpperCase();
     const listed = listingCounts[rec.bbl] || 0;
     const price = listingPrices[rec.bbl];
     const beds = listingBeds[rec.bbl];
@@ -607,7 +619,7 @@
     if (rec.yr) stats.push(`built ${rec.yr}`);
     if (rec.z) stats.push(`ZIP ${rec.z}`);
     const statuses = (rec.s || []).slice(0, 3).map(s => `<span class="tag">${esc(s)}</span>`).join('');
-    const googleQ = encodeURIComponent(`${rec.a} ${rec.b === 'M' ? 'Manhattan' : 'Brooklyn'} NY ${rec.z || ''}`.trim());
+    const googleQ = encodeURIComponent(`${rec.a} ${BORO_NAME[rec.b] || ''} NY ${rec.z || ''}`.trim());
     const sv = streetviewUrl(rec.lat, rec.lng);
     return `<div class="card" data-bbl="${rec.bbl}">
       <div class="photo">

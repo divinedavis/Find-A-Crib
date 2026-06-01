@@ -12,7 +12,7 @@ from pathlib import Path
 HERE = Path(__file__).parent
 
 # borough numeric prefix used in NYC BBL
-BOROUGH_CODE = {"manhattan": 1, "brooklyn": 3}
+BOROUGH_CODE = {"manhattan": 1, "bronx": 2, "brooklyn": 3, "queens": 4}
 
 HEADER_FIELDS = [
     "ZIP", "BLDGNO1", "STREET1", "STSUFX1",
@@ -99,7 +99,9 @@ def main():
     all_records = []
     for borough, fname in [
         ("manhattan", "2024-DHCR-Bldg-File-Manhattan.pdf"),
+        ("bronx", "2024-DHCR-Bldg-File-Bronx.pdf"),
         ("brooklyn", "2024-DHCR-Bldg-File-Brooklyn.pdf"),
+        ("queens", "2024-DHCR-Bldg-File-Queens.pdf"),
     ]:
         path = HERE / fname
         print(f"Parsing {fname}...")

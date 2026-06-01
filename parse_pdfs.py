@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Parse the DHCR Manhattan + Brooklyn building PDFs into a single JSON of records.
+"""Parse the DHCR Manhattan, Bronx, Brooklyn + Queens building PDFs into a single JSON of records.
 
 Each record carries: borough, zip, address, block, lot, bbl, status fields.
 """

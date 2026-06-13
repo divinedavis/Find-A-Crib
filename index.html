@@ -36,6 +36,17 @@
   .toggle-pill.active { border-color: var(--blue); color: var(--blue); background: var(--blue-soft); }
   .toggle-pill .fav-heart { color: #e0457b; }
   .mobile-only { display: none; }
+
+  /* address search autocomplete dropdown (positioned under the search box via JS) */
+  #search-ac { position: fixed; z-index: 1750; background: #fff; border: 1px solid var(--line);
+    border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.18); overflow: hidden; }
+  #search-ac[hidden] { display: none; }
+  .ac-item { display: block; width: 100%; text-align: left; background: #fff; border: none;
+    border-bottom: 1px solid var(--line); padding: 11px 14px; cursor: pointer; }
+  .ac-item:last-child { border-bottom: none; }
+  .ac-item:hover { background: var(--blue-soft); }
+  .ac-addr { display: block; font-size: 14px; font-weight: 700; color: var(--ink); }
+  .ac-sub { display: block; font-size: 12px; color: var(--ink-2); margin-top: 2px; }
   .filter-bar input.search-input {
     flex: 1 1 280px; min-width: 220px; max-width: 380px;
     padding: 9px 14px; font-size: 14px; border: 1px solid var(--line); border-radius: 999px;
@@ -205,8 +216,11 @@
     }
     .chip-row::-webkit-scrollbar { display: none; }
     .filter-pill { flex: 0 0 auto; }
-    /* popovers can't overflow a scroll container — pin them to the viewport under the header */
+    /* popovers can't overflow a scroll container — pin them to the viewport under the header.
+       On mobile they're portaled to <body> (see JS) and shown via .pop-open, because iOS Safari
+       clips position:fixed descendants of a -webkit-overflow-scrolling container (the chip row). */
     .pill-popover { position: fixed; top: var(--header-h); left: 8px; right: 8px; min-width: 0; max-width: none; max-height: 70vh; overflow-y: auto; }
+    .pill-popover.pop-open { display: block; z-index: 1700; }
 
     /* map fills the screen under the header */
     main { display: block; height: auto; }
@@ -425,6 +439,8 @@
   <button id="btn-toggle-view" type="button"><span class="fab-ico" id="fab-ico">≣</span> <span id="fab-label">List</span></button>
   <button id="btn-sort" type="button" hidden>⇅ Sort</button>
 </div>
+<!-- address search autocomplete -->
+<div id="search-ac" hidden></div>
 <!-- tap-a-pin listing card (mobile) -->
 <div id="building-card" hidden></div>
 <div id="detail-sheet" hidden>
@@ -663,18 +679,32 @@
     nbListEl.appendChild(lab);
   }
 
-  // popover behavior
+  // popover behavior. On mobile we portal the open popover to <body> and show it via
+  // .pop-open, because iOS Safari clips position:fixed descendants of the chip row's
+  // -webkit-overflow-scrolling container (so the popover was invisible on phones).
+  const portalPops = isMobile;
+  function closeAllPills() {
+    document.querySelectorAll('.filter-pill.open').forEach(o => o.classList.remove('open'));
+    document.querySelectorAll('.pill-popover.pop-open').forEach(pop => {
+      pop.classList.remove('pop-open');
+      if (pop._owner) pop._owner.appendChild(pop); // move back into its pill
+    });
+  }
   document.querySelectorAll('.filter-pill').forEach(p => {
+    const pop = p.querySelector('.pill-popover');
+    if (pop) { pop._owner = p; pop.addEventListener('click', e => e.stopPropagation()); }
     p.addEventListener('click', e => {
       if (e.target.closest('.pill-popover')) return;  // clicking inside popover doesn't close
-      document.querySelectorAll('.filter-pill.open').forEach(o => { if (o !== p) o.classList.remove('open'); });
-      p.classList.toggle('open');
+      const wasOpen = p.classList.contains('open');
+      closeAllPills();
+      if (!wasOpen) {
+        p.classList.add('open');
+        if (portalPops && pop) { document.body.appendChild(pop); pop.classList.add('pop-open'); }
+      }
       e.stopPropagation();
     });
   });
-  document.addEventListener('click', () => {
-    document.querySelectorAll('.filter-pill.open').forEach(o => o.classList.remove('open'));
-  });
+  document.addEventListener('click', closeAllPills);
 
   // borough toggles
   document.querySelectorAll('#borough-list input').forEach(cb => cb.addEventListener('change', () => { updateBoroughBadge(); applyFilters(); }));
@@ -739,11 +769,59 @@
     applyFilters();
   }));
 
-  // search
+  // search + address autocomplete (top 3 matches; selecting one opens full details)
+  const qInput = document.getElementById('q');
+  const searchAC = document.getElementById('search-ac');
+  function searchMatches(raw, limit = 3) {
+    const q = (raw || '').toUpperCase().trim();
+    if (q.length < 2) return [];
+    const starts = [], contains = [];
+    for (const rec of data) {
+      if (!rec.a) continue;
+      const A = rec.a.toUpperCase();
+      if (A.startsWith(q)) { if (starts.length < limit) starts.push(rec); }
+      else if (contains.length < limit && A.includes(q)) contains.push(rec);
+      if (starts.length >= limit) break;
+    }
+    return starts.concat(contains).slice(0, limit);
+  }
+  function positionAC() {
+    const r = qInput.getBoundingClientRect();
+    searchAC.style.left = r.left + 'px';
+    searchAC.style.top = (r.bottom + 4) + 'px';
+    searchAC.style.width = r.width + 'px';
+  }
+  function renderAC(matches) {
+    if (!matches.length) { searchAC.hidden = true; return; }
+    searchAC.innerHTML = matches.map(rec => {
+      const borough = BORO_NAME[rec.b] || '';
+      return `<button class="ac-item" data-bbl="${rec.bbl}">
+        <span class="ac-addr">${esc(rec.a)}</span>
+        <span class="ac-sub">${rec.nb ? esc(rec.nb) + ' · ' : ''}${esc(borough)}${rec.z ? ' ' + rec.z : ''}</span>
+      </button>`;
+    }).join('');
+    positionAC();
+    searchAC.hidden = false;
+  }
   let qTimer;
-  document.getElementById('q').addEventListener('input', () => {
+  qInput.addEventListener('input', () => {
+    renderAC(searchMatches(qInput.value));
     clearTimeout(qTimer);
     qTimer = setTimeout(applyFilters, 200);
+  });
+  qInput.addEventListener('focus', () => { if (qInput.value.trim()) renderAC(searchMatches(qInput.value)); });
+  qInput.addEventListener('blur', () => setTimeout(() => { searchAC.hidden = true; }, 200));
+  window.addEventListener('resize', positionAC);
+  searchAC.addEventListener('click', e => {
+    const item = e.target.closest('.ac-item');
+    if (!item) return;
+    const m = markerByBbl.get(item.dataset.bbl);
+    if (!m) return;
+    searchAC.hidden = true;
+    qInput.value = m._rec.a;
+    qInput.blur();
+    map.setView([m._rec.lat, m._rec.lng], Math.max(map.getZoom(), 16), { animate: false });
+    openDetail(m._rec, m._listed || 0);
   });
 
   // ---------- filter / refresh ----------

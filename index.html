@@ -459,6 +459,32 @@
     maxZoom: 20, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
   }).addTo(map);
 
+  // Double-tap to zoom in one level. Leaflet's native doubleClickZoom relies on a
+  // dblclick event that mobile Safari doesn't reliably fire, so detect the
+  // double-tap manually from touch events and zoom toward the tapped point.
+  if (window.matchMedia('(pointer: coarse)').matches) {
+    map.doubleClickZoom.disable();
+    const mapContainer = map.getContainer();
+    let lastTapTime = 0, lastTapXY = null;
+    mapContainer.addEventListener('touchend', (ev) => {
+      if (ev.touches.length) return;                 // mid-pinch / multi-touch — ignore
+      const t = ev.changedTouches[0];
+      if (!t) return;
+      const xy = [t.clientX, t.clientY];
+      const now = Date.now();
+      const quick = now - lastTapTime < 320;
+      const samePlace = lastTapXY && Math.abs(xy[0] - lastTapXY[0]) < 35 && Math.abs(xy[1] - lastTapXY[1]) < 35;
+      if (quick && samePlace) {
+        ev.preventDefault();
+        const ll = map.containerPointToLatLng(map.mouseEventToContainerPoint(t));
+        if (map.getZoom() < map.getMaxZoom()) map.setZoomAround(ll, map.getZoom() + 1);
+        lastTapTime = 0; lastTapXY = null;
+      } else {
+        lastTapTime = now; lastTapXY = xy;
+      }
+    }, { passive: false });
+  }
+
   // ---------- data ----------
   // GMAPS_KEY is provided by config.js (gitignored). See config.example.js.
   const GMAPS_KEY = window.GMAPS_KEY || '';

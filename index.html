@@ -1034,6 +1034,8 @@
     clearSelected();
     cardMarker = null;
   }
+  // tapping the map (anywhere but a pin) dismisses the open card
+  map.on('click', () => { if (!cardEl.hidden) closeCard(); });
 
   // ---------- full-screen building detail page ----------
   const detailSheet = document.getElementById('detail-sheet');

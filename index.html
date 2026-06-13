@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Rent-Stabilized NYC — Manhattan, Bronx, Brooklyn + Queens</title>
+<title>Rent-Stabilized NYC — Manhattan, Bronx, Brooklyn, Queens + Staten Island</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
@@ -31,6 +31,11 @@
   .brand { display: flex; align-items: center; gap: 8px; font-weight: 800; color: var(--blue); font-size: 22px; letter-spacing: -0.5px; }
   .brand-dot { width: 22px; height: 22px; background: var(--blue); border-radius: 6px; display: inline-block; transform: rotate(45deg); }
   .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; flex: 1; align-items: center; }
+  /* on desktop the chip-row is transparent so pills lay out as direct flex children (layout unchanged) */
+  .chip-row { display: contents; }
+  .toggle-pill.active { border-color: var(--blue); color: var(--blue); background: var(--blue-soft); }
+  .toggle-pill .fav-heart { color: #e0457b; }
+  .mobile-only { display: none; }
   .filter-bar input.search-input {
     flex: 1 1 280px; min-width: 220px; max-width: 380px;
     padding: 9px 14px; font-size: 14px; border: 1px solid var(--line); border-radius: 999px;
@@ -81,6 +86,7 @@
   .empty { padding: 60px 20px; text-align: center; color: var(--ink-2); }
 
   .card {
+    position: relative;
     background: #fff; border: 1px solid var(--line); border-radius: 10px; cursor: pointer;
     transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
     display: block; min-width: 0; min-height: 290px;
@@ -102,6 +108,15 @@
   }
   .card .photo > .badge-row, .card .photo > .addr-overlay { position: relative; z-index: 2; }
   .card .photo .badge-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .card .fav-btn {
+    position: absolute; top: 8px; right: 8px; z-index: 5;
+    width: 34px; height: 34px; border-radius: 50%; border: none; cursor: pointer;
+    background: rgba(255,255,255,0.92); box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    font-size: 18px; line-height: 1; display: flex; align-items: center; justify-content: center;
+    color: #4a4a68; transition: transform .12s ease;
+  }
+  .card .fav-btn:hover { transform: scale(1.1); }
+  .card .fav-btn.faved { color: #e0457b; }
   .card .photo .listed-pill {
     background: rgba(255,255,255,0.95); color: var(--pill); font-weight: 700; font-size: 11px;
     padding: 3px 9px; border-radius: 999px; box-shadow: 0 2px 6px rgba(0,0,0,0.18);
@@ -174,10 +189,74 @@
   .footer-credit a { color: var(--ink-2); text-decoration: underline; }
 
   @media (max-width: 900px) {
-    main { grid-template-columns: 1fr; grid-template-rows: 50vh 50vh; }
-    aside.results { border-left: none; border-top: 1px solid var(--line); }
+    :root { --header-h: 104px; }
+    .mobile-only { display: flex; }
+
+    /* compact header: brand shrinks, search on its own row, chips scroll horizontally */
+    header.topbar { flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
+    .brand { font-size: 17px; gap: 6px; }
+    .brand-dot { width: 18px; height: 18px; }
+    .filter-bar { gap: 8px; width: 100%; flex: 1 1 100%; }
+    .filter-bar input.search-input { flex: 1 1 100%; max-width: none; min-width: 0; order: -1; }
+    .chip-row {
+      display: flex; gap: 8px; width: 100%;
+      overflow-x: auto; flex-wrap: nowrap; padding-bottom: 2px;
+      -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    }
+    .chip-row::-webkit-scrollbar { display: none; }
+    .filter-pill { flex: 0 0 auto; }
+    /* popovers can't overflow a scroll container — pin them to the viewport under the header */
+    .pill-popover { position: fixed; top: var(--header-h); left: 8px; right: 8px; min-width: 0; max-width: none; max-height: 70vh; overflow-y: auto; }
+
+    /* map fills the screen under the header */
+    main { display: block; height: auto; }
+    #map { height: calc(100vh - var(--header-h)); height: calc(100dvh - var(--header-h)); width: 100%; }
+
+    /* results become a full-screen sheet that slides up over the map; chips stay visible on top */
+    aside.results {
+      position: fixed; left: 0; right: 0; bottom: 0; top: var(--header-h);
+      border-left: none; border-top: none; z-index: 1400;
+      transform: translateY(110%); transition: transform .28s ease; will-change: transform;
+      box-shadow: 0 -8px 24px rgba(0,0,0,0.18);
+    }
+    body.list-open aside.results { transform: translateY(0); }
+    body.list-open #map { visibility: hidden; }
     .card { flex-basis: 100%; }
-    header.topbar { flex-wrap: wrap; }
+    .results-grid { padding-bottom: 96px; }
+
+    /* live "X of Y" pill, bottom-left over the map (hidden while list is open) */
+    #map-count {
+      position: fixed; left: 12px; bottom: 22px; z-index: 1500;
+      background: rgba(10,10,35,0.82); color: #fff; font-size: 12px; font-weight: 700;
+      padding: 6px 12px; border-radius: 999px; pointer-events: none;
+    }
+    body.list-open #map-count { display: none; }
+
+    /* floating List/Map (+ Sort) control, bottom center */
+    #mobile-fab {
+      position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
+      z-index: 1600; gap: 0; align-items: stretch;
+      background: var(--ink); color: #fff; border-radius: 999px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.35); overflow: hidden;
+    }
+    #mobile-fab button {
+      background: transparent; color: #fff; border: none; cursor: pointer;
+      font-size: 15px; font-weight: 700; padding: 12px 22px; display: flex; align-items: center; gap: 8px;
+    }
+    #mobile-fab button[hidden] { display: none; }
+    #mobile-fab button + button { border-left: 1px solid rgba(255,255,255,0.22); }
+    #mobile-fab .fab-ico { font-size: 16px; }
+
+    /* sort bottom sheet */
+    .sheet-backdrop { position: fixed; inset: 0; z-index: 1700; background: rgba(0,0,0,0.4); display: flex; align-items: flex-end; }
+    .sheet-backdrop[hidden] { display: none; }
+    .sheet { background: #fff; width: 100%; border-radius: 16px 16px 0 0; padding: 8px 16px 24px; }
+    .sheet-handle { width: 40px; height: 4px; background: #d0d5dd; border-radius: 999px; margin: 8px auto 4px; }
+    .sheet h3 { margin: 8px 4px 12px; font-size: 16px; }
+    .sheet-opt { display: block; width: 100%; text-align: left; background: #fff; border: none; border-top: 1px solid var(--line);
+      padding: 14px 6px; font-size: 15px; font-weight: 600; color: var(--ink); cursor: pointer; }
+    .sheet-opt.active { color: var(--blue); }
+    .sheet-opt.active::after { content: " ✓"; }
   }
 </style>
 </head>
@@ -186,14 +265,19 @@
   <div class="brand"><span class="brand-dot"></span>Jays Home Finder</div>
   <div class="filter-bar">
     <input class="search-input" id="q" type="text" placeholder="Address, neighborhood, ZIP, or BBL" />
+    <div class="chip-row">
+    <div class="filter-pill toggle-pill" id="pill-fav" role="button" tabindex="0">
+      <span class="fav-heart">♡</span> Saved <span class="count-badge" id="badge-fav" style="display:none">0</span>
+    </div>
     <div class="filter-pill" id="pill-borough">
-      Borough <span class="count-badge" id="badge-borough">4</span><span class="caret">▾</span>
+      Borough <span class="count-badge" id="badge-borough">5</span><span class="caret">▾</span>
       <div class="pill-popover">
         <div class="scroll" id="borough-list">
           <label class="row"><input type="checkbox" data-b="M" checked> Manhattan</label>
           <label class="row"><input type="checkbox" data-b="Bx" checked> Bronx</label>
           <label class="row"><input type="checkbox" data-b="Bk" checked> Brooklyn</label>
           <label class="row"><input type="checkbox" data-b="Q" checked> Queens</label>
+          <label class="row"><input type="checkbox" data-b="SI" checked> Staten Island</label>
         </div>
       </div>
     </div>
@@ -226,6 +310,7 @@
         <div style="font-size:11px;color:var(--ink-2);margin-top:8px;padding-top:8px;border-top:1px solid var(--line)">Bedroom data comes from recent listings — this also limits results to advertised buildings.</div>
       </div>
     </div>
+    </div><!-- /chip-row -->
   </div>
 </header>
 <main>
@@ -250,6 +335,25 @@
     <div class="footer-credit" id="credit">Source: NYC Rent Guidelines Board / DHCR 2024 · Coordinates from <a href="https://www.nyc.gov/site/planning/data-maps/open-data.page" target="_blank" rel="noopener">NYC PLUTO</a> · Listings via Zumper (nightly) · Owner/violation/complaint data from <a href="https://data.cityofnewyork.us/" target="_blank" rel="noopener">NYC Open Data — HPD</a></div>
   </aside>
 </main>
+
+<!-- mobile-only chrome (hidden on desktop via CSS) -->
+<div id="map-count" class="mobile-only" aria-live="polite"></div>
+<div id="mobile-fab" class="mobile-only">
+  <button id="btn-toggle-view" type="button"><span class="fab-ico" id="fab-ico">≣</span> <span id="fab-label">List</span></button>
+  <button id="btn-sort" type="button" hidden>⇅ Sort</button>
+</div>
+<div id="sort-sheet" class="sheet-backdrop" hidden>
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3>Sort buildings</h3>
+    <button class="sheet-opt" data-v="loc">By location</button>
+    <button class="sheet-opt" data-v="price-asc">Price (low → high)</button>
+    <button class="sheet-opt" data-v="price-desc">Price (high → low)</button>
+    <button class="sheet-opt" data-v="viol-desc">Open violations (high → low)</button>
+    <button class="sheet-opt" data-v="viol-asc">Open violations (low → high)</button>
+  </div>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="config.js"></script>
@@ -269,14 +373,26 @@
   // GMAPS_KEY is provided by config.js (gitignored). See config.example.js.
   const GMAPS_KEY = window.GMAPS_KEY || '';
   // short borough code -> display name / Zumper city slug
-  const BORO_NAME = { M: 'Manhattan', Bx: 'Bronx', Bk: 'Brooklyn', Q: 'Queens' };
-  const BORO_SLUG = { M: 'manhattan-ny', Bx: 'bronx-ny', Bk: 'brooklyn-ny', Q: 'queens-ny' };
+  const BORO_NAME = { M: 'Manhattan', Bx: 'Bronx', Bk: 'Brooklyn', Q: 'Queens', SI: 'Staten Island' };
+  const BORO_SLUG = { M: 'manhattan-ny', Bx: 'bronx-ny', Bk: 'brooklyn-ny', Q: 'queens-ny', SI: 'staten-island-ny' };
   function streetviewUrl(lat, lng, w = 400, h = 240) {
     return `https://maps.googleapis.com/maps/api/streetview?size=${w}x${h}&location=${lat},${lng}&fov=80&pitch=0&source=outdoor&key=${GMAPS_KEY}`;
   }
   const resultsTitle = document.getElementById('results-title');
   const resultsSub = document.getElementById('results-sub');
   const grid = document.getElementById('grid');
+
+  // ---------- favorites (persisted in the browser) ----------
+  const FAV_KEY = 'jhf_favs';
+  let FAVS;
+  try { FAVS = new Set(JSON.parse(localStorage.getItem(FAV_KEY) || '[]')); }
+  catch { FAVS = new Set(); }
+  function saveFavs() { try { localStorage.setItem(FAV_KEY, JSON.stringify([...FAVS])); } catch {} }
+  function updateFavBadge() {
+    const badge = document.getElementById('badge-fav');
+    if (FAVS.size) { badge.textContent = FAVS.size; badge.style.display = ''; }
+    else { badge.style.display = 'none'; }
+  }
 
   const [data, listingsBlob] = await Promise.all([
     fetch('buildings.min.json').then(r => r.json()),
@@ -445,7 +561,7 @@
   function updateBoroughBadge() {
     const n = document.querySelectorAll('#borough-list input:checked').length;
     document.getElementById('badge-borough').textContent = n;
-    document.getElementById('pill-borough').classList.toggle('active', n !== 4);
+    document.getElementById('pill-borough').classList.toggle('active', n !== 5);
   }
 
   // neighborhood checkboxes
@@ -517,12 +633,14 @@
     const selectedNbs = new Set([...nbListEl.querySelectorAll('input:checked')].map(c => c.value));
     const listedMode = document.querySelector('input[name="listed"]:checked').value;
     const selectedBeds = new Set([...document.querySelectorAll('input[name="beds"]:checked')].map(c => +c.value));
+    const favOnly = document.getElementById('pill-fav').classList.contains('active');
     const q = document.getElementById('q').value.trim().toUpperCase();
 
     filtered = [];
     cluster.clearLayers();
     const layers = [];
     for (const rec of data) {
+      if (favOnly && !FAVS.has(rec.bbl)) continue;
       if (!boroughs.has(rec.b)) continue;
       if (selectedNbs.size && !selectedNbs.has(rec.nb)) continue;
       const listed = listingCounts[rec.bbl] || 0;
@@ -577,6 +695,9 @@
     }
     const totalListings = visible.reduce((s, r) => s + (listingCounts[r.bbl]||0), 0);
     resultsSub.textContent = `${visible.length.toLocaleString()} buildings in view · ${filtered.length.toLocaleString()} match filters · ${totalListings.toLocaleString()} recently advertised on Zumper`;
+    // Zillow-style "X of Y" pill over the map on mobile
+    document.getElementById('map-count').textContent = `${visible.length.toLocaleString()} of ${filtered.length.toLocaleString()}`;
+    document.getElementById('fab-label').textContent = document.body.classList.contains('list-open') ? 'Map' : 'List';
     if (!visible.length) {
       grid.classList.add('empty-state');
       grid.innerHTML = '<div class="empty">No buildings in view. Pan or zoom out, or change filters.</div>';
@@ -627,7 +748,9 @@
     const statuses = (rec.s || []).slice(0, 3).map(s => `<span class="tag">${esc(s)}</span>`).join('');
     const googleQ = encodeURIComponent(`${rec.a} ${BORO_NAME[rec.b] || ''} NY ${rec.z || ''}`.trim());
     const sv = streetviewUrl(rec.lat, rec.lng);
+    const faved = FAVS.has(rec.bbl);
     return `<div class="card" data-bbl="${rec.bbl}">
+      <button class="fav-btn ${faved ? 'faved' : ''}" data-action="fav" aria-label="${faved ? 'Remove from saved' : 'Save'}" aria-pressed="${faved}">${faved ? '♥' : '♡'}</button>
       <div class="photo">
         <img class="streetview" loading="lazy" src="${sv}" alt="" onerror="this.style.display='none'">
         <div class="photo-shade"></div>
@@ -661,6 +784,17 @@
     if (!m) return;
     const rec = m._rec;
     const action = e.target.dataset.action;
+    // heart toggle: save/unsave, never navigate
+    if (action === 'fav') {
+      e.preventDefault(); e.stopPropagation();
+      const btn = e.target;
+      if (FAVS.has(bbl)) { FAVS.delete(bbl); btn.classList.remove('faved'); btn.textContent = '♡'; btn.setAttribute('aria-pressed','false'); }
+      else { FAVS.add(bbl); btn.classList.add('faved'); btn.textContent = '♥'; btn.setAttribute('aria-pressed','true'); }
+      saveFavs(); updateFavBadge();
+      // if the Saved filter is on, an unsaved card should drop out of the list
+      if (document.getElementById('pill-fav').classList.contains('active')) applyFilters();
+      return;
+    }
     // Search button: let the link do its thing
     if (action === 'search') return;
     // map button or anywhere else on card → fly to and open popup
@@ -675,12 +809,59 @@
 
   map.addLayer(cluster);
   map.on('moveend', refreshGrid);
-  document.getElementById('sort-select').addEventListener('change', refreshGrid);
+  const sortSelect = document.getElementById('sort-select');
+  sortSelect.addEventListener('change', refreshGrid);
+
+  // ---------- Saved (favorites) filter chip ----------
+  const favPill = document.getElementById('pill-fav');
+  function toggleFavFilter() {
+    favPill.classList.toggle('active');
+    applyFilters();
+  }
+  favPill.addEventListener('click', e => { e.stopPropagation(); toggleFavFilter(); });
+  favPill.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleFavFilter(); } });
+
+  // ---------- mobile: List/Map toggle, count, sort sheet ----------
+  const headerEl = document.querySelector('header.topbar');
+  function syncHeaderHeight() {
+    document.documentElement.style.setProperty('--header-h', headerEl.offsetHeight + 'px');
+    map.invalidateSize();
+  }
+  window.addEventListener('resize', syncHeaderHeight);
+
+  const toggleBtn = document.getElementById('btn-toggle-view');
+  const sortBtn = document.getElementById('btn-sort');
+  function setListOpen(open) {
+    document.body.classList.toggle('list-open', open);
+    document.getElementById('fab-label').textContent = open ? 'Map' : 'List';
+    document.getElementById('fab-ico').textContent = open ? '▤' : '≣';
+    sortBtn.hidden = !open;
+    if (!open) map.invalidateSize();
+  }
+  toggleBtn.addEventListener('click', () => setListOpen(!document.body.classList.contains('list-open')));
+
+  // sort bottom sheet
+  const sortSheet = document.getElementById('sort-sheet');
+  function markSortOpts() {
+    sortSheet.querySelectorAll('.sheet-opt').forEach(o => o.classList.toggle('active', o.dataset.v === sortSelect.value));
+  }
+  sortBtn.addEventListener('click', () => { markSortOpts(); sortSheet.hidden = false; });
+  sortSheet.addEventListener('click', e => {
+    if (e.target === sortSheet) { sortSheet.hidden = true; return; }
+    const opt = e.target.closest('.sheet-opt');
+    if (!opt) return;
+    sortSelect.value = opt.dataset.v;
+    refreshGrid();
+    sortSheet.hidden = true;
+  });
 
   // ---------- init ----------
   updateBoroughBadge();
   updateNbBadge();
+  updateFavBadge();
   applyFilters();
+  syncHeaderHeight();
+  if (location.hash === '#list') setListOpen(true);
 })();
 </script>
 </body>

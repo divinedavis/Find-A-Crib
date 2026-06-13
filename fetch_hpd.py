@@ -18,7 +18,7 @@ CONTACTS = "https://data.cityofnewyork.us/resource/feu5-w2e2.json"
 VIOLATIONS = "https://data.cityofnewyork.us/resource/wvxf-dwi5.json"
 COMPLAINTS = "https://data.cityofnewyork.us/resource/ygpa-z7cr.json"
 
-BORO_NAME = {"1": "manhattan", "2": "bronx", "3": "brooklyn", "4": "queens"}
+BORO_NAME = {"1": "manhattan", "2": "bronx", "3": "brooklyn", "4": "queens", "5": "staten_island"}
 NAME_BORO = {v: k for k, v in BORO_NAME.items()}
 ONE_YEAR_AGO = (datetime.utcnow() - timedelta(days=365)).strftime("%Y-%m-%dT00:00:00")
 

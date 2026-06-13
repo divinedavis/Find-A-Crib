@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Parse the DHCR Manhattan, Bronx, Brooklyn + Queens building PDFs into a single JSON of records.
+"""Parse the DHCR Manhattan, Bronx, Brooklyn, Queens + Staten Island building PDFs into a single JSON of records.
 
 Each record carries: borough, zip, address, block, lot, bbl, status fields.
 """
@@ -12,7 +12,7 @@ from pathlib import Path
 HERE = Path(__file__).parent
 
 # borough numeric prefix used in NYC BBL
-BOROUGH_CODE = {"manhattan": 1, "bronx": 2, "brooklyn": 3, "queens": 4}
+BOROUGH_CODE = {"manhattan": 1, "bronx": 2, "brooklyn": 3, "queens": 4, "staten_island": 5}
 
 HEADER_FIELDS = [
     "ZIP", "BLDGNO1", "STREET1", "STSUFX1",
@@ -102,6 +102,7 @@ def main():
         ("bronx", "2024-DHCR-Bldg-File-Bronx.pdf"),
         ("brooklyn", "2024-DHCR-Bldg-File-Brooklyn.pdf"),
         ("queens", "2024-DHCR-Bldg-File-Queens.pdf"),
+        ("staten_island", "2024-DHCR-Bldg-File-Staten-Island.pdf"),
     ]:
         path = HERE / fname
         print(f"Parsing {fname}...")

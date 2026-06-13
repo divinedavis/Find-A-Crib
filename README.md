@@ -1,7 +1,7 @@
 # Rent Map — NYC Rent-Stabilized Buildings Explorer
 
 An interactive map of every DHCR rent-stabilized building in **Manhattan**,
-**the Bronx**, **Brooklyn**, and **Queens** (~46,900 buildings), with a nightly
+**the Bronx**, **Brooklyn**, **Queens**, and **Staten Island**, with a nightly
 signal for which buildings were **recently advertised** for rent on Zumper.
 
 Deployed at [https://jayshomefinder.com](https://jayshomefinder.com).

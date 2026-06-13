@@ -257,7 +257,90 @@
       padding: 14px 6px; font-size: 15px; font-weight: 600; color: var(--ink); cursor: pointer; }
     .sheet-opt.active { color: var(--blue); }
     .sheet-opt.active::after { content: " ✓"; }
+
+    /* tap-a-pin listing card that slides up from the bottom of the map */
+    #building-card {
+      position: fixed; left: 8px; right: 8px; bottom: 78px; z-index: 1550;
+      background: #fff; border-radius: 14px; overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.32);
+      transform: translateY(24px); opacity: 0; transition: transform .22s ease, opacity .22s ease;
+    }
+    #building-card:not([hidden]) { transform: none; opacity: 1; }
+    body.card-open #map-count { display: none; }
+    .card-photo {
+      width: 100%; height: 150px; object-fit: cover; display: block;
+      background: linear-gradient(135deg, #1f3a8a 0%, #3151c8 50%, #6b3df5 100%);
+    }
+    .card-close {
+      position: absolute; top: 8px; left: 8px; width: 30px; height: 30px; border-radius: 50%;
+      border: none; background: rgba(0,0,0,0.55); color: #fff; font-size: 14px; cursor: pointer; z-index: 2;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .card-fav {
+      position: absolute; top: 8px; right: 8px; width: 36px; height: 36px; border-radius: 50%;
+      border: none; background: rgba(255,255,255,0.92); color: #4a4a68; font-size: 18px; cursor: pointer; z-index: 2;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .card-fav.faved { color: #e0457b; }
+    .card-badge {
+      position: absolute; top: 118px; left: 8px; background: rgba(0,0,0,0.72); color: #fff;
+      font-size: 11px; font-weight: 700; padding: 4px 9px; border-radius: 6px; z-index: 2;
+    }
+    .card-body { padding: 12px 14px 14px; }
+    .card-price { font-size: 20px; font-weight: 800; letter-spacing: -.5px; color: var(--ink); }
+    .card-sub { font-size: 13px; color: var(--ink-2); margin-top: 2px; }
+    .card-addr { font-size: 14px; font-weight: 600; margin-top: 6px; color: var(--ink); }
+    .card-meta { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
+    .card-actions { display: flex; gap: 8px; margin-top: 12px; }
+    .card-actions .cbtn { flex: 1; text-align: center; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: 1px solid var(--blue); text-decoration: none; }
+    .card-actions .cbtn-1 { background: var(--blue); color: #fff; }
+    .card-actions .cbtn-2 { background: #fff; color: var(--blue); }
   }
+  /* selected map pin (both layouts) */
+  .price-pill.selected { background: var(--ink); border-color: #fff; transform: scale(1.06); }
+  .building-dot.selected { background: var(--ink); width: 18px; height: 18px; border-width: 2px; }
+  @media (min-width: 901px) { #building-card { display: none !important; } }
+
+  /* full-screen building detail page (Zillow-style PDP) */
+  #detail-sheet {
+    position: fixed; inset: 0; z-index: 1800; background: #fff;
+    display: flex; flex-direction: column;
+  }
+  #detail-sheet[hidden] { display: none; }
+  .detail-bar {
+    position: sticky; top: 0; z-index: 2; display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 12px; background: #fff; border-bottom: 1px solid var(--line);
+  }
+  .detail-icon {
+    width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: #fff;
+    font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--ink);
+  }
+  .detail-fav.faved { color: #e0457b; border-color: #f3c2d3; }
+  .detail-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .d-photo { width: 100%; height: 240px; object-fit: cover; display: block;
+    background: linear-gradient(135deg, #1f3a8a 0%, #3151c8 50%, #6b3df5 100%); }
+  .d-head { padding: 16px 18px 4px; }
+  .d-badge { display: inline-block; background: var(--blue-soft); color: var(--blue); font-size: 11px; font-weight: 700;
+    padding: 3px 9px; border-radius: 999px; margin-bottom: 8px; }
+  .d-price { font-size: 26px; font-weight: 800; letter-spacing: -.6px; }
+  .d-key { font-size: 14px; color: var(--ink); font-weight: 600; margin-top: 4px; }
+  .d-addr { font-size: 15px; margin-top: 8px; }
+  .d-sub { font-size: 13px; color: var(--ink-2); margin-top: 2px; }
+  .d-actions { display: flex; gap: 8px; padding: 14px 18px; }
+  .d-actions a, .d-actions button { flex: 1 1 0; min-width: 0; text-align: center; padding: 12px; border-radius: 8px; font-size: 14px;
+    font-weight: 700; border: 1px solid var(--blue); cursor: pointer; text-decoration: none; white-space: nowrap; }
+  .d-actions .d-primary { background: var(--blue); color: #fff; }
+  .d-actions .d-secondary { background: #fff; color: var(--blue); }
+  .d-section { padding: 16px 18px; border-top: 8px solid var(--bg); }
+  .d-section h3 { margin: 0 0 12px; font-size: 18px; letter-spacing: -.3px; }
+  .d-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+  .d-fact { font-size: 13px; }
+  .d-fact .l { color: var(--ink-2); display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .4px; }
+  .d-fact .v { font-weight: 700; font-size: 15px; }
+  .d-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .d-chips .chip { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; font-size: 13px; font-weight: 600; }
+  /* the reused HPD markup renders cleanly inside a detail section */
+  #detail-content .hpd-section:first-child { border-top: none; margin-top: 0; padding-top: 0; }
 </style>
 </head>
 <body>
@@ -342,6 +425,15 @@
   <button id="btn-toggle-view" type="button"><span class="fab-ico" id="fab-ico">≣</span> <span id="fab-label">List</span></button>
   <button id="btn-sort" type="button" hidden>⇅ Sort</button>
 </div>
+<!-- tap-a-pin listing card (mobile) -->
+<div id="building-card" hidden></div>
+<div id="detail-sheet" hidden>
+  <div class="detail-bar">
+    <button class="detail-icon" data-detail="close" aria-label="Back">‹</button>
+    <button class="detail-icon detail-fav" data-detail="fav" aria-label="Save">♡</button>
+  </div>
+  <div class="detail-scroll" id="detail-content"></div>
+</div>
 <div id="sort-sheet" class="sheet-backdrop" hidden>
   <div class="sheet">
     <div class="sheet-handle"></div>
@@ -360,11 +452,9 @@
 <script>
 (async function () {
   // ---------- map ----------
-  const map = L.map('map', { preferCanvas: true, doubleClickZoom: false, zoomControl: true }).setView([40.72, -73.97], 12);
-  map.on('dblclick', () => {
-    const z = map.getZoom();
-    if (z < map.getMaxZoom()) map.setZoom(z + 1, { animate: false });
-  });
+  // doubleClickZoom: true → a double-click (desktop) or double-tap (mobile) zooms in
+  // one level toward the tapped point. zoomDelta 1 keeps it gentle ("a little").
+  const map = L.map('map', { preferCanvas: true, doubleClickZoom: true, zoomDelta: 1, zoomControl: true }).setView([40.72, -73.97], 12);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
     maxZoom: 20, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
   }).addTo(map);
@@ -430,12 +520,16 @@
     });
   }
 
+  const isMobile = window.matchMedia('(max-width: 900px)').matches;
   const markerByBbl = new Map();
   for (const rec of data) {
     const listed = listingCounts[rec.bbl] || 0;
     const m = L.marker([rec.lat, rec.lng], { icon: listed > 0 ? listedIcon(listed) : dotIcon });
-    m.bindPopup(() => buildPopup(rec, listed));
     m._rec = rec;
+    m._listed = listed;
+    // mobile: tapping a pin slides up a listing card (StreetEasy-style) instead of a popup
+    if (isMobile) m.on('click', () => openCard(m));
+    else m.bindPopup(() => buildPopup(rec, listed));
     markerByBbl.set(rec.bbl, m);
   }
 
@@ -797,14 +891,23 @@
     }
     // Search button: let the link do its thing
     if (action === 'search') return;
-    // map button or anywhere else on card → fly to and open popup
-    e.preventDefault();
-    const ll = (m.getLatLng ? m.getLatLng() : L.latLng(rec.lat, rec.lng));
-    if (map.getZoom() < 16) map.setView(ll, 17, { animate: false });
-    else map.panTo(ll);
-    if (m.openPopup) {
-      cluster.zoomToShowLayer(m, () => m.openPopup());
+    const listed = m._listed || 0;
+    const flyTo = () => {
+      const ll = (m.getLatLng ? m.getLatLng() : L.latLng(rec.lat, rec.lng));
+      if (map.getZoom() < 16) map.setView(ll, 17, { animate: false });
+      else map.panTo(ll);
+    };
+    // "View on map" button → jump to the pin (card on mobile, popup on desktop)
+    if (action === 'map') {
+      e.preventDefault(); flyTo();
+      if (isMobile) { setListOpen(false); cluster.zoomToShowLayer(m, () => openCard(m)); }
+      else if (m.openPopup) { cluster.zoomToShowLayer(m, () => m.openPopup()); }
+      return;
     }
+    // tapping the card itself → full detail page (mobile) / map popup (desktop)
+    e.preventDefault();
+    if (isMobile) openDetail(rec, listed);
+    else { flyTo(); if (m.openPopup) cluster.zoomToShowLayer(m, () => m.openPopup()); }
   });
 
   map.addLayer(cluster);
@@ -855,6 +958,189 @@
     sortSheet.hidden = true;
   });
 
+  // ---------- mobile: tap-a-pin listing card ----------
+  const cardEl = document.getElementById('building-card');
+  let selectedMarker = null;
+  let cardMarker = null;
+
+  function fmtRent(p) { return p >= 1000 ? '$' + (p / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : '$' + p; }
+
+  function clearSelected() {
+    if (selectedMarker) {
+      selectedMarker.setIcon(selectedMarker._listed > 0 ? listedIcon(selectedMarker._listed) : dotIcon);
+      selectedMarker = null;
+    }
+  }
+  function selectMarker(m) {
+    clearSelected();
+    const rec = m._rec, listed = m._listed || 0;
+    const price = listingPrices[rec.bbl];
+    const txt = price ? fmtRent(price) : (listed > 0 ? listed + ' listed' : '●');
+    const w = txt.length * 7 + 20;
+    m.setIcon(L.divIcon({ className: '', html: `<div class="price-pill selected">${esc(txt)}</div>`, iconSize: [w, 26], iconAnchor: [w / 2, 13] }));
+    selectedMarker = m;
+  }
+
+  function renderCard(rec, listed) {
+    const price = listingPrices[rec.bbl];
+    const beds = listingBeds[rec.bbl];
+    const borough = BORO_NAME[rec.b] || '';
+    const faved = FAVS.has(rec.bbl);
+    const sv = streetviewUrl(rec.lat, rec.lng, 640, 360);
+    const priceLine = listed > 0
+      ? (price ? '$' + price.toLocaleString() + '/mo' : 'Recently advertised')
+      : (rec.u != null ? rec.u + ' residential units' : 'Rent-stabilized building');
+    const sub = [
+      beds && beds.length ? bedsLabel(beds) : null,
+      rec.yr ? 'built ' + rec.yr : null,
+      'Rent-stabilized',
+    ].filter(Boolean).join(' · ');
+    const googleQ = encodeURIComponent(`${rec.a} ${borough} NY ${rec.z || ''}`.trim());
+    return `
+      <button class="card-close" data-card="close" aria-label="Close">✕</button>
+      <img class="card-photo" src="${sv}" alt="" onerror="this.removeAttribute('src')">
+      <button class="card-fav ${faved ? 'faved' : ''}" data-card="fav" aria-label="${faved ? 'Saved' : 'Save'}" aria-pressed="${faved}">${faved ? '♥' : '♡'}</button>
+      ${listed > 0 ? `<span class="card-badge">Recently advertised on Zumper</span>` : ''}
+      <div class="card-body">
+        <div class="card-price">${priceLine}</div>
+        <div class="card-sub">${esc(sub)}</div>
+        <div class="card-addr">${esc(rec.a)}</div>
+        <div class="card-meta">${rec.nb ? esc(rec.nb) + ' · ' : ''}${esc(borough)}${rec.z ? ' ' + rec.z : ''}</div>
+        <div class="card-actions">
+          <button class="cbtn cbtn-2" data-card="details">Details</button>
+          <a class="cbtn cbtn-1" data-card="search" target="_blank" rel="noopener" href="https://www.google.com/search?q=${googleQ}">Search</a>
+        </div>
+      </div>`;
+  }
+
+  function openCard(m) {
+    setListOpen(false);
+    cardMarker = m;
+    const rec = m._rec, listed = m._listed || 0;
+    selectMarker(m);
+    cardEl.innerHTML = renderCard(rec, listed);
+    cardEl.hidden = false;
+    document.body.classList.add('card-open');
+    // keep the pin visible above the card
+    const ll = m.getLatLng ? m.getLatLng() : L.latLng(rec.lat, rec.lng);
+    if (map.getZoom() < 15) map.setView(ll, 16, { animate: false });
+    else map.panTo(ll, { animate: false });
+    // lift the selected pin into the upper half so the card doesn't cover it
+    map.panBy([0, -150], { animate: true });
+  }
+  function closeCard() {
+    cardEl.hidden = true;
+    document.body.classList.remove('card-open');
+    clearSelected();
+    cardMarker = null;
+  }
+
+  // ---------- full-screen building detail page ----------
+  const detailSheet = document.getElementById('detail-sheet');
+  const detailContent = document.getElementById('detail-content');
+  const detailFavBtn = detailSheet.querySelector('.detail-fav');
+  let detailRec = null, detailListed = 0;
+
+  function renderDetail(rec, listed) {
+    const price = listingPrices[rec.bbl];
+    const beds = listingBeds[rec.bbl];
+    const borough = BORO_NAME[rec.b] || '';
+    const sv = streetviewUrl(rec.lat, rec.lng, 800, 480);
+    const priceLine = listed > 0
+      ? (price ? '$' + price.toLocaleString() + '/mo' : 'Recently advertised on Zumper')
+      : 'Rent-stabilized building';
+    const keyBits = [];
+    if (rec.u != null) keyBits.push(rec.u + ' units');
+    if (beds && beds.length) keyBits.push(bedsLabel(beds) + ' available');
+    if (rec.yr) keyBits.push('built ' + rec.yr);
+    const facts = [
+      ['Units', rec.u != null ? rec.u : '—'],
+      ['Year built', rec.yr || '—'],
+      ['ZIP', rec.z || '—'],
+      ['Borough', borough || '—'],
+      ['Neighborhood', rec.nb || '—'],
+      ['BBL', rec.bbl],
+    ];
+    const statuses = rec.s || [];
+    const googleQ = encodeURIComponent(`${rec.a} ${borough} NY ${rec.z || ''}`.trim());
+    const directUrl = (listingsBlob.urls && listingsBlob.urls[rec.bbl]) || null;
+    const zumperHref = directUrl || `https://www.google.com/search?q=${encodeURIComponent(`site:zumper.com "${rec.a}" ${borough} NY`)}`;
+    return `
+      <img class="d-photo" src="${sv}" alt="" onerror="this.removeAttribute('src')">
+      <div class="d-head">
+        <span class="d-badge">${listed > 0 ? 'Recently advertised on Zumper' : 'Rent-stabilized'}</span>
+        <div class="d-price">${priceLine}</div>
+        ${keyBits.length ? `<div class="d-key">${esc(keyBits.join(' · '))}</div>` : ''}
+        <div class="d-addr">${esc(rec.a)}</div>
+        <div class="d-sub">${rec.nb ? esc(rec.nb) + ' · ' : ''}${esc(borough)}${rec.z ? ' ' + rec.z : ''}</div>
+      </div>
+      <div class="d-actions">
+        <button class="d-secondary" data-detail="map">View on map</button>
+        <a class="d-primary" data-detail="search" target="_blank" rel="noopener" href="https://www.google.com/search?q=${googleQ}">Search Google</a>
+      </div>
+      ${statuses.length ? `<div class="d-section"><h3>Rent-stabilization status</h3><div class="d-chips">${statuses.map(s => `<span class="chip">${esc(s)}</span>`).join('')}</div></div>` : ''}
+      <div class="d-section"><h3>Building facts</h3>
+        <div class="d-facts">${facts.map(([l, v]) => `<div class="d-fact"><span class="l">${l}</span><span class="v">${esc(String(v))}</span></div>`).join('')}</div>
+      </div>
+      <div class="d-section"><h3>Owner &amp; HPD record</h3>${hpdHtml(rec)}</div>
+      <div class="d-section"><h3>Find this listing</h3>
+        <div class="d-actions" style="padding:0">
+          <a class="d-secondary" target="_blank" rel="noopener" href="${zumperHref}">${listed > 0 ? 'View on Zumper' : 'Search Zumper'}</a>
+          <a class="d-primary" target="_blank" rel="noopener" href="https://www.google.com/search?q=${googleQ}">Search Google</a>
+        </div>
+      </div>`;
+  }
+
+  function syncDetailFav() {
+    const f = detailRec && FAVS.has(detailRec.bbl);
+    detailFavBtn.classList.toggle('faved', !!f);
+    detailFavBtn.textContent = f ? '♥' : '♡';
+  }
+  function openDetail(rec, listed) {
+    detailRec = rec; detailListed = listed || 0;
+    detailContent.innerHTML = renderDetail(rec, detailListed);
+    detailContent.scrollTop = 0;
+    syncDetailFav();
+    detailSheet.hidden = false;
+  }
+  function closeDetail() { detailSheet.hidden = true; detailRec = null; }
+
+  detailSheet.addEventListener('click', e => {
+    const act = e.target.closest('[data-detail]')?.dataset.detail;
+    if (!act || !detailRec) return;
+    const rec = detailRec;
+    if (act === 'search') return; // link
+    if (act === 'close') { closeDetail(); return; }
+    if (act === 'fav') {
+      if (FAVS.has(rec.bbl)) FAVS.delete(rec.bbl); else FAVS.add(rec.bbl);
+      saveFavs(); updateFavBadge(); syncDetailFav();
+      return;
+    }
+    if (act === 'map') {
+      const m = markerByBbl.get(rec.bbl);
+      closeDetail(); setListOpen(false);
+      if (m) { map.setView(m.getLatLng(), Math.max(map.getZoom(), 16), { animate: false }); cluster.zoomToShowLayer(m, () => openCard(m)); }
+      return;
+    }
+  });
+
+  cardEl.addEventListener('click', e => {
+    const act = e.target.closest('[data-card]')?.dataset.card;
+    if (!cardMarker) return;
+    const rec = cardMarker._rec, listed = cardMarker._listed || 0;
+    if (act === 'close') { closeCard(); return; }
+    if (act === 'search') return; // let the link open
+    if (act === 'fav') {
+      const btn = e.target.closest('[data-card="fav"]');
+      if (FAVS.has(rec.bbl)) { FAVS.delete(rec.bbl); btn.classList.remove('faved'); btn.textContent = '♡'; }
+      else { FAVS.add(rec.bbl); btn.classList.add('faved'); btn.textContent = '♥'; }
+      saveFavs(); updateFavBadge();
+      return;
+    }
+    if (act === 'details') { openDetail(rec, listed); return; }
+  });
+  detailSheet.addEventListener('click', e => { if (e.target === detailSheet) detailSheet.hidden = true; });
+
   // ---------- init ----------
   updateBoroughBadge();
   updateNbBadge();
@@ -862,6 +1148,14 @@
   applyFilters();
   syncHeaderHeight();
   if (location.hash === '#list') setListOpen(true);
+  if (location.hash.startsWith('#b=')) {
+    const m = markerByBbl.get(location.hash.slice(3));
+    if (m) { map.setView(m.getLatLng(), 16, { animate: false }); openCard(m); }
+  }
+  if (location.hash.startsWith('#d=')) {
+    const m = markerByBbl.get(location.hash.slice(3));
+    if (m) openDetail(m._rec, m._listed || 0);
+  }
 })();
 </script>
 </body>

@@ -30,7 +30,32 @@
   }
   .brand { display: flex; align-items: center; gap: 8px; font-weight: 800; color: var(--blue); font-size: 22px; letter-spacing: -0.5px; }
   .brand-dot { width: 22px; height: 22px; background: var(--blue); border-radius: 6px; display: inline-block; transform: rotate(45deg); }
-  .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; flex: 1; align-items: center; }
+  .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; flex: 1; align-items: center; order: 1; }
+  .auth-btn { order: 2; flex: 0 0 auto; background: #fff; color: var(--blue); border: 1px solid var(--blue);
+    border-radius: 999px; padding: 8px 16px; font-size: 14px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .auth-btn:hover { background: var(--blue-soft); }
+  .auth-btn.signed-in { color: var(--ink); border-color: var(--line); }
+  /* sign in / sign up modal */
+  .auth-backdrop { position: fixed; inset: 0; z-index: 1900; background: rgba(0,0,0,0.45);
+    display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .auth-backdrop[hidden] { display: none; }
+  .auth-card { background: #fff; border-radius: 16px; width: 100%; max-width: 380px; padding: 24px 20px 20px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.3); position: relative; }
+  .auth-close { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; border-radius: 50%;
+    border: none; background: var(--bg); font-size: 14px; cursor: pointer; }
+  .auth-card h2 { margin: 0 0 6px; font-size: 22px; letter-spacing: -.4px; }
+  .auth-sub { margin: 0 0 18px; font-size: 13px; color: var(--ink-2); }
+  .auth-card input { width: 100%; padding: 12px 14px; font-size: 16px; border: 1px solid var(--line);
+    border-radius: 8px; margin-bottom: 10px; }
+  .auth-card input:focus { outline: none; border-color: var(--blue); }
+  .auth-error { background: #ffe2e2; color: #a40000; font-size: 13px; padding: 9px 11px; border-radius: 6px; margin-bottom: 10px; }
+  .auth-error[hidden] { display: none; }
+  .auth-submit { width: 100%; padding: 13px; background: var(--blue); color: #fff; border: none;
+    border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; }
+  .auth-submit:hover { background: var(--blue-dark); }
+  .auth-submit:disabled { opacity: .6; cursor: default; }
+  .auth-toggle { text-align: center; font-size: 13px; color: var(--ink-2); margin-top: 14px; }
+  .auth-toggle a { font-weight: 700; cursor: pointer; }
   /* on desktop the chip-row is transparent so pills lay out as direct flex children (layout unchanged) */
   .chip-row { display: contents; }
   .toggle-pill.active { border-color: var(--blue); color: var(--blue); background: var(--blue-soft); }
@@ -207,7 +232,8 @@
     header.topbar { flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
     .brand { font-size: 17px; gap: 6px; }
     .brand-dot { width: 18px; height: 18px; }
-    .filter-bar { gap: 8px; width: 100%; flex: 1 1 100%; }
+    .filter-bar { gap: 8px; width: 100%; flex: 1 1 100%; order: 3; }
+    .auth-btn { margin-left: auto; order: 2; padding: 7px 14px; font-size: 13px; }
     .filter-bar input.search-input { flex: 1 1 100%; max-width: none; min-width: 0; order: -1; }
     .chip-row {
       display: flex; gap: 8px; width: 100%;
@@ -360,6 +386,7 @@
 <body>
 <header class="topbar">
   <div class="brand"><span class="brand-dot"></span>Jays Home Finder</div>
+  <button id="auth-btn" type="button" class="auth-btn">Sign in</button>
   <div class="filter-bar">
     <input class="search-input" id="q" type="text" placeholder="Address, neighborhood, ZIP, or BBL" />
     <div class="chip-row">
@@ -441,6 +468,21 @@
 </div>
 <!-- address search autocomplete -->
 <div id="search-ac" hidden></div>
+<!-- sign in / sign up -->
+<div id="auth-modal" class="auth-backdrop" hidden>
+  <div class="auth-card">
+    <button class="auth-close" data-auth="close" aria-label="Close">✕</button>
+    <h2 id="auth-title">Sign in</h2>
+    <p class="auth-sub">Save buildings to your account so they're on every device.</p>
+    <form id="auth-form" autocomplete="on">
+      <input id="auth-email" type="email" placeholder="Email" autocomplete="email" required>
+      <input id="auth-pass" type="password" placeholder="Password (6+ characters)" autocomplete="current-password" minlength="6" required>
+      <div id="auth-error" class="auth-error" hidden></div>
+      <button id="auth-submit" type="submit" class="auth-submit">Sign in</button>
+    </form>
+    <div class="auth-toggle"><span id="auth-toggle-text">No account?</span> <a id="auth-switch" href="#">Create one</a></div>
+  </div>
+</div>
 <!-- tap-a-pin listing card (mobile) -->
 <div id="building-card" hidden></div>
 <div id="detail-sheet" hidden>
@@ -464,6 +506,7 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script>
 (async function () {
@@ -524,6 +567,17 @@
     const badge = document.getElementById('badge-fav');
     if (FAVS.size) { badge.textContent = FAVS.size; badge.style.display = ''; }
     else { badge.style.display = 'none'; }
+  }
+  // when signed in, mirror each heart toggle to the user's Supabase account
+  let supaClient = null, authUser = null;
+  async function persistFav(bbl, on) {
+    if (!supaClient || !authUser) return;
+    try {
+      // insert (not upsert) so we only need INSERT privilege, not UPDATE; a duplicate
+      // just means it's already saved, which is the desired state.
+      if (on) await supaClient.from('saved_buildings').insert({ user_id: authUser.id, bbl });
+      else await supaClient.from('saved_buildings').delete().eq('user_id', authUser.id).eq('bbl', bbl);
+    } catch (e) { console.warn('fav sync failed', e); }
   }
 
   const [data, listingsBlob] = await Promise.all([
@@ -988,7 +1042,7 @@
       const btn = e.target;
       if (FAVS.has(bbl)) { FAVS.delete(bbl); btn.classList.remove('faved'); btn.textContent = '♡'; btn.setAttribute('aria-pressed','false'); }
       else { FAVS.add(bbl); btn.classList.add('faved'); btn.textContent = '♥'; btn.setAttribute('aria-pressed','true'); }
-      saveFavs(); updateFavBadge();
+      saveFavs(); updateFavBadge(); persistFav(bbl, FAVS.has(bbl));
       // if the Saved filter is on, an unsaved card should drop out of the list
       if (document.getElementById('pill-fav').classList.contains('active')) applyFilters();
       return;
@@ -1219,7 +1273,7 @@
     if (act === 'close') { closeDetail(); return; }
     if (act === 'fav') {
       if (FAVS.has(rec.bbl)) FAVS.delete(rec.bbl); else FAVS.add(rec.bbl);
-      saveFavs(); updateFavBadge(); syncDetailFav();
+      saveFavs(); updateFavBadge(); syncDetailFav(); persistFav(rec.bbl, FAVS.has(rec.bbl));
       return;
     }
     if (act === 'map') {
@@ -1240,7 +1294,7 @@
       const btn = e.target.closest('[data-card="fav"]');
       if (FAVS.has(rec.bbl)) { FAVS.delete(rec.bbl); btn.classList.remove('faved'); btn.textContent = '♡'; }
       else { FAVS.add(rec.bbl); btn.classList.add('faved'); btn.textContent = '♥'; }
-      saveFavs(); updateFavBadge();
+      saveFavs(); updateFavBadge(); persistFav(rec.bbl, FAVS.has(rec.bbl));
       return;
     }
     if (act === 'details') { openDetail(rec, listed); return; }
@@ -1261,6 +1315,88 @@
   if (location.hash.startsWith('#d=')) {
     const m = markerByBbl.get(location.hash.slice(3));
     if (m) openDetail(m._rec, m._listed || 0);
+  }
+
+  // ---------- auth: email sign in/up + saved-buildings sync ----------
+  const authBtn = document.getElementById('auth-btn');
+  const authModal = document.getElementById('auth-modal');
+  const authForm = document.getElementById('auth-form');
+  const authEmail = document.getElementById('auth-email');
+  const authPass = document.getElementById('auth-pass');
+  const authErr = document.getElementById('auth-error');
+  const authSubmit = document.getElementById('auth-submit');
+  const authTitle = document.getElementById('auth-title');
+  const authSwitch = document.getElementById('auth-switch');
+  const authToggleText = document.getElementById('auth-toggle-text');
+  let authMode = 'signin';
+
+  function showAuthError(msg) { authErr.textContent = msg || ''; authErr.hidden = !msg; }
+  function setAuthMode(m) {
+    authMode = m;
+    authTitle.textContent = m === 'signup' ? 'Create account' : 'Sign in';
+    authSubmit.textContent = m === 'signup' ? 'Create account' : 'Sign in';
+    authToggleText.textContent = m === 'signup' ? 'Have an account?' : 'No account?';
+    authSwitch.textContent = m === 'signup' ? 'Sign in' : 'Create one';
+    authPass.setAttribute('autocomplete', m === 'signup' ? 'new-password' : 'current-password');
+    showAuthError('');
+  }
+  function openAuthModal() { setAuthMode('signin'); authModal.hidden = false; setTimeout(() => authEmail.focus(), 50); }
+  function closeAuthModal() { authModal.hidden = true; }
+  function updateAuthUI() {
+    if (authUser) { authBtn.textContent = 'Sign out'; authBtn.classList.add('signed-in'); authBtn.title = authUser.email || ''; }
+    else { authBtn.textContent = 'Sign in'; authBtn.classList.remove('signed-in'); authBtn.title = ''; }
+  }
+  async function loadAccountFavs() {
+    if (!supaClient || !authUser) return;
+    const local = [...FAVS]; // merge anonymous (localStorage) saves into the account first
+    if (local.length) {
+      // ignoreDuplicates → ON CONFLICT DO NOTHING, which needs only INSERT (no UPDATE)
+      try { await supaClient.from('saved_buildings').upsert(local.map(bbl => ({ user_id: authUser.id, bbl })), { onConflict: 'user_id,bbl', ignoreDuplicates: true }); }
+      catch (e) { console.warn('merge favs failed', e); }
+    }
+    try {
+      const { data: rows } = await supaClient.from('saved_buildings').select('bbl');
+      FAVS = new Set([...(rows || []).map(r => r.bbl), ...local]);
+      saveFavs(); updateFavBadge(); refreshGrid();
+    } catch (e) { console.warn('load favs failed', e); }
+  }
+
+  if (window.supabase && window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
+    supaClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+    const { data: { session } } = await supaClient.auth.getSession();
+    authUser = session?.user || null;
+    updateAuthUI();
+    if (authUser) loadAccountFavs();
+    supaClient.auth.onAuthStateChange((_evt, sess) => {
+      authUser = sess?.user || null;
+      updateAuthUI();
+      if (authUser) { closeAuthModal(); loadAccountFavs(); }
+    });
+    authBtn.addEventListener('click', async () => {
+      if (authUser) { await supaClient.auth.signOut(); authUser = null; updateAuthUI(); }
+      else openAuthModal();
+    });
+    authModal.addEventListener('click', e => {
+      if (e.target === authModal || e.target.closest('[data-auth="close"]')) closeAuthModal();
+    });
+    authSwitch.addEventListener('click', e => { e.preventDefault(); setAuthMode(authMode === 'signin' ? 'signup' : 'signin'); });
+    authForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      const email = authEmail.value.trim(), pass = authPass.value;
+      if (!email || pass.length < 6) { showAuthError('Enter an email and a password of at least 6 characters.'); return; }
+      authSubmit.disabled = true; showAuthError('');
+      try {
+        const fn = authMode === 'signup' ? 'signUp' : 'signInWithPassword';
+        const { data, error } = await supaClient.auth[fn]({ email, password: pass });
+        authSubmit.disabled = false;
+        if (error) { showAuthError(error.message); return; }
+        authUser = data?.user || null;
+        if (authUser) { closeAuthModal(); updateAuthUI(); loadAccountFavs(); }
+        else showAuthError('Could not sign in. Please try again.');
+      } catch (err) { authSubmit.disabled = false; showAuthError(err.message || 'Something went wrong.'); }
+    });
+  } else {
+    authBtn.style.display = 'none'; // supabase not available — don't show a dead button
   }
 })();
 </script>

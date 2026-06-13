@@ -12,7 +12,7 @@ records = json.loads(SRC.read_text())
 hpd = json.loads(HPD.read_text()) if HPD.exists() else {}
 
 # short borough codes used by the front end
-BORO_SHORT = {"manhattan": "M", "bronx": "Bx", "brooklyn": "Bk", "queens": "Q"}
+BORO_SHORT = {"manhattan": "M", "bronx": "Bx", "brooklyn": "Bk", "queens": "Q", "staten_island": "SI"}
 
 slim = []
 for r in records:

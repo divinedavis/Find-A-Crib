@@ -443,18 +443,6 @@
 <main>
   <div id="map"></div>
   <aside class="results">
-    <div class="results-head">
-      <div></div>
-      <div class="sort">Sort
-        <select id="sort-select" aria-label="Sort buildings">
-          <option value="loc">By location</option>
-          <option value="price-asc">Price (low → high)</option>
-          <option value="price-desc">Price (high → low)</option>
-          <option value="viol-desc">Open violations (high → low)</option>
-          <option value="viol-asc">Open violations (low → high)</option>
-        </select>
-      </div>
-    </div>
     <div class="results-grid empty-state" id="grid"><div class="empty">Loading 30k buildings…</div></div>
     <div class="footer-credit" id="credit">Source: NYC Rent Guidelines Board / DHCR 2024 · Coordinates from <a href="https://www.nyc.gov/site/planning/data-maps/open-data.page" target="_blank" rel="noopener">NYC PLUTO</a> · Listings via Zumper (nightly) · Owner/violation/complaint data from <a href="https://data.cityofnewyork.us/" target="_blank" rel="noopener">NYC Open Data — HPD</a></div>
   </aside>
@@ -464,7 +452,6 @@
 <div id="map-count" class="mobile-only" aria-live="polite"></div>
 <div id="mobile-fab" class="mobile-only">
   <button id="btn-toggle-view" type="button"><span class="fab-ico" id="fab-ico">≣</span> <span id="fab-label">List</span></button>
-  <button id="btn-sort" type="button" hidden>⇅ Sort</button>
 </div>
 <!-- address search autocomplete -->
 <div id="search-ac" hidden></div>
@@ -477,6 +464,7 @@
     <form id="auth-form" autocomplete="on">
       <input id="auth-email" type="email" placeholder="Email" autocomplete="email" required>
       <input id="auth-pass" type="password" placeholder="Password (6+ characters)" autocomplete="current-password" minlength="6" required>
+      <input id="auth-pass2" type="password" placeholder="Confirm password" autocomplete="new-password" minlength="6" hidden>
       <div id="auth-error" class="auth-error" hidden></div>
       <button id="auth-submit" type="submit" class="auth-submit">Sign in</button>
     </form>
@@ -492,18 +480,6 @@
   </div>
   <div class="detail-scroll" id="detail-content"></div>
 </div>
-<div id="sort-sheet" class="sheet-backdrop" hidden>
-  <div class="sheet">
-    <div class="sheet-handle"></div>
-    <h3>Sort buildings</h3>
-    <button class="sheet-opt" data-v="loc">By location</button>
-    <button class="sheet-opt" data-v="price-asc">Price (low → high)</button>
-    <button class="sheet-opt" data-v="price-desc">Price (high → low)</button>
-    <button class="sheet-opt" data-v="viol-desc">Open violations (high → low)</button>
-    <button class="sheet-opt" data-v="viol-asc">Open violations (low → high)</button>
-  </div>
-</div>
-
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -927,23 +903,6 @@
     for (const rec of filtered) {
       if (b.contains([rec.lat, rec.lng])) visible.push(rec);
     }
-    const sortMode = document.getElementById('sort-select').value;
-    if (sortMode === 'price-asc' || sortMode === 'price-desc') {
-      const dir = sortMode === 'price-asc' ? 1 : -1;
-      visible.sort((x, y) => {
-        const px = listingPrices[x.bbl], py = listingPrices[y.bbl];
-        // buildings with no advertised rent always sort last
-        if (px == null && py == null) return 0;
-        if (px == null) return 1;
-        if (py == null) return -1;
-        return (px - py) * dir;
-      });
-    } else if (sortMode === 'viol-asc' || sortMode === 'viol-desc') {
-      const dir = sortMode === 'viol-asc' ? 1 : -1;
-      // open HPD violations; buildings with no HPD record count as 0
-      const openViols = rec => (rec.h && rec.h.violations && rec.h.violations.open) || 0;
-      visible.sort((x, y) => (openViols(x) - openViols(y)) * dir);
-    }
     const totalListings = visible.reduce((s, r) => s + (listingCounts[r.bbl]||0), 0);
     if (resultsSub) resultsSub.textContent = `${visible.length.toLocaleString()} buildings in view · ${filtered.length.toLocaleString()} match filters · ${totalListings.toLocaleString()} recently advertised on Zumper`;
     // Zillow-style "X of Y" pill over the map on mobile
@@ -1069,8 +1028,6 @@
 
   map.addLayer(cluster);
   map.on('moveend', refreshGrid);
-  const sortSelect = document.getElementById('sort-select');
-  sortSelect.addEventListener('change', refreshGrid);
 
   // ---------- Saved (favorites) filter chip ----------
   const favPill = document.getElementById('pill-fav');
@@ -1090,30 +1047,13 @@
   window.addEventListener('resize', syncHeaderHeight);
 
   const toggleBtn = document.getElementById('btn-toggle-view');
-  const sortBtn = document.getElementById('btn-sort');
   function setListOpen(open) {
     document.body.classList.toggle('list-open', open);
     document.getElementById('fab-label').textContent = open ? 'Map' : 'List';
     document.getElementById('fab-ico').textContent = open ? '▤' : '≣';
-    sortBtn.hidden = !open;
     if (!open) map.invalidateSize();
   }
   toggleBtn.addEventListener('click', () => setListOpen(!document.body.classList.contains('list-open')));
-
-  // sort bottom sheet
-  const sortSheet = document.getElementById('sort-sheet');
-  function markSortOpts() {
-    sortSheet.querySelectorAll('.sheet-opt').forEach(o => o.classList.toggle('active', o.dataset.v === sortSelect.value));
-  }
-  sortBtn.addEventListener('click', () => { markSortOpts(); sortSheet.hidden = false; });
-  sortSheet.addEventListener('click', e => {
-    if (e.target === sortSheet) { sortSheet.hidden = true; return; }
-    const opt = e.target.closest('.sheet-opt');
-    if (!opt) return;
-    sortSelect.value = opt.dataset.v;
-    refreshGrid();
-    sortSheet.hidden = true;
-  });
 
   // ---------- mobile: tap-a-pin listing card ----------
   const cardEl = document.getElementById('building-card');
@@ -1322,6 +1262,7 @@
   const authForm = document.getElementById('auth-form');
   const authEmail = document.getElementById('auth-email');
   const authPass = document.getElementById('auth-pass');
+  const authPass2 = document.getElementById('auth-pass2');
   const authErr = document.getElementById('auth-error');
   const authSubmit = document.getElementById('auth-submit');
   const authTitle = document.getElementById('auth-title');
@@ -1337,6 +1278,9 @@
     authToggleText.textContent = m === 'signup' ? 'Have an account?' : 'No account?';
     authSwitch.textContent = m === 'signup' ? 'Sign in' : 'Create one';
     authPass.setAttribute('autocomplete', m === 'signup' ? 'new-password' : 'current-password');
+    authPass2.hidden = m !== 'signup';
+    authPass2.required = m === 'signup';
+    authPass2.value = '';
     showAuthError('');
   }
   function openAuthModal() { setAuthMode('signin'); authModal.hidden = false; setTimeout(() => authEmail.focus(), 50); }
@@ -1383,6 +1327,7 @@
       e.preventDefault();
       const email = authEmail.value.trim(), pass = authPass.value;
       if (!email || pass.length < 6) { showAuthError('Enter an email and a password of at least 6 characters.'); return; }
+      if (authMode === 'signup' && pass !== authPass2.value) { showAuthError('Passwords do not match.'); return; }
       authSubmit.disabled = true; showAuthError('');
       try {
         const fn = authMode === 'signup' ? 'signUp' : 'signInWithPassword';

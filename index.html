@@ -444,10 +444,7 @@
   <div id="map"></div>
   <aside class="results">
     <div class="results-head">
-      <div>
-        <h1 id="results-title">Rent-Stabilized Buildings</h1>
-        <div class="sub" id="results-sub">Loading…</div>
-      </div>
+      <div></div>
       <div class="sort">Sort
         <select id="sort-select" aria-label="Sort buildings">
           <option value="loc">By location</option>
@@ -556,7 +553,6 @@
   function streetviewUrl(lat, lng, w = 400, h = 240) {
     return `https://maps.googleapis.com/maps/api/streetview?size=${w}x${h}&location=${lat},${lng}&fov=80&pitch=0&source=outdoor&key=${GMAPS_KEY}`;
   }
-  const resultsTitle = document.getElementById('results-title');
   const resultsSub = document.getElementById('results-sub');
   const grid = document.getElementById('grid');
 
@@ -949,7 +945,7 @@
       visible.sort((x, y) => (openViols(x) - openViols(y)) * dir);
     }
     const totalListings = visible.reduce((s, r) => s + (listingCounts[r.bbl]||0), 0);
-    resultsSub.textContent = `${visible.length.toLocaleString()} buildings in view · ${filtered.length.toLocaleString()} match filters · ${totalListings.toLocaleString()} recently advertised on Zumper`;
+    if (resultsSub) resultsSub.textContent = `${visible.length.toLocaleString()} buildings in view · ${filtered.length.toLocaleString()} match filters · ${totalListings.toLocaleString()} recently advertised on Zumper`;
     // Zillow-style "X of Y" pill over the map on mobile
     document.getElementById('map-count').textContent = `${visible.length.toLocaleString()} of ${filtered.length.toLocaleString()}`;
     document.getElementById('fab-label').textContent = document.body.classList.contains('list-open') ? 'Map' : 'List';

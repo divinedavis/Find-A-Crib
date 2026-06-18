@@ -29,7 +29,9 @@
     padding: 10px 20px; display: flex; align-items: center; gap: 16px;
   }
   .brand { display: flex; align-items: center; gap: 8px; font-weight: 800; color: var(--blue); font-size: 22px; letter-spacing: -0.5px; }
-  .brand-dot { width: 22px; height: 22px; background: var(--blue); border-radius: 6px; display: inline-block; transform: rotate(45deg); }
+  .brand-dot { width: 22px; height: 22px; background: var(--blue); border-radius: 6px; display: inline-block; transform: rotate(45deg); flex: none; }
+  .brand-text { display: flex; flex-direction: column; line-height: 1.05; }
+  .brand-sub { font-weight: 600; font-size: 11px; color: var(--blue); opacity: 0.7; letter-spacing: 0; margin-top: 1px; }
   .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; flex: 1; align-items: center; order: 1; }
   .auth-btn { order: 2; flex: 0 0 auto; background: #fff; color: var(--blue); border: 1px solid var(--blue);
     border-radius: 999px; padding: 8px 16px; font-size: 14px; font-weight: 700; cursor: pointer; white-space: nowrap; }
@@ -232,6 +234,7 @@
     header.topbar { flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
     .brand { font-size: 17px; gap: 6px; }
     .brand-dot { width: 18px; height: 18px; }
+    .brand-sub { font-size: 10px; }
     .filter-bar { gap: 8px; width: 100%; flex: 1 1 100%; order: 3; }
     .auth-btn { margin-left: auto; order: 2; padding: 7px 14px; font-size: 13px; }
     .filter-bar input.search-input { flex: 1 1 100%; max-width: none; min-width: 0; order: -1; }
@@ -385,7 +388,7 @@
 </head>
 <body>
 <header class="topbar">
-  <div class="brand"><span class="brand-dot"></span>Jays Home Finder</div>
+  <div class="brand"><span class="brand-dot"></span><span class="brand-text">Jays Home Finder<span class="brand-sub">(NYC Rent Stabilized Home)</span></span></div>
   <button id="auth-btn" type="button" class="auth-btn">Sign in</button>
   <div class="filter-bar">
     <input class="search-input" id="q" type="text" placeholder="Address, neighborhood, ZIP, or BBL" />

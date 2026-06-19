@@ -97,7 +97,8 @@
   }
   .filter-pill.open .pill-popover { display: block; }
   /* Rightmost pill: anchor its popover to the right edge so it opens leftward and stays in the viewport */
-  #pill-listed .pill-popover, #pill-beds .pill-popover { left: auto; right: 0; }
+  #pill-listed .pill-popover, #pill-beds .pill-popover, #pill-viol .pill-popover { left: auto; right: 0; }
+  .pill-popover .sheet-group-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--ink-2); margin: 2px 2px 4px; }
   .pill-popover label.row { display: flex; align-items: center; gap: 8px; padding: 4px 2px; font-size: 13px; font-weight: 500; cursor: pointer; }
   .pill-popover label.row:hover { background: var(--blue-soft); border-radius: 4px; }
   .pill-popover input[type=checkbox] { accent-color: var(--blue); }
@@ -218,6 +219,18 @@
   .hpd-stat { display: inline-block; background: var(--bg); padding: 2px 7px; border-radius: 4px; font-size: 11px; margin-right: 4px; margin-top: 2px; }
   .hpd-stat.warn { background: #fff2dc; color: #8a5a00; }
   .hpd-stat.bad { background: #ffe2e2; color: #a40000; }
+  .hpd-chip { border: none; font-family: inherit; line-height: 1.3; cursor: pointer; position: relative; padding-right: 16px; }
+  .hpd-chip::after { content: "ⓘ"; position: absolute; right: 4px; top: 50%; transform: translateY(-50%); font-size: 9px; opacity: .6; }
+  .hpd-chip:hover { filter: brightness(0.96); }
+  .hpd-legend-toggle { display: inline-block; margin-top: 8px; background: none; border: none; padding: 0;
+    color: var(--blue); font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer; }
+  .hpd-legend-toggle:hover { text-decoration: underline; }
+  .hpd-legend { margin-top: 8px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 4px 12px; }
+  .hpd-legend[hidden] { display: none; }
+  .hpd-legend-row { font-size: 12px; line-height: 1.5; color: var(--ink); padding: 8px 0; }
+  .hpd-legend-row + .hpd-legend-row { border-top: 1px solid var(--line); }
+  .hpd-legend-row .hpd-stat { font-weight: 700; }
+  .hpd-legend-row.hot { background: #fffbe0; margin: 0 -8px; padding: 8px; border-radius: 6px; }
   .hpd-link { font-size: 11px; margin-top: 6px; }
   .card .hpd-mini { font-size: 11px; color: var(--ink-2); margin-top: 4px; }
   .card .hpd-mini .bad { color: #a40000; font-weight: 700; }
@@ -300,6 +313,16 @@
       padding: 14px 6px; font-size: 15px; font-weight: 600; color: var(--ink); cursor: pointer; }
     .sheet-opt.active { color: var(--blue); }
     .sheet-opt.active::after { content: " ✓"; }
+    .sheet-group { padding: 6px 0; }
+    .sheet-group + .sheet-group { border-top: 1px solid var(--line); }
+    .sheet-group-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--ink-2); margin: 8px 4px 6px; }
+    .sheet-radio { display: flex; align-items: center; gap: 10px; padding: 11px 6px; font-size: 15px; font-weight: 600; color: var(--ink); cursor: pointer; }
+    .sheet-radio input[type=radio] { accent-color: var(--blue); width: 18px; height: 18px; }
+    .sheet-actions { display: flex; gap: 10px; margin-top: 14px; }
+    .sheet-actions button { flex: 1; padding: 13px; font-size: 15px; font-weight: 700; border-radius: 10px; border: 1px solid var(--line); background: #fff; color: var(--ink); cursor: pointer; }
+    .sheet-actions button.primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .fab-badge { background: var(--blue); color: #fff; font-size: 11px; font-weight: 800; min-width: 18px; height: 18px; line-height: 18px; text-align: center; padding: 0 5px; border-radius: 999px; }
+    .fab-badge[hidden] { display: none; }
 
     /* tap-a-pin listing card that slides up from the bottom of the map */
     #building-card {
@@ -437,6 +460,20 @@
         <div style="font-size:11px;color:var(--ink-2);margin-top:8px;padding-top:8px;border-top:1px solid var(--line)">Bedroom data comes from recent listings — this also limits results to advertised buildings.</div>
       </div>
     </div>
+    <div class="filter-pill" id="pill-viol">
+      Violations<span class="caret">▾</span>
+      <div class="pill-popover">
+        <div class="sheet-group-title">HPD violations</div>
+        <label class="row"><input type="radio" name="pv-viol" value="any" checked> Any</label>
+        <label class="row"><input type="radio" name="pv-viol" value="none"> No open violations</label>
+        <label class="row"><input type="radio" name="pv-viol" value="open"> Has open violations</label>
+        <label class="row"><input type="radio" name="pv-viol" value="classc"> Has Class C (hazardous) violations</label>
+        <div class="sheet-group-title" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line)">HPD complaints</div>
+        <label class="row"><input type="radio" name="pv-comp" value="any" checked> Any</label>
+        <label class="row"><input type="radio" name="pv-comp" value="none"> No open complaints</label>
+        <label class="row"><input type="radio" name="pv-comp" value="open"> Has open complaints</label>
+      </div>
+    </div>
     </div><!-- /chip-row -->
   </div>
 </header>
@@ -452,6 +489,7 @@
 <div id="map-count" class="mobile-only" aria-live="polite"></div>
 <div id="mobile-fab" class="mobile-only">
   <button id="btn-toggle-view" type="button"><span class="fab-ico" id="fab-ico">≣</span> <span id="fab-label">List</span></button>
+  <button id="btn-filters" type="button"><span class="fab-ico">⚲</span> Filters <span class="fab-badge" id="fab-filter-badge" hidden></span></button>
 </div>
 <!-- address search autocomplete -->
 <div id="search-ac" hidden></div>
@@ -473,6 +511,30 @@
 </div>
 <!-- tap-a-pin listing card (mobile) -->
 <div id="building-card" hidden></div>
+<!-- filters bottom sheet (opened from the mobile FAB and the desktop "Conditions" pill) -->
+<div id="filter-sheet" class="sheet-backdrop" hidden>
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3>Filter buildings</h3>
+    <div class="sheet-group">
+      <div class="sheet-group-title">HPD violations</div>
+      <label class="sheet-radio"><input type="radio" name="fs-viol" value="any" checked> Any</label>
+      <label class="sheet-radio"><input type="radio" name="fs-viol" value="none"> No open violations</label>
+      <label class="sheet-radio"><input type="radio" name="fs-viol" value="open"> Has open violations</label>
+      <label class="sheet-radio"><input type="radio" name="fs-viol" value="classc"> Has Class C (hazardous) violations</label>
+    </div>
+    <div class="sheet-group">
+      <div class="sheet-group-title">HPD complaints</div>
+      <label class="sheet-radio"><input type="radio" name="fs-comp" value="any" checked> Any</label>
+      <label class="sheet-radio"><input type="radio" name="fs-comp" value="none"> No open complaints</label>
+      <label class="sheet-radio"><input type="radio" name="fs-comp" value="open"> Has open complaints</label>
+    </div>
+    <div class="sheet-actions">
+      <button id="filter-clear" type="button">Clear</button>
+      <button id="filter-apply" type="button" class="primary">Show results</button>
+    </div>
+  </div>
+</div>
 <div id="detail-sheet" hidden>
   <div class="detail-bar">
     <button class="detail-icon" data-detail="close" aria-label="Back">‹</button>
@@ -657,11 +719,20 @@
     const vChips = v ? `
       <span class="hpd-stat ${v.open > 5 ? 'bad' : (v.open > 0 ? 'warn' : '')}">${v.open} open</span>
       <span class="hpd-stat">${v.total} all-time</span>
-      ${v.c ? `<span class="hpd-stat bad">Class C: ${v.c}</span>` : ''}
-      ${v.b ? `<span class="hpd-stat warn">Class B: ${v.b}</span>` : ''}
-      ${v.a ? `<span class="hpd-stat">Class A: ${v.a}</span>` : ''}
+      ${v.c ? `<button type="button" class="hpd-stat bad hpd-chip" data-cls="C">Class C: ${v.c}</button>` : ''}
+      ${v.b ? `<button type="button" class="hpd-stat warn hpd-chip" data-cls="B">Class B: ${v.b}</button>` : ''}
+      ${v.a ? `<button type="button" class="hpd-stat hpd-chip" data-cls="A">Class A: ${v.a}</button>` : ''}
       ${v.last_12mo ? `<span class="hpd-stat">${v.last_12mo} in last 12mo</span>` : ''}
     ` : '<span style="color:var(--ink-2);font-size:11px">No violations on file.</span>';
+    // plain-English explainer of HPD violation classes (tap a Class chip or the link to open)
+    const vLegend = v ? `
+      <button type="button" class="hpd-legend-toggle" aria-expanded="false">ⓘ What do the classes mean?</button>
+      <div class="hpd-legend" hidden>
+        <div class="hpd-legend-row" data-cls="A"><span class="hpd-stat">Class A</span> <b>Non-hazardous.</b> Minor issues — a leaky faucet, chipped paint, a missing sign. Landlord has up to <b>90 days</b> to fix.</div>
+        <div class="hpd-legend-row" data-cls="B"><span class="hpd-stat warn">Class B</span> <b>Hazardous.</b> Broken fixtures, pests, or missing required services. Landlord has <b>30 days</b> to fix.</div>
+        <div class="hpd-legend-row" data-cls="C"><span class="hpd-stat bad">Class C</span> <b>Immediately hazardous.</b> No heat or hot water, lead paint, broken smoke/CO detectors, or a rodent infestation. Landlord has <b>24 hours</b> to fix.</div>
+      </div>
+    ` : '';
     const cChips = c ? `
       <span class="hpd-stat ${c.open > 10 ? 'bad' : (c.open > 0 ? 'warn' : '')}">${c.open} open</span>
       <span class="hpd-stat">${c.total} all-time</span>
@@ -682,6 +753,7 @@
       <div class="hpd-section">
         <h4>HPD violations</h4>
         <div class="hpd-row">${vChips}</div>
+        ${vLegend}
       </div>
       <div class="hpd-section">
         <h4>HPD complaints</h4>
@@ -692,6 +764,35 @@
   }
 
   function esc(s){return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+  // Make HPD violation Class chips + the "What do the classes mean?" link interactive.
+  // Delegated from a stable container so it survives re-renders; Leaflet popups stop
+  // propagation to document, so we wire each popup's node on `popupopen` instead.
+  function wireHpdLegend(root) {
+    if (!root || root._hpdLegendWired) return;
+    root._hpdLegendWired = true;
+    root.addEventListener('click', e => {
+      const toggle = e.target.closest('.hpd-legend-toggle');
+      const chip = e.target.closest('.hpd-chip');
+      if (!toggle && !chip) return;
+      e.preventDefault(); e.stopPropagation();
+      const section = (toggle || chip).closest('.hpd-section');
+      const legend = section && section.querySelector('.hpd-legend');
+      if (!legend) return;
+      if (chip) {
+        legend.removeAttribute('hidden');
+        const t = section.querySelector('.hpd-legend-toggle');
+        if (t) t.setAttribute('aria-expanded', 'true');
+        legend.querySelectorAll('.hpd-legend-row').forEach(r => r.classList.toggle('hot', r.dataset.cls === chip.dataset.cls));
+      } else {
+        const willOpen = legend.hasAttribute('hidden');
+        legend.toggleAttribute('hidden', !willOpen);
+        toggle.setAttribute('aria-expanded', String(willOpen));
+        if (!willOpen) legend.querySelectorAll('.hpd-legend-row.hot').forEach(r => r.classList.remove('hot'));
+      }
+    });
+  }
+  map.on('popupopen', e => { const el = e.popup.getElement(); if (el) wireHpdLegend(el); });
 
   // ---------- filters ----------
   const PRESET_NB = ['Bed-Stuy (West)', 'Bed-Stuy (East)', 'Williamsburg', 'East Village', 'SoHo', 'Nolita'];
@@ -798,6 +899,39 @@
     applyFilters();
   }));
 
+  // ---------- HPD violations / complaints filter (desktop "Violations" pill + mobile Filters sheet) ----------
+  const filterSheet = document.getElementById('filter-sheet');
+  const fabFilterBadge = document.getElementById('fab-filter-badge');
+  function moreFilterCount() {
+    return (moreFilters.viol !== 'any' ? 1 : 0) + (moreFilters.comp !== 'any' ? 1 : 0);
+  }
+  function syncMoreUI() {
+    // reflect shared state into both the pill radios and the sheet radios
+    document.querySelectorAll('input[name="pv-viol"], input[name="fs-viol"]').forEach(r => { r.checked = (r.value === moreFilters.viol); });
+    document.querySelectorAll('input[name="pv-comp"], input[name="fs-comp"]').forEach(r => { r.checked = (r.value === moreFilters.comp); });
+    const n = moreFilterCount();
+    const pill = document.getElementById('pill-viol');
+    pill.classList.toggle('active', n > 0);
+    let badge = pill.querySelector('.count-badge');
+    if (n > 0) {
+      if (!badge) { badge = document.createElement('span'); badge.className = 'count-badge'; pill.insertBefore(badge, pill.querySelector('.caret')); }
+      badge.textContent = n;
+    } else if (badge) { badge.remove(); }
+    if (n > 0) { fabFilterBadge.textContent = n; fabFilterBadge.hidden = false; }
+    else { fabFilterBadge.hidden = true; }
+  }
+  document.querySelectorAll('input[name="pv-viol"], input[name="fs-viol"]').forEach(r =>
+    r.addEventListener('change', () => { if (r.checked) { moreFilters.viol = r.value; syncMoreUI(); applyFilters(); } }));
+  document.querySelectorAll('input[name="pv-comp"], input[name="fs-comp"]').forEach(r =>
+    r.addEventListener('change', () => { if (r.checked) { moreFilters.comp = r.value; syncMoreUI(); applyFilters(); } }));
+
+  // mobile FAB opens the sheet; backdrop tap or "Show results" closes it; "Clear" resets
+  document.getElementById('btn-filters').addEventListener('click', () => { closeAllPills(); filterSheet.hidden = false; });
+  filterSheet.addEventListener('click', e => {
+    if (e.target === filterSheet || e.target.id === 'filter-apply') { filterSheet.hidden = true; return; }
+    if (e.target.id === 'filter-clear') { moreFilters.viol = 'any'; moreFilters.comp = 'any'; syncMoreUI(); applyFilters(); }
+  });
+
   // search + address autocomplete (top 3 matches; selecting one opens full details)
   const qInput = document.getElementById('q');
   const searchAC = document.getElementById('search-ac');
@@ -854,6 +988,9 @@
   });
 
   // ---------- filter / refresh ----------
+  // HPD violation / complaint filter state, shared by the desktop "Violations" pill
+  // and the mobile Filters bottom sheet. viol: any|none|open|classc, comp: any|none|open.
+  const moreFilters = { viol: 'any', comp: 'any' };
   let filtered = [];
   function applyFilters() {
     const boroughs = new Set([...document.querySelectorAll('#borough-list input:checked')].map(c => c.dataset.b));
@@ -876,6 +1013,20 @@
       if (selectedBeds.size) {
         const bb = listingBeds[rec.bbl];
         if (!bb || !bb.some(n => selectedBeds.has(n))) continue;
+      }
+      if (moreFilters.viol !== 'any') {
+        const v = rec.h && rec.h.violations;
+        const open = v ? (v.open || 0) : 0;
+        const classc = v ? (v.c || 0) : 0;
+        if (moreFilters.viol === 'none' && open > 0) continue;
+        if (moreFilters.viol === 'open' && open === 0) continue;
+        if (moreFilters.viol === 'classc' && classc === 0) continue;
+      }
+      if (moreFilters.comp !== 'any') {
+        const c = rec.h && rec.h.complaints;
+        const open = c ? (c.open || 0) : 0;
+        if (moreFilters.comp === 'none' && open > 0) continue;
+        if (moreFilters.comp === 'open' && open === 0) continue;
       }
       if (q) {
         const inAddr = rec.a && rec.a.toUpperCase().includes(q);
@@ -1137,6 +1288,7 @@
   // ---------- full-screen building detail page ----------
   const detailSheet = document.getElementById('detail-sheet');
   const detailContent = document.getElementById('detail-content');
+  wireHpdLegend(detailContent);
   const detailFavBtn = detailSheet.querySelector('.detail-fav');
   let detailRec = null, detailListed = 0;
 

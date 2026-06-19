@@ -13,3 +13,6 @@ fetch_hpd.log
 
 # OS / editor cruft
 .DS_Store
+
+# Generated SEO pages (rebuild via build_seo.py)
+seo/

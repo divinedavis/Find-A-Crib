@@ -509,6 +509,7 @@
 <div id="mobile-fab" class="mobile-only">
   <button id="btn-toggle-view" type="button"><span class="fab-ico" id="fab-ico">≣</span> <span id="fab-label">List</span></button>
   <button id="btn-filters" type="button"><span class="fab-ico">⚲</span> Filters <span class="fab-badge" id="fab-filter-badge" hidden></span></button>
+  <button id="btn-sort" type="button" hidden><span class="fab-ico">⇅</span> Sort</button>
 </div>
 <!-- address search autocomplete -->
 <div id="search-ac" hidden></div>
@@ -552,6 +553,19 @@
       <button id="filter-clear" type="button">Clear</button>
       <button id="filter-apply" type="button" class="primary">Show results</button>
     </div>
+  </div>
+</div>
+<!-- sort bottom sheet (opened from the mobile FAB "Sort" button) -->
+<div id="sort-sheet" class="sheet-backdrop" hidden>
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h3>Sort buildings</h3>
+    <button class="sheet-opt active" data-v="loc">By location</button>
+    <button class="sheet-opt" data-v="viol-desc">Open violations (most first)</button>
+    <button class="sheet-opt" data-v="viol-asc">Open violations (fewest first)</button>
+    <button class="sheet-opt" data-v="comp-desc">Open complaints (most first)</button>
+    <button class="sheet-opt" data-v="price-asc">Price (low → high)</button>
+    <button class="sheet-opt" data-v="price-desc">Price (high → low)</button>
   </div>
 </div>
 <div id="detail-sheet" hidden>
@@ -1010,6 +1024,8 @@
   // HPD violation / complaint filter state, shared by the desktop "Violations" pill
   // and the mobile Filters bottom sheet. viol: any|none|open|classc, comp: any|none|open.
   const moreFilters = { viol: 'any', comp: 'any' };
+  // list sort, chosen from the mobile FAB "Sort" sheet. 'loc' = natural viewport order.
+  let sortMode = 'loc';
   let filtered = [];
   function applyFilters() {
     const boroughs = new Set([...document.querySelectorAll('#borough-list input:checked')].map(c => c.dataset.b));
@@ -1072,6 +1088,26 @@
     const visible = [];
     for (const rec of filtered) {
       if (b.contains([rec.lat, rec.lng])) visible.push(rec);
+    }
+    // sort the in-view buildings (before the 200-card cap, so e.g. "most violations" surfaces the worst)
+    if (sortMode !== 'loc') {
+      const openViols = r => (r.h && r.h.violations && r.h.violations.open) || 0;
+      const openComps = r => (r.h && r.h.complaints && r.h.complaints.open) || 0;
+      if (sortMode === 'viol-desc' || sortMode === 'viol-asc') {
+        const dir = sortMode === 'viol-asc' ? 1 : -1;
+        visible.sort((x, y) => (openViols(x) - openViols(y)) * dir);
+      } else if (sortMode === 'comp-desc') {
+        visible.sort((x, y) => openComps(y) - openComps(x));
+      } else if (sortMode === 'price-asc' || sortMode === 'price-desc') {
+        const dir = sortMode === 'price-asc' ? 1 : -1;
+        visible.sort((x, y) => {
+          const px = listingPrices[x.bbl], py = listingPrices[y.bbl];
+          if (px == null && py == null) return 0;   // buildings with no advertised rent sort last
+          if (px == null) return 1;
+          if (py == null) return -1;
+          return (px - py) * dir;
+        });
+      }
     }
     const totalListings = visible.reduce((s, r) => s + (listingCounts[r.bbl]||0), 0);
     if (resultsSub) resultsSub.textContent = `${visible.length.toLocaleString()} buildings in view · ${filtered.length.toLocaleString()} match filters · ${totalListings.toLocaleString()} recently advertised on Zumper`;
@@ -1217,13 +1253,31 @@
   window.addEventListener('resize', syncHeaderHeight);
 
   const toggleBtn = document.getElementById('btn-toggle-view');
+  const sortBtn = document.getElementById('btn-sort');
   function setListOpen(open) {
     document.body.classList.toggle('list-open', open);
     document.getElementById('fab-label').textContent = open ? 'Map' : 'List';
     document.getElementById('fab-ico').textContent = open ? '▤' : '≣';
+    sortBtn.hidden = !open;   // sorting only applies to the list, so show Sort with the list (Zillow-style Map | Sort)
     if (!open) map.invalidateSize();
   }
   toggleBtn.addEventListener('click', () => setListOpen(!document.body.classList.contains('list-open')));
+
+  // sort bottom sheet
+  const sortSheet = document.getElementById('sort-sheet');
+  function markSortOpts() {
+    sortSheet.querySelectorAll('.sheet-opt').forEach(o => o.classList.toggle('active', o.dataset.v === sortMode));
+  }
+  sortBtn.addEventListener('click', () => { markSortOpts(); sortSheet.hidden = false; });
+  sortSheet.addEventListener('click', e => {
+    if (e.target === sortSheet) { sortSheet.hidden = true; return; }
+    const opt = e.target.closest('.sheet-opt');
+    if (!opt) return;
+    sortMode = opt.dataset.v;
+    markSortOpts();
+    sortSheet.hidden = true;
+    refreshGrid();
+  });
 
   // ---------- mobile: tap-a-pin listing card ----------
   const cardEl = document.getElementById('building-card');

@@ -325,8 +325,12 @@
     /* sort bottom sheet */
     .sheet-backdrop { position: fixed; inset: 0; z-index: 1700; background: rgba(0,0,0,0.4); display: flex; align-items: flex-end; }
     .sheet-backdrop[hidden] { display: none; }
-    .sheet { background: #fff; width: 100%; border-radius: 16px 16px 0 0; padding: 8px 16px 24px; }
+    .sheet { position: relative; background: #fff; width: 100%; border-radius: 16px 16px 0 0; padding: 8px 16px 24px; }
     .sheet-handle { width: 40px; height: 4px; background: #d0d5dd; border-radius: 999px; margin: 8px auto 4px; }
+    .sheet-close { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border-radius: 50%;
+      border: none; background: var(--bg); color: var(--ink-2); font-size: 16px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; z-index: 1; }
+    .sheet-close:hover { background: #e4e8ee; }
     .sheet h3 { margin: 8px 4px 12px; font-size: 16px; }
     .sheet-opt { display: block; width: 100%; text-align: left; background: #fff; border: none; border-top: 1px solid var(--line);
       padding: 14px 6px; font-size: 15px; font-weight: 600; color: var(--ink); cursor: pointer; }
@@ -535,6 +539,7 @@
 <div id="filter-sheet" class="sheet-backdrop" hidden>
   <div class="sheet">
     <div class="sheet-handle"></div>
+    <button id="filter-close" class="sheet-close" type="button" aria-label="Close">✕</button>
     <h3>Filter buildings</h3>
     <div class="sheet-group">
       <div class="sheet-group-title">HPD violations</div>
@@ -559,6 +564,7 @@
 <div id="sort-sheet" class="sheet-backdrop" hidden>
   <div class="sheet">
     <div class="sheet-handle"></div>
+    <button id="sort-close" class="sheet-close" type="button" aria-label="Close">✕</button>
     <h3>Sort buildings</h3>
     <button class="sheet-opt active" data-v="loc">By location</button>
     <button class="sheet-opt" data-v="viol-desc">Open violations (most first)</button>
@@ -961,8 +967,8 @@
   // mobile FAB opens the sheet; backdrop tap or "Show results" closes it; "Clear" resets
   document.getElementById('btn-filters').addEventListener('click', () => { closeAllPills(); filterSheet.hidden = false; });
   filterSheet.addEventListener('click', e => {
-    if (e.target === filterSheet || e.target.id === 'filter-apply') { filterSheet.hidden = true; return; }
-    if (e.target.id === 'filter-clear') { moreFilters.viol = 'any'; moreFilters.comp = 'any'; syncMoreUI(); applyFilters(); }
+    if (e.target === filterSheet || e.target.closest('#filter-apply') || e.target.closest('#filter-close')) { filterSheet.hidden = true; return; }
+    if (e.target.closest('#filter-clear')) { moreFilters.viol = 'any'; moreFilters.comp = 'any'; syncMoreUI(); applyFilters(); }
   });
 
   // search + address autocomplete (top 3 matches; selecting one opens full details)
@@ -1270,7 +1276,7 @@
   }
   sortBtn.addEventListener('click', () => { markSortOpts(); sortSheet.hidden = false; });
   sortSheet.addEventListener('click', e => {
-    if (e.target === sortSheet) { sortSheet.hidden = true; return; }
+    if (e.target === sortSheet || e.target.closest('#sort-close')) { sortSheet.hidden = true; return; }
     const opt = e.target.closest('.sheet-opt');
     if (!opt) return;
     sortMode = opt.dataset.v;

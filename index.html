@@ -1209,6 +1209,7 @@
     // heart toggle: save/unsave, never navigate
     if (action === 'fav') {
       e.preventDefault(); e.stopPropagation();
+      if (!authUser) { openAuthModal(); return; }
       const btn = e.target;
       if (FAVS.has(bbl)) { FAVS.delete(bbl); btn.classList.remove('faved'); btn.textContent = '♡'; btn.setAttribute('aria-pressed','false'); }
       else { FAVS.add(bbl); btn.classList.add('faved'); btn.textContent = '♥'; btn.setAttribute('aria-pressed','true'); }
@@ -1442,6 +1443,7 @@
     if (act === 'search') return; // link
     if (act === 'close') { closeDetail(); return; }
     if (act === 'fav') {
+      if (!authUser) { openAuthModal(); return; }
       if (FAVS.has(rec.bbl)) FAVS.delete(rec.bbl); else FAVS.add(rec.bbl);
       saveFavs(); updateFavBadge(); syncDetailFav(); persistFav(rec.bbl, FAVS.has(rec.bbl));
       return;
@@ -1461,6 +1463,7 @@
     if (act === 'close') { closeCard(); return; }
     if (act === 'search') return; // let the link open
     if (act === 'fav') {
+      if (!authUser) { openAuthModal(); return; }
       const btn = e.target.closest('[data-card="fav"]');
       if (FAVS.has(rec.bbl)) { FAVS.delete(rec.bbl); btn.classList.remove('faved'); btn.textContent = '♡'; }
       else { FAVS.add(rec.bbl); btn.classList.add('faved'); btn.textContent = '♥'; }

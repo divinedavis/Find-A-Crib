@@ -1169,8 +1169,6 @@
     const h = rec.h;
     if (!h) return '';
     const bits = [];
-    if (h.owner && h.owner.name) bits.push(`Owner: ${esc(h.owner.name)}`);
-    else if (h.manager && h.manager.name) bits.push(`Manager: ${esc(h.manager.name)}`);
     const v = h.violations;
     const c = h.complaints;
     if (v && v.open) {
@@ -1195,7 +1193,7 @@
     if (rec.u != null) stats.push(`${rec.u} units`);
     if (rec.yr) stats.push(`built ${rec.yr}`);
     if (rec.z) stats.push(`ZIP ${rec.z}`);
-    const statuses = (rec.s || []).slice(0, 3).map(s => `<span class="tag">${esc(s)}</span>`).join('');
+    const statuses = (rec.s || []).filter(s => !/MULTIPLE DWELLING/i.test(s)).slice(0, 3).map(s => `<span class="tag">${esc(s)}</span>`).join('');
     const googleQ = encodeURIComponent(`${rec.a} ${BORO_NAME[rec.b] || ''} NY ${rec.z || ''}`.trim());
     const sv = streetviewUrl(rec.lat, rec.lng);
     const faved = FAVS.has(rec.bbl);

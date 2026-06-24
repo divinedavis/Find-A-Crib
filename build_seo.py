@@ -17,12 +17,25 @@ import json
 import os
 import re
 import html
+import hashlib
 import datetime
 from collections import defaultdict
 
 SITE = "https://findacrib.com"
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "seo")
 BUILD_DATE = datetime.date.today().isoformat()  # sitemap <lastmod>
+
+# --- honest lastmod: only bump a page's <lastmod> when its HTML actually changes.
+# State (url -> {h: content-hash, m: lastmod}) persists between runs next to this
+# script so a nightly rebuild doesn't lie to crawlers about unchanged pages.
+LM_STATE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "seo_lastmod.json")
+try:
+    LM_STATE = json.load(open(LM_STATE_PATH))
+except Exception:
+    LM_STATE = {}
+LM_NEW = {}        # url -> {h, m} written back at the end
+LASTMOD = {}       # url -> lastmod string, used when emitting sitemaps
+LM_CHANGED = []     # urls whose content changed this run (for IndexNow)
 
 
 def breadcrumb(items):
@@ -121,6 +134,19 @@ def write(relpath, contents):
     os.makedirs(os.path.dirname(full), exist_ok=True)
     with open(full, "w") as f:
         f.write(contents)
+    # track lastmod for crawlable HTML pages (…/index.html) only
+    if relpath.endswith("index.html"):
+        loc = SITE + "/" + relpath[:-len("index.html")]  # …/foo/index.html -> …/foo/
+        h = hashlib.sha1(contents.encode("utf-8")).hexdigest()
+        prev = LM_STATE.get(loc)
+        if prev and prev.get("h") == h:
+            lastmod = prev["m"]                 # unchanged -> keep old date (honest)
+        else:
+            lastmod = BUILD_DATE                # new or changed -> bump
+            if prev is not None:
+                LM_CHANGED.append(loc)          # changed (not brand-new) -> ping IndexNow
+        LM_NEW[loc] = {"h": h, "m": lastmod}
+        LASTMOD[loc] = lastmod
 
 
 def main():
@@ -467,13 +493,17 @@ def main():
     for loc, pri, key in urls:
         by_boro_urls[key].append((loc, pri))
     smaps = []
+    shard_lastmod = {}
     for key, locs in by_boro_urls.items():
         name = f"sitemap-{key}.xml"
-        body = "".join(f"<url><loc>{loc}</loc><lastmod>{BUILD_DATE}</lastmod><priority>{pri}</priority></url>" for loc, pri in locs)
+        body = "".join(f"<url><loc>{loc}</loc><lastmod>{LASTMOD.get(loc, BUILD_DATE)}</lastmod>"
+                       f"<priority>{pri}</priority></url>" for loc, pri in locs)
         write(name, f'<?xml version="1.0" encoding="UTF-8"?>'
                     f'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{body}</urlset>')
+        shard_lastmod[name] = max((LASTMOD.get(loc, BUILD_DATE) for loc, _ in locs), default=BUILD_DATE)
         smaps.append(name)
-    idx = "".join(f"<sitemap><loc>{SITE}/{n}</loc><lastmod>{BUILD_DATE}</lastmod></sitemap>" for n in sorted(smaps))
+    idx = "".join(f"<sitemap><loc>{SITE}/{n}</loc><lastmod>{shard_lastmod.get(n, BUILD_DATE)}</lastmod></sitemap>"
+                  for n in sorted(smaps))
     write("sitemap.xml", f'<?xml version="1.0" encoding="UTF-8"?>'
           f'<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
           f'<sitemap><loc>{SITE}/sitemap-main.xml</loc><lastmod>{BUILD_DATE}</lastmod></sitemap>{idx}</sitemapindex>')
@@ -483,7 +513,13 @@ def main():
           f'<url><loc>{SITE}/</loc><lastmod>{BUILD_DATE}</lastmod><priority>1.0</priority></url></urlset>')
     write("robots.txt", f"User-agent: *\nAllow: /\nSitemap: {SITE}/sitemap.xml\n")
 
-    print(f"Generated {len(urls):,} pages + {len(smaps)+2} sitemaps into {OUT}/")
+    # persist lastmod state + emit the list of changed URLs for IndexNow
+    json.dump(LM_NEW, open(LM_STATE_PATH, "w"))
+    with open(os.path.join(OUT, "changed_urls.txt"), "w") as f:
+        f.write("\n".join(sorted(set(LM_CHANGED))))
+
+    print(f"Generated {len(urls):,} pages + {len(smaps)+2} sitemaps into {OUT}/ "
+          f"({len(LM_CHANGED)} pages changed this run)")
 
 
 if __name__ == "__main__":

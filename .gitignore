@@ -16,3 +16,6 @@ fetch_hpd.log
 
 # Generated SEO pages (rebuild via build_seo.py)
 seo/
+
+# honest-lastmod state for build_seo.py
+seo_lastmod.json

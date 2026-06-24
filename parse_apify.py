@@ -75,7 +75,9 @@ def build_index(records):
 
 HERE = Path(__file__).parent
 BUILDINGS = HERE / "buildings.min.json"
-OUT = HERE / "listings.json"
+# Apify writes its own per-borough file; combine_listings.py overlays it onto
+# the Zumper baseline to produce the listings.json the site serves.
+OUT = HERE / "listings_apify.json"
 
 RENT_MIN, RENT_MAX = 500, 50000
 

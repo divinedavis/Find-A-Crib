@@ -22,3 +22,6 @@ seo_lastmod.json
 
 # nightly listing history snapshots (droplet-side)
 listings_archive/
+listings_zumper.json
+listings_apify.json
+apify_export.json

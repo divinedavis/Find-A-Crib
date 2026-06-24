@@ -15,10 +15,13 @@ cd "$DOC"
 # load Apify creds
 set -a; . /etc/rentmap-apify.env; set +a
 
-# --merge: refresh only the borough(s) this run covered, keep the others.
-# The task rotates one borough/month (BK, then MN, BX, QN, SI), so each run
-# must accumulate into listings.json rather than overwrite it.
+# Monthly per-borough Apify run. Pass the borough as $1 (BK|MN|BX|QN|SI) so the
+# parse pins to it (stray cross-borough matches dropped) and --merge accumulates
+# it into listings_apify.json alongside prior months' boroughs. combine then
+# overlays Apify onto the Zumper baseline to rebuild listings.json.
+BOROUGH="${1:?usage: refresh_listings.sh <BK|MN|BX|QN|SI>}"
 python3 fetch_apify.py apify_export.json
-python3 parse_apify.py apify_export.json --merge
+python3 parse_apify.py apify_export.json --merge --borough "$BOROUGH"
+python3 combine_listings.py
 
-echo "listings refreshed: $(date -u)"
+echo "listings refreshed ($BOROUGH): $(date -u)"

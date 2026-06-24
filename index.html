@@ -1212,7 +1212,7 @@
       </div>
       <div class="body">
         ${rec.nb ? `<div class="nb">${esc(rec.nb)}</div>` : ''}
-        ${listed > 0 ? `<div class="price">${price ? '$' + price.toLocaleString() + '/mo · ' : ''}Recently advertised on Zumper · ${listed} listing${listed===1?'':'s'}${asOf}</div>` : ''}
+        ${listed > 0 ? `<div class="price">${price ? '$' + price.toLocaleString() + '/mo' : `Recently advertised on Zumper · ${listed} listing${listed===1?'':'s'}${asOf}`}</div>` : ''}
         ${beds && beds.length ? `<div class="beds-line">${bedsLabel(beds)} available</div>` : ''}
         <div class="units-line">${stats.join(' · ')}</div>
         ${cardHpdLine(rec)}

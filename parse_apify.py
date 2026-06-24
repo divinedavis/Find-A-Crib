@@ -114,10 +114,25 @@ def match_bbl(norm, addr_idx):
     return None
 
 
+BOROUGH_CODE = {"MN": "1", "M": "1", "BX": "2", "BK": "3",
+                "QN": "4", "Q": "4", "SI": "5"}
+
+
+def parse_borough(argv):
+    """--borough BK / MN / 3 / 1 ... -> single BBL prefix digit, or None."""
+    for i, a in enumerate(argv):
+        if a == "--borough" and i + 1 < len(argv):
+            v = argv[i + 1].upper()
+            return v if v in "12345" and len(v) == 1 else BOROUGH_CODE.get(v)
+    return None
+
+
 def main():
     if len(sys.argv) < 2:
-        sys.exit("usage: python3 parse_apify.py <apify_export.json> [--merge]")
+        sys.exit("usage: python3 parse_apify.py <export.json> [--merge] "
+                 "[--borough BK|MN|BX|QN|SI]")
     merge = "--merge" in sys.argv[2:]
+    target = parse_borough(sys.argv[2:])  # restrict to one borough if given
     items = json.loads(Path(sys.argv[1]).read_text())
     if isinstance(items, dict):  # some exports wrap the array
         items = items.get("items") or items.get("results") or []
@@ -133,6 +148,10 @@ def main():
         bbl = match_bbl(normalize_addr(street_of(item)), addr_idx)
         if not bbl:
             continue
+        if target and bbl[:1] != target:
+            continue  # drop stray cross-borough matches (e.g. a BK run that
+                      # address-matches into Manhattan) so a per-borough run
+                      # never pollutes another borough's data
         matched += 1
         rent = int(item.get("rent", item.get("price")))
 
@@ -153,7 +172,10 @@ def main():
     # of overwriting each other. Stale same-borough entries are dropped.
     if merge and OUT.exists():
         old = json.loads(OUT.read_text())
-        run_boroughs = {b[0] for b in counts}  # which boroughs this run covered
+        # Refresh exactly the borough we targeted. Fall back to inferring from
+        # results only when no --borough was given (single-borough runs should
+        # always pass --borough so a stray match can't clear another borough).
+        run_boroughs = {target} if target else {b[0] for b in counts}
 
         def keep(bbl):  # keep old entry only if its borough wasn't re-run
             return bbl[:1] not in run_boroughs

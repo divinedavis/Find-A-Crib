@@ -1544,6 +1544,22 @@
     authUser = session?.user || null;
     updateAuthUI();
     if (authUser) loadAccountFavs();
+    // anonymous returning-visitor analytics: a first-party id (localStorage) lets us
+    // count true returning users without storing IPs. user_id is attached when signed in.
+    try {
+      let vid = localStorage.getItem('fac_vid');
+      if (!vid) {
+        vid = (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
+              : 'v' + Date.now().toString(36) + Math.random().toString(36).slice(2);
+        localStorage.setItem('fac_vid', vid);
+      }
+      supaClient.from('visits').insert({
+        visitor_id: vid,
+        user_id: authUser ? authUser.id : null,
+        path: location.pathname + location.search,
+        referrer: document.referrer || null,
+      }).then(() => {}, () => {}); // fire-and-forget; never block the app
+    } catch (e) { /* analytics is best-effort */ }
     supaClient.auth.onAuthStateChange((_evt, sess) => {
       authUser = sess?.user || null;
       updateAuthUI();

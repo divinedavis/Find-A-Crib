@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Rent-Stabilized NYC — Manhattan, Bronx, Brooklyn, Queens + Staten Island</title>
 <meta name="description" content="Find NYC rent-stabilized apartments across Manhattan, Bronx, Brooklyn, Queens & Staten Island." />
+<link rel="canonical" href="https://findacrib.com/" />
+<meta name="robots" content="index,follow,max-image-preview:large" />
+<meta name="theme-color" content="#2b39c8" />
+<!-- warm up the map + asset origins for a faster first paint (LCP) -->
+<link rel="preconnect" href="https://unpkg.com" crossorigin />
+<link rel="preconnect" href="https://basemaps.cartocdn.com" crossorigin />
+<link rel="dns-prefetch" href="https://maps.googleapis.com" />
+<link rel="dns-prefetch" href="https://dbaifotzwlxjvsxjohjt.supabase.co" />
 <!-- icons (favicon + iOS home-screen / iMessage fallback icon) -->
 <link rel="icon" href="/favicon.ico" sizes="any" />
 <link rel="icon" type="image/png" href="/favicon-32.png" sizes="32x32" />
@@ -23,6 +31,13 @@
 <meta name="twitter:title" content="Rent-Stabilized NYC — Find A Crib" />
 <meta name="twitter:description" content="Find NYC rent-stabilized apartments across Manhattan, Bronx, Brooklyn, Queens & Staten Island." />
 <meta name="twitter:image" content="https://findacrib.com/og-image.png" />
+<!-- structured data: site identity for richer search results -->
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+{"@type":"WebSite","@id":"https://findacrib.com/#website","url":"https://findacrib.com/","name":"Find A Crib","description":"Find NYC rent-stabilized apartments across Manhattan, the Bronx, Brooklyn, Queens, and Staten Island.","publisher":{"@id":"https://findacrib.com/#org"}},
+{"@type":"Organization","@id":"https://findacrib.com/#org","name":"Find A Crib","url":"https://findacrib.com/","logo":"https://findacrib.com/icon-512.png"}
+]}
+</script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />

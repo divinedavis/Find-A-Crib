@@ -17,10 +17,20 @@ import json
 import os
 import re
 import html
+import datetime
 from collections import defaultdict
 
 SITE = "https://findacrib.com"
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "seo")
+BUILD_DATE = datetime.date.today().isoformat()  # sitemap <lastmod>
+
+
+def breadcrumb(items):
+    """schema.org BreadcrumbList from [(name, absolute_url), ...] for rich results."""
+    return {"@context": "https://schema.org", "@type": "BreadcrumbList",
+            "itemListElement": [
+                {"@type": "ListItem", "position": i + 1, "name": name, "item": url}
+                for i, (name, url) in enumerate(items)]}
 
 BORO_NAME = {"M": "Manhattan", "Bk": "Brooklyn", "Q": "Queens",
              "Bx": "the Bronx", "SI": "Staten Island"}
@@ -205,11 +215,18 @@ def main():
             near_html = (f"<h2>Other rent-stabilized buildings in {esc(nb)}</h2><div class='cols'>{items}</div>"
                          f"<p><a href=\"{nb_url(b['b'], b.get('nb') or boro)}\">See all in {esc(nb)} →</a></p>")
 
-        jsonld = {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{
+        faq = {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{
             "@type": "Question", "name": f"Is {addr} rent stabilized?",
             "acceptedAnswer": {"@type": "Answer",
                 "text": f"Yes. {addr} in {nb}, {boro} is a DHCR-registered rent-stabilized building"
                         + (f" with about {units} apartments." if units else ".")}}]}
+        crumb = breadcrumb([
+            ("Home", SITE + "/"),
+            (boro, SITE + f"/borough/{BORO_SLUG.get(b['b'],'nyc')}/"),
+            (nb, SITE + nb_url(b['b'], b.get('nb') or boro)),
+            (addr, canonical),
+        ])
+        jsonld = [faq, crumb]
 
         body = (f"<div class='crumbs'><a href='/'>Home</a> › "
                 f"<a href='/borough/{BORO_SLUG.get(b['b'],'nyc')}/'>{esc(boro)}</a> › "
@@ -245,10 +262,15 @@ def main():
                 + f". Tap any address to check its rent-stabilized status, owner, and HPD record.</p>"
                 f"<a class='cta' href='/'>Explore {esc(nb)} on the map →</a>"
                 f"<h2>All {n:,} buildings</h2><div class='cols'>{links}</div>")
+        nb_crumb = breadcrumb([
+            ("Home", SITE + "/"),
+            (boroname, SITE + f"/borough/{BORO_SLUG.get(boro,'nyc')}/"),
+            (nb, canonical),
+        ])
         write(url.strip("/") + "/index.html",
               page(f"Rent-stabilized buildings in {nb}, {boroname} ({n}) | Find A Crib",
                    f"All {n} rent-stabilized buildings in {nb}, {boroname}. Check any address for status, owner, and violations.",
-                   canonical, body))
+                   canonical, body, nb_crumb))
         urls.append((canonical, "0.7", boro))
 
     # ---- borough hub pages ----
@@ -268,10 +290,11 @@ def main():
                 f"{len(nbs)} {esc(boroname)} neighborhoods.</p>"
                 f"<a class='cta' href='/'>Open the map →</a>"
                 f"<h2>Neighborhoods</h2><div class='cols'>{links}</div>")
+        boro_crumb = breadcrumb([("Home", SITE + "/"), (boroname, canonical)])
         write(url.strip("/") + "/index.html",
               page(f"Rent-stabilized buildings in {boroname} ({total}) | Find A Crib",
                    f"Browse {total} rent-stabilized buildings across {boroname} by neighborhood.",
-                   canonical, body))
+                   canonical, body, boro_crumb))
         urls.append((canonical, "0.8", boro))
 
     # ---- master hub /buildings/ ----
@@ -300,18 +323,18 @@ def main():
     smaps = []
     for key, locs in by_boro_urls.items():
         name = f"sitemap-{key}.xml"
-        body = "".join(f"<url><loc>{loc}</loc><priority>{pri}</priority></url>" for loc, pri in locs)
+        body = "".join(f"<url><loc>{loc}</loc><lastmod>{BUILD_DATE}</lastmod><priority>{pri}</priority></url>" for loc, pri in locs)
         write(name, f'<?xml version="1.0" encoding="UTF-8"?>'
                     f'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{body}</urlset>')
         smaps.append(name)
-    idx = "".join(f"<sitemap><loc>{SITE}/{n}</loc></sitemap>" for n in sorted(smaps))
+    idx = "".join(f"<sitemap><loc>{SITE}/{n}</loc><lastmod>{BUILD_DATE}</lastmod></sitemap>" for n in sorted(smaps))
     write("sitemap.xml", f'<?xml version="1.0" encoding="UTF-8"?>'
           f'<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
-          f'<sitemap><loc>{SITE}/sitemap-main.xml</loc></sitemap>{idx}</sitemapindex>')
+          f'<sitemap><loc>{SITE}/sitemap-main.xml</loc><lastmod>{BUILD_DATE}</lastmod></sitemap>{idx}</sitemapindex>')
     # main sitemap = homepage + hub
     write("sitemap-main.xml", f'<?xml version="1.0" encoding="UTF-8"?>'
           f'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
-          f'<url><loc>{SITE}/</loc><priority>1.0</priority></url></urlset>')
+          f'<url><loc>{SITE}/</loc><lastmod>{BUILD_DATE}</lastmod><priority>1.0</priority></url></urlset>')
     write("robots.txt", f"User-agent: *\nAllow: /\nSitemap: {SITE}/sitemap.xml\n")
 
     print(f"Generated {len(urls):,} pages + {len(smaps)+2} sitemaps into {OUT}/")

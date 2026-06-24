@@ -44,12 +44,17 @@ def main():
     if not (task or actor):
         sys.exit("set APIFY_TASK or APIFY_ACTOR")
 
+    # raise the run's server-side timeout for big scrapes (the actor's default
+    # is often 3600s, too short for a full-borough run). 0/unset = actor default.
+    run_timeout = os.environ.get("APIFY_RUN_TIMEOUT", "")
+    qs = f"&timeout={run_timeout}" if run_timeout else ""
+
     # 1) start the run
     if task:
-        start = f"{API}/actor-tasks/{task}/runs?token={token}"
+        start = f"{API}/actor-tasks/{task}/runs?token={token}{qs}"
         body = None
     else:
-        start = f"{API}/acts/{actor}/runs?token={token}"
+        start = f"{API}/acts/{actor}/runs?token={token}{qs}"
         body = None
         inp = os.environ.get("APIFY_INPUT")
         if inp:
@@ -66,8 +71,13 @@ def main():
             sys.exit(f"timed out after {timeout}s (run {run_id} still {status})")
         time.sleep(POLL_EVERY)
         status = _req("GET", f"{API}/actor-runs/{run_id}?token={token}")["data"]["status"]
-    if status != "SUCCEEDED":
+    # SUCCEEDED is ideal, but TIMED-OUT/ABORTED still leave a usable partial
+    # dataset we paid for — pull it anyway and just warn. Only a hard FAILED
+    # with no data is fatal.
+    if status not in ("SUCCEEDED", "TIMED-OUT", "TIMING-OUT", "ABORTED", "ABORTING"):
         sys.exit(f"run {run_id} ended {status}")
+    if status != "SUCCEEDED":
+        print(f"WARNING: run {run_id} ended {status} — pulling partial dataset", flush=True)
 
     # 3) pull dataset items
     items = _req("GET", f"{API}/datasets/{dataset_id}/items?clean=true&format=json&token={token}")

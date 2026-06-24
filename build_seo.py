@@ -19,7 +19,7 @@ import re
 import html
 from collections import defaultdict
 
-SITE = "https://jayshomefinder.com"
+SITE = "https://findacrib.com"
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "seo")
 
 BORO_NAME = {"M": "Manhattan", "Bk": "Brooklyn", "Q": "Queens",
@@ -91,18 +91,18 @@ def page(title, desc, canonical, body, jsonld=None):
 <meta name="description" content="{esc(desc)}">
 <link rel="canonical" href="{canonical}">
 <link rel="icon" href="/favicon.ico" sizes="any">
-<meta property="og:type" content="website"><meta property="og:site_name" content="Jays Home Finder">
+<meta property="og:type" content="website"><meta property="og:site_name" content="Find A Crib">
 <meta property="og:title" content="{esc(title)}"><meta property="og:description" content="{esc(desc)}">
 <meta property="og:url" content="{canonical}"><meta property="og:image" content="{SITE}/og-image.png">
 <meta name="twitter:card" content="summary_large_image">
 <style>{CSS}</style>{ld}</head><body>
-<header class="site"><a class="brand" href="/">🏠 Jays Home Finder</a> &nbsp;·&nbsp;
+<header class="site"><a class="brand" href="/">🏠 Find A Crib</a> &nbsp;·&nbsp;
 <a href="/buildings/">All neighborhoods</a></header>
 <main>{body}</main>
 <footer class="site">Data: NYC DHCR 2024 rent-stabilized building files, NYC PLUTO (coordinates),
 and NYC HPD Open Data (owner, violations, complaints). A building's rent-stabilized status reflects
 DHCR registration; it is not a guarantee that a specific unit is available or currently stabilized.
-&copy; Jays Home Finder. <a href="/">Open the interactive map →</a></footer>
+&copy; Find A Crib. <a href="/">Open the interactive map →</a></footer>
 </body></html>"""
 
 
@@ -222,7 +222,7 @@ def main():
                 + owner_html + cond_html + near_html)
 
         write(url.strip("/") + "/index.html",
-              page(f"Is {addr} rent stabilized? — {nb}, {boro} | Jays Home Finder",
+              page(f"Is {addr} rent stabilized? — {nb}, {boro} | Find A Crib",
                    f"{addr} in {nb}, {boro} is a NYC rent-stabilized building. See units, year built, owner, and HPD violations.",
                    canonical, body, jsonld))
         urls.append((canonical, "0.6", b["b"]))
@@ -246,7 +246,7 @@ def main():
                 f"<a class='cta' href='/'>Explore {esc(nb)} on the map →</a>"
                 f"<h2>All {n:,} buildings</h2><div class='cols'>{links}</div>")
         write(url.strip("/") + "/index.html",
-              page(f"Rent-stabilized buildings in {nb}, {boroname} ({n}) | Jays Home Finder",
+              page(f"Rent-stabilized buildings in {nb}, {boroname} ({n}) | Find A Crib",
                    f"All {n} rent-stabilized buildings in {nb}, {boroname}. Check any address for status, owner, and violations.",
                    canonical, body))
         urls.append((canonical, "0.7", boro))
@@ -269,7 +269,7 @@ def main():
                 f"<a class='cta' href='/'>Open the map →</a>"
                 f"<h2>Neighborhoods</h2><div class='cols'>{links}</div>")
         write(url.strip("/") + "/index.html",
-              page(f"Rent-stabilized buildings in {boroname} ({total}) | Jays Home Finder",
+              page(f"Rent-stabilized buildings in {boroname} ({total}) | Find A Crib",
                    f"Browse {total} rent-stabilized buildings across {boroname} by neighborhood.",
                    canonical, body))
         urls.append((canonical, "0.8", boro))
@@ -285,7 +285,7 @@ def main():
         hub_links += (f"<h2><a href='/borough/{BORO_SLUG[boro]}/'>{esc(boroname)}</a></h2>"
                       f"<div class='cols'>{nl}</div>")
     write("buildings/index.html",
-          page("NYC rent-stabilized buildings by neighborhood | Jays Home Finder",
+          page("NYC rent-stabilized buildings by neighborhood | Find A Crib",
                "Browse every NYC rent-stabilized building by borough and neighborhood — Manhattan, Brooklyn, Queens, the Bronx, Staten Island.",
                SITE + "/buildings/",
                f"<h1>NYC rent-stabilized buildings</h1><p class='lead'>Browse all "

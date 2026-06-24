@@ -145,6 +145,15 @@ def main():
     def nb_url(boro, nb):
         return f"/neighborhood/{BORO_SLUG.get(boro,'nyc')}/{slugify(nb)}/"
 
+    def zip_url(z):
+        return f"/zip/{z}/"
+
+    def boro_list_url(boro, kind):  # kind = "largest" | "oldest"
+        return f"/borough/{BORO_SLUG.get(boro,'nyc')}/{kind}/"
+
+    def avail_url(boro, nb):
+        return f"/available/{BORO_SLUG.get(boro,'nyc')}/{slugify(nb)}/"
+
     urls = []  # (loc, priority) for sitemaps
 
     # ---- building pages ----
@@ -215,6 +224,13 @@ def main():
             near_html = (f"<h2>Other rent-stabilized buildings in {esc(nb)}</h2><div class='cols'>{items}</div>"
                          f"<p><a href=\"{nb_url(b['b'], b.get('nb') or boro)}\">See all in {esc(nb)} →</a></p>")
 
+        # broaden-search links to the ZIP hub + borough listicles (internal linking / crawl)
+        more = [f"<a href=\"{boro_list_url(b['b'],'largest')}\">Largest buildings in {esc(boro)}</a>",
+                f"<a href=\"{boro_list_url(b['b'],'oldest')}\">Oldest buildings in {esc(boro)}</a>"]
+        if b.get("z"):
+            more.insert(0, f"<a href=\"{zip_url(b['z'])}\">All rent-stabilized in ZIP {esc(b['z'])}</a>")
+        area_html = "<h2>Explore more</h2><div class='cols'>" + "".join(more) + "</div>"
+
         faq = {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{
             "@type": "Question", "name": f"Is {addr} rent stabilized?",
             "acceptedAnswer": {"@type": "Answer",
@@ -236,7 +252,7 @@ def main():
                 + (f"<p><span class='badge'>Recently advertised for rent</span></p>" if adv else "")
                 + f"<a class='cta' href='/#d={b['bbl']}'>View {esc(addr)} on the map →</a>"
                 f"<h2>Building details</h2><table class='facts'>{facts}</table>"
-                + owner_html + cond_html + near_html)
+                + owner_html + cond_html + near_html + area_html)
 
         write(url.strip("/") + "/index.html",
               page(f"Is {addr} rent stabilized? — {nb}, {boro} | Find A Crib",
@@ -289,6 +305,8 @@ def main():
                 f"<p class='lead'>{total:,} registered rent-stabilized buildings across "
                 f"{len(nbs)} {esc(boroname)} neighborhoods.</p>"
                 f"<a class='cta' href='/'>Open the map →</a>"
+                f"<p><a href='{boro_list_url(boro,'largest')}'>Largest buildings in {esc(boroname)}</a> "
+                f"&nbsp;·&nbsp; <a href='{boro_list_url(boro,'oldest')}'>Oldest buildings</a></p>"
                 f"<h2>Neighborhoods</h2><div class='cols'>{links}</div>")
         boro_crumb = breadcrumb([("Home", SITE + "/"), (boroname, canonical)])
         write(url.strip("/") + "/index.html",
@@ -306,6 +324,8 @@ def main():
         nl = "".join(f"<a href=\"{nb_url(boro, nb)}\">{esc(nb)} ({c:,})</a>"
                      for nb, c in sorted(nbs_by_boro[boro]))
         hub_links += (f"<h2><a href='/borough/{BORO_SLUG[boro]}/'>{esc(boroname)}</a></h2>"
+                      f"<p><a href='{boro_list_url(boro,'largest')}'>Largest buildings</a> &nbsp;·&nbsp; "
+                      f"<a href='{boro_list_url(boro,'oldest')}'>Oldest buildings</a></p>"
                       f"<div class='cols'>{nl}</div>")
     write("buildings/index.html",
           page("NYC rent-stabilized buildings by neighborhood | Find A Crib",
@@ -313,8 +333,134 @@ def main():
                SITE + "/buildings/",
                f"<h1>NYC rent-stabilized buildings</h1><p class='lead'>Browse all "
                f"{len(blds):,} DHCR rent-stabilized buildings by borough and neighborhood, "
-               f"or <a href='/'>open the interactive map</a>.</p>" + hub_links))
+               f"or <a href='/'>open the interactive map</a>. See which buildings were "
+               f"<a href='/available/'>recently advertised for rent →</a></p>" + hub_links))
     urls.append((SITE + "/buildings/", "0.9", "hub"))
+
+    # ===== long-tail hub + listicle pages (high-intent searches) =====
+    # ---- ZIP-code hubs: "rent-stabilized buildings in ZIP 11221" ----
+    by_zip = defaultdict(list)
+    for b in blds:
+        if b.get("z"):
+            by_zip[str(b["z"])].append(b)
+    for z, items in by_zip.items():
+        if len(items) < 5:
+            continue  # skip thin pages
+        items = sorted(items, key=lambda x: x.get("a", ""))
+        boro_counts = defaultdict(int)
+        for x in items:
+            boro_counts[x["b"]] += 1
+        dom = max(boro_counts, key=boro_counts.get)  # dominant borough for breadcrumb
+        boroname = BORO_NAME.get(dom, "New York")
+        nbs = sorted({x["nb"] for x in items if x.get("nb")})
+        url = zip_url(z)
+        canonical = SITE + url
+        n = len(items)
+        links = "".join(f"<a href=\"{bld_url(x)}\">{esc(titlecase_addr(x.get('a')))}</a>" for x in items[:400])
+        nb_links = "".join(f"<a href=\"{nb_url(dom, nb)}\">{esc(nb)}</a>" for nb in nbs)
+        body = (f"<div class='crumbs'><a href='/'>Home</a> › "
+                f"<a href='/borough/{BORO_SLUG.get(dom,'nyc')}/'>{esc(boroname)}</a></div>"
+                f"<h1>Rent-stabilized buildings in ZIP {esc(z)}</h1>"
+                f"<p class='lead'>There are <strong>{n:,}</strong> registered rent-stabilized "
+                f"buildings in ZIP code {esc(z)} ({esc(boroname)}). Tap any address to check its "
+                f"status, owner, year built, and HPD record.</p>"
+                + (f"<h2>Neighborhoods in {esc(z)}</h2><div class='cols'>{nb_links}</div>" if nb_links else "")
+                + f"<a class='cta' href='/'>Explore ZIP {esc(z)} on the map →</a>"
+                f"<h2>All {n:,} buildings in {esc(z)}</h2><div class='cols'>{links}</div>")
+        crumb = breadcrumb([("Home", SITE + "/"),
+                            (boroname, SITE + f"/borough/{BORO_SLUG.get(dom,'nyc')}/"),
+                            (f"ZIP {z}", canonical)])
+        write(url.strip("/") + "/index.html",
+              page(f"Rent-stabilized buildings in ZIP {z}, {boroname} ({n}) | Find A Crib",
+                   f"All {n} rent-stabilized buildings in ZIP code {z} ({boroname}). Check any address for status, owner, year built, and violations.",
+                   canonical, body, crumb))
+        urls.append((canonical, "0.7", dom))
+
+    # ---- borough "largest" + "oldest" listicles ----
+    SUPER = [("largest", "Largest rent-stabilized buildings", lambda x: -(x.get("u") or 0), "u",
+              lambda x: f"{x['u']:,} apartments", "apartment count", "Apartments"),
+             ("oldest", "Oldest rent-stabilized buildings", lambda x: (x.get("yr") or 99999), "yr",
+              lambda x: f"built {x['yr']}", "year built", "Year built")]
+    for boro in ["M", "Bk", "Q", "Bx", "SI"]:
+        bb = [x for x in blds if x["b"] == boro]
+        if len(bb) < 10:
+            continue
+        boroname = BORO_NAME.get(boro, "New York")
+        for kind, htext, keyf, field, label, by_phrase, col in SUPER:
+            ranked = sorted([x for x in bb if x.get(field)], key=keyf)[:50]
+            if len(ranked) < 5:
+                continue
+            url = boro_list_url(boro, kind)
+            canonical = SITE + url
+            rows = "".join(
+                f"<tr><td>{i+1}</td><td><a href=\"{bld_url(x)}\">{esc(titlecase_addr(x.get('a')))}</a></td>"
+                f"<td>{esc(x.get('nb') or '')}</td><td>{esc(label(x))}</td></tr>"
+                for i, x in enumerate(ranked))
+            body = (f"<div class='crumbs'><a href='/'>Home</a> › "
+                    f"<a href='/borough/{BORO_SLUG.get(boro,'nyc')}/'>{esc(boroname)}</a></div>"
+                    f"<h1>{htext} in {esc(boroname)}</h1>"
+                    f"<p class='lead'>The {len(ranked)} {kind} DHCR rent-stabilized buildings in "
+                    f"{esc(boroname)}, ranked by {by_phrase}.</p>"
+                    f"<a class='cta' href='/'>Open the map →</a>"
+                    f"<table class='facts'><thead><tr><th>#</th><th>Building</th>"
+                    f"<th>Neighborhood</th><th>{col}</th></tr></thead><tbody>{rows}</tbody></table>")
+            crumb = breadcrumb([("Home", SITE + "/"),
+                                (boroname, SITE + f"/borough/{BORO_SLUG.get(boro,'nyc')}/"),
+                                (htext, canonical)])
+            write(url.strip("/") + "/index.html",
+                  page(f"{htext} in {boroname} | Find A Crib",
+                       f"The {len(ranked)} {kind} rent-stabilized buildings in {boroname}, ranked by {by_phrase}.",
+                       canonical, body, crumb))
+            urls.append((canonical, "0.6", boro))
+
+    # ---- "recently advertised for rent" pages (high commercial intent) ----
+    adv_by_nb = defaultdict(list)
+    for b in blds:
+        if b["bbl"] in listed and b.get("nb"):
+            adv_by_nb[(b["b"], b["nb"])].append(b)
+    if adv_by_nb:
+        total_adv = sum(len(v) for v in adv_by_nb.values())
+        nb_rows = "".join(
+            f"<a href=\"{avail_url(boro, nb)}\">{esc(nb)}, {esc(BORO_NAME.get(boro,''))} ({len(v)})</a>"
+            for (boro, nb), v in sorted(adv_by_nb.items(), key=lambda kv: -len(kv[1])) if len(v) >= 3)
+        body = (f"<div class='crumbs'><a href='/'>Home</a></div>"
+                f"<h1>Rent-stabilized apartments recently advertised in NYC</h1>"
+                f"<p class='lead'><strong>{total_adv:,}</strong> rent-stabilized buildings across "
+                f"{len(adv_by_nb)} neighborhoods have had a unit advertised for rent recently "
+                f"(matched nightly against Zumper). Browse by neighborhood:</p>"
+                f"<a class='cta' href='/'>Open the map →</a>"
+                f"<h2>Neighborhoods with recent listings</h2><div class='cols'>{nb_rows}</div>")
+        write("available/index.html",
+              page("Rent-stabilized apartments recently advertised in NYC | Find A Crib",
+                   f"{total_adv} rent-stabilized buildings recently advertised for rent across NYC, by neighborhood.",
+                   SITE + "/available/", body,
+                   breadcrumb([("Home", SITE + "/"), ("Recently advertised", SITE + "/available/")])))
+        urls.append((SITE + "/available/", "0.8", "hub"))
+    for (boro, nb), items in adv_by_nb.items():
+        if len(items) < 3:
+            continue
+        boroname = BORO_NAME.get(boro, "New York")
+        url = avail_url(boro, nb)
+        canonical = SITE + url
+        n = len(items)
+        links = "".join(f"<a href=\"{bld_url(x)}\">{esc(titlecase_addr(x.get('a')))}</a>"
+                        for x in sorted(items, key=lambda x: x.get("a", "")))
+        body = (f"<div class='crumbs'><a href='/'>Home</a> › "
+                f"<a href='/available/'>Recently advertised</a> › "
+                f"<a href='{nb_url(boro, nb)}'>{esc(nb)}</a></div>"
+                f"<h1>Rent-stabilized apartments recently advertised in {esc(nb)}, {esc(boroname)}</h1>"
+                f"<p class='lead'>{n} rent-stabilized building{'s' if n != 1 else ''} in {esc(nb)} "
+                f"had a unit advertised for rent recently. Rent-stabilized units come with regulated "
+                f"rent increases — check each building's status, owner, and HPD record.</p>"
+                f"<a class='cta' href='/'>See {esc(nb)} on the map →</a>"
+                f"<h2>Buildings with recent listings</h2><div class='cols'>{links}</div>"
+                f"<p><a href=\"{nb_url(boro, nb)}\">See all rent-stabilized buildings in {esc(nb)} →</a></p>")
+        crumb = breadcrumb([("Home", SITE + "/"), ("Recently advertised", SITE + "/available/"), (nb, canonical)])
+        write(url.strip("/") + "/index.html",
+              page(f"Recently advertised rent-stabilized apartments in {nb}, {boroname} | Find A Crib",
+                   f"{n} rent-stabilized buildings in {nb}, {boroname} recently advertised a unit for rent. Check status, owner, and violations.",
+                   canonical, body, crumb))
+        urls.append((canonical, "0.7", boro))
 
     # ---- sitemaps (sharded by borough, < 50k each) + index ----
     by_boro_urls = defaultdict(list)

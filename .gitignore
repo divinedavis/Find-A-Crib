@@ -19,3 +19,6 @@ seo/
 
 # honest-lastmod state for build_seo.py
 seo_lastmod.json
+
+# nightly listing history snapshots (droplet-side)
+listings_archive/

@@ -686,6 +686,11 @@
   const listingCounts = listingsBlob.counts || {};
   const listingPrices = listingsBlob.prices || {};
   const listingBeds = listingsBlob.beds || {};
+  // when the listing/price data was last collected by the nightly scrape
+  const listingsAsOf = listingsBlob.updated
+    ? new Date(listingsBlob.updated * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : null;
+  const asOf = listingsAsOf ? ` · as of ${listingsAsOf}` : '';
 
   // ---------- markers ----------
   const cluster = L.markerClusterGroup({
@@ -738,7 +743,7 @@
     if (rec.yr) meta.push(`built ${rec.yr}`);
     if (rec.u != null) meta.push(`${rec.u} residential units`);
     const statusHtml = (rec.s || []).map(s => `<span class="popup-status">${esc(s)}</span>`).join('');
-    const listedHtml = listed ? `<div style="margin-top:8px;color:#6b3df5;font-weight:700">Recently advertised on Zumper (${listed} listing${listed===1?'':'s'})</div>` : '';
+    const listedHtml = listed ? `<div style="margin-top:8px;color:#6b3df5;font-weight:700">Recently advertised on Zumper (${listed} listing${listed===1?'':'s'})<span style="font-weight:500;color:#8a8aa0">${asOf}</span></div>` : '';
     const googleQ = encodeURIComponent(`${rec.a} ${borough} NY ${rec.z || ''}`.trim());
     // Use Google site-search for Zumper since Zumper has no constructable deep-link pattern.
     // If the scraper captured a direct URL for this BBL, prefer it.
@@ -1207,7 +1212,7 @@
       </div>
       <div class="body">
         ${rec.nb ? `<div class="nb">${esc(rec.nb)}</div>` : ''}
-        ${listed > 0 ? `<div class="price">${price ? '$' + price.toLocaleString() + '/mo · ' : ''}Recently advertised on Zumper · ${listed} listing${listed===1?'':'s'}</div>` : ''}
+        ${listed > 0 ? `<div class="price">${price ? '$' + price.toLocaleString() + '/mo · ' : ''}Recently advertised on Zumper · ${listed} listing${listed===1?'':'s'}${asOf}</div>` : ''}
         ${beds && beds.length ? `<div class="beds-line">${bedsLabel(beds)} available</div>` : ''}
         <div class="units-line">${stats.join(' · ')}</div>
         ${cardHpdLine(rec)}
@@ -1423,7 +1428,7 @@
       <img class="d-photo" src="${sv}" alt="" onerror="this.removeAttribute('src')">
       <div class="d-head">
         <span class="d-badge">${listed > 0 ? 'Recently advertised on Zumper' : 'Rent-stabilized'}</span>
-        <div class="d-price">${priceLine}</div>
+        <div class="d-price">${priceLine}${listed > 0 ? `<span style="font-size:13px;font-weight:500;color:#8a8aa0">${asOf}</span>` : ''}</div>
         ${keyBits.length ? `<div class="d-key">${esc(keyBits.join(' · '))}</div>` : ''}
         <div class="d-addr">${esc(rec.a)}</div>
         <div class="d-sub">${rec.nb ? esc(rec.nb) + ' · ' : ''}${esc(borough)}${rec.z ? ' ' + rec.z : ''}</div>

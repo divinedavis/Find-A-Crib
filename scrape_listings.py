@@ -69,7 +69,7 @@ def build_index(records):
     """Return dict normalized_addr -> bbl. For range-numbered DHCR rows, index every number in the range."""
     idx = {}
     for r in records:
-        if r["b"] not in ("M", "Bk"):
+        if r["b"] not in ("M", "Bk", "Q", "Bx", "SI"):  # all five boroughs
             continue
         for raw in (r.get("a"), r.get("address_alt")):
             if not raw:
@@ -215,7 +215,8 @@ async def main():
         )
 
         all_listings = []  # list of listing dicts {addr,url,price,bmin,bmax}
-        for area in ["manhattan-ny", "brooklyn-ny"]:
+        # all five boroughs (verified Zumper slugs — note it's "the-bronx-ny", not "bronx-ny")
+        for area in ["manhattan-ny", "brooklyn-ny", "queens-ny", "the-bronx-ny", "staten-island-ny"]:
             log(f"== Zumper {area} ==")
             try:
                 pairs = await scrape_zumper(ctx, area, log=log)
@@ -271,11 +272,23 @@ async def main():
     log(f"buildings with bedroom data: {len(beds)}")
     log(f"unique normalized matched addresses: {len(matched_addrs)}")
 
-    payload = {"updated": int(time.time()), "counts": counts, "urls": urls, "prices": prices,
+    now = int(time.time())
+    payload = {"updated": now,
+               "updated_iso": time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime(now)),
+               "counts": counts, "urls": urls, "prices": prices,
                "beds": {b: sorted(s) for b, s in beds.items()}}
-    OUT.write_text(json.dumps(payload, separators=(",", ":")))
+    blob = json.dumps(payload, separators=(",", ":"))
+    OUT.write_text(blob)
     LOG.write_text("\n".join(log_lines) + "\n")
-    print(f"wrote {OUT} ({len(counts)} buildings with listings)")
+
+    # keep history "for the future": archive a dated snapshot of every run so we
+    # accumulate a rent record over time instead of overwriting it each night.
+    archive_dir = HERE / "listings_archive"
+    archive_dir.mkdir(exist_ok=True)
+    (archive_dir / f"{time.strftime('%Y-%m-%d', time.gmtime(now))}.json").write_text(blob)
+
+    print(f"wrote {OUT} ({len(counts)} buildings with listings; "
+          f"archived to listings_archive/)")
 
 
 if __name__ == "__main__":

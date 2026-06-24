@@ -116,7 +116,8 @@ def match_bbl(norm, addr_idx):
 
 def main():
     if len(sys.argv) < 2:
-        sys.exit("usage: python3 parse_apify.py <apify_export.json>")
+        sys.exit("usage: python3 parse_apify.py <apify_export.json> [--merge]")
+    merge = "--merge" in sys.argv[2:]
     items = json.loads(Path(sys.argv[1]).read_text())
     if isinstance(items, dict):  # some exports wrap the array
         items = items.get("items") or items.get("results") or []
@@ -144,16 +145,45 @@ def main():
         if isinstance(bed, int) and 0 <= bed <= 12:
             beds.setdefault(bbl, set()).add(min(bed, 4))  # 4 == "4+"
 
+    beds = {b: sorted(s) for b, s in beds.items()}
+
+    # Merge mode (borough-rotation): refresh only the boroughs present in this
+    # run (by BBL prefix 1=MN 2=BX 3=BK 4=QN 5=SI) and keep every other
+    # borough's existing prices, so monthly per-borough runs accumulate instead
+    # of overwriting each other. Stale same-borough entries are dropped.
+    if merge and OUT.exists():
+        old = json.loads(OUT.read_text())
+        run_boroughs = {b[0] for b in counts}  # which boroughs this run covered
+
+        def keep(bbl):  # keep old entry only if its borough wasn't re-run
+            return bbl[:1] not in run_boroughs
+
+        for key, new in (("counts", counts), ("urls", urls),
+                         ("prices", prices), ("beds", beds)):
+            merged = {b: v for b, v in old.get(key, {}).items() if keep(b)}
+            merged.update(new)
+            if key == "counts":
+                counts = merged
+            elif key == "urls":
+                urls = merged
+            elif key == "prices":
+                prices = merged
+            else:
+                beds = merged
+        print(f"merged: refreshed boroughs {sorted(run_boroughs)}, "
+              f"kept {sum(1 for b in prices if b[:1] not in run_boroughs)} "
+              f"prices from other boroughs")
+
     payload = {
         "updated": int(time.time()),
         "counts": counts,
         "urls": urls,
         "prices": prices,
-        "beds": {b: sorted(s) for b, s in beds.items()},
+        "beds": beds,
     }
     OUT.write_text(json.dumps(payload, separators=(",", ":")))
     print(f"rentals: {rentals}  matched to DHCR: {matched}  "
-          f"buildings: {len(counts)}  with rent: {len(prices)}")
+          f"buildings in file: {len(counts)}  with rent: {len(prices)}")
 
 
 if __name__ == "__main__":

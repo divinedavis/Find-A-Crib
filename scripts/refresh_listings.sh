@@ -15,7 +15,10 @@ cd "$DOC"
 # load Apify creds
 set -a; . /etc/rentmap-apify.env; set +a
 
+# --merge: refresh only the borough(s) this run covered, keep the others.
+# The task rotates one borough/month (BK, then MN, BX, QN, SI), so each run
+# must accumulate into listings.json rather than overwrite it.
 python3 fetch_apify.py apify_export.json
-python3 parse_apify.py apify_export.json
+python3 parse_apify.py apify_export.json --merge
 
 echo "listings refreshed: $(date -u)"

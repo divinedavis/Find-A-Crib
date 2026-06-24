@@ -302,6 +302,14 @@
     main { display: block; height: auto; }
     #map { height: calc(100vh - var(--header-h)); height: calc(100dvh - var(--header-h)); width: 100%; }
 
+    /* pin the zoom +/- to the map's top-left, below the header, so it stays put
+       instead of sliding up under the sticky header when the page scrolls */
+    .leaflet-top.leaflet-left { position: fixed; top: calc(var(--header-h) + 10px); left: 10px; }
+    .leaflet-top.leaflet-left .leaflet-control { margin: 0; }
+
+    /* hide the explanatory blurb on mobile (kept on desktop for SEO/crawl links) */
+    .seo-nav { display: none; }
+
     /* results become a full-screen sheet that slides up over the map; chips stay visible on top */
     aside.results {
       position: fixed; left: 0; right: 0; bottom: 0; top: var(--header-h);

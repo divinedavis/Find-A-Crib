@@ -1193,7 +1193,6 @@
     if (rec.u != null) stats.push(`${rec.u} units`);
     if (rec.yr) stats.push(`built ${rec.yr}`);
     if (rec.z) stats.push(`ZIP ${rec.z}`);
-    const statuses = (rec.s || []).filter(s => !/MULTIPLE DWELLING/i.test(s)).slice(0, 3).map(s => `<span class="tag">${esc(s)}</span>`).join('');
     const googleQ = encodeURIComponent(`${rec.a} ${BORO_NAME[rec.b] || ''} NY ${rec.z || ''}`.trim());
     const sv = streetviewUrl(rec.lat, rec.lng);
     const faved = FAVS.has(rec.bbl);
@@ -1214,7 +1213,6 @@
         ${beds && beds.length ? `<div class="beds-line">${bedsLabel(beds)} available</div>` : ''}
         <div class="units-line">${stats.join(' · ')}</div>
         ${cardHpdLine(rec)}
-        <div class="statuses">${statuses}</div>
         <div class="actions">
           <button class="btn-secondary" data-action="map">View on map</button>
           <a class="btn-primary" data-action="search" target="_blank" rel="noopener" href="https://www.google.com/search?q=${googleQ}">Search Google</a>

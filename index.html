@@ -8,6 +8,14 @@
 <link rel="canonical" href="https://findacrib.com/" />
 <meta name="robots" content="index,follow,max-image-preview:large" />
 <meta name="theme-color" content="#2b39c8" />
+<!-- Google tag (gtag.js) — Google Ads conversion tracking for findacrib.com -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-1001356637"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'AW-1001356637');
+</script>
 <!-- warm up the map + asset origins for a faster first paint (LCP) -->
 <link rel="preconnect" href="https://unpkg.com" crossorigin />
 <link rel="preconnect" href="https://basemaps.cartocdn.com" crossorigin />
@@ -1527,6 +1535,8 @@
   const authSwitch = document.getElementById('auth-switch');
   const authToggleText = document.getElementById('auth-toggle-text');
   let authMode = 'signin';
+  // Google Ads "Sign up" conversion label — paste from Tools > Conversions.
+  const GADS_SIGNUP_LABEL = '';
 
   function showAuthError(msg) { authErr.textContent = msg || ''; authErr.hidden = !msg; }
   function setAuthMode(m) {
@@ -1609,7 +1619,16 @@
         authSubmit.disabled = false;
         if (error) { showAuthError(error.message); return; }
         authUser = data?.user || null;
-        if (authUser) { closeAuthModal(); updateAuthUI(); loadAccountFavs(); }
+        if (authUser) {
+          // Google Ads conversion: fire only on a genuine new-account signup.
+          // Paste the label from Google Ads > Tools > Conversions > "Sign up"
+          // into GADS_SIGNUP_LABEL below (e.g. 'AbC-D_efGh'); the conversion is
+          // a no-op until it's set, so the base tag stays safe to ship now.
+          if (authMode === 'signup' && window.gtag && GADS_SIGNUP_LABEL) {
+            gtag('event', 'conversion', { send_to: 'AW-1001356637/' + GADS_SIGNUP_LABEL });
+          }
+          closeAuthModal(); updateAuthUI(); loadAccountFavs();
+        }
         else showAuthError('Could not sign in. Please try again.');
       } catch (err) { authSubmit.disabled = false; showAuthError(err.message || 'Something went wrong.'); }
     });

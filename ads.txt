@@ -1,0 +1,5 @@
+# Authorized Digital Sellers for findacrib.com
+# After Google AdSense approves the site, replace the line below with your real
+# publisher ID (Account > Settings shows it as pub-XXXXXXXXXXXXXXXX), then deploy:
+#   scp ads.txt root@104.236.120.144:/var/www/rent-map/ads.txt
+# google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0

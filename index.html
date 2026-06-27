@@ -274,6 +274,14 @@
   .hpd-legend-row .hpd-stat { font-weight: 700; }
   .hpd-legend-row.hot { background: #fffbe0; margin: 0 -8px; padding: 8px; border-radius: 6px; }
   .hpd-link { font-size: 11px; margin-top: 6px; }
+  /* in-feed ad tile: same footprint as a building card */
+  .card.ad-card { cursor: default; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 0; }
+  .card.ad-card:hover { box-shadow: none; transform: none; border-color: var(--line); }
+  .card.ad-card .adsbygoogle { width: 100%; height: 100%; min-height: 288px; }
+  .card.ad-card .ad-flag { position: absolute; top: 8px; left: 8px; z-index: 3;
+    font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+    color: var(--ink-2); background: rgba(255,255,255,.92); border: 1px solid var(--line);
+    padding: 2px 7px; border-radius: 4px; pointer-events: none; }
   .card .hpd-mini { font-size: 11px; color: var(--ink-2); margin-top: 4px; }
   .card .hpd-mini .bad { color: #a40000; font-weight: 700; }
   .card .hpd-mini .warn { color: #8a5a00; font-weight: 700; }
@@ -1125,6 +1133,40 @@
   }
 
   const MAX_CARDS = 200;
+
+  // ---------- in-feed ads (Google AdSense) ----------
+  // Paste your AdSense IDs after the site is approved to switch ads on.
+  // While ADSENSE_CLIENT is empty, no ad script loads and no ad tiles render.
+  const ADSENSE_CLIENT = '';            // e.g. 'ca-pub-1234567890123456'
+  const ADSENSE_SLOT   = '';            // in-feed/display ad-unit slot id, e.g. '1234567890'
+  const AD_EVERY       = 6;             // insert one ad tile after every N building cards
+  const ADS_ON = () => !!(ADSENSE_CLIENT && ADSENSE_SLOT);
+
+  if (ADS_ON()) {
+    const s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + ADSENSE_CLIENT;
+    s.crossOrigin = 'anonymous';
+    document.head.appendChild(s);
+  }
+
+  function adCardHtml() {
+    return `<div class="card ad-card">
+      <span class="ad-flag">Sponsored</span>
+      <ins class="adsbygoogle" style="display:block;width:100%;height:100%"
+           data-ad-client="${ADSENSE_CLIENT}" data-ad-slot="${ADSENSE_SLOT}"
+           data-ad-format="auto" data-full-width-responsive="false"></ins>
+    </div>`;
+  }
+
+  // fill any ad slots that were just rendered but not yet initialized
+  function initAds() {
+    if (!ADS_ON()) return;
+    grid.querySelectorAll('ins.adsbygoogle:not([data-adsbygoogle-status])').forEach(() => {
+      try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) { /* ad blocker / not ready */ }
+    });
+  }
+
   function refreshGrid() {
     const b = map.getBounds();
     const visible = [];
@@ -1164,9 +1206,16 @@
     grid.classList.remove('empty-state');
     const truncated = visible.length > MAX_CARDS;
     const shown = truncated ? visible.slice(0, MAX_CARDS) : visible;
-    grid.innerHTML = shown.map(rec => cardHtml(rec)).join('') + (truncated
+    const ads = ADS_ON();
+    const parts = [];
+    shown.forEach((rec, i) => {
+      parts.push(cardHtml(rec));
+      if (ads && (i + 1) % AD_EVERY === 0) parts.push(adCardHtml());
+    });
+    grid.innerHTML = parts.join('') + (truncated
       ? `<div class="empty" style="flex-basis:100%;padding:18px">Zoom in to see more — ${MAX_CARDS}+ buildings in view.</div>`
       : '');
+    initAds();
   }
 
   function bedsLabel(arr) {

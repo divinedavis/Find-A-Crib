@@ -1535,8 +1535,8 @@
   const authSwitch = document.getElementById('auth-switch');
   const authToggleText = document.getElementById('auth-toggle-text');
   let authMode = 'signin';
-  // Google Ads "Sign up" conversion label — paste from Tools > Conversions.
-  const GADS_SIGNUP_LABEL = '';
+  // Google Ads "Sign up" conversion label (from Tools > Conversions).
+  const GADS_SIGNUP_LABEL = 'Flj6CMyn38YcEN36vd0D';
 
   function showAuthError(msg) { authErr.textContent = msg || ''; authErr.hidden = !msg; }
   function setAuthMode(m) {
@@ -1625,7 +1625,10 @@
           // into GADS_SIGNUP_LABEL below (e.g. 'AbC-D_efGh'); the conversion is
           // a no-op until it's set, so the base tag stays safe to ship now.
           if (authMode === 'signup' && window.gtag && GADS_SIGNUP_LABEL) {
-            gtag('event', 'conversion', { send_to: 'AW-1001356637/' + GADS_SIGNUP_LABEL });
+            gtag('event', 'conversion', {
+              send_to: 'AW-1001356637/' + GADS_SIGNUP_LABEL,
+              value: 1.0, currency: 'USD',
+            });
           }
           closeAuthModal(); updateAuthUI(); loadAccountFavs();
         }

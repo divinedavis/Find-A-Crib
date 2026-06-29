@@ -29,7 +29,15 @@ OUTPUT
   agent_phones.json   cache of {name|address -> {phone, matched_name, matched_address, confidence}}
   buildings_hpd.json  updated in place: each manager gets manager.phone / manager.phone_confidence when found
 """
-import argparse, json, os, re, subprocess, sys, time, urllib.request, urllib.error
+import argparse, json, os, re, socket, subprocess, sys, time, urllib.request, urllib.error
+
+# Force IPv4: the Places key is IP-restricted to this box's IPv4, and outbound
+# IPv6 (a rotating privacy address) would violate the restriction. Pin DNS to A
+# records so every request leaves over IPv4.
+_orig_getaddrinfo = socket.getaddrinfo
+def _ipv4_only(host, *a, **k):
+    return [r for r in _orig_getaddrinfo(host, *a, **k) if r[0] == socket.AF_INET]
+socket.getaddrinfo = _ipv4_only
 
 HPD_FILE   = "buildings_hpd.json"
 CACHE_FILE = "agent_phones.json"
@@ -78,8 +86,17 @@ def confidence(agent_name, matched_name):
     return len(a & b) / len(a)
 
 
-def places_lookup(key, name, address):
-    body = json.dumps({"textQuery": f"{name} {address}", "maxResultCount": 1}).encode()
+def clean_address(addr):
+    """HPD addresses look like '135 PERRY STREET ##16 · New York, NY 10014'."""
+    if not addr:
+        return ""
+    addr = addr.replace("·", ",")          # middot -> comma
+    addr = re.sub(r"#+\s*\w*", "", addr)         # drop apartment/suite tokens
+    return re.sub(r"\s+", " ", addr).strip(" ,")
+
+
+def _query(key, text):
+    body = json.dumps({"textQuery": text, "maxResultCount": 1}).encode()
     req = urllib.request.Request(PLACES_URL, data=body, method="POST", headers={
         "Content-Type": "application/json",
         "X-Goog-Api-Key": key,
@@ -101,6 +118,25 @@ def places_lookup(key, name, address):
         "matched_name": (p.get("displayName") or {}).get("text"),
         "matched_address": p.get("formattedAddress"),
     }
+
+
+def places_lookup(key, name, address, min_conf):
+    """Two passes: name + cleaned address, then name + city as a fallback. Pick
+    the first confident, phone-bearing result. Returns (result, calls_made)."""
+    queries = [f"{name} {clean_address(address)}".strip()]
+    m = re.search(r"([A-Za-z .]+,\s*[A-Z]{2})\s*\d*$", clean_address(address))
+    queries.append(f"{name} {m.group(1)}" if m else f"{name} New York, NY")
+    calls = 0
+    last = {"phone": None}
+    for q in queries:
+        res = _query(key, q)
+        calls += 1
+        if res.get("error"):
+            return res, calls
+        last = res
+        if res.get("phone") and confidence(name, res.get("matched_name", "")) >= min_conf:
+            return res, calls
+    return last, calls
 
 
 def main():
@@ -166,10 +202,11 @@ def main():
 
     todo = uncached[: args.limit] if args.limit else uncached
     print(f"\nquerying {len(todo)} agents...\n")
-    found = 0
+    found = api_calls = 0
     for i, k in enumerate(todo, 1):
         name, addr = agents[k]
-        res = places_lookup(key, name, addr)
+        res, calls = places_lookup(key, name, addr, args.min_confidence)
+        api_calls += calls
         if res.get("error"):
             print(f"  [{i}/{len(todo)}] ERROR {name}: {res['error']}")
             if "HTTP 403" in res["error"] or "HTTP 400" in res["error"]:
@@ -207,7 +244,7 @@ def main():
             injected += 1
     json.dump(hpd, open(HPD_FILE, "w"), ensure_ascii=False)
 
-    print(f"\ndone. phones found this run: {found}")
+    print(f"\ndone. phones found this run: {found}  (API calls: {api_calls}, ~${api_calls * COST_PER_REQUEST:.2f})")
     print(f"buildings now carrying a manager phone: {injected:,}")
     print("note: rebuild buildings.min.json (the file the site loads) to surface these.")
 

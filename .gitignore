@@ -25,3 +25,6 @@ listings_archive/
 listings_zumper.json
 listings_apify.json
 apify_export.json
+
+# managing-agent phone cache (regenerable; may contain harvested business numbers)
+agent_phones.json

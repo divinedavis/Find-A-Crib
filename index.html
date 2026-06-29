@@ -686,6 +686,7 @@
   // when signed in, mirror each heart toggle to the user's Supabase account
   let supaClient = null, authUser = null;
   async function persistFav(bbl, on) {
+    track(on ? 'save' : 'unsave', { bbl });
     if (!supaClient || !authUser) return;
     try {
       // insert (not upsert) so we only need INSERT privilege, not UPDATE; a duplicate
@@ -693,6 +694,25 @@
       if (on) await supaClient.from('saved_buildings').insert({ user_id: authUser.id, bbl });
       else await supaClient.from('saved_buildings').delete().eq('user_id', authUser.id).eq('bbl', bbl);
     } catch (e) { console.warn('fav sync failed', e); }
+  }
+
+  // ---------- feature analytics ----------
+  // Fire-and-forget event logging into public.events. Shares the same anonymous
+  // first-party visitor id (fac_vid) as the pageview tracker; user_id attaches when
+  // signed in. Never blocks or breaks the app — analytics is strictly best-effort.
+  function track(event, props) {
+    try {
+      if (!supaClient) return;
+      const vid = localStorage.getItem('fac_vid');
+      if (!vid) return;
+      supaClient.from('events').insert({
+        visitor_id: vid,
+        user_id: authUser ? authUser.id : null,
+        event,
+        props: props || null,
+        path: location.pathname + location.search,
+      }).then(() => {}, () => {});
+    } catch (e) { /* best-effort */ }
   }
 
   const [data, listingsBlob] = await Promise.all([
@@ -750,6 +770,7 @@
   }
 
   function buildPopup(rec, listed) {
+    track('building_view', { bbl: rec.bbl, addr: rec.a, boro: rec.b, listed, via: 'popup' });
     const borough = BORO_NAME[rec.b] || '';
     const boroughSlug = BORO_SLUG[rec.b] || '';
     const meta = [];
@@ -1053,8 +1074,30 @@
   qInput.addEventListener('input', () => {
     renderAC(searchMatches(qInput.value));
     clearTimeout(qTimer);
-    qTimer = setTimeout(applyFilters, 200);
+    qTimer = setTimeout(() => {
+      applyFilters();
+      const q = qInput.value.trim();
+      // one event per settled search (200ms after the last keystroke), not per keypress
+      if (q) track('search', { q, results: filtered.length });
+    }, 200);
   });
+
+  // outbound link clicks (Zumper / Google / HPD etc.) — one delegated listener
+  // catches every external link so we can see which off-site actions people take.
+  document.addEventListener('click', e => {
+    const a = e.target.closest && e.target.closest('a[target="_blank"]');
+    if (!a) return;
+    const href = a.getAttribute('href') || '';
+    if (!/^https?:/i.test(href)) return;
+    let kind = 'other';
+    if (/zumper\.com/i.test(href)) kind = 'zumper';
+    else if (/google\.[^/]+\/maps|maps\.google/i.test(href)) kind = 'google_maps';
+    else if (/google\.[^/]+\/search/i.test(href)) kind = 'google_search';
+    else if (/hpdonline|hpd/i.test(href)) kind = 'hpd';
+    else if (/nyc\.gov|cityofnewyork/i.test(href)) kind = 'nyc_data';
+    const bbl = a.closest('[data-bbl]')?.dataset.bbl || null;
+    track('outbound', { kind, href, bbl });
+  }, true);
   qInput.addEventListener('focus', () => { if (qInput.value.trim()) renderAC(searchMatches(qInput.value)); });
   qInput.addEventListener('blur', () => setTimeout(() => { searchAC.hidden = true; }, 200));
   window.addEventListener('resize', positionAC);
@@ -1426,6 +1469,7 @@
     setListOpen(false);
     cardMarker = m;
     const rec = m._rec, listed = m._listed || 0;
+    track('building_view', { bbl: rec.bbl, addr: rec.a, boro: rec.b, listed, via: 'card' });
     selectMarker(m);
     cardEl.innerHTML = renderCard(rec, listed);
     cardEl.hidden = false;
@@ -1510,6 +1554,7 @@
   }
   function openDetail(rec, listed) {
     detailRec = rec; detailListed = listed || 0;
+    track('building_view', { bbl: rec.bbl, addr: rec.a, boro: rec.b, listed: detailListed, via: 'detail' });
     detailContent.innerHTML = renderDetail(rec, detailListed);
     detailContent.scrollTop = 0;
     syncDetailFav();

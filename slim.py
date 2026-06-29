@@ -35,8 +35,10 @@ for r in records:
         # public file. Convert any contact phone to a has_phone boolean flag.
         for role in ("owner", "manager", "officer"):
             c = h.get(role)
-            if isinstance(c, dict) and c.pop("phone", None):
-                c["has_phone"] = True
+            if isinstance(c, dict):
+                c.pop("phone_confidence", None)
+                if c.pop("phone", None):
+                    c["has_phone"] = True
         rec["h"] = h
     slim.append(rec)
 

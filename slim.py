@@ -31,6 +31,12 @@ for r in records:
     }
     h = hpd.get(r["bbl"])
     if h:
+        # Phone numbers are a paid feature: never ship the actual number in the
+        # public file. Convert any contact phone to a has_phone boolean flag.
+        for role in ("owner", "manager", "officer"):
+            c = h.get(role)
+            if isinstance(c, dict) and c.pop("phone", None):
+                c["has_phone"] = True
         rec["h"] = h
     slim.append(rec)
 

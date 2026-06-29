@@ -100,6 +100,15 @@
   .auth-submit:disabled { opacity: .6; cursor: default; }
   .auth-toggle { text-align: center; font-size: 13px; color: var(--ink-2); margin-top: 14px; }
   .auth-toggle a { font-weight: 700; cursor: pointer; }
+  .paywall-card .paywall-badge { display: inline-block; font-size: 11px; letter-spacing: .04em; text-transform: uppercase;
+    color: var(--blue); background: #eef3ff; border: 1px solid #cfe0ff; border-radius: 999px; padding: 3px 10px; margin-bottom: 10px; }
+  .paywall-card h2 { margin: 0 0 6px; font-size: 20px; }
+  .paywall-feats { list-style: none; padding: 0; margin: 0 0 16px; }
+  .paywall-feats li { font-size: 13px; padding: 6px 0; border-top: 1px solid var(--line); }
+  .paywall-price { margin-bottom: 14px; }
+  .paywall-price .amt { font-size: 28px; font-weight: 800; }
+  .paywall-price .per { font-size: 13px; color: var(--ink-2); }
+  .paywall-fine { text-align: center; font-size: 11px; color: var(--ink-2); margin: 12px 0 0; }
   /* on desktop the chip-row is transparent so pills lay out as direct flex children (layout unchanged) */
   .chip-row { display: contents; }
   .toggle-pill.active { border-color: var(--blue); color: var(--blue); background: var(--blue-soft); }
@@ -258,6 +267,14 @@
   .hpd-row { font-size: 12px; line-height: 1.45; margin-bottom: 4px; }
   .hpd-row .label { color: var(--ink-2); font-weight: 600; }
   .hpd-row .addr { color: var(--ink-2); display: block; font-size: 11px; }
+  .hpd-row .hpd-phone { display: inline-block; margin-top: 3px; font-size: 12px; font-weight: 600;
+    color: var(--blue); text-decoration: none; }
+  .hpd-row .hpd-phone:hover { text-decoration: underline; }
+  .hpd-row .hpd-phone-btn { display: inline-block; margin-top: 4px; padding: 3px 9px; font-size: 11px;
+    font-weight: 700; color: var(--blue); background: #eef3ff; border: 1px solid #cfe0ff;
+    border-radius: 999px; cursor: pointer; }
+  .hpd-row .hpd-phone-btn:hover { background: #e0eaff; }
+  .hpd-row .hpd-phone-btn:disabled { opacity: .6; cursor: default; }
   .hpd-stat { display: inline-block; background: var(--bg); padding: 2px 7px; border-radius: 4px; font-size: 11px; margin-right: 4px; margin-top: 2px; }
   .hpd-stat.warn { background: #fff2dc; color: #8a5a00; }
   .hpd-stat.bad { background: #ffe2e2; color: #a40000; }
@@ -572,6 +589,23 @@
     <div class="auth-toggle"><span id="auth-toggle-text">No account?</span> <a id="auth-switch" href="#">Create one</a></div>
   </div>
 </div>
+<!-- Find A Crib Plus paywall -->
+<div id="paywall-modal" class="auth-backdrop" hidden>
+  <div class="auth-card paywall-card">
+    <button class="auth-close" data-paywall="close" aria-label="Close">✕</button>
+    <div class="paywall-badge">Find A Crib <b>Plus</b></div>
+    <h2>Unlock managing-agent phone numbers</h2>
+    <p class="auth-sub">Call the people who actually run the building. Plus also lets you organize your saved homes into custom categories.</p>
+    <ul class="paywall-feats">
+      <li>📞 Reveal managing-agent phone numbers</li>
+      <li>🏷️ Organize your saved homes into categories</li>
+    </ul>
+    <div class="paywall-price"><span class="amt">$1.99</span> <span class="per">/ month</span></div>
+    <div id="paywall-error" class="auth-error" hidden></div>
+    <button id="paywall-subscribe" type="button" class="auth-submit">Subscribe</button>
+    <p class="paywall-fine">Cancel anytime. Billed monthly via Stripe.</p>
+  </div>
+</div>
 <!-- tap-a-pin listing card (mobile) -->
 <div id="building-card" hidden></div>
 <!-- filters bottom sheet (opened from the mobile FAB and the desktop "Conditions" pill) -->
@@ -684,7 +718,7 @@
     else { badge.style.display = 'none'; }
   }
   // when signed in, mirror each heart toggle to the user's Supabase account
-  let supaClient = null, authUser = null;
+  let supaClient = null, authUser = null, pendingPhoneBbl = null;
   async function persistFav(bbl, on) {
     track(on ? 'save' : 'unsave', { bbl });
     if (!supaClient || !authUser) return;
@@ -801,10 +835,17 @@
     `;
   }
 
-  function hpdContact(c) {
+  function hpdContact(c, bbl) {
     if (!c || !c.name) return '';
     const addr = c.address ? `<span class="addr">${esc(c.address)}</span>` : '';
-    return `<div>${esc(c.name)}</div>${addr}`;
+    // Phone numbers are a paid (Find A Crib Plus) feature. The public data only
+    // carries a has_phone flag — the actual number lives in a private table and
+    // is fetched on demand via get_agent_phone() only for subscribers.
+    let phone = '';
+    if (c.has_phone && bbl) {
+      phone = `<button type="button" class="hpd-phone-btn" data-show-phone data-bbl="${esc(bbl)}">📞 Show number</button>`;
+    }
+    return `<div>${esc(c.name)}</div>${addr}${phone}`;
   }
 
   function hpdHtml(rec) {
@@ -816,7 +857,7 @@
       </div>`;
     }
     const ownerRow = h.owner ? `<div class="hpd-row"><span class="label">Owner</span> · ${esc(h.owner.type || '')}<br>${hpdContact(h.owner)}</div>` : '';
-    const managerRow = h.manager ? `<div class="hpd-row"><span class="label">Managing agent</span><br>${hpdContact(h.manager)}</div>` : '';
+    const managerRow = h.manager ? `<div class="hpd-row"><span class="label">Managing agent</span><br>${hpdContact(h.manager, rec.bbl)}</div>` : '';
     const officerRow = h.officer ? `<div class="hpd-row"><span class="label">${esc(h.officer.type || 'Head officer')}</span><br>${hpdContact(h.officer)}</div>` : '';
     const v = h.violations;
     const c = h.complaints;
@@ -1098,6 +1139,40 @@
     const bbl = a.closest('[data-bbl]')?.dataset.bbl || null;
     track('outbound', { kind, href, bbl });
   }, true);
+
+  // managing-agent phone: "Show number" (paid) reveal flow + click-to-call tracking
+  document.addEventListener('click', e => {
+    const btn = e.target.closest && e.target.closest('button.hpd-phone-btn[data-show-phone]');
+    if (btn) { e.preventDefault(); revealAgentPhone(btn); return; }
+    const a = e.target.closest && e.target.closest('a.hpd-phone[href^="tel:"]');
+    if (a) track('outbound', { kind: 'call', href: a.getAttribute('href'), bbl: a.dataset.bbl || null });
+  }, true);
+
+  // Fetch + reveal the managing-agent number, but only for Find A Crib Plus
+  // subscribers. get_agent_phone() returns null for everyone else, which we
+  // turn into the paywall.
+  async function revealAgentPhone(btn) {
+    const bbl = btn.dataset.bbl;
+    if (!supaClient) return;
+    if (!authUser) { pendingPhoneBbl = bbl; openAuthModal('Sign in to unlock managing-agent phone numbers.'); return; }
+    const orig = btn.textContent;
+    btn.disabled = true; btn.textContent = '…';
+    try {
+      const { data, error } = await supaClient.rpc('get_agent_phone', { p_bbl: bbl });
+      if (error) { btn.disabled = false; btn.textContent = orig; return; }
+      if (data) {
+        const tel = String(data).replace(/[^\d+]/g, '');
+        const link = document.createElement('a');
+        link.className = 'hpd-phone'; link.href = 'tel:' + tel; link.dataset.bbl = bbl;
+        link.textContent = '📞 ' + data;
+        btn.replaceWith(link);
+        track('outbound', { kind: 'phone_reveal', bbl });
+      } else {
+        btn.disabled = false; btn.textContent = orig;
+        openPaywall(bbl);
+      }
+    } catch (_) { btn.disabled = false; btn.textContent = orig; }
+  }
   qInput.addEventListener('focus', () => { if (qInput.value.trim()) renderAC(searchMatches(qInput.value)); });
   qInput.addEventListener('blur', () => setTimeout(() => { searchAC.hidden = true; }, 200));
   window.addEventListener('resize', positionAC);
@@ -1654,6 +1729,41 @@
     setTimeout(() => authEmail.focus(), 50);
   }
   function closeAuthModal() { authModal.hidden = true; }
+
+  // ---------- Find A Crib Plus paywall ----------
+  const paywallModal = document.getElementById('paywall-modal');
+  function openPaywall(bbl) {
+    pendingPhoneBbl = bbl || null;            // remember what they wanted, to reveal after checkout
+    const err = document.getElementById('paywall-error');
+    if (err) err.hidden = true;
+    paywallModal.hidden = false;
+    track('outbound', { kind: 'paywall_view', bbl: bbl || null });
+  }
+  function closePaywall() { paywallModal.hidden = true; }
+  paywallModal.addEventListener('click', e => {
+    if (e.target === paywallModal || e.target.closest('[data-paywall="close"]')) closePaywall();
+  });
+  document.getElementById('paywall-subscribe').addEventListener('click', startCheckout);
+
+  // Kick off Stripe Checkout for the $1.99/mo Plus subscription. The create-checkout
+  // Edge Function returns a hosted Checkout URL we redirect to; Stripe redirects
+  // back to the site, the webhook marks the user active, and the number unlocks.
+  async function startCheckout() {
+    const btn = document.getElementById('paywall-subscribe');
+    const err = document.getElementById('paywall-error');
+    if (!authUser) { closePaywall(); openAuthModal('Sign in to subscribe to Find A Crib Plus.'); return; }
+    btn.disabled = true; btn.textContent = 'Starting checkout…';
+    try {
+      const { data, error } = await supaClient.functions.invoke('create-checkout', {
+        body: { return_url: location.href }
+      });
+      if (error || !data?.url) throw (error || new Error('no checkout url'));
+      window.location.href = data.url;   // -> Stripe Checkout
+    } catch (e) {
+      btn.disabled = false; btn.textContent = 'Subscribe';
+      if (err) { err.textContent = 'Checkout is not available yet. Please try again shortly.'; err.hidden = false; }
+    }
+  }
   function updateAuthUI() {
     if (authUser) { authBtn.textContent = 'Sign out'; authBtn.classList.add('signed-in'); authBtn.title = authUser.email || ''; }
     else { authBtn.textContent = 'Sign in'; authBtn.classList.remove('signed-in'); authBtn.title = ''; }
@@ -1698,7 +1808,11 @@
     supaClient.auth.onAuthStateChange((_evt, sess) => {
       authUser = sess?.user || null;
       updateAuthUI();
-      if (authUser) { closeAuthModal(); loadAccountFavs(); }
+      if (authUser) {
+        closeAuthModal(); loadAccountFavs();
+        // user signed in specifically to see a phone number -> take them to the paywall
+        if (pendingPhoneBbl) { const b = pendingPhoneBbl; pendingPhoneBbl = null; openPaywall(b); }
+      }
     });
     authBtn.addEventListener('click', async () => {
       if (authUser) { await supaClient.auth.signOut(); authUser = null; updateAuthUI(); }

@@ -561,7 +561,7 @@
   <div class="auth-card">
     <button class="auth-close" data-auth="close" aria-label="Close">✕</button>
     <h2 id="auth-title">Sign in</h2>
-    <p class="auth-sub">Save buildings to your account so they're on every device.</p>
+    <p class="auth-sub" id="auth-sub">Save buildings to your account so they're on every device.</p>
     <form id="auth-form" autocomplete="on">
       <input id="auth-email" type="email" placeholder="Email" autocomplete="email" required>
       <input id="auth-pass" type="password" placeholder="Password (6+ characters)" autocomplete="current-password" minlength="6" required>
@@ -1290,7 +1290,7 @@
     // heart toggle: save/unsave, never navigate
     if (action === 'fav') {
       e.preventDefault(); e.stopPropagation();
-      if (!authUser) { openAuthModal(); return; }
+      if (!authUser) { openAuthModal('Sign in or sign up to like and save apartments.'); return; }
       const btn = e.target;
       if (FAVS.has(bbl)) { FAVS.delete(bbl); btn.classList.remove('faved'); btn.textContent = '♡'; btn.setAttribute('aria-pressed','false'); }
       else { FAVS.add(bbl); btn.classList.add('faved'); btn.textContent = '♥'; btn.setAttribute('aria-pressed','true'); }
@@ -1524,7 +1524,7 @@
     if (act === 'search') return; // link
     if (act === 'close') { closeDetail(); return; }
     if (act === 'fav') {
-      if (!authUser) { openAuthModal(); return; }
+      if (!authUser) { openAuthModal('Sign in or sign up to like and save apartments.'); return; }
       if (FAVS.has(rec.bbl)) FAVS.delete(rec.bbl); else FAVS.add(rec.bbl);
       saveFavs(); updateFavBadge(); syncDetailFav(); persistFav(rec.bbl, FAVS.has(rec.bbl));
       return;
@@ -1544,7 +1544,7 @@
     if (act === 'close') { closeCard(); return; }
     if (act === 'search') return; // let the link open
     if (act === 'fav') {
-      if (!authUser) { openAuthModal(); return; }
+      if (!authUser) { openAuthModal('Sign in or sign up to like and save apartments.'); return; }
       const btn = e.target.closest('[data-card="fav"]');
       if (FAVS.has(rec.bbl)) { FAVS.delete(rec.bbl); btn.classList.remove('faved'); btn.textContent = '♡'; }
       else { FAVS.add(rec.bbl); btn.classList.add('faved'); btn.textContent = '♥'; }
@@ -1600,7 +1600,14 @@
     authPass2.value = '';
     showAuthError('');
   }
-  function openAuthModal() { setAuthMode('signin'); authModal.hidden = false; setTimeout(() => authEmail.focus(), 50); }
+  const AUTH_SUB_DEFAULT = "Save buildings to your account so they're on every device.";
+  function openAuthModal(reminder) {
+    setAuthMode('signin');
+    const sub = document.getElementById('auth-sub');
+    if (sub) sub.textContent = reminder || AUTH_SUB_DEFAULT;
+    authModal.hidden = false;
+    setTimeout(() => authEmail.focus(), 50);
+  }
   function closeAuthModal() { authModal.hidden = true; }
   function updateAuthUI() {
     if (authUser) { authBtn.textContent = 'Sign out'; authBtn.classList.add('signed-in'); authBtn.title = authUser.email || ''; }

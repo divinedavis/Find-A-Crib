@@ -15,8 +15,12 @@ Tracking began 2026-06-24 (rebrand day), so anything before that is empty.
 device/browser or cleared storage counts as a new visitor.
 
 Usage:
-  python3 traffic_report.py                 # full dashboard
-  python3 traffic_report.py --json          # raw JSON (all sections)
+  python3 traffic_report.py                       # full dashboard
+  python3 traffic_report.py --json                # raw JSON (all sections)
+  python3 traffic_report.py --email a@b.com,c@d   # email the dashboard
+
+Email uses SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASSWORD from the
+environment (same convention as payments_report.py on the caprecruiting box).
 """
 import argparse, json, subprocess, sys, urllib.request, urllib.error
 
@@ -105,14 +109,83 @@ def pct(part, whole):
     return f"{(100.0 * part / whole):.0f}%" if whole else "n/a"
 
 
+def render(data):
+    """Build the plain-text dashboard from the query results."""
+    t = data["today"][0]
+    nr = data["new_vs_returning_today"][0]
+    ret = data["retention_wow"][0]
+    out = []
+    out.append("=" * 52)
+    out.append("  FIND A CRIB — TRAFFIC REPORT")
+    out.append("=" * 52)
+
+    out.append("\nTODAY")
+    out.append(f"  Unique visitors : {t['unique_visitors']}")
+    out.append(f"  Page views      : {t['total_views']}")
+    out.append(f"  Returning       : {nr['returning_visitors']} "
+               f"({pct(nr['returning_visitors'], nr['total'])} of today's visitors)")
+
+    out.append("\nMONTH TO MONTH")
+    out.append(f"  {'Month':<9}{'Visitors':>10}{'Views':>9}")
+    for r in data["month_to_month"]:
+        out.append(f"  {r['month']:<9}{r['unique_visitors']:>10}{r['total_views']:>9}")
+
+    out.append("\nLAST 14 DAYS")
+    out.append(f"  {'Day':<12}{'Visitors':>10}{'Views':>9}")
+    for r in data["last_14_days"]:
+        out.append(f"  {r['day']:<12}{r['unique_visitors']:>10}{r['total_views']:>9}")
+
+    out.append("\nWEEK-OVER-WEEK RETENTION")
+    if ret["prev_cohort"]:
+        out.append(f"  Of last week's {ret['prev_cohort']} visitors, "
+                   f"{ret['returned']} returned this week "
+                   f"({pct(ret['returned'], ret['prev_cohort'])}).")
+    else:
+        out.append("  Not enough history yet (need a full prior week of data).")
+
+    if data["events_today"]:
+        out.append("\nTODAY'S ACTIVITY")
+        for r in data["events_today"]:
+            out.append(f"  {r['event']:<16}{r['n']:>5} events "
+                       f"({r['visitors']} visitors)")
+    return "\n".join(out) + "\n"
+
+
+def send_email(recipients, text):
+    import os, smtplib
+    from email.mime.text import MIMEText
+
+    host = os.environ.get("SMTP_HOST", "smtp.gmail.com")
+    port = int(os.environ.get("SMTP_PORT", "587"))
+    user = os.environ.get("SMTP_USER", "")
+    pwd = os.environ.get("SMTP_PASSWORD", "")
+    if not (user and pwd):
+        sys.exit("missing SMTP_USER / SMTP_PASSWORD in environment")
+
+    msg = MIMEText(text, "plain")
+    msg["Subject"] = "Find A Crib — weekly traffic report"
+    msg["From"] = f"Find A Crib <{user}>"
+    msg["To"] = ", ".join(recipients)
+    with smtplib.SMTP(host, port) as server:
+        server.starttls()
+        server.login(user, pwd)
+        server.sendmail(user, recipients, msg.as_string())
+    print(f"Emailed traffic report to: {', '.join(recipients)}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", action="store_true", help="dump raw JSON")
+    ap.add_argument("--email", default="", help="comma-separated recipient list")
     args = ap.parse_args()
 
-    token = keychain("supabase-pat-clockin")
+    # The PAT lives in the macOS keychain locally, or SUPABASE_ACCESS_TOKEN in
+    # the environment (e.g. on the droplet cron).
+    import os
+    token = os.environ.get("SUPABASE_ACCESS_TOKEN") or keychain("supabase-pat-clockin")
     if not token:
-        sys.exit("missing keychain item supabase-pat-clockin")
+        sys.exit("missing Supabase PAT (keychain supabase-pat-clockin "
+                 "or env SUPABASE_ACCESS_TOKEN)")
 
     data = {name: run_sql(token, sql) for name, sql in queries().items()}
 
@@ -120,44 +193,12 @@ def main():
         print(json.dumps(data, indent=2))
         return
 
-    t = data["today"][0]
-    nr = data["new_vs_returning_today"][0]
-    ret = data["retention_wow"][0]
-
-    print("=" * 52)
-    print("  FIND A CRIB — TRAFFIC REPORT")
-    print("=" * 52)
-
-    print("\nTODAY")
-    print(f"  Unique visitors : {t['unique_visitors']}")
-    print(f"  Page views      : {t['total_views']}")
-    print(f"  Returning       : {nr['returning_visitors']} "
-          f"({pct(nr['returning_visitors'], nr['total'])} of today's visitors)")
-
-    print("\nMONTH TO MONTH")
-    print(f"  {'Month':<9}{'Visitors':>10}{'Views':>9}")
-    for r in data["month_to_month"]:
-        print(f"  {r['month']:<9}{r['unique_visitors']:>10}{r['total_views']:>9}")
-
-    print("\nLAST 14 DAYS")
-    print(f"  {'Day':<12}{'Visitors':>10}{'Views':>9}")
-    for r in data["last_14_days"]:
-        print(f"  {r['day']:<12}{r['unique_visitors']:>10}{r['total_views']:>9}")
-
-    print("\nWEEK-OVER-WEEK RETENTION")
-    if ret["prev_cohort"]:
-        print(f"  Of last week's {ret['prev_cohort']} visitors, "
-              f"{ret['returned']} returned this week "
-              f"({pct(ret['returned'], ret['prev_cohort'])}).")
+    text = render(data)
+    if args.email:
+        recipients = [r.strip() for r in args.email.split(",") if r.strip()]
+        send_email(recipients, text)
     else:
-        print("  Not enough history yet (need a full prior week of data).")
-
-    if data["events_today"]:
-        print("\nTODAY'S ACTIVITY")
-        for r in data["events_today"]:
-            print(f"  {r['event']:<16}{r['n']:>5} events "
-                  f"({r['visitors']} visitors)")
-    print()
+        print(text)
 
 
 if __name__ == "__main__":

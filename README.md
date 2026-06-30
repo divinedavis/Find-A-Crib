@@ -59,6 +59,19 @@ thumbnails). No build step; serve the directory statically. An optional Supabase
 backend powers email accounts, cross-device saved buildings, and privacy-safe
 usage analytics. Copy `config.example.js` → `config.js` and fill in keys.
 
+## Traffic report
+
+`traffic_report.py` prints a traffic dashboard from the Supabase `visits` /
+`events` logs: today's numbers, a month-to-month table, the last 14 days,
+new-vs-returning, week-over-week retention, and today's activity breakdown. The
+owner's own visits are always excluded. Needs the Supabase PAT in the macOS
+keychain (`supabase-pat-clockin`).
+
+```sh
+python3 traffic_report.py          # dashboard
+python3 traffic_report.py --json   # raw JSON
+```
+
 ## Sources
 
 - NYC Rent Guidelines Board / DHCR 2024 building files

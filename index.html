@@ -813,8 +813,8 @@
     const borough = BORO_NAME[rec.b] || '';
     const boroughSlug = BORO_SLUG[rec.b] || '';
     const meta = [];
-    if (rec.nb) meta.push(rec.nb);
-    if (rec.z) meta.push(`ZIP ${rec.z}`);
+    if (rec.nb) meta.push(esc(rec.nb));
+    if (rec.z) meta.push(`ZIP ${esc(rec.z)}`);
     meta.push(borough);
     if (rec.yr) meta.push(`built ${rec.yr}`);
     if (rec.u != null) meta.push(`${rec.u} residential units`);
@@ -825,16 +825,16 @@
     // If the scraper captured a direct URL for this BBL, prefer it.
     const directUrl = (listingsBlob.urls && listingsBlob.urls[rec.bbl]) || null;
     const zumperQ = encodeURIComponent(`site:zumper.com "${rec.a}" ${borough} NY`);
-    const zumperHref = directUrl || `https://www.google.com/search?q=${zumperQ}`;
+    const zumperHref = safeHttpUrl(directUrl) || `https://www.google.com/search?q=${zumperQ}`;
     return `
       <div class="popup-addr">${esc(rec.a)}</div>
       <div class="popup-meta">${meta.join(' · ')}</div>
       ${listedHtml}
       <div style="margin-top:6px">${statusHtml}</div>
-      <div class="popup-meta" style="margin-top:6px">BBL ${rec.bbl}</div>
+      <div class="popup-meta" style="margin-top:6px">BBL ${esc(rec.bbl)}</div>
       ${hpdHtml(rec)}
       <div class="popup-actions">
-        <a class="secondary" href="${zumperHref}" target="_blank" rel="noopener">${listed > 0 ? 'View on Zumper' : 'Search Zumper'}</a>
+        <a class="secondary" href="${esc(zumperHref)}" target="_blank" rel="noopener">${listed > 0 ? 'View on Zumper' : 'Search Zumper'}</a>
         <a class="primary" href="https://www.google.com/search?q=${googleQ}" target="_blank" rel="noopener">Search Google</a>
       </div>
     `;
@@ -914,6 +914,10 @@
   }
 
   function esc(s){return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  // Only let http(s) URLs into href attributes; anything else (javascript:, data:,
+  // or a poisoned scrape) becomes '' so the caller's fallback is used. Callers
+  // still esc() the result for attribute safety.
+  function safeHttpUrl(u){return (typeof u === 'string' && /^https?:\/\//i.test(u)) ? u : '';}
 
   // Make HPD violation Class chips + the "What do the classes mean?" link interactive.
   // Delegated from a stable container so it survives re-renders; Leaflet popups stop
@@ -1108,9 +1112,9 @@
     if (!matches.length) { searchAC.hidden = true; return; }
     searchAC.innerHTML = matches.map(rec => {
       const borough = BORO_NAME[rec.b] || '';
-      return `<button class="ac-item" data-bbl="${rec.bbl}">
+      return `<button class="ac-item" data-bbl="${esc(rec.bbl)}">
         <span class="ac-addr">${esc(rec.a)}</span>
-        <span class="ac-sub">${rec.nb ? esc(rec.nb) + ' · ' : ''}${esc(borough)}${rec.z ? ' ' + rec.z : ''}</span>
+        <span class="ac-sub">${rec.nb ? esc(rec.nb) + ' · ' : ''}${esc(borough)}${rec.z ? ' ' + esc(rec.z) : ''}</span>
       </button>`;
     }).join('');
     positionAC();
@@ -1372,11 +1376,11 @@
     const stats = [];
     if (rec.u != null) stats.push(`${rec.u} units`);
     if (rec.yr) stats.push(`built ${rec.yr}`);
-    if (rec.z) stats.push(`ZIP ${rec.z}`);
+    if (rec.z) stats.push(`ZIP ${esc(rec.z)}`);
     const googleQ = encodeURIComponent(`${rec.a} ${BORO_NAME[rec.b] || ''} NY ${rec.z || ''}`.trim());
     const sv = streetviewUrl(rec.lat, rec.lng);
     const faved = FAVS.has(rec.bbl);
-    return `<div class="card" data-bbl="${rec.bbl}">
+    return `<div class="card" data-bbl="${esc(rec.bbl)}">
       <button class="fav-btn ${faved ? 'faved' : ''}" data-action="fav" aria-label="${faved ? 'Remove from saved' : 'Save'}" aria-pressed="${faved}">${faved ? '♥' : '♡'}</button>
       <div class="photo">
         <img class="streetview" loading="lazy" src="${sv}" alt="" onerror="this.style.display='none'">
@@ -1537,7 +1541,7 @@
         <div class="card-price">${priceLine}</div>
         <div class="card-sub">${esc(sub)}</div>
         <div class="card-addr">${esc(rec.a)}</div>
-        <div class="card-meta">${rec.nb ? esc(rec.nb) + ' · ' : ''}${esc(borough)}${rec.z ? ' ' + rec.z : ''}</div>
+        <div class="card-meta">${rec.nb ? esc(rec.nb) + ' · ' : ''}${esc(borough)}${rec.z ? ' ' + esc(rec.z) : ''}</div>
         <div class="card-actions">
           <button class="cbtn cbtn-2" data-card="details">Details</button>
           <a class="cbtn cbtn-1" data-card="search" target="_blank" rel="noopener" href="https://www.google.com/search?q=${googleQ}">Search</a>
@@ -1600,7 +1604,7 @@
     const statuses = rec.s || [];
     const googleQ = encodeURIComponent(`${rec.a} ${borough} NY ${rec.z || ''}`.trim());
     const directUrl = (listingsBlob.urls && listingsBlob.urls[rec.bbl]) || null;
-    const zumperHref = directUrl || `https://www.google.com/search?q=${encodeURIComponent(`site:zumper.com "${rec.a}" ${borough} NY`)}`;
+    const zumperHref = safeHttpUrl(directUrl) || `https://www.google.com/search?q=${encodeURIComponent(`site:zumper.com "${rec.a}" ${borough} NY`)}`;
     return `
       <img class="d-photo" src="${sv}" alt="" onerror="this.removeAttribute('src')">
       <div class="d-head">
@@ -1608,7 +1612,7 @@
         <div class="d-price">${priceLine}${listed > 0 ? `<span style="font-size:13px;font-weight:500;color:#8a8aa0">${asOf}</span>` : ''}</div>
         ${keyBits.length ? `<div class="d-key">${esc(keyBits.join(' · '))}</div>` : ''}
         <div class="d-addr">${esc(rec.a)}</div>
-        <div class="d-sub">${rec.nb ? esc(rec.nb) + ' · ' : ''}${esc(borough)}${rec.z ? ' ' + rec.z : ''}</div>
+        <div class="d-sub">${rec.nb ? esc(rec.nb) + ' · ' : ''}${esc(borough)}${rec.z ? ' ' + esc(rec.z) : ''}</div>
       </div>
       <div class="d-actions">
         <button class="d-secondary" data-detail="map">View on map</button>
@@ -1621,7 +1625,7 @@
       <div class="d-section"><h3>Owner &amp; HPD record</h3>${hpdHtml(rec)}</div>
       <div class="d-section"><h3>Find this listing</h3>
         <div class="d-actions" style="padding:0">
-          <a class="d-secondary" target="_blank" rel="noopener" href="${zumperHref}">${listed > 0 ? 'View on Zumper' : 'Search Zumper'}</a>
+          <a class="d-secondary" target="_blank" rel="noopener" href="${esc(zumperHref)}">${listed > 0 ? 'View on Zumper' : 'Search Zumper'}</a>
           <a class="d-primary" target="_blank" rel="noopener" href="https://www.google.com/search?q=${googleQ}">Search Google</a>
         </div>
       </div>`;

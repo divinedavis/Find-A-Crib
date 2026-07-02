@@ -16,6 +16,10 @@ async function verify(body: string, header: string): Promise<boolean> {
   const parts = Object.fromEntries(header.split(",").map((p) => p.split("=")));
   const t = parts["t"], sig = parts["v1"];
   if (!t || !sig) return false;
+  // Reject stale/replayed events: the signed timestamp must be within 5 minutes,
+  // matching Stripe's own default tolerance.
+  const ts = Number(t);
+  if (!Number.isFinite(ts) || Math.abs(Date.now() / 1000 - ts) > 300) return false;
   const key = await crypto.subtle.importKey(
     "raw", new TextEncoder().encode(WEBHOOK_SECRET),
     { name: "HMAC", hash: "SHA-256" }, false, ["sign"],

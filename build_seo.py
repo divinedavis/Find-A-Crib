@@ -104,6 +104,37 @@ footer.site{border-top:1px solid var(--line);margin-top:40px;padding:22px 20px;c
 """
 
 
+# Same first-party pageview ping as index.html (public.visits), minus the
+# supabase-js dependency: plain fetch with the anon key from /config.js.
+# Cookie-first visitor id (nginx sets fac_vid; server-set cookies survive
+# Safari's 7-day script-storage cap), localStorage fallback, bot guard, and
+# the Supabase session token attached when one exists so user_id passes the
+# "user_id = auth.uid()" RLS check (that mapping powers the owner-exclusion
+# in traffic_report.py). Plain string on purpose: page() is an f-string and
+# this JS is full of braces.
+TRACK_SNIPPET = """<script src="/config.js"></script>
+<script>
+(function(){try{
+  if(navigator.webdriver||/bot|crawl|spider|slurp|headless|lighthouse|prerender|facebookexternal/i.test(navigator.userAgent))return;
+  if(!window.SUPABASE_URL||!window.SUPABASE_ANON_KEY)return;
+  var m=document.cookie.match(/(?:^|;\\s*)fac_vid=([\\w-]+)/),vid=m?m[1]:null;
+  if(!vid){try{vid=localStorage.getItem('fac_vid')}catch(e){}}
+  if(!vid)vid=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():'v'+Date.now().toString(36)+Math.random().toString(36).slice(2);
+  try{localStorage.setItem('fac_vid',vid)}catch(e){}
+  var tok=null,uid=null;
+  try{
+    var ref=window.SUPABASE_URL.split('//')[1].split('.')[0];
+    var s=JSON.parse(localStorage.getItem('sb-'+ref+'-auth-token'));
+    if(s&&s.access_token&&(s.expires_at||0)*1000>Date.now()+60000){tok=s.access_token;uid=(s.user&&s.user.id)||null}
+  }catch(e){}
+  fetch(window.SUPABASE_URL+'/rest/v1/visits',{method:'POST',keepalive:true,
+    headers:{apikey:window.SUPABASE_ANON_KEY,'Authorization':'Bearer '+(tok||window.SUPABASE_ANON_KEY),
+             'Content-Type':'application/json','Prefer':'return=minimal'},
+    body:JSON.stringify({visitor_id:vid,user_id:uid,path:location.pathname+location.search,referrer:document.referrer||null})});
+}catch(e){}})();
+</script>"""
+
+
 def page(title, desc, canonical, body, jsonld=None):
     ld = ""
     if jsonld:
@@ -126,6 +157,7 @@ def page(title, desc, canonical, body, jsonld=None):
 and NYC HPD Open Data (owner, violations, complaints). A building's rent-stabilized status reflects
 DHCR registration; it is not a guarantee that a specific unit is available or currently stabilized.
 &copy; Find A Crib. <a href="/">Open the interactive map →</a></footer>
+{TRACK_SNIPPET}
 </body></html>"""
 
 

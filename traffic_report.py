@@ -29,18 +29,27 @@ QUERY_URL = f"https://api.supabase.com/v1/projects/{PROJECT_REF}/database/query"
 OWNER = "af2629f7-1121-4bee-8a2b-cede9318c864"
 TZ = "America/New_York"
 
+# Owner's visitor_ids: any anonymous id he ever used while signed in, learned
+# from BOTH tables (a page load logs visits; the in-app 'signin' event logs
+# events — either one is enough to map a device). visitor_id is not null guards
+# the NOT IN <null> trap, which would silently drop every row.
+MINE = (
+    "select visitor_id from public.visits "
+    f"where user_id = '{OWNER}' and visitor_id is not null "
+    "union "
+    "select visitor_id from public.events "
+    f"where user_id = '{OWNER}' and visitor_id is not null"
+)
 # Common CTE: `v` = all visits minus the owner; `mine` = owner's visitor_ids.
 CLEAN = (
-    "with mine as (select distinct visitor_id from public.visits "
-    f"where user_id = '{OWNER}'), "
+    f"with mine as ({MINE}), "
     "v as (select * from public.visits "
     f"where user_id is distinct from '{OWNER}' "
     "and visitor_id not in (select visitor_id from mine))"
 )
 # Same idea for the events table.
 CLEAN_E = (
-    "with mine as (select distinct visitor_id from public.visits "
-    f"where user_id = '{OWNER}'), "
+    f"with mine as ({MINE}), "
     "e as (select * from public.events "
     f"where user_id is distinct from '{OWNER}' "
     "and visitor_id not in (select visitor_id from mine))"

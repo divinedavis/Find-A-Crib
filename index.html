@@ -216,6 +216,20 @@
     background: rgba(255,255,255,0.95); color: var(--pill); font-weight: 700; font-size: 11px;
     padding: 3px 9px; border-radius: 999px; box-shadow: 0 2px 6px rgba(0,0,0,0.18);
   }
+  /* Section 8 / voucher tags */
+  .card .photo .s8-pill {
+    background: #0e8a45; color: #fff; font-weight: 700; font-size: 11px;
+    padding: 3px 9px; border-radius: 999px; box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+  }
+  .card .photo .s8-pill.soft { background: rgba(255,255,255,0.95); color: #0e8a45; }
+  .s8-line { margin-top: 8px; color: #0e8a45; font-weight: 700; font-size: 13px; }
+  .s8-line.soft { font-weight: 600; color: #3d7d58; font-size: 12px; margin-top: 4px; }
+  .s8-line a { color: #0e8a45; text-decoration: underline; }
+  .s8-line .s8-asof { font-weight: 500; color: #8a8aa0; }
+  .s8-mini { font-size: 12px; font-weight: 700; color: #0e8a45; margin: 2px 0 4px; }
+  .s8-mini.soft { font-weight: 600; color: #3d7d58; }
+  .s8-legal { font-size: 11px; color: var(--ink-2); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); line-height: 1.45; }
+  .s8-legal a { color: var(--blue); }
   .card .photo .borough-pill {
     font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; letter-spacing: .5px;
     background: rgba(0,0,0,0.35); color: #fff;
@@ -533,6 +547,16 @@
         <label class="row"><input type="radio" name="listed" value="no"> Not recently advertised</label>
       </div>
     </div>
+    <div class="filter-pill" id="pill-s8">
+      Section 8<span class="caret">▾</span>
+      <div class="pill-popover">
+        <label class="row"><input type="radio" name="s8" value="any" checked> Any</label>
+        <label class="row"><input type="radio" name="s8" value="avail"> Listed for voucher holders now (AffordableHousing.com)</label>
+        <label class="row"><input type="radio" name="s8" value="bldg"> Subsidized / voucher-friendly building (HPD · HUD)</label>
+        <label class="row"><input type="radio" name="s8" value="either"> Either</label>
+        <div style="font-size:11px;color:var(--ink-2);margin-top:8px;padding-top:8px;border-top:1px solid var(--line)">Every NYC landlord must accept vouchers by law — a building without a tag isn't off-limits. <a href="https://www.nyc.gov/site/cchr/about/report-discrimination.page" target="_blank" rel="noopener">Report voucher discrimination ↗</a></div>
+      </div>
+    </div>
     <div class="filter-pill" id="pill-beds">
       Beds<span class="caret">▾</span>
       <div class="pill-popover">
@@ -565,7 +589,7 @@
   <div id="map"></div>
   <aside class="results">
     <div class="results-grid empty-state" id="grid"><div class="empty">Loading 30k buildings…</div></div>
-    <div class="footer-credit" id="credit">Source: NYC Rent Guidelines Board / DHCR 2024 · Coordinates from <a href="https://www.nyc.gov/site/planning/data-maps/open-data.page" target="_blank" rel="noopener">NYC PLUTO</a> · Listings via Zumper (nightly) · Owner/violation/complaint data from <a href="https://data.cityofnewyork.us/" target="_blank" rel="noopener">NYC Open Data — HPD</a></div>
+    <div class="footer-credit" id="credit">Source: NYC Rent Guidelines Board / DHCR 2024 · Coordinates from <a href="https://www.nyc.gov/site/planning/data-maps/open-data.page" target="_blank" rel="noopener">NYC PLUTO</a> · Listings via Zumper (nightly) · Owner/violation/complaint data from <a href="https://data.cityofnewyork.us/" target="_blank" rel="noopener">NYC Open Data — HPD</a> · Voucher listings via <a href="https://www.affordablehousing.com" target="_blank" rel="noopener">AffordableHousing.com</a> · Subsidized-building data from HPD &amp; HUD</div>
   </aside>
 </main>
 
@@ -769,9 +793,10 @@
     } catch (e) { /* best-effort */ }
   }
 
-  const [data, listingsBlob] = await Promise.all([
+  const [data, listingsBlob, s8Blob] = await Promise.all([
     fetch('buildings.min.json').then(r => r.json()),
     fetch('listings.json').then(r => r.ok ? r.json() : { counts: {} }).catch(() => ({ counts: {} })),
+    fetch('s8.json').then(r => r.ok ? r.json() : { bldg: {}, avail: {} }).catch(() => ({ bldg: {}, avail: {} })),
   ]);
   const listingCounts = listingsBlob.counts || {};
   const listingPrices = listingsBlob.prices || {};
@@ -781,6 +806,14 @@
     ? new Date(listingsBlob.updated * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     : null;
   const asOf = listingsAsOf ? ` · as of ${listingsAsOf}` : '';
+  // Section 8 / voucher signals, keyed by BBL (s8.json):
+  //   bldg  — subsidized building (flags: 1 = HPD city-financed, 2 = HUD project-based Section 8)
+  //   avail — live listings on AffordableHousing.com (landlords soliciting voucher tenants)
+  const s8Bldg = s8Blob.bldg || {};
+  const s8Avail = s8Blob.avail || {};
+  const s8AsOf = s8Blob.avail_updated
+    ? ' · as of ' + new Date(s8Blob.avail_updated * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : '';
 
   // ---------- markers ----------
   const cluster = L.markerClusterGroup({
@@ -823,6 +856,34 @@
     markerByBbl.set(rec.bbl, m);
   }
 
+  // ---------- Section 8 / voucher badges (shared by popup, cards, detail) ----------
+  const S8_HPD = 1, S8_HUD = 2;  // bit flags in s8.json bldg[bbl].f
+  function s8SourceLabel(f) {
+    const bits = [];
+    if (f & S8_HPD) bits.push('city-financed affordable (HPD)');
+    if (f & S8_HUD) bits.push('project-based Section 8 (HUD)');
+    return bits.join(' · ');
+  }
+  function s8Html(rec) {
+    const av = s8Avail[rec.bbl], bl = s8Bldg[rec.bbl];
+    if (!av && !bl) return '';
+    let out = '';
+    if (av) {
+      const from = av.p ? `, from $${av.p.toLocaleString()}/mo` : '';
+      const link = safeHttpUrl(av.url) ? ` <a href="${esc(av.url)}" target="_blank" rel="noopener">View listing ↗</a>` : '';
+      out += `<div class="s8-line">✓ Accepting Section 8 vouchers — ${av.n} listing${av.n === 1 ? '' : 's'} on AffordableHousing.com${from}<span class="s8-asof">${s8AsOf}</span>${link}</div>`;
+    }
+    if (bl) {
+      out += `<div class="s8-line soft">Subsidized building — ${s8SourceLabel(bl.f)}${bl.u ? ` · ${bl.u.toLocaleString()} income-restricted units` : ''}</div>`;
+    }
+    return out;
+  }
+  function s8PillHtml(rec) {  // small photo-corner pill on grid cards
+    if (s8Avail[rec.bbl]) return '<span class="s8-pill">§8 listed now</span>';
+    if (s8Bldg[rec.bbl]) return '<span class="s8-pill soft">§8 friendly</span>';
+    return '';
+  }
+
   function buildPopup(rec, listed) {
     track('building_view', { bbl: rec.bbl, addr: rec.a, boro: rec.b, listed, via: 'popup' });
     const borough = BORO_NAME[rec.b] || '';
@@ -845,6 +906,7 @@
       <div class="popup-addr">${esc(rec.a)}</div>
       <div class="popup-meta">${meta.join(' · ')}</div>
       ${listedHtml}
+      ${s8Html(rec)}
       <div style="margin-top:6px">${statusHtml}</div>
       <div class="popup-meta" style="margin-top:6px">BBL ${esc(rec.bbl)}</div>
       ${hpdHtml(rec)}
@@ -1049,6 +1111,13 @@
     applyFilters();
   }));
 
+  // section 8 radio
+  document.querySelectorAll('input[name="s8"]').forEach(r => r.addEventListener('change', () => {
+    const v = document.querySelector('input[name="s8"]:checked').value;
+    document.getElementById('pill-s8').classList.toggle('active', v !== 'any');
+    applyFilters();
+  }));
+
   // beds checkboxes
   document.querySelectorAll('input[name="beds"]').forEach(cb => cb.addEventListener('change', () => {
     const pill = document.getElementById('pill-beds');
@@ -1223,6 +1292,7 @@
     const boroughs = new Set([...document.querySelectorAll('#borough-list input:checked')].map(c => c.dataset.b));
     const selectedNbs = new Set([...nbListEl.querySelectorAll('input:checked')].map(c => c.value));
     const listedMode = document.querySelector('input[name="listed"]:checked').value;
+    const s8Mode = document.querySelector('input[name="s8"]:checked').value;
     const selectedBeds = new Set([...document.querySelectorAll('input[name="beds"]:checked')].map(c => +c.value));
     const favOnly = document.getElementById('pill-fav').classList.contains('active');
     const q = document.getElementById('q').value.trim().toUpperCase();
@@ -1237,6 +1307,13 @@
       const listed = listingCounts[rec.bbl] || 0;
       if (listedMode === 'yes' && !listed) continue;
       if (listedMode === 'no' && listed) continue;
+      if (s8Mode !== 'any') {
+        const hasAvail = !!s8Avail[rec.bbl];
+        const hasBldg = !!s8Bldg[rec.bbl];
+        if (s8Mode === 'avail' && !hasAvail) continue;
+        if (s8Mode === 'bldg' && !hasBldg) continue;
+        if (s8Mode === 'either' && !hasAvail && !hasBldg) continue;
+      }
       if (selectedBeds.size) {
         const bb = listingBeds[rec.bbl];
         if (!bb || !bb.some(n => selectedBeds.has(n))) continue;
@@ -1402,6 +1479,7 @@
         <div class="photo-shade"></div>
         <div class="badge-row">
           <span class="borough-pill">${borough}</span>
+          ${s8PillHtml(rec)}
           ${listedHtml}
         </div>
         <div class="addr-overlay">${esc(rec.a)}</div>
@@ -1410,6 +1488,7 @@
         ${rec.nb ? `<div class="nb">${esc(rec.nb)}</div>` : ''}
         ${listed > 0 ? `<div class="price">${price ? '$' + price.toLocaleString() + '/mo' : `Recently advertised on Zumper · ${listed} listing${listed===1?'':'s'}${asOf}`}</div>` : ''}
         ${beds && beds.length ? `<div class="beds-line">${bedsLabel(beds)} available</div>` : ''}
+        ${s8Avail[rec.bbl] ? `<div class="s8-mini">✓ Section 8 listing${s8Avail[rec.bbl].n === 1 ? '' : 's'} on AffordableHousing.com${s8Avail[rec.bbl].p ? ' · from $' + s8Avail[rec.bbl].p.toLocaleString() + '/mo' : ''}</div>` : ''}
         <div class="units-line">${stats.join(' · ')}</div>
         ${cardHpdLine(rec)}
         <div class="actions">
@@ -1555,6 +1634,7 @@
       <div class="card-body">
         <div class="card-price">${priceLine}</div>
         <div class="card-sub">${esc(sub)}</div>
+        ${s8Avail[rec.bbl] ? `<div class="s8-mini">✓ Accepting Section 8 — on AffordableHousing.com${s8Avail[rec.bbl].p ? ' from $' + s8Avail[rec.bbl].p.toLocaleString() + '/mo' : ''}</div>` : (s8Bldg[rec.bbl] ? '<div class="s8-mini soft">Subsidized / voucher-friendly building</div>' : '')}
         <div class="card-addr">${esc(rec.a)}</div>
         <div class="card-meta">${rec.nb ? esc(rec.nb) + ' · ' : ''}${esc(borough)}${rec.z ? ' ' + esc(rec.z) : ''}</div>
         <div class="card-actions">
@@ -1632,6 +1712,10 @@
       <div class="d-actions">
         <button class="d-secondary" data-detail="map">View on map</button>
         <a class="d-primary" data-detail="search" target="_blank" rel="noopener" href="https://www.google.com/search?q=${googleQ}">Search Google</a>
+      </div>
+      <div class="d-section"><h3>Housing vouchers (Section 8)</h3>
+        ${s8Html(rec) || '<div class="d-sub" style="margin:0">No voucher listing or subsidy record for this building right now.</div>'}
+        <div class="s8-legal">Source-of-income discrimination is illegal in NYC — every landlord must accept Section 8 and other vouchers, tagged here or not. <a href="https://www.nyc.gov/site/cchr/about/report-discrimination.page" target="_blank" rel="noopener">Report discrimination to the NYC Commission on Human Rights ↗</a></div>
       </div>
       ${statuses.length ? `<div class="d-section"><h3>Rent-stabilization status</h3><div class="d-chips">${statuses.map(s => `<span class="chip">${esc(s)}</span>`).join('')}</div></div>` : ''}
       <div class="d-section"><h3>Building facts</h3>

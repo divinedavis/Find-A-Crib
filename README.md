@@ -36,9 +36,28 @@ rent-stabilized units in the building.
 | 4. Pull HPD owner / manager / violations / complaints | `fetch_hpd.py` | `buildings_hpd.json` |
 | 5. Slim + merge HPD into a browser-ready blob | `slim.py` | `buildings.min.json` |
 | 6. Nightly listings refresh | `scripts/refresh_listings.sh` (`fetch_apify.py` → `parse_apify.py` → `combine_listings.py`) | `listings.json` |
+| 7. Section 8 building signals (monthly) | `fetch_section8.py` — HPD Affordable Housing Production (BBL join) + HUD project-based Section 8 contracts (address→BBL) | `s8.json` (`bldg` half) |
+| 8. Live voucher listings (nightly) | `scrape_affordablehousing.py` — AffordableHousing.com search API, address→BBL | `s8.json` (`avail` half) |
 
-Steps 1–5 produce regenerable intermediates (gitignored); `buildings.min.json`
-and `listings.json` are the two files the front end actually fetches.
+Steps 1–5 produce regenerable intermediates (gitignored); `buildings.min.json`,
+`listings.json`, and `s8.json` are the three files the front end actually fetches.
+
+### Section 8 / housing vouchers
+
+The **Section 8** filter and the green badges have two tiers:
+
+- **Listed for voucher holders now** — the building has a live listing on
+  [AffordableHousing.com](https://www.affordablehousing.com) (ex-GoSection8),
+  the site NYCHA/HPD point voucher holders to. Landlords there are explicitly
+  soliciting voucher tenants; the badge links to the cheapest such listing.
+- **Subsidized / voucher-friendly building** — the building appears in HPD's
+  *Affordable Housing Production by Building* (city-financed, income-restricted
+  rentals, `hg8x-zxpr`) and/or HUD's *Multifamily Properties – Assisted* with a
+  project-based Section 8 contract.
+
+Source-of-income discrimination is illegal in NYC, so the absence of a badge
+never means "vouchers not accepted" — the UI says so wherever badges appear and
+links to the NYC Commission on Human Rights complaint page.
 
 ### HPD data
 

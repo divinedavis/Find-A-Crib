@@ -1885,6 +1885,20 @@
     if (p.get('plus') === 'success') showPlusToast('🎉 You’re now Find A Crib Plus — agent phone numbers are unlocked. Tap “Show number” to view.');
     if (p.has('plus')) { p.delete('plus'); history.replaceState({}, '', location.pathname + (p.toString() ? '?' + p : '')); }
   })();
+  // one-click unsubscribe from saved-building alert emails (#unsub=<token>)
+  async function handleUnsubHash() {
+    const m = location.hash.match(/[#&]unsub=([0-9a-f-]{36})/i);
+    if (!m || !supaClient) return;
+    history.replaceState({}, '', location.pathname + location.search);
+    try {
+      const { data, error } = await supaClient.rpc('unsubscribe_alerts', { p_token: m[1] });
+      if (error) throw error;
+      showPlusToast(data ? 'You’ve been unsubscribed from saved-building alerts.'
+                         : 'That unsubscribe link isn’t valid — it may have already been used.');
+    } catch (e) {
+      showPlusToast('Couldn’t unsubscribe — please try the link again shortly.');
+    }
+  }
   function updateAuthUI() {
     if (authUser) { authBtn.textContent = 'Sign out'; authBtn.classList.add('signed-in'); authBtn.title = authUser.email || ''; }
     else { authBtn.textContent = 'Sign in'; authBtn.classList.remove('signed-in'); authBtn.title = ''; }
@@ -1910,6 +1924,7 @@
     authUser = session?.user || null;
     updateAuthUI();
     if (authUser) loadAccountFavs();
+    handleUnsubHash();
     // anonymous returning-visitor analytics: a first-party id (cookie/localStorage)
     // lets us count true returning users without storing IPs. user_id is attached
     // when signed in. Bots (webdriver / crawler UAs) are not logged.

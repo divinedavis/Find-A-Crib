@@ -28,3 +28,7 @@ apify_export.json
 
 # managing-agent phone cache (regenerable; may contain harvested business numbers)
 agent_phones.json
+
+# saved-building alert job state (droplet-side)
+alert_snapshot.json
+buildings_cache.json

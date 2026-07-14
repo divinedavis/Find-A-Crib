@@ -59,6 +59,23 @@ Source-of-income discrimination is illegal in NYC, so the absence of a badge
 never means "vouchers not accepted" — the UI says so wherever badges appear and
 links to the NYC Commission on Human Rights complaint page.
 
+### Saved-building alert emails
+
+`notify_saved_listings.py` (nightly cron, 05:00 UTC, on the report droplet
+alongside `traffic_report.py`) emails signed-in users when a building they
+saved is **newly** advertised. It diffs the public `listings.json` (Zumper) and
+`s8.json` (AffordableHousing.com) feeds against the previous night's snapshot,
+so only fresh listings trigger mail; each (user, building, source) is notified
+at most once per 60 days (`listing_alert_state` in Supabase), and the first run
+seeds the snapshot without sending. Every email carries a one-click
+unsubscribe link (`findacrib.com/#unsub=<token>` → `unsubscribe_alerts` RPC,
+tokens in `alert_prefs`; migration `supabase/migrations/0001_listing_alerts.sql`).
+
+```sh
+python3 notify_saved_listings.py --dry-run                 # print, no sends
+python3 notify_saved_listings.py --test-email you@x.com    # one sample email
+```
+
 ### HPD data
 
 `fetch_hpd.py` pulls four NYC Open Data datasets and joins them on BBL:

@@ -930,7 +930,7 @@
   // users can still clean up hearts they saved before the gate existed.
   function gateSave(isUnsave) {
     if (isUnsave) return true;
-    if (!authUser) { openAuthModal('Saving homes is a Plus feature — sign in to get started.'); return false; }
+    if (!authUser) { openAuthModal('Create a free account or sign in to continue — saving homes is part of Plus.'); return false; }
     if (!plusActive) { openPaywall(null); return false; }
     return true;
   }
@@ -1520,7 +1520,7 @@
   }
   document.getElementById('pill-save-search').addEventListener('click', async e => {
     e.stopPropagation();
-    if (!authUser) { openAuthModal('Saving searches is a Plus feature — sign in to get started.'); return; }
+    if (!authUser) { openAuthModal('Create a free account or sign in to continue — saved searches are part of Plus.'); return; }
     if (!plusActive) { openPaywall(null); return; }
     const name = (prompt('Name this search (e.g. "BK 2BR, no violations"):') || '').trim();
     if (!name) return;
@@ -1676,7 +1676,7 @@
   async function openResearch(btn) {
     const bbl = btn.dataset.bbl;
     if (!supaClient) return;
-    if (!authUser) { openAuthModal('Sign in to research landlords and agents with Plus.'); return; }
+    if (!authUser) { openAuthModal('Create a free account or sign in to continue — landlord research is part of Plus.'); return; }
     if (!plusActive) { openPaywall(null); return; }
     const orig = btn.textContent;
     btn.disabled = true; btn.textContent = 'Looking up portfolio…';
@@ -1700,7 +1700,7 @@
   async function revealAgentPhone(btn) {
     const bbl = btn.dataset.bbl;
     if (!supaClient) return;
-    if (!authUser) { pendingPhoneBbl = bbl; openAuthModal('Sign in to unlock managing-agent phone numbers.'); return; }
+    if (!authUser) { pendingPhoneBbl = bbl; openAuthModal('Create a free account or sign in to continue — phone numbers are part of Plus.'); return; }
     const orig = btn.textContent;
     btn.disabled = true; btn.textContent = '…';
     try {
@@ -2293,7 +2293,7 @@
     authPass2.value = '';
     showAuthError('');
   }
-  const AUTH_SUB_DEFAULT = "Save buildings to your account so they're on every device.";
+  const AUTH_SUB_DEFAULT = "Creating an account is free. Upgrade to Plus ($4.99/mo) anytime to unlock saving, alerts, phone numbers, and landlord research.";
   function openAuthModal(reminder) {
     setAuthMode('signin');
     const sub = document.getElementById('auth-sub');

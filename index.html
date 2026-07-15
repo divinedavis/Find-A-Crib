@@ -139,6 +139,32 @@
   .hpd-research-btn { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 7px 12px;
     background: #fff; border: 1px solid var(--line); border-radius: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
   .hpd-research-btn:hover { background: #f6f6f6; }
+  #folder-bar { display: flex; gap: 8px; padding: 10px 16px 0; overflow-x: auto; flex: none; }
+  #folder-bar[hidden] { display: none; }
+  .folder-chip { flex: none; padding: 6px 12px; border-radius: 15px; border: 1px solid var(--line);
+    background: #fff; font-size: 12.5px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .folder-chip.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .folder-toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 24px; z-index: 4000;
+    background: #1d2430; color: #fff; border-radius: 12px; padding: 12px 14px; max-width: min(92vw, 420px);
+    box-shadow: 0 8px 28px rgba(0,0,0,.35); font-size: 13.5px; }
+  .folder-toast .ft-title { font-weight: 700; margin-bottom: 8px; }
+  .folder-toast .ft-opts { display: flex; flex-wrap: wrap; gap: 6px; }
+  .folder-toast .ft-opts button { padding: 6px 11px; border-radius: 14px; border: 1px solid #46536a;
+    background: #2a3346; color: #fff; font-size: 12.5px; cursor: pointer; }
+  .folder-toast .ft-opts button:hover { background: #38445c; }
+  .folder-toast .ft-close { position: absolute; top: 6px; right: 9px; background: none; border: none; color: #9aa7bd; cursor: pointer; font-size: 14px; }
+  .folder-new { background: none; border: none; color: var(--blue); font-size: 13px; font-weight: 700; cursor: pointer; }
+  .folder-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .folder-row .fname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .folder-row .fcount { color: var(--ink-2); font-size: 12px; flex: none; }
+  .folder-row button { flex: none; background: #fff; border: 1px solid var(--line); border-radius: 6px;
+    padding: 4px 8px; font-size: 12px; cursor: pointer; }
+  .folder-row button:hover { background: #f6f6f6; }
+  .shared-banner { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 3500;
+    background: var(--blue); color: #fff; border-radius: 12px; padding: 10px 38px 10px 14px; font-size: 13.5px;
+    font-weight: 600; box-shadow: 0 6px 20px rgba(0,0,0,.3); max-width: 92vw; }
+  .shared-banner .sb-close { position: absolute; top: 50%; right: 10px; transform: translateY(-50%);
+    background: none; border: none; color: #dbe7ff; cursor: pointer; font-size: 15px; }
   .paywall-card .paywall-badge { display: inline-block; font-size: 11px; letter-spacing: .04em; text-transform: uppercase;
     color: var(--blue); background: #eef3ff; border: 1px solid #cfe0ff; border-radius: 999px; padding: 3px 10px; margin-bottom: 10px; }
   .paywall-card h2 { margin: 0 0 6px; font-size: 20px; }
@@ -627,6 +653,7 @@
 <main>
   <div id="map"></div>
   <aside class="results">
+    <div id="folder-bar" hidden></div>
     <div class="results-grid empty-state" id="grid"><div class="empty">Loading 30k buildings…</div></div>
     <div class="footer-credit" id="credit">Source: NYC Rent Guidelines Board / DHCR 2024 · Coordinates from <a href="https://www.nyc.gov/site/planning/data-maps/open-data.page" target="_blank" rel="noopener">NYC PLUTO</a> · Listings via Zumper (nightly) · Owner/violation/complaint data from <a href="https://data.cityofnewyork.us/" target="_blank" rel="noopener">NYC Open Data — HPD</a> · Voucher listings via <a href="https://www.affordablehousing.com" target="_blank" rel="noopener">AffordableHousing.com</a> · Subsidized-building data from HPD &amp; HUD</div>
   </aside>
@@ -701,6 +728,13 @@
         <div class="profile-feat-sub">Get an email when a building you saved is listed for rent.</div>
       </div>
       <label class="switch"><input id="profile-alerts" type="checkbox"><span class="slider"></span></label>
+    </div>
+    <div id="profile-folders" hidden>
+      <div class="profile-row" style="border-bottom:none;padding-bottom:4px">
+        <span class="label">Folders</span>
+        <button id="folder-new" type="button" class="folder-new">+ New folder</button>
+      </div>
+      <div id="folder-list"></div>
     </div>
     <div id="profile-error" class="auth-error" hidden></div>
     <button id="profile-signout" type="button" class="profile-signout">Sign out</button>
@@ -855,7 +889,85 @@
       // just means it's already saved, which is the desired state.
       if (on) await supaClient.from('saved_buildings').insert({ user_id: authUser.id, bbl });
       else await supaClient.from('saved_buildings').delete().eq('user_id', authUser.id).eq('bbl', bbl);
+      if (on && plusActive) showFolderToast(bbl);   // offer to file it right away
+      if (!on) { delete FAVCATS[bbl]; renderFolderBar(); }
     } catch (e) { console.warn('fav sync failed', e); }
+  }
+
+  // ---------- folders (Plus): file saved homes into named folders ----------
+  let CATS = [];          // this user's folders [{id, name, share_token}]
+  let FAVCATS = {};       // bbl -> category_id (null/undefined = unfiled)
+  let folderFilter = null;   // folder id the Saved view is narrowed to
+  let sharedFolder = null;   // {name, bbls:Set} while viewing someone's shared link
+  async function loadFolders() {
+    CATS = [];
+    if (!supaClient || !authUser) { renderFolderBar(); return; }
+    try {
+      const { data } = await supaClient.from('categories').select('id,name,share_token').order('name');
+      CATS = data || [];
+    } catch (e) { /* fine — folders just won't render */ }
+    renderFolderBar();
+  }
+  async function createFolder(name) {
+    const { data, error } = await supaClient.from('categories')
+      .insert({ user_id: authUser.id, name }).select('id,name,share_token').single();
+    if (error) {   // RLS rejects non-Plus inserts
+      if (!plusActive) openPaywall(null);
+      else showPlusToast(/duplicate/i.test(error.message) ? 'You already have a folder with that name.' : 'Couldn’t create the folder — try again.');
+      return null;
+    }
+    CATS.push(data); CATS.sort((a, b) => a.name.localeCompare(b.name));
+    renderFolderBar();
+    return data;
+  }
+  async function setBuildingFolder(bbl, catId) {
+    try {
+      await supaClient.from('saved_buildings').update({ category_id: catId })
+        .eq('user_id', authUser.id).eq('bbl', bbl);
+      if (catId) FAVCATS[bbl] = catId; else delete FAVCATS[bbl];
+      renderFolderBar();
+      const cat = CATS.find(c => c.id === catId);
+      if (cat) showPlusToast(`Filed under 📁 ${cat.name}.`);
+    } catch (e) { showPlusToast('Couldn’t move it — please try again.'); }
+  }
+  // small bottom sheet offered right after saving: pick a folder (or create one)
+  function showFolderToast(bbl) {
+    dismissFolderToast();
+    const t = document.createElement('div');
+    t.className = 'folder-toast'; t.id = 'folder-toast';
+    const opts = CATS.map(c =>
+      `<button type="button" data-cat="${c.id}">📁 ${escT(c.name)}</button>`).join('');
+    t.innerHTML = `<button type="button" class="ft-close" aria-label="Dismiss">✕</button>
+      <div class="ft-title">♥ Saved — add it to a folder?</div>
+      <div class="ft-opts">${opts}<button type="button" data-newcat>＋ New folder…</button></div>`;
+    document.body.appendChild(t);
+    const timer = setTimeout(dismissFolderToast, 12000);
+    t.addEventListener('click', async e => {
+      const catBtn = e.target.closest('[data-cat]');
+      if (catBtn) { clearTimeout(timer); await setBuildingFolder(bbl, catBtn.dataset.cat); dismissFolderToast(); return; }
+      if (e.target.closest('[data-newcat]')) {
+        clearTimeout(timer);
+        const name = (prompt('Folder name (e.g. "Near work", "Tour Saturday"):') || '').trim();
+        if (name) { const cat = await createFolder(name); if (cat) await setBuildingFolder(bbl, cat.id); }
+        dismissFolderToast(); return;
+      }
+      if (e.target.closest('.ft-close')) { clearTimeout(timer); dismissFolderToast(); }
+    });
+  }
+  function dismissFolderToast() { document.getElementById('folder-toast')?.remove(); }
+  function escT(s) { return String(s).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])); }
+  // chip bar above the results grid: narrows the Saved view to one folder
+  function renderFolderBar() {
+    const bar = document.getElementById('folder-bar');
+    const favOnly = document.getElementById('pill-fav').classList.contains('active');
+    if (!favOnly || sharedFolder || !authUser || !CATS.length) { bar.hidden = true; return; }
+    const counts = {};
+    for (const id of Object.values(FAVCATS)) counts[id] = (counts[id] || 0) + 1;
+    if (folderFilter && !CATS.some(c => c.id === folderFilter)) folderFilter = null;
+    bar.innerHTML =
+      `<button type="button" class="folder-chip ${folderFilter ? '' : 'active'}" data-folder="">All saved (${FAVS.size})</button>` +
+      CATS.map(c => `<button type="button" class="folder-chip ${folderFilter === c.id ? 'active' : ''}" data-folder="${c.id}">📁 ${escT(c.name)} (${counts[c.id] || 0})</button>`).join('');
+    bar.hidden = false;
   }
 
   // ---------- feature analytics ----------
@@ -1459,7 +1571,10 @@
     cluster.clearLayers();
     const layers = [];
     for (const rec of data) {
-      if (favOnly && !FAVS.has(rec.bbl)) continue;
+      // viewing a shared folder link: show exactly its buildings
+      if (sharedFolder && !sharedFolder.bbls.has(rec.bbl)) continue;
+      if (!sharedFolder && favOnly && !FAVS.has(rec.bbl)) continue;
+      if (!sharedFolder && favOnly && folderFilter && FAVCATS[rec.bbl] !== folderFilter) continue;
       if (!boroughs.has(rec.b)) continue;
       if (selectedNbs.size && !selectedNbs.has(rec.nb)) continue;
       const listed = listingCounts[rec.bbl] || 0;
@@ -1708,7 +1823,13 @@
     favPill.classList.toggle('active');
     applyFilters();
   }
-  favPill.addEventListener('click', e => { e.stopPropagation(); toggleFavFilter(); });
+  favPill.addEventListener('click', e => { e.stopPropagation(); toggleFavFilter(); renderFolderBar(); });
+  document.getElementById('folder-bar').addEventListener('click', e => {
+    const chip = e.target.closest('[data-folder]');
+    if (!chip) return;
+    folderFilter = chip.dataset.folder || null;
+    renderFolderBar(); applyFilters();
+  });
   favPill.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleFavFilter(); } });
 
   // ---------- mobile: List/Map toggle, count, sort sheet ----------
@@ -2057,6 +2178,28 @@
       showPlusToast('Couldn’t unsubscribe — please try the link again shortly.');
     }
   }
+  // shared folder links (#folder=<token>): read-only view for anyone, no sign-in
+  async function handleFolderHash() {
+    const m = location.hash.match(/[#&]folder=([0-9a-f-]{36})/i);
+    if (!m || !supaClient) return;
+    try {
+      const { data } = await supaClient.rpc('get_shared_folder', { p_token: m[1] });
+      if (!data) { showPlusToast('That folder link isn’t valid anymore.'); return; }
+      sharedFolder = { name: data.name, bbls: new Set(data.bbls || []) };
+      let b = document.getElementById('shared-banner');
+      if (!b) { b = document.createElement('div'); b.id = 'shared-banner'; b.className = 'shared-banner'; document.body.appendChild(b); }
+      b.innerHTML = `📁 Shared folder: ${escT(data.name)} — ${sharedFolder.bbls.size} home${sharedFolder.bbls.size === 1 ? '' : 's'}
+        <button type="button" class="sb-close" aria-label="Exit shared view">✕</button>`;
+      b.querySelector('.sb-close').addEventListener('click', () => {
+        sharedFolder = null; b.remove();
+        history.replaceState({}, '', location.pathname + location.search);
+        renderFolderBar(); applyFilters();
+      });
+      renderFolderBar(); applyFilters();
+      if (isMobile) setListOpen(true);
+    } catch (e) { /* bad link — leave the normal view */ }
+  }
+
   function updateAuthUI() {
     if (authUser) { authBtn.textContent = '👤 Profile'; authBtn.classList.add('signed-in'); authBtn.title = authUser.email || ''; }
     else { authBtn.textContent = 'Sign in'; authBtn.classList.remove('signed-in'); authBtn.title = ''; }
@@ -2082,8 +2225,63 @@
         profileAlerts.checked = data !== false;
       } catch (e) { /* leave off */ }
     }
+    document.getElementById('profile-folders').hidden = !plusActive;
+    if (plusActive) { await loadFolders(); renderProfileFolders(); }
     profileModal.hidden = false;
   }
+  function renderProfileFolders() {
+    const list = document.getElementById('folder-list');
+    const counts = {};
+    for (const id of Object.values(FAVCATS)) counts[id] = (counts[id] || 0) + 1;
+    list.innerHTML = CATS.length ? CATS.map(c => `
+      <div class="folder-row" data-id="${c.id}">
+        <span class="fname">📁 ${escT(c.name)}</span>
+        <span class="fcount">${counts[c.id] || 0} home${(counts[c.id] || 0) === 1 ? '' : 's'}</span>
+        <button type="button" data-act="view" title="Show on map">👁</button>
+        <button type="button" data-act="rename" title="Rename">✎</button>
+        <button type="button" data-act="share" title="Copy share link">🔗</button>
+        <button type="button" data-act="delete" title="Delete folder">🗑</button>
+      </div>`).join('')
+      : '<div style="font-size:13px;color:var(--ink-2);padding:8px 0">No folders yet — save a home and choose “New folder”, or create one above.</div>';
+  }
+  document.getElementById('folder-new').addEventListener('click', async () => {
+    const name = (prompt('Folder name (e.g. "Near work", "Tour Saturday"):') || '').trim();
+    if (name) { await createFolder(name); renderProfileFolders(); }
+  });
+  document.getElementById('folder-list').addEventListener('click', async e => {
+    const btn = e.target.closest('button[data-act]');
+    if (!btn) return;
+    const id = btn.closest('.folder-row').dataset.id;
+    const cat = CATS.find(c => c.id === id);
+    if (!cat) return;
+    if (btn.dataset.act === 'view') {
+      profileModal.hidden = true;
+      folderFilter = id;
+      const pill = document.getElementById('pill-fav');
+      if (!pill.classList.contains('active')) toggleFavFilter();
+      renderFolderBar(); applyFilters();
+    } else if (btn.dataset.act === 'rename') {
+      const name = (prompt('Rename folder:', cat.name) || '').trim();
+      if (!name || name === cat.name) return;
+      const { error } = await supaClient.from('categories').update({ name }).eq('id', id);
+      if (error) { showPlusToast('Couldn’t rename — you may already have a folder with that name.'); return; }
+      cat.name = name; CATS.sort((a, b) => a.name.localeCompare(b.name));
+      renderProfileFolders(); renderFolderBar();
+    } else if (btn.dataset.act === 'share') {
+      const link = `https://findacrib.com/#folder=${cat.share_token}`;
+      try { await navigator.clipboard.writeText(link); showPlusToast('Share link copied — anyone with it can view this folder.'); }
+      catch (_) { prompt('Copy this share link:', link); }
+      track('outbound', { kind: 'folder_share' });
+    } else if (btn.dataset.act === 'delete') {
+      if (!confirm(`Delete “${cat.name}”? The homes stay saved — they just leave the folder.`)) return;
+      const { error } = await supaClient.from('categories').delete().eq('id', id);
+      if (error) { showPlusToast('Couldn’t delete the folder — please try again.'); return; }
+      CATS = CATS.filter(c => c.id !== id);
+      for (const [bbl, cid] of Object.entries(FAVCATS)) if (cid === id) delete FAVCATS[bbl];
+      if (folderFilter === id) folderFilter = null;
+      renderProfileFolders(); renderFolderBar(); applyFilters();
+    }
+  });
   profileModal.addEventListener('click', e => {
     if (e.target === profileModal || e.target.closest('[data-profile="close"]')) profileModal.hidden = true;
   });
@@ -2093,7 +2291,9 @@
   document.getElementById('profile-signout').addEventListener('click', async () => {
     profileModal.hidden = true;
     if (supaClient) await supaClient.auth.signOut();
-    authUser = null; plusActive = false; updateAuthUI();
+    authUser = null; plusActive = false;
+    CATS = []; FAVCATS = {}; folderFilter = null;
+    updateAuthUI(); renderFolderBar();
   });
   profileAlerts.addEventListener('change', async () => {
     const want = profileAlerts.checked;
@@ -2121,10 +2321,13 @@
       catch (e) { console.warn('merge favs failed', e); }
     }
     try {
-      const { data: rows } = await supaClient.from('saved_buildings').select('bbl');
+      const { data: rows } = await supaClient.from('saved_buildings').select('bbl,category_id');
       FAVS = new Set([...(rows || []).map(r => r.bbl), ...local]);
+      FAVCATS = {};
+      for (const r of rows || []) if (r.category_id) FAVCATS[r.bbl] = r.category_id;
       saveFavs(); updateFavBadge(); refreshGrid();
     } catch (e) { console.warn('load favs failed', e); }
+    loadFolders();
   }
 
   if (window.supabase && window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
@@ -2135,6 +2338,7 @@
     refreshPlus();   // also re-checked on auth changes and on profile open
     if (authUser) loadAccountFavs();
     handleUnsubHash();
+    handleFolderHash();
     // anonymous returning-visitor analytics: a first-party id (cookie/localStorage)
     // lets us count true returning users without storing IPs. user_id is attached
     // when signed in. Bots (webdriver / crawler UAs) are not logged.

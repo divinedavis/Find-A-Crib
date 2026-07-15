@@ -166,9 +166,17 @@
   .shared-banner .sb-close { position: absolute; top: 50%; right: 10px; transform: translateY(-50%);
     background: none; border: none; color: #dbe7ff; cursor: pointer; font-size: 15px; }
   /* consolidated Filters modal: relocated pill popovers render as inline sections */
-  .filters-card { max-width: 480px; max-height: 84vh; overflow-y: auto; }
+  /* until the script moves them into the modal, the filter pills stay hidden in
+     the header (they'd otherwise flash there while the building data loads) */
+  .filter-bar #pill-borough, .filter-bar #pill-nb, .filter-bar #pill-listed,
+  .filter-bar #pill-s8, .filter-bar #pill-beds, .filter-bar #pill-viol { display: none; }
+  .filters-card { max-width: min(480px, calc(100vw - 24px)); min-width: 0; max-height: 84vh; overflow-y: auto; }
   .filters-card .filter-pill { display: block; background: none; border: none; padding: 0;
-    margin: 0 0 18px; cursor: default; font-weight: 800; font-size: 14px; color: var(--ink); }
+    margin: 0 0 18px; cursor: default; font-weight: 800; font-size: 14px; color: var(--ink);
+    white-space: normal; }
+  /* undo the .auth-card input styling (full width + padding) for filter controls */
+  .filters-card .pill-popover input[type=checkbox], .filters-card .pill-popover input[type=radio] {
+    width: auto; padding: 0; margin: 0; border: none; flex: none; font-size: inherit; }
   .filters-card .filter-pill .caret { display: none; }
   .filters-card .pill-popover { position: static !important; display: block !important;
     visibility: visible !important; opacity: 1 !important; transform: none !important;

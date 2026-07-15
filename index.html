@@ -100,6 +100,14 @@
   .auth-submit:disabled { opacity: .6; cursor: default; }
   .auth-toggle { text-align: center; font-size: 13px; color: var(--ink-2); margin-top: 14px; }
   .auth-toggle a { font-weight: 700; cursor: pointer; }
+  .auth-or { display: flex; align-items: center; gap: 10px; margin: 14px 0 10px; color: var(--ink-2); font-size: 12px; }
+  .auth-or::before, .auth-or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+  .auth-google { width: 100%; padding: 12px; background: #fff; color: #1f1f1f; border: 1px solid var(--line);
+    border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .auth-google:hover { background: #f6f6f6; }
+  .auth-google:disabled { opacity: .6; cursor: default; }
+  .auth-google svg { width: 18px; height: 18px; flex: none; }
   .paywall-card .paywall-badge { display: inline-block; font-size: 11px; letter-spacing: .04em; text-transform: uppercase;
     color: var(--blue); background: #eef3ff; border: 1px solid #cfe0ff; border-radius: 999px; padding: 3px 10px; margin-bottom: 10px; }
   .paywall-card h2 { margin: 0 0 6px; font-size: 20px; }
@@ -615,6 +623,16 @@
       <div id="auth-error" class="auth-error" hidden></div>
       <button id="auth-submit" type="submit" class="auth-submit">Sign in</button>
     </form>
+    <div class="auth-or"><span>or</span></div>
+    <button id="auth-google" type="button" class="auth-google">
+      <svg viewBox="0 0 18 18" aria-hidden="true">
+        <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/>
+        <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.32A9 9 0 0 0 9 18z"/>
+        <path fill="#FBBC05" d="M3.97 10.72a5.41 5.41 0 0 1 0-3.44V4.96H.96a9 9 0 0 0 0 8.08l3.01-2.32z"/>
+        <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.59A9 9 0 0 0 .96 4.96l3.01 2.32C4.68 5.16 6.66 3.58 9 3.58z"/>
+      </svg>
+      Continue with Google
+    </button>
     <div class="auth-toggle"><span id="auth-toggle-text">No account?</span> <a id="auth-switch" href="#">Create one</a></div>
   </div>
 </div>
@@ -1945,6 +1963,16 @@
         // ties this browser's fac_vid to the account, which is what lets
         // traffic_report.py retroactively exclude the owner's anonymous visits
         if (_evt === 'SIGNED_IN') track('signin', null);
+        // OAuth signups never hit the email-form path, so fire the Google Ads
+        // signup conversion here for accounts created moments ago via a provider.
+        if (_evt === 'SIGNED_IN' && window.gtag && GADS_SIGNUP_LABEL &&
+            authUser.app_metadata?.provider && authUser.app_metadata.provider !== 'email' &&
+            Date.now() - new Date(authUser.created_at).getTime() < 5 * 60 * 1000) {
+          gtag('event', 'conversion', {
+            send_to: 'AW-1001356637/' + GADS_SIGNUP_LABEL,
+            value: 1.0, currency: 'USD',
+          });
+        }
         closeAuthModal(); loadAccountFavs();
         // user signed in specifically to see a phone number -> take them to the paywall
         if (pendingPhoneBbl) { const b = pendingPhoneBbl; pendingPhoneBbl = null; openPaywall(b); }
@@ -1958,6 +1986,20 @@
       if (e.target === authModal || e.target.closest('[data-auth="close"]')) closeAuthModal();
     });
     authSwitch.addEventListener('click', e => { e.preventDefault(); setAuthMode(authMode === 'signin' ? 'signup' : 'signin'); });
+    document.getElementById('auth-google').addEventListener('click', async e => {
+      const btn = e.currentTarget;
+      btn.disabled = true; showAuthError('');
+      try {
+        // Redirects to Google via the Supabase callback, then back here with a
+        // session; onAuthStateChange handles the rest (works for both new and
+        // existing accounts).
+        const { error } = await supaClient.auth.signInWithOAuth({
+          provider: 'google',
+          options: { redirectTo: location.origin + '/' },
+        });
+        if (error) { showAuthError(error.message); btn.disabled = false; }
+      } catch (err) { showAuthError(err.message || 'Google sign-in failed.'); btn.disabled = false; }
+    });
     authForm.addEventListener('submit', async e => {
       e.preventDefault();
       const email = authEmail.value.trim(), pass = authPass.value;

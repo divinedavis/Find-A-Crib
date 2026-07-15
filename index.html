@@ -242,6 +242,7 @@
   #pill-listed .pill-popover, #pill-beds .pill-popover, #pill-viol .pill-popover { left: auto; right: 0; }
   .pill-popover .sheet-group-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--ink-2); margin: 2px 2px 4px; }
   .pill-popover label.row { display: flex; align-items: center; gap: 8px; padding: 4px 2px; font-size: 13px; font-weight: 500; cursor: pointer; }
+  .pill-popover label.row[hidden] { display: none; }   /* [hidden] loses to display:flex without this */
   .pill-popover label.row:hover { background: var(--blue-soft); border-radius: 4px; }
   .pill-popover input[type=checkbox] { accent-color: var(--blue); }
   .pill-popover .scroll { max-height: 320px; overflow-y: auto; margin: 0 -6px; padding: 0 6px; }
@@ -367,7 +368,9 @@
   .popup-actions a.secondary { background: #fff; color: var(--blue); }
   .popup-actions a.secondary:hover { background: var(--blue-soft); }
   .leaflet-popup-content-wrapper { min-width: 260px; max-width: 360px; }
-  .leaflet-popup-content { max-height: 520px; overflow-y: auto; }
+  /* never taller than the visible map, so the whole popup stays reachable;
+     long content scrolls inside instead of vanishing under the header */
+  .leaflet-popup-content { max-height: min(56vh, 520px); overflow-y: auto; }
 
   .hpd-section { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
   .hpd-section h4 { margin: 0 0 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--ink-2); }
@@ -584,9 +587,10 @@
   .d-price { font-size: 26px; font-weight: 800; letter-spacing: -.6px; }
   .price.est, .card-price.est { color: #4a5568; font-weight: 700; }
   .card .price.est { font-size: 14px; }
+  /* one consistent size for everything in the header except the price */
   .d-key { font-size: 14px; color: var(--ink); font-weight: 600; margin-top: 4px; }
-  .d-addr { font-size: 15px; margin-top: 8px; }
-  .d-sub { font-size: 13px; color: var(--ink-2); margin-top: 2px; }
+  .d-addr { font-size: 14px; font-weight: 600; margin-top: 8px; }
+  .d-sub { font-size: 14px; color: var(--ink-2); margin-top: 2px; }
   .d-actions { display: flex; gap: 8px; padding: 14px 18px; }
   .d-actions a, .d-actions button { flex: 1 1 0; min-width: 0; text-align: center; padding: 12px; border-radius: 8px; font-size: 14px;
     font-weight: 700; border: 1px solid var(--blue); cursor: pointer; text-decoration: none; white-space: nowrap; }
@@ -689,6 +693,21 @@
 <main>
   <div id="map"></div>
   <aside class="results">
+    <div class="results-head">
+      <div class="sub" id="results-sub">Loading…</div>
+      <label class="sort">Sort
+        <select id="sort-select" aria-label="Sort buildings">
+          <option value="loc">By location</option>
+          <option value="price-asc">Price (low → high)</option>
+          <option value="price-desc">Price (high → low)</option>
+          <option value="viol-desc">Violations (most first)</option>
+          <option value="viol-asc">Violations (fewest first)</option>
+          <option value="comp-desc">Complaints (most first)</option>
+          <option value="yr-asc">Year built (oldest first)</option>
+          <option value="yr-desc">Year built (newest first)</option>
+        </select>
+      </label>
+    </div>
     <div id="folder-bar" hidden></div>
     <div class="results-grid empty-state" id="grid"><div class="empty">Loading 30k buildings…</div></div>
     <div class="footer-credit" id="credit">Source: NYC Rent Guidelines Board / DHCR 2024 · Coordinates from <a href="https://www.nyc.gov/site/planning/data-maps/open-data.page" target="_blank" rel="noopener">NYC PLUTO</a> · Listings via Zumper (nightly) · Owner/violation/complaint data from <a href="https://data.cityofnewyork.us/" target="_blank" rel="noopener">NYC Open Data — HPD</a> · Voucher listings via <a href="https://www.affordablehousing.com" target="_blank" rel="noopener">AffordableHousing.com</a> · Subsidized-building data from HPD &amp; HUD · Rent estimates: <a href="https://www.huduser.gov/portal/datasets/fmr/smallarea/index.html" target="_blank" rel="noopener">HUD FY2026 Small-Area Fair Market Rents</a> by ZIP (not building-specific)</div>
@@ -840,6 +859,8 @@
     <button class="sheet-opt" data-v="comp-desc">Open complaints (most first)</button>
     <button class="sheet-opt" data-v="price-asc">Price (low → high)</button>
     <button class="sheet-opt" data-v="price-desc">Price (high → low)</button>
+    <button class="sheet-opt" data-v="yr-asc">Year built (oldest first)</button>
+    <button class="sheet-opt" data-v="yr-desc">Year built (newest first)</button>
   </div>
 </div>
 <div id="detail-sheet" hidden>
@@ -1168,7 +1189,11 @@
     m.setIcon(markerIcon(m));
     // mobile: tapping a pin slides up a listing card (StreetEasy-style) instead of a popup
     if (isMobile) m.on('click', () => openCard(m));
-    else m.bindPopup(() => buildPopup(rec, listed));
+    else m.bindPopup(() => buildPopup(rec, listed), {
+      // auto-pan clear of the sticky header so the popup top is never cut off
+      autoPanPaddingTopLeft: L.point(12, 72),
+      autoPanPaddingBottomRight: L.point(12, 12),
+    });
     markerByBbl.set(rec.bbl, m);
   }
 
@@ -1381,15 +1406,33 @@
   const PRESET_NB = ['Bed-Stuy (West)', 'Bed-Stuy (East)', 'Williamsburg', 'East Village', 'SoHo', 'Nolita'];
   // Build neighborhood list
   const nbCounts = {};
-  for (const rec of data) if (rec.nb) nbCounts[rec.nb] = (nbCounts[rec.nb]||0) + 1;
+  const nbBoros = {};   // neighborhood -> borough codes it spans
+  for (const rec of data) if (rec.nb) {
+    nbCounts[rec.nb] = (nbCounts[rec.nb]||0) + 1;
+    (nbBoros[rec.nb] = nbBoros[rec.nb] || new Set()).add(rec.b);
+  }
   const nbList = Object.entries(nbCounts).sort((a, b) => a[0].localeCompare(b[0]));
   const nbListEl = document.getElementById('nb-list');
   for (const [name, n] of nbList) {
     const id = 'nb-' + name.replace(/[^a-z0-9]/gi,'_');
     const lab = document.createElement('label');
     lab.className = 'row';
+    lab.dataset.boros = [...nbBoros[name]].join(',');
     lab.innerHTML = `<input type="checkbox" value="${esc(name)}"> <span>${esc(name)} <span style="color:#888;font-weight:400">(${n.toLocaleString()})</span></span>`;
     nbListEl.appendChild(lab);
+  }
+  // the Neighborhood list follows the Borough selection in real time; a
+  // neighborhood that gets hidden also gets unchecked (it would zero results)
+  function syncNbVisibility() {
+    const boros = new Set([...document.querySelectorAll('#borough-list input:checked')].map(c => c.dataset.b));
+    let unchecked = false;
+    nbListEl.querySelectorAll('label.row').forEach(lab => {
+      const show = (lab.dataset.boros || '').split(',').some(b => boros.has(b));
+      lab.hidden = !show;
+      const cb = lab.querySelector('input');
+      if (!show && cb.checked) { cb.checked = false; unchecked = true; }
+    });
+    return unchecked;
   }
 
   // popover behavior. On mobile we portal the open popover to <body> and show it via
@@ -1420,7 +1463,12 @@
   document.addEventListener('click', closeAllPills);
 
   // borough toggles
-  document.querySelectorAll('#borough-list input').forEach(cb => cb.addEventListener('change', () => { updateBoroughBadge(); applyFilters(); }));
+  document.querySelectorAll('#borough-list input').forEach(cb => cb.addEventListener('change', () => {
+    updateBoroughBadge();
+    if (syncNbVisibility()) updateNbBadge();   // borough change narrows the nb list live
+    applyFilters();
+  }));
+  syncNbVisibility();
   function updateBoroughBadge() {
     const n = document.querySelectorAll('#borough-list input:checked').length;
     document.getElementById('badge-borough').textContent = n;
@@ -1927,12 +1975,22 @@
         visible.sort((x, y) => openComps(y) - openComps(x));
       } else if (sortMode === 'price-asc' || sortMode === 'price-desc') {
         const dir = sortMode === 'price-asc' ? 1 : -1;
+        // real asking rent when advertised, else the ZIP's HUD estimate midpoint
+        const priceOf = r => listingPrices[r.bbl] ?? (FMR[r.z] ? (FMR[r.z][0] + FMR[r.z][2]) / 2 : null);
         visible.sort((x, y) => {
-          const px = listingPrices[x.bbl], py = listingPrices[y.bbl];
-          if (px == null && py == null) return 0;   // buildings with no advertised rent sort last
+          const px = priceOf(x), py = priceOf(y);
+          if (px == null && py == null) return 0;   // unpriceable buildings sort last
           if (px == null) return 1;
           if (py == null) return -1;
           return (px - py) * dir;
+        });
+      } else if (sortMode === 'yr-asc' || sortMode === 'yr-desc') {
+        const dir = sortMode === 'yr-asc' ? 1 : -1;
+        visible.sort((x, y) => {
+          if (x.yr == null && y.yr == null) return 0;
+          if (x.yr == null) return 1;   // unknown year sorts last either way
+          if (y.yr == null) return -1;
+          return (x.yr - y.yr) * dir;
         });
       }
     }
@@ -2108,7 +2166,15 @@
   const sortSheet = document.getElementById('sort-sheet');
   function markSortOpts() {
     sortSheet.querySelectorAll('.sheet-opt').forEach(o => o.classList.toggle('active', o.dataset.v === sortMode));
+    const sel = document.getElementById('sort-select');
+    if (sel) sel.value = sortMode;
   }
+  // desktop sort dropdown in the results header (mirrors the mobile sheet)
+  document.getElementById('sort-select').addEventListener('change', e => {
+    sortMode = e.target.value;
+    markSortOpts();
+    refreshGrid();
+  });
   sortBtn.addEventListener('click', () => { markSortOpts(); sortSheet.hidden = false; });
   sortSheet.addEventListener('click', e => {
     if (e.target === sortSheet || e.target.closest('#sort-close')) { sortSheet.hidden = true; return; }

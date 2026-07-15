@@ -1208,6 +1208,36 @@
     return `<div>${esc(c.name)}</div>${addr}${phone}`;
   }
 
+  // Operator contacts (owner/manager/officer) are lazy-loaded: they were 79%
+  // of buildings.min.json, so the map file now carries only h.op=1 and the
+  // details come from the hpd_contacts table when a building is opened.
+  const CONTACTS = new Map();   // bbl -> {owner,manager,officer} | null
+  function operatorRows(c, bbl) {
+    if (!c || !(c.owner || c.manager || c.officer)) {
+      return '<div class="hpd-row" style="color:var(--ink-2)">No operator contacts on file.</div>';
+    }
+    const ownerRow = c.owner ? `<div class="hpd-row"><span class="label">Owner</span> · ${esc(c.owner.type || '')}<br>${hpdContact(c.owner)}</div>` : '';
+    const managerRow = c.manager ? `<div class="hpd-row"><span class="label">Managing agent</span><br>${hpdContact(c.manager, bbl)}</div>` : '';
+    const officerRow = c.officer ? `<div class="hpd-row"><span class="label">${esc(c.officer.type || 'Head officer')}</span><br>${hpdContact(c.officer)}</div>` : '';
+    return ownerRow + managerRow + officerRow;
+  }
+  async function loadOperator(bbl, attempt = 0) {
+    // deep-links render the detail before the Supabase client exists — retry briefly
+    if (!supaClient) {
+      if (attempt < 10) setTimeout(() => loadOperator(bbl, attempt + 1), 500);
+      return;
+    }
+    if (!CONTACTS.has(bbl)) {
+      try {
+        const { data, error } = await supaClient.from('hpd_contacts')
+          .select('owner,manager,officer').eq('bbl', bbl).maybeSingle();
+        if (error) return;              // leave "Loading…"; retried on next open
+        CONTACTS.set(bbl, data || null);
+      } catch (e) { return; }
+    }
+    document.querySelectorAll(`[data-op="${bbl}"]`)
+      .forEach(el => { el.innerHTML = operatorRows(CONTACTS.get(bbl), bbl); });
+  }
   function hpdHtml(rec) {
     const h = rec.h;
     if (!h) {
@@ -1216,9 +1246,11 @@
         <div class="hpd-link"><a href="https://hpdonline.nyc.gov/hpdonline/" target="_blank" rel="noopener">Search HPD Online ↗</a></div>
       </div>`;
     }
-    const ownerRow = h.owner ? `<div class="hpd-row"><span class="label">Owner</span> · ${esc(h.owner.type || '')}<br>${hpdContact(h.owner)}</div>` : '';
-    const managerRow = h.manager ? `<div class="hpd-row"><span class="label">Managing agent</span><br>${hpdContact(h.manager, rec.bbl)}</div>` : '';
-    const officerRow = h.officer ? `<div class="hpd-row"><span class="label">${esc(h.officer.type || 'Head officer')}</span><br>${hpdContact(h.officer)}</div>` : '';
+    const opInner = CONTACTS.has(rec.bbl)
+      ? operatorRows(CONTACTS.get(rec.bbl), rec.bbl)
+      : (h.op ? '<div class="hpd-row" style="color:var(--ink-2)">Loading operator…</div>'
+              : '<div class="hpd-row" style="color:var(--ink-2)">No operator contacts on file.</div>');
+    if (h.op && !CONTACTS.has(rec.bbl)) loadOperator(rec.bbl);
     const v = h.violations;
     const c = h.complaints;
     const vChips = v ? `
@@ -1243,21 +1275,19 @@
       <span class="hpd-stat">${c.total} all-time</span>
       ${c.last_12mo ? `<span class="hpd-stat">${c.last_12mo} in last 12mo</span>` : ''}
     ` : '<span style="color:var(--ink-2);font-size:11px">No complaints on file.</span>';
-    const link = h.hpd_url
-      ? `<div class="hpd-link"><a href="${h.hpd_url}" target="_blank" rel="noopener">Full HPD Online record ↗</a></div>`
+    const link = h.bid
+      ? `<div class="hpd-link"><a href="https://hpdonline.nyc.gov/hpdonline/building/${esc(h.bid)}/overview" target="_blank" rel="noopener">Full HPD Online record ↗</a></div>`
       : `<div class="hpd-link"><a href="https://hpdonline.nyc.gov/hpdonline/" target="_blank" rel="noopener">Search HPD Online ↗</a></div>`;
     const regDate = h.lastregistration ? `<div class="popup-meta" style="margin-top:4px;font-size:11px">Last registered ${esc(h.lastregistration)}</div>` : '';
     // Portfolio research (Plus): aggregates live in private tables, fetched via
     // the has_plus-gated get_research() RPC — non-subscribers get the paywall.
-    const researchBtn = (h.owner || h.manager)
+    const researchBtn = h.op
       ? `<button type="button" class="hpd-research-btn" data-research data-bbl="${esc(rec.bbl)}">🔎 Research this owner &amp; agent</button>`
       : '';
     return `
       <div class="hpd-section">
         <h4>Building operator</h4>
-        ${ownerRow}
-        ${managerRow}
-        ${officerRow}
+        <div class="hpd-op" data-op="${esc(rec.bbl)}">${opInner}</div>
         ${regDate}
         ${researchBtn}
       </div>
@@ -2279,6 +2309,10 @@
   let authMode = 'signin';
   // Google Ads "Sign up" conversion label (from Tools > Conversions).
   const GADS_SIGNUP_LABEL = 'Flj6CMyn38YcEN36vd0D';
+  // Google Ads "Plus purchase" conversion label — create a Purchase-category
+  // conversion action in Google Ads and paste its label here; until then the
+  // purchase conversion is a safe no-op (same pattern as the signup label).
+  const GADS_PLUS_LABEL = '';
 
   function showAuthError(msg) { authErr.textContent = msg || ''; authErr.hidden = !msg; }
   function setAuthMode(m) {
@@ -2345,9 +2379,13 @@
     setTimeout(() => t.classList.remove('show'), 6000);
   }
   // returning from Stripe Checkout
+  let plusPurchasePending = false;   // fires the Ads purchase conversion once the session loads
   (function () {
     const p = new URLSearchParams(location.search);
-    if (p.get('plus') === 'success') showPlusToast('🎉 You’re now Find A Crib Plus — agent phone numbers are unlocked. Tap “Show number” to view.');
+    if (p.get('plus') === 'success') {
+      showPlusToast('🎉 You’re now Find A Crib Plus — agent phone numbers are unlocked. Tap “Show number” to view.');
+      plusPurchasePending = true;
+    }
     if (p.has('plus')) { p.delete('plus'); history.replaceState({}, '', location.pathname + (p.toString() ? '?' + p : '')); }
   })();
   // one-click unsubscribe from saved-building alert emails (#unsub=<token>)
@@ -2523,6 +2561,17 @@
     authUser = session?.user || null;
     updateAuthUI();
     refreshPlus();   // also re-checked on auth changes and on profile open
+    // Google Ads purchase conversion for a completed Plus checkout ($4.99).
+    // Enhanced conversions: pass the account email (Google hashes it) so the
+    // purchase can be matched back to the ad click.
+    if (plusPurchasePending && window.gtag && GADS_PLUS_LABEL) {
+      if (authUser?.email) gtag('set', 'user_data', { email: authUser.email });
+      gtag('event', 'conversion', {
+        send_to: 'AW-1001356637/' + GADS_PLUS_LABEL,
+        value: 4.99, currency: 'USD',
+        transaction_id: authUser ? authUser.id : undefined,
+      });
+    }
     if (authUser) loadAccountFavs();
     handleUnsubHash();
     handleFolderHash();
@@ -2552,6 +2601,7 @@
         if (_evt === 'SIGNED_IN' && window.gtag && GADS_SIGNUP_LABEL &&
             authUser.app_metadata?.provider && authUser.app_metadata.provider !== 'email' &&
             Date.now() - new Date(authUser.created_at).getTime() < 5 * 60 * 1000) {
+          if (authUser.email) gtag('set', 'user_data', { email: authUser.email });  // enhanced conversions
           gtag('event', 'conversion', {
             send_to: 'AW-1001356637/' + GADS_SIGNUP_LABEL,
             value: 1.0, currency: 'USD',
@@ -2602,6 +2652,7 @@
           // into GADS_SIGNUP_LABEL below (e.g. 'AbC-D_efGh'); the conversion is
           // a no-op until it's set, so the base tag stays safe to ship now.
           if (authMode === 'signup' && window.gtag && GADS_SIGNUP_LABEL) {
+            gtag('set', 'user_data', { email });   // enhanced conversions (hashed by Google)
             gtag('event', 'conversion', {
               send_to: 'AW-1001356637/' + GADS_SIGNUP_LABEL,
               value: 1.0, currency: 'USD',

@@ -31,15 +31,26 @@ for r in records:
     }
     h = hpd.get(r["bbl"])
     if h:
-        # Phone numbers are a paid feature: never ship the actual number in the
-        # public file. Convert any contact phone to a has_phone boolean flag.
-        for role in ("owner", "manager", "officer"):
-            c = h.get(role)
-            if isinstance(c, dict):
-                c.pop("phone_confidence", None)
-                if c.pop("phone", None):
-                    c["has_phone"] = True
-        rec["h"] = h
+        # Operator contacts (owner/manager/officer) were 79% of this file.
+        # They now live in the hpd_contacts Supabase table (uploaded by
+        # build_hpd_contacts.py) and are lazy-loaded per building; h.op=1
+        # tells the frontend contacts exist. Keep only what the map needs:
+        # violation/complaint counts (filters, sort, cards), the HPD link,
+        # and the registration date.
+        slim_h = {}
+        for k in ("violations", "complaints"):
+            counts = h.get(k)
+            if isinstance(counts, dict):
+                # "closed" is never used by the frontend; drop it
+                slim_h[k] = {ck: cv for ck, cv in counts.items() if ck != "closed"}
+        if h.get("lastregistration"):
+            slim_h["lastregistration"] = h["lastregistration"]
+        # hpd_url is reconstructed client-side from the building id (saves ~2.5MB)
+        if h.get("buildingid"):
+            slim_h["bid"] = h["buildingid"]
+        if any(h.get(role) for role in ("owner", "manager", "officer")):
+            slim_h["op"] = 1
+        rec["h"] = slim_h
     slim.append(rec)
 
 OUT.write_text(json.dumps(slim, separators=(",", ":")))

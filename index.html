@@ -852,7 +852,8 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js"></script>
+<!-- ?v= busts the 7-day JS browser cache — bump it whenever a key in config.js rotates -->
+<script src="config.js?v=2"></script>
 <script>
 (async function () {
   // ---------- map ----------

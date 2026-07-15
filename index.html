@@ -165,6 +165,19 @@
     font-weight: 600; box-shadow: 0 6px 20px rgba(0,0,0,.3); max-width: 92vw; }
   .shared-banner .sb-close { position: absolute; top: 50%; right: 10px; transform: translateY(-50%);
     background: none; border: none; color: #dbe7ff; cursor: pointer; font-size: 15px; }
+  /* consolidated Filters modal: relocated pill popovers render as inline sections */
+  .filters-card { max-width: 480px; max-height: 84vh; overflow-y: auto; }
+  .filters-card .filter-pill { display: block; background: none; border: none; padding: 0;
+    margin: 0 0 18px; cursor: default; font-weight: 800; font-size: 14px; color: var(--ink); }
+  .filters-card .filter-pill .caret { display: none; }
+  .filters-card .pill-popover { position: static !important; display: block !important;
+    visibility: visible !important; opacity: 1 !important; transform: none !important;
+    box-shadow: none; border: 1px solid var(--line); border-radius: 10px;
+    margin-top: 8px; padding: 10px 12px; width: auto; max-width: none; }
+  .filters-actions { display: flex; gap: 10px; margin-top: 4px; }
+  .filters-actions #filters-reset { flex: 1; background: #fff; border: 1px solid var(--line);
+    border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .filters-actions #filters-done { flex: 1.4; margin: 0; }
   .paywall-card .paywall-badge { display: inline-block; font-size: 11px; letter-spacing: .04em; text-transform: uppercase;
     color: var(--blue); background: #eef3ff; border: 1px solid #cfe0ff; border-radius: 999px; padding: 3px 10px; margin-bottom: 10px; }
   .paywall-card h2 { margin: 0 0 6px; font-size: 20px; }
@@ -326,12 +339,14 @@
   }
   /* transparent hit area fills the icon (sized in JS); centers the visible dot so the whole box is tappable */
   .building-dot-hit { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
-  .building-dot {
-    width: 11px; height: 11px; background: #7c8aa3; border: 1px solid #fff;
-    border-radius: 50%; box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  /* white unit-count pill for buildings with no active listing — same shape and
+     height as the blue listed pill so every building is an easy tap target */
+  .unit-pill {
+    background: #fff; color: var(--ink); font-weight: 700; font-size: 11px;
+    padding: 4px 8px; border-radius: 999px; white-space: nowrap;
+    box-shadow: 0 2px 6px rgba(0,0,0,.28); border: 1.5px solid #9aa7bd;
+    display: inline-block;
   }
-  /* bigger, more visible dot on touch devices where the finger target matters most */
-  @media (pointer: coarse) { .building-dot { width: 15px; height: 15px; border-width: 2px; } }
   .leaflet-div-icon { background: transparent; border: none; }
   .leaflet-popup-content { font-family: inherit; }
   .popup-addr { font-weight: 700; font-size: 15px; }
@@ -530,12 +545,19 @@
   .building-dot.selected { background: var(--ink); width: 18px; height: 18px; border-width: 2px; }
   @media (min-width: 901px) { #building-card { display: none !important; } }
 
-  /* full-screen building detail page (Zillow-style PDP) */
+  /* building detail (Zillow-style PDP): full-screen page on mobile,
+     centered popup over a dimmed backdrop on desktop (click outside closes) */
   #detail-sheet {
-    position: fixed; inset: 0; z-index: 1800; background: #fff;
-    display: flex; flex-direction: column;
+    position: fixed; inset: 0; z-index: 1800;
+    display: flex;
   }
   #detail-sheet[hidden] { display: none; }
+  .detail-shell { display: flex; flex-direction: column; background: #fff; width: 100%; height: 100%; min-height: 0; }
+  @media (min-width: 901px) {
+    #detail-sheet { background: rgba(13, 20, 33, .55); align-items: center; justify-content: center; padding: 28px; }
+    .detail-shell { width: min(780px, 94vw); height: auto; max-height: 88vh;
+      border-radius: 16px; overflow: hidden; box-shadow: 0 24px 64px rgba(0,0,0,.45); }
+  }
   .detail-bar {
     position: sticky; top: 0; z-index: 2; display: flex; justify-content: space-between; align-items: center;
     padding: 8px 12px; background: #fff; border-bottom: 1px solid var(--line);
@@ -582,6 +604,10 @@
     <div class="filter-pill toggle-pill" id="pill-fav" role="button" tabindex="0">
       <span class="fav-heart">♡</span> Saved <span class="count-badge" id="badge-fav" style="display:none">0</span>
     </div>
+    <div class="filter-pill" id="pill-filters" role="button" tabindex="0">
+      ⚲ Filters <span class="count-badge" id="filters-count" style="display:none">0</span>
+    </div>
+    <div class="filter-pill" id="pill-save-search" role="button" tabindex="0">🔖 Save search</div>
     <div class="filter-pill" id="pill-borough">
       Borough <span class="count-badge" id="badge-borough">5</span><span class="caret">▾</span>
       <div class="pill-popover">
@@ -714,6 +740,19 @@
     <p class="paywall-fine">Cancel anytime. Billed monthly via Stripe.</p>
   </div>
 </div>
+<!-- Zillow-style consolidated filters modal (the pill popovers are moved in
+     here at init, so every filter keeps its existing live-apply listeners) -->
+<div id="filters-modal" class="auth-backdrop" hidden>
+  <div class="auth-card filters-card">
+    <button class="auth-close" data-filters="close" aria-label="Close">✕</button>
+    <h2>Filters</h2>
+    <div id="filters-body"></div>
+    <div class="filters-actions">
+      <button id="filters-reset" type="button">Reset all filters</button>
+      <button id="filters-done" type="button" class="auth-submit">Show results</button>
+    </div>
+  </div>
+</div>
 <!-- profile (signed-in account) -->
 <div id="profile-modal" class="auth-backdrop" hidden>
   <div class="auth-card">
@@ -728,6 +767,10 @@
         <div class="profile-feat-sub">Get an email when a building you saved is listed for rent.</div>
       </div>
       <label class="switch"><input id="profile-alerts" type="checkbox"><span class="slider"></span></label>
+    </div>
+    <div id="profile-searches" hidden>
+      <div class="profile-row" style="border-bottom:none;padding-bottom:4px"><span class="label">Saved searches</span></div>
+      <div id="search-list"></div>
     </div>
     <div id="profile-folders" hidden>
       <div class="profile-row" style="border-bottom:none;padding-bottom:4px">
@@ -790,11 +833,13 @@
   </div>
 </div>
 <div id="detail-sheet" hidden>
-  <div class="detail-bar">
-    <button class="detail-icon" data-detail="close" aria-label="Back">‹</button>
-    <button class="detail-icon detail-fav" data-detail="fav" aria-label="Save">♡</button>
+  <div class="detail-shell">
+    <div class="detail-bar">
+      <button class="detail-icon" data-detail="close" aria-label="Back">‹</button>
+      <button class="detail-icon detail-fav" data-detail="fav" aria-label="Save">♡</button>
+    </div>
+    <div class="detail-scroll" id="detail-content"></div>
   </div>
-  <div class="detail-scroll" id="detail-content"></div>
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
@@ -1041,26 +1086,40 @@
     },
   });
 
-  // 44px finger-friendly tap target on touch devices, 24px on desktop for precision; visible dot stays small + centered
-  const DOT = window.matchMedia('(pointer: coarse)').matches ? 44 : 24;
-  const dotIcon = L.divIcon({ className: '', html: '<div class="building-dot-hit"><div class="building-dot"></div></div>', iconSize: [DOT, DOT], iconAnchor: [DOT/2, DOT/2] });
-  function listedIcon(n) {
-    const text = `${n} listed`;
-    const w = text.length * 6 + 16;
+  // Zillow-style pills for EVERY building — uniform height, easy to tap.
+  // Listed buildings: blue pill with the asking rent (or "N listed");
+  // everything else: white pill with the apartment count. The transparent
+  // hit wrapper pads the tap target to 44px on touch devices.
+  const DOT = window.matchMedia('(pointer: coarse)').matches ? 44 : 28;
+  function pillIcon(html, textLen) {
+    const w = Math.max(textLen * 6 + 24, 34);
     return L.divIcon({
       className: '',
-      html: `<div class="price-pill">${text}</div>`,
-      iconSize: [w, 22], iconAnchor: [w/2, 11],
+      html: `<div class="building-dot-hit">${html}</div>`,
+      iconSize: [w, DOT], iconAnchor: [w / 2, DOT / 2],
     });
+  }
+  function listedIcon(n, bbl) {
+    const price = listingPrices[bbl];
+    const text = price ? fmtRent(price) : `${n} listed`;
+    return pillIcon(`<div class="price-pill">${text}</div>`, text.length);
+  }
+  function unitIcon(rec) {
+    const text = rec.u != null ? `${rec.u} unit${rec.u === 1 ? '' : 's'}` : 'bldg';
+    return pillIcon(`<div class="unit-pill">${text}</div>`, text.length);
+  }
+  function markerIcon(m) {
+    return m._listed > 0 ? listedIcon(m._listed, m._rec.bbl) : unitIcon(m._rec);
   }
 
   const isMobile = window.matchMedia('(max-width: 900px)').matches;
   const markerByBbl = new Map();
   for (const rec of data) {
     const listed = listingCounts[rec.bbl] || 0;
-    const m = L.marker([rec.lat, rec.lng], { icon: listed > 0 ? listedIcon(listed) : dotIcon });
+    const m = L.marker([rec.lat, rec.lng], { icon: null });
     m._rec = rec;
     m._listed = listed;
+    m.setIcon(markerIcon(m));
     // mobile: tapping a pin slides up a listing card (StreetEasy-style) instead of a popup
     if (isMobile) m.on('click', () => openCard(m));
     else m.bindPopup(() => buildPopup(rec, listed));
@@ -1380,8 +1439,124 @@
   document.querySelectorAll('input[name="pv-comp"], input[name="fs-comp"]').forEach(r =>
     r.addEventListener('change', () => { if (r.checked) { moreFilters.comp = r.value; syncMoreUI(); applyFilters(); } }));
 
-  // mobile FAB opens the sheet; backdrop tap or "Show results" closes it; "Clear" resets
-  document.getElementById('btn-filters').addEventListener('click', () => { closeAllPills(); filterSheet.hidden = false; });
+  // ---------- Zillow-style consolidated Filters modal ----------
+  // Physically move the pill popovers into the modal: the inputs keep their
+  // ids/names and live-apply listeners, so no filter logic changes.
+  const filtersModal = document.getElementById('filters-modal');
+  const filtersBody = document.getElementById('filters-body');
+  ['pill-borough', 'pill-nb', 'pill-listed', 'pill-s8', 'pill-beds', 'pill-viol']
+    .forEach(id => { const el = document.getElementById(id); if (el) filtersBody.appendChild(el); });
+  function openFilters() { closeAllPills(); filtersModal.hidden = false; }
+  function updateFiltersCount() {
+    let n = 0;
+    if (document.querySelectorAll('#borough-list input:checked').length < 5) n++;
+    if (nbListEl.querySelectorAll('input:checked').length) n++;
+    if (document.querySelector('input[name="listed"]:checked').value !== 'any') n++;
+    if (document.querySelector('input[name="s8"]:checked').value !== 'any') n++;
+    if (document.querySelectorAll('input[name="beds"]:checked').length) n++;
+    n += moreFilterCount();
+    const b = document.getElementById('filters-count');
+    b.textContent = n; b.style.display = n ? '' : 'none';
+    document.getElementById('pill-filters').classList.toggle('active', n > 0);
+  }
+  filtersBody.addEventListener('change', updateFiltersCount);
+  document.getElementById('pill-filters').addEventListener('click', e => { e.stopPropagation(); openFilters(); });
+  filtersModal.addEventListener('click', e => {
+    if (e.target === filtersModal || e.target.closest('[data-filters="close"]') || e.target.closest('#filters-done')) {
+      filtersModal.hidden = true; return;
+    }
+    if (e.target.closest('#filters-reset')) resetAllFilters();
+  });
+  function resetAllFilters() {
+    document.querySelectorAll('#borough-list input').forEach(c => { c.checked = true; });
+    document.querySelector('#borough-list input').dispatchEvent(new Event('change', { bubbles: true }));
+    document.getElementById('nb-clear').click();
+    const l = document.querySelector('input[name="listed"][value="any"]');
+    l.checked = true; l.dispatchEvent(new Event('change', { bubbles: true }));
+    const s = document.querySelector('input[name="s8"][value="any"]');
+    s.checked = true; s.dispatchEvent(new Event('change', { bubbles: true }));
+    document.querySelectorAll('input[name="beds"]:checked').forEach(c => { c.checked = false; });
+    document.querySelector('input[name="beds"]').dispatchEvent(new Event('change', { bubbles: true }));
+    moreFilters.viol = 'any'; moreFilters.comp = 'any'; syncMoreUI();
+    applyFilters(); updateFiltersCount();
+  }
+
+  // ---------- saved searches (Plus): capture + reapply the whole search ----------
+  function captureSearch() {
+    return {
+      q: document.getElementById('q').value.trim(),
+      boroughs: [...document.querySelectorAll('#borough-list input:checked')].map(c => c.dataset.b),
+      nbs: [...nbListEl.querySelectorAll('input:checked')].map(c => c.value),
+      listed: document.querySelector('input[name="listed"]:checked').value,
+      s8: document.querySelector('input[name="s8"]:checked').value,
+      beds: [...document.querySelectorAll('input[name="beds"]:checked')].map(c => +c.value),
+      viol: moreFilters.viol, comp: moreFilters.comp,
+      center: [map.getCenter().lat, map.getCenter().lng], zoom: map.getZoom(),
+    };
+  }
+  function applySearch(p) {
+    document.getElementById('q').value = p.q || '';
+    document.querySelectorAll('#borough-list input').forEach(c => { c.checked = (p.boroughs || []).includes(c.dataset.b); });
+    document.querySelector('#borough-list input').dispatchEvent(new Event('change', { bubbles: true }));
+    nbListEl.querySelectorAll('input').forEach(c => { c.checked = (p.nbs || []).includes(c.value); });
+    nbListEl.dispatchEvent(new Event('change', { bubbles: true }));
+    const l = document.querySelector(`input[name="listed"][value="${p.listed || 'any'}"]`);
+    if (l) { l.checked = true; l.dispatchEvent(new Event('change', { bubbles: true })); }
+    const s = document.querySelector(`input[name="s8"][value="${p.s8 || 'any'}"]`);
+    if (s) { s.checked = true; s.dispatchEvent(new Event('change', { bubbles: true })); }
+    document.querySelectorAll('input[name="beds"]').forEach(c => { c.checked = (p.beds || []).includes(+c.value); });
+    document.querySelector('input[name="beds"]').dispatchEvent(new Event('change', { bubbles: true }));
+    moreFilters.viol = p.viol || 'any'; moreFilters.comp = p.comp || 'any'; syncMoreUI();
+    if (p.center) map.setView(p.center, p.zoom || map.getZoom(), { animate: false });
+    applyFilters(); updateFiltersCount();
+  }
+  document.getElementById('pill-save-search').addEventListener('click', async e => {
+    e.stopPropagation();
+    if (!authUser) { openAuthModal('Saving searches is a Plus feature — sign in to get started.'); return; }
+    if (!plusActive) { openPaywall(null); return; }
+    const name = (prompt('Name this search (e.g. "BK 2BR, no violations"):') || '').trim();
+    if (!name) return;
+    const { error } = await supaClient.from('saved_searches')
+      .insert({ user_id: authUser.id, name, params: captureSearch() });
+    showPlusToast(error ? 'Couldn’t save the search — please try again.'
+                        : `🔖 “${name}” saved — reapply it anytime from your profile.`);
+  });
+  async function renderProfileSearches() {
+    const list = document.getElementById('search-list');
+    let rows = [];
+    try {
+      const { data } = await supaClient.from('saved_searches')
+        .select('id,name,params').order('created_at', { ascending: false });
+      rows = data || [];
+    } catch (e) { /* section just renders empty */ }
+    list._rows = rows;
+    list.innerHTML = rows.length ? rows.map(r => `
+      <div class="folder-row" data-sid="${r.id}">
+        <span class="fname">🔖 ${escT(r.name)}</span>
+        <button type="button" data-sact="apply">Apply</button>
+        <button type="button" data-sact="delete" title="Delete">🗑</button>
+      </div>`).join('')
+      : '<div style="font-size:13px;color:var(--ink-2);padding:8px 0">No saved searches yet — set your filters, then hit 🔖 Save search.</div>';
+  }
+  document.getElementById('search-list').addEventListener('click', async e => {
+    const btn = e.target.closest('button[data-sact]');
+    if (!btn) return;
+    const row = btn.closest('.folder-row');
+    const r = (document.getElementById('search-list')._rows || []).find(x => x.id === row.dataset.sid);
+    if (!r) return;
+    if (btn.dataset.sact === 'apply') {
+      document.getElementById('profile-modal').hidden = true;
+      applySearch(r.params);
+      showPlusToast(`Showing “${r.name}”.`);
+    } else if (btn.dataset.sact === 'delete') {
+      if (!confirm(`Delete saved search “${r.name}”?`)) return;
+      await supaClient.from('saved_searches').delete().eq('id', r.id);
+      renderProfileSearches();
+    }
+  });
+
+  // mobile FAB now opens the same consolidated modal
+  document.getElementById('btn-filters').addEventListener('click', openFilters);
   filterSheet.addEventListener('click', e => {
     if (e.target === filterSheet || e.target.closest('#filter-apply') || e.target.closest('#filter-close')) { filterSheet.hidden = true; return; }
     if (e.target.closest('#filter-clear')) { moreFilters.viol = 'any'; moreFilters.comp = 'any'; syncMoreUI(); applyFilters(); }
@@ -1808,10 +1983,11 @@
       else if (m.openPopup) { cluster.zoomToShowLayer(m, () => m.openPopup()); }
       return;
     }
-    // tapping the card itself → full detail page (mobile) / map popup (desktop)
+    // tapping the card → Zillow-style detail (full page on mobile, centered
+    // popup on desktop; the map recenters behind it for when it closes)
     e.preventDefault();
-    if (isMobile) openDetail(rec, listed);
-    else { flyTo(); if (m.openPopup) cluster.zoomToShowLayer(m, () => m.openPopup()); }
+    if (!isMobile) flyTo();
+    openDetail(rec, listed);
   });
 
   map.addLayer(cluster);
@@ -1876,7 +2052,7 @@
 
   function clearSelected() {
     if (selectedMarker) {
-      selectedMarker.setIcon(selectedMarker._listed > 0 ? listedIcon(selectedMarker._listed) : dotIcon);
+      selectedMarker.setIcon(markerIcon(selectedMarker));
       selectedMarker = null;
     }
   }
@@ -1884,9 +2060,10 @@
     clearSelected();
     const rec = m._rec, listed = m._listed || 0;
     const price = listingPrices[rec.bbl];
-    const txt = price ? fmtRent(price) : (listed > 0 ? listed + ' listed' : '●');
-    const w = txt.length * 7 + 20;
-    m.setIcon(L.divIcon({ className: '', html: `<div class="price-pill selected">${esc(txt)}</div>`, iconSize: [w, 26], iconAnchor: [w / 2, 13] }));
+    const txt = price ? fmtRent(price)
+      : (listed > 0 ? listed + ' listed'
+      : (rec.u != null ? `${rec.u} unit${rec.u === 1 ? '' : 's'}` : 'bldg'));
+    m.setIcon(pillIcon(`<div class="price-pill selected">${esc(txt)}</div>`, txt.length));
     selectedMarker = m;
   }
 
@@ -2060,7 +2237,8 @@
     }
     if (act === 'details') { openDetail(rec, listed); return; }
   });
-  detailSheet.addEventListener('click', e => { if (e.target === detailSheet) detailSheet.hidden = true; });
+  // click on the dimmed backdrop (outside the popup) -> back to the previous screen
+  detailSheet.addEventListener('click', e => { if (e.target === detailSheet) closeDetail(); });
 
   // ---------- init ----------
   updateBoroughBadge();
@@ -2226,7 +2404,8 @@
       } catch (e) { /* leave off */ }
     }
     document.getElementById('profile-folders').hidden = !plusActive;
-    if (plusActive) { await loadFolders(); renderProfileFolders(); }
+    document.getElementById('profile-searches').hidden = !plusActive;
+    if (plusActive) { await loadFolders(); renderProfileFolders(); renderProfileSearches(); }
     profileModal.hidden = false;
   }
   function renderProfileFolders() {

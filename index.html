@@ -582,6 +582,8 @@
   .d-badge { display: inline-block; background: var(--blue-soft); color: var(--blue); font-size: 11px; font-weight: 700;
     padding: 3px 9px; border-radius: 999px; margin-bottom: 8px; }
   .d-price { font-size: 26px; font-weight: 800; letter-spacing: -.6px; }
+  .price.est, .card-price.est { color: #4a5568; font-weight: 700; }
+  .card .price.est { font-size: 14px; }
   .d-key { font-size: 14px; color: var(--ink); font-weight: 600; margin-top: 4px; }
   .d-addr { font-size: 15px; margin-top: 8px; }
   .d-sub { font-size: 13px; color: var(--ink-2); margin-top: 2px; }
@@ -689,7 +691,7 @@
   <aside class="results">
     <div id="folder-bar" hidden></div>
     <div class="results-grid empty-state" id="grid"><div class="empty">Loading 30k buildings…</div></div>
-    <div class="footer-credit" id="credit">Source: NYC Rent Guidelines Board / DHCR 2024 · Coordinates from <a href="https://www.nyc.gov/site/planning/data-maps/open-data.page" target="_blank" rel="noopener">NYC PLUTO</a> · Listings via Zumper (nightly) · Owner/violation/complaint data from <a href="https://data.cityofnewyork.us/" target="_blank" rel="noopener">NYC Open Data — HPD</a> · Voucher listings via <a href="https://www.affordablehousing.com" target="_blank" rel="noopener">AffordableHousing.com</a> · Subsidized-building data from HPD &amp; HUD</div>
+    <div class="footer-credit" id="credit">Source: NYC Rent Guidelines Board / DHCR 2024 · Coordinates from <a href="https://www.nyc.gov/site/planning/data-maps/open-data.page" target="_blank" rel="noopener">NYC PLUTO</a> · Listings via Zumper (nightly) · Owner/violation/complaint data from <a href="https://data.cityofnewyork.us/" target="_blank" rel="noopener">NYC Open Data — HPD</a> · Voucher listings via <a href="https://www.affordablehousing.com" target="_blank" rel="noopener">AffordableHousing.com</a> · Subsidized-building data from HPD &amp; HUD · Rent estimates: <a href="https://www.huduser.gov/portal/datasets/fmr/smallarea/index.html" target="_blank" rel="noopener">HUD FY2026 Small-Area Fair Market Rents</a> by ZIP (not building-specific)</div>
   </aside>
 </main>
 
@@ -1044,8 +1046,35 @@
     try { localStorage.setItem('fac_vid', vid); } catch (e) {}
     return vid;
   }
+  // Ask for signup at the moment of interest: a visitor who has opened a few
+  // buildings without an account gets one dismissible nudge per session.
+  let bvCount = 0, signupNudged = false;
+  function maybeSignupNudge() {
+    window.__bv = ++bvCount;
+    if (authUser || signupNudged) return;
+    if (bvCount < 3) return;
+    signupNudged = true;
+    try { if (sessionStorage.getItem('fac_nudged')) return; sessionStorage.setItem('fac_nudged', '1'); } catch (e) {}
+    const t = document.createElement('div');
+    t.className = 'folder-toast'; t.id = 'signup-nudge';
+    t.innerHTML = `<button type="button" class="ft-close" aria-label="Dismiss">✕</button>
+      <div class="ft-title">🔔 Like any of these buildings?</div>
+      <div style="font-size:13px;margin-bottom:9px">Get an email the moment one of them lists an apartment.</div>
+      <div class="ft-opts"><button type="button" data-nudge-cta>Create a free account</button></div>`;
+    document.body.appendChild(t);
+    const timer = setTimeout(() => t.remove(), 15000);
+    t.addEventListener('click', e => {
+      if (e.target.closest('[data-nudge-cta]')) {
+        clearTimeout(timer); t.remove();
+        track('outbound', { kind: 'nudge_cta' });
+        openAuthModal('Create a free account — alerts for saved buildings are part of Plus.');
+      } else if (e.target.closest('.ft-close')) { clearTimeout(timer); t.remove(); }
+    });
+    track('outbound', { kind: 'signup_nudge' });
+  }
   function track(event, props) {
     try {
+      if (event === 'building_view') maybeSignupNudge();
       if (!supaClient || isBot()) return;
       const vid = visitorId();
       supaClient.from('events').insert({
@@ -1058,11 +1087,19 @@
     } catch (e) { /* best-effort */ }
   }
 
-  const [data, listingsBlob, s8Blob] = await Promise.all([
+  const [data, listingsBlob, s8Blob, FMR] = await Promise.all([
     fetch('buildings.min.json').then(r => r.json()),
     fetch('listings.json').then(r => r.ok ? r.json() : { counts: {} }).catch(() => ({ counts: {} })),
     fetch('s8.json').then(r => r.ok ? r.json() : { bldg: {}, avail: {} }).catch(() => ({ bldg: {}, avail: {} })),
+    // HUD FY2026 Small-Area Fair Market Rents by ZIP: [studio, 1BR, 2BR, 3BR]
+    fetch('fmr.json').then(r => r.ok ? r.json() : {}).catch(() => ({})),
   ]);
+  // typical-rent estimate (studio–2BR) for buildings with no active listing
+  function estRent(rec) {
+    const f = FMR[rec.z];
+    return f ? `Est. $${f[0].toLocaleString()}–$${f[2].toLocaleString()}/mo` : '';
+  }
+  const EST_TITLE = 'Typical rent for this ZIP, studio–2BR (HUD FY2026 Small-Area Fair Market Rents) — not this building’s actual rent';
   const listingCounts = listingsBlob.counts || {};
   const listingPrices = listingsBlob.prices || {};
   const listingBeds = listingsBlob.beds || {};
@@ -1973,7 +2010,8 @@
       </div>
       <div class="body">
         ${rec.nb ? `<div class="nb">${esc(rec.nb)}</div>` : ''}
-        ${listed > 0 ? `<div class="price">${price ? '$' + price.toLocaleString() + '/mo' : `Recently advertised on Zumper · ${listed} listing${listed===1?'':'s'}${asOf}`}</div>` : ''}
+        ${listed > 0 ? `<div class="price">${price ? '$' + price.toLocaleString() + '/mo' : `Recently advertised on Zumper · ${listed} listing${listed===1?'':'s'}${asOf}`}</div>`
+                     : (estRent(rec) ? `<div class="price est" title="${EST_TITLE}">${estRent(rec)}</div>` : '')}
         ${beds && beds.length ? `<div class="beds-line">${bedsLabel(beds)} available</div>` : ''}
         ${s8Avail[rec.bbl] ? `<div class="s8-mini">✓ Section 8 listing${s8Avail[rec.bbl].n === 1 ? '' : 's'} on AffordableHousing.com${s8Avail[rec.bbl].p ? ' · from $' + s8Avail[rec.bbl].p.toLocaleString() + '/mo' : ''}</div>` : ''}
         <div class="units-line">${stats.join(' · ')}</div>
@@ -2114,7 +2152,7 @@
     const sv = streetviewUrl(rec.lat, rec.lng, 640, 360);
     const priceLine = listed > 0
       ? (price ? '$' + price.toLocaleString() + '/mo' : 'Recently advertised')
-      : (rec.u != null ? rec.u + ' residential units' : 'Rent-stabilized building');
+      : (estRent(rec) || (rec.u != null ? rec.u + ' residential units' : 'Rent-stabilized building'));
     const sub = [
       beds && beds.length ? bedsLabel(beds) : null,
       rec.yr ? 'built ' + rec.yr : null,
@@ -2205,8 +2243,11 @@
         <div class="d-sub">${rec.nb ? esc(rec.nb) + ' · ' : ''}${esc(borough)}${rec.z ? ' ' + esc(rec.z) : ''}</div>
       </div>
       <div class="d-actions">
+        <button class="d-primary" data-detail="fav">${FAVS.has(rec.bbl) ? '♥ Saved — alerts on' : '🔔 Save &amp; get listing alerts'}</button>
+      </div>
+      <div class="d-actions" style="padding-top:0">
         <button class="d-secondary" data-detail="map">View on map</button>
-        <a class="d-primary" data-detail="search" target="_blank" rel="noopener" href="https://www.google.com/search?q=${googleQ}">Search Google</a>
+        <a class="d-secondary" data-detail="search" target="_blank" rel="noopener" href="https://www.google.com/search?q=${googleQ}">Search Google</a>
       </div>
       <div class="d-section"><h3>Housing vouchers (Section 8)</h3>
         ${s8Html(rec) || '<div class="d-sub" style="margin:0">No voucher listing or subsidy record for this building right now.</div>'}
@@ -2229,6 +2270,8 @@
     const f = detailRec && FAVS.has(detailRec.bbl);
     detailFavBtn.classList.toggle('faved', !!f);
     detailFavBtn.textContent = f ? '♥' : '♡';
+    const cta = detailContent.querySelector('.d-actions [data-detail="fav"]');
+    if (cta) cta.innerHTML = f ? '♥ Saved — alerts on' : '🔔 Save &amp; get listing alerts';
   }
   function openDetail(rec, listed) {
     detailRec = rec; detailListed = listed || 0;

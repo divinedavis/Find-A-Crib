@@ -18,6 +18,8 @@ Usage:
   python3 traffic_report.py                       # full dashboard
   python3 traffic_report.py --json                # raw JSON (all sections)
   python3 traffic_report.py --email a@b.com,c@d   # email the dashboard
+  python3 traffic_report.py --yesterday           # report on yesterday
+                                                  # (the 6am daily email)
 
 Email uses SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASSWORD from the
 environment (same convention as payments_report.py on the caprecruiting box).
@@ -80,8 +82,10 @@ def run_sql(token, sql):
         sys.exit(f"query failed ({e.code}): {e.read().decode()[:300]}")
 
 
-def queries():
-    today = f"(now() at time zone '{TZ}')::date"
+def queries(day_offset=0):
+    # day_offset=0 reports on today; 1 reports on yesterday (for the 6am
+    # daily email, when "today" would be nearly empty).
+    today = f"((now() at time zone '{TZ}')::date - {day_offset})"
     day_of = f"(created_at at time zone '{TZ}')::date"
     return {
         "today": f"{CLEAN} select count(*) as total_views, "
@@ -111,6 +115,24 @@ def queries():
         "events_today": f"{CLEAN_E} select event, count(*) as n, "
                  f"count(distinct visitor_id) as visitors from e "
                  f"where {day_of} = {today} group by 1 order by n desc;",
+        "signups": f"select count(*) as total_accounts, "
+                 f"count(*) filter (where {day_of} = {today}) as new_today "
+                 f"from auth.users where id != '{OWNER}';",
+        # Signed-in users active on the report day who had ALSO been active on
+        # an earlier day (revisit or re-login), with their activity count.
+        # Activity = page views (visits) + interactions (events, incl. signin).
+        "returning_users": f"{CLEAN_E}, "
+                 f"acts as (select user_id, created_at from public.visits "
+                 f"where user_id is not null and user_id is distinct from '{OWNER}' "
+                 f"union all "
+                 f"select user_id, created_at from e where user_id is not null), "
+                 f"d as (select user_id, count(*) as n from acts "
+                 f"where {day_of} = {today} group by 1), "
+                 f"ret as (select d.user_id, d.n from d where exists "
+                 f"(select 1 from acts p where p.user_id = d.user_id "
+                 f"and {day_of.replace('created_at','p.created_at')} < {today})) "
+                 f"select u.email, ret.n from ret "
+                 f"join auth.users u on u.id = ret.user_id order by ret.n desc;",
     }
 
 
@@ -118,7 +140,7 @@ def pct(part, whole):
     return f"{(100.0 * part / whole):.0f}%" if whole else "n/a"
 
 
-def render(data):
+def render(data, day_label="TODAY"):
     """Build the plain-text dashboard from the query results."""
     t = data["today"][0]
     nr = data["new_vs_returning_today"][0]
@@ -128,11 +150,24 @@ def render(data):
     out.append("  FIND A CRIB — TRAFFIC REPORT")
     out.append("=" * 52)
 
-    out.append("\nTODAY")
+    out.append(f"\n{day_label}")
     out.append(f"  Unique visitors : {t['unique_visitors']}")
     out.append(f"  Page views      : {t['total_views']}")
     out.append(f"  Returning       : {nr['returning_visitors']} "
-               f"({pct(nr['returning_visitors'], nr['total'])} of today's visitors)")
+               f"({pct(nr['returning_visitors'], nr['total'])} of the day's visitors)")
+
+    su = data["signups"][0]
+    out.append("\nSIGNED-UP USERS")
+    out.append(f"  Total accounts  : {su['total_accounts']}")
+    out.append(f"  New this day    : {su['new_today']}")
+
+    ru = data["returning_users"]
+    out.append(f"\nRETURNING SIGNED-IN USERS ({len(ru)})")
+    if ru:
+        for r in ru:
+            out.append(f"  {r['email']:<36}{r['n']:>4} actions")
+    else:
+        out.append("  None this day.")
 
     out.append("\nMONTH TO MONTH")
     out.append(f"  {'Month':<9}{'Visitors':>10}{'Views':>9}")
@@ -153,7 +188,7 @@ def render(data):
         out.append("  Not enough history yet (need a full prior week of data).")
 
     if data["events_today"]:
-        out.append("\nTODAY'S ACTIVITY")
+        out.append(f"\n{day_label}'S ACTIVITY")
         for r in data["events_today"]:
             out.append(f"  {r['event']:<16}{r['n']:>5} events "
                        f"({r['visitors']} visitors)")
@@ -172,7 +207,7 @@ def send_email(recipients, text):
         sys.exit("missing SMTP_USER / SMTP_PASSWORD in environment")
 
     msg = MIMEText(text, "plain")
-    msg["Subject"] = "Find A Crib — weekly traffic report"
+    msg["Subject"] = "Find A Crib — daily traffic report"
     msg["From"] = f"Find A Crib <{user}>"
     msg["To"] = ", ".join(recipients)
     with smtplib.SMTP(host, port) as server:
@@ -186,6 +221,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", action="store_true", help="dump raw JSON")
     ap.add_argument("--email", default="", help="comma-separated recipient list")
+    ap.add_argument("--yesterday", action="store_true",
+                    help="report on yesterday instead of today "
+                         "(for the 6am daily email)")
     args = ap.parse_args()
 
     # The PAT lives in the macOS keychain locally, or SUPABASE_ACCESS_TOKEN in
@@ -196,13 +234,14 @@ def main():
         sys.exit("missing Supabase PAT (keychain supabase-pat-clockin "
                  "or env SUPABASE_ACCESS_TOKEN)")
 
-    data = {name: run_sql(token, sql) for name, sql in queries().items()}
+    offset = 1 if args.yesterday else 0
+    data = {name: run_sql(token, sql) for name, sql in queries(offset).items()}
 
     if args.json:
         print(json.dumps(data, indent=2))
         return
 
-    text = render(data)
+    text = render(data, "YESTERDAY" if args.yesterday else "TODAY")
     if args.email:
         recipients = [r.strip() for r in args.email.split(",") if r.strip()]
         send_email(recipients, text)

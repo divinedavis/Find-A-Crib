@@ -282,6 +282,7 @@ def main():
         join auth.users u on u.id = sb.user_id
         where sb.bbl in ({bbl_list})
           and u.email not like '%@example.com'
+          and public.has_plus(sb.user_id)  -- alerts are a Plus ($4.99/mo) feature
     """)
     if not rows:
         print("no saved buildings match the newly advertised set")

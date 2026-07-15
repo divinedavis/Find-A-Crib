@@ -108,6 +108,37 @@
   .auth-google:hover { background: #f6f6f6; }
   .auth-google:disabled { opacity: .6; cursor: default; }
   .auth-google svg { width: 18px; height: 18px; flex: none; }
+  .profile-row { display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .profile-row .label { color: var(--ink-2); font-size: 12px; text-transform: uppercase; letter-spacing: .4px; flex: none; }
+  .profile-row #profile-email { overflow: hidden; text-overflow: ellipsis; }
+  #profile-plan.plus { color: #0a7a2f; font-weight: 700; }
+  #profile-upgrade { margin: 12px 0 2px; }
+  .profile-toggle-row { align-items: center; }
+  .profile-feat { font-size: 14px; font-weight: 600; }
+  .profile-feat-sub { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
+  .switch { position: relative; width: 44px; height: 26px; flex: none; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch .slider { position: absolute; inset: 0; background: #cfd6df; border-radius: 13px; cursor: pointer; transition: background .15s; }
+  .switch .slider::before { content: ""; position: absolute; width: 20px; height: 20px; left: 3px; top: 3px;
+    background: #fff; border-radius: 50%; transition: transform .15s; box-shadow: 0 1px 2px rgba(0,0,0,.25); }
+  .switch input:checked + .slider { background: var(--blue); }
+  .switch input:checked + .slider::before { transform: translateX(18px); }
+  .profile-signout { width: 100%; margin-top: 14px; padding: 11px; background: #fff; color: #a40000;
+    border: 1px solid var(--line); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .profile-signout:hover { background: #fff5f5; }
+  .research-card { max-width: 420px; max-height: 82vh; overflow-y: auto; }
+  .research-sec { margin-top: 14px; }
+  .research-sec h3 { margin: 0 0 2px; font-size: 15px; }
+  .research-sec .research-name { font-size: 13px; color: var(--ink-2); margin-bottom: 8px; }
+  .research-big { display: flex; gap: 18px; margin-bottom: 8px; }
+  .research-big .n { font-size: 24px; font-weight: 800; display: block; }
+  .research-big .l { font-size: 11px; color: var(--ink-2); text-transform: uppercase; letter-spacing: .4px; }
+  .research-boros { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .research-boros .hpd-stat { text-transform: capitalize; }
+  .hpd-research-btn { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 7px 12px;
+    background: #fff; border: 1px solid var(--line); border-radius: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+  .hpd-research-btn:hover { background: #f6f6f6; }
   .paywall-card .paywall-badge { display: inline-block; font-size: 11px; letter-spacing: .04em; text-transform: uppercase;
     color: var(--blue); background: #eef3ff; border: 1px solid #cfe0ff; border-radius: 999px; padding: 3px 10px; margin-bottom: 10px; }
   .paywall-card h2 { margin: 0 0 6px; font-size: 20px; }
@@ -641,16 +672,46 @@
   <div class="auth-card paywall-card">
     <button class="auth-close" data-paywall="close" aria-label="Close">✕</button>
     <div class="paywall-badge">Find A Crib <b>Plus</b></div>
-    <h2>Unlock managing-agent phone numbers</h2>
-    <p class="auth-sub">Call the people who actually run the building. Plus also lets you organize your saved homes into custom categories.</p>
+    <h2>Everything you need to land your crib</h2>
+    <p class="auth-sub">One membership unlocks all of Find A Crib:</p>
     <ul class="paywall-feats">
-      <li>📞 Reveal managing-agent phone numbers</li>
-      <li>🏷️ Organize your saved homes into categories</li>
+      <li>❤️ Save unlimited homes, synced to every device</li>
+      <li>🔔 Email alerts the moment a home you saved is listed for rent</li>
+      <li>📞 Managing-agent phone numbers — call who actually runs the building</li>
+      <li>🔎 Research any landlord: every building they own across NYC, apartment counts by borough, and their violation record</li>
+      <li>🏷️ Organize your saved homes into custom categories</li>
     </ul>
-    <div class="paywall-price"><span class="amt">$1.99</span> <span class="per">/ month</span></div>
+    <div class="paywall-price"><span class="amt">$4.99</span> <span class="per">/ month</span></div>
     <div id="paywall-error" class="auth-error" hidden></div>
     <button id="paywall-subscribe" type="button" class="auth-submit">Subscribe</button>
     <p class="paywall-fine">Cancel anytime. Billed monthly via Stripe.</p>
+  </div>
+</div>
+<!-- profile (signed-in account) -->
+<div id="profile-modal" class="auth-backdrop" hidden>
+  <div class="auth-card">
+    <button class="auth-close" data-profile="close" aria-label="Close">✕</button>
+    <h2>Your account</h2>
+    <div class="profile-row"><span class="label">Email</span><span id="profile-email"></span></div>
+    <div class="profile-row"><span class="label">Membership</span><span id="profile-plan"></span></div>
+    <button id="profile-upgrade" type="button" class="auth-submit" hidden>Get Plus — $4.99/mo</button>
+    <div class="profile-row profile-toggle-row">
+      <div>
+        <div class="profile-feat">🔔 Email alerts</div>
+        <div class="profile-feat-sub">Get an email when a building you saved is listed for rent.</div>
+      </div>
+      <label class="switch"><input id="profile-alerts" type="checkbox"><span class="slider"></span></label>
+    </div>
+    <div id="profile-error" class="auth-error" hidden></div>
+    <button id="profile-signout" type="button" class="profile-signout">Sign out</button>
+  </div>
+</div>
+<!-- Research: owner/agent portfolio (Plus) -->
+<div id="research-modal" class="auth-backdrop" hidden>
+  <div class="auth-card research-card">
+    <button class="auth-close" data-research-close aria-label="Close">✕</button>
+    <h2>🔎 Portfolio research</h2>
+    <div id="research-body"></div>
   </div>
 </div>
 <!-- tap-a-pin listing card (mobile) -->
@@ -765,7 +826,27 @@
     else { badge.style.display = 'none'; }
   }
   // when signed in, mirror each heart toggle to the user's Supabase account
-  let supaClient = null, authUser = null, pendingPhoneBbl = null;
+  let supaClient = null, authUser = null, pendingPhoneBbl = null, plusActive = false;
+  // Is the signed-in user a Plus subscriber? Mirrors has_plus() server-side;
+  // the client flag only decides which UI to show — RLS enforces the truth.
+  async function refreshPlus() {
+    plusActive = false;
+    if (!supaClient || !authUser) return;
+    try {
+      const { data } = await supaClient.from('subscriptions')
+        .select('status,current_period_end').eq('user_id', authUser.id).maybeSingle();
+      plusActive = !!data && ['active', 'trialing'].includes(data.status) &&
+        (!data.current_period_end || new Date(data.current_period_end) > new Date());
+    } catch (e) { /* treat as free tier */ }
+  }
+  // Saving is a Plus feature (hard gate). Unsaving is always allowed so free
+  // users can still clean up hearts they saved before the gate existed.
+  function gateSave(isUnsave) {
+    if (isUnsave) return true;
+    if (!authUser) { openAuthModal('Saving homes is a Plus feature — sign in to get started.'); return false; }
+    if (!plusActive) { openPaywall(null); return false; }
+    return true;
+  }
   async function persistFav(bbl, on) {
     track(on ? 'save' : 'unsave', { bbl });
     if (!supaClient || !authUser) return;
@@ -987,6 +1068,11 @@
       ? `<div class="hpd-link"><a href="${h.hpd_url}" target="_blank" rel="noopener">Full HPD Online record ↗</a></div>`
       : `<div class="hpd-link"><a href="https://hpdonline.nyc.gov/hpdonline/" target="_blank" rel="noopener">Search HPD Online ↗</a></div>`;
     const regDate = h.lastregistration ? `<div class="popup-meta" style="margin-top:4px;font-size:11px">Last registered ${esc(h.lastregistration)}</div>` : '';
+    // Portfolio research (Plus): aggregates live in private tables, fetched via
+    // the has_plus-gated get_research() RPC — non-subscribers get the paywall.
+    const researchBtn = (h.owner || h.manager)
+      ? `<button type="button" class="hpd-research-btn" data-research data-bbl="${esc(rec.bbl)}">🔎 Research this owner &amp; agent</button>`
+      : '';
     return `
       <div class="hpd-section">
         <h4>Building operator</h4>
@@ -994,6 +1080,7 @@
         ${managerRow}
         ${officerRow}
         ${regDate}
+        ${researchBtn}
       </div>
       <div class="hpd-section">
         <h4>HPD violations</h4>
@@ -1255,9 +1342,62 @@
   document.addEventListener('click', e => {
     const btn = e.target.closest && e.target.closest('button.hpd-phone-btn[data-show-phone]');
     if (btn) { e.preventDefault(); revealAgentPhone(btn); return; }
+    const rbtn = e.target.closest && e.target.closest('button.hpd-research-btn[data-research]');
+    if (rbtn) { e.preventDefault(); openResearch(rbtn); return; }
     const a = e.target.closest && e.target.closest('a.hpd-phone[href^="tel:"]');
     if (a) track('outbound', { kind: 'call', href: a.getAttribute('href'), bbl: a.dataset.bbl || null });
   }, true);
+
+  // Research (Plus): landlord/agent portfolio — building + apartment counts by
+  // borough, violations. Data comes from the has_plus-gated get_research() RPC.
+  const researchModal = document.getElementById('research-modal');
+  const researchBody = document.getElementById('research-body');
+  researchModal.addEventListener('click', e => {
+    if (e.target === researchModal || e.target.closest('[data-research-close]')) researchModal.hidden = true;
+  });
+  function researchSection(title, p) {
+    if (!p) return '';
+    const boros = Object.entries(p.by_boro || {}).sort((a, b) => b[1] - a[1])
+      .map(([b, n]) => `<span class="hpd-stat">${esc(b)}: ${n}</span>`).join('');
+    const risk = (p.open_violations || p.class_c)
+      ? `<div class="hpd-row" style="margin-top:2px">
+           <span class="hpd-stat ${p.class_c ? 'bad' : 'warn'}">${p.open_violations} open violations</span>
+           ${p.class_c ? `<span class="hpd-stat bad">Class C: ${p.class_c}</span>` : ''}
+           <span class="hpd-stat">${p.open_complaints} open complaints</span>
+         </div>`
+      : '<div class="hpd-row"><span class="hpd-stat">No open violations across the portfolio 🎉</span></div>';
+    return `
+      <div class="research-sec">
+        <h3>${title}</h3>
+        <div class="research-name">${esc(p.display_name)}</div>
+        <div class="research-big">
+          <div><span class="n">${p.buildings}</span><span class="l">rent-stabilized building${p.buildings === 1 ? '' : 's'}</span></div>
+          <div><span class="n">${(p.units || 0).toLocaleString()}</span><span class="l">apartments</span></div>
+        </div>
+        <div class="research-boros">${boros}</div>
+        ${risk}
+      </div>`;
+  }
+  async function openResearch(btn) {
+    const bbl = btn.dataset.bbl;
+    if (!supaClient) return;
+    if (!authUser) { openAuthModal('Sign in to research landlords and agents with Plus.'); return; }
+    if (!plusActive) { openPaywall(null); return; }
+    const orig = btn.textContent;
+    btn.disabled = true; btn.textContent = 'Looking up portfolio…';
+    try {
+      const { data, error } = await supaClient.rpc('get_research', { p_bbl: bbl });
+      btn.disabled = false; btn.textContent = orig;
+      if (error) return;
+      if (!data || (!data.owner && !data.agent)) { openPaywall(null); return; }
+      researchBody.innerHTML =
+        `<p class="auth-sub" style="margin-bottom:0">Everything this building's operator has registered with HPD, matched by exact name — treat the numbers as a floor, since owners often split holdings across LLCs.</p>` +
+        researchSection('🏢 Owner portfolio', data.owner) +
+        researchSection('🤝 Managing-agent portfolio', data.agent);
+      researchModal.hidden = false;
+      track('outbound', { kind: 'research', bbl });
+    } catch (_) { btn.disabled = false; btn.textContent = orig; }
+  }
 
   // Fetch + reveal the managing-agent number, but only for Find A Crib Plus
   // subscribers. get_agent_phone() returns null for everyone else, which we
@@ -1529,7 +1669,7 @@
     // heart toggle: save/unsave, never navigate
     if (action === 'fav') {
       e.preventDefault(); e.stopPropagation();
-      if (!authUser) { openAuthModal('Sign in or sign up to like and save apartments.'); return; }
+      if (!gateSave(FAVS.has(bbl))) return;
       const btn = e.target;
       if (FAVS.has(bbl)) { FAVS.delete(bbl); btn.classList.remove('faved'); btn.textContent = '♡'; btn.setAttribute('aria-pressed','false'); }
       else { FAVS.add(bbl); btn.classList.add('faved'); btn.textContent = '♥'; btn.setAttribute('aria-pressed','true'); }
@@ -1770,7 +1910,7 @@
     if (act === 'search') return; // link
     if (act === 'close') { closeDetail(); return; }
     if (act === 'fav') {
-      if (!authUser) { openAuthModal('Sign in or sign up to like and save apartments.'); return; }
+      if (!gateSave(FAVS.has(rec.bbl))) return;
       if (FAVS.has(rec.bbl)) FAVS.delete(rec.bbl); else FAVS.add(rec.bbl);
       saveFavs(); updateFavBadge(); syncDetailFav(); persistFav(rec.bbl, FAVS.has(rec.bbl));
       return;
@@ -1790,7 +1930,7 @@
     if (act === 'close') { closeCard(); return; }
     if (act === 'search') return; // let the link open
     if (act === 'fav') {
-      if (!authUser) { openAuthModal('Sign in or sign up to like and save apartments.'); return; }
+      if (!gateSave(FAVS.has(rec.bbl))) return;
       const btn = e.target.closest('[data-card="fav"]');
       if (FAVS.has(rec.bbl)) { FAVS.delete(rec.bbl); btn.classList.remove('faved'); btn.textContent = '♡'; }
       else { FAVS.add(rec.bbl); btn.classList.add('faved'); btn.textContent = '♥'; }
@@ -1918,9 +2058,60 @@
     }
   }
   function updateAuthUI() {
-    if (authUser) { authBtn.textContent = 'Sign out'; authBtn.classList.add('signed-in'); authBtn.title = authUser.email || ''; }
+    if (authUser) { authBtn.textContent = '👤 Profile'; authBtn.classList.add('signed-in'); authBtn.title = authUser.email || ''; }
     else { authBtn.textContent = 'Sign in'; authBtn.classList.remove('signed-in'); authBtn.title = ''; }
   }
+
+  // ---------- profile: account, membership, email-alert preference ----------
+  const profileModal = document.getElementById('profile-modal');
+  const profileAlerts = document.getElementById('profile-alerts');
+  const profileErr = document.getElementById('profile-error');
+  async function openProfile() {
+    if (!authUser) return;
+    document.getElementById('profile-email').textContent = authUser.email || '';
+    profileErr.hidden = true;
+    await refreshPlus();
+    const plan = document.getElementById('profile-plan');
+    plan.textContent = plusActive ? '★ Plus member' : 'Free';
+    plan.classList.toggle('plus', plusActive);
+    document.getElementById('profile-upgrade').hidden = plusActive;
+    profileAlerts.checked = false;
+    if (plusActive) {
+      try {
+        const { data } = await supaClient.rpc('get_alerts_enabled');
+        profileAlerts.checked = data !== false;
+      } catch (e) { /* leave off */ }
+    }
+    profileModal.hidden = false;
+  }
+  profileModal.addEventListener('click', e => {
+    if (e.target === profileModal || e.target.closest('[data-profile="close"]')) profileModal.hidden = true;
+  });
+  document.getElementById('profile-upgrade').addEventListener('click', () => {
+    profileModal.hidden = true; openPaywall(null);
+  });
+  document.getElementById('profile-signout').addEventListener('click', async () => {
+    profileModal.hidden = true;
+    if (supaClient) await supaClient.auth.signOut();
+    authUser = null; plusActive = false; updateAuthUI();
+  });
+  profileAlerts.addEventListener('change', async () => {
+    const want = profileAlerts.checked;
+    if (!plusActive) {   // alerts are a Plus feature — flip back and show why
+      profileAlerts.checked = false;
+      profileModal.hidden = true; openPaywall(null);
+      return;
+    }
+    try {
+      const { error } = await supaClient.rpc('set_alerts_enabled', { p_on: want });
+      if (error) throw error;
+      profileErr.hidden = true;
+    } catch (e) {
+      profileAlerts.checked = !want;
+      profileErr.textContent = 'Couldn’t update alerts — please try again.';
+      profileErr.hidden = false;
+    }
+  });
   async function loadAccountFavs() {
     if (!supaClient || !authUser) return;
     const local = [...FAVS]; // merge anonymous (localStorage) saves into the account first
@@ -1941,6 +2132,7 @@
     const { data: { session } } = await supaClient.auth.getSession();
     authUser = session?.user || null;
     updateAuthUI();
+    refreshPlus();   // also re-checked on auth changes and on profile open
     if (authUser) loadAccountFavs();
     handleUnsubHash();
     // anonymous returning-visitor analytics: a first-party id (cookie/localStorage)
@@ -1959,6 +2151,7 @@
     supaClient.auth.onAuthStateChange((_evt, sess) => {
       authUser = sess?.user || null;
       updateAuthUI();
+      refreshPlus();
       if (authUser) {
         // ties this browser's fac_vid to the account, which is what lets
         // traffic_report.py retroactively exclude the owner's anonymous visits
@@ -1978,8 +2171,8 @@
         if (pendingPhoneBbl) { const b = pendingPhoneBbl; pendingPhoneBbl = null; openPaywall(b); }
       }
     });
-    authBtn.addEventListener('click', async () => {
-      if (authUser) { await supaClient.auth.signOut(); authUser = null; updateAuthUI(); }
+    authBtn.addEventListener('click', () => {
+      if (authUser) openProfile();
       else openAuthModal();
     });
     authModal.addEventListener('click', e => {

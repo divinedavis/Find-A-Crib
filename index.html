@@ -2418,6 +2418,11 @@
   applyFilters();
   syncHeaderHeight();
   if (location.hash === '#list') setListOpen(true);
+  // Ad landings (gclid) on mobile: open the results list straight away. The ad
+  // headline promises a "list of buildings," but mobile otherwise lands on a
+  // bare map — a message-match break that was bouncing ~53% of paid clicks
+  // (vs 33% organic). Show them the photos+prices list they came for.
+  if (isMobile && /[?&]gclid=/.test(location.search)) setListOpen(true);
   if (location.hash.startsWith('#b=')) {
     const m = markerByBbl.get(location.hash.slice(3));
     if (m) { map.setView(m.getLatLng(), 16, { animate: false }); openCard(m); }

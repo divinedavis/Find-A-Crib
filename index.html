@@ -757,7 +757,6 @@
     <h2>Everything you need to land your crib</h2>
     <p class="auth-sub">One membership unlocks all of Find A Crib:</p>
     <ul class="paywall-feats">
-      <li>❤️ Save unlimited homes, synced to every device</li>
       <li>🔔 Email alerts the moment a home you saved is listed for rent</li>
       <li>📞 Managing-agent phone numbers — call who actually runs the building</li>
       <li>🔎 Research any landlord: every building they own across NYC, apartment counts by borough, and their violation record</li>
@@ -950,12 +949,11 @@
         (!data.current_period_end || new Date(data.current_period_end) > new Date());
     } catch (e) { /* treat as free tier */ }
   }
-  // Saving is a Plus feature (hard gate). Unsaving is always allowed so free
-  // users can still clean up hearts they saved before the gate existed.
+  // Saving is free — it just requires an account (the signup hook for ad
+  // traffic). Alerts, phones, research, folders, and saved searches stay Plus.
   function gateSave(isUnsave) {
     if (isUnsave) return true;
-    if (!authUser) { openAuthModal('Create a free account or sign in to continue — saving homes is part of Plus.'); return false; }
-    if (!plusActive) { openPaywall(null); return false; }
+    if (!authUser) { openAuthModal('Create a free account or sign in to save the buildings you like.'); return false; }
     return true;
   }
   async function persistFav(bbl, on) {
@@ -967,6 +965,7 @@
       if (on) await supaClient.from('saved_buildings').insert({ user_id: authUser.id, bbl });
       else await supaClient.from('saved_buildings').delete().eq('user_id', authUser.id).eq('bbl', bbl);
       if (on && plusActive) showFolderToast(bbl);   // offer to file it right away
+      else if (on && !plusActive) maybeAlertsUpsell();  // free save = natural Plus moment
       if (!on) { delete FAVCATS[bbl]; renderFolderBar(); }
     } catch (e) { console.warn('fav sync failed', e); }
   }
@@ -1032,6 +1031,23 @@
     });
   }
   function dismissFolderToast() { document.getElementById('folder-toast')?.remove(); }
+  // shown at most once per session, right after a free user saves a building
+  function maybeAlertsUpsell() {
+    try { if (sessionStorage.getItem('fac_upsell')) return; sessionStorage.setItem('fac_upsell', '1'); } catch (e) {}
+    dismissFolderToast();
+    const t = document.createElement('div');
+    t.className = 'folder-toast'; t.id = 'folder-toast';
+    t.innerHTML = `<button type="button" class="ft-close" aria-label="Dismiss">✕</button>
+      <div class="ft-title">♥ Saved!</div>
+      <div style="font-size:13px;margin-bottom:9px">Plus members get an email the moment a saved building lists an apartment.</div>
+      <div class="ft-opts"><button type="button" data-upsell-cta>See Plus — $4.99/mo</button></div>`;
+    document.body.appendChild(t);
+    const timer = setTimeout(dismissFolderToast, 12000);
+    t.addEventListener('click', e => {
+      if (e.target.closest('[data-upsell-cta]')) { clearTimeout(timer); dismissFolderToast(); openPaywall(null); }
+      else if (e.target.closest('.ft-close')) { clearTimeout(timer); dismissFolderToast(); }
+    });
+  }
   function escT(s) { return String(s).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])); }
   // chip bar above the results grid: narrows the Saved view to one folder
   function renderFolderBar() {
@@ -1079,8 +1095,8 @@
     const t = document.createElement('div');
     t.className = 'folder-toast'; t.id = 'signup-nudge';
     t.innerHTML = `<button type="button" class="ft-close" aria-label="Dismiss">✕</button>
-      <div class="ft-title">🔔 Like any of these buildings?</div>
-      <div style="font-size:13px;margin-bottom:9px">Get an email the moment one of them lists an apartment.</div>
+      <div class="ft-title">🔖 Like any of these buildings?</div>
+      <div style="font-size:13px;margin-bottom:9px">Save them with a free account — they’ll be here when you come back.</div>
       <div class="ft-opts"><button type="button" data-nudge-cta>Create a free account</button></div>`;
     document.body.appendChild(t);
     const timer = setTimeout(() => t.remove(), 15000);
@@ -1088,7 +1104,7 @@
       if (e.target.closest('[data-nudge-cta]')) {
         clearTimeout(timer); t.remove();
         track('outbound', { kind: 'nudge_cta' });
-        openAuthModal('Create a free account — alerts for saved buildings are part of Plus.');
+        openAuthModal('Create a free account to save the buildings you like — it takes ten seconds.');
       } else if (e.target.closest('.ft-close')) { clearTimeout(timer); t.remove(); }
     });
     track('outbound', { kind: 'signup_nudge' });
@@ -2309,7 +2325,7 @@
         <div class="d-sub">${rec.nb ? esc(rec.nb) + ' · ' : ''}${esc(borough)}${rec.z ? ' ' + esc(rec.z) : ''}</div>
       </div>
       <div class="d-actions">
-        <button class="d-primary" data-detail="fav">${FAVS.has(rec.bbl) ? '♥ Saved — alerts on' : '🔔 Save &amp; get listing alerts'}</button>
+        <button class="d-primary" data-detail="fav">${FAVS.has(rec.bbl) ? '♥ Saved to your list' : '♡ Save this building — free'}</button>
       </div>
       <div class="d-actions" style="padding-top:0">
         <button class="d-secondary" data-detail="map">View on map</button>
@@ -2337,7 +2353,7 @@
     detailFavBtn.classList.toggle('faved', !!f);
     detailFavBtn.textContent = f ? '♥' : '♡';
     const cta = detailContent.querySelector('.d-actions [data-detail="fav"]');
-    if (cta) cta.innerHTML = f ? '♥ Saved — alerts on' : '🔔 Save &amp; get listing alerts';
+    if (cta) cta.innerHTML = f ? '♥ Saved to your list' : '♡ Save this building — free';
   }
   function openDetail(rec, listed) {
     detailRec = rec; detailListed = listed || 0;
@@ -2437,7 +2453,7 @@
     authPass2.value = '';
     showAuthError('');
   }
-  const AUTH_SUB_DEFAULT = "Creating an account is free. Upgrade to Plus ($4.99/mo) anytime to unlock saving, alerts, phone numbers, and landlord research.";
+  const AUTH_SUB_DEFAULT = "Creating an account is free — save buildings you like and pick up where you left off on any device. Plus ($4.99/mo) adds listing alerts, agent phone numbers, and landlord research.";
   function openAuthModal(reminder) {
     setAuthMode('signin');
     const sub = document.getElementById('auth-sub');

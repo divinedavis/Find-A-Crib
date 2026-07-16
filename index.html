@@ -8,6 +8,8 @@
 <link rel="canonical" href="https://findacrib.com/" />
 <meta name="robots" content="index,follow,max-image-preview:large" />
 <meta name="theme-color" content="#2b39c8" />
+<!-- Google AdSense — site-ownership verification + ad serving (ca-pub-8077227518694725) -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8077227518694725" crossorigin="anonymous"></script>
 <!-- Google tag (gtag.js) — Google Ads conversion tracking for findacrib.com -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=AW-1001356637"></script>
 <script>
@@ -1946,8 +1948,11 @@
   // ---------- in-feed ads (Google AdSense) ----------
   // Paste your AdSense IDs after the site is approved to switch ads on.
   // While ADSENSE_CLIENT is empty, no ad script loads and no ad tiles render.
-  const ADSENSE_CLIENT = '';            // e.g. 'ca-pub-1234567890123456'
-  const ADSENSE_SLOT   = '';            // in-feed/display ad-unit slot id, e.g. '1234567890'
+  // The verification/loader script is in <head>. In-feed ad TILES only render
+  // once ADSENSE_SLOT is set (create an In-feed ad unit after Google approves
+  // the site, then paste its slot id here). Client id is live for verification.
+  const ADSENSE_CLIENT = 'ca-pub-8077227518694725';
+  const ADSENSE_SLOT   = '';            // in-feed ad-unit slot id (set after approval)
   const AD_EVERY       = 6;             // insert one ad tile after every N building cards
   const ADS_ON = () => !!(ADSENSE_CLIENT && ADSENSE_SLOT);
 

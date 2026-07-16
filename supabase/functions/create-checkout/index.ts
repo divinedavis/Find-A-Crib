@@ -5,17 +5,28 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const STRIPE_SECRET = Deno.env.get("STRIPE_SECRET_KEY")!;
 const PRICE_ID = Deno.env.get("STRIPE_PRICE_ID")!;
 
-const cors = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+// Only our own origins may invoke checkout from a browser. The endpoint is
+// already JWT-gated, so this is defense in depth against CSRF-style abuse.
+const ALLOWED = new Set([
+  "https://findacrib.com",
+  "https://www.findacrib.com",
+]);
+function corsFor(req: Request) {
+  const origin = req.headers.get("Origin") || "";
+  return {
+    "Access-Control-Allow-Origin": ALLOWED.has(origin) ? origin : "https://findacrib.com",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Vary": "Origin",
+  };
+}
 
 function form(obj: Record<string, string>) {
   return new URLSearchParams(obj).toString();
 }
 
 Deno.serve(async (req) => {
+  const cors = corsFor(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
     const auth = req.headers.get("Authorization") || "";

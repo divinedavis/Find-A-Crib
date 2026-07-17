@@ -2604,6 +2604,7 @@
         <button type="button" data-act="view" title="Show on map">👁</button>
         <button type="button" data-act="rename" title="Rename">✎</button>
         <button type="button" data-act="share" title="Copy share link">🔗</button>
+        <button type="button" data-act="revoke" title="Reset share link (invalidates old links)">🚫</button>
         <button type="button" data-act="delete" title="Delete folder">🗑</button>
       </div>`).join('')
       : '<div style="font-size:13px;color:var(--ink-2);padding:8px 0">No folders yet — save a home and choose “New folder”, or create one above.</div>';
@@ -2636,6 +2637,12 @@
       try { await navigator.clipboard.writeText(link); showPlusToast('Share link copied — anyone with it can view this folder.'); }
       catch (_) { prompt('Copy this share link:', link); }
       track('outbound', { kind: 'folder_share' });
+    } else if (btn.dataset.act === 'revoke') {
+      if (!confirm(`Reset the share link for “${cat.name}”? Anyone you already shared the old link with will lose access.`)) return;
+      const { data, error } = await supaClient.rpc('reset_share_token', { p_category_id: id });
+      if (error || !data) { showPlusToast('Couldn’t reset the link — please try again.'); return; }
+      cat.share_token = data;   // future "Copy link" uses the new token; old links now 404
+      showPlusToast('Share link reset — the old link no longer works.');
     } else if (btn.dataset.act === 'delete') {
       if (!confirm(`Delete “${cat.name}”? The homes stay saved — they just leave the folder.`)) return;
       const { error } = await supaClient.from('categories').delete().eq('id', id);

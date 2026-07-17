@@ -143,6 +143,20 @@ def queries(day_offset=0):
                  f"and {day_of.replace('created_at','p.created_at')} < {today})) "
                  f"select u.email, ret.n from ret "
                  f"join auth.users u on u.id = ret.user_id order by ret.n desc;",
+        # Security/anomaly signals for the day being reported. Cheap heuristics
+        # that flag the shapes an attack or abuse would take.
+        "anomalies": f"select "
+                 f"(select count(*) from auth.users where {day_of} = {today} "
+                 f"and id != '{OWNER}') as signups, "
+                 f"(select count(*) from public.subscriptions "
+                 f"where (updated_at at time zone '{TZ}')::date = {today}) as sub_writes, "
+                 f"(select count(*) from public.saved_buildings sb "
+                 f"where sb.user_id in (select id from auth.users where {day_of} = {today})) "
+                 f"as saves_by_new_users, "
+                 f"(select count(distinct visitor_id) from public.visits "
+                 f"where {day_of} = {today} and coalesce(referrer,'') = '' "
+                 f"and (path like '/building/%' or path like '/borough/%' or path like '/neighborhood/%')) "
+                 f"as crawler_visitors;",
     }
 
 
@@ -170,6 +184,22 @@ def render(data, day_label="TODAY"):
     out.append("\nSIGNED-UP USERS")
     out.append(f"  Total accounts  : {su['total_accounts']}")
     out.append(f"  New this day    : {su['new_today']}")
+
+    # Anomaly watch: only surfaces when a threshold trips, so a clean day stays quiet.
+    a = data.get("anomalies", [{}])[0]
+    alerts = []
+    if a.get("signups", 0) > 50:
+        alerts.append(f"signup spike: {a['signups']} new accounts in one day (usual: a few)")
+    if a.get("sub_writes", 0) > 20:
+        alerts.append(f"{a['sub_writes']} subscription-table writes — expected ~= real Plus sales")
+    if a.get("saves_by_new_users", 0) > 500:
+        alerts.append(f"{a['saves_by_new_users']} saves from accounts created today — possible save-spam")
+    if a.get("crawler_visitors", 0) > 500:
+        alerts.append(f"{a['crawler_visitors']} crawler hits (excluded from stats) — unusually high")
+    if alerts:
+        out.append("\n⚠️  ANOMALY ALERTS")
+        for al in alerts:
+            out.append(f"  - {al}")
 
     ru = data["returning_users"]
     out.append(f"\nRETURNING SIGNED-IN USERS ({len(ru)})")

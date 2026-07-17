@@ -105,6 +105,7 @@ footer.site{border-top:1px solid var(--line);margin-top:40px;padding:22px 20px;c
 .guide-body p,.guide-body li{font-size:16px;line-height:1.6}
 .guide-body ul{padding-left:20px}
 .disclaimer{font-size:13px;color:var(--ink2);background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:10px}
+.hook{background:#f0f5ff;border:1px solid #cfe0ff;border-radius:12px;padding:12px 14px;margin:12px 0;font-size:14px;line-height:1.5}
 """
 
 
@@ -314,7 +315,15 @@ def main():
                 f"<p class='lead'>{lead}</p>"
                 + (f"<p><span class='badge'>Recently advertised for rent</span></p>" if adv else "")
                 + f"<a class='cta' href='/#d={b['bbl']}'>View {esc(addr)} on the map →</a>"
-                f"<h2>Building details</h2><table class='facts'>{facts}</table>"
+                # conversion hook: give organic readers a reason to act, not just leave
+                + (f"<div class='hook'><strong>🔔 A unit here was recently advertised.</strong> "
+                   f"See it on the map and get an email if another opens up — "
+                   f"<a href='/#d={b['bbl']}'>save {esc(addr)} to a free account</a>.</div>"
+                   if adv else
+                   f"<div class='hook'><strong>🔔 Want to know if an apartment opens up here?</strong> "
+                   f"<a href='/#d={b['bbl']}'>Save {esc(addr)} to a free Find A Crib account</a> and get a listing alert. "
+                   f"Plus members also see the managing agent's phone number and the owner's full portfolio.</div>")
+                + f"<h2>Building details</h2><table class='facts'>{facts}</table>"
                 + owner_html + cond_html + near_html + area_html)
 
         write(url.strip("/") + "/index.html",

@@ -145,6 +145,19 @@
   .hpd-research-btn:hover { background: #f6f6f6; }
   #folder-bar { display: flex; gap: 8px; padding: 10px 16px 0; overflow-x: auto; flex: none; }
   #folder-bar[hidden] { display: none; }
+  /* post-search helper: turns a big undifferentiated result set into next steps */
+  #search-helper { flex: none; padding: 10px 16px 0; }
+  #search-helper[hidden] { display: none; }
+  .sh-card { background: #f0f5ff; border: 1px solid #cfe0ff; border-radius: 12px; padding: 11px 13px; }
+  .sh-head { font-size: 13.5px; color: var(--ink); font-weight: 600; margin-bottom: 8px; }
+  .sh-head b { color: var(--blue); }
+  .sh-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .sh-chips button { border: 1px solid #b8ccf0; background: #fff; color: var(--blue); border-radius: 15px;
+    padding: 5px 11px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+  .sh-chips button:hover { background: #e6efff; }
+  .sh-chips button.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .sh-signup { margin-top: 8px; font-size: 12.5px; color: var(--ink-2); }
+  .sh-signup a { color: var(--blue); font-weight: 700; cursor: pointer; }
   .folder-chip { flex: none; padding: 6px 12px; border-radius: 15px; border: 1px solid var(--line);
     background: #fff; font-size: 12.5px; font-weight: 600; cursor: pointer; white-space: nowrap; }
   .folder-chip.active { background: var(--blue); border-color: var(--blue); color: #fff; }
@@ -595,6 +608,10 @@
   .d-key { font-size: 14px; color: var(--ink); font-weight: 600; margin-top: 4px; }
   .d-addr { font-size: 14px; font-weight: 600; margin-top: 8px; }
   .d-sub { font-size: 14px; color: var(--ink-2); margin-top: 2px; }
+  .d-health { display: inline-block; margin-top: 8px; font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 8px; }
+  .d-health.ok { background: #e8f7ec; color: #137333; }
+  .d-health.warn { background: #fff4e5; color: #a15c00; }
+  .d-health.bad { background: #fde8e8; color: #b3261e; }
   .d-actions { display: flex; gap: 8px; padding: 14px 18px; }
   .d-actions a, .d-actions button { flex: 1 1 0; min-width: 0; text-align: center; padding: 12px; border-radius: 8px; font-size: 14px;
     font-weight: 700; border: 1px solid var(--blue); cursor: pointer; text-decoration: none; white-space: nowrap; }
@@ -713,6 +730,7 @@
       </label>
     </div>
     <div id="folder-bar" hidden></div>
+    <div id="search-helper" hidden></div>
     <div class="results-grid empty-state" id="grid"><div class="empty">Loading 30k buildings…</div></div>
     <div class="footer-credit" id="credit">Source: NYC Rent Guidelines Board / DHCR 2024 · Coordinates from <a href="https://www.nyc.gov/site/planning/data-maps/open-data.page" target="_blank" rel="noopener">NYC PLUTO</a> · Listings via Zumper (nightly) · Owner/violation/complaint data from <a href="https://data.cityofnewyork.us/" target="_blank" rel="noopener">NYC Open Data — HPD</a> · Voucher listings via <a href="https://www.affordablehousing.com" target="_blank" rel="noopener">AffordableHousing.com</a> · Subsidized-building data from HPD &amp; HUD · Rent estimates: <a href="https://www.huduser.gov/portal/datasets/fmr/smallarea/index.html" target="_blank" rel="noopener">HUD FY2026 Small-Area Fair Market Rents</a> by ZIP (not building-specific) · Created by <a href="https://divinedavis.com" target="_blank" rel="noopener">Divine Davis</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></div>
   </aside>
@@ -1094,14 +1112,18 @@
   function maybeSignupNudge() {
     window.__bv = ++bvCount;
     if (authUser || signupNudged) return;
-    if (bvCount < 3) return;
+    // fire on the 2nd building view — early, while they're actively interested,
+    // rather than the 3rd (the old trigger got zero clicks)
+    if (bvCount < 2) return;
     signupNudged = true;
     try { if (sessionStorage.getItem('fac_nudged')) return; sessionStorage.setItem('fac_nudged', '1'); } catch (e) {}
     const t = document.createElement('div');
     t.className = 'folder-toast'; t.id = 'signup-nudge';
+    // benefit-led copy: name the thing they just did (comparing buildings) and
+    // the concrete payoff (a saved shortlist that syncs), not a generic ask
     t.innerHTML = `<button type="button" class="ft-close" aria-label="Dismiss">✕</button>
-      <div class="ft-title">🔖 Like any of these buildings?</div>
-      <div style="font-size:13px;margin-bottom:9px">Save them with a free account — they’ll be here when you come back.</div>
+      <div class="ft-title">🏠 Comparing a few buildings?</div>
+      <div style="font-size:13px;margin-bottom:9px">Save your shortlist to a free account — it syncs to your phone and you can pick up right where you left off.</div>
       <div class="ft-opts"><button type="button" data-nudge-cta>Create a free account</button></div>`;
     document.body.appendChild(t);
     const timer = setTimeout(() => t.remove(), 15000);
@@ -1750,7 +1772,51 @@
       const q = qInput.value.trim();
       // one event per settled search (200ms after the last keystroke), not per keypress
       if (q) track('search', { q, results: filtered.length });
+      renderSearchHelper(q);
     }, 200);
+  });
+
+  // #2 post-search narrowing: a broad neighborhood/ZIP search returns hundreds
+  // of buildings with no obvious next step. Turn that into quick filters + a
+  // count of what's actually available, so people find a unit instead of drowning.
+  const searchHelper = document.getElementById('search-helper');
+  function renderSearchHelper(q) {
+    // only worth showing for a broad result set from an actual query
+    if (!q || filtered.length < 25 || document.getElementById('pill-fav').classList.contains('active')) {
+      searchHelper.hidden = true; return;
+    }
+    const advertised = filtered.filter(r => (listingCounts[r.bbl] || 0) > 0).length;
+    const listedOn = document.querySelector('input[name="listed"]:checked').value === 'yes';
+    const violOn = moreFilters.viol === 'none';
+    const bedsOn = document.querySelectorAll('input[name="beds"]:checked').length > 0;
+    searchHelper.innerHTML =
+      `<div class="sh-card">
+        <div class="sh-head"><b>${filtered.length.toLocaleString()}</b> rent-stabilized buildings match${advertised ? ` · <b>${advertised}</b> recently advertised` : ''}. Narrow it down:</div>
+        <div class="sh-chips">
+          <button data-sh="listed" class="${listedOn ? 'on' : ''}">🏠 Available now${advertised ? ` (${advertised})` : ''}</button>
+          <button data-sh="noviol" class="${violOn ? 'on' : ''}">✅ No open violations</button>
+          <button data-sh="beds" class="${bedsOn ? 'on' : ''}">🛏 Bedrooms</button>
+        </div>
+        ${authUser ? '' : `<div class="sh-signup">💡 <a data-sh="save">Create a free account</a> to save the ones you like.</div>`}
+      </div>`;
+    searchHelper.hidden = false;
+  }
+  searchHelper.addEventListener('click', e => {
+    const act = e.target.closest('[data-sh]')?.dataset.sh;
+    if (!act) return;
+    if (act === 'listed') {
+      const cur = document.querySelector('input[name="listed"]:checked').value;
+      const r = document.querySelector(`input[name="listed"][value="${cur === 'yes' ? 'any' : 'yes'}"]`);
+      r.checked = true; r.dispatchEvent(new Event('change', { bubbles: true }));
+    } else if (act === 'noviol') {
+      moreFilters.viol = moreFilters.viol === 'none' ? 'any' : 'none'; syncMoreUI(); applyFilters();
+    } else if (act === 'beds') {
+      openFilters();   // beds live in the filters modal
+    } else if (act === 'save') {
+      openAuthModal('Create a free account to save the buildings you like.');
+    }
+    renderSearchHelper(qInput.value.trim());
+    updateFiltersCount();
   });
 
   // outbound link clicks (Zumper / Google / HPD etc.) — one delegated listener
@@ -2299,6 +2365,17 @@
   const detailFavBtn = detailSheet.querySelector('.detail-fav');
   let detailRec = null, detailListed = 0;
 
+  // #5 instant trust signal in the detail header, so people don't leave to
+  // Google "is this building/landlord bad" — we already have the answer.
+  function healthBadge(rec) {
+    const v = rec.h && rec.h.violations;
+    if (!v) return '';
+    const open = v.open || 0;
+    if (open === 0) return `<div class="d-health ok">✅ No open HPD violations on record</div>`;
+    const cls = v.c ? 'bad' : 'warn';
+    return `<div class="d-health ${cls}">⚠️ ${open} open HPD violation${open === 1 ? '' : 's'}`
+      + (v.c ? ` · ${v.c} hazardous (Class C)` : '') + ` — see details below</div>`;
+  }
   function renderDetail(rec, listed) {
     const price = listingPrices[rec.bbl];
     const beds = listingBeds[rec.bbl];
@@ -2331,6 +2408,7 @@
         ${keyBits.length ? `<div class="d-key">${esc(keyBits.join(' · '))}</div>` : ''}
         <div class="d-addr">${esc(rec.a)}</div>
         <div class="d-sub">${rec.nb ? esc(rec.nb) + ' · ' : ''}${esc(borough)}${rec.z ? ' ' + esc(rec.z) : ''}</div>
+        ${healthBadge(rec)}
       </div>
       <div class="d-actions">
         <button class="d-primary" data-detail="fav">${FAVS.has(rec.bbl) ? '♥ Saved to your list' : '♡ Save this building — free'}</button>

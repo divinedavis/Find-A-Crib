@@ -20,6 +20,7 @@ import html
 import hashlib
 import datetime
 from collections import defaultdict
+from seo_guides import GUIDES, _related
 
 SITE = "https://findacrib.com"
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "seo")
@@ -101,6 +102,9 @@ table.facts td.k{color:var(--ink2);width:42%;font-weight:600}
 footer.site{border-top:1px solid var(--line);margin-top:40px;padding:22px 20px;color:var(--ink2);font-size:13px;max-width:880px;margin-left:auto;margin-right:auto}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
 .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px}
+.guide-body p,.guide-body li{font-size:16px;line-height:1.6}
+.guide-body ul{padding-left:20px}
+.disclaimer{font-size:13px;color:var(--ink2);background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:10px}
 """
 
 
@@ -151,7 +155,8 @@ def page(title, desc, canonical, body, jsonld=None):
 <meta name="twitter:card" content="summary_large_image">
 <style>{CSS}</style>{ld}</head><body>
 <header class="site"><a class="brand" href="/">🏠 Find A Crib</a> &nbsp;·&nbsp;
-<a href="/buildings/">All neighborhoods</a></header>
+<a href="/buildings/">All neighborhoods</a> &nbsp;·&nbsp;
+<a href="/guide/">Guides</a></header>
 <main>{body}</main>
 <footer class="site">Data: NYC DHCR 2024 rent-stabilized building files, NYC PLUTO (coordinates),
 and NYC HPD Open Data (owner, violations, complaints). A building's rent-stabilized status reflects
@@ -519,6 +524,46 @@ def main():
                    f"{n} rent-stabilized buildings in {nb}, {boroname} recently advertised a unit for rent. Check status, owner, and violations.",
                    canonical, body, crumb))
         urls.append((canonical, "0.7", boro))
+
+    # ---- cornerstone guide pages (/guide/ hub + one page per guide) ----
+    for g in GUIDES:
+        canonical = SITE + f"/guide/{g['slug']}/"
+        crumb = breadcrumb([("Home", SITE + "/"), ("Guides", SITE + "/guide/"), (g["h1"], canonical)])
+        # Article schema helps these rank as informational content.
+        article = {"@context": "https://schema.org", "@type": "Article",
+                   "headline": g["title"], "description": g["desc"],
+                   "mainEntityOfPage": canonical, "author": {"@type": "Organization", "name": "Find A Crib"},
+                   "publisher": {"@type": "Organization", "name": "Find A Crib",
+                                 "logo": {"@type": "ImageObject", "url": SITE + "/icon-512.png"}}}
+        body = (f"<div class='crumbs'><a href='/'>Home</a> › <a href='/guide/'>Guides</a> › {esc(g['h1'])}</div>"
+                f"<h1>{esc(g['h1'])}</h1>"
+                f"<div class='guide-body'>{g['body']}</div>"
+                + _related(g["slug"], GUIDES))
+        write(f"guide/{g['slug']}/index.html",
+              page(g["title"] + " | Find A Crib", g["desc"], canonical, body, [article, crumb]))
+        urls.append((canonical, "0.8", "guide"))
+
+    # /guide/ hub linking every guide
+    hub_canonical = SITE + "/guide/"
+    cards = "".join(
+        f"<a class='card' href='/guide/{g['slug']}/'><strong>{esc(g['h1'])}</strong>"
+        f"<div style='color:#4a4a68;font-size:14px;margin-top:4px'>{esc(g['desc'])}</div></a>"
+        for g in GUIDES)
+    hub_crumb = breadcrumb([("Home", SITE + "/"), ("Guides", hub_canonical)])
+    hub_body = ("<div class='crumbs'><a href='/'>Home</a> › Guides</div>"
+                "<h1>NYC rent stabilization guides</h1>"
+                "<p class='lead'>Plain-English answers to the most common questions about rent-stabilized "
+                "apartments in New York City — what stabilization is, how to check your unit, and your rights "
+                "as a tenant.</p>"
+                f"<div class='grid'>{cards}</div>"
+                "<h2>Check a building</h2><p>Rent stabilization is building-specific — look up any address on the map.</p>"
+                "<a class='cta' href='/'>🔎 Open the Find A Crib map →</a>")
+    write("guide/index.html",
+          page("NYC Rent Stabilization Guides — Is My Apartment Stabilized? | Find A Crib",
+               "Plain-English guides to NYC rent stabilization: check if your apartment is stabilized, "
+               "find a stabilized unit, tenant rights, lease renewals, and rent-controlled vs stabilized.",
+               hub_canonical, hub_body, hub_crumb))
+    urls.append((hub_canonical, "0.9", "guide"))
 
     # ---- sitemaps (sharded by borough, < 50k each) + index ----
     by_boro_urls = defaultdict(list)

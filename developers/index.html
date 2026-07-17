@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Find A Crib API — NYC Rent-Stabilized, HPD & Section 8 Data for Developers</title>
+<meta name="description" content="Developer API for NYC rent-stabilized buildings, HPD violations, and Section 8 / voucher data. Free tier available. REST, JSON, API keys." />
+<link rel="canonical" href="https://findacrib.com/developers/" />
+<link rel="icon" href="/favicon.ico" />
+<style>
+  :root{--blue:#2f57ff;--ink:#0a0a23;--ink2:#4a4a68;--line:#e2e6ea;--bg:#f7f8fa;--code:#0d1117}
+  *{box-sizing:border-box}
+  body{margin:0;font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:#fff}
+  a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
+  header.site{padding:14px 22px;border-bottom:1px solid var(--line);display:flex;gap:16px;align-items:center}
+  header.site .brand{font-weight:800;color:var(--ink);font-size:18px}
+  main{max-width:920px;margin:0 auto;padding:0 20px 80px}
+  .hero{padding:48px 0 28px}
+  h1{font-size:34px;line-height:1.15;letter-spacing:-.5px;margin:0 0 10px}
+  .hero p{font-size:18px;color:var(--ink2);max-width:640px}
+  h2{font-size:22px;margin:40px 0 10px}
+  h3{font-size:16px;margin:22px 0 6px}
+  section{scroll-margin-top:20px}
+  pre{background:var(--code);color:#e6edf3;border-radius:10px;padding:14px 16px;overflow-x:auto;font-size:13.5px;line-height:1.5}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  p code,li code{background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-size:13.5px}
+  .card{border:1px solid var(--line);border-radius:14px;padding:20px;background:#fff}
+  .row{display:flex;gap:16px;flex-wrap:wrap}
+  .row>*{flex:1;min-width:230px}
+  input,button,select{font:inherit}
+  input[type=email],input[type=text]{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:9px;font-size:15px}
+  button{background:var(--blue);color:#fff;border:none;border-radius:9px;padding:11px 18px;font-weight:700;cursor:pointer}
+  button.sec{background:#fff;color:var(--blue);border:1px solid var(--blue)}
+  button:disabled{opacity:.6;cursor:default}
+  .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media(max-width:680px){.tiers{grid-template-columns:1fr}}
+  .tier{border:1px solid var(--line);border-radius:14px;padding:18px}
+  .tier.pop{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue)}
+  .tier .price{font-size:26px;font-weight:800;margin:6px 0}
+  .tier .price small{font-size:13px;color:var(--ink2);font-weight:500}
+  .tier ul{padding-left:18px;margin:10px 0;color:var(--ink2);font-size:14px}
+  .keybox{background:var(--bg);border:1px dashed var(--blue);border-radius:9px;padding:12px;font-family:ui-monospace,monospace;font-size:14px;word-break:break-all;margin-top:10px}
+  .muted{color:var(--ink2);font-size:14px}
+  .ok{color:#137333}.err{color:#b3261e}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  td,th{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line)}
+  footer{border-top:1px solid var(--line);padding:24px 20px;color:var(--ink2);font-size:13px;text-align:center}
+  .toc{position:sticky;top:0}
+</style>
+</head>
+<body>
+<header class="site"><a class="brand" href="/">🏠 Find A Crib</a> <a href="/">Map</a> <a href="/guide/">Guides</a> <a href="/developers/"><b>API</b></a></header>
+<main>
+  <div class="hero">
+    <h1>NYC rent-stabilized data, as an API</h1>
+    <p>Query 47,000+ DHCR-registered rent-stabilized buildings, their HPD violation and complaint history, and Section 8 / voucher data — one clean REST API. Free tier, no card required.</p>
+  </div>
+
+  <section id="start" class="card">
+    <h2 style="margin-top:0">Get an API key</h2>
+    <p class="muted">Enter your email and we'll issue a free key (1,000 requests/day). It's shown once — save it.</p>
+    <div class="row" style="align-items:flex-start">
+      <input id="email" type="email" placeholder="you@example.com" autocomplete="email" />
+      <button id="signup" style="flex:0 0 auto">Create free key</button>
+    </div>
+    <div id="signup-out"></div>
+  </section>
+
+  <section id="auth">
+    <h2>Authentication</h2>
+    <p>Send your key in the <code>X-API-Key</code> header on every request. Base URL: <code>https://findacrib.com/api/v1</code></p>
+    <pre>curl -H "X-API-Key: YOUR_KEY" https://findacrib.com/api/v1/buildings/1007220003</pre>
+    <p class="muted">Every response includes <code>X-RateLimit-Limit</code> and <code>X-RateLimit-Remaining</code>. Over the limit returns <code>429</code>; a bad key returns <code>401</code>.</p>
+  </section>
+
+  <section id="endpoints">
+    <h2>Endpoints</h2>
+
+    <h3>Get a building</h3>
+    <pre>GET /v1/buildings/{bbl}
+
+curl -H "X-API-Key: KEY" https://findacrib.com/api/v1/buildings/1007220003</pre>
+    <p class="muted">Returns rent-stabilized status, address, borough, ZIP, neighborhood, units, year built, HPD violation/complaint summary, and Section 8 info. (BBL = NYC Borough-Block-Lot id.)</p>
+
+    <h3>List / filter buildings</h3>
+    <pre>GET /v1/buildings?borough=&zip=&neighborhood=&advertised=&section8=&page=&limit=
+
+curl -H "X-API-Key: KEY" \
+  "https://findacrib.com/api/v1/buildings?borough=brooklyn&section8=true&limit=20"</pre>
+    <p class="muted"><code>borough</code>: manhattan · brooklyn · queens · bronx · staten_island. <code>advertised=true</code> = recently listed for rent. <code>section8=true</code> = subsidized/voucher-friendly. Paginated (<code>limit</code> ≤ 100).</p>
+
+    <h3>Section 8 / vouchers</h3>
+    <pre>GET /v1/section8?bbl={bbl}
+GET /v1/section8?zip={zip}</pre>
+
+    <h3>Search by address</h3>
+    <pre>GET /v1/search?q=dumbo</pre>
+  </section>
+
+  <section id="pricing">
+    <h2>Pricing</h2>
+    <div class="tiers">
+      <div class="tier"><b>Free</b><div class="price">$0</div>
+        <ul><li>1,000 requests / day</li><li>All endpoints</li><li>Community support</li></ul></div>
+      <div class="tier pop"><b>Pro</b><div class="price">$49<small>/mo</small></div>
+        <ul><li>50,000 requests / day</li><li>All endpoints</li><li>Email support</li></ul></div>
+      <div class="tier"><b>Business</b><div class="price">$199<small>/mo</small></div>
+        <ul><li>500,000 requests / day</li><li>All endpoints</li><li>Priority support</li></ul></div>
+    </div>
+  </section>
+
+  <section id="dashboard" class="card" style="margin-top:34px">
+    <h2 style="margin-top:0">Your key &amp; usage</h2>
+    <p class="muted">Paste your key to see today's usage and upgrade.</p>
+    <div class="row" style="align-items:flex-start">
+      <input id="dashkey" type="text" placeholder="fac_live_…" />
+      <button id="check" class="sec" style="flex:0 0 auto">Check usage</button>
+    </div>
+    <div id="dash-out"></div>
+  </section>
+</main>
+<footer>Data: NYC DHCR, HPD Open Data, HUD, and AffordableHousing.com. Public government data, compiled by Find A Crib. · <a href="/">Home</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></footer>
+
+<script>
+  const API = '/api/developers';
+  const $ = id => document.getElementById(id);
+
+  $('signup').addEventListener('click', async () => {
+    const email = $('email').value.trim();
+    const out = $('signup-out'); out.innerHTML = '';
+    if (!email) return;
+    $('signup').disabled = true; $('signup').textContent = 'Creating…';
+    try {
+      const r = await fetch(API + '/signup', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email }) });
+      const d = await r.json();
+      if (d.ok) {
+        out.innerHTML = `<p class="ok">✅ Your free API key (save it — shown only once):</p><div class="keybox">${d.api_key}</div>`;
+      } else if (d.error === 'has_paid_key') {
+        out.innerHTML = `<p class="err">${d.message}</p>`;
+      } else {
+        out.innerHTML = `<p class="err">${d.error === 'invalid_email' ? 'Please enter a valid email.' : 'Something went wrong — try again.'}</p>`;
+      }
+    } catch (e) { out.innerHTML = '<p class="err">Network error — try again.</p>'; }
+    $('signup').disabled = false; $('signup').textContent = 'Create free key';
+  });
+
+  $('check').addEventListener('click', async () => {
+    const key = $('dashkey').value.trim();
+    const out = $('dash-out'); out.innerHTML = '';
+    if (!key) return;
+    try {
+      const r = await fetch(API + '/usage?key=' + encodeURIComponent(key));
+      const d = await r.json();
+      if (d.error) { out.innerHTML = '<p class="err">That key wasn\'t found.</p>'; return; }
+      const pct = Math.round(100 * d.used_today / d.daily_limit);
+      out.innerHTML = `<table>
+        <tr><th>Tier</th><td><b>${d.tier}</b></td></tr>
+        <tr><th>Today</th><td>${d.used_today.toLocaleString()} / ${d.daily_limit.toLocaleString()} requests (${pct}%)</td></tr>
+        <tr><th>Remaining</th><td>${d.remaining.toLocaleString()}</td></tr>
+      </table>` + (d.paid ? '<p class="muted" style="margin-top:12px">You\'re on a paid plan. To change or cancel, reply to your Stripe receipt.</p>'
+        : `<p style="margin-top:14px"><button data-up="pro">Upgrade to Pro — $49/mo</button> <button class="sec" data-up="business">Business — $199/mo</button></p>`);
+      out.querySelectorAll('[data-up]').forEach(b => b.addEventListener('click', () => startUpgrade(key, b.dataset.up)));
+    } catch (e) { out.innerHTML = '<p class="err">Network error — try again.</p>'; }
+  });
+
+  async function startUpgrade(key, tier) {
+    try {
+      const r = await fetch(API + '/upgrade', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ key, tier }) });
+      const d = await r.json();
+      if (d.checkout_url) location.href = d.checkout_url;
+      else $('dash-out').insertAdjacentHTML('beforeend', '<p class="err">Couldn\'t start checkout — try again.</p>');
+    } catch (e) { $('dash-out').insertAdjacentHTML('beforeend', '<p class="err">Network error — try again.</p>'); }
+  }
+
+  // returning from Stripe
+  const p = new URLSearchParams(location.search);
+  if (p.get('upgraded') === '1') { const s = $('dashboard'); s.insertAdjacentHTML('afterbegin', '<p class="ok">🎉 Upgrade complete — your key now has the new limit. Paste it above to confirm.</p>'); }
+</script>
+</body>
+</html>

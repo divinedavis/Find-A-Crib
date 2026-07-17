@@ -13,16 +13,21 @@ reads are fast and need no DB round-trip. The DB is used only for auth/metering.
 
 Run:  DATA_DIR=/var/www/rent-map gunicorn -w 2 -b 127.0.0.1:8010 api_server:app
 """
-import hashlib, json, os, urllib.request, urllib.error
+import hashlib, hmac, json, os, re, secrets, time, urllib.request, urllib.error, urllib.parse
 from flask import Flask, jsonify, request, g
 
 DATA_DIR = os.environ.get("DATA_DIR", ".")
 SUPABASE_URL = "https://dbaifotzwlxjvsxjohjt.supabase.co"
 SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+STRIPE_SECRET = os.environ.get("STRIPE_SECRET_KEY", "")
+STRIPE_WH_SECRET = os.environ.get("STRIPE_API_WEBHOOK_SECRET", "")
+PRICES = {"pro": os.environ.get("STRIPE_PRICE_PRO", ""),
+          "business": os.environ.get("STRIPE_PRICE_BUSINESS", "")}
 BORO = {"M": "manhattan", "Bk": "brooklyn", "Q": "queens", "Bx": "bronx", "SI": "staten_island"}
 BORO_REV = {v: k for k, v in BORO.items()}
 MAX_LIMIT = 100
-DOCS = "https://findacrib.com/developers"
+DOCS = "https://findacrib.com/developers/"
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 app = Flask(__name__)
 
@@ -87,18 +92,32 @@ def public_building(b):
 
 
 # ---- auth / metering --------------------------------------------------------
-def authorize(key):
-    key_hash = hashlib.sha256(key.encode()).hexdigest()
+def rpc(name, body):
     req = urllib.request.Request(
-        f"{SUPABASE_URL}/rest/v1/rpc/api_authorize",
-        data=json.dumps({"p_key_hash": key_hash}).encode(),
+        f"{SUPABASE_URL}/rest/v1/rpc/{name}",
+        data=json.dumps(body).encode(),
         headers={"apikey": SERVICE_KEY, "Authorization": f"Bearer {SERVICE_KEY}",
                  "Content-Type": "application/json"}, method="POST")
+    with urllib.request.urlopen(req, timeout=8) as r:
+        raw = r.read()
+        return json.loads(raw) if raw else None   # void RPCs return an empty body (204)
+
+
+def authorize(key):
     try:
-        with urllib.request.urlopen(req, timeout=8) as r:
-            return json.loads(r.read())
+        return rpc("api_authorize", {"p_key_hash": hashlib.sha256(key.encode()).hexdigest()})
     except Exception:
         return {"allowed": False, "reason": "auth_unavailable"}
+
+
+def stripe_post(path, fields):
+    req = urllib.request.Request(
+        f"https://api.stripe.com/v1/{path}",
+        data=urllib.parse.urlencode(fields).encode(),
+        headers={"Authorization": f"Bearer {STRIPE_SECRET}",
+                 "Content-Type": "application/x-www-form-urlencoded"}, method="POST")
+    with urllib.request.urlopen(req, timeout=15) as r:
+        return json.loads(r.read())
 
 
 PUBLIC_PATHS = {"/", "/v1", "/v1/", "/health"}
@@ -106,7 +125,10 @@ PUBLIC_PATHS = {"/", "/v1", "/v1/", "/health"}
 
 @app.before_request
 def gate():
-    if request.method == "OPTIONS" or request.path in PUBLIC_PATHS:
+    # portal endpoints (signup/usage/upgrade/webhook) have their own auth;
+    # the X-API-Key gate applies only to the metered /v1 data endpoints.
+    if request.method == "OPTIONS" or request.path in PUBLIC_PATHS \
+       or request.path.startswith("/developers/"):
         return
     key = request.headers.get("X-API-Key") or request.args.get("api_key")
     if not key:
@@ -241,6 +263,103 @@ def search():
                    results=[{"bbl": b["bbl"], "address": b.get("a"),
                              "borough": BORO.get(b.get("b")), "neighborhood": b.get("nb"),
                              "zip": b.get("z")} for b in hits])
+
+
+# ---- developer portal (signup / usage / upgrade / billing webhook) ----------
+@app.route("/developers/signup", methods=["POST"])
+def signup():
+    email = (request.json or {}).get("email", "").strip().lower() if request.is_json \
+            else request.form.get("email", "").strip().lower()
+    if not EMAIL_RE.match(email):
+        return jsonify(error="invalid_email"), 400
+    plain = "fac_live_" + secrets.token_hex(20)
+    key_hash = hashlib.sha256(plain.encode()).hexdigest()
+    try:
+        res = rpc("api_create_key", {"p_email": email, "p_key_hash": key_hash,
+                                     "p_key_prefix": plain[:16] + "…"})
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
+    if not res.get("ok"):
+        if res.get("reason") == "has_paid_key":
+            return jsonify(error="has_paid_key",
+                           message="This email already has a paid key. Manage it in the dashboard."), 409
+        return jsonify(error="signup_failed"), 400
+    return jsonify(ok=True, api_key=plain, tier="free", daily_limit=1000,
+                   message="Save this key — it is shown only once.")
+
+
+@app.route("/developers/usage")
+def usage():
+    key = request.args.get("key", "").strip()
+    if not key:
+        return jsonify(error="missing_key"), 400
+    try:
+        s = rpc("api_key_status", {"p_key_hash": hashlib.sha256(key.encode()).hexdigest()})
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
+    if not s.get("ok"):
+        return jsonify(error="invalid_key"), 404
+    return jsonify(tier=s["tier"], owner=s["owner"], prefix=s["prefix"], status=s["status"],
+                   used_today=s["used_today"], daily_limit=s["limit"],
+                   remaining=max(0, s["limit"] - s["used_today"]), paid=s["paid"])
+
+
+@app.route("/developers/upgrade", methods=["POST"])
+def upgrade():
+    body = request.json or {}
+    key, tier = body.get("key", "").strip(), body.get("tier", "").strip()
+    if tier not in ("pro", "business") or not PRICES.get(tier):
+        return jsonify(error="bad_tier"), 400
+    try:
+        s = rpc("api_key_status", {"p_key_hash": hashlib.sha256(key.encode()).hexdigest()})
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
+    if not s.get("ok"):
+        return jsonify(error="invalid_key"), 404
+    try:
+        session = stripe_post("checkout/sessions", {
+            "mode": "subscription",
+            "line_items[0][price]": PRICES[tier],
+            "line_items[0][quantity]": "1",
+            "customer_email": s["owner"],
+            "success_url": DOCS + "?upgraded=1",
+            "cancel_url": DOCS + "?canceled=1",
+            "metadata[api_key_id]": s["id"],
+            "metadata[tier]": tier,
+            "subscription_data[metadata][api_key_id]": s["id"],
+            "subscription_data[metadata][tier]": tier,
+        })
+    except Exception:
+        return jsonify(error="checkout_unavailable"), 502
+    return jsonify(checkout_url=session.get("url"))
+
+
+@app.route("/developers/stripe-webhook", methods=["POST"])
+def stripe_webhook():
+    body = request.get_data(as_text=True)
+    sig = request.headers.get("Stripe-Signature", "")
+    parts = dict(p.split("=", 1) for p in sig.split(",") if "=" in p)
+    t, v1 = parts.get("t"), parts.get("v1")
+    if not (t and v1) or abs(time.time() - int(t)) > 300:
+        return "bad signature", 400
+    mac = hmac.new(STRIPE_WH_SECRET.encode(), f"{t}.{body}".encode(), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(mac, v1):
+        return "bad signature", 400
+    event = json.loads(body)
+    obj = event.get("data", {}).get("object", {})
+    typ = event.get("type", "")
+    try:
+        if typ == "checkout.session.completed":
+            meta = obj.get("metadata") or {}
+            kid = meta.get("api_key_id")
+            if kid:
+                rpc("api_set_tier", {"p_key_id": kid, "p_tier": meta.get("tier", "pro"),
+                                     "p_customer": obj.get("customer"), "p_sub": obj.get("subscription")})
+        elif typ == "customer.subscription.deleted":
+            rpc("api_downgrade_by_sub", {"p_sub": obj.get("id")})
+    except Exception:
+        return "error", 500
+    return "", 200
 
 
 if __name__ == "__main__":

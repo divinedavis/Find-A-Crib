@@ -476,6 +476,46 @@ def main():
                        canonical, body, crumb))
             urls.append((canonical, "0.6", boro))
 
+    # ---- "no open violations" (best-maintained) borough pages ----
+    # Renters search for well-maintained buildings; this cut refreshes as HPD
+    # violation data updates each month, so it's naturally fresh content.
+    def open_viol(x):
+        return ((x.get("h") or {}).get("violations") or {}).get("open")
+    for boro in ["M", "Bk", "Q", "Bx", "SI"]:
+        boroname = BORO_NAME.get(boro, "New York")
+        # buildings with an HPD record (so 0 is real, not "unknown") and 0 open violations
+        clean = [x for x in blds if x["b"] == boro and open_viol(x) == 0]
+        clean.sort(key=lambda x: -(x.get("u") or 0))   # biggest well-maintained first
+        clean = clean[:60]
+        if len(clean) < 5:
+            continue
+        url = f"/borough/{BORO_SLUG.get(boro,'nyc')}/no-violations/"
+        canonical = SITE + url
+        rows = "".join(
+            f"<tr><td>{i+1}</td><td><a href=\"{bld_url(x)}\">{esc(titlecase_addr(x.get('a')))}</a></td>"
+            f"<td>{esc(x.get('nb') or '')}</td><td>{esc(x.get('u') or '—')}</td></tr>"
+            for i, x in enumerate(clean))
+        body = (f"<div class='crumbs'><a href='/'>Home</a> › "
+                f"<a href='/borough/{BORO_SLUG.get(boro,'nyc')}/'>{esc(boroname)}</a></div>"
+                f"<h1>Rent-stabilized buildings with no open violations in {esc(boroname)}</h1>"
+                f"<p class='lead'>{len(clean)} DHCR rent-stabilized buildings in {esc(boroname)} that currently "
+                f"have <strong>zero open HPD violations</strong> on record — a useful signal of a well-maintained "
+                f"building. Largest first. Always verify a building's current record before you sign.</p>"
+                f"<a class='cta' href='/'>Open the map →</a>"
+                f"<table class='facts'><thead><tr><th>#</th><th>Building</th>"
+                f"<th>Neighborhood</th><th>Apartments</th></tr></thead><tbody>{rows}</tbody></table>"
+                f"<p style='margin-top:16px'><a href='/guide/rent-stabilized-tenant-rights/'>"
+                f"Learn your rights as a rent-stabilized tenant →</a></p>")
+        crumb = breadcrumb([("Home", SITE + "/"),
+                            (boroname, SITE + f"/borough/{BORO_SLUG.get(boro,'nyc')}/"),
+                            ("No open violations", canonical)])
+        write(url.strip("/") + "/index.html",
+              page(f"Rent-stabilized buildings with no open violations in {boroname} | Find A Crib",
+                   f"{len(clean)} rent-stabilized buildings in {boroname} with zero open HPD violations. "
+                   f"A signal of well-maintained buildings — verify before you sign.",
+                   canonical, body, crumb))
+        urls.append((canonical, "0.6", boro))
+
     # ---- "recently advertised for rent" pages (high commercial intent) ----
     adv_by_nb = defaultdict(list)
     for b in blds:

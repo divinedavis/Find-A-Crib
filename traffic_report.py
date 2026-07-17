@@ -31,18 +31,6 @@ QUERY_URL = f"https://api.supabase.com/v1/projects/{PROJECT_REF}/database/query"
 OWNER = "af2629f7-1121-4bee-8a2b-cede9318c864"
 TZ = "America/New_York"
 
-# ---- Business-metric inputs -------------------------------------------------
-# Revenue is computed from the subscriptions table (active subs x price). The
-# rest of the startup metrics (CAC, payback, gross margin, burn, runway) need
-# numbers that live outside the database — set them here and keep them current.
-PLUS_PRICE = 4.99          # $/mo per Plus subscriber (list price)
-STRIPE_FEE = 0.30 + 0.029 * PLUS_PRICE   # Stripe's ~2.9% + $0.30 per charge
-MONTHLY_AD_SPEND = 1500.0  # Google Ads: ~$50/day. Update if you change budget.
-MONTHLY_COSTS = 150.0      # hosting + APIs (droplets, Supabase, Maps, etc.) — your COGS/opex estimate
-CASH_ON_HAND = 0.0         # set to your bank balance to compute burn rate & cash runway
-ASSUMED_LIFETIME_MO = 12   # fallback avg subscriber lifetime when churn can't be measured yet
-# -----------------------------------------------------------------------------
-
 # Owner's visitor_ids: any anonymous id he ever used while signed in, learned
 # from BOTH tables (a page load logs visits; the in-app 'signin' event logs
 # events — either one is enough to map a device). visitor_id is not null guards
@@ -54,12 +42,22 @@ MINE = (
     "select visitor_id from public.events "
     f"where user_id = '{OWNER}' and visitor_id is not null"
 )
-# Common CTE: `v` = all visits minus the owner; `mine` = owner's visitor_ids.
+# Search-engine crawlers indexing the 47k SEO pages hit /building/, /borough/,
+# and /neighborhood/ with NO referrer (real organic visitors to those pages
+# arrive WITH a google/bing/brave referrer). Since the sitemap was submitted
+# (2026-07-16) these bots inflate visitor counts — exclude that exact pattern.
+# Real app users land on "/" and real search visitors carry a referrer, so
+# neither is affected.
+BOT_FILTER = (
+    "and not (coalesce(referrer, '') = '' and ("
+    "path like '/building/%' or path like '/borough/%' or path like '/neighborhood/%'))"
+)
+# Common CTE: `v` = all visits minus the owner and crawlers; `mine` = owner's ids.
 CLEAN = (
     f"with mine as ({MINE}), "
     "v as (select * from public.visits "
     f"where user_id is distinct from '{OWNER}' "
-    "and visitor_id not in (select visitor_id from mine))"
+    f"and visitor_id not in (select visitor_id from mine) {BOT_FILTER})"
 )
 # Same idea for the events table.
 CLEAN_E = (
@@ -145,79 +143,11 @@ def queries(day_offset=0):
                  f"and {day_of.replace('created_at','p.created_at')} < {today})) "
                  f"select u.email, ret.n from ret "
                  f"join auth.users u on u.id = ret.user_id order by ret.n desc;",
-        # Subscription state for the business metrics. active = paying now;
-        # new_paying_mtd / churned_mtd bound the current calendar month so
-        # churn and CAC reflect this month.
-        "subs": f"select "
-                 f"count(*) filter (where status in ('active','trialing')) as active, "
-                 f"count(*) filter (where status = 'canceled') as canceled_total, "
-                 f"count(*) filter (where status in ('active','trialing') "
-                 f"and date_trunc('month', updated_at at time zone '{TZ}') "
-                 f"= date_trunc('month', {today})) as new_paying_mtd, "
-                 f"count(*) filter (where status = 'canceled' "
-                 f"and date_trunc('month', updated_at at time zone '{TZ}') "
-                 f"= date_trunc('month', {today})) as churned_mtd "
-                 f"from public.subscriptions;",
     }
 
 
 def pct(part, whole):
     return f"{(100.0 * part / whole):.0f}%" if whole else "n/a"
-
-
-def money(x):
-    return f"${x:,.2f}"
-
-
-def business_metrics(data):
-    """The startup/SaaS metrics: revenue from the DB, the rest from the
-    config inputs at the top of this file. Returns a list of report lines."""
-    s = data["subs"][0]
-    total_users = data["signups"][0]["total_accounts"]
-    active = s["active"]
-    new_paying = s["new_paying_mtd"]
-    churned = s["churned_mtd"]
-
-    net_per_sub = PLUS_PRICE - STRIPE_FEE          # after Stripe fees
-    mrr = active * PLUS_PRICE                        # gross monthly recurring revenue
-    arr = mrr * 12
-    arpu = (mrr / total_users) if total_users else 0.0     # revenue per signed-up user
-    conv = pct(active, total_users)                  # free -> Plus
-    # base at month start = active now minus those added this month, plus those churned this month
-    base = max(active - new_paying + churned, 0)
-    churn_rate = (churned / base) if base else None
-    lifetime_mo = (1 / churn_rate) if churn_rate else ASSUMED_LIFETIME_MO
-    ltv = net_per_sub * lifetime_mo                  # per paying customer, net of fees
-    cac = (MONTHLY_AD_SPEND / new_paying) if new_paying else None
-    gross_profit_per_sub = net_per_sub - (MONTHLY_COSTS / active if active else 0)
-    payback_mo = (cac / gross_profit_per_sub) if (cac and gross_profit_per_sub > 0) else None
-    gross_margin = ((mrr - MONTHLY_COSTS) / mrr) if mrr else None
-    net_burn = (MONTHLY_COSTS + MONTHLY_AD_SPEND) - mrr   # cash out minus cash in, per month
-    runway_mo = (CASH_ON_HAND / net_burn) if (net_burn > 0 and CASH_ON_HAND) else None
-    net_new_arr = new_paying * PLUS_PRICE * 12
-    burn_multiple = (net_burn / (net_new_arr / 12)) if net_new_arr else None
-
-    def opt(v, fmt):  # format a value that may be un-computable yet
-        return fmt(v) if v is not None else "n/a (need data)"
-
-    out = ["\nBUSINESS METRICS"]
-    out.append(f"  Active Plus subs   : {active}")
-    out.append(f"  MRR                : {money(mrr)}   (ARR {money(arr)})")
-    out.append(f"  ARPU               : {money(arpu)}/user   Free->Plus: {conv}")
-    out.append(f"  New paying (MTD)   : {new_paying}     Churned (MTD): {churned}")
-    out.append(f"  Churn rate (MTD)   : {opt(churn_rate, lambda v: f'{v*100:.1f}%')}")
-    out.append(f"  LTV (net of fees)  : {money(ltv)}   (~{lifetime_mo:.0f} mo lifetime)")
-    out.append(f"  CAC                : {opt(cac, money)}")
-    out.append(f"  CAC payback        : {opt(payback_mo, lambda v: f'{v:.1f} mo')}")
-    out.append(f"  Gross margin       : {opt(gross_margin, lambda v: f'{v*100:.0f}%')}")
-    out.append(f"  Net burn / mo      : {money(net_burn)}")
-    out.append(f"  Burn multiple      : {opt(burn_multiple, lambda v: f'{v:.2f}x')}")
-    out.append(f"  Cash runway        : {opt(runway_mo, lambda v: f'{v:.1f} mo')}")
-    if cac and ltv:
-        out.append(f"  LTV : CAC ratio    : {ltv/cac:.1f} : 1  (>3:1 is healthy)")
-    out.append(f"  [inputs: ad spend {money(MONTHLY_AD_SPEND)}/mo, costs {money(MONTHLY_COSTS)}/mo, "
-               f"cash {money(CASH_ON_HAND)} — edit these in traffic_report.py]")
-    return out
 
 
 def render(data, day_label="TODAY"):
@@ -240,9 +170,6 @@ def render(data, day_label="TODAY"):
     out.append("\nSIGNED-UP USERS")
     out.append(f"  Total accounts  : {su['total_accounts']}")
     out.append(f"  New this day    : {su['new_today']}")
-
-    if data.get("subs"):
-        out.extend(business_metrics(data))
 
     ru = data["returning_users"]
     out.append(f"\nRETURNING SIGNED-IN USERS ({len(ru)})")

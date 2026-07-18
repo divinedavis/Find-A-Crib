@@ -633,10 +633,13 @@ def main():
     write("sitemap.xml", f'<?xml version="1.0" encoding="UTF-8"?>'
           f'<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
           f'<sitemap><loc>{SITE}/sitemap-main.xml</loc><lastmod>{BUILD_DATE}</lastmod></sitemap>{idx}</sitemapindex>')
-    # main sitemap = homepage + hub
+    # main sitemap = homepage + hand-authored pages (developer API portal).
+    # These aren't generated in the loop above, so list them here explicitly.
+    static_pages = [("/", "1.0"), ("/developers/", "0.8")]
+    main_urls = "".join(f'<url><loc>{SITE}{p}</loc><lastmod>{BUILD_DATE}</lastmod>'
+                        f'<priority>{pr}</priority></url>' for p, pr in static_pages)
     write("sitemap-main.xml", f'<?xml version="1.0" encoding="UTF-8"?>'
-          f'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
-          f'<url><loc>{SITE}/</loc><lastmod>{BUILD_DATE}</lastmod><priority>1.0</priority></url></urlset>')
+          f'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{main_urls}</urlset>')
     write("robots.txt", f"User-agent: *\nAllow: /\nSitemap: {SITE}/sitemap.xml\n")
 
     # persist lastmod state + emit the list of changed URLs for IndexNow

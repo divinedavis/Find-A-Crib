@@ -1456,6 +1456,11 @@
   }
   const nbList = Object.entries(nbCounts).sort((a, b) => a[0].localeCompare(b[0]));
   const nbListEl = document.getElementById('nb-list');
+  // area indexes so the search box can suggest boroughs/neighborhoods (click → set the filter)
+  const NB_INDEX = nbList.map(([name, count]) => ({ name, count, boro: [...(nbBoros[name] || [])][0] }));
+  const boroCounts = {};
+  for (const rec of data) boroCounts[rec.b] = (boroCounts[rec.b] || 0) + 1;
+  const BORO_INDEX = Object.keys(BORO_NAME).map(code => ({ name: BORO_NAME[code], code, count: boroCounts[code] || 0 })).filter(b => b.count);
   for (const [name, n] of nbList) {
     const id = 'nb-' + name.replace(/[^a-z0-9]/gi,'_');
     const lab = document.createElement('label');
@@ -1735,15 +1740,26 @@
   function searchMatches(raw, limit = 3) {
     const q = (raw || '').toUpperCase().trim();
     if (q.length < 2) return [];
+    // areas first (boroughs + neighborhoods) — clicking one SETS the filter
+    const areas = [];
+    for (const b of BORO_INDEX) if (b.name.toUpperCase().includes(q)) areas.push({ type: 'borough', ...b });
+    const nbStarts = [], nbContains = [];
+    for (const n of NB_INDEX) {
+      const N = n.name.toUpperCase();
+      if (N.startsWith(q)) nbStarts.push({ type: 'neighborhood', ...n });
+      else if (N.includes(q)) nbContains.push({ type: 'neighborhood', ...n });
+    }
+    const areaMatches = areas.concat(nbStarts, nbContains).slice(0, 4);
+    // then building addresses
     const starts = [], contains = [];
     for (const rec of data) {
       if (!rec.a) continue;
       const A = rec.a.toUpperCase();
-      if (A.startsWith(q)) { if (starts.length < limit) starts.push(rec); }
-      else if (contains.length < limit && A.includes(q)) contains.push(rec);
+      if (A.startsWith(q)) { if (starts.length < limit) starts.push({ type: 'building', rec }); }
+      else if (contains.length < limit && A.includes(q)) contains.push({ type: 'building', rec });
       if (starts.length >= limit) break;
     }
-    return starts.concat(contains).slice(0, limit);
+    return areaMatches.concat(starts, contains).slice(0, areaMatches.length + limit);
   }
   function positionAC() {
     const r = qInput.getBoundingClientRect();
@@ -1753,9 +1769,21 @@
   }
   function renderAC(matches) {
     if (!matches.length) { searchAC.hidden = true; return; }
-    searchAC.innerHTML = matches.map(rec => {
-      const borough = BORO_NAME[rec.b] || '';
-      return `<button class="ac-item" data-bbl="${esc(rec.bbl)}">
+    searchAC.innerHTML = matches.map(m => {
+      if (m.type === 'borough') {
+        return `<button class="ac-item" data-type="borough" data-code="${esc(m.code)}">
+          <span class="ac-addr">📍 ${esc(m.name)}</span>
+          <span class="ac-sub">Borough · ${m.count.toLocaleString()} buildings — filter to this borough</span>
+        </button>`;
+      }
+      if (m.type === 'neighborhood') {
+        return `<button class="ac-item" data-type="neighborhood" data-nb="${esc(m.name)}" data-code="${esc(m.boro || '')}">
+          <span class="ac-addr">📍 ${esc(m.name)}</span>
+          <span class="ac-sub">Neighborhood, ${esc(BORO_NAME[m.boro] || '')} · ${m.count.toLocaleString()} buildings — filter to this area</span>
+        </button>`;
+      }
+      const rec = m.rec, borough = BORO_NAME[rec.b] || '';
+      return `<button class="ac-item" data-type="building" data-bbl="${esc(rec.bbl)}">
         <span class="ac-addr">${esc(rec.a)}</span>
         <span class="ac-sub">${rec.nb ? esc(rec.nb) + ' · ' : ''}${esc(borough)}${rec.z ? ' ' + esc(rec.z) : ''}</span>
       </button>`;
@@ -1925,12 +1953,46 @@
   qInput.addEventListener('focus', () => { if (qInput.value.trim()) renderAC(searchMatches(qInput.value)); });
   qInput.addEventListener('blur', () => setTimeout(() => { searchAC.hidden = true; }, 200));
   window.addEventListener('resize', positionAC);
+  // Clicking a borough suggestion narrows the borough filter to just that one.
+  function selectBorough(code) {
+    document.querySelectorAll('#borough-list input').forEach(c => { c.checked = (c.dataset.b === code); });
+    nbListEl.querySelectorAll('input:checked').forEach(c => { c.checked = false; });  // clear nb filter
+    document.querySelector('#borough-list input').dispatchEvent(new Event('change', { bubbles: true }));
+    updateFiltersCount();
+  }
+  // Clicking a neighborhood suggestion filters to just that neighborhood.
+  function selectNeighborhood(nb, code) {
+    const bcb = code && document.querySelector(`#borough-list input[data-b="${code}"]`);
+    if (bcb && !bcb.checked) { bcb.checked = true; updateBoroughBadge(); }
+    syncNbVisibility();
+    nbListEl.querySelectorAll('input').forEach(c => { c.checked = (c.value === nb); });
+    updateNbBadge();
+    applyFilters();
+    updateFiltersCount();
+    // frame the neighborhood on the map
+    const buildings = data.filter(r => r.nb === nb);
+    if (buildings.length) {
+      const lats = buildings.map(r => r.lat), lngs = buildings.map(r => r.lng);
+      map.fitBounds([[Math.min(...lats), Math.min(...lngs)], [Math.max(...lats), Math.max(...lngs)]], { padding: [40, 40], animate: false });
+    }
+  }
   searchAC.addEventListener('click', e => {
     const item = e.target.closest('.ac-item');
     if (!item) return;
+    searchAC.hidden = true;
+    const type = item.dataset.type;
+    if (type === 'borough') {
+      qInput.value = ''; qInput.blur();
+      selectBorough(item.dataset.code);
+      return;
+    }
+    if (type === 'neighborhood') {
+      qInput.value = ''; qInput.blur();
+      selectNeighborhood(item.dataset.nb, item.dataset.code);
+      return;
+    }
     const m = markerByBbl.get(item.dataset.bbl);
     if (!m) return;
-    searchAC.hidden = true;
     qInput.value = m._rec.a;
     qInput.blur();
     map.setView([m._rec.lat, m._rec.lng], Math.max(map.getZoom(), 16), { animate: false });

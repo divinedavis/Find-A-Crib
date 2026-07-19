@@ -41,7 +41,7 @@ CITY_META = {
         "desc": ("Map 12,000+ San Francisco block-sides with rent-controlled apartments, "
                  "from official SF Rent Board owner reports — median reported rents, "
                  "unit counts, year built, by neighborhood."),
-        "tagline": "(San Francisco Rent Controlled Homes)",
+        "tagline": "(SF Rent Stabilized Homes)",
         "seo_nav": """<nav class="seo-nav" aria-label="About this map">
   <h2>Find rent-controlled apartments in San Francisco</h2>
   <p>Find A Crib maps the SF Rent Board's Housing Inventory — owner-reported,
@@ -56,7 +56,7 @@ CITY_META = {
         "desc": ("Map 67,000+ Los Angeles buildings that meet the Rent Stabilization "
                  "Ordinance criteria (2+ units, built before Oct 1979), derived from "
                  "LA County assessor rolls. Verify any address on ZIMAS."),
-        "tagline": "(LA Rent-Stabilized · RSO)",
+        "tagline": "(LA Rent Stabilized Homes)",
         "seo_nav": """<nav class="seo-nav" aria-label="About this map">
   <h2>Find likely rent-stabilized (RSO) apartments in Los Angeles</h2>
   <p>Find A Crib maps City of LA residential buildings that meet LAHD's RSO

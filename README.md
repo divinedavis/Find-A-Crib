@@ -1,9 +1,15 @@
-# Find A Crib — NYC Rent-Stabilized Buildings Explorer
+# Find A Crib — Rent-Stabilized Buildings Explorer (NYC · SF · LA)
 
 An interactive map of every DHCR rent-stabilized building in **Manhattan**,
 **the Bronx**, **Brooklyn**, **Queens**, and **Staten Island**, with a nightly
 signal for which buildings were **recently advertised** for rent, plus the
 building's HPD owner / managing agent and open violation & complaint counts.
+
+Two more cities ride the same frontend (see **Other cities** below):
+**San Francisco** at [/sf/](https://findacrib.com/sf/) (SF Rent Board Housing
+Inventory, block-level, with median reported rents) and **Los Angeles** at
+[/la/](https://findacrib.com/la/) (buildings meeting the RSO criteria, derived
+from LA County assessor rolls).
 
 🔗 **Live at [findacrib.com](https://findacrib.com)**
 

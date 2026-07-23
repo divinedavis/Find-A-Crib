@@ -389,11 +389,22 @@ def upgrade():
 
 @app.route("/developers/stripe-webhook", methods=["POST"])
 def stripe_webhook():
+    # Fail closed: with no configured signing secret we cannot authenticate the
+    # payload, and an empty key would let anyone forge a valid signature. Reject
+    # as a misconfiguration rather than proceed.
+    if not STRIPE_WH_SECRET:
+        return "webhook secret not configured", 500
     body = request.get_data(as_text=True)
     sig = request.headers.get("Stripe-Signature", "")
     parts = dict(p.split("=", 1) for p in sig.split(",") if "=" in p)
     t, v1 = parts.get("t"), parts.get("v1")
-    if not (t and v1) or abs(time.time() - int(t)) > 300:
+    if not (t and v1):
+        return "bad signature", 400
+    try:
+        ts = int(t)
+    except (TypeError, ValueError):
+        return "bad signature", 400
+    if abs(time.time() - ts) > 300:
         return "bad signature", 400
     mac = hmac.new(STRIPE_WH_SECRET.encode(), f"{t}.{body}".encode(), hashlib.sha256).hexdigest()
     if not hmac.compare_digest(mac, v1):

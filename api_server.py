@@ -13,7 +13,8 @@ reads are fast and need no DB round-trip. The DB is used only for auth/metering.
 
 Run:  DATA_DIR=/var/www/rent-map gunicorn -w 2 -b 127.0.0.1:8010 api_server:app
 """
-import hashlib, hmac, json, os, re, secrets, time, urllib.request, urllib.error, urllib.parse
+import hashlib, hmac, json, os, re, secrets, threading, time, urllib.request, urllib.error, urllib.parse
+from collections import defaultdict, deque
 from flask import Flask, jsonify, request, g
 
 DATA_DIR = os.environ.get("DATA_DIR", ".")
@@ -118,6 +119,49 @@ def stripe_post(path, fields):
                  "Content-Type": "application/x-www-form-urlencoded"}, method="POST")
     with urllib.request.urlopen(req, timeout=15) as r:
         return json.loads(r.read())
+
+
+# ---- per-IP rate limiting for the unauthenticated developer portal ----------
+# The metered /v1 endpoints are throttled per-key in the DB (api_authorize).
+# The portal endpoints (signup/usage/upgrade) carry no API key, so without a
+# guard anyone could script unlimited free-key minting (issue #20). Sliding
+# window, in-process (per gunicorn worker) — coarse but enough to stop
+# automation; the per-email cap in api_create_key is the DB-side backstop.
+_RL_LOCK = threading.Lock()
+_RL_HITS = defaultdict(deque)
+
+
+def _client_ip():
+    # nginx appends the real client to X-Forwarded-For, so the rightmost entry
+    # is the hop nginx observed and cannot be spoofed by a client-sent header.
+    xff = request.headers.get("X-Forwarded-For", "")
+    if xff:
+        return xff.split(",")[-1].strip()
+    return request.remote_addr or "unknown"
+
+
+def rate_limited(bucket, max_hits, window_sec):
+    """True if this IP has exceeded max_hits for `bucket` within window_sec."""
+    now = time.time()
+    key = f"{bucket}:{_client_ip()}"
+    with _RL_LOCK:
+        if len(_RL_HITS) > 5000:                      # bound memory under IP-rotation abuse
+            stale = now - 3600
+            for k in [k for k, d in _RL_HITS.items() if not d or d[-1] < stale]:
+                _RL_HITS.pop(k, None)
+        dq = _RL_HITS[key]
+        cutoff = now - window_sec
+        while dq and dq[0] < cutoff:
+            dq.popleft()
+        if len(dq) >= max_hits:
+            return True
+        dq.append(now)
+        return False
+
+
+def _too_many():
+    return jsonify(error="rate_limited",
+                   message="Too many requests. Please slow down and try again later."), 429
 
 
 PUBLIC_PATHS = {"/", "/v1", "/v1/", "/health"}
@@ -268,6 +312,8 @@ def search():
 # ---- developer portal (signup / usage / upgrade / billing webhook) ----------
 @app.route("/developers/signup", methods=["POST"])
 def signup():
+    if rate_limited("signup", 5, 3600):              # a few free keys per hour per IP
+        return _too_many()
     email = (request.json or {}).get("email", "").strip().lower() if request.is_json \
             else request.form.get("email", "").strip().lower()
     if not EMAIL_RE.match(email):
@@ -283,6 +329,9 @@ def signup():
         if res.get("reason") == "has_paid_key":
             return jsonify(error="has_paid_key",
                            message="This email already has a paid key. Manage it in the dashboard."), 409
+        if res.get("reason") == "free_key_limit":
+            return jsonify(error="free_key_limit",
+                           message="Too many free keys created for this email today. Try again tomorrow."), 429
         return jsonify(error="signup_failed"), 400
     return jsonify(ok=True, api_key=plain, tier="free", daily_limit=1000,
                    message="Save this key — it is shown only once.")
@@ -290,6 +339,8 @@ def signup():
 
 @app.route("/developers/usage")
 def usage():
+    if rate_limited("usage", 60, 3600):
+        return _too_many()
     key = request.args.get("key", "").strip()
     if not key:
         return jsonify(error="missing_key"), 400
@@ -306,6 +357,8 @@ def usage():
 
 @app.route("/developers/upgrade", methods=["POST"])
 def upgrade():
+    if rate_limited("upgrade", 15, 3600):
+        return _too_many()
     body = request.json or {}
     key, tier = body.get("key", "").strip(), body.get("tier", "").strip()
     if tier not in ("pro", "business") or not PRICES.get(tier):

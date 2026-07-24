@@ -27,10 +27,26 @@ PRICES = {"pro": os.environ.get("STRIPE_PRICE_PRO", ""),
 BORO = {"M": "manhattan", "Bk": "brooklyn", "Q": "queens", "Bx": "bronx", "SI": "staten_island"}
 BORO_REV = {v: k for k, v in BORO.items()}
 MAX_LIMIT = 100
+# Anti-scraping: the dataset is the product, so the free tier is deliberately
+# shallow. Smaller page size + a hard pagination ceiling force free users to
+# narrow with filters instead of walking the whole 47k-building set, and their
+# coordinates are rounded (~110m) so a free clone isn't map-grade. Paid tiers
+# get full precision and depth.
+TIER_MAX_LIMIT = {"free": 25, "pro": 100, "business": 100}
+FREE_MAX_RESULTS = 1000          # deepest offset a free key can page a list to
+COORD_DECIMALS = {"free": 3}     # None/absent = full precision
 DOCS = "https://findacrib.com/developers/"
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 app = Flask(__name__)
+# Cap request bodies: the only POST bodies we accept are a tiny email/tier JSON.
+# Without this Flask reads an unbounded body, so a large POST to a portal
+# endpoint is a cheap memory-exhaustion vector. 16 KB is generous for our shape.
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024
+
+
+def _tier():
+    return (getattr(g, "verdict", None) or {}).get("tier", "free")
 
 # ---- load data once at startup ---------------------------------------------
 def _load(name, default):
@@ -62,6 +78,11 @@ def s8_for(bbl):
 
 
 def public_building(b):
+    dec = COORD_DECIMALS.get(_tier())            # free tier gets coarse coords
+    lat, lng = b.get("lat"), b.get("lng")
+    if dec is not None:
+        lat = round(lat, dec) if isinstance(lat, (int, float)) else lat
+        lng = round(lng, dec) if isinstance(lng, (int, float)) else lng
     h = b.get("h") or {}
     v = h.get("violations") or {}
     c = h.get("complaints") or {}
@@ -80,8 +101,8 @@ def public_building(b):
         "borough": BORO.get(b.get("b")),
         "zip": b.get("z") or None,
         "neighborhood": b.get("nb"),
-        "latitude": b.get("lat"),
-        "longitude": b.get("lng"),
+        "latitude": lat,
+        "longitude": lng,
         "rent_stabilized": True,             # every building here is DHCR-registered stabilized
         "units": b.get("u"),
         "year_built": b.get("yr"),
@@ -174,7 +195,9 @@ def gate():
     if request.method == "OPTIONS" or request.path in PUBLIC_PATHS \
        or request.path.startswith("/developers/"):
         return
-    key = request.headers.get("X-API-Key") or request.args.get("api_key")
+    # Header only — never accept the key in the query string, where it would be
+    # captured in nginx access logs, browser history, and Referer headers.
+    key = request.headers.get("X-API-Key")
     if not key:
         return jsonify(error="missing_api_key", docs=DOCS,
                        message="Send your key in the X-API-Key header. Get one at " + DOCS), 401
@@ -192,8 +215,17 @@ def gate():
 
 @app.after_request
 def headers(resp):
-    resp.headers["Access-Control-Allow-Origin"] = "*"
-    resp.headers["Access-Control-Allow-Headers"] = "X-API-Key, Content-Type"
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    resp.headers["Referrer-Policy"] = "no-referrer"
+    resp.headers["Cache-Control"] = "no-store"      # keyed JSON must never be cached
+    # CORS only for the read-only data API (meant for cross-origin/browser
+    # clients). The /developers/* portal is same-origin only: omitting the
+    # header stops a victim's browser being scripted into minting keys or
+    # starting a checkout from an attacker's page.
+    p = request.path
+    if p in PUBLIC_PATHS or p.startswith("/v1"):
+        resp.headers["Access-Control-Allow-Origin"] = "*"
+        resp.headers["Access-Control-Allow-Headers"] = "X-API-Key, Content-Type"
     v = getattr(g, "verdict", None)
     if v:
         resp.headers["X-RateLimit-Limit"] = str(v.get("limit"))
@@ -240,9 +272,11 @@ def buildings():
     nb = request.args.get("neighborhood", "").lower().strip()
     adv = request.args.get("advertised", "").lower() in ("1", "true", "yes")
     s8 = request.args.get("section8", "").lower() in ("1", "true", "yes")
+    tier = _tier()
+    max_limit = TIER_MAX_LIMIT.get(tier, TIER_MAX_LIMIT["free"])
     try:
         page = max(1, int(request.args.get("page", 1)))
-        limit = min(MAX_LIMIT, max(1, int(request.args.get("limit", 50))))
+        limit = min(max_limit, max(1, int(request.args.get("limit", 50))))
     except ValueError:
         return jsonify(error="bad_request", message="page and limit must be integers"), 400
     bcode = BORO_REV.get(boro) if boro else None
@@ -265,7 +299,18 @@ def buildings():
 
     total = len(res)
     start = (page - 1) * limit
-    window = res[start:start + limit]
+    # Free tier can only reach the first FREE_MAX_RESULTS of any result set, so a
+    # single broad query can't be walked to completion. Narrowing with filters
+    # (borough/zip/neighborhood) or upgrading lifts the ceiling.
+    if tier == "free" and start >= FREE_MAX_RESULTS:
+        return jsonify(error="pagination_limit", docs=DOCS,
+                       message="Free tier can page through the first %d results per query. "
+                               "Add filters (borough, zip, neighborhood) to narrow, or upgrade for full depth."
+                               % FREE_MAX_RESULTS), 402
+    end = start + limit
+    if tier == "free":
+        end = min(end, FREE_MAX_RESULTS)
+    window = res[start:end]
     return jsonify(
         total=total, page=page, limit=limit,
         results=[public_building(b) for b in window])
@@ -337,11 +382,15 @@ def signup():
                    message="Save this key — it is shown only once.")
 
 
-@app.route("/developers/usage")
+@app.route("/developers/usage", methods=["GET", "POST"])
 def usage():
     if rate_limited("usage", 60, 3600):
         return _too_many()
-    key = request.args.get("key", "").strip()
+    # Read the key from the header (or a POST body) — never the query string,
+    # which would leak it into access logs and history.
+    key = request.headers.get("X-API-Key", "").strip()
+    if not key and request.is_json:
+        key = ((request.json or {}).get("key") or "").strip()
     if not key:
         return jsonify(error="missing_key"), 400
     try:

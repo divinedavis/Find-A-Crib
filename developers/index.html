@@ -149,7 +149,7 @@ GET /v1/section8?zip={zip}</pre>
     const out = $('dash-out'); out.innerHTML = '';
     if (!key) return;
     try {
-      const r = await fetch(API + '/usage?key=' + encodeURIComponent(key));
+      const r = await fetch(API + '/usage', { headers: { 'X-API-Key': key } });
       const d = await r.json();
       if (d.error) { out.innerHTML = '<p class="err">That key wasn\'t found.</p>'; return; }
       const pct = Math.round(100 * d.used_today / d.daily_limit);

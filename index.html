@@ -1377,7 +1377,6 @@
     // SF blocks carry a median owner-reported rent (mr)
     const rentHtml = rec.mr ? `<div style="margin-top:8px;color:#137333;font-weight:700">Median reported rent $${rec.mr.toLocaleString()}/mo <span style="font-weight:500;color:#8a8aa0">(owner-reported, block level)</span></div>` : '';
     const noteHtml = CITY.sourceNote ? `<div class="popup-meta" style="margin-top:6px">${CITY.sourceNote}${CITY.likely ? ` <a href="https://zimas.lacity.org/" target="_blank" rel="noopener">Check ZIMAS ↗</a>` : ''}</div>` : '';
-    const googleQ = encodeURIComponent(`${rec.a} ${borough} ${CITY.state} ${rec.z || ''}`.trim());
     const listing = listingLink(rec, borough);
     return `
       <div class="popup-addr">${esc(rec.a)}</div>
@@ -1391,7 +1390,6 @@
       ${IS_NYC ? hpdHtml(rec) : ''}
       <div class="popup-actions">
         <a class="primary" href="${esc(listing.href)}" target="_blank" rel="noopener">${listing.label}</a>
-        <a class="secondary" href="https://www.google.com/search?q=${googleQ}" target="_blank" rel="noopener">Search Google</a>
       </div>
     `;
   }
@@ -2300,7 +2298,7 @@
     if (rec.u != null) stats.push(`${rec.u} units`);
     if (rec.yr) stats.push(`built ${rec.yr}`);
     if (rec.z) stats.push(`ZIP ${esc(rec.z)}`);
-    const googleQ = encodeURIComponent(`${rec.a} ${BORO_NAME[rec.b] || ''} ${CITY.state} ${rec.z || ''}`.trim());
+    const listing = listingLink(rec, borough);
     const sv = streetviewUrl(rec.lat, rec.lng);
     const faved = FAVS.has(rec.bbl);
     return `<div class="card" data-bbl="${esc(rec.bbl)}">
@@ -2317,7 +2315,7 @@
       </div>
       <div class="body">
         ${rec.nb ? `<div class="nb">${esc(rec.nb)}</div>` : ''}
-        ${listed > 0 ? `<div class="price">${price ? '$' + price.toLocaleString() + '/mo' : `Recently advertised on Zumper · ${listed} listing${listed===1?'':'s'}${asOf}`}</div>`
+        ${listed > 0 ? `<div class="price">${price ? '$' + price.toLocaleString() + '/mo' : `Recently advertised${IS_NYC ? '' : ' on Zumper'} · ${listed} listing${listed===1?'':'s'}${asOf}`}</div>`
                      : rec.mr ? `<div class="price est" title="Median owner-reported rent for this block (SF Rent Board Housing Inventory) — not an asking rent">Median reported $${rec.mr.toLocaleString()}/mo</div>`
                      : (estRent(rec) ? `<div class="price est" title="${EST_TITLE}">${estRent(rec)}</div>` : '')}
         ${beds && beds.length ? `<div class="beds-line">${bedsLabel(beds)} available</div>` : ''}
@@ -2326,7 +2324,7 @@
         ${cardHpdLine(rec)}
         <div class="actions">
           <button class="btn-secondary" data-action="map">View on map</button>
-          <a class="btn-primary" data-action="search" target="_blank" rel="noopener" href="https://www.google.com/search?q=${googleQ}">Search Google</a>
+          <a class="btn-primary" data-action="search" target="_blank" rel="noopener" href="${esc(listing.href)}">${IS_NYC ? 'Listings ↗' : 'Search'}</a>
         </div>
       </div>
     </div>`;
@@ -2475,7 +2473,6 @@
       rec.yr ? 'built ' + rec.yr : null,
       CITY.label,
     ].filter(Boolean).join(' · ');
-    const googleQ = encodeURIComponent(`${rec.a} ${borough} ${CITY.state} ${rec.z || ''}`.trim());
     const listing = listingLink(rec, borough);
     return `
       <button class="card-close" data-card="close" aria-label="Close">✕</button>
@@ -2561,7 +2558,6 @@
     if (CITY.idLabel) facts.push([CITY.idLabel, idShort(rec)]);
     if (rec.mr) facts.push(['Median reported rent', '$' + rec.mr.toLocaleString() + '/mo']);
     const statuses = rec.s || [];
-    const googleQ = encodeURIComponent(`${rec.a} ${borough} ${CITY.state} ${rec.z || ''}`.trim());
     const listing = listingLink(rec, borough);
     return `
       <img class="d-photo" src="${sv}" alt="" onerror="this.removeAttribute('src')">
@@ -2578,7 +2574,6 @@
       </div>
       <div class="d-actions" style="padding-top:0">
         <button class="d-secondary" data-detail="map">View on map</button>
-        <a class="d-secondary" data-detail="search" target="_blank" rel="noopener" href="https://www.google.com/search?q=${googleQ}">Search Google</a>
       </div>
       ${IS_NYC ? `<div class="d-section"><h3>Housing vouchers (Section 8)</h3>
         ${s8Html(rec) || '<div class="d-sub" style="margin:0">No voucher listing or subsidy record for this building right now.</div>'}
@@ -2592,7 +2587,6 @@
       <div class="d-section"><h3>Find this listing</h3>
         <div class="d-actions" style="padding:0">
           <a class="d-primary" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.label}</a>
-          <a class="d-secondary" target="_blank" rel="noopener" href="https://www.google.com/search?q=${googleQ}">Search Google</a>
         </div>
       </div>`;
   }

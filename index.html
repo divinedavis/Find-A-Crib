@@ -740,7 +740,7 @@
     <div id="folder-bar" hidden></div>
     <div id="search-helper" hidden></div>
     <div class="results-grid empty-state" id="grid"><div class="empty">Loading 30k buildings…</div></div>
-    <div class="footer-credit" id="credit">Source: NYC Rent Guidelines Board / DHCR 2024 · Coordinates from <a href="https://www.nyc.gov/site/planning/data-maps/open-data.page" target="_blank" rel="noopener">NYC PLUTO</a> · Listings via Zumper (nightly) · Owner/violation/complaint data from <a href="https://data.cityofnewyork.us/" target="_blank" rel="noopener">NYC Open Data — HPD</a> · Voucher listings via <a href="https://www.affordablehousing.com" target="_blank" rel="noopener">AffordableHousing.com</a> · Subsidized-building data from HPD &amp; HUD · Rent estimates: <a href="https://www.huduser.gov/portal/datasets/fmr/smallarea/index.html" target="_blank" rel="noopener">HUD FY2026 Small-Area Fair Market Rents</a> by ZIP (not building-specific) · Created by <a href="https://divinedavis.com" target="_blank" rel="noopener">Divine Davis</a> · <a href="/developers/">API for developers</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></div>
+    <div class="footer-credit" id="credit">Source: NYC Rent Guidelines Board / DHCR 2024 · Coordinates from <a href="https://www.nyc.gov/site/planning/data-maps/open-data.page" target="_blank" rel="noopener">NYC PLUTO</a> · Listings via <a href="https://streeteasy.com" target="_blank" rel="noopener">StreetEasy</a> &amp; Zumper · Owner/violation/complaint data from <a href="https://data.cityofnewyork.us/" target="_blank" rel="noopener">NYC Open Data — HPD</a> · Voucher listings via <a href="https://www.affordablehousing.com" target="_blank" rel="noopener">AffordableHousing.com</a> · Subsidized-building data from HPD &amp; HUD · Rent estimates: <a href="https://www.huduser.gov/portal/datasets/fmr/smallarea/index.html" target="_blank" rel="noopener">HUD FY2026 Small-Area Fair Market Rents</a> by ZIP (not building-specific) · Created by <a href="https://divinedavis.com" target="_blank" rel="noopener">Divine Davis</a> · <a href="/developers/">API for developers</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></div>
   </aside>
 </main>
 
@@ -1344,6 +1344,23 @@
   // display id: NYC shows the raw BBL; other cities strip the "SF-"/"LA-" namespace
   function idShort(rec) { return IS_NYC ? rec.bbl : rec.bbl.replace(/^[A-Z]+-/, ''); }
 
+  // Where to send a user for current listings. NYC forwards to StreetEasy (the
+  // market it covers): the scraped direct listing page when we captured one,
+  // otherwise a StreetEasy address search so every building has a live link
+  // without us scraping it. SF/LA keep Zumper/Google since StreetEasy doesn't
+  // serve them. Returns {href, label}.
+  function listingLink(rec, borough) {
+    const direct = (listingsBlob.urls && listingsBlob.urls[rec.bbl]) || null;
+    if (IS_NYC) {
+      if (safeHttpUrl(direct)) return { href: direct, label: 'View on StreetEasy ↗' };
+      const q = encodeURIComponent(`${rec.a}, ${borough}, NY ${rec.z || ''}`.trim());
+      return { href: `https://streeteasy.com/search?search=${q}`, label: 'See listings on StreetEasy ↗' };
+    }
+    if (safeHttpUrl(direct)) return { href: direct, label: 'View on Zumper ↗' };
+    const zq = encodeURIComponent(`site:zumper.com "${rec.a}" ${borough} ${CITY.state}`);
+    return { href: `https://www.google.com/search?q=${zq}`, label: 'Search Zumper ↗' };
+  }
+
   function buildPopup(rec, listed) {
     track('building_view', { bbl: rec.bbl, addr: rec.a, boro: rec.b, listed, via: 'popup' });
     const borough = BORO_NAME[rec.b] || '';
@@ -1355,16 +1372,13 @@
     if (rec.yr) meta.push(`built ${rec.yr}`);
     if (rec.u != null) meta.push(`${rec.u} residential units`);
     const statusHtml = (rec.s || []).map(s => `<span class="popup-status">${esc(s)}</span>`).join('');
-    const listedHtml = listed ? `<div style="margin-top:8px;color:#6b3df5;font-weight:700">Recently advertised on Zumper (${listed} listing${listed===1?'':'s'})<span style="font-weight:500;color:#8a8aa0">${asOf}</span></div>` : '';
+    const advSrc = IS_NYC ? '' : ' on Zumper';
+    const listedHtml = listed ? `<div style="margin-top:8px;color:#6b3df5;font-weight:700">Recently advertised${advSrc} (${listed} listing${listed===1?'':'s'})<span style="font-weight:500;color:#8a8aa0">${asOf}</span></div>` : '';
     // SF blocks carry a median owner-reported rent (mr)
     const rentHtml = rec.mr ? `<div style="margin-top:8px;color:#137333;font-weight:700">Median reported rent $${rec.mr.toLocaleString()}/mo <span style="font-weight:500;color:#8a8aa0">(owner-reported, block level)</span></div>` : '';
     const noteHtml = CITY.sourceNote ? `<div class="popup-meta" style="margin-top:6px">${CITY.sourceNote}${CITY.likely ? ` <a href="https://zimas.lacity.org/" target="_blank" rel="noopener">Check ZIMAS ↗</a>` : ''}</div>` : '';
     const googleQ = encodeURIComponent(`${rec.a} ${borough} ${CITY.state} ${rec.z || ''}`.trim());
-    // Use Google site-search for Zumper since Zumper has no constructable deep-link pattern.
-    // If the scraper captured a direct URL for this BBL, prefer it.
-    const directUrl = (listingsBlob.urls && listingsBlob.urls[rec.bbl]) || null;
-    const zumperQ = encodeURIComponent(`site:zumper.com "${rec.a}" ${borough} ${CITY.state}`);
-    const zumperHref = safeHttpUrl(directUrl) || `https://www.google.com/search?q=${zumperQ}`;
+    const listing = listingLink(rec, borough);
     return `
       <div class="popup-addr">${esc(rec.a)}</div>
       <div class="popup-meta">${meta.join(' · ')}</div>
@@ -1376,8 +1390,8 @@
       ${noteHtml}
       ${IS_NYC ? hpdHtml(rec) : ''}
       <div class="popup-actions">
-        <a class="secondary" href="${esc(zumperHref)}" target="_blank" rel="noopener">${listed > 0 ? 'View on Zumper' : 'Search Zumper'}</a>
-        <a class="primary" href="https://www.google.com/search?q=${googleQ}" target="_blank" rel="noopener">Search Google</a>
+        <a class="primary" href="${esc(listing.href)}" target="_blank" rel="noopener">${listing.label}</a>
+        <a class="secondary" href="https://www.google.com/search?q=${googleQ}" target="_blank" rel="noopener">Search Google</a>
       </div>
     `;
   }
@@ -2462,11 +2476,12 @@
       CITY.label,
     ].filter(Boolean).join(' · ');
     const googleQ = encodeURIComponent(`${rec.a} ${borough} ${CITY.state} ${rec.z || ''}`.trim());
+    const listing = listingLink(rec, borough);
     return `
       <button class="card-close" data-card="close" aria-label="Close">✕</button>
       <img class="card-photo" src="${sv}" alt="" onerror="this.removeAttribute('src')">
       <button class="card-fav ${faved ? 'faved' : ''}" data-card="fav" aria-label="${faved ? 'Saved' : 'Save'}" aria-pressed="${faved}">${faved ? '♥' : '♡'}</button>
-      ${listed > 0 ? `<span class="card-badge">Recently advertised on Zumper</span>` : ''}
+      ${listed > 0 ? `<span class="card-badge">Recently advertised${IS_NYC ? '' : ' on Zumper'}</span>` : ''}
       <div class="card-body">
         <div class="card-price">${priceLine}</div>
         <div class="card-sub">${esc(sub)}</div>
@@ -2475,7 +2490,7 @@
         <div class="card-meta">${rec.nb ? esc(rec.nb) + ' · ' : ''}${esc(borough)}${rec.z ? ' ' + esc(rec.z) : ''}</div>
         <div class="card-actions">
           <button class="cbtn cbtn-2" data-card="details">Details</button>
-          <a class="cbtn cbtn-1" data-card="search" target="_blank" rel="noopener" href="https://www.google.com/search?q=${googleQ}">Search</a>
+          <a class="cbtn cbtn-1" data-card="search" target="_blank" rel="noopener" href="${esc(listing.href)}">${IS_NYC ? 'Listings ↗' : 'Search'}</a>
         </div>
       </div>`;
   }
@@ -2547,12 +2562,11 @@
     if (rec.mr) facts.push(['Median reported rent', '$' + rec.mr.toLocaleString() + '/mo']);
     const statuses = rec.s || [];
     const googleQ = encodeURIComponent(`${rec.a} ${borough} ${CITY.state} ${rec.z || ''}`.trim());
-    const directUrl = (listingsBlob.urls && listingsBlob.urls[rec.bbl]) || null;
-    const zumperHref = safeHttpUrl(directUrl) || `https://www.google.com/search?q=${encodeURIComponent(`site:zumper.com "${rec.a}" ${borough} ${CITY.state}`)}`;
+    const listing = listingLink(rec, borough);
     return `
       <img class="d-photo" src="${sv}" alt="" onerror="this.removeAttribute('src')">
       <div class="d-head">
-        <span class="d-badge">${listed > 0 ? 'Recently advertised on Zumper' : CITY.label}</span>
+        <span class="d-badge">${listed > 0 ? ('Recently advertised' + (IS_NYC ? '' : ' on Zumper')) : CITY.label}</span>
         <div class="d-price">${priceLine}${listed > 0 ? `<span style="font-size:13px;font-weight:500;color:#8a8aa0">${asOf}</span>` : ''}</div>
         ${keyBits.length ? `<div class="d-key">${esc(keyBits.join(' · '))}</div>` : ''}
         <div class="d-addr">${esc(rec.a)}</div>
@@ -2577,8 +2591,8 @@
       ${IS_NYC ? `<div class="d-section"><h3>Owner &amp; HPD record</h3>${hpdHtml(rec)}</div>` : ''}
       <div class="d-section"><h3>Find this listing</h3>
         <div class="d-actions" style="padding:0">
-          <a class="d-secondary" target="_blank" rel="noopener" href="${esc(zumperHref)}">${listed > 0 ? 'View on Zumper' : 'Search Zumper'}</a>
-          <a class="d-primary" target="_blank" rel="noopener" href="https://www.google.com/search?q=${googleQ}">Search Google</a>
+          <a class="d-primary" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.label}</a>
+          <a class="d-secondary" target="_blank" rel="noopener" href="https://www.google.com/search?q=${googleQ}">Search Google</a>
         </div>
       </div>`;
   }

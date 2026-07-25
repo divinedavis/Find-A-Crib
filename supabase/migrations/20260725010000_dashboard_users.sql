@@ -20,7 +20,14 @@ as $$
       au.email,
       coalesce(au.raw_app_meta_data->>'provider', 'email') as provider,
       au.created_at,
-      au.last_sign_in_at,
+      -- real "last seen": last_sign_in_at only changes on an explicit re-login,
+      -- but returning users come back on a persisted session — so use the latest
+      -- signed-in activity from the visit/event logs (greatest() skips nulls)
+      greatest(
+        au.last_sign_in_at,
+        (select max(created_at) from public.visits v where v.user_id = au.id),
+        (select max(created_at) from public.events  e where e.user_id = au.id)
+      ) as last_seen,
       (select count(*) from public.saved_buildings sb where sb.user_id = au.id) as saves,
       -- paying Plus / comped / (null = free)
       (select case when s.plan = 'plus' and s.stripe_subscription_id is not null then 'plus'

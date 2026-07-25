@@ -73,6 +73,7 @@
   .u-name{font-weight:600}
   .u-email{color:var(--ink2);font-size:12.5px}
   .u-muted{color:var(--muted)}
+  .u-returned{color:var(--purple-ink);font-weight:600}
   .badge{display:inline-block;font-size:11px;font-weight:600;padding:2px 9px;border-radius:999px}
   .b-google{background:#eef3fe;color:#2a5bd7}
   .b-email{background:#f0f0f4;color:#6b6a76}
@@ -167,6 +168,8 @@
   function el(id){ return document.getElementById(id); }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function fdate(s){ if(!s) return '—'; try{ return new Date(s).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }catch(e){ return '—'; } }
+  function sameDay(a,b){ if(!a||!b) return true; try{ return new Date(a).toDateString()===new Date(b).toDateString(); }catch(e){ return true; } }
+  function didReturn(u){ return u.last_seen && u.created_at && !sameDay(u.last_seen,u.created_at) && new Date(u.last_seen)>new Date(u.created_at); }
 
   function showGate(kind, email){
     app.classList.add('hidden'); gate.classList.remove('hidden');
@@ -199,12 +202,14 @@
         google=USERS.filter(function(u){return u.provider==='google';}).length,
         paying=USERS.filter(function(u){return u.plan==='plus';}).length,
         comped=USERS.filter(function(u){return u.plan==='comp';}).length,
-        savers=USERS.filter(function(u){return (u.saves||0)>0;}).length;
+        savers=USERS.filter(function(u){return (u.saves||0)>0;}).length,
+        returned=USERS.filter(didReturn).length;
     el('chips').innerHTML =
       '<div class="chip"><b>'+total+'</b><span>total users</span></div>'+
       '<div class="chip"><b>'+google+'</b><span>via Google</span></div>'+
       '<div class="chip"><b>'+paying+'</b><span>paying Plus</span></div>'+
       '<div class="chip"><b>'+comped+'</b><span>comped</span></div>'+
+      '<div class="chip"><b>'+returned+'</b><span>came back after signup</span></div>'+
       '<div class="chip"><b>'+savers+'</b><span>have saved a building</span></div>';
   }
 
@@ -237,7 +242,7 @@
         '<td>'+(area ? esc(area) : '<span class="u-muted">—</span>')+'</td>'+
         '<td>'+(u.saves ? u.saves : '<span class="u-muted">0</span>')+'</td>'+
         '<td>'+fdate(u.created_at)+'</td>'+
-        '<td class="u-muted">'+fdate(u.last_sign_in_at)+'</td>'+
+        '<td class="'+(didReturn(u)?'u-returned':'u-muted')+'">'+fdate(u.last_seen)+(didReturn(u)?' ↩':'')+'</td>'+
       '</tr>';
     }).join('');
   }

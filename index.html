@@ -486,10 +486,9 @@
     /* ---- mobile decluttering ---- */
     /* the long data-attribution/credits footer eats the bottom of the screen */
     .footer-credit { display: none; }
-    /* the "X buildings in view · Y match filters · Z recently advertised" line */
-    #results-sub { display: none; }
-    /* Sort now sits alone in the list header — keep it on the right */
-    .results-head { justify-content: flex-end; }
+    /* hide the whole list header on mobile: the "X buildings in view…" count
+       AND the Sort dropdown (Sort is already in the bottom FAB sheet) */
+    .results-head { display: none; }
     /* in list view, drop the Saved / Filters / Save search quick-actions */
     body.list-open #pill-fav,
     body.list-open #pill-filters,

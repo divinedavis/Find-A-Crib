@@ -45,6 +45,12 @@ with
     select visitor_id, count(*) as visits, bool_or(user_id is not null) as signed_up
     from v group by visitor_id
   ),
+  -- visitors who clicked a paid Google Ad at least once (gclid/gad_source/gbraid
+  -- lands in the path); lets us ask whether ad traffic converts
+  adv as (
+    select distinct visitor_id from v
+    where path ~* 'gclid|gad_source|gbraid' and visitor_id is not null
+  ),
   ordered as (
     select visitor_id, path, referrer,
            row_number() over (partition by visitor_id order by created_at) as rn
@@ -115,6 +121,14 @@ select jsonb_build_object(
     'searched_visitors',(select count(*) from pv where visitor_id in (select visitor_id from searchers)),
     'searched_returned',(select count(*) from pv where visits > 1 and visitor_id in (select visitor_id from searchers)),
     'searched_signups', (select count(*) from pv where signed_up and visitor_id in (select visitor_id from searchers))
+  ),
+  'ads', jsonb_build_object(
+    'click_visits',    (select count(*) from v where path ~* 'gclid|gad_source|gbraid'),
+    'visitors',        (select count(*) from adv),
+    'signups',         (select count(*) from pv where signed_up and visitor_id in (select visitor_id from adv)),
+    'returned',        (select count(*) from pv where visits > 1 and visitor_id in (select visitor_id from adv)),
+    'opened_listing',  (select count(*) from pv where visitor_id in (select visitor_id from adv)
+                          and visitor_id in (select visitor_id from viewers))
   ),
   'today', jsonb_build_object(
     'visitors', (select count(distinct visitor_id) from v

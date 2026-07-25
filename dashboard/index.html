@@ -127,6 +127,14 @@
   .callout{background:var(--purple-soft);border:1px solid #e5e1fb;border-radius:12px;padding:13px 15px;font-size:13px;color:var(--purple-ink);margin-top:4px}
   .callout b{color:var(--purple-ink)}
 
+  /* google ads tiles */
+  .ads-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  @media(max-width:700px){.ads-tiles{grid-template-columns:repeat(2,1fr)}}
+  .ads-tile{background:var(--bg);border:1px solid var(--border2);border-radius:12px;padding:14px 15px}
+  .ads-tile .a-val{font-size:21px;font-weight:700;letter-spacing:-.3px;line-height:1.1}
+  .ads-tile .a-lbl{font-size:12.5px;color:var(--ink2);margin-top:4px}
+  .ads-tile .a-sub{font-size:11.5px;color:var(--muted);margin-top:2px}
+
   /* sparkline */
   .spark-tip{position:absolute;background:#1c1b22;color:#fff;font-size:11.5px;padding:5px 8px;border-radius:7px;pointer-events:none;transform:translate(-50%,-120%);white-space:nowrap;opacity:0;transition:opacity .1s}
 
@@ -182,6 +190,7 @@
     <nav>
       <button class="nav-item active" data-scroll="top"><span class="nav-ico">▦</span> Dashboard</button>
       <button class="nav-item" data-scroll="sec-traffic"><span class="nav-ico">◔</span> Traffic</button>
+      <button class="nav-item" data-scroll="sec-ads"><span class="nav-ico">◉</span> Google Ads</button>
       <button class="nav-item" data-scroll="sec-funnel"><span class="nav-ico">⇅</span> Funnel</button>
       <button class="nav-item" data-scroll="sec-revenue"><span class="nav-ico">$</span> Revenue model</button>
     </nav>
@@ -229,6 +238,15 @@
           <div class="card-sub">Fresh traffic, updated live</div>
           <div id="today-list"></div>
         </div>
+      </div>
+
+      <!-- google ads -->
+      <div class="card mb18" id="sec-ads">
+        <div class="card-head-row">
+          <div><h2>Google Ads — did the clicks convert?</h2><div class="card-sub">Sign-up is server-side, so Google can’t see it — but you can. (First-party, from ad-click gclid.)</div></div>
+        </div>
+        <div class="ads-tiles" id="ads-tiles"></div>
+        <div class="callout" id="ads-callout" style="margin-top:16px"></div>
       </div>
 
       <!-- 14-day sparkline -->
@@ -395,6 +413,7 @@
     }).join('');
 
     renderDonut(R);
+    renderAds(d.ads);
     renderToday(TD, d.events||{});
     renderSpark(d.sparkline||[]);
     renderConv(C, convRate);
@@ -433,6 +452,24 @@
     }).join('');
     el('returns-callout').innerHTML='<b>'+freePct.toFixed(0)+'% of your returns are free</b> — only '+
       pctS(paid,total)+' came back through a paid ad. Ads bring people in; they come back on their own.';
+  }
+
+  // ---------- google ads (first-party ad-click funnel) ----------
+  function renderAds(A){
+    A = A || {};
+    var v=n(A.visitors), sg=n(A.signups), ret=n(A.returned), op=n(A.opened_listing);
+    var tiles=[
+      {val:comma(v),lbl:'Visitors from ads',sub:comma(A.click_visits)+' ad clicks'},
+      {val:comma(sg)+' · '+pctS(sg,v),lbl:'Signed up',sub:'the goal'},
+      {val:comma(ret)+' · '+pctS(ret,v),lbl:'Came back',sub:'returned ≥1×'},
+      {val:comma(op)+' · '+pctS(op,v),lbl:'Opened a listing',sub:'engaged'}
+    ];
+    el('ads-tiles').innerHTML=tiles.map(function(t){
+      return '<div class="ads-tile"><div class="a-val">'+t.val+'</div><div class="a-lbl">'+t.lbl+'</div><div class="a-sub">'+t.sub+'</div></div>';
+    }).join('');
+    el('ads-callout').innerHTML = sg>0
+      ? '<b>'+comma(sg)+' of '+comma(v)+' ad visitors signed up ('+pctS(sg,v)+').</b> Compare that to your overall sign-up rate to see if ads pull their weight.'
+      : '<b>0 of '+comma(v)+' ad visitors have signed up.</b> They engage — '+pctS(op,v)+' open a listing, '+pctS(ret,v)+' come back — but ad clicks aren’t converting to accounts yet. (Sign-up attribution is lossy, so the true number may be slightly above 0.)';
   }
 
   // ---------- today ----------

@@ -482,6 +482,18 @@
     .card { flex-basis: 100%; }
     .results-grid { padding-bottom: 96px; }
 
+    /* ---- mobile decluttering ---- */
+    /* the long data-attribution/credits footer eats the bottom of the screen */
+    .footer-credit { display: none; }
+    /* the "X buildings in view · Y match filters · Z recently advertised" line */
+    #results-sub { display: none; }
+    /* Sort now sits alone in the list header — keep it on the right */
+    .results-head { justify-content: flex-end; }
+    /* in list view, drop the Saved / Filters / Save search quick-actions */
+    body.list-open #pill-fav,
+    body.list-open #pill-filters,
+    body.list-open #pill-save-search { display: none; }
+
     /* live "X of Y" pill, bottom-left over the map (hidden while list is open) */
     #map-count {
       position: fixed; left: 12px; bottom: 22px; z-index: 1500;

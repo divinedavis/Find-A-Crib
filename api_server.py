@@ -199,7 +199,7 @@ def gate():
     # the X-API-Key gate applies only to the metered /v1 data endpoints.
     if request.method == "OPTIONS" or request.path in PUBLIC_PATHS \
        or request.path.startswith("/developers/") \
-       or request.path == "/dashboard-metrics":   # its own Supabase-token owner gate
+       or request.path in ("/dashboard-metrics", "/dashboard-users"):   # own Supabase-token owner gate
         return
     # Header only — never accept the key in the query string, where it would be
     # captured in nginx access logs, browser history, and Referer headers.
@@ -530,6 +530,24 @@ def dashboard_metrics():
     except Exception:
         return jsonify(error="temporarily_unavailable"), 503
     return jsonify(data)
+
+
+@app.route("/dashboard-users")
+def dashboard_users():
+    if rate_limited("dashboard", 120, 3600):
+        return _too_many()
+    verdict = _dashboard_auth()
+    if verdict == "error":
+        return jsonify(error="temporarily_unavailable"), 503
+    if verdict == "unauth":
+        return jsonify(error="sign_in_required"), 401
+    if verdict == "forbidden":
+        return jsonify(error="forbidden", message="This dashboard is private."), 403
+    try:
+        data = rpc("dashboard_users", {})
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
+    return jsonify(users=data or [])
 
 
 if __name__ == "__main__":

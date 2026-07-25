@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Find A Crib — Users</title>
+<style>
+  :root{
+    --bg:#f5f6fb; --card:#ffffff; --border:#ececf1; --border2:#f0f0f4;
+    --ink:#17161c; --ink2:#6b6a76; --muted:#9a99a5;
+    --purple:#6d5ce7; --purple-soft:#f1effe; --purple-ink:#5a49d0;
+    --shadow:0 1px 2px rgba(20,20,40,.04),0 4px 16px rgba(20,20,40,.04); --radius:16px;
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;font-size:15px}
+  a{color:var(--purple);text-decoration:none}
+  .hidden{display:none !important}
+
+  #gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:50;padding:24px}
+  .gate-card{background:var(--card);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:40px 36px;max-width:420px;width:100%;text-align:center}
+  .gate-logo{width:52px;height:52px;border-radius:14px;background:var(--purple);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:26px}
+  .gate-card h1{font-size:22px;margin:0 0 6px}
+  .gate-card p{color:var(--ink2);margin:0 0 24px;font-size:14px}
+  .g-btn{display:inline-flex;align-items:center;gap:10px;justify-content:center;width:100%;padding:12px 18px;border-radius:12px;border:1px solid var(--border);background:#fff;color:var(--ink);font-weight:600;font-size:15px;cursor:pointer}
+  .g-btn:hover{background:#fafafc}
+  .g-btn svg{width:18px;height:18px}
+  .g-note{margin-top:18px;font-size:12.5px;color:var(--muted)}
+
+  #app{display:flex;min-height:100vh}
+  aside{width:236px;flex:0 0 236px;background:#fff;border-right:1px solid var(--border);position:sticky;top:0;height:100vh;padding:20px 14px;display:flex;flex-direction:column;gap:4px}
+  .brand{display:flex;align-items:center;gap:11px;padding:6px 8px 16px}
+  .brand-mark{width:34px;height:34px;border-radius:10px;background:var(--purple);display:flex;align-items:center;justify-content:center;font-size:18px;flex:0 0 34px}
+  .brand-name{font-weight:700;font-size:16px;letter-spacing:-.2px}
+  .brand-sub{font-size:11px;color:var(--muted);font-weight:500}
+  nav{display:flex;flex-direction:column;gap:2px;margin-top:6px}
+  .nav-item{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:10px;color:var(--ink2);font-weight:500;font-size:14px;cursor:pointer;border:none;background:none;text-align:left;width:100%;position:relative;text-decoration:none}
+  .nav-item:hover{background:#f7f7fa}
+  .nav-item.active{background:var(--purple-soft);color:var(--purple-ink);font-weight:600}
+  .nav-item.active::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:3px;background:var(--purple)}
+  .nav-ico{width:17px;height:17px;flex:0 0 17px;opacity:.85}
+  .nav-spacer{flex:1}
+  .nav-foot{font-size:11px;color:var(--muted);padding:12px 12px 2px;border-top:1px solid var(--border2)}
+
+  main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .topbar{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;border-bottom:1px solid var(--border);background:#fff;position:sticky;top:0;z-index:10}
+  .live-pill{display:inline-flex;align-items:center;gap:7px;background:#f1fbe9;color:#4b7a12;border:1px solid #dcecc4;border-radius:100px;padding:4px 11px;font-size:12px;font-weight:600}
+  .live-dot{width:7px;height:7px;border-radius:50%;background:#7ac70f;box-shadow:0 0 0 3px rgba(122,199,15,.2)}
+  .tb-right{display:flex;align-items:center;gap:14px}
+  .avatar{width:34px;height:34px;border-radius:50%;background:var(--purple);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px}
+  .signout{font-size:13px;color:var(--ink2);cursor:pointer;background:none;border:none;font-weight:500}
+  .signout:hover{color:var(--ink)}
+
+  .content{padding:26px 28px 60px;max-width:1240px;width:100%}
+  .page-head{margin-bottom:18px;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+  .page-head h1{font-size:26px;margin:0 0 3px;letter-spacing:-.5px}
+  .page-head .sub{color:var(--ink2);font-size:14px}
+  .usearch{padding:9px 14px;border:1px solid var(--border);border-radius:10px;font-size:14px;min-width:230px;outline:none}
+  .usearch:focus{border-color:var(--purple)}
+
+  .chips{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+  .chip{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 14px;box-shadow:var(--shadow)}
+  .chip b{font-size:19px;font-weight:700;letter-spacing:-.3px}
+  .chip span{font-size:12px;color:var(--ink2);margin-left:6px}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+  .tbl-wrap{overflow-x:auto}
+  .utable{width:100%;border-collapse:collapse;font-size:13.5px;min-width:760px}
+  .utable th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:600;padding:11px 14px;border-bottom:1px solid var(--border);background:var(--card);white-space:nowrap}
+  .utable td{padding:12px 14px;border-bottom:1px solid var(--border2);vertical-align:middle;white-space:nowrap}
+  .utable tr:last-child td{border-bottom:none}
+  .utable tbody tr:hover td{background:#fafafc}
+  .u-name{font-weight:600}
+  .u-email{color:var(--ink2);font-size:12.5px}
+  .u-muted{color:var(--muted)}
+  .badge{display:inline-block;font-size:11px;font-weight:600;padding:2px 9px;border-radius:999px}
+  .b-google{background:#eef3fe;color:#2a5bd7}
+  .b-email{background:#f0f0f4;color:#6b6a76}
+  .b-plus{background:#efe9ff;color:#5a49d0}
+  .b-comp{background:#eaf7ef;color:#1a8f57}
+  .b-free{background:#f4f4f6;color:#9a99a5}
+  .empty{padding:40px;text-align:center;color:var(--muted);font-size:14px}
+  .foot{text-align:center;font-size:12px;color:var(--muted);margin-top:22px}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="gate-card">
+    <div class="gate-logo">🏙️</div>
+    <h1 id="gate-title">Private dashboard</h1>
+    <p id="gate-msg">This is the Find A Crib owner dashboard. Sign in to continue.</p>
+    <button class="g-btn" id="google-btn">
+      <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.6 2.4 30.2 0 24 0 14.6 0 6.4 5.4 2.5 13.3l7.9 6.1C12.3 13.2 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.9 7.2l7.6 5.9c4.4-4.1 7.1-10.1 7.1-17.6z"/><path fill="#FBBC05" d="M10.4 28.6c-.5-1.5-.8-3-.8-4.6s.3-3.1.8-4.6l-7.9-6.1C.9 16.3 0 20 0 24s.9 7.7 2.5 10.7l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.6-5.9c-2.1 1.4-4.8 2.3-7.6 2.3-6.3 0-11.7-3.7-13.6-9.1l-7.9 6.1C6.4 42.6 14.6 48 24 48z"/></svg>
+      Sign in with Google
+    </button>
+    <div class="g-note">Only <b>divinejdavis@gmail.com</b> can view this page.</div>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <aside>
+    <div class="brand">
+      <div class="brand-mark">🏙️</div>
+      <div><div class="brand-name">Find A Crib</div><div class="brand-sub">Owner analytics</div></div>
+    </div>
+    <nav>
+      <a class="nav-item" href="/dashboard/"><span class="nav-ico">▦</span> Dashboard</a>
+      <a class="nav-item" href="/dashboard/#sec-traffic"><span class="nav-ico">◔</span> Traffic</a>
+      <a class="nav-item" href="/dashboard/#sec-ads"><span class="nav-ico">◉</span> Google Ads</a>
+      <a class="nav-item active"><span class="nav-ico">☺</span> Users</a>
+      <a class="nav-item" href="/dashboard/#sec-revenue"><span class="nav-ico">$</span> Revenue model</a>
+    </nav>
+    <div class="nav-spacer"></div>
+    <a class="nav-item" href="https://findacrib.com" target="_blank"><span class="nav-ico">↗</span> View live site</a>
+    <div class="nav-foot">Since 24 June 2026</div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <span class="live-pill"><span class="live-dot"></span> Live data</span>
+      <div class="tb-right">
+        <button class="signout" id="signout">Sign out</button>
+        <div class="avatar" id="avatar">D</div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="page-head">
+        <div>
+          <h1>Users</h1>
+          <div class="sub">Everyone who created an account. Newest first.</div>
+        </div>
+        <input class="usearch" id="usearch" type="text" placeholder="Search name, email, or area…">
+      </div>
+
+      <div class="chips" id="chips"></div>
+
+      <div class="card">
+        <div class="tbl-wrap">
+          <table class="utable">
+            <thead><tr>
+              <th>Name</th><th>Email</th><th>Sign-in</th><th>Plan</th>
+              <th>Searching in</th><th>Saved</th><th>Joined</th><th>Last seen</th>
+            </tr></thead>
+            <tbody id="urows"></tbody>
+          </table>
+        </div>
+        <div class="empty hidden" id="empty">No users match your search.</div>
+      </div>
+
+      <div class="foot">🔒 Private — only you can see this. Live data, refreshed on load.</div>
+    </div>
+  </main>
+</div>
+
+<script src="/config.js"></script>
+<script src="/static/supabase/supabase.js"></script>
+<script>
+(function(){
+  "use strict";
+  var sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+  var gate = document.getElementById('gate'), app = document.getElementById('app');
+  var USERS = [];
+  var BORO = { M:'Manhattan', Bk:'Brooklyn', Q:'Queens', Bx:'Bronx', SI:'Staten Island',
+               '1':'Manhattan', '2':'Bronx', '3':'Brooklyn', '4':'Queens', '5':'Staten Island' };
+  function el(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function fdate(s){ if(!s) return '—'; try{ return new Date(s).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }catch(e){ return '—'; } }
+
+  function showGate(kind, email){
+    app.classList.add('hidden'); gate.classList.remove('hidden');
+    var t=el('gate-title'), m=el('gate-msg'), btn=el('google-btn');
+    if(kind==='forbidden'){ t.textContent='Not your dashboard'; m.textContent='You are signed in as '+(email||'another account')+', which can’t view this page.'; btn.textContent='Sign out'; btn.onclick=function(){ sb.auth.signOut(); }; }
+    else if(kind==='error'){ t.textContent='Something went wrong'; m.textContent='Couldn’t load users. Try again in a moment.'; }
+    else { t.textContent='Private dashboard'; m.textContent='This is the Find A Crib owner dashboard. Sign in to continue.'; }
+  }
+  async function route(session){
+    if(!session){ showGate('signin'); return; }
+    var res;
+    try{ res = await fetch('/api/dashboard-users', { headers:{ Authorization:'Bearer '+session.access_token } }); }
+    catch(e){ showGate('error'); return; }
+    if(res.status===403){ showGate('forbidden', session.user && session.user.email); return; }
+    if(res.status===401){ showGate('signin'); return; }
+    if(!res.ok){ showGate('error'); return; }
+    var d = await res.json();
+    USERS = d.users || [];
+    el('avatar').textContent = ((session.user&&session.user.email)||'D')[0].toUpperCase();
+    renderChips(); renderRows('');
+    gate.classList.add('hidden'); app.classList.remove('hidden');
+  }
+  el('google-btn').onclick = function(){ sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: location.origin + '/dashboard/users/' } }); };
+  el('signout').onclick = function(){ sb.auth.signOut(); };
+  sb.auth.onAuthStateChange(function(_e, s){ route(s); });
+  sb.auth.getSession().then(function(r){ route(r.data.session); });
+
+  function renderChips(){
+    var total=USERS.length,
+        google=USERS.filter(function(u){return u.provider==='google';}).length,
+        paying=USERS.filter(function(u){return u.plan==='plus';}).length,
+        comped=USERS.filter(function(u){return u.plan==='comp';}).length,
+        savers=USERS.filter(function(u){return (u.saves||0)>0;}).length;
+    el('chips').innerHTML =
+      '<div class="chip"><b>'+total+'</b><span>total users</span></div>'+
+      '<div class="chip"><b>'+google+'</b><span>via Google</span></div>'+
+      '<div class="chip"><b>'+paying+'</b><span>paying Plus</span></div>'+
+      '<div class="chip"><b>'+comped+'</b><span>comped</span></div>'+
+      '<div class="chip"><b>'+savers+'</b><span>have saved a building</span></div>';
+  }
+
+  function planBadge(p){
+    if(p==='plus') return '<span class="badge b-plus">Plus</span>';
+    if(p==='comp') return '<span class="badge b-comp">Comped</span>';
+    return '<span class="badge b-free">Free</span>';
+  }
+  function provBadge(p){
+    return p==='google' ? '<span class="badge b-google">Google</span>' : '<span class="badge b-email">Email</span>';
+  }
+
+  function renderRows(q){
+    q = (q||'').trim().toLowerCase();
+    var rows = USERS.filter(function(u){
+      if(!q) return true;
+      var area = BORO[u.area_code] || '';
+      return (u.name||'').toLowerCase().indexOf(q)>=0
+          || (u.email||'').toLowerCase().indexOf(q)>=0
+          || area.toLowerCase().indexOf(q)>=0;
+    });
+    el('empty').classList.toggle('hidden', rows.length>0);
+    el('urows').innerHTML = rows.map(function(u){
+      var area = BORO[u.area_code];
+      return '<tr>'+
+        '<td class="u-name">'+esc(u.name)+'</td>'+
+        '<td class="u-email">'+esc(u.email)+'</td>'+
+        '<td>'+provBadge(u.provider)+'</td>'+
+        '<td>'+planBadge(u.plan)+'</td>'+
+        '<td>'+(area ? esc(area) : '<span class="u-muted">—</span>')+'</td>'+
+        '<td>'+(u.saves ? u.saves : '<span class="u-muted">0</span>')+'</td>'+
+        '<td>'+fdate(u.created_at)+'</td>'+
+        '<td class="u-muted">'+fdate(u.last_sign_in_at)+'</td>'+
+      '</tr>';
+    }).join('');
+  }
+  el('usearch').addEventListener('input', function(e){ renderRows(e.target.value); });
+})();
+</script>
+</body>
+</html>

@@ -24,6 +24,11 @@ STRIPE_SECRET = os.environ.get("STRIPE_SECRET_KEY", "")
 STRIPE_WH_SECRET = os.environ.get("STRIPE_API_WEBHOOK_SECRET", "")
 PRICES = {"pro": os.environ.get("STRIPE_PRICE_PRO", ""),
           "business": os.environ.get("STRIPE_PRICE_BUSINESS", "")}
+# Owner-only analytics dashboard (findacrib.com/dashboard). The anon key is the
+# public browser key (safe in source); it's only used server-side here to ask
+# Supabase Auth "who is this access token?" — the real gate is the email check.
+ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRiYWlmb3R6d2x4anZzeGpvaGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzI2MTQsImV4cCI6MjA5Njk0ODYxNH0.5hoLfoKkNnEnFuu7jsfCTq_rUQqn8gf32BEI9qiyCI4"
+OWNER_EMAIL = "divinejdavis@gmail.com"
 BORO = {"M": "manhattan", "Bk": "brooklyn", "Q": "queens", "Bx": "bronx", "SI": "staten_island"}
 BORO_REV = {v: k for k, v in BORO.items()}
 MAX_LIMIT = 100
@@ -193,7 +198,8 @@ def gate():
     # portal endpoints (signup/usage/upgrade/webhook) have their own auth;
     # the X-API-Key gate applies only to the metered /v1 data endpoints.
     if request.method == "OPTIONS" or request.path in PUBLIC_PATHS \
-       or request.path.startswith("/developers/"):
+       or request.path.startswith("/developers/") \
+       or request.path == "/dashboard-metrics":   # its own Supabase-token owner gate
         return
     # Header only — never accept the key in the query string, where it would be
     # captured in nginx access logs, browser history, and Referer headers.
@@ -473,6 +479,57 @@ def stripe_webhook():
     except Exception:
         return "error", 500
     return "", 200
+
+
+# ---- owner-only analytics dashboard -----------------------------------------
+def _dashboard_auth():
+    """Classify the caller by their Supabase access token.
+
+    Returns 'ok' only for the verified owner email; 'forbidden' for any other
+    signed-in user, 'unauth' for a missing/invalid token, 'error' if Supabase
+    Auth can't be reached. The token is verified server-side against Supabase
+    (GET /auth/v1/user) — we never trust claims decoded on the client.
+    """
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        return "unauth"
+    token = auth[7:].strip()
+    if not token:
+        return "unauth"
+    try:
+        req = urllib.request.Request(
+            f"{SUPABASE_URL}/auth/v1/user",
+            headers={"apikey": ANON_KEY, "Authorization": f"Bearer {token}"})
+        with urllib.request.urlopen(req, timeout=8) as r:
+            u = json.loads(r.read())
+    except urllib.error.HTTPError:
+        return "unauth"        # 401/403 from Supabase = bad/expired token
+    except Exception:
+        return "error"
+    email = (u.get("email") or "").strip().lower()
+    verified = bool(u.get("email_confirmed_at")
+                    or (u.get("user_metadata") or {}).get("email_verified"))
+    if email == OWNER_EMAIL and verified:
+        return "ok"
+    return "forbidden"
+
+
+@app.route("/dashboard-metrics")
+def dashboard_metrics():
+    if rate_limited("dashboard", 120, 3600):
+        return _too_many()
+    verdict = _dashboard_auth()
+    if verdict == "error":
+        return jsonify(error="temporarily_unavailable"), 503
+    if verdict == "unauth":
+        return jsonify(error="sign_in_required"), 401
+    if verdict == "forbidden":
+        return jsonify(error="forbidden", message="This dashboard is private."), 403
+    try:
+        data = rpc("dashboard_metrics", {})
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
+    return jsonify(data)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Find A Crib — Owner Dashboard</title>
+<style>
+  :root{
+    --bg:#f5f6fb; --card:#ffffff; --border:#ececf1; --border2:#f0f0f4;
+    --ink:#17161c; --ink2:#6b6a76; --muted:#9a99a5;
+    --purple:#6d5ce7; --purple-soft:#f1effe; --purple-ink:#5a49d0;
+    --lime:#c3f53c; --lime-deep:#a8dd1f;
+    --c1:#2a78d6; --c2:#eb6834; --c3:#1baf7a; --c4:#eda100; --c5:#e87ba4;
+    --good:#1baf7a; --shadow:0 1px 2px rgba(20,20,40,.04),0 4px 16px rgba(20,20,40,.04);
+    --radius:16px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased;
+    font-size:15px; line-height:1.45;
+  }
+  a{color:var(--purple); text-decoration:none}
+  .hidden{display:none !important}
+
+  /* ---------- gate ---------- */
+  #gate{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:var(--bg); z-index:50; padding:24px}
+  .gate-card{background:var(--card); border:1px solid var(--border); border-radius:20px; box-shadow:var(--shadow); padding:40px 36px; max-width:420px; width:100%; text-align:center}
+  .gate-logo{width:52px;height:52px;border-radius:14px;background:var(--purple);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:26px}
+  .gate-card h1{font-size:22px;margin:0 0 6px}
+  .gate-card p{color:var(--ink2);margin:0 0 24px;font-size:14px}
+  .g-btn{display:inline-flex;align-items:center;gap:10px;justify-content:center;width:100%;padding:12px 18px;border-radius:12px;border:1px solid var(--border);background:#fff;color:var(--ink);font-weight:600;font-size:15px;cursor:pointer;transition:background .15s,border-color .15s}
+  .g-btn:hover{background:#fafafc;border-color:#dcdce4}
+  .g-btn svg{width:18px;height:18px}
+  .g-note{margin-top:18px;font-size:12.5px;color:var(--muted)}
+  .g-err{color:var(--c2);font-size:13px;margin-top:14px}
+
+  /* ---------- shell ---------- */
+  #app{display:flex;min-height:100vh}
+  aside{width:236px;flex:0 0 236px;background:#fff;border-right:1px solid var(--border);position:sticky;top:0;height:100vh;padding:20px 14px;display:flex;flex-direction:column;gap:4px}
+  .brand{display:flex;align-items:center;gap:11px;padding:6px 8px 16px}
+  .brand-mark{width:34px;height:34px;border-radius:10px;background:var(--purple);display:flex;align-items:center;justify-content:center;font-size:18px;flex:0 0 34px}
+  .brand-name{font-weight:700;font-size:16px;letter-spacing:-.2px}
+  .brand-sub{font-size:11px;color:var(--muted);font-weight:500}
+  nav{display:flex;flex-direction:column;gap:2px;margin-top:6px}
+  .nav-item{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:10px;color:var(--ink2);font-weight:500;font-size:14px;cursor:pointer;border:none;background:none;text-align:left;width:100%;position:relative}
+  .nav-item:hover{background:#f7f7fa}
+  .nav-item.active{background:var(--purple-soft);color:var(--purple-ink);font-weight:600}
+  .nav-item.active::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:3px;background:var(--purple)}
+  .nav-ico{width:17px;height:17px;flex:0 0 17px;opacity:.85}
+  .nav-spacer{flex:1}
+  .nav-foot{font-size:11px;color:var(--muted);padding:12px 12px 2px;border-top:1px solid var(--border2)}
+
+  main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .topbar{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;border-bottom:1px solid var(--border);background:#fff;position:sticky;top:0;z-index:10}
+  .tb-left{display:flex;align-items:center;gap:12px}
+  .live-pill{display:inline-flex;align-items:center;gap:7px;background:#f1fbe9;color:#4b7a12;border:1px solid #dcecc4;border-radius:100px;padding:4px 11px;font-size:12px;font-weight:600}
+  .live-dot{width:7px;height:7px;border-radius:50%;background:#7ac70f;box-shadow:0 0 0 3px rgba(122,199,15,.2)}
+  .tb-right{display:flex;align-items:center;gap:14px}
+  .avatar{width:34px;height:34px;border-radius:50%;background:var(--purple);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px}
+  .signout{font-size:13px;color:var(--ink2);cursor:pointer;background:none;border:none;font-weight:500}
+  .signout:hover{color:var(--ink)}
+
+  .content{padding:26px 28px 60px;max-width:1240px;width:100%}
+  .page-head{margin-bottom:22px}
+  .page-head h1{font-size:26px;margin:0 0 3px;letter-spacing:-.5px}
+  .page-head .sub{color:var(--ink2);font-size:14px}
+  .updated{color:var(--muted);font-size:12.5px;margin-top:2px}
+
+  .grid{display:grid;gap:18px}
+  .cols-2{grid-template-columns:1.35fr 1fr}
+  @media(max-width:1080px){.cols-2{grid-template-columns:1fr}}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 22px}
+  .card h2{font-size:15px;margin:0 0 2px;letter-spacing:-.2px}
+  .card .card-sub{font-size:12.5px;color:var(--muted);margin-bottom:16px}
+  .card-head-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}
+  .card-head-row h2{margin:0}
+
+  /* stat tiles */
+  .tiles{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:20px}
+  @media(max-width:1080px){.tiles{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:560px){.tiles{grid-template-columns:repeat(2,1fr)}}
+  .tile{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:15px 16px}
+  .tile .t-ico{width:30px;height:30px;border-radius:9px;background:var(--purple-soft);display:flex;align-items:center;justify-content:center;margin-bottom:11px;font-size:15px}
+  .tile .t-val{font-size:23px;font-weight:700;letter-spacing:-.5px;line-height:1.1}
+  .tile .t-lbl{font-size:12px;color:var(--ink2);margin-top:3px}
+  .tile.accent{background:linear-gradient(150deg,#6d5ce7,#8a5cf0);border:none;color:#fff}
+  .tile.accent .t-ico{background:rgba(255,255,255,.18)}
+  .tile.accent .t-lbl{color:rgba(255,255,255,.82)}
+
+  /* donut */
+  .donut-wrap{display:flex;gap:24px;align-items:center;flex-wrap:wrap}
+  .donut-legend{flex:1;min-width:180px;display:flex;flex-direction:column;gap:9px}
+  .leg-row{display:flex;align-items:center;gap:9px;font-size:13px}
+  .leg-sw{width:11px;height:11px;border-radius:3px;flex:0 0 11px}
+  .leg-name{color:var(--ink2);flex:1}
+  .leg-val{font-weight:600;color:var(--ink)}
+  .leg-pct{color:var(--muted);font-size:12px;width:42px;text-align:right}
+  .donut-center-big{font-size:26px;font-weight:700;letter-spacing:-.5px}
+  .donut-center-lbl{font-size:11px;fill:var(--muted)}
+
+  /* activity list */
+  .act-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--border2)}
+  .act-row:last-child{border-bottom:none}
+  .act-l{display:flex;align-items:center;gap:11px}
+  .act-ico{width:32px;height:32px;border-radius:9px;background:var(--purple-soft);display:flex;align-items:center;justify-content:center;font-size:15px}
+  .act-name{font-size:13.5px;font-weight:500}
+  .act-desc{font-size:11.5px;color:var(--muted)}
+  .act-val{font-size:18px;font-weight:700}
+  .act-val small{font-size:12px;color:var(--ink2);font-weight:500}
+
+  /* progress meters */
+  .meter{margin-bottom:16px}
+  .meter:last-child{margin-bottom:0}
+  .meter-top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px}
+  .meter-top .m-name{color:var(--ink2)}
+  .meter-top .m-val{font-weight:700}
+  .bar{height:9px;border-radius:6px;background:#f0f0f4;overflow:hidden}
+  .bar > span{display:block;height:100%;border-radius:6px;background:var(--purple)}
+  .bar.good > span{background:var(--good)}
+  .bar.cost > span{background:var(--c2)}
+  .meter-note{font-size:11.5px;color:var(--muted);margin-top:5px}
+
+  .callout{background:var(--purple-soft);border:1px solid #e5e1fb;border-radius:12px;padding:13px 15px;font-size:13px;color:var(--purple-ink);margin-top:4px}
+  .callout b{color:var(--purple-ink)}
+
+  /* sparkline */
+  .spark-tip{position:absolute;background:#1c1b22;color:#fff;font-size:11.5px;padding:5px 8px;border-radius:7px;pointer-events:none;transform:translate(-50%,-120%);white-space:nowrap;opacity:0;transition:opacity .1s}
+
+  /* revenue model */
+  .rev-grid{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+  @media(max-width:820px){.rev-grid{grid-template-columns:1fr}}
+  .slider-row{margin-bottom:17px}
+  .slider-row label{display:flex;justify-content:space-between;font-size:13px;color:var(--ink2);margin-bottom:7px}
+  .slider-row label b{color:var(--ink);font-weight:700}
+  input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:5px;border-radius:5px;background:#e9e9f0;outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--purple);cursor:pointer;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+  input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--purple);cursor:pointer;border:3px solid #fff}
+  .rev-out{display:flex;flex-direction:column;gap:12px}
+  .rev-line{display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--border2)}
+  .rev-line .rl-name{font-size:13px;color:var(--ink2)}
+  .rev-line .rl-val{font-weight:600}
+  .rev-total{background:linear-gradient(150deg,#6d5ce7,#8a5cf0);color:#fff;border-radius:14px;padding:16px 18px;margin-top:6px}
+  .rev-total .rt-lbl{font-size:12px;opacity:.85}
+  .rev-total .rt-val{font-size:28px;font-weight:700;letter-spacing:-.5px}
+  .rev-total .rt-sub{font-size:11.5px;opacity:.8;margin-top:2px}
+  .disclaim{font-size:11.5px;color:var(--muted);margin-top:14px;line-height:1.5}
+  .foot{text-align:center;font-size:12px;color:var(--muted);margin-top:34px}
+  .mb18{margin-bottom:18px}
+</style>
+</head>
+<body>
+
+<!-- ============ GATE ============ -->
+<div id="gate">
+  <div class="gate-card">
+    <div class="gate-logo">🏙️</div>
+    <h1 id="gate-title">Private dashboard</h1>
+    <p id="gate-msg">This is the Find A Crib owner dashboard. Sign in to continue.</p>
+    <button class="g-btn" id="google-btn">
+      <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.6 2.4 30.2 0 24 0 14.6 0 6.4 5.4 2.5 13.3l7.9 6.1C12.3 13.2 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.9 7.2l7.6 5.9c4.4-4.1 7.1-10.1 7.1-17.6z"/><path fill="#FBBC05" d="M10.4 28.6c-.5-1.5-.8-3-.8-4.6s.3-3.1.8-4.6l-7.9-6.1C.9 16.3 0 20 0 24s.9 7.7 2.5 10.7l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.6-5.9c-2.1 1.4-4.8 2.3-7.6 2.3-6.3 0-11.7-3.7-13.6-9.1l-7.9 6.1C6.4 42.6 14.6 48 24 48z"/></svg>
+      Sign in with Google
+    </button>
+    <div class="g-err hidden" id="gate-err"></div>
+    <div class="g-note">Only <b>divinejdavis@gmail.com</b> can view this page.</div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" class="hidden">
+  <aside>
+    <div class="brand">
+      <div class="brand-mark">🏙️</div>
+      <div>
+        <div class="brand-name">Find A Crib</div>
+        <div class="brand-sub">Owner analytics</div>
+      </div>
+    </div>
+    <nav>
+      <button class="nav-item active" data-scroll="top"><span class="nav-ico">▦</span> Dashboard</button>
+      <button class="nav-item" data-scroll="sec-traffic"><span class="nav-ico">◔</span> Traffic</button>
+      <button class="nav-item" data-scroll="sec-funnel"><span class="nav-ico">⇅</span> Funnel</button>
+      <button class="nav-item" data-scroll="sec-revenue"><span class="nav-ico">$</span> Revenue model</button>
+    </nav>
+    <div class="nav-spacer"></div>
+    <a class="nav-item" href="https://findacrib.com" target="_blank"><span class="nav-ico">↗</span> View live site</a>
+    <div class="nav-foot">Since 24 June 2026</div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <div class="tb-left">
+        <span class="live-pill"><span class="live-dot"></span> Live data</span>
+      </div>
+      <div class="tb-right">
+        <button class="signout" id="signout">Sign out</button>
+        <div class="avatar" id="avatar">D</div>
+      </div>
+    </div>
+
+    <div class="content" id="top">
+      <div class="page-head">
+        <h1>Find A Crib</h1>
+        <div class="sub">Traffic, funnel &amp; revenue — everything in one place.</div>
+        <div class="updated" id="updated">—</div>
+      </div>
+
+      <!-- stat tiles -->
+      <div class="tiles" id="tiles"></div>
+
+      <!-- traffic row -->
+      <div class="grid cols-2 mb18" id="sec-traffic">
+        <div class="card">
+          <div class="card-head-row">
+            <div><h2>Where returning visitors come from</h2><div class="card-sub">Are you paying to bring people back?</div></div>
+          </div>
+          <div class="donut-wrap">
+            <div id="donut"></div>
+            <div class="donut-legend" id="donut-legend"></div>
+          </div>
+          <div class="callout" id="returns-callout" style="margin-top:18px"></div>
+        </div>
+
+        <div class="card">
+          <h2>Today</h2>
+          <div class="card-sub">Fresh traffic, updated live</div>
+          <div id="today-list"></div>
+        </div>
+      </div>
+
+      <!-- 14-day sparkline -->
+      <div class="card mb18">
+        <div class="card-head-row">
+          <div><h2>Last 14 days</h2><div class="card-sub">Daily page views &amp; unique visitors</div></div>
+        </div>
+        <div id="spark" style="position:relative"></div>
+      </div>
+
+      <!-- funnel -->
+      <div class="grid cols-2 mb18" id="sec-funnel">
+        <div class="card">
+          <h2>Sign-up conversion</h2>
+          <div class="card-sub">A sign-up is a returning-visitor behavior</div>
+          <div id="conv-meters"></div>
+          <div class="callout" id="conv-callout" style="margin-top:16px"></div>
+        </div>
+        <div class="card">
+          <h2>The listing-open hook</h2>
+          <div class="card-sub">Opening one listing predicts return &amp; sign-up</div>
+          <div id="hook-meters"></div>
+        </div>
+      </div>
+
+      <!-- revenue model -->
+      <div class="card" id="sec-revenue">
+        <div class="card-head-row">
+          <div><h2>Revenue model</h2><div class="card-sub">Project monthly revenue at different scale. Your real sign-up rate is baked in.</div></div>
+        </div>
+        <div class="rev-grid">
+          <div id="rev-inputs">
+            <div class="slider-row">
+              <label>Monthly searches (NYC+SF+LA niche) <b id="v-searches">30,000</b></label>
+              <input type="range" id="s-searches" min="5000" max="80000" step="1000" value="30000">
+            </div>
+            <div class="slider-row">
+              <label>Search traffic you capture <b id="v-capture">10%</b></label>
+              <input type="range" id="s-capture" min="2" max="25" step="1" value="10">
+            </div>
+            <div class="slider-row">
+              <label>Free account → paid Plus <b id="v-fp">8%</b></label>
+              <input type="range" id="s-fp" min="2" max="20" step="1" value="8">
+            </div>
+            <div class="slider-row">
+              <label>Monthly churn (renters leave once housed) <b id="v-churn">25%</b></label>
+              <input type="range" id="s-churn" min="8" max="45" step="1" value="25">
+            </div>
+            <div class="slider-row">
+              <label>Plus price / month <b id="v-price">$4.99</b></label>
+              <input type="range" id="s-price" min="299" max="1499" step="100" value="499">
+            </div>
+          </div>
+          <div>
+            <div class="rev-out">
+              <div class="rev-line"><span class="rl-name">Monthly visitors</span><span class="rl-val" id="o-visitors">—</span></div>
+              <div class="rev-line"><span class="rl-name">New sign-ups / mo (at <span id="o-convrate">4.4%</span>)</span><span class="rl-val" id="o-signups">—</span></div>
+              <div class="rev-line"><span class="rl-name">New Plus subs / mo</span><span class="rl-val" id="o-newsubs">—</span></div>
+              <div class="rev-line"><span class="rl-name">Steady-state subscribers</span><span class="rl-val" id="o-subs">—</span></div>
+              <div class="rev-line"><span class="rl-name">Subscription revenue</span><span class="rl-val" id="o-mrr">—</span></div>
+              <div class="rev-line"><span class="rl-name">AdSense (est.)</span><span class="rl-val" id="o-ads">—</span></div>
+            </div>
+            <div class="rev-total">
+              <div class="rt-lbl">Projected total / month</div>
+              <div class="rt-val" id="o-total">—</div>
+              <div class="rt-sub" id="o-annual">—</div>
+            </div>
+          </div>
+        </div>
+        <div class="disclaim">Steady-state subscribers = new subs ÷ churn — high churn caps recurring revenue no matter the traffic. AdSense assumes ~2.5 views/visit at a $10 RPM. Your sign-up rate is your real number from the funnel above; everything else is an assumption you can slide.</div>
+      </div>
+
+      <div class="foot">🔒 Private — only you can see this. Data refreshes on every load.</div>
+    </div>
+  </main>
+</div>
+
+<script src="/config.js"></script>
+<script src="/static/supabase/supabase.js"></script>
+<script>
+(function(){
+  "use strict";
+  var sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+  var gate = document.getElementById('gate'), app = document.getElementById('app');
+  var REALCONV = 4.4; // fallback; overwritten from live data
+
+  // ---------- helpers ----------
+  function n(x){ return (x==null?0:x); }
+  function comma(x){ return Math.round(n(x)).toLocaleString('en-US'); }
+  function pct(a,b){ return b>0 ? (100*a/b) : 0; }
+  function pctS(a,b,d){ return (pct(a,b)).toFixed(d==null?0:d)+'%'; }
+  function money(x){ return '$'+Math.round(x).toLocaleString('en-US'); }
+  function el(id){ return document.getElementById(id); }
+
+  // ---------- auth routing ----------
+  function showGate(kind, email){
+    app.classList.add('hidden'); gate.classList.remove('hidden');
+    var t=el('gate-title'), m=el('gate-msg'), err=el('gate-err'), btn=el('google-btn');
+    err.classList.add('hidden');
+    if(kind==='forbidden'){
+      t.textContent='Not your dashboard';
+      m.textContent='You are signed in as '+(email||'another account')+', which can’t view this page.';
+      btn.textContent='Sign out'; btn.onclick=function(){ sb.auth.signOut(); };
+    } else if(kind==='error'){
+      t.textContent='Something went wrong'; m.textContent='Couldn’t load the dashboard. Try again in a moment.';
+    } else {
+      t.textContent='Private dashboard'; m.textContent='This is the Find A Crib owner dashboard. Sign in to continue.';
+    }
+  }
+  async function route(session){
+    if(!session){ showGate('signin'); return; }
+    var res;
+    try{
+      res = await fetch('/api/dashboard-metrics', { headers:{ Authorization:'Bearer '+session.access_token } });
+    }catch(e){ showGate('error'); return; }
+    if(res.status===403){ showGate('forbidden', session.user && session.user.email); return; }
+    if(res.status===401){ showGate('signin'); return; }
+    if(!res.ok){ showGate('error'); return; }
+    var data = await res.json();
+    render(session.user, data);
+    gate.classList.add('hidden'); app.classList.remove('hidden');
+  }
+
+  el('google-btn').onclick = function(){
+    sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: location.origin + '/dashboard/' } });
+  };
+  el('signout').onclick = function(){ sb.auth.signOut(); };
+  sb.auth.onAuthStateChange(function(_e, session){ route(session); });
+  sb.auth.getSession().then(function(r){ route(r.data.session); });
+
+  // sidebar scroll
+  document.querySelectorAll('.nav-item[data-scroll]').forEach(function(b){
+    b.onclick=function(){
+      document.querySelectorAll('.nav-item').forEach(function(x){x.classList.remove('active');});
+      b.classList.add('active');
+      var t=el(b.getAttribute('data-scroll')); if(t) t.scrollIntoView({behavior:'smooth',block:'start'});
+    };
+  });
+
+  // ---------- render ----------
+  function render(user, d){
+    // avatar
+    var email=(user&&user.email)||'';
+    el('avatar').textContent=(email[0]||'D').toUpperCase();
+    // updated
+    var ts = d.generated_at ? new Date(d.generated_at) : new Date();
+    el('updated').textContent='Updated '+ts.toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+
+    var T=d.totals||{}, C=d.conversion||{}, R=d.returns||{}, H=d.hook||{}, TD=d.today||{}, S=d.subscriptions||{};
+    var convRate = pct(n(T.accounts), n(T.visitors));
+    REALCONV = convRate;
+
+    // tiles
+    var tiles=[
+      {ic:'👣',v:comma(T.visitors),l:'Unique visitors'},
+      {ic:'📈',v:comma(T.visits),l:'Total visits'},
+      {ic:'🔁',v:comma(T.returning)+' · '+pctS(T.returning,T.visitors),l:'Returning visitors'},
+      {ic:'✅',v:comma(T.accounts),l:'Sign-ups'},
+      {ic:'🎯',v:convRate.toFixed(1)+'%',l:'Sign-up conversion'},
+      {ic:'💳',v:money(n(S.mrr)),l:comma(S.active)+' Plus subs · MRR',accent:true}
+    ];
+    el('tiles').innerHTML=tiles.map(function(t){
+      return '<div class="tile'+(t.accent?' accent':'')+'"><div class="t-ico">'+t.ic+'</div><div class="t-val">'+t.v+'</div><div class="t-lbl">'+t.l+'</div></div>';
+    }).join('');
+
+    renderDonut(R);
+    renderToday(TD, d.events||{});
+    renderSpark(d.sparkline||[]);
+    renderConv(C, convRate);
+    renderHook(H);
+    initRevenue(convRate);
+  }
+
+  // ---------- donut (return channels) ----------
+  var CH_META = [
+    {k:'direct_or_bookmark', name:'Direct / bookmark', c:'var(--c1)', hex:'#2a78d6', paid:false},
+    {k:'internal_direct',    name:'Internal / same-site', c:'var(--c3)', hex:'#1baf7a', paid:false},
+    {k:'organic_search',     name:'Organic search', c:'var(--c4)', hex:'#eda100', paid:false},
+    {k:'referral_other',     name:'Other referral', c:'var(--c5)', hex:'#e87ba4', paid:false},
+    {k:'paid_google_ads',    name:'Paid Google Ads', c:'var(--c2)', hex:'#eb6834', paid:true}
+  ];
+  function renderDonut(R){
+    var by=R.by_channel||{}, total=0;
+    CH_META.forEach(function(m){ m.val=n(by[m.k]); total+=m.val; });
+    var cx=90,cy=90,r=68,sw=26, C=2*Math.PI*r, gap=total>1?0.012:0, off=-0.25*C;
+    var segs='';
+    CH_META.forEach(function(m){
+      if(!m.val) return;
+      var frac=m.val/total, len=Math.max(C*frac - C*gap,0.5);
+      segs+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+m.hex+'" stroke-width="'+sw+'" '+
+            'stroke-dasharray="'+len+' '+(C-len)+'" stroke-dashoffset="'+off+'" stroke-linecap="butt"></circle>';
+      off -= C*frac;
+    });
+    var paid=n(by.paid_google_ads), freePct=pct(total-paid,total);
+    el('donut').innerHTML='<svg width="180" height="180" viewBox="0 0 180 180" style="transform:rotate(0deg)">'+segs+
+      '<text x="90" y="86" text-anchor="middle" class="donut-center-big" style="font-size:26px;font-weight:700;fill:var(--ink)">'+comma(total)+'</text>'+
+      '<text x="90" y="104" text-anchor="middle" class="donut-center-lbl">return visits</text></svg>';
+    el('donut-legend').innerHTML=CH_META.slice().sort(function(a,b){return b.val-a.val;}).map(function(m){
+      return '<div class="leg-row"><span class="leg-sw" style="background:'+m.hex+'"></span>'+
+        '<span class="leg-name">'+m.name+'</span><span class="leg-val">'+comma(m.val)+'</span>'+
+        '<span class="leg-pct">'+pctS(m.val,total)+'</span></div>';
+    }).join('');
+    el('returns-callout').innerHTML='<b>'+freePct.toFixed(0)+'% of your returns are free</b> — only '+
+      pctS(paid,total)+' came back through a paid ad. Ads bring people in; they come back on their own.';
+  }
+
+  // ---------- today ----------
+  function renderToday(TD, ev){
+    var rows=[
+      {ic:'🟢',name:'Visitors today',desc:'unique',val:comma(TD.visitors)},
+      {ic:'📄',name:'Page views today',desc:'total',val:comma(TD.visits)},
+      {ic:'⭐',name:'New → opened a listing',desc:'leading sign-up indicator',
+        val:comma(TD.new_opened_listing)+'<small>/'+comma(TD.new_visitors)+' ('+pctS(TD.new_opened_listing,TD.new_visitors)+')</small>'},
+      {ic:'🔍',name:'Searches (all-time)',desc:'core action',val:comma(ev.search)},
+      {ic:'🏢',name:'Listing opens (all-time)',desc:'building views',val:comma(ev.building_view)}
+    ];
+    el('today-list').innerHTML=rows.map(function(r){
+      return '<div class="act-row"><div class="act-l"><div class="act-ico">'+r.ic+'</div>'+
+        '<div><div class="act-name">'+r.name+'</div><div class="act-desc">'+r.desc+'</div></div></div>'+
+        '<div class="act-val">'+r.val+'</div></div>';
+    }).join('');
+  }
+
+  // ---------- sparkline ----------
+  function renderSpark(days){
+    var host=el('spark');
+    if(!days.length){ host.innerHTML='<div style="color:var(--muted);font-size:13px">Not enough history yet.</div>'; return; }
+    var W=Math.max(host.clientWidth||900,320), H=150, pad={t:14,r:8,b:22,l:8};
+    var iw=W-pad.l-pad.r, ih=H-pad.t-pad.b;
+    var max=Math.max.apply(null,days.map(function(d){return d.views;}))||1;
+    var X=function(i){ return pad.l + (days.length===1?iw/2:iw*i/(days.length-1)); };
+    var Y=function(v){ return pad.t + ih - ih*v/max; };
+    var line='',area='M'+X(0)+' '+(pad.t+ih);
+    days.forEach(function(d,i){ line+=(i?'L':'M')+X(i)+' '+Y(d.views)+' '; area+=' L'+X(i)+' '+Y(d.views); });
+    area+=' L'+X(days.length-1)+' '+(pad.t+ih)+' Z';
+    var dots='',labels='';
+    days.forEach(function(d,i){
+      dots+='<circle cx="'+X(i)+'" cy="'+Y(d.views)+'" r="3.2" fill="#6d5ce7" stroke="#fff" stroke-width="1.5" data-i="'+i+'"></circle>';
+      if(i%2===0 || i===days.length-1){
+        var lbl=new Date(d.date+'T00:00').toLocaleString('en-US',{month:'numeric',day:'numeric'});
+        labels+='<text x="'+X(i)+'" y="'+(H-6)+'" text-anchor="middle" font-size="10.5" fill="var(--muted)">'+lbl+'</text>';
+      }
+    });
+    host.innerHTML='<svg width="100%" height="'+H+'" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" id="spark-svg">'+
+      '<defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6d5ce7" stop-opacity=".22"/><stop offset="1" stop-color="#6d5ce7" stop-opacity="0"/></linearGradient></defs>'+
+      '<path d="'+area+'" fill="url(#sg)"></path><path d="'+line+'" fill="none" stroke="#6d5ce7" stroke-width="2" stroke-linejoin="round"></path>'+
+      dots+labels+'</svg><div class="spark-tip" id="spark-tip"></div>';
+    var svg=el('spark-svg'), tip=el('spark-tip');
+    svg.querySelectorAll('circle').forEach(function(c){
+      c.addEventListener('mouseenter',function(){
+        var d=days[+c.getAttribute('data-i')];
+        var rb=host.getBoundingClientRect(), cb=c.getBoundingClientRect();
+        tip.style.left=(cb.left-rb.left+cb.width/2)+'px'; tip.style.top=(cb.top-rb.top)+'px';
+        tip.innerHTML='<b>'+new Date(d.date+'T00:00').toLocaleString('en-US',{month:'short',day:'numeric'})+'</b> — '+d.views+' views · '+d.visitors+' visitors';
+        tip.style.opacity='1';
+      });
+      c.addEventListener('mouseleave',function(){ tip.style.opacity='0'; });
+    });
+  }
+
+  // ---------- conversion meters ----------
+  function renderConv(C, convRate){
+    var otV=n(C.one_time_visitors), otS=n(C.one_time_signups),
+        rtV=n(C.returning_visitors), rtS=n(C.returning_signups);
+    var otP=pct(otS,otV), rtP=pct(rtS,rtV);
+    var mx=Math.max(otP,rtP,0.1);
+    el('conv-meters').innerHTML=
+      meter('First-time visitors', otS+'/'+otV+' · '+otP.toFixed(1)+'%', otP/mx*100, '') +
+      meter('Returning visitors', rtS+'/'+rtV+' · '+rtP.toFixed(1)+'%', rtP/mx*100, 'good');
+    var mult = otP>0 ? (rtP/otP) : rtP>0? 99 : 0;
+    el('conv-callout').innerHTML='Returning visitors convert <b>~'+(mult>=10?Math.round(mult):mult.toFixed(1))+
+      '× higher</b>. First-timers barely sign up — so the lever is <b>return rate</b>, not squeezing first visits.';
+  }
+  function meter(name,val,w,cls){
+    return '<div class="meter"><div class="meter-top"><span class="m-name">'+name+'</span><span class="m-val">'+val+'</span></div>'+
+      '<div class="bar '+(cls||'')+'"><span style="width:'+Math.max(2,Math.min(100,w))+'%"></span></div></div>';
+  }
+
+  // ---------- hook meters ----------
+  function renderHook(H){
+    var vV=n(H.viewed_visitors), vR=n(H.viewed_returned), vS=n(H.viewed_signups),
+        nV=n(H.noview_visitors), nR=n(H.noview_returned), nS=n(H.noview_signups);
+    el('hook-meters').innerHTML=
+      '<div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">RETURN RATE</div>'+
+      meter('Opened a listing', pctS(vR,vV,0), pct(vR,vV), 'good')+
+      meter('Never opened one', pctS(nR,nV,0), pct(nR,nV), '')+
+      '<div style="font-size:12px;color:var(--muted);margin:14px 0 8px;font-weight:600">SIGN-UP RATE</div>'+
+      meter('Opened a listing', pctS(vS,vV,1), pct(vS,vV)*8, 'good')+
+      meter('Never opened one', pctS(nS,nV,1), pct(nS,nV)*8, '');
+  }
+
+  // ---------- revenue model ----------
+  function initRevenue(convRate){
+    var ids=['searches','capture','fp','churn','price'];
+    function fmt(){
+      var searches=+el('s-searches').value, capture=+el('s-capture').value,
+          fp=+el('s-fp').value, churn=+el('s-churn').value, price=+el('s-price').value/100;
+      el('v-searches').textContent=comma(searches);
+      el('v-capture').textContent=capture+'%';
+      el('v-fp').textContent=fp+'%';
+      el('v-churn').textContent=churn+'%';
+      el('v-price').textContent='$'+price.toFixed(2);
+      el('o-convrate').textContent=convRate.toFixed(1)+'%';
+
+      var visitors=searches*capture/100;
+      var signups=visitors*convRate/100;
+      var newsubs=signups*fp/100;
+      var subs=churn>0? newsubs/(churn/100):newsubs;
+      var mrr=subs*price;
+      var ads=visitors*2.5*10/1000;
+      var total=mrr+ads;
+      el('o-visitors').textContent=comma(visitors);
+      el('o-signups').textContent=comma(signups);
+      el('o-newsubs').textContent=comma(newsubs);
+      el('o-subs').textContent=comma(subs);
+      el('o-mrr').textContent=money(mrr);
+      el('o-ads').textContent=money(ads);
+      el('o-total').textContent=money(total)+' /mo';
+      el('o-annual').textContent=money(total*12)+' / year';
+    }
+    ids.forEach(function(k){ el('s-'+k).oninput=fmt; });
+    fmt();
+  }
+})();
+</script>
+</body>
+</html>

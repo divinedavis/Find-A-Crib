@@ -48,6 +48,17 @@ as $$
       ) as area_code
     from auth.users au
     where au.id <> 'af2629f7-1121-4bee-8a2b-cede9318c864'
+      -- This Supabase project's auth is SHARED (originally Jays Home Finder;
+      -- Kinnkolk's family-tree tables still live here). Only count a user as a
+      -- Find A Crib user if they left real product activity — otherwise the
+      -- roster pulls in Kinnkolk/other-app accounts that never touched the site.
+      and (
+        exists (select 1 from public.visits          x where x.user_id = au.id) or
+        exists (select 1 from public.events          x where x.user_id = au.id) or
+        exists (select 1 from public.saved_buildings x where x.user_id = au.id) or
+        exists (select 1 from public.subscriptions   x where x.user_id = au.id) or
+        exists (select 1 from public.saved_searches  x where x.user_id = au.id)
+      )
   ) u;
 $$;
 

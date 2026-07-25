@@ -51,6 +51,15 @@ with
     select distinct visitor_id from v
     where path ~* 'gclid|gad_source|gbraid' and visitor_id is not null
   ),
+  -- real Find A Crib account holders: this auth is shared with Kinnkolk/JHF, so
+  -- a "sign-up" only counts if the user left product activity here
+  fac_users as (
+    select user_id from public.visits where user_id is not null
+    union select user_id from public.events where user_id is not null
+    union select user_id from public.saved_buildings
+    union select user_id from public.subscriptions
+    union select user_id from public.saved_searches
+  ),
   ordered as (
     select visitor_id, path, referrer,
            row_number() over (partition by visitor_id order by created_at) as rn
@@ -88,8 +97,8 @@ select jsonb_build_object(
     'visitors',  (select count(*) from pv),
     'visits',    (select coalesce(sum(visits), 0) from pv),
     'returning', (select count(*) from pv where visits > 1),
-    'accounts',  (select count(*) from auth.users
-                    where id <> 'af2629f7-1121-4bee-8a2b-cede9318c864')
+    'accounts',  (select count(*) from fac_users
+                    where user_id <> 'af2629f7-1121-4bee-8a2b-cede9318c864')
   ),
   'conversion', jsonb_build_object(
     'one_time_visitors',  (select count(*) from pv where visits = 1),

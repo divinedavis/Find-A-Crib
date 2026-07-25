@@ -127,13 +127,22 @@ select jsonb_build_object(
     'new_opened_listing', (select count(*) from today_new t
                              where t.visitor_id in (select visitor_id from openers_today))
   ),
+  -- Real revenue only: plan 'plus' WITH a live Stripe subscription, excluding
+  -- comped (plan 'comp') accounts and the owner's own test sub. Comps are
+  -- surfaced separately so the count is honest but not counted as MRR.
   'subscriptions', jsonb_build_object(
-    'active', (select count(*) from public.subscriptions
-                 where status in ('active','trialing')
+    'paying', (select count(*) from public.subscriptions
+                 where status in ('active','trialing') and plan = 'plus'
+                   and stripe_subscription_id is not null
+                   and user_id <> 'af2629f7-1121-4bee-8a2b-cede9318c864'
                    and (current_period_end is null or current_period_end > now())),
+    'comped', (select count(*) from public.subscriptions
+                 where status in ('active','trialing') and plan = 'comp'),
     'mrr',    round((select count(*) from public.subscriptions
-                       where status in ('active','trialing')
-                         and (current_period_end is null or current_period_end > now())) * 4.99, 2)
+                 where status in ('active','trialing') and plan = 'plus'
+                   and stripe_subscription_id is not null
+                   and user_id <> 'af2629f7-1121-4bee-8a2b-cede9318c864'
+                   and (current_period_end is null or current_period_end > now())) * 4.99, 2)
   ),
   'sparkline', coalesce((
     select jsonb_agg(jsonb_build_object('date', d, 'views', views, 'visitors', visitors) order by d)

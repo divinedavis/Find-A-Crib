@@ -388,7 +388,7 @@
       {ic:'🔁',v:comma(T.returning)+' · '+pctS(T.returning,T.visitors),l:'Returning visitors'},
       {ic:'✅',v:comma(T.accounts),l:'Sign-ups'},
       {ic:'🎯',v:convRate.toFixed(1)+'%',l:'Sign-up conversion'},
-      {ic:'💳',v:money(n(S.mrr)),l:comma(S.active)+' Plus subs · MRR',accent:true}
+      {ic:'💳',v:money(n(S.mrr)),l:comma(S.paying)+' paying'+(n(S.comped)?' · '+comma(S.comped)+' comped':'')+' · MRR',accent:true}
     ];
     el('tiles').innerHTML=tiles.map(function(t){
       return '<div class="tile'+(t.accent?' accent':'')+'"><div class="t-ico">'+t.ic+'</div><div class="t-val">'+t.v+'</div><div class="t-lbl">'+t.l+'</div></div>';

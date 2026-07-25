@@ -2683,6 +2683,12 @@
     const cta = detailContent.querySelector('.d-actions [data-detail="fav"]');
     if (cta) cta.innerHTML = f ? '♥ Saved to your list' : '♡ Save this building — free';
   }
+  // The detail sheet opens via JS, so on its own it adds no browser history —
+  // which means the iOS edge-swipe-back gesture (and the browser Back button)
+  // would leave the whole site instead of just closing the sheet. Pushing a
+  // history entry on open makes Back/swipe close the sheet; the ‹ button unwinds
+  // the same entry so it never lingers.
+  let _detailNav = false;
   function openDetail(rec, listed) {
     detailRec = rec; detailListed = listed || 0;
     track('building_view', { bbl: rec.bbl, addr: rec.a, boro: rec.b, listed: detailListed, via: 'detail' });
@@ -2690,8 +2696,17 @@
     detailContent.scrollTop = 0;
     syncDetailFav();
     detailSheet.hidden = false;
+    if (!_detailNav) { history.pushState({ facDetail: true }, ''); _detailNav = true; }
   }
-  function closeDetail() { detailSheet.hidden = true; detailRec = null; }
+  function closeDetail() {
+    detailSheet.hidden = true; detailRec = null;
+    // consume the pushed entry (popstate below no-ops because _detailNav is now false)
+    if (_detailNav) { _detailNav = false; history.back(); }
+  }
+  // swipe-back / Back button: the entry was already popped, so just hide the sheet
+  window.addEventListener('popstate', () => {
+    if (_detailNav) { _detailNav = false; detailSheet.hidden = true; detailRec = null; }
+  });
 
   detailSheet.addEventListener('click', e => {
     const act = e.target.closest('[data-detail]')?.dataset.detail;

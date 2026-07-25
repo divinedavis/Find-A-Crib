@@ -610,6 +610,42 @@
   .detail-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
   .d-photo { width: 100%; height: 240px; object-fit: cover; display: block;
     background: linear-gradient(135deg, #1f3a8a 0%, #3151c8 50%, #6b3df5 100%); }
+  /* redesigned detail header: hero photo + floating spec pills + agent card */
+  .d-hero { position: relative; }
+  .d-spec {
+    position: relative; margin: -28px 16px 0; z-index: 1;
+    display: flex; justify-content: space-between; gap: 8px;
+    background: #fff; border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: 0 6px 20px rgba(20,20,50,.12); padding: 12px 8px;
+  }
+  .d-spec-item { flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 13px; color: var(--ink-2); }
+  .d-spec-item + .d-spec-item { border-left: 1px solid var(--line); }
+  .d-spec-ico { font-size: 15px; }
+  .d-spec-txt b { color: var(--ink); font-weight: 800; }
+  .d-title { font-size: 20px; font-weight: 800; letter-spacing: -.4px; margin: 14px 0 0; }
+  .d-tagline { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 6px; font-size: 14px; }
+  .d-tag { background: var(--blue-soft); color: var(--blue); font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; }
+  .d-dot { color: var(--ink-2); }
+  .d-est { color: var(--ink); font-weight: 700; }
+  .agent-card {
+    display: flex; align-items: center; gap: 12px; margin: 16px 18px 4px;
+    padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: #fff;
+  }
+  .agent-card:empty { display: none; }
+  .agent-avatar { width: 46px; height: 46px; border-radius: 50%; flex: 0 0 46px;
+    background: linear-gradient(135deg, #e6e8ee, #d3d6df); }
+  .agent-meta { flex: 1; min-width: 0; }
+  .agent-name { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 5px; }
+  .agent-verified { color: var(--blue); font-size: 12px; }
+  .agent-role { font-size: 12px; color: var(--ink-2); margin-top: 1px; }
+  .agent-actions { display: flex; gap: 8px; flex: 0 0 auto; }
+  .agent-call { width: 42px; height: 42px; border-radius: 50%; border: none; cursor: pointer;
+    background: var(--blue); color: #fff; font-size: 17px; display: flex; align-items: center; justify-content: center; }
+  .agent-call:hover { filter: brightness(1.05); }
+  .agent-loading, .agent-empty { color: var(--ink-2); font-size: 13px; }
+  /* detail address reads like the reference: muted, regular weight */
+  #detail-content .d-addr { color: var(--ink-2); font-weight: 500; }
+  #detail-content .d-pin { opacity: .7; }
   /* header city switcher (NYC · SF · LA) */
   .city-nav { display: flex; gap: 4px; align-items: center; margin-left: 10px; }
   .city-nav a { font-size: 12px; font-weight: 700; color: var(--ink-2); text-decoration: none;
@@ -1432,6 +1468,27 @@
     const officerRow = c.officer ? `<div class="hpd-row"><span class="label">${esc(c.officer.type || 'Head officer')}</span><br>${hpdContact(c.officer)}</div>` : '';
     return ownerRow + managerRow + officerRow;
   }
+
+  // Reference-style agent card for the detail sheet: grey avatar, managing-agent
+  // name (falls back to owner), and a Plus-gated call button (reuses the same
+  // data-show-phone reveal flow). Returns '' when there's nobody to show, so the
+  // container collapses via .agent-card:empty.
+  function agentCardInner(bbl, canLoad) {
+    const c = CONTACTS.get(bbl);
+    if (c === undefined) return canLoad ? '<div class="agent-loading">Loading managing agent…</div>' : '';
+    const m = c && c.manager && c.manager.name ? c.manager : null;
+    const o = c && c.owner && c.owner.name ? c.owner : null;
+    const person = m || o;
+    if (!person) return '';
+    const role = m ? 'Managing agent' : 'Owner';
+    const phoneBtn = person.has_phone
+      ? `<button type="button" class="hpd-phone-btn agent-call" data-show-phone data-bbl="${esc(bbl)}" aria-label="Call the ${role.toLowerCase()}">📞</button>`
+      : '';
+    return `<div class="agent-avatar" aria-hidden="true"></div>`
+      + `<div class="agent-meta"><div class="agent-name">${esc(person.name)}<span class="agent-verified" title="HPD-registered">✔</span></div>`
+      + `<div class="agent-role">${role}</div></div>`
+      + `<div class="agent-actions">${phoneBtn}</div>`;
+  }
   async function loadOperator(bbl, attempt = 0) {
     // deep-links render the detail before the Supabase client exists — retry briefly
     if (!supaClient) {
@@ -1448,6 +1505,8 @@
     }
     document.querySelectorAll(`[data-op="${bbl}"]`)
       .forEach(el => { el.innerHTML = operatorRows(CONTACTS.get(bbl), bbl); });
+    document.querySelectorAll(`[data-agentcard="${bbl}"]`)
+      .forEach(el => { el.innerHTML = agentCardInner(bbl, true); });
   }
   function hpdHtml(rec) {
     const h = rec.h;
@@ -2571,16 +2630,30 @@
     if (rec.mr) facts.push(['Median reported rent', '$' + rec.mr.toLocaleString() + '/mo']);
     const statuses = rec.s || [];
     const listing = listingLink(rec, borough);
+    const violTotal = rec.h && rec.h.violations
+      ? (rec.h.violations.total != null ? rec.h.violations.total : rec.h.violations.open)
+      : null;
+    const est = estRent(rec);
+    const title = rec.nb || borough || CITY.label;
+    const addrLine = [rec.a, [borough, rec.z].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+    const spec = [
+      ['🏢', rec.u != null ? rec.u : '—', rec.u === 1 ? 'unit' : 'units'],
+      ['⚠️', violTotal != null ? violTotal : '—', violTotal === 1 ? 'violation' : 'violations'],
+      ['🏗️', rec.yr || '—', ''],
+    ];
     return `
-      <img class="d-photo" src="${sv}" alt="" onerror="this.removeAttribute('src')">
-      <div class="d-head">
-        <span class="d-badge">${listed > 0 ? ('Recently advertised' + (IS_NYC ? '' : ' on Zumper')) : CITY.label}</span>
-        <div class="d-price">${priceLine}${listed > 0 ? `<span style="font-size:13px;font-weight:500;color:#8a8aa0">${asOf}</span>` : ''}</div>
-        ${keyBits.length ? `<div class="d-key">${esc(keyBits.join(' · '))}</div>` : ''}
-        <div class="d-addr">${esc(rec.a)}</div>
-        <div class="d-sub">${rec.nb ? esc(rec.nb) + ' · ' : ''}${esc(borough)}${rec.z ? ' ' + esc(rec.z) : ''}</div>
-        ${healthBadge(rec)}
+      <div class="d-hero">
+        <img class="d-photo" src="${sv}" alt="" onerror="this.style.visibility='hidden'">
+        <div class="d-spec">
+          ${spec.map(([ic, v, l]) => `<div class="d-spec-item"><span class="d-spec-ico">${ic}</span><span class="d-spec-txt"><b>${esc(String(v))}</b>${l ? ' ' + l : ''}</span></div>`).join('')}
+        </div>
       </div>
+      <div class="d-head">
+        <h2 class="d-title">${esc(title)}</h2>
+        <div class="d-tagline"><span class="d-tag">Rent-stabilized</span>${est ? ` <span class="d-dot">·</span> <span class="d-est" title="${esc(EST_TITLE)}">${est}</span>` : ''}</div>
+        <div class="d-addr"><span class="d-pin">📍</span> ${esc(addrLine)}</div>
+      </div>
+      <div class="agent-card" data-agentcard="${esc(rec.bbl)}">${agentCardInner(rec.bbl, !!(rec.h && rec.h.op))}</div>
       <div class="d-actions">
         <button class="d-primary" data-detail="fav">${FAVS.has(rec.bbl) ? '♥ Saved to your list' : '♡ Save this building — free'}</button>
       </div>

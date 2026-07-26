@@ -450,7 +450,11 @@
     header.topbar { flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
     .brand { font-size: 17px; gap: 6px; }
     .brand-dot { width: 18px; height: 18px; }
-    .brand-sub { font-size: 10px; }
+    /* free up width so brand + NYC/SF/LA + Sign in fit on one row */
+    .brand-sub { display: none; }
+    .brand { font-size: 16px; }
+    .city-nav { margin-left: 6px; gap: 3px; }
+    .city-nav a { padding: 4px 9px; }
     .filter-bar { gap: 8px; width: 100%; flex: 1 1 100%; order: 3; }
     .auth-btn { margin-left: auto; order: 2; padding: 7px 14px; font-size: 13px; }
     /* 16px stops iOS Safari from auto-zooming when the field is focused */

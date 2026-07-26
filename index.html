@@ -502,6 +502,8 @@
     body.list-open #pill-fav,
     body.list-open #pill-filters,
     body.list-open #pill-save-search { display: none; }
+    /* driving-directions button appears only on mobile */
+    .d-dir-row { display: flex; }
 
     /* live "X of Y" pill, bottom-left over the map (hidden while list is open) */
     #map-count {
@@ -679,6 +681,7 @@
     font-weight: 700; border: 1px solid var(--blue); cursor: pointer; text-decoration: none; white-space: nowrap; }
   .d-actions .d-primary { background: var(--blue); color: #fff; }
   .d-actions .d-secondary { background: #fff; color: var(--blue); }
+  .d-dir-row { display: none; }   /* driving directions: mobile only (shown in the <=900px block) */
   .d-section { padding: 16px 18px; border-top: 8px solid var(--bg); }
   .d-section h3 { margin: 0 0 12px; font-size: 18px; letter-spacing: -.3px; }
   .d-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
@@ -2685,6 +2688,9 @@
       <div class="d-actions" style="padding-top:0">
         <button class="d-secondary" data-detail="map">View on map</button>
       </div>
+      <div class="d-actions d-dir-row" style="padding-top:0">
+        <button class="d-secondary" data-detail="directions">🧭 Driving directions</button>
+      </div>
       ${IS_NYC ? `<div class="d-section"><h3>Housing vouchers (Section 8)</h3>
         ${s8Html(rec) || '<div class="d-sub" style="margin:0">No voucher listing or subsidy record for this building right now.</div>'}
         <div class="s8-legal">Source-of-income discrimination is illegal in NYC — every landlord must accept Section 8 and other vouchers, tagged here or not. <a href="https://www.nyc.gov/site/cchr/about/report-discrimination.page" target="_blank" rel="noopener">Report discrimination to the NYC Commission on Human Rights ↗</a></div>
@@ -2713,6 +2719,25 @@
   // would leave the whole site instead of just closing the sheet. Pushing a
   // history entry on open makes Back/swipe close the sheet; the ‹ button unwinds
   // the same entry so it never lingers.
+  // Full geocodable address for the maps deep link (address in the destination).
+  function fullAddress(rec) {
+    const region = IS_NYC ? (BORO_NAME[rec.b] || 'New York') : CITY.name;
+    return `${rec.a}, ${region}, ${CITY.state}${rec.z ? ' ' + rec.z : ''}`;
+  }
+  // Mobile driving-directions: Apple devices open Apple Maps, everything else
+  // opens Google Maps — both with this building's address as the destination.
+  function openDirections(rec) {
+    const dest = encodeURIComponent(fullAddress(rec));
+    const ua = navigator.userAgent || '';
+    const isApple = /iPhone|iPad|iPod/i.test(ua) ||
+                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const url = isApple
+      ? 'https://maps.apple.com/?daddr=' + dest + '&dirflg=d'
+      : 'https://www.google.com/maps/dir/?api=1&destination=' + dest + '&travelmode=driving';
+    try { track('outbound', { kind: 'directions', bbl: rec.bbl }); } catch (e) {}
+    window.open(url, '_blank');
+  }
+
   let _detailNav = false;
   function openDetail(rec, listed) {
     detailRec = rec; detailListed = listed || 0;
@@ -2745,6 +2770,7 @@
       saveFavs(); updateFavBadge(); syncDetailFav(); persistFav(rec.bbl, FAVS.has(rec.bbl));
       return;
     }
+    if (act === 'directions') { openDirections(rec); return; }
     if (act === 'map') {
       const m = markerByBbl.get(rec.bbl);
       closeDetail(); setListOpen(false);

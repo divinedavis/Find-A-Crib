@@ -139,6 +139,17 @@ select jsonb_build_object(
     'opened_listing',  (select count(*) from pv where visitor_id in (select visitor_id from adv)
                           and visitor_id in (select visitor_id from viewers))
   ),
+  -- referral loop: who clicked the "invite a friend" button, who shared a link,
+  -- and how many friends actually signed up through a link
+  'referrals', jsonb_build_object(
+    'opened',      (select count(distinct user_id) from public.events
+                      where event = 'referral_open' and props->>'via' = 'button'
+                        and user_id is not null and user_id <> 'af2629f7-1121-4bee-8a2b-cede9318c864'),
+    'shared',      (select count(distinct user_id) from public.events
+                      where event = 'referral_share'
+                        and user_id is not null and user_id <> 'af2629f7-1121-4bee-8a2b-cede9318c864'),
+    'redemptions', (select count(*) from public.referrals where status = 'redeemed')
+  ),
   'today', jsonb_build_object(
     'visitors', (select count(distinct visitor_id) from v
                    where (created_at at time zone 'America/New_York')::date

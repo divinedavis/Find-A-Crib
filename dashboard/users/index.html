@@ -160,7 +160,7 @@
           <table class="utable">
             <thead><tr>
               <th>Name</th><th>Email</th><th>Sign-in</th><th>Plan</th>
-              <th>Searching in</th><th>Saved</th><th>Joined</th><th>Last seen</th>
+              <th>Searching in</th><th>Saved</th><th>Links sent</th><th>Joined</th><th>Last seen</th>
             </tr></thead>
             <tbody id="urows"></tbody>
           </table>
@@ -260,6 +260,7 @@
         '<td>'+planBadge(u.plan)+'</td>'+
         '<td>'+(area ? esc(area) : '<span class="u-muted">—</span>')+'</td>'+
         '<td>'+(u.saves ? u.saves : '<span class="u-muted">0</span>')+'</td>'+
+        '<td>'+(u.shares ? u.shares : '<span class="u-muted">0</span>')+'</td>'+
         '<td>'+fdate(u.created_at)+'</td>'+
         '<td class="'+(didReturn(u)?'u-returned':'u-muted')+'">'+fdate(u.last_seen)+(didReturn(u)?' ↩':'')+'</td>'+
       '</tr>';

@@ -29,6 +29,8 @@ as $$
         (select max(created_at) from public.events  e where e.user_id = au.id)
       ) as last_seen,
       (select count(*) from public.saved_buildings sb where sb.user_id = au.id) as saves,
+      -- referral links this user has shared (copy / native-share actions)
+      (select count(*) from public.events e where e.user_id = au.id and e.event = 'referral_share') as shares,
       -- paying Plus / comped / (null = free)
       (select case when s.plan = 'plus' and s.stripe_subscription_id is not null then 'plus'
                    when s.plan = 'comp' then 'comp'

@@ -134,6 +134,8 @@
   .ads-tile .a-val{font-size:21px;font-weight:700;letter-spacing:-.3px;line-height:1.1}
   .ads-tile .a-lbl{font-size:12.5px;color:var(--ink2);margin-top:4px}
   .ads-tile .a-sub{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .ref-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media(max-width:700px){.ref-tiles{grid-template-columns:1fr}}
 
   /* sparkline */
   .spark-tip{position:absolute;background:#1c1b22;color:#fff;font-size:11.5px;padding:5px 8px;border-radius:7px;pointer-events:none;transform:translate(-50%,-120%);white-space:nowrap;opacity:0;transition:opacity .1s}
@@ -267,6 +269,14 @@
         </div>
         <div class="ads-tiles" id="ads-tiles"></div>
         <div class="callout" id="ads-callout" style="margin-top:16px"></div>
+      </div>
+
+      <!-- referrals -->
+      <div class="card mb18" id="sec-referrals">
+        <div class="card-head-row">
+          <div><h2>Referrals — invite a friend, both get Plus</h2><div class="card-sub">Who’s spreading the word, and how many friends signed up through a link.</div></div>
+        </div>
+        <div class="ref-tiles" id="ref-tiles"></div>
       </div>
 
       <!-- 14-day sparkline -->
@@ -434,6 +444,7 @@
 
     renderDonut(R);
     renderAds(d.ads);
+    renderReferrals(d.referrals);
     renderToday(TD, d.events||{});
     renderSpark(d.sparkline||[]);
     renderConv(C, convRate);
@@ -490,6 +501,19 @@
     el('ads-callout').innerHTML = sg>0
       ? '<b>'+comma(sg)+' of '+comma(v)+' ad visitors signed up ('+pctS(sg,v)+').</b> Compare that to your overall sign-up rate to see if ads pull their weight.'
       : '<b>0 of '+comma(v)+' ad visitors have signed up.</b> They engage — '+pctS(op,v)+' open a listing, '+pctS(ret,v)+' come back — but ad clicks aren’t converting to accounts yet. (Sign-up attribution is lossy, so the true number may be slightly above 0.)';
+  }
+
+  // ---------- referrals ----------
+  function renderReferrals(R){
+    R = R || {};
+    var tiles=[
+      {val:comma(R.opened),lbl:'Clicked “share”',sub:'opened the invite'},
+      {val:comma(R.shared),lbl:'Shared a link',sub:'copied or shared'},
+      {val:comma(R.redemptions),lbl:'Links used',sub:'friend signed up → both got Plus'}
+    ];
+    el('ref-tiles').innerHTML=tiles.map(function(t){
+      return '<div class="ads-tile"><div class="a-val">'+t.val+'</div><div class="a-lbl">'+t.lbl+'</div><div class="a-sub">'+t.sub+'</div></div>';
+    }).join('');
   }
 
   // ---------- today ----------

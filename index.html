@@ -3090,8 +3090,9 @@
     }
     const refModal = document.getElementById('referral-modal');
     const refLinkInput = document.getElementById('ref-link');
-    async function openReferralModal() {
+    async function openReferralModal(via) {
       if (!authUser) { openAuthModal('Create a free account, then invite a friend — you both get Plus free.'); return; }
+      try { track('referral_open', { via: via || 'button' }); } catch (e) {}
       refLinkInput.value = 'Generating your link…';
       document.getElementById('ref-note').textContent = '';
       refModal.hidden = false;
@@ -3105,19 +3106,20 @@
     function maybeShowReferralPrompt() {
       if (!authUser) return;
       try { if (sessionStorage.getItem('ref_prompt_seen')) return; sessionStorage.setItem('ref_prompt_seen', '1'); } catch (e) {}
-      setTimeout(openReferralModal, 1200);                   // let the app settle first
+      setTimeout(function () { openReferralModal('auto'); }, 1200);   // let the app settle first
     }
     if (refModal) {
       refModal.addEventListener('click', e => { if (e.target === refModal || e.target.closest('[data-ref="close"]')) closeReferralModal(); });
       document.getElementById('ref-copy').addEventListener('click', async () => {
         const v = refLinkInput.value; if (!v || v.indexOf('http') !== 0) return;
         try { await navigator.clipboard.writeText(v); } catch (e) { try { refLinkInput.select(); document.execCommand('copy'); } catch (e2) {} }
+        try { track('referral_share', { method: 'copy' }); } catch (e) {}
         const b = document.getElementById('ref-copy'), o = b.textContent; b.textContent = 'Copied ✓'; setTimeout(() => { b.textContent = o; }, 1500);
       });
       const shareBtn = document.getElementById('ref-share');
       if (navigator.share && shareBtn) {
         shareBtn.hidden = false;
-        shareBtn.addEventListener('click', () => { const v = refLinkInput.value; if (v && v.indexOf('http') === 0) navigator.share({ title: 'Find A Crib', text: 'Join me on Find A Crib — we both get Plus free.', url: v }).catch(() => {}); });
+        shareBtn.addEventListener('click', () => { const v = refLinkInput.value; if (v && v.indexOf('http') === 0) { try { track('referral_share', { method: 'native' }); } catch (e) {} navigator.share({ title: 'Find A Crib', text: 'Join me on Find A Crib — we both get Plus free.', url: v }).catch(() => {}); } });
       }
     }
     { const rb = document.getElementById('ref-btn'); if (rb) rb.addEventListener('click', openReferralModal); }

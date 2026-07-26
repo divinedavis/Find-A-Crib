@@ -622,6 +622,12 @@
     font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--ink);
   }
   .detail-fav.faved { color: #e0457b; border-color: #f3c2d3; }
+  .detail-bar-left { display: flex; align-items: center; gap: 10px; }
+  .detail-bar-right { display: flex; align-items: center; gap: 8px; }
+  .detail-brand { font-weight: 800; color: var(--blue); font-size: 17px; letter-spacing: -0.3px; }
+  .detail-plus-cta { background: linear-gradient(135deg,#6b3df5,#3151c8); color:#fff; border:none;
+    border-radius: 999px; padding: 8px 14px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .detail-plus-cta:hover { filter: brightness(1.06); }
   .detail-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
   .d-photo { width: 100%; height: 240px; object-fit: cover; display: block;
     background: linear-gradient(135deg, #1f3a8a 0%, #3151c8 50%, #6b3df5 100%); }
@@ -976,8 +982,15 @@
 <div id="detail-sheet" hidden>
   <div class="detail-shell">
     <div class="detail-bar">
-      <button class="detail-icon" data-detail="close" aria-label="Back">‹</button>
-      <button class="detail-icon detail-fav" data-detail="fav" aria-label="Save">♡</button>
+      <div class="detail-bar-left">
+        <button class="detail-icon" data-detail="close" aria-label="Back">‹</button>
+        <span class="detail-brand" hidden>Find A Crib</span>
+      </div>
+      <div class="detail-bar-right">
+        <button class="detail-plus-cta" data-detail="getplus" hidden>🎁 Get free Plus</button>
+        <button class="detail-icon detail-profile" data-detail="profile" hidden aria-label="Profile">👤</button>
+        <button class="detail-icon detail-fav" data-detail="fav" aria-label="Save">♡</button>
+      </div>
     </div>
     <div class="detail-scroll" id="detail-content"></div>
   </div>
@@ -1517,7 +1530,7 @@
       ? `<button type="button" class="hpd-phone-btn agent-call" data-show-phone data-bbl="${esc(bbl)}" aria-label="Call the ${role.toLowerCase()}">📞</button>`
       : '';
     return `<div class="agent-avatar" aria-hidden="true"></div>`
-      + `<div class="agent-meta"><div class="agent-name">${esc(person.name)}<span class="agent-verified" title="HPD-registered">✔</span></div>`
+      + `<div class="agent-meta"><div class="agent-name">${esc(person.name)}</div>`
       + `<div class="agent-role">${role}</div></div>`
       + `<div class="agent-actions">${phoneBtn}</div>`;
   }
@@ -2768,6 +2781,8 @@
     const rec = detailRec;
     if (act === 'search') return; // link
     if (act === 'close') { closeDetail(); return; }
+    if (act === 'getplus') { openAuthModal('Create a free account — invite a friend and you both get Find A Crib Plus free.'); return; }
+    if (act === 'profile') { openProfile(); return; }
     if (act === 'fav') {
       if (!gateSave(FAVS.has(rec.bbl))) return;
       if (FAVS.has(rec.bbl)) FAVS.delete(rec.bbl); else FAVS.add(rec.bbl);
@@ -2957,6 +2972,17 @@
     if (authUser) { authBtn.textContent = '👤 Profile'; authBtn.classList.add('signed-in'); authBtn.title = authUser.email || ''; }
     else { authBtn.textContent = 'Sign in'; authBtn.classList.remove('signed-in'); authBtn.title = ''; }
     const rb = document.getElementById('ref-btn'); if (rb) rb.hidden = !authUser;
+    updateDetailBar();
+  }
+  // detail-sheet top bar: logged out -> "Get free Plus" CTA; logged in -> brand + profile
+  function updateDetailBar() {
+    const on = !!authUser;
+    const brand = document.querySelector('.detail-brand');
+    const prof = document.querySelector('.detail-profile');
+    const plus = document.querySelector('.detail-plus-cta');
+    if (brand) brand.hidden = !on;
+    if (prof) prof.hidden = !on;
+    if (plus) plus.hidden = on;
   }
 
   // ---------- profile: account, membership, email-alert preference ----------

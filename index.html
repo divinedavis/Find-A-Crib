@@ -681,7 +681,7 @@
     font-weight: 700; border: 1px solid var(--blue); cursor: pointer; text-decoration: none; white-space: nowrap; }
   .d-actions .d-primary { background: var(--blue); color: #fff; }
   .d-actions .d-secondary { background: #fff; color: var(--blue); }
-  .d-dir-row { display: none; }   /* driving directions: mobile only (shown in the <=900px block) */
+  @media (min-width: 901px) { .d-dir-row { display: none; } }   /* driving directions: mobile only */
   .d-section { padding: 16px 18px; border-top: 8px solid var(--bg); }
   .d-section h3 { margin: 0 0 12px; font-size: 18px; letter-spacing: -.3px; }
   .d-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }

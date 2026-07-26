@@ -630,6 +630,10 @@ def main():
         smaps.append(name)
     idx = "".join(f"<sitemap><loc>{SITE}/{n}</loc><lastmod>{shard_lastmod.get(n, BUILD_DATE)}</lastmod></sitemap>"
                   for n in sorted(smaps))
+    # sitemap-daily.xml is owned by the daily growth engine (growth/techniques.py).
+    # This monthly build must still list it, or a rebuild would silently drop the
+    # daily section out of the index until the next growth run repaired it.
+    idx += f"<sitemap><loc>{SITE}/sitemap-daily.xml</loc><lastmod>{BUILD_DATE}</lastmod></sitemap>"
     write("sitemap.xml", f'<?xml version="1.0" encoding="UTF-8"?>'
           f'<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
           f'<sitemap><loc>{SITE}/sitemap-main.xml</loc><lastmod>{BUILD_DATE}</lastmod></sitemap>{idx}</sitemapindex>')
@@ -642,7 +646,10 @@ def main():
                         f'<priority>{pr}</priority></url>' for p, pr in static_pages)
     write("sitemap-main.xml", f'<?xml version="1.0" encoding="UTF-8"?>'
           f'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{main_urls}</urlset>')
-    write("robots.txt", f"User-agent: *\nAllow: /\nSitemap: {SITE}/sitemap.xml\n")
+    # robots.txt is deliberately NOT written here. The daily growth engine owns it
+    # (growth/techniques.py:t_llms_txt) because it names the AI crawlers explicitly
+    # and lists both sitemaps; writing the short version here would revert that
+    # every month until the next daily run.
 
     # persist lastmod state + emit the list of changed URLs for IndexNow
     json.dump(LM_NEW, open(LM_STATE_PATH, "w"))

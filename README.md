@@ -127,6 +127,52 @@ thumbnails). No build step; serve the directory statically. An optional Supabase
 backend powers email accounts, cross-device saved buildings, and privacy-safe
 usage analytics. Copy `config.example.js` → `config.js` and fill in keys.
 
+## Growth engine
+
+`growth_daily.py` + the `growth/` package run a self-improving loop for organic
+traffic and revenue. Two crons on the web droplet (`/etc/cron.d/rentmap-growth`):
+
+| When | Command | What it does |
+|------|---------|--------------|
+| 05:40 UTC | `growth_daily.py build --deploy` | Rebuilds the daily pages from the overnight voucher feed, deploys them, submits new URLs to IndexNow |
+| 06:00 ET | `growth_daily.py daily --email …` | Measures yesterday, judges every active technique, retires the dead ones, scouts for new techniques, mails the report |
+
+Everything is driven by a **ledger** (`growth/techniques.json`), so the ledger —
+not the code — decides what runs. Flipping a technique to `retired` stops it
+without a deploy, which is what lets the review loop prune autonomously.
+
+| Module | Role |
+|--------|------|
+| `growth/ledger.py` | The registry + append-only measured results |
+| `growth/techniques.py` | The executable techniques (one `t_<slug>` function each) |
+| `growth/metrics.py` | Daily traffic / funnel / revenue, attributed per technique |
+| `growth/review.py` | Judges, retires, and de-duplicates techniques |
+| `growth/keywords.py` | The tracked query universe the search-share goal is measured against |
+| `growth/scout.py` | Researches and proposes NEW techniques (needs an Anthropic key) |
+| `growth/report.py` | The daily email |
+
+A technique must be **idempotent** (it runs every day), **honest** (it never
+publishes an empty page just to have a URL to submit), and **attributable** (it
+declares the URL prefixes it owns, so `review.py` can tell whether it actually
+earned traffic). Site-wide techniques declare no prefixes and are judged on a
+global series instead.
+
+The scout proposes; it does not deploy. It can write ledger candidates and add
+tracked keywords, but it cannot write code, change the live site, spend money,
+or send mail — an unattended loop with commit rights eventually ships something
+broken at 6am on a Sunday.
+
+```sh
+python3 growth_daily.py build --dry-run       # what would be published
+python3 growth_daily.py status                # the ledger + keyword coverage
+python3 growth_daily.py measure --days 30     # backfill measurements
+python3 growth_daily.py report                # print the daily report
+```
+
+State (`techniques.json`, `keywords.json`, `results.jsonl`, `state.json`) lives
+on the droplet at `/root/dhcr-build/growth/` and is gitignored; `seed.py` and
+`keywords.py` hold the definitions that recreate it from scratch.
+
 ## Traffic report
 
 `traffic_report.py` prints a traffic dashboard from the Supabase `visits` /

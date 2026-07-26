@@ -41,3 +41,13 @@ agent_phones.json
 # saved-building alert job state (droplet-side)
 alert_snapshot.json
 buildings_cache.json
+
+# growth engine: generated pages + the droplet-side running ledger.
+# The droplet is the source of truth for the ledger; the seed definitions that
+# recreate it live in growth/seed.py and growth/keywords.py, which ARE tracked.
+growth_out/
+growth/techniques.json
+growth/keywords.json
+growth/results.jsonl
+growth/state.json
+growth/.anthropic_key

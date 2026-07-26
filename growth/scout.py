@@ -1,0 +1,241 @@
+#!/usr/bin/env python3
+"""The 6am scout: find techniques we are not running yet.
+
+Once a day it asks a model with live web search what is currently working for
+sites like this one — organic search, AI answer engines, distribution, and
+revenue — then filters the answers against the ledger so it proposes ideas we
+have not already tried and rejected.
+
+What it will and will not do on its own:
+
+  proposes   new techniques, written into the ledger as `candidate` with a
+             hypothesis and a source, so the owner (or a later session) can
+             implement them
+  expands    the tracked keyword universe, which is what the 90%-share goal is
+             measured against — new queries are pure upside and cost nothing
+  will NOT   write code, change the live site, spend money, or send mail
+
+That boundary is deliberate. A loop that can edit its own production site
+unattended will eventually deploy something broken at 6am on a Sunday, and the
+whole point of the ledger is that changes are legible and reversible.
+
+Needs an Anthropic API key in keychain `rent-map-anthropic`, env
+ANTHROPIC_API_KEY, or a file at growth/.anthropic_key.
+"""
+import json
+import os
+import subprocess
+import urllib.request
+
+from . import keywords, ledger, review
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+API_URL = "https://api.anthropic.com/v1/messages"
+MODEL = "claude-sonnet-5"
+MAX_NEW_PER_DAY = 3          # a trickle of well-formed ideas beats a firehose
+MAX_KEYWORDS_PER_DAY = 25
+
+
+def load_key():
+    v = os.environ.get("ANTHROPIC_API_KEY")
+    if v:
+        return v.strip()
+    p = os.path.join(HERE, ".anthropic_key")
+    if os.path.exists(p):
+        return open(p).read().strip()
+    try:
+        return subprocess.check_output(
+            ["security", "find-generic-password", "-s", "rent-map-anthropic", "-w"],
+            stderr=subprocess.DEVNULL).decode().strip()
+    except Exception:
+        return None
+
+
+TOOLS = [{"type": "web_search_20250305", "name": "web_search", "max_uses": 8}]
+
+SYSTEM = """You are the growth scout for Find A Crib (findacrib.com), a property-level map of \
+rent-stabilized and rent-controlled housing in NYC, San Francisco, Los Angeles and Washington DC.
+
+Your job each day: search the web for growth techniques that are working RIGHT NOW, and propose \
+ones this site is not already running. You are advising a real business with real constraints.
+
+Judge every idea against these rules and discard it if it fails any:
+- It must be legal, and it must not violate the terms of service of Google, Bing, Reddit, or any \
+platform involved. Never propose buying links, private blog networks, cloaking, doorway pages, \
+scraped or AI-spun filler content, fake reviews, or bulk unsolicited email.
+- It must suit a site whose credibility IS the product. This data is used by tenants to make \
+housing decisions; anything that trades accuracy or trust for traffic is worthless here.
+- It must be concrete enough to implement, and cheap enough for a solo operator.
+- Prefer techniques with a defensible advantage: this site owns a dataset almost nobody else \
+publishes at the property level.
+
+Return ONLY valid JSON, no prose, in this shape:
+{
+  "techniques": [
+    {"slug": "snake_case_id", "name": "short label",
+     "kind": "content|indexing|distribution|lifecycle|conversion",
+     "hypothesis": "why this should drive traffic or revenue HERE, specifically",
+     "evidence": "what you found that suggests it works, with a URL",
+     "effort": "hours|days|weeks",
+     "expected": "what success would look like in numbers",
+     "first_step": "the single concrete first action"}
+  ],
+  "keywords": [
+    {"query": "lowercase search query", "city": "nyc|sf|la|dc",
+     "intent": "list|check|explain", "why": "why this query matters"}
+  ],
+  "notes": "anything the owner should know, including techniques you considered and rejected"
+}"""
+
+
+def build_prompt(docroot=None):
+    techs = ledger.load_techniques()
+    running = [f"- {t['name']} [{t['status']}] — {t['hypothesis'][:160]}" for t in techs]
+    sb = review.scoreboard()
+    tried = [f"- {r['name']}: DID NOT WORK — {r['why']}" for r in sb["does_not_work"]]
+    won = [f"- {r['name']}: WORKS — {r['why']}" for r in sb["works"]]
+    kw = keywords.summary()
+    goals = ledger.get_state("goals", {})
+
+    def last(m):
+        s = ledger.series("__site__", m)
+        return s[-1][1] if s else "unknown"
+
+    return f"""Today is {ledger.today()}.
+
+SITE
+findacrib.com — a map of every DHCR-registered rent-stabilized building in NYC (47,165 buildings,
+with owner, managing agent, HPD violations and complaints per building), plus San Francisco,
+Los Angeles and Washington DC. ~47,000 static SEO pages already exist for NYC buildings,
+neighborhoods, boroughs and ZIPs, plus guides. There is a free tier, a $4.99/mo "Plus" tier
+(saved-building alerts, agent phone numbers, portfolio research, saved searches), and a
+key-metered Developer API that is built but not productized.
+
+CURRENT NUMBERS
+- visitors/day: {last('visitors')} (paid ads are currently PAUSED, so this is the organic floor)
+- organic search visitors/day: {last('organic_visitors')}
+- AI answer engine visitors/day: {last('ai_visitors')}
+- paying subscribers: {last('paying_subs')} — revenue is effectively $0
+- registered accounts: single digits to low tens
+- tracked query universe: {kw['total']} queries, {kw['coverage_pct']}% have a page targeting them
+
+GOALS
+- {json.dumps(goals.get('search_share_pct', {}).get('target', 90))}% of searches for rent-stabilized
+  housing in the four covered cities
+- {json.dumps(goals.get('signups', {}).get('target', 10000))} registered users
+- ${json.dumps(goals.get('mrr_usd', {}).get('target', 10000))}/month revenue
+
+TECHNIQUES ALREADY IN THE LEDGER (do not re-propose these)
+{chr(10).join(running) if running else '(none)'}
+
+ALREADY MEASURED AS WORKING
+{chr(10).join(won) if won else '(nothing judged yet)'}
+
+ALREADY MEASURED AS NOT WORKING — do not propose these again
+{chr(10).join(tried) if tried else '(nothing retired yet)'}
+
+TASK
+1. Search for what is currently working in 2026 for: programmatic/data-driven SEO, getting large
+   page counts actually indexed, ranking in AI answer engines, and monetizing a proprietary
+   civic-data set. Prefer sources from the last 6 months.
+2. Propose at most {MAX_NEW_PER_DAY} techniques NOT already in the ledger. Fewer, better ideas.
+3. Propose up to {MAX_KEYWORDS_PER_DAY} search queries to add to the tracked universe — real
+   queries people type about rent regulation in NYC, SF, LA or DC.
+
+Given revenue is the weakest number, at least one technique should target revenue directly."""
+
+
+def call_api(key, prompt, timeout=180):
+    body = {
+        "model": MODEL,
+        "max_tokens": 4000,
+        "system": SYSTEM,
+        "tools": TOOLS,
+        "messages": [{"role": "user", "content": prompt}],
+    }
+    req = urllib.request.Request(
+        API_URL, data=json.dumps(body).encode(),
+        headers={"content-type": "application/json",
+                 "x-api-key": key,
+                 "anthropic-version": "2023-06-01"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read().decode())
+
+
+def extract_json(resp):
+    """Pull the JSON object out of the response, ignoring any search chatter."""
+    text = "".join(b.get("text", "") for b in resp.get("content", []) if b.get("type") == "text")
+    start = text.find("{")
+    end = text.rfind("}")
+    if start < 0 or end <= start:
+        raise ValueError(f"no JSON object in response: {text[:400]}")
+    blob = text[start:end + 1]
+    try:
+        return json.loads(blob)
+    except json.JSONDecodeError:
+        # models occasionally wrap it in a fence; retry on the fenced body
+        import re
+        m = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.S)
+        if m:
+            return json.loads(m.group(1))
+        raise
+
+
+def run(dry_run=False, docroot=None):
+    key = load_key()
+    if not key:
+        msg = ("no Anthropic key — set keychain `rent-map-anthropic`, env ANTHROPIC_API_KEY, "
+               "or growth/.anthropic_key. Scout skipped.")
+        print(f"  {msg}")
+        ledger.set_state("scout_last", {"date": ledger.today(), "ok": False, "detail": msg})
+        return {"ok": False, "detail": msg}
+
+    prompt = build_prompt(docroot)
+    try:
+        resp = call_api(key, prompt)
+        data = extract_json(resp)
+    except Exception as e:
+        print(f"  scout call failed: {e}")
+        ledger.set_state("scout_last", {"date": ledger.today(), "ok": False, "detail": str(e)})
+        return {"ok": False, "detail": str(e)}
+
+    known = {t["slug"] for t in ledger.load_techniques()}
+    added_t, added_k = [], []
+
+    for t in (data.get("techniques") or [])[:MAX_NEW_PER_DAY]:
+        slug = (t.get("slug") or "").strip().lower().replace("-", "_")
+        if not slug or slug in known:
+            continue
+        kind = t.get("kind") if t.get("kind") in ledger.VALID_KIND else "content"
+        notes = "\n".join(filter(None, [
+            f"effort: {t.get('effort')}" if t.get("effort") else None,
+            f"expected: {t.get('expected')}" if t.get("expected") else None,
+            f"first step: {t.get('first_step')}" if t.get("first_step") else None,
+        ]))
+        if not dry_run:
+            ledger.add(slug=slug, name=t.get("name") or slug,
+                       hypothesis=t.get("hypothesis") or "", kind=kind,
+                       prefixes=[], metric="organic_visitors",
+                       source=f"scout:{ledger.today()}",
+                       evidence=t.get("evidence") or "", status="candidate", notes=notes)
+        added_t.append(slug)
+
+    for k in (data.get("keywords") or [])[:MAX_KEYWORDS_PER_DAY]:
+        q = (k.get("query") or "").strip().lower()
+        city = k.get("city") if k.get("city") in keywords.CITIES else None
+        if not q or not city:
+            continue
+        if not dry_run:
+            if keywords.add(q, city, k.get("intent") or "list", source=f"scout:{ledger.today()}",
+                            note=k.get("why", "")):
+                added_k.append(q)
+        else:
+            added_k.append(q)
+
+    out = {"ok": True, "techniques_added": added_t, "keywords_added": added_k,
+           "notes": data.get("notes", "")}
+    ledger.set_state("scout_last", {"date": ledger.today(), **out})
+    print(f"  proposed {len(added_t)} technique(s), added {len(added_k)} keyword(s)")
+    for s in added_t:
+        print(f"    + {s}")
+    return out

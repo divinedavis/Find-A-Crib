@@ -217,6 +217,15 @@
     font-size: 13px; font-weight: 600; box-shadow: 0 6px 24px rgba(0,0,0,.3); z-index: 9999;
     transition: transform .35s ease; }
   .plus-toast.show { transform: translate(-50%, 0); }
+  /* referral: header button + invite modal link row */
+  .ref-btn { background: linear-gradient(135deg,#6b3df5,#3151c8); color:#fff; border:none; border-radius:999px;
+    padding:7px 13px; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; }
+  .ref-btn:hover { filter: brightness(1.06); }
+  .ref-linkrow { display:flex; gap:8px; margin:8px 0 10px; }
+  .ref-linkrow input { flex:1; min-width:0; padding:11px 12px; border:1px solid var(--line); border-radius:10px;
+    font-size:14px; background:#f7f8fa; color:var(--ink); }
+  .ref-copy { flex:0 0 auto; width:auto; padding:11px 18px; }
+  .ref-share { margin-top:2px; }
   /* on desktop the chip-row is transparent so pills lay out as direct flex children (layout unchanged) */
   .chip-row { display: contents; }
   .toggle-pill.active { border-color: var(--blue); color: var(--blue); background: var(--blue-soft); }
@@ -441,10 +450,15 @@
     header.topbar { flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
     .brand { font-size: 17px; gap: 6px; }
     .brand-dot { width: 18px; height: 18px; }
-    .brand-sub { font-size: 10px; }
+    /* free up width so brand + NYC/SF/LA + Sign in fit on one row */
+    .brand-sub { display: none; }
+    .brand { font-size: 16px; }
+    .city-nav { margin-left: 6px; gap: 3px; }
+    .city-nav a { padding: 4px 9px; }
     .filter-bar { gap: 8px; width: 100%; flex: 1 1 100%; order: 3; }
     .auth-btn { margin-left: auto; order: 2; padding: 7px 14px; font-size: 13px; }
-    .filter-bar input.search-input { flex: 1 1 100%; max-width: none; min-width: 0; order: -1; }
+    /* 16px stops iOS Safari from auto-zooming when the field is focused */
+    .filter-bar input.search-input { flex: 1 1 100%; max-width: none; min-width: 0; order: -1; font-size: 16px; }
     .chip-row {
       display: flex; gap: 8px; width: 100%;
       overflow-x: auto; flex-wrap: nowrap; padding-bottom: 2px;
@@ -481,6 +495,19 @@
     body.list-open #map { visibility: hidden; }
     .card { flex-basis: 100%; }
     .results-grid { padding-bottom: 96px; }
+
+    /* ---- mobile decluttering ---- */
+    /* the long data-attribution/credits footer eats the bottom of the screen */
+    .footer-credit { display: none; }
+    /* hide the whole list header on mobile: the "X buildings in view…" count
+       AND the Sort dropdown (Sort is already in the bottom FAB sheet) */
+    .results-head { display: none; }
+    /* in list view, drop the Saved / Filters / Save search quick-actions */
+    body.list-open #pill-fav,
+    body.list-open #pill-filters,
+    body.list-open #pill-save-search { display: none; }
+    /* driving-directions button appears only on mobile */
+    .d-dir-row { display: flex; }
 
     /* live "X of Y" pill, bottom-left over the map (hidden while list is open) */
     #map-count {
@@ -595,9 +622,51 @@
     font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--ink);
   }
   .detail-fav.faved { color: #e0457b; border-color: #f3c2d3; }
+  .detail-bar-left { display: flex; align-items: center; gap: 10px; }
+  .detail-bar-right { display: flex; align-items: center; gap: 8px; }
+  .detail-brand { font-weight: 800; color: var(--blue); font-size: 17px; letter-spacing: -0.3px; }
+  .detail-plus-cta { background: linear-gradient(135deg,#6b3df5,#3151c8); color:#fff; border:none;
+    border-radius: 999px; padding: 8px 14px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .detail-plus-cta:hover { filter: brightness(1.06); }
   .detail-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
   .d-photo { width: 100%; height: 240px; object-fit: cover; display: block;
     background: linear-gradient(135deg, #1f3a8a 0%, #3151c8 50%, #6b3df5 100%); }
+  /* redesigned detail header: hero photo + floating spec pills + agent card */
+  .d-hero { position: relative; }
+  .d-spec {
+    position: relative; margin: -28px 16px 0; z-index: 1;
+    display: flex; justify-content: space-between; gap: 8px;
+    background: #fff; border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: 0 6px 20px rgba(20,20,50,.12); padding: 12px 8px;
+  }
+  .d-spec-item { flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 13px; color: var(--ink-2); }
+  .d-spec-item + .d-spec-item { border-left: 1px solid var(--line); }
+  .d-spec-ico { font-size: 15px; }
+  .d-spec-txt b { color: var(--ink); font-weight: 800; }
+  .d-title { font-size: 20px; font-weight: 800; letter-spacing: -.4px; margin: 14px 0 0; }
+  .d-tagline { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 6px; font-size: 14px; }
+  .d-tag { background: var(--blue-soft); color: var(--blue); font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; }
+  .d-dot { color: var(--ink-2); }
+  .d-est { color: var(--ink); font-weight: 700; }
+  .agent-card {
+    display: flex; align-items: center; gap: 12px; margin: 16px 18px 4px;
+    padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: #fff;
+  }
+  .agent-card:empty { display: none; }
+  .agent-avatar { width: 46px; height: 46px; border-radius: 50%; flex: 0 0 46px;
+    background: linear-gradient(135deg, #e6e8ee, #d3d6df); }
+  .agent-meta { flex: 1; min-width: 0; }
+  .agent-name { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 5px; }
+  .agent-verified { color: var(--blue); font-size: 12px; }
+  .agent-role { font-size: 12px; color: var(--ink-2); margin-top: 1px; }
+  .agent-actions { display: flex; gap: 8px; flex: 0 0 auto; }
+  .agent-call { width: 42px; height: 42px; border-radius: 50%; border: none; cursor: pointer;
+    background: var(--blue); color: #fff; font-size: 17px; display: flex; align-items: center; justify-content: center; }
+  .agent-call:hover { filter: brightness(1.05); }
+  .agent-loading, .agent-empty { color: var(--ink-2); font-size: 13px; }
+  /* detail address reads like the reference: muted, regular weight */
+  #detail-content .d-addr { color: var(--ink-2); font-weight: 500; }
+  #detail-content .d-pin { opacity: .7; }
   /* header city switcher (NYC · SF · LA) */
   .city-nav { display: flex; gap: 4px; align-items: center; margin-left: 10px; }
   .city-nav a { font-size: 12px; font-weight: 700; color: var(--ink-2); text-decoration: none;
@@ -622,6 +691,7 @@
     font-weight: 700; border: 1px solid var(--blue); cursor: pointer; text-decoration: none; white-space: nowrap; }
   .d-actions .d-primary { background: var(--blue); color: #fff; }
   .d-actions .d-secondary { background: #fff; color: var(--blue); }
+  @media (min-width: 901px) { .d-dir-row { display: none; } }   /* driving directions: mobile only */
   .d-section { padding: 16px 18px; border-top: 8px solid var(--bg); }
   .d-section h3 { margin: 0 0 12px; font-size: 18px; letter-spacing: -.3px; }
   .d-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
@@ -641,6 +711,7 @@
     <a href="/" data-city-link="nyc">NYC</a><a href="/sf/" data-city-link="sf">SF</a><a href="/la/" data-city-link="la">LA</a>
   </nav>
   <button id="auth-btn" type="button" class="auth-btn">Sign in</button>
+  <button id="ref-btn" type="button" class="ref-btn" hidden>🎁 Free Plus</button>
   <div class="filter-bar">
     <input class="search-input" id="q" type="text" placeholder="Address, neighborhood, ZIP, or BBL" />
     <div class="chip-row">
@@ -740,7 +811,7 @@
     <div id="folder-bar" hidden></div>
     <div id="search-helper" hidden></div>
     <div class="results-grid empty-state" id="grid"><div class="empty">Loading 30k buildings…</div></div>
-    <div class="footer-credit" id="credit">Source: NYC Rent Guidelines Board / DHCR 2024 · Coordinates from <a href="https://www.nyc.gov/site/planning/data-maps/open-data.page" target="_blank" rel="noopener">NYC PLUTO</a> · Listings via Zumper (nightly) · Owner/violation/complaint data from <a href="https://data.cityofnewyork.us/" target="_blank" rel="noopener">NYC Open Data — HPD</a> · Voucher listings via <a href="https://www.affordablehousing.com" target="_blank" rel="noopener">AffordableHousing.com</a> · Subsidized-building data from HPD &amp; HUD · Rent estimates: <a href="https://www.huduser.gov/portal/datasets/fmr/smallarea/index.html" target="_blank" rel="noopener">HUD FY2026 Small-Area Fair Market Rents</a> by ZIP (not building-specific) · Created by <a href="https://divinedavis.com" target="_blank" rel="noopener">Divine Davis</a> · <a href="/developers/">API for developers</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></div>
+    <div class="footer-credit" id="credit">Source: NYC Rent Guidelines Board / DHCR 2024 · Coordinates from <a href="https://www.nyc.gov/site/planning/data-maps/open-data.page" target="_blank" rel="noopener">NYC PLUTO</a> · Listings via <a href="https://streeteasy.com" target="_blank" rel="noopener">StreetEasy</a> &amp; Zumper · Owner/violation/complaint data from <a href="https://data.cityofnewyork.us/" target="_blank" rel="noopener">NYC Open Data — HPD</a> · Voucher listings via <a href="https://www.affordablehousing.com" target="_blank" rel="noopener">AffordableHousing.com</a> · Subsidized-building data from HPD &amp; HUD · Rent estimates: <a href="https://www.huduser.gov/portal/datasets/fmr/smallarea/index.html" target="_blank" rel="noopener">HUD FY2026 Small-Area Fair Market Rents</a> by ZIP (not building-specific) · Created by <a href="https://divinedavis.com" target="_blank" rel="noopener">Divine Davis</a> · <a href="/developers/">API for developers</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></div>
   </aside>
 </main>
 
@@ -797,6 +868,21 @@
     <div id="paywall-error" class="auth-error" hidden></div>
     <button id="paywall-subscribe" type="button" class="auth-submit">Subscribe</button>
     <p class="paywall-fine">Cancel anytime. Billed monthly via Stripe.</p>
+  </div>
+</div>
+<!-- Referral: invite one friend, both get Plus free -->
+<div id="referral-modal" class="auth-backdrop" hidden>
+  <div class="auth-card">
+    <button class="auth-close" data-ref="close" aria-label="Close">✕</button>
+    <div class="paywall-badge">🎁 Find A Crib <b>Plus</b> — on us</div>
+    <h2>Invite a friend, unlock Plus free</h2>
+    <p class="auth-sub">Share your link. When <b>one friend</b> signs up through it, you <b>both</b> get Plus free — email alerts, managing-agent phone numbers, landlord research, and folders. Each link works for a single sign-up; you’ll get a fresh one to invite the next person.</p>
+    <div class="ref-linkrow">
+      <input id="ref-link" type="text" readonly aria-label="Your invite link">
+      <button id="ref-copy" type="button" class="auth-submit ref-copy">Copy</button>
+    </div>
+    <button id="ref-share" type="button" class="auth-google ref-share" hidden>Share…</button>
+    <div id="ref-note" class="auth-legal"></div>
   </div>
 </div>
 <!-- Zillow-style consolidated filters modal (the pill popovers are moved in
@@ -896,8 +982,15 @@
 <div id="detail-sheet" hidden>
   <div class="detail-shell">
     <div class="detail-bar">
-      <button class="detail-icon" data-detail="close" aria-label="Back">‹</button>
-      <button class="detail-icon detail-fav" data-detail="fav" aria-label="Save">♡</button>
+      <div class="detail-bar-left">
+        <button class="detail-icon" data-detail="close" aria-label="Back">‹</button>
+        <span class="detail-brand" hidden>Find A Crib</span>
+      </div>
+      <div class="detail-bar-right">
+        <button class="detail-plus-cta" data-detail="getplus" hidden>🎁 Get free Plus</button>
+        <button class="detail-icon detail-profile" data-detail="profile" hidden aria-label="Profile">👤</button>
+        <button class="detail-icon detail-fav" data-detail="fav" aria-label="Save">♡</button>
+      </div>
     </div>
     <div class="detail-scroll" id="detail-content"></div>
   </div>
@@ -929,6 +1022,11 @@
       tagline: '(SF Rent Stabilized Homes)',
       regions: { SF: 'San Francisco' }, slugs: { SF: 'san-francisco-ca' },
       searchPh: 'Address or neighborhood',
+      statusHeading: 'Rent-control status',
+      rent: {
+        label: 'Median reported rent', short: 'Median reported', note: '(owner-reported, block level)',
+        title: 'Median owner-reported rent for this block (SF Rent Board Housing Inventory) — not an asking rent',
+      },
       sourceNote: 'Block-level data: the SF Rent Board anonymizes owner reports to the block, so a pin is a block-side of rent-controlled units, not one specific building.',
       credit: 'Source: <a href="https://data.sfgov.org/Housing-and-Buildings/Rent-Board-Housing-Inventory/gdc7-dmcn" target="_blank" rel="noopener">SF Rent Board Housing Inventory</a> via DataSF (owner-reported under the Rent Ordinance, refreshed daily, anonymized to the block) · Created by <a href="https://divinedavis.com" target="_blank" rel="noopener">Divine Davis</a> · <a href="/developers/">API for developers</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a>',
     },
@@ -941,9 +1039,29 @@
       sourceNote: 'Meets LA’s RSO criteria — 2+ units, built on or before Oct 1, 1978 (LA County assessor rolls). A small number of exemptions can’t be derived from tax data, so verify the address on ZIMAS.',
       credit: 'Derived from <a href="https://data.lacounty.gov/" target="_blank" rel="noopener">LA County Assessor parcel data</a> using <a href="https://housing.lacity.gov/residents/rso-overview" target="_blank" rel="noopener">LAHD’s RSO criteria</a> (residential, 2+ units, built ≤ 1978, City of LA) — verify any building on <a href="https://zimas.lacity.org/" target="_blank" rel="noopener">ZIMAS</a> · Created by <a href="https://divinedavis.com" target="_blank" rel="noopener">Divine Davis</a> · <a href="/developers/">API for developers</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a>',
     },
+    dc: {
+      name: 'Washington DC', state: 'DC', center: [38.905, -77.02], zoom: 12,
+      idLabel: 'Reg. #', label: 'Rent-controlled (registered)', regionLabel: 'City',
+      tagline: '(DC Rent Controlled Homes)',
+      regions: { DC: 'Washington DC' }, slugs: { DC: 'washington-dc' },
+      searchPh: 'Address, neighborhood, or ZIP',
+      statusHeading: 'Rent-control status',
+      rent: {
+        label: 'Median registered rent', short: 'Median registered', note: '(legal rent on file with DHCD)',
+        title: 'Median rent registered with DC DHCD for this property’s rent-controlled units — the legal registered rent, not an asking rent',
+      },
+      sourceNote: 'Registered with DHCD under the Rental Housing Act. Coverage is per unit, so a property can hold both controlled and exempt units — the count here is the controlled ones. A few large landlords register an entire complex under one street address.',
+      credit: 'Source: <a href="https://dhcd.dc.gov/page/rentregistry-rent-control-database" target="_blank" rel="noopener">DC DHCD RentRegistry</a> public data exports (nightly) — registered rent-controlled units under the Rental Housing Act; exempt units under § 2.05(a) are excluded · Created by <a href="https://divinedavis.com" target="_blank" rel="noopener">Divine Davis</a> · <a href="/developers/">API for developers</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a>',
+    },
   };
   const CITY = CITIES[document.documentElement.dataset.city || 'nyc'] || CITIES.nyc;
   const IS_NYC = !!CITY.nyc;
+  // Wording for a record's `mr` (a reported/registered rent, never an asking rent).
+  // Each city phrases it differently — SF reports at the block, DC registers a legal rent.
+  const RENT = CITY.rent || {
+    label: 'Median reported rent', short: 'Median reported', note: '',
+    title: 'Median reported rent — not an asking rent',
+  };
 
   // ---------- map ----------
   // doubleClickZoom: true → a double-click (desktop) or double-tap (mobile) zooms in
@@ -1344,6 +1462,23 @@
   // display id: NYC shows the raw BBL; other cities strip the "SF-"/"LA-" namespace
   function idShort(rec) { return IS_NYC ? rec.bbl : rec.bbl.replace(/^[A-Z]+-/, ''); }
 
+  // Where to send a user for current listings. NYC forwards to StreetEasy (the
+  // market it covers): the scraped direct listing page when we captured one,
+  // otherwise a StreetEasy address search so every building has a live link
+  // without us scraping it. SF/LA keep Zumper/Google since StreetEasy doesn't
+  // serve them. Returns {href, label}.
+  function listingLink(rec, borough) {
+    const direct = (listingsBlob.urls && listingsBlob.urls[rec.bbl]) || null;
+    if (IS_NYC) {
+      if (safeHttpUrl(direct)) return { href: direct, label: 'View on StreetEasy ↗' };
+      const q = encodeURIComponent(`${rec.a}, ${borough}, NY ${rec.z || ''}`.trim());
+      return { href: `https://streeteasy.com/search?search=${q}`, label: 'See listings on StreetEasy ↗' };
+    }
+    if (safeHttpUrl(direct)) return { href: direct, label: 'View on Zumper ↗' };
+    const zq = encodeURIComponent(`site:zumper.com "${rec.a}" ${borough} ${CITY.state}`);
+    return { href: `https://www.google.com/search?q=${zq}`, label: 'Search Zumper ↗' };
+  }
+
   function buildPopup(rec, listed) {
     track('building_view', { bbl: rec.bbl, addr: rec.a, boro: rec.b, listed, via: 'popup' });
     const borough = BORO_NAME[rec.b] || '';
@@ -1355,29 +1490,26 @@
     if (rec.yr) meta.push(`built ${rec.yr}`);
     if (rec.u != null) meta.push(`${rec.u} residential units`);
     const statusHtml = (rec.s || []).map(s => `<span class="popup-status">${esc(s)}</span>`).join('');
-    const listedHtml = listed ? `<div style="margin-top:8px;color:#6b3df5;font-weight:700">Recently advertised on Zumper (${listed} listing${listed===1?'':'s'})<span style="font-weight:500;color:#8a8aa0">${asOf}</span></div>` : '';
-    // SF blocks carry a median owner-reported rent (mr)
-    const rentHtml = rec.mr ? `<div style="margin-top:8px;color:#137333;font-weight:700">Median reported rent $${rec.mr.toLocaleString()}/mo <span style="font-weight:500;color:#8a8aa0">(owner-reported, block level)</span></div>` : '';
+    const advSrc = IS_NYC ? '' : ' on Zumper';
+    const listedHtml = listed ? `<div style="margin-top:8px;color:#6b3df5;font-weight:700">Recently advertised${advSrc} (${listed} listing${listed===1?'':'s'})<span style="font-weight:500;color:#8a8aa0">${asOf}</span></div>` : '';
+    // SF blocks and DC registrations carry a median reported/registered rent (mr)
+    const rentHtml = rec.mr ? `<div style="margin-top:8px;color:#137333;font-weight:700">${RENT.label} $${rec.mr.toLocaleString()}/mo <span style="font-weight:500;color:#8a8aa0">${esc(RENT.note)}</span></div>` : '';
+    const vacHtml = rec.vac ? `<div style="margin-top:6px;color:#b26a00;font-weight:700">${rec.vac} vacant unit${rec.vac === 1 ? '' : 's'} <span style="font-weight:500;color:#8a8aa0">(reported at last registration)</span></div>` : '';
     const noteHtml = CITY.sourceNote ? `<div class="popup-meta" style="margin-top:6px">${CITY.sourceNote}${CITY.likely ? ` <a href="https://zimas.lacity.org/" target="_blank" rel="noopener">Check ZIMAS ↗</a>` : ''}</div>` : '';
-    const googleQ = encodeURIComponent(`${rec.a} ${borough} ${CITY.state} ${rec.z || ''}`.trim());
-    // Use Google site-search for Zumper since Zumper has no constructable deep-link pattern.
-    // If the scraper captured a direct URL for this BBL, prefer it.
-    const directUrl = (listingsBlob.urls && listingsBlob.urls[rec.bbl]) || null;
-    const zumperQ = encodeURIComponent(`site:zumper.com "${rec.a}" ${borough} ${CITY.state}`);
-    const zumperHref = safeHttpUrl(directUrl) || `https://www.google.com/search?q=${zumperQ}`;
+    const listing = listingLink(rec, borough);
     return `
       <div class="popup-addr">${esc(rec.a)}</div>
       <div class="popup-meta">${meta.join(' · ')}</div>
       ${listedHtml}
       ${rentHtml}
+      ${vacHtml}
       ${s8Html(rec)}
       <div style="margin-top:6px">${statusHtml}</div>
       ${CITY.idLabel ? `<div class="popup-meta" style="margin-top:6px">${CITY.idLabel} ${esc(idShort(rec))}</div>` : ''}
       ${noteHtml}
       ${IS_NYC ? hpdHtml(rec) : ''}
       <div class="popup-actions">
-        <a class="secondary" href="${esc(zumperHref)}" target="_blank" rel="noopener">${listed > 0 ? 'View on Zumper' : 'Search Zumper'}</a>
-        <a class="primary" href="https://www.google.com/search?q=${googleQ}" target="_blank" rel="noopener">Search Google</a>
+        <a class="primary" href="${esc(listing.href)}" target="_blank" rel="noopener">${listing.label}</a>
       </div>
     `;
   }
@@ -1408,6 +1540,27 @@
     const officerRow = c.officer ? `<div class="hpd-row"><span class="label">${esc(c.officer.type || 'Head officer')}</span><br>${hpdContact(c.officer)}</div>` : '';
     return ownerRow + managerRow + officerRow;
   }
+
+  // Reference-style agent card for the detail sheet: grey avatar, managing-agent
+  // name (falls back to owner), and a Plus-gated call button (reuses the same
+  // data-show-phone reveal flow). Returns '' when there's nobody to show, so the
+  // container collapses via .agent-card:empty.
+  function agentCardInner(bbl, canLoad) {
+    const c = CONTACTS.get(bbl);
+    if (c === undefined) return canLoad ? '<div class="agent-loading">Loading managing agent…</div>' : '';
+    const m = c && c.manager && c.manager.name ? c.manager : null;
+    const o = c && c.owner && c.owner.name ? c.owner : null;
+    const person = m || o;
+    if (!person) return '';
+    const role = m ? 'Managing agent' : 'Owner';
+    const phoneBtn = person.has_phone
+      ? `<button type="button" class="hpd-phone-btn agent-call" data-show-phone data-bbl="${esc(bbl)}" aria-label="Call the ${role.toLowerCase()}">📞</button>`
+      : '';
+    return `<div class="agent-avatar" aria-hidden="true"></div>`
+      + `<div class="agent-meta"><div class="agent-name">${esc(person.name)}</div>`
+      + `<div class="agent-role">${role}</div></div>`
+      + `<div class="agent-actions">${phoneBtn}</div>`;
+  }
   async function loadOperator(bbl, attempt = 0) {
     // deep-links render the detail before the Supabase client exists — retry briefly
     if (!supaClient) {
@@ -1424,6 +1577,8 @@
     }
     document.querySelectorAll(`[data-op="${bbl}"]`)
       .forEach(el => { el.innerHTML = operatorRows(CONTACTS.get(bbl), bbl); });
+    document.querySelectorAll(`[data-agentcard="${bbl}"]`)
+      .forEach(el => { el.innerHTML = agentCardInner(bbl, true); });
   }
   function hpdHtml(rec) {
     const h = rec.h;
@@ -2286,7 +2441,7 @@
     if (rec.u != null) stats.push(`${rec.u} units`);
     if (rec.yr) stats.push(`built ${rec.yr}`);
     if (rec.z) stats.push(`ZIP ${esc(rec.z)}`);
-    const googleQ = encodeURIComponent(`${rec.a} ${BORO_NAME[rec.b] || ''} ${CITY.state} ${rec.z || ''}`.trim());
+    const listing = listingLink(rec, borough);
     const sv = streetviewUrl(rec.lat, rec.lng);
     const faved = FAVS.has(rec.bbl);
     return `<div class="card" data-bbl="${esc(rec.bbl)}">
@@ -2303,8 +2458,8 @@
       </div>
       <div class="body">
         ${rec.nb ? `<div class="nb">${esc(rec.nb)}</div>` : ''}
-        ${listed > 0 ? `<div class="price">${price ? '$' + price.toLocaleString() + '/mo' : `Recently advertised on Zumper · ${listed} listing${listed===1?'':'s'}${asOf}`}</div>`
-                     : rec.mr ? `<div class="price est" title="Median owner-reported rent for this block (SF Rent Board Housing Inventory) — not an asking rent">Median reported $${rec.mr.toLocaleString()}/mo</div>`
+        ${listed > 0 ? `<div class="price">${price ? '$' + price.toLocaleString() + '/mo' : `Recently advertised${IS_NYC ? '' : ' on Zumper'} · ${listed} listing${listed===1?'':'s'}${asOf}`}</div>`
+                     : rec.mr ? `<div class="price est" title="${esc(RENT.title)}">${RENT.short} $${rec.mr.toLocaleString()}/mo</div>`
                      : (estRent(rec) ? `<div class="price est" title="${EST_TITLE}">${estRent(rec)}</div>` : '')}
         ${beds && beds.length ? `<div class="beds-line">${bedsLabel(beds)} available</div>` : ''}
         ${s8Avail[rec.bbl] ? `<div class="s8-mini">✓ Section 8 listing${s8Avail[rec.bbl].n === 1 ? '' : 's'} on AffordableHousing.com${s8Avail[rec.bbl].p ? ' · from $' + s8Avail[rec.bbl].p.toLocaleString() + '/mo' : ''}</div>` : ''}
@@ -2312,7 +2467,7 @@
         ${cardHpdLine(rec)}
         <div class="actions">
           <button class="btn-secondary" data-action="map">View on map</button>
-          <a class="btn-primary" data-action="search" target="_blank" rel="noopener" href="https://www.google.com/search?q=${googleQ}">Search Google</a>
+          <a class="btn-primary" data-action="search" target="_blank" rel="noopener" href="${esc(listing.href)}">${IS_NYC ? 'Listings ↗' : 'Search'}</a>
         </div>
       </div>
     </div>`;
@@ -2454,19 +2609,19 @@
     const sv = streetviewUrl(rec.lat, rec.lng, 640, 360);
     const priceLine = listed > 0
       ? (price ? '$' + price.toLocaleString() + '/mo' : 'Recently advertised')
-      : rec.mr ? `Median reported $${rec.mr.toLocaleString()}/mo`
+      : rec.mr ? `${RENT.short} $${rec.mr.toLocaleString()}/mo`
       : (estRent(rec) || (rec.u != null ? rec.u + ' residential units' : CITY.label + ' building'));
     const sub = [
       beds && beds.length ? bedsLabel(beds) : null,
       rec.yr ? 'built ' + rec.yr : null,
       CITY.label,
     ].filter(Boolean).join(' · ');
-    const googleQ = encodeURIComponent(`${rec.a} ${borough} ${CITY.state} ${rec.z || ''}`.trim());
+    const listing = listingLink(rec, borough);
     return `
       <button class="card-close" data-card="close" aria-label="Close">✕</button>
       <img class="card-photo" src="${sv}" alt="" onerror="this.removeAttribute('src')">
       <button class="card-fav ${faved ? 'faved' : ''}" data-card="fav" aria-label="${faved ? 'Saved' : 'Save'}" aria-pressed="${faved}">${faved ? '♥' : '♡'}</button>
-      ${listed > 0 ? `<span class="card-badge">Recently advertised on Zumper</span>` : ''}
+      ${listed > 0 ? `<span class="card-badge">Recently advertised${IS_NYC ? '' : ' on Zumper'}</span>` : ''}
       <div class="card-body">
         <div class="card-price">${priceLine}</div>
         <div class="card-sub">${esc(sub)}</div>
@@ -2475,7 +2630,7 @@
         <div class="card-meta">${rec.nb ? esc(rec.nb) + ' · ' : ''}${esc(borough)}${rec.z ? ' ' + esc(rec.z) : ''}</div>
         <div class="card-actions">
           <button class="cbtn cbtn-2" data-card="details">Details</button>
-          <a class="cbtn cbtn-1" data-card="search" target="_blank" rel="noopener" href="https://www.google.com/search?q=${googleQ}">Search</a>
+          <a class="cbtn cbtn-1" data-card="search" target="_blank" rel="noopener" href="${esc(listing.href)}">${IS_NYC ? 'Listings ↗' : 'Search'}</a>
         </div>
       </div>`;
   }
@@ -2530,7 +2685,7 @@
     const sv = streetviewUrl(rec.lat, rec.lng, 800, 480);
     const priceLine = listed > 0
       ? (price ? '$' + price.toLocaleString() + '/mo' : 'Recently advertised on Zumper')
-      : rec.mr ? `Median reported rent $${rec.mr.toLocaleString()}/mo`
+      : rec.mr ? `${RENT.label} $${rec.mr.toLocaleString()}/mo`
       : CITY.label + ' building';
     const keyBits = [];
     if (rec.u != null) keyBits.push(rec.u + ' units');
@@ -2544,41 +2699,55 @@
       ['Neighborhood', rec.nb || '—'],
     ];
     if (CITY.idLabel) facts.push([CITY.idLabel, idShort(rec)]);
-    if (rec.mr) facts.push(['Median reported rent', '$' + rec.mr.toLocaleString() + '/mo']);
+    if (rec.mr) facts.push([RENT.label, '$' + rec.mr.toLocaleString() + '/mo']);
+    if (rec.vac) facts.push(['Vacant units', rec.vac]);
     const statuses = rec.s || [];
-    const googleQ = encodeURIComponent(`${rec.a} ${borough} ${CITY.state} ${rec.z || ''}`.trim());
-    const directUrl = (listingsBlob.urls && listingsBlob.urls[rec.bbl]) || null;
-    const zumperHref = safeHttpUrl(directUrl) || `https://www.google.com/search?q=${encodeURIComponent(`site:zumper.com "${rec.a}" ${borough} ${CITY.state}`)}`;
+    const listing = listingLink(rec, borough);
+    const violTotal = rec.h && rec.h.violations
+      ? (rec.h.violations.total != null ? rec.h.violations.total : rec.h.violations.open)
+      : null;
+    const est = estRent(rec);
+    const title = rec.nb || borough || CITY.label;
+    const addrLine = [rec.a, [borough, rec.z].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+    const spec = [
+      ['🏢', rec.u != null ? rec.u : '—', rec.u === 1 ? 'unit' : 'units'],
+      ['⚠️', violTotal != null ? violTotal : '—', violTotal === 1 ? 'violation' : 'violations'],
+      ['🏗️', rec.yr || '—', ''],
+    ];
     return `
-      <img class="d-photo" src="${sv}" alt="" onerror="this.removeAttribute('src')">
-      <div class="d-head">
-        <span class="d-badge">${listed > 0 ? 'Recently advertised on Zumper' : CITY.label}</span>
-        <div class="d-price">${priceLine}${listed > 0 ? `<span style="font-size:13px;font-weight:500;color:#8a8aa0">${asOf}</span>` : ''}</div>
-        ${keyBits.length ? `<div class="d-key">${esc(keyBits.join(' · '))}</div>` : ''}
-        <div class="d-addr">${esc(rec.a)}</div>
-        <div class="d-sub">${rec.nb ? esc(rec.nb) + ' · ' : ''}${esc(borough)}${rec.z ? ' ' + esc(rec.z) : ''}</div>
-        ${healthBadge(rec)}
+      <div class="d-hero">
+        <img class="d-photo" src="${sv}" alt="" onerror="this.style.visibility='hidden'">
+        <div class="d-spec">
+          ${spec.map(([ic, v, l]) => `<div class="d-spec-item"><span class="d-spec-ico">${ic}</span><span class="d-spec-txt"><b>${esc(String(v))}</b>${l ? ' ' + l : ''}</span></div>`).join('')}
+        </div>
       </div>
+      <div class="d-head">
+        <h2 class="d-title">${esc(title)}</h2>
+        <div class="d-tagline"><span class="d-tag">${esc(CITY.label)}</span>${est ? ` <span class="d-dot">·</span> <span class="d-est" title="${esc(EST_TITLE)}">${est}</span>` : ''}</div>
+        <div class="d-addr"><span class="d-pin">📍</span> ${esc(addrLine)}</div>
+      </div>
+      <div class="agent-card" data-agentcard="${esc(rec.bbl)}">${agentCardInner(rec.bbl, !!(rec.h && rec.h.op))}</div>
       <div class="d-actions">
         <button class="d-primary" data-detail="fav">${FAVS.has(rec.bbl) ? '♥ Saved to your list' : '♡ Save this building — free'}</button>
       </div>
       <div class="d-actions" style="padding-top:0">
         <button class="d-secondary" data-detail="map">View on map</button>
-        <a class="d-secondary" data-detail="search" target="_blank" rel="noopener" href="https://www.google.com/search?q=${googleQ}">Search Google</a>
+      </div>
+      <div class="d-actions d-dir-row" style="padding-top:0">
+        <button class="d-secondary" data-detail="directions">🧭 Driving directions</button>
       </div>
       ${IS_NYC ? `<div class="d-section"><h3>Housing vouchers (Section 8)</h3>
         ${s8Html(rec) || '<div class="d-sub" style="margin:0">No voucher listing or subsidy record for this building right now.</div>'}
         <div class="s8-legal">Source-of-income discrimination is illegal in NYC — every landlord must accept Section 8 and other vouchers, tagged here or not. <a href="https://www.nyc.gov/site/cchr/about/report-discrimination.page" target="_blank" rel="noopener">Report discrimination to the NYC Commission on Human Rights ↗</a></div>
       </div>` : ''}
-      ${statuses.length ? `<div class="d-section"><h3>Rent-stabilization status</h3><div class="d-chips">${statuses.map(s => `<span class="chip">${esc(s)}</span>`).join('')}</div>${CITY.sourceNote ? `<div class="d-sub" style="margin-top:8px">${CITY.sourceNote}${CITY.likely ? ' <a href="https://zimas.lacity.org/" target="_blank" rel="noopener">Check ZIMAS ↗</a>' : ''}</div>` : ''}</div>` : ''}
+      ${statuses.length ? `<div class="d-section"><h3>${esc(CITY.statusHeading || 'Rent-stabilization status')}</h3><div class="d-chips">${statuses.map(s => `<span class="chip">${esc(s)}</span>`).join('')}</div>${CITY.sourceNote ? `<div class="d-sub" style="margin-top:8px">${CITY.sourceNote}${CITY.likely ? ' <a href="https://zimas.lacity.org/" target="_blank" rel="noopener">Check ZIMAS ↗</a>' : ''}</div>` : ''}</div>` : ''}
       <div class="d-section"><h3>Building facts</h3>
         <div class="d-facts">${facts.map(([l, v]) => `<div class="d-fact"><span class="l">${l}</span><span class="v">${esc(String(v))}</span></div>`).join('')}</div>
       </div>
       ${IS_NYC ? `<div class="d-section"><h3>Owner &amp; HPD record</h3>${hpdHtml(rec)}</div>` : ''}
       <div class="d-section"><h3>Find this listing</h3>
         <div class="d-actions" style="padding:0">
-          <a class="d-secondary" target="_blank" rel="noopener" href="${esc(zumperHref)}">${listed > 0 ? 'View on Zumper' : 'Search Zumper'}</a>
-          <a class="d-primary" target="_blank" rel="noopener" href="https://www.google.com/search?q=${googleQ}">Search Google</a>
+          <a class="d-primary" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.label}</a>
         </div>
       </div>`;
   }
@@ -2590,6 +2759,31 @@
     const cta = detailContent.querySelector('.d-actions [data-detail="fav"]');
     if (cta) cta.innerHTML = f ? '♥ Saved to your list' : '♡ Save this building — free';
   }
+  // The detail sheet opens via JS, so on its own it adds no browser history —
+  // which means the iOS edge-swipe-back gesture (and the browser Back button)
+  // would leave the whole site instead of just closing the sheet. Pushing a
+  // history entry on open makes Back/swipe close the sheet; the ‹ button unwinds
+  // the same entry so it never lingers.
+  // Full geocodable address for the maps deep link (address in the destination).
+  function fullAddress(rec) {
+    const region = IS_NYC ? (BORO_NAME[rec.b] || 'New York') : CITY.name;
+    return `${rec.a}, ${region}, ${CITY.state}${rec.z ? ' ' + rec.z : ''}`;
+  }
+  // Mobile driving-directions: Apple devices open Apple Maps, everything else
+  // opens Google Maps — both with this building's address as the destination.
+  function openDirections(rec) {
+    const dest = encodeURIComponent(fullAddress(rec));
+    const ua = navigator.userAgent || '';
+    const isApple = /iPhone|iPad|iPod/i.test(ua) ||
+                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const url = isApple
+      ? 'https://maps.apple.com/?daddr=' + dest + '&dirflg=d'
+      : 'https://www.google.com/maps/dir/?api=1&destination=' + dest + '&travelmode=driving';
+    try { track('outbound', { kind: 'directions', bbl: rec.bbl }); } catch (e) {}
+    window.open(url, '_blank');
+  }
+
+  let _detailNav = false;
   function openDetail(rec, listed) {
     detailRec = rec; detailListed = listed || 0;
     track('building_view', { bbl: rec.bbl, addr: rec.a, boro: rec.b, listed: detailListed, via: 'detail' });
@@ -2597,8 +2791,17 @@
     detailContent.scrollTop = 0;
     syncDetailFav();
     detailSheet.hidden = false;
+    if (!_detailNav) { history.pushState({ facDetail: true }, ''); _detailNav = true; }
   }
-  function closeDetail() { detailSheet.hidden = true; detailRec = null; }
+  function closeDetail() {
+    detailSheet.hidden = true; detailRec = null;
+    // consume the pushed entry (popstate below no-ops because _detailNav is now false)
+    if (_detailNav) { _detailNav = false; history.back(); }
+  }
+  // swipe-back / Back button: the entry was already popped, so just hide the sheet
+  window.addEventListener('popstate', () => {
+    if (_detailNav) { _detailNav = false; detailSheet.hidden = true; detailRec = null; }
+  });
 
   detailSheet.addEventListener('click', e => {
     const act = e.target.closest('[data-detail]')?.dataset.detail;
@@ -2606,12 +2809,15 @@
     const rec = detailRec;
     if (act === 'search') return; // link
     if (act === 'close') { closeDetail(); return; }
+    if (act === 'getplus') { openAuthModal('Create a free account — invite a friend and you both get Find A Crib Plus free.'); return; }
+    if (act === 'profile') { openProfile(); return; }
     if (act === 'fav') {
       if (!gateSave(FAVS.has(rec.bbl))) return;
       if (FAVS.has(rec.bbl)) FAVS.delete(rec.bbl); else FAVS.add(rec.bbl);
       saveFavs(); updateFavBadge(); syncDetailFav(); persistFav(rec.bbl, FAVS.has(rec.bbl));
       return;
     }
+    if (act === 'directions') { openDirections(rec); return; }
     if (act === 'map') {
       const m = markerByBbl.get(rec.bbl);
       closeDetail(); setListOpen(false);
@@ -2793,6 +2999,18 @@
   function updateAuthUI() {
     if (authUser) { authBtn.textContent = '👤 Profile'; authBtn.classList.add('signed-in'); authBtn.title = authUser.email || ''; }
     else { authBtn.textContent = 'Sign in'; authBtn.classList.remove('signed-in'); authBtn.title = ''; }
+    const rb = document.getElementById('ref-btn'); if (rb) rb.hidden = !authUser;
+    updateDetailBar();
+  }
+  // detail-sheet top bar: logged out -> "Get free Plus" CTA; logged in -> brand + profile
+  function updateDetailBar() {
+    const on = !!authUser;
+    const brand = document.querySelector('.detail-brand');
+    const prof = document.querySelector('.detail-profile');
+    const plus = document.querySelector('.detail-plus-cta');
+    if (brand) brand.hidden = !on;
+    if (prof) prof.hidden = !on;
+    if (plus) plus.hidden = on;
   }
 
   // ---------- profile: account, membership, email-alert preference ----------
@@ -2930,6 +3148,67 @@
 
   if (window.supabase && window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
     supaClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+    // ---------- referral: invite 1 friend, both get Plus free ----------
+    function captureRef() {
+      try {
+        const p = new URLSearchParams(location.search);
+        const code = (p.get('ref') || '').trim().toLowerCase();
+        if (code && /^[a-z0-9]{4,20}$/.test(code)) {
+          localStorage.setItem('fac_ref', code);
+          p.delete('ref');
+          history.replaceState({}, '', location.pathname + (p.toString() ? '?' + p.toString() : '') + location.hash);
+        }
+      } catch (e) {}
+    }
+    async function maybeRedeemReferral() {
+      let code = null;
+      try { code = localStorage.getItem('fac_ref'); } catch (e) {}
+      if (!code || !authUser || !supaClient) return;
+      try {
+        const { data, error } = await supaClient.rpc('redeem_referral', { p_code: code });
+        if (error) return;                                   // transient — keep code, retry next load
+        try { localStorage.removeItem('fac_ref'); } catch (e) {}
+        if (data && data.ok) { await refreshPlus(); showPlusToast('🎉 You and your friend both unlocked Find A Crib Plus — free!'); }
+      } catch (e) {}
+    }
+    const refModal = document.getElementById('referral-modal');
+    const refLinkInput = document.getElementById('ref-link');
+    async function openReferralModal(via) {
+      if (!authUser) { openAuthModal('Create a free account, then invite a friend — you both get Plus free.'); return; }
+      try { track('referral_open', { via: via || 'button' }); } catch (e) {}
+      refLinkInput.value = 'Generating your link…';
+      document.getElementById('ref-note').textContent = '';
+      refModal.hidden = false;
+      try {
+        const { data, error } = await supaClient.rpc('get_or_create_referral');
+        if (error || !data) { refLinkInput.value = ''; document.getElementById('ref-note').textContent = 'Couldn’t generate a link right now — try again shortly.'; }
+        else refLinkInput.value = location.origin + '/?ref=' + data;
+      } catch (e) { refLinkInput.value = ''; }
+    }
+    function closeReferralModal() { if (refModal) refModal.hidden = true; }
+    function maybeShowReferralPrompt() {
+      if (!authUser) return;
+      try { if (sessionStorage.getItem('ref_prompt_seen')) return; sessionStorage.setItem('ref_prompt_seen', '1'); } catch (e) {}
+      setTimeout(function () { openReferralModal('auto'); }, 1200);   // let the app settle first
+    }
+    if (refModal) {
+      refModal.addEventListener('click', e => { if (e.target === refModal || e.target.closest('[data-ref="close"]')) closeReferralModal(); });
+      document.getElementById('ref-copy').addEventListener('click', async () => {
+        const v = refLinkInput.value; if (!v || v.indexOf('http') !== 0) return;
+        try { await navigator.clipboard.writeText(v); } catch (e) { try { refLinkInput.select(); document.execCommand('copy'); } catch (e2) {} }
+        try { track('referral_share', { method: 'copy' }); } catch (e) {}
+        const b = document.getElementById('ref-copy'), o = b.textContent; b.textContent = 'Copied ✓'; setTimeout(() => { b.textContent = o; }, 1500);
+      });
+      const shareBtn = document.getElementById('ref-share');
+      if (navigator.share && shareBtn) {
+        shareBtn.hidden = false;
+        shareBtn.addEventListener('click', () => { const v = refLinkInput.value; if (v && v.indexOf('http') === 0) { try { track('referral_share', { method: 'native' }); } catch (e) {} navigator.share({ title: 'Find A Crib', text: 'Join me on Find A Crib — we both get Plus free.', url: v }).catch(() => {}); } });
+      }
+    }
+    { const rb = document.getElementById('ref-btn'); if (rb) rb.addEventListener('click', openReferralModal); }
+    captureRef();
+
     const { data: { session } } = await supaClient.auth.getSession();
     authUser = session?.user || null;
     updateAuthUI();
@@ -2945,7 +3224,7 @@
         transaction_id: authUser ? authUser.id : undefined,
       });
     }
-    if (authUser) loadAccountFavs();
+    if (authUser) { loadAccountFavs(); maybeRedeemReferral(); maybeShowReferralPrompt(); }
     handleUnsubHash();
     handleFolderHash();
     // anonymous returning-visitor analytics: a first-party id (cookie/localStorage)
@@ -2981,8 +3260,10 @@
           });
         }
         closeAuthModal(); loadAccountFavs();
+        maybeRedeemReferral();
         // user signed in specifically to see a phone number -> take them to the paywall
         if (pendingPhoneBbl) { const b = pendingPhoneBbl; pendingPhoneBbl = null; openPaywall(b); }
+        else maybeShowReferralPrompt();
       }
     });
     authBtn.addEventListener('click', () => {
@@ -3048,7 +3329,8 @@
   <p>Find A Crib maps the SF Rent Board's Housing Inventory — owner-reported,
      rent-controlled units across San Francisco, shown at the block level with
      median reported rents. Also on Find A Crib:
-     <a href="/">rent-stabilized NYC</a> and <a href="/la/">rent-stabilized (RSO) Los Angeles</a>.</p>
+     <a href="/">rent-stabilized NYC</a>, <a href="/la/">rent-stabilized (RSO) Los Angeles</a>
+     and <a href="/dc/">rent-controlled Washington DC</a>.</p>
 </nav>
 <style>
   .seo-nav{position:relative;z-index:1;background:#fff;border-top:1px solid var(--line);

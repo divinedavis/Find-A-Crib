@@ -21,9 +21,13 @@ seo/
 buildings.min.json.gz
 sf/buildings.min.json.gz
 la/buildings.min.json.gz
+dc/buildings.min.json.gz
 
 # honest-lastmod state for build_seo.py
 seo_lastmod.json
+
+# DC RentRegistry export CSVs (~130 MB, re-downloaded by build_dc.py)
+dc_raw/
 
 # nightly listing history snapshots (droplet-side)
 listings_archive/

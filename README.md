@@ -1,15 +1,17 @@
-# Find A Crib — Rent-Stabilized Buildings Explorer (NYC · SF · LA)
+# Find A Crib — Rent-Stabilized Buildings Explorer (NYC · SF · LA · DC)
 
 An interactive map of every DHCR rent-stabilized building in **Manhattan**,
 **the Bronx**, **Brooklyn**, **Queens**, and **Staten Island**, with a nightly
 signal for which buildings were **recently advertised** for rent, plus the
 building's HPD owner / managing agent and open violation & complaint counts.
 
-Two more cities ride the same frontend (see **Other cities** below):
+Three more cities ride the same frontend (see **Other cities** below):
 **San Francisco** at [/sf/](https://findacrib.com/sf/) (SF Rent Board Housing
-Inventory, block-level, with median reported rents) and **Los Angeles** at
+Inventory, block-level, with median reported rents), **Los Angeles** at
 [/la/](https://findacrib.com/la/) (buildings meeting the RSO criteria, derived
-from LA County assessor rolls).
+from LA County assessor rolls), and **Washington DC** at
+[/dc/](https://findacrib.com/dc/) (properties registered with DHCD as holding
+rent-controlled units, with median *registered* rents).
 
 🔗 **Live at [findacrib.com](https://findacrib.com)**
 
@@ -94,6 +96,30 @@ python3 notify_saved_listings.py --test-email you@x.com    # one sample email
 Each building shows the operator info, violation/complaint counts, and a
 link to that building's full record on HPD Online.
 
+## Other cities
+
+Each city is a directory (`sf/`, `la/`, `dc/`) holding its own
+`buildings.min.json` plus an `index.html` generated from the root one by
+`build_city_pages.py` — the frontend is city-aware at runtime via
+`<html data-city="…">` and the `CITIES` config inside `index.html`, so a new
+city is a builder script, a `CITIES` entry, and a `CITY_META` entry.
+
+Only cities that publish **property-level** coverage data get a map (see
+`BACKLOG.md` for the ones that don't — most rent-controlled jurisdictions in
+the US publish nothing below the municipality level).
+
+| City | Script | Source | Records |
+|------|--------|--------|---------|
+| San Francisco | `build_sf.py` | DataSF `gdc7-dmcn`, SF Rent Board Housing Inventory (owner-reported, anonymized to the block) | ~12k block-sides |
+| Los Angeles | `build_la.py` | LA County Assessor parcels filtered by LAHD's RSO criteria — *derived*, labelled "likely RSO" | ~68k parcels |
+| Washington DC | `build_dc.py` | DHCD RentRegistry nightly public CSV exports | ~4.3k properties / 78k covered units |
+
+DC is the only one besides NYC that is an authoritative registry rather than a
+derivation. Its exports are discovered at runtime from an unauthenticated
+`api/ListExports` endpoint (see the `build_dc.py` docstring); coverage there is
+a *per-unit* determination, so the script counts non-exempt units from the unit
+file rather than trusting a building-level flag.
+
 ## Front end
 
 `index.html` — a single-file Leaflet map (marker clustering + Street View
@@ -125,3 +151,7 @@ environment. A weekly cron on the caprecruiting droplet (167.71.170.219,
 - Coordinates from NYC PLUTO
 - Recent-listing signal via a nightly Apify (StreetEasy) refresh
 - Owner / managing agent / violations / complaints from NYC Open Data (HPD)
+- SF Rent Board Housing Inventory via DataSF (`gdc7-dmcn`)
+- LA County Assessor parcel rolls, filtered by LAHD's RSO criteria
+- DC DHCD RentRegistry public data exports; DC neighborhood label points (DCGIS)
+  and Census 2020 ZCTAs for DC neighborhood/ZIP assignment

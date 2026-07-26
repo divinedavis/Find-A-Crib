@@ -1022,6 +1022,11 @@
       tagline: '(SF Rent Stabilized Homes)',
       regions: { SF: 'San Francisco' }, slugs: { SF: 'san-francisco-ca' },
       searchPh: 'Address or neighborhood',
+      statusHeading: 'Rent-control status',
+      rent: {
+        label: 'Median reported rent', short: 'Median reported', note: '(owner-reported, block level)',
+        title: 'Median owner-reported rent for this block (SF Rent Board Housing Inventory) — not an asking rent',
+      },
       sourceNote: 'Block-level data: the SF Rent Board anonymizes owner reports to the block, so a pin is a block-side of rent-controlled units, not one specific building.',
       credit: 'Source: <a href="https://data.sfgov.org/Housing-and-Buildings/Rent-Board-Housing-Inventory/gdc7-dmcn" target="_blank" rel="noopener">SF Rent Board Housing Inventory</a> via DataSF (owner-reported under the Rent Ordinance, refreshed daily, anonymized to the block) · Created by <a href="https://divinedavis.com" target="_blank" rel="noopener">Divine Davis</a> · <a href="/developers/">API for developers</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a>',
     },
@@ -1034,9 +1039,29 @@
       sourceNote: 'Meets LA’s RSO criteria — 2+ units, built on or before Oct 1, 1978 (LA County assessor rolls). A small number of exemptions can’t be derived from tax data, so verify the address on ZIMAS.',
       credit: 'Derived from <a href="https://data.lacounty.gov/" target="_blank" rel="noopener">LA County Assessor parcel data</a> using <a href="https://housing.lacity.gov/residents/rso-overview" target="_blank" rel="noopener">LAHD’s RSO criteria</a> (residential, 2+ units, built ≤ 1978, City of LA) — verify any building on <a href="https://zimas.lacity.org/" target="_blank" rel="noopener">ZIMAS</a> · Created by <a href="https://divinedavis.com" target="_blank" rel="noopener">Divine Davis</a> · <a href="/developers/">API for developers</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a>',
     },
+    dc: {
+      name: 'Washington DC', state: 'DC', center: [38.905, -77.02], zoom: 12,
+      idLabel: 'Reg. #', label: 'Rent-controlled (registered)', regionLabel: 'City',
+      tagline: '(DC Rent Controlled Homes)',
+      regions: { DC: 'Washington DC' }, slugs: { DC: 'washington-dc' },
+      searchPh: 'Address, neighborhood, or ZIP',
+      statusHeading: 'Rent-control status',
+      rent: {
+        label: 'Median registered rent', short: 'Median registered', note: '(legal rent on file with DHCD)',
+        title: 'Median rent registered with DC DHCD for this property’s rent-controlled units — the legal registered rent, not an asking rent',
+      },
+      sourceNote: 'Registered with DHCD under the Rental Housing Act. Coverage is per unit, so a property can hold both controlled and exempt units — the count here is the controlled ones. A few large landlords register an entire complex under one street address.',
+      credit: 'Source: <a href="https://dhcd.dc.gov/page/rentregistry-rent-control-database" target="_blank" rel="noopener">DC DHCD RentRegistry</a> public data exports (nightly) — registered rent-controlled units under the Rental Housing Act; exempt units under § 2.05(a) are excluded · Created by <a href="https://divinedavis.com" target="_blank" rel="noopener">Divine Davis</a> · <a href="/developers/">API for developers</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a>',
+    },
   };
   const CITY = CITIES[document.documentElement.dataset.city || 'nyc'] || CITIES.nyc;
   const IS_NYC = !!CITY.nyc;
+  // Wording for a record's `mr` (a reported/registered rent, never an asking rent).
+  // Each city phrases it differently — SF reports at the block, DC registers a legal rent.
+  const RENT = CITY.rent || {
+    label: 'Median reported rent', short: 'Median reported', note: '',
+    title: 'Median reported rent — not an asking rent',
+  };
 
   // ---------- map ----------
   // doubleClickZoom: true → a double-click (desktop) or double-tap (mobile) zooms in
@@ -1467,8 +1492,9 @@
     const statusHtml = (rec.s || []).map(s => `<span class="popup-status">${esc(s)}</span>`).join('');
     const advSrc = IS_NYC ? '' : ' on Zumper';
     const listedHtml = listed ? `<div style="margin-top:8px;color:#6b3df5;font-weight:700">Recently advertised${advSrc} (${listed} listing${listed===1?'':'s'})<span style="font-weight:500;color:#8a8aa0">${asOf}</span></div>` : '';
-    // SF blocks carry a median owner-reported rent (mr)
-    const rentHtml = rec.mr ? `<div style="margin-top:8px;color:#137333;font-weight:700">Median reported rent $${rec.mr.toLocaleString()}/mo <span style="font-weight:500;color:#8a8aa0">(owner-reported, block level)</span></div>` : '';
+    // SF blocks and DC registrations carry a median reported/registered rent (mr)
+    const rentHtml = rec.mr ? `<div style="margin-top:8px;color:#137333;font-weight:700">${RENT.label} $${rec.mr.toLocaleString()}/mo <span style="font-weight:500;color:#8a8aa0">${esc(RENT.note)}</span></div>` : '';
+    const vacHtml = rec.vac ? `<div style="margin-top:6px;color:#b26a00;font-weight:700">${rec.vac} vacant unit${rec.vac === 1 ? '' : 's'} <span style="font-weight:500;color:#8a8aa0">(reported at last registration)</span></div>` : '';
     const noteHtml = CITY.sourceNote ? `<div class="popup-meta" style="margin-top:6px">${CITY.sourceNote}${CITY.likely ? ` <a href="https://zimas.lacity.org/" target="_blank" rel="noopener">Check ZIMAS ↗</a>` : ''}</div>` : '';
     const listing = listingLink(rec, borough);
     return `
@@ -1476,6 +1502,7 @@
       <div class="popup-meta">${meta.join(' · ')}</div>
       ${listedHtml}
       ${rentHtml}
+      ${vacHtml}
       ${s8Html(rec)}
       <div style="margin-top:6px">${statusHtml}</div>
       ${CITY.idLabel ? `<div class="popup-meta" style="margin-top:6px">${CITY.idLabel} ${esc(idShort(rec))}</div>` : ''}
@@ -2432,7 +2459,7 @@
       <div class="body">
         ${rec.nb ? `<div class="nb">${esc(rec.nb)}</div>` : ''}
         ${listed > 0 ? `<div class="price">${price ? '$' + price.toLocaleString() + '/mo' : `Recently advertised${IS_NYC ? '' : ' on Zumper'} · ${listed} listing${listed===1?'':'s'}${asOf}`}</div>`
-                     : rec.mr ? `<div class="price est" title="Median owner-reported rent for this block (SF Rent Board Housing Inventory) — not an asking rent">Median reported $${rec.mr.toLocaleString()}/mo</div>`
+                     : rec.mr ? `<div class="price est" title="${esc(RENT.title)}">${RENT.short} $${rec.mr.toLocaleString()}/mo</div>`
                      : (estRent(rec) ? `<div class="price est" title="${EST_TITLE}">${estRent(rec)}</div>` : '')}
         ${beds && beds.length ? `<div class="beds-line">${bedsLabel(beds)} available</div>` : ''}
         ${s8Avail[rec.bbl] ? `<div class="s8-mini">✓ Section 8 listing${s8Avail[rec.bbl].n === 1 ? '' : 's'} on AffordableHousing.com${s8Avail[rec.bbl].p ? ' · from $' + s8Avail[rec.bbl].p.toLocaleString() + '/mo' : ''}</div>` : ''}
@@ -2582,7 +2609,7 @@
     const sv = streetviewUrl(rec.lat, rec.lng, 640, 360);
     const priceLine = listed > 0
       ? (price ? '$' + price.toLocaleString() + '/mo' : 'Recently advertised')
-      : rec.mr ? `Median reported $${rec.mr.toLocaleString()}/mo`
+      : rec.mr ? `${RENT.short} $${rec.mr.toLocaleString()}/mo`
       : (estRent(rec) || (rec.u != null ? rec.u + ' residential units' : CITY.label + ' building'));
     const sub = [
       beds && beds.length ? bedsLabel(beds) : null,
@@ -2658,7 +2685,7 @@
     const sv = streetviewUrl(rec.lat, rec.lng, 800, 480);
     const priceLine = listed > 0
       ? (price ? '$' + price.toLocaleString() + '/mo' : 'Recently advertised on Zumper')
-      : rec.mr ? `Median reported rent $${rec.mr.toLocaleString()}/mo`
+      : rec.mr ? `${RENT.label} $${rec.mr.toLocaleString()}/mo`
       : CITY.label + ' building';
     const keyBits = [];
     if (rec.u != null) keyBits.push(rec.u + ' units');
@@ -2672,7 +2699,8 @@
       ['Neighborhood', rec.nb || '—'],
     ];
     if (CITY.idLabel) facts.push([CITY.idLabel, idShort(rec)]);
-    if (rec.mr) facts.push(['Median reported rent', '$' + rec.mr.toLocaleString() + '/mo']);
+    if (rec.mr) facts.push([RENT.label, '$' + rec.mr.toLocaleString() + '/mo']);
+    if (rec.vac) facts.push(['Vacant units', rec.vac]);
     const statuses = rec.s || [];
     const listing = listingLink(rec, borough);
     const violTotal = rec.h && rec.h.violations
@@ -2695,7 +2723,7 @@
       </div>
       <div class="d-head">
         <h2 class="d-title">${esc(title)}</h2>
-        <div class="d-tagline"><span class="d-tag">Rent-stabilized</span>${est ? ` <span class="d-dot">·</span> <span class="d-est" title="${esc(EST_TITLE)}">${est}</span>` : ''}</div>
+        <div class="d-tagline"><span class="d-tag">${esc(CITY.label)}</span>${est ? ` <span class="d-dot">·</span> <span class="d-est" title="${esc(EST_TITLE)}">${est}</span>` : ''}</div>
         <div class="d-addr"><span class="d-pin">📍</span> ${esc(addrLine)}</div>
       </div>
       <div class="agent-card" data-agentcard="${esc(rec.bbl)}">${agentCardInner(rec.bbl, !!(rec.h && rec.h.op))}</div>
@@ -2712,7 +2740,7 @@
         ${s8Html(rec) || '<div class="d-sub" style="margin:0">No voucher listing or subsidy record for this building right now.</div>'}
         <div class="s8-legal">Source-of-income discrimination is illegal in NYC — every landlord must accept Section 8 and other vouchers, tagged here or not. <a href="https://www.nyc.gov/site/cchr/about/report-discrimination.page" target="_blank" rel="noopener">Report discrimination to the NYC Commission on Human Rights ↗</a></div>
       </div>` : ''}
-      ${statuses.length ? `<div class="d-section"><h3>Rent-stabilization status</h3><div class="d-chips">${statuses.map(s => `<span class="chip">${esc(s)}</span>`).join('')}</div>${CITY.sourceNote ? `<div class="d-sub" style="margin-top:8px">${CITY.sourceNote}${CITY.likely ? ' <a href="https://zimas.lacity.org/" target="_blank" rel="noopener">Check ZIMAS ↗</a>' : ''}</div>` : ''}</div>` : ''}
+      ${statuses.length ? `<div class="d-section"><h3>${esc(CITY.statusHeading || 'Rent-stabilization status')}</h3><div class="d-chips">${statuses.map(s => `<span class="chip">${esc(s)}</span>`).join('')}</div>${CITY.sourceNote ? `<div class="d-sub" style="margin-top:8px">${CITY.sourceNote}${CITY.likely ? ' <a href="https://zimas.lacity.org/" target="_blank" rel="noopener">Check ZIMAS ↗</a>' : ''}</div>` : ''}</div>` : ''}
       <div class="d-section"><h3>Building facts</h3>
         <div class="d-facts">${facts.map(([l, v]) => `<div class="d-fact"><span class="l">${l}</span><span class="v">${esc(String(v))}</span></div>`).join('')}</div>
       </div>
@@ -3303,8 +3331,9 @@
      <a href="/borough/manhattan/">Manhattan</a>, <a href="/borough/brooklyn/">Brooklyn</a>,
      <a href="/borough/queens/">Queens</a>, <a href="/borough/bronx/">the Bronx</a>,
      <a href="/borough/staten-island/">Staten Island</a>.
-     Also on Find A Crib: <a href="/sf/">rent-controlled San Francisco</a> and
-     <a href="/la/">rent-stabilized (RSO) Los Angeles</a>.</p>
+     Also on Find A Crib: <a href="/sf/">rent-controlled San Francisco</a>,
+     <a href="/la/">rent-stabilized (RSO) Los Angeles</a> and
+     <a href="/dc/">rent-controlled Washington DC</a>.</p>
 </nav>
 <style>
   .seo-nav{position:relative;z-index:1;background:#fff;border-top:1px solid var(--line);

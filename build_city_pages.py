@@ -30,8 +30,9 @@ NYC_SEO_NAV = """<nav class="seo-nav" aria-label="Browse rent-stabilized buildin
      <a href="/borough/manhattan/">Manhattan</a>, <a href="/borough/brooklyn/">Brooklyn</a>,
      <a href="/borough/queens/">Queens</a>, <a href="/borough/bronx/">the Bronx</a>,
      <a href="/borough/staten-island/">Staten Island</a>.
-     Also on Find A Crib: <a href="/sf/">rent-controlled San Francisco</a> and
-     <a href="/la/">rent-stabilized (RSO) Los Angeles</a>.</p>
+     Also on Find A Crib: <a href="/sf/">rent-controlled San Francisco</a>,
+     <a href="/la/">rent-stabilized (RSO) Los Angeles</a> and
+     <a href="/dc/">rent-controlled Washington DC</a>.</p>
 </nav>"""
 
 CITY_META = {
@@ -47,7 +48,8 @@ CITY_META = {
   <p>Find A Crib maps the SF Rent Board's Housing Inventory — owner-reported,
      rent-controlled units across San Francisco, shown at the block level with
      median reported rents. Also on Find A Crib:
-     <a href="/">rent-stabilized NYC</a> and <a href="/la/">rent-stabilized (RSO) Los Angeles</a>.</p>
+     <a href="/">rent-stabilized NYC</a>, <a href="/la/">rent-stabilized (RSO) Los Angeles</a>
+     and <a href="/dc/">rent-controlled Washington DC</a>.</p>
 </nav>""",
     },
     "la": {
@@ -62,8 +64,29 @@ CITY_META = {
   <p>Find A Crib maps City of LA residential buildings that meet LAHD's RSO
      criteria — two or more units, built on or before Oct 1, 1978 — from LA
      County assessor parcel data. Confirm any building on ZIMAS. Also on
-     Find A Crib: <a href="/">rent-stabilized NYC</a> and
-     <a href="/sf/">rent-controlled San Francisco</a>.</p>
+     Find A Crib: <a href="/">rent-stabilized NYC</a>,
+     <a href="/sf/">rent-controlled San Francisco</a> and
+     <a href="/dc/">rent-controlled Washington DC</a>.</p>
+</nav>""",
+    },
+    "dc": {
+        "title": "Rent-Controlled Washington DC — 4,300+ Registered Buildings | Find A Crib",
+        "og_title": "Rent-Controlled Washington DC — Find A Crib",
+        "desc": ("Map every Washington DC building with rent-controlled units registered "
+                 "with DHCD — 78,000+ covered units, median registered rents and vacancies, "
+                 "by neighborhood and ZIP."),
+        "tagline": "(DC Rent Controlled Homes)",
+        "seo_nav": """<nav class="seo-nav" aria-label="About this map">
+  <h2>Find rent-controlled apartments in Washington DC</h2>
+  <p>Find A Crib maps every property registered with DC's DHCD as containing
+     rent-controlled units under the Rental Housing Act, from the District's
+     RentRegistry — with the median <em>registered</em> rent (the legal rent on
+     file, not an asking rent) and units reported vacant. Units exempt under
+     § 2.05(a) — subsidized, new construction, small landlords with four or
+     fewer units, co-ops — are excluded. Also on Find A Crib:
+     <a href="/">rent-stabilized NYC</a>,
+     <a href="/sf/">rent-controlled San Francisco</a> and
+     <a href="/la/">rent-stabilized (RSO) Los Angeles</a>.</p>
 </nav>""",
     },
 }

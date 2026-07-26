@@ -79,6 +79,7 @@
   .b-email{background:#f0f0f4;color:#6b6a76}
   .b-plus{background:#efe9ff;color:#5a49d0}
   .b-comp{background:#eaf7ef;color:#1a8f57}
+  .b-ref{background:#e6f7f4;color:#0f766e}
   .b-free{background:#f4f4f6;color:#9a99a5}
   .empty{padding:40px;text-align:center;color:var(--muted);font-size:14px}
   .foot{text-align:center;font-size:12px;color:var(--muted);margin-top:22px}
@@ -233,6 +234,7 @@
   function planBadge(p){
     if(p==='plus') return '<span class="badge b-plus">Plus</span>';
     if(p==='comp') return '<span class="badge b-comp">Comped</span>';
+    if(p==='referral') return '<span class="badge b-ref">Referral</span>';
     return '<span class="badge b-free">Free</span>';
   }
   function provBadge(p){

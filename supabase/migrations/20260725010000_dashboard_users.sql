@@ -31,10 +31,11 @@ as $$
       (select count(*) from public.saved_buildings sb where sb.user_id = au.id) as saves,
       -- paying Plus / comped / (null = free)
       (select case when s.plan = 'plus' and s.stripe_subscription_id is not null then 'plus'
-                   when s.plan = 'comp' then 'comp' end
+                   when s.plan = 'comp' then 'comp'
+                   when s.plan = 'referral' then 'referral' end
          from public.subscriptions s
         where s.user_id = au.id and s.status in ('active', 'trialing')
-        order by (s.plan = 'plus') desc limit 1) as plan,
+        order by (s.plan = 'plus') desc, (s.plan = 'referral') desc limit 1) as plan,
       -- "searching in": most-viewed borough from building_view events (props.boro
       -- is a borough code M/Bk/Q/Bx/SI), else the borough of a saved building
       -- (BBL first digit 1-5); the client maps either encoding to a name

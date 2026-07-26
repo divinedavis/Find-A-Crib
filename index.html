@@ -217,6 +217,15 @@
     font-size: 13px; font-weight: 600; box-shadow: 0 6px 24px rgba(0,0,0,.3); z-index: 9999;
     transition: transform .35s ease; }
   .plus-toast.show { transform: translate(-50%, 0); }
+  /* referral: header button + invite modal link row */
+  .ref-btn { background: linear-gradient(135deg,#6b3df5,#3151c8); color:#fff; border:none; border-radius:999px;
+    padding:7px 13px; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; }
+  .ref-btn:hover { filter: brightness(1.06); }
+  .ref-linkrow { display:flex; gap:8px; margin:8px 0 10px; }
+  .ref-linkrow input { flex:1; min-width:0; padding:11px 12px; border:1px solid var(--line); border-radius:10px;
+    font-size:14px; background:#f7f8fa; color:var(--ink); }
+  .ref-copy { flex:0 0 auto; width:auto; padding:11px 18px; }
+  .ref-share { margin-top:2px; }
   /* on desktop the chip-row is transparent so pills lay out as direct flex children (layout unchanged) */
   .chip-row { display: contents; }
   .toggle-pill.active { border-color: var(--blue); color: var(--blue); background: var(--blue-soft); }
@@ -689,6 +698,7 @@
     <a href="/" data-city-link="nyc">NYC</a><a href="/sf/" data-city-link="sf">SF</a><a href="/la/" data-city-link="la">LA</a>
   </nav>
   <button id="auth-btn" type="button" class="auth-btn">Sign in</button>
+  <button id="ref-btn" type="button" class="ref-btn" hidden>🎁 Free Plus</button>
   <div class="filter-bar">
     <input class="search-input" id="q" type="text" placeholder="Address, neighborhood, ZIP, or BBL" />
     <div class="chip-row">
@@ -845,6 +855,21 @@
     <div id="paywall-error" class="auth-error" hidden></div>
     <button id="paywall-subscribe" type="button" class="auth-submit">Subscribe</button>
     <p class="paywall-fine">Cancel anytime. Billed monthly via Stripe.</p>
+  </div>
+</div>
+<!-- Referral: invite one friend, both get Plus free -->
+<div id="referral-modal" class="auth-backdrop" hidden>
+  <div class="auth-card">
+    <button class="auth-close" data-ref="close" aria-label="Close">✕</button>
+    <div class="paywall-badge">🎁 Find A Crib <b>Plus</b> — on us</div>
+    <h2>Invite a friend, unlock Plus free</h2>
+    <p class="auth-sub">Share your link. When <b>one friend</b> signs up through it, you <b>both</b> get Plus free — email alerts, managing-agent phone numbers, landlord research, and folders. Each link works for a single sign-up; you’ll get a fresh one to invite the next person.</p>
+    <div class="ref-linkrow">
+      <input id="ref-link" type="text" readonly aria-label="Your invite link">
+      <button id="ref-copy" type="button" class="auth-submit ref-copy">Copy</button>
+    </div>
+    <button id="ref-share" type="button" class="auth-google ref-share" hidden>Share…</button>
+    <div id="ref-note" class="auth-legal"></div>
   </div>
 </div>
 <!-- Zillow-style consolidated filters modal (the pill popovers are moved in
@@ -2901,6 +2926,7 @@
   function updateAuthUI() {
     if (authUser) { authBtn.textContent = '👤 Profile'; authBtn.classList.add('signed-in'); authBtn.title = authUser.email || ''; }
     else { authBtn.textContent = 'Sign in'; authBtn.classList.remove('signed-in'); authBtn.title = ''; }
+    const rb = document.getElementById('ref-btn'); if (rb) rb.hidden = !authUser;
   }
 
   // ---------- profile: account, membership, email-alert preference ----------
@@ -3038,6 +3064,65 @@
 
   if (window.supabase && window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
     supaClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+    // ---------- referral: invite 1 friend, both get Plus free ----------
+    function captureRef() {
+      try {
+        const p = new URLSearchParams(location.search);
+        const code = (p.get('ref') || '').trim().toLowerCase();
+        if (code && /^[a-z0-9]{4,20}$/.test(code)) {
+          localStorage.setItem('fac_ref', code);
+          p.delete('ref');
+          history.replaceState({}, '', location.pathname + (p.toString() ? '?' + p.toString() : '') + location.hash);
+        }
+      } catch (e) {}
+    }
+    async function maybeRedeemReferral() {
+      let code = null;
+      try { code = localStorage.getItem('fac_ref'); } catch (e) {}
+      if (!code || !authUser || !supaClient) return;
+      try {
+        const { data, error } = await supaClient.rpc('redeem_referral', { p_code: code });
+        if (error) return;                                   // transient — keep code, retry next load
+        try { localStorage.removeItem('fac_ref'); } catch (e) {}
+        if (data && data.ok) { await refreshPlus(); showPlusToast('🎉 You and your friend both unlocked Find A Crib Plus — free!'); }
+      } catch (e) {}
+    }
+    const refModal = document.getElementById('referral-modal');
+    const refLinkInput = document.getElementById('ref-link');
+    async function openReferralModal() {
+      if (!authUser) { openAuthModal('Create a free account, then invite a friend — you both get Plus free.'); return; }
+      refLinkInput.value = 'Generating your link…';
+      document.getElementById('ref-note').textContent = '';
+      refModal.hidden = false;
+      try {
+        const { data, error } = await supaClient.rpc('get_or_create_referral');
+        if (error || !data) { refLinkInput.value = ''; document.getElementById('ref-note').textContent = 'Couldn’t generate a link right now — try again shortly.'; }
+        else refLinkInput.value = location.origin + '/?ref=' + data;
+      } catch (e) { refLinkInput.value = ''; }
+    }
+    function closeReferralModal() { if (refModal) refModal.hidden = true; }
+    function maybeShowReferralPrompt() {
+      if (!authUser) return;
+      try { if (sessionStorage.getItem('ref_prompt_seen')) return; sessionStorage.setItem('ref_prompt_seen', '1'); } catch (e) {}
+      setTimeout(openReferralModal, 1200);                   // let the app settle first
+    }
+    if (refModal) {
+      refModal.addEventListener('click', e => { if (e.target === refModal || e.target.closest('[data-ref="close"]')) closeReferralModal(); });
+      document.getElementById('ref-copy').addEventListener('click', async () => {
+        const v = refLinkInput.value; if (!v || v.indexOf('http') !== 0) return;
+        try { await navigator.clipboard.writeText(v); } catch (e) { try { refLinkInput.select(); document.execCommand('copy'); } catch (e2) {} }
+        const b = document.getElementById('ref-copy'), o = b.textContent; b.textContent = 'Copied ✓'; setTimeout(() => { b.textContent = o; }, 1500);
+      });
+      const shareBtn = document.getElementById('ref-share');
+      if (navigator.share && shareBtn) {
+        shareBtn.hidden = false;
+        shareBtn.addEventListener('click', () => { const v = refLinkInput.value; if (v && v.indexOf('http') === 0) navigator.share({ title: 'Find A Crib', text: 'Join me on Find A Crib — we both get Plus free.', url: v }).catch(() => {}); });
+      }
+    }
+    { const rb = document.getElementById('ref-btn'); if (rb) rb.addEventListener('click', openReferralModal); }
+    captureRef();
+
     const { data: { session } } = await supaClient.auth.getSession();
     authUser = session?.user || null;
     updateAuthUI();
@@ -3053,7 +3138,7 @@
         transaction_id: authUser ? authUser.id : undefined,
       });
     }
-    if (authUser) loadAccountFavs();
+    if (authUser) { loadAccountFavs(); maybeRedeemReferral(); maybeShowReferralPrompt(); }
     handleUnsubHash();
     handleFolderHash();
     // anonymous returning-visitor analytics: a first-party id (cookie/localStorage)
@@ -3089,8 +3174,10 @@
           });
         }
         closeAuthModal(); loadAccountFavs();
+        maybeRedeemReferral();
         // user signed in specifically to see a phone number -> take them to the paywall
         if (pendingPhoneBbl) { const b = pendingPhoneBbl; pendingPhoneBbl = null; openPaywall(b); }
+        else maybeShowReferralPrompt();
       }
     });
     authBtn.addEventListener('click', () => {

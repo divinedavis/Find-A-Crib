@@ -165,6 +165,23 @@ def cmd_status(args):
     log(json.dumps(keywords.summary(), indent=2))
 
 
+def cmd_outreach(args):
+    """Research prospects and draft outreach. Never sends — see growth/outreach.py."""
+    if not any(t["slug"] == "b2b_outreach" for t in ledger.active()):
+        log("  b2b_outreach is not active in the ledger — skipped")
+        return None
+    try:
+        from growth import outreach
+    except Exception as e:
+        log(f"  outreach unavailable: {e}")
+        return None
+    try:
+        return outreach.run(dry_run=args.dry_run)
+    except Exception as e:
+        log(f"  outreach failed: {e}")
+        return None
+
+
 def cmd_daily(args):
     log("== measure ==")
     cmd_measure(args)
@@ -172,6 +189,8 @@ def cmd_daily(args):
     rv = cmd_review(args)
     log("== scout ==")
     cmd_scout(args)
+    log("== outreach ==")
+    cmd_outreach(args)
     log("== report ==")
     last = ledger.get_state("last_build", {})
     cmd_report(args, run_log=last.get("log"), review_out=rv)
@@ -181,7 +200,7 @@ def main():
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("command", choices=["build", "deploy", "measure", "review", "scout",
-                                       "report", "daily", "status"])
+                                       "outreach", "report", "daily", "status"])
     p.add_argument("--build-dir", default=os.environ.get("GROWTH_BUILD_DIR", DEFAULT_BUILD))
     p.add_argument("--docroot", default=os.environ.get("GROWTH_DOCROOT", DEFAULT_DOCROOT))
     p.add_argument("--deploy", action="store_true", help="rsync after build")
@@ -192,8 +211,8 @@ def main():
 
     seed.run()
     {"build": cmd_build, "deploy": cmd_deploy, "measure": cmd_measure,
-     "review": cmd_review, "scout": cmd_scout, "report": cmd_report,
-     "daily": cmd_daily, "status": cmd_status}[args.command](args)
+     "review": cmd_review, "scout": cmd_scout, "outreach": cmd_outreach,
+     "report": cmd_report, "daily": cmd_daily, "status": cmd_status}[args.command](args)
 
 
 if __name__ == "__main__":

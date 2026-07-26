@@ -92,26 +92,31 @@ SEEDS = [
          notes="Needs: confirm the AdSense account cleared review, create an in-feed unit, "
                "paste its slot id. One field, and inventory goes live."),
     dict(slug="b2b_api_licensing", status="candidate", kind="conversion",
-         name="Productize the Developer API for B2B data licensing",
+         name="Drive demand to the Developer API",
          prefixes=["/developers/"], metric="mrr_usd",
-         hypothesis="Reaching $10k/mo through $4.99 consumer subs needs ~2,000 subscribers; "
-                    "the same number needs roughly 10-30 B2B customers at $300-1,000/mo. "
-                    "Proptech, brokerages, appraisers, tenant-side law firms and housing "
-                    "nonprofits all need property-level rent-regulation data and mostly "
-                    "cannot get it anywhere else.",
-         evidence="findacrib-api already runs with per-key metering and issue_api_key.py; the "
-                  "missing pieces are public pricing, self-serve checkout, and outreach.",
-         notes="Needs: pricing tiers, a Stripe product, self-serve key issuance on payment."),
-    dict(slug="b2b_outreach", status="candidate", kind="distribution",
-         name="Daily qualified B2B prospect research + drafted outreach",
+         hypothesis="Reaching $10k/mo through $4.99 consumer subs needs ~2,000 subscribers. "
+                    "The API reaches it with roughly 200 Pro or 50 Business customers — or a "
+                    "handful of Enterprise bulk licences, which is why that tier now exists. "
+                    "Proptech, appraisers, brokerages, tenant-side law firms and researchers "
+                    "all need property-level rent-regulation data and mostly cannot get it.",
+         evidence="Verified 2026-07-26: the product is already BUILT and working end to end — "
+                  "self-serve signup, metered keys, live Stripe checkout (cs_live_ session "
+                  "confirmed), and a working webhook. The api_keys table holds only the "
+                  "owner's own smoke tests, so the gap is demand, not product.",
+         notes="Enterprise tier added 2026-07-26 to raise the ceiling. REQUIRED: confirm "
+               "api@findacrib.com is a live forwarding alias in Namecheap, or Enterprise "
+               "enquiries bounce."),
+    dict(slug="b2b_outreach", status="active", kind="distribution",
+         name="Daily B2B prospect research + drafted outreach",
          prefixes=[], metric="mrr_usd",
-         hypothesis="Nobody discovers a data API by accident. A steady, small, genuinely "
-                    "researched outreach list converts far better than volume, and B2B is the "
-                    "fastest credible path to the revenue goal.",
-         evidence="Standard motion for data businesses at this stage.",
-         notes="Deliberately drafts-for-approval rather than auto-sending: bulk cold mail from "
-               "findacrib.com would put the deliverability of the product's own alert emails "
-               "at risk, and that is not a trade worth making silently."),
+         hypothesis="Nobody discovers a data API by accident, and zero real signups confirms "
+                    "it. A steady trickle of genuinely researched, personalised outreach "
+                    "converts far better than volume in markets this small.",
+         evidence="api_keys contains no real developer signups despite the API being live "
+                  "since July.",
+         notes="Drafts only, never auto-sends — bulk cold mail from findacrib.com would put "
+               "the saved-building alert emails into spam, and cold outreach carries CAN-SPAM "
+               "and GDPR obligations that need a human decision. Needs the Anthropic key."),
     dict(slug="data_pr_outreach", status="candidate", kind="distribution",
          name="Pitch data stories to housing reporters (earns links)",
          prefixes=[], metric="organic_visitors",
@@ -163,8 +168,14 @@ SEEDS = [
 
 
 def run():
-    """Create anything missing. Returns (added_slugs, total)."""
-    added = []
+    """Create anything missing and refresh the descriptions of what exists.
+
+    This file is the source of truth for a seeded technique's wording, so an
+    edit here propagates on the next run. Status, verdicts and dates are left
+    alone — those belong to the running ledger, and overwriting them would
+    erase measured history every deploy.
+    """
+    added, updated = [], []
     for s in SEEDS:
         before = {t["slug"] for t in ledger.load_techniques()}
         ledger.add(slug=s["slug"], name=s["name"], hypothesis=s["hypothesis"],
@@ -173,6 +184,22 @@ def run():
                    notes=s.get("notes", ""))
         if s["slug"] not in before:
             added.append(s["slug"])
+            continue
+        techs = ledger.load_techniques()
+        dirty = False
+        for t in techs:
+            if t["slug"] != s["slug"]:
+                continue
+            for field, key in (("name", "name"), ("hypothesis", "hypothesis"),
+                               ("evidence", "evidence"), ("notes", "notes"),
+                               ("prefixes", "prefixes"), ("metric", "metric")):
+                new = s.get(key, t.get(field))
+                if new is not None and t.get(field) != new:
+                    t[field] = new
+                    dirty = True
+        if dirty:
+            ledger.save_techniques(techs)
+            updated.append(s["slug"])
     if not ledger.get_state("goals"):
         ledger.set_state("goals", GOALS)
     return added, len(ledger.load_techniques())

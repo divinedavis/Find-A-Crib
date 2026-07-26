@@ -113,6 +113,22 @@ def build_text(run_log=None, review_out=None):
             L.append(f"  DIDN'T WORK {r['id']} {r['name']} — {r['why']}")
         L.append("")
 
+    # ---- outreach drafts awaiting a send decision
+    try:
+        from . import outreach
+        drafts = outreach.pending(limit=8)
+    except Exception:
+        drafts = []
+    if drafts:
+        L.append(f"OUTREACH DRAFTS AWAITING YOUR APPROVAL ({len(drafts)})")
+        L.append("  (nothing is ever sent automatically — files in growth/outreach_drafts/)")
+        for d in drafts:
+            L.append(f"  · {d['org']} [{d.get('segment')}, confidence {d.get('confidence')}]")
+            L.append(f"      {d.get('url')}")
+            L.append(f"      why: {(d.get('why') or '')[:150]}")
+            L.append(f"      reach via: {d.get('contact_route')}")
+        L.append("")
+
     # ---- blocked candidates: the things needing a human
     needs_owner = [t for t in cands if t.get("notes")]
     if needs_owner:

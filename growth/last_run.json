@@ -1,0 +1,40 @@
+{
+  "build": {
+    "at": "2026-07-27T11:56:10+00:00",
+    "changed_urls": 6,
+    "date": "2026-07-27",
+    "deployed": true,
+    "new_urls": 0,
+    "techniques": {
+      "daily_brief": {
+        "detail": "no movement since yesterday \u2014 no brief published (avoids filler)",
+        "ok": true
+      },
+      "fresh_section8": {
+        "detail": "258 buildings across 5 boroughs",
+        "ok": true
+      },
+      "indexnow": {
+        "detail": "submitted 6 URLs \u2192 HTTP 200",
+        "ok": true
+      },
+      "llms_txt": {
+        "detail": "llms.txt (54 lines), robots.txt naming 15 AI crawlers",
+        "ok": true
+      },
+      "sitemap_daily": {
+        "detail": "sitemap-daily.xml with 9 URLs",
+        "ok": true
+      }
+    }
+  },
+  "measure": {
+    "at": "2026-07-27T05:00:04+00:00",
+    "coverage_pct": 89.1,
+    "date": "2026-07-27",
+    "days": 1,
+    "keywords_covered": 41,
+    "keywords_total": 46,
+    "latest_measured_day": "2026-07-26"
+  }
+}

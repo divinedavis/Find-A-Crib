@@ -54,3 +54,7 @@ growth/.anthropic_key
 # them. This repo is public — these stay local.
 growth/prospects.json
 growth/outreach_drafts/
+
+# droplet-side secrets that live inside the growth checkout
+growth.env
+indexnow.key

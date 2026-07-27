@@ -177,6 +177,9 @@ td a{color:var(--accent)}
 .note{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:14px 0;font-size:14px;color:var(--ink2)}
 .cols{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px;margin:10px 0}
 .cols a{color:var(--accent);text-decoration:none;font-size:14px}
+.faq-item{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:10px 0}
+.faq-item h3{font-size:15px;margin:0 0 4px}
+.faq-item p{color:var(--ink2);font-size:14px;margin:0}
 footer.site{border-top:1px solid var(--line);margin-top:36px;color:var(--ink2);font-size:13px}
 .scroll{overflow-x:auto}
 """
@@ -263,6 +266,20 @@ def _faq_jsonld(pairs):
             "mainEntity": [{"@type": "Question", "name": q,
                             "acceptedAnswer": {"@type": "Answer", "text": a}}
                            for q, a in pairs]}
+
+
+def _faq_html(pairs):
+    """Render FAQ pairs as visible HTML matching the FAQPage JSON-LD.
+
+    Structured data should describe what's actually on the page, not stand
+    in for content that only exists in a hidden <script> block — and AI
+    answer engines extract from rendered text, not JSON-LD, so an
+    FAQPage schema with no visible counterpart earns neither.
+    """
+    items = "".join(
+        f"<div class='faq-item'><h3>{_esc(q)}</h3><p>{_esc(a)}</p></div>"
+        for q, a in pairs)
+    return f"<h2>Frequently asked questions</h2><div class='faq'>{items}</div>"
 
 
 SECTION8_FAQ = [
@@ -395,7 +412,8 @@ def t_fresh_section8(ctx):
           "apartments, and plenty list rent-stabilized buildings. These are the ones that are "
           "<b>both</b> — a stabilized building means the rent is capped by the Rent Guidelines "
           "Board every year, so the apartment stays affordable after you move in. "
-          "<a href='/'>Open the map</a> to see every stabilized building in the city.</div>")
+          "<a href='/'>Open the map</a> to see every stabilized building in the city.</div>"
+        + _faq_html(SECTION8_FAQ))
 
     lastmod = ctx.s8.get("avail_updated")
     date_modified = (datetime.datetime.fromtimestamp(lastmod, datetime.timezone.utc)

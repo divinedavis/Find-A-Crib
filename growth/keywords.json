@@ -642,5 +642,77 @@
     "clicks": null,
     "coverage_detail": "targeted by title/h1",
     "coverage_checked": "2026-07-27"
+  },
+  {
+    "query": "nyc rent guidelines board 2026 increase",
+    "city": "nyc",
+    "intent": "explain",
+    "target": "/guide/",
+    "source": "seed",
+    "added": "2026-07-27",
+    "covered": null,
+    "position": null,
+    "impressions": null,
+    "clicks": null
+  },
+  {
+    "query": "rent stabilized lease renewal rules",
+    "city": "nyc",
+    "intent": "explain",
+    "target": "/guide/",
+    "source": "seed",
+    "added": "2026-07-27",
+    "covered": null,
+    "position": null,
+    "impressions": null,
+    "clicks": null
+  },
+  {
+    "query": "how much can rent go up rent controlled sf",
+    "city": "sf",
+    "intent": "explain",
+    "target": "/sf/",
+    "source": "seed",
+    "added": "2026-07-27",
+    "covered": null,
+    "position": null,
+    "impressions": null,
+    "clicks": null
+  },
+  {
+    "query": "how much can landlord raise rent los angeles rent control",
+    "city": "la",
+    "intent": "explain",
+    "target": "/la/",
+    "source": "seed",
+    "added": "2026-07-27",
+    "covered": null,
+    "position": null,
+    "impressions": null,
+    "clicks": null
+  },
+  {
+    "query": "how much can rent go up rent controlled dc",
+    "city": "dc",
+    "intent": "explain",
+    "target": "/dc/",
+    "source": "seed",
+    "added": "2026-07-27",
+    "covered": null,
+    "position": null,
+    "impressions": null,
+    "clicks": null
+  },
+  {
+    "query": "affordable housing dataset api",
+    "city": "nyc",
+    "intent": "list",
+    "target": "/developers/",
+    "source": "seed",
+    "added": "2026-07-27",
+    "covered": null,
+    "position": null,
+    "impressions": null,
+    "clicks": null
   }
 ]

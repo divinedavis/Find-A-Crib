@@ -18,7 +18,7 @@ python3 growth_daily.py "$@"
 rc=$?
 
 # Push the night's measurements back so the next review can read them.
-git add -A growth/techniques.json growth/keywords.json growth/results.jsonl growth/journal.md 2>/dev/null
+git add -A growth/techniques.json growth/keywords.json growth/results.jsonl growth/journal.md growth/last_run.json 2>/dev/null
 if ! git diff --cached --quiet; then
   git commit -q -m "growth: ledger $(date -u +%Y-%m-%d)" && git push -q origin main \
     && echo "growth_run: ledger pushed" || echo "growth_run: ledger push FAILED"

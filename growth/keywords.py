@@ -145,6 +145,18 @@ def check_coverage(docroot):
     to predict rank.
     """
     kws = load()
+
+    # Guard: run against anything that is not a BUILT docroot — a bare repo
+    # checkout, say — and every query comes back uncovered, silently destroying
+    # real coverage history. A checkout has index.html but none of the generated
+    # section directories, so require those before writing anything.
+    built = sum(1 for d in ("borough", "guide", "buildings", "section8", "neighborhood")
+                if os.path.isdir(os.path.join(docroot, d)))
+    if built < 2:
+        raise RuntimeError(
+            f"{docroot!r} does not look like a built docroot (found {built} of the expected "
+            f"generated directories) — refusing to overwrite coverage data with false negatives")
+
     STOP = {"the", "and", "for", "how", "what", "out", "much", "can", "you", "your", "are", "that"}
     changed = 0
     for k in kws:

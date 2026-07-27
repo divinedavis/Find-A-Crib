@@ -66,6 +66,12 @@ def cmd_build(args):
 
     ledger.set_state("last_build", {"date": ledger.today(), "log": run_log,
                                     "new": len(ctx.new_urls), "changed": len(ctx.changed_urls)})
+    if not args.dry_run:
+        ledger.write_last_run("build", {
+            "new_urls": len(ctx.new_urls), "changed_urls": len(ctx.changed_urls),
+            "techniques": {r["slug"]: {"ok": bool(r.get("ok")), "detail": r.get("detail", "")}
+                           for r in run_log},
+            "deployed": bool(args.deploy)})
     log(f"  {len(ctx.new_urls)} new URLs, {len(ctx.changed_urls)} changed")
 
     if args.deploy and not args.dry_run:
@@ -105,6 +111,10 @@ def cmd_measure(args):
         s = keywords.summary()
         log(f"  keywords: {s['covered']}/{s['total']} covered ({s['coverage_pct']}%), "
             f"{changed} changed")
+        ledger.write_last_run("measure", {
+            "days": args.days, "keywords_covered": s["covered"],
+            "keywords_total": s["total"], "coverage_pct": s["coverage_pct"],
+            "latest_measured_day": max(data) if data else None})
     except Exception as e:
         log(f"  keyword coverage failed: {e}")
     return data

@@ -218,6 +218,43 @@ def get_state(key, default=None):
     return load_state().get(key, default)
 
 
+# ----------------------------------------------------------------- last run
+
+# state.json is gitignored (it carries per-URL content hashes and visitor ids),
+# so the cloud review agent cannot see it and has no way to tell whether the
+# droplet crons actually ran. This file is the sanitized, git-tracked answer:
+# no hashes, no ids, just what happened and when. Without it the agent reads an
+# absent state.json as "no build has ever executed" and raises a false alarm.
+LAST_RUN_PATH = os.path.join(HERE, "last_run.json")
+
+
+def write_last_run(command, detail):
+    try:
+        with open(LAST_RUN_PATH) as f:
+            doc = json.load(f)
+    except Exception:
+        doc = {}
+    doc[command] = {
+        "date": today(),
+        "at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+        **detail,
+    }
+    tmp = LAST_RUN_PATH + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(doc, f, indent=2, sort_keys=True)
+        f.write("\n")
+    os.replace(tmp, LAST_RUN_PATH)
+    return doc
+
+
+def read_last_run():
+    try:
+        with open(LAST_RUN_PATH) as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
 def set_state(key, value):
     with _LOCK:
         s = load_state()

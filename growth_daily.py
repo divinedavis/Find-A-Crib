@@ -235,6 +235,30 @@ def cmd_lifecycle(args):
         return None
 
 
+def cmd_accounts(args):
+    """Free-account onboarding sequence. Gated on the ledger, like everything else."""
+    if not any(t["slug"] == "account_lifecycle" for t in ledger.active()):
+        log("  account_lifecycle is not active in the ledger — skipped")
+        return None
+    try:
+        from growth import accounts
+    except Exception as e:
+        log(f"  accounts unavailable: {e}")
+        return None
+    try:
+        # The lapsed email cites the live voucher count, so it has to be real.
+        n = None
+        try:
+            with open(os.path.join(args.docroot, "s8.json")) as f:
+                n = len((json.load(f).get("avail") or {}))
+        except Exception:
+            pass
+        return accounts.run(dry_run=args.dry_run, voucher_buildings=n)
+    except Exception as e:
+        log(f"  accounts failed: {e}")
+        return None
+
+
 def cmd_daily(args):
     log("== measure ==")
     cmd_measure(args)
@@ -246,6 +270,8 @@ def cmd_daily(args):
     cmd_outreach(args)
     log("== lifecycle ==")
     cmd_lifecycle(args)
+    log("== accounts ==")
+    cmd_accounts(args)
     log("== report ==")
     last = ledger.get_state("last_build", {})
     cmd_report(args, run_log=last.get("log"), review_out=rv)
@@ -255,7 +281,7 @@ def main():
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("command", choices=["build", "deploy", "measure", "review", "scout",
-                                       "outreach", "lifecycle", "report", "daily", "status",
+                                       "outreach", "lifecycle", "accounts", "report", "daily", "status",
                                        "journal"])
     p.add_argument("--build-dir", default=os.environ.get("GROWTH_BUILD_DIR", DEFAULT_BUILD))
     p.add_argument("--docroot", default=os.environ.get("GROWTH_DOCROOT", DEFAULT_DOCROOT))
@@ -275,7 +301,7 @@ def main():
     seed.run()
     {"build": cmd_build, "deploy": cmd_deploy, "measure": cmd_measure,
      "review": cmd_review, "scout": cmd_scout, "outreach": cmd_outreach,
-     "lifecycle": cmd_lifecycle,
+     "lifecycle": cmd_lifecycle, "accounts": cmd_accounts,
      "report": cmd_report, "daily": cmd_daily, "status": cmd_status,
      "journal": cmd_journal}[args.command](args)
 

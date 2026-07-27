@@ -28,13 +28,10 @@ Rules this module holds itself to:
 import datetime
 import json
 import os
-import smtplib
 import urllib.parse
 import urllib.request
-from email.mime.text import MIMEText
-from email.utils import formataddr
 
-from . import ledger
+from . import emailkit, ledger
 
 SITE = "https://findacrib.com"
 SUPABASE_URL = "https://dbaifotzwlxjvsxjohjt.supabase.co"
@@ -99,83 +96,75 @@ def _building(bbl, buildings_by_bbl):
 
 # ------------------------------------------------------------------- copy
 
-def _footer(unsub):
-    return (f"\n\n—\nFind A Crib · {SITE}\n"
-            f"You're getting this because you bought a building report. "
-            f"Stop these follow-ups: {unsub}\n")
+FOOTER_NOTE = "You're getting this because you bought a building report."
 
 
 def day3_rent_history(row, b, unsub):
     addr = _addr(b)
     subject = f"The free step most people skip — {addr}"
-    body = (
-        f"Hi,\n\n"
-        f"You picked up a building report on {addr} a few days ago. One thing in it "
-        f"matters more than the rest, and it's the easiest to put off, so here it is again.\n\n"
-        f"If the apartment is rent stabilized, the legal rent is whatever DHCR has on record — "
-        f"not whatever the lease says. Asking for that history is free, takes about two minutes, "
-        f"and it's the only way to find out whether you're being overcharged.\n\n"
-        f"Email rentinfo@hcr.ny.gov, or call (718) 739-6400. Ask for the FULL registration "
-        f"history, not just the current year:\n\n"
-        f"    Address:   {addr}\n"
-        f"    BBL:       {row.get('bbl')}\n"
-        f"    Apartment: ____\n\n"
-        f"    \"I am the current or prospective tenant of this apartment. Please send the\n"
-        f"     full rent registration history for all years available, including the\n"
-        f"     registered legal regulated rent and any preferential rent recorded.\"\n\n"
-        f"If the numbers come back looking wrong — big unexplained jumps between tenants — "
-        f"that's a DHCR overcharge complaint (form RA-89). The lookback window is limited, "
-        f"so it's worth doing sooner rather than later.\n\n"
-        f"Your report is still here: {SITE}/report/{row['token']}\n"
-        + _footer(unsub))
-    return subject, body
+    html, text = emailkit.render(
+        title="One thing in your report matters more than the rest",
+        intro=f"You picked up a report on {addr} a few days ago. This is the part that's "
+              f"easiest to put off, so here it is again.",
+        blocks=[
+            {"type": "paragraph",
+             "text": "If the apartment is rent stabilized, the legal rent is whatever DHCR "
+                     "has on record — not whatever the lease says. Asking for that history "
+                     "is free, takes about two minutes, and it's the only way to find out "
+                     "whether you're being overcharged."},
+            {"type": "steps", "items": [
+                "Email rentinfo@hcr.ny.gov, or call (718) 739-6400.",
+                "Ask for the FULL registration history, not just the current year.",
+                "Compare it to the rent you were quoted — big unexplained jumps between "
+                "tenants are the classic overcharge pattern.",
+            ]},
+            {"type": "quote", "text":
+                f"Address:   {addr}\n"
+                f"BBL:       {row.get('bbl')}\n"
+                f"Apartment: ____\n\n"
+                f"\"I am the current or prospective tenant of this apartment.\n"
+                f" Please send the full rent registration history for all years\n"
+                f" available, including the registered legal regulated rent and\n"
+                f" any preferential rent recorded.\""},
+            {"type": "paragraph",
+             "text": "If the numbers come back looking wrong, that's a DHCR overcharge "
+                     "complaint (form RA-89). The lookback window is limited, so it's worth "
+                     "doing sooner rather than later."},
+        ],
+        cta=("Open your report", f"{SITE}/report/{row['token']}"),
+        footer_note=FOOTER_NOTE, unsub_url=unsub,
+        unsub_label="Stop these follow-ups")
+    return subject, html, text
 
 
 def day14_followup(row, b, unsub):
     addr = _addr(b)
     subject = f"How did it go with {addr}?"
-    body = (
-        f"Hi,\n\n"
-        f"Two weeks ago you looked into {addr}. However it turned out — signed, walked away, "
-        f"still deciding — one thing might be useful.\n\n"
-        f"If you make a free account and save that building, we'll email you when an apartment "
-        f"there is advertised again, including listings that explicitly accept housing vouchers. "
-        f"It's the same nightly feed the report was built from. No card, and it costs nothing:\n\n"
-        f"    {SITE}/\n\n"
-        f"And if the rent history came back looking off, the overcharge route is still open — "
-        f"DHCR form RA-89. Reply to this email if you want a hand reading what they sent you; "
-        f"a real person will answer.\n\n"
-        f"Your report: {SITE}/report/{row['token']}\n"
-        + _footer(unsub))
-    return subject, body
+    html, text = emailkit.render(
+        title=f"How did it go with {addr}?",
+        intro="However it turned out — signed, walked away, still deciding — one thing "
+              "might still be useful.",
+        blocks=[
+            {"type": "paragraph",
+             "text": "If you make a free account and save that building, we'll email you "
+                     "when an apartment there is advertised again, including listings that "
+                     "explicitly accept housing vouchers. It's the same nightly feed your "
+                     "report was built from, and it costs nothing."},
+            {"type": "paragraph",
+             "text": "And if the rent history came back looking off, the overcharge route "
+                     "is still open — DHCR form RA-89. Reply to this email if you want a "
+                     "hand reading what they sent you; a real person will answer."},
+        ],
+        cta=("Save the building", f"{SITE}/"),
+        footer_note=FOOTER_NOTE, unsub_url=unsub,
+        unsub_label="Stop these follow-ups")
+    return subject, html, text
 
 
 BUILDERS = {"day3_rent_history": day3_rent_history, "day14_followup": day14_followup}
 
 
 # ------------------------------------------------------------------- send
-
-def _send(to, subject, body, unsub_url):
-    host = os.environ.get("SMTP_HOST")
-    user = os.environ.get("SMTP_USER")
-    pw = os.environ.get("SMTP_PASSWORD")
-    if not (host and user and pw):
-        raise RuntimeError("SMTP not configured")
-    msg = MIMEText(body, "plain", "utf-8")
-    msg["Subject"] = subject
-    msg["From"] = formataddr(("Find A Crib", user))
-    msg["To"] = to
-    # One-click unsubscribe: Gmail and Outlook surface a native button for
-    # these, and honouring it is what keeps the domain out of spam folders —
-    # which matters doubly here, because the same domain sends the product's
-    # own saved-building alerts.
-    msg["List-Unsubscribe"] = f"<{unsub_url}>"
-    msg["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"
-    with smtplib.SMTP(host, int(os.environ.get("SMTP_PORT", "587")), timeout=30) as s:
-        s.starttls()
-        s.login(user, pw)
-        s.sendmail(user, [to], msg.as_string())
-
 
 def due(now=None):
     """Paid, subscribed reports with a step whose delay has elapsed."""
@@ -231,13 +220,13 @@ def run(buildings_by_bbl=None, dry_run=False, now=None):
     for row, step, age in pending:
         b = _building(row["bbl"], buildings_by_bbl)
         unsub = f"{SITE}/api/reports/unsubscribe?t={row.get('unsub_token') or ''}"
-        subject, body = BUILDERS[step](row, b, unsub)
+        subject, html, text = BUILDERS[step](row, b, unsub)
         if dry_run:
             print(f"  [dry-run] {step} -> {row['email']} ({age}d) — {subject}")
             sent.append(step)
             continue
         try:
-            _send(row["email"], subject, body, unsub)
+            emailkit.send(row["email"], subject, html, text, unsub_url=unsub)
         except Exception as e:
             failed.append(f"{step}->{row['email']}: {e}")
             continue

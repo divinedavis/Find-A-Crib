@@ -136,12 +136,28 @@ SEEDS = [
                "added as a user on the findacrib.com property, key stored in keychain "
                "rent-map-gsc-service-account."),
     dict(slug="lifecycle_email", status="candidate", kind="lifecycle",
-         name="Onboarding + re-engagement email",
+         name="Buyer follow-up sequence (Building Report)",
+         prefixes=[], metric="mrr_usd",
+         hypothesis="Report buyers paid at the highest-intent moment in the funnel and each "
+                    "have one specific building they care about. Nudging the free DHCR "
+                    "rent-history request — the step that actually establishes overcharge "
+                    "and the easiest to put off — is useful enough to earn the open.",
+         evidence="Free accounts were the obvious audience but only 3 have ever saved a "
+                  "building, too few for the 21-day review to find any signal."),
+    dict(slug="account_lifecycle", status="candidate", kind="lifecycle",
+         name="Free-account onboarding sequence",
          prefixes=[], metric="visitors",
-         hypothesis="Saved-building alerts already bring people back; a short onboarding "
-                    "sequence and a lapsed-user nudge should raise return rate and give the "
-                    "Plus upgrade a natural moment to appear.",
-         evidence="Week-over-week retention is 6% — most first visits never come back."),
+         hypothesis="A new account currently receives nothing at all, so the first "
+                    "impression after signing up is silence. A welcome, one activation "
+                    "nudge for people who never saved anything, and one lapsed check "
+                    "should raise the 6% week-over-week return rate.",
+         evidence="Supabase auth runs with mailer_autoconfirm and no SMTP host: no "
+                  "confirmation and no welcome is sent. 17 of 20 accounts have never "
+                  "saved a building.",
+         notes="Accounts created before the 2026-07-27 cutover never enter the sequence — "
+               "gating only the welcome on age would still have fired the day-3 and day-21 "
+               "steps at 17 cold accounts at once, which is the backfill blast the owner "
+               "explicitly ruled out."),
     dict(slug="listings_freshness", status="candidate", kind="content",
          name="Refresh the 'recently advertised' feed more than monthly",
          prefixes=["/available/"], metric="owned_visitors",

@@ -16,7 +16,8 @@
     "activated": "2026-07-26",
     "retired": null,
     "notes": "",
-    "verdict": null
+    "verdict": null,
+    "revisit_on": "2026-08-25"
   },
   {
     "id": "T002",
@@ -35,7 +36,8 @@
     "activated": "2026-07-26",
     "retired": null,
     "notes": "",
-    "verdict": null
+    "verdict": null,
+    "revisit_on": "2026-08-25"
   },
   {
     "id": "T003",
@@ -52,7 +54,8 @@
     "activated": "2026-07-26",
     "retired": null,
     "notes": "",
-    "verdict": null
+    "verdict": null,
+    "revisit_on": "2026-08-25"
   },
   {
     "id": "T004",
@@ -69,7 +72,8 @@
     "activated": "2026-07-26",
     "retired": null,
     "notes": "",
-    "verdict": null
+    "verdict": null,
+    "revisit_on": "2026-08-25"
   },
   {
     "id": "T005",
@@ -86,7 +90,8 @@
     "activated": "2026-07-26",
     "retired": null,
     "notes": "",
-    "verdict": null
+    "verdict": null,
+    "revisit_on": "2026-08-25"
   },
   {
     "id": "T006",
@@ -139,7 +144,8 @@
     "activated": "2026-07-26",
     "retired": null,
     "notes": "Drafts only, never auto-sends \u2014 bulk cold mail from findacrib.com would put the saved-building alert emails into spam, and cold outreach carries CAN-SPAM and GDPR obligations that need a human decision. Needs the Anthropic key.",
-    "verdict": null
+    "verdict": null,
+    "revisit_on": "2026-08-25"
   },
   {
     "id": "T009",
@@ -178,19 +184,20 @@
   {
     "id": "T011",
     "slug": "lifecycle_email",
-    "name": "Onboarding + re-engagement email",
-    "hypothesis": "Saved-building alerts already bring people back; a short onboarding sequence and a lapsed-user nudge should raise return rate and give the Plus upgrade a natural moment to appear.",
+    "name": "Buyer follow-up sequence (Building Report)",
+    "hypothesis": "Report buyers paid at the highest-intent moment in the funnel and each have one specific building they care about. Nudging the free DHCR rent-history request \u2014 the step that actually establishes overcharge and the easiest to put off \u2014 is useful enough to earn the open.",
     "kind": "lifecycle",
     "status": "active",
     "prefixes": [],
-    "metric": "visitors",
+    "metric": "mrr_usd",
     "source": "seed",
-    "evidence": "Week-over-week retention is 6% \u2014 most first visits never come back.",
+    "evidence": "Free accounts were the obvious audience but only 3 have ever saved a building, too few for the 21-day review to find any signal.",
     "added": "2026-07-26",
     "activated": "2026-07-27",
     "retired": null,
     "notes": "[2026-07-27] candidate\u2192active: re-scoped to Building Report buyers 2026-07-27; free-account base too small to measure",
-    "verdict": null
+    "verdict": null,
+    "revisit_on": "2026-08-26"
   },
   {
     "id": "T012",
@@ -299,5 +306,23 @@
     "retired": null,
     "notes": "effort: days\nexpected: First paid dollar on the site; target 50-100 one-time purchases/month at $7-9.99 within 90 days of launch, tracked via Stripe one-time checkout separate from the Plus subscription funnel.\nfirst step: Pick 3 high-traffic building pages, add a 'Get the full building report' one-time-purchase button (Stripe Checkout, no account required) that unlocks owner/agent history, full violation timeline, and portfolio cross-reference as a downloadable PDF.",
     "verdict": null
+  },
+  {
+    "id": "T018",
+    "slug": "account_lifecycle",
+    "name": "Free-account onboarding sequence",
+    "hypothesis": "A new account currently receives nothing at all, so the first impression after signing up is silence. A welcome, one activation nudge for people who never saved anything, and one lapsed check should raise the 6% week-over-week return rate.",
+    "kind": "lifecycle",
+    "status": "active",
+    "prefixes": [],
+    "metric": "visitors",
+    "source": "seed",
+    "evidence": "Supabase auth runs with mailer_autoconfirm and no SMTP host: no confirmation and no welcome is sent. 17 of 20 accounts have never saved a building.",
+    "added": "2026-07-27",
+    "activated": "2026-07-27",
+    "retired": null,
+    "notes": "Accounts created before the 2026-07-27 cutover never enter the sequence \u2014 gating only the welcome on age would still have fired the day-3 and day-21 steps at 17 cold accounts at once, which is the backfill blast the owner explicitly ruled out.",
+    "verdict": null,
+    "revisit_on": "2026-08-26"
   }
 ]

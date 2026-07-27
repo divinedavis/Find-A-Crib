@@ -111,6 +111,7 @@ def add(slug, name, hypothesis, kind, prefixes=None, metric="owned_visitors",
             "evidence": evidence,
             "added": today(),
             "activated": today() if status == "active" else None,
+            "revisit_on": _revisit_date() if status == "active" else None,
             "retired": None,
             "notes": notes,
             "verdict": None,
@@ -118,6 +119,37 @@ def add(slug, name, hypothesis, kind, prefixes=None, metric="owned_visitors",
         techs.append(rec)
         save_techniques(techs)
         return rec
+
+
+# How long after activation a technique gets a deliberate second look. The
+# 21-day review grace period asks "is this dead?"; a revisit asks the different
+# and more useful question "is this the best version of this idea, and should it
+# be replaced?" Without a date attached, that question never gets asked again.
+REVISIT_DAYS = 30
+
+
+def _revisit_date(days=REVISIT_DAYS):
+    return (datetime.date.today() + datetime.timedelta(days=days)).isoformat()
+
+
+def set_revisit(tech_id, on=None, days=REVISIT_DAYS):
+    """Schedule (or push forward) the next deliberate review of a technique."""
+    with _LOCK:
+        techs = load_techniques()
+        for t in techs:
+            if t["id"] == tech_id or t.get("slug") == tech_id:
+                t["revisit_on"] = on or _revisit_date(days)
+                save_techniques(techs)
+                return t
+    return None
+
+
+def revisit_due(as_of=None):
+    """Active techniques whose scheduled second look has come due."""
+    as_of = as_of or today()
+    return [t for t in load_techniques()
+            if t.get("status") == "active" and t.get("revisit_on")
+            and t["revisit_on"] <= as_of]
 
 
 def set_status(tech_id, status, why=""):
@@ -131,6 +163,8 @@ def set_status(tech_id, status, why=""):
                 t["status"] = status
                 if status == "active" and not t.get("activated"):
                     t["activated"] = today()
+                if status == "active" and not t.get("revisit_on"):
+                    t["revisit_on"] = _revisit_date()
                 if status == "retired":
                     t["retired"] = today()
                 if why:

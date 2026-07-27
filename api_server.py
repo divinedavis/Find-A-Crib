@@ -657,32 +657,37 @@ def _fulfil_report(session, bbl):
 
 
 def _email_report(to, bbl, token):
-    import smtplib
-    from email.mime.text import MIMEText
-    host, user, pw = (os.environ.get("SMTP_HOST"), os.environ.get("SMTP_USER"),
-                      os.environ.get("SMTP_PASSWORD"))
-    if not (host and user and pw):
+    """Deliver the paid report. Shares the house style with every other email
+    we send (growth/emailkit.py) — this is the first thing a buyer sees after
+    paying, so it should not be the one that looks like a mail-merge."""
+    import sys
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from growth import emailkit
+
+    if not emailkit.smtp_configured():
         return
     b = BY_BBL.get(str(bbl)) or {}
     addr = " ".join(w.capitalize() if not w.isdigit() else w
                     for w in str(b.get("a") or "your building").split())
     url = f"https://findacrib.com/report/{token}"
-    body = (f"Thanks — here is your Find A Crib building report for {addr}.\n\n"
-            f"{url}\n\n"
-            f"The link does not expire, so keep this email if you want to come back to it.\n"
-            f"The report includes how this building's violation record compares with every\n"
-            f"other rent-stabilized building in the city, who is registered as the owner and\n"
-            f"what else they run, and a pre-filled DHCR rent-history request — the free step\n"
-            f"that establishes whether you are being overcharged.\n\n"
-            f"Find A Crib · https://findacrib.com\n")
-    msg = MIMEText(body, "plain", "utf-8")
-    msg["Subject"] = f"Your building report — {addr}"
-    msg["From"] = user
-    msg["To"] = to
-    with smtplib.SMTP(host, int(os.environ.get("SMTP_PORT", "587")), timeout=20) as s:
-        s.starttls()
-        s.login(user, pw)
-        s.sendmail(user, [to], msg.as_string())
+    html, text = emailkit.render(
+        title=f"Your building report — {addr}",
+        intro="Thanks for the purchase. Your report is ready, and the link below doesn't "
+              "expire — keep this email if you want to come back to it.",
+        blocks=[
+            {"type": "steps", "items": [
+                "How this building's violation record compares with every other "
+                "rent-stabilized building in the city.",
+                "Who is registered as the owner and managing agent, and what else "
+                "they run.",
+                "A pre-filled DHCR rent-history request — the free step that "
+                "establishes whether you're being overcharged.",
+            ]},
+        ],
+        cta=("Open your report", url),
+        footer_note="This is a one-time purchase receipt and delivery. "
+                    "Questions? Just reply to this email.")
+    emailkit.send(to, f"Your building report — {addr}", html, text)
 
 
 @app.route("/developers/stripe-webhook", methods=["POST"])

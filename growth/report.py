@@ -117,6 +117,20 @@ def build_text(run_log=None, review_out=None):
             L.append(f"      site-wide · judged on {t.get('metric')} · {_series_summary(t.get('metric'))}")
     L.append("")
 
+    # ---- scheduled second looks. The 21-day review asks "is this dead?"; this
+    # asks "is this still the best version of the idea, or should it be replaced?"
+    revisits = ledger.revisit_due()
+    if revisits:
+        L.append(f"DUE FOR REVISIT ({len(revisits)}) — decide keep / change / replace")
+        for t in revisits:
+            line = f"  {t['id']} {t['name']} (scheduled {t.get('revisit_on')})"
+            if t.get("prefixes"):
+                pairs = ledger.series(t["slug"], "owned_visitors", since=t.get("activated"))
+                line += f" · {sum(v for _, v in pairs):,} owned visitors since {t.get('activated')}"
+            L.append(line)
+            L.append(f"      hypothesis was: {(t.get('hypothesis') or '')[:160]}")
+        L.append("")
+
     # ---- review decisions
     if review_out and review_out.get("actions"):
         L.append("REVIEW DECISIONS TODAY")

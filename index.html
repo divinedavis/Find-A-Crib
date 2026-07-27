@@ -2989,15 +2989,23 @@
     }
     if (p.has('plus')) { p.delete('plus'); history.replaceState({}, '', location.pathname + (p.toString() ? '?' + p : '')); }
   })();
-  // one-click unsubscribe from saved-building alert emails (#unsub=<token>)
+  // one-click unsubscribe (#unsub=<token>), optionally scoped with &k=lifecycle.
+  // The two opt-outs are separate on purpose: saved-building alerts are a
+  // feature someone asked for by saving a building, onboarding email is not, so
+  // stopping the latter must not cost them the former.
   async function handleUnsubHash() {
     const m = location.hash.match(/[#&]unsub=([0-9a-f-]{36})/i);
     if (!m || !supaClient) return;
+    const lifecycle = /[#&]k=lifecycle\b/i.test(location.hash);
     history.replaceState({}, '', location.pathname + location.search);
     try {
-      const { data, error } = await supaClient.rpc('unsubscribe_alerts', { p_token: m[1] });
+      const { data, error } = await supaClient.rpc(
+        lifecycle ? 'unsubscribe_lifecycle' : 'unsubscribe_alerts', { p_token: m[1] });
       if (error) throw error;
-      showPlusToast(data ? 'You’ve been unsubscribed from saved-building alerts.'
+      const ok = lifecycle
+        ? 'You’ve been unsubscribed from Find A Crib emails. Saved-building alerts still work.'
+        : 'You’ve been unsubscribed from saved-building alerts.';
+      showPlusToast(data ? ok
                          : 'That unsubscribe link isn’t valid — it may have already been used.');
     } catch (e) {
       showPlusToast('Couldn’t unsubscribe — please try the link again shortly.');

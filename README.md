@@ -137,6 +137,18 @@ traffic and revenue. Two crons on the web droplet (`/etc/cron.d/rentmap-growth`)
 | 05:40 UTC | `growth_daily.py build --deploy` | Rebuilds the daily pages from the overnight voucher feed, deploys them, submits new URLs to IndexNow |
 | 06:00 ET | `growth_daily.py daily --email …` | Measures yesterday, judges every active technique, retires the dead ones, scouts for new techniques, mails the report |
 
+A third job runs in Anthropic's cloud, not on the droplet:
+
+| When | What |
+|------|------|
+| 06:00 ET | **Daily growth review** — a Claude Code routine reads the ledger, journal and measurements, judges whether last week's changes worked, researches what's currently working, changes something, and logs its reasoning |
+
+That agent has only a git checkout — no SSH, no keys, no database. **Git is the
+channel between it and production:** it pushes ledger and code changes, and
+`growth_run.sh` pulls them in before each droplet run and pushes the night's
+measurements back. The droplet's daily pass therefore runs at 05:00 ET, an hour
+ahead of the review, so the agent always reads fresh numbers.
+
 Everything is driven by a **ledger** (`growth/techniques.json`), so the ledger —
 not the code — decides what runs. Flipping a technique to `retired` stops it
 without a deploy, which is what lets the review loop prune autonomously.
@@ -149,7 +161,14 @@ without a deploy, which is what lets the review loop prune autonomously.
 | `growth/review.py` | Judges, retires, and de-duplicates techniques |
 | `growth/keywords.py` | The tracked query universe the search-share goal is measured against |
 | `growth/scout.py` | Researches and proposes NEW techniques (needs an Anthropic key) |
+| `growth/outreach.py` | Daily B2B prospect research + drafted outreach — **never sends** |
+| `growth/journal.py` | The decision journal: what was observed, concluded, changed, watched |
 | `growth/report.py` | The daily email |
+
+The **ledger** records what a technique is and how it scored; the **journal**
+(`growth/journal.md`) records why anything changed. Both are tracked in git, so
+the file history doubles as a tamper-evident record of when each decision was
+made — that history is the year-end "what worked" list.
 
 A technique must be **idempotent** (it runs every day), **honest** (it never
 publishes an empty page just to have a URL to submit), and **attributable** (it

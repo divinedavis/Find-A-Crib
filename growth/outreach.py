@@ -38,6 +38,17 @@ MAX_PER_DAY = 5
 # Who actually needs property-level rent-regulation data. Rotated daily so the
 # research does not keep circling one segment.
 SEGMENTS = [
+    # --- link-earning segments. These target domain authority rather than
+    # revenue: search share is 0.0% and 89 of 47,600 pages get an impression,
+    # and links from housing/civic/.gov/.edu sources are the strongest lever on
+    # that. The pitch is a free tool or a free dataset, never a link request in
+    # exchange for nothing.
+    ("press", "Housing reporters, data desks and local-news outlets covering rent regulation, "
+              "evictions or affordability in NYC, SF, LA or DC — people who would use a "
+              "custom data cut for a story and credit the source"),
+    ("tenant-orgs", "Tenant unions, housing legal-aid organisations, and city/state 'tenant "
+                    "resources' pages that maintain link lists and would find a free "
+                    "address-lookup widget genuinely useful to their readers"),
     ("proptech", "Proptech and rental-listing platforms serving NYC, SF, LA or DC that would "
                  "show renters whether a building is rent-regulated"),
     ("appraisal", "Real-estate appraisal and valuation firms — rent regulation materially "
@@ -121,10 +132,15 @@ def build_prompt():
 Find up to {MAX_PER_DAY} organisations in this segment that would plausibly pay for
 property-level rent-regulation data, and draft one short outreach email for each.
 
-What we sell:
-- REST API at https://findacrib.com/api/v1 — free tier (1k req/day), Pro $49/mo (50k/day),
-  Business $199/mo (500k/day), Enterprise custom (bulk CSV/Parquet delivery, redistribution
-  rights, custom coverage and SLA).
+What we offer — pick the one that fits the segment:
+- FREE, for press / tenant orgs / legal aid: an embeddable address-lookup widget at
+  https://findacrib.com/embed/ (one line of HTML, no key, no tracking), and custom data cuts
+  for a story on request. For these segments the ask is NOT a link in exchange for nothing —
+  lead with the useful thing and let attribution follow. Never offer money for a link, and
+  never ask anyone to edit Wikipedia on our behalf.
+- PAID, for commercial segments: REST API at https://findacrib.com/api/v1 — free tier
+  (1k req/day), Pro $49/mo (50k/day), Business $199/mo (500k/day), Enterprise custom (bulk
+  CSV/Parquet delivery, redistribution rights, custom coverage and SLA).
 - Coverage: NYC 47,165 DHCR-registered rent-stabilized buildings with owner, managing agent,
   and HPD violation/complaint history; plus San Francisco, Los Angeles and Washington DC.
 - The differentiator: almost nobody publishes rent-regulation status at the property level.

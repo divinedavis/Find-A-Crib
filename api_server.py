@@ -200,6 +200,7 @@ def gate():
     if request.method == "OPTIONS" or request.path in PUBLIC_PATHS \
        or request.path.startswith("/developers/") \
        or request.path.startswith("/reports/") \
+       or request.path.startswith("/embed/") \
        or request.path in ("/dashboard-metrics", "/dashboard-users"):   # own Supabase-token owner gate
         return
     # Header only — never accept the key in the query string, where it would be
@@ -230,7 +231,9 @@ def headers(resp):
     # header stops a victim's browser being scripted into minting keys or
     # starting a checkout from an attacker's page.
     p = request.path
-    if p in PUBLIC_PATHS or p.startswith("/v1"):
+    if p in PUBLIC_PATHS or p.startswith("/v1") or p.startswith("/embed/"):
+        # /embed/* is CORS-open by design: the widget runs on other people's
+        # sites. It is read-only, keyless and heavily capped (see embed_search).
         resp.headers["Access-Control-Allow-Origin"] = "*"
         resp.headers["Access-Control-Allow-Headers"] = "X-API-Key, Content-Type"
     v = getattr(g, "verdict", None)
@@ -359,6 +362,57 @@ def search():
                    results=[{"bbl": b["bbl"], "address": b.get("a"),
                              "borough": BORO.get(b.get("b")), "neighborhood": b.get("nb"),
                              "zip": b.get("z")} for b in hits])
+
+
+@app.route("/embed/search")
+def embed_search():
+    """Keyless lookup for the embeddable widget (findacrib.com/embed/widget.js).
+
+    The widget exists to be pasted into tenant-org, legal-aid and newsroom
+    pages, so requiring an API key would kill it — those embedders will never
+    sign up for one. A single shared key baked into the JS is worse: every
+    embedder would draw down one 1,000/day quota and the widget would break for
+    everyone once it got popular.
+
+    The dataset is still the product, so this is deliberately useless for bulk
+    extraction: it requires a query the caller already knows, caps results at
+    three, has no pagination or offset, rounds coordinates out entirely, and is
+    rate limited per IP. Extracting the corpus this way would mean enumerating
+    addresses you would have to already possess.
+    """
+    if rate_limited("embed", 120, 3600):
+        return _too_many()
+    q = request.args.get("q", "").strip().lower()
+    if len(q) < 3:
+        return jsonify(error="bad_request",
+                       message="q must be at least 3 characters"), 400
+    hits = []
+    for b in BUILDINGS:
+        hay = f"{b.get('a','')} {b.get('nb','')} {b.get('z','')}".lower()
+        if q in hay:
+            hits.append(b)
+            if len(hits) >= 3:
+                break
+    out = []
+    for b in hits:
+        h = b.get("h") or {}
+        v = h.get("violations") or {}
+        out.append({
+            "bbl": b["bbl"],
+            "address": b.get("a"),
+            "borough": BORO.get(b.get("b")),
+            "neighborhood": b.get("nb"),
+            "zip": b.get("z") or None,
+            "units": b.get("u"),
+            "year_built": b.get("yr"),
+            "rent_stabilized": True,
+            "hpd": {"open_violations": v.get("open")} if v else None,
+        })
+    resp = jsonify(query=q, results=out,
+                   note="Registration is at the building level and does not guarantee a "
+                        "specific unit is stabilized.",
+                   source="https://findacrib.com/")
+    return resp
 
 
 # ---- developer portal (signup / usage / upgrade / billing webhook) ----------

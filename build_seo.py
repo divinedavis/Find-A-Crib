@@ -306,7 +306,53 @@ def main():
             (nb, SITE + nb_url(b['b'], b.get('nb') or boro)),
             (addr, canonical),
         ])
-        jsonld = [faq, crumb]
+        # A building is a Place, not a Dataset. Marking these up as Dataset —
+        # which is what "add Dataset schema to the building pages" would mean
+        # literally — would tell every consumer that a single address is a
+        # published data collection, which it isn't. ApartmentComplex is the
+        # schema.org type that actually describes a multi-unit residential
+        # building, and it carries the fields we genuinely hold.
+        place = {
+            "@context": "https://schema.org",
+            "@type": "ApartmentComplex",
+            "name": addr,
+            "url": canonical,
+            "address": {
+                "@type": "PostalAddress",
+                "streetAddress": addr,
+                "addressLocality": boro,
+                "addressRegion": "NY",
+                "addressCountry": "US",
+            },
+            # Rent stabilization has no schema.org vocabulary, so it goes in an
+            # additionalProperty rather than being crammed into a field that
+            # means something else.
+            "additionalProperty": [{
+                "@type": "PropertyValue",
+                "name": "Rent stabilized",
+                "value": "Registered with NY State DHCR",
+            }],
+        }
+        if b.get("z"):
+            place["address"]["postalCode"] = str(b["z"])
+        if b.get("lat") and b.get("lng"):
+            place["geo"] = {"@type": "GeoCoordinates",
+                            "latitude": b["lat"], "longitude": b["lng"]}
+        if units:
+            place["numberOfAccommodationUnits"] = {
+                "@type": "QuantitativeValue", "value": units}
+        if b.get("yr"):
+            place["yearBuilt"] = b["yr"]
+        # Only name an operator we actually have on file, and only as the
+        # registered contact — not as an endorsement or a verified manager.
+        operator = (m.get("name") or o.get("name") or "").strip()
+        if operator:
+            place["additionalProperty"].append({
+                "@type": "PropertyValue",
+                "name": "HPD-registered operator",
+                "value": operator,
+            })
+        jsonld = [place, faq, crumb]
 
         body = (f"<div class='crumbs'><a href='/'>Home</a> › "
                 f"<a href='/borough/{BORO_SLUG.get(b['b'],'nyc')}/'>{esc(boro)}</a> › "

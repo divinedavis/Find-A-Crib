@@ -25,6 +25,7 @@ ANTHROPIC_API_KEY, or a file at growth/.anthropic_key.
 import json
 import os
 import subprocess
+import urllib.error
 import urllib.request
 
 from . import keywords, ledger, review
@@ -145,10 +146,24 @@ TASK
 Given revenue is the weakest number, at least one technique should target revenue directly."""
 
 
+class ApiError(RuntimeError):
+    """An Anthropic API error, carrying the API's own message.
+
+    urllib raises a bare 'HTTP Error 400: Bad Request' on failure, which hides
+    the one thing worth knowing. Billing and rate-limit problems both surface as
+    4xx here, and a daily job that logs only the status code looks broken when
+    it is merely out of credit.
+    """
+
+    def __init__(self, status, etype, message):
+        self.status, self.etype, self.message = status, etype, message
+        super().__init__(f"{etype or 'http_' + str(status)}: {message}")
+
+
 def call_api(key, prompt, timeout=180):
     body = {
         "model": MODEL,
-        "max_tokens": 4000,
+        "max_tokens": 8000,   # web-search answers are long; 4k truncated them
         "system": SYSTEM,
         "tools": TOOLS,
         "messages": [{"role": "user", "content": prompt}],
@@ -158,27 +173,89 @@ def call_api(key, prompt, timeout=180):
         headers={"content-type": "application/json",
                  "x-api-key": key,
                  "anthropic-version": "2023-06-01"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return json.loads(r.read().decode())
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return json.loads(r.read().decode())
+    except urllib.error.HTTPError as e:
+        raw = e.read().decode("utf-8", "replace")
+        try:
+            err = json.loads(raw).get("error") or {}
+        except Exception:
+            err = {}
+        raise ApiError(e.code, err.get("type"), err.get("message") or raw[:200]) from None
+
+
+def _salvage(blob):
+    """Best-effort parse of a JSON object that was cut off mid-write.
+
+    Long web-search answers get truncated at max_tokens, which leaves a valid
+    prefix and a half-written final element. Rather than throw the whole day's
+    research away, walk back to the last balanced position and close it. The
+    partial element is dropped, never guessed at.
+    """
+    decoder = json.JSONDecoder()
+    for end in range(len(blob), 1, -1):
+        chunk = blob[:end]
+        # close whatever is still open, innermost first
+        depth = []
+        in_str = esc = False
+        for ch in chunk:
+            if in_str:
+                if esc:
+                    esc = False
+                elif ch == "\\":
+                    esc = True
+                elif ch == '"':
+                    in_str = False
+                continue
+            if ch == '"':
+                in_str = True
+            elif ch in "{[":
+                depth.append(ch)
+            elif ch in "}]":
+                if depth:
+                    depth.pop()
+        if in_str:
+            continue
+        candidate = chunk.rstrip().rstrip(",")
+        candidate += "".join("}" if c == "{" else "]" for c in reversed(depth))
+        try:
+            return decoder.decode(candidate)
+        except json.JSONDecodeError:
+            continue
+    raise ValueError("could not salvage JSON from a truncated response")
 
 
 def extract_json(resp):
     """Pull the JSON object out of the response, ignoring any search chatter."""
     text = "".join(b.get("text", "") for b in resp.get("content", []) if b.get("type") == "text")
+    truncated = resp.get("stop_reason") == "max_tokens"
+
+    import re
+    m = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.S)
+    if m:
+        try:
+            return json.loads(m.group(1))
+        except json.JSONDecodeError:
+            pass
+
     start = text.find("{")
     end = text.rfind("}")
-    if start < 0 or end <= start:
-        raise ValueError(f"no JSON object in response: {text[:400]}")
-    blob = text[start:end + 1]
+    if start < 0:
+        raise ValueError(f"no JSON object in response (stop_reason={resp.get('stop_reason')}): "
+                         f"{text[:300]}")
+    blob = text[start:end + 1] if end > start else text[start:]
     try:
         return json.loads(blob)
-    except json.JSONDecodeError:
-        # models occasionally wrap it in a fence; retry on the fenced body
-        import re
-        m = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, re.S)
-        if m:
-            return json.loads(m.group(1))
-        raise
+    except json.JSONDecodeError as e:
+        try:
+            out = _salvage(blob)
+            print(f"  note: response was malformed{' (truncated at max_tokens)' if truncated else ''}"
+                  f" — salvaged the complete entries and dropped the partial one")
+            return out
+        except Exception:
+            raise ValueError(
+                f"unparseable JSON{' — truncated at max_tokens' if truncated else ''}: {e}") from None
 
 
 def run(dry_run=False, docroot=None):

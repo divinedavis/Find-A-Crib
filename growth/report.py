@@ -113,6 +113,20 @@ def build_text(run_log=None, review_out=None):
             L.append(f"  DIDN'T WORK {r['id']} {r['name']} — {r['why']}")
         L.append("")
 
+    # ---- research jobs: say plainly when they could not run. A daily job that
+    # fails quietly (no key, no credit, rate limited) looks like a job with
+    # nothing to report, and the difference matters.
+    trouble = []
+    for key, label in (("scout_last", "Scout (new techniques)"),
+                       ("outreach_last", "Outreach (B2B prospects)")):
+        st = ledger.get_state(key)
+        if st and not st.get("ok"):
+            trouble.append(f"  {label}: DID NOT RUN — {st.get('detail', 'unknown error')}")
+    if trouble:
+        L.append("RESEARCH JOBS BLOCKED")
+        L.extend(trouble)
+        L.append("")
+
     # ---- outreach drafts awaiting a send decision
     try:
         from . import outreach

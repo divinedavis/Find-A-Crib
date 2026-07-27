@@ -141,6 +141,7 @@ def run(dry_run=False):
     if not key:
         msg = "no Anthropic key — outreach research skipped (same key as the scout)"
         print(f"  {msg}")
+        ledger.set_state("outreach_last", {"date": ledger.today(), "ok": False, "detail": msg})
         return {"ok": False, "detail": msg}
 
     seg_key, _ = todays_segment()
@@ -149,6 +150,7 @@ def run(dry_run=False):
         data = scout.extract_json(resp)
     except Exception as e:
         print(f"  outreach research failed: {e}")
+        ledger.set_state("outreach_last", {"date": ledger.today(), "ok": False, "detail": str(e)})
         return {"ok": False, "detail": str(e)}
 
     known = _load_prospects()

@@ -530,5 +530,101 @@
     "clicks": null,
     "coverage_detail": "targeted by title/h1",
     "coverage_checked": "2026-07-26"
+  },
+  {
+    "query": "section 8 apartments queens",
+    "city": "nyc",
+    "intent": "list",
+    "target": "/section8/queens/",
+    "source": "seed",
+    "added": "2026-07-27",
+    "covered": null,
+    "position": null,
+    "impressions": null,
+    "clicks": null
+  },
+  {
+    "query": "section 8 apartments bronx",
+    "city": "nyc",
+    "intent": "list",
+    "target": "/section8/bronx/",
+    "source": "seed",
+    "added": "2026-07-27",
+    "covered": null,
+    "position": null,
+    "impressions": null,
+    "clicks": null
+  },
+  {
+    "query": "voucher friendly apartments nyc",
+    "city": "nyc",
+    "intent": "list",
+    "target": "/section8/",
+    "source": "seed",
+    "added": "2026-07-27",
+    "covered": null,
+    "position": null,
+    "impressions": null,
+    "clicks": null
+  },
+  {
+    "query": "sf rent control exemptions",
+    "city": "sf",
+    "intent": "explain",
+    "target": "/sf/",
+    "source": "seed",
+    "added": "2026-07-27",
+    "covered": null,
+    "position": null,
+    "impressions": null,
+    "clicks": null
+  },
+  {
+    "query": "la just cause eviction rent control",
+    "city": "la",
+    "intent": "explain",
+    "target": "/la/",
+    "source": "seed",
+    "added": "2026-07-27",
+    "covered": null,
+    "position": null,
+    "impressions": null,
+    "clicks": null
+  },
+  {
+    "query": "dc rent control exemptions",
+    "city": "dc",
+    "intent": "explain",
+    "target": "/dc/",
+    "source": "seed",
+    "added": "2026-07-27",
+    "covered": null,
+    "position": null,
+    "impressions": null,
+    "clicks": null
+  },
+  {
+    "query": "rent stabilization data api",
+    "city": "nyc",
+    "intent": "list",
+    "target": "/developers/",
+    "source": "seed",
+    "added": "2026-07-27",
+    "covered": null,
+    "position": null,
+    "impressions": null,
+    "clicks": null
+  },
+  {
+    "query": "nyc housing data api",
+    "city": "nyc",
+    "intent": "list",
+    "target": "/developers/",
+    "source": "seed",
+    "added": "2026-07-27",
+    "covered": null,
+    "position": null,
+    "impressions": null,
+    "clicks": null
   }
 ]

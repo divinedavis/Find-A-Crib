@@ -240,6 +240,42 @@ def _breadcrumb(items):
                                 for i, (n, u) in enumerate(items)]}
 
 
+def _dataset_jsonld(name, description, url, date_modified, spatial, item_count):
+    """A conservative Dataset record — factual fields only, no license claim
+    (the site has never stated a data license, so asserting one would be a
+    fabrication schema.org markup makes machine-readable, not a harmless one).
+    """
+    return {
+        "@context": "https://schema.org", "@type": "Dataset",
+        "name": name, "description": description, "url": url,
+        "dateModified": date_modified,
+        "creator": {"@type": "Organization", "name": "Find A Crib", "url": SITE + "/"},
+        "spatialCoverage": {"@type": "Place", "name": spatial},
+        "variableMeasured": ["asking rent", "unit count", "accepts housing voucher",
+                              "rent-stabilization status"],
+        "isBasedOn": "https://www.affordablehousing.com/",
+        "distribution": {"@type": "DataDownload", "encodingFormat": "text/html", "contentUrl": url},
+    }
+
+
+def _faq_jsonld(pairs):
+    return {"@context": "https://schema.org", "@type": "FAQPage",
+            "mainEntity": [{"@type": "Question", "name": q,
+                            "acceptedAnswer": {"@type": "Answer", "text": a}}
+                           for q, a in pairs]}
+
+
+SECTION8_FAQ = [
+    ("Does the absence of an “accepts vouchers” tag mean this apartment refuses Section 8?",
+     "No. The tag only appears when the landlord said so in their listing. Source-of-income "
+     "discrimination is illegal in New York City, so its absence never means vouchers are refused."),
+    ("What makes this different from other Section 8 apartment lists?",
+     "Every building shown is independently confirmed as registered rent-stabilized with NY State "
+     "DHCR, not just marked voucher-friendly. A stabilized building means the rent is capped by the "
+     "Rent Guidelines Board every year, so the apartment stays affordable after you move in."),
+]
+
+
 # ----------------------------------------------------------- voucher listings
 
 def _live_listings(ctx):
@@ -361,6 +397,9 @@ def t_fresh_section8(ctx):
           "Board every year, so the apartment stays affordable after you move in. "
           "<a href='/'>Open the map</a> to see every stabilized building in the city.</div>")
 
+    lastmod = ctx.s8.get("avail_updated")
+    date_modified = (datetime.datetime.fromtimestamp(lastmod, datetime.timezone.utc)
+                     .strftime("%Y-%m-%d") if lastmod else ledger.today())
     jsonld = [
         _breadcrumb([("Home", SITE + "/"), ("Voucher listings", SITE + "/section8/")]),
         {"@context": "https://schema.org", "@type": "ItemList",
@@ -371,6 +410,12 @@ def t_fresh_section8(ctx):
               "name": f"{r['addr']}, {r['boro_name']}",
               "url": SITE + _bld_url({'b': r['boro'], 'a': r['addr'], 'bbl': r['bbl']})}
              for i, r in enumerate(rows[:50])]},
+        _dataset_jsonld(
+            "Rent-stabilized NYC buildings with live Section 8 / voucher listings",
+            f"{len(rows)} NYC buildings registered rent-stabilized with DHCR that currently have an "
+            f"apartment listed on AffordableHousing.com, refreshed nightly.",
+            SITE + "/section8/", date_modified, "New York City", len(rows)),
+        _faq_jsonld(SECTION8_FAQ),
     ]
     st, url, _ = ctx.write_page(
         "section8/index.html",
@@ -398,14 +443,21 @@ def t_fresh_section8(ctx):
             + _listing_table(brows, show_boro=False)
             + f"<div class='note'><a href='/borough/{slug}/'>Every rent-stabilized building in "
               f"{_esc(disp)} →</a></div>")
+        bjsonld = [
+            _breadcrumb([("Home", SITE + "/"), ("Voucher listings", SITE + "/section8/"),
+                         (disp, f"{SITE}/section8/{slug}/")]),
+            _dataset_jsonld(
+                f"Rent-stabilized {disp} buildings with live Section 8 / voucher listings",
+                f"{len(brows)} {disp} buildings registered rent-stabilized with DHCR that currently "
+                f"have an apartment listed on AffordableHousing.com, refreshed nightly.",
+                f"{SITE}/section8/{slug}/", date_modified, disp, len(brows)),
+        ]
         st, url, _ = ctx.write_page(
             f"section8/{slug}/index.html",
             _page(f"Section 8 apartments in {disp} — {len(brows)} stabilized buildings listed now",
                   f"Rent-stabilized buildings in {disp} with apartments listed for Section 8 and "
                   f"other voucher holders right now. Updated daily.",
-                  f"{SITE}/section8/{slug}/", bbody,
-                  _breadcrumb([("Home", SITE + "/"), ("Voucher listings", SITE + "/section8/"),
-                               (disp, f"{SITE}/section8/{slug}/")])))
+                  f"{SITE}/section8/{slug}/", bbody, bjsonld))
         made.append((st, url))
 
     counts = {}
@@ -470,14 +522,21 @@ def t_daily_brief(ctx):
         + f"<div class='note'>This is a dated snapshot. For the current list, see "
           f"<a href='/section8/'>today's voucher listings</a>.</div>")
 
+    brief_jsonld = [
+        _breadcrumb([("Home", SITE + "/"), ("Daily briefs", SITE + "/brief/"),
+                     (date, f"{SITE}/brief/{date}/")]),
+        _dataset_jsonld(
+            f"NYC rent-stabilized voucher listing snapshot — {date}",
+            f"Dated snapshot of {len(rows)} NYC buildings registered rent-stabilized with DHCR that "
+            f"had an apartment listed on AffordableHousing.com on {date}.",
+            f"{SITE}/brief/{date}/", date, "New York City", len(rows)),
+    ]
     st, url, _ = ctx.write_page(
         f"brief/{date}/index.html",
         _page(f"NYC rent-stabilized voucher listings — {date}",
               f"Daily snapshot for {date}: {len(rows)} rent-stabilized NYC buildings with apartments "
               f"listed for voucher holders, {len(added)} newly listed, by borough.",
-              f"{SITE}/brief/{date}/", body,
-              _breadcrumb([("Home", SITE + "/"), ("Daily briefs", SITE + "/brief/"),
-                           (date, f"{SITE}/brief/{date}/")])))
+              f"{SITE}/brief/{date}/", body, brief_jsonld))
 
     # ---- archive index
     archive = ledger.get_state("brief_archive", [])

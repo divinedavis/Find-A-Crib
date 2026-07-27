@@ -60,24 +60,33 @@ SEED = [
     ("nyc", "hpd violations lookup", "check", "/"),
     ("nyc", "who owns my building nyc", "check", "/"),
     ("nyc", "rent stabilized apartments for rent", "list", "/available/"),
+    ("nyc", "section 8 apartments queens", "list", "/section8/queens/"),
+    ("nyc", "section 8 apartments bronx", "list", "/section8/bronx/"),
+    ("nyc", "voucher friendly apartments nyc", "list", "/section8/"),
     # ---- San Francisco
     ("sf", "rent controlled apartments san francisco", "list", "/sf/"),
     ("sf", "is my apartment rent controlled sf", "check", "/sf/"),
     ("sf", "sf rent board lookup", "check", "/sf/"),
     ("sf", "san francisco rent control list", "list", "/sf/"),
     ("sf", "san francisco rent control rules", "explain", "/sf/"),
+    ("sf", "sf rent control exemptions", "explain", "/sf/"),
     # ---- Los Angeles
     ("la", "rent stabilized apartments los angeles", "list", "/la/"),
     ("la", "rso apartment list los angeles", "list", "/la/"),
     ("la", "is my building rent controlled la", "check", "/la/"),
     ("la", "lahd rso lookup", "check", "/la/"),
     ("la", "los angeles rent control rules", "explain", "/la/"),
+    ("la", "la just cause eviction rent control", "explain", "/la/"),
     # ---- Washington DC
     ("dc", "rent controlled apartments washington dc", "list", "/dc/"),
     ("dc", "dc rent control list", "list", "/dc/"),
     ("dc", "is my apartment rent controlled dc", "check", "/dc/"),
     ("dc", "dc rentregistry lookup", "check", "/dc/"),
     ("dc", "dc rent control rules", "explain", "/dc/"),
+    ("dc", "dc rent control exemptions", "explain", "/dc/"),
+    # ---- Developer / data-licensing intent (targets the API demand problem)
+    ("nyc", "rent stabilization data api", "list", "/developers/"),
+    ("nyc", "nyc housing data api", "list", "/developers/"),
 ]
 
 

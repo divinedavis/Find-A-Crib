@@ -181,15 +181,15 @@
     "name": "Onboarding + re-engagement email",
     "hypothesis": "Saved-building alerts already bring people back; a short onboarding sequence and a lapsed-user nudge should raise return rate and give the Plus upgrade a natural moment to appear.",
     "kind": "lifecycle",
-    "status": "candidate",
+    "status": "active",
     "prefixes": [],
     "metric": "visitors",
     "source": "seed",
     "evidence": "Week-over-week retention is 6% \u2014 most first visits never come back.",
     "added": "2026-07-26",
-    "activated": null,
+    "activated": "2026-07-27",
     "retired": null,
-    "notes": "",
+    "notes": "[2026-07-27] candidate\u2192active: re-scoped to Building Report buyers 2026-07-27; free-account base too small to measure",
     "verdict": null
   },
   {

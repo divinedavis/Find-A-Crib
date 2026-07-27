@@ -542,6 +542,46 @@ def report_lookup():
     return jsonify(status="paid", url=f"https://findacrib.com/report/{row['token']}")
 
 
+@app.route("/reports/unsubscribe", methods=["GET", "POST"])
+def report_unsubscribe():
+    """Stop the buyer follow-up sequence.
+
+    Accepts GET (the link in the footer) and POST (Gmail/Outlook one-click via
+    the List-Unsubscribe-Post header). Uses unsub_token, never the report
+    token: the report token is access to something they paid for, and
+    unsubscribe links get fetched by mail scanners.
+
+    Always answers 200 with the same page, even for an unknown token. Telling a
+    caller which tokens are real would turn this into an enumeration oracle
+    over buyer records, and there is nothing useful to say differently.
+    """
+    if rate_limited("report_unsub", 120, 3600):
+        return _too_many()
+    t = (request.args.get("t") or (request.form.get("t") if request.form else "") or "").strip()
+    if re.fullmatch(r"[A-Za-z0-9_-]{16,80}", t or ""):
+        try:
+            _rest("PATCH", "building_reports?unsub_token=eq." + urllib.parse.quote(t, safe=""),
+                  {"unsubscribed_at": datetime.datetime.now(datetime.timezone.utc).isoformat()},
+                  prefer="return=minimal")
+        except Exception:
+            pass
+    html = ("<!doctype html><meta charset=utf-8>"
+            "<meta name=viewport content='width=device-width,initial-scale=1'>"
+            "<meta name=robots content='noindex,nofollow'>"
+            "<title>Unsubscribed — Find A Crib</title>"
+            "<style>body{font:16px/1.6 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;"
+            "max-width:520px;margin:12vh auto;padding:0 22px;color:#111}"
+            "h1{font-size:21px}p{color:#5a5f6a}a{color:#1a56db}</style>"
+            "<h1>You're unsubscribed</h1>"
+            "<p>We won't send you any more follow-ups about your building report. "
+            "The report itself stays available at the link we emailed you — that link "
+            "still works and does not expire.</p>"
+            "<p>This does not affect saved-building alerts if you have a Find A Crib "
+            "account; those are managed from your account.</p>"
+            "<p><a href='https://findacrib.com/'>Back to the map →</a></p>")
+    return app.response_class(html, mimetype="text/html")
+
+
 @app.route("/reports/<token>")
 def report_view(token):
     if rate_limited("report_view", 300, 3600):
@@ -598,13 +638,15 @@ def _fulfil_report(session, bbl):
             return rows[0]["token"]          # already fulfilled; do nothing
         token = rows[0]["token"]
         _rest("PATCH", "building_reports?stripe_session_id=eq." + urllib.parse.quote(sid, safe=""),
-              {"status": "paid", "paid_at": now, "email": email or None},
+              {"status": "paid", "paid_at": now, "email": email or None,
+               "unsub_token": secrets.token_urlsafe(18)},
               prefer="return=minimal")
     else:
         token = secrets.token_urlsafe(24)
         _rest("POST", "building_reports",
               {"token": token, "bbl": str(bbl), "email": email or None,
-               "stripe_session_id": sid, "status": "paid", "paid_at": now},
+               "stripe_session_id": sid, "status": "paid", "paid_at": now,
+               "unsub_token": secrets.token_urlsafe(18)},
               prefer="return=minimal")
     if email and token:
         try:

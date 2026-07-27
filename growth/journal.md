@@ -77,3 +77,15 @@ turns out to be wrong, say so in a new entry.
 **Changed.** Added growth/searchconsole.py: pulls positions for every tracked query, serving-page count, and page-2 opportunities into the ledger daily (window ends 2 days back — GSC lags, and asking for today returns a partial day that reads as a cliff). Wired into the measure step and the daily report, which now shows real share, indexing ratio and search traffic instead of the coverage proxy. Key deployed to the droplet at growth/.gsc_key.json (600, gitignored) with SC_KEY_FILE in growth.env.
 
 **Watching.** gsc_serving_pages is now THE number to watch — if daily IndexNow and the daily sitemap are working, it should climb from 89. If it is flat in two weeks, indexing needs a different attack (internal linking depth, or the 47k pages may be judged thin/duplicate by Google). Also watch whether any tracked query ever appears: the first non-zero tracked_ranking is the first real evidence the SEO corpus can rank at all.
+
+
+## 2026-07-27 — Lifecycle email built — aimed at buyers, not free accounts
+*claude (setup session)*
+
+**Observed.** T011 had sat as a candidate all session while everything else shipped. The original scope (onboarding + re-engagement for registered users) targets 3 accounts with saves out of ~19 registered — too small for the 21-day review to ever find a signal, so it would have been retired for lack of evidence rather than lack of merit.
+
+**Concluded.** Re-scoped to Building Report buyers. They paid at the highest-intent moment in the funnel, they hand over an email via Stripe, and they each have one specific building they care about — a base that grows with revenue instead of ahead of it. Two steps only, both genuinely useful: day 3 nudges the free DHCR rent-history request (the one action that establishes overcharge, and the easiest to put off), day 14 asks what happened and offers saved-building alerts.
+
+**Changed.** growth/lifecycle.py + migration 0003 (sent_steps, unsub_token, unsubscribed_at) + /reports/unsubscribe endpoint, wired into the daily pass and gated on the ledger. Verified live: both steps sent, step recorded so a re-run advances rather than resends, unsubscribe works on GET and one-click POST and excludes the buyer afterwards, unknown tokens return the identical 200 so the endpoint is not an enumeration oracle over buyer records. Found and fixed a silent-skip bug: PostgREST returns '+00' offsets, which datetime.fromisoformat rejects before Python 3.11 — a bare except turned that into 'nothing due', which is indistinguishable from working. The droplet runs 3.12 and would have masked it entirely.
+
+**Watching.** First real buyer through the sequence — whether day3 gets opened at all, and whether anyone replies to day14 (it invites a reply, which is the cheapest qualitative signal available). Also whether sent_steps stays consistent: the write happens after the send, so a failure there means a duplicate tomorrow, and one duplicate is the acceptable side of that trade.

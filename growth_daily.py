@@ -212,6 +212,29 @@ def cmd_outreach(args):
         return None
 
 
+def cmd_lifecycle(args):
+    """Buyer follow-up sequence. Only runs if the ledger says it's active."""
+    if not any(t["slug"] == "lifecycle_email" for t in ledger.active()):
+        log("  lifecycle_email is not active in the ledger — skipped")
+        return None
+    try:
+        from growth import lifecycle
+    except Exception as e:
+        log(f"  lifecycle unavailable: {e}")
+        return None
+    try:
+        by_bbl = {}
+        try:
+            with open(os.path.join(args.docroot, "buildings.min.json")) as f:
+                by_bbl = {str(b["bbl"]): b for b in json.load(f)}
+        except Exception:
+            pass          # copy still sends; it just falls back to "your building"
+        return lifecycle.run(buildings_by_bbl=by_bbl, dry_run=args.dry_run)
+    except Exception as e:
+        log(f"  lifecycle failed: {e}")
+        return None
+
+
 def cmd_daily(args):
     log("== measure ==")
     cmd_measure(args)
@@ -221,6 +244,8 @@ def cmd_daily(args):
     cmd_scout(args)
     log("== outreach ==")
     cmd_outreach(args)
+    log("== lifecycle ==")
+    cmd_lifecycle(args)
     log("== report ==")
     last = ledger.get_state("last_build", {})
     cmd_report(args, run_log=last.get("log"), review_out=rv)
@@ -230,7 +255,8 @@ def main():
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("command", choices=["build", "deploy", "measure", "review", "scout",
-                                       "outreach", "report", "daily", "status", "journal"])
+                                       "outreach", "lifecycle", "report", "daily", "status",
+                                       "journal"])
     p.add_argument("--build-dir", default=os.environ.get("GROWTH_BUILD_DIR", DEFAULT_BUILD))
     p.add_argument("--docroot", default=os.environ.get("GROWTH_DOCROOT", DEFAULT_DOCROOT))
     p.add_argument("--deploy", action="store_true", help="rsync after build")
@@ -249,6 +275,7 @@ def main():
     seed.run()
     {"build": cmd_build, "deploy": cmd_deploy, "measure": cmd_measure,
      "review": cmd_review, "scout": cmd_scout, "outreach": cmd_outreach,
+     "lifecycle": cmd_lifecycle,
      "report": cmd_report, "daily": cmd_daily, "status": cmd_status,
      "journal": cmd_journal}[args.command](args)
 

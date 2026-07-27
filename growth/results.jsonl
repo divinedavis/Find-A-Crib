@@ -554,3 +554,5 @@
 {"date": "2026-07-27", "technique": "__site__", "metric": "tracked_top10", "value": 0, "meta": {}, "written": "2026-07-27T13:14:17+00:00"}
 {"date": "2026-07-27", "technique": "__site__", "metric": "tracked_top3", "value": 0, "meta": {}, "written": "2026-07-27T13:14:17+00:00"}
 {"date": "2026-07-27", "technique": "__site__", "metric": "tracked_ranking", "value": 0, "meta": {}, "written": "2026-07-27T13:14:17+00:00"}
+{"date": "2026-07-27", "technique": "lifecycle_email", "metric": "emails_sent", "value": 1, "meta": {}, "written": "2026-07-27T13:27:41+00:00"}
+{"date": "2026-07-27", "technique": "lifecycle_email", "metric": "emails_sent", "value": 1, "meta": {}, "written": "2026-07-27T13:28:12+00:00"}

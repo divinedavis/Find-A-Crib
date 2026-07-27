@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Preparing your building report — Find A Crib</title>
+<meta name="robots" content="noindex,nofollow">
+<style>
+:root{--ink:#111;--ink2:#5a5f6a;--line:#e2e5ec;--accent:#1a56db;--bad:#b42318}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.6 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+     color:var(--ink);background:#f6f7f9;display:flex;min-height:100vh;align-items:center;
+     justify-content:center;padding:24px}
+.card{max-width:520px;width:100%;background:#fff;border:1px solid var(--line);border-radius:14px;
+      padding:30px 28px;text-align:center}
+h1{font-size:22px;margin:0 0 8px}
+p{color:var(--ink2);margin:.5em 0}
+.spin{width:26px;height:26px;margin:14px auto;border:3px solid #e6e9f0;border-top-color:var(--accent);
+      border-radius:50%;animation:s .9s linear infinite}
+@keyframes s{to{transform:rotate(360deg)}}
+a.btn{display:inline-block;margin-top:16px;background:var(--accent);color:#fff;text-decoration:none;
+      padding:11px 20px;border-radius:9px;font-weight:600}
+.err{color:var(--bad)}
+small{color:var(--ink2);font-size:13px}
+</style>
+</head>
+<body>
+<div class="card" id="c">
+  <h1>Payment received — preparing your report</h1>
+  <div class="spin" id="spin"></div>
+  <p id="msg">This usually takes a few seconds.</p>
+  <p><small>We've also emailed the link, so you can close this page safely.</small></p>
+</div>
+<script>
+// Stripe redirects back the instant the payment succeeds, which can be before
+// the webhook that fulfils the order has landed. Poll rather than declaring
+// failure during a two-second race — telling someone who just paid that
+// nothing happened is the worst possible moment to be wrong.
+(function () {
+  var s = new URLSearchParams(location.search).get('s');
+  var msg = document.getElementById('msg'), spin = document.getElementById('spin');
+  if (!s) {
+    spin.remove();
+    msg.innerHTML = 'We could not identify this purchase from the link. ' +
+      'Check your email for the report link, or contact ' +
+      '<a href="mailto:api@findacrib.com">api@findacrib.com</a>.';
+    return;
+  }
+  var tries = 0;
+  (function poll() {
+    tries++;
+    fetch('/api/reports/lookup?s=' + encodeURIComponent(s))
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d.status === 'paid' && d.url) { location.href = d.url; return; }
+        if (tries > 20) {
+          spin.remove();
+          msg.innerHTML = 'Your payment went through, but the report is taking longer than ' +
+            'expected to build. The link is on its way by email. If it does not arrive, ' +
+            'email <a href="mailto:api@findacrib.com">api@findacrib.com</a> and we will ' +
+            'send it straight over — your payment is safe.';
+          return;
+        }
+        setTimeout(poll, 1500);
+      })
+      .catch(function () { if (tries <= 20) setTimeout(poll, 2000); });
+  })();
+})();
+</script>
+</body>
+</html>

@@ -13,7 +13,7 @@ reads are fast and need no DB round-trip. The DB is used only for auth/metering.
 
 Run:  DATA_DIR=/var/www/rent-map gunicorn -w 2 -b 127.0.0.1:8010 api_server:app
 """
-import hashlib, hmac, json, os, re, secrets, threading, time, urllib.request, urllib.error, urllib.parse
+import datetime, hashlib, hmac, json, os, re, secrets, threading, time, urllib.request, urllib.error, urllib.parse
 from collections import defaultdict, deque
 from flask import Flask, jsonify, request, g
 
@@ -199,6 +199,7 @@ def gate():
     # the X-API-Key gate applies only to the metered /v1 data endpoints.
     if request.method == "OPTIONS" or request.path in PUBLIC_PATHS \
        or request.path.startswith("/developers/") \
+       or request.path.startswith("/reports/") \
        or request.path in ("/dashboard-metrics", "/dashboard-users"):   # own Supabase-token owner gate
         return
     # Header only — never accept the key in the query string, where it would be
@@ -442,6 +443,206 @@ def upgrade():
     return jsonify(checkout_url=session.get("url"))
 
 
+# ---- one-time paid Building Report -----------------------------------------
+# Deliberately account-free. The whole premise is that people need this data
+# exactly once, at the moment they are about to sign a lease, so requiring a
+# signup before paying would lose most of them. The token in the URL is the
+# only credential; building_reports carries no anon grant so the tokens cannot
+# be enumerated through the Data API.
+
+REPORT_PRICE = os.environ.get("STRIPE_PRICE_REPORT", "")
+_REPORT_CACHE = {}
+
+
+def _report_corpus():
+    """Lazily build the benchmarking corpus; it needs the full 47k set."""
+    if "corpus" not in _REPORT_CACHE:
+        import building_report
+        _REPORT_CACHE["corpus"] = building_report.Corpus(BUILDINGS)
+        _REPORT_CACHE["contacts"] = building_report.load_contacts(
+            os.path.join(DATA_DIR, "hpd_contacts.json"))
+    return _REPORT_CACHE["corpus"], _REPORT_CACHE["contacts"]
+
+
+def _rest(method, path, body=None, prefer=None):
+    headers = {"apikey": SERVICE_KEY, "Authorization": f"Bearer {SERVICE_KEY}",
+               "Content-Type": "application/json"}
+    if prefer:
+        headers["Prefer"] = prefer
+    req = urllib.request.Request(
+        f"{SUPABASE_URL}/rest/v1/{path}",
+        data=json.dumps(body).encode() if body is not None else None,
+        headers=headers, method=method)
+    with urllib.request.urlopen(req, timeout=10) as r:
+        raw = r.read()
+        return json.loads(raw) if raw else None
+
+
+@app.route("/reports/checkout", methods=["POST"])
+def report_checkout():
+    if rate_limited("report_checkout", 30, 3600):
+        return _too_many()
+    if not (STRIPE_SECRET and REPORT_PRICE):
+        return jsonify(error="reports_unavailable"), 503
+    bbl = str((request.json or {}).get("bbl") or "").strip()
+    b = BY_BBL.get(bbl)
+    if not b:
+        return jsonify(error="unknown_building"), 404
+    addr = " ".join(w.capitalize() if not w.isdigit() else w
+                    for w in str(b.get("a") or "").split())
+    try:
+        session = stripe_post("checkout/sessions", {
+            "mode": "payment",
+            "line_items[0][price]": REPORT_PRICE,
+            "line_items[0][quantity]": "1",
+            "metadata[bbl]": bbl,
+            "payment_intent_data[metadata][bbl]": bbl,
+            # /report-ready deliberately avoids the /report/ prefix, which nginx
+            # proxies to this app for token URLs.
+            "success_url": "https://findacrib.com/report-ready/?s={CHECKOUT_SESSION_ID}",
+            "cancel_url": "https://findacrib.com/?report_canceled=1",
+        })
+    except Exception:
+        return jsonify(error="checkout_unavailable"), 502
+    try:
+        _rest("POST", "building_reports",
+              {"token": secrets.token_urlsafe(24), "bbl": bbl,
+               "stripe_session_id": session.get("id"), "status": "pending"},
+              prefer="return=minimal")
+    except Exception:
+        # The row is a convenience for the pending page; the webhook creates or
+        # updates it authoritatively, so a failure here must not block payment.
+        pass
+    return jsonify(checkout_url=session.get("url"), address=addr)
+
+
+@app.route("/reports/lookup")
+def report_lookup():
+    """Exchange a Stripe session id for the report token, once paid.
+
+    The success page polls this: Stripe redirects the buyer back before the
+    webhook has necessarily landed, and showing "your purchase failed" during a
+    two-second race would be both wrong and alarming.
+    """
+    if rate_limited("report_lookup", 240, 3600):
+        return _too_many()
+    sid = (request.args.get("s") or "").strip()
+    if not sid.startswith("cs_"):
+        return jsonify(error="bad_session"), 400
+    try:
+        rows = _rest("GET", "building_reports?select=token,status&stripe_session_id=eq."
+                     + urllib.parse.quote(sid, safe=""))
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
+    if not rows:
+        return jsonify(status="unknown"), 404
+    row = rows[0]
+    if row.get("status") != "paid":
+        return jsonify(status=row.get("status") or "pending")
+    return jsonify(status="paid", url=f"https://findacrib.com/report/{row['token']}")
+
+
+@app.route("/reports/<token>")
+def report_view(token):
+    if rate_limited("report_view", 300, 3600):
+        return _too_many()
+    if not re.fullmatch(r"[A-Za-z0-9_-]{16,64}", token or ""):
+        return "Not found", 404
+    try:
+        rows = _rest("GET", "building_reports?select=token,bbl,status,view_count&token=eq."
+                     + urllib.parse.quote(token, safe=""))
+    except Exception:
+        return "Temporarily unavailable", 503
+    if not rows or rows[0].get("status") != "paid":
+        return "Not found", 404
+    row = rows[0]
+    try:
+        import building_report
+        corpus, contacts = _report_corpus()
+        html = building_report.render(
+            row["bbl"], corpus, contacts,
+            s8=bool(S8_BLDG.get(row["bbl"])),
+            listed=bool(LISTED and row["bbl"] in LISTED))
+    except KeyError:
+        return "Not found", 404
+    except Exception:
+        return "Report temporarily unavailable", 503
+    try:
+        _rest("PATCH", "building_reports?token=eq." + urllib.parse.quote(token, safe=""),
+              {"view_count": (row.get("view_count") or 0) + 1,
+               "last_viewed_at": datetime.datetime.now(datetime.timezone.utc).isoformat()},
+              prefer="return=minimal")
+    except Exception:
+        pass
+    return app.response_class(html, mimetype="text/html")
+
+
+def _fulfil_report(session, bbl):
+    """Mark a paid report and email the buyer their link.
+
+    Idempotent on stripe_session_id: Stripe retries webhooks, and a retry must
+    not mint a second token for a purchase already fulfilled.
+    """
+    sid = session.get("id")
+    email = ((session.get("customer_details") or {}).get("email")
+             or session.get("customer_email") or "").strip()
+    now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    token = None
+    try:
+        rows = _rest("GET", "building_reports?select=token,status&stripe_session_id=eq."
+                     + urllib.parse.quote(sid, safe=""))
+    except Exception:
+        rows = None
+    if rows:
+        if rows[0].get("status") == "paid":
+            return rows[0]["token"]          # already fulfilled; do nothing
+        token = rows[0]["token"]
+        _rest("PATCH", "building_reports?stripe_session_id=eq." + urllib.parse.quote(sid, safe=""),
+              {"status": "paid", "paid_at": now, "email": email or None},
+              prefer="return=minimal")
+    else:
+        token = secrets.token_urlsafe(24)
+        _rest("POST", "building_reports",
+              {"token": token, "bbl": str(bbl), "email": email or None,
+               "stripe_session_id": sid, "status": "paid", "paid_at": now},
+              prefer="return=minimal")
+    if email and token:
+        try:
+            _email_report(email, str(bbl), token)
+        except Exception:
+            pass                              # the link still works; mail is a convenience
+    return token
+
+
+def _email_report(to, bbl, token):
+    import smtplib
+    from email.mime.text import MIMEText
+    host, user, pw = (os.environ.get("SMTP_HOST"), os.environ.get("SMTP_USER"),
+                      os.environ.get("SMTP_PASSWORD"))
+    if not (host and user and pw):
+        return
+    b = BY_BBL.get(str(bbl)) or {}
+    addr = " ".join(w.capitalize() if not w.isdigit() else w
+                    for w in str(b.get("a") or "your building").split())
+    url = f"https://findacrib.com/report/{token}"
+    body = (f"Thanks — here is your Find A Crib building report for {addr}.\n\n"
+            f"{url}\n\n"
+            f"The link does not expire, so keep this email if you want to come back to it.\n"
+            f"The report includes how this building's violation record compares with every\n"
+            f"other rent-stabilized building in the city, who is registered as the owner and\n"
+            f"what else they run, and a pre-filled DHCR rent-history request — the free step\n"
+            f"that establishes whether you are being overcharged.\n\n"
+            f"Find A Crib · https://findacrib.com\n")
+    msg = MIMEText(body, "plain", "utf-8")
+    msg["Subject"] = f"Your building report — {addr}"
+    msg["From"] = user
+    msg["To"] = to
+    with smtplib.SMTP(host, int(os.environ.get("SMTP_PORT", "587")), timeout=20) as s:
+        s.starttls()
+        s.login(user, pw)
+        s.sendmail(user, [to], msg.as_string())
+
+
 @app.route("/developers/stripe-webhook", methods=["POST"])
 def stripe_webhook():
     # Fail closed: with no configured signing secret we cannot authenticate the
@@ -474,6 +675,8 @@ def stripe_webhook():
             if kid:
                 rpc("api_set_tier", {"p_key_id": kid, "p_tier": meta.get("tier", "pro"),
                                      "p_customer": obj.get("customer"), "p_sub": obj.get("subscription")})
+            elif meta.get("bbl"):
+                _fulfil_report(obj, meta["bbl"])
         elif typ == "customer.subscription.deleted":
             rpc("api_downgrade_by_sub", {"p_sub": obj.get("id")})
     except Exception:

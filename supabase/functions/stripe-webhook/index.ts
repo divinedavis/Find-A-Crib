@@ -63,6 +63,15 @@ Deno.serve(async (req) => {
   try {
     if (event.type === "checkout.session.completed") {
       const s = event.data.object;
+      // One-time purchases (the $9 building report) also fire this event, and
+      // they carry no subscription. Without this guard we'd fetch
+      // `subscriptions/null`, throw, and hand Stripe a 500 on every report
+      // sale — and Stripe disables endpoints that keep failing, which would
+      // take real Plus subscriptions down with it. Not our event: ack and stop.
+      if (s.mode !== "subscription" || !s.subscription) {
+        return new Response(JSON.stringify({ received: true, ignored: "not a subscription" }),
+                            { headers: { "Content-Type": "application/json" } });
+      }
       const sub = await stripeGet(`subscriptions/${s.subscription}`);
       await upsert(sub, s.client_reference_id || s.metadata?.user_id);
     } else if (event.type.startsWith("customer.subscription.")) {

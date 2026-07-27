@@ -2736,6 +2736,12 @@
       <div class="d-actions d-dir-row" style="padding-top:0">
         <button class="d-secondary" data-detail="directions">🧭 Driving directions</button>
       </div>
+      ${IS_NYC && REPORTS_ON ? `<div class="d-actions" style="padding-top:0">
+        <button class="d-secondary" data-detail="report">📄 Get the full building report — $9</button>
+        <div class="d-sub" style="margin:6px 0 0">How this building's violation record compares
+        citywide, who owns it and what else they own, and a pre-filled DHCR rent-history
+        request. One-time, no account needed.</div>
+      </div>` : ''}
       ${IS_NYC ? `<div class="d-section"><h3>Housing vouchers (Section 8)</h3>
         ${s8Html(rec) || '<div class="d-sub" style="margin:0">No voucher listing or subsidy record for this building right now.</div>'}
         <div class="s8-legal">Source-of-income discrimination is illegal in NYC — every landlord must accept Section 8 and other vouchers, tagged here or not. <a href="https://www.nyc.gov/site/cchr/about/report-discrimination.page" target="_blank" rel="noopener">Report discrimination to the NYC Commission on Human Rights ↗</a></div>
@@ -2783,6 +2789,28 @@
     window.open(url, '_blank');
   }
 
+  // One-time paid building report. No account required on purpose: people need
+  // this once, at the moment they are deciding on a specific apartment, and a
+  // signup wall at that moment loses most of them. Stripe collects the email
+  // and the report link is emailed plus shown on return.
+  const REPORTS_ON = true;
+  async function buyReport(rec, btn) {
+    if (btn) { btn.disabled = true; btn.textContent = 'Opening checkout…'; }
+    try { track('report_checkout_start', { bbl: rec.bbl }); } catch (e) {}
+    try {
+      const r = await fetch('/api/reports/checkout', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bbl: rec.bbl })
+      });
+      const d = await r.json();
+      if (d.checkout_url) { window.location.href = d.checkout_url; return; }
+      throw new Error(d.error || 'unavailable');
+    } catch (err) {
+      if (btn) { btn.disabled = false; btn.textContent = '📄 Get the full building report — $9'; }
+      alert('Sorry — checkout could not be opened just now. Please try again in a moment.');
+    }
+  }
+
   let _detailNav = false;
   function openDetail(rec, listed) {
     detailRec = rec; detailListed = listed || 0;
@@ -2818,6 +2846,7 @@
       return;
     }
     if (act === 'directions') { openDirections(rec); return; }
+    if (act === 'report') { buyReport(rec, e.target.closest('[data-detail]')); return; }
     if (act === 'map') {
       const m = markerByBbl.get(rec.bbl);
       closeDetail(); setListOpen(false);

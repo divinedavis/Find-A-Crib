@@ -58,3 +58,6 @@ growth/outreach_drafts/
 # droplet-side secrets that live inside the growth checkout
 growth.env
 indexnow.key
+
+# regenerable from Supabase (build_hpd_contacts.py); 46k owner/manager records
+hpd_contacts.json

@@ -546,3 +546,11 @@
 {"date": "2026-07-27", "technique": "__site__", "metric": "mrr_usd", "value": 0.0, "meta": {}, "written": "2026-07-27T05:00:04+00:00"}
 {"date": "2026-07-27", "technique": "__site__", "metric": "accounts_with_saves", "value": 3, "meta": {}, "written": "2026-07-27T05:00:04+00:00"}
 {"date": "2026-07-27", "technique": "__site__", "metric": "api_keys", "value": 3, "meta": {}, "written": "2026-07-27T05:00:04+00:00"}
+{"date": "2026-07-27", "technique": "__site__", "metric": "gsc_clicks", "value": 8, "meta": {}, "written": "2026-07-27T13:14:17+00:00"}
+{"date": "2026-07-27", "technique": "__site__", "metric": "gsc_impressions", "value": 27, "meta": {}, "written": "2026-07-27T13:14:17+00:00"}
+{"date": "2026-07-27", "technique": "__site__", "metric": "gsc_position", "value": 13.7, "meta": {}, "written": "2026-07-27T13:14:17+00:00"}
+{"date": "2026-07-27", "technique": "__site__", "metric": "gsc_serving_pages", "value": 89, "meta": {}, "written": "2026-07-27T13:14:17+00:00"}
+{"date": "2026-07-27", "technique": "__site__", "metric": "search_share_pct", "value": 0.0, "meta": {}, "written": "2026-07-27T13:14:17+00:00"}
+{"date": "2026-07-27", "technique": "__site__", "metric": "tracked_top10", "value": 0, "meta": {}, "written": "2026-07-27T13:14:17+00:00"}
+{"date": "2026-07-27", "technique": "__site__", "metric": "tracked_top3", "value": 0, "meta": {}, "written": "2026-07-27T13:14:17+00:00"}
+{"date": "2026-07-27", "technique": "__site__", "metric": "tracked_ranking", "value": 0, "meta": {}, "written": "2026-07-27T13:14:17+00:00"}

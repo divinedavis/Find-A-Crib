@@ -61,3 +61,6 @@ indexnow.key
 
 # regenerable from Supabase (build_hpd_contacts.py); 46k owner/manager records
 hpd_contacts.json
+
+# Search Console service-account key (droplet copy)
+growth/.gsc_key.json

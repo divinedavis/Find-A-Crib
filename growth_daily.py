@@ -107,6 +107,14 @@ def cmd_measure(args):
             f"{m['ai_visitors']} AI")
     log(f"  totals: {totals}")
     try:
+        from growth import searchconsole
+        gsc = searchconsole.collect(days=7)
+        log(f"  search console: {gsc['clicks']} clicks, {gsc['impressions']} impressions, "
+            f"{gsc['serving_pages']} pages serving, {gsc['tracked_ranking']}/{len(keywords.load())} "
+            f"tracked queries ranking, share {gsc['share_pct']}%")
+    except Exception as e:
+        log(f"  search console unavailable: {e}")
+    try:
         _, changed = keywords.check_coverage(args.docroot)
         s = keywords.summary()
         log(f"  keywords: {s['covered']}/{s['total']} covered ({s['coverage_pct']}%), "

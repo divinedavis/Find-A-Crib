@@ -58,12 +58,33 @@ def build_text(run_log=None, review_out=None):
     goal_users = (goals.get("signups") or {}).get("target", 10000)
     L.append(f"  Revenue        ${_fmt(mrr)}/mo of ${_fmt(goal_mrr)}  ({subs} paying subscriber(s))")
     L.append(f"  Signups        {_fmt(last('accounts_with_saves'))} active of {_fmt(goal_users)} target")
-    if kw["share_pct"] is not None:
-        L.append(f"  Search share   {kw['share_pct']}% of {kw['total']} tracked queries in the top 10")
+    share = last("search_share_pct")
+    if share is not None:
+        L.append(f"  Search share   {share}% of {kw['total']} tracked queries in the top 10 "
+                 f"(target 90%) · {_fmt(last('tracked_top3'))} in the top 3")
+        serving = last("gsc_serving_pages")
+        if serving is not None:
+            L.append(f"  Indexing       {_fmt(serving)} pages earned an impression, of ~47,600 "
+                     f"published — this is the ceiling on everything else")
+        L.append(f"  Search traffic {_fmt(last('gsc_clicks'))} clicks / "
+                 f"{_fmt(last('gsc_impressions'))} impressions (last 7d), "
+                 f"avg position {last('gsc_position')}")
     else:
-        L.append(f"  Search share   unmeasured — needs Search Console. "
+        L.append(f"  Search share   unmeasured — Search Console not reporting. "
                  f"Coverage proxy: {kw['coverage_pct']}% of {kw['total']} queries have a page")
     L.append("")
+
+    # ---- the cheapest available rankings
+    try:
+        from . import searchconsole
+        p2 = searchconsole.page2(limit=10)
+        if p2:
+            L.append("PAGE-2 QUERIES (rank 11-20 — cheapest wins on the board)")
+            for k in p2:
+                L.append(f"  pos {k['position']:>5}  {k.get('impressions', 0):>5} impr  {k['query']}")
+            L.append("")
+    except Exception:
+        pass
 
     # ---- traffic
     L.append("TRAFFIC (excludes owner's own visits)")

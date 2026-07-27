@@ -153,6 +153,18 @@ def cmd_report(args, run_log=None, review_out=None):
     return text
 
 
+def cmd_journal(args):
+    """Append a decision-journal entry (see growth/journal.py)."""
+    from growth import journal
+    if not args.title:
+        print(journal.read(last=args.days or 1) or "(journal is empty)")
+        return
+    entry = journal.append(title=args.title, observed=args.observed or "",
+                           concluded=args.concluded or "", changed=args.changed or "",
+                           watching=args.watching or "", author=args.author or "daily-review")
+    print(entry)
+
+
 def cmd_status(args):
     techs = ledger.load_techniques()
     for t in techs:
@@ -200,19 +212,27 @@ def main():
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("command", choices=["build", "deploy", "measure", "review", "scout",
-                                       "outreach", "report", "daily", "status"])
+                                       "outreach", "report", "daily", "status", "journal"])
     p.add_argument("--build-dir", default=os.environ.get("GROWTH_BUILD_DIR", DEFAULT_BUILD))
     p.add_argument("--docroot", default=os.environ.get("GROWTH_DOCROOT", DEFAULT_DOCROOT))
     p.add_argument("--deploy", action="store_true", help="rsync after build")
     p.add_argument("--dry-run", action="store_true", help="write nothing, send nothing")
     p.add_argument("--days", type=int, default=1, help="days to measure (backfill)")
     p.add_argument("--email", help="email the report here")
+    # journal fields
+    p.add_argument("--title", help="journal: entry title")
+    p.add_argument("--observed", help="journal: what the numbers showed")
+    p.add_argument("--concluded", help="journal: what you concluded and why")
+    p.add_argument("--changed", help="journal: what you actually changed")
+    p.add_argument("--watching", help="journal: what to check next time")
+    p.add_argument("--author", help="journal: who wrote it")
     args = p.parse_args()
 
     seed.run()
     {"build": cmd_build, "deploy": cmd_deploy, "measure": cmd_measure,
      "review": cmd_review, "scout": cmd_scout, "outreach": cmd_outreach,
-     "report": cmd_report, "daily": cmd_daily, "status": cmd_status}[args.command](args)
+     "report": cmd_report, "daily": cmd_daily, "status": cmd_status,
+     "journal": cmd_journal}[args.command](args)
 
 
 if __name__ == "__main__":

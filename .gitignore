@@ -42,12 +42,15 @@ agent_phones.json
 alert_snapshot.json
 buildings_cache.json
 
-# growth engine: generated pages + the droplet-side running ledger.
-# The droplet is the source of truth for the ledger; the seed definitions that
-# recreate it live in growth/seed.py and growth/keywords.py, which ARE tracked.
+# growth engine. The ledger itself (techniques.json, keywords.json,
+# results.jsonl, journal.md) IS tracked: it is the year-end record of what was
+# tried and what worked, and the daily review agent reads it from the checkout.
+# Only machine-local scratch and third-party research stay out.
 growth_out/
-growth/techniques.json
-growth/keywords.json
-growth/results.jsonl
 growth/state.json
 growth/.anthropic_key
+
+# Outreach research names real third-party organisations and drafts addressed to
+# them. This repo is public — these stay local.
+growth/prospects.json
+growth/outreach_drafts/

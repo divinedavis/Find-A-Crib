@@ -126,10 +126,42 @@ def seed():
     return kws
 
 
+# City nicknames collapse to one form, so "…sf" and "…san francisco" are not
+# tracked as two separate queries. The share goal is a percentage of this list;
+# letting restatements inflate it would make the number meaningless.
+_ALIASES = {"sf": "sanfrancisco", "san": "", "francisco": "sanfrancisco",
+            "la": "losangeles", "los": "", "angeles": "losangeles",
+            "nyc": "newyork", "new": "", "york": "newyork",
+            "dc": "washingtondc", "washington": "washingtondc",
+            "apartment": "apt", "apartments": "apt",
+            "stabilised": "stabilized"}
+# Only genuinely contentless words. Intent words stay: "lookup", "list", "for
+# rent", "check" and "difference" are what separate a tool query from a
+# listings query from an explainer, and collapsing them merges queries that
+# want completely different pages. An over-eager list here silently deletes
+# real coverage, which is worse than tracking a near-duplicate.
+_NOISE = {"a", "an", "the", "is", "my", "of", "to", "and", "i", "does", "do"}
+
+
+def _fingerprint(q):
+    """Order-insensitive content signature of a query."""
+    toks = []
+    for t in re.split(r"[^a-z0-9]+", (q or "").lower()):
+        if not t:
+            continue
+        t = _ALIASES.get(t, t)
+        if t and t not in _NOISE:
+            toks.append(t)
+    return frozenset(toks)
+
+
 def add(query, city, intent, target="", source="scout", note=""):
     kws = load()
     q = query.strip().lower()
     if any(k["query"] == q for k in kws):
+        return None
+    fp = _fingerprint(q)
+    if fp and any(_fingerprint(k["query"]) == fp for k in kws):
         return None
     kws.append({"query": q, "city": city, "intent": intent, "target": target,
                 "source": source, "added": ledger.today(), "note": note,

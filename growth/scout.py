@@ -135,6 +135,11 @@ ALREADY MEASURED AS WORKING
 ALREADY MEASURED AS NOT WORKING — do not propose these again
 {chr(10).join(tried) if tried else '(nothing retired yet)'}
 
+QUERIES ALREADY TRACKED — do not propose these or paraphrases of them. "is my apartment
+rent controlled sf" and "is my apartment rent controlled san francisco" are the same entry
+for our purposes; padding the universe with restatements makes the share goal meaningless.
+{chr(10).join('- ' + k['query'] for k in keywords.load()) or '(none yet)'}
+
 TASK
 1. Search for what is currently working in 2026 for: programmatic/data-driven SEO, getting large
    page counts actually indexed, ranking in AI answer engines, and monetizing a proprietary

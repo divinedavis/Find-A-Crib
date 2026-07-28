@@ -153,6 +153,23 @@ def build_blocks(run_log=None, review_out=None):
                   "rows": [[k["query"], (f"{k['position']}", "warn"),
                             _fmt(k.get("impressions", 0))] for k in p2]})
 
+    # ---- the page-level twin of the above: which URLs are close, not which
+    # queries. When the fix is rewriting a page rather than publishing one,
+    # this is the list that tells you which page.
+    try:
+        from . import searchconsole
+        heads = searchconsole.headroom(limit=10)
+    except Exception:
+        heads = []
+    if heads:
+        B.append({"type": "section", "label": "Pages with headroom",
+                  "note": "Already served, ranking 11–30 — rewrite these before publishing new ones"})
+        B.append({"type": "table", "cols": ["Page", "Position", "Impressions"],
+                  "align": ["left", "right", "right"], "mono": True, "widths": [56, 20, 24],
+                  "rows": [[p["url"].replace("https://findacrib.com", "") or "/",
+                            (f"{p['position']}", "warn"), _fmt(p["impressions"])]
+                           for p in heads]})
+
     # ---- traffic
     B.append({"type": "section", "label": "Traffic",
               "note": "Excludes the owner's own visits"})

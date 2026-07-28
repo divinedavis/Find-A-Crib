@@ -796,7 +796,47 @@ def t_indexnow(ctx):
 
 
 # The registry the driver walks. Slug → function.
+def t_hub_direct_answers(ctx):
+    """Verify the hub pages actually carry their direct-answer block.
+
+    The block is written by build_seo.py, not here, because that is what
+    generates the hub pages. This technique exists so the ledger can hold the
+    hypothesis and so the claim is checked against the live docroot every day
+    rather than assumed — a generator change that silently drops the block
+    would otherwise look identical to one that works.
+    """
+    import glob
+    roots = [("neighborhood", "neighborhood/*/*/index.html"),
+             ("borough", "borough/*/index.html"),
+             ("zip", "zip/*/index.html")]
+    counts, missing = {}, []
+    for label, pattern in roots:
+        have = total = 0
+        for path in glob.glob(os.path.join(ctx.docroot, pattern)):
+            total += 1
+            try:
+                with open(path, encoding="utf-8") as f:
+                    if "class='answer'" in f.read():
+                        have += 1
+                    elif len(missing) < 5:
+                        missing.append(os.path.relpath(path, ctx.docroot))
+            except OSError:
+                continue
+        counts[label] = (have, total)
+
+    have = sum(h for h, _ in counts.values())
+    total = sum(t for _, t in counts.values())
+    if not total:
+        return {"ok": False, "detail": "no hub pages found in the docroot — has the SEO build run?"}
+    detail = ("answer block on " + f"{have:,} of {total:,} hub pages ("
+              + ", ".join(f"{k} {v[0]}/{v[1]}" for k, v in counts.items()) + ")")
+    if have < total:
+        return {"ok": False, "detail": detail + f" — missing e.g. {', '.join(missing)}"}
+    return {"ok": True, "detail": detail, "pages": have}
+
+
 REGISTRY = {
+    "hub_direct_answers": t_hub_direct_answers,
     "fresh_section8": t_fresh_section8,
     "daily_brief": t_daily_brief,
     "llms_txt": t_llms_txt,
@@ -806,4 +846,5 @@ REGISTRY = {
 
 # Order matters: content first, then the sitemap that lists it, then the ping
 # that announces it.
-ORDER = ["fresh_section8", "daily_brief", "llms_txt", "sitemap_daily", "indexnow"]
+ORDER = ["fresh_section8", "daily_brief", "hub_direct_answers", "llms_txt",
+         "sitemap_daily", "indexnow"]

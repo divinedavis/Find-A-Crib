@@ -62,6 +62,44 @@ def faq_html(pairs):
                      for q, a in pairs)
     return f"<h2>Frequently asked questions</h2><div class='faq'>{items}</div>"
 
+
+# Roughly 50-70 words is the window that survives extraction: long enough to
+# carry the number, the definition and the source, short enough to be quoted
+# whole. These bounds are asserted at build time rather than trusted.
+ANSWER_MIN_WORDS, ANSWER_MAX_WORDS = 45, 80
+
+
+def answer_block(sentences):
+    """The direct answer to the question the page's title asks.
+
+    Hub pages already open with a lead line, but a lead assumes you have the
+    page in front of you — "There are 1,204 buildings" means nothing lifted out
+    of context. This block is written to be lifted: it names the place, gives
+    the number, says what rent stabilization actually means for a tenant, and
+    attributes the data, in one self-contained paragraph.
+
+    That is the pattern behind the AI-answer-engine results other sites report,
+    and unlike an FAQ it also serves the human who landed here from a search
+    and wants the answer before the list of 1,204 addresses.
+
+    Every sentence must come from real data. Callers pass finished sentences;
+    this only assembles and checks the length, because a block that drifts long
+    stops being extractable and one that drifts short stops being an answer.
+    """
+    text = " ".join(s.strip() for s in sentences if s and s.strip())
+    n = len(text.split())
+    if n < ANSWER_MIN_WORDS or n > ANSWER_MAX_WORDS:
+        raise ValueError(f"answer block is {n} words, outside {ANSWER_MIN_WORDS}-{ANSWER_MAX_WORDS}: {text[:120]}…")
+    return f"<div class='answer'><p>{esc(text)}</p></div>"
+
+
+# The one-sentence definition every hub page carries. Deliberately identical
+# everywhere: it is the load-bearing fact, and rewording it per page to look
+# "unique" would be writing for a crawler rather than a reader.
+STABILIZED_DEF = ("Rent stabilization caps how much the rent can rise each year — the "
+                  "Rent Guidelines Board sets the limit — and gives the tenant the right "
+                  "to renew the lease.")
+
 BORO_NAME = {"M": "Manhattan", "Bk": "Brooklyn", "Q": "Queens",
              "Bx": "the Bronx", "SI": "Staten Island"}
 BORO_SLUG = {"M": "manhattan", "Bk": "brooklyn", "Q": "queens",
@@ -122,6 +160,8 @@ footer.site{border-top:1px solid var(--line);margin-top:40px;padding:22px 20px;c
 .guide-body ul{padding-left:20px}
 .disclaimer{font-size:13px;color:var(--ink2);background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:10px}
 .hook{background:#f0f5ff;border:1px solid #cfe0ff;border-radius:12px;padding:12px 14px;margin:12px 0;font-size:14px;line-height:1.5}
+.answer{background:#fff;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;padding:14px 16px;margin:14px 0}
+.answer p{margin:0;font-size:16px;line-height:1.6}
 .faq-item{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:10px 0}
 .faq-item h3{font-size:15px;margin:0 0 4px}
 .faq-item p{color:var(--ink2);font-size:14px;margin:0}
@@ -186,6 +226,21 @@ DHCR registration; it is not a guarantee that a specific unit is available or cu
 </body></html>"""
 
 
+def _lastmod_body(contents):
+    """The part of a page whose change means the page changed.
+
+    lastmod is a promise to a crawler that the *content* moved. The stylesheet
+    is inlined into all 47,596 pages, so adding one CSS rule rewrites every
+    file byte-for-byte and — hashing the whole document — would bump every
+    lastmod on the site to today. Mass-bumping lastmod on a corpus that did not
+    change is precisely the signal Google learns to distrust, and it would have
+    buried the few hundred pages that genuinely did change.
+
+    So the hash covers everything except the <style> block.
+    """
+    return re.sub(r"<style>.*?</style>", "", contents, flags=re.S)
+
+
 def write(relpath, contents):
     full = os.path.join(OUT, relpath)
     os.makedirs(os.path.dirname(full), exist_ok=True)
@@ -194,7 +249,7 @@ def write(relpath, contents):
     # track lastmod for crawlable HTML pages (…/index.html) only
     if relpath.endswith("index.html"):
         loc = SITE + "/" + relpath[:-len("index.html")]  # …/foo/index.html -> …/foo/
-        h = hashlib.sha1(contents.encode("utf-8")).hexdigest()
+        h = hashlib.sha1(_lastmod_body(contents).encode("utf-8")).hexdigest()
         prev = LM_STATE.get(loc)
         if prev and prev.get("h") == h:
             lastmod = prev["m"]                 # unchanged -> keep old date (honest)
@@ -409,11 +464,16 @@ def main():
         body = (f"<div class='crumbs'><a href='/'>Home</a> › "
                 f"<a href='/borough/{BORO_SLUG.get(boro,'nyc')}/'>{esc(boroname)}</a></div>"
                 f"<h1>Rent-stabilized buildings in {esc(nb)}, {esc(boroname)}</h1>"
-                f"<p class='lead'>There are <strong>{n:,}</strong> registered rent-stabilized buildings in "
-                f"{esc(nb)}"
-                + (f", most built around {esc(med)}" if med else "")
-                + f". Tap any address to check its rent-stabilized status, owner, and HPD record.</p>"
-                f"<a class='cta' href='/'>Explore {esc(nb)} on the map →</a>"
+                + answer_block([
+                    f"{nb}, {boroname} has {n:,} buildings registered as rent stabilized with "
+                    f"New York State DHCR"
+                    + (f", most of them built around {med}." if med else "."),
+                    STABILIZED_DEF,
+                    "Registration is per building, so an individual apartment can still be "
+                    "deregulated — check the address below and ask the landlord for its "
+                    "rent history.",
+                ])
+                + f"<a class='cta' href='/'>Explore {esc(nb)} on the map →</a>"
                 f"<h2>All {n:,} buildings</h2><div class='cols'>{links}</div>")
         nb_faq = [(f"How many rent-stabilized buildings are in {nb}, {boroname}?",
                    f"There are {n:,} registered rent-stabilized buildings in {nb}, {boroname}, "
@@ -447,9 +507,15 @@ def main():
                         for nb, c in sorted(nbs))
         body = (f"<div class='crumbs'><a href='/'>Home</a></div>"
                 f"<h1>Rent-stabilized buildings in {esc(boroname)}</h1>"
-                f"<p class='lead'>{total:,} registered rent-stabilized buildings across "
-                f"{len(nbs)} {esc(boroname)} neighborhoods.</p>"
-                f"<a class='cta' href='/'>Open the map →</a>"
+                + answer_block([
+                    f"{boroname} has {total:,} buildings registered as rent stabilized with "
+                    f"New York State DHCR, spread across {len(nbs)} neighborhoods.",
+                    STABILIZED_DEF,
+                    "Registration is per building, so an individual apartment can still be "
+                    "deregulated — find the address here and ask the landlord for its "
+                    "rent history.",
+                ])
+                + f"<a class='cta' href='/'>Open the map →</a>"
                 f"<p><a href='{boro_list_url(boro,'largest')}'>Largest buildings in {esc(boroname)}</a> "
                 f"&nbsp;·&nbsp; <a href='{boro_list_url(boro,'oldest')}'>Oldest buildings</a></p>"
                 f"<h2>Neighborhoods</h2><div class='cols'>{links}</div>")
@@ -510,9 +576,14 @@ def main():
         body = (f"<div class='crumbs'><a href='/'>Home</a> › "
                 f"<a href='/borough/{BORO_SLUG.get(dom,'nyc')}/'>{esc(boroname)}</a></div>"
                 f"<h1>Rent-stabilized buildings in ZIP {esc(z)}</h1>"
-                f"<p class='lead'>There are <strong>{n:,}</strong> registered rent-stabilized "
-                f"buildings in ZIP code {esc(z)} ({esc(boroname)}). Tap any address to check its "
-                f"status, owner, year built, and HPD record.</p>"
+                + answer_block([
+                    f"ZIP code {z} in {boroname} contains {n:,} buildings registered as rent "
+                    f"stabilized with New York State DHCR.",
+                    STABILIZED_DEF,
+                    "Registration is per building, so an individual apartment can still be "
+                    "deregulated — find the address below and ask the landlord for its "
+                    "rent history.",
+                ])
                 + (f"<h2>Neighborhoods in {esc(z)}</h2><div class='cols'>{nb_links}</div>" if nb_links else "")
                 + f"<a class='cta' href='/'>Explore ZIP {esc(z)} on the map →</a>"
                 f"<h2>All {n:,} buildings in {esc(z)}</h2><div class='cols'>{links}</div>")

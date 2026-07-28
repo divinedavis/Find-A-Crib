@@ -50,11 +50,35 @@ LINE = "#e3e8ef"
 BLUE = "#1a63d6"
 PAPER = "#ffffff"
 FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"
+MONO = "ui-monospace,SFMono-Regular,Menlo,Consolas,monospace"
+
+# Status colours. Tints are opaque, not alpha, so a dark-mode client that
+# inverts the page background does not bleed through them.
+GOOD, GOOD_BG = "#0b7a4b", "#eaf7f0"
+BAD, BAD_BG = "#b42318", "#fef3f2"
+WARN, WARN_BG = "#b54708", "#fff8eb"
+SOFT = "#f7f9fc"
+TONES = {"good": (GOOD, GOOD_BG), "bad": (BAD, BAD_BG), "warn": (WARN, WARN_BG),
+         "info": (BLUE, "#eef4fe"), "mute": (INK2, SOFT)}
 
 
 def esc(s):
     return (str(s if s is not None else "").replace("&", "&amp;").replace("<", "&lt;")
             .replace(">", "&gt;").replace('"', "&quot;"))
+
+
+def safe_url(u):
+    """Only http(s) and mailto reach an href.
+
+    Some of the URLs in these emails are written by a model — the scout's
+    technique notes, the outreach drafts it researches. esc() stops attribute
+    injection but not a `javascript:` or `data:` href, so the scheme is checked
+    here rather than trusted at every call site. Anything else renders as '#'.
+    """
+    s = str(u or "").strip()
+    if re.match(r"^(https?://|mailto:|/|#)", s, re.I) and "\n" not in s:
+        return s
+    return "#"
 
 
 def _strip(html):
@@ -77,7 +101,7 @@ def _card(b):
     link_html = ""
     if b.get("link"):
         label, url = b["link"]
-        link_html = (f'<a href="{esc(url)}" style="color:{BLUE};font-weight:600;'
+        link_html = (f'<a href="{esc(safe_url(url))}" style="color:{BLUE};font-weight:600;'
                      f'font-size:14px;text-decoration:none">{esc(label)} &rarr;</a>')
     html = (f'<div style="border:1px solid {LINE};border-radius:10px;padding:14px 16px;'
             f'margin:0 0 12px;background:{PAPER}">'
@@ -130,15 +154,216 @@ def _stats(b):
     return html, text
 
 
+# --------------------------------------------------- report-shaped blocks
+#
+# A daily report is a dashboard, not a letter: sections, tiles, progress
+# against a target, tables, pass/fail. These blocks exist so a report never
+# has to hand-write markup, and so every report in the product looks alike.
+#
+# All of them lay out with <table>, not flex or grid. Outlook's word-based
+# renderer drops both, and a report is exactly the kind of email people read
+# in Outlook.
+
+def _tbl(inner, style=""):
+    return (f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" '
+            f'border="0" style="border-collapse:collapse;{style}">{inner}</table>')
+
+
+def _section(b):
+    """A ruled section heading. The rule is what makes a long report skimmable."""
+    note = (f'<div style="font-size:12px;color:{INK3};margin:3px 0 0;line-height:1.5">'
+            f'{esc(b["note"])}</div>') if b.get("note") else ""
+    html = _tbl(
+        f'<tr><td style="border-top:1px solid {LINE};padding:20px 0 10px">'
+        f'<div style="font-size:11px;font-weight:700;letter-spacing:.09em;'
+        f'text-transform:uppercase;color:{INK2}">{esc(b["label"])}</div>{note}</td></tr>',
+        "margin:12px 0 0")
+    text = "\n" + str(b["label"]).upper() + (f"  ({b['note']})" if b.get("note") else "")
+    return html, text
+
+
+def _tiles(b):
+    """Headline numbers, two per row. Two — not four — because a 640px column
+    becomes ~300px on a phone, and four tiles would each be unreadably narrow."""
+    items = b["items"]
+    rows, text = [], []
+    for i in range(0, len(items), 2):
+        cells = []
+        for it in items[i:i + 2]:
+            tone = TONES.get(it.get("tone") or "mute", (INK2, SOFT))
+            delta = (f'<div style="font-size:12px;font-weight:600;color:{tone[0]};'
+                     f'margin:4px 0 0">{esc(it["delta"])}</div>') if it.get("delta") else ""
+            cells.append(
+                f'<td width="50%" valign="top" style="padding:0 6px 12px 0">'
+                f'<div style="background:{SOFT};border:1px solid {LINE};border-radius:10px;'
+                f'padding:13px 14px">'
+                f'<div style="font-size:11px;font-weight:700;letter-spacing:.06em;'
+                f'text-transform:uppercase;color:{INK2}">{esc(it["label"])}</div>'
+                f'<div style="font-size:26px;font-weight:800;color:{INK};line-height:1.15;'
+                f'margin:5px 0 0">{esc(it["value"])}</div>{delta}</div></td>')
+            text.append(f"  {it['label']}: {it['value']}"
+                        + (f" ({it['delta']})" if it.get("delta") else ""))
+        if len(items[i:i + 2]) == 1:
+            cells.append('<td width="50%">&nbsp;</td>')
+        rows.append("<tr>" + "".join(cells) + "</tr>")
+    # table-layout:fixed, or an auto table refuses to shrink below the widest
+    # tile's min-content and pushes the whole email off a phone screen.
+    return _tbl("".join(rows), "margin:0 0 4px;table-layout:fixed"), "\n".join(text)
+
+
+def _progress(b):
+    """Distance to a target. The bar is a two-cell table with a percentage
+    width — the only progress bar that survives every mail client."""
+    pct = max(0.0, min(100.0, float(b.get("pct") or 0)))
+    colour = TONES.get(b.get("tone") or "info", (BLUE, SOFT))[0]
+    # Below half a percent, render an empty track rather than a sliver that
+    # rounds up to something visible. The point is to be honest about zero.
+    fill = (f'<td width="{pct:.1f}%" style="height:7px;line-height:7px;font-size:0;'
+            f'background:{colour};border-radius:99px">&nbsp;</td>') if pct >= 0.5 else ""
+    bar = _tbl(f'<tr>{fill}<td style="height:7px;line-height:7px;font-size:0">&nbsp;</td></tr>',
+               f"background:{LINE};border-radius:99px")
+    sub = (f'<div style="font-size:12px;color:{INK2};margin:5px 0 0;line-height:1.5">'
+           f'{esc(b["sub"])}</div>') if b.get("sub") else ""
+    # The gap below has to be clearly larger than the gap between a bar and its
+    # own caption, or the caption reads as belonging to the next row.
+    html = (
+        f'<div style="margin:0 0 20px;background:{PAPER}">'
+        + _tbl(f'<tr>'
+               f'<td style="font-size:14px;font-weight:600;color:{INK};padding:0 8px 6px 0">'
+               f'{esc(b["label"])}</td>'
+               f'<td align="right" style="font-size:14px;color:{INK};padding:0 0 6px;'
+               f'white-space:nowrap">{esc(b["value"])}</td></tr>')
+        + bar + sub + "</div>")
+    text = f"  {b['label']:<16} {b['value']}" + (f"\n      {b['sub']}" if b.get("sub") else "")
+    return html, text
+
+
+def _cell(c):
+    """A cell is a string, a (text, tone) pair, or {text, tone, sub}. `sub` is a
+    second muted line under the value — it keeps a narrow table from needing an
+    extra column, which is what actually breaks the layout on a phone."""
+    if isinstance(c, dict):
+        return c.get("text"), c.get("tone"), c.get("sub")
+    if isinstance(c, (tuple, list)):
+        return c[0], (c[1] if len(c) > 1 else None), None
+    return c, None, None
+
+
+def _cell_text(c):
+    return _cell(c)[0]
+
+
+def _table(b):
+    """Rows of `cols`, laid out to survive a 320px-wide phone: fixed layout with
+    declared column widths, and long tokens wrap rather than forcing the whole
+    message to scroll sideways. `widths` are percentages; the default gives the
+    label column the slack and splits the rest evenly."""
+    aligns = b.get("align") or ["left"] * len(b["cols"])
+    n = len(b["cols"])
+    widths = b.get("widths")
+    if not widths:
+        first = 46 if n > 2 else 60
+        widths = [first] + [round((100 - first) / (n - 1))] * (n - 1) if n > 1 else [100]
+    head = "".join(
+        f'<th align="{a}" width="{w}%" style="font-size:11px;font-weight:700;'
+        f'letter-spacing:.05em;text-transform:uppercase;color:{INK3};padding:0 8px 7px 0;'
+        f'border-bottom:1px solid {LINE};word-break:break-word;line-height:1.35">{esc(c)}</th>'
+        for c, a, w in zip(b["cols"], aligns, widths))
+    body = []
+    for r in b["rows"]:
+        tds = []
+        for c, a in zip(r, aligns):
+            text, tone, sub = _cell(c)
+            colour = TONES.get(tone, (INK, SOFT))[0] if tone else INK
+            weight = "600" if tone else "400"
+            mono = f"font-family:{MONO};" if b.get("mono") and a == "right" else ""
+            sub_html = (f'<div style="font-size:11px;color:{INK3};font-weight:400;'
+                        f'margin:2px 0 0;line-height:1.4">{esc(sub)}</div>') if sub else ""
+            tds.append(f'<td align="{a}" style="font-size:13px;color:{colour};'
+                       f'font-weight:{weight};{mono}padding:8px 8px 8px 0;'
+                       f'border-bottom:1px solid #f0f3f7;line-height:1.45;'
+                       f'word-break:break-word">{esc(text)}{sub_html}</td>')
+        body.append("<tr>" + "".join(tds) + "</tr>")
+    html = _tbl(f"<tr>{head}</tr>" + "".join(body), "margin:0 0 16px;table-layout:fixed")
+    all_rows = [b["cols"]] + list(b["rows"])
+    widths = [max(len(str(_cell_text(r[i]))) for r in all_rows) for i in range(len(b["cols"]))]
+    lines = []
+    for row in all_rows:
+        lines.append("  " + "  ".join(str(_cell_text(c)).ljust(w)
+                                      for c, w in zip(row, widths)).rstrip())
+        for sub in (s for s in (_cell(c)[2] for c in row) if s):
+            lines.append(f"      {sub}")
+    return html, "\n".join(lines)
+
+
+def _status(b):
+    """Pass/fail lines for a batch of jobs. Failure is loud on purpose."""
+    rows = []
+    text = []
+    for it in b["items"]:
+        ok = it.get("ok")
+        colour, bg = (GOOD, GOOD_BG) if ok else (BAD, BAD_BG)
+        label = "OK" if ok else "FAIL"
+        rows.append(
+            f'<tr>'
+            f'<td valign="top" width="44" style="padding:0 8px 9px 0">'
+            f'<span style="display:inline-block;background:{bg};color:{colour};'
+            f'font-size:10px;font-weight:800;letter-spacing:.06em;padding:3px 7px;'
+            f'border-radius:5px">{label}</span></td>'
+            f'<td valign="top" width="36%" style="padding:0 8px 9px 0;font-size:12.5px;'
+            f'font-weight:600;color:{INK};font-family:{MONO};word-break:break-word">'
+            f'{esc(it["name"])}</td>'
+            f'<td valign="top" style="padding:0 0 9px;font-size:13px;color:{INK2};'
+            f'line-height:1.5;word-break:break-word">{esc(it.get("detail") or "")}</td></tr>')
+        text.append(f"  [{'ok  ' if ok else 'FAIL'}] {it['name']:<18} {it.get('detail', '')}")
+    return _tbl("".join(rows), "margin:0 0 14px;table-layout:fixed"), "\n".join(text)
+
+
+def _callout(b):
+    """A tinted box for the things that need the reader to do something."""
+    colour, bg = TONES.get(b.get("tone") or "warn", (WARN, WARN_BG))
+    head = (f'<div style="font-size:14px;font-weight:700;color:{colour};margin:0 0 4px">'
+            f'{esc(b["heading"])}</div>') if b.get("heading") else ""
+    html = (f'<div style="background:{bg};border-left:3px solid {colour};border-radius:8px;'
+            f'padding:12px 14px;margin:0 0 12px">{head}'
+            f'<div style="font-size:13px;color:{INK};line-height:1.55">'
+            f'{esc(b["body"])}</div></div>')
+    text = (f"  {b['heading']}\n      {b['body']}" if b.get("heading") else f"  {b['body']}")
+    return html, text
+
+
+def _chips(b):
+    """Short strings as pills — query lists, tags. Wraps naturally, no columns
+    to get out of sync."""
+    chips = "".join(
+        f'<span style="display:inline-block;background:{SOFT};border:1px solid {LINE};'
+        f'border-radius:99px;padding:5px 11px;margin:0 6px 7px 0;font-size:12px;'
+        f'color:{INK2}">{esc(c)}</span>' for c in b["items"])
+    return (f'<div style="margin:0 0 12px;background:{PAPER}">{chips}</div>',
+            "\n".join(f"  · {c}" for c in b["items"]))
+
+
+def _note(b):
+    return (f'<p style="margin:0 0 14px;font-size:12px;color:{INK3};line-height:1.55;'
+            f'background:{PAPER}">{esc(b["text"])}</p>', f"  {b['text']}")
+
+
 RENDERERS = {"paragraph": _paragraph, "card": _card, "steps": _steps,
-             "quote": _quote, "stats": _stats}
+             "quote": _quote, "stats": _stats, "section": _section, "tiles": _tiles,
+             "progress": _progress, "table": _table, "status": _status,
+             "callout": _callout, "chips": _chips, "note": _note}
 
 
 # ------------------------------------------------------------------- render
 
 def render(title, blocks=None, intro=None, cta=None, footer_note=None, unsub_url=None,
-           unsub_label="Unsubscribe"):
-    """Build (html, text). `blocks` is a list of dicts with a `type` key."""
+           unsub_label="Unsubscribe", width=560, eyebrow=None):
+    """Build (html, text). `blocks` is a list of dicts with a `type` key.
+
+    `width` widens the column for reports — tables and progress bars need more
+    room than a letter does. `eyebrow` is a small line above the title (a date,
+    a run label) that keeps the headline itself short.
+    """
     blocks = blocks or []
     body_html, body_text = [], []
     for b in blocks:
@@ -155,8 +380,8 @@ def render(title, blocks=None, intro=None, cta=None, footer_note=None, unsub_url
         label, url = cta
         cta_html = (
             f'<div style="margin:4px 0 18px;background:{PAPER}">'
-            f'<a href="{esc(url)}" style="display:inline-block;background:{BLUE};color:#ffffff;'
-            f'text-decoration:none;font-weight:600;font-size:15px;padding:11px 20px;'
+            f'<a href="{esc(safe_url(url))}" style="display:inline-block;background:{BLUE};'
+            f'color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:11px 20px;'
             f'border-radius:9px">{esc(label)}</a></div>')
         body_text.append(f"{label}: {url}")
 
@@ -164,23 +389,36 @@ def render(title, blocks=None, intro=None, cta=None, footer_note=None, unsub_url
     if footer_note:
         foot_bits.append(esc(footer_note))
     if unsub_url:
-        foot_bits.append(f'<a href="{esc(unsub_url)}" style="color:{INK3}">{esc(unsub_label)}</a>')
+        foot_bits.append(f'<a href="{esc(safe_url(unsub_url))}" style="color:{INK3}">'
+                         f'{esc(unsub_label)}</a>')
     foot_html = (f'<p style="margin:22px 0 0;padding-top:14px;border-top:1px solid {LINE};'
                  f'color:{INK3};font-size:12px;line-height:1.55;background:{PAPER}">'
                  + " ".join(foot_bits) + "</p>") if foot_bits else ""
 
+    # The shell is a table, not a padded div. A div with max-width and padding
+    # is content-box in mail clients, so on a 390px phone its own padding pushes
+    # the card wider than the screen and the right-hand column is cut off.
     html = (
-        f'<div style="background:#f6f7f9;padding:24px 0;margin:0">'
-        f'<div style="font-family:{FONT};max-width:560px;margin:0 auto;padding:26px 22px;'
-        f'background:{PAPER};border-radius:12px;color:{INK}">'
+        f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" '
+        f'style="border-collapse:collapse;background:#f6f7f9;margin:0;'
+        f'-webkit-text-size-adjust:100%"><tr>'
+        f'<td align="center" style="padding:24px 12px">'
+        f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" '
+        f'style="border-collapse:collapse;max-width:{int(width)}px;margin:0 auto">'
+        f'<tr><td style="font-family:{FONT};padding:26px 22px;background:{PAPER};'
+        f'border-radius:12px;color:{INK}">'
         f'<div style="font-weight:800;font-size:17px;color:{BLUE};margin:0 0 10px">{BRAND}</div>'
-        f'<h1 style="font-size:21px;line-height:1.3;margin:0 0 8px;color:{INK}">{esc(title)}</h1>'
+        + (f'<div style="font-size:12px;font-weight:600;letter-spacing:.07em;'
+           f'text-transform:uppercase;color:{INK3};margin:0 0 4px">{esc(eyebrow)}</div>'
+           if eyebrow else "")
+        + f'<h1 style="font-size:21px;line-height:1.3;margin:0 0 8px;color:{INK}">'
+          f'{esc(title)}</h1>'
         + (f'<p style="color:{INK2};font-size:14px;margin:0 0 18px;line-height:1.55">'
            f'{esc(intro)}</p>' if intro else "")
         + "".join(body_html) + cta_html + foot_html
-        + "</div></div>")
+        + "</td></tr></table></td></tr></table>")
 
-    text_parts = [title]
+    text_parts = [f"{eyebrow} — {title}" if eyebrow else title]
     if intro:
         text_parts.append(intro)
     text_parts += body_text

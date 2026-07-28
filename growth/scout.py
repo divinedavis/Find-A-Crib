@@ -32,7 +32,7 @@ from . import keywords, ledger, review
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 API_URL = "https://api.anthropic.com/v1/messages"
-MODEL = "claude-sonnet-5"
+MODEL = "claude-opus-5"
 MAX_NEW_PER_DAY = 3          # a trickle of well-formed ideas beats a firehose
 MAX_KEYWORDS_PER_DAY = 25
 

@@ -160,11 +160,13 @@ def cmd_scout(args):
 # ------------------------------------------------------------------ report
 
 def cmd_report(args, run_log=None, review_out=None):
-    text = report.build_text(run_log=run_log, review_out=review_out)
+    # Built once: the console gets the text part, the email gets both parts.
+    built = report.build(run_log=run_log, review_out=review_out)
+    text = built[2]
     print(text)
     if args.email and not args.dry_run:
         try:
-            report.email(text, args.email)
+            report.email(args.email, prebuilt=built)
             log(f"\n  emailed to {args.email}")
         except Exception as e:
             log(f"\n  email failed: {e}")

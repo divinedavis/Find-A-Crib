@@ -264,6 +264,21 @@ def build_blocks(run_log=None, review_out=None):
             B.append({"type": "callout", "tone": "bad", "heading": f"{label} did not run",
                       "body": detail})
 
+    # ---- what the engine spent on the API. A daily job that quietly costs 50x
+    # what it should looks exactly like one that is working, right up until the
+    # account hits its cap — which is what happened on 2026-07-28.
+    spend = ledger.get_state("api_spend", {}) or {}
+    if spend:
+        days = sorted(spend)[-7:]
+        today_total = sum((spend.get(ledger.today()) or {}).values())
+        week_total = sum(sum(v.values()) for d, v in spend.items() if d in days)
+        B.append({"type": "section", "label": "API spend (estimated)",
+                  "note": "Token cost of the LLM jobs — see growth/BUDGET.md"})
+        B.append({"type": "stats", "items": [
+            (f"${today_total:,.2f}", "today"),
+            (f"${week_total:,.2f}", f"last {len(days)} days"),
+            (f"${week_total / max(len(days), 1):,.2f}", "per day average")]})
+
     # ---- outreach drafts awaiting a send decision
     try:
         from . import outreach

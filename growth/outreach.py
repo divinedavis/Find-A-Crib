@@ -163,6 +163,7 @@ def run(dry_run=False):
     seg_key, _ = todays_segment()
     try:
         resp = scout.call_api(key, build_prompt())
+        scout.record_spend("outreach", resp)
         data = scout.extract_json(resp)
     except Exception as e:
         print(f"  outreach research failed: {e}")

@@ -165,6 +165,51 @@ class ApiError(RuntimeError):
         super().__init__(f"{etype or 'http_' + str(status)}: {message}")
 
 
+# Published per-million-token rates for the model above, so a run can price
+# itself. Update these together with MODEL — a stale rate here reports a
+# confident wrong number, which is worse than reporting none.
+PRICE_IN_PER_MTOK, PRICE_OUT_PER_MTOK = 5.00, 25.00     # claude-opus-5
+
+
+def price(usage):
+    """Dollar estimate for one API response's `usage` block.
+
+    Cache reads are ~0.1x input and cache writes ~1.25x, so this is an
+    estimate, not an invoice — it is here to catch an order-of-magnitude
+    problem (a job that quietly costs 50x what it should), not to reconcile
+    billing. Web-search results land in input tokens, which is why a
+    search-heavy call is dominated by the input side.
+    """
+    u = usage or {}
+    tin = (u.get("input_tokens", 0) + u.get("cache_read_input_tokens", 0)
+           + u.get("cache_creation_input_tokens", 0))
+    tout = u.get("output_tokens", 0)
+    return round(tin / 1e6 * PRICE_IN_PER_MTOK + tout / 1e6 * PRICE_OUT_PER_MTOK, 4)
+
+
+def record_spend(job, resp):
+    """Add one call's estimated cost to today's running total in the ledger."""
+    try:
+        cost = price((resp or {}).get("usage"))
+        day = ledger.today()
+        spend = ledger.get_state("api_spend", {}) or {}
+        today = spend.get(day) or {}
+        today[job] = round((today.get(job) or 0) + cost, 4)
+        # Keep a fortnight; this is a tripwire, not an accounting system.
+        spend = {d: v for d, v in spend.items() if d >= _days_ago(14)}
+        spend[day] = today
+        ledger.set_state("api_spend", spend)
+        return cost
+    except Exception:
+        return 0.0        # never let cost bookkeeping break the job it measures
+
+
+def _days_ago(n):
+    import datetime
+    return (datetime.date.fromisoformat(ledger.today())
+            - datetime.timedelta(days=n)).isoformat()
+
+
 def call_api(key, prompt, timeout=180):
     body = {
         "model": MODEL,
@@ -275,6 +320,7 @@ def run(dry_run=False, docroot=None):
     prompt = build_prompt(docroot)
     try:
         resp = call_api(key, prompt)
+        record_spend("scout", resp)
         data = extract_json(resp)
     except Exception as e:
         print(f"  scout call failed: {e}")

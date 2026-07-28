@@ -204,8 +204,13 @@ def run(dry_run=False):
 
     if not dry_run:
         _save_prospects(known)
-        ledger.set_state("outreach_last", {"date": ledger.today(), "segment": seg_key,
-                                           "added": added, "notes": data.get("notes", "")})
+        # "ok" must be explicit on the success path too. Both failure paths set
+        # ok=False, and the report treats a missing key as failure — so omitting
+        # it here made every successful outreach run show up in the daily email
+        # as "DID NOT RUN — unknown error".
+        ledger.set_state("outreach_last", {"date": ledger.today(), "ok": True,
+                                           "segment": seg_key, "added": added,
+                                           "notes": data.get("notes", "")})
     print(f"  {seg_key}: drafted {len(added)} prospect(s) — review in growth/outreach_drafts/")
     for o in added:
         print(f"    + {o}")

@@ -235,7 +235,11 @@ def build_blocks(run_log=None, review_out=None):
     for key, label in (("scout_last", "Scout (new techniques)"),
                        ("outreach_last", "Outreach (B2B prospects)")):
         st = ledger.get_state(key)
-        if st and not st.get("ok"):
+        # `is False` on purpose, not falsiness. Failure paths always write an
+        # explicit ok=False with a detail; a record missing the key entirely is
+        # an older or partial write, and reporting that as a failure with
+        # "unknown error" is a false alarm — which is exactly what happened.
+        if st and st.get("ok") is False:
             trouble.append((label, st.get("detail", "unknown error")))
     if trouble:
         B.append({"type": "section", "label": "Research jobs blocked"})

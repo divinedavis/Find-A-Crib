@@ -59,6 +59,13 @@
   .live-pill{display:inline-flex;align-items:center;gap:7px;background:#f1fbe9;color:#4b7a12;border:1px solid #dcecc4;border-radius:100px;padding:4px 11px;font-size:12px;font-weight:600}
   .live-dot{width:7px;height:7px;border-radius:50%;background:#7ac70f;box-shadow:0 0 0 3px rgba(122,199,15,.2)}
   .tb-right{display:flex;align-items:center;gap:14px}
+  /* site switcher — one dashboard, two sites, same template */
+  .site-switch{display:inline-flex;background:#f3f3f7;border:1px solid var(--border);border-radius:11px;padding:3px;gap:2px}
+  .site-switch button{border:none;background:none;font:inherit;font-size:13px;font-weight:600;color:var(--ink2);
+    padding:6px 13px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+  .site-switch button:hover{color:var(--ink)}
+  .site-switch button.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(20,20,40,.08)}
+  .site-switch button:disabled{opacity:.55;cursor:progress}
   .avatar{width:34px;height:34px;border-radius:50%;background:var(--purple);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px}
   .signout{font-size:13px;color:var(--ink2);cursor:pointer;background:none;border:none;font-weight:500}
   .signout:hover{color:var(--ink)}
@@ -172,7 +179,8 @@
     .nav-item{white-space:nowrap;padding:8px 12px;flex:0 0 auto}
     .nav-item.active::before{display:none}
     .nav-spacer,.nav-foot,aside>.nav-item{display:none}
-    .topbar{height:52px;padding:0 16px}
+    .topbar{height:auto;min-height:52px;padding:8px 16px;flex-wrap:wrap;gap:8px}
+    .site-switch button{padding:6px 10px;font-size:12.5px}
     .content{padding:18px 16px 48px}
     .page-head{flex-direction:column;align-items:flex-start;gap:12px}
     .card{padding:18px 16px}
@@ -202,28 +210,25 @@
 <div id="app" class="hidden">
   <aside>
     <div class="brand">
-      <div class="brand-mark">🏙️</div>
+      <div class="brand-mark" id="brand-mark">🏙️</div>
       <div>
-        <div class="brand-name">Find A Crib</div>
+        <div class="brand-name" id="brand-name">Find A Crib</div>
         <div class="brand-sub">Owner analytics</div>
       </div>
     </div>
-    <nav>
-      <button class="nav-item active" data-scroll="top"><span class="nav-ico">▦</span> Dashboard</button>
-      <button class="nav-item" data-scroll="sec-traffic"><span class="nav-ico">◔</span> Traffic</button>
-      <button class="nav-item" data-scroll="sec-ads"><span class="nav-ico">◉</span> Google Ads</button>
-      <a class="nav-item" href="/dashboard/users/"><span class="nav-ico">☺</span> Users</a>
-      <button class="nav-item" data-scroll="sec-funnel"><span class="nav-ico">⇅</span> Funnel</button>
-      <button class="nav-item" data-scroll="sec-revenue"><span class="nav-ico">$</span> Revenue model</button>
-    </nav>
+    <nav id="nav"></nav>
     <div class="nav-spacer"></div>
-    <a class="nav-item" href="https://findacrib.com" target="_blank"><span class="nav-ico">↗</span> View live site</a>
-    <div class="nav-foot">Since 24 June 2026</div>
+    <a class="nav-item" id="live-site" href="https://findacrib.com" target="_blank"><span class="nav-ico">↗</span> View live site</a>
+    <div class="nav-foot" id="nav-foot">Since 24 June 2026</div>
   </aside>
 
   <main>
     <div class="topbar">
       <div class="tb-left">
+        <div class="site-switch" id="site-switch">
+          <button data-site="fac" class="on">🏙️ Find A Crib</button>
+          <button data-site="nemo">🏠 NEMO Gutter</button>
+        </div>
         <span class="live-pill"><span class="live-dot"></span> Live data</span>
       </div>
       <div class="tb-right">
@@ -234,8 +239,8 @@
 
     <div class="content" id="top">
       <div class="page-head">
-        <h1>Find A Crib</h1>
-        <div class="sub">Traffic, funnel &amp; revenue — everything in one place.</div>
+        <h1 id="page-title">Find A Crib</h1>
+        <div class="sub" id="page-sub">Traffic, funnel &amp; revenue — everything in one place.</div>
         <div class="updated" id="updated">—</div>
       </div>
 
@@ -246,7 +251,7 @@
       <div class="grid cols-2 mb18" id="sec-traffic">
         <div class="card">
           <div class="card-head-row">
-            <div><h2>Where returning visitors come from</h2><div class="card-sub">Are you paying to bring people back?</div></div>
+            <div><h2 id="donut-title">Where returning visitors come from</h2><div class="card-sub" id="donut-sub">Are you paying to bring people back?</div></div>
           </div>
           <div class="donut-wrap">
             <div id="donut"></div>
@@ -257,11 +262,13 @@
 
         <div class="card">
           <h2>Today</h2>
-          <div class="card-sub">Fresh traffic, updated live</div>
+          <div class="card-sub" id="today-sub">Fresh traffic, updated live</div>
           <div id="today-list"></div>
         </div>
       </div>
 
+      <!-- ===== Find A Crib only ===== -->
+      <div id="fac-a">
       <!-- google ads -->
       <div class="card mb18" id="sec-ads">
         <div class="card-head-row">
@@ -278,15 +285,39 @@
         </div>
         <div class="ref-tiles" id="ref-tiles"></div>
       </div>
+      </div><!-- /fac-a -->
 
-      <!-- 14-day sparkline -->
+      <!-- ===== NEMO only ===== -->
+      <div id="nemo-a" class="hidden">
+        <!-- rank goal -->
+        <div class="card mb18" id="sec-rank">
+          <div class="card-head-row">
+            <div><h2>Search rankings — the goal</h2><div class="card-sub" id="rank-goal">—</div></div>
+          </div>
+          <div id="rank-meters"></div>
+          <div class="ads-tiles" id="gsc-tiles" style="margin-top:18px"></div>
+          <div class="callout" id="rank-callout" style="margin-top:16px"></div>
+        </div>
+
+        <!-- leads -->
+        <div class="card mb18" id="sec-leads">
+          <div class="card-head-row">
+            <div><h2>Leads &amp; bookings — the money signal</h2><div class="card-sub">Traffic that never becomes a call hasn’t worked. Counts only — no customer details reach this page.</div></div>
+          </div>
+          <div class="ads-tiles" id="lead-tiles"></div>
+        </div>
+      </div>
+
+      <!-- 14-day sparkline (both sites) -->
       <div class="card mb18">
         <div class="card-head-row">
-          <div><h2>Last 14 days</h2><div class="card-sub">Daily page views &amp; unique visitors</div></div>
+          <div><h2>Last 14 days</h2><div class="card-sub" id="spark-sub">Daily page views &amp; unique visitors</div></div>
         </div>
         <div id="spark" style="position:relative"></div>
       </div>
 
+      <!-- ===== Find A Crib only ===== -->
+      <div id="fac-b">
       <!-- funnel -->
       <div class="grid cols-2 mb18" id="sec-funnel">
         <div class="card">
@@ -348,6 +379,18 @@
         </div>
         <div class="disclaim">Steady-state subscribers = new subs ÷ churn — high churn caps recurring revenue no matter the traffic. AdSense assumes ~2.5 views/visit at a $10 RPM. Your sign-up rate is your real number from the funnel above; everything else is an assumption you can slide.</div>
       </div>
+      </div><!-- /fac-b -->
+
+      <!-- ===== NEMO only ===== -->
+      <div id="nemo-b" class="hidden">
+        <div class="card" id="sec-build">
+          <div class="card-head-row">
+            <div><h2>What the growth engine shipped</h2><div class="card-sub" id="build-sub">The 6am loop measures yesterday, judges what’s running, and builds.</div></div>
+          </div>
+          <div id="build-list"></div>
+          <div class="disclaim" id="nemo-disclaim">Visitors are counted from the site’s own nginx log — bots and Eric’s own IPs removed — not from a JavaScript tag, so ad-blockers can’t hide them. There is no visitor cookie on this site, so a “visitor” is one IP + browser per day: switching from wifi to cell counts twice, and a whole office behind one router counts once.</div>
+        </div>
+      </div>
 
       <div class="foot">🔒 Private — only you can see this. Data refreshes on every load.</div>
     </div>
@@ -386,19 +429,137 @@
       t.textContent='Private dashboard'; m.textContent='This is the Find A Crib owner dashboard. Sign in to continue.';
     }
   }
-  async function route(session){
-    if(!session){ showGate('signin'); return; }
+  // ---------- the two sites ----------
+  // Same shell, same tiles/donut/today/sparkline components; each site brings
+  // its own payload and its own extra sections. Adding a third site means
+  // adding an entry here and a render function — not another dashboard.
+  var SITES = {
+    fac:{
+      mark:'🏙️', name:'Find A Crib', endpoint:'/api/dashboard-metrics',
+      title:'Find A Crib', sub:'Traffic, funnel &amp; revenue — everything in one place.',
+      live:'https://findacrib.com', foot:'Since 24 June 2026',
+      blocks:['fac-a','fac-b'],
+      nav:[['top','▦','Dashboard'],['sec-traffic','◔','Traffic'],['sec-ads','◉','Google Ads'],
+           ['link:/dashboard/users/','☺','Users'],['sec-funnel','⇅','Funnel'],['sec-revenue','$','Revenue model']]
+    },
+    nemo:{
+      mark:'🏠', name:'NEMO Gutter', endpoint:'/api/dashboard-nemo',
+      title:'NEMO Seamless Gutter', sub:'Web traffic, search rankings &amp; leads — Eric’s site, same template.',
+      live:'https://nemoseamlessgutter.com', foot:'—',
+      blocks:['nemo-a','nemo-b'],
+      nav:[['top','▦','Dashboard'],['sec-traffic','◔','Traffic'],['sec-rank','◉','Rankings'],
+           ['sec-leads','☎','Leads'],['sec-build','⚙','Growth engine']]
+    }
+  };
+  var siteKey = (function(){
+    var q=new URLSearchParams(location.search).get('site');
+    if(SITES[q]) return q;
+    try{ var s=localStorage.getItem('dash.site'); if(SITES[s]) return s; }catch(e){}
+    return 'fac';
+  })();
+  var session = null, cache = {};
+
+  function applyShell(){
+    var S=SITES[siteKey];
+    el('brand-mark').textContent=S.mark;
+    el('brand-name').textContent=S.name;
+    el('page-title').textContent=S.title;
+    el('page-sub').innerHTML=S.sub;
+    el('nav-foot').textContent=S.foot;
+    var ls=el('live-site'); ls.href=S.live;
+    // nav
+    el('nav').innerHTML=S.nav.map(function(item,i){
+      var target=item[0], ico=item[1], label=item[2];
+      if(target.indexOf('link:')===0)
+        return '<a class="nav-item" href="'+target.slice(5)+'"><span class="nav-ico">'+ico+'</span> '+label+'</a>';
+      return '<button class="nav-item'+(i===0?' active':'')+'" data-scroll="'+target+'"><span class="nav-ico">'+ico+'</span> '+label+'</button>';
+    }).join('');
+    bindNav();
+    // which extra sections exist for this site
+    Object.keys(SITES).forEach(function(k){
+      SITES[k].blocks.forEach(function(id){
+        var b=el(id); if(b) b.classList.toggle('hidden', k!==siteKey);
+      });
+    });
+    // switcher state
+    document.querySelectorAll('#site-switch button').forEach(function(b){
+      b.classList.toggle('on', b.getAttribute('data-site')===siteKey);
+    });
+  }
+
+  function bindNav(){
+    document.querySelectorAll('.nav-item[data-scroll]').forEach(function(b){
+      b.onclick=function(){
+        document.querySelectorAll('.nav-item').forEach(function(x){x.classList.remove('active');});
+        b.classList.add('active');
+        var t=el(b.getAttribute('data-scroll')); if(t) t.scrollIntoView({behavior:'smooth',block:'start'});
+      };
+    });
+  }
+
+  function switchBusy(on){
+    document.querySelectorAll('#site-switch button').forEach(function(b){ b.disabled=on; });
+  }
+
+  async function load(force){
+    if(!session) return 'signin';
+    if(!force && cache[siteKey]){ paint(cache[siteKey]); return 'ok'; }
     var res;
     try{
-      res = await fetch('/api/dashboard-metrics', { headers:{ Authorization:'Bearer '+session.access_token } });
-    }catch(e){ showGate('error'); return; }
-    if(res.status===403){ showGate('forbidden', session.user && session.user.email); return; }
-    if(res.status===401){ showGate('signin'); return; }
-    if(!res.ok){ showGate('error'); return; }
+      res = await fetch(SITES[siteKey].endpoint,
+                        { headers:{ Authorization:'Bearer '+session.access_token } });
+    }catch(e){ return 'error'; }
+    if(res.status===403) return 'forbidden';
+    if(res.status===401) return 'signin';
+    if(!res.ok) return 'error';
     var data = await res.json();
-    render(session.user, data);
+    cache[siteKey]=data;
+    paint(data);
+    return 'ok';
+  }
+
+  function paint(data){
+    applyShell();
+    if(siteKey==='nemo') renderNemo(session.user, data);
+    else render(session.user, data);
+  }
+
+  async function route(s){
+    session = s;
+    if(!s){ showGate('signin'); return; }
+    applyShell();
+    var r = await load(false);
+    if(r==='error' && siteKey!=='fac'){
+      // A remembered site whose feed is down must not gate the whole dashboard.
+      siteKey='fac'; applyShell(); r = await load(false);
+    }
+    if(r==='forbidden'){ showGate('forbidden', s.user && s.user.email); return; }
+    if(r==='signin'){ showGate('signin'); return; }
+    if(r==='error'){ showGate('error'); return; }
     gate.classList.add('hidden'); app.classList.remove('hidden');
   }
+
+  document.querySelectorAll('#site-switch button').forEach(function(b){
+    b.onclick=async function(){
+      var next=b.getAttribute('data-site');
+      if(next===siteKey || !SITES[next]) return;
+      siteKey=next;
+      try{ localStorage.setItem('dash.site', siteKey); }catch(e){}
+      history.replaceState(null,'', location.pathname+(siteKey==='fac'?'':'?site='+siteKey));
+      applyShell();
+      switchBusy(true);
+      var r = await load(false);
+      switchBusy(false);
+      if(r!=='ok'){
+        // Don't throw the owner back to the sign-in card over one bad fetch —
+        // the other site's data is still on screen and still true.
+        el('updated').textContent = r==='error'
+          ? 'Couldn’t load '+SITES[siteKey].name+' just now — try again in a moment.'
+          : 'Session expired — reload to sign in again.';
+      }
+      window.scrollTo({top:0,behavior:'smooth'});
+    };
+  });
 
   el('google-btn').onclick = function(){
     sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: location.origin + '/dashboard/' } });
@@ -407,17 +568,12 @@
   sb.auth.onAuthStateChange(function(_e, session){ route(session); });
   sb.auth.getSession().then(function(r){ route(r.data.session); });
 
-  // sidebar scroll
-  document.querySelectorAll('.nav-item[data-scroll]').forEach(function(b){
-    b.onclick=function(){
-      document.querySelectorAll('.nav-item').forEach(function(x){x.classList.remove('active');});
-      b.classList.add('active');
-      var t=el(b.getAttribute('data-scroll')); if(t) t.scrollIntoView({behavior:'smooth',block:'start'});
-    };
-  });
-
-  // ---------- render ----------
+  // ---------- render: Find A Crib ----------
   function render(user, d){
+    el('donut-title').textContent='Where returning visitors come from';
+    el('donut-sub').textContent='Are you paying to bring people back?';
+    el('today-sub').textContent='Fresh traffic, updated live';
+    el('spark-sub').textContent='Daily page views & unique visitors';
     // avatar
     var email=(user&&user.email)||'';
     el('avatar').textContent=(email[0]||'D').toUpperCase();
@@ -460,27 +616,35 @@
     {k:'referral_other',     name:'Other referral', c:'var(--c5)', hex:'#e87ba4', paid:false},
     {k:'paid_google_ads',    name:'Paid Google Ads', c:'var(--c2)', hex:'#eb6834', paid:true}
   ];
-  function renderDonut(R){
-    var by=R.by_channel||{}, total=0;
-    CH_META.forEach(function(m){ m.val=n(by[m.k]); total+=m.val; });
+  // Shared by both sites: segments in, ring + legend out.
+  function drawDonut(items, centerLabel){
+    var total=0; items.forEach(function(m){ m.val=n(m.val); total+=m.val; });
     var cx=90,cy=90,r=68,sw=26, C=2*Math.PI*r, gap=total>1?0.012:0, off=-0.25*C;
     var segs='';
-    CH_META.forEach(function(m){
+    items.forEach(function(m){
       if(!m.val) return;
       var frac=m.val/total, len=Math.max(C*frac - C*gap,0.5);
       segs+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+m.hex+'" stroke-width="'+sw+'" '+
             'stroke-dasharray="'+len+' '+(C-len)+'" stroke-dashoffset="'+off+'" stroke-linecap="butt"></circle>';
       off -= C*frac;
     });
-    var paid=n(by.paid_google_ads), freePct=pct(total-paid,total);
-    el('donut').innerHTML='<svg width="180" height="180" viewBox="0 0 180 180" style="transform:rotate(0deg)">'+segs+
+    if(!total) segs='<circle cx="90" cy="90" r="68" fill="none" stroke="#ececf1" stroke-width="26"></circle>';
+    el('donut').innerHTML='<svg width="180" height="180" viewBox="0 0 180 180">'+segs+
       '<text x="90" y="86" text-anchor="middle" class="donut-center-big" style="font-size:26px;font-weight:700;fill:var(--ink)">'+comma(total)+'</text>'+
-      '<text x="90" y="104" text-anchor="middle" class="donut-center-lbl">return visits</text></svg>';
-    el('donut-legend').innerHTML=CH_META.slice().sort(function(a,b){return b.val-a.val;}).map(function(m){
+      '<text x="90" y="104" text-anchor="middle" class="donut-center-lbl">'+centerLabel+'</text></svg>';
+    el('donut-legend').innerHTML=items.slice().sort(function(a,b){return b.val-a.val;}).map(function(m){
       return '<div class="leg-row"><span class="leg-sw" style="background:'+m.hex+'"></span>'+
         '<span class="leg-name">'+m.name+'</span><span class="leg-val">'+comma(m.val)+'</span>'+
         '<span class="leg-pct">'+pctS(m.val,total)+'</span></div>';
     }).join('');
+    return total;
+  }
+
+  function renderDonut(R){
+    var by=R.by_channel||{};
+    var items=CH_META.map(function(m){ return {name:m.name, hex:m.hex, val:n(by[m.k])}; });
+    var total=drawDonut(items,'return visits');
+    var paid=n(by.paid_google_ads), freePct=pct(total-paid,total);
     el('returns-callout').innerHTML='<b>'+freePct.toFixed(0)+'% of your returns are free</b> — only '+
       pctS(paid,total)+' came back through a paid ad. Ads bring people in; they come back on their own.';
   }
@@ -632,6 +796,127 @@
     }
     ids.forEach(function(k){ el('s-'+k).oninput=fmt; });
     fmt();
+  }
+
+  // ---------- render: NEMO Seamless Gutter ----------
+  // Same components, different business: no accounts and no subscriptions here,
+  // so the funnel that matters ends at a phone call, not a sign-up.
+  var NEMO_CH=[
+    {k:'organic',  name:'Organic search',       hex:'#eda100'},
+    {k:'local',    name:'Local listings / maps', hex:'#1baf7a'},
+    {k:'ai',       name:'AI assistants',        hex:'#8a5cf0'},
+    {k:'direct',   name:'Direct / typed-in',    hex:'#2a78d6'},
+    {k:'referral', name:'Other referral',       hex:'#e87ba4'},
+    {k:'campaign', name:'Tagged campaign',      hex:'#eb6834'},
+    {k:'internal', name:'Internal / same-site', hex:'#9a99a5'}
+  ];
+
+  function renderNemo(user, d){
+    var email=(user&&user.email)||'';
+    el('avatar').textContent=(email[0]||'D').toUpperCase();
+    var ts=d.generated_at?new Date(d.generated_at):new Date();
+    var upd='Updated '+ts.toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+    if((d.warnings||[]).length) upd+=' · '+d.warnings.join(' ');
+    el('updated').textContent=upd;
+    el('nav-foot').textContent=d.since?('Since '+new Date(d.since+'T00:00').toLocaleDateString('en-US',{day:'numeric',month:'long',year:'numeric'})):'—';
+
+    el('donut-title').textContent='Where NEMO’s visitors come from';
+    el('donut-sub').textContent='Earned (search, maps, AI) vs. people who already knew the name';
+    el('today-sub').textContent='Straight from the server log, updated live';
+    el('spark-sub').textContent='Daily page views & visitors — history starts when per-site logging did';
+
+    var T=d.totals||{}, TD=d.today||{}, L=d.leads||{}, S=d.search||{}, ch=d.channels||{};
+    var earned=n(ch.organic)+n(ch.local)+n(ch.ai);
+    var chTotal=NEMO_CH.reduce(function(a,m){return a+n(ch[m.k]);},0);
+    var share=S.share_pct, target=n(S.target_pct)||50;
+
+    var tiles=[
+      {ic:'👣',v:comma(T.visitors),l:'Visitors'},
+      {ic:'📄',v:comma(T.views),l:'Page views'},
+      {ic:'🔎',v:comma(earned)+(chTotal?' · '+pctS(earned,chTotal):''),l:'Found you (search/maps/AI)'},
+      {ic:'📅',v:comma(L.bookings_all_time),l:'Bookings (all-time)'},
+      {ic:'☎️',v:comma(L.phone_leads_all_time),l:'Phone leads (all-time)'},
+      {ic:'🎯',v:(share==null?'—':share.toFixed(1)+'%'),
+       l:'Top-3 rank share · goal '+target+'%',accent:true}
+    ];
+    el('tiles').innerHTML=tiles.map(function(t){
+      return '<div class="tile'+(t.accent?' accent':'')+'"><div class="t-ico">'+t.ic+'</div><div class="t-val">'+t.v+'</div><div class="t-lbl">'+t.l+'</div></div>';
+    }).join('');
+
+    var items=NEMO_CH.map(function(m){ return {name:m.name,hex:m.hex,val:n(ch[m.k])}; });
+    drawDonut(items,'visitors');
+    el('returns-callout').innerHTML = chTotal
+      ? (earned
+          ? '<b>'+pctS(earned,chTotal)+' of visitors found you through search, maps or an AI assistant.</b> That share is what the growth engine is paid to move — direct traffic is people who already knew the name.'
+          : '<b>Every visitor so far arrived direct or by referral.</b> Nobody has landed from a search result yet, which is exactly the gap the rank work is closing.')
+      : 'No visitors recorded yet for this period.';
+
+    el('today-list').innerHTML=[
+      {ic:'🟢',name:'Visitors today',desc:'unique (IP + browser)',val:comma(TD.visitors)},
+      {ic:'📄',name:'Page views today',desc:'real pages, assets excluded',val:comma(TD.views)},
+      {ic:'🔎',name:'From search today',desc:'organic landings',val:comma(TD.organic)},
+      {ic:'📅',name:'Bookings today',desc:'booked on the site',val:comma(TD.bookings)},
+      {ic:'☎️',name:'Phone leads today',desc:'captured by the phone assistant',val:comma(TD.phone_leads)},
+      {ic:'🤖',name:'Bots filtered today',desc:'never counted as traffic',val:comma(TD.bots)}
+    ].map(function(r){
+      return '<div class="act-row"><div class="act-l"><div class="act-ico">'+r.ic+'</div>'+
+        '<div><div class="act-name">'+r.name+'</div><div class="act-desc">'+r.desc+'</div></div></div>'+
+        '<div class="act-val">'+r.val+'</div></div>';
+    }).join('');
+
+    renderSpark(d.sparkline||[]);
+
+    // --- rankings ---
+    el('rank-goal').textContent=S.statement||'—';
+    var tracked=n(S.tracked_queries), top3=n(S.top3), top10=n(S.top10), cov=S.coverage_pct;
+    el('rank-meters').innerHTML=
+      meter('Top-3 share of tracked queries', (share==null?'—':share.toFixed(1)+'%')+' of '+target+'% goal',
+            share==null?0:pct(share,target), share!=null&&share>=target?'good':'')+
+      meter('Queries in the top 3', comma(top3)+'/'+comma(tracked), pct(top3,tracked)*4, 'good')+
+      meter('Queries in the top 10', comma(top10)+'/'+comma(tracked), pct(top10,tracked)*4, '')+
+      meter('Queries with a page covering them', (cov==null?'—':cov.toFixed(1)+'%'), n(cov), '');
+    el('gsc-tiles').innerHTML=[
+      {val:comma(S.clicks),lbl:'Search clicks',sub:'Search Console, last 28 days'},
+      {val:comma(S.impressions),lbl:'Impressions',sub:'times a page was shown'},
+      {val:(S.avg_position==null?'—':Number(S.avg_position).toFixed(1)),lbl:'Average position',sub:'lower is better'},
+      {val:comma(tracked),lbl:'Tracked queries',sub:'the York County universe'}
+    ].map(function(t){
+      return '<div class="ads-tile"><div class="a-val">'+t.val+'</div><div class="a-lbl">'+t.lbl+'</div><div class="a-sub">'+t.sub+'</div></div>';
+    }).join('');
+    el('rank-callout').innerHTML = S.connected
+      ? '<b>'+comma(top3)+' of '+comma(tracked)+' tracked queries sit in the top 3.</b> Impressions without clicks mean Google is showing the site but further down than anyone scrolls — position, not visibility, is the bottleneck.'
+      : '<b>Search Console isn’t reporting.</b> Rank numbers below are the last ones measured.';
+
+    // --- leads ---
+    el('lead-tiles').innerHTML=[
+      {val:comma(L.bookings_all_time),lbl:'Bookings, all-time',sub:'booked through the site'},
+      {val:comma(L.phone_leads_all_time),lbl:'Phone leads, all-time',sub:'captured by the phone assistant'},
+      {val:comma(n(L.period_bookings)+n(L.period_phone)),lbl:'Leads in this period',sub:'since '+(d.since||'—')}
+    ].map(function(t){
+      return '<div class="ads-tile"><div class="a-val">'+t.val+'</div><div class="a-lbl">'+t.lbl+'</div><div class="a-sub">'+t.sub+'</div></div>';
+    }).join('');
+
+    // --- what the engine shipped ---
+    var B=d.build||{}, steps=B.steps||[];
+    el('build-sub').textContent=B.date
+      ? 'Last run '+new Date(B.date+'T00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})+' — the 6am loop measures yesterday, judges what’s running, and builds.'
+      : 'The 6am loop measures yesterday, judges what’s running, and builds.';
+    el('build-list').innerHTML = steps.length
+      ? steps.map(function(s){
+          return '<div class="act-row"><div class="act-l"><div class="act-ico">✅</div>'+
+            '<div><div class="act-name">'+esc(s)+'</div></div></div></div>';
+        }).join('')
+      : '<div style="color:var(--muted);font-size:13px">No build steps recorded for the last run.</div>';
+    var P=(d.pages||{});
+    if(P.total) el('build-list').innerHTML += '<div class="act-row"><div class="act-l"><div class="act-ico">📄</div>'+
+      '<div><div class="act-name">Pages published by the engine</div><div class="act-desc">area, guide and service pages</div></div></div>'+
+      '<div class="act-val">'+comma(P.total)+'</div></div>';
+  }
+
+  function esc(s){
+    return String(s).replace(/[&<>"]/g,function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
+    });
   }
 })();
 </script>

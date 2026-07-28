@@ -17,6 +17,8 @@ import datetime, hashlib, hmac, json, os, re, secrets, threading, time, urllib.r
 from collections import defaultdict, deque
 from flask import Flask, jsonify, request, g
 
+import nemo_metrics          # NEMO Seamless Gutter traffic, same droplet
+
 DATA_DIR = os.environ.get("DATA_DIR", ".")
 SUPABASE_URL = "https://dbaifotzwlxjvsxjohjt.supabase.co"
 SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
@@ -201,7 +203,8 @@ def gate():
        or request.path.startswith("/developers/") \
        or request.path.startswith("/reports/") \
        or request.path.startswith("/embed/") \
-       or request.path in ("/dashboard-metrics", "/dashboard-users"):   # own Supabase-token owner gate
+       or request.path in ("/dashboard-metrics", "/dashboard-users",
+                           "/dashboard-nemo"):   # own Supabase-token owner gate
         return
     # Header only — never accept the key in the query string, where it would be
     # captured in nginx access logs, browser history, and Referer headers.
@@ -834,6 +837,30 @@ def dashboard_metrics():
     except Exception:
         return jsonify(error="temporarily_unavailable"), 503
     return jsonify(data)
+
+
+@app.route("/dashboard-nemo")
+def dashboard_nemo():
+    """NEMO Seamless Gutter traffic — the dashboard's second site tab.
+
+    Same owner gate as the Find A Crib metrics: NEMO has no analytics database
+    and no dashboard of its own, and both sites sit on this droplet, so the
+    numbers are read from NEMO's growth ledger and nginx log here rather than
+    duplicating the whole dashboard app under the other domain.
+    """
+    if rate_limited("dashboard", 120, 3600):
+        return _too_many()
+    verdict = _dashboard_auth()
+    if verdict == "error":
+        return jsonify(error="temporarily_unavailable"), 503
+    if verdict == "unauth":
+        return jsonify(error="sign_in_required"), 401
+    if verdict == "forbidden":
+        return jsonify(error="forbidden", message="This dashboard is private."), 403
+    try:
+        return jsonify(nemo_metrics.build_cached())
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
 
 
 @app.route("/dashboard-users")

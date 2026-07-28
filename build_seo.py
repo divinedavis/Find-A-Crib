@@ -46,6 +46,22 @@ def breadcrumb(items):
                 {"@type": "ListItem", "position": i + 1, "name": name, "item": url}
                 for i, (name, url) in enumerate(items)]}
 
+
+def faq_jsonld(pairs):
+    return {"@context": "https://schema.org", "@type": "FAQPage",
+            "mainEntity": [{"@type": "Question", "name": q,
+                            "acceptedAnswer": {"@type": "Answer", "text": a}}
+                           for q, a in pairs]}
+
+
+def faq_html(pairs):
+    """Render FAQ pairs as visible HTML matching the FAQPage JSON-LD — structured
+    data with no visible counterpart describes content that isn't there, and AI
+    answer engines extract from rendered text, not hidden JSON-LD."""
+    items = "".join(f"<div class='faq-item'><h3>{esc(q)}</h3><p>{esc(a)}</p></div>"
+                     for q, a in pairs)
+    return f"<h2>Frequently asked questions</h2><div class='faq'>{items}</div>"
+
 BORO_NAME = {"M": "Manhattan", "Bk": "Brooklyn", "Q": "Queens",
              "Bx": "the Bronx", "SI": "Staten Island"}
 BORO_SLUG = {"M": "manhattan", "Bk": "brooklyn", "Q": "queens",
@@ -106,6 +122,9 @@ footer.site{border-top:1px solid var(--line);margin-top:40px;padding:22px 20px;c
 .guide-body ul{padding-left:20px}
 .disclaimer{font-size:13px;color:var(--ink2);background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:10px}
 .hook{background:#f0f5ff;border:1px solid #cfe0ff;border-radius:12px;padding:12px 14px;margin:12px 0;font-size:14px;line-height:1.5}
+.faq-item{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:10px 0}
+.faq-item h3{font-size:15px;margin:0 0 4px}
+.faq-item p{color:var(--ink2);font-size:14px;margin:0}
 """
 
 
@@ -396,6 +415,14 @@ def main():
                 + f". Tap any address to check its rent-stabilized status, owner, and HPD record.</p>"
                 f"<a class='cta' href='/'>Explore {esc(nb)} on the map →</a>"
                 f"<h2>All {n:,} buildings</h2><div class='cols'>{links}</div>")
+        nb_faq = [(f"How many rent-stabilized buildings are in {nb}, {boroname}?",
+                   f"There are {n:,} registered rent-stabilized buildings in {nb}, {boroname}, "
+                   f"according to NY State DHCR registration data.")]
+        if med:
+            nb_faq.append((f"What year were most rent-stabilized buildings in {nb} built?",
+                           f"Most rent-stabilized buildings in {nb}, {boroname} were built around {med}, "
+                           f"based on NYC PLUTO records for the {n:,} DHCR-registered buildings tracked here."))
+        body += faq_html(nb_faq)
         nb_crumb = breadcrumb([
             ("Home", SITE + "/"),
             (boroname, SITE + f"/borough/{BORO_SLUG.get(boro,'nyc')}/"),
@@ -404,7 +431,7 @@ def main():
         write(url.strip("/") + "/index.html",
               page(f"Rent-stabilized buildings in {nb}, {boroname} ({n}) | Find A Crib",
                    f"All {n} rent-stabilized buildings in {nb}, {boroname}. Check any address for status, owner, and violations.",
-                   canonical, body, nb_crumb))
+                   canonical, body, [nb_crumb, faq_jsonld(nb_faq)]))
         urls.append((canonical, "0.7", boro))
 
     # ---- borough hub pages ----
@@ -426,11 +453,15 @@ def main():
                 f"<p><a href='{boro_list_url(boro,'largest')}'>Largest buildings in {esc(boroname)}</a> "
                 f"&nbsp;·&nbsp; <a href='{boro_list_url(boro,'oldest')}'>Oldest buildings</a></p>"
                 f"<h2>Neighborhoods</h2><div class='cols'>{links}</div>")
+        boro_faq = [(f"How many rent-stabilized buildings are in {boroname}?",
+                     f"There are {total:,} registered rent-stabilized buildings across {len(nbs)} "
+                     f"neighborhoods in {boroname}, according to NY State DHCR registration data.")]
+        body += faq_html(boro_faq)
         boro_crumb = breadcrumb([("Home", SITE + "/"), (boroname, canonical)])
         write(url.strip("/") + "/index.html",
               page(f"Rent-stabilized buildings in {boroname} ({total}) | Find A Crib",
                    f"Browse {total} rent-stabilized buildings across {boroname} by neighborhood.",
-                   canonical, body, boro_crumb))
+                   canonical, body, [boro_crumb, faq_jsonld(boro_faq)]))
         urls.append((canonical, "0.8", boro))
 
     # ---- master hub /buildings/ ----
@@ -485,13 +516,17 @@ def main():
                 + (f"<h2>Neighborhoods in {esc(z)}</h2><div class='cols'>{nb_links}</div>" if nb_links else "")
                 + f"<a class='cta' href='/'>Explore ZIP {esc(z)} on the map →</a>"
                 f"<h2>All {n:,} buildings in {esc(z)}</h2><div class='cols'>{links}</div>")
+        zip_faq = [(f"How many rent-stabilized buildings are in ZIP code {z}?",
+                    f"There are {n:,} registered rent-stabilized buildings in ZIP code {z} "
+                    f"({boroname}), according to NY State DHCR registration data.")]
+        body += faq_html(zip_faq)
         crumb = breadcrumb([("Home", SITE + "/"),
                             (boroname, SITE + f"/borough/{BORO_SLUG.get(dom,'nyc')}/"),
                             (f"ZIP {z}", canonical)])
         write(url.strip("/") + "/index.html",
               page(f"Rent-stabilized buildings in ZIP {z}, {boroname} ({n}) | Find A Crib",
                    f"All {n} rent-stabilized buildings in ZIP code {z} ({boroname}). Check any address for status, owner, year built, and violations.",
-                   canonical, body, crumb))
+                   canonical, body, [crumb, faq_jsonld(zip_faq)]))
         urls.append((canonical, "0.7", dom))
 
     # ---- borough "largest" + "oldest" listicles ----

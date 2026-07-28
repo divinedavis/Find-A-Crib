@@ -130,7 +130,19 @@ def _today_live():
 
 
 def _all_time_leads():
-    """Bookings and phone leads ever taken. Counts only — no customer rows."""
+    """Bookings and phone leads ever taken. Counts only — no customer rows.
+
+    Delegates to NEMO's own lead_totals when it imports, so the dashboard and
+    the morning report apply the same owner/test-row exclusions. The direct
+    read below is the fallback and deliberately counts everything: better an
+    obviously-too-high number than a silently different one.
+    """
+    m = _nemo_growth_metrics()
+    if m is not None:
+        try:
+            return m.lead_totals()
+        except Exception:
+            pass
     out = {"bookings_all_time": 0, "phone_leads_all_time": 0}
     if not os.path.exists(BOOKINGS_DB):
         return out
@@ -234,6 +246,7 @@ def build(days=14):
             "period_phone": period_phone,
             "bookings_all_time": _n(all_time.get("bookings_all_time")),
             "phone_leads_all_time": _n(all_time.get("phone_leads_all_time")),
+            "own_rows_excluded": _n(all_time.get("own_rows_excluded")),
         },
         "search": {
             "share_pct": goal.get("share_pct"),

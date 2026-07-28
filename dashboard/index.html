@@ -891,7 +891,8 @@
     el('lead-tiles').innerHTML=[
       {val:comma(L.bookings_all_time),lbl:'Bookings, all-time',sub:'booked through the site'},
       {val:comma(L.phone_leads_all_time),lbl:'Phone leads, all-time',sub:'captured by the phone assistant'},
-      {val:comma(n(L.period_bookings)+n(L.period_phone)),lbl:'Leads in this period',sub:'since '+(d.since||'—')}
+      {val:comma(n(L.period_bookings)+n(L.period_phone)),lbl:'Leads in this period',sub:'since '+(d.since||'—')},
+      {val:comma(L.own_rows_excluded),lbl:'Own test rows excluded',sub:'your bookings & wiring tests'}
     ].map(function(t){
       return '<div class="ads-tile"><div class="a-val">'+t.val+'</div><div class="a-lbl">'+t.lbl+'</div><div class="a-sub">'+t.sub+'</div></div>';
     }).join('');

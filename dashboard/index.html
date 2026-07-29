@@ -5,6 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
 <title>Find A Crib — Owner Dashboard</title>
+<!-- Link preview. This URL gets texted, and with no og: tags iMessage renders
+     a bare grey rectangle showing only the domain, which reads like a broken
+     link. noindex above still applies: og: tags describe the card, they don't
+     invite crawlers, and the page's data stays behind the sign-in gate. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Find A Crib">
+<meta property="og:title" content="Owner Dashboard">
+<meta property="og:description" content="Web traffic, search rankings and leads — updated live, every day.">
+<meta property="og:url" content="https://findacrib.com/dashboard/">
+<meta property="og:image" content="https://findacrib.com/dashboard/og-dashboard.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Owner Dashboard — web traffic, search rankings and leads.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Owner Dashboard">
+<meta name="twitter:description" content="Web traffic, search rankings and leads — updated live, every day.">
+<meta name="twitter:image" content="https://findacrib.com/dashboard/og-dashboard.png">
+<link rel="apple-touch-icon" href="/dashboard/og-dashboard.png">
 <style>
   :root{
     --bg:#f5f6fb; --card:#ffffff; --border:#ececf1; --border2:#f0f0f4;
@@ -202,7 +220,7 @@
       Sign in with Google
     </button>
     <div class="g-err hidden" id="gate-err"></div>
-    <div class="g-note">Only <b>divinejdavis@gmail.com</b> can view this page.</div>
+    <div class="g-note">Private. Sign in with the Google account you were given access on — NEMO owners see the NEMO tab only.</div>
   </div>
 </div>
 
@@ -524,6 +542,16 @@
     else render(session.user, data);
   }
 
+  // Eric signs in to see NEMO and is refused Find A Crib's feed by the API.
+  // That 403 is his normal state, not an error, so it must not show him the
+  // "this dashboard is private" card — fall through to NEMO and, if that
+  // loads, drop the site switcher so the tab he can't open isn't on screen.
+  function nemoOnly(){
+    document.body.classList.add('nemo-only');
+    var b=document.querySelector('#site-switch button[data-site="fac"]');
+    if(b) b.classList.add('hidden');
+  }
+
   async function route(s){
     session = s;
     if(!s){ showGate('signin'); return; }
@@ -532,6 +560,15 @@
     if(r==='error' && siteKey!=='fac'){
       // A remembered site whose feed is down must not gate the whole dashboard.
       siteKey='fac'; applyShell(); r = await load(false);
+    }
+    if(r==='forbidden' && siteKey!=='nemo'){
+      siteKey='nemo'; applyShell();
+      if(await load(false)==='ok'){
+        nemoOnly();
+        gate.classList.add('hidden'); app.classList.remove('hidden');
+        return;
+      }
+      siteKey='fac'; applyShell(); r='forbidden';
     }
     if(r==='forbidden'){ showGate('forbidden', s.user && s.user.email); return; }
     if(r==='signin'){ showGate('signin'); return; }

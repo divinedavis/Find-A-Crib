@@ -31,6 +31,16 @@ PRICES = {"pro": os.environ.get("STRIPE_PRICE_PRO", ""),
 # Supabase Auth "who is this access token?" — the real gate is the email check.
 ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRiYWlmb3R6d2x4anZzeGpvaGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzI2MTQsImV4cCI6MjA5Njk0ODYxNH0.5hoLfoKkNnEnFuu7jsfCTq_rUQqn8gf32BEI9qiyCI4"
 OWNER_EMAIL = "divinejdavis@gmail.com"
+# Eric owns NEMO Seamless Gutter and gets the NEMO tab of this dashboard, but
+# not Find A Crib's traffic, subscriptions or MRR — that is a different
+# business. `_dashboard_auth()` returns a scope, and only the full owner scope
+# reaches /dashboard-metrics and /dashboard-users.
+#
+# Both addresses are listed on purpose. `eric@` is only a Workspace ALIAS and
+# cannot authenticate; his actual Google identity is `enemo@`, which is the
+# email Google returns to Supabase on sign-in. Allowlisting `eric@` alone would
+# reject the only account he can log in with.
+NEMO_EMAILS = {"enemo@nemoseamlessgutter.com", "eric@nemoseamlessgutter.com"}
 BORO = {"M": "manhattan", "Bk": "brooklyn", "Q": "queens", "Bx": "bronx", "SI": "staten_island"}
 BORO_REV = {v: k for k, v in BORO.items()}
 MAX_LIMIT = 100
@@ -816,22 +826,39 @@ def _dashboard_auth():
     email = (u.get("email") or "").strip().lower()
     verified = bool(u.get("email_confirmed_at")
                     or (u.get("user_metadata") or {}).get("email_verified"))
-    if email == OWNER_EMAIL and verified:
+    if not verified:
+        return "forbidden"
+    if email == OWNER_EMAIL:
         return "ok"
+    if email in NEMO_EMAILS:
+        return "nemo"      # NEMO tab only — see NEMO_EMAILS
     return "forbidden"
+
+
+def _dashboard_denial(verdict, allowed):
+    """Response to send when `verdict` is not in `allowed`, else None.
+
+    Every dashboard route funnels through this so adding a scope can never
+    silently widen one of them: a route lists the scopes it accepts, and
+    anything else is a 403 whether it is an unknown caller or a signed-in
+    user whose scope simply does not cover this feed.
+    """
+    if verdict == "error":
+        return jsonify(error="temporarily_unavailable"), 503
+    if verdict == "unauth":
+        return jsonify(error="sign_in_required"), 401
+    if verdict not in allowed:
+        return jsonify(error="forbidden", message="This dashboard is private."), 403
+    return None
 
 
 @app.route("/dashboard-metrics")
 def dashboard_metrics():
     if rate_limited("dashboard", 120, 3600):
         return _too_many()
-    verdict = _dashboard_auth()
-    if verdict == "error":
-        return jsonify(error="temporarily_unavailable"), 503
-    if verdict == "unauth":
-        return jsonify(error="sign_in_required"), 401
-    if verdict == "forbidden":
-        return jsonify(error="forbidden", message="This dashboard is private."), 403
+    denied = _dashboard_denial(_dashboard_auth(), ("ok",))
+    if denied:
+        return denied
     try:
         data = rpc("dashboard_metrics", {})
     except Exception:
@@ -850,13 +877,10 @@ def dashboard_nemo():
     """
     if rate_limited("dashboard", 120, 3600):
         return _too_many()
-    verdict = _dashboard_auth()
-    if verdict == "error":
-        return jsonify(error="temporarily_unavailable"), 503
-    if verdict == "unauth":
-        return jsonify(error="sign_in_required"), 401
-    if verdict == "forbidden":
-        return jsonify(error="forbidden", message="This dashboard is private."), 403
+    # Eric's NEMO scope reaches this feed and nothing else.
+    denied = _dashboard_denial(_dashboard_auth(), ("ok", "nemo"))
+    if denied:
+        return denied
     try:
         return jsonify(nemo_metrics.build_cached())
     except Exception:
@@ -867,13 +891,9 @@ def dashboard_nemo():
 def dashboard_users():
     if rate_limited("dashboard", 120, 3600):
         return _too_many()
-    verdict = _dashboard_auth()
-    if verdict == "error":
-        return jsonify(error="temporarily_unavailable"), 503
-    if verdict == "unauth":
-        return jsonify(error="sign_in_required"), 401
-    if verdict == "forbidden":
-        return jsonify(error="forbidden", message="This dashboard is private."), 403
+    denied = _dashboard_denial(_dashboard_auth(), ("ok",))
+    if denied:
+        return denied
     try:
         data = rpc("dashboard_users", {})
     except Exception:

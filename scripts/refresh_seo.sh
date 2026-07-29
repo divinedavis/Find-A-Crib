@@ -8,6 +8,18 @@ BUILD=/root/dhcr-build
 DOC=/var/www/rent-map
 cd "$BUILD"
 
+# Take whatever the daily review agent pushed. It runs in Anthropic's cloud with
+# only a git checkout, so git is the only way its content changes (seo_guides.py,
+# build_seo.py) reach this build. Guarded and non-fatal: if $BUILD is not a git
+# worktree, or the pull fails, build from whatever is on disk rather than
+# skipping the night's rebuild entirely.
+if git -C "$BUILD" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  git -C "$BUILD" pull --rebase --autostash -q origin main \
+    || echo "refresh_seo: git pull failed, building from the local copy"
+else
+  echo "refresh_seo: $BUILD is not a git worktree, building from the local copy"
+fi
+
 python3 build_seo.py
 
 # deploy: copy changed/new pages into the docroot. NO --delete — the docroot

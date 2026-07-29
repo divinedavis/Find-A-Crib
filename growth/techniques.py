@@ -835,7 +835,56 @@ def t_hub_direct_answers(ctx):
     return {"ok": True, "detail": detail, "pages": have}
 
 
+CITY_GUIDES = {
+    "sf": "guide/is-my-apartment-rent-controlled-san-francisco/index.html",
+    "la": "guide/is-my-apartment-rent-controlled-los-angeles/index.html",
+    "dc": "guide/is-my-apartment-rent-controlled-washington-dc/index.html",
+}
+
+# The coverage caveat each city guide is required to carry. These are not
+# decoration: the LA layer is derived from assessor criteria and the SF layer is
+# block-anonymized, and a guide that quietly loses its caveat while keeping its
+# confident headline is worse than no guide. Checked against the built page every
+# run, so an editorial change that drops one fails loudly instead of shipping.
+GUIDE_CAVEATS = {
+    "sf": "anonymized to the block",
+    "la": "likely rso",
+    "dc": "registration records",
+}
+
+
+def t_city_guides(ctx):
+    """Verify the SF / LA / DC guide pages exist and still carry their caveats.
+
+    Written by seo_guides.py via build_seo.py, like the hub answer blocks — this
+    technique holds the hypothesis in the ledger and checks the live docroot,
+    rather than trusting that a generator change stuck.
+    """
+    missing, uncaveated, ok = [], [], 0
+    for city, rel in CITY_GUIDES.items():
+        path = os.path.join(ctx.docroot, rel)
+        try:
+            with open(path, encoding="utf-8", errors="replace") as f:
+                html = f.read().lower()
+        except OSError:
+            missing.append(city)
+            continue
+        if GUIDE_CAVEATS[city] not in html:
+            uncaveated.append(city)
+            continue
+        ok += 1
+
+    detail = f"{ok} of {len(CITY_GUIDES)} city guides live with their data caveat"
+    if missing:
+        return {"ok": False, "detail": detail + f" — missing: {', '.join(sorted(missing))}"}
+    if uncaveated:
+        return {"ok": False,
+                "detail": detail + f" — caveat text gone from: {', '.join(sorted(uncaveated))}"}
+    return {"ok": True, "detail": detail, "pages": ok}
+
+
 REGISTRY = {
+    "city_guides": t_city_guides,
     "hub_direct_answers": t_hub_direct_answers,
     "fresh_section8": t_fresh_section8,
     "daily_brief": t_daily_brief,
@@ -846,5 +895,5 @@ REGISTRY = {
 
 # Order matters: content first, then the sitemap that lists it, then the ping
 # that announces it.
-ORDER = ["fresh_section8", "daily_brief", "hub_direct_answers", "llms_txt",
-         "sitemap_daily", "indexnow"]
+ORDER = ["fresh_section8", "daily_brief", "hub_direct_answers", "city_guides",
+         "llms_txt", "sitemap_daily", "indexnow"]

@@ -64,3 +64,7 @@ hpd_contacts.json
 
 # Search Console service-account key (droplet copy)
 growth/.gsc_key.json
+
+# Python bytecode
+__pycache__/
+*.pyc

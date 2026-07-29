@@ -1,21 +1,40 @@
 """
 Cornerstone SEO guide content for Find A Crib.
 
-Editorial pages that target the high-intent informational queries around NYC
-rent stabilization ("is my apartment rent stabilized", "how to find a rent
-stabilized apartment", "rent stabilized vs rent controlled", tenant rights,
-lease renewal). These build topical authority and internally link to the ~47k
-data pages. build_seo.py renders each into /guide/<slug>/ plus a /guide/ hub.
+Editorial pages that target the high-intent informational queries around rent
+regulation ("is my apartment rent stabilized", "how to find a rent stabilized
+apartment", "rent stabilized vs rent controlled", tenant rights, lease renewal).
+These build topical authority and internally link to the ~47k data pages.
+build_seo.py renders each into /guide/<slug>/ plus a /guide/ hub.
+
+Each guide declares a `city`. Until 2026-07-29 every guide was NYC, which left
+San Francisco, Los Angeles and Washington DC — three of the four cities in the
+dataset, and 42 of the 97 tracked queries — with no explanatory page at all;
+their "explain" and "check" queries pointed at the city map, which is a listings
+UI and cannot answer them. The city field also drives internal linking: related
+links stay inside a city rather than sending an SF reader to six NYC pages.
 
 Accuracy: content sticks to well-established, durable facts and links out to the
-authoritative sources (DHCR/HCR, the Rent Guidelines Board, HPD, tenant
-resources) for anything that changes year to year (e.g. the annual RGB
-increase). Guides are informational, not legal advice.
+authoritative sources (DHCR/HCR, the Rent Guidelines Board, HPD, the SF Rent
+Board, LAHD, DC's Rental Accommodations Division, tenant resources) for anything
+that changes year to year (e.g. the annual RGB order, the AB 1482 CPI figure).
+Guides never overstate what this site's own data proves — the SF layer is
+anonymized to the block and the LA layer is derived from assessor criteria, and
+both guides say so. Guides are informational, not legal advice.
 """
 
 # Reusable snippets ----------------------------------------------------------
 TOOL_CTA = (
     "<a class='cta' href='/'>🔎 Check any building on the Find A Crib map →</a>"
+)
+TOOL_CTA_SF = (
+    "<a class='cta' href='/sf/'>🔎 Open the San Francisco rent-control map →</a>"
+)
+TOOL_CTA_LA = (
+    "<a class='cta' href='/la/'>🔎 Open the Los Angeles RSO map →</a>"
+)
+TOOL_CTA_DC = (
+    "<a class='cta' href='/dc/'>🔎 Open the Washington DC rent-control map →</a>"
 )
 
 SOURCES = (
@@ -35,18 +54,96 @@ SOURCES = (
     "For your specific situation, contact DHCR or a tenant attorney/legal-aid group.</p>"
 )
 
+SOURCES_SF = (
+    "<h2>Official sources</h2>"
+    "<ul>"
+    "<li><a href='https://www.sf.gov/departments--rent-board' rel='nofollow noopener' target='_blank'>"
+    "San Francisco Rent Board</a> — counselling, petitions, and the current annual allowable increase</li>"
+    "<li><a href='https://www.sfrb.org/' rel='nofollow noopener' target='_blank'>"
+    "sfrb.org — Rent Board fact sheets and forms</a></li>"
+    "<li><a href='https://sfplanninggis.org/pim/' rel='nofollow noopener' target='_blank'>"
+    "SF Property Information Map</a> — building records by address</li>"
+    "<li><a href='https://sftu.org/' rel='nofollow noopener' target='_blank'>"
+    "San Francisco Tenants Union</a> — tenant counselling</li>"
+    "</ul>"
+    "<p class='disclaimer'>Find A Crib is an informational tool, not a law firm. "
+    "This guide is general information about the San Francisco Rent Ordinance and California state law, "
+    "not legal advice. For your specific situation, contact the Rent Board or a tenant attorney/legal-aid group.</p>"
+)
+
+SOURCES_LA = (
+    "<h2>Official sources</h2>"
+    "<ul>"
+    "<li><a href='https://housing.lacity.gov/residents/rso-overview' rel='nofollow noopener' target='_blank'>"
+    "LAHD — Rent Stabilization Ordinance overview</a></li>"
+    "<li><a href='https://housing.lacity.gov/residents/is-my-rental-unit-subject-to-the-rent-stabilization-ordinance' "
+    "rel='nofollow noopener' target='_blank'>LAHD — Is my rental unit subject to the RSO?</a></li>"
+    "<li><a href='https://housing.lacity.gov/residents/ab-1482' rel='nofollow noopener' target='_blank'>"
+    "LAHD — AB 1482 (California statewide rent cap)</a></li>"
+    "<li><a href='https://www.ladbs.org/' rel='nofollow noopener' target='_blank'>"
+    "LA Department of Building and Safety</a> — certificate of occupancy records</li>"
+    "</ul>"
+    "<p class='disclaimer'>Find A Crib is an informational tool, not a law firm. "
+    "This guide is general information about the Los Angeles RSO and California state law, not legal advice. "
+    "For your specific situation, contact LAHD or a tenant attorney/legal-aid group.</p>"
+)
+
+SOURCES_DC = (
+    "<h2>Official sources</h2>"
+    "<ul>"
+    "<li><a href='https://dhcd.dc.gov/rentcontrol' rel='nofollow noopener' target='_blank'>"
+    "DC DHCD — Rent control (rent stabilization)</a></li>"
+    "<li><a href='https://rentregistry.dc.gov/' rel='nofollow noopener' target='_blank'>"
+    "DC Rent Registry</a></li>"
+    "<li><a href='https://code.dccouncil.gov/us/dc/council/code/sections/42-3502.05' "
+    "rel='nofollow noopener' target='_blank'>D.C. Code § 42-3502.05 — registration and coverage</a></li>"
+    "<li><a href='https://ota.dc.gov/' rel='nofollow noopener' target='_blank'>"
+    "DC Office of the Tenant Advocate</a> — free tenant advice</li>"
+    "</ul>"
+    "<p class='disclaimer'>Find A Crib is an informational tool, not a law firm. "
+    "This guide is general information about the DC Rental Housing Act, not legal advice. "
+    "For your specific situation, contact the Rental Accommodations Division, the Office of the Tenant Advocate, "
+    "or a tenant attorney/legal-aid group.</p>"
+)
+
 
 def _related(current, guides):
-    links = "".join(
-        f"<a href='/guide/{g['slug']}/'>{g['h1']}</a>"
-        for g in guides if g["slug"] != current
-    )
-    return f"<h2>Related guides</h2><div class='cols'>{links}</div>"
+    """Related links, city-first.
+
+    A San Francisco reader is not served by six New York links, and sending
+    every guide's link equity to every other guide flattens the topical signal
+    the city clusters are there to create. So: every other guide in the same
+    city, then one entry point per other city.
+    """
+    here = next((g for g in guides if g["slug"] == current), None)
+    city = (here or {}).get("city", "nyc")
+
+    same = [g for g in guides if g.get("city", "nyc") == city and g["slug"] != current]
+    other, seen = [], {city}
+    for g in guides:
+        c = g.get("city", "nyc")
+        if c not in seen:
+            seen.add(c)
+            other.append(g)
+
+    def _links(items):
+        return "".join(f"<a href='/guide/{g['slug']}/'>{g['h1']}</a>" for g in items)
+
+    html = ""
+    if same:
+        html += f"<h2>Related guides</h2><div class='cols'>{_links(same)}</div>"
+    if other:
+        # A city with only one guide gets no empty "Related guides" box — the
+        # other-city links are the related guides in that case.
+        heading = "Other cities" if same else "Guides for other cities"
+        html += f"<h2>{heading}</h2><div class='cols'>{_links(other)}</div>"
+    return html
 
 
 # The guides (order = hub display order) -------------------------------------
 GUIDES = [
     {
+        "city": "nyc",
         "slug": "is-my-apartment-rent-stabilized",
         "title": "Is My Apartment Rent Stabilized? How to Check (NYC)",
         "desc": "Four free ways to find out if your NYC apartment is rent stabilized — "
@@ -99,6 +196,7 @@ GUIDES = [
         ),
     },
     {
+        "city": "nyc",
         "slug": "what-is-rent-stabilization",
         "title": "What Is Rent Stabilization in NYC? A Plain-English Guide",
         "desc": "Rent stabilization limits how much your rent can rise and gives you the right to renew your lease. "
@@ -153,6 +251,7 @@ GUIDES = [
         ),
     },
     {
+        "city": "nyc",
         "slug": "rent-stabilized-vs-rent-controlled",
         "title": "Rent Stabilized vs. Rent Controlled: What's the Difference?",
         "desc": "Rent control and rent stabilization are not the same thing. Learn how they differ in NYC, "
@@ -198,6 +297,7 @@ GUIDES = [
         ),
     },
     {
+        "city": "nyc",
         "slug": "how-to-find-a-rent-stabilized-apartment",
         "title": "How to Find a Rent-Stabilized Apartment in NYC",
         "desc": "A practical guide to finding rent-stabilized apartments in New York City: where to look, "
@@ -245,6 +345,7 @@ GUIDES = [
         ),
     },
     {
+        "city": "nyc",
         "slug": "rent-stabilized-tenant-rights",
         "title": "Rent-Stabilized Tenant Rights in NYC",
         "desc": "If you live in a rent-stabilized apartment you have strong rights: lease renewal, capped increases, "
@@ -289,6 +390,7 @@ GUIDES = [
         ),
     },
     {
+        "city": "nyc",
         "slug": "rent-stabilized-lease-renewal-and-rent-increases",
         "title": "Rent-Stabilized Lease Renewals & Rent Increases (NYC)",
         "desc": "How rent-stabilized lease renewals work in NYC: the 1-year vs 2-year choice, how the Rent Guidelines "
@@ -331,6 +433,188 @@ GUIDES = [
             "<a href='/guide/what-is-rent-stabilization/'>what rent stabilization is</a> for the bigger picture, or "
             "<a href='/guide/rent-stabilized-tenant-rights/'>your full tenant rights</a>.</p>"
             + TOOL_CTA + SOURCES
+        ),
+    },
+
+    # ---- San Francisco ------------------------------------------------------
+    {
+        "city": "sf",
+        "slug": "is-my-apartment-rent-controlled-san-francisco",
+        "title": "Is My Apartment Rent Controlled in San Francisco? How to Check",
+        "desc": "How to tell whether your San Francisco apartment is rent controlled: the June 13, 1979 "
+                "certificate-of-occupancy rule, the Costa-Hawkins exemptions, just-cause eviction protection, "
+                "and where to confirm it.",
+        "h1": "Is my apartment rent controlled in San Francisco?",
+        "body": (
+            "<p class='lead'>San Francisco has two separate protections that people both call \"rent control\", and you "
+            "can have one without the other. <strong>Price control</strong> — the cap on how much your rent can go up "
+            "each year — generally applies to buildings of two or more units whose first certificate of occupancy was "
+            "issued on or before <strong>June 13, 1979</strong>. <strong>Just-cause eviction protection</strong> under "
+            "the same Rent Ordinance reaches much further. Here is how to work out which applies to you.</p>"
+
+            "<h2>1. Find the building's certificate of occupancy date</h2>"
+            "<p>San Francisco rent control is tied to when the <em>building</em> was first approved for occupancy, not "
+            "to when you moved in or what your lease says. If the first certificate of occupancy was issued on or "
+            "before June 13, 1979 and the building has two or more units, it is the standard case for coverage. You can "
+            "look up building records by address on the "
+            "<a href='https://sfplanninggis.org/pim/' rel='nofollow noopener' target='_blank'>SF Property Information "
+            "Map</a>.</p>"
+
+            "<h2>2. Check whether state law carves your unit out</h2>"
+            "<p>California's <strong>Costa-Hawkins Rental Housing Act</strong>, in effect since January 1, 1996, removes "
+            "some units from local price control even in old buildings:</p>"
+            "<ul>"
+            "<li><strong>Single-family homes and condominiums</strong> that can be sold separately from any other "
+            "dwelling unit are generally exempt from the local rent cap.</li>"
+            "<li>Units first certificated <strong>after</strong> the local cutoff date are exempt from the cap.</li>"
+            "<li>It also allows <strong>vacancy decontrol</strong>: when a tenant moves out voluntarily, the owner may "
+            "reset the rent to market for the next tenant. The annual cap then applies again to that new tenancy — so a "
+            "high starting rent does not mean the unit is uncontrolled.</li>"
+            "</ul>"
+
+            "<h2>3. Even outside the rent cap, you probably still have just cause</h2>"
+            "<p>The Rent Ordinance's <strong>just-cause eviction</strong> rules cover far more tenancies in San Francisco "
+            "than the price cap does. A landlord generally needs one of the specific reasons listed in the ordinance to "
+            "end a tenancy. Being outside price control is not the same as being outside the ordinance, and this is the "
+            "single most common misunderstanding tenants arrive with.</p>"
+
+            "<h2>4. Ask the Rent Board</h2>"
+            "<p>The <a href='https://www.sf.gov/departments--rent-board' rel='nofollow noopener' target='_blank'>San "
+            "Francisco Rent Board</a> counsels tenants by phone and in person, publishes the current annual allowable "
+            "increase, and is where petitions are filed — including petitions over an increase you believe exceeds the "
+            "limit. That is the authoritative answer for your address; this page is the orientation.</p>"
+
+            "<h2>5. Look up the block on the map</h2>"
+            "<p>Find A Crib maps San Francisco from official SF Rent Board owner reports. One caveat matters and we will "
+            "not soften it: <strong>the San Francisco data is anonymized to the block, not the individual address.</strong> "
+            "It shows you where rent-controlled units are reported across the city and what owners reported about them — "
+            "it cannot tell you the status of your specific unit. Use it to orient yourself, then confirm with the "
+            "certificate of occupancy date and the Rent Board.</p>"
+            + TOOL_CTA_SF +
+
+            "<h2>What if the rent cap doesn't cover me?</h2>"
+            "<p>California's statewide law <strong>AB 1482</strong> caps annual increases for many units that local "
+            "ordinances do not reach. The cap is tied to regional CPI and changes every year, so check the current figure "
+            "with the Rent Board or the state rather than relying on a number you read somewhere — including here.</p>"
+            + SOURCES_SF
+        ),
+    },
+
+    # ---- Los Angeles --------------------------------------------------------
+    {
+        "city": "la",
+        "slug": "is-my-apartment-rent-controlled-los-angeles",
+        "title": "Is My Apartment Rent Controlled in Los Angeles? RSO Lookup Explained",
+        "desc": "How to check whether your Los Angeles apartment is covered by the Rent Stabilization Ordinance "
+                "(RSO): the October 1, 1978 rule, what LAHD's rent registry shows, and what still protects you "
+                "if the RSO does not.",
+        "h1": "Is my apartment rent controlled in Los Angeles?",
+        "body": (
+            "<p class='lead'>Los Angeles rent control is the <strong>Rent Stabilization Ordinance</strong>, or RSO. As a "
+            "rule it covers rental units in the City of Los Angeles in buildings of <strong>two or more units</strong> "
+            "with a certificate of occupancy issued <strong>on or before October 1, 1978</strong>. Two things trip people "
+            "up: the City of Los Angeles is not Los Angeles County, and a building that misses the RSO date can still be "
+            "covered by other law.</p>"
+
+            "<h2>1. Confirm you are in the City of Los Angeles</h2>"
+            "<p>The RSO is a City ordinance. Unincorporated Los Angeles County has its own separate rent rules, and "
+            "neighbouring cities such as Santa Monica and West Hollywood have theirs. A Los Angeles mailing address is "
+            "not proof you are inside the City limits — the parcel is what decides it.</p>"
+
+            "<h2>2. Check the date and the unit count</h2>"
+            "<p>The core test is build date plus unit count. Beyond ordinary apartment buildings, LAHD describes the RSO "
+            "as reaching condominiums, duplexes, accessory dwelling units, and rooms occupied by the same tenant for 30 "
+            "or more consecutive days in a hotel or rooming house. A lone single-family house on its own parcel is "
+            "generally outside the RSO — but two or more dwellings on the same parcel can be inside it.</p>"
+
+            "<h2>3. Check LAHD's records</h2>"
+            "<p>Owners of RSO units must register them with the "
+            "<a href='https://housing.lacity.gov/residents/rso-overview' rel='nofollow noopener' target='_blank'>Los "
+            "Angeles Housing Department</a> and pay an annual fee, so LAHD holds a registration record for covered units. "
+            "Asking LAHD whether your unit has one is the closest thing to a definitive answer available to a tenant. The "
+            "certificate of occupancy itself is a "
+            "<a href='https://www.ladbs.org/' rel='nofollow noopener' target='_blank'>LADBS</a> record.</p>"
+
+            "<h2>4. What our Los Angeles map shows — and what it does not</h2>"
+            "<p>This caveat is important enough to state before the map link, not after it. The Find A Crib Los Angeles "
+            "layer is <strong>derived, not official</strong>: it flags buildings that meet the RSO's published criteria — "
+            "build year and unit count, from county assessor data — and labels them <strong>\"likely RSO\"</strong>. It is "
+            "not LAHD's list. A building can meet those criteria and still be exempt, and a building can be covered for a "
+            "reason the assessor record does not show. Use it to narrow the question down, then confirm with LAHD before "
+            "you act on it.</p>"
+            + TOOL_CTA_LA +
+
+            "<h2>5. Not RSO? Two other laws may still cover you</h2>"
+            "<ul>"
+            "<li><strong>AB 1482</strong>, the California statewide rent cap, limits annual increases for many units "
+            "outside local rent control. The limit is tied to regional CPI and changes annually — check the current "
+            "figure at <a href='https://housing.lacity.gov/residents/ab-1482' rel='nofollow noopener' target='_blank'>"
+            "LAHD's AB 1482 page</a>.</li>"
+            "<li>The City's <strong>Just Cause Ordinance</strong> extends eviction protections to many non-RSO rentals "
+            "once the tenancy has passed an initial qualifying period, so \"my building is too new for the RSO\" does not "
+            "mean you can be evicted without a reason.</li>"
+            "</ul>"
+            + SOURCES_LA
+        ),
+    },
+
+    # ---- Washington DC ------------------------------------------------------
+    {
+        "city": "dc",
+        "slug": "is-my-apartment-rent-controlled-washington-dc",
+        "title": "Is My Apartment Rent Controlled in Washington DC? How to Check",
+        "desc": "How to tell whether your DC apartment is rent stabilized: the pre-1976 rule, the common "
+                "exemptions, and the registration rule that means an unregistered unit is treated as covered.",
+        "h1": "Is my apartment rent controlled in Washington, DC?",
+        "body": (
+            "<p class='lead'>In Washington, DC, rent control is formally <strong>rent stabilization</strong> under the "
+            "Rental Housing Act of 1985. As a rule it covers rental units in buildings <strong>built before 1976</strong>. "
+            "But the rule that matters most to tenants is the registration rule: every rental unit in the District must be "
+            "registered with the Rental Accommodations Division, and <strong>a unit that is not registered with an "
+            "approved exemption is treated as covered</strong>.</p>"
+
+            "<h2>1. Check when the building was built</h2>"
+            "<p>Buildings first built in 1976 or later are generally exempt as new construction. Older buildings are the "
+            "standard case for coverage, subject to the exemptions below.</p>"
+
+            "<h2>2. Check the exemptions</h2>"
+            "<p>The common ones are:</p>"
+            "<ul>"
+            "<li><strong>New construction</strong> — built 1976 or later.</li>"
+            "<li><strong>Small landlords</strong> — units owned by a natural person (not a company) who owns four or "
+            "fewer rental units in the District. Note the two halves: it must be a person, and the count is across the "
+            "whole District, not just your building.</li>"
+            "<li><strong>Subsidized housing</strong> — units under federal or District rent-subsidy programs, which have "
+            "their own rent rules.</li>"
+            "<li><strong>Vacant and substantially rehabilitated</strong> buildings, where the owner obtained approval.</li>"
+            "</ul>"
+
+            "<h2>3. The registration rule works in tenants' favour</h2>"
+            "<p>An exemption is not automatic. The owner has to claim it on a registration filing with the "
+            "<strong>Rental Accommodations Division (RAD)</strong> and have it approved. So if your landlord never "
+            "registered your unit, that is not evidence you are unregulated — it points the other way. Ask RAD for the "
+            "registration or exemption record for your address; that filing, not your landlord's description of it, is "
+            "what governs.</p>"
+
+            "<h2>4. Ask RAD or the Office of the Tenant Advocate</h2>"
+            "<p>RAD holds the registration and exemption filings for every rental housing accommodation in the District. "
+            "The <a href='https://ota.dc.gov/' rel='nofollow noopener' target='_blank'>Office of the Tenant Advocate</a> "
+            "gives DC tenants free advice and can help you read what you get back.</p>"
+
+            "<h2>5. Look up the building on the map</h2>"
+            "<p>Find A Crib maps Washington DC from the District's own registration records, so — unlike our Los Angeles "
+            "layer, which is derived from assessor criteria — the DC layer reflects an official registry. It still shows "
+            "the <em>building</em> rather than the current status of your individual unit, and registrations change, so "
+            "confirm with RAD before you act on it.</p>"
+            + TOOL_CTA_DC +
+
+            "<h2>If you are covered</h2>"
+            "<p>Annual increases for rent-stabilized units are limited by a CPI-linked figure, with a lower cap for "
+            "elderly tenants and tenants with disabilities. The figure is republished as the CPI changes, so take the "
+            "current one from "
+            "<a href='https://dhcd.dc.gov/rentcontrol' rel='nofollow noopener' target='_blank'>DHCD</a> rather than from "
+            "any secondary source, including this page.</p>"
+            + SOURCES_DC
         ),
     },
 ]

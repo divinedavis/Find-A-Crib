@@ -33,6 +33,12 @@ CITIES = {
     "dc": {"name": "Washington DC", "root": "/dc/", "aka": ["dc", "washington dc", "washington d.c."]},
 }
 
+# Cornerstone guide pages (seo_guides.py / build_seo.py). Named here so the
+# targets below stay in step with the slugs rather than drifting into typos.
+SF_GUIDE = "/guide/is-my-apartment-rent-controlled-san-francisco/"
+LA_GUIDE = "/guide/is-my-apartment-rent-controlled-los-angeles/"
+DC_GUIDE = "/guide/is-my-apartment-rent-controlled-washington-dc/"
+
 # Seed universe. `intent` matters more than volume: "check" and "list" queries
 # convert into map sessions, "explain" queries earn links and AI citations.
 SEED = [
@@ -66,29 +72,32 @@ SEED = [
     ("nyc", "section 8 apartments bronx", "list", "/section8/bronx/"),
     ("nyc", "voucher friendly apartments nyc", "list", "/section8/"),
     # ---- San Francisco
+    # "explain"/"check" queries point at the city guide, not the city map: the
+    # map is a listings UI that cannot answer "what are the exemptions", and
+    # counting it as coverage was flattering the number. Guides added 2026-07-29.
     ("sf", "rent controlled apartments san francisco", "list", "/sf/"),
-    ("sf", "is my apartment rent controlled sf", "check", "/sf/"),
+    ("sf", "is my apartment rent controlled sf", "check", SF_GUIDE),
     ("sf", "sf rent board lookup", "check", "/sf/"),
     ("sf", "san francisco rent control list", "list", "/sf/"),
-    ("sf", "san francisco rent control rules", "explain", "/sf/"),
-    ("sf", "sf rent control exemptions", "explain", "/sf/"),
-    ("sf", "how much can rent go up rent controlled sf", "explain", "/sf/"),
+    ("sf", "san francisco rent control rules", "explain", SF_GUIDE),
+    ("sf", "sf rent control exemptions", "explain", SF_GUIDE),
+    ("sf", "how much can rent go up rent controlled sf", "explain", SF_GUIDE),
     # ---- Los Angeles
     ("la", "rent stabilized apartments los angeles", "list", "/la/"),
     ("la", "rso apartment list los angeles", "list", "/la/"),
-    ("la", "is my building rent controlled la", "check", "/la/"),
-    ("la", "lahd rso lookup", "check", "/la/"),
-    ("la", "los angeles rent control rules", "explain", "/la/"),
-    ("la", "la just cause eviction rent control", "explain", "/la/"),
-    ("la", "how much can landlord raise rent los angeles rent control", "explain", "/la/"),
+    ("la", "is my building rent controlled la", "check", LA_GUIDE),
+    ("la", "lahd rso lookup", "check", LA_GUIDE),
+    ("la", "los angeles rent control rules", "explain", LA_GUIDE),
+    ("la", "la just cause eviction rent control", "explain", LA_GUIDE),
+    ("la", "how much can landlord raise rent los angeles rent control", "explain", LA_GUIDE),
     # ---- Washington DC
     ("dc", "rent controlled apartments washington dc", "list", "/dc/"),
     ("dc", "dc rent control list", "list", "/dc/"),
-    ("dc", "is my apartment rent controlled dc", "check", "/dc/"),
+    ("dc", "is my apartment rent controlled dc", "check", DC_GUIDE),
     ("dc", "dc rentregistry lookup", "check", "/dc/"),
-    ("dc", "dc rent control rules", "explain", "/dc/"),
-    ("dc", "dc rent control exemptions", "explain", "/dc/"),
-    ("dc", "how much can rent go up rent controlled dc", "explain", "/dc/"),
+    ("dc", "dc rent control rules", "explain", DC_GUIDE),
+    ("dc", "dc rent control exemptions", "explain", DC_GUIDE),
+    ("dc", "how much can rent go up rent controlled dc", "explain", DC_GUIDE),
     # ---- Developer / data-licensing intent (targets the API demand problem)
     ("nyc", "rent stabilization data api", "list", "/developers/"),
     ("nyc", "nyc housing data api", "list", "/developers/"),
@@ -113,15 +122,38 @@ def save(kws):
 
 
 def seed():
-    """Create the universe if absent. Idempotent — never clobbers added queries."""
+    """Create the universe if absent. Idempotent — never clobbers added queries.
+
+    Also re-points seed-sourced entries at their current SEED target. Without
+    this, retargeting a query in SEED (say, from the city map to a guide page
+    written later) silently did nothing, because the query already existed and
+    was skipped — so the roadmap and the ledger drifted apart with no signal.
+    Only `source == "seed"` rows are touched: a target the scout chose is its
+    own, and coverage is left for check_coverage to recompute rather than
+    guessed at here.
+    """
     kws = load()
-    have = {k["query"] for k in kws}
+    by_query = {k["query"]: k for k in kws}
+    retargeted = 0
     for city, query, intent, target in SEED:
-        if query in have:
+        existing = by_query.get(query)
+        if existing is None:
+            kws.append({"query": query, "city": city, "intent": intent,
+                        "target": target, "source": "seed", "added": ledger.today(),
+                        "covered": None, "position": None, "impressions": None, "clicks": None})
             continue
-        kws.append({"query": query, "city": city, "intent": intent,
-                    "target": target, "source": "seed", "added": ledger.today(),
-                    "covered": None, "position": None, "impressions": None, "clicks": None})
+        if existing.get("source") == "seed" and existing.get("target") != target:
+            existing["target"] = target
+            existing["intent"] = intent
+            # The old verdict was about a different page, so it is no longer an
+            # answer to anything. Clearing it means the ledger says "unknown"
+            # until check_coverage looks at the new target, rather than carrying
+            # a `covered: true` earned by a page this query no longer points at.
+            existing["covered"] = None
+            existing["coverage_detail"] = f"retargeted to {target}, not yet re-checked"
+            retargeted += 1
+    if retargeted:
+        print(f"  keywords: retargeted {retargeted} seed queries", flush=True)
     save(kws)
     return kws
 

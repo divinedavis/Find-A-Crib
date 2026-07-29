@@ -746,23 +746,35 @@ def main():
 
     # /guide/ hub linking every guide
     hub_canonical = SITE + "/guide/"
-    cards = "".join(
-        f"<a class='card' href='/guide/{g['slug']}/'><strong>{esc(g['h1'])}</strong>"
-        f"<div style='color:#4a4a68;font-size:14px;margin-top:4px'>{esc(g['desc'])}</div></a>"
-        for g in GUIDES)
+    # Grouped by city. A flat list of nine cards reads as one NYC pile with three
+    # strays in it; the headings are also what tells a reader (and a crawler)
+    # that SF/LA/DC are covered here at all.
+    CITY_LABELS = [("nyc", "New York City"), ("sf", "San Francisco"),
+                   ("la", "Los Angeles"), ("dc", "Washington, DC")]
+    sections = []
+    for key, label in CITY_LABELS:
+        group = [g for g in GUIDES if g.get("city", "nyc") == key]
+        if not group:
+            continue
+        cards = "".join(
+            f"<a class='card' href='/guide/{g['slug']}/'><strong>{esc(g['h1'])}</strong>"
+            f"<div style='color:#4a4a68;font-size:14px;margin-top:4px'>{esc(g['desc'])}</div></a>"
+            for g in group)
+        sections.append(f"<h2>{esc(label)}</h2><div class='grid'>{cards}</div>")
     hub_crumb = breadcrumb([("Home", SITE + "/"), ("Guides", hub_canonical)])
     hub_body = ("<div class='crumbs'><a href='/'>Home</a> › Guides</div>"
-                "<h1>NYC rent stabilization guides</h1>"
-                "<p class='lead'>Plain-English answers to the most common questions about rent-stabilized "
-                "apartments in New York City — what stabilization is, how to check your unit, and your rights "
-                "as a tenant.</p>"
-                f"<div class='grid'>{cards}</div>"
-                "<h2>Check a building</h2><p>Rent stabilization is building-specific — look up any address on the map.</p>"
+                "<h1>Rent stabilization &amp; rent control guides</h1>"
+                "<p class='lead'>Plain-English answers to the most common questions about rent-regulated "
+                "apartments in New York City, San Francisco, Los Angeles and Washington, DC — what the rules are, "
+                "how to check your own unit, and what your rights are as a tenant. Each city's rules are different, "
+                "so start with your city.</p>"
+                + "".join(sections) +
+                "<h2>Check a building</h2><p>Rent regulation is building-specific — look up any address on the map.</p>"
                 "<a class='cta' href='/'>🔎 Open the Find A Crib map →</a>")
     write("guide/index.html",
-          page("NYC Rent Stabilization Guides — Is My Apartment Stabilized? | Find A Crib",
-               "Plain-English guides to NYC rent stabilization: check if your apartment is stabilized, "
-               "find a stabilized unit, tenant rights, lease renewals, and rent-controlled vs stabilized.",
+          page("Rent Stabilization & Rent Control Guides — NYC, SF, LA, DC | Find A Crib",
+               "Plain-English guides to rent regulation in NYC, San Francisco, Los Angeles and Washington DC: "
+               "check if your apartment is covered, tenant rights, lease renewals, and the exemptions that matter.",
                hub_canonical, hub_body, hub_crumb))
     urls.append((hub_canonical, "0.9", "guide"))
 

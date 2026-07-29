@@ -402,5 +402,25 @@
     "retired": null,
     "notes": "effort: hours\nexpected: 20-30 substantive answers/month across five subreddits and two tenant-org forums. Target within 120 days: first non-zero AI-engine referral day, 10+ referrals/day from ChatGPT/Perplexity/AI Overviews combined, and the site named unprompted in at least 3 threads it did not start. Zero removals or moderator warnings is a hard success condition.\nfirst step: Read the self-promotion rules of r/AskNYC, r/NYCapartments, r/sanfrancisco, r/LosAngeles and r/washingtondc, write them into a one-page posting rulebook, then answer one existing question today with a full data-backed answer and affiliation disclosed.",
     "verdict": null
+  },
+  {
+    "id": "T023",
+    "slug": "city_guides",
+    "name": "Cornerstone guides for San Francisco, Los Angeles and Washington DC",
+    "hypothesis": "Every one of the site's six guide pages was about New York, while SF, LA and DC \u2014 three of the four cities in the dataset and 42 of the 97 tracked queries \u2014 had no explanatory page at all. Their 'explain' and 'check' queries were pointed at the city map, which is a listings UI that cannot answer 'what are the exemptions' or 'is my building covered', so those queries were counted as covered while being unanswerable. One cornerstone guide per city, targeting the is-my-apartment-rent-controlled question that every other query in that city orbits, is the cheapest way to make three quarters of the tracked universe addressable at all. Unlike another 40k templated pages, these are three hand-written pages on a domain whose problem is trust, not volume.",
+    "kind": "content",
+    "status": "active",
+    "prefixes": [
+      "/guide/is-my-apartment-rent-controlled-"
+    ],
+    "metric": "organic_visitors",
+    "source": "seed",
+    "evidence": "Measured, not assumed: 0 of 97 tracked queries rank in the top 10 and 77 of ~47,600 pages earn a Search Console impression (2026-07-29), so the constraint is not page count. The SF/LA/DC city pages are the same SPA shell with a different <title> \u2014 their visible text is NYC borough filters and HPD violation controls, which is why an SF exemptions query has nothing to match. 2026 pSEO guidance is consistent that templated pages survive only where each carries unique data and intent; a hand-written cornerstone page per city is the opposite failure mode.",
+    "added": "2026-07-29",
+    "activated": "2026-07-29",
+    "revisit_on": "2026-08-28",
+    "retired": null,
+    "notes": "Content lives in seo_guides.py, rendered by build_seo.py into /guide/<slug>/. The technique here verifies the three pages exist in the docroot AND still carry their data caveat \u2014 LA is derived from assessor criteria and labelled 'likely RSO', SF is anonymized to the block. A guide that loses its caveat is a credibility bug, so it fails the run.",
+    "verdict": null
   }
 ]

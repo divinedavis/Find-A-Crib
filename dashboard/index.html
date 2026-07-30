@@ -36,6 +36,40 @@
   document.documentElement.setAttribute('data-theme', t);
 })();
 </script>
+<!-- Same trick for the sign-in card. The gate is in the markup, so it painted
+     on every load and only went away once getSession() had restored the
+     session AND the first metrics fetch had come back — the owner refreshed
+     his own dashboard and watched it ask him to sign in. Supabase can't answer
+     synchronously, but localStorage can: supabase-js keeps the session under
+     sb-<project-ref>-auth-token, and an OAuth return carries its token in the
+     URL. Either means a signed-in user is likely, so paint the boot splash
+     instead of the gate and let route() decide.
+
+     Deliberately conservative: with no stored token this does nothing and the
+     gate shows immediately, which is right for a signed-out visitor. The only
+     cost of guessing wrong is a splash for one beat before the gate. -->
+<script>
+(function(){
+  var pending = false;
+  try{
+    for(var i=0;i<localStorage.length;i++){
+      var k = localStorage.key(i);
+      if(k && /^sb-.+-auth-token$/.test(k) && localStorage.getItem(k)){ pending = true; break; }
+    }
+  }catch(e){}
+  // Mid-OAuth: the session isn't stored yet, but one is arriving.
+  var h = location.hash || '', q = location.search || '';
+  if(h.indexOf('access_token=')>-1 || h.indexOf('error=')>-1 || /[?&]code=/.test(q)) pending = true;
+  if(!pending) return;
+  document.documentElement.setAttribute('data-auth','pending');
+  // Failsafe lives here, not in the app script: if supabase.js fails to load,
+  // that script never runs and its own timer would never be set, leaving a
+  // spinner that spins forever. A gate the visitor can act on beats that.
+  setTimeout(function(){
+    document.documentElement.removeAttribute('data-auth');
+  }, 8000);
+})();
+</script>
 <style>
   :root{
     color-scheme:light;
@@ -82,6 +116,17 @@
 
   /* ---------- gate ---------- */
   #gate{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:var(--bg); z-index:50; padding:24px}
+  /* While auth is still resolving, neither answer is known: show the splash
+     and keep the sign-in card off screen. route() clears data-auth the moment
+     it knows, so the gate is only ever painted once it is the real answer. */
+  html[data-auth="pending"] #gate{display:none}
+  #boot{display:none}
+  html[data-auth="pending"] #boot{position:fixed; inset:0; display:flex; align-items:center;
+    justify-content:center; background:var(--bg); z-index:60}
+  #boot .spin{width:26px;height:26px;border-radius:50%;border:2.5px solid var(--border);
+    border-top-color:var(--ink2); animation:bootspin .7s linear infinite}
+  @keyframes bootspin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion: reduce){ #boot .spin{animation:none} }
   .gate-card{background:var(--card); border:1px solid var(--border); border-radius:20px; box-shadow:var(--shadow-lg); padding:40px 36px; max-width:420px; width:100%; text-align:center}
   .gate-logo{width:52px;height:52px;border-radius:14px;background:var(--purple);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:26px}
   .gate-card h1{font-size:22px;margin:0 0 6px}
@@ -251,6 +296,9 @@
 </style>
 </head>
 <body>
+
+<!-- Shown only while auth is resolving; see the data-auth script in <head>. -->
+<div id="boot" aria-hidden="true"><div class="spin"></div></div>
 
 <!-- ============ GATE ============ -->
 <div id="gate">
@@ -512,7 +560,17 @@
   applyTheme(currentTheme()); // sync the icon with what the <head> already painted
 
   // ---------- auth routing ----------
+  // Drop the boot splash. Every path that decides what the visitor sees goes
+  // through here first, so the splash can never outlive the decision.
+  function settle(){ document.documentElement.removeAttribute('data-auth'); }
+
+  function showApp(){
+    settle();
+    gate.classList.add('hidden'); app.classList.remove('hidden');
+  }
+
   function showGate(kind, email){
+    settle();
     app.classList.add('hidden'); gate.classList.remove('hidden');
     var t=el('gate-title'), m=el('gate-msg'), err=el('gate-err'), btn=el('google-btn');
     err.classList.add('hidden');
@@ -645,7 +703,7 @@
       siteKey='nemo'; applyShell();
       if(await load(false)==='ok'){
         nemoOnly();
-        gate.classList.add('hidden'); app.classList.remove('hidden');
+        showApp();
         return;
       }
       siteKey='fac'; applyShell(); r='forbidden';
@@ -653,7 +711,7 @@
     if(r==='forbidden'){ showGate('forbidden', s.user && s.user.email); return; }
     if(r==='signin'){ showGate('signin'); return; }
     if(r==='error'){ showGate('error'); return; }
-    gate.classList.add('hidden'); app.classList.remove('hidden');
+    showApp();
   }
 
   document.querySelectorAll('#site-switch button').forEach(function(b){

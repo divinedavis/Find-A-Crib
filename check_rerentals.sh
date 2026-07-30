@@ -17,7 +17,14 @@ if [ -f ./growth.env ]; then set -a; . ./growth.env; set +a; fi
 git pull --rebase --autostash -q origin main \
   || echo "check_rerentals: git pull failed, running on the local copy"
 
-python3 check_rerentals.py --apply --out "$GROWTH_DOCROOT" "$@"
+# Playwright lives in the scraper's venv, not in the system python. Prefer it,
+# and say so loudly rather than dying with a bare ModuleNotFoundError in a log.
+PY=/var/www/rent-map/venv/bin/python
+[ -x "$PY" ] || PY=python3
+"$PY" -c 'import playwright' 2>/dev/null || {
+  echo "check_rerentals: no playwright in $PY — install it or point PY at the venv"; exit 1; }
+
+"$PY" check_rerentals.py --apply --out "$GROWTH_DOCROOT" "$@"
 rc=$?
 
 git add -A rerental_pages.json marketing_agents.json 2>/dev/null

@@ -51,14 +51,15 @@
    "title": "Wavecrest Rentals",
    "units_seen": false,
    "note": "Application portal for their LAMP / HDC / LIHTC developments.",
-   "last_ok": "2026-07-30"
+   "last_ok": "2026-07-30",
+   "waitlist": true
   },
   "TF Cornerstone": {
    "url": "https://tfc.com/about/affordable-re-rentals",
    "title": "Affordable Re-rentals",
    "units_seen": false,
    "last_ok": "2026-07-30",
-   "unit_count": 4
+   "waitlist": true
   },
   "Tax Solute Consulting": {
    "url": "https://sites.google.com/affordablelivingnyc.com/hpd/home",

@@ -154,6 +154,58 @@ def sweep(pages):
     return out
 
 
+def update_site(results, today, outdir=None):
+    """Push the same sweep into the public data files.
+
+    Kept here rather than calling check_rerentals (which imports this module)
+    so there's one daily browser pass, not two, and no import cycle. A page that
+    failed keeps its previous units_seen — a timeout is not evidence the units
+    went away, and flapping the public page on a blip is worse than a day stale.
+    """
+    data = json.load(open(RERENTALS))
+    for name, rec in results.items():
+        page = data["pages"].get(name)
+        if page is None:
+            continue
+        if not rec["error"]:
+            n = max(rec["stated"], len(rec["items"]))
+            page["units_seen"] = bool(n) and not rec["waitlist"]
+            page["waitlist"] = rec["waitlist"] or None
+            if page["waitlist"] is None:
+                page.pop("waitlist", None)
+            if n and not rec["waitlist"]:
+                page["unit_count"] = n
+            else:
+                page.pop("unit_count", None)
+            page["last_ok"] = today
+    data["checked"] = today
+    json.dump(data, open(RERENTALS, "w"), indent=1, ensure_ascii=False)
+
+    agents_path = os.path.join(HERE, "marketing_agents.json")
+    try:
+        agents = json.load(open(agents_path))
+    except (FileNotFoundError, ValueError):
+        print("  marketing_agents.json missing — skipped")
+        return
+    by_name = {a["name"]: a for a in agents["agents"]}
+    n = 0
+    for name, page in data["pages"].items():
+        if name in by_name:
+            by_name[name]["rerentals"] = dict(page, checked=today)
+            n += 1
+    agents["rerental_count"] = n
+    json.dump(agents, open(agents_path, "w"), indent=1, ensure_ascii=False)
+    print(f"  updated site data ({n} agents)")
+    if outdir:
+        dest = os.path.join(outdir, "marketing_agents.json")
+        try:
+            with open(agents_path) as s, open(dest, "w") as d:
+                d.write(s.read())
+            print(f"  wrote {dest}")
+        except OSError as e:
+            print(f"  write to {dest} FAILED: {e}")
+
+
 def load_history():
     try:
         return json.load(open(HISTORY))
@@ -273,6 +325,9 @@ def main():
     ap.add_argument("--email", help="comma-separated recipients")
     ap.add_argument("--quiet-if-same", action="store_true",
                     help="only send when something changed or broke")
+    ap.add_argument("--update-site", action="store_true",
+                    help="also write rerental_pages.json + marketing_agents.json")
+    ap.add_argument("--out", help="docroot to copy marketing_agents.json into")
     args = ap.parse_args()
 
     pages = json.load(open(RERENTALS))["pages"]
@@ -293,6 +348,9 @@ def main():
         if not rec["error"]:
             snap[name] = [i["key"] for i in rec["items"]]
     json.dump({"last": snap, "date": today}, open(HISTORY, "w"), indent=1)
+
+    if args.update_site:
+        update_site(results, today, args.out)
 
     if not args.email:
         return

@@ -68,3 +68,4 @@ growth/.gsc_key.json
 # Python bytecode
 __pycache__/
 *.pyc
+rerental_history.json

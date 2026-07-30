@@ -56,21 +56,24 @@
   "TF Cornerstone": {
    "url": "https://tfc.com/about/affordable-re-rentals",
    "title": "Affordable Re-rentals",
-   "units_seen": true,
-   "last_ok": "2026-07-30"
+   "units_seen": false,
+   "last_ok": "2026-07-30",
+   "unit_count": 4
   },
   "Tax Solute Consulting": {
    "url": "https://sites.google.com/affordablelivingnyc.com/hpd/home",
    "title": "Affordable Living NYC",
    "units_seen": true,
    "note": "First-come, first-served. Separate domain from their HPD-listed site.",
-   "last_ok": "2026-07-30"
+   "last_ok": "2026-07-30",
+   "unit_count": 5
   },
   "Taxace NY LLC": {
    "url": "https://www.taxaceny.com/projects-8",
    "title": "Available Units",
    "units_seen": true,
-   "last_ok": "2026-07-30"
+   "last_ok": "2026-07-30",
+   "unit_count": 31
   },
   "SJP Tax Consultants Inc": {
    "url": "https://www.sjpny.com/affordable-rerentals",
@@ -81,20 +84,23 @@
   "Clinton Management": {
    "url": "https://www.clintonmanagement.com/availabilities/affordable",
    "title": "Affordable Availabilities",
-   "units_seen": false,
-   "last_ok": "2026-07-30"
+   "units_seen": true,
+   "last_ok": "2026-07-30",
+   "unit_count": 6
   },
   "MHANY Management, Inc.": {
    "url": "https://www.mutualhousingny.org/avaliable-properties",
    "title": "Available Properties",
-   "units_seen": false,
-   "last_ok": "2026-07-30"
+   "units_seen": true,
+   "last_ok": "2026-07-30",
+   "unit_count": 2
   },
   "Housing Partnership Development Corporation": {
    "url": "https://www.housingpartnership.com/services/current-vacancies",
    "title": "Current Vacancies",
-   "units_seen": false,
-   "last_ok": "2026-07-30"
+   "units_seen": true,
+   "last_ok": "2026-07-30",
+   "unit_count": 11
   },
   "Restored Homes": {
    "url": "https://www.neighborhoodrestore.org/homebuyers",
@@ -113,14 +119,16 @@
   "Spring Leasing and Management, LLC": {
    "url": "https://springmanagement.net/apartments-for-rent",
    "title": "Apartments For Rent",
-   "units_seen": false,
-   "last_ok": "2026-07-30"
+   "units_seen": true,
+   "last_ok": "2026-07-30",
+   "unit_count": 2
   },
   "C+C Apartment Management, LLC": {
    "url": "https://ccmanagers.com/availability/",
    "title": "Rental Availability",
-   "units_seen": false,
-   "last_ok": "2026-07-30"
+   "units_seen": true,
+   "last_ok": "2026-07-30",
+   "unit_count": 1
   }
  }
 }

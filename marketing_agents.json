@@ -143,8 +143,9 @@
    "rerentals": {
     "url": "https://ccmanagers.com/availability/",
     "title": "Rental Availability",
-    "units_seen": false,
+    "units_seen": true,
     "last_ok": "2026-07-30",
+    "unit_count": 1,
     "checked": "2026-07-30"
    }
   },
@@ -206,8 +207,9 @@
    "rerentals": {
     "url": "https://www.clintonmanagement.com/availabilities/affordable",
     "title": "Affordable Availabilities",
-    "units_seen": false,
+    "units_seen": true,
     "last_ok": "2026-07-30",
+    "unit_count": 6,
     "checked": "2026-07-30"
    }
   },
@@ -416,8 +418,9 @@
    "rerentals": {
     "url": "https://www.housingpartnership.com/services/current-vacancies",
     "title": "Current Vacancies",
-    "units_seen": false,
+    "units_seen": true,
     "last_ok": "2026-07-30",
+    "unit_count": 11,
     "checked": "2026-07-30"
    }
   },
@@ -587,8 +590,9 @@
    "rerentals": {
     "url": "https://www.mutualhousingny.org/avaliable-properties",
     "title": "Available Properties",
-    "units_seen": false,
+    "units_seen": true,
     "last_ok": "2026-07-30",
+    "unit_count": 2,
     "checked": "2026-07-30"
    }
   },
@@ -933,8 +937,9 @@
    "rerentals": {
     "url": "https://springmanagement.net/apartments-for-rent",
     "title": "Apartments For Rent",
-    "units_seen": false,
+    "units_seen": true,
     "last_ok": "2026-07-30",
+    "unit_count": 2,
     "checked": "2026-07-30"
    }
   },
@@ -1021,6 +1026,7 @@
     "units_seen": true,
     "note": "First-come, first-served. Separate domain from their HPD-listed site.",
     "last_ok": "2026-07-30",
+    "unit_count": 5,
     "checked": "2026-07-30"
    }
   },
@@ -1039,6 +1045,7 @@
     "title": "Available Units",
     "units_seen": true,
     "last_ok": "2026-07-30",
+    "unit_count": 31,
     "checked": "2026-07-30"
    }
   },
@@ -1055,8 +1062,9 @@
    "rerentals": {
     "url": "https://tfc.com/about/affordable-re-rentals",
     "title": "Affordable Re-rentals",
-    "units_seen": true,
+    "units_seen": false,
     "last_ok": "2026-07-30",
+    "unit_count": 4,
     "checked": "2026-07-30"
    }
   },

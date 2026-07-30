@@ -418,11 +418,13 @@
                 '" target="_blank" rel="noopener" data-out="rerental">🏠 ' +
                 (a.rerentals.units_seen
                   ? (a.rerentals.unit_count ? a.rerentals.unit_count + ' listed' : 'Units posted')
-                  : 'Re-rental page') + ' ↗</a>' +
+                  : (a.rerentals.waitlist ? 'Join the waitlist' : 'Re-rental page')) + ' ↗</a>' +
               '<div class="rr-note">' + esc(a.rerentals.title) +
                 (a.rerentals.units_seen
-                  ? ' · had units on ' + esc(a.rerentals.checked || '')
-                  : ' · nothing posted on ' + esc(a.rerentals.checked || '')) +
+                  ? ' · checked ' + esc(a.rerentals.checked || '')
+                  : (a.rerentals.waitlist
+                      ? ' · takes applications for buildings, not per-unit listings'
+                      : ' · nothing posted on ' + esc(a.rerentals.checked || ''))) +
                 (a.rerentals.note ? '<br>' + esc(a.rerentals.note) : '') +
               '</div>'
             : '') +

@@ -67,31 +67,25 @@ def look(page_text):
 
 
 def check(pages):
-    from playwright.sync_api import sync_playwright
+    """Delegate to rerental_daily.sweep so the public page and the daily email
+    can never disagree.
+
+    They used to. This module asked "are there PRICED units?"; the daily job
+    asked "are there LISTED buildings?". Clinton Management's availabilities
+    page lists six buildings with no rents on the index, so the site said empty
+    while the email said six. One extractor, one answer.
+    """
+    sys.path.insert(0, HERE)
+    import rerental_daily as rd
     out = {}
-    with sync_playwright() as pw:
-        browser = pw.chromium.launch()
-        ctx = browser.new_context(viewport={"width": 1280, "height": 1400}, user_agent=UA)
-        for name, meta in pages.items():
-            url = meta["url"]
-            rec = {"url": url, "status": None, "units_seen": False, "count": 0, "error": None}
-            for attempt in (1, 2):          # one retry — these sites are flaky
-                page = ctx.new_page()
-                try:
-                    resp = page.goto(url, wait_until="domcontentloaded", timeout=35000)
-                    page.wait_for_timeout(4000 if attempt == 1 else 8000)
-                    rec["status"] = resp.status if resp else None
-                    text = page.evaluate("document.body ? document.body.innerText : ''")
-                    rec["units_seen"], rec["count"] = look(text)
-                    rec["error"] = None
-                    page.close()
-                    break
-                except Exception as e:
-                    rec["error"] = f"{type(e).__name__}: {str(e)[:70]}"
-                    try: page.close()
-                    except Exception: pass
-            out[name] = rec
-        browser.close()
+    for name, rec in rd.sweep(pages).items():
+        n = max(rec["stated"], len(rec["items"]))
+        out[name] = {"url": rec["url"], "status": rec["status"], "error": rec["error"],
+                     "waitlist": rec["waitlist"],
+                     # a waitlist page is real and worth linking, but it is not
+                     # "units posted" — see rerental_daily.WAITLIST
+                     "units_seen": bool(n) and not rec["waitlist"],
+                     "count": rec["stated"] or n}
     return out
 
 

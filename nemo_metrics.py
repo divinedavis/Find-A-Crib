@@ -6,7 +6,7 @@ directly instead of standing up a second dashboard app. The dashboard renders
 whichever payload it is given through the same template; this module's job is to
 hand it NEMO data in the shape that template already understands.
 
-Three sources, in the order they are trusted:
+Four sources, in the order they are trusted:
 
   growth/results.jsonl   the append-only daily ledger the 6am growth engine
                          writes. Bot-filtered, owner-IP-filtered, already
@@ -15,6 +15,12 @@ Three sources, in the order they are trusted:
                          written once a morning for the *previous* day and a
                          dashboard that says "live" must not be 18 hours stale.
   growth/snapshot.json   rank/GSC/goal state, refreshed each morning.
+  ElevenLabs history     calls into the AI phone assistant, via NEMO's own
+                         growth.calls. This — not bookings — is the demand
+                         number the tiles lead with: the assistant is forbidden
+                         from booking anything, and a caller who hangs up
+                         before leaving a message is still the phone ringing.
+                         Owner and test numbers are excluded there, not here.
 
 Today's live number is computed by importing NEMO's own growth.metrics rather
 than reimplementing its bot regex and channel rules here — two copies of that
@@ -23,8 +29,8 @@ about the same day. The import is done by file path under a private module name
 (`nemo_growth`) because this API's own repo also contains a `growth` package;
 a plain `import growth.metrics` would resolve to the wrong one.
 
-Nothing here reads customer rows. Bookings and leads are counted, never listed:
-this endpoint returns no names, phones or addresses.
+Nothing here reads customer rows. Calls, bookings and leads are counted, never
+listed: this endpoint returns no names, phones or addresses.
 """
 import datetime
 import importlib.util
@@ -91,8 +97,8 @@ def _snapshot():
 
 
 # ------------------------------------------------------------------ live day
-def _nemo_growth_metrics():
-    """Import NEMO's growth.metrics under a private name, or None."""
+def _nemo_growth(sub):
+    """Import a submodule of NEMO's growth package under a private name, or None."""
     pkg_dir = os.path.join(NEMO_ROOT, "growth")
     init = os.path.join(pkg_dir, "__init__.py")
     if not os.path.exists(init):
@@ -111,9 +117,14 @@ def _nemo_growth_metrics():
             sys.modules.pop(name, None)
             return None
     try:
-        return importlib.import_module(name + ".metrics")
+        return importlib.import_module(name + "." + sub)
     except Exception:
         return None
+
+
+def _nemo_growth_metrics():
+    """Import NEMO's growth.metrics under a private name, or None."""
+    return _nemo_growth("metrics")
 
 
 def _today_live():
@@ -167,6 +178,37 @@ def _n(x):
     return x if isinstance(x, (int, float)) else 0
 
 
+def _calls(dates, today_key):
+    """AI phone calls: all-time, this period, and today. Counts only.
+
+    Delegated wholesale to NEMO's growth.calls so the owner-number exclusion is
+    applied in exactly one place. A missing key or an unreachable API leaves the
+    counts at zero and raises a warning rather than failing the page — the
+    dashboard saying "0 calls" with a note beats it saying nothing at all.
+    """
+    out = {"all_time": 0, "own_excluded": 0, "period": 0, "today": 0, "ok": False}
+    mod = _nemo_growth("calls")
+    if mod is None:
+        return out
+    st = {}
+    try:
+        rows = mod.fetch(status=st)
+        totals = mod.call_totals(rows, refresh=False)
+        by_day = mod.calls_by_day(sorted(set(dates) | {today_key}), rows, refresh=False)
+    except Exception:
+        return out
+    # A revoked key and a quiet phone both come back as zero calls, so the tile
+    # is only trustworthy when the fetch actually reached ElevenLabs.
+    if not st.get("ok"):
+        return out
+    out["ok"] = True
+    out["all_time"] = _n(totals.get("ai_calls_all_time"))
+    out["own_excluded"] = _n(totals.get("own_calls_excluded"))
+    out["today"] = _n((by_day.get(today_key) or {}).get("ai_calls"))
+    out["period"] = sum(_n((by_day.get(d) or {}).get("ai_calls")) for d in set(dates))
+    return out
+
+
 def build(days=14):
     """The dashboard view model for NEMO."""
     hist = _daily_series()
@@ -217,6 +259,15 @@ def build(days=14):
     period_phone = sum(_n(hist[d].get("phone_leads")) for d in leads_days) + _n(live.get("phone_leads"))
     all_time = _all_time_leads()
 
+    # Calls into the AI. Counted over the same window the traffic tiles cover so
+    # "calls in this period" and "visitors" answer the same question, and read
+    # straight from ElevenLabs rather than from the ledger — the ledger only
+    # learns yesterday's number at 6am and this tile is on the live page.
+    call_dates = [r["date"] for r in rows] or [today_key]
+    calls = _calls(call_dates, today_key)
+    if not calls["ok"]:
+        warnings.append("Call history could not be read from the phone assistant.")
+
     snap = _snapshot()
     goal = snap.get("goal") or {}
     gsc = snap.get("gsc") or {}
@@ -234,6 +285,7 @@ def build(days=14):
         "today": {
             "visitors": _n(live.get("visitors")),
             "views": _n(live.get("pageviews")),
+            "ai_calls": calls["today"],
             "bookings": _n(live.get("bookings")),
             "phone_leads": _n(live.get("phone_leads")),
             "organic": _n(live.get("organic_visitors")),
@@ -242,6 +294,10 @@ def build(days=14):
         "channels": channels,
         "sparkline": spark,
         "leads": {
+            "ai_calls_all_time": calls["all_time"],
+            "period_calls": calls["period"],
+            "own_calls_excluded": calls["own_excluded"],
+            "calls_ok": calls["ok"],
             "period_bookings": period_bookings,
             "period_phone": period_phone,
             "bookings_all_time": _n(all_time.get("bookings_all_time")),

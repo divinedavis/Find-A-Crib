@@ -364,7 +364,7 @@
         <!-- leads -->
         <div class="card mb18" id="sec-leads">
           <div class="card-head-row">
-            <div><h2>Leads &amp; bookings — the money signal</h2><div class="card-sub">Traffic that never becomes a call hasn’t worked. Counts only — no customer details reach this page.</div></div>
+            <div><h2>Calls &amp; leads — the money signal</h2><div class="card-sub">Traffic that never becomes a call hasn’t worked. Every call into the assistant counts, including the ones that hang up. Counts only — no customer details reach this page.</div></div>
           </div>
           <div class="ads-tiles" id="lead-tiles"></div>
         </div>
@@ -953,7 +953,7 @@
       {ic:'👣',v:comma(T.visitors),l:'Visitors'},
       {ic:'📄',v:comma(T.views),l:'Page views'},
       {ic:'🔎',v:comma(earned)+(chTotal?' · '+pctS(earned,chTotal):''),l:'Found you (search/maps/AI)'},
-      {ic:'📅',v:comma(L.bookings_all_time),l:'Bookings (all-time)'},
+      {ic:'📞',v:comma(L.ai_calls_all_time),l:'Calls into the AI (all-time)'},
       {ic:'☎️',v:comma(L.phone_leads_all_time),l:'Phone leads (all-time)'},
       {ic:'🎯',v:(share==null?'—':share.toFixed(1)+'%'),
        l:'Top-3 rank share · goal '+target+'%',accent:true}
@@ -974,8 +974,8 @@
       {ic:'🟢',name:'Visitors today',desc:'unique (IP + browser)',val:comma(TD.visitors)},
       {ic:'📄',name:'Page views today',desc:'real pages, assets excluded',val:comma(TD.views)},
       {ic:'🔎',name:'From search today',desc:'organic landings',val:comma(TD.organic)},
-      {ic:'📅',name:'Bookings today',desc:'booked on the site',val:comma(TD.bookings)},
-      {ic:'☎️',name:'Phone leads today',desc:'captured by the phone assistant',val:comma(TD.phone_leads)},
+      {ic:'📞',name:'Calls into the AI today',desc:'your own number excluded',val:comma(TD.ai_calls)},
+      {ic:'☎️',name:'Phone leads today',desc:'callers who left a message',val:comma(TD.phone_leads)},
       {ic:'🤖',name:'Bots filtered today',desc:'never counted as traffic',val:comma(TD.bots)}
     ].map(function(r){
       return '<div class="act-row"><div class="act-l"><div class="act-ico">'+r.ic+'</div>'+
@@ -1008,10 +1008,12 @@
 
     // --- leads ---
     el('lead-tiles').innerHTML=[
-      {val:comma(L.bookings_all_time),lbl:'Bookings, all-time',sub:'booked through the site'},
-      {val:comma(L.phone_leads_all_time),lbl:'Phone leads, all-time',sub:'captured by the phone assistant'},
-      {val:comma(n(L.period_bookings)+n(L.period_phone)),lbl:'Leads in this period',sub:'since '+(d.since||'—')},
-      {val:comma(L.own_rows_excluded),lbl:'Own test rows excluded',sub:'your bookings & wiring tests'}
+      {val:(L.calls_ok===false?'—':comma(L.ai_calls_all_time)),lbl:'Calls into the AI, all-time',
+       sub:(L.calls_ok===false?'call history unavailable':'every ring, message left or not')},
+      {val:comma(L.phone_leads_all_time),lbl:'Phone leads, all-time',sub:'callers who left a message'},
+      {val:comma(L.period_calls),lbl:'Calls in this period',sub:'since '+(d.since||'—')},
+      {val:comma(n(L.own_calls_excluded)+n(L.own_rows_excluded)),lbl:'Own test activity excluded',
+       sub:'your own number & wiring tests'}
     ].map(function(t){
       return '<div class="ads-tile"><div class="a-val">'+t.val+'</div><div class="a-lbl">'+t.lbl+'</div><div class="a-sub">'+t.sub+'</div></div>';
     }).join('');

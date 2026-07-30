@@ -236,6 +236,32 @@ def build(days=14):
         "visitors": sum(r["visitors"] for r in rows),
         "views": sum(r["views"] for r in rows),
         "bots": sum(_n(hist[d].get("bot_hits")) for d in traffic_days) + _n(live.get("bot_hits")),
+        "call_taps": (sum(_n(hist[d].get("call_taps")) for d in traffic_days)
+                      + _n(live.get("call_taps"))),
+    }
+
+    # Call conversion — of the people who reached the site, how many opened the
+    # dialer. On a contractor site this is the number that matters: a visitor
+    # who does not ring is worth nothing, and ranking improvements are only
+    # real if this moves with them.
+    #
+    # Measured from the tel: beacon in analytics.js, so it starts at the day
+    # that shipped (2026-07-30) and has no history before it. `measured_since`
+    # exists so the UI can say that instead of drawing a flat zero back to July
+    # and implying nobody ever called.
+    tap_days = sorted(d for d, m in hist.items() if "call_taps" in m and d != today_key)
+    if live and "call_taps" in live:
+        tap_days.append(today_key)
+    measured_visitors = (sum(_n(hist[d].get("visitors")) for d in tap_days if d != today_key)
+                         + (_n(live.get("visitors")) if today_key in tap_days else 0))
+    totals["call_conversion"] = {
+        "taps": totals["call_taps"],
+        # Rate against visitors in the measured window only — dividing new taps
+        # by all-time visitors would understate it forever.
+        "visitors": measured_visitors,
+        "pct": round(100.0 * totals["call_taps"] / measured_visitors, 1) if measured_visitors else None,
+        "measured_since": tap_days[0] if tap_days else None,
+        "today_taps": _n(live.get("call_taps")),
     }
 
     channels = {}
@@ -289,6 +315,7 @@ def build(days=14):
             "bookings": _n(live.get("bookings")),
             "phone_leads": _n(live.get("phone_leads")),
             "organic": _n(live.get("organic_visitors")),
+            "call_taps": _n(live.get("call_taps")),
             "bots": _n(live.get("bot_hits")),
         },
         "channels": channels,

@@ -1007,10 +1007,21 @@
     var chTotal=NEMO_CH.reduce(function(a,m){return a+n(ch[m.k]);},0);
     var share=S.share_pct, target=n(S.target_pct)||50;
 
+    // Call conversion: visitors who opened the dialer. Measured first-party
+    // from the tel: beacon, which shipped 2026-07-30 — before that date there
+    // is no data, which is not the same as nobody calling. Show a dash and say
+    // when counting started rather than a 0.0% that reads like a verdict.
+    var CV=T.call_conversion||{};
+    var cv = (CV.pct==null) ? '—' : CV.pct.toFixed(1)+'%';
+    var cvLabel = (CV.pct==null)
+      ? 'Call conversion · counting from ' + (CV.measured_since||'today')
+      : 'Call conversion · '+comma(CV.taps)+' of '+comma(CV.visitors)+' tapped to call';
+
     var tiles=[
       {ic:'👣',v:comma(T.visitors),l:'Visitors'},
       {ic:'📄',v:comma(T.views),l:'Page views'},
       {ic:'🔎',v:comma(earned)+(chTotal?' · '+pctS(earned,chTotal):''),l:'Found you (search/maps/AI)'},
+      {ic:'📲',v:cv,l:cvLabel},
       {ic:'📞',v:comma(L.ai_calls_all_time),l:'Calls into the AI (all-time)'},
       {ic:'☎️',v:comma(L.phone_leads_all_time),l:'Phone leads (all-time)'},
       {ic:'🎯',v:(share==null?'—':share.toFixed(1)+'%'),
@@ -1032,6 +1043,7 @@
       {ic:'🟢',name:'Visitors today',desc:'unique (IP + browser)',val:comma(TD.visitors)},
       {ic:'📄',name:'Page views today',desc:'real pages, assets excluded',val:comma(TD.views)},
       {ic:'🔎',name:'From search today',desc:'organic landings',val:comma(TD.organic)},
+      {ic:'📲',name:'Tapped to call today',desc:'tel: taps on the site — intent, not connected calls',val:comma(TD.call_taps)},
       {ic:'📞',name:'Calls into the AI today',desc:'your own number excluded',val:comma(TD.ai_calls)},
       {ic:'☎️',name:'Phone leads today',desc:'callers who left a message',val:comma(TD.phone_leads)},
       {ic:'🤖',name:'Bots filtered today',desc:'never counted as traffic',val:comma(TD.bots)}

@@ -150,6 +150,11 @@
     font-size: 15px; line-height: 1; cursor: pointer; padding: 0;
     display: flex; align-items: center; justify-content: center; }
   .theme-btn:hover { background: var(--surface-2); border-color: var(--line-strong); }
+  /* link out to the HPD lottery-agent directory; same order group as the toggles */
+  .agents-btn { order: 2; flex: 0 0 auto; background: var(--surface); color: var(--ink-2);
+    border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; font-size: 13px;
+    font-weight: 700; white-space: nowrap; text-decoration: none; }
+  .agents-btn:hover { background: var(--surface-2); border-color: var(--line-strong); text-decoration: none; }
   .auth-btn { order: 2; flex: 0 0 auto; background: var(--surface); color: var(--blue); border: 1px solid var(--blue);
     border-radius: 999px; padding: 8px 16px; font-size: 14px; font-weight: 700; cursor: pointer; white-space: nowrap; }
   .auth-btn:hover { background: var(--blue-soft); }
@@ -532,6 +537,10 @@
     .filter-bar { gap: 8px; width: 100%; flex: 1 1 100%; order: 3; }
     .auth-btn { margin-left: auto; order: 2; padding: 7px 14px; font-size: 13px; }
     .theme-btn { width: 30px; height: 30px; font-size: 14px; }
+    /* header row is tight on phones — the 🏛️ alone carries it (aria-label has the name) */
+    .agents-label { display: none; }
+    .agents-btn { padding: 0; width: 30px; height: 30px; border-radius: 50%; font-size: 14px;
+      display: flex; align-items: center; justify-content: center; }
     /* 16px stops iOS Safari from auto-zooming when the field is focused */
     .filter-bar input.search-input { flex: 1 1 100%; max-width: none; min-width: 0; order: -1; font-size: 16px; }
     .chip-row {
@@ -811,6 +820,7 @@
   <nav class="city-nav" id="city-nav" aria-label="City">
     <a href="/" data-city-link="nyc">NYC</a><a href="/sf/" data-city-link="sf">SF</a><a href="/la/" data-city-link="la">LA</a><a href="/dc/" data-city-link="dc">DC</a>
   </nav>
+  <a id="agents-btn" class="agents-btn nyc-only" href="/marketing-agents/" title="Every HPD-approved firm that runs NYC affordable-housing lotteries" aria-label="Lottery agents">🏛️<span class="agents-label"> Lottery agents</span></a>
   <button id="theme-btn" type="button" class="theme-btn" aria-label="Switch to dark mode" title="Switch to dark mode">🌙</button>
   <button id="auth-btn" type="button" class="auth-btn">Sign in</button>
   <button id="ref-btn" type="button" class="ref-btn" hidden>🎁 Free Plus</button>
@@ -3535,7 +3545,10 @@
      RentRegistry — with the median <em>registered</em> rent (the legal rent on
      file, not an asking rent) and units reported vacant. Units exempt under
      § 2.05(a) — subsidized, new construction, small landlords with four or
-     fewer units, co-ops — are excluded. Also on Find A Crib:
+     fewer units, co-ops — are excluded.
+     Browse <a href="/dc/buildings/">Washington DC by neighborhood</a>, or read
+     <a href="/guide/is-my-apartment-rent-controlled-washington-dc/">is my apartment
+     rent controlled in DC?</a> Also on Find A Crib:
      <a href="/">rent-stabilized NYC</a>,
      <a href="/sf/">rent-controlled San Francisco</a> and
      <a href="/la/">rent-stabilized (RSO) Los Angeles</a>.</p>

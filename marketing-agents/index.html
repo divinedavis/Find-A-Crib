@@ -416,7 +416,9 @@
           (a.rerentals
             ? '<br><a class="rr' + (a.rerentals.units_seen ? '' : ' quiet') + '" href="' + esc(a.rerentals.url) +
                 '" target="_blank" rel="noopener" data-out="rerental">🏠 ' +
-                (a.rerentals.units_seen ? 'Units posted' : 'Re-rental page') + ' ↗</a>' +
+                (a.rerentals.units_seen
+                  ? (a.rerentals.unit_count ? a.rerentals.unit_count + ' listed' : 'Units posted')
+                  : 'Re-rental page') + ' ↗</a>' +
               '<div class="rr-note">' + esc(a.rerentals.title) +
                 (a.rerentals.units_seen
                   ? ' · had units on ' + esc(a.rerentals.checked || '')

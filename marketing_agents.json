@@ -48,6 +48,8 @@
     "title": "Outside Market / Re-rentals",
     "units_seen": true,
     "note": "Filterable board with rent + household size per unit.",
+    "unit_count": 6,
+    "last_ok": "2026-07-30",
     "checked": "2026-07-30"
    }
   },
@@ -142,6 +144,7 @@
     "url": "https://ccmanagers.com/availability/",
     "title": "Rental Availability",
     "units_seen": false,
+    "last_ok": "2026-07-30",
     "checked": "2026-07-30"
    }
   },
@@ -204,6 +207,7 @@
     "url": "https://www.clintonmanagement.com/availabilities/affordable",
     "title": "Affordable Availabilities",
     "units_seen": false,
+    "last_ok": "2026-07-30",
     "checked": "2026-07-30"
    }
   },
@@ -413,6 +417,7 @@
     "url": "https://www.housingpartnership.com/services/current-vacancies",
     "title": "Current Vacancies",
     "units_seen": false,
+    "last_ok": "2026-07-30",
     "checked": "2026-07-30"
    }
   },
@@ -431,6 +436,8 @@
     "title": "Outside Market / Re-rentals",
     "units_seen": true,
     "note": "Same operator as Affordable for NY, but lists different units — check both.",
+    "unit_count": 3,
+    "last_ok": "2026-07-30",
     "checked": "2026-07-30"
    }
   },
@@ -561,7 +568,9 @@
    "rerentals": {
     "url": "https://mgnyconsulting.com/listings/",
     "title": "Listings",
-    "units_seen": false,
+    "units_seen": true,
+    "unit_count": 12,
+    "last_ok": "2026-07-30",
     "checked": "2026-07-30"
    }
   },
@@ -579,6 +588,7 @@
     "url": "https://www.mutualhousingny.org/avaliable-properties",
     "title": "Available Properties",
     "units_seen": false,
+    "last_ok": "2026-07-30",
     "checked": "2026-07-30"
    }
   },
@@ -804,6 +814,7 @@
     "title": "Available Homes & Open Houses",
     "units_seen": false,
     "note": "Homeownership, not rentals.",
+    "last_ok": "2026-07-30",
     "checked": "2026-07-30"
    }
   },
@@ -875,6 +886,7 @@
     "url": "https://www.sjpny.com/affordable-rerentals",
     "title": "Affordable Re-Rentals",
     "units_seen": false,
+    "last_ok": "2026-07-30",
     "checked": "2026-07-30"
    }
   },
@@ -922,6 +934,7 @@
     "url": "https://springmanagement.net/apartments-for-rent",
     "title": "Apartments For Rent",
     "units_seen": false,
+    "last_ok": "2026-07-30",
     "checked": "2026-07-30"
    }
   },
@@ -1007,6 +1020,7 @@
     "title": "Affordable Living NYC",
     "units_seen": true,
     "note": "First-come, first-served. Separate domain from their HPD-listed site.",
+    "last_ok": "2026-07-30",
     "checked": "2026-07-30"
    }
   },
@@ -1024,6 +1038,7 @@
     "url": "https://www.taxaceny.com/projects-8",
     "title": "Available Units",
     "units_seen": true,
+    "last_ok": "2026-07-30",
     "checked": "2026-07-30"
    }
   },
@@ -1041,6 +1056,7 @@
     "url": "https://tfc.com/about/affordable-re-rentals",
     "title": "Affordable Re-rentals",
     "units_seen": true,
+    "last_ok": "2026-07-30",
     "checked": "2026-07-30"
    }
   },
@@ -1100,6 +1116,7 @@
     "title": "Wavecrest Rentals",
     "units_seen": false,
     "note": "Application portal for their LAMP / HDC / LIHTC developments.",
+    "last_ok": "2026-07-30",
     "checked": "2026-07-30"
    }
   },

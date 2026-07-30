@@ -51,33 +51,106 @@
 <link rel="stylesheet" href="/static/leaflet/leaflet.css" />
 <link rel="stylesheet" href="/static/markercluster/MarkerCluster.css" />
 <link rel="stylesheet" href="/static/markercluster/MarkerCluster.Default.css" />
+<!-- Paint the chosen theme before the first frame. Signed-in visitors have the
+     preference on their account, but that only arrives with the session — this
+     localStorage copy is the one readable synchronously, and without it the page
+     flashes white for a frame on every load. New visitors follow their OS. -->
+<script>
+(function(){
+  var t;
+  try{ t = localStorage.getItem('fac.theme'); }catch(e){}
+  if(t!=='light' && t!=='dark')
+    t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
 <style>
   :root {
+    color-scheme: light;
     --blue: #006aff;
     --blue-dark: #0052cc;
     --blue-soft: #e8f0fe;
+    /* Fills that carry white text. Split from --blue so dark mode can keep the
+       fill dark enough for white to read while --blue itself gets lighter for
+       use as text and borders. */
+    --blue-solid: #006aff;
     --ink: #0a0a23;
     --ink-2: #4a4a68;
     --line: #e2e6ea;
+    --line-strong: #b8c3d0;
     --bg: #f7f8fa;
+    --surface: #ffffff;      /* cards, modals, bars, popovers */
+    --surface-2: #f6f6f6;    /* hover on a surface */
+    --surface-3: #e4e8ee;    /* pressed */
+    --overlay-ink: #0a0a23;  /* the mobile FAB — dark chrome in either theme */
+    --switch-off: #cfd6df;
     --pill: #6b3df5;
     --pill-bg: #6b3df5;
+    /* semantic tints, each a background + ink pair */
+    --info-bg: #eef3ff; --info-bg-2: #e0eaff; --info-line: #cfe0ff;
+    --err-bg: #ffe2e2; --err-ink: #a40000; --err-bg-soft: #fff5f5;
+    --warn-bg: #fff2dc; --warn-ink: #8a5a00;
+    --warn2-bg: #fff4e5; --warn2-ink: #a15c00;
+    --ok-bg: #e8f7ec; --ok-ink: #137333;
+    --bad-bg: #fde8e8; --bad-ink: #b3261e;
+    --hot-bg: #fffbe0;
+    --s8: #0e8a45; --s8-soft: #3d7d58;
+    --card-shadow: 0 1px 2px rgba(10,10,35,.06), 0 4px 14px rgba(10,10,35,.08);
+    --card-shadow-hover: 0 6px 14px rgba(10,10,35,.10), 0 16px 40px rgba(10,10,35,.18);
+  }
+  /* Dark theme. Blues and greens are lifted — the light-mode values are tuned
+     against white and go muddy on a dark card. Tints keep their hue but invert
+     the relationship: dark fill, light ink. */
+  html[data-theme="dark"] {
+    color-scheme: dark;
+    --blue: #5b9bff;
+    --blue-dark: #7fb2ff;
+    --blue-soft: #16233d;
+    --blue-solid: #1f6fe0;
+    --ink: #eef0f6;
+    --ink-2: #a3a7bb;
+    --line: #2b2f3c;
+    --line-strong: #414658;
+    --bg: #0c0c12;
+    --surface: #16161f;
+    --surface-2: #1f1f2b;
+    --surface-3: #282833;
+    --overlay-ink: #23233a;
+    --switch-off: #3d4250;
+    --pill: #8b6bff;
+    --pill-bg: #7b56f5;
+    --info-bg: #16233d; --info-bg-2: #1d2e4d; --info-line: #2c4370;
+    --err-bg: #3a1b1b; --err-ink: #ff9a9a; --err-bg-soft: #2a1616;
+    --warn-bg: #38290f; --warn-ink: #f0c069;
+    --warn2-bg: #38280f; --warn2-ink: #f2b95e;
+    --ok-bg: #12301f; --ok-ink: #5fd39a;
+    --bad-bg: #3a1a1a; --bad-ink: #ff8f86;
+    --hot-bg: #322c12;
+    --s8: #35c07a; --s8-soft: #77b795;
+    --card-shadow: 0 1px 2px rgba(0,0,0,.5), 0 6px 18px rgba(0,0,0,.5);
+    --card-shadow-hover: 0 6px 14px rgba(0,0,0,.55), 0 18px 44px rgba(0,0,0,.6);
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: var(--ink); background: #fff; }
+  html, body { margin: 0; height: 100%; font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: var(--ink); background: var(--surface); }
   a { color: var(--blue); text-decoration: none; }
 
   header.topbar {
     position: sticky; top: 0; z-index: 1000;
-    background: #fff; border-bottom: 1px solid var(--line);
+    background: var(--surface); border-bottom: 1px solid var(--line);
     padding: 10px 20px; display: flex; align-items: center; gap: 16px;
   }
   .brand { display: flex; align-items: center; gap: 8px; font-weight: 800; color: var(--blue); font-size: 22px; letter-spacing: -0.5px; }
-  .brand-dot { width: 22px; height: 22px; background: var(--blue); border-radius: 6px; display: inline-block; transform: rotate(45deg); flex: none; }
+  .brand-dot { width: 22px; height: 22px; background: var(--blue-solid); border-radius: 6px; display: inline-block; transform: rotate(45deg); flex: none; }
   .brand-text { display: flex; flex-direction: column; line-height: 1.05; }
   .brand-sub { font-weight: 600; font-size: 11px; color: var(--blue); opacity: 0.7; letter-spacing: 0; margin-top: 1px; }
   .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; flex: 1; align-items: center; order: 1; }
-  .auth-btn { order: 2; flex: 0 0 auto; background: #fff; color: var(--blue); border: 1px solid var(--blue);
+  /* theme toggle: sits to the left of Sign in / Profile in the same order group */
+  .theme-btn { order: 2; flex: 0 0 auto; width: 34px; height: 34px; border-radius: 50%;
+    background: var(--surface); color: var(--ink); border: 1px solid var(--line);
+    font-size: 15px; line-height: 1; cursor: pointer; padding: 0;
+    display: flex; align-items: center; justify-content: center; }
+  .theme-btn:hover { background: var(--surface-2); border-color: var(--line-strong); }
+  .auth-btn { order: 2; flex: 0 0 auto; background: var(--surface); color: var(--blue); border: 1px solid var(--blue);
     border-radius: 999px; padding: 8px 16px; font-size: 14px; font-weight: 700; cursor: pointer; white-space: nowrap; }
   .auth-btn:hover { background: var(--blue-soft); }
   .auth-btn.signed-in { color: var(--ink); border-color: var(--line); }
@@ -85,7 +158,7 @@
   .auth-backdrop { position: fixed; inset: 0; z-index: 1900; background: rgba(0,0,0,0.45);
     display: flex; align-items: center; justify-content: center; padding: 16px; }
   .auth-backdrop[hidden] { display: none; }
-  .auth-card { background: #fff; border-radius: 16px; width: 100%; max-width: 380px; padding: 24px 20px 20px;
+  .auth-card { background: var(--surface); border-radius: 16px; width: 100%; max-width: 380px; padding: 24px 20px 20px;
     box-shadow: 0 20px 50px rgba(0,0,0,0.3); position: relative; }
   .auth-close { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; border-radius: 50%;
     border: none; background: var(--bg); font-size: 14px; cursor: pointer; }
@@ -94,9 +167,9 @@
   .auth-card input { width: 100%; padding: 12px 14px; font-size: 16px; border: 1px solid var(--line);
     border-radius: 8px; margin-bottom: 10px; }
   .auth-card input:focus { outline: none; border-color: var(--blue); }
-  .auth-error { background: #ffe2e2; color: #a40000; font-size: 13px; padding: 9px 11px; border-radius: 6px; margin-bottom: 10px; }
+  .auth-error { background: var(--err-bg); color: var(--err-ink); font-size: 13px; padding: 9px 11px; border-radius: 6px; margin-bottom: 10px; }
   .auth-error[hidden] { display: none; }
-  .auth-submit { width: 100%; padding: 13px; background: var(--blue); color: #fff; border: none;
+  .auth-submit { width: 100%; padding: 13px; background: var(--blue-solid); color: #fff; border: none;
     border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; }
   .auth-submit:hover { background: var(--blue-dark); }
   .auth-submit:disabled { opacity: .6; cursor: default; }
@@ -106,31 +179,31 @@
   .auth-legal a { color: var(--ink-2); text-decoration: underline; }
   .auth-or { display: flex; align-items: center; gap: 10px; margin: 14px 0 10px; color: var(--ink-2); font-size: 12px; }
   .auth-or::before, .auth-or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
-  .auth-google { width: 100%; padding: 12px; background: #fff; color: #1f1f1f; border: 1px solid var(--line);
+  .auth-google { width: 100%; padding: 12px; background: var(--surface); color: var(--ink); border: 1px solid var(--line);
     border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer;
     display: flex; align-items: center; justify-content: center; gap: 10px; }
-  .auth-google:hover { background: #f6f6f6; }
+  .auth-google:hover { background: var(--surface-2); }
   .auth-google:disabled { opacity: .6; cursor: default; }
   .auth-google svg { width: 18px; height: 18px; flex: none; }
   .profile-row { display: flex; justify-content: space-between; align-items: center; gap: 12px;
     padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
   .profile-row .label { color: var(--ink-2); font-size: 12px; text-transform: uppercase; letter-spacing: .4px; flex: none; }
   .profile-row #profile-email { overflow: hidden; text-overflow: ellipsis; }
-  #profile-plan.plus { color: #0a7a2f; font-weight: 700; }
+  #profile-plan.plus { color: var(--ok-ink); font-weight: 700; }
   #profile-upgrade { margin: 12px 0 2px; }
   .profile-toggle-row { align-items: center; }
   .profile-feat { font-size: 14px; font-weight: 600; }
   .profile-feat-sub { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
   .switch { position: relative; width: 44px; height: 26px; flex: none; }
   .switch input { opacity: 0; width: 0; height: 0; }
-  .switch .slider { position: absolute; inset: 0; background: #cfd6df; border-radius: 13px; cursor: pointer; transition: background .15s; }
+  .switch .slider { position: absolute; inset: 0; background: var(--switch-off); border-radius: 13px; cursor: pointer; transition: background .15s; }
   .switch .slider::before { content: ""; position: absolute; width: 20px; height: 20px; left: 3px; top: 3px;
-    background: #fff; border-radius: 50%; transition: transform .15s; box-shadow: 0 1px 2px rgba(0,0,0,.25); }
-  .switch input:checked + .slider { background: var(--blue); }
+    background: var(--surface); border-radius: 50%; transition: transform .15s; box-shadow: 0 1px 2px rgba(0,0,0,.25); }
+  .switch input:checked + .slider { background: var(--blue-solid); }
   .switch input:checked + .slider::before { transform: translateX(18px); }
-  .profile-signout { width: 100%; margin-top: 14px; padding: 11px; background: #fff; color: #a40000;
+  .profile-signout { width: 100%; margin-top: 14px; padding: 11px; background: var(--surface); color: var(--err-ink);
     border: 1px solid var(--line); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
-  .profile-signout:hover { background: #fff5f5; }
+  .profile-signout:hover { background: var(--err-bg-soft); }
   .research-card { max-width: 420px; max-height: 82vh; overflow-y: auto; }
   .research-sec { margin-top: 14px; }
   .research-sec h3 { margin: 0 0 2px; font-size: 15px; }
@@ -141,26 +214,26 @@
   .research-boros { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
   .research-boros .hpd-stat { text-transform: capitalize; }
   .hpd-research-btn { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 7px 12px;
-    background: #fff; border: 1px solid var(--line); border-radius: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
-  .hpd-research-btn:hover { background: #f6f6f6; }
+    background: var(--surface); border: 1px solid var(--line); border-radius: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+  .hpd-research-btn:hover { background: var(--surface-2); }
   #folder-bar { display: flex; gap: 8px; padding: 10px 16px 0; overflow-x: auto; flex: none; }
   #folder-bar[hidden] { display: none; }
   /* post-search helper: turns a big undifferentiated result set into next steps */
   #search-helper { flex: none; padding: 10px 16px 0; }
   #search-helper[hidden] { display: none; }
-  .sh-card { background: #f0f5ff; border: 1px solid #cfe0ff; border-radius: 12px; padding: 11px 13px; }
+  .sh-card { background: var(--info-bg); border: 1px solid var(--info-line); border-radius: 12px; padding: 11px 13px; }
   .sh-head { font-size: 13.5px; color: var(--ink); font-weight: 600; margin-bottom: 8px; }
   .sh-head b { color: var(--blue); }
   .sh-chips { display: flex; flex-wrap: wrap; gap: 7px; }
-  .sh-chips button { border: 1px solid #b8ccf0; background: #fff; color: var(--blue); border-radius: 15px;
+  .sh-chips button { border: 1px solid var(--info-line); background: var(--surface); color: var(--blue); border-radius: 15px;
     padding: 5px 11px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
-  .sh-chips button:hover { background: #e6efff; }
-  .sh-chips button.on { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .sh-chips button:hover { background: var(--info-bg-2); }
+  .sh-chips button.on { background: var(--blue-solid); color: #fff; border-color: var(--blue); }
   .sh-signup { margin-top: 8px; font-size: 12.5px; color: var(--ink-2); }
   .sh-signup a { color: var(--blue); font-weight: 700; cursor: pointer; }
   .folder-chip { flex: none; padding: 6px 12px; border-radius: 15px; border: 1px solid var(--line);
-    background: #fff; font-size: 12.5px; font-weight: 600; cursor: pointer; white-space: nowrap; }
-  .folder-chip.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+    background: var(--surface); font-size: 12.5px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .folder-chip.active { background: var(--blue-solid); border-color: var(--blue); color: #fff; }
   .folder-toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: 24px; z-index: 4000;
     background: #1d2430; color: #fff; border-radius: 12px; padding: 12px 14px; max-width: min(92vw, 420px);
     box-shadow: 0 8px 28px rgba(0,0,0,.35); font-size: 13.5px; }
@@ -174,11 +247,11 @@
   .folder-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
   .folder-row .fname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .folder-row .fcount { color: var(--ink-2); font-size: 12px; flex: none; }
-  .folder-row button { flex: none; background: #fff; border: 1px solid var(--line); border-radius: 6px;
+  .folder-row button { flex: none; background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
     padding: 4px 8px; font-size: 12px; cursor: pointer; }
-  .folder-row button:hover { background: #f6f6f6; }
+  .folder-row button:hover { background: var(--surface-2); }
   .shared-banner { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 3500;
-    background: var(--blue); color: #fff; border-radius: 12px; padding: 10px 38px 10px 14px; font-size: 13.5px;
+    background: var(--blue-solid); color: #fff; border-radius: 12px; padding: 10px 38px 10px 14px; font-size: 13.5px;
     font-weight: 600; box-shadow: 0 6px 20px rgba(0,0,0,.3); max-width: 92vw; }
   .shared-banner .sb-close { position: absolute; top: 50%; right: 10px; transform: translateY(-50%);
     background: none; border: none; color: #dbe7ff; cursor: pointer; font-size: 15px; }
@@ -200,11 +273,11 @@
     box-shadow: none; border: 1px solid var(--line); border-radius: 10px;
     margin-top: 8px; padding: 10px 12px; width: auto; max-width: none; }
   .filters-actions { display: flex; gap: 10px; margin-top: 4px; }
-  .filters-actions #filters-reset { flex: 1; background: #fff; border: 1px solid var(--line);
+  .filters-actions #filters-reset { flex: 1; background: var(--surface); border: 1px solid var(--line);
     border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
   .filters-actions #filters-done { flex: 1.4; margin: 0; }
   .paywall-card .paywall-badge { display: inline-block; font-size: 11px; letter-spacing: .04em; text-transform: uppercase;
-    color: var(--blue); background: #eef3ff; border: 1px solid #cfe0ff; border-radius: 999px; padding: 3px 10px; margin-bottom: 10px; }
+    color: var(--blue); background: var(--info-bg); border: 1px solid var(--info-line); border-radius: 999px; padding: 3px 10px; margin-bottom: 10px; }
   .paywall-card h2 { margin: 0 0 6px; font-size: 20px; }
   .paywall-feats { list-style: none; padding: 0; margin: 0 0 16px; }
   .paywall-feats li { font-size: 13px; padding: 6px 0; border-top: 1px solid var(--line); }
@@ -223,7 +296,7 @@
   .ref-btn:hover { filter: brightness(1.06); }
   .ref-linkrow { display:flex; gap:8px; margin:8px 0 10px; }
   .ref-linkrow input { flex:1; min-width:0; padding:11px 12px; border:1px solid var(--line); border-radius:10px;
-    font-size:14px; background:#f7f8fa; color:var(--ink); }
+    font-size:14px; background:var(--bg); color:var(--ink); }
   .ref-copy { flex:0 0 auto; width:auto; padding:11px 18px; }
   .ref-share { margin-top:2px; }
   /* on desktop the chip-row is transparent so pills lay out as direct flex children (layout unchanged) */
@@ -233,10 +306,10 @@
   .mobile-only { display: none; }
 
   /* address search autocomplete dropdown (positioned under the search box via JS) */
-  #search-ac { position: fixed; z-index: 1750; background: #fff; border: 1px solid var(--line);
+  #search-ac { position: fixed; z-index: 1750; background: var(--surface); border: 1px solid var(--line);
     border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.18); overflow: hidden; }
   #search-ac[hidden] { display: none; }
-  .ac-item { display: block; width: 100%; text-align: left; background: #fff; border: none;
+  .ac-item { display: block; width: 100%; text-align: left; background: var(--surface); border: none;
     border-bottom: 1px solid var(--line); padding: 11px 14px; cursor: pointer; }
   .ac-item:last-child { border-bottom: none; }
   .ac-item:hover { background: var(--blue-soft); }
@@ -251,16 +324,16 @@
   .filter-pill {
     position: relative;
     padding: 9px 14px; font-size: 13px; font-weight: 600; border: 1px solid var(--line); border-radius: 999px;
-    background: #fff; cursor: pointer; white-space: nowrap; user-select: none;
+    background: var(--surface); cursor: pointer; white-space: nowrap; user-select: none;
     color: var(--ink);
   }
-  .filter-pill:hover { border-color: #b8c3d0; }
+  .filter-pill:hover { border-color: var(--line-strong); }
   .filter-pill.active { border-color: var(--blue); color: var(--blue); }
   .filter-pill .caret { font-size: 9px; opacity: .6; margin-left: 4px; }
-  .filter-pill .count-badge { display: inline-block; background: var(--blue); color: #fff; font-size: 11px; padding: 1px 6px; border-radius: 10px; margin-left: 6px; font-weight: 700; }
+  .filter-pill .count-badge { display: inline-block; background: var(--blue-solid); color: #fff; font-size: 11px; padding: 1px 6px; border-radius: 10px; margin-left: 6px; font-weight: 700; }
   .pill-popover {
     position: absolute; top: calc(100% + 6px); left: 0; min-width: 280px; max-width: 360px;
-    background: #fff; border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.12);
     padding: 12px; z-index: 1100; display: none;
   }
   .filter-pill.open .pill-popover { display: block; }
@@ -273,20 +346,20 @@
   .pill-popover input[type=checkbox] { accent-color: var(--blue); }
   .pill-popover .scroll { max-height: 320px; overflow-y: auto; margin: 0 -6px; padding: 0 6px; }
   .pill-popover .actions { display: flex; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
-  .pill-popover .actions button { flex: 1; padding: 7px 10px; font-size: 12px; font-weight: 600; border-radius: 6px; cursor: pointer; border: 1px solid var(--line); background: #fff; }
-  .pill-popover .actions button.primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .pill-popover .actions button { flex: 1; padding: 7px 10px; font-size: 12px; font-weight: 600; border-radius: 6px; cursor: pointer; border: 1px solid var(--line); background: var(--surface); }
+  .pill-popover .actions button.primary { background: var(--blue-solid); color: #fff; border-color: var(--blue); }
 
   main { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); height: calc(100vh - 56px); }
   #map { height: 100%; min-width: 0; }
 
-  aside.results { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-left: 1px solid var(--line); background: #fff; }
+  aside.results { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-left: 1px solid var(--line); background: var(--surface); }
   .results-head { padding: 14px 20px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: baseline; }
   .results-head h1 { margin: 0; font-size: 22px; letter-spacing: -0.5px; }
   .results-head .sub { font-size: 13px; color: var(--ink-2); margin-top: 2px; }
   .results-head .sort { font-size: 13px; color: var(--ink-2); white-space: nowrap; }
   .results-head .sort select {
     font-size: 13px; font-weight: 700; color: var(--ink); margin-left: 4px;
-    border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; background: #fff; cursor: pointer;
+    border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; background: var(--surface); cursor: pointer;
   }
   /* flexbox wrap (not grid): wrapped flex lines stack and never overlap, even with variable card heights */
   .results-grid { flex: 1 1 auto; overflow-y: auto; padding: 14px 16px 24px; display: flex; flex-wrap: wrap; gap: 14px; align-content: flex-start; }
@@ -295,12 +368,13 @@
 
   .card {
     position: relative;
-    background: #fff; border: 1px solid var(--line); border-radius: 10px; cursor: pointer;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px; cursor: pointer;
+    box-shadow: var(--card-shadow);
     transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
     display: block; min-width: 0; min-height: 290px;
     flex: 0 1 calc(50% - 7px);
   }
-  .card:hover { box-shadow: 0 8px 24px rgba(10,10,35,0.12); border-color: #c5d0db; transform: translateY(-1px); }
+  .card:hover { box-shadow: var(--card-shadow-hover); border-color: var(--line-strong); transform: translateY(-1px); }
   .card .photo {
     flex: 0 0 150px; height: 150px; background: linear-gradient(135deg, #1f3a8a 0%, #3151c8 50%, #6b3df5 100%);
     color: #fff; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden;
@@ -331,16 +405,16 @@
   }
   /* Section 8 / voucher tags */
   .card .photo .s8-pill {
-    background: #0e8a45; color: #fff; font-weight: 700; font-size: 11px;
+    background: var(--s8); color: #fff; font-weight: 700; font-size: 11px;
     padding: 3px 9px; border-radius: 999px; box-shadow: 0 2px 6px rgba(0,0,0,0.18);
   }
-  .card .photo .s8-pill.soft { background: rgba(255,255,255,0.95); color: #0e8a45; }
-  .s8-line { margin-top: 8px; color: #0e8a45; font-weight: 700; font-size: 13px; }
-  .s8-line.soft { font-weight: 600; color: #3d7d58; font-size: 12px; margin-top: 4px; }
-  .s8-line a { color: #0e8a45; text-decoration: underline; }
+  .card .photo .s8-pill.soft { background: rgba(255,255,255,0.95); color: var(--s8); }
+  .s8-line { margin-top: 8px; color: var(--s8); font-weight: 700; font-size: 13px; }
+  .s8-line.soft { font-weight: 600; color: var(--s8-soft); font-size: 12px; margin-top: 4px; }
+  .s8-line a { color: var(--s8); text-decoration: underline; }
   .s8-line .s8-asof { font-weight: 500; color: #8a8aa0; }
-  .s8-mini { font-size: 12px; font-weight: 700; color: #0e8a45; margin: 2px 0 4px; }
-  .s8-mini.soft { font-weight: 600; color: #3d7d58; }
+  .s8-mini { font-size: 12px; font-weight: 700; color: var(--s8); margin: 2px 0 4px; }
+  .s8-mini.soft { font-weight: 600; color: var(--s8-soft); }
   .s8-legal { font-size: 11px; color: var(--ink-2); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); line-height: 1.45; }
   .s8-legal a { color: var(--blue); }
   .card .photo .borough-pill {
@@ -360,9 +434,9 @@
     flex: 1; padding: 7px 8px; font-size: 12px; font-weight: 700; text-align: center;
     border-radius: 6px; border: 1px solid var(--blue); cursor: pointer;
   }
-  .card .actions .btn-primary { background: var(--blue); color: #fff; }
+  .card .actions .btn-primary { background: var(--blue-solid); color: #fff; }
   .card .actions .btn-primary:hover { background: var(--blue-dark); }
-  .card .actions .btn-secondary { background: #fff; color: var(--blue); }
+  .card .actions .btn-secondary { background: var(--surface); color: var(--blue); }
   .card .actions .btn-secondary:hover { background: var(--blue-soft); }
 
   /* leaflet marker overrides */
@@ -377,7 +451,7 @@
   /* white unit-count pill for buildings with no active listing — same shape and
      height as the blue listed pill so every building is an easy tap target */
   .unit-pill {
-    background: #fff; color: var(--ink); font-weight: 700; font-size: 11px;
+    background: #fff; color: #0a0a23; font-weight: 700; font-size: 11px;
     padding: 4px 8px; border-radius: 999px; white-space: nowrap;
     box-shadow: 0 2px 6px rgba(0,0,0,.28); border: 1.5px solid #9aa7bd;
     display: inline-block;
@@ -389,9 +463,9 @@
   .popup-status { font-size: 11px; padding: 2px 6px; background: var(--blue-soft); color: var(--blue); border-radius: 4px; display: inline-block; margin: 4px 4px 0 0; font-weight: 600; }
   .popup-actions { display: flex; gap: 6px; margin-top: 10px; }
   .popup-actions a { flex: 1; padding: 7px 8px; font-size: 12px; font-weight: 700; text-align: center; border-radius: 6px; border: 1px solid var(--blue); text-decoration: none; }
-  .popup-actions a.primary { background: var(--blue); color: #fff; }
+  .popup-actions a.primary { background: var(--blue-solid); color: #fff; }
   .popup-actions a.primary:hover { background: var(--blue-dark); }
-  .popup-actions a.secondary { background: #fff; color: var(--blue); }
+  .popup-actions a.secondary { background: var(--surface); color: var(--blue); }
   .popup-actions a.secondary:hover { background: var(--blue-soft); }
   .leaflet-popup-content-wrapper { min-width: 260px; max-width: 360px; }
   /* never taller than the visible map, so the whole popup stays reachable;
@@ -407,13 +481,13 @@
     color: var(--blue); text-decoration: none; }
   .hpd-row .hpd-phone:hover { text-decoration: underline; }
   .hpd-row .hpd-phone-btn { display: inline-block; margin-top: 4px; padding: 3px 9px; font-size: 11px;
-    font-weight: 700; color: var(--blue); background: #eef3ff; border: 1px solid #cfe0ff;
+    font-weight: 700; color: var(--blue); background: var(--info-bg); border: 1px solid var(--info-line);
     border-radius: 999px; cursor: pointer; }
-  .hpd-row .hpd-phone-btn:hover { background: #e0eaff; }
+  .hpd-row .hpd-phone-btn:hover { background: var(--info-bg-2); }
   .hpd-row .hpd-phone-btn:disabled { opacity: .6; cursor: default; }
   .hpd-stat { display: inline-block; background: var(--bg); padding: 2px 7px; border-radius: 4px; font-size: 11px; margin-right: 4px; margin-top: 2px; }
-  .hpd-stat.warn { background: #fff2dc; color: #8a5a00; }
-  .hpd-stat.bad { background: #ffe2e2; color: #a40000; }
+  .hpd-stat.warn { background: var(--warn-bg); color: var(--warn-ink); }
+  .hpd-stat.bad { background: var(--err-bg); color: var(--err-ink); }
   .hpd-chip { border: none; font-family: inherit; line-height: 1.3; cursor: pointer; position: relative; padding-right: 16px; }
   .hpd-chip::after { content: "ⓘ"; position: absolute; right: 4px; top: 50%; transform: translateY(-50%); font-size: 9px; opacity: .6; }
   .hpd-chip:hover { filter: brightness(0.96); }
@@ -425,7 +499,7 @@
   .hpd-legend-row { font-size: 12px; line-height: 1.5; color: var(--ink); padding: 8px 0; }
   .hpd-legend-row + .hpd-legend-row { border-top: 1px solid var(--line); }
   .hpd-legend-row .hpd-stat { font-weight: 700; }
-  .hpd-legend-row.hot { background: #fffbe0; margin: 0 -8px; padding: 8px; border-radius: 6px; }
+  .hpd-legend-row.hot { background: var(--hot-bg); margin: 0 -8px; padding: 8px; border-radius: 6px; }
   .hpd-link { font-size: 11px; margin-top: 6px; }
   /* in-feed ad tile: same footprint as a building card */
   .card.ad-card { cursor: default; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 0; }
@@ -436,8 +510,8 @@
     color: var(--ink-2); background: rgba(255,255,255,.92); border: 1px solid var(--line);
     padding: 2px 7px; border-radius: 4px; pointer-events: none; }
   .card .hpd-mini { font-size: 11px; color: var(--ink-2); margin-top: 4px; }
-  .card .hpd-mini .bad { color: #a40000; font-weight: 700; }
-  .card .hpd-mini .warn { color: #8a5a00; font-weight: 700; }
+  .card .hpd-mini .bad { color: var(--err-ink); font-weight: 700; }
+  .card .hpd-mini .warn { color: var(--warn-ink); font-weight: 700; }
 
   .footer-credit { font-size: 11px; color: var(--ink-2); padding: 8px 16px; border-top: 1px solid var(--line); background: var(--bg); }
   .footer-credit a { color: var(--ink-2); text-decoration: underline; }
@@ -457,6 +531,7 @@
     .city-nav a { padding: 4px 9px; }
     .filter-bar { gap: 8px; width: 100%; flex: 1 1 100%; order: 3; }
     .auth-btn { margin-left: auto; order: 2; padding: 7px 14px; font-size: 13px; }
+    .theme-btn { width: 30px; height: 30px; font-size: 14px; }
     /* 16px stops iOS Safari from auto-zooming when the field is focused */
     .filter-bar input.search-input { flex: 1 1 100%; max-width: none; min-width: 0; order: -1; font-size: 16px; }
     .chip-row {
@@ -521,7 +596,7 @@
     #mobile-fab {
       position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
       z-index: 1600; gap: 0; align-items: stretch;
-      background: var(--ink); color: #fff; border-radius: 999px;
+      background: var(--overlay-ink); color: #fff; border-radius: 999px;
       box-shadow: 0 6px 18px rgba(0,0,0,0.35); overflow: hidden;
     }
     #mobile-fab button {
@@ -535,14 +610,14 @@
     /* sort bottom sheet */
     .sheet-backdrop { position: fixed; inset: 0; z-index: 1700; background: rgba(0,0,0,0.4); display: flex; align-items: flex-end; }
     .sheet-backdrop[hidden] { display: none; }
-    .sheet { position: relative; background: #fff; width: 100%; border-radius: 16px 16px 0 0; padding: 8px 16px 24px; }
-    .sheet-handle { width: 40px; height: 4px; background: #d0d5dd; border-radius: 999px; margin: 8px auto 4px; }
+    .sheet { position: relative; background: var(--surface); width: 100%; border-radius: 16px 16px 0 0; padding: 8px 16px 24px; }
+    .sheet-handle { width: 40px; height: 4px; background: var(--switch-off); border-radius: 999px; margin: 8px auto 4px; }
     .sheet-close { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border-radius: 50%;
       border: none; background: var(--bg); color: var(--ink-2); font-size: 16px; cursor: pointer;
       display: flex; align-items: center; justify-content: center; z-index: 1; }
-    .sheet-close:hover { background: #e4e8ee; }
+    .sheet-close:hover { background: var(--surface-3); }
     .sheet h3 { margin: 8px 4px 12px; font-size: 16px; }
-    .sheet-opt { display: block; width: 100%; text-align: left; background: #fff; border: none; border-top: 1px solid var(--line);
+    .sheet-opt { display: block; width: 100%; text-align: left; background: var(--surface); border: none; border-top: 1px solid var(--line);
       padding: 14px 6px; font-size: 15px; font-weight: 600; color: var(--ink); cursor: pointer; }
     .sheet-opt.active { color: var(--blue); }
     .sheet-opt.active::after { content: " ✓"; }
@@ -552,15 +627,15 @@
     .sheet-radio { display: flex; align-items: center; gap: 10px; padding: 11px 6px; font-size: 15px; font-weight: 600; color: var(--ink); cursor: pointer; }
     .sheet-radio input[type=radio] { accent-color: var(--blue); width: 18px; height: 18px; }
     .sheet-actions { display: flex; gap: 10px; margin-top: 14px; }
-    .sheet-actions button { flex: 1; padding: 13px; font-size: 15px; font-weight: 700; border-radius: 10px; border: 1px solid var(--line); background: #fff; color: var(--ink); cursor: pointer; }
-    .sheet-actions button.primary { background: var(--blue); color: #fff; border-color: var(--blue); }
-    .fab-badge { background: var(--blue); color: #fff; font-size: 11px; font-weight: 800; min-width: 18px; height: 18px; line-height: 18px; text-align: center; padding: 0 5px; border-radius: 999px; }
+    .sheet-actions button { flex: 1; padding: 13px; font-size: 15px; font-weight: 700; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+    .sheet-actions button.primary { background: var(--blue-solid); color: #fff; border-color: var(--blue); }
+    .fab-badge { background: var(--blue-solid); color: #fff; font-size: 11px; font-weight: 800; min-width: 18px; height: 18px; line-height: 18px; text-align: center; padding: 0 5px; border-radius: 999px; }
     .fab-badge[hidden] { display: none; }
 
     /* tap-a-pin listing card that slides up from the bottom of the map */
     #building-card {
       position: fixed; left: 8px; right: 8px; bottom: 78px; z-index: 1550;
-      background: #fff; border-radius: 14px; overflow: hidden;
+      background: var(--surface); border-radius: 14px; overflow: hidden;
       box-shadow: 0 10px 30px rgba(0,0,0,0.32);
       transform: translateY(24px); opacity: 0; transition: transform .22s ease, opacity .22s ease;
     }
@@ -592,12 +667,12 @@
     .card-meta { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
     .card-actions { display: flex; gap: 8px; margin-top: 12px; }
     .card-actions .cbtn { flex: 1; text-align: center; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: 1px solid var(--blue); text-decoration: none; }
-    .card-actions .cbtn-1 { background: var(--blue); color: #fff; }
-    .card-actions .cbtn-2 { background: #fff; color: var(--blue); }
+    .card-actions .cbtn-1 { background: var(--blue-solid); color: #fff; }
+    .card-actions .cbtn-2 { background: var(--surface); color: var(--blue); }
   }
   /* selected map pin (both layouts) */
-  .price-pill.selected { background: var(--ink); border-color: #fff; transform: scale(1.06); }
-  .building-dot.selected { background: var(--ink); width: 18px; height: 18px; border-width: 2px; }
+  .price-pill.selected { background: #0a0a23; border-color: #fff; transform: scale(1.06); }
+  .building-dot.selected { background: #0a0a23; width: 18px; height: 18px; border-width: 2px; }
   @media (min-width: 901px) { #building-card { display: none !important; } }
 
   /* building detail (Zillow-style PDP): full-screen page on mobile,
@@ -607,7 +682,7 @@
     display: flex;
   }
   #detail-sheet[hidden] { display: none; }
-  .detail-shell { display: flex; flex-direction: column; background: #fff; width: 100%; height: 100%; min-height: 0; }
+  .detail-shell { display: flex; flex-direction: column; background: var(--surface); width: 100%; height: 100%; min-height: 0; }
   @media (min-width: 901px) {
     #detail-sheet { background: rgba(13, 20, 33, .55); align-items: center; justify-content: center; padding: 28px; }
     .detail-shell { width: min(780px, 94vw); height: auto; max-height: 88vh;
@@ -615,10 +690,10 @@
   }
   .detail-bar {
     position: sticky; top: 0; z-index: 2; display: flex; justify-content: space-between; align-items: center;
-    padding: 8px 12px; background: #fff; border-bottom: 1px solid var(--line);
+    padding: 8px 12px; background: var(--surface); border-bottom: 1px solid var(--line);
   }
   .detail-icon {
-    width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: #fff;
+    width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface);
     font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--ink);
   }
   .detail-fav.faved { color: #e0457b; border-color: #f3c2d3; }
@@ -636,7 +711,7 @@
   .d-spec {
     position: relative; margin: -28px 16px 0; z-index: 1;
     display: flex; justify-content: space-between; gap: 8px;
-    background: #fff; border: 1px solid var(--line); border-radius: 14px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
     box-shadow: 0 6px 20px rgba(20,20,50,.12); padding: 12px 8px;
   }
   .d-spec-item { flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 13px; color: var(--ink-2); }
@@ -650,7 +725,7 @@
   .d-est { color: var(--ink); font-weight: 700; }
   .agent-card {
     display: flex; align-items: center; gap: 12px; margin: 16px 18px 4px;
-    padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: #fff;
+    padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface);
   }
   .agent-card:empty { display: none; }
   .agent-avatar { width: 46px; height: 46px; border-radius: 50%; flex: 0 0 46px;
@@ -661,7 +736,7 @@
   .agent-role { font-size: 12px; color: var(--ink-2); margin-top: 1px; }
   .agent-actions { display: flex; gap: 8px; flex: 0 0 auto; }
   .agent-call { width: 42px; height: 42px; border-radius: 50%; border: none; cursor: pointer;
-    background: var(--blue); color: #fff; font-size: 17px; display: flex; align-items: center; justify-content: center; }
+    background: var(--blue-solid); color: #fff; font-size: 17px; display: flex; align-items: center; justify-content: center; }
   .agent-call:hover { filter: brightness(1.05); }
   .agent-loading, .agent-empty { color: var(--ink-2); font-size: 13px; }
   /* detail address reads like the reference: muted, regular weight */
@@ -671,26 +746,26 @@
   .city-nav { display: flex; gap: 4px; align-items: center; margin-left: 10px; }
   .city-nav a { font-size: 12px; font-weight: 700; color: var(--ink-2); text-decoration: none;
     padding: 4px 8px; border-radius: 999px; border: 1px solid var(--line); }
-  .city-nav a.cur { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .city-nav a.cur { background: var(--blue-solid); border-color: var(--blue); color: #fff; }
   .d-head { padding: 16px 18px 4px; }
   .d-badge { display: inline-block; background: var(--blue-soft); color: var(--blue); font-size: 11px; font-weight: 700;
     padding: 3px 9px; border-radius: 999px; margin-bottom: 8px; }
   .d-price { font-size: 26px; font-weight: 800; letter-spacing: -.6px; }
-  .price.est, .card-price.est { color: #4a5568; font-weight: 700; }
+  .price.est, .card-price.est { color: var(--ink-2); font-weight: 700; }
   .card .price.est { font-size: 14px; }
   /* one consistent size for everything in the header except the price */
   .d-key { font-size: 14px; color: var(--ink); font-weight: 600; margin-top: 4px; }
   .d-addr { font-size: 14px; font-weight: 600; margin-top: 8px; }
   .d-sub { font-size: 14px; color: var(--ink-2); margin-top: 2px; }
   .d-health { display: inline-block; margin-top: 8px; font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 8px; }
-  .d-health.ok { background: #e8f7ec; color: #137333; }
-  .d-health.warn { background: #fff4e5; color: #a15c00; }
-  .d-health.bad { background: #fde8e8; color: #b3261e; }
+  .d-health.ok { background: var(--ok-bg); color: var(--ok-ink); }
+  .d-health.warn { background: var(--warn2-bg); color: var(--warn2-ink); }
+  .d-health.bad { background: var(--bad-bg); color: var(--bad-ink); }
   .d-actions { display: flex; gap: 8px; padding: 14px 18px; }
   .d-actions a, .d-actions button { flex: 1 1 0; min-width: 0; text-align: center; padding: 12px; border-radius: 8px; font-size: 14px;
     font-weight: 700; border: 1px solid var(--blue); cursor: pointer; text-decoration: none; white-space: nowrap; }
-  .d-actions .d-primary { background: var(--blue); color: #fff; }
-  .d-actions .d-secondary { background: #fff; color: var(--blue); }
+  .d-actions .d-primary { background: var(--blue-solid); color: #fff; }
+  .d-actions .d-secondary { background: var(--surface); color: var(--blue); }
   @media (min-width: 901px) { .d-dir-row { display: none; } }   /* driving directions: mobile only */
   .d-section { padding: 16px 18px; border-top: 8px solid var(--bg); }
   .d-section h3 { margin: 0 0 12px; font-size: 18px; letter-spacing: -.3px; }
@@ -702,6 +777,32 @@
   .d-chips .chip { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; font-size: 13px; font-weight: 600; }
   /* the reused HPD markup renders cleanly inside a detail section */
   #detail-content .hpd-section:first-child { border-top: none; margin-top: 0; padding-top: 0; }
+
+  /* ---- dark mode: Leaflet's own chrome ----
+     Leaflet ships its white popup/zoom/attribution styling in its stylesheet, so
+     these can't be reached by tokens — they need explicit overrides. The tiles
+     themselves are a different basemap, swapped in JS. */
+  html[data-theme="dark"] .leaflet-container { background: #0a0a10; }
+  html[data-theme="dark"] .leaflet-popup-content-wrapper,
+  html[data-theme="dark"] .leaflet-popup-tip {
+    background: var(--surface); color: var(--ink); box-shadow: 0 3px 14px rgba(0,0,0,.6);
+  }
+  html[data-theme="dark"] .leaflet-container a.leaflet-popup-close-button { color: var(--ink-2); }
+  html[data-theme="dark"] .leaflet-bar a,
+  html[data-theme="dark"] .leaflet-bar a:hover {
+    background: var(--surface); color: var(--ink); border-bottom-color: var(--line);
+  }
+  html[data-theme="dark"] .leaflet-bar a:hover { background: var(--surface-2); }
+  html[data-theme="dark"] .leaflet-bar { border-color: rgba(0,0,0,.5); }
+  html[data-theme="dark"] .leaflet-control-attribution {
+    background: rgba(22,22,31,.85); color: var(--ink-2);
+  }
+  html[data-theme="dark"] .leaflet-control-attribution a { color: var(--blue); }
+  /* The Street View thumbnails are bright daylight photos; take a little of the
+     glare off so a card doesn't blaze out of a dark list. */
+  html[data-theme="dark"] .card .photo img.streetview,
+  html[data-theme="dark"] .card-photo,
+  html[data-theme="dark"] .d-photo { filter: brightness(.88); }
 </style>
 </head>
 <body>
@@ -710,6 +811,7 @@
   <nav class="city-nav" id="city-nav" aria-label="City">
     <a href="/" data-city-link="nyc">NYC</a><a href="/sf/" data-city-link="sf">SF</a><a href="/la/" data-city-link="la">LA</a><a href="/dc/" data-city-link="dc">DC</a>
   </nav>
+  <button id="theme-btn" type="button" class="theme-btn" aria-label="Switch to dark mode" title="Switch to dark mode">🌙</button>
   <button id="auth-btn" type="button" class="auth-btn">Sign in</button>
   <button id="ref-btn" type="button" class="ref-btn" hidden>🎁 Free Plus</button>
   <div class="filter-bar">
@@ -913,6 +1015,13 @@
       </div>
       <label class="switch"><input id="profile-alerts" type="checkbox"><span class="slider"></span></label>
     </div>
+    <div class="profile-row profile-toggle-row">
+      <div>
+        <div class="profile-feat">🌙 Dark mode</div>
+        <div class="profile-feat-sub">Saved to your account, so it follows you to any device you sign in on.</div>
+      </div>
+      <label class="switch"><input id="profile-dark" type="checkbox"><span class="slider"></span></label>
+    </div>
     <div id="profile-searches" hidden>
       <div class="profile-row" style="border-bottom:none;padding-bottom:4px"><span class="label">Saved searches</span></div>
       <div id="search-list"></div>
@@ -1002,6 +1111,55 @@
 <script src="../config.js?v=2"></script>
 <script>
 (async function () {
+  // ---------- theme ----------
+  // Three layers, in order of authority: the account (survives a new device),
+  // localStorage (survives a reload and is readable before first paint — set in
+  // <head>), and the OS preference (what a first-time visitor gets). Anyone can
+  // flip it from the header; signing in is what makes the choice portable.
+  const THEME_KEY = 'fac.theme';
+  const themeBtn = document.getElementById('theme-btn');
+  const themeListeners = [];
+  let themeTouched = false;      // a click here outranks metadata replayed by an auth event
+
+  function themeName() {
+    return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  }
+  function onThemeChange(fn) { themeListeners.push(fn); }
+  function setTheme(t, opts) {
+    t = t === 'dark' ? 'dark' : 'light';
+    const changed = t !== themeName();
+    document.documentElement.setAttribute('data-theme', t);
+    try { localStorage.setItem(THEME_KEY, t); } catch (e) {}
+    const label = t === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+    themeBtn.textContent = t === 'dark' ? '☀️' : '🌙';
+    themeBtn.setAttribute('aria-label', label);
+    themeBtn.title = label;
+    const box = document.getElementById('profile-dark');
+    if (box) box.checked = (t === 'dark');
+    if (changed) for (const fn of themeListeners) { try { fn(t); } catch (e) {} }
+    if (opts && opts.save) saveThemeToAccount(t);
+  }
+  // Stored on the auth user rather than a profiles table: no migration, no RLS
+  // policy, and it works for free accounts, not just Plus.
+  function saveThemeToAccount(t) {
+    if (!supaClient || !authUser) return;   // anonymous — localStorage is all there is
+    supaClient.auth.updateUser({ data: { theme: t } }).then(() => {}, () => {});
+  }
+  function adoptAccountTheme(user) {
+    if (themeTouched) return;
+    const t = user && user.user_metadata && user.user_metadata.theme;
+    if (t === 'dark' || t === 'light') setTheme(t);
+  }
+  themeBtn.addEventListener('click', () => {
+    themeTouched = true;
+    setTheme(themeName() === 'dark' ? 'light' : 'dark', { save: true });
+  });
+  document.getElementById('profile-dark').addEventListener('change', e => {
+    themeTouched = true;
+    setTheme(e.target.checked ? 'dark' : 'light', { save: true });
+  });
+  setTheme(themeName());   // sync the button + switch with what <head> painted
+
   // ---------- city ----------
   // The root page is NYC; build_city_pages.py generates sf/index.html and
   // la/index.html from this same file and stamps <html data-city="…">. Each
@@ -1067,9 +1225,16 @@
   // doubleClickZoom: true → a double-click (desktop) or double-tap (mobile) zooms in
   // one level toward the tapped point. zoomDelta 1 keeps it gentle ("a little").
   const map = L.map('map', { preferCanvas: true, doubleClickZoom: true, zoomDelta: 1, zoomControl: true }).setView(CITY.center, CITY.zoom);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+  // A light basemap under a dark UI is the one thing that gives dark mode away,
+  // so the tiles switch too — same CARTO tileset family, dark variant.
+  const BASEMAP = {
+    light: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    dark:  'https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png',
+  };
+  const baseTiles = L.tileLayer(BASEMAP[themeName()], {
     maxZoom: 20, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
   }).addTo(map);
+  onThemeChange(t => baseTiles.setUrl(BASEMAP[t]));
 
   // Double-tap to zoom in one level. Leaflet's native doubleClickZoom relies on a
   // dblclick event that mobile Safari doesn't reliably fire, so detect the
@@ -1493,7 +1658,7 @@
     const advSrc = IS_NYC ? '' : ' on Zumper';
     const listedHtml = listed ? `<div style="margin-top:8px;color:#6b3df5;font-weight:700">Recently advertised${advSrc} (${listed} listing${listed===1?'':'s'})<span style="font-weight:500;color:#8a8aa0">${asOf}</span></div>` : '';
     // SF blocks and DC registrations carry a median reported/registered rent (mr)
-    const rentHtml = rec.mr ? `<div style="margin-top:8px;color:#137333;font-weight:700">${RENT.label} $${rec.mr.toLocaleString()}/mo <span style="font-weight:500;color:#8a8aa0">${esc(RENT.note)}</span></div>` : '';
+    const rentHtml = rec.mr ? `<div style="margin-top:8px;color:var(--ok-ink);font-weight:700">${RENT.label} $${rec.mr.toLocaleString()}/mo <span style="font-weight:500;color:var(--ink-2)">${esc(RENT.note)}</span></div>` : '';
     const vacHtml = rec.vac ? `<div style="margin-top:6px;color:#b26a00;font-weight:700">${rec.vac} vacant unit${rec.vac === 1 ? '' : 's'} <span style="font-weight:500;color:#8a8aa0">(reported at last registration)</span></div>` : '';
     const noteHtml = CITY.sourceNote ? `<div class="popup-meta" style="margin-top:6px">${CITY.sourceNote}${CITY.likely ? ` <a href="https://zimas.lacity.org/" target="_blank" rel="noopener">Check ZIMAS ↗</a>` : ''}</div>` : '';
     const listing = listingLink(rec, borough);
@@ -2736,6 +2901,12 @@
       <div class="d-actions d-dir-row" style="padding-top:0">
         <button class="d-secondary" data-detail="directions">🧭 Driving directions</button>
       </div>
+      ${IS_NYC && REPORTS_ON ? `<div class="d-actions" style="padding-top:0">
+        <button class="d-secondary" data-detail="report">📄 Get the full building report — $9</button>
+        <div class="d-sub" style="margin:6px 0 0">How this building's violation record compares
+        citywide, who owns it and what else they own, and a pre-filled DHCR rent-history
+        request. One-time, no account needed.</div>
+      </div>` : ''}
       ${IS_NYC ? `<div class="d-section"><h3>Housing vouchers (Section 8)</h3>
         ${s8Html(rec) || '<div class="d-sub" style="margin:0">No voucher listing or subsidy record for this building right now.</div>'}
         <div class="s8-legal">Source-of-income discrimination is illegal in NYC — every landlord must accept Section 8 and other vouchers, tagged here or not. <a href="https://www.nyc.gov/site/cchr/about/report-discrimination.page" target="_blank" rel="noopener">Report discrimination to the NYC Commission on Human Rights ↗</a></div>
@@ -2783,6 +2954,28 @@
     window.open(url, '_blank');
   }
 
+  // One-time paid building report. No account required on purpose: people need
+  // this once, at the moment they are deciding on a specific apartment, and a
+  // signup wall at that moment loses most of them. Stripe collects the email
+  // and the report link is emailed plus shown on return.
+  const REPORTS_ON = true;
+  async function buyReport(rec, btn) {
+    if (btn) { btn.disabled = true; btn.textContent = 'Opening checkout…'; }
+    try { track('report_checkout_start', { bbl: rec.bbl }); } catch (e) {}
+    try {
+      const r = await fetch('/api/reports/checkout', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bbl: rec.bbl })
+      });
+      const d = await r.json();
+      if (d.checkout_url) { window.location.href = d.checkout_url; return; }
+      throw new Error(d.error || 'unavailable');
+    } catch (err) {
+      if (btn) { btn.disabled = false; btn.textContent = '📄 Get the full building report — $9'; }
+      alert('Sorry — checkout could not be opened just now. Please try again in a moment.');
+    }
+  }
+
   let _detailNav = false;
   function openDetail(rec, listed) {
     detailRec = rec; detailListed = listed || 0;
@@ -2818,6 +3011,7 @@
       return;
     }
     if (act === 'directions') { openDirections(rec); return; }
+    if (act === 'report') { buyReport(rec, e.target.closest('[data-detail]')); return; }
     if (act === 'map') {
       const m = markerByBbl.get(rec.bbl);
       closeDetail(); setListOpen(false);
@@ -2960,15 +3154,23 @@
     }
     if (p.has('plus')) { p.delete('plus'); history.replaceState({}, '', location.pathname + (p.toString() ? '?' + p : '')); }
   })();
-  // one-click unsubscribe from saved-building alert emails (#unsub=<token>)
+  // one-click unsubscribe (#unsub=<token>), optionally scoped with &k=lifecycle.
+  // The two opt-outs are separate on purpose: saved-building alerts are a
+  // feature someone asked for by saving a building, onboarding email is not, so
+  // stopping the latter must not cost them the former.
   async function handleUnsubHash() {
     const m = location.hash.match(/[#&]unsub=([0-9a-f-]{36})/i);
     if (!m || !supaClient) return;
+    const lifecycle = /[#&]k=lifecycle\b/i.test(location.hash);
     history.replaceState({}, '', location.pathname + location.search);
     try {
-      const { data, error } = await supaClient.rpc('unsubscribe_alerts', { p_token: m[1] });
+      const { data, error } = await supaClient.rpc(
+        lifecycle ? 'unsubscribe_lifecycle' : 'unsubscribe_alerts', { p_token: m[1] });
       if (error) throw error;
-      showPlusToast(data ? 'You’ve been unsubscribed from saved-building alerts.'
+      const ok = lifecycle
+        ? 'You’ve been unsubscribed from Find A Crib emails. Saved-building alerts still work.'
+        : 'You’ve been unsubscribed from saved-building alerts.';
+      showPlusToast(data ? ok
                          : 'That unsubscribe link isn’t valid — it may have already been used.');
     } catch (e) {
       showPlusToast('Couldn’t unsubscribe — please try the link again shortly.');
@@ -3026,6 +3228,7 @@
     plan.textContent = plusActive ? '★ Plus member' : 'Free';
     plan.classList.toggle('plus', plusActive);
     document.getElementById('profile-upgrade').hidden = plusActive;
+    document.getElementById('profile-dark').checked = themeName() === 'dark';
     profileAlerts.checked = false;
     if (plusActive) {
       try {
@@ -3242,6 +3445,7 @@
     } catch (e) { /* analytics is best-effort */ }
     supaClient.auth.onAuthStateChange((_evt, sess) => {
       authUser = sess?.user || null;
+      adoptAccountTheme(authUser);   // the account's choice beats this device's
       updateAuthUI();
       refreshPlus();
       if (authUser) {
@@ -3337,7 +3541,7 @@
      <a href="/la/">rent-stabilized (RSO) Los Angeles</a>.</p>
 </nav>
 <style>
-  .seo-nav{position:relative;z-index:1;background:#fff;border-top:1px solid var(--line);
+  .seo-nav{position:relative;z-index:1;background:var(--surface);border-top:1px solid var(--line);
     padding:18px 20px;font-size:14px;color:var(--ink-2)}
   .seo-nav h2{font-size:16px;margin:0 0 6px;color:var(--ink)}
   .seo-nav a{color:var(--blue);text-decoration:none}.seo-nav a:hover{text-decoration:underline}

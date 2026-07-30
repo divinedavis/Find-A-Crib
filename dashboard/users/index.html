@@ -5,12 +5,37 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
 <title>Find A Crib — Users</title>
+<!-- Paint the saved theme before the first frame — see /dashboard/. -->
+<script>
+(function(){
+  var t;
+  try{ t = localStorage.getItem('dash.theme'); }catch(e){}
+  if(t!=='light' && t!=='dark')
+    t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
 <style>
   :root{
-    --bg:#f5f6fb; --card:#ffffff; --border:#ececf1; --border2:#f0f0f4;
+    color-scheme:light;
+    --bg:#f5f6fb; --card:#ffffff; --border:#e2e2ec; --border-strong:#cfcfdd; --border2:#eeeef4;
+    --hover:#f7f7fa; --sunken:#f0f0f6;
     --ink:#17161c; --ink2:#6b6a76; --muted:#9a99a5;
     --purple:#6d5ce7; --purple-soft:#f1effe; --purple-ink:#5a49d0;
-    --shadow:0 1px 2px rgba(20,20,40,.04),0 4px 16px rgba(20,20,40,.04); --radius:16px;
+    --live-bg:#f1fbe9; --live-ink:#4b7a12; --live-line:#dcecc4;
+    --shadow:0 1px 2px rgba(17,17,34,.09),0 6px 18px rgba(17,17,34,.11);
+    --shadow-lg:0 4px 10px rgba(17,17,34,.10),0 18px 44px rgba(17,17,34,.16);
+    --radius:16px;
+  }
+  html[data-theme="dark"]{
+    color-scheme:dark;
+    --bg:#0d0d13; --card:#16161f; --border:#2c2c3b; --border-strong:#3d3d50; --border2:#23232f;
+    --hover:#1f1f2b; --sunken:#20202c;
+    --ink:#f1f1f6; --ink2:#a9a8b8; --muted:#7b7a8c;
+    --purple:#8b7bff; --purple-soft:#221d40; --purple-ink:#b7abff;
+    --live-bg:#18240f; --live-ink:#a8dd5c; --live-line:#31461a;
+    --shadow:0 1px 2px rgba(0,0,0,.55),0 8px 24px rgba(0,0,0,.55);
+    --shadow-lg:0 6px 14px rgba(0,0,0,.55),0 24px 56px rgba(0,0,0,.6);
   }
   *{box-sizing:border-box} html,body{margin:0;padding:0}
   body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;font-size:15px}
@@ -18,24 +43,24 @@
   .hidden{display:none !important}
 
   #gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:50;padding:24px}
-  .gate-card{background:var(--card);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:40px 36px;max-width:420px;width:100%;text-align:center}
+  .gate-card{background:var(--card);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow-lg);padding:40px 36px;max-width:420px;width:100%;text-align:center}
   .gate-logo{width:52px;height:52px;border-radius:14px;background:var(--purple);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:26px}
   .gate-card h1{font-size:22px;margin:0 0 6px}
   .gate-card p{color:var(--ink2);margin:0 0 24px;font-size:14px}
-  .g-btn{display:inline-flex;align-items:center;gap:10px;justify-content:center;width:100%;padding:12px 18px;border-radius:12px;border:1px solid var(--border);background:#fff;color:var(--ink);font-weight:600;font-size:15px;cursor:pointer}
-  .g-btn:hover{background:#fafafc}
+  .g-btn{display:inline-flex;align-items:center;gap:10px;justify-content:center;width:100%;padding:12px 18px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--ink);font-weight:600;font-size:15px;cursor:pointer}
+  .g-btn:hover{background:var(--hover);border-color:var(--border-strong)}
   .g-btn svg{width:18px;height:18px}
   .g-note{margin-top:18px;font-size:12.5px;color:var(--muted)}
 
   #app{display:flex;min-height:100vh}
-  aside{width:236px;flex:0 0 236px;background:#fff;border-right:1px solid var(--border);position:sticky;top:0;height:100vh;padding:20px 14px;display:flex;flex-direction:column;gap:4px}
+  aside{width:236px;flex:0 0 236px;background:var(--card);border-right:1px solid var(--border);position:sticky;top:0;height:100vh;padding:20px 14px;display:flex;flex-direction:column;gap:4px}
   .brand{display:flex;align-items:center;gap:11px;padding:6px 8px 16px}
   .brand-mark{width:34px;height:34px;border-radius:10px;background:var(--purple);display:flex;align-items:center;justify-content:center;font-size:18px;flex:0 0 34px}
   .brand-name{font-weight:700;font-size:16px;letter-spacing:-.2px}
   .brand-sub{font-size:11px;color:var(--muted);font-weight:500}
   nav{display:flex;flex-direction:column;gap:2px;margin-top:6px}
   .nav-item{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:10px;color:var(--ink2);font-weight:500;font-size:14px;cursor:pointer;border:none;background:none;text-align:left;width:100%;position:relative;text-decoration:none}
-  .nav-item:hover{background:#f7f7fa}
+  .nav-item:hover{background:var(--hover)}
   .nav-item.active{background:var(--purple-soft);color:var(--purple-ink);font-weight:600}
   .nav-item.active::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:3px;background:var(--purple)}
   .nav-ico{width:17px;height:17px;flex:0 0 17px;opacity:.85}
@@ -43,19 +68,23 @@
   .nav-foot{font-size:11px;color:var(--muted);padding:12px 12px 2px;border-top:1px solid var(--border2)}
 
   main{flex:1;min-width:0;display:flex;flex-direction:column}
-  .topbar{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;border-bottom:1px solid var(--border);background:#fff;position:sticky;top:0;z-index:10}
-  .live-pill{display:inline-flex;align-items:center;gap:7px;background:#f1fbe9;color:#4b7a12;border:1px solid #dcecc4;border-radius:100px;padding:4px 11px;font-size:12px;font-weight:600}
+  .topbar{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;border-bottom:1px solid var(--border);background:var(--card);position:sticky;top:0;z-index:10}
+  .live-pill{display:inline-flex;align-items:center;gap:7px;background:var(--live-bg);color:var(--live-ink);border:1px solid var(--live-line);border-radius:100px;padding:4px 11px;font-size:12px;font-weight:600}
   .live-dot{width:7px;height:7px;border-radius:50%;background:#7ac70f;box-shadow:0 0 0 3px rgba(122,199,15,.2)}
   .tb-right{display:flex;align-items:center;gap:14px}
   .avatar{width:34px;height:34px;border-radius:50%;background:var(--purple);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px}
   .signout{font-size:13px;color:var(--ink2);cursor:pointer;background:none;border:none;font-weight:500}
   .signout:hover{color:var(--ink)}
+  .theme-btn{width:34px;height:34px;border-radius:10px;border:1px solid var(--border);background:var(--card);
+    color:var(--ink);font-size:15px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;
+    justify-content:center;padding:0;box-shadow:0 1px 2px rgba(17,17,34,.07)}
+  .theme-btn:hover{background:var(--hover);border-color:var(--border-strong)}
 
   .content{padding:26px 28px 60px;max-width:1240px;width:100%}
   .page-head{margin-bottom:18px;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
   .page-head h1{font-size:26px;margin:0 0 3px;letter-spacing:-.5px}
   .page-head .sub{color:var(--ink2);font-size:14px}
-  .usearch{padding:9px 14px;border:1px solid var(--border);border-radius:10px;font-size:14px;min-width:230px;outline:none}
+  .usearch{padding:9px 14px;border:1px solid var(--border);border-radius:10px;font-size:14px;min-width:230px;outline:none;background:var(--card);color:var(--ink)}
   .usearch:focus{border-color:var(--purple)}
 
   .chips{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
@@ -69,7 +98,7 @@
   .utable th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:600;padding:11px 14px;border-bottom:1px solid var(--border);background:var(--card);white-space:nowrap}
   .utable td{padding:12px 14px;border-bottom:1px solid var(--border2);vertical-align:middle;white-space:nowrap}
   .utable tr:last-child td{border-bottom:none}
-  .utable tbody tr:hover td{background:#fafafc}
+  .utable tbody tr:hover td{background:var(--hover)}
   .u-name{font-weight:600}
   .u-email{color:var(--ink2);font-size:12.5px}
   .u-muted{color:var(--muted)}
@@ -81,6 +110,14 @@
   .b-comp{background:#eaf7ef;color:#1a8f57}
   .b-ref{background:#e6f7f4;color:#0f766e}
   .b-free{background:#f4f4f6;color:#9a99a5}
+  /* Badge tints are two-colour pairs, not theme tokens, so they get their own
+     dark set — the light fills wash out to near-white against a dark row. */
+  html[data-theme="dark"] .b-google{background:#152b52;color:#8fb6ff}
+  html[data-theme="dark"] .b-email{background:#26262f;color:#a9a8b8}
+  html[data-theme="dark"] .b-plus{background:#271f4d;color:#bdb0ff}
+  html[data-theme="dark"] .b-comp{background:#123020;color:#5fd39a}
+  html[data-theme="dark"] .b-ref{background:#0e2e2a;color:#4fd0be}
+  html[data-theme="dark"] .b-free{background:#22222b;color:#7b7a8c}
   .empty{padding:40px;text-align:center;color:var(--muted);font-size:14px}
   .foot{text-align:center;font-size:12px;color:var(--muted);margin-top:22px}
 
@@ -140,6 +177,7 @@
     <div class="topbar">
       <span class="live-pill"><span class="live-dot"></span> Live data</span>
       <div class="tb-right">
+        <button class="theme-btn" id="theme-btn" type="button" aria-label="Switch to dark mode" title="Switch to dark mode">🌙</button>
         <button class="signout" id="signout">Sign out</button>
         <div class="avatar" id="avatar">D</div>
       </div>
@@ -190,6 +228,35 @@
   function sameDay(a,b){ if(!a||!b) return true; try{ return new Date(a).toDateString()===new Date(b).toDateString(); }catch(e){ return true; } }
   function didReturn(u){ return u.last_seen && u.created_at && !sameDay(u.last_seen,u.created_at) && new Date(u.last_seen)>new Date(u.created_at); }
 
+  // ---------- theme ----------
+  // Same contract as /dashboard/: the profile owns the preference, localStorage
+  // is the synchronously-readable copy, and a click in this tab beats a replay
+  // of older metadata from an auth event.
+  var session = null, themeTouched = false;
+  function currentTheme(){
+    return document.documentElement.getAttribute('data-theme')==='dark' ? 'dark' : 'light';
+  }
+  function applyTheme(t){
+    t = (t==='dark') ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', t);
+    var b=el('theme-btn'), label=(t==='dark' ? 'Switch to light mode' : 'Switch to dark mode');
+    b.textContent = (t==='dark' ? '☀️' : '🌙');
+    b.setAttribute('aria-label', label); b.title = label;
+    try{ localStorage.setItem('dash.theme', t); }catch(e){}
+  }
+  function adoptProfileTheme(s){
+    if(themeTouched) return;
+    var t = s && s.user && s.user.user_metadata && s.user.user_metadata.theme;
+    applyTheme(t==='dark'||t==='light' ? t : currentTheme());
+  }
+  el('theme-btn').onclick = function(){
+    var next = (currentTheme()==='dark') ? 'light' : 'dark';
+    themeTouched = true;
+    applyTheme(next);
+    if(session) sb.auth.updateUser({ data:{ theme: next } }).catch(function(){});
+  };
+  applyTheme(currentTheme());
+
   function showGate(kind, email){
     app.classList.add('hidden'); gate.classList.remove('hidden');
     var t=el('gate-title'), m=el('gate-msg'), btn=el('google-btn');
@@ -197,7 +264,9 @@
     else if(kind==='error'){ t.textContent='Something went wrong'; m.textContent='Couldn’t load users. Try again in a moment.'; }
     else { t.textContent='Private dashboard'; m.textContent='This is the Find A Crib owner dashboard. Sign in to continue.'; }
   }
-  async function route(session){
+  async function route(s){
+    session = s;
+    adoptProfileTheme(s);
     if(!session){ showGate('signin'); return; }
     var res;
     try{ res = await fetch('/api/dashboard-users', { headers:{ Authorization:'Bearer '+session.access_token } }); }

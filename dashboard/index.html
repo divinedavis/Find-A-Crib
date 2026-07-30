@@ -23,15 +23,52 @@
 <meta name="twitter:description" content="Web traffic, search rankings and leads — updated live, every day.">
 <meta name="twitter:image" content="https://findacrib.com/dashboard/og-dashboard.png">
 <link rel="apple-touch-icon" href="/dashboard/og-dashboard.png">
+<!-- Paint the saved theme before the first frame. Without this the page flashes
+     light for one frame on every load, which is worst in the dark. The profile
+     is the source of truth, but it only arrives with the session — localStorage
+     is the copy that's readable synchronously. -->
+<script>
+(function(){
+  var t;
+  try{ t = localStorage.getItem('dash.theme'); }catch(e){}
+  if(t!=='light' && t!=='dark')
+    t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
 <style>
   :root{
-    --bg:#f5f6fb; --card:#ffffff; --border:#ececf1; --border2:#f0f0f4;
+    color-scheme:light;
+    --bg:#f5f6fb; --card:#ffffff; --border:#e2e2ec; --border-strong:#cfcfdd; --border2:#eeeef4;
+    --hover:#f7f7fa; --sunken:#f0f0f6;
     --ink:#17161c; --ink2:#6b6a76; --muted:#9a99a5;
-    --purple:#6d5ce7; --purple-soft:#f1effe; --purple-ink:#5a49d0;
+    --purple:#6d5ce7; --purple-soft:#f1effe; --purple-ink:#5a49d0; --purple-line:#e5e1fb;
     --lime:#c3f53c; --lime-deep:#a8dd1f;
     --c1:#2a78d6; --c2:#eb6834; --c3:#1baf7a; --c4:#eda100; --c5:#e87ba4;
-    --good:#1baf7a; --shadow:0 1px 2px rgba(20,20,40,.04),0 4px 16px rgba(20,20,40,.04);
+    --good:#1baf7a;
+    --live-bg:#f1fbe9; --live-ink:#4b7a12; --live-line:#dcecc4;
+    --tip-bg:#1c1b22; --tip-ink:#ffffff;
+    /* Cards sit ON the page instead of lying flat against it: the border draws
+       the edge, the shadow under it is what makes the edge read as an edge. */
+    --shadow:0 1px 2px rgba(17,17,34,.09),0 6px 18px rgba(17,17,34,.11);
+    --shadow-lg:0 4px 10px rgba(17,17,34,.10),0 18px 44px rgba(17,17,34,.16);
     --radius:16px;
+  }
+  /* Dark theme. Same tokens, so every rule below is written once. Channel
+     colours are lifted and desaturated — the light-mode hexes go muddy against
+     a dark card and the donut segments stop separating. */
+  html[data-theme="dark"]{
+    color-scheme:dark;
+    --bg:#0d0d13; --card:#16161f; --border:#2c2c3b; --border-strong:#3d3d50; --border2:#23232f;
+    --hover:#1f1f2b; --sunken:#20202c;
+    --ink:#f1f1f6; --ink2:#a9a8b8; --muted:#7b7a8c;
+    --purple:#8b7bff; --purple-soft:#221d40; --purple-ink:#b7abff; --purple-line:#332c5c;
+    --c1:#5b9bee; --c2:#ff8a5c; --c3:#35c993; --c4:#f0b93c; --c5:#f294b8;
+    --good:#35c993;
+    --live-bg:#18240f; --live-ink:#a8dd5c; --live-line:#31461a;
+    --tip-bg:#2c2b38; --tip-ink:#ffffff;
+    --shadow:0 1px 2px rgba(0,0,0,.55),0 8px 24px rgba(0,0,0,.55);
+    --shadow-lg:0 6px 14px rgba(0,0,0,.55),0 24px 56px rgba(0,0,0,.6);
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
@@ -45,26 +82,26 @@
 
   /* ---------- gate ---------- */
   #gate{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:var(--bg); z-index:50; padding:24px}
-  .gate-card{background:var(--card); border:1px solid var(--border); border-radius:20px; box-shadow:var(--shadow); padding:40px 36px; max-width:420px; width:100%; text-align:center}
+  .gate-card{background:var(--card); border:1px solid var(--border); border-radius:20px; box-shadow:var(--shadow-lg); padding:40px 36px; max-width:420px; width:100%; text-align:center}
   .gate-logo{width:52px;height:52px;border-radius:14px;background:var(--purple);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:26px}
   .gate-card h1{font-size:22px;margin:0 0 6px}
   .gate-card p{color:var(--ink2);margin:0 0 24px;font-size:14px}
-  .g-btn{display:inline-flex;align-items:center;gap:10px;justify-content:center;width:100%;padding:12px 18px;border-radius:12px;border:1px solid var(--border);background:#fff;color:var(--ink);font-weight:600;font-size:15px;cursor:pointer;transition:background .15s,border-color .15s}
-  .g-btn:hover{background:#fafafc;border-color:#dcdce4}
+  .g-btn{display:inline-flex;align-items:center;gap:10px;justify-content:center;width:100%;padding:12px 18px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--ink);font-weight:600;font-size:15px;cursor:pointer;transition:background .15s,border-color .15s}
+  .g-btn:hover{background:var(--hover);border-color:var(--border-strong)}
   .g-btn svg{width:18px;height:18px}
   .g-note{margin-top:18px;font-size:12.5px;color:var(--muted)}
   .g-err{color:var(--c2);font-size:13px;margin-top:14px}
 
   /* ---------- shell ---------- */
   #app{display:flex;min-height:100vh}
-  aside{width:236px;flex:0 0 236px;background:#fff;border-right:1px solid var(--border);position:sticky;top:0;height:100vh;padding:20px 14px;display:flex;flex-direction:column;gap:4px}
+  aside{width:236px;flex:0 0 236px;background:var(--card);border-right:1px solid var(--border);position:sticky;top:0;height:100vh;padding:20px 14px;display:flex;flex-direction:column;gap:4px}
   .brand{display:flex;align-items:center;gap:11px;padding:6px 8px 16px}
   .brand-mark{width:34px;height:34px;border-radius:10px;background:var(--purple);display:flex;align-items:center;justify-content:center;font-size:18px;flex:0 0 34px}
   .brand-name{font-weight:700;font-size:16px;letter-spacing:-.2px}
   .brand-sub{font-size:11px;color:var(--muted);font-weight:500}
   nav{display:flex;flex-direction:column;gap:2px;margin-top:6px}
   .nav-item{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:10px;color:var(--ink2);font-weight:500;font-size:14px;cursor:pointer;border:none;background:none;text-align:left;width:100%;position:relative}
-  .nav-item:hover{background:#f7f7fa}
+  .nav-item:hover{background:var(--hover)}
   .nav-item.active{background:var(--purple-soft);color:var(--purple-ink);font-weight:600}
   .nav-item.active::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:3px;background:var(--purple)}
   .nav-ico{width:17px;height:17px;flex:0 0 17px;opacity:.85}
@@ -72,19 +109,25 @@
   .nav-foot{font-size:11px;color:var(--muted);padding:12px 12px 2px;border-top:1px solid var(--border2)}
 
   main{flex:1;min-width:0;display:flex;flex-direction:column}
-  .topbar{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;border-bottom:1px solid var(--border);background:#fff;position:sticky;top:0;z-index:10}
+  .topbar{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;border-bottom:1px solid var(--border);background:var(--card);position:sticky;top:0;z-index:10}
   .tb-left{display:flex;align-items:center;gap:12px}
-  .live-pill{display:inline-flex;align-items:center;gap:7px;background:#f1fbe9;color:#4b7a12;border:1px solid #dcecc4;border-radius:100px;padding:4px 11px;font-size:12px;font-weight:600}
+  .live-pill{display:inline-flex;align-items:center;gap:7px;background:var(--live-bg);color:var(--live-ink);border:1px solid var(--live-line);border-radius:100px;padding:4px 11px;font-size:12px;font-weight:600}
   .live-dot{width:7px;height:7px;border-radius:50%;background:#7ac70f;box-shadow:0 0 0 3px rgba(122,199,15,.2)}
   .tb-right{display:flex;align-items:center;gap:14px}
   /* site switcher — one dashboard, two sites, same template */
-  .site-switch{display:inline-flex;background:#f3f3f7;border:1px solid var(--border);border-radius:11px;padding:3px;gap:2px}
+  .site-switch{display:inline-flex;background:var(--sunken);border:1px solid var(--border);border-radius:11px;padding:3px;gap:2px}
   .site-switch button{border:none;background:none;font:inherit;font-size:13px;font-weight:600;color:var(--ink2);
     padding:6px 13px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
   .site-switch button:hover{color:var(--ink)}
-  .site-switch button.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(20,20,40,.08)}
+  .site-switch button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(17,17,34,.16)}
   .site-switch button:disabled{opacity:.55;cursor:progress}
   .avatar{width:34px;height:34px;border-radius:50%;background:var(--purple);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px}
+  /* theme toggle — the flip is instant and local; the save is what makes it
+     follow the account onto the next browser. */
+  .theme-btn{width:34px;height:34px;border-radius:10px;border:1px solid var(--border);background:var(--card);
+    color:var(--ink);font-size:15px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;
+    justify-content:center;padding:0;box-shadow:0 1px 2px rgba(17,17,34,.07)}
+  .theme-btn:hover{background:var(--hover);border-color:var(--border-strong)}
   .signout{font-size:13px;color:var(--ink2);cursor:pointer;background:none;border:none;font-weight:500}
   .signout:hover{color:var(--ink)}
 
@@ -143,13 +186,13 @@
   .meter-top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px}
   .meter-top .m-name{color:var(--ink2)}
   .meter-top .m-val{font-weight:700}
-  .bar{height:9px;border-radius:6px;background:#f0f0f4;overflow:hidden}
+  .bar{height:9px;border-radius:6px;background:var(--sunken);overflow:hidden}
   .bar > span{display:block;height:100%;border-radius:6px;background:var(--purple)}
   .bar.good > span{background:var(--good)}
   .bar.cost > span{background:var(--c2)}
   .meter-note{font-size:11.5px;color:var(--muted);margin-top:5px}
 
-  .callout{background:var(--purple-soft);border:1px solid #e5e1fb;border-radius:12px;padding:13px 15px;font-size:13px;color:var(--purple-ink);margin-top:4px}
+  .callout{background:var(--purple-soft);border:1px solid var(--purple-line);border-radius:12px;padding:13px 15px;font-size:13px;color:var(--purple-ink);margin-top:4px}
   .callout b{color:var(--purple-ink)}
 
   /* google ads tiles */
@@ -163,7 +206,7 @@
   @media(max-width:700px){.ref-tiles{grid-template-columns:1fr}}
 
   /* sparkline */
-  .spark-tip{position:absolute;background:#1c1b22;color:#fff;font-size:11.5px;padding:5px 8px;border-radius:7px;pointer-events:none;transform:translate(-50%,-120%);white-space:nowrap;opacity:0;transition:opacity .1s}
+  .spark-tip{position:absolute;background:var(--tip-bg);color:var(--tip-ink);font-size:11.5px;padding:5px 8px;border-radius:7px;pointer-events:none;transform:translate(-50%,-120%);white-space:nowrap;opacity:0;transition:opacity .1s}
 
   /* revenue model */
   .rev-grid{display:grid;grid-template-columns:1fr 1fr;gap:26px}
@@ -171,9 +214,9 @@
   .slider-row{margin-bottom:17px}
   .slider-row label{display:flex;justify-content:space-between;font-size:13px;color:var(--ink2);margin-bottom:7px}
   .slider-row label b{color:var(--ink);font-weight:700}
-  input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:5px;border-radius:5px;background:#e9e9f0;outline:none}
-  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--purple);cursor:pointer;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2)}
-  input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--purple);cursor:pointer;border:3px solid #fff}
+  input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:5px;border-radius:5px;background:var(--sunken);outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--purple);cursor:pointer;border:3px solid var(--card);box-shadow:0 1px 4px rgba(0,0,0,.35)}
+  input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--purple);cursor:pointer;border:3px solid var(--card)}
   .rev-out{display:flex;flex-direction:column;gap:12px}
   .rev-line{display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--border2)}
   .rev-line .rl-name{font-size:13px;color:var(--ink2)}
@@ -250,6 +293,7 @@
         <span class="live-pill"><span class="live-dot"></span> Live data</span>
       </div>
       <div class="tb-right">
+        <button class="theme-btn" id="theme-btn" type="button" aria-label="Switch to dark mode" title="Switch to dark mode">🌙</button>
         <button class="signout" id="signout">Sign out</button>
         <div class="avatar" id="avatar">D</div>
       </div>
@@ -432,6 +476,41 @@
   function money(x){ return '$'+Math.round(x).toLocaleString('en-US'); }
   function el(id){ return document.getElementById(id); }
 
+  // ---------- theme ----------
+  // Saved on the profile (auth user_metadata), so the choice follows the
+  // account to any browser it signs in on — localStorage is only the local
+  // copy the <head> script can read synchronously to avoid a light flash.
+  // Once the user clicks in this tab, their click wins: an auth event that
+  // replays older metadata must not flip the page back under them.
+  var themeTouched = false;
+
+  function currentTheme(){
+    return document.documentElement.getAttribute('data-theme')==='dark' ? 'dark' : 'light';
+  }
+  function applyTheme(t){
+    t = (t==='dark') ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', t);
+    var b=el('theme-btn'), label=(t==='dark' ? 'Switch to light mode' : 'Switch to dark mode');
+    b.textContent = (t==='dark' ? '☀️' : '🌙');
+    b.setAttribute('aria-label', label);
+    b.title = label;
+    try{ localStorage.setItem('dash.theme', t); }catch(e){}
+  }
+  function adoptProfileTheme(s){
+    if(themeTouched) return;
+    var t = s && s.user && s.user.user_metadata && s.user.user_metadata.theme;
+    applyTheme(t==='dark'||t==='light' ? t : currentTheme());
+  }
+  el('theme-btn').onclick = function(){
+    var next = (currentTheme()==='dark') ? 'light' : 'dark';
+    themeTouched = true;
+    applyTheme(next);
+    // Fire-and-forget: the flip already happened on screen, and a failed save
+    // should cost the preference on other devices, not the click.
+    if(session) sb.auth.updateUser({ data:{ theme: next } }).catch(function(){});
+  };
+  applyTheme(currentTheme()); // sync the icon with what the <head> already painted
+
   // ---------- auth routing ----------
   function showGate(kind, email){
     app.classList.add('hidden'); gate.classList.remove('hidden');
@@ -554,6 +633,7 @@
 
   async function route(s){
     session = s;
+    adoptProfileTheme(s);
     if(!s){ showGate('signin'); return; }
     applyShell();
     var r = await load(false);
@@ -646,12 +726,14 @@
   }
 
   // ---------- donut (return channels) ----------
+  // Channel colours come from the theme, not from literal hexes: the light-mode
+  // palette goes muddy on a dark card and the segments stop separating.
   var CH_META = [
-    {k:'direct_or_bookmark', name:'Direct / bookmark', c:'var(--c1)', hex:'#2a78d6', paid:false},
-    {k:'internal_direct',    name:'Internal / same-site', c:'var(--c3)', hex:'#1baf7a', paid:false},
-    {k:'organic_search',     name:'Organic search', c:'var(--c4)', hex:'#eda100', paid:false},
-    {k:'referral_other',     name:'Other referral', c:'var(--c5)', hex:'#e87ba4', paid:false},
-    {k:'paid_google_ads',    name:'Paid Google Ads', c:'var(--c2)', hex:'#eb6834', paid:true}
+    {k:'direct_or_bookmark', name:'Direct / bookmark', hex:'var(--c1)', paid:false},
+    {k:'internal_direct',    name:'Internal / same-site', hex:'var(--c3)', paid:false},
+    {k:'organic_search',     name:'Organic search', hex:'var(--c4)', paid:false},
+    {k:'referral_other',     name:'Other referral', hex:'var(--c5)', paid:false},
+    {k:'paid_google_ads',    name:'Paid Google Ads', hex:'var(--c2)', paid:true}
   ];
   // Shared by both sites: segments in, ring + legend out.
   function drawDonut(items, centerLabel){
@@ -665,7 +747,7 @@
             'stroke-dasharray="'+len+' '+(C-len)+'" stroke-dashoffset="'+off+'" stroke-linecap="butt"></circle>';
       off -= C*frac;
     });
-    if(!total) segs='<circle cx="90" cy="90" r="68" fill="none" stroke="#ececf1" stroke-width="26"></circle>';
+    if(!total) segs='<circle cx="90" cy="90" r="68" fill="none" stroke="var(--border)" stroke-width="26"></circle>';
     el('donut').innerHTML='<svg width="180" height="180" viewBox="0 0 180 180">'+segs+
       '<text x="90" y="86" text-anchor="middle" class="donut-center-big" style="font-size:26px;font-weight:700;fill:var(--ink)">'+comma(total)+'</text>'+
       '<text x="90" y="104" text-anchor="middle" class="donut-center-lbl">'+centerLabel+'</text></svg>';
@@ -748,15 +830,15 @@
     area+=' L'+X(days.length-1)+' '+(pad.t+ih)+' Z';
     var dots='',labels='';
     days.forEach(function(d,i){
-      dots+='<circle cx="'+X(i)+'" cy="'+Y(d.views)+'" r="3.2" fill="#6d5ce7" stroke="#fff" stroke-width="1.5" data-i="'+i+'"></circle>';
+      dots+='<circle cx="'+X(i)+'" cy="'+Y(d.views)+'" r="3.2" fill="var(--purple)" stroke="var(--card)" stroke-width="1.5" data-i="'+i+'"></circle>';
       if(i%2===0 || i===days.length-1){
         var lbl=new Date(d.date+'T00:00').toLocaleString('en-US',{month:'numeric',day:'numeric'});
         labels+='<text x="'+X(i)+'" y="'+(H-6)+'" text-anchor="middle" font-size="10.5" fill="var(--muted)">'+lbl+'</text>';
       }
     });
     host.innerHTML='<svg width="100%" height="'+H+'" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" id="spark-svg">'+
-      '<defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6d5ce7" stop-opacity=".22"/><stop offset="1" stop-color="#6d5ce7" stop-opacity="0"/></linearGradient></defs>'+
-      '<path d="'+area+'" fill="url(#sg)"></path><path d="'+line+'" fill="none" stroke="#6d5ce7" stroke-width="2" stroke-linejoin="round"></path>'+
+      '<defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--purple)" stop-opacity=".22"/><stop offset="1" stop-color="var(--purple)" stop-opacity="0"/></linearGradient></defs>'+
+      '<path d="'+area+'" fill="url(#sg)"></path><path d="'+line+'" fill="none" stroke="var(--purple)" stroke-width="2" stroke-linejoin="round"></path>'+
       dots+labels+'</svg><div class="spark-tip" id="spark-tip"></div>';
     var svg=el('spark-svg'), tip=el('spark-tip');
     svg.querySelectorAll('circle').forEach(function(c){
@@ -839,13 +921,13 @@
   // Same components, different business: no accounts and no subscriptions here,
   // so the funnel that matters ends at a phone call, not a sign-up.
   var NEMO_CH=[
-    {k:'organic',  name:'Organic search',       hex:'#eda100'},
-    {k:'local',    name:'Local listings / maps', hex:'#1baf7a'},
-    {k:'ai',       name:'AI assistants',        hex:'#8a5cf0'},
-    {k:'direct',   name:'Direct / typed-in',    hex:'#2a78d6'},
-    {k:'referral', name:'Other referral',       hex:'#e87ba4'},
-    {k:'campaign', name:'Tagged campaign',      hex:'#eb6834'},
-    {k:'internal', name:'Internal / same-site', hex:'#9a99a5'}
+    {k:'organic',  name:'Organic search',       hex:'var(--c4)'},
+    {k:'local',    name:'Local listings / maps', hex:'var(--c3)'},
+    {k:'ai',       name:'AI assistants',        hex:'var(--purple)'},
+    {k:'direct',   name:'Direct / typed-in',    hex:'var(--c1)'},
+    {k:'referral', name:'Other referral',       hex:'var(--c5)'},
+    {k:'campaign', name:'Tagged campaign',      hex:'var(--c2)'},
+    {k:'internal', name:'Internal / same-site', hex:'var(--muted)'}
   ];
 
   function renderNemo(user, d){

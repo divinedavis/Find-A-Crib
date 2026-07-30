@@ -220,8 +220,15 @@ def build(days=14):
 
     # History, excluding today — today comes from the live parse so the two
     # never double-count the same visitors.
+    # A day with no visitors AND no bot hits was not a quiet day, it was a day
+    # with no measurement: NEMO's dedicated nginx access_log did not exist until
+    # 2026-07-27, and every genuinely measured day logs ~2,000 bot hits. Keeping
+    # those rows made the board claim "Since July 25" for data that starts on
+    # the 27th, and dragged every per-day average down with two phantom zeros.
     traffic_days = sorted(d for d, m in hist.items()
-                          if "visitors" in m and d != today_key)
+                          if "visitors" in m and d != today_key
+                          and not (_n(m.get("visitors")) == 0
+                                   and _n(m.get("bot_hits")) == 0))
     rows = [{"date": d,
              "visitors": _n(hist[d].get("visitors")),
              "views": _n(hist[d].get("pageviews"))} for d in traffic_days]

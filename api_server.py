@@ -863,7 +863,50 @@ def dashboard_metrics():
         data = rpc("dashboard_metrics", {})
     except Exception:
         return jsonify(error="temporarily_unavailable"), 503
+    # The engine's own build log. It lives on disk in the growth checkout, not
+    # in Postgres, because the 05:40 build runs on this droplet and never writes
+    # to the database. NEMO's tab has had this from the start; Find A Crib
+    # reported traffic and revenue but never what was actually shipped for it.
+    data["build"] = _fac_build()
     return jsonify(data)
+
+
+FAC_LAST_RUN = os.environ.get(
+    "FAC_LAST_RUN", "/root/Find-A-Crib/growth/last_run.json")
+
+
+def _fac_build():
+    """What the Find A Crib growth engine shipped on its last run.
+
+    Returns {} when the file is missing or unreadable — a dashboard that loses
+    its build log should drop the card, not 500 the whole page.
+    """
+    try:
+        with open(FAC_LAST_RUN) as f:
+            run = json.load(f)
+    except Exception:
+        return {}
+    b = run.get("build") or {}
+    techs = b.get("techniques") or {}
+    steps = []
+    for slug in sorted(techs):
+        t = techs[slug] or {}
+        detail = (t.get("detail") or "").strip()
+        if not detail:
+            continue
+        # ok is carried through rather than flattened to a tick: this engine
+        # records failures (a technique can report ok:false and still have run),
+        # and a card that shows every line green would hide them.
+        steps.append({"slug": slug, "detail": detail, "ok": bool(t.get("ok"))})
+    m = run.get("measure") or {}
+    return {
+        "date": b.get("date") or m.get("date"),
+        "at": b.get("at"),
+        "steps": steps,
+        "new_urls": b.get("new_urls"),
+        "changed_urls": b.get("changed_urls"),
+        "deployed": bool(b.get("deployed")),
+    }
 
 
 @app.route("/dashboard-nemo")

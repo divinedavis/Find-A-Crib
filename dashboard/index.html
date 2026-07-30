@@ -489,6 +489,13 @@
         </div>
         <div class="disclaim">Steady-state subscribers = new subs ÷ churn — high churn caps recurring revenue no matter the traffic. AdSense assumes ~2.5 views/visit at a $10 RPM. Your sign-up rate is your real number from the funnel above; everything else is an assumption you can slide.</div>
       </div>
+        <div class="card" id="sec-fac-build">
+          <div class="card-head-row">
+            <div><h2>What the growth engine shipped</h2><div class="card-sub" id="fac-build-sub">The daily loop measures, judges what’s running, builds and deploys.</div></div>
+          </div>
+          <div id="fac-build-list"></div>
+          <div class="disclaim" id="fac-build-note">Straight from the engine’s own run log on the server — this is what it did, including anything that did not work.</div>
+        </div>
       </div><!-- /fac-b -->
 
       <!-- ===== NEMO only ===== -->
@@ -779,6 +786,7 @@
     renderToday(TD, d.events||{});
     renderSpark(d.sparkline||[]);
     renderConv(C, convRate);
+    renderFacBuild(d.build);
     renderHook(H);
     initRevenue(convRate);
   }
@@ -827,6 +835,48 @@
   }
 
   // ---------- google ads (first-party ad-click funnel) ----------
+  // What the Find A Crib engine shipped on its last run. Mirrors the NEMO
+  // card, with one difference: this engine records per-technique ok/failed, so
+  // a step that did not work is shown as such. A card where every line is a
+  // green tick is a card that cannot tell you anything went wrong.
+  function renderFacBuild(B){
+    B = B || {};
+    var steps = B.steps || [];
+    var card = el('sec-fac-build');
+    if(!card) return;
+    if(!steps.length){
+      // No run log means the engine has not reported, which is itself worth
+      // saying — quietly hiding the card would read as "nothing to ship".
+      card.classList.add('hidden');
+      return;
+    }
+    card.classList.remove('hidden');
+
+    var when = B.date
+      ? new Date(B.date+'T00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})
+      : null;
+    var failed = steps.filter(function(s){ return !s.ok; }).length;
+    el('fac-build-sub').textContent =
+      (when ? 'Last run '+when+' — ' : '')
+      + steps.length + ' step' + (steps.length===1?'':'s')
+      + (failed ? ', '+failed+' needing attention' : ', all clear')
+      + (B.deployed ? ' · deployed' : ' · not deployed');
+
+    var rows = steps.map(function(s){
+      return '<div class="act-row"><div class="act-l"><div class="act-ico">'+(s.ok?'✅':'⚠️')+'</div>'+
+        '<div><div class="act-name">'+esc(s.detail)+'</div>'+
+        '<div class="act-desc">'+esc(s.slug)+'</div></div></div></div>';
+    });
+    var newU = n(B.new_urls), chg = n(B.changed_urls);
+    if(newU || chg){
+      rows.push('<div class="act-row"><div class="act-l"><div class="act-ico">📄</div>'+
+        '<div><div class="act-name">Pages published or updated</div>'+
+        '<div class="act-desc">'+comma(newU)+' new · '+comma(chg)+' changed</div></div></div>'+
+        '<div class="act-val">'+comma(newU+chg)+'</div></div>');
+    }
+    el('fac-build-list').innerHTML = rows.join('');
+  }
+
   function renderAds(A){
     A = A || {};
     var v=n(A.visitors), sg=n(A.signups), ret=n(A.returned), op=n(A.opened_listing);

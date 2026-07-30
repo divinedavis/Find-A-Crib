@@ -154,6 +154,9 @@
   html[data-theme="dark"] .rr:hover { background: #17402a; }
   html[data-theme="dark"] .rr.quiet { background: var(--bg); color: var(--ink-2); border-color: var(--line); }
   .rr-note { font-size: 11.5px; color: var(--ink-2); margin-top: 4px; }
+  .rr-none { font-size: 11.5px; color: var(--ink-2); margin-top: 7px; line-height: 1.5;
+    padding-left: 9px; border-left: 2px solid var(--line-strong); }
+  .th-sub { text-transform: none; letter-spacing: 0; font-weight: 600; opacity: .75; }
   .banner { background: var(--blue-soft); border: 1px solid var(--blue); border-radius: 12px;
     padding: 14px 16px; margin: 0 0 18px; font-size: 14px; line-height: 1.6; color: var(--ink); }
   .banner b { color: var(--blue-dark); }
@@ -221,6 +224,9 @@
     unit, the apartment usually doesn't go back into a lottery. The agent re-rents it directly,
     often <b>first-come, first-served</b>, on their own website. Far fewer people know to look
     there. <span id="rr-summary"></span>
+    <br><span style="opacity:.85">Heads up: an agent's <b>company website is usually not that page</b> —
+    most are sales sites aimed at developers. Use the green link where there is one; otherwise
+    the phone and email are your way in.</span>
   </div>
 
   <div class="controls">
@@ -247,7 +253,7 @@
           <th scope="col">Specialties</th>
           <th scope="col">Contact</th>
           <th scope="col">Phone</th>
-          <th scope="col">Reach them</th>
+          <th scope="col">Reach them <span class="th-sub">(company site ≠ listings)</span></th>
         </tr>
       </thead>
       <tbody id="rows"></tbody>
@@ -418,6 +424,10 @@
                 (a.rerentals.note ? '<br>' + esc(a.rerentals.note) : '') +
               '</div>'
             : '') +
+          (!a.rerentals
+            ? '<div class="rr-none">No public listings page — their site sells to developers, ' +
+              'not renters. Call or email and ask about re-rentals and waitlists.</div>'
+            : '') +
           (a.about ? '<br><button class="about-btn" type="button">What they do ▾</button>' : '') +
         '</td>' +
         '<td><div class="tags">' +
@@ -429,7 +439,7 @@
                           : '<span class="muted">—</span>') + '</td>' +
         '<td class="reach">' +
           (a.email ? '<a href="mailto:' + esc(a.email) + '" data-out="email">' + esc(a.email) + '</a>' : '') +
-          (a.website ? '<a href="' + esc(a.website) + '" target="_blank" rel="noopener nofollow" data-out="website">' + esc(host(a.website)) + ' ↗</a>' : '') +
+          (a.website ? '<a href="' + esc(a.website) + '" target="_blank" rel="noopener nofollow" data-out="website" title="Company site — not where units are posted">' + esc(host(a.website)) + ' ↗</a>' : '') +
           (!a.email && !a.website ? '<span class="muted">—</span>' : '') +
         '</td>';
 

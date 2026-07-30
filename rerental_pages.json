@@ -15,8 +15,39 @@
   "",
   "To re-verify: python3 check_rerentals.py"
  ],
+ "excluded": {
+  "_comment": "Verified and deliberately left out — recording these so nobody re-adds them.",
+  "Places.NYC LLC": "places.nyc/units is market-rate luxury ($6,500 no-fee), not affordable",
+  "The Brodsky Organization / Urban Associates LLC": "brodsky.com/rentals is 'NYC Luxury Apartments'",
+  "Related Management Companies, L.P": "relatedrentals.com is market-rate luxury",
+  "K&R Realty Management Inc": "gonofee.com is a market-rate no-fee brokerage",
+  "About Real Estate NY": "/rentals shows RENTED PROPERTIES — a past-deals archive, not live listings",
+  "Vector New York": "/listings is market-rate luxury",
+  "Diamond Mine Real Estate": "soft-404: /about/affordable-re-rentals renders their About page",
+  "Micki Garcia Realty": "soft-404: same",
+  "Urban Ecospaces, Inc.": "soft-404: same",
+  "Rentability": "HPD-listed domain is parked (redirects to search-domainparking.com)"
+ },
  "checked": "2026-07-30",
  "pages": {
+  "Affordable for NY": {
+   "url": "https://afny.org/re-rentals",
+   "title": "Outside Market / Re-rentals",
+   "units_seen": true,
+   "note": "Filterable board with rent + household size per unit."
+  },
+  "iAfford NY": {
+   "url": "https://iaffordny.com/re-rentals",
+   "title": "Outside Market / Re-rentals",
+   "units_seen": true,
+   "note": "Same operator as Affordable for NY, but lists different units — check both."
+  },
+  "The Wavecrest Management Team Ltd.": {
+   "url": "https://www.wavecrestrentals.com",
+   "title": "Wavecrest Rentals",
+   "units_seen": false,
+   "note": "Application portal for their LAMP / HDC / LIHTC developments."
+  },
   "TF Cornerstone": {
    "url": "https://tfc.com/about/affordable-re-rentals",
    "title": "Affordable Re-rentals",

@@ -2,7 +2,7 @@
  "source": "https://www.nyc.gov/site/hpd/services-and-information/marketing-agent-pql.page",
  "fetched": "2026-07-30",
  "count": 85,
- "rerental_count": 11,
+ "rerental_count": 14,
  "agents": [
   {
    "name": "About Real Estate NY",
@@ -42,7 +42,14 @@
     "Administering agent",
     "421-a / IH"
    ],
-   "about": "Affordable for NY, is an HPD-approved Marketing and Administering Agent that conveniently leases out affordable/inclusionary units through the NYC HPD Housing Connect System. We are known to be the primary Administering Agent for developers in New York City. Our goal is to have the affordable units rented quickly and efficiently, thereby preventing units from being vacant for an unnecessarily exceeding period. From assigning your project with the HPD Housing Connect system, renting out the units initially or re-renting upon vacancies, to monitoring the properties’ ongoing compliance. Affordable for NY, covers it all! Our firm proudly guides through the complicated process with experience and high efficiency. We deal with the applicants to ensure eligibility while keeping them in the loop with their status. From document collection and verification, interviewing the apparently-eligible applicants, viewing the available units with them before lease-up, to finally signing leases, Affordable for NY is involved in making the process run smooth and effective."
+   "about": "Affordable for NY, is an HPD-approved Marketing and Administering Agent that conveniently leases out affordable/inclusionary units through the NYC HPD Housing Connect System. We are known to be the primary Administering Agent for developers in New York City. Our goal is to have the affordable units rented quickly and efficiently, thereby preventing units from being vacant for an unnecessarily exceeding period. From assigning your project with the HPD Housing Connect system, renting out the units initially or re-renting upon vacancies, to monitoring the properties’ ongoing compliance. Affordable for NY, covers it all! Our firm proudly guides through the complicated process with experience and high efficiency. We deal with the applicants to ensure eligibility while keeping them in the loop with their status. From document collection and verification, interviewing the apparently-eligible applicants, viewing the available units with them before lease-up, to finally signing leases, Affordable for NY is involved in making the process run smooth and effective.",
+   "rerentals": {
+    "url": "https://afny.org/re-rentals",
+    "title": "Outside Market / Re-rentals",
+    "units_seen": true,
+    "note": "Filterable board with rent + household size per unit.",
+    "checked": "2026-07-30"
+   }
   },
   {
    "name": "All Borough Solutions Inc.",
@@ -418,7 +425,14 @@
    "website": "https://iaffordny.com/",
    "agency": "HPD",
    "tags": [],
-   "about": "iAfford NY, is an HPD approved marketing Agency that conveniently leases out the assigned affordable units through the NYC HPD Housing Connect System. With many projects completed in record time, We are known to be the primary marketing agency in New York City with our structure of operations. Our efficient system accelerates the process infinitely. Our firm proudly guides through the involved process with experience and high efficiency."
+   "about": "iAfford NY, is an HPD approved marketing Agency that conveniently leases out the assigned affordable units through the NYC HPD Housing Connect System. With many projects completed in record time, We are known to be the primary marketing agency in New York City with our structure of operations. Our efficient system accelerates the process infinitely. Our firm proudly guides through the involved process with experience and high efficiency.",
+   "rerentals": {
+    "url": "https://iaffordny.com/re-rentals",
+    "title": "Outside Market / Re-rentals",
+    "units_seen": true,
+    "note": "Same operator as Affordable for NY, but lists different units — check both.",
+    "checked": "2026-07-30"
+   }
   },
   {
    "name": "IBIS Advisors",
@@ -1080,7 +1094,14 @@
    "tags": [
     "Property management"
    ],
-   "about": "Wavecrest Management is a family-owned and operated management company committed to preserving the financial and physical viability of residential buildings across New York City, Nassau, and Westchester counties. It is our goal to ensure that residents of our properties are proud to call their buildings home. As one of the largest management companies in New York City, overseeing more than 30,000 units in buildings of all sizes, the Wavecrest team takes a personal approach to our work, holding ourselves responsible for the efficient, diligent, and considerate administration of all building operations. Wavecrest meets the financial and legal expectations of our building owners while providing our residents with the respect, attention, and assistance needed to maintain a safe, clean, and well-cared-for place to live. Many of our employees are long-term members of the Wavecrest “family” and residents regularly come to know our executive team personally. Over the past 7 years, Wavecrest has partnered with City, State, and Federal Agencies to successfully rent up approximately 7,000 units in over 65 buildings."
+   "about": "Wavecrest Management is a family-owned and operated management company committed to preserving the financial and physical viability of residential buildings across New York City, Nassau, and Westchester counties. It is our goal to ensure that residents of our properties are proud to call their buildings home. As one of the largest management companies in New York City, overseeing more than 30,000 units in buildings of all sizes, the Wavecrest team takes a personal approach to our work, holding ourselves responsible for the efficient, diligent, and considerate administration of all building operations. Wavecrest meets the financial and legal expectations of our building owners while providing our residents with the respect, attention, and assistance needed to maintain a safe, clean, and well-cared-for place to live. Many of our employees are long-term members of the Wavecrest “family” and residents regularly come to know our executive team personally. Over the past 7 years, Wavecrest has partnered with City, State, and Federal Agencies to successfully rent up approximately 7,000 units in over 65 buildings.",
+   "rerentals": {
+    "url": "https://www.wavecrestrentals.com",
+    "title": "Wavecrest Rentals",
+    "units_seen": false,
+    "note": "Application portal for their LAMP / HDC / LIHTC developments.",
+    "checked": "2026-07-30"
+   }
   },
   {
    "name": "Transitional Services for New York, Inc.",

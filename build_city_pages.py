@@ -47,7 +47,10 @@ CITY_META = {
   <h2>Find rent-controlled apartments in San Francisco</h2>
   <p>Find A Crib maps the SF Rent Board's Housing Inventory — owner-reported,
      rent-controlled units across San Francisco, shown at the block level with
-     median reported rents. Also on Find A Crib:
+     median reported rents.
+     Browse <a href="/sf/buildings/">San Francisco by neighborhood</a>, or read
+     <a href="/guide/is-my-apartment-rent-controlled-san-francisco/">is my apartment
+     rent controlled in San Francisco?</a> Also on Find A Crib:
      <a href="/">rent-stabilized NYC</a>, <a href="/la/">rent-stabilized (RSO) Los Angeles</a>
      and <a href="/dc/">rent-controlled Washington DC</a>.</p>
 </nav>""",
@@ -63,7 +66,10 @@ CITY_META = {
   <h2>Find likely rent-stabilized (RSO) apartments in Los Angeles</h2>
   <p>Find A Crib maps City of LA residential buildings that meet LAHD's RSO
      criteria — two or more units, built on or before Oct 1, 1978 — from LA
-     County assessor parcel data. Confirm any building on ZIMAS. Also on
+     County assessor parcel data. Confirm any building on ZIMAS.
+     Browse <a href="/la/buildings/">Los Angeles by ZIP code</a>, or read
+     <a href="/guide/is-my-apartment-rent-controlled-los-angeles/">is my apartment
+     rent controlled in Los Angeles?</a> Also on
      Find A Crib: <a href="/">rent-stabilized NYC</a>,
      <a href="/sf/">rent-controlled San Francisco</a> and
      <a href="/dc/">rent-controlled Washington DC</a>.</p>
@@ -83,7 +89,10 @@ CITY_META = {
      RentRegistry — with the median <em>registered</em> rent (the legal rent on
      file, not an asking rent) and units reported vacant. Units exempt under
      § 2.05(a) — subsidized, new construction, small landlords with four or
-     fewer units, co-ops — are excluded. Also on Find A Crib:
+     fewer units, co-ops — are excluded.
+     Browse <a href="/dc/buildings/">Washington DC by neighborhood</a>, or read
+     <a href="/guide/is-my-apartment-rent-controlled-washington-dc/">is my apartment
+     rent controlled in DC?</a> Also on Find A Crib:
      <a href="/">rent-stabilized NYC</a>,
      <a href="/sf/">rent-controlled San Francisco</a> and
      <a href="/la/">rent-stabilized (RSO) Los Angeles</a>.</p>

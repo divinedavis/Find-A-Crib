@@ -75,29 +75,52 @@ SEED = [
     # "explain"/"check" queries point at the city guide, not the city map: the
     # map is a listings UI that cannot answer "what are the exemptions", and
     # counting it as coverage was flattering the number. Guides added 2026-07-29.
-    ("sf", "rent controlled apartments san francisco", "list", "/sf/"),
+    # "list" queries move off /sf/, /la/ and /dc/ for the same reason the
+    # explain/check ones did on 2026-07-29: those three URLs are a JavaScript map
+    # shell, so counting them as the answer to "san francisco rent control list"
+    # flattered coverage with a page a crawler cannot read. /<city>/buildings/ is
+    # the crawlable browse hub added 2026-07-30 and is a real list. A "lookup"
+    # query still points at the map, because looking up one address is what the
+    # map is genuinely for.
+    ("sf", "rent controlled apartments san francisco", "list", "/sf/buildings/"),
     ("sf", "is my apartment rent controlled sf", "check", SF_GUIDE),
     ("sf", "sf rent board lookup", "check", "/sf/"),
-    ("sf", "san francisco rent control list", "list", "/sf/"),
+    ("sf", "san francisco rent control list", "list", "/sf/buildings/"),
     ("sf", "san francisco rent control rules", "explain", SF_GUIDE),
     ("sf", "sf rent control exemptions", "explain", SF_GUIDE),
     ("sf", "how much can rent go up rent controlled sf", "explain", SF_GUIDE),
+    # Neighborhood-level intent, newly answerable. NYC's ZIP and neighborhood
+    # hubs are the only pages on this site ranking at positions 2-4 (measured
+    # 2026-07-30), and until today no non-NYC city had that tier at all, so this
+    # is the query class the new pages exist to test.
+    ("sf", "rent controlled apartments mission district san francisco", "list",
+     "/sf/neighborhood/mission/"),
+    ("sf", "rent controlled buildings sunset district san francisco", "list",
+     "/sf/neighborhood/sunset-parkside/"),
     # ---- Los Angeles
-    ("la", "rent stabilized apartments los angeles", "list", "/la/"),
-    ("la", "rso apartment list los angeles", "list", "/la/"),
+    ("la", "rent stabilized apartments los angeles", "list", "/la/buildings/"),
+    ("la", "rso apartment list los angeles", "list", "/la/buildings/"),
     ("la", "is my building rent controlled la", "check", LA_GUIDE),
     ("la", "lahd rso lookup", "check", LA_GUIDE),
     ("la", "los angeles rent control rules", "explain", LA_GUIDE),
     ("la", "la just cause eviction rent control", "explain", LA_GUIDE),
     ("la", "how much can landlord raise rent los angeles rent control", "explain", LA_GUIDE),
+    ("la", "rso buildings by zip code los angeles", "list", "/la/buildings/"),
+    ("la", "rso buildings 90019", "list", "/la/zip/90019/"),
+    ("la", "rent stabilized buildings 90026 los angeles", "list", "/la/zip/90026/"),
     # ---- Washington DC
-    ("dc", "rent controlled apartments washington dc", "list", "/dc/"),
-    ("dc", "dc rent control list", "list", "/dc/"),
+    ("dc", "rent controlled apartments washington dc", "list", "/dc/buildings/"),
+    ("dc", "dc rent control list", "list", "/dc/buildings/"),
     ("dc", "is my apartment rent controlled dc", "check", DC_GUIDE),
     ("dc", "dc rentregistry lookup", "check", "/dc/"),
     ("dc", "dc rent control rules", "explain", DC_GUIDE),
     ("dc", "dc rent control exemptions", "explain", DC_GUIDE),
     ("dc", "how much can rent go up rent controlled dc", "explain", DC_GUIDE),
+    ("dc", "rent controlled buildings by neighborhood washington dc", "list", "/dc/buildings/"),
+    ("dc", "rent controlled apartments columbia heights dc", "list",
+     "/dc/neighborhood/columbia-heights/"),
+    ("dc", "rent controlled apartments dupont circle dc", "list",
+     "/dc/neighborhood/dupont-circle/"),
     # ---- Developer / data-licensing intent (targets the API demand problem)
     ("nyc", "rent stabilization data api", "list", "/developers/"),
     ("nyc", "nyc housing data api", "list", "/developers/"),

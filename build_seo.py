@@ -106,6 +106,357 @@ BORO_SLUG = {"M": "manhattan", "Bk": "brooklyn", "Q": "queens",
              "Bx": "bronx", "SI": "staten-island"}
 
 
+# ---- the non-NYC browse tier (SF / LA / DC) --------------------------------
+# Why this exists, from growth/gsc_pages.json on 2026-07-30: of the 82 pages on
+# this site earning any Search Console impression, 75 are single-building pages
+# whose only query is the literal street address, and 58 of the 82 sit at
+# position 10 or better. Ranking ability is not the constraint — addressable
+# search volume is, and one address has almost none. The tier that aggregates
+# (ZIP and neighborhood hubs) ranks at positions 2-4 where it serves, and three
+# of the four cities on this site had none of it: /sf/, /la/ and /dc/ were a
+# single JavaScript map shell each, which is also why 11 city queries were
+# scored as "covered" by a page that cannot answer them.
+#
+# Each city is grouped on the dimension its data actually carries — SF and DC
+# record a neighborhood, LA records only a ZIP — and every page states only
+# stats that city holds: LA has no reported rents, DC has no build years.
+MIN_CITY_HUB = 5      # below this a place gets no page rather than a thin one
+CITY_LIST_CAP = 300   # addresses listed per page; overflow is stated, not hidden
+
+CITY_HUBS = {
+    "sf": dict(
+        name="San Francisco", group="nb", path="neighborhood",
+        thing="location", things="locations",
+        h1="Rent-controlled apartments in {place}, San Francisco",
+        browse_h1="Rent-controlled buildings in San Francisco by neighborhood",
+        browse_link_text="rent-controlled San Francisco by neighborhood",
+        guide="is-my-apartment-rent-controlled-san-francisco",
+        list_h2="Block-sides reported in {place}",
+        list_note="These are block-sides as the Rent Board publishes them, not individual addresses.",
+    ),
+    "la": dict(
+        name="Los Angeles", group="z", path="zip",
+        thing="building", things="buildings",
+        h1="Rent-stabilized (RSO) buildings in ZIP {place}, Los Angeles",
+        browse_h1="Rent-stabilized (RSO) buildings in Los Angeles by ZIP code",
+        browse_link_text="likely-RSO Los Angeles by ZIP code",
+        guide="is-my-apartment-rent-controlled-los-angeles",
+        list_h2="Addresses meeting the RSO criteria in ZIP {place}",
+        list_note="Derived from assessor records and labelled likely RSO — confirm any address "
+                  "with LAHD or on ZIMAS before you rely on it.",
+    ),
+    "dc": dict(
+        name="Washington, DC", group="nb", path="neighborhood",
+        thing="property", things="properties",
+        h1="Rent-controlled buildings in {place}, Washington DC",
+        browse_h1="Rent-controlled buildings in Washington DC by neighborhood",
+        browse_link_text="rent-controlled Washington DC by neighborhood",
+        guide="is-my-apartment-rent-controlled-washington-dc",
+        list_h2="Registered properties in {place}",
+        list_note="A property is listed because its housing provider filed it as rent controlled.",
+    ),
+}
+
+
+def _med(xs):
+    xs = sorted(xs)
+    return xs[len(xs) // 2] if xs else None
+
+
+def _city_stats(items):
+    """Only what the records actually hold — missing fields stay missing."""
+    return {"n": len(items),
+            "units": sum(x["u"] for x in items if x.get("u")),
+            "yr": sorted(x["yr"] for x in items if x.get("yr")),
+            "mr": sorted(x["mr"] for x in items if x.get("mr"))}
+
+
+def _city_answer(key, place, st):
+    """The extractable answer for a city hub. Wording differs per city because
+    the underlying legal test and the data's authority differ per city, and
+    flattening that into one template would mean saying something untrue about
+    two of the three."""
+    n, units = st["n"], st["units"]
+    if key == "sf":
+        return [f"{place}, San Francisco has {n:,} block-side locations with rent-controlled units "
+                f"reported to the San Francisco Rent Board"
+                + (f", covering about {units:,} apartments." if units else "."),
+                "San Francisco rent control generally covers buildings occupied before 13 June 1979, "
+                "capping the annual increase and requiring just cause to end a tenancy.",
+                "This inventory is published anonymized to the block, not the individual address."]
+    if key == "la":
+        # "build year before 1979", not "before 1 October 1978": the assessor
+        # records carry a year, not a date, so the tighter phrasing would assert
+        # a precision the data does not have. The ordinance's real test is the
+        # certificate-of-occupancy date, which is why the third sentence sends
+        # the reader to LAHD rather than settling it here.
+        return [f"ZIP code {place} in Los Angeles has {n:,} buildings that meet the Rent "
+                f"Stabilization Ordinance criteria — two or more units and a build year before 1979"
+                + (f" — about {units:,} apartments in total." if units else "."),
+                "The RSO caps how much the rent can rise each year and requires just cause to evict.",
+                "This list is derived from county assessor records, not the City's official RSO "
+                "inventory, so confirm an address with LAHD or on ZIMAS."]
+    return [f"{place} in Washington DC has {n:,} properties registered as rent controlled with the "
+            f"District's Rental Accommodations Division"
+            + (f", covering about {units:,} units." if units else "."),
+            "DC rent control generally covers buildings built before 1976, and caps how much the "
+            "rent can rise each year.",
+            "Registration is the operative record: a unit its housing provider never registered is "
+            "generally treated as covered rather than exempt."]
+
+
+SIZE_BANDS = [(1, 1, "1 unit"), (2, 4, "2–4 units"), (5, 9, "5–9 units"),
+              (10, 19, "10–19 units"), (20, None, "20+ units")]
+
+
+def _band_table(items, label):
+    """Distribution by reported unit count — a real per-page statistic, not a
+    reworded version of the count above it."""
+    rows = []
+    for lo, hi, name in SIZE_BANDS:
+        c = sum(1 for x in items
+                if x.get("u") and x["u"] >= lo and (hi is None or x["u"] <= hi))
+        if c:
+            rows.append(f"<tr><td class='k'>{esc(name)}</td><td>{c:,} {esc(label)}</td></tr>")
+    return (f"<h2>By building size</h2><table class='facts'>{''.join(rows)}</table>"
+            if rows else "")
+
+
+def _decade_table(items):
+    counts = defaultdict(int)
+    for x in items:
+        if x.get("yr"):
+            counts[(x["yr"] // 10) * 10] += 1
+    rows = "".join(f"<tr><td class='k'>{d}s</td><td>{c:,} buildings</td></tr>"
+                   for d, c in sorted(counts.items()))
+    return f"<h2>By decade built</h2><table class='facts'>{rows}</table>" if rows else ""
+
+
+DC_QUADRANTS = {"Nw": "NW", "Ne": "NE", "Sw": "SW", "Se": "SE"}
+
+
+def _city_labels(key, items):
+    """Deduplicated address labels for a city hub's list.
+
+    Each city needs different handling, and none of them can use
+    titlecase_addr's NYC assumptions unmodified — that helper is shared with
+    47,000 NYC pages, so it is left alone rather than adjusted here (changing it
+    would rewrite every NYC page and mass-bump their lastmod).
+
+      * SF records a block-side ("1000 Block of REVERE AVE") once per reported
+        building, so the raw list repeats the same block many times, and
+        titlecase gives "Block Of".
+      * DC records a full mailing address, sometimes down to a unit ("…, Ste
+        501, Washington, DC, 20036"). The registry's claim is about the
+        property, so the label stops at the street address — that also stops
+        the page publishing a specific unit number.
+
+    Sorted by street, then house number: a plain string sort files every
+    "0 Block of …" first, which is not how anyone looks for their own street.
+    """
+    seen, out = set(), []
+    for x in items:
+        a = (x.get("a") or "").strip()
+        if key == "dc":
+            a = a.split(",")[0].strip()
+        if not a:
+            continue
+        label = re.sub(r"\bOf\b", "of", titlecase_addr(a))
+        if key == "dc":
+            label = " ".join(DC_QUADRANTS.get(w, w) for w in label.split())
+        if not re.search(r"[A-Za-z]", label):
+            continue          # a bare "0" is not an address
+        if re.match(r"^\d+\s+Block\s+of$", label):
+            continue          # "0 Block of" with no street names nothing
+        if label in seen:
+            continue
+        seen.add(label)
+        m = re.match(r"^(\d+)\s+(.*)$", label)
+        out.append(((m.group(2), int(m.group(1))) if m else (label, 0), label))
+    out.sort(key=lambda t: t[0])
+    return [label for _, label in out]
+
+
+def _city_stat_table(key, st):
+    cfg = CITY_HUBS[key]
+    rows = [f"<tr><td class='k'>{esc(cfg['things'].capitalize())}</td><td>{st['n']:,}</td></tr>"]
+    if st["units"]:
+        rows.append(f"<tr><td class='k'>Units reported</td><td>{st['units']:,}</td></tr>")
+    if st["yr"]:
+        rows.append(f"<tr><td class='k'>Median year built</td>"
+                    f"<td>{_med(st['yr'])} <span style='color:#4a4a68'>"
+                    f"({len(st['yr']):,} with a recorded year)</span></td></tr>")
+    if len(st["mr"]) >= MIN_CITY_HUB:
+        rows.append(f"<tr><td class='k'>Median reported rent</td>"
+                    f"<td>${_med(st['mr']):,} <span style='color:#4a4a68'>"
+                    f"({len(st['mr']):,} reported one)</span></td></tr>")
+    return f"<h2>The numbers here</h2><table class='facts'>{''.join(rows)}</table>"
+
+
+def _city_faq(key, place, st):
+    cfg = CITY_HUBS[key]
+    n = st["n"]
+    if key == "sf":
+        faq = [(f"How many rent-controlled locations are in {place}, San Francisco?",
+                f"The San Francisco Rent Board's housing inventory reports {n:,} rent-controlled "
+                f"block-side locations in {place}. The inventory is anonymized to the block, so a "
+                f"location is a block-side rather than a single address.")]
+        if st["yr"]:
+            pre = sum(1 for y in st["yr"] if y < 1979)
+            faq.append((f"Were most rent-controlled buildings in {place} built before 1979?",
+                        f"{pre:,} of the {len(st['yr']):,} locations in {place} with a recorded "
+                        f"build year were built before 1979. The legal test is the date the "
+                        f"certificate of occupancy was issued — before 13 June 1979 — not the "
+                        f"assessor's build year, so treat this as an indication, not a ruling."))
+        return faq
+    if key == "la":
+        faq = [(f"How many RSO buildings are in ZIP code {place}?",
+                f"{n:,} buildings in ZIP code {place} meet the Los Angeles Rent Stabilization "
+                f"Ordinance criteria — two or more units and a build year before 1979 — according "
+                f"to county assessor records. The ordinance's own test is a certificate of "
+                f"occupancy issued on or before 1 October 1978, so this is a close proxy rather "
+                f"than a determination. LAHD holds the City's official RSO inventory.")]
+        if st["yr"]:
+            faq.append((f"How old are the RSO buildings in {place}?",
+                        f"The median build year of the {len(st['yr']):,} buildings with a recorded "
+                        f"year in ZIP {place} is {_med(st['yr'])}. Every building on this list has "
+                        f"a build year before 1979, which is what puts it inside the criteria used "
+                        f"here."))
+        return faq
+    faq = [(f"How many rent-controlled properties are in {place}, Washington DC?",
+            f"{n:,} properties in {place} are registered as rent controlled with the District's "
+            f"Rental Accommodations Division.")]
+    if len(st["mr"]) >= MIN_CITY_HUB:
+        faq.append((f"What rent is reported for rent-controlled units in {place}?",
+                    f"The median rent reported to the Rental Accommodations Division across the "
+                    f"{len(st['mr']):,} {place} properties that reported one is "
+                    f"${_med(st['mr']):,}. That is what housing providers filed, not the market "
+                    f"rent and not what a specific unit will cost."))
+    return faq
+
+
+def city_hub_pages(urls):
+    """One aggregate page per neighborhood (SF, DC) or ZIP (LA), plus a browse
+    hub per city. Returns {city: count} so the caller can report it.
+
+    These are deliberately not building-level pages. SF is anonymized to the
+    block and LA is a derived "likely RSO" list, so the honest unit of
+    publication for those two is the aggregate, and a per-address page would
+    assert more than the data supports.
+    """
+    built = {}
+    for key, cfg in CITY_HUBS.items():
+        try:
+            recs = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                               key, "buildings.min.json")))
+        except Exception as e:
+            print(f"city hubs: skipping {key} ({e})")
+            built[key] = 0
+            continue
+
+        groups = defaultdict(list)
+        for r in recs:
+            g = r.get(cfg["group"])
+            if g not in (None, ""):
+                groups[str(g)].append(r)
+        big = {k: sorted(v, key=lambda x: x.get("a") or "")
+               for k, v in groups.items() if len(v) >= MIN_CITY_HUB}
+        small = len(groups) - len(big)
+        city, footer = cfg["name"], CITY_FOOTER[key]
+        browse_url = f"/{key}/buildings/"
+        counts = {k: len(v) for k, v in big.items()}
+        others = [(o, CITY_HUBS[o]) for o in CITY_HUBS if o != key]
+
+        for place, items in sorted(big.items()):
+            slug = place if cfg["path"] == "zip" else slugify(place)
+            url = f"/{key}/{cfg['path']}/{slug}/"
+            canonical = SITE + url
+            st = _city_stats(items)
+            h1 = cfg["h1"].format(place=place)
+
+            labels = _city_labels(key, items)
+            listing = ""
+            if labels:
+                shown = labels[:CITY_LIST_CAP]
+                # State the cap rather than truncating quietly: a list that
+                # silently stops at 300 reads as "this is all of them".
+                count = (f"{len(labels):,} distinct, showing the first {len(shown):,}."
+                         if len(labels) > len(shown) else
+                         f"{len(labels):,} distinct.")
+                listing = (f"<h2>{esc(cfg['list_h2'].format(place=place))}</h2>"
+                           f"<p class='disclaimer'>{esc(count)} {esc(cfg['list_note'])}</p>"
+                           f"<div class='cols'>"
+                           + "".join(f"<span>{esc(a)}</span>" for a in shown)
+                           + "</div>")
+
+            extra = _decade_table(items) if key == "la" else _band_table(items, cfg["things"])
+            sibs = "".join(
+                f"<a href=\"/{key}/{cfg['path']}/"
+                f"{p if cfg['path'] == 'zip' else slugify(p)}/\">{esc(p)} ({c:,})</a>"
+                for p, c in sorted(counts.items(), key=lambda kv: -kv[1])[:12] if p != place)
+            body = (f"<div class='crumbs'><a href='/'>Home</a> › "
+                    f"<a href='/{key}/'>{esc(city)}</a> › "
+                    f"<a href='{browse_url}'>All {esc(cfg['things'])}</a></div>"
+                    f"<h1>{esc(h1)}</h1>"
+                    + answer_block(_city_answer(key, place, st))
+                    + f"<a class='cta' href='/{key}/'>Open the {esc(city)} map →</a>"
+                    + _city_stat_table(key, st) + extra
+                    + (f"<p><a href='/guide/{cfg['guide']}/'>Read: is my apartment rent controlled "
+                       f"in {esc(city)}? →</a></p>")
+                    + listing
+                    + (f"<h2>Nearby in {esc(city)}</h2><div class='cols'>{sibs}</div>"
+                       f"<p><a href='{browse_url}'>All {esc(cfg['things'])} in {esc(city)} →</a></p>"
+                       if sibs else ""))
+            faq = _city_faq(key, place, st)
+            body += faq_html(faq)
+            crumb = breadcrumb([("Home", SITE + "/"), (city, SITE + f"/{key}/"),
+                                (h1, canonical)])
+            write(url.strip("/") + "/index.html",
+                  page(f"{h1} ({st['n']}) | Find A Crib",
+                       f"{st['n']} {cfg['things']} in {place}, {city} — counts, unit sizes and "
+                       f"what rent regulation there actually means. Check any address on the map.",
+                       canonical, body, [crumb, faq_jsonld(faq)], footer=footer))
+            urls.append((canonical, "0.7", key))
+
+        # ---- the city's browse hub: the page that makes the rest non-orphans
+        if not big:
+            built[key] = 0
+            continue
+        total_places = len(big)
+        total_recs = sum(counts.values())
+        links = "".join(
+            f"<a href=\"/{key}/{cfg['path']}/"
+            f"{p if cfg['path'] == 'zip' else slugify(p)}/\">{esc(p)} ({c:,})</a>"
+            for p, c in sorted(counts.items()))
+        skipped = (f" {small} more had fewer than {MIN_CITY_HUB} and were left off rather than "
+                   f"published as a near-empty page." if small else "")
+        body = (f"<div class='crumbs'><a href='/'>Home</a> › <a href='/{key}/'>{esc(city)}</a></div>"
+                f"<h1>{esc(cfg['browse_h1'])}</h1>"
+                f"<p class='lead'>{total_recs:,} {esc(cfg['things'])} across {total_places} "
+                f"{'ZIP codes' if cfg['path'] == 'zip' else 'neighborhoods'} in {esc(city)}."
+                f"{esc(skipped)} Start with your "
+                f"{'ZIP code' if cfg['path'] == 'zip' else 'neighborhood'}, or "
+                f"<a href='/{key}/'>open the map</a>.</p>"
+                f"<p><a href='/guide/{cfg['guide']}/'>Read: is my apartment rent controlled in "
+                f"{esc(city)}? →</a></p>"
+                f"<div class='cols'>{links}</div>"
+                + "<h2>Other cities on Find A Crib</h2><div class='cols'>"
+                + "<a href='/buildings/'>New York City by neighborhood</a>"
+                + "".join(f"<a href='/{o}/buildings/'>{esc(oc['browse_h1'])}</a>"
+                          for o, oc in others)
+                + "</div>")
+        crumb = breadcrumb([("Home", SITE + "/"), (city, SITE + f"/{key}/"),
+                            (cfg["browse_h1"], SITE + browse_url)])
+        write(browse_url.strip("/") + "/index.html",
+              page(f"{cfg['browse_h1']} | Find A Crib",
+                   f"Browse {total_recs:,} {cfg['things']} across {total_places} "
+                   f"{'ZIP codes' if cfg['path'] == 'zip' else 'neighborhoods'} in {city}.",
+                   SITE + browse_url, body, crumb, footer=footer))
+        urls.append((SITE + browse_url, "0.9", key))
+        built[key] = total_places
+    return built
+
+
 def slugify(s):
     s = (s or "").lower()
     s = re.sub(r"[^a-z0-9]+", "-", s)
@@ -199,7 +550,32 @@ TRACK_SNIPPET = """<script src="/config.js"></script>
 </script>"""
 
 
-def page(title, desc, canonical, body, jsonld=None):
+# The data-provenance footer. Every page states where its numbers came from,
+# and a page outside New York must not claim New York sources: the NYC footer
+# names DHCR, PLUTO and HPD, none of which have anything to do with a San
+# Francisco block or a Los Angeles parcel. Pages pass their own footer; the
+# NYC one stays the default because it is the overwhelming majority.
+NYC_FOOTER = """Data: NYC DHCR 2024 rent-stabilized building files, NYC PLUTO (coordinates),
+and NYC HPD Open Data (owner, violations, complaints). A building's rent-stabilized status reflects
+DHCR registration; it is not a guarantee that a specific unit is available or currently stabilized."""
+
+CITY_FOOTER = {
+    "sf": """Data: San Francisco Rent Board housing inventory — units their owners reported
+as rent controlled, published anonymized to the block rather than the individual address, plus
+San Francisco Assessor build years. Coverage reflects what owners reported; it is not a
+determination that a specific unit is rent controlled.""",
+    "la": """Data: Los Angeles County Assessor parcel records, filtered to the Rent
+Stabilization Ordinance criteria (two or more units, built before 1 October 1978). This is a
+derived list labelled "likely RSO" — it is not the City of Los Angeles's official RSO inventory,
+which LAHD holds. Verify an address with LAHD or on ZIMAS before relying on it.""",
+    "dc": """Data: District of Columbia Rental Accommodations Division registration and
+exemption filings (RentRegistry). A property appears here because its housing provider filed it as
+covered by rent control; registration is per property, and a unit its provider never registered is
+generally treated as covered rather than exempt.""",
+}
+
+
+def page(title, desc, canonical, body, jsonld=None, footer=None):
     ld = ""
     if jsonld:
         ld = '<script type="application/ld+json">%s</script>' % json.dumps(jsonld)
@@ -218,9 +594,7 @@ def page(title, desc, canonical, body, jsonld=None):
 <a href="/buildings/">All neighborhoods</a> &nbsp;·&nbsp;
 <a href="/guide/">Guides</a></header>
 <main>{body}</main>
-<footer class="site">Data: NYC DHCR 2024 rent-stabilized building files, NYC PLUTO (coordinates),
-and NYC HPD Open Data (owner, violations, complaints). A building's rent-stabilized status reflects
-DHCR registration; it is not a guarantee that a specific unit is available or currently stabilized.
+<footer class="site">{footer or NYC_FOOTER}
 &copy; Find A Crib. <a href="/">Open the interactive map →</a></footer>
 {TRACK_SNIPPET}
 </body></html>"""
@@ -549,7 +923,15 @@ def main():
                f"<h1>NYC rent-stabilized buildings</h1><p class='lead'>Browse all "
                f"{len(blds):,} DHCR rent-stabilized buildings by borough and neighborhood, "
                f"or <a href='/'>open the interactive map</a>. See which buildings were "
-               f"<a href='/available/'>recently advertised for rent →</a></p>" + hub_links))
+               f"<a href='/available/'>recently advertised for rent →</a></p>" + hub_links
+               # /buildings/ is a priority-0.9 page and one of the few places a
+               # crawler reliably reaches. The other three cities' browse tiers
+               # hang off it so they are not dependent on the city guides alone
+               # for internal links.
+               + "<h2>Other cities on Find A Crib</h2><div class='cols'>"
+               + "".join(f"<a href='/{k}/buildings/'>{esc(c['browse_h1'])}</a>"
+                         for k, c in CITY_HUBS.items())
+               + "</div>"))
     urls.append((SITE + "/buildings/", "0.9", "hub"))
 
     # ===== long-tail hub + listicle pages (high-intent searches) =====
@@ -736,12 +1118,21 @@ def main():
                    "mainEntityOfPage": canonical, "author": {"@type": "Organization", "name": "Find A Crib"},
                    "publisher": {"@type": "Organization", "name": "Find A Crib",
                                  "logo": {"@type": "ImageObject", "url": SITE + "/icon-512.png"}}}
+        gcity = g.get("city", "nyc")
+        # A guide about San Francisco footed "Data: NYC DHCR…" is simply wrong,
+        # and these three shipped that way on 2026-07-29. Each non-NYC guide now
+        # carries its own city's provenance, and links into that city's browse
+        # tier — the contextual link the new hubs need to not be orphans.
         body = (f"<div class='crumbs'><a href='/'>Home</a> › <a href='/guide/'>Guides</a> › {esc(g['h1'])}</div>"
                 f"<h1>{esc(g['h1'])}</h1>"
                 f"<div class='guide-body'>{g['body']}</div>"
+                + (f"<p><a href='/{gcity}/buildings/'>Browse "
+                   f"{esc(CITY_HUBS[gcity]['browse_link_text'])} →</a></p>"
+                   if gcity in CITY_HUBS else "")
                 + _related(g["slug"], GUIDES))
         write(f"guide/{g['slug']}/index.html",
-              page(g["title"] + " | Find A Crib", g["desc"], canonical, body, [article, crumb]))
+              page(g["title"] + " | Find A Crib", g["desc"], canonical, body, [article, crumb],
+                   footer=CITY_FOOTER.get(gcity)))
         urls.append((canonical, "0.8", "guide"))
 
     # /guide/ hub linking every guide
@@ -777,6 +1168,14 @@ def main():
                "check if your apartment is covered, tenant rights, lease renewals, and the exemptions that matter.",
                hub_canonical, hub_body, hub_crumb))
     urls.append((hub_canonical, "0.9", "guide"))
+
+    # ---- the SF / LA / DC browse tier (see CITY_HUBS above) ----
+    # Sharded into its own sitemap per city by the loop below, because the key
+    # in `urls` is the shard name: 2026 guidance on large sites is consistent
+    # that mixing thousands of URLs into one sitemap makes it harder, not
+    # easier, for a crawler to tell the important pages from the noise.
+    city_built = city_hub_pages(urls)
+    print("city hubs: " + ", ".join(f"{k}={v}" for k, v in sorted(city_built.items())))
 
     # ---- sitemaps (sharded by borough, < 50k each) + index ----
     by_boro_urls = defaultdict(list)

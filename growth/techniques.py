@@ -883,8 +883,54 @@ def t_city_guides(ctx):
     return {"ok": True, "detail": detail, "pages": ok}
 
 
+# Where the non-NYC browse tier lives in the docroot, and how many pages each
+# city should have. Counts are a floor, not an assertion: a city gains a hub
+# whenever a place crosses MIN_CITY_HUB records, so the check is ">= 1 and the
+# browse hub exists", and the real count is reported for the review to read.
+CITY_HUB_DIRS = {
+    "sf": "sf/neighborhood",
+    "la": "la/zip",
+    "dc": "dc/neighborhood",
+}
+
+
+def t_city_seo_expansion(ctx):
+    """Verify the SF / LA / DC aggregate hub pages are live in the docroot.
+
+    Written by build_seo.py:city_hub_pages(), so — like city_guides and
+    hub_direct_answers — this only checks. It exists because the SEO build is a
+    separate pipeline (/root/dhcr-build → rsync) from the daily growth build,
+    and "shipped" and "live" are not the same claim.
+
+    The detail deliberately distinguishes the two ways this fails: no city has
+    any hub page AND the pre-existing /guide/ hub is present means the docroot
+    is simply older than this change, which is a deploy problem; some cities
+    present and others empty means the generator did.
+    """
+    import glob
+    counts, browse = {}, {}
+    for city, rel in CITY_HUB_DIRS.items():
+        counts[city] = len(glob.glob(os.path.join(ctx.docroot, rel, "*", "index.html")))
+        browse[city] = os.path.exists(os.path.join(ctx.docroot, city, "buildings", "index.html"))
+
+    total = sum(counts.values())
+    detail = "hub pages live: " + ", ".join(
+        f"{c} {counts[c]}{'' if browse[c] else ' (no browse hub)'}" for c in sorted(counts))
+    if total == 0:
+        stale = os.path.exists(os.path.join(ctx.docroot, "guide", "index.html"))
+        return {"ok": False,
+                "detail": detail + (" — docroot has no city hub pages at all; the SEO rebuild "
+                                    "has not deployed this change yet"
+                                    if stale else " — no SEO build output in the docroot")}
+    missing = [c for c in counts if not counts[c] or not browse[c]]
+    if missing:
+        return {"ok": False, "detail": detail + f" — incomplete: {', '.join(sorted(missing))}"}
+    return {"ok": True, "detail": detail, "pages": total + len(browse)}
+
+
 REGISTRY = {
     "city_guides": t_city_guides,
+    "city_seo_expansion": t_city_seo_expansion,
     "hub_direct_answers": t_hub_direct_answers,
     "fresh_section8": t_fresh_section8,
     "daily_brief": t_daily_brief,
@@ -896,4 +942,4 @@ REGISTRY = {
 # Order matters: content first, then the sitemap that lists it, then the ping
 # that announces it.
 ORDER = ["fresh_section8", "daily_brief", "hub_direct_answers", "city_guides",
-         "llms_txt", "sitemap_daily", "indexnow"]
+         "city_seo_expansion", "llms_txt", "sitemap_daily", "indexnow"]

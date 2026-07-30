@@ -188,7 +188,7 @@ def email_changes(to, changes, results, today):
     blocks = [
         {"type": "paragraph",
          "text": "What changed on the HPD agents' re-rental pages since the last check."},
-        {"type": "card", "title": "Changes", "body": "\n".join(changes)},
+        {"type": "card", "heading": "Changes", "body": "\n".join(changes)},
         {"type": "paragraph",
          "text": f"{len(live)} of {len(results)} pages are showing units right now: "
                  + (", ".join(live) if live else "none")},

@@ -819,6 +819,7 @@
     "units_seen": false,
     "note": "Homeownership, not rentals.",
     "last_ok": "2026-07-30",
+    "waitlist": true,
     "checked": "2026-07-30"
    }
   },

@@ -19,6 +19,9 @@ import urllib.request
 
 SRC = "https://www.nyc.gov/site/hpd/services-and-information/marketing-agent-pql.page"
 OUT = "marketing_agents.json"
+# Hand-curated re-rental listing pages, merged in on top of the scrape. HPD only
+# publishes a corporate homepage, which is almost never where units get posted.
+RERENTALS = "rerental_pages.json"
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/126.0 Safari/537.36")
 
@@ -119,13 +122,31 @@ def main():
         raise SystemExit(f"only parsed {len(agents)} agents — the PQL page layout "
                          f"probably changed, refusing to overwrite {OUT}")
 
+    # Merge the curated re-rental pages. Match on the exact PQL name; if HPD
+    # renames a firm the entry stops matching, so warn loudly rather than
+    # silently dropping a link.
+    try:
+        rr = json.load(open(RERENTALS))
+    except FileNotFoundError:
+        rr = {"pages": {}, "checked": None}
+    pages = rr.get("pages", {})
+    by_name = {a["name"]: a for a in agents}
+    for name, page in pages.items():
+        if name in by_name:
+            by_name[name]["rerentals"] = dict(page, checked=rr.get("checked"))
+        else:
+            print(f"  ⚠ re-rental entry has no matching agent: {name!r}")
+    matched = sum(1 for a in agents if a.get("rerentals"))
+
     agents.sort(key=lambda a: re.sub(r'^[^A-Za-z]+', '', a["name"]).lower() or a["name"].lower())
     json.dump({"source": SRC,
                "fetched": datetime.date.today().isoformat(),
                "count": len(agents),
+               "rerental_count": matched,
                "agents": agents},
               open(OUT, "w"), indent=1, ensure_ascii=False)
-    print(f"wrote {OUT}: {len(agents)} marketing agents")
+    print(f"wrote {OUT}: {len(agents)} marketing agents, "
+          f"{matched} with a re-rental listing page")
 
 
 if __name__ == "__main__":

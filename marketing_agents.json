@@ -2,6 +2,7 @@
  "source": "https://www.nyc.gov/site/hpd/services-and-information/marketing-agent-pql.page",
  "fetched": "2026-07-30",
  "count": 85,
+ "rerental_count": 11,
  "agents": [
   {
    "name": "About Real Estate NY",
@@ -129,7 +130,13 @@
    "website": "http://www.ccmanagers.com/",
    "agency": "HPD",
    "tags": [],
-   "about": "C+C Apartment Management, LLC prides itself on a proactive approach to management which allows us to anticipate and deal with problems and situations before they occur. We view our role as a customer service specialist. We always ensure that the right decisions are made to achieve the needs and goals of our clients, investors and residents. We know that the quality of life each resident experiences while living in our properties is dependent upon caring and proficient management. As such, our priorities are focused upon providing responsive service, maintaining the property in a meticulous manner, and staying attuned to industry innovations that can help us to enhance our performance."
+   "about": "C+C Apartment Management, LLC prides itself on a proactive approach to management which allows us to anticipate and deal with problems and situations before they occur. We view our role as a customer service specialist. We always ensure that the right decisions are made to achieve the needs and goals of our clients, investors and residents. We know that the quality of life each resident experiences while living in our properties is dependent upon caring and proficient management. As such, our priorities are focused upon providing responsive service, maintaining the property in a meticulous manner, and staying attuned to industry innovations that can help us to enhance our performance.",
+   "rerentals": {
+    "url": "https://ccmanagers.com/availability/",
+    "title": "Rental Availability",
+    "units_seen": false,
+    "checked": "2026-07-30"
+   }
   },
   {
    "name": "CGMR Compliance Partners",
@@ -185,7 +192,13 @@
     "LIHTC",
     "421-a / IH"
    ],
-   "about": "Founded in 2002, Clinton Management provides full-service marketing, lease-up, compliance, and property management for affordable and mixed-income housing across New York City. With extensive experience in LIHTC, HOME, Section 8, Inclusionary Housing, 421-a, tax-exempt bond financing, senior housing, and the PACT program, we support residents throughout the entire housing lifecycle with a focus on efficiency, equity, and operational excellence. We partner closely with key agencies, including HPD, HDC, HCR/HFA, and NYCHA, to ensure full compliance and successful project delivery. Clinton Management is part of a family of affiliated development, construction, and property management companies with decades of combined expertise. Together, we deliver high-quality, community-focused housing by seamlessly managing every phase, from development and construction to ongoing operations, ensuring thoughtful design, sustainability, and enduring value. At the core of our work is \"The Clinton Way\", a commitment to balancing community needs with market demand through innovation, integrity, and a residents-first approach. This philosophy drives us to improve lives and revitalize neighborhoods throughout New York City with housing solutions that truly make a difference."
+   "about": "Founded in 2002, Clinton Management provides full-service marketing, lease-up, compliance, and property management for affordable and mixed-income housing across New York City. With extensive experience in LIHTC, HOME, Section 8, Inclusionary Housing, 421-a, tax-exempt bond financing, senior housing, and the PACT program, we support residents throughout the entire housing lifecycle with a focus on efficiency, equity, and operational excellence. We partner closely with key agencies, including HPD, HDC, HCR/HFA, and NYCHA, to ensure full compliance and successful project delivery. Clinton Management is part of a family of affiliated development, construction, and property management companies with decades of combined expertise. Together, we deliver high-quality, community-focused housing by seamlessly managing every phase, from development and construction to ongoing operations, ensuring thoughtful design, sustainability, and enduring value. At the core of our work is \"The Clinton Way\", a commitment to balancing community needs with market demand through innovation, integrity, and a residents-first approach. This philosophy drives us to improve lives and revitalize neighborhoods throughout New York City with housing solutions that truly make a difference.",
+   "rerentals": {
+    "url": "https://www.clintonmanagement.com/availabilities/affordable",
+    "title": "Affordable Availabilities",
+    "units_seen": false,
+    "checked": "2026-07-30"
+   }
   },
   {
    "name": "CMP Consultants, Inc.",
@@ -388,7 +401,13 @@
     "LIHTC",
     "421-a / IH"
    ],
-   "about": "The Housing Partnership team has expertise in HPD marketing compliance, Fair Housing, Inclusionary Housing, LIHTC, Open Door, and Affordable New York/421-a programs. We have successfully leased over 1,000 apartments and sold more than 15,000 homes, while ensuring fair, efficient applicant processing and full compliance with HPD requirements. Partnering with us means your project benefits from decades of affordable housing experience and trusted relationships with HPD—delivering results on time, in compliance, and with professionalism."
+   "about": "The Housing Partnership team has expertise in HPD marketing compliance, Fair Housing, Inclusionary Housing, LIHTC, Open Door, and Affordable New York/421-a programs. We have successfully leased over 1,000 apartments and sold more than 15,000 homes, while ensuring fair, efficient applicant processing and full compliance with HPD requirements. Partnering with us means your project benefits from decades of affordable housing experience and trusted relationships with HPD—delivering results on time, in compliance, and with professionalism.",
+   "rerentals": {
+    "url": "https://www.housingpartnership.com/services/current-vacancies",
+    "title": "Current Vacancies",
+    "units_seen": false,
+    "checked": "2026-07-30"
+   }
   },
   {
    "name": "iAfford NY",
@@ -524,7 +543,13 @@
    "website": "https://mgnyconsulting.com/",
    "agency": "HPD",
    "tags": [],
-   "about": "MGNY Consulting has become the premier choice for New York City’s most sophisticated developers thanks to our fully integrated marketing and lease management services. From 5Pointz LIC and JDS’s The Brooklyn Tower to Brookfield’s “Bankside” in Mott Haven, our track record features the most iconic developments in NYC and inspires a welcome change in the industry. As your approved HPD Marketing Agent, we take full ownership over the leasing of income-restricted apartments and see every qualified applicant through to move-in. We begin by reaching out to the target audience and attracting qualified applicants through highly visible digital media, responsive landing pages and smart digital ad campaigns. Our expert sales team builds relationships with middle-income families and walks them through the application process. Our tech team makes every step easy and efficient through rapid processing and communication. Our tours department gives applicants a true concierge experience before leasing, and finally, our project managers ensure that tenants are fully qualified and moved in as quickly as possible."
+   "about": "MGNY Consulting has become the premier choice for New York City’s most sophisticated developers thanks to our fully integrated marketing and lease management services. From 5Pointz LIC and JDS’s The Brooklyn Tower to Brookfield’s “Bankside” in Mott Haven, our track record features the most iconic developments in NYC and inspires a welcome change in the industry. As your approved HPD Marketing Agent, we take full ownership over the leasing of income-restricted apartments and see every qualified applicant through to move-in. We begin by reaching out to the target audience and attracting qualified applicants through highly visible digital media, responsive landing pages and smart digital ad campaigns. Our expert sales team builds relationships with middle-income families and walks them through the application process. Our tech team makes every step easy and efficient through rapid processing and communication. Our tours department gives applicants a true concierge experience before leasing, and finally, our project managers ensure that tenants are fully qualified and moved in as quickly as possible.",
+   "rerentals": {
+    "url": "https://mgnyconsulting.com/listings/",
+    "title": "Listings",
+    "units_seen": false,
+    "checked": "2026-07-30"
+   }
   },
   {
    "name": "MHANY Management, Inc.",
@@ -535,7 +560,13 @@
    "website": "http://www.mutualhousingny.org",
    "agency": "HPD",
    "tags": [],
-   "about": "MHANY's mission incorporates the highest standards in the service of human rights, gender equality, access and opportunity for low-income and immigrant families in NYC/NJ. Towards that end, MHANY is committed to promoting, developing and managing affordable housing in New York. MHANY's mission is:"
+   "about": "MHANY's mission incorporates the highest standards in the service of human rights, gender equality, access and opportunity for low-income and immigrant families in NYC/NJ. Towards that end, MHANY is committed to promoting, developing and managing affordable housing in New York. MHANY's mission is:",
+   "rerentals": {
+    "url": "https://www.mutualhousingny.org/avaliable-properties",
+    "title": "Available Properties",
+    "units_seen": false,
+    "checked": "2026-07-30"
+   }
   },
   {
    "name": "Micki Garcia Realty",
@@ -753,7 +784,14 @@
     "Nonprofit",
     "Sales / homeownership"
    ],
-   "about": "Restored Homes Housing Development Fund Corporation (Restored Homes) develops, on a not-for-profit basis, housing projects for individuals and families of low- and moderate- income. In addition to promoting affordable homeownership opportunities, Restored Homes seeks to eliminate blight and foster the stabilization of communities throughout New York City. Restored Homes works in close collaboration with the New York City Department of Housing Preservation and Development (HPD), and with the support of the U.S. Department of Housing and Urban Development (HUD), and the New York State Affordable Housing Corporation (AHC). Through its established partnerships with government, lenders, and community partners, Restored Homes has remained at the forefront of affordable homeownership programs focused on one- to four- family homes through successfully acquiring, rehabilitating, and marketing distressed properties to low- and moderate- income households. Restored Homes also draws on its extensive knowledge of housing rehabilitation and affordable housing development in providing construction management services and technical assistance to its partners."
+   "about": "Restored Homes Housing Development Fund Corporation (Restored Homes) develops, on a not-for-profit basis, housing projects for individuals and families of low- and moderate- income. In addition to promoting affordable homeownership opportunities, Restored Homes seeks to eliminate blight and foster the stabilization of communities throughout New York City. Restored Homes works in close collaboration with the New York City Department of Housing Preservation and Development (HPD), and with the support of the U.S. Department of Housing and Urban Development (HUD), and the New York State Affordable Housing Corporation (AHC). Through its established partnerships with government, lenders, and community partners, Restored Homes has remained at the forefront of affordable homeownership programs focused on one- to four- family homes through successfully acquiring, rehabilitating, and marketing distressed properties to low- and moderate- income households. Restored Homes also draws on its extensive knowledge of housing rehabilitation and affordable housing development in providing construction management services and technical assistance to its partners.",
+   "rerentals": {
+    "url": "https://www.neighborhoodrestore.org/homebuyers",
+    "title": "Available Homes & Open Houses",
+    "units_seen": false,
+    "note": "Homeownership, not rentals.",
+    "checked": "2026-07-30"
+   }
   },
   {
    "name": "RiseBoro",
@@ -818,7 +856,13 @@
    "website": "http://www.sjpny.com",
    "agency": "HPD",
    "tags": [],
-   "about": "SJP Tax Consultants Inc. is a family owned and operated real estate tax consulting corporation. Our associates have been operating in the tri-state area since 1973. We are proud that we have represented thousands of customers in seeking to reduce real estate taxes through numerous programs filed with the NYC. We have also found affordable housing for New Yorkers in need. It is our mission to reduce our clients' affordable housing burdens by providing services that are streamlined and precise. We take pride in treating each project as our own and will continue to provide each client with the most current and effective affordable housing marketing skills that are available."
+   "about": "SJP Tax Consultants Inc. is a family owned and operated real estate tax consulting corporation. Our associates have been operating in the tri-state area since 1973. We are proud that we have represented thousands of customers in seeking to reduce real estate taxes through numerous programs filed with the NYC. We have also found affordable housing for New Yorkers in need. It is our mission to reduce our clients' affordable housing burdens by providing services that are streamlined and precise. We take pride in treating each project as our own and will continue to provide each client with the most current and effective affordable housing marketing skills that are available.",
+   "rerentals": {
+    "url": "https://www.sjpny.com/affordable-rerentals",
+    "title": "Affordable Re-Rentals",
+    "units_seen": false,
+    "checked": "2026-07-30"
+   }
   },
   {
    "name": "SKF Property Management",
@@ -859,7 +903,13 @@
    "tags": [
     "Property management"
    ],
-   "about": "Spring Leasing and Management, LLC (SLM), is committed to providing best in class marketing, lease-up and property management services to New York City developers and owners of market rate and affordable housing. The company's mission is to ensure that all projects are efficiently and effectively managed by utilizing time tested, proven management principles combined with a high level of customer service to our residents."
+   "about": "Spring Leasing and Management, LLC (SLM), is committed to providing best in class marketing, lease-up and property management services to New York City developers and owners of market rate and affordable housing. The company's mission is to ensure that all projects are efficiently and effectively managed by utilizing time tested, proven management principles combined with a high level of customer service to our residents.",
+   "rerentals": {
+    "url": "https://springmanagement.net/apartments-for-rent",
+    "title": "Apartments For Rent",
+    "units_seen": false,
+    "checked": "2026-07-30"
+   }
   },
   {
    "name": "St. Nicks Alliance",
@@ -937,7 +987,14 @@
     "LIHTC",
     "421-a / IH"
    ],
-   "about": "Since 2018, Tax Solute Consulting LLC has been proudly guiding developers and tenants alike within the Agency's complex confines of the marketing, tenant selection, lease-up, and ongoing compliance logistics and regulatory requirements for numerous LIHTC, 70/30 Affordable Housing NY Program eligible projects. To date, we have successfully managed and leased up a sizeable quantity of affordable units throughout New York City. We continuously strive to identify and implement best practices in our approach to make a difference in the lives of the underprivileged, all the while trying to maintain and improve the vibrancy, diversity, and integration of all individual communities that comprise our great city. Our entire staff has a substantive understating of various incentive programs and policies related to neighborhood development that is specifically aimed at improving lives, strengthening low-income communities, and generating social change. Our past and ongoing projects and collaborations clearly manifest how we aim to deliver support to the Agency through fostering fair housing and enhancing equal housing opportunities for all members of our society, especially the less fortunate. As the managing director and president of Tax Solute Consulting LLC, Sam Posner is fully accredited by HPD with Low Income Housing Tax Credits (LIHTC), Inclusionary Housing Administering Agent, and Affordable 421a (16) Marketing Agent Certifications. He and his diverse and growing, multi-lingual staff are extremely knowledgeable in conducting accurate initial eligibility and ongoing compliance reviews of potential tenants for affordable housing; lottery and Housing Connect procedures; advertising of affordable units through community and public outreach efforts; painstaking maintenance of all records and waiting lists; and proper processing of all applicants within the purview of specific occupancy requirements of each project while utilizing pertinent Fair Housing policies and all other aspects of requisite rules and regulations."
+   "about": "Since 2018, Tax Solute Consulting LLC has been proudly guiding developers and tenants alike within the Agency's complex confines of the marketing, tenant selection, lease-up, and ongoing compliance logistics and regulatory requirements for numerous LIHTC, 70/30 Affordable Housing NY Program eligible projects. To date, we have successfully managed and leased up a sizeable quantity of affordable units throughout New York City. We continuously strive to identify and implement best practices in our approach to make a difference in the lives of the underprivileged, all the while trying to maintain and improve the vibrancy, diversity, and integration of all individual communities that comprise our great city. Our entire staff has a substantive understating of various incentive programs and policies related to neighborhood development that is specifically aimed at improving lives, strengthening low-income communities, and generating social change. Our past and ongoing projects and collaborations clearly manifest how we aim to deliver support to the Agency through fostering fair housing and enhancing equal housing opportunities for all members of our society, especially the less fortunate. As the managing director and president of Tax Solute Consulting LLC, Sam Posner is fully accredited by HPD with Low Income Housing Tax Credits (LIHTC), Inclusionary Housing Administering Agent, and Affordable 421a (16) Marketing Agent Certifications. He and his diverse and growing, multi-lingual staff are extremely knowledgeable in conducting accurate initial eligibility and ongoing compliance reviews of potential tenants for affordable housing; lottery and Housing Connect procedures; advertising of affordable units through community and public outreach efforts; painstaking maintenance of all records and waiting lists; and proper processing of all applicants within the purview of specific occupancy requirements of each project while utilizing pertinent Fair Housing policies and all other aspects of requisite rules and regulations.",
+   "rerentals": {
+    "url": "https://sites.google.com/affordablelivingnyc.com/hpd/home",
+    "title": "Affordable Living NYC",
+    "units_seen": true,
+    "note": "First-come, first-served. Separate domain from their HPD-listed site.",
+    "checked": "2026-07-30"
+   }
   },
   {
    "name": "Taxace NY LLC",
@@ -948,7 +1005,13 @@
    "website": "https://www.taxaceny.com/",
    "agency": "HPD",
    "tags": [],
-   "about": "Taxace NY LLC has a unique approach when it comes to filling up units through (HPS) Homeless Placement Service. We focus on filling up the units with Care, Speed and Organization."
+   "about": "Taxace NY LLC has a unique approach when it comes to filling up units through (HPS) Homeless Placement Service. We focus on filling up the units with Care, Speed and Organization.",
+   "rerentals": {
+    "url": "https://www.taxaceny.com/projects-8",
+    "title": "Available Units",
+    "units_seen": true,
+    "checked": "2026-07-30"
+   }
   },
   {
    "name": "TF Cornerstone",
@@ -959,7 +1022,13 @@
    "website": "https://tfc.com/",
    "agency": "HPD + HDC",
    "tags": [],
-   "about": "We are a privately held real estate development company, founded in 1970. TF Cornerstone has grown to nearly 12,000 residential units in New York City and over 4 million SF of commercial and retail space in NY, DC, VA, and PA. TFC has been approved as a Marketing Agent and has a long history of leasing and operating affordable housing through the diverse programs offered by New York City and State housing development and finance agencies such as HPD & HDC. Our in-house team of Eligibility and Compliance Specialists, Managers and Director perform all steps relating to the affordable leasing process from marketing, resident lottery, income certification/re-certification, tenant selection and regulatory compliance."
+   "about": "We are a privately held real estate development company, founded in 1970. TF Cornerstone has grown to nearly 12,000 residential units in New York City and over 4 million SF of commercial and retail space in NY, DC, VA, and PA. TFC has been approved as a Marketing Agent and has a long history of leasing and operating affordable housing through the diverse programs offered by New York City and State housing development and finance agencies such as HPD & HDC. Our in-house team of Eligibility and Compliance Specialists, Managers and Director perform all steps relating to the affordable leasing process from marketing, resident lottery, income certification/re-certification, tenant selection and regulatory compliance.",
+   "rerentals": {
+    "url": "https://tfc.com/about/affordable-re-rentals",
+    "title": "Affordable Re-rentals",
+    "units_seen": true,
+    "checked": "2026-07-30"
+   }
   },
   {
    "name": "3438 30th Street LLC",

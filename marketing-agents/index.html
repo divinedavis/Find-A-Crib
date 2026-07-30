@@ -144,6 +144,19 @@
     padding: 2px 7px; border-radius: 5px; margin-top: 5px;
     background: var(--surface-3); color: var(--ink-2); }
   .agency.both { background: var(--blue-soft); color: var(--blue-dark); }
+  /* re-rental link: the most actionable thing on the page, so it gets colour */
+  .rr { display: inline-flex; align-items: center; gap: 5px; margin-top: 7px; padding: 5px 10px;
+    border-radius: 999px; font-size: 12px; font-weight: 800; text-decoration: none;
+    background: #e7f7ed; color: #10683a; border: 1px solid #b6e3c8; }
+  .rr:hover { background: #d6f0e1; text-decoration: none; }
+  .rr.quiet { background: var(--bg); color: var(--ink-2); border-color: var(--line); font-weight: 700; }
+  html[data-theme="dark"] .rr { background: #123020; color: #7fe0a8; border-color: #1f5236; }
+  html[data-theme="dark"] .rr:hover { background: #17402a; }
+  html[data-theme="dark"] .rr.quiet { background: var(--bg); color: var(--ink-2); border-color: var(--line); }
+  .rr-note { font-size: 11.5px; color: var(--ink-2); margin-top: 4px; }
+  .banner { background: var(--blue-soft); border: 1px solid var(--blue); border-radius: 12px;
+    padding: 14px 16px; margin: 0 0 18px; font-size: 14px; line-height: 1.6; color: var(--ink); }
+  .banner b { color: var(--blue-dark); }
   .tags { display: flex; flex-wrap: wrap; gap: 4px; }
   .tag { font-size: 11px; font-weight: 700; color: var(--ink-2); background: var(--bg);
     border: 1px solid var(--line); border-radius: 6px; padding: 2px 7px; white-space: nowrap; }
@@ -203,9 +216,17 @@
   </p>
   <p class="meta" id="meta">Loading…</p>
 
+  <div class="banner">
+    <b>Skip the lottery — look for re-rentals.</b> When a tenant moves out of an affordable
+    unit, the apartment usually doesn't go back into a lottery. The agent re-rents it directly,
+    often <b>first-come, first-served</b>, on their own website. Far fewer people know to look
+    there. <span id="rr-summary"></span>
+  </div>
+
   <div class="controls">
     <input class="search" id="q" type="search" placeholder="Search by company, contact, borough or specialty" aria-label="Search agents" />
     <select class="sort" id="sort" aria-label="Sort">
+      <option value="rr">Sort: re-rental pages first</option>
       <option value="name">Sort: A–Z</option>
       <option value="agency">Sort: HPD + HDC first</option>
     </select>
@@ -243,6 +264,11 @@
     Agents market specific buildings; being on this list doesn't mean a firm has anything
     available today. Open lotteries always post on
     <a href="https://housingconnect.nyc.gov/" target="_blank" rel="noopener">NYC Housing Connect ↗</a>.
+    Re-rental links are hand-checked, not scraped — HPD lists corporate homepages, which are
+    almost never where units get posted. Each one was opened in a browser and confirmed.
+    "Nothing posted" is the normal resting state of these pages, not a broken link: it means
+    that's where the firm posts when a unit opens up, so they're worth re-checking often.
+    Availability changes daily and we don't poll it live.
   </p>
 </main>
 
@@ -266,7 +292,7 @@
   paintBtn();
 
   // ---------- data ----------
-  var ALL = [], activeTags = new Set();
+  var ALL = [], activeTags = new Set(), rrOnly = false;
   var rows = document.getElementById('rows'), empty = document.getElementById('empty');
   var qEl = document.getElementById('q'), sortEl = document.getElementById('sort');
   var countEl = document.getElementById('count'), metaEl = document.getElementById('meta');
@@ -289,6 +315,11 @@
         : null;
       metaEl.innerHTML = '<strong>' + ALL.length + '</strong> firms on HPD’s Pre-Qualified List'
         + (when ? ' · last checked ' + esc(when) : '');
+      var rrAll = ALL.filter(function(a){ return a.rerentals; });
+      var rrLive = rrAll.filter(function(a){ return a.rerentals.units_seen; });
+      document.getElementById('rr-summary').innerHTML =
+        '<strong>' + rrAll.length + '</strong> of these firms publish one — '
+        + '<strong>' + rrLive.length + '</strong> had units posted when we last checked.';
       buildChips();
       render();
     })
@@ -303,6 +334,24 @@
     ALL.forEach(function(a){ (a.tags||[]).forEach(function(t){ counts[t] = (counts[t]||0)+1; }); });
     var names = Object.keys(counts).sort(function(x,y){ return counts[y]-counts[x] || x.localeCompare(y); });
     var box = document.getElementById('chips');
+
+    // re-rental filter leads the row — it's the reason most people are here
+    var rrN = ALL.filter(function(a){ return a.rerentals; }).length;
+    if (rrN) {
+      var rb = document.createElement('button');
+      rb.type = 'button'; rb.className = 'chip'; rb.id = 'chip-rr';
+      rb.textContent = '🏠 Posts re-rentals (' + rrN + ')';
+      rb.setAttribute('aria-pressed', 'false');
+      rb.addEventListener('click', function(){
+        rrOnly = !rrOnly;
+        rb.classList.toggle('on', rrOnly);
+        rb.setAttribute('aria-pressed', rrOnly ? 'true' : 'false');
+        if (rrOnly) track('agent_filter', {tag: 'rerentals'});
+        render();
+      });
+      box.appendChild(rb);
+    }
+
     names.forEach(function(t){
       var b = document.createElement('button');
       b.type = 'button'; b.className = 'chip'; b.textContent = t + ' (' + counts[t] + ')';
@@ -317,12 +366,14 @@
   }
 
   function matches(a, q){
+    if (rrOnly && !a.rerentals) return false;
     if (activeTags.size) {
       var tags = a.tags || [];
       for (var tag of activeTags) if (tags.indexOf(tag) === -1) return false;
     }
     if (!q) return true;
-    var hay = [a.name, a.contact, a.address, a.email, a.website, a.agency, (a.tags||[]).join(' '), a.about]
+    var hay = [a.name, a.contact, a.address, a.email, a.website, a.agency, (a.tags||[]).join(' '), a.about,
+               a.rerentals ? 're-rentals rerentals available units ' + a.rerentals.url : '']
       .join(' ').toLowerCase();
     return q.split(/\s+/).every(function(w){ return hay.indexOf(w) !== -1; });
   }
@@ -334,6 +385,12 @@
       list = list.slice().sort(function(x, y){
         var d = (y.agency === 'HPD + HDC') - (x.agency === 'HPD + HDC');
         return d || x.name.localeCompare(y.name);
+      });
+    else if (sortEl.value === 'rr')
+      // live units first, then firms with a page, then everyone else
+      list = list.slice().sort(function(x, y){
+        function rank(a){ return a.rerentals ? (a.rerentals.units_seen ? 0 : 1) : 2; }
+        return rank(x) - rank(y) || x.name.localeCompare(y.name);
       });
 
     countEl.textContent = list.length === ALL.length
@@ -350,6 +407,17 @@
         '<td><div class="name">' + esc(a.name) + '</div>' +
           (a.address ? '<div class="addr">' + esc(a.address) + '</div>' : '') +
           '<span class="agency' + (both ? ' both' : '') + '">' + esc(a.agency) + '</span>' +
+          (a.rerentals
+            ? '<br><a class="rr' + (a.rerentals.units_seen ? '' : ' quiet') + '" href="' + esc(a.rerentals.url) +
+                '" target="_blank" rel="noopener" data-out="rerental">🏠 ' +
+                (a.rerentals.units_seen ? 'Units posted' : 'Re-rental page') + ' ↗</a>' +
+              '<div class="rr-note">' + esc(a.rerentals.title) +
+                (a.rerentals.units_seen
+                  ? ' · had units on ' + esc(a.rerentals.checked || '')
+                  : ' · nothing posted on ' + esc(a.rerentals.checked || '')) +
+                (a.rerentals.note ? '<br>' + esc(a.rerentals.note) : '') +
+              '</div>'
+            : '') +
           (a.about ? '<br><button class="about-btn" type="button">What they do ▾</button>' : '') +
         '</td>' +
         '<td><div class="tags">' +

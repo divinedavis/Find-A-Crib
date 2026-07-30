@@ -1,0 +1,78 @@
+{
+ "_comment": [
+  "Curated map of HPD marketing agents -> the page where they post AVAILABLE re-rentals.",
+  "",
+  "Why this is hand-curated and not scraped: HPD's PQL lists a corporate homepage, which is",
+  "almost never the listings page (Tax Solute is listed as taxsolute.com; their actual re-rental",
+  "board is a Google Site on affordablelivingnyc.com). Link-crawling misses pages that aren't",
+  "linked from the homepage (TF Cornerstone), and URL-pattern probing produces false positives",
+  "on sites that soft-404 into their About page (diamondminere.com, mickigarciarealty.com and",
+  "urbanecospaces.com all return 200 for /about/affordable-re-rentals and render 'About Us').",
+  "Every URL below was opened in a real browser and confirmed by page title + content.",
+  "",
+  "units_seen = units were actually posted on the check date. false means the page is real and",
+  "is where they post, but nothing was listed at that moment - which is the normal state.",
+  "",
+  "To re-verify: python3 check_rerentals.py"
+ ],
+ "checked": "2026-07-30",
+ "pages": {
+  "TF Cornerstone": {
+   "url": "https://tfc.com/about/affordable-re-rentals",
+   "title": "Affordable Re-rentals",
+   "units_seen": true
+  },
+  "Tax Solute Consulting": {
+   "url": "https://sites.google.com/affordablelivingnyc.com/hpd/home",
+   "title": "Affordable Living NYC",
+   "units_seen": true,
+   "note": "First-come, first-served. Separate domain from their HPD-listed site."
+  },
+  "Taxace NY LLC": {
+   "url": "https://www.taxaceny.com/projects-8",
+   "title": "Available Units",
+   "units_seen": true
+  },
+  "SJP Tax Consultants Inc": {
+   "url": "https://www.sjpny.com/affordable-rerentals",
+   "title": "Affordable Re-Rentals",
+   "units_seen": false
+  },
+  "Clinton Management": {
+   "url": "https://www.clintonmanagement.com/availabilities/affordable",
+   "title": "Affordable Availabilities",
+   "units_seen": false
+  },
+  "MHANY Management, Inc.": {
+   "url": "https://www.mutualhousingny.org/avaliable-properties",
+   "title": "Available Properties",
+   "units_seen": false
+  },
+  "Housing Partnership Development Corporation": {
+   "url": "https://www.housingpartnership.com/services/current-vacancies",
+   "title": "Current Vacancies",
+   "units_seen": false
+  },
+  "Restored Homes": {
+   "url": "https://www.neighborhoodrestore.org/homebuyers",
+   "title": "Available Homes & Open Houses",
+   "units_seen": false,
+   "note": "Homeownership, not rentals."
+  },
+  "MGNY Consulting Corp.": {
+   "url": "https://mgnyconsulting.com/listings/",
+   "title": "Listings",
+   "units_seen": false
+  },
+  "Spring Leasing and Management, LLC": {
+   "url": "https://springmanagement.net/apartments-for-rent",
+   "title": "Apartments For Rent",
+   "units_seen": false
+  },
+  "C+C Apartment Management, LLC": {
+   "url": "https://ccmanagers.com/availability/",
+   "title": "Rental Availability",
+   "units_seen": false
+  }
+ }
+}

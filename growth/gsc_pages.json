@@ -1,22 +1,22 @@
 {
- "date": "2026-07-30",
+ "date": "2026-07-31",
  "discovered_untracked": [
   {
-   "clicks": 2,
-   "impressions": 8,
-   "position": 2.8,
-   "query": "jayshomefinder"
-  },
-  {
    "clicks": 0,
-   "impressions": 6,
-   "position": 34.5,
+   "impressions": 7,
+   "position": 34.9,
    "query": "228 e 3rd st ny"
   },
   {
    "clicks": 1,
+   "impressions": 6,
+   "position": 3,
+   "query": "jayshomefinder"
+  },
+  {
+   "clicks": 1,
    "impressions": 5,
-   "position": 5.4,
+   "position": 5.6,
    "query": "jays home finder"
   },
   {
@@ -24,12 +24,6 @@
    "impressions": 2,
    "position": 37,
    "query": "\"481 4th ave\" \"brooklyn ny\""
-  },
-  {
-   "clicks": 1,
-   "impressions": 1,
-   "position": 1,
-   "query": "jayshomefinder.com"
   },
   {
    "clicks": 0,
@@ -40,15 +34,15 @@
  ],
  "pages": [
   {
-   "clicks": 6,
-   "impressions": 21,
-   "position": 3.6,
+   "clicks": 5,
+   "impressions": 20,
+   "position": 3.5,
    "url": "https://findacrib.com/"
   },
   {
    "clicks": 0,
-   "impressions": 6,
-   "position": 34.5,
+   "impressions": 7,
+   "position": 34.9,
    "url": "https://findacrib.com/building/manhattan/228-e-3rd-st-1003850019/"
   },
   {
@@ -65,21 +59,21 @@
   },
   {
    "clicks": 0,
-   "impressions": 4,
-   "position": 37,
-   "url": "https://findacrib.com/building/brooklyn/481-4th-ave-3010220002/"
-  },
-  {
-   "clicks": 0,
-   "impressions": 4,
-   "position": 33.5,
-   "url": "https://findacrib.com/building/manhattan/180-thompson-st-1005250040/"
+   "impressions": 3,
+   "position": 9.3,
+   "url": "https://findacrib.com/building/bronx/909-sheridan-ave-2024610035/"
   },
   {
    "clicks": 0,
    "impressions": 3,
    "position": 10.7,
    "url": "https://findacrib.com/building/brooklyn/33-3rd-ave-3001800065/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 3,
+   "position": 32.3,
+   "url": "https://findacrib.com/building/manhattan/180-thompson-st-1005250040/"
   },
   {
    "clicks": 0,
@@ -90,14 +84,50 @@
   {
    "clicks": 0,
    "impressions": 2,
+   "position": 3,
+   "url": "https://findacrib.com/building/bronx/224-willis-ave-2022820002/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 2,
    "position": 4,
-   "url": "https://findacrib.com/building/bronx/909-sheridan-ave-2024610035/"
+   "url": "https://findacrib.com/building/bronx/616-e-139th-st-2025510030/"
   },
   {
    "clicks": 0,
    "impressions": 2,
    "position": 5,
    "url": "https://findacrib.com/building/brooklyn/103-to-105-smith-st-3001820057/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 2,
+   "position": 5,
+   "url": "https://findacrib.com/building/brooklyn/1337-fulton-st-3018490036/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 2,
+   "position": 37,
+   "url": "https://findacrib.com/building/brooklyn/481-4th-ave-3010220002/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 2,
+   "position": 28.5,
+   "url": "https://findacrib.com/building/brooklyn/558-50th-st-3007920024/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 2,
+   "position": 5,
+   "url": "https://findacrib.com/building/brooklyn/64-herkimer-st-3018650038/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 2,
+   "position": 2.5,
+   "url": "https://findacrib.com/building/brooklyn/825-bedford-ave-3017340058/"
   },
   {
    "clicks": 0,
@@ -120,6 +150,12 @@
   {
    "clicks": 0,
    "impressions": 2,
+   "position": 2,
+   "url": "https://findacrib.com/building/manhattan/216-e-5th-st-1004600019/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 2,
    "position": 4.5,
    "url": "https://findacrib.com/building/manhattan/286-e-10th-st-1004370024/"
   },
@@ -132,14 +168,14 @@
   {
    "clicks": 0,
    "impressions": 2,
-   "position": 3.5,
-   "url": "https://findacrib.com/zip/10024/"
+   "position": 8,
+   "url": "https://findacrib.com/building/queens/144-45-35th-ave-4049950064/"
   },
   {
    "clicks": 1,
    "impressions": 1,
-   "position": 9,
-   "url": "https://findacrib.com/building/manhattan/62-e-7th-st-1004480015/"
+   "position": 7,
+   "url": "https://findacrib.com/building/manhattan/70-saint-marks-pl-1004490024/"
   },
   {
    "clicks": 0,
@@ -169,7 +205,13 @@
    "clicks": 0,
    "impressions": 1,
    "position": 10,
-   "url": "https://findacrib.com/building/bronx/224-to-230-naples-ter-2057040050/"
+   "url": "https://findacrib.com/building/bronx/219-saint-anns-ave-2022650045/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 1,
+   "position": 3,
+   "url": "https://findacrib.com/building/bronx/520-tinton-ave-2025820030/"
   },
   {
    "clicks": 0,
@@ -228,12 +270,6 @@
   {
    "clicks": 0,
    "impressions": 1,
-   "position": 8,
-   "url": "https://findacrib.com/building/brooklyn/226-eckford-st-3026220047/"
-  },
-  {
-   "clicks": 0,
-   "impressions": 1,
    "position": 4,
    "url": "https://findacrib.com/building/brooklyn/234-eckford-st-3026220051/"
   },
@@ -248,12 +284,6 @@
    "impressions": 1,
    "position": 6,
    "url": "https://findacrib.com/building/brooklyn/2499-to-2507-bedford-ave-3051900075/"
-  },
-  {
-   "clicks": 0,
-   "impressions": 1,
-   "position": 12,
-   "url": "https://findacrib.com/building/brooklyn/2940-ocean-pkwy-3072740020/"
   },
   {
    "clicks": 0,
@@ -282,20 +312,8 @@
   {
    "clicks": 0,
    "impressions": 1,
-   "position": 2,
-   "url": "https://findacrib.com/building/brooklyn/4901-8th-ave-3056370006/"
-  },
-  {
-   "clicks": 0,
-   "impressions": 1,
    "position": 7,
    "url": "https://findacrib.com/building/brooklyn/55-newell-st-3026830009/"
-  },
-  {
-   "clicks": 0,
-   "impressions": 1,
-   "position": 49,
-   "url": "https://findacrib.com/building/brooklyn/558-50th-st-3007920024/"
   },
   {
    "clicks": 0,
@@ -312,14 +330,14 @@
   {
    "clicks": 0,
    "impressions": 1,
-   "position": 1,
-   "url": "https://findacrib.com/building/brooklyn/770-union-st-3009570013/"
+   "position": 10,
+   "url": "https://findacrib.com/building/brooklyn/761-44th-st-3007320053/"
   },
   {
    "clicks": 0,
    "impressions": 1,
-   "position": 11,
-   "url": "https://findacrib.com/building/brooklyn/782-new-york-ave-3048370065/"
+   "position": 1,
+   "url": "https://findacrib.com/building/brooklyn/770-union-st-3009570013/"
   },
   {
    "clicks": 0,
@@ -330,20 +348,8 @@
   {
    "clicks": 0,
    "impressions": 1,
-   "position": 38,
-   "url": "https://findacrib.com/building/brooklyn/90-diamond-st-3026520043/"
-  },
-  {
-   "clicks": 0,
-   "impressions": 1,
    "position": 8,
    "url": "https://findacrib.com/building/manhattan/103-avenue-a-1004347501/"
-  },
-  {
-   "clicks": 0,
-   "impressions": 1,
-   "position": 11,
-   "url": "https://findacrib.com/building/manhattan/110-sullivan-st-1005040031/"
   },
   {
    "clicks": 0,
@@ -362,12 +368,6 @@
    "impressions": 1,
    "position": 5,
    "url": "https://findacrib.com/building/manhattan/129-e-10th-st-1004660043/"
-  },
-  {
-   "clicks": 0,
-   "impressions": 1,
-   "position": 6,
-   "url": "https://findacrib.com/building/manhattan/140-to-160-amsterdam-ave-1011587507/"
   },
   {
    "clicks": 0,
@@ -432,12 +432,6 @@
   {
    "clicks": 0,
    "impressions": 1,
-   "position": 3,
-   "url": "https://findacrib.com/building/manhattan/239-elizabeth-st-1005080042/"
-  },
-  {
-   "clicks": 0,
-   "impressions": 1,
    "position": 48,
    "url": "https://findacrib.com/building/manhattan/250-w-72nd-st-1011630056/"
   },
@@ -456,8 +450,8 @@
   {
    "clicks": 0,
    "impressions": 1,
-   "position": 41,
-   "url": "https://findacrib.com/building/manhattan/315-e-9th-st-1004510054/"
+   "position": 5,
+   "url": "https://findacrib.com/building/manhattan/315-w-71st-st-1011830124/"
   },
   {
    "clicks": 0,
@@ -498,20 +492,26 @@
   {
    "clicks": 0,
    "impressions": 1,
-   "position": 10,
-   "url": "https://findacrib.com/building/queens/169-beach-90th-st-4161330030/"
+   "position": 6,
+   "url": "https://findacrib.com/building/manhattan/79-avenue-a-1004320035/"
   },
   {
    "clicks": 0,
    "impressions": 1,
-   "position": 2,
-   "url": "https://findacrib.com/neighborhood/manhattan/east-midtown-turtle-bay/"
+   "position": 3,
+   "url": "https://findacrib.com/building/queens/101-17-37th-ave-4017420027/"
   },
   {
    "clicks": 0,
    "impressions": 1,
    "position": 2,
    "url": "https://findacrib.com/zip/10023/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 1,
+   "position": 1,
+   "url": "https://findacrib.com/zip/10024/"
   },
   {
    "clicks": 0,
@@ -524,33 +524,21 @@
    "impressions": 1,
    "position": 11,
    "url": "https://findacrib.com/zip/11201/"
-  },
-  {
-   "clicks": 0,
-   "impressions": 1,
-   "position": 2,
-   "url": "https://findacrib.com/zip/11206/"
   }
  ],
  "queries_by_page": {
   "https://findacrib.com/": [
    {
-    "clicks": 2,
-    "impressions": 8,
-    "position": 2.8,
+    "clicks": 1,
+    "impressions": 6,
+    "position": 3,
     "query": "jayshomefinder"
    },
    {
     "clicks": 1,
     "impressions": 5,
-    "position": 5.4,
+    "position": 5.6,
     "query": "jays home finder"
-   },
-   {
-    "clicks": 1,
-    "impressions": 1,
-    "position": 1,
-    "query": "jayshomefinder.com"
    }
   ],
   "https://findacrib.com/building/bronx/1005-walton-ave-2024770034/": [],
@@ -558,10 +546,13 @@
   "https://findacrib.com/building/bronx/1160-cromwell-ave-2024960034/": [],
   "https://findacrib.com/building/bronx/1266-to-1268-grand-concourse-2024570040/": [],
   "https://findacrib.com/building/bronx/1901-gleason-ave-2037680001/": [],
-  "https://findacrib.com/building/bronx/224-to-230-naples-ter-2057040050/": [],
+  "https://findacrib.com/building/bronx/219-saint-anns-ave-2022650045/": [],
+  "https://findacrib.com/building/bronx/224-willis-ave-2022820002/": [],
+  "https://findacrib.com/building/bronx/520-tinton-ave-2025820030/": [],
   "https://findacrib.com/building/bronx/555-cauldwell-ave-2026230056/": [],
   "https://findacrib.com/building/bronx/561-cauldwell-ave-2026230054/": [],
   "https://findacrib.com/building/bronx/582-to-588-union-ave-2026740021/": [],
+  "https://findacrib.com/building/bronx/616-e-139th-st-2025510030/": [],
   "https://findacrib.com/building/bronx/80-mcclellan-st-2024780030/": [],
   "https://findacrib.com/building/bronx/909-sheridan-ave-2024610035/": [],
   "https://findacrib.com/building/brooklyn/101-prospect-park-w-3010850040/": [],
@@ -569,13 +560,12 @@
   "https://findacrib.com/building/brooklyn/1048-ocean-view-ave-3087090095/": [],
   "https://findacrib.com/building/brooklyn/105-boerum-pl-3001870005/": [],
   "https://findacrib.com/building/brooklyn/112-emerson-pl-3018940054/": [],
+  "https://findacrib.com/building/brooklyn/1337-fulton-st-3018490036/": [],
   "https://findacrib.com/building/brooklyn/143-4th-ave-3009430004/": [],
   "https://findacrib.com/building/brooklyn/209-kingsland-ave-3026880038/": [],
-  "https://findacrib.com/building/brooklyn/226-eckford-st-3026220047/": [],
   "https://findacrib.com/building/brooklyn/234-eckford-st-3026220051/": [],
   "https://findacrib.com/building/brooklyn/234-to-238-livingston-st-3001657501/": [],
   "https://findacrib.com/building/brooklyn/2499-to-2507-bedford-ave-3051900075/": [],
-  "https://findacrib.com/building/brooklyn/2940-ocean-pkwy-3072740020/": [],
   "https://findacrib.com/building/brooklyn/311-baltic-st-3003960053/": [],
   "https://findacrib.com/building/brooklyn/33-3rd-ave-3001800065/": [],
   "https://findacrib.com/building/brooklyn/410-lexington-ave-3018057502/": [],
@@ -590,29 +580,26 @@
     "query": "\"481 4th ave\" \"brooklyn ny\""
    }
   ],
-  "https://findacrib.com/building/brooklyn/4901-8th-ave-3056370006/": [],
   "https://findacrib.com/building/brooklyn/55-newell-st-3026830009/": [],
   "https://findacrib.com/building/brooklyn/558-50th-st-3007920024/": [],
   "https://findacrib.com/building/brooklyn/559-49th-st-3007750062/": [],
   "https://findacrib.com/building/brooklyn/613-to-615-marcy-ave-3017670007/": [],
+  "https://findacrib.com/building/brooklyn/64-herkimer-st-3018650038/": [],
+  "https://findacrib.com/building/brooklyn/761-44th-st-3007320053/": [],
   "https://findacrib.com/building/brooklyn/770-union-st-3009570013/": [],
-  "https://findacrib.com/building/brooklyn/782-new-york-ave-3048370065/": [],
+  "https://findacrib.com/building/brooklyn/825-bedford-ave-3017340058/": [],
   "https://findacrib.com/building/brooklyn/880-47th-st-3007690036/": [],
-  "https://findacrib.com/building/brooklyn/90-diamond-st-3026520043/": [],
   "https://findacrib.com/building/manhattan/103-avenue-a-1004347501/": [],
   "https://findacrib.com/building/manhattan/109-e-9th-st-1005550040/": [],
-  "https://findacrib.com/building/manhattan/110-sullivan-st-1005040031/": [],
   "https://findacrib.com/building/manhattan/111-w-71st-st-1011430030/": [],
   "https://findacrib.com/building/manhattan/12-e-22nd-st-1008500064/": [],
   "https://findacrib.com/building/manhattan/128-e-10th-st-1004650021/": [],
   "https://findacrib.com/building/manhattan/129-e-10th-st-1004660043/": [],
-  "https://findacrib.com/building/manhattan/140-to-160-amsterdam-ave-1011587507/": [],
   "https://findacrib.com/building/manhattan/142-e-98th-st-1016250048/": [],
   "https://findacrib.com/building/manhattan/1590-lexington-ave-1016290014/": [],
   "https://findacrib.com/building/manhattan/164-e-107th-st-1016340044/": [],
   "https://findacrib.com/building/manhattan/168-to-170-e-7th-st-1004020028/": [],
   "https://findacrib.com/building/manhattan/180-thompson-st-1005250040/": [],
-  "https://findacrib.com/building/manhattan/197-e-3rd-st-1003990039/": [],
   "https://findacrib.com/building/manhattan/200-w-72nd-st-1011637503/": [
    {
     "clicks": 0,
@@ -621,19 +608,20 @@
     "query": "200 west 72"
    }
   ],
+  "https://findacrib.com/building/manhattan/216-e-5th-st-1004600019/": [],
   "https://findacrib.com/building/manhattan/228-e-3rd-st-1003850019/": [
    {
     "clicks": 0,
-    "impressions": 6,
-    "position": 34.5,
+    "impressions": 7,
+    "position": 34.9,
     "query": "228 e 3rd st ny"
    }
   ],
   "https://findacrib.com/building/manhattan/286-e-10th-st-1004370024/": [],
-  "https://findacrib.com/building/manhattan/62-e-7th-st-1004480015/": [],
   "https://findacrib.com/building/manhattan/68-w-3rd-st-1005370017/": [],
-  "https://findacrib.com/zip/10024/": []
+  "https://findacrib.com/building/manhattan/70-saint-marks-pl-1004490024/": [],
+  "https://findacrib.com/building/queens/144-45-35th-ave-4049950064/": []
  },
  "serving_pages": 82,
- "window": "2026-07-21..2026-07-28"
+ "window": "2026-07-22..2026-07-29"
 }

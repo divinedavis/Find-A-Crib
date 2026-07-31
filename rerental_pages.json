@@ -28,15 +28,15 @@
   "Urban Ecospaces, Inc.": "soft-404: same",
   "Rentability": "HPD-listed domain is parked (redirects to search-domainparking.com)"
  },
- "checked": "2026-07-30",
+ "checked": "2026-07-31",
  "pages": {
   "Affordable for NY": {
    "url": "https://afny.org/re-rentals",
    "title": "Outside Market / Re-rentals",
    "units_seen": true,
    "note": "Filterable board with rent + household size per unit.",
-   "unit_count": 6,
-   "last_ok": "2026-07-30"
+   "unit_count": 5,
+   "last_ok": "2026-07-31"
   },
   "iAfford NY": {
    "url": "https://iaffordny.com/re-rentals",
@@ -44,21 +44,21 @@
    "units_seen": true,
    "note": "Same operator as Affordable for NY, but lists different units — check both.",
    "unit_count": 3,
-   "last_ok": "2026-07-30"
+   "last_ok": "2026-07-31"
   },
   "The Wavecrest Management Team Ltd.": {
    "url": "https://www.wavecrestrentals.com",
    "title": "Wavecrest Rentals",
    "units_seen": false,
    "note": "Application portal for their LAMP / HDC / LIHTC developments.",
-   "last_ok": "2026-07-30",
+   "last_ok": "2026-07-31",
    "waitlist": true
   },
   "TF Cornerstone": {
    "url": "https://tfc.com/about/affordable-re-rentals",
    "title": "Affordable Re-rentals",
    "units_seen": false,
-   "last_ok": "2026-07-30",
+   "last_ok": "2026-07-31",
    "waitlist": true
   },
   "Tax Solute Consulting": {
@@ -66,41 +66,41 @@
    "title": "Affordable Living NYC",
    "units_seen": true,
    "note": "First-come, first-served. Separate domain from their HPD-listed site.",
-   "last_ok": "2026-07-30",
+   "last_ok": "2026-07-31",
    "unit_count": 5
   },
   "Taxace NY LLC": {
    "url": "https://www.taxaceny.com/projects-8",
    "title": "Available Units",
    "units_seen": true,
-   "last_ok": "2026-07-30",
+   "last_ok": "2026-07-31",
    "unit_count": 31
   },
   "SJP Tax Consultants Inc": {
    "url": "https://www.sjpny.com/affordable-rerentals",
    "title": "Affordable Re-Rentals",
    "units_seen": false,
-   "last_ok": "2026-07-30"
+   "last_ok": "2026-07-31"
   },
   "Clinton Management": {
    "url": "https://www.clintonmanagement.com/availabilities/affordable",
    "title": "Affordable Availabilities",
    "units_seen": true,
-   "last_ok": "2026-07-30",
+   "last_ok": "2026-07-31",
    "unit_count": 6
   },
   "MHANY Management, Inc.": {
    "url": "https://www.mutualhousingny.org/avaliable-properties",
    "title": "Available Properties",
    "units_seen": true,
-   "last_ok": "2026-07-30",
+   "last_ok": "2026-07-31",
    "unit_count": 2
   },
   "Housing Partnership Development Corporation": {
    "url": "https://www.housingpartnership.com/services/current-vacancies",
    "title": "Current Vacancies",
    "units_seen": true,
-   "last_ok": "2026-07-30",
+   "last_ok": "2026-07-31",
    "unit_count": 11
   },
   "Restored Homes": {
@@ -108,7 +108,7 @@
    "title": "Available Homes & Open Houses",
    "units_seen": false,
    "note": "Homeownership, not rentals.",
-   "last_ok": "2026-07-30",
+   "last_ok": "2026-07-31",
    "waitlist": true
   },
   "MGNY Consulting Corp.": {
@@ -116,20 +116,20 @@
    "title": "Listings",
    "units_seen": true,
    "unit_count": 12,
-   "last_ok": "2026-07-30"
+   "last_ok": "2026-07-31"
   },
   "Spring Leasing and Management, LLC": {
    "url": "https://springmanagement.net/apartments-for-rent",
    "title": "Apartments For Rent",
    "units_seen": true,
-   "last_ok": "2026-07-30",
+   "last_ok": "2026-07-31",
    "unit_count": 2
   },
   "C+C Apartment Management, LLC": {
    "url": "https://ccmanagers.com/availability/",
    "title": "Rental Availability",
    "units_seen": true,
-   "last_ok": "2026-07-30",
+   "last_ok": "2026-07-31",
    "unit_count": 1
   }
  }

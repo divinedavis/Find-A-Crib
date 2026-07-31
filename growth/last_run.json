@@ -1,8 +1,8 @@
 {
   "build": {
-    "at": "2026-07-30T05:40:06+00:00",
+    "at": "2026-07-31T05:40:07+00:00",
     "changed_urls": 7,
-    "date": "2026-07-30",
+    "date": "2026-07-31",
     "deployed": true,
     "new_urls": 1,
     "techniques": {
@@ -10,12 +10,16 @@
         "detail": "0 of 3 city guides live with their data caveat \u2014 missing: dc, la, sf",
         "ok": false
       },
+      "city_seo_expansion": {
+        "detail": "hub pages live: dc 0 (no browse hub), la 0 (no browse hub), sf 0 (no browse hub) \u2014 docroot has no city hub pages at all; the SEO rebuild has not deployed this change yet",
+        "ok": false
+      },
       "daily_brief": {
-        "detail": "brief 2026-07-30: 1 added, 26 removed",
+        "detail": "brief 2026-07-31: 21 added, 0 removed",
         "ok": true
       },
       "fresh_section8": {
-        "detail": "225 buildings across 5 boroughs",
+        "detail": "246 buildings across 5 boroughs",
         "ok": true
       },
       "hub_direct_answers": {
@@ -31,7 +35,7 @@
         "ok": true
       },
       "sitemap_daily": {
-        "detail": "sitemap-daily.xml with 12 URLs",
+        "detail": "sitemap-daily.xml with 13 URLs",
         "ok": true
       }
     }

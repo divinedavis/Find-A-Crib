@@ -856,10 +856,11 @@
       ? new Date(B.date+'T00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})
       : null;
     var failed = steps.filter(function(s){ return !s.ok; }).length;
+    var shipped = steps.length - failed;
     el('fac-build-sub').textContent =
       (when ? 'Last run '+when+' — ' : '')
-      + steps.length + ' step' + (steps.length===1?'':'s')
-      + (failed ? ', '+failed+' needing attention' : ', all clear')
+      + shipped + ' change' + (shipped===1?'':'s') + ' shipped'
+      + (failed ? ', '+failed+' needing attention' : '')
       + (B.deployed ? ' · deployed' : ' · not deployed');
 
     var rows = steps.map(function(s){
@@ -874,7 +875,8 @@
         '<div class="act-desc">'+comma(newU)+' new · '+comma(chg)+' changed</div></div></div>'+
         '<div class="act-val">'+comma(newU+chg)+'</div></div>');
     }
-    el('fac-build-list').innerHTML = rows.join('');
+    el('fac-build-list').innerHTML = rows.length ? rows.join('')
+      : '<div style="color:var(--muted);font-size:13px">Nothing shipped on the last run.</div>';
   }
 
   function renderAds(A){
@@ -1148,7 +1150,7 @@
           return '<div class="act-row"><div class="act-l"><div class="act-ico">✅</div>'+
             '<div><div class="act-name">'+esc(s)+'</div></div></div></div>';
         }).join('')
-      : '<div style="color:var(--muted);font-size:13px">No build steps recorded for the last run.</div>';
+      : '<div style="color:var(--muted);font-size:13px">Nothing shipped on the last run.</div>';
     var P=(d.pages||{});
     if(P.total) el('build-list').innerHTML += '<div class="act-row"><div class="act-l"><div class="act-ico">📄</div>'+
       '<div><div class="act-name">Pages published by the engine</div><div class="act-desc">area, guide and service pages</div></div></div>'+

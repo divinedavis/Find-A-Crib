@@ -17,6 +17,7 @@ import datetime, hashlib, hmac, json, os, re, secrets, threading, time, urllib.r
 from collections import defaultdict, deque
 from flask import Flask, jsonify, request, g
 
+import build_log             # which run-log lines are work that shipped
 import nemo_metrics          # NEMO Seamless Gutter traffic, same droplet
 
 DATA_DIR = os.environ.get("DATA_DIR", ".")
@@ -897,7 +898,13 @@ def _fac_build():
         # ok is carried through rather than flattened to a tick: this engine
         # records failures (a technique can report ok:false and still have run),
         # and a card that shows every line green would hide them.
-        steps.append({"slug": slug, "detail": detail, "ok": bool(t.get("ok"))})
+        step = {"slug": slug, "detail": detail, "ok": bool(t.get("ok")),
+                "skipped": bool(t.get("skipped"))}
+        # A technique with nothing to do is a healthy no-op, not a shipment.
+        # The card reports what the engine built; "nothing new to submit" is
+        # not something it built. Failures still come through.
+        if build_log.did_work(step):
+            steps.append({k: step[k] for k in ("slug", "detail", "ok")})
     m = run.get("measure") or {}
     return {
         "date": b.get("date") or m.get("date"),

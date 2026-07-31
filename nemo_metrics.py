@@ -41,6 +41,8 @@ import sys
 import threading
 import time
 
+import build_log
+
 NEMO_ROOT = os.environ.get("NEMO_ROOT", "/var/www/nemo-seamless-gutter")
 RESULTS = os.path.join(NEMO_ROOT, "growth", "results.jsonl")
 SNAPSHOT = os.path.join(NEMO_ROOT, "growth", "snapshot.json")
@@ -355,8 +357,12 @@ def build(days=14):
         "pages": {"counts": page_counts, "total": sum(page_counts.values())},
         "build": {
             "date": last_build.get("date"),
-            "steps": [s.get("detail") for s in (last_build.get("log") or [])
-                      if isinstance(s, dict) and s.get("ok") and s.get("detail")][:6],
+            # Only what the run actually shipped. A technique that found nothing
+            # to do reports ok with a "no page is due a rewrite" detail; listing
+            # those alongside real work turns the card into a list of non-events.
+            "steps": [s.get("detail")
+                      for s in build_log.shipped(last_build.get("log"))
+                      if s.get("ok") and s.get("detail")][:6],
         },
         "warnings": warnings,
     }

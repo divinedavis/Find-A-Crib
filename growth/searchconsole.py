@@ -96,7 +96,9 @@ def collect(days=7):
     # ---- serving pages: the indexing read, and which pages they actually are
     pages = sc.query(token, start, end, ["page"], row_limit=5000)
     serving = len(pages)
-    _save_pages(sc, token, start, end, pages, by_query)
+    page_rows = _page_rows(pages)
+    _save_pages(sc, token, start, end, page_rows, by_query)
+    record_owned_visibility(page_rows)
 
     clicks, impressions, avg_pos = sc.totals(rows)   # returns a 3-tuple, not a dict
     top10 = sum(1 for k in kws if (k.get("position") or 999) <= 10)
@@ -125,14 +127,8 @@ def collect(days=7):
             "top10": top10, "top3": top3, "share_pct": share}
 
 
-def _save_pages(sc, token, start, end, pages, by_query):
-    """Write growth/gsc_pages.json: the served URLs, their queries, and the
-    queries we are not tracking at all.
-
-    Kept small deliberately. The whole point is that a person or an agent reads
-    it and decides something, and a 5,000-row dump of every long-tail
-    impression does not get read.
-    """
+def _page_rows(pages):
+    """Search Console's page dimension, flattened and sorted by impressions."""
     rows = []
     for r in pages:
         url = (r.get("keys") or [""])[0]
@@ -140,7 +136,94 @@ def _save_pages(sc, token, start, end, pages, by_query):
                      "impressions": r.get("impressions", 0),
                      "position": round(r.get("position", 0), 1)})
     rows.sort(key=lambda x: -x["impressions"])
+    return rows
 
+
+def _path(url):
+    """The path part of a served URL, so it can be matched against a prefix."""
+    try:
+        from urllib.parse import urlparse
+        return urlparse(url).path or "/"
+    except Exception:
+        return url
+
+
+def owned_visibility(rows, techs=None):
+    """Per-technique search visibility: which of a technique's own URLs Google
+    actually serves, and how often.
+
+    A technique declares the URL prefixes it owns; `rows` is every URL that
+    earned an impression in the window. The intersection is the only
+    leading indicator this site has. `owned_visitors` — the metric the 21-day
+    review retires on — is a *lagging* one, and at ~2 organic clicks a day
+    site-wide it has no resolution at all: every content technique reads zero
+    whether it is invisible in search or ranking well for a query nobody types.
+    Impressions move weeks earlier and separate those two cases.
+    """
+    out = {}
+    for t in (techs if techs is not None else ledger.load_techniques()):
+        prefixes = tuple(t.get("prefixes") or ())
+        if not prefixes:
+            continue
+        mine = [r for r in rows if _path(r["url"]).startswith(prefixes)]
+        best = min((r["position"] for r in mine if r.get("position")), default=None)
+        out[t["slug"]] = {
+            "pages": len(mine),
+            "impressions": sum(r["impressions"] for r in mine),
+            "clicks": sum(r["clicks"] for r in mine),
+            "best_position": best,
+        }
+    return out
+
+
+def record_owned_visibility(rows, date=None):
+    """Fold owned_visibility() into the ledger, one row per technique+metric.
+
+    Recorded even when it is all zeros: "this technique's pages earned no
+    impressions" is the finding, and a missing row would be read as "not
+    measured" by the review, which deliberately refuses to retire on that.
+    """
+    date = date or ledger.today()
+    vis = owned_visibility(rows)
+    for slug, v in vis.items():
+        ledger.record_result(date, slug, "gsc_owned_pages", v["pages"])
+        ledger.record_result(date, slug, "gsc_owned_impressions", v["impressions"])
+        ledger.record_result(date, slug, "gsc_owned_clicks", v["clicks"])
+        if v["best_position"] is not None:
+            ledger.record_result(date, slug, "gsc_owned_best_position", v["best_position"])
+    return vis
+
+
+def recent_visibility(slug, since=None, window=7):
+    """Read a technique's owned search visibility back out of the ledger.
+
+    Takes the best of the last `window` readings rather than the latest one.
+    Each reading is already a rolling 8-day Search Console window, so a single
+    low day is noise — and the decision this feeds (retire or keep) should never
+    turn on one flaky pull. `measured` is False when nothing has been recorded
+    yet, which is not the same as zero and must not be treated as one.
+    """
+    def best(metric, fn=max):
+        vals = [v for _, v in ledger.series(slug, metric, since=since)[-window:]]
+        return fn(vals) if vals else None
+
+    pages = best("gsc_owned_pages")
+    impressions = best("gsc_owned_impressions")
+    return {"measured": impressions is not None,
+            "pages": pages or 0,
+            "impressions": impressions or 0,
+            "clicks": best("gsc_owned_clicks") or 0,
+            "best_position": best("gsc_owned_best_position", min)}
+
+
+def _save_pages(sc, token, start, end, rows, by_query):
+    """Write growth/gsc_pages.json: the served URLs, their queries, and the
+    queries we are not tracking at all.
+
+    Kept small deliberately. The whole point is that a person or an agent reads
+    it and decides something, and a 5,000-row dump of every long-tail
+    impression does not get read.
+    """
     # Which queries each of the busiest pages actually earns. Capped: the
     # page+query dimension multiplies rows fast and most of the tail is noise.
     per_page = {}
@@ -194,12 +277,21 @@ def headroom(limit=15):
     This is the page-level twin of page2(): page2 asks which *queries* are
     close, this asks which *URLs* are close, which is what you need when the
     fix is rewriting a page rather than adding one.
+
+    Aggregate pages sort ahead of single-address building pages even when they
+    have fewer impressions. A building page's only query is its own street
+    address (measured 2026-07-30: 75 served building pages, 1.4 impressions
+    each over eight days), so moving one from position 12 to position 1 wins a
+    fraction of a click a week — the ranking is not the constraint, the query
+    volume is. Address pages stay in the list rather than being hidden, because
+    the count of them is itself the finding.
     """
     data = load_pages()
     out = [p for p in data.get("pages", [])
            if HEADROOM_MIN <= (p.get("position") or 999) <= HEADROOM_MAX
            and p.get("impressions", 0) > 0]
-    return sorted(out, key=lambda p: -p["impressions"])[:limit]
+    return sorted(out, key=lambda p: (_path(p["url"]).startswith("/building/"),
+                                      -p["impressions"]))[:limit]
 
 
 def page2(limit=25):

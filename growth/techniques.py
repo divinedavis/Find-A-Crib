@@ -835,6 +835,45 @@ def t_hub_direct_answers(ctx):
     return {"ok": True, "detail": detail, "pages": have}
 
 
+def _seo_corpus_age(docroot):
+    """How stale the separately-built SEO corpus in the docroot is.
+
+    The 47k-page corpus is built by build_seo.py in /root/dhcr-build and rsynced
+    across by scripts/refresh_seo.sh; the daily growth build writes its own
+    pages straight into the docroot. So "we shipped it" and "it is live" are
+    different claims, and when a verifier below reports a page missing, the
+    reader needs to know which one failed. rsync -a preserves mtimes, so the
+    newest mtime in the corpus is the last time that pipeline wrote anything.
+    Excludes sitemap-daily.xml, which the growth build owns and rewrites nightly.
+
+    Returns (iso date, days old) or None when nothing recognisable is there.
+    """
+    import glob
+    stamps = [p for p in glob.glob(os.path.join(docroot, "sitemap*.xml"))
+              if not p.endswith("sitemap-daily.xml")]
+    stamps.append(os.path.join(docroot, "guide", "index.html"))
+    newest = None
+    for p in stamps:
+        try:
+            m = os.path.getmtime(p)
+        except OSError:
+            continue
+        newest = m if newest is None else max(newest, m)
+    if newest is None:
+        return None
+    when = datetime.datetime.fromtimestamp(newest, datetime.timezone.utc).date()
+    return (when.isoformat(), (datetime.date.today() - when).days)
+
+
+def _stale_note(docroot):
+    """' — …' suffix naming when the SEO pipeline last wrote, or '' if unknown."""
+    age = _seo_corpus_age(docroot)
+    if not age:
+        return ""
+    when, days = age
+    return f" — the docroot's SEO corpus was last written {when} ({days}d ago)"
+
+
 CITY_GUIDES = {
     "sf": "guide/is-my-apartment-rent-controlled-san-francisco/index.html",
     "la": "guide/is-my-apartment-rent-controlled-los-angeles/index.html",
@@ -876,7 +915,8 @@ def t_city_guides(ctx):
 
     detail = f"{ok} of {len(CITY_GUIDES)} city guides live with their data caveat"
     if missing:
-        return {"ok": False, "detail": detail + f" — missing: {', '.join(sorted(missing))}"}
+        return {"ok": False, "detail": detail + f" — missing: {', '.join(sorted(missing))}"
+                                              + _stale_note(ctx.docroot)}
     if uncaveated:
         return {"ok": False,
                 "detail": detail + f" — caveat text gone from: {', '.join(sorted(uncaveated))}"}
@@ -920,7 +960,7 @@ def t_city_seo_expansion(ctx):
         stale = os.path.exists(os.path.join(ctx.docroot, "guide", "index.html"))
         return {"ok": False,
                 "detail": detail + (" — docroot has no city hub pages at all; the SEO rebuild "
-                                    "has not deployed this change yet"
+                                    "has not deployed this change yet" + _stale_note(ctx.docroot)
                                     if stale else " — no SEO build output in the docroot")}
     missing = [c for c in counts if not counts[c] or not browse[c]]
     if missing:

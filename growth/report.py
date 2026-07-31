@@ -12,7 +12,7 @@ text part is the one a screen reader and a spam filter actually read.
 import datetime
 import statistics
 
-from . import emailkit, keywords, ledger, review
+from . import emailkit, keywords, ledger, review, searchconsole
 
 # Pages published across NYC/SF/LA/DC. The gap between this and the pages that
 # have ever earned an impression is the single biggest number in the report.
@@ -162,8 +162,12 @@ def build_blocks(run_log=None, review_out=None):
     except Exception:
         heads = []
     if heads:
-        B.append({"type": "section", "label": "Pages with headroom",
-                  "note": "Already served, ranking 11–30 — rewrite these before publishing new ones"})
+        addr = sum(1 for p in heads if p["url"].startswith("https://findacrib.com/building/"))
+        note = "Already served, ranking 11–30 — rewrite these before publishing new ones"
+        if addr:
+            note += (f" · {addr} of {len(heads)} are single-address pages, listed last: "
+                     f"their only query is the street address, so a rewrite adds no volume")
+        B.append({"type": "section", "label": "Pages with headroom", "note": note})
         B.append({"type": "table", "cols": ["Page", "Position", "Impressions"],
                   "align": ["left", "right", "right"], "mono": True, "widths": [56, 20, 24],
                   "rows": [[p["url"].replace("https://findacrib.com", "") or "/",
@@ -202,8 +206,16 @@ def build_blocks(run_log=None, review_out=None):
             pairs = ledger.series(t["slug"], "owned_visitors", since=t.get("activated"))
             total = sum(v for _, v in pairs)
             recent = statistics.median([v for _, v in pairs[-7:]]) if pairs else None
-            rows.append([{"text": f"{t['id']} {t['name']}",
-                          "sub": f"owns {', '.join(t['prefixes'])} · since {t.get('activated')}"},
+            # Search visibility rides in the sub-line rather than a fourth
+            # column — four columns do not fit a phone — but it is the number
+            # that says whether a zero-visitor technique is early or dead.
+            vis = searchconsole.recent_visibility(t["slug"], since=t.get("activated"))
+            sub = f"owns {', '.join(t['prefixes'])} · since {t.get('activated')}"
+            if vis["measured"]:
+                sub += (f" · {vis['pages']} pages serving, {vis['impressions']} impressions"
+                        + (f", best position {vis['best_position']}"
+                           if vis["best_position"] is not None else ""))
+            rows.append([{"text": f"{t['id']} {t['name']}", "sub": sub},
                          _fmt(total), _fmt(recent)])
         else:
             last, med, _arrow, _tone = _trend(t.get("metric"))

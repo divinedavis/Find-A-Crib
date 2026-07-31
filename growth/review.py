@@ -8,7 +8,9 @@ technique and asks three questions:
   1. Has it had a fair run?      (below GRACE_DAYS, nothing is judged — SEO
                                   changes take weeks to show up in a series)
   2. Did it earn its traffic?    (owned visitors since activation vs threshold)
-  3. Is it redundant?            (another technique owns overlapping URLs and
+  3. If not, is it invisible or  (owned Search Console impressions — the
+     merely un-clicked?           leading indicator; see MIN_OWNED_IMPRESSIONS)
+  4. Is it redundant?            (another technique owns overlapping URLs and
                                   massively outperforms it)
 
 Retiring is cheap and reversible: status flips to "retired", the driver stops
@@ -18,13 +20,22 @@ idea does not get re-proposed as if it were new.
 import datetime
 import statistics
 
-from . import ledger
+from . import ledger, searchconsole
 
 GRACE_DAYS = 21          # nothing is judged before this — indexing is slow
 WINDOW = 14              # trailing window for "is it working now"
 MIN_TOTAL_VISITORS = 20  # cumulative owned visitors needed to call it alive
 MIN_RECENT_MEDIAN = 1    # median daily owned visitors in the trailing window
 REDUNDANCY_RATIO = 0.10  # <10% of an overlapping technique's traffic = redundant
+
+# Search impressions on a technique's own URLs, below which it is invisible
+# rather than merely un-clicked. Deliberately low: the whole site earns ~20
+# impressions a week, so a technique whose pages Google serves at all is
+# carrying a real signal. Above this bar a technique that misses the visitor
+# threshold is flagged for a rewrite, not retired — retiring a page that ranks
+# for a query nobody types is right, retiring one Google serves but we title
+# badly throws away the work at the moment it started paying.
+MIN_OWNED_IMPRESSIONS = 5
 
 
 def _days_active(t):
@@ -77,22 +88,43 @@ def evaluate(t):
         pairs = _owned(t)
         total = sum(v for _, v in pairs)
         recent, prior = _trend(pairs)
+        vis = searchconsole.recent_visibility(slug, since=t.get("activated"))
         res["measured"] = {"total_owned_visitors": total,
                            "recent_median": recent, "prior_median": prior,
-                           "days_measured": len(pairs)}
+                           "days_measured": len(pairs),
+                           "owned_serving_pages": vis["pages"],
+                           "owned_impressions": vis["impressions"],
+                           "owned_best_position": vis["best_position"]}
         if len(pairs) < GRACE_DAYS // 2:
             res["why"] = f"only {len(pairs)} days of measurement — not enough to judge"
             return res
         if total < MIN_TOTAL_VISITORS and (recent or 0) < MIN_RECENT_MEDIAN:
+            # The visitor series says dead. Check the leading indicator before
+            # acting on it — a technique whose pages Google serves is early,
+            # not dead, and the two look identical in a visitor count of zero.
+            if not vis["measured"]:
+                res["why"] = (f"{total} owned visitors in {days}d, but its pages' search "
+                              f"visibility has never been measured — not retiring on a "
+                              f"metric with no resolution at this traffic level")
+                return res
+            if vis["impressions"] >= MIN_OWNED_IMPRESSIONS:
+                res["action"] = "flag"
+                res["why"] = (f"{total} owned visitors in {days}d, but {vis['pages']} of its "
+                              f"pages earned {vis['impressions']} search impressions "
+                              f"(best position {vis['best_position']}) — served but not "
+                              f"clicked: rewrite the titles, do not retire")
+                return res
             res["action"] = "retire"
-            res["why"] = (f"{total} owned visitors in {days}d and a trailing median of "
-                          f"{recent} — below the bar to keep running daily")
+            res["why"] = (f"{total} owned visitors in {days}d, and its pages earned "
+                          f"{vis['impressions']} search impressions across "
+                          f"{vis['pages']} URLs — invisible in search, not merely un-clicked")
             return res
         direction = ""
         if recent is not None and prior is not None:
             direction = " and rising" if recent > prior else (
                 " but falling" if recent < prior else " and flat")
-        res["why"] = f"{total} owned visitors in {days}d (median {recent}/day{direction})"
+        res["why"] = (f"{total} owned visitors in {days}d (median {recent}/day{direction})"
+                      + (f", {vis['pages']} pages serving in search" if vis["measured"] else ""))
         return res
 
     # Site-wide technique: judged on its declared global metric, comparing the
@@ -158,6 +190,11 @@ def run(apply=True):
             ledger.set_status(r["id"], "retired", r["why"])
             ledger.set_verdict(r["id"], False, r["why"], r["measured"])
             actions.append(f"RETIRED {r['id']} {r['slug']} — {r['why']}")
+        elif r["action"] == "flag":
+            # A flag nobody reads is not a decision. Surfaced in the daily
+            # report next to the retirements so "served but not clicked" and
+            # "no lift" reach the person who can rewrite the page.
+            actions.append(f"FLAGGED {r['id']} {r['slug']} — {r['why']}")
         elif r["action"] == "keep" and r["days_active"] >= GRACE_DAYS and r["measured"] and apply:
             # record a running verdict so the year-end list is always current
             ledger.set_verdict(r["id"], True, r["why"], r["measured"])

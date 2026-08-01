@@ -3400,9 +3400,16 @@
       } catch (e) { refLinkInput.value = ''; }
     }
     function closeReferralModal() { if (refModal) refModal.hidden = true; }
+    // Auto-prompt is capped at once per week per browser — it interrupts the map,
+    // so a signed-in regular should see it rarely. The 🎁 header button is always available.
+    const REF_PROMPT_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
     function maybeShowReferralPrompt() {
       if (!authUser) return;
-      try { if (sessionStorage.getItem('ref_prompt_seen')) return; sessionStorage.setItem('ref_prompt_seen', '1'); } catch (e) {}
+      try {
+        const last = parseInt(localStorage.getItem('ref_prompt_last') || '0', 10);
+        if (last && Date.now() - last < REF_PROMPT_COOLDOWN_MS) return;
+        localStorage.setItem('ref_prompt_last', String(Date.now()));
+      } catch (e) { return; }   // no storage = no way to rate-limit; stay quiet
       setTimeout(function () { openReferralModal('auto'); }, 1200);   // let the app settle first
     }
     if (refModal) {

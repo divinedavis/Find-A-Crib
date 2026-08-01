@@ -69,3 +69,4 @@ growth/.gsc_key.json
 __pycache__/
 *.pyc
 rerental_history.json
+supabase/.temp/

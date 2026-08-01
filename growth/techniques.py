@@ -695,6 +695,14 @@ def t_llms_txt(ctx):
             "cities": {"nyc": nyc, "sf": sf, "la": la, "dc": dc}}
 
 
+# Sitemaps in the docroot root that THIS build writes, and so carry a fresh
+# mtime every night no matter what the separate SEO pipeline did. t_sitemap_daily
+# writes sitemap-daily.xml outright and rewrites sitemap.xml to keep the daily
+# shard's lastmod current. Neither can be used to date the SEO corpus
+# (_seo_corpus_age); build_seo.py's own sitemap-main.xml / sitemap-<boro>.xml can.
+GROWTH_OWNED_SITEMAPS = {"sitemap.xml", "sitemap-daily.xml"}
+
+
 def t_sitemap_daily(ctx):
     """A dedicated sitemap for the daily-changing pages.
 
@@ -844,13 +852,23 @@ def _seo_corpus_age(docroot):
     different claims, and when a verifier below reports a page missing, the
     reader needs to know which one failed. rsync -a preserves mtimes, so the
     newest mtime in the corpus is the last time that pipeline wrote anything.
-    Excludes sitemap-daily.xml, which the growth build owns and rewrites nightly.
+
+    Only files the SEO pipeline alone writes count as stamps — see
+    GROWTH_OWNED_SITEMAPS. The first version of this globbed sitemap*.xml and
+    excluded only sitemap-daily.xml, which left sitemap.xml in the set; but
+    t_sitemap_daily rewrites sitemap.xml every night to refresh the daily
+    shard's lastmod, so its mtime is always today and this always answered
+    "0d ago". It reported a corpus written today on 2026-08-01 while the
+    pipeline had in fact not deployed since 2026-07-29 — the opposite of the
+    deploy signal it exists to give. Any new growth-written file in the docroot
+    root must be added to that set, or this goes blind again.
 
     Returns (iso date, days old) or None when nothing recognisable is there.
     """
     import glob
     stamps = [p for p in glob.glob(os.path.join(docroot, "sitemap*.xml"))
-              if not p.endswith("sitemap-daily.xml")]
+              if os.path.basename(p) not in GROWTH_OWNED_SITEMAPS]
+    # seo_guides.py writes the guide hub; nothing in the growth build touches it.
     stamps.append(os.path.join(docroot, "guide", "index.html"))
     newest = None
     for p in stamps:

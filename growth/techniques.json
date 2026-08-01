@@ -227,9 +227,12 @@
     "kind": "content",
     "status": "active",
     "prefixes": [
-      "/sf/",
-      "/la/",
-      "/dc/"
+      "/sf/neighborhood/",
+      "/sf/buildings/",
+      "/la/zip/",
+      "/la/buildings/",
+      "/dc/neighborhood/",
+      "/dc/buildings/"
     ],
     "metric": "owned_visitors",
     "source": "seed",

@@ -214,7 +214,16 @@ SEEDS = [
                   "runs on the 1st of the month only."),
     dict(slug="city_seo_expansion", status="candidate", kind="content",
          name="Aggregate browse hubs for SF / LA / DC",
-         prefixes=["/sf/", "/la/", "/dc/"], metric="owned_visitors",
+         # The tier this technique generates, NOT the bare city roots. /sf/, /la/
+         # and /dc/ are the pre-existing SPA map shells written by
+         # build_city_pages.py and listed in sitemap-main.xml since long before
+         # this technique existed; claiming them made the first gsc_owned_*
+         # reading (2026-08-01) report 3 pages serving at position 8 for a
+         # technique with zero pages live in the docroot.
+         prefixes=["/sf/neighborhood/", "/sf/buildings/",
+                   "/la/zip/", "/la/buildings/",
+                   "/dc/neighborhood/", "/dc/buildings/"],
+         metric="owned_visitors",
          hypothesis="The page tier that ranks on this site is the one that aggregates, and three "
                     "of the four cities had none of it. Of the 82 pages earning any Search "
                     "Console impression on 2026-07-30, 75 are single-building pages whose only "

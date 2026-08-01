@@ -1,21 +1,21 @@
 {
   "build": {
-    "at": "2026-07-31T05:40:07+00:00",
-    "changed_urls": 7,
-    "date": "2026-07-31",
+    "at": "2026-08-01T05:40:06+00:00",
+    "changed_urls": 6,
+    "date": "2026-08-01",
     "deployed": true,
-    "new_urls": 1,
+    "new_urls": 0,
     "techniques": {
       "city_guides": {
-        "detail": "0 of 3 city guides live with their data caveat \u2014 missing: dc, la, sf",
+        "detail": "0 of 3 city guides live with their data caveat \u2014 missing: dc, la, sf \u2014 the docroot's SEO corpus was last written 2026-08-01 (0d ago)",
         "ok": false
       },
       "city_seo_expansion": {
-        "detail": "hub pages live: dc 0 (no browse hub), la 0 (no browse hub), sf 0 (no browse hub) \u2014 docroot has no city hub pages at all; the SEO rebuild has not deployed this change yet",
+        "detail": "hub pages live: dc 0 (no browse hub), la 0 (no browse hub), sf 0 (no browse hub) \u2014 docroot has no city hub pages at all; the SEO rebuild has not deployed this change yet \u2014 the docroot's SEO corpus was last written 2026-08-01 (0d ago)",
         "ok": false
       },
       "daily_brief": {
-        "detail": "brief 2026-07-31: 21 added, 0 removed",
+        "detail": "no movement since yesterday \u2014 no brief published (avoids filler)",
         "ok": true
       },
       "fresh_section8": {
@@ -27,7 +27,7 @@
         "ok": true
       },
       "indexnow": {
-        "detail": "submitted 8 URLs \u2192 HTTP 200",
+        "detail": "submitted 6 URLs \u2192 HTTP 200",
         "ok": true
       },
       "llms_txt": {

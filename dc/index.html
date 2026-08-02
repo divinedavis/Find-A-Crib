@@ -2566,6 +2566,15 @@
         ? n(f.money_low) + '–' + n(f.money_high) : n(f.money_low);
       return `<div class="price">${amt}/mo</div>`;
     }
+    // No rent published. The most useful thing left is the ceiling a
+    // single-person household may earn — it answers "can I even apply?", which
+    // is the question that gates everything else on an income-restricted unit.
+    // Only when the agent breaks it out by household size: the overall range
+    // spans every family size, so its top belongs to the largest household.
+    if (f.income_1p_max) {
+      return `<div class="price income"><span class="lab">Income limit · 1 person</span>` +
+             `up to ${n(f.income_1p_max)}/yr</div>`;
+    }
     if (f.money_kind === 'income') {
       return `<div class="price income"><span class="lab">Household income</span>` +
              `${n(f.money_low)}–${n(f.money_high)}/yr</div>`;
@@ -2612,12 +2621,29 @@
     </div>`;
   }
 
-  // Which featured listing goes in the next slot. Walks the list so one grid
+  // Only apartments in a borough you are actually looking at. A Bronx
+  // re-rental leading the grid while you pan around Chelsea is noise, and the
+  // tile takes the first slot — the one place noise is least forgivable.
+  // Listings whose card never named a borough are left out rather than shown
+  // everywhere; guessing would put them in the wrong place most of the time.
+  let featPool = [];
+  function setFeaturedPool(visible) {
+    if (!FEATURED.length) { featPool = []; return; }
+    const boros = new Set();
+    for (let i = 0; i < visible.length; i++) {
+      const name = BORO_NAME[visible[i].b];
+      if (name) boros.add(name);
+      if (boros.size >= N_REGIONS) break;      // every borough is on screen
+    }
+    featPool = FEATURED.filter(f => f.borough && boros.has(f.borough));
+  }
+
+  // Which featured listing goes in the next slot. Walks the pool so one grid
   // shows several different apartments rather than the same one eight times,
   // and resets per render so the top slot is stable as you pan.
   function nextFeatured() {
-    if (!FEATURED.length) return '';
-    const f = FEATURED[featCursor % FEATURED.length];
+    if (!featPool.length) return '';
+    const f = featPool[featCursor % featPool.length];
     featCursor++;
     return featuredCardHtml(f);
   }
@@ -2682,6 +2708,7 @@
     const ads = ADS_ON();
     const parts = [];
     featCursor = 0;
+    setFeaturedPool(visible);
     // Lead with a featured apartment, then one after every FEAT_EVERY
     // buildings. It goes first because it is the only inventory on this page
     // someone can actually apply to today — burying it eight cards down meant

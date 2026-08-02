@@ -60,7 +60,10 @@ INCOME_FLOOR = 20000
 # genuinely low, so the floor is set under the cheapest plausible one.
 RENT_MIN, RENT_MAX = 400, 15000
 
-MONEY = re.compile(r'\$\s?([\d,]{3,})(?:\.\d\d)?')
+MONEY = re.compile(r'\$\s?(\d[\d.,]*)')
+# "1 PERSON $135,360.00 - $154.440.00" — the income band for a single-person
+# household, which is the number someone looking at a studio actually needs.
+ONE_PERSON = re.compile(r'\b1\s*(?:person|adult|occupant)\b', re.I)
 UNITS = re.compile(r'\b(\d+)\s+units?\b', re.I)
 BEDS = re.compile(r'\b(studio|\d+)\s*(?:bed|bd|br|bedroom)s?\b', re.I)
 ZIP = re.compile(r'\b(\d{5})\b')
@@ -179,6 +182,74 @@ EXTRACT_JS = r"""() => {
 }"""
 
 
+def money_val(raw):
+    """"135,360.00" -> 135360. Returns None if it isn't a number.
+
+    Separators cannot be trusted to be commas. Tax Solute prints its upper
+    income limit as "$154.440.00" — periods where the commas belong — and
+    reading that as a plain decimal gives $154, which is how a $154/mo rent
+    reached the tile. Strip a two-digit cents tail, then strip every remaining
+    separator, and both spellings land on the same integer.
+    """
+    s = raw.strip().rstrip(".,")
+    s = re.sub(r'[.,]\d{2}$', '', s)      # cents
+    s = re.sub(r'[.,]', '', s)            # thousands, whichever mark was used
+    return int(s) if s.isdigit() else None
+
+
+def amounts_in(text):
+    return [v for v in (money_val(m.group(1)) for m in MONEY.finditer(text))
+            if v is not None]
+
+
+def one_person_income(lines):
+    """Highest income a single-person household may earn, when stated.
+
+    Only from a row that actually says one person. The overall range on a card
+    spans every household size, so its top is the limit for the largest family
+    — quoting that to someone looking at a studio would be wrong by tens of
+    thousands.
+    """
+    best = None
+    for line in lines:
+        if not ONE_PERSON.search(line):
+            continue
+        vals = [v for v in amounts_in(line) if v >= INCOME_FLOOR]
+        if vals:
+            best = max(vals) if best is None else max(best, max(vals))
+    return best
+
+
+# NYC ZIP prefixes, for the listings whose card never names a borough.
+ZIP_BORO = {"100": "Manhattan", "101": "Manhattan", "102": "Manhattan",
+            "103": "Staten Island", "104": "Bronx", "112": "Brooklyn",
+            "111": "Queens", "113": "Queens", "114": "Queens", "116": "Queens"}
+
+
+def borough_of(address, blob, zipcode):
+    """Which borough, from anything on the card that says so.
+
+    The address line usually doesn't: Taxace writes "2187 Ryer Avenue. Unit 6D"
+    and puts "Bronx, NY" on the line below. Reading only the address left two
+    thirds of the listings with no borough at all, which makes a borough filter
+    useless. Named boroughs beat the ZIP, and both beat a bare "New York" —
+    that string is on every card in the city.
+    """
+    for text in (address, blob):
+        low = text.lower()
+        for k, v in BOROS.items():
+            if k in ("new york", "manhattan") or v == "Manhattan":
+                continue                       # too generic; handled last
+            if re.search(r'\b' + re.escape(k) + r'\b', low):
+                return v
+    if zipcode and zipcode[:3] in ZIP_BORO:
+        return ZIP_BORO[zipcode[:3]]
+    for text in (address, blob):
+        if re.search(r'\b(manhattan|new york)\b', text, re.I):
+            return "Manhattan"
+    return None
+
+
 def classify_money(amounts, context):
     """Decide what the dollar figures on a listing actually mean.
 
@@ -237,22 +308,12 @@ def parse_card(c, agent, page_url):
                 and not is_generic_title(cand)):
             title = cand
     blob = " \n".join(lines)
-    amounts = []
-    for m in MONEY.finditer(blob):
-        try:
-            amounts.append(int(m.group(1).replace(",", "")))
-        except ValueError:
-            pass
-    kind, low, high = classify_money(amounts, blob)
+    kind, low, high = classify_money(amounts_in(blob), blob)
     um = UNITS.search(blob)
     bm = BEDS.search(blob)
     zm = ZIP.search(address) or ZIP.search(blob)
-    boro = None
-    low_addr = address.lower()
-    for k, v in BOROS.items():
-        if k in low_addr:
-            boro = v
-            break
+    zipcode = zm.group(1) if zm else None
+    boro = borough_of(address, blob, zipcode)
     return {
         "agent": agent,
         "agent_page": page_url,
@@ -263,6 +324,9 @@ def parse_card(c, agent, page_url):
         "money_kind": kind,
         "money_low": low,
         "money_high": high,
+        # What one person may earn, when the agent breaks it out by household
+        # size. The tile falls back to this when there is no rent to show.
+        "income_1p_max": one_person_income(lines),
         "units": int(um.group(1)) if um else None,
         "beds": bm.group(1).lower() if bm else None,
         "href": c["href"] or page_url,

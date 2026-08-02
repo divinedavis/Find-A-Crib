@@ -83,6 +83,17 @@ class Context:
             self._s8 = self._load("s8.json")
         return self._s8
 
+    def live_or_staged(self, relpath):
+        """Is this path in the docroot, or will it be once this run rsyncs?
+
+        A technique that links to a page another technique publishes cannot ask
+        the docroot alone — the docroot only catches up after the driver rsyncs
+        the staging dir across. Never true in a dry run, which stages nothing.
+        Used so llms.txt never advertises a URL that would 404.
+        """
+        return (os.path.exists(os.path.join(self.docroot, relpath))
+                or (not self.dry_run and os.path.exists(os.path.join(self.out, relpath))))
+
     # ---- page writing with honest lastmod
 
     def write_page(self, relpath, html, url=None):
@@ -651,6 +662,21 @@ def t_llms_txt(ctx):
         "",
         "- Plain-English explainers on rent stabilization, succession rights, overcharge",
         "  complaints, and how to check a specific apartment: https://findacrib.com/guide/",
+    ]
+    # The per-city guides by name, not just the hub. An answer engine asked
+    # "is my apartment rent controlled in Los Angeles" needs the URL that
+    # answers it, and the /guide/ hub in the docroot is written by the SEO
+    # pipeline, which does not yet know these three pages exist. Listed only
+    # when the page is actually live (or staged for this run's rsync) — a
+    # citation map that advertises a 404 is worse than one that omits a page.
+    for _city, _label in (("sf", "San Francisco"), ("la", "Los Angeles"),
+                          ("dc", "Washington DC")):
+        _rel = CITY_GUIDES[_city]
+        if ctx.live_or_staged(_rel):
+            lines.append(f"- Is my apartment rent controlled in {_label}? — what the city's rules "
+                         f"cover, the main exemptions, and how to check an address: "
+                         f"{SITE}/{_rel[:-len('index.html')]}")
+    lines += [
         "",
         "## Data provenance",
         "",
@@ -711,23 +737,34 @@ def t_sitemap_daily(ctx):
     the monthly build and the daily build never fight over one another's output.
     """
     lm = ledger.get_state("lastmod", {})
-    daily = {u: v for u, v in lm.items()
-             if u.startswith(SITE + "/section8/") or u.startswith(SITE + "/brief/")}
+
+    def entry(u):
+        """(changefreq, priority) for a URL the growth build published, else None."""
+        if u == SITE + "/section8/":
+            return ("daily", "0.9")
+        if u.startswith(SITE + "/section8/"):
+            return ("daily", "0.8")
+        if u == SITE + "/brief/":
+            return ("daily", "0.6")
+        if u.startswith(SITE + "/brief/"):
+            return ("daily", "0.4")
+        # Cornerstone guides this build had to publish itself because the SEO
+        # pipeline had not deployed them (t_city_guides). They appear in no
+        # sitemap shard that pipeline owns, so without this line Google has no
+        # crawl path to them at all. Declared monthly, not daily: they are
+        # editorial pages and a sitemap that overstates change frequency is the
+        # signal crawlers learn to discount.
+        if u.startswith(SITE + "/guide/"):
+            return ("monthly", "0.8")
+        return None
+
+    daily = {u: v for u, v in lm.items() if entry(u)}
     if not daily:
         return {"ok": False, "detail": "no daily pages written yet"}
 
-    def prio(u):
-        if u == SITE + "/section8/":
-            return "0.9"
-        if u.startswith(SITE + "/section8/"):
-            return "0.8"
-        if u == SITE + "/brief/":
-            return "0.6"
-        return "0.4"
-
     urls = "".join(
         f"<url><loc>{u}</loc><lastmod>{v['m']}</lastmod>"
-        f"<changefreq>daily</changefreq><priority>{prio(u)}</priority></url>"
+        f"<changefreq>{entry(u)[0]}</changefreq><priority>{entry(u)[1]}</priority></url>"
         for u, v in sorted(daily.items()))
     ctx.write_raw("sitemap-daily.xml",
                   '<?xml version="1.0" encoding="UTF-8"?>'
@@ -754,7 +791,10 @@ def t_sitemap_daily(ctx):
                      rf"\g<1>{ledger.today()}\g<2>", idx)
         ctx.write_raw("sitemap.xml", idx)
 
-    return {"ok": True, "urls": len(daily), "detail": f"sitemap-daily.xml with {len(daily)} URLs"}
+    guides = sum(1 for u in daily if u.startswith(SITE + "/guide/"))
+    return {"ok": True, "urls": len(daily),
+            "detail": f"sitemap-daily.xml with {len(daily)} URLs"
+                      + (f" (incl. {guides} fallback-published guides)" if guides else "")}
 
 
 def t_indexnow(ctx):
@@ -910,13 +950,86 @@ GUIDE_CAVEATS = {
 }
 
 
-def t_city_guides(ctx):
-    """Verify the SF / LA / DC guide pages exist and still carry their caveats.
+# Marker embedded in a guide this technique published itself. It answers the
+# only question that matters when two pipelines can write the same path: who
+# wrote the copy currently in the docroot. A page carrying it is ours and we
+# keep it current; a page without it belongs to the SEO build and we never
+# touch it, so the two never fight over one file.
+GUIDE_FALLBACK_MARKER = "<!-- published by the daily growth build -->"
 
-    Written by seo_guides.py via build_seo.py, like the hub answer blocks — this
-    technique holds the hypothesis in the ledger and checks the live docroot,
-    rather than trusting that a generator change stuck.
+
+def _publish_stranded_guides(ctx):
+    """Publish any city guide the SEO pipeline has not deployed. Returns {city: state}.
+
+    Why this exists. The SEO corpus is built by a second pipeline
+    (/root/dhcr-build → build_seo.py → rsync) that this review agent cannot
+    reach; the daily growth build is the one path from git to the docroot that
+    demonstrably works. On 2026-08-02 the SEO pipeline had been writing the
+    docroot nightly while running code from before 2026-07-29 — its checkout is
+    not taking pushes — so the three city guides, the whole non-NYC editorial
+    tier, had been finished and committed for four days and were live nowhere.
+    Content stranded in git earns nothing.
+
+    So this publishes them through the working channel, using build_seo's own
+    renderer so the bytes match what the SEO build would have deployed. It is
+    deliberately a fallback, not a takeover: a guide already in the docroot
+    without our marker was written by the SEO pipeline, and we leave it alone.
     """
+    import importlib
+    try:
+        bs = importlib.import_module("build_seo")
+        guides = {g["slug"]: g for g in importlib.import_module("seo_guides").GUIDES}
+    except Exception as e:                    # noqa: BLE001 - never break the build
+        return {c: f"unavailable ({e.__class__.__name__})" for c in CITY_GUIDES}
+
+    out = {}
+    for city, rel in CITY_GUIDES.items():
+        slug = rel.split("/")[1]
+        g = guides.get(slug)
+        if g is None:
+            out[city] = "no such guide in seo_guides.GUIDES"
+            continue
+        path = os.path.join(ctx.docroot, rel)
+        try:
+            with open(path, encoding="utf-8", errors="replace") as f:
+                live = f.read()
+        except OSError:
+            live = None
+        if live is not None and GUIDE_FALLBACK_MARKER not in live:
+            out[city] = "seo"                 # the real pipeline got there; hands off
+            continue
+        # The guide links into /<city>/buildings/, which the same dead pipeline
+        # owns. Only offer that link if the target is actually live.
+        browse_ok = os.path.exists(os.path.join(ctx.docroot, city, "buildings", "index.html"))
+        try:
+            canonical, doc = bs.guide_page(g, browse_ok=browse_ok)
+        except Exception as e:                # noqa: BLE001
+            out[city] = f"render failed ({e.__class__.__name__})"
+            continue
+        doc = doc.replace("</body>", GUIDE_FALLBACK_MARKER + "</body>")
+        if GUIDE_CAVEATS[city] not in doc.lower():
+            # Never publish a guide that lost its coverage caveat — that is the
+            # credibility bug this technique already fails the run over.
+            out[city] = "caveat missing from render, not published"
+            continue
+        state, _url, _lm = ctx.write_page(rel, doc, url=canonical)
+        out[city] = "growth-" + state
+    return out
+
+
+def t_city_guides(ctx):
+    """Publish the SF / LA / DC guides if the SEO build hasn't, then verify them.
+
+    The content lives in seo_guides.py and is rendered by build_seo.guide_page().
+    Ownership is by marker (see _publish_stranded_guides): the SEO pipeline's
+    copy always wins, and this only fills the gap when that pipeline has not
+    deployed. The verification below still reads the docroot rather than what we
+    just rendered, and the detail names which pipeline published each page —
+    "3 of 3 live" would otherwise become a self-fulfilling reading the moment
+    this technique started writing the files it checks.
+    """
+    published = _publish_stranded_guides(ctx)
+
     missing, uncaveated, ok = [], [], 0
     for city, rel in CITY_GUIDES.items():
         path = os.path.join(ctx.docroot, rel)
@@ -924,21 +1037,37 @@ def t_city_guides(ctx):
             with open(path, encoding="utf-8", errors="replace") as f:
                 html = f.read().lower()
         except OSError:
-            missing.append(city)
+            # A page written this run is in the staging dir, not the docroot —
+            # the driver rsyncs afterwards. Count it as live only if we really
+            # wrote it (and never in a dry run, which writes nothing).
+            if not ctx.dry_run and str(published.get(city, "")).startswith("growth-"):
+                ok += 1
+            else:
+                missing.append(city)
             continue
         if GUIDE_CAVEATS[city] not in html:
             uncaveated.append(city)
             continue
         ok += 1
 
+    by_us = sorted(c for c, s in published.items() if str(s).startswith("growth-"))
+    verb = "would be published (dry run)" if ctx.dry_run else "published"
+    note = (f" — {len(by_us)} {verb} by the daily growth build "
+            f"({', '.join(by_us)}) because the SEO pipeline has not deployed them"
+            + _stale_note(ctx.docroot)) if by_us else ""
+    broken = sorted(f"{c}: {s}" for c, s in published.items()
+                    if not str(s).startswith("growth-") and s != "seo")
+    if broken:
+        note += " — could not publish: " + "; ".join(broken)
+
     detail = f"{ok} of {len(CITY_GUIDES)} city guides live with their data caveat"
     if missing:
         return {"ok": False, "detail": detail + f" — missing: {', '.join(sorted(missing))}"
-                                              + _stale_note(ctx.docroot)}
+                                              + _stale_note(ctx.docroot) + note}
     if uncaveated:
         return {"ok": False,
-                "detail": detail + f" — caveat text gone from: {', '.join(sorted(uncaveated))}"}
-    return {"ok": True, "detail": detail, "pages": ok}
+                "detail": detail + f" — caveat text gone from: {', '.join(sorted(uncaveated))}" + note}
+    return {"ok": not broken, "detail": detail + note, "pages": ok}
 
 
 # Where the non-NYC browse tier lives in the docroot, and how many pages each

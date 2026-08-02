@@ -635,6 +635,44 @@ def write(relpath, contents):
         LASTMOD[loc] = lastmod
 
 
+def guide_page(g, browse_ok=True):
+    """Render one cornerstone guide from seo_guides.GUIDES. Returns (canonical, html).
+
+    Lifted out of main() so there is exactly one renderer for these pages. The
+    daily growth build (growth/techniques.py:t_city_guides) publishes a guide
+    through its own rsync when this pipeline has not deployed it — on
+    2026-08-02 the SF/LA/DC guides had been sitting in git for four days — and
+    two independent renderers would overwrite each other's bytes every night,
+    churning lastmod on a page that never changed. Import this; do not copy it.
+
+    browse_ok=False drops the "browse this city" link. The growth build passes
+    False when /<city>/buildings/ is not live in the docroot: a cornerstone page
+    is a trust page, and it does not ship pointing at a 404.
+    """
+    canonical = SITE + f"/guide/{g['slug']}/"
+    crumb = breadcrumb([("Home", SITE + "/"), ("Guides", SITE + "/guide/"), (g["h1"], canonical)])
+    # Article schema helps these rank as informational content.
+    article = {"@context": "https://schema.org", "@type": "Article",
+               "headline": g["title"], "description": g["desc"],
+               "mainEntityOfPage": canonical, "author": {"@type": "Organization", "name": "Find A Crib"},
+               "publisher": {"@type": "Organization", "name": "Find A Crib",
+                             "logo": {"@type": "ImageObject", "url": SITE + "/icon-512.png"}}}
+    gcity = g.get("city", "nyc")
+    # A guide about San Francisco footed "Data: NYC DHCR…" is simply wrong,
+    # and these three shipped that way on 2026-07-29. Each non-NYC guide now
+    # carries its own city's provenance, and links into that city's browse
+    # tier — the contextual link the new hubs need to not be orphans.
+    body = (f"<div class='crumbs'><a href='/'>Home</a> › <a href='/guide/'>Guides</a> › {esc(g['h1'])}</div>"
+            f"<h1>{esc(g['h1'])}</h1>"
+            f"<div class='guide-body'>{g['body']}</div>"
+            + (f"<p><a href='/{gcity}/buildings/'>Browse "
+               f"{esc(CITY_HUBS[gcity]['browse_link_text'])} →</a></p>"
+               if browse_ok and gcity in CITY_HUBS else "")
+            + _related(g["slug"], GUIDES))
+    return canonical, page(g["title"] + " | Find A Crib", g["desc"], canonical, body,
+                           [article, crumb], footer=CITY_FOOTER.get(gcity))
+
+
 def main():
     blds = json.load(open("buildings.min.json"))
     try:
@@ -1110,29 +1148,8 @@ def main():
 
     # ---- cornerstone guide pages (/guide/ hub + one page per guide) ----
     for g in GUIDES:
-        canonical = SITE + f"/guide/{g['slug']}/"
-        crumb = breadcrumb([("Home", SITE + "/"), ("Guides", SITE + "/guide/"), (g["h1"], canonical)])
-        # Article schema helps these rank as informational content.
-        article = {"@context": "https://schema.org", "@type": "Article",
-                   "headline": g["title"], "description": g["desc"],
-                   "mainEntityOfPage": canonical, "author": {"@type": "Organization", "name": "Find A Crib"},
-                   "publisher": {"@type": "Organization", "name": "Find A Crib",
-                                 "logo": {"@type": "ImageObject", "url": SITE + "/icon-512.png"}}}
-        gcity = g.get("city", "nyc")
-        # A guide about San Francisco footed "Data: NYC DHCR…" is simply wrong,
-        # and these three shipped that way on 2026-07-29. Each non-NYC guide now
-        # carries its own city's provenance, and links into that city's browse
-        # tier — the contextual link the new hubs need to not be orphans.
-        body = (f"<div class='crumbs'><a href='/'>Home</a> › <a href='/guide/'>Guides</a> › {esc(g['h1'])}</div>"
-                f"<h1>{esc(g['h1'])}</h1>"
-                f"<div class='guide-body'>{g['body']}</div>"
-                + (f"<p><a href='/{gcity}/buildings/'>Browse "
-                   f"{esc(CITY_HUBS[gcity]['browse_link_text'])} →</a></p>"
-                   if gcity in CITY_HUBS else "")
-                + _related(g["slug"], GUIDES))
-        write(f"guide/{g['slug']}/index.html",
-              page(g["title"] + " | Find A Crib", g["desc"], canonical, body, [article, crumb],
-                   footer=CITY_FOOTER.get(gcity)))
+        canonical, doc = guide_page(g)
+        write(f"guide/{g['slug']}/index.html", doc)
         urls.append((canonical, "0.8", "guide"))
 
     # /guide/ hub linking every guide

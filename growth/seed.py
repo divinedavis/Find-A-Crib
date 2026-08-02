@@ -122,11 +122,18 @@ SEEDS = [
                   "has nothing to match. 2026 pSEO guidance is consistent that templated "
                   "pages survive only where each carries unique data and intent; a "
                   "hand-written cornerstone page per city is the opposite failure mode.",
-         notes="Content lives in seo_guides.py, rendered by build_seo.py into "
-               "/guide/<slug>/. The technique here verifies the three pages exist in the "
-               "docroot AND still carry their data caveat — LA is derived from assessor "
-               "criteria and labelled 'likely RSO', SF is anonymized to the block. A guide "
-               "that loses its caveat is a credibility bug, so it fails the run."),
+         notes="Content lives in seo_guides.py, rendered by build_seo.guide_page(). The "
+               "technique verifies the three pages exist in the docroot AND still carry "
+               "their data caveat — LA is derived from assessor criteria and labelled "
+               "'likely RSO', SF is anonymized to the block. A guide that loses its caveat "
+               "is a credibility bug, so it fails the run. Since 2026-08-02 it also "
+               "PUBLISHES a guide the SEO pipeline has not deployed, through the growth "
+               "build's own rsync: that pipeline's checkout stopped taking pushes and these "
+               "three pages sat finished in git for four days, live nowhere. Ownership is "
+               "by marker — a docroot copy without GUIDE_FALLBACK_MARKER belongs to the SEO "
+               "build and is never overwritten — so the two pipelines cannot fight over one "
+               "file. Fallback-published guides are listed in sitemap-daily.xml because no "
+               "SEO shard knows they exist."),
 
     # ------------------------------------------------------------- CANDIDATE
     dict(slug="adsense_activation", status="candidate", kind="conversion",

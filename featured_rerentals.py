@@ -93,6 +93,23 @@ GENERIC_TITLE = re.compile(
     # renders as "BROOKLYN · Brooklyn" — the borough twice, once pretending to
     # be the building's name.
     r'manhattan|brooklyn|queens|bronx|the\s*bronx|staten\s*island|new\s*york|nyc)$', re.I)
+# The other thing that sits directly above an address is a table's header row —
+# C+C's "Building Unit Beds Baths Rent Date Available Apply" published as the
+# building's name. Any title made only of column words is a header, not a name.
+COLUMN_WORDS = {"building", "buildings", "unit", "units", "apt", "apartment",
+                "apartments", "bed", "beds", "bedroom", "bedrooms", "bath",
+                "baths", "bathroom", "bathrooms", "rent", "price", "date",
+                "available", "availability", "apply", "size", "type", "floor",
+                "status", "income", "household", "name", "address", "no", "sq",
+                "ft", "sqft", "move", "in", "term", "lease", "details", "view"}
+
+
+def is_generic_title(t):
+    """Is this a heading or a table header rather than a building's name?"""
+    if not t or GENERIC_TITLE.match(t):
+        return True
+    words = [w for w in re.split(r'[^a-z0-9]+', t.lower()) if w]
+    return bool(words) and all(w in COLUMN_WORDS for w in words)
 INCOME_WORDS = re.compile(r'income|ami\b|household|earn|eligib', re.I)
 RENT_WORDS = re.compile(r'/\s*mo|per month|monthly|rent\b', re.I)
 
@@ -215,9 +232,9 @@ def parse_card(c, agent, page_url):
     # The building's name, when the site prints one above the address.
     title = ""
     if addr_i > 0:
-        cand = re.sub(r'\s+', ' ', lines[addr_i - 1]).strip(" .·|-")
+        cand = re.sub(r'\s+', ' ', lines[addr_i - 1]).strip(" .·|-:")
         if (3 < len(cand) < 70 and not ADDRISH.match(cand) and not MONEY.search(cand)
-                and not GENERIC_TITLE.match(cand)):
+                and not is_generic_title(cand)):
             title = cand
     blob = " \n".join(lines)
     amounts = []

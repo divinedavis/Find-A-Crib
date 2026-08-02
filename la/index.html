@@ -514,6 +514,21 @@
     font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
     color: var(--ink-2); background: rgba(255,255,255,.92); border: 1px solid var(--line);
     padding: 2px 7px; border-radius: 4px; pointer-events: none; }
+  /* featured tile: a real income-restricted apartment an HPD marketing agent is
+     advertising right now. Same footprint as a building card on purpose — it is
+     inventory, not an ad — but the chip has to be unmistakable, because the
+     apartment is on someone else's site and the visitor leaves to apply. */
+  .card.feat-card .feat-flag { position: absolute; top: 8px; left: 8px; z-index: 3;
+    font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+    color: #fff; background: var(--pill); padding: 3px 8px; border-radius: 4px;
+    pointer-events: none; }
+  .card.feat-card .photo { background: var(--surface-3); }
+  .card.feat-card .feat-agent { font-size: 11px; color: var(--ink-2); margin-top: 6px; }
+  .card.feat-card .feat-agent b { font-weight: 600; color: var(--ink); }
+  /* Income bands are not rent and must never be mistaken for it. */
+  .card.feat-card .price.income { font-size: 14px; }
+  .card.feat-card .price.income .lab { display: block; font-size: 10.5px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .03em; color: var(--ink-2); }
   .card .hpd-mini { font-size: 11px; color: var(--ink-2); margin-top: 4px; }
   .card .hpd-mini .bad { color: var(--err-ink); font-weight: 700; }
   .card .hpd-mini .warn { color: var(--warn-ink); font-weight: 700; }
@@ -2519,6 +2534,94 @@
     </div>`;
   }
 
+  // ---------- featured re-rentals ----------
+  // Income-restricted apartments the HPD-approved marketing agents are
+  // advertising on their own sites today, refreshed by featured_rerentals.py.
+  // They are not on StreetEasy or Zumper and they go in days, which is the
+  // whole reason they earn a slot in the grid rather than a page nobody visits.
+  const FEAT_EVERY = 8;                 // one featured tile after every N cards
+  let FEATURED = [];
+  let featCursor = 0;
+
+  // NYC only. Every one of these agents is on HPD's approved list, so the
+  // apartments are all in the five boroughs — the same template builds /sf/,
+  // /la/ and /dc/, and a Bronx re-rental in a San Francisco grid is just wrong.
+  if (IS_NYC) fetch('/featured.json', { cache: 'no-cache' })
+    .then(r => r.ok ? r.json() : null)
+    .then(d => {
+      if (!d || !Array.isArray(d.listings) || !d.listings.length) return;
+      FEATURED = d.listings;
+      refreshGrid();                    // they arrived after the first paint
+    })
+    .catch(() => { /* no featured feed today: the grid is unchanged */ });
+
+  // Rent and income are both printed with a dollar sign and mean opposite
+  // things — MGNY's "$98,366 - $176,410" is what you must EARN, not what you
+  // pay. Labelling it is not a nicety; an unlabelled income band reads as the
+  // most expensive studio in New York.
+  function featMoneyHtml(f) {
+    const n = v => '$' + Number(v).toLocaleString();
+    if (f.money_kind === 'rent') {
+      const amt = f.money_high && f.money_high !== f.money_low
+        ? n(f.money_low) + '–' + n(f.money_high) : n(f.money_low);
+      return `<div class="price">${amt}/mo</div>`;
+    }
+    if (f.money_kind === 'income') {
+      return `<div class="price income"><span class="lab">Household income</span>` +
+             `${n(f.money_low)}–${n(f.money_high)}/yr</div>`;
+    }
+    return '<div class="price est">Income-restricted · see agent for rent</div>';
+  }
+
+  function featuredCardHtml(f) {
+    // Several agents print the building name above the postal address, so the
+    // two are often the same words twice ("188-11 Hillside Avenue" over
+    // "188-11 Hillside Avenue, Queens, NY 11423"). Only show a name that adds
+    // something — "Forten at Columbia" does, a prefix of the address doesn't.
+    const named = f.title && !f.address.toLowerCase().startsWith(f.title.toLowerCase());
+    const where = [named ? f.title : null, f.borough].filter(Boolean).join(' · ');
+    const bits = [];
+    if (f.beds) bits.push(f.beds === 'studio' ? 'Studio' : f.beds + '-bed');
+    if (f.units) bits.push(f.units + (f.units === 1 ? ' unit' : ' units'));
+    if (f.zip) bits.push('ZIP ' + esc(f.zip));
+    return `<div class="card feat-card" data-feat-agent="${esc(f.agent)}" data-feat-addr="${esc(f.address)}">
+      <span class="feat-flag">Featured</span>
+      <div class="photo">
+        ${f.image ? `<img class="streetview" loading="lazy" src="${esc(f.image)}" alt=""
+             onerror="this.style.display='none'">` : ''}
+        <div class="photo-shade"></div>
+        <div class="badge-row">
+          <!-- no borough pill: the Featured chip occupies that corner, and the
+               borough is already on the line under the photo. -->
+          <span></span>
+          <span class="listed-pill">Income-restricted</span>
+        </div>
+        <div class="addr-overlay">${esc(f.address)}</div>
+      </div>
+      <div class="body">
+        ${where ? `<div class="nb">${esc(where)}</div>` : ''}
+        ${featMoneyHtml(f)}
+        ${bits.length ? `<div class="units-line">${bits.join(' · ')}</div>` : ''}
+        <div class="feat-agent">Listed by <b>${esc(f.agent)}</b> — an HPD-approved marketing agent</div>
+        <div class="actions">
+          <a class="btn-primary" data-action="featured" style="flex:1"
+             target="_blank" rel="noopener nofollow"
+             href="${esc(f.href)}">Apply on their site ↗</a>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // Which featured listing goes in the next slot. Walks the list so one grid
+  // shows several different apartments rather than the same one eight times,
+  // and resets per render so the top slot is stable as you pan.
+  function nextFeatured() {
+    if (!FEATURED.length) return '';
+    const f = FEATURED[featCursor % FEATURED.length];
+    featCursor++;
+    return featuredCardHtml(f);
+  }
+
   // fill any ad slots that were just rendered but not yet initialized
   function initAds() {
     if (!ADS_ON()) return;
@@ -2578,9 +2681,11 @@
     const shown = truncated ? visible.slice(0, MAX_CARDS) : visible;
     const ads = ADS_ON();
     const parts = [];
+    featCursor = 0;
     shown.forEach((rec, i) => {
       parts.push(cardHtml(rec));
       if (ads && (i + 1) % AD_EVERY === 0) parts.push(adCardHtml());
+      if ((i + 1) % FEAT_EVERY === 0) parts.push(nextFeatured());
     });
     grid.innerHTML = parts.join('') + (truncated
       ? `<div class="empty" style="flex-basis:100%;padding:18px">Zoom in to see more — ${MAX_CARDS}+ buildings in view.</div>`
@@ -2656,6 +2761,13 @@
   grid.addEventListener('click', e => {
     const card = e.target.closest('.card');
     if (!card) return;
+    // A featured tile is somebody else's listing: it has no BBL and no marker,
+    // so there is nothing to fly to. Count the hand-off and let the link go.
+    if (card.classList.contains('feat-card')) {
+      if (e.target.closest('a[data-action="featured"]'))
+        track('featured_click', { agent: card.dataset.featAgent, addr: card.dataset.featAddr });
+      return;
+    }
     const bbl = card.dataset.bbl;
     const m = markerByBbl.get(bbl);
     if (!m) return;

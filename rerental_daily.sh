@@ -22,7 +22,15 @@ PY=/var/www/rent-map/venv/bin/python
 "$PY" rerental_daily.py --update-site --out "$GROWTH_DOCROOT" "$@"
 rc=$?
 
-git add -A rerental_pages.json marketing_agents.json 2>/dev/null
+# Same 14 sites, second pass: pull a full record per apartment (rent, units,
+# photo, apply link) for the featured tiles in the map grid. It is a separate
+# pass because the digest above only needs a key per listing and this needs the
+# whole card — but it rides this cron so the sites are only visited once a day
+# in total, and a failure here must not fail the digest.
+"$PY" featured_rerentals.py --apply --out "$GROWTH_DOCROOT" \
+  || echo "rerental_daily: featured tiles FAILED (digest above is unaffected)"
+
+git add -A rerental_pages.json marketing_agents.json featured.json 2>/dev/null
 if ! git diff --cached --quiet; then
   git commit -q -m "re-rentals: daily sweep $(date -u +%Y-%m-%d)" \
     && git push -q origin main \

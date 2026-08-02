@@ -1,17 +1,17 @@
 {
   "build": {
-    "at": "2026-08-01T05:40:06+00:00",
+    "at": "2026-08-02T05:40:06+00:00",
     "changed_urls": 6,
-    "date": "2026-08-01",
+    "date": "2026-08-02",
     "deployed": true,
     "new_urls": 0,
     "techniques": {
       "city_guides": {
-        "detail": "0 of 3 city guides live with their data caveat \u2014 missing: dc, la, sf \u2014 the docroot's SEO corpus was last written 2026-08-01 (0d ago)",
+        "detail": "0 of 3 city guides live with their data caveat \u2014 missing: dc, la, sf \u2014 the docroot's SEO corpus was last written 2026-08-01 (1d ago)",
         "ok": false
       },
       "city_seo_expansion": {
-        "detail": "hub pages live: dc 0 (no browse hub), la 0 (no browse hub), sf 0 (no browse hub) \u2014 docroot has no city hub pages at all; the SEO rebuild has not deployed this change yet \u2014 the docroot's SEO corpus was last written 2026-08-01 (0d ago)",
+        "detail": "hub pages live: dc 0 (no browse hub), la 0 (no browse hub), sf 0 (no browse hub) \u2014 docroot has no city hub pages at all; the SEO rebuild has not deployed this change yet \u2014 the docroot's SEO corpus was last written 2026-08-01 (1d ago)",
         "ok": false
       },
       "daily_brief": {

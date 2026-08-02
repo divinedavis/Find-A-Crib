@@ -79,6 +79,16 @@ NOT_A_STREET = re.compile(
 # for an apartment nobody can apply to is worse than no tile.
 CLOSED = re.compile(r'application process is closed|no longer available|recently leased|'
                     r'waitlist closed|closed to new applic', re.I)
+# The line above the address is usually the building's name ("Forten at
+# Columbia", "OHM", "Rialto West") — but on some sites it is a section heading,
+# and "600 Crown St · Units Available · Brooklyn" reads like the building is
+# called Units Available.
+GENERIC_TITLE = re.compile(
+    r'^(units?\s*available|available\s*units?|available|now\s*leasing|leasing|'
+    r'listings?|current\s*vacanc\w*|vacanc\w*|apartments?(\s*for\s*rent)?|'
+    r'for\s*rent|new|featured|results?|re-?rentals?|outside\s*market|'
+    r'unit\s*available\s*for\s*initial\s*occupancy|initial\s*occupancy|'
+    r'affordable(\s*housing)?|our\s*\w+|properties)$', re.I)
 INCOME_WORDS = re.compile(r'income|ami\b|household|earn|eligib', re.I)
 RENT_WORDS = re.compile(r'/\s*mo|per month|monthly|rent\b', re.I)
 
@@ -201,9 +211,10 @@ def parse_card(c, agent, page_url):
     # The building's name, when the site prints one above the address.
     title = ""
     if addr_i > 0:
-        cand = lines[addr_i - 1]
-        if 3 < len(cand) < 70 and not ADDRISH.match(cand) and not MONEY.search(cand):
-            title = re.sub(r'\s+', ' ', cand).strip()
+        cand = re.sub(r'\s+', ' ', lines[addr_i - 1]).strip(" .·|-")
+        if (3 < len(cand) < 70 and not ADDRISH.match(cand) and not MONEY.search(cand)
+                and not GENERIC_TITLE.match(cand)):
+            title = cand
     blob = " \n".join(lines)
     amounts = []
     for m in MONEY.finditer(blob):

@@ -30,7 +30,10 @@ rc=$?
 "$PY" featured_rerentals.py --apply --out "$GROWTH_DOCROOT" \
   || echo "rerental_daily: featured tiles FAILED (digest above is unaffected)"
 
-git add -A rerental_pages.json marketing_agents.json featured.json 2>/dev/null
+# featured.json is deliberately NOT committed — it is regenerated every run and
+# served from the docroot, so tracking it would put this cron in conflict with
+# itself. See .gitignore.
+git add -A rerental_pages.json marketing_agents.json 2>/dev/null
 if ! git diff --cached --quiet; then
   git commit -q -m "re-rentals: daily sweep $(date -u +%Y-%m-%d)" \
     && git push -q origin main \

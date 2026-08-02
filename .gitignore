@@ -65,11 +65,12 @@ hpd_contacts.json
 # Search Console service-account key (droplet copy)
 growth/.gsc_key.json
 
-# Featured-tile photos re-hosted from the marketing agents' own sites. The
-# facts in featured.json are tracked; the images are not. They are somebody
-# else's copyrighted photographs and this repo is public — they belong on the
-# droplet that serves the tile and nowhere else. Rebuild with
+# Featured-tile output. Regenerated from the agents' own pages every morning
+# and served from the docroot, so tracking it only guarantees a daily conflict
+# between the droplet's run and the laptop's. The photos additionally are
+# somebody else's copyrighted images and this repo is public. Rebuild both with
 # featured_rerentals.py --apply.
+featured.json
 featured/img/
 
 # Python bytecode

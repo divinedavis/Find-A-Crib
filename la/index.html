@@ -2682,6 +2682,11 @@
     const ads = ADS_ON();
     const parts = [];
     featCursor = 0;
+    // Lead with a featured apartment, then one after every FEAT_EVERY
+    // buildings. It goes first because it is the only inventory on this page
+    // someone can actually apply to today — burying it eight cards down meant
+    // most visitors never scrolled to one.
+    parts.push(nextFeatured());
     shown.forEach((rec, i) => {
       parts.push(cardHtml(rec));
       if (ads && (i + 1) % AD_EVERY === 0) parts.push(adCardHtml());

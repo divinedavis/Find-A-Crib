@@ -88,7 +88,11 @@ GENERIC_TITLE = re.compile(
     r'listings?|current\s*vacanc\w*|vacanc\w*|apartments?(\s*for\s*rent)?|'
     r'for\s*rent|new|featured|results?|re-?rentals?|outside\s*market|'
     r'unit\s*available\s*for\s*initial\s*occupancy|initial\s*occupancy|'
-    r'affordable(\s*housing)?|our\s*\w+|properties)$', re.I)
+    r'affordable(\s*housing)?|our\s*\w+|properties|'
+    # Several boards print the borough as a label above the address, which then
+    # renders as "BROOKLYN · Brooklyn" — the borough twice, once pretending to
+    # be the building's name.
+    r'manhattan|brooklyn|queens|bronx|the\s*bronx|staten\s*island|new\s*york|nyc)$', re.I)
 INCOME_WORDS = re.compile(r'income|ami\b|household|earn|eligib', re.I)
 RENT_WORDS = re.compile(r'/\s*mo|per month|monthly|rent\b', re.I)
 

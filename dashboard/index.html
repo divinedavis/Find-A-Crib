@@ -575,6 +575,33 @@
     settle();
     shown = true;
     gate.classList.add('hidden'); app.classList.remove('hidden');
+    openHash();
+  }
+
+  // The Users page is its own document, so its sidebar links back here as
+  // /dashboard/#sec-funnel. Two things then went wrong: the browser's own
+  // anchor jump can't land, because #app is still hidden while auth resolves
+  // and the target has no position yet, and applyShell() rebuilds the nav with
+  // the first item active — so clicking Funnel from Users opened the top of the
+  // board with Dashboard highlighted. Honour the hash once the board is on
+  // screen. Only on arrival: a later re-render must not yank the page back.
+  var hashOpened = false;
+  function openHash(){
+    if(hashOpened) return;
+    var id = (location.hash || '').replace(/^#/, '');
+    if(!id) return;
+    hashOpened = true;
+    var target = el(id);
+    if(!target) return;
+    // Wait for the layout the freshly-unhidden app is about to get.
+    requestAnimationFrame(function(){
+      var btn = document.querySelector('.nav-item[data-scroll="' + id + '"]');
+      if(btn){
+        document.querySelectorAll('.nav-item').forEach(function(x){ x.classList.remove('active'); });
+        btn.classList.add('active');
+      }
+      target.scrollIntoView({block:'start'});
+    });
   }
 
   function showGate(kind, email){

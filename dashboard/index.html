@@ -573,6 +573,7 @@
 
   function showApp(){
     settle();
+    shown = true;
     gate.classList.add('hidden'); app.classList.remove('hidden');
   }
 
@@ -654,7 +655,13 @@
       b.onclick=function(){
         document.querySelectorAll('.nav-item').forEach(function(x){x.classList.remove('active');});
         b.classList.add('active');
-        var t=el(b.getAttribute('data-scroll')); if(t) t.scrollIntoView({behavior:'smooth',block:'start'});
+        var t=el(b.getAttribute('data-scroll')); if(!t) return;
+        // The board is long enough that a smooth scroll from the top to the
+        // revenue model animates for over a second — the click reads as the
+        // dashboard being slow rather than as a scroll. Animate the short hops
+        // where the motion tells you where you went; jump the long ones.
+        var far = Math.abs(t.getBoundingClientRect().top) > window.innerHeight * 1.6;
+        t.scrollIntoView({behavior: far ? 'auto' : 'smooth', block:'start'});
       };
     });
   }
@@ -663,14 +670,54 @@
     document.querySelectorAll('#site-switch button').forEach(function(b){ b.disabled=on; });
   }
 
-  async function load(force){
+  // An access token is only good for an hour. The captured session can be
+  // holding an expired one — asking supabase-js for the session refreshes it
+  // when it is past due, so the fetch always carries a live token instead of
+  // earning a 401 that used to be shown as "sign in".
+  async function token(){
+    try{
+      var r = await sb.auth.getSession();
+      if(r.data.session){ session = r.data.session; }
+    }catch(e){}
+    return session && session.access_token;
+  }
+
+  // Both onAuthStateChange and getSession() call route() on boot, so the same
+  // feed was fetched and rendered twice on every load — two identical round
+  // trips racing to paint the same board. Concurrent callers share one request.
+  var inflight = {};
+
+  function load(force){
+    var k = siteKey;
+    if(!force && inflight[k]) return inflight[k];
+    var pr = _load(force);
+    inflight[k] = pr;
+    pr.then(function(){ if(inflight[k]===pr) delete inflight[k]; },
+            function(){ if(inflight[k]===pr) delete inflight[k]; });
+    return pr;
+  }
+
+  async function _load(force){
     if(!session) return 'signin';
     if(!force && cache[siteKey]){ paint(cache[siteKey]); return 'ok'; }
     var res;
     try{
       res = await fetch(SITES[siteKey].endpoint,
-                        { headers:{ Authorization:'Bearer '+session.access_token } });
+                        { headers:{ Authorization:'Bearer '+(await token()) } });
     }catch(e){ return 'error'; }
+    // A 401 means this token is dead, not that the owner is signed out. Force
+    // one refresh and retry before anything can show him the sign-in card.
+    if(res.status===401){
+      var fresh = null;
+      try{ var rr = await sb.auth.refreshSession(); fresh = rr.data && rr.data.session; }catch(e){}
+      if(fresh){
+        session = fresh;
+        try{
+          res = await fetch(SITES[siteKey].endpoint,
+                            { headers:{ Authorization:'Bearer '+fresh.access_token } });
+        }catch(e){ return 'error'; }
+      }
+    }
     if(res.status===403) return 'forbidden';
     if(res.status===401) return 'signin';
     if(!res.ok) return 'error';
@@ -696,19 +743,38 @@
     if(b) b.classList.add('hidden');
   }
 
+  // supabase-js re-emits an auth event whenever the tab regains focus and on
+  // every hourly token refresh, and both of those used to run the whole route:
+  // a refetch, applyShell() rebuilding the sidebar (losing which nav item was
+  // active) and render() rewriting every card — a visible hitch for a session
+  // that did not change. Take the new token and leave the page alone.
+  //
+  // routeSeq keeps the newest answer on screen: auth events and getSession()
+  // both land here, so a slower earlier call must not repaint over a newer one.
+  var shown = false, routeSeq = 0;
+
   async function route(s){
+    if(shown && s && session && s.user && session.user && s.user.id === session.user.id){
+      session = s;
+      return;
+    }
+    var mine = ++routeSeq;
     session = s;
     adoptProfileTheme(s);
-    if(!s){ showGate('signin'); return; }
+    if(!s){ shown = false; showGate('signin'); return; }
     applyShell();
     var r = await load(false);
+    if(mine!==routeSeq) return;
     if(r==='error' && siteKey!=='fac'){
       // A remembered site whose feed is down must not gate the whole dashboard.
       siteKey='fac'; applyShell(); r = await load(false);
+      if(mine!==routeSeq) return;
     }
     if(r==='forbidden' && siteKey!=='nemo'){
       siteKey='nemo'; applyShell();
-      if(await load(false)==='ok'){
+      var nemoR = await load(false);
+      if(mine!==routeSeq) return;
+      if(nemoR==='ok'){
         nemoOnly();
         showApp();
         return;

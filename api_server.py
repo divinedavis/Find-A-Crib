@@ -13,7 +13,7 @@ reads are fast and need no DB round-trip. The DB is used only for auth/metering.
 
 Run:  DATA_DIR=/var/www/rent-map gunicorn -w 2 -b 127.0.0.1:8010 api_server:app
 """
-import datetime, hashlib, hmac, json, os, re, secrets, threading, time, urllib.request, urllib.error, urllib.parse
+import base64, datetime, hashlib, hmac, json, os, re, secrets, threading, time, urllib.request, urllib.error, urllib.parse
 from collections import defaultdict, deque
 from flask import Flask, jsonify, request, g
 
@@ -800,6 +800,17 @@ def stripe_webhook():
 
 
 # ---- owner-only analytics dashboard -----------------------------------------
+# Verdicts are cached per token for a minute. Every dashboard click paid a
+# round trip to Supabase Auth before its own data query could start, on a page
+# whose sidebar and site switcher fire several requests in a row. Caching only
+# the answer for a token we already checked doesn't loosen the gate: the token
+# is a signed JWT that stays valid until it expires regardless of what we do
+# here, so a minute of memory cannot admit anyone the live check would refuse.
+_AUTH_CACHE = {}
+_AUTH_CACHE_LOCK = threading.Lock()
+_AUTH_CACHE_TTL = 60
+
+
 def _dashboard_auth():
     """Classify the caller by their Supabase access token.
 
@@ -814,6 +825,12 @@ def _dashboard_auth():
     token = auth[7:].strip()
     if not token:
         return "unauth"
+    key = hashlib.sha256(token.encode()).hexdigest()
+    now = time.time()
+    with _AUTH_CACHE_LOCK:
+        hit = _AUTH_CACHE.get(key)
+        if hit and now < hit[0]:
+            return hit[1]
     try:
         req = urllib.request.Request(
             f"{SUPABASE_URL}/auth/v1/user",
@@ -821,19 +838,53 @@ def _dashboard_auth():
         with urllib.request.urlopen(req, timeout=8) as r:
             u = json.loads(r.read())
     except urllib.error.HTTPError:
-        return "unauth"        # 401/403 from Supabase = bad/expired token
+        return _auth_cached(key, "unauth", token)   # 401/403 = bad/expired token
     except Exception:
-        return "error"
+        return "error"     # never cached: a Supabase blip is not a verdict
     email = (u.get("email") or "").strip().lower()
     verified = bool(u.get("email_confirmed_at")
                     or (u.get("user_metadata") or {}).get("email_verified"))
     if not verified:
-        return "forbidden"
+        return _auth_cached(key, "forbidden", token)
     if email == OWNER_EMAIL:
-        return "ok"
+        return _auth_cached(key, "ok", token)
     if email in NEMO_EMAILS:
-        return "nemo"      # NEMO tab only — see NEMO_EMAILS
-    return "forbidden"
+        return _auth_cached(key, "nemo", token)   # NEMO tab only, see NEMO_EMAILS
+    return _auth_cached(key, "forbidden", token)
+
+
+def _jwt_exp(token):
+    """The `exp` claim, or None. Read, not trusted.
+
+    Supabase already told us whether the token is good; this only shortens how
+    long that answer is reused, so a forged claim can shorten its own cache
+    entry and nothing else.
+    """
+    try:
+        body = token.split(".")[1]
+        body += "=" * (-len(body) % 4)
+        exp = json.loads(base64.urlsafe_b64decode(body)).get("exp")
+        return float(exp) if exp else None
+    except Exception:
+        return None
+
+
+def _auth_cached(key, verdict, token):
+    """Remember `verdict` for this token and return it.
+
+    The entry never outlives the token: an access token that expires in 10s is
+    cached for 10s, so a minute of memory can't keep answering 'ok' for a token
+    Supabase would now reject.
+    """
+    until = time.time() + _AUTH_CACHE_TTL
+    exp = _jwt_exp(token)
+    if exp:
+        until = min(until, exp)
+    with _AUTH_CACHE_LOCK:
+        if len(_AUTH_CACHE) > 64:          # a handful of people, not a crowd
+            _AUTH_CACHE.clear()
+        _AUTH_CACHE[key] = (until, verdict)
+    return verdict
 
 
 def _dashboard_denial(verdict, allowed):

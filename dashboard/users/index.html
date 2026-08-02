@@ -15,6 +15,32 @@
   document.documentElement.setAttribute('data-theme', t);
 })();
 </script>
+<!-- Same sign-in pre-paint as /dashboard/. This page was missing it, so every
+     click on "Users" from the sidebar painted the "Private dashboard" card for
+     as long as getSession() + the users fetch took — the owner watched his own
+     dashboard ask him to sign in on the way to a page he was already signed in
+     for. A stored sb-<ref>-auth-token (or a token arriving in the URL mid-OAuth)
+     means a signed-in visitor is likely: paint the splash and let route()
+     decide. With no stored token this does nothing and the gate shows at once,
+     which is right for a signed-out visitor. -->
+<script>
+(function(){
+  var pending = false;
+  try{
+    for(var i=0;i<localStorage.length;i++){
+      var k = localStorage.key(i);
+      if(k && /^sb-.+-auth-token$/.test(k) && localStorage.getItem(k)){ pending = true; break; }
+    }
+  }catch(e){}
+  var h = location.hash || '', q = location.search || '';
+  if(h.indexOf('access_token=')>-1 || h.indexOf('error=')>-1 || /[?&]code=/.test(q)) pending = true;
+  if(!pending) return;
+  document.documentElement.setAttribute('data-auth','pending');
+  // Failsafe here rather than in the app script: if supabase.js never loads,
+  // that script never runs and the spinner would spin forever.
+  setTimeout(function(){ document.documentElement.removeAttribute('data-auth'); }, 8000);
+})();
+</script>
 <style>
   :root{
     color-scheme:light;
@@ -43,6 +69,16 @@
   .hidden{display:none !important}
 
   #gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:50;padding:24px}
+  /* While auth is still resolving neither answer is known: hold the gate back
+     and show the splash. route() clears data-auth the moment it knows. */
+  html[data-auth="pending"] #gate{display:none}
+  #boot{display:none}
+  html[data-auth="pending"] #boot{position:fixed;inset:0;display:flex;align-items:center;
+    justify-content:center;background:var(--bg);z-index:60}
+  #boot .spin{width:26px;height:26px;border-radius:50%;border:2.5px solid var(--border);
+    border-top-color:var(--ink2);animation:bootspin .7s linear infinite}
+  @keyframes bootspin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion: reduce){ #boot .spin{animation:none} }
   .gate-card{background:var(--card);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow-lg);padding:40px 36px;max-width:420px;width:100%;text-align:center}
   .gate-logo{width:52px;height:52px;border-radius:14px;background:var(--purple);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:26px}
   .gate-card h1{font-size:22px;margin:0 0 6px}
@@ -140,6 +176,9 @@
 </style>
 </head>
 <body>
+
+<!-- Shown only while auth is resolving; see the data-auth script in <head>. -->
+<div id="boot" aria-hidden="true"><div class="spin"></div></div>
 
 <div id="gate">
   <div class="gate-card">
@@ -257,27 +296,87 @@
   };
   applyTheme(currentTheme());
 
+  // Drop the boot splash. Every path that decides what the visitor sees goes
+  // through here, so the splash can never outlive the decision.
+  function settle(){ document.documentElement.removeAttribute('data-auth'); }
+
   function showGate(kind, email){
+    settle();
     app.classList.add('hidden'); gate.classList.remove('hidden');
     var t=el('gate-title'), m=el('gate-msg'), btn=el('google-btn');
     if(kind==='forbidden'){ t.textContent='Not your dashboard'; m.textContent='You are signed in as '+(email||'another account')+', which can’t view this page.'; btn.textContent='Sign out'; btn.onclick=function(){ sb.auth.signOut(); }; }
     else if(kind==='error'){ t.textContent='Something went wrong'; m.textContent='Couldn’t load users. Try again in a moment.'; }
     else { t.textContent='Private dashboard'; m.textContent='This is the Find A Crib owner dashboard. Sign in to continue.'; }
   }
-  async function route(s){
+  // An access token is only good for an hour. The captured session can be
+  // holding an expired one — asking supabase-js for the session refreshes it
+  // when it is past due, so the fetch always carries a live token instead of
+  // earning a 401 that used to be shown as "sign in".
+  async function token(){
+    try{
+      var r = await sb.auth.getSession();
+      if(r.data.session){ session = r.data.session; }
+    }catch(e){}
+    return session && session.access_token;
+  }
+
+  // Only the newest route() may paint: auth events and getSession() both land
+  // here, and a slower earlier call must not repaint over a newer answer.
+  var routeSeq = 0;
+
+  // supabase-js re-emits an auth event whenever the tab regains focus and on
+  // every hourly token refresh. Rebuilding the roster for those is a refetch
+  // and a full re-render for a session that did not change — take the new
+  // token and leave the page alone.
+  var shown = false;
+
+  // Both onAuthStateChange and getSession() call this on boot, so the roster
+  // was fetched and rendered twice on every load. A route already running for
+  // this same user will produce the same answer — let it.
+  var routing = null;
+
+  function route(s){
+    var uid = s && s.user && s.user.id;
+    if(shown && s && session && s.user && session.user && s.user.id === session.user.id){
+      session = s;
+      return Promise.resolve();
+    }
+    if(routing !== null && routing === uid){ session = s; return Promise.resolve(); }
+    routing = uid;
+    return _route(s).then(function(){ if(routing===uid) routing = null; },
+                          function(){ if(routing===uid) routing = null; });
+  }
+
+  async function _route(s){
+    var mine = ++routeSeq;
     session = s;
     adoptProfileTheme(s);
-    if(!session){ showGate('signin'); return; }
+    if(!session){ shown = false; showGate('signin'); return; }
     var res;
-    try{ res = await fetch('/api/dashboard-users', { headers:{ Authorization:'Bearer '+session.access_token } }); }
-    catch(e){ showGate('error'); return; }
+    try{ res = await fetch('/api/dashboard-users', { headers:{ Authorization:'Bearer '+(await token()) } }); }
+    catch(e){ if(mine===routeSeq) showGate('error'); return; }
+    // A 401 means this token is dead, not that the visitor is signed out.
+    // Force one refresh and retry before ever showing the sign-in card.
+    if(res.status===401){
+      var fresh = null;
+      try{ var rr = await sb.auth.refreshSession(); fresh = rr.data && rr.data.session; }catch(e){}
+      if(fresh){
+        session = fresh;
+        try{ res = await fetch('/api/dashboard-users', { headers:{ Authorization:'Bearer '+fresh.access_token } }); }
+        catch(e){ if(mine===routeSeq) showGate('error'); return; }
+      }
+    }
+    if(mine!==routeSeq) return;
     if(res.status===403){ showGate('forbidden', session.user && session.user.email); return; }
     if(res.status===401){ showGate('signin'); return; }
     if(!res.ok){ showGate('error'); return; }
     var d = await res.json();
+    if(mine!==routeSeq) return;
     USERS = d.users || [];
     el('avatar').textContent = ((session.user&&session.user.email)||'D')[0].toUpperCase();
     renderChips(); renderRows('');
+    settle();
+    shown = true;
     gate.classList.add('hidden'); app.classList.remove('hidden');
   }
   el('google-btn').onclick = function(){ sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: location.origin + '/dashboard/users/' } }); };

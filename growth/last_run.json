@@ -1,17 +1,17 @@
 {
   "build": {
-    "at": "2026-08-02T05:40:06+00:00",
+    "at": "2026-08-03T05:40:06+00:00",
     "changed_urls": 6,
-    "date": "2026-08-02",
+    "date": "2026-08-03",
     "deployed": true,
-    "new_urls": 0,
+    "new_urls": 3,
     "techniques": {
       "city_guides": {
-        "detail": "0 of 3 city guides live with their data caveat \u2014 missing: dc, la, sf \u2014 the docroot's SEO corpus was last written 2026-08-01 (1d ago)",
-        "ok": false
+        "detail": "3 of 3 city guides live with their data caveat \u2014 3 published by the daily growth build (dc, la, sf) because the SEO pipeline has not deployed them \u2014 the docroot's SEO corpus was last written 2026-08-01 (2d ago)",
+        "ok": true
       },
       "city_seo_expansion": {
-        "detail": "hub pages live: dc 0 (no browse hub), la 0 (no browse hub), sf 0 (no browse hub) \u2014 docroot has no city hub pages at all; the SEO rebuild has not deployed this change yet \u2014 the docroot's SEO corpus was last written 2026-08-01 (1d ago)",
+        "detail": "hub pages live: dc 0 (no browse hub), la 0 (no browse hub), sf 0 (no browse hub) \u2014 docroot has no city hub pages at all; the SEO rebuild has not deployed this change yet \u2014 the docroot's SEO corpus was last written 2026-08-01 (2d ago)",
         "ok": false
       },
       "daily_brief": {
@@ -27,15 +27,15 @@
         "ok": true
       },
       "indexnow": {
-        "detail": "submitted 6 URLs \u2192 HTTP 200",
+        "detail": "submitted 9 URLs \u2192 HTTP 200",
         "ok": true
       },
       "llms_txt": {
-        "detail": "llms.txt (54 lines), robots.txt naming 15 AI crawlers",
+        "detail": "llms.txt (57 lines), robots.txt naming 15 AI crawlers",
         "ok": true
       },
       "sitemap_daily": {
-        "detail": "sitemap-daily.xml with 13 URLs",
+        "detail": "sitemap-daily.xml with 16 URLs (incl. 3 fallback-published guides)",
         "ok": true
       }
     }

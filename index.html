@@ -299,11 +299,35 @@
   .ref-btn { background: linear-gradient(135deg,#6b3df5,#3151c8); color:#fff; border:none; border-radius:999px;
     padding:7px 13px; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; }
   .ref-btn:hover { filter: brightness(1.06); }
-  .ref-linkrow { display:flex; gap:8px; margin:8px 0 10px; }
-  .ref-linkrow input { flex:1; min-width:0; padding:11px 12px; border:1px solid var(--line); border-radius:10px;
-    font-size:14px; background:var(--bg); color:var(--ink); }
-  .ref-copy { flex:0 0 auto; width:auto; padding:11px 18px; }
-  .ref-share { margin-top:2px; }
+  /* invite sheet: full-bleed hero, serif headline, checklist rows, one solid CTA.
+     --ref-solid flips in dark mode so the button stays the highest-contrast thing on the card. */
+  .ref-card { max-width: 420px; padding: 0 0 20px; overflow: hidden; --ref-solid: #14161c; --ref-on-solid: #ffffff; }
+  html[data-theme="dark"] .ref-card { --ref-solid: #eef0f6; --ref-on-solid: #14161c; }
+  .ref-card .auth-close { background: rgba(255,255,255,.92); color: #14161c; box-shadow: 0 1px 4px rgba(0,0,0,.2); }
+  .ref-hero { height: 128px; display: flex; align-items: flex-end; padding: 0 20px 14px;
+    background: linear-gradient(135deg,#6b3df5 0%,#3151c8 55%,#1f9df5 100%); }
+  .ref-hero-label { font-size: 11px; letter-spacing: .13em; text-transform: uppercase; font-weight: 800;
+    color: rgba(255,255,255,.92); }
+  .ref-body { padding: 22px 22px 0; }
+  .ref-card h2 { font-family: ui-serif, Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+    font-size: 30px; line-height: 1.08; font-weight: 500; letter-spacing: -.6px; margin: 0 0 12px; }
+  .ref-sub { font-size: 14px; line-height: 1.55; color: var(--ink-2); margin: 0 0 22px; }
+  .ref-steps { list-style: none; margin: 0 0 24px; padding: 0; display: grid; gap: 15px; }
+  .ref-steps li { display: flex; align-items: center; gap: 13px; font-size: 14px; font-weight: 700; line-height: 1.35; }
+  .ref-steps li::before { content: ""; flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%;
+    background: radial-gradient(circle, var(--ref-on-solid) 0 4.5px, var(--ref-solid) 4.5px); }
+  .ref-cta { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; padding: 15px;
+    background: var(--ref-solid); color: var(--ref-on-solid); border: none; border-radius: 999px;
+    font-family: inherit; font-size: 15px; font-weight: 800; cursor: pointer; }
+  .ref-cta:hover { opacity: .88; }
+  .ref-cta svg { width: 17px; height: 17px; flex: 0 0 auto; }
+  .ref-share { width: 100%; margin-top: 10px; padding: 14px; border-radius: 999px; background: transparent;
+    border: 1px solid var(--line); color: var(--ink); font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+  .ref-share:hover { background: var(--bg); }
+  .ref-linkrow { margin-top: 14px; }
+  .ref-linkrow input { width: 100%; padding: 10px 12px; margin: 0; border: 1px solid var(--line); border-radius: 12px;
+    font-size: 12px; text-align: center; background: var(--bg); color: var(--ink-2); }
+  .ref-fine { font-size: 11px; line-height: 1.5; color: var(--ink-2); text-align: center; margin: 10px 0 0; }
   /* on desktop the chip-row is transparent so pills lay out as direct flex children (layout unchanged) */
   .chip-row { display: contents; }
   .toggle-pill.active { border-color: var(--blue); color: var(--blue); background: var(--blue-soft); }
@@ -1003,17 +1027,28 @@
 </div>
 <!-- Referral: invite one friend, both get Plus free -->
 <div id="referral-modal" class="auth-backdrop" hidden>
-  <div class="auth-card">
+  <div class="auth-card ref-card">
     <button class="auth-close" data-ref="close" aria-label="Close">✕</button>
-    <div class="paywall-badge">🎁 Find A Crib <b>Plus</b> — on us</div>
-    <h2>Invite a friend, unlock Plus free</h2>
-    <p class="auth-sub">Share your link. When <b>one friend</b> signs up through it, you <b>both</b> get Plus free — email alerts, managing-agent phone numbers, landlord research, and folders. Each link works for a single sign-up; you’ll get a fresh one to invite the next person.</p>
-    <div class="ref-linkrow">
-      <input id="ref-link" type="text" readonly aria-label="Your invite link">
-      <button id="ref-copy" type="button" class="auth-submit ref-copy">Copy</button>
+    <div class="ref-hero"><span class="ref-hero-label">Find A Crib Plus — on us</span></div>
+    <div class="ref-body">
+      <h2>Want Plus for free?</h2>
+      <p class="ref-sub">You’re one friend away. Share your link, and when someone signs up through it you both get Find A Crib Plus — permanently, no card needed.</p>
+      <ul class="ref-steps">
+        <li>Share your unique link with a friend</li>
+        <li>They sign up through it and get Plus</li>
+        <li>You get Plus too — alerts, agent phones, landlord research</li>
+      </ul>
+      <button id="ref-copy" type="button" class="ref-cta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <span class="ref-cta-label">Copy your unique invite link</span>
+      </button>
+      <button id="ref-share" type="button" class="ref-share" hidden>Share…</button>
+      <div class="ref-linkrow">
+        <input id="ref-link" type="text" readonly aria-label="Your invite link">
+      </div>
+      <p class="ref-fine">Each link works for one sign-up — you’ll get a fresh one to invite the next person.</p>
+      <div id="ref-note" class="auth-legal"></div>
     </div>
-    <button id="ref-share" type="button" class="auth-google ref-share" hidden>Share…</button>
-    <div id="ref-note" class="auth-legal"></div>
   </div>
 </div>
 <!-- Zillow-style consolidated filters modal (the pill popovers are moved in
@@ -3566,7 +3601,8 @@
         const v = refLinkInput.value; if (!v || v.indexOf('http') !== 0) return;
         try { await navigator.clipboard.writeText(v); } catch (e) { try { refLinkInput.select(); document.execCommand('copy'); } catch (e2) {} }
         try { track('referral_share', { method: 'copy' }); } catch (e) {}
-        const b = document.getElementById('ref-copy'), o = b.textContent; b.textContent = 'Copied ✓'; setTimeout(() => { b.textContent = o; }, 1500);
+        // swap the label span, not the button — the button also holds the copy icon
+        const b = document.querySelector('#ref-copy .ref-cta-label'), o = b.textContent; b.textContent = 'Copied ✓'; setTimeout(() => { b.textContent = o; }, 1500);
       });
       const shareBtn = document.getElementById('ref-share');
       if (navigator.share && shareBtn) {

@@ -335,125 +335,152 @@ def _city_faq(key, place, st):
     return faq
 
 
-def city_hub_pages(urls):
-    """One aggregate page per neighborhood (SF, DC) or ZIP (LA), plus a browse
-    hub per city. Returns {city: count} so the caller can report it.
+def city_hub_docs(key, guide_ok=True):
+    """Render one city's aggregate hub tier. Returns a list of page dicts.
+
+    Each dict is {kind, relpath, canonical, html, priority}: kind "place" for
+    the per-neighborhood / per-ZIP pages and "browse" for the single hub that
+    links them all. Returns [] when the city's data is unreadable or no place
+    clears MIN_CITY_HUB — a city with nothing to say publishes nothing.
 
     These are deliberately not building-level pages. SF is anonymized to the
     block and LA is a derived "likely RSO" list, so the honest unit of
     publication for those two is the aggregate, and a per-address page would
     assert more than the data supports.
+
+    Lifted out of city_hub_pages() for the same reason guide_page() was lifted
+    out of main(): the daily growth build (growth/techniques.py:
+    t_city_seo_expansion) publishes this tier through its own rsync when this
+    pipeline has not deployed it, and two independent renderers would overwrite
+    each other's bytes every night, churning lastmod on pages that never
+    changed. Import this; do not copy it.
+
+    guide_ok=False drops the "is my apartment rent controlled in <city>?" link.
+    The growth build passes False when that guide is not live: these pages are
+    the contextual path into the guides, and a hub tier does not ship pointing
+    at a 404.
     """
-    built = {}
-    for key, cfg in CITY_HUBS.items():
-        try:
-            recs = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                               key, "buildings.min.json")))
-        except Exception as e:
-            print(f"city hubs: skipping {key} ({e})")
-            built[key] = 0
-            continue
+    cfg = CITY_HUBS[key]
+    try:
+        recs = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                           key, "buildings.min.json")))
+    except Exception as e:
+        print(f"city hubs: skipping {key} ({e})")
+        return []
 
-        groups = defaultdict(list)
-        for r in recs:
-            g = r.get(cfg["group"])
-            if g not in (None, ""):
-                groups[str(g)].append(r)
-        big = {k: sorted(v, key=lambda x: x.get("a") or "")
-               for k, v in groups.items() if len(v) >= MIN_CITY_HUB}
-        small = len(groups) - len(big)
-        city, footer = cfg["name"], CITY_FOOTER[key]
-        browse_url = f"/{key}/buildings/"
-        counts = {k: len(v) for k, v in big.items()}
-        others = [(o, CITY_HUBS[o]) for o in CITY_HUBS if o != key]
+    groups = defaultdict(list)
+    for r in recs:
+        g = r.get(cfg["group"])
+        if g not in (None, ""):
+            groups[str(g)].append(r)
+    big = {k: sorted(v, key=lambda x: x.get("a") or "")
+           for k, v in groups.items() if len(v) >= MIN_CITY_HUB}
+    if not big:
+        return []
+    small = len(groups) - len(big)
+    city, footer = cfg["name"], CITY_FOOTER[key]
+    browse_url = f"/{key}/buildings/"
+    counts = {k: len(v) for k, v in big.items()}
+    others = [(o, CITY_HUBS[o]) for o in CITY_HUBS if o != key]
+    guide_link = (f"<p><a href='/guide/{cfg['guide']}/'>Read: is my apartment rent controlled "
+                  f"in {esc(city)}? →</a></p>") if guide_ok else ""
 
-        for place, items in sorted(big.items()):
-            slug = place if cfg["path"] == "zip" else slugify(place)
-            url = f"/{key}/{cfg['path']}/{slug}/"
-            canonical = SITE + url
-            st = _city_stats(items)
-            h1 = cfg["h1"].format(place=place)
+    docs = []
+    for place, items in sorted(big.items()):
+        slug = place if cfg["path"] == "zip" else slugify(place)
+        url = f"/{key}/{cfg['path']}/{slug}/"
+        canonical = SITE + url
+        st = _city_stats(items)
+        h1 = cfg["h1"].format(place=place)
 
-            labels = _city_labels(key, items)
-            listing = ""
-            if labels:
-                shown = labels[:CITY_LIST_CAP]
-                # State the cap rather than truncating quietly: a list that
-                # silently stops at 300 reads as "this is all of them".
-                count = (f"{len(labels):,} distinct, showing the first {len(shown):,}."
-                         if len(labels) > len(shown) else
-                         f"{len(labels):,} distinct.")
-                listing = (f"<h2>{esc(cfg['list_h2'].format(place=place))}</h2>"
-                           f"<p class='disclaimer'>{esc(count)} {esc(cfg['list_note'])}</p>"
-                           f"<div class='cols'>"
-                           + "".join(f"<span>{esc(a)}</span>" for a in shown)
-                           + "</div>")
+        labels = _city_labels(key, items)
+        listing = ""
+        if labels:
+            shown = labels[:CITY_LIST_CAP]
+            # State the cap rather than truncating quietly: a list that
+            # silently stops at 300 reads as "this is all of them".
+            count = (f"{len(labels):,} distinct, showing the first {len(shown):,}."
+                     if len(labels) > len(shown) else
+                     f"{len(labels):,} distinct.")
+            listing = (f"<h2>{esc(cfg['list_h2'].format(place=place))}</h2>"
+                       f"<p class='disclaimer'>{esc(count)} {esc(cfg['list_note'])}</p>"
+                       f"<div class='cols'>"
+                       + "".join(f"<span>{esc(a)}</span>" for a in shown)
+                       + "</div>")
 
-            extra = _decade_table(items) if key == "la" else _band_table(items, cfg["things"])
-            sibs = "".join(
-                f"<a href=\"/{key}/{cfg['path']}/"
-                f"{p if cfg['path'] == 'zip' else slugify(p)}/\">{esc(p)} ({c:,})</a>"
-                for p, c in sorted(counts.items(), key=lambda kv: -kv[1])[:12] if p != place)
-            body = (f"<div class='crumbs'><a href='/'>Home</a> › "
-                    f"<a href='/{key}/'>{esc(city)}</a> › "
-                    f"<a href='{browse_url}'>All {esc(cfg['things'])}</a></div>"
-                    f"<h1>{esc(h1)}</h1>"
-                    + answer_block(_city_answer(key, place, st))
-                    + f"<a class='cta' href='/{key}/'>Open the {esc(city)} map →</a>"
-                    + _city_stat_table(key, st) + extra
-                    + (f"<p><a href='/guide/{cfg['guide']}/'>Read: is my apartment rent controlled "
-                       f"in {esc(city)}? →</a></p>")
-                    + listing
-                    + (f"<h2>Nearby in {esc(city)}</h2><div class='cols'>{sibs}</div>"
-                       f"<p><a href='{browse_url}'>All {esc(cfg['things'])} in {esc(city)} →</a></p>"
-                       if sibs else ""))
-            faq = _city_faq(key, place, st)
-            body += faq_html(faq)
-            crumb = breadcrumb([("Home", SITE + "/"), (city, SITE + f"/{key}/"),
-                                (h1, canonical)])
-            write(url.strip("/") + "/index.html",
-                  page(f"{h1} ({st['n']}) | Find A Crib",
-                       f"{st['n']} {cfg['things']} in {place}, {city} — counts, unit sizes and "
-                       f"what rent regulation there actually means. Check any address on the map.",
-                       canonical, body, [crumb, faq_jsonld(faq)], footer=footer))
-            urls.append((canonical, "0.7", key))
-
-        # ---- the city's browse hub: the page that makes the rest non-orphans
-        if not big:
-            built[key] = 0
-            continue
-        total_places = len(big)
-        total_recs = sum(counts.values())
-        links = "".join(
+        extra = _decade_table(items) if key == "la" else _band_table(items, cfg["things"])
+        sibs = "".join(
             f"<a href=\"/{key}/{cfg['path']}/"
             f"{p if cfg['path'] == 'zip' else slugify(p)}/\">{esc(p)} ({c:,})</a>"
-            for p, c in sorted(counts.items()))
-        skipped = (f" {small} more had fewer than {MIN_CITY_HUB} and were left off rather than "
-                   f"published as a near-empty page." if small else "")
-        body = (f"<div class='crumbs'><a href='/'>Home</a> › <a href='/{key}/'>{esc(city)}</a></div>"
-                f"<h1>{esc(cfg['browse_h1'])}</h1>"
-                f"<p class='lead'>{total_recs:,} {esc(cfg['things'])} across {total_places} "
-                f"{'ZIP codes' if cfg['path'] == 'zip' else 'neighborhoods'} in {esc(city)}."
-                f"{esc(skipped)} Start with your "
-                f"{'ZIP code' if cfg['path'] == 'zip' else 'neighborhood'}, or "
-                f"<a href='/{key}/'>open the map</a>.</p>"
-                f"<p><a href='/guide/{cfg['guide']}/'>Read: is my apartment rent controlled in "
-                f"{esc(city)}? →</a></p>"
-                f"<div class='cols'>{links}</div>"
-                + "<h2>Other cities on Find A Crib</h2><div class='cols'>"
-                + "<a href='/buildings/'>New York City by neighborhood</a>"
-                + "".join(f"<a href='/{o}/buildings/'>{esc(oc['browse_h1'])}</a>"
-                          for o, oc in others)
-                + "</div>")
+            for p, c in sorted(counts.items(), key=lambda kv: -kv[1])[:12] if p != place)
+        body = (f"<div class='crumbs'><a href='/'>Home</a> › "
+                f"<a href='/{key}/'>{esc(city)}</a> › "
+                f"<a href='{browse_url}'>All {esc(cfg['things'])}</a></div>"
+                f"<h1>{esc(h1)}</h1>"
+                + answer_block(_city_answer(key, place, st))
+                + f"<a class='cta' href='/{key}/'>Open the {esc(city)} map →</a>"
+                + _city_stat_table(key, st) + extra
+                + guide_link
+                + listing
+                + (f"<h2>Nearby in {esc(city)}</h2><div class='cols'>{sibs}</div>"
+                   f"<p><a href='{browse_url}'>All {esc(cfg['things'])} in {esc(city)} →</a></p>"
+                   if sibs else ""))
+        faq = _city_faq(key, place, st)
+        body += faq_html(faq)
         crumb = breadcrumb([("Home", SITE + "/"), (city, SITE + f"/{key}/"),
-                            (cfg["browse_h1"], SITE + browse_url)])
-        write(browse_url.strip("/") + "/index.html",
-              page(f"{cfg['browse_h1']} | Find A Crib",
-                   f"Browse {total_recs:,} {cfg['things']} across {total_places} "
-                   f"{'ZIP codes' if cfg['path'] == 'zip' else 'neighborhoods'} in {city}.",
-                   SITE + browse_url, body, crumb, footer=footer))
-        urls.append((SITE + browse_url, "0.9", key))
-        built[key] = total_places
+                            (h1, canonical)])
+        docs.append({
+            "kind": "place", "relpath": url.strip("/") + "/index.html",
+            "canonical": canonical, "priority": "0.7",
+            "html": page(f"{h1} ({st['n']}) | Find A Crib",
+                         f"{st['n']} {cfg['things']} in {place}, {city} — counts, unit sizes and "
+                         f"what rent regulation there actually means. Check any address on the map.",
+                         canonical, body, [crumb, faq_jsonld(faq)], footer=footer)})
+
+    # ---- the city's browse hub: the page that makes the rest non-orphans
+    total_places = len(big)
+    total_recs = sum(counts.values())
+    links = "".join(
+        f"<a href=\"/{key}/{cfg['path']}/"
+        f"{p if cfg['path'] == 'zip' else slugify(p)}/\">{esc(p)} ({c:,})</a>"
+        for p, c in sorted(counts.items()))
+    skipped = (f" {small} more had fewer than {MIN_CITY_HUB} and were left off rather than "
+               f"published as a near-empty page." if small else "")
+    body = (f"<div class='crumbs'><a href='/'>Home</a> › <a href='/{key}/'>{esc(city)}</a></div>"
+            f"<h1>{esc(cfg['browse_h1'])}</h1>"
+            f"<p class='lead'>{total_recs:,} {esc(cfg['things'])} across {total_places} "
+            f"{'ZIP codes' if cfg['path'] == 'zip' else 'neighborhoods'} in {esc(city)}."
+            f"{esc(skipped)} Start with your "
+            f"{'ZIP code' if cfg['path'] == 'zip' else 'neighborhood'}, or "
+            f"<a href='/{key}/'>open the map</a>.</p>"
+            + guide_link
+            + f"<div class='cols'>{links}</div>"
+            + "<h2>Other cities on Find A Crib</h2><div class='cols'>"
+            + "<a href='/buildings/'>New York City by neighborhood</a>"
+            + "".join(f"<a href='/{o}/buildings/'>{esc(oc['browse_h1'])}</a>"
+                      for o, oc in others)
+            + "</div>")
+    crumb = breadcrumb([("Home", SITE + "/"), (city, SITE + f"/{key}/"),
+                        (cfg["browse_h1"], SITE + browse_url)])
+    docs.append({
+        "kind": "browse", "relpath": browse_url.strip("/") + "/index.html",
+        "canonical": SITE + browse_url, "priority": "0.9",
+        "html": page(f"{cfg['browse_h1']} | Find A Crib",
+                     f"Browse {total_recs:,} {cfg['things']} across {total_places} "
+                     f"{'ZIP codes' if cfg['path'] == 'zip' else 'neighborhoods'} in {city}.",
+                     SITE + browse_url, body, crumb, footer=footer)})
+    return docs
+
+
+def city_hub_pages(urls):
+    """Write every city's hub tier into this build. Returns {city: place count}."""
+    built = {}
+    for key in CITY_HUBS:
+        docs = city_hub_docs(key)
+        for d in docs:
+            write(d["relpath"], d["html"])
+            urls.append((d["canonical"], d["priority"], key))
+        built[key] = sum(1 for d in docs if d["kind"] == "place")
     return built
 
 

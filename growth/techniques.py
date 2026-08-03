@@ -96,6 +96,38 @@ class Context:
 
     # ---- page writing with honest lastmod
 
+    def _url_for(self, relpath):
+        return (SITE + "/" + relpath[:-len("index.html")] if relpath.endswith("index.html")
+                else SITE + "/" + relpath)
+
+    def unstage(self, relpath, url=None):
+        """Forget a page this build published, so it stops being republished.
+
+        The staging dir is never cleared and `deploy` is `rsync -a` with no
+        --delete, so a file left in growth_out is pushed into the docroot again
+        every single night — including over a copy another pipeline has since
+        deployed. Any technique that publishes on another pipeline's behalf
+        therefore has to be able to hand a page back: "the SEO build wins" is
+        only true until the next rsync otherwise. Dropping the lastmod entry
+        too is part of handing it back — the URL is no longer ours to list in
+        our sitemap shard or to date.
+        """
+        if self.dry_run:
+            return False
+        url = url or self._url_for(relpath)
+        removed = False
+        try:
+            os.remove(os.path.join(self.out, relpath))
+            removed = True
+        except OSError:
+            pass
+        lm = ledger.get_state("lastmod", {})
+        if url in lm:
+            del lm[url]
+            ledger.set_state("lastmod", lm)
+            removed = True
+        return removed
+
     def write_page(self, relpath, html, url=None):
         """Write a page, tracking whether it is new / changed / identical.
 
@@ -103,8 +135,7 @@ class Context:
         changed pages get their <lastmod> bumped. Re-pinging unchanged URLs is
         how sites get their IndexNow key ignored.
         """
-        url = url or (SITE + "/" + relpath[:-len("index.html")] if relpath.endswith("index.html")
-                      else SITE + "/" + relpath)
+        url = url or self._url_for(relpath)
         h = hashlib.sha1(html.encode("utf-8")).hexdigest()
         lm = ledger.get_state("lastmod", {})
         prev = lm.get(url)
@@ -676,6 +707,17 @@ def t_llms_txt(ctx):
             lines.append(f"- Is my apartment rent controlled in {_label}? — what the city's rules "
                          f"cover, the main exemptions, and how to check an address: "
                          f"{SITE}/{_rel[:-len('index.html')]}")
+    # The aggregate browse tier, on the same terms. An answer engine asked
+    # "what rent-controlled housing is in the Mission" needs the page that
+    # answers at neighborhood level; the map at /sf/ cannot be quoted.
+    _hubs = [(c, l, f"{c}/buildings/index.html") for c, l in
+             (("sf", "San Francisco, by neighborhood"), ("la", "Los Angeles, by ZIP code"),
+              ("dc", "Washington DC, by neighborhood"))
+             if ctx.live_or_staged(f"{c}/buildings/index.html")]
+    if _hubs:
+        lines += ["", "## Browse by area", ""]
+        lines += [f"- {_label} — counts, unit sizes and what the city's rules cover for each "
+                  f"area: {SITE}/{_c}/buildings/" for _c, _label, _rel in _hubs]
     lines += [
         "",
         "## Data provenance",
@@ -756,6 +798,16 @@ def t_sitemap_daily(ctx):
         # signal crawlers learn to discount.
         if u.startswith(SITE + "/guide/"):
             return ("monthly", "0.8")
+        # The SF/LA/DC aggregate hub tier, for the same reason and on the same
+        # terms (t_city_seo_expansion). Monthly: these summarise the SF Rent
+        # Board inventory, the LA assessor roll and DC's RentRegistry, none of
+        # which turn over nightly. Priorities match what build_seo.py assigns
+        # them in its own shards, so nothing changes the day it deploys again.
+        for _city, _rel in CITY_HUB_DIRS.items():
+            if u == f"{SITE}/{_city}/buildings/":
+                return ("monthly", "0.9")
+            if u.startswith(f"{SITE}/{_rel}/"):
+                return ("monthly", "0.7")
         return None
 
     daily = {u: v for u, v in lm.items() if entry(u)}
@@ -792,9 +844,14 @@ def t_sitemap_daily(ctx):
         ctx.write_raw("sitemap.xml", idx)
 
     guides = sum(1 for u in daily if u.startswith(SITE + "/guide/"))
+    hubs = sum(1 for u in daily if any(
+        u == f"{SITE}/{c}/buildings/" or u.startswith(f"{SITE}/{r}/")
+        for c, r in CITY_HUB_DIRS.items()))
+    extra = ", ".join(x for x in (f"{guides} fallback-published guides" if guides else "",
+                                  f"{hubs} city hub pages" if hubs else "") if x)
     return {"ok": True, "urls": len(daily),
             "detail": f"sitemap-daily.xml with {len(daily)} URLs"
-                      + (f" (incl. {guides} fallback-published guides)" if guides else "")}
+                      + (f" (incl. {extra})" if extra else "")}
 
 
 def t_indexnow(ctx):
@@ -950,12 +1007,15 @@ GUIDE_CAVEATS = {
 }
 
 
-# Marker embedded in a guide this technique published itself. It answers the
-# only question that matters when two pipelines can write the same path: who
-# wrote the copy currently in the docroot. A page carrying it is ours and we
-# keep it current; a page without it belongs to the SEO build and we never
-# touch it, so the two never fight over one file.
-GUIDE_FALLBACK_MARKER = "<!-- published by the daily growth build -->"
+# Marker embedded in any page this build published on the SEO pipeline's
+# behalf. It answers the only question that matters when two pipelines can
+# write the same path: who wrote the copy currently in the docroot. A page
+# carrying it is ours and we keep it current; a page without it belongs to the
+# SEO build and we never touch it, so the two never fight over one file.
+# (Named FALLBACK_MARKER until 2026-08-03, when the city hub tier started
+# using the same rule. The string itself has never changed — renaming it would
+# have orphaned every page already published under it.)
+FALLBACK_MARKER = "<!-- published by the daily growth build -->"
 
 
 def _publish_stranded_guides(ctx):
@@ -995,8 +1055,13 @@ def _publish_stranded_guides(ctx):
                 live = f.read()
         except OSError:
             live = None
-        if live is not None and GUIDE_FALLBACK_MARKER not in live:
-            out[city] = "seo"                 # the real pipeline got there; hands off
+        if live is not None and FALLBACK_MARKER not in live:
+            # The real pipeline got there. Hands off — and unstage our own
+            # copy: growth_out is never cleared and deploy is rsync without
+            # --delete, so a leftover would be pushed back over the SEO
+            # build's page every night and this fallback would never end.
+            out[city] = "seo"
+            ctx.unstage(rel, url=SITE + "/" + rel[:-len("index.html")])
             continue
         # The guide links into /<city>/buildings/, which the same dead pipeline
         # owns. Only offer that link if the target is actually live.
@@ -1006,7 +1071,7 @@ def _publish_stranded_guides(ctx):
         except Exception as e:                # noqa: BLE001
             out[city] = f"render failed ({e.__class__.__name__})"
             continue
-        doc = doc.replace("</body>", GUIDE_FALLBACK_MARKER + "</body>")
+        doc = doc.replace("</body>", FALLBACK_MARKER + "</body>")
         if GUIDE_CAVEATS[city] not in doc.lower():
             # Never publish a guide that lost its coverage caveat — that is the
             # credibility bug this technique already fails the run over.
@@ -1081,24 +1146,126 @@ CITY_HUB_DIRS = {
 }
 
 
+def _publish_stranded_city_hubs(ctx):
+    """Publish any city hub page the SEO pipeline has not deployed.
+
+    Returns {city: {"docs": [(kind, relpath)], "published": n, "seo": n,
+                    "error": str|None}}.
+
+    The same fallback as _publish_stranded_guides, for the tier underneath it.
+    The guides were the three pages a reader lands on; these 255 are the pages
+    that make the non-NYC data browsable at all, and on 2026-08-03 they had been
+    finished and committed for five days while /root/dhcr-build refused to pull.
+    Every one of them is an aggregate over data already in this repo, rendered
+    by build_seo's own city_hub_docs() so the bytes match what that pipeline
+    would have deployed.
+
+    Ownership is by FALLBACK_MARKER, exactly as for the guides: a page in the
+    docroot without it was written by the SEO build and we never touch it, so
+    the day /root/dhcr-build starts pulling again this steps aside on its own.
+    """
+    import importlib
+    try:
+        bs = importlib.import_module("build_seo")
+    except Exception as e:                        # noqa: BLE001 - never break the build
+        err = f"build_seo unavailable ({e.__class__.__name__})"
+        return {c: {"docs": [], "published": 0, "seo": 0, "handed_back": 0, "error": err}
+                for c in CITY_HUB_DIRS}
+
+    out = {}
+    for city in CITY_HUB_DIRS:
+        rec = {"docs": [], "published": 0, "seo": 0, "handed_back": 0, "error": None}
+        out[city] = rec
+        # These pages are the contextual path into the city guide. Only offer
+        # that link when the guide is live (or staged by t_city_guides earlier
+        # this run) — the same rule the guides apply to their link back here.
+        guide_ok = ctx.live_or_staged(CITY_GUIDES[city])
+        try:
+            docs = bs.city_hub_docs(city, guide_ok=guide_ok)
+        except Exception as e:                    # noqa: BLE001
+            rec["error"] = f"render failed ({e.__class__.__name__})"
+            continue
+        if not docs:
+            # city_hub_docs returns nothing when the data is unreadable or no
+            # place clears MIN_CITY_HUB. Publishing a near-empty tier to have
+            # URLs is exactly what this build does not do.
+            rec["error"] = "no page cleared the minimum record count"
+            continue
+        for d in docs:
+            rec["docs"].append((d["kind"], d["relpath"]))
+            path = os.path.join(ctx.docroot, d["relpath"])
+            try:
+                with open(path, encoding="utf-8", errors="replace") as f:
+                    live = f.read()
+            except OSError:
+                live = None
+            if live is not None and FALLBACK_MARKER not in live:
+                # The real pipeline got there. Hands off — and drop our own
+                # stale copy, or the nightly rsync would push it back over the
+                # top and the handover would never actually happen.
+                rec["seo"] += 1
+                if ctx.unstage(d["relpath"], url=d["canonical"]):
+                    rec["handed_back"] += 1
+                continue
+            doc = d["html"].replace("</body>", FALLBACK_MARKER + "</body>")
+            ctx.write_page(d["relpath"], doc, url=d["canonical"])
+            rec["published"] += 1
+    return out
+
+
 def t_city_seo_expansion(ctx):
-    """Verify the SF / LA / DC aggregate hub pages are live in the docroot.
+    """Publish the SF / LA / DC aggregate hub pages if the SEO build hasn't, then verify.
 
-    Written by build_seo.py:city_hub_pages(), so — like city_guides and
-    hub_direct_answers — this only checks. It exists because the SEO build is a
-    separate pipeline (/root/dhcr-build → rsync) from the daily growth build,
-    and "shipped" and "live" are not the same claim.
+    Rendered by build_seo.py:city_hub_docs(). This was a checker until
+    2026-08-03: the SEO build is a separate pipeline (/root/dhcr-build → rsync)
+    and "shipped" and "live" are not the same claim, so the technique read the
+    docroot rather than trusting the commit. It read ok=False for five straight
+    days while that pipeline ran pre-2026-07-29 code, which is long enough to
+    stop reporting a blocker and route around it.
 
-    The detail deliberately distinguishes the two ways this fails: no city has
-    any hub page AND the pre-existing /guide/ hub is present means the docroot
-    is simply older than this change, which is a deploy problem; some cities
-    present and others empty means the generator did.
+    The verification still reads the filesystem rather than what we just
+    rendered — every page is counted only if it is in the docroot or staged for
+    this run's rsync — and the detail names which pipeline published each city,
+    because "255 pages live" must not become a self-fulfilling reading now that
+    this technique writes the files it checks.
     """
     import glob
-    counts, browse = {}, {}
+    published = _publish_stranded_city_hubs(ctx)
+
+    counts, browse, notes = {}, {}, []
     for city, rel in CITY_HUB_DIRS.items():
-        counts[city] = len(glob.glob(os.path.join(ctx.docroot, rel, "*", "index.html")))
-        browse[city] = os.path.exists(os.path.join(ctx.docroot, city, "buildings", "index.html"))
+        rec = published[city]
+        if rec["docs"]:
+            counts[city] = sum(1 for k, p in rec["docs"]
+                               if k == "place" and ctx.live_or_staged(p))
+            browse[city] = any(k == "browse" and ctx.live_or_staged(p) for k, p in rec["docs"])
+        else:
+            # Nothing rendered (build_seo unimportable, or no data): fall back to
+            # reporting what the docroot holds, which is what this check did
+            # before it could publish.
+            counts[city] = len(glob.glob(os.path.join(ctx.docroot, rel, "*", "index.html")))
+            browse[city] = os.path.exists(os.path.join(ctx.docroot, city, "buildings", "index.html"))
+        if rec["error"]:
+            notes.append(f"{city}: {rec['error']}")
+
+    by_us = {c: published[c]["published"] for c in published if published[c]["published"]}
+    verb = "would be published (dry run)" if ctx.dry_run else "published"
+    note = ""
+    if by_us:
+        # Counts here include each city's browse hub, so they read one higher
+        # than the place-page counts above. Say so rather than leave a reader
+        # to reconcile "sf 37" with "sf 38".
+        note = (f" — {sum(by_us.values())} pages {verb} by the daily growth build, browse hubs "
+                f"included ({', '.join(f'{c} {n}' for c, n in sorted(by_us.items()))}), because "
+                f"the SEO pipeline has not deployed them" + _stale_note(ctx.docroot))
+    handed_back = sum(published[c]["handed_back"] for c in published)
+    if handed_back:
+        # The one signal that /root/dhcr-build started pulling again. Worth a
+        # line of its own: it is how a future review learns the fallback can go.
+        note += (f" — handed {handed_back} pages back to the SEO pipeline, which has "
+                 f"deployed its own copies")
+    if notes:
+        note += " — could not publish: " + "; ".join(sorted(notes))
 
     total = sum(counts.values())
     detail = "hub pages live: " + ", ".join(
@@ -1108,11 +1275,12 @@ def t_city_seo_expansion(ctx):
         return {"ok": False,
                 "detail": detail + (" — docroot has no city hub pages at all; the SEO rebuild "
                                     "has not deployed this change yet" + _stale_note(ctx.docroot)
-                                    if stale else " — no SEO build output in the docroot")}
+                                    if stale else " — no SEO build output in the docroot") + note}
     missing = [c for c in counts if not counts[c] or not browse[c]]
     if missing:
-        return {"ok": False, "detail": detail + f" — incomplete: {', '.join(sorted(missing))}"}
-    return {"ok": True, "detail": detail, "pages": total + len(browse)}
+        return {"ok": False,
+                "detail": detail + f" — incomplete: {', '.join(sorted(missing))}" + note}
+    return {"ok": not notes, "detail": detail + note, "pages": total + sum(browse.values())}
 
 
 REGISTRY = {

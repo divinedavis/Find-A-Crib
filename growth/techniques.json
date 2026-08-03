@@ -642,5 +642,23 @@
     "retired": null,
     "notes": "effort: days\nexpected: 12 videos (3 per city) in the first month, each ending on the same URL. Target 90 days: 5,000 total views, 300 referred sessions, and findacrib named in at least one AI answer for 'how to check if my building is rent stabilized' in each of the four cities.\nfirst step: Record one 3-minute video, 'Checking whether a real Brooklyn address is rent stabilized, and what the DHCR record actually shows', with the unit-count history on screen and the caveats stated out loud, then publish it and embed it on the NYC hub page.",
     "verdict": null
+  },
+  {
+    "id": "T036",
+    "slug": "rent_history_review_service",
+    "name": "Paid apartment-level Rent History Review ($39 one-off)",
+    "hypothesis": "The site sells building-level truth, but the question a tenant actually pays to resolve is unit-level: 'is MY apartment stabilized and has my rent been raised legally?' Every credible source now ends by telling the tenant to go get the DHCR rent history themselves \u2014 <cite index=\"31-6,31-7\">a building-level database match is described as a lead, not a final answer for one unit, with the advice to check the lease and official rider and request the apartment's registration and rent history</cite>, and <cite index=\"32-3\">tenants are told to confirm stabilized status, check the renewal's effective date, and request a DHCR rent history</cite>. That hand-off is exactly where the money is: a $39 fixed-fee service where the site files the free DHCR rent-history request for the tenant, then returns a plain-English timeline of registered rents, increase-by-increase, flagged where an increase exceeds the RGB order for that year, alongside the building's DHCR/HPD record already on file. It monetizes the highest-intent moment (pre-lease-signing or mid-dispute), needs no subscription from a once-per-lease renter, and unlike the $4.99 tier it is priced like what it is: research labour. It also feeds the site the one asset it lacks \u2014 unit-level ground truth and real testimonials.",
+    "kind": "conversion",
+    "status": "candidate",
+    "prefixes": [],
+    "metric": "organic_visitors",
+    "source": "scout:2026-08-03",
+    "evidence": "Demand and framing come from the current NYC moment: <cite index=\"31-3,31-4\">RGB Order #58 sets a 0% adjustment for one- and two-year leases commencing 1 Oct 2026 through 30 Sept 2027, adopted 25 June 2026</cite> and <cite index=\"32-10,32-11\">the 7-1 vote affects nearly one million apartments and is already expected to face a legal challenge</cite> \u2014 which means a wave of renewal offers between now and October that tenants will want checked against their own rent history. https://rentguidelinesboard.cityofnewyork.us/ and https://aalawus.com/nycs-historic-rent-freeze-what-the-2026-rent-guidelines-board-vote-means-for-tenants-and-landlords/ . On the monetization pattern generally, <cite index=\"21-1,21-2\">licensing/packaging proprietary data lets the owner retain the asset while generating revenue, which is especially useful where others will pay for data you already hold</cite>: https://www.forbes.com/sites/douglaslaney/2024/09/26/data-monetization-trends-insights-from-1000-organizations/",
+    "added": "2026-08-03",
+    "activated": null,
+    "revisit_on": null,
+    "retired": null,
+    "notes": "effort: days\nexpected: 20 orders/month at $39 = ~$780/mo within 60 days, from existing traffic plus the /brief/ and Building Report audiences; 60%+ of buyers create an account; 5+ written permission-to-quote outcomes ('found a $412/mo discrepancy') usable as on-page proof. Target 100 orders/mo (~$3.9k) by Q1 2027 if the renewal-season cohort converts.\nfirst step: Write the one-page product spec and the disclaimer language with a tenant-lawyer read-through: state explicitly that this is document retrieval and data interpretation, not legal advice, no representation, no outcome promised \u2014 then publish a single /rent-history-review/ landing page with Stripe checkout and a 5-business-day turnaround, and fulfil the first ten manually before automating anything.",
+    "verdict": null
   }
 ]

@@ -128,6 +128,20 @@ def build_blocks(run_log=None, review_out=None):
                       "sub": "pages that have earned an impression — this is the ceiling "
                              "on everything else",
                       "pct": indexed_pct, "tone": "bad" if indexed_pct < 5 else "info"})
+            # That count on its own reads as a plateau when it is really a
+            # rotation: on 2026-08-04 it held at 89 while nine URLs entered the
+            # set and nine left it. Say which it is, or the number misleads.
+            stable = _last("gsc_serving_stable")
+            ever = _last("gsc_serving_ever")
+            if stable is not None and serving:
+                held = round(100.0 * stable / serving)
+                B.append({"type": "note",
+                          "text": f"{_fmt(stable)} of those {_fmt(serving)} also served "
+                                  f"yesterday ({held}% held); "
+                                  f"{_fmt(_last('gsc_serving_entered'))} entered and "
+                                  f"{_fmt(_last('gsc_serving_left'))} dropped out overnight. "
+                                  f"{_fmt(ever)} distinct pages have served at least once "
+                                  f"since this was first recorded."})
         # Three loose numbers, not a table — four header cells collide at phone
         # width and a one-row table is a table for no reason.
         B.append({"type": "stats", "items": [

@@ -908,3 +908,24 @@
 {"date": "2026-08-04", "technique": "__site__", "metric": "tracked_top3", "value": 0, "meta": {}, "written": "2026-08-04T05:00:05+00:00"}
 {"date": "2026-08-04", "technique": "__site__", "metric": "tracked_ranking", "value": 0, "meta": {}, "written": "2026-08-04T05:00:05+00:00"}
 {"date": "2026-08-04", "technique": "account_lifecycle", "metric": "emails_sent", "value": 1, "meta": {}, "written": "2026-08-04T05:04:45+00:00"}
+{"date": "2026-07-30", "technique": "__site__", "metric": "gsc_serving_ever", "value": 82, "meta": {"backfilled": "from committed gsc_pages.json snapshots"}, "written": "2026-08-04T10:13:17+00:00"}
+{"date": "2026-07-31", "technique": "__site__", "metric": "gsc_serving_stable", "value": 68, "meta": {"backfilled": "from committed gsc_pages.json snapshots"}, "written": "2026-08-04T10:13:17+00:00"}
+{"date": "2026-07-31", "technique": "__site__", "metric": "gsc_serving_entered", "value": 14, "meta": {"backfilled": "from committed gsc_pages.json snapshots"}, "written": "2026-08-04T10:13:17+00:00"}
+{"date": "2026-07-31", "technique": "__site__", "metric": "gsc_serving_left", "value": 14, "meta": {"backfilled": "from committed gsc_pages.json snapshots"}, "written": "2026-08-04T10:13:17+00:00"}
+{"date": "2026-07-31", "technique": "__site__", "metric": "gsc_serving_ever", "value": 96, "meta": {"backfilled": "from committed gsc_pages.json snapshots"}, "written": "2026-08-04T10:13:17+00:00"}
+{"date": "2026-08-01", "technique": "__site__", "metric": "gsc_serving_stable", "value": 68, "meta": {"backfilled": "from committed gsc_pages.json snapshots"}, "written": "2026-08-04T10:13:17+00:00"}
+{"date": "2026-08-01", "technique": "__site__", "metric": "gsc_serving_entered", "value": 10, "meta": {"backfilled": "from committed gsc_pages.json snapshots"}, "written": "2026-08-04T10:13:17+00:00"}
+{"date": "2026-08-01", "technique": "__site__", "metric": "gsc_serving_left", "value": 14, "meta": {"backfilled": "from committed gsc_pages.json snapshots"}, "written": "2026-08-04T10:13:17+00:00"}
+{"date": "2026-08-01", "technique": "__site__", "metric": "gsc_serving_ever", "value": 105, "meta": {"backfilled": "from committed gsc_pages.json snapshots"}, "written": "2026-08-04T10:13:17+00:00"}
+{"date": "2026-08-02", "technique": "__site__", "metric": "gsc_serving_stable", "value": 69, "meta": {"backfilled": "from committed gsc_pages.json snapshots"}, "written": "2026-08-04T10:13:17+00:00"}
+{"date": "2026-08-02", "technique": "__site__", "metric": "gsc_serving_entered", "value": 12, "meta": {"backfilled": "from committed gsc_pages.json snapshots"}, "written": "2026-08-04T10:13:17+00:00"}
+{"date": "2026-08-02", "technique": "__site__", "metric": "gsc_serving_left", "value": 9, "meta": {"backfilled": "from committed gsc_pages.json snapshots"}, "written": "2026-08-04T10:13:17+00:00"}
+{"date": "2026-08-02", "technique": "__site__", "metric": "gsc_serving_ever", "value": 117, "meta": {"backfilled": "from committed gsc_pages.json snapshots"}, "written": "2026-08-04T10:13:17+00:00"}
+{"date": "2026-08-03", "technique": "__site__", "metric": "gsc_serving_stable", "value": 73, "meta": {"backfilled": "from committed gsc_pages.json snapshots"}, "written": "2026-08-04T10:13:17+00:00"}
+{"date": "2026-08-03", "technique": "__site__", "metric": "gsc_serving_entered", "value": 16, "meta": {"backfilled": "from committed gsc_pages.json snapshots"}, "written": "2026-08-04T10:13:17+00:00"}
+{"date": "2026-08-03", "technique": "__site__", "metric": "gsc_serving_left", "value": 8, "meta": {"backfilled": "from committed gsc_pages.json snapshots"}, "written": "2026-08-04T10:13:17+00:00"}
+{"date": "2026-08-03", "technique": "__site__", "metric": "gsc_serving_ever", "value": 133, "meta": {"backfilled": "from committed gsc_pages.json snapshots"}, "written": "2026-08-04T10:13:17+00:00"}
+{"date": "2026-08-04", "technique": "__site__", "metric": "gsc_serving_stable", "value": 80, "meta": {"backfilled": "from committed gsc_pages.json snapshots"}, "written": "2026-08-04T10:13:17+00:00"}
+{"date": "2026-08-04", "technique": "__site__", "metric": "gsc_serving_entered", "value": 9, "meta": {"backfilled": "from committed gsc_pages.json snapshots"}, "written": "2026-08-04T10:13:17+00:00"}
+{"date": "2026-08-04", "technique": "__site__", "metric": "gsc_serving_left", "value": 9, "meta": {"backfilled": "from committed gsc_pages.json snapshots"}, "written": "2026-08-04T10:13:17+00:00"}
+{"date": "2026-08-04", "technique": "__site__", "metric": "gsc_serving_ever", "value": 142, "meta": {"backfilled": "from committed gsc_pages.json snapshots"}, "written": "2026-08-04T10:13:17+00:00"}

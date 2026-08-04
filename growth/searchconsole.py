@@ -15,6 +15,10 @@ Three things get pulled daily:
   page-2 wins   queries at rank 11-20, the cheapest rankings available
   per-page      which URLs earn impressions, and for which queries — written to
                 growth/gsc_pages.json
+  churn         how much of that serving set is the same set as yesterday's.
+                The daily count cannot tell a stable 89 from a rotating sample
+                of 89 out of 47,600; `stable`, `entered`, `left` and `ever` can.
+                See _churn() for why this was added on 2026-08-04.
 
 That last one is tracked in git on purpose. `serving_pages` being 89 says the
 corpus is not indexed; it does not say *which* 89 pages Google chose to serve,
@@ -97,7 +101,7 @@ def collect(days=7):
     pages = sc.query(token, start, end, ["page"], row_limit=5000)
     serving = len(pages)
     page_rows = _page_rows(pages)
-    _save_pages(sc, token, start, end, page_rows, by_query)
+    saved = _save_pages(sc, token, start, end, page_rows, by_query)
     record_owned_visibility(page_rows)
 
     clicks, impressions, avg_pos = sc.totals(rows)   # returns a 3-tuple, not a dict
@@ -117,14 +121,27 @@ def collect(days=7):
             ("tracked_ranking", matched)):
         ledger.record_result(today, "__site__", metric, value)
 
+    # ---- how much of that serving set is the same set as yesterday's.
+    # gsc_serving_pages alone cannot tell 89 pages that hold their ranking
+    # from a rotating sample of 89 out of 47,600 — see _churn().
+    ch = (saved or {}).get("churn") or {}
+    for metric in ("gsc_serving_stable", "gsc_serving_entered",
+                   "gsc_serving_left", "gsc_serving_ever"):
+        if ch.get(metric) is not None:
+            ledger.record_result(today, "__site__", metric, ch[metric])
+
     ledger.write_last_run("searchconsole", {
         "window": f"{start}..{end}", "clicks": clicks,
         "impressions": impressions, "serving_pages": serving,
-        "tracked_ranking": matched, "share_pct": share})
+        "tracked_ranking": matched, "share_pct": share,
+        "serving_stable": ch.get("gsc_serving_stable"),
+        "serving_ever": ch.get("gsc_serving_ever")})
 
     return {"clicks": clicks, "impressions": impressions,
             "serving_pages": serving, "tracked_ranking": matched,
-            "top10": top10, "top3": top3, "share_pct": share}
+            "top10": top10, "top3": top3, "share_pct": share,
+            "serving_stable": ch.get("gsc_serving_stable"),
+            "serving_ever": ch.get("gsc_serving_ever")}
 
 
 def _page_rows(pages):
@@ -216,6 +233,100 @@ def recent_visibility(slug, since=None, window=7):
             "best_position": best("gsc_owned_best_position", min)}
 
 
+# How many URLs of serving history to keep in gsc_pages.json. The file is
+# committed every night, so this is a git-size decision, not a memory one: at
+# ~9 newly-serving URLs a day the cap is years away, and when it is ever hit
+# the least-recently-served entries go first and the count of what was dropped
+# is written into the payload. A silently truncated history would read as
+# "these are all the pages that have ever served", which is the exact wrong
+# conclusion this whole record exists to prevent.
+HISTORY_CAP = 4000
+
+
+def _churn(prev, rows, today):
+    """Fold today's serving set into the persistent per-URL history.
+
+    Why this exists. On 2026-08-04 gsc_serving_pages read 89 for the second day
+    running and looked like a plateau. It was not a plateau: nine URLs had
+    entered the set and nine had left it overnight, and 80 of the 89 were
+    single-address building pages with one or two impressions each. A count of
+    distinct URLs served in a rolling window cannot tell "89 pages hold their
+    ranking" from "Google rotates a sample of 89 through a 47,600-page corpus",
+    and those two call for opposite decisions — the first says publish more of
+    what works, the second says the corpus is too big to be crawled and should
+    be consolidated. So the count is kept, and three numbers that disambiguate
+    it are kept beside it:
+
+      stable   served today AND in the previous snapshot — visibility that
+               survived a day, which is the honest read on what ranks
+      entered  / left   the size of the nightly rotation
+      ever     distinct URLs seen serving since this record began — monotone,
+               so it measures how much of the corpus Google has *ever* shown,
+               which the daily count cannot
+
+    History is {url: [first_seen, last_seen, days_seen]}. `days_seen` counts
+    distinct dates, so re-running the measurement twice in a day does not
+    inflate it, and churn is skipped entirely on a same-day re-run because
+    comparing a snapshot against itself would report a fictional zero rotation.
+
+    Returns (history, churn-metrics dict). Any metric it cannot honestly
+    compute is left out rather than defaulted to zero, because the ledger reads
+    a missing row as "not measured" and a zero as "measured, and it was zero".
+    """
+    hist = dict((prev or {}).get("history") or {})
+    prev_date = (prev or {}).get("date")
+    today_urls = {r["url"] for r in rows}
+
+    out = {"gsc_serving_entered": None, "gsc_serving_left": None,
+           "gsc_serving_stable": None, "gsc_serving_ever": None}
+
+    # The comparison set is "URLs whose last sighting was the previous
+    # snapshot", taken from history rather than from prev["pages"] — that list
+    # is capped at 300 for readability and would understate churn the day the
+    # serving set grows past it.
+    if prev_date and prev_date != today and hist:
+        prev_urls = {u for u, v in hist.items() if v and v[1] == prev_date}
+        if prev_urls:
+            out["gsc_serving_stable"] = len(today_urls & prev_urls)
+            out["gsc_serving_entered"] = len(today_urls - prev_urls)
+            out["gsc_serving_left"] = len(prev_urls - today_urls)
+
+    for url in today_urls:
+        rec = hist.get(url)
+        if not rec:
+            hist[url] = [today, today, 1]
+        elif rec[1] != today:
+            hist[url] = [rec[0], today, rec[2] + 1]
+
+    # Evicted URLs still happened. Carry the running total forward so
+    # `ever` stays monotone — a count that can go *down* because the record
+    # was trimmed is worse than no count, since the only thing it is read for
+    # is whether the corpus is being discovered over time.
+    dropped_before = int(((prev or {}).get("churn") or {}).get("history_dropped_total") or 0)
+    dropped = 0
+    if len(hist) > HISTORY_CAP:
+        keep = sorted(hist.items(), key=lambda kv: (kv[1][1], kv[1][2]),
+                      reverse=True)[:HISTORY_CAP]
+        dropped = len(hist) - len(keep)
+        hist = dict(keep)
+    out["gsc_serving_ever"] = len(hist) + dropped_before + dropped
+    out["history_dropped"] = dropped
+    out["history_dropped_total"] = dropped_before + dropped
+    return hist, out
+
+
+def stable_pages(limit=25):
+    """URLs that have served on the most distinct days — what actually holds.
+
+    The page-level answer to "ignore the rotation, what does this site reliably
+    rank for". Empty until the history in gsc_pages.json has a few days in it.
+    """
+    hist = (load_pages() or {}).get("history") or {}
+    rank = sorted(hist.items(), key=lambda kv: (-kv[1][2], kv[1][0]))
+    return [{"url": u, "days": v[2], "first_seen": v[0], "last_seen": v[1]}
+            for u, v in rank[:limit]]
+
+
 def _save_pages(sc, token, start, end, rows, by_query):
     """Write growth/gsc_pages.json: the served URLs, their queries, and the
     queries we are not tracking at all.
@@ -247,10 +358,17 @@ def _save_pages(sc, token, start, end, rows, by_query):
          if q not in tracked and v.get("impressions", 0) > 0),
         key=lambda x: -x["impressions"])[:60]
 
+    today = ledger.today()
+    # Read the previous snapshot before overwriting it: it carries the serving
+    # history, and losing it would reset "ever" to today's count every night.
+    history, churn = _churn(load_pages(), rows, today)
+
     payload = {
-        "date": ledger.today(),
+        "date": today,
         "window": f"{start}..{end}",
         "serving_pages": len(rows),
+        "churn": churn,
+        "history": history,
         "pages": rows[:300],
         "queries_by_page": {r["url"]: per_page.get(r["url"], []) for r in rows[:60]},
         "discovered_untracked": discovered,

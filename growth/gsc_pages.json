@@ -1,16 +1,16 @@
 {
- "date": "2026-08-03",
+ "date": "2026-08-04",
  "discovered_untracked": [
   {
-   "clicks": 4,
-   "impressions": 18,
+   "clicks": 3,
+   "impressions": 16,
    "position": 3.6,
    "query": "jayshomefinder"
   },
   {
    "clicks": 0,
-   "impressions": 9,
-   "position": 33.7,
+   "impressions": 7,
+   "position": 33.6,
    "query": "228 e 3rd st ny"
   },
   {
@@ -34,28 +34,22 @@
  ],
  "pages": [
   {
-   "clicks": 13,
-   "impressions": 38,
+   "clicks": 12,
+   "impressions": 36,
    "position": 3.4,
    "url": "https://findacrib.com/"
   },
   {
    "clicks": 0,
-   "impressions": 9,
-   "position": 33.7,
+   "impressions": 7,
+   "position": 33.6,
    "url": "https://findacrib.com/building/manhattan/228-e-3rd-st-1003850019/"
   },
   {
-   "clicks": 1,
-   "impressions": 5,
-   "position": 4.4,
-   "url": "https://findacrib.com/building/brooklyn/209-kingsland-ave-3026880038/"
-  },
-  {
    "clicks": 0,
-   "impressions": 3,
-   "position": 34.7,
-   "url": "https://findacrib.com/building/manhattan/180-thompson-st-1005250040/"
+   "impressions": 4,
+   "position": 1.5,
+   "url": "https://findacrib.com/zip/10024/"
   },
   {
    "clicks": 0,
@@ -150,14 +144,14 @@
   {
    "clicks": 0,
    "impressions": 2,
-   "position": 9.5,
-   "url": "https://findacrib.com/building/manhattan/128-e-10th-st-1004650021/"
+   "position": 10,
+   "url": "https://findacrib.com/building/manhattan/1520-york-ave-1015770001/"
   },
   {
    "clicks": 0,
    "impressions": 2,
-   "position": 10,
-   "url": "https://findacrib.com/building/manhattan/1520-york-ave-1015770001/"
+   "position": 37.5,
+   "url": "https://findacrib.com/building/manhattan/180-thompson-st-1005250040/"
   },
   {
    "clicks": 0,
@@ -184,12 +178,6 @@
    "url": "https://findacrib.com/building/queens/144-45-35th-ave-4049950064/"
   },
   {
-   "clicks": 0,
-   "impressions": 2,
-   "position": 4.5,
-   "url": "https://findacrib.com/zip/10455/"
-  },
-  {
    "clicks": 1,
    "impressions": 1,
    "position": 2,
@@ -200,18 +188,6 @@
    "impressions": 1,
    "position": 7,
    "url": "https://findacrib.com/building/manhattan/70-saint-marks-pl-1004490024/"
-  },
-  {
-   "clicks": 0,
-   "impressions": 1,
-   "position": 49,
-   "url": "https://findacrib.com/building/bronx/1005-walton-ave-2024770034/"
-  },
-  {
-   "clicks": 0,
-   "impressions": 1,
-   "position": 10,
-   "url": "https://findacrib.com/building/bronx/1266-to-1268-grand-concourse-2024570040/"
   },
   {
    "clicks": 0,
@@ -234,14 +210,20 @@
   {
    "clicks": 0,
    "impressions": 1,
+   "position": 4,
+   "url": "https://findacrib.com/building/bronx/435-e-136th-st-2022810010/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 1,
    "position": 76,
    "url": "https://findacrib.com/building/bronx/491-gerard-ave-2023517501/"
   },
   {
    "clicks": 0,
    "impressions": 1,
-   "position": 2,
-   "url": "https://findacrib.com/building/bronx/561-cauldwell-ave-2026230054/"
+   "position": 6,
+   "url": "https://findacrib.com/building/bronx/77-to-79-westchester-sq-2040710002/"
   },
   {
    "clicks": 0,
@@ -272,12 +254,6 @@
    "impressions": 1,
    "position": 5,
    "url": "https://findacrib.com/building/brooklyn/1008-fulton-st-3020150023/"
-  },
-  {
-   "clicks": 0,
-   "impressions": 1,
-   "position": 8,
-   "url": "https://findacrib.com/building/brooklyn/105-boerum-pl-3001870005/"
   },
   {
    "clicks": 0,
@@ -314,6 +290,18 @@
    "impressions": 1,
    "position": 9,
    "url": "https://findacrib.com/building/brooklyn/165-hicks-st-3002360083/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 1,
+   "position": 2,
+   "url": "https://findacrib.com/building/brooklyn/168-7th-ave-3009660047/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 1,
+   "position": 43,
+   "url": "https://findacrib.com/building/brooklyn/1833-e-12th-st-3068180082/"
   },
   {
    "clicks": 0,
@@ -408,6 +396,12 @@
   {
    "clicks": 0,
    "impressions": 1,
+   "position": 2,
+   "url": "https://findacrib.com/building/manhattan/115-e-102nd-st-1016300008/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 1,
    "position": 43,
    "url": "https://findacrib.com/building/manhattan/12-e-22nd-st-1008500064/"
   },
@@ -426,6 +420,12 @@
   {
    "clicks": 0,
    "impressions": 1,
+   "position": 2,
+   "url": "https://findacrib.com/building/manhattan/1544-madison-ave-1016100055/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 1,
    "position": 4,
    "url": "https://findacrib.com/building/manhattan/164-e-107th-st-1016340044/"
   },
@@ -438,8 +438,8 @@
   {
    "clicks": 0,
    "impressions": 1,
-   "position": 11,
-   "url": "https://findacrib.com/building/manhattan/203-to-205-mott-st-1004800024/"
+   "position": 25,
+   "url": "https://findacrib.com/building/manhattan/210-e-10th-st-1004510016/"
   },
   {
    "clicks": 0,
@@ -452,12 +452,6 @@
    "impressions": 1,
    "position": 9,
    "url": "https://findacrib.com/building/manhattan/230-e-2nd-st-1003850055/"
-  },
-  {
-   "clicks": 0,
-   "impressions": 1,
-   "position": 48,
-   "url": "https://findacrib.com/building/manhattan/250-w-72nd-st-1011630056/"
   },
   {
    "clicks": 0,
@@ -486,6 +480,12 @@
   {
    "clicks": 0,
    "impressions": 1,
+   "position": 30,
+   "url": "https://findacrib.com/building/manhattan/40-macdougal-st-1005180002/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 1,
    "position": 3,
    "url": "https://findacrib.com/building/manhattan/402-e-10th-st-1003790010/"
   },
@@ -504,12 +504,6 @@
   {
    "clicks": 0,
    "impressions": 1,
-   "position": 6,
-   "url": "https://findacrib.com/building/manhattan/521-e-5th-st-1004010053/"
-  },
-  {
-   "clicks": 0,
-   "impressions": 1,
    "position": 43,
    "url": "https://findacrib.com/building/manhattan/529-e-13th-st-1004070046/"
   },
@@ -518,6 +512,12 @@
    "impressions": 1,
    "position": 7,
    "url": "https://findacrib.com/building/manhattan/59-saint-marks-pl-1004500045/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 1,
+   "position": 7,
+   "url": "https://findacrib.com/building/manhattan/70-e-7th-st-1004480019/"
   },
   {
    "clicks": 0,
@@ -552,8 +552,8 @@
   {
    "clicks": 0,
    "impressions": 1,
-   "position": 2,
-   "url": "https://findacrib.com/zip/10024/"
+   "position": 5,
+   "url": "https://findacrib.com/zip/10455/"
   },
   {
    "clicks": 0,
@@ -571,8 +571,8 @@
  "queries_by_page": {
   "https://findacrib.com/": [
    {
-    "clicks": 4,
-    "impressions": 18,
+    "clicks": 3,
+    "impressions": 16,
     "position": 3.6,
     "query": "jayshomefinder"
    },
@@ -595,25 +595,23 @@
     "query": "jays homefinder"
    }
   ],
-  "https://findacrib.com/building/bronx/1005-walton-ave-2024770034/": [],
   "https://findacrib.com/building/bronx/1006-grant-ave-2024470045/": [],
-  "https://findacrib.com/building/bronx/1266-to-1268-grand-concourse-2024570040/": [],
   "https://findacrib.com/building/bronx/1437-doris-st-2039640026/": [],
   "https://findacrib.com/building/bronx/219-saint-anns-ave-2022650045/": [],
   "https://findacrib.com/building/bronx/224-willis-ave-2022820002/": [],
   "https://findacrib.com/building/bronx/417-e-151st-st-2023740059/": [],
+  "https://findacrib.com/building/bronx/435-e-136th-st-2022810010/": [],
   "https://findacrib.com/building/bronx/491-gerard-ave-2023517501/": [],
   "https://findacrib.com/building/bronx/520-tinton-ave-2025820030/": [],
-  "https://findacrib.com/building/bronx/561-cauldwell-ave-2026230054/": [],
   "https://findacrib.com/building/bronx/582-to-588-union-ave-2026740021/": [],
   "https://findacrib.com/building/bronx/616-e-139th-st-2025510030/": [],
   "https://findacrib.com/building/bronx/707-concourse-vlg-w-2024587501/": [],
+  "https://findacrib.com/building/bronx/77-to-79-westchester-sq-2040710002/": [],
   "https://findacrib.com/building/bronx/80-mcclellan-st-2024780030/": [],
   "https://findacrib.com/building/bronx/888-grand-concourse-2024590034/": [],
   "https://findacrib.com/building/bronx/909-sheridan-ave-2024610035/": [],
   "https://findacrib.com/building/brooklyn/100-steuben-st-3018930047/": [],
   "https://findacrib.com/building/brooklyn/1008-fulton-st-3020150023/": [],
-  "https://findacrib.com/building/brooklyn/105-boerum-pl-3001870005/": [],
   "https://findacrib.com/building/brooklyn/11-halsey-st-3018370100/": [],
   "https://findacrib.com/building/brooklyn/112-emerson-pl-3018940054/": [],
   "https://findacrib.com/building/brooklyn/123-melrose-st-3031520048/": [],
@@ -621,10 +619,11 @@
   "https://findacrib.com/building/brooklyn/143-4th-ave-3009430004/": [],
   "https://findacrib.com/building/brooklyn/15-butler-pl-3011700041/": [],
   "https://findacrib.com/building/brooklyn/165-hicks-st-3002360083/": [],
+  "https://findacrib.com/building/brooklyn/168-7th-ave-3009660047/": [],
+  "https://findacrib.com/building/brooklyn/1833-e-12th-st-3068180082/": [],
   "https://findacrib.com/building/brooklyn/198-to-228-congress-st-3003020009/": [],
   "https://findacrib.com/building/brooklyn/199-30th-st-3006690062/": [],
   "https://findacrib.com/building/brooklyn/20-e-32nd-st-3048850015/": [],
-  "https://findacrib.com/building/brooklyn/209-kingsland-ave-3026880038/": [],
   "https://findacrib.com/building/brooklyn/234-eckford-st-3026220051/": [],
   "https://findacrib.com/building/brooklyn/234-to-238-livingston-st-3001657501/": [],
   "https://findacrib.com/building/brooklyn/251-nassau-ave-3026570034/": [],
@@ -637,9 +636,10 @@
   "https://findacrib.com/building/brooklyn/629-warren-st-3009340063/": [],
   "https://findacrib.com/building/brooklyn/64-herkimer-st-3018650038/": [],
   "https://findacrib.com/building/brooklyn/761-44th-st-3007320053/": [],
+  "https://findacrib.com/building/brooklyn/770-union-st-3009570013/": [],
   "https://findacrib.com/building/brooklyn/825-bedford-ave-3017340058/": [],
   "https://findacrib.com/building/brooklyn/88-eagle-st-3025040015/": [],
-  "https://findacrib.com/building/manhattan/128-e-10th-st-1004650021/": [],
+  "https://findacrib.com/building/manhattan/11-w-17th-st-1008190031/": [],
   "https://findacrib.com/building/manhattan/13-to-27-spring-st-1004930041/": [],
   "https://findacrib.com/building/manhattan/1520-york-ave-1015770001/": [],
   "https://findacrib.com/building/manhattan/180-thompson-st-1005250040/": [],
@@ -648,8 +648,8 @@
   "https://findacrib.com/building/manhattan/228-e-3rd-st-1003850019/": [
    {
     "clicks": 0,
-    "impressions": 9,
-    "position": 33.7,
+    "impressions": 7,
+    "position": 33.6,
     "query": "228 e 3rd st ny"
    }
   ],
@@ -681,8 +681,8 @@
     "query": "jayshomefinder"
    }
   ],
-  "https://findacrib.com/zip/10455/": []
+  "https://findacrib.com/zip/10024/": []
  },
  "serving_pages": 89,
- "window": "2026-07-25..2026-08-01"
+ "window": "2026-07-26..2026-08-02"
 }

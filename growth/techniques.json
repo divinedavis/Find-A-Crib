@@ -15,7 +15,7 @@
     "added": "2026-07-26",
     "activated": "2026-07-26",
     "retired": null,
-    "notes": "",
+    "notes": "2026-08-05 decision (the date set on 2026-07-31, when the retirement rule was moved from owned visitors to owned search impressions): KEPT, not retired. Six consecutive readings of gsc_owned_impressions = 0 over ten days live. Retiring on that would have blamed the content for a structural fault: nothing on findacrib.com linked to /section8/ at all, so it was an orphan discoverable only from sitemap-daily.xml, and Google treats a sitemap-only URL as unimportant. The homepage nav now links it (index.html) and T037 crawl_paths audits that link nightly. NEW DECISION DATE 2026-08-26: if /section8/ still earns zero impressions 21 days after it has a verified inbound link, the fault is the content and it retires then. If the T037 audit still reports it ORPHANED, the app shell never deployed and the clock has not started.",
     "verdict": null,
     "revisit_on": "2026-08-25"
   },
@@ -35,7 +35,7 @@
     "added": "2026-07-26",
     "activated": "2026-07-26",
     "retired": null,
-    "notes": "",
+    "notes": "2026-08-05 decision (the date set on 2026-07-31, when the retirement rule was moved from owned visitors to owned search impressions): KEPT, not retired. Six consecutive readings of gsc_owned_impressions = 0 over ten days live. Retiring on that would have blamed the content for a structural fault: nothing on findacrib.com linked to /brief/ at all, so it was an orphan discoverable only from sitemap-daily.xml, and Google treats a sitemap-only URL as unimportant. The homepage nav now links it (index.html) and T037 crawl_paths audits that link nightly. NEW DECISION DATE 2026-08-26: if /brief/ still earns zero impressions 21 days after it has a verified inbound link, the fault is the content and it retires then. If the T037 audit still reports it ORPHANED, the app shell never deployed and the clock has not started.",
     "verdict": null,
     "revisit_on": "2026-08-25"
   },
@@ -659,6 +659,24 @@
     "revisit_on": null,
     "retired": null,
     "notes": "effort: days\nexpected: 20 orders/month at $39 = ~$780/mo within 60 days, from existing traffic plus the /brief/ and Building Report audiences; 60%+ of buyers create an account; 5+ written permission-to-quote outcomes ('found a $412/mo discrepancy') usable as on-page proof. Target 100 orders/mo (~$3.9k) by Q1 2027 if the renewal-season cohort converts.\nfirst step: Write the one-page product spec and the disclaimer language with a tenant-lawyer read-through: state explicitly that this is document retrieval and data interpretation, not legal advice, no representation, no outcome promised \u2014 then publish a single /rent-history-review/ landing page with Stripe checkout and a 5-business-day turnaround, and fulfil the first ten manually before automating anything.",
+    "verdict": null
+  },
+  {
+    "id": "T037",
+    "slug": "crawl_paths",
+    "name": "Every published section must have an inbound internal link",
+    "hypothesis": "A section reachable only from a sitemap does not get indexed. On 2026-08-05, /section8/ had been live 10 days, rebuilt nightly, listed in sitemap-daily.xml and submitted to IndexNow every night, and had never earned a single Search Console impression \u2014 and nothing on the site linked to it. Every URL that HAS served sits in the interlinked SEO corpus or is linked from the homepage nav. Giving each published section a real inbound link from a page Google already crawls should get it indexed; auditing that link nightly should stop the next section from shipping into the same hole.",
+    "kind": "indexing",
+    "status": "active",
+    "prefixes": [],
+    "metric": "organic_visitors",
+    "source": "seed",
+    "evidence": "/sf/ /la/ /dc/ are the test case already in the data: they are the only non-building URLs besides the homepage, six ZIP hubs and one neighborhood hub to serve at all, and they are the ones the homepage nav links to. 2026 indexing guidance is consistent that Google treats a URL with no internal link as unimportant regardless of sitemap inclusion.",
+    "added": "2026-08-05",
+    "activated": "2026-08-05",
+    "revisit_on": "2026-09-04",
+    "retired": null,
+    "notes": "Audits, never publishes. Reads the ledger's own prefix declarations against the live docroot, so a technique added later is covered without being listed here. Self-links inside a prefix do not count \u2014 a family whose pages only link to each other is exactly the orphan case.",
     "verdict": null
   }
 ]

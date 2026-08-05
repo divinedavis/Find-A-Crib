@@ -80,6 +80,27 @@ SEEDS = [
                     "actually indexed and serving.",
          evidence="IndexNow key already hosted at the docroot; the existing submitter only "
                   "ran on the monthly SEO rebuild, so it fired ~once a month."),
+    dict(slug="crawl_paths", status="active", kind="indexing",
+         name="Every published section must have an inbound internal link",
+         prefixes=[], metric="organic_visitors",
+         hypothesis="A section reachable only from a sitemap does not get indexed. On "
+                    "2026-08-05, /section8/ had been live 10 days, rebuilt nightly, listed in "
+                    "sitemap-daily.xml and submitted to IndexNow every night, and had never "
+                    "earned a single Search Console impression — and nothing on the site "
+                    "linked to it. Every URL that HAS served sits in the interlinked SEO "
+                    "corpus or is linked from the homepage nav. Giving each published section "
+                    "a real inbound link from a page Google already crawls should get it "
+                    "indexed; auditing that link nightly should stop the next section from "
+                    "shipping into the same hole.",
+         evidence="/sf/ /la/ /dc/ are the test case already in the data: they are the only "
+                  "non-building URLs besides the homepage, six ZIP hubs and one neighborhood "
+                  "hub to serve at all, and they are the ones the homepage nav links to. "
+                  "2026 indexing guidance is consistent that Google treats a URL with no "
+                  "internal link as unimportant regardless of sitemap inclusion.",
+         notes="Audits, never publishes. Reads the ledger's own prefix declarations against "
+               "the live docroot, so a technique added later is covered without being "
+               "listed here. Self-links inside a prefix do not count — a family whose pages "
+               "only link to each other is exactly the orphan case."),
     dict(slug="hub_direct_answers", status="active", kind="content",
          prefixes=["/neighborhood/", "/borough/", "/zip/"], metric="owned_visitors",
          name="Direct-answer blocks on hub pages",

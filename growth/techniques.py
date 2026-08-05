@@ -1283,6 +1283,131 @@ def t_city_seo_expansion(ctx):
     return {"ok": not notes, "detail": detail + note, "pages": total + sum(browse.values())}
 
 
+# ------------------------------------------------------- crawl-path auditing
+
+# Pages that stand in for the whole site's link graph. Every page in a
+# generated family shares one template, so a link present on one is present on
+# all of them; reading a capped, sorted sample of each family answers the
+# question in a few dozen file reads instead of 47,600. The cap is per family
+# and the sample is sorted, so this is deterministic — two runs on an unchanged
+# docroot read the same files and reach the same answer.
+def _crawl_sources():
+    """[(family label, glob relative to the docroot, how many to read)]."""
+    src = [("home shell", "index.html", 1),
+           ("guide hub", "guide/index.html", 1),
+           ("nyc browse hub", "buildings/index.html", 1),
+           ("borough hub", "borough/*/index.html", 5),
+           ("zip hub", "zip/*/index.html", 8),
+           ("neighborhood hub", "neighborhood/*/*/index.html", 8),
+           ("building page", "building/*/*/index.html", 8)]
+    for city, rel in CITY_HUB_DIRS.items():
+        src += [(f"{city} shell", f"{city}/index.html", 1),
+                (f"{city} browse hub", f"{city}/buildings/index.html", 1),
+                (f"{city} hub page", f"{rel}/*/index.html", 8)]
+    return src
+
+
+def _crawl_link_audit(docroot, prefixes):
+    """Which URL prefixes have a crawlable inbound link, and from which families.
+
+    Returns ({prefix: {family labels}}, pages read).
+
+    A page inside the prefix it is being scored for does not count as an
+    inbound link. That exclusion is the whole point: the pages of one generated
+    family link to each other, so counting those self-links would report a
+    family as reachable at exactly the moment the family is collectively
+    orphaned — the failure this exists to catch.
+    """
+    import glob
+    found = {p: set() for p in prefixes}
+    read = 0
+    for label, pattern, cap in _crawl_sources():
+        for path in sorted(glob.glob(os.path.join(docroot, pattern)))[:cap]:
+            rel = os.path.relpath(path, docroot)
+            own = "/" + (rel[:-len("index.html")] if rel.endswith("index.html") else rel)
+            try:
+                with open(path, encoding="utf-8", errors="replace") as f:
+                    html = f.read()
+            except OSError:
+                continue
+            read += 1
+            for p in prefixes:
+                if own.startswith(p):
+                    continue
+                if f'href="{p}' in html or f"href='{p}" in html:
+                    found[p].add(label)
+    return found, read
+
+
+def t_crawl_paths(ctx):
+    """Verify every section we publish is reachable by an internal link, not just a sitemap.
+
+    Why this is a technique and not a note. On 2026-08-05 /section8/ had been
+    live and rebuilt nightly for ten days, was in sitemap-daily.xml with an
+    honest lastmod, was submitted to IndexNow every night, and had never once
+    earned a Search Console impression — nor had /brief/. Meanwhile every URL
+    that HAS served (131 building pages, 6 ZIP hubs, one neighborhood hub, and
+    /sf/ /la/ /dc/) sits in the interlinked SEO corpus or is linked from the
+    homepage nav. A grep of the corpus found the reason: nothing on this site
+    linked to /section8/ or /brief/ at all. They were orphans, discoverable
+    only from a sitemap, and current indexing guidance is consistent that
+    Google treats a URL with no internal link as unimportant and may never
+    index it however often it is submitted.
+
+    So the rule this enforces: if an active technique claims a URL prefix, some
+    page outside that prefix must link into it. The prefixes come from the
+    ledger rather than a list here, so a technique added tomorrow is audited
+    the night it goes live without anyone remembering to add it.
+
+    Writes nothing. It reads the live docroot, which is deliberate — the fix
+    for an orphaned section usually lives in the app shells, and this is how a
+    review running on a bare checkout learns whether that fix ever deployed.
+    """
+    import glob
+    claimed = {}
+    for t in ledger.active():
+        for p in t.get("prefixes") or []:
+            claimed.setdefault(p, t["slug"])
+    if not claimed:
+        return {"ok": True, "detail": "no active technique claims a URL prefix"}
+
+    # Only audit sections that exist. A prefix with nothing published under it
+    # is not an orphan, it is unbuilt, and reporting the two the same way would
+    # bury the one that can be fixed. Directories only: "/sf/buildings/" globs
+    # to sf/buildings.min.json otherwise, and a section would read as built
+    # because a data file happens to share its name.
+    live = [p for p in claimed
+            if any(os.path.isdir(m) for m in
+                   glob.glob(os.path.join(ctx.docroot, p.strip("/").replace("/", os.sep) + "*")))]
+    unbuilt = sorted(set(claimed) - set(live))
+    if not live:
+        return {"ok": False,
+                "detail": "no claimed section exists in the docroot" + _stale_note(ctx.docroot)}
+
+    found, read = _crawl_link_audit(ctx.docroot, live)
+    if not read:
+        return {"ok": False, "detail": "no docroot pages readable — has anything deployed?"}
+
+    orphaned = sorted(p for p in live if not found[p])
+    detail = (f"{len(live) - len(orphaned)} of {len(live)} published sections have an inbound "
+              f"internal link ({read} docroot pages read)")
+    # The unbuilt list can run to nine prefixes on a checkout with no corpus,
+    # so it goes last: the orphan names are the finding and must not be pushed
+    # off the end of a phone-width line by a list of things that are merely
+    # absent.
+    tail = f" — not built yet, not audited: {', '.join(unbuilt)}" if unbuilt else ""
+    if orphaned:
+        return {"ok": False, "pages": read,
+                "detail": detail + " — ORPHANED, reachable only from sitemap-daily.xml: "
+                + ", ".join(f"{p} ({claimed[p]})" for p in orphaned) + tail}
+    # Name where the link comes from when there is exactly one source family:
+    # a single thread is the one worth knowing about before it breaks.
+    thin = sorted(f"{p} ← {next(iter(found[p]))}" for p in live if len(found[p]) == 1)
+    if thin:
+        detail += " — single inbound source: " + ", ".join(thin)
+    return {"ok": True, "detail": detail + tail, "pages": read}
+
+
 REGISTRY = {
     "city_guides": t_city_guides,
     "city_seo_expansion": t_city_seo_expansion,
@@ -1291,10 +1416,13 @@ REGISTRY = {
     "daily_brief": t_daily_brief,
     "llms_txt": t_llms_txt,
     "sitemap_daily": t_sitemap_daily,
+    "crawl_paths": t_crawl_paths,
     "indexnow": t_indexnow,
 }
 
 # Order matters: content first, then the sitemap that lists it, then the ping
-# that announces it.
+# that announces it. crawl_paths runs after the content techniques so it audits
+# what they published, and before indexnow so a run that is about to submit an
+# orphan says so in the same log.
 ORDER = ["fresh_section8", "daily_brief", "hub_direct_answers", "city_guides",
-         "city_seo_expansion", "llms_txt", "sitemap_daily", "indexnow"]
+         "city_seo_expansion", "llms_txt", "sitemap_daily", "crawl_paths", "indexnow"]

@@ -1589,6 +1589,12 @@
   // arrive fine and the stream just ends early — so both live in the try.
   const BUILDINGS_STALL_MS = 15000;
   const BUILDINGS_ATTEMPTS = 3;
+
+  // Parsing stays on the main thread on purpose. Moving it into a worker was
+  // measured and is slower: decode+parse of this payload costs ~100 ms, but
+  // handing 47k objects back across postMessage costs ~248 ms in structured
+  // clone alone. The parse was never the freeze — see the cluster chunking note
+  // further down for where the load-time cost actually lives.
   async function fetchBuildings(attempt = 0) {
     try {
       const ctl = new AbortController();
@@ -1689,6 +1695,15 @@
   // ---------- markers ----------
   const cluster = L.markerClusterGroup({
     chunkedLoading: true,
+    // Indexing 47k markers into the cluster tree is where load-time actually
+    // goes — ~2 s of work, dwarfing the parse (~100 ms) and the marker build
+    // (~60 ms). chunkedLoading already splits it, but the stock 200 ms slice
+    // is four times the 50 ms threshold at which a task starts being felt as
+    // a freeze, so each slice showed up as jank. Cutting the slice to 40 ms
+    // keeps every one of them under that line; the extra yields cost a little
+    // total time in exchange for a page that stays responsive throughout.
+    chunkInterval: 40,
+    chunkDelay: 10,
     spiderfyOnMaxZoom: true,
     maxClusterRadius: 60,
     iconCreateFunction: (c) => {

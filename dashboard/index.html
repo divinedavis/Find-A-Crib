@@ -724,13 +724,32 @@
     return pr;
   }
 
+  // A feed fetch with no ceiling is what turns a slow request into a frozen
+  // board: the switcher stays disabled for as long as the request runs, and a
+  // request that never settles disables it forever. Both feeds normally answer
+  // in ~0.2 s; one was seen taking 10.1 s in the access log. 20 s is well past
+  // any honest response and still short enough to hand control back.
+  var FEED_TIMEOUT_MS = 20000;
+  function feedFetch(url, token){
+    var opts = { headers:{ Authorization:'Bearer '+token } };
+    // AbortSignal.timeout is unsupported on older Safari, which is exactly
+    // where a stalled request would otherwise hang hardest.
+    if(typeof AbortSignal!=='undefined' && AbortSignal.timeout){
+      opts.signal = AbortSignal.timeout(FEED_TIMEOUT_MS);
+      return fetch(url, opts);
+    }
+    var ctl = new AbortController();
+    opts.signal = ctl.signal;
+    var timer = setTimeout(function(){ ctl.abort(); }, FEED_TIMEOUT_MS);
+    return fetch(url, opts).finally(function(){ clearTimeout(timer); });
+  }
+
   async function _load(force){
     if(!session) return 'signin';
     if(!force && cache[siteKey]){ paint(cache[siteKey]); return 'ok'; }
     var res;
     try{
-      res = await fetch(SITES[siteKey].endpoint,
-                        { headers:{ Authorization:'Bearer '+(await token()) } });
+      res = await feedFetch(SITES[siteKey].endpoint, await token());
     }catch(e){ return 'error'; }
     // A 401 means this token is dead, not that the owner is signed out. Force
     // one refresh and retry before anything can show him the sign-in card.
@@ -740,8 +759,7 @@
       if(fresh){
         session = fresh;
         try{
-          res = await fetch(SITES[siteKey].endpoint,
-                            { headers:{ Authorization:'Bearer '+fresh.access_token } });
+          res = await feedFetch(SITES[siteKey].endpoint, fresh.access_token);
         }catch(e){ return 'error'; }
       }
     }
@@ -818,18 +836,32 @@
     b.onclick=async function(){
       var next=b.getAttribute('data-site');
       if(next===siteKey || !SITES[next]) return;
+      var prev=siteKey;
       siteKey=next;
       try{ localStorage.setItem('dash.site', siteKey); }catch(e){}
       history.replaceState(null,'', location.pathname+(siteKey==='fac'?'':'?site='+siteKey));
       applyShell();
       switchBusy(true);
-      var r = await load(false);
-      switchBusy(false);
+      var r;
+      // finally, not a bare call: switchBusy(false) has to run even if load()
+      // rejects, or the buttons stay disabled and neither site can be reached
+      // again without a reload. That was the whole "switching hangs" symptom.
+      try{ r = await load(false); }
+      catch(e){ r = 'error'; }
+      finally{ switchBusy(false); }
       if(r!=='ok'){
-        // Don't throw the owner back to the sign-in card over one bad fetch —
-        // the other site's data is still on screen and still true.
+        // Go back to the site whose numbers are actually on screen. applyShell()
+        // already swapped the title and nav, so staying here would caption the
+        // previous site's tiles with this one's name — mislabelled data is worse
+        // than an error. Don't throw the owner back to the sign-in card either:
+        // the data still showing is real, it just isn't the site he asked for.
+        siteKey=prev;
+        try{ localStorage.setItem('dash.site', siteKey); }catch(e){}
+        history.replaceState(null,'', location.pathname+(siteKey==='fac'?'':'?site='+siteKey));
+        applyShell();
+        if(cache[siteKey]) paint(cache[siteKey]);
         el('updated').textContent = r==='error'
-          ? 'Couldn’t load '+SITES[siteKey].name+' just now — try again in a moment.'
+          ? 'Couldn’t load '+SITES[next].name+' just now — still showing '+SITES[prev].name+'. Try again in a moment.'
           : 'Session expired — reload to sign in again.';
       }
       window.scrollTo({top:0,behavior:'smooth'});

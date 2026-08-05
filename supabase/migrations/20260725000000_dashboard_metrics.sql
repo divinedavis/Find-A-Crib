@@ -159,7 +159,14 @@ select jsonb_build_object(
                        = (now() at time zone 'America/New_York')::date),
     'new_visitors',       (select count(*) from today_new),
     'new_opened_listing', (select count(*) from today_new t
-                             where t.visitor_id in (select visitor_id from openers_today))
+                             where t.visitor_id in (select visitor_id from openers_today)),
+    -- accounts created today. Same Find A Crib footprint filter as 'accounts'
+    -- above (the auth is shared), dated off auth.users.created_at in NY time.
+    'signups', (select count(*) from auth.users au
+                  where au.id <> 'af2629f7-1121-4bee-8a2b-cede9318c864'
+                    and au.id in (select user_id from fac_users)
+                    and (au.created_at at time zone 'America/New_York')::date
+                      = (now() at time zone 'America/New_York')::date)
   ),
   -- Real revenue only: plan 'plus' WITH a live Stripe subscription, excluding
   -- comped (plan 'comp') accounts and the owner's own test sub. Comps are

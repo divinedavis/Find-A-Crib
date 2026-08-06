@@ -678,5 +678,23 @@
     "retired": null,
     "notes": "Audits, never publishes. Reads the ledger's own prefix declarations against the live docroot, so a technique added later is covered without being listed here. Self-links inside a prefix do not count \u2014 a family whose pages only link to each other is exactly the orphan case.",
     "verdict": null
+  },
+  {
+    "id": "T038",
+    "slug": "org_seat_licenses_legal_aid",
+    "name": "Annual organization licenses for legal-aid and tenant-org teams",
+    "hypothesis": "Every existing revenue path here asks an individual to pay: a once-per-lease renter ($4.99/mo, 0 conversions), a lone lawyer ($49/mo, unbuilt), or a developer who never finds the API. The buyers who actually have budgets and a recurring, daily need for 'is this address regulated, who owns it, what is its violation history' are institutions: NYC Right to Counsel / HRA-contracted eviction-defense providers, legal services offices in SF, LA and DC, tenant unions, and city council constituent-services staff. They buy annually, on invoice, with grant or city-contract money, at $600-$2,400/yr for a handful of named seats plus a bulk-lookup allowance \u2014 and they do not churn mid-grant-cycle. 30 orgs at $1,200/yr is ~$3k/mo of predictable revenue from ~30 conversations, versus 2,000 consumer subs. Second-order benefit: these organizations publish resource pages, which is exactly the off-site validation that industry AEO analysis says AI answer engines require (megrisoft.com, Feb 2026).",
+    "kind": "conversion",
+    "status": "candidate",
+    "prefixes": [],
+    "metric": "organic_visitors",
+    "source": "scout:2026-08-06",
+    "evidence": "",
+    "added": "2026-08-06",
+    "activated": null,
+    "revisit_on": null,
+    "retired": null,
+    "notes": "",
+    "verdict": null
   }
 ]

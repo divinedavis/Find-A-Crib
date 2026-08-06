@@ -149,6 +149,18 @@ channel between it and production:** it pushes ledger and code changes, and
 measurements back. The droplet's daily pass therefore runs at 05:00 ET, an hour
 ahead of the review, so the agent always reads fresh numbers.
 
+**What a git push does and does not deploy.** Only two paths reach the docroot
+on their own: `growth_daily.py build --deploy` rsyncs `growth_out/`, and
+`scripts/refresh_seo.sh` rsyncs `build_seo.py`'s `seo/`. **Nothing in either
+cron deploys the root `index.html`** — the app shell is copied to the docroot by
+hand ("no build step; serve the directory statically", above). So a change the
+review agent pushes to `index.html` sits in git until someone deploys the app,
+while a change to `build_seo.py` or `growth/techniques.py` goes live the next
+morning. This is not obvious from the checkout and has already cost one review
+cycle: on 2026-08-05 the review fixed two orphaned sections by adding links to
+`index.html`, and the 2026-08-06 audit correctly still reported them orphaned.
+Site-wide crawl paths belong in `build_seo.py`, not the app shell.
+
 Everything is driven by a **ledger** (`growth/techniques.json`), so the ledger —
 not the code — decides what runs. Flipping a technique to `retired` stops it
 without a deploy, which is what lets the review loop prune autonomously.

@@ -100,6 +100,36 @@ STABILIZED_DEF = ("Rent stabilization caps how much the rent can rise each year 
                   "Rent Guidelines Board sets the limit — and gives the tenant the right "
                   "to renew the lease.")
 
+# The crawl path from this corpus into the two sections the growth build
+# publishes. Why it lives here and not in index.html: on 2026-08-06 /section8/
+# and /brief/ had been rebuilt nightly for eleven days, sat in sitemap-daily.xml
+# with an honest lastmod and were submitted to IndexNow every night, and had
+# still never earned a single Search Console impression. The reason was that
+# nothing a crawler reaches linked to either one. The 2026-08-05 review put the
+# links in the repo's index.html, but neither droplet cron deploys that file —
+# growth_daily.py rsyncs only growth_out/ and refresh_seo.sh only seo/ — so the
+# fix could not reach production and the 2026-08-06 audit still reported both
+# sections orphaned. This corpus is the part of the site Google actually crawls,
+# and refresh_seo.sh does deploy it, so the link belongs here.
+#
+# It also repairs a one-way reference: /section8/<borough>/ already links out to
+# /borough/<slug>/ and nothing linked back. A hub whose spokes never reinforce it
+# is the shape that gets dropped from the index.
+#
+# Deliberately quotes no counts. The voucher pages are rebuilt by the growth
+# build (growth/techniques.py t_fresh_section8) from a feed this pipeline never
+# reads, hours after this one runs, so any number here would be a claim this
+# build cannot substantiate. The destination carries the live figures; this
+# block only has to be true and get a crawler there.
+VOUCHER_XLINK = (
+    "<h2>Renting with a housing voucher?</h2>"
+    "<p>Find A Crib rebuilds a list every night of the DHCR-registered "
+    "rent-stabilized buildings that have an apartment listed for Section 8 and "
+    "other housing vouchers, from the overnight AffordableHousing.com feed — "
+    "<a href='/section8/'>see the current voucher listings</a>, or read the "
+    "<a href='/brief/'>daily brief</a> on which buildings came on and off the "
+    "market.</p>")
+
 BORO_NAME = {"M": "Manhattan", "Bk": "Brooklyn", "Q": "Queens",
              "Bx": "the Bronx", "SI": "Staten Island"}
 BORO_SLUG = {"M": "manhattan", "Bk": "brooklyn", "Q": "queens",
@@ -913,7 +943,8 @@ def main():
                     "rent history.",
                 ])
                 + f"<a class='cta' href='/'>Explore {esc(nb)} on the map →</a>"
-                f"<h2>All {n:,} buildings</h2><div class='cols'>{links}</div>")
+                + VOUCHER_XLINK
+                + f"<h2>All {n:,} buildings</h2><div class='cols'>{links}</div>")
         nb_faq = [(f"How many rent-stabilized buildings are in {nb}, {boroname}?",
                    f"There are {n:,} registered rent-stabilized buildings in {nb}, {boroname}, "
                    f"according to NY State DHCR registration data.")]
@@ -957,7 +988,8 @@ def main():
                 + f"<a class='cta' href='/'>Open the map →</a>"
                 f"<p><a href='{boro_list_url(boro,'largest')}'>Largest buildings in {esc(boroname)}</a> "
                 f"&nbsp;·&nbsp; <a href='{boro_list_url(boro,'oldest')}'>Oldest buildings</a></p>"
-                f"<h2>Neighborhoods</h2><div class='cols'>{links}</div>")
+                + VOUCHER_XLINK
+                + f"<h2>Neighborhoods</h2><div class='cols'>{links}</div>")
         boro_faq = [(f"How many rent-stabilized buildings are in {boroname}?",
                      f"There are {total:,} registered rent-stabilized buildings across {len(nbs)} "
                      f"neighborhoods in {boroname}, according to NY State DHCR registration data.")]
@@ -988,7 +1020,8 @@ def main():
                f"<h1>NYC rent-stabilized buildings</h1><p class='lead'>Browse all "
                f"{len(blds):,} DHCR rent-stabilized buildings by borough and neighborhood, "
                f"or <a href='/'>open the interactive map</a>. See which buildings were "
-               f"<a href='/available/'>recently advertised for rent →</a></p>" + hub_links
+               f"<a href='/available/'>recently advertised for rent →</a></p>"
+               + VOUCHER_XLINK + hub_links
                # /buildings/ is a priority-0.9 page and one of the few places a
                # crawler reliably reaches. The other three cities' browse tiers
                # hang off it so they are not dependent on the city guides alone
@@ -1033,7 +1066,8 @@ def main():
                 ])
                 + (f"<h2>Neighborhoods in {esc(z)}</h2><div class='cols'>{nb_links}</div>" if nb_links else "")
                 + f"<a class='cta' href='/'>Explore ZIP {esc(z)} on the map →</a>"
-                f"<h2>All {n:,} buildings in {esc(z)}</h2><div class='cols'>{links}</div>")
+                + VOUCHER_XLINK
+                + f"<h2>All {n:,} buildings in {esc(z)}</h2><div class='cols'>{links}</div>")
         zip_faq = [(f"How many rent-stabilized buildings are in ZIP code {z}?",
                     f"There are {n:,} registered rent-stabilized buildings in ZIP code {z} "
                     f"({boroname}), according to NY State DHCR registration data.")]

@@ -1397,9 +1397,17 @@ def t_crawl_paths(ctx):
     # absent.
     tail = f" — not built yet, not audited: {', '.join(unbuilt)}" if unbuilt else ""
     if orphaned:
+        # Say how old the corpus is, because "still orphaned" has two very
+        # different causes and the reader cannot tell them apart otherwise: the
+        # fix is wrong, or the fix has not deployed. The inbound links now live
+        # in build_seo.py's hub tier (VOUCHER_XLINK), which reaches the docroot
+        # only when refresh_seo.sh runs — and on 2026-08-06 that pipeline had
+        # not written for 5 days. Without this the next review re-derives the
+        # deploy gap from scratch, which has already cost one cycle.
         return {"ok": False, "pages": read,
                 "detail": detail + " — ORPHANED, reachable only from sitemap-daily.xml: "
-                + ", ".join(f"{p} ({claimed[p]})" for p in orphaned) + tail}
+                + ", ".join(f"{p} ({claimed[p]})" for p in orphaned)
+                + _stale_note(ctx.docroot) + tail}
     # Name where the link comes from when there is exactly one source family:
     # a single thread is the one worth knowing about before it breaks.
     thin = sorted(f"{p} ← {next(iter(found[p]))}" for p in live if len(found[p]) == 1)

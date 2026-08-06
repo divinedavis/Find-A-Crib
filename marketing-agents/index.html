@@ -156,6 +156,9 @@
   .rr-note { font-size: 11.5px; color: var(--ink-2); margin-top: 4px; }
   .rr-none { font-size: 11.5px; color: var(--ink-2); margin-top: 7px; line-height: 1.5;
     padding-left: 9px; border-left: 2px solid var(--line-strong); }
+  .blds { font-size: 11.5px; color: var(--ink-2); margin-top: 7px; line-height: 1.55; }
+  .blds b { color: var(--ink); font-weight: 700; }
+  .blds a { color: inherit; text-decoration: underline; text-decoration-style: dotted; }
   .th-sub { text-transform: none; letter-spacing: 0; font-weight: 600; opacity: .75; }
   .banner { background: var(--blue-soft); border: 1px solid var(--blue); border-radius: 12px;
     padding: 14px 16px; margin: 0 0 18px; font-size: 14px; line-height: 1.6; color: var(--ink); }
@@ -379,6 +382,7 @@
     }
     if (!q) return true;
     var hay = [a.name, a.contact, a.address, a.email, a.website, a.agency, (a.tags||[]).join(' '), a.about,
+               (a.buildings||[]).map(function(b){ return b.name + ' ' + b.address; }).join(' '),
                a.rerentals ? 're-rentals rerentals available units ' + a.rerentals.url : '']
       .join(' ').toLowerCase();
     return q.split(/\s+/).every(function(w){ return hay.indexOf(w) !== -1; });
@@ -431,6 +435,18 @@
           (!a.rerentals
             ? '<div class="rr-none">No public listings page — their site sells to developers, ' +
               'not renters. Call or email and ask about re-rentals and waitlists.</div>'
+            : '') +
+          (a.buildings && a.buildings.length
+            ? '<div class="blds"><b>Ran the lottery for:</b> ' +
+                a.buildings.map(function(b){
+                  var label = esc(b.name) + ' · ' + b.units + ' units · ' + b.year;
+                  return b.lottery_id
+                    ? '<a href="https://housingconnect.nyc.gov/PublicWeb/details/' + encodeURIComponent(b.lottery_id) +
+                        '" target="_blank" rel="noopener" data-out="lottery" title="' + esc(b.address) + '">' +
+                        label + '</a>'
+                    : '<span title="' + esc(b.address) + '">' + label + '</span>';
+                }).join('<br>') +
+              '</div>'
             : '') +
           (a.about ? '<br><button class="about-btn" type="button">What they do ▾</button>' : '') +
         '</td>' +

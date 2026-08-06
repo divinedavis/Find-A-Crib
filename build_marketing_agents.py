@@ -22,6 +22,10 @@ OUT = "marketing_agents.json"
 # Hand-curated re-rental listing pages, merged in on top of the scrape. HPD only
 # publishes a corporate homepage, which is almost never where units get posted.
 RERENTALS = "rerental_pages.json"
+# Hand-curated building -> agent attributions. NYC publishes no such mapping: the
+# Housing Connect datasets and API have no agent field, so each one is sourced by
+# hand from the agent's portfolio page or the lottery's "c/o <agent>" mail address.
+BUILDINGS = "agent_buildings.json"
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/126.0 Safari/537.36")
 
@@ -138,15 +142,31 @@ def main():
             print(f"  ⚠ re-rental entry has no matching agent: {name!r}")
     matched = sum(1 for a in agents if a.get("rerentals"))
 
+    # Merge the curated building attributions, same exact-name match as above.
+    try:
+        ab = json.load(open(BUILDINGS))
+    except FileNotFoundError:
+        ab = {"agents": {}, "checked": None}
+    for name, blds in ab.get("agents", {}).items():
+        if name in by_name:
+            by_name[name]["buildings"] = sorted(blds, key=lambda b: -(b.get("units") or 0))
+        else:
+            print(f"  ⚠ building entry has no matching agent: {name!r}")
+    with_blds = sum(1 for a in agents if a.get("buildings"))
+    n_blds = sum(len(a.get("buildings") or ()) for a in agents)
+
     agents.sort(key=lambda a: re.sub(r'^[^A-Za-z]+', '', a["name"]).lower() or a["name"].lower())
     json.dump({"source": SRC,
                "fetched": datetime.date.today().isoformat(),
                "count": len(agents),
                "rerental_count": matched,
+               "building_agent_count": with_blds,
+               "building_count": n_blds,
                "agents": agents},
               open(OUT, "w"), indent=1, ensure_ascii=False)
     print(f"wrote {OUT}: {len(agents)} marketing agents, "
-          f"{matched} with a re-rental listing page")
+          f"{matched} with a re-rental listing page, "
+          f"{n_blds} buildings attributed across {with_blds} agents")
 
 
 if __name__ == "__main__":

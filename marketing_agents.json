@@ -422,7 +422,16 @@
     "last_ok": "2026-08-06",
     "unit_count": 11,
     "checked": "2026-08-06"
-   }
+   },
+   "buildings": [
+    {
+     "name": "Hoyt & Horn",
+     "address": "210 Livingston St (45 Hoyt St), Brooklyn",
+     "units": 74,
+     "year": 2017,
+     "source": "https://www.housingpartnership.com/projects/hoyt-horn (Inclusionary Housing administering agent)"
+    }
+   ]
   },
   {
    "name": "iAfford NY",
@@ -574,7 +583,25 @@
     "units_seen": false,
     "last_ok": "2026-08-06",
     "checked": "2026-08-06"
-   }
+   },
+   "buildings": [
+    {
+     "name": "5Pointz LIC",
+     "address": "22-44 Jackson Ave, Long Island City",
+     "units": 337,
+     "year": 2021,
+     "lottery_id": 1977,
+     "source": "https://mgnyconsulting.com/results/properties/5-pointz-long-island-city/"
+    },
+    {
+     "name": "The Brooklyn Tower",
+     "address": "55 Fleet St (9 DeKalb Ave), Brooklyn",
+     "units": 120,
+     "year": 2023,
+     "lottery_id": 3590,
+     "source": "https://mgnyconsulting.com/results/properties/the-brooklyn-tower/"
+    }
+   ]
   },
   {
    "name": "MHANY Management, Inc.",
@@ -607,7 +634,17 @@
     "MWBE",
     "Administering agent"
    ],
-   "about": "Micki Garcia Realty is a minority, women owned family business. Since our inception in 2001; we have provided exceptional services with a culture centered around professionalism and community. MGR has built long lasting institutional partnerships with numerous government agencies. Our highly trained team provides time efficient marketing and lease up strategies, re-rental services, and recertification services according to agency guidelines. As consultants, we are well versed in all sides of the marketing process and candidate approval selection guidelines. MGR is committed to ensure that your development follows and meets all applicable requirements from but not limited to, HPD, HDC, HCR, and any HUD regulatory agreement. MGR in addition qualifies to be a Monitoring Agent and Administrative Agent on developments throughout all boroughs. Our strategic formulas and organizational framework provide clients with a measurable time frame to accomplish specific objectives resulting in mutual success. We consider ourselves to be an extended component of our client’s business. Operating with integrity, dependability, and following through on our commitments."
+   "about": "Micki Garcia Realty is a minority, women owned family business. Since our inception in 2001; we have provided exceptional services with a culture centered around professionalism and community. MGR has built long lasting institutional partnerships with numerous government agencies. Our highly trained team provides time efficient marketing and lease up strategies, re-rental services, and recertification services according to agency guidelines. As consultants, we are well versed in all sides of the marketing process and candidate approval selection guidelines. MGR is committed to ensure that your development follows and meets all applicable requirements from but not limited to, HPD, HDC, HCR, and any HUD regulatory agreement. MGR in addition qualifies to be a Monitoring Agent and Administrative Agent on developments throughout all boroughs. Our strategic formulas and organizational framework provide clients with a measurable time frame to accomplish specific objectives resulting in mutual success. We consider ourselves to be an extended component of our client’s business. Operating with integrity, dependability, and following through on our commitments.",
+   "buildings": [
+    {
+     "name": "The Victoria Tower Residences",
+     "address": "230 W 126th St, Manhattan",
+     "units": 102,
+     "year": 2021,
+     "lottery_id": 2322,
+     "source": "Paper applications mailed to 'Victoria Tower c/o Micki Garcia Realty, 11 East 125th Street'"
+    }
+   ]
   },
   {
    "name": "MNS",
@@ -786,7 +823,17 @@
    "tags": [
     "Administering agent"
    ],
-   "about": "As an Administering Agent, Reside Affordable's mission is committed in delivering affordable housing opportunities to all New Yorker in need of permanent housing. New Yorkers in need AND developers waiting for their investments' return, are both winners when choosing Reside Affordable. Speed, efficiency, simplicity, and compliance combined will give you the \"Reside Experience.\" The proof is in the thousands of New Yorkers who now have a proper place to call home."
+   "about": "As an Administering Agent, Reside Affordable's mission is committed in delivering affordable housing opportunities to all New Yorker in need of permanent housing. New Yorkers in need AND developers waiting for their investments' return, are both winners when choosing Reside Affordable. Speed, efficiency, simplicity, and compliance combined will give you the \"Reside Experience.\" The proof is in the thousands of New Yorkers who now have a proper place to call home.",
+   "buildings": [
+    {
+     "name": "The Lotus",
+     "address": "255 E 39th St, Manhattan",
+     "units": 48,
+     "year": 2026,
+     "lottery_id": 7372,
+     "source": "Paper applications mailed to 'The Lotus c/o Reside Affordable, 349 Keap Street'"
+    }
+   ]
   },
   {
    "name": "Reside New York LLC",
@@ -1199,5 +1246,7 @@
    ],
    "about": "The founder Anthony Verrelli, Esq. has over 25 years of experience representing developers in the 421a and 485x tax abatement programs in the NYC area. Our goal at YNH, LLC is to provide assistance and guidance to tenants and developers in the tax abatement process. Our team takes great pride in participating in the great partnership between HPD and developers in the placing of tenants in affordable housing throughout the City of New York. Your Neighborhood Housing is open to being hired by outside teams."
   }
- ]
+ ],
+ "building_agent_count": 4,
+ "building_count": 5
 }

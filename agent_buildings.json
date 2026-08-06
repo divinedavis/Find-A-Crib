@@ -1,0 +1,69 @@
+{
+ "_comment": [
+  "Curated map of HPD marketing agents -> the buildings whose lotteries they actually ran.",
+  "",
+  "Why this is hand-curated and not scraped: NYC publishes no building->agent mapping anywhere.",
+  "The two Housing Connect open datasets (nibs-na6y 'Advertised Lotteries by Building' and",
+  "vy5i-a666 'by Lottery') carry unit counts, AMI bands and dates but no agent column, and the",
+  "Housing Connect SPA's own API has no agent field either. HPD's advertisement PDFs name the",
+  "program (LIHTC / 421-a / IH) and a phone number, not the firm. So the only reliable sources",
+  "are the agent's own portfolio page, the lottery microsite, or the 'c/o <agent>' line in the",
+  "paper-application mailing address.",
+  "",
+  "Every entry below cites where the attribution came from. Do not add a building on the",
+  "strength of a news article that merely names the developer - developer != marketing agent.",
+  "",
+  "This is a partial map, seeded from the Rose Associates NY portfolio (rosenyc.com/communities).",
+  "Units = the income-restricted count in that lottery, not the building's total unit count."
+ ],
+ "checked": "2026-08-06",
+ "agents": {
+  "MGNY Consulting Corp.": [
+   {
+    "name": "The Brooklyn Tower",
+    "address": "55 Fleet St (9 DeKalb Ave), Brooklyn",
+    "units": 120,
+    "year": 2023,
+    "lottery_id": 3590,
+    "source": "https://mgnyconsulting.com/results/properties/the-brooklyn-tower/"
+   },
+   {
+    "name": "5Pointz LIC",
+    "address": "22-44 Jackson Ave, Long Island City",
+    "units": 337,
+    "year": 2021,
+    "lottery_id": 1977,
+    "source": "https://mgnyconsulting.com/results/properties/5-pointz-long-island-city/"
+   }
+  ],
+  "Micki Garcia Realty": [
+   {
+    "name": "The Victoria Tower Residences",
+    "address": "230 W 126th St, Manhattan",
+    "units": 102,
+    "year": 2021,
+    "lottery_id": 2322,
+    "source": "Paper applications mailed to 'Victoria Tower c/o Micki Garcia Realty, 11 East 125th Street'"
+   }
+  ],
+  "Reside Affordable Inc": [
+   {
+    "name": "The Lotus",
+    "address": "255 E 39th St, Manhattan",
+    "units": 48,
+    "year": 2026,
+    "lottery_id": 7372,
+    "source": "Paper applications mailed to 'The Lotus c/o Reside Affordable, 349 Keap Street'"
+   }
+  ],
+  "Housing Partnership Development Corporation": [
+   {
+    "name": "Hoyt & Horn",
+    "address": "210 Livingston St (45 Hoyt St), Brooklyn",
+    "units": 74,
+    "year": 2017,
+    "source": "https://www.housingpartnership.com/projects/hoyt-horn (Inclusionary Housing administering agent)"
+   }
+  ]
+ }
+}

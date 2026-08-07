@@ -130,6 +130,44 @@ VOUCHER_XLINK = (
     "<a href='/brief/'>daily brief</a> on which buildings came on and off the "
     "market.</p>")
 
+# The same crawl path, for the three city browse hubs — and the reason it is a
+# second string rather than a reuse of VOUCHER_XLINK.
+#
+# Why it exists at all: as of 2026-08-07 this is the ONLY inbound link into
+# /section8/ and /brief/ that can actually reach production. VOUCHER_XLINK above
+# lives in the NYC hub tier, which main() writes into seo/ and which reaches the
+# docroot only when scripts/refresh_seo.sh runs — and that pipeline has not
+# written since 2026-08-01. city_hub_docs() is different: the daily growth build
+# imports it from a fresh git checkout every night and rsyncs the result into the
+# docroot itself (growth/techniques.py: _publish_stranded_city_hubs), so a change
+# here deploys on the next 05:40 UTC run whether or not the SEO pipeline ever
+# recovers. Two consecutive reviews shipped this fix into files no cron deploys;
+# this is the same fix routed through the path that demonstrably works.
+#
+# Why the wording differs. The voucher feed is New York City only — it is built
+# from DHCR registrations and the AffordableHousing.com feed, and there is no
+# equivalent for San Francisco, Los Angeles or Washington DC. Dropping the NYC
+# block verbatim onto a San Francisco page would imply SF voucher coverage that
+# does not exist, so the city and the gap are both named outright. A reader who
+# is not in New York should be able to tell in one sentence that this is not for
+# them; that is worth more than the click.
+#
+# On the three browse hubs only, not the 252 place pages under them. The browse
+# hub already carries an "Other cities" section, so a cross-city block belongs
+# there and nowhere else; repeating a New York block on every San Francisco
+# neighborhood page would be boilerplate on the thinner tier, which is the
+# duplication that plausibly drives the serving-set churn. One good link from a
+# priority-0.9 page two clicks from /sf/ (which serves) beats 252 weak ones.
+CITY_VOUCHER_XLINK = (
+    "<h2>New York City: apartments listed for housing vouchers</h2>"
+    "<p>Find A Crib's voucher feed covers New York City only — every night it "
+    "rebuilds the list of DHCR-registered rent-stabilized buildings with an "
+    "apartment listed for Section 8 and other housing vouchers, from the "
+    "overnight AffordableHousing.com feed. "
+    "<a href='/section8/'>See the current New York City voucher listings</a>, or "
+    "read the <a href='/brief/'>daily brief</a> on which buildings came on and "
+    "off the market. There is no equivalent feed for {city} yet.</p>")
+
 BORO_NAME = {"M": "Manhattan", "Bk": "Brooklyn", "Q": "Queens",
              "Bx": "the Bronx", "SI": "Staten Island"}
 BORO_SLUG = {"M": "manhattan", "Bk": "brooklyn", "Q": "queens",
@@ -489,7 +527,8 @@ def city_hub_docs(key, guide_ok=True):
             + "<a href='/buildings/'>New York City by neighborhood</a>"
             + "".join(f"<a href='/{o}/buildings/'>{esc(oc['browse_h1'])}</a>"
                       for o, oc in others)
-            + "</div>")
+            + "</div>"
+            + CITY_VOUCHER_XLINK.format(city=esc(city)))
     crumb = breadcrumb([("Home", SITE + "/"), (city, SITE + f"/{key}/"),
                         (cfg["browse_h1"], SITE + browse_url)])
     docs.append({

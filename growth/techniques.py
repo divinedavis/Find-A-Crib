@@ -447,6 +447,16 @@ def t_fresh_section8(ctx):
         f"NYCHA and HPD point voucher holders to. Rebuilt daily from the overnight feed.</p>"
         + _stats_block(rows)
         + f"<div class='cols'>{boro_links}</div>"
+        # The return leg of a reference that has only ever run one way: every
+        # dated brief links here, nothing here linked back. Both sections are
+        # orphans as of 2026-08-07, so this link buys nothing on its own — but
+        # the crawl path added to the city browse hubs today reaches /section8/,
+        # and this is what carries it the one further hop into /brief/. It is
+        # deliberately NOT counted by t_crawl_paths: a pair of orphans linking
+        # to each other is the orphan-cluster case that audit exists to catch,
+        # and crediting it here would report both healthy the day they are not.
+        + "<p class='sub'>What changed overnight: the <a href='/brief/'>daily brief</a> "
+          "records which buildings came on and off this list each day.</p>"
         + SOI_NOTE
         + "<h2>All live listings, cheapest first</h2>"
         + _listing_table(rows)

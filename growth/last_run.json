@@ -1,29 +1,29 @@
 {
   "build": {
-    "at": "2026-08-06T05:40:26+00:00",
+    "at": "2026-08-07T05:40:21+00:00",
     "changed_urls": 7,
-    "date": "2026-08-06",
+    "date": "2026-08-07",
     "deployed": true,
     "new_urls": 1,
     "techniques": {
       "city_guides": {
-        "detail": "3 of 3 city guides live with their data caveat \u2014 3 published by the daily growth build (dc, la, sf) because the SEO pipeline has not deployed them \u2014 the docroot's SEO corpus was last written 2026-08-01 (5d ago)",
+        "detail": "3 of 3 city guides live with their data caveat \u2014 3 published by the daily growth build (dc, la, sf) because the SEO pipeline has not deployed them \u2014 the docroot's SEO corpus was last written 2026-08-01 (6d ago)",
         "ok": true
       },
       "city_seo_expansion": {
-        "detail": "hub pages live: dc 103, la 112, sf 37 \u2014 255 pages published by the daily growth build, browse hubs included (dc 104, la 113, sf 38), because the SEO pipeline has not deployed them \u2014 the docroot's SEO corpus was last written 2026-08-01 (5d ago)",
+        "detail": "hub pages live: dc 103, la 112, sf 37 \u2014 255 pages published by the daily growth build, browse hubs included (dc 104, la 113, sf 38), because the SEO pipeline has not deployed them \u2014 the docroot's SEO corpus was last written 2026-08-01 (6d ago)",
         "ok": true
       },
       "crawl_paths": {
-        "detail": "10 of 12 published sections have an inbound internal link (62 docroot pages read) \u2014 ORPHANED, reachable only from sitemap-daily.xml: /brief/ (daily_brief), /section8/ (fresh_section8)",
+        "detail": "10 of 12 published sections have an inbound internal link (62 docroot pages read) \u2014 ORPHANED, reachable only from sitemap-daily.xml: /brief/ (daily_brief), /section8/ (fresh_section8) \u2014 the docroot's SEO corpus was last written 2026-08-01 (6d ago)",
         "ok": false
       },
       "daily_brief": {
-        "detail": "brief 2026-08-06: 1 added, 1 removed",
+        "detail": "brief 2026-08-07: 5 added, 0 removed",
         "ok": true
       },
       "fresh_section8": {
-        "detail": "249 buildings across 5 boroughs",
+        "detail": "254 buildings across 5 boroughs",
         "ok": true
       },
       "hub_direct_answers": {
@@ -39,7 +39,7 @@
         "ok": true
       },
       "sitemap_daily": {
-        "detail": "sitemap-daily.xml with 274 URLs (incl. 3 fallback-published guides, 255 city hub pages)",
+        "detail": "sitemap-daily.xml with 275 URLs (incl. 3 fallback-published guides, 255 city hub pages)",
         "ok": true
       }
     }

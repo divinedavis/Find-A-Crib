@@ -48,9 +48,9 @@
     "title": "Outside Market / Re-rentals",
     "units_seen": true,
     "note": "Filterable board with rent + household size per unit.",
-    "unit_count": 6,
-    "last_ok": "2026-08-06",
-    "checked": "2026-08-06"
+    "unit_count": 5,
+    "last_ok": "2026-08-07",
+    "checked": "2026-08-07"
    }
   },
   {
@@ -144,9 +144,9 @@
     "url": "https://ccmanagers.com/availability/",
     "title": "Rental Availability",
     "units_seen": true,
-    "last_ok": "2026-08-06",
+    "last_ok": "2026-08-07",
     "unit_count": 1,
-    "checked": "2026-08-06"
+    "checked": "2026-08-07"
    }
   },
   {
@@ -208,9 +208,9 @@
     "url": "https://www.clintonmanagement.com/availabilities/affordable",
     "title": "Affordable Availabilities",
     "units_seen": true,
-    "last_ok": "2026-08-06",
+    "last_ok": "2026-08-07",
     "unit_count": 6,
-    "checked": "2026-08-06"
+    "checked": "2026-08-07"
    }
   },
   {
@@ -419,9 +419,9 @@
     "url": "https://www.housingpartnership.com/services/current-vacancies",
     "title": "Current Vacancies",
     "units_seen": true,
-    "last_ok": "2026-08-06",
+    "last_ok": "2026-08-07",
     "unit_count": 11,
-    "checked": "2026-08-06"
+    "checked": "2026-08-07"
    },
    "buildings": [
     {
@@ -449,8 +449,8 @@
     "units_seen": true,
     "note": "Same operator as Affordable for NY, but lists different units — check both.",
     "unit_count": 1,
-    "last_ok": "2026-08-06",
-    "checked": "2026-08-06"
+    "last_ok": "2026-08-07",
+    "checked": "2026-08-07"
    }
   },
   {
@@ -580,9 +580,10 @@
    "rerentals": {
     "url": "https://mgnyconsulting.com/listings/",
     "title": "Listings",
-    "units_seen": false,
-    "last_ok": "2026-08-06",
-    "checked": "2026-08-06"
+    "units_seen": true,
+    "last_ok": "2026-08-07",
+    "unit_count": 11,
+    "checked": "2026-08-07"
    },
    "buildings": [
     {
@@ -617,9 +618,9 @@
     "url": "https://www.mutualhousingny.org/avaliable-properties",
     "title": "Available Properties",
     "units_seen": true,
-    "last_ok": "2026-08-06",
+    "last_ok": "2026-08-07",
     "unit_count": 2,
-    "checked": "2026-08-06"
+    "checked": "2026-08-07"
    }
   },
   {
@@ -864,9 +865,9 @@
     "title": "Available Homes & Open Houses",
     "units_seen": false,
     "note": "Homeownership, not rentals.",
-    "last_ok": "2026-08-06",
+    "last_ok": "2026-08-07",
     "waitlist": true,
-    "checked": "2026-08-06"
+    "checked": "2026-08-07"
    }
   },
   {
@@ -937,8 +938,8 @@
     "url": "https://www.sjpny.com/affordable-rerentals",
     "title": "Affordable Re-Rentals",
     "units_seen": false,
-    "last_ok": "2026-08-06",
-    "checked": "2026-08-06"
+    "last_ok": "2026-08-07",
+    "checked": "2026-08-07"
    }
   },
   {
@@ -985,9 +986,9 @@
     "url": "https://springmanagement.net/apartments-for-rent",
     "title": "Apartments For Rent",
     "units_seen": true,
-    "last_ok": "2026-08-06",
+    "last_ok": "2026-08-07",
     "unit_count": 2,
-    "checked": "2026-08-06"
+    "checked": "2026-08-07"
    }
   },
   {
@@ -1072,9 +1073,9 @@
     "title": "Affordable Living NYC",
     "units_seen": true,
     "note": "First-come, first-served. Separate domain from their HPD-listed site.",
-    "last_ok": "2026-08-06",
-    "unit_count": 9,
-    "checked": "2026-08-06"
+    "last_ok": "2026-08-07",
+    "unit_count": 10,
+    "checked": "2026-08-07"
    }
   },
   {
@@ -1091,9 +1092,9 @@
     "url": "https://www.taxaceny.com/projects-8",
     "title": "Available Units",
     "units_seen": true,
-    "last_ok": "2026-08-06",
+    "last_ok": "2026-08-07",
     "unit_count": 31,
-    "checked": "2026-08-06"
+    "checked": "2026-08-07"
    }
   },
   {
@@ -1110,9 +1111,9 @@
     "url": "https://tfc.com/about/affordable-re-rentals",
     "title": "Affordable Re-rentals",
     "units_seen": false,
-    "last_ok": "2026-08-06",
+    "last_ok": "2026-08-07",
     "waitlist": true,
-    "checked": "2026-08-06"
+    "checked": "2026-08-07"
    }
   },
   {
@@ -1171,9 +1172,9 @@
     "title": "Wavecrest Rentals",
     "units_seen": false,
     "note": "Application portal for their LAMP / HDC / LIHTC developments.",
-    "last_ok": "2026-08-06",
+    "last_ok": "2026-08-07",
     "waitlist": true,
-    "checked": "2026-08-06"
+    "checked": "2026-08-07"
    }
   },
   {

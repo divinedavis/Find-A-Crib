@@ -159,7 +159,13 @@
   .auth-btn { order: 2; flex: 0 0 auto; background: var(--surface); color: var(--blue); border: 1px solid var(--blue);
     border-radius: 999px; padding: 8px 16px; font-size: 14px; font-weight: 700; cursor: pointer; white-space: nowrap; }
   .auth-btn:hover { background: var(--blue-soft); }
-  .auth-btn.signed-in { color: var(--ink); border-color: var(--line); }
+  /* Signed in it is just the avatar — the word "Profile" cost a third of the
+     header row on a phone and said nothing the picture doesn't. Signed out it
+     stays "Sign in", because a bare icon is not a call to action. */
+  .auth-btn.signed-in { color: var(--ink); border-color: var(--line);
+    padding: 0; width: 34px; height: 34px; border-radius: 50%; overflow: hidden;
+    display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .auth-btn.signed-in img { width: 100%; height: 100%; object-fit: cover; display: block; }
   /* sign in / sign up modal */
   .auth-backdrop { position: fixed; inset: 0; z-index: 1900; background: rgba(0,0,0,0.45);
     display: flex; align-items: center; justify-content: center; padding: 16px; }
@@ -196,6 +202,10 @@
   .profile-row .label { color: var(--ink-2); font-size: 12px; text-transform: uppercase; letter-spacing: .4px; flex: none; }
   .profile-row #profile-email { overflow: hidden; text-overflow: ellipsis; }
   #profile-plan.plus { color: var(--ok-ink); font-weight: 700; }
+  .profile-cities { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .profile-cities .city-choice { font-size: 12px; font-weight: 700; color: var(--ink-2);
+    text-decoration: none; padding: 5px 11px; border: 1px solid var(--line); border-radius: 999px; }
+  .profile-cities .city-choice.cur { background: var(--blue-solid); border-color: var(--blue); color: #fff; }
   #profile-upgrade { margin: 12px 0 2px; }
   .profile-toggle-row { align-items: center; }
   .profile-feat { font-size: 14px; font-weight: 600; }
@@ -574,18 +584,40 @@
     .mobile-only { display: flex; }
 
     /* compact header: brand shrinks, search on its own row, chips scroll horizontally */
-    header.topbar { flex-wrap: wrap; gap: 8px;
-      padding: calc(8px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) 8px calc(12px + env(safe-area-inset-left)); }
+    /* gap 6 and 10px sides, not 8/12: signed in the row carries brand + city
+       chip + Free Plus + two icon buttons + the avatar, which lands within a
+       few px of a 375-wide phone. The slack buys it. */
+    header.topbar { flex-wrap: wrap; gap: 6px;
+      padding: calc(8px + env(safe-area-inset-top)) calc(10px + env(safe-area-inset-right)) 8px calc(10px + env(safe-area-inset-left)); }
     .brand { font-size: 17px; gap: 6px; }
     .brand-dot { width: 18px; height: 18px; }
     /* free up width so brand + NYC/SF/LA + Sign in fit on one row */
     .brand-sub { display: none; }
-    .brand { font-size: 16px; }
-    .city-nav { margin-left: 6px; gap: 3px; }
+    .brand { font-size: 15px; }
+    /* One header row. Four city chips, a "Free Plus" pill, two icon buttons and
+       a "Profile" button do not fit across a phone, so the row wrapped and ate
+       a third of the screen above the map. Only the city you are actually in
+       stays in the header; the other three move behind it into a tap-to-open
+       menu (and into the profile sheet). They stay real <a>s in the DOM either
+       way, so the crawler still follows them. */
+    .city-nav { margin-left: 6px; gap: 3px; position: relative; }
     .city-nav a { padding: 4px 9px; }
+    .city-nav a.cur::after { content: '▾'; margin-left: 4px; font-size: 10px; opacity: .8; }
+    .city-more { position: absolute; top: calc(100% + 9px); left: 0; z-index: 1700;
+      display: flex; flex-direction: column; gap: 2px; padding: 6px;
+      background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+      box-shadow: 0 10px 28px rgba(0,0,0,.35); }
+    .city-more[hidden] { display: none; }
+    .city-more a { display: block; padding: 8px 16px; text-align: center; }
     .filter-bar { gap: 8px; width: 100%; flex: 1 1 100%; order: 3; }
     .auth-btn { margin-left: auto; order: 2; padding: 7px 14px; font-size: 13px; }
+    .auth-btn.signed-in { padding: 0; width: 30px; height: 30px; }
     .theme-btn { width: 30px; height: 30px; font-size: 14px; }
+    .ref-btn { padding: 5px 10px; font-size: 11.5px; }
+    /* An SE-sized phone is ~25px short of holding the whole row once the
+       lottery-agents button and the referral pill are both up. "Free" is the
+       cheapest word on the row to lose — the pill still reads 🎁 Plus. */
+    @media (max-width: 385px) { .ref-free { display: none; } }
     /* header row is tight on phones — the 🏛️ alone carries it (aria-label has the name) */
     .agents-label { display: none; }
     .agents-btn { padding: 0; width: 30px; height: 30px; border-radius: 50%; font-size: 14px;
@@ -832,6 +864,11 @@
   .city-nav a { font-size: 12px; font-weight: 700; color: var(--ink-2); text-decoration: none;
     padding: 4px 8px; border-radius: 999px; border: 1px solid var(--line); }
   .city-nav a.cur { background: var(--blue-solid); border-color: var(--blue); color: #fff; }
+  /* The other cities are moved into this wrapper so a phone can drop them below
+     the chip. On a desktop there is room for all four, so the wrapper itself
+     disappears from layout and its links sit in the nav exactly as before —
+     display:contents also beats the [hidden] attribute the menu toggles. */
+  .city-more { display: contents; }
   .d-head { padding: 16px 18px 4px; }
   .d-badge { display: inline-block; background: var(--blue-soft); color: var(--blue); font-size: 11px; font-weight: 700;
     padding: 3px 9px; border-radius: 999px; margin-bottom: 8px; }
@@ -899,11 +936,13 @@
   <div class="brand"><span class="brand-dot"></span><span class="brand-text">Find A Crib<span class="brand-sub">(NYC Rent Stabilized Homes)</span></span></div>
   <nav class="city-nav" id="city-nav" aria-label="City">
     <a href="/" data-city-link="nyc">NYC</a><a href="/sf/" data-city-link="sf">SF</a><a href="/la/" data-city-link="la">LA</a><a href="/dc/" data-city-link="dc">DC</a>
+    <!-- on phones the cities you are NOT in move in here, behind the chip -->
+    <div class="city-more" id="city-more" hidden></div>
   </nav>
   <a id="agents-btn" class="agents-btn nyc-only" href="/marketing-agents/" title="Every HPD-approved firm that runs NYC affordable-housing lotteries" aria-label="Lottery agents">🏛️<span class="agents-label"> Lottery agents</span></a>
   <button id="theme-btn" type="button" class="theme-btn" aria-label="Switch to dark mode" title="Switch to dark mode">🌙</button>
   <button id="auth-btn" type="button" class="auth-btn">Sign in</button>
-  <button id="ref-btn" type="button" class="ref-btn" hidden>🎁 Free Plus</button>
+  <button id="ref-btn" type="button" class="ref-btn" hidden>🎁 <span class="ref-free">Free </span>Plus</button>
   <div class="filter-bar">
     <input class="search-input" id="q" type="text" placeholder="Address, neighborhood, ZIP, or BBL" />
     <div class="chip-row">
@@ -1108,6 +1147,10 @@
     <h2>Your account</h2>
     <div class="profile-row"><span class="label">Email</span><span id="profile-email"></span></div>
     <div class="profile-row"><span class="label">Membership</span><span id="profile-plan"></span></div>
+    <div class="profile-row profile-cities-row">
+      <span class="label">City</span>
+      <div id="profile-cities" class="profile-cities"></div>
+    </div>
     <button id="profile-upgrade" type="button" class="auth-submit" hidden>Get Plus — $4.99/mo</button>
     <div class="profile-row profile-toggle-row">
       <div>
@@ -1398,6 +1441,39 @@
   document.querySelectorAll('#city-nav a').forEach(a => {
     if (a.dataset.cityLink === (document.documentElement.dataset.city || 'nyc')) a.classList.add('cur');
   });
+  // On a phone the header has room for one city chip, so the cities you are not
+  // in move under it. Done in JS rather than CSS because they also have to be
+  // listed in the profile sheet, and a link can only live in one place.
+  (function cityMenu() {
+    const nav = document.getElementById('city-nav');
+    const more = document.getElementById('city-more');
+    const sheet = document.getElementById('profile-cities');
+    if (!nav || !more) return;
+    [...nav.querySelectorAll('a')].filter(a => !a.classList.contains('cur'))
+      .forEach(a => more.appendChild(a));
+    // The profile sheet gets its own copies — the header's links moved into the
+    // menu, and a link can only be in one place. Re-query after the move so the
+    // list is every city once, in document order.
+    if (sheet) {
+      sheet.innerHTML = '';
+      [...nav.querySelectorAll('a')].forEach(a => {
+        const c = document.createElement('a');
+        c.href = a.getAttribute('href');
+        c.textContent = a.textContent;
+        c.className = 'city-choice' + (a.classList.contains('cur') ? ' cur' : '');
+        sheet.appendChild(c);
+      });
+    }
+    const close = () => { more.hidden = true; };
+    nav.addEventListener('click', e => {
+      const cur = e.target.closest('a.cur');
+      if (!cur || !matchMedia('(max-width: 900px)').matches) return;
+      e.preventDefault();                       // the chip is the menu, not a link to here
+      more.hidden = !more.hidden;
+    });
+    document.addEventListener('click', e => { if (!nav.contains(e.target)) close(); });
+    addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+  })();
   function streetviewUrl(lat, lng, w = 400, h = 240) {
     return `https://maps.googleapis.com/maps/api/streetview?size=${w}x${h}&location=${lat},${lng}&fov=80&pitch=0&source=outdoor&key=${GMAPS_KEY}`;
   }
@@ -3537,8 +3613,28 @@
   }
 
   function updateAuthUI() {
-    if (authUser) { authBtn.textContent = '👤 Profile'; authBtn.classList.add('signed-in'); authBtn.title = authUser.email || ''; }
-    else { authBtn.textContent = 'Sign in'; authBtn.classList.remove('signed-in'); authBtn.title = ''; }
+    if (authUser) {
+      const md = authUser.user_metadata || {};
+      const pic = md.avatar_url || md.picture || '';
+      authBtn.textContent = '👤';
+      // Google sign-in hands us a real photo; build the <img> rather than
+      // interpolating a provider-supplied URL into innerHTML, and fall back to
+      // the glyph if it fails to load so the button is never blank.
+      if (pic) {
+        const im = document.createElement('img');
+        im.alt = ''; im.referrerPolicy = 'no-referrer';
+        im.onload = () => { authBtn.textContent = ''; authBtn.appendChild(im); };
+        im.src = pic;
+      }
+      authBtn.classList.add('signed-in');
+      authBtn.title = authUser.email || 'Your account';
+      authBtn.setAttribute('aria-label', 'Your account');
+    } else {
+      authBtn.textContent = 'Sign in';
+      authBtn.classList.remove('signed-in');
+      authBtn.title = '';
+      authBtn.removeAttribute('aria-label');
+    }
     const rb = document.getElementById('ref-btn'); if (rb) rb.hidden = !authUser;
     updateDetailBar();
   }

@@ -45,24 +45,24 @@
     }
   },
   "measure": {
-    "at": "2026-08-07T05:00:06+00:00",
+    "at": "2026-08-08T05:00:07+00:00",
     "coverage_pct": 82.2,
-    "date": "2026-08-07",
+    "date": "2026-08-08",
     "days": 1,
     "keywords_covered": 120,
     "keywords_total": 146,
-    "latest_measured_day": "2026-08-06"
+    "latest_measured_day": "2026-08-07"
   },
   "searchconsole": {
-    "at": "2026-08-07T05:00:04+00:00",
-    "clicks": 10,
-    "date": "2026-08-07",
-    "impressions": 29,
-    "serving_ever": 163,
+    "at": "2026-08-08T05:00:05+00:00",
+    "clicks": 6,
+    "date": "2026-08-08",
+    "impressions": 20,
+    "serving_ever": 172,
     "serving_pages": 80,
-    "serving_stable": 67,
+    "serving_stable": 71,
     "share_pct": 0.0,
     "tracked_ranking": 0,
-    "window": "2026-07-29..2026-08-05"
+    "window": "2026-07-30..2026-08-06"
   }
 }

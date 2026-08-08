@@ -606,15 +606,31 @@
       left: calc(8px + env(safe-area-inset-left)); right: calc(8px + env(safe-area-inset-right)); min-width: 0; max-width: none; max-height: 70vh; overflow-y: auto; }
     .pill-popover.pop-open { display: block; z-index: 1700; }
 
-    /* map fills the screen under the header */
+    /* map fills the screen under the header — all the way to the bottom edge of
+       the phone, not just to the top of Safari's toolbar. dvh stops at the
+       toolbar and leaves the map floating above it; lvh runs the tiles under
+       it, and the toolbar is translucent so the map shows through. Measured on
+       an iPhone 17 Pro Max: lvh 836, dvh 796, so the strip is 40px. The order
+       matters — lvh must come last to win, and a browser without it falls back
+       to dvh, then vh. body can't scroll that 40px away: everything on mobile
+       below the map is fixed chrome or display:none, so the only thing a scroll
+       could do is rubber-band the map off the bottom of the screen. */
+    body { overflow: hidden; }
     main { display: block; height: auto; }
-    #map { height: calc(100vh - var(--header-h)); height: calc(100dvh - var(--header-h)); width: 100%; }
+    #map { height: calc(100vh - var(--header-h)); height: calc(100dvh - var(--header-h));
+           height: calc(100lvh - var(--header-h)); width: 100%; }
 
     /* pin the zoom +/- to the map's top-left, below the header, so it stays put
        instead of sliding up under the sticky header when the page scrolls */
     .leaflet-top.leaflet-left { position: fixed; top: calc(var(--header-h) + 10px); left: calc(10px + env(safe-area-inset-left)); }
-    /* attribution sits at the map's bottom edge, which now runs under the home indicator */
+    /* The map's bottom edge is now behind Safari's toolbar, and the OSM/CARTO
+       credit has to stay readable — it is a licence condition, not decoration.
+       Lift it by exactly the strip the toolbar covers. The two terms are
+       complements: with the toolbar up, lvh-dvh is its height and the safe-area
+       inset reads 0; once it hides, lvh equals dvh and the inset becomes the
+       home indicator. */
     .leaflet-bottom { margin-bottom: env(safe-area-inset-bottom); }
+    .leaflet-bottom { margin-bottom: calc(100lvh - 100dvh + env(safe-area-inset-bottom)); }
     .leaflet-top.leaflet-left .leaflet-control { margin: 0; }
 
     /* hide the explanatory blurb on mobile (kept on desktop for SEO/crawl links) */

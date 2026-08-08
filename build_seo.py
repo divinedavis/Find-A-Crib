@@ -651,6 +651,83 @@ TRACK_SNIPPET = """<script src="/config.js"></script>
 # names DHCR, PLUTO and HPD, none of which have anything to do with a San
 # Francisco block or a Los Angeles parcel. Pages pass their own footer; the
 # NYC one stays the default because it is the overwhelming majority.
+# ---- schema.org/Dataset -------------------------------------------------
+# Google Dataset Search, and the LLM crawlers that increasingly follow it, index
+# schema.org/Dataset. The corpus genuinely is one — every NYC building DHCR has
+# on the rent-stabilization rolls — but only the pages that present a
+# *collection* are allowed to say so. A single address is not a dataset; see the
+# note where the building pages pick ApartmentComplex instead.
+#
+# Every field below has to be true or the markup is worse than none: Dataset
+# Search shows description, coverage and distribution verbatim to people
+# deciding whether to trust the data. Two deliberate omissions:
+#   - no `license`. The underlying records are public NY State and NYC data, but
+#     stamping a licence on the derived corpus is a legal claim, and /terms.html
+#     is a terms-of-use page, not a licence. `conditionsOfAccess` says what is
+#     actually true instead.
+#   - no `datePublished` on the slices. The DHCR file is annual; a per-page
+#     publish date would imply a freshness the rolls do not have.
+DATA_CATALOG = {
+    "@type": "DataCatalog",
+    "@id": SITE + "/developers/#catalog",
+    "name": "Find A Crib rent-regulation data",
+    "url": SITE + "/developers/",
+}
+# The variables actually present in buildings.min.json + the HPD join.
+DATA_VARIABLES = ["Street address", "Borough", "Neighborhood (NTA)", "ZIP code",
+                  "Borough-Block-Lot (BBL)", "Latitude", "Longitude", "Year built",
+                  "Apartment count", "DHCR stabilization code", "Registered owner",
+                  "HPD-registered managing agent", "Open HPD violations",
+                  "Open HPD complaints"]
+
+
+def dataset_jsonld(name, description, url, spatial, size=None, part_of_catalog=True):
+    """A Dataset node for a page that presents a collection of buildings.
+
+    `size` is the building count, published as a QuantitativeValue so a consumer
+    can see the slice's scale without downloading 16 MB to find out.
+    """
+    d = {
+        "@context": "https://schema.org",
+        "@type": "Dataset",
+        "name": name,
+        "description": description,
+        "url": url,
+        "isAccessibleForFree": True,
+        "creator": {"@type": "Organization", "name": "Find A Crib", "url": SITE + "/"},
+        # Provenance, not decoration: these are the agencies whose records this
+        # is derived from, and the reason the data can be trusted at all.
+        "sourceOrganization": [
+            {"@type": "GovernmentOrganization",
+             "name": "New York State Division of Housing and Community Renewal"},
+            {"@type": "GovernmentOrganization", "name": "NYC Department of City Planning"},
+            {"@type": "GovernmentOrganization",
+             "name": "NYC Department of Housing Preservation and Development"},
+        ],
+        "temporalCoverage": "2024",
+        "spatialCoverage": spatial,
+        "variableMeasured": DATA_VARIABLES,
+        "conditionsOfAccess":
+            "Free to read on the site. Bulk JSON is public; the REST API requires a free key.",
+        "distribution": [
+            {"@type": "DataDownload",
+             "name": "Bulk JSON — every registered building",
+             "encodingFormat": "application/json",
+             "contentUrl": SITE + "/buildings.min.json"},
+            {"@type": "DataDownload",
+             "name": "REST API (free key required)",
+             "encodingFormat": "application/json",
+             "contentUrl": SITE + "/api/v1/buildings"},
+        ],
+    }
+    if size:
+        d["size"] = {"@type": "QuantitativeValue", "value": size,
+                     "unitText": "buildings"}
+    if part_of_catalog:
+        d["includedInDataCatalog"] = DATA_CATALOG
+    return d
+
+
 NYC_FOOTER = """Data: NYC DHCR 2024 rent-stabilized building files, NYC PLUTO (coordinates),
 and NYC HPD Open Data (owner, violations, complaints). A building's rent-stabilized status reflects
 DHCR registration; it is not a guarantee that a specific unit is available or currently stabilized."""
@@ -997,10 +1074,23 @@ def main():
             (boroname, SITE + f"/borough/{BORO_SLUG.get(boro,'nyc')}/"),
             (nb, canonical),
         ])
+        # This page IS a collection — every stabilized building in one
+        # neighborhood — so it carries a Dataset node for that slice.
+        nb_ds = dataset_jsonld(
+            name=f"Rent-stabilized buildings in {nb}, {boroname}",
+            description=(f"The {n:,} buildings in {nb}, {boroname} registered as rent "
+                         f"stabilized with New York State DHCR, with address, BBL, year "
+                         f"built, apartment count, registered owner and open HPD "
+                         f"violations. A slice of the citywide Find A Crib dataset."),
+            url=canonical,
+            spatial={"@type": "Place", "name": f"{nb}, {boroname}, New York, NY",
+                     "address": {"@type": "PostalAddress", "addressLocality": boroname,
+                                 "addressRegion": "NY", "addressCountry": "US"}},
+            size=n)
         write(url.strip("/") + "/index.html",
               page(f"Rent-stabilized buildings in {nb}, {boroname} ({n}) | Find A Crib",
                    f"All {n} rent-stabilized buildings in {nb}, {boroname}. Check any address for status, owner, and violations.",
-                   canonical, body, [nb_crumb, faq_jsonld(nb_faq)]))
+                   canonical, body, [nb_crumb, faq_jsonld(nb_faq), nb_ds]))
         urls.append((canonical, "0.7", boro))
 
     # ---- borough hub pages ----

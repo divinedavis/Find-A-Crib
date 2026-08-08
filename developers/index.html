@@ -7,6 +7,49 @@
 <meta name="description" content="Developer API for NYC rent-stabilized buildings, HPD violations, and Section 8 / voucher data. Free tier available. REST, JSON, API keys." />
 <link rel="canonical" href="https://findacrib.com/developers/" />
 <link rel="icon" href="/favicon.ico" />
+<!-- The canonical Dataset node. Google Dataset Search (and the LLM crawlers that
+     follow it) index schema.org/Dataset; the per-neighborhood pages each declare
+     their own slice and point back at the catalog declared here. Kept in sync by
+     hand with dataset_jsonld() in build_seo.py — this page is static, not
+     generated. Nothing here is aspirational: both distribution URLs are live,
+     and the counts are what buildings.min.json actually holds. -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Dataset",
+  "@id": "https://findacrib.com/developers/#dataset",
+  "name": "NYC rent-stabilized buildings (DHCR registration roll, 2024)",
+  "description": "Every building in New York City registered as rent stabilized with New York State DHCR — roughly 47,000 addresses across Manhattan, Brooklyn, Queens, the Bronx and Staten Island — geocoded to BBL and joined to NYC HPD owner, managing-agent, violation and complaint records. Rent stabilization is registered per building, so inclusion does not guarantee that a specific apartment is stabilized today.",
+  "url": "https://findacrib.com/developers/",
+  "sameAs": "https://findacrib.com/",
+  "keywords": ["rent stabilization", "rent regulation", "affordable housing", "New York City", "DHCR", "HPD", "housing data", "tenant rights"],
+  "isAccessibleForFree": true,
+  "creator": { "@type": "Organization", "name": "Find A Crib", "url": "https://findacrib.com/" },
+  "sourceOrganization": [
+    { "@type": "GovernmentOrganization", "name": "New York State Division of Housing and Community Renewal" },
+    { "@type": "GovernmentOrganization", "name": "NYC Department of City Planning" },
+    { "@type": "GovernmentOrganization", "name": "NYC Department of Housing Preservation and Development" }
+  ],
+  "temporalCoverage": "2024",
+  "spatialCoverage": {
+    "@type": "Place",
+    "name": "New York, NY, United States",
+    "geo": { "@type": "GeoShape", "box": "40.4774 -74.2591 40.9176 -73.7004" }
+  },
+  "variableMeasured": ["Street address", "Borough", "Neighborhood (NTA)", "ZIP code", "Borough-Block-Lot (BBL)", "Latitude", "Longitude", "Year built", "Apartment count", "DHCR stabilization code", "Registered owner", "HPD-registered managing agent", "Open HPD violations", "Open HPD complaints"],
+  "conditionsOfAccess": "Free to read on the site. Bulk JSON is public; the REST API requires a free key.",
+  "includedInDataCatalog": {
+    "@type": "DataCatalog",
+    "@id": "https://findacrib.com/developers/#catalog",
+    "name": "Find A Crib rent-regulation data",
+    "url": "https://findacrib.com/developers/"
+  },
+  "distribution": [
+    { "@type": "DataDownload", "name": "Bulk JSON — every registered building", "encodingFormat": "application/json", "contentUrl": "https://findacrib.com/buildings.min.json" },
+    { "@type": "DataDownload", "name": "REST API (free key required)", "encodingFormat": "application/json", "contentUrl": "https://findacrib.com/api/v1/buildings" }
+  ]
+}
+</script>
 <style>
   :root{--blue:#2f57ff;--ink:#0a0a23;--ink2:#4a4a68;--line:#e2e6ea;--bg:#f7f8fa;--code:#0d1117}
   *{box-sizing:border-box}

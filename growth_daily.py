@@ -67,10 +67,20 @@ def cmd_build(args):
     ledger.set_state("last_build", {"date": ledger.today(), "log": run_log,
                                     "new": len(ctx.new_urls), "changed": len(ctx.changed_urls)})
     if not args.dry_run:
+        # Record how stale the separately-built SEO corpus is as its own field,
+        # not only inside a technique's detail string. It is the biggest single
+        # blocker when it goes stale — the 47k pages Google actually crawls stop
+        # being rewritten, so every build_seo.py change sits in git — and both
+        # readers of this file need it first-class: the report, to put one
+        # actionable line on the owner's phone, and the cloud review agent,
+        # which cannot see the docroot at all and had been reverse-engineering
+        # the date out of a sentence in t_crawl_paths' detail.
+        age = techniques._seo_corpus_age(args.docroot)
         ledger.write_last_run("build", {
             "new_urls": len(ctx.new_urls), "changed_urls": len(ctx.changed_urls),
             "techniques": {r["slug"]: {"ok": bool(r.get("ok")), "detail": r.get("detail", "")}
                            for r in run_log},
+            "seo_corpus": {"written": age[0], "days_old": age[1]} if age else None,
             "deployed": bool(args.deploy)})
     log(f"  {len(ctx.new_urls)} new URLs, {len(ctx.changed_urls)} changed")
 

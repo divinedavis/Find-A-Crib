@@ -1317,10 +1317,13 @@ def _crawl_sources():
     return src
 
 
-def _crawl_link_audit(docroot, prefixes):
+def _crawl_link_audit(root, prefixes):
     """Which URL prefixes have a crawlable inbound link, and from which families.
 
     Returns ({prefix: {family labels}}, pages read).
+
+    `root` is a docroot-shaped tree: either the live docroot or this run's
+    staging dir, which mirrors the same layout.
 
     A page inside the prefix it is being scored for does not count as an
     inbound link. That exclusion is the whole point: the pages of one generated
@@ -1332,8 +1335,8 @@ def _crawl_link_audit(docroot, prefixes):
     found = {p: set() for p in prefixes}
     read = 0
     for label, pattern, cap in _crawl_sources():
-        for path in sorted(glob.glob(os.path.join(docroot, pattern)))[:cap]:
-            rel = os.path.relpath(path, docroot)
+        for path in sorted(glob.glob(os.path.join(root, pattern)))[:cap]:
+            rel = os.path.relpath(path, root)
             own = "/" + (rel[:-len("index.html")] if rel.endswith("index.html") else rel)
             try:
                 with open(path, encoding="utf-8", errors="replace") as f:
@@ -1347,6 +1350,46 @@ def _crawl_link_audit(docroot, prefixes):
                 if f'href="{p}' in html or f"href='{p}" in html:
                     found[p].add(label)
     return found, read
+
+
+# How long a prefix may sit "linked in the staging dir but not in the docroot"
+# before that stops being deploy lag and becomes a deploy failure. One night:
+# cmd_build rsyncs at the end of the same run that stages the page, so a link
+# staged today is live before tomorrow's audit reads the docroot.
+STAGED_GRACE_DAYS = 1
+
+
+def _staged_since(prefix, staged_now, dry_run):
+    """First date this prefix was seen linked-in-staging-but-not-live, or None.
+
+    The audit runs before the driver rsyncs, so the night a crawl-path fix
+    ships through the growth build the docroot cannot possibly show it yet.
+    That one-night lag and a broken rsync look identical in a single run's
+    output, and telling them apart is the difference between "wait" and "the
+    only deploy path left is dead" — so the first sighting is remembered.
+    """
+    seen = ledger.get_state("crawl_staged_since", {})
+    if not staged_now:
+        if prefix in seen and not dry_run:
+            del seen[prefix]
+            ledger.set_state("crawl_staged_since", seen)
+        return None
+    since = seen.get(prefix)
+    if since is None:
+        since = ledger.today()
+        if not dry_run:
+            seen[prefix] = since
+            ledger.set_state("crawl_staged_since", seen)
+    return since
+
+
+def _staged_age(since):
+    """Whole days between an ISO date and today, or 0 if unparseable."""
+    try:
+        d = datetime.date.fromisoformat(since)
+    except (TypeError, ValueError):
+        return 0
+    return (datetime.date.today() - d).days
 
 
 def t_crawl_paths(ctx):
@@ -1369,9 +1412,13 @@ def t_crawl_paths(ctx):
     ledger rather than a list here, so a technique added tomorrow is audited
     the night it goes live without anyone remembering to add it.
 
-    Writes nothing. It reads the live docroot, which is deliberate — the fix
+    Writes nothing. It scores the live docroot, which is deliberate — the fix
     for an orphaned section usually lives in the app shells, and this is how a
     review running on a bare checkout learns whether that fix ever deployed.
+    It reads this run's staging dir too, but only ever to explain a docroot
+    orphan ("the link is staged, the rsync has not happened yet"), never to
+    call one healthy: a link that exists solely in growth_out is not a link
+    Google can follow.
     """
     import glob
     claimed = {}
@@ -1398,7 +1445,27 @@ def t_crawl_paths(ctx):
     if not read:
         return {"ok": False, "detail": "no docroot pages readable — has anything deployed?"}
 
+    # Also audit the staging dir. cmd_build runs every technique first and
+    # rsyncs growth_out at the very end, so the docroot this reads is the one
+    # the PREVIOUS run deployed: a crawl-path fix that ships through the growth
+    # build is guaranteed to read as orphaned on the night it lands. That is
+    # exactly what happened on 2026-08-08 — the three city browse hubs carrying
+    # the links to /section8/ and /brief/ were staged and rsynced by the same
+    # run that reported both sections ORPHANED — and a reader has no way to
+    # tell that from a fix that is simply wrong. Skipped in a dry run, which
+    # stages nothing this run but may still hold a previous run's growth_out.
+    staged = {p: set() for p in live}
+    if not ctx.dry_run and os.path.isdir(ctx.out):
+        staged, _ = _crawl_link_audit(ctx.out, live)
+
     orphaned = sorted(p for p in live if not found[p])
+    for p in live:                     # linked in the docroot: forget any lag we recorded
+        if found[p]:
+            _staged_since(p, False, ctx.dry_run)
+    pending = {p: _staged_since(p, bool(staged.get(p)), ctx.dry_run) for p in orphaned}
+    pending = {p: s for p, s in pending.items() if s}
+    stuck = sorted(p for p, s in pending.items() if _staged_age(s) > STAGED_GRACE_DAYS)
+    dead = [p for p in orphaned if p not in pending]
     detail = (f"{len(live) - len(orphaned)} of {len(live)} published sections have an inbound "
               f"internal link ({read} docroot pages read)")
     # The unbuilt list can run to nine prefixes on a checkout with no corpus,
@@ -1406,7 +1473,25 @@ def t_crawl_paths(ctx):
     # off the end of a phone-width line by a list of things that are merely
     # absent.
     tail = f" — not built yet, not audited: {', '.join(unbuilt)}" if unbuilt else ""
-    if orphaned:
+    # A prefix whose only inbound link is on a page this run stages gets its own
+    # sentence, naming the source page and how long it has been waiting. Within
+    # the grace window that is ordinary deploy lag and the reader should wait
+    # one night; past it, the growth build's own rsync is not landing, which is
+    # the most serious finding this audit can produce — it is the last deploy
+    # path from this repo into the docroot.
+    def _pend(ps):
+        return ", ".join(
+            f"{p} ({claimed[p]}) ← {', '.join(sorted(staged[p]))}"
+            f"{f', {_staged_age(pending[p])}d' if _staged_age(pending[p]) else ''}"
+            for p in ps)
+
+    if stuck:
+        return {"ok": False, "pages": read,
+                "detail": detail + " — STAGED BUT NOT DEPLOYED, the growth build's own rsync is "
+                "not reaching the docroot: " + _pend(stuck)
+                + (" — ORPHANED with no inbound link anywhere: "
+                   + ", ".join(f"{p} ({claimed[p]})" for p in dead) if dead else "") + tail}
+    if dead:
         # Say how old the corpus is, because "still orphaned" has two very
         # different causes and the reader cannot tell them apart otherwise: the
         # fix is wrong, or the fix has not deployed. The inbound links now live
@@ -1416,8 +1501,15 @@ def t_crawl_paths(ctx):
         # deploy gap from scratch, which has already cost one cycle.
         return {"ok": False, "pages": read,
                 "detail": detail + " — ORPHANED, reachable only from sitemap-daily.xml: "
-                + ", ".join(f"{p} ({claimed[p]})" for p in orphaned)
-                + _stale_note(ctx.docroot) + tail}
+                + ", ".join(f"{p} ({claimed[p]})" for p in dead)
+                + _stale_note(ctx.docroot) + tail
+                + (" — awaiting this run's rsync: " + _pend(sorted(pending)) if pending else "")}
+    if pending:
+        return {"ok": False, "pages": read,
+                "detail": detail + " — awaiting this run's rsync, linked from a page staged "
+                "minutes ago and not yet in the docroot: " + _pend(sorted(pending))
+                + " — this audit reads the docroot before the deploy, so expect it to clear "
+                "on the next run" + tail}
     # Name where the link comes from when there is exactly one source family:
     # a single thread is the one worth knowing about before it breaks.
     thin = sorted(f"{p} ← {next(iter(found[p]))}" for p in live if len(found[p]) == 1)

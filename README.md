@@ -159,7 +159,21 @@ while a change to `build_seo.py` or `growth/techniques.py` goes live the next
 morning. This is not obvious from the checkout and has already cost one review
 cycle: on 2026-08-05 the review fixed two orphaned sections by adding links to
 `index.html`, and the 2026-08-06 audit correctly still reported them orphaned.
-Site-wide crawl paths belong in `build_seo.py`, not the app shell.
+
+Those two paths are not equally reliable, either. `refresh_seo.sh` is chained
+after the listings scrape and stops when anything ahead of it fails — it wrote
+nothing between 2026-08-01 and 08-08, so a `build_seo.py` change is only live
+once that pipeline recovers. The growth build's own rsync is the path that can
+be observed working every morning (`growth/last_run.json` → `build.deployed`,
+and `build.seo_corpus` for how stale the other one is). So prefer whichever of
+the two is currently running for anything site-wide, and check `seo_corpus`
+before assuming a `build_seo.py` edit shipped.
+
+One consequence of that ordering: **`build` runs every technique first and
+rsyncs last**, so any check that reads the docroot is scoring the *previous*
+run's deploy. `t_crawl_paths` therefore also reads `growth_out/` and says
+"awaiting this run's rsync" for a link it staged minutes earlier, rather than
+reporting an orphan that is already fixed.
 
 Everything is driven by a **ledger** (`growth/techniques.json`), so the ledger —
 not the code — decides what runs. Flipping a technique to `retired` stops it

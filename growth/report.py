@@ -19,6 +19,10 @@ from . import emailkit, keywords, ledger, review, searchconsole
 PUBLISHED_PAGES = 47600
 DASHBOARD = "https://findacrib.com/dashboard"
 
+# How many days the SEO corpus may go unwritten before the report says so.
+# refresh_seo.sh is nightly, so 1 day old is normal and 2 is already a miss.
+SEO_CORPUS_STALE_DAYS = 2
+
 
 def _fmt(v):
     if v is None:
@@ -152,6 +156,26 @@ def build_blocks(run_log=None, review_out=None):
         B.append({"type": "callout", "tone": "warn", "heading": "Search share unmeasured",
                   "body": f"Search Console is not reporting. Coverage proxy: "
                           f"{kw['coverage_pct']}% of {kw['total']} tracked queries have a page."})
+
+    # ---- the deploy path behind every number above. refresh_seo.sh is a
+    # nightly job; when it stops, the ~47k pages Google actually crawls freeze
+    # and no content change in this repo can reach them, so a flat indexing
+    # number is a deploy failure rather than a content problem. That distinction
+    # spent 2026-08-01..08-08 buried inside t_crawl_paths' detail string, where
+    # it read as a footnote to an orphan report. It is the owner action.
+    corpus = (ledger.read_last_run().get("build") or {}).get("seo_corpus")
+    if corpus and (corpus.get("days_old") or 0) >= SEO_CORPUS_STALE_DAYS:
+        days = corpus["days_old"]
+        B.append({"type": "callout",
+                  "tone": "bad" if days >= 3 else "warn",
+                  "heading": f"SEO corpus frozen for {days} days",
+                  "body": f"The ~{PUBLISHED_PAGES:,}-page corpus in the docroot was last "
+                          f"written {_pretty_date(corpus['written'])}. scripts/refresh_seo.sh "
+                          f"runs nightly, so it has not completed since then and every "
+                          f"build_seo.py change pushed since is still only in git. The daily "
+                          f"growth build's own pages are unaffected — they deploy on a "
+                          f"separate rsync. Needs a hand on the droplet; nothing in the "
+                          f"repo can restart it."})
 
     # ---- the cheapest available rankings
     try:

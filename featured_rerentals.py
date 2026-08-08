@@ -78,6 +78,10 @@ NOT_A_STREET = re.compile(
     r'^\s*\d+[\w-]*\s+(results?|active|listings?|available|units?|bed|beds|bedrooms?|'
     r'studios?|person|people|household|applicants?|min(?:ute)?s?|hours?|days?|weeks?|'
     r'months?|years?|bath|baths|sq\.?\s*ft)\b', re.I)
+# "1-Bedroom - 2-Bedroom" is a unit-type list, but the hyphen glues the stopword
+# to the number so NOT_A_STREET's `\d+[\w-]*\s+` swallows it and the line reads
+# as a street. It published as the headline of every Affordable for NY tile.
+UNIT_TYPE = re.compile(r'^\s*(?:studio|\d+)\s*[-–]?\s*(?:bed|bd|br|bath|ba)\w*\b', re.I)
 # MHANY leaves leased buildings on the page with the application closed. A tile
 # for an apartment nobody can apply to is worse than no tile.
 CLOSED = re.compile(r'application process is closed|no longer available|recently leased|'
@@ -128,6 +132,64 @@ BOROS = {"manhattan": "Manhattan", "new york": "Manhattan", "brooklyn": "Brookly
 # address, a photo and a link — so that is what this looks for, taking the
 # smallest block that qualifies so a wrapper doesn't swallow the whole grid.
 EXTRACT_JS = r"""() => {
+  // "Apply on their site" has to land on THE apartment. Taking the first <a> in
+  // the block sent six agents' tiles to the board they were scraped from and
+  // C+C's to the company logo in the header, so every candidate link is scored
+  // and the board itself is explicitly worth nothing.
+  // Not "home": Tax Solute's whole board lives at a Google Sites path ending
+  // /hpd/home, and denying it sent every one of their tiles to a Drive PDF.
+  const NAVISH = /\/(about|contact|careers?|privacy|terms|login|sign-?in|team|news|blog|faq|accessibility|residents?|capabilities|vendors?)\b/i;
+  const ACTION = /\b(apply|view|details?|more|learn|floor\s*plans?|availab|listings?|inquire|see)\b/i;
+  const JUNK_HOST = /(facebook|twitter|x|instagram|linkedin|youtube|tiktok|pinterest|accessibe|google\.com\/maps)\./i;
+  // A flyer is a document, not a page you can apply on. Tax Solute links both
+  // the PDF and the building's own section of their board from the same card,
+  // and the PDF names the building so it outscores everything — but "Apply on
+  // their site" opening a Drive download is not what the button says.
+  const DOCISH = /\.(pdf|docx?|xlsx?|pptx?)($|\?)|drive\.google\.com\/file|dropbox\.com\/s\//i;
+  const words = s => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().split(/\s+/).filter(Boolean);
+
+  // Which link on this card points at this apartment?
+  function pickHref(el, addr) {
+    const here = new URL(location.href);
+    const herePath = here.pathname.replace(/\/+$/, '');
+    const cands = [];
+    if (el.matches('a')) cands.push(el);
+    el.querySelectorAll('a').forEach(a => cands.push(a));
+    // Card grids often wrap the whole tile in the link rather than putting one
+    // inside it, so an <a> a level or two up counts as this card's link.
+    let hop = el.parentElement;
+    for (let i = 0; i < 3 && hop; i++, hop = hop.parentElement) {
+      if (hop.matches && hop.matches('a')) cands.push(hop);
+    }
+    // Words a listing's own URL or link text would repeat from the address.
+    const aw = words(addr).filter(w => w.length > 2 && !/^\d+$/.test(w));
+    const num = ((addr.match(/^\s*(\d+[\w-]*)/) || [])[1] || '').toLowerCase();
+
+    let best = null, bestScore = 0;
+    for (const a of cands) {
+      let u;
+      try { u = new URL(a.getAttribute('href') || '', location.href); } catch (e) { continue; }
+      if (!/^https?:$/.test(u.protocol) || JUNK_HOST.test(u.hostname)) continue;
+      const path = u.pathname.replace(/\/+$/, '');
+      const isRoot = path === '';
+      const samePage = path === herePath && !u.search;
+      // The board a listing was scraped from is not that listing.
+      if (isRoot || (samePage && u.hash.length < 3)) continue;
+      if (NAVISH.test(path)) continue;
+      const text = (a.innerText || '').trim();
+      const hay = (path + ' ' + u.search + ' ' + text).toLowerCase();
+      const hits = aw.filter(w => hay.includes(w)).length;
+
+      let score;
+      if (DOCISH.test(u.href)) score = 1;              // last resort: a flyer beats a grid
+      else if (hits >= 2 || (hits === 1 && num && hay.includes(num))) score = 5;  // names the building
+      else if (samePage) score = 2;                    // one-page board, deep-linked by fragment
+      else score = ACTION.test(text) ? 4 : 3;
+      if (score > bestScore) { bestScore = score; best = u.href; }
+    }
+    return best;
+  }
+
   const ADDR = /^\s*\d+[\w-]*\s+[A-Za-z0-9.'-]/;
   // Same stopwords the Python side uses, and they have to be HERE too: "1
   // Unit", "10 results" and "3 Beds" all open with a number and a word, so
@@ -160,7 +222,6 @@ EXTRACT_JS = r"""() => {
     const key = bldg(addrs[0]);
     const prev = best.get(key);
     if (prev && prev.len >= txt.length) return;
-    const a = el.matches('a') ? el : el.querySelector('a');
     // The photo often sits on a sibling wrapper rather than inside the text
     // block, so walk up a couple of levels before giving up on it.
     let img = el.querySelector('img'), hop = el;
@@ -168,17 +229,44 @@ EXTRACT_JS = r"""() => {
       hop = hop.parentElement;
       if ((hop.innerText || '').length < 1500) img = hop.querySelector('img');
     }
+    // The card's own headline, for the boards whose only street address is
+    // buried inside it ("Greenpoint Central Apartments - 65 Dupont Street").
+    const h = el.querySelector('h1, h2, h3, h4, [class*="title"], [class*="Title"]');
     best.set(key, {
+      el,
       len: txt.length,
       addr: addrs[0],
+      heading: h ? (h.innerText || '').trim().replace(/\s+/g, ' ').slice(0, 120) : '',
       lines: lines.slice(0, 14),
-      href: a ? a.href : null,
+      href: pickHref(el, addrs[0]),
       img: img ? (img.currentSrc || img.src) : null,
       imgW: img ? img.naturalWidth : 0,
       imgH: img ? img.naturalHeight : 0,
     });
   });
-  return [...best.values()];
+  // Hand each card a handle so the Python side can click the ones that turned
+  // out to have no link at all (see resolve_by_click). Tag the tightest element
+  // that still holds the address, not the block the record came from: with one
+  // listing on the page the block is the whole page shell, and pressing that
+  // does nothing (iAfford NY has exactly one). A click on something inside the
+  // card bubbles up to the card's own handler, so going too deep is harmless.
+  const tightest = (el, addr) => {
+    let cur = el;
+    for (let d = 0; d < 8; d++) {
+      const kids = [...cur.children].filter(k => (k.innerText || '').includes(addr));
+      if (kids.length !== 1) break;
+      cur = kids[0];
+    }
+    return cur;
+  };
+  const out = [];
+  [...best.entries()].forEach(([key, rec], i) => {
+    const probe = 'fac' + i;
+    try { tightest(rec.el, rec.addr).setAttribute('data-fac-probe', probe); } catch (e) {}
+    delete rec.el;
+    out.push({...rec, probe});
+  });
+  return out;
 }"""
 
 
@@ -300,6 +388,14 @@ def parse_card(c, agent, page_url):
     if addr_i is None:
         return None
     address = clean_address(c.get("addr") or lines[addr_i])
+    # Angular boards (afny.org, iaffordny.com) print no street on its own line —
+    # the address is inside the headline and the only address-shaped line left
+    # is the unit-type list. Take the headline rather than dropping the card.
+    if UNIT_TYPE.match(address):
+        heading = re.sub(r'\s+', ' ', c.get("heading") or "").strip()
+        if len(heading) < 8 or is_generic_title(heading):
+            return None
+        address = clean_address(heading)
     # The building's name, when the site prints one above the address.
     title = ""
     if addr_i > 0:
@@ -330,8 +426,77 @@ def parse_card(c, agent, page_url):
         "units": int(um.group(1)) if um else None,
         "beds": bm.group(1).lower() if bm else None,
         "href": c["href"] or page_url,
+        # Whether that link is the apartment or just the board it sits on. The
+        # tile says which, because "Apply on their site" pointing at a grid of
+        # 35 other apartments is a promise the link doesn't keep.
+        "href_kind": "listing" if c["href"] else "agent_page",
+        "probe": c.get("probe"),
         "image_src": c["img"] if (c.get("imgW") or 0) >= 240 else None,
     }
+
+
+def addr_words(address):
+    """The tokens of an address distinctive enough to recognise it elsewhere."""
+    toks = [w for w in re.split(r'[^a-z0-9]+', address.lower()) if len(w) > 2]
+    return [w for w in toks if not w.isdigit()], (re.match(r'\s*(\d+[\w-]*)', address) or [""])[0].strip().lower()
+
+
+def looks_like(address, text):
+    """Does this page look like it is about this address?
+
+    The check that makes clicking safe. A click resolves to whatever the site
+    navigates to, and if the grid re-rendered between tagging and pressing, that
+    is a different apartment — a confidently wrong link, which is worse than the
+    board it replaced. So the destination has to name the building.
+    """
+    words, num = addr_words(address)
+    low = text.lower()
+    hits = sum(1 for w in words[:6] if w in low)
+    return hits >= 2 or (hits >= 1 and num and num in low)
+
+
+def resolve_by_click(page, records, page_url, limit=10):
+    """Cards with no link anywhere: press one and see where the site goes.
+
+    afny.org and iaffordny.com render their boards as an Angular grid — the card
+    is a bare <div id="project-3399348"> with no anchor in it, above it, or
+    anywhere near it, and the router turns a click into /re-rentals/3399348.
+    There is no href in the DOM to find, so pressing the card is the only way to
+    learn the apartment's URL. Six of the site's tiles pointed at the board they
+    came from because of this.
+
+    Each click is verified against the address and rolled back, and the whole
+    thing is best-effort: anything unexpected leaves the record on its board.
+    """
+    todo = [r for r in records if r["href_kind"] == "agent_page" and r.get("probe")][:limit]
+    fixed = 0
+    for rec in todo:
+        sel = f'[data-fac-probe="{rec["probe"]}"]'
+        try:
+            if not page.query_selector(sel):
+                page.evaluate(EXTRACT_JS)          # a back-navigation re-rendered the grid
+                if not page.query_selector(sel):
+                    continue
+            page.click(sel, timeout=5000)
+            page.wait_for_timeout(2500)
+            dest, body = page.url, page.evaluate("() => document.body.innerText")[:4000]
+            if dest.rstrip("/") != page_url.rstrip("/") and looks_like(rec["address"], body):
+                rec["href"] = dest
+                rec["href_kind"] = "listing"
+                fixed += 1
+            if page.url != page_url:
+                page.go_back(wait_until="domcontentloaded", timeout=20000)
+                page.wait_for_timeout(1500)
+        except Exception:
+            # A click that misfires must not cost the rest of the board. Get
+            # back to the grid if we can and move on.
+            try:
+                if page.url != page_url:
+                    page.goto(page_url, wait_until="domcontentloaded", timeout=30000)
+                    page.wait_for_timeout(2500)
+            except Exception:
+                return fixed
+    return fixed
 
 
 def sweep(pages, only=None):
@@ -354,7 +519,7 @@ def sweep(pages, only=None):
                     page.wait_for_timeout(700)
                 page.wait_for_timeout(1200)
                 cands = page.evaluate(EXTRACT_JS)
-                seen = set()
+                seen, found = set(), []
                 for c in cands:
                     rec = parse_card(c, name, meta["url"])
                     if not rec:
@@ -363,7 +528,11 @@ def sweep(pages, only=None):
                     if not k or k in seen:
                         continue
                     seen.add(k)
-                    out.append(rec)
+                    found.append(rec)
+                resolve_by_click(page, found, meta["url"])
+                for rec in found:
+                    rec.pop("probe", None)
+                out.extend(found)
             except Exception as e:
                 errors[name] = f"{type(e).__name__}: {str(e)[:70]}"
             finally:
@@ -501,6 +670,10 @@ def rank(records):
             s += 2
         if r.get("image"):
             s += 3
+        # A tile whose button opens the apartment beats one that opens the board
+        # and leaves the reader to find it again.
+        if r.get("href_kind") == "listing":
+            s += 2
         if r.get("borough"):
             s += 1
         if r.get("units"):
@@ -554,7 +727,9 @@ def main():
     for r in records:
         agents.setdefault(r["agent"], 0)
         agents[r["agent"]] += 1
+    deep = sum(1 for r in records if r.get("href_kind") == "listing")
     print(f"{len(records)} listings from {len(agents)} agents · {kept_img} with a photo"
+          + f" · {deep} link to the apartment, {len(records) - deep} to the agent's board"
           + (f" · {dropped_img} stale photo(s) removed" if dropped_img else ""))
     for a, n in sorted(agents.items(), key=lambda kv: -kv[1]):
         print(f"  {n:3}  {a}")

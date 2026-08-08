@@ -2772,9 +2772,14 @@
         ${bits.length ? `<div class="units-line">${bits.join(' · ')}</div>` : ''}
         <div class="feat-agent">Listed by <b>${esc(f.agent)}</b> — an HPD-approved marketing agent</div>
         <div class="actions">
+          <!-- A few agents (Clinton Management) publish a board with no page
+               per apartment, so the link can only be that board. Saying "Apply"
+               and landing someone in a grid of other people's apartments is a
+               promise the link doesn't keep — so the button says which it is. -->
           <a class="btn-primary" data-action="featured" style="flex:1"
              target="_blank" rel="noopener nofollow"
-             href="${esc(f.href)}">Apply on their site ↗</a>
+             href="${esc(f.href)}">${f.href_kind === 'agent_page'
+               ? 'Find it on their listings page ↗' : 'Apply on their site ↗'}</a>
         </div>
       </div>
     </div>`;

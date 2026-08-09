@@ -573,6 +573,18 @@
     pointer-events: none; }
   .card.feat-card .photo { background: var(--surface-3); }
   .card.feat-card .feat-agent { font-size: 11px; color: var(--ink-2); margin-top: 6px; }
+  /* Housing Connect. A different badge colour from the re-rental tiles because
+     it is a different kind of offer — a lottery with a deadline, not a unit you
+     can take today. NYC green rather than the purple used for featured. */
+  .card.hc-card .hc-flag { position: absolute; top: 8px; left: 8px; z-index: 3;
+    font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+    color: #fff; background: #1c7a4a; padding: 3px 8px; border-radius: 4px;
+    pointer-events: none; }
+  .card.hc-card .photo { background: var(--surface-3); }
+  .card.hc-card .feat-agent { font-size: 11px; color: var(--ink-2); margin-top: 6px; }
+  .hc-days { display: inline-block; margin-top: 6px; font-size: 12px; font-weight: 700;
+    color: var(--ink-2); }
+  .hc-days.urgent { color: var(--err-ink); }
   .card.feat-card .feat-agent b { font-weight: 600; color: var(--ink); }
   /* Income bands are not rent and must never be mistaken for it. */
   .card.feat-card .price.income { font-size: 14px; }
@@ -2837,6 +2849,25 @@
   let FEATURED = [];
   let featCursor = 0;
 
+  // ---------- NYC Housing Connect lotteries ----------
+  // A separate feed and a separate badge from the re-rental tiles above, on
+  // purpose. Housing Connect is the city's LOTTERY: you apply by a deadline and
+  // are picked by log number. A re-rental is a vacated affordable unit that
+  // never goes back into a lottery — usually first-come, first-served. Reading
+  // one as the other sends someone to the wrong kind of application, so the two
+  // never share a tile type.
+  const HC_EVERY = 7;                   // one Housing Connect tile every N cards
+  let HC = [];
+  let hcCursor = 0;
+  if (IS_NYC) fetch('/housing_connect.json', { cache: 'no-cache' })
+    .then(r => r.ok ? r.json() : null)
+    .then(d => {
+      if (!d || !Array.isArray(d.lotteries) || !d.lotteries.length) return;
+      HC = d.lotteries;
+      refreshGrid();
+    })
+    .catch(() => { /* no lottery feed today: the grid just has no HC tiles */ });
+
   // NYC only. Every one of these agents is on HPD's approved list, so the
   // apartments are all in the five boroughs — the same template builds /sf/,
   // /la/ and /dc/, and a Bronx re-rental in a San Francisco grid is just wrong.
@@ -2947,6 +2978,75 @@
     return featuredCardHtml(f);
   }
 
+  function hcCardHtml(h) {
+    const n = v => '$' + Number(v).toLocaleString();
+    const rent = h.rent_low
+      ? (h.rent_high && h.rent_high !== h.rent_low
+          ? n(h.rent_low) + '–' + n(h.rent_high) : n(h.rent_low)) + '/mo'
+      : 'See listing for rents';
+    // The income band is the thing that decides whether someone is eligible at
+    // all, so it sits next to the rent rather than buried — and it is labelled,
+    // because an unlabelled five-figure number next to a rent reads as a rent.
+    const income = (h.income_min && h.income_max)
+      ? `Household income ${n(h.income_min)}–${n(h.income_max)}` : '';
+    const where = [h.neighborhood, h.borough].filter(Boolean).join(' · ');
+    const bits = [];
+    if (h.beds && h.beds.length) bits.push(h.beds.join(' · '));
+    if (h.household_min && h.household_max)
+      bits.push(`${h.household_min}–${h.household_max} people`);
+    // A deadline is the whole point of a lottery tile. Under a week is called
+    // out in red — that is a real "apply this week or you cannot".
+    const d = h.days_left;
+    const urgent = d != null && d <= 7;
+    const left = d == null ? '' :
+      `<span class="hc-days${urgent ? ' urgent' : ''}">${d === 1 ? 'Closes tomorrow' : 'Closes in ' + d + ' days'}</span>`;
+    const sv = (h.lat && h.lng) ? streetviewUrl(h.lat, h.lng) : null;
+    return `<div class="card hc-card">
+      <span class="hc-flag">Housing Connect</span>
+      <div class="photo">
+        ${sv ? `<img class="streetview" loading="lazy" src="${sv}" alt=""
+             onerror="this.style.display='none'">` : ''}
+        <div class="photo-shade"></div>
+        <div class="badge-row"><span></span><span class="listed-pill">Lottery</span></div>
+        <div class="addr-overlay">${esc(h.name || h.address || 'Housing Connect lottery')}</div>
+      </div>
+      <div class="body">
+        ${where ? `<div class="nb">${esc(where)}</div>` : ''}
+        <div class="price">${esc(rent)}</div>
+        ${income ? `<div class="units-line">${esc(income)}</div>` : ''}
+        ${bits.length ? `<div class="units-line">${esc(bits.join(' · '))}</div>` : ''}
+        ${left}
+        <div class="feat-agent">NYC Housing Connect — the city's affordable-housing lottery</div>
+        <div class="actions">
+          <a class="btn-primary" data-action="hc" style="flex:1"
+             target="_blank" rel="noopener nofollow"
+             href="${esc(h.href)}">Apply on Housing Connect ↗</a>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // Only lotteries in a borough currently on screen, the same rule the featured
+  // pool uses: a Bronx lottery leading a grid of Chelsea buildings is noise.
+  let hcPool = [];
+  function setHcPool(visible) {
+    if (!HC.length) { hcPool = []; return; }
+    const boros = new Set();
+    for (let i = 0; i < visible.length; i++) {
+      const name = BORO_NAME[visible[i].b];
+      if (name) boros.add(name);
+      if (boros.size >= N_REGIONS) break;
+    }
+    hcPool = HC.filter(h => h.borough && boros.has(h.borough));
+  }
+
+  function nextHc() {
+    if (!hcPool.length) return '';
+    const h = hcPool[hcCursor % hcPool.length];
+    hcCursor++;
+    return hcCardHtml(h);
+  }
+
   // fill any ad slots that were just rendered but not yet initialized
   function initAds() {
     if (!ADS_ON()) return;
@@ -3007,7 +3107,9 @@
     const ads = ADS_ON();
     const parts = [];
     featCursor = 0;
+    hcCursor = 0;
     setFeaturedPool(visible);
+    setHcPool(visible);
     // Lead with a featured apartment, then one after every FEAT_EVERY
     // buildings. It goes first because it is the only inventory on this page
     // someone can actually apply to today — burying it eight cards down meant
@@ -3016,6 +3118,10 @@
     shown.forEach((rec, i) => {
       parts.push(cardHtml(rec));
       if (ads && (i + 1) % AD_EVERY === 0) parts.push(adCardHtml());
+      // 7 and 8 are deliberately coprime-ish with 6: three interleaved tile
+      // types on the same multiple would stack three non-building cards in a
+      // row every 24 slots and the grid would read as an ad break.
+      if ((i + 1) % HC_EVERY === 0) parts.push(nextHc());
       if ((i + 1) % FEAT_EVERY === 0) parts.push(nextFeatured());
     });
     grid.innerHTML = parts.join('') + (truncated

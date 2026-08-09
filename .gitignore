@@ -79,3 +79,4 @@ __pycache__/
 rerental_history.json
 supabase/.temp/
 founding_sent.json
+housing_connect.json

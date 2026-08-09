@@ -993,8 +993,11 @@ def dashboard_nemo():
     denied = _dashboard_denial(_dashboard_auth(), ("ok", "nemo"))
     if denied:
         return denied
+    rng = (request.args.get("range") or "all").lower()
+    if rng not in DASHBOARD_RANGES:
+        rng = "all"
     try:
-        return jsonify(nemo_metrics.build_cached())
+        return jsonify(nemo_metrics.build_cached(rng=rng))
     except Exception:
         return jsonify(error="temporarily_unavailable"), 503
 

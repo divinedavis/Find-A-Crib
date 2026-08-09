@@ -60,11 +60,41 @@ BOOKINGS_DB = os.environ.get("NEMO_BOOKINGS_DB",
 # beside this file so a recycled gunicorn worker starts from the last answer
 # instead of from nothing. Only the first build after a deploy ever blocks.
 CACHE_TTL = 120
-_CACHE = {"at": 0.0, "data": None}
+# Keyed by range. A build costs ~14 s, so every range needs its own slot —
+# a single slot would make each click of the picker evict the previous answer
+# and pay the full rebuild again.
+_CACHE = {}                      # rng -> {"at": float, "data": dict}
 _LOCK = threading.Lock()
-_REFRESHING = False
+_REFRESHING = set()              # ranges with a rebuild already in flight
 PAYLOAD_CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                              "nemo_payload_cache.json")
+
+
+def _cache_path(rng):
+    """One file per range. 'all' keeps the original filename so a deploy does
+    not throw away the payload the previous process left behind."""
+    return (PAYLOAD_CACHE if rng == "all"
+            else PAYLOAD_CACHE.replace(".json", f".{rng}.json"))
+
+
+def range_start(rng):
+    """First day included in `rng`, as an ISO date, or None for all time.
+
+    NEMO's history is a day-keyed series, so a range is a simple lower bound on
+    that key — no timezone arithmetic, because the series is already binned by
+    the server's local day.
+    """
+    today = datetime.date.today()
+    rng = (rng or "all").lower()
+    if rng == "today":
+        return today.isoformat()
+    if rng == "month":
+        return today.replace(day=1).isoformat()
+    if rng == "3m":
+        return (today - datetime.timedelta(days=91)).isoformat()
+    if rng == "6m":
+        return (today - datetime.timedelta(days=182)).isoformat()
+    return None
 
 CHANNELS = [
     ("organic", "Organic search", "#eda100"),
@@ -222,11 +252,25 @@ def _calls(dates, today_key):
     return out
 
 
-def build(days=14):
-    """The dashboard view model for NEMO."""
+def build(days=14, rng="all"):
+    """The dashboard view model for NEMO.
+
+    `rng` scopes every period total. Filtering the day-keyed history once here
+    is what makes it work everywhere downstream — traffic, channels, call taps,
+    leads and calls are all sums over these same keys, so bounding the series
+    bounds all of them without touching each tile. The explicitly all-time
+    tiles (phone leads, calls into the AI) read their own sources and stay
+    all-time, which is what their labels already say.
+    """
     hist = _daily_series()
     today_key = datetime.date.today().isoformat()
-    live = _today_live()
+    since = range_start(rng)
+    if since:
+        hist = {d: m for d, m in hist.items() if d >= since}
+    # Today is inside every range this picker offers, so the live parse is
+    # always included; it is named here rather than assumed so a future range
+    # that excludes today does not silently double-count it.
+    live = _today_live() if (not since or today_key >= since) else {}
     warnings = []
     if not live:
         warnings.append("Today's live traffic could not be read from the access log.")
@@ -325,6 +369,8 @@ def build(days=14):
         "site": "nemo",
         "domain": snap.get("site") or "nemoseamlessgutter.com",
         "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        # What the numbers are scoped to, so the UI never has to guess.
+        "range": (rng or "all").lower(),
         "since": rows[0]["date"] if rows else None,
         "live": bool(live),
         "totals": totals,
@@ -379,15 +425,15 @@ def build(days=14):
     }
 
 
-def _store(data):
+def _store(data, rng="all"):
     with _LOCK:
-        _CACHE["at"] = time.time()
-        _CACHE["data"] = data
-    tmp = PAYLOAD_CACHE + ".tmp"
+        _CACHE[rng] = {"at": time.time(), "data": data}
+    path = _cache_path(rng)
+    tmp = path + ".tmp"
     try:
         with open(tmp, "w") as f:
             json.dump(data, f)
-        os.replace(tmp, PAYLOAD_CACHE)
+        os.replace(tmp, path)
     except Exception:
         try:
             os.unlink(tmp)
@@ -395,53 +441,55 @@ def _store(data):
             pass
 
 
-def _refresh_bg(days):
-    global _REFRESHING
+def _refresh_bg(days, rng):
     try:
-        _store(build(days=days))
+        _store(build(days=days, rng=rng), rng)
     except Exception:
         pass
     finally:
         with _LOCK:
-            _REFRESHING = False
+            _REFRESHING.discard(rng)
 
 
-def build_cached(days=14):
-    global _REFRESHING
+def build_cached(days=14, rng="all"):
+    rng = (rng or "all").lower()
     now = time.time()
     with _LOCK:
-        data, at = _CACHE["data"], _CACHE["at"]
+        slot = _CACHE.get(rng) or {}
+        data, at = slot.get("data"), slot.get("at", 0.0)
 
     if data is None:
         # Fresh process: the last payload another worker (or a previous life of
         # this one) persisted is a better answer than a 14 s rebuild.
         try:
-            with open(PAYLOAD_CACHE) as f:
+            with open(_cache_path(rng)) as f:
                 disk = json.load(f)
         except Exception:
             disk = None
         if isinstance(disk, dict):
             with _LOCK:
-                if _CACHE["data"] is None:
-                    _CACHE["data"] = disk       # at stays 0.0 → refresh below
-                data, at = _CACHE["data"], _CACHE["at"]
+                if _CACHE.get(rng) is None:
+                    _CACHE[rng] = {"at": 0.0, "data": disk}   # at 0 → refresh below
+                slot = _CACHE.get(rng) or {}
+                data, at = slot.get("data"), slot.get("at", 0.0)
 
     if data is not None:
         if now - at < CACHE_TTL:
             return data
-        # Stale: hand it over now, rebuild behind the response. One refresh at
-        # a time — a second expired request must not start a second rebuild.
+        # Stale: hand it over now, rebuild behind the response. One refresh per
+        # range — a second expired request must not start a second rebuild, but
+        # a different range must not be blocked by this one either.
         with _LOCK:
-            kick = not _REFRESHING
+            kick = rng not in _REFRESHING
             if kick:
-                _REFRESHING = True
+                _REFRESHING.add(rng)
         if kick:
-            threading.Thread(target=_refresh_bg, args=(days,), daemon=True).start()
+            threading.Thread(target=_refresh_bg, args=(days, rng), daemon=True).start()
         return data
 
     # Nothing in memory or on disk — first build after a deploy pays once.
-    data = build(days=days)
-    _store(data)
+    data = build(days=days, rng=rng)
+    _store(data, rng)
     return data
 
 

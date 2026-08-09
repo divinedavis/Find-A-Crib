@@ -354,9 +354,9 @@
           <button data-site="nemo">🏠 NEMO Gutter</button>
         </div>
         <span class="live-pill"><span class="live-dot"></span> Live data</span>
-        <!-- Scopes every tile that counts something over a period. Hidden on
-             NEMO, whose feed has no range support. -->
-        <div class="range-switch fac-only" id="range-switch" role="group" aria-label="Date range">
+        <!-- Scopes every tile that counts something over a period, on both
+             sites. Tiles labelled "(all-time)" stay all-time by design. -->
+        <div class="range-switch" id="range-switch" role="group" aria-label="Date range">
           <button type="button" data-range="all"   class="on">All time</button>
           <button type="button" data-range="6m">6 mo</button>
           <button type="button" data-range="3m">3 mo</button>
@@ -739,8 +739,8 @@
   var inflight = {};
 
   // ---------- date range ----------
-  // Only Find A Crib's feed understands a range; NEMO's is a different builder
-  // with no period parameter, so asking it for one would be a silent no-op.
+  // Both feeds understand it. NEMO's history is a day-keyed series, so its
+  // builder bounds the same keys every tile sums over.
   var RANGES = ['all','6m','3m','month','today'];
   var rangeKey = 'all';
   try{
@@ -748,11 +748,9 @@
     if(saved && RANGES.indexOf(saved) >= 0) rangeKey = saved;
   }catch(e){}
 
-  function cacheKey(k){ return k === 'fac' ? k + ':' + rangeKey : k; }
+  function cacheKey(k){ return k + ':' + rangeKey; }
   function feedUrl(k){
-    return k === 'fac'
-      ? SITES[k].endpoint + '?range=' + encodeURIComponent(rangeKey)
-      : SITES[k].endpoint;
+    return SITES[k].endpoint + '?range=' + encodeURIComponent(rangeKey);
   }
 
   function paintRangeSwitch(){

@@ -403,6 +403,108 @@ def _city_faq(key, place, st):
     return faq
 
 
+# The three sentences a city-level answer is assembled from. Split out per city
+# rather than templated because the authority behind each dataset is different
+# and one wording would be untrue of two of the three: SF is an owner-reported
+# inventory anonymized to the block, LA is a derived proxy for a list the City
+# holds, DC is a registration record. `source` is a noun phrase that reads after
+# "from"; `rule` states the legal test; `caveat` is the limit of the data and is
+# never optional.
+CITY_BROWSE_COPY = {
+    "sf": dict(
+        unit="apartments",
+        source="the San Francisco Rent Board's housing inventory",
+        rule="San Francisco rent control generally covers buildings occupied before 13 June 1979, "
+             "capping the annual increase and requiring just cause to end a tenancy.",
+        caveat="The inventory is published anonymized to the block, not the individual address.",
+    ),
+    "la": dict(
+        unit="apartments",
+        source="Los Angeles County Assessor parcel records filtered to the Rent Stabilization "
+               "Ordinance criteria",
+        rule="The RSO caps how much the rent can rise each year and requires just cause to evict.",
+        caveat="This is a derived list labelled likely RSO, not the City's official inventory, "
+               "which LAHD holds.",
+    ),
+    "dc": dict(
+        unit="units",
+        source="registration filings held by the District's Rental Accommodations Division",
+        rule="DC rent control generally covers buildings built before 1976 and caps how much the "
+             "rent can rise each year.",
+        caveat="A property is listed because its housing provider filed it as covered, so "
+               "registration is the operative record.",
+    ),
+}
+
+
+def _place_word(cfg, plural=False):
+    """'ZIP code' / 'neighborhood', matching how the city is grouped."""
+    if cfg["path"] == "zip":
+        return "ZIP codes" if plural else "ZIP code"
+    return "neighborhoods" if plural else "neighborhood"
+
+
+def _city_browse_answer(key, cfg, n, places, agg):
+    """The extractable answer for a city's browse hub.
+
+    Scoped to the index, not to the city: `n` is the sum over places that clear
+    MIN_CITY_HUB, so "San Francisco has n" would overstate it. "This index
+    covers n" is the claim the data actually supports, and it is the claim an
+    answer engine would be quoting.
+    """
+    units = agg["units"]
+    return [f"This index covers {n:,} {cfg['things']} across {places} "
+            f"{_place_word(cfg, plural=True)} in {cfg['name']}, from {CITY_BROWSE_COPY[key]['source']}"
+            + (f", about {units:,} {CITY_BROWSE_COPY[key]['unit']} in total." if units else "."),
+            CITY_BROWSE_COPY[key]["rule"],
+            CITY_BROWSE_COPY[key]["caveat"]]
+
+
+def _city_browse_faq(key, cfg, n, places, small, counts, agg):
+    """City-level Q&A for a browse hub — facts no single place page can state.
+
+    Deliberately not a rewrite of the place-page FAQ: the two questions here are
+    "how big is this index and what is left out of it" and "where is the data
+    concentrated", both of which are answerable only across the whole tier.
+    """
+    copy = CITY_BROWSE_COPY[key]
+    left_off = (f" A further {small:,} {_place_word(cfg, plural=small != 1)} had fewer than "
+                f"{MIN_CITY_HUB} {cfg['things']} and are not broken out here, rather than "
+                f"published as near-empty pages." if small else "")
+    faq = [(f"How many {cfg['things']} in {cfg['name']} does this index list?",
+            f"{n:,} {cfg['things']} across {places} {_place_word(cfg, plural=True)}, from "
+            f"{copy['source']}.{left_off} {copy['caveat']}")]
+
+    ranked = sorted(counts.items(), key=lambda kv: -kv[1])
+    if len(ranked) >= 2:
+        (top, top_n), (nxt, nxt_n) = ranked[0], ranked[1]
+        lead = f"{'ZIP code ' if cfg['path'] == 'zip' else ''}{top}"
+        faq.append((f"Which {_place_word(cfg)} in {cfg['name']} has the most {cfg['things']}?",
+                    f"{lead}, with {top_n:,} of the {n:,} {cfg['things']} listed here "
+                    f"({top_n * 100.0 / n:.1f}%). "
+                    f"{'ZIP code ' if cfg['path'] == 'zip' else ''}{nxt} follows with {nxt_n:,}. "
+                    f"That is where this dataset records them, which is not the same as where "
+                    f"every regulated unit in {cfg['name']} is."))
+
+    # The third question is whichever city-wide statistic that city's data
+    # actually carries. Not one template: build year is the near-test in SF and
+    # LA and is the wrong frame in DC, where coverage turns on registration and
+    # a pre-1976 build, and where the filings carry a reported rent instead.
+    if key in ("sf", "la") and agg["yr"]:
+        faq.append((f"How old are the {cfg['things']} in this index?",
+                    f"The median build year across the {len(agg['yr']):,} with a recorded year is "
+                    f"{_med(agg['yr'])}. Build year is what the assessor recorded; the ordinance "
+                    f"turns on when the certificate of occupancy was issued, so treat it as an "
+                    f"indication rather than a ruling."))
+    elif key == "dc" and len(agg["mr"]) >= MIN_CITY_HUB:
+        faq.append(("What rent is reported for rent-controlled units in Washington DC?",
+                    f"The median rent reported to the Rental Accommodations Division across the "
+                    f"{len(agg['mr']):,} properties in this index that reported one is "
+                    f"${_med(agg['mr']):,}. That is what housing providers filed, not the market "
+                    f"rent and not what a specific unit will cost."))
+    return faq
+
+
 def city_hub_docs(key, guide_ok=True):
     """Render one city's aggregate hub tier. Returns a list of page dicts.
 
@@ -512,13 +614,24 @@ def city_hub_docs(key, guide_ok=True):
         f"<a href=\"/{key}/{cfg['path']}/"
         f"{p if cfg['path'] == 'zip' else slugify(p)}/\">{esc(p)} ({c:,})</a>"
         for p, c in sorted(counts.items()))
-    skipped = (f" {small} more had fewer than {MIN_CITY_HUB} and were left off rather than "
-               f"published as a near-empty page." if small else "")
+    # Reworded when the count sentence moved into the answer block above: "N
+    # more" had an antecedent while this opened with the total and has none now.
+    skipped = (f"{small} {_place_word(cfg, plural=small != 1)} with fewer than {MIN_CITY_HUB} "
+               f"{cfg['things']} were left off rather than published as near-empty pages. "
+               if small else "")
+    # The browse hub is the highest-priority page in this tier (0.9) and the one
+    # the guides, the other cities and the voucher cross-link all point at, but
+    # until 2026-08-09 it was the only page here with no extractable answer and
+    # no FAQ — the pattern that holds the site's best measured position. The
+    # count sentence moved out of the lead and into the answer block rather than
+    # being repeated in both: two adjacent paragraphs saying the same number is
+    # the boilerplate this tier does not need.
+    agg = _city_stats([x for v in big.values() for x in v])
+    browse_faq = _city_browse_faq(key, cfg, total_recs, total_places, small, counts, agg)
     body = (f"<div class='crumbs'><a href='/'>Home</a> › <a href='/{key}/'>{esc(city)}</a></div>"
             f"<h1>{esc(cfg['browse_h1'])}</h1>"
-            f"<p class='lead'>{total_recs:,} {esc(cfg['things'])} across {total_places} "
-            f"{'ZIP codes' if cfg['path'] == 'zip' else 'neighborhoods'} in {esc(city)}."
-            f"{esc(skipped)} Start with your "
+            + answer_block(_city_browse_answer(key, cfg, total_recs, total_places, agg))
+            + f"<p class='lead'>{esc(skipped)}Start with your "
             f"{'ZIP code' if cfg['path'] == 'zip' else 'neighborhood'}, or "
             f"<a href='/{key}/'>open the map</a>.</p>"
             + guide_link
@@ -528,7 +641,8 @@ def city_hub_docs(key, guide_ok=True):
             + "".join(f"<a href='/{o}/buildings/'>{esc(oc['browse_h1'])}</a>"
                       for o, oc in others)
             + "</div>"
-            + CITY_VOUCHER_XLINK.format(city=esc(city)))
+            + CITY_VOUCHER_XLINK.format(city=esc(city))
+            + faq_html(browse_faq))
     crumb = breadcrumb([("Home", SITE + "/"), (city, SITE + f"/{key}/"),
                         (cfg["browse_h1"], SITE + browse_url)])
     docs.append({
@@ -537,7 +651,7 @@ def city_hub_docs(key, guide_ok=True):
         "html": page(f"{cfg['browse_h1']} | Find A Crib",
                      f"Browse {total_recs:,} {cfg['things']} across {total_places} "
                      f"{'ZIP codes' if cfg['path'] == 'zip' else 'neighborhoods'} in {city}.",
-                     SITE + browse_url, body, crumb, footer=footer)})
+                     SITE + browse_url, body, [crumb, faq_jsonld(browse_faq)], footer=footer)})
     return docs
 
 

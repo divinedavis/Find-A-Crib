@@ -911,6 +911,34 @@ def t_indexnow(ctx):
 
 
 # The registry the driver walks. Slug → function.
+ANSWER_MARKER = "class='answer'"
+
+
+def _answer_hub_families():
+    """[(label, [globs relative to a docroot-shaped tree])] for every hub we publish.
+
+    The NYC tier comes from build_seo.py's own pipeline; the SF/LA/DC tier is
+    rendered by build_seo.city_hub_docs but deployed by this build
+    (t_city_seo_expansion), and until 2026-08-09 it was not audited at all —
+    "368 of 368 hub pages" was a green line covering 59% of the hub pages this
+    site publishes, and it would have stayed green through a regression in the
+    only tier whose deploy path still works.
+    """
+    fams = [("neighborhood", ["neighborhood/*/*/index.html"]),
+            ("borough", ["borough/*/index.html"]),
+            ("zip", ["zip/*/index.html"])]
+    for city, rel in sorted(CITY_HUB_DIRS.items()):
+        fams.append((f"{city} hub", [f"{rel}/*/index.html"]))
+    # The browse hubs are one page per city, the highest-priority page in the
+    # tier (0.9) and the page the guides, the other cities and the voucher
+    # cross-link all point at. They carried no answer block until 2026-08-09.
+    # Grouped under one label rather than three so the detail line stays
+    # readable; glob has no brace expansion, hence the list.
+    fams.append(("city browse hub",
+                 [f"{c}/buildings/index.html" for c in sorted(CITY_HUB_DIRS)]))
+    return fams
+
+
 def t_hub_direct_answers(ctx):
     """Verify the hub pages actually carry their direct-answer block.
 
@@ -919,24 +947,40 @@ def t_hub_direct_answers(ctx):
     hypothesis and so the claim is checked against the live docroot every day
     rather than assumed — a generator change that silently drops the block
     would otherwise look identical to one that works.
+
+    Pages this run stages are read from the staging dir when the docroot copy
+    is behind, for the reason t_crawl_paths does the same: cmd_build runs every
+    technique and rsyncs growth_out at the very end, so on the night a change
+    to city_hub_docs ships, the docroot still holds the previous deploy and a
+    docroot-only read would report the tier broken by its own fix. A staged
+    page is never counted as healthy — it is reported separately and keeps ok
+    False, because a block that exists only in growth_out is not one an answer
+    engine can extract. It needs no staleness escalator of its own: these pages
+    ride the same rsync as /section8/ and /brief/, and t_crawl_paths already
+    escalates when that rsync stops landing.
     """
     import glob
-    roots = [("neighborhood", "neighborhood/*/*/index.html"),
-             ("borough", "borough/*/index.html"),
-             ("zip", "zip/*/index.html")]
-    counts, missing = {}, []
-    for label, pattern in roots:
+
+    def has_block(root, rel):
+        try:
+            with open(os.path.join(root, rel), encoding="utf-8", errors="replace") as f:
+                return ANSWER_MARKER in f.read()
+        except OSError:
+            return False
+
+    counts, missing, pending = {}, [], []
+    for label, patterns in _answer_hub_families():
         have = total = 0
-        for path in glob.glob(os.path.join(ctx.docroot, pattern)):
-            total += 1
-            try:
-                with open(path, encoding="utf-8") as f:
-                    if "class='answer'" in f.read():
-                        have += 1
-                    elif len(missing) < 5:
-                        missing.append(os.path.relpath(path, ctx.docroot))
-            except OSError:
-                continue
+        for pattern in patterns:
+            for path in glob.glob(os.path.join(ctx.docroot, pattern)):
+                rel = os.path.relpath(path, ctx.docroot)
+                total += 1
+                if has_block(ctx.docroot, rel):
+                    have += 1
+                elif not ctx.dry_run and has_block(ctx.out, rel):
+                    pending.append(rel)
+                elif len(missing) < 5:
+                    missing.append(rel)
         counts[label] = (have, total)
 
     have = sum(h for h, _ in counts.values())
@@ -945,8 +989,14 @@ def t_hub_direct_answers(ctx):
         return {"ok": False, "detail": "no hub pages found in the docroot — has the SEO build run?"}
     detail = ("answer block on " + f"{have:,} of {total:,} hub pages ("
               + ", ".join(f"{k} {v[0]}/{v[1]}" for k, v in counts.items()) + ")")
+    if pending:
+        shown = ", ".join(sorted(pending)[:5])
+        detail += (f" — {len(pending)} awaiting this run's rsync, the block is in the page this "
+                   f"run staged but not yet in the docroot: {shown}")
+    if missing:
+        detail += f" — missing e.g. {', '.join(missing)}"
     if have < total:
-        return {"ok": False, "detail": detail + f" — missing e.g. {', '.join(missing)}"}
+        return {"ok": False, "detail": detail, "pages": have}
     return {"ok": True, "detail": detail, "pages": have}
 
 

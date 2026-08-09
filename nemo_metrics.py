@@ -51,9 +51,20 @@ BOOKINGS_DB = os.environ.get("NEMO_BOOKINGS_DB",
 
 # Parsing a day of access log on every dashboard load would make the page slow
 # and the log re-read pointless — the numbers only move as fast as traffic does.
+#
+# The TTL alone wasn't enough: the request that arrived after it expired paid
+# the whole rebuild — the ElevenLabs listing plus a detail lookup per unknown
+# call — which took 3–14 s in the access log and froze the dashboard's site
+# switcher for exactly that long. Expiry now serves the stale payload
+# immediately and rebuilds on a background thread, and the payload is persisted
+# beside this file so a recycled gunicorn worker starts from the last answer
+# instead of from nothing. Only the first build after a deploy ever blocks.
 CACHE_TTL = 120
 _CACHE = {"at": 0.0, "data": None}
 _LOCK = threading.Lock()
+_REFRESHING = False
+PAYLOAD_CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             "nemo_payload_cache.json")
 
 CHANNELS = [
     ("organic", "Organic search", "#eda100"),
@@ -368,15 +379,69 @@ def build(days=14):
     }
 
 
-def build_cached(days=14):
-    now = time.time()
-    with _LOCK:
-        if _CACHE["data"] is not None and now - _CACHE["at"] < CACHE_TTL:
-            return _CACHE["data"]
-    data = build(days=days)
+def _store(data):
     with _LOCK:
         _CACHE["at"] = time.time()
         _CACHE["data"] = data
+    tmp = PAYLOAD_CACHE + ".tmp"
+    try:
+        with open(tmp, "w") as f:
+            json.dump(data, f)
+        os.replace(tmp, PAYLOAD_CACHE)
+    except Exception:
+        try:
+            os.unlink(tmp)
+        except Exception:
+            pass
+
+
+def _refresh_bg(days):
+    global _REFRESHING
+    try:
+        _store(build(days=days))
+    except Exception:
+        pass
+    finally:
+        with _LOCK:
+            _REFRESHING = False
+
+
+def build_cached(days=14):
+    global _REFRESHING
+    now = time.time()
+    with _LOCK:
+        data, at = _CACHE["data"], _CACHE["at"]
+
+    if data is None:
+        # Fresh process: the last payload another worker (or a previous life of
+        # this one) persisted is a better answer than a 14 s rebuild.
+        try:
+            with open(PAYLOAD_CACHE) as f:
+                disk = json.load(f)
+        except Exception:
+            disk = None
+        if isinstance(disk, dict):
+            with _LOCK:
+                if _CACHE["data"] is None:
+                    _CACHE["data"] = disk       # at stays 0.0 → refresh below
+                data, at = _CACHE["data"], _CACHE["at"]
+
+    if data is not None:
+        if now - at < CACHE_TTL:
+            return data
+        # Stale: hand it over now, rebuild behind the response. One refresh at
+        # a time — a second expired request must not start a second rebuild.
+        with _LOCK:
+            kick = not _REFRESHING
+            if kick:
+                _REFRESHING = True
+        if kick:
+            threading.Thread(target=_refresh_bg, args=(days,), daemon=True).start()
+        return data
+
+    # Nothing in memory or on disk — first build after a deploy pays once.
+    data = build(days=days)
+    _store(data)
     return data
 
 

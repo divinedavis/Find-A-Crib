@@ -744,12 +744,18 @@
     return fetch(url, opts).finally(function(){ clearTimeout(timer); });
   }
 
+  // The site is captured once, up front: siteKey is a global and every await
+  // below is a chance for a switch click to change it. A slow NEMO response
+  // landing after the owner had already switched to Find A Crib used to run
+  // `cache[siteKey]=data` against the NEW key — NEMO's payload cached under
+  // 'fac' and painted through the Find A Crib renderer, wrong until a reload.
   async function _load(force){
+    var k = siteKey;
     if(!session) return 'signin';
-    if(!force && cache[siteKey]){ paint(cache[siteKey]); return 'ok'; }
+    if(!force && cache[k]){ if(k===siteKey) paint(cache[k]); return 'ok'; }
     var res;
     try{
-      res = await feedFetch(SITES[siteKey].endpoint, await token());
+      res = await feedFetch(SITES[k].endpoint, await token());
     }catch(e){ return 'error'; }
     // A 401 means this token is dead, not that the owner is signed out. Force
     // one refresh and retry before anything can show him the sign-in card.
@@ -759,7 +765,7 @@
       if(fresh){
         session = fresh;
         try{
-          res = await feedFetch(SITES[siteKey].endpoint, fresh.access_token);
+          res = await feedFetch(SITES[k].endpoint, fresh.access_token);
         }catch(e){ return 'error'; }
       }
     }
@@ -767,8 +773,8 @@
     if(res.status===401) return 'signin';
     if(!res.ok) return 'error';
     var data = await res.json();
-    cache[siteKey]=data;
-    paint(data);
+    cache[k]=data;
+    if(k===siteKey) paint(data);
     return 'ok';
   }
 

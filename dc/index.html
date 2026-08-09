@@ -1537,6 +1537,16 @@
       plusActive = !!data && ['active', 'trialing'].includes(data.status) &&
         (!data.current_period_end || new Date(data.current_period_end) > new Date());
     } catch (e) { /* treat as free tier */ }
+    // Membership is only known once this resolves, and the callers above run
+    // updateAuthUI() before awaiting it — so anything that depends on Plus has
+    // to be re-synced here or a member sees the invite button flash in.
+    syncReferralUI();
+  }
+  // Referral UI visibility, in one place because two paths set it: the initial
+  // paint (which does not yet know about Plus) and refreshPlus() (which does).
+  function syncReferralUI() {
+    const rb = document.getElementById('ref-btn');
+    if (rb) rb.hidden = !authUser || plusActive;
   }
   // Saving is free — it just requires an account (the signup hook for ad
   // traffic). Alerts, phones, research, folders, and saved searches stay Plus.
@@ -3825,7 +3835,10 @@
       authBtn.title = '';
       authBtn.removeAttribute('aria-label');
     }
-    const rb = document.getElementById('ref-btn'); if (rb) rb.hidden = !authUser;
+    // The referral offer is "invite a friend, you BOTH get Plus free". There is
+    // nothing in that for someone who already has Plus — permanent is already
+    // permanent — so it is hidden for members rather than dangled at them.
+    syncReferralUI();
     updateDetailBar();
   }
   // detail-sheet top bar: logged out -> "Get free Plus" CTA; logged in -> brand + profile
@@ -4017,13 +4030,21 @@
     // Auto-prompt is capped at once per week per browser — it interrupts the map,
     // so a signed-in regular should see it rarely. The 🎁 header button is always available.
     const REF_PROMPT_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
-    function maybeShowReferralPrompt() {
+    async function maybeShowReferralPrompt() {
       if (!authUser) return;
       try {
         const last = parseInt(localStorage.getItem('ref_prompt_last') || '0', 10);
         if (last && Date.now() - last < REF_PROMPT_COOLDOWN_MS) return;
-        localStorage.setItem('ref_prompt_last', String(Date.now()));
       } catch (e) { return; }   // no storage = no way to rate-limit; stay quiet
+      // Await membership rather than reading whatever plusActive happens to
+      // hold: the callers fire this during boot, alongside the refreshPlus()
+      // they do not wait for, so the flag is still false for a member. This is
+      // the one place a stale read shows the wrong person an offer.
+      await refreshPlus();
+      if (plusActive) return;
+      // Stamp only once it is going to be shown — a prompt suppressed for a
+      // member must not burn the cooldown they would need if they ever lapse.
+      try { localStorage.setItem('ref_prompt_last', String(Date.now())); } catch (e) { return; }
       setTimeout(function () { openReferralModal('auto'); }, 1200);   // let the app settle first
     }
     if (refModal) {

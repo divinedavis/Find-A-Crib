@@ -3115,6 +3115,11 @@
     // someone can actually apply to today — burying it eight cards down meant
     // most visitors never scrolled to one.
     parts.push(nextFeatured());
+    // Housing Connect takes the second slot on every render. hcCursor was just
+    // reset, and the pool is sorted by soonest deadline, so the lead tile is
+    // always the lottery closest to closing in the boroughs on screen — the one
+    // where being a day late actually costs someone the application.
+    parts.push(nextHc());
     shown.forEach((rec, i) => {
       parts.push(cardHtml(rec));
       if (ads && (i + 1) % AD_EVERY === 0) parts.push(adCardHtml());

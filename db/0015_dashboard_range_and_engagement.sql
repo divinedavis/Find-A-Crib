@@ -333,3 +333,12 @@ drop function if exists public.dashboard_metrics();
 
 revoke all on function public.dashboard_metrics(text) from public, anon, authenticated;
 grant execute on function public.dashboard_metrics(text) to service_role;
+
+-- MANDATORY after any signature change, and the reason this migration shipped
+-- broken the first time. PostgREST caches function signatures. It still held
+-- the old zero-arg dashboard_metrics(), so every REST call resolved to that and
+-- silently used the p_range DEFAULT — the picker moved, the querystring was
+-- correct, the API returned 200, and every range printed all-time numbers.
+-- Nothing errored anywhere, which is what made it hard to see. Changing a
+-- function's arguments without this line is a silent wrong-answer bug.
+notify pgrst, 'reload schema';

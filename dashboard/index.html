@@ -166,6 +166,21 @@
   .site-switch button:hover{color:var(--ink)}
   .site-switch button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(17,17,34,.16)}
   .site-switch button:disabled{opacity:.55;cursor:progress}
+  /* Date range — same segmented shape as the site switcher, one size down so
+     it reads as a filter on the board rather than a peer of it. */
+  .range-switch{display:inline-flex;background:var(--sunken);border:1px solid var(--border);
+    border-radius:11px;padding:3px;gap:2px;margin-left:10px}
+  .range-switch button{border:none;background:none;font:inherit;font-size:12px;font-weight:600;
+    color:var(--ink2);padding:5px 10px;border-radius:8px;cursor:pointer;white-space:nowrap}
+  .range-switch button:hover{color:var(--ink)}
+  .range-switch button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(17,17,34,.16)}
+  .range-switch button:disabled{opacity:.55;cursor:progress}
+  /* A range with no data behind it is shown, but visibly inert: tracking began
+     24 June 2026, so "6 mo" and "3 mo" are the same as all-time for now and
+     saying so beats letting three buttons print identical numbers. */
+  .range-switch button.same{opacity:.45}
+  body.nemo-only .fac-only{display:none}
+  @media (max-width:820px){ .range-switch{margin-left:0;order:9} }
   .avatar{width:34px;height:34px;border-radius:50%;background:var(--purple);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px}
   /* theme toggle — the flip is instant and local; the save is what makes it
      follow the account onto the next browser. */
@@ -339,6 +354,15 @@
           <button data-site="nemo">🏠 NEMO Gutter</button>
         </div>
         <span class="live-pill"><span class="live-dot"></span> Live data</span>
+        <!-- Scopes every tile that counts something over a period. Hidden on
+             NEMO, whose feed has no range support. -->
+        <div class="range-switch fac-only" id="range-switch" role="group" aria-label="Date range">
+          <button type="button" data-range="all"   class="on">All time</button>
+          <button type="button" data-range="6m">6 mo</button>
+          <button type="button" data-range="3m">3 mo</button>
+          <button type="button" data-range="month">This month</button>
+          <button type="button" data-range="today">Today</button>
+        </div>
       </div>
       <div class="tb-right">
         <button class="theme-btn" id="theme-btn" type="button" aria-label="Switch to dark mode" title="Switch to dark mode">🌙</button>
@@ -714,6 +738,53 @@
   // trips racing to paint the same board. Concurrent callers share one request.
   var inflight = {};
 
+  // ---------- date range ----------
+  // Only Find A Crib's feed understands a range; NEMO's is a different builder
+  // with no period parameter, so asking it for one would be a silent no-op.
+  var RANGES = ['all','6m','3m','month','today'];
+  var rangeKey = 'all';
+  try{
+    var saved = localStorage.getItem('fac_dash_range');
+    if(saved && RANGES.indexOf(saved) >= 0) rangeKey = saved;
+  }catch(e){}
+
+  function cacheKey(k){ return k === 'fac' ? k + ':' + rangeKey : k; }
+  function feedUrl(k){
+    return k === 'fac'
+      ? SITES[k].endpoint + '?range=' + encodeURIComponent(rangeKey)
+      : SITES[k].endpoint;
+  }
+
+  function paintRangeSwitch(){
+    var box = document.getElementById('range-switch');
+    if(!box) return;
+    [].forEach.call(box.querySelectorAll('button'), function(b){
+      b.classList.toggle('on', b.dataset.range === rangeKey);
+    });
+  }
+
+  function wireRangeSwitch(){
+    var box = document.getElementById('range-switch');
+    if(!box) return;
+    box.addEventListener('click', function(e){
+      var b = e.target.closest('button[data-range]');
+      if(!b || b.dataset.range === rangeKey) return;
+      rangeKey = b.dataset.range;
+      try{ localStorage.setItem('fac_dash_range', rangeKey); }catch(err){}
+      paintRangeSwitch();
+      // Disable the whole group while the new window loads, the same way the
+      // site switcher does — two ranges in flight would race to paint.
+      var btns = box.querySelectorAll('button');
+      [].forEach.call(btns, function(x){ x.disabled = true; });
+      load().then(function(){
+        [].forEach.call(btns, function(x){ x.disabled = false; });
+      }, function(){
+        [].forEach.call(btns, function(x){ x.disabled = false; });
+      });
+    });
+    paintRangeSwitch();
+  }
+
   function load(force){
     var k = siteKey;
     if(!force && inflight[k]) return inflight[k];
@@ -752,10 +823,14 @@
   async function _load(force){
     var k = siteKey;
     if(!session) return 'signin';
-    if(!force && cache[k]){ if(k===siteKey) paint(cache[k]); return 'ok'; }
+    // The range is part of the cache identity. Keying on the site alone would
+    // hand "this month" the all-time payload the moment it had been loaded
+    // once — the picker would move and the numbers would not.
+    var ck = cacheKey(k);
+    if(!force && cache[ck]){ if(k===siteKey) paint(cache[ck]); return 'ok'; }
     var res;
     try{
-      res = await feedFetch(SITES[k].endpoint, await token());
+      res = await feedFetch(feedUrl(k), await token());
     }catch(e){ return 'error'; }
     // A 401 means this token is dead, not that the owner is signed out. Force
     // one refresh and retry before anything can show him the sign-in card.
@@ -765,7 +840,7 @@
       if(fresh){
         session = fresh;
         try{
-          res = await feedFetch(SITES[k].endpoint, fresh.access_token);
+          res = await feedFetch(feedUrl(k), fresh.access_token);
         }catch(e){ return 'error'; }
       }
     }
@@ -773,13 +848,27 @@
     if(res.status===401) return 'signin';
     if(!res.ok) return 'error';
     var data = await res.json();
-    cache[k]=data;
+    cache[ck]=data;
     if(k===siteKey) paint(data);
     return 'ok';
   }
 
   function paint(data){
     applyShell();
+    paintRangeSwitch();
+    // Mark ranges that cannot differ from all-time yet. The feed reports the
+    // window it actually used, so this stays honest as history accumulates
+    // instead of hard-coding the 24 June start date in two places.
+    var box = document.getElementById('range-switch');
+    if(box && data && data.since !== undefined){
+      var start = new Date('2026-06-24T00:00:00Z');
+      [].forEach.call(box.querySelectorAll('button[data-range]'), function(b){
+        var r = b.dataset.range, cut = null;
+        if(r === '6m') cut = new Date(Date.now() - 182*864e5);
+        if(r === '3m') cut = new Date(Date.now() - 91*864e5);
+        b.classList.toggle('same', !!cut && cut < start);
+      });
+    }
     if(siteKey==='nemo') renderNemo(session.user, data);
     else render(session.user, data);
   }
@@ -814,6 +903,7 @@
     adoptProfileTheme(s);
     if(!s){ shown = false; showGate('signin'); return; }
     applyShell();
+    wireRangeSwitch();
     var r = await load(false);
     if(mine!==routeSeq) return;
     if(r==='error' && siteKey!=='fac'){
@@ -865,7 +955,7 @@
         try{ localStorage.setItem('dash.site', siteKey); }catch(e){}
         history.replaceState(null,'', location.pathname+(siteKey==='fac'?'':'?site='+siteKey));
         applyShell();
-        if(cache[siteKey]) paint(cache[siteKey]);
+        if(cache[cacheKey(siteKey)]) paint(cache[cacheKey(siteKey)]);
         el('updated').textContent = r==='error'
           ? 'Couldn’t load '+SITES[next].name+' just now — still showing '+SITES[prev].name+'. Try again in a moment.'
           : 'Session expired — reload to sign in again.';

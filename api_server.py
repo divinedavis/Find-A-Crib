@@ -54,6 +54,9 @@ TIER_MAX_LIMIT = {"free": 25, "pro": 100, "business": 100}
 FREE_MAX_RESULTS = 1000          # deepest offset a free key can page a list to
 COORD_DECIMALS = {"free": 3}     # None/absent = full precision
 DOCS = "https://findacrib.com/developers/"
+# Ranges the dashboard picker may ask for. Kept here, not in the SQL, so an
+# unknown value never reaches the database at all.
+DASHBOARD_RANGES = {"all", "6m", "3m", "month", "today"}
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 app = Flask(__name__)
@@ -911,8 +914,16 @@ def dashboard_metrics():
     denied = _dashboard_denial(_dashboard_auth(), ("ok",))
     if denied:
         return denied
+    # The range picker. Allowlisted rather than passed through: this value
+    # reaches a SECURITY DEFINER function, and an allowlist is the difference
+    # between a filter and an injection surface. Anything unrecognised falls
+    # back to 'all' instead of erroring — a bad querystring should not blank
+    # the owner's dashboard.
+    rng = (request.args.get("range") or "all").lower()
+    if rng not in DASHBOARD_RANGES:
+        rng = "all"
     try:
-        data = rpc("dashboard_metrics", {})
+        data = rpc("dashboard_metrics", {"p_range": rng})
     except Exception:
         return jsonify(error="temporarily_unavailable"), 503
     # The engine's own build log. It lives on disk in the growth checkout, not

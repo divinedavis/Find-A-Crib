@@ -414,6 +414,12 @@
   }
   .load-retry:hover { border-color: var(--blue); }
 
+  /* The card for the building whose pin is open on the map. A ring rather than
+     a background change: these cards are mostly photo, and tinting them fights
+     the image while a ring reads at a glance in both themes. */
+  .card.is-selected {
+    border-color: var(--blue); box-shadow: 0 0 0 2px var(--blue-solid), var(--card-shadow);
+  }
   .card {
     position: relative;
     background: var(--surface); border: 1px solid var(--line); border-radius: 10px; cursor: pointer;
@@ -1883,13 +1889,28 @@
     m.setIcon(markerIcon(m));
     // mobile: tapping a pin slides up a listing card (StreetEasy-style) instead of a popup
     if (isMobile) m.on('click', () => openCard(m));
-    else m.bindPopup(() => buildPopup(rec, listed), {
-      // auto-pan clear of the sticky header so the popup top is never cut off
-      autoPanPaddingTopLeft: L.point(12, 72),
-      autoPanPaddingBottomRight: L.point(12, 12),
-    });
+    else {
+      m.bindPopup(() => buildPopup(rec, listed), {
+        // auto-pan clear of the sticky header so the popup top is never cut off
+        autoPanPaddingTopLeft: L.point(12, 72),
+        autoPanPaddingBottomRight: L.point(12, 12),
+      });
+      // Mark the matching card in the results pane. Hung off the marker's own
+      // click rather than the map's popupopen so it does not depend on the
+      // popup lifecycle — and deliberately NOT selectMarker(), because that
+      // swaps the icon, and re-anchoring an icon mid-open can drop the popup.
+      m.on('click', () => highlightCard(rec.bbl, true));
+    }
     markerByBbl.set(rec.bbl, m);
   }
+
+  // Desktop clicks a pin into a Leaflet popup and never goes through
+  // selectMarker(), so the card link has to hang off the popup's own events.
+  map.on('popupopen', e => {
+    const m = e.popup && e.popup._source;
+    if (m && m._rec) highlightCard(m._rec.bbl, true);
+  });
+  map.on('popupclose', () => clearCardHighlight());
 
   // ---------- Section 8 / voucher badges (shared by popup, cards, detail) ----------
   const S8_HPD = 1, S8_HUD = 2;  // bit flags in s8.json bldg[bbl].f
@@ -3000,6 +3021,9 @@
     grid.innerHTML = parts.join('') + (truncated
       ? `<div class="empty" style="flex-basis:100%;padding:18px">Zoom in to see more — ${MAX_CARDS}+ buildings in view.</div>`
       : '');
+    // The list just lost every node it had; re-mark the open building so
+    // panning the map doesn't quietly drop the selection.
+    paintCardHighlight();
     initAds();
   }
 
@@ -3185,11 +3209,43 @@
 
   function fmtRent(p) { return p >= 1000 ? '$' + (p / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : '$' + p; }
 
+  // ---------- map ⇄ list ----------
+  // Both halves of the screen show the same buildings, and until now nothing
+  // connected them: you clicked a pin, read the address off the popup, then
+  // hunted the right-hand list for the same words. The pin selection and the
+  // card are now one selection.
+  //
+  // Tracked by BBL rather than by element, because the list re-renders on every
+  // map move — holding the node would leave a stale reference to something no
+  // longer in the document, and the highlight would silently vanish on a pan.
+  let selectedBbl = null;
+  function paintCardHighlight() {
+    const prev = grid.querySelector('.card.is-selected');
+    if (prev) prev.classList.remove('is-selected');
+    if (!selectedBbl) return null;
+    const el = grid.querySelector('.card[data-bbl="' + CSS.escape(String(selectedBbl)) + '"]');
+    if (el) el.classList.add('is-selected');
+    return el;                      // null is normal: the building may be off the current page
+  }
+  function highlightCard(bbl, scroll) {
+    selectedBbl = bbl || null;
+    const el = paintCardHighlight();
+    if (!el || !scroll) return;
+    // Only scroll when it isn't already visible. Yanking the list under the
+    // cursor on every pin click is worse than leaving it where it is.
+    const r = el.getBoundingClientRect(), host = grid.getBoundingClientRect();
+    if (r.top < host.top || r.bottom > host.bottom) {
+      el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }
+  function clearCardHighlight() { selectedBbl = null; paintCardHighlight(); }
+
   function clearSelected() {
     if (selectedMarker) {
       selectedMarker.setIcon(markerIcon(selectedMarker));
       selectedMarker = null;
     }
+    clearCardHighlight();
   }
   function selectMarker(m) {
     clearSelected();
@@ -3200,6 +3256,7 @@
       : (rec.u != null ? `${rec.u} unit${rec.u === 1 ? '' : 's'}` : 'bldg'));
     m.setIcon(pillIcon(`<div class="price-pill selected">${esc(txt)}</div>`, txt.length));
     selectedMarker = m;
+    highlightCard(rec.bbl, true);
   }
 
   function renderCard(rec, listed) {

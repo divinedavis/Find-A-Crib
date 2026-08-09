@@ -185,8 +185,13 @@ select jsonb_build_object(
     'visitors',  (select count(*) from pv),
     'visits',    (select coalesce(sum(visits), 0) from pv),
     'returning', (select count(*) from pv where visits > 1),
-    'accounts',  (select count(*) from fac_users
-                    where user_id <> 'af2629f7-1121-4bee-8a2b-cede9318c864')
+    -- Accounts CREATED in the window, not every account that has ever existed.
+    -- The all-time count against a ranged visitor count is not just mislabelled,
+    -- it produces a nonsense derived stat: the dashboard divides this by unique
+    -- visitors, so 26 lifetime accounts over 1 visitor today printed a sign-up
+    -- conversion of 2600%. On 'all' the bound is -infinity, so this is still
+    -- every account.
+    'accounts',  (select count(*) from acct)
   ),
   'conversion', jsonb_build_object(
     'one_time_visitors',  (select count(*) from pv where visits = 1),

@@ -1,25 +1,29 @@
 {
   "build": {
-    "at": "2026-08-08T05:40:19+00:00",
-    "changed_urls": 10,
-    "date": "2026-08-08",
+    "at": "2026-08-09T05:40:19+00:00",
+    "changed_urls": 6,
+    "date": "2026-08-09",
     "deployed": true,
-    "new_urls": 1,
+    "new_urls": 0,
+    "seo_corpus": {
+      "days_old": 1,
+      "written": "2026-08-08"
+    },
     "techniques": {
       "city_guides": {
-        "detail": "3 of 3 city guides live with their data caveat \u2014 3 published by the daily growth build (dc, la, sf) because the SEO pipeline has not deployed them \u2014 the docroot's SEO corpus was last written 2026-08-01 (7d ago)",
+        "detail": "3 of 3 city guides live with their data caveat",
         "ok": true
       },
       "city_seo_expansion": {
-        "detail": "hub pages live: dc 103, la 112, sf 37 \u2014 255 pages published by the daily growth build, browse hubs included (dc 104, la 113, sf 38), because the SEO pipeline has not deployed them \u2014 the docroot's SEO corpus was last written 2026-08-01 (7d ago)",
+        "detail": "hub pages live: dc 103, la 112, sf 37 \u2014 handed 255 pages back to the SEO pipeline, which has deployed its own copies",
         "ok": true
       },
       "crawl_paths": {
-        "detail": "10 of 12 published sections have an inbound internal link (62 docroot pages read) \u2014 ORPHANED, reachable only from sitemap-daily.xml: /brief/ (daily_brief), /section8/ (fresh_section8) \u2014 the docroot's SEO corpus was last written 2026-08-01 (7d ago)",
-        "ok": false
+        "detail": "12 of 12 published sections have an inbound internal link (62 docroot pages read) \u2014 single inbound source: /dc/neighborhood/ \u2190 dc browse hub, /la/zip/ \u2190 la browse hub, /sf/neighborhood/ \u2190 sf browse hub, /zip/ \u2190 building page",
+        "ok": true
       },
       "daily_brief": {
-        "detail": "brief 2026-08-08: 33 added, 0 removed",
+        "detail": "no movement since yesterday \u2014 no brief published (avoids filler)",
         "ok": true
       },
       "fresh_section8": {
@@ -31,7 +35,7 @@
         "ok": true
       },
       "indexnow": {
-        "detail": "submitted 11 URLs \u2192 HTTP 200",
+        "detail": "submitted 6 URLs \u2192 HTTP 200",
         "ok": true
       },
       "llms_txt": {
@@ -39,7 +43,7 @@
         "ok": true
       },
       "sitemap_daily": {
-        "detail": "sitemap-daily.xml with 276 URLs (incl. 3 fallback-published guides, 255 city hub pages)",
+        "detail": "sitemap-daily.xml with 18 URLs",
         "ok": true
       }
     }

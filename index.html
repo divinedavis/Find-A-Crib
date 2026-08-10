@@ -1985,16 +1985,31 @@
   // otherwise a StreetEasy address search so every building has a live link
   // without us scraping it. SF/LA keep Zumper/Google since StreetEasy doesn't
   // serve them. Returns {href, label}.
+  // Two different things wearing one label. About 1,800 of the 47,165 buildings
+  // have a real listing URL banked from the StreetEasy feed; the other 96% get
+  // an address search. Both used to render as "Listings ↗", so on a building
+  // with nothing for rent the button promised listings and delivered a search
+  // page that found none — 257 Adelphi St, 0 current, "32 past rentals".
+  //
+  // The search fallback is still worth keeping: it lands on StreetEasy's page
+  // for the address, which carries the building and its rental history, and
+  // that is genuinely useful when researching a stabilized building. It just
+  // must not call itself a listing. `direct` is returned so callers can style
+  // the real thing differently from the lookup.
   function listingLink(rec, borough) {
     const direct = (listingsBlob.urls && listingsBlob.urls[rec.bbl]) || null;
     if (IS_NYC) {
-      if (safeHttpUrl(direct)) return { href: direct, label: 'View on StreetEasy ↗' };
+      if (safeHttpUrl(direct))
+        return { href: direct, label: 'View on StreetEasy ↗', short: 'View listing ↗', direct: true };
       const q = encodeURIComponent(`${rec.a}, ${borough}, NY ${rec.z || ''}`.trim());
-      return { href: `https://streeteasy.com/search?search=${q}`, label: 'See listings on StreetEasy ↗' };
+      return { href: `https://streeteasy.com/search?search=${q}`,
+               label: 'Look up on StreetEasy ↗', short: 'StreetEasy ↗', direct: false };
     }
-    if (safeHttpUrl(direct)) return { href: direct, label: 'View on Zumper ↗' };
+    if (safeHttpUrl(direct))
+      return { href: direct, label: 'View on Zumper ↗', short: 'View listing ↗', direct: true };
     const zq = encodeURIComponent(`site:zumper.com "${rec.a}" ${borough} ${CITY.state}`);
-    return { href: `https://www.google.com/search?q=${zq}`, label: 'Search Zumper ↗' };
+    return { href: `https://www.google.com/search?q=${zq}`,
+             label: 'Search Zumper ↗', short: 'Search ↗', direct: false };
   }
 
   function buildPopup(rec, listed) {
@@ -3221,7 +3236,7 @@
         ${cardHpdLine(rec)}
         <div class="actions">
           <button class="btn-secondary" data-action="map">View on map</button>
-          <a class="btn-primary" data-action="search" target="_blank" rel="noopener" href="${esc(listing.href)}">${IS_NYC ? 'Listings ↗' : 'Search'}</a>
+          <a class="btn-primary" data-action="search" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.short}</a>
         </div>
       </div>
     </div>`;
@@ -3424,7 +3439,7 @@
         <div class="card-meta">${rec.nb ? esc(rec.nb) + ' · ' : ''}${esc(borough)}${rec.z ? ' ' + esc(rec.z) : ''}</div>
         <div class="card-actions">
           <button class="cbtn cbtn-2" data-card="details">Details</button>
-          <a class="cbtn cbtn-1" data-card="search" target="_blank" rel="noopener" href="${esc(listing.href)}">${IS_NYC ? 'Listings ↗' : 'Search'}</a>
+          <a class="cbtn cbtn-1" data-card="search" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.short}</a>
         </div>
       </div>`;
   }

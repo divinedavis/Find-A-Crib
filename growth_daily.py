@@ -195,7 +195,61 @@ def cmd_journal(args):
     print(entry)
 
 
+HEARTBEAT_PATH = os.path.join(DEFAULT_BUILD, "growth", "cron_heartbeat.jsonl")
+
+
+def cron_liveness(path=HEARTBEAT_PATH, now=None):
+    """Has the droplet's cron actually been running?
+
+    growth_run.sh appends a start and a finish record per invocation and commits
+    the file, so this is the one question a review running on a bare checkout can
+    answer directly instead of inferring from silence. Returns (summary, rows).
+    """
+    import datetime
+    try:
+        with open(path) as f:
+            rows = [json.loads(l) for l in f if l.strip()]
+    except FileNotFoundError:
+        return ("no heartbeat file — growth_run.sh has not run since it was added "
+                "on 2026-08-10, or an older copy is deployed on the droplet"), []
+    except json.JSONDecodeError as e:
+        return f"heartbeat file is corrupt ({e})", []
+    if not rows:
+        return "heartbeat file is empty", []
+    last = rows[-1]
+    now = now or datetime.datetime.now(datetime.timezone.utc)
+    try:
+        at = datetime.datetime.fromisoformat(last["at"].replace("Z", "+00:00"))
+        hours = (now - at).total_seconds() / 3600.0
+        age = f"{hours:.1f}h ago"
+    except Exception:
+        hours, age = None, "unparseable timestamp"
+    # A run that started and never finished is a crash mid-flight; a finish with
+    # rc != 0 is a run that reported its own failure. Both beat silence.
+    if last.get("phase") == "bootstrap":
+        state = "no droplet run recorded yet — only the file's bootstrap record"
+    elif last.get("phase") == "start":
+        state = f"STARTED BUT NEVER FINISHED ({last.get('job')}) — the run died mid-flight"
+    elif last.get("rc") not in (0, None):
+        state = f"last run FAILED rc={last.get('rc')} ({last.get('job')}): {last.get('note') or 'no output captured'}"
+    else:
+        state = f"last run ok ({last.get('job')})"
+    # Worth saying out loud even on a green run: it means the operator's push and
+    # the droplet's own ledger write collided, which used to wedge the checkout.
+    if last.get("pull") == "recovered":
+        state += " — but the pull hit a conflict and was reset to origin/main"
+    if hours is not None and hours > 26:
+        state = f"NO RUN FOR {hours / 24:.1f} DAYS — cron, the host or the checkout. " + state
+    return f"{state}; last record {age}", rows
+
+
 def cmd_status(args):
+    summary, rows = cron_liveness()
+    log(f"cron: {summary}")
+    for r in rows[-6:]:
+        log(f"    {r.get('at')} {str(r.get('job'))[:18].ljust(18)} {str(r.get('phase')).ljust(9)}"
+            f" rc={r.get('rc')} pull={r.get('pull')} {(r.get('note') or '')[:60]}")
+    log("")
     techs = ledger.load_techniques()
     for t in techs:
         v = t.get("verdict") or {}

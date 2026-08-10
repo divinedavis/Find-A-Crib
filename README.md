@@ -149,6 +149,26 @@ channel between it and production:** it pushes ledger and code changes, and
 measurements back. The droplet's daily pass therefore runs at 05:00 ET, an hour
 ahead of the review, so the agent always reads fresh numbers.
 
+**Reading whether the droplet ran at all.** Because git is the only channel,
+silence in git is the only symptom the review agent sees — and silence has three
+causes needing three different fixes: the cron never fired, it fired and the run
+crashed, or it ran and the push was lost. `growth_run.sh` therefore appends a
+`start` and a `finish` record to `growth/cron_heartbeat.jsonl` around every
+invocation, carrying the exit code, the pull's outcome and — on failure only —
+the last two lines of output, and commits that file whether or not the run
+succeeded. **Every invocation leaves a commit**, so no commit for a morning now
+means the script did not run, full stop. `growth_daily.py status` prints the
+verdict first; read it before anything else. Two failure modes it names directly:
+a `start` with no `finish` is a run that died mid-flight, and `"pull":"recovered"`
+means an operator push collided with the droplet's own ledger write. That
+collision used to be silent and permanent — `git pull --rebase --autostash`
+exits **0** when the autostash pop conflicts, leaving `<<<<<<<` markers in
+`growth/techniques.json`, which `ledger.load_techniques()` refuses to parse on
+that run and every run after it. The script now checks `git ls-files -u`
+independently of the pull's exit code and resets the conflicted paths to
+`origin/main`, which is safe because the droplet is their only writer and pushes
+them every run.
+
 **What a git push does and does not deploy.** Only two paths reach the docroot
 on their own: `growth_daily.py build --deploy` rsyncs `growth_out/`, and
 `scripts/refresh_seo.sh` rsyncs `build_seo.py`'s `seo/`. **Nothing in either

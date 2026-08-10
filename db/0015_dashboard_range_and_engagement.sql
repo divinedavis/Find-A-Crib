@@ -72,8 +72,22 @@ with
   ),
   v  as (select v_all.*  from v_all,  bounds where v_all.created_at  >= bounds.since),
   ev as (select ev_all.* from ev_all, bounds where ev_all.created_at >= bounds.since),
+  -- A RETURN IS A DIFFERENT DAY, not a second page load.
+  --
+  -- This counted anyone with more than one row in `visits` as returning, and a
+  -- row is one page load: landing on the map and opening a single building page
+  -- made someone a "returning visitor" forty seconds after they arrived. Across
+  -- all 864 visitors that read 275 returning (32%) when only 81 (9%) had ever
+  -- come back on another day — 194 of them never left at all. It also filled
+  -- the channel donut with "internal / same-site", which is not a channel that
+  -- brings anyone back, it is the site linking to itself mid-visit.
+  --
+  -- `days` is therefore the basis for every returning/one-time figure below.
   pv as (
-    select visitor_id, count(*) as visits, bool_or(user_id is not null) as signed_up
+    select visitor_id,
+           count(*) as visits,
+           count(distinct (created_at at time zone 'America/New_York')::date) as days,
+           bool_or(user_id is not null) as signed_up
     from v group by visitor_id
   ),
   adv as (
@@ -87,12 +101,24 @@ with
     union select user_id from public.subscriptions
     union select user_id from public.saved_searches
   ),
-  ordered as (
-    select visitor_id, path, referrer,
-           row_number() over (partition by visitor_id order by created_at) as rn
+  -- The first hit of each day a visitor was here. That row carries the referrer
+  -- that actually brought them back; every later hit that day carries wherever
+  -- they happened to be on the site, which is why the donut used to be mostly
+  -- "internal".
+  day_first as (
+    select distinct on (visitor_id, (created_at at time zone 'America/New_York')::date)
+           visitor_id,
+           (created_at at time zone 'America/New_York')::date as d,
+           path, referrer, created_at
     from v
+    order by visitor_id, (created_at at time zone 'America/New_York')::date, created_at
   ),
-  returns as (select * from ordered where rn > 1),
+  ranked_days as (
+    select *, row_number() over (partition by visitor_id order by d) as day_rn
+    from day_first
+  ),
+  -- One row per RETURN: a day after the visitor's first day.
+  returns as (select * from ranked_days where day_rn > 1),
   searchers as (select distinct visitor_id from ev where event = 'search'),
   viewers   as (select distinct visitor_id from ev where event = 'building_view'),
   today_new as (
@@ -184,7 +210,7 @@ select jsonb_build_object(
   'totals', jsonb_build_object(
     'visitors',  (select count(*) from pv),
     'visits',    (select coalesce(sum(visits), 0) from pv),
-    'returning', (select count(*) from pv where visits > 1),
+    'returning', (select count(*) from pv where days > 1),
     -- Accounts CREATED in the window, not every account that has ever existed.
     -- The all-time count against a ranged visitor count is not just mislabelled,
     -- it produces a nonsense derived stat: the dashboard divides this by unique
@@ -194,10 +220,10 @@ select jsonb_build_object(
     'accounts',  (select count(*) from acct)
   ),
   'conversion', jsonb_build_object(
-    'one_time_visitors',  (select count(*) from pv where visits = 1),
-    'one_time_signups',   (select count(*) from pv where visits = 1 and signed_up),
-    'returning_visitors', (select count(*) from pv where visits > 1),
-    'returning_signups',  (select count(*) from pv where visits > 1 and signed_up)
+    'one_time_visitors',  (select count(*) from pv where days = 1),
+    'one_time_signups',   (select count(*) from pv where days = 1 and signed_up),
+    'returning_visitors', (select count(*) from pv where days > 1),
+    'returning_signups',  (select count(*) from pv where days > 1 and signed_up)
   ),
   'returns', jsonb_build_object(
     'total', (select count(*) from returns),
@@ -215,20 +241,20 @@ select jsonb_build_object(
   ),
   'hook', jsonb_build_object(
     'viewed_visitors',  (select count(*) from pv where visitor_id in (select visitor_id from viewers)),
-    'viewed_returned',  (select count(*) from pv where visits > 1 and visitor_id in (select visitor_id from viewers)),
+    'viewed_returned',  (select count(*) from pv where days > 1 and visitor_id in (select visitor_id from viewers)),
     'viewed_signups',   (select count(*) from pv where signed_up and visitor_id in (select visitor_id from viewers)),
     'noview_visitors',  (select count(*) from pv where visitor_id not in (select visitor_id from viewers)),
-    'noview_returned',  (select count(*) from pv where visits > 1 and visitor_id not in (select visitor_id from viewers)),
+    'noview_returned',  (select count(*) from pv where days > 1 and visitor_id not in (select visitor_id from viewers)),
     'noview_signups',   (select count(*) from pv where signed_up and visitor_id not in (select visitor_id from viewers)),
     'searched_visitors',(select count(*) from pv where visitor_id in (select visitor_id from searchers)),
-    'searched_returned',(select count(*) from pv where visits > 1 and visitor_id in (select visitor_id from searchers)),
+    'searched_returned',(select count(*) from pv where days > 1 and visitor_id in (select visitor_id from searchers)),
     'searched_signups', (select count(*) from pv where signed_up and visitor_id in (select visitor_id from searchers))
   ),
   'ads', jsonb_build_object(
     'click_visits',    (select count(*) from v where path ~* 'gclid|gad_source|gbraid'),
     'visitors',        (select count(*) from adv),
     'signups',         (select count(*) from pv where signed_up and visitor_id in (select visitor_id from adv)),
-    'returned',        (select count(*) from pv where visits > 1 and visitor_id in (select visitor_id from adv)),
+    'returned',        (select count(*) from pv where days > 1 and visitor_id in (select visitor_id from adv)),
     'opened_listing',  (select count(*) from pv where visitor_id in (select visitor_id from adv)
                           and visitor_id in (select visitor_id from viewers))
   ),

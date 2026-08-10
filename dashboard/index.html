@@ -1136,8 +1136,11 @@
       {ic:'✅',name:'Sign-ups today',desc:'new accounts',val:comma(TD.signups)},
       {ic:'⭐',name:'New → opened a listing',desc:'leading sign-up indicator',
         val:comma(TD.new_opened_listing)+'<small>/'+comma(TD.new_visitors)+' ('+pctS(TD.new_opened_listing,TD.new_visitors)+')</small>'},
-      {ic:'🔍',name:'Searches (all-time)',desc:'core action',val:comma(ev.search)},
-      {ic:'🏢',name:'Listing opens (all-time)',desc:'building views',val:comma(ev.building_view)}
+      // NOT all-time, whatever the old label said: these read the `events`
+      // block, which the range picker scopes like everything else. Labelling a
+      // filtered number "all-time" is the one way to make a correct figure lie.
+      {ic:'🔍',name:'Searches',desc:'core action · in range',val:comma(ev.search)},
+      {ic:'🏢',name:'Listing opens',desc:'building views · in range',val:comma(ev.building_view)}
     ];
     el('today-list').innerHTML=rows.map(function(r){
       return '<div class="act-row"><div class="act-l"><div class="act-ico">'+r.ic+'</div>'+

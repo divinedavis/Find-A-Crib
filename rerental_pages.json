@@ -26,7 +26,30 @@
   "Diamond Mine Real Estate": "soft-404: /about/affordable-re-rentals renders their About page",
   "Micki Garcia Realty": "soft-404: same",
   "Urban Ecospaces, Inc.": "soft-404: same",
-  "Rentability": "HPD-listed domain is parked (redirects to search-domainparking.com)"
+  "Rentability": "HPD-listed domain is parked (redirects to search-domainparking.com)",
+  "B3 Compliance Solutions": "compliance consultancy site, no renter listings (verified 2026-08-10)",
+  "Belmont Arthur Avenue LDC": "program + senior-housing info pages only, no unit board",
+  "Cornell Pace Inc.": "corporate LIHTC/property-management site, no listings page",
+  "Fordham-Bedford Housing Corporation": "corporate/mission site, no unit board",
+  "HANAC, INC.": "building portfolio pages, no availabilities",
+  "Housing Line Inc": "B2B administering agent, no renter-facing listings",
+  "Lemle & Wolff, Inc": "posts the current housing lottery only, no re-rentals",
+  "Plaza Marketing (a subsidiary of Plaza Management USA Inc)": "portfolio pages only, no availabilities",
+  "Prestige Management": "corporate site, no listings",
+  "Regtime": "B2B software brand; same operator as MGNY (already listed), listings live there",
+  "RiseBoro": "program/service pages, no unit board",
+  "SCT Compliance, LLC": "B2B compliance consultancy",
+  "Settlement Housing Fund": "corporate site; the /marketing-leasing/ page has no listings",
+  "Sterling23": "market-rate brokerage",
+  "Style & Haus Realty": "market-rate broker/investment site",
+  "The Bouklis Group Inc.": "market-rate Astoria brokerage",
+  "Transitional Services for New York, Inc.": "referral-based supportive housing, no public listings",
+  "Westhab": "Westchester supportive-housing nonprofit, no NYC unit board",
+  "City5 Consulting": "site broken - SSL protocol error (checked 2026-08-10)",
+  "Conformity Habitat LLC": "HPD-listed domain dead - DNS (checked 2026-08-10)",
+  "Reside Affordable Inc": "HPD-listed domain dead - DNS; operator's board is Reside New York's Open Market page",
+  "Grenadier Realty Management": "HPD-listed domain parked at sedo; grenadierrealty.com also dead (checked 2026-08-10)",
+  "Sycamore Birch Management LLC": "site times out (checked 2026-08-10)"
  },
  "checked": "2026-08-10",
  "pages": {
@@ -131,6 +154,46 @@
    "units_seen": true,
    "last_ok": "2026-08-10",
    "unit_count": 1
+  },
+  "K&G Upright Consulting, Inc.": {
+   "url": "https://kgupright.com/current-vacancies",
+   "title": "Current Vacancies",
+   "note": "Income-restricted rent-stabilized lease-ups (Verdant Fort Greene). No per-unit prices; downloadable application."
+  },
+  "Langsam Property Services Corp": {
+   "url": "https://www.langsampropertyservices.com/affordable-rental-opportunities",
+   "title": "Affordable Rental Opportunities",
+   "note": "AMI-banded units with stated rents; apply by email. First-come style."
+  },
+  "MNS": {
+   "url": "https://www.mns.com/affordable_units",
+   "title": "Affordable Units",
+   "note": "Filterable availability table with unit-level rents across their affordable buildings."
+  },
+  "Reside New York LLC": {
+   "url": "https://residenewyork.com/property-status/open-market/",
+   "title": "Open Market",
+   "note": "Open-market (non-lottery) re-rentals with unit-level rents. Their /listings/ 404s and /my-properties/ throws a WP error - this taxonomy URL is the live board. Same operator as the dead Reside Affordable Inc domain."
+  },
+  "Phipps Houses": {
+   "url": "https://www.phippsny.org/find-housing/",
+   "title": "Housing Opportunities",
+   "note": "Directory of 42 buildings with waitlist/vacancy applications (e.g. Rockaway Village). Applications, not a priced unit board."
+  },
+  "Bronx Pro Group LLC": {
+   "url": "https://bronxprogroup.com/apartments",
+   "title": "Apartments",
+   "note": "Waitlist applications; two senior buildings marked Available (rent = 30% of income, HPD PBV S8)."
+  },
+  "Breaking Ground": {
+   "url": "https://www.breakingground.org/need-housing",
+   "title": "Need Housing?",
+   "note": "Building browser filterable by which waitlists are currently open; supportive/affordable, PDF applications."
+  },
+  "Highbridge Community Development Corporation (HCDC)": {
+   "url": "https://hcdcny.com/apply/",
+   "title": "Apply",
+   "note": "General application by mail for their Bronx portfolio; no unit board."
   }
  }
 }

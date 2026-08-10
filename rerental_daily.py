@@ -37,7 +37,9 @@ UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
 
 # Pages that take applications for a building rather than listing priced units.
 # Extracting "rents" from these yields the surrounding marketing copy.
-WAITLIST = {"TF Cornerstone", "The Wavecrest Management Team Ltd.", "Restored Homes"}
+WAITLIST = {"TF Cornerstone", "The Wavecrest Management Team Ltd.", "Restored Homes",
+            "Phipps Houses", "Bronx Pro Group LLC", "Breaking Ground",
+            "Highbridge Community Development Corporation (HCDC)"}
 
 MONEY = re.compile(r'\$\s?[\d,]+(?:\.\d\d)?')
 COUNT = re.compile(r'(\d+)\s+(?:results?|units?\s+(?:available|found)|listings?)', re.I)

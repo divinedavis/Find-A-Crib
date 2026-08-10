@@ -1,12 +1,12 @@
 {
   "build": {
-    "at": "2026-08-09T05:40:19+00:00",
+    "at": "2026-08-10T05:40:23+00:00",
     "changed_urls": 6,
-    "date": "2026-08-09",
+    "date": "2026-08-10",
     "deployed": true,
     "new_urls": 0,
     "seo_corpus": {
-      "days_old": 1,
+      "days_old": 2,
       "written": "2026-08-08"
     },
     "techniques": {
@@ -15,7 +15,7 @@
         "ok": true
       },
       "city_seo_expansion": {
-        "detail": "hub pages live: dc 103, la 112, sf 37 \u2014 handed 255 pages back to the SEO pipeline, which has deployed its own copies",
+        "detail": "hub pages live: dc 103, la 112, sf 37",
         "ok": true
       },
       "crawl_paths": {

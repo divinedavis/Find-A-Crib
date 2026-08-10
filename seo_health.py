@@ -75,11 +75,13 @@ def check(url):
         issues.append(f"HTTP {status}")
     if hops > 0:
         issues.append(f"{hops} redirect hop(s) -> {final}")
-    # The homepage is the JS map app (an SPA) — it has a title but no static
-    # <h1>, which is expected. Only run content-quality checks on the static
-    # SEO pages, not the SPA.
-    is_spa_home = url.rstrip("/") == SITE
-    if body and not is_spa_home:
+    # The homepage used to be exempt: it is the JS map app, and an SPA having
+    # no static <h1> was treated as expected. That exemption hid the problem
+    # instead of reporting it — and it only ever covered the exact homepage, so
+    # /sf/, /la/ and /dc/, which are the SAME app built from the same file, got
+    # flagged for a fault the original was excused from. All four carry a real
+    # <h1> now, so the SPA is held to the same standard as every other page.
+    if body:
         if "<title>" not in body:
             issues.append("missing <title>")
         if "<h1" not in body:

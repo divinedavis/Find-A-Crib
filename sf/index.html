@@ -140,6 +140,11 @@
     padding: calc(10px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) 10px calc(20px + env(safe-area-inset-left));
     display: flex; align-items: center; gap: 16px;
   }
+  /* Available to a screen reader and to a crawler, absent from the layout.
+     clip/1px rather than display:none — display:none is skipped by assistive
+     tech, which would defeat half the point of having the heading. */
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
   .brand { display: flex; align-items: center; gap: 8px; font-weight: 800; color: var(--blue); font-size: 22px; letter-spacing: -0.5px; }
   .brand-dot { width: 22px; height: 22px; background: var(--blue-solid); border-radius: 6px; display: inline-block; transform: rotate(45deg); flex: none; }
   .brand-text { display: flex; flex-direction: column; line-height: 1.05; }
@@ -1055,6 +1060,16 @@
   </div>
 </header>
 <main>
+<!-- The page had no <h1> at all — not this one, not /sf/, /la/ or /dc/. Four
+     landing pages aimed at the site's most competitive terms, and none of them
+     stated its own subject in the one element a crawler weights hardest.
+     It is also an accessibility failure: with no h1 there is nothing for a
+     screen reader to land on when jumping by heading.
+     Visually hidden rather than drawn, because the design's first row is the
+     map and there is nowhere to put a heading without displacing it. The text
+     matches the <title> and the page's actual content, so this describes the
+     page rather than hiding anything from anyone. -->
+<h1 class="sr-only">Rent-Controlled Apartments in San Francisco</h1>
   <div id="map"></div>
   <aside class="results">
     <div class="results-head">

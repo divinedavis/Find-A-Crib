@@ -23,6 +23,10 @@ NYC_TITLE = "Rent-Stabilized NYC — Manhattan, Bronx, Brooklyn, Queens + Staten
 NYC_DESC = "Find NYC rent-stabilized apartments across Manhattan, Bronx, Brooklyn, Queens & Staten Island."
 NYC_OG_TITLE = "Rent-Stabilized NYC — Find A Crib"
 NYC_TAGLINE = "(NYC Rent Stabilized Homes)"
+# The visually-hidden <h1> in <main>. Swapped per city for the same reason the
+# <title> is: three pages all announcing themselves as New York would be wrong
+# for a screen reader and duplicate-content bait for a crawler.
+NYC_H1 = "Rent-Stabilized Apartments in New York City"
 NYC_SEO_NAV = """<nav class="seo-nav" aria-label="Browse rent-stabilized buildings by neighborhood">
   <h2>Find rent-stabilized apartments in NYC</h2>
   <p>Find A Crib maps every DHCR-registered rent-stabilized building in New York City.
@@ -41,6 +45,7 @@ NYC_SEO_NAV = """<nav class="seo-nav" aria-label="Browse rent-stabilized buildin
 
 CITY_META = {
     "sf": {
+        "h1": "Rent-Controlled Apartments in San Francisco",
         "title": "Rent-Controlled San Francisco — Map of SF Rent Board Inventory | Find A Crib",
         "og_title": "Rent-Controlled San Francisco — Find A Crib",
         "desc": ("Map 12,000+ San Francisco block-sides with rent-controlled apartments, "
@@ -60,6 +65,7 @@ CITY_META = {
 </nav>""",
     },
     "la": {
+        "h1": "Rent-Stabilized (RSO) Apartments in Los Angeles",
         "title": "Rent-Stabilized (RSO) Los Angeles — 67,000+ Likely-Covered Buildings | Find A Crib",
         "og_title": "Rent-Stabilized (RSO) Los Angeles — Find A Crib",
         "desc": ("Map 67,000+ Los Angeles buildings that meet the Rent Stabilization "
@@ -80,6 +86,7 @@ CITY_META = {
 </nav>""",
     },
     "dc": {
+        "h1": "Rent-Controlled Apartments in Washington DC",
         "title": "Rent-Controlled Washington DC — 4,300+ Registered Buildings | Find A Crib",
         "og_title": "Rent-Controlled Washington DC — Find A Crib",
         "desc": ("Map every Washington DC building with rent-controlled units registered "
@@ -136,6 +143,8 @@ def main():
         html = substitute(html, f'<span class="brand-sub">{NYC_TAGLINE}</span>',
                           f'<span class="brand-sub">{m["tagline"]}</span>', "brand tagline")
         html = substitute(html, 'src="config.js?v=2"', 'src="../config.js?v=2"', "config.js path")
+        html = substitute(html, f'<h1 class="sr-only">{NYC_H1}</h1>',
+                          f'<h1 class="sr-only">{m["h1"]}</h1>', "h1")
         html = substitute(html, NYC_SEO_NAV, m["seo_nav"], "seo nav")
         out = HERE / city / "index.html"
         out.parent.mkdir(exist_ok=True)

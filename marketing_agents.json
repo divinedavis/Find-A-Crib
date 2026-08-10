@@ -2,7 +2,7 @@
  "source": "https://www.nyc.gov/site/hpd/services-and-information/marketing-agent-pql.page",
  "fetched": "2026-07-30",
  "count": 85,
- "rerental_count": 14,
+ "rerental_count": 22,
  "agents": [
   {
    "name": "About Real Estate NY",
@@ -114,7 +114,16 @@
    "website": "https://www.breakingground.org/",
    "agency": "HPD",
    "tags": [],
-   "about": "In 1990, a small group of people came together to bring to scale a new model of housing for people who were experiencing or at risk of homelessness - permanent supportive housing. The result was Breaking Ground's Times Square residence. Over 30 years later, the Times Square remains the largest supportive residence in the country, and thousands of people have been able to escape or avoid life on the streets by finding a home in one of its 652 apartments. Today, Breaking Ground operates nearly 4,500 units of permanent housing across New York City. Supportive housing - affordable housing paired with wraparound services designed to help people maintain their homes for the long-term - is widely recognized as a proven and cost-effective solution to chronic homelessness. But we didn't stop at providing housing. Breaking Ground's programs and services help people experiencing street homelessness - especially those who have been on the streets the longest - to come indoors. Through our Street to Home outreach program and transitional housing resources, we help people get, and stay, on the path to a permanent home."
+   "about": "In 1990, a small group of people came together to bring to scale a new model of housing for people who were experiencing or at risk of homelessness - permanent supportive housing. The result was Breaking Ground's Times Square residence. Over 30 years later, the Times Square remains the largest supportive residence in the country, and thousands of people have been able to escape or avoid life on the streets by finding a home in one of its 652 apartments. Today, Breaking Ground operates nearly 4,500 units of permanent housing across New York City. Supportive housing - affordable housing paired with wraparound services designed to help people maintain their homes for the long-term - is widely recognized as a proven and cost-effective solution to chronic homelessness. But we didn't stop at providing housing. Breaking Ground's programs and services help people experiencing street homelessness - especially those who have been on the streets the longest - to come indoors. Through our Street to Home outreach program and transitional housing resources, we help people get, and stay, on the path to a permanent home.",
+   "rerentals": {
+    "url": "https://www.breakingground.org/need-housing",
+    "title": "Need Housing?",
+    "note": "Building browser filterable by which waitlists are currently open; supportive/affordable, PDF applications.",
+    "units_seen": false,
+    "waitlist": true,
+    "last_ok": "2026-08-10",
+    "checked": "2026-08-10"
+   }
   },
   {
    "name": "Bronx Pro Group LLC",
@@ -128,7 +137,16 @@
     "MWBE",
     "Property management"
    ],
-   "about": "Bronx Pro Group is a women owned, neighborhood-based firm dedicated to community development through affordable housing investments. Bronx Pro's mission is to develop high quality affordable housing that is sustainable and builds thriving communities. The company and its affiliates employ full time professionals and support staff engaged in Real Estate Development, Construction, Property Management, and Resident Services."
+   "about": "Bronx Pro Group is a women owned, neighborhood-based firm dedicated to community development through affordable housing investments. Bronx Pro's mission is to develop high quality affordable housing that is sustainable and builds thriving communities. The company and its affiliates employ full time professionals and support staff engaged in Real Estate Development, Construction, Property Management, and Resident Services.",
+   "rerentals": {
+    "url": "https://bronxprogroup.com/apartments",
+    "title": "Apartments",
+    "note": "Waitlist applications; two senior buildings marked Available (rent = 30% of income, HPD PBV S8).",
+    "units_seen": false,
+    "waitlist": true,
+    "last_ok": "2026-08-10",
+    "checked": "2026-08-10"
+   }
   },
   {
    "name": "C+C Apartment Management, LLC",
@@ -386,7 +404,16 @@
     "Nonprofit",
     "LIHTC"
    ],
-   "about": "Highbridge Community Development Corporation (HCDC) was founded in 1989 with the mission of developing, leasing, and managing low-income and affordable housing throughout New York City. HCDC is a not-for-profit 501(c)(3) organization and currently manages approximately 2,800 residential units, primarily in the Bronx. With more than 30 years of experience, HCDC develops, markets, leases, and manages its own properties, while also providing marketing and lease-up services for other developers. Our portfolio includes housing developed under a wide range of programs, including Low-Income Housing Tax Credits (LIHTC), HUD Section 202, and various New York State and City housing initiatives. We work closely with all relevant housing agencies to ensure accessible, efficient rental processes for our tenants.. HCDC and its affiliated nonprofit organizations are dedicated to strengthening Bronx neighborhoods by promoting safe, stable, and affordable housing for low- and moderate-income families, seniors, the frail, and individuals with disabilities. In partnership with other organizations, HCDC also supports complementary educational, cultural, health care, social, and economic development initiatives to address the broader needs of the communities we serve. State whether your team is open to being hired by outside teams or only in-house. Rental or Sales projects – We are open to being hired by outside teams."
+   "about": "Highbridge Community Development Corporation (HCDC) was founded in 1989 with the mission of developing, leasing, and managing low-income and affordable housing throughout New York City. HCDC is a not-for-profit 501(c)(3) organization and currently manages approximately 2,800 residential units, primarily in the Bronx. With more than 30 years of experience, HCDC develops, markets, leases, and manages its own properties, while also providing marketing and lease-up services for other developers. Our portfolio includes housing developed under a wide range of programs, including Low-Income Housing Tax Credits (LIHTC), HUD Section 202, and various New York State and City housing initiatives. We work closely with all relevant housing agencies to ensure accessible, efficient rental processes for our tenants.. HCDC and its affiliated nonprofit organizations are dedicated to strengthening Bronx neighborhoods by promoting safe, stable, and affordable housing for low- and moderate-income families, seniors, the frail, and individuals with disabilities. In partnership with other organizations, HCDC also supports complementary educational, cultural, health care, social, and economic development initiatives to address the broader needs of the communities we serve. State whether your team is open to being hired by outside teams or only in-house. Rental or Sales projects – We are open to being hired by outside teams.",
+   "rerentals": {
+    "url": "https://hcdcny.com/apply/",
+    "title": "Apply",
+    "note": "General application by mail for their Bronx portfolio; no unit board.",
+    "units_seen": false,
+    "waitlist": true,
+    "last_ok": "2026-08-10",
+    "checked": "2026-08-10"
+   }
   },
   {
    "name": "Housing Line Inc",
@@ -448,7 +475,7 @@
     "title": "Outside Market / Re-rentals",
     "units_seen": true,
     "note": "Same operator as Affordable for NY, but lists different units — check both.",
-    "unit_count": 1,
+    "unit_count": 3,
     "last_ok": "2026-08-10",
     "checked": "2026-08-10"
    }
@@ -489,7 +516,16 @@
     "MWBE",
     "LIHTC"
    ],
-   "about": "K&G Upright Consulting, Inc. is committed to ensure that your development follows all applicable HPD, HDC, HCR, and HUD’s regulatory agreement, Marketing Handbook, as well as programs requirements and project deadlines. We specialize in initial lease ups and re-rentals applying the NYC Housing Lottery system and utilizing Housing Connect software; Marketing plans, newspaper and online advertisement coordination, community outreach by mail and emails; and community townhalls to provide Development information. Our experience includes working with but not limited to the following programs: IRS Section 42 / LIHTC, AIRS, 15/15 Supportive Housing, Project Based Section 8, Middle and limited Income Units, and Market Rate units. We are a 100% women-owned business and are M/WBE Certified in NYC. We serve a wide range of clientele in New York City and Westchester County and can customize services to meet the unique needs of housing providers, developers, investors, and syndicators. K&G promotes and is committed to the highest standards in the service of Housing Marketing by following Federal, State and City rules and regulations."
+   "about": "K&G Upright Consulting, Inc. is committed to ensure that your development follows all applicable HPD, HDC, HCR, and HUD’s regulatory agreement, Marketing Handbook, as well as programs requirements and project deadlines. We specialize in initial lease ups and re-rentals applying the NYC Housing Lottery system and utilizing Housing Connect software; Marketing plans, newspaper and online advertisement coordination, community outreach by mail and emails; and community townhalls to provide Development information. Our experience includes working with but not limited to the following programs: IRS Section 42 / LIHTC, AIRS, 15/15 Supportive Housing, Project Based Section 8, Middle and limited Income Units, and Market Rate units. We are a 100% women-owned business and are M/WBE Certified in NYC. We serve a wide range of clientele in New York City and Westchester County and can customize services to meet the unique needs of housing providers, developers, investors, and syndicators. K&G promotes and is committed to the highest standards in the service of Housing Marketing by following Federal, State and City rules and regulations.",
+   "rerentals": {
+    "url": "https://kgupright.com/current-vacancies",
+    "title": "Current Vacancies",
+    "note": "Income-restricted rent-stabilized lease-ups (Verdant Fort Greene). No per-unit prices; downloadable application.",
+    "units_seen": true,
+    "unit_count": 1,
+    "last_ok": "2026-08-10",
+    "checked": "2026-08-10"
+   }
   },
   {
    "name": "K&R Realty Management Inc",
@@ -513,7 +549,16 @@
    "tags": [
     "LIHTC"
    ],
-   "about": "Langsam Property Services Corp. is a full-service real estate management firm based in the Bronx since 1949. Langsam manages over 10,000 residential units throughout the City of New York. Despite its size, Langsam manages its properties like a small business, with great attention to detail. Langsam is designated as an Accredited Management Organization (AMO), a standard of excellence in management conferred by the Institute of Real Estate Management (IREM). Although nearly all of Langsam’s residential units are rent regulated, it specializes in helping to turn around distressed housing and to rent up and initiate new LIHTC properties. Langsam’s tried and true processes focus on ensuring nothing “falls through the cracks” and that its properties are up to date on all code and compliance requirements."
+   "about": "Langsam Property Services Corp. is a full-service real estate management firm based in the Bronx since 1949. Langsam manages over 10,000 residential units throughout the City of New York. Despite its size, Langsam manages its properties like a small business, with great attention to detail. Langsam is designated as an Accredited Management Organization (AMO), a standard of excellence in management conferred by the Institute of Real Estate Management (IREM). Although nearly all of Langsam’s residential units are rent regulated, it specializes in helping to turn around distressed housing and to rent up and initiate new LIHTC properties. Langsam’s tried and true processes focus on ensuring nothing “falls through the cracks” and that its properties are up to date on all code and compliance requirements.",
+   "rerentals": {
+    "url": "https://www.langsampropertyservices.com/affordable-rental-opportunities",
+    "title": "Affordable Rental Opportunities",
+    "note": "AMI-banded units with stated rents; apply by email. First-come style.",
+    "units_seen": true,
+    "unit_count": 3,
+    "last_ok": "2026-08-10",
+    "checked": "2026-08-10"
+   }
   },
   {
    "name": "Lemle & Wolff, Inc",
@@ -658,7 +703,16 @@
    "tags": [
     "421-a / IH"
    ],
-   "about": "MNS is committed to providing unparalleled service and expertise in the real estate industry. We empower our clients by offering comprehensive guidance, personalized solutions, and innovative strategies to achieve their real estate goals. MNS plays a crucial role by facilitating the administration and oversight of affordable housing programs. By working alongside Seiden and Schein P.C., the largest 421a legal advisor in New York City, MNS demonstrates a dedication to ensuring that affordable housing initiatives are not only effectively implemented but also compliant with pertinent regulations. At MNS we are committed to preserve and promote affordable housing for individuals’ families and communities through New York City."
+   "about": "MNS is committed to providing unparalleled service and expertise in the real estate industry. We empower our clients by offering comprehensive guidance, personalized solutions, and innovative strategies to achieve their real estate goals. MNS plays a crucial role by facilitating the administration and oversight of affordable housing programs. By working alongside Seiden and Schein P.C., the largest 421a legal advisor in New York City, MNS demonstrates a dedication to ensuring that affordable housing initiatives are not only effectively implemented but also compliant with pertinent regulations. At MNS we are committed to preserve and promote affordable housing for individuals’ families and communities through New York City.",
+   "rerentals": {
+    "url": "https://www.mns.com/affordable_units",
+    "title": "Affordable Units",
+    "note": "Filterable availability table with unit-level rents across their affordable buildings.",
+    "units_seen": true,
+    "unit_count": 3,
+    "last_ok": "2026-08-10",
+    "checked": "2026-08-10"
+   }
   },
   {
    "name": "Phipps Houses",
@@ -671,7 +725,16 @@
    "tags": [
     "Nonprofit"
    ],
-   "about": "Phipps Houses is the oldest and largest not-for-profit developer, owner, and manager of affordable housing in New York City. Its social services affiliate, Phipps Neighborhoods, provides children, youth and families in low-income neighborhoods the opportunities they need to thrive through comprehensive workforce and education programs, and access to community and economic empowerment services. Together they are changing lives in New York City."
+   "about": "Phipps Houses is the oldest and largest not-for-profit developer, owner, and manager of affordable housing in New York City. Its social services affiliate, Phipps Neighborhoods, provides children, youth and families in low-income neighborhoods the opportunities they need to thrive through comprehensive workforce and education programs, and access to community and economic empowerment services. Together they are changing lives in New York City.",
+   "rerentals": {
+    "url": "https://www.phippsny.org/find-housing/",
+    "title": "Housing Opportunities",
+    "note": "Directory of 42 buildings with waitlist/vacancy applications (e.g. Rockaway Village). Applications, not a priced unit board.",
+    "units_seen": false,
+    "waitlist": true,
+    "last_ok": "2026-08-10",
+    "checked": "2026-08-10"
+   }
   },
   {
    "name": "Places.NYC LLC",
@@ -845,7 +908,16 @@
    "website": "https://www.residenewyork.com/",
    "agency": "HPD",
    "tags": [],
-   "about": "Reside New York is committed to delivering affordable housing opportunities in a win-win setup. New Yorkers in need of housing AND developers waiting for their investments' return, are both winners when choosing Reside New York. Speed, efficiency, simplicity, and compliance combined will give you the \"Reside Experience.\""
+   "about": "Reside New York is committed to delivering affordable housing opportunities in a win-win setup. New Yorkers in need of housing AND developers waiting for their investments' return, are both winners when choosing Reside New York. Speed, efficiency, simplicity, and compliance combined will give you the \"Reside Experience.\"",
+   "rerentals": {
+    "url": "https://residenewyork.com/property-status/open-market/",
+    "title": "Open Market",
+    "note": "Open-market (non-lottery) re-rentals with unit-level rents. Their /listings/ 404s and /my-properties/ throws a WP error - this taxonomy URL is the live board. Same operator as the dead Reside Affordable Inc domain.",
+    "units_seen": true,
+    "unit_count": 8,
+    "last_ok": "2026-08-10",
+    "checked": "2026-08-10"
+   }
   },
   {
    "name": "Restored Homes",

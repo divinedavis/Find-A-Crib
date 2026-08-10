@@ -936,6 +936,21 @@
   .d-fact .v { font-weight: 700; font-size: 15px; }
   .d-chips { display: flex; flex-wrap: wrap; gap: 8px; }
   .d-chips .chip { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; font-size: 13px; font-weight: 600; }
+  /* ---- building comments ---- */
+  .d-comment { padding: 10px 0; border-top: 1px solid var(--line); }
+  .d-comment:first-child { border-top: none; padding-top: 0; }
+  .d-comment-head { display: flex; align-items: baseline; gap: 8px; font-size: 12px; margin-bottom: 3px; }
+  .d-comment-author { font-weight: 700; color: var(--ink); font-size: 13px; }
+  .d-comment-when { color: var(--ink-2); }
+  .d-comment-del { margin-left: auto; background: none; border: none; color: var(--ink-2); cursor: pointer; font-size: 12px; padding: 2px 4px; }
+  .d-comment-del:hover { color: var(--err-ink); }
+  .d-comment-body { font-size: 14px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .d-comment-form textarea { width: 100%; min-height: 68px; padding: 10px 12px; font-size: 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); resize: vertical; font-family: inherit; margin-bottom: 8px; }
+  .d-comment-form textarea:focus { outline: none; border-color: var(--blue); }
+  .d-comment-post { padding: 10px 18px; background: var(--blue-solid); color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; }
+  .d-comment-post:disabled { opacity: .6; cursor: default; }
+  .d-comment-err { color: var(--err-ink); font-size: 13px; margin-top: 6px; }
+  .d-comment-err[hidden] { display: none; }
   /* the reused HPD markup renders cleanly inside a detail section */
   #detail-content .hpd-section:first-child { border-top: none; margin-top: 0; padding-top: 0; }
 
@@ -3564,6 +3579,10 @@
         <div class="d-actions" style="padding:0">
           <a class="d-primary" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.label}</a>
         </div>
+      </div>
+      <div class="d-section" id="d-comments"><h3>Comments</h3>
+        <div id="d-comments-list"><div class="d-sub" style="margin:0">Loading comments…</div></div>
+        <div id="d-comments-composer"></div>
       </div>`;
   }
 
@@ -3627,6 +3646,7 @@
     detailContent.innerHTML = renderDetail(rec, detailListed);
     detailContent.scrollTop = 0;
     syncDetailFav();
+    loadComments(rec.bbl);
     detailSheet.hidden = false;
     if (!_detailNav) { history.pushState({ facDetail: true }, ''); _detailNav = true; }
   }
@@ -3647,6 +3667,7 @@
     if (act === 'search') return; // link
     if (act === 'close') { closeDetail(); return; }
     if (act === 'getplus') { openAuthModal('Create a free account — invite a friend and you both get Find A Crib Plus free.'); return; }
+    if (act === 'comment-signin') { openAuthModal('Sign in to comment on buildings.'); return; }
     if (act === 'profile') { openProfile(); return; }
     if (act === 'fav') {
       if (!gateSave(FAVS.has(rec.bbl))) return;
@@ -3682,6 +3703,89 @@
   });
   // click on the dimmed backdrop (outside the popup) -> back to the previous screen
   detailSheet.addEventListener('click', e => { if (e.target === detailSheet) closeDetail(); });
+
+  // ---------- building comments ----------
+  // Anyone can read; posting needs an account. The UI gate is cosmetic — RLS on
+  // building_comments is what actually enforces both, so a forged client gains nothing.
+  function commentAuthorName() {
+    const md = (authUser && authUser.user_metadata) || {};
+    const n = (md.full_name || md.name || '').trim();
+    if (n) return n.slice(0, 60);
+    return (((authUser && authUser.email) || '').split('@')[0] || 'Member').slice(0, 60);
+  }
+  function commentWhen(ts) {
+    const d = new Date(ts), diff = Date.now() - d.getTime(), H = 36e5, DAY = 864e5;
+    if (diff < H) return 'just now';
+    if (diff < DAY) return Math.floor(diff / H) + 'h ago';
+    if (diff < 30 * DAY) return Math.floor(diff / DAY) + 'd ago';
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+  function renderCommentComposer() {
+    const box = detailContent.querySelector('#d-comments-composer');
+    if (!box) return;
+    if (!supaClient) { box.innerHTML = ''; return; }
+    box.innerHTML = authUser
+      ? `<form class="d-comment-form" id="d-comment-form">
+          <textarea id="d-comment-text" maxlength="1000" placeholder="Lived here? Toured it? Share what you know." required></textarea>
+          <button type="submit" class="d-comment-post">Post comment</button>
+          <div class="d-comment-err" id="d-comment-err" hidden></div>
+        </form>`
+      : `<div class="d-actions" style="padding:12px 0 0"><button class="d-secondary" data-detail="comment-signin">Sign in to comment</button></div>`;
+  }
+  async function loadComments(bbl) {
+    const list = detailContent.querySelector('#d-comments-list');
+    if (!list) return;
+    renderCommentComposer();
+    if (!supaClient) { list.innerHTML = '<div class="d-sub" style="margin:0">Comments are unavailable right now.</div>'; return; }
+    try {
+      const { data, error } = await supaClient.from('building_comments')
+        .select('id,user_id,author,body,created_at')
+        .eq('bbl', bbl).order('created_at', { ascending: false }).limit(100);
+      if (error) throw error;
+      if (!detailRec || detailRec.bbl !== bbl) return;   // user moved on mid-flight
+      list.innerHTML = (data && data.length)
+        ? data.map(c => `<div class="d-comment">
+            <div class="d-comment-head"><span class="d-comment-author">${esc(c.author)}</span>
+              <span class="d-comment-when">${esc(commentWhen(c.created_at))}</span>
+              ${authUser && authUser.id === c.user_id ? `<button class="d-comment-del" data-cdel="${esc(c.id)}" title="Delete your comment">Delete</button>` : ''}</div>
+            <div class="d-comment-body">${esc(c.body)}</div>
+          </div>`).join('')
+        : '<div class="d-sub" style="margin:0">No comments yet — be the first to share what you know about this building.</div>';
+    } catch (e) {
+      list.innerHTML = '<div class="d-sub" style="margin:0">Couldn’t load comments right now.</div>';
+    }
+  }
+  detailContent.addEventListener('submit', async e => {
+    if (e.target.id !== 'd-comment-form') return;
+    e.preventDefault();
+    if (!authUser || !supaClient || !detailRec) return;
+    const ta = detailContent.querySelector('#d-comment-text');
+    const err = detailContent.querySelector('#d-comment-err');
+    const btn = e.target.querySelector('.d-comment-post');
+    const body = (ta.value || '').trim();
+    if (!body) return;
+    btn.disabled = true; if (err) err.hidden = true;
+    try {
+      const { error } = await supaClient.from('building_comments')
+        .insert({ bbl: detailRec.bbl, user_id: authUser.id, author: commentAuthorName(), body: body.slice(0, 1000) });
+      if (error) throw error;
+      try { track('comment_post', { bbl: detailRec.bbl }); } catch (e2) {}
+      loadComments(detailRec.bbl);
+    } catch (e2) {
+      btn.disabled = false;
+      if (err) { err.textContent = 'Couldn’t post that — please try again.'; err.hidden = false; }
+    }
+  });
+  detailContent.addEventListener('click', async e => {
+    const del = e.target.closest('[data-cdel]');
+    if (!del || !supaClient || !detailRec) return;
+    del.disabled = true;
+    try {
+      const { error } = await supaClient.from('building_comments').delete().eq('id', del.dataset.cdel);
+      if (error) throw error;
+      loadComments(detailRec.bbl);
+    } catch (e2) { del.disabled = false; }
+  });
 
   // ---------- init ----------
   updateBoroughBadge();
@@ -4131,6 +4235,9 @@
       adoptAccountTheme(authUser);   // the account's choice beats this device's
       updateAuthUI();
       refreshPlus();
+      // signing in (or out) with the detail sheet open swaps the composer in/out
+      // and re-marks which comments carry your Delete button
+      if (detailRec) loadComments(detailRec.bbl);
       if (authUser) {
         // ties this browser's fac_vid to the account, which is what lets
         // traffic_report.py retroactively exclude the owner's anonymous visits

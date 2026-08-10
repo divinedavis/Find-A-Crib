@@ -937,8 +937,14 @@
   .d-chips { display: flex; flex-wrap: wrap; gap: 8px; }
   .d-chips .chip { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; font-size: 13px; font-weight: 600; }
   /* ---- building comments ---- */
-  .d-comment { padding: 10px 0; border-top: 1px solid var(--line); }
-  .d-comment:first-child { border-top: none; padding-top: 0; }
+  .d-cthread { padding: 12px 0; border-top: 1px solid var(--line); }
+  .d-cthread:first-child { border-top: none; padding-top: 0; }
+  .d-reply { margin-top: 10px; margin-left: 14px; padding-left: 12px; border-left: 2px solid var(--line); }
+  .d-comment-acts { display: flex; gap: 16px; margin-top: 6px; }
+  .d-comment-like, .d-comment-reply { background: none; border: none; padding: 2px 0; font-size: 12px; font-weight: 700; color: var(--ink-2); cursor: pointer; }
+  .d-comment-like.liked { color: #e0457b; }
+  .d-comment-like:disabled, .d-comment-reply:disabled { opacity: .5; cursor: default; }
+  .d-reply-slot .d-comment-form { margin-top: 10px; }
   .d-comment-head { display: flex; align-items: baseline; gap: 8px; font-size: 12px; margin-bottom: 3px; }
   .d-comment-author { font-weight: 700; color: var(--ink); font-size: 13px; }
   .d-comment-when { color: var(--ink-2); }
@@ -3732,6 +3738,20 @@
         </form>`
       : `<div class="d-actions" style="padding:12px 0 0"><button class="d-secondary" data-detail="comment-signin">Sign in to comment</button></div>`;
   }
+  function commentHtml(c, isReply) {
+    const likers = c._likers || [];
+    const liked = !!(authUser && likers.indexOf(authUser.id) !== -1);
+    return `<div class="d-comment${isReply ? ' d-reply' : ''}">
+        <div class="d-comment-head"><span class="d-comment-author">${esc(c.author)}</span>
+          <span class="d-comment-when">${esc(commentWhen(c.created_at))}</span>
+          ${authUser && authUser.id === c.user_id ? `<button class="d-comment-del" data-cdel="${esc(c.id)}" title="Delete your comment">Delete</button>` : ''}</div>
+        <div class="d-comment-body">${esc(c.body)}</div>
+        <div class="d-comment-acts">
+          <button class="d-comment-like${liked ? ' liked' : ''}" data-clike="${esc(c.id)}" aria-pressed="${liked}">${liked ? '♥' : '♡'}${likers.length ? ' ' + likers.length : ''}</button>
+          ${isReply ? '' : `<button class="d-comment-reply" data-creply="${esc(c.id)}">Reply</button>`}
+        </div>
+      </div>`;
+  }
   async function loadComments(bbl) {
     const list = detailContent.querySelector('#d-comments-list');
     if (!list) return;
@@ -3739,37 +3759,55 @@
     if (!supaClient) { list.innerHTML = '<div class="d-sub" style="margin:0">Comments are unavailable right now.</div>'; return; }
     try {
       const { data, error } = await supaClient.from('building_comments')
-        .select('id,user_id,author,body,created_at')
-        .eq('bbl', bbl).order('created_at', { ascending: false }).limit(100);
+        .select('id,user_id,author,body,created_at,parent_id,comment_likes(user_id)')
+        .eq('bbl', bbl).order('created_at', { ascending: false }).limit(200);
       if (error) throw error;
       if (!detailRec || detailRec.bbl !== bbl) return;   // user moved on mid-flight
-      list.innerHTML = (data && data.length)
-        ? data.map(c => `<div class="d-comment">
-            <div class="d-comment-head"><span class="d-comment-author">${esc(c.author)}</span>
-              <span class="d-comment-when">${esc(commentWhen(c.created_at))}</span>
-              ${authUser && authUser.id === c.user_id ? `<button class="d-comment-del" data-cdel="${esc(c.id)}" title="Delete your comment">Delete</button>` : ''}</div>
-            <div class="d-comment-body">${esc(c.body)}</div>
-          </div>`).join('')
+      const tops = [], byParent = {};
+      for (const c of data || []) {
+        c._likers = (c.comment_likes || []).map(l => l.user_id);
+        if (c.parent_id) (byParent[c.parent_id] = byParent[c.parent_id] || []).push(c);
+        else tops.push(c);
+      }
+      // top-level newest first (query order); replies inside a thread oldest first
+      list.innerHTML = tops.length
+        ? tops.map(t => `<div class="d-cthread">`
+            + commentHtml(t, false)
+            + (byParent[t.id] || []).slice().reverse().map(r => commentHtml(r, true)).join('')
+            + `<div class="d-reply-slot" data-rslot="${esc(t.id)}"></div></div>`).join('')
         : '<div class="d-sub" style="margin:0">No comments yet — be the first to share what you know about this building.</div>';
     } catch (e) {
       list.innerHTML = '<div class="d-sub" style="margin:0">Couldn’t load comments right now.</div>';
     }
   }
+  function mountReplyForm(parentId) {
+    detailContent.querySelectorAll('[data-rslot]').forEach(s => { s.innerHTML = ''; });   // one reply box at a time
+    const slot = detailContent.querySelector(`[data-rslot="${parentId}"]`);
+    if (!slot) return;
+    slot.innerHTML = `<form class="d-comment-form d-reply-form" data-parent="${esc(parentId)}">
+        <textarea maxlength="1000" placeholder="Write a reply…" required></textarea>
+        <button type="submit" class="d-comment-post">Post reply</button>
+        <div class="d-comment-err" hidden></div>
+      </form>`;
+    try { slot.querySelector('textarea').focus(); } catch (e) {}
+  }
   detailContent.addEventListener('submit', async e => {
-    if (e.target.id !== 'd-comment-form') return;
+    const form = e.target;
+    if (!form.classList.contains('d-comment-form')) return;   // main composer or a reply form
     e.preventDefault();
     if (!authUser || !supaClient || !detailRec) return;
-    const ta = detailContent.querySelector('#d-comment-text');
-    const err = detailContent.querySelector('#d-comment-err');
-    const btn = e.target.querySelector('.d-comment-post');
+    const ta = form.querySelector('textarea');
+    const err = form.querySelector('.d-comment-err');
+    const btn = form.querySelector('.d-comment-post');
+    const parentId = form.dataset.parent || null;
     const body = (ta.value || '').trim();
     if (!body) return;
     btn.disabled = true; if (err) err.hidden = true;
     try {
       const { error } = await supaClient.from('building_comments')
-        .insert({ bbl: detailRec.bbl, user_id: authUser.id, author: commentAuthorName(), body: body.slice(0, 1000) });
+        .insert({ bbl: detailRec.bbl, user_id: authUser.id, author: commentAuthorName(), body: body.slice(0, 1000), parent_id: parentId });
       if (error) throw error;
-      try { track('comment_post', { bbl: detailRec.bbl }); } catch (e2) {}
+      try { track('comment_post', { bbl: detailRec.bbl, reply: !!parentId }); } catch (e2) {}
       loadComments(detailRec.bbl);
     } catch (e2) {
       btn.disabled = false;
@@ -3777,14 +3815,43 @@
     }
   });
   detailContent.addEventListener('click', async e => {
+    if (!supaClient || !detailRec) return;
     const del = e.target.closest('[data-cdel]');
-    if (!del || !supaClient || !detailRec) return;
-    del.disabled = true;
-    try {
-      const { error } = await supaClient.from('building_comments').delete().eq('id', del.dataset.cdel);
-      if (error) throw error;
-      loadComments(detailRec.bbl);
-    } catch (e2) { del.disabled = false; }
+    if (del) {
+      del.disabled = true;
+      try {
+        const { error } = await supaClient.from('building_comments').delete().eq('id', del.dataset.cdel);
+        if (error) throw error;
+        loadComments(detailRec.bbl);   // replies under it cascade away server-side
+      } catch (e2) { del.disabled = false; }
+      return;
+    }
+    const like = e.target.closest('[data-clike]');
+    if (like) {
+      if (!authUser) { openAuthModal('Sign in to like comments.'); return; }
+      like.disabled = true;
+      const id = like.dataset.clike;
+      try {
+        if (like.classList.contains('liked')) {
+          const { error } = await supaClient.from('comment_likes').delete()
+            .eq('comment_id', id).eq('user_id', authUser.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supaClient.from('comment_likes')
+            .insert({ comment_id: id, user_id: authUser.id });
+          if (error && error.code !== '23505') throw error;   // already liked = fine
+          try { track('comment_like', { bbl: detailRec.bbl }); } catch (e2) {}
+        }
+        loadComments(detailRec.bbl);
+      } catch (e2) { like.disabled = false; }
+      return;
+    }
+    const rep = e.target.closest('[data-creply]');
+    if (rep) {
+      if (!authUser) { openAuthModal('Sign in to reply to comments.'); return; }
+      mountReplyForm(rep.dataset.creply);
+      return;
+    }
   });
 
   // ---------- init ----------

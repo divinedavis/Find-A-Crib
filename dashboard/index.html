@@ -1169,21 +1169,61 @@
         labels+='<text x="'+X(i)+'" y="'+(H-6)+'" text-anchor="middle" font-size="10.5" fill="var(--muted)">'+lbl+'</text>';
       }
     });
+    // A full-height invisible band per day, each spanning to the midpoint of its
+    // neighbours so the columns tile the whole plot with no dead gaps. The dots
+    // are r=3.2 — a 6px target you had to hit exactly to read a number. Anywhere
+    // in the day's column now works, which is what a reader expects of a chart.
+    var bands='';
+    days.forEach(function(d,i){
+      // Edge columns run to the edge of the SVG, and every band is full height,
+      // so the bands tile the entire chart: no dead strip in the side padding,
+      // above the line, or down in the date labels. "Any part of the chart"
+      // means any part.
+      var lo = i===0 ? 0 : (X(i-1)+X(i))/2;
+      var hi = i===days.length-1 ? W : (X(i)+X(i+1))/2;
+      bands+='<rect class="spark-band" x="'+lo+'" y="0" width="'+Math.max(hi-lo,1)+
+             '" height="'+H+'" fill="transparent" pointer-events="all" data-i="'+i+'"></rect>';
+    });
+    // Drawn under the bands so it never steals their pointer events.
+    var guide='<line id="spark-guide" y1="'+pad.t+'" y2="'+(pad.t+ih)+
+              '" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 3" opacity="0" pointer-events="none"></line>';
     host.innerHTML='<svg width="100%" height="'+H+'" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" id="spark-svg">'+
       '<defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--purple)" stop-opacity=".22"/><stop offset="1" stop-color="var(--purple)" stop-opacity="0"/></linearGradient></defs>'+
       '<path d="'+area+'" fill="url(#sg)"></path><path d="'+line+'" fill="none" stroke="var(--purple)" stroke-width="2" stroke-linejoin="round"></path>'+
-      dots+labels+'</svg><div class="spark-tip" id="spark-tip"></div>';
-    var svg=el('spark-svg'), tip=el('spark-tip');
-    svg.querySelectorAll('circle').forEach(function(c){
-      c.addEventListener('mouseenter',function(){
-        var d=days[+c.getAttribute('data-i')];
-        var rb=host.getBoundingClientRect(), cb=c.getBoundingClientRect();
-        tip.style.left=(cb.left-rb.left+cb.width/2)+'px'; tip.style.top=(cb.top-rb.top)+'px';
-        tip.innerHTML='<b>'+new Date(d.date+'T00:00').toLocaleString('en-US',{month:'short',day:'numeric'})+'</b> — '+d.views+' views · '+d.visitors+' visitors';
-        tip.style.opacity='1';
-      });
-      c.addEventListener('mouseleave',function(){ tip.style.opacity='0'; });
+      guide+dots+labels+bands+'</svg><div class="spark-tip" id="spark-tip"></div>';
+    var svg=el('spark-svg'), tip=el('spark-tip'), gl=el('spark-guide');
+    var circles=svg.querySelectorAll('circle');
+
+    function show(i){
+      var d=days[i], c=circles[i];
+      if(!d||!c) return;
+      var rb=host.getBoundingClientRect(), cb=c.getBoundingClientRect();
+      tip.innerHTML='<b>'+new Date(d.date+'T00:00').toLocaleString('en-US',{month:'short',day:'numeric'})+
+                    '</b> — '+d.views+' views · '+d.visitors+' visitors';
+      // Clamp inside the card: the tip is centred on the point, so the first and
+      // last columns would otherwise hang off the edge and get clipped.
+      var half=tip.offsetWidth/2;
+      var x=cb.left-rb.left+cb.width/2;
+      tip.style.left=Math.min(Math.max(x,half+2),rb.width-half-2)+'px';
+      tip.style.top=(cb.top-rb.top)+'px';
+      tip.style.opacity='1';
+      gl.setAttribute('x1',X(i)); gl.setAttribute('x2',X(i)); gl.setAttribute('opacity','.5');
+      circles.forEach(function(o,j){ o.setAttribute('r', j===i?'5':'3.2'); });
+    }
+    function hide(){
+      tip.style.opacity='0'; gl.setAttribute('opacity','0');
+      circles.forEach(function(o){ o.setAttribute('r','3.2'); });
+    }
+    svg.querySelectorAll('.spark-band').forEach(function(b){
+      var i=+b.getAttribute('data-i');
+      b.addEventListener('mouseenter',function(){ show(i); });
+      // Touch gets the same reading; a tap on a column is the mobile equivalent
+      // of a hover and there is no other way to read a value on a phone.
+      b.addEventListener('touchstart',function(e){ show(i); }, {passive:true});
     });
+    // One leave handler on the chart, not per band — moving between adjacent
+    // columns must not flicker the tooltip off and on.
+    svg.addEventListener('mouseleave',hide);
   }
 
   // ---------- conversion meters ----------

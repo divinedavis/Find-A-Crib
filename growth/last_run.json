@@ -1,12 +1,12 @@
 {
   "build": {
-    "at": "2026-08-10T05:40:23+00:00",
-    "changed_urls": 6,
-    "date": "2026-08-10",
+    "at": "2026-08-11T05:40:22+00:00",
+    "changed_urls": 7,
+    "date": "2026-08-11",
     "deployed": true,
-    "new_urls": 0,
+    "new_urls": 1,
     "seo_corpus": {
-      "days_old": 2,
+      "days_old": 3,
       "written": "2026-08-08"
     },
     "techniques": {
@@ -23,19 +23,19 @@
         "ok": true
       },
       "daily_brief": {
-        "detail": "no movement since yesterday \u2014 no brief published (avoids filler)",
+        "detail": "brief 2026-08-11: 1 added, 0 removed",
         "ok": true
       },
       "fresh_section8": {
-        "detail": "287 buildings across 5 boroughs",
+        "detail": "288 buildings across 5 boroughs",
         "ok": true
       },
       "hub_direct_answers": {
-        "detail": "answer block on 368 of 368 hub pages (neighborhood 198/198, borough 5/5, zip 165/165)",
-        "ok": true
+        "detail": "answer block on 620 of 623 hub pages (neighborhood 198/198, borough 5/5, zip 165/165, dc hub 103/103, la hub 112/112, sf hub 37/37, city browse hub 0/3) \u2014 missing e.g. dc/buildings/index.html, la/buildings/index.html, sf/buildings/index.html",
+        "ok": false
       },
       "indexnow": {
-        "detail": "submitted 6 URLs \u2192 HTTP 200",
+        "detail": "submitted 8 URLs \u2192 HTTP 200",
         "ok": true
       },
       "llms_txt": {
@@ -43,7 +43,7 @@
         "ok": true
       },
       "sitemap_daily": {
-        "detail": "sitemap-daily.xml with 18 URLs",
+        "detail": "sitemap-daily.xml with 19 URLs",
         "ok": true
       }
     }

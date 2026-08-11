@@ -1070,12 +1070,53 @@ GUIDE_CAVEATS = {
 # Marker embedded in any page this build published on the SEO pipeline's
 # behalf. It answers the only question that matters when two pipelines can
 # write the same path: who wrote the copy currently in the docroot. A page
-# carrying it is ours and we keep it current; a page without it belongs to the
-# SEO build and we never touch it, so the two never fight over one file.
+# carrying it is ours and we keep it current; a page without it was written by
+# the SEO build, and whether we may replace it is decided by
+# _seo_page_is_current() below rather than by the marker alone.
 # (Named FALLBACK_MARKER until 2026-08-03, when the city hub tier started
 # using the same rule. The string itself has never changed — renaming it would
 # have orphaned every page already published under it.)
 FALLBACK_MARKER = "<!-- published by the daily growth build -->"
+
+# refresh_seo.sh runs nightly at 04:10 UTC, before this build, so a corpus
+# written yesterday is normal and one written two days ago has already missed a
+# run. Same threshold report.py uses to call that pipeline stalled.
+SEO_STALE_DAYS = 2
+
+
+def _seo_page_is_current(live, ours, docroot):
+    """Should a page the SEO pipeline deployed be left exactly as it is?
+
+    Ownership used to be decided by FALLBACK_MARKER alone: a docroot page
+    without our marker had been written by the SEO pipeline, so we never touched
+    it again. That conflates two different claims — "that pipeline published
+    this page once" and "that pipeline's copy is what the committed code
+    renders" — and the gap between them silently strands real work.
+
+    It already did. On 2026-08-09 a review added an extractable answer block and
+    FAQ to build_seo.city_hub_docs(). The SEO pipeline had deployed the three
+    city browse hubs on 2026-08-08, so from 08-09 on every nightly growth build
+    re-rendered the improved page, saw no marker, said "hands off" and threw the
+    render away. On 2026-08-11 t_hub_direct_answers still read "city browse hub
+    0/3", and would have read it indefinitely: the only other path to the
+    docroot, refresh_seo.sh, had not written since 08-08.
+
+    So the test is content, not provenance. Identical bytes mean the two
+    pipelines agree and the handover is real — nothing to do either way.
+    Different bytes mean the live page is behind this checkout, and we take it
+    over only once that pipeline has demonstrably missed a night. A pipeline
+    still deploying daily therefore wins every disagreement and the two never
+    fight over one file; when a stalled one catches up it rsyncs the same bytes
+    we render, and the next run hands the page back on its own.
+
+    `ours` is the unmarked render; `live` never carries the marker here. When
+    the corpus cannot be dated at all we cannot prove that pipeline missed
+    anything, so the SEO copy stands.
+    """
+    if live == ours:
+        return True
+    age = _seo_corpus_age(docroot)
+    return age is None or age[1] < SEO_STALE_DAYS
 
 
 def _publish_stranded_guides(ctx):
@@ -1115,21 +1156,25 @@ def _publish_stranded_guides(ctx):
                 live = f.read()
         except OSError:
             live = None
-        if live is not None and FALLBACK_MARKER not in live:
-            # The real pipeline got there. Hands off — and unstage our own
-            # copy: growth_out is never cleared and deploy is rsync without
-            # --delete, so a leftover would be pushed back over the SEO
-            # build's page every night and this fallback would never end.
-            out[city] = "seo"
-            ctx.unstage(rel, url=SITE + "/" + rel[:-len("index.html")])
-            continue
+        seo_owned = live is not None and FALLBACK_MARKER not in live
         # The guide links into /<city>/buildings/, which the same dead pipeline
         # owns. Only offer that link if the target is actually live.
         browse_ok = os.path.exists(os.path.join(ctx.docroot, city, "buildings", "index.html"))
         try:
             canonical, doc = bs.guide_page(g, browse_ok=browse_ok)
         except Exception as e:                # noqa: BLE001
-            out[city] = f"render failed ({e.__class__.__name__})"
+            # A render failure is only this technique's problem when there is no
+            # live copy behind it; the SEO pipeline's page still serves.
+            out[city] = "seo" if seo_owned else f"render failed ({e.__class__.__name__})"
+            continue
+        if seo_owned and _seo_page_is_current(live, doc, ctx.docroot):
+            # The real pipeline got there and its copy is what this code
+            # renders. Hands off — and unstage our own copy: growth_out is
+            # never cleared and deploy is rsync without --delete, so a leftover
+            # would be pushed back over the SEO build's page every night and
+            # this fallback would never end.
+            out[city] = "seo"
+            ctx.unstage(rel, url=SITE + "/" + rel[:-len("index.html")])
             continue
         doc = doc.replace("</body>", FALLBACK_MARKER + "</body>")
         if GUIDE_CAVEATS[city] not in doc.lower():
@@ -1229,12 +1274,14 @@ def _publish_stranded_city_hubs(ctx):
         bs = importlib.import_module("build_seo")
     except Exception as e:                        # noqa: BLE001 - never break the build
         err = f"build_seo unavailable ({e.__class__.__name__})"
-        return {c: {"docs": [], "published": 0, "seo": 0, "handed_back": 0, "error": err}
+        return {c: {"docs": [], "published": 0, "refreshed": 0, "seo": 0,
+                    "handed_back": 0, "error": err}
                 for c in CITY_HUB_DIRS}
 
     out = {}
     for city in CITY_HUB_DIRS:
-        rec = {"docs": [], "published": 0, "seo": 0, "handed_back": 0, "error": None}
+        rec = {"docs": [], "published": 0, "refreshed": 0, "seo": 0,
+               "handed_back": 0, "error": None}
         out[city] = rec
         # These pages are the contextual path into the city guide. Only offer
         # that link when the guide is live (or staged by t_city_guides earlier
@@ -1260,13 +1307,21 @@ def _publish_stranded_city_hubs(ctx):
             except OSError:
                 live = None
             if live is not None and FALLBACK_MARKER not in live:
-                # The real pipeline got there. Hands off — and drop our own
-                # stale copy, or the nightly rsync would push it back over the
-                # top and the handover would never actually happen.
-                rec["seo"] += 1
-                if ctx.unstage(d["relpath"], url=d["canonical"]):
-                    rec["handed_back"] += 1
-                continue
+                if _seo_page_is_current(live, d["html"], ctx.docroot):
+                    # The real pipeline got there and its copy is what this
+                    # code renders. Hands off — and drop our own stale copy, or
+                    # the nightly rsync would push it back over the top and the
+                    # handover would never actually happen.
+                    rec["seo"] += 1
+                    if ctx.unstage(d["relpath"], url=d["canonical"]):
+                        rec["handed_back"] += 1
+                    continue
+                # Live, but behind the committed renderer, and that pipeline
+                # has missed at least one night. Counted apart from the
+                # stranded-page case: "published because it was missing" and
+                # "republished because it was out of date" are different
+                # failures of the SEO pipeline and the detail line says which.
+                rec["refreshed"] += 1
             doc = d["html"].replace("</body>", FALLBACK_MARKER + "</body>")
             ctx.write_page(d["relpath"], doc, url=d["canonical"])
             rec["published"] += 1
@@ -1311,13 +1366,22 @@ def t_city_seo_expansion(ctx):
     by_us = {c: published[c]["published"] for c in published if published[c]["published"]}
     verb = "would be published (dry run)" if ctx.dry_run else "published"
     note = ""
+    refreshed = sum(published[c]["refreshed"] for c in published)
     if by_us:
         # Counts here include each city's browse hub, so they read one higher
         # than the place-page counts above. Say so rather than leave a reader
         # to reconcile "sf 37" with "sf 38".
+        why = ("the SEO pipeline has not deployed them" if refreshed < sum(by_us.values())
+               else "the SEO pipeline is behind this checkout")
         note = (f" — {sum(by_us.values())} pages {verb} by the daily growth build, browse hubs "
                 f"included ({', '.join(f'{c} {n}' for c, n in sorted(by_us.items()))}), because "
-                f"the SEO pipeline has not deployed them" + _stale_note(ctx.docroot))
+                f"{why}" + _stale_note(ctx.docroot))
+        if refreshed:
+            # The distinction a future review needs: these paths were already
+            # live, so nothing looked missing, and the improvement was being
+            # discarded nightly rather than waiting to be published.
+            note += (f" — {refreshed} of them were live but stale, still serving the SEO "
+                     f"pipeline's older render of the same page")
     handed_back = sum(published[c]["handed_back"] for c in published)
     if handed_back:
         # The one signal that /root/dhcr-build started pulling again. Worth a

@@ -281,6 +281,11 @@
      the header (they'd otherwise flash there while the building data loads) */
   .filter-bar #pill-borough, .filter-bar #pill-nb, .filter-bar #pill-listed,
   .filter-bar #pill-s8, .filter-bar #pill-beds, .filter-bar #pill-viol { display: none; }
+  /* StreetEasy-style price popover: two min/max dropdowns + Reset/Done */
+  .price-row { display: flex; align-items: center; gap: 10px; }
+  .price-row select { flex: 1; min-width: 0; padding: 9px 10px; font-size: 14px; font-weight: 500;
+    border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); cursor: pointer; }
+  .price-row .dash { color: var(--ink-2); flex: none; }
   .filters-card { max-width: min(480px, calc(100vw - 24px)); min-width: 0; max-height: 84vh; overflow-y: auto; }
   .filters-card .filter-pill { display: block; background: none; border: none; padding: 0;
     margin: 0 0 18px; cursor: default; font-weight: 800; font-size: 14px; color: var(--ink);
@@ -1061,6 +1066,36 @@
         <label class="row"><input type="checkbox" name="beds" value="3"> 3 beds</label>
         <label class="row"><input type="checkbox" name="beds" value="4"> 4+ beds</label>
         <div style="font-size:11px;color:var(--ink-2);margin-top:8px;padding-top:8px;border-top:1px solid var(--line)">Bedroom data comes from recent listings — this also limits results to advertised buildings.</div>
+      </div>
+    </div>
+    <div class="filter-pill nyc-only" id="pill-price">
+      Price<span class="caret">▾</span>
+      <div class="pill-popover">
+        <div class="sheet-group-title">Price</div>
+        <div class="price-row">
+          <select id="price-min" aria-label="Minimum monthly rent">
+            <option value="">No min</option>
+            <option value="1000">$1,000</option><option value="1500">$1,500</option>
+            <option value="2000">$2,000</option><option value="2500">$2,500</option>
+            <option value="3000">$3,000</option><option value="3500">$3,500</option>
+            <option value="4000">$4,000</option><option value="4500">$4,500</option>
+            <option value="5000">$5,000</option><option value="6000">$6,000</option>
+          </select>
+          <span class="dash">—</span>
+          <select id="price-max" aria-label="Maximum monthly rent">
+            <option value="">No max</option>
+            <option value="1500">$1,500</option><option value="2000">$2,000</option>
+            <option value="2500">$2,500</option><option value="3000">$3,000</option>
+            <option value="3500">$3,500</option><option value="4000">$4,000</option>
+            <option value="4500">$4,500</option><option value="5000">$5,000</option>
+            <option value="6000">$6,000</option><option value="8000">$8,000</option>
+          </select>
+        </div>
+        <div style="font-size:11px;color:var(--ink-2);margin-top:10px">Uses the asking rent when a building was recently advertised; otherwise the ZIP's typical rent (HUD Small-Area FMR, studio–2BR midpoint) — not the building's actual rent.</div>
+        <div class="actions">
+          <button type="button" id="price-reset">Reset</button>
+          <button type="button" id="price-done" class="primary">Done</button>
+        </div>
       </div>
     </div>
     <div class="filter-pill nyc-only" id="pill-viol">
@@ -1862,6 +1897,9 @@
   const listingCounts = listingsBlob.counts || {};
   const listingPrices = listingsBlob.prices || {};
   const listingBeds = listingsBlob.beds || {};
+  // one price per building, shared by the price sort and the price filter:
+  // real asking rent when advertised, else the ZIP's HUD estimate midpoint
+  const priceOf = r => listingPrices[r.bbl] ?? (FMR[r.z] ? (FMR[r.z][0] + FMR[r.z][2]) / 2 : null);
   // when the listing/price data was last collected by the nightly scrape
   const listingsAsOf = listingsBlob.updated
     ? new Date(listingsBlob.updated * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -2419,6 +2457,10 @@
     if (document.querySelector('input[name="listed"]:checked').value !== 'any') n++;
     if (document.querySelector('input[name="s8"]:checked').value !== 'any') n++;
     if (document.querySelectorAll('input[name="beds"]:checked').length) n++;
+    // price has its own header pill (not in the modal), so it lights up there
+    // instead of counting toward the Filters badge
+    const priceOn = !!(document.getElementById('price-min').value || document.getElementById('price-max').value);
+    document.getElementById('pill-price').classList.toggle('active', priceOn);
     n += moreFilterCount();
     // The desktop pill; on mobile it isn't rendered — the count lives on the
     // bottom Filters control instead, which is the only way in there.
@@ -2448,9 +2490,23 @@
     s.checked = true; s.dispatchEvent(new Event('change', { bubbles: true }));
     document.querySelectorAll('input[name="beds"]:checked').forEach(c => { c.checked = false; });
     document.querySelector('input[name="beds"]').dispatchEvent(new Event('change', { bubbles: true }));
+    document.getElementById('price-min').value = '';
+    document.getElementById('price-max').value = '';
     moreFilters.viol = 'any'; moreFilters.comp = 'any'; syncMoreUI();
     applyFilters(); updateFiltersCount();
   }
+
+  // Price pill (StreetEasy-style): stays in the header rather than moving into
+  // the Filters modal; the dropdowns live-apply and Done just closes the popover.
+  ['price-min', 'price-max'].forEach(id => document.getElementById(id).addEventListener('change', () => {
+    applyFilters(); updateFiltersCount();
+  }));
+  document.getElementById('price-reset').addEventListener('click', () => {
+    document.getElementById('price-min').value = '';
+    document.getElementById('price-max').value = '';
+    applyFilters(); updateFiltersCount();
+  });
+  document.getElementById('price-done').addEventListener('click', closeAllPills);
 
   // ---------- saved searches (Plus): capture + reapply the whole search ----------
   function captureSearch() {
@@ -2461,6 +2517,8 @@
       listed: document.querySelector('input[name="listed"]:checked').value,
       s8: document.querySelector('input[name="s8"]:checked').value,
       beds: [...document.querySelectorAll('input[name="beds"]:checked')].map(c => +c.value),
+      pmin: document.getElementById('price-min').value,
+      pmax: document.getElementById('price-max').value,
       viol: moreFilters.viol, comp: moreFilters.comp,
       center: [map.getCenter().lat, map.getCenter().lng], zoom: map.getZoom(),
     };
@@ -2477,6 +2535,8 @@
     if (s) { s.checked = true; s.dispatchEvent(new Event('change', { bubbles: true })); }
     document.querySelectorAll('input[name="beds"]').forEach(c => { c.checked = (p.beds || []).includes(+c.value); });
     document.querySelector('input[name="beds"]').dispatchEvent(new Event('change', { bubbles: true }));
+    document.getElementById('price-min').value = p.pmin || '';
+    document.getElementById('price-max').value = p.pmax || '';
     moreFilters.viol = p.viol || 'any'; moreFilters.comp = p.comp || 'any'; syncMoreUI();
     if (p.center) map.setView(p.center, p.zoom || map.getZoom(), { animate: false });
     applyFilters(); updateFiltersCount();
@@ -2811,6 +2871,9 @@
     const listedMode = document.querySelector('input[name="listed"]:checked').value;
     const s8Mode = document.querySelector('input[name="s8"]:checked').value;
     const selectedBeds = new Set([...document.querySelectorAll('input[name="beds"]:checked')].map(c => +c.value));
+    const priceMin = +document.getElementById('price-min').value || 0;
+    const priceMax = +document.getElementById('price-max').value || Infinity;
+    const priceSet = priceMin > 0 || priceMax < Infinity;
     const favOnly = document.getElementById('pill-fav').classList.contains('active');
     const q = document.getElementById('q').value.trim().toUpperCase();
 
@@ -2837,6 +2900,10 @@
       if (selectedBeds.size) {
         const bb = listingBeds[rec.bbl];
         if (!bb || !bb.some(n => selectedBeds.has(n))) continue;
+      }
+      if (priceSet) {
+        const p = priceOf(rec);
+        if (p == null || p < priceMin || p > priceMax) continue;
       }
       if (moreFilters.viol !== 'any') {
         const v = rec.h && rec.h.violations;
@@ -3133,8 +3200,6 @@
         visible.sort((x, y) => openComps(y) - openComps(x));
       } else if (sortMode === 'price-asc' || sortMode === 'price-desc') {
         const dir = sortMode === 'price-asc' ? 1 : -1;
-        // real asking rent when advertised, else the ZIP's HUD estimate midpoint
-        const priceOf = r => listingPrices[r.bbl] ?? (FMR[r.z] ? (FMR[r.z][0] + FMR[r.z][2]) / 2 : null);
         visible.sort((x, y) => {
           const px = priceOf(x), py = priceOf(y);
           if (px == null && py == null) return 0;   // unpriceable buildings sort last

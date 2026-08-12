@@ -76,11 +76,19 @@ def cmd_build(args):
         # which cannot see the docroot at all and had been reverse-engineering
         # the date out of a sentence in t_crawl_paths' detail.
         age = techniques._seo_corpus_age(args.docroot)
+        # …and what that pipeline says about itself. The age above is an mtime:
+        # it dates the freeze but never explains it, and a cron that never
+        # fired, a crashed build_seo.py and a failed rsync are three different
+        # owner actions behind one identical number. refresh_seo.sh writes a
+        # status record into the docroot; this build is the only thing that can
+        # carry it out to the cloud review, because it is the only one that
+        # commits. None until the droplet picks up the 2026-08-12 script.
         ledger.write_last_run("build", {
             "new_urls": len(ctx.new_urls), "changed_urls": len(ctx.changed_urls),
             "techniques": {r["slug"]: {"ok": bool(r.get("ok")), "detail": r.get("detail", "")}
                            for r in run_log},
             "seo_corpus": {"written": age[0], "days_old": age[1]} if age else None,
+            "seo_pipeline": techniques._seo_pipeline_status(args.docroot),
             "deployed": bool(args.deploy)})
     log(f"  {len(ctx.new_urls)} new URLs, {len(ctx.changed_urls)} changed")
 
@@ -249,6 +257,20 @@ def cmd_status(args):
     for r in rows[-6:]:
         log(f"    {r.get('at')} {str(r.get('job'))[:18].ljust(18)} {str(r.get('phase')).ljust(9)}"
             f" rc={r.get('rc')} pull={r.get('pull')} {(r.get('note') or '')[:60]}")
+    # The second cron, and the one that publishes 47,599 of ~47,600 pages. It
+    # runs from a different checkout and cannot commit, so the only copy that
+    # reaches a bare cloud checkout is the one the build folded into
+    # last_run.json — read it from there, not from the docroot.
+    build = ledger.read_last_run().get("build") or {}
+    corpus, pipe = build.get("seo_corpus") or {}, build.get("seo_pipeline")
+    if pipe:
+        log(f"seo pipeline: {pipe.get('state')}; last record {pipe.get('hours_ago', '?')}h ago"
+            f" ({pipe.get('corpus_pages', '?')} pages built, "
+            f"{pipe.get('changed_urls', '?')} changed, head {pipe.get('head', '?')})")
+    elif corpus:
+        log(f"seo pipeline: no status record — the droplet's refresh_seo.sh predates "
+            f"2026-08-12. Corpus mtime says {corpus.get('written')} "
+            f"({corpus.get('days_old')}d ago); that is all we know.")
     log("")
     techs = ledger.load_techniques()
     for t in techs:

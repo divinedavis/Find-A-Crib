@@ -1040,6 +1040,86 @@ def _seo_corpus_age(docroot):
     return (when.isoformat(), (datetime.date.today() - when).days)
 
 
+# Written by scripts/refresh_seo.sh at start and on exit — see the long comment
+# there. It is the only thing that pipeline says about itself, and the docroot
+# is the only place both it and this build can see.
+SEO_STATUS_FILE = ".seo-build-status.json"
+
+# Whitelist, because this record is copied into growth/last_run.json, which is
+# committed to a public repo. A file that grew a field nobody reviewed here
+# would be published unread; strings are truncated for the same reason.
+SEO_STATUS_FIELDS = ("started", "at", "phase", "step", "rc", "head",
+                     "changed_urls", "corpus_pages")
+
+# The corpus has never been near this. A build that completes cleanly and writes
+# a few hundred pages is a catastrophic failure that the docroot's mtime alone
+# calls healthy — it deploys, so the corpus looks freshly written. Deliberately
+# far below the real ~47,600 so this can only fire on an unambiguous break.
+SEO_CORPUS_MIN_PAGES = 1000
+
+
+def _seo_pipeline_status(docroot, now=None):
+    """What refresh_seo.sh last said about its own run, or None if it never has.
+
+    _seo_corpus_age() below answers "when did that pipeline last write?" from
+    mtimes. It cannot answer "why did it stop?", and those are different
+    questions with different owner actions: a cron that never fired, a
+    build_seo.py that crashed, and an rsync that failed all look identical from
+    a stale mtime. Between 2026-08-09 and 2026-08-12 the corpus went four days
+    stale and no review could say which of the three it was.
+
+    Returns a small dict with the raw fields plus a derived one-line `state`, or
+    None when the file is absent (which now means only that the droplet is still
+    running a refresh_seo.sh from before 2026-08-12 — it does not mean the
+    pipeline is dead, and must not be read that way).
+    """
+    path = os.path.join(docroot, SEO_STATUS_FILE)
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            raw = json.loads(f.read(4096))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(raw, dict):
+        return None
+    rec = {}
+    for k in SEO_STATUS_FIELDS:
+        v = raw.get(k)
+        if isinstance(v, bool) or v is None:
+            continue
+        if isinstance(v, (int, float)):
+            rec[k] = v
+        elif isinstance(v, str):
+            rec[k] = v[:64]
+
+    hours = None
+    try:
+        at = datetime.datetime.fromisoformat(str(rec.get("at", "")).replace("Z", "+00:00"))
+        now = now or datetime.datetime.now(datetime.timezone.utc)
+        hours = (now - at).total_seconds() / 3600.0
+    except ValueError:
+        pass
+
+    step, rc = rec.get("step", "?"), rec.get("rc")
+    pages = rec.get("corpus_pages")
+    if rec.get("phase") == "start":
+        state = f"STARTED BUT NEVER FINISHED — died in step '{step}'"
+    elif rc not in (0, None):
+        state = f"FAILED rc={rc} in step '{step}'"
+    elif isinstance(pages, (int, float)) and 0 < pages < SEO_CORPUS_MIN_PAGES:
+        state = (f"completed, but built only {int(pages):,} pages — the corpus is "
+                 f"normally ~47,600, so this deployed a truncated site")
+    else:
+        state = "ran clean"
+    if hours is not None:
+        # 04:10 nightly, read by the 05:40 build, so anything past ~26h is a
+        # morning missed. Same shape as cron_liveness() for growth_run.sh.
+        if hours > 26:
+            state = f"NO RUN FOR {hours / 24:.1f} DAYS — cron, the host or the checkout. " + state
+        rec["hours_ago"] = round(hours, 1)
+    rec["state"] = state
+    return rec
+
+
 def _stale_note(docroot):
     """' — …' suffix naming when the SEO pipeline last wrote, or '' if unknown."""
     age = _seo_corpus_age(docroot)
@@ -1644,9 +1724,21 @@ REGISTRY = {
     "indexnow": t_indexnow,
 }
 
-# Order matters: content first, then the sitemap that lists it, then the ping
-# that announces it. crawl_paths runs after the content techniques so it audits
-# what they published, and before indexnow so a run that is about to submit an
-# orphan says so in the same log.
-ORDER = ["fresh_section8", "daily_brief", "hub_direct_answers", "city_guides",
-         "city_seo_expansion", "llms_txt", "sitemap_daily", "crawl_paths", "indexnow"]
+# Order matters: content first, then the audits of that content, then the
+# sitemap that lists it, then the ping that announces it. crawl_paths runs after
+# the content techniques so it audits what they published, and before indexnow
+# so a run that is about to submit an orphan says so in the same log.
+#
+# hub_direct_answers is an audit and was mis-slotted at position 3, ahead of the
+# two techniques that publish the pages it audits. It reads the docroot and
+# falls back to ctx.out for pages this run staged but has not rsynced yet — and
+# that fallback could never fire for the city hub tier, because nothing had been
+# staged when it ran. So the audit reported LAST night's docroot as though it
+# were tonight's result. That is not cosmetic: two consecutive reviews
+# (2026-08-09, 2026-08-11) predicted "3 awaiting this run's rsync" from reading
+# the fallback, got a flat "missing dc/la/sf buildings/index.html" instead, and
+# the 08-09 one spent its follow-up chasing a staging bug that did not exist.
+# Moved after city_guides and city_seo_expansion, which is where an audit
+# belongs.
+ORDER = ["fresh_section8", "daily_brief", "city_guides", "city_seo_expansion",
+         "hub_direct_answers", "llms_txt", "sitemap_daily", "crawl_paths", "indexnow"]

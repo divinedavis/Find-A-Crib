@@ -163,9 +163,23 @@ def build_blocks(run_log=None, review_out=None):
     # number is a deploy failure rather than a content problem. That distinction
     # spent 2026-08-01..08-08 buried inside t_crawl_paths' detail string, where
     # it read as a footnote to an orphan report. It is the owner action.
-    corpus = (ledger.read_last_run().get("build") or {}).get("seo_corpus")
+    build = ledger.read_last_run().get("build") or {}
+    corpus, pipe = build.get("seo_corpus"), build.get("seo_pipeline")
     if corpus and (corpus.get("days_old") or 0) >= SEO_CORPUS_STALE_DAYS:
         days = corpus["days_old"]
+        # "Needs a hand on the droplet" is true but was, until 2026-08-12, the
+        # end of what this could say — the owner got a date and had to SSH in to
+        # find out whether cron fired, the build crashed or the rsync failed.
+        # refresh_seo.sh now records the step it died in; when it has, name it
+        # here, because the step IS the fix.
+        if pipe:
+            cause = (f" That pipeline's own last record says: {pipe['state']} "
+                     f"(as of {pipe.get('hours_ago', '?')}h ago, at commit "
+                     f"{pipe.get('head', '?')}).")
+        else:
+            cause = (" It reports nothing about itself yet — the droplet is still "
+                     "running a refresh_seo.sh from before 2026-08-12, which will "
+                     "self-report from its first run after the next pull.")
         B.append({"type": "callout",
                   "tone": "bad" if days >= 3 else "warn",
                   "heading": f"SEO corpus frozen for {days} days",
@@ -174,8 +188,8 @@ def build_blocks(run_log=None, review_out=None):
                           f"runs nightly, so it has not completed since then and every "
                           f"build_seo.py change pushed since is still only in git. The daily "
                           f"growth build's own pages are unaffected — they deploy on a "
-                          f"separate rsync. Needs a hand on the droplet; nothing in the "
-                          f"repo can restart it."})
+                          f"separate rsync." + cause + " Needs a hand on the droplet; nothing "
+                          f"in the repo can restart it."})
 
     # ---- the cheapest available rankings
     try:

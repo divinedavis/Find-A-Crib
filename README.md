@@ -189,11 +189,43 @@ and `build.seo_corpus` for how stale the other one is). So prefer whichever of
 the two is currently running for anything site-wide, and check `seo_corpus`
 before assuming a `build_seo.py` edit shipped.
 
+**Reading why the SEO pipeline stopped.** `build.seo_corpus` is an mtime: it
+dates the freeze but never explains it, and "the cron never fired", "`build_seo.py`
+crashed" and "the rsync failed" are three different owner actions behind one
+identical number. Four mornings in August 2026 were spent unable to tell them
+apart. Since 2026-08-12 `refresh_seo.sh` writes `.seo-build-status.json` into
+the **docroot** at start and again on exit — naming the step in flight, the exit
+code, the commit it built from and how many pages the build produced — and the
+05:40 growth build reads it (`techniques._seo_pipeline_status`) into
+`growth/last_run.json` → `build.seo_pipeline`, which it commits. The docroot is
+the only place both pipelines can see, and the growth build's push is the only
+channel that reaches the cloud review; `refresh_seo.sh` runs from a different
+checkout and never commits. `growth_daily.py status` prints the verdict under
+the cron line, and the daily report names the failing step in its "SEO corpus
+frozen" callout. Unlike `cron_heartbeat.jsonl`, that record carries **structured
+fields only, never captured output** — the docroot is web-served and `$BUILD`
+holds `indexnow.key`. It also catches one failure the mtime cannot: a build that
+completes and rsyncs a *truncated* corpus looks freshly written, so a clean run
+reporting fewer than 1,000 pages is reported as a break.
+
+Read a **missing** status record carefully, because it is the one case with two
+meanings. The script pulls itself (`STEP=pull` is inside it), so a cron that
+fires at all picks the new version up and self-reports from the run after. On
+2026-08-13/14 an absence therefore just means it has not pulled yet. From
+2026-08-15 on, a still-absent record *plus* a still-frozen `seo_corpus` is
+positive evidence that the cron is not firing at all — which is the one failure
+this file cannot report from the inside, and is exactly what it narrows down to.
+An absence on its own, with a fresh corpus, means nothing.
+
 One consequence of that ordering: **`build` runs every technique first and
 rsyncs last**, so any check that reads the docroot is scoring the *previous*
 run's deploy. `t_crawl_paths` therefore also reads `growth_out/` and says
 "awaiting this run's rsync" for a link it staged minutes earlier, rather than
-reporting an orphan that is already fixed.
+reporting an orphan that is already fixed. That fallback only works if the audit
+runs *after* the technique that stages the page — `t_hub_direct_answers` sat
+ahead of both city-hub publishers in `techniques.ORDER` until 2026-08-12 and so
+reported the previous night's docroot as though it were the current run's
+result, which cost two reviews a wrong prediction. Audits go after publishers.
 
 Everything is driven by a **ledger** (`growth/techniques.json`), so the ledger —
 not the code — decides what runs. Flipping a technique to `retired` stops it

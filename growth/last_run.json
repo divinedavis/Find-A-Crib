@@ -1,12 +1,12 @@
 {
   "build": {
-    "at": "2026-08-11T05:40:22+00:00",
+    "at": "2026-08-12T05:40:18+00:00",
     "changed_urls": 7,
-    "date": "2026-08-11",
+    "date": "2026-08-12",
     "deployed": true,
-    "new_urls": 1,
+    "new_urls": 4,
     "seo_corpus": {
-      "days_old": 3,
+      "days_old": 4,
       "written": "2026-08-08"
     },
     "techniques": {
@@ -15,7 +15,7 @@
         "ok": true
       },
       "city_seo_expansion": {
-        "detail": "hub pages live: dc 103, la 112, sf 37",
+        "detail": "hub pages live: dc 103, la 112, sf 37 \u2014 3 pages published by the daily growth build, browse hubs included (dc 1, la 1, sf 1), because the SEO pipeline is behind this checkout \u2014 the docroot's SEO corpus was last written 2026-08-08 (4d ago) \u2014 3 of them were live but stale, still serving the SEO pipeline's older render of the same page",
         "ok": true
       },
       "crawl_paths": {
@@ -23,7 +23,7 @@
         "ok": true
       },
       "daily_brief": {
-        "detail": "brief 2026-08-11: 1 added, 0 removed",
+        "detail": "brief 2026-08-12: 1 added, 1 removed",
         "ok": true
       },
       "fresh_section8": {
@@ -35,7 +35,7 @@
         "ok": false
       },
       "indexnow": {
-        "detail": "submitted 8 URLs \u2192 HTTP 200",
+        "detail": "submitted 11 URLs \u2192 HTTP 200",
         "ok": true
       },
       "llms_txt": {
@@ -43,7 +43,7 @@
         "ok": true
       },
       "sitemap_daily": {
-        "detail": "sitemap-daily.xml with 19 URLs",
+        "detail": "sitemap-daily.xml with 23 URLs (incl. 3 city hub pages)",
         "ok": true
       }
     }

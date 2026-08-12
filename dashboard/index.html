@@ -671,7 +671,7 @@
     try{ var s=localStorage.getItem('dash.site'); if(SITES[s]) return s; }catch(e){}
     return 'fac';
   })();
-  var session = null, cache = {};
+  var session = null, cache = {}, cacheAt = {};
 
   function applyShell(){
     var S=SITES[siteKey];
@@ -825,11 +825,24 @@
     // hand "this month" the all-time payload the moment it had been loaded
     // once — the picker would move and the numbers would not.
     var ck = cacheKey(k);
-    if(!force && cache[ck]){ if(k===siteKey) paint(cache[ck]); return 'ok'; }
+    // A cached payload is only good for 5 minutes. This page used to fetch
+    // once per load and never again — a tab left open overnight wore the
+    // "Live data" badge over yesterday-evening numbers (and the backend's day
+    // rolls at UTC midnight = 8 PM ET, so that snapshot reads all-zero).
+    var freshFor = 5*60*1000;
+    if(!force && cache[ck] && (Date.now()-(cacheAt[ck]||0)) < freshFor){
+      if(k===siteKey) paint(cache[ck]); return 'ok';
+    }
+    // When a refetch fails, stale numbers with their honest "Updated" stamp
+    // beat an error card or a blank pane — the data on screen was real once.
+    function staleOk(){
+      if(cache[ck]){ if(k===siteKey) paint(cache[ck]); return 'ok'; }
+      return null;
+    }
     var res;
     try{
       res = await feedFetch(feedUrl(k), await token());
-    }catch(e){ return 'error'; }
+    }catch(e){ return staleOk() || 'error'; }
     // A 401 means this token is dead, not that the owner is signed out. Force
     // one refresh and retry before anything can show him the sign-in card.
     if(res.status===401){
@@ -839,14 +852,15 @@
         session = fresh;
         try{
           res = await feedFetch(feedUrl(k), fresh.access_token);
-        }catch(e){ return 'error'; }
+        }catch(e){ return staleOk() || 'error'; }
       }
     }
     if(res.status===403) return 'forbidden';
     if(res.status===401) return 'signin';
-    if(!res.ok) return 'error';
+    if(!res.ok) return staleOk() || 'error';
     var data = await res.json();
     cache[ck]=data;
+    cacheAt[ck]=Date.now();
     if(k===siteKey) paint(data);
     return 'ok';
   }
@@ -968,6 +982,23 @@
   el('signout').onclick = function(){ sb.auth.signOut(); };
   sb.auth.onAuthStateChange(function(_e, session){ route(session); });
   sb.auth.getSession().then(function(r){ route(r.data.session); });
+
+  // Keep an open tab honest: refetch the visible site+range once its payload
+  // is 5 minutes old — on a timer while the tab is visible, and immediately
+  // when the tab wakes from a sleep. Without this the "Live data" badge sat
+  // over a fetched-once snapshot for as long as the tab stayed open. The
+  // backend allows 120 dashboard calls/hour; this adds at most 12.
+  var REFRESH_MS = 5*60*1000;
+  function refreshIfStale(){
+    if(!session || !shown || document.hidden) return;
+    if(inflight[siteKey]) return;
+    if((Date.now()-(cacheAt[cacheKey(siteKey)]||0)) < REFRESH_MS) return;
+    load(true).then(null, function(){});
+  }
+  setInterval(refreshIfStale, 60*1000);
+  document.addEventListener('visibilitychange', function(){
+    if(!document.hidden) refreshIfStale();
+  });
 
   // ---------- render: Find A Crib ----------
   function render(user, d){

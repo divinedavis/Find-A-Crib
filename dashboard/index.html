@@ -1363,13 +1363,19 @@
       ? 'Call conversion · counting from ' + (CV.measured_since||'today')
       : 'Call conversion · '+comma(CV.taps)+' of '+comma(CV.visitors)+' tapped to call';
 
+    // Tiles follow the range picker: taps come from the ranged totals, phone
+    // leads from the ranged leads window ("all" uses the all-time counter,
+    // which reaches further back than the log-derived period fields).
+    var RANGE_WORD={all:'all-time','6m':'last 6 months','3m':'last 3 months',
+                    month:'this month',today:'today'};
+    var rw=RANGE_WORD[rangeKey]||'all-time';
     var tiles=[
       {ic:'👣',v:comma(T.visitors),l:'Unique visitors'},
       {ic:'📄',v:comma(T.views),l:'Page views'},
       {ic:'🔎',v:comma(earned)+(chTotal?' · '+pctS(earned,chTotal):''),l:'Found you (search/maps/AI)'},
       {ic:'📲',v:cv,l:cvLabel},
-      {ic:'📞',v:comma(L.ai_calls_all_time),l:'Calls into the AI (all-time)'},
-      {ic:'☎️',v:comma(L.phone_leads_all_time),l:'Phone leads (all-time)'},
+      {ic:'👆',v:comma(T.call_taps),l:'Tapped to call · '+rw},
+      {ic:'☎️',v:comma(rangeKey==='all'?L.phone_leads_all_time:L.period_phone),l:'Phone leads · '+rw},
       {ic:'🎯',v:(share==null?'—':share.toFixed(1)+'%'),
        l:'Top-3 rank share · goal '+target+'%',accent:true}
     ];

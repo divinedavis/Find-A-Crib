@@ -13,3 +13,5 @@
 {"at":"2026-08-13T05:40:20Z","job":"build --deploy","phase":"finish","rc":0,"pull":"ok","head":"5cd4cfe","note":""}
 {"at":"2026-08-13T12:56:12Z","job":"scout","phase":"start","rc":null,"pull":"pending","head":"7686b75","note":""}
 {"at":"2026-08-13T12:58:36Z","job":"scout","phase":"finish","rc":0,"pull":"ok","head":"dbc25ff","note":""}
+{"at":"2026-08-13T12:58:37Z","job":"outreach","phase":"start","rc":null,"pull":"pending","head":"cca9935","note":""}
+{"at":"2026-08-13T13:00:41Z","job":"outreach","phase":"finish","rc":0,"pull":"ok","head":"cca9935","note":""}

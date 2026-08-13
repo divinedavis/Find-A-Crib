@@ -227,13 +227,17 @@ def _n(x):
     return x if isinstance(x, (int, float)) else 0
 
 
-def _calls(dates, today_key):
+def _calls(dates, today_key, refresh=True):
     """AI phone calls: all-time, this period, and today. Counts only.
 
     Delegated wholesale to NEMO's growth.calls so the owner-number exclusion is
     applied in exactly one place. A missing key or an unreachable API leaves the
     counts at zero and raises a warning rather than failing the page — the
     dashboard saying "0 calls" with a note beats it saying nothing at all.
+
+    `refresh=False` counts the on-disk call cache without touching ElevenLabs.
+    An empty cache still pays the network fetch: cache-only zero calls is
+    indistinguishable from a quiet phone, and only one of those is true.
     """
     out = {"all_time": 0, "own_excluded": 0, "period": 0, "today": 0, "ok": False}
     mod = _nemo_growth("calls")
@@ -241,7 +245,9 @@ def _calls(dates, today_key):
         return out
     st = {}
     try:
-        rows = mod.fetch(status=st)
+        rows = mod.fetch(status=st, refresh=refresh)
+        if not refresh and not rows:
+            rows = mod.fetch(status=st)
         totals = mod.call_totals(rows, refresh=False)
         by_day = mod.calls_by_day(sorted(set(dates) | {today_key}), rows, refresh=False)
     except Exception:
@@ -258,7 +264,7 @@ def _calls(dates, today_key):
     return out
 
 
-def build(days=14, rng="all"):
+def build(days=14, rng="all", fresh_calls=True):
     """The dashboard view model for NEMO.
 
     `rng` scopes every period total. Filtering the day-keyed history once here
@@ -267,6 +273,10 @@ def build(days=14, rng="all"):
     bounds all of them without touching each tile. The explicitly all-time
     tiles (phone leads, calls into the AI) read their own sources and stay
     all-time, which is what their labels already say.
+
+    `fresh_calls=False` counts calls from the on-disk cache instead of asking
+    ElevenLabs — for builds a request is waiting on, where the network refresh
+    is the difference between ~0.7s and ~14s.
     """
     hist = _daily_series()
     today_key = datetime.date.today().isoformat()
@@ -360,7 +370,7 @@ def build(days=14, rng="all"):
     # straight from ElevenLabs rather than from the ledger — the ledger only
     # learns yesterday's number at 6am and this tile is on the live page.
     call_dates = [r["date"] for r in rows] or [today_key]
-    calls = _calls(call_dates, today_key)
+    calls = _calls(call_dates, today_key, refresh=fresh_calls)
     if not calls["ok"]:
         warnings.append("Call history could not be read from the phone assistant.")
 
@@ -508,9 +518,21 @@ def build_cached(days=14, rng="all"):
             return data
         # Too old to show — fall through to a foreground rebuild.
 
-    # Nothing servable in memory or on disk — this request pays for the build.
-    data = build(days=days, rng=rng)
+    # Nothing servable in memory or on disk — this request pays for the build,
+    # but not for the ElevenLabs refresh: the listing plus per-call detail
+    # lookups ran 3–14s in the access log, and the site switcher is disabled
+    # for exactly as long as this request takes — that was the "dashboard
+    # freezes when I switch sites" bug. Build from the cached call rows
+    # (~0.7s) and let a background rebuild bring the call tiles current.
+    data = build(days=days, rng=rng, fresh_calls=False)
     _store(data, rng)
+    with _LOCK:
+        kick = rng not in _REFRESHING
+        if kick:
+            _REFRESHING.add(rng)
+    if kick:
+        threading.Thread(target=_refresh_bg, args=(days, rng),
+                         daemon=True).start()
     return data
 
 

@@ -276,6 +276,13 @@
     font-weight: 600; box-shadow: 0 6px 20px rgba(0,0,0,.3); max-width: 92vw; }
   .shared-banner .sb-close { position: absolute; top: 50%; right: 10px; transform: translateY(-50%);
     background: none; border: none; color: #dbe7ff; cursor: pointer; font-size: 15px; }
+  .founding-banner { position: fixed; top: calc(64px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 3500;
+    background: linear-gradient(135deg, #a06e0a, #d99a15); color: #fff; border-radius: 12px; padding: 12px 38px 12px 16px;
+    font-size: 13.5px; font-weight: 600; box-shadow: 0 6px 20px rgba(0,0,0,.3); max-width: 92vw; text-align: center; line-height: 1.5; }
+  .founding-banner .fb-open { display: inline-block; margin: 6px 0 0 8px; background: #fff; color: #8a6508; border: none;
+    border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: 800; cursor: pointer; }
+  .founding-banner .fb-close { position: absolute; top: 8px; right: 10px;
+    background: none; border: none; color: #fff3d6; cursor: pointer; font-size: 15px; }
   /* consolidated Filters modal: relocated pill popovers render as inline sections */
   /* until the script moves them into the modal, the filter pills stay hidden in
      the header (they'd otherwise flash there while the building data loads) */
@@ -4056,6 +4063,35 @@
       showPlusToast('Couldn’t unsubscribe — please try the link again shortly.');
     }
   }
+  // Founding-user welcome: an in-app thank-you for specific early accounts.
+  // The Plus grant itself was written by founding_members.py (plan='founding',
+  // permanent) — this is the visible moment. Accounts are matched by SHA-256 of
+  // the email so no address ships in the page source; dismissal is remembered
+  // per account so it greets once, not forever.
+  const FOUNDING_HASHES = [
+    '5c97154b27ad2481e9e8b25263feae3789b98f657afa51925d2a9e31d7bff5d0',
+  ];
+  async function maybeFoundingWelcome() {
+    if (!authUser?.email || !window.crypto?.subtle || !window.isSecureContext) return;
+    const seenKey = 'fac_founding_thanks_' + authUser.id;
+    try { if (localStorage.getItem(seenKey)) return; } catch (e) { /* still greet */ }
+    let hex;
+    try {
+      const buf = await crypto.subtle.digest('SHA-256',
+        new TextEncoder().encode(authUser.email.trim().toLowerCase()));
+      hex = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    } catch (e) { return; }
+    if (!FOUNDING_HASHES.includes(hex)) return;
+    let b = document.getElementById('founding-banner');
+    if (!b) { b = document.createElement('div'); b.id = 'founding-banner'; b.className = 'founding-banner'; document.body.appendChild(b); }
+    b.innerHTML = `🏆 <strong>You’re a founding user of Find A Crib.</strong><br>
+      Plus is yours — free, forever. You deserve it.
+      <button type="button" class="fb-open">Open my Plus perks</button>
+      <button type="button" class="fb-close" aria-label="Dismiss">✕</button>`;
+    const done = () => { try { localStorage.setItem(seenKey, '1'); } catch (e) {} b.remove(); };
+    b.querySelector('.fb-open').addEventListener('click', () => { done(); openProfile(); });
+    b.querySelector('.fb-close').addEventListener('click', done);
+  }
   // shared folder links (#folder=<token>): read-only view for anyone, no sign-in
   async function handleFolderHash() {
     const m = location.hash.match(/[#&]folder=([0-9a-f-]{36})/i);
@@ -4346,7 +4382,7 @@
         transaction_id: authUser ? authUser.id : undefined,
       });
     }
-    if (authUser) { loadAccountFavs(); maybeRedeemReferral(); maybeShowReferralPrompt(); }
+    if (authUser) { loadAccountFavs(); maybeRedeemReferral(); maybeShowReferralPrompt(); maybeFoundingWelcome(); }
     handleUnsubHash();
     handleFolderHash();
     // anonymous returning-visitor analytics: a first-party id (cookie/localStorage)
@@ -4373,7 +4409,7 @@
       if (authUser) {
         // ties this browser's fac_vid to the account, which is what lets
         // traffic_report.py retroactively exclude the owner's anonymous visits
-        if (_evt === 'SIGNED_IN') track('signin', null);
+        if (_evt === 'SIGNED_IN') { track('signin', null); maybeFoundingWelcome(); }
         // OAuth signups never hit the email-form path, so fire the Google Ads
         // signup conversion here for accounts created moments ago via a provider.
         if (_evt === 'SIGNED_IN' && window.gtag && GADS_SIGNUP_LABEL &&

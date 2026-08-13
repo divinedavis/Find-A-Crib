@@ -227,6 +227,22 @@ ahead of both city-hub publishers in `techniques.ORDER` until 2026-08-12 and so
 reported the previous night's docroot as though it were the current run's
 result, which cost two reviews a wrong prediction. Audits go after publishers.
 
+**Two different link audits, at two different scales.** `t_crawl_paths` asks
+whether each *section* has an inbound link at all — a whole family orphaned. It
+cannot see the other failure, which is a family that is linked but only barely:
+until 2026-08-13 every building page's "Other rent-stabilized buildings in
+&lt;neighborhood&gt;" list was `sorted_by_address[:12]`, identical on every page
+in the neighborhood, so 13 addresses per neighborhood collected every sibling
+link and **44,738 of 47,165 building pages (94.9%) had two or fewer inbound
+internal links** — 11,294 had exactly one. `build_seo.py` now takes a window
+around each page's own position in a geographically snaked order
+(`_geo_ring_order` / `_ring_window`), which makes the neighborhood a ring: every
+page links to 12 siblings and is linked from 12, and the listed buildings are
+genuinely next door (median 76 m apart in the East Village, against 466 m
+before) instead of alphabetical neighbours. The ordering is deterministic
+because `seo_lastmod.json` only bumps `<lastmod>` when a page's HTML really
+changed, and a shuffled list would rewrite 47,165 lastmods every night.
+
 Everything is driven by a **ledger** (`growth/techniques.json`), so the ledger —
 not the code — decides what runs. Flipping a technique to `retired` stops it
 without a deploy, which is what lets the review loop prune autonomously.

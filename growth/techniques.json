@@ -276,7 +276,8 @@
     "activated": null,
     "retired": null,
     "notes": "effort: days\nexpected: Dataset/Place JSON-LD live on all 47k+ building pages within one sprint; measurable via Search Console rich-result reports and by tracking AI-referrer (utm_source=chatgpt.com/perplexity.ai) visits per week, targeting a rise from 0/day toward double digits within 60 days.\nfirst step: Write and validate one Dataset + Place JSON-LD template against a sample of 20 NYC building pages using Google's Rich Results Test, then ship site-wide via the existing static-page generator.",
-    "verdict": null
+    "verdict": null,
+    "revisit_on": "2026-09-12"
   },
   {
     "id": "T016",
@@ -293,7 +294,8 @@
     "activated": null,
     "retired": null,
     "notes": "effort: days\nexpected: 10-20 embeds placed on tenant-org, legal-aid, and local-news sites within 90 days, generating referring domains that move the domain-authority needle toward the 90%-search-share goal; track via backlink monitoring and referral traffic from embed domains.\nfirst step: Build a single-address lookup widget (HTML iframe, no JS framework dependency) returning stabilization status + DHCR registration + violation count, then pitch it directly to 10 named NYC tenant-rights orgs and housing reporters already covered by the daily-brief outreach list.",
-    "verdict": null
+    "verdict": null,
+    "revisit_on": "2026-09-12"
   },
   {
     "id": "T017",

@@ -17,6 +17,7 @@ import json
 import os
 import re
 import html
+import math
 import hashlib
 import datetime
 from collections import defaultdict
@@ -960,6 +961,78 @@ def guide_page(g, browse_ok=True):
                            [article, crumb], footer=CITY_FOOTER.get(gcity))
 
 
+# --- the sibling-link ring on building pages -------------------------------
+# Every building page carries a short list of other stabilized buildings in the
+# same neighborhood. Until 2026-08-13 that list was `sorted_by_address[:12]`,
+# recomputed identically on every page in the neighborhood — so it was a STAR,
+# not a mesh: in Bushwick (West) the same 13 addresses collected 1,196 inbound
+# links each and the other 1,184 building pages had exactly one inbound link on
+# the whole site, their neighborhood hub. Measured over buildings.min.json:
+# 44,738 of 47,165 building pages (94.9%) had two or fewer inbound internal
+# links, 11,294 had exactly one, and only 2,430 buildings — 5.2% — were ever
+# linked from a sibling page. Google will not crawl 47,600 pages it reaches
+# only through 198 hub pages carrying up to 1,197 links each, and 66 pages
+# earning a Search Console impression is what that looks like from outside.
+#
+# A window that follows the page's own position turns the star into a ring:
+# every page links to the NEAR_LINKS entries around it, so every page is also
+# linked FROM that many, and the neighborhood becomes one connected cycle a
+# crawler can walk. In-degree goes from {1 for 94.9%, ~n for 13} to a flat 12.
+#
+# Ordered geographically rather than alphabetically, because the same window
+# then reads as a real neighbour list to a human: addresses sort lexically
+# ("1180 Gerard" next to "119 E 149th"), which is nothing to a reader, while a
+# snaked column sort puts physically adjacent buildings next to each other.
+# The heading stays "Other rent-stabilized buildings in <neighborhood>" — a
+# claim the ordering cannot falsify — rather than "nearby", which a snake's
+# column boundaries would occasionally make untrue.
+#
+# Deterministic, and no randomness anywhere: seo_lastmod.json only bumps a
+# page's <lastmod> when its HTML really changed, so a shuffled list would
+# rewrite 47,165 lastmods every night and turn that honesty into noise. This
+# does change every building page once, which is a real change and an honest
+# one-time bump.
+NEAR_LINKS = 12
+GEO_COL_DEG = 0.0035   # ~295 m of longitude at NYC's latitude
+
+
+def _geo_ring_order(items):
+    """One neighborhood's buildings, ordered so consecutive entries are close.
+
+    Snaked column sort: bucket by longitude into ~295 m columns, then sort by
+    latitude, alternating direction column to column so the end of one column
+    is adjacent to the start of the next instead of diagonally across the
+    neighborhood. Buildings with no coordinates sort last, by address, so they
+    still take part in the ring. BBL breaks every tie, so the order is stable
+    across runs.
+    """
+    def key(x):
+        lat, lng = x.get("lat"), x.get("lng")
+        if lat is None or lng is None:
+            return (1, 0, 0.0, x.get("a") or "", str(x["bbl"]))
+        col = int(math.floor(lng / GEO_COL_DEG))
+        return (0, col, lat if col % 2 == 0 else -lat, x.get("a") or "", str(x["bbl"]))
+    return sorted(items, key=key)
+
+
+def _ring_window(order, i, k=NEAR_LINKS):
+    """The k entries around position i in `order`, wrapping, excluding i itself.
+
+    Half before and half after, so the lists of adjacent buildings overlap and
+    the ring is walkable in both directions. With len(order) <= k the window is
+    simply every other building in the neighborhood, which is what the old
+    slice already did for small neighborhoods.
+    """
+    n = len(order)
+    if n <= 1:
+        return []
+    if n <= k + 1:
+        return [x for j, x in enumerate(order) if j != i]
+    half = k // 2
+    offsets = list(range(-half, 0)) + list(range(1, k - half + 1))
+    return [order[(i + o) % n] for o in offsets]
+
+
 def main():
     blds = json.load(open("buildings.min.json"))
     try:
@@ -975,6 +1048,15 @@ def main():
             by_nb[(b["b"], b["nb"])].append(b)
     for k in by_nb:
         by_nb[k].sort(key=lambda x: x.get("a", ""))
+
+    # The sibling-link ring (see _geo_ring_order). Kept separate from by_nb:
+    # the hub pages list their neighborhood alphabetically, which is how a
+    # reader looks an address up, while the ring is ordered geographically.
+    ring = {k: _geo_ring_order(v) for k, v in by_nb.items()}
+    ring_pos = {}
+    for k, v in ring.items():
+        for i, x in enumerate(v):
+            ring_pos[x["bbl"]] = i
 
     def bld_url(b):
         return f"/building/{BORO_SLUG.get(b['b'],'nyc')}/{slugify(b.get('a'))}-{b['bbl']}/"
@@ -1053,8 +1135,11 @@ def main():
                     f"rel=\"nofollow noopener\" target=\"_blank\">View on HPD Online ↗</a></td></tr>") if h.get("hpd_url") else ""
             cond_html = "<h2>Building conditions</h2><table class='facts'>" + vr + cr + link + "</table>"
 
-        # nearby buildings in same neighborhood for internal linking / crawl depth
-        nearby = [x for x in by_nb.get((b["b"], b.get("nb")), []) if x["bbl"] != b["bbl"]][:12]
+        # sibling buildings in the same neighborhood, as a ring rather than a
+        # star, so every building page is linked from ~12 others instead of 94.9%
+        # of them hanging off one hub link (see _geo_ring_order above).
+        nb_ring = ring.get((b["b"], b.get("nb")), [])
+        nearby = _ring_window(nb_ring, ring_pos.get(b["bbl"], 0)) if nb_ring else []
         near_html = ""
         if nearby:
             items = "".join(f"<a href=\"{bld_url(x)}\">{esc(titlecase_addr(x.get('a')))}</a>" for x in nearby)

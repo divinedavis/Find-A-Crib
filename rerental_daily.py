@@ -284,7 +284,7 @@ def build_report(results, deltas, today, had_history):
                 lines.append(f"{name}: {label}")
         blocks.insert(1, {"type": "callout", "tone": "good",
                           "heading": f"{new_total} new listing{'s' if new_total != 1 else ''}",
-                          "body": "\n".join(lines[:20])})
+                          "items": lines[:20]})
     elif had_history:
         blocks.insert(1, {"type": "callout", "tone": "mute",
                           "heading": "Nothing new overnight",
@@ -296,7 +296,7 @@ def build_report(results, deltas, today, had_history):
                        "heading": f"{len(failed)} page could not be loaded"
                                   if len(failed) == 1 else
                                   f"{len(failed)} pages could not be loaded",
-                       "body": "\n".join(f"{n}: {results[n]['error']}" for n in failed)})
+                       "items": [f"{n}: {results[n]['error']}" for n in failed]})
 
     blocks.append({"type": "note",
                    "text": "Counts come from each site. Waitlist pages (TF Cornerstone, "

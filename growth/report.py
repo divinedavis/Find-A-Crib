@@ -10,6 +10,8 @@ is the reason there is no second text builder here: two builders drift, and the
 text part is the one a screen reader and a spam filter actually read.
 """
 import datetime
+import html as _html
+import os
 import statistics
 
 from . import emailkit, keywords, ledger, review, searchconsole
@@ -22,6 +24,57 @@ DASHBOARD = "https://findacrib.com/dashboard"
 # How many days the SEO corpus may go unwritten before the report says so.
 # refresh_seo.sh is nightly, so 1 day old is normal and 2 is already a miss.
 SEO_CORPUS_STALE_DAYS = 2
+
+SITE = "https://findacrib.com"
+
+# The email shows this many "waiting on you" candidates; the rest live on a
+# standalone page so the report stays readable as the backlog grows.
+WAITING_EMAIL_CAP = 5
+WAITING_PAGE = "reports/waiting-on-you.html"
+
+
+def _write_waiting_page(items):
+    """Write the full 'waiting on you' list into the docroot and return its URL.
+
+    noindex — it's an internal worklist, not content, and build_seo.py's
+    sitemaps are built from an explicit URL list so it never enters them.
+    Returns None when there is no docroot to write into (local runs), in which
+    case the email falls back to showing everything rather than hiding items
+    behind a link that doesn't exist.
+    """
+    root = os.environ.get("GROWTH_DOCROOT")
+    if not root or not os.path.isdir(root):
+        return None
+    rows = []
+    for t in items:
+        notes = _html.escape((t.get("notes") or "").strip()).replace("\n", "<br>")
+        rows.append(
+            f'<article style="border-left:3px solid #d97706;background:#fffbeb;'
+            f'border-radius:8px;padding:14px 16px;margin:0 0 12px">'
+            f'<h2 style="margin:0 0 6px;font-size:16px;color:#b45309">'
+            f'{_html.escape(t.get("id", ""))} {_html.escape(t.get("name", ""))}</h2>'
+            f'<p style="margin:0;font-size:14px;line-height:1.55;color:#1a1f36">'
+            f'{notes}</p></article>')
+    page = (
+        '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+        '<meta name="robots" content="noindex,nofollow">'
+        '<meta name="viewport" content="width=device-width,initial-scale=1">'
+        '<title>Waiting on you — Find A Crib growth</title></head>'
+        '<body style="margin:0;background:#f6f7f9;font-family:-apple-system,'
+        'BlinkMacSystemFont,Segoe UI,Roboto,sans-serif">'
+        '<main style="max-width:680px;margin:0 auto;padding:28px 16px">'
+        '<h1 style="font-size:20px;color:#1a1f36">Waiting on you — '
+        'these candidates cannot activate without a decision</h1>'
+        f'<p style="font-size:13px;color:#6b7280">{len(items)} candidate(s) · '
+        f'generated {ledger.today()} by the growth engine</p>'
+        + "".join(rows) + "</main></body></html>")
+    path = os.path.join(root, WAITING_PAGE)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        f.write(page)
+    os.replace(tmp, path)
+    return f"{SITE}/{WAITING_PAGE}"
 
 
 def _fmt(v):
@@ -364,12 +417,24 @@ def build_blocks(run_log=None, review_out=None):
     # ---- blocked candidates: the things needing a human
     needs_owner = [t for t in cands if t.get("notes")]
     if needs_owner:
+        try:
+            page_url = _write_waiting_page(needs_owner)
+        except Exception:
+            page_url = None
+        # only cap when the overflow has somewhere to live
+        shown = needs_owner[:WAITING_EMAIL_CAP] if page_url else needs_owner
         B.append({"type": "section", "label": "Waiting on you",
                   "note": "These candidates cannot activate without a decision"})
-        for t in needs_owner:
+        for t in shown:
             B.append({"type": "callout", "tone": "warn",
                       "heading": f"{t['id']} {t['name']}",
                       "body": (t.get("notes") or "").strip().split("\n")[0]})
+        rest = len(needs_owner) - len(shown)
+        if rest:
+            B.append({"type": "card",
+                      "heading": f"{rest} more waiting on a decision",
+                      "body": "The full list, with complete notes, is on one page.",
+                      "link": (f"See all {len(needs_owner)}", page_url)})
 
     if kw["gaps"]:
         B.append({"type": "section", "label": f"Uncovered queries ({len(kw['gaps'])})",

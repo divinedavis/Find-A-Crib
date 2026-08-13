@@ -320,15 +320,23 @@ def _status(b):
 
 
 def _callout(b):
-    """A tinted box for the things that need the reader to do something."""
+    """A tinted box for the things that need the reader to do something.
+    `items` renders as a bulleted list; `body` as a single paragraph."""
     colour, bg = TONES.get(b.get("tone") or "warn", (WARN, WARN_BG))
     head = (f'<div style="font-size:14px;font-weight:700;color:{colour};margin:0 0 4px">'
             f'{esc(b["heading"])}</div>') if b.get("heading") else ""
+    if b.get("items"):
+        body_html = "".join(
+            f'<div style="font-size:13px;color:{INK};line-height:1.55;margin:0 0 3px">'
+            f'&bull;&nbsp;&nbsp;{esc(it)}</div>' for it in b["items"])
+        body_text = "\n".join(f"      • {it}" for it in b["items"])
+    else:
+        body_html = (f'<div style="font-size:13px;color:{INK};line-height:1.55">'
+                     f'{esc(b["body"])}</div>')
+        body_text = f"      {b['body']}"
     html = (f'<div style="background:{bg};border-left:3px solid {colour};border-radius:8px;'
-            f'padding:12px 14px;margin:0 0 12px">{head}'
-            f'<div style="font-size:13px;color:{INK};line-height:1.55">'
-            f'{esc(b["body"])}</div></div>')
-    text = (f"  {b['heading']}\n      {b['body']}" if b.get("heading") else f"  {b['body']}")
+            f'padding:12px 14px;margin:0 0 12px">{head}{body_html}</div>')
+    text = (f"  {b['heading']}\n{body_text}" if b.get("heading") else body_text.lstrip())
     return html, text
 
 

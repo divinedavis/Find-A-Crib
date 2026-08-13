@@ -1,21 +1,22 @@
 {
   "build": {
-    "at": "2026-08-12T05:40:18+00:00",
+    "at": "2026-08-13T05:40:20+00:00",
     "changed_urls": 7,
-    "date": "2026-08-12",
+    "date": "2026-08-13",
     "deployed": true,
-    "new_urls": 4,
+    "new_urls": 1,
     "seo_corpus": {
-      "days_old": 4,
+      "days_old": 5,
       "written": "2026-08-08"
     },
+    "seo_pipeline": null,
     "techniques": {
       "city_guides": {
         "detail": "3 of 3 city guides live with their data caveat",
         "ok": true
       },
       "city_seo_expansion": {
-        "detail": "hub pages live: dc 103, la 112, sf 37 \u2014 3 pages published by the daily growth build, browse hubs included (dc 1, la 1, sf 1), because the SEO pipeline is behind this checkout \u2014 the docroot's SEO corpus was last written 2026-08-08 (4d ago) \u2014 3 of them were live but stale, still serving the SEO pipeline's older render of the same page",
+        "detail": "hub pages live: dc 103, la 112, sf 37 \u2014 3 pages published by the daily growth build, browse hubs included (dc 1, la 1, sf 1), because the SEO pipeline has not deployed them \u2014 the docroot's SEO corpus was last written 2026-08-08 (5d ago)",
         "ok": true
       },
       "crawl_paths": {
@@ -23,19 +24,19 @@
         "ok": true
       },
       "daily_brief": {
-        "detail": "brief 2026-08-12: 1 added, 1 removed",
+        "detail": "brief 2026-08-13: 1 added, 2 removed",
         "ok": true
       },
       "fresh_section8": {
-        "detail": "288 buildings across 5 boroughs",
+        "detail": "287 buildings across 5 boroughs",
         "ok": true
       },
       "hub_direct_answers": {
-        "detail": "answer block on 620 of 623 hub pages (neighborhood 198/198, borough 5/5, zip 165/165, dc hub 103/103, la hub 112/112, sf hub 37/37, city browse hub 0/3) \u2014 missing e.g. dc/buildings/index.html, la/buildings/index.html, sf/buildings/index.html",
-        "ok": false
+        "detail": "answer block on 623 of 623 hub pages (neighborhood 198/198, borough 5/5, zip 165/165, dc hub 103/103, la hub 112/112, sf hub 37/37, city browse hub 3/3)",
+        "ok": true
       },
       "indexnow": {
-        "detail": "submitted 11 URLs \u2192 HTTP 200",
+        "detail": "submitted 8 URLs \u2192 HTTP 200",
         "ok": true
       },
       "llms_txt": {
@@ -43,7 +44,7 @@
         "ok": true
       },
       "sitemap_daily": {
-        "detail": "sitemap-daily.xml with 23 URLs (incl. 3 city hub pages)",
+        "detail": "sitemap-daily.xml with 24 URLs (incl. 3 city hub pages)",
         "ok": true
       }
     }

@@ -210,7 +210,9 @@ def _days_ago(n):
             - datetime.timedelta(days=n)).isoformat()
 
 
-def call_api(key, prompt, timeout=180):
+def call_api(key, prompt, timeout=600):
+    # 180s timed out on 2026-08-13 once max_tokens gave Opus 5 real headroom —
+    # a thinking model doing web search legitimately generates for minutes.
     body = {
         "model": MODEL,
         # Opus 5 spends part of this on thinking before any text, and web-search

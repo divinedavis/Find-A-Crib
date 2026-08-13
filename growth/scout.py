@@ -213,7 +213,10 @@ def _days_ago(n):
 def call_api(key, prompt, timeout=180):
     body = {
         "model": MODEL,
-        "max_tokens": 8000,   # web-search answers are long; 4k truncated them
+        # Opus 5 spends part of this on thinking before any text, and web-search
+        # answers are long — 4k truncated them, and 8k once went entirely to
+        # thinking, ending the reply before the JSON started (2026-08-13).
+        "max_tokens": 16000,
         "system": SYSTEM,
         "tools": TOOLS,
         "messages": [{"role": "user", "content": prompt}],

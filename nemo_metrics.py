@@ -60,6 +60,12 @@ BOOKINGS_DB = os.environ.get("NEMO_BOOKINGS_DB",
 # beside this file so a recycled gunicorn worker starts from the last answer
 # instead of from nothing. Only the first build after a deploy ever blocks.
 CACHE_TTL = 120
+# Serve-stale has a limit: past this age the payload is history, not a cache.
+# The first load of the morning was presenting last night's numbers under
+# "Today" (with only the small "Updated ..." header giving it away) because a
+# recycled worker treats the disk payload as stale-but-servable no matter how
+# old it is. Beyond this, pay the rebuild in the foreground.
+MAX_STALE = 600
 # Keyed by range. A build costs ~14 s, so every range needs its own slot —
 # a single slot would make each click of the picker evict the previous answer
 # and pay the full rebuild again.
@@ -441,6 +447,17 @@ def _store(data, rng="all"):
             pass
 
 
+def _payload_age(data):
+    """Seconds since the payload was built, judged by its own generated_at —
+    the in-memory `at` only says when THIS process cached it (0.0 for a
+    payload inherited from disk), not how old the numbers are."""
+    try:
+        gen = datetime.datetime.fromisoformat(data["generated_at"])
+        return time.time() - gen.timestamp()
+    except Exception:
+        return float("inf")
+
+
 def _refresh_bg(days, rng):
     try:
         _store(build(days=days, rng=rng), rng)
@@ -476,18 +493,22 @@ def build_cached(days=14, rng="all"):
     if data is not None:
         if now - at < CACHE_TTL:
             return data
-        # Stale: hand it over now, rebuild behind the response. One refresh per
-        # range — a second expired request must not start a second rebuild, but
-        # a different range must not be blocked by this one either.
-        with _LOCK:
-            kick = rng not in _REFRESHING
+        if _payload_age(data) <= MAX_STALE:
+            # Stale but recent: hand it over now, rebuild behind the response.
+            # One refresh per range — a second expired request must not start a
+            # second rebuild, but a different range must not be blocked by this
+            # one either.
+            with _LOCK:
+                kick = rng not in _REFRESHING
+                if kick:
+                    _REFRESHING.add(rng)
             if kick:
-                _REFRESHING.add(rng)
-        if kick:
-            threading.Thread(target=_refresh_bg, args=(days, rng), daemon=True).start()
-        return data
+                threading.Thread(target=_refresh_bg, args=(days, rng),
+                                daemon=True).start()
+            return data
+        # Too old to show — fall through to a foreground rebuild.
 
-    # Nothing in memory or on disk — first build after a deploy pays once.
+    # Nothing servable in memory or on disk — this request pays for the build.
     data = build(days=days, rng=rng)
     _store(data, rng)
     return data

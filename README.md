@@ -209,13 +209,45 @@ completes and rsyncs a *truncated* corpus looks freshly written, so a clean run
 reporting fewer than 1,000 pages is reported as a break.
 
 Read a **missing** status record carefully, because it is the one case with two
-meanings. The script pulls itself (`STEP=pull` is inside it), so a cron that
-fires at all picks the new version up and self-reports from the run after. On
-2026-08-13/14 an absence therefore just means it has not pulled yet. From
-2026-08-15 on, a still-absent record *plus* a still-frozen `seo_corpus` is
-positive evidence that the cron is not firing at all — which is the one failure
-this file cannot report from the inside, and is exactly what it narrows down to.
-An absence on its own, with a fresh corpus, means nothing.
+meanings. The script pulls itself (`STEP=pull` is inside it), and bash has
+already read the file by then, so a cron that fires at all picks the new version
+up on one run and self-reports from the *next* one. An absence on its own, with
+a fresh corpus, therefore means nothing.
+
+**A frozen `seo_corpus` is decisive on its own, though, and does not need the
+status record at all** — this was worked out on 2026-08-14 and it settles the
+question a day earlier than the rule that used to sit here. `build_seo.py`'s
+`write()` opens and rewrites *every* file it emits on *every* run, unconditionally
+(only `<lastmod>` is content-aware, via `LM_STATE`), and `sitemap-main.xml`
+embeds `BUILD_DATE`. So a healthy run gives each `sitemap-*.xml` in `$BUILD` a
+fresh mtime and fresh bytes even on a night when no page changed, and `rsync -a`
+copies them across. **A docroot `sitemap-*.xml` older than a day therefore proves
+`refresh_seo.sh` did not reach `STEP=deploy`, whatever the status record says.**
+The status record then only distinguishes *how* it stopped: present means it ran
+and died at the named step; absent means it never started, because `status start`
+is written before the pull and before the build, so even an instant crash leaves
+the file behind.
+
+**The watchdog.** On 2026-08-14 the corpus had been frozen since 08-08 with no
+status record, i.e. six nights of the 04:10 cron not firing, which stranded every
+`build_seo.py` change since 08-01 in git. The cloud review cannot touch cron —
+but `growth_run.sh` is on the droplet, in the right checkout, with `GROWTH_DOCROOT`
+already set, and it demonstrably runs every morning. It now re-runs the refresh
+the missing cron owes: `seo_watchdog()` fires only on the `build` job, only when
+every non-growth-owned `sitemap-*.xml` in the docroot is more than `SEO_STALE_DAYS`
+(default 2) old, under `flock` and `timeout` (default 3600s), with every failure
+swallowed so it can never cost the night's ledger push. It runs
+`./scripts/refresh_seo.sh` from the growth checkout — which `growth_run.sh` has
+just pulled — rather than the copy in `$SEO_BUILD`, so the script is always the
+newest version instead of one night behind its own self-pull; `refresh_seo.sh`
+cds to `$SEO_BUILD` and pulls it, so the data and build dir are unchanged. Its
+outcome lands in `cron_heartbeat.jsonl` as `seo_watchdog_start` /
+`seo_watchdog_finish`, which is committed and pushed, so the review reads the
+result the same morning. Set `GROWTH_SEO_WATCHDOG=0` in `growth.env` to stop it —
+that is the switch to use if the pipeline is ever stopped on purpose. **If a new
+growth-written `sitemap-*.xml` is ever added to the docroot it must be excluded
+in `seo_watchdog()` as well as in `GROWTH_OWNED_SITEMAPS`, or the watchdog reads
+it as freshness and silently stops firing.**
 
 One consequence of that ordering: **`build` runs every technique first and
 rsyncs last**, so any check that reads the docroot is scoring the *previous*

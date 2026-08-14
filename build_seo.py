@@ -1033,6 +1033,77 @@ def _ring_window(order, i, k=NEAR_LINKS):
     return [order[(i + o) % n] for o in offsets]
 
 
+# Google truncates around 155-160 characters; past that the tail is spent, not
+# shown. The builder below fills the budget with facts and drops the ones that
+# do not fit, rather than writing one sentence and padding it.
+DESC_LIMIT = 158
+
+
+def building_meta_desc(addr, nb, units, yr, open_viol, advertised, limit=DESC_LIMIT):
+    """The <meta name="description"> for one building page.
+
+    It used to be a template with one variable slot:
+
+        "{addr} in {nb}, {boro} is a NYC rent-stabilized building.
+         See units, year built, owner, and HPD violations."
+
+    Every one of the 47,165 building pages carried the same 14-word tail, and
+    the only thing that varied — the address — was already in the <title>, the
+    <h1> and the URL. So the description, which is the only line of the page a
+    searcher reads before deciding to click, added nothing to what the title
+    already said, and it promised facts ("see units, year built…") instead of
+    stating them. On 2026-08-14, 62 building pages held a median Search Console
+    position of 6 with 111 impressions and 2 clicks; a low CTR at a good
+    position is a snippet problem, not a ranking problem.
+
+    So state the facts instead. Everything here is a field already displayed in
+    the page body, from the same record, and nothing is asserted that the page
+    does not also say:
+
+      * "about N apartments" keeps the body's own hedge — the unit count comes
+        from PLUTO and the body says "about". A meta description is not the
+        place to quietly upgrade an approximation into a fact.
+      * the DHCR registration is the claim the page exists to make.
+      * a recently-advertised unit is the highest-intent thing we know about a
+        building, so it wins the leftover budget when both extras fit.
+      * open HPD violations are shown in the body's "Building conditions" table
+        and are the other reason someone searches an address.
+
+    Degrades on missing fields rather than emitting an empty slot: 99.6% of
+    buildings have a unit count and 99.8% a year, but the remainder must still
+    read as a sentence.
+    """
+    facts = []
+    if units:
+        facts.append(f"about {units} apartment{'' if units == 1 else 's'}")
+    if yr:
+        facts.append(f"built {yr}")
+    def _lead(head):
+        if facts:
+            return head + ": " + ", ".join(facts) + ", registered as rent stabilized with NY State DHCR."
+        return head + ": registered as rent stabilized with NY State DHCR."
+
+    lead = _lead(f"{addr}, {nb}")
+    # 19 of 47,165 buildings pair a long address with a long neighborhood name
+    # ("114-15 To 114-19 Rockaway Beach Blvd, Breezy Point-Belle Harbor-Rockaway
+    # Park-Broad Channel") and blow the budget on the lead alone, so the DHCR
+    # claim — the whole point of the line — is what gets truncated away. Drop
+    # the neighborhood in that case; the <title> carries it either way.
+    if len(lead) > limit:
+        lead = _lead(addr)
+
+    extras = []
+    if advertised:
+        extras.append("A unit here was recently advertised for rent.")
+    if open_viol:
+        extras.append(f"{open_viol} open HPD violation{'' if open_viol == 1 else 's'} on file.")
+    out = lead
+    for e in extras:
+        if len(out) + 1 + len(e) <= limit:
+            out += " " + e
+    return out
+
+
 def main():
     blds = json.load(open("buildings.min.json"))
     try:
@@ -1232,7 +1303,8 @@ def main():
 
         write(url.strip("/") + "/index.html",
               page(f"Is {addr} rent stabilized? — {nb}, {boro} | Find A Crib",
-                   f"{addr} in {nb}, {boro} is a NYC rent-stabilized building. See units, year built, owner, and HPD violations.",
+                   building_meta_desc(addr, nb, units, yr,
+                                      (h.get("violations") or {}).get("open"), adv),
                    canonical, body, jsonld))
         urls.append((canonical, "0.6", b["b"]))
 

@@ -201,10 +201,24 @@ def build_blocks(run_log=None, review_out=None):
                                   f"since this was first recorded."})
         # Three loose numbers, not a table — four header cells collide at phone
         # width and a one-row table is a table for no reason.
+        #
+        # These are the PAGE dimension, which is the site's actual footprint;
+        # gsc_clicks/gsc_impressions are the query dimension, which drops
+        # anonymized queries and on this corpus reported 11 impressions against
+        # a real 137 (see searchconsole.collect). Fall back to the query numbers
+        # for days recorded before 2026-08-14, when the page series starts, so
+        # the trend does not break at the changeover — `is None` and not `or`,
+        # because a genuine zero is a fact, not a missing value.
+        _pc, _pi = _last("gsc_page_clicks"), _last("gsc_page_impressions")
         B.append({"type": "stats", "items": [
-            (_fmt(_last("gsc_clicks")), "clicks, last 7d"),
-            (_fmt(_last("gsc_impressions")), "impressions"),
+            (_fmt(_last("gsc_clicks") if _pc is None else _pc), "clicks, last 7d"),
+            (_fmt(_last("gsc_impressions") if _pi is None else _pi), "impressions"),
             (_fmt(_last("gsc_position")), "avg position")]})
+        if _pi is not None:
+            B.append({"type": "note", "text":
+                      "Clicks and impressions are Search Console's page dimension. Its query "
+                      "dimension drops anonymized rare queries and, on a corpus of single-address "
+                      "pages, reports a small fraction of the real total."})
     else:
         B.append({"type": "callout", "tone": "warn", "heading": "Search share unmeasured",
                   "body": f"Search Console is not reporting. Coverage proxy: "

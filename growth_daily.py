@@ -127,7 +127,8 @@ def cmd_measure(args):
     try:
         from growth import searchconsole
         gsc = searchconsole.collect(days=7)
-        log(f"  search console: {gsc['clicks']} clicks, {gsc['impressions']} impressions, "
+        log(f"  search console: {gsc['page_clicks']} clicks, {gsc['page_impressions']} impressions "
+            f"(page dimension; query dimension sees {gsc['clicks']}/{gsc['impressions']}), "
             f"{gsc['serving_pages']} pages serving, {gsc['tracked_ranking']}/{len(keywords.load())} "
             f"tracked queries ranking, share {gsc['share_pct']}%")
     except Exception as e:

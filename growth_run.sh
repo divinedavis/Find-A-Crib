@@ -83,6 +83,93 @@ fi
 rm -f "$runlog"
 beat finish "$rc" "$pull_state" "$note"
 
+# ------------------------------------------------------ SEO pipeline watchdog
+# scripts/refresh_seo.sh publishes 47,599 of the site's ~47,600 pages from its
+# own 04:10 cron. On 2026-08-14 that cron had not deployed since 2026-08-08 and
+# had not even STARTED for at least two nights, which is provable two ways:
+# build_seo.py's write() rewrites every file unconditionally and sitemap-main.xml
+# embeds the build date, so a healthy run gives the docroot's sitemap-*.xml a
+# fresh mtime every night even when no page changed — and the .seo-build-status
+# heartbeat is written at `status start`, before the pull and before the build,
+# so a script that runs and then crashes still leaves the file. Frozen mtime plus
+# no status file therefore means "never invoked", not "invoked and failed".
+#
+# Six days of that stranded every SEO change in git: the browse hubs from 08-09,
+# the sibling-link ring from 08-13, and everything after. The review agent runs
+# in Anthropic's cloud and cannot touch cron — but THIS script is on the droplet,
+# in the right checkout, with the docroot already in the environment, and it
+# demonstrably runs every morning. So it can re-run the refresh the missing cron
+# owes, which is the difference between the corpus updating nightly and it being
+# frozen until someone notices by hand.
+#
+# Deliberately conservative:
+#   * only on the deploy job, never on the measure or scout runs;
+#   * only when the corpus is already SEO_STALE_DAYS stale, so a healthy 04:10
+#     cron is never raced or duplicated — it wrote at 04:10, we look at 05:40;
+#   * flock, so two watchdogs can never overlap each other;
+#   * timeout, so a hung rebuild cannot hold the ledger push hostage;
+#   * every failure is swallowed — a watchdog must never be the reason the
+#     night's measurements go unpushed. rc is the python run's, and stays so.
+#   * GROWTH_SEO_WATCHDOG=0 in growth.env turns it off, for when the pipeline is
+#     stopped on purpose.
+# It runs the refresh script from THIS checkout, which growth_run.sh has just
+# pulled, rather than the copy in $SEO_BUILD. refresh_seo.sh cds to $SEO_BUILD
+# and pulls it, so the data and the build dir are the same either way — but the
+# script itself is then always the newest version, instead of one night behind
+# its own self-pull. Its outcome lands in the heartbeat below, which is committed
+# and pushed, so the cloud review reads the result the same morning.
+SEO_BUILD=${SEO_BUILD_DIR:-/root/dhcr-build}
+SEO_STALE_DAYS=${SEO_STALE_DAYS:-2}
+SEO_TIMEOUT=${SEO_WATCHDOG_TIMEOUT:-3600}
+SEO_LOCK=${SEO_WATCHDOG_LOCK:-/tmp/findacrib-refresh-seo.lock}
+
+seo_watchdog() {
+  [ "${GROWTH_SEO_WATCHDOG:-1}" = "0" ] && return 0
+  case "$JOB" in *build*) ;; *) return 0 ;; esac
+  [ -d "$SEO_BUILD" ] || return 0
+  [ -f ./scripts/refresh_seo.sh ] || return 0
+  [ -d "${GROWTH_DOCROOT:-}" ] || return 0
+
+  # Freshness stamps are exactly the sitemaps only build_seo.py writes — the
+  # same set as techniques.GROWTH_OWNED_SITEMAPS excludes. sitemap.xml does not
+  # match the glob; sitemap-daily.xml does and is the growth build's own, so it
+  # is excluded by name. Any new growth-written sitemap-*.xml must be added here
+  # too, or this goes blind and stops firing.
+  local fresh
+  fresh=$(find "$GROWTH_DOCROOT" -maxdepth 1 -name 'sitemap-*.xml' \
+            ! -name 'sitemap-daily.xml' -mtime "-$SEO_STALE_DAYS" 2>/dev/null | head -n 1)
+  [ -n "$fresh" ] && return 0        # pipeline wrote recently: nothing owed
+
+  local log
+  log=$(mktemp) || log=/tmp/seo_watchdog.$$.log
+  beat seo_watchdog_start null "$pull_state" "corpus stale >${SEO_STALE_DAYS}d, running scripts/refresh_seo.sh"
+  if command -v flock >/dev/null 2>&1; then
+    timeout "$SEO_TIMEOUT" flock -n "$SEO_LOCK" bash ./scripts/refresh_seo.sh >"$log" 2>&1
+  else
+    timeout "$SEO_TIMEOUT" bash ./scripts/refresh_seo.sh >"$log" 2>&1
+  fi
+  local wrc=$?
+  # Two lines, same rule as the run note above: this file is committed to a
+  # public repo, and refresh_seo.sh's own .seo-build-status.json carries the
+  # real diagnosis. The fallbacks matter — a non-zero rc with NO output is the
+  # signature of flock refusing (another copy already running), and reporting
+  # that as "ok" would be exactly the "DID NOT RUN — unknown error" mistake of
+  # 2026-07-28 in the other direction.
+  local wnote=""
+  if [ "$wrc" -eq 124 ]; then
+    wnote="timed out after ${SEO_TIMEOUT}s"
+  elif [ "$wrc" -ne 0 ]; then
+    wnote=$(grep -v '^[[:space:]]*$' "$log" | tail -n 2 | tr '\n' ' ' | cut -c1-300)
+    wnote=${wnote:-"rc=$wrc with no output — another copy probably holds $SEO_LOCK"}
+  else
+    wnote="ran refresh_seo.sh to completion"
+  fi
+  rm -f "$log"
+  beat seo_watchdog_finish "$wrc" "$pull_state" "$wnote"
+  return 0
+}
+seo_watchdog || true
+
 # Keep the heartbeat bounded; it is a liveness log, not a record to preserve.
 if [ "$(wc -l < "$BEAT" 2>/dev/null || echo 0)" -gt "$BEAT_KEEP" ]; then
   tail -n "$BEAT_KEEP" "$BEAT" > "$BEAT.tmp" && mv "$BEAT.tmp" "$BEAT"

@@ -105,6 +105,21 @@ def collect(days=7):
     record_owned_visibility(page_rows)
 
     clicks, impressions, avg_pos = sc.totals(rows)   # returns a 3-tuple, not a dict
+
+    # Search Console's QUERY dimension silently drops anonymized (rare) queries,
+    # and on a corpus of 47k single-address pages almost every query is rare. Over
+    # 2026-08-05..08-12 the query dimension totalled 11 impressions and 1 click;
+    # the page dimension, identical window, totalled 137 and 6. Every journal
+    # entry that has ever quoted "impressions" quoted the query number, so the
+    # site's real search footprint has been understated by about 12x for weeks,
+    # and the CTR arithmetic built on it was wrong in both directions.
+    #
+    # Record the page dimension alongside it. Do NOT redefine gsc_impressions to
+    # mean this: that series goes back to the start and would stop being
+    # comparable to itself, and the query total is still the right number for
+    # "which named queries do we appear for". Two metrics, two meanings.
+    page_impressions = sum(r.get("impressions", 0) for r in page_rows)
+    page_clicks = sum(r.get("clicks", 0) for r in page_rows)
     top10 = sum(1 for k in kws if (k.get("position") or 999) <= 10)
     top3 = sum(1 for k in kws if (k.get("position") or 999) <= 3)
     share = round(100.0 * top10 / len(kws), 1) if kws else 0.0
@@ -113,6 +128,8 @@ def collect(days=7):
     for metric, value in (
             ("gsc_clicks", clicks),
             ("gsc_impressions", impressions),
+            ("gsc_page_clicks", page_clicks),
+            ("gsc_page_impressions", page_impressions),
             ("gsc_position", round(avg_pos, 1)),
             ("gsc_serving_pages", serving),
             ("search_share_pct", share),
@@ -133,11 +150,13 @@ def collect(days=7):
     ledger.write_last_run("searchconsole", {
         "window": f"{start}..{end}", "clicks": clicks,
         "impressions": impressions, "serving_pages": serving,
+        "page_clicks": page_clicks, "page_impressions": page_impressions,
         "tracked_ranking": matched, "share_pct": share,
         "serving_stable": ch.get("gsc_serving_stable"),
         "serving_ever": ch.get("gsc_serving_ever")})
 
     return {"clicks": clicks, "impressions": impressions,
+            "page_clicks": page_clicks, "page_impressions": page_impressions,
             "serving_pages": serving, "tracked_ranking": matched,
             "top10": top10, "top3": top3, "share_pct": share,
             "serving_stable": ch.get("gsc_serving_stable"),

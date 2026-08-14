@@ -176,14 +176,29 @@ def _nemo_growth_metrics():
     return _nemo_growth("metrics")
 
 
-def _today_live():
-    """Today so far, straight from the access log. ({} if unavailable.)"""
+def _today_live(net=True):
+    """Today so far, straight from the access log. ({} if unavailable.)
+
+    `net=False` keeps collect() off the network: its hosting check does a
+    reverse-DNS lookup per never-seen address at up to 1.5s each, and a burst
+    of new scanner IPs after an idle stretch was exactly the 5-10s "switching
+    to NEMO freezes" lag — the one path yesterday's fresh_calls fix missed.
+    Cache-only means a brand-new datacenter IP is counted as a visitor until
+    a background refresh or the 6am run resolves it; that is a rounding error
+    on the tiles, a frozen switcher is not.
+    """
     m = _nemo_growth_metrics()
     if m is None:
         return {}
     today = datetime.date.today()
     try:
-        data = m.collect(days=1, end=today)
+        data = m.collect(days=1, end=today, ptr_lookups=None if net else 0)
+    except TypeError:
+        # Older metrics.py without the parameter — slow but correct.
+        try:
+            data = m.collect(days=1, end=today)
+        except Exception:
+            return {}
     except Exception:
         return {}
     return data.get(today.isoformat(), {})
@@ -235,9 +250,12 @@ def _calls(dates, today_key, refresh=True):
     counts at zero and raises a warning rather than failing the page — the
     dashboard saying "0 calls" with a note beats it saying nothing at all.
 
-    `refresh=False` counts the on-disk call cache without touching ElevenLabs.
-    An empty cache still pays the network fetch: cache-only zero calls is
-    indistinguishable from a quiet phone, and only one of those is true.
+    `refresh=False` counts the on-disk call cache without touching ElevenLabs
+    — ever. An empty cache comes back as ok=False (the tiles get zeros plus
+    the "could not be read" warning) and the background refresh that every
+    such build kicks fills it seconds later. The earlier version paid a
+    foreground network fetch on an empty cache, which was one more way for the
+    site switcher to freeze — the exact bug refresh=False exists to prevent.
     """
     out = {"all_time": 0, "own_excluded": 0, "period": 0, "today": 0, "ok": False}
     mod = _nemo_growth("calls")
@@ -247,7 +265,7 @@ def _calls(dates, today_key, refresh=True):
     try:
         rows = mod.fetch(status=st, refresh=refresh)
         if not refresh and not rows:
-            rows = mod.fetch(status=st)
+            return out
         totals = mod.call_totals(rows, refresh=False)
         by_day = mod.calls_by_day(sorted(set(dates) | {today_key}), rows, refresh=False)
     except Exception:
@@ -274,9 +292,11 @@ def build(days=14, rng="all", fresh_calls=True):
     tiles (phone leads, calls into the AI) read their own sources and stay
     all-time, which is what their labels already say.
 
-    `fresh_calls=False` counts calls from the on-disk cache instead of asking
-    ElevenLabs — for builds a request is waiting on, where the network refresh
-    is the difference between ~0.7s and ~14s.
+    `fresh_calls=False` means "a request is waiting on this build — touch no
+    network at all": calls are counted from the on-disk cache instead of
+    asking ElevenLabs, and the live log parse skips reverse-DNS lookups for
+    never-seen addresses. Either network path is the difference between ~0.3s
+    and 5-14s. Background and 6am builds keep fresh_calls=True and pay both.
     """
     hist = _daily_series()
     today_key = datetime.date.today().isoformat()
@@ -286,7 +306,8 @@ def build(days=14, rng="all", fresh_calls=True):
     # Today is inside every range this picker offers, so the live parse is
     # always included; it is named here rather than assumed so a future range
     # that excludes today does not silently double-count it.
-    live = _today_live() if (not since or today_key >= since) else {}
+    live = (_today_live(net=fresh_calls)
+            if (not since or today_key >= since) else {})
     warnings = []
     if not live:
         warnings.append("Today's live traffic could not be read from the access log.")

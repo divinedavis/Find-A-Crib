@@ -567,6 +567,13 @@
   function pct(a,b){ return b>0 ? (100*a/b) : 0; }
   function pctS(a,b,d){ return (pct(a,b)).toFixed(d==null?0:d)+'%'; }
   function money(x){ return '$'+Math.round(x).toLocaleString('en-US'); }
+  // Durations read as time, never as a decimal: "3m 14s", not "194s" or "3.2m".
+  function fmtDur(s){
+    s = Math.max(0, Math.round(n(s)));
+    if(s < 60) return s+'s';
+    var h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=s%60;
+    return h ? h+'h '+m+'m' : m+'m '+(sec<10?'0':'')+sec+'s';
+  }
   function el(id){ return document.getElementById(id); }
 
   // ---------- theme ----------
@@ -1031,17 +1038,42 @@
     var convRate = pct(n(T.accounts), n(T.visitors));
     REALCONV = convRate;
 
+    // Time on site. There is no timing beacon, so a session is a run of hits
+    // from one visitor split on a 30-minute gap, and nothing is logged when a
+    // page closes — the last page of every session counts as zero. A one-hit
+    // session therefore measures 0s however long it really was, which is why
+    // the median covers 2+ hit sessions and the single-hit share is stated
+    // beside it instead of being averaged in. The true figure is higher than
+    // this; the tile shows a floor, and says so on hover.
+    var D=d.dwell||{};
+    var dwellV='—', dwellSub='', dwellTitle='';
+    if(D.median_secs != null){
+      dwellV = fmtDur(D.median_secs);
+      dwellSub = (D.single_hit_pct != null ? D.single_hit_pct+'% single-page (unmeasurable)' : '');
+      if(D.p75_secs != null) dwellSub += (dwellSub?' · ':'')+'p75 '+fmtDur(D.p75_secs);
+      dwellTitle = 'Median over '+comma(D.engaged)+' of '+comma(D.sessions)+' sessions — the ones with 2+ '+
+        'recorded hits. A session is one visitor’s activity split wherever the gap exceeds 30 minutes. '+
+        'Nothing is logged when a page closes, so the final page of every session counts as zero and a '+
+        'single-page visit measures 0s no matter how long it lasted; those are excluded rather than averaged '+
+        'in, which would drag the median to 0. Read this as a floor, not the true figure. '+
+        (D.p90_secs != null ? 'p90 '+fmtDur(D.p90_secs)+'. ' : '')+
+        'Only a client-side unload or heartbeat ping would measure the last page.';
+    }
+
     // tiles
     var tiles=[
       {ic:'👣',v:comma(T.visitors),l:'Unique visitors'},
       {ic:'📈',v:comma(T.visits),l:'Total visits'},
       {ic:'🔁',v:comma(T.returning)+' · '+pctS(T.returning,T.visitors),l:'Returning visitors'},
+      {ic:'⏱️',v:dwellV,l:'Median time on site · engaged sessions',own:dwellSub,title:dwellTitle},
       {ic:'✅',v:comma(T.accounts),l:'Sign-ups'},
       {ic:'🎯',v:convRate.toFixed(1)+'%',l:'Sign-up conversion'},
       {ic:'💳',v:money(n(S.mrr)),l:comma(S.paying)+' paying'+(n(S.comped)?' · '+comma(S.comped)+' comped':'')+' · MRR',accent:true}
     ];
     el('tiles').innerHTML=tiles.map(function(t){
-      return '<div class="tile'+(t.accent?' accent':'')+'"><div class="t-ico">'+t.ic+'</div><div class="t-val">'+t.v+'</div><div class="t-lbl">'+t.l+'</div></div>';
+      return '<div class="tile'+(t.accent?' accent':'')+'"'+(t.title?' title="'+esc(t.title)+'"':'')+'>'+
+        '<div class="t-ico">'+t.ic+'</div><div class="t-val">'+t.v+'</div><div class="t-lbl">'+t.l+'</div>'+
+        (t.own?'<div class="t-own">'+t.own+'</div>':'')+'</div>';
     }).join('');
 
     renderDonut(R);

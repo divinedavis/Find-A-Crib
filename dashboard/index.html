@@ -1454,26 +1454,31 @@
       ? 'Call conversion · counting from ' + (CV.measured_since||'today')
       : 'Call conversion · '+comma(CV.taps)+' of '+comma(CV.visitors)+' tapped to call';
 
-    // Two lines under the headline, split by what owns the number.
+    // Two separate tiles, because they answer two different questions and only
+    // one of them can be benchmarked.
     //
-    // ABOVE the hairline — Eric's own data. The published contractor benchmarks
-    // count a call OR a form fill, so the tap-only headline is not the figure to
-    // hold against them; contact_pct (taps + bookings over the same window) is.
-    // It is measured from his site, so it belongs with his numbers.
+    //  * Call conversion (above) — did the phone ring? Tap-only, Eric's metric.
+    //  * Total contact rate (this one) — did anyone reach him at all? Taps plus
+    //    bookings, and the ONLY figure the published contractor benchmarks may
+    //    be held against, because they count a call OR a form fill. Comparing
+    //    the tap-only rate to them would report Eric as four times worse than
+    //    he is.
     //
-    // BELOW the hairline — the third-party band, and the verdict, which is the
-    // only part that is somebody else's claim.
+    // Within the contact tile the hairline rule still holds: his rate above it,
+    // the third party's band and verdict below.
     //
     // Below ~30 measured visitors the comparison is noise — "today" can be 0 of
     // 2, which would paint a red "below median" verdict onto a sample that
     // cannot support one. Suppress the ranking, keep his own rate.
     var BENCH_MIN_VISITORS = 30;
     function bandN(x){ return (Math.round(x*10)%10===0) ? String(Math.round(x)) : x.toFixed(1); }
-    var cvOwn = '', cvBench = '';
-    if(CV.contact_pct != null){
-      cvOwn = '<b>'+CV.contact_pct.toFixed(1)+'%</b> with form fills · '+
-              comma(CV.contacts)+' of '+comma(CV.visitors)+' reached you';
-    }
+    var ctV = (CV.contact_pct==null) ? '—' : CV.contact_pct.toFixed(1)+'%';
+    var ctLabel = (CV.contact_pct==null)
+      ? 'Total contact rate · counting from '+(CV.measured_since||'today')
+      : 'Total contact rate · '+comma(CV.contacts)+' of '+comma(CV.visitors)+' reached you';
+    var ctOwn = (CV.contact_pct==null) ? ''
+      : ('calls <b>'+comma(CV.taps)+'</b> · form fills <b>'+comma(CV.bookings)+'</b>');
+    var cvBench = '';
     if(CV.benchmark && CV.contact_pct != null && n(CV.visitors) < BENCH_MIN_VISITORS){
       cvBench = 'Too few visitors yet to compare against the '+bandN(CV.benchmark.low)+'–'+
                 bandN(CV.benchmark.high)+'% industry median';
@@ -1486,10 +1491,16 @@
       cvBench = 'Industry median <b>'+bandN(B.low)+'–'+bandN(B.high)+'%</b> for '+B.label+
                 ' <span class="bn '+cls+'">'+verdict+'</span>';
     }
-    var cvTitle = CV.benchmark
-      ? ('Industry benchmarks count a tracked contact — a call OR a form fill — so they are compared against '+
-         'taps plus bookings ('+comma(CV.contacts||0)+' of '+comma(CV.visitors||0)+'), not against the tap-only '+
-         'headline. Median contractor site: '+bandN(CV.benchmark.low)+'–'+bandN(CV.benchmark.high)+'%. '+
+    // Hover on the tap-only tile: what it is, and why it is not the benchmarked one.
+    var cvTitle = 'Visitors who opened the dialer from the site, measured first-party from the tel: beacon. '+
+      'This is intent, not connected calls — a call dialled off the Business Profile or a saved contact never '+
+      'touches the site, so it is a floor on call volume. It is deliberately NOT the figure compared to the '+
+      'industry, which counts form fills too; see the total contact rate tile for that.';
+    var ctTitle = CV.benchmark
+      ? ('Every way a visitor reached Eric from the site: dialer taps plus booking-form submissions, over the '+
+         'same days taps were measured. Industry benchmarks count a tracked contact — a call OR a form fill — '+
+         'so this is the figure they compare to, not the tap-only rate. Median contractor site: '+
+         bandN(CV.benchmark.low)+'–'+bandN(CV.benchmark.high)+'%. '+
          CV.benchmark.trade_label+' specifically: '+bandN(CV.benchmark.trade_low)+'–'+bandN(CV.benchmark.trade_high)+'%. '+
          'Top quartile: '+bandN(CV.benchmark.top_quartile)+'%+. Their denominator is sessions and ours is unique '+
          'visitors, which is the smaller number, so read our rate as sitting at the low edge of the band rather '+
@@ -1507,7 +1518,8 @@
       {ic:'👣',v:comma(T.visitors),l:'Unique visitors'},
       {ic:'📄',v:comma(T.views),l:'Page views'},
       {ic:'🔎',v:comma(earned)+(chTotal?' · '+pctS(earned,chTotal):''),l:'Found you (search/maps/AI)'},
-      {ic:'📲',v:cv,l:cvLabel,own:cvOwn,bench:cvBench,title:cvTitle},
+      {ic:'📲',v:cv,l:cvLabel,title:cvTitle},
+      {ic:'📝',v:ctV,l:ctLabel,own:ctOwn,bench:cvBench,title:ctTitle},
       {ic:'👆',v:comma(T.call_taps),l:'Tapped to call · '+rw},
       {ic:'☎️',v:comma(rangeKey==='all'?L.phone_leads_all_time:L.period_phone),l:'Phone leads · '+rw},
       {ic:'🎯',v:(share==null?'—':share.toFixed(1)+'%'),

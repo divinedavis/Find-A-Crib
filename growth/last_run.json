@@ -1,12 +1,12 @@
 {
   "build": {
-    "at": "2026-08-14T05:40:20+00:00",
+    "at": "2026-08-15T05:40:17+00:00",
     "changed_urls": 7,
-    "date": "2026-08-14",
+    "date": "2026-08-15",
     "deployed": true,
     "new_urls": 1,
     "seo_corpus": {
-      "days_old": 6,
+      "days_old": 7,
       "written": "2026-08-08"
     },
     "seo_pipeline": null,
@@ -16,7 +16,7 @@
         "ok": true
       },
       "city_seo_expansion": {
-        "detail": "hub pages live: dc 103, la 112, sf 37 \u2014 3 pages published by the daily growth build, browse hubs included (dc 1, la 1, sf 1), because the SEO pipeline has not deployed them \u2014 the docroot's SEO corpus was last written 2026-08-08 (6d ago)",
+        "detail": "hub pages live: dc 103, la 112, sf 37 \u2014 3 pages published by the daily growth build, browse hubs included (dc 1, la 1, sf 1), because the SEO pipeline has not deployed them \u2014 the docroot's SEO corpus was last written 2026-08-08 (7d ago)",
         "ok": true
       },
       "crawl_paths": {
@@ -24,11 +24,11 @@
         "ok": true
       },
       "daily_brief": {
-        "detail": "brief 2026-08-14: 2 added, 0 removed",
+        "detail": "brief 2026-08-15: 4 added, 1 removed",
         "ok": true
       },
       "fresh_section8": {
-        "detail": "289 buildings across 5 boroughs",
+        "detail": "292 buildings across 5 boroughs",
         "ok": true
       },
       "hub_direct_answers": {
@@ -44,7 +44,7 @@
         "ok": true
       },
       "sitemap_daily": {
-        "detail": "sitemap-daily.xml with 25 URLs (incl. 3 city hub pages)",
+        "detail": "sitemap-daily.xml with 26 URLs (incl. 3 city hub pages)",
         "ok": true
       }
     }

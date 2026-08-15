@@ -1414,8 +1414,10 @@
          'taps plus bookings ('+comma(CV.contacts||0)+' of '+comma(CV.visitors||0)+'), not against the tap-only '+
          'headline. Median contractor site: '+bandN(CV.benchmark.low)+'–'+bandN(CV.benchmark.high)+'%. '+
          CV.benchmark.trade_label+' specifically: '+bandN(CV.benchmark.trade_low)+'–'+bandN(CV.benchmark.trade_high)+'%. '+
-         'Top quartile: '+bandN(CV.benchmark.top_quartile)+'%+. Third-party agency figures, so read them as a band to '+
-         'sit inside rather than an exact target.')
+         'Top quartile: '+bandN(CV.benchmark.top_quartile)+'%+. Their denominator is sessions and ours is unique '+
+         'visitors, which is the smaller number, so read our rate as sitting at the low edge of the band rather '+
+         'than the middle. Third-party agency figures, so read them as a band to sit inside rather than an '+
+         'exact target.')
       : '';
 
     // Tiles follow the range picker: taps come from the ranged totals, phone

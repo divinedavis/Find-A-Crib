@@ -124,11 +124,26 @@ CHANNELS = [
 #   https://www.webfx.com/blog/home-services/home-services-marketing-benchmarks/
 #
 # CRITICAL — read `counts` before moving this number anywhere else in the UI.
-# Every published rate above counts a *tracked contact*: a call OR a form fill.
+# The published definition is explicit:
+#
+#   (tracked calls + tracked form fills + chats + booked appointments) / sessions
+#
 # The tile's headline (`pct`) counts dialer taps alone, so it is not comparable
 # to these and must never be shown against them without the combined
-# `contact_pct` beside it. These are third-party marketing-agency figures, not
-# a census — treat them as a band to sit inside, not a target to hit exactly.
+# `contact_pct` beside it — the source names that exact substitution as the
+# most common way contractors undercount themselves.
+#
+# Two known mismatches, neither worth re-engineering but both worth stating:
+#   * DENOMINATOR. They divide by sessions; `contact_pct` divides by unique
+#     visitors, which is the smaller number, so our rate runs slightly high.
+#     At 141 visitors / 255 views the real figure is nearer 1.8-2.0% than 2.1%
+#     — bottom of the band rather than mid-band. Fix this only if NEMO ever
+#     grows real session tracking; guessing a multiplier would be worse.
+#   * NUMERATOR. NEMO has no chat and no self-serve appointment booking, so it
+#     can only fill two of the four channels the benchmark counts.
+#
+# These are third-party marketing-agency figures, not a census — treat them as
+# a band to sit inside, not a target to hit exactly.
 CALL_CONVERSION_BENCHMARK = {
     "low": 2.0,          # median contractor site, all trades
     "high": 4.0,

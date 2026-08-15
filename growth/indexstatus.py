@@ -1,0 +1,434 @@
+#!/usr/bin/env python3
+"""Measured index coverage — is the 47k-page corpus actually *indexed*?
+
+Why this exists
+---------------
+Every review since 2026-07-27 has gated its strategy on `gsc_serving_pages` —
+the number of distinct URLs that earned a Search Console impression in the
+window — and has read it as an *indexing* number. searchconsole.py's own
+docstring calls it "the only honest read on whether the 47k-page corpus is
+actually indexed". That reading is wrong, and it has been driving decisions for
+three weeks.
+
+An impression requires two independent things: the page is in Google's index,
+AND somebody typed a query it could answer. On a corpus of 47,165 single-address
+pages the second one is the binding constraint for almost every page — nobody
+searches most addresses in a given week. So "63 of ~47,600 pages served" is
+consistent with 63 indexed pages and with 47,000 indexed pages, and the whole
+question of what to do next turns on which it is:
+
+  * few pages indexed  -> the constraint is crawl/index acceptance, and
+                          consolidating the corpus (T027) is the move.
+  * many pages indexed -> the constraint is search demand, publishing more
+                          address pages cannot help, and the effort belongs on
+                          the query families that have volume.
+
+Nothing in the repo could tell those apart. This can. The Search Console URL
+Inspection API returns Google's own coverage state for a URL — "Submitted and
+indexed", "Crawled - currently not indexed", "Discovered - currently not
+indexed", "Excluded by 'noindex' tag" and so on — which is the direct
+measurement the serving count was standing in for.
+
+How it is sampled
+-----------------
+The API allows 2,000 inspections/day per property, against ~47,600 published
+pages, so the whole corpus cannot be measured and a *sample* has to be. Two
+properties matter more than sample size:
+
+  stable cohort   The same URLs are re-inspected over time, so a change in the
+                  indexed rate is a change in Google's opinion and not a
+                  different draw. The cohort persists in index_status.json;
+                  URLs are only dropped when they leave the sitemaps, and only
+                  topped up to the target size, in sha1 order so the top-up is
+                  deterministic rather than build-order dependent.
+  stratified      /building/ is 99% of the corpus but 0% of the interesting
+                  question. Each page family gets its own quota and its own
+                  reported rate, because "are the guides indexed" and "are the
+                  address pages indexed" are different questions with different
+                  answers and different consequences.
+
+Each run inspects the DAILY_BUDGET cohort URLs whose reading is oldest, so the
+cohort is fully refreshed every few days and every URL carries the date its
+state was last read.
+
+Output is public URLs and Google's public opinion of them — no PII — so
+index_status.json is tracked in git and the cloud review agent can read it.
+
+Runs on the droplet only: it needs the Search Console service-account key.
+"""
+import hashlib
+import json
+import os
+import re
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+
+from . import ledger
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+STATUS_PATH = os.path.join(HERE, "index_status.json")
+
+sys.path.insert(0, os.path.dirname(HERE))
+
+INSPECT_API = "https://searchconsole.googleapis.com/v1/urlInspection/index:inspect"
+SITE_URL = "https://findacrib.com/"
+
+# Per-family cohort quotas. /building/ dominates the corpus and gets the largest
+# share, but not a proportional one: at 250 pages its indexed rate carries a
+# ~±6pp 95% interval, which is far more precision than any decision here needs,
+# and the remaining slots buy the first measurement this site has ever had of
+# whether the hub and guide tiers are indexed at all. Those tiers have never
+# earned a single impression across 224 pages of serving history, and that fact
+# has two completely different explanations — not indexed, or indexed and
+# outranked — which imply opposite next moves.
+COHORT = {
+    "building": 250,
+    "neighborhood": 40,
+    "zip": 40,
+    "dc": 20,
+    "la": 20,
+    "sf": 20,
+    "available": 15,
+    "guide": 10,
+    "borough": 10,
+    "section8": 10,
+    "brief": 10,
+    "(root)": 10,
+}
+COHORT_TOTAL = sum(COHORT.values())
+
+# Any published family not named above still gets sampled, at a token rate. The
+# engine adds page families over time — a technique ships a new prefix and the
+# sampler would otherwise be blind to it until somebody remembered to edit this
+# dict, which is exactly the kind of silent gap this module exists to close.
+DEFAULT_QUOTA = 5
+
+# 2,000/day and 600/min are the per-property quotas. 100 keeps a wide margin for
+# anything else that ever wants the API, refreshes the whole cohort in ~5 days,
+# and costs about two minutes of wall clock at the pace set below.
+DAILY_BUDGET = int(os.environ.get("GROWTH_INDEX_BUDGET", "100"))
+PACE_SECONDS = 0.4        # ~150/min against a 600/min ceiling
+
+# Google's coverageState strings are prose and have changed wording before, so
+# match on the substring that carries the meaning rather than on equality.
+_STATE_BUCKETS = (
+    ("indexed", ("submitted and indexed", "indexed, not submitted")),
+    ("crawled_not_indexed", ("crawled - currently not indexed",
+                             "crawled — currently not indexed")),
+    ("discovered_not_indexed", ("discovered - currently not indexed",
+                                "discovered — currently not indexed")),
+    ("duplicate", ("duplicate", "alternate page")),
+    ("excluded_noindex", ("noindex",)),
+    ("blocked", ("blocked", "robots.txt")),
+    ("redirect", ("redirect",)),
+    ("not_found", ("not found", "404", "soft 404")),
+)
+
+
+def bucket(coverage_state):
+    """Collapse Google's prose coverage state into a stable, countable bucket."""
+    s = (coverage_state or "").strip().lower()
+    if not s:
+        return "unknown"
+    for name, needles in _STATE_BUCKETS:
+        if any(n in s for n in needles):
+            return name
+    return "other"
+
+
+def family(url):
+    """The page family a URL belongs to — its first path segment.
+
+    /dc/neighborhood/foo/ and /dc/ both read as "dc"; that is deliberate. The
+    three non-NYC cities are each one publishing project and are worth counting
+    as one, and separating a city's own landing page from its hubs would leave a
+    stratum of size one.
+    """
+    path = urllib.parse.urlparse(url).path or "/"
+    seg = path.strip("/").split("/")[0]
+    return seg or "(root)"
+
+
+# --------------------------------------------------------------- the sitemaps
+
+_LOC = re.compile(r"<loc>\s*([^<\s]+)\s*</loc>")
+
+
+def sitemap_urls(docroot):
+    """Every URL the site has told Google about, read from the docroot sitemaps.
+
+    The sitemap index is the right source rather than a filesystem walk: it is
+    exactly the set Google was asked to crawl, it already includes the daily
+    growth engine's own pages (sitemap-daily.xml), and it excludes anything in
+    the docroot that is not a published page — the app bundle, the data blobs,
+    the scraper's working files.
+    """
+    index = os.path.join(docroot, "sitemap.xml")
+    try:
+        with open(index) as f:
+            shards = _LOC.findall(f.read())
+    except OSError:
+        return []
+    out, seen = [], set()
+    for shard in shards:
+        name = os.path.basename(urllib.parse.urlparse(shard).path)
+        # Only ever open a file inside the docroot: the sitemap index is
+        # generated, but it is also web-served and there is no reason for this
+        # to be able to read a path a <loc> chose.
+        if not re.fullmatch(r"sitemap-[A-Za-z0-9_-]+\.xml", name):
+            continue
+        try:
+            with open(os.path.join(docroot, name)) as f:
+                body = f.read()
+        except OSError:
+            continue
+        for url in _LOC.findall(body):
+            if url.startswith(SITE_URL.rstrip("/")) and url not in seen:
+                seen.add(url)
+                out.append(url)
+    return out
+
+
+# ------------------------------------------------------------------ the cohort
+
+def _load():
+    try:
+        with open(STATUS_PATH) as f:
+            doc = json.load(f)
+    except Exception:
+        doc = {}
+    doc.setdefault("cohort", {})
+    return doc
+
+
+def _save(doc):
+    tmp = STATUS_PATH + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(doc, f, indent=1, sort_keys=True)
+        f.write("\n")
+    os.replace(tmp, STATUS_PATH)
+
+
+def _rank(url):
+    return hashlib.sha1(url.encode("utf-8")).hexdigest()
+
+
+def reconcile(cohort, published):
+    """Drop cohort URLs that are no longer published, then top each family back
+    up to its quota. Returns (cohort, dropped, added).
+
+    Existing members are never evicted to make room for a lower-hashing
+    newcomer: the point of the cohort is that today's rate and last week's rate
+    describe the same pages. It only ever shrinks by de-publication.
+    """
+    live = set(published)
+    dropped = [u for u in cohort if u not in live]
+    for u in dropped:
+        cohort.pop(u, None)
+
+    have = {}
+    for u in cohort:
+        have[family(u)] = have.get(family(u), 0) + 1
+    by_family = {}
+    for u in published:
+        by_family.setdefault(family(u), []).append(u)
+
+    added = []
+    for fam in sorted(set(COHORT) | set(by_family)):
+        quota = COHORT.get(fam, DEFAULT_QUOTA)
+        need = quota - have.get(fam, 0)
+        if need <= 0:
+            continue
+        for u in sorted(by_family.get(fam, []), key=_rank):
+            if need <= 0:
+                break
+            if u not in cohort:
+                cohort[u] = {"family": fam}
+                added.append(u)
+                need -= 1
+    return cohort, dropped, added
+
+
+def _due(cohort, budget):
+    """The `budget` cohort URLs whose reading is oldest; never-read ones first."""
+    return sorted(cohort, key=lambda u: (cohort[u].get("checked") or "", _rank(u)))[:budget]
+
+
+# ------------------------------------------------------------------- the API
+
+def inspect(token, url, timeout=30):
+    """One URL Inspection call. Returns (record, error_string)."""
+    body = json.dumps({"inspectionUrl": url, "siteUrl": SITE_URL,
+                       "languageCode": "en-US"}).encode()
+    req = urllib.request.Request(
+        INSPECT_API, data=body,
+        headers={"Authorization": f"Bearer {token}",
+                 "Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            payload = json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        return None, f"HTTP {e.code}: {e.read().decode('utf-8', 'replace')[:200]}"
+    except Exception as e:                       # network, timeout, bad JSON
+        return None, f"{type(e).__name__}: {e}"
+    idx = ((payload.get("inspectionResult") or {}).get("indexStatusResult") or {})
+    state = idx.get("coverageState")
+    rec = {
+        "state": state,
+        "bucket": bucket(state),
+        "verdict": idx.get("verdict"),
+        "crawled": (idx.get("lastCrawlTime") or "")[:10] or None,
+        "fetch": idx.get("pageFetchState"),
+        "checked": ledger.today(),
+    }
+    # A Google-chosen canonical that is not the URL we submitted is the quiet
+    # failure mode for a large templated corpus — the page is "indexed" under
+    # somebody else's URL and will never serve under its own. Record it only
+    # when it actually differs, so the common case costs no bytes.
+    google_canonical = idx.get("googleCanonical")
+    if google_canonical and google_canonical.rstrip("/") != url.rstrip("/"):
+        rec["google_canonical"] = google_canonical
+    return rec, None
+
+
+# ------------------------------------------------------------------ summarise
+
+def summarise(cohort):
+    """Per-family and overall counts over whatever has been read so far."""
+    fams = {}
+    for url, rec in cohort.items():
+        fam = rec.get("family") or family(url)
+        f = fams.setdefault(fam, {"cohort": 0, "read": 0, "indexed": 0,
+                                  "buckets": {}, "wrong_canonical": 0})
+        f["cohort"] += 1
+        b = rec.get("bucket")
+        if not b:
+            continue
+        f["read"] += 1
+        f["buckets"][b] = f["buckets"].get(b, 0) + 1
+        if b == "indexed":
+            f["indexed"] += 1
+        if rec.get("google_canonical"):
+            f["wrong_canonical"] += 1
+    for f in fams.values():
+        f["indexed_pct"] = round(100.0 * f["indexed"] / f["read"], 1) if f["read"] else None
+    total = {"cohort": sum(f["cohort"] for f in fams.values()),
+             "read": sum(f["read"] for f in fams.values()),
+             "indexed": sum(f["indexed"] for f in fams.values()),
+             "wrong_canonical": sum(f["wrong_canonical"] for f in fams.values())}
+    total["indexed_pct"] = (round(100.0 * total["indexed"] / total["read"], 1)
+                            if total["read"] else None)
+    return {"total": total, "by_family": fams}
+
+
+# ---------------------------------------------------------------------- run
+
+def collect(docroot, budget=None):
+    """Inspect a slice of the cohort and fold the result into the ledger.
+
+    Never raises: a measurement job must not be the reason the night's other
+    measurements go unrecorded. Every exit path writes an explicit `ok` into the
+    last_run record — the 2026-07-28 lesson, where outreach.run() omitted `ok`
+    on success and the report announced a healthy job as "DID NOT RUN".
+    """
+    budget = DAILY_BUDGET if budget is None else budget
+    doc = _load()
+    cohort = doc["cohort"]
+
+    published = sitemap_urls(docroot)
+    if not published:
+        detail = (f"no sitemap URLs readable under {docroot} — cannot tell which "
+                  f"pages are published, so nothing was inspected")
+        ledger.write_last_run("indexstatus", {"ok": False, "detail": detail,
+                                              "inspected": 0})
+        return {"ok": False, "detail": detail, "inspected": 0}
+
+    cohort, dropped, added = reconcile(cohort, published)
+
+    try:
+        import seo_search_console as sc
+        token = sc.access_token(sc.load_key())
+    except SystemExit as e:                      # load_key() exits when unset
+        detail = f"no Search Console credentials: {e}"
+        ledger.write_last_run("indexstatus", {"ok": False, "detail": detail,
+                                              "inspected": 0})
+        return {"ok": False, "detail": detail, "inspected": 0}
+    except Exception as e:
+        detail = f"Search Console auth failed: {type(e).__name__}: {e}"
+        ledger.write_last_run("indexstatus", {"ok": False, "detail": detail,
+                                              "inspected": 0})
+        return {"ok": False, "detail": detail, "inspected": 0}
+
+    inspected, errors, first_error = 0, 0, None
+    for url in _due(cohort, budget):
+        rec, err = inspect(token, url)
+        if err:
+            errors += 1
+            first_error = first_error or f"{url}: {err}"
+            # 403 means the service account is not an owner or full user of the
+            # property — every subsequent call will fail the same way, and 100
+            # of them is a waste of two minutes and of the quota. 429 means the
+            # daily quota is already gone. Both are "stop now", not "retry".
+            if " 403" in err or " 429" in err:
+                break
+            if errors >= 10:
+                break
+            continue
+        prev = cohort.get(url) or {}
+        rec["family"] = prev.get("family") or family(url)
+        # Keep the first date this URL was seen indexed. "When did Google accept
+        # this page" is not recoverable afterwards and is the number that says
+        # how long acceptance takes on this corpus.
+        if rec["bucket"] == "indexed":
+            rec["first_indexed"] = prev.get("first_indexed") or ledger.today()
+        elif prev.get("first_indexed"):
+            rec["first_indexed"] = prev["first_indexed"]
+        cohort[url] = rec
+        inspected += 1
+        time.sleep(PACE_SECONDS)
+
+    summary = summarise(cohort)
+    doc["cohort"] = cohort
+    doc["summary"] = summary
+    doc["updated"] = ledger.today()
+    doc["published_urls"] = len(published)
+    _save(doc)
+
+    today = ledger.today()
+    tot = summary["total"]
+    # Only record when the cohort actually holds readings. A denied or dead API
+    # leaves read=0, and writing that into the series would put a hard zero on
+    # the day — a measurement failure rendered as "nothing is indexed", which is
+    # the same class of mistake as reporting a healthy job as "DID NOT RUN".
+    # An absent day is honest; a zero is a claim.
+    if tot["read"]:
+        for metric, value in (("index_cohort", tot["cohort"]),
+                              ("index_read", tot["read"]),
+                              ("index_indexed", tot["indexed"]),
+                              ("index_wrong_canonical", tot["wrong_canonical"]),
+                              ("index_pct", tot["indexed_pct"])):
+            ledger.record_result(today, "__site__", metric, value)
+        # The building corpus on its own, because it is 99% of the pages and the
+        # one whose answer decides whether to publish more of them or fewer.
+        bld = summary["by_family"].get("building") or {}
+        if bld.get("indexed_pct") is not None:
+            ledger.record_result(today, "__site__", "index_pct_building",
+                                 bld["indexed_pct"])
+
+    ok = inspected > 0 or not errors
+    out = {"ok": ok, "inspected": inspected, "errors": errors,
+           "cohort": tot["cohort"], "read": tot["read"],
+           "indexed_pct": tot["indexed_pct"],
+           "published_urls": len(published),
+           "added": len(added), "dropped": len(dropped)}
+    if first_error:
+        out["detail"] = (f"{errors} inspection(s) failed, first: {first_error}"
+                         + ("" if " 403" not in first_error else
+                            " — the Search Console service account must be an "
+                            "owner or full user of the property to use the URL "
+                            "Inspection API; a restricted user gets 403."))
+    ledger.write_last_run("indexstatus", out)
+    return out

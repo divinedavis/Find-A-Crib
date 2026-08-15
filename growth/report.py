@@ -11,6 +11,7 @@ text part is the one a screen reader and a spam filter actually read.
 """
 import datetime
 import html as _html
+import json
 import os
 import statistics
 
@@ -104,6 +105,37 @@ def _last(metric):
     return s[-1][1] if s else None
 
 
+def _index_families(limit=8):
+    """Rows for the sampled index-coverage table: one page family per row.
+
+    Families with nothing read yet are dropped rather than shown as 0% — an
+    unread stratum is not a failing one, and on a cohort that refreshes over
+    several days there is always one.
+    """
+    try:
+        from . import indexstatus
+        with open(indexstatus.STATUS_PATH) as f:
+            fams = (json.load(f).get("summary") or {}).get("by_family") or {}
+    except Exception:
+        return []
+    rows = []
+    for name, f in sorted(fams.items(), key=lambda kv: -(kv[1].get("read") or 0)):
+        read = f.get("read") or 0
+        if not read:
+            continue
+        pct = f.get("indexed_pct")
+        worst = sorted(((v, k) for k, v in (f.get("buckets") or {}).items()
+                        if k != "indexed"), reverse=True)
+        rows.append([f"/{name}/" if name != "(root)" else "/",
+                     (f"{pct}%", "good" if (pct or 0) >= 70 else
+                      ("warn" if (pct or 0) >= 30 else "bad")),
+                     str(read),
+                     f"{worst[0][1]} ({worst[0][0]})" if worst else "—"])
+        if len(rows) >= limit:
+            break
+    return rows
+
+
 def _trend(metric, days=14):
     """(yesterday, 7-day median, arrow, tone). Tone is about direction, not
     politeness — a fall in traffic is red even on a report you wrote yourself."""
@@ -180,10 +212,14 @@ def build_blocks(run_log=None, review_out=None):
         serving = _last("gsc_serving_pages")
         if serving is not None:
             indexed_pct = _pct(serving, PUBLISHED_PAGES)
-            B.append({"type": "progress", "label": "Indexing",
+            B.append({"type": "progress", "label": "Search footprint",
                       "value": f"{_fmt(serving)} / ~{PUBLISHED_PAGES:,} pages",
-                      "sub": "pages that have earned an impression — this is the ceiling "
-                             "on everything else",
+                      # Renamed from "Indexing" on 2026-08-15. An impression
+                      # needs the page indexed AND somebody to have searched for
+                      # it, and on 47k single-address pages the second is the
+                      # binding constraint — so this was never the indexing
+                      # number it was labelled as. The real one is below.
+                      "sub": "pages that earned an impression — indexed *and* searched for",
                       "pct": indexed_pct, "tone": "bad" if indexed_pct < 5 else "info"})
             # That count on its own reads as a plateau when it is really a
             # rotation: on 2026-08-04 it held at 89 while nine URLs entered the
@@ -209,6 +245,35 @@ def build_blocks(run_log=None, review_out=None):
         # for days recorded before 2026-08-14, when the page series starts, so
         # the trend does not break at the changeover — `is None` and not `or`,
         # because a genuine zero is a fact, not a missing value.
+        # ---- the measured index rate, which is a different question from the
+        # footprint above and the one that decides whether to publish more pages
+        # or fewer. Sampled from the URL Inspection API — see growth/indexstatus.py.
+        _read, _pct_ix = _last("index_read"), _last("index_pct")
+        if _read and _pct_ix is not None:
+            B.append({"type": "progress", "label": "Indexed (sampled)",
+                      "value": f"{_pct_ix}% of {_fmt(_read)} inspected",
+                      "sub": "Google's own coverage state for a fixed stratified "
+                             "sample of published pages",
+                      "pct": _pct_ix,
+                      "tone": "bad" if _pct_ix < 30 else
+                              ("warn" if _pct_ix < 70 else "good")})
+            ix = _index_families()
+            if ix:
+                B.append({"type": "table",
+                          "cols": ["Page family", "Indexed", "Read", "Top non-indexed state"],
+                          "rows": ix})
+            _wrong = _last("index_wrong_canonical")
+            if _wrong:
+                B.append({"type": "note", "text":
+                          f"{_fmt(_wrong)} sampled pages are indexed under a Google-chosen "
+                          f"canonical that is not their own URL — those can never serve "
+                          f"under the address they were built for."})
+        ixrun = ledger.read_last_run().get("indexstatus") or {}
+        if ixrun.get("ok") is False:
+            B.append({"type": "callout", "tone": "warn",
+                      "heading": "Index sampling did not run",
+                      "body": str(ixrun.get("detail") or "unknown error")})
+
         _pc, _pi = _last("gsc_page_clicks"), _last("gsc_page_impressions")
         B.append({"type": "stats", "items": [
             (_fmt(_last("gsc_clicks") if _pc is None else _pc), "clicks, last 7d"),
@@ -255,8 +320,19 @@ def build_blocks(run_log=None, review_out=None):
                           f"runs nightly, so it has not completed since then and every "
                           f"build_seo.py change pushed since is still only in git. The daily "
                           f"growth build's own pages are unaffected — they deploy on a "
-                          f"separate rsync." + cause + " Needs a hand on the droplet; nothing "
-                          f"in the repo can restart it."})
+                          f"separate rsync." + cause +
+                          # Until 2026-08-14 this ended "nothing in the repo can
+                          # restart it", which stopped being true when
+                          # growth_run.sh got seo_watchdog(): the 05:40 build now
+                          # re-runs refresh_seo.sh itself whenever the corpus is
+                          # stale. So a corpus still frozen at this point is the
+                          # watchdog having failed, not the cron merely missing,
+                          # and the heartbeat says which.
+                          " growth_run.sh's watchdog re-runs scripts/refresh_seo.sh "
+                          "after the 05:40 build whenever the corpus is this old, so "
+                          "seeing this means the watchdog also failed or has not "
+                          "deployed — growth/cron_heartbeat.jsonl carries its "
+                          "seo_watchdog_finish rc."})
 
     # ---- the cheapest available rankings
     try:

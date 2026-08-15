@@ -275,6 +275,46 @@ before) instead of alphabetical neighbours. The ordering is deterministic
 because `seo_lastmod.json` only bumps `<lastmod>` when a page's HTML really
 changed, and a shuffled list would rewrite 47,165 lastmods every night.
 
+**"Indexed" and "earns impressions" are different numbers, and conflating them
+cost three weeks.** `gsc_serving_pages` counts distinct URLs that earned a
+Search Console impression in the window. Until 2026-08-15 every review, the
+daily report's "Indexing" bar and `searchconsole.py`'s own docstring read that as
+*how much of the corpus is indexed* — but an impression needs the page indexed
+**and** somebody to have typed a query it could answer, and on 47,165
+single-address pages the second condition is the binding one for almost every
+page. "63 of ~47,600 pages served" is equally consistent with 63 indexed pages
+and with 47,000 of them, and the two imply opposite next moves: consolidate the
+corpus, or stop publishing address pages and go where the search demand is.
+
+`growth/indexstatus.py` measures it directly. The Search Console **URL
+Inspection API** returns Google's own coverage state per URL ("Submitted and
+indexed", "Crawled – currently not indexed", "Discovered – currently not
+indexed", a Google-chosen canonical that is not ours, …). Its quota is 2,000
+URLs/day per property against ~47,600 pages, so it samples:
+
+* a **stable cohort** (~430 URLs) persisted in `growth/index_status.json`, so a
+  move in the indexed rate is Google changing its mind rather than a different
+  draw. Members leave only when they leave the sitemaps; top-ups are picked in
+  `sha1(url)` order so they do not depend on build order.
+* **stratified by page family**, because `/building/` is 99% of the corpus and
+  0% of the interesting question. Any family not named in `COHORT` still gets
+  `DEFAULT_QUOTA` slots, so a technique that ships a new URL prefix is sampled
+  without anyone remembering to edit the dict.
+* `GROWTH_INDEX_BUDGET` (default 100) inspections per night, oldest reading
+  first, so the whole cohort refreshes in ~4 days and every URL carries the date
+  its state was read.
+
+It runs inside `measure`, needs the same service-account key as the rest of
+Search Console, and never raises — a measurement job must not be why the night's
+other measurements go unrecorded. Every exit path writes an explicit `ok` into
+`last_run.indexstatus` (the 2026-07-28 lesson: `outreach.run()` omitted `ok` on
+success and the report announced a healthy job as "DID NOT RUN"). A `403` stops
+the run after one call rather than burning the quota — the URL Inspection API
+requires the service account to be an **owner or full user** of the property, and
+a restricted user gets `403` on every call. Set `GROWTH_INDEX_STATUS=0` to
+disable. The file holds public URLs and Google's public opinion of them, no PII,
+so it is tracked in git and the cloud review can read it.
+
 Everything is driven by a **ledger** (`growth/techniques.json`), so the ledger —
 not the code — decides what runs. Flipping a technique to `retired` stops it
 without a deploy, which is what lets the review loop prune autonomously.
@@ -286,6 +326,8 @@ without a deploy, which is what lets the review loop prune autonomously.
 | `growth/metrics.py` | Daily traffic / funnel / revenue, attributed per technique |
 | `growth/review.py` | Judges, retires, and de-duplicates techniques |
 | `growth/keywords.py` | The tracked query universe the search-share goal is measured against |
+| `growth/searchconsole.py` | Positions, serving pages and per-page impressions from Search Console |
+| `growth/indexstatus.py` | Google's own index coverage for a stable stratified sample of pages |
 | `growth/scout.py` | Researches and proposes NEW techniques (needs an Anthropic key) |
 | `growth/outreach.py` | Daily B2B prospect research + drafted outreach — **never sends** |
 | `growth/journal.py` | The decision journal: what was observed, concluded, changed, watched |
@@ -317,6 +359,18 @@ python3 growth_daily.py report                # print the daily report
 State (`techniques.json`, `keywords.json`, `results.jsonl`, `state.json`) lives
 on the droplet at `/root/dhcr-build/growth/` and is gitignored; `seed.py` and
 `keywords.py` hold the definitions that recreate it from scratch.
+
+**Edit a seeded technique's prose in `seed.py`, never in `techniques.json`.**
+`cmd_build` calls `seed.run()` first, and for every slug in `SEEDS` it copies
+`name`, `hypothesis`, `evidence`, `notes`, `prefixes` and `metric` from the seed
+over whatever the ledger holds — deliberately, so those definitions live in code
+and in review, but it means a hand-edit to any of those six fields in
+`techniques.json` survives exactly until the next 05:40 build and then vanishes
+with no error. (`status`, `verdict`, `revisit_on`, `activated` and the measured
+history are *not* touched, so `set_status` / `set_verdict` / `set_revisit` are
+safe to call directly.) This is the likeliest explanation for the 2026-08-12
+review whose journal entry claimed a ledger note its diff did not contain: the
+note was written, committed, and then overwritten by the next build.
 
 ## Traffic report
 

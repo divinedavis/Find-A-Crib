@@ -218,7 +218,17 @@ SEEDS = [
                "snapshots 2026-07-30..08-04: the daily count sat at 78-89 the whole time "
                "while distinct-pages-ever went 82 -> 142, i.e. newly-served pages displace "
                "old ones instead of adding to the total. _ever is the monotone one and the "
-               "one to steer by; it survives history eviction via a running dropped total."),
+               "one to steer by; it survives history eviction via a running dropped total. "
+               "2026-08-15: gsc_serving_pages is not an INDEXING number either, which this "
+               "note and searchconsole.py's docstring both said it was. An impression needs "
+               "the page indexed AND somebody to have searched for something it answers, and "
+               "on 47,165 single-address pages the second condition is what almost every "
+               "page fails — so '63 of ~47,600 served' is equally consistent with 63 indexed "
+               "pages and with 47,000, and those imply opposite next moves. "
+               "growth/indexstatus.py now asks the Search Console URL Inspection API for "
+               "Google's own coverage state on a stable stratified cohort of ~430 URLs, 100 "
+               "a night, and records index_pct / index_pct_building. Read gsc_serving_pages "
+               "as the search FOOTPRINT and index_pct as the indexing rate."),
     dict(slug="lifecycle_email", status="candidate", kind="lifecycle",
          name="Buyer follow-up sequence (Building Report)",
          prefixes=[], metric="mrr_usd",

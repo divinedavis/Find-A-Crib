@@ -133,6 +133,23 @@ def cmd_measure(args):
             f"tracked queries ranking, share {gsc['share_pct']}%")
     except Exception as e:
         log(f"  search console unavailable: {e}")
+    # Measured index coverage. gsc_serving_pages counts pages that earned an
+    # impression, which needs the page to be indexed AND someone to have
+    # searched for it; on 47k address pages the second half is the binding
+    # constraint, so that number has never actually said whether the corpus is
+    # indexed. This asks Google directly, for a stable stratified sample.
+    if os.environ.get("GROWTH_INDEX_STATUS", "1") != "0":
+        try:
+            from growth import indexstatus
+            ix = indexstatus.collect(args.docroot)
+            if ix.get("ok"):
+                log(f"  index status: {ix['inspected']} inspected, "
+                    f"{ix['read']}/{ix['cohort']} cohort read, "
+                    f"{ix['indexed_pct']}% indexed")
+            else:
+                log(f"  index status unavailable: {ix.get('detail')}")
+        except Exception as e:
+            log(f"  index status failed: {type(e).__name__}: {e}")
     try:
         _, changed = keywords.check_coverage(args.docroot)
         s = keywords.summary()

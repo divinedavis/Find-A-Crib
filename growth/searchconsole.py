@@ -9,9 +9,14 @@ Three things get pulled daily:
 
   positions     the actual rank for every tracked query in keywords.json, so
                 share = (queries ranking in the top 10) / (queries tracked)
-  serving pages how many distinct URLs earned an impression — the only honest
-                read on whether the 47k-page corpus is actually indexed, which
-                is the bottleneck the whole engine was built around
+  serving pages how many distinct URLs earned an impression. NOT an indexing
+                number, though this docstring called it one until 2026-08-15 and
+                three weeks of reviews took it at its word: an impression needs
+                the page indexed AND somebody to have searched for something it
+                answers, and on 47k single-address pages the second condition is
+                what almost every page fails. Read it as the site's search
+                *footprint*. growth/indexstatus.py asks Google for the actual
+                index state of a sampled cohort; that is the indexing number.
   page-2 wins   queries at rank 11-20, the cheapest rankings available
   per-page      which URLs earn impressions, and for which queries — written to
                 growth/gsc_pages.json

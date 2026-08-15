@@ -19,6 +19,12 @@
 -- Applied to production 2026-08-15. Runtime after the change is ~0.4s for both
 -- the 'month' and 'all' ranges, so the added window functions cost nothing worth
 -- optimising at current data volumes.
+--
+-- 2026-08-15 follow-up: added `mean_all_secs`. See its comment in the payload --
+-- it is the only figure that may be compared to a published "average session
+-- duration", because the headline median excludes the single-hit zeros that
+-- such averages include.
+
 CREATE OR REPLACE FUNCTION public.dashboard_metrics(p_range text DEFAULT 'all'::text)
  RETURNS jsonb
  LANGUAGE sql
@@ -261,6 +267,13 @@ select jsonb_build_object(
     'p90_secs',        (select round(percentile_cont(0.90) within group (order by secs))
                           from sess where n > 1),
     'median_hits',     (select percentile_cont(0.5) within group (order by n) from sess),
+    -- The GA-comparable figure, and the ONLY one that may be held against a
+    -- published "average session duration": mean over EVERY session with the
+    -- single-hit ones counted as the zeros they measure. That is precisely how
+    -- GA computes it. The tile's headline median excludes those zeros, so it
+    -- reads lower and must never be compared to an industry average directly —
+    -- doing so understates the site by about a minute.
+    'mean_all_secs',   (select round(avg(secs)) from sess),
     -- The median excludes single-hit sessions; say so in the payload so a
     -- future reader of this JSON cannot mistake it for all sessions.
     'basis', 'sessions with 2+ hits; 30-minute gap; last page unmeasured'

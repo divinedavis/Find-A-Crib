@@ -567,6 +567,25 @@
   function pct(a,b){ return b>0 ? (100*a/b) : 0; }
   function pctS(a,b,d){ return (pct(a,b)).toFixed(d==null?0:d)+'%'; }
   function money(x){ return '$'+Math.round(x).toLocaleString('en-US'); }
+  // Published average session duration for real estate. Both sources that carry
+  // this figure trace back to one dataset, so treat it as a single reading:
+  //
+  //   https://firstpagesage.com/reports/average-session-duration-by-industry/
+  //   https://www.hikeseo.co/learn/reporting/average-session-duration-by-industry  (cites the above)
+  //
+  // CRITICAL — it is an AVERAGE over every session, which is how GA computes
+  // "average session duration": bounced single-page sessions are in the pool at
+  // zero. The tile's headline is a MEDIAN over engaged sessions only, so it is
+  // structurally lower and comparing the two directly understates this site by
+  // roughly a minute. Only `dwell.mean_all_secs` is like-for-like, and that is
+  // the figure the verdict below is computed from.
+  //
+  // Weak evidence by benchmark standards: n=170 companies across 50+ industries,
+  // methodology unpublished, no median given and no spread. A single reading to
+  // sit near, not a target — which is why the verdict has a wide "in line" band
+  // rather than pretending a 10-second difference means anything.
+  var DWELL_BENCHMARK = { secs: 232, label: 'real estate', tolerance: 0.15 };
+
   // Durations read as time, never as a decimal: "3m 14s", not "194s" or "3.2m".
   function fmtDur(s){
     s = Math.max(0, Math.round(n(s)));
@@ -1046,17 +1065,42 @@
     // beside it instead of being averaged in. The true figure is higher than
     // this; the tile shows a floor, and says so on hover.
     var D=d.dwell||{};
-    var dwellV='—', dwellSub='', dwellTitle='';
+    var dwellV='—', dwellOwn='', dwellBench='', dwellTitle='';
     if(D.median_secs != null){
       dwellV = fmtDur(D.median_secs);
-      dwellSub = (D.single_hit_pct != null ? D.single_hit_pct+'% single-page (unmeasurable)' : '');
-      if(D.p75_secs != null) dwellSub += (dwellSub?' · ':'')+'p75 '+fmtDur(D.p75_secs);
-      dwellTitle = 'Median over '+comma(D.engaged)+' of '+comma(D.sessions)+' sessions — the ones with 2+ '+
-        'recorded hits. A session is one visitor’s activity split wherever the gap exceeds 30 minutes. '+
-        'Nothing is logged when a page closes, so the final page of every session counts as zero and a '+
-        'single-page visit measures 0s no matter how long it lasted; those are excluded rather than averaged '+
-        'in, which would drag the median to 0. Read this as a floor, not the true figure. '+
+      // Above the hairline, our own numbers. The GA-comparable mean earns its
+      // place here because it is the only figure the industry average can
+      // legitimately be held against — the headline median cannot.
+      if(D.mean_all_secs != null){
+        dwellOwn = '<b>'+fmtDur(D.mean_all_secs)+'</b> average, counting single-page visits';
+      }
+      // Below the hairline, somebody else's number and the verdict drawn from it.
+      // Under 30 sessions the average swings on one long visit — "today" ranked
+      // itself below average on six sessions — so state the benchmark without
+      // passing judgement on a sample that cannot carry one.
+      if(D.mean_all_secs != null && n(D.sessions) < 30){
+        dwellBench = 'Industry average <b>'+fmtDur(DWELL_BENCHMARK.secs)+'</b> for '+DWELL_BENCHMARK.label+
+                     ' · too few sessions to compare';
+      } else if(D.mean_all_secs != null){
+        var bs=DWELL_BENCHMARK.secs, tol=bs*DWELL_BENCHMARK.tolerance, mine=n(D.mean_all_secs), bverdict, bcls;
+        if(mine > bs+tol)      { bverdict='above average'; bcls='bn-hi';  }
+        else if(mine < bs-tol) { bverdict='below average'; bcls='bn-low'; }
+        else                   { bverdict='in line';       bcls='bn-mid'; }
+        dwellBench = 'Industry average <b>'+fmtDur(bs)+'</b> for '+DWELL_BENCHMARK.label+
+                     ' <span class="bn '+bcls+'">'+bverdict+'</span>';
+      }
+      dwellTitle = 'Headline is the median over '+comma(D.engaged)+' of '+comma(D.sessions)+' sessions — the '+
+        'ones with 2+ recorded hits. A session is one visitor’s activity split wherever the gap exceeds 30 '+
+        'minutes. Nothing is logged when a page closes, so the final page of every session counts as zero and '+
+        'a single-page visit measures 0s however long it really lasted ('+
+        (D.single_hit_pct != null ? D.single_hit_pct+'% of sessions' : 'some sessions')+'); excluding those '+
+        'keeps the median from collapsing to 0, so read it as a floor. '+
+        (D.p75_secs != null ? 'p75 '+fmtDur(D.p75_secs)+'. ' : '')+
         (D.p90_secs != null ? 'p90 '+fmtDur(D.p90_secs)+'. ' : '')+
+        'The industry figure is an AVERAGE over all sessions including bounces, which is how GA measures it, '+
+        'so it is compared against our average on the same basis rather than against the median — comparing '+
+        'the median to it would understate this site by about a minute. That benchmark is one reading from '+
+        '170 companies with unpublished methodology, hence the wide "in line" band. '+
         'Only a client-side unload or heartbeat ping would measure the last page.';
     }
 
@@ -1065,7 +1109,7 @@
       {ic:'👣',v:comma(T.visitors),l:'Unique visitors'},
       {ic:'📈',v:comma(T.visits),l:'Total visits'},
       {ic:'🔁',v:comma(T.returning)+' · '+pctS(T.returning,T.visitors),l:'Returning visitors'},
-      {ic:'⏱️',v:dwellV,l:'Median time on site · engaged sessions',own:dwellSub,title:dwellTitle},
+      {ic:'⏱️',v:dwellV,l:'Median time on site · engaged sessions',own:dwellOwn,bench:dwellBench,title:dwellTitle},
       {ic:'✅',v:comma(T.accounts),l:'Sign-ups'},
       {ic:'🎯',v:convRate.toFixed(1)+'%',l:'Sign-up conversion'},
       {ic:'💳',v:money(n(S.mrr)),l:comma(S.paying)+' paying'+(n(S.comped)?' · '+comma(S.comped)+' comped':'')+' · MRR',accent:true}
@@ -1073,7 +1117,8 @@
     el('tiles').innerHTML=tiles.map(function(t){
       return '<div class="tile'+(t.accent?' accent':'')+'"'+(t.title?' title="'+esc(t.title)+'"':'')+'>'+
         '<div class="t-ico">'+t.ic+'</div><div class="t-val">'+t.v+'</div><div class="t-lbl">'+t.l+'</div>'+
-        (t.own?'<div class="t-own">'+t.own+'</div>':'')+'</div>';
+        (t.own?'<div class="t-own">'+t.own+'</div>':'')+
+        (t.bench?'<div class="t-bench">'+t.bench+'</div>':'')+'</div>';
     }).join('');
 
     renderDonut(R);

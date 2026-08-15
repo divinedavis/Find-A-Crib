@@ -146,6 +146,8 @@
   .b-comp{background:#eaf7ef;color:#1a8f57}
   .b-ref{background:#e6f7f4;color:#0f766e}
   .b-free{background:#f4f4f6;color:#9a99a5}
+  .b-mobile{background:#fdf0e6;color:#b4560f}
+  .b-desktop{background:#eef1f6;color:#4a5875}
   /* Badge tints are two-colour pairs, not theme tokens, so they get their own
      dark set — the light fills wash out to near-white against a dark row. */
   html[data-theme="dark"] .b-google{background:#152b52;color:#8fb6ff}
@@ -154,6 +156,8 @@
   html[data-theme="dark"] .b-comp{background:#123020;color:#5fd39a}
   html[data-theme="dark"] .b-ref{background:#0e2e2a;color:#4fd0be}
   html[data-theme="dark"] .b-free{background:#22222b;color:#7b7a8c}
+  html[data-theme="dark"] .b-mobile{background:#3a2312;color:#f0a86a}
+  html[data-theme="dark"] .b-desktop{background:#23283a;color:#9fb0d0}
   .empty{padding:40px;text-align:center;color:var(--muted);font-size:14px}
   .foot{text-align:center;font-size:12px;color:var(--muted);margin-top:22px}
 
@@ -231,7 +235,7 @@
           <h1>Users</h1>
           <div class="sub">Everyone who created an account. Newest first.</div>
         </div>
-        <input class="usearch" id="usearch" type="text" placeholder="Search name, email, or area…">
+        <input class="usearch" id="usearch" type="text" placeholder="Search name, email, area, or device…">
       </div>
 
       <div class="chips" id="chips"></div>
@@ -241,7 +245,7 @@
           <table class="utable">
             <thead><tr>
               <th>Name</th><th>Email</th><th>Sign-in</th><th>Plan</th>
-              <th>Searching in</th><th>Saved</th><th>Links sent</th><th>Joined</th><th>Last seen</th>
+              <th>Searching in</th><th>Saved</th><th>Links sent</th><th>Joined</th><th>Last seen</th><th>Last device</th>
             </tr></thead>
             <tbody id="urows"></tbody>
           </table>
@@ -393,6 +397,7 @@
         paying=USERS.filter(function(u){return u.plan==='plus';}).length,
         comped=USERS.filter(function(u){return u.plan==='comp';}).length,
         savers=USERS.filter(function(u){return (u.saves||0)>0;}).length,
+        mobile=USERS.filter(function(u){return u.device==='mobile'||u.device==='tablet';}).length,
         returned=USERS.filter(didReturn).length;
     el('chips').innerHTML =
       '<div class="chip"><b>'+total+'</b><span>total users</span></div>'+
@@ -400,7 +405,8 @@
       '<div class="chip"><b>'+paying+'</b><span>paying Plus</span></div>'+
       '<div class="chip"><b>'+comped+'</b><span>comped</span></div>'+
       '<div class="chip"><b>'+returned+'</b><span>came back after signup</span></div>'+
-      '<div class="chip"><b>'+savers+'</b><span>have saved a building</span></div>';
+      '<div class="chip"><b>'+savers+'</b><span>have saved a building</span></div>'+
+      '<div class="chip"><b>'+mobile+'</b><span>last on mobile</span></div>';
   }
 
   function planBadge(p){
@@ -412,6 +418,15 @@
   function provBadge(p){
     return p==='google' ? '<span class="badge b-google">Google</span>' : '<span class="badge b-email">Email</span>';
   }
+  // Device of the newest auth session, not of the last visit — see the
+  // dashboard_users() migration. A user with no live session reads "—" rather
+  // than being guessed at.
+  function deviceBadge(d){
+    if(d==='mobile')  return '<span class="badge b-mobile">📱 Mobile</span>';
+    if(d==='tablet')  return '<span class="badge b-mobile">📱 Tablet</span>';
+    if(d==='desktop') return '<span class="badge b-desktop">🖥 Desktop</span>';
+    return '<span class="u-muted">—</span>';
+  }
 
   function renderRows(q){
     q = (q||'').trim().toLowerCase();
@@ -420,7 +435,8 @@
       var area = BORO[u.area_code] || '';
       return (u.name||'').toLowerCase().indexOf(q)>=0
           || (u.email||'').toLowerCase().indexOf(q)>=0
-          || area.toLowerCase().indexOf(q)>=0;
+          || area.toLowerCase().indexOf(q)>=0
+          || (u.device||'').indexOf(q)>=0;
     });
     el('empty').classList.toggle('hidden', rows.length>0);
     el('urows').innerHTML = rows.map(function(u){
@@ -435,6 +451,7 @@
         '<td>'+(u.shares ? u.shares : '<span class="u-muted">0</span>')+'</td>'+
         '<td>'+fdate(u.created_at)+'</td>'+
         '<td class="'+(didReturn(u)?'u-returned':'u-muted')+'">'+fdate(u.last_seen)+(didReturn(u)?' ↩':'')+'</td>'+
+        '<td>'+deviceBadge(u.device)+'</td>'+
       '</tr>';
     }).join('');
   }

@@ -215,6 +215,17 @@
   .tile .t-ico{width:30px;height:30px;border-radius:9px;background:var(--purple-soft);display:flex;align-items:center;justify-content:center;margin-bottom:11px;font-size:15px}
   .tile .t-val{font-size:23px;font-weight:700;letter-spacing:-.5px;line-height:1.1}
   .tile .t-lbl{font-size:12px;color:var(--ink2);margin-top:3px}
+  /* Benchmark footer on the call-conversion tile: a hairline separates it from
+     the tile's own numbers so a third party's figure never reads as NEMO's. */
+  .tile .t-bench{font-size:11px;color:var(--ink2);margin-top:9px;padding-top:8px;border-top:1px solid var(--border);line-height:1.45}
+  .tile .t-bench b{color:var(--ink)}
+  .bn{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;margin-left:2px;white-space:nowrap}
+  .bn-low{background:#fdecec;color:#c0342c}
+  .bn-mid{background:#fdf4e3;color:#a76a06}
+  .bn-hi{background:#e9f7ef;color:#137a4a}
+  html[data-theme="dark"] .bn-low{background:#3a1b1b;color:#f38f88}
+  html[data-theme="dark"] .bn-mid{background:#392c11;color:#e5b45c}
+  html[data-theme="dark"] .bn-hi{background:#12301f;color:#5fd39a}
   .tile.accent{background:linear-gradient(150deg,#6d5ce7,#8a5cf0);border:none;color:#fff}
   .tile.accent .t-ico{background:rgba(255,255,255,.18)}
   .tile.accent .t-lbl{color:rgba(255,255,255,.82)}
@@ -1363,6 +1374,39 @@
       ? 'Call conversion · counting from ' + (CV.measured_since||'today')
       : 'Call conversion · '+comma(CV.taps)+' of '+comma(CV.visitors)+' tapped to call';
 
+    // How Eric stacks up. The published contractor benchmarks count a call OR a
+    // form fill, so the headline tap-only rate is not the number to hold against
+    // them — contact_pct (taps + bookings over the same window) is. Show that
+    // one here, say plainly that it includes form fills, and never print the
+    // industry band next to the tap-only figure.
+    //
+    // Below ~30 measured visitors the rate is noise — "today" can be 0 of 2,
+    // which would paint a red "below median" verdict onto a sample that cannot
+    // support one. Say the sample is too small instead of ranking Eric on it.
+    var BENCH_MIN_VISITORS = 30;
+    function bandN(x){ return (Math.round(x*10)%10===0) ? String(Math.round(x)) : x.toFixed(1); }
+    var cvBench = '';
+    if(CV.benchmark && CV.contact_pct != null && n(CV.visitors) < BENCH_MIN_VISITORS){
+      cvBench = 'Too few visitors yet to compare against the '+bandN(CV.benchmark.low)+'–'+
+                bandN(CV.benchmark.high)+'% industry median';
+    } else if(CV.benchmark && CV.contact_pct != null){
+      var B=CV.benchmark, cp=CV.contact_pct, verdict, cls;
+      if(cp < B.low)                 { verdict='below median';  cls='bn-low'; }
+      else if(cp <= B.high)          { verdict='median band';   cls='bn-mid'; }
+      else if(cp < B.top_quartile)   { verdict='above median';  cls='bn-mid'; }
+      else                           { verdict='top quartile';  cls='bn-hi';  }
+      cvBench = '<b>'+cp.toFixed(1)+'%</b> counting form fills, vs <b>'+bandN(B.low)+'–'+bandN(B.high)+'%</b> '+
+                'median for '+B.label+' <span class="bn '+cls+'">'+verdict+'</span>';
+    }
+    var cvTitle = CV.benchmark
+      ? ('Industry benchmarks count a tracked contact — a call OR a form fill — so they are compared against '+
+         'taps plus bookings ('+comma(CV.contacts||0)+' of '+comma(CV.visitors||0)+'), not against the tap-only '+
+         'headline. Median contractor site: '+bandN(CV.benchmark.low)+'–'+bandN(CV.benchmark.high)+'%. '+
+         CV.benchmark.trade_label+' specifically: '+bandN(CV.benchmark.trade_low)+'–'+bandN(CV.benchmark.trade_high)+'%. '+
+         'Top quartile: '+bandN(CV.benchmark.top_quartile)+'%+. Third-party agency figures, so read them as a band to '+
+         'sit inside rather than an exact target.')
+      : '';
+
     // Tiles follow the range picker: taps come from the ranged totals, phone
     // leads from the ranged leads window ("all" uses the all-time counter,
     // which reaches further back than the log-derived period fields).
@@ -1373,14 +1417,16 @@
       {ic:'👣',v:comma(T.visitors),l:'Unique visitors'},
       {ic:'📄',v:comma(T.views),l:'Page views'},
       {ic:'🔎',v:comma(earned)+(chTotal?' · '+pctS(earned,chTotal):''),l:'Found you (search/maps/AI)'},
-      {ic:'📲',v:cv,l:cvLabel},
+      {ic:'📲',v:cv,l:cvLabel,bench:cvBench,title:cvTitle},
       {ic:'👆',v:comma(T.call_taps),l:'Tapped to call · '+rw},
       {ic:'☎️',v:comma(rangeKey==='all'?L.phone_leads_all_time:L.period_phone),l:'Phone leads · '+rw},
       {ic:'🎯',v:(share==null?'—':share.toFixed(1)+'%'),
        l:'Top-3 rank share · goal '+target+'%',accent:true}
     ];
     el('tiles').innerHTML=tiles.map(function(t){
-      return '<div class="tile'+(t.accent?' accent':'')+'"><div class="t-ico">'+t.ic+'</div><div class="t-val">'+t.v+'</div><div class="t-lbl">'+t.l+'</div></div>';
+      return '<div class="tile'+(t.accent?' accent':'')+'"'+(t.title?' title="'+esc(t.title)+'"':'')+'>'+
+        '<div class="t-ico">'+t.ic+'</div><div class="t-val">'+t.v+'</div><div class="t-lbl">'+t.l+'</div>'+
+        (t.bench?'<div class="t-bench">'+t.bench+'</div>':'')+'</div>';
     }).join('');
 
     var items=NEMO_CH.map(function(m){ return {name:m.name,hex:m.hex,val:n(ch[m.k])}; });

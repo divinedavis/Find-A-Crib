@@ -112,6 +112,34 @@ CHANNELS = [
     ("internal", "Internal / same-site", "#9a99a5"),   # derived, see build()
 ]
 
+# How Eric stacks up against other contractors. Published home-services
+# benchmarks converge on the same shape: the median contractor site turns 2-4%
+# of visitors into a tracked contact, above 6% is the top quartile, and above
+# 10% is roughly the top 6%. Exterior trades (roofing/gutters) sit at 4-8%,
+# which is the band that actually describes NEMO's trade, so it is the one the
+# tile compares against.
+#
+#   https://pipelineon.com/blog/contractor-website-conversion-rate/
+#   https://www.ghostrep.ai/blog/roofing-website-conversion-rate
+#   https://www.webfx.com/blog/home-services/home-services-marketing-benchmarks/
+#
+# CRITICAL — read `counts` before moving this number anywhere else in the UI.
+# Every published rate above counts a *tracked contact*: a call OR a form fill.
+# The tile's headline (`pct`) counts dialer taps alone, so it is not comparable
+# to these and must never be shown against them without the combined
+# `contact_pct` beside it. These are third-party marketing-agency figures, not
+# a census — treat them as a band to sit inside, not a target to hit exactly.
+CALL_CONVERSION_BENCHMARK = {
+    "low": 2.0,          # median contractor site, all trades
+    "high": 4.0,
+    "trade_low": 4.0,    # roofing / exterior specifically
+    "trade_high": 8.0,
+    "top_quartile": 6.0,
+    "counts": "calls + form fills",
+    "label": "all contractors",
+    "trade_label": "roofing / exterior",
+}
+
 
 # ---------------------------------------------------------------- ledger read
 def _daily_series():
@@ -355,6 +383,11 @@ def build(days=14, rng="all", fresh_calls=True):
         tap_days.append(today_key)
     measured_visitors = (sum(_n(hist[d].get("visitors")) for d in tap_days if d != today_key)
                          + (_n(live.get("visitors")) if today_key in tap_days else 0))
+    # Bookings taken over the SAME days the taps were measured, so the combined
+    # rate below divides two things counted over one window.
+    measured_bookings = (sum(_n(hist[d].get("bookings")) for d in tap_days if d != today_key)
+                         + (_n(live.get("bookings")) if today_key in tap_days else 0))
+    measured_contacts = totals["call_taps"] + measured_bookings
     totals["call_conversion"] = {
         "taps": totals["call_taps"],
         # Rate against visitors in the measured window only — dividing new taps
@@ -363,6 +396,17 @@ def build(days=14, rng="all", fresh_calls=True):
         "pct": round(100.0 * totals["call_taps"] / measured_visitors, 1) if measured_visitors else None,
         "measured_since": tap_days[0] if tap_days else None,
         "today_taps": _n(live.get("call_taps")),
+        # Every way a visitor can reach Eric from the site: dialer taps plus
+        # booking-form submissions. This is the number the industry benchmark is
+        # actually comparable to (see BENCHMARK), because published contractor
+        # conversion rates count calls AND form fills, while the tile's headline
+        # counts taps only. Comparing 0.7% against 2-4% without this would tell
+        # Eric he is four times worse than he is.
+        "bookings": measured_bookings,
+        "contacts": measured_contacts,
+        "contact_pct": (round(100.0 * measured_contacts / measured_visitors, 1)
+                        if measured_visitors else None),
+        "benchmark": CALL_CONVERSION_BENCHMARK,
     }
 
     channels = {}

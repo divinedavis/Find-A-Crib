@@ -215,8 +215,11 @@
   .tile .t-ico{width:30px;height:30px;border-radius:9px;background:var(--purple-soft);display:flex;align-items:center;justify-content:center;margin-bottom:11px;font-size:15px}
   .tile .t-val{font-size:23px;font-weight:700;letter-spacing:-.5px;line-height:1.1}
   .tile .t-lbl{font-size:12px;color:var(--ink2);margin-top:3px}
-  /* Benchmark footer on the call-conversion tile: a hairline separates it from
-     the tile's own numbers so a third party's figure never reads as NEMO's. */
+  /* The hairline divides NEMO's numbers from the outside world's: everything
+     above it is Eric's own measured data, everything below it is a third-party
+     benchmark. The combined call+form rate is his, so it sits above. */
+  .tile .t-own{font-size:11px;color:var(--ink2);margin-top:4px;line-height:1.45}
+  .tile .t-own b{color:var(--ink)}
   .tile .t-bench{font-size:11px;color:var(--ink2);margin-top:9px;padding-top:8px;border-top:1px solid var(--border);line-height:1.45}
   .tile .t-bench b{color:var(--ink)}
   .bn{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;margin-left:2px;white-space:nowrap}
@@ -1374,18 +1377,26 @@
       ? 'Call conversion · counting from ' + (CV.measured_since||'today')
       : 'Call conversion · '+comma(CV.taps)+' of '+comma(CV.visitors)+' tapped to call';
 
-    // How Eric stacks up. The published contractor benchmarks count a call OR a
-    // form fill, so the headline tap-only rate is not the number to hold against
-    // them — contact_pct (taps + bookings over the same window) is. Show that
-    // one here, say plainly that it includes form fills, and never print the
-    // industry band next to the tap-only figure.
+    // Two lines under the headline, split by what owns the number.
     //
-    // Below ~30 measured visitors the rate is noise — "today" can be 0 of 2,
-    // which would paint a red "below median" verdict onto a sample that cannot
-    // support one. Say the sample is too small instead of ranking Eric on it.
+    // ABOVE the hairline — Eric's own data. The published contractor benchmarks
+    // count a call OR a form fill, so the tap-only headline is not the figure to
+    // hold against them; contact_pct (taps + bookings over the same window) is.
+    // It is measured from his site, so it belongs with his numbers.
+    //
+    // BELOW the hairline — the third-party band, and the verdict, which is the
+    // only part that is somebody else's claim.
+    //
+    // Below ~30 measured visitors the comparison is noise — "today" can be 0 of
+    // 2, which would paint a red "below median" verdict onto a sample that
+    // cannot support one. Suppress the ranking, keep his own rate.
     var BENCH_MIN_VISITORS = 30;
     function bandN(x){ return (Math.round(x*10)%10===0) ? String(Math.round(x)) : x.toFixed(1); }
-    var cvBench = '';
+    var cvOwn = '', cvBench = '';
+    if(CV.contact_pct != null){
+      cvOwn = '<b>'+CV.contact_pct.toFixed(1)+'%</b> with form fills · '+
+              comma(CV.contacts)+' of '+comma(CV.visitors)+' reached you';
+    }
     if(CV.benchmark && CV.contact_pct != null && n(CV.visitors) < BENCH_MIN_VISITORS){
       cvBench = 'Too few visitors yet to compare against the '+bandN(CV.benchmark.low)+'–'+
                 bandN(CV.benchmark.high)+'% industry median';
@@ -1395,8 +1406,8 @@
       else if(cp <= B.high)          { verdict='median band';   cls='bn-mid'; }
       else if(cp < B.top_quartile)   { verdict='above median';  cls='bn-mid'; }
       else                           { verdict='top quartile';  cls='bn-hi';  }
-      cvBench = '<b>'+cp.toFixed(1)+'%</b> counting form fills, vs <b>'+bandN(B.low)+'–'+bandN(B.high)+'%</b> '+
-                'median for '+B.label+' <span class="bn '+cls+'">'+verdict+'</span>';
+      cvBench = 'Industry median <b>'+bandN(B.low)+'–'+bandN(B.high)+'%</b> for '+B.label+
+                ' <span class="bn '+cls+'">'+verdict+'</span>';
     }
     var cvTitle = CV.benchmark
       ? ('Industry benchmarks count a tracked contact — a call OR a form fill — so they are compared against '+
@@ -1417,7 +1428,7 @@
       {ic:'👣',v:comma(T.visitors),l:'Unique visitors'},
       {ic:'📄',v:comma(T.views),l:'Page views'},
       {ic:'🔎',v:comma(earned)+(chTotal?' · '+pctS(earned,chTotal):''),l:'Found you (search/maps/AI)'},
-      {ic:'📲',v:cv,l:cvLabel,bench:cvBench,title:cvTitle},
+      {ic:'📲',v:cv,l:cvLabel,own:cvOwn,bench:cvBench,title:cvTitle},
       {ic:'👆',v:comma(T.call_taps),l:'Tapped to call · '+rw},
       {ic:'☎️',v:comma(rangeKey==='all'?L.phone_leads_all_time:L.period_phone),l:'Phone leads · '+rw},
       {ic:'🎯',v:(share==null?'—':share.toFixed(1)+'%'),
@@ -1426,6 +1437,7 @@
     el('tiles').innerHTML=tiles.map(function(t){
       return '<div class="tile'+(t.accent?' accent':'')+'"'+(t.title?' title="'+esc(t.title)+'"':'')+'>'+
         '<div class="t-ico">'+t.ic+'</div><div class="t-val">'+t.v+'</div><div class="t-lbl">'+t.l+'</div>'+
+        (t.own?'<div class="t-own">'+t.own+'</div>':'')+
         (t.bench?'<div class="t-bench">'+t.bench+'</div>':'')+'</div>';
     }).join('');
 

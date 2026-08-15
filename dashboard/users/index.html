@@ -235,7 +235,7 @@
           <h1>Users</h1>
           <div class="sub">Everyone who created an account. Newest first.</div>
         </div>
-        <input class="usearch" id="usearch" type="text" placeholder="Search name, email, area, or device…">
+        <input class="usearch" id="usearch" type="text" placeholder="Search name, email, or device…">
       </div>
 
       <div class="chips" id="chips"></div>
@@ -245,7 +245,7 @@
           <table class="utable">
             <thead><tr>
               <th>Name</th><th>Email</th><th>Sign-in</th><th>Plan</th>
-              <th>Searching in</th><th>Saved</th><th>Links sent</th><th>Joined</th><th>Last seen</th><th>Last device</th>
+              <th>Saved</th><th>Links sent</th><th>Joined</th><th>Last seen</th><th>Last device</th>
             </tr></thead>
             <tbody id="urows"></tbody>
           </table>
@@ -266,8 +266,9 @@
   var sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
   var gate = document.getElementById('gate'), app = document.getElementById('app');
   var USERS = [];
-  var BORO = { M:'Manhattan', Bk:'Brooklyn', Q:'Queens', Bx:'Bronx', SI:'Staten Island',
-               '1':'Manhattan', '2':'Bronx', '3':'Brooklyn', '4':'Queens', '5':'Staten Island' };
+  // The "Searching in" column is gone, so the borough-code map that decoded it
+  // goes with it. dashboard_users() still returns `area_code` — nothing else
+  // reads it, but it costs nothing and is there if the column ever comes back.
   function el(id){ return document.getElementById(id); }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function fdate(s){ if(!s) return '—'; try{ return new Date(s).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }catch(e){ return '—'; } }
@@ -432,21 +433,17 @@
     q = (q||'').trim().toLowerCase();
     var rows = USERS.filter(function(u){
       if(!q) return true;
-      var area = BORO[u.area_code] || '';
       return (u.name||'').toLowerCase().indexOf(q)>=0
           || (u.email||'').toLowerCase().indexOf(q)>=0
-          || area.toLowerCase().indexOf(q)>=0
           || (u.device||'').indexOf(q)>=0;
     });
     el('empty').classList.toggle('hidden', rows.length>0);
     el('urows').innerHTML = rows.map(function(u){
-      var area = BORO[u.area_code];
       return '<tr>'+
         '<td class="u-name">'+esc(u.name)+'</td>'+
         '<td class="u-email">'+esc(u.email)+'</td>'+
         '<td>'+provBadge(u.provider)+'</td>'+
         '<td>'+planBadge(u.plan)+'</td>'+
-        '<td>'+(area ? esc(area) : '<span class="u-muted">—</span>')+'</td>'+
         '<td>'+(u.saves ? u.saves : '<span class="u-muted">0</span>')+'</td>'+
         '<td>'+(u.shares ? u.shares : '<span class="u-muted">0</span>')+'</td>'+
         '<td>'+fdate(u.created_at)+'</td>'+

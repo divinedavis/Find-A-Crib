@@ -1,34 +1,37 @@
 {
   "build": {
-    "at": "2026-08-15T05:40:17+00:00",
-    "changed_urls": 7,
-    "date": "2026-08-15",
+    "at": "2026-08-16T05:40:18+00:00",
+    "changed_urls": 0,
+    "date": "2026-08-16",
     "deployed": true,
-    "new_urls": 1,
+    "new_urls": 0,
     "seo_corpus": {
-      "days_old": 7,
-      "written": "2026-08-08"
+      "days_old": 1,
+      "written": "2026-08-15"
     },
-    "seo_pipeline": null,
+    "seo_pipeline": {
+      "at": "2026-08-15T05:41:25Z",
+      "changed_urls": 47208,
+      "corpus_pages": 47637,
+      "head": "unknown",
+      "hours_ago": 24.0,
+      "phase": "finish",
+      "rc": 0,
+      "started": "2026-08-15T05:40:17Z",
+      "state": "ran clean",
+      "step": "done"
+    },
     "techniques": {
       "city_guides": {
         "detail": "3 of 3 city guides live with their data caveat",
         "ok": true
       },
       "city_seo_expansion": {
-        "detail": "hub pages live: dc 103, la 112, sf 37 \u2014 3 pages published by the daily growth build, browse hubs included (dc 1, la 1, sf 1), because the SEO pipeline has not deployed them \u2014 the docroot's SEO corpus was last written 2026-08-08 (7d ago)",
+        "detail": "hub pages live: dc 103, la 112, sf 37 \u2014 3 pages published by the daily growth build, browse hubs included (dc 1, la 1, sf 1), because the SEO pipeline has not deployed them \u2014 the docroot's SEO corpus was last written 2026-08-15 (1d ago)",
         "ok": true
       },
       "crawl_paths": {
-        "detail": "12 of 12 published sections have an inbound internal link (62 docroot pages read) \u2014 single inbound source: /dc/neighborhood/ \u2190 dc browse hub, /la/zip/ \u2190 la browse hub, /sf/neighborhood/ \u2190 sf browse hub, /zip/ \u2190 building page",
-        "ok": true
-      },
-      "daily_brief": {
-        "detail": "brief 2026-08-15: 4 added, 1 removed",
-        "ok": true
-      },
-      "fresh_section8": {
-        "detail": "292 buildings across 5 boroughs",
+        "detail": "10 of 10 published sections have an inbound internal link (62 docroot pages read) \u2014 single inbound source: /dc/neighborhood/ \u2190 dc browse hub, /la/zip/ \u2190 la browse hub, /sf/neighborhood/ \u2190 sf browse hub, /zip/ \u2190 building page",
         "ok": true
       },
       "hub_direct_answers": {
@@ -36,7 +39,7 @@
         "ok": true
       },
       "indexnow": {
-        "detail": "submitted 8 URLs \u2192 HTTP 200",
+        "detail": "nothing new or changed today",
         "ok": true
       },
       "llms_txt": {

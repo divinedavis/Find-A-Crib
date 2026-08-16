@@ -127,6 +127,15 @@ _STATE_BUCKETS = (
     ("not_found", ("not found", "404", "soft 404")),
 )
 
+# The full vocabulary, in the order a human reads it: accepted first, then the
+# two states that are the whole diagnosis, then the exclusions. Recorded as a
+# dense daily series (zeros included) so a bucket that appears for the first
+# time does not read as a jump from "missing" and a bucket that empties out is
+# visibly zero rather than absent. `unknown` is Google returning no coverage
+# state at all; `other` is wording this module has not learned yet, and a rising
+# `other` is the signal that _STATE_BUCKETS needs a new needle.
+BUCKETS = tuple(name for name, _ in _STATE_BUCKETS) + ("other", "unknown")
+
 
 def bucket(coverage_state):
     """Collapse Google's prose coverage state into a stable, countable bucket."""
@@ -321,6 +330,21 @@ def summarise(cohort):
              "wrong_canonical": sum(f["wrong_canonical"] for f in fams.values())}
     total["indexed_pct"] = (round(100.0 * total["indexed"] / total["read"], 1)
                             if total["read"] else None)
+    # The site-wide state split. "3% indexed" says the corpus is not being
+    # accepted; it does not say why, and the two dominant failure states imply
+    # opposite work. "Discovered - currently not indexed" means Google knows the
+    # URL and has not spent a crawl on it — a crawl-budget/priority problem, so
+    # the move is to submit fewer, better-linked URLs. "Crawled - currently not
+    # indexed" means it fetched the page and declined it — a quality/duplication
+    # judgement, so the move is to consolidate or strengthen the pages
+    # themselves. Publishing more addresses is wrong under both, but everything
+    # after that diverges, so this split is recorded rather than left implicit
+    # in the per-family "top non-indexed state".
+    states = {b: 0 for b in BUCKETS}
+    for f in fams.values():
+        for b, n in (f.get("buckets") or {}).items():
+            states[b] = states.get(b, 0) + n
+    total["buckets"] = states
     return {"total": total, "by_family": fams}
 
 
@@ -411,6 +435,14 @@ def collect(docroot, budget=None):
                               ("index_wrong_canonical", tot["wrong_canonical"]),
                               ("index_pct", tot["indexed_pct"])):
             ledger.record_result(today, "__site__", metric, value)
+        # index_status.json holds only the LATEST state per URL, so it can never
+        # answer "did pages move from discovered to crawled to indexed after we
+        # changed something" — the question any fix to a 3%-indexed corpus has
+        # to be judged on. results.jsonl is the only append-only series here, so
+        # the split goes in it, one metric per bucket.
+        for b in BUCKETS:
+            ledger.record_result(today, "__site__", f"index_state_{b}",
+                                 tot["buckets"].get(b, 0))
         # The building corpus on its own, because it is 99% of the pages and the
         # one whose answer decides whether to publish more of them or fewer.
         bld = summary["by_family"].get("building") or {}
@@ -423,7 +455,11 @@ def collect(docroot, budget=None):
            "cohort": tot["cohort"], "read": tot["read"],
            "indexed_pct": tot["indexed_pct"],
            "published_urls": len(published),
-           "added": len(added), "dropped": len(dropped)}
+           "added": len(added), "dropped": len(dropped),
+           # last_run.json is committed nightly and is the first thing a review
+           # reads. Carrying the split here means the diagnosis is legible from
+           # `growth_daily.py status` alone, without opening the cohort file.
+           "states": {b: n for b, n in tot["buckets"].items() if n}}
     if first_error:
         out["detail"] = (f"{errors} inspection(s) failed, first: {first_error}"
                          + ("" if " 403" not in first_error else

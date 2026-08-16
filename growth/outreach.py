@@ -152,12 +152,29 @@ Search the web to find real organisations. Prefer specific, mid-sized, reachable
 household names that will never reply."""
 
 
+def _mirror(record):
+    """Copy the outreach job's outcome into last_run.json (tracked in git).
+
+    Same reason as scout._mirror: outreach_last lives in the gitignored
+    state.json, so the cloud review has no way to tell a job that had nothing to
+    add from one that never ran. `ok` is explicit on every path here — the
+    2026-07-28 lesson, when this function's success path omitted it and the daily
+    email announced a healthy run as "DID NOT RUN — unknown error".
+
+    NEVER put prospect names in this record. growth/prospects.json and
+    growth/outreach_drafts/ are gitignored precisely because they name real
+    organisations; last_run.json is committed, so this carries a count.
+    """
+    ledger.write_last_run("outreach", {"date": ledger.today(), **record})
+
+
 def run(dry_run=False):
     key = scout.load_key()
     if not key:
         msg = "no Anthropic key — outreach research skipped (same key as the scout)"
         print(f"  {msg}")
         ledger.set_state("outreach_last", {"date": ledger.today(), "ok": False, "detail": msg})
+        _mirror({"ok": False, "detail": msg})
         return {"ok": False, "detail": msg}
 
     seg_key, _ = todays_segment()
@@ -168,6 +185,7 @@ def run(dry_run=False):
     except Exception as e:
         print(f"  outreach research failed: {e}")
         ledger.set_state("outreach_last", {"date": ledger.today(), "ok": False, "detail": str(e)})
+        _mirror({"ok": False, "detail": str(e)})
         return {"ok": False, "detail": str(e)}
 
     known = _load_prospects()
@@ -212,6 +230,9 @@ def run(dry_run=False):
         ledger.set_state("outreach_last", {"date": ledger.today(), "ok": True,
                                            "segment": seg_key, "added": added,
                                            "notes": data.get("notes", "")})
+        # Count, never names: `added` holds real third-party organisations and
+        # last_run.json is committed to a public repo.
+        _mirror({"ok": True, "segment": seg_key, "drafted": len(added)})
     print(f"  {seg_key}: drafted {len(added)} prospect(s) — review in growth/outreach_drafts/")
     for o in added:
         print(f"    + {o}")

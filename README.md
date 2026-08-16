@@ -313,7 +313,19 @@ the run after one call rather than burning the quota — the URL Inspection API
 requires the service account to be an **owner or full user** of the property, and
 a restricted user gets `403` on every call. Set `GROWTH_INDEX_STATUS=0` to
 disable. The file holds public URLs and Google's public opinion of them, no PII,
-so it is tracked in git and the cloud review can read it.
+so it is tracked in git and the cloud review can read it — via the `git add`
+allowlist at the end of `growth_run.sh`, which is what "tracked" actually means
+here and which this file was missing until 2026-08-16.
+
+The rate on its own does not say what to do. `index_state_<bucket>` records the
+**site-wide coverage-state split** into `results.jsonl` every night, dense over
+`indexstatus.BUCKETS` so a zero is a recorded fact rather than a gap. It is the
+diagnosis: *discovered, never crawled* is Google declining to spend a crawl —
+a budget/priority problem, so submit fewer and better-linked URLs; *crawled, not
+indexed* is Google fetching the page and refusing it — a quality/duplication
+judgement, so consolidate or strengthen the pages. `index_status.json` only ever
+holds each URL's latest state, so this series is the only thing that can show
+pages *moving* between those states after a fix.
 
 Everything is driven by a **ledger** (`growth/techniques.json`), so the ledger —
 not the code — decides what runs. Flipping a technique to `retired` stops it

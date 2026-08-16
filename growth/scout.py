@@ -313,6 +313,25 @@ def extract_json(resp):
                 f"unparseable JSON{' — truncated at max_tokens' if truncated else ''}: {e}") from None
 
 
+def _mirror(record):
+    """Copy the scout's outcome into last_run.json, which is tracked in git.
+
+    scout_last lives in growth/state.json, and state.json is gitignored because
+    it carries per-URL content hashes and visitor ids. So the daily review — which
+    runs on a bare checkout in the cloud — has never been able to see whether the
+    scout ran, failed for want of a key, or hit a billing cap; on 2026-08-16 it
+    could only infer a successful run from `source: scout:<date>` tags left behind
+    in keywords.json. That is the same blind spot last_run.json was created to
+    close for the crons, so the answer is the same file.
+
+    COUNTS AND ERRORS ONLY. This repo is public. Slugs and queries are already
+    published in techniques.json and keywords.json, but do not widen this to echo
+    model output — see outreach._mirror, where the equivalent field is a list of
+    named third-party organisations that must never be committed.
+    """
+    ledger.write_last_run("scout", {"date": ledger.today(), **record})
+
+
 def run(dry_run=False, docroot=None):
     key = load_key()
     if not key:
@@ -320,6 +339,7 @@ def run(dry_run=False, docroot=None):
                "or growth/.anthropic_key. Scout skipped.")
         print(f"  {msg}")
         ledger.set_state("scout_last", {"date": ledger.today(), "ok": False, "detail": msg})
+        _mirror({"ok": False, "detail": msg})
         return {"ok": False, "detail": msg}
 
     prompt = build_prompt(docroot)
@@ -330,6 +350,7 @@ def run(dry_run=False, docroot=None):
     except Exception as e:
         print(f"  scout call failed: {e}")
         ledger.set_state("scout_last", {"date": ledger.today(), "ok": False, "detail": str(e)})
+        _mirror({"ok": False, "detail": str(e)})
         return {"ok": False, "detail": str(e)}
 
     known = {t["slug"] for t in ledger.load_techniques()}
@@ -368,6 +389,8 @@ def run(dry_run=False, docroot=None):
     out = {"ok": True, "techniques_added": added_t, "keywords_added": added_k,
            "notes": data.get("notes", "")}
     ledger.set_state("scout_last", {"date": ledger.today(), **out})
+    _mirror({"ok": True, "techniques_added": len(added_t),
+             "keywords_added": len(added_k)})
     print(f"  proposed {len(added_t)} technique(s), added {len(added_k)} keyword(s)")
     for s in added_t:
         print(f"    + {s}")

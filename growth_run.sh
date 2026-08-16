@@ -181,9 +181,18 @@ fi
 # invisible to it. This one holds WHICH pages Search Console serves and which
 # queries we earn impressions for without tracking them — the difference between
 # "77 of 47,600 pages serve" and knowing which 77.
+#
+# index_status.json is here for exactly the same reason, and was missed when
+# indexstatus.py shipped on 2026-08-15: that module's own docstring says "no PII
+# — so index_status.json is tracked in git and the cloud review agent can read
+# it", which was false for a day, because this allowlist is what makes a file
+# tracked and nobody added it. It holds Google's per-URL coverage state for the
+# sampled cohort — the difference between "3.1% of the corpus is indexed" and
+# knowing whether the other 97% was crawled and declined or never crawled at
+# all, which are opposite problems with opposite fixes.
 git add -A growth/techniques.json growth/keywords.json growth/results.jsonl \
            growth/journal.md growth/last_run.json growth/gsc_pages.json \
-           "$BEAT" 2>/dev/null
+           growth/index_status.json "$BEAT" 2>/dev/null
 if ! git diff --cached --quiet; then
   if git commit -q -m "growth: ledger $(date -u +%Y-%m-%d)"; then
     # Retry the push. The operator pushes to this branch by hand at all hours

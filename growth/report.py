@@ -136,6 +136,40 @@ def _index_families(limit=8):
     return rows
 
 
+def _index_states():
+    """Site-wide coverage-state split as chips: "crawled, not indexed — 61".
+
+    Read from the ledger series rather than index_status.json, so this survives
+    anywhere the metrics do and shows the same numbers the journal can plot.
+    Empty buckets are dropped: the series is deliberately dense so a zero is a
+    fact, but a chip row of nine zeroes is nine chips of noise.
+    """
+    from . import indexstatus
+    out = []
+    for b in indexstatus.BUCKETS:
+        n = _last(f"index_state_{b}")
+        if not n:
+            continue
+        out.append(f"{_STATE_LABEL.get(b, b.replace('_', ' '))} — {_fmt(n)}")
+    # One bucket and it is "indexed" tells the reader nothing the bar above did
+    # not; the split is only worth the space when there is a split to show.
+    return out if len(out) > 1 else []
+
+
+_STATE_LABEL = {
+    "indexed": "indexed",
+    "crawled_not_indexed": "crawled, not indexed",
+    "discovered_not_indexed": "discovered, never crawled",
+    "duplicate": "duplicate / alternate",
+    "excluded_noindex": "noindex",
+    "blocked": "blocked",
+    "redirect": "redirect",
+    "not_found": "404 / soft 404",
+    "other": "state not recognised",
+    "unknown": "no state returned",
+}
+
+
 def _trend(metric, days=14):
     """(yesterday, 7-day median, arrow, tone). Tone is about direction, not
     politeness — a fall in traffic is red even on a report you wrote yourself."""
@@ -257,6 +291,13 @@ def build_blocks(run_log=None, review_out=None):
                       "pct": _pct_ix,
                       "tone": "bad" if _pct_ix < 30 else
                               ("warn" if _pct_ix < 70 else "good")})
+            # What the un-indexed 97% actually is. The per-family table below
+            # gives each stratum's worst state; this gives the site-wide split,
+            # which is the line that says which fix applies — see the comment on
+            # summarise() in indexstatus.py.
+            chips = _index_states()
+            if chips:
+                B.append({"type": "chips", "items": chips})
             ix = _index_families()
             if ix:
                 B.append({"type": "table",

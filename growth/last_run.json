@@ -49,27 +49,41 @@
       }
     }
   },
+  "indexstatus": {
+    "added": 388,
+    "at": "2026-08-16T05:11:54+00:00",
+    "cohort": 388,
+    "date": "2026-08-16",
+    "detail": "2 inspection(s) failed, first: https://findacrib.com/building/brooklyn/450-95th-st-3061230038/: TimeoutError: The read operation timed out",
+    "dropped": 0,
+    "errors": 2,
+    "indexed_pct": 3.1,
+    "inspected": 98,
+    "ok": true,
+    "published_urls": 47667,
+    "read": 98
+  },
   "measure": {
-    "at": "2026-08-15T05:00:06+00:00",
-    "coverage_pct": 82.1,
-    "date": "2026-08-15",
+    "at": "2026-08-16T05:11:54+00:00",
+    "coverage_pct": 82.2,
+    "date": "2026-08-16",
     "days": 1,
-    "keywords_covered": 161,
-    "keywords_total": 196,
-    "latest_measured_day": "2026-08-14"
+    "keywords_covered": 162,
+    "keywords_total": 197,
+    "latest_measured_day": "2026-08-15"
   },
   "searchconsole": {
-    "at": "2026-08-15T05:00:05+00:00",
+    "at": "2026-08-16T05:00:05+00:00",
     "clicks": 0,
-    "date": "2026-08-15",
-    "impressions": 6,
-    "page_clicks": 5,
-    "page_impressions": 122,
-    "serving_ever": 224,
-    "serving_pages": 63,
+    "date": "2026-08-16",
+    "impressions": 3,
+    "page_clicks": 2,
+    "page_impressions": 118,
+    "serving_ever": 235,
+    "serving_pages": 69,
     "serving_stable": 58,
     "share_pct": 0.0,
     "tracked_ranking": 0,
-    "window": "2026-08-06..2026-08-13"
+    "window": "2026-08-07..2026-08-14"
   }
 }

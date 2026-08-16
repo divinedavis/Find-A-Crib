@@ -5,7 +5,7 @@
     "name": "Daily voucher-listing pages (/section8/)",
     "hypothesis": "The voucher feed is the only data on the site that genuinely changes daily, and 'section 8 apartments <city>' is high-volume, high-intent, commercial search. Pages that are both rebuilt daily and uniquely cross-referenced against rent-stabilized status should earn rankings that a static list cannot.",
     "kind": "content",
-    "status": "active",
+    "status": "retired",
     "prefixes": [
       "/section8/"
     ],
@@ -14,9 +14,22 @@
     "evidence": "Nightly AffordableHousing.com feed already runs at 04:15 UTC; ~250 live listings match known stabilized buildings.",
     "added": "2026-07-26",
     "activated": "2026-07-26",
-    "retired": null,
-    "notes": "2026-08-05 decision (the date set on 2026-07-31, when the retirement rule was moved from owned visitors to owned search impressions): KEPT, not retired. Six consecutive readings of gsc_owned_impressions = 0 over ten days live. Retiring on that would have blamed the content for a structural fault: nothing on findacrib.com linked to /section8/ at all, so it was an orphan discoverable only from sitemap-daily.xml, and Google treats a sitemap-only URL as unimportant. The homepage nav now links it (index.html) and T037 crawl_paths audits that link nightly. NEW DECISION DATE 2026-08-26: if /section8/ still earns zero impressions 21 days after it has a verified inbound link, the fault is the content and it retires then. If the T037 audit still reports it ORPHANED, the app shell never deployed and the clock has not started.",
-    "verdict": null,
+    "retired": "2026-08-16",
+    "notes": "2026-08-05 decision (the date set on 2026-07-31, when the retirement rule was moved from owned visitors to owned search impressions): KEPT, not retired. Six consecutive readings of gsc_owned_impressions = 0 over ten days live. Retiring on that would have blamed the content for a structural fault: nothing on findacrib.com linked to /section8/ at all, so it was an orphan discoverable only from sitemap-daily.xml, and Google treats a sitemap-only URL as unimportant. The homepage nav now links it (index.html) and T037 crawl_paths audits that link nightly. NEW DECISION DATE 2026-08-26: if /section8/ still earns zero impressions 21 days after it has a verified inbound link, the fault is the content and it retires then. If the T037 audit still reports it ORPHANED, the app shell never deployed and the clock has not started.\n[2026-08-16] active\u2192retired: 1 owned visitors in 21d, and its pages earned 0 search impressions across 0 URLs \u2014 invisible in search, not merely un-clicked",
+    "verdict": {
+      "decided": "2026-08-16",
+      "works": false,
+      "why": "1 owned visitors in 21d, and its pages earned 0 search impressions across 0 URLs \u2014 invisible in search, not merely un-clicked",
+      "measured": {
+        "total_owned_visitors": 1,
+        "recent_median": 0.0,
+        "prior_median": 0.0,
+        "days_measured": 20,
+        "owned_serving_pages": 0,
+        "owned_impressions": 0,
+        "owned_best_position": null
+      }
+    },
     "revisit_on": "2026-08-25"
   },
   {
@@ -25,7 +38,7 @@
     "name": "Dated daily market briefs (/brief/)",
     "hypothesis": "A dated series of real market snapshots creates a genuine archive, gives crawlers a new URL every day, and is the kind of primary source that journalists and AI answer engines cite.",
     "kind": "content",
-    "status": "active",
+    "status": "retired",
     "prefixes": [
       "/brief/"
     ],
@@ -34,9 +47,22 @@
     "evidence": "Publishes only when listings actually moved, so the archive stays a data series rather than filler.",
     "added": "2026-07-26",
     "activated": "2026-07-26",
-    "retired": null,
-    "notes": "2026-08-05 decision (the date set on 2026-07-31, when the retirement rule was moved from owned visitors to owned search impressions): KEPT, not retired. Six consecutive readings of gsc_owned_impressions = 0 over ten days live. Retiring on that would have blamed the content for a structural fault: nothing on findacrib.com linked to /brief/ at all, so it was an orphan discoverable only from sitemap-daily.xml, and Google treats a sitemap-only URL as unimportant. The homepage nav now links it (index.html) and T037 crawl_paths audits that link nightly. NEW DECISION DATE 2026-08-26: if /brief/ still earns zero impressions 21 days after it has a verified inbound link, the fault is the content and it retires then. If the T037 audit still reports it ORPHANED, the app shell never deployed and the clock has not started.",
-    "verdict": null,
+    "retired": "2026-08-16",
+    "notes": "2026-08-05 decision (the date set on 2026-07-31, when the retirement rule was moved from owned visitors to owned search impressions): KEPT, not retired. Six consecutive readings of gsc_owned_impressions = 0 over ten days live. Retiring on that would have blamed the content for a structural fault: nothing on findacrib.com linked to /brief/ at all, so it was an orphan discoverable only from sitemap-daily.xml, and Google treats a sitemap-only URL as unimportant. The homepage nav now links it (index.html) and T037 crawl_paths audits that link nightly. NEW DECISION DATE 2026-08-26: if /brief/ still earns zero impressions 21 days after it has a verified inbound link, the fault is the content and it retires then. If the T037 audit still reports it ORPHANED, the app shell never deployed and the clock has not started.\n[2026-08-16] active\u2192retired: 1 owned visitors in 21d, and its pages earned 0 search impressions across 0 URLs \u2014 invisible in search, not merely un-clicked",
+    "verdict": {
+      "decided": "2026-08-16",
+      "works": false,
+      "why": "1 owned visitors in 21d, and its pages earned 0 search impressions across 0 URLs \u2014 invisible in search, not merely un-clicked",
+      "measured": {
+        "total_owned_visitors": 1,
+        "recent_median": 0.0,
+        "prior_median": 0.0,
+        "days_measured": 20,
+        "owned_serving_pages": 0,
+        "owned_impressions": 0,
+        "owned_best_position": null
+      }
+    },
     "revisit_on": "2026-08-25"
   },
   {
@@ -144,7 +170,17 @@
     "activated": "2026-07-26",
     "retired": null,
     "notes": "Drafts only, never auto-sends \u2014 bulk cold mail from findacrib.com would put the saved-building alert emails into spam, and cold outreach carries CAN-SPAM and GDPR obligations that need a human decision. Needs the Anthropic key.",
-    "verdict": null,
+    "verdict": {
+      "decided": "2026-08-16",
+      "works": true,
+      "why": "mrr_usd median 0.0/day since activation (no pre-activation baseline)",
+      "measured": {
+        "metric": "mrr_usd",
+        "median_after": 0.0,
+        "median_before": null,
+        "days_measured": 21
+      }
+    },
     "revisit_on": "2026-08-25"
   },
   {
@@ -877,6 +913,60 @@
     "revisit_on": null,
     "retired": null,
     "notes": "effort: days\nexpected: One signed award or contract in the $10k\u2013$50k range within 6 months (\u2248$1\u20134k/month equivalent, 10\u201340% of the revenue goal from a single counterparty), plus 2\u20133 .gov/.org citations. Leading indicator: 3 written proposals out and 2 meetings booked within 30 days.\nfirst step: Write a single two-page 'Data brief for funders and agencies' \u2014 coverage counts per city, update cadence, provenance, known error rate, and three concrete deliverables (per-council-district canvass lists, an embeddable lookup for a counselling hotline, quarterly registration-change reporting) \u2014 and send it to the tenant-outreach or housing-counselling programme officer at one funder in each of the four cities this week.",
+    "verdict": null
+  },
+  {
+    "id": "T049",
+    "slug": "court_ready_evidence_certificate",
+    "name": "Court-ready registration evidence certificate ($79 one-off)",
+    "hypothesis": "Every revenue path in the ledger asks someone with no budget and a one-time need to pay a subscription price. The one moment a rent-regulation fact is worth real money is when it becomes evidence: an overcharge case, a DHCR complaint, a non-renewal fight, or a Housing Court appearance where a tenant has to show what the registration record said and when. A $79 certificate \u2014 a PDF stating the DHCR/LAHD/RAD/SF registration status for a specific building as of a specific retrieval timestamp, with the source file name, agency publication date, file hash, the owner and managing agent of record, the registration-year history, and a signed declaration of how the record was obtained plus an explicit statement of what the record does and does not prove \u2014 sells to the one buyer here who is spending someone else's money or facing a five-figure downside: tenant attorneys, legal-aid caseworkers, and pro-se litigants. It is a pure packaging of data the site already holds, it strengthens rather than trades on credibility (the whole product is provenance), and it prices at the value of the moment rather than the value of a page view.",
+    "kind": "conversion",
+    "status": "candidate",
+    "prefixes": [],
+    "metric": "organic_visitors",
+    "source": "scout:2026-08-16",
+    "evidence": "The demand moment is already in the tracked universe (\"how to prove my apartment is rent stabilized in court\") and the City itself pushes tenants toward documentary proof: <cite index=\"32-15,32-16\">NYC's guidance tells tenants that to determine or prove their home is rent stabilized they should check the lease or order their rent history from the state</cite>, which is a slow FOIL-style request, not something usable the same week a case is calendared. The 2026 rent freeze manufactures disputes on a schedule: <cite index=\"30-3\">RGB Order #58 applies to covered leases commencing 1 October 2026 through 30 September 2027</cite>, so every improper renewal offer issued this autumn is a potential proceeding. Industry analysis of 2026 monetization also points small data holders away from waiting on licensing and toward owned, first-party products: https://notioncue.com/blog/ai-content-licensing-training-data-deals-publishers-2026 <cite index=\"26-8,26-9,26-10\">argues publishers adapting fastest are redirecting investment toward owned first-party assets and direct audience relationships, because individual small publishers lack negotiating leverage in licensing markets</cite>.",
+    "added": "2026-08-16",
+    "activated": null,
+    "revisit_on": null,
+    "retired": null,
+    "notes": "effort: days\nexpected: First paid order within 21 days of launch. 10 certificates/month by day 90 at $79 = ~$790/month, from ~3 of the site's existing 15 daily visitors plus outreach to 40 named tenant-side attorneys and legal-aid housing units across the four cities. Secondary: certificate buyers are the qualifying list for the unbuilt $49/mo Pro tier \u2014 target 15% of buyers taking a Pro trial.\nfirst step: Generate one real certificate for one real NYC building end-to-end (PDF with retrieval timestamp, source file name + hash, registration-year table, owner/agent of record, and a plain-English 'what this does not prove' section), then send it to two tenant-side housing attorneys asking one question: 'would you file this, and what is missing?' Do not build a checkout until one of them says yes.",
+    "verdict": null
+  },
+  {
+    "id": "T050",
+    "slug": "address_alias_coverage",
+    "name": "Address-alias resolution on every building page",
+    "hypothesis": "47,600 pages earning 89 impressions is usually read as a thinness problem, but there is a simpler failure underneath it: a renter types the address on their lease or on the listing \u2014 '215 E 5th St', '215 East Fifth Street', the corner address, the 'aka' address, or one of the 6 street numbers a through-block building answers to \u2014 and the building page contains exactly one of those strings. Every alias is a distinct, real, high-intent query that no other page on the site answers, and the alias set is derivable from data the operator already has or can join for free (DOF/PLUTO address ranges, HPD registration addresses, DHCR's own address spelling, agency-specific street abbreviations). Adding a visible, human-readable 'Also known as / all addresses at this property' block plus alternateName in the existing schema markup does three things at once: it multiplies matchable long-tail queries per page without inventing a single word of content, it adds a second independent data source per page (the 2026 quality bar), and it fixes the failure mode where a page exists but is invisible to the exact string a user types.",
+    "kind": "indexing",
+    "status": "candidate",
+    "prefixes": [],
+    "metric": "organic_visitors",
+    "source": "scout:2026-08-16",
+    "evidence": "The 2026 programmatic-SEO standard is explicitly about distinctness and multi-source data, not word count: https://www.digitalapplied.com/blog/programmatic-seo-after-march-2026-surviving-scaled-content-ban <cite index=\"4-1\">sets the threshold as whether each page answers a distinct user query no other page on your site already answers</cite> and <cite index=\"4-7,4-8\">recommends building programmatic SEO on proprietary data competitors cannot easily replicate, because the data moat makes the page set inherently differentiated</cite>. https://www.tryvizup.com/blog/programmatic-seo-trends-2026 <cite index=\"7-6,7-7\">reports practitioners establishing minimum uniqueness thresholds and drawing from multiple data sources per page as the safety standard, a much higher bar than legacy stacks</cite>. And LA's own agency instructs tenants to look up RSO status using the lowest number on the property \u2014 <cite index=\"45-9,45-10\">LAHD tells renters to use the lowest number address on the property when checking, e.g. a building that includes 1722, 1724, 1726 and 1728</cite> \u2014 which is direct evidence that multi-address buildings are the normal case and that a single-address page misses most of the ways people search.",
+    "added": "2026-08-16",
+    "activated": null,
+    "revisit_on": null,
+    "retired": null,
+    "notes": "effort: days\nexpected: Ship on a 2,000-building pilot batch (the highest-unit-count buildings in NYC) before touching the full set. Success at 45 days: the pilot cohort's Search Console impressions rise from near-zero to 1,500+/month, at least 200 previously-unseen address-string queries appear in Search Console, and indexed-URL count for the cohort exceeds 80%. Roll to the remaining buildings only if the pilot clears that.\nfirst step: Take 50 known multi-address NYC buildings, join DHCR's address string against HPD registration addresses and DOF address ranges, and count how many distinct address strings per building the current page fails to contain \u2014 that number decides whether this ships at all.",
+    "verdict": null
+  },
+  {
+    "id": "T051",
+    "slug": "spanish_language_regulation_hubs",
+    "name": "Spanish-language city hubs and guides (human-reviewed, hubs only)",
+    "hypothesis": "The renters most exposed to illegal increases and most likely to be told 'your apartment isn't stabilized' are disproportionately Spanish-speaking, and in all four cities the agencies publish tenant materials in Spanish while essentially no private rent-regulation lookup site does. That is a whole demand market with near-zero competition, reachable by translating roughly 40 pages \u2014 the city guides, the borough/city hubs, the calculator explainers and the direct-answer blocks \u2014 not 47,000 building shells. The dataset itself is language-neutral, so the marginal cost of serving a second audience is a translation bill and hreflang. This is also the cheapest credible way to earn links from tenant organizations and mutual-aid groups whose own outreach is bilingual, and AI assistants answer in the language of the question, so a Spanish page is the only thing that can be cited for a Spanish prompt.",
+    "kind": "content",
+    "status": "candidate",
+    "prefixes": [],
+    "metric": "organic_visitors",
+    "source": "scout:2026-08-16",
+    "evidence": "Spanish-language search is materially less contested than its English equivalent: https://seowebster.com/services/multilingual-seo/spanish-seo <cite index=\"52-18\">reports across 200+ industries that Spanish keyword difficulty averages 55\u201365% lower than English equivalents while volumes grow</cite>, and <cite index=\"52-2\">the US Hispanic approach it describes is Spanish and Spanglish queries on Google.com with hreflang=\\\"es-US\\\"</cite>. The 2026 caveat is that this must not be bulk mirror translation: https://www.incremys.com/en/resources/blog/spanish-seo <cite index=\"53-1,53-3,53-4\">warns against mirror translation, inconsistent hreflang and mass creation of similar pages, noting generic or duplicated content is riskier internationally</cite> \u2014 which is exactly why this is scoped to ~40 hub pages with human review, not the building set. The audience is explicitly addressed by the agencies themselves: <cite index=\"27-2,27-3\">NYC states its rent-increase protections apply to every tenant regardless of immigration status</cite> and <cite index=\"49-7\">SAJE states LARSO rights apply to all renters regardless of immigration status</cite>.",
+    "added": "2026-08-16",
+    "activated": null,
+    "revisit_on": null,
+    "retired": null,
+    "notes": "effort: weeks\nexpected: 40 es-US pages live in 6 weeks. At 90 days: 400+ Spanish-query impressions/month in Search Console, 25+ organic Spanish-language sessions/month, and at least 2 inbound links from bilingual tenant or legal-aid organizations that discovered the Spanish pages. Track as a separate market segment; kill it at 120 days if impressions stay under 100/month.\nfirst step: Translate one page only \u2014 the NYC 'is my apartment rent stabilized' guide \u2014 pay a native Spanish-speaking NYC tenant organizer or paralegal to review it for terminology (renta estabilizada vs control de renta vs renta controlada), ship it at /es/ with correct hreflang pairs, and measure whether it earns impressions before commissioning the other 39.",
     "verdict": null
   }
 ]

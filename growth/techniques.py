@@ -14,9 +14,11 @@ A technique must be:
     actually earned traffic
 """
 import datetime
+import glob
 import hashlib
 import json
 import os
+import re
 import statistics
 import urllib.request
 
@@ -781,12 +783,69 @@ def t_llms_txt(ctx):
 GROWTH_OWNED_SITEMAPS = {"sitemap.xml", "sitemap-daily.xml"}
 
 
+_SITEMAP_SHARD = re.compile(r"sitemap-[A-Za-z0-9_-]+\.xml")
+_SITEMAP_LOC = re.compile(r"<loc>\s*([^<\s]+)\s*</loc>")
+
+
+def _sitemap_covered(docroot):
+    """Every URL already listed in a sitemap shard the SEO pipeline owns.
+
+    Returns None — not an empty set — when the docroot has no readable sitemap
+    index. The difference matters: an empty set means "the pipeline lists
+    nothing", which would have this build list every page it knows about, and a
+    missing index means "cannot tell", where the honest move is to change
+    nothing. A dry run against a bare checkout takes the second path.
+    """
+    try:
+        with open(os.path.join(docroot, "sitemap.xml")) as f:
+            index = f.read()
+    except OSError:
+        return None
+    covered = set()
+    for loc in _SITEMAP_LOC.findall(index):
+        name = loc.rsplit("/", 1)[-1]
+        # Only ever open a file inside the docroot. sitemap.xml is generated,
+        # but it is also web-served, and a <loc> should not be able to choose a
+        # path for us. Our own shard is excluded — it is what we are rebuilding.
+        if not _SITEMAP_SHARD.fullmatch(name) or name == "sitemap-daily.xml":
+            continue
+        try:
+            with open(os.path.join(docroot, name)) as f:
+                covered.update(_SITEMAP_LOC.findall(f.read()))
+        except OSError:
+            continue
+    return covered
+
+
 def t_sitemap_daily(ctx):
-    """A dedicated sitemap for the daily-changing pages.
+    """A dedicated sitemap for the daily-changing pages, plus any page in a
+    family this build owns that no pipeline shard lists.
 
     The main sitemap is rebuilt monthly by build_seo.py and would otherwise
     never mention today's brief. Keeping the daily URLs in their own file means
     the monthly build and the daily build never fight over one another's output.
+
+    The second half of that job was missing until 2026-08-17, and the gap had
+    swallowed 252 pages. This shard was built purely from the lastmod state —
+    the URLs THIS build wrote — and ctx.unstage() deletes a URL's lastmod entry
+    when it hands a page back to the SEO pipeline, on the reasoning that "the
+    URL is no longer ours to list". That reasoning holds only if the pipeline
+    then lists it, and for the SF/LA/DC hub tier it does not: on 2026-08-17 the
+    docroot held 103 DC, 112 LA and 37 SF hub pages while the docroot sitemaps
+    carried exactly two URLs per city (/dc/ from sitemap-main.xml and
+    /dc/buildings/ from this shard). The handover dropped them out of our
+    sitemap and the pipeline's own shard never picked them up, so 252 finished
+    pages sat in the docroot with no sitemap entry anywhere — and the URL
+    Inspection sample that same morning came back "URL is unknown to Google" for
+    80% of the URLs it read, never fetched at all.
+
+    So the shard is now the union of two sets: URLs this build wrote (with the
+    honest content-hash lastmod it tracks for them), and URLs in a family this
+    build owns that are live in the docroot but absent from every pipeline
+    shard. The second set is derived from the filesystem, never asserted: a page
+    is listed only if it exists, dated by its own mtime rather than today, and
+    it drops back out of this shard by itself on the day the pipeline starts
+    listing it. No page is published to have a URL — these are already live.
     """
     lm = ledger.get_state("lastmod", {})
 
@@ -821,6 +880,39 @@ def t_sitemap_daily(ctx):
         return None
 
     daily = {u: v for u, v in lm.items() if entry(u)}
+
+    # ---- pages in our families that are live but in nobody's sitemap
+    # Enumerated from the docroot, so this can only ever list a page that really
+    # exists. The globs are the families entry() knows how to price; anything
+    # entry() would return None for is skipped even if a glob matched it.
+    rescued = 0
+    covered = _sitemap_covered(ctx.docroot)
+    if covered is not None:
+        globs = ["section8/index.html", "section8/*/index.html",
+                 "brief/index.html", "brief/*/index.html",
+                 "guide/index.html", "guide/*/index.html"]
+        for _city, _rel in CITY_HUB_DIRS.items():
+            globs += [f"{_city}/buildings/index.html", f"{_rel}/*/index.html"]
+        for pattern in globs:
+            for path in sorted(glob.glob(os.path.join(ctx.docroot, pattern))):
+                rel = os.path.relpath(path, ctx.docroot)
+                url = SITE + "/" + rel[:-len("index.html")]
+                if url in daily or url in covered or not entry(url):
+                    continue
+                # The page's own mtime, not today. rsync -a preserves the source
+                # mtime, so this is the date the deploying pipeline last wrote
+                # the page — a real lastmod, and one that stays put on the nights
+                # nothing changes. A shard that redates every page every night is
+                # the signal crawlers learn to discount, which is the one thing
+                # these pages cannot afford.
+                try:
+                    m = datetime.date.fromtimestamp(os.path.getmtime(path))
+                except OSError:
+                    continue
+                today = datetime.date.fromisoformat(ledger.today())
+                daily[url] = {"m": min(m, today).isoformat()}
+                rescued += 1
+
     if not daily:
         return {"ok": False, "detail": "no daily pages written yet"}
 
@@ -848,7 +940,6 @@ def t_sitemap_daily(ctx):
         ctx.write_raw("sitemap.xml", idx)
     elif idx:
         # keep the index's lastmod for our shard current
-        import re
         idx = re.sub(r"(<sitemap><loc>[^<]*sitemap-daily\.xml</loc><lastmod>)[^<]*(</lastmod>)",
                      rf"\g<1>{ledger.today()}\g<2>", idx)
         ctx.write_raw("sitemap.xml", idx)
@@ -859,9 +950,19 @@ def t_sitemap_daily(ctx):
         for c, r in CITY_HUB_DIRS.items()))
     extra = ", ".join(x for x in (f"{guides} fallback-published guides" if guides else "",
                                   f"{hubs} city hub pages" if hubs else "") if x)
-    return {"ok": True, "urls": len(daily),
+    # `rescued` is the number a future review needs, because it is the size of a
+    # hole nothing else reports: pages live in the docroot that no sitemap listed
+    # until this run. It should fall to 0 the day the SEO pipeline starts
+    # emitting its own city shards, and a jump means the pipeline dropped a tier.
+    note = ""
+    if covered is None:
+        note = " — could not read the docroot sitemap index, so listed only our own URLs"
+    elif rescued:
+        note = (f" — {rescued} of them live in the docroot but listed in no sitemap the SEO "
+                f"pipeline owns, so they had no crawl path at all until this run")
+    return {"ok": True, "urls": len(daily), "rescued": rescued,
             "detail": f"sitemap-daily.xml with {len(daily)} URLs"
-                      + (f" (incl. {extra})" if extra else "")}
+                      + (f" (incl. {extra})" if extra else "") + note}
 
 
 def t_indexnow(ctx):

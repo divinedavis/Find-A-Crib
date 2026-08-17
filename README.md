@@ -249,6 +249,25 @@ growth-written `sitemap-*.xml` is ever added to the docroot it must be excluded
 in `seo_watchdog()` as well as in `GROWTH_OWNED_SITEMAPS`, or the watchdog reads
 it as freshness and silently stops firing.**
 
+**Publishing a page and getting it into a sitemap are two separate jobs, and the
+handover between the pipelines dropped the second one.** `t_sitemap_daily` built
+`sitemap-daily.xml` purely from the lastmod state — the URLs *this* build wrote
+— and `Ctx.unstage()` deletes a URL's lastmod entry when it hands a page back to
+the SEO pipeline, reasoning that "the URL is no longer ours to list". That holds
+only if the pipeline then lists it. For the SF/LA/DC hub tier it did not: on
+2026-08-17 the docroot held 103 DC, 112 LA and 37 SF hub pages while the docroot
+sitemaps carried **two URLs per city**, so 252 finished pages had no sitemap
+entry anywhere, and the URL Inspection sample that morning came back *unknown to
+Google* — never fetched — for 80% of what it read. `t_sitemap_daily` now lists
+the union of what this build wrote and every page in a family it owns
+(`/section8/`, `/brief/`, `/guide/`, the city hub tier) that is live in the
+docroot but absent from every pipeline-owned shard. That second set is read off
+the filesystem and never asserted: a page is listed only if it exists, dated by
+its own mtime rather than today, and it leaves this shard by itself the day the
+pipeline starts listing it. The `rescued` count in the technique's detail line is
+the size of the hole — it should fall to 0 when the pipeline emits its own city
+shards, and a jump means the pipeline dropped a tier.
+
 One consequence of that ordering: **`build` runs every technique first and
 rsyncs last**, so any check that reads the docroot is scoring the *previous*
 run's deploy. `t_crawl_paths` therefore also reads `growth_out/` and says
@@ -301,8 +320,15 @@ URLs/day per property against ~47,600 pages, so it samples:
   `DEFAULT_QUOTA` slots, so a technique that ships a new URL prefix is sampled
   without anyone remembering to edit the dict.
 * `GROWTH_INDEX_BUDGET` (default 100) inspections per night, oldest reading
-  first, so the whole cohort refreshes in ~4 days and every URL carries the date
-  its state was read.
+  first *within each family* and the families interleaved in proportion to their
+  size, so the whole cohort still refreshes in ~4 days and every stratum is
+  measured on the **first** night. A single global sort by `(checked, sha1)` is
+  not equivalent and was the bug fixed on 2026-08-17: `reconcile()` tops a
+  family up with its lowest-hashing candidates, so `/building/`'s 250 URLs — the
+  250 lowest hashes out of 47,165 — sorted ahead of nearly everything else, and
+  196 of the first 198 URLs ever read were `/building/`. The interleave also
+  pins each family's oldest member to the front of the night, because a family
+  smaller than `cohort/budget` members otherwise never comes up at all.
 
 It runs inside `measure`, needs the same service-account key as the rest of
 Search Console, and never raises — a measurement job must not be why the night's
@@ -320,12 +346,23 @@ here and which this file was missing until 2026-08-16.
 The rate on its own does not say what to do. `index_state_<bucket>` records the
 **site-wide coverage-state split** into `results.jsonl` every night, dense over
 `indexstatus.BUCKETS` so a zero is a recorded fact rather than a gap. It is the
-diagnosis: *discovered, never crawled* is Google declining to spend a crawl —
-a budget/priority problem, so submit fewer and better-linked URLs; *crawled, not
-indexed* is Google fetching the page and refusing it — a quality/duplication
-judgement, so consolidate or strengthen the pages. `index_status.json` only ever
-holds each URL's latest state, so this series is the only thing that can show
-pages *moving* between those states after a fix.
+diagnosis: *unknown to Google* is Google having no record of the URL at all, so
+the problem is upstream of both of the others and the fix is discovery — a
+sitemap entry and internal links, not better pages; *discovered, never crawled*
+is Google knowing the URL and declining to spend a crawl, a budget/priority
+problem, so submit fewer and better-linked URLs; *crawled, not indexed* is
+Google fetching the page and refusing it — a quality/duplication judgement, so
+consolidate or strengthen the pages. `index_status.json` only ever holds each
+URL's latest state, so this series is the only thing that can show pages *moving*
+between those states after a fix.
+
+Read the state string literally and check the discriminator before building on
+it: `unknown_to_google` is Google's answer about the URL, `unknown` is the API
+returning no coverage state at all, and Google has been observed relabelling
+long-known URLs "unknown". A URL it has genuinely never fetched also carries no
+`lastCrawlTime` and `pageFetchState: PAGE_FETCH_STATE_UNSPECIFIED`; a relabelled
+one keeps its crawl time. On 2026-08-17 all 159 "unknown" readings had no crawl
+time and all 39 known ones had both a crawl time and `SUCCESSFUL`.
 
 Everything is driven by a **ledger** (`growth/techniques.json`), so the ledger —
 not the code — decides what runs. Flipping a technique to `retired` stops it

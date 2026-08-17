@@ -120,6 +120,22 @@ _STATE_BUCKETS = (
                              "crawled — currently not indexed")),
     ("discovered_not_indexed", ("discovered - currently not indexed",
                                 "discovered — currently not indexed")),
+    # Google has no record of the URL at all — it is not merely un-indexed, it
+    # has never been fetched. On 2026-08-17 this was 159 of the 198 URLs read
+    # and every one of them was filed as "other", because this needle was
+    # missing: the single most decision-relevant state the sampler has ever
+    # measured was invisible under a bucket whose own comment says it means
+    # "wording this module has not learned yet".
+    #
+    # Read it literally, and check the discriminator before building on it. The
+    # state string alone is not proof a URL was never crawled — Google has been
+    # observed relabelling long-known URLs "unknown" — but a never-fetched URL
+    # also carries no lastCrawlTime and pageFetchState
+    # PAGE_FETCH_STATE_UNSPECIFIED, and a relabelled one keeps its crawl time.
+    # All 159 on 2026-08-17 had crawled=None and fetch unspecified; all 39
+    # known URLs had a real crawl time and SUCCESSFUL. Re-check that split
+    # before reading this bucket as "never discovered" again.
+    ("unknown_to_google", ("unknown to google",)),
     ("duplicate", ("duplicate", "alternate page")),
     ("excluded_noindex", ("noindex",)),
     ("blocked", ("blocked", "robots.txt")),
@@ -128,12 +144,16 @@ _STATE_BUCKETS = (
 )
 
 # The full vocabulary, in the order a human reads it: accepted first, then the
-# two states that are the whole diagnosis, then the exclusions. Recorded as a
-# dense daily series (zeros included) so a bucket that appears for the first
-# time does not read as a jump from "missing" and a bucket that empties out is
-# visibly zero rather than absent. `unknown` is Google returning no coverage
-# state at all; `other` is wording this module has not learned yet, and a rising
-# `other` is the signal that _STATE_BUCKETS needs a new needle.
+# three states that are the whole diagnosis — in reverse funnel order, indexed
+# then crawled then discovered then never-seen — then the exclusions. Recorded
+# as a dense daily series (zeros included) so a bucket that appears for the
+# first time does not read as a jump from "missing" and a bucket that empties
+# out is visibly zero rather than absent. `unknown` is Google returning no
+# coverage state at all — an instrument condition, and not the same thing as
+# `unknown_to_google`, which is Google's own answer about the URL; the report
+# labels them "no state returned" and "unknown to Google" for that reason.
+# `other` is wording this module has not learned yet, and a rising `other` is
+# the signal that _STATE_BUCKETS needs a new needle.
 BUCKETS = tuple(name for name, _ in _STATE_BUCKETS) + ("other", "unknown")
 
 
@@ -262,8 +282,58 @@ def reconcile(cohort, published):
 
 
 def _due(cohort, budget):
-    """The `budget` cohort URLs whose reading is oldest; never-read ones first."""
-    return sorted(cohort, key=lambda u: (cohort[u].get("checked") or "", _rank(u)))[:budget]
+    """The `budget` cohort URLs to inspect tonight: oldest reading first *within
+    each family*, and the families interleaved in proportion to their size.
+
+    A single global sort by (checked, sha1) looks equivalent and is not, because
+    the two sha1 orderings compose badly. reconcile() tops a family up by taking
+    the `quota` lowest-hashing candidates, so /building/ holds the 250 lowest
+    hashes out of 47,165 URLs — all of them tiny — while /guide/ holds all 7 of
+    its candidates, spread across the whole hash range. Sorted globally, every
+    /building/ member therefore sorts ahead of almost everything else, and the
+    larger the candidate pool the further forward the family lands.
+
+    That is what happened on 2026-08-16 and 08-17: 196 of the first 198 URLs
+    read were /building/, with 1 /neighborhood/, 1 /zip/ and nothing at all from
+    /guide/, /section8/, /brief/ or the three city tiers — the strata the
+    stratified cohort exists to measure, and the ones whose "indexed vs indexed
+    and outranked" question had been open for weeks. The rate was right; the
+    order silently made it a /building/-only rate for the first four nights.
+
+    Proportional interleaving fixes it: a family with 250 of 388 cohort URLs
+    still gets ~64 of a 100-URL budget, so the whole cohort still refreshes in
+    the same ~4 nights, but every family is sampled on the FIRST night. The key
+    is each member's fractional position in its own family, so families are
+    consumed at equal relative speed regardless of size.
+
+    Three parts to the sort key, and each is load-bearing:
+
+      checked   Staleness first, so this is still honestly "oldest reading
+                first" and a family that errored out or was added late catches
+                up on its own. Never-read URLs sort ahead of every read one.
+      slot      The member's fractional position in its family — EXCEPT that
+                each family's oldest member is pinned to the front. Without the
+                pin, a family smaller than cohort/budget members starves
+                outright: at 100 of 388 the cut falls near 0.26, so /dc/, /la/
+                and /sf/ (2 URLs each) and /guide/ (7) would sit at 0.5 and 0.14
+                and never be reached at all. The pin costs one slot per family —
+                sixteen of a hundred — and buys first-night coverage of every
+                stratum, which is the entire point of stratifying.
+      fam,rank  Deterministic tie-breaks, so two runs over the same cohort
+                inspect the same URLs in the same order.
+    """
+    fams = {}
+    for u in cohort:
+        fams.setdefault(cohort[u].get("family") or family(u), []).append(u)
+    order = []
+    for fam, members in fams.items():
+        members.sort(key=lambda u: (cohort[u].get("checked") or "", _rank(u)))
+        n = len(members)
+        for i, u in enumerate(members):
+            slot = 0.0 if i == 0 else (i + 1.0) / n
+            order.append((cohort[u].get("checked") or "", slot, fam, _rank(u), u))
+    order.sort()
+    return [t[-1] for t in order[:budget]]
 
 
 # ------------------------------------------------------------------- the API

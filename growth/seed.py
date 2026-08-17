@@ -70,7 +70,17 @@ SEEDS = [
          hypothesis="The main sitemap is rebuilt monthly and would never mention today's "
                     "pages. A separate daily sitemap with honest lastmod is how Google learns "
                     "to re-crawl this section on a daily rhythm.",
-         evidence="Google does not consume IndexNow; sitemap lastmod is its re-crawl signal."),
+         evidence="Google does not consume IndexNow; sitemap lastmod is its re-crawl signal.",
+         notes="2026-08-17: widened from 'the daily pages' to 'every page in a family this "
+               "build owns that no pipeline shard lists'. It had been built purely from the "
+               "lastmod state, and Ctx.unstage() drops a URL's lastmod entry when it hands a "
+               "page back to the SEO pipeline — correct for the bytes, wrong for the sitemap, "
+               "because the pipeline's own shard never picked the city hub tier up. Result: 103 "
+               "DC, 112 LA and 37 SF hub pages live in the docroot against two sitemap URLs per "
+               "city, i.e. 252 finished pages in no sitemap at all, on the same morning the URL "
+               "Inspection sample read 'unknown to Google' — never fetched — for 159 of 198 "
+               "URLs. Watch the 'rescued' count in the detail line: it is the size of that hole "
+               "and should go to 0 when the SEO pipeline emits its own city shards."),
     dict(slug="indexnow", status="active", kind="indexing",
          name="IndexNow submission of new/changed URLs",
          prefixes=[], metric="organic_visitors",

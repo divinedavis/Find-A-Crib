@@ -97,7 +97,7 @@
     "added": "2026-07-26",
     "activated": "2026-07-26",
     "retired": null,
-    "notes": "",
+    "notes": "2026-08-17: widened from 'the daily pages' to 'every page in a family this build owns that no pipeline shard lists'. It had been built purely from the lastmod state, and Ctx.unstage() drops a URL's lastmod entry when it hands a page back to the SEO pipeline \u2014 correct for the bytes, wrong for the sitemap, because the pipeline's own shard never picked the city hub tier up. Result: 103 DC, 112 LA and 37 SF hub pages live in the docroot against two sitemap URLs per city, i.e. 252 finished pages in no sitemap at all, on the same morning the URL Inspection sample read 'unknown to Google' \u2014 never fetched \u2014 for 159 of 198 URLs. Watch the 'rescued' count in the detail line: it is the size of that hole and should go to 0 when the SEO pipeline emits its own city shards.",
     "verdict": null,
     "revisit_on": "2026-08-25"
   },

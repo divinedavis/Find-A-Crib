@@ -130,7 +130,12 @@ def _index_families(limit=8):
                      (f"{pct}%", "good" if (pct or 0) >= 70 else
                       ("warn" if (pct or 0) >= 30 else "bad")),
                      str(read),
-                     f"{worst[0][1]} ({worst[0][0]})" if worst else "—"])
+                     # Same prose the chips row uses. This column read
+                     # "crawled_not_indexed (1)" until 2026-08-17 — a raw bucket
+                     # key in the one place a reader is deciding what to do about
+                     # it, next to a chips row spelling the same state properly.
+                     (f"{_STATE_LABEL.get(worst[0][1], worst[0][1].replace('_', ' '))} "
+                      f"({worst[0][0]})") if worst else "—"])
         if len(rows) >= limit:
             break
     return rows
@@ -160,6 +165,9 @@ _STATE_LABEL = {
     "indexed": "indexed",
     "crawled_not_indexed": "crawled, not indexed",
     "discovered_not_indexed": "discovered, never crawled",
+    # Google's own answer, not a gap in this instrument — distinct from
+    # "unknown" below, which is the API returning no coverage state at all.
+    "unknown_to_google": "unknown to Google",
     "duplicate": "duplicate / alternate",
     "excluded_noindex": "noindex",
     "blocked": "blocked",

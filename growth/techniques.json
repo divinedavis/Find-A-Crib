@@ -171,14 +171,14 @@
     "retired": null,
     "notes": "Drafts only, never auto-sends \u2014 bulk cold mail from findacrib.com would put the saved-building alert emails into spam, and cold outreach carries CAN-SPAM and GDPR obligations that need a human decision. Needs the Anthropic key.",
     "verdict": {
-      "decided": "2026-08-16",
+      "decided": "2026-08-17",
       "works": true,
       "why": "mrr_usd median 0.0/day since activation (no pre-activation baseline)",
       "measured": {
         "metric": "mrr_usd",
         "median_after": 0.0,
         "median_before": null,
-        "days_measured": 21
+        "days_measured": 22
       }
     },
     "revisit_on": "2026-08-25"
@@ -967,6 +967,60 @@
     "revisit_on": null,
     "retired": null,
     "notes": "effort: weeks\nexpected: 40 es-US pages live in 6 weeks. At 90 days: 400+ Spanish-query impressions/month in Search Console, 25+ organic Spanish-language sessions/month, and at least 2 inbound links from bilingual tenant or legal-aid organizations that discovered the Spanish pages. Track as a separate market segment; kill it at 120 days if impressions stay under 100/month.\nfirst step: Translate one page only \u2014 the NYC 'is my apartment rent stabilized' guide \u2014 pay a native Spanish-speaking NYC tenant organizer or paralegal to review it for terminology (renta estabilizada vs control de renta vs renta controlada), ship it at /es/ with correct hreflang pairs, and measure whether it earns impressions before commissioning the other 39.",
+    "verdict": null
+  },
+  {
+    "id": "T052",
+    "slug": "four_city_allowable_increase_index",
+    "name": "Canonical four-city allowable-increase index (dated, sourced, versioned)",
+    "hypothesis": "Find A Crib is the only site holding property-level data for all four cities, but every page it publishes is single-city, so it never gets to be the one URL that answers the comparative question. A single maintained table \u2014 current allowable increase, effective lease window, board/agency that set it, official source URL, last-verified date, plus a visible change history for the last five orders \u2014 is the exact extractable shape answer engines lift and the exact citation a housing reporter needs when writing 'rents can rise X% in LA but 0% in NYC'. It is cheap to maintain (four numbers, changed a handful of times a year), it is the highest-authority thing the site can say without any building-level data, and each row links down into the city hub and the building search, so it feeds the existing funnel instead of sitting apart. Unlike the calculators candidate it does not compute anything, and unlike direct-answer blocks it is one cross-city asset rather than per-hub text.",
+    "kind": "content",
+    "status": "candidate",
+    "prefixes": [],
+    "metric": "organic_visitors",
+    "source": "scout:2026-08-17",
+    "evidence": "AI answers now intercept most informational queries \u2014 Q1 2026 BrightEdge data put AI Overviews on <cite index=\"12-7\">an estimated 58% of all U.S. search result pages for informational queries</cite> (https://upgrowth.in/artificial-intelligence-search-engine-optimization-strategy-2026/), and the tactic that earns citation is answer-first, tightly structured passages: <cite index=\"13-1,13-2,13-3\">state the answer in the first 40\u201360 words of a section, because engines extract top-down, and proper H2\u2192H3\u2192H4 structure sees roughly 2.8x more citation lift</cite> (https://www.spinxdigital.com/blog/answer-engine-optimization-how-to-rank-in-ai-search/). The underlying question is live right now: NYC's board set a freeze so that <cite index=\"26-12,26-13\">for stabilized leases starting or renewing 1 Oct 2026 through 30 Sep 2027 there will be no increase</cite> (https://www.nyc.gov/main/services/rent-increase-guide), which is precisely when 'how much can it go up here vs there' peaks.",
+    "added": "2026-08-17",
+    "activated": null,
+    "revisit_on": null,
+    "retired": null,
+    "notes": "effort: days\nexpected: One /rent-increases/ hub live within a week, each of the four rows carrying a primary-source URL and a verification date. Within 60 days: 300+ Search Console impressions/month on increase-shaped queries (from 89 total site-wide today), a top-10 position for at least two of the four '<city> rent increase 2026' queries, and appearance as a cited source in at least 2 of 12 tracked AI-answer probes. Within 90 days: 2+ earned external links from a housing outlet, tenant org or newsletter pointing at this URL.\nfirst step: Create /rent-increases/ with one HTML table: city, current allowable increase for 1-year and 2-year leases, lease-commencement window it applies to, issuing body, official source URL, and 'verified 2026-08-17' \u2014 each cell manually checked against the RGB, SF Rent Board, LAHD and DC RAD pages today.",
+    "verdict": null
+  },
+  {
+    "id": "T053",
+    "slug": "index_coverage_census",
+    "name": "URL Inspection API index census before any further page building",
+    "hypothesis": "47,600 pages producing 89 impressions has three possible causes with completely different fixes: Google never discovered the URLs, discovered but never crawled them, or crawled and rejected them. The site is currently guessing, and every candidate in the ledger that touches page quality (index triage, computed facts, address aliases, tenant layer) is a bet placed blind. Search Console's UI shows aggregate counts but not per-tier breakdowns; the URL Inspection API returns coverageState and lastCrawlTime for up to 2,000 URLs/day, which is enough to run a stratified sample (building pages vs neighborhood vs ZIP vs guides, linked vs sitemap-only) and get an actual index rate per tier in under a week. That single number decides whether the next month is spent pruning or promoting \u2014 and it is the same instrument that will prove whether the triage worked.",
+    "kind": "indexing",
+    "status": "candidate",
+    "prefixes": [],
+    "metric": "organic_visitors",
+    "source": "scout:2026-08-17",
+    "evidence": "The 2026 consensus is that crawl no longer implies index for templated pages at scale: <cite index=\"1-14,1-15\">being crawled no longer means being indexed, and programmatic sites that don't prove value page by page lose coverage over time</cite> (https://www.ranktracker.com/blog/programmatic-seo-2026/), and <cite index=\"4-10\">indexation rates for pSEO sites have dropped sharply, making quality gates essential before publishing at scale</cite> (https://www.tryvizup.com/blog/programmatic-seo-trends-2026). Google itself now treats thin templated scale as a spam category \u2014 <cite index=\"9-2,9-3\">search engines draw a bright line between legitimate programmatic pages with real data and scaled content abuse</cite> (https://metaflow.life/blog/what-is-programmatic-seo). Both point the same way: measure coverage per template tier before adding pages.",
+    "added": "2026-08-17",
+    "activated": null,
+    "revisit_on": null,
+    "retired": null,
+    "notes": "effort: days\nexpected: Within 7 days, a per-tier index rate table covering a 3,000-URL stratified sample, e.g. 'building pages 4% indexed, ZIP hubs 61%, guides 100%'. Success is a decision, not traffic: a written prune/promote list, then indexed-URL share on the retained set rising above 60% within 90 days and site-wide impressions above 1,000/month.\nfirst step: Enable the Search Console URL Inspection API on the existing service account and run it tonight against 500 URLs sampled evenly across building / neighborhood / ZIP / guide tiers, logging coverageState, robotsTxtState, lastCrawlTime and referring-links count to a CSV.",
+    "verdict": null
+  },
+  {
+    "id": "T054",
+    "slug": "fixed_scope_research_on_service_marketplaces",
+    "name": "Sell a fixed-scope lookup where buyers already search: service marketplaces",
+    "hypothesis": "Every revenue path in the ledger except B2B outreach needs traffic the site does not have \u2014 10 visitors/day cannot yield 2,000 subscribers at $4.99. The one thing already measured as working here is going to buyers directly. Service marketplaces (Upwork Project Catalog, Fiverr Pro, and paralegal/legal-support marketplaces) are the same motion with the demand pre-existing: people already search those platforms for 'NYC rent history research', 'DHCR records', 'tenant due diligence', and buy fixed-price deliverables without a sales call. The operator can produce a 2-page, sourced stabilization + registration + violations brief from the existing dataset in about 20 minutes, so a $99 fixed-scope order is 80%+ margin, and it validates real willingness-to-pay for the unbuilt $39 rent-history review and $79 evidence certificate before either is built. Buyers who order twice (paralegals, tenant-side firms, small brokers) are exactly the $49 Pro and bulk-screening prospects the ledger wants. Strictly factual research, no legal advice, no representation \u2014 which keeps it clean and keeps credibility intact.",
+    "kind": "content",
+    "status": "candidate",
+    "prefixes": [],
+    "metric": "organic_visitors",
+    "source": "scout:2026-08-17",
+    "evidence": "Packaged, outcome-priced deliverables are outperforming flat access subscriptions: <cite index=\"19-1,19-2\">buyers increasingly prefer outcome-based pricing over flat-rate subscriptions \u2014 they pay for results, not access \u2014 and the moat is the proprietary data and domain knowledge layered on top</cite> (https://medium.com/activated-thinker/5-underrated-ai-niches-for-massive-monetization-in-2026-ca8147484158). HBR's framing of data monetization is the same discipline: <cite index=\"25-4,25-5,25-7\">clarify who the data customers are and what problem the data solves, choose between direct monetization such as subscriptions or licensing and indirect approaches, and note that packaging matters</cite> (https://hbr.org/2025/11/how-to-monetize-your-data). Directory economics point at capturing high-intent demand rather than charging for mere presence \u2014 <cite index=\"18-3,18-4\">lead generation is one of the most lucrative directory models in 2026, collecting inquiries from users seeking a service</cite> (https://www.edirectory.com/updates/how-directory-websites-make-money/).",
+    "added": "2026-08-17",
+    "activated": null,
+    "revisit_on": null,
+    "retired": null,
+    "notes": "effort: days\nexpected: 3 marketplace listings live within 7 days. First paid order within 21 days; 3\u20136 orders/month at $99 by day 60 ($300\u2013$600/mo \u2014 the first non-zero revenue the business has had). By day 90: at least one buyer who has ordered 3+ times, converted to a standing arrangement or the $49 tier, and a documented price point (order volume at $99 vs $149) to set the one-off Building Report price.\nfirst step: Publish one Upwork Project Catalog listing today \u2014 'NYC apartment rent-stabilization status + DHCR registration & HPD violation research, 24-hour turnaround, $99' \u2014 with a redacted sample deliverable PDF generated from a real building page and an explicit 'factual research only, not legal advice' scope line.",
     "verdict": null
   }
 ]

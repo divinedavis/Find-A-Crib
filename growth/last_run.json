@@ -53,40 +53,58 @@
     }
   },
   "indexstatus": {
-    "added": 388,
-    "at": "2026-08-16T05:11:54+00:00",
+    "added": 0,
+    "at": "2026-08-17T05:11:12+00:00",
     "cohort": 388,
-    "date": "2026-08-16",
-    "detail": "2 inspection(s) failed, first: https://findacrib.com/building/brooklyn/450-95th-st-3061230038/: TimeoutError: The read operation timed out",
+    "date": "2026-08-17",
     "dropped": 0,
-    "errors": 2,
-    "indexed_pct": 3.1,
-    "inspected": 98,
+    "errors": 0,
+    "indexed_pct": 3.5,
+    "inspected": 100,
     "ok": true,
     "published_urls": 47667,
-    "read": 98
+    "read": 198,
+    "states": {
+      "crawled_not_indexed": 32,
+      "indexed": 7,
+      "other": 159
+    }
   },
   "measure": {
-    "at": "2026-08-16T05:11:54+00:00",
-    "coverage_pct": 82.2,
-    "date": "2026-08-16",
+    "at": "2026-08-17T05:11:13+00:00",
+    "coverage_pct": 82.0,
+    "date": "2026-08-17",
     "days": 1,
-    "keywords_covered": 162,
-    "keywords_total": 197,
-    "latest_measured_day": "2026-08-15"
+    "keywords_covered": 182,
+    "keywords_total": 222,
+    "latest_measured_day": "2026-08-16"
+  },
+  "outreach": {
+    "at": "2026-08-17T05:17:51+00:00",
+    "date": "2026-08-17",
+    "drafted": 0,
+    "ok": true,
+    "segment": "legal"
+  },
+  "scout": {
+    "at": "2026-08-17T05:15:16+00:00",
+    "date": "2026-08-17",
+    "keywords_added": 18,
+    "ok": true,
+    "techniques_added": 3
   },
   "searchconsole": {
-    "at": "2026-08-16T05:00:05+00:00",
+    "at": "2026-08-17T05:00:05+00:00",
     "clicks": 0,
-    "date": "2026-08-16",
-    "impressions": 3,
-    "page_clicks": 2,
-    "page_impressions": 118,
-    "serving_ever": 235,
-    "serving_pages": 69,
-    "serving_stable": 58,
+    "date": "2026-08-17",
+    "impressions": 1,
+    "page_clicks": 1,
+    "page_impressions": 93,
+    "serving_ever": 245,
+    "serving_pages": 67,
+    "serving_stable": 57,
     "share_pct": 0.0,
     "tracked_ranking": 0,
-    "window": "2026-08-07..2026-08-14"
+    "window": "2026-08-08..2026-08-15"
   }
 }

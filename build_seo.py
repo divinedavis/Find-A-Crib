@@ -700,6 +700,7 @@ body{margin:0;font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,
 a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
 header.site{background:#fff;border-bottom:1px solid var(--line);padding:14px 20px}
 header.site a.brand{font-weight:700;color:var(--ink);font-size:18px}
+header.site .cities{display:block;margin-top:5px;font-size:13px;color:var(--ink2)}
 main{max-width:880px;margin:0 auto;padding:28px 20px 60px}
 h1{font-size:28px;line-height:1.2;margin:.2em 0 .4em}
 h2{font-size:20px;margin:1.6em 0 .5em}
@@ -863,6 +864,39 @@ generally treated as covered rather than exempt.""",
 }
 
 
+# The three non-NYC city hubs, linked from the header of every page this
+# pipeline writes. Two reasons, and the second one is the measured one.
+#
+# For a reader: a Brooklyn address page offered exactly two onward links —
+# "All neighborhoods" and "Guides" — and no route at all to the other three
+# cities this site covers. Someone reading about a Bed-Stuy building because
+# they are moving to LA had nowhere to go.
+#
+# For crawling: /building/ is the ONLY tier Googlebot is currently fetching —
+# on 2026-08-18 it was 51 of the 65 fetched URLs in the sampled cohort, with
+# fresh crawls on 08-16, 08-17 and 08-18, while /dc/ and /la/ had never been
+# fetched at all and /sf/ not since 07-28. The root index.html has linked all
+# three from its city nav for weeks and Google has not followed it, so this is
+# not a new signal — it is the same signal from 47,165 pages instead of one,
+# which is a different weight rather than a different idea. Judge it on
+# index_fetched_pct for the dc/la/sf families (growth/indexstatus.py), not on
+# traffic, and give it a fortnight: at 1-5 fetches a night the crawler needs
+# time to arrive. If those families are still 0% fetched in two weeks, link
+# volume is not the constraint and the next thing to suspect is site-level
+# crawl rationing, which no amount of internal linking fixes.
+#
+# Anchor text is the wording the homepage already uses for these three, which
+# is accurate for each: SF and DC are rent CONTROL registries, LA is the RSO.
+# The coverage caveats — LA derived and "likely RSO", SF anonymized to the
+# block — live on the hub pages themselves, which is where a caveat belongs;
+# naming a destination is not asserting a claim about its contents.
+CITY_NAV = (
+    '<span class="cities">Also mapped: '
+    '<a href="/sf/">rent-controlled San Francisco</a> &nbsp;·&nbsp; '
+    '<a href="/la/">rent-stabilized (RSO) Los Angeles</a> &nbsp;·&nbsp; '
+    '<a href="/dc/">rent-controlled Washington DC</a></span>')
+
+
 def page(title, desc, canonical, body, jsonld=None, footer=None):
     ld = ""
     if jsonld:
@@ -880,7 +914,7 @@ def page(title, desc, canonical, body, jsonld=None, footer=None):
 <style>{CSS}</style>{ld}</head><body>
 <header class="site"><a class="brand" href="/">🏠 Find A Crib</a> &nbsp;·&nbsp;
 <a href="/buildings/">All neighborhoods</a> &nbsp;·&nbsp;
-<a href="/guide/">Guides</a></header>
+<a href="/guide/">Guides</a>{CITY_NAV}</header>
 <main>{body}</main>
 <footer class="site">{footer or NYC_FOOTER}
 &copy; Find A Crib. <a href="/">Open the interactive map →</a></footer>

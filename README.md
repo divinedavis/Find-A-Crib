@@ -235,7 +235,7 @@ but `growth_run.sh` is on the droplet, in the right checkout, with `GROWTH_DOCRO
 already set, and it demonstrably runs every morning. It now re-runs the refresh
 the missing cron owes: `seo_watchdog()` fires only on the `build` job, only when
 every non-growth-owned `sitemap-*.xml` in the docroot is more than `SEO_STALE_DAYS`
-(default 2) old, under `flock` and `timeout` (default 3600s), with every failure
+(default 1) old, under `flock` and `timeout` (default 3600s), with every failure
 swallowed so it can never cost the night's ledger push. It runs
 `./scripts/refresh_seo.sh` from the growth checkout — which `growth_run.sh` has
 just pulled — rather than the copy in `$SEO_BUILD`, so the script is always the
@@ -248,6 +248,17 @@ that is the switch to use if the pipeline is ever stopped on purpose. **If a new
 growth-written `sitemap-*.xml` is ever added to the docroot it must be excluded
 in `seo_watchdog()` as well as in `GROWTH_OWNED_SITEMAPS`, or the watchdog reads
 it as freshness and silently stops firing.**
+
+`SEO_STALE_DAYS` was 2 until 2026-08-18, and at 2 the watchdog was firing only
+every third night: `find -mtime -2` still matches a sitemap written 48h ago, so
+the night after a watchdog run and the night after that both read as fresh. With
+the 04:10 cron dead since at least 08-14 the watchdog is the *only* route from
+this repo to the 47,600 published pages, so that made the corpus deploy on a
+three-day cycle — `seo_watchdog_finish` appears in the heartbeat on 08-15 and
+then not again until 08-18. At 1 it runs nightly and the anti-race property is
+unchanged: a healthy 04:10 cron's sitemaps are 1.5h old when the 05:40 build
+looks, well inside `-mtime -1`, so the watchdog still stands down whenever the
+real cron is working.
 
 **Publishing a page and getting it into a sitemap are two separate jobs, and the
 handover between the pipelines dropped the second one.** `t_sitemap_daily` built
@@ -363,6 +374,35 @@ long-known URLs "unknown". A URL it has genuinely never fetched also carries no
 `lastCrawlTime` and `pageFetchState: PAGE_FETCH_STATE_UNSPECIFIED`; a relabelled
 one keeps its crawl time. On 2026-08-17 all 159 "unknown" readings had no crawl
 time and all 39 known ones had both a crawl time and `SUCCESSFUL`.
+
+**`index_pct` is a product of two independent rates, and since 2026-08-18 both
+are recorded.** `index_fetched_pct` is how many read URLs Google has ever
+fetched (`lastCrawlTime` is non-null) — a discovery number that links and
+sitemaps move and that nothing about the page itself can. `index_accept_pct` is
+how many of *those* it kept — a quality judgement that submitting more URLs
+cannot move. On 2026-08-18 they were 21.8% and 16.9%, whose product is the 3.7%
+`index_pct` that three weeks of reviews had been arguing about as though it were
+one problem. Judge a change on the half it was aimed at: a linking fix that
+moves `fetched_pct` and leaves `accept_pct` flat did exactly what it should.
+Both are also broken out per page family in the daily report's index table,
+which is where the tiers diverge — on 2026-08-18 `/building/` read 20.4% fetched
+while `/guide/`, `/brief/`, `/section8/`, `/dc/` and `/la/` read 0%.
+
+**`summarise()` re-derives every bucket from the stored raw `state` string; it
+never reads `rec["bucket"]` back.** `inspect()` stamps a bucket at read time, so
+without this a URL keeps whatever vocabulary `bucket()` knew on the night it was
+inspected until it is re-inspected, four nights later. When `bucket()` learned
+`unknown_to_google` on 08-17, 159 of 298 readings kept the stale `other` label
+and the series reported `unknown_to_google 74 / other 159` for a cohort whose
+real split was 233 / 0 — and `other` is documented to mean "a wording this module
+has not learned yet", so the report was asking the next review to hunt a needle
+that already existed. Re-deriving makes any future `bucket()` fix retroactive
+the moment it lands. The daily report follows the same rule: `_index_summary()`
+in `report.py` recomputes from the cohort rather than reading back the cached
+`summary` blob, so a counting change shows up the same morning instead of a
+night later. The append-only `results.jsonl` series is *not* rewritten — a
+frozen record of what was believed on the day is the point of it — so a row from
+before a `bucket()` fix stays as it was recorded.
 
 Everything is driven by a **ledger** (`growth/techniques.json`), so the ledger —
 not the code — decides what runs. Flipping a technique to `retired` stops it

@@ -376,30 +376,93 @@ def inspect(token, url, timeout=30):
 # ------------------------------------------------------------------ summarise
 
 def summarise(cohort):
-    """Per-family and overall counts over whatever has been read so far."""
+    """Per-family and overall counts over whatever has been read so far.
+
+    The bucket is RE-DERIVED from the stored raw `state` string on every call
+    rather than read back from `rec["bucket"]`, and that is load-bearing.
+    inspect() stamps a bucket at read time, so a URL keeps whatever vocabulary
+    bucket() knew on the night it was inspected until it happens to be
+    re-inspected — four nights later, at the current rotation. On 2026-08-18
+    that meant 159 of 298 readings still carried `other` while their own stored
+    state read, literally, "URL is unknown to Google": bucket() learned that
+    wording on 08-17 and the backlog could not benefit from it. The daily series
+    therefore reported unknown_to_google 74 / other 159 when the truth was 233 /
+    0 — and `other` is documented to mean "wording this module has not learned
+    yet, add a needle", so the report was standing there asking the next review
+    to go find a needle that already existed.
+
+    Re-deriving makes every future bucket() improvement retroactive across the
+    whole cohort the moment it lands, which is the only behaviour that lets
+    `other` keep meaning what its comment says it means. The raw state is
+    already stored on every record, so this costs nothing but the lookup.
+    """
     fams = {}
     for url, rec in cohort.items():
         fam = rec.get("family") or family(url)
         f = fams.setdefault(fam, {"cohort": 0, "read": 0, "indexed": 0,
-                                  "buckets": {}, "wrong_canonical": 0})
+                                  "fetched": 0, "buckets": {},
+                                  "wrong_canonical": 0})
         f["cohort"] += 1
-        b = rec.get("bucket")
-        if not b:
+        # `checked` is stamped by inspect() on every successful call and by
+        # nothing else, so it — not the presence of a bucket or a state — is
+        # what separates "read" from "still waiting its turn". A URL Google
+        # answers about with no coverageState at all is read, and buckets as
+        # `unknown`.
+        if not (rec.get("checked") or rec.get("bucket")):
             continue
+        b = bucket(rec.get("state"))
         f["read"] += 1
         f["buckets"][b] = f["buckets"].get(b, 0) + 1
         if b == "indexed":
             f["indexed"] += 1
+        # Has Google ever fetched this URL? lastCrawlTime is the direct
+        # evidence and the discriminator the unknown_to_google comment names,
+        # so it is used here rather than inferring it from the bucket. On
+        # 2026-08-18 the two agreed exactly — all 233 unknown_to_google rows had
+        # no crawl time, all 65 others had one — and if they ever disagree, the
+        # crawl time is the fact and the coverage prose is the summary of it.
+        if rec.get("crawled"):
+            f["fetched"] += 1
         if rec.get("google_canonical"):
             f["wrong_canonical"] += 1
     for f in fams.values():
         f["indexed_pct"] = round(100.0 * f["indexed"] / f["read"], 1) if f["read"] else None
+        f["fetched_pct"] = round(100.0 * f["fetched"] / f["read"], 1) if f["read"] else None
+        f["accept_pct"] = (round(100.0 * f["indexed"] / f["fetched"], 1)
+                           if f["fetched"] else None)
     total = {"cohort": sum(f["cohort"] for f in fams.values()),
              "read": sum(f["read"] for f in fams.values()),
              "indexed": sum(f["indexed"] for f in fams.values()),
+             "fetched": sum(f["fetched"] for f in fams.values()),
              "wrong_canonical": sum(f["wrong_canonical"] for f in fams.values())}
     total["indexed_pct"] = (round(100.0 * total["indexed"] / total["read"], 1)
                             if total["read"] else None)
+    # Discovery and acceptance are independent failures with opposite fixes, and
+    # indexed_pct is their product — which is why three weeks of reviews read
+    # "3.7% indexed" as one problem and argued about which one it was.
+    #
+    #   fetched_pct  did Google ever come and get the page? 21.8% on 2026-08-18.
+    #                A discovery/crawl-budget number. Links and sitemaps move it;
+    #                nothing about the page itself does, because nothing about
+    #                the page has been seen.
+    #   accept_pct   of the pages it did fetch, how many did it keep? 16.9% on
+    #                2026-08-18 — 54 of 65 fetched URLs came back "crawled,
+    #                currently not indexed". A quality/duplication judgement.
+    #                Submitting more URLs cannot move it and consolidating might.
+    #
+    # Recorded separately so a change can be judged on the one it was aimed at:
+    # a sitemap or linking fix that moves fetched_pct and leaves accept_pct flat
+    # worked exactly as intended, and reading that as failure — or as success —
+    # off the combined rate is a coin toss.
+    total["fetched_pct"] = (round(100.0 * total["fetched"] / total["read"], 1)
+                            if total["read"] else None)
+    total["accept_pct"] = (round(100.0 * total["indexed"] / total["fetched"], 1)
+                           if total["fetched"] else None)
+    # The newest crawl date anywhere in the cohort: "is Googlebot still coming
+    # at all", which no rate answers. A cohort whose newest crawl is a week old
+    # is a different emergency from one that is crawled nightly and declined.
+    crawls = [r.get("crawled") for r in cohort.values() if r.get("crawled")]
+    total["last_crawl"] = max(crawls) if crawls else None
     # The site-wide state split. "3% indexed" says the corpus is not being
     # accepted; it does not say why, and the two dominant failure states imply
     # opposite work. "Discovered - currently not indexed" means Google knows the
@@ -503,8 +566,16 @@ def collect(docroot, budget=None):
                               ("index_read", tot["read"]),
                               ("index_indexed", tot["indexed"]),
                               ("index_wrong_canonical", tot["wrong_canonical"]),
-                              ("index_pct", tot["indexed_pct"])):
-            ledger.record_result(today, "__site__", metric, value)
+                              ("index_pct", tot["indexed_pct"]),
+                              # The two halves index_pct multiplies together.
+                              # See summarise(): a linking fix is judged on
+                              # fetched_pct and a consolidation on accept_pct,
+                              # and neither is legible in the combined rate.
+                              ("index_fetched", tot["fetched"]),
+                              ("index_fetched_pct", tot["fetched_pct"]),
+                              ("index_accept_pct", tot["accept_pct"])):
+            if value is not None:
+                ledger.record_result(today, "__site__", metric, value)
         # index_status.json holds only the LATEST state per URL, so it can never
         # answer "did pages move from discovered to crawled to indexed after we
         # changed something" — the question any fix to a 3%-indexed corpus has
@@ -524,6 +595,12 @@ def collect(docroot, budget=None):
     out = {"ok": ok, "inspected": inspected, "errors": errors,
            "cohort": tot["cohort"], "read": tot["read"],
            "indexed_pct": tot["indexed_pct"],
+           # Both halves in last_run.json, because that file is what the cloud
+           # review reads first and "21.8% ever fetched, 16.9% of those kept" is
+           # the whole diagnosis in two numbers.
+           "fetched_pct": tot["fetched_pct"],
+           "accept_pct": tot["accept_pct"],
+           "last_crawl": tot["last_crawl"],
            "published_urls": len(published),
            "added": len(added), "dropped": len(dropped),
            # last_run.json is committed nightly and is the first thing a review

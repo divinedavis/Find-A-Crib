@@ -105,6 +105,29 @@ def _last(metric):
     return s[-1][1] if s else None
 
 
+def _index_summary():
+    """The index-coverage summary, RECOMPUTED from the cohort, not read back.
+
+    index_status.json carries both the per-URL cohort and a `summary` blob, and
+    the blob is a cache written by whichever version of summarise() last ran on
+    the droplet. Reading it back means every improvement to the counting — a new
+    coverage-state needle, a new rate — shows up in the report a night late, and
+    shows up as "—" in the meantime, which is indistinguishable from a stratum
+    with nothing read yet. The cohort is the fact; the summary is a view of it,
+    and it is cheap enough (a few hundred records) to take the view fresh.
+
+    Returns None if the file cannot be read, so callers can tell "no data" from
+    "data that summarises to nothing".
+    """
+    try:
+        from . import indexstatus
+        with open(indexstatus.STATUS_PATH) as f:
+            cohort = json.load(f).get("cohort") or {}
+        return indexstatus.summarise(cohort) if cohort else None
+    except Exception:
+        return None
+
+
 def _index_families(limit=8):
     """Rows for the sampled index-coverage table: one page family per row.
 
@@ -112,30 +135,35 @@ def _index_families(limit=8):
     unread stratum is not a failing one, and on a cohort that refreshes over
     several days there is always one.
     """
-    try:
-        from . import indexstatus
-        with open(indexstatus.STATUS_PATH) as f:
-            fams = (json.load(f).get("summary") or {}).get("by_family") or {}
-    except Exception:
+    fams = (_index_summary() or {}).get("by_family") or {}
+    if not fams:
         return []
+    def _cell(pct):
+        if pct is None:
+            return ("—", "")
+        return (f"{pct}%", "good" if pct >= 70 else ("warn" if pct >= 30 else "bad"))
+
     rows = []
     for name, f in sorted(fams.items(), key=lambda kv: -(kv[1].get("read") or 0)):
         read = f.get("read") or 0
         if not read:
             continue
-        pct = f.get("indexed_pct")
-        worst = sorted(((v, k) for k, v in (f.get("buckets") or {}).items()
-                        if k != "indexed"), reverse=True)
+        # Fetched and Kept, not "indexed" and "top non-indexed state". The old
+        # fourth column spelled out the dominant failure state in prose, which
+        # these two rates now say numerically and per-stratum: a low Fetched is a
+        # distribution problem for that tier (Google never came), a high Fetched
+        # with a low Kept is a quality one (it came and declined). That is the
+        # actual fork in the road and it is different per family — on 2026-08-18
+        # /building/ read 20.4% fetched / 17.6% kept while /guide/, /brief/,
+        # /section8/, /dc/ and /la/ read 0% fetched, meaning every verdict ever
+        # recorded against those tiers measured distribution, not demand.
+        # Kept is "—" rather than 0% when nothing was fetched: no page has been
+        # judged, so there is no acceptance rate to report, and a 0 there would
+        # read as a quality verdict Google never gave.
         rows.append([f"/{name}/" if name != "(root)" else "/",
-                     (f"{pct}%", "good" if (pct or 0) >= 70 else
-                      ("warn" if (pct or 0) >= 30 else "bad")),
-                     str(read),
-                     # Same prose the chips row uses. This column read
-                     # "crawled_not_indexed (1)" until 2026-08-17 — a raw bucket
-                     # key in the one place a reader is deciding what to do about
-                     # it, next to a chips row spelling the same state properly.
-                     (f"{_STATE_LABEL.get(worst[0][1], worst[0][1].replace('_', ' '))} "
-                      f"({worst[0][0]})") if worst else "—"])
+                     _cell(f.get("fetched_pct")),
+                     _cell(f.get("accept_pct")),
+                     str(read)])
         if len(rows) >= limit:
             break
     return rows
@@ -144,15 +172,26 @@ def _index_families(limit=8):
 def _index_states():
     """Site-wide coverage-state split as chips: "crawled, not indexed — 61".
 
-    Read from the ledger series rather than index_status.json, so this survives
-    anywhere the metrics do and shows the same numbers the journal can plot.
+    Counted from the cohort when it is readable, and from the ledger series
+    otherwise, so the report still renders anywhere the metrics do.
+
+    The cohort comes first because the series is append-only history and a day's
+    row is frozen at whatever the code knew that morning. On 2026-08-18 the
+    recorded row said `unknown to Google — 74, state not recognised — 159` while
+    the cohort those numbers were counted from held 233 URLs whose stored state
+    read "URL is unknown to Google" — see summarise(). Plotting the frozen row is
+    right; showing it as today's split is not, and the two blocks disagreeing in
+    one email is worse than either. The series is not rewritten to match: an
+    append-only record of what was believed on the day is the point of it.
+
     Empty buckets are dropped: the series is deliberately dense so a zero is a
     fact, but a chip row of nine zeroes is nine chips of noise.
     """
     from . import indexstatus
+    buckets = ((_index_summary() or {}).get("total") or {}).get("buckets")
     out = []
     for b in indexstatus.BUCKETS:
-        n = _last(f"index_state_{b}")
+        n = buckets.get(b) if buckets else _last(f"index_state_{b}")
         if not n:
             continue
         out.append(f"{_STATE_LABEL.get(b, b.replace('_', ' '))} — {_fmt(n)}")
@@ -290,7 +329,13 @@ def build_blocks(run_log=None, review_out=None):
         # ---- the measured index rate, which is a different question from the
         # footprint above and the one that decides whether to publish more pages
         # or fewer. Sampled from the URL Inspection API — see growth/indexstatus.py.
-        _read, _pct_ix = _last("index_read"), _last("index_pct")
+        # Same rule as _index_states(): count from the cohort when it is there,
+        # fall back to the frozen series row when it is not.
+        _ixtot = (_index_summary() or {}).get("total") or {}
+        _read = _ixtot.get("read") or _last("index_read")
+        _pct_ix = _ixtot.get("indexed_pct")
+        if _pct_ix is None:
+            _pct_ix = _last("index_pct")
         if _read and _pct_ix is not None:
             B.append({"type": "progress", "label": "Indexed (sampled)",
                       "value": f"{_pct_ix}% of {_fmt(_read)} inspected",
@@ -299,6 +344,24 @@ def build_blocks(run_log=None, review_out=None):
                       "pct": _pct_ix,
                       "tone": "bad" if _pct_ix < 30 else
                               ("warn" if _pct_ix < 70 else "good")})
+            # indexed_pct is the product of two independent failures, and until
+            # 2026-08-18 only the product was reported — so every review since
+            # 07-27 argued about whether "3.7% indexed" meant Google would not
+            # come or would not keep, when the answer was both and in known
+            # proportions. Split out so a fix can be judged on the half it was
+            # aimed at: see summarise() in indexstatus.py.
+            _fet = _ixtot.get("fetched_pct")
+            _acc = _ixtot.get("accept_pct")
+            if _fet is None:
+                _fet, _acc = _last("index_fetched_pct"), _last("index_accept_pct")
+            if _fet is not None and _acc is not None:
+                B.append({"type": "tiles", "items": [
+                    {"label": "Ever fetched", "value": f"{_fet}%",
+                     "delta": "Googlebot came for the page",
+                     "tone": "bad" if _fet < 50 else "info"},
+                    {"label": "Kept, of fetched", "value": f"{_acc}%",
+                     "delta": "and did not drop it again",
+                     "tone": "bad" if _acc < 50 else "info"}]})
             # What the un-indexed 97% actually is. The per-family table below
             # gives each stratum's worst state; this gives the site-wide split,
             # which is the line that says which fix applies — see the comment on
@@ -309,7 +372,7 @@ def build_blocks(run_log=None, review_out=None):
             ix = _index_families()
             if ix:
                 B.append({"type": "table",
-                          "cols": ["Page family", "Indexed", "Read", "Top non-indexed state"],
+                          "cols": ["Page family", "Fetched", "Kept", "Read"],
                           "rows": ix})
             _wrong = _last("index_wrong_canonical")
             if _wrong:

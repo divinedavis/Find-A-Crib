@@ -106,6 +106,23 @@ beat finish "$rc" "$pull_state" "$note"
 #   * only on the deploy job, never on the measure or scout runs;
 #   * only when the corpus is already SEO_STALE_DAYS stale, so a healthy 04:10
 #     cron is never raced or duplicated — it wrote at 04:10, we look at 05:40;
+#
+# SEO_STALE_DAYS went 2 -> 1 on 2026-08-18, and the reason is that the thing it
+# was hedging against has not existed for a fortnight. The 04:10 cron has not
+# fired since at least 2026-08-14; the watchdog is now the ONLY path by which
+# build_seo.py, seo_guides.py or anything else in this repo reaches the 47,600
+# published pages. At 2, `find -mtime -2` still matches a sitemap written 48h
+# ago, so the watchdog refused to fire two nights out of three and the corpus
+# deployed once every THREE days — visible in the heartbeat, which shows
+# seo_watchdog_finish on 08-15 and then not again until 08-18. Every content
+# change pushed by the review loop sat in git for an average of a day and a half
+# waiting for it.
+#
+# At 1 the anti-race property is exactly as strong: `-mtime -1` matches anything
+# written in the last 24h, and a healthy 04:10 cron's sitemaps are 1.5h old when
+# this looks at 05:40 — still matched, still skipped. The only slack removed is
+# the extra day that was never load-bearing. If the 04:10 cron is ever repaired
+# this needs no change; it will simply go back to never firing.
 #   * flock, so two watchdogs can never overlap each other;
 #   * timeout, so a hung rebuild cannot hold the ledger push hostage;
 #   * every failure is swallowed — a watchdog must never be the reason the
@@ -119,7 +136,7 @@ beat finish "$rc" "$pull_state" "$note"
 # its own self-pull. Its outcome lands in the heartbeat below, which is committed
 # and pushed, so the cloud review reads the result the same morning.
 SEO_BUILD=${SEO_BUILD_DIR:-/root/dhcr-build}
-SEO_STALE_DAYS=${SEO_STALE_DAYS:-2}
+SEO_STALE_DAYS=${SEO_STALE_DAYS:-1}
 SEO_TIMEOUT=${SEO_WATCHDOG_TIMEOUT:-3600}
 SEO_LOCK=${SEO_WATCHDOG_LOCK:-/tmp/findacrib-refresh-seo.lock}
 

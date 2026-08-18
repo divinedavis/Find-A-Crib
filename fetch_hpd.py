@@ -134,7 +134,7 @@ def fetch_violations(by_boro):
                 where = (f"boroid='{boroid}' AND block in ({quote_csv(blk_chunk)}) "
                          f"AND lot in ({quote_csv(lot_chunk)})")
                 rows = fetch(VIOLATIONS, {
-                    "$select": "boroid,block,lot,class,currentstatus,novissueddate",
+                    "$select": "boroid,block,lot,class,violationstatus,novissueddate",
                     "$where": where,
                     "$limit": "50000",
                 })
@@ -149,11 +149,14 @@ def fetch_violations(by_boro):
                     cls = (row.get("class") or "").lower()
                     if cls in ("a", "b", "c"):
                         agg[cls] += 1
-                    status = (row.get("currentstatus") or "").upper()
-                    if "CLOSED" in status:
-                        agg["closed"] += 1
-                    else:
+                    # HPD's own Open/Close flag, not the free-text currentstatus:
+                    # that one reads "VIOLATION DISMISSED" as still open, which
+                    # inflated every count and disagreed with the per-violation
+                    # list the site now shows in the building detail sheet.
+                    if (row.get("violationstatus") or "").lower().startswith("open"):
                         agg["open"] += 1
+                    else:
+                        agg["closed"] += 1
                     issued = row.get("novissueddate", "")
                     if issued and issued >= ONE_YEAR_AGO:
                         agg["last_12mo"] += 1

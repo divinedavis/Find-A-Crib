@@ -571,6 +571,20 @@
   .hpd-legend-row + .hpd-legend-row { border-top: 1px solid var(--line); }
   .hpd-legend-row .hpd-stat { font-weight: 700; }
   .hpd-legend-row.hot { background: var(--hot-bg); margin: 0 -8px; padding: 8px; border-radius: 6px; }
+  /* per-violation list: what each open violation actually says (lazy-loaded) */
+  .hpd-viol-btn { display: inline-block; margin: 8px 10px 0 0; background: none; border: none; padding: 0;
+    color: var(--blue); font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer; }
+  .hpd-viol-btn:hover { text-decoration: underline; }
+  .hpd-viols { margin-top: 8px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+    padding: 2px 12px; max-height: 320px; overflow-y: auto; overscroll-behavior: contain; }
+  .hpd-viols[hidden] { display: none; }
+  .hpd-viol { font-size: 12px; line-height: 1.45; padding: 8px 0; }
+  .hpd-viol + .hpd-viol { border-top: 1px solid var(--line); }
+  .hpd-viol-head { margin-bottom: 3px; }
+  .hpd-viol-head .hpd-stat { font-weight: 700; }
+  .hpd-viol-meta { color: var(--ink-2); font-size: 11px; }
+  .hpd-viol-txt { color: var(--ink); }
+  .hpd-viol-note { font-size: 11px; color: var(--ink-2); padding: 8px 0; border-top: 1px solid var(--line); }
   .hpd-link { font-size: 11px; margin-top: 6px; }
   /* in-feed ad tile: same footprint as a building card */
   .card.ad-card { cursor: default; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 0; }
@@ -2195,7 +2209,7 @@
     const v = h.violations;
     const c = h.complaints;
     const vChips = v ? `
-      <span class="hpd-stat ${v.open > 5 ? 'bad' : (v.open > 0 ? 'warn' : '')}">${v.open} open</span>
+      <span class="hpd-stat ${v.open > 5 ? 'bad' : (v.open > 0 ? 'warn' : '')}" data-viol-open>${v.open} open</span>
       <span class="hpd-stat">${v.total} all-time</span>
       ${v.c ? `<button type="button" class="hpd-stat bad hpd-chip" data-cls="C">Class C: ${v.c}</button>` : ''}
       ${v.b ? `<button type="button" class="hpd-stat warn hpd-chip" data-cls="B">Class B: ${v.b}</button>` : ''}
@@ -2236,6 +2250,8 @@
         <h4>HPD violations</h4>
         <div class="hpd-row">${vChips}</div>
         ${vLegend}
+        ${v && v.total ? `<button type="button" class="hpd-viol-btn" data-viol-bbl="${esc(rec.bbl)}" aria-expanded="false">📋 See what the violations are</button>
+        <div class="hpd-viols" hidden></div>` : ''}
       </div>
       <div class="hpd-section">
         <h4>HPD complaints</h4>
@@ -2243,6 +2259,100 @@
         ${link}
       </div>
     `;
+  }
+
+  // ---------- what the violations actually SAY (lazy, per building) ----------
+  // The nightly HPD pull only banks counts — one row per violation is far too much
+  // to carry in buildings.min.json (46k buildings), so the text is fetched from the
+  // same NYC Open Data set (wvxf-dwi5) the moment someone asks for this building.
+  const VIOL_URL = 'https://data.cityofnewyork.us/resource/wvxf-dwi5.json';
+  const VIOL_LIMIT = 60;
+  const violCache = new Map();   // bbl -> Promise<rows>
+  const CLS_WORD = { A: 'Non-hazardous', B: 'Hazardous', C: 'Immediately hazardous' };
+  const CLS_RANK = { C: 0, B: 1, A: 2 };
+
+  function loadViolations(bbl) {
+    if (violCache.has(bbl)) return violCache.get(bbl);
+    // BBLs come from our own data, but this string is interpolated into SoQL —
+    // anything but 10 digits is refused rather than escaped.
+    if (!/^\d{10}$/.test(bbl)) return Promise.reject(new Error('bad bbl'));
+    // HPD's own Open/Close flag, not the free-text currentstatus the aggregate
+    // greps — that one counts "VIOLATION DISMISSED" as open, and showing a
+    // dismissed notice as a live problem is worse than a chip being off by one.
+    const where = `bbl='${bbl}' AND violationstatus='Open'`;
+    const url = VIOL_URL
+      + '?$select=' + encodeURIComponent('class,novdescription,novissueddate,currentstatus,apartment,story')
+      + '&$where=' + encodeURIComponent(where)
+      + '&$order=' + encodeURIComponent('novissueddate DESC')
+      + '&$limit=' + VIOL_LIMIT;
+    const p = fetch(url, { headers: { Accept: 'application/json' } })
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(rows => Array.isArray(rows) ? rows : []);
+    p.catch(() => violCache.delete(bbl));   // let a failed load be retried
+    violCache.set(bbl, p);
+    return p;
+  }
+
+  // HPD's notice text is written for inspectors: it repeats the address, pads with
+  // empty SECTION '' '' fields, and shouts. Trim the boilerplate, keep the substance.
+  function violText(s) {
+    const raw = String(s || '').replace(/\s+/g, ' ').trim();
+    const m = raw.match(/^(§?\s*[\d\-.,§\s]*\d)\s*(HMC|ADM\.? CODE|ADMIN\.? CODE)?\s*:?\s*/i);
+    const cite = m ? ('§ ' + (m[1] + (m[2] ? ' ' + m[2] : '')).replace(/^§\s*/, '')).replace(/\s+/g, ' ').trim() : '';
+    const body = (m ? raw.slice(m[0].length) : raw)
+      .replace(/,?\s*SECTION\s*'+\s*'+\.?/gi, '')
+      .replace(/,?\s*LOCATED AT\s+(THE\s+)?(APT|APARTMENT)\b.*$/i, '')
+      .replace(/\s{2,}/g, ' ')
+      .replace(/[\s,.]+$/, '')
+      .trim();
+    return { cite, body };
+  }
+
+  // "2" -> "2nd floor"; HPD sometimes already writes "2nd", so leave those alone.
+  function floorLabel(story) {
+    const s = String(story || '').trim();
+    if (!s) return '';
+    // HPD also writes "2nd" and words like "Bsmt" / "Roof" — pass those through.
+    if (/^\d+(st|nd|rd|th)$/i.test(s)) return s + ' floor';
+    if (!/^\d+$/.test(s)) return s;
+    const n = +s, t = n % 100;
+    const suf = (t >= 11 && t <= 13) ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th');
+    return n + suf + ' floor';
+  }
+
+  function violRowHtml(r) {
+    const cls = (r.class || '').toUpperCase();
+    const chipCls = cls === 'C' ? 'bad' : (cls === 'B' ? 'warn' : '');
+    const when = (r.novissueddate || '').slice(0, 10);
+    const { cite, body } = violText(r.novdescription);
+    const meta = [
+      when ? 'Issued ' + when : '',
+      r.apartment ? 'Apt ' + r.apartment : '',
+      floorLabel(r.story),
+      cite,
+    ].filter(Boolean).join(' · ');
+    return `<div class="hpd-viol">
+      <div class="hpd-viol-head">
+        ${cls ? `<span class="hpd-stat ${chipCls}">Class ${esc(cls)}${CLS_WORD[cls] ? ' — ' + CLS_WORD[cls] : ''}</span>` : ''}
+      </div>
+      <div class="hpd-viol-txt">${esc(body || 'No description on file.')}</div>
+      ${meta ? `<div class="hpd-viol-meta">${esc(meta)}</div>` : ''}
+    </div>`;
+  }
+
+  function violListHtml(rows) {
+    if (!rows.length) {
+      return '<div class="hpd-viol-note" style="border:none">Nothing open right now — everything HPD cited at this building has been closed out or dismissed.</div>';
+    }
+    const sorted = rows.slice().sort((a, b) => {
+      const ra = CLS_RANK[(a.class || '').toUpperCase()] ?? 3;
+      const rb = CLS_RANK[(b.class || '').toUpperCase()] ?? 3;
+      return ra - rb || String(b.novissueddate || '').localeCompare(String(a.novissueddate || ''));
+    });
+    const head = sorted.length >= VIOL_LIMIT
+      ? `<div class="hpd-viol-note" style="border:none">The ${VIOL_LIMIT} most recent violations HPD still has open here — most serious first. See the full HPD record below for the rest.</div>`
+      : `<div class="hpd-viol-note" style="border:none">${sorted.length} violation${sorted.length === 1 ? '' : 's'} HPD still has open here — most serious first.</div>`;
+    return head + sorted.map(violRowHtml).join('');
   }
 
   function esc(s){return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -2258,6 +2368,12 @@
     if (!root || root._hpdLegendWired) return;
     root._hpdLegendWired = true;
     root.addEventListener('click', e => {
+      const violBtn = e.target.closest('.hpd-viol-btn');
+      if (violBtn) {
+        e.preventDefault(); e.stopPropagation();
+        toggleViolList(violBtn);
+        return;
+      }
       const toggle = e.target.closest('.hpd-legend-toggle');
       const chip = e.target.closest('.hpd-chip');
       if (!toggle && !chip) return;
@@ -2276,6 +2392,35 @@
         toggle.setAttribute('aria-expanded', String(willOpen));
         if (!willOpen) legend.querySelectorAll('.hpd-legend-row.hot').forEach(r => r.classList.remove('hot'));
       }
+    });
+  }
+  // Expand/collapse a building's violation list, loading the text on first open.
+  function toggleViolList(btn) {
+    const box = btn.parentNode.querySelector('.hpd-viols');
+    if (!box) return;
+    const open = box.hasAttribute('hidden');
+    box.toggleAttribute('hidden', !open);
+    btn.setAttribute('aria-expanded', String(open));
+    btn.textContent = open ? '📋 Hide the violations' : '📋 See what the violations are';
+    if (!open || box.dataset.loaded) return;
+    box.dataset.loaded = '1';
+    box.innerHTML = '<div class="hpd-viol-note" style="border:none">Loading violations from NYC Open Data…</div>';
+    const bbl = btn.dataset.violBbl || '';
+    track('violations_open', { bbl });
+    loadViolations(bbl).then(rows => {
+      box.innerHTML = violListHtml(rows);
+      // The banked chip counts anything not literally "CLOSED" (dismissed notices
+      // included) and is only as fresh as the last HPD pull. Now that we have the
+      // live rows, reconcile the chip so it can't sit above a list that disagrees.
+      const chip = btn.closest('.hpd-section') && btn.closest('.hpd-section').querySelector('[data-viol-open]');
+      if (chip && rows.length < VIOL_LIMIT) {
+        chip.textContent = rows.length + ' open';
+        chip.classList.toggle('bad', rows.length > 5);
+        chip.classList.toggle('warn', rows.length > 0 && rows.length <= 5);
+      }
+    }).catch(() => {
+      delete box.dataset.loaded;   // so a tap can retry
+      box.innerHTML = '<div class="hpd-viol-note" style="border:none">Couldn\'t reach NYC Open Data just now. Tap again to retry, or open the full HPD record below.</div>';
     });
   }
   map.on('popupopen', e => { const el = e.popup.getElement(); if (el) wireHpdLegend(el); });

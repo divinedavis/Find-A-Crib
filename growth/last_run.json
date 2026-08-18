@@ -1,12 +1,12 @@
 {
   "build": {
-    "at": "2026-08-17T05:40:25+00:00",
+    "at": "2026-08-18T05:40:18+00:00",
     "changed_urls": 0,
-    "date": "2026-08-17",
+    "date": "2026-08-18",
     "deployed": true,
     "new_urls": 0,
     "seo_corpus": {
-      "days_old": 2,
+      "days_old": 3,
       "written": "2026-08-15"
     },
     "seo_pipeline": {
@@ -14,11 +14,11 @@
       "changed_urls": 47208,
       "corpus_pages": 47637,
       "head": "unknown",
-      "hours_ago": 48.0,
+      "hours_ago": 72.0,
       "phase": "finish",
       "rc": 0,
       "started": "2026-08-15T05:40:17Z",
-      "state": "NO RUN FOR 2.0 DAYS \u2014 cron, the host or the checkout. ran clean",
+      "state": "NO RUN FOR 3.0 DAYS \u2014 cron, the host or the checkout. ran clean",
       "step": "done"
     },
     "techniques": {
@@ -27,7 +27,7 @@
         "ok": true
       },
       "city_seo_expansion": {
-        "detail": "hub pages live: dc 103, la 112, sf 37 \u2014 3 pages published by the daily growth build, browse hubs included (dc 1, la 1, sf 1), because the SEO pipeline has not deployed them \u2014 the docroot's SEO corpus was last written 2026-08-15 (2d ago)",
+        "detail": "hub pages live: dc 103, la 112, sf 37 \u2014 3 pages published by the daily growth build, browse hubs included (dc 1, la 1, sf 1), because the SEO pipeline has not deployed them \u2014 the docroot's SEO corpus was last written 2026-08-15 (3d ago)",
         "ok": true
       },
       "crawl_paths": {
@@ -47,7 +47,7 @@
         "ok": true
       },
       "sitemap_daily": {
-        "detail": "sitemap-daily.xml with 26 URLs (incl. 3 city hub pages)",
+        "detail": "sitemap-daily.xml with 281 URLs (incl. 3 fallback-published guides, 255 city hub pages) \u2014 255 of them live in the docroot but listed in no sitemap the SEO pipeline owns, so they had no crawl path at all until this run",
         "ok": true
       }
     }

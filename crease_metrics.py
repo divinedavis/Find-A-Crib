@@ -66,7 +66,26 @@ PROBE = re.compile(
 
 # Your own machines. A dashboard that counts the person building the site is a
 # dashboard that congratulates them for testing.
-OWNER_IPS = {ip.strip() for ip in os.environ.get("CREASE_OWNER_IPS", "").split(",") if ip.strip()}
+_ENV_OWNER_IPS = {ip.strip() for ip in os.environ.get("CREASE_OWNER_IPS", "").split(",") if ip.strip()}
+# Addresses the site itself registered, from anyone who visited with ?owner=1.
+# A hand-kept list loses every time a phone changes network; this one follows
+# the devices around, the way NEMO's does.
+OWNER_FILE = os.environ.get("CREASE_OWNER_FILE", "/var/lib/crease/owner-ips.json")
+
+
+def owner_ips():
+    ips = set(_ENV_OWNER_IPS)
+    try:
+        with open(OWNER_FILE) as f:
+            for ip in json.load(f).get("ips", []):
+                ips.add(str(ip))
+    except (OSError, ValueError):
+        pass
+    return ips
+
+
+# Kept for the tooling that inspects the filter interactively.
+OWNER_IPS = owner_ips()
 
 # Where a customer cannot be.
 #
@@ -86,11 +105,12 @@ DATACENTER_PREFIXES = (
     "34.", "35.",                                            # Google Cloud
     "54.", "52.", "18.", "3.",                              # AWS
     "164.90.", "167.172.", "165.227.", "104.236.", "159.203.",  # DigitalOcean
-    "20.", "40.", "13.",                                    # Azure
+    "20.", "40.", "13.", "152.233.",                        # Azure
     "43.", "47.",                                           # Tencent / Alibaba
     "5.9.", "95.216.", "168.119.", "116.202.",              # Hetzner
+    "62.210.", "51.15.", "163.172.", "212.83.",             # Scaleway / Online SAS
     "103.196.",                                             # rotating scraper block
-    "45.88.",                                               # seen probing this site
+    "45.88.", "136.0.74.", "149.19.255.",                   # seen probing this site
 )
 
 
@@ -125,6 +145,8 @@ def traffic(rng="all"):
     today = datetime.datetime.utcnow().date()
     cutoff = today - datetime.timedelta(days=days - 1) if days else None
 
+    owners = owner_ips()
+
     # Two passes, because both rules need to know what an address did across
     # the whole day before any of its hits can be judged.
     pages, assets, scanners = [], set(), set()
@@ -148,7 +170,7 @@ def traffic(rng="all"):
                 if PROBE.search(path):
                     scanners.add((day, ip))
                     continue
-                if ip in OWNER_IPS or _datacenter(ip) or BOT.search(ua):
+                if ip in owners or _datacenter(ip) or BOT.search(ua):
                     continue
                 if m.group("method") not in ("GET", "HEAD"):
                     continue

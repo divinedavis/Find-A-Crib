@@ -39,6 +39,12 @@ _CACHE = {}
 
 # Deliberately broad. A crawler counted as a visitor is a lie the dashboard
 # then repeats every day; a person wrongly excluded is one visit, once.
+#
+# The user-agent list is only the honest half of the problem. On this site's
+# first day 62 "visitors" were counted and not one was a person: scanners
+# probing /.env and /wp-admin behind ordinary Chrome and Safari strings, a
+# LeakIX prober, and the owner's own browser automation. Two behavioural rules
+# below do the work the UA string cannot.
 BOT = re.compile(
     r"bot|crawl|spider|slurp|bing|yandex|baidu|duckduck|semrush|ahrefs|mj12|dotbot|"
     r"petal|bytespider|facebookexternalhit|whatsapp|telegram|preview|monitor|uptime|"
@@ -48,6 +54,48 @@ BOT = re.compile(
 # A page view is a page. Chunks, images and the robots file are not visits, and
 # counting them turns one reader into thirty.
 ASSET = re.compile(r"^/(?:_next/|assets/|favicon|robots\.txt|sitemap\.xml|.*\.(?:svg|png|jpg|ico|css|js|map)$)")
+
+# Nobody browsing a dry cleaner asks for /.env. One of these from an address
+# marks everything it did that day as a scan, not a visit.
+PROBE = re.compile(
+    r"\.env|/wp-|/admin|\.git|graphql|phpmyadmin|/vendor|/actuator|/telescope|"
+    r"\.aws|/config\.json|/config/|/backend/|/\.well-known/security|xmlrpc|"
+    r"/owa/|/autodiscover|\.php$",
+    re.I,
+)
+
+# Your own machines. A dashboard that counts the person building the site is a
+# dashboard that congratulates them for testing.
+OWNER_IPS = {ip.strip() for ip in os.environ.get("CREASE_OWNER_IPS", "").split(",") if ip.strip()}
+
+# Where a customer cannot be.
+#
+# The user-agent filter and the asset rule between them still left sixteen
+# "visitors" on day one, and every one was a machine: three OVH addresses
+# sharing a single Windows Chrome string, a Google Cloud range, AWS, and a
+# rotating 103.196.9.x block wearing an iPhone. The tell was never the browser
+# they claimed to be — it was the network. Somebody in Brooklyn booking a
+# pickup arrives on Verizon, Spectrum or T-Mobile, not from a rack in Roubaix.
+#
+# Blunt on purpose: this also drops a real person browsing through a VPN, which
+# for a neighbourhood laundry service is a rounding error against counting a
+# crawler as demand. First octets are matched as prefixes, so the list stays
+# readable rather than exact.
+DATACENTER_PREFIXES = (
+    "158.69.", "167.114.", "51.222.", "51.79.",            # OVH
+    "34.", "35.",                                            # Google Cloud
+    "54.", "52.", "18.", "3.",                              # AWS
+    "164.90.", "167.172.", "165.227.", "104.236.", "159.203.",  # DigitalOcean
+    "20.", "40.", "13.",                                    # Azure
+    "43.", "47.",                                           # Tencent / Alibaba
+    "5.9.", "95.216.", "168.119.", "116.202.",              # Hetzner
+    "103.196.",                                             # rotating scraper block
+    "45.88.",                                               # seen probing this site
+)
+
+
+def _datacenter(ip):
+    return ip.startswith(DATACENTER_PREFIXES)
 
 LINE = re.compile(
     r'^(?P<host>\S+) (?P<ip>\S+) \S+ \S+ \[(?P<ts>[^\]]+)\] '
@@ -77,9 +125,9 @@ def traffic(rng="all"):
     today = datetime.datetime.utcnow().date()
     cutoff = today - datetime.timedelta(days=days - 1) if days else None
 
-    seen, seen_today = set(), set()
-    views = views_today = 0
-    per_day = {}
+    # Two passes, because both rules need to know what an address did across
+    # the whole day before any of its hits can be judged.
+    pages, assets, scanners = [], set(), set()
     referrers = {}
 
     try:
@@ -90,35 +138,59 @@ def traffic(rng="all"):
                     continue
                 if m.group("host") not in HOSTS:
                     continue
-                if m.group("method") not in ("GET", "HEAD"):
-                    continue
-                if BOT.search(m.group("ua")):
+                ip, ua = m.group("ip"), m.group("ua")
+                day = _parse_day(m.group("ts"))
+                if not day:
                     continue
                 path = m.group("path").split("?")[0]
+                who = (day, ip, ua)
+
+                if PROBE.search(path):
+                    scanners.add((day, ip))
+                    continue
+                if ip in OWNER_IPS or _datacenter(ip) or BOT.search(ua):
+                    continue
+                if m.group("method") not in ("GET", "HEAD"):
+                    continue
+
                 if ASSET.match(path):
-                    continue
-                day = _parse_day(m.group("ts"))
-                if not day or (cutoff and day < cutoff):
+                    # Not a page view, but proof a browser was rendering one.
+                    assets.add(who)
                     continue
 
-                who = (m.group("ip"), m.group("ua"))
-                seen.add((day, who))
-                views += 1
-                per_day[day.isoformat()] = per_day.get(day.isoformat(), 0) + 1
-                if day == today:
-                    seen_today.add(who)
-                    views_today += 1
-
-                ref = m.group("ref") or ""
-                if ref and ref != "-" and "creasenyc.com" not in ref and "usecreaseapp.com" not in ref:
-                    host = ref.split("/")[2] if "://" in ref else ref
-                    referrers[host] = referrers.get(host, 0) + 1
+                pages.append((who, day, m.group("ref") or ""))
     except FileNotFoundError:
         pass
 
+    seen, seen_today = set(), set()
+    views = views_today = 0
+    per_day = {}
+
+    for who, day, ref in pages:
+        # A scan and a visit look identical in one line of a log. They differ in
+        # what else the address did: a browser fetches the stylesheet and the
+        # script bundle the page asks for, and a scanner asks for the page and
+        # leaves. Requiring one asset fetch is what separates them, and it is
+        # why this counts lower than the raw log — deliberately.
+        if (day, who[1]) in scanners or who not in assets:
+            continue
+        if cutoff and day < cutoff:
+            continue
+
+        seen.add(who)
+        views += 1
+        per_day[day.isoformat()] = per_day.get(day.isoformat(), 0) + 1
+        if day == today:
+            seen_today.add((who[1], who[2]))
+            views_today += 1
+
+        if ref and ref != "-" and "creasenyc.com" not in ref and "usecreaseapp.com" not in ref:
+            host = ref.split("/")[2] if "://" in ref else ref
+            referrers[host] = referrers.get(host, 0) + 1
+
     # Unique people, not unique person-days: somebody who came Monday and
     # Tuesday is one visitor and two visits.
-    people = {who for _, who in seen}
+    people = {(ip, ua) for _, ip, ua in seen}
     spark = [{"date": d, "views": n} for d, n in sorted(per_day.items())][-14:]
     top_ref = sorted(referrers.items(), key=lambda kv: -kv[1])[:5]
 
@@ -129,6 +201,12 @@ def traffic(rng="all"):
         "views_today": views_today,
         "sparkline": spark,
         "referrers": [{"host": h, "hits": n} for h, n in top_ref],
+        # Said out loud on the tile, because the first honest answer this
+        # dashboard gave was "62 visitors" and the true answer was zero.
+        "scanners_excluded": len({ip for _, ip in scanners}),
+        # What the number means, in the payload rather than only in a comment:
+        # this counts browsers on consumer networks that rendered a page.
+        "basis": "consumer-network browsers that fetched the page and its assets",
     }
 
 

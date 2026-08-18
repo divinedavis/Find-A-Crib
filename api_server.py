@@ -18,6 +18,7 @@ from collections import defaultdict, deque
 from flask import Flask, jsonify, request, g
 
 import build_log             # which run-log lines are work that shipped
+import crease_metrics
 import nemo_metrics          # NEMO Seamless Gutter traffic, same droplet
 
 DATA_DIR = os.environ.get("DATA_DIR", ".")
@@ -218,7 +219,8 @@ def gate():
        or request.path.startswith("/reports/") \
        or request.path.startswith("/embed/") \
        or request.path in ("/dashboard-metrics", "/dashboard-users",
-                           "/dashboard-nemo"):   # own Supabase-token owner gate
+                           "/dashboard-nemo",    # own Supabase-token owner gate
+                           "/dashboard-crease"):
         return
     # Header only — never accept the key in the query string, where it would be
     # captured in nginx access logs, browser history, and Referer headers.
@@ -998,6 +1000,30 @@ def dashboard_nemo():
         rng = "all"
     try:
         return jsonify(nemo_metrics.build_cached(rng=rng))
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
+
+
+@app.route("/dashboard-crease")
+def dashboard_crease():
+    """Crease traffic and demand — the dashboard's third site tab.
+
+    Same owner gate as the Find A Crib metrics, and deliberately not Eric's
+    scope: this is a different business of the same owner's, not a client's
+    site. Traffic comes from this box's own nginx log; everything about orders
+    and demand is read over loopback from the Crease dispatcher, which owns
+    that schema. Counts only — no customer rows cross this endpoint.
+    """
+    if rate_limited("dashboard", 120, 3600):
+        return _too_many()
+    denied = _dashboard_denial(_dashboard_auth(), ("ok",))
+    if denied:
+        return denied
+    rng = (request.args.get("range") or "all").lower()
+    if rng not in DASHBOARD_RANGES:
+        rng = "all"
+    try:
+        return jsonify(crease_metrics.build_cached(rng=rng))
     except Exception:
         return jsonify(error="temporarily_unavailable"), 503
 

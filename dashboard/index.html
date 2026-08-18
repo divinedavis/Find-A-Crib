@@ -366,6 +366,7 @@
         <div class="site-switch" id="site-switch">
           <button data-site="fac" class="on">🏙️ Find A Crib</button>
           <button data-site="nemo">🏠 NEMO Gutter</button>
+          <button data-site="crease">👔 Crease</button>
         </div>
         <span class="live-pill"><span class="live-dot"></span> Live data</span>
         <!-- Scopes every tile that counts something over a period, on both
@@ -453,6 +454,32 @@
             <div><h2>Calls &amp; leads — the money signal</h2><div class="card-sub">Traffic that never becomes a call hasn’t worked. Every call into the assistant counts, including the ones that hang up. Counts only — no customer details reach this page.</div></div>
           </div>
           <div class="ads-tiles" id="lead-tiles"></div>
+        </div>
+      </div>
+
+      <div id="crease-a" class="hidden">
+        <!-- where the demand is -->
+        <div class="card mb18" id="sec-demand">
+          <div class="card-head-row">
+            <div><h2>Where people are asking from</h2><div class="card-sub">Every address checked on the site, whether or not it became an order. The ones outside the band are the map of where to sign the next shop — that is what this table is for. Counts only: no address or name reaches this page.</div></div>
+          </div>
+          <div id="crease-hoods"></div>
+        </div>
+
+        <!-- requests and orders -->
+        <div class="card mb18" id="sec-pipeline">
+          <div class="card-head-row">
+            <div><h2>Requests &amp; orders</h2><div class="card-sub">A web request is somebody who handed over a phone number; an order is one that was placed and paid. Margin is realised — what was captured, minus the card, the couriers and the shop.</div></div>
+          </div>
+          <div class="ads-tiles" id="crease-pipe"></div>
+        </div>
+
+        <!-- canvass -->
+        <div class="card mb18" id="sec-canvass">
+          <div class="card-head-row">
+            <div><h2>Brooklyn canvass</h2><div class="card-sub">Supply, not demand: every dry cleaner and laundromat mapped, and how far the door-knocking has got. Shops are never the constraint — coverage is.</div></div>
+          </div>
+          <div class="ads-tiles" id="crease-canvass"></div>
         </div>
       </div>
 
@@ -744,6 +771,14 @@
       nav:[['top','▦','Dashboard'],['sec-traffic','◔','Traffic'],['sec-ads','◉','Google Ads'],
            ['link:/dashboard/users/','☺','Users'],['sec-funnel','⇅','Funnel'],['sec-revenue','$','Revenue model']]
     },
+    crease:{
+      mark:'👔', name:'Crease', endpoint:'/api/dashboard-crease',
+      title:'Crease', sub:'Who is asking, where they are, and what they actually paid.',
+      live:'https://creasenyc.com', foot:'Brooklyn · 3-mile courier band',
+      blocks:['crease-a'],
+      nav:[['top','▦','Dashboard'],['sec-demand','◎','Demand map'],
+           ['sec-pipeline','⇅','Requests & orders'],['sec-canvass','◉','Canvass']]
+    },
     nemo:{
       mark:'🏠', name:'NEMO Gutter', endpoint:'/api/dashboard-nemo',
       title:'NEMO Seamless Gutter', sub:'Web traffic, search rankings &amp; leads — Eric’s site, same template.',
@@ -970,6 +1005,7 @@
       });
     }
     if(siteKey==='nemo') renderNemo(session.user, data);
+    else if(siteKey==='crease') renderCrease(session.user, data);
     else render(session.user, data);
   }
 
@@ -1536,6 +1572,111 @@
     {k:'campaign', name:'Tagged campaign',      hex:'var(--c2)'},
     {k:'internal', name:'Internal / same-site', hex:'var(--muted)'}
   ];
+
+  // ---- Crease ------------------------------------------------------------
+  // Same shell as the other two: six tiles, the shared sparkline, and its own
+  // sections underneath. What is deliberately different is the lead tile.
+  // Visitors is the vanity number; the number that decides whether this
+  // business exists is how many people typed an address — that is somebody
+  // saying "I want this, here", and it is counted whether or not they went on
+  // to order.
+  function renderCrease(user, d){
+    var email=(user&&user.email)||'';
+    el('avatar').textContent=(email[0]||'D').toUpperCase();
+    var ts=d.generated_at?new Date(d.generated_at):new Date();
+    el('updated').textContent='Updated '+ts.toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+
+      (d.degraded?' · order data unavailable':'');
+
+    el('donut-title').textContent='Where Crease visitors come from';
+    el('donut-sub').textContent='Referrers seen in the server log';
+    el('today-sub').textContent='Straight from the server log, updated live';
+    el('spark-sub').textContent='Daily page views on creasenyc.com';
+
+    var T=d.traffic||{}, DM=d.demand||{}, RQ=d.requests||{}, OR=d.orders||{},
+        CU=d.customers||{}, CV=d.canvass||{}, PT=d.partners||{};
+
+    // Of the people who asked, how many could we actually serve? This is the
+    // coverage question and the expansion argument in one number.
+    var checks=n(DM.checks), served = checks ? (n(DM.in_area)/checks*100) : null;
+
+    var tiles=[
+      {ic:'👣',v:comma(n(T.visitors)),l:'Unique visitors',
+       own:comma(n(T.visits))+' visits'},
+      {ic:'📍',v:comma(checks),l:'Addresses checked',
+       own:'the demand signal — asked for, order or not'},
+      {ic:'✅',v:(served==null?'—':served.toFixed(0)+'%'),l:'Inside the courier band',
+       own:comma(n(DM.in_area))+' in · '+comma(n(DM.outside))+' out of range',
+       bench:n(DM.outside)?'Every one outside is an argument for a shop near them':''},
+      {ic:'📝',v:comma(n(RQ.total)),l:'Pickup requests',
+       own:comma(n(RQ.new))+' unworked · '+comma(n(RQ.booked))+' booked'},
+      {ic:'📦',v:comma(n(OR.total)),l:'Orders placed',
+       own:comma(n(OR.delivered))+' delivered · '+comma(n(OR.in_flight))+' in flight'},
+      {ic:'💳',v:money(n(OR.margin_cents)/100),l:'Realised margin',accent:true,
+       own:money(n(OR.captured_cents)/100)+' collected · '+comma(n(CU.total))+' customers',
+       title:'Captured, minus the card fee, the couriers and the shop'}
+    ];
+    el('tiles').innerHTML=tiles.map(function(t){
+      return '<div class="tile'+(t.accent?' accent':'')+'"'+(t.title?' title="'+esc(t.title)+'"':'')+'>'+
+        '<div class="t-ico">'+t.ic+'</div><div class="t-val">'+t.v+'</div><div class="t-lbl">'+t.l+'</div>'+
+        (t.own?'<div class="t-own">'+t.own+'</div>':'')+
+        (t.bench?'<div class="t-bench">'+t.bench+'</div>':'')+'</div>';
+    }).join('');
+
+    // Referrers stand in for the channel donut: Crease has no first-party
+    // channel tagging yet, and inventing one would be a chart of guesses.
+    var refs=(T.referrers||[]).map(function(r,i){
+      return {name:r.host,hex:['#4C7DF0','#F0B429','#2FBF71','#E9576B','#8B5CF6'][i%5],val:n(r.hits)};
+    });
+    if(refs.length) drawDonut(refs,'referred visits');
+    else drawDonut([{name:'Direct / bookmark',hex:'#4C7DF0',val:Math.max(1,n(T.visits))}],'visits');
+
+    var hoods=(DM.neighborhoods||[]);
+    // The activity-row pattern the rest of the dashboard uses, rather than a
+    // table this stylesheet has never had a style for.
+    el('crease-hoods').innerHTML = hoods.length
+      ? hoods.map(function(h){
+          return '<div class="act-row"><div class="act-l"><div class="act-ico">📍</div>'+
+            '<div><div class="act-name">'+esc(h.name)+'</div>'+
+            '<div class="act-desc">addresses checked</div></div></div>'+
+            '<div class="act-val">'+comma(n(h.checks))+'</div></div>';
+        }).join('')
+      : '<div class="disclaim">Nobody has checked an address yet in this range. The moment somebody does their neighborhood appears here — including the ones we cannot serve, which are the ones worth reading.</div>';
+
+    el('crease-pipe').innerHTML=[
+      {v:comma(n(RQ.new)),l:'Requests waiting on you'},
+      {v:comma(n(OR.paid)),l:'Orders paid'},
+      {v:comma(n(OR.cancelled)),l:'Cancelled or failed'},
+      {v:comma(n(CU.repeat)),l:'Repeat customers'}
+    ].map(creaseTile).join('');
+
+    el('crease-canvass').innerHTML=[
+      {v:comma(n(CV.shops)),l:'Shops mapped'},
+      {v:comma(n(CV.dry_cleaners))+' / '+comma(n(CV.laundromats)),l:'Dry cleaners / laundromats'},
+      {v:comma(n(CV.contacted)),l:'Visited'},
+      {v:comma(n(CV.interested))+' / '+comma(n(CV.following_up)),l:'Interested / following up'},
+      {v:comma(n(PT.active)),l:'Live partners'},
+      {v:comma(n(PT.payouts_enabled)),l:'Ready to be paid'}
+    ].map(creaseTile).join('');
+
+    el('today-list').innerHTML=[
+      {ic:'🟢',name:'Visitors today',desc:'unique',val:comma(n(T.visitors_today))},
+      {ic:'📄',name:'Page views today',desc:'total',val:comma(n(T.views_today))},
+      {ic:'📍',name:'Addresses checked',desc:'in this range',val:comma(n(DM.checks))},
+      {ic:'📝',name:'Requests waiting',desc:'nobody has called them back',val:comma(n(RQ.new))}
+    ].map(function(r){
+      return '<div class="act-row"><div class="act-l"><div class="act-ico">'+r.ic+'</div>'+
+        '<div><div class="act-name">'+r.name+'</div><div class="act-desc">'+r.desc+'</div></div></div>'+
+        '<div class="act-val">'+r.val+'</div></div>';
+    }).join('');
+    renderSpark((T.sparkline||[]).map(function(p){ return {date:p.date, views:p.views, visitors:null}; }));
+  }
+
+  // The same tile markup the ads and leads rows use, so a Crease tile and a
+  // NEMO tile are the same object with different numbers in it.
+  function creaseTile(t){
+    return '<div class="ads-tile"><div class="a-val">'+t.v+'</div><div class="a-lbl">'+t.l+'</div>'+
+      (t.sub?'<div class="a-sub">'+t.sub+'</div>':'')+'</div>';
+  }
 
   function renderNemo(user, d){
     var email=(user&&user.email)||'';

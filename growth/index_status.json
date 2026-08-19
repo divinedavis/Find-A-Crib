@@ -20,7 +20,13 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/available/brooklyn/bed-stuy-east/": {
-   "family": "available"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "available",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/available/brooklyn/bushwick-west/": {
    "family": "available"
@@ -35,28 +41,64 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/available/brooklyn/crown-heights-north/": {
-   "family": "available"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "available",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/available/brooklyn/crown-heights-south/": {
    "family": "available"
   },
   "https://findacrib.com/available/brooklyn/cypress-hills/": {
-   "family": "available"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "available",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/available/brooklyn/east-williamsburg/": {
-   "family": "available"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "available",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/available/brooklyn/ocean-hill/": {
    "family": "available"
   },
   "https://findacrib.com/available/brooklyn/prospect-heights/": {
-   "family": "available"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "available",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/available/brooklyn/windsor-terrace-south-slope/": {
-   "family": "available"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "available",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/available/manhattan/east-midtown-turtle-bay/": {
-   "family": "available"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "available",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/available/manhattan/upper-east-side-lenox-hill-roosevelt-island/": {
    "bucket": "unknown_to_google",
@@ -68,7 +110,13 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/available/manhattan/upper-west-side-central/": {
-   "family": "available"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "available",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/available/manhattan/upper-west-side-manhattan-valley/": {
    "bucket": "unknown_to_google",
@@ -89,7 +137,13 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/borough/bronx/largest/": {
-   "family": "borough"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "borough",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/borough/bronx/oldest/": {
    "bucket": "unknown_to_google",
@@ -107,16 +161,40 @@
    "family": "borough"
   },
   "https://findacrib.com/borough/brooklyn/no-violations/": {
-   "family": "borough"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "borough",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/borough/brooklyn/oldest/": {
-   "family": "borough"
+   "bucket": "crawled_not_indexed",
+   "checked": "2026-08-19",
+   "crawled": "2026-07-17",
+   "family": "borough",
+   "fetch": "SUCCESSFUL",
+   "state": "Crawled - currently not indexed",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/borough/manhattan/": {
-   "family": "borough"
+   "bucket": "crawled_not_indexed",
+   "checked": "2026-08-19",
+   "crawled": "2026-07-06",
+   "family": "borough",
+   "fetch": "SUCCESSFUL",
+   "state": "Crawled - currently not indexed",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/borough/manhattan/no-violations/": {
-   "family": "borough"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "borough",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/borough/queens/no-violations/": {
    "bucket": "unknown_to_google",
@@ -128,7 +206,13 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/brief/2026-07-28/": {
-   "family": "brief"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "brief",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/brief/2026-07-29/": {
    "family": "brief"
@@ -155,13 +239,31 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/brief/2026-08-05/": {
-   "family": "brief"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "brief",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/brief/2026-08-06/": {
-   "family": "brief"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "brief",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/brief/2026-08-08/": {
-   "family": "brief"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "brief",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/brief/2026-08-12/": {
    "bucket": "unknown_to_google",
@@ -173,7 +275,13 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/brief/2026-08-14/": {
-   "family": "brief"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "brief",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/bronx/1047-summit-ave-2025230141/": {
    "bucket": "other",
@@ -2455,6 +2563,126 @@
   "https://findacrib.com/dc/buildings/": {
    "family": "dc"
   },
+  "https://findacrib.com/dc/neighborhood/barry-farm/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "dc",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/dc/neighborhood/benning-ridge/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "dc",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/dc/neighborhood/brookland/": {
+   "family": "dc"
+  },
+  "https://findacrib.com/dc/neighborhood/buzzard-point/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "dc",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/dc/neighborhood/cleveland-park/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "dc",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/dc/neighborhood/deanwood/": {
+   "family": "dc"
+  },
+  "https://findacrib.com/dc/neighborhood/howard-university/": {
+   "family": "dc"
+  },
+  "https://findacrib.com/dc/neighborhood/knox-hill-buena-vista/": {
+   "family": "dc"
+  },
+  "https://findacrib.com/dc/neighborhood/lincoln-heights/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "dc",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/dc/neighborhood/marshall-heights/": {
+   "family": "dc"
+  },
+  "https://findacrib.com/dc/neighborhood/mount-vernon-square/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "dc",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/dc/neighborhood/near-northeast/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "dc",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/dc/neighborhood/petworth/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "dc",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/dc/neighborhood/shepherd-park/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "dc",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/dc/neighborhood/trinidad/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "dc",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/dc/neighborhood/truxton-circle/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "dc",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/dc/neighborhood/van-ness/": {
+   "family": "dc"
+  },
+  "https://findacrib.com/dc/neighborhood/woodley-park/": {
+   "family": "dc"
+  },
   "https://findacrib.com/developers/": {
    "bucket": "crawled_not_indexed",
    "checked": "2026-08-18",
@@ -2476,8 +2704,41 @@
    "state": "URL is unknown to Google",
    "verdict": "NEUTRAL"
   },
+  "https://findacrib.com/guide/is-my-apartment-rent-controlled-los-angeles/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "guide",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/guide/is-my-apartment-rent-controlled-san-francisco/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "guide",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/guide/is-my-apartment-rent-controlled-washington-dc/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "guide",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
   "https://findacrib.com/guide/is-my-apartment-rent-stabilized/": {
-   "family": "guide"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "guide",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/guide/rent-stabilized-lease-renewal-and-rent-increases/": {
    "family": "guide"
@@ -2495,7 +2756,13 @@
    "family": "guide"
   },
   "https://findacrib.com/guide/what-is-rent-stabilization/": {
-   "family": "guide"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "guide",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/la/": {
    "bucket": "unknown_to_google",
@@ -2508,6 +2775,126 @@
   },
   "https://findacrib.com/la/buildings/": {
    "family": "la"
+  },
+  "https://findacrib.com/la/zip/90016/": {
+   "family": "la"
+  },
+  "https://findacrib.com/la/zip/90019/": {
+   "family": "la"
+  },
+  "https://findacrib.com/la/zip/90034/": {
+   "family": "la"
+  },
+  "https://findacrib.com/la/zip/90035/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "la",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/la/zip/90043/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "la",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/la/zip/90048/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "la",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/la/zip/90058/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "la",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/la/zip/90064/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "la",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/la/zip/90077/": {
+   "family": "la"
+  },
+  "https://findacrib.com/la/zip/90210/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "la",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/la/zip/90230/": {
+   "family": "la"
+  },
+  "https://findacrib.com/la/zip/90248/": {
+   "family": "la"
+  },
+  "https://findacrib.com/la/zip/90293/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "la",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/la/zip/91040/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "la",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/la/zip/91042/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "la",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/la/zip/91324/": {
+   "family": "la"
+  },
+  "https://findacrib.com/la/zip/91356/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "la",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/la/zip/91602/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "la",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/marketing-agents/": {
    "bucket": "unknown_to_google",
@@ -2534,10 +2921,22 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/neighborhood/brooklyn/bensonhurst/": {
-   "family": "neighborhood"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "neighborhood",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/neighborhood/brooklyn/brownsville/": {
-   "family": "neighborhood"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "neighborhood",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/neighborhood/brooklyn/bushwick-west/": {
    "bucket": "unknown_to_google",
@@ -2558,16 +2957,40 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/neighborhood/brooklyn/cypress-hills/": {
-   "family": "neighborhood"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "neighborhood",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/neighborhood/brooklyn/east-flatbush-remsen-village/": {
-   "family": "neighborhood"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "neighborhood",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/neighborhood/brooklyn/flatbush/": {
-   "family": "neighborhood"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "neighborhood",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/neighborhood/brooklyn/fort-hamilton/": {
-   "family": "neighborhood"
+   "bucket": "crawled_not_indexed",
+   "checked": "2026-08-19",
+   "crawled": "2026-08-01",
+   "family": "neighborhood",
+   "fetch": "SUCCESSFUL",
+   "state": "Crawled - currently not indexed",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/neighborhood/brooklyn/gravesend-east-homecrest/": {
    "bucket": "crawled_not_indexed",
@@ -2579,7 +3002,13 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/neighborhood/brooklyn/marine-park-mill-basin-bergen-beach/": {
-   "family": "neighborhood"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "neighborhood",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/neighborhood/brooklyn/midwood/": {
    "bucket": "crawled_not_indexed",
@@ -2591,13 +3020,25 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/neighborhood/brooklyn/sunset-park-east-borough-park-west/": {
-   "family": "neighborhood"
+   "bucket": "crawled_not_indexed",
+   "checked": "2026-08-19",
+   "crawled": "2026-08-03",
+   "family": "neighborhood",
+   "fetch": "SUCCESSFUL",
+   "state": "Crawled - currently not indexed",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/neighborhood/manhattan/chelsea-hudson-yards/": {
    "family": "neighborhood"
   },
   "https://findacrib.com/neighborhood/manhattan/chinatown-two-bridges/": {
-   "family": "neighborhood"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "neighborhood",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/neighborhood/manhattan/east-harlem-north/": {
    "bucket": "unknown_to_google",
@@ -2609,10 +3050,22 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/neighborhood/manhattan/financial-district-battery-park-city/": {
-   "family": "neighborhood"
+   "bucket": "crawled_not_indexed",
+   "checked": "2026-08-19",
+   "crawled": "2026-07-22",
+   "family": "neighborhood",
+   "fetch": "SUCCESSFUL",
+   "state": "Crawled - currently not indexed",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/neighborhood/manhattan/hamilton-heights-sugar-hill/": {
-   "family": "neighborhood"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "neighborhood",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/neighborhood/manhattan/kingsbridge-marble-hill/": {
    "bucket": "crawled_not_indexed",
@@ -2624,7 +3077,13 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/neighborhood/manhattan/midtown-south-flatiron-union-square/": {
-   "family": "neighborhood"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "neighborhood",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/neighborhood/manhattan/upper-east-side-carnegie-hill/": {
    "bucket": "crawled_not_indexed",
@@ -2645,10 +3104,22 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/neighborhood/manhattan/upper-west-side-central/": {
-   "family": "neighborhood"
+   "bucket": "crawled_not_indexed",
+   "checked": "2026-08-19",
+   "crawled": "2026-06-25",
+   "family": "neighborhood",
+   "fetch": "SUCCESSFUL",
+   "state": "Crawled - currently not indexed",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/neighborhood/queens/bayside/": {
-   "family": "neighborhood"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "neighborhood",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/neighborhood/queens/bellerose/": {
    "bucket": "unknown_to_google",
@@ -2669,25 +3140,56 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/neighborhood/queens/college-point/": {
-   "family": "neighborhood"
+   "bucket": "crawled_not_indexed",
+   "checked": "2026-08-19",
+   "crawled": "2026-08-03",
+   "family": "neighborhood",
+   "fetch": "SUCCESSFUL",
+   "state": "Crawled - currently not indexed",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/neighborhood/queens/elmhurst/": {
    "family": "neighborhood"
   },
   "https://findacrib.com/neighborhood/queens/forest-hills/": {
-   "family": "neighborhood"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "neighborhood",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/neighborhood/queens/jackson-heights/": {
-   "family": "neighborhood"
+   "bucket": "crawled_not_indexed",
+   "checked": "2026-08-19",
+   "crawled": "2026-08-03",
+   "family": "neighborhood",
+   "fetch": "SUCCESSFUL",
+   "state": "Crawled - currently not indexed",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/neighborhood/queens/kew-gardens/": {
    "family": "neighborhood"
   },
   "https://findacrib.com/neighborhood/queens/long-island-city-hunters-point/": {
-   "family": "neighborhood"
+   "bucket": "indexed",
+   "checked": "2026-08-19",
+   "crawled": "2026-06-25",
+   "family": "neighborhood",
+   "fetch": "SUCCESSFUL",
+   "first_indexed": "2026-08-19",
+   "state": "Submitted and indexed",
+   "verdict": "PASS"
   },
   "https://findacrib.com/neighborhood/queens/north-corona/": {
-   "family": "neighborhood"
+   "bucket": "crawled_not_indexed",
+   "checked": "2026-08-19",
+   "crawled": "2026-08-08",
+   "family": "neighborhood",
+   "fetch": "SUCCESSFUL",
+   "state": "Crawled - currently not indexed",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/neighborhood/queens/rosedale/": {
    "bucket": "unknown_to_google",
@@ -2717,19 +3219,43 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/neighborhood/staten-island/great-kills-eltingville/": {
-   "family": "neighborhood"
+   "bucket": "crawled_not_indexed",
+   "checked": "2026-08-19",
+   "crawled": "2026-08-01",
+   "family": "neighborhood",
+   "fetch": "SUCCESSFUL",
+   "state": "Crawled - currently not indexed",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/neighborhood/staten-island/mariner-s-harbor-arlington-graniteville/": {
-   "family": "neighborhood"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "neighborhood",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/section8/": {
-   "family": "section8"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "section8",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/section8/bronx/": {
    "family": "section8"
   },
   "https://findacrib.com/section8/brooklyn/": {
-   "family": "section8"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "section8",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/section8/manhattan/": {
    "bucket": "unknown_to_google",
@@ -2741,7 +3267,13 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/section8/queens/": {
-   "family": "section8"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "section8",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/section8/staten-island/": {
    "family": "section8"
@@ -2758,8 +3290,128 @@
   "https://findacrib.com/sf/buildings/": {
    "family": "sf"
   },
+  "https://findacrib.com/sf/neighborhood/bayview-hunters-point/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "sf",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/sf/neighborhood/bernal-heights/": {
+   "family": "sf"
+  },
+  "https://findacrib.com/sf/neighborhood/castro-upper-market/": {
+   "family": "sf"
+  },
+  "https://findacrib.com/sf/neighborhood/haight-ashbury/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "sf",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/sf/neighborhood/inner-sunset/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "sf",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/sf/neighborhood/japantown/": {
+   "family": "sf"
+  },
+  "https://findacrib.com/sf/neighborhood/lakeshore/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "sf",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/sf/neighborhood/marina/": {
+   "family": "sf"
+  },
+  "https://findacrib.com/sf/neighborhood/mission/": {
+   "family": "sf"
+  },
+  "https://findacrib.com/sf/neighborhood/noe-valley/": {
+   "family": "sf"
+  },
+  "https://findacrib.com/sf/neighborhood/pacific-heights/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "sf",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/sf/neighborhood/portola/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "sf",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/sf/neighborhood/potrero-hill/": {
+   "family": "sf"
+  },
+  "https://findacrib.com/sf/neighborhood/presidio-heights/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "sf",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/sf/neighborhood/presidio/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "sf",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/sf/neighborhood/russian-hill/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "sf",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/sf/neighborhood/twin-peaks/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "sf",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/sf/neighborhood/western-addition/": {
+   "family": "sf"
+  },
   "https://findacrib.com/zip/10005/": {
-   "family": "zip"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "zip",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/10007/": {
    "bucket": "unknown_to_google",
@@ -2771,10 +3423,22 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/10010/": {
-   "family": "zip"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "zip",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/10011/": {
-   "family": "zip"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "zip",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/10023/": {
    "bucket": "crawled_not_indexed",
@@ -2786,10 +3450,22 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/10028/": {
-   "family": "zip"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "zip",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/10029/": {
-   "family": "zip"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "zip",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/10030/": {
    "bucket": "unknown_to_google",
@@ -2816,19 +3492,43 @@
    "family": "zip"
   },
   "https://findacrib.com/zip/10039/": {
-   "family": "zip"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "zip",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/10040/": {
-   "family": "zip"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "zip",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/10282/": {
-   "family": "zip"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "zip",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/10305/": {
    "family": "zip"
   },
   "https://findacrib.com/zip/10451/": {
-   "family": "zip"
+   "bucket": "discovered_not_indexed",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "zip",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "Discovered - currently not indexed",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/10458/": {
    "family": "zip"
@@ -2843,7 +3543,13 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/10462/": {
-   "family": "zip"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "zip",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/10468/": {
    "bucket": "unknown_to_google",
@@ -2855,7 +3561,13 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/10469/": {
-   "family": "zip"
+   "bucket": "discovered_not_indexed",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "zip",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "Discovered - currently not indexed",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/10475/": {
    "bucket": "unknown_to_google",
@@ -2894,7 +3606,13 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/11226/": {
-   "family": "zip"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "zip",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/11228/": {
    "family": "zip"
@@ -2909,13 +3627,31 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/11231/": {
-   "family": "zip"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "zip",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/11234/": {
-   "family": "zip"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "zip",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/11238/": {
-   "family": "zip"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "zip",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/11356/": {
    "bucket": "indexed",
@@ -2928,7 +3664,13 @@
    "verdict": "PASS"
   },
   "https://findacrib.com/zip/11360/": {
-   "family": "zip"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "zip",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/11366/": {
    "bucket": "other",
@@ -2940,16 +3682,40 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/11367/": {
-   "family": "zip"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "zip",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/11369/": {
-   "family": "zip"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "zip",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/11379/": {
-   "family": "zip"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "zip",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/11413/": {
-   "family": "zip"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "zip",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/11423/": {
    "bucket": "unknown_to_google",
@@ -2961,191 +3727,247 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/11429/": {
-   "family": "zip"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-19",
+   "crawled": null,
+   "family": "zip",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   }
  },
- "published_urls": 47667,
+ "published_urls": 47926,
  "summary": {
   "by_family": {
    "(root)": {
+    "accept_pct": 100.0,
     "buckets": {
      "indexed": 1
     },
     "cohort": 1,
+    "fetched": 1,
+    "fetched_pct": 100.0,
     "indexed": 1,
     "indexed_pct": 100.0,
     "read": 1,
     "wrong_canonical": 0
    },
    "available": {
+    "accept_pct": null,
     "buckets": {
-     "unknown_to_google": 4
+     "unknown_to_google": 12
     },
     "cohort": 15,
+    "fetched": 0,
+    "fetched_pct": 0.0,
     "indexed": 0,
     "indexed_pct": 0.0,
-    "read": 4,
+    "read": 12,
     "wrong_canonical": 0
    },
    "borough": {
+    "accept_pct": 0.0,
     "buckets": {
-     "crawled_not_indexed": 1,
-     "unknown_to_google": 2
+     "crawled_not_indexed": 3,
+     "unknown_to_google": 5
     },
     "cohort": 10,
+    "fetched": 3,
+    "fetched_pct": 37.5,
     "indexed": 0,
     "indexed_pct": 0.0,
-    "read": 3,
+    "read": 8,
     "wrong_canonical": 0
    },
    "brief": {
+    "accept_pct": null,
     "buckets": {
-     "unknown_to_google": 3
+     "unknown_to_google": 8
     },
     "cohort": 10,
+    "fetched": 0,
+    "fetched_pct": 0.0,
     "indexed": 0,
     "indexed_pct": 0.0,
-    "read": 3,
+    "read": 8,
     "wrong_canonical": 0
    },
    "building": {
+    "accept_pct": 17.6,
     "buckets": {
      "crawled_not_indexed": 42,
      "indexed": 9,
-     "other": 158,
-     "unknown_to_google": 41
+     "unknown_to_google": 199
     },
     "cohort": 250,
+    "fetched": 51,
+    "fetched_pct": 20.4,
     "indexed": 9,
     "indexed_pct": 3.6,
     "read": 250,
     "wrong_canonical": 0
    },
    "buildings": {
+    "accept_pct": 0.0,
     "buckets": {
      "crawled_not_indexed": 1
     },
     "cohort": 1,
+    "fetched": 1,
+    "fetched_pct": 100.0,
     "indexed": 0,
     "indexed_pct": 0.0,
     "read": 1,
     "wrong_canonical": 0
    },
    "dc": {
+    "accept_pct": null,
     "buckets": {
-     "unknown_to_google": 1
+     "unknown_to_google": 12
     },
-    "cohort": 2,
+    "cohort": 20,
+    "fetched": 0,
+    "fetched_pct": 0.0,
     "indexed": 0,
     "indexed_pct": 0.0,
-    "read": 1,
+    "read": 12,
     "wrong_canonical": 0
    },
    "developers": {
+    "accept_pct": 0.0,
     "buckets": {
      "crawled_not_indexed": 1
     },
     "cohort": 1,
+    "fetched": 1,
+    "fetched_pct": 100.0,
     "indexed": 0,
     "indexed_pct": 0.0,
     "read": 1,
     "wrong_canonical": 0
    },
    "guide": {
+    "accept_pct": null,
     "buckets": {
-     "unknown_to_google": 2
+     "unknown_to_google": 7
     },
-    "cohort": 7,
+    "cohort": 10,
+    "fetched": 0,
+    "fetched_pct": 0.0,
     "indexed": 0,
     "indexed_pct": 0.0,
-    "read": 2,
+    "read": 7,
     "wrong_canonical": 0
    },
    "la": {
+    "accept_pct": null,
     "buckets": {
-     "unknown_to_google": 1
+     "unknown_to_google": 12
     },
-    "cohort": 2,
+    "cohort": 20,
+    "fetched": 0,
+    "fetched_pct": 0.0,
     "indexed": 0,
     "indexed_pct": 0.0,
-    "read": 1,
+    "read": 12,
     "wrong_canonical": 0
    },
    "marketing-agents": {
+    "accept_pct": null,
     "buckets": {
      "unknown_to_google": 1
     },
     "cohort": 1,
+    "fetched": 0,
+    "fetched_pct": 0.0,
     "indexed": 0,
     "indexed_pct": 0.0,
     "read": 1,
     "wrong_canonical": 0
    },
    "neighborhood": {
+    "accept_pct": 7.1,
     "buckets": {
-     "crawled_not_indexed": 5,
-     "unknown_to_google": 9
+     "crawled_not_indexed": 13,
+     "indexed": 1,
+     "unknown_to_google": 21
     },
     "cohort": 40,
-    "indexed": 0,
-    "indexed_pct": 0.0,
-    "read": 14,
+    "fetched": 14,
+    "fetched_pct": 40.0,
+    "indexed": 1,
+    "indexed_pct": 2.9,
+    "read": 35,
     "wrong_canonical": 0
    },
    "section8": {
+    "accept_pct": null,
     "buckets": {
-     "unknown_to_google": 1
+     "unknown_to_google": 4
     },
     "cohort": 6,
+    "fetched": 0,
+    "fetched_pct": 0.0,
     "indexed": 0,
     "indexed_pct": 0.0,
-    "read": 1,
+    "read": 4,
     "wrong_canonical": 0
    },
    "sf": {
+    "accept_pct": 0.0,
     "buckets": {
-     "crawled_not_indexed": 1
+     "crawled_not_indexed": 1,
+     "unknown_to_google": 10
     },
-    "cohort": 2,
+    "cohort": 20,
+    "fetched": 1,
+    "fetched_pct": 9.1,
     "indexed": 0,
     "indexed_pct": 0.0,
-    "read": 1,
+    "read": 11,
     "wrong_canonical": 0
    },
    "zip": {
+    "accept_pct": 25.0,
     "buckets": {
      "crawled_not_indexed": 3,
+     "discovered_not_indexed": 2,
      "indexed": 1,
-     "other": 1,
-     "unknown_to_google": 9
+     "unknown_to_google": 29
     },
     "cohort": 40,
+    "fetched": 4,
+    "fetched_pct": 11.4,
     "indexed": 1,
-    "indexed_pct": 7.1,
-    "read": 14,
+    "indexed_pct": 2.9,
+    "read": 35,
     "wrong_canonical": 0
    }
   },
   "total": {
+   "accept_pct": 15.8,
    "buckets": {
     "blocked": 0,
-    "crawled_not_indexed": 54,
-    "discovered_not_indexed": 0,
+    "crawled_not_indexed": 64,
+    "discovered_not_indexed": 2,
     "duplicate": 0,
     "excluded_noindex": 0,
-    "indexed": 11,
+    "indexed": 12,
     "not_found": 0,
-    "other": 159,
+    "other": 0,
     "redirect": 0,
     "unknown": 0,
-    "unknown_to_google": 74
+    "unknown_to_google": 320
    },
-   "cohort": 388,
-   "indexed": 11,
-   "indexed_pct": 3.7,
-   "read": 298,
+   "cohort": 445,
+   "fetched": 76,
+   "fetched_pct": 19.1,
+   "indexed": 12,
+   "indexed_pct": 3.0,
+   "last_crawl": "2026-08-18",
+   "read": 398,
    "wrong_canonical": 0
   }
  },
- "updated": "2026-08-18"
+ "updated": "2026-08-19"
 }

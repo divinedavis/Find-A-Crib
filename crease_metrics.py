@@ -20,6 +20,8 @@ Nothing here returns a person. Visits are counted, addresses are counted by
 neighbourhood, and no name, phone or street crosses this module.
 """
 import datetime
+import glob
+import gzip
 import json
 import os
 import re
@@ -264,6 +266,31 @@ def _parse_day(ts):
         return None
 
 
+def _log_lines():
+    """Every line of the access log, rotated files included.
+
+    nginx rotates this log daily and keeps fourteen, so reading only the live
+    file quietly turns "all time" into "since midnight" — the range picker
+    would keep offering six months of a log that starts this morning. Oldest
+    file first, so the two-pass rules below see a day whole.
+    """
+    paths = sorted(glob.glob(ACCESS_LOG + ".*"), reverse=True) + [ACCESS_LOG]
+    for path in paths:
+        try:
+            opener = gzip.open if path.endswith(".gz") else open
+            with opener(path, "rt", errors="replace") as f:
+                for line in f:
+                    yield line
+        except OSError:
+            continue
+
+
+# The page and its stylesheet are served to anything that asks. The app's
+# JavaScript is fetched by something that is actually running the app — a
+# scraper that saves the HTML and leaves has no reason to pull the chunks.
+APP_BUNDLE = re.compile(r"^/_next/static/chunks/")
+
+
 def traffic(rng="all"):
     """Unique visitors, page views and today's numbers, from the access log.
 
@@ -279,7 +306,7 @@ def traffic(rng="all"):
 
     # Two passes, because both rules need to know what an address did across
     # the whole day before any of its hits can be judged.
-    pages, assets, scanners = [], set(), set()
+    pages, assets, scanners, ran = [], set(), set(), set()
     referrers = {}
     # One address wearing two browsers in a day is not a household, it is a
     # scanner rotating its user-agent. The pairs are collected first and the
@@ -287,43 +314,44 @@ def traffic(rng="all"):
     day_agents = {}
 
     try:
-        with open(ACCESS_LOG, "r", errors="replace") as f:
-            for line in f:
-                m = LINE.match(line)
-                if not m:
-                    continue
-                if m.group("host") not in HOSTS:
-                    continue
-                ip, ua = m.group("ip"), m.group("ua")
-                day = _parse_day(m.group("ts"))
-                if not day:
-                    continue
-                path = m.group("path").split("?")[0]
-                who = (day, ip, ua)
+        for line in _log_lines():
+            m = LINE.match(line)
+            if not m:
+                continue
+            if m.group("host") not in HOSTS:
+                continue
+            ip, ua = m.group("ip"), m.group("ua")
+            day = _parse_day(m.group("ts"))
+            if not day:
+                continue
+            path = m.group("path").split("?")[0]
+            who = (day, ip, ua)
 
-                if PROBE.search(path):
-                    scanners.add((day, ip))
-                    continue
-                if ip in owners or _datacenter(ip) or BOT.search(ua):
-                    continue
-                # A browser a year out of date, on a network that sells racks:
-                # both were counted as demand until the day this site had 49
-                # "visitors", one order request between them, and none of them
-                # a person.
-                if _stale_browser(ua) or _hosting(ip):
-                    continue
+            if PROBE.search(path):
+                scanners.add((day, ip))
+                continue
+            if ip in owners or _datacenter(ip) or BOT.search(ua):
+                continue
+            # A browser a year out of date, on a network that sells racks:
+            # both were counted as demand until the day this site had 49
+            # "visitors", one order request between them, and none of them
+            # a person.
+            if _stale_browser(ua) or _hosting(ip):
+                continue
 
-                if ASSET.match(path):
-                    # Not a page view, but proof a browser was rendering one.
-                    assets.add(who)
-                    continue
-                # A HEAD is a machine checking the page is there. It renders
-                # nothing and reads nothing, so it is not a view.
-                if m.group("method") != "GET":
-                    continue
+            if ASSET.match(path):
+                # Not a page view, but proof a browser was rendering one.
+                assets.add(who)
+                if APP_BUNDLE.match(path):
+                    ran.add(who)
+                continue
+            # A HEAD is a machine checking the page is there. It renders
+            # nothing and reads nothing, so it is not a view.
+            if m.group("method") != "GET":
+                continue
 
-                day_agents.setdefault((day, ip), set()).add(ua)
-                pages.append((who, day, m.group("ref") or ""))
+            day_agents.setdefault((day, ip), set()).add(ua)
+            pages.append((who, day, m.group("ref") or ""))
     except FileNotFoundError:
         pass
 
@@ -337,7 +365,7 @@ def traffic(rng="all"):
         # script bundle the page asks for, and a scanner asks for the page and
         # leaves. Requiring one asset fetch is what separates them, and it is
         # why this counts lower than the raw log — deliberately.
-        if (day, who[1]) in scanners or who not in assets:
+        if (day, who[1]) in scanners or who not in assets or who not in ran:
             continue
         if len(day_agents.get((day, who[1]), ())) > 1:
             continue
@@ -376,7 +404,7 @@ def traffic(rng="all"):
         # What the number means, in the payload rather than only in a comment:
         # this counts browsers on consumer networks that rendered a page.
         "basis": "consumer-network browsers, on a current build, that fetched "
-                 "the page and its assets",
+                 "the page and ran its JavaScript",
     }
 
 

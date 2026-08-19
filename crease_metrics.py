@@ -76,12 +76,36 @@ _ENV_OWNER_IPS = {ip.strip() for ip in os.environ.get("CREASE_OWNER_IPS", "").sp
 OWNER_FILE = os.environ.get("CREASE_OWNER_FILE", "/var/lib/crease/owner-ips.json")
 
 
+# Entries carry the date they were last seen, and are forgotten after a
+# fortnight. A device that is still in use re-registers on every visit and
+# never falls off; the address it borrowed does. That matters because a phone
+# on iCloud Private Relay leaves through a Fastly or Cloudflare node shared
+# with thousands of strangers, and a permanent entry would go on hiding
+# whichever of them inherits it next week.
+OWNER_TTL_DAYS = 14
+
+
 def owner_ips():
     ips = set(_ENV_OWNER_IPS)
+    cutoff = datetime.datetime.utcnow() - datetime.timedelta(days=OWNER_TTL_DAYS)
     try:
         with open(OWNER_FILE) as f:
-            for ip in json.load(f).get("ips", []):
-                ips.add(str(ip))
+            for entry in json.load(f).get("ips", []):
+                # The original file was a bare list of addresses with no dates;
+                # those are honoured rather than dropped on the upgrade.
+                if isinstance(entry, dict):
+                    ip, at = str(entry.get("ip") or ""), str(entry.get("at") or "")
+                    if not ip:
+                        continue
+                    try:
+                        seen = datetime.datetime.fromisoformat(at.replace("Z", "+00:00"))
+                        if seen.replace(tzinfo=None) < cutoff:
+                            continue
+                    except ValueError:
+                        pass
+                    ips.add(ip)
+                else:
+                    ips.add(str(entry))
     except (OSError, ValueError):
         pass
     return ips

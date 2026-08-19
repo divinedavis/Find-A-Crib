@@ -255,10 +255,24 @@ the night after a watchdog run and the night after that both read as fresh. With
 the 04:10 cron dead since at least 08-14 the watchdog is the *only* route from
 this repo to the 47,600 published pages, so that made the corpus deploy on a
 three-day cycle — `seo_watchdog_finish` appears in the heartbeat on 08-15 and
-then not again until 08-18. At 1 it runs nightly and the anti-race property is
-unchanged: a healthy 04:10 cron's sitemaps are 1.5h old when the 05:40 build
-looks, well inside `-mtime -1`, so the watchdog still stands down whenever the
-real cron is working.
+then not again until 08-18. At 1 it *still* did not run nightly, and the reason
+is that a threshold in whole days cannot express this question. The watchdog ran
+at 05:40:18 on 08-18 and `refresh_seo.sh` finished at 05:41:33; the next night
+the test ran at 05:40:18 again, 23h58m later, and `-mtime -1` matches anything
+under 24h — so the sitemaps the watchdog had written itself the previous morning
+read as fresh by a two-minute margin and it stood down. Two crons on a fixed
+daily clock chasing a 24h window can only fire on alternate nights, which is
+exactly what the heartbeat shows for 08-18 and 08-19.
+
+Since 2026-08-19 the threshold is therefore in **minutes**, with an explicit
+guard band: `SEO_FRESH_MINS = SEO_STALE_DAYS * 1440 - SEO_GUARD_MINS`, guard 120,
+so 1,320 minutes (22h). The question it actually asks is "was the corpus rebuilt
+in *this* daily cycle", and the guard band is the width of the window between the
+two crons. The anti-race property is unchanged: a healthy 04:10 cron's sitemaps
+are ~90 minutes old when the 05:40 build looks, well inside 22h, so the watchdog
+still stands down whenever the real cron is working. Setting the band too wide
+costs at most a duplicate rebuild, which `flock` already makes safe; setting it
+too narrow costs a day of every content change, which is what 08-19 cost.
 
 **Publishing a page and getting it into a sitemap are two separate jobs, and the
 handover between the pipelines dropped the second one.** `t_sitemap_daily` built
@@ -387,6 +401,35 @@ moves `fetched_pct` and leaves `accept_pct` flat did exactly what it should.
 Both are also broken out per page family in the daily report's index table,
 which is where the tiers diverge — on 2026-08-18 `/building/` read 20.4% fetched
 while `/guide/`, `/brief/`, `/section8/`, `/dc/` and `/la/` read 0%.
+
+**`index_accept_pct` is confounded with crawl recency, and since 2026-08-19 the
+split is recorded too.** A page Google fetched last night has not been decided
+about; a page it fetched two months ago has. Averaging them produces a rate that
+describes neither. On 2026-08-19 the 76 fetched URLs read 22.2% / 0% / 0% / 0% /
+66.7% across crawl-age bands 0-6d, 7-13d, 14-20d, 21-27d and 28d+, which
+averages to the 15.8% `index_accept_pct` — a number no page on the site has.
+`index_accept_pct_mature` is acceptance restricted to crawls at least
+`MATURE_DAYS` (21) old, with `index_fetched_mature` as its denominator because
+on a 100-URL nightly budget that slice is small; on 2026-08-19 it was 62.5% of
+16. The daily report shows the band table under the two rate tiles.
+
+Two readings fit that shape and they imply opposite work — *latency* (Google has
+not finished deciding, real acceptance is ~62%, and consolidating would be
+self-harm) or *verdict* (Google accepted this corpus in June and stopped; of the
+61 URLs it fetched from 2026-07-06 onward it kept 2, so current acceptance is
+~3% and T027 is right). The band table does not settle it, because
+`lastCrawlTime` is the *most recent* crawl: a page declined in July and
+re-fetched last night reads as "too recent to judge", so the matured rate is
+biased optimistic by exactly the pages Google keeps returning to and refusing.
+`first_checked` and `first_bucket` are stamped on every cohort record for that
+reason — they are the one clock a re-crawl cannot reset — and
+`index_accept_pct_settled` is the unconfounded rate computed off them. It is
+`None`, and therefore absent from the series, until 2026-09-06: three weeks after
+the sampler's first night. **Do not decide T027 off `index_accept_pct` alone.**
+
+`first_indexed` is *not* Google's acceptance date and never was. It is the first
+day this sampler saw the URL indexed, so on 2026-08-19 all twelve indexed URLs
+carried 08-16..08-19 against crawls running back to June.
 
 **`summarise()` re-derives every bucket from the stored raw `state` string; it
 never reads `rec["bucket"]` back.** `inspect()` stamps a bucket at read time, so

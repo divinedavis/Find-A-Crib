@@ -123,6 +123,29 @@ beat finish "$rc" "$pull_state" "$note"
 # this looks at 05:40 — still matched, still skipped. The only slack removed is
 # the extra day that was never load-bearing. If the 04:10 cron is ever repaired
 # this needs no change; it will simply go back to never firing.
+#
+# AND ON 2026-08-19 IT STILL DID NOT FIRE, because a threshold in whole days
+# cannot express this. The watchdog ran at 05:40:18 on 08-18 and refresh_seo.sh
+# finished at 05:41:33. The next night this test ran at 05:40:18 again — 23h
+# 58m later — and `-mtime -1` matches anything under 24h, so the sitemaps its
+# own previous run had written 1,438 minutes ago still read "fresh" and it stood
+# down. It is a fixed daily clock chasing a 24h window by a two-minute margin,
+# so it can only ever fire every OTHER night, which is exactly what the
+# heartbeat shows: 08-18 yes, 08-19 no. The 2 -> 1 change bought one day of the
+# three and the off-by-two-minutes ate the rest. Yesterday's build_seo.py header
+# change was still not deployed 24h after it was pushed.
+#
+# So the threshold is in MINUTES with an explicit guard band. What the test
+# actually wants to ask is "was the corpus rebuilt in THIS daily cycle", and
+# both crons are on a fixed daily clock, so the honest form is "younger than a
+# day minus the width of the window between the two crons". 120 minutes: the
+# 04:10 cron's sitemaps are ~90 minutes old when this looks at 05:40, well
+# inside 22h and still skipped, and last night's watchdog output at 1,438
+# minutes is outside it and correctly reads stale. Every minute of the band is
+# margin for a cron that starts late or a build that runs long, and the cost of
+# setting it too wide is only that a genuinely healthy pipeline gets a duplicate
+# rebuild — which flock already makes safe — while the cost of setting it too
+# narrow is the corpus deploying every other day, which is what we just had.
 #   * flock, so two watchdogs can never overlap each other;
 #   * timeout, so a hung rebuild cannot hold the ledger push hostage;
 #   * every failure is swallowed — a watchdog must never be the reason the
@@ -137,6 +160,11 @@ beat finish "$rc" "$pull_state" "$note"
 # and pushed, so the cloud review reads the result the same morning.
 SEO_BUILD=${SEO_BUILD_DIR:-/root/dhcr-build}
 SEO_STALE_DAYS=${SEO_STALE_DAYS:-1}
+# The guard band, in minutes, subtracted from SEO_STALE_DAYS. See above: whole
+# days cannot express "this cycle" for two crons 90 minutes apart on the same
+# daily clock, and -mtime's 24h boundary lands two minutes the wrong side of it.
+SEO_GUARD_MINS=${SEO_GUARD_MINS:-120}
+SEO_FRESH_MINS=${SEO_FRESH_MINS:-$(( SEO_STALE_DAYS * 1440 - SEO_GUARD_MINS ))}
 SEO_TIMEOUT=${SEO_WATCHDOG_TIMEOUT:-3600}
 SEO_LOCK=${SEO_WATCHDOG_LOCK:-/tmp/findacrib-refresh-seo.lock}
 
@@ -154,12 +182,12 @@ seo_watchdog() {
   # too, or this goes blind and stops firing.
   local fresh
   fresh=$(find "$GROWTH_DOCROOT" -maxdepth 1 -name 'sitemap-*.xml' \
-            ! -name 'sitemap-daily.xml' -mtime "-$SEO_STALE_DAYS" 2>/dev/null | head -n 1)
+            ! -name 'sitemap-daily.xml' -mmin "-$SEO_FRESH_MINS" 2>/dev/null | head -n 1)
   [ -n "$fresh" ] && return 0        # pipeline wrote recently: nothing owed
 
   local log
   log=$(mktemp) || log=/tmp/seo_watchdog.$$.log
-  beat seo_watchdog_start null "$pull_state" "corpus stale >${SEO_STALE_DAYS}d, running scripts/refresh_seo.sh"
+  beat seo_watchdog_start null "$pull_state" "corpus older than ${SEO_FRESH_MINS}min, running scripts/refresh_seo.sh"
   if command -v flock >/dev/null 2>&1; then
     timeout "$SEO_TIMEOUT" flock -n "$SEO_LOCK" bash ./scripts/refresh_seo.sh >"$log" 2>&1
   else

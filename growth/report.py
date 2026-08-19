@@ -169,6 +169,28 @@ def _index_families(limit=8):
     return rows
 
 
+def _index_ages():
+    """Acceptance by how long ago Google last fetched the page, oldest last.
+
+    Rows are dropped when the band holds nothing fetched, so the table is only
+    ever as wide as the evidence. Kept is "—" and not 0% for an empty band, the
+    same rule as the family table: no page judged means no rate, and a 0 there
+    would read as a verdict Google never gave.
+    """
+    tot = (_index_summary() or {}).get("total") or {}
+    bands = tot.get("by_crawl_age") or {}
+    rows = []
+    for label, b in bands.items():
+        n = b.get("fetched") or 0
+        if not n:
+            continue
+        pct = b.get("accept_pct")
+        cell = ("—", "") if pct is None else (
+            f"{pct}%", "good" if pct >= 70 else ("warn" if pct >= 30 else "bad"))
+        rows.append([label, str(n), cell])
+    return rows
+
+
 def _index_states():
     """Site-wide coverage-state split as chips: "crawled, not indexed — 61".
 
@@ -362,6 +384,30 @@ def build_blocks(run_log=None, review_out=None):
                     {"label": "Kept, of fetched", "value": f"{_acc}%",
                      "delta": "and did not drop it again",
                      "tone": "bad" if _acc < 50 else "info"}]})
+            # "Kept, of fetched" is an average over crawls of every age, and on
+            # 2026-08-19 that average (15.8%) sat between a 62.5% matured slice
+            # and three consecutive 0% bands — a number that described no page
+            # on the site and would have justified either of two opposite
+            # decisions. The band table is the disaggregation; see MATURE_DAYS
+            # in indexstatus.py for why this is the axis that matters.
+            _ages = _index_ages()
+            if _ages:
+                B.append({"type": "table",
+                          # "Last fetched", not "Fetched": the family table
+                          # directly above uses Fetched for a percentage, and
+                          # two columns of the same name meaning different
+                          # things in one email is how a number gets misread.
+                          "cols": ["Last fetched", "Pages", "Kept"],
+                          "rows": _ages})
+                _accm, _nm = _ixtot.get("accept_pct_mature"), _ixtot.get("fetched_mature")
+                B.append({"type": "note", "text": (
+                    f"Acceptance among the {_fmt(_nm)} pages Google last fetched "
+                    f"{_ixtot.get('mature_days', 21)}+ days ago — long enough for "
+                    f"\"not indexed\" to be a verdict rather than a queue position — "
+                    f"is {_accm}%."
+                    if _accm is not None else
+                    "No sampled page has a crawl old enough to tell a verdict from a "
+                    "queue position yet.")})
             # What the un-indexed 97% actually is. The per-family table below
             # gives each stratum's worst state; this gives the site-wide split,
             # which is the line that says which fix applies — see the comment on

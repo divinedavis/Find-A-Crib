@@ -56,6 +56,7 @@ index_status.json is tracked in git and the cloud review agent can read it.
 
 Runs on the droplet only: it needs the Search Console service-account key.
 """
+import datetime
 import hashlib
 import json
 import os
@@ -105,6 +106,54 @@ COHORT_TOTAL = sum(COHORT.values())
 # sampler would otherwise be blind to it until somebody remembered to edit this
 # dict, which is exactly the kind of silent gap this module exists to close.
 DEFAULT_QUOTA = 5
+
+# How long after Google fetches a page before "not indexed" is a verdict rather
+# than a queue position.
+#
+# This exists because accept_pct — indexed / fetched, the number the whole
+# consolidate-or-not decision hangs on — is confounded with crawl recency, and
+# the single site-wide average hides it completely. On 2026-08-19 the cohort's
+# 76 fetched URLs split like this by days since lastCrawlTime:
+#
+#     0-6d    9 fetched,  2 indexed  22.2%
+#     7-13d  19 fetched,  0 indexed   0.0%
+#     14-20d 32 fetched,  0 indexed   0.0%
+#     21-27d  1 fetched,  0 indexed   0.0%
+#     28d+   15 fetched, 10 indexed  66.7%
+#
+# One average over that is 15.8%, and 15.8% is not a rate that describes any
+# page on the site. Two readings are consistent with the shape and they imply
+# opposite work:
+#
+#   latency   Google has not finished deciding about the recent crawls, the
+#             matured cohort is the honest rate, acceptance is ~67%, and
+#             consolidating a corpus Google is largely keeping would be a
+#             self-inflicted wound.
+#   verdict   Google accepted this corpus in June and stopped: everything it
+#             fetched from 2026-07-06 onward is 2-of-61 indexed. Then the
+#             matured rate is a fossil of an older regime, current acceptance
+#             really is ~3%, and consolidation (T027) is the move.
+#
+# Reporting both the matured rate and the age split is what lets the next review
+# tell them apart instead of averaging them into a number that means neither.
+#
+# 21 days, not 28, because the age bands already show the 14-20d band flat at
+# 0/32 and moving the line out further would exclude the only evidence that
+# distinguishes the two readings. It is a threshold on a continuum and it should
+# be read as one.
+#
+# ONE CAVEAT AND IT IS NOT SMALL: lastCrawlTime is the MOST RECENT crawl, not
+# the first. A page Google fetched and declined in July and re-fetched last
+# night reads as 1 day old — "pending" — when it is really a re-affirmed
+# rejection, so the matured rate is biased optimistic by exactly the pages
+# Google keeps coming back to and keeps refusing. `first_checked`/`first_bucket`
+# below are what remove that bias, and they need three weeks of this sampler's
+# own history before they can.
+MATURE_DAYS = 21
+
+# Crawl-age bands for the acceptance split, as (label, max_days_exclusive).
+_AGE_BANDS = (("0-6d", 7), ("7-13d", 14), ("14-20d", 21), ("21-27d", 28),
+              ("28d+", None))
 
 # 2,000/day and 600/min are the per-property quotas. 100 keeps a wide margin for
 # anything else that ever wants the API, refreshes the whole cohort in ~5 days,
@@ -375,7 +424,31 @@ def inspect(token, url, timeout=30):
 
 # ------------------------------------------------------------------ summarise
 
-def summarise(cohort):
+def _age_days(datestr, today):
+    """Whole days between two YYYY-MM-DD strings, or None if either is missing.
+
+    datetime.date.fromisoformat rather than any parsing of our own: every date
+    in the cohort is either Google's lastCrawlTime truncated to 10 characters or
+    ledger.today(), and both are ISO. A malformed one returns None and the row
+    is simply left out of the age split rather than crashing a measurement job.
+    """
+    if not datestr or not today:
+        return None
+    try:
+        return (datetime.date.fromisoformat(today)
+                - datetime.date.fromisoformat(datestr)).days
+    except ValueError:
+        return None
+
+
+def _band(age):
+    for label, upper in _AGE_BANDS:
+        if upper is None or age < upper:
+            return label
+    return _AGE_BANDS[-1][0]
+
+
+def summarise(cohort, today=None):
     """Per-family and overall counts over whatever has been read so far.
 
     The bucket is RE-DERIVED from the stored raw `state` string on every call
@@ -396,6 +469,14 @@ def summarise(cohort):
     `other` keep meaning what its comment says it means. The raw state is
     already stored on every record, so this costs nothing but the lookup.
     """
+    today = today or ledger.today()
+    # (fetched, indexed) per crawl-age band, and the matured slice. See
+    # MATURE_DAYS: the site-wide accept_pct is an average over a distribution
+    # that is anything but flat, and averaging it is how a 67% and a 3% became
+    # one 15.8% that describes no page on the site.
+    ages = {label: [0, 0] for label, _ in _AGE_BANDS}
+    mature = [0, 0]
+    settled = [0, 0]
     fams = {}
     for url, rec in cohort.items():
         fam = rec.get("family") or family(url)
@@ -423,6 +504,28 @@ def summarise(cohort):
         # crawl time is the fact and the coverage prose is the summary of it.
         if rec.get("crawled"):
             f["fetched"] += 1
+            age = _age_days(rec.get("crawled"), today)
+            if age is not None:
+                slot = ages[_band(age)]
+                slot[0] += 1
+                if b == "indexed":
+                    slot[1] += 1
+                if age >= MATURE_DAYS:
+                    mature[0] += 1
+                    if b == "indexed":
+                        mature[1] += 1
+            # The unconfounded version of the same question, keyed off OUR first
+            # reading rather than Google's last crawl. A URL this sampler first
+            # saw fetched-and-not-indexed MATURE_DAYS ago and still sees
+            # un-indexed today has been decided against, whatever its
+            # lastCrawlTime says — that is the one measurement a re-crawl cannot
+            # disguise. It reads 0/0 until 2026-09-06, three weeks after the
+            # sampler's first night, and None is the honest value until then.
+            seen = _age_days(rec.get("first_checked"), today)
+            if seen is not None and seen >= MATURE_DAYS:
+                settled[0] += 1
+                if b == "indexed":
+                    settled[1] += 1
         if rec.get("google_canonical"):
             f["wrong_canonical"] += 1
     for f in fams.values():
@@ -458,6 +561,22 @@ def summarise(cohort):
                             if total["read"] else None)
     total["accept_pct"] = (round(100.0 * total["indexed"] / total["fetched"], 1)
                            if total["fetched"] else None)
+    # accept_pct, disaggregated by how long ago Google fetched the page, plus
+    # the two versions of "acceptance among pages that have had time to be
+    # decided". Read the band table before quoting either rate: on 2026-08-19
+    # accept_pct was 15.8% while accept_pct_mature was 62.5% and the three bands
+    # in between were 0%, and no single number was going to say that.
+    total["by_crawl_age"] = {
+        label: {"fetched": n, "indexed": k,
+                "accept_pct": round(100.0 * k / n, 1) if n else None}
+        for label, (n, k) in ((lab, ages[lab]) for lab, _ in _AGE_BANDS)}
+    total["mature_days"] = MATURE_DAYS
+    total["fetched_mature"] = mature[0]
+    total["accept_pct_mature"] = (round(100.0 * mature[1] / mature[0], 1)
+                                  if mature[0] else None)
+    total["fetched_settled"] = settled[0]
+    total["accept_pct_settled"] = (round(100.0 * settled[1] / settled[0], 1)
+                                   if settled[0] else None)
     # The newest crawl date anywhere in the cohort: "is Googlebot still coming
     # at all", which no rate answers. A cohort whose newest crawl is a week old
     # is a different emergency from one that is crawled nightly and declined.
@@ -536,9 +655,21 @@ def collect(docroot, budget=None):
             continue
         prev = cohort.get(url) or {}
         rec["family"] = prev.get("family") or family(url)
-        # Keep the first date this URL was seen indexed. "When did Google accept
-        # this page" is not recoverable afterwards and is the number that says
-        # how long acceptance takes on this corpus.
+        # When this sampler first read the URL, and what it said then. Both are
+        # carried forward untouched for the life of the cohort entry, because
+        # they are the only defence against the confound in MATURE_DAYS: Google
+        # re-crawls a page it already declined, lastCrawlTime resets to
+        # yesterday, and the page reads as "too recent to judge" forever.
+        # first_checked cannot be reset by anything Google does.
+        rec["first_checked"] = prev.get("first_checked") or ledger.today()
+        rec["first_bucket"] = prev.get("first_bucket") or rec["bucket"]
+        # Keep the first date this URL was seen indexed — by THIS sampler. It is
+        # not Google's acceptance date and must never be read as one: the loop
+        # started on 2026-08-16, so on 2026-08-19 all twelve indexed URLs
+        # carried a first_indexed of 08-16..08-19 while their crawls ran back to
+        # June, and a review reading it as latency would have concluded the
+        # corpus was indexed in three days. It answers "since when have we
+        # believed this", nothing more.
         if rec["bucket"] == "indexed":
             rec["first_indexed"] = prev.get("first_indexed") or ledger.today()
         elif prev.get("first_indexed"):
@@ -573,7 +704,23 @@ def collect(docroot, budget=None):
                               # and neither is legible in the combined rate.
                               ("index_fetched", tot["fetched"]),
                               ("index_fetched_pct", tot["fetched_pct"]),
-                              ("index_accept_pct", tot["accept_pct"])):
+                              ("index_accept_pct", tot["accept_pct"]),
+                              # Acceptance among crawls old enough to have been
+                              # decided, and its denominator. accept_pct alone
+                              # is an average across a distribution that ran
+                              # 66.7% / 0% / 0% / 0% / 22.2% by crawl age on
+                              # 2026-08-19 — see MATURE_DAYS. Recorded with the
+                              # denominator because on a 100-URL nightly budget
+                              # the matured slice is small and a rate off 16
+                              # pages must never be read like a rate off 400.
+                              ("index_fetched_mature", tot["fetched_mature"]),
+                              ("index_accept_pct_mature", tot["accept_pct_mature"]),
+                              # The same rate keyed off our own first reading
+                              # instead of Google's last crawl, which is the one
+                              # a re-crawl cannot reset. None — and so absent —
+                              # until 2026-09-06.
+                              ("index_fetched_settled", tot["fetched_settled"]),
+                              ("index_accept_pct_settled", tot["accept_pct_settled"])):
             if value is not None:
                 ledger.record_result(today, "__site__", metric, value)
         # index_status.json holds only the LATEST state per URL, so it can never
@@ -600,6 +747,15 @@ def collect(docroot, budget=None):
            # the whole diagnosis in two numbers.
            "fetched_pct": tot["fetched_pct"],
            "accept_pct": tot["accept_pct"],
+           # And the same number restricted to crawls old enough to be a
+           # verdict, with its denominator and the full age split. This is in
+           # last_run.json rather than left in the cohort file because the whole
+           # point of MATURE_DAYS is that the flat accept_pct is misleading on
+           # its own, and last_run.json is what the cloud review reads first.
+           "accept_pct_mature": tot["accept_pct_mature"],
+           "fetched_mature": tot["fetched_mature"],
+           "by_crawl_age": {k: v for k, v in tot["by_crawl_age"].items()
+                            if v["fetched"]},
            "last_crawl": tot["last_crawl"],
            "published_urls": len(published),
            "added": len(added), "dropped": len(dropped),

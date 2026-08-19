@@ -114,6 +114,16 @@ def owner_ips():
 # Kept for the tooling that inspects the filter interactively.
 OWNER_IPS = owner_ips()
 
+# The address list is the fallback; this is the real answer.
+#
+# /?owner=1 leaves a cookie, and since 19 Aug 2026 nginx logs it as the last
+# field of every request. A device carrying it is the owner's on whatever
+# network it happens to be on — which is the failure the IP list could never
+# cover: his home address changed that afternoon and the tile began counting
+# him as a visitor to his own site within the hour. NEMO's log has worked this
+# way since July; this is the same rule, one site over.
+OWNER_COOKIE = "1"
+
 # Where a customer cannot be.
 #
 # The user-agent filter and the asset rule between them still left sixteen
@@ -277,6 +287,10 @@ LINE = re.compile(
     r'^(?P<host>\S+) (?P<ip>\S+) \S+ \S+ \[(?P<ts>[^\]]+)\] '
     r'"(?P<method>\S+) (?P<path>\S+) [^"]*" (?P<status>\d{3}) \S+ '
     r'"(?P<ref>[^"]*)" "(?P<ua>[^"]*)"'
+    # nginx appends $request_time, $upstream_response_time and the owner cookie
+    # after this, each added on a different day. All optional, so a line from
+    # before any of them still parses against the same expression.
+    r'(?: \S+(?: \S+(?: "(?P<owner_cookie>[^"]*)")?)?)?'
 )
 
 RANGE_DAYS = {"today": 1, "month": 30, "3m": 90, "6m": 182, "all": None}
@@ -336,6 +350,10 @@ def traffic(rng="all"):
     # scanner rotating its user-agent. The pairs are collected first and the
     # whole day is dropped below.
     day_agents = {}
+    # A browser that identified itself as the owner's on this day. Collected
+    # across the whole day and applied below, because the cookie rides the page
+    # request and not necessarily every asset beside it.
+    cookie_owner = set()
 
     try:
         for line in _log_lines():
@@ -350,6 +368,10 @@ def traffic(rng="all"):
                 continue
             path = m.group("path").split("?")[0]
             who = (day, ip, ua)
+
+            if m.group("owner_cookie") == OWNER_COOKIE:
+                cookie_owner.add((day, ip))
+                continue
 
             if PROBE.search(path):
                 scanners.add((day, ip))
@@ -390,6 +412,8 @@ def traffic(rng="all"):
         # leaves. Requiring one asset fetch is what separates them, and it is
         # why this counts lower than the raw log — deliberately.
         if (day, who[1]) in scanners or who not in assets or who not in ran:
+            continue
+        if (day, who[1]) in cookie_owner:
             continue
         if len(day_agents.get((day, who[1]), ())) > 1:
             continue

@@ -1,12 +1,12 @@
 {
   "build": {
-    "at": "2026-08-19T05:40:18+00:00",
-    "changed_urls": 3,
-    "date": "2026-08-19",
+    "at": "2026-08-20T05:40:15+00:00",
+    "changed_urls": 0,
+    "date": "2026-08-20",
     "deployed": true,
     "new_urls": 0,
     "seo_corpus": {
-      "days_old": 1,
+      "days_old": 2,
       "written": "2026-08-18"
     },
     "seo_pipeline": {
@@ -14,20 +14,16 @@
       "changed_urls": 115,
       "corpus_pages": 47640,
       "head": "unknown",
-      "hours_ago": 24.0,
+      "hours_ago": 48.0,
       "phase": "finish",
       "rc": 0,
       "started": "2026-08-18T05:40:18Z",
-      "state": "ran clean",
+      "state": "NO RUN FOR 2.0 DAYS \u2014 cron, the host or the checkout. ran clean",
       "step": "done"
     },
     "techniques": {
-      "city_seo_expansion": {
-        "detail": "hub pages live: dc 103, la 112, sf 37 \u2014 3 pages published by the daily growth build, browse hubs included (dc 1, la 1, sf 1), because the SEO pipeline has not deployed them \u2014 the docroot's SEO corpus was last written 2026-08-18 (1d ago)",
-        "ok": true
-      },
       "crawl_paths": {
-        "detail": "9 of 9 published sections have an inbound internal link (62 docroot pages read) \u2014 single inbound source: /dc/neighborhood/ \u2190 dc browse hub, /la/zip/ \u2190 la browse hub, /sf/neighborhood/ \u2190 sf browse hub, /zip/ \u2190 building page",
+        "detail": "3 of 3 published sections have an inbound internal link (62 docroot pages read) \u2014 single inbound source: /zip/ \u2190 building page",
         "ok": true
       },
       "hub_direct_answers": {
@@ -35,7 +31,7 @@
         "ok": true
       },
       "indexnow": {
-        "detail": "submitted 3 URLs \u2192 HTTP 200",
+        "detail": "nothing new or changed today",
         "ok": true
       },
       "llms_txt": {

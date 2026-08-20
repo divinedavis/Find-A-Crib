@@ -51,3 +51,7 @@
 {"at":"2026-08-19T05:40:18Z","job":"build --deploy","phase":"finish","rc":0,"pull":"ok","head":"2be431e","note":""}
 {"at":"2026-08-20T05:00:01Z","job":"daily --email divinejdavis@gmail.com","phase":"start","rc":null,"pull":"pending","head":"a0f80d1","note":""}
 {"at":"2026-08-20T05:11:22Z","job":"daily --email divinejdavis@gmail.com","phase":"finish","rc":0,"pull":"ok","head":"a0f80d1","note":""}
+{"at":"2026-08-20T05:40:01Z","job":"build --deploy","phase":"start","rc":null,"pull":"pending","head":"a9698d8","note":""}
+{"at":"2026-08-20T05:40:15Z","job":"build --deploy","phase":"finish","rc":0,"pull":"ok","head":"a9698d8","note":""}
+{"at":"2026-08-20T05:40:15Z","job":"build --deploy","phase":"seo_watchdog_start","rc":null,"pull":"ok","head":"a9698d8","note":"corpus older than 1320min, running scripts/refresh_seo.sh"}
+{"at":"2026-08-20T05:41:24Z","job":"build --deploy","phase":"seo_watchdog_finish","rc":0,"pull":"ok","head":"a9698d8","note":"ran refresh_seo.sh to completion"}

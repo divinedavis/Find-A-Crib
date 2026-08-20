@@ -211,6 +211,20 @@ seo_watchdog() {
   fi
   rm -f "$log"
   beat seo_watchdog_finish "$wrc" "$pull_state" "$wnote"
+
+  # The build wrote last_run.json's seo_corpus/seo_pipeline BEFORE the refresh
+  # above, and this watchdog only fires when those read stale — so the record
+  # about to be committed describes the corpus we just repaired as frozen. That
+  # is not a cosmetic lag: last_run.json is what the cloud review is told to
+  # trust as ground truth about whether the droplet's pipelines ran, so it was
+  # guaranteed to report a dead pipeline on exactly the mornings the watchdog
+  # worked. 2026-08-20 is the worked example — heartbeat rc=0 "ran
+  # refresh_seo.sh to completion", last_run.json "NO RUN FOR 2.0 DAYS". Re-read
+  # the docroot and correct it, and carry the watchdog's own outcome across in
+  # the same record. Never fatal: a failure here must not lose the run's commit.
+  python3 growth_daily.py seo-status --docroot "$GROWTH_DOCROOT" \
+    --watchdog-rc "$wrc" --watchdog-note "$wnote" >/dev/null 2>&1 || \
+    echo "growth_run: seo-status restamp failed (rc=$?) — last_run.json still holds the pre-watchdog corpus"
   return 0
 }
 seo_watchdog || true

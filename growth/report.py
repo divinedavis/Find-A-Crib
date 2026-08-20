@@ -264,6 +264,39 @@ def _pretty_date(iso):
         return str(iso)
 
 
+def _watchdog_clause(wd):
+    """The last sentence of the frozen-corpus callout: what the watchdog did.
+
+    growth_run.sh re-runs scripts/refresh_seo.sh after the 05:40 build whenever
+    the corpus is stale, so a corpus STILL frozen when this callout renders is
+    the watchdog having failed rather than the 04:10 cron merely missing — a
+    different owner action. Until 2026-08-20 this said so and then sent the
+    reader to growth/cron_heartbeat.jsonl to find the rc, which the report
+    cannot read and nobody opens on a phone. The watchdog now leaves its own
+    outcome in last_run.json's build record, so name it.
+
+    `ran` absent means the record predates that change (or the watchdog never
+    reached this docroot) — which is NOT the same as "it failed", and is the
+    one case that still points at the heartbeat. Same lesson as 2026-07-28's
+    "DID NOT RUN — unknown error": missing is not false.
+    """
+    base = (" growth_run.sh's watchdog re-runs scripts/refresh_seo.sh after the "
+            "05:40 build whenever the corpus is this old, so seeing this means "
+            "the watchdog did not put it right.")
+    if not isinstance(wd, dict) or not wd.get("ran"):
+        return base + (" It has left no record of its own run here, so it has not "
+                       "deployed yet or never reached this docroot — "
+                       "growth/cron_heartbeat.jsonl carries its seo_watchdog_finish rc.")
+    if wd.get("ok"):
+        # It ran, exited 0, and the corpus is still stale: refresh_seo.sh
+        # returned success without writing the sitemaps. Worth saying plainly,
+        # because it is the one failure the rc alone hides.
+        return base + (f" It ran and exited 0 ({wd.get('note') or 'no note'}) yet the "
+                       f"corpus is still this old, so that script is reporting success "
+                       f"without writing the corpus — read its .seo-build-status.json step.")
+    return base + (f" It ran and FAILED with rc={wd.get('rc')}: {wd.get('note') or 'no output'}.")
+
+
 # ------------------------------------------------------------------- blocks
 
 def build_blocks(run_log=None, review_out=None):
@@ -484,13 +517,10 @@ def build_blocks(run_log=None, review_out=None):
                           # growth_run.sh got seo_watchdog(): the 05:40 build now
                           # re-runs refresh_seo.sh itself whenever the corpus is
                           # stale. So a corpus still frozen at this point is the
-                          # watchdog having failed, not the cron merely missing,
-                          # and the heartbeat says which.
-                          " growth_run.sh's watchdog re-runs scripts/refresh_seo.sh "
-                          "after the 05:40 build whenever the corpus is this old, so "
-                          "seeing this means the watchdog also failed or has not "
-                          "deployed — growth/cron_heartbeat.jsonl carries its "
-                          "seo_watchdog_finish rc."})
+                          # watchdog having failed, not the cron merely missing —
+                          # and from 2026-08-20 the watchdog says so here itself,
+                          # rather than sending the reader to the heartbeat.
+                          _watchdog_clause(build.get("seo_watchdog"))})
 
     # ---- the cheapest available rankings
     try:

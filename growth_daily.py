@@ -15,6 +15,8 @@ Commands:
   report    print / email the daily growth report
   daily     measure → review → scout → report
   status    print the ledger and the scoreboard
+  seo-status  re-read the SEO corpus after growth_run.sh's watchdog repaired it,
+              and correct the build record it was too early to describe
 
 Nothing here touches the live docroot except `deploy`, and `--dry-run` makes
 every command read-only, so it is safe to run by hand on the server.
@@ -269,6 +271,67 @@ def cron_liveness(path=HEARTBEAT_PATH, now=None):
     return f"{state}; last record {age}", rows
 
 
+def cmd_seo_status(args):
+    """Re-read the SEO corpus after the watchdog has run, and correct last_run.json.
+
+    Ordering bug this exists to fix, observed 2026-08-20. growth_run.sh does
+    three things in this order: run `build --deploy` (which writes
+    last_run.json's build record, including seo_corpus and seo_pipeline read
+    from the docroot), then run the SEO watchdog (which re-runs
+    scripts/refresh_seo.sh and REWRITES that corpus), then commit and push. The
+    watchdog only fires when the corpus is stale — so on every morning it
+    succeeds, the record that gets committed is the pre-fix snapshot saying the
+    corpus is frozen. On 2026-08-20 the heartbeat carried seo_watchdog_finish
+    rc=0 "ran refresh_seo.sh to completion" at 05:41:24 while the committed
+    last_run.json said "NO RUN FOR 2.0 DAYS — cron, the host or the checkout",
+    and `status` printed that as its headline. The one file the cloud review is
+    told to trust as ground truth was structurally guaranteed to report failure
+    on the mornings the repair worked.
+
+    So: after the watchdog, re-read the docroot and patch those two fields in
+    place, and record what the watchdog itself did as `seo_watchdog` — rc, note
+    and time — so the outcome is first-class in last_run.json instead of only
+    in the heartbeat, which the report cannot read and no reviewer opens first.
+
+    --watchdog-rc/-note are the values growth_run.sh already computed for the
+    heartbeat. `ran` is always set explicitly, on every path, for the reason
+    2026-07-28 taught: a job whose record omits `ok` gets announced as a
+    failure it never had.
+    """
+    age = techniques._seo_corpus_age(args.docroot)
+    pipe = techniques._seo_pipeline_status(args.docroot)
+    rc = args.watchdog_rc
+    # Correct these two only upward in confidence: a re-read that comes back
+    # empty (unreadable docroot, a deleted status file) must leave the build's
+    # own reading standing rather than blank it. Both readers treat a MISSING
+    # seo_corpus as "nothing known" and fall silent, so clobbering a real
+    # "frozen since 08-18" with null would suppress the very alarm this command
+    # exists to keep honest. Keeping the older value can only under-report
+    # freshness, never claim a frozen corpus is fresh, and that is the side to
+    # err on.
+    rec = {"seo_watchdog": {
+            "ran": True,
+            "ok": rc == 0,
+            "rc": rc,
+            # Same truncation rule as the heartbeat note: this is committed to
+            # a public repo and the tail of a build log is not reviewed here.
+            "note": (args.watchdog_note or "")[:300],
+            "at": ledger.now_iso(),
+        },
+    }
+    if age:
+        rec["seo_corpus"] = {"written": age[0], "days_old": age[1]}
+    if pipe:
+        rec["seo_pipeline"] = pipe
+    if args.dry_run:
+        log(f"  (dry run) would patch build: {json.dumps(rec, sort_keys=True)}")
+        return rec
+    ledger.patch_last_run("build", rec)
+    log(f"  corpus now {age[0] if age else 'UNREADABLE — left the build reading in place'} "
+        f"({age[1] if age else '?'}d old); watchdog rc={rc}")
+    return rec
+
+
 def cmd_status(args):
     summary, rows = cron_liveness()
     log(f"cron: {summary}")
@@ -289,6 +352,14 @@ def cmd_status(args):
         log(f"seo pipeline: no status record — the droplet's refresh_seo.sh predates "
             f"2026-08-12. Corpus mtime says {corpus.get('written')} "
             f"({corpus.get('days_old')}d ago); that is all we know.")
+    # Whether the watchdog had to step in, and what happened when it did. Both
+    # fields above are re-read after it runs (see cmd_seo_status), so from
+    # 2026-08-20 they describe the corpus AFTER any repair rather than the
+    # snapshot the build happened to take a minute too early.
+    wd = build.get("seo_watchdog")
+    if isinstance(wd, dict) and wd.get("ran"):
+        log(f"seo watchdog: ran at {wd.get('at')}, rc={wd.get('rc')} "
+            f"({'ok' if wd.get('ok') else 'FAILED'}) — {wd.get('note') or 'no note'}")
     log("")
     techs = ledger.load_techniques()
     for t in techs:
@@ -388,7 +459,7 @@ def main():
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("command", choices=["build", "deploy", "measure", "review", "scout",
                                        "outreach", "lifecycle", "accounts", "report", "daily", "status",
-                                       "journal"])
+                                       "journal", "seo-status"])
     p.add_argument("--build-dir", default=os.environ.get("GROWTH_BUILD_DIR", DEFAULT_BUILD))
     p.add_argument("--docroot", default=os.environ.get("GROWTH_DOCROOT", DEFAULT_DOCROOT))
     p.add_argument("--deploy", action="store_true", help="rsync after build")
@@ -402,6 +473,12 @@ def main():
     p.add_argument("--changed", help="journal: what you actually changed")
     p.add_argument("--watching", help="journal: what to check next time")
     p.add_argument("--author", help="journal: who wrote it")
+    # seo-status: what growth_run.sh's watchdog just did, so last_run.json can
+    # say it without anyone parsing the heartbeat.
+    p.add_argument("--watchdog-rc", type=int, default=0,
+                   help="seo-status: exit code of the watchdog's refresh_seo.sh")
+    p.add_argument("--watchdog-note", default="",
+                   help="seo-status: the watchdog's one-line outcome")
     args = p.parse_args()
 
     seed.run()
@@ -409,7 +486,7 @@ def main():
      "review": cmd_review, "scout": cmd_scout, "outreach": cmd_outreach,
      "lifecycle": cmd_lifecycle, "accounts": cmd_accounts,
      "report": cmd_report, "daily": cmd_daily, "status": cmd_status,
-     "journal": cmd_journal}[args.command](args)
+     "journal": cmd_journal, "seo-status": cmd_seo_status}[args.command](args)
 
 
 if __name__ == "__main__":

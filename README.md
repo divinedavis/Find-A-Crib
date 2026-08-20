@@ -274,6 +274,37 @@ still stands down whenever the real cron is working. Setting the band too wide
 costs at most a duplicate rebuild, which `flock` already makes safe; setting it
 too narrow costs a day of every content change, which is what 08-19 cost.
 
+That guard band works: on 2026-08-20 the heartbeat carries `seo_watchdog_start`
+at 05:40:15 ("corpus older than 1320min") and `seo_watchdog_finish` rc=0 at
+05:41:24 — the first nightly fire. **But that same morning `growth/last_run.json`
+said `seo_pipeline: "NO RUN FOR 2.0 DAYS — cron, the host or the checkout"`, and
+`growth_daily.py status` printed it as its headline.** Both were true readings of
+a docroot that no longer existed: `growth_run.sh` runs `build --deploy` *first*
+(and the build stamps `seo_corpus`/`seo_pipeline` from the docroot as it finds
+it), then the watchdog, then the commit. Since the watchdog only fires when those
+fields read stale, the record that got committed was guaranteed to describe a
+frozen pipeline on exactly the mornings the repair worked — in the one file the
+cloud review is told to trust as ground truth about whether the droplet ran. This
+is the same shape of error as 2026-08-01 (the deploy clock measuring our own
+nightly write) and 2026-08-08 (the orphan audit reading the docroot before its
+own rsync): the instrument was sampling before the thing it measures had
+happened.
+
+Since 2026-08-20 the watchdog therefore ends by calling
+`growth_daily.py seo-status --docroot … --watchdog-rc … --watchdog-note …`, which
+re-reads the docroot and merges the corrected `seo_corpus`/`seo_pipeline` into the
+existing `build` record via `ledger.patch_last_run()` — a merge, so `at` keeps
+meaning "when the build ran" — and records what the watchdog itself did as
+`build.seo_watchdog` (`ran`, `ok`, `rc`, `note`, `at`). `ran` is set on every
+path, per the 2026-07-28 rule that a missing field must never be readable as a
+failure. Two consequences worth knowing: the report's "SEO corpus frozen" callout
+now names the watchdog's own rc and note instead of telling the owner to go read
+the heartbeat, and a re-read that comes back **empty leaves the build's reading
+standing** rather than blanking it — both readers fall silent on a missing
+`seo_corpus`, so clobbering a real "frozen since 08-18" with null would suppress
+the alarm. Keeping the older value can only under-report freshness; it can never
+call a frozen corpus fresh.
+
 **Publishing a page and getting it into a sitemap are two separate jobs, and the
 handover between the pipelines dropped the second one.** `t_sitemap_daily` built
 `sitemap-daily.xml` purely from the lastmod state — the URLs *this* build wrote
@@ -430,6 +461,24 @@ the sampler's first night. **Do not decide T027 off `index_accept_pct` alone.**
 `first_indexed` is *not* Google's acceptance date and never was. It is the first
 day this sampler saw the URL indexed, so on 2026-08-19 all twelve indexed URLs
 carried 08-16..08-19 against crawls running back to June.
+
+**Every rate above is a level, and a level cannot tell "Google has not reached
+these pages yet" from "Google is taking them back."** `index_status.json` holds
+only the latest state per URL, so until 2026-08-20 the only way to see a page
+*lose* indexing was to diff that file against git by hand — which is how it was
+found, by luck. On 2026-08-20 two building pages that had been "Submitted and
+indexed" since a 2026-06-27 crawl were re-crawled on 08-18 and 08-19 and both
+came back "Crawled - currently not indexed", with zero pages gained. So
+`collect()` now counts bucket transitions among URLs it had already read once and
+records `index_rechecked`, `index_lost_indexed` and `index_gained_indexed`, and
+stamps `left_indexed` on the record of any URL that drops out (the mirror of
+`first_indexed`). **Read lost/gained against `index_rechecked`, never alone** —
+on a night the API is denied nothing is re-read, and the two counters are omitted
+entirely rather than written as zeros, for the same reason the other index
+metrics are: an absent day is honest, a zero is a claim. Both sides of the
+comparison go through `bucket()` afresh, so a new needle in `_STATE_BUCKETS`
+cannot manufacture a transition, and a move into or out of `unknown` (Google
+returning no coverage state at all — an instrument condition) is never counted.
 
 **`summarise()` re-derives every bucket from the stored raw `state` string; it
 never reads `rec["bucket"]` back.** `inspect()` stamps a bucket at read time, so

@@ -639,6 +639,11 @@ def collect(docroot, budget=None):
         return {"ok": False, "detail": detail, "inspected": 0}
 
     inspected, errors, first_error = 0, 0, None
+    # Bucket transitions among URLs this sampler had already read once. See the
+    # block in the loop: `rechecked` is the denominator and is recorded with the
+    # other two, because a night with 0 lost and 0 gained reads completely
+    # differently depending on whether 100 URLs were re-read or none were.
+    rechecked, lost_indexed, gained_indexed = 0, 0, 0
     for url in _due(cohort, budget):
         rec, err = inspect(token, url)
         if err:
@@ -674,6 +679,37 @@ def collect(docroot, budget=None):
             rec["first_indexed"] = prev.get("first_indexed") or ledger.today()
         elif prev.get("first_indexed"):
             rec["first_indexed"] = prev["first_indexed"]
+        # Did this URL change its mind since we last read it? index_status.json
+        # keeps only the LATEST state per URL, so until 2026-08-20 the only way
+        # to see a page LOSE indexing was to diff the file against git by hand —
+        # and that is exactly how the finding of 2026-08-20 was found, by luck:
+        # two building pages indexed since a 2026-06-27 crawl were re-crawled on
+        # 08-18/08-19 and both came back "Crawled - currently not indexed", with
+        # zero pages gained. That is eviction on re-crawl, and it is a different
+        # claim from a low acceptance rate — it says Google is actively undoing
+        # the June cohort, which no rate computed off a single night can show.
+        # Count it as a nightly series so nobody has to notice it by hand again.
+        #
+        # Both sides are re-derived through bucket() for the reason summarise()
+        # documents: a stored bucket carries whatever vocabulary bucket() knew
+        # on the night it was written, so comparing a stored one against a fresh
+        # one would report every improvement to _STATE_BUCKETS as a transition.
+        # And "unknown" means Google returned no coverage state at all — an
+        # instrument condition — so a move into or out of it is not a verdict
+        # changing and must not be counted as one.
+        was = bucket(prev.get("state")) if (prev.get("checked") or prev.get("bucket")) else None
+        if was and was != "unknown" and rec["bucket"] != "unknown":
+            rechecked += 1
+            if was == "indexed" and rec["bucket"] != "indexed":
+                lost_indexed += 1
+                # Mirrors first_indexed: stamped on the record so a later review
+                # can find the evicted URLs in the file itself. Overwritten on
+                # each new eviction — it means "most recently dropped", and a
+                # URL that is re-accepted and dropped again should read as the
+                # later date.
+                rec["left_indexed"] = ledger.today()
+            elif was != "indexed" and rec["bucket"] == "indexed":
+                gained_indexed += 1
         cohort[url] = rec
         inspected += 1
         time.sleep(PACE_SECONDS)
@@ -731,6 +767,16 @@ def collect(docroot, budget=None):
         for b in BUCKETS:
             ledger.record_result(today, "__site__", f"index_state_{b}",
                                  tot["buckets"].get(b, 0))
+        # Movement, not level. Recorded only when something was actually
+        # re-read: on a night the API was denied or the cohort was all-new,
+        # index_rechecked is 0 and writing "0 lost, 0 gained" would assert
+        # stability the run never observed. Same rule as the tot["read"] gate
+        # above — an absent day is honest, a zero is a claim.
+        if rechecked:
+            for metric, value in (("index_rechecked", rechecked),
+                                  ("index_lost_indexed", lost_indexed),
+                                  ("index_gained_indexed", gained_indexed)):
+                ledger.record_result(today, "__site__", metric, value)
         # The building corpus on its own, because it is 99% of the pages and the
         # one whose answer decides whether to publish more of them or fewer.
         bld = summary["by_family"].get("building") or {}
@@ -757,6 +803,15 @@ def collect(docroot, budget=None):
            "by_crawl_age": {k: v for k, v in tot["by_crawl_age"].items()
                             if v["fetched"]},
            "last_crawl": tot["last_crawl"],
+           # What moved overnight, among the URLs re-read tonight. Every rate
+           # above is a level and a level cannot distinguish "Google has not
+           # got to these pages yet" from "Google is taking them back", which
+           # on 2026-08-20 turned out to be the live question and was only
+           # answerable by diffing this file against git. Read lost/gained
+           # against `rechecked`, never on their own.
+           "rechecked": rechecked,
+           "lost_indexed": lost_indexed,
+           "gained_indexed": gained_indexed,
            "published_urls": len(published),
            "added": len(added), "dropped": len(dropped),
            # last_run.json is committed nightly and is the first thing a review

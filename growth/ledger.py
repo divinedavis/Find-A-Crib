@@ -47,6 +47,11 @@ def today():
     return datetime.date.today().isoformat()
 
 
+def now_iso():
+    """UTC, to the second. The stamp every last_run record is dated with."""
+    return datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
+
+
 # ---------------------------------------------------------------- techniques
 
 def load_techniques():
@@ -268,11 +273,42 @@ def write_last_run(command, detail):
             doc = json.load(f)
     except Exception:
         doc = {}
-    doc[command] = {
-        "date": today(),
-        "at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
-        **detail,
-    }
+    doc[command] = {"date": today(), "at": now_iso(), **detail}
+    tmp = LAST_RUN_PATH + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(doc, f, indent=2, sort_keys=True)
+        f.write("\n")
+    os.replace(tmp, LAST_RUN_PATH)
+    return doc
+
+
+def patch_last_run(command, detail):
+    """Merge fields into an existing last_run record without restamping it.
+
+    write_last_run() above always sets `date` and `at` to now, which is right
+    for "this command just finished" but wrong for a correction applied after
+    the fact. The build's record carries two fields — seo_corpus and
+    seo_pipeline — that describe a SECOND pipeline's state at the moment the
+    build read the docroot, and growth_run.sh's SEO watchdog then re-runs that
+    pipeline immediately afterwards. So on exactly the mornings the watchdog
+    works, the committed record still says the corpus is frozen (2026-08-20:
+    heartbeat seo_watchdog_finish rc=0 at 05:41:24, last_run.json build
+    seo_pipeline "NO RUN FOR 2.0 DAYS"). This lets the watchdog correct those
+    two fields in place while `at` keeps meaning "when the build ran".
+
+    Returns the whole document. A record that does not exist yet is created
+    with today's date, so this is safe to call unconditionally.
+    """
+    try:
+        with open(LAST_RUN_PATH) as f:
+            doc = json.load(f)
+    except Exception:
+        doc = {}
+    rec = doc.get(command)
+    if not isinstance(rec, dict):
+        rec = {"date": today(), "at": now_iso()}
+    rec.update(detail)
+    doc[command] = rec
     tmp = LAST_RUN_PATH + ".tmp"
     with open(tmp, "w") as f:
         json.dump(doc, f, indent=2, sort_keys=True)

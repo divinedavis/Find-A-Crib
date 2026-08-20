@@ -933,6 +933,7 @@ def dashboard_metrics():
     # to the database. NEMO's tab has had this from the start; Find A Crib
     # reported traffic and revenue but never what was actually shipped for it.
     data["build"] = _fac_build()
+    data["search"] = _fac_search()
     return jsonify(data)
 
 
@@ -978,6 +979,79 @@ def _fac_build():
         "changed_urls": b.get("changed_urls"),
         "deployed": bool(b.get("deployed")),
     }
+
+
+FAC_GSC_PAGES = os.environ.get(
+    "FAC_GSC_PAGES", "/root/Find-A-Crib/growth/gsc_pages.json")
+FAC_INDEX_STATUS = os.environ.get(
+    "FAC_INDEX_STATUS", "/root/Find-A-Crib/growth/index_status.json")
+
+
+def _fac_search():
+    """Search Console and indexing, for the Find A Crib tab.
+
+    NEMO's tab has had a rankings card since July and this one never did, even
+    though findacrib.com has been a verified property the whole time — the
+    numbers were being collected every morning and read by nobody.
+
+    Read from the growth checkout's own artifacts rather than from Google.
+    This runs on the request path, and the rule this endpoint learned the hard
+    way three separate times is that nothing on the request path may touch the
+    network: an ElevenLabs fetch and a reverse-DNS lookup each turned a
+    dashboard load into a ten-second stall. The 05:40 build already writes both
+    of these files; serving yesterday's honest numbers beats blocking on
+    today's.
+
+    Returns {} when the files are missing, so a dashboard that loses its
+    growth checkout drops the card instead of 500-ing the page.
+    """
+    out = {}
+    try:
+        with open(FAC_GSC_PAGES) as f:
+            g = json.load(f)
+    except Exception:
+        g = {}
+    pages = g.get("pages") or []
+    if pages:
+        # Impressions are summed across serving pages rather than taken from
+        # the tracked-query total. The two differ by an order of magnitude
+        # here, because most of what Google shows this site is a building page
+        # answering a query nobody thought to track.
+        clicks = sum(int(p.get("clicks") or 0) for p in pages)
+        impressions = sum(int(p.get("impressions") or 0) for p in pages)
+        ranked = [p for p in pages if p.get("position") is not None]
+        avg_pos = (sum(float(p["position"]) for p in ranked) / len(ranked)) if ranked else None
+        out.update({
+            "clicks": clicks,
+            "impressions": impressions,
+            "ctr": (clicks / impressions) if impressions else None,
+            "avg_position": avg_pos,
+            "serving_pages": len(pages),
+            "serving_ever": (g.get("churn") or {}).get("gsc_serving_ever"),
+            "date": g.get("date"),
+            "untracked": (g.get("discovered_untracked") or [])[:8],
+        })
+    try:
+        with open(FAC_INDEX_STATUS) as f:
+            ix = json.load(f)
+    except Exception:
+        ix = {}
+    total = ((ix.get("summary") or {}).get("total") or {})
+    if total:
+        buckets = total.get("buckets") or {}
+        cohort = sum(int(v or 0) for v in buckets.values())
+        out["index"] = {
+            "published": ix.get("published_urls"),
+            "cohort": cohort,
+            "indexed": buckets.get("indexed"),
+            "unknown_to_google": buckets.get("unknown_to_google"),
+            "crawled_not_indexed": buckets.get("crawled_not_indexed"),
+            "discovered_not_indexed": buckets.get("discovered_not_indexed"),
+            "accept_pct": total.get("accept_pct"),
+            "accept_pct_mature": total.get("accept_pct_mature"),
+            "updated": ix.get("updated"),
+        }
+    return out
 
 
 @app.route("/dashboard-nemo")

@@ -418,6 +418,26 @@
 
       <!-- ===== Find A Crib only ===== -->
       <div id="fac-a">
+      <!-- product health: the numbers that value the business -->
+      <div class="card mb18" id="sec-fac-health">
+        <div class="card-head-row">
+          <div><h2>Product health — the numbers that value the business</h2><div class="card-sub">Visitors and page views say how many people arrived. These say whether the product is worth anything to them once they do. All of it was already being computed; none of it was on this page.</div></div>
+        </div>
+        <div class="ads-tiles" id="fac-health-tiles"></div>
+        <div id="fac-health-meters" style="margin-top:18px"></div>
+        <div class="callout" id="fac-health-callout" style="margin-top:16px"></div>
+      </div>
+
+      <!-- search -->
+      <div class="card mb18" id="sec-fac-search">
+        <div class="card-head-row">
+          <div><h2>Search — is Google sending anyone?</h2><div class="card-sub">findacrib.com has been a verified Search Console property since June and this card never existed, so these numbers were collected every morning and read by nobody. From the 05:40 build, not live.</div></div>
+        </div>
+        <div class="ads-tiles" id="fac-search-tiles"></div>
+        <div id="fac-index-meters" style="margin-top:18px"></div>
+        <div class="callout" id="fac-search-callout" style="margin-top:16px"></div>
+      </div>
+
       <!-- google ads -->
       <div class="card mb18" id="sec-ads">
         <div class="card-head-row">
@@ -1270,6 +1290,8 @@
     }).join('');
 
     renderDonut(R);
+    renderFacHealth(d);
+    renderFacSearch(d.search);
     renderAds(d.ads);
     renderReferrals(d.referrals);
     renderToday(TD, d.events||{});
@@ -1366,6 +1388,102 @@
     }
     el('fac-build-list').innerHTML = rows.length ? rows.join('')
       : '<div style="color:var(--muted);font-size:13px">Nothing shipped on the last run.</div>';
+  }
+
+  // ---------- product health ----------
+  // The tiles above this card count arrivals. These count whether anyone
+  // stayed, came back, or did the thing the product exists to do. Every field
+  // here already existed in dashboard_metrics(); the page just never asked.
+  function renderFacHealth(d){
+    var R=d.retention||{}, E=d.engagement||{}, A=d.activation||{},
+        S=d.subscriptions||{}, T=d.totals||{};
+    var d30=(R.d30||{}), d7=(R.d7||{}), d1=(R.d1||{});
+    function rate(x){ return x==null ? '—' : (100*Number(x)).toFixed(1)+'%'; }
+    // Two different numbers get called "returning", and showing only the
+    // kinder one is how a dashboard flatters its owner. `within_rate` is
+    // "came back at any point inside the window"; `rate` is true cohort
+    // retention — still active at day 30. They differ by 20x here.
+    var tiles=[
+      {val:rate(d30.rate),lbl:'D30 retention · true',
+       sub:comma(d30.retained)+' of '+comma(d30.cohort)+' still active at day 30'},
+      {val:rate(d30.within_rate),lbl:'Returned within 30d',
+       sub:'the softer measure · '+comma(d30.within_returned)+' of '+comma(d30.within_cohort)},
+      {val:rate(E.stickiness),lbl:'Stickiness · DAU/MAU',
+       sub:comma(E.dau)+' daily of '+comma(E.mau)+' monthly'},
+      {val:rate(E.wau_mau),lbl:'WAU/MAU',
+       sub:comma(E.wau)+' weekly of '+comma(E.mau)+' monthly'},
+      {val:'$'+comma(S.mrr),lbl:'MRR',
+       sub:comma(S.paying)+' paying · '+comma(S.comped)+' comped'}
+    ];
+    el('fac-health-tiles').innerHTML=tiles.map(function(t){
+      return '<div class="ads-tile"><div class="a-val">'+t.val+'</div><div class="a-lbl">'+t.lbl+'</div><div class="a-sub">'+t.sub+'</div></div>';
+    }).join('');
+
+    // Activation: of the people who bothered to make an account, how many did
+    // anything with it. A sign-up that never saves a building is a number, not
+    // a user.
+    var acc=n(A.accounts);
+    el('fac-health-meters').innerHTML=
+      '<div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">ACTIVATION — WHAT SIGN-UPS ACTUALLY DID</div>'+
+      meter('Searched at least once', comma(A.searched)+'/'+comma(acc), pct(n(A.searched),acc), '')+
+      meter('Opened a building', comma(A.viewed)+'/'+comma(acc), pct(n(A.viewed),acc), '')+
+      meter('Saved a building', comma(A.saved)+'/'+comma(acc), pct(n(A.saved),acc), n(A.saved)>0?'good':'')+
+      '<div style="font-size:12px;color:var(--muted);margin:14px 0 8px;font-weight:600">RETENTION CURVE — TRUE COHORT</div>'+
+      meter('Day 1', rate(d1.rate), pct(100*n(d1.rate),100)*4, '')+
+      meter('Day 7', rate(d7.rate), pct(100*n(d7.rate),100)*4, '')+
+      meter('Day 30', rate(d30.rate), pct(100*n(d30.rate),100)*4, '');
+
+    var stick=Number(E.stickiness||0)*100;
+    el('fac-health-callout').innerHTML =
+      '<b>D30 retention is '+rate(d30.rate)+' and stickiness is '+rate(E.stickiness)+'.</b> '+
+      'A consumer product people rely on runs 20%+ DAU/MAU; this is '+stick.toFixed(1)+'%. '+
+      'The tile that says '+rate(d30.within_rate)+' came back is the same population measured more kindly — '+
+      'it counts anyone who returned once inside the window, not who was still there at the end. '+
+      'With '+comma(S.paying)+' paying of '+comma(T.accounts)+' accounts, retention is the number that '+
+      'decides whether this is worth anything, and it is the one that has been off the page.';
+  }
+
+  // ---------- search ----------
+  function renderFacSearch(S){
+    S = S || {};
+    var ix = S.index || {};
+    var has = S.impressions != null;
+    var tiles=[
+      {val:has?comma(S.clicks):'—',lbl:'Search clicks',sub:'last 28 days'},
+      {val:has?comma(S.impressions):'—',lbl:'Impressions',sub:'times a page was shown'},
+      {val:(S.avg_position==null?'—':Number(S.avg_position).toFixed(1)),lbl:'Average position',sub:'lower is better'},
+      {val:has?comma(S.serving_pages):'—',lbl:'Pages Google serves',sub:comma(S.serving_ever)+' have ever served'},
+      {val:comma(ix.published),lbl:'Pages published',sub:'in the sitemap'}
+    ];
+    el('fac-search-tiles').innerHTML=tiles.map(function(t){
+      return '<div class="ads-tile"><div class="a-val">'+t.val+'</div><div class="a-lbl">'+t.lbl+'</div><div class="a-sub">'+t.sub+'</div></div>';
+    }).join('');
+
+    // The indexing cohort is the honest denominator for a site that publishes
+    // 48,000 pages: not "how many did we make" but "how many did Google agree
+    // to keep". A sample is inspected, not the whole corpus — the URL
+    // Inspection API is rate-limited — so this is a rate, not a count.
+    var coh=n(ix.cohort);
+    if (coh > 0) {
+      el('fac-index-meters').innerHTML=
+        '<div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">'+
+        'INDEXING — OF '+comma(coh)+' URLS INSPECTED</div>'+
+        meter('Indexed', comma(ix.indexed)+'/'+comma(coh), pct(n(ix.indexed),coh)*4, n(ix.indexed)>0?'good':'')+
+        meter('Crawled, not indexed', comma(ix.crawled_not_indexed)+'/'+comma(coh), pct(n(ix.crawled_not_indexed),coh), '')+
+        meter('Google has never seen it', comma(ix.unknown_to_google)+'/'+comma(coh), pct(n(ix.unknown_to_google),coh), '');
+    } else {
+      el('fac-index-meters').innerHTML='';
+    }
+
+    var top=(S.untracked||[])[0];
+    var brand = top ? (' The single most-clicked query is <b>“'+String(top.query).replace(/[<>]/g,'')+'”</b>' +
+        ' — people looking for the old brand, not for rent-stabilized housing.') : '';
+    el('fac-search-callout').innerHTML = has
+      ? '<b>'+comma(ix.published)+' pages published, '+comma(ix.indexed)+' of '+comma(coh)+' inspected ones indexed'+
+        ' ('+(ix.accept_pct==null?'—':Number(ix.accept_pct).toFixed(1)+'%')+' of what Google fetches).</b> '+
+        comma(ix.unknown_to_google)+' it has never seen at all. Publishing more building pages does not help while '+
+        'that ratio holds — the constraint is what Google accepts, not what we make.'+brand
+      : '<b>No Search Console data on disk.</b> The 05:40 build writes it; if this stays empty, that run is failing.';
   }
 
   function renderAds(A){

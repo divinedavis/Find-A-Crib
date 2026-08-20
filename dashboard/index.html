@@ -221,6 +221,8 @@
   .tile .t-own{font-size:11px;color:var(--ink2);margin-top:4px;line-height:1.45}
   .tile .t-own b{color:var(--ink)}
   .tile .t-bench{font-size:11px;color:var(--ink2);margin-top:9px;padding-top:8px;border-top:1px solid var(--border);line-height:1.45}
+  .ads-tile .a-bench{font-size:11px;color:var(--ink2);margin-top:9px;padding-top:8px;border-top:1px solid var(--border);line-height:1.45}
+  .ads-tile .a-bench b{color:var(--ink)}
   .tile .t-bench b{color:var(--ink)}
   .bn{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;margin-left:2px;white-space:nowrap}
   .bn-low{background:#fdecec;color:#c0342c}
@@ -679,6 +681,44 @@
   // band, "below" requires the optimistic one to miss it, and anything that
   // straddles reads "in line", because straddling is genuinely all we know.
   var SIGNUP_BENCHMARK = { low: 2.0, high: 3.0, label: 'real estate', min_visitors: 500 };
+
+  // Cohort retention curve — the share of a signup cohort still active on the
+  // day, not the share that ever came back. Cross-industry 2025–26 readings
+  // settle near D1 25–26%, D7 11–13%, D30 5–7%:
+  //
+  //   https://vmobify.com/blog/app-retention-benchmarks
+  //   https://uxcam.com/blog/mobile-app-retention-benchmarks/
+  //
+  // TWO CAVEATS, both of which cut the same way and both of which matter more
+  // than the numbers:
+  //
+  // 1. These are MOBILE APP benchmarks. Their cohort installed something —
+  //    a deliberate act with a download behind it — where this cohort is
+  //    anyone who hit a web page. A web cohort is far less selected and reads
+  //    lower for that reason alone, so this is a ceiling to understand the
+  //    gap against, not par to be judged on.
+  // 2. Category matters more than the average: e-commerce sits at 3–6% by D30
+  //    and social at 15–20%. A housing search is a task with an end, closer to
+  //    the low end, and a user who found an apartment and left is a success
+  //    the curve records as churn.
+  //
+  // Held only against retention.dN.rate (survival), never against within_rate
+  // — mixing those two is the mistake RETURN_BENCHMARK's comment warns about.
+  var RETENTION_BENCHMARK = { d1: 25.5, d7: 12.0, d30: 6.0, label: 'all app categories',
+                              tolerance: 0.25, min_cohort: 100 };
+
+  // DAU/MAU. ~20% is the widely repeated "good consumer app" line, ~50%
+  // exceptional, 50–80% for messaging:
+  //
+  //   https://vmobify.com/blog/dau-mau-stickiness-benchmarks
+  //
+  // Weakest benchmark on this page: a rule of thumb repeated between blogs,
+  // not a measured distribution, with no n and no methodology anywhere. It is
+  // stated as a reference line and deliberately given no "above/below average"
+  // verdict, because a number nobody measured cannot support one. It is also
+  // the wrong shape for a housing search, which is periodic by nature — nobody
+  // looks for an apartment daily for a month.
+  var STICKINESS_REFERENCE = { good: 20, exceptional: 50 };
   function bandPct(x){ return (Math.round(x*10)%10===0) ? String(Math.round(x)) : x.toFixed(1); }
 
   // Durations read as time, never as a decimal: "3m 14s", not "194s" or "3.2m".
@@ -1403,20 +1443,42 @@
     // kinder one is how a dashboard flatters its owner. `within_rate` is
     // "came back at any point inside the window"; `rate` is true cohort
     // retention — still active at day 30. They differ by 20x here.
+    // Verdict against a cohort-survival benchmark, with the same discipline the
+    // dwell and return tiles use: state the reference number always, pass
+    // judgement only when the cohort can carry one.
+    function survivalBench(mine, bench, cohort){
+      var line = 'All-app-category average <b>'+bench+'%</b>';
+      if (mine == null) return line + ' · not measured here';
+      if (n(cohort) < RETENTION_BENCHMARK.min_cohort)
+        return line + ' · cohort of '+comma(cohort)+' too small to compare';
+      var pctv = 100*Number(mine), tol = bench*RETENTION_BENCHMARK.tolerance, v, c;
+      if (pctv > bench+tol)      { v='above average'; c='bn-hi';  }
+      else if (pctv < bench-tol) { v='below average';  c='bn-low'; }
+      else                       { v='in line';        c='bn-mid'; }
+      return line + ' <span class="bn '+c+'">'+v+'</span>';
+    }
     var tiles=[
       {val:rate(d30.rate),lbl:'D30 retention · true',
-       sub:comma(d30.retained)+' of '+comma(d30.cohort)+' still active at day 30'},
+       sub:comma(d30.retained)+' of '+comma(d30.cohort)+' still active at day 30',
+       bench:survivalBench(d30.rate, RETENTION_BENCHMARK.d30, d30.cohort)},
       {val:rate(d30.within_rate),lbl:'Returned within 30d',
-       sub:'the softer measure · '+comma(d30.within_returned)+' of '+comma(d30.within_cohort)},
+       sub:'the softer measure · '+comma(d30.within_returned)+' of '+comma(d30.within_cohort),
+       bench:'Compared against <b>13%</b> on the tile above — not repeated here'},
       {val:rate(E.stickiness),lbl:'Stickiness · DAU/MAU',
-       sub:comma(E.dau)+' daily of '+comma(E.mau)+' monthly'},
+       sub:comma(E.dau)+' daily of '+comma(E.mau)+' monthly',
+       // Reference line, no verdict: see STICKINESS_REFERENCE.
+       bench:'<b>'+STICKINESS_REFERENCE.good+'%</b> is the usual "good consumer app" line, '+
+             '<b>'+STICKINESS_REFERENCE.exceptional+'%</b> exceptional · rule of thumb, not a measured average'},
       {val:rate(E.wau_mau),lbl:'WAU/MAU',
-       sub:comma(E.wau)+' weekly of '+comma(E.mau)+' monthly'},
+       sub:comma(E.wau)+' weekly of '+comma(E.mau)+' monthly',
+       bench:'No sourced benchmark · the healthier of the two ratios here'},
       {val:'$'+comma(S.mrr),lbl:'MRR',
-       sub:comma(S.paying)+' paying · '+comma(S.comped)+' comped'}
+       sub:comma(S.paying)+' paying · '+comma(S.comped)+' comped',
+       bench:'<b>0%</b> free-to-paid · industry free tier converts <b>2–5%</b>'}
     ];
     el('fac-health-tiles').innerHTML=tiles.map(function(t){
-      return '<div class="ads-tile"><div class="a-val">'+t.val+'</div><div class="a-lbl">'+t.lbl+'</div><div class="a-sub">'+t.sub+'</div></div>';
+      return '<div class="ads-tile"><div class="a-val">'+t.val+'</div><div class="a-lbl">'+t.lbl+'</div>'+
+             '<div class="a-sub">'+t.sub+'</div>'+(t.bench?'<div class="a-bench">'+t.bench+'</div>':'')+'</div>';
     }).join('');
 
     // Activation: of the people who bothered to make an account, how many did
@@ -1428,10 +1490,15 @@
       meter('Searched at least once', comma(A.searched)+'/'+comma(acc), pct(n(A.searched),acc), '')+
       meter('Opened a building', comma(A.viewed)+'/'+comma(acc), pct(n(A.viewed),acc), '')+
       meter('Saved a building', comma(A.saved)+'/'+comma(acc), pct(n(A.saved),acc), n(A.saved)>0?'good':'')+
-      '<div style="font-size:12px;color:var(--muted);margin:14px 0 8px;font-weight:600">RETENTION CURVE — TRUE COHORT</div>'+
-      meter('Day 1', rate(d1.rate), pct(100*n(d1.rate),100)*4, '')+
-      meter('Day 7', rate(d7.rate), pct(100*n(d7.rate),100)*4, '')+
-      meter('Day 30', rate(d30.rate), pct(100*n(d30.rate),100)*4, '');
+      '<div style="font-size:12px;color:var(--muted);margin:14px 0 8px;font-weight:600">'+
+      'RETENTION CURVE — TRUE COHORT <span style="font-weight:400;text-transform:none">'+
+      '(all-app-category average in brackets)</span></div>'+
+      meter('Day 1 &nbsp;<span style="opacity:.55">('+RETENTION_BENCHMARK.d1+'%)</span>',
+            rate(d1.rate), pct(100*n(d1.rate),100)*4, '')+
+      meter('Day 7 &nbsp;<span style="opacity:.55">('+RETENTION_BENCHMARK.d7+'%)</span>',
+            rate(d7.rate), pct(100*n(d7.rate),100)*4, '')+
+      meter('Day 30 &nbsp;<span style="opacity:.55">('+RETENTION_BENCHMARK.d30+'%)</span>',
+            rate(d30.rate), pct(100*n(d30.rate),100)*4, '');
 
     var stick=Number(E.stickiness||0)*100;
     el('fac-health-callout').innerHTML =
@@ -1474,6 +1541,32 @@
     } else {
       el('fac-index-meters').innerHTML='';
     }
+
+    // Indexing benchmark. Reported the other way round in the literature —
+    // "20–30% of a typical site's crawled pages remain unindexed" — so 70–80%
+    // of FETCHED pages being kept is the normal reading:
+    //
+    //   https://www.outrank.so/blog/how-to-fix-crawled-but-not-indexed
+    //
+    // Weak evidence: a stated range with no n and no methodology. It is used
+    // only to say whether a number is in a normal band or nowhere near it,
+    // which is all a range like that can support. Note the denominator trap —
+    // this is share of pages Google FETCHED, not of pages published; against
+    // published, a big generated corpus reads catastrophically low for the
+    // ordinary reason that Google has not got to most of it yet.
+    var idxBench = '';
+    if (ix.accept_pct != null) {
+      var got = Number(ix.accept_pct), iv, ic;
+      if (got >= 70)      { iv='in line';       ic='bn-mid'; }
+      else if (got >= 45) { iv='below average'; ic='bn-low'; }
+      else                { iv='far below';     ic='bn-low'; }
+      idxBench = '<div class="callout" style="margin-top:14px">Typically <b>70–80%</b> of the pages '+
+                 'Google fetches get indexed; this corpus is at <b>'+got.toFixed(1)+'%</b> '+
+                 '<span class="bn '+ic+'">'+iv+'</span>. Measured against pages <i>fetched</i>, '+
+                 'not pages published — of '+comma(ix.published)+' published, most have simply not '+
+                 'been reached yet.</div>';
+    }
+    el('fac-index-meters').innerHTML += idxBench;
 
     var top=(S.untracked||[])[0];
     var brand = top ? (' The single most-clicked query is <b>“'+String(top.query).replace(/[<>]/g,'')+'”</b>' +

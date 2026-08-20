@@ -1841,6 +1841,21 @@
     if(refs.length) drawDonut(refs,'referred visits');
     else drawDonut([{name:'Direct / bookmark',hex:'#4C7DF0',val:Math.max(1,n(T.visits))}],'visits');
 
+    // Write this tab's own callout. It is a SHARED element: Find A Crib and
+    // NEMO both write it, and this tab used not to — so switching here from
+    // NEMO left NEMO's "16% found you through search" sitting under a donut
+    // that said 100% direct. Two sites' numbers on one screen, and the wrong
+    // one was the encouraging one.
+    var refHits=(T.referrers||[]).reduce(function(a,r){ return a+n(r.hits); },0);
+    el('returns-callout').innerHTML = !n(T.visits)
+      ? 'No visits recorded yet for this period.'
+      : (refHits
+          ? '<b>'+pctS(refHits,n(T.visits))+' of visits arrived from another site</b>, the rest direct. '+
+            'The biggest source is '+esc((T.referrers[0]||{}).host||'—')+'.'
+          : '<b>Every visit so far arrived direct — typed in, tapped from a message, or bookmarked.</b> '+
+            'Not one has come from a search result, which is the whole gap the indexing work is closing. '+
+            'A referrer of "none" is also what an AI assistant looks like, so this is a floor, not a total.');
+
     var hoods=(DM.neighborhoods||[]);
     // The activity-row pattern the rest of the dashboard uses, rather than a
     // table this stylesheet has never had a style for.

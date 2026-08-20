@@ -171,14 +171,14 @@
     "retired": null,
     "notes": "Drafts only, never auto-sends \u2014 bulk cold mail from findacrib.com would put the saved-building alert emails into spam, and cold outreach carries CAN-SPAM and GDPR obligations that need a human decision. Needs the Anthropic key.",
     "verdict": {
-      "decided": "2026-08-19",
+      "decided": "2026-08-20",
       "works": true,
       "why": "mrr_usd median 0.0/day since activation (no pre-activation baseline)",
       "measured": {
         "metric": "mrr_usd",
         "median_after": 0.0,
         "median_before": null,
-        "days_measured": 24
+        "days_measured": 25
       }
     },
     "revisit_on": "2026-08-25"
@@ -261,7 +261,7 @@
     "name": "Aggregate browse hubs for SF / LA / DC",
     "hypothesis": "The page tier that ranks on this site is the one that aggregates, and three of the four cities had none of it. Of the 82 pages earning any Search Console impression on 2026-07-30, 75 are single-building pages whose only query is the literal street address \u2014 58 of the 82 sit at position 10 or better, so ranking ability is not the constraint, addressable search volume is, and one address has almost none. The ZIP and neighborhood hubs rank at positions 2-4 where they serve. So: give SF, LA and DC the same aggregate tier NYC has, 252 pages instead of another 47,000 addresses, each carrying counts and distributions that only this dataset holds.",
     "kind": "content",
-    "status": "active",
+    "status": "retired",
     "prefixes": [
       "/sf/neighborhood/",
       "/sf/buildings/",
@@ -275,9 +275,22 @@
     "evidence": "/sf/, /la/ and /dc/ were a single JavaScript map shell each \u2014 which is also why 11 city queries were scored 'covered' by a page that cannot answer them (found 2026-07-29). 2026 large-site guidance is consistent that a crawler reaches hub pages first and that aggregate pages survive only where each carries unique data; these carry per-place counts, unit-size or decade distributions, and median reported rents where the city reports them.",
     "added": "2026-07-26",
     "activated": "2026-07-30",
-    "retired": null,
-    "notes": "Rendered by build_seo.py:city_hub_docs() at /<city>/neighborhood/<slug>/ (SF, DC) and /la/zip/<zip>/, plus a browse hub at /<city>/buildings/. Grouped on the dimension each city's data actually carries: SF and DC record a neighborhood, LA records only a ZIP. No page states a stat its city does not hold \u2014 LA has no reported rents, DC has no build years \u2014 and no place with fewer than 5 records gets a page. Deliberately NOT building-level: SF is anonymized to the block and LA is a derived 'likely RSO' list, so the aggregate is the honest unit of publication for those two. Since 2026-08-03 the technique also PUBLISHES the tier the SEO pipeline has not deployed, through the growth build's own rsync, on the same terms as the city guides: ownership by FALLBACK_MARKER, so a docroot copy the SEO build wrote is never overwritten and this steps aside on the day /root/dhcr-build starts pulling again. 255 pages had been finished in git and live nowhere for five days. Fallback-published hubs are listed in sitemap-daily.xml (changefreq monthly) and the three browse hubs in llms.txt, because no SEO-owned shard knows these URLs exist.",
-    "verdict": null,
+    "retired": "2026-08-20",
+    "notes": "Rendered by build_seo.py:city_hub_docs() at /<city>/neighborhood/<slug>/ (SF, DC) and /la/zip/<zip>/, plus a browse hub at /<city>/buildings/. Grouped on the dimension each city's data actually carries: SF and DC record a neighborhood, LA records only a ZIP. No page states a stat its city does not hold \u2014 LA has no reported rents, DC has no build years \u2014 and no place with fewer than 5 records gets a page. Deliberately NOT building-level: SF is anonymized to the block and LA is a derived 'likely RSO' list, so the aggregate is the honest unit of publication for those two. Since 2026-08-03 the technique also PUBLISHES the tier the SEO pipeline has not deployed, through the growth build's own rsync, on the same terms as the city guides: ownership by FALLBACK_MARKER, so a docroot copy the SEO build wrote is never overwritten and this steps aside on the day /root/dhcr-build starts pulling again. 255 pages had been finished in git and live nowhere for five days. Fallback-published hubs are listed in sitemap-daily.xml (changefreq monthly) and the three browse hubs in llms.txt, because no SEO-owned shard knows these URLs exist.\n[2026-08-20] active\u2192retired: 0 owned visitors in 21d, and its pages earned 0 search impressions across 0 URLs \u2014 invisible in search, not merely un-clicked",
+    "verdict": {
+      "decided": "2026-08-20",
+      "works": false,
+      "why": "0 owned visitors in 21d, and its pages earned 0 search impressions across 0 URLs \u2014 invisible in search, not merely un-clicked",
+      "measured": {
+        "total_owned_visitors": 0,
+        "recent_median": 0.0,
+        "prior_median": 0,
+        "days_measured": 21,
+        "owned_serving_pages": 0,
+        "owned_impressions": 0,
+        "owned_best_position": 8
+      }
+    },
     "revisit_on": "2026-08-29"
   },
   {
@@ -390,14 +403,14 @@
     "retired": null,
     "notes": "Implementation lives in build_seo.py:answer_block(), not in techniques.py \u2014 the hub pages are generated by the SEO build, so the growth technique here only verifies the blocks are present and counts them.",
     "verdict": {
-      "decided": "2026-08-19",
+      "decided": "2026-08-20",
       "works": true,
-      "why": "25 owned visitors in 22d (median 1.5/day and rising), 2 pages serving in search",
+      "why": "25 owned visitors in 23d (median 1.5/day and rising), 2 pages serving in search",
       "measured": {
         "total_owned_visitors": 25,
         "recent_median": 1.5,
-        "prior_median": 0.0,
-        "days_measured": 22,
+        "prior_median": 0,
+        "days_measured": 23,
         "owned_serving_pages": 2,
         "owned_impressions": 2,
         "owned_best_position": 6

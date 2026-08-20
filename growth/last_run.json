@@ -49,60 +49,89 @@
     }
   },
   "indexstatus": {
-    "accept_pct": 15.8,
-    "added": 57,
-    "at": "2026-08-19T05:15:19+00:00",
+    "accept_pct": 12.5,
+    "accept_pct_mature": 50.0,
+    "added": 0,
+    "at": "2026-08-20T05:11:16+00:00",
+    "by_crawl_age": {
+      "0-6d": {
+        "accept_pct": 12.5,
+        "fetched": 8,
+        "indexed": 1
+      },
+      "14-20d": {
+        "accept_pct": 0.0,
+        "fetched": 32,
+        "indexed": 0
+      },
+      "21-27d": {
+        "accept_pct": 0.0,
+        "fetched": 2,
+        "indexed": 0
+      },
+      "28d+": {
+        "accept_pct": 57.1,
+        "fetched": 14,
+        "indexed": 8
+      },
+      "7-13d": {
+        "accept_pct": 4.2,
+        "fetched": 24,
+        "indexed": 1
+      }
+    },
     "cohort": 445,
-    "date": "2026-08-19",
+    "date": "2026-08-20",
     "dropped": 0,
     "errors": 0,
-    "fetched_pct": 19.1,
-    "indexed_pct": 3.0,
+    "fetched_mature": 16,
+    "fetched_pct": 18.0,
+    "indexed_pct": 2.2,
     "inspected": 100,
-    "last_crawl": "2026-08-18",
+    "last_crawl": "2026-08-19",
     "ok": true,
     "published_urls": 47926,
-    "read": 398,
+    "read": 445,
     "states": {
-      "crawled_not_indexed": 64,
-      "discovered_not_indexed": 2,
-      "indexed": 12,
-      "unknown_to_google": 320
+      "crawled_not_indexed": 70,
+      "discovered_not_indexed": 10,
+      "indexed": 10,
+      "unknown_to_google": 355
     }
   },
   "measure": {
-    "at": "2026-08-19T05:15:20+00:00",
+    "at": "2026-08-20T05:11:17+00:00",
     "coverage_pct": 83.4,
-    "date": "2026-08-19",
+    "date": "2026-08-20",
     "days": 1,
     "keywords_covered": 221,
     "keywords_total": 265,
-    "latest_measured_day": "2026-08-18"
+    "latest_measured_day": "2026-08-19"
   },
   "outreach": {
-    "at": "2026-08-19T05:15:21+00:00",
-    "date": "2026-08-19",
+    "at": "2026-08-20T05:11:17+00:00",
+    "date": "2026-08-20",
     "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
     "ok": false
   },
   "scout": {
-    "at": "2026-08-19T05:15:21+00:00",
-    "date": "2026-08-19",
+    "at": "2026-08-20T05:11:17+00:00",
+    "date": "2026-08-20",
     "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
     "ok": false
   },
   "searchconsole": {
-    "at": "2026-08-19T05:00:07+00:00",
-    "clicks": 0,
-    "date": "2026-08-19",
-    "impressions": 1,
-    "page_clicks": 0,
-    "page_impressions": 79,
-    "serving_ever": 249,
-    "serving_pages": 58,
-    "serving_stable": 52,
+    "at": "2026-08-20T05:00:06+00:00",
+    "clicks": 1,
+    "date": "2026-08-20",
+    "impressions": 3,
+    "page_clicks": 1,
+    "page_impressions": 74,
+    "serving_ever": 253,
+    "serving_pages": 53,
+    "serving_stable": 49,
     "share_pct": 0.0,
     "tracked_ranking": 0,
-    "window": "2026-08-10..2026-08-17"
+    "window": "2026-08-11..2026-08-18"
   }
 }

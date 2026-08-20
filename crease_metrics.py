@@ -51,7 +51,19 @@ _CACHE = {}
 BOT = re.compile(
     r"bot|crawl|spider|slurp|bing|yandex|baidu|duckduck|semrush|ahrefs|mj12|dotbot|"
     r"petal|bytespider|facebookexternalhit|whatsapp|telegram|preview|monitor|uptime|"
-    r"curl|wget|python-requests|okhttp|headless|lighthouse|pingdom|scanner|nuclei",
+    r"curl|wget|python-requests|okhttp|headless|lighthouse|pingdom|scanner|nuclei|"
+    # Crawlers whose names contain no word this list was matching on. Every one
+    # of these was counted as a person until 2026-08-20, when the tile read 17
+    # visitors and a third of them were Google fetching the neighbourhood pages
+    # it had just been told about.
+    #
+    #   googleother   Google's NON-search fetcher (Gemini, product fetches). The
+    #                 Googlebot UA says "Googlebot" and was caught by `bot`;
+    #                 this one says "GoogleOther" and sailed straight through.
+    #   dataprovider  a commercial web-data scraper, UA "Dataprovider.com"
+    #   the rest      request libraries and scan tooling that identify honestly
+    r"googleother|google-inspectiontool|dataprovider|go-http-client|node-fetch|"
+    r"axios|libwww|zgrab|masscan|nmap|httpx|java/|apache-httpclient|postman",
     re.I,
 )
 # A page view is a page. Chunks, images and the robots file are not visits, and
@@ -167,6 +179,12 @@ DATACENTER_PREFIXES = (
     "138.199.", "143.244.", "156.146.", "185.156.", "37.19.",
     # Zscaler and corporate proxy pools
     "165.225.", "216.73.", "104.129.",
+    # Google's own crawl range. Nobody books a laundry pickup from it, and the
+    # UA is not always self-identifying — GoogleOther wears the same Nexus 5X
+    # string as Googlebot without the word that gets it filtered.
+    "66.249.",
+    # OVH Canada, which the earlier OVH block missed
+    "149.56.",
     # rotating scraper and probe blocks seen on this site
     "103.196.", "45.88.", "136.0.74.", "149.19.255.", "205.169.39.",
     "216.38.230.", "194.36.25.", "192.253.209.", "204.101.161.", "23.27.145.",

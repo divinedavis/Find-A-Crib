@@ -157,7 +157,7 @@ DATACENTER_PREFIXES = (
     # Hetzner
     "5.9.", "95.216.", "168.119.", "116.202.", "49.12.", "78.46.", "88.99.",
     # Scaleway / Online SAS
-    "62.210.", "51.15.", "163.172.", "212.83.",
+    "62.210.", "51.15.", "163.172.", "212.83.", "151.115.",
     # Linode / Akamai
     "172.236.", "172.237.", "45.79.", "45.33.", "139.144.", "170.187.",
     # Fastly and other edge networks, which browse nothing
@@ -180,7 +180,7 @@ DATACENTER_PREFIXES = (
 # spectrum or t-mobile in it.
 HOSTING_PTR = re.compile(
     r"amazonaws|googleusercontent|google\.com$|azure|cloudapp|digitalocean|"
-    r"linode|vultr|ovh\.|hetzner|scaleway|online\.net|contabo|hostinger|"
+    r"linode|vultr|ovh\.|hetzner|scaleway|scw\.cloud|online\.net|contabo|hostinger|"
     r"leaseweb|datapacket|m247|datacamp|choopa|quadranet|colocrossing|tzulo|"
     r"servers\.com|hosting|vps|dedicated|cloudapp|tor-exit",
     re.I,

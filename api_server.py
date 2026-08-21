@@ -20,6 +20,7 @@ from flask import Flask, jsonify, request, g
 import build_log             # which run-log lines are work that shipped
 import crease_metrics
 import nemo_metrics          # NEMO Seamless Gutter traffic, same droplet
+import trent_metrics         # Trent's Fresh Spaces traffic, same droplet
 
 DATA_DIR = os.environ.get("DATA_DIR", ".")
 SUPABASE_URL = "https://dbaifotzwlxjvsxjohjt.supabase.co"
@@ -220,7 +221,8 @@ def gate():
        or request.path.startswith("/embed/") \
        or request.path in ("/dashboard-metrics", "/dashboard-users",
                            "/dashboard-nemo",    # own Supabase-token owner gate
-                           "/dashboard-crease"):
+                           "/dashboard-crease",
+                           "/dashboard-trent"):
         return
     # Header only — never accept the key in the query string, where it would be
     # captured in nginx access logs, browser history, and Referer headers.
@@ -1098,6 +1100,31 @@ def dashboard_crease():
         rng = "all"
     try:
         return jsonify(crease_metrics.build_cached(rng=rng))
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
+
+
+@app.route("/dashboard-trent")
+def dashboard_trent():
+    """Trent's Fresh Spaces — the dashboard's fourth site tab.
+
+    Owner-only, like Crease and unlike NEMO: Trent has no login here, and the
+    payload mixes his booking counts with market-size figures that are the
+    owner's working notes rather than a client report. Everything comes off
+    this box — the site's own nginx log, the Node app's SQLite, and Search
+    Console via the estate service account. Counts only: no customer row, name
+    or phone crosses this endpoint.
+    """
+    if rate_limited("dashboard", 120, 3600):
+        return _too_many()
+    denied = _dashboard_denial(_dashboard_auth(), ("ok",))
+    if denied:
+        return denied
+    rng = (request.args.get("range") or "all").lower()
+    if rng not in DASHBOARD_RANGES:
+        rng = "all"
+    try:
+        return jsonify(trent_metrics.build_cached(rng=rng))
     except Exception:
         return jsonify(error="temporarily_unavailable"), 503
 

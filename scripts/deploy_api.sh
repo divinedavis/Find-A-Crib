@@ -19,7 +19,7 @@ LIVE=/root/findacrib-api
 # Exactly the modules gunicorn imports. Listed rather than globbed: the repo is
 # a website with a hundred scripts in its root, and the API directory should
 # hold the six files it runs.
-FILES=(api_server.py crease_metrics.py nemo_metrics.py build_log.py building_report.py issue_api_key.py)
+FILES=(api_server.py crease_metrics.py nemo_metrics.py trent_metrics.py build_log.py building_report.py issue_api_key.py)
 
 ssh "$HOST" "set -e
   cd $REPO && git pull -q --ff-only
@@ -35,14 +35,18 @@ sleep 4
 ssh "$HOST" "set -e
   systemctl is-active findacrib-api
   cd $LIVE && ./venv/bin/python -c \"
-import crease_metrics, nemo_metrics
+import crease_metrics, nemo_metrics, trent_metrics
 t = crease_metrics.traffic('all')
 print('    crease traffic:', {k: t[k] for k in ('visitors', 'visits', 'visitors_today')})
+tt = trent_metrics.traffic('all')
+print('    trent traffic:', {k: tt[k] for k in ('visitors', 'visits', 'visitors_today')})
 \"
   # The gate is the point: a 401 here is the owner check working, and anything
   # else — a 500, a 502 — is a module that imported on the command line and
   # broke inside the worker.
-  code=\$(curl -s -o /dev/null -w '%{http_code}' -m 10 https://findacrib.com/api/dashboard-crease)
-  echo \"    /api/dashboard-crease -> \$code (expect 401 unauthenticated)\"
-  test \"\$code\" = 401"
+  for feed in dashboard-crease dashboard-trent; do
+    code=\$(curl -s -o /dev/null -w '%{http_code}' -m 10 https://findacrib.com/api/\$feed)
+    echo \"    /api/\$feed -> \$code (expect 401 unauthenticated)\"
+    test \"\$code\" = 401
+  done"
 echo "==> done"

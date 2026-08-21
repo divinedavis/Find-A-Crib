@@ -369,6 +369,7 @@
           <button data-site="fac" class="on">🏙️ Find A Crib</button>
           <button data-site="nemo">🏠 NEMO Gutter</button>
           <button data-site="crease">👔 Crease</button>
+          <button data-site="trent">🎨 Fresh Spaces</button>
         </div>
         <span class="live-pill"><span class="live-dot"></span> Live data</span>
         <!-- Scopes every tile that counts something over a period, on both
@@ -502,6 +503,38 @@
             <div><h2>Brooklyn canvass</h2><div class="card-sub">Supply, not demand: every dry cleaner and laundromat mapped, and how far the door-knocking has got. Shops are never the constraint — coverage is.</div></div>
           </div>
           <div class="ads-tiles" id="crease-canvass"></div>
+        </div>
+      </div>
+
+      <!-- ===== Trent's Fresh Spaces only ===== -->
+      <div id="trent-a" class="hidden">
+        <!-- the market: the denominator every other number here is a fraction of -->
+        <div class="card mb18" id="sec-market">
+          <div class="card-head-row">
+            <div><h2>What York actually searches for</h2><div class="card-sub" id="market-sub">—</div></div>
+          </div>
+          <div class="ads-tiles" id="trent-market"></div>
+          <div id="market-rows" style="margin-top:18px"></div>
+          <div class="callout" id="market-callout" style="margin-top:16px"></div>
+        </div>
+
+        <!-- search: is Google sending anyone -->
+        <div class="card mb18" id="sec-trent-search">
+          <div class="card-head-row">
+            <div><h2>Search — is Google sending anyone?</h2><div class="card-sub" id="trent-search-sub">Search Console lags about three days, so this window ends there rather than today.</div></div>
+          </div>
+          <div class="ads-tiles" id="trent-search-tiles"></div>
+          <div id="trent-queries" style="margin-top:18px"></div>
+          <div class="callout" id="trent-search-callout" style="margin-top:16px"></div>
+        </div>
+
+        <!-- bookings: the only conversion this site can currently measure -->
+        <div class="card mb18" id="sec-trent-bookings">
+          <div class="card-head-row">
+            <div><h2>Bookings — the money signal</h2><div class="card-sub">Estimates and consultations booked on the site. Counts and dates only: no name, phone or address reaches this page. A tel: tap is invisible here — the site ships no beacon, so calls and texts are uncounted, not zero.</div></div>
+          </div>
+          <div class="ads-tiles" id="trent-bookings"></div>
+          <div class="callout" id="trent-bookings-callout" style="margin-top:16px"></div>
         </div>
       </div>
 
@@ -839,6 +872,14 @@
       nav:[['top','▦','Dashboard'],['sec-demand','◎','Demand map'],
            ['sec-pipeline','⇅','Requests & orders'],['sec-canvass','◉','Canvass']]
     },
+    trent:{
+      mark:'🎨', name:'Trent\u2019s Fresh Spaces', endpoint:'/api/dashboard-trent',
+      title:'Trent\u2019s Fresh Spaces', sub:'Interior painting in York, PA \u2014 the market, the traffic and the bookings.',
+      live:'https://trentsfreshspaces.com', foot:'York County, PA',
+      blocks:['trent-a'],
+      nav:[['top','▦','Dashboard'],['sec-market','◎','The market'],
+           ['sec-trent-search','◉','Search'],['sec-trent-bookings','⇅','Bookings']]
+    },
     nemo:{
       mark:'🏠', name:'NEMO Gutter', endpoint:'/api/dashboard-nemo',
       title:'NEMO Seamless Gutter', sub:'Web traffic, search rankings &amp; leads — Eric’s site, same template.',
@@ -1066,6 +1107,7 @@
     }
     if(siteKey==='nemo') renderNemo(session.user, data);
     else if(siteKey==='crease') renderCrease(session.user, data);
+    else if(siteKey==='trent') renderTrent(session.user, data);
     else render(session.user, data);
   }
 
@@ -1075,8 +1117,13 @@
   // loads, drop the site switcher so the tab he can't open isn't on screen.
   function nemoOnly(){
     document.body.classList.add('nemo-only');
-    var b=document.querySelector('#site-switch button[data-site="fac"]');
-    if(b) b.classList.add('hidden');
+    // Every tab except his own, not just Find A Crib's: Crease and Trent's are
+    // other businesses of the owner's, and the API refuses Eric both. Hiding
+    // only one of the three left him buttons that answer 403 — and named two
+    // companies he has no reason to see.
+    document.querySelectorAll('#site-switch button').forEach(function(b){
+      if(b.getAttribute('data-site')!=='nemo') b.classList.add('hidden');
+    });
   }
 
   // supabase-js re-emits an auth event whenever the tab regains focus and on
@@ -1902,6 +1949,163 @@
   function creaseTile(t){
     return '<div class="ads-tile"><div class="a-val">'+t.v+'</div><div class="a-lbl">'+t.l+'</div>'+
       (t.sub?'<div class="a-sub">'+t.sub+'</div>':'')+'</div>';
+  }
+
+  // ---- Trent's Fresh Spaces ----------------------------------------------
+  // The tab is built around a number the other three don't have: how big the
+  // market actually is. York is a town of 45,000 and painting is a search-led
+  // trade, so "265 hire-intent searches a month" is the denominator, and every
+  // other tile here is a fraction of it. Without it, "0 impressions" reads as a
+  // quiet month rather than as the whole opportunity going to Thumbtack.
+  function renderTrent(user, d){
+    var email=(user&&user.email)||'';
+    el('avatar').textContent=(email[0]||'D').toUpperCase();
+    var ts=d.generated_at?new Date(d.generated_at):new Date();
+    var upd='Updated '+ts.toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+    if((d.warnings||[]).length) upd+=' · '+d.warnings.join(' ');
+    el('updated').textContent=upd;
+
+    var T=d.traffic||{}, B=d.bookings||{}, S=d.search||{}, M=d.market||{};
+
+    el('nav-foot').textContent = T.since
+      ? ('Since '+fmtDay(T.since))
+      : ('Logging since '+fmtDay(T.logging_since||M.as_of));
+    el('donut-title').textContent='Where Trent\u2019s visitors come from';
+    el('donut-sub').textContent='Referrers seen in the server log';
+    el('today-sub').textContent='Straight from the server log, updated live';
+    el('spark-sub').textContent='Daily page views on trentsfreshspaces.com';
+
+    var share=M.share_pct;
+    var tiles=[
+      {ic:'👣',v:comma(n(T.visitors)),l:'Unique visitors',
+       own:comma(n(T.visits))+' visits · per-site logging started '+fmtDay(T.logging_since)},
+      {ic:'🔎',v:comma(n(S.impressions)),l:'Google impressions',
+       own:S.connected?(comma(n(S.clicks))+' clicks · '+(S.position?('avg position '+S.position):'no ranking yet')):'Search Console unreachable',
+       bench:S.start?('last '+n(S.days)+' days, to '+fmtDay(S.end)):''},
+      {ic:'🎯',v:(share==null?'—':share.toFixed(share<10?1:0)+'%'),l:'Share of York\u2019s painting searches',
+       own:comma(n(S.impressions))+' of ~'+comma(n(M.monthly_searches))+' searches a month',
+       bench:'Appearing at all — not ranking, not clicked'},
+      {ic:'📅',v:comma(n(B.total)),l:'Bookings taken',
+       own:comma(n(B.confirmed))+' confirmed · '+comma(n(B.cancelled))+' cancelled'},
+      {ic:'🗓️',v:comma(n(B.upcoming)),l:'Jobs still upcoming',
+       own:B.last?('last booking '+fmtDay(B.last)):'none yet'},
+      {ic:'🎨',v:comma(n(M.monthly_searches)),l:'Searches a month in York',accent:true,
+       own:'people looking to hire a painter · '+(M.as_of||''),
+       title:M.note||''}
+    ];
+    el('tiles').innerHTML=tiles.map(function(t){
+      return '<div class="tile'+(t.accent?' accent':'')+'"'+(t.title?' title="'+esc(t.title)+'"':'')+'>'+
+        '<div class="t-ico">'+t.ic+'</div><div class="t-val">'+t.v+'</div><div class="t-lbl">'+t.l+'</div>'+
+        (t.own?'<div class="t-own">'+esc(t.own)+'</div>':'')+
+        (t.bench?'<div class="t-bench">'+esc(t.bench)+'</div>':'')+'</div>';
+    }).join('');
+
+    // Referrers stand in for the channel donut: this site has no first-party
+    // channel tagging, and inventing one would be a chart of guesses.
+    var refs=(T.referrers||[]).map(function(r,i){
+      return {name:r.host,hex:['#4C7DF0','#F0B429','#2FBF71','#E9576B','#8B5CF6'][i%5],val:n(r.hits)};
+    });
+    if(refs.length) drawDonut(refs,'referred visits');
+    else drawDonut([{name:'Direct / typed in',hex:'#4C7DF0',val:Math.max(1,n(T.visits))}],'visits');
+
+    var refHits=(T.referrers||[]).reduce(function(a,r){ return a+n(r.hits); },0);
+    el('returns-callout').innerHTML = !n(T.visits)
+      ? 'No visits recorded yet in this range. Per-site logging only started on '+fmtDay(T.logging_since)+
+        ' — before that trentsfreshspaces.com shared a log with every other site on the box, in a format that records no hostname, so there is nothing to backfill.'
+      : (refHits
+          ? '<b>'+pctS(refHits,n(T.visits))+' of visits arrived from another site</b>, the rest direct. '+
+            'The biggest source is '+esc((T.referrers[0]||{}).host||'—')+'.'
+          : '<b>Every visit so far arrived direct — typed in, tapped from a text, or handed out in person.</b> '+
+            'Not one came from a search result, which is the gap the market card below measures.');
+
+    // ---- the market -------------------------------------------------------
+    el('market-sub').textContent = 'Hire-intent searches per month in '+(M.geo||'York, PA')+
+      ' · '+(M.source||'')+' · '+(M.as_of||'');
+    var cmp=M.comparables||{};
+    el('trent-market').innerHTML=[
+      {v:comma(n(M.monthly_searches)),l:'Searches a month',sub:'people shopping for a painter'},
+      {v:comma(n((M.top||[])[0]&&M.top[0].vol)),l:'“painters near me”',sub:'the single biggest query'},
+      {v:(share==null?'—':share.toFixed(share<10?1:0)+'%'),l:'You appear for',sub:'impressions ÷ searches'},
+      {v:comma(n(M.monthly_searches)*12),l:'A year of them',sub:'and none of them yours yet'}
+    ].map(creaseTile).join('');
+    el('market-rows').innerHTML=(M.top||[]).map(function(k){
+      return '<div class="act-row"><div class="act-l"><div class="act-ico">🔎</div>'+
+        '<div><div class="act-name">'+esc(k.q)+'</div>'+
+        '<div class="act-desc">'+(k.cpc?('$'+k.cpc.toFixed(2)+' a click if you paid for it · '+esc(k.comp||'')+' competition'):'no ad data')+'</div></div></div>'+
+        '<div class="act-val">'+comma(n(k.vol))+'/mo</div></div>';
+    }).join('') || '<div class="disclaim">No keyword data loaded.</div>';
+    el('market-callout').innerHTML=
+      '<b>These searches are being answered by somebody — just not by Trent.</b> The sites ranking first for them are '+
+      esc((M.incumbents||[]).join(', '))+', which are lead brokers rather than painters: they sell the same job back to '+
+      'contractors. Comparable towns come out the same size ('+
+      Object.keys(cmp).map(function(c){ return esc(c)+' '+comma(n(cmp[c]))+'/mo'; }).join(', ')+
+      '), so this is a market reading rather than a fluke. ' + esc(M.note||'');
+
+    // ---- search -----------------------------------------------------------
+    el('trent-search-tiles').innerHTML=[
+      {v:comma(n(S.impressions)),l:'Impressions',sub:S.start?(fmtDay(S.start)+' → '+fmtDay(S.end)):''},
+      {v:comma(n(S.clicks)),l:'Clicks',sub:(S.ctr==null?'':S.ctr+'% of impressions')},
+      {v:(S.position?S.position.toFixed(1):'—'),l:'Average position',sub:'1 is the top of page one'},
+      {v:comma((S.queries||[]).length),l:'Queries served',sub:'distinct searches you appeared for'}
+    ].map(creaseTile).join('');
+    el('trent-queries').innerHTML=(S.queries||[]).length
+      ? S.queries.map(function(q){
+          return '<div class="act-row"><div class="act-l"><div class="act-ico">🔍</div>'+
+            '<div><div class="act-name">'+esc(q.q)+'</div>'+
+            '<div class="act-desc">position '+q.position+' · '+comma(n(q.clicks))+' clicks</div></div></div>'+
+            '<div class="act-val">'+comma(n(q.impressions))+'</div></div>';
+        }).join('')
+      : '<div class="disclaim">Google has not shown this site for a single search in the window. Six pages are published; three of the service pages have never been crawled.</div>';
+    el('trent-search-callout').innerHTML = !S.connected
+      ? 'Search Console could not be reached, so this card is blank for a reason that is not Google\u2019s verdict.'
+      : (n(S.impressions)
+          ? '<b>'+comma(n(S.impressions))+' impressions against ~'+comma(n(M.monthly_searches))+' searches a month</b> in town. '+
+            'Every one of them is a chance to be clicked that costs nothing.'
+          : '<b>Zero impressions.</b> Not a slow month — Google is not putting this site in front of anybody, for anything. '+
+            'The market card above says '+comma(n(M.monthly_searches))+' people a month are looking. The fix is a Google Business Profile and '+
+            'getting the three uncrawled service pages fetched, in that order: the map pack sits above the organic results for every one of these queries.');
+
+    // ---- bookings ---------------------------------------------------------
+    var svc=B.by_service||{};
+    el('trent-bookings').innerHTML=[
+      {v:comma(n(B.total)),l:'Bookings ever',sub:B.first?('first '+fmtDay(B.first)):''},
+      {v:comma(n(B.confirmed)),l:'Confirmed',sub:comma(n(B.cancelled))+' cancelled'},
+      {v:comma(n(svc.estimate)),l:'On-site estimates',sub:'the ones worth money'},
+      {v:comma(n(svc.consult)),l:'Phone consultations',sub:'20 minutes each'},
+      {v:comma(n(B.period)),l:'In this range',sub:'by the date they booked'},
+      {v:comma(n(B.upcoming)),l:'Still upcoming',sub:'on the calendar now'}
+    ].map(creaseTile).join('');
+    el('trent-bookings-callout').innerHTML = !B.ok
+      ? 'The booking database could not be read.'
+      : (!n(B.total)
+          ? 'Nobody has booked yet.'
+          : (B.first===B.last
+              ? '<b>All '+comma(n(B.total))+' bookings were taken on '+fmtDay(B.first)+' — launch day.</b> '+
+                'That is the form being tested, not demand: no real customer has booked since. '+
+                'The booking flow works; nothing is arriving at it.'
+              : '<b>'+comma(n(B.total))+' bookings between '+fmtDay(B.first)+' and '+fmtDay(B.last)+'.</b> '+
+                comma(n(B.upcoming))+' are still on the calendar.'));
+
+    el('today-list').innerHTML=[
+      {ic:'🟢',name:'Visitors today',desc:'unique',val:comma(n(T.visitors_today))},
+      {ic:'📄',name:'Page views today',desc:'total',val:comma(n(T.views_today))},
+      {ic:'📅',name:'Bookings today',desc:'new',val:comma(n(B.today))},
+      {ic:'🗓️',name:'Jobs upcoming',desc:'on the calendar',val:comma(n(B.upcoming))}
+    ].map(function(r){
+      return '<div class="act-row"><div class="act-l"><div class="act-ico">'+r.ic+'</div>'+
+        '<div><div class="act-name">'+r.name+'</div><div class="act-desc">'+r.desc+'</div></div></div>'+
+        '<div class="act-val">'+r.val+'</div></div>';
+    }).join('');
+    renderSpark((T.sparkline||[]).map(function(p){ return {date:p.date, views:p.views, visitors:null}; }));
+  }
+
+  // An ISO day as a person would say it. Guards the null so a missing date
+  // renders as a dash rather than "Invalid Date" in the middle of a sentence.
+  function fmtDay(iso){
+    if(!iso) return '—';
+    var dt=new Date(String(iso).length===7 ? iso+'-01T00:00' : iso+'T00:00');
+    if(isNaN(dt)) return String(iso);
+    return dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
   }
 
   function renderNemo(user, d){

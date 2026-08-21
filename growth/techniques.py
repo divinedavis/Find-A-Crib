@@ -1813,10 +1813,81 @@ def t_crawl_paths(ctx):
     return {"ok": True, "detail": detail + tail, "pages": read}
 
 
+# build_seo.py writes the computed comparison paragraph inside this wrapper.
+# Kept distinct from ANSWER_MARKER on purpose: an answer block answers the
+# question in the page's title, this one compares the building to its
+# neighbours, and an audit that conflated them would report either as the other.
+COMPARE_MARKER = "class='compare'"
+
+# Below this share of sampled building pages, assume the generator dropped the
+# block rather than that the sample is unlucky. build_seo emits it for 46,853 of
+# 47,165 buildings (99.3%) — the rest genuinely have fewer than three computable
+# facts on file — so anything under 90% is a regression, not data sparsity.
+COMPARE_MIN_PCT = 90
+COMPARE_SAMPLE = 400
+
+
+def t_derived_building_facts(ctx):
+    """Verify the building pages carry their computed comparison block.
+
+    Same split as t_hub_direct_answers: build_seo.py writes the block, this
+    holds the hypothesis and checks the claim against the live docroot daily.
+    It matters more here than on the hubs because the building tier is the one
+    Googlebot actually fetches, so a silent regression would be invisible in
+    every metric until the next index sample weeks later.
+
+    Two differences from the hub audit. It samples rather than reading all
+    47,165 pages, evenly spaced through the sorted path list so the sample
+    spans every borough and is identical between runs unless the corpus itself
+    changes. And it has no staging fallback: these pages come from the SEO
+    pipeline, which this build cannot stage — growth_run.sh runs the watchdog
+    that rebuilds the corpus AFTER the techniques run, so this audit always
+    reads yesterday's corpus. On the morning after a build_seo change ships it
+    will therefore read 0%, correctly: the block is not live yet. The detail
+    line names the corpus date so that reading cannot be mistaken for the
+    generator having dropped the block.
+    """
+    import glob
+
+    paths = sorted(glob.glob(os.path.join(ctx.docroot, "building", "*", "*", "index.html")))
+    if not paths:
+        return {"ok": False, "detail": "no building pages found in the docroot — "
+                                       "has the SEO build ever run?"}
+    step = max(1, len(paths) // COMPARE_SAMPLE)
+    sample = paths[::step][:COMPARE_SAMPLE]
+    have, missing = 0, []
+    for p in sample:
+        try:
+            with open(p, encoding="utf-8", errors="replace") as f:
+                if COMPARE_MARKER in f.read():
+                    have += 1
+                elif len(missing) < 3:
+                    missing.append(os.path.relpath(p, ctx.docroot))
+        except OSError:
+            if len(missing) < 3:
+                missing.append(os.path.relpath(p, ctx.docroot))
+    # Floor, not round: 399 of 400 is not "100%", and an audit that reports a
+    # clean sweep it did not see is worse than no audit.
+    pct = int(100.0 * have / len(sample))
+    detail = (f"comparison block on {have} of {len(sample)} sampled building pages ({pct}%) "
+              f"across {len(paths):,} published")
+    if pct >= COMPARE_MIN_PCT:
+        return {"ok": True, "detail": detail, "pages": have}
+    age = _seo_corpus_age(ctx.docroot)
+    if age:
+        detail += f" — SEO corpus in the docroot was last written {age[0]} ({age[1]}d ago)"
+    else:
+        detail += " — could not date the SEO corpus in the docroot"
+    if missing:
+        detail += f"; missing e.g. {', '.join(missing)}"
+    return {"ok": False, "detail": detail, "pages": have}
+
+
 REGISTRY = {
     "city_guides": t_city_guides,
     "city_seo_expansion": t_city_seo_expansion,
     "hub_direct_answers": t_hub_direct_answers,
+    "derived_building_facts": t_derived_building_facts,
     "fresh_section8": t_fresh_section8,
     "daily_brief": t_daily_brief,
     "llms_txt": t_llms_txt,
@@ -1841,5 +1912,10 @@ REGISTRY = {
 # the 08-09 one spent its follow-up chasing a staging bug that did not exist.
 # Moved after city_guides and city_seo_expansion, which is where an audit
 # belongs.
+#
+# derived_building_facts sits beside hub_direct_answers for the same reason: it
+# is an audit of pages another pipeline publishes, so it belongs after the
+# content techniques and before the sitemap and the ping.
 ORDER = ["fresh_section8", "daily_brief", "city_guides", "city_seo_expansion",
-         "hub_direct_answers", "llms_txt", "sitemap_daily", "crawl_paths", "indexnow"]
+         "hub_direct_answers", "derived_building_facts", "llms_txt",
+         "sitemap_daily", "crawl_paths", "indexnow"]

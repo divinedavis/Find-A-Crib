@@ -13,6 +13,7 @@ config change.
 
     python3 build_seo.py
 """
+import bisect
 import json
 import os
 import re
@@ -723,8 +724,10 @@ footer.site{border-top:1px solid var(--line);margin-top:40px;padding:22px 20px;c
 .guide-body ul{padding-left:20px}
 .disclaimer{font-size:13px;color:var(--ink2);background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:10px}
 .hook{background:#f0f5ff;border:1px solid #cfe0ff;border-radius:12px;padding:12px 14px;margin:12px 0;font-size:14px;line-height:1.5}
-.answer{background:#fff;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;padding:14px 16px;margin:14px 0}
+.answer{background:#fff;border:1px solid var(--line);border-left:3px solid var(--blue);border-radius:10px;padding:14px 16px;margin:14px 0}
 .answer p{margin:0;font-size:16px;line-height:1.6}
+.compare{background:#fff;border:1px solid var(--line);border-left:3px solid var(--blue);border-radius:10px;padding:14px 16px;margin:14px 0}
+.compare p{margin:0;font-size:16px;line-height:1.6}
 .faq-item{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:10px 0}
 .faq-item h3{font-size:15px;margin:0 0 4px}
 .faq-item p{color:var(--ink2);font-size:14px;margin:0}
@@ -1067,6 +1070,235 @@ def _ring_window(order, i, k=NEAR_LINKS):
     return [order[(i + o) % n] for o in offsets]
 
 
+# ---- computed per-building facts (T046) ------------------------------------
+# The building tier is the only one Googlebot fetches in any volume — 51 of the
+# 65 ever-fetched URLs in the 2026-08-18 index sample were /building/ — and it
+# is also the tier Google is rejecting: 2 of the 71 URLs fetched since
+# 2026-07-01 were kept, and on 2026-08-19/20 two pages that had been indexed
+# since June were re-crawled and came back "Crawled - currently not indexed".
+#
+# The reason is visible in the generator above. A building page is a template
+# with six variable tokens — address, ZIP, neighborhood, year built, unit count,
+# violation count — and every other word on it is identical 47,165 times over.
+# That is the documented shape of a corpus that gets crawled and dropped.
+#
+# So these sentences add text, and deliberately not the SAME text: every one of
+# them carries a number computed for THIS building against the neighborhood it
+# sits in, and a building with no such number gets no sentence rather than a
+# filler one. Four rules keep it honest, because a tenant makes a housing
+# decision on this page:
+#
+#   - Every comparison names its base set. "larger than 78% of the 1,204
+#     rent-stabilized buildings this site tracks in Chelsea-Hudson Yards" is a
+#     claim the dataset supports; "larger than 78% of buildings in Chelsea" is
+#     not, because the base is DHCR-registered stabilized buildings only.
+#   - Ties belong to neither side of a percentile. Hundreds of buildings in a
+#     neighborhood share a unit count, so "larger than X%" counts only the ones
+#     strictly smaller and "smaller than Y%" only the ones strictly larger.
+#   - The HPD class counters count only violations whose class field is literally
+#     A, B or C, while `total` counts every row (fetch_hpd.fetch_violations) —
+#     a+b+c falls short of total for 33,218 of the 46,245 buildings that have
+#     any. So the class sentence says "N of the M violations on record are class
+#     C" and never implies what the other M-N are.
+#   - Fewer than FACTS_MIN_SENTENCES computable sentences and the block is
+#     omitted outright. A page with nothing to say should say nothing.
+FACTS_MIN_SENTENCES = 3
+FACTS_MAX_SENTENCES = 5
+# PLUTO records a placeholder year for buildings whose date it does not know;
+# 218 rows sit below this line and none of them should produce a date sentence.
+PLUTO_MIN_YEAR = 1850
+# Below this many buildings a neighborhood percentile is noise, not a comparison.
+FACTS_MIN_BASE = 20
+
+
+def _count_below_above(sorted_vals, v):
+    """(count strictly below v, count strictly above v) within a sorted list."""
+    if not sorted_vals:
+        return None, None
+    return (bisect.bisect_left(sorted_vals, v),
+            len(sorted_vals) - bisect.bisect_right(sorted_vals, v))
+
+
+def _floor_pct(part, whole):
+    """Percent, rounded DOWN.
+
+    Rounding to nearest turned 499 of 500 into "larger than 100% of the 500
+    buildings this site tracks", which is false on its face — the page cannot be
+    larger than itself. A share quoted about the reader's own building has to
+    round in the direction that keeps it true.
+    """
+    return int(math.floor(100.0 * part / whole)) if whole else 0
+
+
+def neighborhood_norms(items):
+    """The comparison base for one (borough, neighborhood) group.
+
+    Computed once per group and shared by every building page in it — 198 groups
+    against 47,165 pages — so the per-page cost is a dict lookup and a bisect.
+    """
+    units = sorted(x["u"] for x in items if x.get("u"))
+    years = sorted(x["yr"] for x in items if (x.get("yr") or 0) >= PLUTO_MIN_YEAR)
+    rates = [(((x.get("h") or {}).get("violations") or {}).get("open") or 0) / x["u"]
+             for x in items if x.get("u")]
+    rates.sort()
+    # `clean` counts every tracked building with no open violation on file,
+    # including the ones with no unit count — the claim it backs is about the
+    # neighborhood, not about the subset that happens to have a denominator.
+    clean = sum(1 for x in items
+                if not (((x.get("h") or {}).get("violations") or {}).get("open") or 0))
+    return {"n": len(items), "units": units, "unit_med": _med(units),
+            "year_med": _med(years), "rate_med": _med(rates), "rate_n": len(rates),
+            "clean": clean}
+
+
+def _rate_phrase(rate):
+    """A violations-per-apartment rate in words that never round to nothing.
+
+    "{rate:.1f} per apartment" reads as "0.0 per apartment" for a 198-unit
+    building with 8 open violations — a sentence that contradicts its own first
+    half and reads as "none" to someone deciding whether to take the apartment.
+    Below one violation per two apartments the honest form is the reciprocal.
+    Callers guarantee rate > 0.
+    """
+    if rate >= 0.5:
+        return f"{rate:.1f} per apartment"
+    return f"one for every {max(2, int(round(1 / rate))):,} apartments"
+
+
+# Sentences are written with {PLACE} and resolved by _name_place(): the full
+# neighborhood name the first time, "the neighborhood" after that. Some of these
+# names are four hyphenated neighborhoods long, and repeating
+# "Carroll Gardens-Cobble Hill-Gowanus-Red Hook" three times in one paragraph
+# reads like a template filling itself in, which is the impression this block
+# exists to undo.
+def _name_place(sentences, nb):
+    out, seen = [], False
+    for s in sentences:
+        if "{PLACE}" in s and seen:
+            out.append(s.replace("{PLACE}", "the neighborhood"))
+        else:
+            if "{PLACE}" in s:
+                seen = True
+            out.append(s.replace("{PLACE}", nb))
+    return out
+
+
+def building_facts(b, nb, norms):
+    """Sentences about THIS building that no other page on the site repeats.
+
+    Each sentence carries its own number, comparison and source, because the
+    point is to be liftable one sentence at a time by an answer engine, not only
+    readable in place.
+    """
+    out = []
+    h = b.get("h") or {}
+    v = h.get("violations") or {}
+    cm = h.get("complaints") or {}
+    units = b.get("u")
+    yr = b.get("yr") if (b.get("yr") or 0) >= PLUTO_MIN_YEAR else None
+    big_enough = norms.get("n", 0) >= FACTS_MIN_BASE
+
+    # 1. size, against the stabilized buildings around it
+    if units and big_enough and norms.get("units"):
+        # The base is the buildings the percentile was actually computed over —
+        # the ones with a unit count on file — not the whole neighborhood, or
+        # the sentence quotes a denominator it did not use.
+        peers = len(norms["units"])
+        below, above = _count_below_above(norms["units"], units)
+        base = f"the {peers:,} rent-stabilized buildings this site tracks in {{PLACE}}"
+        # 184 rows in the registry carry a single unit, so "1 apartments" is a
+        # real output, not a hypothetical. Every count in this block agrees with
+        # its noun for the same reason.
+        apts = f"{units:,} apartment{'' if units == 1 else 's'}"
+        if below == peers - 1:
+            out.append(f"With about {apts} it is the largest of {base}.")
+        elif above == peers - 1:
+            out.append(f"With about {apts} it is the smallest of {base}.")
+        elif _floor_pct(below, peers) >= 60:
+            out.append(f"With about {apts} it is larger than {_floor_pct(below, peers)}% of {base}.")
+        elif _floor_pct(above, peers) >= 60:
+            out.append(f"With about {apts} it is smaller than {_floor_pct(above, peers)}% of {base}.")
+        elif norms.get("unit_med"):
+            out.append(f"With about {apts} it sits near the middle of {base}, where the "
+                       f"median building has {norms['unit_med']:,}.")
+
+    # 2. age, against the same set
+    if yr and big_enough and norms.get("year_med"):
+        d = yr - norms["year_med"]
+        if d <= -15:
+            out.append(f"It went up in {yr}, {abs(d)} years before the {norms['year_med']} median "
+                       f"for stabilized buildings tracked in {{PLACE}}.")
+        elif d >= 15:
+            out.append(f"It went up in {yr}, {d} years after the {norms['year_med']} median for "
+                       f"stabilized buildings tracked in {{PLACE}}.")
+        else:
+            out.append(f"Its {yr} construction date sits close to the {norms['year_med']} median "
+                       f"for stabilized buildings tracked in {{PLACE}}.")
+
+    # 3. open violations per apartment — the number that varies most, and the
+    #    one a tenant deciding about an address actually wants
+    openv = v.get("open") or 0
+    if units and big_enough and norms.get("rate_n", 0) >= FACTS_MIN_BASE \
+            and norms.get("rate_med") is not None:
+        med = norms["rate_med"]
+        plural = "" if openv == 1 else "s"
+        if openv and med <= 0:
+            out.append(f"HPD lists {openv:,} open violation{plural} here, about "
+                       f"{_rate_phrase(openv / units)}, in a neighborhood where the median "
+                       f"tracked building has none open at all.")
+        elif openv:
+            rate = openv / units
+            here, there = _rate_phrase(rate), _rate_phrase(med)
+            rel = "above" if rate > med * 1.25 else "below" if rate < med * 0.8 else "close to"
+            if rel == "close to" and here == there:
+                out.append(f"HPD lists {openv:,} open violation{plural} here, about {here} — "
+                           f"matching the median for tracked buildings in {{PLACE}}.")
+            else:
+                out.append(f"HPD lists {openv:,} open violation{plural} here, about {here} — "
+                           f"{rel} the {there} median for tracked buildings in {{PLACE}}.")
+        elif norms.get("clean"):
+            # Counts, not a percentage: 1 clean building in 527 rounds to 0%,
+            # and "0% of the tracked buildings" on a page that is itself one of
+            # them contradicts its own first clause.
+            out.append(f"HPD lists no open violations at this address — one of {norms['clean']:,} "
+                       f"such buildings among the {norms['n']:,} this site tracks in {{PLACE}}.")
+
+    # 4. how severe the record is, in HPD's own vocabulary
+    total_v, cv = v.get("total") or 0, v.get("c") or 0
+    if cv and total_v:
+        grade = "class C — HPD's immediately hazardous grade"
+        if total_v == 1:
+            out.append(f"The one violation on record at the address is {grade}.")
+        elif cv >= total_v:
+            out.append(f"All {total_v:,} violations on record at the address are {grade}.")
+        else:
+            out.append(f"Of the {total_v:,} violations on record at the address, {cv:,} "
+                       f"{'is' if cv == 1 else 'are'} {grade}.")
+
+    # 5. what tenants themselves reported
+    ct = cm.get("total") or 0
+    if ct:
+        recent = cm.get("last_12mo") or 0
+        tail = (f"{recent:,} of them in the last twelve months" if recent
+                else "none of them in the last twelve months")
+        out.append(f"Tenants have filed {ct:,} HPD complaint{'' if ct == 1 else 's'} at the "
+                   f"address, {tail}.")
+
+    return _name_place(out[:FACTS_MAX_SENTENCES], nb)
+
+
+def hpd_registration_line(h):
+    """'October 7, 2025' from the HPD lastregistrationdate, or None."""
+    reg = (h or {}).get("lastregistration")
+    if not reg:
+        return None
+    try:
+        d = datetime.date.fromisoformat(str(reg)[:10])
+    except ValueError:
+        return None
+    return f"{d.strftime('%B')} {d.day}, {d.year}"
+
+
 # Google truncates around 155-160 characters; past that the tail is spent, not
 # shown. The builder below fills the budget with facts and drops the ones that
 # do not fit, rather than writing one sentence and padding it.
@@ -1158,6 +1390,9 @@ def main():
     # the hub pages list their neighborhood alphabetically, which is how a
     # reader looks an address up, while the ring is ordered geographically.
     ring = {k: _geo_ring_order(v) for k, v in by_nb.items()}
+    # The comparison base behind building_facts(): one pass per neighborhood,
+    # not one per page.
+    norms = {k: neighborhood_norms(v) for k, v in by_nb.items()}
     ring_pos = {}
     for k, v in ring.items():
         for i, x in enumerate(v):
@@ -1229,16 +1464,33 @@ def main():
         cond_html = ""
         v = h.get("violations") or {}
         c = h.get("complaints") or {}
-        if v or c:
+        reg_line = hpd_registration_line(h)
+        if v or c or reg_line:
             vr = (f"<tr><td class='k'>HPD violations</td><td>{esc(v.get('open',0))} open / "
                   f"{esc(v.get('total',0))} total"
                   + (f" · {esc(v.get('last_12mo',0))} in last 12 mo" if v.get('last_12mo') else "")
                   + "</td></tr>") if v else ""
             cr = (f"<tr><td class='k'>HPD complaints</td><td>{esc(c.get('open',0))} open / "
                   f"{esc(c.get('total',0))} total</td></tr>") if c else ""
+            # Owners of most multiple dwellings have to keep an HPD property
+            # registration current, so the date one was last filed is a fact a
+            # tenant can use. Reported as a date and nothing more — this build
+            # cannot tell whether a registration is validly in force today.
+            rr = (f"<tr><td class='k'>HPD registration last filed</td>"
+                  f"<td>{esc(reg_line)}</td></tr>") if reg_line else ""
             link = (f"<tr><td class='k'>City record</td><td><a href=\"{esc(h['hpd_url'])}\" "
                     f"rel=\"nofollow noopener\" target=\"_blank\">View on HPD Online ↗</a></td></tr>") if h.get("hpd_url") else ""
-            cond_html = "<h2>Building conditions</h2><table class='facts'>" + vr + cr + link + "</table>"
+            cond_html = "<h2>Building conditions</h2><table class='facts'>" + vr + cr + rr + link + "</table>"
+
+        # The computed comparison block. Omitted, not padded, when this building
+        # does not have enough on file to say three true things about it.
+        compare_html = ""
+        nb_norms = norms.get((b["b"], b.get("nb")))
+        if nb_norms:
+            sentences = building_facts(b, nb, nb_norms)
+            if len(sentences) >= FACTS_MIN_SENTENCES:
+                compare_html = ("<h2>How this building compares</h2>"
+                                f"<div class='compare'><p>{esc(' '.join(sentences))}</p></div>")
 
         # sibling buildings in the same neighborhood, as a ring rather than a
         # star, so every building page is linked from ~12 others instead of 94.9%
@@ -1323,6 +1575,7 @@ def main():
                 f"<h1>Is {esc(addr)} rent stabilized?</h1>"
                 f"<p class='lead'>{lead}</p>"
                 + (f"<p><span class='badge'>Recently advertised for rent</span></p>" if adv else "")
+                + compare_html
                 + f"<a class='cta' href='/#d={b['bbl']}'>View {esc(addr)} on the map →</a>"
                 # conversion hook: give organic readers a reason to act, not just leave
                 + (f"<div class='hook'><strong>🔔 A unit here was recently advertised.</strong> "

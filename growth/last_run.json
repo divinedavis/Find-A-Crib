@@ -1,25 +1,32 @@
 {
   "build": {
-    "at": "2026-08-20T05:40:15+00:00",
+    "at": "2026-08-21T05:40:20+00:00",
     "changed_urls": 0,
-    "date": "2026-08-20",
+    "date": "2026-08-21",
     "deployed": true,
     "new_urls": 0,
     "seo_corpus": {
-      "days_old": 2,
-      "written": "2026-08-18"
+      "days_old": 0,
+      "written": "2026-08-21"
     },
     "seo_pipeline": {
-      "at": "2026-08-18T05:41:33Z",
-      "changed_urls": 115,
+      "at": "2026-08-21T05:41:30Z",
+      "changed_urls": 0,
       "corpus_pages": 47640,
       "head": "unknown",
-      "hours_ago": 48.0,
+      "hours_ago": 0.0,
       "phase": "finish",
       "rc": 0,
-      "started": "2026-08-18T05:40:18Z",
-      "state": "NO RUN FOR 2.0 DAYS \u2014 cron, the host or the checkout. ran clean",
+      "started": "2026-08-21T05:40:20Z",
+      "state": "ran clean",
       "step": "done"
+    },
+    "seo_watchdog": {
+      "at": "2026-08-21T05:41:31+00:00",
+      "note": "ran refresh_seo.sh to completion",
+      "ok": true,
+      "ran": true,
+      "rc": 0
     },
     "techniques": {
       "crawl_paths": {

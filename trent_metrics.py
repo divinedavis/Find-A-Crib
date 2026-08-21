@@ -333,7 +333,11 @@ def search(days=28):
         totals = _gsc_query(token, out["start"], out["end"], None, 1)
         queries = _gsc_query(token, out["start"], out["end"], ["query"], 10)
         pages = _gsc_query(token, out["start"], out["end"], ["page"], 10)
-    except (OSError, ValueError, KeyError, urllib.error.URLError):
+    except (OSError, ValueError, KeyError, ImportError, urllib.error.URLError):
+        # ImportError is in the list on purpose: signing the service-account JWT
+        # needs `cryptography`, which the API's venv did not have until this
+        # shipped. A missing dependency must degrade to an unconnected search
+        # tile, not take the whole tab down with a 503.
         return out
     out["connected"] = True
     if totals:

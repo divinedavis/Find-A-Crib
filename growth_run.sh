@@ -183,11 +183,33 @@ seo_watchdog() {
   local fresh
   fresh=$(find "$GROWTH_DOCROOT" -maxdepth 1 -name 'sitemap-*.xml' \
             ! -name 'sitemap-daily.xml' -mmin "-$SEO_FRESH_MINS" 2>/dev/null | head -n 1)
-  [ -n "$fresh" ] && return 0        # pipeline wrote recently: nothing owed
+
+  # Freshness is necessary and, since 2026-08-22, known not to be sufficient.
+  # This test asks whether the corpus was WRITTEN recently. From 2026-07-29 it
+  # was written every night, cleanly, from a build_seo.py three weeks old:
+  # /root/dhcr-build is not a git worktree, so refresh_seo.sh's guarded pull did
+  # nothing and its copy of the generator never moved. refresh_seo.sh now hands
+  # the code over itself — but only on the runs it is actually invoked on, and
+  # this gate is what invokes it. If the 04:10 cron ever comes back it will run
+  # $BUILD's own frozen copy of the script, stamp the sitemaps at 04:10, and
+  # this test would read "fresh" at 05:40 and stand down forever, leaving the
+  # site permanently on pre-07-29 code with every instrument reporting healthy.
+  # So a fresh corpus only ends the matter if the pipeline's own last record
+  # does not say it was built from stale source.
+  local why="corpus older than ${SEO_FRESH_MINS}min"
+  if [ -n "$fresh" ]; then
+    local code
+    code=$(python3 -c 'import json,sys;print((json.load(open(sys.argv[1])) or {}).get("code") or "")' \
+             "$GROWTH_DOCROOT/.seo-build-status.json" 2>/dev/null) || code=""
+    case "$code" in
+      no-source|skipped-compile) why="corpus is fresh but was built from stale source (code=$code)" ;;
+      *) return 0 ;;                 # pipeline wrote recently, from real source: nothing owed
+    esac
+  fi
 
   local log
   log=$(mktemp) || log=/tmp/seo_watchdog.$$.log
-  beat seo_watchdog_start null "$pull_state" "corpus older than ${SEO_FRESH_MINS}min, running scripts/refresh_seo.sh"
+  beat seo_watchdog_start null "$pull_state" "$why, running scripts/refresh_seo.sh"
   if command -v flock >/dev/null 2>&1; then
     timeout "$SEO_TIMEOUT" flock -n "$SEO_LOCK" bash ./scripts/refresh_seo.sh >"$log" 2>&1
   else

@@ -1150,7 +1150,7 @@ SEO_STATUS_FILE = ".seo-build-status.json"
 # committed to a public repo. A file that grew a field nobody reviewed here
 # would be published unread; strings are truncated for the same reason.
 SEO_STATUS_FIELDS = ("started", "at", "phase", "step", "rc", "head",
-                     "changed_urls", "corpus_pages")
+                     "changed_urls", "corpus_pages", "pull", "code")
 
 # The corpus has never been near this. A build that completes cleanly and writes
 # a few hundred pages is a catastrophic failure that the docroot's mtime alone
@@ -1211,6 +1211,27 @@ def _seo_pipeline_status(docroot, now=None):
                  f"normally ~47,600, so this deployed a truncated site")
     else:
         state = "ran clean"
+
+    # WHICH build_seo.py ran. Between 2026-07-29 and 2026-08-22 the answer was
+    # "one from before 2026-07-29" every single night, and the only trace of that
+    # in this record was head reading "unknown" — which is what `git rev-parse`
+    # prints when $BUILD is not a worktree, and which nobody read as a signal for
+    # three weeks while the 08-13 sibling-link ring, the 08-14 meta descriptions
+    # and the 08-21 comparison blocks all sat unpublished in git. "ran clean" was
+    # true and useless: the pipeline ran cleanly on the wrong source.
+    #
+    # refresh_seo.sh now says so in one field, and hands the code over itself.
+    # Absent, on a droplet still running the older script, means unknown — not ok.
+    code = rec.get("code")
+    if code in ("no-source", "skipped-compile"):
+        why = ("the build directory is not a git worktree and this run had no "
+               "checkout to copy from" if code == "no-source" else
+               "the checkout's build_seo.py did not compile, so its old copy was kept")
+        state = (f"BUILT FROM STALE SOURCE — {why}. Nothing pushed to build_seo.py "
+                 f"or seo_guides.py is live. " + state)
+    elif isinstance(code, str) and code.startswith("synced"):
+        state += f" (source handed over from the checkout: {code})"
+
     if hours is not None:
         # 04:10 nightly, read by the 05:40 build, so anything past ~26h is a
         # morning missed. Same shape as cron_liveness() for growth_run.sh.

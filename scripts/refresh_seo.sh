@@ -4,8 +4,22 @@
 # Runs after the Zumper scrape (which refreshes listings.json). Honest lastmod:
 # build_seo.py only bumps a page's <lastmod> when its HTML really changed.
 set -euo pipefail
-BUILD=/root/dhcr-build
-DOC=/var/www/rent-map
+# Same variable growth_run.sh's watchdog reads, and the same default, so the two
+# cannot disagree about which directory is the build. Overridable only so this
+# script can be exercised against a scratch pair of directories — nothing on the
+# droplet sets either.
+BUILD=${SEO_BUILD_DIR:-/root/dhcr-build}
+DOC=${SEO_DOCROOT:-/var/www/rent-map}
+
+# Where THIS script lives, which is not where it builds — and it has to be
+# resolved BEFORE the cd, while ${BASH_SOURCE[0]}'s relative path still means
+# what it says. growth_run.sh invokes the copy in the checkout it has just
+# pulled (see its seo_watchdog comment), so $SRC is current source while $BUILD
+# is a separate directory holding the night's scraped data. When the old 04:10
+# cron invokes $BUILD's own copy instead, $SRC resolves to $BUILD and every use
+# of it below is a no-op.
+SRC="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)" || SRC="$BUILD"
+
 cd "$BUILD"
 
 # ------------------------------------------------------------------ heartbeat
@@ -42,13 +56,16 @@ STEP=startup          # the step currently in flight; the trap reports it
 CHANGED_N=0           # URLs build_seo.py says really changed
 CORPUS_N=0            # pages in the built corpus — a truncated build looks
                       # identical to a good one from the docroot's mtime alone
+PULL_STATE=pending    # did $BUILD take the night's commits? see STEP=pull
+CODE_STATE=pending    # …and if it did not, did we hand them over anyway?
 
 status() {
   {
-    printf '{"started":"%s","at":"%s","phase":"%s","step":"%s","rc":%s,"head":"%s","changed_urls":%s,"corpus_pages":%s}\n' \
+    printf '{"started":"%s","at":"%s","phase":"%s","step":"%s","rc":%s,"head":"%s","changed_urls":%s,"corpus_pages":%s,"pull":"%s","code":"%s"}\n' \
       "$STARTED" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$1" "$STEP" "${2:-null}" \
       "$(git -C "$BUILD" rev-parse --short HEAD 2>/dev/null || echo unknown)" \
-      "$CHANGED_N" "$CORPUS_N" > "$STATUS.tmp" && mv -f "$STATUS.tmp" "$STATUS"
+      "$CHANGED_N" "$CORPUS_N" "$PULL_STATE" "$CODE_STATE" \
+      > "$STATUS.tmp" && mv -f "$STATUS.tmp" "$STATUS"
   } 2>/dev/null || true
 }
 
@@ -65,11 +82,75 @@ status start
 # skipping the night's rebuild entirely.
 STEP=pull
 if git -C "$BUILD" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  git -C "$BUILD" pull --rebase --autostash -q origin main \
-    || echo "refresh_seo: git pull failed, building from the local copy"
+  if git -C "$BUILD" pull --rebase --autostash -q origin main; then
+    PULL_STATE=ok
+  else
+    PULL_STATE=failed
+    echo "refresh_seo: git pull failed, building from the local copy"
+  fi
 else
+  PULL_STATE=no-worktree
   echo "refresh_seo: $BUILD is not a git worktree, building from the local copy"
 fi
+
+# ------------------------------------------------------------- hand the code over
+# The pull above has never once succeeded. Every .seo-build-status.json record in
+# git — 2026-08-15 through 2026-08-22 — carries "head":"unknown", which is what
+# `git -C $BUILD rev-parse HEAD` returns when $BUILD is not a git worktree at all,
+# and that is the same condition the `if` above tests. So the else branch has been
+# taken every night, its one line of explanation went to a stdout that
+# growth_run.sh discards on purpose, and $BUILD/build_seo.py has been frozen since
+# 2026-07-29. The 08-02 review called this "two doors, and only one opens"; the
+# door has stayed shut for the 20 days since, because the only remedy anyone wrote
+# down was an owner typing `git -C /root/dhcr-build pull` by hand.
+#
+# What proved it rather than merely suggesting it: on 2026-08-21 a review shipped
+# a computed comparison paragraph to 46,853 of the 47,165 building pages. write()
+# hashes everything but the <style> block, so a rebuild on that code cannot report
+# fewer than ~46,853 changed URLs. The rebuild at 05:41 on 08-22 ran to completion,
+# built 47,640 pages, and reported 0 changed. The generator that ran was not the
+# generator in git.
+#
+# So stop waiting for the door. $SRC is a checkout that IS current; $BUILD holds
+# the data. Copy the two source files the corpus is generated from across before
+# building. Deliberately narrow:
+#   * only when the pull did not already do it — a $BUILD that pulls is never touched;
+#   * only these two files, named explicitly. Not data (buildings.min.json and
+#     listings.json are scraped nightly INTO $BUILD and the checkout's copies are
+#     stale), not seo_lastmod.json (per-corpus state; replacing it would bump every
+#     lastmod on the site), not scripts/ (already run from $SRC);
+#   * only if they differ, so a healthy build is byte-for-byte untouched;
+#   * only if they compile, because replacing working code with code that does not
+#     parse would publish nothing at all — the one outcome worse than stale pages;
+#   * never a delete, never a move. Both files are in git and recoverable.
+# Every step is non-fatal for the same reason the heartbeat is: this must not
+# become the new reason the night's rebuild does not happen.
+STEP=code
+if [ "$PULL_STATE" = ok ]; then
+  CODE_STATE=pull-ok
+elif [ "$SRC" = "$BUILD" ]; then
+  # Invoked as $BUILD's own copy — there is no fresher source to hand over.
+  CODE_STATE=no-source
+elif ! git -C "$SRC" rev-parse --short HEAD >/dev/null 2>&1; then
+  CODE_STATE=no-source
+elif ! ( cd "$SRC" && python3 -m py_compile build_seo.py seo_guides.py ) 2>/dev/null; then
+  # Source is present but broken. Leave $BUILD alone and say so loudly enough
+  # that the morning review sees a named cause instead of an unexplained freeze.
+  CODE_STATE=skipped-compile
+  echo "refresh_seo: $SRC/build_seo.py does not compile — kept $BUILD's copy"
+else
+  n=0
+  for f in build_seo.py seo_guides.py; do
+    if [ -f "$SRC/$f" ] && ! cmp -s "$SRC/$f" "$BUILD/$f"; then
+      # `cp && n=…` as the last statement of the loop body would take the whole
+      # script out under `set -e` if the copy ever failed on permissions.
+      if cp -f "$SRC/$f" "$BUILD/$f"; then n=$((n + 1)); fi
+    fi
+  done
+  if [ "$n" -gt 0 ]; then CODE_STATE="synced-$n"; else CODE_STATE=in-sync; fi
+  echo "refresh_seo: code $CODE_STATE (from $SRC at $(git -C "$SRC" rev-parse --short HEAD 2>/dev/null || echo '?'))"
+fi
+status code
 
 STEP=build
 python3 build_seo.py

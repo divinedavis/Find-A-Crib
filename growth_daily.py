@@ -347,7 +347,8 @@ def cmd_status(args):
     if pipe:
         log(f"seo pipeline: {pipe.get('state')}; last record {pipe.get('hours_ago', '?')}h ago"
             f" ({pipe.get('corpus_pages', '?')} pages built, "
-            f"{pipe.get('changed_urls', '?')} changed, head {pipe.get('head', '?')})")
+            f"{pipe.get('changed_urls', '?')} changed, head {pipe.get('head', '?')}, "
+            f"pull {pipe.get('pull', '?')}, code {pipe.get('code', '?')})")
     elif corpus:
         log(f"seo pipeline: no status record — the droplet's refresh_seo.sh predates "
             f"2026-08-12. Corpus mtime says {corpus.get('written')} "

@@ -522,6 +522,35 @@ def build_blocks(run_log=None, review_out=None):
                           # rather than sending the reader to the heartbeat.
                           _watchdog_clause(build.get("seo_watchdog"))})
 
+    # ---- the failure the callout above could not see, and the reason it went
+    # unreported for 24 days. That one fires on the corpus's mtime, so it asks
+    # "did the pipeline write?" — and from 2026-07-29 to 2026-08-22 the honest
+    # answer was yes, every night, at 05:41, cleanly, on a build_seo.py from
+    # before 2026-07-29. $BUILD is not a git worktree, so its pull silently did
+    # nothing and its copy of the generator never moved. A freshly-written corpus
+    # built from three-week-old source looks perfect from every mtime on the box.
+    # The cost was three reviews' worth of shipped work that was never published
+    # — the sibling-link ring, the meta descriptions, the comparison blocks — and
+    # two conclusions drawn on the assumption that they were live.
+    # So: a second callout on a different question. Not "did it write?" but
+    # "whose code did it write?", answered from the field refresh_seo.sh now sets.
+    code = (pipe or {}).get("code")
+    if code in ("no-source", "skipped-compile"):
+        why = ("no checkout to copy from — the old 04:10 cron ran $BUILD's own copy "
+               "of refresh_seo.sh, which has no fresher source beside it"
+               if code == "no-source" else
+               "the checkout's build_seo.py did not compile, so the build kept its "
+               "old copy rather than publish nothing — fix the syntax error and the "
+               "next run takes it")
+        B.append({"type": "callout", "tone": "bad",
+                  "heading": "The corpus was built from stale source",
+                  "body": f"scripts/refresh_seo.sh rebuilt and deployed the "
+                          f"~{PUBLISHED_PAGES:,}-page corpus, but not from the code in "
+                          f"this repo: {why}. Everything pushed to build_seo.py or "
+                          f"seo_guides.py is in git and not on the site, and the corpus "
+                          f"mtime looks perfectly healthy while that is true. The daily "
+                          f"growth build's own pages are unaffected — separate rsync."})
+
     # ---- the cheapest available rankings
     try:
         from . import searchconsole

@@ -219,6 +219,41 @@ def traffic(rng="all"):
     }
 
 
+# ------------------------------------------------------- owner test bookings
+# On 2026-08-22 every row in this database was one of ours: twelve bookings,
+# all created inside two hours of launch day, named "Test Customer" or booked
+# against the owner's own Gmail. Counted as demand they made the tile read
+# "12 bookings taken · 4 confirmed" for a business no stranger has ever booked.
+#
+# Trent's site sets no owner cookie to stamp a row with, so the exclusion is by
+# identity: our own addresses and phones, the fictional 555 range, and anything
+# named like a test. Excluded rows are still counted and reported, so the tab
+# says what it dropped rather than quietly shrinking.
+# The addresses and numbers themselves live in the droplet's EnvironmentFile,
+# not here: this repository is public, and a hardcoded default would publish
+# our own contact details and Trent's business line to it. An unset variable
+# would silently switch half the rule off, so `configured` below reports it.
+_OWNER_EMAILS = {e.strip().lower() for e in os.environ.get(
+    "TRENT_OWNER_EMAILS", "").split(",") if e.strip()}
+_OWNER_PHONES = {re.sub(r"\D", "", p) for p in os.environ.get(
+    "TRENT_OWNER_PHONES", "").split(",") if p.strip()}
+# The NANP reserves 555 for fiction. Nobody reachable types one into a form.
+_FAKE_PHONE = re.compile(r"^\d{3}555\d{4}$")
+_TEST_NAME = re.compile(r"\btest(s|ing|er)?\b", re.I)
+
+
+def _is_owner_booking(name, email, phone):
+    """True when a booking row is ours rather than a customer's."""
+    if (email or "").strip().lower() in _OWNER_EMAILS:
+        return True
+    digits = re.sub(r"\D", "", phone or "")
+    if len(digits) == 11 and digits.startswith("1"):
+        digits = digits[1:]
+    if digits and (digits in _OWNER_PHONES or _FAKE_PHONE.match(digits)):
+        return True
+    return bool(_TEST_NAME.search(name or ""))
+
+
 # ------------------------------------------------------------------ bookings
 def bookings(rng="all"):
     """Estimates and consultations booked. Counts and dates only.
@@ -227,10 +262,14 @@ def bookings(rng="all"):
     all-time; the range only scopes the period counts, because "one booking in
     the last month" and "twelve ever" answer different questions and the tile
     shows both.
+
+    Our own test bookings are dropped before anything is counted — see
+    `_is_owner_booking`. `excluded` carries how many, so a tile can say so.
     """
     out = {"total": 0, "confirmed": 0, "cancelled": 0, "upcoming": 0,
            "period": 0, "today": 0, "by_service": {}, "first": None,
-           "last": None, "ok": False}
+           "last": None, "excluded": 0,
+           "owner_rules": bool(_OWNER_EMAILS or _OWNER_PHONES), "ok": False}
     if not os.path.exists(BOOKINGS_DB):
         return out
     try:
@@ -239,25 +278,36 @@ def bookings(rng="all"):
         return out
     try:
         days = RANGE_DAYS.get(rng, None)
-        today = datetime.datetime.utcnow().date()
-        cutoff = (today - datetime.timedelta(days=days - 1)).isoformat() if days else "0000"
+        today = datetime.datetime.utcnow().date().isoformat()
+        cutoff = (datetime.date.fromisoformat(today) -
+                  datetime.timedelta(days=days - 1)).isoformat() if days else "0000"
         now = datetime.datetime.utcnow().isoformat()
-        q = con.execute
-        out["total"] = q("select count(*) from bookings").fetchone()[0]
-        for status, count in q("select status, count(*) from bookings group by status"):
+
+        # A painting business books in the dozens, not the millions: reading
+        # the rows and filtering in Python keeps the owner rule in one place
+        # instead of scattering it through six WHERE clauses.
+        rows = con.execute(
+            "select service, name, email, phone, status, end_utc, created_at "
+            "from bookings").fetchall()
+        for service, name, email, phone, status, end_utc, created_at in rows:
+            if _is_owner_booking(name, email, phone):
+                out["excluded"] += 1
+                continue
+            day = (created_at or "")[:10]
+            out["total"] += 1
             if status in ("confirmed", "cancelled"):
-                out[status] = count
-        out["upcoming"] = q("select count(*) from bookings where status='confirmed' "
-                            "and end_utc >= ?", (now,)).fetchone()[0]
-        out["period"] = q("select count(*) from bookings where substr(created_at,1,10) >= ?",
-                          (cutoff,)).fetchone()[0]
-        out["today"] = q("select count(*) from bookings where substr(created_at,1,10) = ?",
-                         (today.isoformat(),)).fetchone()[0]
-        out["by_service"] = {s: c for s, c in
-                             q("select service, count(*) from bookings group by service")}
-        row = q("select min(substr(created_at,1,10)), max(substr(created_at,1,10)) "
-                "from bookings").fetchone()
-        out["first"], out["last"] = row[0], row[1]
+                out[status] += 1
+            if status == "confirmed" and (end_utc or "") >= now:
+                out["upcoming"] += 1
+            if day >= cutoff:
+                out["period"] += 1
+            if day == today:
+                out["today"] += 1
+            out["by_service"][service] = out["by_service"].get(service, 0) + 1
+            if out["first"] is None or day < out["first"]:
+                out["first"] = day
+            if out["last"] is None or day > out["last"]:
+                out["last"] = day
         out["ok"] = True
     except sqlite3.Error:
         pass
@@ -370,6 +420,9 @@ def build(rng="all"):
     warnings = []
     if not b["ok"]:
         warnings.append("The booking database could not be read.")
+    if b["ok"] and not b["owner_rules"]:
+        warnings.append("TRENT_OWNER_EMAILS/PHONES are unset, so our own test "
+                        "bookings are only partly excluded.")
     if not s["connected"]:
         warnings.append("Search Console could not be reached.")
     return {

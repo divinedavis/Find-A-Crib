@@ -531,7 +531,7 @@
         <!-- bookings: the only conversion this site can currently measure -->
         <div class="card mb18" id="sec-trent-bookings">
           <div class="card-head-row">
-            <div><h2>Bookings — the money signal</h2><div class="card-sub">Estimates and consultations booked on the site. Counts and dates only: no name, phone or address reaches this page. A tel: tap is invisible here — the site ships no beacon, so calls and texts are uncounted, not zero.</div></div>
+            <div><h2>Bookings — the money signal</h2><div class="card-sub">Estimates and consultations booked on the site. Counts and dates only: no name, phone or address reaches this page. Our own test bookings are excluded and reported separately. A tel: tap is invisible here — the site ships no beacon, so calls and texts are uncounted, not zero.</div></div>
           </div>
           <div class="ads-tiles" id="trent-bookings"></div>
           <div class="callout" id="trent-bookings-callout" style="margin-top:16px"></div>
@@ -1986,7 +1986,8 @@
        own:comma(n(S.impressions))+' of ~'+comma(n(M.monthly_searches))+' searches a month',
        bench:'Appearing at all — not ranking, not clicked'},
       {ic:'📅',v:comma(n(B.total)),l:'Bookings taken',
-       own:comma(n(B.confirmed))+' confirmed · '+comma(n(B.cancelled))+' cancelled'},
+       own:comma(n(B.confirmed))+' confirmed · '+comma(n(B.cancelled))+' cancelled',
+       bench:n(B.excluded)?(comma(n(B.excluded))+' of our own test bookings excluded'):''},
       {ic:'🗓️',v:comma(n(B.upcoming)),l:'Jobs still upcoming',
        own:B.last?('last booking '+fmtDay(B.last)):'none yet'},
       {ic:'🎨',v:comma(n(M.monthly_searches)),l:'Searches a month in York',accent:true,
@@ -2068,23 +2069,27 @@
     // ---- bookings ---------------------------------------------------------
     var svc=B.by_service||{};
     el('trent-bookings').innerHTML=[
-      {v:comma(n(B.total)),l:'Bookings ever',sub:B.first?('first '+fmtDay(B.first)):''},
+      {v:comma(n(B.total)),l:'Bookings ever',sub:B.first?('first '+fmtDay(B.first)):'by somebody who is not us'},
       {v:comma(n(B.confirmed)),l:'Confirmed',sub:comma(n(B.cancelled))+' cancelled'},
       {v:comma(n(svc.estimate)),l:'On-site estimates',sub:'the ones worth money'},
       {v:comma(n(svc.consult)),l:'Phone consultations',sub:'20 minutes each'},
       {v:comma(n(B.period)),l:'In this range',sub:'by the date they booked'},
       {v:comma(n(B.upcoming)),l:'Still upcoming',sub:'on the calendar now'}
     ].map(creaseTile).join('');
+    var dropped = n(B.excluded)
+      ? ' '+comma(n(B.excluded))+' rows are our own launch-day form tests — booked against our '+
+        'email, Trent\u2019s own line or a 555 number — and none of them are counted above.'
+      : '';
     el('trent-bookings-callout').innerHTML = !B.ok
       ? 'The booking database could not be read.'
       : (!n(B.total)
-          ? 'Nobody has booked yet.'
+          ? '<b>Nobody outside has ever booked.</b> The booking flow works — it was tested end to end on '+
+            'launch day and the confirmations sent — but nothing is arriving at it.'+dropped
           : (B.first===B.last
-              ? '<b>All '+comma(n(B.total))+' bookings were taken on '+fmtDay(B.first)+' — launch day.</b> '+
-                'That is the form being tested, not demand: no real customer has booked since. '+
-                'The booking flow works; nothing is arriving at it.'
+              ? '<b>All '+comma(n(B.total))+' bookings were taken on '+fmtDay(B.first)+'.</b> '+
+                comma(n(B.upcoming))+' are still on the calendar.'+dropped
               : '<b>'+comma(n(B.total))+' bookings between '+fmtDay(B.first)+' and '+fmtDay(B.last)+'.</b> '+
-                comma(n(B.upcoming))+' are still on the calendar.'));
+                comma(n(B.upcoming))+' are still on the calendar.'+dropped));
 
     el('today-list').innerHTML=[
       {ic:'🟢',name:'Visitors today',desc:'unique',val:comma(n(T.visitors_today))},

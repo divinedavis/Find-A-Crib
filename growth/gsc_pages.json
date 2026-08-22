@@ -1,13 +1,13 @@
 {
  "churn": {
-  "gsc_serving_entered": 0,
-  "gsc_serving_ever": 263,
-  "gsc_serving_left": 16,
-  "gsc_serving_stable": 47,
+  "gsc_serving_entered": 4,
+  "gsc_serving_ever": 266,
+  "gsc_serving_left": 5,
+  "gsc_serving_stable": 42,
   "history_dropped": 0,
   "history_dropped_total": 0
  },
- "date": "2026-08-21",
+ "date": "2026-08-22",
  "discovered_untracked": [
   {
    "clicks": 1,
@@ -17,16 +17,22 @@
   },
   {
    "clicks": 1,
-   "impressions": 1,
+   "impressions": 2,
    "position": 2,
    "query": "jays home finder"
+  },
+  {
+   "clicks": 1,
+   "impressions": 1,
+   "position": 1,
+   "query": "jayshomefinder.com"
   }
  ],
  "history": {
   "https://findacrib.com/": [
    "2026-07-30",
-   "2026-08-21",
-   21
+   "2026-08-22",
+   22
   ],
   "https://findacrib.com/building/bronx/1005-walton-ave-2024770034/": [
    "2026-07-30",
@@ -60,8 +66,8 @@
   ],
   "https://findacrib.com/building/bronx/1236-virginia-ave-2037940001/": [
    "2026-08-17",
-   "2026-08-21",
-   5
+   "2026-08-22",
+   6
   ],
   "https://findacrib.com/building/bronx/1266-to-1268-grand-concourse-2024570040/": [
    "2026-07-30",
@@ -78,6 +84,11 @@
    "2026-08-02",
    4
   ],
+  "https://findacrib.com/building/bronx/2028-to-2032-e-177th-st-2038030019/": [
+   "2026-08-22",
+   "2026-08-22",
+   1
+  ],
   "https://findacrib.com/building/bronx/2033-to-2035-newbold-ave-2038057502/": [
    "2026-08-14",
    "2026-08-20",
@@ -85,8 +96,8 @@
   ],
   "https://findacrib.com/building/bronx/2051-hermany-ave-2036800054/": [
    "2026-08-17",
-   "2026-08-21",
-   5
+   "2026-08-22",
+   6
   ],
   "https://findacrib.com/building/bronx/219-saint-anns-ave-2022650045/": [
    "2026-07-31",
@@ -110,13 +121,18 @@
   ],
   "https://findacrib.com/building/bronx/275-e-168th-st-2024390022/": [
    "2026-08-16",
-   "2026-08-21",
-   6
+   "2026-08-22",
+   7
   ],
   "https://findacrib.com/building/bronx/295-e-149th-st-2023310066/": [
    "2026-08-20",
-   "2026-08-21",
-   2
+   "2026-08-22",
+   3
+  ],
+  "https://findacrib.com/building/bronx/352-e-139th-st-2023010011/": [
+   "2026-08-22",
+   "2026-08-22",
+   1
   ],
   "https://findacrib.com/building/bronx/417-e-151st-st-2023740059/": [
    "2026-08-02",
@@ -125,8 +141,8 @@
   ],
   "https://findacrib.com/building/bronx/429-e-156th-st-2023780034/": [
    "2026-08-20",
-   "2026-08-21",
-   2
+   "2026-08-22",
+   3
   ],
   "https://findacrib.com/building/bronx/435-e-136th-st-2022810010/": [
    "2026-08-04",
@@ -150,8 +166,8 @@
   ],
   "https://findacrib.com/building/bronx/554-e-141st-st-2022670039/": [
    "2026-08-16",
-   "2026-08-21",
-   6
+   "2026-08-22",
+   7
   ],
   "https://findacrib.com/building/bronx/555-cauldwell-ave-2026230056/": [
    "2026-07-30",
@@ -165,8 +181,8 @@
   ],
   "https://findacrib.com/building/bronx/582-e-138th-st-2025507501/": [
    "2026-08-17",
-   "2026-08-21",
-   5
+   "2026-08-22",
+   6
   ],
   "https://findacrib.com/building/bronx/582-to-588-union-ave-2026740021/": [
    "2026-07-30",
@@ -175,8 +191,8 @@
   ],
   "https://findacrib.com/building/bronx/601-e-156th-st-2026187501/": [
    "2026-08-20",
-   "2026-08-21",
-   2
+   "2026-08-22",
+   3
   ],
   "https://findacrib.com/building/bronx/616-e-139th-st-2025510030/": [
    "2026-07-31",
@@ -295,8 +311,8 @@
   ],
   "https://findacrib.com/building/brooklyn/12-vernon-ave-3017580012/": [
    "2026-08-20",
-   "2026-08-21",
-   2
+   "2026-08-22",
+   3
   ],
   "https://findacrib.com/building/brooklyn/123-melrose-st-3031520048/": [
    "2026-08-03",
@@ -340,8 +356,8 @@
   ],
   "https://findacrib.com/building/brooklyn/178-halsey-st-3018440050/": [
    "2026-08-17",
-   "2026-08-21",
-   5
+   "2026-08-22",
+   6
   ],
   "https://findacrib.com/building/brooklyn/1833-e-12th-st-3068180082/": [
    "2026-08-04",
@@ -355,13 +371,13 @@
   ],
   "https://findacrib.com/building/brooklyn/1930-bedford-ave-3050427502/": [
    "2026-08-16",
-   "2026-08-21",
-   6
+   "2026-08-22",
+   7
   ],
   "https://findacrib.com/building/brooklyn/195-clarkson-ave-3050560062/": [
    "2026-08-16",
-   "2026-08-21",
-   6
+   "2026-08-22",
+   7
   ],
   "https://findacrib.com/building/brooklyn/196-norman-ave-3026530006/": [
    "2026-08-09",
@@ -385,13 +401,13 @@
   ],
   "https://findacrib.com/building/brooklyn/203-kent-st-3025510043/": [
    "2026-08-17",
-   "2026-08-21",
-   5
+   "2026-08-22",
+   6
   ],
   "https://findacrib.com/building/brooklyn/208-eckford-st-3026220038/": [
    "2026-08-20",
-   "2026-08-21",
-   2
+   "2026-08-22",
+   3
   ],
   "https://findacrib.com/building/brooklyn/209-kingsland-ave-3026880038/": [
    "2026-07-30",
@@ -415,8 +431,8 @@
   ],
   "https://findacrib.com/building/brooklyn/23-driggs-ave-3027070007/": [
    "2026-08-16",
-   "2026-08-21",
-   6
+   "2026-08-22",
+   7
   ],
   "https://findacrib.com/building/brooklyn/234-eckford-st-3026220051/": [
    "2026-07-30",
@@ -425,8 +441,8 @@
   ],
   "https://findacrib.com/building/brooklyn/234-to-238-livingston-st-3001657501/": [
    "2026-07-30",
-   "2026-08-05",
-   7
+   "2026-08-22",
+   8
   ],
   "https://findacrib.com/building/brooklyn/237-jefferson-ave-3018280067/": [
    "2026-08-07",
@@ -465,8 +481,8 @@
   ],
   "https://findacrib.com/building/brooklyn/289-empire-blvd-3013080052/": [
    "2026-08-16",
-   "2026-08-21",
-   6
+   "2026-08-22",
+   7
   ],
   "https://findacrib.com/building/brooklyn/2940-ocean-pkwy-3072740020/": [
    "2026-07-30",
@@ -475,8 +491,8 @@
   ],
   "https://findacrib.com/building/brooklyn/308-eckford-st-3025760042/": [
    "2026-08-20",
-   "2026-08-21",
-   2
+   "2026-08-22",
+   3
   ],
   "https://findacrib.com/building/brooklyn/311-baltic-st-3003960053/": [
    "2026-07-30",
@@ -495,8 +511,8 @@
   ],
   "https://findacrib.com/building/brooklyn/35-commercial-st-3024727504/": [
    "2026-08-20",
-   "2026-08-21",
-   2
+   "2026-08-22",
+   3
   ],
   "https://findacrib.com/building/brooklyn/354-41st-st-3007180030/": [
    "2026-08-08",
@@ -520,8 +536,8 @@
   ],
   "https://findacrib.com/building/brooklyn/415-to-433-red-hook-ln-3001547501/": [
    "2026-08-20",
-   "2026-08-21",
-   2
+   "2026-08-22",
+   3
   ],
   "https://findacrib.com/building/brooklyn/420-eastern-pkwy-3012670014/": [
    "2026-07-30",
@@ -535,8 +551,8 @@
   ],
   "https://findacrib.com/building/brooklyn/426-tompkins-ave-3018390040/": [
    "2026-08-19",
-   "2026-08-21",
-   3
+   "2026-08-22",
+   4
   ],
   "https://findacrib.com/building/brooklyn/427-tompkins-ave-3018400005/": [
    "2026-08-03",
@@ -555,8 +571,8 @@
   ],
   "https://findacrib.com/building/brooklyn/475-43rd-st-3007240046/": [
    "2026-08-16",
-   "2026-08-21",
-   6
+   "2026-08-22",
+   7
   ],
   "https://findacrib.com/building/brooklyn/481-4th-ave-3010220002/": [
    "2026-07-30",
@@ -575,8 +591,8 @@
   ],
   "https://findacrib.com/building/brooklyn/51-quincy-st-3019700001/": [
    "2026-08-16",
-   "2026-08-21",
-   6
+   "2026-08-22",
+   7
   ],
   "https://findacrib.com/building/brooklyn/541-49th-st-3007750069/": [
    "2026-08-09",
@@ -645,8 +661,8 @@
   ],
   "https://findacrib.com/building/brooklyn/646-leonard-st-3026210050/": [
    "2026-08-17",
-   "2026-08-21",
-   5
+   "2026-08-22",
+   6
   ],
   "https://findacrib.com/building/brooklyn/761-44th-st-3007320053/": [
    "2026-07-31",
@@ -661,6 +677,11 @@
   "https://findacrib.com/building/brooklyn/782-new-york-ave-3048370065/": [
    "2026-07-30",
    "2026-07-30",
+   1
+  ],
+  "https://findacrib.com/building/brooklyn/80-eagle-st-3025040011/": [
+   "2026-08-22",
+   "2026-08-22",
    1
   ],
   "https://findacrib.com/building/brooklyn/81-to-95-flatbush-avenue-ext-3001207503/": [
@@ -710,8 +731,8 @@
   ],
   "https://findacrib.com/building/manhattan/1-bank-st-1006150036/": [
    "2026-08-16",
-   "2026-08-21",
-   6
+   "2026-08-22",
+   7
   ],
   "https://findacrib.com/building/manhattan/10-jones-st-1005900022/": [
    "2026-08-06",
@@ -720,8 +741,8 @@
   ],
   "https://findacrib.com/building/manhattan/100-w-67th-st-1011380036/": [
    "2026-08-17",
-   "2026-08-21",
-   5
+   "2026-08-22",
+   6
   ],
   "https://findacrib.com/building/manhattan/101-saint-marks-pl-1004360050/": [
    "2026-08-06",
@@ -745,8 +766,8 @@
   ],
   "https://findacrib.com/building/manhattan/107-e-100th-st-1016280103/": [
    "2026-08-20",
-   "2026-08-21",
-   2
+   "2026-08-22",
+   3
   ],
   "https://findacrib.com/building/manhattan/107-university-pl-1005640004/": [
    "2026-08-14",
@@ -765,8 +786,8 @@
   ],
   "https://findacrib.com/building/manhattan/110-e-end-ave-1015810030/": [
    "2026-08-17",
-   "2026-08-21",
-   5
+   "2026-08-22",
+   6
   ],
   "https://findacrib.com/building/manhattan/110-sullivan-st-1005040031/": [
    "2026-07-30",
@@ -820,8 +841,8 @@
   ],
   "https://findacrib.com/building/manhattan/126-macdougal-st-1005400012/": [
    "2026-08-19",
-   "2026-08-21",
-   3
+   "2026-08-22",
+   4
   ],
   "https://findacrib.com/building/manhattan/128-e-10th-st-1004650021/": [
    "2026-07-30",
@@ -855,8 +876,8 @@
   ],
   "https://findacrib.com/building/manhattan/142-e-98th-st-1016250048/": [
    "2026-07-30",
-   "2026-08-21",
-   6
+   "2026-08-22",
+   7
   ],
   "https://findacrib.com/building/manhattan/144-sullivan-st-1005180036/": [
    "2026-08-14",
@@ -885,8 +906,8 @@
   ],
   "https://findacrib.com/building/manhattan/1553-york-ave-1015620023/": [
    "2026-08-20",
-   "2026-08-21",
-   2
+   "2026-08-22",
+   3
   ],
   "https://findacrib.com/building/manhattan/1590-lexington-ave-1016290014/": [
    "2026-07-30",
@@ -895,13 +916,13 @@
   ],
   "https://findacrib.com/building/manhattan/160-bleecker-st-1005257501/": [
    "2026-08-20",
-   "2026-08-21",
-   2
+   "2026-08-22",
+   3
   ],
   "https://findacrib.com/building/manhattan/160-prince-st-1005020016/": [
    "2026-08-17",
-   "2026-08-21",
-   5
+   "2026-08-22",
+   6
   ],
   "https://findacrib.com/building/manhattan/164-e-107th-st-1016340044/": [
    "2026-07-30",
@@ -960,8 +981,8 @@
   ],
   "https://findacrib.com/building/manhattan/204-spring-st-1004900024/": [
    "2026-08-17",
-   "2026-08-21",
-   5
+   "2026-08-22",
+   6
   ],
   "https://findacrib.com/building/manhattan/210-e-10th-st-1004510016/": [
    "2026-08-04",
@@ -975,8 +996,8 @@
   ],
   "https://findacrib.com/building/manhattan/212-lafayette-st-1004820031/": [
    "2026-08-20",
-   "2026-08-21",
-   2
+   "2026-08-22",
+   3
   ],
   "https://findacrib.com/building/manhattan/215-mulberry-st-1004950041/": [
    "2026-08-11",
@@ -1030,8 +1051,8 @@
   ],
   "https://findacrib.com/building/manhattan/229-sullivan-st-1005390011/": [
    "2026-08-16",
-   "2026-08-21",
-   6
+   "2026-08-22",
+   7
   ],
   "https://findacrib.com/building/manhattan/229-to-235-w-60th-st-1011520013/": [
    "2026-07-30",
@@ -1185,13 +1206,13 @@
   ],
   "https://findacrib.com/building/manhattan/59-w-73rd-st-1011260104/": [
    "2026-08-16",
-   "2026-08-21",
-   6
+   "2026-08-22",
+   7
   ],
   "https://findacrib.com/building/manhattan/60-to-66-norfolk-st-1003467504/": [
    "2026-08-19",
-   "2026-08-21",
-   3
+   "2026-08-22",
+   4
   ],
   "https://findacrib.com/building/manhattan/62-e-7th-st-1004480015/": [
    "2026-07-30",
@@ -1230,13 +1251,13 @@
   ],
   "https://findacrib.com/building/manhattan/85-kenmare-st-1004810028/": [
    "2026-08-19",
-   "2026-08-21",
-   3
+   "2026-08-22",
+   4
   ],
   "https://findacrib.com/building/manhattan/88-w-3rd-st-1005390016/": [
    "2026-08-20",
-   "2026-08-21",
-   2
+   "2026-08-22",
+   3
   ],
   "https://findacrib.com/building/queens/101-17-37th-ave-4017420027/": [
    "2026-07-31",
@@ -1275,8 +1296,8 @@
   ],
   "https://findacrib.com/building/queens/439-beach-22nd-st-4157710064/": [
    "2026-08-20",
-   "2026-08-21",
-   2
+   "2026-08-22",
+   3
   ],
   "https://findacrib.com/dc/": [
    "2026-08-01",
@@ -1290,8 +1311,8 @@
   ],
   "https://findacrib.com/neighborhood/brooklyn/ocean-hill/": [
    "2026-08-14",
-   "2026-08-21",
-   8
+   "2026-08-22",
+   9
   ],
   "https://findacrib.com/neighborhood/manhattan/east-midtown-turtle-bay/": [
    "2026-07-30",
@@ -1341,9 +1362,9 @@
  },
  "pages": [
   {
-   "clicks": 2,
-   "impressions": 8,
-   "position": 3.1,
+   "clicks": 3,
+   "impressions": 11,
+   "position": 2.6,
    "url": "https://findacrib.com/"
   },
   {
@@ -1360,9 +1381,9 @@
   },
   {
    "clicks": 0,
-   "impressions": 2,
-   "position": 10,
-   "url": "https://findacrib.com/building/manhattan/139-eldridge-st-1004190065/"
+   "impressions": 3,
+   "position": 61.7,
+   "url": "https://findacrib.com/building/queens/439-beach-22nd-st-4157710064/"
   },
   {
    "clicks": 0,
@@ -1385,6 +1406,12 @@
   {
    "clicks": 0,
    "impressions": 1,
+   "position": 9,
+   "url": "https://findacrib.com/building/bronx/2028-to-2032-e-177th-st-2038030019/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 1,
    "position": 3,
    "url": "https://findacrib.com/building/bronx/2051-hermany-ave-2036800054/"
   },
@@ -1399,6 +1426,12 @@
    "impressions": 1,
    "position": 3,
    "url": "https://findacrib.com/building/bronx/295-e-149th-st-2023310066/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 1,
+   "position": 5,
+   "url": "https://findacrib.com/building/bronx/352-e-139th-st-2023010011/"
   },
   {
    "clicks": 0,
@@ -1427,20 +1460,8 @@
   {
    "clicks": 0,
    "impressions": 1,
-   "position": 84,
-   "url": "https://findacrib.com/building/brooklyn/101-franklin-st-3025620025/"
-  },
-  {
-   "clicks": 0,
-   "impressions": 1,
    "position": 7,
    "url": "https://findacrib.com/building/brooklyn/12-vernon-ave-3017580012/"
-  },
-  {
-   "clicks": 0,
-   "impressions": 1,
-   "position": 11,
-   "url": "https://findacrib.com/building/brooklyn/1311-brightwater-ave-3087210375/"
   },
   {
    "clicks": 0,
@@ -1481,6 +1502,12 @@
   {
    "clicks": 0,
    "impressions": 1,
+   "position": 5,
+   "url": "https://findacrib.com/building/brooklyn/234-to-238-livingston-st-3001657501/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 1,
    "position": 2,
    "url": "https://findacrib.com/building/brooklyn/289-empire-blvd-3013080052/"
   },
@@ -1517,14 +1544,14 @@
   {
    "clicks": 0,
    "impressions": 1,
-   "position": 62,
-   "url": "https://findacrib.com/building/brooklyn/616-willoughby-ave-3017680024/"
+   "position": 1,
+   "url": "https://findacrib.com/building/brooklyn/646-leonard-st-3026210050/"
   },
   {
    "clicks": 0,
    "impressions": 1,
-   "position": 1,
-   "url": "https://findacrib.com/building/brooklyn/646-leonard-st-3026210050/"
+   "position": 7,
+   "url": "https://findacrib.com/building/brooklyn/80-eagle-st-3025040011/"
   },
   {
    "clicks": 0,
@@ -1571,12 +1598,6 @@
   {
    "clicks": 0,
    "impressions": 1,
-   "position": 8,
-   "url": "https://findacrib.com/building/manhattan/17-cleveland-pl-1004810008/"
-  },
-  {
-   "clicks": 0,
-   "impressions": 1,
    "position": 54,
    "url": "https://findacrib.com/building/manhattan/204-spring-st-1004900024/"
   },
@@ -1613,12 +1634,6 @@
   {
    "clicks": 0,
    "impressions": 1,
-   "position": 57,
-   "url": "https://findacrib.com/building/queens/439-beach-22nd-st-4157710064/"
-  },
-  {
-   "clicks": 0,
-   "impressions": 1,
    "position": 5,
    "url": "https://findacrib.com/neighborhood/brooklyn/ocean-hill/"
   }
@@ -1633,28 +1648,35 @@
    },
    {
     "clicks": 1,
-    "impressions": 1,
+    "impressions": 2,
     "position": 2,
     "query": "jays home finder"
+   },
+   {
+    "clicks": 1,
+    "impressions": 1,
+    "position": 1,
+    "query": "jayshomefinder.com"
    }
   ],
   "https://findacrib.com/building/bronx/1236-virginia-ave-2037940001/": [],
+  "https://findacrib.com/building/bronx/2028-to-2032-e-177th-st-2038030019/": [],
   "https://findacrib.com/building/bronx/2051-hermany-ave-2036800054/": [],
   "https://findacrib.com/building/bronx/275-e-168th-st-2024390022/": [],
   "https://findacrib.com/building/bronx/295-e-149th-st-2023310066/": [],
+  "https://findacrib.com/building/bronx/352-e-139th-st-2023010011/": [],
   "https://findacrib.com/building/bronx/429-e-156th-st-2023780034/": [],
   "https://findacrib.com/building/bronx/554-e-141st-st-2022670039/": [],
   "https://findacrib.com/building/bronx/582-e-138th-st-2025507501/": [],
   "https://findacrib.com/building/bronx/601-e-156th-st-2026187501/": [],
-  "https://findacrib.com/building/brooklyn/101-franklin-st-3025620025/": [],
   "https://findacrib.com/building/brooklyn/12-vernon-ave-3017580012/": [],
-  "https://findacrib.com/building/brooklyn/1311-brightwater-ave-3087210375/": [],
   "https://findacrib.com/building/brooklyn/178-halsey-st-3018440050/": [],
   "https://findacrib.com/building/brooklyn/1930-bedford-ave-3050427502/": [],
   "https://findacrib.com/building/brooklyn/195-clarkson-ave-3050560062/": [],
   "https://findacrib.com/building/brooklyn/203-kent-st-3025510043/": [],
   "https://findacrib.com/building/brooklyn/208-eckford-st-3026220038/": [],
   "https://findacrib.com/building/brooklyn/23-driggs-ave-3027070007/": [],
+  "https://findacrib.com/building/brooklyn/234-to-238-livingston-st-3001657501/": [],
   "https://findacrib.com/building/brooklyn/289-empire-blvd-3013080052/": [],
   "https://findacrib.com/building/brooklyn/308-eckford-st-3025760042/": [],
   "https://findacrib.com/building/brooklyn/35-commercial-st-3024727504/": [],
@@ -1662,19 +1684,17 @@
   "https://findacrib.com/building/brooklyn/426-tompkins-ave-3018390040/": [],
   "https://findacrib.com/building/brooklyn/475-43rd-st-3007240046/": [],
   "https://findacrib.com/building/brooklyn/51-quincy-st-3019700001/": [],
-  "https://findacrib.com/building/brooklyn/616-willoughby-ave-3017680024/": [],
   "https://findacrib.com/building/brooklyn/646-leonard-st-3026210050/": [],
+  "https://findacrib.com/building/brooklyn/80-eagle-st-3025040011/": [],
   "https://findacrib.com/building/manhattan/1-bank-st-1006150036/": [],
   "https://findacrib.com/building/manhattan/100-w-67th-st-1011380036/": [],
   "https://findacrib.com/building/manhattan/107-e-100th-st-1016280103/": [],
   "https://findacrib.com/building/manhattan/110-e-end-ave-1015810030/": [],
   "https://findacrib.com/building/manhattan/126-macdougal-st-1005400012/": [],
-  "https://findacrib.com/building/manhattan/139-eldridge-st-1004190065/": [],
   "https://findacrib.com/building/manhattan/142-e-98th-st-1016250048/": [],
   "https://findacrib.com/building/manhattan/1553-york-ave-1015620023/": [],
   "https://findacrib.com/building/manhattan/160-bleecker-st-1005257501/": [],
   "https://findacrib.com/building/manhattan/160-prince-st-1005020016/": [],
-  "https://findacrib.com/building/manhattan/17-cleveland-pl-1004810008/": [],
   "https://findacrib.com/building/manhattan/204-spring-st-1004900024/": [],
   "https://findacrib.com/building/manhattan/212-lafayette-st-1004820031/": [],
   "https://findacrib.com/building/manhattan/229-sullivan-st-1005390011/": [],
@@ -1685,6 +1705,6 @@
   "https://findacrib.com/building/queens/439-beach-22nd-st-4157710064/": [],
   "https://findacrib.com/neighborhood/brooklyn/ocean-hill/": []
  },
- "serving_pages": 47,
- "window": "2026-08-12..2026-08-19"
+ "serving_pages": 46,
+ "window": "2026-08-13..2026-08-20"
 }

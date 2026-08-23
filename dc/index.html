@@ -2208,12 +2208,22 @@
     if (h.op && !CONTACTS.has(rec.bbl)) loadOperator(rec.bbl);
     const v = h.violations;
     const c = h.complaints;
+    // Class chips describe the OPEN violations (oa/ob/oc), so they sum to the
+    // "N open" chip beside them and to the list below it. They used to be the
+    // all-time counts, which read as "3 open, and 3 of them are class C" on a
+    // building whose only open class C was one of three ever cited. Blobs built
+    // before oa/ob/oc fall back to the all-time keys — except at 0 open, where
+    // nothing can be open by class either and the old counts were pure noise.
+    const vOpenCls = v && (v.oa != null || v.ob != null || v.oc != null);
+    const clsCount = k => (!v || !v.open) ? 0 : ((vOpenCls ? v['o' + k] : v[k]) || 0);
+    const vc = clsCount('c'), vb = clsCount('b'), va = clsCount('a');
+    const clsWord = vOpenCls ? 'open' : 'on record';
     const vChips = v ? `
       <span class="hpd-stat ${v.open > 5 ? 'bad' : (v.open > 0 ? 'warn' : '')}" data-viol-open>${v.open} open</span>
       <span class="hpd-stat">${v.total} all-time</span>
-      ${v.c ? `<button type="button" class="hpd-stat bad hpd-chip" data-cls="C">Class C: ${v.c}</button>` : ''}
-      ${v.b ? `<button type="button" class="hpd-stat warn hpd-chip" data-cls="B">Class B: ${v.b}</button>` : ''}
-      ${v.a ? `<button type="button" class="hpd-stat hpd-chip" data-cls="A">Class A: ${v.a}</button>` : ''}
+      ${vc ? `<button type="button" class="hpd-stat bad hpd-chip" data-cls="C" title="${vc} class C ${clsWord}">Class C: ${vc}</button>` : ''}
+      ${vb ? `<button type="button" class="hpd-stat warn hpd-chip" data-cls="B" title="${vb} class B ${clsWord}">Class B: ${vb}</button>` : ''}
+      ${va ? `<button type="button" class="hpd-stat hpd-chip" data-cls="A" title="${va} class A ${clsWord}">Class A: ${va}</button>` : ''}
       ${v.last_12mo ? `<span class="hpd-stat">${v.last_12mo} in last 12mo</span>` : ''}
     ` : '<span style="color:var(--ink-2);font-size:11px">No violations on file.</span>';
     // plain-English explainer of HPD violation classes (tap a Class chip or the link to open)
@@ -2412,11 +2422,27 @@
       // The banked chip counts anything not literally "CLOSED" (dismissed notices
       // included) and is only as fresh as the last HPD pull. Now that we have the
       // live rows, reconcile the chip so it can't sit above a list that disagrees.
-      const chip = btn.closest('.hpd-section') && btn.closest('.hpd-section').querySelector('[data-viol-open]');
+      const section = btn.closest('.hpd-section');
+      const chip = section && section.querySelector('[data-viol-open]');
       if (chip && rows.length < VIOL_LIMIT) {
         chip.textContent = rows.length + ' open';
         chip.classList.toggle('bad', rows.length > 5);
         chip.classList.toggle('warn', rows.length > 0 && rows.length <= 5);
+        // The class chips are open-scoped too, so they have to move with it —
+        // leaving "Class C: 3" beside a corrected "3 open" just relocates the
+        // contradiction. A class the live rows no longer show open is hidden
+        // rather than left sitting at its banked number. A class that is open
+        // live but was 0 in the blob has no chip to correct; that only happens
+        // on a building HPD cited since the last pull.
+        const byCls = { A: 0, B: 0, C: 0 };
+        rows.forEach(r => { const k = (r.class || '').toUpperCase(); if (k in byCls) byCls[k]++; });
+        section.querySelectorAll('.hpd-chip[data-cls]').forEach(el => {
+          const k = el.dataset.cls;
+          if (!(k in byCls)) return;
+          el.textContent = `Class ${k}: ${byCls[k]}`;
+          el.title = `${byCls[k]} class ${k} open`;
+          el.style.display = byCls[k] ? '' : 'none';
+        });
       }
     }).catch(() => {
       delete box.dataset.loaded;   // so a tap can retry

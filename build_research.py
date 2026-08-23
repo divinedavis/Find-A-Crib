@@ -83,7 +83,9 @@ def main():
             p["by_boro"][boro] = p["by_boro"].get(boro, 0) + 1
             p["open_violations"] += v.get("open") or 0
             p["open_complaints"] += c.get("open") or 0
-            p["class_c"] += v.get("c") or 0
+            # open class C, to match the "N open violations" it renders beside;
+            # v["c"] is every class C ever cited here. Older blobs have no "oc".
+            p["class_c"] += (v.get("oc") if v.get("oc") is not None else v.get("c")) or 0
         if row["owner_key"] or row["agent_key"]:
             names.append(row)
 

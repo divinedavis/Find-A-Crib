@@ -56,92 +56,92 @@
     }
   },
   "indexstatus": {
-    "accept_pct": 6.1,
-    "accept_pct_mature": 11.1,
+    "accept_pct": 3.7,
+    "accept_pct_mature": 3.6,
     "added": 0,
-    "at": "2026-08-22T05:11:12+00:00",
+    "at": "2026-08-23T05:11:26+00:00",
     "by_crawl_age": {
       "0-6d": {
-        "accept_pct": 5.6,
-        "fetched": 18,
+        "accept_pct": 5.0,
+        "fetched": 20,
         "indexed": 1
       },
       "14-20d": {
         "accept_pct": 0.0,
-        "fetched": 21,
+        "fetched": 23,
         "indexed": 0
       },
       "21-27d": {
         "accept_pct": 0.0,
-        "fetched": 17,
+        "fetched": 18,
         "indexed": 0
       },
       "28d+": {
-        "accept_pct": 30.0,
+        "accept_pct": 10.0,
         "fetched": 10,
-        "indexed": 3
+        "indexed": 1
       },
       "7-13d": {
-        "accept_pct": 6.2,
-        "fetched": 16,
+        "accept_pct": 9.1,
+        "fetched": 11,
         "indexed": 1
       }
     },
     "cohort": 445,
-    "date": "2026-08-22",
+    "date": "2026-08-23",
     "dropped": 0,
     "errors": 0,
-    "fetched_mature": 27,
+    "fetched_mature": 28,
     "fetched_pct": 18.4,
     "gained_indexed": 0,
-    "indexed_pct": 1.1,
+    "indexed_pct": 0.7,
     "inspected": 100,
-    "last_crawl": "2026-08-21",
-    "lost_indexed": 4,
+    "last_crawl": "2026-08-23",
+    "lost_indexed": 2,
     "ok": true,
     "published_urls": 47926,
     "read": 445,
     "rechecked": 100,
     "states": {
-      "crawled_not_indexed": 77,
-      "discovered_not_indexed": 26,
-      "indexed": 5,
-      "unknown_to_google": 337
+      "crawled_not_indexed": 79,
+      "discovered_not_indexed": 34,
+      "indexed": 3,
+      "unknown_to_google": 329
     }
   },
   "measure": {
-    "at": "2026-08-22T05:11:14+00:00",
+    "at": "2026-08-23T05:11:27+00:00",
     "coverage_pct": 83.4,
-    "date": "2026-08-22",
+    "date": "2026-08-23",
     "days": 1,
     "keywords_covered": 221,
     "keywords_total": 265,
-    "latest_measured_day": "2026-08-21"
+    "latest_measured_day": "2026-08-22"
   },
   "outreach": {
-    "at": "2026-08-22T05:11:14+00:00",
-    "date": "2026-08-22",
-    "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
+    "at": "2026-08-23T05:11:28+00:00",
+    "date": "2026-08-23",
+    "detail": "invalid_request_error: You have reached your specified API usage limits. You will regain access on 2026-09-01 at 00:00 UTC.",
     "ok": false
   },
   "scout": {
-    "at": "2026-08-22T05:11:14+00:00",
-    "date": "2026-08-22",
-    "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
+    "at": "2026-08-23T05:11:27+00:00",
+    "date": "2026-08-23",
+    "detail": "invalid_request_error: You have reached your specified API usage limits. You will regain access on 2026-09-01 at 00:00 UTC.",
     "ok": false
   },
   "searchconsole": {
-    "at": "2026-08-22T05:00:07+00:00",
+    "at": "2026-08-23T05:00:06+00:00",
     "clicks": 3,
-    "date": "2026-08-22",
+    "date": "2026-08-23",
     "impressions": 7,
     "page_clicks": 3,
-    "page_impressions": 65,
-    "serving_ever": 266,
-    "serving_pages": 46,
-    "serving_stable": 42,
+    "page_impressions": 55,
+    "serving_ever": 267,
+    "serving_pages": 37,
+    "serving_stable": 36,
     "share_pct": 0.0,
     "tracked_ranking": 0,
-    "window": "2026-08-13..2026-08-20"
+    "window": "2026-08-14..2026-08-21"
   }
 }

@@ -150,11 +150,52 @@ def set_revisit(tech_id, on=None, days=REVISIT_DAYS):
 
 
 def revisit_due(as_of=None):
-    """Active techniques whose scheduled second look has come due."""
+    """Techniques whose scheduled second look has come due.
+
+    Includes ones the automatic review already retired, and that is the point.
+
+    The two mechanisms were wired so the cheap one always won a race the
+    deliberate one could not see. review.py retires on GRACE_DAYS = 21 days
+    after activation; _revisit_date() schedules the second look for
+    REVISIT_DAYS = 30. So on the default dates the automatic retirement fires
+    exactly nine days before every scheduled revisit, and because this function
+    used to filter to status == "active", retirement then cancelled the revisit
+    outright. Not "delayed" — cancelled, silently, with the date still sitting
+    in the record.
+
+    That is not hypothetical. Every retirement this loop has ever made landed
+    nine days early and cancelled the review that had been booked for it:
+    T001 and T002 retired 2026-08-16 against revisits scheduled 2026-08-25,
+    T023 retired 08-19 against 08-28, T013 retired 08-20 against 08-29. T001's
+    own notes had recorded an explicit condition and date for the decision —
+    "NEW DECISION DATE 2026-08-26: if /section8/ still earns zero impressions
+    21 days after it has a verified inbound link" — and the machine retired it
+    on the metric that note had already ruled out, ten days early, during the
+    24 days the corpus was frozen so the inbound link it was waiting on had
+    never deployed. The reasoning was in the ledger and was never re-read.
+
+    So a retirement now defers the second look rather than deleting it. The
+    revisit asks a different question from the review — "is this still the best
+    version of this idea?" — and a verdict of "no" is a perfectly good input to
+    it. What is not a good input is silence.
+
+    Bounded on purpose: a retired technique comes due only if it was retired
+    BEFORE its own revisit date, i.e. only where the retirement is what
+    pre-empted the second look. One retired after its revisit date already had
+    that look, and does not come back.
+    """
     as_of = as_of or today()
-    return [t for t in load_techniques()
-            if t.get("status") == "active" and t.get("revisit_on")
-            and t["revisit_on"] <= as_of]
+    out = []
+    for t in load_techniques():
+        on = t.get("revisit_on")
+        if not on or on > as_of:
+            continue
+        status = t.get("status")
+        if status == "active":
+            out.append(t)
+        elif status == "retired" and (t.get("retired") or "") < on:
+            out.append(t)
+    return out
 
 
 def set_status(tech_id, status, why=""):

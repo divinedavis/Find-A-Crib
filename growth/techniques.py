@@ -1723,10 +1723,17 @@ def t_crawl_paths(ctx):
     Google treats a URL with no internal link as unimportant and may never
     index it however often it is submitted.
 
-    So the rule this enforces: if an active technique claims a URL prefix, some
-    page outside that prefix must link into it. The prefixes come from the
-    ledger rather than a list here, so a technique added tomorrow is audited
-    the night it goes live without anyone remembering to add it.
+    So the rule this enforces: if a technique claims a URL prefix and pages
+    exist under it, some page outside that prefix must link into it. The
+    prefixes come from the ledger rather than a list here, so a technique added
+    tomorrow is audited the night it goes live without anyone remembering to
+    add it — and, since 2026-08-23, a technique RETIRED tomorrow keeps being
+    audited for as long as its pages are still in the docroot. Retirement stops
+    the rebuild; it does not delete the pages, take them out of
+    sitemap-daily.xml, or stop IndexNow submitting them. Dropping them from the
+    audit turned "we stopped believing in this section" into "we stopped
+    looking at this section", which is how four families reached 1-of-101
+    ever-fetched with a green light on this check.
 
     Writes nothing. It scores the live docroot, which is deliberate — the fix
     for an orphaned section usually lives in the app shells, and this is how a
@@ -1737,12 +1744,44 @@ def t_crawl_paths(ctx):
     Google can follow.
     """
     import glob
-    claimed = {}
-    for t in ledger.active():
+    # Every prefix any technique claims, whatever that technique's status.
+    #
+    # This audit used to read ledger.active() alone, which made the question it
+    # answers "is our current bet reachable?" when the question that matters is
+    # "is anything we publish unreachable?". Those differ by the whole retired
+    # and candidate backlog, and the difference is not academic: retiring a
+    # technique does not delete its pages, take them out of sitemap-daily.xml,
+    # or stop IndexNow submitting them nightly. All retirement changes is that
+    # nothing rebuilds them — and, until today, that nothing checked them.
+    #
+    # Worse, the direction of the error was exactly wrong. Sections retire
+    # BECAUSE they earned no impressions, and earning no impressions is the
+    # symptom an orphaned crawl path produces. So the instrument that could
+    # tell "the content failed" from "nothing linked to it" switched itself off
+    # at the moment its reading mattered most, and the verdict it could have
+    # challenged went into the ledger unopposed.
+    #
+    # Measured, 2026-08-23 URL Inspection census: across the families whose
+    # techniques are retired or still candidates — /dc/ 20 URLs, /la/ 20,
+    # /sf/ 20, /available/ 15, /brief/ 10, /guide/ 10, /section8/ 6 — exactly
+    # one of 101 sampled URLs had ever been fetched by Google. The four
+    # families this audit did watch read 22-50% ever-fetched. On a site whose
+    # binding constraint is crawl budget, an unwatched published family is not
+    # neutral: it is inventory Google spends discovery on and gets nothing for.
+    #
+    # Status decides the LABEL, never whether a prefix is audited: active wins,
+    # because the live bet is the one a reader needs named first.
+    _RANK = {"active": 0, "retired": 1, "candidate": 2}
+    claimed, owner_status = {}, {}
+    for t in ledger.load_techniques():
+        st = t.get("status")
         for p in t.get("prefixes") or []:
-            claimed.setdefault(p, t["slug"])
+            if p in claimed and _RANK.get(owner_status[p], 9) <= _RANK.get(st, 9):
+                continue
+            claimed[p] = t["slug"]
+            owner_status[p] = st
     if not claimed:
-        return {"ok": True, "detail": "no active technique claims a URL prefix"}
+        return {"ok": True, "detail": "no technique claims a URL prefix"}
 
     # Only audit sections that exist. A prefix with nothing published under it
     # is not an orphan, it is unbuilt, and reporting the two the same way would
@@ -1784,11 +1823,30 @@ def t_crawl_paths(ctx):
     dead = [p for p in orphaned if p not in pending]
     detail = (f"{len(live) - len(orphaned)} of {len(live)} published sections have an inbound "
               f"internal link ({read} docroot pages read)")
+    def _own(p):
+        """`/prefix/ (slug)`, marking the ones no live technique owns."""
+        st = owner_status.get(p)
+        return f"{p} ({claimed[p]}{'' if st == 'active' else ', ' + str(st)})"
+
     # The unbuilt list can run to nine prefixes on a checkout with no corpus,
     # so it goes last: the orphan names are the finding and must not be pushed
     # off the end of a phone-width line by a list of things that are merely
     # absent.
     tail = f" — not built yet, not audited: {', '.join(unbuilt)}" if unbuilt else ""
+    # How many audited sections have no live technique behind them. The
+    # denominator grew on 2026-08-23 when this audit stopped dropping them, and
+    # a count that changes size without saying why reads as a regression. It
+    # goes in the tail, next to `unbuilt`, for that comment's reason: it is
+    # context for the headline, not the finding, and must not push the orphan
+    # names off a phone-width line. Capped for the same reason — the names that
+    # matter are already in the orphan list above, which is uncapped.
+    stale_owner = sorted(p for p in live if owner_status.get(p) != "active")
+    if stale_owner:
+        shown = [f"{p} [{owner_status.get(p)}]" for p in stale_owner[:6]]
+        more = len(stale_owner) - len(shown)
+        tail += (f" — {len(stale_owner)} of {len(live)} audited sections are published under no "
+                 f"ACTIVE technique, so nothing rebuilds them; link them or stop publishing "
+                 f"them: " + ", ".join(shown) + (f", +{more} more" if more else ""))
     # A prefix whose only inbound link is on a page this run stages gets its own
     # sentence, naming the source page and how long it has been waiting. Within
     # the grace window that is ordinary deploy lag and the reader should wait
@@ -1797,7 +1855,7 @@ def t_crawl_paths(ctx):
     # path from this repo into the docroot.
     def _pend(ps):
         return ", ".join(
-            f"{p} ({claimed[p]}) ← {', '.join(sorted(staged[p]))}"
+            f"{_own(p)} ← {', '.join(sorted(staged[p]))}"
             f"{f', {_staged_age(pending[p])}d' if _staged_age(pending[p]) else ''}"
             for p in ps)
 
@@ -1806,7 +1864,7 @@ def t_crawl_paths(ctx):
                 "detail": detail + " — STAGED BUT NOT DEPLOYED, the growth build's own rsync is "
                 "not reaching the docroot: " + _pend(stuck)
                 + (" — ORPHANED with no inbound link anywhere: "
-                   + ", ".join(f"{p} ({claimed[p]})" for p in dead) if dead else "") + tail}
+                   + ", ".join(_own(p) for p in dead) if dead else "") + tail}
     if dead:
         # Say how old the corpus is, because "still orphaned" has two very
         # different causes and the reader cannot tell them apart otherwise: the
@@ -1817,7 +1875,7 @@ def t_crawl_paths(ctx):
         # deploy gap from scratch, which has already cost one cycle.
         return {"ok": False, "pages": read,
                 "detail": detail + " — ORPHANED, reachable only from sitemap-daily.xml: "
-                + ", ".join(f"{p} ({claimed[p]})" for p in dead)
+                + ", ".join(_own(p) for p in dead)
                 + _stale_note(ctx.docroot) + tail
                 + (" — awaiting this run's rsync: " + _pend(sorted(pending)) if pending else "")}
     if pending:

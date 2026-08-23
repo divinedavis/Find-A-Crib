@@ -650,8 +650,20 @@ def build_blocks(run_log=None, review_out=None):
                 pairs = ledger.series(t["slug"], "owned_visitors", since=t.get("activated"))
                 meta += (f" · {sum(v for _, v in pairs):,} owned visitors "
                          f"since {t.get('activated')}")
+            # A revisit the automatic review pre-empted is a different job from
+            # an ordinary one: the question is not "keep, change or replace"
+            # but "was that verdict sound, and do the pages come back?".
+            # ledger.revisit_due() only returns a retired technique when the
+            # retirement landed before the date booked for this look, so
+            # saying so here is a statement of fact, not an inference.
+            body = f"Hypothesis was: {(t.get('hypothesis') or '')[:200]}"
+            if t.get("status") == "retired":
+                meta += f" · RETIRED {t.get('retired')}, before this date"
+                body = (f"Retired before its scheduled second look — reconsider the verdict, "
+                        f"do not skip it. Verdict was: {((t.get('verdict') or {}).get('why') or 'not recorded')[:160]}"
+                        f" · {body}")
             B.append({"type": "card", "heading": f"{t['id']} {t['name']}", "meta": meta,
-                      "body": f"Hypothesis was: {(t.get('hypothesis') or '')[:200]}"})
+                      "body": body})
 
     # ---- review decisions
     if review_out and review_out.get("actions"):

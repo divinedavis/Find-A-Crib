@@ -17,6 +17,8 @@ district from the City Council roster (uvw5-9znb). Writes council_districts.json
 import argparse
 import datetime
 import json
+import re
+import unicodedata
 import urllib.parse
 import urllib.request
 from collections import defaultdict
@@ -32,6 +34,13 @@ CONTACTS = HERE / "hpd_contacts.json"
 OUT = HERE / "council_districts.json"
 
 MEMBERS = "https://data.cityofnewyork.us/resource/uvw5-9znb.json"
+# The Council's own district table is the authority on who currently holds a
+# seat: the Open Data roster (uvw5-9znb) lags a succession, and on 2026-08-23 it
+# carried no term covering today for District 3 while council.nyc.gov already
+# listed Carl Wilson. A page that calls an occupied seat vacant is worse than a
+# page with no name on it, so the roster is the fallback, not the source.
+ROSTER = "https://council.nyc.gov/districts/"
+OUTREACH = HERE / "council_outreach.csv"
 
 # A landlord is only worth naming when the portfolio inside the district is big
 # enough that the number says something about them rather than about one bad
@@ -45,6 +54,53 @@ def fetch_json(url, params=None):
     req = urllib.request.Request(full, headers={"User-Agent": "rentmap-council/1.0"})
     with urllib.request.urlopen(req, timeout=60) as resp:
         return json.loads(resp.read())
+
+
+def _fold(name):
+    """Compare names ignoring accents, case, punctuation and middle initials."""
+    n = unicodedata.normalize("NFKD", name or "")
+    n = "".join(c for c in n if not unicodedata.combining(c)).lower()
+    n = re.sub(r"[^a-z ]", " ", n)
+    parts = [w for w in n.split() if len(w) > 1]
+    return " ".join(parts)
+
+
+def roster_members():
+    """district (int) -> {name, email, borough} scraped from council.nyc.gov.
+
+    One request per build against one page. Returns {} on any failure so the
+    Open Data roster still carries the build.
+    """
+    req = urllib.request.Request(ROSTER, headers={
+        "User-Agent": "findacrib-council/1.0 (+https://findacrib.com)"})
+    try:
+        with urllib.request.urlopen(req, timeout=45) as resp:
+            html = resp.read().decode("utf-8", "replace")
+    except Exception as e:
+        print(f"  ! council.nyc.gov roster unavailable ({e}); using Open Data only")
+        return {}
+    out = {}
+    for row in re.findall(r"<tr[^>]*>(.*?)</tr>", html, re.S):
+        # the per-district link is the one field every row has, Speaker included
+        d = re.search(r"council\.nyc\.gov/district-(\d+)/", row)
+        if not d:
+            continue
+        email = re.search(r"mailto:([^\"?]+)", row)
+        name = re.search(r'aria-label="Send an email to Council Member ([^"]+)"', row)
+        boro = re.search(r'class="sort-borough">([^<]*)<', row)
+        who = (name.group(1).strip() if name else "")
+        # The roster prefixes leadership titles and honorifics onto the name —
+        # "Speaker Julie Menin", "Deputy Speaker Dr. Nantasha Williams". The
+        # pages want the name; the title is not what identifies the seat.
+        who = re.sub(r"^((Deputy\s+)?Speaker|(Majority|Minority)\s+(Leader|Whip)|"
+                     r"Dr\.?|Rev\.?)\s+", "", who, flags=re.I)
+        who = re.sub(r"^(Dr\.?|Rev\.?)\s+", "", who, flags=re.I).strip()
+        out[int(d.group(1))] = {
+            "name": who or None,
+            "email": email.group(1).strip() if email else None,
+            "borough": boro.group(1).strip() if boro else None,
+        }
+    return out
 
 
 def sitting_members(today=None):
@@ -168,6 +224,42 @@ def aggregate(records, by_bbl, members, contacts=None):
     return out
 
 
+def _ordinal(n):
+    if 11 <= n % 100 <= 13:
+        return f"{n}th"
+    return f"{n}{ {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th') }"
+
+
+def write_outreach(data, roster):
+    """The pitch list: one row per district, the office that would cite it, and
+    the number that makes it worth citing.
+
+    Kept out of council_districts.json and off the published pages on purpose —
+    these are public office addresses, and republishing a scraped contact table
+    is not what the district pages are for.
+    """
+    rows = ["district,member,email,borough,buildings,units,open_violations,"
+            "open_class_c,rank_by_open_violations,page,hook"]
+    ranked = sorted(data.values(), key=lambda d: -d["open_violations"])
+    rank = {d["district"]: i + 1 for i, d in enumerate(ranked)}
+    for d in sorted(data.values(), key=lambda x: x["district"]):
+        num = d["district"]
+        info = roster.get(num, {})
+        place = ("the highest of the" if rank[num] == 1 else
+                 "the lowest of the" if rank[num] == len(data) else
+                 f"the {_ordinal(rank[num])} highest of the")
+        hook = (f"District {num} has {d['open_violations']:,} open HPD violations across its "
+                f"{d['buildings']:,} rent-stabilized buildings, {d['open_class_c']:,} of them "
+                f"immediately hazardous - {place} {len(data)} districts")
+        cells = [str(num), d.get("member") or "", info.get("email") or "",
+                 info.get("borough") or "", str(d["buildings"]), str(d["units"]),
+                 str(d["open_violations"]), str(d["open_class_c"]), str(rank[num]),
+                 f"https://findacrib.com/council-district/{num}/", hook]
+        rows.append(",".join('"' + c.replace('"', '""') + '"' for c in cells))
+    OUTREACH.write_text("\n".join(rows) + "\n")
+    print(f"Wrote {OUTREACH.name}: {len(data)} offices")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--check", action="store_true",
@@ -178,8 +270,29 @@ def main():
     contacts = json.loads(CONTACTS.read_text()) if CONTACTS.exists() else {}
     print(f"{len(records):,} buildings, {len(contacts):,} with HPD contacts")
 
-    members = sitting_members()
-    print(f"{len(members)} sitting council members")
+    roster = roster_members()
+    open_data = sitting_members()
+    members = {}
+    for d, info in roster.items():
+        name, alt = info.get("name"), open_data.get(str(d))
+        # The roster page is fresher but writes names without diacritics
+        # ("Elsie Encarnacion"); Open Data spells them. When both name the same
+        # person, keep the spelled version — this tier gets pitched to these
+        # offices, and their own name is the last thing to get wrong.
+        if name and alt and _fold(name) == _fold(alt):
+            name = alt
+        members[str(d)] = name or alt
+    for d, name in open_data.items():          # districts the roster page missed
+        members.setdefault(d, name)
+    named = sum(1 for v in members.values() if v)
+    print(f"{named} sitting council members "
+          f"({len(roster)} from council.nyc.gov, {len(open_data)} from Open Data)")
+    for d in sorted(members, key=int):
+        r, o = roster.get(int(d), {}).get("name"), open_data.get(d)
+        if r and o and _fold(r) != _fold(o):
+            print(f"  district {d}: roster says {r}, Open Data says {o} — using the roster")
+        elif r and not o:
+            print(f"  district {d}: {r} holds the seat; Open Data has no current term")
 
     by_bbl = assign(records)
     print(f"{len(by_bbl):,} buildings fell inside a district "
@@ -205,6 +318,7 @@ def main():
         return
 
     OUT.write_text(json.dumps(payload, separators=(",", ":")))
+    write_outreach(data, roster)
     covered = sum(v["buildings"] for v in data.values())
     print(f"\nWrote {OUT.name}: {len(data)} districts, {covered:,} buildings")
     top = sorted(data.values(), key=lambda v: -v["open_violations"])[:5]

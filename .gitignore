@@ -80,3 +80,7 @@ rerental_history.json
 supabase/.temp/
 founding_sent.json
 housing_connect.json
+
+# Council-office contact list (public office addresses; rebuilt by build_council.py,
+# deliberately not published — see growth/council_outreach.md)
+council_outreach.csv

@@ -1,28 +1,30 @@
 {
   "build": {
-    "at": "2026-08-22T05:40:23+00:00",
+    "at": "2026-08-23T05:40:29+00:00",
     "changed_urls": 0,
-    "date": "2026-08-22",
+    "date": "2026-08-23",
     "deployed": true,
     "new_urls": 0,
     "seo_corpus": {
       "days_old": 0,
-      "written": "2026-08-22"
+      "written": "2026-08-23"
     },
     "seo_pipeline": {
-      "at": "2026-08-22T05:41:39Z",
-      "changed_urls": 0,
-      "corpus_pages": 47640,
+      "at": "2026-08-23T05:41:41Z",
+      "changed_urls": 47638,
+      "code": "synced-2",
+      "corpus_pages": 47643,
       "head": "unknown",
       "hours_ago": 0.0,
       "phase": "finish",
+      "pull": "no-worktree",
       "rc": 0,
-      "started": "2026-08-22T05:40:23Z",
-      "state": "ran clean",
+      "started": "2026-08-23T05:40:29Z",
+      "state": "ran clean (source handed over from the checkout: synced-2)",
       "step": "done"
     },
     "seo_watchdog": {
-      "at": "2026-08-22T05:41:40+00:00",
+      "at": "2026-08-23T05:41:42+00:00",
       "note": "ran refresh_seo.sh to completion",
       "ok": true,
       "ran": true,
@@ -34,7 +36,7 @@
         "ok": true
       },
       "derived_building_facts": {
-        "detail": "comparison block on 0 of 400 sampled building pages (0%) across 47,165 published \u2014 SEO corpus in the docroot was last written 2026-08-21 (1d ago); missing e.g. building/bronx/1-e-198th-st-2033190029/index.html, building/bronx/1036-intervale-ave-2027050007/index.html, building/bronx/1071-tinton-ave-2026400050/index.html",
+        "detail": "comparison block on 0 of 400 sampled building pages (0%) across 47,165 published \u2014 SEO corpus in the docroot was last written 2026-08-22 (1d ago); missing e.g. building/bronx/1-e-198th-st-2033190029/index.html, building/bronx/1036-intervale-ave-2027050007/index.html, building/bronx/1071-tinton-ave-2026400050/index.html",
         "ok": false
       },
       "hub_direct_answers": {

@@ -657,6 +657,203 @@ def city_hub_docs(key, guide_ok=True):
     return docs
 
 
+COUNCIL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            "council_districts.json")
+COUNCIL_SOURCE = ("Council district boundaries: NYC Open Data 872g-cjhh. Sitting members: "
+                  "NYC Open Data uvw5-9znb. Violations and complaints: HPD via NYC Open Data, "
+                  "counted from HPD's own Open/Close flag.")
+
+
+def council_url(d):
+    return f"/council-district/{d}/"
+
+
+def council_district_pages(urls):
+    """A hub per NYC City Council district. Returns the district records used.
+
+    Every other hub axis on this site — borough, neighborhood, ZIP — restates a
+    geography somebody with more authority already publishes. A council district
+    is the one unit of NYC geography where this data answers a question nobody
+    else answers and a named officeholder has a standing reason to cite the
+    answer. That is the difference between a page worth publishing and a page
+    worth linking to.
+
+    Returns [] when council_districts.json is missing (build_council.py owns it),
+    so a checkout without the join still builds the rest of the site.
+    """
+    try:
+        with open(COUNCIL_PATH) as f:
+            data = json.load(f)
+    except Exception as e:
+        print(f"council districts: skipping ({e})")
+        return []
+    districts = data.get("districts") or {}
+    if not districts:
+        return []
+
+    recs = sorted(districts.values(), key=lambda d: d["district"])
+    ranked = sorted(recs, key=lambda d: -d["open_violations"])
+    rank_of = {d["district"]: i + 1 for i, d in enumerate(ranked)}
+    n_d = len(recs)
+
+    for d in recs:
+        num = d["district"]
+        url = council_url(num)
+        canonical = SITE + url
+        member = d.get("member")
+        who = (f"District {num} is represented by {member}."
+               if member else
+               f"District {num} has no sitting member on the Council's own roster.")
+        boros = ", ".join(BORO_NAME.get(b, b) for b in d.get("boroughs") or [])
+        clean = d["buildings_no_open_violations"]
+        rank = rank_of[num]
+
+        facts = [
+            ("Rent-stabilized buildings", f"{d['buildings']:,}"),
+            ("Apartments in them", f"{d['units']:,}" if d["units"] else "—"),
+            ("Median year built", str(d["median_year"]) if d["median_year"] else "—"),
+            ("Open HPD violations", f"{d['open_violations']:,}"),
+            ("Of those, immediately hazardous (class C)", f"{d['open_class_c']:,}"),
+            ("Buildings with no open violation", f"{clean:,} of {d['buildings']:,}"),
+            ("Open HPD complaints", f"{d['open_complaints']:,}"),
+        ]
+        table = "".join(f"<tr><td class='k'>{esc(k)}</td><td>{esc(v)}</td></tr>" for k, v in facts)
+
+        owners = d.get("top_owners") or []
+        if owners:
+            rows = "".join(
+                f"<tr><td>{esc(o['name'])}</td><td>{o['buildings']:,}</td>"
+                f"<td>{o['units']:,}</td><td>{o['open_violations']:,}</td></tr>"
+                for o in owners)
+            owner_html = (
+                f"<h2>The largest violation records in District {num}</h2>"
+                f"<table class='facts'><tr><th>Owner or managing agent (HPD registration)</th>"
+                f"<th>Buildings</th><th>Units</th><th>Open violations</th></tr>{rows}</table>"
+                f"<p class='note'>Ranked by open HPD violations across the stabilized buildings "
+                f"they have registered in this district, counting only owners with three or more. "
+                f"HPD registration names the party responsible for the registration, which is not "
+                f"always the beneficial owner.</p>")
+        else:
+            owner_html = ""
+
+        nbs = (d.get("neighborhoods") or [])[:24]
+        nb_html = ("<h2>Neighborhoods in this district</h2><div class='cols'>"
+                   + "".join(f"<span>{esc(n)}</span>" for n in nbs) + "</div>") if nbs else ""
+
+        per_bld = (d["open_violations"] / d["buildings"]) if d["buildings"] else 0
+        body = (
+            f"<div class='crumbs'><a href='/'>Home</a> › "
+            f"<a href='/council-district/'>Council districts</a></div>"
+            f"<h1>Rent-stabilized housing in NYC Council District {num}</h1>"
+            + answer_block([
+                f"NYC Council District {num} contains {d['buildings']:,} rent-stabilized "
+                f"buildings registered with New York State DHCR"
+                + (f", covering {d['units']:,} apartments" if d["units"] else "") + ".",
+                f"HPD has {d['open_violations']:,} open violations against them, "
+                f"{per_bld:.1f} per building, {d['open_class_c']:,} of them class C — the "
+                f"immediately hazardous grade a landlord has 24 hours to fix.",
+                (f"That is the largest open count of the {n_d} districts; " if rank == 1 else
+                 f"That is the smallest open count of the {n_d} districts; " if rank == n_d else
+                 f"That is the {ordinal(rank)}-largest open count of the {n_d} districts; ")
+                + f"{clean:,} buildings here have none.",
+                who,
+            ])
+            + f"<a class='cta' href='/'>Open the map →</a>"
+            + f"<h2>The numbers</h2><table class='facts'>{table}</table>"
+            + owner_html
+            + nb_html
+            + f"<p><a href='/council-district/'>Compare all {n_d} council districts →</a></p>"
+        )
+        faq = [
+            (f"How many rent-stabilized buildings are in NYC Council District {num}?",
+             f"{d['buildings']:,} buildings in Council District {num} are registered as rent "
+             f"stabilized with New York State DHCR"
+             + (f", covering {d['units']:,} apartments" if d["units"] else "") + "."),
+            (f"How many open HPD violations are there in Council District {num}?",
+             f"HPD has {d['open_violations']:,} open violations against the rent-stabilized "
+             f"buildings in District {num}, {d['open_class_c']:,} of them class C — the "
+             f"immediately hazardous grade. {clean:,} of the {d['buildings']:,} buildings "
+             f"have no open violation at all."),
+        ]
+        if member:
+            faq.append((f"Who represents NYC Council District {num}?",
+                        f"{member}, according to the City Council's own roster of members."))
+        body += faq_html(faq)
+        crumb = breadcrumb([("Home", SITE + "/"),
+                            ("Council districts", SITE + "/council-district/"),
+                            (f"District {num}", canonical)])
+        title = (f"Rent-stabilized buildings in NYC Council District {num}"
+                 + (f" ({member})" if member else "") + " | Find A Crib")
+        desc = (f"{d['buildings']:,} rent-stabilized buildings and {d['open_violations']:,} open "
+                f"HPD violations in NYC Council District {num}"
+                + (f", represented by {member}" if member else "") + ".")
+        write(url.strip("/") + "/index.html",
+              page(title, desc, canonical, body, [crumb, faq_jsonld(faq)],
+                   footer=NYC_FOOTER + " " + COUNCIL_SOURCE))
+        urls.append((canonical, "0.8", "council"))
+
+    # ---- the index: all 51, ranked. This is the page meant to be cited. ----
+    rows = "".join(
+        f"<tr><td>{i + 1}</td><td><a href='{council_url(d['district'])}'>District "
+        f"{d['district']}</a></td><td>{esc(d.get('member') or 'Vacant')}</td>"
+        f"<td>{d['buildings']:,}</td><td>{d['units']:,}</td>"
+        f"<td>{d['open_violations']:,}</td><td>{d['open_class_c']:,}</td></tr>"
+        for i, d in enumerate(ranked))
+    tot_b = sum(d["buildings"] for d in recs)
+    tot_v = sum(d["open_violations"] for d in recs)
+    tot_c = sum(d["open_class_c"] for d in recs)
+    worst, best = ranked[0], ranked[-1]
+    hub_body = (
+        f"<div class='crumbs'><a href='/'>Home</a></div>"
+        f"<h1>Rent-stabilized housing by NYC Council District</h1>"
+        + answer_block([
+            f"The {n_d} New York City Council districts contain {tot_b:,} DHCR-registered "
+            f"rent-stabilized buildings, carrying {tot_v:,} open HPD violations, {tot_c:,} of "
+            f"them class C — the immediately hazardous grade.",
+            f"District {worst['district']} has the most open violations "
+            f"({worst['open_violations']:,} across {worst['buildings']:,} buildings); "
+            f"District {best['district']} the fewest ({best['open_violations']:,}).",
+            "Council district is not a geography the housing portals publish, so these counts "
+            "are not available elsewhere. Every figure is recomputed from the city's own open "
+            "data on each build.",
+        ])
+        + f"<table class='facts'><tr><th>#</th><th>District</th><th>Council member</th>"
+        f"<th>Buildings</th><th>Apartments</th><th>Open violations</th>"
+        f"<th>Class C</th></tr>{rows}</table>"
+        + f"<p class='note'>Ranked by open HPD violations. {COUNCIL_SOURCE} "
+        f"Rebuilt {esc(data.get('generated', ''))}.</p>")
+    hub_faq = [
+        ("Which NYC Council district has the most open HPD violations in its rent-stabilized "
+         "buildings?",
+         f"District {worst['district']}"
+         + (f", represented by {worst['member']}," if worst.get("member") else "")
+         + f" has {worst['open_violations']:,} open HPD violations across its "
+           f"{worst['buildings']:,} rent-stabilized buildings — the most of the {n_d} districts."),
+        ("How many rent-stabilized buildings are there in New York City?",
+         f"{tot_b:,} buildings across the {n_d} council districts are registered as rent "
+         f"stabilized with New York State DHCR."),
+    ]
+    hub_body += faq_html(hub_faq)
+    write("council-district/index.html",
+          page(f"Rent-stabilized buildings and HPD violations by NYC Council District "
+               f"| Find A Crib",
+               f"All {n_d} NYC Council districts ranked by open HPD violations in their "
+               f"rent-stabilized buildings — {tot_b:,} buildings, {tot_v:,} open violations.",
+               SITE + "/council-district/", hub_body,
+               [breadcrumb([("Home", SITE + "/"),
+                            ("Council districts", SITE + "/council-district/")]),
+                faq_jsonld(hub_faq)],
+               footer=NYC_FOOTER + " " + COUNCIL_SOURCE))
+    urls.append((SITE + "/council-district/", "0.9", "council"))
+    return recs
+
+
+def ordinal(n):
+    if 11 <= n % 100 <= 13:
+        return f"{n}th"
+    return f"{n}{ {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th') }"
+
+
 def city_hub_pages(urls):
     """Write every city's hub tier into this build. Returns {city: place count}."""
     built = {}
@@ -677,6 +874,51 @@ def slugify(s):
 
 def esc(s):
     return html.escape(str(s if s is not None else ""))
+
+
+# HPD and DHCR write addresses the way a clerk types them — "200 W 72ND ST" —
+# and Search Console shows people typing the long form: "200 west 72", "228 e 3rd
+# st ny", '"481 4th ave" "brooklyn ny"'. Those are the only non-brand queries this
+# site has ever surfaced for, so the expanded forms belong on the page as visible
+# text rather than left for a search engine to infer from an abbreviation.
+ADDR_EXPAND = {
+    "N": "North", "S": "South", "E": "East", "W": "West",
+    "NE": "Northeast", "NW": "Northwest", "SE": "Southeast", "SW": "Southwest",
+    "ST": "Street", "AVE": "Avenue", "AV": "Avenue", "RD": "Road", "DR": "Drive",
+    "BLVD": "Boulevard", "PL": "Place", "PKWY": "Parkway", "CT": "Court",
+    "LN": "Lane", "TER": "Terrace", "PLZ": "Plaza", "SQ": "Square",
+    "HTS": "Heights", "EXPY": "Expressway", "CIR": "Circle", "BRDG": "Bridge",
+}
+
+
+def address_variants(raw, boro, zipc=None):
+    """Other ways the same address gets typed. Empty when nothing expands.
+
+    Returns at most three, deduped against the address as printed, because the
+    point is to cover the abbreviation a searcher spelled out — not to stack
+    every permutation into a keyword list.
+    """
+    raw = (raw or "").strip()
+    if not raw:
+        return []
+    words = raw.split()
+    expanded = [ADDR_EXPAND.get(w.upper(), w) for w in words]
+    out = []
+    long_form = titlecase_addr(" ".join(expanded))
+    printed = titlecase_addr(raw)
+    if long_form != printed:
+        out.append(long_form)
+    # the form people actually type into Google: address + borough, + ZIP when
+    # we have one. Only one located variant — the same address twice with and
+    # without a ZIP reads as padding, which is what it would be.
+    located = f"{printed}, {boro}, NY" + (f" {zipc}" if zipc else "")
+    out.append(located)
+    seen, uniq = set(), []
+    for v in out:
+        if v and v not in seen and v != printed:
+            seen.add(v)
+            uniq.append(v)
+    return uniq[:2]
 
 
 def titlecase_addr(a):
@@ -706,6 +948,7 @@ main{max-width:880px;margin:0 auto;padding:28px 20px 60px}
 h1{font-size:28px;line-height:1.2;margin:.2em 0 .4em}
 h2{font-size:20px;margin:1.6em 0 .5em}
 .lead{font-size:18px;color:var(--ink2)}
+.aka{font-size:14px;color:var(--ink2);margin:-.4em 0 1em}
 .cta{display:inline-block;background:var(--blue);color:#fff;padding:11px 18px;border-radius:10px;font-weight:600;margin:14px 0}
 .cta:hover{text-decoration:none;opacity:.92}
 table.facts{border-collapse:collapse;width:100%;margin:8px 0 4px;background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
@@ -1440,6 +1683,12 @@ def main():
             bits.append("A unit here was <strong>recently advertised for rent</strong>.")
         lead = " ".join(bits)
 
+        # The abbreviation the city files an address under is often not the one a
+        # searcher types. Rendered as visible text, not a hidden keyword list.
+        aka = address_variants(b.get("a"), boro, b.get("z"))
+        aka_html = (f"<p class='aka'>Also written as {esc(' — or '.join(aka))}.</p>"
+                    if aka else "")
+
         rows = [("Borough", boro), ("Neighborhood", esc(nb)), ("ZIP", b.get("z")),
                 ("Year built", yr), ("Apartments", units),
                 ("Rent-stabilized", "Yes — DHCR registered"),
@@ -1567,6 +1816,8 @@ def main():
                 "name": "HPD-registered operator",
                 "value": operator,
             })
+        if aka:
+            place["alternateName"] = aka
         jsonld = [place, faq, crumb]
 
         body = (f"<div class='crumbs'><a href='/'>Home</a> › "
@@ -1574,6 +1825,7 @@ def main():
                 f"<a href='{nb_url(b['b'], b.get('nb') or boro)}'>{esc(nb)}</a></div>"
                 f"<h1>Is {esc(addr)} rent stabilized?</h1>"
                 f"<p class='lead'>{lead}</p>"
+                + aka_html
                 + (f"<p><span class='badge'>Recently advertised for rent</span></p>" if adv else "")
                 + compare_html
                 + f"<a class='cta' href='/#d={b['bbl']}'>View {esc(addr)} on the map →</a>"
@@ -1708,7 +1960,13 @@ def main():
                f"{len(blds):,} DHCR rent-stabilized buildings by borough and neighborhood, "
                f"or <a href='/'>open the interactive map</a>. See which buildings were "
                f"<a href='/available/'>recently advertised for rent →</a></p>"
-               + VOUCHER_XLINK + hub_links
+               + VOUCHER_XLINK
+               # /buildings/ is one of the few pages a crawler reliably reaches,
+               # so the council tier hangs off it rather than depending on the
+               # homepage nav alone.
+               + "<p><a href='/council-district/'>Rent-stabilized housing and open HPD "
+                 "violations by NYC Council District →</a></p>"
+               + hub_links
                # /buildings/ is a priority-0.9 page and one of the few places a
                # crawler reliably reaches. The other three cities' browse tiers
                # hang off it so they are not dependent on the city guides alone
@@ -1941,6 +2199,10 @@ def main():
     # easier, for a crawler to tell the important pages from the noise.
     city_built = city_hub_pages(urls)
     print("city hubs: " + ", ".join(f"{k}={v}" for k, v in sorted(city_built.items())))
+
+    # ---- NYC Council district tier (see council_district_pages) ----
+    council = council_district_pages(urls)
+    print(f"council districts: {len(council)}")
 
     # ---- sitemaps (sharded by borough, < 50k each) + index ----
     by_boro_urls = defaultdict(list)

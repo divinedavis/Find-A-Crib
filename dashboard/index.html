@@ -1369,6 +1369,28 @@
       {ic:'🎯',v:convRate.toFixed(1)+'%',l:'Sign-up conversion',own:convOwn,bench:convBench,title:convTitle},
       {ic:'💳',v:money(n(S.mrr)),l:comma(S.paying)+' paying'+(n(S.comped)?' · '+comma(S.comped)+' comped':'')+' · MRR',accent:true}
     ];
+    // Social tile. A referrer cannot answer "did TikTok send anyone" — a comment
+    // saying "use findacrib.com" gets typed into the reader's own browser, so
+    // there is no referrer and the visit looks like a bookmark. This counts the
+    // tagged entry paths (/tt, /ig, /yt, /rd -> ?src=) instead, and says so, so
+    // a zero here reads as "nobody used the tagged link" rather than "nobody
+    // came from TikTok".
+    var CH=d.channels||{}, chRows=(CH.rows||[]), tk=null;
+    for(var ci=0;ci<chRows.length;ci++){ if(chRows[ci].key==='tiktok') tk=chRows[ci]; }
+    var chOther=chRows.filter(function(r){ return r.key!=='tiktok' && n(r.visitors)>0; })
+                      .map(function(r){ return esc(r.label)+' '+comma(r.visitors); });
+    tiles.push({
+      ic:'🎵',
+      v:comma(tk?tk.visitors:0),
+      l:'From TikTok · tagged link',
+      own: (tk&&n(tk.visits)) ? comma(tk.visits)+' visits' : 'no visits through findacrib.com/tt yet',
+      bench: chOther.length ? 'Also tagged: '+chOther.join(' · ')
+                            : 'Post findacrib.com/tt, not the bare domain — a typed domain carries no referrer and cannot be attributed',
+      title:'Counts visitors whose first page carried a ?src=tiktok tag, which is what '+
+            'findacrib.com/tt redirects to. Someone who types findacrib.com after reading '+
+            'it in a comment sends no referrer and cannot be told apart from direct traffic, '+
+            'so this is a floor on TikTok, never a total.'
+    });
     el('tiles').innerHTML=tiles.map(function(t){
       return '<div class="tile'+(t.accent?' accent':'')+'"'+(t.title?' title="'+esc(t.title)+'"':'')+'>'+
         '<div class="t-ico">'+t.ic+'</div><div class="t-val">'+t.v+'</div><div class="t-lbl">'+t.l+'</div>'+

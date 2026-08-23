@@ -936,7 +936,64 @@ def dashboard_metrics():
     # reported traffic and revenue but never what was actually shipped for it.
     data["build"] = _fac_build()
     data["search"] = _fac_search()
+    data["channels"] = _fac_channels(data.get("since"))
     return jsonify(data)
+
+
+# Channels worth naming on the card, in the order they are shown. The key is
+# the ?src= value the nginx short link redirects to (/tt -> /?src=tiktok).
+FAC_CHANNELS = [("tiktok", "TikTok"), ("instagram", "Instagram"),
+                ("youtube", "YouTube"), ("reddit", "Reddit")]
+
+
+def _fac_channels(since):
+    """Visitors who arrived through a tagged channel link.
+
+    A referrer cannot answer "did TikTok send anyone": a comment saying "use
+    findacrib.com" gets typed into the reader's own browser, so document.referrer
+    is empty and the visit is indistinguishable from a bookmark. Of the visits
+    banked before this shipped, 2,023 of 2,825 carried no referrer at all and not
+    one carried a TikTok one. What survives is the entry path — nginx serves /tt,
+    /ig, /yt and /rd as 302s to /?src=<channel> and the tracking snippet already
+    records location.search — so this counts tags, not referrers.
+
+    `since` is the boundary the SQL function computed for this range, passed back
+    in rather than re-derived here: two independent readings of "this month" that
+    disagree by a timezone would put a card on the page that contradicts the
+    cards beside it. None means all time.
+
+    Returns {} on any failure — a dashboard that loses one card should drop it,
+    not 500 the page.
+    """
+    q = ("visits?select=path,visitor_id,created_at&path=like.*src%3D*"
+         "&order=created_at.desc&limit=20000")
+    if since:
+        q += f"&created_at=gte.{urllib.parse.quote(str(since))}"
+    try:
+        rows = _rest("GET", q) or []
+    except Exception:
+        return {}
+    seen, visits = {}, {}
+    for r in rows:
+        m = re.search(r"[?&]src=([\w-]+)", r.get("path") or "")
+        if not m:
+            continue
+        c = m.group(1).lower()
+        visits[c] = visits.get(c, 0) + 1
+        seen.setdefault(c, set()).add(r.get("visitor_id"))
+    known = {k for k, _ in FAC_CHANNELS}
+    out = [{"key": k, "label": lbl, "visitors": len(seen.get(k, ())),
+            "visits": visits.get(k, 0)}
+           for k, lbl in FAC_CHANNELS]
+    # Anything tagged by hand that is not in the list still counts, rather than
+    # vanishing into a total that does not add up.
+    for c in sorted(set(visits) - known):
+        out.append({"key": c, "label": c.title(),
+                    "visitors": len(seen.get(c, ())), "visits": visits[c]})
+    return {"rows": out,
+            "visitors": sum(len(v) for v in seen.values()),
+            "visits": sum(visits.values()),
+            "tagged": True}
 
 
 FAC_LAST_RUN = os.environ.get(

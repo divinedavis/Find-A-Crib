@@ -30,8 +30,6 @@ import gzip
 import json
 import os
 import re
-import subprocess
-import sys
 import urllib.request
 from collections import Counter
 
@@ -107,7 +105,8 @@ def main():
     ap.add_argument("--env", default="/root/Find-A-Crib/growth.env")
     args = ap.parse_args()
 
-    since_dt = datetime.datetime.utcnow() - datetime.timedelta(days=args.days)
+    since_dt = (datetime.datetime.now(datetime.timezone.utc)
+                - datetime.timedelta(days=args.days)).replace(tzinfo=None)
     since = since_dt.strftime("%Y-%m-%dT%H:%M:%S")
     print(f"Since {since} ({args.days} days)\n")
 

@@ -200,7 +200,15 @@ HOSTING_PTR = re.compile(
     r"amazonaws|googleusercontent|google\.com$|azure|cloudapp|digitalocean|"
     r"linode|vultr|ovh\.|hetzner|scaleway|scw\.cloud|online\.net|contabo|hostinger|"
     r"leaseweb|datapacket|m247|datacamp|choopa|quadranet|colocrossing|tzulo|"
-    r"servers\.com|hosting|vps|dedicated|cloudapp|tor-exit",
+    r"servers\.com|hosting|vps|dedicated|cloudapp|tor-exit|"
+    # OVH's default reverse DNS for a dedicated server carries the brand
+    # nowhere in it: ns31520396.ip-57-129-136.eu. `ovh\.` above catches their
+    # VPS (vpsNNNN.vps.ovh.net) and nothing else, so on 2026-08-23 an OVH box
+    # in London was one of the day's two "visitors" — it asked for the page
+    # twice in the same second, once as python-httpx and once wearing Firefox,
+    # and only the honest half was filtered. The address-shaped label is the
+    # durable tell.
+    r"\bip-\d+-\d+-\d+\.(?:eu|net)$",
     re.I,
 )
 # Deliberately not matched: "cloud", "relay", "proxy". iCloud Private Relay is

@@ -937,6 +937,7 @@ def dashboard_metrics():
     data["build"] = _fac_build()
     data["search"] = _fac_search()
     data["channels"] = _fac_channels(data.get("since"))
+    data["adtiles"] = _fac_adtiles(data.get("since"))
     return jsonify(data)
 
 
@@ -994,6 +995,117 @@ def _fac_channels(since):
             "visitors": sum(len(v) for v in seen.values()),
             "visits": sum(visits.values()),
             "tagged": True}
+
+
+# The owner's own browsing is not inventory. His signed-in user_id is fixed;
+# his anonymous visitor_ids are learned the same way traffic_report.py learns
+# them — any visitor_id ever seen alongside that user_id. Without this his own
+# testing IS the ad-tile card, the way it was the whole Crease demand tile.
+FAC_OWNER_UID = "af2629f7-1121-4bee-8a2b-cede9318c864"
+
+
+def _fac_owner_visitors():
+    """visitor_ids belonging to the owner, from both logs. () on failure."""
+    ids = set()
+    for tbl in ("events", "visits"):
+        try:
+            rows = _rest("GET", f"{tbl}?select=visitor_id"
+                                f"&user_id=eq.{FAC_OWNER_UID}&limit=10000") or []
+        except Exception:
+            continue
+        ids.update(r.get("visitor_id") for r in rows if r.get("visitor_id"))
+    return ids
+
+
+# The three tile events, and which advertiser each one belongs to.
+AD_TILE_EVENTS = ("tile_impression", "featured_click", "hc_click")
+
+
+def _fac_adtiles(since):
+    """Advertiser-tile inventory: what the re-rental and lottery tiles earned.
+
+    This is the card a marketing agent gets shown when asked to pay for the
+    slot, so the numbers have to survive being read by the buyer. Two rules
+    it does not bend:
+
+    * Impressions are the browser's viewability count (half the tile, one
+      second, once per apartment per session), not renders. The grid rebuilds
+      on every pan, so renders would be an order of magnitude larger and
+      indefensible.
+    * Reach is distinct visitors, and it is reported next to impressions
+      rather than instead of them. "1,200 impressions" from forty people is a
+      different product than from four hundred, and only one of those two
+      numbers says which.
+
+    Impression tracking shipped 2026-08-24; clicks go back to 2026-08-02.
+    `first_impression` is returned so the card can say so instead of showing a
+    CTR built on a denominator that did not exist yet.
+
+    Returns {} on any failure — one card should drop, not the page.
+    """
+    q = ("events?select=event,props,visitor_id,created_at"
+         f"&event=in.({','.join(AD_TILE_EVENTS)})"
+         "&order=created_at.desc&limit=50000")
+    if since:
+        q += f"&created_at=gte.{urllib.parse.quote(str(since))}"
+    try:
+        rows = _rest("GET", q) or []
+    except Exception:
+        return {}
+    mine = _fac_owner_visitors()
+
+    # agent -> {kind, impressions, clicks, reach set, addrs set}
+    by_agent, kinds, first_impr = {}, {}, None
+    for r in rows:
+        if r.get("visitor_id") in mine:
+            continue
+        props = r.get("props") or {}
+        ev = r.get("event")
+        if ev == "tile_impression":
+            kind = props.get("kind") or "rerental"
+            agent = props.get("agent") or "—"
+            ts = r.get("created_at")
+            if ts and (first_impr is None or ts < first_impr):
+                first_impr = ts
+        elif ev == "hc_click":
+            kind, agent = "lottery", "NYC Housing Connect"
+        else:                                     # featured_click
+            kind, agent = "rerental", props.get("agent") or "—"
+        a = by_agent.setdefault(agent, {"agent": agent, "kind": kind,
+                                        "impressions": 0, "clicks": 0,
+                                        "_reach": set(), "_units": set()})
+        k = kinds.setdefault(kind, {"kind": kind, "impressions": 0,
+                                    "clicks": 0, "_reach": set()})
+        field = "impressions" if ev == "tile_impression" else "clicks"
+        a[field] += 1
+        k[field] += 1
+        if r.get("visitor_id"):
+            a["_reach"].add(r["visitor_id"])
+            k["_reach"].add(r["visitor_id"])
+        if props.get("addr"):
+            a["_units"].add(props["addr"])
+
+    def finish(d, extra=()):
+        out = {kk: vv for kk, vv in d.items() if not kk.startswith("_")}
+        out["reach"] = len(d["_reach"])
+        for e in extra:
+            out[e] = len(d["_" + e])
+        # CTR is left null rather than 0 when nothing was measured — a "0.0%"
+        # click rate on zero impressions reads as a tile nobody clicks.
+        out["ctr"] = (100.0 * d["clicks"] / d["impressions"]) if d["impressions"] else None
+        return out
+
+    agents = sorted((finish(v, ("units",)) for v in by_agent.values()),
+                    key=lambda x: (-x["impressions"], -x["clicks"], x["agent"]))
+    return {
+        "agents": agents,
+        "kinds": [finish(kinds[k]) for k in ("rerental", "lottery") if k in kinds],
+        "impressions": sum(a["impressions"] for a in agents),
+        "clicks": sum(a["clicks"] for a in agents),
+        "reach": len(set().union(*[v["_reach"] for v in by_agent.values()]) if by_agent else set()),
+        "advertisers": len([a for a in agents if a["agent"] != "NYC Housing Connect"]),
+        "first_impression": first_impr,
+    }
 
 
 FAC_LAST_RUN = os.environ.get(

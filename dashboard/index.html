@@ -457,6 +457,16 @@
         </div>
         <div class="ref-tiles" id="ref-tiles"></div>
       </div>
+
+      <!-- advertiser tiles: the only inventory somebody else would pay for -->
+      <div class="card mb18" id="sec-tiles">
+        <div class="card-head-row">
+          <div><h2>Advertiser tiles — what a slot is actually worth</h2><div class="card-sub">The re-rental and lottery tiles are the only space on this map somebody else would buy. An impression is counted the way a buyer would check it — half the tile on screen for a full second, once per apartment per session, not once per render, because the grid rebuilds every time you pan. A click is a hand-off to the agent’s own site.</div></div>
+        </div>
+        <div class="ads-tiles" id="tile-tiles"></div>
+        <div id="tile-agents" style="margin-top:18px"></div>
+        <div class="callout" id="tile-callout" style="margin-top:16px"></div>
+      </div>
       </div><!-- /fac-a -->
 
       <!-- ===== NEMO only ===== -->
@@ -862,6 +872,7 @@
       live:'https://findacrib.com', foot:'Since 24 June 2026',
       blocks:['fac-a','fac-b'],
       nav:[['top','▦','Dashboard'],['sec-traffic','◔','Traffic'],['sec-ads','◉','Google Ads'],
+           ['sec-tiles','◫','Advertiser tiles'],
            ['link:/dashboard/users/','☺','Users'],['sec-funnel','⇅','Funnel'],['sec-revenue','$','Revenue model']]
     },
     crease:{
@@ -1407,6 +1418,7 @@
     renderSpark(d.sparkline||[]);
     renderConv(C, convRate);
     renderFacBuild(d.build);
+    renderFacTiles(d.adtiles);
     renderHook(H);
     initRevenue(convRate);
   }
@@ -1452,6 +1464,71 @@
     var paid=n(by.paid_google_ads), freePct=pct(total-paid,total);
     el('returns-callout').innerHTML='<b>'+freePct.toFixed(0)+'% of your returns are free</b> — only '+
       pctS(paid,total)+' came back through a paid ad. Ads bring people in; they come back on their own.';
+  }
+
+  // ---------- advertiser tiles ----------
+  // Written to be read over somebody's shoulder in a pitch, so it refuses to
+  // flatter itself in three specific ways:
+  //   * If impressions started being counted after the clicks did, it says so
+  //     and withholds the CTR rather than dividing by a denominator that did
+  //     not exist for most of the period.
+  //   * Reach sits beside impressions, never instead of it. The same 1,200
+  //     impressions from 40 people and from 400 are different products.
+  //   * An agent with clicks and no impressions yet shows "—", not "0.0%".
+  function renderFacTiles(A){
+    A = A || {};
+    var impr=n(A.impressions), clicks=n(A.clicks), reach=n(A.reach);
+    var ctr = impr ? pctS(clicks,impr,1) : '—';
+
+    el('tile-tiles').innerHTML=[
+      {v:comma(impr), l:'Tile impressions', sub:'half on screen, one second'},
+      {v:comma(reach), l:'People reached', sub:'distinct visitors'},
+      {v:comma(clicks), l:'Clicks to the agent', sub:'hand-offs off this site'},
+      {v:ctr, l:'Click rate', sub:impr?'clicks ÷ impressions':'no impressions banked yet'}
+    ].map(creaseTile).join('');
+
+    var rows=(A.agents||[]);
+    el('tile-agents').innerHTML = rows.length
+      ? rows.map(function(a){
+          var lottery = a.kind==='lottery';
+          var i=n(a.impressions), c=n(a.clicks);
+          var rate = i ? pctS(c,i,1)+' click rate' : (c? c+(c===1?' click':' clicks')+', impressions not yet counted' : 'no activity yet');
+          var desc=[comma(i)+' impressions', comma(n(a.reach))+' people',
+                    n(a.units)?comma(n(a.units))+(n(a.units)===1?' apartment':' apartments'):null, rate]
+                   .filter(Boolean).join(' · ');
+          return '<div class="act-row"><div class="act-l"><div class="act-ico">'+(lottery?'🏛️':'🏢')+'</div>'+
+            '<div><div class="act-name">'+esc(a.agent)+'</div>'+
+            '<div class="act-desc">'+esc(desc)+'</div></div></div>'+
+            '<div class="act-val">'+comma(c)+'</div></div>';
+        }).join('')
+      : '<div class="disclaim">No tile has been seen or clicked yet in this range.</div>';
+
+    // The sentence that goes in the email. It is deliberately built from the
+    // top advertiser rather than the total: nobody is buying "the site", they
+    // are buying the slot their own apartments went into, and the only honest
+    // pitch is what that one slot already did for them for free.
+    var top=rows.filter(function(r){ return r.kind!=='lottery'; })[0];
+    var msg;
+    if(!impr && !clicks){
+      msg='<b>Nothing to sell yet.</b> Impression counting is live on the map — the first numbers land as soon as somebody scrolls a tile into view.';
+    } else if(!impr){
+      msg='<b>'+comma(clicks)+' clicks handed to marketing agents, and the impressions behind them were never counted.</b> '+
+          'Counting shipped 24 August 2026; until a few days of it bank, the click rate here stays blank rather than being '+
+          'divided by a denominator that did not exist.'+
+          (top?' Most of those clicks went to <b>'+esc(top.agent)+'</b>.':'');
+    } else {
+      msg='<b>'+comma(impr)+' viewable impressions reached '+comma(reach)+' renters and produced '+comma(clicks)+' clicks ('+ctr+').</b> '+
+          (top&&n(top.impressions)
+            ? esc(top.agent)+' alone got '+comma(n(top.impressions))+' impressions and '+comma(n(top.clicks))+' clicks — free. '
+            : '')+
+          'That is the number to put in front of an agent: this is what one slot already delivered before anybody paid for it.';
+    }
+    if(A.first_impression){
+      msg+=' <span class="disclaim">Impressions counted since '+
+           new Date(A.first_impression).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+
+           '; clicks go back further.</span>';
+    }
+    el('tile-callout').innerHTML=msg;
   }
 
   // ---------- google ads (first-party ad-click funnel) ----------

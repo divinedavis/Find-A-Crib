@@ -3412,7 +3412,7 @@
     const left = d == null ? '' :
       `<span class="hc-days${urgent ? ' urgent' : ''}">${d === 1 ? 'Closes tomorrow' : 'Closes in ' + d + ' days'}</span>`;
     const sv = (h.lat && h.lng) ? streetviewUrl(h.lat, h.lng) : null;
-    return `<div class="card hc-card">
+    return `<div class="card hc-card" data-hc-name="${esc(h.name || h.address || 'Housing Connect lottery')}" data-hc-boro="${esc(h.borough || '')}" data-hc-href="${esc(h.href || '')}">
       <span class="hc-flag">Housing Connect</span>
       <div class="photo">
         ${sv ? `<img class="streetview" loading="lazy" src="${sv}" alt=""
@@ -3456,6 +3456,84 @@
     const h = hcPool[hcCursor % hcPool.length];
     hcCursor++;
     return hcCardHtml(h);
+  }
+
+  // ---------- advertiser tile impressions ----------
+  // The re-rental and lottery tiles are the only inventory on this page that
+  // somebody else would pay for, and until now the only thing counted about
+  // them was the click. A click rate with no denominator cannot be sold, so
+  // this counts the other half.
+  //
+  // "Rendered" is not "seen". refreshGrid() rebuilds the whole list on every
+  // pan and zoom, and most of what it builds is below the fold — counting
+  // renders would invent tens of thousands of impressions nobody looked at and
+  // make the CTR in the pitch a lie. An impression here is the IAB rule
+  // applied honestly: at least half the tile on screen for a full second,
+  // counted ONCE per apartment per page session, so panning back and forth
+  // does not mint inventory.
+  const IMPR_RATIO = 0.5;               // half the tile visible
+  const IMPR_MS = 1000;                 // ...held for a second
+  const IMPR_MAX = 60;                  // per page session; see below
+  const imprSeen = new Set();           // tile keys already counted
+  const imprTimers = new Map();         // element -> pending dwell timer
+  let imprCount = 0;
+
+  // A tile's identity is what an advertiser is buying — the apartment, not the
+  // DOM node, which is thrown away and rebuilt on every pan.
+  function tileKey(el) {
+    return el.classList.contains('hc-card')
+      ? 'lottery|NYC Housing Connect|' + (el.dataset.hcName || '')
+      : 'rerental|' + (el.dataset.featAgent || '') + '|' + (el.dataset.featAddr || '');
+  }
+
+  const tileObserver = ('IntersectionObserver' in window)
+    ? new IntersectionObserver(entries => {
+        entries.forEach(en => {
+          const el = en.target;
+          if (en.isIntersecting && en.intersectionRatio >= IMPR_RATIO) {
+            if (imprTimers.has(el)) return;
+            imprTimers.set(el, setTimeout(() => {
+              imprTimers.delete(el);
+              countImpression(el);
+            }, IMPR_MS));
+          } else {
+            const t = imprTimers.get(el);
+            if (t) { clearTimeout(t); imprTimers.delete(el); }
+          }
+        });
+      }, { threshold: [0, IMPR_RATIO] })
+    : null;
+
+  function countImpression(el) {
+    const key = tileKey(el);
+    if (imprSeen.has(key)) return;
+    // A page left open on a huge pool could otherwise write a row per
+    // apartment all afternoon. The cap is far above a real session (the pools
+    // are dozens of listings, and a visitor scrolls past a handful) and exists
+    // so a stuck tab cannot run up the free-tier row count.
+    if (imprCount >= IMPR_MAX) return;
+    imprSeen.add(key); imprCount++;
+    tileObserver.unobserve(el);
+    const hc = el.classList.contains('hc-card');
+    track('tile_impression', hc
+      ? { kind: 'lottery', agent: 'NYC Housing Connect',
+          addr: el.dataset.hcName || '', boro: el.dataset.hcBoro || '' }
+      : { kind: 'rerental', agent: el.dataset.featAgent || '',
+          addr: el.dataset.featAddr || '' });
+  }
+
+  // Called after every render. The previous render's nodes are detached but
+  // IntersectionObserver holds them strongly, and a dwell timer armed against
+  // a node that is no longer on the page would count an impression for a tile
+  // that left the screen — so both are torn down first.
+  function watchAdTiles() {
+    if (!tileObserver) return;
+    imprTimers.forEach(t => clearTimeout(t));
+    imprTimers.clear();
+    tileObserver.disconnect();
+    grid.querySelectorAll('.feat-card, .hc-card').forEach(el => {
+      if (!imprSeen.has(tileKey(el))) tileObserver.observe(el);
+    });
   }
 
   // fill any ad slots that were just rendered but not yet initialized
@@ -3545,6 +3623,7 @@
     // panning the map doesn't quietly drop the selection.
     paintCardHighlight();
     initAds();
+    watchAdTiles();
   }
 
   function bedsLabel(arr) {
@@ -3620,6 +3699,14 @@
     if (card.classList.contains('feat-card')) {
       if (e.target.closest('a[data-action="featured"]'))
         track('featured_click', { agent: card.dataset.featAgent, addr: card.dataset.featAddr });
+      return;
+    }
+    // A lottery tile is the same kind of hand-off and had no counter at all,
+    // so every Housing Connect application started here was invisible.
+    if (card.classList.contains('hc-card')) {
+      if (e.target.closest('a[data-action="hc"]'))
+        track('hc_click', { agent: 'NYC Housing Connect', addr: card.dataset.hcName,
+                            boro: card.dataset.hcBoro });
       return;
     }
     const bbl = card.dataset.bbl;

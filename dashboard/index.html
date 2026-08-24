@@ -794,6 +794,7 @@
     return h ? h+'h '+m+'m' : m+'m '+(sec<10?'0':'')+sec+'s';
   }
   function el(id){ return document.getElementById(id); }
+  function plural(v,word){ return comma(n(v))+' '+word+(Math.round(n(v))===1?'':'s'); }
 
   // ---------- theme ----------
   // Saved on the profile (auth user_metadata), so the choice follows the
@@ -1815,10 +1816,14 @@
       var plates=(a.plates||[]).filter(function(p){ return n(p.scans)||n(p.sessions); });
       var plateRows = plates.length
         ? plates.map(function(p){
-            var d=[comma(n(p.scans))+' scans', comma(n(p.sessions))+' sessions',
+            var d=[plural(p.scans,'scan'), plural(p.sessions,'session'),
                    comma(n(p.engaged))+' engaged'].join(' · ');
+            // The plate cut before the codes existed answers on /c with no
+            // suffix; printing it as "/c/" would name a path that 404s.
+            var url = p.code==='counter' ? 'findacrib.com/c'
+                                         : 'findacrib.com/c/'+p.code;
             return '<div class="act-row"><div class="act-l"><div class="act-ico">🏷️</div>'+
-              '<div><div class="act-name">findacrib.com/c/'+esc(p.code==='counter'?'':p.code)+'</div>'+
+              '<div><div class="act-name">'+esc(url)+'</div>'+
               '<div class="act-desc">'+esc(d)+'</div></div></div>'+
               '<div class="act-val">'+comma(n(p.scans))+'</div></div>';
           }).join('')

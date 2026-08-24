@@ -832,7 +832,9 @@
       position: absolute; top: 118px; left: 8px; background: rgba(0,0,0,0.72); color: #fff;
       font-size: 11px; font-weight: 700; padding: 4px 9px; border-radius: 6px; z-index: 2;
     }
-    .card-body { padding: 12px 14px 14px; }
+    .card-body { padding: 12px 14px 14px; cursor: pointer; }
+    /* the card reads as one tappable surface; the photo is part of it */
+    .card-photo { cursor: pointer; }
     .card-price { font-size: 20px; font-weight: 800; letter-spacing: -.5px; color: var(--ink); }
     .card-sub { font-size: 13px; color: var(--ink-2); margin-top: 2px; }
     .card-addr { font-size: 14px; font-weight: 600; margin-top: 6px; color: var(--ink); }
@@ -4052,6 +4054,11 @@
       return;
     }
     if (act === 'details') { openDetail(rec, listed); return; }
+    // The whole card is the tap target, not just the Details button — on a phone
+    // the photo and the address are the biggest things on screen and the button
+    // is the smallest. Anything that is already a control (close, save, the
+    // StreetEasy link) is handled above and excluded here.
+    if (!e.target.closest('a,button')) { openDetail(rec, listed); return; }
   });
   // click on the dimmed backdrop (outside the popup) -> back to the previous screen
   detailSheet.addEventListener('click', e => { if (e.target === detailSheet) closeDetail(); });

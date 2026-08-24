@@ -278,6 +278,19 @@
   .ads-tile .a-val{font-size:21px;font-weight:700;letter-spacing:-.3px;line-height:1.1}
   .ads-tile .a-lbl{font-size:12.5px;color:var(--ink2);margin-top:4px}
   .ads-tile .a-sub{font-size:11.5px;color:var(--muted);margin-top:2px}
+  /* counter signage: one block per question a plate can ask */
+  .sg-arm{border:1px solid var(--border2);border-radius:14px;padding:16px 17px;margin-bottom:16px;background:var(--bg)}
+  .sg-arm:last-child{margin-bottom:0}
+  .sg-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  .sg-q{font-size:16px;font-weight:700;letter-spacing:-.3px}
+  .sg-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;color:var(--muted);white-space:nowrap}
+  .sg-why{font-size:12.5px;color:var(--ink2);line-height:1.55;margin-top:13px}
+  .sg-sub{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin:16px 0 8px}
+  .sg-v{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border2);font-size:12.5px;line-height:1.5}
+  .sg-v:last-child{border-bottom:none}
+  .sg-v-n{flex:0 0 34%;font-weight:600}
+  .sg-v-w{flex:1;color:var(--muted)}
+  @media(max-width:700px){.sg-v{display:block}.sg-v-n{margin-bottom:2px}}
   .ref-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
   @media(max-width:700px){.ref-tiles{grid-template-columns:1fr}}
 
@@ -466,6 +479,15 @@
         <div class="ads-tiles" id="tile-tiles"></div>
         <div id="tile-agents" style="margin-top:18px"></div>
         <div class="callout" id="tile-callout" style="margin-top:16px"></div>
+      </div>
+
+      <!-- printed counter plates: which question earns the scan -->
+      <div class="card mb18" id="sec-signage">
+        <div class="card-head-row">
+          <div><h2>Counter signage — which question earns the scan</h2><div class="card-sub">Two printed plates asking two different things, each with its own short link, so a scan can be traced back to the plate it came off. Scans are counted by nginx at the redirect, which catches the people who pointed a camera and then closed the tab; sessions and engagement are counted on the site, which cannot see them. The headline earns the scan — the site earns everything after it.</div></div>
+        </div>
+        <div id="sg-arms"></div>
+        <div class="callout" id="sg-callout" style="margin-top:16px"></div>
       </div>
       </div><!-- /fac-a -->
 
@@ -1419,6 +1441,7 @@
     renderConv(C, convRate);
     renderFacBuild(d.build);
     renderFacTiles(d.adtiles);
+    renderFacSignage(d.signage);
     renderHook(H);
     initRevenue(convRate);
   }
@@ -1757,6 +1780,73 @@
     el('ads-callout').innerHTML = sg>0
       ? '<b>'+comma(sg)+' of '+comma(v)+' ad visitors signed up ('+pctS(sg,v)+').</b> Compare that to your overall sign-up rate to see if ads pull their weight.'
       : '<b>0 of '+comma(v)+' ad visitors have signed up.</b> They engage — '+pctS(op,v)+' open a listing, '+pctS(ret,v)+' come back — but ad clicks aren’t converting to accounts yet. (Sign-up attribution is lossy, so the true number may be slightly above 0.)';
+  }
+
+  // ---------- counter signage ----------
+  // The card exists to stop a decision being made too early. Two questions are
+  // on plates, both of them true, and the temptation is to read whichever is
+  // ahead this week as the winner — on counts where a single busy laundromat
+  // moves the whole arm. So the rate is withheld under a floor, the verdict
+  // sentence says outright when nothing is callable, and the venue list sits
+  // underneath because the real lever is which room the plate is standing in,
+  // not which sentence is on it.
+  function renderFacSignage(S){
+    S = S || {};
+    var arms = S.arms || [];
+    if(!arms.length){ el('sec-signage').classList.add('hidden'); return; }
+    var floor = n(S.rate_floor)||30;
+
+    el('sg-arms').innerHTML = arms.map(function(a){
+      var scans=n(a.scans), sess=n(a.sessions), eng=n(a.engaged);
+      var hasRate = a.rate !== null && a.rate !== undefined;
+      // "0%" off four scans is a number that looks like a finding. A dash and
+      // the reason is the honest render.
+      var rateSub = hasRate ? 'engaged ÷ scans — what the question is worth'
+                  : (scans ? comma(scans)+' scans so far — needs '+floor+' to divide by'
+                           : (S.log ? 'no scans through this plate yet'
+                                    : 'scan log not readable on the server'));
+      var tiles=[
+        {v:comma(scans), l:'Scans', sub:'redirects through the short link'},
+        {v:comma(sess),  l:'Sessions', sub:'reached the site'},
+        {v:comma(eng),   l:'Engaged', sub:'searched, opened or saved a building'},
+        {v:hasRate ? a.rate.toFixed(1)+'%' : '—', l:'Engaged per scan', sub:rateSub}
+      ].map(creaseTile).join('');
+
+      var plates=(a.plates||[]).filter(function(p){ return n(p.scans)||n(p.sessions); });
+      var plateRows = plates.length
+        ? plates.map(function(p){
+            var d=[comma(n(p.scans))+' scans', comma(n(p.sessions))+' sessions',
+                   comma(n(p.engaged))+' engaged'].join(' · ');
+            return '<div class="act-row"><div class="act-l"><div class="act-ico">🏷️</div>'+
+              '<div><div class="act-name">findacrib.com/c/'+esc(p.code==='counter'?'':p.code)+'</div>'+
+              '<div class="act-desc">'+esc(d)+'</div></div></div>'+
+              '<div class="act-val">'+comma(n(p.scans))+'</div></div>';
+          }).join('')
+        : '<div class="disclaim">No plate carrying this question has been scanned yet.</div>';
+
+      var venues=(a.venues||[]).map(function(v){
+        return '<div class="sg-v"><div class="sg-v-n">'+esc(v.place)+'</div>'+
+               '<div class="sg-v-w">'+esc(v.why)+'</div></div>';
+      }).join('');
+
+      return '<div class="sg-arm">'+
+        '<div class="sg-head"><div class="sg-q">“'+esc(a.headline)+'”</div>'+
+        '<div class="sg-code">'+esc(a.code)+'</div></div>'+
+        '<div class="ads-tiles">'+tiles+'</div>'+
+        '<div class="sg-why">'+esc(a.why)+'</div>'+
+        '<div class="sg-sub">Plates in the field</div>'+plateRows+
+        '<div class="sg-sub">Where this one belongs — '+esc(a.audience)+'</div>'+venues+
+        '</div>';
+    }).join('');
+
+    el('sg-callout').innerHTML = '<b>'+esc(S.verdict||'')+'</b>'+
+      (S.truncated ? ' <span style="opacity:.75">Session counts hit the feed’s '+
+        'page limit and are floors, not totals — the scan counts above them are '+
+        'complete.</span>' : '')+
+      (S.log ? '' : ' <span style="opacity:.75">Scans are read from '+
+        'findacrib-qr.log, which nginx has not written yet — sessions below are '+
+        'still counted from the site, so a zero here is a missing log, not a '+
+        'missing scan.</span>');
   }
 
   // ---------- referrals ----------

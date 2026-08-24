@@ -13,7 +13,7 @@ reads are fast and need no DB round-trip. The DB is used only for auth/metering.
 
 Run:  DATA_DIR=/var/www/rent-map gunicorn -w 2 -b 127.0.0.1:8010 api_server:app
 """
-import base64, datetime, hashlib, hmac, json, os, re, secrets, threading, time, urllib.request, urllib.error, urllib.parse
+import base64, datetime, glob, gzip, hashlib, hmac, json, os, re, secrets, threading, time, urllib.request, urllib.error, urllib.parse
 from collections import defaultdict, deque
 from flask import Flask, jsonify, request, g
 
@@ -938,6 +938,7 @@ def dashboard_metrics():
     data["search"] = _fac_search()
     data["channels"] = _fac_channels(data.get("since"))
     data["adtiles"] = _fac_adtiles(data.get("since"))
+    data["signage"] = _fac_signage(data.get("since"))
     return jsonify(data)
 
 
@@ -1187,6 +1188,327 @@ FAC_GSC_PAGES = os.environ.get(
 FAC_INDEX_STATUS = os.environ.get(
     "FAC_INDEX_STATUS", "/root/Find-A-Crib/growth/index_status.json")
 
+
+# ---------------------------------------------------------------------------
+# Counter signage: which question on a printed plate earns the scan
+# ---------------------------------------------------------------------------
+# nginx writes one line per QR redirect into its own log rather than leaving
+# them in the site log. Two reasons, and the second is the one that matters:
+# the file stays small enough to read on the request path, and it counts the
+# people who pointed a camera at a plate and then closed the tab before any
+# JavaScript ran. Those never reach `visits`, and they are exactly the
+# difference between "the sign got read" and "the site was worth staying on" —
+# the two things this card has to tell apart.
+FAC_QR_LOG = os.environ.get("FAC_QR_LOG", "/var/log/nginx/findacrib-qr.log")
+
+# The questions a plate can ask. The key is the FIRST CHARACTER of the plate
+# code, so /c/a3 is the third plate asking question A and the arm falls out of
+# the tag with no registry to keep in sync — putting a new plate on a counter
+# changes nothing in this file, only inventing a new QUESTION does.
+#
+# The venue lists are the point of the split. Both questions are true and both
+# are answered by this site; they differ in who is standing at the counter.
+# Question A talks to somebody who already has a landlord, which at a bodega
+# counter is everyone. Question B talks to somebody mid-move, which is a few
+# percent of any given room and close to all of a self-storage lobby. So the
+# copy is not really an A/B test of words — it is a test of whether a room is
+# full of residents or full of movers, and the words follow the room.
+SIGNAGE_ARMS = [
+    {
+        "key": "a",
+        "headline": "Is your building rent-stabilized?",
+        "code": "findacrib.com/c/a<n>",
+        "audience": "People who already live here",
+        "why": ("Everyone standing at a counter has a landlord; roughly one "
+                "renter household in ten moves in a year, so on any given day "
+                "almost nobody in the room is mid-search. This question also "
+                "has money behind it — a stabilized unit means a capped "
+                "increase, a renewal right, and sometimes an overcharge "
+                "refund — which is what makes somebody pull a phone out for a "
+                "sign on a counter. It is answerable for 47,198 buildings."),
+        "venues": [
+            {"place": "Laundromats",
+             "why": "30–60 minutes of forced dwell, and a building with in-unit laundry never sends anyone here — the room is renters by construction"},
+            {"place": "Bodegas, delis and corner stores",
+             "why": "Daily repeat trade from a three-block radius; the same plate is seen twenty times, which is how a counter sign actually works"},
+            {"place": "Barbershops, hair and nail salons",
+             "why": "Long waits, neighbourhood regulars, and a room where people already talk about their landlords"},
+            {"place": "Check cashing, money transfer and tax preparers",
+             "why": "Renter-heavy, and the customer is already in a paperwork-about-money frame when they read it"},
+            {"place": "Pharmacy pickup counters",
+             "why": "A ten-minute wait facing a counter, in a chain that serves the same blocks every day"},
+            {"place": "Repair counters — phone, shoe, tailoring, dry cleaning",
+             "why": "The transaction is drop-off then pickup, so the plate gets two viewings per customer"},
+            {"place": "Public library branches and community centres",
+             "why": "Free counter space, a civic question, and staff who will say yes without being sold to"},
+            {"place": "Tenant associations, mutual-aid tables, senior centres",
+             "why": "The highest-intent room there is, and the one most likely to pass the link on rather than just scan it"},
+            {"place": "Immigrant-serving groceries, halal butchers, bakeries",
+             "why": "Stabilized status is most often unknown, and most often worth money, exactly where tenants are least likely to have been told"},
+        ],
+    },
+    {
+        "key": "b",
+        "headline": "Find rent-stabilized apartments",
+        "code": "findacrib.com/c/b<n>",
+        "audience": "People who are moving right now",
+        "why": ("A promise instead of a question, and it only beats A where "
+                "the room is already mid-move — then the share of people it "
+                "speaks to goes from a few percent to most of the counter. "
+                "It is backed by live listings rather than the whole "
+                "stabilized set, so it is a thinner promise: put it where the "
+                "thinness does not matter because the person is searching "
+                "anyway."),
+        "venues": [
+            {"place": "Self-storage front desks",
+             "why": "Nobody rents a unit except side-on to a move; the lobby is the purest mid-move room in the city"},
+            {"place": "Truck rental and moving supply counters",
+             "why": "Boxes and a van are bought days before a lease starts — and often while the next place is still undecided"},
+            {"place": "Mailbox rental, packing and shipping stores",
+             "why": "A change-of-address counter is a move in progress, stated out loud"},
+            {"place": "Furniture and mattress shops",
+             "why": "Bought for a specific new room, usually in the two weeks either side of the move"},
+            {"place": "Hardware stores — key cutting, paint, curtain rails",
+             "why": "The errand list of somebody who just got keys, or is about to"},
+            {"place": "Coffee and copy shops next to a campus, August–September",
+             "why": "A dense, seasonal, apartment-hunting population that turns over completely every year"},
+            {"place": "Coworking desks and job centres",
+             "why": "A new job in a new borough is the most common reason a search starts at all"},
+            {"place": "Any counter that already has an apartment-flyer board",
+             "why": "The room has told you what it is for. Put the plate beside the board, not on the other wall"},
+        ],
+    },
+]
+
+# Under this many scans a rate is not printed. A count carries roughly +/- 2*sqrt(N),
+# so 25 scans against 40 is an overlapping pair of intervals and not a result;
+# calling one question the winner off numbers that small is the single easiest
+# way to engrave the wrong plate.
+QR_RATE_FLOOR = 30
+QR_CALL_FLOOR = 100
+
+# The whole scan history is read on every dashboard load, so it is capped.
+# A file this size is a fault — a redirect loop, a crawler, someone hammering
+# the short link — not a counter that got busy, and the cap keeps that fault
+# from turning into a slow dashboard rather than pretending to measure it.
+QR_LOG_MAX_LINES = 200000
+# PostgREST answers with at most one page whatever the limit says, so a tagged
+# feed that reaches the page size has been truncated and the counts under it
+# are floors. Detected rather than assumed absent: the same silent truncation
+# on a $limit that looked generous has cost this project a day before.
+QR_PAGE_SIZE = 1000
+
+_QR_TAG = re.compile(r"[?&]src=qr-([a-z0-9]{1,8})")
+# One line of findacrib-qr.log: $time_iso8601 $status $request_uri "$http_user_agent"
+_QR_LINE = re.compile(r'^(\S+) (\d{3}) (\S+) "([^"]*)"')
+# A link preview fetcher and a command-line client are not somebody holding a
+# phone up to a plate. curl is named because it is what the short link gets
+# tested with, and a test must never look like a scan.
+_QR_BOT = re.compile(r"bot|crawl|spider|slurp|headless|preview|curl|wget|"
+                     r"python|okhttp|libwww|scan|monitor", re.I)
+
+
+def _qr_plate(path):
+    """The plate code out of a tagged path, or None."""
+    m = _QR_TAG.search(path or "")
+    return m.group(1) if m else None
+
+
+def _qr_arm(plate):
+    """Which question a plate code asks.
+
+    The engraved plate that predates the codes tags itself `qr-counter` and
+    asks question A. It keeps its own name rather than being renamed `a0`,
+    because the code is cut into the plastic and cannot be changed; the mapping
+    lives here instead.
+    """
+    if not plate:
+        return None
+    if plate == "counter":
+        return "a"
+    return plate[0] if plate[0].isalpha() else None
+
+
+def _qr_scans(since):
+    """Redirects through /c and /c/<code>, by plate, from nginx's own log.
+
+    Returns ({plate: count}, log_present). An unreadable or absent log gives
+    ({}, False) rather than zeros: "no scan log" and "no scans" are different
+    findings, and the card says which one it is.
+    """
+    paths = [FAC_QR_LOG] + sorted(glob.glob(FAC_QR_LOG + ".*"))
+    out, seen_file, lines = {}, False, 0
+    for p in paths:
+        if lines > QR_LOG_MAX_LINES:
+            break
+        try:
+            f = gzip.open(p, "rt", errors="replace") if p.endswith(".gz") \
+                else open(p, "r", errors="replace")
+        except Exception:
+            continue
+        seen_file = True
+        try:
+            with f:
+                for line in f:
+                    lines += 1
+                    if lines > QR_LOG_MAX_LINES:
+                        break
+                    m = _QR_LINE.match(line)
+                    if not m:
+                        continue
+                    ts, _status, uri, ua = m.groups()
+                    if _QR_BOT.search(ua):
+                        continue
+                    if since and _iso(ts) and _iso(ts) < _iso(str(since)):
+                        continue
+                    # /c -> the original engraved plate; /c/<code> -> a numbered one
+                    u = uri.split("?")[0]
+                    code = "counter" if u.rstrip("/") == "/c" else u.rsplit("/", 1)[-1]
+                    if not re.fullmatch(r"[a-z0-9]{1,8}", code or ""):
+                        continue
+                    out[code] = out.get(code, 0) + 1
+        except Exception:
+            continue
+    return out, seen_file
+
+
+def _iso(s):
+    """A comparable UTC datetime out of an ISO-ish string, or None.
+
+    The two sides being compared come from different places — nginx writes
+    $time_iso8601, Postgres hands back whatever the range function computed —
+    so they are parsed rather than string-compared. A timestamp that will not
+    parse counts the row IN: losing a scan is worse than counting one twice on
+    a card whose whole problem is small numbers.
+    """
+    if not s:
+        return None
+    t = str(s).strip().replace(" ", "T")
+    t = re.sub(r"(\.\d+)?(Z|[+-]\d{2}:?\d{2})?$", "", t)[:19]
+    try:
+        return datetime.datetime.strptime(t, "%Y-%m-%dT%H:%M:%S")
+    except Exception:
+        try:
+            return datetime.datetime.strptime(t[:10], "%Y-%m-%d")
+        except Exception:
+            return None
+
+
+# Events that mean the scan went somewhere. A tile impression is not on the
+# list: it fires because the page rendered, not because anybody did anything,
+# so counting it would make every bounce look like an engaged visit.
+QR_ENGAGED = ("search", "building_view", "save", "outbound",
+              "report_checkout_start", "violations_open", "signin")
+
+
+def _fac_signage(since):
+    """The counter-plate card: scans, sessions and engagement per question.
+
+    Three numbers per arm and they come from two different systems on purpose:
+
+      scans     nginx redirects. Counts the camera, including the people who
+                never waited for the page. This is what the HEADLINE earns.
+      sessions  distinct visitor_id carrying the tag. Counts arrival.
+      engaged   distinct visitor_id who then searched, opened a building or
+                saved one. This is what the SITE earns.
+
+    The verdict is engaged/scans, not scans, because a question that pulls
+    scans out of people with no interest in the answer is worse than one that
+    pulls fewer. Nothing is called until an arm banks QR_CALL_FLOOR scans.
+
+    Returns {} on failure — a dashboard that loses one card should drop it.
+    """
+    arms = {}
+    for a in SIGNAGE_ARMS:
+        arms[a["key"]] = dict(a, scans=0, sessions=0, engaged=0,
+                              rate=None, plates={})
+
+    scans, log_present = _qr_scans(since)
+    for code, cnt in scans.items():
+        k = _qr_arm(code)
+        if k not in arms:
+            continue
+        arms[k]["scans"] += cnt
+        arms[k]["plates"].setdefault(code, {"code": code, "scans": 0,
+                                            "sessions": 0, "engaged": 0})
+        arms[k]["plates"][code]["scans"] += cnt
+
+    # `qr-` rather than `src=` as the LIKE needle: an `=` inside a PostgREST
+    # filter value is a parse hazard and the tag is the only place "qr-" ever
+    # appears in a path.
+    sess, eng, truncated = {}, {}, False
+    try:
+        q = "visits?select=path,visitor_id&path=like.*qr-*&limit=20000"
+        if since:
+            q += f"&created_at=gte.{urllib.parse.quote(str(since))}"
+        rows = _rest("GET", q) or []
+        truncated = truncated or len(rows) >= QR_PAGE_SIZE
+        for r in rows:
+            code = _qr_plate(r.get("path"))
+            if code:
+                sess.setdefault(code, set()).add(r.get("visitor_id"))
+        q = "events?select=path,visitor_id,event&path=like.*qr-*&limit=20000"
+        if since:
+            q += f"&created_at=gte.{urllib.parse.quote(str(since))}"
+        rows = _rest("GET", q) or []
+        truncated = truncated or len(rows) >= QR_PAGE_SIZE
+        for r in rows:
+            code = _qr_plate(r.get("path"))
+            if not code:
+                continue
+            # An event is also proof of arrival, and it is the more reliable
+            # proof: `visits` is one insert at the end of a long async boot and
+            # a small share of sessions never land one, while an event fires
+            # off whatever the visitor actually did.
+            sess.setdefault(code, set()).add(r.get("visitor_id"))
+            if r.get("event") in QR_ENGAGED:
+                eng.setdefault(code, set()).add(r.get("visitor_id"))
+    except Exception:
+        pass
+
+    for code in set(sess) | set(eng):
+        k = _qr_arm(code)
+        if k not in arms:
+            continue
+        p = arms[k]["plates"].setdefault(code, {"code": code, "scans": 0,
+                                                "sessions": 0, "engaged": 0})
+        p["sessions"] = len(sess.get(code, ()))
+        p["engaged"] = len(eng.get(code, ()))
+        arms[k]["sessions"] += p["sessions"]
+        arms[k]["engaged"] += p["engaged"]
+
+    out = []
+    for a in SIGNAGE_ARMS:
+        arm = arms[a["key"]]
+        if arm["scans"] >= QR_RATE_FLOOR:
+            arm["rate"] = round(100.0 * arm["engaged"] / arm["scans"], 1)
+        arm["plates"] = sorted(arm["plates"].values(),
+                               key=lambda p: (-p["scans"], p["code"]))
+        out.append(arm)
+
+    # The call, in one sentence, so the card cannot be read as a scoreboard
+    # before it is one.
+    ready = [a for a in out if a["scans"] >= QR_CALL_FLOOR]
+    if len(ready) < 2:
+        short = min((a["scans"] for a in out), default=0)
+        verdict = ("Not callable yet. Each question needs about "
+                   f"{QR_CALL_FLOOR} scans before the two can be told apart — "
+                   f"the thinner arm has {short}. A count carries roughly "
+                   "±2√N, so 25 scans against 40 is the same number twice.")
+    else:
+        best = max(out, key=lambda a: (a["rate"] or 0))
+        other = [a for a in out if a is not best][0]
+        gap = (best["rate"] or 0) - (other["rate"] or 0)
+        verdict = (f"“{best['headline']}” is converting {best['rate']}% of "
+                   f"scans against {other['rate']}%. " +
+                   ("That gap is inside the noise on these counts — keep both "
+                    "running." if gap < 5 else
+                    "Both arms have cleared the floor, so this is a real "
+                    "difference, not a coin flip."))
+
+    return {"arms": out, "log": log_present, "verdict": verdict,
+            "truncated": truncated,
+            "rate_floor": QR_RATE_FLOOR, "call_floor": QR_CALL_FLOOR}
 
 def _fac_search():
     """Search Console and indexing, for the Find A Crib tab.

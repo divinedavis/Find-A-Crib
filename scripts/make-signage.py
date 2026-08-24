@@ -55,8 +55,10 @@ once at 300dpi proves little more.
 from __future__ import annotations
 
 import pathlib
+import re
 import subprocess
 import sys
+import tempfile
 
 import segno
 
@@ -212,11 +214,85 @@ def svg(w: float, h: float, body: str, title: str) -> str:
 # --------------------------------------------------------------------------
 # the piece, twice
 # --------------------------------------------------------------------------
-HEAD_1 = "Is your building"
-HEAD_2 = "rent-stabilized?"
+# The two questions a plate can ask, keyed by the letter that starts its code.
+# A plate coded a3 asks question A and redirects through findacrib.com/c/a3, so
+# the dashboard can separate the two without a registry: the arm is the first
+# character of the tag. Both questions are true and both are answered by this
+# site; what differs is who is standing at the counter. A talks to somebody who
+# already has a landlord, which in a laundromat is everybody. B talks to
+# somebody mid-move, which is a few percent of most rooms and nearly all of a
+# self-storage lobby.
+ARMS = {
+    "a": ("Is your building", "rent-stabilized?"),
+    "b": ("Find rent-stabilized", "apartments"),
+}
+
+# Largest headline the plate is drawn at, and the ink margin the longest line
+# must leave on each side. The size is a CEILING, not a constant: "Find
+# rent-stabilized" is four characters longer than "Is your building" and
+# overruns a 4in plate at 27pt. Silently, too — SVG text does not wrap or
+# complain, it just walks off the artboard, and the first anyone would know is
+# a box of plates with a clipped word on them.
+HEAD_MAX = 27.0
+HEAD_MARGIN_IN = 0.30
 
 
-def counter_plate(url: str, shown: str, cut: str = CUT) -> tuple[str, float, float, dict]:
+def ink_width_in(line: str, size: float, weight: int, spacing: float) -> float:
+    """Width of one line's actual ink, in inches, measured off a render.
+
+    Measured rather than estimated from an advance-width table, and measured
+    with rsvg-convert specifically, because that is the renderer that produces
+    the proof the shop is sent — a table would be describing a font this
+    pipeline may not even be resolving to. Falls back to a deliberately
+    pessimistic estimate when the imaging libraries are absent, so a machine
+    without them under-fills the plate instead of overrunning it.
+    """
+    try:
+        import cv2
+        import numpy as np
+    except ImportError:
+        return len(line) * 0.62 * size / PT
+    w, h = 8 * PT, 2 * size
+    body = text(4 * PT, 1.4 * size, line, size, fill=BLACK,
+                weight=weight, spacing=spacing)
+    with tempfile.TemporaryDirectory() as td:
+        svg_p = pathlib.Path(td) / "m.svg"
+        png_p = pathlib.Path(td) / "m.png"
+        svg_p.write_text(svg(w, h, body, "measure"))
+        subprocess.run(["rsvg-convert", "-f", "png", "--dpi-x", "150",
+                        "--dpi-y", "150", "-o", str(png_p), str(svg_p)],
+                       check=True)
+        img = cv2.imread(str(png_p), cv2.IMREAD_UNCHANGED)
+        if img is None:
+            return len(line) * 0.62 * size / PT
+        if img.shape[2] == 4:
+            a = img[:, :, 3:4] / 255.0
+            img = (img[:, :, :3] * a + 255 * (1 - a)).astype(np.uint8)
+        dark = (img.min(axis=2) < 128)
+        cols = np.where(dark.any(axis=0))[0]
+        if not len(cols):
+            return 0.0
+        return float(cols[-1] - cols[0] + 1) / 150.0
+
+
+def fit_head(lines, plate_w: float, spacing: float) -> float:
+    """The largest size at or below HEAD_MAX where every line still fits.
+
+    Steps down in whole points rather than solving for a size, because the
+    number ends up printed on a permanent object and a round one is easier to
+    check against a physical sample with a ruler.
+    """
+    avail = plate_w / PT - 2 * HEAD_MARGIN_IN
+    size = HEAD_MAX
+    while size > 12:
+        if all(ink_width_in(l, size, 700, spacing) <= avail for l in lines):
+            return size
+        size -= 1.0
+    raise SystemExit(f"headline {lines!r} will not fit a {plate_w / PT:.0f}in plate")
+
+
+def counter_plate(url: str, shown: str, lines=None,
+                  cut: str = CUT) -> tuple[str, float, float, dict]:
     """4 x 6in plate: one question and the code that answers it.
 
     Everything else came off — the wordmark, the supporting line, the "scan
@@ -247,9 +323,10 @@ def counter_plate(url: str, shown: str, cut: str = CUT) -> tuple[str, float, flo
     # checkerboard that could hide a stray mark.
     b = [rect(0, 0, w, h, fill=WHITE, rx=r)]
 
-    head = 27.0
-    b.append(text(cx, 86, HEAD_1, head, fill=BLACK, weight=700, spacing=-0.7))
-    b.append(text(cx, 118, HEAD_2, head, fill=BLACK, weight=700, spacing=-0.7))
+    lines = lines or ARMS["a"]
+    head = fit_head(lines, w, -0.7)
+    b.append(text(cx, 86, lines[0], head, fill=BLACK, weight=700, spacing=-0.7))
+    b.append(text(cx, 118, lines[1], head, fill=BLACK, weight=700, spacing=-0.7))
 
     side = 216.0
     top = 168.0
@@ -267,7 +344,7 @@ def counter_plate(url: str, shown: str, cut: str = CUT) -> tuple[str, float, flo
     # Cut path last so it sits on top of everything in a shop's viewer.
     b.append(rect(0, 0, w, h, rx=r, stroke=cut, sw=CUT_W))
     meta = {"trim": "4 x 6 in", "bleed": "none (cut to line)",
-            "canvas": f"{w / PT:.3f} x {h / PT:.3f} in",
+            "canvas": f"{w / PT:.3f} x {h / PT:.3f} in", "head": head,
             "qr_in": side / PT, "quiet": (top - 118.0) / module, "modules": n}
     return "\n".join(b), w, h, meta
 
@@ -319,10 +396,29 @@ README = """Find A Crib — etched counter piece
 Generated by `scripts/make-signage.py`. **Edit the script, never these files.**
 Nudging a QR module in a design tool destroys the code invisibly.
 
+TWO QUESTIONS, ONE PLATE PER COUNTER
+------------------------------------
+A plate asks one of two things, and its code says which:
+
+  a<n>   "Is your building rent-stabilized?"   -> findacrib.com/c/a<n>
+  b<n>   "Find rent-stabilized apartments"     -> findacrib.com/c/b<n>
+
+Both are true and both are answered by this site. What differs is who is
+standing at the counter: A talks to somebody who already has a landlord, which
+in a laundromat is everybody, and B talks to somebody mid-move, which is a few
+percent of most rooms and nearly all of a self-storage lobby. Pick the question
+from the ROOM, not from taste — the dashboard's signage card lists the venues
+each one is for.
+
+The number is not decoration. One code per counter is what makes a scan
+traceable to the plate it came off; two counters sharing a code means neither
+one's scans can be read. `make-signage.py a1 a2 b1` writes a run of them.
+
 WHICH FILE GOES WHERE
 ---------------------
 Everything is the same two objects — a 4 x 6 plate and the foot it stands in.
-The formats differ because the shops differ.
+The plate files carry their code in the name; the foot is shared. The formats
+differ because the shops differ.
 
   Ponoko            -engrave-ponoko.svg  +  -base-ponoko.svg
   Laser-CutZ        -cut.dxf  +  -600dpi.png   (cut path + raster art)
@@ -429,12 +525,18 @@ and not from a screen proof.
 
 WHAT IS ETCHED, AND WHAT IS NOT
 -------------------------------
-The code encodes a short path, not a destination. `findacrib.com/c` resolves
-server-side in nginx to /?src=qr-counter, so where it lands can change — a new
-landing page, a borough view, an app — without touching a plate already
+The code encodes a short path, not a destination. `findacrib.com/c/a1`
+resolves server-side in nginx to /?src=qr-a1, so where it lands can change — a
+new landing page, a borough view, an app — without touching a plate already
 sitting on a counter, and every scan is counted on the dashboard like a tagged
 link. Nothing about the destination is on the object, which is the only reason
 a permanent object is safe to make at all.
+
+nginx logs those redirects to a file of their own, so a scan is counted even
+when the person closes the tab before any JavaScript runs. That gap is the
+measurement: scans are what the QUESTION earned, and the sessions and searches
+underneath them are what the SITE earned. A question that pulls scans out of
+people with no interest in the answer is worse than one that pulls fewer.
 """
 
 
@@ -528,6 +630,17 @@ def verify(stem: str, expect: str) -> None:
     det = cv2.QRCodeDetector()
     h, w = img.shape[:2]
     floor_dpi = None
+    # Isolated failures on the way down are the resampler, not the artwork: a
+    # 33-module code drawn with crispEdges lands its module boundaries between
+    # pixels at a few particular scales, and INTER_AREA smears them there and
+    # nowhere else. This plate decoded at every step from 300 to 25 except 290
+    # and 275, and stopping at the first miss reported its floor as 295 — a
+    # ten-fold overstatement that would have failed a build over nothing. A
+    # margin that is genuinely thin fails at every scale below the point where
+    # it runs out, so the floor is the lowest dpi that still decodes and the
+    # sweep only gives up after a run of them.
+    RESAMPLE_ARTEFACT_RUN = 4
+    misses = 0
     for dpi in range(300, 19, -5):
         s = dpi / 300.0
         small = cv2.resize(img, (max(1, int(w * s)), max(1, int(h * s))),
@@ -538,8 +651,11 @@ def verify(stem: str, expect: str) -> None:
             got = ""
         if got == expect:
             floor_dpi = dpi
+            misses = 0
         else:
-            break
+            misses += 1
+            if misses >= RESAMPLE_ARTEFACT_RUN:
+                break
     if floor_dpi is None:
         raise SystemExit(f"{stem}: the rendered code does not decode to {expect} at all.")
     if floor_dpi > DPI_FLOOR:
@@ -552,32 +668,73 @@ def verify(stem: str, expect: str) -> None:
     print(f"  verified: decodes to {expect} down to {floor_dpi}dpi")
 
 
+CODE_RE = re.compile(r"^[ab][0-9]{1,3}$")
+
+
+def parse_codes(argv) -> list:
+    """Plate codes off the command line, defaulting to one plate per question.
+
+    A code is the arm letter plus a placement number: a1 is the first plate
+    asking question A. The number is not decoration — a scan can only be traced
+    to the counter it came off if no two counters share a code, and telling two
+    laundromats apart is the whole reason the second one is worth placing.
+    """
+    codes = [c.strip().lower() for c in argv if c.strip()]
+    if not codes:
+        return ["a1", "b1"]
+    bad = [c for c in codes if not CODE_RE.match(c)]
+    if bad:
+        raise SystemExit(f"not plate codes: {', '.join(bad)} "
+                         "(expected a1, a2, b1 ... — arm letter then placement)")
+    if len(set(codes)) != len(codes):
+        raise SystemExit("duplicate code: two plates on two counters cannot "
+                         "share one, or neither scan can be attributed")
+    return codes
+
+
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
-    # Short path, resolved by nginx to /?src=qr-counter. The printed string and
-    # the encoded string are the same variable on purpose.
-    shown = "findacrib.com/c"
-    url = f"https://{shown}"
+    codes = parse_codes(sys.argv[1:])
 
-    plate, pw, ph, pm = counter_plate(url, shown)
+    # The foot is the same object whatever the plate says, so it is cut once
+    # and the files are not duplicated per code.
     foot, bw, bh, bm = base_bar()
-    render("findacrib-counter-4x6-engrave", svg(pw, ph, plate,
-           "Find A Crib counter plate 4x6 (engrave)"))
     render("findacrib-counter-base", svg(bw, bh, foot,
            "Find A Crib counter base (cut only)"))
-
-    # Ponoko's colour convention is the reverse of everyone else's, and the
-    # colour IS the instruction, so it gets its own file rather than a warning.
-    pplate, _, _, _ = counter_plate(url, shown, cut=CUT_PONOKO)
     pfoot, _, _, _ = base_bar(cut=CUT_PONOKO)
-    render("findacrib-counter-4x6-engrave-ponoko", svg(pw, ph, pplate,
-           "Find A Crib counter plate 4x6 (Ponoko: blue = cut)"))
     render("findacrib-counter-base-ponoko", svg(bw, bh, pfoot,
            "Find A Crib counter base (Ponoko: blue = cut)"))
 
-    # Cut paths for a shop that wants DXF. Geometry mirrors the SVG exactly:
-    # plate outline; base outline plus its slot.
-    write_dxf("findacrib-counter-4x6-cut", ph, [(0, 0, pw, ph, 10.0)])
+    pw = ph = None
+    for code in codes:
+        lines = ARMS[code[0]]
+        # Short path, resolved by nginx to /?src=qr-<code>. The printed string
+        # and the encoded string are the same variable on purpose.
+        shown = f"findacrib.com/c/{code}"
+        url = f"https://{shown}"
+        stem = f"findacrib-counter-{code}-4x6-engrave"
+
+        plate, pw, ph, pm = counter_plate(url, shown, lines)
+        render(stem, svg(pw, ph, plate,
+               f"Find A Crib counter plate {code} 4x6 (engrave)"))
+
+        # Ponoko's colour convention is the reverse of everyone else's, and the
+        # colour IS the instruction, so it gets its own file rather than a
+        # warning.
+        pplate, _, _, _ = counter_plate(url, shown, lines, cut=CUT_PONOKO)
+        render(stem + "-ponoko", svg(pw, ph, pplate,
+               f"Find A Crib counter plate {code} 4x6 (Ponoko: blue = cut)"))
+
+        write_dxf(f"findacrib-counter-{code}-4x6-cut", ph, [(0, 0, pw, ph, 10.0)])
+
+        print(f"plate {code}: \u201c{lines[0]} {lines[1]}\u201d -> {url}")
+        print(f"  {pm['trim']}, bleed {pm['bleed']}  ->  {pm['canvas']} artwork, "
+              f"headline {pm['head']:.0f}pt")
+        print(f"  code {pm['modules']}x{pm['modules']} modules, {pm['qr_in']:.2f} in wide, "
+              f"ECC H, {pm['quiet']:.1f}-module quiet zone")
+        verify(stem, url)
+        verify(stem + "-ponoko", url)
+
     slot_w = PLATE_T - KERF
     slot_l = 4.02 * PT
     write_dxf("findacrib-counter-base-cut", bh, [
@@ -586,18 +743,9 @@ def main() -> int:
     ])
 
     (OUT / "README.md").write_text(README)
-
-    stem = "findacrib-counter-4x6-engrave"
-    print(f"plate: {url}")
-    print(f"  {pm['trim']}, bleed {pm['bleed']}  ->  {pm['canvas']} artwork")
-    print(f"  code {pm['modules']}x{pm['modules']} modules, {pm['qr_in']:.2f} in wide, "
-          f"ECC H, {pm['quiet']:.1f}-module quiet zone")
-    verify(stem, url)
-    verify(stem + "-ponoko", url)
     print(f"base: {bm['size']} from {bm['stock']} stock, slot {bm['slot']} (cut only)")
     print(f"\nwritten to {OUT}")
     return 0
-
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -214,62 +214,61 @@ def svg(w: float, h: float, body: str, title: str) -> str:
 # --------------------------------------------------------------------------
 HEAD_1 = "Is your building"
 HEAD_2 = "rent-stabilized?"
-SUB = f"Look it up free. {BUILDINGS} NYC buildings, one map."
-CTA = "Scan to check your address"
 
 
 def counter_plate(url: str, shown: str, cut: str = CUT) -> tuple[str, float, float, dict]:
-    """4 x 6in two-ply plate: the same card as line art, plus a cut path.
+    """4 x 6in plate: one question and the code that answers it.
 
-    No bleed. Paper is printed oversize and trimmed into the art; a laser cuts
-    to a line, so the canvas IS the finished size and the cut path sits on it.
+    Everything else came off — the wordmark, the supporting line, the "scan
+    me" caption, the printed URL. What is left is the only two things the
+    object has to do at counter distance: ask something the person standing
+    there wants answered, and give them the way to answer it.
+
+    The subtraction is not only tidier, it is functional. The code went from
+    2.33in to 3.00in wide across the same plate, which is the single biggest
+    lever on whether this reads from across a counter rather than from over
+    it, and on a two-ply plate the removed text is also engraving time off
+    every piece.
+
+    One thing genuinely lost: with the URL gone there is no fallback for
+    somebody who cannot or will not scan. That is a real trade and it is the
+    reason the question is doing all the work — it has to be worth pulling a
+    phone out for on its own.
+
+    No bleed: paper is printed oversize and trimmed into the art, but a laser
+    cuts to a line, so the canvas IS the finished size and the cut path sits
+    on it.
     """
     w, h = 4 * PT, 6 * PT
     cx = w / 2
     r = 10.0
-    # White field = the untouched cap layer. It is drawn rather than left
-    # implicit so the PNG proof shows the finished piece and not a transparent
-    # checkerboard that hides a stray mark.
+    # White field = the untouched cap layer. Drawn rather than left implicit so
+    # the PNG proof shows the finished piece and not a transparent
+    # checkerboard that could hide a stray mark.
     b = [rect(0, 0, w, h, fill=WHITE, rx=r)]
 
-    b.append(mark(cx - 60, 46, 32, outline=True))
-    b.append(text(cx - 38, 53, "Find A Crib", 22, fill=BLACK, weight=700, anchor="start", spacing=-0.5))
-    # A rule instead of the printed version's filled band: one thin engraved
-    # line where the print piece has 86pt of solid colour.
-    b.append(rect(34, 74, w - 68, 1.6, fill=BLACK))
+    head = 27.0
+    b.append(text(cx, 86, HEAD_1, head, fill=BLACK, weight=700, spacing=-0.7))
+    b.append(text(cx, 118, HEAD_2, head, fill=BLACK, weight=700, spacing=-0.7))
 
-    b.append(text(cx, 122, HEAD_1, 21, fill=BLACK, weight=700, spacing=-0.6))
-    b.append(text(cx, 146, HEAD_2, 21, fill=BLACK, weight=700, spacing=-0.6))
-    b.append(text(cx, 168, SUB, 10, fill=BLACK))
-
-    # No panel outline. The print piece rings the code with a white card on a
-    # tint, which reads as a frame and costs the code nothing. The same frame
-    # engraved is a black line a few points from the finder patterns, and it
-    # measurably wrecks the code: with a 1.4pt border at 14pt clearance this
-    # plate stopped decoding below 80dpi, against 35dpi for the printed card.
-    # The clear space around the code IS the frame, and it stays untouched.
-    side = 168.0
-    top = 206.0
+    side = 216.0
+    top = 168.0
     code, module, n = qr(url, cx, top, side)
-    # Measured against the nearest ink on every side, which after the border
-    # came out is the subhead above and the caption below.
-    check_quiet("counter plate (engrave), above code", top - 168.0, module)
-    check_quiet("counter plate (engrave), beside code", (w - side) / 2, module)
+    # Measured against the nearest ink on every side. Cap height is ~0.72 of
+    # the point size for this family, so the descender-free baseline at 118
+    # is not the bottom of the headline's ink — but the CAP of the line above
+    # is what encroaches, and here the gap is measured from the baseline,
+    # which is the conservative direction.
+    check_quiet("plate, above code", top - 118.0, module)
+    check_quiet("plate, beside code", (w - side) / 2, module)
+    check_quiet("plate, below code", h - (top + side), module)
     b.append(code)
-
-    cta_baseline = 412.0
-    # Cap height is ~0.72 of the point size for this family; the top of the
-    # capital S is what encroaches on the code, not the baseline.
-    check_quiet("counter plate (engrave), below code",
-                (cta_baseline - 14 * 0.72) - (top + side), module)
-    b.append(text(cx, cta_baseline, CTA, 14, fill=BLACK, weight=700))
-    b.append(text(cx, 430, shown, 11.5, fill=BLACK, weight=700))
 
     # Cut path last so it sits on top of everything in a shop's viewer.
     b.append(rect(0, 0, w, h, rx=r, stroke=cut, sw=CUT_W))
     meta = {"trim": "4 x 6 in", "bleed": "none (cut to line)",
             "canvas": f"{w / PT:.3f} x {h / PT:.3f} in",
-            "qr_in": side / PT, "quiet": (top - 168.0) / module, "modules": n}
+            "qr_in": side / PT, "quiet": (top - 118.0) / module, "modules": n}
     return "\n".join(b), w, h, meta
 
 

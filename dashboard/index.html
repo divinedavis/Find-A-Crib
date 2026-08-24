@@ -1478,13 +1478,21 @@
   function renderFacTiles(A){
     A = A || {};
     var impr=n(A.impressions), clicks=n(A.clicks), reach=n(A.reach);
-    var ctr = impr ? pctS(clicks,impr,1) : '—';
+    // The rate comes from the API, which knows two things this function cannot:
+    // which clicks fell inside the measured window, and how many impressions a
+    // slot has to bank before a rate off them is worth printing. A null means
+    // withheld, not zero.
+    var hasCtr = A.ctr !== null && A.ctr !== undefined;
+    var ctr = hasCtr ? A.ctr.toFixed(1)+'%' : '—';
+    var ctrSub = hasCtr ? 'clicks ÷ impressions, same window'
+               : (impr ? comma(impr)+' impressions so far — too few to divide by'
+                       : 'no impressions banked yet');
 
     el('tile-tiles').innerHTML=[
       {v:comma(impr), l:'Tile impressions', sub:'half on screen, one second'},
       {v:comma(reach), l:'People reached', sub:'distinct visitors'},
       {v:comma(clicks), l:'Clicks to the agent', sub:'hand-offs off this site'},
-      {v:ctr, l:'Click rate', sub:impr?'clicks ÷ impressions':'no impressions banked yet'}
+      {v:ctr, l:'Click rate', sub:ctrSub}
     ].map(creaseTile).join('');
 
     var rows=(A.agents||[]);
@@ -1492,7 +1500,9 @@
       ? rows.map(function(a){
           var lottery = a.kind==='lottery';
           var i=n(a.impressions), c=n(a.clicks);
-          var rate = i ? pctS(c,i,1)+' click rate' : (c? c+(c===1?' click':' clicks')+', impressions not yet counted' : 'no activity yet');
+          var rate = (a.ctr !== null && a.ctr !== undefined) ? a.ctr.toFixed(1)+' click rate'
+                   : (c ? c+(c===1?' click':' clicks')+(i?', still measuring impressions':', impressions not yet counted')
+                        : 'no activity yet');
           // "0 impressions" next to "impressions not yet counted" reads as a
           // tile nobody looked at rather than one nobody measured.
           var desc=[i?comma(i)+' impressions':null, comma(n(a.reach))+' people',
@@ -1518,8 +1528,13 @@
           'Counting shipped 24 August 2026; until a few days of it bank, the click rate here stays blank rather than being '+
           'divided by a denominator that did not exist.'+
           (top?' Most of those clicks went to <b>'+esc(top.agent)+'</b>.':'');
+    } else if(!hasCtr){
+      msg='<b>'+comma(clicks)+' clicks handed to marketing agents; the impressions behind them are still being counted.</b> '+
+          'Counting shipped 24 August 2026 and has banked '+comma(impr)+' so far — the click rate stays blank until '+
+          comma(n(A.ctr_min)||100)+', because a rate off a handful of impressions has a margin of error wider than itself.'+
+          (top?' Most of those clicks went to <b>'+esc(top.agent)+'</b>.':'');
     } else {
-      msg='<b>'+comma(impr)+' viewable impressions reached '+comma(reach)+' renters and produced '+comma(clicks)+' clicks ('+ctr+').</b> '+
+      msg='<b>'+comma(impr)+' viewable impressions reached '+comma(reach)+' renters and produced '+comma(n(A.clicks_measured))+' clicks ('+ctr+').</b> '+
           (top&&n(top.impressions)
             ? esc(top.agent)+' alone got '+comma(n(top.impressions))+' impressions and '+comma(n(top.clicks))+' clicks — free. '
             : '')+

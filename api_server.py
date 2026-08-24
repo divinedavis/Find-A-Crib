@@ -1024,6 +1024,11 @@ def _fac_owner_visitors():
 # The three tile events, and which advertiser each one belongs to.
 AD_TILE_EVENTS = ("tile_impression", "featured_click", "hc_click")
 
+# How many impressions a slot has to bank before its click rate is published.
+# Under a hundred, the confidence interval on the rate is wider than the rate,
+# and the card would be quoting noise at a buyer.
+AD_CTR_MIN = 100
+
 
 def _fac_adtiles(since):
     """Advertiser-tile inventory: what the re-rental and lottery tiles earned.
@@ -1043,7 +1048,11 @@ def _fac_adtiles(since):
 
     Impression tracking shipped 2026-08-24; clicks go back to 2026-08-02.
     `first_impression` is returned so the card can say so instead of showing a
-    CTR built on a denominator that did not exist yet.
+    CTR built on a denominator that did not exist yet — and the CTR itself is
+    computed only over the window where BOTH sides were measured: clicks from
+    before the first impression are reported, but never divided by it. A rate
+    is withheld entirely until the window has banked AD_CTR_MIN impressions,
+    because below that the margin of error is wider than the number.
 
     Returns {} on any failure — one card should drop, not the page.
     """
@@ -1057,32 +1066,39 @@ def _fac_adtiles(since):
     except Exception:
         return {}
     mine = _fac_owner_visitors()
+    rows = [r for r in rows if r.get("visitor_id") not in mine]
 
-    # agent -> {kind, impressions, clicks, reach set, addrs set}
-    by_agent, kinds, first_impr = {}, {}, None
+    # The first impression has to be known before anything is bucketed: it is
+    # the left edge of the only window in which a click rate means anything.
+    first_impr = min((r["created_at"] for r in rows
+                      if r.get("event") == "tile_impression" and r.get("created_at")),
+                     default=None)
+
+    # agent -> {kind, impressions, clicks, clicks_measured, reach set, addrs set}
+    by_agent, kinds = {}, {}
     for r in rows:
-        if r.get("visitor_id") in mine:
-            continue
         props = r.get("props") or {}
         ev = r.get("event")
         if ev == "tile_impression":
             kind = props.get("kind") or "rerental"
             agent = props.get("agent") or "—"
-            ts = r.get("created_at")
-            if ts and (first_impr is None or ts < first_impr):
-                first_impr = ts
         elif ev == "hc_click":
             kind, agent = "lottery", "NYC Housing Connect"
         else:                                     # featured_click
             kind, agent = "rerental", props.get("agent") or "—"
         a = by_agent.setdefault(agent, {"agent": agent, "kind": kind,
                                         "impressions": 0, "clicks": 0,
+                                        "clicks_measured": 0,
                                         "_reach": set(), "_units": set()})
         k = kinds.setdefault(kind, {"kind": kind, "impressions": 0,
-                                    "clicks": 0, "_reach": set()})
+                                    "clicks": 0, "clicks_measured": 0,
+                                    "_reach": set()})
         field = "impressions" if ev == "tile_impression" else "clicks"
         a[field] += 1
         k[field] += 1
+        if field == "clicks" and first_impr and (r.get("created_at") or "") >= first_impr:
+            a["clicks_measured"] += 1
+            k["clicks_measured"] += 1
         if r.get("visitor_id"):
             a["_reach"].add(r["visitor_id"])
             k["_reach"].add(r["visitor_id"])
@@ -1095,8 +1111,13 @@ def _fac_adtiles(since):
         for e in extra:
             out[e] = len(d["_" + e])
         # CTR is left null rather than 0 when nothing was measured — a "0.0%"
-        # click rate on zero impressions reads as a tile nobody clicks.
-        out["ctr"] = (100.0 * d["clicks"] / d["impressions"]) if d["impressions"] else None
+        # click rate on zero impressions reads as a tile nobody clicks — and
+        # null again while the sample is too small to survive being quoted.
+        # Numerator is only the clicks inside the measured window; dividing
+        # every click since August by two impressions counted this morning is
+        # how a card ends up claiming a 1,450% click rate.
+        out["ctr"] = (100.0 * d["clicks_measured"] / d["impressions"]) \
+            if d["impressions"] >= AD_CTR_MIN else None
         return out
 
     agents = sorted((finish(v, ("units",)) for v in by_agent.values()),
@@ -1106,6 +1127,11 @@ def _fac_adtiles(since):
         "kinds": [finish(kinds[k]) for k in ("rerental", "lottery") if k in kinds],
         "impressions": sum(a["impressions"] for a in agents),
         "clicks": sum(a["clicks"] for a in agents),
+        "clicks_measured": sum(a["clicks_measured"] for a in agents),
+        "ctr": (100.0 * sum(a["clicks_measured"] for a in agents)
+                / sum(a["impressions"] for a in agents))
+               if sum(a["impressions"] for a in agents) >= AD_CTR_MIN else None,
+        "ctr_min": AD_CTR_MIN,
         "reach": len(set().union(*[v["_reach"] for v in by_agent.values()]) if by_agent else set()),
         "advertisers": len([a for a in agents if a["agent"] != "NYC Housing Connect"]),
         "first_impression": first_impr,

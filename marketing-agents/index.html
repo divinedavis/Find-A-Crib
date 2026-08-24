@@ -407,6 +407,28 @@
       ? 'Showing all ' + ALL.length + ' agents'
       : 'Showing ' + list.length + ' of ' + ALL.length + ' agents';
 
+  // ---------- outbound tagging ----------
+  // Every hand-off to a marketing agent is tagged so they can see this traffic
+  // in their own analytics. That is the entire pitch for a paid slot: an agent
+  // who can find findacrib.com in their own GA does not have to take our
+  // dashboard's word for how much we sent them. Rules it keeps: only http(s),
+  // never an internal link, never overwrite a campaign somebody else set, and
+  // medium stays "referral" so GA4 files it under Referral instead of dropping
+  // it into Unassigned.
+  function outbound(url, campaign, content){
+    try {
+      var u = new URL(url, location.href);
+      if (u.protocol !== 'http:' && u.protocol !== 'https:') return url;
+      if (u.hostname === location.hostname) return url;
+      if (u.searchParams.has('utm_source')) return url;
+      u.searchParams.set('utm_source', 'findacrib.com');
+      u.searchParams.set('utm_medium', 'referral');
+      u.searchParams.set('utm_campaign', campaign);
+      if (content) u.searchParams.set('utm_content', content);
+      return u.toString();
+    } catch (e) { return url; }
+  }
+
     rows.innerHTML = '';
     var frag = document.createDocumentFragment();
     list.forEach(function(a, i){
@@ -418,7 +440,7 @@
           (a.address ? '<div class="addr">' + esc(a.address) + '</div>' : '') +
           '<span class="agency' + (both ? ' both' : '') + '">' + esc(a.agency) + '</span>' +
           (a.rerentals
-            ? '<br><a class="rr' + (a.rerentals.units_seen ? '' : ' quiet') + '" href="' + esc(a.rerentals.url) +
+            ? '<br><a class="rr' + (a.rerentals.units_seen ? '' : ' quiet') + '" href="' + esc(outbound(a.rerentals.url, 'agent_directory', a.rerentals.units_seen ? 'units_posted' : 'waitlist')) +
                 '" target="_blank" rel="noopener" data-out="rerental">🏠 ' +
                 (a.rerentals.units_seen
                   ? (a.rerentals.unit_count ? a.rerentals.unit_count + ' listed' : 'Units posted')

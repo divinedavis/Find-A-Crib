@@ -1493,7 +1493,9 @@
           var lottery = a.kind==='lottery';
           var i=n(a.impressions), c=n(a.clicks);
           var rate = i ? pctS(c,i,1)+' click rate' : (c? c+(c===1?' click':' clicks')+', impressions not yet counted' : 'no activity yet');
-          var desc=[comma(i)+' impressions', comma(n(a.reach))+' people',
+          // "0 impressions" next to "impressions not yet counted" reads as a
+          // tile nobody looked at rather than one nobody measured.
+          var desc=[i?comma(i)+' impressions':null, comma(n(a.reach))+' people',
                     n(a.units)?comma(n(a.units))+(n(a.units)===1?' apartment':' apartments'):null, rate]
                    .filter(Boolean).join(' · ');
           return '<div class="act-row"><div class="act-l"><div class="act-ico">'+(lottery?'🏛️':'🏢')+'</div>'+

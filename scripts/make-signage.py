@@ -1,25 +1,32 @@
 #!/usr/bin/env python3
-"""Print-ready and engrave-ready artwork for the Find A Crib counter piece.
+"""Etch-ready artwork for the Find A Crib counter piece.
 
     python3 scripts/make-signage.py
 
 Writes into marketing/signage/:
 
-  findacrib-counter-4x6-print.{svg,pdf,png}     full colour, for a printed
-                                                card in a stock acrylic holder
-  findacrib-counter-4x6-engrave.{svg,pdf,png}   flat black/white line art for
-                                                two-ply engraving plastic
+  findacrib-counter-4x6-engrave.{svg,pdf,png}   the 4x6 plate: flat line art,
+                                                black = engrave, red hairline
+                                                = cut path
+  findacrib-counter-base.{svg,pdf,png}          the foot it stands in, cut only
 
-Same design, same URL, two manufacturing routes on purpose: the printed card
-costs about a dollar and exists to find out which counters keep it, and the
-engraved piece is what goes back to the ones that do. Generating both from one
-layout is what stops the cheap pilot and the permanent object from being two
-different pieces of marketing with two different numbers behind them.
+One artwork file, several materials. It is deliberately material-agnostic
+because the constraint that actually matters is not what the plate is made of:
+
+  THE CODE MUST COME OUT DARK ON LIGHT.  Scanning algorithms look for dark
+  modules on a light field. Inverted codes -- a bright mark on a dark plate --
+  are read by recent iPhones and missed by older Android cameras and older
+  Google Lens versions, and those are disproportionately the phones the people
+  this site is for are holding. So two-ply ordered white-cap-over-black-core
+  works, laser-annealed stainless works, aluminium engraved and black-filled
+  works, and black anodised aluminium -- the one every vendor suggests, because
+  it photographs beautifully -- does not, permanently. Everything in the README
+  is a consequence of this one line.
 
 Why generated rather than drawn once in a design tool:
 
   * The URL is the whole point of the object and the one thing that must never
-    be wrong. Encoding the code from the same string that is printed under it
+    be wrong. Encoding the code from the same string printed underneath it
     removes the class of mistake where the caption says one address and the
     code goes somewhere else.
   * A QR code cannot be edited. Nudging a module in a design tool destroys it
@@ -28,30 +35,22 @@ Why generated rather than drawn once in a design tool:
 
 Three decisions worth keeping:
 
-  THE CODE IS DARK-ON-LIGHT, ALWAYS.  Scanning algorithms look for dark
-  modules on a light field. Inverted codes — a bright mark on a dark plate,
-  which is exactly what engraving black anodised aluminium produces — are read
-  by recent iPhones and missed by older Android cameras and older Google Lens.
-  The people this site is for are disproportionately on those phones. So the
-  mark may be any colour anywhere else on the piece; the code panel is black
-  on white and nothing is allowed to invert it.
-
   ERROR CORRECTION IS 'H'.  The URL is short enough that the highest level
   still fits a 29-module version-3 code, so the robustness costs nothing. A
   third of the code can be lost to a thumbprint, a coffee ring, a strip of
-  tape or a sun-bleached corner and it still reads.
+  tape or a scratch and it still reads.
 
-  THE ENGRAVE FILE HAS NO FLOOD FILLS.  On two-ply the laser removes the cap
-  layer wherever the art is black, so a solid header band is not a colour
-  choice, it is minutes of machine time per piece and enough heat to bow a
-  1/16in sheet. The engrave layout carries the same design as outlines.
+  NO FLOOD FILLS.  On two-ply the laser removes the cap layer wherever the art
+  is black, so a solid header band is not a colour choice, it is minutes of
+  machine time per piece and enough heat to bow a 1/16in sheet. The layout
+  carries its structure as line work.
 
-Two-ply orientation, because it is the one spec that inverts the code if it is
-ordered backwards: the material is WHITE CAP over BLACK CORE (Rowmark LaserMax
-White/Black). The laser burns away the white cap, revealing black underneath,
-so black in this file is black on the finished piece. Order it the other way
-round -- black cap over white core -- and every black area in this artwork
-comes out white, including the code, and none of it scans.
+  NO LOGO NEAR THE CODE.  Concentric squares read to a scanner as a QR finder
+  pattern. Measured, not assumed -- see mark().
+
+Every render is decoded again at falling resolution before the build is
+allowed to succeed, because looking at a QR proves nothing and decoding it
+once at 300dpi proves little more.
 """
 from __future__ import annotations
 
@@ -211,48 +210,7 @@ SUB = f"Look it up free. {BUILDINGS} NYC buildings, one map."
 CTA = "Scan to check your address"
 
 
-def counter_print(url: str, shown: str) -> tuple[str, float, float, dict]:
-    """4 x 6in card for a stock acrylic counter holder.
-
-    Portrait 4x6 because that is the size every sign holder on the shelf takes.
-    A custom size means a custom holder, and the point of this version is that
-    both halves are cheap enough to abandon on a counter that does not work.
-    """
-    tw, th = 4 * PT, 6 * PT
-    w, h = tw + 2 * BLEED, th + 2 * BLEED
-    cx = w / 2
-    b = [rect(0, 0, w, h, fill=WHITE)]
-
-    # Header bled off three edges, so no white sliver survives a bad trim.
-    b.append(rect(0, 0, w, 86, fill=BLUE))
-    b.append(mark(cx - 62, 47, 34, outline=False))
-    b.append(text(cx - 38, 54, "Find A Crib", 23, fill=WHITE, weight=700, anchor="start", spacing=-0.5))
-
-    b.append(text(cx, 128, HEAD_1, 22, weight=700, spacing=-0.6))
-    b.append(text(cx, 153, HEAD_2, 22, weight=700, spacing=-0.6))
-    b.append(text(cx, 176, SUB, 10.5, fill=MUTED))
-
-    # Tinted band bled off the bottom with the code on a white panel inside it.
-    # The tint is what makes the panel read as the thing to point at; the panel
-    # is what gives the code its quiet zone.
-    b.append(rect(0, 194, w, h - 194, fill=BLUE_SOFT))
-    panel = 190.0
-    px, py = cx - panel / 2, 206.0
-    b.append(rect(px, py, panel, panel, fill=WHITE, rx=18))
-    side = 146.0
-    code, module, n = qr(url, cx, py + (panel - side) / 2, side)
-    check_quiet("counter card (print)", (panel - side) / 2, module)
-    b.append(code)
-
-    b.append(text(cx, 418, CTA, 14.5, weight=700))
-    b.append(text(cx, 436, shown, 11.5, fill=BLUE, weight=700))
-    meta = {"trim": "4 x 6 in", "bleed": "0.125 in",
-            "canvas": f"{w / PT:.3f} x {h / PT:.3f} in",
-            "qr_in": side / PT, "quiet": ((panel - side) / 2) / module, "modules": n}
-    return "\n".join(b), w, h, meta
-
-
-def counter_engrave(url: str, shown: str) -> tuple[str, float, float, dict]:
+def counter_plate(url: str, shown: str) -> tuple[str, float, float, dict]:
     """4 x 6in two-ply plate: the same card as line art, plus a cut path.
 
     No bleed. Paper is printed oversize and trimmed into the art; a laser cuts
@@ -307,75 +265,149 @@ def counter_engrave(url: str, shown: str) -> tuple[str, float, float, dict]:
     return "\n".join(b), w, h, meta
 
 
-README = """Find A Crib — counter QR artwork
-================================
+# Plate thickness the base is cut to hold. 1/16in is the standard two-ply
+# gauge; change both together or the slot stops gripping.
+PLATE_T = 0.0625 * PT
+
+# A laser removes material, so a slot cut on a 1/16in line comes out WIDER
+# than 1/16in and the plate rattles. Drawing it undersize by roughly one kerf
+# lets the cut open up to a friction fit. Kerf varies by machine and stock,
+# which is why this is a named number the shop can move rather than a
+# tolerance buried in a path.
+KERF = 0.007 * PT
+
+
+def base_bar() -> tuple[str, float, float, dict]:
+    """Cut file for the foot the plate stands in.
+
+    A 4x6 plate on its own is not a counter display, it is a coaster: flat
+    stock cannot be bent, so the piece has to be stood up by something. This
+    is the something — a bar with a through-slot, the same construction as
+    every engraved desk nameplate.
+
+    Cut from 1/4in stock, NOT from the 1/16in two-ply the plate is cut from.
+    The weight is the entire point. A foot in the same gauge as the plate
+    weighs nothing and goes over the first time somebody puts a bag on the
+    counter, which on the counters this is going on is the same afternoon.
+
+    Cut only — nothing here is engraved.
+    """
+    w, h = 5.0 * PT, 1.75 * PT
+    r = 0.1 * PT
+    slot_w = PLATE_T - KERF
+    slot_l = 4.02 * PT              # plate is 4.00in; the 0.02 is clearance
+    sx, sy = (w - slot_l) / 2, 0.62 * PT
+    b = [
+        rect(0, 0, w, h, rx=r, stroke=CUT, sw=CUT_W),
+        rect(sx, sy, slot_l, slot_w, rx=slot_w / 2, stroke=CUT, sw=CUT_W),
+    ]
+    meta = {"stock": "1/4 in", "size": f"{w / PT:.2f} x {h / PT:.2f} in",
+            "slot": f"{slot_l / PT:.2f} x {slot_w / PT:.4f} in"}
+    return "\n".join(b), w, h, meta
+
+
+README = """Find A Crib — etched counter piece
+=========================================
 
 Generated by `scripts/make-signage.py`. **Edit the script, never these files.**
 Nudging a QR module in a design tool destroys the code invisibly.
 
-Both pieces carry the same URL and the same design. The printed card is the
-cheap pilot; the engraved plate is what goes back to the counters that kept it.
+    findacrib-counter-4x6-engrave.pdf   the plate. 4 x 6 in finished, no bleed.
+                                        BLACK = engrave/mark. The red hairline
+                                        rectangle is the CUT path, not artwork.
+    findacrib-counter-base.pdf          the foot it stands in. Cut only,
+                                        nothing engraved. 1/4 in stock.
 
-WHICH FILE TO SEND
+Send the PDF, not the SVG. The SVG carries live text and a shop without
+Helvetica will substitute a font and reflow the layout. The QR is a vector
+path in both and is never at risk from that.
+
+THE ONE RULE, WHATEVER THE MATERIAL
+-----------------------------------
+**The code must come out DARK ON LIGHT.** Scanning algorithms look for dark
+modules on a light field. Inverted codes — a bright mark on a dark plate — are
+read by recent iPhones and missed by older Android cameras and older Google
+Lens. The people this site is for are disproportionately on those phones.
+
+Everything below is just a list of ways to get a dark mark on a light
+substrate. Any process that does that works. Any process that does the reverse
+is off the table no matter how good it looks.
+
+MATERIALS THAT WORK
+-------------------
+Plastic — two-ply engraving stock (Rowmark LaserMax or equivalent), 1/16 in:
+    Order **WHITE CAP over BLACK CORE**. The laser removes the white cap and
+    the black core shows through, so black in the artwork is black on the
+    finished plate. Order it the other way round — black cap, white core —
+    and every black area comes out white, including the code, and none of it
+    scans. Say "white cap, black core" in words on the order.
+
+Metal — stainless steel, laser ANNEALED:
+    Annealing oxidises the surface to a dark mark without removing material,
+    so it is dark-on-bright, and it leaves the passive layer intact so the
+    plate will not corrode. Ask for "laser annealed, dark mark" — not
+    "engraved", which means depth. Bead-blasted stock takes the highest
+    contrast.
+
+Metal — aluminium, engraved and BLACK PAINT FILLED:
+    Cut the art, fill the recess with black. Dark-on-light, and the fill is
+    what makes it so.
+
+MATERIALS THAT DO NOT WORK
+--------------------------
+Black anodised aluminium. This is what every vendor will suggest and what
+looks best in a photograph: the laser burns the anodise off to bright metal,
+giving a bright mark on a dark plate. That is the inverted case, permanently.
+
+Clear or frosted acrylic. Frosted-on-clear is the lowest-contrast result
+available and low contrast is the first cause of scan failure. If acrylic is
+the only option, engrave white or black cast acrylic, or engrave and fill.
+
+MAKING IT STAND UP
 ------------------
-Printed card, in a stock 4x6 acrylic holder:
-    findacrib-counter-4x6-print.pdf      -> the print shop
-    4 x 6 in trim, 0.125 in bleed, full colour.
+A 4 x 6 plate on its own is a coaster. Two ways, by material:
 
-Engraved plate, two-ply plastic:
-    findacrib-counter-4x6-engrave.pdf    -> the laser/engraving shop
-    4 x 6 in finished, no bleed. Black = engrave. The red hairline rectangle
-    is the cut path, not artwork.
+Plastic — cut the base file from **1/4 in stock**, not from the 1/16 in the
+    plate is cut from. The weight is the whole point; a foot in plate gauge
+    goes over the first time somebody puts a bag on the counter. The slot is
+    drawn one kerf undersize for a friction fit — **test-fit the first sample
+    before cutting the rest**, since kerf varies by machine and stock, and
+    have the shop adjust the slot rather than forcing the plate.
 
-Send the PDF, not the SVG. The SVG carries live text, and a shop without
-Helvetica installed will substitute a font and reflow the layout. The QR is a
-vector path in both formats and is never at risk from that.
+Metal — skip the base and ask for a **1 in return bend at 90 degrees along the
+    bottom**, from a 4 x 7 blank. The 4 x 6 face carries the artwork and the
+    remaining inch is the foot. One piece, no assembly, heavy enough not to
+    tip, and nothing to lose. Metal can be bent; two-ply cannot, which is the
+    only reason the base file exists.
 
-MATERIAL, AND THE ONE SPEC THAT INVERTS THE CODE
-------------------------------------------------
-Order **white cap over black core** two-ply (Rowmark LaserMax White/Black or
-equivalent), 1/16 in. The laser removes the white cap and the black core shows
-through, so black in the artwork is black on the finished plate.
-
-Ordered the other way round -- black cap, white core -- every black area comes
-out white, including the code. A QR with light modules on a dark field is an
-inverted code: recent iPhones read them, older Android cameras and older
-Google Lens versions do not. Say "white cap, black core" in words on the order.
-
-For the same reason, do NOT let anyone helpfully move this onto black anodised
-aluminium. Laser-marking that produces a bright mark on a dark plate, which is
-the inverted case, permanently.
-
-DO NOT ENGRAVE CLEAR ACRYLIC
-----------------------------
-Frosted-on-clear is the lowest-contrast result available and low contrast is
-the first cause of scan failure. If acrylic is the only option, engrave white
-or black cast acrylic, or engrave and paint-fill.
+An adhesive easel back also works on either and costs cents, but it is the
+first thing to peel and the easiest to knock over.
 
 DO NOT ADD A LOGO NEXT TO THE CODE
 ----------------------------------
 Anything built from concentric squares reads to a scanner as a QR finder
-pattern -- the three corner targets it hunts for before it reads anything --
-and it will spend its search on the logo instead. This is not theoretical: the
-first version of this plate carried the app mark as an outlined rounded square
-with a diamond inside, and it dropped the page from decoding at 25dpi to
-failing below 80dpi. Same ink, a third of the scan margin. Both pieces now use
-the diamond alone, and `make-signage.py` re-decodes every render at falling
-resolution and fails the build if the margin comes back thin.
+pattern — the three corner targets it hunts for before it reads anything — and
+it will spend its search on the logo instead. Not theoretical: the first
+version of this plate carried the app mark as an outlined rounded square with
+a diamond inside, and it dropped the page from decoding at 25dpi to failing
+below 80dpi. Same ink, a third of the scan margin. The mark is now the diamond
+alone, and `make-signage.py` re-decodes every render at falling resolution and
+fails the build if the margin comes back thin.
 
 BEFORE APPROVING A RUN
 ----------------------
-Ask for one physical sample and **decode it with a phone**, at arm's length,
-under the shop's own lighting. Not by eye, and not from a screen proof. Try an
-Android as well as an iPhone.
+Ask for one physical sample and **decode it with a phone** — at arm's length,
+under the shop's own lighting, on an Android as well as an iPhone. Not by eye,
+and not from a screen proof.
 
-WHAT IS PRINTED, AND WHAT IS NOT
---------------------------------
-The code encodes a short path, not a destination. It resolves server-side in
-nginx, so where it lands can change -- a new landing page, a borough view, an
-app -- without touching a plate already sitting on a counter. Nothing about
-the destination is printed on the object, which is the only reason a permanent
-object is safe to make at all.
+WHAT IS ETCHED, AND WHAT IS NOT
+-------------------------------
+The code encodes a short path, not a destination. `findacrib.com/c` resolves
+server-side in nginx to /?src=qr-counter, so where it lands can change — a new
+landing page, a borough view, an app — without touching a plate already
+sitting on a counter, and every scan is counted on the dashboard like a tagged
+link. Nothing about the destination is on the object, which is the only reason
+a permanent object is safe to make at all.
 """
 
 
@@ -452,19 +484,21 @@ def main() -> int:
     shown = "findacrib.com/c"
     url = f"https://{shown}"
 
-    pr, pw, ph, pm = counter_print(url, shown)
-    en, ew, eh, em = counter_engrave(url, shown)
-    render("findacrib-counter-4x6-print", svg(pw, ph, pr, "Find A Crib counter card 4x6"))
-    render("findacrib-counter-4x6-engrave", svg(ew, eh, en, "Find A Crib counter plate 4x6 (engrave)"))
+    plate, pw, ph, pm = counter_plate(url, shown)
+    foot, bw, bh, bm = base_bar()
+    render("findacrib-counter-4x6-engrave", svg(pw, ph, plate,
+           "Find A Crib counter plate 4x6 (engrave)"))
+    render("findacrib-counter-base", svg(bw, bh, foot,
+           "Find A Crib counter base (cut only)"))
     (OUT / "README.md").write_text(README)
 
-    for name, stem, meta in (("printed card", "findacrib-counter-4x6-print", pm),
-                             ("engraved plate", "findacrib-counter-4x6-engrave", em)):
-        print(f"{name}: {url}")
-        print(f"  {meta['trim']}, bleed {meta['bleed']}  ->  {meta['canvas']} artwork")
-        print(f"  code {meta['modules']}x{meta['modules']} modules, {meta['qr_in']:.2f} in wide, "
-              f"ECC H, {meta['quiet']:.1f}-module quiet zone")
-        verify(stem, url)
+    stem = "findacrib-counter-4x6-engrave"
+    print(f"plate: {url}")
+    print(f"  {pm['trim']}, bleed {pm['bleed']}  ->  {pm['canvas']} artwork")
+    print(f"  code {pm['modules']}x{pm['modules']} modules, {pm['qr_in']:.2f} in wide, "
+          f"ECC H, {pm['quiet']:.1f}-module quiet zone")
+    verify(stem, url)
+    print(f"base: {bm['size']} from {bm['stock']} stock, slot {bm['slot']} (cut only)")
     print(f"\nwritten to {OUT}")
     return 0
 

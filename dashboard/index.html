@@ -289,6 +289,11 @@
   .sg-v{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border2);font-size:12.5px;line-height:1.5}
   .sg-v:last-child{border-bottom:none}
   .sg-v-n{flex:0 0 34%;font-weight:600}
+  /* the plate code, muted and monospaced so it reads as a label on the room
+     rather than as part of the room's name */
+  .sg-v-c{display:inline-block;margin-left:7px;font-weight:600;font-size:11px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted);
+    background:var(--surface-2);border-radius:5px;padding:1px 5px;vertical-align:1px}
   .sg-v-w{flex:1;color:var(--muted)}
   @media(max-width:700px){.sg-v{display:block}.sg-v-n{margin-bottom:2px}}
   .ref-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
@@ -1822,15 +1827,23 @@
             // suffix; printing it as "/c/" would name a path that 404s.
             var url = p.code==='counter' ? 'findacrib.com/c'
                                          : 'findacrib.com/c/'+p.code;
+            // The venue leads. "a4" is a code the reader has to go and look up,
+            // and a row nobody can read at a glance is a row that gets skipped
+            // — which is the whole point of having cut nine of them.
+            var name = p.venue ? p.venue : url;
+            var sub = p.venue ? url+' · '+d : d;
             return '<div class="act-row"><div class="act-l"><div class="act-ico">🏷️</div>'+
-              '<div><div class="act-name">'+esc(url)+'</div>'+
-              '<div class="act-desc">'+esc(d)+'</div></div></div>'+
+              '<div><div class="act-name">'+esc(name)+'</div>'+
+              '<div class="act-desc">'+esc(sub)+'</div></div></div>'+
               '<div class="act-val">'+comma(n(p.scans))+'</div></div>';
           }).join('')
         : '<div class="disclaim">No plate carrying this question has been scanned yet.</div>';
 
       var venues=(a.venues||[]).map(function(v){
-        return '<div class="sg-v"><div class="sg-v-n">'+esc(v.place)+'</div>'+
+        // Naming the plate against the room is what turns this from a list of
+        // ideas into a checklist of what has actually been cut.
+        var tag = v.code ? '<span class="sg-v-c">/c/'+esc(v.code)+'</span>' : '';
+        return '<div class="sg-v"><div class="sg-v-n">'+esc(v.place)+tag+'</div>'+
                '<div class="sg-v-w">'+esc(v.why)+'</div></div>';
       }).join('');
 

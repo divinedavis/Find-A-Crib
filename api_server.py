@@ -1227,23 +1227,23 @@ SIGNAGE_ARMS = [
                 "refund — which is what makes somebody pull a phone out for a "
                 "sign on a counter. It is answerable for 47,198 buildings."),
         "venues": [
-            {"place": "Laundromats",
+            {"code": "a1", "place": "Laundromats",
              "why": "30–60 minutes of forced dwell, and a building with in-unit laundry never sends anyone here — the room is renters by construction"},
-            {"place": "Bodegas, delis and corner stores",
+            {"code": "a2", "place": "Bodegas, delis and corner stores",
              "why": "Daily repeat trade from a three-block radius; the same plate is seen twenty times, which is how a counter sign actually works"},
-            {"place": "Barbershops, hair and nail salons",
+            {"code": "a3", "place": "Barbershops, hair and nail salons",
              "why": "Long waits, neighbourhood regulars, and a room where people already talk about their landlords"},
-            {"place": "Check cashing, money transfer and tax preparers",
+            {"code": "a4", "place": "Check cashing, money transfer and tax preparers",
              "why": "Renter-heavy, and the customer is already in a paperwork-about-money frame when they read it"},
-            {"place": "Pharmacy pickup counters",
+            {"code": "a5", "place": "Pharmacy pickup counters",
              "why": "A ten-minute wait facing a counter, in a chain that serves the same blocks every day"},
-            {"place": "Repair counters — phone, shoe, tailoring, dry cleaning",
+            {"code": "a6", "place": "Repair counters — phone, shoe, tailoring, dry cleaning",
              "why": "The transaction is drop-off then pickup, so the plate gets two viewings per customer"},
-            {"place": "Public library branches and community centres",
+            {"code": "a7", "place": "Public library branches and community centres",
              "why": "Free counter space, a civic question, and staff who will say yes without being sold to"},
-            {"place": "Tenant associations, mutual-aid tables, senior centres",
+            {"code": "a8", "place": "Tenant associations, mutual-aid tables, senior centres",
              "why": "The highest-intent room there is, and the one most likely to pass the link on rather than just scan it"},
-            {"place": "Immigrant-serving groceries, halal butchers, bakeries",
+            {"code": "a9", "place": "Immigrant-serving groceries, halal butchers, bakeries",
              "why": "Stabilized status is most often unknown, and most often worth money, exactly where tenants are least likely to have been told"},
         ],
     },
@@ -1477,9 +1477,20 @@ def _fac_signage(since):
         arms[k]["sessions"] += p["sessions"]
         arms[k]["engaged"] += p["engaged"]
 
+    # A plate row that says only "a4" is a code the reader has to go and look
+    # up, which in practice means the per-plate numbers get skipped. The venue
+    # each code was cut for is declared right here in SIGNAGE_ARMS, so the row
+    # can carry it. Plates with no venue assigned (the pre-code `counter`
+    # plate, or a code cut later) keep their bare code rather than borrowing
+    # somebody else's label.
+    venue_of = {v["code"]: v["place"]
+                for a in SIGNAGE_ARMS for v in a.get("venues", []) if v.get("code")}
+
     out = []
     for a in SIGNAGE_ARMS:
         arm = arms[a["key"]]
+        for pl in arm["plates"].values():
+            pl["venue"] = venue_of.get(pl["code"])
         if arm["scans"] >= QR_RATE_FLOOR:
             arm["rate"] = round(100.0 * arm["engaged"] / arm["scans"], 1)
         arm["plates"] = sorted(arm["plates"].values(),

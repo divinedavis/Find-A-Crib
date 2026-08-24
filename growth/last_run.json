@@ -59,23 +59,23 @@
   },
   "indexstatus": {
     "accept_pct": 3.7,
-    "accept_pct_mature": 3.6,
-    "added": 0,
-    "at": "2026-08-23T05:11:26+00:00",
+    "accept_pct_mature": 2.9,
+    "added": 5,
+    "at": "2026-08-24T05:11:03+00:00",
     "by_crawl_age": {
       "0-6d": {
-        "accept_pct": 5.0,
-        "fetched": 20,
+        "accept_pct": 5.9,
+        "fetched": 17,
         "indexed": 1
       },
       "14-20d": {
         "accept_pct": 0.0,
-        "fetched": 23,
+        "fetched": 20,
         "indexed": 0
       },
       "21-27d": {
         "accept_pct": 0.0,
-        "fetched": 18,
+        "fetched": 24,
         "indexed": 0
       },
       "28d+": {
@@ -89,61 +89,63 @@
         "indexed": 1
       }
     },
-    "cohort": 445,
-    "date": "2026-08-23",
+    "cohort": 450,
+    "date": "2026-08-24",
     "dropped": 0,
     "errors": 0,
-    "fetched_mature": 28,
-    "fetched_pct": 18.4,
+    "fetched_mature": 34,
+    "fetched_pct": 18.2,
     "gained_indexed": 0,
     "indexed_pct": 0.7,
     "inspected": 100,
     "last_crawl": "2026-08-23",
-    "lost_indexed": 2,
+    "lost_indexed": 0,
     "ok": true,
-    "published_urls": 47926,
-    "read": 445,
-    "rechecked": 100,
+    "published_urls": 47979,
+    "read": 450,
+    "rechecked": 95,
     "states": {
       "crawled_not_indexed": 79,
-      "discovered_not_indexed": 34,
+      "discovered_not_indexed": 36,
       "indexed": 3,
-      "unknown_to_google": 329
+      "unknown_to_google": 332
     }
   },
   "measure": {
-    "at": "2026-08-23T05:11:27+00:00",
+    "at": "2026-08-24T05:11:04+00:00",
     "coverage_pct": 83.4,
-    "date": "2026-08-23",
+    "date": "2026-08-24",
     "days": 1,
     "keywords_covered": 221,
     "keywords_total": 265,
-    "latest_measured_day": "2026-08-22"
+    "latest_measured_day": "2026-08-23"
   },
   "outreach": {
-    "at": "2026-08-23T05:11:28+00:00",
-    "date": "2026-08-23",
-    "detail": "invalid_request_error: You have reached your specified API usage limits. You will regain access on 2026-09-01 at 00:00 UTC.",
-    "ok": false
+    "at": "2026-08-24T05:17:47+00:00",
+    "date": "2026-08-24",
+    "drafted": 0,
+    "ok": true,
+    "segment": "proptech"
   },
   "scout": {
-    "at": "2026-08-23T05:11:27+00:00",
-    "date": "2026-08-23",
-    "detail": "invalid_request_error: You have reached your specified API usage limits. You will regain access on 2026-09-01 at 00:00 UTC.",
-    "ok": false
+    "at": "2026-08-24T05:15:06+00:00",
+    "date": "2026-08-24",
+    "keywords_added": 25,
+    "ok": true,
+    "techniques_added": 3
   },
   "searchconsole": {
-    "at": "2026-08-23T05:00:06+00:00",
+    "at": "2026-08-24T05:00:05+00:00",
     "clicks": 3,
-    "date": "2026-08-23",
+    "date": "2026-08-24",
     "impressions": 7,
     "page_clicks": 3,
-    "page_impressions": 55,
-    "serving_ever": 267,
-    "serving_pages": 37,
-    "serving_stable": 36,
+    "page_impressions": 59,
+    "serving_ever": 271,
+    "serving_pages": 39,
+    "serving_stable": 35,
     "share_pct": 0.0,
     "tracked_ranking": 0,
-    "window": "2026-08-14..2026-08-21"
+    "window": "2026-08-15..2026-08-22"
   }
 }

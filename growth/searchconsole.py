@@ -24,6 +24,11 @@ Three things get pulled daily:
                 The daily count cannot tell a stable 89 from a rotating sample
                 of 89 out of 47,600; `stable`, `entered`, `left` and `ever` can.
                 See _churn() for why this was added on 2026-08-04.
+  tiers         which page family those serving URLs belong to, now and ever.
+                Added 2026-08-24, when the history already in this file turned
+                out to say that 258 of the 271 URLs ever served were building
+                pages and 12 were hubs — the opposite of what the ledger had
+                been assuming. See SERVING_TIERS.
 
 That last one is tracked in git on purpose. `serving_pages` being 89 says the
 corpus is not indexed; it does not say *which* 89 pages Google chose to serve,
@@ -51,6 +56,48 @@ PAGES_PATH = os.path.join(HERE, "gsc_pages.json")
 # serve it, just not on page one. Those are worth rewriting before anything
 # that has never been served at all.
 HEADROOM_MIN, HEADROOM_MAX = 10.5, 30.0
+
+# ---- which tier of the corpus actually earns impressions -------------------
+#
+# _churn() below separates "N pages hold their ranking" from "Google rotates N
+# through a 47,600-page corpus". It still cannot answer the question that
+# decides where the next content goes: WHICH pages. Its own docstring noticed
+# the answer in passing on 2026-08-04 — "80 of the 89 were single-address
+# building pages" — and then nobody turned it into a number, so eight weeks of
+# reviews reasoned about "the hub tier" and "the building tier" from verdicts
+# built on owned_visitors, which at ~2 organic clicks a day site-wide cannot
+# distinguish a search arrival from an internal click.
+#
+# It matters because the two tiers point opposite ways. If the hubs are what
+# serve, the answer is more hubs and fewer addresses. If the addresses are what
+# serve, every hub-shaped proposal in the ledger is being justified by a tier
+# Google has barely shown, and the honest move is to make the address pages
+# survive rather than to publish another hub.
+#
+# Ordered, first match wins, catch-all last. Nothing is silently dropped: a URL
+# matching no rule lands in "other" and shows up in the table, because a tier
+# that disappears from the arithmetic is the failure mode this whole record
+# exists to prevent.
+SERVING_TIERS = (
+    ("home",       lambda p: p == "/"),
+    ("building",   lambda p: p.startswith("/building/")),
+    # The NYC aggregate tier: neighborhood, borough, ZIP and the borough
+    # listicles. Built by build_seo.py's main(), all carrying answer_block().
+    ("nyc_hub",    lambda p: p.startswith(("/neighborhood/", "/borough/",
+                                           "/zip/", "/buildings/"))),
+    # The SF / LA / DC aggregate tier: /<city>/neighborhood/, /<city>/zip/,
+    # /<city>/buildings/ — city_hub_docs(). Same shape, different generator.
+    ("city_hub",   lambda p: p.startswith(("/sf/", "/la/", "/dc/", "/nyc/"))),
+    ("council",    lambda p: p.startswith("/council-district/")),
+    ("guide",      lambda p: p.startswith("/guide/")),
+    # The two sections retired on 2026-08-16 for earning zero impressions.
+    # Kept as their own tier so the revisit can read the claim rather than
+    # inherit it.
+    ("voucher",    lambda p: p.startswith(("/section8/", "/brief/"))),
+    ("available",  lambda p: p.startswith("/available/")),
+    ("developers", lambda p: p.startswith("/developers/")),
+)
+TIER_OTHER = "other"
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -151,6 +198,18 @@ def collect(days=7):
                    "gsc_serving_left", "gsc_serving_ever"):
         if ch.get(metric) is not None:
             ledger.record_result(today, "__site__", metric, ch[metric])
+
+    # ---- and which tier those pages are. Only the daily count goes into the
+    # series: `ever`, the medians and the never-served tiers are all
+    # recomputable from the history in gsc_pages.json, which is committed every
+    # night, so writing them nightly would be storing a derivation. A tier that
+    # has never served once is not recorded at all — there is no series to
+    # start until Google shows the family for the first time, and a nightly
+    # zero for /developers/ is noise in a file that is read by eye.
+    tiers = (saved or {}).get("serving_tiers") or {}
+    for name, t in tiers.items():
+        if t.get("ever"):
+            ledger.record_result(today, "__site__", f"gsc_serving_{name}", t.get("now"))
 
     ledger.write_last_run("searchconsole", {
         "window": f"{start}..{end}", "clicks": clicks,
@@ -351,6 +410,62 @@ def stable_pages(limit=25):
             for u, v in rank[:limit]]
 
 
+def _tier(url):
+    """Which page family a served URL belongs to. See SERVING_TIERS."""
+    p = _path(url)
+    for name, match in SERVING_TIERS:
+        if match(p):
+            return name
+    return TIER_OTHER
+
+
+def serving_tiers(rows=None, history=None):
+    """Split the serving set by page family, now and over the whole record.
+
+    Three numbers per tier, because one of them alone always misleads:
+
+      now         distinct URLs in this tier that earned an impression in the
+                  current window. This is the rotating sample, so a low number
+                  is not by itself a verdict on the tier.
+      ever        distinct URLs in this tier seen serving since the record
+                  began. Monotone, so it is the honest read on how much of the
+                  tier Google has *ever* shown — and a tier sitting at a
+                  handful after weeks is one Google has declined, not one that
+                  happened to miss tonight's rotation.
+      days        median / max distinct days a URL in this tier held its place.
+                  Separates "shown once and dropped" from "holds".
+
+    `now` is None when rows is not supplied — the caller asked about history
+    only, and a zero there would read as a measurement rather than an absence.
+    Tiers with nothing in either column are still returned: "Google has never
+    once served this family" is the finding, not a gap.
+    """
+    import statistics
+
+    hist = history if history is not None else ((load_pages() or {}).get("history") or {})
+    order = [name for name, _ in SERVING_TIERS] + [TIER_OTHER]
+    out = {n: {"now": (0 if rows is not None else None), "ever": 0,
+               "median_days": None, "max_days": None} for n in order}
+
+    if rows is not None:
+        for r in rows:
+            out[_tier(r.get("url") or "")]["now"] += 1
+
+    days = {n: [] for n in order}
+    for url, rec in (hist or {}).items():
+        n = _tier(url)
+        out[n]["ever"] += 1
+        # rec is [first_seen, last_seen, days_seen]; tolerate a short record
+        # rather than dropping the URL out of the count it belongs in.
+        if rec and len(rec) >= 3 and isinstance(rec[2], int):
+            days[n].append(rec[2])
+    for n in order:
+        if days[n]:
+            out[n]["median_days"] = round(statistics.median(days[n]), 1)
+            out[n]["max_days"] = max(days[n])
+    return out
+
+
 def _save_pages(sc, token, start, end, rows, by_query):
     """Write growth/gsc_pages.json: the served URLs, their queries, and the
     queries we are not tracking at all.
@@ -392,6 +507,9 @@ def _save_pages(sc, token, start, end, rows, by_query):
         "window": f"{start}..{end}",
         "serving_pages": len(rows),
         "churn": churn,
+        # Computed against the history this run just folded today's rows into,
+        # not the previous snapshot, so `now` and `ever` are the same night.
+        "serving_tiers": serving_tiers(rows, history),
         "history": history,
         "pages": rows[:300],
         "queries_by_page": {r["url"]: per_page.get(r["url"], []) for r in rows[:60]},

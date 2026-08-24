@@ -105,6 +105,75 @@ def _last(metric):
     return s[-1][1] if s else None
 
 
+def _serving_tiers(limit=6):
+    """Rows for the "which tier serves" table: one page family per row.
+
+    RECOMPUTED from the serving history rather than read back from the
+    `serving_tiers` blob in gsc_pages.json, for the same reason _index_summary()
+    recomputes: the blob is written by whichever searchconsole.py last ran on
+    the droplet, so a change to the tier table would otherwise show up a night
+    late and look like a tier that vanished.
+
+    Families that have never served are dropped from the table — there are
+    several and they would push the two that matter off a phone-width screen —
+    but they are counted in the note underneath, so "six families have never
+    served a single page" is still said out loud rather than left as a gap.
+
+    "Now" is counted from the snapshot's own page list rather than from the
+    gsc_serving_<tier> series, so the table is right on the first night it
+    renders instead of a row of dashes until a series exists. That list is
+    capped at 300 for readability; when the cap actually bites the counts are
+    floors and the caller says so rather than printing a number it cannot
+    stand behind.
+
+    Returns (rows, never_served_names, now_is_floor, longest_run).
+    """
+    # Spelled out rather than derived from the slug: "/nyc_hub/" is not a path
+    # that exists, and a table column that looks like a URL prefix but isn't
+    # one gets pasted into a browser.
+    labels = {"home": "Home page", "building": "/building/ (addresses)",
+              "nyc_hub": "NYC hubs (nb/zip/boro)", "city_hub": "SF·LA·DC hubs",
+              "council": "/council-district/", "guide": "/guide/",
+              "voucher": "/section8/ + /brief/", "available": "/available/",
+              "developers": "/developers/", "other": "other"}
+    try:
+        snap = searchconsole.load_pages() or {}
+        listed = snap.get("pages") or []
+        tiers = searchconsole.serving_tiers(listed)
+    except Exception:
+        return [], [], False, None
+    live = [(n, t) for n, t in tiers.items() if t.get("ever")]
+    if not live:
+        return [], [], False, None
+    floor = len(listed) < (snap.get("serving_pages") or 0)
+    # "other" is the catch-all, not a page family — an empty one means every
+    # served URL matched a rule, which is the healthy case. Naming it as a
+    # family that has never served reads as a finding when it is the opposite.
+    never = sorted(labels.get(n, n) for n, t in tiers.items()
+                   if not t.get("ever") and n != searchconsole.TIER_OTHER)
+    rows = []
+    for name, t in sorted(live, key=lambda kv: -(kv[1].get("ever") or 0)):
+        # Held: the median number of distinct days a URL in this family kept its
+        # place. One day means Google showed it once and dropped it, which is a
+        # different failure from never being shown at all. Median only — the max
+        # goes in the note, because four columns leave this one ~18% of the
+        # width and "7d (max 17d)" wraps to "7d (max / 17d)" on a phone, which
+        # reads as two different numbers.
+        med = t.get("median_days")
+        held = "—" if med is None else f"{med:g}d"
+        now = t.get("now")
+        rows.append([labels.get(name, name),
+                     ("—" if now is None else f"{now}{'+' if floor and now else ''}"),
+                     str(t.get("ever") or 0),
+                     held])
+        if len(rows) >= limit:
+            break
+    best = max(live, key=lambda kv: kv[1].get("max_days") or 0)
+    longest = ((labels.get(best[0], best[0]), best[1]["max_days"])
+               if best[1].get("max_days") else None)
+    return rows, never, floor, longest
+
+
 def _index_summary():
     """The index-coverage summary, RECOMPUTED from the cohort, not read back.
 
@@ -371,6 +440,32 @@ def build_blocks(run_log=None, review_out=None):
                                   f"{_fmt(_last('gsc_serving_left'))} dropped out overnight. "
                                   f"{_fmt(ever)} distinct pages have served at least once "
                                   f"since this was first recorded."})
+            # ...and which pages those are. "More hubs" and "fewer addresses"
+            # are opposite instructions and the ledger had been picking between
+            # them on owned_visitors, which at ~2 organic clicks a day cannot
+            # tell a search arrival from an internal click. This can.
+            _tiers, _never, _floor, _longest = _serving_tiers()
+            if _tiers:
+                B.append({"type": "table",
+                          # "Ever", not "Total": these columns are distinct URLs
+                          # seen serving, not impressions, and the two get
+                          # confused every time the column is named loosely.
+                          "cols": ["Page family", "Now", "Ever", "Held"],
+                          "rows": _tiers})
+                _tail = ["Held is the median run of distinct days a URL in that "
+                         "family kept its place."]
+                if _longest:
+                    _tail.append(f"The longest single run is {_longest[1]}d "
+                                 f"({_longest[0]}).")
+                if _floor:
+                    _tail.append("\"Now\" is a floor — the snapshot lists only the "
+                                 "top 300 serving URLs.")
+                if _never:
+                    _tail.append(f"Never served a single page: {', '.join(_never)}. "
+                                 f"A family at zero here has not lost a ranking — "
+                                 f"Google has not once shown it.")
+                if _tail:
+                    B.append({"type": "note", "text": " ".join(_tail)})
         # Three loose numbers, not a table — four header cells collide at phone
         # width and a one-row table is a table for no reason.
         #

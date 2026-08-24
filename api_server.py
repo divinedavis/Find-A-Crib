@@ -944,7 +944,11 @@ def dashboard_metrics():
 # Channels worth naming on the card, in the order they are shown. The key is
 # the ?src= value the nginx short link redirects to (/tt -> /?src=tiktok).
 FAC_CHANNELS = [("tiktok", "TikTok"), ("instagram", "Instagram"),
-                ("youtube", "YouTube"), ("reddit", "Reddit")]
+                ("youtube", "YouTube"), ("reddit", "Reddit"),
+                # Printed counter QR pieces: nginx serves /c as a 302 to
+                # ?src=qr-counter, so a scan is counted exactly like a tagged
+                # social link and needs nothing on the object but a short path.
+                ("qr-counter", "Counter QR")]
 
 
 def _fac_channels(since):

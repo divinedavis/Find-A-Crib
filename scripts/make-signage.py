@@ -153,6 +153,23 @@ def mark(cx: float, cy: float, size: float, *, outline: bool) -> str:
     )
 
 
+def mark_icon(cx: float, cy: float, size: float) -> str:
+    """The app icon as it actually ships: blue square, white ring, blue centre.
+
+    Only the printed card uses this. It is a solid mark rather than the
+    outlined one, which is the whole reason it is allowed near a code: the
+    finder-pattern problem that cost the engrave plate two thirds of its scan
+    margin comes from CONCENTRIC OUTLINES, and filled shapes do not trip the
+    same search. Measured on the earlier colour card at 35dpi page floor
+    against 30dpi for its bare code — a rounding error. The decode sweep at
+    the end of the build is what actually holds this to account.
+    """
+    h = size / 2
+    return (rect(cx - h, cy - h, size, size, fill=BLUE, rx=size * 0.22)
+            + diamond(cx, cy, size * 0.34, fill=WHITE)
+            + diamond(cx, cy, size * 0.16, fill=BLUE))
+
+
 QUIET_MODULES = 4  # the spec minimum, and the thing an eye never catches
 
 
@@ -346,6 +363,58 @@ def counter_plate(url: str, shown: str, lines=None,
     meta = {"trim": "4 x 6 in", "bleed": "none (cut to line)",
             "canvas": f"{w / PT:.3f} x {h / PT:.3f} in", "head": head,
             "qr_in": side / PT, "quiet": (top - 118.0) / module, "modules": n}
+    return "\n".join(b), w, h, meta
+
+
+def card_black(url: str, shown: str, lines) -> tuple[str, float, float, dict]:
+    """4 x 4in black card for a UV-printed acrylic counter stand.
+
+    Square and 4in because that is the size the L-shaped NFC stands these are
+    modelled on actually come in, and because a square face is what a folded
+    or L-foot stand gives you.
+
+    THE CARD IS BLACK AND THE CODE IS NOT. The QR sits on a white tile, which
+    is not a design flourish — it is the entire reason a black card is allowed
+    to exist here. A code printed white-on-black is an inverted code: recent
+    iPhones read them, older Android cameras and older Google Lens do not, and
+    those are disproportionately the phones this is aimed at. Every product
+    this is modelled on does the same thing, and it is the one part of the
+    look that cannot be copied by eye.
+
+    UV printed rather than engraved, so this file is allowed the flood fill
+    that the two-ply artwork is not: on acrylic the black is ink, not an hour
+    of laser time.
+    """
+    w = h = 4 * PT
+    cx = w / 2
+    b = [rect(0, 0, w, h, fill=BLACK)]
+
+    # Logo lockup, centred as a lockup rather than as two centred things.
+    b.append(mark_icon(cx - 54, 30, 26))
+    b.append(text(cx - 36, 39, "Find A Crib", 20, fill=WHITE, weight=700,
+                  anchor="start", spacing=-0.5))
+
+    b.append(text(cx, 78, lines[0], 17, fill=WHITE, weight=700, spacing=-0.4))
+    b.append(text(cx, 99, lines[1], 17, fill=WHITE, weight=700, spacing=-0.4))
+
+    # The white tile. Its margin around the code IS the quiet zone, so it is
+    # measured rather than eyeballed — a tile drawn tight to the code is a
+    # black card pressing straight up against the finder patterns.
+    # Sized so the tile clears the bottom edge by about the margin the logo
+    # keeps at the top — the first cut hung it 14pt off the bottom against
+    # 21pt at the top, which reads as the card slipping downward.
+    panel = 156.0
+    px, py = cx - panel / 2, 110.0
+    b.append(rect(px, py, panel, panel, fill=WHITE, rx=13))
+    side = 122.0
+    code, module, n = qr(url, cx, py + (panel - side) / 2, side)
+    check_quiet("black card", (panel - side) / 2, module)
+    b.append(code)
+
+    meta = {"trim": "4 x 4 in", "bleed": "none",
+            "canvas": f"{w / PT:.3f} x {h / PT:.3f} in",
+            "qr_in": side / PT, "quiet": ((panel - side) / 2) / module,
+            "modules": n, "head": 17}
     return "\n".join(b), w, h, meta
 
 
@@ -726,6 +795,16 @@ def main() -> int:
                f"Find A Crib counter plate {code} 4x6 (Ponoko: blue = cut)"))
 
         write_dxf(f"findacrib-counter-{code}-4x6-cut", ph, [(0, 0, pw, ph, 10.0)])
+
+        # The UV-printed black card. Same code, same question, different
+        # manufacturing route entirely — ink on acrylic rather than a laser in
+        # two-ply — so it is a separate piece rather than a recolour.
+        bstem = f"findacrib-card-{code}-4x4-black"
+        bcard, bwd, bht, bm2 = card_black(url, shown, lines)
+        render(bstem, svg(bwd, bht, bcard, f"Find A Crib black card {code} 4x4"))
+        print(f"  black card {bm2['trim']}, code {bm2['qr_in']:.2f} in, "
+              f"{bm2['quiet']:.1f}-module quiet zone")
+        verify(bstem, url)
 
         print(f"plate {code}: \u201c{lines[0]} {lines[1]}\u201d -> {url}")
         print(f"  {pm['trim']}, bleed {pm['bleed']}  ->  {pm['canvas']} artwork, "

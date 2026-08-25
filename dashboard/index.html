@@ -578,7 +578,7 @@
       <!-- 14-day sparkline (both sites) -->
       <div class="card mb18">
         <div class="card-head-row">
-          <div><h2>Last 14 days</h2><div class="card-sub" id="spark-sub">Daily page views &amp; unique visitors</div></div>
+          <div><h2 id="spark-title">Last 7 days</h2><div class="card-sub" id="spark-sub">Unique visitors per day</div></div>
         </div>
         <div id="spark" style="position:relative"></div>
       </div>
@@ -1275,7 +1275,7 @@
     el('donut-title').textContent='Where returning visitors come from';
     el('donut-sub').textContent='Are you paying to bring people back?';
     el('today-sub').textContent='Fresh traffic, updated live';
-    el('spark-sub').textContent='Daily page views & unique visitors';
+    el('spark-sub').textContent='Unique visitors per day';
     // avatar
     var email=(user&&user.email)||'';
     el('avatar').textContent=(email[0]||'D').toUpperCase();
@@ -1931,21 +1931,39 @@
   }
 
   // ---------- sparkline ----------
+  var SPARK_DAYS = 7;
+
   function renderSpark(days){
     var host=el('spark');
     if(!days.length){ host.innerHTML='<div style="color:var(--muted);font-size:13px">Not enough history yet.</div>'; return; }
+    days = days.slice(-SPARK_DAYS);
+    // Plot unique visitors. Page views flatter the chart — one person reloading
+    // a map ten times is ten views and one visitor, and on a site this size
+    // that is the difference between a spike and a person.
+    //
+    // Crease and Trent share this component and pass visitors:null, because
+    // their per-site logging never recorded one. So the metric is chosen from
+    // the data rather than assumed: with no visitor figures it plots views and
+    // the subtitle says so, instead of drawing a flat line along zero.
+    var hasVis = days.some(function(d){ return d.visitors != null; });
+    var val = function(d){ return n(hasVis ? d.visitors : d.views); };
+    // The heading states the window it actually drew. Early on there is less
+    // history than the window, and a card claiming "last 7 days" over four
+    // points is a card lying about a trend.
+    var t=el('spark-title');
+    if(t) t.textContent = 'Last '+days.length+(days.length===1?' day':' days');
     var W=Math.max(host.clientWidth||900,320), H=150, pad={t:14,r:8,b:22,l:8};
     var iw=W-pad.l-pad.r, ih=H-pad.t-pad.b;
-    var max=Math.max.apply(null,days.map(function(d){return d.views;}))||1;
+    var max=Math.max.apply(null,days.map(val))||1;
     var X=function(i){ return pad.l + (days.length===1?iw/2:iw*i/(days.length-1)); };
     var Y=function(v){ return pad.t + ih - ih*v/max; };
     var line='',area='M'+X(0)+' '+(pad.t+ih);
-    days.forEach(function(d,i){ line+=(i?'L':'M')+X(i)+' '+Y(d.views)+' '; area+=' L'+X(i)+' '+Y(d.views); });
+    days.forEach(function(d,i){ line+=(i?'L':'M')+X(i)+' '+Y(val(d))+' '; area+=' L'+X(i)+' '+Y(val(d)); });
     area+=' L'+X(days.length-1)+' '+(pad.t+ih)+' Z';
     var dots='',labels='';
     days.forEach(function(d,i){
-      dots+='<circle cx="'+X(i)+'" cy="'+Y(d.views)+'" r="3.2" fill="var(--purple)" stroke="var(--card)" stroke-width="1.5" data-i="'+i+'"></circle>';
-      if(i%2===0 || i===days.length-1){
+      dots+='<circle cx="'+X(i)+'" cy="'+Y(val(d))+'" r="3.2" fill="var(--purple)" stroke="var(--card)" stroke-width="1.5" data-i="'+i+'"></circle>';
+      if(true){
         var lbl=new Date(d.date+'T00:00').toLocaleString('en-US',{month:'numeric',day:'numeric'});
         labels+='<text x="'+X(i)+'" y="'+(H-6)+'" text-anchor="middle" font-size="10.5" fill="var(--muted)">'+lbl+'</text>';
       }
@@ -1980,7 +1998,9 @@
       if(!d||!c) return;
       var rb=host.getBoundingClientRect(), cb=c.getBoundingClientRect();
       tip.innerHTML='<b>'+new Date(d.date+'T00:00').toLocaleString('en-US',{month:'short',day:'numeric'})+
-                    '</b> — '+d.views+' views · '+d.visitors+' visitors';
+                    '</b> — '+(hasVis ? n(d.visitors)+' visitor'+(n(d.visitors)===1?'':'s')+
+                                        ' · '+n(d.views)+' views'
+                                      : n(d.views)+' views');
       // Clamp inside the card: the tip is centred on the point, so the first and
       // last columns would otherwise hang off the edge and get clipped.
       var half=tip.offsetWidth/2;
@@ -2378,7 +2398,7 @@
     el('donut-title').textContent='Where NEMO’s visitors come from';
     el('donut-sub').textContent='Earned (search, maps, AI) vs. people who already knew the name';
     el('today-sub').textContent='Straight from the server log, updated live';
-    el('spark-sub').textContent='Daily page views & visitors — history starts when per-site logging did';
+    el('spark-sub').textContent='Unique visitors per day — history starts when per-site logging did';
 
     var T=d.totals||{}, TD=d.today||{}, L=d.leads||{}, S=d.search||{}, ch=d.channels||{};
     var earned=n(ch.organic)+n(ch.local)+n(ch.ai);

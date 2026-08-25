@@ -437,6 +437,18 @@
         </div>
       </div>
 
+      <!-- Recent trend. Shared by all four sites, so it sits OUTSIDE fac-a —
+           that div is hidden on the other tabs, and putting the chart inside
+           it would silently remove the chart from three dashboards. Sitting
+           here it lands directly above whichever site's first section
+           follows. -->
+      <div class="card mb18">
+        <div class="card-head-row">
+          <div><h2 id="spark-title">Last 7 days</h2><div class="card-sub" id="spark-sub">Unique visitors per day</div></div>
+        </div>
+        <div id="spark" style="position:relative"></div>
+      </div>
+
       <!-- ===== Find A Crib only ===== -->
       <div id="fac-a">
       <!-- product health: the numbers that value the business -->
@@ -573,14 +585,6 @@
           <div class="ads-tiles" id="trent-bookings"></div>
           <div class="callout" id="trent-bookings-callout" style="margin-top:16px"></div>
         </div>
-      </div>
-
-      <!-- 14-day sparkline (both sites) -->
-      <div class="card mb18">
-        <div class="card-head-row">
-          <div><h2 id="spark-title">Last 7 days</h2><div class="card-sub" id="spark-sub">Unique visitors per day</div></div>
-        </div>
-        <div id="spark" style="position:relative"></div>
       </div>
 
       <!-- ===== Find A Crib only ===== -->

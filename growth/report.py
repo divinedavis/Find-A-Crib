@@ -767,14 +767,22 @@ def build_blocks(run_log=None, review_out=None):
 
     # ---- scoreboard
     sb = review.scoreboard()
-    if sb["works"] or sb["does_not_work"]:
+    if sb["works"] or sb["does_not_work"] or sb.get("unproven"):
         B.append({"type": "section", "label": "Scoreboard so far"})
+        # UNPROVEN is its own row and is deliberately not folded into either
+        # side. It means the review ran, read the series, and could not tell —
+        # usually because the technique's declared metric has no resolution at
+        # this traffic level. Reading that as WORKS is what put "mrr_usd median
+        # 0.0/day" in the won column on 2026-08-25; reading it as DIDN'T WORK
+        # would retire the idea for the instrument's failure instead.
         B.append({"type": "table", "cols": ["Verdict", "Technique", "Why"],
                   "align": ["left", "left", "left"],
                   "rows": [[("WORKS", "good"), f"{r['id']} {r['name']}", r["why"]]
                            for r in sb["works"]]
                           + [[("DIDN'T WORK", "bad"), f"{r['id']} {r['name']}", r["why"]]
-                             for r in sb["does_not_work"]]})
+                             for r in sb["does_not_work"]]
+                          + [[("UNPROVEN", "mute"), f"{r['id']} {r['name']}", r["why"]]
+                             for r in sb.get("unproven") or []]})
 
     # ---- research jobs: say plainly when they could not run. A daily job that
     # fails quietly (no key, no credit, rate limited) looks like a job with

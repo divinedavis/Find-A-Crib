@@ -220,16 +220,77 @@ def set_status(tech_id, status, why=""):
     return None
 
 
+def note(tech_id, text):
+    """Append a dated line to a technique's notes without changing anything else.
+
+    Revisits mostly produce reasoning, not status changes, and until now the
+    only way to record one was to flip a status you did not want to flip.
+    """
+    with _LOCK:
+        techs = load_techniques()
+        for t in techs:
+            if t["id"] == tech_id or t.get("slug") == tech_id:
+                t["notes"] = (t.get("notes", "") + f"\n[{today()}] {text}").strip()
+                save_techniques(techs)
+                return t
+    return None
+
+
+def reactivate(tech_id, why=""):
+    """Bring a retired technique back, with its measurement clock restarted.
+
+    Deliberately NOT the same as set_status(id, "active"), and the difference
+    decides whether a revisit means anything. set_status leaves `activated` at
+    the original date, so a technique revived after 30 days is already past
+    GRACE_DAYS the moment it comes back: review.py judges it on the next run,
+    finds the same flat series the revisit just rejected as unsound, and
+    retires it again before the second run has produced a single day of its own
+    evidence. The revival would survive about 24 hours and look, in the ledger,
+    like the revisit had agreed with the retirement.
+
+    So the clock restarts. `first_activated` keeps the original date — the
+    history is not rewritten — and the stale verdict is cleared rather than
+    left standing, because it describes a run that has been deliberately
+    superseded and would otherwise keep the technique in the scoreboard's
+    failure column and on the scout's "do not propose again" list while it is
+    being actively retried.
+    """
+    with _LOCK:
+        techs = load_techniques()
+        for t in techs:
+            if t["id"] == tech_id or t.get("slug") == tech_id:
+                prev = t.get("status")
+                if not t.get("first_activated"):
+                    t["first_activated"] = t.get("activated")
+                t["status"] = "active"
+                t["activated"] = today()
+                t["retired"] = None
+                t["verdict"] = None
+                t["revisit_on"] = _revisit_date()
+                t["notes"] = (t.get("notes", "")
+                              + f"\n[{today()}] {prev}→active (clock restarted, "
+                                f"first activated {t.get('first_activated')}): {why}").strip()
+                save_techniques(techs)
+                return t
+    return None
+
+
 def set_verdict(tech_id, works, why, measured=None):
     """Record the judgement. Kept separate from status so a technique can be
-    'works but retired' (e.g. folded into another) without losing the finding."""
+    'works but retired' (e.g. folded into another) without losing the finding.
+
+    works is tri-state: True, False, or None for "judged and not established".
+    Do not coerce None to False — see the note at the top of review.py. A
+    technique nobody could measure has not failed, and filing it under failure
+    would retire ideas for the sins of the instrument.
+    """
     with _LOCK:
         techs = load_techniques()
         for t in techs:
             if t["id"] == tech_id or t.get("slug") == tech_id:
                 t["verdict"] = {
                     "decided": today(),
-                    "works": bool(works),
+                    "works": None if works is None else bool(works),
                     "why": why,
                     "measured": measured or {},
                 }

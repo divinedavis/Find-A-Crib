@@ -368,7 +368,8 @@ def cmd_status(args):
         mark = {"active": "●", "candidate": "○", "retired": "×"}.get(t.get("status"), "?")
         log(f"{mark} {t['id']} {t['name']}  [{t['kind']}/{t['status']}]")
         if v:
-            log(f"    verdict: {'WORKS' if v.get('works') else 'no'} — {v.get('why')}")
+            mk = {True: "WORKS", False: "no"}.get(v.get("works"), "UNPROVEN")
+            log(f"    verdict: {mk} — {v.get('why')}")
     log("")
     log(json.dumps(keywords.summary(), indent=2))
 

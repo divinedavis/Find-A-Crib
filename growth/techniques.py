@@ -386,14 +386,14 @@ def _listing_table(rows, show_boro=True):
     return f"<div class='scroll'><table>{head}{''.join(out)}</table></div>"
 
 
-def _stats_block(rows):
+def _stats_block(rows, live_label="rent-stabilized buildings with live listings"):
     prices = [r["price"] for r in rows if r.get("price")]
     med = int(statistics.median(prices)) if prices else None
     cheapest = min(prices) if prices else None
     total = sum(r["n"] for r in rows)
     b8 = sum(1 for r in rows if r["b8"])
     cells = [
-        (f"{len(rows):,}", "rent-stabilized buildings with live listings"),
+        (f"{len(rows):,}", live_label),
         (f"{total:,}", "individual units listed"),
         (f"${med:,}" if med else "—", "median asking rent"),
         (f"${cheapest:,}" if cheapest else "—", "cheapest listing"),
@@ -401,6 +401,54 @@ def _stats_block(rows):
     ]
     return "<div class='stats'>" + "".join(
         f"<div class='stat'><b>{v}</b><span>{_esc(l)}</span></div>" for v, l in cells) + "</div>"
+
+
+# The voucher feed is a nightly third-party scrape, and it can stop moving
+# without anything here noticing. Two ways, both observed:
+#
+#   1. The scrape fails or AffordableHousing.com changes shape, and s8.json
+#      keeps whatever the last good run left behind.
+#   2. The technique is RETIRED. Retirement stops the rebuild — it does not
+#      unpublish the pages, drop them from sitemap-daily.xml, or stop IndexNow
+#      submitting them nightly (see t_crawl_paths). /section8/ sat exactly
+#      there from 2026-08-16 to 2026-08-25, still live, still telling readers
+#      "updated August 16, 2026 … Rebuilt daily from the overnight feed".
+#
+# In both cases the page went on asserting "listed right now", "Updated daily"
+# and "refreshed nightly" over data of unknown age. That is the one kind of
+# error this site cannot afford: these are apartment listings, and a reader
+# acting on a stale one travels across the city to see a unit that is gone.
+# The fix is not to remember to check — it is to make every present-tense claim
+# on these pages derive from the feed's own timestamp, so it degrades to a
+# dated, past-tense one automatically the moment the feed stops.
+FEED_STALE_HOURS = 48
+
+
+def _feed_freshness(ctx):
+    """(stale, when, note) for the AffordableHousing.com voucher feed.
+
+    `when` is the feed's own date, formatted for display. `note` is the reader-
+    facing caveat, or None when the feed is current. No timestamp at all counts
+    as stale: an unknown age is not evidence of freshness, and the failure that
+    leaves the timestamp missing is the same one that leaves the data old.
+    """
+    ts = (ctx.s8 or {}).get("avail_updated")
+    if not ts:
+        return True, None, ("<b>These listings may be out of date.</b> The date of the "
+                            "underlying feed could not be determined, so treat every "
+                            "listing below as a lead to verify rather than a live vacancy.")
+    when = datetime.datetime.fromtimestamp(ts, datetime.timezone.utc)
+    label = when.strftime("%B %-d, %Y")
+    hours = (datetime.datetime.now(datetime.timezone.utc) - when).total_seconds() / 3600.0
+    if hours <= FEED_STALE_HOURS:
+        return False, label, None
+    days = int(hours // 24)
+    return True, label, (
+        f"<b>These listings are from {_esc(label)} and have not been refreshed since.</b> "
+        f"That is {days} day{'s' if days != 1 else ''} ago. Apartments listed for voucher "
+        f"holders turn over quickly, so some of these are no longer available — check the "
+        f"listing itself before you travel to see one. The rent-stabilization status of each "
+        f"building is unaffected: that comes from the DHCR registration, not this feed.")
 
 
 SOI_NOTE = (
@@ -427,9 +475,17 @@ def t_fresh_section8(ctx):
     if len(rows) < 10:
         return {"ok": False, "detail": f"only {len(rows)} matched listings — refusing to publish a thin page"}
 
-    updated = ctx.s8.get("avail_updated")
-    when = (datetime.datetime.fromtimestamp(updated, datetime.timezone.utc).strftime("%B %-d, %Y")
-            if updated else ledger.today())
+    # Every present-tense claim below is conditioned on this. See _feed_freshness.
+    stale, when, age_note = _feed_freshness(ctx)
+    when = when or ledger.today()
+    # "listed right now" is a claim about this minute; "listed as of <date>" is
+    # a claim about a snapshot. Only one of them is true when the feed is old.
+    now_phrase = f"as of {when}" if stale else "right now"
+    cadence = "" if stale else " Updated daily."
+    refreshed = f"as of {when}" if stale else "refreshed nightly"
+    stats_label = (f"rent-stabilized buildings listed as of {when}" if stale
+                   else "rent-stabilized buildings with live listings")
+    caveat = f"<div class='note'>{age_note}</div>" if age_note else ""
 
     made = []
 
@@ -443,11 +499,14 @@ def t_fresh_section8(ctx):
         for k, v in sorted(by_boro.items(), key=lambda kv: -len(kv[1])) if k in BORO_SLUG)
 
     body = (
-        f"<h1>Section 8 &amp; voucher-friendly apartments in NYC — updated {_esc(when)}</h1>"
-        f"<p class='sub'>Every building below is <b>registered rent-stabilized with DHCR</b> "
-        f"and has at least one apartment listed right now on AffordableHousing.com, the site "
-        f"NYCHA and HPD point voucher holders to. Rebuilt daily from the overnight feed.</p>"
-        + _stats_block(rows)
+        f"<h1>Section 8 &amp; voucher-friendly apartments in NYC — "
+        f"{'listings as of' if stale else 'updated'} {_esc(when)}</h1>"
+        + caveat
+        + f"<p class='sub'>Every building below is <b>registered rent-stabilized with DHCR</b> "
+        f"and {'had' if stale else 'has'} at least one apartment listed {_esc(now_phrase)} on "
+        f"AffordableHousing.com, the site NYCHA and HPD point voucher holders to."
+        + ("</p>" if stale else " Rebuilt daily from the overnight feed.</p>")
+        + _stats_block(rows, stats_label)
         + f"<div class='cols'>{boro_links}</div>"
         # The return leg of a reference that has only ever run one way: every
         # dated brief links here, nothing here linked back. Both sections are
@@ -484,16 +543,18 @@ def t_fresh_section8(ctx):
              for i, r in enumerate(rows[:50])]},
         _dataset_jsonld(
             "Rent-stabilized NYC buildings with live Section 8 / voucher listings",
-            f"{len(rows)} NYC buildings registered rent-stabilized with DHCR that currently have an "
-            f"apartment listed on AffordableHousing.com, refreshed nightly.",
+            f"{len(rows)} NYC buildings registered rent-stabilized with DHCR that "
+            f"{'had' if stale else 'currently have'} an apartment listed on "
+            f"AffordableHousing.com, {refreshed}.",
             SITE + "/section8/", date_modified, "New York City", len(rows)),
         _faq_jsonld(SECTION8_FAQ),
     ]
     st, url, _ = ctx.write_page(
         "section8/index.html",
-        _page(f"Section 8 apartments in NYC — {len(rows)} rent-stabilized buildings listed now",
+        _page(f"Section 8 apartments in NYC — {len(rows)} rent-stabilized buildings "
+              f"listed {'as of ' + when if stale else 'now'}",
               f"{len(rows)} rent-stabilized NYC buildings with apartments listed for voucher holders "
-              f"right now. Updated daily. Median asking rent and direct listing links by borough.",
+              f"{now_phrase}.{cadence} Median asking rent and direct listing links by borough.",
               SITE + "/section8/", body, jsonld))
     made.append((st, url))
 
@@ -508,10 +569,13 @@ def t_fresh_section8(ctx):
                   f"<a href='/section8/'>Voucher listings</a> › {_esc(disp)}</div>")
         bbody = (
             crumbs
-            + f"<h1>Section 8 apartments in {_esc(disp)} — updated {_esc(when)}</h1>"
-            + f"<p class='sub'>{len(brows)} rent-stabilized {_esc(disp)} buildings have an apartment "
-              f"listed for voucher holders right now.</p>"
-            + _stats_block(brows) + SOI_NOTE
+            + f"<h1>Section 8 apartments in {_esc(disp)} — "
+              f"{'listings as of' if stale else 'updated'} {_esc(when)}</h1>"
+            + caveat
+            + f"<p class='sub'>{len(brows)} rent-stabilized {_esc(disp)} buildings "
+              f"{'had' if stale else 'have'} an apartment listed for voucher holders "
+              f"{_esc(now_phrase)}.</p>"
+            + _stats_block(brows, stats_label) + SOI_NOTE
             + _listing_table(brows, show_boro=False)
             + f"<div class='note'><a href='/borough/{slug}/'>Every rent-stabilized building in "
               f"{_esc(disp)} →</a></div>")
@@ -520,15 +584,17 @@ def t_fresh_section8(ctx):
                          (disp, f"{SITE}/section8/{slug}/")]),
             _dataset_jsonld(
                 f"Rent-stabilized {disp} buildings with live Section 8 / voucher listings",
-                f"{len(brows)} {disp} buildings registered rent-stabilized with DHCR that currently "
-                f"have an apartment listed on AffordableHousing.com, refreshed nightly.",
+                f"{len(brows)} {disp} buildings registered rent-stabilized with DHCR that "
+                f"{'had' if stale else 'currently have'} an apartment listed on "
+                f"AffordableHousing.com, {refreshed}.",
                 f"{SITE}/section8/{slug}/", date_modified, disp, len(brows)),
         ]
         st, url, _ = ctx.write_page(
             f"section8/{slug}/index.html",
-            _page(f"Section 8 apartments in {disp} — {len(brows)} stabilized buildings listed now",
+            _page(f"Section 8 apartments in {disp} — {len(brows)} stabilized buildings "
+                  f"listed {'as of ' + when if stale else 'now'}",
                   f"Rent-stabilized buildings in {disp} with apartments listed for Section 8 and "
-                  f"other voucher holders right now. Updated daily.",
+                  f"other voucher holders {now_phrase}.{cadence}",
                   f"{SITE}/section8/{slug}/", bbody, bjsonld))
         made.append((st, url))
 
@@ -550,6 +616,18 @@ def t_daily_brief(ctx):
     rows = _live_listings(ctx)
     if len(rows) < 10:
         return {"ok": False, "detail": f"only {len(rows)} matched listings — no brief published"}
+
+    # A brief is a dated point in a data series, and its date is today's date
+    # while its contents are the feed's. When the feed stops refreshing those
+    # are different days, and publishing anyway would file old numbers under
+    # today — a fabricated observation in the one artefact on this site whose
+    # entire value is that it is a genuine dated record. Refuse instead.
+    feed_stale, feed_when, _ = _feed_freshness(ctx)
+    if feed_stale:
+        return {"ok": True, "skipped": True,
+                "detail": f"voucher feed last refreshed {feed_when or 'at an unknown date'} — "
+                          f"no brief published, because dating that data today would put a "
+                          f"fabricated point in the series"}
 
     date = ledger.today()
     today_set = {r["bbl"] for r in rows}

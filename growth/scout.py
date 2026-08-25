@@ -95,6 +95,10 @@ def build_prompt(docroot=None):
     sb = review.scoreboard()
     tried = [f"- {r['name']}: DID NOT WORK — {r['why']}" for r in sb["does_not_work"]]
     won = [f"- {r['name']}: WORKS — {r['why']}" for r in sb["works"]]
+    # Kept out of the won list on purpose. A scout told that a technique with
+    # $0.00 of lifetime revenue "WORKS" proposes more of it; this section asks
+    # for the opposite move — a way to measure it, or a better idea.
+    unproven = [f"- {r['name']}: {r['why']}" for r in sb.get("unproven") or []]
     kw = keywords.summary()
     goals = ledger.get_state("goals", {})
 
@@ -134,6 +138,12 @@ ALREADY MEASURED AS WORKING
 
 ALREADY MEASURED AS NOT WORKING — do not propose these again
 {chr(10).join(tried) if tried else '(nothing retired yet)'}
+
+RUNNING BUT UNPROVEN — the review read the series and could NOT tell whether these work,
+usually because the metric they are judged on has no resolution at this traffic level.
+Do not treat these as successes to extend. If you can name a metric that WOULD resolve one
+of them, say so in notes; that is worth more than another technique.
+{chr(10).join(unproven) if unproven else '(none)'}
 
 QUERIES ALREADY TRACKED — do not propose these or paraphrases of them. "is my apartment
 rent controlled sf" and "is my apartment rent controlled san francisco" are the same entry

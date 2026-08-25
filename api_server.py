@@ -1329,15 +1329,55 @@ def _qr_arm(plate):
     return plate[0] if plate[0].isalpha() else None
 
 
-def _qr_scans(since):
+FAC_PLACEMENTS = os.environ.get(
+    "FAC_PLACEMENTS", "/root/Find-A-Crib/growth/placements.json")
+
+
+def _fac_placements():
+    """Which plate is on which counter, and since when.
+
+    Returns (rows, live_from). `live_from` maps a plate code to the earliest
+    date any copy of it went out — the moment its scans stop being the owner
+    checking a proof and start being somebody at a counter.
+
+    Missing file gives ({}, {}) and the card then counts NOTHING and says so.
+    That is the deliberate direction to fail in: the alternative is counting
+    every test scan as a customer, which on this project has a track record.
+    """
+    try:
+        with open(FAC_PLACEMENTS) as f:
+            rows = (json.load(f) or {}).get("placements") or []
+    except Exception:
+        return [], {}
+    live_from = {}
+    for r in rows:
+        c, d = r.get("code"), r.get("placed")
+        if c and d and (c not in live_from or d < live_from[c]):
+            live_from[c] = d
+    return rows, live_from
+
+
+def _qr_scans(since, live_from=None):
     """Redirects through /c and /c/<code>, by plate, from nginx's own log.
 
-    Returns ({plate: count}, log_present). An unreadable or absent log gives
-    ({}, False) rather than zeros: "no scan log" and "no scans" are different
-    findings, and the card says which one it is.
+    Returns (counted, pre, unlogged, log_present). An unreadable or absent log
+    gives empties and log_present False: "no scan log" and "no scans" are
+    different findings, and the card says which one it is.
+
+    Three buckets, and nothing is ever silently dropped:
+
+      counted   the plate is on a counter and this scan came after it got
+                there. The only bucket that is a customer.
+      pre       scanned before that plate was placed. Testing, by definition —
+                a plate on a desk has no customers. Reported, not deleted, so
+                a number the owner remembers seeing does not just vanish.
+      unlogged  scanned on a plate with no placement record at all. NOT
+                counted, and surfaced loudly: it means either a test, or a
+                plate that went out and never got written down. Both need the
+                owner, and silently choosing either one for him is wrong.
     """
     paths = [FAC_QR_LOG] + sorted(glob.glob(FAC_QR_LOG + ".*"))
-    out, seen_file, lines = {}, False, 0
+    out, pre, unlogged, seen_file, lines = {}, {}, {}, False, 0
     for p in paths:
         if lines > QR_LOG_MAX_LINES:
             break
@@ -1366,10 +1406,22 @@ def _qr_scans(since):
                     code = "counter" if u.rstrip("/") == "/c" else u.rsplit("/", 1)[-1]
                     if not re.fullmatch(r"[a-z0-9]{1,8}", code or ""):
                         continue
+                    if live_from is not None:
+                        lf = live_from.get(code)
+                        if not lf:
+                            unlogged[code] = unlogged.get(code, 0) + 1
+                            continue
+                        # Date-only compare: the log stamp is a full ISO
+                        # timestamp and the placement is a day, so slicing to
+                        # 10 chars is what makes "placed today" mean all of
+                        # today rather than midnight onwards.
+                        if ts[:10] < lf[:10]:
+                            pre[code] = pre.get(code, 0) + 1
+                            continue
                     out[code] = out.get(code, 0) + 1
         except Exception:
             continue
-    return out, seen_file
+    return out, pre, unlogged, seen_file
 
 
 def _iso(s):
@@ -1423,7 +1475,8 @@ def _fac_signage(since):
         arms[a["key"]] = dict(a, scans=0, sessions=0, engaged=0,
                               rate=None, plates={})
 
-    scans, log_present = _qr_scans(since)
+    placements, live_from = _fac_placements()
+    scans, pre_scans, unlogged, log_present = _qr_scans(since, live_from)
     for code, cnt in scans.items():
         k = _qr_arm(code)
         if k not in arms:
@@ -1491,6 +1544,9 @@ def _fac_signage(since):
         arm = arms[a["key"]]
         for pl in arm["plates"].values():
             pl["venue"] = venue_of.get(pl["code"])
+            pl["stores"] = [r for r in placements
+                            if r.get("code") == pl["code"] and not r.get("removed")]
+            pl["since"] = live_from.get(pl["code"])
         if arm["scans"] >= QR_RATE_FLOOR:
             arm["rate"] = round(100.0 * arm["engaged"] / arm["scans"], 1)
         arm["plates"] = sorted(arm["plates"].values(),
@@ -1519,6 +1575,11 @@ def _fac_signage(since):
 
     return {"arms": out, "log": log_present, "verdict": verdict,
             "truncated": truncated,
+            "placed": len([r for r in placements if not r.get("removed")]),
+            "rooms": len({r["code"] for r in placements if not r.get("removed")}),
+            "excluded_pre": sum(pre_scans.values()),
+            "unlogged": sorted(({"code": c, "scans": n} for c, n in unlogged.items()),
+                               key=lambda r: -r["scans"]),
             "rate_floor": QR_RATE_FLOOR, "call_floor": QR_CALL_FLOOR}
 
 def _fac_search():

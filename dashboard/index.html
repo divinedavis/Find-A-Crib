@@ -1831,7 +1831,17 @@
             // and a row nobody can read at a glance is a row that gets skipped
             // — which is the whole point of having cut nine of them.
             var name = p.venue ? p.venue : url;
-            var sub = p.venue ? url+' · '+d : d;
+            // Where it physically is, when there is somewhere. "Laundromats:
+            // 4 scans" is a category; "Sunshine Laundromat since Aug 28" is a
+            // place you can walk back to and ask about.
+            var st = p.stores || [];
+            var whereTxt = st.length===1
+                  ? st[0].store + (st[0].cross ? ' · '+st[0].cross : '')
+              : st.length ? st.length+' counters'
+              : '';
+            var sub = [p.venue ? url : null, whereTxt,
+                       p.since ? 'since '+p.since : null, d]
+                      .filter(Boolean).join(' · ');
             return '<div class="act-row"><div class="act-l"><div class="act-ico">🏷️</div>'+
               '<div><div class="act-name">'+esc(name)+'</div>'+
               '<div class="act-desc">'+esc(sub)+'</div></div></div>'+
@@ -1857,7 +1867,26 @@
         '</div>';
     }).join('');
 
-    el('sg-callout').innerHTML = '<b>'+esc(S.verdict||'')+'</b>'+
+    // Two things that must never be quiet. Scans excluded as pre-placement
+    // testing, so a number the owner remembers seeing does not just vanish;
+    // and scans on plates with no placement record, which are either tests or
+    // a plate that went out and never got written down — and choosing between
+    // those for him would be inventing data either way.
+    var warn = '';
+    if(n(S.excluded_pre)) warn += ' <span style="opacity:.75">'+
+      comma(S.excluded_pre)+' scan'+(n(S.excluded_pre)===1?'':'s')+
+      ' before the plate was placed excluded as testing.</span>';
+    if((S.unlogged||[]).length){
+      var u=S.unlogged.map(function(r){ return '/c/'+esc(r.code)+' ('+comma(r.scans)+')'; });
+      warn += ' <span style="opacity:.9">⚠ Not counted — no placement record for '+
+        u.join(', ')+'. If those went out, log them: '+
+        '<code>python3 scripts/placement.py add &lt;code&gt; "&lt;shop&gt;"</code>.</span>';
+    }
+    if(!n(S.placed)) warn += ' <span style="opacity:.75">Nothing is recorded as '+
+      'placed yet, so nothing is being counted — which is the right answer '+
+      'while every scan in the log is still a proof being checked.</span>';
+
+    el('sg-callout').innerHTML = '<b>'+esc(S.verdict||'')+'</b>'+warn+
       (S.truncated ? ' <span style="opacity:.75">Session counts hit the feed’s '+
         'page limit and are floors, not totals — the scan counts above them are '+
         'complete.</span>' : '')+

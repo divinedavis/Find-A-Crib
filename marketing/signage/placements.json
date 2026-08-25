@@ -1,0 +1,4 @@
+{
+  "_readme": "Which plate went to which counter, and when. Written by scripts/placement.py; deployed to the droplet where the dashboard reads it. A scan before a plate's placed date is testing, not a customer.",
+  "placements": []
+}

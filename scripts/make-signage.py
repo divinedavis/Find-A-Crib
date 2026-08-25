@@ -85,7 +85,19 @@ CUT = "#FF0000"
 CUT_PONOKO = "#0000FF"
 CUT_W = 0.072        # 0.001in
 
-FONT = "Helvetica Neue, Helvetica, Arial, sans-serif"
+# Inter, not SF Pro, and not by accident. Apple's San Francisco is licensed
+# for building and mocking up Apple-platform software — a physical sign on a
+# bodega counter is not that — and it is not resolvable to a renderer anyway:
+# only the protected system file exists, so asking for "SF Pro Display" here
+# silently renders VERDANA, which is worse than what it replaced. Inter is the
+# typeface SF-alikes are actually built from, under the SIL Open Font Licence,
+# so it can go on a printed object without a licensing question.
+#
+# `Inter Display` is the optical size cut for large text — tighter apertures
+# and less spacing than the text cut, which is what a headline read across a
+# counter wants. Both are named so a machine without the display cut still
+# gets Inter rather than falling all the way back to a default.
+FONT = "Inter Display, Inter, Helvetica Neue, Helvetica, Arial, sans-serif"
 
 # The number is printed on a permanent object, so it is the real row count of
 # the dataset the site ships, rounded DOWN to the nearest thousand. Rounding up

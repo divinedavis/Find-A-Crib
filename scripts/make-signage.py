@@ -447,7 +447,11 @@ def card_black(url: str, shown: str, lines, *, nfc: bool = False,
         # which read as two unrelated things rather than one choice.
         lx, rx = 72.0, 208.0
         mid, panel = 178.0, 112.0
-        b.append(wave(lx - 10, mid, 46))
+        # The wave carries its half the way the tile carries its own. Drawn at
+        # 46pt it was legible but apologetic — on the stands this copies, the
+        # arcs are the loudest thing on the card, because tapping is the
+        # behaviour most people have to be told is available at all.
+        b.append(wave(lx - 26, mid, 62))
         b.append(rect(144.0, 128.0, 0.8, 100.0, fill="#3A3A3A"))
 
         px, py = rx - panel / 2, mid - panel / 2

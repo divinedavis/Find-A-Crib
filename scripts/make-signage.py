@@ -153,6 +153,32 @@ def mark(cx: float, cy: float, size: float, *, outline: bool) -> str:
     )
 
 
+def wave(cx: float, cy: float, size: float, colour: str = WHITE) -> str:
+    """The contactless arcs, opening right.
+
+    Four arcs on a common centre, the smallest barely more than a tick — the
+    shape everybody already reads as "hold your phone here" from paying for
+    coffee. Drawn rather than imported so it scales with the card and cannot
+    arrive as a low-resolution PNG of somebody else's trademark.
+
+    Arcs are not concentric squares, so unlike the outlined logo that cost the
+    engrave plate two thirds of its margin, this does not look like a finder
+    pattern to a scanner. The decode sweep still checks.
+    """
+    import math
+    parts = []
+    th = math.radians(52)
+    for i, k in enumerate((0.16, 0.38, 0.60, 0.82)):
+        r = size * k
+        x1, y1 = cx + r * math.cos(-th), cy + r * math.sin(-th)
+        x2, y2 = cx + r * math.cos(th), cy + r * math.sin(th)
+        parts.append(
+            f'<path d="M{x1:.2f},{y1:.2f} A{r:.2f},{r:.2f} 0 0,1 {x2:.2f},{y2:.2f}" '
+            f'fill="none" stroke="{colour}" stroke-width="{size * 0.115:.2f}" '
+            f'stroke-linecap="round"/>')
+    return "".join(parts)
+
+
 def mark_icon(cx: float, cy: float, size: float) -> str:
     """The app icon as it actually ships: blue square, white ring, blue centre.
 
@@ -366,12 +392,12 @@ def counter_plate(url: str, shown: str, lines=None,
     return "\n".join(b), w, h, meta
 
 
-def card_black(url: str, shown: str, lines) -> tuple[str, float, float, dict]:
+def card_black(url: str, shown: str, lines, *, nfc: bool = False,
+               tap_url: str = "") -> tuple[str, float, float, dict]:
     """4 x 4in black card for a UV-printed acrylic counter stand.
 
-    Square and 4in because that is the size the L-shaped NFC stands these are
-    modelled on actually come in, and because a square face is what a folded
-    or L-foot stand gives you.
+    Square and 4in because that is the size the L-footed NFC stands these are
+    modelled on actually come in.
 
     THE CARD IS BLACK AND THE CODE IS NOT. The QR sits on a white tile, which
     is not a design flourish — it is the entire reason a black card is allowed
@@ -384,37 +410,60 @@ def card_black(url: str, shown: str, lines) -> tuple[str, float, float, dict]:
     UV printed rather than engraved, so this file is allowed the flood fill
     that the two-ply artwork is not: on acrylic the black is ink, not an hour
     of laser time.
+
+    `nfc=True` splits the bottom into Tap | Scan, the way the stands it copies
+    do. ONLY PRINT THAT ON A STAND THAT ACTUALLY HAS A CHIP IN IT. A wave on a
+    card with no tag is an instruction that does nothing, and the person who
+    follows it concludes the site is broken rather than that the sign is.
     """
     w = h = 4 * PT
     cx = w / 2
     b = [rect(0, 0, w, h, fill=BLACK)]
 
-    # Logo lockup, centred as a lockup rather than as two centred things.
     b.append(mark_icon(cx - 54, 30, 26))
     b.append(text(cx - 36, 39, "Find A Crib", 20, fill=WHITE, weight=700,
                   anchor="start", spacing=-0.5))
 
-    b.append(text(cx, 78, lines[0], 17, fill=WHITE, weight=700, spacing=-0.4))
-    b.append(text(cx, 99, lines[1], 17, fill=WHITE, weight=700, spacing=-0.4))
+    head = 16 if nfc else 17
+    b.append(text(cx, 76, lines[0], head, fill=WHITE, weight=700, spacing=-0.4))
+    b.append(text(cx, 96 if nfc else 99, lines[1], head, fill=WHITE, weight=700, spacing=-0.4))
 
-    # The white tile. Its margin around the code IS the quiet zone, so it is
-    # measured rather than eyeballed — a tile drawn tight to the code is a
-    # black card pressing straight up against the finder patterns.
-    # Sized so the tile clears the bottom edge by about the margin the logo
-    # keeps at the top — the first cut hung it 14pt off the bottom against
-    # 21pt at the top, which reads as the card slipping downward.
-    panel = 156.0
-    px, py = cx - panel / 2, 110.0
-    b.append(rect(px, py, panel, panel, fill=WHITE, rx=13))
-    side = 122.0
-    code, module, n = qr(url, cx, py + (panel - side) / 2, side)
-    check_quiet("black card", (panel - side) / 2, module)
-    b.append(code)
+    if not nfc:
+        panel = 156.0
+        px, py = cx - panel / 2, 110.0
+        b.append(rect(px, py, panel, panel, fill=WHITE, rx=13))
+        side = 122.0
+        code, module, n = qr(url, cx, py + (panel - side) / 2, side)
+        check_quiet("black card", (panel - side) / 2, module)
+        b.append(code)
+    else:
+        # Tap on the left, scan on the right, with a hairline between them —
+        # the same split the stands use, and it matters: a wave with no
+        # explanation is decoration, and a QR with no alternative loses
+        # everybody whose camera app is slower than their patience.
+        # Each half gets the centre of its own half, and the two glyphs share a
+        # vertical centre and a label baseline. The first cut hung the wave and
+        # the tile at different heights with the rule buried behind the tile,
+        # which read as two unrelated things rather than one choice.
+        lx, rx = 72.0, 208.0
+        mid, panel = 178.0, 112.0
+        b.append(wave(lx - 10, mid, 46))
+        b.append(rect(144.0, 128.0, 0.8, 100.0, fill="#3A3A3A"))
+
+        px, py = rx - panel / 2, mid - panel / 2
+        b.append(rect(px, py, panel, panel, fill=WHITE, rx=10))
+        side = 88.0
+        code, module, n = qr(url, rx, py + (panel - side) / 2, side)
+        check_quiet("black card (nfc)", (panel - side) / 2, module)
+        b.append(code)
+
+        b.append(text(lx, 258, "Tap here", 13, fill=WHITE, weight=700))
+        b.append(text(rx, 258, "Scan code", 13, fill=WHITE, weight=700))
 
     meta = {"trim": "4 x 4 in", "bleed": "none",
             "canvas": f"{w / PT:.3f} x {h / PT:.3f} in",
             "qr_in": side / PT, "quiet": ((panel - side) / 2) / module,
-            "modules": n, "head": 17}
+            "modules": n, "head": head, "tap": tap_url}
     return "\n".join(b), w, h, meta
 
 
@@ -805,6 +854,18 @@ def main() -> int:
         print(f"  black card {bm2['trim']}, code {bm2['qr_in']:.2f} in, "
               f"{bm2['quiet']:.1f}-module quiet zone")
         verify(bstem, url)
+
+        # The NFC twin. The chip gets a DIFFERENT url from the printed code —
+        # /t/<code> against /c/<code> — so a tap and a scan are two findings
+        # rather than one. Both resolve to the same plate, so every per-plate
+        # and per-arm number keeps working untouched.
+        nstem = bstem + "-nfc"
+        ncard, nwd, nht, nm = card_black(url, shown, lines, nfc=True,
+                                         tap_url=f"https://findacrib.com/t/{code}")
+        render(nstem, svg(nwd, nht, ncard, f"Find A Crib black card {code} 4x4 (tap or scan)"))
+        print(f"  nfc card   code {nm['qr_in']:.2f} in, {nm['quiet']:.1f}-module "
+              f"quiet zone, chip -> {nm['tap']}")
+        verify(nstem, url)
 
         print(f"plate {code}: \u201c{lines[0]} {lines[1]}\u201d -> {url}")
         print(f"  {pm['trim']}, bleed {pm['bleed']}  ->  {pm['canvas']} artwork, "

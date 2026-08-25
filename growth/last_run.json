@@ -52,41 +52,41 @@
   },
   "indexstatus": {
     "accept_pct": 3.7,
-    "accept_pct_mature": 2.9,
-    "added": 5,
-    "at": "2026-08-24T05:11:03+00:00",
+    "accept_pct_mature": 2.8,
+    "added": 0,
+    "at": "2026-08-25T05:11:09+00:00",
     "by_crawl_age": {
       "0-6d": {
-        "accept_pct": 5.9,
-        "fetched": 17,
+        "accept_pct": 9.1,
+        "fetched": 11,
         "indexed": 1
       },
       "14-20d": {
         "accept_pct": 0.0,
-        "fetched": 20,
+        "fetched": 18,
         "indexed": 0
       },
       "21-27d": {
         "accept_pct": 0.0,
-        "fetched": 24,
+        "fetched": 25,
         "indexed": 0
       },
       "28d+": {
-        "accept_pct": 10.0,
-        "fetched": 10,
+        "accept_pct": 9.1,
+        "fetched": 11,
         "indexed": 1
       },
       "7-13d": {
-        "accept_pct": 9.1,
-        "fetched": 11,
+        "accept_pct": 5.9,
+        "fetched": 17,
         "indexed": 1
       }
     },
     "cohort": 450,
-    "date": "2026-08-24",
+    "date": "2026-08-25",
     "dropped": 0,
     "errors": 0,
-    "fetched_mature": 34,
+    "fetched_mature": 36,
     "fetched_pct": 18.2,
     "gained_indexed": 0,
     "indexed_pct": 0.7,
@@ -96,49 +96,49 @@
     "ok": true,
     "published_urls": 47979,
     "read": 450,
-    "rechecked": 95,
+    "rechecked": 100,
     "states": {
       "crawled_not_indexed": 79,
-      "discovered_not_indexed": 36,
+      "discovered_not_indexed": 27,
       "indexed": 3,
-      "unknown_to_google": 332
+      "unknown_to_google": 341
     }
   },
   "measure": {
-    "at": "2026-08-24T05:11:04+00:00",
-    "coverage_pct": 83.4,
-    "date": "2026-08-24",
+    "at": "2026-08-25T05:11:09+00:00",
+    "coverage_pct": 82.4,
+    "date": "2026-08-25",
     "days": 1,
-    "keywords_covered": 221,
-    "keywords_total": 265,
-    "latest_measured_day": "2026-08-23"
+    "keywords_covered": 239,
+    "keywords_total": 290,
+    "latest_measured_day": "2026-08-24"
   },
   "outreach": {
-    "at": "2026-08-24T05:17:47+00:00",
-    "date": "2026-08-24",
+    "at": "2026-08-25T05:17:51+00:00",
+    "date": "2026-08-25",
     "drafted": 0,
     "ok": true,
-    "segment": "proptech"
+    "segment": "appraisal"
   },
   "scout": {
-    "at": "2026-08-24T05:15:06+00:00",
-    "date": "2026-08-24",
+    "at": "2026-08-25T05:15:16+00:00",
+    "date": "2026-08-25",
     "keywords_added": 25,
     "ok": true,
     "techniques_added": 3
   },
   "searchconsole": {
-    "at": "2026-08-24T05:00:05+00:00",
+    "at": "2026-08-25T05:00:06+00:00",
     "clicks": 3,
-    "date": "2026-08-24",
-    "impressions": 7,
+    "date": "2026-08-25",
+    "impressions": 8,
     "page_clicks": 3,
-    "page_impressions": 59,
+    "page_impressions": 50,
     "serving_ever": 271,
-    "serving_pages": 39,
-    "serving_stable": 35,
+    "serving_pages": 31,
+    "serving_stable": 31,
     "share_pct": 0.0,
     "tracked_ranking": 0,
-    "window": "2026-08-15..2026-08-22"
+    "window": "2026-08-16..2026-08-23"
   }
 }

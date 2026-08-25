@@ -135,6 +135,14 @@
   .utable td{padding:12px 14px;border-bottom:1px solid var(--border2);vertical-align:middle;white-space:nowrap}
   .utable tr:last-child td{border-bottom:none}
   .utable tbody tr:hover td{background:var(--hover)}
+  .utable th[data-sort]{cursor:pointer;user-select:none}
+  .utable th[data-sort]:hover{color:var(--ink2)}
+  .utable th[data-sort]:focus-visible{outline:2px solid var(--purple-ink);outline-offset:-2px}
+  /* The arrow holds its width whether or not it is showing anything, so the
+     header row does not shift sideways every time a column is clicked. */
+  .sarr{display:inline-block;width:9px;margin-left:5px;opacity:0}
+  .utable th[aria-sort]:not([aria-sort="none"]){color:var(--ink)}
+  .utable th[aria-sort]:not([aria-sort="none"]) .sarr{opacity:1}
   .u-name{font-weight:600}
   .u-email{color:var(--ink2);font-size:12.5px}
   .u-muted{color:var(--muted)}
@@ -233,7 +241,7 @@
       <div class="page-head">
         <div>
           <h1>Users</h1>
-          <div class="sub">Everyone who created an account. Newest first.</div>
+          <div class="sub">Everyone who created an account. Click a column to sort.</div>
         </div>
         <input class="usearch" id="usearch" type="text" placeholder="Search name, email, or device…">
       </div>
@@ -243,9 +251,8 @@
       <div class="card">
         <div class="tbl-wrap">
           <table class="utable">
-            <thead><tr>
-              <th>Name</th><th>Email</th><th>Sign-in</th><th>Plan</th>
-              <th>Saved</th><th>Links sent</th><th>Joined</th><th>Last seen</th><th>Last device</th>
+            <thead><tr id="uhead">
+              <th data-sort="name" tabindex="0" role="button" aria-sort="none">Name<span class="sarr"></span></th><th data-sort="email" tabindex="0" role="button" aria-sort="none">Email<span class="sarr"></span></th><th data-sort="provider" tabindex="0" role="button" aria-sort="none">Sign-in<span class="sarr"></span></th><th data-sort="plan" tabindex="0" role="button" aria-sort="none">Plan<span class="sarr"></span></th><th data-sort="saves" tabindex="0" role="button" aria-sort="none">Saved<span class="sarr"></span></th><th data-sort="shares" tabindex="0" role="button" aria-sort="none">Links sent<span class="sarr"></span></th><th data-sort="created_at" tabindex="0" role="button" aria-sort="none">Joined<span class="sarr"></span></th><th data-sort="last_seen" tabindex="0" role="button" aria-sort="none">Last seen<span class="sarr"></span></th><th data-sort="device" tabindex="0" role="button" aria-sort="none">Last device<span class="sarr"></span></th>
             </tr></thead>
             <tbody id="urows"></tbody>
           </table>
@@ -382,7 +389,7 @@
     if(mine!==routeSeq) return;
     USERS = d.users || [];
     el('avatar').textContent = ((session.user&&session.user.email)||'D')[0].toUpperCase();
-    renderChips(); renderRows('');
+    renderChips(); paintHead(); renderRows('');
     settle();
     shown = true;
     gate.classList.add('hidden'); app.classList.remove('hidden');
@@ -429,6 +436,69 @@
     return '<span class="u-muted">—</span>';
   }
 
+  // ---- sorting -------------------------------------------------------------
+  // Plan is ranked, not alphabetised. Sorting the plan column A-Z gives
+  // comp, free, plus, referral, which is an ordering of spellings and not of
+  // anything about the business; ranked, the paying users come to the top,
+  // which is the only reason to click that header.
+  var PLAN_RANK = { plus:3, comp:2, referral:1, free:0 };
+  var COLS = {
+    name:       { get:function(u){ return (u.name||'').toLowerCase() || null; }, num:false },
+    email:      { get:function(u){ return (u.email||'').toLowerCase() || null; }, num:false },
+    provider:   { get:function(u){ return u.provider || null; }, num:false },
+    plan:       { get:function(u){ var r=PLAN_RANK[u.plan]; return r==null?null:r; }, num:true },
+    saves:      { get:function(u){ return u.saves||0; }, num:true },
+    shares:     { get:function(u){ return u.shares||0; }, num:true },
+    created_at: { get:function(u){ return u.created_at ? Date.parse(u.created_at) : null; }, num:true },
+    last_seen:  { get:function(u){ return u.last_seen ? Date.parse(u.last_seen) : null; }, num:true },
+    device:     { get:function(u){ return u.device || null; }, num:false }
+  };
+  // Opens where the page already was, so the first paint is unchanged.
+  var sortKey='created_at', sortDir=-1;      // 1 ascending, -1 descending
+
+  function cmp(a,b){
+    var c=COLS[sortKey], x=c.get(a), y=c.get(b);
+    // Missing values sort last in BOTH directions. A user with no device
+    // recorded is not the smallest device, and letting those rows head an
+    // ascending sort buries the ones the column was clicked to find.
+    var xn = x===null || x===undefined, yn = y===null || y===undefined;
+    if(xn || yn) return xn && yn ? 0 : (xn ? 1 : -1);
+    if(x<y) return -sortDir;
+    if(x>y) return sortDir;
+    // Email is unique, so equal cells still land in a stable, repeatable
+    // order rather than shuffling on every re-render.
+    return (a.email||'') < (b.email||'') ? -1 : 1;
+  }
+
+  function setSort(key){
+    if(!COLS[key]) return;
+    // Same column flips. A new column opens the way that column is actually
+    // read: counts and dates biggest/newest first, names A-Z.
+    if(key===sortKey) sortDir = -sortDir;
+    else { sortKey = key; sortDir = COLS[key].num ? -1 : 1; }
+    paintHead();
+    renderRows(el('usearch').value);
+  }
+
+  function paintHead(){
+    [].forEach.call(document.querySelectorAll('#uhead th[data-sort]'), function(th){
+      var on = th.dataset.sort===sortKey;
+      th.setAttribute('aria-sort', on ? (sortDir===1?'ascending':'descending') : 'none');
+      th.querySelector('.sarr').textContent = on ? (sortDir===1?'\u2191':'\u2193') : '';
+    });
+  }
+
+  el('uhead').addEventListener('click', function(e){
+    var th = e.target.closest('th[data-sort]');
+    if(th) setSort(th.dataset.sort);
+  });
+  // The headers are reachable by keyboard, so they have to act on a key too.
+  el('uhead').addEventListener('keydown', function(e){
+    if(e.key!=='Enter' && e.key!==' ') return;
+    var th = e.target.closest('th[data-sort]');
+    if(th){ e.preventDefault(); setSort(th.dataset.sort); }
+  });
+
   function renderRows(q){
     q = (q||'').trim().toLowerCase();
     var rows = USERS.filter(function(u){
@@ -436,7 +506,7 @@
       return (u.name||'').toLowerCase().indexOf(q)>=0
           || (u.email||'').toLowerCase().indexOf(q)>=0
           || (u.device||'').indexOf(q)>=0;
-    });
+    }).sort(cmp);
     el('empty').classList.toggle('hidden', rows.length>0);
     el('urows').innerHTML = rows.map(function(u){
       return '<tr>'+

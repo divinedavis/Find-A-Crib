@@ -83,3 +83,5 @@
 {"at":"2026-08-25T05:40:26Z","job":"build --deploy","phase":"finish","rc":0,"pull":"ok","head":"130dc43","note":""}
 {"at":"2026-08-25T05:40:26Z","job":"build --deploy","phase":"seo_watchdog_start","rc":null,"pull":"ok","head":"130dc43","note":"corpus older than 1320min, running scripts/refresh_seo.sh"}
 {"at":"2026-08-25T05:41:51Z","job":"build --deploy","phase":"seo_watchdog_finish","rc":0,"pull":"ok","head":"130dc43","note":"ran refresh_seo.sh to completion"}
+{"at":"2026-08-26T05:00:01Z","job":"daily","phase":"start","rc":null,"pull":"pending","head":"f770163","note":""}
+{"at":"2026-08-26T05:18:28Z","job":"daily","phase":"finish","rc":0,"pull":"ok","head":"5a9c241","note":""}

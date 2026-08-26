@@ -58,14 +58,14 @@
     }
   },
   "indexstatus": {
-    "accept_pct": 3.7,
-    "accept_pct_mature": 2.8,
+    "accept_pct": 2.4,
+    "accept_pct_mature": 0.0,
     "added": 0,
-    "at": "2026-08-25T05:11:09+00:00",
+    "at": "2026-08-26T05:11:15+00:00",
     "by_crawl_age": {
       "0-6d": {
-        "accept_pct": 9.1,
-        "fetched": 11,
+        "accept_pct": 14.3,
+        "fetched": 7,
         "indexed": 1
       },
       "14-20d": {
@@ -75,77 +75,77 @@
       },
       "21-27d": {
         "accept_pct": 0.0,
-        "fetched": 25,
+        "fetched": 27,
         "indexed": 0
       },
       "28d+": {
-        "accept_pct": 9.1,
-        "fetched": 11,
-        "indexed": 1
+        "accept_pct": 0.0,
+        "fetched": 10,
+        "indexed": 0
       },
       "7-13d": {
-        "accept_pct": 5.9,
-        "fetched": 17,
+        "accept_pct": 5.0,
+        "fetched": 20,
         "indexed": 1
       }
     },
     "cohort": 450,
-    "date": "2026-08-25",
+    "date": "2026-08-26",
     "dropped": 0,
     "errors": 0,
-    "fetched_mature": 36,
+    "fetched_mature": 37,
     "fetched_pct": 18.2,
     "gained_indexed": 0,
-    "indexed_pct": 0.7,
+    "indexed_pct": 0.4,
     "inspected": 100,
-    "last_crawl": "2026-08-23",
-    "lost_indexed": 0,
+    "last_crawl": "2026-08-25",
+    "lost_indexed": 1,
     "ok": true,
-    "published_urls": 47979,
+    "published_urls": 47982,
     "read": 450,
     "rechecked": 100,
     "states": {
-      "crawled_not_indexed": 79,
-      "discovered_not_indexed": 27,
-      "indexed": 3,
-      "unknown_to_google": 341
+      "crawled_not_indexed": 80,
+      "discovered_not_indexed": 28,
+      "indexed": 2,
+      "unknown_to_google": 340
     }
   },
   "measure": {
-    "at": "2026-08-25T05:11:09+00:00",
-    "coverage_pct": 82.4,
-    "date": "2026-08-25",
+    "at": "2026-08-26T05:11:16+00:00",
+    "coverage_pct": 82.2,
+    "date": "2026-08-26",
     "days": 1,
-    "keywords_covered": 239,
-    "keywords_total": 290,
-    "latest_measured_day": "2026-08-24"
+    "keywords_covered": 259,
+    "keywords_total": 315,
+    "latest_measured_day": "2026-08-25"
   },
   "outreach": {
-    "at": "2026-08-25T05:17:51+00:00",
-    "date": "2026-08-25",
+    "at": "2026-08-26T05:18:25+00:00",
+    "date": "2026-08-26",
     "drafted": 0,
     "ok": true,
-    "segment": "appraisal"
+    "segment": "legal"
   },
   "scout": {
-    "at": "2026-08-25T05:15:16+00:00",
-    "date": "2026-08-25",
-    "keywords_added": 25,
+    "at": "2026-08-26T05:16:19+00:00",
+    "date": "2026-08-26",
+    "keywords_added": 0,
     "ok": true,
-    "techniques_added": 3
+    "techniques_added": 1
   },
   "searchconsole": {
-    "at": "2026-08-25T05:00:06+00:00",
+    "at": "2026-08-26T05:00:09+00:00",
     "clicks": 3,
-    "date": "2026-08-25",
+    "date": "2026-08-26",
     "impressions": 8,
     "page_clicks": 3,
-    "page_impressions": 50,
-    "serving_ever": 271,
-    "serving_pages": 31,
-    "serving_stable": 31,
+    "page_impressions": 46,
+    "serving_ever": 272,
+    "serving_pages": 28,
+    "serving_stable": 26,
     "share_pct": 0.0,
     "tracked_ranking": 0,
-    "window": "2026-08-16..2026-08-23"
+    "window": "2026-08-17..2026-08-24"
   }
 }

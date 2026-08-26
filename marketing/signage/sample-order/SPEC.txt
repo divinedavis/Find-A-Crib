@@ -1,0 +1,42 @@
+FIND A CRIB — SAMPLE ORDER
+Supplier: Ningbo Create Joykey (Mason Lu)
+
+THREE DESIGNS, THREE FILES. They look nearly identical apart from the QR
+pattern, so they must stay separated and labelled at every step.
+
+  findacrib-card-a1-120x140mm-nfc.pdf    "a1"
+  findacrib-card-a2-120x140mm-nfc.pdf    "a2"
+  findacrib-card-a7-120x140mm-nfc.pdf    "a7"
+
+SPEC
+  Printed face   120 x 140 mm portrait (confirmed by supplier)
+  Angle          75 degrees, consistent across the run
+  Printing       FULL-COLOUR UV PRINT — not laser engraving
+  NFC            NTAG213 or 215, NOT encoded. We program the URLs.
+  Packing        each design bagged and labelled separately
+
+SAMPLES REQUESTED
+  a1  at 1 mm
+  a2  at 2 mm or 3 mm if available   (comparing stiffness by hand)
+  a7  supplier's recommended thickness
+  Ship DHL/FedEx express, NOT ocean freight.
+  Ask: sample cost incl. express, and credit against the bulk order?
+
+WHAT EACH DESIGN IS FOR (our record, not the supplier's concern)
+  a1  Laundromats
+  a2  Bodegas, delis and corner stores
+  a7  Public library branches and community centres
+
+THE ONE THING THAT MUST NOT CHANGE
+  The QR is dark on light and sits on the white half of the card. A code
+  printed light-on-dark is an inverted code: recent iPhones read them,
+  older Android cameras do not. Do not "improve" the contrast by moving
+  the code onto the blue.
+
+AFTER DELIVERY
+  Write the NFC chips ourselves, one URL per design:
+    a1 -> https://findacrib.com/t/a1
+    a2 -> https://findacrib.com/t/a2
+    a7 -> https://findacrib.com/t/a7
+  The printed codes already carry /c/a1, /c/a2, /c/a7 — a tap and a scan
+  are counted separately on purpose.

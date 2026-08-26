@@ -287,8 +287,9 @@
   /* until the script moves them into the modal, the filter pills stay hidden in
      the header (they'd otherwise flash there while the building data loads) */
   .filter-bar #pill-borough, .filter-bar #pill-nb, .filter-bar #pill-listed,
-  .filter-bar #pill-s8, .filter-bar #pill-beds, .filter-bar #pill-viol { display: none; }
-  /* StreetEasy-style price popover: two min/max dropdowns + Reset/Done */
+  .filter-bar #pill-s8, .filter-bar #pill-beds, .filter-bar #pill-price,
+  .filter-bar #pill-viol { display: none; }
+  /* price section (Filters modal): two min/max dropdowns */
   .price-row { display: flex; align-items: center; gap: 10px; }
   .price-row select { flex: 1; min-width: 0; padding: 9px 10px; font-size: 14px; font-weight: 500;
     border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); cursor: pointer; }
@@ -1094,7 +1095,6 @@
     <div class="filter-pill nyc-only" id="pill-price">
       Price<span class="caret">▾</span>
       <div class="pill-popover">
-        <div class="sheet-group-title">Price</div>
         <div class="price-row">
           <select id="price-min" aria-label="Minimum monthly rent">
             <option value="">No min</option>
@@ -1115,10 +1115,6 @@
           </select>
         </div>
         <div style="font-size:11px;color:var(--ink-2);margin-top:10px">Uses the asking rent when a building was recently advertised; otherwise the ZIP's typical rent (HUD Small-Area FMR, studio–2BR midpoint) — not the building's actual rent.</div>
-        <div class="actions">
-          <button type="button" id="price-reset">Reset</button>
-          <button type="button" id="price-done" class="primary">Done</button>
-        </div>
       </div>
     </div>
     <div class="filter-pill nyc-only" id="pill-viol">
@@ -2627,7 +2623,7 @@
   // ids/names and live-apply listeners, so no filter logic changes.
   const filtersModal = document.getElementById('filters-modal');
   const filtersBody = document.getElementById('filters-body');
-  ['pill-borough', 'pill-nb', 'pill-listed', 'pill-s8', 'pill-beds', 'pill-viol']
+  ['pill-borough', 'pill-nb', 'pill-listed', 'pill-s8', 'pill-beds', 'pill-price', 'pill-viol']
     .forEach(id => { const el = document.getElementById(id); if (el) filtersBody.appendChild(el); });
   function openFilters() { closeAllPills(); filtersModal.hidden = false; }
   function updateFiltersCount() {
@@ -2637,10 +2633,7 @@
     if (document.querySelector('input[name="listed"]:checked').value !== 'any') n++;
     if (document.querySelector('input[name="s8"]:checked').value !== 'any') n++;
     if (document.querySelectorAll('input[name="beds"]:checked').length) n++;
-    // price has its own header pill (not in the modal), so it lights up there
-    // instead of counting toward the Filters badge
-    const priceOn = !!(document.getElementById('price-min').value || document.getElementById('price-max').value);
-    document.getElementById('pill-price').classList.toggle('active', priceOn);
+    if (document.getElementById('price-min').value || document.getElementById('price-max').value) n++;
     n += moreFilterCount();
     // The desktop pill; on mobile it isn't rendered — the count lives on the
     // bottom Filters control instead, which is the only way in there.
@@ -2676,17 +2669,11 @@
     applyFilters(); updateFiltersCount();
   }
 
-  // Price pill (StreetEasy-style): stays in the header rather than moving into
-  // the Filters modal; the dropdowns live-apply and Done just closes the popover.
+  // Price lives in the Filters modal with the other pills: the dropdowns
+  // live-apply, and the modal's own Reset/Done footer covers both actions.
   ['price-min', 'price-max'].forEach(id => document.getElementById(id).addEventListener('change', () => {
     applyFilters(); updateFiltersCount();
   }));
-  document.getElementById('price-reset').addEventListener('click', () => {
-    document.getElementById('price-min').value = '';
-    document.getElementById('price-max').value = '';
-    applyFilters(); updateFiltersCount();
-  });
-  document.getElementById('price-done').addEventListener('click', closeAllPills);
 
   // ---------- saved searches (Plus): capture + reapply the whole search ----------
   function captureSearch() {

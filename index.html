@@ -752,6 +752,9 @@
     /* in list view, drop the Saved / Save search quick-actions */
     body.list-open #pill-fav,
     body.list-open #pill-save-search { display: none; }
+    /* which empties the chip row entirely — collapse it so the flex gap and its
+       scroll padding don't leave a blank strip under the search field */
+    body.list-open .chip-row { display: none; }
     /* driving-directions button appears only on mobile */
     .d-dir-row { display: flex; }
 
@@ -3777,11 +3780,21 @@
 
   // ---------- mobile: List/Map toggle, count, sort sheet ----------
   const headerEl = document.querySelector('header.topbar');
+  let headerH = 0;
   function syncHeaderHeight() {
-    document.documentElement.style.setProperty('--header-h', headerEl.offsetHeight + 'px');
+    const h = headerEl.offsetHeight;
+    if (h === headerH) return;   // ResizeObserver → invalidateSize → resize would otherwise loop
+    headerH = h;
+    document.documentElement.style.setProperty('--header-h', h + 'px');
     map.invalidateSize();
   }
   window.addEventListener('resize', syncHeaderHeight);
+  // The header is not a fixed height: the chip row empties out in list view, and
+  // pills appear/disappear with sign-in and with the city. Measuring it only on
+  // resize left --header-h holding the map view's taller number, and the list
+  // sheet — pinned to top: var(--header-h) — opened a chip-row-tall dead strip
+  // under the search field. Watch the element itself instead.
+  if (window.ResizeObserver) new ResizeObserver(syncHeaderHeight).observe(headerEl);
 
   const toggleBtn = document.getElementById('btn-toggle-view');
   const sortBtn = document.getElementById('btn-sort');

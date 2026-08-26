@@ -1,17 +1,17 @@
 {
   "build": {
-    "at": "2026-08-25T05:40:26+00:00",
-    "changed_urls": 0,
-    "date": "2026-08-25",
+    "at": "2026-08-26T05:40:23+00:00",
+    "changed_urls": 6,
+    "date": "2026-08-26",
     "deployed": true,
     "new_urls": 0,
     "seo_corpus": {
       "days_old": 0,
-      "written": "2026-08-25"
+      "written": "2026-08-26"
     },
     "seo_pipeline": {
-      "at": "2026-08-25T05:41:51Z",
-      "changed_urls": 98,
+      "at": "2026-08-26T05:41:52Z",
+      "changed_urls": 0,
       "code": "in-sync",
       "corpus_pages": 47954,
       "head": "unknown",
@@ -19,12 +19,12 @@
       "phase": "finish",
       "pull": "no-worktree",
       "rc": 0,
-      "started": "2026-08-25T05:40:26Z",
+      "started": "2026-08-26T05:40:23Z",
       "state": "ran clean",
       "step": "done"
     },
     "seo_watchdog": {
-      "at": "2026-08-25T05:41:51+00:00",
+      "at": "2026-08-26T05:41:52+00:00",
       "note": "ran refresh_seo.sh to completion",
       "ok": true,
       "ran": true,
@@ -32,11 +32,15 @@
     },
     "techniques": {
       "crawl_paths": {
-        "detail": "15 of 15 published sections have an inbound internal link (62 docroot pages read) \u2014 single inbound source: /available/ \u2190 nyc browse hub, /dc/neighborhood/ \u2190 dc browse hub, /la/zip/ \u2190 la browse hub, /sf/neighborhood/ \u2190 sf browse hub, /zip/ \u2190 building page \u2014 11 of 15 audited sections are published under no ACTIVE technique, so nothing rebuilds them; link them or stop publishing them: /available/ [candidate], /brief/ [retired], /dc/buildings/ [retired], /dc/neighborhood/ [retired], /developers/ [candidate], /guide/is-my-apartment-rent-controlled- [retired], +5 more",
+        "detail": "15 of 15 published sections have an inbound internal link (62 docroot pages read) \u2014 single inbound source: /available/ \u2190 nyc browse hub, /dc/neighborhood/ \u2190 dc browse hub, /la/zip/ \u2190 la browse hub, /sf/neighborhood/ \u2190 sf browse hub, /zip/ \u2190 building page \u2014 10 of 15 audited sections are published under no ACTIVE technique, so nothing rebuilds them; link them or stop publishing them: /available/ [candidate], /brief/ [retired], /dc/buildings/ [retired], /dc/neighborhood/ [retired], /developers/ [candidate], /guide/is-my-apartment-rent-controlled- [retired], +4 more",
         "ok": true
       },
       "derived_building_facts": {
         "detail": "comparison block on 399 of 400 sampled building pages (99%) across 47,165 published",
+        "ok": true
+      },
+      "fresh_section8": {
+        "detail": "293 buildings across 5 boroughs",
         "ok": true
       },
       "hub_direct_answers": {
@@ -44,7 +48,7 @@
         "ok": true
       },
       "indexnow": {
-        "detail": "nothing new or changed today",
+        "detail": "submitted 6 URLs \u2192 HTTP 200",
         "ok": true
       },
       "llms_txt": {

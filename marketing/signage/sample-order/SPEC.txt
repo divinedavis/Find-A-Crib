@@ -3,45 +3,52 @@ Supplier: Ningbo Create Joykey (Mason Lu)
 
 THREE DESIGNS, THREE FILES — AND THEY ARE NOT THE SAME FILE.
 They are identical by eye on purpose. Only the QR pattern differs, because
-each one encodes a different address. Verified before sending:
+each one encodes a different address. Verified by decoding each PDF before
+sending, not by looking at it:
 
-  findacrib-card-a1-100x160mm-nfc.pdf  ->  findacrib.com/c/a1
-  findacrib-card-a2-100x160mm-nfc.pdf  ->  findacrib.com/c/a2
-  findacrib-card-a7-100x160mm-nfc.pdf  ->  findacrib.com/c/a7
+  findacrib-card-a1-70x105mm.pdf  ->  findacrib.com/c/a1
+  findacrib-card-a2-70x105mm.pdf  ->  findacrib.com/c/a2
+  findacrib-card-a7-70x105mm.pdf  ->  findacrib.com/c/a7
 
 Scan each PDF with a phone to confirm — the last two characters of the
-address differ. They must stay separated and labelled at every step.
-
-  findacrib-card-a1-100x160mm-nfc.pdf    "a1"
-  findacrib-card-a2-100x160mm-nfc.pdf    "a2"
-  findacrib-card-a7-100x160mm-nfc.pdf    "a7"
+address differ. They must be printed as three separate designs and packed
+separately.
 
 SPEC
-  Printed face   100 wide x 160 tall mm, PORTRAIT
-                 (supplier quotes it as "160*100*70mm" — please
-                  confirm which number is width and which height)
-  Angle          75 degrees, consistent across the run
+  Stand          105*70*50mm (the smaller one)
+  Printed face   70 wide x 105 tall mm, PORTRAIT
+  Quantity       3 samples, one of each design
   Printing       FULL-COLOUR UV PRINT — not laser engraving
   NFC            NTAG213 or 215, NOT encoded. We program the URLs.
   Packing        each design bagged and labelled separately
 
-SAMPLES REQUESTED
-  a1  at 1 mm
-  a2  at 2 mm or 3 mm if available   (comparing stiffness by hand)
-  a7  supplier's recommended thickness
-  Ship DHL/FedEx express, NOT ocean freight.
-  Ask: sample cost incl. express, and credit against the bulk order?
+THE QR IS THE WHOLE PRODUCT
+  None of the samples in the supplier video carry a QR code — every piece
+  shown is NFC-only. So there is no evidence yet that this printing can
+  reproduce a scannable code, and on the 105mm printed sample the small
+  text under "Tap your phone" came out as a smear.
+
+  The code here is 41mm across 33 modules, about 1.24mm per module. It has
+  to print cleanly enough to scan from a phone at arm's length. That is the
+  one thing the sample exists to prove.
+
+THE ONE THING THAT MUST NOT CHANGE
+  The QR is dark on light and sits on the white half of the card. A code
+  printed light-on-dark is an inverted code: recent iPhones read them,
+  older Android cameras do not. Do not "improve" the contrast by moving
+  the code onto the blue, and do not shrink it.
 
 WHAT EACH DESIGN IS FOR (our record, not the supplier's concern)
   a1  Laundromats
   a2  Bodegas, delis and corner stores
   a7  Public library branches and community centres
 
-THE ONE THING THAT MUST NOT CHANGE
-  The QR is dark on light and sits on the white half of the card. A code
-  printed light-on-dark is an inverted code: recent iPhones read them,
-  older Android cameras do not. Do not "improve" the contrast by moving
-  the code onto the blue.
+NO TAP AFFORDANCE ON THIS SIZE
+  At 70mm wide there is no room for the "Tap here | Scan code" split
+  without dropping the code to 0.95mm per module, which is the size range
+  this supplier's printing already failed at. The whole width goes to the
+  code instead. The chip still works for anyone who taps; nobody is told
+  to, which is the cheaper of the two losses.
 
 AFTER DELIVERY
   Write the NFC chips ourselves, one URL per design:

@@ -72,7 +72,7 @@ MM = 72.0 / 25.4     # points per millimetre
 # with the supplier's own confirmation of the first one. TAKEN AS PORTRAIT ON
 # THAT BASIS AND STILL TO BE CONFIRMED IN WRITING — if it comes back the other
 # way round the layout rotates, which is a rebuild, not an edit.
-FACE_W_MM, FACE_H_MM = 100.0, 160.0
+FACE_W_MM, FACE_H_MM = 70.0, 105.0
 
 PT = 72.0            # points per inch; SVG user units throughout, so PDF is exact
 BLEED = 0.125 * PT   # 9pt. Every printer asks for it, none complain about it.
@@ -461,18 +461,18 @@ def card_wave(url: str, shown: str, lines, *, nfc: bool = False,
     """
     w, h = FACE_W_MM * MM, FACE_H_MM * MM
     cx = w / 2
-    wy = 208.0
-    badge_r = 34.0
+    wy = 126.0
+    badge_r = 23.0
     b = [rect(0, 0, w, h, fill=BLUE)]
     # A second, lighter curve just above the divider. It is the difference
     # between a card split in two and a card with a horizon on it.
     b.append(wave_edge(w, h, wy, BLUE_LIFT, lift=15.0))
     b.append(wave_edge(w, h, wy, WHITE))
 
-    b.append(text(cx, 60, "Find A Crib", 23, fill=WHITE, weight=700, spacing=-0.5))
-    head = 20
-    b.append(text(cx, 116, lines[0], head, fill=WHITE, weight=700, spacing=-0.5))
-    b.append(text(cx, 144, lines[1], head, fill=WHITE, weight=700, spacing=-0.5))
+    b.append(text(cx, 42, "Find A Crib", 16, fill=WHITE, weight=700, spacing=-0.4))
+    head = 14.5
+    b.append(text(cx, 74, lines[0], head, fill=WHITE, weight=700, spacing=-0.35))
+    b.append(text(cx, 93, lines[1], head, fill=WHITE, weight=700, spacing=-0.35))
 
     # The badge, on the boundary. The disc has to be wider than the mark by a
     # clear ring or it stops reading as a badge and starts reading as a notch
@@ -482,12 +482,25 @@ def card_wave(url: str, shown: str, lines, *, nfc: bool = False,
     floor_y = wy + badge_r
 
     if not nfc:
-        side, top = 150.0, 280.0
+        side, top = 116.0, 164.0
         code, module, n = qr(url, cx, top, side)
         check_quiet("wave card, above code", top - floor_y, module)
         check_quiet("wave card, beside code", (w - side) / 2, module)
         check_quiet("wave card, below code", h - (top + side), module)
         b.append(code)
+    elif w < 85.0 * MM:
+        # The Tap|Scan split does not fit here, and forcing it would be the
+        # expensive kind of tidy. Across 70mm the arcs, the rule and the code
+        # share one width, and the code drops to 31mm — 0.95mm per module. That
+        # is above a phone's floor in theory and straight into the range where
+        # this supplier's own printing already failed: the small text on their
+        # 105mm sample came out as a smear. So the small face gets the whole
+        # width for the code (42mm, 1.28mm per module) and no printed tap
+        # affordance. The chip still works for anyone who taps; nobody is told
+        # to, which is a real loss and the cheaper of the two.
+        raise SystemExit(
+            f"the Tap|Scan layout needs a face at least 85mm wide; this one is "
+            f"{w / MM:.0f}mm. Build the QR-only card for this size.")
     else:
         lx, rx, div = 66.0, 206.0, 132.0
         b.append(wave(lx - 26, 329, 62, colour=INK))
@@ -897,11 +910,16 @@ def main() -> int:
         print(f"  card       {bm2['trim']}, code {bm2['qr_mm']:.0f} mm")
         verify(bstem, url)
 
-        # The NFC twin. The chip gets a DIFFERENT url from the printed code —
+        # The NFC twin, where the face is wide enough to carry it.
+        # The chip gets a DIFFERENT url from the printed code —
         # /t/<code> against /c/<code> — so a tap and a scan are two findings
         # rather than one. Both resolve to the same plate, so every per-plate
         # and per-arm number keeps working untouched.
         nstem = bstem + "-nfc"
+        if FACE_W_MM < 85.0:
+            print(f"  (no Tap|Scan card: {FACE_W_MM:.0f}mm face is too narrow "
+                  f"— the code would drop to 0.95mm per module)")
+            continue
         ncard, nwd, nht, nm = card_wave(url, shown, lines, nfc=True,
                                          tap_url=f"https://findacrib.com/t/{code}")
         render(nstem, svg(nwd, nht, ncard, f"Find A Crib card {code} {int(FACE_W_MM)}x{int(FACE_H_MM)}mm (tap or scan)"))

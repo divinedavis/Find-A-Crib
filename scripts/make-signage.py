@@ -62,6 +62,14 @@ import tempfile
 
 import segno
 
+MM = 72.0 / 25.4     # points per millimetre
+
+# The printed face of the stand, confirmed by the supplier in writing rather
+# than read off a listing: 120 wide x 140 tall. The listing said "140*120*50mm"
+# and the obvious reading was landscape, which was wrong — the third number is
+# the depth of the foot. One place to change it if a different stand is chosen.
+FACE_W_MM, FACE_H_MM = 120.0, 140.0
+
 PT = 72.0            # points per inch; SVG user units throughout, so PDF is exact
 BLEED = 0.125 * PT   # 9pt. Every printer asks for it, none complain about it.
 
@@ -447,20 +455,20 @@ def card_wave(url: str, shown: str, lines, *, nfc: bool = False,
     does on the stands this is modelled on: it belongs to neither field, which
     is what stops the curve from cutting the card into two unrelated posters.
     """
-    w, h = 4 * PT, 6 * PT
+    w, h = FACE_W_MM * MM, FACE_H_MM * MM
     cx = w / 2
-    wy = 200.0
-    badge_r = 33.0
+    wy = 183.0
+    badge_r = 36.0
     b = [rect(0, 0, w, h, fill=BLUE)]
     # A second, lighter curve just above the divider. It is the difference
     # between a card split in two and a card with a horizon on it.
     b.append(wave_edge(w, h, wy, BLUE_LIFT, lift=15.0))
     b.append(wave_edge(w, h, wy, WHITE))
 
-    b.append(text(cx, 58, "Find A Crib", 23, fill=WHITE, weight=700, spacing=-0.5))
-    head = 20
-    b.append(text(cx, 112, lines[0], head, fill=WHITE, weight=700, spacing=-0.5))
-    b.append(text(cx, 139, lines[1], head, fill=WHITE, weight=700, spacing=-0.5))
+    b.append(text(cx, 56, "Find A Crib", 24, fill=WHITE, weight=700, spacing=-0.5))
+    head = 21
+    b.append(text(cx, 107, lines[0], head, fill=WHITE, weight=700, spacing=-0.5))
+    b.append(text(cx, 135, lines[1], head, fill=WHITE, weight=700, spacing=-0.5))
 
     # The badge, on the boundary. The disc has to be wider than the mark by a
     # clear ring or it stops reading as a badge and starts reading as a notch
@@ -470,31 +478,31 @@ def card_wave(url: str, shown: str, lines, *, nfc: bool = False,
     floor_y = wy + badge_r
 
     if not nfc:
-        side, top = 150.0, 262.0
+        side, top = 130.0, 248.0
         code, module, n = qr(url, cx, top, side)
         check_quiet("wave card, above code", top - floor_y, module)
         check_quiet("wave card, beside code", (w - side) / 2, module)
         check_quiet("wave card, below code", h - (top + side), module)
         b.append(code)
     else:
-        lx, rx, div = 64.0, 200.0, 124.0
-        b.append(wave(lx - 24, 318, 62, colour=INK))
-        b.append(rect(div, 250.0, 0.8, 140.0, fill="#D6DBE2"))
-        side, top = 120.0, 258.0
+        lx, rx, div = 78.0, 250.0, 162.0
+        b.append(wave(lx - 26, 296, 66, colour=INK))
+        b.append(rect(div, 236.0, 0.8, 132.0, fill="#D6DBE2"))
+        side, top = 112.0, 240.0
         code, module, n = qr(url, rx, top, side)
         check_quiet("wave card (nfc), above code", top - floor_y, module)
         check_quiet("wave card (nfc), beside code", (rx - side / 2) - div, module)
         # Cap height is ~0.72 of the point size, and it is the cap that
         # encroaches on the code, not the baseline.
-        check_quiet("wave card (nfc), below code", (405 - 14 * 0.72) - (top + side), module)
+        check_quiet("wave card (nfc), below code", (378 - 14 * 0.72) - (top + side), module)
         b.append(code)
-        b.append(text(lx, 405, "Tap here", 14, fill=INK, weight=700))
-        b.append(text(rx, 405, "Scan code", 14, fill=INK, weight=700))
+        b.append(text(lx, 378, "Tap here", 14, fill=INK, weight=700))
+        b.append(text(rx, 378, "Scan code", 14, fill=INK, weight=700))
 
-    meta = {"trim": "4 x 6 in", "bleed": "none",
-            "canvas": f"{w / PT:.3f} x {h / PT:.3f} in",
-            "qr_in": side / PT, "quiet": 0.0, "modules": n, "head": head,
-            "tap": tap_url}
+    meta = {"trim": f"{FACE_W_MM:.0f} x {FACE_H_MM:.0f} mm", "bleed": "none",
+            "canvas": f"{w / MM:.1f} x {h / MM:.1f} mm ({w / PT:.2f} x {h / PT:.2f} in)",
+            "qr_in": side / PT, "qr_mm": side / MM, "quiet": 0.0, "modules": n,
+            "head": head, "tap": tap_url}
     return "\n".join(b), w, h, meta
 
 
@@ -879,10 +887,10 @@ def main() -> int:
         # The UV-printed black card. Same code, same question, different
         # manufacturing route entirely — ink on acrylic rather than a laser in
         # two-ply — so it is a separate piece rather than a recolour.
-        bstem = f"findacrib-card-{code}-4x6"
+        bstem = f"findacrib-card-{code}-120x140mm"
         bcard, bwd, bht, bm2 = card_wave(url, shown, lines)
-        render(bstem, svg(bwd, bht, bcard, f"Find A Crib card {code} 4x6"))
-        print(f"  card       {bm2['trim']}, code {bm2['qr_in']:.2f} in")
+        render(bstem, svg(bwd, bht, bcard, f"Find A Crib card {code} 120x140mm"))
+        print(f"  card       {bm2['trim']}, code {bm2['qr_mm']:.0f} mm")
         verify(bstem, url)
 
         # The NFC twin. The chip gets a DIFFERENT url from the printed code —
@@ -892,8 +900,8 @@ def main() -> int:
         nstem = bstem + "-nfc"
         ncard, nwd, nht, nm = card_wave(url, shown, lines, nfc=True,
                                          tap_url=f"https://findacrib.com/t/{code}")
-        render(nstem, svg(nwd, nht, ncard, f"Find A Crib card {code} 4x6 (tap or scan)"))
-        print(f"  nfc card   code {nm['qr_in']:.2f} in, chip -> {nm['tap']}")
+        render(nstem, svg(nwd, nht, ncard, f"Find A Crib card {code} 120x140mm (tap or scan)"))
+        print(f"  nfc card   code {nm['qr_mm']:.0f} mm, chip -> {nm['tap']}")
         verify(nstem, url)
 
         print(f"plate {code}: \u201c{lines[0]} {lines[1]}\u201d -> {url}")

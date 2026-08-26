@@ -1028,7 +1028,7 @@
   <button id="auth-btn" type="button" class="auth-btn">Sign in</button>
   <button id="ref-btn" type="button" class="ref-btn" hidden>🎁 <span class="ref-free">Free </span>Plus</button>
   <div class="filter-bar">
-    <input class="search-input" id="q" type="text" placeholder="Address, neighborhood, ZIP, or BBL" />
+    <input class="search-input" id="q" type="text" placeholder="Rent-stabilized? Address, ZIP or APN" />
     <div class="chip-row">
     <div class="filter-pill toggle-pill" id="pill-fav" role="button" tabindex="0">
       <span class="fav-heart">♡</span> Saved <span class="count-badge" id="badge-fav" style="display:none">0</span>
@@ -1442,7 +1442,7 @@
       idLabel: 'BBL', label: 'Rent-stabilized', regionLabel: 'Borough',
       regions: { M: 'Manhattan', Bx: 'Bronx', Bk: 'Brooklyn', Q: 'Queens', SI: 'Staten Island' },
       slugs: { M: 'manhattan-ny', Bx: 'bronx-ny', Bk: 'brooklyn-ny', Q: 'queens-ny', SI: 'staten-island-ny' },
-      searchPh: 'Address, neighborhood, ZIP, or BBL',
+      searchPh: 'Rent-stabilized? Address, ZIP or BBL',
       nyc: true,
     },
     sf: {
@@ -1450,7 +1450,7 @@
       idLabel: '', label: 'Rent-controlled (reported)', regionLabel: 'City',
       tagline: '(SF Rent Stabilized Homes)',
       regions: { SF: 'San Francisco' }, slugs: { SF: 'san-francisco-ca' },
-      searchPh: 'Address or neighborhood',
+      searchPh: 'Rent-controlled? Address or block',
       statusHeading: 'Rent-control status',
       rent: {
         label: 'Median reported rent', short: 'Median reported', note: '(owner-reported, block level)',
@@ -1464,7 +1464,7 @@
       idLabel: 'APN', label: 'Likely rent-stabilized (RSO)', regionLabel: 'City',
       tagline: '(LA Rent Stabilized Homes)', likely: true,
       regions: { LA: 'Los Angeles' }, slugs: { LA: 'los-angeles-ca' },
-      searchPh: 'Address, neighborhood, or ZIP',
+      searchPh: 'Rent-stabilized? Address, ZIP or APN',
       sourceNote: 'Meets LA’s RSO criteria — 2+ units, built on or before Oct 1, 1978 (LA County assessor rolls). A small number of exemptions can’t be derived from tax data, so verify the address on ZIMAS.',
       credit: 'Derived from <a href="https://data.lacounty.gov/" target="_blank" rel="noopener">LA County Assessor parcel data</a> using <a href="https://housing.lacity.gov/residents/rso-overview" target="_blank" rel="noopener">LAHD’s RSO criteria</a> (residential, 2+ units, built ≤ 1978, City of LA) — verify any building on <a href="https://zimas.lacity.org/" target="_blank" rel="noopener">ZIMAS</a> · Created by <a href="https://divinedavis.com" target="_blank" rel="noopener">Divine Davis</a> · <a href="/developers/">API for developers</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a>',
     },
@@ -1473,7 +1473,7 @@
       idLabel: 'Reg. #', label: 'Rent-controlled (registered)', regionLabel: 'City',
       tagline: '(DC Rent Controlled Homes)',
       regions: { DC: 'Washington DC' }, slugs: { DC: 'washington-dc' },
-      searchPh: 'Address, neighborhood, or ZIP',
+      searchPh: 'Rent-controlled? Address or ZIP',
       statusHeading: 'Rent-control status',
       rent: {
         label: 'Median registered rent', short: 'Median registered', note: '(legal rent on file with DHCD)',

@@ -1,15 +1,25 @@
 FIND A CRIB — SAMPLE ORDER
 Supplier: Ningbo Create Joykey (Mason Lu)
 
-THREE DESIGNS, THREE FILES. They look nearly identical apart from the QR
-pattern, so they must stay separated and labelled at every step.
+THREE DESIGNS, THREE FILES — AND THEY ARE NOT THE SAME FILE.
+They are identical by eye on purpose. Only the QR pattern differs, because
+each one encodes a different address. Verified before sending:
 
-  findacrib-card-a1-120x140mm-nfc.pdf    "a1"
-  findacrib-card-a2-120x140mm-nfc.pdf    "a2"
-  findacrib-card-a7-120x140mm-nfc.pdf    "a7"
+  findacrib-card-a1-100x160mm-nfc.pdf  ->  findacrib.com/c/a1
+  findacrib-card-a2-100x160mm-nfc.pdf  ->  findacrib.com/c/a2
+  findacrib-card-a7-100x160mm-nfc.pdf  ->  findacrib.com/c/a7
+
+Scan each PDF with a phone to confirm — the last two characters of the
+address differ. They must stay separated and labelled at every step.
+
+  findacrib-card-a1-100x160mm-nfc.pdf    "a1"
+  findacrib-card-a2-100x160mm-nfc.pdf    "a2"
+  findacrib-card-a7-100x160mm-nfc.pdf    "a7"
 
 SPEC
-  Printed face   120 x 140 mm portrait (confirmed by supplier)
+  Printed face   100 wide x 160 tall mm, PORTRAIT
+                 (supplier quotes it as "160*100*70mm" — please
+                  confirm which number is width and which height)
   Angle          75 degrees, consistent across the run
   Printing       FULL-COLOUR UV PRINT — not laser engraving
   NFC            NTAG213 or 215, NOT encoded. We program the URLs.

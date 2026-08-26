@@ -1642,9 +1642,18 @@
        // Reference line, no verdict: see STICKINESS_REFERENCE.
        bench:'<b>'+STICKINESS_REFERENCE.good+'%</b> is the usual "good consumer app" line, '+
              '<b>'+STICKINESS_REFERENCE.exceptional+'%</b> exceptional · rule of thumb, not a measured average'},
-      {val:rate(E.wau_mau),lbl:'WAU/MAU',
-       sub:comma(E.wau)+' weekly of '+comma(E.mau)+' monthly',
-       bench:'No sourced benchmark · the healthier of the two ratios here'},
+      // Split out of the WAU/MAU ratio, because at this scale the counts are
+      // the actionable half and the percentage was hiding them. 101 and 376
+      // tell you what to do next; 26.9% does not, and it has no sourced
+      // benchmark to be judged against anyway. The ratio survives as the
+      // footnote on the weekly tile rather than as a headline of its own.
+      {val:comma(E.wau),lbl:'Weekly active',
+       sub:'unique visitors · last 7 days',
+       bench:n(E.mau) ? '<b>'+rate(E.wau_mau)+'</b> of the monthly total came back this week'
+                      : 'No monthly figure yet to compare against'},
+      {val:comma(E.mau),lbl:'Monthly active',
+       sub:'unique visitors · last 30 days',
+       bench:'The denominator for stickiness and for weekly return'},
       {val:'$'+comma(S.mrr),lbl:'MRR',
        sub:comma(S.paying)+' paying · '+comma(S.comped)+' comped',
        bench:'<b>0%</b> free-to-paid · industry free tier converts <b>2–5%</b>'}

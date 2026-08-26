@@ -68,6 +68,56 @@ MIN_OWNED_IMPRESSIONS = 5
 # more now that both are reported.
 PAID_FLIGHT_DAYS = frozenset({"2026-07-17", "2026-07-18"})
 
+# Metrics that are CUMULATIVE STOCKS, not daily flows.
+#
+# `visitors` is a flow: 16 today, 25 tomorrow, and the median of a window is a
+# fair summary of the level. `accounts_with_saves` is a stock: it counts every
+# account that has ever saved a building, so it can only ever go up. Running a
+# stock through the median-of-two-windows comparison below is not merely
+# imprecise, it is rigged in both directions:
+#
+#   * a stock that grew at all scores works=True forever, because the later
+#     window's median is necessarily >= the earlier one's. That is the same
+#     false-positive machinery the tri-state fixed on 2026-08-25, arriving by
+#     a different road.
+#   * a stock that is flat scores "no measurable lift" with no way to tell a
+#     technique that is failing from one nothing has entered yet.
+#
+# For these the question is the CHANGE across the window, expressed as a daily
+# rate so windows of different lengths can be compared at all. See _judge_stock.
+STOCK_METRICS = frozenset({
+    "paying_subs", "comped_subs", "mrr_usd", "api_keys", "api_keys_pro",
+    "api_keys_business", "accounts_with_saves", "reports_sold",
+    "gsc_serving_ever",
+})
+
+# A stock needs a pre-activation span of at least this many days before a
+# growth rate measured on it means anything. One reading either side of the
+# activation date is not a baseline, it is a coincidence.
+MIN_BASELINE_DAYS = 7
+
+
+def _span_days(pairs):
+    """Calendar days between the first and last reading. 0 for a single point."""
+    if len(pairs) < 2:
+        return 0
+    try:
+        return (datetime.date.fromisoformat(pairs[-1][0])
+                - datetime.date.fromisoformat(pairs[0][0])).days
+    except Exception:
+        return len(pairs) - 1
+
+
+def _growth_rate(pairs):
+    """(delta, span_days, per_day) for a cumulative series. None if unmeasurable."""
+    if len(pairs) < 2:
+        return (None, 0, None)
+    span = _span_days(pairs)
+    delta = pairs[-1][1] - pairs[0][1]
+    if not span:
+        return (delta, 0, None)
+    return (delta, span, delta / span)
+
 
 def _days_active(t):
     a = t.get("activated")
@@ -98,6 +148,73 @@ def _trend(pairs, window=WINDOW):
     prior = vals[-2 * window:-window] or []
     return (statistics.median(recent) if recent else None,
             statistics.median(prior) if prior else None)
+
+
+def _judge_stock(res, metric, after, before, days):
+    """Judge a technique whose declared metric is a cumulative stock.
+
+    The reading that matters is how fast the counter moved after activation
+    against how fast it was moving before, per day, because the two spans are
+    almost never the same length. Everything here refuses to claim more than
+    the arithmetic supports: a stock that moved is reported as having moved,
+    and is still only works=True when there is a real baseline to beat.
+    """
+    a_delta, a_span, a_rate = _growth_rate(after)
+    b_delta, b_span, b_rate = _growth_rate(before)
+    first = after[0][1] if after else None
+    last = after[-1][1] if after else None
+    res["measured"] = {"metric": metric, "kind": "stock",
+                       "start": first, "end": last,
+                       "delta_after": a_delta, "span_days_after": a_span,
+                       "per_day_after": round(a_rate, 4) if a_rate is not None else None,
+                       "delta_before": b_delta, "span_days_before": b_span,
+                       "per_day_before": round(b_rate, 4) if b_rate is not None else None,
+                       "days_measured": len(after)}
+
+    if len(after) < GRACE_DAYS // 2:
+        res["why"] = f"only {len(after)} readings of {metric} since activation"
+        return res
+    if a_rate is None:
+        res["why"] = (f"{metric} has only {len(after)} reading(s) spanning {a_span}d since "
+                      f"activation — not enough to measure a rate")
+        return res
+
+    moved = f"{metric} went {_num(first)} → {_num(last)} ({_signed(a_delta)}) over {a_span}d"
+
+    if a_delta == 0:
+        # Flat is a real reading, but it does not say whether the technique
+        # failed or whether nothing has entered it yet. That difference is the
+        # whole reason this is not works=False.
+        res["action"] = "flag"
+        res["why"] = (f"{moved} — the counter has not moved at all since activation, so "
+                      f"either nothing reaches this technique or nothing it does converts")
+        return res
+
+    if b_span < MIN_BASELINE_DAYS:
+        res["why"] = (f"{moved}, but only {b_span}d of pre-activation history — no comparable "
+                      f"baseline, so the movement cannot be attributed either way")
+        return res
+
+    was = f"vs {_signed(b_delta)} over the {b_span}d before ({round(b_rate, 3)}/day)"
+    if a_rate <= b_rate:
+        res["action"] = "flag"
+        res["why"] = f"{moved} at {round(a_rate, 3)}/day {was} — no acceleration after {days}d"
+        return res
+    res["works"] = True
+    res["why"] = f"{moved} at {round(a_rate, 3)}/day {was}"
+    return res
+
+
+def _num(v):
+    if v is None:
+        return "?"
+    return str(int(v)) if float(v) == int(v) else str(round(float(v), 2))
+
+
+def _signed(v):
+    if v is None:
+        return "?"
+    return ("+" if v > 0 else "") + _num(v)
 
 
 def evaluate(t):
@@ -170,6 +287,10 @@ def evaluate(t):
     pairs = _global(metric)
     after = [(d, v) for d, v in pairs if d >= (t.get("activated") or "")]
     before = [(d, v) for d, v in pairs if d < (t.get("activated") or "")][-WINDOW:]
+    if metric in STOCK_METRICS:
+        return _judge_stock(res, metric, after,
+                            [(d, v) for d, v in pairs if d < (t.get("activated") or "")],
+                            days)
     a_med = statistics.median([v for _, v in after[-WINDOW:]]) if after else None
     b_med = statistics.median([v for _, v in before]) if before else None
     # Totals alongside the medians, because at this traffic level the median is

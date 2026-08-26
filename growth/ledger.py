@@ -275,6 +275,51 @@ def reactivate(tech_id, why=""):
     return None
 
 
+def set_metric(tech_id, metric, why=""):
+    """Repoint a site-wide technique at a different global series.
+
+    This is a bigger act than it looks, so it is a named operation rather than
+    an edit to techniques.json. A verdict is a sentence about a metric: "no
+    measurable lift" is a claim about the series it was measured on and about
+    nothing else. Leave the old verdict standing under a new metric and the
+    ledger asserts something no measurement supports — which is how T011 came
+    to carry "mrr_usd median 0.0/day" when mrr_usd was, by construction,
+    incapable of containing the one-time revenue that technique exists to
+    produce. So the stale verdict is cleared here, and the change is dated in
+    the notes where the next reader will trip over it.
+
+    The old metric's history is untouched: results.jsonl is append-only and the
+    series stays readable, so a future review can always ask what the previous
+    instrument said.
+
+    CALLING THIS ALONE IS NOT ENOUGH FOR A SEEDED TECHNIQUE, and the failure is
+    silent. seed.run() re-applies `metric` from growth/seed.py on every single
+    run — it is deliberately the source of truth for a seeded technique's
+    wording — so a metric changed only here reverts on the next build with no
+    error and no log line. That is exactly what happened on 2026-08-26: T011 and
+    T018 were repointed, verified as changed, and were back to mrr_usd and
+    visitors an hour later, while the notes explaining the change survived, so
+    the ledger read as though the change had been made. Change SEEDS in seed.py
+    in the same commit, then call this. Scout-proposed techniques are not
+    seeded and do not have this problem.
+    """
+    with _LOCK:
+        techs = load_techniques()
+        for t in techs:
+            if t["id"] == tech_id or t.get("slug") == tech_id:
+                prev = t.get("metric")
+                if prev == metric:
+                    return t
+                t["metric"] = metric
+                t["verdict"] = None
+                t["notes"] = (t.get("notes", "")
+                              + f"\n[{today()}] metric {prev} → {metric}; prior verdict "
+                                f"cleared because it was decided against {prev}: {why}").strip()
+                save_techniques(techs)
+                return t
+    return None
+
+
 def set_verdict(tech_id, works, why, measured=None):
     """Record the judgement. Kept separate from status so a technique can be
     'works but retired' (e.g. folded into another) without losing the finding.

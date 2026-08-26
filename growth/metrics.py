@@ -177,8 +177,79 @@ def collect(days=1, sb=None, end=None):
     return out
 
 
+# ------------------------------------------------------------------ revenue
+#
+# Until 2026-08-26 revenue was, in full: `mrr_usd = paying_subs * 4.99`. That
+# is the price of the legacy Plus subscription and of nothing else this site
+# sells, so the number was structurally blind to both products that were
+# actually launched:
+#
+#   * the Developer API tiers. Their checkout lives in api_server.py and sets
+#     api_keys.tier through the api_set_tier RPC — it never touches the
+#     `subscriptions` table, so a $199/mo Business key would have been counted
+#     as $0.00 and the loop would have kept reporting "no measurable lift".
+#   * the one-time $9 Building Report. It has no recurring component at all,
+#     so no amount of MRR arithmetic can ever see it, and T011 — a technique
+#     whose entire audience is Building Report buyers — was being judged on
+#     mrr_usd. It could not have registered its own revenue if it had worked
+#     perfectly.
+#
+# Prices are the published ones and every figure here is sourced in-repo, not
+# from memory: index.html offers "Get the full building report — $9";
+# api_server.py sells tiers "pro" and "business"; the Plus subscription is the
+# $4.99 plan the stripe-webhook function writes as plan="plus". If a price
+# changes on the site, change it here in the same commit — a stale number here
+# does not fail loudly, it quietly misreports the goal.
+PLUS_MRR_USD = 4.99
+API_TIER_MRR_USD = {"pro": 49.0, "business": 199.0}
+REPORT_PRICE_USD = 9.0
+
+# mrr_usd stays strictly RECURRING so its year of history keeps meaning the
+# same thing. One-time sales are reported beside it, and revenue_usd_30d is the
+# number to read against the $10,000/month goal, because that goal is about
+# money arriving in a month, not about subscriptions specifically.
+
+
+def _count_api_tiers(sb):
+    """Paid API keys by tier. Returns {} if the tier column is not readable."""
+    try:
+        rows = sb.select("api_keys", {"select": "id,tier,status"})
+    except Exception:
+        return {}
+    out = {}
+    for r in rows:
+        if str(r.get("status") or "active") not in ("active", "", "None"):
+            continue
+        tier = str(r.get("tier") or "free")
+        if tier in API_TIER_MRR_USD:
+            out[tier] = out.get(tier, 0) + 1
+    return out
+
+
+def _report_sales(sb, today=None):
+    """(lifetime paid reports, paid in the trailing 30 days).
+
+    building_reports is service-role only and carries no amount column — the
+    price is the single published one, so units times price is exact rather
+    than an estimate.
+    """
+    rows = sb.select("building_reports", {"select": "status,paid_at"})
+    paid = [r for r in rows if r.get("status") == "paid"]
+    today = today or datetime.date.today()
+    cutoff = (today - datetime.timedelta(days=30)).isoformat()
+    recent = [r for r in paid if str(r.get("paid_at") or "")[:10] >= cutoff]
+    return len(paid), len(recent)
+
+
 def snapshot_totals(sb=None):
-    """Point-in-time totals against the standing goals: users and revenue."""
+    """Point-in-time totals against the standing goals: users and revenue.
+
+    Every query beyond the two that have always worked is wrapped: a schema
+    surprise on a new table must not cost the day its visitors, its signups
+    and its subscription count. A missing extra reads as absent, not as zero
+    — except the sales counts, where a real zero is the whole point and is
+    reported as zero only when the table was actually read.
+    """
     sb = sb or Supabase()
     users = sb.select("subscriptions", {"select": "user_id,status,plan,stripe_subscription_id"})
     paying = [u for u in users
@@ -186,14 +257,32 @@ def snapshot_totals(sb=None):
               and u.get("user_id") != OWNER_USER_ID]
     comped = [u for u in users if u.get("status") == "active" and not u.get("stripe_subscription_id")]
     saved = sb.select("saved_buildings", {"select": "user_id"})
-    api_keys = sb.select("api_keys", {"select": "id"})
-    return {
+    try:
+        api_keys = sb.select("api_keys", {"select": "id"})
+    except Exception:
+        api_keys = []
+
+    tiers = _count_api_tiers(sb)
+    api_mrr = sum(API_TIER_MRR_USD[k] * n for k, n in tiers.items())
+
+    out = {
         "paying_subs": len(paying),
         "comped_subs": len(comped),
-        "mrr_usd": round(len(paying) * 4.99, 2),
+        "mrr_usd": round(len(paying) * PLUS_MRR_USD + api_mrr, 2),
         "accounts_with_saves": len({s["user_id"] for s in saved if s.get("user_id")}),
         "api_keys": len(api_keys),
     }
+    for tier in API_TIER_MRR_USD:
+        out[f"api_keys_{tier}"] = tiers.get(tier, 0)
+
+    try:
+        sold, sold_30d = _report_sales(sb)
+    except Exception:
+        return out                      # table unreadable: say nothing rather than "0 sold"
+    out["reports_sold"] = sold
+    out["reports_sold_30d"] = sold_30d
+    out["revenue_usd_30d"] = round(out["mrr_usd"] + sold_30d * REPORT_PRICE_USD, 2)
+    return out
 
 
 def record_day(date, m):

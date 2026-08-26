@@ -241,7 +241,13 @@ SEEDS = [
                "as the search FOOTPRINT and index_pct as the indexing rate."),
     dict(slug="lifecycle_email", status="candidate", kind="lifecycle",
          name="Buyer follow-up sequence (Building Report)",
-         prefixes=[], metric="mrr_usd",
+         # reports_sold, not mrr_usd: mrr_usd is monthly RECURRING revenue and the
+         # Building Report is a one-time $9 purchase, so the old metric could not
+         # have registered this technique's own revenue if it had worked perfectly.
+         # reports_sold is a GATE rather than an attribution — this sequence emails
+         # people who have already bought and does not cause sales — but while it
+         # reads 0 the technique has no audience and any verdict on it is noise.
+         prefixes=[], metric="reports_sold",
          hypothesis="Report buyers paid at the highest-intent moment in the funnel and each "
                     "have one specific building they care about. Nudging the free DHCR "
                     "rent-history request — the step that actually establishes overcharge "
@@ -250,7 +256,12 @@ SEEDS = [
                   "building, too few for the 21-day review to find any signal."),
     dict(slug="account_lifecycle", status="candidate", kind="lifecycle",
          name="Free-account onboarding sequence",
-         prefixes=[], metric="visitors",
+         # accounts_with_saves, not visitors: this sequence has sent 26 emails in
+         # 30 days and no onboarding email can move a site-wide visitor count, so
+         # "no measurable lift in visitors" was measuring the paid-ad flight and
+         # the search collapse, not this. The hypothesis below names the activation
+         # rate, and accounts_with_saves is that number.
+         prefixes=[], metric="accounts_with_saves",
          hypothesis="A new account currently receives nothing at all, so the first "
                     "impression after signing up is silence. A welcome, one activation "
                     "nudge for people who never saved anything, and one lapsed check "

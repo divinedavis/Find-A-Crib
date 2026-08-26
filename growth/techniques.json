@@ -67,7 +67,7 @@
     "added": "2026-07-26",
     "activated": "2026-07-26",
     "retired": null,
-    "notes": "[2026-08-25] REVISIT DECISION: keep, and the reason is that its verdict is now legible rather than good. With the paid flight of 2026-07-17/18 excluded from the comparison, ai_visitors reads 8 in the last 14d against 6 in the 14d before \u2014 flat-to-marginally-up, on counts far too small to call either way, and the medians are 0.0 vs 0.0. review.py flags that as 'no measurable lift' and records it UNPROVEN, which is the honest reading: this technique has never been measured, because a 0-2/day series has no resolution. It stays because it costs one text file a night and because AI citation is a stated goal with no other instrument pointed at it \u2014 not because anything says it works. If a future review wants a real answer here it needs a metric that counts citations, not visitors.\n[2026-08-25] SAME-DAY CORRECTION to the revisit note above, from 2026-08-25 research. I wrote that this technique 'costs one text file a night'. That is probably wrong, and the cost may land exactly where this site can least afford it. Google updated its crawl-budget documentation on 2026-07-22 to state that every site starts at the same conservative default crawl capacity limit and that THE CRAWL CAPACITY LIMIT IS SHARED ACROSS ALL CRAWLERS \u2014 high demand from one reduces what is available to the others. Google-Extended, which this technique's robots.txt explicitly allows, is a Google crawler and therefore draws on the same pool as Googlebot. On a 47,954-page corpus with 18.2% ever-fetched, capacity is the binding constraint, so inviting AI-training crawls is not free \u2014 it is a trade against search crawling. NOT ACTED ON TODAY, deliberately: the trade runs directly against this technique's own goal (AI citation is a stated objective and there is no other instrument pointed at it), so choosing between them is T043's decision, not a note's. What a future review needs is the number neither of us has: the server-log split of Googlebot vs Google-Extended vs third-party AI crawler hits. Non-Google AI crawlers (GPTBot, CCBot) sit outside Google's pool and cost bandwidth rather than capacity \u2014 a weaker and different argument, so do not merge the two. Source: developers.google.com crawl-budget doc, updated 2026-07-22.",
+    "notes": "[2026-08-25] REVISIT DECISION: keep, and the reason is that its verdict is now legible rather than good. With the paid flight of 2026-07-17/18 excluded from the comparison, ai_visitors reads 8 in the last 14d against 6 in the 14d before \u2014 flat-to-marginally-up, on counts far too small to call either way, and the medians are 0.0 vs 0.0. review.py flags that as 'no measurable lift' and records it UNPROVEN, which is the honest reading: this technique has never been measured, because a 0-2/day series has no resolution. It stays because it costs one text file a night and because AI citation is a stated goal with no other instrument pointed at it \u2014 not because anything says it works. If a future review wants a real answer here it needs a metric that counts citations, not visitors.\n[2026-08-25] SAME-DAY CORRECTION to the revisit note above, from 2026-08-25 research. I wrote that this technique 'costs one text file a night'. That is probably wrong, and the cost may land exactly where this site can least afford it. Google updated its crawl-budget documentation on 2026-07-22 to state that every site starts at the same conservative default crawl capacity limit and that THE CRAWL CAPACITY LIMIT IS SHARED ACROSS ALL CRAWLERS \u2014 high demand from one reduces what is available to the others. Google-Extended, which this technique's robots.txt explicitly allows, is a Google crawler and therefore draws on the same pool as Googlebot. On a 47,954-page corpus with 18.2% ever-fetched, capacity is the binding constraint, so inviting AI-training crawls is not free \u2014 it is a trade against search crawling. NOT ACTED ON TODAY, deliberately: the trade runs directly against this technique's own goal (AI citation is a stated objective and there is no other instrument pointed at it), so choosing between them is T043's decision, not a note's. What a future review needs is the number neither of us has: the server-log split of Googlebot vs Google-Extended vs third-party AI crawler hits. Non-Google AI crawlers (GPTBot, CCBot) sit outside Google's pool and cost bandwidth rather than capacity \u2014 a weaker and different argument, so do not merge the two. Source: developers.google.com crawl-budget doc, updated 2026-07-22.\n[2026-08-26] Research note, not a decision (revisit stays 2026-09-24). T003 flipped to WORKS this morning on ai_visitors median 0.5/day vs 0.0 [10 in the last 14d vs 6 before]. Treat that as fragile: it is 10 visitors, and two 2026 studies point the other way \u2014 Shepard's citation study rates llms.txt 2.0/10 with no credible evidence it influences LLM citations, and Google's May 2026 AI-features guidance says AI Overviews and AI Mode require no llms.txt and no special AI markup. Also note the metric mismatch: ai_visitors counts referral clicks from AI hosts, which is not the same thing as being cited. What the same research says DOES correlate with citations is corroboration off-site \u2014 unlinked brand mentions at 0.664 vs 0.218 for backlinks \u2014 which is the premise T047 and T056 already carry, and neither is active.",
     "verdict": {
       "decided": "2026-08-26",
       "works": true,
@@ -269,28 +269,15 @@
     "kind": "lifecycle",
     "status": "active",
     "prefixes": [],
-    "metric": "mrr_usd",
+    "metric": "reports_sold",
     "source": "seed",
     "evidence": "Free accounts were the obvious audience but only 3 have ever saved a building, too few for the 21-day review to find any signal.",
     "added": "2026-07-26",
     "activated": "2026-07-27",
     "retired": null,
-    "notes": "[2026-07-27] candidate\u2192active: re-scoped to Building Report buyers 2026-07-27; free-account base too small to measure",
-    "verdict": {
-      "decided": "2026-08-26",
-      "works": null,
-      "why": "mrr_usd median 0.0/day vs 0.0/day before activation [0.0 in the last 14d vs 0.0 in the 1d before] \u2014 no measurable lift after 30d",
-      "measured": {
-        "metric": "mrr_usd",
-        "median_after": 0.0,
-        "median_before": 0.0,
-        "total_after": 0.0,
-        "total_before": 0.0,
-        "window_days": 14,
-        "days_measured": 30
-      }
-    },
-    "revisit_on": "2026-08-26"
+    "notes": "[2026-07-27] candidate\u2192active: re-scoped to Building Report buyers 2026-07-27; free-account base too small to measure\n[2026-08-26] metric mrr_usd \u2192 reports_sold; prior verdict cleared because it was decided against mrr_usd: revisit 2026-08-26. mrr_usd is monthly RECURRING revenue and was computed as paying_subs * 4.99; the Building Report is a one-time $9 purchase, so this technique's declared metric could not have registered its own revenue if the sequence had worked perfectly. Same failure mode as T008 on 2026-08-25: judged on a number structurally incapable of resolving it. reports_sold (added to metrics.py today) is a GATE, not an attribution \u2014 T011 emails people who have already bought and does not cause sales \u2014 but while it reads 0 this technique has no audience and any verdict on it is noise.\n[2026-08-26] revisit: KEEP, dormant and honestly labelled. Lifetime output is 2 emails, both on 2026-07-27, and nothing in the 30 days since, because no Building Report has sold. The code is sound (idempotent via sent_steps, unsubscribe honoured forever, nothing sends without SMTP) and costs nothing to keep. Its measurability is downstream of T017. DATED CONDITION, mirroring T008's: if reports_sold is still 0 on 2026-09-25, retire it as unmeasurable-by-construction \u2014 NOT as failed. Retiring it as failed would tell the scout this idea was tried and lost, when it has never once run.\n[2026-08-26] metric mrr_usd \u2192 reports_sold; prior verdict cleared because it was decided against mrr_usd: revisit 2026-08-26, RE-APPLIED after the first attempt silently reverted via seed.run(); seed.py now declares reports_sold. mrr_usd is monthly RECURRING revenue computed as paying_subs * 4.99, and the Building Report is a one-time $9 purchase, so the declared metric could not have registered this technique's own revenue if it had worked perfectly. Same failure mode as T008 on 2026-08-25.",
+    "verdict": null,
+    "revisit_on": "2026-09-25"
   },
   {
     "id": "T012",
@@ -410,27 +397,14 @@
     "kind": "conversion",
     "status": "active",
     "prefixes": [],
-    "metric": "organic_visitors",
+    "metric": "reports_sold",
     "source": "scout:2026-07-27",
     "evidence": "A comparable tenant-facing product in this exact space is already monetizing a single-use moment this way: <cite index=\"25-11,25-12,25-13\">Is your landlord allowed to do that? Get a plain-English lease review with red flags and state-specific tenant rights. $9.99, one-time.</cite> This validates that renters will pay a small one-time fee at the decision point rather than commit to a subscription for information they need once.",
     "added": "2026-07-27",
     "activated": "2026-07-28",
     "retired": null,
-    "notes": "effort: days\nexpected: First paid dollar on the site; target 50-100 one-time purchases/month at $7-9.99 within 90 days of launch, tracked via Stripe one-time checkout separate from the Plus subscription funnel.\nfirst step: Pick 3 high-traffic building pages, add a 'Get the full building report' one-time-purchase button (Stripe Checkout, no account required) that unlocks owner/agent history, full violation timeline, and portfolio cross-reference as a downloadable PDF.\n[2026-07-28] candidate\u2192active: was live in production since 2026-07-27 (api_server.py Stripe checkout + building_reports table + lifecycle.py buyer sequence) but never flipped from candidate \u2014 same unfixed claim as gsc_integration. Confirmed by code before flipping.",
-    "verdict": {
-      "decided": "2026-08-26",
-      "works": null,
-      "why": "organic_visitors median 1.0/day vs 6.0/day before activation [28 in the last 14d vs 107 in the 14d before] \u2014 no measurable lift after 29d",
-      "measured": {
-        "metric": "organic_visitors",
-        "median_after": 1.0,
-        "median_before": 6.0,
-        "total_after": 28,
-        "total_before": 107,
-        "window_days": 14,
-        "days_measured": 29
-      }
-    },
+    "notes": "effort: days\nexpected: First paid dollar on the site; target 50-100 one-time purchases/month at $7-9.99 within 90 days of launch, tracked via Stripe one-time checkout separate from the Plus subscription funnel.\nfirst step: Pick 3 high-traffic building pages, add a 'Get the full building report' one-time-purchase button (Stripe Checkout, no account required) that unlocks owner/agent history, full violation timeline, and portfolio cross-reference as a downloadable PDF.\n[2026-07-28] candidate\u2192active: was live in production since 2026-07-27 (api_server.py Stripe checkout + building_reports table + lifecycle.py buyer sequence) but never flipped from candidate \u2014 same unfixed claim as gsc_integration. Confirmed by code before flipping.\n[2026-08-26] metric organic_visitors \u2192 reports_sold; prior verdict cleared because it was decided against organic_visitors: The Building Report's own conversion metric. It was judged on site-wide organic_visitors, which measures whether the site gets search traffic, not whether the $9 ask converts. Repointed the day before its scheduled revisit so tomorrow's revisit has a metric that can answer it; the revisit decision itself is deliberately NOT taken here.",
+    "verdict": null,
     "revisit_on": "2026-08-27"
   },
   {
@@ -441,28 +415,15 @@
     "kind": "lifecycle",
     "status": "active",
     "prefixes": [],
-    "metric": "visitors",
+    "metric": "accounts_with_saves",
     "source": "seed",
     "evidence": "Supabase auth runs with mailer_autoconfirm and no SMTP host: no confirmation and no welcome is sent. 17 of 20 accounts have never saved a building.",
     "added": "2026-07-27",
     "activated": "2026-07-27",
     "retired": null,
     "notes": "Accounts created before the 2026-07-27 cutover never enter the sequence \u2014 gating only the welcome on age would still have fired the day-3 and day-21 steps at 17 cold accounts at once, which is the backfill blast the owner explicitly ruled out.",
-    "verdict": {
-      "decided": "2026-08-26",
-      "works": null,
-      "why": "visitors median 16.0/day vs 23.0/day before activation [238 in the last 14d vs 332 in the 14d before] \u2014 no measurable lift after 30d",
-      "measured": {
-        "metric": "visitors",
-        "median_after": 16.0,
-        "median_before": 23.0,
-        "total_after": 238,
-        "total_before": 332,
-        "window_days": 14,
-        "days_measured": 29
-      }
-    },
-    "revisit_on": "2026-08-26"
+    "verdict": null,
+    "revisit_on": "2026-09-25"
   },
   {
     "id": "T019",

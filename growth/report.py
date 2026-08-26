@@ -382,6 +382,19 @@ def build_blocks(run_log=None, review_out=None):
     subs = _last("paying_subs") or 0
     mrr = _last("mrr_usd") or 0
     signups = _last("accounts_with_saves")
+    # The goal is $10,000 A MONTH, which is money arriving — not subscriptions
+    # specifically. mrr_usd cannot contain a one-time Building Report sale by
+    # construction, so reading the goal off it understated revenue by exactly
+    # the amount of every sale the site has ever made. revenue_usd_30d is
+    # recurring plus the trailing 30 days of one-time sales; it is absent from
+    # every day measured before 2026-08-26, so fall back rather than blank out
+    # the history.
+    sold_30d = _last("reports_sold_30d")
+    rev = _last("revenue_usd_30d")
+    revenue = mrr if rev is None else rev
+    rev_sub = (f"{subs} subscriber(s), {sold_30d} report(s) sold in 30d"
+               if rev is not None and sold_30d is not None
+               else f"{subs} paying subscriber(s)")
     goal_mrr = (goals.get("mrr_usd") or {}).get("target", 10000)
     goal_users = (goals.get("signups") or {}).get("target", 10000)
     v_last, v_med, v_arrow, v_tone = _trend("visitors")
@@ -393,17 +406,17 @@ def build_blocks(run_log=None, review_out=None):
          "delta": f"{o_arrow} {_fmt(o_med)}/day median".strip(), "tone": o_tone},
         {"label": "Active signups", "value": _fmt(signups),
          "delta": f"of {_fmt(goal_users)} target"},
-        {"label": "Revenue", "value": f"{_money(mrr)}/mo",
-         "delta": f"{subs} paying subscriber(s)", "tone": "good" if subs else "mute"},
+        {"label": "Revenue", "value": f"{_money(revenue)}/mo",
+         "delta": rev_sub, "tone": "good" if revenue else "mute"},
     ]})
 
     # ---- goals, as distance-to-target rather than a bare number
     share = _last("search_share_pct")
     B.append({"type": "section", "label": "Goals"})
     B.append({"type": "progress", "label": "Revenue",
-              "value": f"{_money(mrr)} / {_money(goal_mrr)}",
-              "sub": f"{subs} paying subscriber(s)",
-              "pct": _pct(mrr, goal_mrr), "tone": "good" if mrr else "info"})
+              "value": f"{_money(revenue)} / {_money(goal_mrr)}",
+              "sub": rev_sub,
+              "pct": _pct(revenue, goal_mrr), "tone": "good" if revenue else "info"})
     B.append({"type": "progress", "label": "Signups",
               "value": f"{_fmt(signups)} / {_fmt(goal_users)}",
               "sub": "accounts that have saved at least one building",

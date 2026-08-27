@@ -84,3 +84,10 @@ housing_connect.json
 # Council-office contact list (public office addresses; rebuilt by build_council.py,
 # deliberately not published — see growth/council_outreach.md)
 council_outreach.csv
+
+# Derived from buildings.min.json by split_hpd.py; regenerated on every
+# refresh, and large. The source blob stays tracked.
+buildings.slim.json
+buildings.slim.json.gz
+buildings.hpd.json
+buildings.hpd.json.gz

@@ -848,6 +848,43 @@ def council_district_pages(urls):
     return recs
 
 
+# ---------------------------------------------------------------- index triage
+# Measured 2026-08-27 by URL Inspection over a 450-URL sample of the 47,982
+# published pages: 2 indexed, 80 crawled-and-declined, 44 discovered-never-
+# crawled, 324 never discovered at all. Of the 37 URLs Google last fetched more
+# than 21 days ago, ZERO are indexed. Nothing is blocked, noindexed, duplicated
+# or mis-canonicalised — the markup is fine and always was.
+#
+# The finding that decides this function is the per-family split. Of 250 sampled
+# building pages Google had fetched 55; of the guides, council districts,
+# /section8/ and /brief/ it had fetched NOT ONE. The whole crawl allowance was
+# going to a tier that is 53-71% identical page to page and converts at 1.8%,
+# and the pages actually worth ranking had never been looked at.
+#
+# So the building tier stops being submitted wholesale. A page is promoted only
+# if it can say something no template can generate:
+#   * a unit in it is advertised right now      — live, changing, high intent
+#   * 100+ open class-C violations              — immediately hazardous, citable
+#   * 300+ apartments                           — among the largest in the city
+# Everything else stays live, stays linked and stays useful to a person who
+# lands on it, but carries noindex,follow and is left out of the sitemap.
+# ~844 of 47,165 promoted. This is the "ship 50-100 high-conviction pages,
+# validate, then scale" shape, and the ledger to widen it is accept_pct_mature
+# in growth/index_status.json — not a hunch.
+PROMOTE_CLASS_C = 100
+PROMOTE_UNITS = 300
+
+
+def promoted_building(b, advertised):
+    """True if this building page earns a place in the sitemap."""
+    if advertised:
+        return True
+    v = (b.get("h") or {}).get("violations") or {}
+    if (v.get("oc") or 0) >= PROMOTE_CLASS_C:
+        return True
+    return (b.get("u") or 0) >= PROMOTE_UNITS
+
+
 def ordinal(n):
     if 11 <= n % 100 <= 13:
         return f"{n}th"
@@ -1143,14 +1180,19 @@ CITY_NAV = (
     '<a href="/dc/">rent-controlled Washington DC</a></span>')
 
 
-def page(title, desc, canonical, body, jsonld=None, footer=None):
+def page(title, desc, canonical, body, jsonld=None, footer=None, robots=None):
     ld = ""
     if jsonld:
         ld = '<script type="application/ld+json">%s</script>' % json.dumps(jsonld)
+    # `robots` is only ever set to noindex,follow, and only on the building tier
+    # that index_triage() declines to promote — see the note there. follow, not
+    # nofollow, because the page still passes a reader and a crawler onward to
+    # the neighbourhood and borough hubs, which is the tier we want crawled.
+    rb = f'<meta name="robots" content="{robots}">' if robots else ""
     return f"""<!doctype html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{esc(title)}</title>
-<meta name="description" content="{esc(desc)}">
+<meta name="description" content="{esc(desc)}">{rb}
 <link rel="canonical" href="{canonical}">
 <link rel="icon" href="/favicon.ico" sizes="any">
 <meta property="og:type" content="website"><meta property="og:site_name" content="Find A Crib">
@@ -1657,6 +1699,7 @@ def main():
         return f"/available/{BORO_SLUG.get(boro,'nyc')}/{slugify(nb)}/"
 
     urls = []  # (loc, priority) for sitemaps
+    promoted_bbls = set()   # building pages that earned a sitemap entry
 
     # ---- building pages ----
     for b in blds:
@@ -1669,6 +1712,7 @@ def main():
         units = b.get("u")
         yr = b.get("yr")
         adv = b["bbl"] in listed
+        promoted = promoted_building(b, adv)
 
         # unique, data-driven lead sentence (avoids thin/duplicate content)
         bits = [f"<strong>{esc(addr)}</strong> is a registered NYC rent-stabilized building in "
@@ -1894,8 +1938,11 @@ def main():
               page(f"Is {addr} rent stabilized? — {nb}, {boro} | Find A Crib",
                    building_meta_desc(addr, nb, units, yr,
                                       (h.get("violations") or {}).get("open"), adv),
-                   canonical, body, jsonld))
-        urls.append((canonical, "0.6", b["b"]))
+                   canonical, body, jsonld,
+                   robots=None if promoted else "noindex,follow"))
+        if promoted:
+            urls.append((canonical, "0.6", b["b"]))
+            promoted_bbls.add(b["bbl"])
 
     # ---- neighborhood pages ----
     for (boro, nb), items in by_nb.items():
@@ -1906,6 +1953,27 @@ def main():
         yrs = [x["yr"] for x in items if x.get("yr")]
         med = sorted(yrs)[len(yrs) // 2] if yrs else None
         links = "".join(f"<a href=\"{bld_url(x)}\">{esc(titlecase_addr(x.get('a')))}</a>" for x in items)
+        # A flat list of 1,197 identical links spreads this page's weight across
+        # 1,197 pages, and the handful that can actually rank are buried in it
+        # alphabetically. The promoted buildings — advertised now, worst class-C
+        # record, or largest — get their own block above it, with the reason
+        # they are there written next to them.
+        notable = [x for x in items if x["bbl"] in promoted_bbls][:40]
+        notable_html = ""
+        if notable:
+            rows = []
+            for x in notable:
+                v = (x.get("h") or {}).get("violations") or {}
+                why = ("advertised for rent now" if x["bbl"] in listed
+                       else f"{v.get('oc'):,} open class-C violations"
+                       if (v.get("oc") or 0) >= PROMOTE_CLASS_C
+                       else f"{x.get('u'):,} apartments")
+                rows.append(f"<tr><td><a href=\"{bld_url(x)}\">"
+                            f"{esc(titlecase_addr(x.get('a')))}</a></td>"
+                            f"<td>{esc(why)}</td></tr>")
+            notable_html = (f"<h2>Notable buildings in {esc(nb)}</h2>"
+                            f"<table class='facts'><tr><th>Building</th><th>Why</th></tr>"
+                            + "".join(rows) + "</table>")
         body = (f"<div class='crumbs'><a href='/'>Home</a> › "
                 f"<a href='/borough/{BORO_SLUG.get(boro,'nyc')}/'>{esc(boroname)}</a></div>"
                 f"<h1>Rent-stabilized buildings in {esc(nb)}, {esc(boroname)}</h1>"
@@ -1920,6 +1988,7 @@ def main():
                 ])
                 + f"<a class='cta' href='/'>Explore {esc(nb)} on the map →</a>"
                 + VOUCHER_XLINK
+                + notable_html
                 + f"<h2>All {n:,} buildings</h2><div class='cols'>{links}</div>")
         nb_faq = [(f"How many rent-stabilized buildings are in {nb}, {boroname}?",
                    f"There are {n:,} registered rent-stabilized buildings in {nb}, {boroname}, "
@@ -2294,12 +2363,27 @@ def main():
     # and lists both sitemaps; writing the short version here would revert that
     # every month until the next daily run.
 
-    # persist lastmod state + emit the list of changed URLs for IndexNow
+    # persist lastmod state + emit the list of changed URLs for IndexNow.
+    # Only submitted URLs are worth pinging: the triage above put noindex on
+    # ~46k building pages, which changes their bytes and so marks every one of
+    # them "changed". Announcing 46,000 freshly-noindexed pages to IndexNow is
+    # at best wasted quota and at worst the kind of bulk submission that makes
+    # a small domain look like a spam farm — the pages we want crawled would be
+    # a rounding error in the payload.
+    submitted = {loc for loc, _, _ in urls} | {SITE + p for p, _ in static_pages}
     json.dump(LM_NEW, open(LM_STATE_PATH, "w"))
+    ping = sorted(set(LM_CHANGED) & submitted)
     with open(os.path.join(OUT, "changed_urls.txt"), "w") as f:
-        f.write("\n".join(sorted(set(LM_CHANGED))))
+        f.write("\n".join(ping))
+    print(f"IndexNow: {len(ping):,} changed URLs to ping "
+          f"({len(set(LM_CHANGED)):,} pages changed, {len(set(LM_CHANGED)) - len(ping):,} "
+          f"not submitted so not announced)")
 
-    print(f"Generated {len(urls):,} pages + {len(smaps)+2} sitemaps into {OUT}/ "
+    n_bld = len(blds)
+    print(f"index triage: {len(promoted_bbls):,} of {n_bld:,} building pages promoted "
+          f"({len(promoted_bbls) * 100.0 / n_bld:.1f}%); the rest are noindex,follow "
+          f"and out of the sitemap")
+    print(f"Generated {len(urls):,} submitted URLs + {len(smaps)+2} sitemaps into {OUT}/ "
           f"({len(LM_CHANGED)} pages changed this run)")
 
 

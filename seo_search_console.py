@@ -125,12 +125,41 @@ def build_report(token, monthly=False):
     for r in tp:
         out.append(f"  {r['keys'][0].replace(SITE_URL,'/')[:40]:<42}{r['clicks']:>4} clk  {r['impressions']:>6} impr")
 
-    # #2 Index coverage proxy: distinct pages receiving impressions
+    # #2 Index coverage. "Pages receiving impressions" is a PROXY and a poor one:
+    # it is derived from impressions, and Google confirmed impression-logging
+    # errors affecting data from 2026-08-13, which is exactly where this site's
+    # series steepens. The URL Inspection census in growth/index_status.json is
+    # an independent instrument — it asks Google the state of specific URLs — so
+    # it leads, and the proxy is kept underneath it for continuity.
     pages = query(token, start, end, ["page"], row_limit=25000)
-    out.append("\nINDEX COVERAGE (proxy)")
-    out.append(f"  Pages receiving impressions: {len(pages):,} of ~47,600 published")
-    if len(pages) < 100:
-        out.append("  ⚠️  Very few pages are serving — check indexing in Search Console (Pages report).")
+    out.append("\nINDEX COVERAGE")
+    cen = _census()
+    if cen:
+        t = cen["summary"]["total"]
+        bk = t.get("buckets", {})
+        out.append(f"  URL Inspection census ({cen.get('updated','?')}, {t.get('cohort',0)} URLs "
+                   f"sampled of {cen.get('published_urls',0):,} published)")
+        out.append(f"    indexed                  {bk.get('indexed',0):>6}   ({t.get('indexed_pct',0)}%)")
+        out.append(f"    crawled, not indexed     {bk.get('crawled_not_indexed',0):>6}")
+        out.append(f"    discovered, not crawled  {bk.get('discovered_not_indexed',0):>6}")
+        out.append(f"    never discovered         {bk.get('unknown_to_google',0):>6}")
+        mature = t.get("accept_pct_mature")
+        out.append(f"  GATING NUMBER — acceptance among URLs crawled 21+ days ago: "
+                   f"{'n/a' if mature is None else str(mature) + '%'}"
+                   f" (of {t.get('fetched_mature',0)})")
+        if mature is not None and mature < 5:
+            out.append("    ⚠️  Google is finding these pages and declining them. That is an")
+            out.append("        acceptance problem, not a discovery problem — more pages cannot fix it.")
+        # Which families Google has never even fetched is the actionable half.
+        fams = cen["summary"].get("by_family", {})
+        never = [(k, v) for k, v in fams.items() if v.get("fetched", 0) == 0 and v.get("cohort", 0) >= 5]
+        if never:
+            out.append("  Never fetched at all (crawl budget is not reaching these):")
+            for k, v in sorted(never, key=lambda x: -x[1]["cohort"]):
+                out.append(f"    /{k}/  0 of {v['cohort']} sampled URLs ever fetched")
+    else:
+        out.append("  (no census yet — run growth/indexstatus.py)")
+    out.append(f"  Proxy, for continuity: {len(pages):,} pages received an impression this window")
 
     # #5 Content-gap: queries stuck on page 2 (positions 11-20) = quick wins
     gap = [r for r in query(token, start, end, ["query"], row_limit=200)
@@ -142,7 +171,69 @@ def build_report(token, monthly=False):
             out.append(f"  {r['keys'][0][:38]:<40}pos {r['position']:.1f}  {r['impressions']} impr")
     else:
         out.append("  None yet (need more impression history).")
+
+    # #6 Content gaps from the site's own search box (see site_search_gaps).
+    out.append("\nASKED HERE AND NOT ANSWERED (last 30 days, site search)")
+    out.extend(site_search_gaps())
     return "\n".join(out) + "\n"
+
+
+def _census():
+    """The URL Inspection census written by growth/indexstatus.py, if present."""
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        "growth", "index_status.json")
+    try:
+        with open(path) as f:
+            d = json.load(f)
+        return d if d.get("summary") else None
+    except Exception:
+        return None
+
+
+def site_search_gaps(limit=15):
+    """Content gaps in the visitors' own words.
+
+    Keyword tools do not cover a niche this narrow, but the site's own search box
+    does: every query typed into it is somebody stating what they wanted from
+    this site, and since 2026-08-26 the event records which tier answered. A
+    settled search that resolved to `nomatch` is a question the site was asked
+    and could not answer — which is the definition of a content gap, sourced
+    first-party and for free.
+    """
+    tok = os.environ.get("SUPABASE_ACCESS_TOKEN") or _keychain("supabase-pat-clockin")
+    if not tok:
+        return ["  (no Supabase token — skipped)"]
+    sql = """
+      select lower(props->>'q') q, count(*) n, count(distinct visitor_id) v
+      from public.events
+      where event = 'search'
+        and created_at > now() - interval '30 days'
+        and props->>'settled' = 'true'
+        and props->>'tier' in ('nomatch', 'pending')
+        and coalesce(props->>'q','') <> ''
+      group by 1 order by 2 desc, 3 desc limit %d;""" % int(limit)
+    try:
+        body = json.dumps({"query": sql}).encode()
+        req = urllib.request.Request(
+            "https://api.supabase.com/v1/projects/dbaifotzwlxjvsxjohjt/database/query",
+            data=body, headers={"Authorization": "Bearer " + tok,
+                                "Content-Type": "application/json",
+                                "User-Agent": "curl/8.7.1"})
+        rows = json.loads(urllib.request.urlopen(req, timeout=60).read().decode())
+    except Exception as e:
+        return [f"  (query failed: {str(e)[:70]})"]
+    if not rows:
+        return ["  Nothing unanswered in the last 30 days."]
+    return [f"  {r['q'][:44]:<46}{r['n']:>4} searches  {r['v']:>3} people" for r in rows]
+
+
+def _keychain(service):
+    try:
+        return subprocess.check_output(
+            ["security", "find-generic-password", "-s", service, "-w"],
+            stderr=subprocess.DEVNULL).decode().strip()
+    except Exception:
+        return None
 
 
 def main():

@@ -1,16 +1,16 @@
 {
   "build": {
-    "at": "2026-08-26T05:40:23+00:00",
+    "at": "2026-08-27T05:40:23+00:00",
     "changed_urls": 6,
-    "date": "2026-08-26",
+    "date": "2026-08-27",
     "deployed": true,
     "new_urls": 0,
     "seo_corpus": {
       "days_old": 0,
-      "written": "2026-08-26"
+      "written": "2026-08-27"
     },
     "seo_pipeline": {
-      "at": "2026-08-26T05:41:52Z",
+      "at": "2026-08-27T05:41:48Z",
       "changed_urls": 0,
       "code": "in-sync",
       "corpus_pages": 47954,
@@ -19,12 +19,12 @@
       "phase": "finish",
       "pull": "no-worktree",
       "rc": 0,
-      "started": "2026-08-26T05:40:23Z",
+      "started": "2026-08-27T05:40:24Z",
       "state": "ran clean",
       "step": "done"
     },
     "seo_watchdog": {
-      "at": "2026-08-26T05:41:52+00:00",
+      "at": "2026-08-27T05:41:48+00:00",
       "note": "ran refresh_seo.sh to completion",
       "ok": true,
       "ran": true,
@@ -40,7 +40,7 @@
         "ok": true
       },
       "fresh_section8": {
-        "detail": "293 buildings across 5 boroughs",
+        "detail": "290 buildings across 5 boroughs",
         "ok": true
       },
       "hub_direct_answers": {

@@ -249,6 +249,17 @@
   .sh-chips button { border: 1px solid var(--info-line); background: var(--surface); color: var(--blue); border-radius: 15px;
     padding: 5px 11px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
   .sh-chips button:hover { background: var(--info-bg-2); }
+  /* The one chip that leaves the page. Filled rather than outlined, because it
+     is an answer, not another way to narrow the one already on screen. */
+  .sh-chips .sh-go { border: 1px solid var(--blue); background: var(--blue); color: #fff;
+    border-radius: 15px; padding: 5px 11px; font-size: 12px; font-weight: 600;
+    text-decoration: none; display: inline-block; line-height: 1.5; }
+  .sh-chips .sh-go:hover { filter: brightness(1.08); }
+  .nj-facts { margin: 8px 0 10px; font-size: 12.5px; line-height: 1.6; color: var(--ink-2); }
+  .nj-facts div { margin-bottom: 2px; }
+  .nj-facts b { color: var(--ink); }
+  .nj-also { display: block; margin-top: 5px; font-weight: 400; color: var(--ink-2); font-size: 12px; }
+  .sh-src { font-size: 11px; color: var(--ink-2); margin: 6px 0 9px; }
   .sh-chips button.on { background: var(--blue-solid); color: #fff; border-color: var(--blue); }
   .sh-signup { margin-top: 8px; font-size: 12.5px; color: var(--ink-2); }
   .sh-signup a { color: var(--blue); font-weight: 700; cursor: pointer; }
@@ -1467,6 +1478,20 @@
       sourceNote: 'Meets LA’s RSO criteria — 2+ units, built on or before Oct 1, 1978 (LA County assessor rolls). A small number of exemptions can’t be derived from tax data, so verify the address on ZIMAS.',
       credit: 'Derived from <a href="https://data.lacounty.gov/" target="_blank" rel="noopener">LA County Assessor parcel data</a> using <a href="https://housing.lacity.gov/residents/rso-overview" target="_blank" rel="noopener">LAHD’s RSO criteria</a> (residential, 2+ units, built ≤ 1978, City of LA) — verify any building on <a href="https://zimas.lacity.org/" target="_blank" rel="noopener">ZIMAS</a> · Created by <a href="https://divinedavis.com" target="_blank" rel="noopener">Divine Davis</a> · <a href="/developers/">API for developers</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a>',
     },
+    westchester: {
+      name: 'Yonkers & Westchester', state: 'NY', center: [40.95, -73.87], zoom: 12,
+      idLabel: 'HCR ID', label: 'Rent-stabilized (ETPA)', regionLabel: 'City',
+      tagline: '(Yonkers Rent Stabilized Homes)',
+      // Yonkers is split out from the rest of the county because it is the
+      // place people search for by name — 10701 was the query that prompted
+      // this map — and it holds more than half the county's registered stock.
+      regions: { Yonkers: 'Yonkers', Westchester: 'Rest of Westchester' },
+      slugs: { Yonkers: 'yonkers-ny', Westchester: 'westchester-ny' },
+      searchPh: 'Rent-stabilized? Address or ZIP',
+      statusHeading: 'Rent-stabilization status',
+      sourceNote: 'Registered with NYS HCR under the Emergency Tenant Protection Act (ETPA) — rent stabilization outside New York City. ETPA generally covers buildings of six or more units built before 1974 in localities that adopted it. Each pin shows the year its registration was last filed.',
+      credit: 'Source: <a href="https://hcr.ny.gov/rent-registration-data-dashboard" target="_blank" rel="noopener">NYS Homes and Community Renewal — Rent Registration Data</a> (Registered Buildings layer, ETPA) · Created by <a href="https://divinedavis.com" target="_blank" rel="noopener">Divine Davis</a> · <a href="/developers/">API for developers</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a>',
+    },
     dc: {
       name: 'Washington DC', state: 'DC', center: [38.905, -77.02], zoom: 12,
       idLabel: 'Reg. #', label: 'Rent-controlled (registered)', regionLabel: 'City',
@@ -1481,6 +1506,91 @@
       sourceNote: 'Registered with DHCD under the Rental Housing Act. Coverage is per unit, so a property can hold both controlled and exempt units — the count here is the controlled ones. A few large landlords register an entire complex under one street address.',
       credit: 'Source: <a href="https://dhcd.dc.gov/page/rentregistry-rent-control-database" target="_blank" rel="noopener">DC DHCD RentRegistry</a> public data exports (nightly) — registered rent-controlled units under the Rental Housing Act; exempt units under § 2.05(a) are excluded · Created by <a href="https://divinedavis.com" target="_blank" rel="noopener">Divine Davis</a> · <a href="/developers/">API for developers</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a>',
     },
+  };
+  // Places just outside coverage that people actually search for, so an
+  // uncovered ZIP can be named rather than merely rejected. Keyed by full ZIP
+  // or by 3-digit prefix; the lookup tries the full ZIP first. Naming the town
+  // is the difference between "we don't have that" and "we don't cover Yonkers
+  // yet" — only the second tells someone whether to come back.
+  const OUT_OF_AREA = {
+    '107': 'Yonkers and southern Westchester', '105': 'Westchester County',
+    '106': 'Westchester County', '108': 'Westchester County', '109': 'Rockland County',
+    '070': 'Newark and Essex County, New Jersey', '071': 'Newark, New Jersey',
+    '072': 'Elizabeth and Union County, New Jersey',
+    '073': 'Jersey City and Hudson County, New Jersey',
+    '074': 'Paterson and Passaic County, New Jersey',
+    '075': 'central New Jersey', '076': 'Bergen County, New Jersey',
+    '077': 'Monmouth County, New Jersey', '078': 'Morris County, New Jersey',
+    '079': 'northern New Jersey',
+    '115': 'Nassau County, Long Island', '116': 'Long Island',
+    '117': 'Long Island', '118': 'Long Island', '119': 'Long Island',
+    '129': 'the Hudson Valley', '125': 'the Hudson Valley',
+  };
+  // ---------- New Jersey ----------
+  // NJ gets an answer but not a map. Rent control there is municipal — ~120
+  // separate ordinances, one rent leveling board per town, property files kept
+  // for in-person inspection — so there is no building register to plot. What
+  // there IS, statewide and official, is the NJ DCA's annual survey: per
+  // municipality, whether an ordinance exists, the increase cap, the building
+  // sizes it covers, and the board's phone number. For "can my landlord raise
+  // it this much" that is most of the answer, and for the 444 towns with no
+  // ordinance it is the whole answer — one no building map could ever give.
+  // Loaded only when someone actually searches an NJ ZIP; it is 330 KB and
+  // every other visitor would pay for it otherwise.
+  let NJ_DATA = null, NJ_STATE = 'idle';
+  function njLoad(then) {
+    if (NJ_STATE === 'done' || NJ_STATE === 'failed') return then();
+    if (NJ_STATE === 'loading') return;
+    NJ_STATE = 'loading';
+    fetch('/nj/rentcontrol.json')
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(d => { NJ_DATA = d; NJ_STATE = 'done'; then(); })
+      .catch(() => { NJ_STATE = 'failed'; then(); });
+  }
+  function njCard(zip) {
+    const list = NJ_DATA && NJ_DATA.zips && NJ_DATA.zips[zip];
+    if (!list || !list.length) return '';
+    const others = list.length - 1;
+    // When a ZIP straddles municipalities that DISAGREE, lead with the one that
+    // HAS an ordinance, whatever its land share. 07701 is the case: most of it
+    // is Middletown Township, which has none, but it also holds Red Bank
+    // Borough, which does — and answering "no rent control here" to a Red Bank
+    // tenant is the same error as the Freehold merge, just arrived at from the
+    // other direction. Being told to check beats being told no.
+    const yes = list.filter(x => x.rc), no = list.filter(x => !x.rc);
+    const mixed = yes.length && no.length;
+    const m = mixed ? yes[0] : list[0];
+    const also = others
+      ? ` <span class="nj-also">${mixed
+            ? `This ZIP straddles a municipal line, and the answer differs across it — ${
+                esc(no[0].name)}${no.length > 1 ? ` and ${no.length - 1} more` : ''} ${
+                no.length > 1 ? 'have' : 'has'} no ordinance. Check which town your address is in.`
+            : `This ZIP also covers ${others} other municipalit${others === 1 ? 'y' : 'ies'}${
+                list.slice(1, 3).map(x => ' — ' + esc(x.name)).join('')}${others > 2 ? ', …' : ''}.`}</span>`
+      : '';
+    if (!m.rc) {
+      return `<div class="sh-head"><b>${esc(m.name)}</b>, ${esc(m.county)} County has <b>no rent-control ordinance</b>.
+        New Jersey leaves rent control to each municipality, and this one has not adopted it.${also}</div>`;
+    }
+    const bits = [];
+    if (m.cap) bits.push(`<div><b>Increase cap</b> · ${esc(m.cap)}</div>`);
+    if (m.applies) bits.push(`<div><b>Applies to buildings of</b> · ${esc(m.applies)} units</div>`);
+    if (m.exceptions) bits.push(`<div><b>Exceptions</b> · ${esc(m.exceptions)}</div>`);
+    if (m.board || m.phone) {
+      bits.push(`<div><b>${esc(m.board || 'Rent control office')}</b>${m.phone ? ' · ' + esc(m.phone) : ''}</div>`);
+    }
+    const links = [];
+    if (m.ordinance) links.push(`<a class="sh-go" href="${esc(m.ordinance)}" target="_blank" rel="noopener">Read the ordinance →</a>`);
+    if (m.site) links.push(`<a class="sh-go" href="${esc(m.site)}" target="_blank" rel="noopener">Rent control office →</a>`);
+    return `<div class="sh-head"><b>${esc(m.name)}</b>, ${esc(m.county)} County <b>has rent control</b>.${also}</div>
+      <div class="nj-facts">${bits.join('')}</div>
+      ${links.length ? `<div class="sh-chips">${links.join('')}</div>` : ''}`;
+  }
+
+  // ZIPs that another Find A Crib map answers. Keyed the same way as
+  // OUT_OF_AREA — full ZIP first, then 3-digit prefix.
+  const COVERED_ELSEWHERE = {
+    '107': { href: '/westchester/', label: 'See the Yonkers & Westchester map' },
   };
   const CITY = CITIES[document.documentElement.dataset.city || 'nyc'] || CITIES.nyc;
   const IS_NYC = !!CITY.nyc;
@@ -1783,11 +1893,23 @@
     try { localStorage.setItem('fac_vid', vid); } catch (e) {}
     return vid;
   }
-  // Ask for signup at the moment of interest: a visitor who has opened a few
-  // buildings without an account gets one dismissible nudge per session.
+  // The signup nudge is OFF, deliberately.
+  //
+  // On 27 Aug 2026 it was shown 31 times to real visitors and clicked 0 times;
+  // across the same day not one non-owner account was created. Every signin and
+  // save event that day was the owner's own testing. It had already been moved
+  // from the 3rd building view to the 2nd because the 3rd "got zero clicks" —
+  // moving it earlier did not fix it either, which is the evidence that the
+  // timing was never the problem. Interrupting someone mid-search to ask for an
+  // account has now failed at two different moments, so it stops asking.
+  //
+  // The counter stays: bvCount is what any future prompt would key off, and
+  // window.__bv is read from the console when checking session depth.
   let bvCount = 0, signupNudged = false;
+  const SIGNUP_NUDGE_ENABLED = false;
   function maybeSignupNudge() {
     window.__bv = ++bvCount;
+    if (!SIGNUP_NUDGE_ENABLED) return;
     if (authUser || signupNudged) return;
     // fire on the 2nd building view — early, while they're actively interested,
     // rather than the 3rd (the old trigger got zero clicks)
@@ -2521,6 +2643,32 @@
   const boroCounts = {};
   for (const rec of data) boroCounts[rec.b] = (boroCounts[rec.b] || 0) + 1;
   const BORO_INDEX = Object.keys(BORO_NAME).map(code => ({ name: BORO_NAME[code], code, count: boroCounts[code] || 0 })).filter(b => b.count);
+  // ZIP index. A ZIP was already searchable — `buildQueryPlan` prefix-matches
+  // rec.z — but it was never OFFERED, so the only way to reach it was to type
+  // all five digits blind while the map redrew on every keystroke: measured on
+  // real traffic, "1" hit 30,013 buildings, "11" 18,140, "112" 10,993 before
+  // "11203" finally settled on 350. Offering the ZIP as a row to click ends
+  // that: pick it at three digits and the flood never happens.
+  const ZIP_INDEX = (() => {
+    const m = new Map();
+    for (const rec of data) {
+      if (!rec.z) continue;
+      let e = m.get(rec.z);
+      if (!e) m.set(rec.z, e = { zip: rec.z, count: 0, boros: new Set(), nbs: new Map() });
+      e.count++;
+      if (rec.b) e.boros.add(rec.b);
+      if (rec.nb) e.nbs.set(rec.nb, (e.nbs.get(rec.nb) || 0) + 1);
+    }
+    // Descending count so the ZIP a person is most likely to mean leads.
+    return [...m.values()].sort((a, b) => b.count - a.count);
+  })();
+  // The label under a ZIP row: its borough, plus the neighbourhood that holds
+  // most of it, because "10460" means nothing and "Bronx · Claremont" does.
+  function zipWhere(e) {
+    const boros = [...e.boros].map(c => BORO_NAME[c] || c).filter(Boolean);
+    const top = [...e.nbs.entries()].sort((a, b) => b[1] - a[1])[0];
+    return [boros.join(' / '), top ? top[0] : ''].filter(Boolean).join(' · ');
+  }
   for (const [name, n] of nbList) {
     const id = 'nb-' + name.replace(/[^a-z0-9]/gi,'_');
     const lab = document.createElement('label');
@@ -3117,7 +3265,17 @@
       if (N.startsWith(q)) nbStarts.push({ type: 'neighborhood', ...n });
       else if (N.includes(q)) nbContains.push({ type: 'neighborhood', ...n });
     }
-    const areaMatches = areas.concat(nbStarts, nbContains).slice(0, 4);
+    // A run of 3-5 digits is a ZIP being typed. Offer the ZIPs it could still
+    // become, most-buildings first, so it can be picked before it is finished.
+    const zipRows = [];
+    if (/^\d{3,5}$/.test(q)) {
+      for (const e of ZIP_INDEX) {
+        if (!e.zip.startsWith(q)) continue;
+        zipRows.push({ type: 'zip', zip: e.zip, count: e.count, where: zipWhere(e) });
+        if (zipRows.length >= 4) break;
+      }
+    }
+    const areaMatches = zipRows.concat(areas, nbStarts, nbContains).slice(0, 4);
     // then building addresses (canonicalized: abbreviations, ordinals,
     // pasted-address tails, and house-number ranges all match)
     const starts = [], contains = [];
@@ -3170,6 +3328,12 @@
         return `<button class="ac-item" data-i="${i}">
           <span class="ac-addr">📍 ${esc(a.label)}</span>
           <span class="ac-sub">${esc(what)} · ${a.count.toLocaleString()} buildings — filter to this area</span>
+        </button>`;
+      }
+      if (m.type === 'zip') {
+        return `<button class="ac-item" data-i="${i}">
+          <span class="ac-addr">📮 ZIP ${esc(m.zip)}</span>
+          <span class="ac-sub">${m.where ? esc(m.where) + ' · ' : ''}${m.count.toLocaleString()} building${m.count === 1 ? '' : 's'} — show this ZIP</span>
         </button>`;
       }
       if (m.type === 'org') {
@@ -3274,6 +3438,36 @@
         <div class="sh-chips"><button data-sh="relax">🔄 Ignore my filters</button></div>`);
       return;
     }
+    if (st.tier === 'zipmiss') {
+      const where = st.label ? ` — that’s <b>${esc(st.label)}</b>` : '';
+      // Some of these now have a home. A ZIP we cover on ANOTHER map should
+      // send the person there, not tell them we don't have it — that was the
+      // whole complaint about the old answer, just one step further along.
+      // New Jersey answers from the DCA survey rather than from a map.
+      if (/^0[78]/.test(q)) {
+        if (NJ_STATE === 'done') {
+          const nj = njCard(q);
+          if (nj) {
+            card(nj + `<div class="sh-src">New Jersey rent control is set town by town · NJ DCA Rent Control Survey 2026</div>
+              <div class="sh-chips"><button data-sh="clear">← Back to ${esc(CITY.name)}</button></div>`);
+            return;
+          }
+        } else if (NJ_STATE !== 'failed') {
+          njLoad(() => { if (document.getElementById('q').value.trim().toUpperCase() === q) renderSearchHelper(q); });
+          card(`<div class="sh-head">ZIP <b>${esc(q)}</b>${where} — checking New Jersey's rent-control survey…</div>`);
+          return;
+        }
+      }
+      const elsewhere = COVERED_ELSEWHERE[q] || COVERED_ELSEWHERE[q.slice(0, 3)];
+      if (elsewhere) {
+        card(`<div class="sh-head">ZIP <b>${esc(q)}</b>${where} isn’t on the ${esc(CITY.name)} map — but Find A Crib does cover it.</div>
+          <div class="sh-chips"><a class="sh-go" href="${esc(elsewhere.href)}?q=${encodeURIComponent(q)}">→ ${esc(elsewhere.label)}</a><button data-sh="clear">← Back to ${esc(CITY.name)}</button></div>`);
+        return;
+      }
+      card(`<div class="sh-head">No rent-stabilized buildings on file for ZIP <b>${esc(q)}</b>${where}. Find A Crib covers <b>${esc(CITY.name)}</b> today.</div>
+        <div class="sh-chips"><button data-sh="clear">← Back to ${esc(CITY.name)}</button></div>`);
+      return;
+    }
     if (st.tier === 'pending') {
       card(`<div class="sh-head">No address or area matches “${esc(q)}” — checking landlord and managing-agent names…</div>`);
       return;
@@ -3320,6 +3514,10 @@
       // opt back out of the auto-relax for this exact query
       keepFiltersFor = qInput.value.trim().toUpperCase();
       applyFilters();
+    } else if (act === 'clear') {
+      qInput.value = '';
+      qInput.dispatchEvent(new Event('input', { bubbles: true }));
+      return;
     } else if (act === 'try') {
       const g = e.target.closest('[data-sh]').dataset.q || '';
       qInput.value = g;
@@ -3491,6 +3689,16 @@
       qInput.value = m.org.label; qInput.blur();
       applyFilters();
       renderSearchHelper(qInput.value.trim());
+      fitTo(filtered);
+      return;
+    }
+    if (m.type === 'zip') {
+      // A ZIP stays in the box rather than becoming a filter checkbox: there is
+      // no ZIP control in the filter panel, and the exact tier already answers
+      // a five-digit ZIP precisely. Framing the map is what makes it feel picked.
+      qInput.value = m.zip; qInput.blur();
+      applyFilters();
+      renderSearchHelper(m.zip);
       fitTo(filtered);
       return;
     }
@@ -3684,6 +3892,14 @@
         // answering with the whole borough.
         recs = [];
         tier = 'kept';
+      } else if (!recs && /^\d{5}$/.test(q) && !ZIP_INDEX.some(e => e.zip === q)) {
+        // A full ZIP we hold no buildings for. The generic nomatch branch below
+        // answers this with EVERY building in the city, which is how a search
+        // for 10701 came back with 47,165 results — the worst possible reply to
+        // "is my Yonkers apartment stabilized". Say we don't cover it instead.
+        recs = [];
+        tier = 'zipmiss';
+        label = OUT_OF_AREA[q] || OUT_OF_AREA[q.slice(0, 3)] || '';
       } else if (!recs) {
         // Nothing anywhere matches. An empty map reads as a broken site, so
         // show what is browsable and say in words that the query found nothing.
@@ -4841,6 +5057,22 @@
   updateBoroughBadge();
   updateNbBadge();
   updateFavBadge();
+  // ?q=… prefills the search. This exists so a ZIP that belongs to another
+  // Find A Crib map can be HANDED to it — the NYC map's "→ See the Yonkers &
+  // Westchester map" link carries the ZIP across, and without this the visitor
+  // would arrive at a fresh map and have to type it a second time.
+  (function () {
+    let q = '';
+    try { q = new URLSearchParams(location.search).get('q') || ''; } catch (e) {}
+    q = q.trim().slice(0, 80);
+    if (!q) return;
+    const box = document.getElementById('q');
+    if (!box) return;
+    box.value = q;
+    // Same path a keystroke takes, so the autocomplete, the tiers and the
+    // result header all behave exactly as if it had been typed.
+    box.dispatchEvent(new Event('input', { bubbles: true }));
+  })();
   applyFilters();
   syncHeaderHeight();
   if (location.hash === '#list') setListOpen(true);

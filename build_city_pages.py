@@ -94,6 +94,27 @@ CITY_META = {
      <a href="/dc/">rent-controlled Washington DC</a>.</p>
 </nav>""",
     },
+    "westchester": {
+        "h1": "Rent-Stabilized (ETPA) Apartments in Yonkers and Westchester County",
+        "title": "Rent-Stabilized Yonkers & Westchester — 1,700+ ETPA-Registered Buildings | Find A Crib",
+        "og_title": "Rent-Stabilized Yonkers & Westchester — Find A Crib",
+        "desc": ("Map every building registered with NYS HCR under the Emergency Tenant "
+                 "Protection Act in Yonkers and Westchester County — 900+ in Yonkers alone, "
+                 "with the year each registration was last filed."),
+        "tagline": "(Yonkers Rent Stabilized Homes)",
+        "seo_nav": """<nav class="seo-nav" aria-label="About this map">
+  <h2>Find rent-stabilized apartments in Yonkers and Westchester</h2>
+  <p>Outside New York City, rent stabilization is the <b>Emergency Tenant Protection
+     Act (ETPA)</b>, which generally covers buildings of six or more units built before
+     1974 in the localities that adopted it. Find A Crib maps every building registered
+     with NYS Homes and Community Renewal under ETPA in Westchester County, with the
+     year each registration was last filed.
+     Also on Find A Crib: <a href="/">rent-stabilized NYC</a>,
+     <a href="/sf/">rent-controlled San Francisco</a>,
+     <a href="/la/">rent-stabilized (RSO) Los Angeles</a> and
+     <a href="/dc/">rent-controlled Washington DC</a>.</p>
+</nav>""",
+    },
     "dc": {
         "h1": "Rent-Controlled Apartments in Washington DC",
         "title": "Rent-Controlled Washington DC — 4,300+ Registered Buildings | Find A Crib",

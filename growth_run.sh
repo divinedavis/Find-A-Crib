@@ -23,7 +23,30 @@ set -a; . ./growth.env; set +a
 
 BEAT=growth/cron_heartbeat.jsonl
 BEAT_KEEP=200          # ~50 days at two crons a day
+# The internal report's recipient comes from growth.env, not from the cron line.
+# This repository is PUBLIC, and /etc/cron.d/rentmap-growth is mirrored into it
+# as deploy/cron-rentmap-growth so the droplet and the repo cannot drift — so an
+# address written into the cron line is an address published to the world. It
+# lives beside the SMTP credentials instead, which is where the rest of the
+# engine's contact configuration already is.
+#
+# Only filled in when the caller passed no --email of its own, so running
+# `growth_run.sh report --email someone@else` by hand still works.
+if [ "${1:-}" = "report" ] && [ -n "${GROWTH_REPORT_EMAIL:-}" ]; then
+  case " $* " in
+    *" --email "*|*" --email="*) ;;
+    *) set -- "$@" --email "$GROWTH_REPORT_EMAIL" ;;
+  esac
+fi
+
 JOB="${*:-daily}"
+
+# The heartbeat below is committed and pushed to that same public repo, and JOB
+# is the raw argv. The block above keeps the address out of the cron line, but a
+# hand-run with --email would still land here, so redact anything address-shaped
+# before it is ever written. A backstop, not the mechanism: secrets go in
+# growth.env, never in argv.
+JOB=$(printf '%s' "$JOB" | sed -E 's/[[:alnum:]._%+-]+@[[:alnum:].-]+\.[[:alpha:]]{2,}/<redacted-email>/g')
 
 now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 head_sha() { git rev-parse --short HEAD 2>/dev/null || echo unknown; }

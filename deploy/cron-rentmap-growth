@@ -1,0 +1,42 @@
+# Find A Crib growth engine. Installed at /etc/cron.d/rentmap-growth.
+#
+# This droplet (104.236.120.144) keeps per-project crons in /etc/cron.d/, NOT in
+# root's user crontab — never pipe to `crontab -` here, it clobbers the other
+# sites' jobs. Edit this tracked copy and scp it into place; do not hand-edit
+# the file on the box, or the repo and the droplet drift apart silently.
+#
+# Runs from the git checkout at /root/Find-A-Crib so the daily cloud review agent
+# (which has only the repo) can steer it: it pushes ledger and code changes,
+# growth_run.sh pulls them in and pushes results back.
+#
+# 05:40 UTC — rebuild the daily pages from the overnight voucher feed (04:15 UTC),
+# deploy them, and submit new URLs to IndexNow.
+#
+# Deliberately above the CRON_TZ line: this one is pinned to the voucher feed's
+# UTC clock, not to the business day, so it must NOT pick up America/New_York.
+40 5 * * * root /root/Find-A-Crib/growth_run.sh build --deploy >> /var/log/rentmap-growth.log 2>&1
+
+# 05:00 America/New_York — measure, judge, prune, scout, draft outreach. Deliberately
+# an hour before the 6am review agent, so the agent always reads fresh numbers.
+CRON_TZ=America/New_York
+0 5 * * * root /root/Find-A-Crib/growth_run.sh daily >> /var/log/rentmap-growth.log 2>&1
+
+# 06:00 America/New_York, FRIDAYS ONLY — mail the internal report.
+#
+# The report was daily until 2026-08-27 and is now weekly, at the owner's
+# request. It is a separate `report` invocation rather than an `--email` on the
+# 05:00 line because the owner asked for 6am and the engine runs at 5am; `report`
+# re-renders from the ledger the 05:00 run has already written, so it costs no
+# API calls (growth/report.py touches neither llm.py nor Anthropic) and repeats
+# no work. An hour of slack is plenty for the daily run to have finished, and
+# 06:00 still sits before the 06:45 re-rentals job, so the two never collide on
+# the git checkout.
+#
+# growth_run.sh's SEO watchdog is gated on the job name containing "build", so
+# this entry cannot trigger a corpus rebuild.
+#
+# No --email here on purpose. This file is mirrored into a PUBLIC repo, so the
+# recipient lives in growth.env as GROWTH_REPORT_EMAIL and growth_run.sh appends
+# it. If the report stops arriving, check that variable first — an unset one is
+# silent by design, because the alternative was publishing the address.
+0 6 * * 5 root /root/Find-A-Crib/growth_run.sh report >> /var/log/rentmap-growth.log 2>&1

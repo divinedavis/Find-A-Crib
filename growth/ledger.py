@@ -225,6 +225,19 @@ def note(tech_id, text):
 
     Revisits mostly produce reasoning, not status changes, and until now the
     only way to record one was to flip a status you did not want to flip.
+
+    THIS DOES NOT ALWAYS SURVIVE. seed.run() re-applies `notes` from
+    growth/seed.py on every build for any slug where that file declares one, so
+    a note appended here to a SEEDED technique is silently reverted by the next
+    run — no error, no log line, and the ledger then reads as though the revisit
+    never happened. Discovered 2026-08-27, when two of four revisit notes
+    written this way vanished on the next build; it is the same trap 08-26
+    documented for `metric` in set_metric(), reached by a different door, and it
+    is exactly how a past entry came to claim a fix its diff never made.
+
+    So this warns when the target is seeded with notes. If you see that warning,
+    put the text in growth/seed.py instead — that file is the source of truth —
+    and re-read the ledger AFTER a build, not after the write.
     """
     with _LOCK:
         techs = load_techniques()
@@ -232,8 +245,29 @@ def note(tech_id, text):
             if t["id"] == tech_id or t.get("slug") == tech_id:
                 t["notes"] = (t.get("notes", "") + f"\n[{today()}] {text}").strip()
                 save_techniques(techs)
+                if _seed_owns_notes(t.get("slug")):
+                    print(f"  WARNING: {t.get('slug')} declares notes in growth/seed.py — "
+                          f"this note will be REVERTED by the next build. Put it in seed.py.")
                 return t
     return None
+
+
+def _seed_owns_notes(slug):
+    """True when growth/seed.py declares a notes= for this slug, so seed.run()
+    will overwrite whatever note() just appended.
+
+    Imported lazily and defensively: seed imports this module at load time, so a
+    module-level import here would be circular, and a failure to answer the
+    question must never be the reason a note does not get written.
+    """
+    try:
+        from . import seed
+        for s in seed.SEEDS:
+            if s.get("slug") == slug:
+                return bool(s.get("notes"))
+    except Exception:
+        return False
+    return False
 
 
 def reactivate(tech_id, why=""):

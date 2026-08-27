@@ -1741,6 +1741,53 @@ def main():
                 compare_html = ("<h2>How this building compares</h2>"
                                 f"<div class='compare'><p>{esc(' '.join(sentences))}</p></div>")
 
+        # ---- the one-time $9 Building Report, offered where the reader is ----
+        #
+        # Why this exists (2026-08-27): the report launched 2026-07-27 to test
+        # whether a single purchase converts where the $4.99/mo Plus
+        # subscription never has — and then was only ever offered inside the
+        # map app (index.html's detail panel). These static /building/ pages
+        # are the ONLY tier that earns search impressions: 260 of the 273 URLs
+        # that have ever served a Search Console impression are building
+        # pages, against 9 hubs and the home page. So for 30 days the product
+        # built to convert search visitors was invisible to every one of them,
+        # and the only offer they were shown was Plus, which has 0 conversions
+        # for its entire lifetime. That is not evidence the $9 ask fails; it
+        # is evidence it was never asked. This puts the ask where the readers
+        # are.
+        #
+        # Gated on compare_html, deliberately. That flag means building_facts()
+        # found at least FACTS_MIN_SENTENCES true comparative things to say,
+        # which is exactly what section 1 of the report ("How this compares")
+        # is built from — so where the block is absent, the report would be
+        # thin and we do not offer it. Selling a $9 report on a building we
+        # can say nothing about is the one version of this that trades the
+        # site's credibility for revenue.
+        #
+        # The copy is deliberately WORD-FOR-WORD the description already
+        # shipped beside the live button in index.html, so the two surfaces
+        # cannot drift into making different claims about one product. It
+        # promises the pre-filled DHCR request, not the rent history itself —
+        # the history is free and the report says so.
+        #
+        # The link is the same /#d=<bbl> deep link the other CTAs on this page
+        # use: it opens the map detail panel, where the real Stripe button
+        # lives. A static page cannot POST to /api/reports/checkout, and
+        # inventing a GET checkout route here would be a change to the payment
+        # path, not to the page.
+        report_html = ""
+        if compare_html:
+            report_html = (
+                "<h2>Full building report — $9</h2>"
+                "<div class='hook'>"
+                "<strong>📄 Get the full building report — $9.</strong> "
+                "How this building's violation record compares citywide, who "
+                "owns it and what else they own, and a pre-filled DHCR "
+                "rent-history request. One-time, no account needed. The report "
+                "also states plainly what the data cannot tell you."
+                f" <a href='/#d={b['bbl']}'>Get the report for {esc(addr)} &rarr;</a>"
+                "</div>")
+
         # sibling buildings in the same neighborhood, as a ring rather than a
         # star, so every building page is linked from ~12 others instead of 94.9%
         # of them hanging off one hub link (see _geo_ring_order above).
@@ -1838,7 +1885,10 @@ def main():
                    f"<a href='/#d={b['bbl']}'>Save {esc(addr)} to a free Find A Crib account</a> and get a listing alert. "
                    f"Plus members also see the managing agent's phone number and the owner's full portfolio.</div>")
                 + f"<h2>Building details</h2><table class='facts'>{facts}</table>"
-                + owner_html + cond_html + near_html + area_html)
+                # report offer sits after the conditions table on purpose: the
+                # reader has just seen the open-violation count and the whole
+                # question the report answers is what that number means here.
+                + owner_html + cond_html + report_html + near_html + area_html)
 
         write(url.strip("/") + "/index.html",
               page(f"Is {addr} rent stabilized? — {nb}, {boro} | Find A Crib",

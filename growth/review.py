@@ -276,9 +276,43 @@ def evaluate(t):
         if recent is not None and prior is not None:
             direction = " and rising" if recent > prior else (
                 " but falling" if recent < prior else " and flat")
-        res["works"] = True
-        res["why"] = (f"{total} owned visitors in {days}d (median {recent}/day{direction})"
-                      + (f", {vis['pages']} pages serving in search" if vis["measured"] else ""))
+        served = f", {vis['pages']} pages serving in search" if vis["measured"] else ""
+
+        # Reaching here means the technique cleared the floor above — but the
+        # floor is `total >= MIN_TOTAL_VISITORS OR recent >= MIN_RECENT_MEDIAN`,
+        # and `total` is CUMULATIVE. A technique that drew traffic in its first
+        # fortnight and nothing since keeps clearing it forever, because a sum
+        # over an ever-longer window cannot fall. This branch used to answer
+        # that with an unconditional works=True while its own why-string said
+        # "but falling" — the same defect 2026-08-25 fixed on the site-wide
+        # paths and 08-26 on the stock metrics, surviving here because this
+        # branch never went through either pass. It matters for the same
+        # reason: scout.py feeds the WORKS list to the model under the heading
+        # ALREADY MEASURED AS WORKING, so a false positive breeds.
+        #
+        # So WORKS now needs the technique to be alive NOW and not shrinking.
+        # Anything else is unproven (works=None) — not failed, which would be
+        # its own false claim: these are all above the retirement floor.
+        alive_now = (recent or 0) >= MIN_RECENT_MEDIAN
+        falling = recent is not None and prior is not None and recent < prior
+        if alive_now and not falling:
+            res["works"] = True
+            res["why"] = (f"{total} owned visitors in {days}d "
+                          f"(median {recent}/day{direction})" + served)
+        elif falling:
+            res["works"] = None
+            res["why"] = (f"{total} owned visitors in {days}d, but the trailing "
+                          f"{WINDOW}d median is {recent}/day against {prior}/day "
+                          f"in the {WINDOW}d before — the cumulative total clears "
+                          f"the floor because it cannot fall, while the rate is "
+                          f"declining" + served)
+        else:
+            res["works"] = None
+            res["why"] = (f"{total} owned visitors in {days}d clears the "
+                          f"{MIN_TOTAL_VISITORS}-visitor floor, but the trailing "
+                          f"{WINDOW}d median is {recent}/day — below the "
+                          f"{MIN_RECENT_MEDIAN}/day that counts as alive, so the "
+                          f"total is carried by days outside the window" + served)
         return res
 
     # Site-wide technique: judged on its declared global metric, comparing the

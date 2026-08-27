@@ -229,6 +229,7 @@
   .tile .t-bench{font-size:11px;color:var(--ink2);margin-top:9px;padding-top:8px;border-top:1px solid var(--border);line-height:1.45}
   .ads-tile .a-bench{font-size:11px;color:var(--ink2);margin-top:9px;padding-top:8px;border-top:1px solid var(--border);line-height:1.45}
   .ads-tile .a-bench b{color:var(--ink)}
+  .ads-tile .a-bench-note{display:block;margin-top:4px;opacity:.72}
   .tile .t-bench b{color:var(--ink)}
   .bn{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;margin-left:2px;white-space:nowrap}
   .bn-low{background:#fdecec;color:#c0342c}
@@ -741,6 +742,22 @@
   // the wrong shape for a housing search, which is periodic by nature — nobody
   // looks for an apartment daily for a month.
   var STICKINESS_REFERENCE = { good: 20, exceptional: 50 };
+
+  // MY targets, not anyone's benchmark. Kept separate from the *_BENCHMARK
+  // constants above on purpose: those are sourced outside numbers a reading
+  // gets judged against, these are the numbers I decided to aim at. The three
+  // are consistent by construction — 300 of 3,000 IS 10% — so hitting the two
+  // counts lands the ratio exactly on its goal, and missing the ratio while
+  // hitting the counts is arithmetically impossible. 10% is deliberately below
+  // the 20% "good consumer app" line because a housing search is periodic:
+  // nobody hunts for an apartment every day for a month.
+  var AUDIENCE_GOALS = { dau: 300, mau: 3000, stickiness: 10 };
+  function goalLine(cur, goal, word){
+    if(cur == null) return 'Goal <b>'+comma(goal)+'</b> '+word+' · not measured yet';
+    var short = goal - n(cur);
+    return 'Goal <b>'+comma(goal)+'</b> · '+pctS(n(cur),goal,0)+' of the way'+
+           (short > 0 ? ' · <b>'+comma(short)+'</b> to go' : ' <span class="bn bn-hi">reached</span>');
+  }
   function bandPct(x){ return (Math.round(x*10)%10===0) ? String(Math.round(x)) : x.toFixed(1); }
 
   // Durations read as time, never as a decimal: "3m 14s", not "194s" or "3.2m".
@@ -1585,9 +1602,20 @@
        bench:'Compared against <b>13%</b> on the tile above — not repeated here'},
       {val:rate(E.stickiness),lbl:'Stickiness · DAU/MAU',
        sub:comma(E.dau)+' daily of '+comma(E.mau)+' monthly',
-       // Reference line, no verdict: see STICKINESS_REFERENCE.
-       bench:'<b>'+STICKINESS_REFERENCE.good+'%</b> is the usual "good consumer app" line, '+
-             '<b>'+STICKINESS_REFERENCE.exceptional+'%</b> exceptional · rule of thumb, not a measured average'},
+       // Reference line, no verdict: see STICKINESS_REFERENCE. My own goal sits
+       // below it and is stated as mine, so the two are never confused.
+       bench:'My goal <b>'+AUDIENCE_GOALS.stickiness+'%</b> · '+
+             (100*n(E.stickiness) >= AUDIENCE_GOALS.stickiness
+                ? '<span class="bn bn-hi">reached</span>'
+                : pctS(100*n(E.stickiness),AUDIENCE_GOALS.stickiness,0)+' of the way')+
+             ' <span class="a-bench-note">('+STICKINESS_REFERENCE.good+'% is the usual "good consumer app" line, '+
+             STICKINESS_REFERENCE.exceptional+'% exceptional · rule of thumb, not a measured average)</span>'},
+      // DAU had no tile of its own — it existed only as the numerator in the
+      // stickiness subtitle, which is the one place a number you have a goal
+      // for should not live.
+      {val:comma(E.dau),lbl:'Daily active',
+       sub:'unique visitors · today so far (ET)',
+       bench:goalLine(E.dau, AUDIENCE_GOALS.dau, 'daily')},
       // Split out of the WAU/MAU ratio, because at this scale the counts are
       // the actionable half and the percentage was hiding them. 101 and 376
       // tell you what to do next; 26.9% does not, and it has no sourced
@@ -1599,7 +1627,7 @@
                       : 'No monthly figure yet to compare against'},
       {val:comma(E.mau),lbl:'Monthly active',
        sub:'unique visitors · last 30 days',
-       bench:'The denominator for stickiness and for weekly return'},
+       bench:goalLine(E.mau, AUDIENCE_GOALS.mau, 'monthly')},
       {val:'$'+comma(S.mrr),lbl:'MRR',
        sub:comma(S.paying)+' paying · '+comma(S.comped)+' comped',
        bench:'<b>0%</b> free-to-paid · industry free tier converts <b>2–5%</b>'}
@@ -1618,10 +1646,23 @@
       meter('Day 7 &nbsp;<span style="opacity:.55">('+RETENTION_BENCHMARK.d7+'%)</span>',
             rate(d7.rate), pct(100*n(d7.rate),100)*4, '')+
       meter('Day 30 &nbsp;<span style="opacity:.55">('+RETENTION_BENCHMARK.d30+'%)</span>',
-            rate(d30.rate), pct(100*n(d30.rate),100)*4, '');
+            rate(d30.rate), pct(100*n(d30.rate),100)*4, '')+
+      '<div style="font-size:12px;color:var(--muted);margin:14px 0 8px;font-weight:600">'+
+      'AUDIENCE GOALS <span style="font-weight:400;text-transform:none">(mine, not a benchmark)</span></div>'+
+      goalMeter('Daily active', E.dau, AUDIENCE_GOALS.dau)+
+      goalMeter('Monthly active', E.mau, AUDIENCE_GOALS.mau)+
+      meter('Stickiness · DAU/MAU', rate(E.stickiness)+' of '+AUDIENCE_GOALS.stickiness+'%',
+            pct(100*n(E.stickiness), AUDIENCE_GOALS.stickiness),
+            100*n(E.stickiness) >= AUDIENCE_GOALS.stickiness ? 'good' : '');
 
     var stick=Number(E.stickiness||0)*100;
     el('fac-health-callout').innerHTML =
+      '<b>Against my goals: '+comma(E.dau)+' of '+comma(AUDIENCE_GOALS.dau)+' daily, '+
+      comma(E.mau)+' of '+comma(AUDIENCE_GOALS.mau)+' monthly, '+rate(E.stickiness)+' of '+
+      AUDIENCE_GOALS.stickiness+'% stickiness.</b> The daily figure counts TODAY SO FAR, so read '+
+      'it late in the day — before noon it is half a day being compared against a whole one. '+
+      'The ratio needs no separate work: '+comma(AUDIENCE_GOALS.dau)+' of '+comma(AUDIENCE_GOALS.mau)+
+      ' is exactly '+AUDIENCE_GOALS.stickiness+'%, so the two counts carry it. '+
       '<b>D30 retention is '+rate(d30.rate)+' and stickiness is '+rate(E.stickiness)+'.</b> '+
       'A consumer product people rely on runs 20%+ DAU/MAU; this is '+stick.toFixed(1)+'%. '+
       'The tile that says '+rate(d30.within_rate)+' came back is the same population measured more kindly — '+
@@ -1962,6 +2003,12 @@
     var mult = otP>0 ? (rtP/otP) : rtP>0? 99 : 0;
     el('conv-callout').innerHTML='Returning visitors convert <b>~'+(mult>=10?Math.round(mult):mult.toFixed(1))+
       '× higher</b>. First-timers barely sign up — so the lever is <b>return rate</b>, not squeezing first visits.';
+  }
+  // A goal bar, unlike a benchmark bar, is allowed to sit near zero and should
+  // read that way — no *4 exaggeration multiplier like the retention meters use.
+  function goalMeter(name,cur,goal){
+    return meter(name, comma(n(cur))+' of '+comma(goal), pct(n(cur),goal),
+                 n(cur)>=goal ? 'good' : '');
   }
   function meter(name,val,w,cls){
     return '<div class="meter"><div class="meter-top"><span class="m-name">'+name+'</span><span class="m-val">'+val+'</span></div>'+

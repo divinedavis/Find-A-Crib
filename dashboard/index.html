@@ -308,23 +308,6 @@
   /* sparkline */
   .spark-tip{position:absolute;background:var(--tip-bg);color:var(--tip-ink);font-size:11.5px;padding:5px 8px;border-radius:7px;pointer-events:none;transform:translate(-50%,-120%);white-space:nowrap;opacity:0;transition:opacity .1s}
 
-  /* revenue model */
-  .rev-grid{display:grid;grid-template-columns:1fr 1fr;gap:26px}
-  @media(max-width:820px){.rev-grid{grid-template-columns:1fr}}
-  .slider-row{margin-bottom:17px}
-  .slider-row label{display:flex;justify-content:space-between;font-size:13px;color:var(--ink2);margin-bottom:7px}
-  .slider-row label b{color:var(--ink);font-weight:700}
-  input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:5px;border-radius:5px;background:var(--sunken);outline:none}
-  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--purple);cursor:pointer;border:3px solid var(--card);box-shadow:0 1px 4px rgba(0,0,0,.35)}
-  input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--purple);cursor:pointer;border:3px solid var(--card)}
-  .rev-out{display:flex;flex-direction:column;gap:12px}
-  .rev-line{display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--border2)}
-  .rev-line .rl-name{font-size:13px;color:var(--ink2)}
-  .rev-line .rl-val{font-weight:600}
-  .rev-total{background:linear-gradient(150deg,#6d5ce7,#8a5cf0);color:#fff;border-radius:14px;padding:16px 18px;margin-top:6px}
-  .rev-total .rt-lbl{font-size:12px;opacity:.85}
-  .rev-total .rt-val{font-size:28px;font-weight:700;letter-spacing:-.5px}
-  .rev-total .rt-sub{font-size:11.5px;opacity:.8;margin-top:2px}
   .disclaim{font-size:11.5px;color:var(--muted);margin-top:14px;line-height:1.5}
   .foot{text-align:center;font-size:12px;color:var(--muted);margin-top:34px}
   .mb18{margin-bottom:18px}
@@ -353,7 +336,6 @@
     .page-head{flex-direction:column;align-items:flex-start;gap:12px}
     .card{padding:18px 16px}
     .donut-wrap{gap:16px}
-    .rev-grid{gap:20px}
   }
 </style>
 </head>
@@ -617,52 +599,6 @@
         </div>
       </div>
 
-      <!-- revenue model -->
-      <div class="card" id="sec-revenue">
-        <div class="card-head-row">
-          <div><h2>Revenue model</h2><div class="card-sub">Project monthly revenue at different scale. Your real sign-up rate is baked in.</div></div>
-        </div>
-        <div class="rev-grid">
-          <div id="rev-inputs">
-            <div class="slider-row">
-              <label>Monthly searches (NYC+SF+LA niche) <b id="v-searches">30,000</b></label>
-              <input type="range" id="s-searches" min="5000" max="80000" step="1000" value="30000">
-            </div>
-            <div class="slider-row">
-              <label>Search traffic you capture <b id="v-capture">10%</b></label>
-              <input type="range" id="s-capture" min="2" max="25" step="1" value="10">
-            </div>
-            <div class="slider-row">
-              <label>Free account → paid Plus <b id="v-fp">8%</b></label>
-              <input type="range" id="s-fp" min="2" max="20" step="1" value="8">
-            </div>
-            <div class="slider-row">
-              <label>Monthly churn (renters leave once housed) <b id="v-churn">25%</b></label>
-              <input type="range" id="s-churn" min="8" max="45" step="1" value="25">
-            </div>
-            <div class="slider-row">
-              <label>Plus price / month <b id="v-price">$4.99</b></label>
-              <input type="range" id="s-price" min="299" max="1499" step="100" value="499">
-            </div>
-          </div>
-          <div>
-            <div class="rev-out">
-              <div class="rev-line"><span class="rl-name">Monthly visitors</span><span class="rl-val" id="o-visitors">—</span></div>
-              <div class="rev-line"><span class="rl-name">New sign-ups / mo (at <span id="o-convrate">4.4%</span>)</span><span class="rl-val" id="o-signups">—</span></div>
-              <div class="rev-line"><span class="rl-name">New Plus subs / mo</span><span class="rl-val" id="o-newsubs">—</span></div>
-              <div class="rev-line"><span class="rl-name">Steady-state subscribers</span><span class="rl-val" id="o-subs">—</span></div>
-              <div class="rev-line"><span class="rl-name">Subscription revenue</span><span class="rl-val" id="o-mrr">—</span></div>
-              <div class="rev-line"><span class="rl-name">AdSense (est.)</span><span class="rl-val" id="o-ads">—</span></div>
-            </div>
-            <div class="rev-total">
-              <div class="rt-lbl">Projected total / month</div>
-              <div class="rt-val" id="o-total">—</div>
-              <div class="rt-sub" id="o-annual">—</div>
-            </div>
-          </div>
-        </div>
-        <div class="disclaim">Steady-state subscribers = new subs ÷ churn — high churn caps recurring revenue no matter the traffic. AdSense assumes ~2.5 views/visit at a $10 RPM. Your sign-up rate is your real number from the funnel above; everything else is an assumption you can slide.</div>
-      </div>
         <div class="card" id="sec-fac-build">
           <div class="card-head-row">
             <div><h2>What the growth engine shipped</h2><div class="card-sub" id="fac-build-sub">The daily loop measures, judges what’s running, builds and deploys.</div></div>
@@ -695,7 +631,6 @@
   "use strict";
   var sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
   var gate = document.getElementById('gate'), app = document.getElementById('app');
-  var REALCONV = 4.4; // fallback; overwritten from live data
 
   // ---------- helpers ----------
   function n(x){ return (x==null?0:x); }
@@ -918,7 +853,7 @@
       blocks:['fac-a','fac-b'],
       nav:[['top','▦','Dashboard'],['sec-traffic','◔','Traffic'],['sec-ads','◉','Google Ads'],
            ['sec-tiles','◫','Advertiser tiles'],
-           ['link:/dashboard/users/','☺','Users'],['sec-funnel','⇅','Funnel'],['sec-revenue','$','Revenue model']]
+           ['link:/dashboard/users/','☺','Users'],['sec-funnel','⇅','Funnel']]
     },
     crease:{
       mark:'👔', name:'Crease', endpoint:'/api/dashboard-crease',
@@ -1302,7 +1237,6 @@
 
     var T=d.totals||{}, C=d.conversion||{}, R=d.returns||{}, H=d.hook||{}, TD=d.today||{}, S=d.subscriptions||{};
     var convRate = pct(n(T.accounts), n(T.visitors));
-    REALCONV = convRate;
 
     // Time on site. There is no timing beacon, so a session is a run of hits
     // from one visitor split on a 30-minute gap, and nothing is logged when a
@@ -1443,7 +1377,6 @@
     renderFacTiles(d.adtiles);
     renderFacSignage(d.signage);
     renderHook(H);
-    initRevenue(convRate);
   }
 
   // ---------- donut (return channels) ----------
@@ -1621,7 +1554,7 @@
   // stayed, came back, or did the thing the product exists to do. Every field
   // here already existed in dashboard_metrics(); the page just never asked.
   function renderFacHealth(d){
-    var R=d.retention||{}, E=d.engagement||{}, A=d.activation||{},
+    var R=d.retention||{}, E=d.engagement||{},
         S=d.subscriptions||{}, T=d.totals||{};
     var d30=(R.d30||{}), d7=(R.d7||{}), d1=(R.d1||{});
     function rate(x){ return x==null ? '—' : (100*Number(x)).toFixed(1)+'%'; }
@@ -1676,16 +1609,8 @@
              '<div class="a-sub">'+t.sub+'</div>'+(t.bench?'<div class="a-bench">'+t.bench+'</div>':'')+'</div>';
     }).join('');
 
-    // Activation: of the people who bothered to make an account, how many did
-    // anything with it. A sign-up that never saves a building is a number, not
-    // a user.
-    var acc=n(A.accounts);
     el('fac-health-meters').innerHTML=
-      '<div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">ACTIVATION — WHAT SIGN-UPS ACTUALLY DID</div>'+
-      meter('Searched at least once', comma(A.searched)+'/'+comma(acc), pct(n(A.searched),acc), '')+
-      meter('Opened a building', comma(A.viewed)+'/'+comma(acc), pct(n(A.viewed),acc), '')+
-      meter('Saved a building', comma(A.saved)+'/'+comma(acc), pct(n(A.saved),acc), n(A.saved)>0?'good':'')+
-      '<div style="font-size:12px;color:var(--muted);margin:14px 0 8px;font-weight:600">'+
+      '<div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">'+
       'RETENTION CURVE — TRUE COHORT <span style="font-weight:400;text-transform:none">'+
       '(all-app-category average in brackets)</span></div>'+
       meter('Day 1 &nbsp;<span style="opacity:.55">('+RETENTION_BENCHMARK.d1+'%)</span>',
@@ -1724,18 +1649,10 @@
     // The indexing cohort is the honest denominator for a site that publishes
     // 48,000 pages: not "how many did we make" but "how many did Google agree
     // to keep". A sample is inspected, not the whole corpus — the URL
-    // Inspection API is rate-limited — so this is a rate, not a count.
+    // Inspection API is rate-limited — so this is a rate, not a count. The
+    // per-state meters were removed; the benchmark callout below carries it.
     var coh=n(ix.cohort);
-    if (coh > 0) {
-      el('fac-index-meters').innerHTML=
-        '<div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">'+
-        'INDEXING — OF '+comma(coh)+' URLS INSPECTED</div>'+
-        meter('Indexed', comma(ix.indexed)+'/'+comma(coh), pct(n(ix.indexed),coh)*4, n(ix.indexed)>0?'good':'')+
-        meter('Crawled, not indexed', comma(ix.crawled_not_indexed)+'/'+comma(coh), pct(n(ix.crawled_not_indexed),coh), '')+
-        meter('Google has never seen it', comma(ix.unknown_to_google)+'/'+comma(coh), pct(n(ix.unknown_to_google),coh), '');
-    } else {
-      el('fac-index-meters').innerHTML='';
-    }
+    el('fac-index-meters').innerHTML='';
 
     // Indexing benchmark. Reported the other way round in the literature —
     // "20–30% of a typical site's crawled pages remain unindexed" — so 70–80%
@@ -1801,7 +1718,10 @@
   // not which sentence is on it.
   function renderFacSignage(S){
     S = S || {};
-    var arms = S.arms || [];
+    // Arm B ("Find rent-stabilized apartments") was removed from this card at
+    // the owner's request; the plates and the /c/b<n> redirects still exist and
+    // are still counted server-side, they are just not drawn here.
+    var arms = (S.arms || []).filter(function(a){ return a.key !== 'b'; });
     if(!arms.length){ el('sec-signage').classList.add('hidden'); return; }
     var floor = n(S.rate_floor)||30;
 
@@ -2059,39 +1979,6 @@
       '<div style="font-size:12px;color:var(--muted);margin:14px 0 8px;font-weight:600">SIGN-UP RATE</div>'+
       meter('Opened a listing', pctS(vS,vV,1), pct(vS,vV)*8, 'good')+
       meter('Never opened one', pctS(nS,nV,1), pct(nS,nV)*8, '');
-  }
-
-  // ---------- revenue model ----------
-  function initRevenue(convRate){
-    var ids=['searches','capture','fp','churn','price'];
-    function fmt(){
-      var searches=+el('s-searches').value, capture=+el('s-capture').value,
-          fp=+el('s-fp').value, churn=+el('s-churn').value, price=+el('s-price').value/100;
-      el('v-searches').textContent=comma(searches);
-      el('v-capture').textContent=capture+'%';
-      el('v-fp').textContent=fp+'%';
-      el('v-churn').textContent=churn+'%';
-      el('v-price').textContent='$'+price.toFixed(2);
-      el('o-convrate').textContent=convRate.toFixed(1)+'%';
-
-      var visitors=searches*capture/100;
-      var signups=visitors*convRate/100;
-      var newsubs=signups*fp/100;
-      var subs=churn>0? newsubs/(churn/100):newsubs;
-      var mrr=subs*price;
-      var ads=visitors*2.5*10/1000;
-      var total=mrr+ads;
-      el('o-visitors').textContent=comma(visitors);
-      el('o-signups').textContent=comma(signups);
-      el('o-newsubs').textContent=comma(newsubs);
-      el('o-subs').textContent=comma(subs);
-      el('o-mrr').textContent=money(mrr);
-      el('o-ads').textContent=money(ads);
-      el('o-total').textContent=money(total)+' /mo';
-      el('o-annual').textContent=money(total*12)+' / year';
-    }
-    ids.forEach(function(k){ el('s-'+k).oninput=fmt; });
-    fmt();
   }
 
   // ---------- render: NEMO Seamless Gutter ----------

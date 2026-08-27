@@ -287,8 +287,9 @@
   /* until the script moves them into the modal, the filter pills stay hidden in
      the header (they'd otherwise flash there while the building data loads) */
   .filter-bar #pill-borough, .filter-bar #pill-nb, .filter-bar #pill-listed,
-  .filter-bar #pill-s8, .filter-bar #pill-beds, .filter-bar #pill-viol { display: none; }
-  /* StreetEasy-style price popover: two min/max dropdowns + Reset/Done */
+  .filter-bar #pill-s8, .filter-bar #pill-beds, .filter-bar #pill-price,
+  .filter-bar #pill-viol { display: none; }
+  /* price section (Filters modal): two min/max dropdowns */
   .price-row { display: flex; align-items: center; gap: 10px; }
   .price-row select { flex: 1; min-width: 0; padding: 9px 10px; font-size: 14px; font-weight: 500;
     border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); cursor: pointer; }
@@ -751,6 +752,9 @@
     /* in list view, drop the Saved / Save search quick-actions */
     body.list-open #pill-fav,
     body.list-open #pill-save-search { display: none; }
+    /* which empties the chip row entirely — collapse it so the flex gap and its
+       scroll padding don't leave a blank strip under the search field */
+    body.list-open .chip-row { display: none; }
     /* driving-directions button appears only on mobile */
     .d-dir-row { display: flex; }
 
@@ -1028,7 +1032,7 @@
   <button id="auth-btn" type="button" class="auth-btn">Sign in</button>
   <button id="ref-btn" type="button" class="ref-btn" hidden>🎁 <span class="ref-free">Free </span>Plus</button>
   <div class="filter-bar">
-    <input class="search-input" id="q" type="text" placeholder="Rent-stabilized? Address, ZIP or APN" />
+    <input class="search-input" id="q" type="text" placeholder="Rent-stabilized? Address, ZIP or BBL" />
     <div class="chip-row">
     <div class="filter-pill toggle-pill" id="pill-fav" role="button" tabindex="0">
       <span class="fav-heart">♡</span> Saved <span class="count-badge" id="badge-fav" style="display:none">0</span>
@@ -1094,7 +1098,6 @@
     <div class="filter-pill nyc-only" id="pill-price">
       Price<span class="caret">▾</span>
       <div class="pill-popover">
-        <div class="sheet-group-title">Price</div>
         <div class="price-row">
           <select id="price-min" aria-label="Minimum monthly rent">
             <option value="">No min</option>
@@ -1115,10 +1118,6 @@
           </select>
         </div>
         <div style="font-size:11px;color:var(--ink-2);margin-top:10px">Uses the asking rent when a building was recently advertised; otherwise the ZIP's typical rent (HUD Small-Area FMR, studio–2BR midpoint) — not the building's actual rent.</div>
-        <div class="actions">
-          <button type="button" id="price-reset">Reset</button>
-          <button type="button" id="price-done" class="primary">Done</button>
-        </div>
       </div>
     </div>
     <div class="filter-pill nyc-only" id="pill-viol">
@@ -2627,21 +2626,21 @@
   // ids/names and live-apply listeners, so no filter logic changes.
   const filtersModal = document.getElementById('filters-modal');
   const filtersBody = document.getElementById('filters-body');
-  ['pill-borough', 'pill-nb', 'pill-listed', 'pill-s8', 'pill-beds', 'pill-viol']
+  ['pill-borough', 'pill-nb', 'pill-listed', 'pill-s8', 'pill-beds', 'pill-price', 'pill-viol']
     .forEach(id => { const el = document.getElementById(id); if (el) filtersBody.appendChild(el); });
   function openFilters() { closeAllPills(); filtersModal.hidden = false; }
-  function updateFiltersCount() {
+  function activeFilterCount() {
     let n = 0;
     if (document.querySelectorAll('#borough-list input:checked').length < N_REGIONS) n++;
     if (nbListEl.querySelectorAll('input:checked').length) n++;
     if (document.querySelector('input[name="listed"]:checked').value !== 'any') n++;
     if (document.querySelector('input[name="s8"]:checked').value !== 'any') n++;
     if (document.querySelectorAll('input[name="beds"]:checked').length) n++;
-    // price has its own header pill (not in the modal), so it lights up there
-    // instead of counting toward the Filters badge
-    const priceOn = !!(document.getElementById('price-min').value || document.getElementById('price-max').value);
-    document.getElementById('pill-price').classList.toggle('active', priceOn);
-    n += moreFilterCount();
+    if (document.getElementById('price-min').value || document.getElementById('price-max').value) n++;
+    return n + moreFilterCount();
+  }
+  function updateFiltersCount() {
+    const n = activeFilterCount();
     // The desktop pill; on mobile it isn't rendered — the count lives on the
     // bottom Filters control instead, which is the only way in there.
     const b = document.getElementById('filters-count');
@@ -2676,17 +2675,11 @@
     applyFilters(); updateFiltersCount();
   }
 
-  // Price pill (StreetEasy-style): stays in the header rather than moving into
-  // the Filters modal; the dropdowns live-apply and Done just closes the popover.
+  // Price lives in the Filters modal with the other pills: the dropdowns
+  // live-apply, and the modal's own Reset/Done footer covers both actions.
   ['price-min', 'price-max'].forEach(id => document.getElementById(id).addEventListener('change', () => {
     applyFilters(); updateFiltersCount();
   }));
-  document.getElementById('price-reset').addEventListener('click', () => {
-    document.getElementById('price-min').value = '';
-    document.getElementById('price-max').value = '';
-    applyFilters(); updateFiltersCount();
-  });
-  document.getElementById('price-done').addEventListener('click', closeAllPills);
 
   // ---------- saved searches (Plus): capture + reapply the whole search ----------
   function captureSearch() {
@@ -2793,13 +2786,29 @@
     FIRST: '1', SECOND: '2', THIRD: '3', FOURTH: '4', FIFTH: '5', SIXTH: '6',
     SEVENTH: '7', EIGHTH: '8', NINTH: '9', TENTH: '10', ELEVENTH: '11', TWELFTH: '12'
   };
+  // People paste whole listing lines ("314\u2013316 57th Street, Sunset Park \u2014 2BR /
+  // 1BA") and phone keyboards swallow the space after the house number
+  // ("1010eastern pkwy"). Both used to canonicalise to something no address
+  // could equal, so the map went blank instead of finding the building.
+  const NOISE_TOK = /^(APT|APARTMENT|UNIT|FL|FLR|FLOOR|STE|SUITE|RM|ROOM|\d*(?:BR|BA|BD|BEDS?|BEDROOMS?|BATHS?))$/;
   function canonAddr(s) {
-    let t = (s || '').toUpperCase();
-    const cut = t.search(/[#,(]/);          // drop "#4A" / ", Brooklyn, NY 11226" tails
+    let t = (s || '').toUpperCase()
+      .replace(/[\u2010-\u2015\u2212]/g, '-')      // en/em dash, minus sign \u2192 hyphen
+      .replace(/[\u2018\u2019\u02BC]/g, '');       // curly apostrophe \u2192 dropped, as below
+    const cut = t.search(/[#,(]| - /);            // drop "#4A" / ", Brooklyn, NY 11226" / " - 2BR" tails
     if (cut !== -1) t = t.slice(0, cut);
-    t = t.replace(/'/g, '').replace(/\./g, ' ').trim();
+    t = t.replace(/'/g, '').replace(/[./]/g, ' ').trim();
     if (!t) return '';
-    return t.split(/\s+/)
+    // "1010EASTERN PKWY" \u2192 "1010 EASTERN PKWY". Three letters minimum so
+    // ordinals (26TH, 42ND) and a Queens house number (93-06) survive intact.
+    t = t.replace(/(\d)([A-Z]{3,})/g, '$1 $2');
+    const toks = t.split(/\s+/);
+    const kept = toks.filter(w => !NOISE_TOK.test(w));
+    // "1 bedroom" must not canonicalise to the bare number "1" — that matched
+    // 28k buildings and read as a working search. Dropping the noise has to
+    // leave a street behind, or the text was never an address to begin with.
+    const use = (kept.some(w => /[A-Z]/.test(w)) || !toks.some(w => /[A-Z]/.test(w))) ? kept : toks;
+    return use
       .map(w => ADDR_TOK[w] || w.replace(/^(\d+)(?:ST|ND|RD|TH)$/, '$1'))
       .join(' ');
   }
@@ -2818,21 +2827,241 @@
     const ca = canonOf(rec);
     return ca.includes(cq) || rangeHit(ca, cq);
   }
+  // The mirror image of rangeHit: the USER pasted the range ("314-316 57 ST")
+  // and DHCR registered only the low number. Queens house numbers are
+  // hyphenated too (93-06 37 AVE), so only read A-B as a range when B is a
+  // plausible higher neighbour of A \u2014 same digit count, no leading zero,
+  // within 30. Wrong guesses are harmless: this is a late tier that only runs
+  // once the literal address has already found nothing.
+  function rangeLow(cq) {
+    const m = cq.match(/^(\d+)-(\d+) (.+)$/);
+    if (!m) return null;
+    const lo = +m[1], hi = +m[2];
+    if (!(hi > lo && hi - lo <= 30 && m[2][0] !== '0' && m[1].length === m[2].length)) return null;
+    return lo + ' ' + m[3];
+  }
+  // The street part of a query, longest first: "597 HALSEY STR" yields
+  // ["HALSEY STR", "HALSEY"]. DHCR spells the street type its own way
+  // ("HALSEY ST"), so a half-typed one used to read as "no such place" — the
+  // longest form that matches wins, and a shorter one is always there to catch it.
+  function streetVariants(cq) {
+    const parts = (cq || '').split(' ');
+    if (parts.length < 2 || !/^\d/.test(parts[0])) return [];
+    const out = [];
+    for (let cut = parts.length; cut > 1; cut--) {
+      const st = parts.slice(1, cut).join(' ');
+      if (st.length >= 3 && !/^[\d ]+$/.test(st)) out.push(st);
+    }
+    return out;
+  }
   // street name with the house number stripped, for "your exact address isn't
   // listed, but these neighbors are" fallbacks
-  function streetOf(cq) {
-    const m = cq.match(/^\d+[A-Z]?(?:-\d+[A-Z]?)? (.+)$/);
-    return m ? m[1] : null;
+  function streetOf(cq) { return streetVariants(cq)[0] || null; }
+  // ---------- area resolution: borough / neighbourhood, incl. nicknames + typos ----------
+  // The dropdown always understood areas; the map behind it did not, so typing
+  // "queens" or "bushwick" left a blank screen. Everything an area query can
+  // mean now resolves through one function that both of them use.
+  function flatName(s) { return (s || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+  const NB_FLAT = NB_INDEX.map(n => ({ name: n.name, boro: n.boro, count: n.count, up: n.name.toUpperCase(), flat: flatName(n.name) }));
+  const BORO_FLAT = BORO_INDEX.map(b => ({ name: b.name, code: b.code, count: b.count, up: b.name.toUpperCase(), flat: flatName(b.name) }));
+  // Only the nicknames a prefix or contains match cannot already reach:
+  // "bushwick" and "soho" need no help, "ues" and "lower manhattan" do.
+  const AREA_ALIAS = IS_NYC ? {
+    BK: ['Brooklyn'], BKLYN: ['Brooklyn'], BX: ['Bronx'], THEBRONX: ['Bronx'],
+    SI: ['Staten Island'], RICHMOND: ['Staten Island'], QNS: ['Queens'], MANH: ['Manhattan'],
+    UES: ['Upper East Side-Carnegie Hill', 'Upper East Side-Lenox Hill-Roosevelt Island', 'Upper East Side-Yorkville'],
+    UWS: ['Upper West Side (Central)', 'Upper West Side-Lincoln Square', 'Upper West Side-Manhattan Valley'],
+    LES: ['Lower East Side'],
+    FIDI: ['Financial District-Battery Park City'],
+    LIC: ['Long Island City-Hunters Point'],
+    BEDSTUY: ['Bed-Stuy (East)', 'Bed-Stuy (West)'],
+    BEDFORDSTUYVESANT: ['Bed-Stuy (East)', 'Bed-Stuy (West)'],
+    STUYTOWN: ['Stuyvesant Town-Peter Cooper Village'],
+    HELLSKITCHEN: ["Hell's Kitchen"],
+    DUMBO: ['Downtown Brooklyn-DUMBO-Boerum Hill'],
+    DOWNTOWNBROOKLYN: ['Downtown Brooklyn-DUMBO-Boerum Hill'],
+    LOWERMANHATTAN: ['Financial District-Battery Park City', 'Tribeca-Civic Center', 'Chinatown-Two Bridges', 'SoHo', 'Nolita', 'Lower East Side'],
+    DOWNTOWNMANHATTAN: ['Financial District-Battery Park City', 'Tribeca-Civic Center', 'Chinatown-Two Bridges', 'SoHo', 'Nolita', 'Lower East Side'],
+    MIDTOWN: ['Midtown-Times Square', 'Midtown South-Flatiron-Union Square', 'East Midtown-Turtle Bay'],
+    ROCKAWAYS: ['Far Rockaway-Bayswater', 'Rockaway Beach-Arverne-Edgemere', 'Breezy Point-Belle Harbor-Rockaway Park-Broad Channel'],
+    THEROCKAWAYS: ['Far Rockaway-Bayswater', 'Rockaway Beach-Arverne-Edgemere', 'Breezy Point-Belle Harbor-Rockaway Park-Broad Channel'],
+  } : {};
+  // What to call a nickname on screen: "ues" is a search, "Upper East Side" is
+  // a place. Only the ones whose own name reads badly need an entry.
+  const ALIAS_LABEL = {
+    UES: 'Upper East Side', UWS: 'Upper West Side', LES: 'Lower East Side',
+    FIDI: 'Financial District', LIC: 'Long Island City', BEDSTUY: 'Bed-Stuy',
+    BEDFORDSTUYVESANT: 'Bed-Stuy', LOWERMANHATTAN: 'Lower Manhattan',
+    DOWNTOWNMANHATTAN: 'Lower Manhattan', DOWNTOWNBROOKLYN: 'Downtown Brooklyn',
+    MIDTOWN: 'Midtown', ROCKAWAYS: 'The Rockaways', THEROCKAWAYS: 'The Rockaways',
+    QNS: 'Queens', MANH: 'Manhattan', BK: 'Brooklyn', BKLYN: 'Brooklyn',
+    BX: 'Bronx', THEBRONX: 'Bronx', SI: 'Staten Island', RICHMOND: 'Staten Island',
+  };
+  // Normalised edit distance. The candidate pool is ~200 short strings, so this
+  // runs in well under a millisecond \u2014 it is safe on every keystroke.
+  function editSim(a, b) {
+    if (a === b) return 1;
+    const m = a.length, n = b.length;
+    if (!m || !n || Math.abs(m - n) > 4) return 0;
+    let prev = Array.from({ length: n + 1 }, (_, j) => j);
+    for (let i = 1; i <= m; i++) {
+      const cur = [i];
+      for (let j = 1; j <= n; j++) {
+        cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      }
+      prev = cur;
+    }
+    return 1 - prev[n] / Math.max(m, n);
   }
+  // "sttaen" should reach "Staten Island" \u2014 compare against the head of the
+  // candidate as well, or a typo in a long name is always too far away.
+  function nameSim(flat, cand) {
+    const whole = editSim(flat, cand);
+    const head = cand.length > flat.length ? editSim(flat, cand.slice(0, flat.length)) : 0;
+    return Math.max(whole, head);
+  }
+  const AREA_MEMO = new Map();
+  function resolveArea(Q) {
+    if (AREA_MEMO.has(Q)) return AREA_MEMO.get(Q);
+    const r = resolveAreaUncached(Q);
+    AREA_MEMO.set(Q, r);
+    return r;
+  }
+  function resolveAreaUncached(Q) {
+    const flat = flatName(Q);
+    if (flat.length < 2) return null;
+    const toks = Q.toUpperCase().split(/[^A-Z0-9]+/).filter(t => t.length > 1);
+    const mk = (label, names, strong) => {
+      const boros = new Set(), nbs = new Set();
+      let count = 0;
+      for (const n of names) {
+        const b = BORO_FLAT.find(x => x.name === n);
+        if (b) { boros.add(b.code); count += b.count; continue; }
+        const nb = NB_FLAT.find(x => x.name === n);
+        if (nb) { nbs.add(nb.name); if (nb.boro) boros.add(nb.boro); count += nb.count; }
+      }
+      if (!boros.size && !nbs.size) return null;
+      return { label, boros, nbs, count, strong };
+    };
+    // 1. nickname
+    const alias = AREA_ALIAS[flat];
+    if (alias) {
+      const r = mk(ALIAS_LABEL[flat] || alias[0], alias, true);
+      if (r) return r;
+    }
+    // 2. borough by prefix ("brook", "man") \u2014 3 chars, or "br" is two boroughs
+    if (flat.length >= 3) {
+      const hits = BORO_FLAT.filter(b => b.flat.startsWith(flat));
+      if (hits.length) return mk(hits.map(b => b.name).join(' / '), hits.map(b => b.name), true);
+    }
+    // 3. neighbourhood by prefix, then by every word appearing in the name
+    //    ("east harlem"), then by the spaces being dropped ("farrockaway")
+    let hits = NB_FLAT.filter(n => n.flat.startsWith(flat));
+    if (!hits.length && toks.length) hits = NB_FLAT.filter(n => toks.every(t => n.up.includes(t)));
+    if (!hits.length && flat.length >= 5) hits = NB_FLAT.filter(n => n.flat.includes(flat));
+    if (hits.length) return mk(hits.length === 1 ? hits[0].name : titleName(Q.replace(/\s+/g, ' ').trim()), hits.map(n => n.name), flat.length >= 3);
+    // 4. typo. Only a confident match filters the map by itself; anything
+    //    weaker is offered as a "did you mean" chip instead of guessing.
+    if (flat.length >= 4) {
+      const best = bestAreaGuesses(flat)[0];
+      // strong:false on purpose — a typo guess must never outrank a literal
+      // address match, only rescue a query that found nothing at all.
+      if (best && best.s >= 0.75) return mk(best.name, [best.name], false);
+    }
+    return null;
+  }
+  // 0.5 is deliberately loose: these become “did you mean” chips, never an
+  // automatic filter, so a weak guess costs a click and rescues “carnise”.
+  function bestAreaGuesses(flat, min = 0.5) {
+    const out = [];
+    for (const c of BORO_FLAT.concat(NB_FLAT)) {
+      const s = nameSim(flat, c.flat);
+      if (s >= min) out.push({ name: c.name, s });
+    }
+    return out.sort((a, b) => b.s - a.s).slice(0, 3);
+  }
+
+  // ---------- landlord / managing-agent search ----------
+  // People type LLC names into an address box ("211 clinton st. realty co.
+  // llc"). Owner, managing agent and head officer for every HPD-registered
+  // building already live in hpd_contacts; a trigram index over the three names
+  // makes a substring match across 46k rows fast enough to answer while they
+  // type. Fetching is deliberately separate from reading: the plan builder only
+  // ever reads the cache, and the input handler starts at most one request per
+  // settled query.
+  const ORG_CACHE = new Map();
+  const ORG_HINT = /(^|[\s.])(LLC|L\.?L\.?C|LP|LLP|INC|CORP|CO|REALTY|REAL ESTATE|MANAGEMENT|MGMT|PROPERTIES|PROPERTY|ASSOCIATES|ASSOC|HOLDINGS|GROUP|PARTNERS|PARTNERSHIP|TRUST|HDFC|HOUSING|DEVELOPMENT|EQUITIES|VENTURES)([\s.]|$)/;
+  // % and _ are ILIKE wildcards and , ( ) " break PostgREST's filter grammar:
+  // strip them rather than let a typed character change what the query means.
+  function orgKey(Q) {
+    return (Q || '')
+      .replace(/[%_*,()"\\]/g, ' ')
+      // "organization 211 clinton st. realty co. llc" — people paste the field
+      // label along with the value, and HPD stores only the value.
+      .replace(/^\s*(organi[sz]ation|owner|landlord|agent|company|corp(?:oration)?)\s*/i, '')
+      .replace(/\s+/g, ' ').trim().toLowerCase();
+  }
+  function orgCached(Q) {
+    const k = orgKey(Q);
+    if (k.length < 4) return null;
+    const v = ORG_CACHE.get(k);
+    return v === undefined ? null : v;
+  }
+  function orgNameish(Q) {
+    return ORG_HINT.test(' ' + Q.toUpperCase() + ' ')
+      || (/^[A-Za-z][A-Za-z'&.\- ]{3,}$/.test(Q) && orgKey(Q).split(' ').length >= 2);
+  }
+  function orgFetch(Q, force) {
+    const k = orgKey(Q);
+    if (k.length < 4 || ORG_CACHE.has(k) || !supaClient) return;
+    if (!force && !orgNameish(Q)) return;
+    ORG_CACHE.set(k, 'pending');
+    supaClient.from('hpd_contacts').select('bbl,names').ilike('names', '%' + k + '%').limit(500)
+      .then(({ data: rows, error }) => {
+        if (error || !rows) { ORG_CACHE.set(k, null); return; }
+        const bbls = new Set(), tally = new Map();
+        for (const r of rows) {
+          bbls.add(r.bbl);
+          // ' | ' separates owner / manager / officer, so the label can name the
+          // one person or company the query actually hit.
+          for (const part of (r.names || '').split(' | ')) {
+            if (part && part.includes(k)) tally.set(part, (tally.get(part) || 0) + 1);
+          }
+        }
+        let label = Q, best = 0;
+        for (const [name, n] of tally) if (n > best) { best = n; label = name; }
+        ORG_CACHE.set(k, bbls.size ? { bbls, label: titleName(label), capped: rows.length >= 500 } : null);
+        if (qInput.value.trim().toUpperCase() === Q.toUpperCase()) {
+          applyFilters();
+          renderAC(searchMatches(qInput.value));
+          renderSearchHelper(qInput.value.trim());
+        }
+      })
+      .catch(() => { ORG_CACHE.set(k, null); });
+  }
+  function titleName(s) {
+    return (s || '').replace(/[A-Za-z0-9']+/g, w =>
+      /^(LLC|LP|LLP|INC|CORP|HDFC|NY|NYC|USA|II|III|IV)$/i.test(w) ? w.toUpperCase()
+        : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+  }
+
   function searchMatches(raw, limit = 3) {
     const q = (raw || '').toUpperCase().trim();
     if (q.length < 2) return [];
     const cq = canonAddr(q);
-    // areas first (boroughs + neighborhoods) — clicking one SETS the filter
-    const areas = [];
-    for (const b of BORO_INDEX) if (b.name.toUpperCase().includes(q)) areas.push({ type: 'borough', ...b });
+    // areas first (boroughs + neighborhoods) — clicking one SETS the filter.
+    // resolveArea() leads because it is the only one that speaks nicknames and
+    // typos ("ues", "lower manhattan", "manhatten"); the plain prefix passes
+    // below it still offer the individual areas to pick from.
+    const area = resolveArea(q);
+    const areas = area ? [{ type: 'area', area }] : [];
+    for (const b of BORO_INDEX) {
+      if (area && area.boros.has(b.code) && !area.nbs.size) continue;
+      if (b.name.toUpperCase().includes(q)) areas.push({ type: 'borough', ...b });
+    }
     const nbStarts = [], nbContains = [];
     for (const n of NB_INDEX) {
+      if (area && area.nbs.has(n.name)) continue;
       const N = n.name.toUpperCase();
       if (N.startsWith(q)) nbStarts.push({ type: 'neighborhood', ...n });
       else if (N.includes(q)) nbContains.push({ type: 'neighborhood', ...n });
@@ -2852,8 +3081,7 @@
     // tenant checking "is my building stabilized" sees the registered
     // neighbors instead of a dead end
     if (!starts.length && !contains.length) {
-      const street = streetOf(cq);
-      if (street && street.length >= 3) {
+      for (const street of streetVariants(rangeLow(cq) || cq)) {
         for (const rec of data) {
           if (!rec.a) continue;
           if (canonOf(rec).includes(street)) {
@@ -2861,9 +3089,14 @@
             if (contains.length >= limit) break;
           }
         }
+        if (contains.length) break;
       }
     }
-    return areaMatches.concat(starts, contains).slice(0, areaMatches.length + limit);
+    // a landlord / managing agent, once the lookup for this query has landed
+    const org = orgCached(q);
+    const orgRows = (org && org.bbls && org.bbls.size) ? [{ type: 'org', org }] : [];
+    return areaMatches.concat(orgRows, starts, contains)
+      .slice(0, areaMatches.length + orgRows.length + limit);
   }
   function positionAC() {
     const r = qInput.getBoundingClientRect();
@@ -2871,23 +3104,44 @@
     searchAC.style.top = (r.bottom + 4) + 'px';
     searchAC.style.width = r.width + 'px';
   }
+  // The rendered list is kept in memory and rows address it by index, so a
+  // suggestion can carry a whole resolved area or landlord rather than
+  // whatever fits in a data- attribute.
+  let acMatches = [];
   function renderAC(matches) {
+    acMatches = matches;
     if (!matches.length) { searchAC.hidden = true; return; }
-    searchAC.innerHTML = matches.map(m => {
+    searchAC.innerHTML = matches.map((m, i) => {
+      if (m.type === 'area') {
+        const a = m.area;
+        const what = a.nbs.size ? (a.nbs.size === 1 ? 'Neighborhood' : a.nbs.size + ' neighborhoods')
+                                : (a.boros.size === 1 ? 'Borough' : 'Boroughs');
+        return `<button class="ac-item" data-i="${i}">
+          <span class="ac-addr">📍 ${esc(a.label)}</span>
+          <span class="ac-sub">${esc(what)} · ${a.count.toLocaleString()} buildings — filter to this area</span>
+        </button>`;
+      }
+      if (m.type === 'org') {
+        const n = m.org.bbls.size;
+        return `<button class="ac-item" data-i="${i}">
+          <span class="ac-addr">🏢 ${esc(m.org.label)}</span>
+          <span class="ac-sub">Landlord or managing agent · ${m.org.capped ? n + '+' : n.toLocaleString()} building${n === 1 ? '' : 's'}</span>
+        </button>`;
+      }
       if (m.type === 'borough') {
-        return `<button class="ac-item" data-type="borough" data-code="${esc(m.code)}">
+        return `<button class="ac-item" data-i="${i}">
           <span class="ac-addr">📍 ${esc(m.name)}</span>
           <span class="ac-sub">Borough · ${m.count.toLocaleString()} buildings — filter to this borough</span>
         </button>`;
       }
       if (m.type === 'neighborhood') {
-        return `<button class="ac-item" data-type="neighborhood" data-nb="${esc(m.name)}" data-code="${esc(m.boro || '')}">
+        return `<button class="ac-item" data-i="${i}">
           <span class="ac-addr">📍 ${esc(m.name)}</span>
           <span class="ac-sub">Neighborhood, ${esc(BORO_NAME[m.boro] || '')} · ${m.count.toLocaleString()} buildings — filter to this area</span>
         </button>`;
       }
       const rec = m.rec, borough = BORO_NAME[rec.b] || '';
-      return `<button class="ac-item" data-type="building" data-bbl="${esc(rec.bbl)}">
+      return `<button class="ac-item" data-i="${i}">
         <span class="ac-addr">${m.nearby ? '📍 ' : ''}${esc(rec.a)}</span>
         <span class="ac-sub">${m.nearby ? 'Same street (your exact number isn’t in the DHCR list) · ' : ''}${rec.nb ? esc(rec.nb) + ' · ' : ''}${esc(borough)}${rec.z ? ' ' + esc(rec.z) : ''}</span>
       </button>`;
@@ -2895,70 +3149,105 @@
     positionAC();
     searchAC.hidden = false;
   }
-  let qTimer;
+  let qTimer, qTrackTimer, qOrgTimer;
   qInput.addEventListener('input', () => {
+    keepFiltersFor = '';                 // a new keystroke re-arms the auto-relax
     renderAC(searchMatches(qInput.value));
     clearTimeout(qTimer);
     qTimer = setTimeout(() => {
       applyFilters();
-      const q = qInput.value.trim();
-      // one event per settled search (200ms after the last keystroke), not per keypress
-      if (q) track('search', { q, results: filtered.length });
-      renderSearchHelper(q);
+      renderSearchHelper(qInput.value.trim());
     }, 200);
+    // A landlord lookup is a round trip, so it waits for a pause in the typing.
+    clearTimeout(qOrgTimer);
+    qOrgTimer = setTimeout(() => {
+      const Q = qInput.value.trim();
+      if (!Q) return;
+      // Force it once the address and area tiers have already come up empty: a
+      // bare surname ("zitolo") reads as nothing else, but it is a real answer.
+      orgFetch(Q, searchState.tier === 'nomatch' && /^[A-Za-z][A-Za-z'&.\- ]{3,}$/.test(Q));
+    }, 500);
+    // Tracking waits longer still. At 200 ms every keystroke of "597 halsey
+    // street" logged its own search — ten events, most of them zero-result —
+    // which inflated the measured failure rate ~2.5x and buried the query the
+    // person actually meant. `settled` marks the ones that are real.
+    clearTimeout(qTrackTimer);
+    qTrackTimer = setTimeout(trackSearch, 1200);
   });
+  function trackSearch() {
+    const q = qInput.value.trim();
+    if (!q) return;
+    track('search', {
+      q,
+      results: filtered.length,
+      settled: true,                     // survived 1.2 s without another keystroke
+      tier: searchState.tier,            // area | exact | org | street | nomatch | pending
+      relaxed: searchState.relaxed,      // the filters had to be set aside to answer
+      filters: activeFilterCount(),
+      suggest: searchState.suggest.slice(0, 3),
+    });
+  }
 
   // #2 post-search narrowing: a broad neighborhood/ZIP search returns hundreds
   // of buildings with no obvious next step. Turn that into quick filters + a
   // count of what's actually available, so people find a unit instead of drowning.
   const searchHelper = document.getElementById('search-helper');
   function renderSearchHelper(q) {
-    // zero results from a real query: say WHY instead of dead-ending. Either
-    // the user's own filters are hiding matches (the #1 silent failure in the
-    // search logs — e.g. searching a Manhattan address with only Brooklyn
-    // checked), or the address genuinely isn't DHCR-registered.
-    if (q && filtered.length === 0 && !sharedFolder) {
-      const cq = canonAddr(q);
-      let hidden = 0;
-      for (const rec of data) { if (rec.a && addrHit(rec, cq)) { hidden++; if (hidden > 99) break; } }
-      if (hidden > 0) {
-        searchHelper.innerHTML =
-          `<div class="sh-card">
-            <div class="sh-head"><b>${hidden}${hidden > 99 ? '+' : ''}</b> matching building${hidden === 1 ? ' is' : 's are'} hidden by your current filters.</div>
-            <div class="sh-chips"><button data-sh="clearfilters">🔄 Show ${hidden === 1 ? 'it' : 'them'} (clear filters)</button></div>
-          </div>`;
-      } else {
-        const street = streetOf(cq);
-        // same guard as the autocomplete fallback — only promise same-street
-        // results in the dropdown when the dropdown will actually show them
-        const hasStreet = street && street.length >= 3 && data.some(r => r.a && canonOf(r).includes(street));
-        searchHelper.innerHTML =
-          `<div class="sh-card">
-            <div class="sh-head">That exact address isn’t in the DHCR rent-stabilization list${hasStreet ? ' — registered buildings on the same street appear in the dropdown above' : ''}. A building missing from the list may simply not be registered as rent-stabilized.</div>
-          </div>`;
-      }
-      searchHelper.hidden = false;
-      return;
-    }
-    // only worth showing for a broad result set from an actual query
-    if (!q || filtered.length < 25 || document.getElementById('pill-fav').classList.contains('active')) {
-      searchHelper.hidden = true; return;
-    }
-    const advertised = filtered.filter(r => (listingCounts[r.bbl] || 0) > 0).length;
-    const listedOn = document.querySelector('input[name="listed"]:checked').value === 'yes';
-    const violOn = moreFilters.viol === 'none';
-    const bedsOn = document.querySelectorAll('input[name="beds"]:checked').length > 0;
-    searchHelper.innerHTML =
-      `<div class="sh-card">
-        <div class="sh-head"><b>${filtered.length.toLocaleString()}</b> rent-stabilized buildings match${advertised ? ` · <b>${advertised}</b> recently advertised` : ''}. Narrow it down:</div>
-        <div class="sh-chips">
+    const st = searchState;
+    const card = html => { searchHelper.innerHTML = `<div class="sh-card">${html}</div>`; searchHelper.hidden = false; };
+    const narrowChips = () => {
+      const advertised = filtered.filter(r => (listingCounts[r.bbl] || 0) > 0).length;
+      const listedOn = document.querySelector('input[name="listed"]:checked').value === 'yes';
+      const violOn = moreFilters.viol === 'none';
+      const bedsOn = document.querySelectorAll('input[name="beds"]:checked').length > 0;
+      return `<div class="sh-chips">
           <button data-sh="listed" class="${listedOn ? 'on' : ''}">🏠 Available now${advertised ? ` (${advertised})` : ''}</button>
           <button data-sh="noviol" class="${violOn ? 'on' : ''}">✅ No open violations</button>
           <button data-sh="beds" class="${bedsOn ? 'on' : ''}">🛏 Bedrooms</button>
-        </div>
-        ${authUser ? '' : `<div class="sh-signup">💡 <a data-sh="save">Create a free account</a> to save the ones you like.</div>`}
-      </div>`;
-    searchHelper.hidden = false;
+        </div>`;
+    };
+    if (!q || document.getElementById('pill-fav').classList.contains('active') || sharedFolder) {
+      searchHelper.hidden = true; return;
+    }
+    const n = filtered.length;
+    // The filters were set aside so the search could be answered. Say so, and
+    // offer the way back — silently ignoring them would be worse than the
+    // blank map this replaces.
+    if (st.relaxed) {
+      card(`<div class="sh-head">Your filters hid every match for “${esc(q)}”. Showing <b>${n.toLocaleString()}</b> result${n === 1 ? '' : 's'} with the filters ignored.</div>
+        <div class="sh-chips"><button data-sh="keepfilters">↩ Keep my filters instead</button></div>`);
+      return;
+    }
+    if (st.tier === 'kept') {
+      card(`<div class="sh-head">Nothing matches “${esc(q)}” with your filters on — <b>${st.hidden.toLocaleString()}</b> building${st.hidden === 1 ? '' : 's'} match${st.hidden === 1 ? 'es' : ''} it without them.</div>
+        <div class="sh-chips"><button data-sh="relax">🔄 Ignore my filters</button></div>`);
+      return;
+    }
+    if (st.tier === 'pending') {
+      card(`<div class="sh-head">No address or area matches “${esc(q)}” — checking landlord and managing-agent names…</div>`);
+      return;
+    }
+    if (st.tier === 'nomatch') {
+      const guesses = st.suggest.length
+        ? `<div class="sh-chips">${st.suggest.map(g => `<button data-sh="try" data-q="${esc(g)}">Did you mean ${esc(g)}?</button>`).join('')}</div>`
+        : '';
+      const beds = /\b(\d\s*(br|bd|bed)|bedroom|studio)\b/i.test(q)
+        ? `<div class="sh-chips"><button data-sh="beds">🛏 Filter by bedrooms instead</button></div>` : '';
+      card(`<div class="sh-head">Nothing matches “${esc(q)}” — no address, area, street or landlord. Showing all <b>${n.toLocaleString()}</b> buildings you can browse.</div>${guesses}${beds}`);
+      return;
+    }
+    // A tier below the literal match answered: say which one, so the result
+    // set never looks like it came from nowhere.
+    if (st.note) {
+      card(`<div class="sh-head">${st.note}</div>${n >= 25 ? narrowChips() : ''}`);
+      return;
+    }
+    // only worth showing for a broad result set from an actual query
+    if (n < 25) { searchHelper.hidden = true; return; }
+    const advertised = filtered.filter(r => (listingCounts[r.bbl] || 0) > 0).length;
+    card(`<div class="sh-head"><b>${n.toLocaleString()}</b> ${esc((CITY.label || '').toLowerCase())} buildings match${advertised ? ` · <b>${advertised}</b> recently advertised` : ''}. Narrow it down:</div>
+        ${narrowChips()}
+        ${authUser ? '' : `<div class="sh-signup">💡 <a data-sh="save">Create a free account</a> to save the ones you like.</div>`}`);
   }
   searchHelper.addEventListener('click', e => {
     const act = e.target.closest('[data-sh]')?.dataset.sh;
@@ -2971,18 +3260,20 @@
       moreFilters.viol = moreFilters.viol === 'none' ? 'any' : 'none'; syncMoreUI(); applyFilters();
     } else if (act === 'beds') {
       openFilters();   // beds live in the filters modal
-    } else if (act === 'clearfilters') {
-      document.querySelectorAll('#borough-list input').forEach(c => { c.checked = true; });
-      nbListEl.querySelectorAll('input:checked').forEach(c => { c.checked = false; });
-      document.querySelector('input[name="listed"][value="any"]').checked = true;
-      document.querySelector('input[name="s8"][value="any"]').checked = true;
-      document.querySelectorAll('input[name="beds"]:checked').forEach(c => { c.checked = false; });
-      document.getElementById('price-min').value = '';
-      document.getElementById('price-max').value = '';
-      document.getElementById('pill-fav').classList.remove('active');
-      moreFilters.viol = 'any'; moreFilters.comp = 'any'; syncMoreUI(); applyFilters();
     } else if (act === 'save') {
       openAuthModal('Create a free account to save the buildings you like.');
+    } else if (act === 'relax') {
+      keepFiltersFor = '';
+      applyFilters();
+    } else if (act === 'keepfilters') {
+      // opt back out of the auto-relax for this exact query
+      keepFiltersFor = qInput.value.trim().toUpperCase();
+      applyFilters();
+    } else if (act === 'try') {
+      const g = e.target.closest('[data-sh]').dataset.q || '';
+      qInput.value = g;
+      qInput.dispatchEvent(new Event('input', { bubbles: true }));
+      return;
     }
     renderSearchHelper(qInput.value.trim());
     updateFiltersCount();
@@ -3111,33 +3402,63 @@
     applyFilters();
     updateFiltersCount();
     // frame the neighborhood on the map
-    const buildings = data.filter(r => r.nb === nb);
-    if (buildings.length) {
-      const lats = buildings.map(r => r.lat), lngs = buildings.map(r => r.lng);
-      map.fitBounds([[Math.min(...lats), Math.min(...lngs)], [Math.max(...lats), Math.max(...lngs)]], { padding: [40, 40], animate: false });
-    }
+    fitTo(data.filter(r => r.nb === nb));
+  }
+  // Frame a set of buildings without re-deriving bounds at four call sites.
+  function fitTo(recs) {
+    if (!recs.length) return;
+    const lats = recs.map(r => r.lat), lngs = recs.map(r => r.lng);
+    map.fitBounds([[Math.min(...lats), Math.min(...lngs)], [Math.max(...lats), Math.max(...lngs)]],
+      { padding: [40, 40], maxZoom: 16, animate: false });
+  }
+  // A resolved area can be several neighbourhoods across more than one borough
+  // ("lower manhattan"), so it sets the checkboxes as a group.
+  function selectArea(a) {
+    document.querySelectorAll('#borough-list input').forEach(c => { c.checked = a.boros.size ? a.boros.has(c.dataset.b) : true; });
+    updateBoroughBadge();
+    syncNbVisibility();
+    nbListEl.querySelectorAll('input').forEach(c => { c.checked = a.nbs.has(c.value); });
+    updateNbBadge();
+    applyFilters();
+    updateFiltersCount();
+    fitTo(data.filter(r => (a.nbs.size ? a.nbs.has(r.nb) : a.boros.has(r.b))));
   }
   searchAC.addEventListener('click', e => {
     const item = e.target.closest('.ac-item');
     if (!item) return;
     searchAC.hidden = true;
-    const type = item.dataset.type;
-    if (type === 'borough') {
-      qInput.value = ''; qInput.blur();
-      selectBorough(item.dataset.code);
-      return;
-    }
-    if (type === 'neighborhood') {
-      qInput.value = ''; qInput.blur();
-      selectNeighborhood(item.dataset.nb, item.dataset.code);
-      return;
-    }
-    const m = markerByBbl.get(item.dataset.bbl);
+    const m = acMatches[+item.dataset.i];
     if (!m) return;
-    qInput.value = m._rec.a;
+    if (m.type === 'area') {
+      qInput.value = ''; qInput.blur();
+      selectArea(m.area);
+      return;
+    }
+    if (m.type === 'org') {
+      // Landlords are a search, not a filter — the query stays in the box so
+      // the result header can keep saying whose buildings these are.
+      qInput.value = m.org.label; qInput.blur();
+      applyFilters();
+      renderSearchHelper(qInput.value.trim());
+      fitTo(filtered);
+      return;
+    }
+    if (m.type === 'borough') {
+      qInput.value = ''; qInput.blur();
+      selectBorough(m.code);
+      return;
+    }
+    if (m.type === 'neighborhood') {
+      qInput.value = ''; qInput.blur();
+      selectNeighborhood(m.name, m.boro);
+      return;
+    }
+    const mk = markerByBbl.get(m.rec.bbl);
+    if (!mk) return;
+    qInput.value = m.rec.a;
     qInput.blur();
-    map.setView([m._rec.lat, m._rec.lng], Math.max(map.getZoom(), 16), { animate: false });
-    openDetail(m._rec, m._listed || 0);
+    map.setView([m.rec.lat, m.rec.lng], Math.max(map.getZoom(), 16), { animate: false });
+    openDetail(m.rec, mk._listed || 0);
   });
 
   // ---------- filter / refresh ----------
@@ -3147,7 +3468,81 @@
   // list sort, chosen from the mobile FAB "Sort" sheet. 'loc' = natural viewport order.
   let sortMode = 'loc';
   let filtered = [];
-  function applyFilters() {
+  // What the last search resolved to, for the header, the helper card and the
+  // event log: which tier answered, whether the filters had to be set aside,
+  // and the closest names we know if nothing matched at all.
+  let searchState = { q: '', tier: 'all', relaxed: false, label: '', note: '', suggest: [], hidden: 0 };
+  // The one query the user explicitly asked to keep their filters on for.
+  let keepFiltersFor = '';
+
+  function filtersActive() {
+    return document.querySelectorAll('#borough-list input:checked').length < N_REGIONS
+      || nbListEl.querySelectorAll('input:checked').length > 0
+      || document.querySelector('input[name="listed"]:checked').value !== 'any'
+      || document.querySelector('input[name="s8"]:checked').value !== 'any'
+      || document.querySelectorAll('input[name="beds"]:checked').length > 0
+      || !!document.getElementById('price-min').value
+      || !!document.getElementById('price-max').value
+      || moreFilters.viol !== 'any' || moreFilters.comp !== 'any';
+  }
+
+  // A query is answered in tiers, and the first tier that finds anything wins.
+  // Tier 1 is the literal match people expect. The tiers under it are what stop
+  // a real question from ending on a blank map: the borough or neighbourhood
+  // they named, the landlord they named, the rest of their street. Half of all
+  // settled searches used to end at zero results, and almost every one of them
+  // had an honest answer one tier down.
+  function buildQueryPlan(Q) {
+    const cq = canonAddr(Q);
+    const area = resolveArea(Q);
+    const org = orgCached(Q);
+    const steps = [];
+    const areaStep = a => ({
+      kind: 'area', label: a.label,
+      note: `Showing every building in <b>${esc(a.label)}</b>.`,
+      test: rec => (a.nbs.size ? a.nbs.has(rec.nb) : a.boros.has(rec.b)),
+    });
+    // A confident area word means the borough, not the handful of addresses
+    // that happen to contain it as a street name ("QUEENS BLVD" for "queens").
+    if (area && area.strong) steps.push(areaStep(area));
+    // Substring-matching the id and the ZIP is what let a query of "1" match
+    // 28k buildings — every BBL contains a 1. An id or a ZIP is matched from
+    // the front, which is what typing one actually means.
+    const digits = /^\d+$/.test(Q);
+    if (cq || Q) steps.push({
+      kind: 'exact',
+      test: rec => (cq.length >= 2 && rec.a && addrHit(rec, cq))
+        || (cq.length === 1 && rec.a && canonOf(rec).startsWith(cq))
+        || (digits && Q.length >= 3 && Q.length <= 5 && rec.z && rec.z.startsWith(Q))
+        || (digits && Q.length >= 6 && rec.bbl.startsWith(Q))
+        || (Q.length >= 3 && rec.nb && rec.nb.toUpperCase().includes(Q)),
+    });
+    if (area && !area.strong) steps.push(areaStep(area));
+    if (org && org.bbls && org.bbls.size) {
+      const n = org.bbls.size;
+      steps.push({
+        kind: 'org', label: org.label,
+        note: `<b>${esc(org.label)}</b> is the registered owner, managing agent or head officer of ${org.capped ? n + '+' : n.toLocaleString()} building${n === 1 ? '' : 's'}.`,
+        test: rec => org.bbls.has(rec.bbl),
+      });
+    }
+    const low = rangeLow(cq);
+    if (low) steps.push({ kind: 'exact', test: rec => rec.a && addrHit(rec, low) });
+    for (const street of streetVariants(low || cq)) steps.push({
+      kind: 'street', label: street,
+      note: `No DHCR-registered building at that number — showing the registered ones on <b>${esc(street)}</b>. A building missing from the list may simply not be registered as rent-stabilized.`,
+      test: rec => rec.a && canonOf(rec).includes(street),
+    });
+    return {
+      steps,
+      pending: orgKey(Q).length >= 4 && ORG_CACHE.get(orgKey(Q)) === 'pending',
+      suggest: area ? [] : bestAreaGuesses(flatName(Q)).map(g => g.name),
+    };
+  }
+
+  function applyFilters(opts) {
+    const keepFilters = !!(opts && opts.keepFilters)
+      || keepFiltersFor === document.getElementById('q').value.trim().toUpperCase();
     const boroughs = new Set([...document.querySelectorAll('#borough-list input:checked')].map(c => c.dataset.b));
     const selectedNbs = new Set([...nbListEl.querySelectorAll('input:checked')].map(c => c.value));
     const listedMode = document.querySelector('input[name="listed"]:checked').value;
@@ -3158,63 +3553,104 @@
     const priceSet = priceMin > 0 || priceMax < Infinity;
     const favOnly = document.getElementById('pill-fav').classList.contains('active');
     const q = document.getElementById('q').value.trim().toUpperCase();
-    const cq = q ? canonAddr(q) : '';
 
-    filtered = [];
-    cluster.clearLayers();
-    const layers = [];
-    for (const rec of data) {
-      // viewing a shared folder link: show exactly its buildings
-      if (sharedFolder && !sharedFolder.bbls.has(rec.bbl)) continue;
-      if (!sharedFolder && favOnly && !FAVS.has(rec.bbl)) continue;
-      if (!sharedFolder && favOnly && folderFilter && FAVCATS[rec.bbl] !== folderFilter) continue;
-      if (!boroughs.has(rec.b)) continue;
-      if (selectedNbs.size && !selectedNbs.has(rec.nb)) continue;
-      const listed = listingCounts[rec.bbl] || 0;
-      if (listedMode === 'yes' && !listed) continue;
-      if (listedMode === 'no' && listed) continue;
-      if (s8Mode !== 'any') {
-        const hasAvail = !!s8Avail[rec.bbl];
-        const hasBldg = !!s8Bldg[rec.bbl];
-        if (s8Mode === 'avail' && !hasAvail) continue;
-        if (s8Mode === 'bldg' && !hasBldg) continue;
-        if (s8Mode === 'either' && !hasAvail && !hasBldg) continue;
+    // One pass over the data. `test` is the tier being tried; `ignoreFilters`
+    // sets the filter panel aside without touching it, for the retry that
+    // rescues a search the user's own leftover filters would have zeroed.
+    const collect = (test, ignoreFilters) => {
+      const out = [];
+      for (const rec of data) {
+        // viewing a shared folder link: show exactly its buildings
+        if (sharedFolder && !sharedFolder.bbls.has(rec.bbl)) continue;
+        if (!sharedFolder && favOnly && !FAVS.has(rec.bbl)) continue;
+        if (!sharedFolder && favOnly && folderFilter && FAVCATS[rec.bbl] !== folderFilter) continue;
+        if (!ignoreFilters) {
+          if (!boroughs.has(rec.b)) continue;
+          if (selectedNbs.size && !selectedNbs.has(rec.nb)) continue;
+          const listed = listingCounts[rec.bbl] || 0;
+          if (listedMode === 'yes' && !listed) continue;
+          if (listedMode === 'no' && listed) continue;
+          if (s8Mode !== 'any') {
+            const hasAvail = !!s8Avail[rec.bbl];
+            const hasBldg = !!s8Bldg[rec.bbl];
+            if (s8Mode === 'avail' && !hasAvail) continue;
+            if (s8Mode === 'bldg' && !hasBldg) continue;
+            if (s8Mode === 'either' && !hasAvail && !hasBldg) continue;
+          }
+          if (selectedBeds.size) {
+            const bb = listingBeds[rec.bbl];
+            if (!bb || !bb.some(n => selectedBeds.has(n))) continue;
+          }
+          if (priceSet) {
+            const p = priceOf(rec);
+            if (p == null || p < priceMin || p > priceMax) continue;
+          }
+          if (moreFilters.viol !== 'any') {
+            const v = rec.h && rec.h.violations;
+            const open = v ? (v.open || 0) : 0;
+            const classc = v ? (v.c || 0) : 0;
+            if (moreFilters.viol === 'none' && open > 0) continue;
+            if (moreFilters.viol === 'open' && open === 0) continue;
+            if (moreFilters.viol === 'classc' && classc === 0) continue;
+          }
+          if (moreFilters.comp !== 'any') {
+            const c = rec.h && rec.h.complaints;
+            const open = c ? (c.open || 0) : 0;
+            if (moreFilters.comp === 'none' && open > 0) continue;
+            if (moreFilters.comp === 'open' && open === 0) continue;
+          }
+        }
+        if (test && !test(rec)) continue;
+        out.push(rec);
       }
-      if (selectedBeds.size) {
-        const bb = listingBeds[rec.bbl];
-        if (!bb || !bb.some(n => selectedBeds.has(n))) continue;
+      return out;
+    };
+
+    const plan = q ? buildQueryPlan(q) : null;
+    let recs = null, tier = 'all', relaxed = false, label = '', note = '', suggest = [], hidden = 0;
+    if (!plan) {
+      recs = collect(null, false);
+    } else {
+      const active = filtersActive();
+      for (const step of plan.steps) {
+        const r = collect(step.test, false);
+        if (r.length) { recs = r; tier = step.kind; label = step.label || ''; note = step.note || ''; break; }
+        if (!active) continue;
+        // The filters the user set three searches ago are the single most
+        // common reason a good query returns nothing. Retry THIS tier without
+        // them before dropping to a looser one: the exact address they typed,
+        // sitting in a borough they left unchecked, beats a same-street guess
+        // that happens to fall inside the filters.
+        const relaxedHit = collect(step.test, true);
+        if (!relaxedHit.length) continue;
+        if (keepFilters) { if (!hidden) hidden = relaxedHit.length; continue; }
+        recs = relaxedHit; tier = step.kind; label = step.label || ''; note = step.note || '';
+        relaxed = true;
+        break;
       }
-      if (priceSet) {
-        const p = priceOf(rec);
-        if (p == null || p < priceMin || p > priceMax) continue;
+      if (!recs && hidden) {
+        // They chose their filters over the search. Say so honestly rather than
+        // answering with the whole borough.
+        recs = [];
+        tier = 'kept';
+      } else if (!recs) {
+        // Nothing anywhere matches. An empty map reads as a broken site, so
+        // show what is browsable and say in words that the query found nothing.
+        recs = collect(null, false);
+        tier = plan.pending ? 'pending' : 'nomatch';
+        suggest = plan.suggest;
       }
-      if (moreFilters.viol !== 'any') {
-        const v = rec.h && rec.h.violations;
-        const open = v ? (v.open || 0) : 0;
-        const classc = v ? (v.c || 0) : 0;
-        if (moreFilters.viol === 'none' && open > 0) continue;
-        if (moreFilters.viol === 'open' && open === 0) continue;
-        if (moreFilters.viol === 'classc' && classc === 0) continue;
-      }
-      if (moreFilters.comp !== 'any') {
-        const c = rec.h && rec.h.complaints;
-        const open = c ? (c.open || 0) : 0;
-        if (moreFilters.comp === 'none' && open > 0) continue;
-        if (moreFilters.comp === 'open' && open === 0) continue;
-      }
-      if (q) {
-        const inAddr = rec.a && addrHit(rec, cq);
-        const inZip = rec.z && rec.z.includes(q);
-        const inBbl = rec.bbl.includes(q);
-        const inNb = rec.nb && rec.nb.toUpperCase().includes(q);
-        if (!inAddr && !inZip && !inBbl && !inNb) continue;
-      }
-      layers.push(markerByBbl.get(rec.bbl));
-      filtered.push(rec);
     }
-    cluster.addLayers(layers);
+    searchState = { q, tier, relaxed, label, note, suggest, hidden };
 
-    if (selectedNbs.size > 0 && filtered.length && filtered.length < 5000) {
+    filtered = recs;
+    cluster.clearLayers();
+    cluster.addLayers(filtered.map(r => markerByBbl.get(r.bbl)).filter(Boolean));
+
+    // Frame the result when the query picked out a place rather than the whole
+    // city — a neighbourhood filter, an area word, a street, a landlord.
+    const framed = selectedNbs.size > 0 || tier === 'area' || tier === 'street' || tier === 'org';
+    if (framed && filtered.length && filtered.length < 5000) {
       const bounds = L.latLngBounds(filtered.map(r => [r.lat, r.lng]));
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15, animate: false });
     }
@@ -3355,11 +3791,33 @@
                promise the link doesn't keep — so the button says which it is. -->
           <a class="btn-primary" data-action="featured" style="flex:1"
              target="_blank" rel="noopener nofollow"
-             href="${esc(f.href)}">${f.href_kind === 'agent_page'
+             href="${esc(outbound(f.href, 'rerental_tile', f.href_kind === 'agent_page' ? 'agent_board' : 'unit_listing'))}">${f.href_kind === 'agent_page'
                ? 'Find it on their listings page ↗' : 'Apply on their site ↗'}</a>
         </div>
       </div>
     </div>`;
+  }
+
+  // ---------- outbound tagging ----------
+  // Every hand-off to a marketing agent is tagged so they can see this traffic
+  // in their own analytics. That is the entire pitch for a paid slot: an agent
+  // who can find findacrib.com in their own GA does not have to take our
+  // dashboard's word for how much we sent them. Rules it keeps: only http(s),
+  // never an internal link, never overwrite a campaign somebody else set, and
+  // medium stays "referral" so GA4 files it under Referral instead of dropping
+  // it into Unassigned.
+  function outbound(url, campaign, content){
+    try {
+      var u = new URL(url, location.href);
+      if (u.protocol !== 'http:' && u.protocol !== 'https:') return url;
+      if (u.hostname === location.hostname) return url;
+      if (u.searchParams.has('utm_source')) return url;
+      u.searchParams.set('utm_source', 'findacrib.com');
+      u.searchParams.set('utm_medium', 'referral');
+      u.searchParams.set('utm_campaign', campaign);
+      if (content) u.searchParams.set('utm_content', content);
+      return u.toString();
+    } catch (e) { return url; }
   }
 
   // Only apartments in a borough you are actually looking at. A Bronx
@@ -3412,7 +3870,7 @@
     const left = d == null ? '' :
       `<span class="hc-days${urgent ? ' urgent' : ''}">${d === 1 ? 'Closes tomorrow' : 'Closes in ' + d + ' days'}</span>`;
     const sv = (h.lat && h.lng) ? streetviewUrl(h.lat, h.lng) : null;
-    return `<div class="card hc-card">
+    return `<div class="card hc-card" data-hc-name="${esc(h.name || h.address || 'Housing Connect lottery')}" data-hc-boro="${esc(h.borough || '')}" data-hc-href="${esc(h.href || '')}">
       <span class="hc-flag">Housing Connect</span>
       <div class="photo">
         ${sv ? `<img class="streetview" loading="lazy" src="${sv}" alt=""
@@ -3456,6 +3914,84 @@
     const h = hcPool[hcCursor % hcPool.length];
     hcCursor++;
     return hcCardHtml(h);
+  }
+
+  // ---------- advertiser tile impressions ----------
+  // The re-rental and lottery tiles are the only inventory on this page that
+  // somebody else would pay for, and until now the only thing counted about
+  // them was the click. A click rate with no denominator cannot be sold, so
+  // this counts the other half.
+  //
+  // "Rendered" is not "seen". refreshGrid() rebuilds the whole list on every
+  // pan and zoom, and most of what it builds is below the fold — counting
+  // renders would invent tens of thousands of impressions nobody looked at and
+  // make the CTR in the pitch a lie. An impression here is the IAB rule
+  // applied honestly: at least half the tile on screen for a full second,
+  // counted ONCE per apartment per page session, so panning back and forth
+  // does not mint inventory.
+  const IMPR_RATIO = 0.5;               // half the tile visible
+  const IMPR_MS = 1000;                 // ...held for a second
+  const IMPR_MAX = 60;                  // per page session; see below
+  const imprSeen = new Set();           // tile keys already counted
+  const imprTimers = new Map();         // element -> pending dwell timer
+  let imprCount = 0;
+
+  // A tile's identity is what an advertiser is buying — the apartment, not the
+  // DOM node, which is thrown away and rebuilt on every pan.
+  function tileKey(el) {
+    return el.classList.contains('hc-card')
+      ? 'lottery|NYC Housing Connect|' + (el.dataset.hcName || '')
+      : 'rerental|' + (el.dataset.featAgent || '') + '|' + (el.dataset.featAddr || '');
+  }
+
+  const tileObserver = ('IntersectionObserver' in window)
+    ? new IntersectionObserver(entries => {
+        entries.forEach(en => {
+          const el = en.target;
+          if (en.isIntersecting && en.intersectionRatio >= IMPR_RATIO) {
+            if (imprTimers.has(el)) return;
+            imprTimers.set(el, setTimeout(() => {
+              imprTimers.delete(el);
+              countImpression(el);
+            }, IMPR_MS));
+          } else {
+            const t = imprTimers.get(el);
+            if (t) { clearTimeout(t); imprTimers.delete(el); }
+          }
+        });
+      }, { threshold: [0, IMPR_RATIO] })
+    : null;
+
+  function countImpression(el) {
+    const key = tileKey(el);
+    if (imprSeen.has(key)) return;
+    // A page left open on a huge pool could otherwise write a row per
+    // apartment all afternoon. The cap is far above a real session (the pools
+    // are dozens of listings, and a visitor scrolls past a handful) and exists
+    // so a stuck tab cannot run up the free-tier row count.
+    if (imprCount >= IMPR_MAX) return;
+    imprSeen.add(key); imprCount++;
+    tileObserver.unobserve(el);
+    const hc = el.classList.contains('hc-card');
+    track('tile_impression', hc
+      ? { kind: 'lottery', agent: 'NYC Housing Connect',
+          addr: el.dataset.hcName || '', boro: el.dataset.hcBoro || '' }
+      : { kind: 'rerental', agent: el.dataset.featAgent || '',
+          addr: el.dataset.featAddr || '' });
+  }
+
+  // Called after every render. The previous render's nodes are detached but
+  // IntersectionObserver holds them strongly, and a dwell timer armed against
+  // a node that is no longer on the page would count an impression for a tile
+  // that left the screen — so both are torn down first.
+  function watchAdTiles() {
+    if (!tileObserver) return;
+    imprTimers.forEach(t => clearTimeout(t));
+    imprTimers.clear();
+    tileObserver.disconnect();
+    grid.querySelectorAll('.feat-card, .hc-card').forEach(el => {
+      if (!imprSeen.has(tileKey(el))) tileObserver.observe(el);
+    });
   }
 
   // fill any ad slots that were just rendered but not yet initialized
@@ -3545,6 +4081,7 @@
     // panning the map doesn't quietly drop the selection.
     paintCardHighlight();
     initAds();
+    watchAdTiles();
   }
 
   function bedsLabel(arr) {
@@ -3622,6 +4159,14 @@
         track('featured_click', { agent: card.dataset.featAgent, addr: card.dataset.featAddr });
       return;
     }
+    // A lottery tile is the same kind of hand-off and had no counter at all,
+    // so every Housing Connect application started here was invisible.
+    if (card.classList.contains('hc-card')) {
+      if (e.target.closest('a[data-action="hc"]'))
+        track('hc_click', { agent: 'NYC Housing Connect', addr: card.dataset.hcName,
+                            boro: card.dataset.hcBoro });
+      return;
+    }
     const bbl = card.dataset.bbl;
     const m = markerByBbl.get(bbl);
     if (!m) return;
@@ -3681,11 +4226,21 @@
 
   // ---------- mobile: List/Map toggle, count, sort sheet ----------
   const headerEl = document.querySelector('header.topbar');
+  let headerH = 0;
   function syncHeaderHeight() {
-    document.documentElement.style.setProperty('--header-h', headerEl.offsetHeight + 'px');
+    const h = headerEl.offsetHeight;
+    if (h === headerH) return;   // ResizeObserver → invalidateSize → resize would otherwise loop
+    headerH = h;
+    document.documentElement.style.setProperty('--header-h', h + 'px');
     map.invalidateSize();
   }
   window.addEventListener('resize', syncHeaderHeight);
+  // The header is not a fixed height: the chip row empties out in list view, and
+  // pills appear/disappear with sign-in and with the city. Measuring it only on
+  // resize left --header-h holding the map view's taller number, and the list
+  // sheet — pinned to top: var(--header-h) — opened a chip-row-tall dead strip
+  // under the search field. Watch the element itself instead.
+  if (window.ResizeObserver) new ResizeObserver(syncHeaderHeight).observe(headerEl);
 
   const toggleBtn = document.getElementById('btn-toggle-view');
   const sortBtn = document.getElementById('btn-sort');

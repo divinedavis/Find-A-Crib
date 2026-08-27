@@ -154,8 +154,14 @@
   .nav-foot{font-size:11px;color:var(--muted);padding:12px 12px 2px;border-top:1px solid var(--border2)}
 
   main{flex:1;min-width:0;display:flex;flex-direction:column}
-  .topbar{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;border-bottom:1px solid var(--border);background:var(--card);position:sticky;top:0;z-index:10}
-  .tb-left{display:flex;align-items:center;gap:12px}
+  /* Wrapping is not a phone concern: the sidebar plus four site tabs, the live
+     pill and five range buttons need ~1285px, so every viewport under that —
+     iPad, a half-width laptop window, the phone — pushed the date-range switch
+     off the right edge with no scroll to reach it. Both rows wrap wherever they
+     have to; at full width nothing wraps and min-height keeps the old 60px bar. */
+  .topbar{min-height:60px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
+    gap:8px 0;padding:8px 28px;border-bottom:1px solid var(--border);background:var(--card);position:sticky;top:0;z-index:10}
+  .tb-left{display:flex;align-items:center;flex-wrap:wrap;min-width:0;gap:12px}
   .live-pill{display:inline-flex;align-items:center;gap:7px;background:var(--live-bg);color:var(--live-ink);border:1px solid var(--live-line);border-radius:100px;padding:4px 11px;font-size:12px;font-weight:600}
   .live-dot{width:7px;height:7px;border-radius:50%;background:#7ac70f;box-shadow:0 0 0 3px rgba(122,199,15,.2)}
   .tb-right{display:flex;align-items:center;gap:14px}
@@ -334,7 +340,14 @@
     .nav-item{white-space:nowrap;padding:8px 12px;flex:0 0 auto}
     .nav-item.active::before{display:none}
     .nav-spacer,.nav-foot,aside>.nav-item{display:none}
-    .topbar{height:auto;min-height:52px;padding:8px 16px;flex-wrap:wrap;gap:8px}
+    /* The top bar wrapped, but .tb-left did not: four site tabs, the live
+       pill and five range buttons stayed on one 853px line inside a 390px
+       screen. Everything past the second tab was simply off the right edge —
+       the whole date-range filter included, with no scroll to reach it. Both
+       segmented controls wrap onto as many rows as they need instead. */
+    .topbar{min-height:52px;padding:8px 16px;gap:8px}
+    .tb-left{width:100%;gap:8px}
+    .site-switch,.range-switch{flex-wrap:wrap;max-width:100%}
     .site-switch button{padding:6px 10px;font-size:12.5px}
     .content{padding:18px 16px 48px}
     .page-head{flex-direction:column;align-items:flex-start;gap:12px}

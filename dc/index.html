@@ -2269,7 +2269,10 @@
     const clsWord = vOpenCls ? 'open' : 'on record';
     const vChips = v ? `
       <span class="hpd-stat ${v.open > 5 ? 'bad' : (v.open > 0 ? 'warn' : '')}" data-viol-open>${v.open} open</span>
-      <span class="hpd-stat">${v.total} all-time</span>
+      <!-- all-time lives in buildings.hpd.json, which arrives after the sheet
+           first paints (and may never arrive on a bad connection). Render the
+           chip only once there is a number for it, rather than "undefined all-time". -->
+      ${v.total == null ? '' : `<span class="hpd-stat">${v.total} all-time</span>`}
       ${vc ? `<button type="button" class="hpd-stat bad hpd-chip" data-cls="C" title="${vc} class C ${clsWord}">Class C: ${vc}</button>` : ''}
       ${vb ? `<button type="button" class="hpd-stat warn hpd-chip" data-cls="B" title="${vb} class B ${clsWord}">Class B: ${vb}</button>` : ''}
       ${va ? `<button type="button" class="hpd-stat hpd-chip" data-cls="A" title="${va} class A ${clsWord}">Class A: ${va}</button>` : ''}
@@ -2286,7 +2289,7 @@
     ` : '';
     const cChips = c ? `
       <span class="hpd-stat ${c.open > 10 ? 'bad' : (c.open > 0 ? 'warn' : '')}">${c.open} open</span>
-      <span class="hpd-stat">${c.total} all-time</span>
+      ${c.total == null ? '' : `<span class="hpd-stat">${c.total} all-time</span>`}
       ${c.last_12mo ? `<span class="hpd-stat">${c.last_12mo} in last 12mo</span>` : ''}
     ` : '<span style="color:var(--ink-2);font-size:11px">No complaints on file.</span>';
     const link = h.bid

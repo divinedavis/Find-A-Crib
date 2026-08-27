@@ -2057,6 +2057,19 @@
   }
   const EST_TITLE = 'Typical rent for this ZIP, studio–2BR (HUD FY2026 Small-Area Fair Market Rents) — not this building’s actual rent';
   const listingCounts = listingsBlob.counts || {};
+  // What this city actually HAS, measured from the payload rather than assumed
+  // from its name. listings.json / s8.json / fmr.json are fetched RELATIVE to
+  // the page, so they resolve only on the NYC root and 404 into empty objects
+  // everywhere else; violations ride on each record's `h` (HPD) field, which no
+  // non-NYC builder writes. Anything keyed off these asks instead of guessing.
+  const HAS_LISTINGS = Object.keys(listingCounts).length > 0;
+  const HAS_VIOLATIONS = data.some(r => r.h);
+  // A city with no ZIP on any record cannot be told anything about a ZIP. SF is
+  // exactly that: 12,297 block-level records, not one with a `z`, because the
+  // SF Rent Board anonymises to the block. Without this the uncovered-ZIP card
+  // answered "no rent-controlled buildings on file for ZIP 94110" — stated as
+  // fact, about a ZIP that is squarely inside its coverage.
+  const HAS_ZIPS = data.some(r => r.z);
   const listingPrices = listingsBlob.prices || {};
   const listingBeds = listingsBlob.beds || {};
   // one price per building, shared by the price sort and the price filter:
@@ -3410,16 +3423,32 @@
   function renderSearchHelper(q) {
     const st = searchState;
     const card = html => { searchHelper.innerHTML = `<div class="sh-card">${html}</div>`; searchHelper.hidden = false; };
+    // These chips drive the filter pills, and outside NYC those pills are
+    // hidden by .nyc-only because their data files (listings.json, s8.json,
+    // fmr.json) only exist for the root site — they 404 per city and fail soft
+    // to empty. The chips were rendered anyway, so LA, DC and Westchester all
+    // offered "Available now", "No open violations" and "Bedrooms" over data
+    // that is uniformly empty: every one of them filtered to nothing and
+    // toggled a control the visitor could not see.
+    //
+    // Gated on the DATA rather than on IS_NYC, so a city that later gets a
+    // listings feed picks its chips up without another edit here.
     const narrowChips = () => {
-      const advertised = filtered.filter(r => (listingCounts[r.bbl] || 0) > 0).length;
-      const listedOn = document.querySelector('input[name="listed"]:checked').value === 'yes';
-      const violOn = moreFilters.viol === 'none';
-      const bedsOn = document.querySelectorAll('input[name="beds"]:checked').length > 0;
-      return `<div class="sh-chips">
-          <button data-sh="listed" class="${listedOn ? 'on' : ''}">🏠 Available now${advertised ? ` (${advertised})` : ''}</button>
-          <button data-sh="noviol" class="${violOn ? 'on' : ''}">✅ No open violations</button>
-          <button data-sh="beds" class="${bedsOn ? 'on' : ''}">🛏 Bedrooms</button>
-        </div>`;
+      const chips = [];
+      if (HAS_LISTINGS) {
+        const advertised = filtered.filter(r => (listingCounts[r.bbl] || 0) > 0).length;
+        const listedOn = document.querySelector('input[name="listed"]:checked').value === 'yes';
+        chips.push(`<button data-sh="listed" class="${listedOn ? 'on' : ''}">🏠 Available now${advertised ? ` (${advertised})` : ''}</button>`);
+      }
+      if (HAS_VIOLATIONS) {
+        const violOn = moreFilters.viol === 'none';
+        chips.push(`<button data-sh="noviol" class="${violOn ? 'on' : ''}">✅ No open violations</button>`);
+      }
+      if (HAS_LISTINGS) {
+        const bedsOn = document.querySelectorAll('input[name="beds"]:checked').length > 0;
+        chips.push(`<button data-sh="beds" class="${bedsOn ? 'on' : ''}">🛏 Bedrooms</button>`);
+      }
+      return chips.length ? `<div class="sh-chips">${chips.join('')}</div>` : '';
     };
     if (!q || document.getElementById('pill-fav').classList.contains('active') || sharedFolder) {
       searchHelper.hidden = true; return;
@@ -3468,6 +3497,16 @@
         <div class="sh-chips"><button data-sh="clear">← Back to ${esc(CITY.name)}</button></div>`);
       return;
     }
+    // A ZIP typed at a city that holds no ZIPs. SF is the only one today: the
+    // Rent Board anonymises every report to the block, so there is no ZIP on
+    // any record and no honest ZIP answer to give. Say which it is rather than
+    // letting the generic "nothing matches" imply the ZIP isn't covered.
+    if (!HAS_ZIPS && /^\d{5}$/.test(q)) {
+      card(`<div class="sh-head">This map has no ZIP-level detail, so <b>${esc(q)}</b> can’t be looked up here.
+        ${esc(CITY.name)}’s source records an address or block, not a ZIP — search a street instead.</div>
+        <div class="sh-chips"><button data-sh="clear">← Show everything</button></div>`);
+      return;
+    }
     if (st.tier === 'pending') {
       card(`<div class="sh-head">No address or area matches “${esc(q)}” — checking landlord and managing-agent names…</div>`);
       return;
@@ -3490,8 +3529,12 @@
     // only worth showing for a broad result set from an actual query
     if (n < 25) { searchHelper.hidden = true; return; }
     const advertised = filtered.filter(r => (listingCounts[r.bbl] || 0) > 0).length;
-    card(`<div class="sh-head"><b>${n.toLocaleString()}</b> ${esc((CITY.label || '').toLowerCase())} buildings match${advertised ? ` · <b>${advertised}</b> recently advertised` : ''}. Narrow it down:</div>
-        ${narrowChips()}
+    const chips = narrowChips();
+    // "Narrow it down:" is a promise the chips keep. Where a city has none of
+    // the data they filter on, the invitation was left standing over an empty
+    // row — so it is only offered when something can actually act on it.
+    card(`<div class="sh-head"><b>${n.toLocaleString()}</b> ${esc((CITY.label || '').toLowerCase())} buildings match${advertised ? ` · <b>${advertised}</b> recently advertised` : ''}.${chips ? ' Narrow it down:' : ''}</div>
+        ${chips}
         ${authUser ? '' : `<div class="sh-signup">💡 <a data-sh="save">Create a free account</a> to save the ones you like.</div>`}`);
   }
   searchHelper.addEventListener('click', e => {
@@ -3892,7 +3935,7 @@
         // answering with the whole borough.
         recs = [];
         tier = 'kept';
-      } else if (!recs && /^\d{5}$/.test(q) && !ZIP_INDEX.some(e => e.zip === q)) {
+      } else if (!recs && HAS_ZIPS && /^\d{5}$/.test(q) && !ZIP_INDEX.some(e => e.zip === q)) {
         // A full ZIP we hold no buildings for. The generic nomatch branch below
         // answers this with EVERY building in the city, which is how a search
         // for 10701 came back with 47,165 results — the worst possible reply to

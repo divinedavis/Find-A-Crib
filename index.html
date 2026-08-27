@@ -4213,6 +4213,11 @@
   const favPill = document.getElementById('pill-fav');
   function toggleFavFilter() {
     favPill.classList.toggle('active');
+    // Opening the Saved list was the one step in the save funnel that left no
+    // trace: the logs show the save and the later click-out to a listing site,
+    // but not whether people got back to the building through this list or by
+    // finding it on the map again.
+    if (favPill.classList.contains('active')) track('saved_view', { saved: FAVS.size });
     applyFilters();
   }
   favPill.addEventListener('click', e => { e.stopPropagation(); toggleFavFilter(); renderFolderBar(); });

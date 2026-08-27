@@ -1838,6 +1838,7 @@
   // arrive fine and the stream just ends early — so both live in the try.
   const BUILDINGS_STALL_MS = 15000;
   const BUILDINGS_ATTEMPTS = 3;
+  let BUILDINGS_URL = 'buildings.slim.json';
 
   // Parsing stays on the main thread on purpose. Moving it into a worker was
   // measured and is slower: decode+parse of this payload costs ~100 ms, but
@@ -1859,7 +1860,12 @@
       };
       armStall();
       try {
-        const r = await fetch('buildings.min.json', { signal: ctl.signal });
+        // split_hpd.py writes buildings.slim.json: every field the map needs to
+        // draw, filter and sort, minus the half of the HPD blob only the detail
+        // sheet reads. 2.12 MB gzipped becomes 1.12 MB, and the JSON.parse that
+        // runs on the main thread halves with it. buildings.min.json stays the
+        // fallback, so a docroot that has not been split still boots.
+        const r = await fetch(BUILDINGS_URL, { signal: ctl.signal });
         if (!r.ok) throw new Error('HTTP ' + r.status);
         if (!r.body) return await r.json();   // no streaming support: take it whole
         const reader = r.body.getReader();
@@ -1883,6 +1889,10 @@
       if (attempt + 1 >= BUILDINGS_ATTEMPTS) throw e;
       // back off before retrying — an overloaded network is not helped by an
       // immediate second copy of the same 1.9 MB request
+      // First failure also drops back to the unsplit blob: the likeliest
+      // reason the slim file 404s is a docroot that has not been split yet,
+      // and retrying the same missing URL three times cannot fix that.
+      if (BUILDINGS_URL !== 'buildings.min.json') BUILDINGS_URL = 'buildings.min.json';
       await new Promise(res => setTimeout(res, 800 * Math.pow(2, attempt)));
       return fetchBuildings(attempt + 1);
     }
@@ -2201,6 +2211,36 @@
       .forEach(el => { el.innerHTML = operatorRows(CONTACTS.get(bbl), bbl); });
     document.querySelectorAll(`[data-agentcard="${bbl}"]`)
       .forEach(el => { el.innerHTML = agentCardInner(bbl, true); });
+  }
+  // ---------- the rest of the HPD record, on demand ----------
+  // All-time totals, the class breakdowns, last registration and the HPD
+  // building id are read by exactly one thing: the detail sheet. Carrying them
+  // in the boot payload cost every visitor 1 MB gzipped and half the parse time
+  // to render a panel most of them never open. They now arrive the first time
+  // somebody does open one — the same shape as the operator contacts above.
+  let HPD_FULL = false, hpdPromise = null;
+  function ensureHpdFull() {
+    if (HPD_FULL) return Promise.resolve(true);
+    if (hpdPromise) return hpdPromise;
+    hpdPromise = fetch('buildings.hpd.json')
+      .then(r => r.ok ? r.json() : null)
+      .then(full => {
+        if (!full) return false;
+        // Merge rather than replace: the slim copy is what the filters and the
+        // sort have been reading since boot, and they must not see a gap.
+        for (const rec of data) {
+          const f = full[rec.bbl];
+          if (!f) continue;
+          rec.h = Object.assign({}, f, rec.h, {
+            violations: Object.assign({}, f.violations, rec.h && rec.h.violations),
+            complaints: Object.assign({}, f.complaints, rec.h && rec.h.complaints),
+          });
+        }
+        HPD_FULL = true;
+        return true;
+      })
+      .catch(() => false);
+    return hpdPromise;
   }
   function hpdHtml(rec) {
     const h = rec.h;
@@ -4580,6 +4620,15 @@
     syncDetailFav();
     loadComments(rec.bbl);
     detailSheet.hidden = false;
+    // The panel renders immediately from what boot already had, then fills in
+    // the all-time and class-breakdown numbers when the rest arrives. Guarded
+    // on detailRec so a fast second tap does not repaint the previous building.
+    if (!HPD_FULL) ensureHpdFull().then(ok => {
+      if (ok && detailRec === rec && !detailSheet.hidden) {
+        detailContent.innerHTML = renderDetail(rec, detailListed);
+        syncDetailFav();
+      }
+    });
     if (!_detailNav) { history.pushState({ facDetail: true }, ''); _detailNav = true; }
   }
   function closeDetail() {
@@ -5364,6 +5413,7 @@
   .seo-nav{position:relative;z-index:1;background:var(--surface);border-top:1px solid var(--line);
     padding:18px 20px;font-size:14px;color:var(--ink-2)}
   .seo-nav h2{font-size:16px;margin:0 0 6px;color:var(--ink)}
+  .seo-nav .seo-former{margin-top:8px;color:var(--ink-2);font-size:12.5px}
   .seo-nav a{color:var(--blue);text-decoration:none}.seo-nav a:hover{text-decoration:underline}
 </style>
 </body>

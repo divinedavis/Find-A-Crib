@@ -140,7 +140,12 @@ elif ! ( cd "$SRC" && python3 -m py_compile build_seo.py seo_guides.py ) 2>/dev/
   echo "refresh_seo: $SRC/build_seo.py does not compile — kept $BUILD's copy"
 else
   n=0
-  for f in build_seo.py seo_guides.py; do
+  # build_landlords.py is NOT in this list on purpose: it needs a Supabase token
+  # the droplet does not hold, so landlords.json is generated on a workstation
+  # and carried in like the source files. hpd_contacts.json is here because
+  # build_seo.py started reading it for the owner block on every building page,
+  # and $BUILD had no copy at all.
+  for f in build_seo.py seo_guides.py split_hpd.py landlords.json hpd_contacts.json; do
     if [ -f "$SRC/$f" ] && ! cmp -s "$SRC/$f" "$BUILD/$f"; then
       # `cp && n=…` as the last statement of the loop body would take the whole
       # script out under `set -e` if the copy ever failed on permissions.
@@ -177,6 +182,20 @@ status deployed
 
 # tell IndexNow (Bing, Yandex, Seznam…) about changed URLs. Google ignores
 # IndexNow and instead re-crawls from the sitemap <lastmod> we just updated.
+# Split the boot payload. buildings.min.json is 2.12 MB gzipped and the whole of
+# it is parsed before the map draws a pin; half of that is HPD detail only the
+# building sheet reads. split_hpd.py writes buildings.slim.json (what the app
+# boots from) and buildings.hpd.json (fetched on the first detail open) beside
+# it. Non-fatal, and the app falls back to buildings.min.json if either is
+# missing, so a failure here degrades to today's behaviour rather than an outage.
+STEP=split
+if [ -f "$BUILD/split_hpd.py" ]; then
+  python3 "$BUILD/split_hpd.py" --docroot "$DOC" || echo "refresh_seo: split_hpd failed — app falls back to buildings.min.json"
+else
+  echo "refresh_seo: no split_hpd.py in $BUILD — skipping payload split"
+fi
+status split
+
 STEP=indexnow
 KEY="$(cat "$BUILD/indexnow.key")"
 if [ -s "$CHANGED" ]; then

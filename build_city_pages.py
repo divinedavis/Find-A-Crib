@@ -43,6 +43,13 @@ NYC_SEO_NAV = """<nav class="seo-nav" aria-label="Browse rent-stabilized buildin
      Also on Find A Crib: <a href="/sf/">rent-controlled San Francisco</a>,
      <a href="/la/">rent-stabilized (RSO) Los Angeles</a> and
      <a href="/dc/">rent-controlled Washington DC</a>.</p>
+  <!-- 37 of the last 44 organic clicks were people searching the old name. That
+       is the only search demand this site has, and until now they arrived at a
+       page that never once said it. Naming the predecessor confirms to the
+       reader that they are in the right place, and gives Google the sentence it
+       needs to connect the two entities across the 301. -->
+  <p class="seo-former">Find A Crib was previously <strong>Jay&rsquo;s Home Finder</strong>
+     (jayshomefinder.com) — same rent-stabilization data, same maps, new name.</p>
 </nav>"""
 
 CITY_META = {

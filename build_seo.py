@@ -1426,6 +1426,91 @@ def write(relpath, contents):
         LASTMOD[loc] = lastmod
 
 
+# --- what a guide can say that a law firm's cannot ------------------------
+# The nine guides are well-formed and have never been fetched by Google. Part of
+# that is crawl budget, which the index triage addresses. The other part is that
+# as written they compete with nyc.gov, HCR and every tenant-law firm on ground
+# those sites own, using words anybody could type. What none of them can do is
+# count: this site holds the DHCR register joined to HPD's violation record and
+# recomputes it on every build. So each NYC guide carries a live figure block
+# and links into the tier that answers the next question.
+_GUIDE_STATS = {}
+
+
+def guide_stats():
+    """City-wide figures for the guide pages. Computed once, cached."""
+    if _GUIDE_STATS:
+        return _GUIDE_STATS
+    try:
+        blds = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                           "buildings.min.json")))
+    except Exception:
+        return {}
+    try:
+        listed = set(json.load(open(os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "listings.json"))).get("counts") or {})
+    except Exception:
+        listed = set()
+    yrs = sorted(b["yr"] for b in blds if b.get("yr"))
+    viol = sum(((b.get("h") or {}).get("violations") or {}).get("open") or 0 for b in blds)
+    cc = sum(((b.get("h") or {}).get("violations") or {}).get("oc") or 0 for b in blds)
+    clean = sum(1 for b in blds if not (((b.get("h") or {}).get("violations") or {}).get("open") or 0))
+    try:
+        n_ll = len(json.load(open(LANDLORD_PATH)).get("landlords") or [])
+    except Exception:
+        n_ll = 0
+    _GUIDE_STATS.update({
+        "buildings": len(blds),
+        "units": sum(b.get("u") or 0 for b in blds),
+        "median_year": yrs[len(yrs) // 2] if yrs else None,
+        "open_violations": viol, "class_c": cc, "clean": clean,
+        "advertised": sum(1 for b in blds if b["bbl"] in listed),
+        "landlords": n_ll,
+    })
+    return _GUIDE_STATS
+
+
+def guide_numbers_html(slug):
+    """A live figure block plus the links this particular question leads to."""
+    st = guide_stats()
+    if not st or not st.get("buildings"):
+        return ""
+    rows = [("Rent-stabilized buildings on the DHCR register", f"{st['buildings']:,}"),
+            ("Apartments in them", f"{st['units']:,}"),
+            ("Median year built", str(st["median_year"] or "—")),
+            ("Open HPD violations against them", f"{st['open_violations']:,}"),
+            ("…of those, class C (immediately hazardous)", f"{st['class_c']:,}"),
+            ("Buildings with no open violation", f"{st['clean']:,}")]
+    NEXT = {
+        "is-my-apartment-rent-stabilized": [
+            ("/buildings/", "Find your building by neighborhood"),
+            ("/landlord/", "Look your landlord up by name")],
+        "what-is-rent-stabilization": [
+            ("/buildings/", "Every stabilized building, by neighborhood"),
+            ("/council-district/", "How the register breaks down by City Council district")],
+        "rent-stabilized-vs-rent-controlled": [
+            ("/buildings/", "Browse the stabilized register"),
+            ("/sf/", "Rent control in San Francisco"), ("/dc/", "Rent control in Washington DC")],
+        "how-to-find-a-rent-stabilized-apartment": [
+            ("/available/", f"{st['advertised']:,} stabilized buildings advertised right now"),
+            ("/section8/", "Buildings taking Section 8 and other vouchers")],
+        "rent-stabilized-tenant-rights": [
+            ("/landlord/", f"All {st['landlords']:,} landlords, ranked by open violations"),
+            ("/council-district/", "Your council district's violation record")],
+        "rent-stabilized-lease-renewal-and-rent-increases": [
+            ("/buildings/", "Check whether your building is on the register"),
+            ("/landlord/", "See what else your landlord owns")],
+    }
+    links = "".join(f"<li><a href='{u}'>{esc(t)}</a></li>" for u, t in NEXT.get(slug, []))
+    return (f"<h2>New York City by the numbers</h2>"
+            f"<table class='facts'>"
+            + "".join(f"<tr><td class='k'>{esc(k)}</td><td>{v}</td></tr>" for k, v in rows)
+            + "</table>"
+            f"<p class='note'>Recomputed from the DHCR rent-stabilization register and HPD's "
+            f"violation data every time this page is rebuilt.</p>"
+            + (f"<h2>Where to go next</h2><ul>{links}</ul>" if links else ""))
+
+
 def guide_page(g, browse_ok=True):
     """Render one cornerstone guide from seo_guides.GUIDES. Returns (canonical, html).
 
@@ -1456,6 +1541,7 @@ def guide_page(g, browse_ok=True):
     body = (f"<div class='crumbs'><a href='/'>Home</a> › <a href='/guide/'>Guides</a> › {esc(g['h1'])}</div>"
             f"<h1>{esc(g['h1'])}</h1>"
             f"<div class='guide-body'>{g['body']}</div>"
+            + (guide_numbers_html(g["slug"]) if gcity == "nyc" else "")
             + (f"<p><a href='/{gcity}/buildings/'>Browse "
                f"{esc(CITY_HUBS[gcity]['browse_link_text'])} →</a></p>"
                if browse_ok and gcity in CITY_HUBS else "")

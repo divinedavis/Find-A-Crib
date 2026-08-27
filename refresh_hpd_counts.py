@@ -16,7 +16,7 @@ of 47,165 buildings — because no schedule owned this data.
     python3 refresh_hpd_counts.py --docroot /var/www/rent-map
     python3 refresh_hpd_counts.py --dry-run            # fetch and report, write nothing
 """
-import argparse
+import argparse, subprocess
 import gzip
 import json
 import os
@@ -142,6 +142,18 @@ def main():
     size, gzsize = write_blob(records, blob)
     print(f"\nWrote {blob} ({size / 1024 / 1024:.2f} MB) "
           f"+ .gz ({gzsize / 1024 / 1024:.2f} MB)")
+
+    # The app boots from buildings.slim.json, which is derived from the file we
+    # have just rewritten. Leaving the split to the nightly SEO refresh would
+    # serve a day of stale violation counts from a file that looks current.
+    # Non-fatal: a failed split leaves the previous pair in place, and the app
+    # falls back to buildings.min.json if they are missing entirely.
+    try:
+        subprocess.run([sys.executable,
+                        str(Path(__file__).resolve().parent / "split_hpd.py"),
+                        "--docroot", str(blob.parent)], check=True)
+    except Exception as e:
+        print(f"split_hpd.py failed ({e}) — buildings.slim.json is now STALE")
 
 
 if __name__ == "__main__":

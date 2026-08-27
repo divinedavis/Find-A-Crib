@@ -1482,6 +1482,25 @@
       credit: 'Source: <a href="https://dhcd.dc.gov/page/rentregistry-rent-control-database" target="_blank" rel="noopener">DC DHCD RentRegistry</a> public data exports (nightly) — registered rent-controlled units under the Rental Housing Act; exempt units under § 2.05(a) are excluded · Created by <a href="https://divinedavis.com" target="_blank" rel="noopener">Divine Davis</a> · <a href="/developers/">API for developers</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a>',
     },
   };
+  // Places just outside coverage that people actually search for, so an
+  // uncovered ZIP can be named rather than merely rejected. Keyed by full ZIP
+  // or by 3-digit prefix; the lookup tries the full ZIP first. Naming the town
+  // is the difference between "we don't have that" and "we don't cover Yonkers
+  // yet" — only the second tells someone whether to come back.
+  const OUT_OF_AREA = {
+    '107': 'Yonkers and southern Westchester', '105': 'Westchester County',
+    '106': 'Westchester County', '108': 'Westchester County', '109': 'Rockland County',
+    '070': 'Newark and Essex County, New Jersey', '071': 'Newark, New Jersey',
+    '072': 'Elizabeth and Union County, New Jersey',
+    '073': 'Jersey City and Hudson County, New Jersey',
+    '074': 'Paterson and Passaic County, New Jersey',
+    '075': 'central New Jersey', '076': 'Bergen County, New Jersey',
+    '077': 'Monmouth County, New Jersey', '078': 'Morris County, New Jersey',
+    '079': 'northern New Jersey',
+    '115': 'Nassau County, Long Island', '116': 'Long Island',
+    '117': 'Long Island', '118': 'Long Island', '119': 'Long Island',
+    '129': 'the Hudson Valley', '125': 'the Hudson Valley',
+  };
   const CITY = CITIES[document.documentElement.dataset.city || 'nyc'] || CITIES.nyc;
   const IS_NYC = !!CITY.nyc;
   // Wording for a record's `mr` (a reported/registered rent, never an asking rent).
@@ -1783,11 +1802,23 @@
     try { localStorage.setItem('fac_vid', vid); } catch (e) {}
     return vid;
   }
-  // Ask for signup at the moment of interest: a visitor who has opened a few
-  // buildings without an account gets one dismissible nudge per session.
+  // The signup nudge is OFF, deliberately.
+  //
+  // On 27 Aug 2026 it was shown 31 times to real visitors and clicked 0 times;
+  // across the same day not one non-owner account was created. Every signin and
+  // save event that day was the owner's own testing. It had already been moved
+  // from the 3rd building view to the 2nd because the 3rd "got zero clicks" —
+  // moving it earlier did not fix it either, which is the evidence that the
+  // timing was never the problem. Interrupting someone mid-search to ask for an
+  // account has now failed at two different moments, so it stops asking.
+  //
+  // The counter stays: bvCount is what any future prompt would key off, and
+  // window.__bv is read from the console when checking session depth.
   let bvCount = 0, signupNudged = false;
+  const SIGNUP_NUDGE_ENABLED = false;
   function maybeSignupNudge() {
     window.__bv = ++bvCount;
+    if (!SIGNUP_NUDGE_ENABLED) return;
     if (authUser || signupNudged) return;
     // fire on the 2nd building view — early, while they're actively interested,
     // rather than the 3rd (the old trigger got zero clicks)
@@ -2521,6 +2552,32 @@
   const boroCounts = {};
   for (const rec of data) boroCounts[rec.b] = (boroCounts[rec.b] || 0) + 1;
   const BORO_INDEX = Object.keys(BORO_NAME).map(code => ({ name: BORO_NAME[code], code, count: boroCounts[code] || 0 })).filter(b => b.count);
+  // ZIP index. A ZIP was already searchable — `buildQueryPlan` prefix-matches
+  // rec.z — but it was never OFFERED, so the only way to reach it was to type
+  // all five digits blind while the map redrew on every keystroke: measured on
+  // real traffic, "1" hit 30,013 buildings, "11" 18,140, "112" 10,993 before
+  // "11203" finally settled on 350. Offering the ZIP as a row to click ends
+  // that: pick it at three digits and the flood never happens.
+  const ZIP_INDEX = (() => {
+    const m = new Map();
+    for (const rec of data) {
+      if (!rec.z) continue;
+      let e = m.get(rec.z);
+      if (!e) m.set(rec.z, e = { zip: rec.z, count: 0, boros: new Set(), nbs: new Map() });
+      e.count++;
+      if (rec.b) e.boros.add(rec.b);
+      if (rec.nb) e.nbs.set(rec.nb, (e.nbs.get(rec.nb) || 0) + 1);
+    }
+    // Descending count so the ZIP a person is most likely to mean leads.
+    return [...m.values()].sort((a, b) => b.count - a.count);
+  })();
+  // The label under a ZIP row: its borough, plus the neighbourhood that holds
+  // most of it, because "10460" means nothing and "Bronx · Claremont" does.
+  function zipWhere(e) {
+    const boros = [...e.boros].map(c => BORO_NAME[c] || c).filter(Boolean);
+    const top = [...e.nbs.entries()].sort((a, b) => b[1] - a[1])[0];
+    return [boros.join(' / '), top ? top[0] : ''].filter(Boolean).join(' · ');
+  }
   for (const [name, n] of nbList) {
     const id = 'nb-' + name.replace(/[^a-z0-9]/gi,'_');
     const lab = document.createElement('label');
@@ -3117,7 +3174,17 @@
       if (N.startsWith(q)) nbStarts.push({ type: 'neighborhood', ...n });
       else if (N.includes(q)) nbContains.push({ type: 'neighborhood', ...n });
     }
-    const areaMatches = areas.concat(nbStarts, nbContains).slice(0, 4);
+    // A run of 3-5 digits is a ZIP being typed. Offer the ZIPs it could still
+    // become, most-buildings first, so it can be picked before it is finished.
+    const zipRows = [];
+    if (/^\d{3,5}$/.test(q)) {
+      for (const e of ZIP_INDEX) {
+        if (!e.zip.startsWith(q)) continue;
+        zipRows.push({ type: 'zip', zip: e.zip, count: e.count, where: zipWhere(e) });
+        if (zipRows.length >= 4) break;
+      }
+    }
+    const areaMatches = zipRows.concat(areas, nbStarts, nbContains).slice(0, 4);
     // then building addresses (canonicalized: abbreviations, ordinals,
     // pasted-address tails, and house-number ranges all match)
     const starts = [], contains = [];
@@ -3170,6 +3237,12 @@
         return `<button class="ac-item" data-i="${i}">
           <span class="ac-addr">📍 ${esc(a.label)}</span>
           <span class="ac-sub">${esc(what)} · ${a.count.toLocaleString()} buildings — filter to this area</span>
+        </button>`;
+      }
+      if (m.type === 'zip') {
+        return `<button class="ac-item" data-i="${i}">
+          <span class="ac-addr">📮 ZIP ${esc(m.zip)}</span>
+          <span class="ac-sub">${m.where ? esc(m.where) + ' · ' : ''}${m.count.toLocaleString()} building${m.count === 1 ? '' : 's'} — show this ZIP</span>
         </button>`;
       }
       if (m.type === 'org') {
@@ -3274,6 +3347,12 @@
         <div class="sh-chips"><button data-sh="relax">🔄 Ignore my filters</button></div>`);
       return;
     }
+    if (st.tier === 'zipmiss') {
+      const where = st.label ? ` — that’s <b>${esc(st.label)}</b>` : '';
+      card(`<div class="sh-head">No rent-stabilized buildings on file for ZIP <b>${esc(q)}</b>${where}. Find A Crib covers <b>${esc(CITY.name)}</b> today.</div>
+        <div class="sh-chips"><button data-sh="clear">← Back to ${esc(CITY.name)}</button></div>`);
+      return;
+    }
     if (st.tier === 'pending') {
       card(`<div class="sh-head">No address or area matches “${esc(q)}” — checking landlord and managing-agent names…</div>`);
       return;
@@ -3320,6 +3399,10 @@
       // opt back out of the auto-relax for this exact query
       keepFiltersFor = qInput.value.trim().toUpperCase();
       applyFilters();
+    } else if (act === 'clear') {
+      qInput.value = '';
+      qInput.dispatchEvent(new Event('input', { bubbles: true }));
+      return;
     } else if (act === 'try') {
       const g = e.target.closest('[data-sh]').dataset.q || '';
       qInput.value = g;
@@ -3491,6 +3574,16 @@
       qInput.value = m.org.label; qInput.blur();
       applyFilters();
       renderSearchHelper(qInput.value.trim());
+      fitTo(filtered);
+      return;
+    }
+    if (m.type === 'zip') {
+      // A ZIP stays in the box rather than becoming a filter checkbox: there is
+      // no ZIP control in the filter panel, and the exact tier already answers
+      // a five-digit ZIP precisely. Framing the map is what makes it feel picked.
+      qInput.value = m.zip; qInput.blur();
+      applyFilters();
+      renderSearchHelper(m.zip);
       fitTo(filtered);
       return;
     }
@@ -3684,6 +3777,14 @@
         // answering with the whole borough.
         recs = [];
         tier = 'kept';
+      } else if (!recs && /^\d{5}$/.test(q) && !ZIP_INDEX.some(e => e.zip === q)) {
+        // A full ZIP we hold no buildings for. The generic nomatch branch below
+        // answers this with EVERY building in the city, which is how a search
+        // for 10701 came back with 47,165 results — the worst possible reply to
+        // "is my Yonkers apartment stabilized". Say we don't cover it instead.
+        recs = [];
+        tier = 'zipmiss';
+        label = OUT_OF_AREA[q] || OUT_OF_AREA[q.slice(0, 3)] || '';
       } else if (!recs) {
         // Nothing anywhere matches. An empty map reads as a broken site, so
         // show what is browsable and say in words that the query found nothing.

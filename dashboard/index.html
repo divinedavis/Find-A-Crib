@@ -752,11 +752,32 @@
   // the 20% "good consumer app" line because a housing search is periodic:
   // nobody hunts for an apartment every day for a month.
   var AUDIENCE_GOALS = { dau: 300, mau: 3000, stickiness: 10 };
+  // Every goal tile ends with the same verdict in the same place, in the same
+  // two words. A tile that just says "19% of the way" makes you do the compare
+  // yourself, and a tile that only badges the wins reads as if the others have
+  // no verdict — silence is not the same as "not reached".
+  function goalBadge(hit){
+    return ' <span class="bn '+(hit?'bn-hi':'bn-low')+'">'+(hit?'reached':'not reached')+'</span>';
+  }
+  // Stickiness is the same goal shape but a ratio, so the gap is in percentage
+  // POINTS, never in percent — "3.2 pts past it", not "32% past it".
+  function stickinessGoalLine(cur){
+    var g = AUDIENCE_GOALS.stickiness;
+    if(cur == null) return 'My goal <b>'+g+'%</b> · not measured yet';
+    var mine = 100*Number(cur), hit = mine >= g;
+    return 'My goal <b>'+g+'%</b> · '+
+           (hit ? (mine-g >= 0.05 ? '<b>'+(mine-g).toFixed(1)+' pts</b> past it' : 'exactly on it')
+                : '<b>'+(g-mine).toFixed(1)+' pts</b> to go')+
+           goalBadge(hit);
+  }
   function goalLine(cur, goal, word){
     if(cur == null) return 'Goal <b>'+comma(goal)+'</b> '+word+' · not measured yet';
-    var short = goal - n(cur);
-    return 'Goal <b>'+comma(goal)+'</b> · '+pctS(n(cur),goal,0)+' of the way'+
-           (short > 0 ? ' · <b>'+comma(short)+'</b> to go' : ' <span class="bn bn-hi">reached</span>');
+    var hit = n(cur) >= goal;
+    var over = n(cur) - goal;
+    return 'Goal <b>'+comma(goal)+'</b> · '+
+           (hit ? (over >= 0.5 ? '<b>'+comma(over)+'</b> past it' : 'exactly on it')
+                : pctS(n(cur),goal,0)+' of the way · <b>'+comma(goal-n(cur))+'</b> to go')+
+           goalBadge(hit);
   }
   function bandPct(x){ return (Math.round(x*10)%10===0) ? String(Math.round(x)) : x.toFixed(1); }
 
@@ -1604,10 +1625,7 @@
        sub:comma(E.dau)+' daily of '+comma(E.mau)+' monthly',
        // Reference line, no verdict: see STICKINESS_REFERENCE. My own goal sits
        // below it and is stated as mine, so the two are never confused.
-       bench:'My goal <b>'+AUDIENCE_GOALS.stickiness+'%</b> · '+
-             (100*n(E.stickiness) >= AUDIENCE_GOALS.stickiness
-                ? '<span class="bn bn-hi">reached</span>'
-                : pctS(100*n(E.stickiness),AUDIENCE_GOALS.stickiness,0)+' of the way')+
+       bench:stickinessGoalLine(E.stickiness)+
              ' <span class="a-bench-note">('+STICKINESS_REFERENCE.good+'% is the usual "good consumer app" line, '+
              STICKINESS_REFERENCE.exceptional+'% exceptional · rule of thumb, not a measured average)</span>'},
       // DAU had no tile of its own — it existed only as the numerator in the

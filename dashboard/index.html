@@ -751,7 +751,14 @@
   // hitting the counts is arithmetically impossible. 10% is deliberately below
   // the 20% "good consumer app" line because a housing search is periodic:
   // nobody hunts for an apartment every day for a month.
-  var AUDIENCE_GOALS = { dau: 300, mau: 3000, stickiness: 10 };
+  // WAU is DERIVED, not chosen: the geometric mean of the two counts I picked,
+  // sqrt(300 * 3000) = 949, rounded to 950. That is the only interpolation that
+  // assumes nothing extra — it makes DAU/WAU and WAU/MAU the same step (31.6%
+  // and 31.7%), so the funnel narrows evenly. The arithmetic midpoint (1,650)
+  // would imply 55% of monthlies show up weekly, which contradicts the 10%
+  // stickiness goal sitting right next to it. Sanity check on the scale: 950 is
+  // 5.8x today's WAU, between what DAU (5.3x) and MAU (6.9x) already demand.
+  var AUDIENCE_GOALS = { dau: 300, wau: 950, mau: 3000, stickiness: 10 };
   // Every goal tile ends with the same verdict in the same place, in the same
   // two words. A tile that just says "19% of the way" makes you do the compare
   // yourself, and a tile that only badges the wins reads as if the others have
@@ -759,16 +766,20 @@
   function goalBadge(hit){
     return ' <span class="bn '+(hit?'bn-hi':'bn-low')+'">'+(hit?'reached':'not reached')+'</span>';
   }
-  // Stickiness is the same goal shape but a ratio, so the gap is in percentage
-  // POINTS, never in percent — "3.2 pts past it", not "32% past it".
-  function stickinessGoalLine(cur){
-    var g = AUDIENCE_GOALS.stickiness;
-    if(cur == null) return 'My goal <b>'+g+'%</b> · not measured yet';
+  // A goal on a RATIO. The gap is in percentage POINTS, never in percent —
+  // "3.2 pts past it", not "32% past it". `cur` is a fraction (0.132), `g` is
+  // already in percent (10), because that is how the payload and the goal
+  // constants respectively arrive.
+  function pctGoalLine(label, cur, g){
+    if(cur == null) return label+' <b>'+g+'%</b> · not measured yet';
     var mine = 100*Number(cur), hit = mine >= g;
-    return 'My goal <b>'+g+'%</b> · '+
+    return label+' <b>'+g+'%</b> · '+
            (hit ? (mine-g >= 0.05 ? '<b>'+(mine-g).toFixed(1)+' pts</b> past it' : 'exactly on it')
                 : '<b>'+(g-mine).toFixed(1)+' pts</b> to go')+
            goalBadge(hit);
+  }
+  function stickinessGoalLine(cur){
+    return pctGoalLine('My goal', cur, AUDIENCE_GOALS.stickiness);
   }
   function goalLine(cur, goal, word){
     if(cur == null) return 'Goal <b>'+comma(goal)+'</b> '+word+' · not measured yet';
@@ -1618,9 +1629,19 @@
       {val:rate(d30.rate),lbl:'D30 retention · true',
        sub:comma(d30.retained)+' of '+comma(d30.cohort)+' still active at day 30',
        bench:survivalBench(d30.rate, RETENTION_BENCHMARK.d30, d30.cohort)},
+      // The one goal here that is NOT made up: it is the sourced cross-industry
+      // return rate from RETURN_BENCHMARK, adopted as the target rather than
+      // just displayed as a reference. Deliberately modest — that constant's
+      // comment argues 13% is a FLOOR for a property site, not par, because a
+      // housing search runs for weeks. Clear it, then raise it.
       {val:rate(d30.within_rate),lbl:'Returned within 30d',
        sub:'the softer measure · '+comma(d30.within_returned)+' of '+comma(d30.within_cohort),
-       bench:'Compared against <b>13%</b> on the tile above — not repeated here'},
+       bench:(n(d30.within_cohort) < RETURN_BENCHMARK.min_cohort
+                ? 'Goal <b>'+RETURN_BENCHMARK.pct+'%</b> · cohort of '+comma(d30.within_cohort)+
+                  ' too small to judge'
+                : pctGoalLine('Goal', d30.within_rate, RETURN_BENCHMARK.pct))+
+             ' <span class="a-bench-note">(the goal IS the '+RETURN_BENCHMARK.label+
+             ' average — 99B sessions, the best-sourced number on this page)</span>'},
       {val:rate(E.stickiness),lbl:'Stickiness · DAU/MAU',
        sub:comma(E.dau)+' daily of '+comma(E.mau)+' monthly',
        // Reference line, no verdict: see STICKINESS_REFERENCE. My own goal sits
@@ -1641,8 +1662,9 @@
       // footnote on the weekly tile rather than as a headline of its own.
       {val:comma(E.wau),lbl:'Weekly active',
        sub:'unique visitors · last 7 days',
-       bench:n(E.mau) ? '<b>'+rate(E.wau_mau)+'</b> of the monthly total came back this week'
-                      : 'No monthly figure yet to compare against'},
+       bench:goalLine(E.wau, AUDIENCE_GOALS.wau, 'weekly')+
+             (n(E.mau) ? ' <span class="a-bench-note">('+rate(E.wau_mau)+
+                         ' of the monthly total came back this week)</span>' : '')},
       {val:comma(E.mau),lbl:'Monthly active',
        sub:'unique visitors · last 30 days',
        bench:goalLine(E.mau, AUDIENCE_GOALS.mau, 'monthly')},
@@ -1668,6 +1690,7 @@
       '<div style="font-size:12px;color:var(--muted);margin:14px 0 8px;font-weight:600">'+
       'AUDIENCE GOALS <span style="font-weight:400;text-transform:none">(mine, not a benchmark)</span></div>'+
       goalMeter('Daily active', E.dau, AUDIENCE_GOALS.dau)+
+      goalMeter('Weekly active', E.wau, AUDIENCE_GOALS.wau)+
       goalMeter('Monthly active', E.mau, AUDIENCE_GOALS.mau)+
       meter('Stickiness · DAU/MAU', rate(E.stickiness)+' of '+AUDIENCE_GOALS.stickiness+'%',
             pct(100*n(E.stickiness), AUDIENCE_GOALS.stickiness),
@@ -1676,6 +1699,7 @@
     var stick=Number(E.stickiness||0)*100;
     el('fac-health-callout').innerHTML =
       '<b>Against my goals: '+comma(E.dau)+' of '+comma(AUDIENCE_GOALS.dau)+' daily, '+
+      comma(E.wau)+' of '+comma(AUDIENCE_GOALS.wau)+' weekly, '+
       comma(E.mau)+' of '+comma(AUDIENCE_GOALS.mau)+' monthly, '+rate(E.stickiness)+' of '+
       AUDIENCE_GOALS.stickiness+'% stickiness.</b> The daily figure counts TODAY SO FAR, so read '+
       'it late in the day — before noon it is half a day being compared against a whole one. '+

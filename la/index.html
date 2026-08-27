@@ -1497,9 +1497,17 @@
   const map = L.map('map', { preferCanvas: true, doubleClickZoom: true, zoomDelta: 1, zoomControl: true }).setView(CITY.center, CITY.zoom);
   // A light basemap under a dark UI is the one thing that gives dark mode away,
   // so the tiles switch too — same CARTO tileset family, dark variant.
+  // CARTO now watermarks unauthenticated raster tiles with "API KEY REQUIRED"
+  // — the bytes themselves carry it, so it is not a referrer or rate-limit
+  // problem and there is nothing to fix on our side except sending a key.
+  // Free up to 5M tile requests/month, no account needed; request one at
+  // carto.com/basemaps/apikey and paste it into config.js as CARTO_KEY.
+  // Without a key the map still works, just watermarked.
+  const CARTO_KEY = (window.CARTO_KEY || '').trim();
+  const cartoQS = CARTO_KEY ? '?key=' + encodeURIComponent(CARTO_KEY) : '';
   const BASEMAP = {
-    light: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-    dark:  'https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png',
+    light: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png' + cartoQS,
+    dark:  'https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png' + cartoQS,
   };
   const baseTiles = L.tileLayer(BASEMAP[themeName()], {
     maxZoom: 20, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
@@ -4049,30 +4057,36 @@
     grid.classList.remove('empty-state');
     const truncated = visible.length > MAX_CARDS;
     const shown = truncated ? visible.slice(0, MAX_CARDS) : visible;
-    const ads = ADS_ON();
+    // Saved is the user's own shortlist and a shared folder is someone else's:
+    // both are lists a person built on purpose, and nobody's advertising
+    // belongs inside one. A saved list of a single building was leading with a
+    // featured re-rental and a lottery tile before the building itself — two
+    // adverts above the one thing the list was for.
+    const promos = !document.getElementById('pill-fav').classList.contains('active') && !sharedFolder;
+    const ads = ADS_ON() && promos;
     const parts = [];
     featCursor = 0;
     hcCursor = 0;
-    setFeaturedPool(visible);
-    setHcPool(visible);
+    setFeaturedPool(promos ? visible : []);
+    setHcPool(promos ? visible : []);
     // Lead with a featured apartment, then one after every FEAT_EVERY
     // buildings. It goes first because it is the only inventory on this page
     // someone can actually apply to today — burying it eight cards down meant
     // most visitors never scrolled to one.
-    parts.push(nextFeatured());
+    if (promos) parts.push(nextFeatured());
     // Housing Connect takes the second slot on every render. hcCursor was just
     // reset, and the pool is sorted by soonest deadline, so the lead tile is
     // always the lottery closest to closing in the boroughs on screen — the one
     // where being a day late actually costs someone the application.
-    parts.push(nextHc());
+    if (promos) parts.push(nextHc());
     shown.forEach((rec, i) => {
       parts.push(cardHtml(rec));
       if (ads && (i + 1) % AD_EVERY === 0) parts.push(adCardHtml());
       // 7 and 8 are deliberately coprime-ish with 6: three interleaved tile
       // types on the same multiple would stack three non-building cards in a
       // row every 24 slots and the grid would read as an ad break.
-      if ((i + 1) % HC_EVERY === 0) parts.push(nextHc());
-      if ((i + 1) % FEAT_EVERY === 0) parts.push(nextFeatured());
+      if (promos && (i + 1) % HC_EVERY === 0) parts.push(nextHc());
+      if (promos && (i + 1) % FEAT_EVERY === 0) parts.push(nextFeatured());
     });
     grid.innerHTML = parts.join('') + (truncated
       ? `<div class="empty" style="flex-basis:100%;padding:18px">Zoom in to see more — ${MAX_CARDS}+ buildings in view.</div>`
@@ -4468,6 +4482,15 @@
       <div class="d-actions">
         <button class="d-primary" data-detail="fav">${FAVS.has(rec.bbl) ? '♥ Saved to your list' : '♡ Save this building — free'}</button>
       </div>
+      <!-- Straight under Save on purpose. It used to sit in a "Find this
+           listing" section below the vouchers, the status chips, the building
+           facts and the whole HPD record — several screens down. It is the
+           single most-clicked thing on the site (60% of all outbound clicks),
+           and the first thing half of the people who re-open a building they
+           saved reach for, so it belongs next to the save, not under a fold. -->
+      <div class="d-actions" style="padding-top:0">
+        <a class="d-secondary" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.label}</a>
+      </div>
       <div class="d-actions" style="padding-top:0">
         <button class="d-secondary" data-detail="map">View on map</button>
       </div>
@@ -4489,11 +4512,6 @@
         <div class="d-facts">${facts.map(([l, v]) => `<div class="d-fact"><span class="l">${l}</span><span class="v">${esc(String(v))}</span></div>`).join('')}</div>
       </div>
       ${IS_NYC ? `<div class="d-section"><h3>Owner &amp; HPD record</h3>${hpdHtml(rec)}</div>` : ''}
-      <div class="d-section"><h3>Find this listing</h3>
-        <div class="d-actions" style="padding:0">
-          <a class="d-primary" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.label}</a>
-        </div>
-      </div>
       <div class="d-section" id="d-comments"><h3>Comments</h3>
         <div id="d-comments-list"><div class="d-sub" style="margin:0">Loading comments…</div></div>
         <div id="d-comments-composer"></div>

@@ -885,6 +885,187 @@ def promoted_building(b, advertised):
     return (b.get("u") or 0) >= PROMOTE_UNITS
 
 
+
+LANDLORD_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "landlords.json")
+# How many landlord pages go into the sitemap on the first run. The census that
+# prompted the index triage is just as binding here: dropping 1,400 new URLs on
+# a domain Google is already rationing would undo the concentration the triage
+# just bought. The rest are built, linked and perfectly indexable — they are
+# simply not queue-jumping. Widen when accept_pct_mature moves off 0.0%.
+LANDLORD_SUBMIT = 300
+LANDLORD_SOURCE = ("Owner and managing-agent names come from HPD property registrations, "
+                   "which every NYC building with three or more units must file and keep "
+                   "current. Violation counts are HPD's own, joined to DHCR's "
+                   "rent-stabilization registrations.")
+
+
+def landlord_url(slug):
+    return f"/landlord/{slug}/"
+
+
+def _landlord_slugs():
+    """UPPERCASE landlord name -> slug, so building pages can link the portfolio."""
+    try:
+        with open(LANDLORD_PATH) as f:
+            recs = json.load(f).get("landlords") or []
+    except Exception:
+        return {}
+    return {e["name"].upper(): e["slug"] for e in recs}
+
+
+LANDLORD_SLUGS = _landlord_slugs()
+
+
+def landlord_pages(urls):
+    """A page per landlord: every rent-stabilized building one operator holds.
+
+    The building tier fails because a template over one building runs out of
+    things to say by the third paragraph, and 47,000 of them say the same three.
+    A portfolio is the opposite: no two landlords hold the same buildings, so
+    every page here differs from every other by construction. It also answers a
+    question people actually type — "who owns my building", a landlord's name,
+    "worst landlords in NYC" — that the borough and neighbourhood tiers cannot.
+
+    Returns the records used. Empty when landlords.json is missing, so a
+    checkout without it still builds the rest of the site.
+    """
+    try:
+        with open(LANDLORD_PATH) as f:
+            data = json.load(f)
+    except Exception as e:
+        print(f"landlords: skipping ({e})")
+        return []
+    recs = data.get("landlords") or []
+    if not recs:
+        return []
+    n_all = len(recs)
+    ranked = sorted(recs, key=lambda e: -e["buildings"])
+    rank_of = {e["slug"]: i + 1 for i, e in enumerate(ranked)}
+    submit = {e["slug"] for e in ranked[:LANDLORD_SUBMIT]}
+    # A building with both a registered owner and a managing agent in this set
+    # appears in two portfolios, so summing e["buildings"] would count it twice
+    # and overstate the corpus on the one page most likely to be quoted.
+    tot_b = len({it["bbl"] for e in recs for it in e["items"]})
+    tot_v = sum(e["open_violations"] for e in recs)
+
+    for e in recs:
+        url = landlord_url(e["slug"])
+        canonical = SITE + url
+        rank = rank_of[e["slug"]]
+        n, viol, cc = e["buildings"], e["open_violations"], e["open_class_c"]
+        per = viol / n if n else 0
+        clean = sum(1 for it in e["items"] if not it["ov"])
+        boros = ", ".join(f"{BORO_NAME.get(b, b)} ({c})"
+                          for b, c in sorted(e["boroughs"].items(), key=lambda x: -x[1]))
+        role = ("owner and managing agent" if len(e["roles"]) > 1
+                else "managing agent" if e["roles"] == ["manager"] else "owner")
+        rows = "".join(
+            f"<tr><td><a href=\"/building/{BORO_SLUG.get(it['b'],'nyc')}/"
+            f"{slugify(it['a'])}-{it['bbl']}/\">{esc(titlecase_addr(it['a']))}</a></td>"
+            f"<td>{esc(BORO_NAME.get(it['b'], it['b']))}</td>"
+            f"<td>{it['u'] or '—'}</td><td>{it['ov']:,}</td><td>{it['oc']:,}</td></tr>"
+            for it in e["items"][:250])
+        more = (f"<p class='note'>Showing the 250 buildings with the most open violations "
+                f"of {n:,}.</p>" if n > 250 else "")
+        body = (
+            f"<div class='crumbs'><a href='/'>Home</a> › "
+            f"<a href='/landlord/'>Landlords</a></div>"
+            f"<h1>{esc(e['name'])} — rent-stabilized buildings and HPD violations</h1>"
+            + answer_block([
+                f"{e['name']} is the registered {role} of {n:,} rent-stabilized buildings in "
+                f"New York City" + (f", covering {e['units']:,} apartments" if e["units"] else "")
+                + ".",
+                f"HPD has {viol:,} open violations against them, {per:.1f} per building, "
+                f"{cc:,} of them class C — the immediately hazardous grade a landlord has "
+                f"24 hours to fix. {clean:,} of the buildings have none open.",
+                ("That is the largest rent-stabilized portfolio of the " if rank == 1 else
+                 "That is the smallest rent-stabilized portfolio of the " if rank == n_all else
+                 f"That is the {ordinal(rank)}-largest rent-stabilized portfolio of the ")
+                + f"{n_all:,} landlords tracked here. Boroughs: {boros}.",
+            ])
+            + (f"<p><span class='badge'>{e['advertised']} building"
+               f"{'' if e['advertised'] == 1 else 's'} advertised for rent now</span></p>"
+               if e.get("advertised") else "")
+            + f"<a class='cta' href='/'>Look any of these up on the map →</a>"
+            + f"<h2>The buildings</h2><table class='facts'>"
+            f"<tr><th>Address</th><th>Borough</th><th>Apartments</th>"
+            f"<th>Open violations</th><th>Class C</th></tr>{rows}</table>{more}"
+            f"<p><a href='/landlord/'>Compare all {n_all:,} landlords →</a></p>")
+        faq = [
+            (f"How many rent-stabilized buildings does {e['name']} own in NYC?",
+             f"{e['name']} is the HPD-registered {role} of {n:,} rent-stabilized buildings in "
+             f"New York City"
+             + (f", covering about {e['units']:,} apartments" if e["units"] else "") + "."),
+            (f"How many open HPD violations does {e['name']} have?",
+             f"HPD has {viol:,} open violations against the {n:,} rent-stabilized buildings "
+             f"registered to {e['name']}, {cc:,} of them class C — the immediately hazardous "
+             f"grade. {clean:,} of the buildings have no open violation at all."),
+        ]
+        body += faq_html(faq)
+        crumb = breadcrumb([("Home", SITE + "/"), ("Landlords", SITE + "/landlord/"),
+                            (e["name"], canonical)])
+        title = f"{e['name']} — {n:,} rent-stabilized NYC buildings, {viol:,} open violations"
+        desc = (f"{e['name']} is the HPD-registered {role} of {n:,} rent-stabilized buildings in "
+                f"NYC with {viol:,} open violations, {cc:,} of them class C. Every address, "
+                f"borough by borough.")
+        write(url.strip("/") + "/index.html",
+              page(title, desc, canonical, body, [crumb, faq_jsonld(faq)],
+                   footer=NYC_FOOTER + " " + LANDLORD_SOURCE))
+        if e["slug"] in submit:
+            urls.append((canonical, "0.8", "landlord"))
+
+    # ---- the index: ranked, and the page meant to be linked to ----
+    idx_rows = "".join(
+        f"<tr><td>{i + 1}</td><td><a href='{landlord_url(e['slug'])}'>{esc(e['name'])}</a></td>"
+        f"<td>{e['buildings']:,}</td><td>{e['units']:,}</td>"
+        f"<td>{e['open_violations']:,}</td><td>{e['open_class_c']:,}</td></tr>"
+        for i, e in enumerate(ranked))
+    worst = max(recs, key=lambda e: e["open_violations"])
+    biggest = ranked[0]
+    hub_body = (
+        f"<div class='crumbs'><a href='/'>Home</a></div>"
+        f"<h1>Who owns NYC's rent-stabilized buildings</h1>"
+        + answer_block([
+            f"{n_all:,} landlords and managing agents hold the {tot_b:,} rent-stabilized "
+            f"buildings tracked here, carrying {tot_v:,} open HPD violations between them.",
+            f"{biggest['name']} holds the most buildings ({biggest['buildings']:,}); "
+            f"{worst['name']} carries the most open violations ({worst['open_violations']:,} "
+            f"across {worst['buildings']:,} buildings).",
+            "Ownership is filed with HPD, not with DHCR, so this is the registered owner or "
+            "managing agent rather than a title search. Every figure is recomputed from the "
+            "city's own data on each build.",
+        ])
+        + f"<a class='cta' href='/'>Look up any address on the map →</a>"
+        + f"<table class='facts'><tr><th>#</th><th>Landlord or managing agent</th>"
+        f"<th>Buildings</th><th>Apartments</th><th>Open violations</th>"
+        f"<th>Class C</th></tr>{idx_rows}</table>"
+        + f"<p class='note'>Ranked by portfolio size. {LANDLORD_SOURCE}</p>")
+    hub_faq = [
+        ("Who owns the most rent-stabilized buildings in New York City?",
+         f"{biggest['name']} is the HPD-registered owner or managing agent of "
+         f"{biggest['buildings']:,} rent-stabilized buildings, the largest portfolio of the "
+         f"{n_all:,} landlords tracked here."),
+        ("How do I find out who owns my building in NYC?",
+         "Every NYC building with three or more units must file an HPD property registration "
+         "naming its owner and managing agent. Search your address on Find A Crib and the "
+         "building page lists both, or find the landlord on this page to see everything "
+         "else they hold."),
+    ]
+    hub_body += faq_html(hub_faq)
+    hub_canonical = SITE + "/landlord/"
+    write("landlord/index.html",
+          page("Who owns NYC's rent-stabilized buildings — landlords ranked | Find A Crib",
+               f"The {n_all:,} landlords and managing agents behind {tot_b:,} rent-stabilized "
+               f"NYC buildings, ranked by portfolio size with their open HPD violations.",
+               hub_canonical, hub_body,
+               [breadcrumb([("Home", SITE + "/"), ("Landlords", hub_canonical)]),
+                faq_jsonld(hub_faq)],
+               footer=NYC_FOOTER + " " + LANDLORD_SOURCE))
+    urls.append((hub_canonical, "0.9", "landlord"))
+    print(f"landlords: {n_all:,} pages, {len(submit):,} submitted")
+    return recs
+
+
 def ordinal(n):
     if 11 <= n % 100 <= 13:
         return f"{n}th"
@@ -1657,6 +1838,17 @@ def building_meta_desc(addr, nb, units, yr, open_viol, advertised, limit=DESC_LI
 
 def main():
     blds = json.load(open("buildings.min.json"))
+    # Owner / managing agent used to ride along inside each building's `h` blob.
+    # They were split out when buildings.min.json was slimmed for the map app —
+    # and this builder was never repointed, so `h.get("owner")` has been empty
+    # on every one of the 47,165 building pages and the whole "Owner &
+    # management" section has silently rendered as nothing. hpd_contacts.json is
+    # the same data build_hpd_contacts.py writes for the Supabase table.
+    try:
+        contacts = json.load(open("hpd_contacts.json"))
+    except Exception as e:
+        print(f"hpd_contacts.json: unavailable ({e}) — owner blocks will be empty")
+        contacts = {}
     try:
         listings = json.load(open("listings.json"))
         listed = set(str(k) for k in (listings.get("counts") or {}).keys())
@@ -1742,16 +1934,25 @@ def main():
                         for k, v in rows if v not in (None, "", "—") or k == "Stabilization code")
 
         owner_html = ""
-        o = h.get("owner") or {}
-        m = h.get("manager") or {}
+        con = contacts.get(b["bbl"]) or {}
+        o = con.get("owner") or h.get("owner") or {}
+        m = con.get("manager") or h.get("manager") or {}
         if o.get("name") or m.get("name"):
+            # Where the operator has a portfolio page, link to it. This is the
+            # one link on a building page that leads somewhere the reader cannot
+            # reach any other way, and it is the natural next question after
+            # "is this building stabilized" — what else do they own?
+            def _named(name):
+                slug = LANDLORD_SLUGS.get((name or "").strip().upper())
+                return (f"<a href=\"{landlord_url(slug)}\">{esc(name)}</a>"
+                        if slug else esc(name))
             parts = []
             if o.get("name"):
-                parts.append(f"<tr><td class='k'>Owner</td><td>{esc(o['name'])}"
+                parts.append(f"<tr><td class='k'>Owner</td><td>{_named(o['name'])}"
                              + (f"<br><span style='color:#4a4a68'>{esc(o.get('address'))}</span>" if o.get("address") else "")
                              + "</td></tr>")
             if m.get("name"):
-                parts.append(f"<tr><td class='k'>Managing agent</td><td>{esc(m['name'])}</td></tr>")
+                parts.append(f"<tr><td class='k'>Managing agent</td><td>{_named(m['name'])}</td></tr>")
             owner_html = "<h2>Owner &amp; management</h2><table class='facts'>" + "".join(parts) + "</table>"
 
         cond_html = ""
@@ -2083,6 +2284,9 @@ def main():
                # /buildings/ is one of the few pages a crawler reliably reaches,
                # so the council tier hangs off it rather than depending on the
                # homepage nav alone.
+               + "<p><a href='/landlord/'>Who owns NYC's rent-stabilized buildings</a> — "
+                 "every landlord and managing agent ranked by portfolio size and open "
+                 "violations.</p>"
                + "<p><a href='/council-district/'>Rent-stabilized housing and open HPD "
                  "violations by NYC Council District →</a></p>"
                + hub_links
@@ -2322,6 +2526,9 @@ def main():
     # ---- NYC Council district tier (see council_district_pages) ----
     council = council_district_pages(urls)
     print(f"council districts: {len(council)}")
+
+    # ---- landlord / managing-agent tier (see landlord_pages) ----
+    landlord_pages(urls)
 
     # ---- sitemaps (sharded by borough, < 50k each) + index ----
     by_boro_urls = defaultdict(list)

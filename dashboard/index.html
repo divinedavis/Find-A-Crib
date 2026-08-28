@@ -254,6 +254,10 @@
   /* The revenue-target row is a consequence, not a plan — set apart from the
      three scenarios above it so it is never read as a fourth target. */
   .goals-tbl tr.goals-target td{border-top:2px solid var(--border);padding-top:12px}
+  /* The ads-only row follows the mixed target directly, so it takes a lighter
+     rule — it is a variant of the question above it, not a new section. */
+  .goals-tbl tr.goals-adonly td{border-top:1px solid var(--border);padding-top:9px}
+  .goals-tbl tr.goals-adonly .goals-tag{color:var(--muted)}
   .goals-tbl tr.goals-target .goals-tag{color:var(--purple)}
   .goals-off{display:block;font-size:9.5px;font-weight:600;color:var(--muted);text-transform:none;letter-spacing:0;opacity:.8}
   .goals-tag{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
@@ -2597,6 +2601,23 @@
       targetRow = row(mauNeeded * (K.stickiness / 100));
     }
 
+    // The same target reachable on ADVERTISING ALONE — the two streams paid per
+    // eyeball rather than per person, every other column switched off. This is
+    // the honest cost of "just grow the traffic", and it is the largest number
+    // this card produces, because a few cents of advertiser revenue plus about
+    // one cent of AdSense per monthly visitor is what an ad-funded consumer
+    // site actually earns.
+    var adOnlyPerMau = (probe.adv + probe.ads) / probe.mau;
+    var adOnlyRow = null;
+    if (adOnlyPerMau > 0) {
+      var r = row((GOAL_REVENUE_TARGET / adOnlyPerMau) * (K.stickiness / 100));
+      // Every other stream is zeroed for display. The row asks a question about
+      // advertising; leaving the others populated would quietly let them help
+      // pay for the answer.
+      adOnlyRow = { dau: r.dau, mau: r.mau, adv: r.adv, ads: r.ads,
+                    total: r.adv + r.ads };
+    }
+
     function usd(v){ return '$' + Math.round(v).toLocaleString('en-US'); }
     el('goals-table').innerHTML =
       '<div style="overflow-x:auto"><table class="goals-tbl">' +
@@ -2633,6 +2654,14 @@
           usd(targetRow.rep) + '</td><td>' + usd(targetRow.ref) + '</td><td>' +
           usd(targetRow.api) + '</td><td>' + usd(targetRow.crawl) +
           '</td><td><b>' + usd(targetRow.total) + '</b></td></tr>'
+        : '') +
+      (adOnlyRow
+        ? '<tr class="goals-target goals-adonly"><td><b>' + comma(adOnlyRow.dau) + '</b> ' +
+          '<span class="goals-tag">ads only, for $' + comma(GOAL_REVENUE_TARGET) + '/mo</span></td>' +
+          '<td>' + comma(adOnlyRow.mau) + '</td><td>' + usd(adOnlyRow.adv) + '</td><td>' +
+          usd(adOnlyRow.ads) + '</td><td>' + usd(0) + '</td><td>' + usd(0) + '</td><td>' +
+          usd(0) + '</td><td>' + usd(0) + '</td><td>' + usd(0) + '</td><td><b>' +
+          usd(adOnlyRow.total) + '</b></td></tr>'
         : '') +
       '</tbody></table></div>';
 
@@ -2725,7 +2754,16 @@
           'at ' + comma(targetRow.dau) + ' — because neither is bought by a visitor. Together they are ' +
           Math.round(100 * (goal.api + goal.crawl) / (goal.total || 1)) + '% of the mix at your goal ' +
           'and need no traffic growth whatsoever to earn it. Everything else on this page is a plan to ' +
-          'get more people; those two are a plan to get a customer.'
+          'get more people; those two are a plan to get a customer.' +
+          (adOnlyRow
+            ? ' <b>The last row prices the alternative: doing it on advertising alone needs ' +
+              comma(adOnlyRow.dau) + ' daily actives</b> — ' +
+              Math.round(adOnlyRow.dau / Math.max(targetRow.dau, 1)) + '× the mixed-revenue answer ' +
+              'directly above it and ' + Math.round(adOnlyRow.dau / GOAL_SCENARIOS[0]) +
+              '× your 300 goal. Advertising pays per eyeball, so an ad-funded version of this site ' +
+              'needs a mid-market publisher\u2019s audience to clear the same $' +
+              comma(GOAL_REVENUE_TARGET) + '.'
+            : '')
         : '');
   }
 

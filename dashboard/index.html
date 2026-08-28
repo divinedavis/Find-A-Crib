@@ -2142,49 +2142,68 @@
     // points is a card lying about a trend.
     var t=el('spark-title');
     if(t) t.textContent = 'Last '+days.length+(days.length===1?' day':' days');
-    var W=Math.max(host.clientWidth||900,320), H=150, pad={t:14,r:8,b:22,l:8};
+    // BARS, not a line. Seven daily counts are seven discrete buckets being
+    // compared by size; a line draws a slope between Tuesday and Wednesday and
+    // invites you to read a rate of change through days that were never
+    // continuous. Bars also make a zero day read as zero instead of as a dip.
+    var W=Math.max(host.clientWidth||900,320), H=150, pad={t:20,r:8,b:22,l:8};
     var iw=W-pad.l-pad.r, ih=H-pad.t-pad.b;
     var max=Math.max.apply(null,days.map(val))||1;
-    var X=function(i){ return pad.l + (days.length===1?iw/2:iw*i/(days.length-1)); };
-    var Y=function(v){ return pad.t + ih - ih*v/max; };
-    var line='',area='M'+X(0)+' '+(pad.t+ih);
-    days.forEach(function(d,i){ line+=(i?'L':'M')+X(i)+' '+Y(val(d))+' '; area+=' L'+X(i)+' '+Y(val(d)); });
-    area+=' L'+X(days.length-1)+' '+(pad.t+ih)+' Z';
-    var dots='',labels='';
+    var base=pad.t+ih;
+    // 2px of surface between adjacent bars, per the mark spec — the gap is the
+    // separator, not a stroke, so nothing is drawn twice at a shared edge.
+    // Thin marks. The gap is 2px per the spec, but on a 1,400px card seven
+    // slots are 200px each, and a 198px-wide bar 100px tall is a block, not a
+    // bar — it reads as a filled area and the eye stops comparing heights.
+    // Cap the width and centre each bar in its slot; the slot still owns the
+    // hit area, so the target stays full-width even though the mark is not.
+    var GAP=2, BAR_MAX=46, slot=iw/days.length;
+    var bw=Math.max(Math.min(slot-GAP, BAR_MAX),3);
+    var X=function(i){ return pad.l + slot*i + slot/2; };          // bar centre
+    var Y=function(v){ return base - ih*v/max; };
+    // A data-end rounded on the top corners only: the bar is anchored to the
+    // baseline, so rounding the bottom would lift it off its own zero.
+    function barPath(x,y,w,h,r){
+      r=Math.min(r, w/2, h);
+      if(h<=0) return '';
+      return 'M'+x+' '+(y+h)+' L'+x+' '+(y+r)+' Q'+x+' '+y+' '+(x+r)+' '+y+
+             ' L'+(x+w-r)+' '+y+' Q'+(x+w)+' '+y+' '+(x+w)+' '+(y+r)+
+             ' L'+(x+w)+' '+(y+h)+' Z';
+    }
+    var bars='',labels='',valueLabels='';
+    // Selective direct labels: the peak only. A number over every bar is noise
+    // on a chart whose whole job is the shape of the week.
+    var peak=days.reduce(function(bi,d,i){ return val(d)>val(days[bi])?i:bi; },0);
     days.forEach(function(d,i){
-      dots+='<circle cx="'+X(i)+'" cy="'+Y(val(d))+'" r="3.2" fill="var(--purple)" stroke="var(--card)" stroke-width="1.5" data-i="'+i+'"></circle>';
-      if(true){
-        var lbl=new Date(d.date+'T00:00').toLocaleString('en-US',{month:'numeric',day:'numeric'});
-        labels+='<text x="'+X(i)+'" y="'+(H-6)+'" text-anchor="middle" font-size="10.5" fill="var(--muted)">'+lbl+'</text>';
+      var v=val(d), x=X(i)-bw/2, y=Y(v), h=base-y;
+      bars+='<path class="spark-bar" data-i="'+i+'" d="'+barPath(x,y,bw,h,4)+
+            '" fill="var(--purple)" opacity="'+(i===peak?'1':'.78')+'"></path>';
+      var lbl=new Date(d.date+'T00:00').toLocaleString('en-US',{month:'numeric',day:'numeric'});
+      labels+='<text x="'+X(i)+'" y="'+(H-6)+'" text-anchor="middle" font-size="10.5" fill="var(--muted)">'+lbl+'</text>';
+      if(i===peak && v>0){
+        valueLabels+='<text x="'+X(i)+'" y="'+(y-6)+'" text-anchor="middle" font-size="11" '+
+                     'font-weight="600" fill="var(--ink2)">'+comma(v)+'</text>';
       }
     });
-    // A full-height invisible band per day, each spanning to the midpoint of its
-    // neighbours so the columns tile the whole plot with no dead gaps. The dots
-    // are r=3.2 — a 6px target you had to hit exactly to read a number. Anywhere
-    // in the day's column now works, which is what a reader expects of a chart.
+    // A zero day has no bar, so the baseline is what says "zero" rather than
+    // "missing". Recessive on purpose — it is an axis, not data.
+    var axis='<line x1="'+pad.l+'" x2="'+(W-pad.r)+'" y1="'+base+'" y2="'+base+
+             '" stroke="var(--border)" stroke-width="1"></line>';
+    // Full-height hit bands, one per day, tiling the plot. A 3-visitor bar is a
+    // few pixels tall; requiring the pointer to land on it would make the low
+    // days — the ones worth reading — the hardest to read.
     var bands='';
     days.forEach(function(d,i){
-      // Edge columns run to the edge of the SVG, and every band is full height,
-      // so the bands tile the entire chart: no dead strip in the side padding,
-      // above the line, or down in the date labels. "Any part of the chart"
-      // means any part.
-      var lo = i===0 ? 0 : (X(i-1)+X(i))/2;
-      var hi = i===days.length-1 ? W : (X(i)+X(i+1))/2;
-      bands+='<rect class="spark-band" x="'+lo+'" y="0" width="'+Math.max(hi-lo,1)+
+      bands+='<rect class="spark-band" x="'+(pad.l+slot*i)+'" y="0" width="'+slot+
              '" height="'+H+'" fill="transparent" pointer-events="all" data-i="'+i+'"></rect>';
     });
-    // Drawn under the bands so it never steals their pointer events.
-    var guide='<line id="spark-guide" y1="'+pad.t+'" y2="'+(pad.t+ih)+
-              '" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 3" opacity="0" pointer-events="none"></line>';
-    host.innerHTML='<svg width="100%" height="'+H+'" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" id="spark-svg">'+
-      '<defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--purple)" stop-opacity=".22"/><stop offset="1" stop-color="var(--purple)" stop-opacity="0"/></linearGradient></defs>'+
-      '<path d="'+area+'" fill="url(#sg)"></path><path d="'+line+'" fill="none" stroke="var(--purple)" stroke-width="2" stroke-linejoin="round"></path>'+
-      guide+dots+labels+bands+'</svg><div class="spark-tip" id="spark-tip"></div>';
-    var svg=el('spark-svg'), tip=el('spark-tip'), gl=el('spark-guide');
-    var circles=svg.querySelectorAll('circle');
+    host.innerHTML='<svg width="100%" height="'+H+'" viewBox="0 0 '+W+' '+H+'" id="spark-svg">'+
+      axis+bars+valueLabels+labels+bands+'</svg><div class="spark-tip" id="spark-tip"></div>';
+    var svg=el('spark-svg'), tip=el('spark-tip');
+    var barEls=svg.querySelectorAll('.spark-bar');
 
     function show(i){
-      var d=days[i], c=circles[i];
+      var d=days[i], c=barEls[i];
       if(!d||!c) return;
       var rb=host.getBoundingClientRect(), cb=c.getBoundingClientRect();
       tip.innerHTML='<b>'+new Date(d.date+'T00:00').toLocaleString('en-US',{month:'short',day:'numeric'})+
@@ -2198,12 +2217,14 @@
       tip.style.left=Math.min(Math.max(x,half+2),rb.width-half-2)+'px';
       tip.style.top=(cb.top-rb.top)+'px';
       tip.style.opacity='1';
-      gl.setAttribute('x1',X(i)); gl.setAttribute('x2',X(i)); gl.setAttribute('opacity','.5');
-      circles.forEach(function(o,j){ o.setAttribute('r', j===i?'5':'3.2'); });
+      // The hovered bar comes forward; the rest recede. No crosshair — that is
+      // a line-chart affordance for reading between points, and a bar chart has
+      // no between.
+      barEls.forEach(function(o,j){ o.setAttribute('opacity', j===i?'1':'.45'); });
     }
     function hide(){
-      tip.style.opacity='0'; gl.setAttribute('opacity','0');
-      circles.forEach(function(o){ o.setAttribute('r','3.2'); });
+      tip.style.opacity='0';
+      barEls.forEach(function(o,j){ o.setAttribute('opacity', j===peak?'1':'.78'); });
     }
     svg.querySelectorAll('.spark-band').forEach(function(b){
       var i=+b.getAttribute('data-i');

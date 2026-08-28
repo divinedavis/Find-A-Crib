@@ -2206,10 +2206,15 @@
       var d=days[i], c=barEls[i];
       if(!d||!c) return;
       var rb=host.getBoundingClientRect(), cb=c.getBoundingClientRect();
+      // Visitors only. The chart plots visitors and its subtitle says so, and
+      // page views next to them invited the wrong read — one person reloading a
+      // map ten times is ten views and one visitor, which is the exact
+      // conflation this chart was built to avoid. Crease and Trent still get
+      // views here because their logging never recorded a visitor, so views is
+      // the only number those charts have.
       tip.innerHTML='<b>'+new Date(d.date+'T00:00').toLocaleString('en-US',{month:'short',day:'numeric'})+
-                    '</b> — '+(hasVis ? n(d.visitors)+' visitor'+(n(d.visitors)===1?'':'s')+
-                                        ' · '+n(d.views)+' views'
-                                      : n(d.views)+' views');
+                    '</b> — '+(hasVis ? n(d.visitors)+' visitor'+(n(d.visitors)===1?'':'s')
+                                      : n(d.views)+' view'+(n(d.views)===1?'':'s'));
       // Clamp inside the card: the tip is centred on the point, so the first and
       // last columns would otherwise hang off the edge and get clipped.
       var half=tip.offsetWidth/2;

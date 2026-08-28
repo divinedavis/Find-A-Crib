@@ -230,6 +230,17 @@
   .ads-tile .a-bench{font-size:11px;color:var(--ink2);margin-top:9px;padding-top:8px;border-top:1px solid var(--border);line-height:1.45}
   .ads-tile .a-bench b{color:var(--ink)}
   .ads-tile .a-bench-note{display:block;margin-top:4px;opacity:.72}
+  .goals-tbl{width:100%;border-collapse:collapse;font-size:13.5px;min-width:560px}
+  .goals-tbl th{text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.04em;
+    color:var(--muted);font-weight:600;padding:0 0 8px;border-bottom:1px solid var(--border)}
+  .goals-tbl th:first-child,.goals-tbl td:first-child{text-align:left}
+  .goals-tbl td{text-align:right;padding:9px 0;border-bottom:1px solid var(--border);color:var(--ink)}
+  .goals-tbl tbody tr:last-child td{border-bottom:none}
+  /* Today's row is context, not a target — recessive so it cannot be misread
+     as a fourth scenario. */
+  .goals-tbl tr.goals-now td{color:var(--ink2);background:var(--sunken)}
+  .goals-tag{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .goals-tbl tr.goals-now .goals-tag{color:var(--ink2)}
   .tile .t-bench b{color:var(--ink)}
   .bn{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;margin-left:2px;white-space:nowrap}
   .bn-low{background:#fdecec;color:#c0342c}
@@ -552,6 +563,15 @@
       </div>
 
       <!-- ===== Trent's Fresh Spaces only ===== -->
+      <div class="card mb18" id="sec-goals">
+        <div class="card-head-row">
+          <div><h2>Goals — what each DAU target is actually worth</h2><div class="card-sub">Three audience scenarios priced against three revenue streams. Every rate here is either <b>measured on this site</b> — and shows the measurement — or <b>assumed</b>, and says so. The last revenue widget on this page was deleted for projecting MRR off assumptions while the real MRR read $0; the difference is that this one names which is which, and the assumptions are the only thing you can argue with.</div></div>
+        </div>
+        <div id="goals-table"></div>
+        <div id="goals-inputs" style="margin-top:18px"></div>
+        <div class="callout" id="goals-callout" style="margin-top:16px"></div>
+      </div>
+
       <div id="claude-a" class="hidden">
         <div class="card mb18" id="sec-claude-spend">
           <div class="card-head-row">
@@ -965,7 +985,7 @@
       live:'https://findacrib.com', foot:'Since 24 June 2026',
       blocks:['fac-a','fac-b','claude-a'],
       nav:[['top','▦','Dashboard'],['sec-traffic','◔','Traffic'],['sec-ads','◉','Google Ads'],
-           ['sec-tiles','◫','Advertiser metrics'],
+           ['sec-tiles','◫','Advertiser metrics'],['sec-goals','◎','Goals & revenue'],
            ['link:/dashboard/users/','☺','Users'],['sec-funnel','⇅','Funnel'],
            // Users is a separate PAGE with its own hardcoded copy of this list
            // in dashboard/users/index.html. Change one, change the other, or
@@ -1243,7 +1263,7 @@
     if(siteKey==='nemo') renderNemo(session.user, data);
     else if(siteKey==='crease') renderCrease(session.user, data);
     else if(siteKey==='trent') renderTrent(session.user, data);
-    else { render(session.user, data); loadClaude(false); }
+    else { render(session.user, data); renderGoals(data); loadClaude(false); }
   }
 
   // Eric signs in to see NEMO and is refused Find A Crib's feed by the API.
@@ -2420,6 +2440,120 @@
   // trade, so "265 hire-intent searches a month" is the denominator, and every
   // other tile here is a fraction of it. Without it, "0 impressions" reads as a
   // quiet month rather than as the whole opportunity going to Thumbtack.
+  // ---------- render: goals & revenue ----------
+  // The predecessor to this card was a slider calculator, deleted 2026-08-27
+  // with the note: "Projecting MRR off assumptions while the real MRR tile
+  // above it reads $0 is a wish, not a metric." That judgement was right, and
+  // it is the specification for this one. The difference is not optimism, it
+  // is provenance: every rate below is either measured on this site and shown
+  // WITH its measurement, or assumed and labelled ASSUMED with its value on
+  // screen. A reader can then argue with the four assumptions instead of with
+  // the total, which is the only useful conversation this card can start.
+  //
+  // Prices are the real ones the site charges: Plus $4.99/mo, building report
+  // $9 one-time. Nothing here invents a product.
+  var PLUS_PRICE = 4.99, REPORT_PRICE = 9;
+  // The four assumptions, in one object so they are trivially editable and
+  // impossible to lose track of.
+  var GOAL_ASSUMPTIONS = {
+    per_click: 2.00,      // $ an agent pays per hand-off. Nobody has ever paid.
+    acct_to_paid: 3.5,    // % of accounts that buy Plus. Measured here: 0 of 13.
+    report_close: 60,     // % of report checkouts that complete. Measured: 0 of 3.
+    stickiness: 10        // DAU/MAU used to turn a DAU target into monthly reach.
+  };
+  var GOAL_SCENARIOS = [300, 1000, 3000];
+
+  function renderGoals(d){
+    d = d || {};
+    var E = d.engagement || {}, T = d.totals || {}, EV = d.events || {}, A = d.adtiles || {};
+    var C = d.conversion || {};
+
+    // --- measured inputs, each with the fraction it came from ---------------
+    var visitors = n(T.visitors);
+    var agentClicks = n(EV.featured_click) + n(EV.hc_click);
+    var clicksPerVisitor = visitors ? agentClicks / visitors : 0;
+    var reportStarts = n(EV.report_checkout_start);
+    var startsPerVisitor = visitors ? reportStarts / visitors : 0;
+    var sVis = n(C.one_time_visitors) + n(C.returning_visitors);
+    var sUps = n(C.one_time_signups) + n(C.returning_signups);
+    var signupRate = sVis ? sUps / sVis : 0;
+    // NYC Housing Connect is a city lottery site. It takes a large share of the
+    // hand-offs and will never pay a referral fee, so it is excluded from the
+    // sellable side rather than quietly inflating it.
+    var agents = A.agents || [];
+    var govClicks = agents.filter(function(a){ return /housing connect/i.test(a.agent||''); })
+                          .reduce(function(t,a){ return t + n(a.clicks); }, 0);
+    var totalAgentClicks = agents.reduce(function(t,a){ return t + n(a.clicks); }, 0);
+    var sellableShare = totalAgentClicks ? (totalAgentClicks - govClicks) / totalAgentClicks : 1;
+
+    var K = GOAL_ASSUMPTIONS;
+    function row(dau){
+      var mau = dau / (K.stickiness / 100);
+      var adv = mau * clicksPerVisitor * sellableShare * K.per_click;
+      var plus = mau * signupRate * (K.acct_to_paid / 100) * PLUS_PRICE;
+      var rep = mau * startsPerVisitor * (K.report_close / 100) * REPORT_PRICE;
+      return { dau: dau, mau: mau, adv: adv, plus: plus, rep: rep, total: adv + plus + rep };
+    }
+    var rows = GOAL_SCENARIOS.map(row);
+    var nowDau = n(E.dau), nowRow = nowDau ? row(nowDau) : null;
+
+    function usd(v){ return '$' + Math.round(v).toLocaleString('en-US'); }
+    el('goals-table').innerHTML =
+      '<div style="overflow-x:auto"><table class="goals-tbl">' +
+      '<thead><tr><th>Daily actives</th><th>Monthly reach</th>' +
+      '<th>Advertiser slots</th><th>Plus $' + PLUS_PRICE.toFixed(2) + '/mo</th>' +
+      '<th>Reports $' + REPORT_PRICE + '</th><th>Total / month</th></tr></thead><tbody>' +
+      (nowRow ? '<tr class="goals-now"><td><b>' + comma(nowRow.dau) + '</b> <span class="goals-tag">today</span></td>' +
+        '<td>' + comma(E.mau) + '</td><td>' + usd(nowRow.adv) + '</td><td>' + usd(nowRow.plus) +
+        '</td><td>' + usd(nowRow.rep) + '</td><td><b>' + usd(nowRow.total) + '</b></td></tr>' : '') +
+      rows.map(function(r){
+        return '<tr><td><b>' + comma(r.dau) + '</b>' +
+          (r.dau === 300 ? ' <span class="goals-tag">your goal</span>' : '') + '</td>' +
+          '<td>' + comma(r.mau) + '</td><td>' + usd(r.adv) + '</td><td>' + usd(r.plus) +
+          '</td><td>' + usd(r.rep) + '</td><td><b>' + usd(r.total) + '</b></td></tr>';
+      }).join('') + '</tbody></table></div>';
+
+    function inputRow(kind, label, detail){
+      return '<div class="act-row"><div class="act-l">' +
+        '<div class="act-ico">' + (kind === 'm' ? '📏' : '🤔') + '</div><div>' +
+        '<div class="act-name">' + label + '</div>' +
+        '<div class="act-desc">' + detail + '</div></div></div>' +
+        '<div class="act-val"><span class="bn ' + (kind === 'm' ? 'bn-hi' : 'bn-mid') + '">' +
+        (kind === 'm' ? 'measured' : 'ASSUMED') + '</span></div></div>';
+    }
+    el('goals-inputs').innerHTML =
+      '<div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">'+
+      'WHAT THE TABLE IS BUILT FROM</div>' +
+      inputRow('m', clicksPerVisitor.toFixed(3) + ' agent hand-offs per visitor',
+               comma(agentClicks) + ' clicks ÷ ' + comma(visitors) + ' visitors in this range') +
+      inputRow('m', (100 * sellableShare).toFixed(0) + '% of hand-offs are sellable',
+               'NYC Housing Connect took ' + comma(govClicks) + ' of ' + comma(totalAgentClicks) +
+               ' — it is a city lottery site and will never pay a referral fee') +
+      inputRow('m', (100 * signupRate).toFixed(1) + '% of visitors create an account',
+               comma(sUps) + ' sign-ups ÷ ' + comma(sVis) + ' visitors') +
+      inputRow('m', startsPerVisitor.toFixed(4) + ' report checkouts started per visitor',
+               comma(reportStarts) + ' starts ÷ ' + comma(visitors) + ' visitors') +
+      inputRow('a', '$' + K.per_click.toFixed(2) + ' per agent hand-off',
+               'No agent has ever paid for one. This is the number the whole left column rests on') +
+      inputRow('a', K.acct_to_paid + '% of accounts buy Plus',
+               'Measured here: 0 of 13. Industry free-to-paid runs 2–5%') +
+      inputRow('a', K.report_close + '% of report checkouts complete',
+               'Measured here: 0 completed of ' + comma(reportStarts) + ' started') +
+      inputRow('a', K.stickiness + '% stickiness turns a DAU target into monthly reach',
+               'Your own goal ratio — 300 daily of 3,000 monthly');
+
+    var goal = rows[0];
+    el('goals-callout').innerHTML =
+      '<b>Hitting your 300 DAU goal is worth about ' + usd(goal.total) + ' a month, and ' +
+      Math.round(100 * goal.adv / (goal.total || 1)) + '% of that is the advertiser slots.</b> ' +
+      'Not Plus, and not reports — the stream with proven demand is the one where ' + comma(agentClicks) +
+      ' hand-offs already happened for free. Even at ' + comma(rows[2].dau) + ' daily actives, ' +
+      'ten times the goal, this reaches ' + usd(rows[2].total) + ' a month. That is the honest ceiling ' +
+      'of the current product mix, and it is the argument for changing the mix rather than for ' +
+      'chasing the traffic harder. Today MRR is $0, so every figure above is conditional on the ' +
+      'four assumptions listed — change one and the whole column moves.';
+  }
+
   // ---------- render: Claude API spend ----------
   // The number that matters here is not the bill, it is the DISTANCE to the
   // cap. On 2026-07-28 this account topped up, ran fine, and tripped a

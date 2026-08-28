@@ -1066,15 +1066,23 @@ def _fac_adtiles(since):
 
     Returns {} on any failure — one card should drop, not the page.
     """
+    # 50,000 is a CEILING, not a promise. tile_served banked ~1,500 on its first
+    # full day, so this window reaches the cap in about a month — and because the
+    # order is created_at.desc, hitting it silently drops the OLDEST rows, which
+    # is exactly where every click older than impression-counting lives. The
+    # all-time card would quietly lose its own history. Detect and report it
+    # rather than let the numbers shrink without saying why.
+    ROW_CAP = 50000
     q = ("events?select=event,props,visitor_id,created_at"
          f"&event=in.({','.join(AD_TILE_EVENTS)})"
-         "&order=created_at.desc&limit=50000")
+         f"&order=created_at.desc&limit={ROW_CAP}")
     if since:
         q += f"&created_at=gte.{urllib.parse.quote(str(since))}"
     try:
         rows = _rest("GET", q) or []
     except Exception:
         return {}
+    truncated = len(rows) >= ROW_CAP
     mine = _fac_owner_visitors()
     rows = [r for r in rows if r.get("visitor_id") not in mine]
 
@@ -1178,6 +1186,9 @@ def _fac_adtiles(since):
         "served_window_ready": served_window_ready,
         "ctr_min": AD_CTR_MIN,
         "first_served": first_served,
+        # True when the query came back full: the numbers are then a recent
+        # slice, not the window asked for, and the card must say so.
+        "truncated": truncated,
         "reach": len(set().union(*[v["_reach"] for v in by_agent.values()]) if by_agent else set()),
         "advertisers": len([a for a in agents if a["agent"] != "NYC Housing Connect"]),
         "first_impression": first_impr,

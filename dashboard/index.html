@@ -1679,10 +1679,20 @@
             : '')+
           'That is the number to put in front of an agent: this is what one slot already delivered before anybody paid for it.';
     }
-    if(A.first_impression){
-      msg+=' <span class="disclaim">Impressions counted since '+
-           new Date(A.first_impression).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+
-           '; clicks go back further.</span>';
+    // This card follows the range picker like every other one, but it used to
+    // talk as though it did not — quoting absolute dates while showing a single
+    // day's numbers, which reads as a card that never updates. Name the window.
+    var RANGE_WORDS={all:'all time','6m':'the last 6 months','3m':'the last 3 months',
+                     month:'this month',today:'today'};
+    msg+=' <span class="disclaim">Showing <b>'+esc(RANGE_WORDS[rangeKey]||'all time')+'</b>'+
+         (A.first_impression
+            ? ' · impressions counted since '+
+              new Date(A.first_impression).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+
+              ', clicks go back further'
+            : '')+'.</span>';
+    if(A.truncated){
+      msg+=' <span class="disclaim">⚠ The event query hit its 50,000-row ceiling, so this '+
+           'window is a recent slice rather than the whole range — the oldest rows were dropped.</span>';
     }
     el('tile-callout').innerHTML=msg;
   }

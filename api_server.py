@@ -952,7 +952,9 @@ def dashboard_metrics():
     data["adtiles"] = _fac_adtiles(data.get("since"))
     # Inputs for the goals card's audience-INDEPENDENT streams. Deliberately
     # not range-scoped: that card is pinned to all-time for the same reason.
-    data["goalstreams"] = {"ai": _fac_ai_crawls(), "consult_clicks": _fac_consult_clicks()}
+    data["goalstreams"] = {"ai": _fac_ai_crawls(),
+                           "consult_clicks": _fac_consult_clicks(),
+                           "agents": _fac_agent_pool()}
     data["signage"] = _fac_signage(data.get("since"))
     return jsonify(data)
 
@@ -1221,6 +1223,26 @@ AI_CRAWLERS = ("GPTBot", "ChatGPT-User", "PerplexityBot", "CCBot", "ClaudeBot",
                "meta-externalagent", "Applebot-Extended", "cohere-ai")
 FAC_ACCESS_LOG = os.environ.get("FAC_ACCESS_LOG", "/var/log/nginx/findacrib.access.log")
 _AI_CACHE = {"at": 0, "val": None}
+
+
+def _fac_agent_pool():
+    """How many HPD marketing agents there ARE — the ceiling on slot sales.
+
+    An advertiser slot is not sold per click; it is sold to a named agent for a
+    month. So the size of this business is bounded by how many such agents
+    exist, and in NYC that is a small, countable number rather than a market.
+    85 on the HPD list, 22 of them currently running a re-rental page.
+
+    This is the number that turns "advertiser revenue scales with traffic" into
+    "advertiser revenue scales with traffic until it runs out of advertisers".
+    """
+    try:
+        with open(os.path.join(DATA_DIR, "marketing_agents.json")) as f:
+            d = json.load(f)
+        return {"total": int(d.get("count") or 0),
+                "with_listings": int(d.get("rerental_count") or 0)}
+    except Exception:
+        return {"total": 0, "with_listings": 0}
 
 
 def _fac_ai_crawls():

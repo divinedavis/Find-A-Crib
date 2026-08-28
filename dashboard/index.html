@@ -2477,7 +2477,13 @@
   // The four assumptions, in one object so they are trivially editable and
   // impossible to lose track of.
   var GOAL_ASSUMPTIONS = {
-    per_click: 2.00,      // $ an agent pays per hand-off. Nobody has ever paid.
+    // An advertiser slot is sold to a named agent for a MONTH, not per click.
+    // The per-click model this replaced implied $174/month at the 300-DAU goal
+    // — about $22 per agent — and nobody signs a contract for $22. Worse, it
+    // scaled without limit, so it quietly claimed you could sell $41,751 of
+    // slots to a market that contains 85 agents.
+    slot_price: 150,      // $/month for one tile placement. Never quoted to anyone.
+    slot_min_handoffs: 20,// hand-offs/month an agent needs before a slot is worth $150.
     acct_to_paid: 3.5,    // % of accounts that buy Plus. Measured here: 0 of 13.
     report_close: 60,     // % of report checkouts that complete. Measured: 0 of 3.
     // AdSense revenue per 1,000 page views. This is the site's own prior
@@ -2553,6 +2559,8 @@
     var G = d.goalstreams || {};
     var consultClicks = n(G.consult_clicks);
     var consultPerVisitor = visitors ? consultClicks / visitors : 0;
+    var agentPool = n((G.agents || {}).total) || 85;
+    var agentsWithListings = n((G.agents || {}).with_listings);
     var aiPerDay = n((G.ai || {}).per_day);
     var aiPerMonth = aiPerDay * 30;
     var sVis = n(C.one_time_visitors) + n(C.returning_visitors);
@@ -2570,7 +2578,13 @@
     var K = GOAL_ASSUMPTIONS;
     function row(dau){
       var mau = dau / (K.stickiness / 100);
-      var adv = mau * clicksPerVisitor * sellableShare * K.per_click;
+      // Slots sold, not clicks billed. An agent buys only if the placement
+      // delivers enough hand-offs to be worth the fee, and you cannot sell more
+      // slots than there are agents — which is the ceiling the per-click model
+      // had no way to express.
+      var handoffs = mau * clicksPerVisitor * sellableShare;
+      var buyers = Math.min(agentPool, Math.floor(handoffs / K.slot_min_handoffs));
+      var adv = buyers * K.slot_price;
       var plus = mau * signupRate * (K.acct_to_paid / 100) * PLUS_PRICE;
       var rep = mau * startsPerVisitor * (K.report_close / 100) * REPORT_PRICE;
       var ads = (mau * pvPerVisitor / 1000) * K.adsense_rpm;
@@ -2580,7 +2594,7 @@
       var api = K.api_seats * API_PRICE;
       var crawl = aiPerMonth * K.crawl_price;
       return { dau: dau, mau: mau, adv: adv, ads: ads, plus: plus, rep: rep,
-               ref: ref, api: api, crawl: crawl,
+               ref: ref, api: api, crawl: crawl, buyers: buyers, handoffs: handoffs,
                total: adv + plus + rep + ads + ref + api + crawl };
     }
     var rows = GOAL_SCENARIOS.map(row);
@@ -2592,31 +2606,34 @@
     // and crawl revenue across a 1,000-visitor probe row, inflated the implied
     // per-visitor rate, and solved to a DAU whose own row then totalled
     // $18,554 instead of $50,000 — a target row that missed its target.
-    var probe = row(1000);
-    var flat = probe.api + probe.crawl;
-    var perMau = (probe.total - flat) / probe.mau;
-    var targetRow = null;
-    if (perMau > 0 && GOAL_REVENUE_TARGET > flat) {
-      var mauNeeded = (GOAL_REVENUE_TARGET - flat) / perMau;
-      targetRow = row(mauNeeded * (K.stickiness / 100));
+    // SOLVE BY SEARCH, not by division.
+    //
+    // Division worked when every stream was linear in reach. It stopped being
+    // true twice: first when API seats and AI crawls were added as flat
+    // columns, and again when advertiser slots gained a floor (an agent needs
+    // 20 hand-offs before buying) and a hard ceiling (there are 85 agents).
+    // Each time, dividing produced a "$50,000" row whose own total was not
+    // $50,000. A bisection makes no assumption about the shape of the curve —
+    // it just asks the model what a given audience earns and narrows in.
+    function solveDau(target, pick){
+      var lo = 0, hi = 1000;
+      // Grow the bracket until the target is inside it, or give up: with a
+      // capped column the target may simply be unreachable at any audience.
+      for (var g = 0; g < 40 && pick(row(hi)) < target; g++) hi *= 2;
+      if (pick(row(hi)) < target) return null;          // cannot get there
+      for (var i = 0; i < 60; i++) {
+        var mid = (lo + hi) / 2;
+        if (pick(row(mid)) < target) lo = mid; else hi = mid;
+      }
+      return row(hi);
     }
-
-    // The same target reachable on ADVERTISING ALONE — the two streams paid per
-    // eyeball rather than per person, every other column switched off. This is
-    // the honest cost of "just grow the traffic", and it is the largest number
-    // this card produces, because a few cents of advertiser revenue plus about
-    // one cent of AdSense per monthly visitor is what an ad-funded consumer
-    // site actually earns.
-    var adOnlyPerMau = (probe.adv + probe.ads) / probe.mau;
-    var adOnlyRow = null;
-    if (adOnlyPerMau > 0) {
-      var r = row((GOAL_REVENUE_TARGET / adOnlyPerMau) * (K.stickiness / 100));
-      // Every other stream is zeroed for display. The row asks a question about
-      // advertising; leaving the others populated would quietly let them help
-      // pay for the answer.
-      adOnlyRow = { dau: r.dau, mau: r.mau, adv: r.adv, ads: r.ads,
-                    total: r.adv + r.ads };
-    }
+    var targetRow = solveDau(GOAL_REVENUE_TARGET, function(r){ return r.total; });
+    // The same target on advertising alone — the two streams paid per eyeball.
+    var adOnlyBase = solveDau(GOAL_REVENUE_TARGET, function(r){ return r.adv + r.ads; });
+    var adOnlyRow = adOnlyBase
+      ? { dau: adOnlyBase.dau, mau: adOnlyBase.mau, adv: adOnlyBase.adv, ads: adOnlyBase.ads,
+          total: adOnlyBase.adv + adOnlyBase.ads }
+      : null;
 
     function usd(v){ return '$' + Math.round(v).toLocaleString('en-US'); }
     el('goals-table').innerHTML =
@@ -2710,8 +2727,18 @@
                K.consult_fee,
                'Never negotiated with anyone. Both halves are guesses and the column is linear ' +
                'in each — treat it as the shape of a deal, not the size of one') +
-      inputRow('a', '$' + K.per_click.toFixed(2) + ' per agent hand-off',
-               'No agent has ever paid for one. This is the number the whole left column rests on') +
+      inputRow('m', comma(agentPool) + ' HPD marketing agents exist',
+               comma(agentsWithListings) + ' of them currently run a re-rental page. This is a ' +
+               'CEILING, not an input: you cannot sell more slots than there are agents, so the ' +
+               'advertiser column stops growing at $' + comma(agentPool * K.slot_price) + '/month ' +
+               'no matter how much traffic arrives') +
+      inputRow('a', '$' + K.slot_price + ' per slot per month',
+               'Never quoted to anyone. One call to Affordable for NY — 11 hand-offs already, free ' +
+               '— replaces this guess with a real number') +
+      inputRow('a', K.slot_min_handoffs + ' hand-offs a month before an agent buys',
+               'Below this a $' + K.slot_price + ' slot costs the agent more than $' +
+               (K.slot_price / K.slot_min_handoffs).toFixed(2) + ' per hand-off and they walk. It ' +
+               'is why the column is small at low traffic rather than merely proportional') +
       inputRow('a', K.acct_to_paid + '% of accounts buy Plus',
                'Measured here: 0 of 13. Industry free-to-paid runs 2–5%') +
       inputRow('a', K.report_close + '% of report checkouts complete',
@@ -2736,34 +2763,24 @@
           ' daily actives — ' + Math.round(targetRow.dau / GOAL_SCENARIOS[0]) + '× your 300 goal and ' +
           (nowRow ? Math.round(targetRow.mau / Math.max(n(E.mau), 1)) + '× the monthly reach you have today'
                   : 'far beyond current reach') + '.</b> ' +
-          'That is not a traffic plan, it is a different company. The number is this large because ' +
-          'the mix earns about ' + (100 * perMau).toFixed(0) + '¢ per monthly visitor, and the ' +
-          'binding term is the $' + K.per_click.toFixed(2) + ' hand-off — revenue is linear in it, ' +
-          'so a slot sold for ten times that reaches $' + comma(GOAL_REVENUE_TARGET) +
-          ' at roughly ' + comma(Math.round(targetRow.dau / 10)) + ' daily actives instead. ' +
-          'At this price the target is unreachable by growth; it is reachable by pricing. ' +
-          'Note what the columns do NOT do: every stream here is linear in monthly reach, so the ' +
-          'mix is the same at every row — AdSense is ' +
-          Math.round(100 * goal.ads / (goal.total || 1)) + '% of the total at 300 daily actives and ' +
-          Math.round(100 * targetRow.ads / (targetRow.total || 1)) + '% at ' + comma(targetRow.dau) +
-          '. Scale never re-weights a mix; only a rate does. AdSense is also the one column earning ' +
-          'nothing today for a reason fixable in an afternoon — the in-feed ad unit was never created ' +
-          'after approval, so ADSENSE_SLOT is empty and not one ad has ever served. ' +
-          '<b>The two flat columns are the interesting ones.</b> API seats and AI crawls are identical ' +
-          'in every row — ' + usd(goal.api + goal.crawl) + ' a month at 300 daily actives and the same ' +
-          'at ' + comma(targetRow.dau) + ' — because neither is bought by a visitor. Together they are ' +
-          Math.round(100 * (goal.api + goal.crawl) / (goal.total || 1)) + '% of the mix at your goal ' +
-          'and need no traffic growth whatsoever to earn it. Everything else on this page is a plan to ' +
-          'get more people; those two are a plan to get a customer.' +
+          'That is not a traffic plan, it is a different company. ' +
+          '<b>Two of these columns do not scale with traffic at all</b> — API seats and AI crawls are ' +
+          usd(goal.api + goal.crawl) + ' a month at every single row, because neither is bought by a ' +
+          'visitor. And a third one STOPS: advertiser slots cap at ' + comma(agentPool) + ' agents, ' +
+          usd(agentPool * K.slot_price) + ' a month, however large the audience gets. Growth buys you ' +
+          'the consultancy and AdSense columns and nothing else. ' +
           (adOnlyRow
-            ? ' <b>The last row prices the alternative: doing it on advertising alone needs ' +
-              comma(adOnlyRow.dau) + ' daily actives</b> — ' +
-              Math.round(adOnlyRow.dau / Math.max(targetRow.dau, 1)) + '× the mixed-revenue answer ' +
-              'directly above it and ' + Math.round(adOnlyRow.dau / GOAL_SCENARIOS[0]) +
-              '× your 300 goal. Advertising pays per eyeball, so an ad-funded version of this site ' +
-              'needs a mid-market publisher\u2019s audience to clear the same $' +
-              comma(GOAL_REVENUE_TARGET) + '.'
-            : '')
+            ? ' <b>Advertising alone needs ' + comma(adOnlyRow.dau) + ' daily actives</b> — ' +
+              Math.round(adOnlyRow.dau / Math.max(targetRow ? targetRow.dau : 1, 1)) +
+              '× the mixed answer above it and ' + Math.round(adOnlyRow.dau / GOAL_SCENARIOS[0]) +
+              '× your 300 goal, because the slot business tops out at ' +
+              usd(agentPool * K.slot_price) + ' and AdSense has to carry the remaining ' +
+              usd(GOAL_REVENUE_TARGET - agentPool * K.slot_price) + ' at about a cent a visitor.'
+            : ' <b>$' + comma(GOAL_REVENUE_TARGET) + ' is not reachable on advertising alone at any ' +
+              'audience.</b> Slots stop at ' + comma(agentPool) + ' agents — $' +
+              comma(agentPool * K.slot_price) + ' a month — and AdSense would have to supply the ' +
+              'remainder at roughly a cent per visitor, which is why that row is absent rather ' +
+              'than large.')
         : '');
   }
 

@@ -570,7 +570,7 @@
       <!-- ===== Trent's Fresh Spaces only ===== -->
       <div class="card mb18" id="sec-goals">
         <div class="card-head-row">
-          <div><h2>Goals — what each DAU target is actually worth</h2><div class="card-sub">Three audience scenarios priced against four revenue streams. <b>This card ignores the range picker</b> — its rates are measured over all time, because a projection about 25,000 daily actives should not be rewritten by one afternoon's click mix. Every rate here is either <b>measured on this site</b> — and shows the measurement — or <b>assumed</b>, and says so. The last revenue widget on this page was deleted for projecting MRR off assumptions while the real MRR read $0; the difference is that this one names which is which, and the assumptions are the only thing you can argue with.</div></div>
+          <div><h2>Goals — what each DAU target is actually worth</h2><div class="card-sub">Three audience scenarios priced against seven revenue streams — five sold to the audience, two not. <b>This card ignores the range picker</b> — its rates are measured over all time, because a projection about 25,000 daily actives should not be rewritten by one afternoon's click mix. Every rate here is either <b>measured on this site</b> — and shows the measurement — or <b>assumed</b>, and says so. The last revenue widget on this page was deleted for projecting MRR off assumptions while the real MRR read $0; the difference is that this one names which is which, and the assumptions are the only thing you can argue with.</div></div>
         </div>
         <div id="goals-table"></div>
         <div id="goals-inputs" style="margin-top:18px"></div>
@@ -2457,7 +2457,7 @@
   //
   // Prices are the real ones the site charges: Plus $4.99/mo, building report
   // $9 one-time. Nothing here invents a product.
-  var PLUS_PRICE = 4.99, REPORT_PRICE = 9;
+  var PLUS_PRICE = 4.99, REPORT_PRICE = 9, API_PRICE = 199;
   // The four assumptions, in one object so they are trivially editable and
   // impossible to lose track of.
   var GOAL_ASSUMPTIONS = {
@@ -2469,8 +2469,20 @@
     // ways: the same $6 that makes the column look small at 3,000 monthly
     // visitors is what makes it the second-largest column at 250,000.
     adsense_rpm: 6.00,
+    // --- the three streams that are NOT sold to the audience ---------------
+    api_seats: 5,         // Business seats at $199. Sold today: 0 (3 free test keys).
+    crawl_price: 0.001,   // $/request. Cloudflare's documented pay-per-crawl minimum.
+    consult_qualified: 25,// % of consultancy hand-offs that become a billable referral.
+    consult_fee: 75,      // $ per qualified referral. Never negotiated with anyone.
     stickiness: 10        // DAU/MAU used to turn a DAU target into monthly reach.
   };
+  // Two of the streams do not scale with visitors at all, and saying so is the
+  // most useful thing this table does. API seats are sold to businesses; AI
+  // crawl revenue is a property of the CORPUS — 47,982 pages get crawled at the
+  // same rate whether one human visits or a million do. They are therefore
+  // constant down every row, and the constancy is the point: they are the only
+  // columns that do not require an audience this site does not have.
+  var GOAL_FLAT = { api: true, crawl: true };
   var GOAL_SCENARIOS = [300, 1000, 3000];
   // The revenue target gets SOLVED for, not guessed at. Hardcoding "25,000 DAU"
   // would be wrong the moment any assumption below it moves, and the whole
@@ -2520,6 +2532,13 @@
     // than per action.
     var pageViews = n(T.visits);
     var pvPerVisitor = visitors ? pageViews / visitors : 0;
+    // Consultancy hand-offs — people who decided their question was worth paying
+    // somebody about. A different, more valuable event than a listing click.
+    var G = d.goalstreams || {};
+    var consultClicks = n(G.consult_clicks);
+    var consultPerVisitor = visitors ? consultClicks / visitors : 0;
+    var aiPerDay = n((G.ai || {}).per_day);
+    var aiPerMonth = aiPerDay * 30;
     var sVis = n(C.one_time_visitors) + n(C.returning_visitors);
     var sUps = n(C.one_time_signups) + n(C.returning_signups);
     var signupRate = sVis ? sUps / sVis : 0;
@@ -2539,18 +2558,30 @@
       var plus = mau * signupRate * (K.acct_to_paid / 100) * PLUS_PRICE;
       var rep = mau * startsPerVisitor * (K.report_close / 100) * REPORT_PRICE;
       var ads = (mau * pvPerVisitor / 1000) * K.adsense_rpm;
-      return { dau: dau, mau: mau, adv: adv, plus: plus, rep: rep, ads: ads,
-               total: adv + plus + rep + ads };
+      // Scales with the audience: a referral needs a visitor to refer.
+      var ref = mau * consultPerVisitor * (K.consult_qualified / 100) * K.consult_fee;
+      // Flat: neither of these is bought by a visitor.
+      var api = K.api_seats * API_PRICE;
+      var crawl = aiPerMonth * K.crawl_price;
+      return { dau: dau, mau: mau, adv: adv, ads: ads, plus: plus, rep: rep,
+               ref: ref, api: api, crawl: crawl,
+               total: adv + plus + rep + ads + ref + api + crawl };
     }
     var rows = GOAL_SCENARIOS.map(row);
     var nowDau = n(E.dau), nowRow = nowDau ? row(nowDau) : null;
 
-    // Revenue is linear in monthly reach, so the DAU that hits a revenue target
-    // is one division — provided the mix earns anything at all per visitor.
-    var perMau = row(100).total / (100 / (K.stickiness / 100));
+    // Solving for the target is no longer one division, because two columns are
+    // FLAT. Revenue is now flat + variable×reach, so the flat part has to be
+    // subtracted before dividing. Doing it the old way spread the $1,271 of API
+    // and crawl revenue across a 1,000-visitor probe row, inflated the implied
+    // per-visitor rate, and solved to a DAU whose own row then totalled
+    // $18,554 instead of $50,000 — a target row that missed its target.
+    var probe = row(1000);
+    var flat = probe.api + probe.crawl;
+    var perMau = (probe.total - flat) / probe.mau;
     var targetRow = null;
-    if (perMau > 0) {
-      var mauNeeded = GOAL_REVENUE_TARGET / perMau;
+    if (perMau > 0 && GOAL_REVENUE_TARGET > flat) {
+      var mauNeeded = (GOAL_REVENUE_TARGET - flat) / perMau;
       targetRow = row(mauNeeded * (K.stickiness / 100));
     }
 
@@ -2560,24 +2591,32 @@
       '<thead><tr><th>Daily actives</th><th>Monthly reach</th>' +
       '<th>Advertiser slots</th><th>AdSense<span class="goals-off">not live</span></th>' +
       '<th>Plus $' + PLUS_PRICE.toFixed(2) + '/mo</th>' +
-      '<th>Reports $' + REPORT_PRICE + '</th><th>Total / month</th></tr></thead><tbody>' +
+      '<th>Reports $' + REPORT_PRICE + '</th>' +
+      '<th>Referrals</th>' +
+      '<th>API seats<span class="goals-off">flat — not sold to visitors</span></th>' +
+      '<th>AI crawls<span class="goals-off">flat — a property of the corpus</span></th>' +
+      '<th>Total / month</th></tr></thead><tbody>' +
       (nowRow ? '<tr class="goals-now"><td><b>' + comma(nowRow.dau) + '</b> <span class="goals-tag">today</span></td>' +
         '<td>' + comma(E.mau) + '</td><td>' + usd(nowRow.adv) + '</td><td>' + usd(nowRow.ads) +
-        '</td><td>' + usd(nowRow.plus) + '</td><td>' + usd(nowRow.rep) + '</td><td><b>' +
-        usd(nowRow.total) + '</b></td></tr>' : '') +
+        '</td><td>' + usd(nowRow.plus) + '</td><td>' + usd(nowRow.rep) +
+        '</td><td>' + usd(nowRow.ref) + '</td><td>' + usd(nowRow.api) + '</td><td>' + usd(nowRow.crawl) +
+        '</td><td><b>' + usd(nowRow.total) + '</b></td></tr>' : '') +
       rows.map(function(r){
         return '<tr><td><b>' + comma(r.dau) + '</b>' +
           (r.dau === 300 ? ' <span class="goals-tag">your goal</span>' : '') + '</td>' +
           '<td>' + comma(r.mau) + '</td><td>' + usd(r.adv) + '</td><td>' + usd(r.ads) +
-          '</td><td>' + usd(r.plus) + '</td><td>' + usd(r.rep) + '</td><td><b>' +
-          usd(r.total) + '</b></td></tr>';
+          '</td><td>' + usd(r.plus) + '</td><td>' + usd(r.rep) +
+          '</td><td>' + usd(r.ref) + '</td><td>' + usd(r.api) + '</td><td>' + usd(r.crawl) +
+          '</td><td><b>' + usd(r.total) + '</b></td></tr>';
       }).join('') +
       (targetRow
         ? '<tr class="goals-target"><td><b>' + comma(targetRow.dau) + '</b> ' +
           '<span class="goals-tag">for $' + comma(GOAL_REVENUE_TARGET) + '/mo</span></td>' +
           '<td>' + comma(targetRow.mau) + '</td><td>' + usd(targetRow.adv) + '</td><td>' +
           usd(targetRow.ads) + '</td><td>' + usd(targetRow.plus) + '</td><td>' +
-          usd(targetRow.rep) + '</td><td><b>' + usd(targetRow.total) + '</b></td></tr>'
+          usd(targetRow.rep) + '</td><td>' + usd(targetRow.ref) + '</td><td>' +
+          usd(targetRow.api) + '</td><td>' + usd(targetRow.crawl) +
+          '</td><td><b>' + usd(targetRow.total) + '</b></td></tr>'
         : '') +
       '</tbody></table></div>';
 
@@ -2608,6 +2647,23 @@
       inputRow('a', '$' + K.adsense_rpm.toFixed(2) + ' AdSense RPM per 1,000 page views',
                'AdSense is wired but ADSENSE_SLOT is empty, so no ad has ever served here and ' +
                'today\u2019s real figure is $0 — this column is what it would earn once approved') +
+      inputRow('m', comma(consultClicks) + ' consultancy hand-offs, all time',
+               'clicks to MGNY, Affordable for NY, Clinton Management and peers — people who ' +
+               'decided the question was worth paying somebody about') +
+      inputRow('m', comma(aiPerDay) + ' AI-crawler requests per day',
+               'measured off this site\u2019s own nginx log, not the beacon — crawlers run no ' +
+               'JavaScript, so every other number on this page is blind to them. That is ~' +
+               Math.round(aiPerDay / Math.max(n(E.dau), 1)) + '× your human daily actives') +
+      inputRow('a', '$' + K.crawl_price.toFixed(3) + ' per crawl',
+               'Cloudflare pay-per-crawl\u2019s documented minimum. Charging anything requires ' +
+               'putting the site behind Cloudflare and switching those crawlers to Charge') +
+      inputRow('a', K.api_seats + ' Business API seats at $' + API_PRICE,
+               'Sold today: 0. The API is live with 3 keys, all free tier, all test emails — ' +
+               'this column is the one that needs a customer, not an audience') +
+      inputRow('a', K.consult_qualified + '% of consultancy hand-offs become a billable referral, at $' +
+               K.consult_fee,
+               'Never negotiated with anyone. Both halves are guesses and the column is linear ' +
+               'in each — treat it as the shape of a deal, not the size of one') +
       inputRow('a', '$' + K.per_click.toFixed(2) + ' per agent hand-off',
                'No agent has ever paid for one. This is the number the whole left column rests on') +
       inputRow('a', K.acct_to_paid + '% of accounts buy Plus',
@@ -2646,7 +2702,13 @@
           Math.round(100 * targetRow.ads / (targetRow.total || 1)) + '% at ' + comma(targetRow.dau) +
           '. Scale never re-weights a mix; only a rate does. AdSense is also the one column earning ' +
           'nothing today for a reason fixable in an afternoon — the in-feed ad unit was never created ' +
-          'after approval, so ADSENSE_SLOT is empty and not one ad has ever served.'
+          'after approval, so ADSENSE_SLOT is empty and not one ad has ever served. ' +
+          '<b>The two flat columns are the interesting ones.</b> API seats and AI crawls are identical ' +
+          'in every row — ' + usd(goal.api + goal.crawl) + ' a month at 300 daily actives and the same ' +
+          'at ' + comma(targetRow.dau) + ' — because neither is bought by a visitor. Together they are ' +
+          Math.round(100 * (goal.api + goal.crawl) / (goal.total || 1)) + '% of the mix at your goal ' +
+          'and need no traffic growth whatsoever to earn it. Everything else on this page is a plan to ' +
+          'get more people; those two are a plan to get a customer.'
         : '');
   }
 

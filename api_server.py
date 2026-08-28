@@ -540,6 +540,17 @@ def _report_corpus():
     return _REPORT_CACHE["corpus"], _REPORT_CACHE["contacts"]
 
 
+def _rest_count(path):
+    """Exact row count via Content-Range, without transferring the rows."""
+    req = urllib.request.Request(
+        f"{SUPABASE_URL}/rest/v1/{path}",
+        headers={"apikey": SERVICE_KEY, "Authorization": f"Bearer {SERVICE_KEY}",
+                 "Prefer": "count=exact", "Range": "0-0"})
+    with urllib.request.urlopen(req, timeout=10) as r:
+        cr = r.headers.get("Content-Range") or ""
+    return int(cr.split("/")[-1]) if "/" in cr and cr.split("/")[-1].isdigit() else 0
+
+
 def _rest(method, path, body=None, prefer=None):
     headers = {"apikey": SERVICE_KEY, "Authorization": f"Bearer {SERVICE_KEY}",
                "Content-Type": "application/json"}
@@ -939,6 +950,9 @@ def dashboard_metrics():
     data["search"] = _fac_search()
     data["channels"] = _fac_channels(data.get("since"))
     data["adtiles"] = _fac_adtiles(data.get("since"))
+    # Inputs for the goals card's audience-INDEPENDENT streams. Deliberately
+    # not range-scoped: that card is pinned to all-time for the same reason.
+    data["goalstreams"] = {"ai": _fac_ai_crawls(), "consult_clicks": _fac_consult_clicks()}
     data["signage"] = _fac_signage(data.get("since"))
     return jsonify(data)
 
@@ -1193,6 +1207,69 @@ def _fac_adtiles(since):
         "advertisers": len([a for a in agents if a["agent"] != "NYC Housing Connect"]),
         "first_impression": first_impr,
     }
+
+
+# Consultancies our visitors already hand themselves to. A click here is a
+# person who has decided their stabilization question is worth paying somebody
+# about — which is a different, more valuable event than a listing hand-off.
+CONSULT_DOMAINS = ("mgnyconsulting.com", "afny.org", "clintonmanagement.com",
+                   "taxsolute.com", "resideny.com", "kgupright.com")
+# The user agents that identify themselves as AI crawlers. Matched
+# case-insensitively against the UA field of this site's own nginx log.
+AI_CRAWLERS = ("GPTBot", "ChatGPT-User", "PerplexityBot", "CCBot", "ClaudeBot",
+               "anthropic-ai", "CloudVertexBot", "Bytespider", "Amazonbot",
+               "meta-externalagent", "Applebot-Extended", "cohere-ai")
+FAC_ACCESS_LOG = os.environ.get("FAC_ACCESS_LOG", "/var/log/nginx/findacrib.access.log")
+_AI_CACHE = {"at": 0, "val": None}
+
+
+def _fac_ai_crawls():
+    """AI-crawler requests per day, measured off this site's own nginx log.
+
+    Not from the analytics beacon: crawlers do not run JavaScript, so every
+    number on the rest of this dashboard is blind to them by construction. They
+    are also the largest single consumer of this site — roughly 8,000 requests a
+    day against ~150 human page views — and the only revenue stream here whose
+    volume is a property of the CORPUS rather than of the audience.
+
+    Reads today's log plus yesterday's rotation, which is enough for a daily
+    rate and cheap enough to do on a request. Cached for an hour; a log scan is
+    not something to repeat on every dashboard reload.
+    """
+    now = time.time()
+    if _AI_CACHE["val"] is not None and now - _AI_CACHE["at"] < 3600:
+        return _AI_CACHE["val"]
+    pat = re.compile("|".join(AI_CRAWLERS), re.I)
+    total, days, out = 0, 0, {"per_day": 0, "window_days": 0, "ok": False}
+    for path in (FAC_ACCESS_LOG + ".1", FAC_ACCESS_LOG):
+        try:
+            with open(path, "r", errors="replace") as f:
+                n = sum(1 for line in f if pat.search(line))
+        except Exception:
+            continue
+        total += n
+        days += 1
+    if days:
+        # Today's log is partial, so a straight sum over two files understates
+        # the daily rate. Yesterday's rotation alone is the honest full day.
+        out = {"per_day": int(round(total / days)), "window_days": days, "ok": True}
+    _AI_CACHE.update(at=now, val=out)
+    return out
+
+
+def _fac_consult_clicks():
+    """All-time outbound clicks to rent-stabilization consultancies."""
+    # Counted in Postgres, not in Python. PostgREST caps a response at 1,000
+    # rows whatever `limit` says, so pulling outbound events and filtering here
+    # silently sampled an arbitrary thousand of 2,400 and reported 1 hit. The
+    # destination lives in props->>href.
+    ors = ",".join(f"props->>href.ilike.*{d}*" for d in CONSULT_DOMAINS)
+    q = "events?select=id&event=eq.outbound&or=(" + urllib.parse.quote(ors, safe="*,.>-") + ")"
+    try:
+        rng = _rest_count(q)
+    except Exception:
+        return 0
+    return rng
 
 
 FAC_LAST_RUN = os.environ.get(

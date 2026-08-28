@@ -570,7 +570,7 @@
       <!-- ===== Trent's Fresh Spaces only ===== -->
       <div class="card mb18" id="sec-goals">
         <div class="card-head-row">
-          <div><h2>Goals — what each DAU target is actually worth</h2><div class="card-sub">Three audience scenarios priced against four revenue streams. Every rate here is either <b>measured on this site</b> — and shows the measurement — or <b>assumed</b>, and says so. The last revenue widget on this page was deleted for projecting MRR off assumptions while the real MRR read $0; the difference is that this one names which is which, and the assumptions are the only thing you can argue with.</div></div>
+          <div><h2>Goals — what each DAU target is actually worth</h2><div class="card-sub">Three audience scenarios priced against four revenue streams. <b>This card ignores the range picker</b> — its rates are measured over all time, because a projection about 25,000 daily actives should not be rewritten by one afternoon's click mix. Every rate here is either <b>measured on this site</b> — and shows the measurement — or <b>assumed</b>, and says so. The last revenue widget on this page was deleted for projecting MRR off assumptions while the real MRR read $0; the difference is that this one names which is which, and the assumptions are the only thing you can argue with.</div></div>
         </div>
         <div id="goals-table"></div>
         <div id="goals-inputs" style="margin-top:18px"></div>
@@ -2477,7 +2477,35 @@
   // point of this card is that the assumptions are the arguable part.
   var GOAL_REVENUE_TARGET = 50000;
 
+  // The goals card does NOT follow the range picker, and that is deliberate.
+  //
+  // It used to. On "Today" the Advertiser column read $0 at every scale —
+  // correctly, and uselessly: all five of that day's hand-offs happened to go
+  // to NYC Housing Connect, which is excluded as unsellable, so the measured
+  // sellable rate was 0% and the projection inherited it. A forecast about
+  // 25,000 daily actives has no business being rewritten by one afternoon's
+  // click mix. So the rates come from the all-time payload, always, and the
+  // card says so.
+  var goalsBase = null;
   function renderGoals(d){
+    if (rangeKey === 'all') { goalsBase = d; return paintGoals(d); }
+    if (goalsBase) return paintGoals(goalsBase);
+    paintGoals(null);                       // "measuring" state, not a zero
+    token().then(function(t){
+      if(!t) return;
+      return feedFetch('/api/dashboard-metrics?range=all', t)
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(all){ if(all){ goalsBase = all; paintGoals(all); } });
+    }).catch(function(){ /* the card stays in its measuring state */ });
+  }
+
+  function paintGoals(d){
+    if(!d){
+      el('goals-table').innerHTML =
+        '<div style="color:var(--muted);font-size:13px">Loading the all-time rates this table is built from…</div>';
+      el('goals-inputs').innerHTML=''; el('goals-callout').innerHTML='';
+      return;
+    }
     d = d || {};
     var E = d.engagement || {}, T = d.totals || {}, EV = d.events || {}, A = d.adtiles || {};
     var C = d.conversion || {};
@@ -2565,16 +2593,18 @@
       '<div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">'+
       'WHAT THE TABLE IS BUILT FROM</div>' +
       inputRow('m', clicksPerVisitor.toFixed(3) + ' agent hand-offs per visitor',
-               comma(agentClicks) + ' clicks ÷ ' + comma(visitors) + ' visitors in this range') +
+               comma(agentClicks) + ' clicks ÷ ' + comma(visitors) + ' visitors, all time. Conservative ' +
+               'on purpose: the denominator includes months before hand-offs were tracked at all, ' +
+               'so the true rate is higher than this and every advertiser figure understates') +
       inputRow('m', (100 * sellableShare).toFixed(0) + '% of hand-offs are sellable',
                'NYC Housing Connect took ' + comma(govClicks) + ' of ' + comma(totalAgentClicks) +
                ' — it is a city lottery site and will never pay a referral fee') +
       inputRow('m', (100 * signupRate).toFixed(1) + '% of visitors create an account',
                comma(sUps) + ' sign-ups ÷ ' + comma(sVis) + ' visitors') +
       inputRow('m', startsPerVisitor.toFixed(4) + ' report checkouts started per visitor',
-               comma(reportStarts) + ' starts ÷ ' + comma(visitors) + ' visitors') +
+               comma(reportStarts) + ' starts ÷ ' + comma(visitors) + ' visitors, all time') +
       inputRow('m', pvPerVisitor.toFixed(2) + ' page views per visitor',
-               comma(pageViews) + ' views ÷ ' + comma(visitors) + ' visitors — the AdSense denominator') +
+               comma(pageViews) + ' views ÷ ' + comma(visitors) + ' visitors, all time — the AdSense denominator') +
       inputRow('a', '$' + K.adsense_rpm.toFixed(2) + ' AdSense RPM per 1,000 page views',
                'AdSense is wired but ADSENSE_SLOT is empty, so no ad has ever served here and ' +
                'today\u2019s real figure is $0 — this column is what it would earn once approved') +
@@ -2583,7 +2613,9 @@
       inputRow('a', K.acct_to_paid + '% of accounts buy Plus',
                'Measured here: 0 of 13. Industry free-to-paid runs 2–5%') +
       inputRow('a', K.report_close + '% of report checkouts complete',
-               'Measured here: 0 completed of ' + comma(reportStarts) + ' started') +
+               'Measured here: 0 of ' + comma(reportStarts) + ' ever completed — every building_reports ' +
+               'row is still \u201cpending\u201d, so this whole column rests on a conversion that has ' +
+               'never once happened') +
       inputRow('a', K.stickiness + '% stickiness turns a DAU target into monthly reach',
                'Your own goal ratio — 300 daily of 3,000 monthly');
 

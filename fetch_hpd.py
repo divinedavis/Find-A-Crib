@@ -149,6 +149,68 @@ def fetch_contacts(registration_ids):
     return out
 
 
+def backfill_building_ids(result):
+    """Fill `buildingid` for buildings the REGISTRATIONS feed has no row for.
+
+    hpdonline deep-links only by HPD's own building id, and that id was only
+    ever read off tesw-yqqr (registrations). A building with no current
+    registration row therefore got no id, and the frontend fell back to the
+    hpdonline HOME page — a search box, with the building you were looking at
+    nowhere on it. That was 383 of 47,165 buildings (0.8%).
+
+    The violations feed carries the same buildingid, and 295 of those 383 have
+    violations, so most of the gap closes from a dataset this script already
+    talks to. One grouped query per borough over only the missing lots; a
+    building with neither a registration nor a violation genuinely has no HPD
+    record to link to, and keeps the honest fallback.
+    """
+    missing = [b for b, e in result.items() if not e.get("buildingid")]
+    if not missing:
+        return 0
+    by_boro = defaultdict(list)
+    for bbl in missing:
+        boro, blk, lot = bbl_to_parts(bbl)
+        by_boro[boro].append((blk, lot, bbl))
+    filled = 0
+    for boroid, items in by_boro.items():
+        want = {(i[0], i[1]): i[2] for i in items}
+        blocks = sorted({i[0] for i in items})
+        lots = sorted({i[1] for i in items})
+        # Same chunking as fetch_violations: a `where` naming every block and
+        # lot at once is what blows past Socrata's URL and row limits.
+        for blk_chunk in chunked(blocks, 60):
+            for lot_chunk in chunked(lots, 60):
+                where = (f"boroid='{boroid}' AND block in ({quote_csv(blk_chunk)}) "
+                         f"AND lot in ({quote_csv(lot_chunk)})")
+                try:
+                    rows = fetch_all(VIOLATIONS, {
+                        "$select": "block,lot,buildingid",
+                        "$where": where,
+                        "$group": "block,lot,buildingid",
+                    })
+                except Exception as e:                  # a gap is not fatal here
+                    print(f"  backfill: boro {boroid} chunk failed ({e})")
+                    continue
+                for row in rows:
+                    bid = row.get("buildingid")
+                    if not bid:
+                        continue
+                    try:
+                        key = (str(int(row["block"])), str(int(row["lot"])))
+                    except (KeyError, TypeError, ValueError):
+                        continue
+                    bbl = want.get(key)
+                    if not bbl or result[bbl].get("buildingid"):
+                        continue
+                    result[bbl]["buildingid"] = bid
+                    result[bbl]["hpd_url"] = (
+                        f"https://hpdonline.nyc.gov/hpdonline/building/{bid}/overview")
+                    filled += 1
+    print(f"  backfilled {filled:,} building ids from violations "
+          f"({len(missing) - filled:,} have no HPD record at all)")
+    return filled
+
+
 def fetch_violations(by_boro):
     """Returns dict BBL -> aggregates."""
     # a/b/c count every violation on record; oa/ob/oc count only the ones HPD
@@ -366,6 +428,10 @@ def main(counts_only=False):
             entry["complaints"] = dict(c)
         if entry:
             result[bbl] = entry
+
+    # Registrations are the primary source of the HPD building id; violations
+    # close most of what they miss. Runs last so it sees the merged result.
+    backfill_building_ids(result)
 
     OUT.write_text(json.dumps(result, separators=(",", ":")))
     size_mb = OUT.stat().st_size / 1024 / 1024

@@ -770,6 +770,27 @@
   // looks for an apartment daily for a month.
   var STICKINESS_REFERENCE = { good: 20, exceptional: 50 };
 
+  // Advertiser-tile click rate. The comparison class is display advertising,
+  // and real estate is the best-performing industry in it:
+  //
+  //   1.08%  real estate display  https://focus-digital.co/average-display-ad-ctr-2025-benchmarks/
+  //   0.46%  cross-industry display (standard banners), same source
+  //   0.08-1.16%  "native" — quoted at 0.08-0.15%, 0.38% and 1.16% by three
+  //          different 2026 roundups, which is a range, not a number, so it is
+  //          shown as a range and never used for the verdict.
+  //
+  // THE CAVEAT THAT MATTERS MORE THAN THE NUMBER. Those benchmarks divide by
+  // SERVED impressions. This tile divides by a viewability-qualified impression
+  // — half the tile on screen for a full second, counted once per apartment per
+  // session — which is a materially smaller denominator for the same delivery.
+  // A smaller denominator inflates the rate, so any multiple against these
+  // figures is an overstatement of the real gap, and a like-for-like number
+  // would be lower. The card already refuses to flatter itself three ways; this
+  // is the fourth, and it belongs on the tile rather than in a footnote,
+  // because the tile is the thing somebody reads over your shoulder in a pitch.
+  var AD_CTR_BENCHMARK = { realestate: 1.08, display: 0.46,
+                           native_low: 0.08, native_high: 1.16 };
+
   // MY targets, not anyone's benchmark. Kept separate from the *_BENCHMARK
   // constants above on purpose: those are sourced outside numbers a reading
   // gets judged against, these are the numbers I decided to aim at. The three
@@ -1538,6 +1559,23 @@
   //   * Reach sits beside impressions, never instead of it. The same 1,200
   //     impressions from 40 people and from 400 are different products.
   //   * An agent with clicks and no impressions yet shows "—", not "0.0%".
+  // States the reference always; passes judgement only with the denominator
+  // caveat attached, because without it the multiple is simply wrong.
+  function adCtrBench(mine){
+    var B = AD_CTR_BENCHMARK;
+    var line = 'Real-estate display averages <b>' + B.realestate + '%</b>, all display <b>' +
+               B.display + '%</b>';
+    if (mine == null) return line + ' · nothing measured here yet';
+    var x = mine / B.realestate;
+    return line +
+      ' <span class="bn ' + (mine > B.realestate ? 'bn-hi' : 'bn-low') + '">' +
+      (mine > B.realestate ? x.toFixed(1) + '\u00d7 higher' : 'below') + '</span>' +
+      '<span class="a-bench-note">…but they divide by served impressions and this ' +
+      'divides by a viewable one (50% on screen, 1s, once per apartment per session). ' +
+      'The real gap is smaller than that multiple. Native is quoted anywhere from ' +
+      B.native_low + '% to ' + B.native_high + '%, too wide to judge against.</span>';
+  }
+
   function renderFacTiles(A){
     A = A || {};
     var impr=n(A.impressions), clicks=n(A.clicks), reach=n(A.reach);
@@ -1555,7 +1593,7 @@
       {v:comma(impr), l:'Tile impressions', sub:'half on screen, one second'},
       {v:comma(reach), l:'People reached', sub:'distinct visitors'},
       {v:comma(clicks), l:'Clicks to the agent', sub:'hand-offs off this site'},
-      {v:ctr, l:'Click rate', sub:ctrSub}
+      {v:ctr, l:'Click rate', sub:ctrSub, bench:adCtrBench(hasCtr ? A.ctr : null)}
     ].map(creaseTile).join('');
 
     var rows=(A.agents||[]);
@@ -2258,7 +2296,8 @@
   // NEMO tile are the same object with different numbers in it.
   function creaseTile(t){
     return '<div class="ads-tile"><div class="a-val">'+t.v+'</div><div class="a-lbl">'+t.l+'</div>'+
-      (t.sub?'<div class="a-sub">'+t.sub+'</div>':'')+'</div>';
+      (t.sub?'<div class="a-sub">'+t.sub+'</div>':'')+
+      (t.bench?'<div class="a-bench">'+t.bench+'</div>':'')+'</div>';
   }
 
   // ---- Trent's Fresh Spaces ----------------------------------------------

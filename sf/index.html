@@ -2413,12 +2413,25 @@
       .catch(() => false);
     return hpdPromise;
   }
+  // hpdonline deep-links ONLY by HPD's own building id — every BBL and
+  // address URL shape was tried and lands on /page-not-found or the bare
+  // search page. So when a building has no id (88 of 47,165 have neither a
+  // registration nor a violation, which is why they have none), the link can
+  // only reach the search box. Name the address it wants, so the click is one
+  // paste away from the record instead of a dead end.
+  function hpdSearchLink(rec) {
+    const a = rec && rec.a ? esc(rec.a) : '';
+    return `<div class="hpd-link"><a href="https://hpdonline.nyc.gov/hpdonline/" target="_blank" rel="noopener">Search HPD Online ↗</a>`
+      + (a ? `<div class="popup-meta" style="margin-top:3px;font-size:11px">HPD has no building record to link to — search <b>${a}</b> by address.</div>` : '')
+      + `</div>`;
+  }
+
   function hpdHtml(rec) {
     const h = rec.h;
     if (!h) {
       return `<div class="hpd-section"><h4>HPD Record</h4>
         <div class="hpd-row" style="color:var(--ink-2)">Not registered with HPD (typically owner-occupied or fewer than 3 units).</div>
-        <div class="hpd-link"><a href="https://hpdonline.nyc.gov/hpdonline/" target="_blank" rel="noopener">Search HPD Online ↗</a></div>
+        ${hpdSearchLink(rec)}
       </div>`;
     }
     const opInner = !authUser
@@ -2467,7 +2480,7 @@
     ` : '<span style="color:var(--ink-2);font-size:11px">No complaints on file.</span>';
     const link = h.bid
       ? `<div class="hpd-link"><a href="https://hpdonline.nyc.gov/hpdonline/building/${esc(h.bid)}/overview" target="_blank" rel="noopener">Full HPD Online record ↗</a></div>`
-      : `<div class="hpd-link"><a href="https://hpdonline.nyc.gov/hpdonline/" target="_blank" rel="noopener">Search HPD Online ↗</a></div>`;
+      : hpdSearchLink(rec);
     const regDate = h.lastregistration ? `<div class="popup-meta" style="margin-top:4px;font-size:11px">Last registered ${esc(h.lastregistration)}</div>` : '';
     // Portfolio research (Plus): aggregates live in private tables, fetched via
     // the has_plus-gated get_research() RPC — non-subscribers get the paywall.

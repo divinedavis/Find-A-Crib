@@ -788,6 +788,22 @@
   // would be lower. The card already refuses to flatter itself three ways; this
   // is the fourth, and it belongs on the tile rather than in a footnote,
   // because the tile is the thing somebody reads over your shoulder in a pitch.
+  // Activation — the share of visitors who reach the moment that predicts
+  // everything else. This site's is already identified and measured: opening a
+  // listing. Openers return at 13% against 2%, and sign up at 7.7% against 0%.
+  //
+  //   30-50%  consumer apps, day-1 activation   https://scilla.studio/insights/activation-rate/
+  //   25-40%  PLG SaaS, within 7 days           (same roundup)
+  //
+  // THE DENOMINATOR IS NOT THEIRS, and it cuts against us. Those figures are
+  // the share of SIGN-UPS that activate — a population that already committed
+  // by creating an account. This one is the share of VISITORS, drive-by
+  // included, because the product needs no account to reach its aha moment. A
+  // less-selected denominator produces a lower rate for the same quality of
+  // product, so clearing their band on this denominator is a stronger result
+  // than matching it on theirs, not a weaker one. Said on the tile.
+  var ACTIVATION_BENCHMARK = { low: 30, high: 50, label: 'consumer apps' };
+
   var AD_CTR_BENCHMARK = { realestate: 1.08, display: 0.46,
                            native_low: 0.08, native_high: 1.16 };
 
@@ -1732,7 +1748,24 @@
     // Verdict against a cohort-survival benchmark, with the same discipline the
     // dwell and return tiles use: state the reference number always, pass
     // judgement only when the cohort can carry one.
-    function survivalBench(mine, bench, cohort){
+    // Band, not a point, so the verdict is "inside / above / below" rather than a
+  // spurious multiple against a number that was quoted as a range.
+  function activationBench(pct){
+    var B = ACTIVATION_BENCHMARK;
+    var line = B.label + ' target <b>' + B.low + '-' + B.high + '%</b>';
+    if (pct == null) return line + ' · nothing measured in this range';
+    var v, c;
+    if (pct >= B.high)     { v = 'above the band'; c = 'bn-hi';  }
+    else if (pct >= B.low) { v = 'inside it';      c = 'bn-mid'; }
+    else                   { v = 'below it';       c = 'bn-low'; }
+    return line + ' <span class="bn ' + c + '">' + v + '</span>' +
+      '<span class="a-bench-note">Their denominator is sign-ups; this one is ' +
+      'every visitor, drive-bys included, because no account is needed to open a ' +
+      'listing. A less-selected denominator reads lower for the same product, so ' +
+      'clearing their band here is the stronger result, not the weaker one.</span>';
+  }
+
+  function survivalBench(mine, bench, cohort){
       var line = 'All-app-category average <b>'+bench+'%</b>';
       if (mine == null) return line + ' · not measured here';
       if (n(cohort) < RETENTION_BENCHMARK.min_cohort)
@@ -1743,7 +1776,19 @@
       else                       { v='in line';        c='bn-mid'; }
       return line + ' <span class="bn '+c+'">'+v+'</span>';
     }
+    // Activation comes out of the hook block rather than a new query: it already
+    // counts, over the selected range, who opened a listing and who did not,
+    // and those two sets together are every visitor in the range.
+    var H = d.hook || {};
+    var actOn = n(H.viewed_visitors), actOff = n(H.noview_visitors);
+    var actAll = actOn + actOff;
+    var actPct = actAll ? (100 * actOn / actAll) : null;
+    var actRate = actPct == null ? '—' : actPct.toFixed(1) + '%';
+
     var tiles=[
+      {val:actRate,lbl:'Activation · opened a listing',
+       sub:comma(actOn)+' of '+comma(actAll)+' visitors reached it',
+       bench:activationBench(actPct)},
       {val:rate(d30.rate),lbl:'D30 retention · true',
        sub:comma(d30.retained)+' of '+comma(d30.cohort)+' still active at day 30',
        bench:survivalBench(d30.rate, RETENTION_BENCHMARK.d30, d30.cohort)},
@@ -1906,7 +1951,18 @@
     }).join('');
     el('ads-callout').innerHTML = sg>0
       ? '<b>'+comma(sg)+' of '+comma(v)+' ad visitors signed up ('+pctS(sg,v)+').</b> Compare that to your overall sign-up rate to see if ads pull their weight.'
-      : '<b>0 of '+comma(v)+' ad visitors have signed up.</b> They engage — '+pctS(op,v)+' open a listing, '+pctS(ret,v)+' come back — but ad clicks aren’t converting to accounts yet. (Sign-up attribution is lossy, so the true number may be slightly above 0.)';
+      // "They engage — 0% open a listing, 0% come back" was written for a case
+      // where the engagement numbers were non-zero. At 0/0 it asserts the
+      // opposite of the figures printed beside it, and a reader (human or
+      // model) reasonably takes the sentence over the numbers. Say which it is.
+      : (op || ret
+          ? '<b>0 of '+comma(v)+' ad visitors have signed up.</b> They do engage — '+pctS(op,v)+
+            ' open a listing and '+pctS(ret,v)+' come back — but the clicks are not becoming '+
+            'accounts. (Sign-up attribution is lossy, so the true number may be slightly above 0.)'
+          : '<b>All '+comma(v)+' ad visitors did nothing measurable.</b> None signed up, none '+
+            'opened a listing, none came back. That is not a weak conversion rate, it is no '+
+            'engagement at all — at this click count it could still be chance, but there is '+
+            'nothing here yet to optimise toward.');
   }
 
   // ---------- counter signage ----------

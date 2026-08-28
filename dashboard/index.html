@@ -243,6 +243,7 @@
      three scenarios above it so it is never read as a fourth target. */
   .goals-tbl tr.goals-target td{border-top:2px solid var(--border);padding-top:12px}
   .goals-tbl tr.goals-target .goals-tag{color:var(--purple)}
+  .goals-off{display:block;font-size:9.5px;font-weight:600;color:var(--muted);text-transform:none;letter-spacing:0;opacity:.8}
   .goals-tag{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
   .goals-tbl tr.goals-now .goals-tag{color:var(--ink2)}
   .tile .t-bench b{color:var(--ink)}
@@ -569,7 +570,7 @@
       <!-- ===== Trent's Fresh Spaces only ===== -->
       <div class="card mb18" id="sec-goals">
         <div class="card-head-row">
-          <div><h2>Goals — what each DAU target is actually worth</h2><div class="card-sub">Three audience scenarios priced against three revenue streams. Every rate here is either <b>measured on this site</b> — and shows the measurement — or <b>assumed</b>, and says so. The last revenue widget on this page was deleted for projecting MRR off assumptions while the real MRR read $0; the difference is that this one names which is which, and the assumptions are the only thing you can argue with.</div></div>
+          <div><h2>Goals — what each DAU target is actually worth</h2><div class="card-sub">Three audience scenarios priced against four revenue streams. Every rate here is either <b>measured on this site</b> — and shows the measurement — or <b>assumed</b>, and says so. The last revenue widget on this page was deleted for projecting MRR off assumptions while the real MRR read $0; the difference is that this one names which is which, and the assumptions are the only thing you can argue with.</div></div>
         </div>
         <div id="goals-table"></div>
         <div id="goals-inputs" style="margin-top:18px"></div>
@@ -2463,6 +2464,11 @@
     per_click: 2.00,      // $ an agent pays per hand-off. Nobody has ever paid.
     acct_to_paid: 3.5,    // % of accounts that buy Plus. Measured here: 0 of 13.
     report_close: 60,     // % of report checkouts that complete. Measured: 0 of 3.
+    // AdSense revenue per 1,000 page views. This is the site's own prior
+    // estimate for the vertical, and it is worth stating that it cuts BOTH
+    // ways: the same $6 that makes the column look small at 3,000 monthly
+    // visitors is what makes it the second-largest column at 250,000.
+    adsense_rpm: 6.00,
     stickiness: 10        // DAU/MAU used to turn a DAU target into monthly reach.
   };
   var GOAL_SCENARIOS = [300, 1000, 3000];
@@ -2482,6 +2488,10 @@
     var clicksPerVisitor = visitors ? agentClicks / visitors : 0;
     var reportStarts = n(EV.report_checkout_start);
     var startsPerVisitor = visitors ? reportStarts / visitors : 0;
+    // Page views per visitor, for the one stream that is paid per page rather
+    // than per action.
+    var pageViews = n(T.visits);
+    var pvPerVisitor = visitors ? pageViews / visitors : 0;
     var sVis = n(C.one_time_visitors) + n(C.returning_visitors);
     var sUps = n(C.one_time_signups) + n(C.returning_signups);
     var signupRate = sVis ? sUps / sVis : 0;
@@ -2500,7 +2510,9 @@
       var adv = mau * clicksPerVisitor * sellableShare * K.per_click;
       var plus = mau * signupRate * (K.acct_to_paid / 100) * PLUS_PRICE;
       var rep = mau * startsPerVisitor * (K.report_close / 100) * REPORT_PRICE;
-      return { dau: dau, mau: mau, adv: adv, plus: plus, rep: rep, total: adv + plus + rep };
+      var ads = (mau * pvPerVisitor / 1000) * K.adsense_rpm;
+      return { dau: dau, mau: mau, adv: adv, plus: plus, rep: rep, ads: ads,
+               total: adv + plus + rep + ads };
     }
     var rows = GOAL_SCENARIOS.map(row);
     var nowDau = n(E.dau), nowRow = nowDau ? row(nowDau) : null;
@@ -2518,23 +2530,26 @@
     el('goals-table').innerHTML =
       '<div style="overflow-x:auto"><table class="goals-tbl">' +
       '<thead><tr><th>Daily actives</th><th>Monthly reach</th>' +
-      '<th>Advertiser slots</th><th>Plus $' + PLUS_PRICE.toFixed(2) + '/mo</th>' +
+      '<th>Advertiser slots</th><th>AdSense<span class="goals-off">not live</span></th>' +
+      '<th>Plus $' + PLUS_PRICE.toFixed(2) + '/mo</th>' +
       '<th>Reports $' + REPORT_PRICE + '</th><th>Total / month</th></tr></thead><tbody>' +
       (nowRow ? '<tr class="goals-now"><td><b>' + comma(nowRow.dau) + '</b> <span class="goals-tag">today</span></td>' +
-        '<td>' + comma(E.mau) + '</td><td>' + usd(nowRow.adv) + '</td><td>' + usd(nowRow.plus) +
-        '</td><td>' + usd(nowRow.rep) + '</td><td><b>' + usd(nowRow.total) + '</b></td></tr>' : '') +
+        '<td>' + comma(E.mau) + '</td><td>' + usd(nowRow.adv) + '</td><td>' + usd(nowRow.ads) +
+        '</td><td>' + usd(nowRow.plus) + '</td><td>' + usd(nowRow.rep) + '</td><td><b>' +
+        usd(nowRow.total) + '</b></td></tr>' : '') +
       rows.map(function(r){
         return '<tr><td><b>' + comma(r.dau) + '</b>' +
           (r.dau === 300 ? ' <span class="goals-tag">your goal</span>' : '') + '</td>' +
-          '<td>' + comma(r.mau) + '</td><td>' + usd(r.adv) + '</td><td>' + usd(r.plus) +
-          '</td><td>' + usd(r.rep) + '</td><td><b>' + usd(r.total) + '</b></td></tr>';
+          '<td>' + comma(r.mau) + '</td><td>' + usd(r.adv) + '</td><td>' + usd(r.ads) +
+          '</td><td>' + usd(r.plus) + '</td><td>' + usd(r.rep) + '</td><td><b>' +
+          usd(r.total) + '</b></td></tr>';
       }).join('') +
       (targetRow
         ? '<tr class="goals-target"><td><b>' + comma(targetRow.dau) + '</b> ' +
           '<span class="goals-tag">for $' + comma(GOAL_REVENUE_TARGET) + '/mo</span></td>' +
           '<td>' + comma(targetRow.mau) + '</td><td>' + usd(targetRow.adv) + '</td><td>' +
-          usd(targetRow.plus) + '</td><td>' + usd(targetRow.rep) + '</td><td><b>' +
-          usd(targetRow.total) + '</b></td></tr>'
+          usd(targetRow.ads) + '</td><td>' + usd(targetRow.plus) + '</td><td>' +
+          usd(targetRow.rep) + '</td><td><b>' + usd(targetRow.total) + '</b></td></tr>'
         : '') +
       '</tbody></table></div>';
 
@@ -2558,6 +2573,11 @@
                comma(sUps) + ' sign-ups ÷ ' + comma(sVis) + ' visitors') +
       inputRow('m', startsPerVisitor.toFixed(4) + ' report checkouts started per visitor',
                comma(reportStarts) + ' starts ÷ ' + comma(visitors) + ' visitors') +
+      inputRow('m', pvPerVisitor.toFixed(2) + ' page views per visitor',
+               comma(pageViews) + ' views ÷ ' + comma(visitors) + ' visitors — the AdSense denominator') +
+      inputRow('a', '$' + K.adsense_rpm.toFixed(2) + ' AdSense RPM per 1,000 page views',
+               'AdSense is wired but ADSENSE_SLOT is empty, so no ad has ever served here and ' +
+               'today\u2019s real figure is $0 — this column is what it would earn once approved') +
       inputRow('a', '$' + K.per_click.toFixed(2) + ' per agent hand-off',
                'No agent has ever paid for one. This is the number the whole left column rests on') +
       inputRow('a', K.acct_to_paid + '% of accounts buy Plus',
@@ -2587,7 +2607,14 @@
           'binding term is the $' + K.per_click.toFixed(2) + ' hand-off — revenue is linear in it, ' +
           'so a slot sold for ten times that reaches $' + comma(GOAL_REVENUE_TARGET) +
           ' at roughly ' + comma(Math.round(targetRow.dau / 10)) + ' daily actives instead. ' +
-          'At this price the target is unreachable by growth; it is reachable by pricing.'
+          'At this price the target is unreachable by growth; it is reachable by pricing. ' +
+          'Note what the columns do NOT do: every stream here is linear in monthly reach, so the ' +
+          'mix is the same at every row — AdSense is ' +
+          Math.round(100 * goal.ads / (goal.total || 1)) + '% of the total at 300 daily actives and ' +
+          Math.round(100 * targetRow.ads / (targetRow.total || 1)) + '% at ' + comma(targetRow.dau) +
+          '. Scale never re-weights a mix; only a rate does. AdSense is also the one column earning ' +
+          'nothing today for a reason fixable in an afternoon — the in-feed ad unit was never created ' +
+          'after approval, so ADSENSE_SLOT is empty and not one ad has ever served.'
         : '');
   }
 

@@ -2604,7 +2604,11 @@
       '<th>Advertiser slots</th><th>AdSense<span class="goals-off">not live</span></th>' +
       '<th>Plus $' + PLUS_PRICE.toFixed(2) + '/mo</th>' +
       '<th>Reports $' + REPORT_PRICE + '</th>' +
-      '<th>Referrals</th>' +
+      // NOT the invite-a-friend card further down this same page. That one is
+      // a growth loop that pays in Plus; this is a fee for handing a tenant to
+      // a firm that charges them. Two different things cannot both be called
+      // "Referrals" on one dashboard.
+      '<th>Consultancy fees<span class="goals-off">tenant → paid advisor</span></th>' +
       '<th>API seats<span class="goals-off">flat — not sold to visitors</span></th>' +
       '<th>AI crawls<span class="goals-off">flat — a property of the corpus</span></th>' +
       '<th>Total / month</th></tr></thead><tbody>' +
@@ -2660,8 +2664,9 @@
                'AdSense is wired but ADSENSE_SLOT is empty, so no ad has ever served here and ' +
                'today\u2019s real figure is $0 — this column is what it would earn once approved') +
       inputRow('m', comma(consultClicks) + ' consultancy hand-offs, all time',
-               'clicks to MGNY, Affordable for NY, Clinton Management and peers — people who ' +
-               'decided the question was worth paying somebody about') +
+               'outbound clicks to MGNY Consulting, Affordable for NY, Clinton Management, ' +
+               'Tax Solute, Reside NY and K&amp;G Upright — rent-stabilization firms that charge ' +
+               'tenants. Unrelated to the invite-a-friend Referrals card below') +
       inputRow('m', comma(aiPerDay) + ' AI-crawler requests per day',
                'measured off this site\u2019s own nginx log, not the beacon — crawlers run no ' +
                'JavaScript, so every other number on this page is blind to them. That is ~' +

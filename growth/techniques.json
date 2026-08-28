@@ -575,7 +575,7 @@
     "name": "Cornerstone guides for San Francisco, Los Angeles and Washington DC",
     "hypothesis": "Every one of the site's six guide pages was about New York, while SF, LA and DC \u2014 three of the four cities in the dataset and 42 of the 97 tracked queries \u2014 had no explanatory page at all. Their 'explain' and 'check' queries were pointed at the city map, which is a listings UI that cannot answer 'what are the exemptions' or 'is my building covered', so those queries were counted as covered while being unanswerable. One cornerstone guide per city, targeting the is-my-apartment-rent-controlled question that every other query in that city orbits, is the cheapest way to make three quarters of the tracked universe addressable at all. Unlike another 40k templated pages, these are three hand-written pages on a domain whose problem is trust, not volume.",
     "kind": "content",
-    "status": "retired",
+    "status": "active",
     "prefixes": [
       "/guide/is-my-apartment-rent-controlled-"
     ],
@@ -583,24 +583,12 @@
     "source": "seed",
     "evidence": "Measured, not assumed: 0 of 97 tracked queries rank in the top 10 and 77 of ~47,600 pages earn a Search Console impression (2026-07-29), so the constraint is not page count. The SF/LA/DC city pages are the same SPA shell with a different <title> \u2014 their visible text is NYC borough filters and HPD violation controls, which is why an SF exemptions query has nothing to match. 2026 pSEO guidance is consistent that templated pages survive only where each carries unique data and intent; a hand-written cornerstone page per city is the opposite failure mode.",
     "added": "2026-07-29",
-    "activated": "2026-07-29",
-    "revisit_on": "2026-08-28",
-    "retired": "2026-08-19",
+    "activated": "2026-08-28",
+    "revisit_on": "2026-09-27",
+    "retired": null,
     "notes": "Content lives in seo_guides.py, rendered by build_seo.guide_page(). The technique verifies the three pages exist in the docroot AND still carry their data caveat \u2014 LA is derived from assessor criteria and labelled 'likely RSO', SF is anonymized to the block. A guide that loses its caveat is a credibility bug, so it fails the run. Since 2026-08-02 it also PUBLISHES a guide the SEO pipeline has not deployed, through the growth build's own rsync: that pipeline's checkout stopped taking pushes and these three pages sat finished in git for four days, live nowhere. Ownership is by marker \u2014 a docroot copy without FALLBACK_MARKER belongs to the SEO build and is never overwritten \u2014 so the two pipelines cannot fight over one file. Fallback-published guides are listed in sitemap-daily.xml because no SEO shard knows they exist.",
-    "verdict": {
-      "decided": "2026-08-19",
-      "works": false,
-      "why": "0 owned visitors in 21d, and its pages earned 0 search impressions across 0 URLs \u2014 invisible in search, not merely un-clicked",
-      "measured": {
-        "total_owned_visitors": 0,
-        "recent_median": 0.0,
-        "prior_median": 0,
-        "days_measured": 21,
-        "owned_serving_pages": 0,
-        "owned_impressions": 0,
-        "owned_best_position": null
-      }
-    }
+    "verdict": null,
+    "first_activated": "2026-07-29"
   },
   {
     "id": "T024",

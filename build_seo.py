@@ -874,10 +874,68 @@ def council_district_pages(urls):
 PROMOTE_CLASS_C = 100
 PROMOTE_UNITS = 300
 
+# ...and the fourth rule, added 2026-08-28 the morning this triage first
+# deployed, because measuring it against the site's own serving history said the
+# three rules above would un-publish the entire working tier.
+#
+# growth/gsc_pages.json["history"] is the per-URL record of every page that has
+# ever earned a Search Console impression — 273 URLs, of which 260 are building
+# pages. Scored against the rules above: 11 of those 260 survive, and of the 14
+# building pages serving in the 2026-08-19..26 window, ZERO do. The rules are
+# not worthless — 4.2% of ever-served pages clear them against 1.2% of the
+# corpus, a real 3.5x enrichment — but they are chosen from what we know about a
+# building, and 2026-08-27 measured that class of criterion (data richness, open
+# violations) to have no power to predict which pages Google shows. Unit count
+# does have some, which is why the 300-unit rule stays.
+#
+# An impression is not a proxy for that judgement, it IS that judgement: Google
+# looked at the page, matched it to a real query and put it in front of a person.
+# Deleting those pages from the sitemap to concentrate crawl budget spends the
+# only demonstrated wins to buy attention for pages that have demonstrated
+# nothing. So a page that has ever served keeps its place.
+#
+# This is not the widening the comment above warns against. It does not relax a
+# threshold or add a new guess; it adds ~249 URLs that are already proven, to a
+# ~844-URL sitemap, and the set only grows when Google itself serves a new page.
+# HISTORY_CAP in growth/searchconsole.py bounds it at 4,000, which is also a
+# sane ceiling for a sitemap on a domain being rationed this hard.
+GSC_HISTORY_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                "growth", "gsc_pages.json")
+
+
+def _ever_served_bbls():
+    """BBLs of building pages that have ever earned a Search Console impression.
+
+    Never fatal: if the file is missing or malformed the triage falls back to
+    the three measured rules, which is the behaviour that shipped 2026-08-27.
+    A build must not fail because a measurement file is absent.
+    """
+    try:
+        hist = json.load(open(GSC_HISTORY_PATH)).get("history") or {}
+    except Exception as e:
+        print(f"index triage: no serving history ({e}) — "
+              f"promoting on the three measured rules only")
+        return set()
+    out = set()
+    for url in hist:
+        # …/building/<boro>/<slug>-<bbl>/ — the BBL is the last hyphen-separated
+        # token of the final path segment, and is all digits.
+        if "/building/" not in url:
+            continue
+        tail = url.rstrip("/").rsplit("/", 1)[-1].rsplit("-", 1)[-1]
+        if tail.isdigit():
+            out.add(tail)
+    return out
+
+
+EVER_SERVED_BBLS = _ever_served_bbls()
+
 
 def promoted_building(b, advertised):
     """True if this building page earns a place in the sitemap."""
     if advertised:
+        return True
+    if str(b.get("bbl")) in EVER_SERVED_BBLS:
         return True
     v = (b.get("h") or {}).get("violations") or {}
     if (v.get("oc") or 0) >= PROMOTE_CLASS_C:
@@ -2673,9 +2731,18 @@ def main():
           f"not submitted so not announced)")
 
     n_bld = len(blds)
+    # The serving-history line is here so a future reader can see, in the build
+    # log, whether the fourth rule is still doing work — if `kept` ever falls to
+    # roughly zero it means the pages Google shows now also clear the other
+    # rules, and the rule can be retired rather than quietly carried forever.
+    served_in_corpus = EVER_SERVED_BBLS & {str(b["bbl"]) for b in blds}
+    kept = served_in_corpus & promoted_bbls
     print(f"index triage: {len(promoted_bbls):,} of {n_bld:,} building pages promoted "
           f"({len(promoted_bbls) * 100.0 / n_bld:.1f}%); the rest are noindex,follow "
           f"and out of the sitemap")
+    print(f"index triage: {len(kept):,} of {len(served_in_corpus):,} building pages "
+          f"that have ever served are promoted (serving history: "
+          f"{len(EVER_SERVED_BBLS):,} BBLs)")
     print(f"Generated {len(urls):,} submitted URLs + {len(smaps)+2} sitemaps into {OUT}/ "
           f"({len(LM_CHANGED)} pages changed this run)")
 

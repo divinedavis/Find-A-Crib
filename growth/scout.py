@@ -228,7 +228,16 @@ def call_api(key, prompt, timeout=600):
         # Opus 5 spends part of this on thinking before any text, and web-search
         # answers are long — 4k truncated them, and 8k once went entirely to
         # thinking, ending the reply before the JSON started (2026-08-13).
-        "max_tokens": 16000,
+        # 16k did the same on 2026-08-28: stop_reason=max_tokens with the entire
+        # visible output being "I'll research current growth techniques before
+        # proposing." — the whole budget went to thinking and eight server-side
+        # searches, and the run produced nothing. There is nothing to salvage
+        # from a reply that never reached a "{", so _salvage() cannot help here
+        # and the only lever is headroom. This is a ceiling, not a spend: a run
+        # that already finishes inside 16k costs exactly what it did before, and
+        # the failed run had already paid for 16,000 tokens and got no techniques
+        # and no keywords for them.
+        "max_tokens": 32000,
         "system": SYSTEM,
         "tools": TOOLS,
         "messages": [{"role": "user", "content": prompt}],

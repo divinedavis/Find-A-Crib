@@ -232,10 +232,22 @@
   .ads-tile .a-bench-note{display:block;margin-top:4px;opacity:.72}
   .goals-tbl{width:100%;border-collapse:collapse;font-size:13.5px;min-width:560px}
   .goals-tbl th{text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.04em;
-    color:var(--muted);font-weight:600;padding:0 0 8px;border-bottom:1px solid var(--border)}
+    color:var(--muted);font-weight:600;padding:0 11px 8px;border-bottom:1px solid var(--border)}
   .goals-tbl th:first-child,.goals-tbl td:first-child{text-align:left}
-  .goals-tbl td{text-align:right;padding:9px 0;border-bottom:1px solid var(--border);color:var(--ink)}
+  .goals-tbl td{text-align:right;padding:9px 11px;border-bottom:1px solid var(--border);color:var(--ink)}
+  /* Column rules. Nine money columns sit side by side and the eye was losing
+     which figure belonged to which header halfway across; the horizontal rules
+     alone were not enough. Kept on the same recessive --border as the row
+     lines, and dropped on the last cell so the table has no outer right edge
+     floating away from the card. The 11px padding is what stops a value
+     touching the rule beside it. */
+  .goals-tbl th:not(:last-child),.goals-tbl td:not(:last-child){
+    border-right:1px solid var(--border)}
   .goals-tbl tbody tr:last-child td{border-bottom:none}
+  /* The first and last columns are the labels and the answer, so they get the
+     surface tint that separates them from the seven streams in between. */
+  .goals-tbl td:first-child,.goals-tbl th:first-child,
+  .goals-tbl td:last-child,.goals-tbl th:last-child{background:var(--sunken)}
   /* Today's row is context, not a target — recessive so it cannot be misread
      as a fourth scenario. */
   .goals-tbl tr.goals-now td{color:var(--ink2);background:var(--sunken)}

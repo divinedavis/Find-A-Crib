@@ -2298,7 +2298,22 @@
   // of buildings.min.json, so the map file now carries only h.op=1 and the
   // details come from the hpd_contacts table when a building is opened.
   const CONTACTS = new Map();   // bbl -> {owner,manager,officer} | null
+
+  // Owner, managing agent and head officer are SIGNED-IN ONLY.
+  //
+  // The gate that matters is on the table, not here: `anon` had `select` on
+  // public.hpd_contacts, and the publishable key is served in /config.js, so
+  // all 46,694 rows — including named individuals, since a head officer is a
+  // person — were a public bulk endpoint to anyone who viewed source. The
+  // 2026-08-28 migration revokes that and enables RLS. This function only
+  // makes the UI tell the truth about it; deleting it would re-expose nothing.
+  function signInForOperator() {
+    return '<div class="hpd-row" style="color:var(--ink-2)">'
+      + '🔒 <a href="#" data-op-signin>Sign in</a> to see the owner, managing agent '
+      + 'and head officer on file with HPD.</div>';
+  }
   function operatorRows(c, bbl) {
+    if (!authUser) return signInForOperator();
     if (!c || !(c.owner || c.manager || c.officer)) {
       return '<div class="hpd-row" style="color:var(--ink-2)">No operator contacts on file.</div>';
     }
@@ -2313,6 +2328,7 @@
   // data-show-phone reveal flow). Returns '' when there's nobody to show, so the
   // container collapses via .agent-card:empty.
   function agentCardInner(bbl, canLoad) {
+    if (!authUser) return '';          // same data, different shape — same gate
     const c = CONTACTS.get(bbl);
     if (c === undefined) return canLoad ? '<div class="agent-loading">Loading managing agent…</div>' : '';
     const m = c && c.manager && c.manager.name ? c.manager : null;
@@ -2328,7 +2344,27 @@
       + `<div class="agent-role">${role}</div></div>`
       + `<div class="agent-actions">${phoneBtn}</div>`;
   }
+  // One delegated handler for every copy of the operator sign-in link — the
+  // panel is re-rendered on each open, so binding per render would pile up
+  // listeners on the same node.
+  document.addEventListener('click', e => {
+    const a = e.target.closest && e.target.closest('[data-op-signin]');
+    if (!a) return;
+    e.preventDefault();
+    openAuthModal('Sign in to see who owns and manages this building.');
+  });
+
   async function loadOperator(bbl, attempt = 0) {
+    // Signed out: the request would come back 42501 anyway now, and a failed
+    // fetch would leave the panel stuck on "Loading operator…" forever. Paint
+    // the sign-in prompt instead and don't touch the network.
+    if (!authUser) {
+      document.querySelectorAll(`[data-op="${bbl}"]`)
+        .forEach(el => { el.innerHTML = signInForOperator(); });
+      document.querySelectorAll(`[data-agentcard="${bbl}"]`)
+        .forEach(el => { el.innerHTML = ''; });
+      return;
+    }
     // deep-links render the detail before the Supabase client exists — retry briefly
     if (!supaClient) {
       if (attempt < 10) setTimeout(() => loadOperator(bbl, attempt + 1), 500);
@@ -2385,10 +2421,12 @@
         <div class="hpd-link"><a href="https://hpdonline.nyc.gov/hpdonline/" target="_blank" rel="noopener">Search HPD Online ↗</a></div>
       </div>`;
     }
-    const opInner = CONTACTS.has(rec.bbl)
-      ? operatorRows(CONTACTS.get(rec.bbl), rec.bbl)
-      : (h.op ? '<div class="hpd-row" style="color:var(--ink-2)">Loading operator…</div>'
-              : '<div class="hpd-row" style="color:var(--ink-2)">No operator contacts on file.</div>');
+    const opInner = !authUser
+      ? signInForOperator()
+      : (CONTACTS.has(rec.bbl)
+          ? operatorRows(CONTACTS.get(rec.bbl), rec.bbl)
+          : (h.op ? '<div class="hpd-row" style="color:var(--ink-2)">Loading operator…</div>'
+                  : '<div class="hpd-row" style="color:var(--ink-2)">No operator contacts on file.</div>'));
     if (h.op && !CONTACTS.has(rec.bbl)) loadOperator(rec.bbl);
     const v = h.violations;
     const c = h.complaints;
@@ -3225,6 +3263,11 @@
   }
   function orgFetch(Q, force) {
     const k = orgKey(Q);
+    // Searching BY a landlord's name reads the same table, so it is behind the
+    // same gate. Bail before the request rather than after a 42501: the search
+    // tiers already fall through to address/area matching, so a signed-out
+    // visitor gets the normal "nothing matches" answer instead of a spinner.
+    if (!authUser) return;
     if (k.length < 4 || ORG_CACHE.has(k) || !supaClient) return;
     if (!force && !orgNameish(Q)) return;
     ORG_CACHE.set(k, 'pending');
@@ -5592,6 +5635,21 @@
       // signing in (or out) with the detail sheet open swaps the composer in/out
       // and re-marks which comments carry your Delete button
       if (detailRec) loadComments(detailRec.bbl);
+      // The operator panel is sign-in gated, so an auth change has to repaint
+      // it too — otherwise signing in leaves the 🔒 prompt sitting there until
+      // the sheet is closed and reopened, which reads as the sign-in failing.
+      if (detailRec) {
+        if (authUser) { CONTACTS.delete(detailRec.bbl); loadOperator(detailRec.bbl); }
+        else {
+          CONTACTS.clear();   // never keep contacts readable after a sign-out
+          document.querySelectorAll('[data-op]').forEach(el => {
+            el.innerHTML = signInForOperator();
+          });
+          document.querySelectorAll('[data-agentcard]').forEach(el => {
+            el.innerHTML = '';
+          });
+        }
+      }
       if (authUser) {
         // ties this browser's fac_vid to the account, which is what lets
         // traffic_report.py retroactively exclude the owner's anonymous visits

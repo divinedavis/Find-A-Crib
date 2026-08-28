@@ -1088,17 +1088,30 @@ def _fac_adtiles(since):
     # is exactly where every click older than impression-counting lives. The
     # all-time card would quietly lose its own history. Detect and report it
     # rather than let the numbers shrink without saying why.
-    ROW_CAP = 50000
-    q = ("events?select=event,props,visitor_id,created_at"
-         f"&event=in.({','.join(AD_TILE_EVENTS)})"
-         f"&order=created_at.desc&limit={ROW_CAP}")
+    # PAGINATE. `limit=50000` is a lie PostgREST tells politely: it caps a
+    # response at 1,000 rows whatever you ask for, and the guard below used to
+    # test len(rows) >= 50000, which could never fire. The moment tile_served
+    # began firing ~1,500 times a day, the newest 1,000 ad-tile events were
+    # almost entirely today's renders and every click fell off the end — this
+    # card reported 0 clicks against a real 72, with `truncated` reading False.
+    PAGE = 1000
+    MAX_PAGES = 200          # 200k events; a real ceiling, and it is reported
+    base = ("events?select=event,props,visitor_id,created_at"
+            f"&event=in.({','.join(AD_TILE_EVENTS)})"
+            "&order=created_at.desc")
     if since:
-        q += f"&created_at=gte.{urllib.parse.quote(str(since))}"
+        base += f"&created_at=gte.{urllib.parse.quote(str(since))}"
+    rows, truncated = [], False
     try:
-        rows = _rest("GET", q) or []
+        for p_ in range(MAX_PAGES):
+            batch = _rest("GET", f"{base}&offset={p_ * PAGE}&limit={PAGE}") or []
+            rows += batch
+            if len(batch) < PAGE:
+                break
+        else:
+            truncated = True
     except Exception:
         return {}
-    truncated = len(rows) >= ROW_CAP
     mine = _fac_owner_visitors()
     rows = [r for r in rows if r.get("visitor_id") not in mine]
 

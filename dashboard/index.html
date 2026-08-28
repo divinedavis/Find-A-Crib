@@ -239,6 +239,10 @@
   /* Today's row is context, not a target — recessive so it cannot be misread
      as a fourth scenario. */
   .goals-tbl tr.goals-now td{color:var(--ink2);background:var(--sunken)}
+  /* The revenue-target row is a consequence, not a plan — set apart from the
+     three scenarios above it so it is never read as a fourth target. */
+  .goals-tbl tr.goals-target td{border-top:2px solid var(--border);padding-top:12px}
+  .goals-tbl tr.goals-target .goals-tag{color:var(--purple)}
   .goals-tag{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
   .goals-tbl tr.goals-now .goals-tag{color:var(--ink2)}
   .tile .t-bench b{color:var(--ink)}
@@ -2462,6 +2466,10 @@
     stickiness: 10        // DAU/MAU used to turn a DAU target into monthly reach.
   };
   var GOAL_SCENARIOS = [300, 1000, 3000];
+  // The revenue target gets SOLVED for, not guessed at. Hardcoding "25,000 DAU"
+  // would be wrong the moment any assumption below it moves, and the whole
+  // point of this card is that the assumptions are the arguable part.
+  var GOAL_REVENUE_TARGET = 50000;
 
   function renderGoals(d){
     d = d || {};
@@ -2497,6 +2505,15 @@
     var rows = GOAL_SCENARIOS.map(row);
     var nowDau = n(E.dau), nowRow = nowDau ? row(nowDau) : null;
 
+    // Revenue is linear in monthly reach, so the DAU that hits a revenue target
+    // is one division — provided the mix earns anything at all per visitor.
+    var perMau = row(100).total / (100 / (K.stickiness / 100));
+    var targetRow = null;
+    if (perMau > 0) {
+      var mauNeeded = GOAL_REVENUE_TARGET / perMau;
+      targetRow = row(mauNeeded * (K.stickiness / 100));
+    }
+
     function usd(v){ return '$' + Math.round(v).toLocaleString('en-US'); }
     el('goals-table').innerHTML =
       '<div style="overflow-x:auto"><table class="goals-tbl">' +
@@ -2511,7 +2528,15 @@
           (r.dau === 300 ? ' <span class="goals-tag">your goal</span>' : '') + '</td>' +
           '<td>' + comma(r.mau) + '</td><td>' + usd(r.adv) + '</td><td>' + usd(r.plus) +
           '</td><td>' + usd(r.rep) + '</td><td><b>' + usd(r.total) + '</b></td></tr>';
-      }).join('') + '</tbody></table></div>';
+      }).join('') +
+      (targetRow
+        ? '<tr class="goals-target"><td><b>' + comma(targetRow.dau) + '</b> ' +
+          '<span class="goals-tag">for $' + comma(GOAL_REVENUE_TARGET) + '/mo</span></td>' +
+          '<td>' + comma(targetRow.mau) + '</td><td>' + usd(targetRow.adv) + '</td><td>' +
+          usd(targetRow.plus) + '</td><td>' + usd(targetRow.rep) + '</td><td><b>' +
+          usd(targetRow.total) + '</b></td></tr>'
+        : '') +
+      '</tbody></table></div>';
 
     function inputRow(kind, label, detail){
       return '<div class="act-row"><div class="act-l">' +
@@ -2551,7 +2576,19 @@
       'ten times the goal, this reaches ' + usd(rows[2].total) + ' a month. That is the honest ceiling ' +
       'of the current product mix, and it is the argument for changing the mix rather than for ' +
       'chasing the traffic harder. Today MRR is $0, so every figure above is conditional on the ' +
-      'four assumptions listed — change one and the whole column moves.';
+      'four assumptions listed — change one and the whole column moves.' +
+      (targetRow
+        ? ' <b>$' + comma(GOAL_REVENUE_TARGET) + ' a month needs ' + comma(targetRow.dau) +
+          ' daily actives — ' + Math.round(targetRow.dau / GOAL_SCENARIOS[0]) + '× your 300 goal and ' +
+          (nowRow ? Math.round(targetRow.mau / Math.max(n(E.mau), 1)) + '× the monthly reach you have today'
+                  : 'far beyond current reach') + '.</b> ' +
+          'That is not a traffic plan, it is a different company. The number is this large because ' +
+          'the mix earns about ' + (100 * perMau).toFixed(0) + '¢ per monthly visitor, and the ' +
+          'binding term is the $' + K.per_click.toFixed(2) + ' hand-off — revenue is linear in it, ' +
+          'so a slot sold for ten times that reaches $' + comma(GOAL_REVENUE_TARGET) +
+          ' at roughly ' + comma(Math.round(targetRow.dau / 10)) + ' daily actives instead. ' +
+          'At this price the target is unreachable by growth; it is reachable by pricing.'
+        : '');
   }
 
   // ---------- render: Claude API spend ----------

@@ -384,7 +384,6 @@
           <button data-site="nemo">🏠 NEMO Gutter</button>
           <button data-site="crease">👔 Crease</button>
           <button data-site="trent">🎨 Fresh Spaces</button>
-          <button data-site="claude">🤖 Claude API</button>
         </div>
         <span class="live-pill"><span class="live-dot"></span> Live data</span>
         <!-- Scopes every tile that counts something over a period, on both
@@ -927,10 +926,14 @@
       mark:'🏙️', name:'Find A Crib', endpoint:'/api/dashboard-metrics',
       title:'Find A Crib', sub:'Traffic, funnel &amp; revenue — everything in one place.',
       live:'https://findacrib.com', foot:'Since 24 June 2026',
-      blocks:['fac-a','fac-b'],
+      blocks:['fac-a','fac-b','claude-a'],
       nav:[['top','▦','Dashboard'],['sec-traffic','◔','Traffic'],['sec-ads','◉','Google Ads'],
            ['sec-tiles','◫','Advertiser tiles'],
-           ['link:/dashboard/users/','☺','Users'],['sec-funnel','⇅','Funnel']]
+           ['link:/dashboard/users/','☺','Users'],['sec-funnel','⇅','Funnel'],
+           // Users is a separate PAGE with its own hardcoded copy of this list
+           // in dashboard/users/index.html. Change one, change the other, or
+           // the pane rearranges when you open it.
+           ['sec-claude-spend','🤖','Claude API']]
     },
     crease:{
       mark:'👔', name:'Crease', endpoint:'/api/dashboard-crease',
@@ -947,14 +950,6 @@
       blocks:['trent-a'],
       nav:[['top','▦','Dashboard'],['sec-market','◎','The market'],
            ['sec-trent-search','◉','Search'],['sec-trent-bookings','⇅','Bookings']]
-    },
-    claude:{
-      mark:'🤖', name:'Claude API', endpoint:'/api/dashboard-claude',
-      title:'Claude API spend', sub:'What the Anthropic bill is doing, and how close it is to the cap that stops the crons.',
-      live:'https://platform.claude.com/cost', foot:'Anthropic Admin API · all projects',
-      blocks:['claude-a'],
-      nav:[['top','▦','Dashboard'],['sec-claude-spend','◔','Spend'],
-           ['sec-claude-models','◫','By model'],['sec-claude-limits','⚙','Rate limits']]
     },
     nemo:{
       mark:'🏠', name:'NEMO Gutter', endpoint:'/api/dashboard-nemo',
@@ -1165,6 +1160,33 @@
     return 'ok';
   }
 
+  // The Claude section sits on the Find A Crib board but comes from its own
+  // endpoint, so it is fetched separately rather than being wedged into
+  // /dashboard-metrics — the bill is org-wide and has nothing to do with this
+  // site's traffic. Kept independent on purpose: a failure here must not blank
+  // the board it is a section of.
+  var claudeAt = 0, claudeData = null;
+  async function loadClaude(force){
+    if(!force && claudeData && Date.now()-claudeAt < 5*60*1000){
+      renderClaude(session && session.user, claudeData); return;
+    }
+    var t = await token();
+    if(!t) return;
+    try{
+      var res = await feedFetch('/api/dashboard-claude', t);
+      if(!res.ok){
+        renderClaude(session && session.user,
+          {ok:false, reason:'http', message:'The dashboard API answered '+res.status+'.'});
+        return;
+      }
+      claudeData = await res.json(); claudeAt = Date.now();
+      renderClaude(session && session.user, claudeData);
+    }catch(e){
+      renderClaude(session && session.user,
+        {ok:false, reason:'network', message:'Could not reach the dashboard API.'});
+    }
+  }
+
   function paint(data){
     applyShell();
     paintRangeSwitch();
@@ -1184,8 +1206,7 @@
     if(siteKey==='nemo') renderNemo(session.user, data);
     else if(siteKey==='crease') renderCrease(session.user, data);
     else if(siteKey==='trent') renderTrent(session.user, data);
-    else if(siteKey==='claude') renderClaude(session.user, data);
-    else render(session.user, data);
+    else { render(session.user, data); loadClaude(false); }
   }
 
   // Eric signs in to see NEMO and is refused Find A Crib's feed by the API.

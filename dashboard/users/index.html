@@ -215,12 +215,20 @@
       <!-- ?site=fac because these sections only exist on the Find A Crib tab:
            without it a remembered NEMO tab wins and the link lands on a board
            that has no funnel to scroll to. -->
+      <!-- MUST match SITES.fac.nav in ../index.html, item for item and in order.
+           This is a separate page with its own hardcoded copy of the sidebar, so
+           the two drift silently: opening Users used to drop "Advertiser tiles",
+           add a "Revenue model" entry, and lose "Claude API" — the whole pane
+           rearranged under the cursor. "Revenue model" also pointed at
+           #sec-revenue, a section removed from the board, so it scrolled
+           nowhere. Change one list, change the other. -->
       <a class="nav-item" href="/dashboard/?site=fac"><span class="nav-ico">▦</span> Dashboard</a>
       <a class="nav-item" href="/dashboard/?site=fac#sec-traffic"><span class="nav-ico">◔</span> Traffic</a>
       <a class="nav-item" href="/dashboard/?site=fac#sec-ads"><span class="nav-ico">◉</span> Google Ads</a>
+      <a class="nav-item" href="/dashboard/?site=fac#sec-tiles"><span class="nav-ico">◫</span> Advertiser tiles</a>
       <a class="nav-item active"><span class="nav-ico">☺</span> Users</a>
       <a class="nav-item" href="/dashboard/?site=fac#sec-funnel"><span class="nav-ico">⇅</span> Funnel</a>
-      <a class="nav-item" href="/dashboard/?site=fac#sec-revenue"><span class="nav-ico">$</span> Revenue model</a>
+      <a class="nav-item" href="/dashboard/?site=fac#sec-claude-spend"><span class="nav-ico">🤖</span> Claude API</a>
     </nav>
     <div class="nav-spacer"></div>
     <a class="nav-item" href="https://findacrib.com" target="_blank"><span class="nav-ico">↗</span> View live site</a>

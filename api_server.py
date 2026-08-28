@@ -1031,6 +1031,14 @@ AD_TILE_EVENTS = ("tile_impression", "tile_served", "featured_click", "hc_click"
 # and the card would be quoting noise at a buyer.
 AD_CTR_MIN = 100
 
+# A served-impression window also has to be OLD enough, not just big enough.
+# `tile_served` shipped mid-afternoon and banked 214 impressions within hours,
+# clearing AD_CTR_MIN — but almost every click on record predates it, so the
+# rate published as "0.0%, below average" on a slot that had just produced 65
+# clicks. Impressions accumulate in minutes and clicks do not; a rate divided
+# over a window hours old is noise wearing a verdict. One full day is the floor.
+AD_WINDOW_MIN_HOURS = 24
+
 
 def _fac_adtiles(since):
     """Advertiser-tile inventory: what the re-rental and lottery tiles earned.
@@ -1120,6 +1128,16 @@ def _fac_adtiles(since):
         if props.get("addr"):
             a["_units"].add(props["addr"])
 
+    # Age of the served window, in hours. Timestamps are ISO from PostgREST.
+    served_window_ready = False
+    if first_served:
+        try:
+            t0 = datetime.datetime.fromisoformat(first_served.replace("Z", "+00:00"))
+            age_h = (datetime.datetime.now(datetime.timezone.utc) - t0).total_seconds() / 3600
+            served_window_ready = age_h >= AD_WINDOW_MIN_HOURS
+        except Exception:
+            served_window_ready = False
+
     def finish(d, extra=()):
         out = {kk: vv for kk, vv in d.items() if not kk.startswith("_")}
         out["reach"] = len(d["_reach"])
@@ -1137,7 +1155,7 @@ def _fac_adtiles(since):
         # published display/native CTR benchmark divides by. Same minimum sample
         # and same measured-window rule as the viewable rate above.
         out["ctr_served"] = (100.0 * d["clicks_served"] / d["served"]) \
-            if d["served"] >= AD_CTR_MIN else None
+            if (d["served"] >= AD_CTR_MIN and served_window_ready) else None
         return out
 
     agents = sorted((finish(v, ("units",)) for v in by_agent.values()),
@@ -1155,7 +1173,9 @@ def _fac_adtiles(since):
                if sum(a["impressions"] for a in agents) >= AD_CTR_MIN else None,
         "ctr_served": (100.0 * sum(a["clicks_served"] for a in agents)
                        / sum(a["served"] for a in agents))
-                      if sum(a["served"] for a in agents) >= AD_CTR_MIN else None,
+                      if (sum(a["served"] for a in agents) >= AD_CTR_MIN
+                          and served_window_ready) else None,
+        "served_window_ready": served_window_ready,
         "ctr_min": AD_CTR_MIN,
         "first_served": first_served,
         "reach": len(set().union(*[v["_reach"] for v in by_agent.values()]) if by_agent else set()),

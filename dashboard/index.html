@@ -1605,7 +1605,8 @@
     var hasView = A.ctr !== null && A.ctr !== undefined;
     var ctrSub = hasCtr
       ? 'clicks ÷ served impressions — the industry denominator'
-      : (served ? comma(served)+' served impressions so far — too few to divide by'
+      : (served ? comma(served)+' served so far — impressions bank in minutes and '
+                   +'clicks do not, so the rate waits a full day'
                 : 'served impressions are being counted from today');
 
     el('tile-tiles').innerHTML=[

@@ -1561,19 +1561,30 @@
   //   * An agent with clicks and no impressions yet shows "—", not "0.0%".
   // States the reference always; passes judgement only with the denominator
   // caveat attached, because without it the multiple is simply wrong.
-  function adCtrBench(mine){
+  // `mine` is the served-impression rate, so this is finally a like-for-like
+  // comparison and the verdict can stand without an apology attached. The
+  // viewable rate rides along as context, not as the thing being judged.
+  function adCtrBench(mine, viewable){
     var B = AD_CTR_BENCHMARK;
     var line = 'Real-estate display averages <b>' + B.realestate + '%</b>, all display <b>' +
                B.display + '%</b>';
-    if (mine == null) return line + ' · nothing measured here yet';
+    if (mine == null) {
+      return line + ' · <span class="a-bench-note">served impressions are only now ' +
+             'being counted, so there is nothing like-for-like to compare yet' +
+             (viewable != null
+                ? '. On viewable impressions it is ' + viewable.toFixed(1) +
+                  '%, which is a stricter denominator and not comparable to these.'
+                : '.') + '</span>';
+    }
     var x = mine / B.realestate;
     return line +
       ' <span class="bn ' + (mine > B.realestate ? 'bn-hi' : 'bn-low') + '">' +
       (mine > B.realestate ? x.toFixed(1) + '\u00d7 higher' : 'below') + '</span>' +
-      '<span class="a-bench-note">…but they divide by served impressions and this ' +
-      'divides by a viewable one (50% on screen, 1s, once per apartment per session). ' +
-      'The real gap is smaller than that multiple. Native is quoted anywhere from ' +
-      B.native_low + '% to ' + B.native_high + '%, too wide to judge against.</span>';
+      '<span class="a-bench-note">Same denominator as theirs: an impression is ' +
+      'counted when the tile is rendered, viewed or not' +
+      (viewable != null ? '. On viewable impressions only, it is ' + viewable.toFixed(1) + '%' : '') +
+      '. Native is quoted anywhere from ' + B.native_low + '% to ' + B.native_high +
+      '%, too wide to judge against.</span>';
   }
 
   function renderFacTiles(A){
@@ -1583,17 +1594,27 @@
     // which clicks fell inside the measured window, and how many impressions a
     // slot has to bank before a rate off them is worth printing. A null means
     // withheld, not zero.
-    var hasCtr = A.ctr !== null && A.ctr !== undefined;
-    var ctr = hasCtr ? A.ctr.toFixed(1)+'%' : '—';
-    var ctrSub = hasCtr ? 'clicks ÷ impressions, same window'
-               : (impr ? comma(impr)+' impressions so far — too few to divide by'
-                       : 'no impressions banked yet');
+    // The published rate is now the INDUSTRY one: clicks over SERVED
+    // impressions, the denominator every display/native CTR benchmark uses.
+    // The viewable rate is kept beside it, because it is the honest number for
+    // a buyer — but it is not the comparable one, and quoting it against an
+    // industry average overstated this slot by roughly an order of magnitude.
+    var served=n(A.served);
+    var hasCtr = A.ctr_served !== null && A.ctr_served !== undefined;
+    var ctr = hasCtr ? A.ctr_served.toFixed(1)+'%' : '—';
+    var hasView = A.ctr !== null && A.ctr !== undefined;
+    var ctrSub = hasCtr
+      ? 'clicks ÷ served impressions — the industry denominator'
+      : (served ? comma(served)+' served impressions so far — too few to divide by'
+                : 'served impressions are being counted from today');
 
     el('tile-tiles').innerHTML=[
-      {v:comma(impr), l:'Tile impressions', sub:'half on screen, one second'},
+      {v:comma(served), l:'Served impressions', sub:'rendered into the grid — what the industry counts'},
+      {v:comma(impr), l:'Viewable impressions', sub:'half on screen, one second'},
       {v:comma(reach), l:'People reached', sub:'distinct visitors'},
       {v:comma(clicks), l:'Clicks to the agent', sub:'hand-offs off this site'},
-      {v:ctr, l:'Click rate', sub:ctrSub, bench:adCtrBench(hasCtr ? A.ctr : null)}
+      {v:ctr, l:'Click rate', sub:ctrSub,
+       bench:adCtrBench(hasCtr ? A.ctr_served : null, hasView ? A.ctr : null)}
     ].map(creaseTile).join('');
 
     var rows=(A.agents||[]);

@@ -1024,7 +1024,7 @@ def _fac_owner_visitors():
 
 
 # The three tile events, and which advertiser each one belongs to.
-AD_TILE_EVENTS = ("tile_impression", "featured_click", "hc_click")
+AD_TILE_EVENTS = ("tile_impression", "tile_served", "featured_click", "hc_click")
 
 # How many impressions a slot has to bank before its click rate is published.
 # Under a hundred, the confidence interval on the rate is wider than the rate,
@@ -1075,13 +1075,20 @@ def _fac_adtiles(since):
     first_impr = min((r["created_at"] for r in rows
                       if r.get("event") == "tile_impression" and r.get("created_at")),
                      default=None)
+    # Served impressions started being counted later than viewable ones, so they
+    # get their own left edge. Sharing first_impr would divide clicks banked
+    # before `tile_served` existed by a denominator that did not exist yet —
+    # the exact mistake the viewable window was built to avoid.
+    first_served = min((r["created_at"] for r in rows
+                        if r.get("event") == "tile_served" and r.get("created_at")),
+                       default=None)
 
     # agent -> {kind, impressions, clicks, clicks_measured, reach set, addrs set}
     by_agent, kinds = {}, {}
     for r in rows:
         props = r.get("props") or {}
         ev = r.get("event")
-        if ev == "tile_impression":
+        if ev in ("tile_impression", "tile_served"):
             kind = props.get("kind") or "rerental"
             agent = props.get("agent") or "—"
         elif ev == "hc_click":
@@ -1089,18 +1096,24 @@ def _fac_adtiles(since):
         else:                                     # featured_click
             kind, agent = "rerental", props.get("agent") or "—"
         a = by_agent.setdefault(agent, {"agent": agent, "kind": kind,
-                                        "impressions": 0, "clicks": 0,
-                                        "clicks_measured": 0,
+                                        "impressions": 0, "served": 0, "clicks": 0,
+                                        "clicks_measured": 0, "clicks_served": 0,
                                         "_reach": set(), "_units": set()})
-        k = kinds.setdefault(kind, {"kind": kind, "impressions": 0,
+        k = kinds.setdefault(kind, {"kind": kind, "impressions": 0, "served": 0,
                                     "clicks": 0, "clicks_measured": 0,
-                                    "_reach": set()})
-        field = "impressions" if ev == "tile_impression" else "clicks"
+                                    "clicks_served": 0, "_reach": set()})
+        field = ("impressions" if ev == "tile_impression"
+                 else "served" if ev == "tile_served" else "clicks")
         a[field] += 1
         k[field] += 1
-        if field == "clicks" and first_impr and (r.get("created_at") or "") >= first_impr:
-            a["clicks_measured"] += 1
-            k["clicks_measured"] += 1
+        if field == "clicks":
+            when = r.get("created_at") or ""
+            if first_impr and when >= first_impr:
+                a["clicks_measured"] += 1
+                k["clicks_measured"] += 1
+            if first_served and when >= first_served:
+                a["clicks_served"] += 1
+                k["clicks_served"] += 1
         if r.get("visitor_id"):
             a["_reach"].add(r["visitor_id"])
             k["_reach"].add(r["visitor_id"])
@@ -1120,6 +1133,11 @@ def _fac_adtiles(since):
         # how a card ends up claiming a 1,450% click rate.
         out["ctr"] = (100.0 * d["clicks_measured"] / d["impressions"]) \
             if d["impressions"] >= AD_CTR_MIN else None
+        # The industry rate: clicks over SERVED impressions, which is what every
+        # published display/native CTR benchmark divides by. Same minimum sample
+        # and same measured-window rule as the viewable rate above.
+        out["ctr_served"] = (100.0 * d["clicks_served"] / d["served"]) \
+            if d["served"] >= AD_CTR_MIN else None
         return out
 
     agents = sorted((finish(v, ("units",)) for v in by_agent.values()),
@@ -1128,12 +1146,18 @@ def _fac_adtiles(since):
         "agents": agents,
         "kinds": [finish(kinds[k]) for k in ("rerental", "lottery") if k in kinds],
         "impressions": sum(a["impressions"] for a in agents),
+        "served": sum(a["served"] for a in agents),
         "clicks": sum(a["clicks"] for a in agents),
         "clicks_measured": sum(a["clicks_measured"] for a in agents),
+        "clicks_served": sum(a["clicks_served"] for a in agents),
         "ctr": (100.0 * sum(a["clicks_measured"] for a in agents)
                 / sum(a["impressions"] for a in agents))
                if sum(a["impressions"] for a in agents) >= AD_CTR_MIN else None,
+        "ctr_served": (100.0 * sum(a["clicks_served"] for a in agents)
+                       / sum(a["served"] for a in agents))
+                      if sum(a["served"] for a in agents) >= AD_CTR_MIN else None,
         "ctr_min": AD_CTR_MIN,
+        "first_served": first_served,
         "reach": len(set().union(*[v["_reach"] for v in by_agent.values()]) if by_agent else set()),
         "advertisers": len([a for a in agents if a["agent"] != "NYC Housing Connect"]),
         "first_impression": first_impr,

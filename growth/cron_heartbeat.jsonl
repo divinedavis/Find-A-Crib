@@ -103,3 +103,5 @@
 {"at":"2026-08-28T05:40:23Z","job":"build --deploy","phase":"finish","rc":0,"pull":"ok","head":"aac0f8b","note":""}
 {"at":"2026-08-28T05:40:23Z","job":"build --deploy","phase":"seo_watchdog_start","rc":null,"pull":"ok","head":"aac0f8b","note":"corpus is fresh but was built from stale source (code=no-source), running scripts/refresh_seo.sh"}
 {"at":"2026-08-28T05:42:00Z","job":"build --deploy","phase":"seo_watchdog_finish","rc":0,"pull":"ok","head":"aac0f8b","note":"ran refresh_seo.sh to completion"}
+{"at":"2026-08-28T06:00:01Z","job":"report --email <redacted-email>","phase":"start","rc":null,"pull":"pending","head":"d91a20f","note":""}
+{"at":"2026-08-28T06:00:12Z","job":"report --email <redacted-email>","phase":"finish","rc":0,"pull":"ok","head":"d91a20f","note":""}

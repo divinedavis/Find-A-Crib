@@ -21,6 +21,7 @@ import build_log             # which run-log lines are work that shipped
 import crease_metrics
 import nemo_metrics          # NEMO Seamless Gutter traffic, same droplet
 import trent_metrics         # Trent's Fresh Spaces traffic, same droplet
+import claude_usage          # Anthropic API spend, owner-only tab
 
 DATA_DIR = os.environ.get("DATA_DIR", ".")
 SUPABASE_URL = "https://dbaifotzwlxjvsxjohjt.supabase.co"
@@ -1718,6 +1719,30 @@ def dashboard_trent():
         rng = "all"
     try:
         return jsonify(trent_metrics.build_cached(rng=rng))
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
+
+
+@app.route("/dashboard-claude")
+def dashboard_claude():
+    """Anthropic API spend — owner only.
+
+    Owner scope and nothing else: this is the bill, and it is the one payload
+    here that describes the operator rather than any site's visitors. Eric's
+    NEMO scope must never reach it.
+
+    Degrades rather than fails. With no ANTHROPIC_ADMIN_KEY set the module
+    returns ok=False with a reason, which the tab renders as a setup card — a
+    500 here would look like the dashboard is broken when the only thing
+    missing is a key that has to be created by hand in the Console.
+    """
+    if rate_limited("dashboard", 120, 3600):
+        return _too_many()
+    denied = _dashboard_denial(_dashboard_auth(), ("ok",))
+    if denied:
+        return denied
+    try:
+        return jsonify(claude_usage.build_cached())
     except Exception:
         return jsonify(error="temporarily_unavailable"), 503
 

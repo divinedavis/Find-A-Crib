@@ -384,6 +384,7 @@
           <button data-site="nemo">🏠 NEMO Gutter</button>
           <button data-site="crease">👔 Crease</button>
           <button data-site="trent">🎨 Fresh Spaces</button>
+          <button data-site="claude">🤖 Claude API</button>
         </div>
         <span class="live-pill"><span class="live-dot"></span> Live data</span>
         <!-- Scopes every tile that counts something over a period, on both
@@ -552,6 +553,33 @@
       </div>
 
       <!-- ===== Trent's Fresh Spaces only ===== -->
+      <div id="claude-a" class="hidden">
+        <div class="card mb18" id="sec-claude-spend">
+          <div class="card-head-row">
+            <div><h2>Spend this month</h2><div class="card-sub" id="claude-sub">—</div></div>
+          </div>
+          <div class="ads-tiles" id="claude-tiles"></div>
+          <div id="claude-meters" style="margin-top:18px"></div>
+          <div id="claude-spark" style="margin-top:18px"></div>
+          <div class="callout" id="claude-callout" style="margin-top:16px"></div>
+        </div>
+
+        <div class="card mb18" id="sec-claude-models">
+          <div class="card-head-row">
+            <div><h2>What is spending it</h2><div class="card-sub">Cost by line item this month, and tokens by model over the last 7 days.</div></div>
+          </div>
+          <div id="claude-desc"></div>
+          <div id="claude-models" style="margin-top:18px"></div>
+        </div>
+
+        <div class="card mb18" id="sec-claude-limits">
+          <div class="card-head-row">
+            <div><h2>Rate limits</h2><div class="card-sub">The other kind of limit — requests and tokens per minute, as configured on the organization.</div></div>
+          </div>
+          <div id="claude-limits"></div>
+        </div>
+      </div>
+
       <div id="trent-a" class="hidden">
         <!-- the market: the denominator every other number here is a fraction of -->
         <div class="card mb18" id="sec-market">
@@ -920,6 +948,14 @@
       nav:[['top','▦','Dashboard'],['sec-market','◎','The market'],
            ['sec-trent-search','◉','Search'],['sec-trent-bookings','⇅','Bookings']]
     },
+    claude:{
+      mark:'🤖', name:'Claude API', endpoint:'/api/dashboard-claude',
+      title:'Claude API spend', sub:'What the Anthropic bill is doing, and how close it is to the cap that stops the crons.',
+      live:'https://platform.claude.com/cost', foot:'Anthropic Admin API · all projects',
+      blocks:['claude-a'],
+      nav:[['top','▦','Dashboard'],['sec-claude-spend','◔','Spend'],
+           ['sec-claude-models','◫','By model'],['sec-claude-limits','⚙','Rate limits']]
+    },
     nemo:{
       mark:'🏠', name:'NEMO Gutter', endpoint:'/api/dashboard-nemo',
       title:'NEMO Seamless Gutter', sub:'Web traffic, search rankings &amp; leads — Eric’s site, same template.',
@@ -1148,6 +1184,7 @@
     if(siteKey==='nemo') renderNemo(session.user, data);
     else if(siteKey==='crease') renderCrease(session.user, data);
     else if(siteKey==='trent') renderTrent(session.user, data);
+    else if(siteKey==='claude') renderClaude(session.user, data);
     else render(session.user, data);
   }
 
@@ -2209,6 +2246,152 @@
   // trade, so "265 hire-intent searches a month" is the denominator, and every
   // other tile here is a fraction of it. Without it, "0 impressions" reads as a
   // quiet month rather than as the whole opportunity going to Thumbtack.
+  // ---------- render: Claude API spend ----------
+  // The number that matters here is not the bill, it is the DISTANCE to the
+  // cap. On 2026-07-28 this account topped up, ran fine, and tripped a
+  // self-imposed spend limit the same day — NEMO's 06:00 scout died with
+  // "you will regain access on 2026-08-01", and a top-up would not have fixed
+  // it. This tab exists to make that visible a week early.
+  function renderClaude(user, d){
+    d = d || {};
+    var setup = el('claude-callout');
+    if(!d.ok){
+      // Not configured, or the key is wrong. Say which, and say the fix — a
+      // blank tab reads as a broken dashboard.
+      el('claude-sub').textContent = 'Not connected yet';
+      el('claude-tiles').innerHTML = '';
+      el('claude-meters').innerHTML = '';
+      el('claude-spark').innerHTML = '';
+      el('claude-desc').innerHTML = '';
+      el('claude-models').innerHTML = '';
+      el('claude-limits').innerHTML = '';
+      setup.innerHTML = '<b>This tab needs an Anthropic <em>admin</em> key.</b> ' +
+        esc(d.message || 'Unavailable.') +
+        '<br><br>Create one at <b>platform.claude.com → Settings → Organization → Admin keys</b> ' +
+        '(it starts <code>sk-ant-admin01-</code>; the keys the apps send messages with are rejected here, ' +
+        'and the Admin API is not available to individual accounts — the organization has to exist). ' +
+        'Then add <code>ANTHROPIC_ADMIN_KEY</code> and <code>CLAUDE_MONTHLY_CAP_USD</code> to ' +
+        '<code>/root/findacrib-api/.env</code> and restart the service.';
+      return;
+    }
+    var cap = d.cap_usd, mtd = n(d.mtd_usd);
+    el('claude-sub').textContent = 'Billing month ' + (d.month || '') +
+      ' · day ' + n(d.days_elapsed) + ', ' + n(d.days_left) + ' left';
+
+    function usd(v){ return v == null ? '—' : '$' + Number(v).toFixed(2); }
+    var tiles = [
+      {val: usd(mtd), lbl: 'Spent this month',
+       sub: 'across every project on the account',
+       bench: cap ? '<b>' + pctS(mtd, cap, 0) + '</b> of the $' + cap.toFixed(0) + ' cap'
+                  : 'No cap set — add CLAUDE_MONTHLY_CAP_USD to measure against one'},
+      {val: usd(d.avg_per_day_7d), lbl: 'Per day',
+       sub: 'average of the last 7 days',
+       bench: 'What the projection below is built from'},
+      {val: usd(d.projected_month_usd), lbl: 'Projected month',
+       sub: 'today\u2019s spend plus ' + n(d.days_left) + ' more days at that rate',
+       bench: cap
+         ? (n(d.projected_month_usd) > cap
+              ? '<span class="bn bn-low">over the cap</span> at this rate'
+              : '<span class="bn bn-hi">inside the cap</span> at this rate')
+         : 'A straight line, not a forecast'},
+      {val: d.over_cap_on == null ? (cap && mtd >= cap ? '0' : '—') : String(d.over_cap_on),
+       lbl: 'Days of headroom',
+       sub: cap ? 'at the current daily rate' : 'needs a cap to compute',
+       bench: cap && d.over_cap_on != null && d.over_cap_on < n(d.days_left)
+                ? '<span class="bn bn-low">runs out before the month does</span>'
+                : 'Days until the cap is reached'}
+    ];
+    el('claude-tiles').innerHTML = tiles.map(function(t){
+      return '<div class="ads-tile"><div class="a-val">'+t.val+'</div><div class="a-lbl">'+t.lbl+'</div>'+
+             '<div class="a-sub">'+t.sub+'</div>'+(t.bench?'<div class="a-bench">'+t.bench+'</div>':'')+'</div>';
+    }).join('');
+
+    el('claude-meters').innerHTML = cap
+      ? '<div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">'+
+        'AGAINST THE CAP <span style="font-weight:400;text-transform:none">'+
+        '(typed in by hand — the API cannot read it)</span></div>'+
+        // Green means ON PACE, not merely "not over yet". 90% of the cap on
+        // day 14 of 31 is a fire, and the first version of this bar drew it
+        // green because the only test was mtd < cap. Compare the two
+        // percentages instead: spending faster than the month is elapsing is
+        // the whole signal this tab exists to give.
+        meter('Spent so far', usd(mtd)+' of $'+cap.toFixed(0), pct(mtd, cap),
+              pct(mtd, cap) <= pct(n(d.days_elapsed), n(d.days_elapsed)+n(d.days_left))
+                ? 'good' : '')+
+        meter('Month elapsed', n(d.days_elapsed)+' of '+(n(d.days_elapsed)+n(d.days_left))+' days',
+              pct(n(d.days_elapsed), n(d.days_elapsed)+n(d.days_left)), '')
+      : '';
+
+    renderClaudeSpark(d.sparkline || []);
+
+    var desc = (d.by_description || []);
+    el('claude-desc').innerHTML = desc.length
+      ? '<div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">COST BY LINE ITEM</div>'+
+        desc.map(function(r){
+          return '<div class="act-row"><div class="act-l"><div class="act-ico">💵</div>'+
+            '<div><div class="act-name">'+esc(r.description)+'</div></div></div>'+
+            '<div class="act-val">'+usd(r.usd)+'</div></div>';
+        }).join('')
+      : '<div style="color:var(--muted);font-size:13px">No cost recorded in this window.</div>';
+
+    var ms = d.models || [];
+    el('claude-models').innerHTML =
+      '<div style="font-size:12px;color:var(--muted);margin:14px 0 8px;font-weight:600">TOKENS BY MODEL · LAST 7 DAYS</div>'+
+      (d.models_error
+        ? '<div style="color:var(--muted);font-size:13px">Token report unavailable: '+esc(String(d.models_error))+'</div>'
+        : (ms.length
+            ? ms.map(function(m){
+                var tot = n(m['in']) + n(m.out);
+                // Cache reads are the cheap ones; showing them beside the
+                // billed input is how you tell whether caching is working.
+                return '<div class="act-row"><div class="act-l"><div class="act-ico">🧠</div>'+
+                  '<div><div class="act-name">'+esc(m.model)+'</div>'+
+                  '<div class="act-desc">'+comma(m['in'])+' in · '+comma(m.out)+' out · '+
+                  comma(m.cache_read)+' cache read</div></div></div>'+
+                  '<div class="act-val">'+comma(tot)+'</div></div>';
+              }).join('')
+            : '<div style="color:var(--muted);font-size:13px">No token usage in the last 7 days.</div>'));
+
+    var rl = d.rate_limits || [];
+    el('claude-limits').innerHTML = d.rate_limits_error
+      ? '<div style="color:var(--muted);font-size:13px">Unavailable: '+esc(String(d.rate_limits_error))+'</div>'
+      : (rl.length
+          ? rl.slice(0, 12).map(function(r){
+              var bits = Object.keys(r).filter(function(k){ return /limit|rpm|tpm|tokens|requests/i.test(k) && r[k] != null; })
+                          .map(function(k){ return k.replace(/_/g,' ')+': '+r[k]; });
+              return '<div class="act-row"><div class="act-l"><div class="act-ico">⚙️</div>'+
+                '<div><div class="act-name">'+esc(String(r.model || r.group_type || 'organization'))+'</div>'+
+                '<div class="act-desc">'+esc(bits.join(' · ') || '—')+'</div></div></div>'+
+                '<div class="act-val"></div></div>';
+            }).join('')
+          : '<div style="color:var(--muted);font-size:13px">No rate limits reported.</div>');
+
+    setup.innerHTML = cap
+      ? '<b>'+usd(mtd)+' of $'+cap.toFixed(0)+' this month'+
+        (d.over_cap_on != null ? ', about '+d.over_cap_on+' days of headroom left' : '')+'.</b> '+
+        'The cap is <b>not readable from the API</b> — it is CLAUDE_MONTHLY_CAP_USD in the service env, '+
+        'so if you change the limit in the Console you have to change it here too or this tile will lie. '+
+        'The bill itself is live: cost data lands within about five minutes and this is cached for ten.'
+      : '<b>'+usd(mtd)+' spent this month.</b> No cap is configured, so there is nothing to measure it against — '+
+        'set <code>CLAUDE_MONTHLY_CAP_USD</code> to whatever the Console spend limit says and this tab will '+
+        'start warning you before the crons die.';
+  }
+
+  // Same shape as the traffic sparkline, but the bars are dollars.
+  function renderClaudeSpark(rows){
+    var box = el('claude-spark');
+    if(!rows.length){ box.innerHTML=''; return; }
+    var max = Math.max.apply(null, rows.map(function(r){ return n(r.usd); })) || 1;
+    box.innerHTML =
+      '<div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">DAILY SPEND · LAST 30 DAYS</div>'+
+      '<div style="display:flex;align-items:flex-end;gap:3px;height:70px">'+
+      rows.map(function(r){
+        var h = Math.max(2, Math.round(100 * n(r.usd) / max));
+        return '<div title="'+esc(r.date)+' — $'+n(r.usd).toFixed(2)+'" style="flex:1;height:'+h+'%;'+
+               'background:var(--accent,#4a7dff);border-radius:2px 2px 0 0;opacity:.85"></div>';
+      }).join('')+'</div>';
+  }
+
   function renderTrent(user, d){
     var email=(user&&user.email)||'';
     el('avatar').textContent=(email[0]||'D').toUpperCase();

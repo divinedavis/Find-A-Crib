@@ -107,3 +107,7 @@
 {"at":"2026-08-28T06:00:12Z","job":"report --email <redacted-email>","phase":"finish","rc":0,"pull":"ok","head":"d91a20f","note":""}
 {"at":"2026-08-29T05:00:01Z","job":"daily","phase":"start","rc":null,"pull":"pending","head":"8bce2c2","note":""}
 {"at":"2026-08-29T05:18:07Z","job":"daily","phase":"finish","rc":0,"pull":"ok","head":"8bce2c2","note":""}
+{"at":"2026-08-29T05:40:01Z","job":"build --deploy","phase":"start","rc":null,"pull":"pending","head":"62adfa1","note":""}
+{"at":"2026-08-29T05:40:26Z","job":"build --deploy","phase":"finish","rc":0,"pull":"ok","head":"62adfa1","note":""}
+{"at":"2026-08-29T05:40:26Z","job":"build --deploy","phase":"seo_watchdog_start","rc":null,"pull":"ok","head":"62adfa1","note":"corpus older than 1320min, running scripts/refresh_seo.sh"}
+{"at":"2026-08-29T05:42:12Z","job":"build --deploy","phase":"seo_watchdog_finish","rc":0,"pull":"ok","head":"62adfa1","note":"ran refresh_seo.sh to completion"}

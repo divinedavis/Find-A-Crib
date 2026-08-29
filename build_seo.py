@@ -864,14 +864,30 @@ def council_district_pages(urls):
 # So the building tier stops being submitted wholesale. A page is promoted only
 # if it can say something no template can generate:
 #   * a unit in it is advertised right now      — live, changing, high intent
-#   * 100+ open class-C violations              — immediately hazardous, citable
 #   * 300+ apartments                           — among the largest in the city
 # Everything else stays live, stays linked and stays useful to a person who
 # lands on it, but carries noindex,follow and is left out of the sitemap.
 # ~844 of 47,165 promoted. This is the "ship 50-100 high-conviction pages,
 # validate, then scale" shape, and the ledger to widen it is accept_pct_mature
 # in growth/index_status.json — not a hunch.
-PROMOTE_CLASS_C = 100
+# The violations rule was REMOVED 2026-08-29. It was retained on 2026-08-27 when
+# the wider "data richness" class of criteria was refuted, on the reasoning that
+# a severe hazard is citable in a way a template is not. Measuring it on its own
+# terms says otherwise, and not marginally:
+#
+#   174 buildings in the corpus carry 100+ open class-C violations.
+#   Of those 174, the number that have EVER earned a Search Console
+#   impression is ZERO. Lift 0.00x — not weak, absent.
+#
+# It was putting 160 URLs into the sitemap (every one of the 174 that isn't
+# already promoted by another rule) on a domain where Google has fetched 82 of
+# 455 sampled URLs and indexed 1. Those 160 were spending the scarcest thing the
+# site has — crawl allowance — on pages with a measured zero record of earning
+# anything. Unit count survives because it is the opposite case: 300+ units is a
+# 4.86x lift, the strongest signal measured (200+ is 3.49x, 100+ is 2.23x), which
+# is also why the threshold is NOT being lowered. Lowering it to 100 would triple
+# the building tier to 2,516 URLs and dilute a 4.86x rule into a 2.23x one, which
+# is the widening this whole triage exists to prevent.
 PROMOTE_UNITS = 300
 
 # ...and the fourth rule, added 2026-08-28 the morning this triage first
@@ -936,9 +952,6 @@ def promoted_building(b, advertised):
     if advertised:
         return True
     if str(b.get("bbl")) in EVER_SERVED_BBLS:
-        return True
-    v = (b.get("h") or {}).get("violations") or {}
-    if (v.get("oc") or 0) >= PROMOTE_CLASS_C:
         return True
     return (b.get("u") or 0) >= PROMOTE_UNITS
 
@@ -2300,19 +2313,21 @@ def main():
         links = "".join(f"<a href=\"{bld_url(x)}\">{esc(titlecase_addr(x.get('a')))}</a>" for x in items)
         # A flat list of 1,197 identical links spreads this page's weight across
         # 1,197 pages, and the handful that can actually rank are buried in it
-        # alphabetically. The promoted buildings — advertised now, worst class-C
-        # record, or largest — get their own block above it, with the reason
-        # they are there written next to them.
+        # alphabetically. The promoted buildings — advertised now, among the
+        # largest, or already earning search impressions — get their own block
+        # above it, with the reason they are there written next to them.
         notable = [x for x in items if x["bbl"] in promoted_bbls][:40]
         notable_html = ""
         if notable:
             rows = []
             for x in notable:
-                v = (x.get("h") or {}).get("violations") or {}
+                # Mirrors promoted_building() in the same order. The last
+                # branch is the ever-served rule, which has no fact of its own
+                # to quote, so it says what is true of every building here.
                 why = ("advertised for rent now" if x["bbl"] in listed
-                       else f"{v.get('oc'):,} open class-C violations"
-                       if (v.get("oc") or 0) >= PROMOTE_CLASS_C
-                       else f"{x.get('u'):,} apartments")
+                       else f"{x.get('u'):,} apartments"
+                       if (x.get("u") or 0) >= PROMOTE_UNITS
+                       else "frequently searched")
                 rows.append(f"<tr><td><a href=\"{bld_url(x)}\">"
                             f"{esc(titlecase_addr(x.get('a')))}</a></td>"
                             f"<td>{esc(why)}</td></tr>")

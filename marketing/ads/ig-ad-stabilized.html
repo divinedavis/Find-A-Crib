@@ -1,0 +1,193 @@
+<!doctype html><html><head><meta charset="utf-8">
+<title>Find A Crib &mdash; Instagram ad</title>
+<style>
+:root { color-scheme: light dark; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#000; }
+
+.post { width:1080px; background:#111214; }
+
+/* --- fake instagram chrome (preview file only) --- */
+.chrome { display:flex; align-items:center; gap:20px; padding:22px 30px; background:#111214; }
+.chrome .avatar { width:64px; height:64px; border-radius:50%; background:#006aff;
+  display:flex; align-items:center; justify-content:center; flex:none; }
+.chrome .avatar svg { width:38px; height:38px; }
+.chrome .who { flex:1; min-width:0; }
+.chrome .handle { display:flex; align-items:center; gap:9px;
+  font:700 32px/1.1 -apple-system, "Helvetica Neue", Arial, sans-serif; color:#fff; }
+.chrome .verified { width:26px; height:26px; }
+.chrome .adlabel { font:400 27px/1.4 -apple-system, "Helvetica Neue", Arial, sans-serif;
+  color:#c9ccd1; margin-top:4px; }
+.chrome .dots { color:#fff; font-size:34px; letter-spacing:3px; padding-right:6px; }
+
+.caption { padding:34px 62px 44px; background:#111214; text-align:center;
+  font:400 29px/1.45 -apple-system, "Helvetica Neue", Arial, sans-serif; color:#e9ebee; }
+
+/* --- the creative itself --- */
+.creative { position:relative; width:1080px; height:1080px; overflow:hidden; }
+.creative .scene { position:absolute; inset:0; width:100%; height:100%; }
+
+.stack { position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; padding:88px 0 64px; }
+
+.headline { text-align:center; color:#fff;
+  font-family:"Helvetica Neue", Helvetica, Arial, sans-serif;
+  text-transform:uppercase; text-shadow:0 4px 34px rgba(0,0,0,.6); }
+/* macOS only ships Helvetica Neue Condensed in Bold/Black, so the two setup
+   lines get their condensing from scaleX -- font-stretch there would silently
+   snap them to bold and flatten the weight contrast the layout depends on. */
+.h-line { font-weight:400; font-size:94px; line-height:1.02; letter-spacing:-1px;
+  transform:scaleX(.86); transform-origin:50% 50%; }
+.h-hero { font-weight:800; font-stretch:condensed; font-size:112px; line-height:1;
+  letter-spacing:-1.5px; transform:none; margin-top:6px; }
+
+.lockup { margin-top:30px; display:inline-flex; align-items:center; gap:12px;
+  background:#006aff; border-radius:8px; padding:11px 20px 11px 14px;
+  box-shadow:0 6px 22px rgba(0,0,0,.45); }
+.lock-mark { width:34px; height:34px; display:block; }
+.lock-mark svg { width:100%; height:100%; display:block; }
+.lock-word { font:800 31px/1 "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color:#fff; letter-spacing:1.4px; }
+
+/* --- hero object: the phone, sat on the sidewalk like the Amex card --- */
+.phone { position:relative; margin-top:auto; margin-bottom:38px;
+  transform:perspective(1500px) rotateX(13deg) rotateZ(-5deg); }
+.phone-body { width:268px; height:462px; border-radius:36px; background:#0b0d12;
+  padding:10px; box-shadow:0 30px 44px rgba(0,0,0,.55), 0 0 0 2px #2c313c inset,
+  0 2px 0 rgba(255,255,255,.22) inset; }
+.screen { position:relative; width:100%; height:100%; border-radius:30px;
+  overflow:hidden; background:#eaeef4; }
+.map { position:absolute; inset:0; width:100%; height:100%; }
+.search { position:absolute; top:16px; left:14px; right:14px; height:46px;
+  background:#fff; border-radius:23px; display:flex; align-items:center; gap:8px;
+  padding:0 16px; box-shadow:0 3px 10px rgba(10,10,35,.16);
+  white-space:nowrap; overflow:hidden;
+  font:600 17px/1 -apple-system, "Helvetica Neue", Arial, sans-serif; color:#0a0a23; }
+.search .mag { color:#006aff; font-size:20px; }
+.callout { position:absolute; left:14px; right:14px; bottom:16px; background:#fff;
+  border-radius:16px; padding:15px 17px; box-shadow:0 8px 22px rgba(10,10,35,.24);
+  border-left:6px solid #006aff; text-align:left; }
+.co-addr { white-space:nowrap; font:700 21px/1.2 -apple-system, "Helvetica Neue", Arial, sans-serif;
+  color:#0a0a23; }
+.co-tag { margin-top:5px; white-space:nowrap;
+  font:700 14px/1.2 -apple-system, "Helvetica Neue", Arial, sans-serif;
+  color:#0e8a45; letter-spacing:.4px; }
+.phone-shadow { position:absolute; left:-14%; right:-14%; bottom:-20px; height:38px;
+  background:radial-gradient(50% 50% at 50% 50%, rgba(0,0,0,.55), rgba(0,0,0,0) 70%); }
+
+.kicker { position:relative; z-index:5; color:#fff; text-align:center;
+  font:800 50px/1.05 "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-stretch:condensed; text-transform:uppercase; letter-spacing:-.4px;
+  text-shadow:0 0 30px rgba(5,7,15,.95), 0 0 14px rgba(5,7,15,.9),
+              0 3px 10px rgba(0,0,0,.8); }
+</style></head>
+<body><div class="post" id="post">
+  
+<div class="creative">
+  
+<svg class="scene" viewBox="0 0 1080 1080" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#080f22"/>
+      <stop offset="34%"  stop-color="#1a2748"/>
+      <stop offset="62%"  stop-color="#42395a"/>
+      <stop offset="82%"  stop-color="#8a5b44"/>
+      <stop offset="100%" stop-color="#c98a52"/>
+    </linearGradient>
+    <radialGradient id="warmGlow">
+      <stop offset="0%" stop-color="#fff3d4"/>
+      <stop offset="100%" stop-color="#ffb44d" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="lampGlow">
+      <stop offset="0%" stop-color="#ffcf8a" stop-opacity=".38"/>
+      <stop offset="100%" stop-color="#ffcf8a" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#2b241f"/>
+      <stop offset="100%" stop-color="#0d0a08"/>
+    </linearGradient>
+    <linearGradient id="scrimTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#05070f" stop-opacity=".62"/>
+      <stop offset="55%"  stop-color="#05070f" stop-opacity=".30"/>
+      <stop offset="100%" stop-color="#05070f" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="scrimBot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#05070f" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#05070f" stop-opacity=".8"/>
+    </linearGradient>
+    <radialGradient id="centreScrim" cx="50%" cy="42%" r="62%">
+      <stop offset="0%"   stop-color="#05070f" stop-opacity=".52"/>
+      <stop offset="100%" stop-color="#05070f" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1080" height="1080" fill="url(#sky)"/>
+  <rect x="-40" y="268" width="196" height="524" fill="#6d4a37"/><rect x="-48" y="268" width="212" height="20" fill="#553a2b"/><rect x="-48" y="288" width="212" height="6" fill="#00000055"/><rect x="-5" y="334" width="46" height="76" rx="3" fill="#ffc978"/><rect x="-5" y="334" width="46" height="76" rx="3" fill="none" stroke="#553a2b" stroke-width="5"/><rect x="-5" y="334" width="46" height="76" rx="3" fill="url(#warmGlow)" opacity=".55"/><rect x="75" y="334" width="46" height="76" rx="3" fill="#ffc978"/><rect x="75" y="334" width="46" height="76" rx="3" fill="none" stroke="#553a2b" stroke-width="5"/><rect x="75" y="334" width="46" height="76" rx="3" fill="url(#warmGlow)" opacity=".55"/><rect x="-5" y="450" width="46" height="76" rx="3" fill="#241c16"/><rect x="-5" y="450" width="46" height="76" rx="3" fill="none" stroke="#553a2b" stroke-width="5"/><rect x="75" y="450" width="46" height="76" rx="3" fill="#ffc978"/><rect x="75" y="450" width="46" height="76" rx="3" fill="none" stroke="#553a2b" stroke-width="5"/><rect x="75" y="450" width="46" height="76" rx="3" fill="url(#warmGlow)" opacity=".55"/><rect x="-5" y="566" width="46" height="76" rx="3" fill="#ffc978"/><rect x="-5" y="566" width="46" height="76" rx="3" fill="none" stroke="#553a2b" stroke-width="5"/><rect x="-5" y="566" width="46" height="76" rx="3" fill="url(#warmGlow)" opacity=".55"/><rect x="75" y="566" width="46" height="76" rx="3" fill="#ffc978"/><rect x="75" y="566" width="46" height="76" rx="3" fill="none" stroke="#553a2b" stroke-width="5"/><rect x="75" y="566" width="46" height="76" rx="3" fill="url(#warmGlow)" opacity=".55"/><rect x="-5" y="568" width="125" height="224" fill="#553a2b" opacity=".55"/><rect x="82" y="642" width="52" height="150" rx="26" fill="#1d1510"/><rect x="88" y="650" width="40" height="142" rx="20" fill="#ffb765" opacity=".85"/><rect x="69" y="783" width="78" height="10" fill="#4a3a30" opacity=".9"/><rect x="64" y="774" width="87" height="10" fill="#4a3a30" opacity=".9"/><rect x="60" y="765" width="96" height="10" fill="#4a3a30" opacity=".9"/><rect x="55" y="756" width="105" height="10" fill="#4a3a30" opacity=".9"/><rect x="51" y="747" width="114" height="10" fill="#4a3a30" opacity=".9"/><rect x="46" y="738" width="123" height="10" fill="#4a3a30" opacity=".9"/><rect x="156" y="232" width="172" height="560" fill="#7d5943"/><rect x="148" y="232" width="188" height="20" fill="#5f4433"/><rect x="148" y="252" width="188" height="6" fill="#00000055"/><rect x="183" y="298" width="46" height="76" rx="3" fill="#ffc978"/><rect x="183" y="298" width="46" height="76" rx="3" fill="none" stroke="#5f4433" stroke-width="5"/><rect x="183" y="298" width="46" height="76" rx="3" fill="url(#warmGlow)" opacity=".55"/><rect x="255" y="298" width="46" height="76" rx="3" fill="#ffc978"/><rect x="255" y="298" width="46" height="76" rx="3" fill="none" stroke="#5f4433" stroke-width="5"/><rect x="255" y="298" width="46" height="76" rx="3" fill="url(#warmGlow)" opacity=".55"/><rect x="183" y="414" width="46" height="76" rx="3" fill="#ffc978"/><rect x="183" y="414" width="46" height="76" rx="3" fill="none" stroke="#5f4433" stroke-width="5"/><rect x="183" y="414" width="46" height="76" rx="3" fill="url(#warmGlow)" opacity=".55"/><rect x="255" y="414" width="46" height="76" rx="3" fill="#ffc978"/><rect x="255" y="414" width="46" height="76" rx="3" fill="none" stroke="#5f4433" stroke-width="5"/><rect x="255" y="414" width="46" height="76" rx="3" fill="url(#warmGlow)" opacity=".55"/><rect x="183" y="530" width="46" height="76" rx="3" fill="#ffc978"/><rect x="183" y="530" width="46" height="76" rx="3" fill="none" stroke="#5f4433" stroke-width="5"/><rect x="183" y="530" width="46" height="76" rx="3" fill="url(#warmGlow)" opacity=".55"/><rect x="255" y="530" width="46" height="76" rx="3" fill="#ffc978"/><rect x="255" y="530" width="46" height="76" rx="3" fill="none" stroke="#5f4433" stroke-width="5"/><rect x="255" y="530" width="46" height="76" rx="3" fill="url(#warmGlow)" opacity=".55"/><rect x="263" y="642" width="52" height="150" rx="26" fill="#1d1510"/><rect x="269" y="650" width="40" height="142" rx="20" fill="#ffb765" opacity=".85"/><rect x="250" y="783" width="78" height="10" fill="#4a3a30" opacity=".9"/><rect x="245" y="774" width="87" height="10" fill="#4a3a30" opacity=".9"/><rect x="241" y="765" width="96" height="10" fill="#4a3a30" opacity=".9"/><rect x="236" y="756" width="105" height="10" fill="#4a3a30" opacity=".9"/><rect x="232" y="747" width="114" height="10" fill="#4a3a30" opacity=".9"/><rect x="227" y="738" width="123" height="10" fill="#4a3a30" opacity=".9"/><rect x="328" y="292" width="208" height="500" fill="#5c4132"/><rect x="320" y="292" width="224" height="20" fill="#452f24"/><rect x="320" y="312" width="224" height="6" fill="#00000055"/><rect x="367" y="358" width="46" height="76" rx="3" fill="#ffc978"/><rect x="367" y="358" width="46" height="76" rx="3" fill="none" stroke="#452f24" stroke-width="5"/><rect x="367" y="358" width="46" height="76" rx="3" fill="url(#warmGlow)" opacity=".55"/><rect x="451" y="358" width="46" height="76" rx="3" fill="#241c16"/><rect x="451" y="358" width="46" height="76" rx="3" fill="none" stroke="#452f24" stroke-width="5"/><rect x="367" y="474" width="46" height="76" rx="3" fill="#ffc978"/><rect x="367" y="474" width="46" height="76" rx="3" fill="none" stroke="#452f24" stroke-width="5"/><rect x="367" y="474" width="46" height="76" rx="3" fill="url(#warmGlow)" opacity=".55"/><rect x="451" y="474" width="46" height="76" rx="3" fill="#ffc978"/><rect x="451" y="474" width="46" height="76" rx="3" fill="none" stroke="#452f24" stroke-width="5"/><rect x="451" y="474" width="46" height="76" rx="3" fill="url(#warmGlow)" opacity=".55"/><rect x="367" y="590" width="46" height="76" rx="3" fill="#241c16"/><rect x="367" y="590" width="46" height="76" rx="3" fill="none" stroke="#452f24" stroke-width="5"/><rect x="451" y="590" width="46" height="76" rx="3" fill="#241c16"/><rect x="451" y="590" width="46" height="76" rx="3" fill="none" stroke="#452f24" stroke-width="5"/><rect x="365" y="592" width="133" height="200" fill="#452f24" opacity=".55"/><rect x="457" y="642" width="52" height="150" rx="26" fill="#1d1510"/><rect x="463" y="650" width="40" height="142" rx="20" fill="#ffb765" opacity=".85"/><rect x="444" y="783" width="78" height="10" fill="#4a3a30" opacity=".9"/><rect x="439" y="774" width="87" height="10" fill="#4a3a30" opacity=".9"/><rect x="435" y="765" width="96" height="10" fill="#4a3a30" opacity=".9"/><rect x="430" y="756" width="105" height="10" fill="#4a3a30" opacity=".9"/><rect x="426" y="747" width="114" height="10" fill="#4a3a30" opacity=".9"/><rect x="421" y="738" width="123" height="10" fill="#4a3a30" opacity=".9"/><rect x="536" y="244" width="180" height="548" fill="#84634b"/><rect x="528" y="244" width="196" height="20" fill="#634a38"/><rect x="528" y="264" width="196" height="6" fill="#00000055"/><rect x="565" y="310" width="46" height="76" rx="3" fill="#ffc978"/><rect x="565" y="310" width="46" height="76" rx="3" fill="none" stroke="#634a38" stroke-width="5"/><rect x="565" y="310" width="46" height="76" rx="3" fill="url(#warmGlow)" opacity=".55"/><rect x="641" y="310" width="46" height="76" rx="3" fill="#ffc978"/><rect x="641" y="310" width="46" height="76" rx="3" fill="none" stroke="#634a38" stroke-width="5"/><rect x="641" y="310" width="46" height="76" rx="3" fill="url(#warmGlow)" opacity=".55"/><rect x="565" y="426" width="46" height="76" rx="3" fill="#241c16"/><rect x="565" y="426" width="46" height="76" rx="3" fill="none" stroke="#634a38" stroke-width="5"/><rect x="641" y="426" width="46" height="76" rx="3" fill="#ffc978"/><rect x="641" y="426" width="46" height="76" rx="3" fill="none" stroke="#634a38" stroke-width="5"/><rect x="641" y="426" width="46" height="76" rx="3" fill="url(#warmGlow)" opacity=".55"/><rect x="565" y="542" width="46" height="76" rx="3" fill="#241c16"/><rect x="565" y="542" width="46" height="76" rx="3" fill="none" stroke="#634a38" stroke-width="5"/><rect x="641" y="542" width="46" height="76" rx="3" fill="#ffc978"/><rect x="641" y="542" width="46" height="76" rx="3" fill="none" stroke="#634a38" stroke-width="5"/><rect x="641" y="542" width="46" height="76" rx="3" fill="url(#warmGlow)" opacity=".55"/><rect x="648" y="642" width="52" height="150" rx="26" fill="#1d1510"/><rect x="654" y="650" width="40" height="142" rx="20" fill="#ffb765" opacity=".85"/><rect x="635" y="783" width="78" height="10" fill="#4a3a30" opacity=".9"/><rect x="630" y="774" width="87" height="10" fill="#4a3a30" opacity=".9"/><rect x="626" y="765" width="96" height="10" fill="#4a3a30" opacity=".9"/><rect x="621" y="756" width="105" height="10" fill="#4a3a30" opacity=".9"/><rect x="617" y="747" width="114" height="10" fill="#4a3a30" opacity=".9"/><rect x="612" y="738" width="123" height="10" fill="#4a3a30" opacity=".9"/><rect x="716" y="276" width="192" height="516" fill="#6a4837"/><rect x="708" y="276" width="208" height="20" fill="#4f3629"/><rect x="708" y="296" width="208" height="6" fill="#00000055"/><rect x="749" y="342" width="46" height="76" rx="3" fill="#ffc978"/><rect x="749" y="342" width="46" height="76" rx="3" fill="none" stroke="#4f3629" stroke-width="5"/><rect x="749" y="342" width="46" height="76" rx="3" fill="url(#warmGlow)" opacity=".55"/><rect x="829" y="342" width="46" height="76" rx="3" fill="#ffc978"/><rect x="829" y="342" width="46" height="76" rx="3" fill="none" stroke="#4f3629" stroke-width="5"/><rect x="829" y="342" width="46" height="76" rx="3" fill="url(#warmGlow)" opacity=".55"/><rect x="749" y="458" width="46" height="76" rx="3" fill="#ffc978"/><rect x="749" y="458" width="46" height="76" rx="3" fill="none" stroke="#4f3629" stroke-width="5"/><rect x="749" y="458" width="46" height="76" rx="3" fill="url(#warmGlow)" opacity=".55"/><rect x="829" y="458" width="46" height="76" rx="3" fill="#241c16"/><rect x="829" y="458" width="46" height="76" rx="3" fill="none" stroke="#4f3629" stroke-width="5"/><rect x="749" y="574" width="46" height="76" rx="3" fill="#ffc978"/><rect x="749" y="574" width="46" height="76" rx="3" fill="none" stroke="#4f3629" stroke-width="5"/><rect x="749" y="574" width="46" height="76" rx="3" fill="url(#warmGlow)" opacity=".55"/><rect x="829" y="574" width="46" height="76" rx="3" fill="#ffc978"/><rect x="829" y="574" width="46" height="76" rx="3" fill="none" stroke="#4f3629" stroke-width="5"/><rect x="829" y="574" width="46" height="76" rx="3" fill="url(#warmGlow)" opacity=".55"/><rect x="751" y="576" width="123" height="216" fill="#4f3629" opacity=".55"/><rect x="835" y="642" width="52" height="150" rx="26" fill="#1d1510"/><rect x="841" y="650" width="40" height="142" rx="20" fill="#ffb765" opacity=".85"/><rect x="822" y="783" width="78" height="10" fill="#4a3a30" opacity=".9"/><rect x="818" y="774" width="87" height="10" fill="#4a3a30" opacity=".9"/><rect x="813" y="765" width="96" height="10" fill="#4a3a30" opacity=".9"/><rect x="809" y="756" width="105" height="10" fill="#4a3a30" opacity=".9"/><rect x="804" y="747" width="114" height="10" fill="#4a3a30" opacity=".9"/><rect x="800" y="738" width="123" height="10" fill="#4a3a30" opacity=".9"/><rect x="908" y="250" width="188" height="542" fill="#77543f"/><rect x="900" y="250" width="204" height="20" fill="#5a3f30"/><rect x="900" y="270" width="204" height="6" fill="#00000055"/><rect x="940" y="316" width="46" height="76" rx="3" fill="#241c16"/><rect x="940" y="316" width="46" height="76" rx="3" fill="none" stroke="#5a3f30" stroke-width="5"/><rect x="1018" y="316" width="46" height="76" rx="3" fill="#ffc978"/><rect x="1018" y="316" width="46" height="76" rx="3" fill="none" stroke="#5a3f30" stroke-width="5"/><rect x="1018" y="316" width="46" height="76" rx="3" fill="url(#warmGlow)" opacity=".55"/><rect x="940" y="432" width="46" height="76" rx="3" fill="#ffc978"/><rect x="940" y="432" width="46" height="76" rx="3" fill="none" stroke="#5a3f30" stroke-width="5"/><rect x="940" y="432" width="46" height="76" rx="3" fill="url(#warmGlow)" opacity=".55"/><rect x="1018" y="432" width="46" height="76" rx="3" fill="#ffc978"/><rect x="1018" y="432" width="46" height="76" rx="3" fill="none" stroke="#5a3f30" stroke-width="5"/><rect x="1018" y="432" width="46" height="76" rx="3" fill="url(#warmGlow)" opacity=".55"/><rect x="940" y="548" width="46" height="76" rx="3" fill="#ffc978"/><rect x="940" y="548" width="46" height="76" rx="3" fill="none" stroke="#5a3f30" stroke-width="5"/><rect x="940" y="548" width="46" height="76" rx="3" fill="url(#warmGlow)" opacity=".55"/><rect x="1018" y="548" width="46" height="76" rx="3" fill="#ffc978"/><rect x="1018" y="548" width="46" height="76" rx="3" fill="none" stroke="#5a3f30" stroke-width="5"/><rect x="1018" y="548" width="46" height="76" rx="3" fill="url(#warmGlow)" opacity=".55"/><rect x="1025" y="642" width="52" height="150" rx="26" fill="#1d1510"/><rect x="1031" y="650" width="40" height="142" rx="20" fill="#ffb765" opacity=".85"/><rect x="1012" y="783" width="78" height="10" fill="#4a3a30" opacity=".9"/><rect x="1007" y="774" width="87" height="10" fill="#4a3a30" opacity=".9"/><rect x="1003" y="765" width="96" height="10" fill="#4a3a30" opacity=".9"/><rect x="998" y="756" width="105" height="10" fill="#4a3a30" opacity=".9"/><rect x="994" y="747" width="114" height="10" fill="#4a3a30" opacity=".9"/><rect x="989" y="738" width="123" height="10" fill="#4a3a30" opacity=".9"/>
+  <rect x="54" y="492" width="7" height="300" fill="#241d18"/><circle cx="57" cy="486" r="17" fill="#ffcf8a"/><circle cx="57" cy="486" r="72" fill="url(#lampGlow)"/><rect x="1014" y="492" width="7" height="300" fill="#241d18"/><circle cx="1017" cy="486" r="17" fill="#ffcf8a"/><circle cx="1017" cy="486" r="72" fill="url(#lampGlow)"/>
+
+  <!-- sidewalk, curb, roadway -->
+  <rect x="0" y="792" width="1080" height="64" fill="#3a322c"/>
+  <rect x="0" y="856" width="1080" height="224" fill="url(#ground)"/>
+  <rect x="0" y="850" width="1080" height="8" fill="#0000006b"/>
+
+  <rect width="1080" height="1080" fill="url(#centreScrim)"/>
+  <rect width="1080" height="560" fill="url(#scrimTop)"/>
+  <rect y="620" width="1080" height="460" fill="url(#scrimBot)"/>
+</svg>
+
+  <div class="stack">
+    <div class="headline">
+      <div class="h-line">GO AHEAD.</div>
+      <div class="h-line">CHECK THE ADDRESS.</div>
+      <div class="h-line h-hero">IS IT STABILIZED?</div>
+    </div>
+    <div class="lockup">
+      <span class="lock-mark">
+        <svg viewBox="0 0 100 100"><path d="M50 12 88 50 50 88 12 50z" fill="#fff"/>
+        <path d="M50 33 67 50 50 67 33 50z" fill="#006aff"/></svg>
+      </span>
+      <span class="lock-word">FINDACRIB</span>
+    </div>
+    
+<div class="phone">
+  <div class="phone-body">
+    <div class="screen">
+      <svg viewBox="0 0 240 500" class="map">
+        <rect width="240" height="500" fill="#eaeef4"/>
+        <g stroke="#ffffff" stroke-width="13" stroke-linecap="round">
+          <path d="M-20 118 H260"/><path d="M-20 258 H260"/><path d="M-20 392 H260"/>
+          <path d="M62 -20 V520"/><path d="M172 -20 V520"/>
+        </g>
+        <g stroke="#dfe5ee" stroke-width="4">
+          <path d="M-20 186 H260"/><path d="M-20 326 H260"/><path d="M118 -20 V520"/>
+        </g>
+        <g fill="#dde3ec">
+          <rect x="8" y="130" width="42" height="42" rx="3"/>
+          <rect x="76" y="130" width="30" height="42" rx="3"/>
+          <rect x="186" y="272" width="44" height="40" rx="3"/>
+          <rect x="8" y="272" width="42" height="40" rx="3"/>
+        </g>
+        <g fill="#006aff">
+          <path d="M96 96 l14 14 -14 14 -14-14z"/>
+          <path d="M150 168 l11 11 -11 11 -11-11z"/>
+          <path d="M40 214 l11 11 -11 11 -11-11z"/>
+          <path d="M196 226 l11 11 -11 11 -11-11z"/>
+          <path d="M84 300 l11 11 -11 11 -11-11z"/>
+          <path d="M160 344 l11 11 -11 11 -11-11z"/>
+        </g>
+      </svg>
+      <div class="search"><span class="mag">&#9906;</span>Bed-Stuy, Brooklyn</div>
+      <div class="callout">
+        <div class="co-addr">412 Lafayette Ave</div>
+        <div class="co-tag">RENT STABILIZED &middot; 24 units</div>
+      </div>
+    </div>
+  </div>
+  <div class="phone-shadow"></div>
+</div>
+
+    <div class="kicker">THERE&rsquo;S NOTHING LIKE KNOWING.</div>
+  </div>
+</div>
+
+</div></body></html>

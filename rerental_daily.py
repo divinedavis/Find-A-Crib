@@ -78,7 +78,78 @@ def key_of(label):
     return " ".join(parts[:3]) if parts else s
 
 
-def listings_from(text, waitlist, own_office=None):
+def slug_key(href):
+    """key_of() over the address inside a URL path.
+
+    The host is dropped first (one of these sites is served from a cPanel
+    hostname made of digits, which would otherwise look like a house number),
+    then the key starts at the path's first numeric token so the routing prefix
+    — /property/, /listing/, /rental/ — is skipped rather than keyed.
+    """
+    path = href.split("?")[0].split("#")[0]
+    path = path.split("//", 1)[-1]
+    path = path.split("/", 1)[1] if "/" in path else ""
+    words = re.sub(r'[^a-z0-9]+', ' ', path.lower()).split()
+    for i, w in enumerate(words):
+        if w[0].isdigit():
+            return key_of(" ".join(words[i:]))
+    return ""
+
+
+def link_index(anchors):
+    """key_of(anchor text) -> href, for matching a listing to its own page.
+
+    Three passes, because these sites wrap the address three different ways:
+
+      * MNS makes the anchor text the address itself -> exact key match.
+      * Reside New York labels every card "VIEW LISTING" and identifies the
+        unit ONLY in the href — /property/56-w-125-st-apartment-unit-810/ — so
+        the slug is keyed with the same function as the label and matched the
+        same way. Without this, 8 of 9 listings in a morning digest had no link.
+      * Anything that wraps a whole card gets a containment match on the
+        anchor's normalised text, last because it is the loosest.
+
+    Anchor text shorter than two words is never keyed ("View", "Details"):
+    it identifies nothing and would match everything.
+    """
+    exact, slug, loose = {}, {}, []
+    for a in anchors:
+        t = re.sub(r'\s+', ' ', (a.get("t") or "")).strip()
+        h = (a.get("h") or "").strip()
+        if not h.lower().startswith(("http://", "https://")):
+            continue
+        sk = slug_key(h)
+        if sk and sk not in slug:
+            slug[sk] = h
+        if not t or len(t.split()) < 2 or len(t) > 160:
+            continue
+        k = key_of(t)
+        if k and k not in exact:
+            exact[k] = h
+        loose.append((re.sub(r'[^a-z0-9]+', ' ', t.lower()), h))
+    return exact, slug, loose
+
+
+def find_link(key, index):
+    exact, slug, loose = index
+    if key in exact:
+        return exact[key]
+    if key in slug:
+        return slug[key]
+    if not key:
+        return None
+    # The first two tokens are house number + street name — enough to identify
+    # a building, and present however the card is worded around it.
+    stem = " ".join(key.split()[:2])
+    if len(stem.split()) < 2:
+        return None
+    for norm, href in loose:
+        if stem in norm:
+            return href
+    return None
+
+
+def listings_from(text, waitlist, own_office=None, index=None):
     """(items, stated_count). items are display labels, deduped by key_of.
 
     `own_office` is the agent's own address from the HPD list. Every one of
@@ -107,7 +178,8 @@ def listings_from(text, waitlist, own_office=None):
         if not k or k in seen or stem(k) in skip:
             continue
         seen.add(k)
-        items.append({"key": k, "label": re.sub(r'\s+', ' ', line)[:64]})
+        items.append({"key": k, "label": re.sub(r'\s+', ' ', line)[:64],
+                      "url": find_link(k, index) if index else None})
     if waitlist:
         # buildings, not units - a stated "N results" would be about something else
         stated = 0
@@ -144,8 +216,13 @@ def sweep(pages):
                     page.wait_for_timeout(700)
                 page.wait_for_timeout(1500)
                 text = page.evaluate("document.body ? document.body.innerText : ''")
+                # Collected in the same pass as the text so the listing label
+                # and its href come from one render of one page.
+                anchors = page.evaluate(
+                    "Array.from(document.querySelectorAll('a[href]'))"
+                    ".slice(0,600).map(function(a){return {t:a.innerText,h:a.href}})")
                 rec["items"], rec["stated"] = listings_from(
-                    text, rec["waitlist"], own.get(name))
+                    text, rec["waitlist"], own.get(name), link_index(anchors))
             except Exception as e:
                 rec["error"] = f"{type(e).__name__}: {str(e)[:60]}"
             finally:
@@ -225,7 +302,9 @@ def diff(prev, results):
         before = set(prev.get(name, []))
         now = {i["key"] for i in rec["items"]}
         label = {i["key"]: i["label"] for i in rec["items"]}
-        d[name] = {"new": [label[k] for k in now - before] if before else [],
+        href = {i["key"]: i.get("url") for i in rec["items"]}
+        d[name] = {"new": [{"label": label[k], "url": href.get(k)}
+                           for k in now - before] if before else [],
                    "gone": sorted(before - now) if before else [],
                    "failed": False,
                    "first_seen": not before}
@@ -251,37 +330,20 @@ def build_report(results, deltas, today, had_history):
          "tone": "bad" if failed else "mute"},
     ]
 
-    rows = []
-    for name, rec in sorted(results.items(),
-                            key=lambda kv: (kv[1]["waitlist"],
-                                            -max(kv[1]["stated"], len(kv[1]["items"])),
-                                            kv[0])):
-        if rec["error"]:
-            state = "failed"
-        elif rec["waitlist"]:
-            state = "waitlist" + (f" · {len(rec['items'])} bldg" if rec["items"] else "")
-        else:
-            n = max(rec["stated"], len(rec["items"]))
-            state = f"{n} unit{'s' if n != 1 else ''}" if n else "empty"
-        d = deltas.get(name, {})
-        moved = ""
-        if d.get("new"):
-            moved = f"+{len(d['new'])}"
-        elif d.get("gone"):
-            moved = f"-{len(d['gone'])}"
-        rows.append([name[:34], state, moved])
-
-    blocks = [{"type": "tiles", "items": tiles},
-              {"type": "section", "label": "Every page",
-               "note": "Unit boards first, then building waitlists."},
-              {"type": "table", "cols": ["Agent", "Listed", "Δ"], "rows": rows,
-               "align": ["left", "left", "right"], "widths": ["58%", "27%", "15%"]}]
+    # The per-agent "Every page" table was removed on 2026-08-29: it repeated
+    # yesterday's answer every morning, and what the reader acts on is the new
+    # listings and the failures, both of which are below.
+    blocks = [{"type": "tiles", "items": tiles}]
 
     if new_total:
         lines = []
         for name, d in deltas.items():
-            for label in d["new"]:
-                lines.append(f"{name}: {label}")
+            for it in d["new"]:
+                lines.append({"text": f"{name}: {it['label']}",
+                              # Straight to the listing where it was posted. With
+                              # no href the reader gets whatever the mail client
+                              # guesses from the address, which is a map pin.
+                              "url": it.get("url") or results[name]["url"]})
         blocks.insert(1, {"type": "callout", "tone": "good",
                           "heading": f"{new_total} new listing{'s' if new_total != 1 else ''}",
                           "items": lines[:20]})

@@ -321,15 +321,36 @@ def _status(b):
 
 def _callout(b):
     """A tinted box for the things that need the reader to do something.
-    `items` renders as a bulleted list; `body` as a single paragraph."""
+    `items` renders as a bulleted list; `body` as a single paragraph.
+
+    An item may be a plain string or {"text": ..., "url": ...}. With a url the
+    text becomes a real link. This exists because mail clients auto-link
+    anything that LOOKS like a street address — iOS Mail turned every listing in
+    the re-rental digest into an Apple Maps link, which is the one destination
+    the reader does not want. A real href beats the client's guess.
+    """
     colour, bg = TONES.get(b.get("tone") or "warn", (WARN, WARN_BG))
     head = (f'<div style="font-size:14px;font-weight:700;color:{colour};margin:0 0 4px">'
             f'{esc(b["heading"])}</div>') if b.get("heading") else ""
     if b.get("items"):
-        body_html = "".join(
-            f'<div style="font-size:13px;color:{INK};line-height:1.55;margin:0 0 3px">'
-            f'&bull;&nbsp;&nbsp;{esc(it)}</div>' for it in b["items"])
-        body_text = "\n".join(f"      • {it}" for it in b["items"])
+        def _one(it):
+            if isinstance(it, dict):
+                txt, url = it.get("text", ""), it.get("url")
+            else:
+                txt, url = it, None
+            inner = (f'<a href="{esc(safe_url(url))}" style="color:{BLUE};'
+                     f'text-decoration:underline">{esc(txt)}</a>') if url else esc(txt)
+            return (f'<div style="font-size:13px;color:{INK};line-height:1.55;'
+                    f'margin:0 0 3px">&bull;&nbsp;&nbsp;{inner}</div>')
+
+        def _one_text(it):
+            if isinstance(it, dict):
+                return (f"      • {it.get('text','')}"
+                        + (f"\n        {it['url']}" if it.get("url") else ""))
+            return f"      • {it}"
+
+        body_html = "".join(_one(it) for it in b["items"])
+        body_text = "\n".join(_one_text(it) for it in b["items"])
     else:
         body_html = (f'<div style="font-size:13px;color:{INK};line-height:1.55">'
                      f'{esc(b["body"])}</div>')

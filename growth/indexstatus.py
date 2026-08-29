@@ -600,6 +600,58 @@ def summarise(cohort, today=None):
     return {"total": total, "by_family": fams}
 
 
+def crawl_evidence(prefixes, cohort=None):
+    """Has Google ever FETCHED any page under these URL prefixes?
+
+    Exists to answer one question review.py cannot otherwise ask: when a
+    technique's pages have earned zero search impressions, is that Google
+    looking and declining, or Google never looking at all? Those read
+    identically in a Search Console impression count of zero and they call for
+    opposite decisions — retire the pages, or go get them crawled.
+
+    Guessing wrong here has been expensive. Three techniques were retired on
+    the "invisible in search" verdict — T002 daily_brief, T013
+    city_seo_expansion (2026-08-20) and T023 city_guides (2026-08-19) — and on
+    2026-08-29 the census says that of their sampled URLs, 10 of 10, 57 of 57
+    and 3 of 3 respectively are `unknown to Google`, with not one crawl between
+    them. Every one of those verdicts was passed on a page Google has never
+    fetched. A page that was never fetched cannot fail a content test; the
+    zero it produced measured the crawler, not the page.
+
+    `read` counts URLs the sampler has actually inspected — a cohort URL still
+    waiting its turn carries no evidence in either direction and is excluded,
+    so this never reports "0 fetched" out of URLs nobody has looked at yet.
+    `fetched` keys off Google's own lastCrawlTime for the same reason
+    summarise() does: it is the fact, and the coverage prose is a summary of it.
+    Buckets are re-derived from the stored raw state, so a later bucket()
+    improvement applies retroactively here too.
+
+    Returns read/fetched/cohort counts and the bucket split. `fetched` is a
+    floor: this is a stratified sample of the corpus, not a census of these
+    prefixes, so 0 means "no sampled URL has been fetched", never "no URL
+    under this prefix has been fetched". Callers must treat a small `read` as
+    silence rather than as proof — see MIN_CENSUS_READ in review.py.
+    """
+    cohort = _load()["cohort"] if cohort is None else cohort
+    prefixes = tuple(prefixes or ())
+    out = {"cohort": 0, "read": 0, "fetched": 0, "buckets": {}}
+    if not prefixes:
+        return out
+    for url, rec in cohort.items():
+        path = urllib.parse.urlparse(url).path or "/"
+        if not path.startswith(prefixes):
+            continue
+        out["cohort"] += 1
+        if not (rec.get("checked") or rec.get("bucket")):
+            continue
+        out["read"] += 1
+        b = bucket(rec.get("state"))
+        out["buckets"][b] = out["buckets"].get(b, 0) + 1
+        if rec.get("crawled"):
+            out["fetched"] += 1
+    return out
+
+
 # ---------------------------------------------------------------------- run
 
 def collect(docroot, budget=None):

@@ -40,7 +40,7 @@ is a finding about the instrument, and belongs in front of someone.
 import datetime
 import statistics
 
-from . import ledger, searchconsole
+from . import indexstatus, ledger, searchconsole
 
 GRACE_DAYS = 21          # nothing is judged before this — indexing is slow
 WINDOW = 14              # trailing window for "is it working now"
@@ -56,6 +56,21 @@ REDUNDANCY_RATIO = 0.10  # <10% of an overlapping technique's traffic = redundan
 # for a query nobody types is right, retiring one Google serves but we title
 # badly throws away the work at the moment it started paying.
 MIN_OWNED_IMPRESSIONS = 5
+
+# How many of a technique's URLs the index census must have actually inspected
+# before "none of them has ever been crawled" counts as evidence rather than as
+# silence. See the census guard in evaluate() for why this exists at all.
+#
+# Three is deliberately low, and the reason is that the guard's cost is
+# asymmetric. Firing it wrongly withholds a verdict for one revisit cycle on a
+# technique that was going to be retired anyway — retirement is reversible and
+# the ledger keeps the series. NOT firing it wrongly destroys a technique on a
+# measurement that could not have come out any other way, which has now
+# happened three times. The census inspects the whole cohort every few days, so
+# a prefix where every inspected URL comes back never-fetched is a statement
+# about the tier and not about one unlucky URL; below three it is a statement
+# about nothing, and the existing path stands.
+MIN_CENSUS_READ = 3
 
 # Two days of paid acquisition — 2026-07-17 and 07-18, 288 and 279 visitors
 # against a ~20/day organic baseline either side. The campaign is paused and
@@ -265,6 +280,43 @@ def evaluate(t):
                               f"pages earned {vis['impressions']} search impressions "
                               f"(best position {vis['best_position']}) — served but not "
                               f"clicked: rewrite the titles, do not retire")
+                return res
+            # Zero impressions has two causes and this branch used to assume
+            # one of them. "Invisible in search" is a claim about Google's
+            # JUDGEMENT of the pages — it looked, and it is not showing them.
+            # That claim needs Google to have looked, and the URL Inspection
+            # census is the only instrument on the site that can say whether it
+            # did. Where the census says it has inspected these URLs and not one
+            # of them has ever been fetched, the impression count is measuring
+            # the crawler's reach, not the pages, and no verdict about the pages
+            # can be drawn from it — so this holds instead of retiring, and says
+            # what would have to change for the question to become answerable.
+            #
+            # This is the same false-verdict family as the fixes of 2026-08-25
+            # (unconditional works=True), 08-26 (stocks through a flow test) and
+            # 08-27 — a path asserting more than its evidence carries — surviving
+            # on the retirement side, where it is most expensive. It had already
+            # fired three times when this landed: T002, T013 and T023, all three
+            # retired for earning no impressions, all three at 0 fetched across
+            # 10, 57 and 3 inspected URLs on 2026-08-29.
+            #
+            # It is deliberately narrow. It needs POSITIVE evidence of no crawl,
+            # not merely an absent measurement: a technique whose URLs the
+            # census has not sampled (`read` below MIN_CENSUS_READ) falls
+            # through to the retirement below exactly as before. The known hole
+            # is a technique whose URLs are in no sitemap and therefore in no
+            # cohort — the census cannot speak for those, and being unsubmitted
+            # is its own finding rather than one to launder through this guard.
+            crawl = indexstatus.crawl_evidence(t.get("prefixes"))
+            res["measured"]["census_read"] = crawl["read"]
+            res["measured"]["census_fetched"] = crawl["fetched"]
+            if crawl["read"] >= MIN_CENSUS_READ and crawl["fetched"] == 0:
+                res["why"] = (f"{total} owned visitors in {days}d and 0 search "
+                              f"impressions, but Google has never fetched any of "
+                              f"the {crawl['read']} of its URLs the index census "
+                              f"has inspected — that zero measures crawl reach, "
+                              f"not these pages, so there is nothing to retire on "
+                              f"yet. Re-judge once any of them is crawled")
                 return res
             res["action"] = "retire"
             res["works"] = False

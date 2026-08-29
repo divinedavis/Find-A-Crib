@@ -349,7 +349,25 @@ SEEDS = [
                "/root/dhcr-build starts pulling again. 255 pages had been finished in git and "
                "live nowhere for five days. Fallback-published hubs are listed in "
                "sitemap-daily.xml (changefreq monthly) and the three browse hubs in llms.txt, "
-               "because no SEO-owned shard knows these URLs exist."),
+               "because no SEO-owned shard knows these URLs exist. "
+               "2026-08-29 REVISIT — retired 08-20 on '0 owned visitors in 21d, and its pages "
+               "earned 0 search impressions across 0 URLs — invisible in search'. That verdict "
+               "is withdrawn: the URL Inspection census has now inspected 57 of these URLs and "
+               "all 57 come back 'unknown to Google' with not one crawl between them, so the "
+               "zero measured the crawler's reach and not the pages. Reactivated with the clock "
+               "restarted. The hypothesis itself SURVIVES the revisit on the site's own numbers: "
+               "NYC's equivalent aggregate tier (198 neighborhood + 165 zip + 5 borough = 368 "
+               "pages) has 9 URLs that have ever earned an impression, 2.4%, against 261 of "
+               "47,165 building pages, 0.55% — a 4.4x higher serving rate per page, and NOT a "
+               "crawl artefact, because the census fetches the two tiers at almost the same rate "
+               "(NYC hubs 23 of 90, buildings 55 of 206). So aggregates do earn more visibility "
+               "per page than address pages; this tier is simply the one Google has never "
+               "reached. The constraint is crawl reach, not the pages, and the reachability "
+               "defect is specific: /<city>/buildings/ is the sole inbound path to these hubs "
+               "and is itself uncrawled (3 sampled, 0 fetched), so the whole tier sits behind a "
+               "door Googlebot has not opened. Do not re-retire this on an impression count "
+               "until at least one of its URLs has been fetched — review.py's census guard now "
+               "enforces that."),
     dict(slug="plus_funnel", status="candidate", kind="conversion",
          name="Rebuild the Plus upgrade funnel",
          prefixes=[], metric="mrr_usd",

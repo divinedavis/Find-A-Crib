@@ -2477,13 +2477,15 @@
   // The four assumptions, in one object so they are trivially editable and
   // impossible to lose track of.
   var GOAL_ASSUMPTIONS = {
-    // An advertiser slot is sold to a named agent for a MONTH, not per click.
-    // The per-click model this replaced implied $174/month at the 300-DAU goal
-    // — about $22 per agent — and nobody signs a contract for $22. Worse, it
-    // scaled without limit, so it quietly claimed you could sell $41,751 of
-    // slots to a market that contains 85 agents.
-    slot_price: 150,      // $/month for one tile placement. Never quoted to anyone.
-    slot_min_handoffs: 20,// hand-offs/month an agent needs before a slot is worth $150.
+    // Direct ad sales: you sell the space on the page yourself.
+    ad_slots_per_page: 2, // ad positions a visitor sees per page view.
+    direct_cpm: 15.00,    // $ per 1,000 impressions sold direct. Above AdSense's
+                          // effective rate because there is no network taking a
+                          // cut and the audience is a narrow, high-intent one.
+    direct_fill: 20,      // % of the inventory you actually manage to sell
+                          // direct. The rest is backfilled by AdSense — the two
+                          // columns share one pool of impressions and must not
+                          // both be paid for the same slot.
     acct_to_paid: 3.5,    // % of accounts that buy Plus. Measured here: 0 of 13.
     report_close: 60,     // % of report checkouts that complete. Measured: 0 of 3.
     // AdSense revenue per 1,000 page views. This is the site's own prior
@@ -2571,7 +2573,6 @@
     var agentsSellable = n(A_.sellable) || 0;      // listings in the grid today
     var agentsSwept    = n(A_.swept) || 0;         // pages the sweep covers
     var agentsExist    = n(A_.total) || 0;         // on the HPD list
-    var agentPool = agentsSellable || agentsSwept || agentsExist || 1;
     var aiPerDay = n((G.ai || {}).per_day);
     var aiPerMonth = aiPerDay * 30;
     var sVis = n(C.one_time_visitors) + n(C.returning_visitors);
@@ -2589,23 +2590,24 @@
     var K = GOAL_ASSUMPTIONS;
     function row(dau){
       var mau = dau / (K.stickiness / 100);
-      // Slots sold, not clicks billed. An agent buys only if the placement
-      // delivers enough hand-offs to be worth the fee, and you cannot sell more
-      // slots than there are agents — which is the ceiling the per-click model
-      // had no way to express.
-      var handoffs = mau * clicksPerVisitor * sellableShare;
-      var buyers = Math.min(agentPool, Math.floor(handoffs / K.slot_min_handoffs));
-      var adv = buyers * K.slot_price;
+      // ONE pool of ad impressions, split between the two ways of filling it.
+      // Selling a slot direct and letting AdSense fill the same slot are
+      // alternatives, not additions; charging for both would bill the same
+      // pixel twice.
+      var adImpressions = mau * pvPerVisitor * K.ad_slots_per_page;
+      var directImpr = adImpressions * (K.direct_fill / 100);
+      var adv = (directImpr / 1000) * K.direct_cpm;
       var plus = mau * signupRate * (K.acct_to_paid / 100) * PLUS_PRICE;
       var rep = mau * startsPerVisitor * (K.report_close / 100) * REPORT_PRICE;
-      var ads = (mau * pvPerVisitor / 1000) * K.adsense_rpm;
+      // AdSense backfills whatever was not sold direct.
+      var ads = ((adImpressions - directImpr) / 1000) * K.adsense_rpm;
       // Scales with the audience: a referral needs a visitor to refer.
       var ref = mau * consultPerVisitor * (K.consult_qualified / 100) * K.consult_fee;
       // Flat: neither of these is bought by a visitor.
       var api = K.api_seats * API_PRICE;
       var crawl = aiPerMonth * K.crawl_price;
       return { dau: dau, mau: mau, adv: adv, ads: ads, plus: plus, rep: rep,
-               ref: ref, api: api, crawl: crawl, buyers: buyers, handoffs: handoffs,
+               ref: ref, api: api, crawl: crawl, impressions: adImpressions,
                total: adv + plus + rep + ads + ref + api + crawl };
     }
     var rows = GOAL_SCENARIOS.map(row);
@@ -2650,7 +2652,8 @@
     el('goals-table').innerHTML =
       '<div style="overflow-x:auto"><table class="goals-tbl">' +
       '<thead><tr><th>Daily actives</th><th>Monthly reach</th>' +
-      '<th>Advertiser slots</th><th>AdSense<span class="goals-off">not live</span></th>' +
+      '<th>Ad space sold direct<span class="goals-off">you sell it</span></th>' +
+      '<th>AdSense backfill<span class="goals-off">not live</span></th>' +
       '<th>Plus $' + PLUS_PRICE.toFixed(2) + '/mo</th>' +
       '<th>Reports $' + REPORT_PRICE + '</th>' +
       // NOT the invite-a-friend card further down this same page. That one is
@@ -2738,19 +2741,17 @@
                K.consult_fee,
                'Never negotiated with anyone. Both halves are guesses and the column is linear ' +
                'in each — treat it as the shape of a deal, not the size of one') +
-      inputRow('m', comma(agentsSellable) + ' agents have listings in the grid today',
-               comma(agentsSwept) + ' agent pages are swept, ' + comma(agentsExist) + ' exist on the ' +
-               'HPD list. Only the first can be invoiced — a tile needs an apartment to put in it — ' +
-               'so the advertiser column caps at $' + comma(agentPool * K.slot_price) + '/month ' +
-               'however much traffic arrives. Reaching $' + comma(agentsExist * K.slot_price) +
-               ' means widening COVERAGE, which is a different project from growing traffic') +
-      inputRow('a', '$' + K.slot_price + ' per slot per month',
-               'Never quoted to anyone. One call to Affordable for NY — 11 hand-offs already, free ' +
-               '— replaces this guess with a real number') +
-      inputRow('a', K.slot_min_handoffs + ' hand-offs a month before an agent buys',
-               'Below this a $' + K.slot_price + ' slot costs the agent more than $' +
-               (K.slot_price / K.slot_min_handoffs).toFixed(2) + ' per hand-off and they walk. It ' +
-               'is why the column is small at low traffic rather than merely proportional') +
+      inputRow('a', K.ad_slots_per_page + ' ad positions per page view',
+               'The grid reserves one in-feed slot every 6 cards. Raising this raises revenue and ' +
+               'lowers the content-to-ads ratio Google judges the whole page on') +
+      inputRow('a', '$' + K.direct_cpm.toFixed(2) + ' CPM sold direct',
+               'What an advertiser pays per 1,000 impressions with no network taking a cut. Above ' +
+               'AdSense because the audience is narrow and high-intent — the ' + comma(agentsSellable) +
+               ' agents already taking free hand-offs are the proof you would sell on') +
+      inputRow('a', K.direct_fill + '% of inventory sold direct',
+               'Selling space yourself is the hard part; the rest backfills to AdSense at $' +
+               K.adsense_rpm.toFixed(2) + ' RPM. The two columns SHARE one pool of impressions — a ' +
+               'slot you sell is a slot AdSense does not fill, so neither is double-counted') +
       inputRow('a', K.acct_to_paid + '% of accounts buy Plus',
                'Measured here: 0 of 13. Industry free-to-paid runs 2–5%') +
       inputRow('a', K.report_close + '% of report checkouts complete',
@@ -2778,21 +2779,19 @@
           'That is not a traffic plan, it is a different company. ' +
           '<b>Two of these columns do not scale with traffic at all</b> — API seats and AI crawls are ' +
           usd(goal.api + goal.crawl) + ' a month at every single row, because neither is bought by a ' +
-          'visitor. And a third one STOPS: advertiser slots cap at ' + comma(agentPool) + ' agents, ' +
-          usd(agentPool * K.slot_price) + ' a month, however large the audience gets. Growth buys you ' +
-          'the consultancy and AdSense columns and nothing else. ' +
+          'visitor. Ad space and AdSense split ONE pool of impressions — ' +
+          comma(Math.round(goal.impressions)) + ' a month at your goal — so selling more direct does ' +
+          'not add revenue, it MOVES revenue from the $' + K.adsense_rpm.toFixed(2) + ' column into ' +
+          'the $' + K.direct_cpm.toFixed(2) + ' one, worth ' +
+          (K.direct_cpm / K.adsense_rpm).toFixed(1) + '× per impression. That swap is the whole case ' +
+          'for selling space yourself. ' +
           (adOnlyRow
-            ? ' <b>Advertising alone needs ' + comma(adOnlyRow.dau) + ' daily actives</b> — ' +
+            ? '<b>Advertising alone needs ' + comma(adOnlyRow.dau) + ' daily actives</b> — ' +
               Math.round(adOnlyRow.dau / Math.max(targetRow ? targetRow.dau : 1, 1)) +
               '× the mixed answer above it and ' + Math.round(adOnlyRow.dau / GOAL_SCENARIOS[0]) +
-              '× your 300 goal, because the slot business tops out at ' +
-              usd(agentPool * K.slot_price) + ' and AdSense has to carry the remaining ' +
-              usd(GOAL_REVENUE_TARGET - agentPool * K.slot_price) + ' at about a cent a visitor.'
-            : ' <b>$' + comma(GOAL_REVENUE_TARGET) + ' is not reachable on advertising alone at any ' +
-              'audience.</b> Slots stop at ' + comma(agentPool) + ' agents — $' +
-              comma(agentPool * K.slot_price) + ' a month — and AdSense would have to supply the ' +
-              'remainder at roughly a cent per visitor, which is why that row is absent rather ' +
-              'than large.')
+              '× your 300 goal, because display pays per impression and impressions are cheap.'
+            : '<b>$' + comma(GOAL_REVENUE_TARGET) + ' is not reachable on advertising alone at any ' +
+              'audience this model can reach.</b>')
         : '');
   }
 

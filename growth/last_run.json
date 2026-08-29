@@ -62,93 +62,94 @@
     }
   },
   "indexstatus": {
-    "accept_pct": 1.9,
+    "accept_pct": 1.2,
     "accept_pct_mature": 0.0,
-    "added": 247,
-    "at": "2026-08-28T05:11:11+00:00",
+    "added": 0,
+    "at": "2026-08-29T05:11:11+00:00",
     "by_crawl_age": {
       "0-6d": {
         "accept_pct": 0.0,
-        "fetched": 4,
+        "fetched": 7,
         "indexed": 0
       },
       "14-20d": {
         "accept_pct": 0.0,
-        "fetched": 8,
+        "fetched": 13,
         "indexed": 0
       },
       "21-27d": {
         "accept_pct": 0.0,
-        "fetched": 14,
+        "fetched": 13,
         "indexed": 0
       },
       "28d+": {
         "accept_pct": 0.0,
-        "fetched": 16,
+        "fetched": 32,
         "indexed": 0
       },
       "7-13d": {
-        "accept_pct": 8.3,
-        "fetched": 12,
+        "accept_pct": 5.9,
+        "fetched": 17,
         "indexed": 1
       }
     },
     "cohort": 455,
-    "date": "2026-08-28",
-    "dropped": 242,
+    "date": "2026-08-29",
+    "dropped": 0,
     "errors": 0,
-    "fetched_mature": 30,
-    "fetched_pct": 17.5,
+    "fetched_mature": 45,
+    "fetched_pct": 20.1,
     "gained_indexed": 0,
-    "indexed_pct": 0.3,
+    "indexed_pct": 0.2,
     "inspected": 100,
     "last_crawl": "2026-08-27",
     "lost_indexed": 0,
     "ok": true,
     "published_urls": 3530,
-    "read": 308,
+    "read": 408,
     "rechecked": 0,
     "states": {
-      "crawled_not_indexed": 53,
-      "discovered_not_indexed": 15,
+      "crawled_not_indexed": 81,
+      "discovered_not_indexed": 16,
       "indexed": 1,
-      "unknown_to_google": 239
+      "unknown_to_google": 310
     }
   },
   "measure": {
-    "at": "2026-08-28T05:11:12+00:00",
+    "at": "2026-08-29T05:11:12+00:00",
     "coverage_pct": 83.2,
-    "date": "2026-08-28",
+    "date": "2026-08-29",
     "days": 1,
     "keywords_covered": 262,
     "keywords_total": 315,
-    "latest_measured_day": "2026-08-27"
+    "latest_measured_day": "2026-08-28"
   },
   "outreach": {
-    "at": "2026-08-28T05:17:56+00:00",
-    "date": "2026-08-28",
+    "at": "2026-08-29T05:18:03+00:00",
+    "date": "2026-08-29",
     "drafted": 0,
     "ok": true,
-    "segment": "research"
+    "segment": "lending"
   },
   "scout": {
-    "at": "2026-08-28T05:15:38+00:00",
-    "date": "2026-08-28",
-    "detail": "no JSON object in response (stop_reason=max_tokens): I'll research current growth techniques before proposing.",
-    "ok": false
+    "at": "2026-08-29T05:15:53+00:00",
+    "date": "2026-08-29",
+    "keywords_added": 25,
+    "ok": true,
+    "techniques_added": 3
   },
   "searchconsole": {
-    "at": "2026-08-28T05:00:09+00:00",
+    "at": "2026-08-29T05:00:06+00:00",
     "clicks": 5,
-    "date": "2026-08-28",
-    "impressions": 13,
-    "page_clicks": 6,
-    "page_impressions": 35,
-    "serving_ever": 273,
-    "serving_pages": 15,
-    "serving_stable": 15,
+    "date": "2026-08-29",
+    "impressions": 15,
+    "page_clicks": 11,
+    "page_impressions": 37,
+    "serving_ever": 274,
+    "serving_pages": 11,
+    "serving_stable": 10,
     "share_pct": 0.0,
     "tracked_ranking": 0,
-    "window": "2026-08-19..2026-08-26"
+    "window": "2026-08-20..2026-08-27"
   }
 }

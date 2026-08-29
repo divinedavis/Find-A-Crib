@@ -1249,13 +1249,28 @@ def _fac_agent_pool():
     This is the number that turns "advertiser revenue scales with traffic" into
     "advertiser revenue scales with traffic until it runs out of advertisers".
     """
+    out = {"total": 0, "swept": 0, "sellable": 0}
     try:
         with open(os.path.join(DATA_DIR, "marketing_agents.json")) as f:
             d = json.load(f)
-        return {"total": int(d.get("count") or 0),
-                "with_listings": int(d.get("rerental_count") or 0)}
+        out["total"] = int(d.get("count") or 0)          # exist on the HPD list
+        out["swept"] = int(d.get("rerental_count") or 0)  # have a page we sweep
     except Exception:
-        return {"total": 0, "with_listings": 0}
+        pass
+    try:
+        # The number that actually bounds slot revenue: agents whose listings
+        # are in the grid RIGHT NOW. You cannot sell a tile to an agent whose
+        # apartments you do not carry — there would be nothing to put in it.
+        # Housing Connect is excluded here as elsewhere; it is a city lottery.
+        with open(os.path.join(DATA_DIR, "featured.json")) as f:
+            lst = (json.load(f) or {}).get("listings") or []
+        names = {(x.get("agent") or "").strip() for x in lst}
+        names.discard("")
+        names = {x for x in names if "housing connect" not in x.lower()}
+        out["sellable"] = len(names)
+    except Exception:
+        pass
+    return out
 
 
 def _fac_ai_crawls():

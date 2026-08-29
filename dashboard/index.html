@@ -2559,8 +2559,19 @@
     var G = d.goalstreams || {};
     var consultClicks = n(G.consult_clicks);
     var consultPerVisitor = visitors ? consultClicks / visitors : 0;
-    var agentPool = n((G.agents || {}).total) || 85;
-    var agentsWithListings = n((G.agents || {}).with_listings);
+    // THE CAP IS WHOSE LISTINGS YOU CARRY, not how many agents exist.
+    //
+    // This capped at the 85 agents on the HPD list, which was wrong by an order
+    // of magnitude: you cannot sell a tile to an agent whose apartments are not
+    // in the grid, because there is nothing to put in the tile. featured.json
+    // holds 35 listings from 9 agents today; the re-rental sweep covers 22
+    // agent pages; 85 exist. Only the first number can be invoiced this month,
+    // and the gap between it and 85 is a coverage backlog, not revenue.
+    var A_ = G.agents || {};
+    var agentsSellable = n(A_.sellable) || 0;      // listings in the grid today
+    var agentsSwept    = n(A_.swept) || 0;         // pages the sweep covers
+    var agentsExist    = n(A_.total) || 0;         // on the HPD list
+    var agentPool = agentsSellable || agentsSwept || agentsExist || 1;
     var aiPerDay = n((G.ai || {}).per_day);
     var aiPerMonth = aiPerDay * 30;
     var sVis = n(C.one_time_visitors) + n(C.returning_visitors);
@@ -2727,11 +2738,12 @@
                K.consult_fee,
                'Never negotiated with anyone. Both halves are guesses and the column is linear ' +
                'in each — treat it as the shape of a deal, not the size of one') +
-      inputRow('m', comma(agentPool) + ' HPD marketing agents exist',
-               comma(agentsWithListings) + ' of them currently run a re-rental page. This is a ' +
-               'CEILING, not an input: you cannot sell more slots than there are agents, so the ' +
-               'advertiser column stops growing at $' + comma(agentPool * K.slot_price) + '/month ' +
-               'no matter how much traffic arrives') +
+      inputRow('m', comma(agentsSellable) + ' agents have listings in the grid today',
+               comma(agentsSwept) + ' agent pages are swept, ' + comma(agentsExist) + ' exist on the ' +
+               'HPD list. Only the first can be invoiced — a tile needs an apartment to put in it — ' +
+               'so the advertiser column caps at $' + comma(agentPool * K.slot_price) + '/month ' +
+               'however much traffic arrives. Reaching $' + comma(agentsExist * K.slot_price) +
+               ' means widening COVERAGE, which is a different project from growing traffic') +
       inputRow('a', '$' + K.slot_price + ' per slot per month',
                'Never quoted to anyone. One call to Affordable for NY — 11 hand-offs already, free ' +
                '— replaces this guess with a real number') +

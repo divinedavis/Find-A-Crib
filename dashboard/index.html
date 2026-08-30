@@ -325,16 +325,6 @@
   .sg-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;color:var(--muted);white-space:nowrap}
   .sg-why{font-size:12.5px;color:var(--ink2);line-height:1.55;margin-top:13px}
   .sg-sub{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin:16px 0 8px}
-  .sg-v{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border2);font-size:12.5px;line-height:1.5}
-  .sg-v:last-child{border-bottom:none}
-  .sg-v-n{flex:0 0 34%;font-weight:600}
-  /* the plate code, muted and monospaced so it reads as a label on the room
-     rather than as part of the room's name */
-  .sg-v-c{display:inline-block;margin-left:7px;font-weight:600;font-size:11px;
-    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted);
-    background:var(--surface-2);border-radius:5px;padding:1px 5px;vertical-align:1px}
-  .sg-v-w{flex:1;color:var(--muted)}
-  @media(max-width:700px){.sg-v{display:block}.sg-v-n{margin-bottom:2px}}
   .ref-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
   @media(max-width:700px){.ref-tiles{grid-template-columns:1fr}}
 
@@ -586,10 +576,9 @@
       <!-- ===== Trent's Fresh Spaces only ===== -->
       <div class="card mb18" id="sec-goals">
         <div class="card-head-row">
-          <div><h2>Goals — what each DAU target is actually worth</h2><div class="card-sub">Three audience scenarios priced against seven revenue streams — five sold to the audience, two not. <b>This card ignores the range picker</b> — its rates are measured over all time, because a projection about 25,000 daily actives should not be rewritten by one afternoon's click mix. Every rate here is either <b>measured on this site</b> — and shows the measurement — or <b>assumed</b>, and says so. The last revenue widget on this page was deleted for projecting MRR off assumptions while the real MRR read $0; the difference is that this one names which is which, and the assumptions are the only thing you can argue with.</div></div>
+          <div><h2>Goals — what each DAU target is actually worth</h2><div class="card-sub">Three audience scenarios priced against seven revenue streams — five sold to the audience, two not. <b>This card ignores the range picker</b> — its rates are measured over all time, because a projection about 25,000 daily actives should not be rewritten by one afternoon's click mix. The last revenue widget on this page was deleted for projecting MRR off assumptions while the real MRR read $0; the rates here are measured over all time and the pricing assumptions are the only thing you can argue with.</div></div>
         </div>
         <div id="goals-table"></div>
-        <div id="goals-inputs" style="margin-top:18px"></div>
         <div class="callout" id="goals-callout" style="margin-top:16px"></div>
       </div>
 
@@ -2080,21 +2069,12 @@
           }).join('')
         : '<div class="disclaim">No plate carrying this question has been scanned yet.</div>';
 
-      var venues=(a.venues||[]).map(function(v){
-        // Naming the plate against the room is what turns this from a list of
-        // ideas into a checklist of what has actually been cut.
-        var tag = v.code ? '<span class="sg-v-c">/c/'+esc(v.code)+'</span>' : '';
-        return '<div class="sg-v"><div class="sg-v-n">'+esc(v.place)+tag+'</div>'+
-               '<div class="sg-v-w">'+esc(v.why)+'</div></div>';
-      }).join('');
-
       return '<div class="sg-arm">'+
         '<div class="sg-head"><div class="sg-q">“'+esc(a.headline)+'”</div>'+
         '<div class="sg-code">'+esc(a.code)+'</div></div>'+
         '<div class="ads-tiles">'+tiles+'</div>'+
         '<div class="sg-why">'+esc(a.why)+'</div>'+
         '<div class="sg-sub">Plates in the field</div>'+plateRows+
-        '<div class="sg-sub">Where this one belongs — '+esc(a.audience)+'</div>'+venues+
         '</div>';
     }).join('');
 
@@ -2539,17 +2519,16 @@
     if(!d){
       el('goals-table').innerHTML =
         '<div style="color:var(--muted);font-size:13px">Loading the all-time rates this table is built from…</div>';
-      el('goals-inputs').innerHTML=''; el('goals-callout').innerHTML='';
+      el('goals-callout').innerHTML='';
       return;
     }
     d = d || {};
-    var E = d.engagement || {}, T = d.totals || {}, EV = d.events || {}, A = d.adtiles || {};
+    var E = d.engagement || {}, T = d.totals || {}, EV = d.events || {};
     var C = d.conversion || {};
 
     // --- measured inputs, each with the fraction it came from ---------------
     var visitors = n(T.visitors);
     var agentClicks = n(EV.featured_click) + n(EV.hc_click);
-    var clicksPerVisitor = visitors ? agentClicks / visitors : 0;
     var reportStarts = n(EV.report_checkout_start);
     var startsPerVisitor = visitors ? reportStarts / visitors : 0;
     // Page views per visitor, for the one stream that is paid per page rather
@@ -2561,31 +2540,11 @@
     var G = d.goalstreams || {};
     var consultClicks = n(G.consult_clicks);
     var consultPerVisitor = visitors ? consultClicks / visitors : 0;
-    // THE CAP IS WHOSE LISTINGS YOU CARRY, not how many agents exist.
-    //
-    // This capped at the 85 agents on the HPD list, which was wrong by an order
-    // of magnitude: you cannot sell a tile to an agent whose apartments are not
-    // in the grid, because there is nothing to put in the tile. featured.json
-    // holds 35 listings from 9 agents today; the re-rental sweep covers 22
-    // agent pages; 85 exist. Only the first number can be invoiced this month,
-    // and the gap between it and 85 is a coverage backlog, not revenue.
-    var A_ = G.agents || {};
-    var agentsSellable = n(A_.sellable) || 0;      // listings in the grid today
-    var agentsSwept    = n(A_.swept) || 0;         // pages the sweep covers
-    var agentsExist    = n(A_.total) || 0;         // on the HPD list
     var aiPerDay = n((G.ai || {}).per_day);
     var aiPerMonth = aiPerDay * 30;
     var sVis = n(C.one_time_visitors) + n(C.returning_visitors);
     var sUps = n(C.one_time_signups) + n(C.returning_signups);
     var signupRate = sVis ? sUps / sVis : 0;
-    // NYC Housing Connect is a city lottery site. It takes a large share of the
-    // hand-offs and will never pay a referral fee, so it is excluded from the
-    // sellable side rather than quietly inflating it.
-    var agents = A.agents || [];
-    var govClicks = agents.filter(function(a){ return /housing connect/i.test(a.agent||''); })
-                          .reduce(function(t,a){ return t + n(a.clicks); }, 0);
-    var totalAgentClicks = agents.reduce(function(t,a){ return t + n(a.clicks); }, 0);
-    var sellableShare = totalAgentClicks ? (totalAgentClicks - govClicks) / totalAgentClicks : 1;
 
     var K = GOAL_ASSUMPTIONS;
     function row(dau){
@@ -2696,71 +2655,6 @@
         : '') +
       '</tbody></table></div>';
 
-    function inputRow(kind, label, detail){
-      return '<div class="act-row"><div class="act-l">' +
-        '<div class="act-ico">' + (kind === 'm' ? '📏' : '🤔') + '</div><div>' +
-        '<div class="act-name">' + label + '</div>' +
-        '<div class="act-desc">' + detail + '</div></div></div>' +
-        '<div class="act-val"><span class="bn ' + (kind === 'm' ? 'bn-hi' : 'bn-mid') + '">' +
-        (kind === 'm' ? 'measured' : 'ASSUMED') + '</span></div></div>';
-    }
-    el('goals-inputs').innerHTML =
-      '<div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">'+
-      'WHAT THE TABLE IS BUILT FROM</div>' +
-      inputRow('m', clicksPerVisitor.toFixed(3) + ' agent hand-offs per visitor',
-               comma(agentClicks) + ' clicks ÷ ' + comma(visitors) + ' visitors, all time. Conservative ' +
-               'on purpose: the denominator includes months before hand-offs were tracked at all, ' +
-               'so the true rate is higher than this and every advertiser figure understates') +
-      inputRow('m', (100 * sellableShare).toFixed(0) + '% of hand-offs are sellable',
-               'NYC Housing Connect took ' + comma(govClicks) + ' of ' + comma(totalAgentClicks) +
-               ' — it is a city lottery site and will never pay a referral fee') +
-      inputRow('m', (100 * signupRate).toFixed(1) + '% of visitors create an account',
-               comma(sUps) + ' sign-ups ÷ ' + comma(sVis) + ' visitors') +
-      inputRow('m', startsPerVisitor.toFixed(4) + ' report checkouts started per visitor',
-               comma(reportStarts) + ' starts ÷ ' + comma(visitors) + ' visitors, all time') +
-      inputRow('m', pvPerVisitor.toFixed(2) + ' page views per visitor',
-               comma(pageViews) + ' views ÷ ' + comma(visitors) + ' visitors, all time — the AdSense denominator') +
-      inputRow('a', '$' + K.adsense_rpm.toFixed(2) + ' AdSense RPM per 1,000 page views',
-               'AdSense is wired but ADSENSE_SLOT is empty, so no ad has ever served here and ' +
-               'today\u2019s real figure is $0 — this column is what it would earn once approved') +
-      inputRow('m', comma(consultClicks) + ' consultancy hand-offs, all time',
-               'outbound clicks to MGNY Consulting, Affordable for NY, Clinton Management, ' +
-               'Tax Solute, Reside NY and K&amp;G Upright — rent-stabilization firms that charge ' +
-               'tenants. Unrelated to the invite-a-friend Referrals card below') +
-      inputRow('m', comma(aiPerDay) + ' AI-crawler requests per day',
-               'measured off this site\u2019s own nginx log, not the beacon — crawlers run no ' +
-               'JavaScript, so every other number on this page is blind to them. That is ~' +
-               Math.round(aiPerDay / Math.max(n(E.dau), 1)) + '× your human daily actives') +
-      inputRow('a', '$' + K.crawl_price.toFixed(3) + ' per crawl',
-               'Cloudflare pay-per-crawl\u2019s documented minimum. Charging anything requires ' +
-               'putting the site behind Cloudflare and switching those crawlers to Charge') +
-      inputRow('a', K.api_seats + ' Business API seats at $' + API_PRICE,
-               'Sold today: 0. The API is live with 3 keys, all free tier, all test emails — ' +
-               'this column is the one that needs a customer, not an audience') +
-      inputRow('a', K.consult_qualified + '% of consultancy hand-offs become a billable referral, at $' +
-               K.consult_fee,
-               'Never negotiated with anyone. Both halves are guesses and the column is linear ' +
-               'in each — treat it as the shape of a deal, not the size of one') +
-      inputRow('a', K.ad_slots_per_page + ' ad positions per page view',
-               'The grid reserves one in-feed slot every 6 cards. Raising this raises revenue and ' +
-               'lowers the content-to-ads ratio Google judges the whole page on') +
-      inputRow('a', '$' + K.direct_cpm.toFixed(2) + ' CPM sold direct',
-               'What an advertiser pays per 1,000 impressions with no network taking a cut. Above ' +
-               'AdSense because the audience is narrow and high-intent — the ' + comma(agentsSellable) +
-               ' agents already taking free hand-offs are the proof you would sell on') +
-      inputRow('a', K.direct_fill + '% of inventory sold direct',
-               'Selling space yourself is the hard part; the rest backfills to AdSense at $' +
-               K.adsense_rpm.toFixed(2) + ' RPM. The two columns SHARE one pool of impressions — a ' +
-               'slot you sell is a slot AdSense does not fill, so neither is double-counted') +
-      inputRow('a', K.acct_to_paid + '% of accounts buy Plus',
-               'Measured here: 0 of 13. Industry free-to-paid runs 2–5%') +
-      inputRow('a', K.report_close + '% of report checkouts complete',
-               'Measured here: 0 of ' + comma(reportStarts) + ' ever completed — every building_reports ' +
-               'row is still \u201cpending\u201d, so this whole column rests on a conversion that has ' +
-               'never once happened') +
-      inputRow('a', K.stickiness + '% stickiness turns a DAU target into monthly reach',
-               'Your own goal ratio — 300 daily of 3,000 monthly');
-
     var goal = rows[0];
     el('goals-callout').innerHTML =
       '<b>Hitting your 300 DAU goal is worth about ' + usd(goal.total) + ' a month, and ' +
@@ -2770,7 +2664,7 @@
       'ten times the goal, this reaches ' + usd(rows[2].total) + ' a month. That is the honest ceiling ' +
       'of the current product mix, and it is the argument for changing the mix rather than for ' +
       'chasing the traffic harder. Today MRR is $0, so every figure above is conditional on the ' +
-      'four assumptions listed — change one and the whole column moves.' +
+      'pricing assumptions behind it — change one and the whole column moves.' +
       (targetRow
         ? ' <b>$' + comma(GOAL_REVENUE_TARGET) + ' a month needs ' + comma(targetRow.dau) +
           ' daily actives — ' + Math.round(targetRow.dau / GOAL_SCENARIOS[0]) + '× your 300 goal and ' +

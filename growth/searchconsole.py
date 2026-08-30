@@ -45,6 +45,7 @@ the service-account JWT dance.
 """
 import json
 import os
+import re
 import sys
 
 from . import ledger, keywords
@@ -98,6 +99,74 @@ SERVING_TIERS = (
     ("developers", lambda p: p.startswith("/developers/")),
 )
 TIER_OTHER = "other"
+
+
+# ---- brand navigation vs. the goal ----------------------------------------
+#
+# The goal is share of searches for RENT-STABILIZED HOUSING. A click from
+# somebody who typed the site's own name into Google is not progress towards
+# it: that person already knew the site and would have arrived anyway.
+#
+# This has been a prose caveat in the review prompt and in journal entry after
+# journal entry — "subtract jayshomefinder from every click count" — for over a
+# month, which means every headline click number on record has been wrong by an
+# unstated amount and no series says by how much. 2026-08-30 is the day that
+# stopped being tolerable: gsc_clicks went 5 -> 33 and gsc_page_clicks 11 -> 42
+# overnight, a 6.6x jump that reads as a breakthrough in the series. The saved
+# per-query snapshot says all 33 landed on the homepage, and every one of them
+# came from "findacrib" (28), "jayshomefinder" and its variants (5). Queries
+# about rent stabilization earned ZERO clicks and one impression that day.
+#
+# jayshomefinder is a decommissioned brand that previously held this domain, so
+# its residual traffic is doubly not ours to count.
+#
+# The rule is a substring test on the query with every non-alphanumeric
+# character stripped, so "find a crib", "find-a-crib" and "findacrib.com" all
+# match one token. It is deliberately blunt in the direction that UNDERSTATES
+# the non-branded number: the site's name is made of common words, so a generic
+# phrase like "find a crib brooklyn" is counted as branded. That bias is the
+# safe one for a metric whose whole purpose is to stop this loop over-claiming.
+BRAND_TOKENS = ("findacrib", "jayshomefinder")
+
+
+def is_branded(query):
+    """True if this query is navigation to a brand rather than housing intent."""
+    flat = re.sub(r"[^a-z0-9]+", "", (query or "").lower())
+    return any(tok in flat for tok in BRAND_TOKENS)
+
+
+def branded_split(rows):
+    """Split {query, clicks, impressions} rows into branded and non-branded.
+
+    Returns a dict of four counts. Both halves are QUERY-dimension numbers and
+    inherit that dimension's limit: Search Console drops anonymized rare
+    queries, so the totals here are smaller than the page dimension and the
+    non-branded half is a floor, not a census. That is the same two-metrics-two-
+    meanings discipline as gsc_clicks vs gsc_page_clicks — see collect().
+    """
+    out = {"branded_clicks": 0, "branded_impressions": 0,
+           "nonbranded_clicks": 0, "nonbranded_impressions": 0}
+    for r in rows:
+        pre = "branded" if is_branded(r.get("query")) else "nonbranded"
+        out[pre + "_clicks"] += r.get("clicks", 0) or 0
+        out[pre + "_impressions"] += r.get("impressions", 0) or 0
+    return out
+
+
+def saved_branded_split():
+    """The same split, recomputed from the committed gsc_pages.json snapshot.
+
+    Lets the report — and the 6am review, which has the repo and no API key —
+    read the split without a Search Console call. A query that served on two
+    pages is counted once per page, so this is an upper bound on either half;
+    on the corpus that motivated it the whole query dimension sat on a single
+    URL. Returns None when the snapshot carries no per-query rows at all,
+    because zero-because-absent and a measured zero are different facts.
+    """
+    qbp = (load_pages() or {}).get("queries_by_page") or {}
+    rows = [q for page in qbp.values() for q in (page or [])]
+    return branded_split(rows) if rows else None
+
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -172,6 +241,11 @@ def collect(days=7):
     # "which named queries do we appear for". Two metrics, two meanings.
     page_impressions = sum(r.get("impressions", 0) for r in page_rows)
     page_clicks = sum(r.get("clicks", 0) for r in page_rows)
+    # How much of that is somebody typing the site's own name — see BRAND_TOKENS.
+    # Built from `rows` and not from the tracked keyword universe, because the
+    # universe deliberately contains no branded queries and so cannot see them.
+    split = branded_split({"query": q, **v} for q, v in by_query.items())
+
     top10 = sum(1 for k in kws if (k.get("position") or 999) <= 10)
     top3 = sum(1 for k in kws if (k.get("position") or 999) <= 3)
     share = round(100.0 * top10 / len(kws), 1) if kws else 0.0
@@ -183,6 +257,10 @@ def collect(days=7):
             ("gsc_page_clicks", page_clicks),
             ("gsc_page_impressions", page_impressions),
             ("gsc_position", round(avg_pos, 1)),
+            ("gsc_branded_clicks", split["branded_clicks"]),
+            ("gsc_branded_impressions", split["branded_impressions"]),
+            ("gsc_nonbranded_clicks", split["nonbranded_clicks"]),
+            ("gsc_nonbranded_impressions", split["nonbranded_impressions"]),
             ("gsc_serving_pages", serving),
             ("search_share_pct", share),
             ("tracked_top10", top10),
@@ -216,11 +294,15 @@ def collect(days=7):
         "impressions": impressions, "serving_pages": serving,
         "page_clicks": page_clicks, "page_impressions": page_impressions,
         "tracked_ranking": matched, "share_pct": share,
+        "nonbranded_clicks": split["nonbranded_clicks"],
+        "nonbranded_impressions": split["nonbranded_impressions"],
         "serving_stable": ch.get("gsc_serving_stable"),
         "serving_ever": ch.get("gsc_serving_ever")})
 
     return {"clicks": clicks, "impressions": impressions,
             "page_clicks": page_clicks, "page_impressions": page_impressions,
+            "nonbranded_clicks": split["nonbranded_clicks"],
+            "nonbranded_impressions": split["nonbranded_impressions"],
             "serving_pages": serving, "tracked_ranking": matched,
             "top10": top10, "top3": top3, "share_pct": share,
             "serving_stable": ch.get("gsc_serving_stable"),

@@ -583,6 +583,29 @@ def build_blocks(run_log=None, review_out=None):
                       "Clicks and impressions are Search Console's page dimension. Its query "
                       "dimension drops anonymized rare queries and, on a corpus of single-address "
                       "pages, reports a small fraction of the real total."})
+
+        # ---- and how much of it is somebody typing the site's own name.
+        # The headline above counts brand navigation, which is not progress
+        # towards a share of rent-stabilization searches; on 2026-08-30 it
+        # tripled overnight on 33 branded clicks and 0 non-branded ones. Prefer
+        # the recorded series, fall back to recomputing from the committed
+        # snapshot so the line still renders on a day the collector did not run.
+        # See searchconsole.BRAND_TOKENS for the rule and its known bias.
+        _nbc, _nbi = _last("gsc_nonbranded_clicks"), _last("gsc_nonbranded_impressions")
+        _bc = _last("gsc_branded_clicks")
+        if _nbc is None:
+            _snap = searchconsole.saved_branded_split()
+            if _snap:
+                _nbc, _nbi = _snap["nonbranded_clicks"], _snap["nonbranded_impressions"]
+                _bc = _snap["branded_clicks"]
+        if _nbc is not None:
+            B.append({"type": "note", "text":
+                      f"Of the query-dimension total, {_fmt(_bc)} clicks came from people "
+                      f"searching for the site by name (or for jayshomefinder, the "
+                      f"decommissioned brand that held this domain). Housing-intent queries "
+                      f"earned {_fmt(_nbc)} clicks and {_fmt(_nbi)} "
+                      f"impression{'' if _nbi == 1 else 's'}. That second pair is the "
+                      f"number the 90% share goal is about."})
     else:
         B.append({"type": "callout", "tone": "warn", "heading": "Search share unmeasured",
                   "body": f"Search Console is not reporting. Coverage proxy: "
@@ -661,7 +684,6 @@ def build_blocks(run_log=None, review_out=None):
 
     # ---- the cheapest available rankings
     try:
-        from . import searchconsole
         p2 = searchconsole.page2(limit=10)
     except Exception:
         p2 = None
@@ -677,7 +699,6 @@ def build_blocks(run_log=None, review_out=None):
     # queries. When the fix is rewriting a page rather than publishing one,
     # this is the list that tells you which page.
     try:
-        from . import searchconsole
         heads = searchconsole.headroom(limit=10)
     except Exception:
         heads = []

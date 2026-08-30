@@ -145,8 +145,17 @@ else
   # and carried in like the source files. hpd_contacts.json is here because
   # build_seo.py started reading it for the owner block on every building page,
   # and $BUILD had no copy at all.
-  for f in build_seo.py seo_guides.py split_hpd.py landlords.json hpd_contacts.json; do
+  # growth/gsc_pages.json added 2026-08-30. build_seo.py's index triage reads it
+  # for the ever-served rule -- the one that keeps a page Google is ALREADY
+  # showing out of the noindex tier. $BUILD had no copy, so EVER_SERVED_BBLS was
+  # empty on every production build since the rule shipped on 08-28, and the
+  # rule silently did nothing: 5 of 6 sampled ever-served building pages were
+  # live with noindex on them. The fallback in _ever_served_bbls() is
+  # deliberately non-fatal, which is why this printed one line and never failed.
+  for f in build_seo.py seo_guides.py split_hpd.py landlords.json hpd_contacts.json \
+           growth/gsc_pages.json; do
     if [ -f "$SRC/$f" ] && ! cmp -s "$SRC/$f" "$BUILD/$f"; then
+      mkdir -p "$BUILD/$(dirname "$f")"
       # `cp && n=…` as the last statement of the loop body would take the whole
       # script out under `set -e` if the copy ever failed on permissions.
       if cp -f "$SRC/$f" "$BUILD/$f"; then n=$((n + 1)); fi

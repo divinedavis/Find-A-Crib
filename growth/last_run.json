@@ -1,42 +1,39 @@
 {
   "build": {
-    "at": "2026-08-29T05:40:26+00:00",
+    "at": "2026-08-30T05:40:26+00:00",
     "changed_urls": 6,
-    "date": "2026-08-29",
+    "date": "2026-08-30",
     "deployed": true,
     "new_urls": 0,
     "seo_corpus": {
-      "days_old": 0,
+      "days_old": 1,
       "written": "2026-08-29"
     },
     "seo_pipeline": {
-      "at": "2026-08-29T05:42:12Z",
-      "changed_urls": 0,
+      "at": "2026-08-29T19:03:00Z",
+      "changed_urls": 61,
       "code": "synced-1",
       "corpus_pages": 49371,
       "head": "unknown",
-      "hours_ago": 0.0,
+      "hours_ago": 10.6,
       "phase": "finish",
       "pull": "no-worktree",
       "rc": 0,
-      "started": "2026-08-29T05:40:26Z",
+      "started": "2026-08-29T19:00:30Z",
       "state": "ran clean (source handed over from the checkout: synced-1)",
       "step": "done"
-    },
-    "seo_watchdog": {
-      "at": "2026-08-29T05:42:12+00:00",
-      "note": "ran refresh_seo.sh to completion",
-      "ok": true,
-      "ran": true,
-      "rc": 0
     },
     "techniques": {
       "city_guides": {
         "detail": "3 of 3 city guides live with their data caveat",
         "ok": true
       },
+      "city_seo_expansion": {
+        "detail": "hub pages live: dc 103, la 112, sf 37 \u2014 handed 3 pages back to the SEO pipeline, which has deployed its own copies",
+        "ok": true
+      },
       "crawl_paths": {
-        "detail": "15 of 15 published sections have an inbound internal link (62 docroot pages read) \u2014 single inbound source: /available/ \u2190 nyc browse hub, /dc/neighborhood/ \u2190 dc browse hub, /la/zip/ \u2190 la browse hub, /sf/neighborhood/ \u2190 sf browse hub, /zip/ \u2190 building page \u2014 9 of 15 audited sections are published under no ACTIVE technique, so nothing rebuilds them; link them or stop publishing them: /available/ [candidate], /brief/ [retired], /dc/buildings/ [retired], /dc/neighborhood/ [retired], /developers/ [candidate], /la/buildings/ [retired], +3 more",
+        "detail": "15 of 15 published sections have an inbound internal link (62 docroot pages read) \u2014 single inbound source: /available/ \u2190 nyc browse hub, /dc/neighborhood/ \u2190 dc browse hub, /la/zip/ \u2190 la browse hub, /sf/neighborhood/ \u2190 sf browse hub, /zip/ \u2190 building page \u2014 3 of 15 audited sections are published under no ACTIVE technique, so nothing rebuilds them; link them or stop publishing them: /available/ [candidate], /brief/ [retired], /developers/ [candidate]",
         "ok": true
       },
       "derived_building_facts": {
@@ -44,7 +41,7 @@
         "ok": true
       },
       "fresh_section8": {
-        "detail": "291 buildings across 5 boroughs",
+        "detail": "290 buildings across 5 boroughs",
         "ok": true
       },
       "hub_direct_answers": {
@@ -60,7 +57,7 @@
         "ok": true
       },
       "sitemap_daily": {
-        "detail": "sitemap-daily.xml with 26 URLs (incl. 3 city hub pages)",
+        "detail": "sitemap-daily.xml with 23 URLs",
         "ok": true
       }
     }

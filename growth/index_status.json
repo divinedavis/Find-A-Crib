@@ -25,7 +25,7 @@
   },
   "https://findacrib.com/available/brooklyn/bed-stuy-east/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-24",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "available",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -58,7 +58,7 @@
   },
   "https://findacrib.com/available/brooklyn/crown-heights-north/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-23",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "available",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -135,7 +135,7 @@
   },
   "https://findacrib.com/available/manhattan/east-midtown-turtle-bay/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-23",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "available",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -190,7 +190,7 @@
   },
   "https://findacrib.com/borough/bronx/largest/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-23",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "borough",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -256,7 +256,7 @@
   },
   "https://findacrib.com/borough/manhattan/": {
    "bucket": "crawled_not_indexed",
-   "checked": "2026-08-24",
+   "checked": "2026-08-30",
    "crawled": "2026-07-06",
    "family": "borough",
    "fetch": "SUCCESSFUL",
@@ -355,7 +355,7 @@
   },
   "https://findacrib.com/brief/2026-08-06/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-24",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "brief",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -388,7 +388,7 @@
   },
   "https://findacrib.com/brief/2026-08-14/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-23",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "brief",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -408,28 +408,6 @@
    "state": "Crawled - currently not indexed",
    "verdict": "NEUTRAL"
   },
-  "https://findacrib.com/building/bronx/1133-boston-rd-2026130026/": {
-   "bucket": "unknown_to_google",
-   "checked": "2026-08-29",
-   "crawled": null,
-   "family": "building",
-   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
-   "first_bucket": "unknown_to_google",
-   "first_checked": "2026-08-29",
-   "state": "URL is unknown to Google",
-   "verdict": "NEUTRAL"
-  },
-  "https://findacrib.com/building/bronx/1171-to-1179-walton-ave-2024790036/": {
-   "bucket": "crawled_not_indexed",
-   "checked": "2026-08-28",
-   "crawled": "2026-08-17",
-   "family": "building",
-   "fetch": "SUCCESSFUL",
-   "first_bucket": "crawled_not_indexed",
-   "first_checked": "2026-08-28",
-   "state": "Crawled - currently not indexed",
-   "verdict": "NEUTRAL"
-  },
   "https://findacrib.com/building/bronx/1256-clay-ave-2024270013/": {
    "bucket": "crawled_not_indexed",
    "checked": "2026-08-29",
@@ -440,12 +418,6 @@
    "first_checked": "2026-08-29",
    "state": "Crawled - currently not indexed",
    "verdict": "NEUTRAL"
-  },
-  "https://findacrib.com/building/bronx/1691-e-174th-st-2038920001/": {
-   "family": "building"
-  },
-  "https://findacrib.com/building/bronx/1775-to-1785-walton-ave-2028500060/": {
-   "family": "building"
   },
   "https://findacrib.com/building/bronx/2190-boston-rd-2043170025/": {
    "bucket": "unknown_to_google",
@@ -492,10 +464,37 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/bronx/2861-bainbridge-ave-2032960055/": {
-   "family": "building"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/building/bronx/3333-henry-hudson-pkwy-2059010001/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/bronx/3363-sedgwick-ave-2032550065/": {
-   "family": "building"
+   "bucket": "crawled_not_indexed",
+   "checked": "2026-08-30",
+   "crawled": "2026-08-15",
+   "family": "building",
+   "fetch": "SUCCESSFUL",
+   "first_bucket": "crawled_not_indexed",
+   "first_checked": "2026-08-30",
+   "state": "Crawled - currently not indexed",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/bronx/445-gerard-ave-2023510012/": {
    "bucket": "unknown_to_google",
@@ -575,7 +574,15 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/brooklyn/1164-pacific-st-3012050025/": {
-   "family": "building"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/brooklyn/123-linden-blvd-3050840084/": {
    "bucket": "crawled_not_indexed",
@@ -633,7 +640,15 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/brooklyn/1402-brooklyn-ave-3049810050/": {
-   "family": "building"
+   "bucket": "crawled_not_indexed",
+   "checked": "2026-08-30",
+   "crawled": "2026-08-01",
+   "family": "building",
+   "fetch": "SUCCESSFUL",
+   "first_bucket": "crawled_not_indexed",
+   "first_checked": "2026-08-30",
+   "state": "Crawled - currently not indexed",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/brooklyn/143-starr-st-3031870050/": {
    "bucket": "unknown_to_google",
@@ -658,10 +673,26 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/brooklyn/1612-new-york-ave-3075600056/": {
-   "family": "building"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/brooklyn/172-union-st-3003430015/": {
-   "family": "building"
+   "bucket": "crawled_not_indexed",
+   "checked": "2026-08-30",
+   "crawled": "2026-08-03",
+   "family": "building",
+   "fetch": "SUCCESSFUL",
+   "first_bucket": "crawled_not_indexed",
+   "first_checked": "2026-08-30",
+   "state": "Crawled - currently not indexed",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/brooklyn/18-goodwin-pl-3032930018/": {
    "bucket": "unknown_to_google",
@@ -685,6 +716,17 @@
    "state": "URL is unknown to Google",
    "verdict": "NEUTRAL"
   },
+  "https://findacrib.com/building/brooklyn/19-e-31st-st-3048850061/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
   "https://findacrib.com/building/brooklyn/2035-e-16th-st-3073210066/": {
    "bucket": "unknown_to_google",
    "checked": "2026-08-28",
@@ -697,10 +739,26 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/brooklyn/2049-20th-ln-3064670012/": {
-   "family": "building"
+   "bucket": "crawled_not_indexed",
+   "checked": "2026-08-30",
+   "crawled": "2026-07-31",
+   "family": "building",
+   "fetch": "SUCCESSFUL",
+   "first_bucket": "crawled_not_indexed",
+   "first_checked": "2026-08-30",
+   "state": "Crawled - currently not indexed",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/brooklyn/210-parkville-ave-3054280016/": {
-   "family": "building"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/brooklyn/2102-newkirk-ave-3052210041/": {
    "bucket": "unknown_to_google",
@@ -801,28 +859,25 @@
    "state": "URL is unknown to Google",
    "verdict": "NEUTRAL"
   },
-  "https://findacrib.com/building/brooklyn/260-howard-ave-3015300001/": {
+  "https://findacrib.com/building/brooklyn/262-to-264-9th-st-3010100010/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-23",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "building",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
    "first_bucket": "unknown_to_google",
-   "first_checked": "2026-08-23",
+   "first_checked": "2026-08-30",
    "state": "URL is unknown to Google",
    "verdict": "NEUTRAL"
   },
-  "https://findacrib.com/building/brooklyn/262-to-264-9th-st-3010100010/": {
-   "family": "building"
-  },
-  "https://findacrib.com/building/brooklyn/270-15th-st-3010480032/": {
+  "https://findacrib.com/building/brooklyn/2913-snyder-ave-3051080049/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-29",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "building",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
    "first_bucket": "unknown_to_google",
-   "first_checked": "2026-08-29",
+   "first_checked": "2026-08-30",
    "state": "URL is unknown to Google",
    "verdict": "NEUTRAL"
   },
@@ -981,11 +1036,19 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/brooklyn/472-bergen-st-3009330027/": {
-   "family": "building"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/brooklyn/484-gates-ave-3018140009/": {
    "bucket": "crawled_not_indexed",
-   "checked": "2026-08-23",
+   "checked": "2026-08-30",
    "crawled": "2026-08-13",
    "family": "building",
    "fetch": "SUCCESSFUL",
@@ -1049,8 +1112,16 @@
    "state": "URL is unknown to Google",
    "verdict": "NEUTRAL"
   },
-  "https://findacrib.com/building/brooklyn/536-to-540-ocean-ave-3050990116/": {
-   "family": "building"
+  "https://findacrib.com/building/brooklyn/539-to-545-vanderbilt-ave-3020107505/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/brooklyn/558-11th-st-3010960035/": {
    "bucket": "unknown_to_google",
@@ -1119,7 +1190,15 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/brooklyn/626-to-632-flatbush-ave-3050260185/": {
-   "family": "building"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/brooklyn/654-madison-st-3016460011/": {
    "bucket": "unknown_to_google",
@@ -1143,8 +1222,16 @@
    "state": "Crawled - currently not indexed",
    "verdict": "NEUTRAL"
   },
-  "https://findacrib.com/building/brooklyn/665-new-york-ave-3048200001/": {
-   "family": "building"
+  "https://findacrib.com/building/brooklyn/680-e-21st-st-3052200057/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/brooklyn/704-greene-ave-3018010030/": {
    "bucket": "unknown_to_google",
@@ -1169,24 +1256,37 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/brooklyn/712-crown-st-3014190006/": {
-   "family": "building"
-  },
-  "https://findacrib.com/building/brooklyn/752-macdonough-st-3015020018/": {
-   "family": "building"
-  },
-  "https://findacrib.com/building/brooklyn/770-new-york-ave-3048370052/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-28",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "building",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
    "first_bucket": "unknown_to_google",
-   "first_checked": "2026-08-28",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/building/brooklyn/752-macdonough-st-3015020018/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
    "state": "URL is unknown to Google",
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/brooklyn/791-sterling-pl-3012400071/": {
-   "family": "building"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/brooklyn/824-e-new-york-ave-3048060077/": {
    "bucket": "unknown_to_google",
@@ -1222,7 +1322,15 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/brooklyn/955-grand-st-3029240047/": {
-   "family": "building"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/brooklyn/961-to-965-willoughby-ave-3031830052/": {
    "bucket": "unknown_to_google",
@@ -1367,6 +1475,17 @@
    "state": "Crawled - currently not indexed",
    "verdict": "NEUTRAL"
   },
+  "https://findacrib.com/building/manhattan/121-to-123-rivington-st-1003530020/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
   "https://findacrib.com/building/manhattan/131-e-83rd-st-1015120016/": {
    "bucket": "unknown_to_google",
    "checked": "2026-08-29",
@@ -1401,13 +1520,37 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/137-thompson-st-1005170031/": {
-   "family": "building"
+   "bucket": "crawled_not_indexed",
+   "checked": "2026-08-30",
+   "crawled": "2026-08-19",
+   "family": "building",
+   "fetch": "SUCCESSFUL",
+   "first_bucket": "crawled_not_indexed",
+   "first_checked": "2026-08-30",
+   "state": "Crawled - currently not indexed",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/1377-to-1379-lexington-ave-1015190052/": {
-   "family": "building"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/139-mulberry-st-1002360026/": {
-   "family": "building"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/14-to-16-bedford-st-1005270007/": {
    "bucket": "unknown_to_google",
@@ -1497,6 +1640,17 @@
    "state": "URL is unknown to Google",
    "verdict": "NEUTRAL"
   },
+  "https://findacrib.com/building/manhattan/155-w-68th-st-1011407501/": {
+   "bucket": "crawled_not_indexed",
+   "checked": "2026-08-30",
+   "crawled": "2026-08-01",
+   "family": "building",
+   "fetch": "SUCCESSFUL",
+   "first_bucket": "crawled_not_indexed",
+   "first_checked": "2026-08-30",
+   "state": "Crawled - currently not indexed",
+   "verdict": "NEUTRAL"
+  },
   "https://findacrib.com/building/manhattan/156-w-15th-st-1007900067/": {
    "bucket": "unknown_to_google",
    "checked": "2026-08-29",
@@ -1575,7 +1729,15 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/163-to-199-e-85th-st-1015140039/": {
-   "family": "building"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/166-w-83rd-st-1012130060/": {
    "bucket": "unknown_to_google",
@@ -1643,6 +1805,17 @@
    "state": "Crawled - currently not indexed",
    "verdict": "NEUTRAL"
   },
+  "https://findacrib.com/building/manhattan/192-orchard-st-1004120011/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
   "https://findacrib.com/building/manhattan/1951-to-1965-1st-ave-1016720017/": {
    "bucket": "crawled_not_indexed",
    "checked": "2026-08-29",
@@ -1666,17 +1839,6 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/200-w-123rd-st-1019280036/": {
-   "bucket": "unknown_to_google",
-   "checked": "2026-08-28",
-   "crawled": null,
-   "family": "building",
-   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
-   "first_bucket": "unknown_to_google",
-   "first_checked": "2026-08-28",
-   "state": "URL is unknown to Google",
-   "verdict": "NEUTRAL"
-  },
-  "https://findacrib.com/building/manhattan/2034-7th-ave-1019270033/": {
    "bucket": "unknown_to_google",
    "checked": "2026-08-28",
    "crawled": null,
@@ -1754,7 +1916,15 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/221-e-28th-st-1009090011/": {
-   "family": "building"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/222-e-12th-st-1004670020/": {
    "bucket": "crawled_not_indexed",
@@ -1812,7 +1982,15 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/229-to-235-chrystie-st-1004277504/": {
-   "family": "building"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/230-w-24th-st-1007730064/": {
    "bucket": "crawled_not_indexed",
@@ -1870,7 +2048,15 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/2350-broadway-1012330016/": {
-   "family": "building"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/238-e-82nd-st-1015270031/": {
    "bucket": "unknown_to_google",
@@ -1939,13 +2125,37 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/258-e-112th-st-1016610027/": {
-   "family": "building"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/2708-broadway-1018750146/": {
-   "family": "building"
+   "bucket": "crawled_not_indexed",
+   "checked": "2026-08-30",
+   "crawled": "2026-08-17",
+   "family": "building",
+   "fetch": "SUCCESSFUL",
+   "first_bucket": "crawled_not_indexed",
+   "first_checked": "2026-08-30",
+   "state": "Crawled - currently not indexed",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/273-w-150th-st-1020360022/": {
-   "family": "building"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/292-w-92nd-st-1012390058/": {
    "bucket": "unknown_to_google",
@@ -1958,8 +2168,27 @@
    "state": "URL is unknown to Google",
    "verdict": "NEUTRAL"
   },
+  "https://findacrib.com/building/manhattan/294-convent-ave-1020580017/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
   "https://findacrib.com/building/manhattan/30-w-63rd-st-1011157503/": {
-   "family": "building"
+   "bucket": "crawled_not_indexed",
+   "checked": "2026-08-30",
+   "crawled": "2026-08-19",
+   "family": "building",
+   "fetch": "SUCCESSFUL",
+   "first_bucket": "crawled_not_indexed",
+   "first_checked": "2026-08-30",
+   "state": "Crawled - currently not indexed",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/301-e-85th-st-1015480001/": {
    "bucket": "unknown_to_google",
@@ -1984,7 +2213,15 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/308-to-320-e-44th-st-1013360040/": {
-   "family": "building"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/310-w-101st-st-1018890025/": {
    "bucket": "unknown_to_google",
@@ -2009,7 +2246,15 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/322-e-61st-st-1014350039/": {
-   "family": "building"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/322-e-74th-st-1014480044/": {
    "bucket": "crawled_not_indexed",
@@ -2144,7 +2389,15 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/350-1st-ave-1009780001/": {
-   "family": "building"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/354-e-87th-st-1015490131/": {
    "bucket": "unknown_to_google",
@@ -2169,7 +2422,15 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/39-e-1st-st-1004420015/": {
-   "family": "building"
+   "bucket": "crawled_not_indexed",
+   "checked": "2026-08-30",
+   "crawled": "2026-08-04",
+   "family": "building",
+   "fetch": "SUCCESSFUL",
+   "first_bucket": "crawled_not_indexed",
+   "first_checked": "2026-08-30",
+   "state": "Crawled - currently not indexed",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/4-w-103rd-st-1018380037/": {
    "bucket": "crawled_not_indexed",
@@ -2205,7 +2466,15 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/400-w-113th-st-1018650020/": {
-   "family": "building"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/41-w-64th-st-1011170013/": {
    "bucket": "crawled_not_indexed",
@@ -2329,7 +2598,15 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/45-to-67-tudor-city-pl-1013350022/": {
-   "family": "building"
+   "bucket": "crawled_not_indexed",
+   "checked": "2026-08-30",
+   "crawled": "2026-07-31",
+   "family": "building",
+   "fetch": "SUCCESSFUL",
+   "first_bucket": "crawled_not_indexed",
+   "first_checked": "2026-08-30",
+   "state": "Crawled - currently not indexed",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/45-w-85th-st-1011990016/": {
    "bucket": "unknown_to_google",
@@ -2343,7 +2620,15 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/454-fort-washington-ave-1021760104/": {
-   "family": "building"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/48-to-50-pinehurst-ave-1021770160/": {
    "bucket": "unknown_to_google",
@@ -2368,7 +2653,15 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/509-cathedral-pkwy-1018820024/": {
-   "family": "building"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/509-to-517-w-38th-st-1007107501/": {
    "bucket": "unknown_to_google",
@@ -2425,6 +2718,17 @@
    "state": "URL is unknown to Google",
    "verdict": "NEUTRAL"
   },
+  "https://findacrib.com/building/manhattan/521-e-5th-st-1004010053/": {
+   "bucket": "crawled_not_indexed",
+   "checked": "2026-08-30",
+   "crawled": "2026-08-01",
+   "family": "building",
+   "fetch": "SUCCESSFUL",
+   "first_bucket": "crawled_not_indexed",
+   "first_checked": "2026-08-30",
+   "state": "Crawled - currently not indexed",
+   "verdict": "NEUTRAL"
+  },
   "https://findacrib.com/building/manhattan/53-grand-st-1002280022/": {
    "bucket": "unknown_to_google",
    "checked": "2026-08-28",
@@ -2437,7 +2741,15 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/539-lenox-ave-1020060030/": {
-   "family": "building"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/542-e-14th-st-1004070029/": {
    "bucket": "crawled_not_indexed",
@@ -2484,7 +2796,15 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/569-w-192nd-st-1021610103/": {
-   "family": "building"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/599-w-190th-st-1021610001/": {
    "bucket": "discovered_not_indexed",
@@ -2505,17 +2825,6 @@
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
    "first_bucket": "unknown_to_google",
    "first_checked": "2026-08-28",
-   "state": "URL is unknown to Google",
-   "verdict": "NEUTRAL"
-  },
-  "https://findacrib.com/building/manhattan/607-w-180th-st-1021620074/": {
-   "bucket": "unknown_to_google",
-   "checked": "2026-08-29",
-   "crawled": null,
-   "family": "building",
-   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
-   "first_bucket": "unknown_to_google",
-   "first_checked": "2026-08-29",
    "state": "URL is unknown to Google",
    "verdict": "NEUTRAL"
   },
@@ -2542,11 +2851,19 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/633-to-635-w-170th-st-1021420006/": {
-   "family": "building"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/643-w-171st-st-1021420061/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-24",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "building",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -2611,7 +2928,15 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/779-to-795-columbus-ave-1018337506/": {
-   "family": "building"
+   "bucket": "crawled_not_indexed",
+   "checked": "2026-08-30",
+   "crawled": "2026-08-03",
+   "family": "building",
+   "fetch": "SUCCESSFUL",
+   "first_bucket": "crawled_not_indexed",
+   "first_checked": "2026-08-30",
+   "state": "Crawled - currently not indexed",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/85-e-end-ave-1015900036/": {
    "bucket": "unknown_to_google",
@@ -2659,7 +2984,26 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/manhattan/98-riverside-dr-1012440090/": {
-   "family": "building"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
+  },
+  "https://findacrib.com/building/queens/1-55-borden-ave-4000067501/": {
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/queens/102-02-queens-blvd-4031730022/": {
    "bucket": "unknown_to_google",
@@ -2717,7 +3061,15 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/queens/216-10-77th-ave-4077610060/": {
-   "family": "building"
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "building",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "unknown_to_google",
+   "first_checked": "2026-08-30",
+   "state": "URL is unknown to Google",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/building/queens/28-26-to-28-34-jackson-ave-4002640017/": {
    "bucket": "unknown_to_google",
@@ -2820,7 +3172,7 @@
   },
   "https://findacrib.com/council-district/26/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-24",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "council-district",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -2897,7 +3249,7 @@
   },
   "https://findacrib.com/dc/neighborhood/benning-ridge/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-24",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "dc",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -2930,7 +3282,7 @@
   },
   "https://findacrib.com/dc/neighborhood/cleveland-park/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-23",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "dc",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -2974,7 +3326,7 @@
   },
   "https://findacrib.com/dc/neighborhood/lincoln-heights/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-23",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "dc",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -2996,7 +3348,7 @@
   },
   "https://findacrib.com/dc/neighborhood/mount-vernon-square/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-23",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "dc",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -3029,7 +3381,7 @@
   },
   "https://findacrib.com/dc/neighborhood/shepherd-park/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-24",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "dc",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -3128,7 +3480,7 @@
   },
   "https://findacrib.com/guide/is-my-apartment-rent-controlled-san-francisco/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-23",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "guide",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -3150,7 +3502,7 @@
   },
   "https://findacrib.com/guide/is-my-apartment-rent-stabilized/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-24",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "guide",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -3271,7 +3623,7 @@
   },
   "https://findacrib.com/la/zip/90043/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-23",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "la",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -3304,7 +3656,7 @@
   },
   "https://findacrib.com/la/zip/90064/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-23",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "la",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -3326,7 +3678,7 @@
   },
   "https://findacrib.com/la/zip/90210/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-23",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "la",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -3370,7 +3722,7 @@
   },
   "https://findacrib.com/la/zip/91040/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-24",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "la",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -3403,7 +3755,7 @@
   },
   "https://findacrib.com/la/zip/91356/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-24",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "la",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -3435,13 +3787,37 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/landlord/ebd-management-services-llc/": {
-   "family": "landlord"
+   "bucket": "discovered_not_indexed",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "landlord",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "discovered_not_indexed",
+   "first_checked": "2026-08-30",
+   "state": "Discovered - currently not indexed",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/landlord/langsam-property-services-corp/": {
-   "family": "landlord"
+   "bucket": "discovered_not_indexed",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "landlord",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "discovered_not_indexed",
+   "first_checked": "2026-08-30",
+   "state": "Discovered - currently not indexed",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/landlord/united-management/": {
-   "family": "landlord"
+   "bucket": "discovered_not_indexed",
+   "checked": "2026-08-30",
+   "crawled": null,
+   "family": "landlord",
+   "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
+   "first_bucket": "discovered_not_indexed",
+   "first_checked": "2026-08-30",
+   "state": "Discovered - currently not indexed",
+   "verdict": "NEUTRAL"
   },
   "https://findacrib.com/landlord/veritas-property-management-llc/": {
    "bucket": "discovered_not_indexed",
@@ -3500,7 +3876,7 @@
   },
   "https://findacrib.com/neighborhood/brooklyn/bensonhurst/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-24",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "neighborhood",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -3599,7 +3975,7 @@
   },
   "https://findacrib.com/neighborhood/brooklyn/marine-park-mill-basin-bergen-beach/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-23",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "neighborhood",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -3621,7 +3997,7 @@
   },
   "https://findacrib.com/neighborhood/brooklyn/sunset-park-east-borough-park-west/": {
    "bucket": "crawled_not_indexed",
-   "checked": "2026-08-24",
+   "checked": "2026-08-30",
    "crawled": "2026-08-03",
    "family": "neighborhood",
    "fetch": "SUCCESSFUL",
@@ -3643,7 +4019,7 @@
   },
   "https://findacrib.com/neighborhood/manhattan/chinatown-two-bridges/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-23",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "neighborhood",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -3665,7 +4041,7 @@
   },
   "https://findacrib.com/neighborhood/manhattan/financial-district-battery-park-city/": {
    "bucket": "crawled_not_indexed",
-   "checked": "2026-08-24",
+   "checked": "2026-08-30",
    "crawled": "2026-07-22",
    "family": "neighborhood",
    "fetch": "SUCCESSFUL",
@@ -3676,7 +4052,7 @@
   },
   "https://findacrib.com/neighborhood/manhattan/hamilton-heights-sugar-hill/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-23",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "neighborhood",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -3698,7 +4074,7 @@
   },
   "https://findacrib.com/neighborhood/manhattan/midtown-south-flatiron-union-square/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-24",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "neighborhood",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -3830,20 +4206,19 @@
   },
   "https://findacrib.com/neighborhood/queens/long-island-city-hunters-point/": {
    "bucket": "crawled_not_indexed",
-   "checked": "2026-08-23",
-   "crawled": "2026-06-25",
+   "checked": "2026-08-30",
+   "crawled": "2026-08-24",
    "family": "neighborhood",
    "fetch": "SUCCESSFUL",
    "first_bucket": "crawled_not_indexed",
    "first_checked": "2026-08-23",
    "first_indexed": "2026-08-19",
-   "left_indexed": "2026-08-23",
    "state": "Crawled - currently not indexed",
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/neighborhood/queens/north-corona/": {
    "bucket": "crawled_not_indexed",
-   "checked": "2026-08-24",
+   "checked": "2026-08-30",
    "crawled": "2026-08-08",
    "family": "neighborhood",
    "fetch": "SUCCESSFUL",
@@ -3898,7 +4273,7 @@
   },
   "https://findacrib.com/neighborhood/staten-island/mariner-s-harbor-arlington-graniteville/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-23",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "neighborhood",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -3909,7 +4284,7 @@
   },
   "https://findacrib.com/section8/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-23",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "section8",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -3997,7 +4372,7 @@
   },
   "https://findacrib.com/sf/neighborhood/bayview-hunters-point/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-24",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "sf",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -4063,7 +4438,7 @@
   },
   "https://findacrib.com/sf/neighborhood/lakeshore/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-23",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "sf",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -4107,7 +4482,7 @@
   },
   "https://findacrib.com/sf/neighborhood/pacific-heights/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-23",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "sf",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -4173,7 +4548,7 @@
   },
   "https://findacrib.com/sf/neighborhood/twin-peaks/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-23",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "sf",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -4228,7 +4603,7 @@
   },
   "https://findacrib.com/zip/10011/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-24",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "zip",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -4316,7 +4691,7 @@
   },
   "https://findacrib.com/zip/10039/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-23",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "zip",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -4359,14 +4734,14 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/10451/": {
-   "bucket": "discovered_not_indexed",
-   "checked": "2026-08-23",
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "zip",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
    "first_bucket": "discovered_not_indexed",
    "first_checked": "2026-08-23",
-   "state": "Discovered - currently not indexed",
+   "state": "URL is unknown to Google",
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/10458/": {
@@ -4392,14 +4767,14 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/10462/": {
-   "bucket": "discovered_not_indexed",
-   "checked": "2026-08-23",
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "zip",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
    "first_bucket": "discovered_not_indexed",
    "first_checked": "2026-08-23",
-   "state": "Discovered - currently not indexed",
+   "state": "URL is unknown to Google",
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/10468/": {
@@ -4414,14 +4789,14 @@
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/10469/": {
-   "bucket": "discovered_not_indexed",
-   "checked": "2026-08-23",
+   "bucket": "unknown_to_google",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "zip",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
    "first_bucket": "discovered_not_indexed",
    "first_checked": "2026-08-23",
-   "state": "Discovered - currently not indexed",
+   "state": "URL is unknown to Google",
    "verdict": "NEUTRAL"
   },
   "https://findacrib.com/zip/10475/": {
@@ -4503,7 +4878,7 @@
   },
   "https://findacrib.com/zip/11231/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-24",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "zip",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -4525,7 +4900,7 @@
   },
   "https://findacrib.com/zip/11238/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-24",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "zip",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -4570,7 +4945,7 @@
   },
   "https://findacrib.com/zip/11367/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-24",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "zip",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -4592,7 +4967,7 @@
   },
   "https://findacrib.com/zip/11379/": {
    "bucket": "unknown_to_google",
-   "checked": "2026-08-24",
+   "checked": "2026-08-30",
    "crawled": null,
    "family": "zip",
    "fetch": "PAGE_FETCH_STATE_UNSPECIFIED",
@@ -4635,7 +5010,7 @@
    "verdict": "NEUTRAL"
   }
  },
- "published_urls": 3530,
+ "published_urls": 3374,
  "summary": {
   "by_family": {
    "(root)": {
@@ -4696,16 +5071,16 @@
    "building": {
     "accept_pct": 0.0,
     "buckets": {
-     "crawled_not_indexed": 55,
+     "crawled_not_indexed": 66,
      "discovered_not_indexed": 1,
-     "unknown_to_google": 150
+     "unknown_to_google": 183
     },
     "cohort": 250,
-    "fetched": 55,
-    "fetched_pct": 26.7,
+    "fetched": 66,
+    "fetched_pct": 26.4,
     "indexed": 0,
     "indexed_pct": 0.0,
-    "read": 206,
+    "read": 250,
     "wrong_canonical": 0
    },
    "buildings": {
@@ -4789,7 +5164,7 @@
    "landlord": {
     "accept_pct": null,
     "buckets": {
-     "discovered_not_indexed": 1,
+     "discovered_not_indexed": 4,
      "unknown_to_google": 1
     },
     "cohort": 5,
@@ -4797,7 +5172,7 @@
     "fetched_pct": 0.0,
     "indexed": 0,
     "indexed_pct": 0.0,
-    "read": 2,
+    "read": 5,
     "wrong_canonical": 0
    },
    "marketing-agents": {
@@ -4859,8 +5234,8 @@
     "accept_pct": 0.0,
     "buckets": {
      "crawled_not_indexed": 4,
-     "discovered_not_indexed": 9,
-     "unknown_to_google": 27
+     "discovered_not_indexed": 6,
+     "unknown_to_google": 30
     },
     "cohort": 40,
     "fetched": 4,
@@ -4872,12 +5247,12 @@
    }
   },
   "total": {
-   "accept_pct": 1.2,
+   "accept_pct": 1.1,
    "accept_pct_mature": 0.0,
    "accept_pct_settled": null,
    "buckets": {
     "blocked": 0,
-    "crawled_not_indexed": 81,
+    "crawled_not_indexed": 92,
     "discovered_not_indexed": 16,
     "duplicate": 0,
     "excluded_noindex": 0,
@@ -4886,47 +5261,47 @@
     "other": 0,
     "redirect": 0,
     "unknown": 0,
-    "unknown_to_google": 310
+    "unknown_to_google": 346
    },
    "by_crawl_age": {
     "0-6d": {
      "accept_pct": 0.0,
-     "fetched": 7,
+     "fetched": 8,
      "indexed": 0
     },
     "14-20d": {
      "accept_pct": 0.0,
-     "fetched": 13,
+     "fetched": 12,
      "indexed": 0
     },
     "21-27d": {
      "accept_pct": 0.0,
-     "fetched": 13,
+     "fetched": 16,
      "indexed": 0
     },
     "28d+": {
      "accept_pct": 0.0,
-     "fetched": 32,
+     "fetched": 38,
      "indexed": 0
     },
     "7-13d": {
-     "accept_pct": 5.9,
-     "fetched": 17,
+     "accept_pct": 5.3,
+     "fetched": 19,
      "indexed": 1
     }
    },
    "cohort": 455,
-   "fetched": 82,
-   "fetched_mature": 45,
-   "fetched_pct": 20.1,
+   "fetched": 93,
+   "fetched_mature": 54,
+   "fetched_pct": 20.4,
    "fetched_settled": 0,
    "indexed": 1,
    "indexed_pct": 0.2,
    "last_crawl": "2026-08-27",
    "mature_days": 21,
-   "read": 408,
+   "read": 455,
    "wrong_canonical": 0
   }
  },
- "updated": "2026-08-29"
+ "updated": "2026-08-30"
 }

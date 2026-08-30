@@ -66,94 +66,94 @@
     }
   },
   "indexstatus": {
-    "accept_pct": 1.2,
+    "accept_pct": 1.1,
     "accept_pct_mature": 0.0,
-    "added": 0,
-    "at": "2026-08-29T05:11:11+00:00",
+    "added": 11,
+    "at": "2026-08-30T05:11:03+00:00",
     "by_crawl_age": {
       "0-6d": {
         "accept_pct": 0.0,
-        "fetched": 7,
+        "fetched": 8,
         "indexed": 0
       },
       "14-20d": {
         "accept_pct": 0.0,
-        "fetched": 13,
+        "fetched": 12,
         "indexed": 0
       },
       "21-27d": {
         "accept_pct": 0.0,
-        "fetched": 13,
+        "fetched": 16,
         "indexed": 0
       },
       "28d+": {
         "accept_pct": 0.0,
-        "fetched": 32,
+        "fetched": 38,
         "indexed": 0
       },
       "7-13d": {
-        "accept_pct": 5.9,
-        "fetched": 17,
+        "accept_pct": 5.3,
+        "fetched": 19,
         "indexed": 1
       }
     },
     "cohort": 455,
-    "date": "2026-08-29",
-    "dropped": 0,
+    "date": "2026-08-30",
+    "dropped": 11,
     "errors": 0,
-    "fetched_mature": 45,
-    "fetched_pct": 20.1,
+    "fetched_mature": 54,
+    "fetched_pct": 20.4,
     "gained_indexed": 0,
     "indexed_pct": 0.2,
     "inspected": 100,
     "last_crawl": "2026-08-27",
     "lost_indexed": 0,
     "ok": true,
-    "published_urls": 3530,
-    "read": 408,
-    "rechecked": 0,
+    "published_urls": 3374,
+    "read": 455,
+    "rechecked": 46,
     "states": {
-      "crawled_not_indexed": 81,
+      "crawled_not_indexed": 92,
       "discovered_not_indexed": 16,
       "indexed": 1,
-      "unknown_to_google": 310
+      "unknown_to_google": 346
     }
   },
   "measure": {
-    "at": "2026-08-29T05:11:12+00:00",
-    "coverage_pct": 83.2,
-    "date": "2026-08-29",
+    "at": "2026-08-30T05:11:05+00:00",
+    "coverage_pct": 82.4,
+    "date": "2026-08-30",
     "days": 1,
-    "keywords_covered": 262,
-    "keywords_total": 315,
-    "latest_measured_day": "2026-08-28"
+    "keywords_covered": 280,
+    "keywords_total": 340,
+    "latest_measured_day": "2026-08-29"
   },
   "outreach": {
-    "at": "2026-08-29T05:18:03+00:00",
-    "date": "2026-08-29",
+    "at": "2026-08-30T05:20:18+00:00",
+    "date": "2026-08-30",
     "drafted": 0,
     "ok": true,
-    "segment": "lending"
+    "segment": "govtech"
   },
   "scout": {
-    "at": "2026-08-29T05:15:53+00:00",
-    "date": "2026-08-29",
+    "at": "2026-08-30T05:17:29+00:00",
+    "date": "2026-08-30",
     "keywords_added": 25,
     "ok": true,
     "techniques_added": 3
   },
   "searchconsole": {
-    "at": "2026-08-29T05:00:06+00:00",
-    "clicks": 5,
-    "date": "2026-08-29",
-    "impressions": 15,
-    "page_clicks": 11,
-    "page_impressions": 37,
-    "serving_ever": 274,
-    "serving_pages": 11,
+    "at": "2026-08-30T05:00:06+00:00",
+    "clicks": 33,
+    "date": "2026-08-30",
+    "impressions": 47,
+    "page_clicks": 42,
+    "page_impressions": 81,
+    "serving_ever": 277,
+    "serving_pages": 13,
     "serving_stable": 10,
     "share_pct": 0.0,
     "tracked_ranking": 0,
-    "window": "2026-08-20..2026-08-27"
+    "window": "2026-08-21..2026-08-28"
   }
 }

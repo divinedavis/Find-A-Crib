@@ -1231,7 +1231,8 @@ CSS = """
 body{margin:0;font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
 a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
 header.site{background:#fff;border-bottom:1px solid var(--line);padding:14px 20px}
-header.site a.brand{font-weight:700;color:var(--ink);font-size:18px}
+@font-face{font-family:'Oxanium';font-style:normal;font-weight:800;font-display:swap;src:url('/fonts/oxanium-800.woff2') format('woff2')}
+header.site a.brand{font-weight:800;color:var(--ink);font-size:18px;font-family:'Oxanium',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
 header.site .cities{display:block;margin-top:5px;font-size:13px;color:var(--ink2)}
 main{max-width:880px;margin:0 auto;padding:28px 20px 60px}
 h1{font-size:28px;line-height:1.2;margin:.2em 0 .4em}

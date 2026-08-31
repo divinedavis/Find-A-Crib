@@ -1159,6 +1159,15 @@
         <label class="row"><input type="radio" name="pv-comp" value="open"> Has open complaints</label>
       </div>
     </div>
+    <div class="filter-pill nyc-only" id="pill-agent">
+      Managing agent<span class="caret">▾</span>
+      <div class="pill-popover">
+        <div class="sheet-group-title">Managing agent</div>
+        <label class="row"><input type="radio" name="pv-phone" value="any" checked> Any</label>
+        <label class="row"><input type="radio" name="pv-phone" value="has"> Has a phone number listed</label>
+        <div style="font-size:11px;color:var(--ink-2);margin-top:8px">HPD registers a managing agent for most buildings but a contact number for far fewer. This narrows the map to the ones you can actually call.</div>
+      </div>
+    </div>
     </div><!-- /chip-row -->
   </div>
 </header>
@@ -1360,6 +1369,11 @@
       <label class="sheet-radio"><input type="radio" name="fs-comp" value="any" checked> Any</label>
       <label class="sheet-radio"><input type="radio" name="fs-comp" value="none"> No open complaints</label>
       <label class="sheet-radio"><input type="radio" name="fs-comp" value="open"> Has open complaints</label>
+    </div>
+    <div class="sheet-group nyc-only">
+      <div class="sheet-group-title">Managing agent</div>
+      <label class="sheet-radio"><input type="radio" name="fs-phone" value="any" checked> Any</label>
+      <label class="sheet-radio"><input type="radio" name="fs-phone" value="has"> Has a phone number listed</label>
     </div>
     <div class="sheet-actions">
       <button id="filter-clear" type="button">Clear</button>
@@ -2875,13 +2889,18 @@
   const filterSheet = document.getElementById('filter-sheet');
   const fabFilterBadge = document.getElementById('fab-filter-badge');
   function moreFilterCount() {
-    return (moreFilters.viol !== 'any' ? 1 : 0) + (moreFilters.comp !== 'any' ? 1 : 0);
+    return (moreFilters.viol !== 'any' ? 1 : 0) + (moreFilters.comp !== 'any' ? 1 : 0)
+         + (moreFilters.phone !== 'any' ? 1 : 0);
   }
   function syncMoreUI() {
     // reflect shared state into both the pill radios and the sheet radios
     document.querySelectorAll('input[name="pv-viol"], input[name="fs-viol"]').forEach(r => { r.checked = (r.value === moreFilters.viol); });
     document.querySelectorAll('input[name="pv-comp"], input[name="fs-comp"]').forEach(r => { r.checked = (r.value === moreFilters.comp); });
-    const n = moreFilterCount();
+    document.querySelectorAll('input[name="pv-phone"], input[name="fs-phone"]').forEach(r => { r.checked = (r.value === moreFilters.phone); });
+    const agentPill = document.getElementById('pill-agent');
+    if (agentPill) agentPill.classList.toggle('active', moreFilters.phone !== 'any');
+    // The Violations pill badges only the two filters it actually contains.
+    const n = (moreFilters.viol !== 'any' ? 1 : 0) + (moreFilters.comp !== 'any' ? 1 : 0);
     const pill = document.getElementById('pill-viol');
     pill.classList.toggle('active', n > 0);
     let badge = pill.querySelector('.count-badge');
@@ -2897,13 +2916,15 @@
     r.addEventListener('change', () => { if (r.checked) { moreFilters.viol = r.value; syncMoreUI(); applyFilters(); } }));
   document.querySelectorAll('input[name="pv-comp"], input[name="fs-comp"]').forEach(r =>
     r.addEventListener('change', () => { if (r.checked) { moreFilters.comp = r.value; syncMoreUI(); applyFilters(); } }));
+  document.querySelectorAll('input[name="pv-phone"], input[name="fs-phone"]').forEach(r =>
+    r.addEventListener('change', () => { if (r.checked) { moreFilters.phone = r.value; syncMoreUI(); applyFilters(); } }));
 
   // ---------- Zillow-style consolidated Filters modal ----------
   // Physically move the pill popovers into the modal: the inputs keep their
   // ids/names and live-apply listeners, so no filter logic changes.
   const filtersModal = document.getElementById('filters-modal');
   const filtersBody = document.getElementById('filters-body');
-  ['pill-borough', 'pill-nb', 'pill-listed', 'pill-s8', 'pill-beds', 'pill-price', 'pill-viol']
+  ['pill-borough', 'pill-nb', 'pill-listed', 'pill-s8', 'pill-beds', 'pill-price', 'pill-viol', 'pill-agent']
     .forEach(id => { const el = document.getElementById(id); if (el) filtersBody.appendChild(el); });
   function openFilters() { closeAllPills(); filtersModal.hidden = false; }
   function activeFilterCount() {
@@ -2948,7 +2969,7 @@
     document.querySelector('input[name="beds"]').dispatchEvent(new Event('change', { bubbles: true }));
     document.getElementById('price-min').value = '';
     document.getElementById('price-max').value = '';
-    moreFilters.viol = 'any'; moreFilters.comp = 'any'; syncMoreUI();
+    moreFilters.viol = 'any'; moreFilters.comp = 'any'; moreFilters.phone = 'any'; syncMoreUI();
     applyFilters(); updateFiltersCount();
   }
 
@@ -2969,7 +2990,7 @@
       beds: [...document.querySelectorAll('input[name="beds"]:checked')].map(c => +c.value),
       pmin: document.getElementById('price-min').value,
       pmax: document.getElementById('price-max').value,
-      viol: moreFilters.viol, comp: moreFilters.comp,
+      viol: moreFilters.viol, comp: moreFilters.comp, phone: moreFilters.phone,
       center: [map.getCenter().lat, map.getCenter().lng], zoom: map.getZoom(),
     };
   }
@@ -2987,7 +3008,8 @@
     document.querySelector('input[name="beds"]').dispatchEvent(new Event('change', { bubbles: true }));
     document.getElementById('price-min').value = p.pmin || '';
     document.getElementById('price-max').value = p.pmax || '';
-    moreFilters.viol = p.viol || 'any'; moreFilters.comp = p.comp || 'any'; syncMoreUI();
+    moreFilters.viol = p.viol || 'any'; moreFilters.comp = p.comp || 'any';
+    moreFilters.phone = p.phone || 'any'; syncMoreUI();
     if (p.center) map.setView(p.center, p.zoom || map.getZoom(), { animate: false });
     applyFilters(); updateFiltersCount();
   }
@@ -3040,7 +3062,7 @@
   document.getElementById('btn-filters').addEventListener('click', openFilters);
   filterSheet.addEventListener('click', e => {
     if (e.target === filterSheet || e.target.closest('#filter-apply') || e.target.closest('#filter-close')) { filterSheet.hidden = true; return; }
-    if (e.target.closest('#filter-clear')) { moreFilters.viol = 'any'; moreFilters.comp = 'any'; syncMoreUI(); applyFilters(); }
+    if (e.target.closest('#filter-clear')) { moreFilters.viol = 'any'; moreFilters.comp = 'any'; moreFilters.phone = 'any'; syncMoreUI(); applyFilters(); }
   });
 
   // search + address autocomplete (top 3 matches; selecting one opens full details)
@@ -3836,7 +3858,7 @@
   // ---------- filter / refresh ----------
   // HPD violation / complaint filter state, shared by the desktop "Violations" pill
   // and the mobile Filters bottom sheet. viol: any|none|open|classc, comp: any|none|open.
-  const moreFilters = { viol: 'any', comp: 'any' };
+  const moreFilters = { viol: 'any', comp: 'any', phone: 'any' };
   // list sort, chosen from the mobile FAB "Sort" sheet. 'loc' = natural viewport order.
   let sortMode = 'loc';
   let filtered = [];
@@ -3855,7 +3877,8 @@
       || document.querySelectorAll('input[name="beds"]:checked').length > 0
       || !!document.getElementById('price-min').value
       || !!document.getElementById('price-max').value
-      || moreFilters.viol !== 'any' || moreFilters.comp !== 'any';
+      || moreFilters.viol !== 'any' || moreFilters.comp !== 'any'
+      || moreFilters.phone !== 'any';
   }
 
   // A query is answered in tiers, and the first tier that finds anything wins.
@@ -3971,6 +3994,12 @@
             if (moreFilters.comp === 'none' && open > 0) continue;
             if (moreFilters.comp === 'open' && open === 0) continue;
           }
+          // h.ph is set by slim.py for the buildings whose HPD-registered
+          // managing agent has a phone on file. The number itself is Plus-only
+          // (private agent_phones, get_agent_phone) — this flag says a number
+          // exists, which is what a filter needs and is already what the
+          // building panel's "Show number" button keys off.
+          if (moreFilters.phone === 'has' && !(rec.h && rec.h.ph)) continue;
         }
         if (test && !test(rec)) continue;
         out.push(rec);

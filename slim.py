@@ -50,6 +50,14 @@ for r in records:
             slim_h["bid"] = h["buildingid"]
         if any(h.get(role) for role in ("owner", "manager", "officer")):
             slim_h["op"] = 1
+        # ph=1 means the managing agent has a phone on file. The number itself
+        # is never published — it lives in the private agent_phones table behind
+        # the Plus-gated get_agent_phone(). The flag is what the map's
+        # "managing agent has a phone listed" filter tests, and it is the same
+        # fact the building panel already exposes as has_phone.
+        mgr = h.get("manager")
+        if isinstance(mgr, dict) and mgr.get("phone"):
+            slim_h["ph"] = 1
         rec["h"] = slim_h
     slim.append(rec)
 

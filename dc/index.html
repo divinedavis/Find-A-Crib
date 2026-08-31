@@ -5372,6 +5372,51 @@
     if (p.get('plus') === '1') plusUpsellPending = true;
     if (p.has('plus')) { p.delete('plus'); history.replaceState({}, '', location.pathname + (p.toString() ? '?' + p : '')); }
   })();
+  // ---------- arriving from /directory/ with a portfolio to open ----------
+  // ?portfolio=<kind>:<key> is a click on a name in the landlord directory.
+  // The map already knows how to show one landlord's buildings — that is the
+  // search's "org" tier, which filters the list, draws only their pins and
+  // frames the map on their bounds. What it does not do is AGREE with the
+  // directory: the org tier substring-matches hpd_contacts.names, so
+  // "SHINDA MANAGEMENT CORP" also drags in "SHINDA MANAGEMENT CORPORATION"
+  // and the map contradicts the row that was clicked.
+  //
+  // So this seeds ORG_CACHE with the exact bbl set from get_research_bbls()
+  // before anything can look it up, then runs the normal search path. The tier
+  // is unchanged, the framing is unchanged, and the number on screen is the
+  // number that was clicked. orgFetch() bails on a key already in the cache,
+  // so the substring query never fires and never overwrites this.
+  async function handlePortfolioParam() {
+    const raw = new URLSearchParams(location.search).get('portfolio');
+    if (!raw || !supaClient) return;
+    const i = raw.indexOf(':');
+    if (i < 1) return;
+    const kind = raw.slice(0, i), key = raw.slice(i + 1);
+    // Drop the param immediately: a reload or a back-button should land on the
+    // plain map, not silently re-run a lookup and re-frame the viewport.
+    const p = new URLSearchParams(location.search);
+    p.delete('portfolio');
+    history.replaceState({}, '', location.pathname + (p.toString() ? '?' + p : ''));
+    if (!authUser) {
+      openAuthModal('Sign in to open a landlord\u2019s portfolio on the map.');
+      return;
+    }
+    try {
+      const { data, error } = await supaClient.rpc('get_research_bbls', { p_kind: kind, p_key: key });
+      // null is the RPC saying "not a subscriber" — the same answer it gives a
+      // signed-out caller, and deliberately not an error.
+      if (error || !data) { openPaywall(null); return; }
+      const bbls = new Set(data.bbls || []);
+      if (!bbls.size) return;
+      const label = titleName(data.display_name);
+      ORG_CACHE.set(orgKey(label), { bbls, label, capped: false });
+      qInput.value = label;
+      applyFilters();
+      renderSearchHelper(label);
+      track('portfolio_open', { kind: data.kind, buildings: bbls.size });
+    } catch (e) { /* leave the map exactly as it was */ }
+  }
+
   // one-click unsubscribe (#unsub=<token>), optionally scoped with &k=lifecycle.
   // The two opt-outs are separate on purpose: saved-building alerts are a
   // feature someone asked for by saving a building, onboarding email is not, so
@@ -5716,6 +5761,7 @@
     if (authUser) { loadAccountFavs(); maybeRedeemReferral(); maybeShowReferralPrompt(); maybeFoundingWelcome(); }
     handleUnsubHash();
     handleFolderHash();
+    handlePortfolioParam();
     // anonymous returning-visitor analytics: a first-party id (cookie/localStorage)
     // lets us count true returning users without storing IPs. user_id is attached
     // when signed in. Bots (webdriver / crawler UAs) are not logged.

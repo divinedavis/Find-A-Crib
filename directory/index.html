@@ -231,6 +231,13 @@
     background:var(--surface);color:var(--ink);font:inherit;font-size:13px}
   .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
   .boros{font-size:11.5px;color:var(--muted)}
+  /* The name is the way into the map, so it has to look like a way in. */
+  .pf{display:block;font-weight:700;font-size:14px;color:var(--ink);text-decoration:none;line-height:1.35}
+  .pf:hover{color:var(--brand)}
+  .pf-go{display:block;font-weight:600;font-size:11.5px;color:var(--brand);opacity:0;
+    transition:opacity .12s;margin-top:1px}
+  tr:hover .pf-go,.pf:focus .pf-go{opacity:1}
+  @media(hover:none){.pf-go{opacity:1}}
   .viol{color:#c2410c;font-weight:600}
   html[data-theme="dark"] .viol{color:#fb923c}
   .pager{display:flex;gap:10px;align-items:center;justify-content:center;margin:18px 0 4px}
@@ -429,8 +436,12 @@
       }).map(function(k){
         return esc(BORO_LABEL[k] || k) + ' ' + comma(r.by_boro[k]);
       }).join(' · ');
+      var href = '/?portfolio=' + encodeURIComponent(state.kind + ':' + r.key);
       tr.innerHTML =
-        '<td><div class="name">' + esc(r.display_name) + '</div>' +
+        '<td><a class="pf" href="' + esc(href) + '" data-pf="' + esc(r.display_name) + '">' +
+            esc(r.display_name) +
+            '<span class="pf-go">' + comma(r.buildings) + ' on the map &rarr;</span>' +
+          '</a>' +
           (boros ? '<div class="boros">' + boros + '</div>' : '') +
           (r.class_c ? '<div class="boros"><span class="viol">' + comma(r.class_c) +
                        ' Class C (hazardous)</span></div>' : '') +
@@ -439,6 +450,9 @@
         '<td class="num">' + comma(r.units) + '</td>' +
         '<td class="num' + (r.open_violations ? ' viol' : '') + '">' + comma(r.open_violations) + '</td>' +
         '<td class="num">' + comma(r.open_complaints) + '</td>';
+      tr.querySelector('.pf').addEventListener('click', function(){
+        track('directory_open_map', {kind: state.kind, buildings: r.buildings});
+      });
       frag.appendChild(tr);
     });
     rows.appendChild(frag);

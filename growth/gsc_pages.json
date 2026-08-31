@@ -1,17 +1,17 @@
 {
  "churn": {
-  "gsc_serving_entered": 3,
+  "gsc_serving_entered": 0,
   "gsc_serving_ever": 277,
-  "gsc_serving_left": 1,
-  "gsc_serving_stable": 10,
+  "gsc_serving_left": 5,
+  "gsc_serving_stable": 8,
   "history_dropped": 0,
   "history_dropped_total": 0
  },
- "date": "2026-08-30",
+ "date": "2026-08-31",
  "discovered_untracked": [
   {
-   "clicks": 28,
-   "impressions": 30,
+   "clicks": 43,
+   "impressions": 46,
    "position": 1.0,
    "query": "findacrib"
   },
@@ -28,8 +28,8 @@
    "query": "jayshomefinder"
   },
   {
-   "clicks": 2,
-   "impressions": 2,
+   "clicks": 3,
+   "impressions": 3,
    "position": 1,
    "query": "jayshomefinder.com"
   },
@@ -43,8 +43,8 @@
  "history": {
   "https://findacrib.com/": [
    "2026-07-30",
-   "2026-08-30",
-   30
+   "2026-08-31",
+   31
   ],
   "https://findacrib.com/building/bronx/1005-walton-ave-2024770034/": [
    "2026-07-30",
@@ -78,8 +78,8 @@
   ],
   "https://findacrib.com/building/bronx/1188-sheridan-ave-2024560222/": [
    "2026-08-30",
-   "2026-08-30",
-   1
+   "2026-08-31",
+   2
   ],
   "https://findacrib.com/building/bronx/1235-grand-concourse-2024640023/": [
    "2026-08-09",
@@ -153,8 +153,8 @@
   ],
   "https://findacrib.com/building/bronx/304-e-134th-st-2023090020/": [
    "2026-08-27",
-   "2026-08-30",
-   4
+   "2026-08-31",
+   5
   ],
   "https://findacrib.com/building/bronx/352-e-139th-st-2023010011/": [
    "2026-08-22",
@@ -428,8 +428,8 @@
   ],
   "https://findacrib.com/building/brooklyn/203-kent-st-3025510043/": [
    "2026-08-17",
-   "2026-08-30",
-   13
+   "2026-08-31",
+   14
   ],
   "https://findacrib.com/building/brooklyn/208-eckford-st-3026220038/": [
    "2026-08-20",
@@ -578,8 +578,8 @@
   ],
   "https://findacrib.com/building/brooklyn/42-driggs-ave-3026890049/": [
    "2026-08-30",
-   "2026-08-30",
-   1
+   "2026-08-31",
+   2
   ],
   "https://findacrib.com/building/brooklyn/420-eastern-pkwy-3012670014/": [
    "2026-07-30",
@@ -608,8 +608,8 @@
   ],
   "https://findacrib.com/building/brooklyn/45-mcguinness-blvd-3026820013/": [
    "2026-08-26",
-   "2026-08-30",
-   5
+   "2026-08-31",
+   6
   ],
   "https://findacrib.com/building/brooklyn/468-gates-ave-3018140002/": [
    "2026-07-30",
@@ -778,8 +778,8 @@
   ],
   "https://findacrib.com/building/brooklyn/96-milton-st-3025660013/": [
    "2026-08-30",
-   "2026-08-30",
-   1
+   "2026-08-31",
+   2
   ],
   "https://findacrib.com/building/manhattan/1-bank-st-1006150036/": [
    "2026-08-16",
@@ -1123,8 +1123,8 @@
   ],
   "https://findacrib.com/building/manhattan/230-to-232-thompson-st-1005370012/": [
    "2026-08-29",
-   "2026-08-30",
-   2
+   "2026-08-31",
+   3
   ],
   "https://findacrib.com/building/manhattan/234-to-236-thompson-st-1005370013/": [
    "2026-07-30",
@@ -1429,9 +1429,9 @@
  },
  "pages": [
   {
-   "clicks": 42,
-   "impressions": 62,
-   "position": 7,
+   "clicks": 60,
+   "impressions": 80,
+   "position": 4.5,
    "url": "https://findacrib.com/"
   },
   {
@@ -1461,44 +1461,14 @@
   {
    "clicks": 0,
    "impressions": 1,
-   "position": 3,
-   "url": "https://findacrib.com/building/bronx/1144-to-1170-walton-ave-2024630001/"
-  },
-  {
-   "clicks": 0,
-   "impressions": 1,
    "position": 51,
    "url": "https://findacrib.com/building/brooklyn/203-kent-st-3025510043/"
   },
   {
    "clicks": 0,
    "impressions": 1,
-   "position": 51,
-   "url": "https://findacrib.com/building/brooklyn/31-driggs-ave-3027070003/"
-  },
-  {
-   "clicks": 0,
-   "impressions": 1,
-   "position": 6,
-   "url": "https://findacrib.com/building/brooklyn/399-4th-ave-3009930003/"
-  },
-  {
-   "clicks": 0,
-   "impressions": 1,
    "position": 2,
    "url": "https://findacrib.com/building/brooklyn/45-mcguinness-blvd-3026820013/"
-  },
-  {
-   "clicks": 0,
-   "impressions": 1,
-   "position": 64,
-   "url": "https://findacrib.com/building/manhattan/100-w-67th-st-1011380036/"
-  },
-  {
-   "clicks": 0,
-   "impressions": 1,
-   "position": 10,
-   "url": "https://findacrib.com/building/manhattan/195-to-199-e-2nd-st-1003970029/"
   },
   {
    "clicks": 0,
@@ -1510,8 +1480,8 @@
  "queries_by_page": {
   "https://findacrib.com/": [
    {
-    "clicks": 28,
-    "impressions": 30,
+    "clicks": 43,
+    "impressions": 46,
     "position": 1.0,
     "query": "findacrib"
    },
@@ -1528,8 +1498,8 @@
     "query": "jayshomefinder"
    },
    {
-    "clicks": 2,
-    "impressions": 2,
+    "clicks": 3,
+    "impressions": 3,
     "position": 1,
     "query": "jayshomefinder.com"
    },
@@ -1540,20 +1510,15 @@
     "query": "finder nyc"
    }
   ],
-  "https://findacrib.com/building/bronx/1144-to-1170-walton-ave-2024630001/": [],
   "https://findacrib.com/building/bronx/1188-sheridan-ave-2024560222/": [],
   "https://findacrib.com/building/bronx/304-e-134th-st-2023090020/": [],
   "https://findacrib.com/building/brooklyn/203-kent-st-3025510043/": [],
-  "https://findacrib.com/building/brooklyn/31-driggs-ave-3027070003/": [],
-  "https://findacrib.com/building/brooklyn/399-4th-ave-3009930003/": [],
   "https://findacrib.com/building/brooklyn/42-driggs-ave-3026890049/": [],
   "https://findacrib.com/building/brooklyn/45-mcguinness-blvd-3026820013/": [],
   "https://findacrib.com/building/brooklyn/96-milton-st-3025660013/": [],
-  "https://findacrib.com/building/manhattan/100-w-67th-st-1011380036/": [],
-  "https://findacrib.com/building/manhattan/195-to-199-e-2nd-st-1003970029/": [],
   "https://findacrib.com/building/manhattan/230-to-232-thompson-st-1005370012/": []
  },
- "serving_pages": 13,
+ "serving_pages": 8,
  "serving_tiers": {
   "available": {
    "ever": 0,
@@ -1565,7 +1530,7 @@
    "ever": 264,
    "max_days": 17,
    "median_days": 7.0,
-   "now": 12
+   "now": 7
   },
   "city_hub": {
    "ever": 3,
@@ -1593,8 +1558,8 @@
   },
   "home": {
    "ever": 1,
-   "max_days": 30,
-   "median_days": 30,
+   "max_days": 31,
+   "median_days": 31,
    "now": 1
   },
   "nyc_hub": {
@@ -1616,5 +1581,5 @@
    "now": 0
   }
  },
- "window": "2026-08-21..2026-08-28"
+ "window": "2026-08-22..2026-08-29"
 }

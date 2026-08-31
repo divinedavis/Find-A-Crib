@@ -59,14 +59,16 @@ def main():
     for rec in (geo if isinstance(geo, list) else geo.values()):
         units = rec.get("unitsres")
         meta[rec["bbl"]] = (rec.get("borough") or "unknown",
-                            int(units) if str(units or "").isdigit() else 0)
+                            int(units) if str(units or "").isdigit() else 0,
+                            rec.get("nb"))
 
     hpd_items = hpd.items() if isinstance(hpd, dict) else ((r["bbl"], r) for r in hpd)
     names, ports = [], {}
     for bbl, h in hpd_items:
-        boro, units = meta.get(bbl, ("unknown", 0))
+        boro, units, nb = meta.get(bbl, ("unknown", 0, None))
         v, c = h.get("violations") or {}, h.get("complaints") or {}
-        row = {"bbl": bbl, "owner_key": None, "agent_key": None}
+        row = {"bbl": bbl, "owner_key": None, "agent_key": None,
+               "boro": boro if boro != "unknown" else None, "nb": nb}
         for kind, contact_field, key_field in (("owner", "owner", "owner_key"),
                                                ("agent", "manager", "agent_key")):
             contact = h.get(contact_field) or {}

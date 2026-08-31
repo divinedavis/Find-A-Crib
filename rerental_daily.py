@@ -275,14 +275,27 @@ def update_site(results, today, outdir=None):
     agents["rerental_count"] = n
     json.dump(agents, open(agents_path, "w"), indent=1, ensure_ascii=False)
     print(f"  updated site data ({n} agents)")
-    if outdir:
-        dest = os.path.join(outdir, "marketing_agents.json")
-        try:
-            with open(agents_path) as s, open(dest, "w") as d:
-                d.write(s.read())
-            print(f"  wrote {dest}")
-        except OSError as e:
-            print(f"  write to {dest} FAILED: {e}")
+    # The docroot copy is NOT this file. marketing_agents.json holds every
+    # firm's phone, email, postal address and re-rental URL, and those are the
+    # Plus half of /marketing-agents/ — publishing them here would hand the
+    # paywall's contents to anyone who fetched the JSON directly. Splitting is
+    # publish_lottery_agents.py's job: public fields to the docroot, contact
+    # block to the private lottery_agent_contacts table.
+    try:
+        import publish_lottery_agents as pla
+        data_pub, rows = pla.split(json.load(open(agents_path)))
+        pla.push(rows, pla.keychain("rent-map-supabase-service-role"))
+        print(f"  pushed {len(rows)} contact rows to lottery_agent_contacts")
+        if outdir:
+            dest = os.path.join(outdir, "marketing_agents.json")
+            tmp = dest + ".tmp"
+            with open(tmp, "w") as d:
+                json.dump(data_pub, d, indent=1, ensure_ascii=False)
+            os.replace(tmp, dest)
+            print(f"  wrote {dest} (public fields only)")
+    except Exception as e:
+        # Loud, and without falling back to copying the private file out.
+        print(f"  PUBLISH FAILED — docroot left unchanged: {e}")
 
 
 def load_history():

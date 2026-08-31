@@ -1053,6 +1053,7 @@
     <div class="city-more" id="city-more" hidden></div>
   </nav>
   <a id="agents-btn" class="agents-btn nyc-only" href="/marketing-agents/" title="Every HPD-approved firm that runs NYC affordable-housing lotteries" aria-label="Lottery agents">🏛️<span class="agents-label"> Lottery agents</span></a>
+  <a id="dir-btn" class="agents-btn nyc-only" href="/directory/" title="Search every registered owner and managing agent in NYC by name, borough or neighborhood — a Plus feature" aria-label="Landlord directory">🔎<span class="agents-label"> Landlords</span></a>
   <button id="theme-btn" type="button" class="theme-btn" aria-label="Switch to dark mode" title="Switch to dark mode">🌙</button>
   <button id="auth-btn" type="button" class="auth-btn">Sign in</button>
   <button id="ref-btn" type="button" class="ref-btn" hidden>🎁 <span class="ref-free">Free </span>Plus</button>
@@ -1765,6 +1766,8 @@
   }
   // when signed in, mirror each heart toggle to the user's Supabase account
   let supaClient = null, authUser = null, pendingPhoneBbl = null, plusActive = false;
+  // Set by ?plus=1 below; consumed by refreshPlus() once membership is known.
+  let plusUpsellPending = false;
   // Is the signed-in user a Plus subscriber? Mirrors has_plus() server-side;
   // the client flag only decides which UI to show — RLS enforces the truth.
   async function refreshPlus() {
@@ -1776,6 +1779,10 @@
       plusActive = !!data && ['active', 'trialing'].includes(data.status) &&
         (!data.current_period_end || new Date(data.current_period_end) > new Date());
     } catch (e) { /* treat as free tier */ }
+    // An arriving ?plus=1 (a lock chip on /marketing-agents/ or /directory/)
+    // waits here rather than firing on load: membership is not known until this
+    // resolves, and showing a subscriber the paywall is worse than a beat's delay.
+    if (plusUpsellPending) { plusUpsellPending = false; if (!plusActive) openPaywall(null); }
     // Membership is only known once this resolves, and the callers above run
     // updateAuthUI() before awaiting it — so anything that depends on Plus has
     // to be re-synced here or a member sees the invite button flash in.
@@ -5360,6 +5367,9 @@
       showPlusToast('🎉 You’re now Find A Crib Plus — agent phone numbers are unlocked. Tap “Show number” to view.');
       plusPurchasePending = true;
     }
+    // ?plus=1 is the "unlock" link from the gated pages. Signed-out users get
+    // the sign-in step first — startCheckout() already routes them there.
+    if (p.get('plus') === '1') plusUpsellPending = true;
     if (p.has('plus')) { p.delete('plus'); history.replaceState({}, '', location.pathname + (p.toString() ? '?' + p : '')); }
   })();
   // one-click unsubscribe (#unsub=<token>), optionally scoped with &k=lifecycle.

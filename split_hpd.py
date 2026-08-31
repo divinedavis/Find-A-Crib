@@ -9,7 +9,7 @@ DOMContentLoaded 5.6 s on a mobile viewport. Roughly half of that weight is the
 Four fields are read on the eager path — the violation/complaint filters, the
 list sort, the card line, the health badge and the agent card:
 
-    h.violations.open   h.violations.c   h.complaints.open   h.op
+    h.violations.open   h.violations.c   h.complaints.open   h.op   h.ph
 
 Everything else (all-time totals, the a/b/c and oa/ob/oc class breakdowns,
 last_12mo, lastregistration, bid) is only ever read by the detail sheet, which
@@ -45,6 +45,11 @@ def slim_h(h):
         out["complaints"] = sc
     if h.get("op"):
         out["op"] = h["op"]
+    # ph is eager too: the "managing agent has a phone listed" filter tests it
+    # on every record at filter time, and a field this function drops is a
+    # filter that silently matches nothing.
+    if h.get("ph"):
+        out["ph"] = h["ph"]
     return out or None
 
 

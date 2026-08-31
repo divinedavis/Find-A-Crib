@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>NYC Landlord &amp; Managing Agent Directory — Find A Crib</title>
+<meta name="description" content="Search every registered building owner and managing agent in New York City by name, borough or neighborhood — how many buildings and apartments each one holds, and their open HPD violation record. A Find A Crib Plus feature." />
+<link rel="canonical" href="https://findacrib.com/directory/" />
+<meta name="robots" content="noindex,follow" />
+
+<meta name="theme-color" content="#2b39c8" />
+<link rel="icon" href="/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" href="/favicon-32.png" sizes="32x32" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Find A Crib" />
+<meta property="og:title" content="NYC Landlord &amp; Managing Agent Directory — Find A Crib" />
+<meta property="og:description" content="Every registered owner and managing agent in NYC, searchable by name, borough and neighborhood." />
+<meta property="og:url" content="https://findacrib.com/directory/" />
+<meta property="og:image" content="https://findacrib.com/og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="NYC Landlord &amp; Managing Agent Directory — Find A Crib" />
+<meta name="twitter:description" content="Every registered owner and managing agent in NYC, searchable by name, borough and neighborhood." />
+<meta name="twitter:image" content="https://findacrib.com/og-image.png" />
+<!-- Google tag (gtag.js) — same properties as the map app -->
+<script src="/static/supabase/supabase.js"></script>
+<script src="/config.js?v=2"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-1001356637"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'AW-1001356637');
+  gtag('config', 'G-53D27PD4X6');
+</script>
+<!-- Paint the chosen theme before the first frame — same localStorage key the
+     map app writes, so the two pages never disagree for a frame. -->
+<script>
+(function(){
+  var t;
+  try{ t = localStorage.getItem('fac.theme'); }catch(e){}
+  if(t!=='light' && t!=='dark')
+    t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
+<style>
+  :root {
+    --blue: #006aff;
+    --blue-dark: #0052cc;
+    --blue-soft: #e8f0fe;
+    --blue-solid: #006aff;
+    --ink: #0a0a23;
+    --ink-2: #4a4a68;
+    --line: #e2e6ea;
+    --line-strong: #b8c3d0;
+    --bg: #f7f8fa;
+    --surface: #ffffff;
+    --surface-2: #f6f6f6;
+    --surface-3: #e4e8ee;
+  }
+  html[data-theme="dark"] {
+    --blue: #5b9bff;
+    --blue-dark: #7fb2ff;
+    --blue-soft: #16233d;
+    --blue-solid: #1f6fe0;
+    --ink: #eef0f6;
+    --ink-2: #a3a7bb;
+    --line: #2b2f3c;
+    --line-strong: #414658;
+    --bg: #0c0c12;
+    --surface: #16161f;
+    --surface-2: #1f1f2b;
+    --surface-3: #282833;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink); background: var(--bg); }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  header.topbar {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--line);
+    position: sticky; top: 0; z-index: 30;
+  }
+  @font-face { font-family:'Oxanium'; font-style:normal; font-weight:800; font-display:swap;
+              src:url('/fonts/oxanium-800.woff2') format('woff2'); }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 800; color: var(--blue);
+    font-size: 22px; letter-spacing: 0; font-family: 'Oxanium', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  .brand:hover { text-decoration: none; }
+  .brand-dot { width: 22px; height: 22px; background: var(--blue-solid); border-radius: 6px;
+    display: inline-block; transform: rotate(45deg); flex: none; }
+  .spacer { flex: 1 1 auto; }
+  .top-link { font-size: 13px; font-weight: 700; color: var(--ink-2); border: 1px solid var(--line);
+    background: var(--surface); border-radius: 999px; padding: 7px 13px; }
+  .top-link:hover { background: var(--surface-2); border-color: var(--line-strong); text-decoration: none; }
+  .theme-btn { width: 34px; height: 34px; border-radius: 50%; background: var(--surface); color: var(--ink);
+    border: 1px solid var(--line); font-size: 15px; line-height: 1; cursor: pointer; flex: none; }
+  .theme-btn:hover { background: var(--surface-2); border-color: var(--line-strong); }
+
+  main { max-width: 1180px; margin: 0 auto; padding: 26px 16px 70px; }
+  h1 { font-size: 30px; letter-spacing: -0.6px; margin: 0 0 8px; }
+  .lede { color: var(--ink-2); font-size: 15px; line-height: 1.6; margin: 0 0 14px; max-width: 76ch; }
+  .lede strong { color: var(--ink); }
+  .meta { font-size: 12.5px; color: var(--ink-2); margin: 0 0 22px; }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+  .search {
+    flex: 1 1 260px; min-width: 200px; padding: 10px 13px; font-size: 15px;
+    border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface); color: var(--ink);
+  }
+  .search:focus { outline: none; border-color: var(--blue); }
+  select.sort { padding: 10px 12px; font-size: 14px; border: 1px solid var(--line-strong);
+    border-radius: 10px; background: var(--surface); color: var(--ink); cursor: pointer; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .chip { font-size: 12.5px; font-weight: 700; color: var(--ink-2); background: var(--surface);
+    border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+  .chip:hover { background: var(--surface-2); }
+  .chip.on { background: var(--blue-solid); border-color: var(--blue-solid); color: #fff; }
+
+  .count { font-size: 13px; color: var(--ink-2); margin: 0 0 10px; }
+
+  .table-wrap { background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    overflow: hidden; }
+  /* Narrow desktops scroll the table sideways rather than crushing the name column. */
+  .table-scroll { overflow-x: auto; }
+  table { width: 100%; min-width: 940px; border-collapse: collapse; font-size: 14px; table-layout: fixed; }
+  col.c-name    { width: 25%; }
+  col.c-tags    { width: 20%; }
+  col.c-contact { width: 15%; }
+  col.c-phone   { width: 15%; }
+  col.c-reach   { width: 25%; }
+  thead th {
+    text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--ink-2); background: var(--surface-2); padding: 11px 14px;
+    border-bottom: 1px solid var(--line); white-space: nowrap;
+  }
+  tbody td { padding: 13px 14px; border-bottom: 1px solid var(--line); vertical-align: top;
+    line-height: 1.5; overflow-wrap: anywhere; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr.agent:hover { background: var(--surface-2); }
+  .name { font-weight: 700; color: var(--ink); font-size: 14.5px; }
+  .addr { font-size: 12px; color: var(--ink-2); margin-top: 3px; }
+  .agency { display: inline-block; font-size: 10.5px; font-weight: 800; letter-spacing: .04em;
+    padding: 2px 7px; border-radius: 5px; margin-top: 5px;
+    background: var(--surface-3); color: var(--ink-2); }
+  .agency.both { background: var(--blue-soft); color: var(--blue-dark); }
+  /* re-rental link: the most actionable thing on the page, so it gets colour */
+  .rr { display: inline-flex; align-items: center; gap: 5px; margin-top: 7px; padding: 5px 10px;
+    border-radius: 999px; font-size: 12px; font-weight: 800; text-decoration: none;
+    background: #e7f7ed; color: #10683a; border: 1px solid #b6e3c8; }
+  .rr:hover { background: #d6f0e1; text-decoration: none; }
+  .rr.quiet { background: var(--bg); color: var(--ink-2); border-color: var(--line); font-weight: 700; }
+  html[data-theme="dark"] .rr { background: #123020; color: #7fe0a8; border-color: #1f5236; }
+  html[data-theme="dark"] .rr:hover { background: #17402a; }
+  html[data-theme="dark"] .rr.quiet { background: var(--bg); color: var(--ink-2); border-color: var(--line); }
+  .rr-note { font-size: 11.5px; color: var(--ink-2); margin-top: 4px; }
+  .rr-none { font-size: 11.5px; color: var(--ink-2); margin-top: 7px; line-height: 1.5;
+    padding-left: 9px; border-left: 2px solid var(--line-strong); }
+  .blds { font-size: 11.5px; color: var(--ink-2); margin-top: 7px; line-height: 1.55; }
+  .blds b { color: var(--ink); font-weight: 700; }
+  .blds a { color: inherit; text-decoration: underline; text-decoration-style: dotted; }
+  .th-sub { text-transform: none; letter-spacing: 0; font-weight: 600; opacity: .75; }
+  .banner { background: var(--blue-soft); border: 1px solid var(--blue); border-radius: 12px;
+    padding: 14px 16px; margin: 0 0 18px; font-size: 14px; line-height: 1.6; color: var(--ink); }
+  .banner b { color: var(--blue-dark); }
+  .tags { display: flex; flex-wrap: wrap; gap: 4px; }
+  .tag { font-size: 11px; font-weight: 700; color: var(--ink-2); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 6px; padding: 2px 7px; white-space: nowrap; }
+  td.reach a { display: block; }
+  .muted { color: var(--ink-2); }
+  .about-btn { background: none; border: none; padding: 0; margin-top: 6px; cursor: pointer;
+    font: inherit; font-size: 12px; font-weight: 700; color: var(--blue); }
+  .about { display: none; font-size: 13.5px; color: var(--ink-2); line-height: 1.65;
+    background: var(--bg); padding: 0 14px 14px; }
+  tr.about-row.open .about { display: block; }
+  tr.about-row td { padding: 0; border-bottom: 1px solid var(--line); }
+  .empty { padding: 40px 16px; text-align: center; color: var(--ink-2); font-size: 15px; }
+
+  .note { margin-top: 22px; font-size: 13px; color: var(--ink-2); line-height: 1.65; max-width: 76ch; }
+
+  /* Below ~760px the six columns stop fitting, so each row becomes a card. */
+  @media (max-width: 760px) {
+    main { padding: 20px 12px 60px; }
+    h1 { font-size: 24px; }
+    .table-wrap, .table-scroll { border: none; background: none; border-radius: 0; overflow: visible; }
+    thead, colgroup { display: none; }
+    table { min-width: 0; table-layout: auto; }
+    table, tbody, tr, td { display: block; width: 100%; }
+    tbody tr.agent { background: var(--surface); border: 1px solid var(--line);
+      border-radius: 12px; margin-bottom: 10px; padding: 4px 0; }
+    tbody tr.agent:hover { background: var(--surface); }
+    tbody td { border-bottom: none; padding: 6px 14px; }
+    tbody td:first-child { padding-top: 12px; }
+    tbody td:last-child { padding-bottom: 12px; }
+    td:empty { display: none; }
+    td.reach a { display: inline-block; margin-right: 12px; }
+    tr.about-row { margin: -14px 0 10px; }
+    tr.about-row td { border-bottom: none; }
+    tr.about-row.open .about { background: var(--surface); border: 1px solid var(--line);
+      border-top: none; border-radius: 0 0 12px 12px; margin: 0; padding: 4px 14px 14px; }
+  }
+
+  /* Locked cells read as a value that exists and is withheld, not as a blank.
+     A dash says "we don't have it"; the chip says "we have it, sign in". */
+  .lock{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;
+    padding:2px 8px;border-radius:999px;border:1px solid var(--line);
+    background:var(--surface-2);color:var(--muted);white-space:nowrap;cursor:pointer}
+  .lock:hover{color:var(--ink);border-color:var(--brand)}
+  .lock-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-content:space-between;
+    margin:14px 0 4px;padding:13px 15px;border:1px solid var(--line);border-radius:12px;
+    background:var(--surface-2)}
+  .lock-bar b{font-size:13.5px}
+  .lock-bar p{margin:3px 0 0;font-size:12.5px;color:var(--muted);max-width:62ch}
+  .lock-cta{flex:0 0 auto;display:inline-block;padding:9px 16px;border-radius:9px;
+    background:var(--brand);color:#fff;font-weight:700;font-size:13px;text-decoration:none}
+  .lock-cta:hover{filter:brightness(1.07)}
+
+  /* ---- directory-specific ---- */
+  .kindtabs{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:0 0 14px}
+  .kindtabs button{appearance:none;border:0;background:var(--surface);color:var(--muted);
+    font:inherit;font-weight:700;font-size:13px;padding:9px 18px;cursor:pointer}
+  .kindtabs button.on{background:var(--brand);color:#fff}
+  .dirbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:0 0 12px}
+  .dirbar .search{flex:1 1 260px;min-width:0}
+  .dirbar select{padding:9px 11px;border:1px solid var(--line);border-radius:9px;
+    background:var(--surface);color:var(--ink);font:inherit;font-size:13px}
+  .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .boros{font-size:11.5px;color:var(--muted)}
+  .viol{color:#c2410c;font-weight:600}
+  html[data-theme="dark"] .viol{color:#fb923c}
+  .pager{display:flex;gap:10px;align-items:center;justify-content:center;margin:18px 0 4px}
+  .pager button{appearance:none;border:1px solid var(--line);background:var(--surface);
+    color:var(--ink);font:inherit;font-size:13px;font-weight:600;padding:8px 15px;
+    border-radius:9px;cursor:pointer}
+  .pager button[disabled]{opacity:.4;cursor:default}
+  .pager .at{font-size:12.5px;color:var(--muted)}
+  .gate{max-width:620px;margin:34px auto;padding:26px;border:1px solid var(--line);
+    border-radius:14px;background:var(--surface-2);text-align:center}
+  .gate h2{margin:0 0 8px;font-size:20px}
+  .gate p{color:var(--muted);font-size:13.5px;line-height:1.6;margin:0 0 16px}
+  .gate ul{text-align:left;max-width:420px;margin:0 auto 18px;padding-left:20px;
+    color:var(--ink-2);font-size:13.5px;line-height:1.85}
+  @media(max-width:700px){
+    .num{text-align:left}
+    .dirbar select{flex:1 1 45%}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="/"><span class="brand-dot"></span>Find A Crib</a>
+  <span class="spacer"></span>
+  <a class="top-link" href="/marketing-agents/">Lottery agents</a>
+  <a class="top-link" href="/">&larr; Back to the map</a>
+  <button id="theme-btn" type="button" class="theme-btn" aria-label="Switch theme" title="Switch theme">&#127769;</button>
+</header>
+
+<main>
+  <h1>Who owns and runs New York's buildings</h1>
+  <p class="lede">
+    Every owner and managing agent HPD has on file for a rent-stabilized building,
+    in one table. Search a name to see the whole portfolio behind it &mdash; how many
+    buildings, how many apartments, which boroughs, and the open violation record
+    across all of them. Filter to a borough or a neighborhood to see who actually
+    holds your block.
+  </p>
+  <p class="meta" id="meta"></p>
+
+  <!-- Everything below is drawn only for a subscriber. The rows never reach a
+       non-subscriber's browser at all: get_research_directory() returns null,
+       not a filtered list, so there is nothing to un-hide in devtools. -->
+  <div class="gate" id="gate" hidden>
+    <h2 id="gate-title">Landlord research is part of Find A Crib Plus</h2>
+    <p id="gate-sub">The directory is built from HPD's own registration and violation records, aggregated per owner and per managing agent.</p>
+    <ul>
+      <li>Search <b id="gate-n">60,000+</b> owners and managing agents by name</li>
+      <li>Filter to a borough or a single neighborhood</li>
+      <li>See buildings, apartments and open violations per portfolio</li>
+      <li>Sort by who holds the most &mdash; or by who has the worst record</li>
+    </ul>
+    <a class="lock-cta" id="gate-cta" href="/?plus=1">Unlock with Plus</a>
+  </div>
+
+  <div id="dir" hidden>
+    <div class="kindtabs" role="tablist">
+      <button type="button" id="tab-agent" class="on" role="tab" aria-selected="true">Managing agents</button>
+      <button type="button" id="tab-owner" role="tab" aria-selected="false">Owners</button>
+    </div>
+    <div class="dirbar">
+      <input class="search" id="q" type="search" placeholder="Search by name &mdash; e.g. Pinnacle, Shinda, FirstService" aria-label="Search by name" />
+      <!-- Options are built from the data, not hardcoded: HPD has no registered
+           contacts for any Staten Island building in this set, and an option
+           that always returns nothing reads as a broken filter. -->
+      <select id="boro" aria-label="Borough"><option value="">All boroughs</option></select>
+      <select id="nb" aria-label="Neighborhood"><option value="">All neighborhoods</option></select>
+      <select id="sort" aria-label="Sort">
+        <option value="buildings">Most buildings</option>
+        <option value="units">Most apartments</option>
+        <option value="violations">Most open violations</option>
+        <option value="name">Name (A&ndash;Z)</option>
+      </select>
+    </div>
+    <p class="count" id="count"></p>
+    <div class="table-wrap">
+      <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th class="num">Buildings</th>
+            <th class="num">Apartments</th>
+            <th class="num">Open violations</th>
+            <th class="num">Open complaints</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+      </div>
+    </div>
+    <div class="empty" id="empty" hidden>Nothing matches those filters.</div>
+    <div class="pager">
+      <button type="button" id="prev" disabled>&larr; Previous</button>
+      <span class="at" id="at"></span>
+      <button type="button" id="next" disabled>Next &rarr;</button>
+    </div>
+    <p class="note">
+      Counts are the floor, not the ceiling. Owners are matched on the exact
+      normalized name HPD registered, so a landlord who files each building under
+      its own LLC shows up as many small portfolios rather than one large one.
+      Violation and complaint totals are the open ones across every building in
+      the portfolio, from NYC Open Data &mdash; HPD.
+    </p>
+  </div>
+</main>
+
+<script>
+(function(){
+  // ---------- theme toggle (mirrors the map app's key so both pages agree) ----------
+  var themeBtn = document.getElementById('theme-btn');
+  function paintBtn(){
+    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    var label = dark ? 'Switch to light mode' : 'Switch to dark mode';
+    themeBtn.textContent = dark ? '\u2600\uFE0F' : '\uD83C\uDF19';
+    themeBtn.title = label;
+    themeBtn.setAttribute('aria-label', label);
+  }
+  themeBtn.addEventListener('click', function(){
+    var t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+    try { localStorage.setItem('fac.theme', t); } catch(e){}
+    paintBtn();
+  });
+  paintBtn();
+
+  var supa = (window.supabase && window.SUPABASE_URL && window.SUPABASE_ANON_KEY)
+    ? window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY)
+    : null;
+
+  function esc(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  function comma(n){ return (n == null ? 0 : n).toLocaleString('en-US'); }
+  function track(name, props){ try { gtag('event', name, props || {}); } catch(e){} }
+  function el(id){ return document.getElementById(id); }
+
+  var PAGE = 50;
+  var state = { kind: 'agent', q: '', boro: '', nb: '', sort: 'buildings', offset: 0 };
+  var PLACES = null, total = 0, seq = 0;
+
+  var BORO_LABEL = { manhattan:'Manhattan', bronx:'Bronx', brooklyn:'Brooklyn',
+                     queens:'Queens', staten_island:'Staten Island' };
+
+  function showGate(kind){
+    el('gate').hidden = false; el('dir').hidden = true;
+    if (kind === 'signed-in') {
+      el('gate-title').textContent = 'Landlord research is part of Find A Crib Plus';
+      el('gate-cta').textContent = 'Upgrade to Plus';
+    } else {
+      el('gate-title').textContent = 'Sign in to search every NYC landlord';
+      el('gate-cta').textContent = 'Unlock with Plus';
+    }
+  }
+
+  // The gate is the RPC, not this function: a null answer means "not a
+  // subscriber", and there is no row data in the page to reveal either way.
+  function load(){
+    if (!supa) { showGate('anon'); return; }
+    var mine = ++seq;
+    el('count').textContent = 'Loading…';
+    supa.rpc('get_research_directory', {
+      p_kind: state.kind, p_q: state.q || null, p_boro: state.boro || null,
+      p_nb: state.nb || null, p_sort: state.sort,
+      p_limit: PAGE, p_offset: state.offset
+    }).then(function(res){
+      if (mine !== seq) return;                 // a later keystroke already won
+      if (res.error || !res.data) { showGate(supa.__signedIn ? 'signed-in' : 'anon'); return; }
+      el('gate').hidden = true; el('dir').hidden = false;
+      render(res.data);
+    }).catch(function(){
+      if (mine === seq) el('count').textContent = 'Could not load the directory right now.';
+    });
+  }
+
+  function render(d){
+    total = d.total || 0;
+    var list = d.rows || [];
+    var noun = state.kind === 'owner' ? 'owner' : 'managing agent';
+    el('count').textContent = total
+      ? comma(total) + ' ' + noun + (total === 1 ? '' : 's') +
+        (state.q || state.boro || state.nb ? ' match these filters' : '')
+      : '';
+    el('empty').hidden = !!list.length;
+
+    var rows = el('rows');
+    rows.innerHTML = '';
+    var frag = document.createDocumentFragment();
+    list.forEach(function(r){
+      var tr = document.createElement('tr');
+      var boros = Object.keys(r.by_boro || {}).sort(function(a,b){
+        return (r.by_boro[b]||0) - (r.by_boro[a]||0);
+      }).map(function(k){
+        return esc(BORO_LABEL[k] || k) + ' ' + comma(r.by_boro[k]);
+      }).join(' · ');
+      tr.innerHTML =
+        '<td><div class="name">' + esc(r.display_name) + '</div>' +
+          (boros ? '<div class="boros">' + boros + '</div>' : '') +
+          (r.class_c ? '<div class="boros"><span class="viol">' + comma(r.class_c) +
+                       ' Class C (hazardous)</span></div>' : '') +
+        '</td>' +
+        '<td class="num">' + comma(r.buildings) + '</td>' +
+        '<td class="num">' + comma(r.units) + '</td>' +
+        '<td class="num' + (r.open_violations ? ' viol' : '') + '">' + comma(r.open_violations) + '</td>' +
+        '<td class="num">' + comma(r.open_complaints) + '</td>';
+      frag.appendChild(tr);
+    });
+    rows.appendChild(frag);
+
+    var from = total ? state.offset + 1 : 0;
+    var to = Math.min(state.offset + PAGE, total);
+    el('at').textContent = total ? from.toLocaleString() + '–' + to.toLocaleString() + ' of ' + comma(total) : '';
+    el('prev').disabled = state.offset <= 0;
+    el('next').disabled = state.offset + PAGE >= total;
+  }
+
+  // Both dropdowns come out of the same one-time places call. Boroughs are the
+  // distinct ones that actually have rows.
+  function fillBoro(){
+    var sel = el('boro');
+    if (!PLACES) return;
+    var seen = {};
+    PLACES.forEach(function(p){ if (p.boro) seen[p.boro] = 1; });
+    Object.keys(seen).sort(function(a, b){
+      return (BORO_LABEL[a] || a).localeCompare(BORO_LABEL[b] || b);
+    }).forEach(function(b){
+      var o = document.createElement('option');
+      o.value = b; o.textContent = BORO_LABEL[b] || b;
+      sel.appendChild(o);
+    });
+  }
+
+  // Neighborhoods are fetched once and filtered to the chosen borough, so the
+  // second dropdown never offers a place the first one has excluded.
+  function fillNb(){
+    var sel = el('nb'), cur = state.nb;
+    sel.innerHTML = '<option value="">All neighborhoods</option>';
+    if (!PLACES) return;
+    PLACES.filter(function(p){ return !state.boro || p.boro === state.boro; })
+      .forEach(function(p){
+        var o = document.createElement('option');
+        o.value = p.nb; o.textContent = p.nb;
+        if (p.nb === cur) o.selected = true;
+        sel.appendChild(o);
+      });
+    if (sel.value !== cur) { state.nb = ''; }
+  }
+
+  function reset(){ state.offset = 0; }
+
+  el('tab-agent').addEventListener('click', function(){ setKind('agent'); });
+  el('tab-owner').addEventListener('click', function(){ setKind('owner'); });
+  function setKind(k){
+    if (state.kind === k) return;
+    state.kind = k; reset();
+    el('tab-agent').classList.toggle('on', k === 'agent');
+    el('tab-owner').classList.toggle('on', k === 'owner');
+    el('tab-agent').setAttribute('aria-selected', k === 'agent');
+    el('tab-owner').setAttribute('aria-selected', k === 'owner');
+    track('directory_kind', {kind: k});
+    load();
+  }
+
+  var t = null;
+  el('q').addEventListener('input', function(){
+    clearTimeout(t);
+    t = setTimeout(function(){
+      state.q = el('q').value.trim(); reset();
+      if (state.q) track('directory_search', {q: state.q.slice(0, 60), kind: state.kind});
+      load();
+    }, 300);
+  });
+  el('boro').addEventListener('change', function(){
+    state.boro = el('boro').value; reset(); fillNb(); load();
+    track('directory_filter', {boro: state.boro});
+  });
+  el('nb').addEventListener('change', function(){
+    state.nb = el('nb').value; reset(); load();
+    track('directory_filter', {nb: state.nb});
+  });
+  el('sort').addEventListener('change', function(){
+    state.sort = el('sort').value; reset(); load();
+  });
+  el('prev').addEventListener('click', function(){
+    state.offset = Math.max(0, state.offset - PAGE); load(); window.scrollTo(0, 0);
+  });
+  el('next').addEventListener('click', function(){
+    state.offset = state.offset + PAGE; load(); window.scrollTo(0, 0);
+  });
+
+  if (!supa) { showGate('anon'); return; }
+  supa.auth.getSession().then(function(r){
+    supa.__signedIn = !!(r && r.data && r.data.session);
+    if (!supa.__signedIn) { showGate('anon'); return; }
+    supa.rpc('get_research_places').then(function(res){
+      if (!res.error && res.data) { PLACES = res.data; fillBoro(); fillNb(); }
+    });
+    load();
+  }).catch(function(){ showGate('anon'); });
+})();
+</script>
+</body>
+</html>

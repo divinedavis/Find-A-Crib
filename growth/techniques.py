@@ -1746,6 +1746,176 @@ def _crawl_link_audit(root, prefixes):
     return found, read
 
 
+# ------------------------------------------------------- click depth from "/"
+#
+# _crawl_link_audit above answers a binary: does SOMETHING link into this
+# prefix. It has answered "yes, 15 of 15" every day since 2026-08-23 while the
+# site's Google footprint collapsed — gsc_serving_pages 63 on 08-20 to 8 today,
+# 346 of 455 sampled published URLs still "unknown to Google", and mature index
+# acceptance flat at 0.0% for a seventh day. A check that stays green through
+# that is not measuring the thing that matters.
+#
+# What it misses is DISTANCE. Google's crawl scheduling, and every current
+# account of "crawled – currently not indexed" and "discovered – not indexed",
+# treat internal link position as the site's own statement of importance: a URL
+# six clicks from the homepage is one the site itself says is unimportant,
+# however faithfully it is submitted. The census on 2026-08-29 said the same
+# thing from the other end — every uncrawled tier on this site sits behind
+# another uncrawled page. So the honest instrument is not "is there a link" but
+# "how many clicks from the homepage", and this measures that.
+#
+# It is DELIBERATELY REPORT-ONLY on its first day. There is no defensible
+# threshold yet because nobody has ever measured this site's real distribution;
+# picking one today would be a guess dressed as a rule, which is the exact
+# failure mode (a number asserting more than its evidence carries) that cost
+# 2026-08-25 through 08-27 a day each. The pass/fail semantics of t_crawl_paths
+# are unchanged: orphans still fail, depth is only reported. Once a few days of
+# distribution exist, T037's revisit on 2026-09-04 can set a threshold against
+# data instead of a hunch.
+CRAWL_DEPTH_MAX = 6          # stop descending here; deeper than this is academic
+CRAWL_DEPTH_PAGES = 2000     # hard cap on pages fetched, so the nightly build stays fast
+CRAWL_DEPTH_BYTES = 300_000  # per page; enough for the link block of any page we publish
+# Below this many pages read, say nothing. A bare checkout holds the app shells
+# and no generated corpus at all (4-12 pages), and a depth reading taken from
+# that would describe the checkout, not the site. Reporting "not measured" is
+# the whole guard: a half-wired instrument that answers anyway is worse than one
+# that admits it cannot see.
+CRAWL_DEPTH_FLOOR = 40
+
+_HREF_RE = re.compile(r"""href\s*=\s*["']([^"'\s>]+)""", re.I)
+
+
+def _crawl_depth_url(href, base):
+    """Absolute site path for an internal page link, or None.
+
+    `base` is the path of the page the href was found on (always starts and,
+    for a directory URL, ends with "/"). Anything off-site, non-HTTP, or not a
+    page (assets, JSON, the sitemaps) returns None.
+    """
+    href = href.strip()
+    if not href or href.startswith(("#", "mailto:", "tel:", "javascript:", "data:")):
+        return None
+    for scheme in ("https://", "http://", "//"):
+        if href.startswith(scheme):
+            rest = href[len(scheme):]
+            host, _, tail = rest.partition("/")
+            if host.lower() not in ("findacrib.com", "www.findacrib.com"):
+                return None
+            href = "/" + tail
+            break
+    if not href.startswith("/"):                       # relative to this page
+        href = base + href
+    href = href.split("#", 1)[0].split("?", 1)[0]
+    if not href.startswith("/"):
+        return None
+    # Collapse "." and ".." without touching the leading slash.
+    parts = []
+    for seg in href.split("/"):
+        if seg in ("", "."):
+            continue
+        if seg == "..":
+            if parts:
+                parts.pop()
+            continue
+        parts.append(seg)
+    if not parts:                                      # a link back to the homepage
+        return "/"
+    path = "/" + "/".join(parts) + ("/" if href.endswith("/") else "")
+    if path.endswith("/") or path.endswith(".html"):
+        return path
+    return None
+
+
+def _crawl_depth(root, prefixes):
+    """Breadth-first from "/", returning how many clicks each prefix sits from home.
+
+    Returns (depth_by_prefix, pages_read, complete_depth), where:
+      * depth_by_prefix maps a prefix to the smallest depth at which any URL
+        under it was LINKED (the homepage itself is depth 0, so a section
+        linked from the homepage is depth 1). A prefix not reached is absent.
+      * complete_depth is the deepest level whose pages were all expanded
+        before the page cap ran out.
+
+    complete_depth exists so a missing prefix is never overstated. Truncating a
+    breadth-first crawl at a page cap means "not found" has two meanings —
+    nothing links to it, or the cap ran out before we got there — and only the
+    depth at which expansion was still complete tells them apart. Callers must
+    report an unreached prefix as "deeper than complete_depth", never as
+    "unreachable"; _crawl_link_audit is the check that owns that verdict.
+    """
+    start = "/"
+    seen = {start}
+    frontier = [start]
+    depth_by_prefix, read, complete_depth = {}, 0, 0
+    truncated = False
+    for depth in range(CRAWL_DEPTH_MAX):
+        nxt = []
+        for path in frontier:
+            if read >= CRAWL_DEPTH_PAGES:
+                truncated = True
+                break
+            rel = path.lstrip("/")
+            fp = os.path.join(root, rel + "index.html" if path.endswith("/") else rel)
+            try:
+                with open(fp, encoding="utf-8", errors="replace") as f:
+                    html = f.read(CRAWL_DEPTH_BYTES)
+            except OSError:
+                continue                 # a link to a page that is not built
+            read += 1
+            for href in _HREF_RE.findall(html):
+                target = _crawl_depth_url(href, path if path.endswith("/")
+                                          else path.rsplit("/", 1)[0] + "/")
+                if not target or target in seen:
+                    continue
+                seen.add(target)
+                for p in prefixes:
+                    if target.startswith(p) and p not in depth_by_prefix:
+                        depth_by_prefix[p] = depth + 1
+                nxt.append(target)
+        if not truncated:
+            complete_depth = depth + 1
+        # Every section placed: stop before paying for the widest level. This is
+        # taken only at a level boundary, so complete_depth still means "fully
+        # expanded" — and with nothing left unreached the cap can no longer
+        # understate anything.
+        if truncated or not nxt or len(depth_by_prefix) == len(prefixes):
+            break
+        frontier = sorted(nxt)           # deterministic: same docroot, same reading
+    return depth_by_prefix, read, complete_depth
+
+
+def _crawl_depth_note(root, prefixes):
+    """One clause naming how deep each published section sits, or why we can't say."""
+    depths, read, complete = _crawl_depth(root, prefixes)
+    # Deepest first: the far end of the distribution is the finding, and a
+    # section the crawl never reached is further out than any measured one.
+    unreached = sorted(p for p in prefixes if p not in depths)
+    # The floor applies ONLY when something is unreached. A section that was
+    # placed is placed however few pages it took — the crawl stops early once
+    # every prefix has a depth, so a well-linked site legitimately reads a
+    # handful of pages and must not be reported as unmeasurable. The floor
+    # exists for the opposite case: on a bare checkout the corpus is absent, so
+    # "not reached" means "not built", and saying anything about depth there
+    # would describe the checkout rather than the site.
+    if unreached and read < CRAWL_DEPTH_FLOOR:
+        return (f" — click depth NOT MEASURED: the crawl reached only {read} page"
+                f"{'' if read == 1 else 's'} from the homepage, below the "
+                f"{CRAWL_DEPTH_FLOOR}-page floor, so this is a bare checkout rather than a "
+                f"deployed docroot")
+    if not depths:
+        return " — click depth NOT MEASURED: nothing links out of the homepage"
+    ranked = sorted(depths.items(), key=lambda kv: (-kv[1], kv[0]))
+    shown = [f"{p} {d}" for p, d in ranked[:8]]
+    more = len(ranked) - len(shown)
+    note = (f" — click depth from the homepage ({read} page{'' if read == 1 else 's'} read, "
+            f"levels 0-{complete} fully expanded): " + ", ".join(shown)
+            + (f", +{more} shallower" if more else ""))
+    if unreached:
+        note += (f" — NOT REACHED within {complete} clicks, so deeper than that or reachable "
+                 f"only from a sitemap: " + ", ".join(unreached))
+    return note
+
+
 # How long a prefix may sit "linked in the staging dir but not in the docroot"
 # before that stops being deploy lag and becomes a deploy failure. One night:
 # cmd_build rsyncs at the end of the same run that stages the page, so a link
@@ -1812,6 +1982,16 @@ def t_crawl_paths(ctx):
     audit turned "we stopped believing in this section" into "we stopped
     looking at this section", which is how four families reached 1-of-101
     ever-fetched with a green light on this check.
+
+    Since 2026-08-31 it also reports CLICK DEPTH: how many clicks from the
+    homepage each published section sits, measured by an actual breadth-first
+    crawl of the docroot rather than by asking whether a link exists somewhere.
+    The binary above has read 15 of 15 green every day since 2026-08-23 while
+    gsc_serving_pages fell 63 → 8 and 346 of 455 sampled published URLs stayed
+    unknown to Google, so "has an inbound link" is demonstrably not the
+    discriminating question; distance from the homepage is the next candidate,
+    and it had never been measured. Depth is REPORTED, not enforced — see
+    CRAWL_DEPTH_MAX for why a threshold today would be a guess.
 
     Writes nothing. It scores the live docroot, which is deliberate — the fix
     for an orphaned section usually lives in the app shells, and this is how a
@@ -1910,7 +2090,13 @@ def t_crawl_paths(ctx):
     # so it goes last: the orphan names are the finding and must not be pushed
     # off the end of a phone-width line by a list of things that are merely
     # absent.
-    tail = f" — not built yet, not audited: {', '.join(unbuilt)}" if unbuilt else ""
+    # Depth goes at the FRONT of the tail, ahead of the merely-absent lists: it
+    # is a finding about pages that exist, not context. It is measured against
+    # the docroot only — never the staging dir — for _crawl_link_audit's reason:
+    # a link that exists solely in growth_out is not a link Google can follow,
+    # and a depth computed through one would be fiction.
+    tail = _crawl_depth_note(ctx.docroot, live)
+    tail += f" — not built yet, not audited: {', '.join(unbuilt)}" if unbuilt else ""
     # How many audited sections have no live technique behind them. The
     # denominator grew on 2026-08-23 when this audit stopped dropping them, and
     # a count that changes size without saying why reads as a regression. It

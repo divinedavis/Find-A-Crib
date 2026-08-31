@@ -1,26 +1,26 @@
 {
   "build": {
-    "at": "2026-08-30T05:40:26+00:00",
+    "at": "2026-08-31T05:40:26+00:00",
     "changed_urls": 6,
-    "date": "2026-08-30",
+    "date": "2026-08-31",
     "deployed": true,
     "new_urls": 0,
     "seo_corpus": {
       "days_old": 1,
-      "written": "2026-08-29"
+      "written": "2026-08-30"
     },
     "seo_pipeline": {
-      "at": "2026-08-29T19:03:00Z",
-      "changed_urls": 61,
-      "code": "synced-1",
+      "at": "2026-08-30T16:43:35Z",
+      "changed_urls": 1096,
+      "code": "synced-2",
       "corpus_pages": 49371,
       "head": "unknown",
-      "hours_ago": 10.6,
+      "hours_ago": 12.9,
       "phase": "finish",
       "pull": "no-worktree",
       "rc": 0,
-      "started": "2026-08-29T19:00:30Z",
-      "state": "ran clean (source handed over from the checkout: synced-1)",
+      "started": "2026-08-30T16:41:43Z",
+      "state": "ran clean (source handed over from the checkout: synced-2)",
       "step": "done"
     },
     "techniques": {
@@ -29,7 +29,7 @@
         "ok": true
       },
       "city_seo_expansion": {
-        "detail": "hub pages live: dc 103, la 112, sf 37 \u2014 handed 3 pages back to the SEO pipeline, which has deployed its own copies",
+        "detail": "hub pages live: dc 103, la 112, sf 37",
         "ok": true
       },
       "crawl_paths": {
@@ -41,7 +41,7 @@
         "ok": true
       },
       "fresh_section8": {
-        "detail": "290 buildings across 5 boroughs",
+        "detail": "292 buildings across 5 boroughs",
         "ok": true
       },
       "hub_direct_answers": {

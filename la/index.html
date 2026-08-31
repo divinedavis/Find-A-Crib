@@ -5031,6 +5031,15 @@
       if (ok && detailRec === rec && !detailSheet.hidden) {
         detailContent.innerHTML = renderDetail(rec, detailListed);
         syncDetailFav();
+        // This repaint throws away everything loadComments() wrote and puts the
+        // "Loading comments…" placeholder back, so the comments have to be
+        // fetched again — otherwise the FIRST building opened in a session sits
+        // on that placeholder forever. It only ever hit the first open, because
+        // buildings.hpd.json is fetched once and HPD_FULL short-circuits every
+        // open after it, which is exactly what made it look intermittent.
+        // The operator block survives because renderDetail reads it from the
+        // CONTACTS cache; comments have no cache to read.
+        loadComments(rec.bbl);
       }
     });
     if (!_detailNav) { history.pushState({ facDetail: true }, ''); _detailNav = true; }

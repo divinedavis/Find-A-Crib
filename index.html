@@ -2268,8 +2268,13 @@
   function listingLink(rec, borough) {
     const direct = (listingsBlob.urls && listingsBlob.urls[rec.bbl]) || null;
     if (IS_NYC) {
-      if (safeHttpUrl(direct))
-        return { href: direct, label: 'View on StreetEasy ↗', short: 'View listing ↗', direct: true };
+      if (safeHttpUrl(direct)) {
+        // The banked URL is whichever source advertised it — StreetEasy for the
+        // Apify feed, Zumper for the weekly scrape. Name the site we're actually
+        // sending them to; a third of NYC's direct links are Zumper's.
+        const src = /(?:^|\.)zumper\.com$/.test(new URL(direct).hostname) ? 'Zumper' : 'StreetEasy';
+        return { href: direct, label: `View on ${src} ↗`, short: 'View listing ↗', direct: true };
+      }
       const q = encodeURIComponent(`${rec.a}, ${borough}, NY ${rec.z || ''}`.trim());
       return { href: `https://streeteasy.com/search?search=${q}`,
                label: 'Look up on StreetEasy ↗', short: 'StreetEasy ↗', direct: false };

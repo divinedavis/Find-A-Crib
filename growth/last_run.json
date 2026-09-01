@@ -1,27 +1,34 @@
 {
   "build": {
-    "at": "2026-08-31T05:40:26+00:00",
+    "at": "2026-09-01T05:40:34+00:00",
     "changed_urls": 6,
-    "date": "2026-08-31",
+    "date": "2026-09-01",
     "deployed": true,
     "new_urls": 0,
     "seo_corpus": {
-      "days_old": 1,
-      "written": "2026-08-30"
+      "days_old": 0,
+      "written": "2026-09-01"
     },
     "seo_pipeline": {
-      "at": "2026-08-30T16:43:35Z",
-      "changed_urls": 1096,
-      "code": "synced-2",
+      "at": "2026-09-01T05:42:18Z",
+      "changed_urls": 0,
+      "code": "synced-1",
       "corpus_pages": 49371,
       "head": "unknown",
-      "hours_ago": 12.9,
+      "hours_ago": 0.0,
       "phase": "finish",
       "pull": "no-worktree",
       "rc": 0,
-      "started": "2026-08-30T16:41:43Z",
-      "state": "ran clean (source handed over from the checkout: synced-2)",
+      "started": "2026-09-01T05:40:35Z",
+      "state": "ran clean (source handed over from the checkout: synced-1)",
       "step": "done"
+    },
+    "seo_watchdog": {
+      "at": "2026-09-01T05:42:18+00:00",
+      "note": "ran refresh_seo.sh to completion",
+      "ok": true,
+      "ran": true,
+      "rc": 0
     },
     "techniques": {
       "city_guides": {
@@ -33,7 +40,7 @@
         "ok": true
       },
       "crawl_paths": {
-        "detail": "15 of 15 published sections have an inbound internal link (62 docroot pages read) \u2014 single inbound source: /available/ \u2190 nyc browse hub, /dc/neighborhood/ \u2190 dc browse hub, /la/zip/ \u2190 la browse hub, /sf/neighborhood/ \u2190 sf browse hub, /zip/ \u2190 building page \u2014 3 of 15 audited sections are published under no ACTIVE technique, so nothing rebuilds them; link them or stop publishing them: /available/ [candidate], /brief/ [retired], /developers/ [candidate]",
+        "detail": "15 of 15 published sections have an inbound internal link (62 docroot pages read) \u2014 single inbound source: /available/ \u2190 nyc browse hub, /dc/neighborhood/ \u2190 dc browse hub, /la/zip/ \u2190 la browse hub, /sf/neighborhood/ \u2190 sf browse hub, /zip/ \u2190 building page \u2014 click depth from the homepage (2000 pages read, levels 0-5 fully expanded): /zip/ 6, /building/ 5, /dc/neighborhood/ 5, /la/zip/ 5, /sf/neighborhood/ 5, /available/ 4, /borough/ 4, /brief/ 4, +7 shallower \u2014 3 of 15 audited sections are published under no ACTIVE technique, so nothing rebuilds them; link them or stop publishing them: /available/ [candidate], /brief/ [retired], /developers/ [candidate]",
         "ok": true
       },
       "derived_building_facts": {
@@ -41,7 +48,7 @@
         "ok": true
       },
       "fresh_section8": {
-        "detail": "292 buildings across 5 boroughs",
+        "detail": "291 buildings across 5 boroughs",
         "ok": true
       },
       "hub_direct_answers": {

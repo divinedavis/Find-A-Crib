@@ -1,0 +1,5 @@
+build.nosync/
+*.xcuserstate
+xcuserdata/
+DerivedData/
+.DS_Store

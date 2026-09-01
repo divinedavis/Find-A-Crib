@@ -111,9 +111,31 @@ def split(data):
 
 
 def keychain(service):
-    return subprocess.check_output(
-        ["security", "find-generic-password", "-s", service, "-w"],
-        stderr=subprocess.DEVNULL).decode().strip()
+    """The service-role key, from the macOS keychain or from the environment.
+
+    This ran the `security` binary unconditionally, which exists on the laptop
+    and does not exist on the droplet — so every nightly run there died with
+    "No such file or directory: 'security'" and rerental_daily.sh printed
+    "PUBLISH FAILED — docroot left unchanged". The contact rows had not been
+    pushed and the public marketing_agents.json had not been rewritten since
+    the job moved to cron; the message was in the log every morning and the
+    exit status was still 0. growth.env already carries the key on the box, so
+    fall back to it rather than making the caller know which host it is on.
+    """
+    try:
+        out = subprocess.check_output(
+            ["security", "find-generic-password", "-s", service, "-w"],
+            stderr=subprocess.DEVNULL).decode().strip()
+        if out:
+            return out
+    except (OSError, subprocess.CalledProcessError):
+        pass
+    for var in ("SUPABASE_SERVICE_KEY", "SUPABASE_SERVICE_ROLE_KEY"):
+        if os.environ.get(var):
+            return os.environ[var].strip()
+    raise RuntimeError(
+        f"no service-role key: keychain item {service!r} is unreadable and "
+        "neither SUPABASE_SERVICE_KEY nor SUPABASE_SERVICE_ROLE_KEY is set")
 
 
 def push(rows, token):

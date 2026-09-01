@@ -77,6 +77,10 @@ featured/img/
 __pycache__/
 *.pyc
 rerental_history.json
+# Geocoder cache: rebuilt on demand, machine-local, and it would put the
+# droplet's nightly run in conflict with the laptop's over a file neither
+# of them needs from the other.
+rerental_places.json
 supabase/.temp/
 founding_sent.json
 housing_connect.json

@@ -323,33 +323,62 @@ def _callout(b):
     """A tinted box for the things that need the reader to do something.
     `items` renders as a bulleted list; `body` as a single paragraph.
 
-    An item may be a plain string or {"text": ..., "url": ...}. With a url the
-    text becomes a real link. This exists because mail clients auto-link
-    anything that LOOKS like a street address — iOS Mail turned every listing in
-    the re-rental digest into an Apple Maps link, which is the one destination
-    the reader does not want. A real href beats the client's guess.
+    An item may be a plain string or {"text": ..., "url": ..., "sub": ...}.
+    With a url the text becomes a real link. This exists because mail clients
+    auto-link anything that LOOKS like a street address — iOS Mail turned every
+    listing in the re-rental digest into an Apple Maps link, which is the one
+    destination the reader does not want. A real href beats the client's guess.
+
+    A linked item is a BLOCK anchor, not an inline one, and that is the whole
+    point. An inline link that wraps onto a second line is only reliably
+    tappable on its first line in the iOS mail clients: the re-rental digest
+    lists addresses long enough to wrap to two and three lines on a phone, so
+    "some of these links don't open on mobile" was the row's continuation
+    lines falling through the tap. As a block with padding, every pixel of the
+    row — both lines, the gap, the `sub` caption — is one target. `sub` is a
+    muted second line inside that same target, which is also somewhere safe to
+    tap when a client's address detector has grabbed the address text itself.
     """
     colour, bg = TONES.get(b.get("tone") or "warn", (WARN, WARN_BG))
     head = (f'<div style="font-size:14px;font-weight:700;color:{colour};margin:0 0 4px">'
             f'{esc(b["heading"])}</div>') if b.get("heading") else ""
     if b.get("items"):
-        def _one(it):
+        def _one(it, first=False):
             if isinstance(it, dict):
-                txt, url = it.get("text", ""), it.get("url")
+                txt, url, sub = it.get("text", ""), it.get("url"), it.get("sub")
             else:
-                txt, url = it, None
-            inner = (f'<a href="{esc(safe_url(url))}" style="color:{BLUE};'
-                     f'text-decoration:underline">{esc(txt)}</a>') if url else esc(txt)
-            return (f'<div style="font-size:13px;color:{INK};line-height:1.55;'
-                    f'margin:0 0 3px">&bull;&nbsp;&nbsp;{inner}</div>')
+                txt, url, sub = it, None, None
+            if not url:
+                one = (f'<div style="font-size:13px;color:{INK};line-height:1.55;'
+                       f'margin:0 0 3px">&bull;&nbsp;&nbsp;{esc(txt)}</div>')
+                if sub:
+                    one += (f'<div style="font-size:12px;color:{INK3};line-height:1.5;'
+                            f'margin:0 0 6px 16px">{esc(sub)}</div>')
+                return one
+            # 9px of padding either side of a 13px/1.5 line clears Apple's
+            # 44px minimum touch target on a one-line row without a min-height
+            # that Outlook would ignore anyway. The negative margin lets the
+            # target run to the callout's own padding edge. A hairline between
+            # rows because the bullets are gone: with none, two stacked
+            # addresses read as one four-line paragraph.
+            rule = "" if first else f"border-top:1px solid {LINE};"
+            return (f'<a href="{esc(safe_url(url))}" style="display:block;{rule}'
+                    f'color:{BLUE};text-decoration:none;font-size:13px;line-height:1.5;'
+                    f'padding:9px 10px;margin:0 -10px;border-radius:7px">'
+                    f'<span style="text-decoration:underline">{esc(txt)}</span>'
+                    + (f'<span style="display:block;font-size:12px;color:{INK2};'
+                       f'text-decoration:none;margin:3px 0 0">{esc(sub)}</span>'
+                       if sub else "")
+                    + '</a>')
 
         def _one_text(it):
             if isinstance(it, dict):
                 return (f"      • {it.get('text','')}"
+                        + (f"\n        {it['sub']}" if it.get("sub") else "")
                         + (f"\n        {it['url']}" if it.get("url") else ""))
             return f"      • {it}"
 
-        body_html = "".join(_one(it) for it in b["items"])
+        body_html = "".join(_one(it, i == 0) for i, it in enumerate(b["items"]))
         body_text = "\n".join(_one_text(it) for it in b["items"])
     else:
         body_html = (f'<div style="font-size:13px;color:{INK};line-height:1.55">'

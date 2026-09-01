@@ -27,10 +27,16 @@ import json
 import os
 import re
 import sys
+import urllib.error
+import urllib.parse
+import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RERENTALS = os.path.join(HERE, "rerental_pages.json")
 HISTORY = os.path.join(HERE, "rerental_history.json")
+# address -> {"hood": ..., "boro": ...}, so the same building is geocoded once
+# ever rather than every morning it stays listed.
+PLACES = os.path.join(HERE, "rerental_places.json")
 SITE = "https://findacrib.com/marketing-agents/"
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/126.0 Safari/537.36")
@@ -40,6 +46,126 @@ UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
 WAITLIST = {"TF Cornerstone", "The Wavecrest Management Team Ltd.", "Restored Homes",
             "Phipps Houses", "Bronx Pro Group LLC", "Breaking Ground",
             "Highbridge Community Development Corporation (HCDC)"}
+
+# ---------------------------------------------------------------- place names
+# "2754 Creston Avenue" says nothing about where it is unless you already know
+# the Bronx street grid. The neighbourhood and borough are what make a listing
+# worth opening or skipping, and NYC Planning's GeoSearch gives both, free, no
+# key, from the city's own address file.
+GEOSEARCH = "https://geosearch.planninglabs.nyc/v2/search"
+
+# Everything from the first unit marker onwards is the apartment, not the
+# building, and the geocoder does not want it: "147-35 95th Ave Apartment –
+# Unit 1012" has to be asked for as "147-35 95th Ave". The leading \s+ is what
+# keeps the hyphen alternative from cutting Queens house numbers in half.
+UNIT_MARK = re.compile(
+    r'\s+(?:apartments?\b|apt\.?\b|units?\b|suites?\b|ste\.?\b|residences?\b'
+    r'|floor\b|fl\.?\b|#|[\u2013\u2014-]\s)', re.I)
+
+STREET_ABBR = {"ave": "avenue", "av": "avenue", "st": "street", "str": "street",
+               "rd": "road", "blvd": "boulevard", "pl": "place", "dr": "drive",
+               "ln": "lane", "ct": "court", "pkwy": "parkway", "ter": "terrace",
+               "hwy": "highway", "sq": "square", "plz": "plaza",
+               "w": "west", "e": "east", "n": "north", "s": "south"}
+
+
+def street_of(label):
+    """The building address inside a listing label, ready to geocode."""
+    m = UNIT_MARK.search(label)
+    base = label[:m.start()] if m else label
+    return re.sub(r'[\s.,;:\-\u2013\u2014]+$', '', base).strip()
+
+
+def _house_no(s):
+    m = re.match(r'\s*(\d+(?:-\d+)?)', s)
+    return m.group(1).lstrip("0") if m else ""
+
+
+def _street_key(s):
+    """First two words of the street name, spelling-normalised.
+
+    Compared between what was asked for and what came back, because GeoSearch
+    answers a house number it does not have with the nearest one it does:
+    "1010 Washington Avenue" returns 1010 Washington in the Bronx first and
+    573 Washington in Brooklyn second, and those are different buildings in
+    different boroughs. Without checking the answer against the question, a
+    fallback match puts a confident, wrong neighbourhood next to an address.
+    """
+    toks = re.sub(r'[^a-z0-9 ]+', ' ', s.split(",")[0].lower()).split()
+    if toks and toks[0][0].isdigit():
+        toks = toks[1:]
+    out = []
+    for t in toks:
+        t = re.sub(r'^(\d+)(?:st|nd|rd|th)$', r'\1', t)
+        out.append(STREET_ABBR.get(t, t))
+    return " ".join(out[:2])
+
+
+def load_places():
+    try:
+        return json.load(open(PLACES))
+    except (FileNotFoundError, ValueError):
+        return {}
+
+
+def place_of(label, cache, timeout=8):
+    """{'hood': ..., 'boro': ...} for a listing label, or None.
+
+    None whenever the city's own geocoder cannot confirm the exact building —
+    an address with no place beside it is fine, an address with the wrong
+    neighbourhood beside it is worse than the bare address was.
+    """
+    street = street_of(label)
+    if not street or not _house_no(street):
+        return None
+    if street in cache:
+        return cache[street] or None
+    hit = None
+    try:
+        q = urllib.parse.urlencode({"text": street + ", New York, NY", "size": "1"})
+        req = urllib.request.Request(f"{GEOSEARCH}?{q}", headers={"User-Agent": UA})
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            feats = json.load(r).get("features") or []
+        if feats:
+            pr = feats[0].get("properties") or {}
+            label_out = pr.get("label") or ""
+            if (_house_no(label_out) == _house_no(street)
+                    and _street_key(label_out) == _street_key(street)
+                    and (pr.get("neighbourhood") or pr.get("borough"))):
+                hit = {"hood": pr.get("neighbourhood"), "boro": pr.get("borough")}
+    except Exception:
+        # A geocoder that is down must not hold up the digest. Not cached
+        # either — a failed lookup should be retried tomorrow.
+        return None
+    cache[street] = hit
+    return hit
+
+
+def place_words(pl):
+    if not pl:
+        return None
+    bits = [b for b in (pl.get("hood"), pl.get("boro")) if b]
+    # Planning names a few neighbourhoods after the borough ("Bronx" in the
+    # Bronx); saying it twice reads like a bug.
+    if len(bits) == 2 and bits[0].lower() == bits[1].lower():
+        bits = bits[:1]
+    return ", ".join(bits) or None
+
+
+def link_ok(url, timeout=8):
+    """Does this href actually resolve? Bounded to the handful in the digest."""
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": UA}, method="HEAD")
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return 200 <= r.status < 400
+    except urllib.error.HTTPError as e:
+        # Plenty of these sites refuse HEAD but serve the page fine.
+        if e.code in (403, 405, 501):
+            return True
+        return False
+    except Exception:
+        return False
+
 
 MONEY = re.compile(r'\$\s?[\d,]+(?:\.\d\d)?')
 COUNT = re.compile(r'(\d+)\s+(?:results?|units?\s+(?:available|found)|listings?)', re.I)
@@ -349,17 +475,35 @@ def build_report(results, deltas, today, had_history):
     blocks = [{"type": "tiles", "items": tiles}]
 
     if new_total:
+        # Truncate BEFORE enriching. Each surviving row costs one geocode and
+        # one link check, so building all of them and then showing 20 would let
+        # a day with a hundred new listings fire two hundred requests to render
+        # twenty rows.
+        raw = [(name, it) for name, d in deltas.items() for it in d["new"]][:20]
         lines = []
-        for name, d in deltas.items():
-            for it in d["new"]:
-                lines.append({"text": f"{name}: {it['label']}",
-                              # Straight to the listing where it was posted. With
-                              # no href the reader gets whatever the mail client
-                              # guesses from the address, which is a map pin.
-                              "url": it.get("url") or results[name]["url"]})
+        places = load_places()
+        for name, it in raw:
+            # Straight to the listing where it was posted. With no href the
+            # reader gets whatever the mail client guesses from the address,
+            # which is a map pin. Checked before it ships, because a link that
+            # 404s is the same to the reader as no link at all: the agent's own
+            # board is a worse destination but a live one.
+            url, board = it.get("url"), results[name]["url"]
+            if url and url != board and not link_ok(url):
+                url = None
+            where = place_words(place_of(it["label"], places))
+            lines.append({"text": it["label"],
+                          "sub": " · ".join(
+                              [w for w in (where, name) if w]
+                              + ([] if url else ["listing page gone — opens the agent's board"])),
+                          "url": url or board})
+        try:
+            json.dump(places, open(PLACES, "w"), indent=1, ensure_ascii=False)
+        except OSError:
+            pass
         blocks.insert(1, {"type": "callout", "tone": "good",
                           "heading": f"{new_total} new listing{'s' if new_total != 1 else ''}",
-                          "items": lines[:20]})
+                          "items": lines})
     elif had_history:
         blocks.insert(1, {"type": "callout", "tone": "mute",
                           "heading": "Nothing new overnight",

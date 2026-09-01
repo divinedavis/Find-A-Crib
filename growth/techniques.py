@@ -1774,7 +1774,35 @@ def _crawl_link_audit(root, prefixes):
 # data instead of a hunch.
 CRAWL_DEPTH_MAX = 6          # stop descending here; deeper than this is academic
 CRAWL_DEPTH_PAGES = 2000     # hard cap on pages fetched, so the nightly build stays fast
-CRAWL_DEPTH_BYTES = 300_000  # per page; enough for the link block of any page we publish
+# Per page. This was 300_000 on the night this crawl shipped, on the stated
+# reasoning that it was "enough for the link block of any page we publish".
+# That was wrong, and it made the instrument's FIRST reading a false one — see
+# t_crawl_paths' docstring for the reading and the correction. Measured
+# 2026-09-01 against this repo: index.html is 342,512 bytes and its <nav
+# class="seo-nav"> — the only crawlable route to /buildings/, /borough/*,
+# /section8/, /brief/ and /council-district/ — begins at byte 340,385, past a
+# 300k read by 40k. The four other city shells (sf, la, dc, westchester) are
+# ~341.5k with the same tail layout. So the cap deleted the navigation of every
+# one of the five pages this site most depends on for discovery, and the crawl
+# routed around them and reported the long way round as the site's real depth.
+# Reproduced directly: with the real index.html and stub targets, a 300k cap
+# places only /sf/ /la/ /dc/ (found in the city switcher at byte ~32k) and
+# misses /buildings/ /borough/ /section8/ /brief/ entirely; at 4M all seven
+# come back at depth 1.
+#
+# The cap is kept rather than removed because an unbounded read on an unknown
+# file is how a nightly build hangs. 4M is ~12x the largest page this site
+# publishes, so it can only ever fire on something pathological — and when it
+# does fire it is now REPORTED (clipped_pages below), because a silently
+# truncated page produces a depth reading that is confidently wrong, which is
+# strictly worse than no reading at all.
+CRAWL_DEPTH_BYTES = 4_000_000
+# Total bytes across the whole crawl, so raising the per-page cap 13x cannot
+# turn the nightly build into a disk-bound job. At 2000 pages the corpus this
+# walks is overwhelmingly small generated pages (a few KB each); this budget
+# only binds if something in the tree is unexpectedly enormous, and running it
+# out is reported the same way the page cap is.
+CRAWL_DEPTH_TOTAL_BYTES = 200_000_000
 # Below this many pages read, say nothing. A bare checkout holds the app shells
 # and no generated corpus at all (4-12 pages), and a depth reading taken from
 # that would describe the checkout, not the site. Reporting "not measured" is
@@ -1829,12 +1857,15 @@ def _crawl_depth_url(href, base):
 def _crawl_depth(root, prefixes):
     """Breadth-first from "/", returning how many clicks each prefix sits from home.
 
-    Returns (depth_by_prefix, pages_read, complete_depth), where:
+    Returns (depth_by_prefix, pages_read, complete_depth, clipped), where:
       * depth_by_prefix maps a prefix to the smallest depth at which any URL
         under it was LINKED (the homepage itself is depth 0, so a section
         linked from the homepage is depth 1). A prefix not reached is absent.
       * complete_depth is the deepest level whose pages were all expanded
         before the page cap ran out.
+      * clipped is the list of pages whose bytes were cut by CRAWL_DEPTH_BYTES
+        or by the total budget — pages whose links were therefore only PARTLY
+        followed.
 
     complete_depth exists so a missing prefix is never overstated. Truncating a
     breadth-first crawl at a page cap means "not found" has two meanings —
@@ -1842,25 +1873,43 @@ def _crawl_depth(root, prefixes):
     depth at which expansion was still complete tells them apart. Callers must
     report an unreached prefix as "deeper than complete_depth", never as
     "unreachable"; _crawl_link_audit is the check that owns that verdict.
+
+    `clipped` exists for the same reason one level down, and it exists because
+    the omission cost a day: a page read to a byte cap yields a SUBSET of its
+    links, so every depth downstream of it is an upper bound, not a
+    measurement — and on 2026-08-31 that silent subset put five sections 3-5
+    clicks further from home than they are. A clipped page cannot be
+    distinguished from a sparse one by its output, so it has to be counted at
+    the point of the read and carried out to the note.
     """
     start = "/"
     seen = {start}
     frontier = [start]
     depth_by_prefix, read, complete_depth = {}, 0, 0
+    clipped, spent = [], 0
     truncated = False
     for depth in range(CRAWL_DEPTH_MAX):
         nxt = []
         for path in frontier:
-            if read >= CRAWL_DEPTH_PAGES:
+            if read >= CRAWL_DEPTH_PAGES or spent >= CRAWL_DEPTH_TOTAL_BYTES:
                 truncated = True
                 break
             rel = path.lstrip("/")
             fp = os.path.join(root, rel + "index.html" if path.endswith("/") else rel)
+            # Read one byte past the cap so a page that exactly fills it can be
+            # told from one that overflows it. Without the +1 the two are
+            # identical at this point and the clipped count silently misses the
+            # boundary case.
+            budget = min(CRAWL_DEPTH_BYTES, CRAWL_DEPTH_TOTAL_BYTES - spent)
             try:
                 with open(fp, encoding="utf-8", errors="replace") as f:
-                    html = f.read(CRAWL_DEPTH_BYTES)
+                    html = f.read(budget + 1)
             except OSError:
                 continue                 # a link to a page that is not built
+            if len(html) > budget:
+                html = html[:budget]
+                clipped.append(path)
+            spent += len(html)
             read += 1
             for href in _HREF_RE.findall(html):
                 target = _crawl_depth_url(href, path if path.endswith("/")
@@ -1881,12 +1930,12 @@ def _crawl_depth(root, prefixes):
         if truncated or not nxt or len(depth_by_prefix) == len(prefixes):
             break
         frontier = sorted(nxt)           # deterministic: same docroot, same reading
-    return depth_by_prefix, read, complete_depth
+    return depth_by_prefix, read, complete_depth, clipped
 
 
 def _crawl_depth_note(root, prefixes):
     """One clause naming how deep each published section sits, or why we can't say."""
-    depths, read, complete = _crawl_depth(root, prefixes)
+    depths, read, complete, clipped = _crawl_depth(root, prefixes)
     # Deepest first: the far end of the distribution is the finding, and a
     # section the crawl never reached is further out than any measured one.
     unreached = sorted(p for p in prefixes if p not in depths)
@@ -1913,6 +1962,22 @@ def _crawl_depth_note(root, prefixes):
     if unreached:
         note += (f" — NOT REACHED within {complete} clicks, so deeper than that or reachable "
                  f"only from a sitemap: " + ", ".join(unreached))
+    # A clipped page contributed only the links in its first CRAWL_DEPTH_BYTES,
+    # so every depth measured through it is an UPPER BOUND. Say so in the same
+    # breath as the numbers rather than in a footnote: the whole reason this
+    # exists is that on 2026-08-31 the reading looked like a clean measurement
+    # and was read as one. Names the pages, because which page was cut is the
+    # difference between "a deep leaf page was long" and "the homepage nav was
+    # deleted from the crawl".
+    if clipped:
+        shown = clipped[:4]
+        more = len(clipped) - len(shown)
+        one = len(clipped) == 1
+        note += (f" — CAUTION, {len(clipped)} page{'' if one else 's'} exceeded the "
+                 f"{CRAWL_DEPTH_BYTES:,}-byte read cap and contributed only "
+                 f"{'its' if one else 'their'} opening links, "
+                 f"so every depth above is an upper bound: " + ", ".join(shown)
+                 + (f", +{more} more" if more else ""))
     return note
 
 
@@ -1992,6 +2057,22 @@ def t_crawl_paths(ctx):
     discriminating question; distance from the homepage is the next candidate,
     and it had never been measured. Depth is REPORTED, not enforced — see
     CRAWL_DEPTH_MAX for why a threshold today would be a guess.
+
+    ITS FIRST READING WAS FALSE AND IS CORRECTED HERE, because it will be
+    quoted. On 2026-09-01 the depth clause read "/zip/ 6, /building/ 5,
+    /dc/neighborhood/ 5, /la/zip/ 5, /sf/neighborhood/ 5, /available/ 4,
+    /borough/ 4, /brief/ 4" and appeared to confirm, on its first night, the
+    exact hypothesis it was built to test. It did not. The crawl was reading
+    each page to a 300,000-byte cap, and all five of this site's app shells —
+    index.html and the sf/la/dc/westchester shells — are ~341-343KB with their
+    entire crawlable <nav class="seo-nav"> in the last ~2KB. Every one of those
+    navs was cut off before the crawler saw it, so the five pages that carry
+    this site's real navigation contributed no links at all, and the crawl
+    found the deep sections by whatever long way round remained. /borough/ and
+    /brief/ are linked directly from the homepage and are depth 1, not 4. The
+    cap is now 4MB with clipped pages counted and named in the note (see
+    CRAWL_DEPTH_BYTES); the depths that reading produced should be discarded,
+    not adjusted.
 
     Writes nothing. It scores the live docroot, which is deliberate — the fix
     for an orphaned section usually lives in the app shells, and this is how a

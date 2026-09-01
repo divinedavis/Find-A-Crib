@@ -481,6 +481,11 @@
     position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;
     transition: opacity .25s ease;
   }
+  /* Street View is requested only once a card scrolls into view, so until then
+     the <img> has no src and the .photo gradient shows through on its own.
+     It must stay in layout — a display:none element never intersects, so
+     hiding it that way would keep the observer from ever firing. */
+  img.streetview:not([src]) { opacity: 0; }
   .card .photo .photo-shade {
     position: absolute; inset: 0; z-index: 1;
     background: linear-gradient(180deg, rgba(0,0,0,0.45) 0%, transparent 35%, transparent 55%, rgba(0,0,0,0.7) 100%);
@@ -4294,7 +4299,7 @@
     return `<div class="card hc-card" data-hc-name="${esc(h.name || h.address || 'Housing Connect lottery')}" data-hc-boro="${esc(h.borough || '')}" data-hc-href="${esc(h.href || '')}">
       <span class="hc-flag">Housing Connect</span>
       <div class="photo">
-        ${sv ? `<img class="streetview" loading="lazy" src="${sv}" alt=""
+        ${sv ? `<img class="streetview" data-sv="${sv}" alt=""
              onerror="this.style.display='none'">` : ''}
         <div class="photo-shade"></div>
         <div class="badge-row"><span></span><span class="listed-pill">Lottery</span></div>
@@ -4380,6 +4385,38 @@
     return el.classList.contains('hc-card')
       ? 'lottery|NYC Housing Connect|' + (el.dataset.hcName || '')
       : 'rerental|' + (el.dataset.featAgent || '') + '|' + (el.dataset.featAddr || '');
+  }
+
+  // Street View Static is billed per image ($7/1000 after 10k free a month) and
+  // every card carries one, so a scrolled grid of MAX_CARDS asked Google for
+  // 255 photos in a single session — that was the whole August bill. The Maps
+  // Platform terms forbid caching the imagery ourselves, so the only lever is
+  // asking for fewer: native loading="lazy" fetches hundreds of pixels ahead
+  // (and fired for cards behind the closed mobile list), so gate the request on
+  // a tight IntersectionObserver instead. A card that is never scrolled to
+  // never costs anything.
+  const svObserver = ('IntersectionObserver' in window)
+    ? new IntersectionObserver((entries, obs) => {
+        entries.forEach(en => {
+          if (!en.isIntersecting) return;
+          const img = en.target;
+          obs.unobserve(img);
+          const url = img.dataset.sv;
+          if (url) { img.removeAttribute('data-sv'); img.src = url; }
+        });
+      }, { rootMargin: '150px' })
+    : null;
+
+  // Arm every not-yet-loaded Street View image under `root`. Without an
+  // observer (old browser) fall back to loading them, which is the previous
+  // behaviour rather than a blank grid.
+  function watchStreetview(root) {
+    (root || document).querySelectorAll('img.streetview[data-sv]').forEach(img => {
+      if (svObserver) { svObserver.observe(img); return; }
+      const url = img.dataset.sv;
+      img.removeAttribute('data-sv');
+      img.src = url;
+    });
   }
 
   const tileObserver = ('IntersectionObserver' in window)
@@ -4543,6 +4580,7 @@
     // The list just lost every node it had; re-mark the open building so
     // panning the map doesn't quietly drop the selection.
     paintCardHighlight();
+    watchStreetview(grid);
     initAds();
     watchAdTiles();
   }
@@ -4585,7 +4623,7 @@
     return `<div class="card" data-bbl="${esc(rec.bbl)}">
       <button class="fav-btn ${faved ? 'faved' : ''}" data-action="fav" aria-label="${faved ? 'Remove from saved' : 'Save'}" aria-pressed="${faved}">${faved ? '♥' : '♡'}</button>
       <div class="photo">
-        <img class="streetview" loading="lazy" src="${sv}" alt="" onerror="this.style.display='none'">
+        <img class="streetview" data-sv="${sv}" alt="" onerror="this.style.display='none'">
         <div class="photo-shade"></div>
         <div class="badge-row">
           <span class="borough-pill">${borough}</span>

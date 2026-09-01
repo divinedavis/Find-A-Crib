@@ -181,8 +181,10 @@
   .range-switch button:hover{color:var(--ink)}
   .range-switch button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(17,17,34,.16)}
   .range-switch button:disabled{opacity:.55;cursor:progress}
-  /* A range with no data behind it is shown, but visibly inert: tracking began
-     24 June 2026, so "6 mo" and "3 mo" are the same as all-time for now and
+  /* A range that repeats a window already on offer is shown, but visibly
+     inert. Tracking began 24 June 2026, so "6 mo" and "3 mo" are all-time for
+     now — and on the 1st of any month "Today" and "This month" are one day,
+     which is what made the picker read as broken on 1 September 2026:
      saying so beats letting three buttons print identical numbers. */
   .range-switch button.same{opacity:.45}
   body.nemo-only .fac-only{display:none}
@@ -202,6 +204,12 @@
   .page-head h1{font-size:26px;margin:0 0 3px;letter-spacing:-.5px}
   .page-head .sub{color:var(--ink2);font-size:14px}
   .updated{color:var(--muted);font-size:12.5px;margin-top:2px}
+  /* Names the window actually on screen. The picker alone could not say
+     it: on 1 September "This month" and "Today" are the same day, and
+     "6 mo"/"3 mo" have equalled "All time" since tracking began — five
+     buttons, two outcomes, and nothing on the page admitting it. */
+  .range-note{color:var(--muted);font-size:12.5px;margin-top:4px;max-width:78ch}
+  .range-note b{color:var(--ink)}
 
   .grid{display:grid;gap:18px}
   .cols-2{grid-template-columns:1.35fr 1fr}
@@ -430,6 +438,7 @@
         <h1 id="page-title">Find A Crib</h1>
         <div class="sub" id="page-sub">Traffic, funnel &amp; revenue — everything in one place.</div>
         <div class="updated" id="updated">—</div>
+        <div class="range-note" id="range-note"></div>
       </div>
 
       <!-- stat tiles -->
@@ -993,6 +1002,11 @@
       mark:'🏙️', name:'Find A Crib', endpoint:'/api/dashboard-metrics',
       title:'Find A Crib', sub:'Traffic, funnel &amp; revenue — everything in one place.',
       live:'https://findacrib.com', foot:'Since 24 June 2026',
+      // First row in the table. Every window is clamped to it, so the picker
+      // can say which of its buttons currently select the same one. The other
+      // three sites have no recorded start, so theirs is left unset rather
+      // than guessed — Find A Crib's date used to be applied to all four.
+      start:'2026-06-24',
       blocks:['fac-a','fac-b','claude-a'],
       nav:[['top','▦','Dashboard'],['sec-traffic','◔','Traffic'],['sec-ads','◉','Google Ads'],
            ['sec-tiles','◫','Advertiser metrics'],['sec-goals','◎','Goals & revenue'],
@@ -1110,9 +1124,86 @@
     if(saved && RANGES.indexOf(saved) >= 0) rangeKey = saved;
   }catch(e){}
 
+  var RANGE_WORDS = {all:'all time','6m':'the last 6 months','3m':'the last 3 months',
+                     month:'this month', today:'today'};
+
+  // The current site's first recorded day, at LOCAL midnight — it is compared
+  // against, and printed beside, month and day boundaries computed in the
+  // reader's own timezone, and Date.UTC would print 24 June as the 23rd here.
+  // -Infinity when the site never recorded one: better an unclamped window
+  // than a date borrowed from another business.
+  function trackingStart(){
+    var iso = SITES[siteKey] && SITES[siteKey].start;
+    if(!iso) return -Infinity;
+    var p = iso.split('-');
+    return new Date(+p[0], +p[1]-1, +p[2]).getTime();
+  }
+
+  // The instant a button actually selects, after that clamp. Two buttons whose
+  // starts land on the same instant select the SAME window and can only ever
+  // paint the same numbers — which is the whole reason this picker reads as
+  // broken. On 1 September 2026 "This month" and "Today" are one day, and
+  // "6 mo"/"3 mo" have equalled "All time" every day since 24 June.
+  function rangeStart(r){
+    var now = new Date(), t = trackingStart(), s;
+    if(r === '6m')         s = Date.now() - 182*864e5;
+    else if(r === '3m')    s = Date.now() - 91*864e5;
+    else if(r === 'month') s = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    else if(r === 'today') s = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    else                   s = t;
+    return Math.max(s, t);
+  }
+
   function cacheKey(k){ return k + ':' + rangeKey; }
   function feedUrl(k){
     return SITES[k].endpoint + '?range=' + encodeURIComponent(rangeKey);
+  }
+
+  // Dim every button that repeats a window already offered, and say in words
+  // which window is on screen.
+  //
+  // This used to mark only "6 mo" and "3 mo", and only against the 24 June
+  // start date — so on the 1st of a month "Today" and "This month" sat side by
+  // side, both undimmed, returning byte-identical payloads. Clicking between
+  // them changed nothing, which is indistinguishable from a filter that does
+  // not work. Grouping by the computed start covers both cases and keeps
+  // covering them as history accumulates: come 25 December, "6 mo" stops being
+  // a repeat on its own, with nothing to edit here.
+  function paintRangeMarks(){
+    var box = document.getElementById('range-switch');
+    if(!box) return;
+    var groups = [];
+    [].forEach.call(box.querySelectorAll('button[data-range]'), function(b){
+      var start = rangeStart(b.dataset.range), g = null;
+      groups.forEach(function(x){ if(x.start === start) g = x; });
+      if(!g){ g = {start: start, members: []}; groups.push(g); }
+      g.members.push(b);
+    });
+    var mine = groups[0];
+    groups.forEach(function(g){
+      g.members.forEach(function(b, i){
+        if(b.dataset.range === rangeKey) mine = g;
+        b.classList.toggle('same', i > 0);
+        b.title = i > 0
+          ? 'Same window as \u201C' + g.members[0].textContent.trim() +
+            '\u201D right now \u2014 these two cannot show different numbers.'
+          : '';
+      });
+    });
+    var note = el('range-note');
+    if(!note) return;
+    var txt = 'Showing <b>' + esc(RANGE_WORDS[rangeKey] || 'all time') + '</b> \u2014 ' +
+      (isFinite(mine.start)
+        ? new Date(mine.start).toLocaleDateString('en-US', {day:'numeric', month:'short', year:'numeric'}) +
+          (rangeKey === 'today' ? '.' : ' to now.')
+        : 'everything recorded.');
+    var dups = groups.filter(function(g){ return g.members.length > 1; }).map(function(g){
+      return g.members.map(function(b){ return '\u201C' + esc(b.textContent.trim()) + '\u201D'; }).join(', ');
+    });
+    if(dups.length)
+      txt += ' Same window today: ' + dups.join('; ') + '. The repeats are dimmed \u2014 ' +
+             'switching between them cannot change a number.';
+    note.innerHTML = txt;
   }
 
   function paintRangeSwitch(){
@@ -1121,6 +1212,10 @@
     [].forEach.call(box.querySelectorAll('button'), function(b){
       b.classList.toggle('on', b.dataset.range === rangeKey);
     });
+    // Together, always: the caption names the window the lit button selects,
+    // so it has to move on the click, not two seconds later when the feed
+    // lands. Waiting for the payload is what makes a picker feel dead.
+    paintRangeMarks();
   }
 
   function wireRangeSwitch(){
@@ -1145,8 +1240,15 @@
     paintRangeSwitch();
   }
 
+  // Keyed on site AND range, not site alone. Keyed on the site only, a range
+  // click landing while any fetch for the same site was still open was handed
+  // that fetch's promise instead of starting its own — the picker moved to the
+  // new window, the numbers stayed on the old one, and because rangeKey had
+  // already been updated, clicking the same button again did nothing. The
+  // 5-minute auto-refresh runs on a timer with no visible sign, and dashboard
+  // feeds take 0.6-3.9 s, so the collision needs no unusual clicking to hit.
   function load(force){
-    var k = siteKey;
+    var k = cacheKey(siteKey);
     if(!force && inflight[k]) return inflight[k];
     var pr = _load(force);
     inflight[k] = pr;
@@ -1257,19 +1359,6 @@
   function paint(data){
     applyShell();
     paintRangeSwitch();
-    // Mark ranges that cannot differ from all-time yet. The feed reports the
-    // window it actually used, so this stays honest as history accumulates
-    // instead of hard-coding the 24 June start date in two places.
-    var box = document.getElementById('range-switch');
-    if(box && data && data.since !== undefined){
-      var start = new Date('2026-06-24T00:00:00Z');
-      [].forEach.call(box.querySelectorAll('button[data-range]'), function(b){
-        var r = b.dataset.range, cut = null;
-        if(r === '6m') cut = new Date(Date.now() - 182*864e5);
-        if(r === '3m') cut = new Date(Date.now() - 91*864e5);
-        b.classList.toggle('same', !!cut && cut < start);
-      });
-    }
     if(siteKey==='nemo') renderNemo(session.user, data);
     else if(siteKey==='crease') renderCrease(session.user, data);
     else if(siteKey==='trent') renderTrent(session.user, data);
@@ -1387,7 +1476,7 @@
   var REFRESH_MS = 5*60*1000;
   function refreshIfStale(){
     if(!session || !shown || document.hidden) return;
-    if(inflight[siteKey]) return;
+    if(inflight[cacheKey(siteKey)]) return;
     if((Date.now()-(cacheAt[cacheKey(siteKey)]||0)) < REFRESH_MS) return;
     load(true).then(null, function(){});
   }
@@ -1712,8 +1801,6 @@
     // This card follows the range picker like every other one, but it used to
     // talk as though it did not — quoting absolute dates while showing a single
     // day's numbers, which reads as a card that never updates. Name the window.
-    var RANGE_WORDS={all:'all time','6m':'the last 6 months','3m':'the last 3 months',
-                     month:'this month',today:'today'};
     msg+=' <span class="disclaim">Showing <b>'+esc(RANGE_WORDS[rangeKey]||'all time')+'</b>'+
          (A.first_impression
             ? ' · impressions counted since '+

@@ -851,7 +851,12 @@
   // would imply 55% of monthlies show up weekly, which contradicts the 10%
   // stickiness goal sitting right next to it. Sanity check on the scale: 950 is
   // 5.8x today's WAU, between what DAU (5.3x) and MAU (6.9x) already demand.
-  var AUDIENCE_GOALS = { dau: 300, wau: 950, mau: 3000, stickiness: 10 };
+  // Every goal this project has, in one place. The first four are audience;
+  // the last three are the growth engine's (ledger state: 10k sign-ups,
+  // $10k/mo revenue, 90% share of the tracked query universe). Mine, not a
+  // benchmark — a benchmark says what is normal, a goal says what I want.
+  var AUDIENCE_GOALS = { dau: 300, wau: 950, mau: 3000, stickiness: 10,
+                         signups: 10000, mrr: 10000, share: 90 };
   // Every goal tile ends with the same verdict in the same place, in the same
   // two words. A tile that just says "19% of the way" makes you do the compare
   // yourself, and a tile that only badges the wins reads as if the others have
@@ -1968,15 +1973,28 @@
 
     // The RETENTION CURVE — TRUE COHORT block (header + D1/D7/D30 meters) was
     // removed; the retention figures still appear in the tiles and callout.
+    // Search share: the growth engine's metric — tracked queries where a
+    // findacrib page ranks in the top 10, as a share of all tracked queries.
+    var SQ = d.search || {};
+    var share = SQ.share_pct != null ? n(SQ.share_pct)
+              : (n(SQ.tracked_queries) ? 100*n(SQ.top10)/n(SQ.tracked_queries) : null);
     el('fac-health-meters').innerHTML=
       '<div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">'+
-      'AUDIENCE GOALS <span style="font-weight:400;text-transform:none">(mine, not a benchmark)</span></div>'+
+      'GOALS <span style="font-weight:400;text-transform:none">(mine, not a benchmark)</span></div>'+
       goalMeter('Daily active', E.dau, AUDIENCE_GOALS.dau)+
       goalMeter('Weekly active', E.wau, AUDIENCE_GOALS.wau)+
       goalMeter('Monthly active', E.mau, AUDIENCE_GOALS.mau)+
       meter('Stickiness · DAU/MAU', rate(E.stickiness)+' of '+AUDIENCE_GOALS.stickiness+'%',
             pct(100*n(E.stickiness), AUDIENCE_GOALS.stickiness),
-            100*n(E.stickiness) >= AUDIENCE_GOALS.stickiness ? 'good' : '');
+            100*n(E.stickiness) >= AUDIENCE_GOALS.stickiness ? 'good' : '')+
+      goalMeter('Sign-ups · accounts, all time', T.accounts, AUDIENCE_GOALS.signups)+
+      meter('Revenue · MRR', '$'+comma(S.mrr)+' of $'+comma(AUDIENCE_GOALS.mrr)+
+            ' <span class="a-bench-note">('+comma(S.paying)+' paying)</span>',
+            pct(n(S.mrr), AUDIENCE_GOALS.mrr), n(S.mrr) >= AUDIENCE_GOALS.mrr ? 'good' : '')+
+      meter('Search share · tracked queries ranking top 10',
+            (share==null ? '—' : Number(share).toFixed(1)+'%')+' of '+AUDIENCE_GOALS.share+'%'+
+            (n(SQ.tracked_queries) ? ' <span class="a-bench-note">('+comma(SQ.top10)+' of '+comma(SQ.tracked_queries)+' queries)</span>' : ''),
+            pct(n(share), AUDIENCE_GOALS.share), n(share) >= AUDIENCE_GOALS.share ? 'good' : '');
 
     // The "Against my goals…" narrative was removed. The tiles and the goal
     // meters above carry every number it recited.

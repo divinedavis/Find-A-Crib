@@ -1235,7 +1235,15 @@ AI_CRAWLERS = ("GPTBot", "ChatGPT-User", "PerplexityBot", "CCBot", "ClaudeBot",
                "anthropic-ai", "CloudVertexBot", "Bytespider", "Amazonbot",
                "meta-externalagent", "Applebot-Extended", "cohere-ai")
 FAC_ACCESS_LOG = os.environ.get("FAC_ACCESS_LOG", "/var/log/nginx/findacrib.access.log")
-_AI_CACHE = {"at": 0, "val": None}
+# Shared with the OTHER gunicorn worker, and across restarts. The in-process
+# dict this replaced hid how expensive the scan is: with -w 2 each worker paid
+# the full cost once an hour, so a dashboard load had roughly even odds of
+# landing on a cold worker and waiting for it.
+FAC_AI_CACHE = os.environ.get(
+    "FAC_AI_CACHE", os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                 ".cache", "ai_crawls.json"))
+_AI_TTL = 3600
+_AI_REFRESHING = threading.Lock()
 
 
 def _fac_agent_pool():
@@ -1273,6 +1281,56 @@ def _fac_agent_pool():
     return out
 
 
+def _ai_crawl_scan():
+    """Count AI-crawler requests in today's log plus yesterday's rotation.
+
+    ~17MB and a couple of seconds. Never called on a request thread.
+    """
+    pat = re.compile("|".join(AI_CRAWLERS), re.I)
+    total, days = 0, 0
+    for path in (FAC_ACCESS_LOG + ".1", FAC_ACCESS_LOG):
+        try:
+            with open(path, "r", errors="replace") as f:
+                total += sum(1 for line in f if pat.search(line))
+        except Exception:
+            continue
+        days += 1
+    if not days:
+        return {"per_day": 0, "window_days": 0, "ok": False}
+    # Today's log is partial, so a straight sum over two files understates the
+    # daily rate. Yesterday's rotation alone is the honest full day.
+    return {"per_day": int(round(total / days)), "window_days": days, "ok": True}
+
+
+def _ai_cache_read():
+    try:
+        with open(FAC_AI_CACHE) as f:
+            doc = json.load(f)
+        if isinstance(doc.get("val"), dict):
+            return float(doc.get("at") or 0), doc["val"]
+    except Exception:
+        pass
+    return 0.0, None
+
+
+def _ai_cache_refresh():
+    """Rescan and rewrite the cache. Runs on a background thread."""
+    try:
+        val = _ai_crawl_scan()
+        os.makedirs(os.path.dirname(FAC_AI_CACHE), exist_ok=True)
+        tmp = FAC_AI_CACHE + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump({"at": time.time(), "val": val}, f)
+        os.replace(tmp, FAC_AI_CACHE)
+    except Exception:
+        pass
+    finally:
+        try:
+            _AI_REFRESHING.release()
+        except RuntimeError:
+            pass
+
+
 def _fac_ai_crawls():
     """AI-crawler requests per day, measured off this site's own nginx log.
 
@@ -1282,29 +1340,45 @@ def _fac_ai_crawls():
     day against ~150 human page views — and the only revenue stream here whose
     volume is a property of the CORPUS rather than of the audience.
 
-    Reads today's log plus yesterday's rotation, which is enough for a daily
-    rate and cheap enough to do on a request. Cached for an hour; a log scan is
-    not something to repeat on every dashboard reload.
+    THIS NEVER BLOCKS. Scanning 17MB of nginx log takes ~2s, and it was the
+    whole reason /dashboard-metrics ran at a 2.1s median and a 4.9s worst case:
+    every other part of that endpoint together is under half a second. An
+    in-process hourly cache did not fix it, because gunicorn runs two workers
+    and each one paid the scan separately, so a page load was a coin flip on
+    whether it hit a warm one.
+
+    So the request path only ever reads a file. A stale value is served as-is
+    and a refresh is kicked off behind it; the number is a rolling daily rate
+    off a log that is still being written, so "an hour old" is not a different
+    answer, it is the same answer measured a moment earlier. Only the very
+    first call after a deploy has nothing to return, and it returns ok:false
+    rather than waiting — the card reads that as "not measured yet", which for
+    about two seconds is exactly true.
     """
-    now = time.time()
-    if _AI_CACHE["val"] is not None and now - _AI_CACHE["at"] < 3600:
-        return _AI_CACHE["val"]
-    pat = re.compile("|".join(AI_CRAWLERS), re.I)
-    total, days, out = 0, 0, {"per_day": 0, "window_days": 0, "ok": False}
-    for path in (FAC_ACCESS_LOG + ".1", FAC_ACCESS_LOG):
-        try:
-            with open(path, "r", errors="replace") as f:
-                n = sum(1 for line in f if pat.search(line))
-        except Exception:
-            continue
-        total += n
-        days += 1
-    if days:
-        # Today's log is partial, so a straight sum over two files understates
-        # the daily rate. Yesterday's rotation alone is the honest full day.
-        out = {"per_day": int(round(total / days)), "window_days": days, "ok": True}
-    _AI_CACHE.update(at=now, val=out)
-    return out
+    at, val = _ai_cache_read()
+    if val is None or time.time() - at >= _AI_TTL:
+        # non-blocking: whichever worker gets the lock does the scan, the other
+        # serves what it has. Released in _ai_cache_refresh's finally.
+        if _AI_REFRESHING.acquire(blocking=False):
+            threading.Thread(target=_ai_cache_refresh, daemon=True).start()
+    if val is None:
+        return {"per_day": 0, "window_days": 0, "ok": False}
+    return val
+
+
+def _ai_cache_prewarm():
+    """Fill the cache at startup so the first dashboard load after a deploy
+    does not read ok:false. Both workers may do this; os.replace makes the
+    write atomic, so the only cost is one duplicated background scan per
+    restart, off every request path."""
+    at, val = _ai_cache_read()
+    if val is not None and time.time() - at < _AI_TTL:
+        return
+    if _AI_REFRESHING.acquire(blocking=False):
+        threading.Thread(target=_ai_cache_refresh, daemon=True).start()
+
+
+_ai_cache_prewarm()
 
 
 def _fac_consult_clicks():

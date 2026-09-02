@@ -998,7 +998,7 @@
       // than guessed — Find A Crib's date used to be applied to all four.
       start:'2026-06-24',
       blocks:['fac-a','fac-b','claude-a'],
-      nav:[['top','▦','Dashboard'],['sec-traffic','◔','Traffic'],['sec-ads','◉','Google Ads'],
+      nav:[['top','▦','Dashboard'],['sec-ads','◉','Google Ads'],
            ['sec-tiles','◫','Advertiser metrics'],['sec-goals','◎','Goals & revenue'],
            ['link:/dashboard/users/','☺','Users'],
            // Users is a separate PAGE with its own hardcoded copy of this list
@@ -1477,13 +1477,12 @@
 
   // ---------- render: Find A Crib ----------
   function render(user, d){
-    el('donut-title').textContent='Where returning visitors come from';
-    el('donut-sub').textContent='Are you paying to bring people back?';
-    // No Today card here. Left in a two-column grid on its own, the donut
-    // would sit in 1.35fr with an empty column beside it, so the row collapses
-    // to one column for this site and is restored by the other three.
-    el('card-today').classList.add('hidden');
-    el('sec-traffic').classList.remove('cols-2');
+    // Neither card in the traffic row is shown for Find A Crib any more — the
+    // return-channel donut went the way of the Today card — so the whole row
+    // is hidden rather than left as an empty grid. Both are shared with the
+    // other three sites, which put the row, its two columns and the Today
+    // card back.
+    el('sec-traffic').classList.add('hidden');
     el('spark-sub').textContent='Unique visitors per day';
     // avatar
     var email=(user&&user.email)||'';
@@ -1622,7 +1621,6 @@
         (t.bench?'<div class="t-bench">'+t.bench+'</div>':'')+'</div>';
     }).join('');
 
-    renderDonut(R);
     renderFacHealth(d);
     renderFacSearch(d.search);
     renderAds(d.ads);
@@ -1665,15 +1663,6 @@
         '<span class="leg-pct">'+pctS(m.val,total)+'</span></div>';
     }).join('');
     return total;
-  }
-
-  function renderDonut(R){
-    var by=R.by_channel||{};
-    var items=CH_META.map(function(m){ return {name:m.name, hex:m.hex, val:n(by[m.k])}; });
-    var total=drawDonut(items,'return visits');
-    var paid=n(by.paid_google_ads), freePct=pct(total-paid,total);
-    el('returns-callout').innerHTML='<b>'+freePct.toFixed(0)+'% of your returns are free</b> — only '+
-      pctS(paid,total)+' came back through a paid ad. Ads bring people in; they come back on their own.';
   }
 
   // ---------- advertiser tiles ----------
@@ -2318,8 +2307,9 @@
 
     el('donut-title').textContent='Where Crease visitors come from';
     el('donut-sub').textContent='Referrers seen in the server log';
-    el('card-today').classList.remove('hidden');
+    el('sec-traffic').classList.remove('hidden');
     el('sec-traffic').classList.add('cols-2');
+    el('card-today').classList.remove('hidden');
     el('today-sub').textContent='Straight from the server log, updated live';
     el('spark-sub').textContent='Daily page views on creasenyc.com';
 
@@ -2813,8 +2803,9 @@
       : ('Logging since '+fmtDay(T.logging_since||M.as_of));
     el('donut-title').textContent='Where Trent\u2019s visitors come from';
     el('donut-sub').textContent='Referrers seen in the server log';
-    el('card-today').classList.remove('hidden');
+    el('sec-traffic').classList.remove('hidden');
     el('sec-traffic').classList.add('cols-2');
+    el('card-today').classList.remove('hidden');
     el('today-sub').textContent='Straight from the server log, updated live';
     el('spark-sub').textContent='Daily page views on trentsfreshspaces.com';
 
@@ -2967,8 +2958,9 @@
 
     el('donut-title').textContent='Where NEMO’s visitors come from';
     el('donut-sub').textContent='Earned (search, maps, AI) vs. people who already knew the name';
-    el('card-today').classList.remove('hidden');
+    el('sec-traffic').classList.remove('hidden');
     el('sec-traffic').classList.add('cols-2');
+    el('card-today').classList.remove('hidden');
     el('today-sub').textContent='Straight from the server log, updated live';
     el('spark-sub').textContent='Unique visitors per day — history starts when per-site logging did';
 

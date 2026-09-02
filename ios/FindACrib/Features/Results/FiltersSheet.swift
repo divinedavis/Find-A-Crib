@@ -11,10 +11,7 @@ struct FiltersSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    HStack(spacing: 16) {
-                        PriceField(label: "Minimum price", value: $draft.minPrice, placeholder: "No min")
-                        PriceField(label: "Maximum price", value: $draft.maxPrice, placeholder: "No max")
-                    }
+                    PriceRangeFields(minPrice: $draft.minPrice, maxPrice: $draft.maxPrice)
                     VStack(alignment: .leading, spacing: 10) {
                         SEFieldLabel(text: "Show")
                         ShowChecklist(query: $draft)

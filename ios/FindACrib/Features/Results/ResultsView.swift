@@ -128,13 +128,13 @@ struct ResultsView: View {
         .navigationBarBackButtonHidden(true)
     }
 
-    private var defaultName: String { "\(query.normalized.availableOnly ? "Available" : query.mode.title) · \(query.locationLabel)" }
+    private var defaultName: String { "\(query.normalized.availableOnly ? "Available" : (query.normalized.vouchersOnly ? "Vouchers" : "Stabilized")) · \(query.locationLabel)" }
     private var emptyHint: String {
-        switch query.normalized.mode {
-        case .rent, .stabilized where query.normalized.availableOnly: "Only about 2,000 of the 47,000 rent-stabilized buildings have a recent advertised rent. Switch Show to \"All stabilized buildings\" to see every building here."
-        case .stabilized: "Widen the price range or clear the building-size filter."
-        case .vouchers: "Voucher listings are sparse outside upper Manhattan, the Bronx and central Brooklyn. Try clearing the price range."
-        }
+        let n = query.normalized
+        if n.availableOnly { return "Only about 2,000 of the 47,000 rent-stabilized buildings have a recent advertised rent. Untick Available now to see every building here." }
+        if n.vouchersOnly { return "Voucher-friendly buildings are sparse outside upper Manhattan, the Bronx and central Brooklyn. Try clearing the price range." }
+        return "Widen the price range or clear a filter."
+
     }
     private func run() {
         guard store.loaded else { return }

@@ -13,11 +13,8 @@ struct SearchHomeView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                HeroCollage().padding(.bottom, 14)
+                HeroCollage().padding(.bottom, 22)
 
-                SEUnderlineTabs(options: SearchMode.tabs.map { ($0, $0.title) }, selection: $query.mode)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 20)
 
                 VStack(alignment: .leading, spacing: 18) {
                     // Location
@@ -58,39 +55,16 @@ struct SearchHomeView: View {
                         PriceField(label: "Maximum price", value: $query.maxPrice, placeholder: "No max")
                     }
 
-                    // Mode-specific rows
-                    switch query.mode {
-                    case .rent, .stabilized:
+                    // Show: multi-select. Every building here is rent-stabilized, so
+                    // that box is the always-on baseline; the others narrow it.
+                    VStack(alignment: .leading, spacing: 10) {
+                        SEFieldLabel(text: "Show")
+                        ShowChecklist(query: $query)
+                    }
+                    if query.availableOnly {
                         VStack(alignment: .leading, spacing: 10) {
-                            SEFieldLabel(text: "Show")
-                            SERadioRow(options: [(false, "All stabilized buildings", "Every building on the DHCR register"),
-                                                 (true, "Available now", "Advertised recently, with an asking rent")],
-                                       selection: $query.availableOnly)
-                        }
-                        if query.availableOnly {
-                            VStack(alignment: .leading, spacing: 10) {
-                                SEFieldLabel(text: "Bedrooms")
-                                SESegmentRow(options: [(0, "Studio"), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: $query.beds)
-                            }
-                        } else {
-                            VStack(alignment: .leading, spacing: 10) {
-                                SEFieldLabel(text: "Building size")
-                                SESegmentRow(options: [(0, "1–5"), (1, "6–19"), (2, "20–49"), (3, "50+")], selection: $query.unitBands)
-                                Text("Units in the building").font(.se(14)).foregroundStyle(SE.ink3)
-                            }
-                        }
-                    case .vouchers:
-                        VStack(alignment: .leading, spacing: 10) {
-                            SEFieldLabel(text: "Voucher listings")
-                            Toggle(isOn: $query.voucherLiveOnly) {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("Accepting vouchers right now").font(.se(18, .semibold))
-                                    Text("Live listings on AffordableHousing.com only").font(.se(14)).foregroundStyle(SE.ink3)
-                                }
-                            }
-                            .tint(SE.royal)
-                            .padding(14)
-                            .overlay(Rectangle().stroke(SE.line, lineWidth: 1))
+                            SEFieldLabel(text: "Bedrooms")
+                            SESegmentRow(options: [(0, "Studio"), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: $query.beds)
                         }
                     }
 
@@ -199,7 +173,7 @@ struct RecentSearchCard: View {
                 .frame(width: 104, height: 140).clipped()
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(alignment: .top) {
-                        Text("\(query.mode == .vouchers ? "Voucher homes" : (query.normalized.availableOnly ? "Rentals" : "Stabilized")) in")
+                        Text("\(query.normalized.availableOnly ? "Rentals" : (query.normalized.vouchersOnly ? "Voucher homes" : "Stabilized")) in")
                             .font(.se(22, .bold)).foregroundStyle(SE.royal).lineLimit(1)
                         Spacer()
                         Image(systemName: activity.isSearchSaved(query) ? "heart.fill" : "heart")
@@ -342,5 +316,19 @@ struct BrandMark: View {
                     .stroke(Color.white, style: StrokeStyle(lineWidth: w * 0.09, lineCap: .round))
             }
         }
+    }
+}
+
+
+/// The Show checklist. Rent stabilized is fixed on (it is the dataset);
+/// Available now and Accepting vouchers narrow it and can be combined.
+struct ShowChecklist: View {
+    @Binding var query: SearchQuery
+    var body: some View {
+        SECheckList(rows: [
+            .init(title: "Rent stabilized", subtitle: "Every building on the DHCR register", isOn: .constant(true), locked: true),
+            .init(title: "Available now", subtitle: "Advertised recently, with an asking rent", isOn: $query.availableOnly),
+            .init(title: "Accepting vouchers", subtitle: "Section 8 / voucher-friendly buildings", isOn: $query.vouchersOnly),
+        ])
     }
 }

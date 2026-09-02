@@ -275,3 +275,42 @@ struct SERadioRow<T: Hashable>: View {
         .overlay(Rectangle().stroke(SE.line, lineWidth: 1))
     }
 }
+
+
+/// Checkbox list in the bordered-row style. `locked` rows draw checked and
+/// don't toggle — used for the "Rent stabilized" baseline.
+struct SECheckList: View {
+    struct Row { let title: String; let subtitle: String; let isOn: Binding<Bool>; var locked = false }
+    let rows: [Row]
+    var body: some View {
+        VStack(spacing: 0) {
+            ForEach(Array(rows.enumerated()), id: \.offset) { i, r in
+                let on = r.isOn.wrappedValue
+                Button { if !r.locked { r.isOn.wrappedValue.toggle() } } label: {
+                    HStack(spacing: 14) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 4).stroke(on ? SE.royal : SE.line, lineWidth: 2).frame(width: 22, height: 22)
+                            if on { RoundedRectangle(cornerRadius: 4).fill(SE.royal).frame(width: 22, height: 22)
+                                Image(systemName: "checkmark").font(.system(size: 13, weight: .black)).foregroundStyle(.white) }
+                        }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(r.title).font(.se(18, on ? .bold : .semibold)).foregroundStyle(SE.ink)
+                            Text(r.subtitle).font(.se(14)).foregroundStyle(SE.ink3)
+                        }
+                        Spacer()
+                    }
+                    .padding(.horizontal, 14).frame(minHeight: 60)
+                    .background(on && !r.locked ? SE.paleBlue.opacity(0.55) : Color.white)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                // locked rows stay full-contrast: the action is a no-op, and
+                // .disabled would grey the baseline out as if it were unavailable
+                .accessibilityIdentifier("check-\(r.title)")
+                .accessibilityAddTraits(on ? .isSelected : [])
+                if i < rows.count - 1 { Rectangle().fill(SE.line).frame(height: 1) }
+            }
+        }
+        .overlay(Rectangle().stroke(SE.line, lineWidth: 1))
+    }
+}

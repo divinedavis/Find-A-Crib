@@ -99,8 +99,16 @@ final class SearchEngineTests: XCTestCase {
     }
 
     func testVoucherMode() {
-        var q = SearchQuery(); q.mode = .vouchers
+        var q = SearchQuery(); q.vouchersOnly = true
         let all = SearchEngine.run(q, store: Self.store)
+        // legacy Vouchers tab decodes to the same flag
+        var legacy = SearchQuery(); legacy.mode = .vouchers
+        XCTAssertEqual(SearchEngine.count(legacy, store: Self.store), all.count)
+        // Show flags combine (AND): available + vouchers ⊆ each alone
+        var both = q; both.availableOnly = true
+        let b = SearchEngine.run(both, store: Self.store)
+        XCTAssertLessThanOrEqual(b.count, all.count)
+        XCTAssertTrue(b.allSatisfy { Self.store.price($0) != nil && Self.store.isVoucherFriendly($0) })
         q.voucherLiveOnly = true
         let live = SearchEngine.run(q, store: Self.store)
         XCTAssertGreaterThan(all.count, live.count)

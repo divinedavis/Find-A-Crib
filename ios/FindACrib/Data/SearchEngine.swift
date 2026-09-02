@@ -17,38 +17,33 @@ enum SearchEngine {
         return n
     }
 
+    /// Every building in the dataset is rent-stabilized; the Show flags narrow
+    /// it (AND). Price filters use the real asking rent when the search is
+    /// available-only, otherwise the building's price-or-ZIP-estimate.
     static func matches(_ b: Building, _ raw: SearchQuery, _ store: DataStore) -> Bool {
         let q = raw.normalized
         if !q.locations.isEmpty, !q.locations.contains(where: { $0.matches(b) }) { return false }
-        switch q.mode {
-        case .rent, .stabilized where q.availableOnly:
+        if q.availableOnly {
             guard let p = store.price(b) else { return false }
             if let lo = q.minPrice, p < lo { return false }
             if let hi = q.maxPrice, p > hi { return false }
             if !q.beds.isEmpty {
                 let bd = store.beds(b)
-                let hit = bd.contains { n in q.beds.contains(n >= 4 ? 4 : n) }
-                if !hit { return false }
+                if !bd.contains(where: { n in q.beds.contains(n >= 4 ? 4 : n) }) { return false }
             }
-        case .stabilized:
-            if q.minPrice != nil || q.maxPrice != nil {
-                guard let p = store.priceOf(b) else { return false }
-                if let lo = q.minPrice, p < lo { return false }
-                if let hi = q.maxPrice, p > hi { return false }
-            }
-            if !q.unitBands.isEmpty {
-                let u = b.u ?? 0
-                let band = u <= 5 ? 0 : (u <= 19 ? 1 : (u <= 49 ? 2 : 3))
-                if !q.unitBands.contains(band) { return false }
-            }
-        case .vouchers:
+        } else if q.minPrice != nil || q.maxPrice != nil {
+            guard let p = store.voucherAvail(b)?.p ?? store.priceOf(b) else { return false }
+            if let lo = q.minPrice, p < lo { return false }
+            if let hi = q.maxPrice, p > hi { return false }
+        }
+        if q.vouchersOnly {
             if q.voucherLiveOnly { if store.voucherAvail(b) == nil { return false } }
             else if !store.isVoucherFriendly(b) { return false }
-            if q.minPrice != nil || q.maxPrice != nil {
-                guard let p = store.voucherAvail(b)?.p ?? store.priceOf(b) else { return false }
-                if let lo = q.minPrice, p < lo { return false }
-                if let hi = q.maxPrice, p > hi { return false }
-            }
+        }
+        if !q.unitBands.isEmpty {
+            let u = b.u ?? 0
+            let band = u <= 5 ? 0 : (u <= 19 ? 1 : (u <= 49 ? 2 : 3))
+            if !q.unitBands.contains(band) { return false }
         }
         if q.noOpenViolations, b.openViolations > 0 { return false }
         return true

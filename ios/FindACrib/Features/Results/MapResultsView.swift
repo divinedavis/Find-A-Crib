@@ -49,7 +49,7 @@ struct MapResultsView: View {
                         .padding(.horizontal, 16)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
-                FloatingPill(title: "List", icon: "list.bullet") { nav.searchPath.removeLast() }
+                FloatingPill(title: "List", icon: "list.bullet") { backToList() }
             }
             .padding(.bottom, 92)
             .animation(.easeInOut(duration: 0.2), value: selected?.bbl)
@@ -63,6 +63,17 @@ struct MapResultsView: View {
             }
         }
         .navigationBarBackButtonHidden(true)
+    }
+
+    /// The list underneath was pushed with the query the map STARTED from.
+    /// "Search this area" and the map's Filter sheet change this view's copy,
+    /// so a plain pop would show the old results. Rewrite the results route
+    /// with the map's current query instead.
+    private func backToList() {
+        var path = nav.searchPath
+        if !path.isEmpty { path.removeLast() }
+        if case .results? = path.last { path[path.count - 1] = .results(query) } else { path.append(.results(query)) }
+        nav.searchPath = path
     }
 
     private var pricesByBBL: [String: Int] {

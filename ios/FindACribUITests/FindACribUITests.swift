@@ -60,4 +60,26 @@ final class FindACribUITests: XCTestCase {
         // back on the home screen the chip (with its remove button) sits in the field
         XCTAssertTrue(app.buttons["Remove Brooklyn"].waitForExistence(timeout: 5))
     }
+
+    /// Regression: "Search this area" then "List" must show the buildings in
+    /// the map's view, not the results the map was opened from.
+    func testMapSearchThisAreaCarriesToList() throws {
+        app.terminate()
+        app.launchArguments = ["--route", "map"]
+        app.launch()
+        let list = app.buttons["pill-List"]
+        XCTAssertTrue(list.waitForExistence(timeout: 30))
+        sleep(3)   // let the initial fit settle so the pan reads as the user's
+        let map = app.maps.firstMatch
+        XCTAssertTrue(map.waitForExistence(timeout: 10))
+        map.swipeUp()
+        map.pinch(withScale: 3, velocity: 2)
+        let search = app.buttons["search-this-area"]
+        XCTAssertTrue(search.waitForExistence(timeout: 5))
+        search.tap()
+        list.tap()
+        let back = app.buttons["results-back"]
+        XCTAssertTrue(back.waitForExistence(timeout: 10))
+        XCTAssertTrue(back.label.contains("Custom map area"), "list header was: \(back.label)")
+    }
 }

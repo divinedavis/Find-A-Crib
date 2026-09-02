@@ -47,4 +47,4 @@ xcrun altool --upload-app -f "$IPA" -t ios --apiKey "$ASC_KEY_ID" --apiIssuer "$
 echo "==> shipped build $next"
 
 echo "==> verifying internal tester auto-distribution"
-python3 scripts/configure_internal_testers.py || echo "warning: configure_internal_testers.py reported a problem"
+"${PY:-$HOME/.venvs/spendcap/bin/python}" scripts/configure_internal_testers.py || echo "warning: configure_internal_testers.py reported a problem"

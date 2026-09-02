@@ -48,8 +48,11 @@ struct RouteView: View {
     @Environment(DataStore.self) private var store
     var body: some View {
         switch route {
-        case .results(let q): ResultsView(query: q)
-        case .map(let q): MapResultsView(query: q)
+        // .id(q): a destination keeps its identity by position in the path, so
+        // rewriting `.results(old)` to `.results(new)` in place would otherwise
+        // leave the old view — and its @State copy of the query — on screen.
+        case .results(let q): ResultsView(query: q).id(q)
+        case .map(let q): MapResultsView(query: q).id(q)
         case .building(let bbl):
             if let b = store.byBBL[bbl] { BuildingDetailView(building: b) }
             else { Text("Building not found").font(.se(18)) }

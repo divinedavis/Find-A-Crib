@@ -15,7 +15,7 @@ struct MapResultsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ResultsHeader(query: query) { showFilters = true }
+            NavyBarBackdrop()
             ZStack(alignment: .top) {
                 BuildingMap(buildings: results, prices: pricesByBBL, region: $region, selected: $selected, initialFit: $initialFit,
                             onUserMoved: { moved = true })
@@ -71,6 +71,7 @@ struct MapResultsView: View {
             .padding(.bottom, 92)
             .animation(.easeInOut(duration: 0.2), value: selected?.bbl)
         }
+        .toolbar { ToolbarItem(placement: .principal) { ResultsHeader(query: query, onBack: { backToList() }, onFilter: { showFilters = true }) } }
         .sheet(isPresented: $showFilters) { FiltersSheet(query: $query) }
         .task(id: query) {
             results = SearchEngine.run(query, store: store)
@@ -145,6 +146,13 @@ final class BuildingAnnotation: NSObject, MKAnnotation {
     var title: String? { building.address }
 }
 
+/// Aggregate pin for a grid cell when there are too many buildings to draw.
+final class GridAnnotation: NSObject, MKAnnotation {
+    let coordinate: CLLocationCoordinate2D
+    let count: Int
+    init(coordinate: CLLocationCoordinate2D, count: Int) { self.coordinate = coordinate; self.count = count }
+}
+
 struct BuildingMap: UIViewRepresentable {
     let buildings: [Building]
     let prices: [String: Int]
@@ -153,7 +161,11 @@ struct BuildingMap: UIViewRepresentable {
     @Binding var initialFit: Bool
     var onUserMoved: () -> Void
 
-    static let cap = 6000
+    /// Above this many buildings in view, cells replace pins. 47k pins froze
+    /// the map and a "nearest 6,000 to the centre" sample left most of the
+    /// city blank; a fixed grid is cheap at any zoom and covers everything.
+    static let pinLimit = 700
+    static let gridCols = 9
 
     func makeUIView(context: Context) -> MKMapView {
         let m = MKMapView()
@@ -162,28 +174,20 @@ struct BuildingMap: UIViewRepresentable {
         m.showsUserLocation = true
         m.register(PriceBubbleView.self, forAnnotationViewWithReuseIdentifier: "bubble")
         m.register(ClusterBubbleView.self, forAnnotationViewWithReuseIdentifier: MKMapViewDefaultClusterAnnotationViewReuseIdentifier)
+        m.register(ClusterBubbleView.self, forAnnotationViewWithReuseIdentifier: "grid")
         m.setRegion(region, animated: false)
         return m
     }
 
     func updateUIView(_ m: MKMapView, context: Context) {
         let c = context.coordinator
-        // Push a region the VIEW chose (a fit, a saved map area) down to the
-        // map, but not one the map itself just reported back — that echo is
-        // what a naive `setRegion` on every update turns into a pan-fight.
-        // Before this, only the very first update ever reached the map, so
-        // fits computed after the results loaded were silently dropped.
+        c.parent = self
         if !Self.same(region, c.reported) && !Self.same(region, c.applied) {
             m.setRegion(region, animated: c.applied != nil)
             c.applied = region
         }
-        let key = buildings.map(\.bbl).hashValue ^ prices.count ^ (buildings.count > Self.cap ? Int(m.region.center.latitude * 100) ^ Int(m.region.center.longitude * 100) : 0)
-        if c.lastKey != key {
-            c.lastKey = key
-            m.removeAnnotations(m.annotations.filter { $0 is BuildingAnnotation })
-            let subset = buildings.count > Self.cap ? Array(nearest(to: m.region.center, from: buildings, n: Self.cap)) : buildings
-            m.addAnnotations(subset.map { BuildingAnnotation($0, price: prices[$0.bbl]) })
-        }
+        let dataKey = buildings.count &* 31 &+ (buildings.first?.bbl.hashValue ?? 0) &+ (buildings.last?.bbl.hashValue ?? 0)
+        if c.dataKey != dataKey { c.dataKey = dataKey; c.schedule(m, force: true) }
         if selected == nil, let s = m.selectedAnnotations.first { m.deselectAnnotation(s, animated: false) }
     }
 
@@ -194,26 +198,89 @@ struct BuildingMap: UIViewRepresentable {
             && abs(a.span.latitudeDelta - b.span.latitudeDelta) < e && abs(a.span.longitudeDelta - b.span.longitudeDelta) < e
     }
 
-    private func nearest(to c: CLLocationCoordinate2D, from bs: [Building], n: Int) -> ArraySlice<Building> {
-        bs.sorted { ($0.lat - c.latitude) * ($0.lat - c.latitude) + ($0.lng - c.longitude) * ($0.lng - c.longitude) <
-                    ($1.lat - c.latitude) * ($1.lat - c.latitude) + ($1.lng - c.longitude) * ($1.lng - c.longitude) }.prefix(n)
-    }
-
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
     final class Coordinator: NSObject, MKMapViewDelegate {
         var parent: BuildingMap
-        var lastKey = 0
-        var applied: MKCoordinateRegion?    // last region this wrapper pushed to the map
-        var reported: MKCoordinateRegion?   // last region the map reported back
+        var dataKey = 0
+        var applied: MKCoordinateRegion?
+        var reported: MKCoordinateRegion?
         var settled = false
         var arming = false
+        private var work: DispatchWorkItem?
+        private var lastLayoutKey = ""
+        private var generation = 0
         init(_ p: BuildingMap) { parent = p }
+
+        /// Debounced: pinch/pan fire regionDidChange continuously; rebuilding
+        /// annotations on each event is what froze the map.
+        func schedule(_ m: MKMapView, force: Bool = false) {
+            work?.cancel()
+            let item = DispatchWorkItem { [weak self, weak m] in
+                guard let self, let m else { return }
+                self.rebuild(m, force: force)
+            }
+            work = item
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12, execute: item)
+        }
+
+        private func rebuild(_ m: MKMapView, force: Bool) {
+            let region = m.region
+            // Only re-aggregate when the view moved a meaningful amount.
+            let zoom = Int((log2(360 / max(region.span.longitudeDelta, 1e-6))).rounded())
+            let cellLat = region.span.latitudeDelta / 3, cellLng = region.span.longitudeDelta / 3
+            let key = "\(zoom):\(Int(region.center.latitude / cellLat)):\(Int(region.center.longitude / cellLng))"
+            if !force && key == lastLayoutKey { return }
+            lastLayoutKey = key
+            let all = parent.buildings, prices = parent.prices
+            let cols = BuildingMap.gridCols, limit = BuildingMap.pinLimit
+            generation += 1; let gen = generation
+            // Padded viewport; the work runs off the main thread.
+            let pad = 0.6
+            let minLat = region.center.latitude - region.span.latitudeDelta * (0.5 + pad)
+            let maxLat = region.center.latitude + region.span.latitudeDelta * (0.5 + pad)
+            let minLng = region.center.longitude - region.span.longitudeDelta * (0.5 + pad)
+            let maxLng = region.center.longitude + region.span.longitudeDelta * (0.5 + pad)
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                var visible: [Building] = []
+                visible.reserveCapacity(2048)
+                for b in all where b.lat >= minLat && b.lat <= maxLat && b.lng >= minLng && b.lng <= maxLng { visible.append(b) }
+                var pins: [MKAnnotation] = []
+                if visible.count <= limit {
+                    pins = visible.map { BuildingAnnotation($0, price: prices[$0.bbl]) }
+                } else {
+                    // grid over the padded viewport, ~cols across the screen
+                    let cw = region.span.longitudeDelta / Double(cols)
+                    let ch = cw * 1.2
+                    var cells: [Int: (lat: Double, lng: Double, n: Int)] = [:]
+                    for b in visible {
+                        let ci = Int((b.lng - minLng) / cw), cj = Int((b.lat - minLat) / ch)
+                        let k = cj * 10_000 + ci
+                        var cell = cells[k] ?? (0, 0, 0)
+                        cell.lat += b.lat; cell.lng += b.lng; cell.n += 1
+                        cells[k] = cell
+                    }
+                    pins = cells.values.map { GridAnnotation(coordinate: .init(latitude: $0.lat / Double($0.n), longitude: $0.lng / Double($0.n)), count: $0.n) }
+                }
+                DispatchQueue.main.async {
+                    guard let self, gen == self.generation else { return }
+                    let keep = self.parent.selected.map { sel in m.annotations.first { ($0 as? BuildingAnnotation)?.building.bbl == sel.bbl } }
+                    m.removeAnnotations(m.annotations.filter { $0 is BuildingAnnotation || $0 is GridAnnotation })
+                    m.addAnnotations(pins)
+                    if let k = keep, let sel = k { m.addAnnotation(sel); m.selectAnnotation(sel, animated: false) }
+                }
+            }
+        }
 
         func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
             if annotation is MKUserLocation { return nil }
             if annotation is MKClusterAnnotation {
                 return mapView.dequeueReusableAnnotationView(withIdentifier: MKMapViewDefaultClusterAnnotationViewReuseIdentifier, for: annotation)
+            }
+            if annotation is GridAnnotation {
+                let v = mapView.dequeueReusableAnnotationView(withIdentifier: "grid", for: annotation)
+                v.clusteringIdentifier = nil
+                return v
             }
             let v = mapView.dequeueReusableAnnotationView(withIdentifier: "bubble", for: annotation)
             v.clusteringIdentifier = "b"
@@ -221,7 +288,7 @@ struct BuildingMap: UIViewRepresentable {
         }
         func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
             if let a = view.annotation as? BuildingAnnotation { parent.selected = a.building }
-            else if let c = view.annotation as? MKClusterAnnotation {
+            else if let c = view.annotation as? MKClusterAnnotation ?? (view.annotation as MKAnnotation?) , view.annotation is MKClusterAnnotation || view.annotation is GridAnnotation {
                 mapView.deselectAnnotation(c, animated: false)
                 let r = MKCoordinateRegion(center: c.coordinate, span: .init(latitudeDelta: mapView.region.span.latitudeDelta / 3, longitudeDelta: mapView.region.span.longitudeDelta / 3))
                 mapView.setRegion(r, animated: true)
@@ -233,8 +300,7 @@ struct BuildingMap: UIViewRepresentable {
         func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
             reported = mapView.region
             parent.region = mapView.region
-            // Ignore the programmatic fits during the first second; anything
-            // after is the user panning.
+            schedule(mapView)
             if settled { parent.onUserMoved() }
             else if !arming { arming = true; DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in self?.settled = true } }
         }
@@ -298,8 +364,10 @@ final class ClusterBubbleView: MKAnnotationView {
     override var annotation: MKAnnotation? { didSet { render() } }
     override func prepareForDisplay() { super.prepareForDisplay(); render() }
     private func render() {
-        guard let c = annotation as? MKClusterAnnotation else { return }
-        let n = c.memberAnnotations.count
+        let n: Int
+        if let c = annotation as? MKClusterAnnotation { n = c.memberAnnotations.count }
+        else if let g = annotation as? GridAnnotation { n = g.count }
+        else { return }
         label.text = n >= 1000 ? "\(n / 1000)k" : "\(n)"
         let d: CGFloat = n >= 100 ? 44 : (n >= 10 ? 38 : 32)
         bounds = CGRect(x: 0, y: 0, width: d, height: d)

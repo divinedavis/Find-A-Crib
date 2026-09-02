@@ -20,30 +20,7 @@ struct BuildingDetailView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            NavyHeader {
-                HStack(alignment: .center, spacing: 14) {
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(b.address).font(.se(22, .bold)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.75)
-                        Text(b.neighborhood).font(.se(15, .semibold)).foregroundStyle(.white.opacity(0.9)).lineLimit(1)
-                    }
-                    Spacer()
-                    Menu {
-                        ShareLink(item: b.webURL) { Label("Share", systemImage: "square.and.arrow.up") }
-                        Button { openURL(b.webURL) } label: { Label("Open on findacrib.com", systemImage: "safari") }
-                        Button {
-                            let item = MKMapItem(placemark: MKPlacemark(coordinate: b.coordinate)); item.name = b.address
-                            item.openInMaps()
-                        } label: { Label("Open in Maps", systemImage: "map") }
-                        Button { activity.toggleSaved(b.bbl) } label: {
-                            Label(activity.isSaved(b.bbl) ? "Unsave" : "Save", systemImage: activity.isSaved(b.bbl) ? "heart.fill" : "heart")
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis").font(.system(size: 22, weight: .bold)).foregroundStyle(.white).frame(width: 40, height: 40)
-                    }
-                    .accessibilityIdentifier("detail-menu")
-                }
-                .padding(.horizontal, 16).padding(.top, 2).padding(.bottom, 10)
-            }
+            NavyBarBackdrop()
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
@@ -109,6 +86,31 @@ struct BuildingDetailView: View {
             .background(Color.white.shadow(.drop(color: .black.opacity(0.08), radius: 6, y: -2)))
         }
         .swipeBackEnabled()
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(b.address).font(.se(19, .bold)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.75)
+                    Text(b.neighborhood).font(.se(13, .semibold)).foregroundStyle(.white.opacity(0.9)).lineLimit(1)
+                }
+                .frame(width: UIScreen.main.bounds.width - 150, alignment: .leading)
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    ShareLink(item: b.webURL) { Label("Share", systemImage: "square.and.arrow.up") }
+                    Button { openURL(b.webURL) } label: { Label("Open on findacrib.com", systemImage: "safari") }
+                    Button {
+                        let item = MKMapItem(placemark: MKPlacemark(coordinate: b.coordinate)); item.name = b.address
+                        item.openInMaps()
+                    } label: { Label("Open in Maps", systemImage: "map") }
+                    Button { activity.toggleSaved(b.bbl) } label: {
+                        Label(activity.isSaved(b.bbl) ? "Unsave" : "Save", systemImage: activity.isSaved(b.bbl) ? "heart.fill" : "heart")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis").font(.system(size: 20, weight: .bold)).foregroundStyle(.white).frame(width: 36, height: 36)
+                }
+                .accessibilityIdentifier("detail-menu")
+            }
+        }
         .sheet(isPresented: $showPaywall) { PaywallView() }
         .onAppear { nav.hideTabBar = true; activity.recordView(b.bbl) }
         .onDisappear { nav.hideTabBar = false }

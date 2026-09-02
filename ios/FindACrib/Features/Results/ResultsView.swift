@@ -2,45 +2,55 @@ import SwiftUI
 
 /// The filter bar StreetEasy puts over its results: a white field carrying
 /// back-chevron + location + summary, and a "Filter (n)" button, on navy.
+/// The filter bar, StreetEasy style, but living IN the navigation bar row so
+/// it sits beside the system back chevron: a white field with location and
+/// summary, and a Filter button. Used as the `.principal` toolbar item; the
+/// navy behind it is the thin `NavyHeader` the screen keeps at the top.
 struct ResultsHeader: View {
-    @Environment(\.dismiss) private var dismiss
     let query: SearchQuery
+    let onBack: () -> Void
     let onFilter: () -> Void
     var body: some View {
-        NavyHeader {
-            HStack(spacing: 10) {
-                Button { dismiss() } label: {
-                    HStack(spacing: 10) {
-                        Image(systemName: "mappin").font(.system(size: 15, weight: .bold)).foregroundStyle(SE.royal)
-                        Text(query.locationLabel).font(.se(19)).foregroundStyle(SE.ink).lineLimit(1).truncationMode(.tail).frame(minWidth: 96, alignment: .leading)
-                        Text(query.summary).font(.se(19)).foregroundStyle(SE.ink2).lineLimit(1).layoutPriority(1)
-                        Spacer(minLength: 0)
-                    }
-                    .padding(.horizontal, 12).frame(height: 52)
-                    .background(Color.white).clipShape(RoundedRectangle(cornerRadius: 2))
+        HStack(spacing: 8) {
+            Button(action: onBack) {
+                HStack(spacing: 8) {
+                    Image(systemName: "mappin").font(.system(size: 13, weight: .bold)).foregroundStyle(SE.royal)
+                    Text(query.locationLabel).font(.se(16)).foregroundStyle(SE.ink).lineLimit(1).truncationMode(.tail).frame(minWidth: 70, alignment: .leading)
+                    Text(query.summary).font(.se(16)).foregroundStyle(SE.ink2).lineLimit(1).layoutPriority(1)
+                    Spacer(minLength: 0)
                 }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("results-back")
-
-                Button(action: onFilter) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "slider.horizontal.3").font(.system(size: 15, weight: .bold))
-                        Text("Filter" + (query.activeFilterCount > 0 ? " (\(query.activeFilterCount))" : ""))
-                            .font(.se(18, .bold))
-                    }
-                    .foregroundStyle(SE.royal)
-                    .padding(.horizontal, 12).frame(height: 52)
-                    .background(Color.white).clipShape(RoundedRectangle(cornerRadius: 2))
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("results-filter")
+                .padding(.horizontal, 10).frame(height: 40)
+                .background(Color.white).clipShape(RoundedRectangle(cornerRadius: 2))
             }
-            .padding(.horizontal, 16).padding(.top, 2).padding(.bottom, 14)
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("results-back")
+
+            Button(action: onFilter) {
+                HStack(spacing: 5) {
+                    Image(systemName: "slider.horizontal.3").font(.system(size: 13, weight: .bold))
+                    Text("Filter" + (query.activeFilterCount > 0 ? " (\(query.activeFilterCount))" : "")).font(.se(16, .bold))
+                }
+                .foregroundStyle(SE.royal)
+                .padding(.horizontal, 10).frame(height: 40)
+                .background(Color.white).clipShape(RoundedRectangle(cornerRadius: 2))
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("results-filter")
         }
+        // Toolbar items size to their content; give the row the bar's free width
+        // (screen minus the chevron and margins) so the field can stretch.
+        .frame(width: UIScreen.main.bounds.width - 92)
     }
 }
 
+/// Navy strip behind the (transparent) navigation bar. Its content is empty;
+/// the background's ignoresSafeArea is what paints the bar row navy.
+struct NavyBarBackdrop: View {
+    var body: some View { NavyHeader { Color.clear.frame(height: 6) } }
+}
+
 struct ResultsView: View {
+    @Environment(\.dismiss) private var dismiss
     @Environment(DataStore.self) private var store
     @Environment(Activity.self) private var activity
     @Environment(AppNav.self) private var nav
@@ -54,7 +64,7 @@ struct ResultsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ResultsHeader(query: query) { showFilters = true }
+            NavyBarBackdrop()
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 16) {
                     HStack(alignment: .firstTextBaseline) {
@@ -117,6 +127,7 @@ struct ResultsView: View {
                     .task { try? await Task.sleep(for: .seconds(2)); self.toast = nil }
             }
         }
+        .toolbar { ToolbarItem(placement: .principal) { ResultsHeader(query: query, onBack: { dismiss() }, onFilter: { showFilters = true }) } }
         .sheet(isPresented: $showFilters) { FiltersSheet(query: $query) }
         .alert("Save this search", isPresented: $showSave) {
             TextField("Name", text: $saveName)

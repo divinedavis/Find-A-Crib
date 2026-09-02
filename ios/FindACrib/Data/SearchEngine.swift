@@ -17,10 +17,11 @@ enum SearchEngine {
         return n
     }
 
-    static func matches(_ b: Building, _ q: SearchQuery, _ store: DataStore) -> Bool {
+    static func matches(_ b: Building, _ raw: SearchQuery, _ store: DataStore) -> Bool {
+        let q = raw.normalized
         if !q.locations.isEmpty, !q.locations.contains(where: { $0.matches(b) }) { return false }
         switch q.mode {
-        case .rent:
+        case .rent, .stabilized where q.availableOnly:
             guard let p = store.price(b) else { return false }
             if let lo = q.minPrice, p < lo { return false }
             if let hi = q.maxPrice, p > hi { return false }

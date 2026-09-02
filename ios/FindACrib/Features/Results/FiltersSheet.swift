@@ -11,21 +11,28 @@ struct FiltersSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    SEUnderlineTabs(options: SearchMode.allCases.map { ($0, $0.title) }, selection: $draft.mode)
+                    SEUnderlineTabs(options: SearchMode.tabs.map { ($0, $0.title) }, selection: $draft.mode)
                     HStack(spacing: 16) {
                         PriceField(label: "Minimum price", value: $draft.minPrice, placeholder: "No min")
                         PriceField(label: "Maximum price", value: $draft.maxPrice, placeholder: "No max")
                     }
-                    if draft.mode == .rent {
-                        VStack(alignment: .leading, spacing: 10) {
-                            SEFieldLabel(text: "Bedrooms")
-                            SESegmentRow(options: [(0, "Studio"), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: $draft.beds)
-                        }
-                    }
                     if draft.mode == .stabilized {
                         VStack(alignment: .leading, spacing: 10) {
-                            SEFieldLabel(text: "Building size")
-                            SESegmentRow(options: [(0, "1–5"), (1, "6–19"), (2, "20–49"), (3, "50+")], selection: $draft.unitBands)
+                            SEFieldLabel(text: "Show")
+                            SERadioRow(options: [(false, "All stabilized buildings", "Every building on the DHCR register"),
+                                                 (true, "Available now", "Advertised recently, with an asking rent")],
+                                       selection: $draft.availableOnly)
+                        }
+                        if draft.availableOnly {
+                            VStack(alignment: .leading, spacing: 10) {
+                                SEFieldLabel(text: "Bedrooms")
+                                SESegmentRow(options: [(0, "Studio"), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: $draft.beds)
+                            }
+                        } else {
+                            VStack(alignment: .leading, spacing: 10) {
+                                SEFieldLabel(text: "Building size")
+                                SESegmentRow(options: [(0, "1–5"), (1, "6–19"), (2, "20–49"), (3, "50+")], selection: $draft.unitBands)
+                            }
                         }
                     }
                     if draft.mode == .vouchers {
@@ -59,7 +66,7 @@ struct FiltersSheet: View {
                         let m = draft.mode; let l = draft.locations
                         draft = SearchQuery(); draft.mode = m; draft.locations = l
                     }
-                    SEPrimaryButton(title: "Show \(count.formatted()) \(draft.mode.noun)") { query = draft; dismiss() }
+                    SEPrimaryButton(title: "Show \(count.formatted()) \(draft.noun)") { query = draft; dismiss() }
                         .accessibilityIdentifier("filters-apply")
                 }
                 .padding(16).background(Color.white.shadow(.drop(color: .black.opacity(0.08), radius: 6, y: -2)))
@@ -67,7 +74,7 @@ struct FiltersSheet: View {
             .navigationTitle("Filters")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.foregroundStyle(SE.ink2) } }
-            .onAppear { draft = query; recount() }
+            .onAppear { draft = query.normalized; recount() }
             .onChange(of: draft) { _, _ in recount() }
         }
     }

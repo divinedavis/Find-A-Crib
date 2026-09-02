@@ -21,7 +21,7 @@ struct MapResultsView: View {
                             onUserMoved: { moved = true })
                     .ignoresSafeArea(edges: .bottom)
                 VStack(spacing: 10) {
-                    Text("\(results.count.formatted()) \(query.mode.noun)")
+                    Text("\(results.count.formatted()) \(query.noun)")
                         .font(.se(15, .bold)).foregroundStyle(SE.ink)
                         .padding(.horizontal, 12).padding(.vertical, 6).background(Color.white.opacity(0.95)).clipShape(Capsule())
                     if moved {

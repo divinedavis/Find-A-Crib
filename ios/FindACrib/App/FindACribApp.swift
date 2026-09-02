@@ -53,7 +53,7 @@ enum LaunchArgs {
         func val(_ flag: String) -> String? { a.firstIndex(of: flag).flatMap { $0 + 1 < a.count ? a[$0 + 1] : nil } }
         if let t = val("--tab") { nav.tab = t == "activity" ? .activity : (t == "profile" ? .profile : .search) }
         guard let r = val("--route") else { return }
-        var q = SearchQuery(); q.mode = .rent; q.locations = [.borough("M")]; q.minPrice = 1000; q.maxPrice = 3000; q.beds = [1]
+        var q = SearchQuery(); q.mode = .stabilized; q.availableOnly = true; q.locations = [.borough("M")]; q.minPrice = 1000; q.maxPrice = 3000; q.beds = [1]
         if r == "results" { nav.searchPath = [.results(q)] }
         else if r == "map" { nav.searchPath = [.results(q), .map(q)] }
         else if r.hasPrefix("detail") {

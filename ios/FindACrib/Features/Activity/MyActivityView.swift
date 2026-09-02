@@ -53,7 +53,7 @@ struct MyActivityView: View {
                         VStack(alignment: .leading, spacing: 3) {
                             Text(s.name).font(.se(20, .bold)).foregroundStyle(SE.royal).lineLimit(1)
                             Text(s.query.summary).font(.se(16)).foregroundStyle(SE.ink2).lineLimit(1)
-                            Text("\(s.resultCount.formatted()) \(s.query.mode.noun) · saved \(Formatters.long.string(from: s.createdAt))").font(.se(14)).foregroundStyle(SE.ink3)
+                            Text("\(s.resultCount.formatted()) \(s.query.noun) · saved \(Formatters.long.string(from: s.createdAt))").font(.se(14)).foregroundStyle(SE.ink3)
                         }
                         Spacer()
                         Button { activity.deleteSearch(s.id) } label: {

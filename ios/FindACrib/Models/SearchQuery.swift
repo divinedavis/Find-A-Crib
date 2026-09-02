@@ -2,16 +2,16 @@ import Foundation
 import MapKit
 
 enum SearchMode: String, CaseIterable, Codable, Hashable {
-    case rent = "Rent"                 // advertised now, with a real asking rent
+    /// Retired tab (2026-09-01): "advertised now" is the `availableOnly` radio
+    /// under Stabilized instead. The case stays so saved/recent searches that
+    /// persisted "Rent" still decode; `normalized` maps them across.
+    case rent = "Rent"
     case stabilized = "Stabilized"     // every rent-stabilized building on file
     case vouchers = "Vouchers"         // Section 8 / voucher-friendly
-    /// Tab label. Kept apart from rawValue, which is persisted in saved and
-    /// recent searches and must not change.
+    static let tabs: [SearchMode] = [.stabilized, .vouchers]
+    /// Tab label. Kept apart from rawValue, which is persisted and must not change.
     var title: String {
-        switch self { case .rent: "For rent"; case .stabilized: "All stabilized"; case .vouchers: "Vouchers" }
-    }
-    var noun: String {
-        switch self { case .rent: "rentals"; case .stabilized: "buildings"; case .vouchers: "voucher listings" }
+        switch self { case .rent: "Stabilized"; case .stabilized: "Stabilized"; case .vouchers: "Vouchers" }
     }
 }
 
@@ -73,7 +73,30 @@ struct SearchQuery: Codable, Hashable {
     var unitBands: Set<Int> = []     // 0: 1–5, 1: 6–19, 2: 20–49, 3: 50+
     var noOpenViolations = false
     var voucherLiveOnly = false      // vouchers mode: only live AffordableHousing.com listings
+    var availableOnly = false        // stabilized mode: only buildings advertised now, with an asking rent
     var sort: SortOrder = .cheapest
+
+    /// Old "Rent" searches become Stabilized + available-only.
+    var normalized: SearchQuery {
+        guard mode == .rent else { return self }
+        var q = self; q.mode = .stabilized; q.availableOnly = true; return q
+    }
+    /// What the results screen counts: "rental listings" when only advertised
+    /// buildings are shown, otherwise "buildings".
+    var noun: String {
+        switch mode {
+        case .vouchers: "voucher listings"
+        case .rent: "rentals"
+        case .stabilized: availableOnly ? "rentals" : "buildings"
+        }
+    }
+    var resultNoun: String {
+        switch mode {
+        case .vouchers: "voucher listing"
+        case .rent: "rental listing"
+        case .stabilized: availableOnly ? "rental listing" : "rent-stabilized building"
+        }
+    }
 
     /// "$1k - $3k, 1 bd" — the compressed summary in the results header.
     var summary: String {
@@ -90,6 +113,7 @@ struct SearchQuery: Codable, Hashable {
         }
         if !unitBands.isEmpty { parts.append("\(unitBands.count) size\(unitBands.count == 1 ? "" : "s")") }
         if noOpenViolations { parts.append("No violations") }
+        if availableOnly { parts.insert("Available", at: 0) }
         return parts.isEmpty ? "Any price" : parts.joined(separator: ", ")
     }
 
@@ -106,6 +130,7 @@ struct SearchQuery: Codable, Hashable {
         if !unitBands.isEmpty { n += 1 }
         if noOpenViolations { n += 1 }
         if voucherLiveOnly { n += 1 }
+        if availableOnly { n += 1 }
         return n
     }
 }

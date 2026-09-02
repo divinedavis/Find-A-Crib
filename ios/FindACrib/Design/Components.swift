@@ -239,3 +239,39 @@ struct FillImage: View {
             .clipped()
     }
 }
+
+
+/// Radio group in StreetEasy's bordered-row style: one selected at a time,
+/// a filled royal dot for the pick, a hollow ring for the rest.
+struct SERadioRow<T: Hashable>: View {
+    let options: [(T, String, String)]   // value, title, subtitle
+    @Binding var selection: T
+    var body: some View {
+        VStack(spacing: 0) {
+            ForEach(Array(options.enumerated()), id: \.offset) { i, opt in
+                let on = selection == opt.0
+                Button { selection = opt.0 } label: {
+                    HStack(spacing: 14) {
+                        ZStack {
+                            Circle().stroke(on ? SE.royal : SE.line, lineWidth: 2).frame(width: 22, height: 22)
+                            if on { Circle().fill(SE.royal).frame(width: 12, height: 12) }
+                        }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(opt.1).font(.se(18, on ? .bold : .semibold)).foregroundStyle(SE.ink)
+                            Text(opt.2).font(.se(14)).foregroundStyle(SE.ink3)
+                        }
+                        Spacer()
+                    }
+                    .padding(.horizontal, 14).frame(minHeight: 60)
+                    .background(on ? SE.paleBlue.opacity(0.55) : Color.white)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("radio-\(opt.1)")
+                .accessibilityAddTraits(on ? .isSelected : [])
+                if i < options.count - 1 { Rectangle().fill(SE.line).frame(height: 1) }
+            }
+        }
+        .overlay(Rectangle().stroke(SE.line, lineWidth: 1))
+    }
+}

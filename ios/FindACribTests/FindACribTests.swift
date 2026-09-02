@@ -36,6 +36,8 @@ final class DataTests: XCTestCase {
         var q = SearchQuery(); q.minPrice = 1000; q.maxPrice = 3000; q.beds = [1]
         XCTAssertEqual(q.summary, "$1k - $3k, 1 bd")
         XCTAssertEqual(q.activeFilterCount, 3)
+        q.availableOnly = true
+        XCTAssertEqual(q.summary, "Available, $1k - $3k, 1 bd")
         XCTAssertEqual(SearchQuery().summary, "Any price")
     }
 }
@@ -54,8 +56,15 @@ final class SearchEngineTests: XCTestCase {
         }
     }
 
-    func testRentModeOnlyPriced() {
+    func testLegacyRentDecodesToAvailableOnly() {
         var q = SearchQuery(); q.mode = .rent
+        let n = q.normalized
+        XCTAssertEqual(n.mode, .stabilized); XCTAssertTrue(n.availableOnly)
+        XCTAssertEqual(SearchEngine.count(q, store: Self.store), SearchEngine.count(n, store: Self.store))
+    }
+
+    func testAvailableOnlyIsPriced() {
+        var q = SearchQuery(); q.mode = .stabilized; q.availableOnly = true
         let r = SearchEngine.run(q, store: Self.store)
         XCTAssertEqual(r.count, Self.store.listings.prices.count)
         XCTAssertTrue(r.allSatisfy { Self.store.price($0) != nil })
@@ -65,7 +74,7 @@ final class SearchEngineTests: XCTestCase {
     }
 
     func testPriceAndBedsFilter() {
-        var q = SearchQuery(); q.mode = .rent; q.minPrice = 1000; q.maxPrice = 3000; q.beds = [1]
+        var q = SearchQuery(); q.mode = .stabilized; q.availableOnly = true; q.minPrice = 1000; q.maxPrice = 3000; q.beds = [1]
         let r = SearchEngine.run(q, store: Self.store)
         XCTAssertFalse(r.isEmpty)
         for b in r {

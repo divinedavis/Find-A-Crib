@@ -58,7 +58,7 @@ struct ResultsView: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 16) {
                     HStack(alignment: .firstTextBaseline) {
-                        Text("\(results.count.formatted()) \(query.mode == .rent ? "rental listing" : (query.mode == .vouchers ? "voucher listing" : "rent-stabilized building"))\(results.count == 1 ? "" : "s")")
+                        Text("\(results.count.formatted()) \(query.resultNoun)\(results.count == 1 ? "" : "s")")
                             .font(.se(24, .bold)).foregroundStyle(SE.ink).lineLimit(1).minimumScaleFactor(0.75)
                             .accessibilityIdentifier("results-count")
                         Spacer()
@@ -80,7 +80,7 @@ struct ResultsView: View {
 
                     if results.isEmpty && store.loaded {
                         VStack(alignment: .leading, spacing: 10) {
-                            Text("No \(query.mode.noun) match").font(.se(22, .bold))
+                            Text("No \(query.noun) match").font(.se(22, .bold))
                             Text(emptyHint).font(.se(17)).foregroundStyle(SE.ink2)
                             SEOutlineButton(title: "Adjust filters") { showFilters = true }
                         }
@@ -128,10 +128,10 @@ struct ResultsView: View {
         .navigationBarBackButtonHidden(true)
     }
 
-    private var defaultName: String { "\(query.mode.title) · \(query.locationLabel)" }
+    private var defaultName: String { "\(query.normalized.availableOnly ? "Available" : query.mode.title) · \(query.locationLabel)" }
     private var emptyHint: String {
-        switch query.mode {
-        case .rent: "Only about 2,000 of the 47,000 rent-stabilized buildings have a recent advertised rent. Try the Stabilized tab to see every building here."
+        switch query.normalized.mode {
+        case .rent, .stabilized where query.normalized.availableOnly: "Only about 2,000 of the 47,000 rent-stabilized buildings have a recent advertised rent. Switch Show to \"All stabilized buildings\" to see every building here."
         case .stabilized: "Widen the price range or clear the building-size filter."
         case .vouchers: "Voucher listings are sparse outside upper Manhattan, the Bronx and central Brooklyn. Try clearing the price range."
         }

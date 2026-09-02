@@ -15,7 +15,7 @@ struct SearchHomeView: View {
             VStack(alignment: .leading, spacing: 0) {
                 HeroCollage().padding(.bottom, 14)
 
-                SEUnderlineTabs(options: SearchMode.allCases.map { ($0, $0.title) }, selection: $query.mode)
+                SEUnderlineTabs(options: SearchMode.tabs.map { ($0, $0.title) }, selection: $query.mode)
                     .padding(.horizontal, 16)
                     .padding(.bottom, 20)
 
@@ -58,18 +58,26 @@ struct SearchHomeView: View {
                         PriceField(label: "Maximum price", value: $query.maxPrice, placeholder: "No max")
                     }
 
-                    // Mode-specific row
+                    // Mode-specific rows
                     switch query.mode {
-                    case .rent:
+                    case .rent, .stabilized:
                         VStack(alignment: .leading, spacing: 10) {
-                            SEFieldLabel(text: "Bedrooms")
-                            SESegmentRow(options: [(0, "Studio"), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: $query.beds)
+                            SEFieldLabel(text: "Show")
+                            SERadioRow(options: [(false, "All stabilized buildings", "Every building on the DHCR register"),
+                                                 (true, "Available now", "Advertised recently, with an asking rent")],
+                                       selection: $query.availableOnly)
                         }
-                    case .stabilized:
-                        VStack(alignment: .leading, spacing: 10) {
-                            SEFieldLabel(text: "Building size")
-                            SESegmentRow(options: [(0, "1–5"), (1, "6–19"), (2, "20–49"), (3, "50+")], selection: $query.unitBands)
-                            Text("Units in the building").font(.se(14)).foregroundStyle(SE.ink3)
+                        if query.availableOnly {
+                            VStack(alignment: .leading, spacing: 10) {
+                                SEFieldLabel(text: "Bedrooms")
+                                SESegmentRow(options: [(0, "Studio"), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: $query.beds)
+                            }
+                        } else {
+                            VStack(alignment: .leading, spacing: 10) {
+                                SEFieldLabel(text: "Building size")
+                                SESegmentRow(options: [(0, "1–5"), (1, "6–19"), (2, "20–49"), (3, "50+")], selection: $query.unitBands)
+                                Text("Units in the building").font(.se(14)).foregroundStyle(SE.ink3)
+                            }
                         }
                     case .vouchers:
                         VStack(alignment: .leading, spacing: 10) {
@@ -86,7 +94,7 @@ struct SearchHomeView: View {
                         }
                     }
 
-                    SEPrimaryButton(title: "Search \(count.formatted()) \(query.mode.noun)") { runSearch() }
+                    SEPrimaryButton(title: "Search \(count.formatted()) \(query.noun)") { runSearch() }
                         .padding(.horizontal, 34)
                         .padding(.top, 6)
                         .accessibilityIdentifier("search-button")
@@ -119,7 +127,7 @@ struct SearchHomeView: View {
             LocationPickerView(selected: $query.locations)
         }
         .onAppear {
-            if query == SearchQuery(), let q = try? JSONDecoder().decode(SearchQuery.self, from: lastQueryData) { query = q }
+            if query == SearchQuery(), let q = try? JSONDecoder().decode(SearchQuery.self, from: lastQueryData) { query = q.normalized }
             recount()
         }
         .onChange(of: query) { _, q in
@@ -191,7 +199,7 @@ struct RecentSearchCard: View {
                 .frame(width: 104, height: 140).clipped()
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(alignment: .top) {
-                        Text("\(query.mode == .rent ? "Rentals" : (query.mode == .vouchers ? "Voucher homes" : "Stabilized")) in")
+                        Text("\(query.mode == .vouchers ? "Voucher homes" : (query.normalized.availableOnly ? "Rentals" : "Stabilized")) in")
                             .font(.se(22, .bold)).foregroundStyle(SE.royal).lineLimit(1)
                         Spacer()
                         Image(systemName: activity.isSearchSaved(query) ? "heart.fill" : "heart")

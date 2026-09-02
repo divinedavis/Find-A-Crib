@@ -42,7 +42,7 @@ struct ProfileView: View {
                                     }
                                 } else {
                                     Text("Guest").font(.se(30, .bold))
-                                    Text("Sign in to sync your saves and see managing agents.").font(.se(16)).foregroundStyle(SE.ink2)
+                                    Text("Sign in with Google to sync your saves and see managing agents.").font(.se(16)).foregroundStyle(SE.ink2)
                                 }
                             }
                         }
@@ -68,17 +68,10 @@ struct ProfileView: View {
                             }
                         } else if auth.configured {
                             VStack(spacing: 10) {
-                                SignInWithAppleButton(.continue) { _ in } onCompletion: { _ in }
-                                    .signInWithAppleButtonStyle(.black)
-                                    .frame(height: 50)
-                                    .allowsHitTesting(false)
-                                    .overlay {
-                                        // Apple's button for App Review's sake; our own controller runs the sheet
-                                        // so the nonce and Supabase exchange live in one place.
-                                        Button { Task { await auth.signInWithApple() } } label: { Color.clear }
-                                            .accessibilityLabel("Continue with Apple")
-                                            .accessibilityIdentifier("sign-in-apple")
-                                    }
+                                // Sign in with Apple is hidden for now (owner decision, 2026-09-02):
+                                // Apple's account service fails to create the credential for this
+                                // brand-new App ID ("Sign Up Not Completed"), so the button could
+                                // only fail. AppleSignInService stays wired for when it clears.
                                 Button { Task { await auth.signInWithGoogle() } } label: {
                                     HStack(spacing: 10) {
                                         GoogleG().frame(width: 18, height: 18)

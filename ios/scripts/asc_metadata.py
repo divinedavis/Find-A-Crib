@@ -55,7 +55,7 @@ REVIEW_NOTES = """WHAT THE APP DOES
 Find A Crib is an informational map of New York City's ~47,000 rent-stabilized buildings (public NYS/NYC records) with advertised rents, HPD violation records, and affordable-housing lotteries. It is not a marketplace and does not take applications or payments.
 
 SIGN-IN
-No account is needed to use the app. Sign in with Apple or Google is optional; it syncs saved buildings with our website and reveals the building's registered managing agent (public HPD registration data). There is no email/password login and no demo account is required — use any Apple ID or Google account. Account deletion is under Profile → Delete account.
+No account is needed to use the app. Sign in with Google is optional; it syncs saved buildings with our website and reveals the building's registered managing agent (public HPD registration data). There is no email/password login and no demo account is required — any Google account works. Account deletion is under Profile → Delete account.
 
 LOCATION
 The app never requests location permission. The map is Apple Maps; the "Search this area" button uses the visible map region, not the device location.

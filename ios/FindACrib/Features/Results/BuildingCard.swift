@@ -34,6 +34,12 @@ struct BuildingCard: View {
                 BuildingImage(building: b).frame(height: 226).frame(maxWidth: .infinity)
                     .contentShape(Rectangle())
                     .onTapGesture { open() }
+                if let l = store.hcrListings(b).first {
+                    SEBadge(text: l.isOpen ? "\(l.kindLabel) · open" : l.kindLabel, icon: "doc.text.fill", fill: SE.navy, ink: .white)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                        .padding(12)
+                        .allowsHitTesting(false)
+                }
                 if store.voucherAvail(b) != nil {
                     SEBadge(text: "Section 8", icon: "checkmark.seal.fill", fill: .white, ink: SE.ink)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
@@ -45,7 +51,7 @@ struct BuildingCard: View {
 
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .top) {
-                    Text("Stabilized building in \(b.neighborhood)")
+                    Text(store.isSyntheticHCR(b) ? "Affordable housing in \(b.borough)" : "Stabilized building in \(b.neighborhood)")
                         .font(.se(18, .semibold)).foregroundStyle(SE.ink2).lineLimit(1).minimumScaleFactor(0.85)
                     Spacer(minLength: 8)
                     HeartButton(on: activity.isSaved(b.bbl)) { activity.toggleSaved(b.bbl) }
@@ -58,6 +64,7 @@ struct BuildingCard: View {
 
                 priceLines
 
+                if !store.isSyntheticHCR(b) {
                 HStack(spacing: 0) {
                     fact("bed.double", bedsText)
                     Rectangle().fill(SE.line).frame(width: 1, height: 26).padding(.horizontal, 12)
@@ -66,8 +73,9 @@ struct BuildingCard: View {
                     fact("calendar", b.yr.map { "Built \($0)" } ?? "Built –")
                 }
                 .padding(.top, 8)
+                }
 
-                Text(attribution).font(.se(18)).foregroundStyle(b.openViolations > 0 ? SE.ink2 : SE.ink2).padding(.top, 4)
+                Text(store.isSyntheticHCR(b) ? "Listed on HousingSearch.ny.gov" : attribution).font(.se(18)).foregroundStyle(SE.ink2).padding(.top, 4)
 
                 HStack(spacing: 14) {
                     ShareLink(item: b.webURL, message: Text("\(b.address) — rent-stabilized building on Find A Crib")) {
@@ -79,7 +87,12 @@ struct BuildingCard: View {
                         .background(Color.white).overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.line))
                     }
                     .frame(maxWidth: .infinity)
-                    if let url = store.listingURL(b) {
+                    if let apply = store.hcrListings(b).first(where: { $0.isOpen })?.applyURL ?? store.hcrListings(b).first?.applyURL {
+                        Link(destination: apply) {
+                            Text("Apply").font(.se(18, .bold)).foregroundStyle(.white)
+                                .frame(maxWidth: .infinity).frame(height: 50).background(SE.royal)
+                        }.frame(maxWidth: 1000)
+                    } else if let url = store.listingURL(b) {
                         Link(destination: url) {
                             Text("View listing").font(.se(18, .bold)).foregroundStyle(.white)
                                 .frame(maxWidth: .infinity).frame(height: 50).background(SE.royal)
@@ -110,7 +123,9 @@ struct BuildingCard: View {
     }
 
     @ViewBuilder private var statusBadge: some View {
-        if store.price(b) != nil, let d = store.listings.updatedDate {
+        if store.isSyntheticHCR(b) {
+            SEBadge(text: "HousingSearch.ny.gov", fill: SE.badge.opacity(0.95))
+        } else if store.price(b) != nil, let d = store.listings.updatedDate {
             SEBadge(text: "Listed (\(Formatters.mdy.string(from: d)))", fill: SE.badge.opacity(0.95))
         } else if let reg = b.h?.lastregistration, let d = ISO8601DateFormatter.ymd.date(from: reg) {
             SEBadge(text: "HPD registered (\(Formatters.mdy.string(from: d)))", fill: SE.badge.opacity(0.95))
@@ -120,7 +135,16 @@ struct BuildingCard: View {
     }
 
     @ViewBuilder private var priceLines: some View {
-        if let p = store.price(b) {
+        if let l = store.hcrListings(b).first, store.isSyntheticHCR(b) || store.price(b) == nil {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(l.name ?? "HCR listing").font(.se(22, .bold)).foregroundStyle(SE.ink).lineLimit(1)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    if let inc = l.incomeRange { Text(inc).font(.se(20, .bold)); Text("household income").font(.se(17)).foregroundStyle(SE.ink2) }
+                }
+                Text([l.ptype, l.due.map { "apply by \($0)" }, l.approx == true ? "location approximate" : nil].compactMap { $0 }.joined(separator: " · "))
+                    .font(.se(16)).foregroundStyle(SE.ink3)
+            }
+        } else if let p = store.price(b) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(Formatters.dollars(p)).font(.se(34, .bold)).foregroundStyle(SE.ink).lineLimit(1).layoutPriority(3)
                 Text("asking rent").font(.se(20)).foregroundStyle(SE.ink2).lineLimit(1).layoutPriority(2)

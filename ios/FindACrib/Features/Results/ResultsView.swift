@@ -11,7 +11,7 @@ struct ResultsHeader: View {
             HStack(spacing: 10) {
                 Button { dismiss() } label: {
                     HStack(spacing: 10) {
-                        Image(systemName: "chevron.left").font(.system(size: 16, weight: .bold)).foregroundStyle(SE.royal)
+                        Image(systemName: "mappin").font(.system(size: 15, weight: .bold)).foregroundStyle(SE.royal)
                         Text(query.locationLabel).font(.se(19)).foregroundStyle(SE.ink).lineLimit(1).truncationMode(.tail).frame(minWidth: 96, alignment: .leading)
                         Text(query.summary).font(.se(19)).foregroundStyle(SE.ink2).lineLimit(1).layoutPriority(1)
                         Spacer(minLength: 0)
@@ -35,7 +35,7 @@ struct ResultsHeader: View {
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("results-filter")
             }
-            .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 14)
+            .padding(.horizontal, 16).padding(.top, 2).padding(.bottom, 14)
         }
     }
 }
@@ -125,13 +125,13 @@ struct ResultsView: View {
         } message: { Text("Find it again under My Activity › Searches.") }
         .task(id: query) { run() }
         .onChange(of: store.loaded) { _, _ in run() }
-        .navigationBarBackButtonHidden(true)
         .swipeBackEnabled()
     }
 
-    private var defaultName: String { "\(query.normalized.availableOnly ? "Available" : (query.normalized.vouchersOnly ? "Vouchers" : "Stabilized")) · \(query.locationLabel)" }
+    private var defaultName: String { "\(query.normalized.hcrOnly ? "HCR lotteries" : (query.normalized.availableOnly ? "Available" : (query.normalized.vouchersOnly ? "Vouchers" : "Stabilized"))) · \(query.locationLabel)" }
     private var emptyHint: String {
         let n = query.normalized
+        if n.hcrOnly { return "HousingSearch.ny.gov lists about 50 open lotteries and waitlists in the city at a time. Clear the other Show boxes and the price range to see them all." }
         if n.availableOnly { return "Only about 2,000 of the 47,000 rent-stabilized buildings have a recent advertised rent. Untick Available now to see every building here." }
         if n.vouchersOnly { return "Voucher-friendly buildings are sparse outside upper Manhattan, the Bronx and central Brooklyn. Try clearing the price range." }
         return "Widen the price range or clear a filter."

@@ -132,3 +132,83 @@ struct S8Blob: Codable {
 
 /// fmr.json — HUD FY2026 Small-Area Fair Market Rents by ZIP: [studio, 1BR, 2BR, 3BR]
 typealias FMRTable = [String: [Int]]
+
+/// hcr.json — HousingSearch.ny.gov lotteries and waitlists (HCR-regulated
+/// affordable housing you apply to online). A listing may sit in a building
+/// that is on the DHCR register (then `bbl` is set and the app attaches it
+/// to that building) or stand alone (the app makes a pin of its own for it).
+struct HCRBlob: Codable {
+    var updated: Double? = nil
+    var listings: [HCRListing] = []
+    var updatedDate: Date? { updated.map { Date(timeIntervalSince1970: $0) } }
+}
+
+struct HCRListing: Codable, Hashable, Identifiable {
+    struct Site: Codable, Hashable {
+        let street: String?; let zip: String?; let lat: Double?; let lng: Double?; let bbl: String?
+    }
+    let id: String
+    let name: String?
+    let kind: String?          // Lottery | Waitlist | Mitchell-Lama Waitlist
+    let status: String?        // Open | Closed
+    let ptype: String?         // Rental | Co-op
+    let boro: String?
+    let min_income: Int?
+    let max_income: Int?
+    let due: String?
+    let fee: Int?
+
+    // Incomes/fees arrive as Int or Double depending on the record; never let
+    // one 19989.0 sink the whole file.
+    init(from d: Decoder) throws {
+        let c = try d.container(keyedBy: CodingKeys.self)
+        func int(_ k: CodingKeys) -> Int? {
+            if let i = try? c.decodeIfPresent(Int.self, forKey: k) { return i }
+            if let f = try? c.decodeIfPresent(Double.self, forKey: k) { return Int(f.rounded()) }
+            return nil
+        }
+        id = try c.decode(String.self, forKey: .id)
+        name = try c.decodeIfPresent(String.self, forKey: .name)
+        kind = try c.decodeIfPresent(String.self, forKey: .kind)
+        status = try c.decodeIfPresent(String.self, forKey: .status)
+        ptype = try c.decodeIfPresent(String.self, forKey: .ptype)
+        boro = try c.decodeIfPresent(String.self, forKey: .boro)
+        min_income = int(.min_income); max_income = int(.max_income); fee = int(.fee)
+        due = try c.decodeIfPresent(String.self, forKey: .due)
+        phone = try c.decodeIfPresent(String.self, forKey: .phone)
+        url = try c.decodeIfPresent(String.self, forKey: .url)
+        info = try c.decodeIfPresent(String.self, forKey: .info)
+        desc = try c.decodeIfPresent(String.self, forKey: .desc)
+        image = try c.decodeIfPresent(String.self, forKey: .image)
+        senior = try c.decodeIfPresent(Bool.self, forKey: .senior)
+        accessible = try c.decodeIfPresent(Bool.self, forKey: .accessible)
+        approx = try c.decodeIfPresent(Bool.self, forKey: .approx)
+        buildings = (try? c.decodeIfPresent([Site].self, forKey: .buildings)) ?? []
+    }
+    let phone: String?
+    let url: String?
+    let info: String?
+    let desc: String?
+    let image: String?
+    let senior: Bool?
+    let accessible: Bool?
+    let approx: Bool?
+    let buildings: [Site]
+
+    var isOpen: Bool { status == "Open" }
+    var kindLabel: String {
+        switch kind { case "Lottery": "HCR lottery"; case "Mitchell-Lama Waitlist": "Mitchell-Lama waitlist"; default: "HCR waitlist" }
+    }
+    var applyURL: URL? { url.flatMap(URL.init) }
+    var incomeRange: String? {
+        switch (min_income, max_income) {
+        case let (lo?, hi?): "\(Formatters.dollars(lo))–\(Formatters.dollars(hi))"
+        case let (lo?, nil): "from \(Formatters.dollars(lo))"
+        case let (nil, hi?): "up to \(Formatters.dollars(hi))"
+        default: nil
+        }
+    }
+    /// Synthetic BBL for a site that is not on the DHCR register.
+    static func syntheticBBL(_ id: String, _ i: Int) -> String { "HCR-\(id)-\(i)" }
+    static func isSynthetic(_ bbl: String) -> Bool { bbl.hasPrefix("HCR-") }
+}

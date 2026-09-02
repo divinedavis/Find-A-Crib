@@ -17,6 +17,7 @@ final class FindACribUITests: XCTestCase {
         // wait for the dataset: the button label carries the live count
         let counted = NSPredicate(format: "label CONTAINS 'Search' AND NOT (label CONTAINS 'Search 0 ')")
         expectation(for: counted, evaluatedWith: search); waitForExpectations(timeout: 30)
+        if !search.isHittable { app.swipeUp() }   // the form runs past the fold on smaller phones
         search.tap()
 
         let count = app.staticTexts["results-count"]
@@ -27,7 +28,7 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(addr.waitForExistence(timeout: 10))
         addr.tap()
         XCTAssertTrue(app.otherElements["detail-hero"].waitForExistence(timeout: 15) || app.staticTexts["About"].waitForExistence(timeout: 15))
-        app.buttons["detail-back"].tap()
+        app.navigationBars.buttons.element(boundBy: 0).tap()   // the system chevron is the back control
         XCTAssertTrue(count.waitForExistence(timeout: 10))
 
         app.buttons["results-back"].tap()
@@ -89,7 +90,7 @@ final class FindACribUITests: XCTestCase {
         app.terminate()
         app.launchArguments = ["--route", "detail"]
         app.launch()
-        XCTAssertTrue(app.buttons["detail-back"].waitForExistence(timeout: 30))
+        XCTAssertTrue(app.buttons["detail-menu"].waitForExistence(timeout: 30))
         let from = app.coordinate(withNormalizedOffset: CGVector(dx: 0.01, dy: 0.55))
         let to = app.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.55))
         from.press(forDuration: 0.05, thenDragTo: to, withVelocity: .fast, thenHoldForDuration: 0.05)

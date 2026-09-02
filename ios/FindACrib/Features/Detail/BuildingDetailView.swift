@@ -21,9 +21,6 @@ struct BuildingDetailView: View {
         VStack(spacing: 0) {
             NavyHeader {
                 HStack(alignment: .center, spacing: 14) {
-                    Button { dismiss() } label: {
-                        Image(systemName: "arrow.left").font(.system(size: 22, weight: .medium)).foregroundStyle(.white).frame(width: 40, height: 40)
-                    }.buttonStyle(.plain).accessibilityIdentifier("detail-back")
                     VStack(alignment: .leading, spacing: 1) {
                         Text(b.address).font(.se(22, .bold)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.75)
                         Text(b.neighborhood).font(.se(15, .semibold)).foregroundStyle(.white.opacity(0.9)).lineLimit(1)
@@ -44,14 +41,22 @@ struct BuildingDetailView: View {
                     }
                     .accessibilityIdentifier("detail-menu")
                 }
-                .padding(.horizontal, 12).padding(.bottom, 10)
+                .padding(.horizontal, 16).padding(.top, 2).padding(.bottom, 10)
             }
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     hero
-                    factsStrip
+                    if !store.isSyntheticHCR(b) { factsStrip }
 
+                    if !store.hcrListings(b).isEmpty { section(store.hcrListings(b).count == 1 ? "Lottery / waitlist" : "Lotteries & waitlists") { hcrBlock } }
+
+                    if store.isSyntheticHCR(b) {
+                        section("About") {
+                            Text("An income-restricted development with a New York State HCR regulatory agreement, listed on HousingSearch.ny.gov. It is not on the rent-stabilization register, so there is no DHCR or HPD record here — the listing above is the whole story.")
+                                .font(.se(17)).foregroundStyle(SE.ink2)
+                        }
+                    } else {
                     section("About") {
                         VStack(alignment: .leading, spacing: 10) {
                             ForEach(aboutLines, id: \.self) { Text($0).font(.se(19)).foregroundStyle(SE.ink) }
@@ -72,6 +77,7 @@ struct BuildingDetailView: View {
                     section("Violations & complaints") { hpdBlock }
 
                     similarRail
+                    }
 
                     Text("Sources: NYS HCR 2024 rent-stabilized building file · NYC HPD violations and complaints · HUD FY2026 Small-Area Fair Market Rents · Recently advertised rents via Zumper. Find A Crib is not a broker and does not list apartments.")
                         .font(.se(14)).foregroundStyle(SE.ink3).padding(16)
@@ -88,7 +94,9 @@ struct BuildingDetailView: View {
                         .frame(maxWidth: .infinity).frame(height: 50).background(Color.white)
                         .overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.royal, lineWidth: 1))
                 }
-                if let url = store.listingURL(b) {
+                if let apply = store.hcrListings(b).first(where: { $0.isOpen })?.applyURL ?? store.hcrListings(b).first?.applyURL {
+                    SEPrimaryButton(title: "Apply on HousingSearch.ny.gov") { openURL(apply) }
+                } else if let url = store.listingURL(b) {
                     SEPrimaryButton(title: "View listing") { openURL(url) }
                 } else if let url = store.voucherAvail(b)?.url.flatMap(URL.init) {
                     SEPrimaryButton(title: "Voucher listing") { openURL(url) }
@@ -99,7 +107,6 @@ struct BuildingDetailView: View {
             .padding(16)
             .background(Color.white.shadow(.drop(color: .black.opacity(0.08), radius: 6, y: -2)))
         }
-        .navigationBarBackButtonHidden(true)
         .swipeBackEnabled()
         .onAppear { nav.hideTabBar = true; activity.recordView(b.bbl) }
         .onDisappear { nav.hideTabBar = false }
@@ -173,6 +180,43 @@ struct BuildingDetailView: View {
         }
     }
 
+    /// HousingSearch.ny.gov lottery / waitlist details for this site.
+    @ViewBuilder private var hcrBlock: some View {
+        ForEach(store.hcrListings(b)) { l in
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 8) {
+                    SEBadge(text: l.kindLabel, icon: "doc.text.fill", fill: SE.navy, ink: .white)
+                    SEBadge(text: l.isOpen ? "Open" : "Closed", fill: l.isOpen ? Color(hex: 0xDCFCE7) : SE.badge, ink: l.isOpen ? SE.good : SE.ink2)
+                    if l.senior == true { SEBadge(text: "Seniors", fill: SE.badge) }
+                }
+                Text(l.name ?? "").font(.se(24, .bold))
+                if let inc = l.incomeRange {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) { Text(inc).font(.se(22, .bold)); Text("household income").font(.se(17)).foregroundStyle(SE.ink2) }
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    if let p = l.ptype { row("Type", p) }
+                    if let d = l.due { row(l.kind == "Lottery" ? "Application deadline" : "Apply by", d) }
+                    if let f = l.fee { row("Application fee", Formatters.dollars(f)) }
+                    if let ph = l.phone { row("Phone", ph) }
+                }
+                if let d = l.desc { Text(d).font(.se(16)).foregroundStyle(SE.ink2).lineLimit(8) }
+                if l.approx == true {
+                    Text("Location shown is the development's application/mailing address; the listing does not give a building address.")
+                        .font(.se(14)).foregroundStyle(SE.ink3)
+                }
+                if let u = l.applyURL {
+                    SEPrimaryButton(title: l.isOpen ? "Apply on HousingSearch.ny.gov" : "See listing on HousingSearch.ny.gov") { openURL(u) }
+                }
+                Text("Source: HousingSearch.ny.gov — New York State Homes and Community Renewal. Income limits and deadlines are the listing's; confirm on the portal before applying.")
+                    .font(.se(14)).foregroundStyle(SE.ink3)
+            }
+            .padding(.bottom, 8)
+        }
+    }
+    private func row(_ k: String, _ v: String) -> some View {
+        HStack { Text(k).font(.se(17)).foregroundStyle(SE.ink2); Spacer(); Text(v).font(.se(17, .bold)).multilineTextAlignment(.trailing) }
+    }
+
     // MARK: pieces
 
     @ViewBuilder private var hero: some View {
@@ -183,19 +227,11 @@ struct BuildingDetailView: View {
             } else {
                 BuildingImage(building: b).frame(height: 280).frame(maxWidth: .infinity)
             }
-            VStack {
-                HStack {
-                    Spacer()
-                    HeartButton(on: activity.isSaved(b.bbl)) { activity.toggleSaved(b.bbl) }
-                        .background(Color.white.opacity(0.92)).clipShape(Circle())
-                }
-                Spacer()
-                HStack {
-                    Spacer()
-                    if store.voucherAvail(b) != nil { SEBadge(text: "Section 8", icon: "checkmark.seal.fill", fill: .white) }
-                }
+            // Save lives in the ··· menu; a heart over the photo covered the
+            // Look Around imagery and the owner asked for it gone.
+            if store.voucherAvail(b) != nil {
+                SEBadge(text: "Section 8", icon: "checkmark.seal.fill", fill: .white).padding(12)
             }
-            .padding(12)
         }
         .accessibilityIdentifier("detail-hero")
     }
@@ -297,12 +333,12 @@ struct BuildingDetailView: View {
             }
             if let v {
                 VStack(alignment: .leading, spacing: 6) {
-                    row("Class A (non-hazardous) open", v.oa ?? 0)
-                    row("Class B (hazardous) open", v.ob ?? 0)
-                    row("Class C (immediately hazardous) open", v.oc ?? 0)
-                    row("Violations issued, last 12 months", v.last_12mo ?? 0)
-                    row("Violations on record, all time", v.total ?? 0)
-                    if let c { row("Complaints, all time", c.total ?? 0) }
+                    nrow("Class A (non-hazardous) open", v.oa ?? 0)
+                    nrow("Class B (hazardous) open", v.ob ?? 0)
+                    nrow("Class C (immediately hazardous) open", v.oc ?? 0)
+                    nrow("Violations issued, last 12 months", v.last_12mo ?? 0)
+                    nrow("Violations on record, all time", v.total ?? 0)
+                    if let c { nrow("Complaints, all time", c.total ?? 0) }
                 }.padding(.top, 6)
             }
             Text("From NYC HPD's open data. Class C means the city considers the condition immediately hazardous — heat, hot water, lead, pests.")
@@ -315,7 +351,7 @@ struct BuildingDetailView: View {
             Text(k).font(.se(15, .semibold)).foregroundStyle(SE.ink2)
         }.frame(maxWidth: .infinity, alignment: .leading).padding(14).background(SE.canvas)
     }
-    private func row(_ k: String, _ n: Int) -> some View {
+    private func nrow(_ k: String, _ n: Int) -> some View {
         HStack { Text(k).font(.se(17)).foregroundStyle(SE.ink2); Spacer(); Text("\(n)").font(.se(17, .bold)) }
     }
 

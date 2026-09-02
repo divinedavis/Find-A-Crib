@@ -5,7 +5,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 D=FindACrib/Resources/Data
-for f in listings.json s8.json fmr.json; do
+for f in listings.json s8.json fmr.json hcr.json; do
   curl -fsS "https://findacrib.com/$f" -o "$D/$f"
 done
 curl -fsS -H "Accept-Encoding: gzip" "https://findacrib.com/buildings.slim.json.gz" -o "$D/buildings.slim.json.gz"

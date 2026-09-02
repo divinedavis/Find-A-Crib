@@ -82,7 +82,6 @@ struct MapResultsView: View {
                 region = (results.count > 0 && results.count <= 500) ? MapRegion.fit(results) : MapRegion.forQuery(query, store: store)
             }
         }
-        .navigationBarBackButtonHidden(true)
         .swipeBackEnabled()
     }
 

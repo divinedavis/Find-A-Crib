@@ -3,7 +3,7 @@ import XCTest
 
 final class DataTests: XCTestCase {
     func testBundledDataDecodes() throws {
-        let p = try DataStore.decodeLocal()
+        let p = try DataStore.decodeLocal(bundleOnly: true)
         XCTAssertGreaterThan(p.buildings.count, 40_000, "bundled buildings.slim.json.gz should hold the full NYC file")
         XCTAssertGreaterThan(p.listings.prices.count, 500)
         XCTAssertFalse(p.fmr.isEmpty)
@@ -12,6 +12,24 @@ final class DataTests: XCTestCase {
         let bbls = Set(p.buildings.map(\.bbl))
         let orphan = p.listings.prices.keys.filter { !bbls.contains($0) }.count
         XCTAssertLessThan(Double(orphan) / Double(p.listings.prices.count), 0.05)
+    }
+
+    func testHCRDecodesFloatIncomesAndNulls() throws {
+        let json = """
+        {"updated": 1788313508.0, "count": 2, "listings": [
+          {"id": "a", "name": "X", "kind": "Lottery", "status": "Open", "ptype": "Rental", "boro": "M",
+           "min_income": 19989.0, "max_income": 109920, "due": "9/7/2026", "fee": null, "phone": null, "url": "https://x",
+           "info": null, "desc": null, "image": null, "senior": false, "accessible": false, "approx": false,
+           "buildings": [{"street": "111 East 123rd Street", "zip": "10035", "lat": 40.8, "lng": -73.9, "bbl": null}]},
+          {"id": "b", "name": "Y", "kind": "Waitlist", "status": "Closed", "ptype": "Co-op", "boro": "Bx",
+           "min_income": null, "max_income": 255840.5, "due": "1/1/2027", "fee": 75, "buildings": []}
+        ]}
+        """
+        let blob = try JSONDecoder().decode(HCRBlob.self, from: Data(json.utf8))
+        XCTAssertEqual(blob.listings.count, 2)
+        XCTAssertEqual(blob.listings[0].min_income, 19989)
+        XCTAssertEqual(blob.listings[1].max_income, 255841)
+        XCTAssertEqual(blob.listings[0].incomeRange, "$19,989–$109,920")
     }
 
     func testGunzipRejectsGarbage() {
@@ -50,7 +68,7 @@ final class SearchEngineTests: XCTestCase {
         if Self.store == nil {
             let s = DataStore()
             // Decode the bundle only; no network in tests.
-            let p = try DataStore.decodeLocal()
+            let p = try DataStore.decodeLocal(bundleOnly: true)
             s.applyForTesting(p)
             Self.store = s
         }
@@ -121,6 +139,19 @@ final class SearchEngineTests: XCTestCase {
         let r = SearchEngine.run(q, store: Self.store)
         XCTAssertFalse(r.isEmpty)
         XCTAssertTrue(r.allSatisfy { abs($0.lat - 40.68) < 0.01 })
+    }
+
+    func testHCRPoolAndFlag() {
+        XCTAssertFalse(Self.store.hcr.listings.isEmpty, "bundled hcr.json should hold listings")
+        XCTAssertFalse(Self.store.hcrBuildings.isEmpty)
+        var q = SearchQuery(); q.hcrOnly = true
+        let r = SearchEngine.run(q, store: Self.store)
+        XCTAssertEqual(r.count, Self.store.hcrBuildings.count)
+        XCTAssertTrue(r.allSatisfy { Self.store.isHCR($0) })
+        // stand-alone sites resolve through byBBL so a route can open them
+        if let syn = r.first(where: { Self.store.isSyntheticHCR($0) }) { XCTAssertNotNil(Self.store.byBBL[syn.bbl]) }
+        // and they never leak into a plain register search
+        XCTAssertFalse(SearchEngine.run(SearchQuery(), store: Self.store).contains { Self.store.isSyntheticHCR($0) })
     }
 
     func testSimilarStaysInNeighborhood() {

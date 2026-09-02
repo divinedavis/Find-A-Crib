@@ -55,6 +55,7 @@ enum LaunchArgs {
         guard let r = val("--route") else { return }
         var q = SearchQuery(); q.mode = .stabilized; q.availableOnly = true; q.locations = [.borough("M")]; q.minPrice = 1000; q.maxPrice = 3000; q.beds = [1]
         if r == "results" { nav.searchPath = [.results(q)] }
+        else if r == "hcr" { var h = SearchQuery(); h.hcrOnly = true; nav.searchPath = [.results(h)] }
         else if r == "map" { nav.searchPath = [.results(q), .map(q)] }
         else if r.hasPrefix("detail") {
             let bbl = r.split(separator: ":").dropFirst().first.map(String.init)

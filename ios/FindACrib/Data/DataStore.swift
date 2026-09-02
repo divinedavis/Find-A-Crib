@@ -11,6 +11,11 @@ final class DataStore {
     private(set) var listings = ListingsBlob()
     private(set) var s8 = S8Blob()
     private(set) var fmr: FMRTable = [:]
+    private(set) var hcr = HCRBlob()
+    /// DHCR buildings that host an HCR listing, plus one synthetic Building per
+    /// listing site that is not on the register — the pool "HCR" searches run over.
+    private(set) var hcrBuildings: [Building] = []
+    private(set) var hcrByBBL: [String: [HCRListing]] = [:]
     private(set) var loaded = false
     private(set) var loadError: String? = nil
     private(set) var refreshing = false
@@ -21,7 +26,7 @@ final class DataStore {
     private(set) var zips: [String] = []
 
     static let host = URL(string: "https://findacrib.com/")!
-    static let files = ["buildings.slim.json.gz", "listings.json", "s8.json", "fmr.json"]
+    static let files = ["buildings.slim.json.gz", "listings.json", "s8.json", "fmr.json", "hcr.json"]
 
     nonisolated static var cacheDir: URL {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -31,9 +36,9 @@ final class DataStore {
     }
 
     /// Cached copy if present, else the bundled seed.
-    nonisolated static func localURL(_ name: String) -> URL? {
+    nonisolated static func localURL(_ name: String, bundleOnly: Bool = false) -> URL? {
         let cached = cacheDir.appendingPathComponent(name)
-        if FileManager.default.fileExists(atPath: cached.path) { return cached }
+        if !bundleOnly, FileManager.default.fileExists(atPath: cached.path) { return cached }
         let stem = (name as NSString).deletingPathExtension
         let ext = (name as NSString).pathExtension
         return Bundle.main.url(forResource: stem, withExtension: ext, subdirectory: "Data")
@@ -41,23 +46,27 @@ final class DataStore {
     }
 
     struct Payload: Sendable {
-        var buildings: [Building]; var listings: ListingsBlob; var s8: S8Blob; var fmr: FMRTable
+        var buildings: [Building]; var listings: ListingsBlob; var s8: S8Blob; var fmr: FMRTable; var hcr: HCRBlob
     }
 
-    nonisolated static func decodeLocal() throws -> Payload {
+    /// `bundleOnly` is for the unit tests: the test host shares the app's
+    /// container, so its cache holds whatever the last simulator run fetched,
+    /// and a test about the shipped seed must not read that instead.
+    nonisolated static func decodeLocal(bundleOnly: Bool = false) throws -> Payload {
         let dec = JSONDecoder()
-        guard let bURL = localURL("buildings.slim.json.gz") else {
+        guard let bURL = localURL("buildings.slim.json.gz", bundleOnly: bundleOnly) else {
             throw NSError(domain: "FindACrib", code: 1, userInfo: [NSLocalizedDescriptionKey: "Building data missing from bundle"])
         }
         let raw = try Data(contentsOf: bURL)
         let json = try Gunzip.inflate(raw)
         let buildings = try dec.decode([Building].self, from: json)
         func opt<T: Decodable>(_ name: String, _ empty: T) -> T {
-            guard let u = localURL(name), let d = try? Data(contentsOf: u), let v = try? dec.decode(T.self, from: d) else { return empty }
-            return v
+            guard let u = localURL(name, bundleOnly: bundleOnly), let d = try? Data(contentsOf: u) else { return empty }
+            do { return try dec.decode(T.self, from: d) }
+            catch { NSLog("FindACrib: %@ failed to decode: %@", name, String(describing: error)); return empty }
         }
         return Payload(buildings: buildings, listings: opt("listings.json", ListingsBlob()),
-                       s8: opt("s8.json", S8Blob()), fmr: opt("fmr.json", [:]))
+                       s8: opt("s8.json", S8Blob()), fmr: opt("fmr.json", [:]), hcr: opt("hcr.json", HCRBlob()))
     }
 
     func load() async {
@@ -73,8 +82,9 @@ final class DataStore {
     func applyPayload(_ p: Payload) {
         buildings = p.buildings
         byBBL = Dictionary(p.buildings.map { ($0.bbl, $0) }, uniquingKeysWith: { a, _ in a })
-        listings = p.listings; s8 = p.s8; fmr = p.fmr
+        listings = p.listings; s8 = p.s8; fmr = p.fmr; hcr = p.hcr
         dataAsOf = p.listings.updatedDate
+        indexHCR()
         var nbCount: [String: (String, Int)] = [:]
         var zipSet = Set<String>()
         for b in p.buildings {
@@ -121,6 +131,38 @@ final class DataStore {
         if let etag = http.value(forHTTPHeaderField: "ETag") { UserDefaults.standard.set(etag, forKey: etagKey) }
         return true
     }
+
+    /// Attach each listing to its DHCR building when the address matched, or
+    /// mint a stand-alone Building for it so it can be a card and a pin.
+    private func indexHCR() {
+        var by: [String: [HCRListing]] = [:]
+        var pool: [Building] = []
+        var seen = Set<String>()
+        for l in hcr.listings {
+            for (i, site) in l.buildings.enumerated() {
+                let key: String
+                if let bbl = site.bbl, let b = byBBL[bbl] {
+                    key = bbl
+                    if !seen.contains(bbl) { pool.append(b); seen.insert(bbl) }
+                } else if let lat = site.lat, let lng = site.lng {
+                    key = HCRListing.syntheticBBL(l.id, i)
+                    let b = Building(bbl: key, b: l.boro ?? "", a: (site.street ?? l.name ?? "HCR listing").uppercased(),
+                                     z: site.zip, lat: lat, lng: lng,
+                                     s: [l.kind?.uppercased() ?? "HCR AFFORDABLE HOUSING"], yr: nil, u: nil, nb: nil, h: nil)
+                    byBBL[key] = b
+                    pool.append(b); seen.insert(key)
+                } else { continue }
+                by[key, default: []].append(l)
+            }
+        }
+        hcrByBBL = by
+        hcrBuildings = pool
+    }
+
+    func hcrListings(_ b: Building) -> [HCRListing] { hcrByBBL[b.bbl] ?? [] }
+    func isHCR(_ b: Building) -> Bool { hcrByBBL[b.bbl] != nil }
+    /// A stand-alone HCR site, not a DHCR-register building.
+    func isSyntheticHCR(_ b: Building) -> Bool { HCRListing.isSynthetic(b.bbl) }
 
     // MARK: derived per-building facts
 

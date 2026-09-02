@@ -295,11 +295,11 @@ struct SECheckList: View {
                         }
                         VStack(alignment: .leading, spacing: 2) {
                             Text(r.title).font(.se(18, on ? .bold : .semibold)).foregroundStyle(SE.ink)
-                            Text(r.subtitle).font(.se(14)).foregroundStyle(SE.ink3)
+                            Text(r.subtitle).font(.se(13)).foregroundStyle(SE.ink3).lineLimit(1).minimumScaleFactor(0.85)
                         }
                         Spacer()
                     }
-                    .padding(.horizontal, 14).frame(minHeight: 60)
+                    .padding(.horizontal, 14).padding(.vertical, 8).frame(minHeight: 52)
                     .background(on && !r.locked ? SE.paleBlue.opacity(0.55) : Color.white)
                     .contentShape(Rectangle())
                 }

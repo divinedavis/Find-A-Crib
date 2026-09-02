@@ -173,7 +173,7 @@ struct RecentSearchCard: View {
                 .frame(width: 104, height: 140).clipped()
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(alignment: .top) {
-                        Text("\(query.normalized.availableOnly ? "Rentals" : (query.normalized.vouchersOnly ? "Voucher homes" : "Stabilized")) in")
+                        Text("\(query.normalized.hcrOnly ? "Lotteries" : (query.normalized.availableOnly ? "Rentals" : (query.normalized.vouchersOnly ? "Voucher homes" : "Stabilized"))) in")
                             .font(.se(22, .bold)).foregroundStyle(SE.royal).lineLimit(1)
                         Spacer()
                         Image(systemName: activity.isSearchSaved(query) ? "heart.fill" : "heart")
@@ -256,7 +256,7 @@ struct HeroCollage: View {
             }
             VStack(spacing: 6) { tile(5); tile(6); tile(7) }.frame(width: 64)
         }
-        .frame(height: 240)
+        .frame(height: 216)
         .padding(.horizontal, 6)
         .padding(.vertical, 6)
         .background(SE.navy.ignoresSafeArea(edges: .top))
@@ -329,6 +329,7 @@ struct ShowChecklist: View {
             .init(title: "Rent stabilized", subtitle: "Every building on the DHCR register", isOn: .constant(true), locked: true),
             .init(title: "Available now", subtitle: "Advertised recently, with an asking rent", isOn: $query.availableOnly),
             .init(title: "Accepting vouchers", subtitle: "Section 8 / voucher-friendly buildings", isOn: $query.vouchersOnly),
+            .init(title: "HCR lotteries & waitlists", subtitle: "Apply online at HousingSearch.ny.gov", isOn: $query.hcrOnly),
         ])
     }
 }

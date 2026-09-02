@@ -75,6 +75,7 @@ struct SearchQuery: Codable, Hashable {
     var voucherLiveOnly = false      // vouchers mode: only live AffordableHousing.com listings
     var availableOnly = false        // Show: only buildings advertised now, with an asking rent
     var vouchersOnly = false         // Show: only Section 8 / voucher-friendly buildings
+    var hcrOnly = false              // Show: only HCR lotteries / waitlists (HousingSearch.ny.gov)
     var sort: SortOrder = .cheapest
 
     /// The tabs are gone (2026-09-01): "Show" is a multi-select and the old
@@ -89,12 +90,14 @@ struct SearchQuery: Codable, Hashable {
     /// What the results screen counts.
     var noun: String {
         let n = normalized
+        if n.hcrOnly { return "lotteries & waitlists" }
         if n.availableOnly { return "rentals" }
         if n.vouchersOnly { return "voucher-friendly buildings" }
         return "buildings"
     }
     var resultNoun: String {
         let n = normalized
+        if n.hcrOnly { return "lottery & waitlist site" }
         if n.availableOnly { return "rental listing" }
         if n.vouchersOnly { return "voucher-friendly building" }
         return "rent-stabilized building"
@@ -115,6 +118,7 @@ struct SearchQuery: Codable, Hashable {
         }
         if !unitBands.isEmpty { parts.append("\(unitBands.count) size\(unitBands.count == 1 ? "" : "s")") }
         if noOpenViolations { parts.append("No violations") }
+        if hcrOnly { parts.insert("HCR", at: 0) }
         if vouchersOnly { parts.insert("Vouchers", at: 0) }
         if availableOnly { parts.insert("Available", at: 0) }
         return parts.isEmpty ? "Any price" : parts.joined(separator: ", ")
@@ -135,6 +139,7 @@ struct SearchQuery: Codable, Hashable {
         if voucherLiveOnly { n += 1 }
         if availableOnly { n += 1 }
         if vouchersOnly { n += 1 }
+        if hcrOnly { n += 1 }
         return n
     }
 }

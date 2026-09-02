@@ -4,16 +4,22 @@ import Foundation
 /// unit tests can pin its semantics.
 @MainActor
 enum SearchEngine {
+    /// HCR-only searches run over the HCR pool (register buildings hosting a
+    /// listing + stand-alone sites); everything else over the register.
+    static func pool(_ q: SearchQuery, _ store: DataStore) -> [Building] {
+        q.normalized.hcrOnly ? store.hcrBuildings : store.buildings
+    }
+
     static func run(_ q: SearchQuery, store: DataStore) -> [Building] {
         var out: [Building] = []
         out.reserveCapacity(1024)
-        for b in store.buildings where matches(b, q, store) { out.append(b) }
+        for b in pool(q, store) where matches(b, q, store) { out.append(b) }
         return sort(out, q.sort, store)
     }
 
     static func count(_ q: SearchQuery, store: DataStore) -> Int {
         var n = 0
-        for b in store.buildings where matches(b, q, store) { n += 1 }
+        for b in pool(q, store) where matches(b, q, store) { n += 1 }
         return n
     }
 

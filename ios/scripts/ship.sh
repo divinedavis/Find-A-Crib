@@ -14,6 +14,12 @@ ARCHIVE="build.nosync/FindACrib.xcarchive"; EXPORT_DIR="build.nosync/export"; IP
 echo "==> refreshing seed data"
 ./scripts/refresh_data.sh >/dev/null
 
+# The project is generated: a resource added since the last generate is not
+# in the bundle until it runs again. hcr.json shipped as a no-op once because
+# the regenerate only happened at the bump step, after the tests.
+echo "==> regenerating xcodeproj"
+./scripts/generate.sh >/dev/null
+
 echo "==> running tests"
 if [[ "${SHIP_RUN_UI:-0}" == "1" ]]; then ./scripts/run_tests.sh; else ./scripts/run_tests.sh FindACribTests; fi
 

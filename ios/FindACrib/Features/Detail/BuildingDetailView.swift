@@ -12,6 +12,7 @@ struct BuildingDetailView: View {
     @State private var contacts: HPDContacts?
     @State private var phone: String?
     @State private var contactsLoading = false
+    @State private var showPaywall = false
     @State private var scene: MKLookAroundScene?
     @State private var sceneChecked = false
 
@@ -108,6 +109,7 @@ struct BuildingDetailView: View {
             .background(Color.white.shadow(.drop(color: .black.opacity(0.08), radius: 6, y: -2)))
         }
         .swipeBackEnabled()
+        .sheet(isPresented: $showPaywall) { PaywallView() }
         .onAppear { nav.hideTabBar = true; activity.recordView(b.bbl) }
         .onDisappear { nav.hideTabBar = false }
         .task {
@@ -150,12 +152,18 @@ struct BuildingDetailView: View {
                     }
                     .accessibilityIdentifier("agent-phone")
                 } else if m.hasPhone {
-                    HStack(spacing: 10) {
-                        Image(systemName: "lock.fill").font(.system(size: 15, weight: .bold)).foregroundStyle(SE.ink3)
-                        Text(auth.hasPlus ? "Phone number temporarily unavailable" : "Phone number included with Find A Crib Plus")
-                            .font(.se(17, .semibold)).foregroundStyle(SE.ink2)
+                    Button { if !auth.hasPlus { showPaywall = true } } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: "lock.fill").font(.system(size: 15, weight: .bold)).foregroundStyle(SE.ink3)
+                            Text(auth.hasPlus ? "Phone number temporarily unavailable" : "Phone number — unlock with Find A Crib Plus")
+                                .font(.se(17, .semibold)).foregroundStyle(SE.ink2)
+                            Spacer()
+                            if !auth.hasPlus { Image(systemName: "chevron.right").font(.system(size: 14, weight: .bold)).foregroundStyle(SE.royal) }
+                        }
+                        .padding(14).frame(maxWidth: .infinity, alignment: .leading).background(SE.canvas)
+                        .contentShape(Rectangle())
                     }
-                    .padding(14).frame(maxWidth: .infinity, alignment: .leading).background(SE.canvas)
+                    .buttonStyle(.plain)
                     .accessibilityIdentifier("agent-phone-locked")
                 } else {
                     Text("No phone number on file for this agent.").font(.se(16)).foregroundStyle(SE.ink3)

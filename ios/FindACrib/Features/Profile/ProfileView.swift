@@ -5,8 +5,11 @@ struct ProfileView: View {
     @Environment(DataStore.self) private var store
     @Environment(Activity.self) private var activity
     @Environment(AuthService.self) private var auth
+    @Environment(AppNav.self) private var nav
     @Environment(\.openURL) private var openURL
     @State private var confirmDelete = false
+    @State private var showPaywall = false
+    @Environment(PlusStore.self) private var plus
     @AppStorage("hereTo") private var hereTo = "Rent"
     @AppStorage("homeBorough") private var homeBorough = "Brooklyn"
     @State private var refreshing = false
@@ -53,8 +56,14 @@ struct ProfileView: View {
                                     Text("Delete account").font(.se(16, .semibold)).foregroundStyle(SE.bad)
                                 }.buttonStyle(.plain).accessibilityIdentifier("delete-account")
                             }
-                            if !auth.hasPlus {
-                                Text("Find A Crib Plus unlocks managing-agent phone numbers.")
+                            if auth.hasPlus {
+                                Button { Task { await plus.manage() } } label: {
+                                    Text("Manage subscription").font(.se(17, .semibold)).foregroundStyle(SE.royal)
+                                }.buttonStyle(.plain)
+                            } else {
+                                SEPrimaryButton(title: "Get Find A Crib Plus · \(plus.priceText)/mo", icon: "star.fill", fill: SE.navy) { showPaywall = true }
+                                    .accessibilityIdentifier("get-plus")
+                                Text("Managing-agent phone numbers, saved searches, listing alerts.")
                                     .font(.se(15)).foregroundStyle(SE.ink3)
                             }
                         } else if auth.configured {
@@ -86,6 +95,9 @@ struct ProfileView: View {
                                 .font(.se(14)).foregroundStyle(SE.ink3)
                         }
                     }.padding(16)
+                    .sheet(isPresented: $showPaywall) { PaywallView() }
+                    .onChange(of: nav.showPaywall) { _, on in if on { showPaywall = true; nav.showPaywall = false } }
+                    .onAppear { if nav.showPaywall { showPaywall = true; nav.showPaywall = false } }
                     .alert("Delete your account?", isPresented: $confirmDelete) {
                         Button("Delete", role: .destructive) { Task { await auth.deleteAccount() } }
                         Button("Cancel", role: .cancel) {}

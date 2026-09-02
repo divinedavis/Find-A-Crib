@@ -6,6 +6,7 @@ struct FindACribApp: App {
     @State private var activity = Activity()
     @State private var nav = AppNav()
     @State private var auth = AuthService()
+    @State private var plus = PlusStore()
 
     var body: some Scene {
         WindowGroup {
@@ -14,8 +15,11 @@ struct FindACribApp: App {
                 .environment(activity)
                 .environment(nav)
                 .environment(auth)
+                .environment(plus)
                 .task {
                     auth.activity = activity
+                    plus.auth = auth; auth.plus = plus
+                    plus.start()
                     activity.remoteToggle = { [weak auth] bbl, on in auth?.remoteToggle(bbl: bbl, saved: on) }
                     await store.load()
                     LaunchArgs.apply(to: nav, store: store)
@@ -43,6 +47,8 @@ final class AppNav {
     var searchPath: [Route] = []
     var activityPath: [Route] = []
     var profilePath: [Route] = []
+    /// Opened by the Profile screen; set by the --paywall launch argument.
+    var showPaywall = false
 }
 
 /// `--tab activity|profile`, `--route results|map|detail[:bbl]` — used by the
@@ -52,6 +58,7 @@ enum LaunchArgs {
         let a = CommandLine.arguments
         func val(_ flag: String) -> String? { a.firstIndex(of: flag).flatMap { $0 + 1 < a.count ? a[$0 + 1] : nil } }
         if let t = val("--tab") { nav.tab = t == "activity" ? .activity : (t == "profile" ? .profile : .search) }
+        if a.contains("--paywall") { nav.tab = .profile; nav.showPaywall = true }
         guard let r = val("--route") else { return }
         var q = SearchQuery(); q.mode = .stabilized; q.availableOnly = true; q.locations = [.borough("Bk")]
         if r == "results" { nav.searchPath = [.results(q)] }

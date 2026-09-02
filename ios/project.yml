@@ -133,5 +133,7 @@ schemes:
       gatherCoverageData: false
     run:
       config: Debug
+      # Local StoreKit products for the simulator; not bundled in the app.
+      storeKitConfiguration: Plus.storekit
     archive:
       config: Release

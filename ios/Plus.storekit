@@ -1,0 +1,23 @@
+{
+  "identifier" : "FINDACRIB-PLUS-STOREKIT",
+  "nonRenewingSubscriptions" : [],
+  "products" : [],
+  "settings" : { "_applicationInternalID" : "6807549249", "_developerTeamID" : "CG89RY4W6R", "_failTransactionsEnabled" : false, "_lastSynchronizedDate" : 0, "_locale" : "en_US", "_storefront" : "USA", "_storeKitErrors" : [] },
+  "subscriptionGroups" : [
+    {
+      "id" : "21800001",
+      "localizations" : [ { "description" : "", "displayName" : "Find A Crib Plus", "locale" : "en_US" } ],
+      "name" : "Find A Crib Plus",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [], "codeOffers" : [], "displayPrice" : "4.99", "familyShareable" : false, "groupNumber" : 1,
+          "internalID" : "6807549250", "introductoryOffer" : null,
+          "localizations" : [ { "description" : "Managing-agent phone numbers, saved searches and listing alerts.", "displayName" : "Find A Crib Plus", "locale" : "en_US" } ],
+          "productID" : "com.divinedavis.findacrib.plus.monthly",
+          "recurringSubscriptionPeriod" : "P1M", "referenceName" : "Find A Crib Plus Monthly", "subscriptionGroupID" : "21800001", "type" : "RecurringSubscription", "winbackOffers" : []
+        }
+      ]
+    }
+  ],
+  "version" : { "major" : 4, "minor" : 0 }
+}

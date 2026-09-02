@@ -46,6 +46,8 @@ final class AuthService {
     private var phoneCache: [String: String?] = [:]
     /// Hook so saves written locally also land in saved_buildings.
     weak var activity: Activity?
+    /// App Store Plus: re-synced to the account on every sign-in.
+    weak var plus: PlusStore?
 
     var isSignedIn: Bool { session != nil }
     var email: String? { session?.user.email }
@@ -71,7 +73,10 @@ final class AuthService {
             case .initialSession, .signedIn, .tokenRefreshed, .userUpdated:
                 let wasSignedIn = session != nil
                 session = s
-                if s != nil { await refreshPlus(); if !wasSignedIn || event == .signedIn { await syncSaves() } }
+                if s != nil {
+                    await refreshPlus()
+                    if !wasSignedIn || event == .signedIn { await syncSaves(); await plus?.sync() }
+                }
             case .signedOut, .userDeleted:
                 session = nil; hasPlus = false; contactsCache = [:]; phoneCache = [:]
             default: break

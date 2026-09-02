@@ -1,6 +1,6 @@
 {
-"updated": 1788313508,
-"updated_iso": "2026-09-02T01:45:08+00:00",
+"updated": 1788323865,
+"updated_iso": "2026-09-02T04:37:45+00:00",
 "count": 52,
 "listings": [
 {
@@ -28,8 +28,8 @@
 "street": "111 East 123rd Street",
 "zip": "10035",
 "bbl": null,
-"lat": 40.803695,
-"lng": -73.939685
+"lat": 40.80365,
+"lng": -73.93916
 }
 ]
 },
@@ -58,85 +58,85 @@
 "street": "30 Monroe St",
 "zip": "10002",
 "bbl": null,
-"lat": 40.711446,
-"lng": -73.995263
+"lat": 40.711001,
+"lng": -73.995088
 },
 {
 "street": "12 Monroe St",
 "zip": "10002",
 "bbl": null,
-"lat": 40.711367,
-"lng": -73.99614
+"lat": 40.71093,
+"lng": -73.99543
 },
 {
 "street": "36 Monroe St",
 "zip": "10002",
 "bbl": null,
-"lat": 40.711453,
-"lng": -73.995181
+"lat": 40.71093,
+"lng": -73.99543
 },
 {
 "street": "20 Monroe St",
 "zip": "10002",
 "bbl": null,
-"lat": 40.711408,
-"lng": -73.995692
+"lat": 40.71093,
+"lng": -73.99543
 },
 {
 "street": "34 Monroe St",
 "zip": "10002",
 "bbl": null,
-"lat": 40.711451,
-"lng": -73.995209
+"lat": 40.71093,
+"lng": -73.99543
 },
 {
 "street": "40 Monroe St",
 "zip": "10002",
 "bbl": null,
-"lat": 40.711458,
-"lng": -73.995126
+"lat": 40.71093,
+"lng": -73.99543
 },
 {
 "street": "14 Monroe St",
 "zip": "10002",
 "bbl": null,
-"lat": 40.711377,
-"lng": -73.996028
+"lat": 40.71093,
+"lng": -73.99543
 },
 {
 "street": "16 Monroe St",
 "zip": "10002",
 "bbl": null,
-"lat": 40.711387,
-"lng": -73.995916
+"lat": 40.71093,
+"lng": -73.99543
 },
 {
 "street": "10 Monroe St",
 "zip": "10002",
 "bbl": null,
-"lat": 40.711357,
-"lng": -73.996252
+"lat": 40.710852,
+"lng": -73.99635
 },
 {
 "street": "38 Monroe St",
 "zip": "10002",
 "bbl": null,
-"lat": 40.711456,
-"lng": -73.995154
+"lat": 40.71093,
+"lng": -73.99543
 },
 {
 "street": "32 Monroe St",
 "zip": "10002",
 "bbl": null,
-"lat": 40.711449,
-"lng": -73.995236
+"lat": 40.71093,
+"lng": -73.99543
 },
 {
 "street": "18 Monroe St",
 "zip": "10002",
 "bbl": null,
-"lat": 40.711397,
-"lng": -73.995804
+"lat": 40.71093,
+"lng": -73.99543
 }
 ]
 },
@@ -165,8 +165,8 @@
 "street": "882 Fountain Avenue",
 "zip": "11208",
 "bbl": null,
-"lat": 40.65729,
-"lng": -73.864916
+"lat": 40.679168,
+"lng": -73.876591
 }
 ]
 },
@@ -195,8 +195,8 @@
 "street": "1182 Woodycrest Avenue",
 "zip": "10452",
 "bbl": null,
-"lat": 40.836493,
-"lng": -73.924933
+"lat": 40.83646,
+"lng": -73.9248
 }
 ]
 },
@@ -225,8 +225,8 @@
 "street": "4519 White Plains Road",
 "zip": "10470",
 "bbl": null,
-"lat": 40.900425,
-"lng": -73.852781
+"lat": 40.90062,
+"lng": -73.85296
 }
 ]
 },
@@ -255,8 +255,8 @@
 "street": "98 Van Cortlandt Park South, Bronx, NY 10463",
 "zip": null,
 "bbl": null,
-"lat": 40.884978,
-"lng": -73.891712
+"lat": 40.884719,
+"lng": -73.891487
 }
 ]
 },
@@ -285,8 +285,8 @@
 "street": "260 65th Street, Brooklyn NY 11220 attn: Management Office",
 "zip": null,
 "bbl": null,
-"lat": 40.639512,
-"lng": -74.024005
+"lat": 40.639622,
+"lng": -74.024994
 }
 ]
 },
@@ -315,8 +315,8 @@
 "street": "1559 Boone Avenue",
 "zip": "10460",
 "bbl": null,
-"lat": 40.833549,
-"lng": -73.884873
+"lat": 40.83359,
+"lng": -73.88508
 }
 ]
 },
@@ -367,8 +367,8 @@
 "street": "750 Faile Street Bronx NY, 10474",
 "zip": null,
 "bbl": null,
-"lat": 40.815428,
-"lng": -73.886641
+"lat": 40.816017,
+"lng": -73.886611
 }
 ]
 },
@@ -397,8 +397,8 @@
 "street": "Cathedral Parkway Towers, 424 Cathedral Parkway -, New York, NY 10025",
 "zip": null,
 "bbl": null,
-"lat": 40.802048,
-"lng": -73.961829
+"lat": 40.802077,
+"lng": -73.962397
 }
 ]
 },
@@ -427,8 +427,8 @@
 "street": "Residential Sales Office, 2057A Bartow Avenue, Bronx, NY 10475",
 "zip": null,
 "bbl": null,
-"lat": 40.869565,
-"lng": -73.828892
+"lat": 40.870254,
+"lng": -73.828209
 }
 ]
 },
@@ -457,8 +457,8 @@
 "street": "The Management Office, 775 Concourse Village, East Bronx, NY 10451",
 "zip": null,
 "bbl": null,
-"lat": 40.822978,
-"lng": -73.919973
+"lat": 40.823554,
+"lng": -73.920036
 }
 ]
 },
@@ -487,8 +487,8 @@
 "street": "65-46 160th Street, NY 11365",
 "zip": null,
 "bbl": null,
-"lat": 40.735511,
-"lng": -73.808906
+"lat": 40.735608,
+"lng": -73.809182
 }
 ]
 },
@@ -517,8 +517,8 @@
 "street": "Findlay House, Inc, 1175 Findlay Avenue, Bronx, NY 10456, Attm: Management Office",
 "zip": null,
 "bbl": null,
-"lat": 40.832178,
-"lng": -73.912779
+"lat": 40.832402,
+"lng": -73.912931
 }
 ]
 },
@@ -575,8 +575,8 @@
 "street": "Management Office: 828 Midwood St. Brooklyn, NY 11203",
 "zip": null,
 "bbl": null,
-"lat": 40.661196,
-"lng": -73.932755
+"lat": 40.66103,
+"lng": -73.933508
 }
 ]
 },
@@ -605,29 +605,29 @@
 "street": "220 Front Street",
 "zip": "10038",
 "bbl": "1000977503",
-"lat": 40.707541,
-"lng": -74.002243
+"lat": 40.707613,
+"lng": -74.002348
 },
 {
 "street": "217 Front Street",
 "zip": "10038",
 "bbl": "1000970018",
-"lat": 40.707408,
-"lng": -74.002232
+"lat": 40.707237,
+"lng": -74.00232
 },
 {
 "street": "225 Front Street",
 "zip": "10038",
 "bbl": "1000970024",
-"lat": 40.707512,
-"lng": -74.002028
+"lat": 40.70737,
+"lng": -74.002055
 },
 {
 "street": "229 Front Street",
 "zip": "10038",
 "bbl": "1000970026",
-"lat": 40.707564,
-"lng": -74.001926
+"lat": 40.707455,
+"lng": -74.001891
 }
 ]
 },
@@ -656,15 +656,15 @@
 "street": "407 West 206th Street",
 "zip": "10034",
 "bbl": null,
-"lat": 40.863138,
-"lng": -73.917692
+"lat": 40.86371,
+"lng": -73.91824
 },
 {
 "street": "405 West 206th Street",
 "zip": "10034",
 "bbl": null,
-"lat": 40.863123,
-"lng": -73.917657
+"lat": 40.86345,
+"lng": -73.9176
 }
 ]
 },
@@ -693,8 +693,8 @@
 "street": "Inwood Gardens Inc. 45 Fairview Ave, Management Office T3, New York, NY 10040",
 "zip": null,
 "bbl": null,
-"lat": 40.857445,
-"lng": -73.929657
+"lat": 40.857657,
+"lng": -73.929507
 }
 ]
 },
@@ -723,8 +723,8 @@
 "street": "17 Fort George Hill, Management Office, 1st Fl, New York, NY 10040",
 "zip": null,
 "bbl": null,
-"lat": 40.858009,
-"lng": -73.927293
+"lat": 40.858187,
+"lng": -73.927497
 }
 ]
 },
@@ -775,8 +775,8 @@
 "street": "11 Fort George Hill New york, NY 10040 Management Office",
 "zip": null,
 "bbl": null,
-"lat": 40.857479,
-"lng": -73.927853
+"lat": 40.857565,
+"lng": -73.928209
 }
 ]
 },
@@ -827,8 +827,8 @@
 "street": "At the management office located at 633 Olmstead Ave, Bronx, NY 10473",
 "zip": null,
 "bbl": null,
-"lat": 40.81931,
-"lng": -73.851322
+"lat": 40.819236,
+"lng": -73.85185
 }
 ]
 },
@@ -856,7 +856,9 @@
 {
 "street": "1407 Linden Blvd Brookyln NY 11212",
 "zip": null,
-"bbl": null
+"bbl": null,
+"lat": 40.655783,
+"lng": -73.908542
 }
 ]
 },
@@ -885,8 +887,8 @@
 "street": "101 Myrtle Avenue",
 "zip": "10310",
 "bbl": null,
-"lat": 40.630072,
-"lng": -74.114838
+"lat": 40.630275,
+"lng": -74.115164
 }
 ]
 },
@@ -915,8 +917,8 @@
 "street": "Metropolitan Realty Group 60 Cuttermill Road Great Neck, NY 11021",
 "zip": null,
 "bbl": null,
-"lat": 40.785922,
-"lng": -73.730878
+"lat": 40.55423,
+"lng": -74.16658
 }
 ]
 },
@@ -945,8 +947,8 @@
 "street": "128 E Broadway, Box, New York, NY 10002-9998",
 "zip": null,
 "bbl": null,
-"lat": 40.713973,
-"lng": -73.991789
+"lat": 40.714202,
+"lng": -73.991871
 }
 ]
 },
@@ -996,7 +998,9 @@
 {
 "street": "636 Brooklyn, Ave BK NY 11205",
 "zip": null,
-"bbl": null
+"bbl": null,
+"lat": 40.658583,
+"lng": -73.945586
 }
 ]
 },
@@ -1025,8 +1029,8 @@
 "street": "Nagle House, Inc. 240 Nagle Avenue, Management Office, New York, NY 10034",
 "zip": null,
 "bbl": null,
-"lat": 40.862983,
-"lng": -73.921138
+"lat": 40.863327,
+"lng": -73.92111
 }
 ]
 },
@@ -1055,8 +1059,8 @@
 "street": "50 Nevins Street",
 "zip": "11217",
 "bbl": "3001727501",
-"lat": 40.687177,
-"lng": -73.982005
+"lat": 40.687077,
+"lng": -73.982179
 }
 ]
 },
@@ -1085,8 +1089,8 @@
 "street": "168 39th Street Brooklyn, N 11232",
 "zip": null,
 "bbl": null,
-"lat": 40.65566,
-"lng": -74.011251
+"lat": 40.655402,
+"lng": -74.011366
 }
 ]
 },
@@ -1115,8 +1119,8 @@
 "street": "3260 Cruger Avenue, Bronx, NY 10467",
 "zip": null,
 "bbl": null,
-"lat": 40.872953,
-"lng": -73.86609
+"lat": 40.873085,
+"lng": -73.865794
 }
 ]
 },
@@ -1145,8 +1149,8 @@
 "street": "Matthew Adam Prop., 375 Pearl St, NYC 10038",
 "zip": null,
 "bbl": null,
-"lat": 40.710859,
-"lng": -74.000694
+"lat": 40.710884,
+"lng": -74.001197
 }
 ]
 },
@@ -1175,8 +1179,8 @@
 "street": "3835 Sedgwick Ave, Bronx, NY 10463",
 "zip": null,
 "bbl": null,
-"lat": 40.88261,
-"lng": -73.895456
+"lat": 40.882822,
+"lng": -73.895398
 }
 ]
 },
@@ -1204,9 +1208,9 @@
 {
 "street": "1633 University Avenue Bronx New York 10453",
 "zip": null,
-"bbl": null,
-"lat": 40.847716,
-"lng": -73.919403
+"bbl": "2028780083",
+"lat": 40.848667,
+"lng": -73.918833
 }
 ]
 },
@@ -1279,8 +1283,8 @@
 "street": "2520 Jerome Avenue",
 "zip": "10468",
 "bbl": null,
-"lat": 40.86435,
-"lng": -73.899749
+"lat": 40.86426,
+"lng": -73.89939
 }
 ]
 },
@@ -1309,8 +1313,8 @@
 "street": "Leasing Office: 3601 Surf Avenue, Brooklyn, NY 11224",
 "zip": null,
 "bbl": null,
-"lat": 40.573169,
-"lng": -74.001477
+"lat": 40.573659,
+"lng": -74.001817
 }
 ]
 },
@@ -1339,15 +1343,15 @@
 "street": "45-25 Kissena Boulevard",
 "zip": "11355",
 "bbl": null,
-"lat": 40.751688,
-"lng": -73.820167
+"lat": 40.751938,
+"lng": -73.820068
 },
 {
 "street": "137-47 45th Avenue",
 "zip": "11355",
 "bbl": null,
-"lat": 40.751575,
-"lng": -73.821995
+"lat": 40.751972,
+"lng": -73.822184
 }
 ]
 },
@@ -1375,7 +1379,9 @@
 {
 "street": "Pick up : 1390 Pennsylvania Ave, 2md fl, Brooklyn, NY 11239 Drop Off: P.O. Box will be established",
 "zip": null,
-"bbl": null
+"bbl": null,
+"lat": 40.646753,
+"lng": -73.883208
 }
 ]
 },
@@ -1404,8 +1410,8 @@
 "street": "1340 Stratford Avenue, Bronx, NY 10472",
 "zip": null,
 "bbl": null,
-"lat": 40.832577,
-"lng": -73.876209
+"lat": 40.833108,
+"lng": -73.875762
 }
 ]
 },
@@ -1434,8 +1440,8 @@
 "street": "1366 East New York Avenue",
 "zip": "11212",
 "bbl": null,
-"lat": 40.669522,
-"lng": -73.91703
+"lat": 40.66943,
+"lng": -73.91683
 }
 ]
 },
@@ -1464,8 +1470,8 @@
 "street": "1591 Bruckner Blvd, Bronx, NY 10472",
 "zip": null,
 "bbl": null,
-"lat": 40.824274,
-"lng": -73.875223
+"lat": 40.824485,
+"lng": -73.874898
 }
 ]
 },
@@ -1494,8 +1500,8 @@
 "street": "548 Utica Avenue",
 "zip": "11203",
 "bbl": null,
-"lat": 40.660107,
-"lng": -73.931351
+"lat": 40.65984,
+"lng": -73.93184
 }
 ]
 },
@@ -1524,8 +1530,8 @@
 "street": "523 East 98th Street",
 "zip": "11212",
 "bbl": "3036200005",
-"lat": 40.656081,
-"lng": -73.912878
+"lat": 40.65615,
+"lng": -73.91259
 }
 ]
 },
@@ -1554,8 +1560,8 @@
 "street": "2001 Marcus Ave Lake Success, NY 11042",
 "zip": null,
 "bbl": null,
-"lat": 40.756624,
-"lng": -73.690261
+"lat": 40.69468,
+"lng": -73.94064
 }
 ]
 },
@@ -1606,8 +1612,8 @@
 "street": "Woodlawn Veteran Mutual Housing, 4260 Katonah Avenue, Bronx, NY 10470",
 "zip": null,
 "bbl": null,
-"lat": 40.897493,
-"lng": -73.867101
+"lat": 40.897304,
+"lng": -73.866716
 }
 ]
 }

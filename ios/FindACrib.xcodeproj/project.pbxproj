@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0136804FC89E8B93A538DC65 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2F8F4D03975F98CA24C386C /* AuthService.swift */; };
+		04D97E5CDE97B0E4A936D811 /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41043E1D2462CF0BA147F621 /* PaywallView.swift */; };
 		0520A5F1A16409B5EDD7B003 /* MapResultsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACFF6FF6AFF4A2D1729699C2 /* MapResultsView.swift */; };
 		07C22BCCE603D9800EE7EE13 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCFB5318551DD17B54EE6524 /* Components.swift */; };
 		0CF23CC819EE42C4B168DADB /* WebAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2A5DE06714F5E44D5AA829E /* WebAuth.swift */; };
@@ -15,6 +16,7 @@
 		1488C890724AD279E0177491 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB6A940EC2510A1E63699B6A /* RootView.swift */; };
 		17B1E6D55E507C00DC25FB0E /* ImageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA50D389BB3AB7B341BD720D /* ImageService.swift */; };
 		1B0A6E98D9106FCDFD97D973 /* fmr.json in Resources */ = {isa = PBXBuildFile; fileRef = BE5021FFFE6C939F06530FD2 /* fmr.json */; };
+		1D4842B47A65A9237090D64D /* PlusStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82AEFA1B93D2073218086C5 /* PlusStore.swift */; };
 		216D8003A64546DC1DED920D /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96A59BAA0D560AEC7D0E1BF8 /* Theme.swift */; };
 		239814C37ED0E60FC84485B9 /* FindACribUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01F62B1CE3CCF2DAD07279F9 /* FindACribUITests.swift */; };
 		2B4DF01382763EDD8546E20A /* Building.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A8CDE81BD0E7DDBEBBC1042 /* Building.swift */; };
@@ -73,6 +75,7 @@
 		3C345F6E17169EEB81A7265B /* LocationPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationPickerView.swift; sourceTree = "<group>"; };
 		3C5230FE7E960A89326516B1 /* SearchQuery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchQuery.swift; sourceTree = "<group>"; };
 		3ED34FDA9213D6B7F0195FB7 /* DataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataStore.swift; sourceTree = "<group>"; };
+		41043E1D2462CF0BA147F621 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
 		44FBB961CA3E35950616322D /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		5A8CDE81BD0E7DDBEBBC1042 /* Building.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Building.swift; sourceTree = "<group>"; };
 		5F0A512AC04B8BF2FA246DAF /* SourceSans3-Black.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SourceSans3-Black.ttf"; sourceTree = "<group>"; };
@@ -93,6 +96,7 @@
 		BA7425E377576FE3E5C2B47B /* BuildingDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildingDetailView.swift; sourceTree = "<group>"; };
 		BE5021FFFE6C939F06530FD2 /* fmr.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = fmr.json; sourceTree = "<group>"; };
 		C2015DADE5A5CCF0E92E6795 /* s8.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = s8.json; sourceTree = "<group>"; };
+		C82AEFA1B93D2073218086C5 /* PlusStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlusStore.swift; sourceTree = "<group>"; };
 		C86217F159AB095139ABEE8D /* BuildingCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildingCard.swift; sourceTree = "<group>"; };
 		CCFBDF3CE45EAFE74FADE6C4 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D0C85E5EC62AB0B5085C0F92 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -105,7 +109,7 @@
 		E42AA07F206334B8F58225F1 /* listings.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = listings.json; sourceTree = "<group>"; };
 		EA50D389BB3AB7B341BD720D /* ImageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageService.swift; sourceTree = "<group>"; };
 		EFD73F478D420E114F0C82CB /* FiltersSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FiltersSheet.swift; sourceTree = "<group>"; };
-		"TEMP_0F96FD89-5917-42AA-BDA1-3FFB59D06657" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_5F25CE75-E93A-4325-8531-CCB618FA6268" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -127,6 +131,7 @@
 				A8B4C6BAFBAB36BCC61E8C51 /* AppleSignIn.swift */,
 				E2F8F4D03975F98CA24C386C /* AuthService.swift */,
 				EA50D389BB3AB7B341BD720D /* ImageService.swift */,
+				C82AEFA1B93D2073218086C5 /* PlusStore.swift */,
 				E2A5DE06714F5E44D5AA829E /* WebAuth.swift */,
 			);
 			path = Services;
@@ -184,6 +189,7 @@
 		664897D1C52D9592240A67E7 /* Profile */ = {
 			isa = PBXGroup;
 			children = (
+				41043E1D2462CF0BA147F621 /* PaywallView.swift */,
 				44FBB961CA3E35950616322D /* ProfileView.swift */,
 			);
 			path = Profile;
@@ -311,10 +317,10 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
-		"TEMP_9B66098B-1800-4D6A-BF56-F9029B2ABE88" /* ios */ = {
+		"TEMP_4D1F103C-5F0C-4608-8114-3837FF7A8FC7" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_0F96FD89-5917-42AA-BDA1-3FFB59D06657" /* Secrets.xcconfig */,
+				"TEMP_5F25CE75-E93A-4325-8531-CCB618FA6268" /* Secrets.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -460,6 +466,8 @@
 				D06140B2770579898ABA0FFB /* LocationPickerView.swift in Sources */,
 				0520A5F1A16409B5EDD7B003 /* MapResultsView.swift in Sources */,
 				77119B1CD94A4E7C0C3B77D4 /* MyActivityView.swift in Sources */,
+				04D97E5CDE97B0E4A936D811 /* PaywallView.swift in Sources */,
+				1D4842B47A65A9237090D64D /* PlusStore.swift in Sources */,
 				64498DC63C55C20134BBB5DE /* ProfileView.swift in Sources */,
 				EE8FB6404DECF616C6331A7C /* ResultsView.swift in Sources */,
 				1488C890724AD279E0177491 /* RootView.swift in Sources */,
@@ -572,7 +580,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -606,7 +614,7 @@
 		};
 		4A043B04EA1D2F1BD0250C61 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_0F96FD89-5917-42AA-BDA1-3FFB59D06657" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_5F25CE75-E93A-4325-8531-CCB618FA6268" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -647,7 +655,7 @@
 		};
 		7B4EAA1664EF270AD8C579E8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_0F96FD89-5917-42AA-BDA1-3FFB59D06657" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_5F25CE75-E93A-4325-8531-CCB618FA6268" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -720,7 +728,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;

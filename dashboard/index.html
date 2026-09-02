@@ -1977,7 +1977,7 @@
     // findacrib page ranks in the top 10, as a share of all tracked queries.
     var SQ = d.search || {};
     var share = SQ.share_pct != null ? n(SQ.share_pct)
-              : (n(SQ.tracked_queries) ? 100*n(SQ.top10)/n(SQ.tracked_queries) : null);
+              : (n(SQ.tracked_queries) ? 100*n(SQ.tracked_ranking)/n(SQ.tracked_queries) : null);
     el('fac-health-meters').innerHTML=
       '<div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">'+
       'GOALS <span style="font-weight:400;text-transform:none">(mine, not a benchmark)</span></div>'+
@@ -1993,7 +1993,7 @@
             pct(n(S.mrr), AUDIENCE_GOALS.mrr), n(S.mrr) >= AUDIENCE_GOALS.mrr ? 'good' : '')+
       meter('Search share · tracked queries ranking top 10',
             (share==null ? '—' : Number(share).toFixed(1)+'%')+' of '+AUDIENCE_GOALS.share+'%'+
-            (n(SQ.tracked_queries) ? ' <span class="a-bench-note">('+comma(SQ.top10)+' of '+comma(SQ.tracked_queries)+' queries)</span>' : ''),
+            (n(SQ.tracked_queries) ? ' <span class="a-bench-note">('+comma(SQ.tracked_ranking)+' of '+comma(SQ.tracked_queries)+' queries)</span>' : ''),
             pct(n(share), AUDIENCE_GOALS.share), n(share) >= AUDIENCE_GOALS.share ? 'good' : '');
 
     // The "Against my goals…" narrative was removed. The tiles and the goal

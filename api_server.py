@@ -1930,6 +1930,20 @@ def _fac_search():
     if total:
         buckets = total.get("buckets") or {}
         cohort = sum(int(v or 0) for v in buckets.values())
+        # The growth engine's search-share goal (90% of tracked queries ranking
+        # top 10), so the dashboard's GOALS block can carry it. Read from the
+        # engine's own ledger rather than recomputed here.
+        try:
+            with open(FAC_LAST_RUN) as f:
+                sc = (json.load(f).get("searchconsole") or {})
+            out["share_pct"] = sc.get("share_pct")
+            out["tracked_ranking"] = sc.get("tracked_ranking")
+            kw_path = os.path.join(os.path.dirname(FAC_LAST_RUN), "keywords.json")
+            with open(kw_path) as f:
+                kws = json.load(f)
+            out["tracked_queries"] = len(kws) if isinstance(kws, list) else len(kws.get("keywords", []))
+        except Exception:
+            pass
         out["index"] = {
             "published": ix.get("published_urls"),
             "cohort": cohort,

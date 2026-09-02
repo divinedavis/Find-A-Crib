@@ -1,13 +1,13 @@
 {
   "build": {
-    "at": "2026-09-01T05:40:34+00:00",
+    "at": "2026-09-02T05:40:30+00:00",
     "changed_urls": 6,
-    "date": "2026-09-01",
+    "date": "2026-09-02",
     "deployed": true,
     "new_urls": 0,
     "seo_corpus": {
       "days_old": 0,
-      "written": "2026-09-01"
+      "written": "2026-09-02"
     },
     "seo_pipeline": {
       "at": "2026-09-01T05:42:18Z",
@@ -15,7 +15,7 @@
       "code": "synced-1",
       "corpus_pages": 49371,
       "head": "unknown",
-      "hours_ago": 0.0,
+      "hours_ago": 24.0,
       "phase": "finish",
       "pull": "no-worktree",
       "rc": 0,
@@ -23,49 +23,56 @@
       "state": "ran clean (source handed over from the checkout: synced-1)",
       "step": "done"
     },
-    "seo_watchdog": {
-      "at": "2026-09-01T05:42:18+00:00",
-      "note": "ran refresh_seo.sh to completion",
-      "ok": true,
-      "ran": true,
-      "rc": 0
-    },
     "techniques": {
       "city_guides": {
         "detail": "3 of 3 city guides live with their data caveat",
-        "ok": true
+        "ok": true,
+        "same_since": "2026-09-02",
+        "unchanged": true
       },
       "city_seo_expansion": {
         "detail": "hub pages live: dc 103, la 112, sf 37",
-        "ok": true
+        "ok": true,
+        "same_since": "2026-09-02",
+        "unchanged": true
       },
       "crawl_paths": {
-        "detail": "15 of 15 published sections have an inbound internal link (62 docroot pages read) \u2014 single inbound source: /available/ \u2190 nyc browse hub, /dc/neighborhood/ \u2190 dc browse hub, /la/zip/ \u2190 la browse hub, /sf/neighborhood/ \u2190 sf browse hub, /zip/ \u2190 building page \u2014 click depth from the homepage (2000 pages read, levels 0-5 fully expanded): /zip/ 6, /building/ 5, /dc/neighborhood/ 5, /la/zip/ 5, /sf/neighborhood/ 5, /available/ 4, /borough/ 4, /brief/ 4, +7 shallower \u2014 3 of 15 audited sections are published under no ACTIVE technique, so nothing rebuilds them; link them or stop publishing them: /available/ [candidate], /brief/ [retired], /developers/ [candidate]",
+        "detail": "15 of 15 published sections have an inbound internal link (62 docroot pages read) \u2014 single inbound source: /available/ \u2190 nyc browse hub, /dc/neighborhood/ \u2190 dc browse hub, /la/zip/ \u2190 la browse hub, /sf/neighborhood/ \u2190 sf browse hub, /zip/ \u2190 building page \u2014 click depth from the homepage (598 pages read, levels 0-3 fully expanded): /dc/neighborhood/ 3, /la/zip/ 3, /sf/neighborhood/ 3, /zip/ 3, /available/ 2, /building/ 2, /dc/buildings/ 2, /guide/is-my-apartment-rent-controlled- 2, +7 shallower \u2014 3 of 15 audited sections are published under no ACTIVE technique, so nothing rebuilds them; link them or stop publishing them: /available/ [candidate], /brief/ [retired], /developers/ [candidate]",
         "ok": true
       },
       "derived_building_facts": {
         "detail": "comparison block on 399 of 400 sampled building pages (99%) across 47,165 published",
-        "ok": true
+        "ok": true,
+        "same_since": "2026-09-02",
+        "unchanged": true
       },
       "fresh_section8": {
-        "detail": "291 buildings across 5 boroughs",
+        "detail": "289 buildings across 5 boroughs",
         "ok": true
       },
       "hub_direct_answers": {
         "detail": "answer block on 623 of 623 hub pages (neighborhood 198/198, borough 5/5, zip 165/165, dc hub 103/103, la hub 112/112, sf hub 37/37, city browse hub 3/3)",
-        "ok": true
+        "ok": true,
+        "same_since": "2026-09-02",
+        "unchanged": true
       },
       "indexnow": {
         "detail": "submitted 6 URLs \u2192 HTTP 200",
-        "ok": true
+        "ok": true,
+        "same_since": "2026-09-02",
+        "unchanged": true
       },
       "llms_txt": {
         "detail": "llms.txt (63 lines), robots.txt naming 15 AI crawlers",
-        "ok": true
+        "ok": true,
+        "same_since": "2026-09-02",
+        "unchanged": true
       },
       "sitemap_daily": {
         "detail": "sitemap-daily.xml with 23 URLs",
-        "ok": true
+        "ok": true,
+        "same_since": "2026-09-02",
+        "unchanged": true
       }
     }
   },

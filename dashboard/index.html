@@ -457,7 +457,10 @@
           <div class="callout" id="returns-callout" style="margin-top:18px"></div>
         </div>
 
-        <div class="card">
+        <!-- Shared by all four sites, so it is hidden per-site rather than
+             deleted: Find A Crib's renderer hides it and drops #sec-traffic to
+             one column, NEMO / Crease / Fresh Spaces show it again. -->
+        <div class="card" id="card-today">
           <h2>Today</h2>
           <div class="card-sub" id="today-sub">Fresh traffic, updated live</div>
           <div id="today-list"></div>
@@ -585,7 +588,7 @@
       <!-- ===== Trent's Fresh Spaces only ===== -->
       <div class="card mb18" id="sec-goals">
         <div class="card-head-row">
-          <div><h2>Goals — what each DAU target is actually worth</h2><div class="card-sub">Three audience scenarios priced against seven revenue streams — five sold to the audience, two not. <b>This card ignores the range picker</b> — its rates are measured over all time, because a projection about 25,000 daily actives should not be rewritten by one afternoon's click mix. The last revenue widget on this page was deleted for projecting MRR off assumptions while the real MRR read $0; the rates here are measured over all time and the pricing assumptions are the only thing you can argue with.</div></div>
+          <div><h2>Goals — what each DAU target is actually worth</h2></div>
         </div>
         <div id="goals-table"></div>
         <div class="callout" id="goals-callout" style="margin-top:16px"></div>
@@ -1476,7 +1479,11 @@
   function render(user, d){
     el('donut-title').textContent='Where returning visitors come from';
     el('donut-sub').textContent='Are you paying to bring people back?';
-    el('today-sub').textContent='Fresh traffic, updated live';
+    // No Today card here. Left in a two-column grid on its own, the donut
+    // would sit in 1.35fr with an empty column beside it, so the row collapses
+    // to one column for this site and is restored by the other three.
+    el('card-today').classList.add('hidden');
+    el('sec-traffic').classList.remove('cols-2');
     el('spark-sub').textContent='Unique visitors per day';
     // avatar
     var email=(user&&user.email)||'';
@@ -1620,7 +1627,6 @@
     renderFacSearch(d.search);
     renderAds(d.ads);
     renderReferrals(d.referrals);
-    renderToday(TD, d.events||{});
     renderSpark(d.sparkline||[]);
     renderFacBuild(d.build);
     renderFacTiles(d.adtiles);
@@ -1777,11 +1783,11 @@
           comma(n(A.ctr_min)||100)+', because a rate off a handful of impressions has a margin of error wider than itself.'+
           (top?' Most of those clicks went to <b>'+esc(top.agent)+'</b>.':'');
     } else {
-      msg='<b>'+comma(impr)+' viewable impressions reached '+comma(reach)+' renters and produced '+comma(n(A.clicks_measured))+' clicks ('+ctr+').</b> '+
-          (top&&n(top.impressions)
-            ? esc(top.agent)+' alone got '+comma(n(top.impressions))+' impressions and '+comma(n(top.clicks))+' clicks — free. '
-            : '')+
-          'That is the number to put in front of an agent: this is what one slot already delivered before anybody paid for it.';
+      // Removed: the "N viewable impressions reached N renters" pitch line. The
+      // per-agent rows above it already carry those counts. The three branches
+      // before this one survive because each explains a BLANK click rate, which
+      // the numbers cannot explain by themselves.
+      msg='';
     }
     // This card follows the range picker like every other one, but it used to
     // talk as though it did not — quoting absolute dates while showing a single
@@ -1983,21 +1989,11 @@
             pct(100*n(E.stickiness), AUDIENCE_GOALS.stickiness),
             100*n(E.stickiness) >= AUDIENCE_GOALS.stickiness ? 'good' : '');
 
-    var stick=Number(E.stickiness||0)*100;
-    el('fac-health-callout').innerHTML =
-      '<b>Against my goals: '+comma(E.dau)+' of '+comma(AUDIENCE_GOALS.dau)+' daily, '+
-      comma(E.wau)+' of '+comma(AUDIENCE_GOALS.wau)+' weekly, '+
-      comma(E.mau)+' of '+comma(AUDIENCE_GOALS.mau)+' monthly, '+rate(E.stickiness)+' of '+
-      AUDIENCE_GOALS.stickiness+'% stickiness.</b> The daily figure counts TODAY SO FAR, so read '+
-      'it late in the day — before noon it is half a day being compared against a whole one. '+
-      'The ratio needs no separate work: '+comma(AUDIENCE_GOALS.dau)+' of '+comma(AUDIENCE_GOALS.mau)+
-      ' is exactly '+AUDIENCE_GOALS.stickiness+'%, so the two counts carry it. '+
-      '<b>D30 retention is '+rate(d30.rate)+' and stickiness is '+rate(E.stickiness)+'.</b> '+
-      'A consumer product people rely on runs 20%+ DAU/MAU; this is '+stick.toFixed(1)+'%. '+
-      'The tile that says '+rate(d30.within_rate)+' came back is the same population measured more kindly — '+
-      'it counts anyone who returned once inside the window, not who was still there at the end. '+
-      'With '+comma(S.paying)+' paying of '+comma(T.accounts)+' accounts, retention is the number that '+
-      'decides whether this is worth anything, and it is the one that has been off the page.';
+    // The "Against my goals…" narrative was removed. The tiles and the goal
+    // meters above carry every number it recited.
+    var healthCallout = el('fac-health-callout');
+    healthCallout.innerHTML = '';
+    healthCallout.style.display = 'none';
   }
 
   // ---------- search ----------
@@ -2053,13 +2049,10 @@
       // where the engagement numbers were non-zero. At 0/0 it asserts the
       // opposite of the figures printed beside it, and a reader (human or
       // model) reasonably takes the sentence over the numbers. Say which it is.
-      : (op || ret
-          ? '<b>0 of '+comma(v)+' ad visitors have signed up.</b> They do engage — '+pctS(op,v)+
-            ' open a listing and '+pctS(ret,v)+' come back — but the clicks are not becoming '+
-            'accounts. (Sign-up attribution is lossy, so the true number may be slightly above 0.)'
-          // The all-zero verdict sentence was removed; with nothing measured the
-          // callout stays empty rather than printing an empty box.
-          : '');
+      // Both no-sign-up verdicts were removed — the engaged-but-not-converting
+      // one and the all-zero one. With nothing to say the callout stays empty
+      // rather than printing an empty box.
+      : '';
     el('ads-callout').style.display = el('ads-callout').innerHTML ? '' : 'none';
   }
 
@@ -2136,26 +2129,10 @@
         '</div>';
     }).join('');
 
-    // Two things that must never be quiet. Scans excluded as pre-placement
-    // testing, so a number the owner remembers seeing does not just vanish;
-    // and scans on plates with no placement record, which are either tests or
-    // a plate that went out and never got written down — and choosing between
-    // those for him would be inventing data either way.
-    var warn = '';
-    if(n(S.excluded_pre)) warn += ' <span style="opacity:.75">'+
-      comma(S.excluded_pre)+' scan'+(n(S.excluded_pre)===1?'':'s')+
-      ' before the plate was placed excluded as testing.</span>';
-    if((S.unlogged||[]).length){
-      var u=S.unlogged.map(function(r){ return '/c/'+esc(r.code)+' ('+comma(r.scans)+')'; });
-      warn += ' <span style="opacity:.9">⚠ Not counted — no placement record for '+
-        u.join(', ')+'. If those went out, log them: '+
-        '<code>python3 scripts/placement.py add &lt;code&gt; "&lt;shop&gt;"</code>.</span>';
-    }
-    if(!n(S.placed)) warn += ' <span style="opacity:.75">Nothing is recorded as '+
-      'placed yet, so nothing is being counted — which is the right answer '+
-      'while every scan in the log is still a proof being checked.</span>';
-
-    el('sg-callout').innerHTML = '<b>'+esc(S.verdict||'')+'</b>'+warn+
+    // Removed: the verdict sentence and the two warnings that hung off it. The
+    // log/truncation notes stay — those say the numbers above are incomplete,
+    // which nothing else on the card can tell you.
+    el('sg-callout').innerHTML =
       (S.truncated ? ' <span style="opacity:.75">Session counts hit the feed’s '+
         'page limit and are floors, not totals — the scan counts above them are '+
         'complete.</span>' : '')+
@@ -2175,27 +2152,6 @@
     ];
     el('ref-tiles').innerHTML=tiles.map(function(t){
       return '<div class="ads-tile"><div class="a-val">'+t.val+'</div><div class="a-lbl">'+t.lbl+'</div><div class="a-sub">'+t.sub+'</div></div>';
-    }).join('');
-  }
-
-  // ---------- today ----------
-  function renderToday(TD, ev){
-    var rows=[
-      {ic:'🟢',name:'Visitors today',desc:'unique',val:comma(TD.visitors)},
-      {ic:'📄',name:'Page views today',desc:'total',val:comma(TD.visits)},
-      {ic:'✅',name:'Sign-ups today',desc:'new accounts',val:comma(TD.signups)},
-      {ic:'⭐',name:'New → opened a listing',desc:'leading sign-up indicator',
-        val:comma(TD.new_opened_listing)+'<small>/'+comma(TD.new_visitors)+' ('+pctS(TD.new_opened_listing,TD.new_visitors)+')</small>'},
-      // NOT all-time, whatever the old label said: these read the `events`
-      // block, which the range picker scopes like everything else. Labelling a
-      // filtered number "all-time" is the one way to make a correct figure lie.
-      {ic:'🔍',name:'Searches',desc:'core action · in range',val:comma(ev.search)},
-      {ic:'🏢',name:'Listing opens',desc:'building views · in range',val:comma(ev.building_view)}
-    ];
-    el('today-list').innerHTML=rows.map(function(r){
-      return '<div class="act-row"><div class="act-l"><div class="act-ico">'+r.ic+'</div>'+
-        '<div><div class="act-name">'+r.name+'</div><div class="act-desc">'+r.desc+'</div></div></div>'+
-        '<div class="act-val">'+r.val+'</div></div>';
     }).join('');
   }
 
@@ -2362,6 +2318,8 @@
 
     el('donut-title').textContent='Where Crease visitors come from';
     el('donut-sub').textContent='Referrers seen in the server log';
+    el('card-today').classList.remove('hidden');
+    el('sec-traffic').classList.add('cols-2');
     el('today-sub').textContent='Straight from the server log, updated live';
     el('spark-sub').textContent='Daily page views on creasenyc.com';
 
@@ -2855,6 +2813,8 @@
       : ('Logging since '+fmtDay(T.logging_since||M.as_of));
     el('donut-title').textContent='Where Trent\u2019s visitors come from';
     el('donut-sub').textContent='Referrers seen in the server log';
+    el('card-today').classList.remove('hidden');
+    el('sec-traffic').classList.add('cols-2');
     el('today-sub').textContent='Straight from the server log, updated live';
     el('spark-sub').textContent='Daily page views on trentsfreshspaces.com';
 
@@ -3007,6 +2967,8 @@
 
     el('donut-title').textContent='Where NEMO’s visitors come from';
     el('donut-sub').textContent='Earned (search, maps, AI) vs. people who already knew the name';
+    el('card-today').classList.remove('hidden');
+    el('sec-traffic').classList.add('cols-2');
     el('today-sub').textContent='Straight from the server log, updated live';
     el('spark-sub').textContent='Unique visitors per day — history starts when per-site logging did';
 

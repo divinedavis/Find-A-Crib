@@ -111,6 +111,33 @@ SEEDS = [
                "the live docroot, so a technique added later is covered without being "
                "listed here. Self-links inside a prefix do not count — a family whose pages "
                "only link to each other is exactly the orphan case."),
+    dict(slug="page_uniqueness", status="active", kind="indexing",
+         name="Measure how much of each section's text is identical across its own pages",
+         prefixes=[], metric="organic_visitors",
+         hypothesis="Google is not refusing to find these pages, it is refusing to keep them. "
+                    "On 2026-09-02 every published section sits within 3 clicks of the "
+                    "homepage, /dc/ and /la/ are still 0-of-20 ever fetched a fortnight after "
+                    "being linked from 47,165 pages, and of the 95 sampled URLs Google HAS "
+                    "fetched, 94 read 'Crawled - currently not indexed' and one — the "
+                    "homepage — is indexed. Some crawled as long ago as 2026-06-24. The "
+                    "remaining explanation is that the pages are near-duplicates of each "
+                    "other: two adjacent Chelsea building pages rendered from the repo share "
+                    "425 of 465 words in identical order (91.4%), and 67 of the 94 "
+                    "crawled-not-indexed URLs are building pages. If that is the constraint, "
+                    "duplicate share should be high on exactly the tiers Google rejects, and "
+                    "cutting it should move accept_pct_mature off 0.0% where nothing else has.",
+         evidence="Hand-measured 2026-09-02 on /building/manhattan/246-10th-ave-1007220003/ "
+                  "against /building/manhattan/299-10th-ave-1006990031/, rendered from this "
+                  "checkout: 91.4% word-for-word overlap, the 40 differing words being the "
+                  "street number, three counts, a year, a percentile and one sibling link. "
+                  "That is one pair on one checkout, which is why this measures nightly "
+                  "instead of asserting.",
+         notes="Audits, never publishes, and reports without a threshold on purpose — the "
+               "site has no distribution of duplicate share yet, and the depth crawler is the "
+               "standing lesson about setting a bar before you have one. Sections come from "
+               "the ledger's prefix declarations whatever a technique's status, because a "
+               "retired section is still in the docroot and still part of what Google prices "
+               "this domain on."),
     dict(slug="hub_direct_answers", status="active", kind="content",
          prefixes=["/neighborhood/", "/borough/", "/zip/"], metric="owned_visitors",
          name="Direct-answer blocks on hub pages",

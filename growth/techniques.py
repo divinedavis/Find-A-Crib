@@ -2237,6 +2237,232 @@ def t_crawl_paths(ctx):
     return {"ok": True, "detail": detail + tail, "pages": read}
 
 
+# ------------------------------------------------- how much of a page is its own
+#
+# Why this exists, 2026-09-02. Two pre-registered hypotheses about why this site
+# is not indexed both died on the same morning:
+#
+#   * CLICK DEPTH. The 09-01 entry said "if /building/ and /zip/ come back at
+#     2-3, click depth is NOT this site's discovery constraint". The first
+#     trustworthy reading (598 pages, levels 0-3 fully expanded, no clipped
+#     pages) put every one of the 15 published sections within 3 clicks of the
+#     homepage: /building/ 2, /zip/ 3, the dc/la/sf hubs 3.
+#   * LINK VOLUME. build_seo.py's CITY_NAV comment said "if the dc/la/sf
+#     families are still 0% fetched in two weeks, link volume is not the
+#     constraint". CITY_NAV has linked all three from 47,165 pages since
+#     2026-08-18; on 2026-09-02 the census reads /dc/ 0 of 20 ever fetched and
+#     /la/ 0 of 20.
+#
+# What is left is what Google does with the pages it HAS fetched, and that
+# number is stark: of 95 sampled published URLs it has ever fetched, 94 are
+# "Crawled - currently not indexed" and exactly one is indexed — the homepage.
+# Not one building, hub, ZIP, borough, neighbourhood, guide or city page, some
+# crawled as far back as 2026-06-24, has ever been kept.
+#
+# The leading explanation has been in this repo as prose since the landlord tier
+# shipped — "the building tier fails because a template over one building runs
+# out of things to say by the third paragraph, and 47,000 of them say the same
+# three" — and nobody had ever measured it. Measured by hand on 2026-09-02
+# against two adjacent Chelsea buildings rendered from this checkout
+# (/building/manhattan/246-10th-ave-1007220003/ and .../299-10th-ave-1006990031/):
+# 425 of 465 words, IN ORDER, are identical — 91.4%. The 40 words that differ
+# are the street number, three counts, a year, a percentile and one sibling
+# link. 67 of the 94 crawled-not-indexed URLs are building pages.
+#
+# That is one hand-measured pair on one checkout, which is exactly the kind of
+# number this journal has twice been burned by treating as a distribution. So
+# this measures it nightly, per section, over a strided sample, against the
+# corpus Google actually fetches — and REPORTS it without a threshold, because
+# a threshold today would be the hunch the depth crawler was told not to be.
+# T037's revisit is where a threshold gets set against a distribution.
+#
+# The method is 8-word shingles rather than a diff: a shingle set is order-
+# insensitive across reordered blocks, cheap, and the standard near-duplicate
+# measure, and 8 words is long enough that ordinary English collocations
+# ("rent-stabilized building in") do not register as shared boilerplate.
+#
+# CALIBRATION, so the two numbers in this repo are never read as the same one.
+# Measured 2026-09-02 on the same rendered corpus: this audit reads /building/
+# at 43%, while the hand diff of the adjacent Chelsea pair reads 91.4%. Both are
+# right; they answer different questions. The hand figure is word-for-word
+# overlap between TWO NEIGHBOURING pages, which share their neighbourhood name,
+# borough, ZIP and sibling-link ring. This audit strides its sample across the
+# whole sorted tier, so those all differ, and a single differing token voids
+# every one of the eight windows containing it. So 43% is the floor — the share
+# of a building page that is the template SPEAKING TO THE WHOLE TIER, before any
+# of the extra duplication two neighbours share. Read it as a contrast, which is
+# where its power is: /building/ 43% of 476 words against /neighborhood/ 14% of
+# 1,378 words is a tier repeating itself three times as much in a third of the
+# space, and it is the tier holding 67 of the 94 crawled-not-indexed URLs.
+DUP_SHINGLE = 8              # words per shingle
+DUP_SAMPLE = 24              # pages compared per section
+DUP_MIN_PAGES = 4            # below this a section cannot be compared to itself
+DUP_MIN_WORDS = DUP_SHINGLE * 5   # a page shorter than this yields too few shingles to rate
+DUP_READ_BYTES = 4_000_000   # per page, for the same reason CRAWL_DEPTH_BYTES is
+DUP_SCAN_CAP = 120_000       # .html paths collected from the docroot, so a walk cannot run away
+# Total pages read below which say nothing at all. A bare checkout holds the app
+# shells and no generated corpus, and a duplication reading taken from that would
+# describe the checkout rather than the site — the same guard, and the same
+# reason, as CRAWL_DEPTH_FLOOR.
+DUP_FLOOR = 20
+
+_SCRIPT_RE = re.compile(r"(?is)<(script|style)\b.*?</\1\s*>")
+_TAG_RE = re.compile(r"(?s)<[^>]+>")
+
+
+def _dup_words(html):
+    """The words a search engine reads on this page, lowercased.
+
+    Scripts and styles come out first — the inlined CSS is byte-identical on all
+    47,596 pages and counting it would measure the stylesheet, not the copy.
+    """
+    import html as _html
+    text = _TAG_RE.sub(" ", _SCRIPT_RE.sub(" ", html))
+    return _html.unescape(text).lower().split()
+
+
+def _dup_shingles(words):
+    n = len(words)
+    if n < DUP_SHINGLE:
+        return set()
+    return {tuple(words[i:i + DUP_SHINGLE]) for i in range(n - DUP_SHINGLE + 1)}
+
+
+def _dup_docroot_pages(docroot):
+    """Every .html page in the docroot as (url_path, file path), sorted by URL.
+
+    One walk for the whole audit rather than one per section, because a ledger
+    prefix is a URL prefix and NOT necessarily a directory. Three of the fifteen
+    this site declares are page-level — "/guide/is-my-apartment-rent-controlled-"
+    is a prefix that names one document — and the first version of this audit
+    tested os.path.isdir() on them and silently measured nothing for /guide/ and
+    /landlord/. A section that yields no reading has to say so, not vanish.
+
+    The url_path is what a crawler would request: a directory index becomes the
+    directory ("/zip/10001/"), anything else keeps its filename.
+    """
+    out = []
+    for dirpath, dirnames, filenames in os.walk(docroot):
+        # Nothing a crawler can reach lives in a dot directory, and .git alone is
+        # thousands of entries the nightly walk should not pay for.
+        dirnames[:] = sorted(d for d in dirnames if not d.startswith("."))
+        for fn in sorted(filenames):
+            if not fn.endswith(".html"):
+                continue
+            fp = os.path.join(dirpath, fn)
+            rel = os.path.relpath(fp, docroot).replace(os.sep, "/")
+            url = "/" + (rel[:-len("index.html")] if rel.endswith("index.html") else rel)
+            out.append((url, fp))
+            if len(out) >= DUP_SCAN_CAP:
+                return sorted(out)
+    return sorted(out)
+
+
+def _dup_measure(paths):
+    """(median duplicate share, median word count, pages compared) for one section.
+
+    "Duplicate share" is the fraction of a page's 8-word shingles that also
+    appear on at least half of the other pages sampled from the same section.
+    Half, not one: a shingle shared with a single sibling is a coincidence or a
+    cross-link, while one shared with the majority of the section is the
+    template talking. Returns None when there is not enough to compare.
+
+    The sample is STRIDED through the sorted path list, not taken from one
+    stretch of it, so it spans every borough and is identical between runs
+    unless the corpus changes — the same sampling t_derived_building_facts uses.
+    That makes the reading tier-wide template share and a floor on any given
+    pair: two adjacent buildings also share their neighbourhood, ZIP and
+    sibling-link ring, none of which survives a stride.
+    """
+    step = max(1, len(paths) // DUP_SAMPLE)
+    sample = paths[::step][:DUP_SAMPLE]
+    pages = []
+    for p in sample:
+        try:
+            with open(p, encoding="utf-8", errors="replace") as f:
+                words = _dup_words(f.read(DUP_READ_BYTES))
+        except OSError:
+            continue
+        if len(words) < DUP_MIN_WORDS:
+            continue                       # too short to rate, not evidence of anything
+        sh = _dup_shingles(words)
+        if sh:
+            pages.append((len(words), sh))
+    if len(pages) < DUP_MIN_PAGES:
+        return None
+    df = {}
+    for _, sh in pages:
+        for s in sh:
+            df[s] = df.get(s, 0) + 1
+    # A shingle on half the sample or more is boilerplate. The page itself is
+    # one of those counts, so the bar is half of the OTHER pages plus itself.
+    bar = max(2, (len(pages) + 1) // 2)
+    shares = [100.0 * sum(1 for s in sh if df[s] >= bar) / len(sh) for _, sh in pages]
+    return (statistics.median(shares), statistics.median(w for w, _ in pages), len(pages))
+
+
+def t_page_uniqueness(ctx):
+    """Measure how much of each published section's text is the same on every page.
+
+    REPORT-ONLY, deliberately: it passes whenever it could take the reading, and
+    there is no duplicate-share threshold. See the block comment above for why
+    the number matters and why a threshold today would be a guess rather than a
+    measurement. `ok` is False only when a section this site publishes has pages
+    in the docroot that could not be read at all, which is a real defect.
+
+    It reads the live docroot, not this run's staging dir, for the same reason
+    t_derived_building_facts does: the tiers that dominate this measurement come
+    from the SEO pipeline, which rebuilds after the techniques run. So the
+    morning after a build_seo.py change ships, this still describes yesterday's
+    corpus — the detail line names the number of pages read so that cannot be
+    mistaken for a fresh reading.
+
+    Sections come from the ledger's own prefix declarations, whatever a
+    technique's status, exactly as t_crawl_paths does: a section that retired is
+    still in the docroot, still crawled, and still part of what Google sees when
+    it prices this domain.
+    """
+    prefixes = sorted({p for t in ledger.load_techniques()
+                       for p in (t.get("prefixes") or [])})
+    pages = _dup_docroot_pages(ctx.docroot)
+    readings, small, unreadable, read = {}, [], [], 0
+    for p in prefixes:
+        paths = [fp for url, fp in pages if url.startswith(p)]
+        if not paths:
+            continue
+        got = _dup_measure(paths)
+        if got is None:
+            if len(paths) < DUP_MIN_PAGES:
+                small.append(f"{p} ({len(paths)} page{'' if len(paths) == 1 else 's'})")
+            else:
+                unreadable.append(p)
+            continue
+        share, words, n = got
+        readings[p] = (share, words, n, len(paths))
+        read += n
+    if read < DUP_FLOOR:
+        return {"ok": True, "pages": read,
+                "detail": (f"duplicate text NOT MEASURED: only {read} page"
+                           f"{'' if read == 1 else 's'} across {len(readings)} section"
+                           f"{'' if len(readings) == 1 else 's'} were readable, below the "
+                           f"{DUP_FLOOR}-page floor — this is a bare checkout rather than a "
+                           f"deployed docroot")}
+    # Worst first: the section that repeats itself most is the finding.
+    ranked = sorted(readings.items(), key=lambda kv: (-kv[1][0], kv[0]))
+    shown = [f"{p} {share:.0f}% of {words:,.0f} words (n={n} of {total:,})"
+             for p, (share, words, n, total) in ranked[:8]]
+    detail = (f"text shared with siblings ({DUP_SHINGLE}-word shingles, "
+              f"{read} pages read across {len(readings)} sections): " + ", ".join(shown))
+    if len(ranked) > len(shown):
+        detail += f", +{len(ranked) - len(shown)} less duplicated"
+    if small:
+        detail += " — too few pages to compare: " + ", ".join(sorted(small))
+    if unreadable:
+        return {"ok": False, "pages": read,
+                "detail": detail + " — COULD NOT READ any page in: " + ", ".join(sorted(unreadable))}
+    return {"ok": True, "detail": detail, "pages": read}
+
+
 # build_seo.py writes the computed comparison paragraph inside this wrapper.
 # Kept distinct from ANSWER_MARKER on purpose: an answer block answers the
 # question in the page's title, this one compares the building to its
@@ -2317,6 +2543,7 @@ REGISTRY = {
     "llms_txt": t_llms_txt,
     "sitemap_daily": t_sitemap_daily,
     "crawl_paths": t_crawl_paths,
+    "page_uniqueness": t_page_uniqueness,
     "indexnow": t_indexnow,
 }
 
@@ -2340,6 +2567,12 @@ REGISTRY = {
 # derived_building_facts sits beside hub_direct_answers for the same reason: it
 # is an audit of pages another pipeline publishes, so it belongs after the
 # content techniques and before the sitemap and the ping.
+#
+# page_uniqueness sits beside crawl_paths for the third time on the same
+# reasoning: it is an audit of the whole published corpus, so it runs after
+# everything that publishes and before the sitemap and the ping. It reads the
+# docroot only, so its position cannot change its reading — the slot is for the
+# log, where "what we published" then "how duplicated it is" reads in order.
 ORDER = ["fresh_section8", "daily_brief", "city_guides", "city_seo_expansion",
          "hub_direct_answers", "derived_building_facts", "llms_txt",
-         "sitemap_daily", "crawl_paths", "indexnow"]
+         "sitemap_daily", "crawl_paths", "page_uniqueness", "indexnow"]

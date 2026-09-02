@@ -13,7 +13,7 @@ reads are fast and need no DB round-trip. The DB is used only for auth/metering.
 
 Run:  DATA_DIR=/var/www/rent-map gunicorn -w 2 -b 127.0.0.1:8010 api_server:app
 """
-import base64, datetime, glob, gzip, hashlib, hmac, json, os, re, secrets, threading, time, urllib.request, urllib.error, urllib.parse
+import base64, concurrent.futures, datetime, glob, gzip, hashlib, hmac, json, os, re, secrets, threading, time, urllib.request, urllib.error, urllib.parse
 from collections import defaultdict, deque
 from flask import Flask, jsonify, request, g
 
@@ -1094,6 +1094,19 @@ def _fac_adtiles(since):
     # began firing ~1,500 times a day, the newest 1,000 ad-tile events were
     # almost entirely today's renders and every click fell off the end — this
     # card reported 0 clicks against a real 72, with `truncated` reading False.
+    #
+    # FETCH THE PAGES CONCURRENTLY. Walking them one at a time was the second
+    # of the two things making /dashboard-metrics slow (the first was the
+    # nginx log scan in _fac_ai_crawls): all-time is 19,530 ad-tile events, so
+    # 20 sequential round-trips at ~83ms each, ~1.7s of the endpoint's ~2.5s.
+    # One count query says how many pages there are up front, then a small
+    # pool fetches them at once. Same number of requests to PostgREST, same
+    # rows, three waves instead of twenty.
+    #
+    # Offset paging over a table still being written can shift a row between
+    # pages either way; fetching them together narrows that window rather than
+    # widening it, because every page is read at nearly the same instant
+    # instead of over a second and a half.
     PAGE = 1000
     MAX_PAGES = 200          # 200k events; a real ceiling, and it is reported
     base = ("events?select=event,props,visitor_id,created_at"
@@ -1103,15 +1116,28 @@ def _fac_adtiles(since):
         base += f"&created_at=gte.{urllib.parse.quote(str(since))}"
     rows, truncated = [], False
     try:
-        for p_ in range(MAX_PAGES):
-            batch = _rest("GET", f"{base}&offset={p_ * PAGE}&limit={PAGE}") or []
-            rows += batch
-            if len(batch) < PAGE:
-                break
-        else:
-            truncated = True
+        total = _rest_count(base)
+        pages = min(-(-total // PAGE), MAX_PAGES) if total else 1
+        truncated = total > MAX_PAGES * PAGE
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+            for batch in pool.map(
+                    lambda i: _rest("GET", f"{base}&offset={i * PAGE}&limit={PAGE}") or [],
+                    range(pages)):
+                rows += batch
     except Exception:
-        return {}
+        # The count is one more thing that can fail. Fall back to the sequential
+        # walk rather than dropping the card: slow beats absent.
+        rows, truncated = [], False
+        try:
+            for p_ in range(MAX_PAGES):
+                batch = _rest("GET", f"{base}&offset={p_ * PAGE}&limit={PAGE}") or []
+                rows += batch
+                if len(batch) < PAGE:
+                    break
+            else:
+                truncated = True
+        except Exception:
+            return {}
     mine = _fac_owner_visitors()
     rows = [r for r in rows if r.get("visitor_id") not in mine]
 

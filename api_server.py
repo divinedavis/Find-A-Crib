@@ -1339,7 +1339,7 @@ def _fac_build():
         return {}
     b = run.get("build") or {}
     techs = b.get("techniques") or {}
-    steps = []
+    steps, held = [], []
     for slug in sorted(techs):
         t = techs[slug] or {}
         detail = (t.get("detail") or "").strip()
@@ -1349,17 +1349,29 @@ def _fac_build():
         # records failures (a technique can report ok:false and still have run),
         # and a card that shows every line green would hide them.
         step = {"slug": slug, "detail": detail, "ok": bool(t.get("ok")),
-                "skipped": bool(t.get("skipped"))}
+                "skipped": bool(t.get("skipped")),
+                "unchanged": bool(t.get("unchanged"))}
         # A technique with nothing to do is a healthy no-op, not a shipment.
         # The card reports what the engine built; "nothing new to submit" is
         # not something it built. Failures still come through.
         if build_log.did_work(step):
             steps.append({k: step[k] for k in ("slug", "detail", "ok")})
+        elif step["unchanged"]:
+            # Dropped, but counted. The suppressed lines are the verifiers
+            # re-confirming yesterday's state; if the card simply went quiet the
+            # owner would read a healthy morning as a dead engine, which is the
+            # failure mode the run log exists to prevent. `since` is the date
+            # the sentence last moved, so a line standing still for a fortnight
+            # can be told from one that settled overnight.
+            held.append({"slug": slug, "since": t.get("same_since")})
     m = run.get("measure") or {}
+    sinces = sorted(h["since"] for h in held if h.get("since"))
     return {
         "date": b.get("date") or m.get("date"),
         "at": b.get("at"),
         "steps": steps,
+        "unchanged": len(held),
+        "unchanged_since": sinces[0] if sinces else None,
         "new_urls": b.get("new_urls"),
         "changed_urls": b.get("changed_urls"),
         "deployed": bool(b.get("deployed")),

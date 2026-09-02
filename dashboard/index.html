@@ -1807,9 +1807,16 @@
   function renderFacBuild(B){
     B = B || {};
     var steps = B.steps || [];
+    // Lines the API withheld because they were word-for-word the previous
+    // run's. Several techniques are verifiers, not builders — they re-read the
+    // docroot and report the same sentence every night. Listing those under
+    // "what the engine shipped" made the card look frozen, which is what it
+    // was: the sentences had not moved in days. They are counted here instead,
+    // so a quiet morning still reads as a run that happened.
+    var heldN = n(B.unchanged);
     var card = el('sec-fac-build');
     if(!card) return;
-    if(!steps.length){
+    if(!steps.length && !heldN){
       // No run log means the engine has not reported, which is itself worth
       // saying — quietly hiding the card would read as "nothing to ship".
       card.classList.add('hidden');
@@ -1826,6 +1833,7 @@
       (when ? 'Last run '+when+' — ' : '')
       + shipped + ' change' + (shipped===1?'':'s') + ' shipped'
       + (failed ? ', '+failed+' needing attention' : '')
+      + (heldN ? ', '+heldN+' re-verified unchanged' : '')
       + (B.deployed ? ' · deployed' : ' · not deployed');
 
     var rows = steps.map(function(s){
@@ -1839,6 +1847,21 @@
         '<div><div class="act-name">Pages published or updated</div>'+
         '<div class="act-desc">'+comma(newU)+' new · '+comma(chg)+' changed</div></div></div>'+
         '<div class="act-val">'+comma(newU+chg)+'</div></div>');
+    }
+    if(heldN){
+      var sinceTxt = '';
+      if(B.unchanged_since){
+        var sd = new Date(B.unchanged_since+'T00:00');
+        var days = Math.round((Date.now()-sd.getTime())/86400000);
+        sinceTxt = days > 1 ? ' — the longest unmoved since '+
+          sd.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' ('+days+' days)' : '';
+      }
+      rows.push('<div class="act-row"><div class="act-l"><div class="act-ico">🔁</div>'+
+        '<div><div class="act-name">Re-verified, nothing to change</div>'+
+        '<div class="act-desc">'+heldN+' technique'+(heldN===1?'':'s')+
+        ' reported exactly what they reported last run'+esc(sinceTxt)+
+        '. Checks that passed, not work that shipped.</div></div></div>'+
+        '<div class="act-val">'+heldN+'</div></div>');
     }
     el('fac-build-list').innerHTML = rows.length ? rows.join('')
       : '<div style="color:var(--muted);font-size:13px">Nothing shipped on the last run.</div>';

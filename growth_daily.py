@@ -87,8 +87,7 @@ def cmd_build(args):
         # commits. None until the droplet picks up the 2026-08-12 script.
         ledger.write_last_run("build", {
             "new_urls": len(ctx.new_urls), "changed_urls": len(ctx.changed_urls),
-            "techniques": {r["slug"]: {"ok": bool(r.get("ok")), "detail": r.get("detail", "")}
-                           for r in run_log},
+            "techniques": _stamp_unchanged(run_log),
             "seo_corpus": {"written": age[0], "days_old": age[1]} if age else None,
             "seo_pipeline": techniques._seo_pipeline_status(args.docroot),
             "deployed": bool(args.deploy)})
@@ -97,6 +96,50 @@ def cmd_build(args):
     if args.deploy and not args.dry_run:
         cmd_deploy(args)
     return run_log
+
+
+def _stamp_unchanged(run_log):
+    """Techniques whose result today is word-for-word yesterday's result.
+
+    Several techniques are verifiers, not builders — t_hub_direct_answers and
+    t_crawl_paths say so in their own docstrings. On a healthy day they re-read
+    the docroot, find the block already where it should be, and report the same
+    sentence they reported last night. That is the technique working, but it is
+    not something the run built, and the owner's dashboard card is headed "What
+    the growth engine shipped": a card that lists "answer block on 623 of 623
+    hub pages" every morning for a fortnight teaches the reader to stop looking
+    at it, which is the opposite of what a build log is for.
+
+    build_log.did_work() already drops the no-ops a technique announces in words
+    ("nothing new to submit"). It cannot catch these, because a state statement
+    that happens to be identical is not phrased like a no-op. The comparison it
+    needs is against the PREVIOUS run, and this is the only place both runs are
+    in hand — last_run.json still holds last night's record when the build is
+    about to overwrite it.
+
+    `same_since` is the date the sentence last changed, carried forward across
+    runs, so the card can say how long a line has been standing still rather
+    than only that it did not move overnight. A failing technique is never
+    stamped: repeated failure is news every single day it repeats.
+    """
+    try:
+        prev = (ledger.read_last_run().get("build") or {}).get("techniques") or {}
+    except Exception:
+        prev = {}
+    today = ledger.today()
+    out = {}
+    for r in run_log:
+        ok = bool(r.get("ok"))
+        detail = r.get("detail", "")
+        rec = {"ok": ok, "detail": detail}
+        was = prev.get(r["slug"]) or {}
+        same = (ok and detail
+                and bool(was.get("ok")) and (was.get("detail") or "") == detail)
+        if same:
+            rec["unchanged"] = True
+            rec["same_since"] = was.get("same_since") or was.get("first_seen") or today
+        out[r["slug"]] = rec
+    return out
 
 
 def cmd_deploy(args):

@@ -37,6 +37,13 @@ def did_work(step):
         return True                       # a failure is real news — keep it
     if step.get("noop") or step.get("skipped"):
         return False
+    # Word-for-word yesterday's line. growth_daily._stamp_unchanged sets this by
+    # diffing the run against the previous last_run.json, which is the only
+    # place both runs exist at once. A verifier that re-checks a block already
+    # in the docroot reports the same sentence every night: true, healthy, and
+    # not something the run built. Failures never carry the flag.
+    if step.get("unchanged"):
+        return False
     detail = (step.get("detail") or "").strip()
     if not detail:
         return False

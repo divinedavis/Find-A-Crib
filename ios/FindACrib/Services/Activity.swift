@@ -33,9 +33,21 @@ final class Activity {
         if let d = try? JSONEncoder().encode(disk) { try? d.write(to: Self.fileURL, options: .atomic) }
     }
 
+    /// Set by AuthService; mirrors each toggle into saved_buildings when signed in.
+    var remoteToggle: ((String, Bool) -> Void)?
+
     func isSaved(_ bbl: String) -> Bool { saved.contains(bbl) }
     func toggleSaved(_ bbl: String) {
-        if let i = saved.firstIndex(of: bbl) { saved.remove(at: i) } else { saved.insert(bbl, at: 0) }
+        let nowSaved: Bool
+        if let i = saved.firstIndex(of: bbl) { saved.remove(at: i); nowSaved = false } else { saved.insert(bbl, at: 0); nowSaved = true }
+        persist()
+        remoteToggle?(bbl, nowSaved)
+    }
+    /// Account saves win on order; anything only known locally stays.
+    func mergeRemoteSaves(_ remote: [String]) {
+        var merged = remote
+        for b in saved where !merged.contains(b) { merged.append(b) }
+        saved = merged
         persist()
     }
 

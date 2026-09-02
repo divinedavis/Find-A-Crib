@@ -4,3 +4,4 @@ xcuserdata/
 DerivedData/
 .DS_Store
 scripts/asc-config.env
+Secrets.xcconfig

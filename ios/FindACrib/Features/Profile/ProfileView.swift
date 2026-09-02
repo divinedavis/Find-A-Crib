@@ -1,9 +1,12 @@
 import SwiftUI
+import AuthenticationServices
 
 struct ProfileView: View {
     @Environment(DataStore.self) private var store
     @Environment(Activity.self) private var activity
+    @Environment(AuthService.self) private var auth
     @Environment(\.openURL) private var openURL
+    @State private var confirmDelete = false
     @AppStorage("hereTo") private var hereTo = "Rent"
     @AppStorage("homeBorough") private var homeBorough = "Brooklyn"
     @State private var refreshing = false
@@ -36,14 +39,65 @@ struct ProfileView: View {
                                 Image(systemName: "person.fill").font(.system(size: 34)).foregroundStyle(SE.ink3)
                             }
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("Guest").font(.se(30, .bold))
-                                Text("Saves and searches live on this phone.").font(.se(16)).foregroundStyle(SE.ink2)
+                                if auth.isSignedIn {
+                                    Text(auth.email?.components(separatedBy: "@").first?.capitalized ?? "Signed in").font(.se(30, .bold)).lineLimit(1).minimumScaleFactor(0.7)
+                                    Text(auth.email ?? "").font(.se(16)).foregroundStyle(SE.ink2).lineLimit(1)
+                                    if auth.hasPlus {
+                                        SEBadge(text: "Find A Crib Plus", icon: "star.fill", fill: SE.paleBlue, ink: SE.royal)
+                                    }
+                                } else {
+                                    Text("Guest").font(.se(30, .bold))
+                                    Text("Sign in to sync your saves and see managing agents.").font(.se(16)).foregroundStyle(SE.ink2)
+                                }
                             }
                         }
-                        Button { openURL(URL(string: "https://findacrib.com/")!) } label: {
-                            Text("Sign in on findacrib.com").font(.se(18, .bold)).foregroundStyle(SE.royal)
-                        }.buttonStyle(.plain)
+                        if auth.isSignedIn {
+                            HStack(spacing: 14) {
+                                Button { Task { await auth.signOut() } } label: {
+                                    Text("Sign out").font(.se(18, .bold)).foregroundStyle(SE.royal)
+                                }.buttonStyle(.plain).accessibilityIdentifier("sign-out")
+                                Spacer()
+                                Button(role: .destructive) { confirmDelete = true } label: {
+                                    Text("Delete account").font(.se(16, .semibold)).foregroundStyle(SE.bad)
+                                }.buttonStyle(.plain).accessibilityIdentifier("delete-account")
+                            }
+                            if !auth.hasPlus {
+                                Text("Find A Crib Plus unlocks managing-agent phone numbers.")
+                                    .font(.se(15)).foregroundStyle(SE.ink3)
+                            }
+                        } else if auth.configured {
+                            VStack(spacing: 10) {
+                                SignInWithAppleButton(.continue) { _ in } onCompletion: { _ in }
+                                    .signInWithAppleButtonStyle(.black)
+                                    .frame(height: 50)
+                                    .allowsHitTesting(false)
+                                    .overlay {
+                                        // Apple's button for App Review's sake; our own controller runs the sheet
+                                        // so the nonce and Supabase exchange live in one place.
+                                        Button { Task { await auth.signInWithApple() } } label: { Color.clear }
+                                            .accessibilityLabel("Continue with Apple")
+                                            .accessibilityIdentifier("sign-in-apple")
+                                    }
+                                Button { Task { await auth.signInWithGoogle() } } label: {
+                                    HStack(spacing: 10) {
+                                        GoogleG().frame(width: 18, height: 18)
+                                        Text("Continue with Google").font(.se(18, .semibold)).foregroundStyle(SE.ink)
+                                    }
+                                    .frame(maxWidth: .infinity).frame(height: 50)
+                                    .background(Color.white).overlay(RoundedRectangle(cornerRadius: 6).stroke(SE.line))
+                                }
+                                .buttonStyle(.plain).accessibilityIdentifier("sign-in-google")
+                                if auth.busy { ProgressView().tint(SE.royal) }
+                                if let e = auth.error { Text(e).font(.se(14)).foregroundStyle(SE.bad) }
+                            }
+                            Text("No passwords. Your saves on this phone merge into the account.")
+                                .font(.se(14)).foregroundStyle(SE.ink3)
+                        }
                     }.padding(16)
+                    .alert("Delete your account?", isPresented: $confirmDelete) {
+                        Button("Delete", role: .destructive) { Task { await auth.deleteAccount() } }
+                        Button("Cancel", role: .cancel) {}
+                    } message: { Text("Removes your account and its saved buildings on findacrib.com. This can't be undone.") }
 
                     Divider()
                     settingRow("I'm here to") {
@@ -54,7 +108,7 @@ struct ProfileView: View {
                         Picker("", selection: $homeBorough) { ForEach(Borough.all.map(\.name), id: \.self) { Text($0) } }
                             .pickerStyle(.menu).tint(SE.royal).font(.se(18))
                     }
-                    settingRow("Saved buildings") { Text("\(activity.saved.count)").font(.se(18, .bold)) }
+                    settingRow("Saved buildings") { Text("\(activity.saved.count)" + (auth.isSignedIn ? " · synced" : "")).font(.se(18, .bold)) }
                     settingRow("Saved searches") { Text("\(activity.savedSearches.count)").font(.se(18, .bold)) }
 
                     // data
@@ -109,5 +163,20 @@ struct ProfileView: View {
             HStack { Text(t).font(.se(18)).foregroundStyle(SE.ink); Spacer(); Image(systemName: "arrow.up.right").font(.system(size: 13, weight: .bold)).foregroundStyle(SE.ink3) }
                 .padding(.horizontal, 16).frame(height: 50)
         }.buttonStyle(.plain)
+    }
+}
+
+
+/// Google's four-colour "G", drawn so the button needs no image asset.
+struct GoogleG: View {
+    var body: some View {
+        ZStack {
+            Circle().trim(from: 0.05, to: 0.30).stroke(Color(hex: 0xEA4335), lineWidth: 4).rotationEffect(.degrees(180))
+            Circle().trim(from: 0.30, to: 0.55).stroke(Color(hex: 0xFBBC05), lineWidth: 4).rotationEffect(.degrees(180))
+            Circle().trim(from: 0.55, to: 0.80).stroke(Color(hex: 0x34A853), lineWidth: 4).rotationEffect(.degrees(180))
+            Circle().trim(from: 0.80, to: 1.0).stroke(Color(hex: 0x4285F4), lineWidth: 4).rotationEffect(.degrees(180))
+            Rectangle().fill(Color(hex: 0x4285F4)).frame(width: 9, height: 4).offset(x: 4.5)
+        }
+        .padding(2)
     }
 }

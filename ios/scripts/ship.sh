@@ -48,3 +48,10 @@ echo "==> shipped build $next"
 
 echo "==> verifying internal tester auto-distribution"
 "${PY:-$HOME/.venvs/spendcap/bin/python}" scripts/configure_internal_testers.py || echo "warning: configure_internal_testers.py reported a problem"
+
+# ASC draws the app's header icon from the build attached to the App Store
+# VERSION, not from the latest TestFlight upload; attach the newest processed
+# build (never submits). Fresh uploads take minutes to process, so a
+# "nothing to attach yet" here is normal right after a ship.
+echo "==> attaching newest processed build to the App Store version"
+"${PY:-$HOME/.venvs/spendcap/bin/python}" scripts/attach_build.py || echo "warning: attach_build.py reported a problem (re-run once the build has processed)"

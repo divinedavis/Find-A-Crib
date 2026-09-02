@@ -11,6 +11,7 @@ struct MapResultsView: View {
     @State private var moved = false
     @State private var showFilters = false
     @State private var initialFit = true
+    @State private var calloutDrag: CGFloat = 0
 
     var body: some View {
         VStack(spacing: 0) {
@@ -44,10 +45,26 @@ struct MapResultsView: View {
         }
         .overlay(alignment: .bottom) {
             VStack(spacing: 12) {
-                if let selected {
-                    MapCalloutCard(building: selected) { nav.searchPath.append(.building(selected.bbl)) }
+                if let sel = selected {
+                    MapCalloutCard(building: sel) { nav.searchPath.append(.building(sel.bbl)) }
                         .padding(.horizontal, 16)
+                        .offset(y: max(0, calloutDrag))
+                        .opacity(1 - Double(max(0, calloutDrag)) / 220)
+                        .gesture(
+                            DragGesture(minimumDistance: 8)
+                                .onChanged { v in if v.translation.height > 0 { calloutDrag = v.translation.height } }
+                                .onEnded { v in
+                                    if v.translation.height > 60 || v.predictedEndTranslation.height > 140 {
+                                        withAnimation(.easeIn(duration: 0.18)) { calloutDrag = 260 }
+                                        // deselect after the slide so the pin unhighlights with it
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) { selected = nil; calloutDrag = 0 }
+                                    } else {
+                                        withAnimation(.spring(duration: 0.3)) { calloutDrag = 0 }
+                                    }
+                                }
+                        )
                         .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .accessibilityAction(named: "Dismiss") { selected = nil }
                 }
                 FloatingPill(title: "List", icon: "list.bullet") { backToList() }
             }

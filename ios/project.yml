@@ -11,12 +11,17 @@ settings:
   base:
     SWIFT_VERSION: "5.10"
     MARKETING_VERSION: "1.0"
-    CURRENT_PROJECT_VERSION: "2"
+    CURRENT_PROJECT_VERSION: "3"
     ENABLE_USER_SCRIPT_SANDBOXING: NO
 
 configs:
   Debug: debug
   Release: release
+
+packages:
+  Supabase:
+    url: https://github.com/supabase/supabase-swift
+    from: "2.20.0"
 
 targets:
   FindACrib:
@@ -28,6 +33,9 @@ targets:
     # silently ignored, and shipped a bundle with no fonts, data or icon.
     sources:
       - path: FindACrib
+    configFiles:
+      Debug: Secrets.xcconfig
+      Release: Secrets.xcconfig
     info:
       path: FindACrib/Info.plist
       properties:
@@ -50,6 +58,15 @@ targets:
           - SourceSans3-Bold.ttf
           - SourceSans3-Black.ttf
         NSLocationWhenInUseUsageDescription: Find A Crib uses your location to show rent-stabilized buildings near you on the map.
+        SUPABASE_HOST: $(SUPABASE_HOST)
+        SUPABASE_ANON_KEY: $(SUPABASE_ANON_KEY)
+        # Google sign-in runs Supabase's web OAuth flow in an
+        # ASWebAuthenticationSession and comes back on this scheme.
+        CFBundleURLTypes:
+          - CFBundleTypeRole: Editor
+            CFBundleURLName: com.divinedavis.findacrib.auth
+            CFBundleURLSchemes:
+              - findacrib
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.divinedavis.findacrib
@@ -62,6 +79,17 @@ targets:
         # Without this the AccentColor asset is dead weight and every .tint
         # falls back to system blue (see reference_ios_accent_color_unwired).
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+    dependencies:
+      - package: Supabase
+        product: Supabase
+    entitlements:
+      path: FindACrib/FindACrib.entitlements
+      properties:
+        # Sign in with Apple. APPLE_ID_AUTH is enabled on the App ID by
+        # scripts/register_in_asc.py; the two halves must agree or signing
+        # fails with an error naming neither.
+        com.apple.developer.applesignin:
+          - Default
 
   FindACribTests:
     type: bundle.unit-test

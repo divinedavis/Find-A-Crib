@@ -7,7 +7,11 @@ struct BuildingDetailView: View {
     @Environment(AppNav.self) private var nav
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
+    @Environment(AuthService.self) private var auth
     let building: Building
+    @State private var contacts: HPDContacts?
+    @State private var phone: String?
+    @State private var contactsLoading = false
     @State private var scene: MKLookAroundScene?
     @State private var sceneChecked = false
 
@@ -61,6 +65,8 @@ struct BuildingDetailView: View {
 
                     section("Rent") { rentBlock }
 
+                    section("Managing agent") { agentBlock }
+
                     voucherCard
 
                     section("Violations & complaints") { hpdBlock }
@@ -99,6 +105,70 @@ struct BuildingDetailView: View {
         .task {
             scene = try? await MKLookAroundSceneRequest(coordinate: b.coordinate).scene
             sceneChecked = true
+        }
+        .task(id: "\(auth.isSignedIn)-\(auth.hasPlus)") { await loadContacts() }
+    }
+
+    private func loadContacts() async {
+        guard auth.isSignedIn else { contacts = nil; phone = nil; return }
+        contactsLoading = true; defer { contactsLoading = false }
+        contacts = await auth.contacts(for: b.bbl)
+        phone = (contacts?.manager?.hasPhone ?? false) ? await auth.agentPhone(for: b.bbl) : nil
+    }
+
+    /// StreetEasy's "Listing by …" block, with the HPD-registered managing
+    /// agent. The number is the Plus feature: shown only to subscribers, via
+    /// get_agent_phone(); everyone else sees that one is on file.
+    @ViewBuilder private var agentBlock: some View {
+        if !auth.isSignedIn {
+            Text("The managing agent and owner HPD has on file for this building, and — with Find A Crib Plus — the agent's phone number.")
+                .font(.se(17)).foregroundStyle(SE.ink2)
+            SEOutlineButton(title: "Sign in to see who runs this building", icon: "person.crop.circle") { nav.tab = .profile }
+                .accessibilityIdentifier("agent-sign-in")
+        } else if contactsLoading && contacts == nil {
+            HStack(spacing: 10) { ProgressView().tint(SE.royal); Text("Looking up HPD registration…").font(.se(17)).foregroundStyle(SE.ink2) }
+        } else if let c = contacts {
+            if let m = c.manager, let name = m.name {
+                party("Managing agent", name, m.type, m.address)
+                if let phone {
+                    Link(destination: URL(string: "tel:" + phone.filter { $0.isNumber || $0 == "+" })!) {
+                        HStack(spacing: 10) {
+                            Image(systemName: "phone.fill").font(.system(size: 16, weight: .bold))
+                            Text(phone).font(.se(20, .bold))
+                            Spacer()
+                            Text("Call").font(.se(17, .bold))
+                        }
+                        .foregroundStyle(.white).padding(.horizontal, 16).frame(height: 50).background(SE.royal).clipShape(RoundedRectangle(cornerRadius: 2))
+                    }
+                    .accessibilityIdentifier("agent-phone")
+                } else if m.hasPhone {
+                    HStack(spacing: 10) {
+                        Image(systemName: "lock.fill").font(.system(size: 15, weight: .bold)).foregroundStyle(SE.ink3)
+                        Text(auth.hasPlus ? "Phone number temporarily unavailable" : "Phone number included with Find A Crib Plus")
+                            .font(.se(17, .semibold)).foregroundStyle(SE.ink2)
+                    }
+                    .padding(14).frame(maxWidth: .infinity, alignment: .leading).background(SE.canvas)
+                    .accessibilityIdentifier("agent-phone-locked")
+                } else {
+                    Text("No phone number on file for this agent.").font(.se(16)).foregroundStyle(SE.ink3)
+                }
+            } else {
+                Text("No managing agent in this building's HPD registration.").font(.se(17)).foregroundStyle(SE.ink2)
+            }
+            if let o = c.owner, let name = o.name { party("Owner", name, o.type, o.address).padding(.top, 6) }
+            if let h = c.officer, let name = h.name, h.name != c.owner?.name { party("Head officer", name, h.type, h.address).padding(.top, 6) }
+            Text("From the building's HPD property registration. Numbers come from public business listings and are for tenant inquiries.")
+                .font(.se(14)).foregroundStyle(SE.ink3).padding(.top, 4)
+        } else {
+            Text("No HPD registration contacts on file for this building.").font(.se(17)).foregroundStyle(SE.ink2)
+        }
+    }
+    private func party(_ role: String, _ name: String, _ type: String?, _ address: String?) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(role + (type.map { " · \(AddressCase.pretty($0.replacingOccurrences(of: "([a-z])([A-Z])", with: "$1 $2", options: .regularExpression)))" } ?? ""))
+                .font(.se(14, .semibold)).foregroundStyle(SE.ink3)
+            Text(AddressCase.pretty(name)).font(.se(20, .bold)).foregroundStyle(SE.ink)
+            if let address { Text(AddressCase.pretty(address)).font(.se(16)).foregroundStyle(SE.ink2) }
         }
     }
 

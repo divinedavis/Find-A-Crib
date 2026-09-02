@@ -5,6 +5,7 @@ struct FindACribApp: App {
     @State private var store = DataStore()
     @State private var activity = Activity()
     @State private var nav = AppNav()
+    @State private var auth = AuthService()
 
     var body: some Scene {
         WindowGroup {
@@ -12,10 +13,14 @@ struct FindACribApp: App {
                 .environment(store)
                 .environment(activity)
                 .environment(nav)
+                .environment(auth)
                 .task {
+                    auth.activity = activity
+                    activity.remoteToggle = { [weak auth] bbl, on in auth?.remoteToggle(bbl: bbl, saved: on) }
                     await store.load()
                     LaunchArgs.apply(to: nav, store: store)
                 }
+                .task { await auth.listen() }
                 .preferredColorScheme(.light)   // StreetEasy ships light-only; the palette is tuned for it
         }
     }

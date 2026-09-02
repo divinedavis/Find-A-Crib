@@ -2096,7 +2096,17 @@
     return f ? `Est. $${f[0].toLocaleString()}–$${f[2].toLocaleString()}/mo` : '';
   }
   const EST_TITLE = 'Typical rent for this ZIP, studio–2BR (HUD FY2026 Small-Area Fair Market Rents) — not this building’s actual rent';
-  const listingCounts = listingsBlob.counts || {};
+  // "Recently advertised" means posted on Zumper within the last 5 days (owner
+  // rule, 2026-09-01). listings.json is a sticky master that keeps every price
+  // it ever banked, so the counts are narrowed here by the per-building posting
+  // date the scraper records. A blob from before the scraper wrote `posted`
+  // has no dates at all — keep the old behaviour rather than blanking the site.
+  const RECENT_DAYS = 5;
+  const listingPosted = listingsBlob.posted || {};
+  const isRecent = bbl => (Date.now() / 1000 - (listingPosted[bbl] || 0)) < RECENT_DAYS * 86400;
+  const listingCounts = Object.keys(listingPosted).length
+    ? Object.fromEntries(Object.entries(listingsBlob.counts || {}).filter(([bbl]) => isRecent(bbl)))
+    : (listingsBlob.counts || {});
   // What this city actually HAS, measured from the payload rather than assumed
   // from its name. listings.json / s8.json / fmr.json are fetched RELATIVE to
   // the page, so they resolve only on the NYC root and 404 into empty objects

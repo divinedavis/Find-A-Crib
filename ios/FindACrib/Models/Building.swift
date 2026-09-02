@@ -116,8 +116,30 @@ struct ListingsBlob: Codable {
     var urls: [String: String] = [:]
     var prices: [String: Int] = [:]
     var beds: [String: [Int]] = [:]
+    /// Epoch of the most recent Zumper posting per building. "Recently
+    /// advertised" / Available now means posted within the last 5 days.
+    var posted: [String: Double] = [:]
     var updated: Double? = nil
     var updatedDate: Date? { updated.map { Date(timeIntervalSince1970: $0) } }
+    static let recentDays: Double = 5
+
+    init() {}
+    // Every map is optional on the wire: a file written before a field existed
+    // (posted, 2026-09-01) must still load rather than emptying every price.
+    init(from d: Decoder) throws {
+        let c = try d.container(keyedBy: CodingKeys.self)
+        counts = (try? c.decodeIfPresent([String: Int].self, forKey: .counts)) ?? [:]
+        urls = (try? c.decodeIfPresent([String: String].self, forKey: .urls)) ?? [:]
+        prices = (try? c.decodeIfPresent([String: Int].self, forKey: .prices)) ?? [:]
+        beds = (try? c.decodeIfPresent([String: [Int]].self, forKey: .beds)) ?? [:]
+        posted = (try? c.decodeIfPresent([String: Double].self, forKey: .posted)) ?? [:]
+        updated = try? c.decodeIfPresent(Double.self, forKey: .updated)
+    }
+    func postedDate(_ bbl: String) -> Date? { posted[bbl].map { Date(timeIntervalSince1970: $0) } }
+    func isRecent(_ bbl: String, now: Date = Date()) -> Bool {
+        guard let t = posted[bbl] else { return false }
+        return now.timeIntervalSince1970 - t < Self.recentDays * 86400
+    }
 }
 
 /// s8.json — voucher signals keyed by BBL.

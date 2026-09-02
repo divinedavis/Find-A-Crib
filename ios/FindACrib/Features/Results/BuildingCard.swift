@@ -125,8 +125,8 @@ struct BuildingCard: View {
     @ViewBuilder private var statusBadge: some View {
         if store.isSyntheticHCR(b) {
             SEBadge(text: "HousingSearch.ny.gov", fill: SE.badge.opacity(0.95))
-        } else if store.price(b) != nil, let d = store.listings.updatedDate {
-            SEBadge(text: "Listed (\(Formatters.mdy.string(from: d)))", fill: SE.badge.opacity(0.95))
+        } else if store.price(b) != nil, let d = store.postedDate(b) ?? store.listings.updatedDate {
+            SEBadge(text: "Listed \(Formatters.mdy.string(from: d))", fill: SE.badge.opacity(0.95))
         } else if let reg = b.h?.lastregistration, let d = ISO8601DateFormatter.ymd.date(from: reg) {
             SEBadge(text: "HPD registered (\(Formatters.mdy.string(from: d)))", fill: SE.badge.opacity(0.95))
         } else {
@@ -172,6 +172,9 @@ struct BuildingCard: View {
                 Text("\(Formatters.dollars(est[0]))–\(Formatters.dollars(est[2]))").font(.se(30, .bold)).foregroundStyle(SE.ink).lineLimit(1).layoutPriority(2)
                 Text("typical rent").font(.se(20)).foregroundStyle(SE.ink2).lineLimit(1)
                 InfoDot()
+            }
+            if let (p, d) = store.lastPrice(b) {
+                Text("Last advertised at \(Formatters.dollars(p))" + (d.map { " · \(Formatters.long.string(from: $0))" } ?? "")).font(.se(16)).foregroundStyle(SE.ink3)
             }
             Text("HUD FY2026 fair market rent for ZIP \(b.z ?? ""), studio–2BR · not this building's rent")
                 .font(.se(16)).foregroundStyle(SE.ink3)

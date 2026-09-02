@@ -133,18 +133,22 @@ async def scrape_zumper(ctx, area_slug: str, max_pages=80, log=print):
             pm = re.search(r'"min_price":(\d{3,7})', window)
             bn = re.search(r'"min_bedrooms":(\d+)', window)
             bx = re.search(r'"max_bedrooms":(\d+)', window)
+            # Zumper stamps each listing with the epoch it was posted. That is
+            # what "recently advertised" means downstream: posted < 5 days ago.
+            lo = re.search(r'"listed_on":(\d{9,11})', window)
             pairs.append({
                 "addr": am.group(1),
                 "url": f"https://www.zumper.com/listing/{lid}",
                 "price": int(pm.group(1)) if pm else None,
                 "bmin": int(bn.group(1)) if bn else None,
                 "bmax": int(bx.group(1)) if bx else None,
+                "posted": int(lo.group(1)) if lo else None,
             })
         # Add any bare addresses not already paired (fallback, no url/price/beds)
         bare_addrs = set(re.findall(r'"address":"([^"]{5,80})"', html))
         addrs_with_url = {p["addr"] for p in pairs}
         for a in bare_addrs - addrs_with_url:
-            pairs.append({"addr": a, "url": None, "price": None, "bmin": None, "bmax": None})
+            pairs.append({"addr": a, "url": None, "price": None, "bmin": None, "bmax": None, "posted": None})
         new = [p for p in pairs if p["addr"] not in seen_addrs]
         log(f"  zumper {area_slug} p{page_n}: {len(pairs)} addrs ({len(new)} new, "
             f"{sum(1 for p in new if p['url'])} with URL, {sum(1 for p in new if p['price'])} with price)")
@@ -177,7 +181,7 @@ async def scrape_renthop(ctx, area_path: str, max_pages=20, log=print):
             break
         seen.update(addrs)
         for a in new:
-            out.append({"addr": a, "url": None, "price": None, "bmin": None, "bmax": None})
+            out.append({"addr": a, "url": None, "price": None, "bmin": None, "bmax": None, "posted": None})
         await asyncio.sleep(1.2)
     return out
 
@@ -200,6 +204,7 @@ async def main():
     urls = {}    # bbl -> first known Zumper URL for that building
     prices = {}  # bbl -> lowest advertised rent seen for that building
     beds = {}    # bbl -> set of bedroom counts available (0=studio, capped at 4)
+    posted = {}  # bbl -> epoch of the most recently posted listing (Zumper listed_on)
     matched_addrs = set()
 
     async with async_playwright() as p:
@@ -258,6 +263,8 @@ async def main():
         if price and 500 <= price <= 50000:
             if bbl not in prices or price < prices[bbl]:
                 prices[bbl] = price
+        if lst.get("posted") and lst["posted"] > posted.get(bbl, 0):
+            posted[bbl] = lst["posted"]
         # union of bedroom counts the building's listings cover (0=studio, 4 means 4+)
         bmin, bmax = lst["bmin"], lst["bmax"]
         if bmin is not None and bmax is not None and 0 <= bmin <= bmax <= 12:
@@ -270,13 +277,16 @@ async def main():
     log(f"buildings with direct Zumper URLs: {len(urls)}")
     log(f"buildings with a rent price: {len(prices)}")
     log(f"buildings with bedroom data: {len(beds)}")
+    fresh = sum(1 for t in posted.values() if time.time() - t < 5 * 86400)
+    log(f"buildings with a posting date: {len(posted)} ({fresh} posted in the last 5 days)")
     log(f"unique normalized matched addresses: {len(matched_addrs)}")
 
     now = int(time.time())
     payload = {"updated": now,
                "updated_iso": time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime(now)),
                "counts": counts, "urls": urls, "prices": prices,
-               "beds": {b: sorted(s) for b, s in beds.items()}}
+               "beds": {b: sorted(s) for b, s in beds.items()},
+               "posted": posted}
     blob = json.dumps(payload, separators=(",", ":"))
     OUT.write_text(blob)
     LOG.write_text("\n".join(log_lines) + "\n")

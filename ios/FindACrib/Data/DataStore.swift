@@ -166,11 +166,17 @@ final class DataStore {
 
     // MARK: derived per-building facts
 
-    func price(_ b: Building) -> Int? { listings.prices[b.bbl] }
+    /// The asking rent, but only while the listing counts as recent (posted
+    /// on Zumper within the last 5 days). Older banked prices are history,
+    /// exposed separately as `lastPrice`.
+    func price(_ b: Building) -> Int? { listings.isRecent(b.bbl) ? listings.prices[b.bbl] : nil }
+    /// A price we once saw for the building, however old — with when.
+    func lastPrice(_ b: Building) -> (Int, Date?)? { listings.prices[b.bbl].map { ($0, listings.postedDate(b.bbl)) } }
+    func postedDate(_ b: Building) -> Date? { listings.postedDate(b.bbl) }
     func beds(_ b: Building) -> [Int] { listings.beds[b.bbl] ?? [] }
     func listingURL(_ b: Building) -> URL? { listings.urls[b.bbl].flatMap(URL.init) }
     func listingCount(_ b: Building) -> Int { listings.counts[b.bbl] ?? 0 }
-    func isAdvertised(_ b: Building) -> Bool { listings.prices[b.bbl] != nil || listings.counts[b.bbl] != nil }
+    func isAdvertised(_ b: Building) -> Bool { listings.isRecent(b.bbl) }
     /// HUD estimate for the ZIP: [studio, 1BR, 2BR, 3BR]
     func estimate(_ b: Building) -> [Int]? { b.z.flatMap { fmr[$0] } }
     /// One price per building, shared by the price sort and filter: the real

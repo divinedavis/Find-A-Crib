@@ -283,7 +283,10 @@ struct BuildingDetailView: View {
             }
             let n = store.listingCount(b); let bd = store.beds(b)
             Text("\(n) recent listing\(n == 1 ? "" : "s")" + (bd.isEmpty ? "" : " · " + bd.sorted().map { $0 == 0 ? "studio" : "\($0) bed" }.joined(separator: ", ")) +
-                 (store.listings.updatedDate.map { " · as of \(Formatters.long.string(from: $0))" } ?? ""))
+                 (store.postedDate(b).map { " · posted \(Formatters.long.string(from: $0))" } ?? ""))
+                .font(.se(17)).foregroundStyle(SE.ink2)
+        } else if let (p, d) = store.lastPrice(b) {
+            Text("Last advertised at \(Formatters.dollars(p))" + (d.map { " on \(Formatters.long.string(from: $0))" } ?? "") + " — no listing in the last 5 days.")
                 .font(.se(17)).foregroundStyle(SE.ink2)
         }
         if let e = store.estimate(b), e.count >= 4 {

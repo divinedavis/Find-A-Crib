@@ -81,17 +81,26 @@ final class SearchEngineTests: XCTestCase {
         XCTAssertEqual(SearchEngine.count(q, store: Self.store), SearchEngine.count(n, store: Self.store))
     }
 
+    func testRecencyRule() {
+        var blob = ListingsBlob()
+        blob.prices = ["a": 1000, "b": 2000]
+        blob.posted = ["a": Date().timeIntervalSince1970 - 2 * 86400, "b": Date().timeIntervalSince1970 - 9 * 86400]
+        XCTAssertTrue(blob.isRecent("a")); XCTAssertFalse(blob.isRecent("b")); XCTAssertFalse(blob.isRecent("zzz"))
+    }
+
     func testAvailableOnlyIsPriced() {
         var q = SearchQuery(); q.mode = .stabilized; q.availableOnly = true
         let r = SearchEngine.run(q, store: Self.store)
-        XCTAssertEqual(r.count, Self.store.listings.prices.count)
+        // only buildings posted on Zumper in the last 5 days count as available
+        XCTAssertEqual(r.count, Self.store.listings.prices.keys.filter { Self.store.listings.isRecent($0) }.count)
         XCTAssertTrue(r.allSatisfy { Self.store.price($0) != nil })
         // cheapest-first
         let prices = r.compactMap { Self.store.price($0) }
         XCTAssertEqual(prices, prices.sorted())
     }
 
-    func testPriceAndBedsFilter() {
+    func testPriceAndBedsFilter() throws {
+        try XCTSkipIf(Self.store.listings.posted.isEmpty, "seed predates posting dates; nothing is 'recent'")
         var q = SearchQuery(); q.mode = .stabilized; q.availableOnly = true; q.minPrice = 1000; q.maxPrice = 3000; q.beds = [1]
         let r = SearchEngine.run(q, store: Self.store)
         XCTAssertFalse(r.isEmpty)

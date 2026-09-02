@@ -38,6 +38,11 @@ def main():
     for m in MAPS:
         candidates = {**z.get(m, {}), **a.get(m, {})}   # Apify wins vs Zumper
         out[m] = {**candidates, **master.get(m, {})}     # master sticky; fill gaps only
+    # Freshness is the one thing that must NOT be sticky. "Recently advertised"
+    # means posted in the last 5 days (owner rule, 2026-09-01), so the latest
+    # scrape's posting dates always win; a building missing from the latest
+    # scrape keeps its old date and simply ages out of "recent".
+    out["posted"] = {**master.get("posted", {}), **z.get("posted", {}), **a.get("posted", {})}
     out["updated"] = max(master.get("updated", 0), z.get("updated", 0),
                          a.get("updated", 0)) or int(time.time())
     out["updated_iso"] = time.strftime("%Y-%m-%dT%H:%M:%S+00:00",

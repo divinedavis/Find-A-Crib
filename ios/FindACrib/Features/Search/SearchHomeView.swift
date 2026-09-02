@@ -327,7 +327,7 @@ struct ShowChecklist: View {
     var body: some View {
         SECheckList(rows: [
             .init(title: "Rent stabilized", subtitle: "Every building on the DHCR register", isOn: .constant(true), locked: true),
-            .init(title: "Available now", subtitle: "Advertised recently, with an asking rent", isOn: $query.availableOnly),
+            .init(title: "Available now", subtitle: "Posted on Zumper in the last 5 days", isOn: $query.availableOnly),
             .init(title: "Accepting vouchers", subtitle: "Section 8 / voucher-friendly buildings", isOn: $query.vouchersOnly),
             .init(title: "HCR lotteries & waitlists", subtitle: "Apply online at HousingSearch.ny.gov", isOn: $query.hcrOnly),
         ])

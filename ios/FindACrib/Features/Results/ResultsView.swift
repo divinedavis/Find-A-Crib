@@ -126,6 +126,7 @@ struct ResultsView: View {
         .task(id: query) { run() }
         .onChange(of: store.loaded) { _, _ in run() }
         .navigationBarBackButtonHidden(true)
+        .swipeBackEnabled()
     }
 
     private var defaultName: String { "\(query.normalized.availableOnly ? "Available" : (query.normalized.vouchersOnly ? "Vouchers" : "Stabilized")) · \(query.locationLabel)" }

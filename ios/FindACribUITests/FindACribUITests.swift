@@ -82,4 +82,17 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(back.waitForExistence(timeout: 10))
         XCTAssertTrue(back.label.contains("Custom map area"), "list header was: \(back.label)")
     }
+
+    /// The pushed screens hide the system nav bar, which normally kills the
+    /// edge swipe; this pins that swiping from the left edge still pops.
+    func testEdgeSwipePopsDetail() throws {
+        app.terminate()
+        app.launchArguments = ["--route", "detail"]
+        app.launch()
+        XCTAssertTrue(app.buttons["detail-back"].waitForExistence(timeout: 30))
+        let from = app.coordinate(withNormalizedOffset: CGVector(dx: 0.01, dy: 0.55))
+        let to = app.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.55))
+        from.press(forDuration: 0.05, thenDragTo: to, withVelocity: .fast, thenHoldForDuration: 0.05)
+        XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 8), "edge swipe did not pop back to the results list")
+    }
 }

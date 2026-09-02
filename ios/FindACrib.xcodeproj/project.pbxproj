@@ -25,6 +25,7 @@
 		57861D606FFBA7F23A414A91 /* BuildingCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C86217F159AB095139ABEE8D /* BuildingCard.swift */; };
 		64498DC63C55C20134BBB5DE /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44FBB961CA3E35950616322D /* ProfileView.swift */; };
 		68768EA92CC0D2364159A378 /* SourceSans3-Semibold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 29346FF1C5BB5747E8F6660B /* SourceSans3-Semibold.ttf */; };
+		6DE31757CEBB12EC458D69FC /* SwipeBack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 855488736B82051BFCB10DF5 /* SwipeBack.swift */; };
 		71EC779912AE74BE0D6EA8D8 /* FiltersSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFD73F478D420E114F0C82CB /* FiltersSheet.swift */; };
 		77119B1CD94A4E7C0C3B77D4 /* MyActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67EAA0737B2B2E5474B5BE9D /* MyActivityView.swift */; };
 		7AFD10F6B321EADAB58210EA /* SearchQuery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C5230FE7E960A89326516B1 /* SearchQuery.swift */; };
@@ -80,6 +81,7 @@
 		7AB083E634E08974E9E2C973 /* buildings.slim.json.gz */ = {isa = PBXFileReference; lastKnownFileType = archive.gzip; path = buildings.slim.json.gz; sourceTree = "<group>"; };
 		7E81DF56B127517559D83AFC /* SearchHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchHomeView.swift; sourceTree = "<group>"; };
 		83E8C07CA8826533BBFF4570 /* FindACribUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FindACribUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		855488736B82051BFCB10DF5 /* SwipeBack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeBack.swift; sourceTree = "<group>"; };
 		96A59BAA0D560AEC7D0E1BF8 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		98EA9658998D86C1B18B3B70 /* FindACribTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FindACribTests.swift; sourceTree = "<group>"; };
 		9F650FE59DC17EC3E4DC6591 /* Gunzip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Gunzip.swift; sourceTree = "<group>"; };
@@ -101,7 +103,7 @@
 		E42AA07F206334B8F58225F1 /* listings.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = listings.json; sourceTree = "<group>"; };
 		EA50D389BB3AB7B341BD720D /* ImageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageService.swift; sourceTree = "<group>"; };
 		EFD73F478D420E114F0C82CB /* FiltersSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FiltersSheet.swift; sourceTree = "<group>"; };
-		"TEMP_FF759DED-9E36-4C5F-B252-8D01C1BD5EBA" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_03A4176E-7D4D-4C54-A150-BD76E8F66CD4" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -246,6 +248,7 @@
 			isa = PBXGroup;
 			children = (
 				DCFB5318551DD17B54EE6524 /* Components.swift */,
+				855488736B82051BFCB10DF5 /* SwipeBack.swift */,
 				96A59BAA0D560AEC7D0E1BF8 /* Theme.swift */,
 			);
 			path = Design;
@@ -305,10 +308,10 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
-		"TEMP_3861567E-F26C-4D6F-BEDF-8A0BF40D0A72" /* ios */ = {
+		"TEMP_FA10A93A-DB32-4FB9-A766-7F4C6C2D550A" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_FF759DED-9E36-4C5F-B252-8D01C1BD5EBA" /* Secrets.xcconfig */,
+				"TEMP_03A4176E-7D4D-4C54-A150-BD76E8F66CD4" /* Secrets.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -459,6 +462,7 @@
 				0F1D27EEB4666DE3CC60230B /* SearchEngine.swift in Sources */,
 				F352BA38267B7AE6FEB41498 /* SearchHomeView.swift in Sources */,
 				7AFD10F6B321EADAB58210EA /* SearchQuery.swift in Sources */,
+				6DE31757CEBB12EC458D69FC /* SwipeBack.swift in Sources */,
 				216D8003A64546DC1DED920D /* Theme.swift in Sources */,
 				0CF23CC819EE42C4B168DADB /* WebAuth.swift in Sources */,
 			);
@@ -564,7 +568,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 8;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -598,7 +602,7 @@
 		};
 		4A043B04EA1D2F1BD0250C61 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_FF759DED-9E36-4C5F-B252-8D01C1BD5EBA" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_03A4176E-7D4D-4C54-A150-BD76E8F66CD4" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -639,7 +643,7 @@
 		};
 		7B4EAA1664EF270AD8C579E8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_FF759DED-9E36-4C5F-B252-8D01C1BD5EBA" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_03A4176E-7D4D-4C54-A150-BD76E8F66CD4" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -712,7 +716,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 7;
+				CURRENT_PROJECT_VERSION = 8;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;

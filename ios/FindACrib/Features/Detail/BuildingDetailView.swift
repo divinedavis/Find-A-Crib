@@ -100,6 +100,7 @@ struct BuildingDetailView: View {
             .background(Color.white.shadow(.drop(color: .black.opacity(0.08), radius: 6, y: -2)))
         }
         .navigationBarBackButtonHidden(true)
+        .swipeBackEnabled()
         .onAppear { nav.hideTabBar = true; activity.recordView(b.bbl) }
         .onDisappear { nav.hideTabBar = false }
         .task {

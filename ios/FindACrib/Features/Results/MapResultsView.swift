@@ -83,6 +83,7 @@ struct MapResultsView: View {
             }
         }
         .navigationBarBackButtonHidden(true)
+        .swipeBackEnabled()
     }
 
     /// The list underneath was pushed with the query the map STARTED from.

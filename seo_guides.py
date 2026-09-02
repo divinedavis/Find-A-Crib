@@ -438,6 +438,123 @@ GUIDES = [
 
     # ---- San Francisco ------------------------------------------------------
     {
+        "city": "nyc",
+        "slug": "deed-theft-nyc",
+        "title": "Deed Theft in NYC: Warning Signs and How to Report It",
+        "desc": "Deed theft is when someone forges or tricks you into signing a deed and takes your home on paper. How it happens in New York City, the warning signs, who to call — the Sheriff, your DA, the Attorney General — and the free alert that catches it early.",
+        "h1": "Deed theft: how it happens and how to report it",
+        "body": (
+            "<p class='lead'>Deed theft is the transfer of a home's title without the owner's real consent — "
+            "a forged signature on a deed, or a document the owner was tricked into signing. Once the deed is "
+            "recorded, the thief can borrow against the house or sell it, and the family living there can find "
+            "itself facing eviction from a home it owns. New York's Attorney General counted roughly 3,000 "
+            "deed-theft complaints in the city from 2014–2018, 45% of them from Brooklyn, and complaints have "
+            "kept climbing since. It targets the same neighborhoods this site maps: older one- to four-family "
+            "homes in central Brooklyn, southeast Queens and the Bronx, often owned outright by seniors.</p>"
+
+            "<h2>How the scam usually works</h2>"
+            "<ul>"
+            "<li><strong>The forged deed.</strong> Someone records a deed transferring your property to themselves "
+            "or a shell LLC, with a forged signature and a notary stamp. You find out when a tax bill stops "
+            "coming, a stranger's mortgage shows up, or a marshal's notice arrives.</li>"
+            "<li><strong>The 'rescue'.</strong> A homeowner behind on the mortgage, taxes or water bills is offered "
+            "help — a refinance, a loan, a way to 'pause' foreclosure. Among the papers is a deed. The owner "
+            "signs believing it is something else.</li>"
+            "<li><strong>The estate grab.</strong> After an owner dies, a relative or stranger records a deed the "
+            "owner supposedly signed before death, or exploits heirs who never formally transferred title.</li>"
+            "<li><strong>The rent-to-own or sale-leaseback.</strong> The owner is told they can sell, stay as a "
+            "tenant, and buy back later. The buy-back never happens; the eviction does.</li>"
+            "</ul>"
+
+            "<h2>Warning signs</h2>"
+            "<ul>"
+            "<li>Your property-tax bill or water bill stops arriving, or arrives in someone else's name.</li>"
+            "<li>Mail about a mortgage, refinance or line of credit you never applied for.</li>"
+            "<li>A notice of eviction, foreclosure or a court date on a home you own free and clear.</li>"
+            "<li>Unsolicited offers to buy the house, 'help with' the mortgage, or 'take the property off your "
+            "hands' — especially if you are behind on payments or the house is in an estate.</li>"
+            "<li>Anyone asking you to sign papers at home, quickly, without your own lawyer.</li>"
+            "</ul>"
+
+            "<h2>Check your own deed right now</h2>"
+            "<p>Every deed and mortgage recorded in Manhattan, Brooklyn, Queens and the Bronx is public in "
+            "<a href='https://a836-acris.nyc.gov/' rel='nofollow noopener' target='_blank'>ACRIS</a>, the City "
+            "Register's database (Staten Island records are with the "
+            "<a href='https://www.richmondcountyclerk.com/' rel='nofollow noopener' target='_blank'>Richmond County Clerk</a>). "
+            "Search by address or by the borough-block-lot on your tax bill and read the list of recorded "
+            "documents. Anything you do not recognize — a deed, a mortgage, a power of attorney — is the "
+            "moment to act. Find A Crib's building pages carry the BBL for every "
+            "<a href='/buildings/'>rent-stabilized building in the city</a>, which is the number ACRIS wants.</p>"
+
+            "<h2>The free alert that catches it early</h2>"
+            "<p>The Department of Finance runs the <strong>Notice of Recorded Document Program</strong>: register "
+            "your property once and the city emails, texts or mails you the day after any deed, mortgage or "
+            "related document is recorded against it. It is free, and it is the single most effective "
+            "protection there is, because a forged deed is far easier to undo in the first week than after a "
+            "mortgage has been taken out on it. Sign up at "
+            "<a href='https://a836-acrissds.nyc.gov/NRD/' rel='nofollow noopener' target='_blank'>a836-acrissds.nyc.gov/NRD</a>. "
+            "Owners, heirs, executors, attorneys and managing agents can all register.</p>"
+
+            "<h2>How to report deed theft</h2>"
+            "<p>Report it to more than one place — the agencies below do different things, and the first "
+            "days matter.</p>"
+            "<ol>"
+            "<li><strong>Mayor's Office of Deed Theft Prevention</strong> (in the Department of Finance) — complete the "
+            "<a href='https://www.nyc.gov/site/finance/property/deed-fraud-protection.page' rel='nofollow noopener' target='_blank'>"
+            "Deed Theft Prevention Intake Form</a> at nyc.gov/deedtheft. This office coordinates the city's "
+            "response and will help you with the steps below.</li>"
+            "<li><strong>NYC Sheriff's Office</strong>, Bureau of Criminal Investigation — <strong>(718) 707-2100</strong>. "
+            "The Sheriff investigates recorded-document fraud citywide. If the theft involves a break-in, "
+            "violence or threats, call the NYPD (911) first.</li>"
+            "<li><strong>Your borough's District Attorney.</strong> Deed theft is a felony under New York's 2023 "
+            "deed-theft law. Brooklyn's DA runs a dedicated line, the Action Center at <strong>(718) 250-2340</strong> "
+            "(9am–5pm) and publishes a "
+            "<a href='https://brooklynda.org/deedfraud/' rel='nofollow noopener' target='_blank'>deed-fraud guide</a>; "
+            "the other four DAs take reports through their main offices.</li>"
+            "<li><strong>New York State Attorney General</strong> — hotline <strong>1-800-771-7755</strong>, or the "
+            "<a href='https://formsnym.ag.ny.gov/OAGOnlineSubmissionForm/faces/OAGDTBHome' rel='nofollow noopener' target='_blank'>"
+            "online deed-theft complaint form</a>. The AG's Protect Our Homes initiative screens complaints and "
+            "brings civil and criminal cases, and can move to void a fraudulent deed and pause a related "
+            "eviction or foreclosure.</li>"
+            "<li><strong>Get a certified copy of the fraudulent document</strong> from the City Register "
+            "(call 311, or write to NYC Department of Finance, Office of the City Register, 66 John Street, "
+            "13th Floor, New York, NY 10038). You will need it for every step above.</li>"
+            "<li><strong>Get a lawyer.</strong> Free help is available: call the state's homeowner hotline at "
+            "<strong>1-855-466-3456</strong> or visit "
+            "<a href='https://homeownerhelpny.org/deed-theft' rel='nofollow noopener' target='_blank'>HomeownerHelpNY</a> "
+            "to be matched with a legal-services or housing-counseling group near you.</li>"
+            "</ol>"
+
+            "<h2>If you are a tenant</h2>"
+            "<p>Deed theft also lands on renters: a new 'owner' appears, demands rent, or starts an eviction. "
+            "Do not pay anyone whose name is not on the deed in ACRIS. Your lease and your "
+            "<a href='/guide/rent-stabilized-tenant-rights/'>rent-stabilized protections</a> survive a change in "
+            "ownership, fraudulent or not — and if the deed was stolen, the eviction has no standing. Tell the "
+            "real owner, and call the numbers above yourself.</p>"
+
+            "<h2>Where to get help</h2>"
+            "<p>The agencies above, a real-estate attorney, or a legal-aid organization. This page is general "
+            "information about deed theft in New York City, not legal advice.</p>"
+            + TOOL_CTA +
+            "<h2>Official sources</h2>"
+            "<ul>"
+            "<li><a href='https://www.nyc.gov/site/finance/property/deed-fraud-protection.page' rel='nofollow noopener' target='_blank'>"
+            "Mayor's Office of Deed Theft Prevention — NYC Department of Finance</a></li>"
+            "<li><a href='https://a836-acrissds.nyc.gov/NRD/' rel='nofollow noopener' target='_blank'>"
+            "Notice of Recorded Document Program — sign up for deed and mortgage alerts</a></li>"
+            "<li><a href='https://portal.311.nyc.gov/article/?kanumber=KA-02936' rel='nofollow noopener' target='_blank'>"
+            "NYC311 — Property Deed or Record Theft</a></li>"
+            "<li><a href='https://ag.ny.gov/resources/individuals/tenants-homeowners/homeowners' rel='nofollow noopener' target='_blank'>"
+            "New York State Attorney General — Homeowners and deed theft</a></li>"
+            "<li><a href='https://brooklynda.org/deedfraud/' rel='nofollow noopener' target='_blank'>"
+            "Brooklyn District Attorney — Deed Fraud Information and Resources</a></li>"
+            "</ul>"
+            "<p class='disclaimer'>Find A Crib is an informational tool, not a law firm. This guide is general "
+            "information about deed theft in New York City, not legal advice. For your specific situation, "
+            "contact the agencies above or an attorney.</p>"
+        ),
+    },
+    {
         "city": "sf",
         "slug": "is-my-apartment-rent-controlled-san-francisco",
         "title": "Is My Apartment Rent Controlled in San Francisco? How to Check",

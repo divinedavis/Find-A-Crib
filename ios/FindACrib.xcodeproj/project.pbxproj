@@ -10,6 +10,7 @@
 		0136804FC89E8B93A538DC65 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2F8F4D03975F98CA24C386C /* AuthService.swift */; };
 		0520A5F1A16409B5EDD7B003 /* MapResultsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACFF6FF6AFF4A2D1729699C2 /* MapResultsView.swift */; };
 		07C22BCCE603D9800EE7EE13 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCFB5318551DD17B54EE6524 /* Components.swift */; };
+		0CF23CC819EE42C4B168DADB /* WebAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2A5DE06714F5E44D5AA829E /* WebAuth.swift */; };
 		0F1D27EEB4666DE3CC60230B /* SearchEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F485D02A5570CFBB0B8EDA8 /* SearchEngine.swift */; };
 		1488C890724AD279E0177491 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB6A940EC2510A1E63699B6A /* RootView.swift */; };
 		17B1E6D55E507C00DC25FB0E /* ImageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA50D389BB3AB7B341BD720D /* ImageService.swift */; };
@@ -95,11 +96,12 @@
 		DBADFE6B0EF45D112E3C4837 /* SourceSans3-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SourceSans3-Bold.ttf"; sourceTree = "<group>"; };
 		DCFB5318551DD17B54EE6524 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		DD42ED9E163BFE8774DB94CC /* FindACrib.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = FindACrib.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E2A5DE06714F5E44D5AA829E /* WebAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebAuth.swift; sourceTree = "<group>"; };
 		E2F8F4D03975F98CA24C386C /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
 		E42AA07F206334B8F58225F1 /* listings.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = listings.json; sourceTree = "<group>"; };
 		EA50D389BB3AB7B341BD720D /* ImageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageService.swift; sourceTree = "<group>"; };
 		EFD73F478D420E114F0C82CB /* FiltersSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FiltersSheet.swift; sourceTree = "<group>"; };
-		"TEMP_ABFA7441-761D-49C4-82EF-6FFE2A336E4E" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_654A50A9-4E6E-488B-B965-7941392EA34E" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -121,6 +123,7 @@
 				A8B4C6BAFBAB36BCC61E8C51 /* AppleSignIn.swift */,
 				E2F8F4D03975F98CA24C386C /* AuthService.swift */,
 				EA50D389BB3AB7B341BD720D /* ImageService.swift */,
+				E2A5DE06714F5E44D5AA829E /* WebAuth.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -302,10 +305,10 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
-		"TEMP_1E564F5E-4254-4FEC-AAD4-CD8D94E7B45C" /* ios */ = {
+		"TEMP_B2AE10CE-260B-4079-A79F-9FB042F0B89C" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_ABFA7441-761D-49C4-82EF-6FFE2A336E4E" /* Secrets.xcconfig */,
+				"TEMP_654A50A9-4E6E-488B-B965-7941392EA34E" /* Secrets.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -457,6 +460,7 @@
 				F352BA38267B7AE6FEB41498 /* SearchHomeView.swift in Sources */,
 				7AFD10F6B321EADAB58210EA /* SearchQuery.swift in Sources */,
 				216D8003A64546DC1DED920D /* Theme.swift in Sources */,
+				0CF23CC819EE42C4B168DADB /* WebAuth.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -560,7 +564,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -594,7 +598,7 @@
 		};
 		4A043B04EA1D2F1BD0250C61 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_ABFA7441-761D-49C4-82EF-6FFE2A336E4E" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_654A50A9-4E6E-488B-B965-7941392EA34E" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -635,7 +639,7 @@
 		};
 		7B4EAA1664EF270AD8C579E8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_ABFA7441-761D-49C4-82EF-6FFE2A336E4E" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_654A50A9-4E6E-488B-B965-7941392EA34E" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -708,7 +712,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;

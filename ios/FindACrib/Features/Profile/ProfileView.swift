@@ -14,17 +14,9 @@ struct ProfileView: View {
     var body: some View {
         VStack(spacing: 0) {
             NavyHeader {
-                HStack {
-                    HStack(spacing: 8) {
-                        Image(systemName: "gearshape.fill").font(.system(size: 15, weight: .bold))
-                        Text("Settings").font(.se(20, .bold))
-                    }.foregroundStyle(.white)
-                    Spacer()
-                    Text("Profile").font(.se(20, .semibold)).foregroundStyle(.white)
-                    Spacer()
-                    Spacer().frame(width: 90)
-                }
-                .padding(.horizontal, 16).padding(.bottom, 14)
+                Text("Profile").font(.se(24, .bold)).foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16).padding(.bottom, 12)
             }
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
@@ -136,6 +128,7 @@ struct ProfileView: View {
                         linkRow("What is rent stabilization?", "https://findacrib.com/guide/what-is-rent-stabilization/")
                         linkRow("Is my apartment rent stabilized?", "https://findacrib.com/guide/is-my-apartment-rent-stabilized/")
                         linkRow("Tenant rights", "https://findacrib.com/guide/rent-stabilized-tenant-rights/")
+                        linkRow("Deed theft: warning signs and how to report it", "https://findacrib.com/guide/deed-theft-nyc/")
                         linkRow("Developer API", "https://findacrib.com/developers")
                     }
                     Text("Find A Crib \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "") (\(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "")) · Not a broker. Building data from NYS HCR and NYC HPD open data.")

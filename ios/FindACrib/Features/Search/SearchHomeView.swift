@@ -15,7 +15,7 @@ struct SearchHomeView: View {
             VStack(alignment: .leading, spacing: 0) {
                 HeroCollage().padding(.bottom, 14)
 
-                SEUnderlineTabs(options: SearchMode.allCases.map { ($0, $0.rawValue) }, selection: $query.mode)
+                SEUnderlineTabs(options: SearchMode.allCases.map { ($0, $0.title) }, selection: $query.mode)
                     .padding(.horizontal, 16)
                     .padding(.bottom, 20)
 

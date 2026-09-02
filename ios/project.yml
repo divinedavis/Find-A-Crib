@@ -11,7 +11,7 @@ settings:
   base:
     SWIFT_VERSION: "5.10"
     MARKETING_VERSION: "1.0"
-    CURRENT_PROJECT_VERSION: "3"
+    CURRENT_PROJECT_VERSION: "4"
     ENABLE_USER_SCRIPT_SANDBOXING: NO
 
 configs:
@@ -40,6 +40,10 @@ targets:
       path: FindACrib/Info.plist
       properties:
         CFBundleDisplayName: Find A Crib
+        # System dialogs (ASWebAuthenticationSession consent, Sign in with
+        # Apple) show CFBundleName, which otherwise defaults to the product
+        # name "FindACrib".
+        CFBundleName: Find A Crib
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         CFBundleShortVersionString: $(MARKETING_VERSION)
         UILaunchScreen:

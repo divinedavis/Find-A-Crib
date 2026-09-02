@@ -11,7 +11,7 @@ struct FiltersSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    SEUnderlineTabs(options: SearchMode.allCases.map { ($0, $0.rawValue) }, selection: $draft.mode)
+                    SEUnderlineTabs(options: SearchMode.allCases.map { ($0, $0.title) }, selection: $draft.mode)
                     HStack(spacing: 16) {
                         PriceField(label: "Minimum price", value: $draft.minPrice, placeholder: "No min")
                         PriceField(label: "Maximum price", value: $draft.maxPrice, placeholder: "No max")

@@ -5,6 +5,11 @@ enum SearchMode: String, CaseIterable, Codable, Hashable {
     case rent = "Rent"                 // advertised now, with a real asking rent
     case stabilized = "Stabilized"     // every rent-stabilized building on file
     case vouchers = "Vouchers"         // Section 8 / voucher-friendly
+    /// Tab label. Kept apart from rawValue, which is persisted in saved and
+    /// recent searches and must not change.
+    var title: String {
+        switch self { case .rent: "For rent"; case .stabilized: "All stabilized"; case .vouchers: "Vouchers" }
+    }
     var noun: String {
         switch self { case .rent: "rentals"; case .stabilized: "buildings"; case .vouchers: "voucher listings" }
     }

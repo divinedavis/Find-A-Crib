@@ -74,8 +74,11 @@ struct MapResultsView: View {
         .sheet(isPresented: $showFilters) { FiltersSheet(query: $query) }
         .task(id: query) {
             results = SearchEngine.run(query, store: store)
-            let isMapArea = query.locations.contains { if case .mapArea = $0 { return true }; return false }
-            if !isMapArea {
+            // A custom map area IS the viewport the user was looking at, so
+            // reopening the map lands exactly there instead of on all of NYC.
+            if case .mapArea(let box)? = query.locations.first(where: { if case .mapArea = $0 { return true }; return false }) {
+                region = box.region
+            } else {
                 region = (results.count > 0 && results.count <= 500) ? MapRegion.fit(results) : MapRegion.forQuery(query, store: store)
             }
         }
@@ -165,10 +168,16 @@ struct BuildingMap: UIViewRepresentable {
 
     func updateUIView(_ m: MKMapView, context: Context) {
         let c = context.coordinator
-        if initialFit && !c.didFit {
-            m.setRegion(region, animated: false); c.didFit = true
+        // Push a region the VIEW chose (a fit, a saved map area) down to the
+        // map, but not one the map itself just reported back — that echo is
+        // what a naive `setRegion` on every update turns into a pan-fight.
+        // Before this, only the very first update ever reached the map, so
+        // fits computed after the results loaded were silently dropped.
+        if !Self.same(region, c.reported) && !Self.same(region, c.applied) {
+            m.setRegion(region, animated: c.applied != nil)
+            c.applied = region
         }
-        let key = buildings.map(\.bbl).hashValue ^ prices.count
+        let key = buildings.map(\.bbl).hashValue ^ prices.count ^ (buildings.count > Self.cap ? Int(m.region.center.latitude * 100) ^ Int(m.region.center.longitude * 100) : 0)
         if c.lastKey != key {
             c.lastKey = key
             m.removeAnnotations(m.annotations.filter { $0 is BuildingAnnotation })
@@ -176,6 +185,13 @@ struct BuildingMap: UIViewRepresentable {
             m.addAnnotations(subset.map { BuildingAnnotation($0, price: prices[$0.bbl]) })
         }
         if selected == nil, let s = m.selectedAnnotations.first { m.deselectAnnotation(s, animated: false) }
+    }
+
+    static func same(_ a: MKCoordinateRegion, _ b: MKCoordinateRegion?) -> Bool {
+        guard let b else { return false }
+        let e = 1e-6
+        return abs(a.center.latitude - b.center.latitude) < e && abs(a.center.longitude - b.center.longitude) < e
+            && abs(a.span.latitudeDelta - b.span.latitudeDelta) < e && abs(a.span.longitudeDelta - b.span.longitudeDelta) < e
     }
 
     private func nearest(to c: CLLocationCoordinate2D, from bs: [Building], n: Int) -> ArraySlice<Building> {
@@ -188,7 +204,8 @@ struct BuildingMap: UIViewRepresentable {
     final class Coordinator: NSObject, MKMapViewDelegate {
         var parent: BuildingMap
         var lastKey = 0
-        var didFit = false
+        var applied: MKCoordinateRegion?    // last region this wrapper pushed to the map
+        var reported: MKCoordinateRegion?   // last region the map reported back
         var settled = false
         var arming = false
         init(_ p: BuildingMap) { parent = p }
@@ -214,6 +231,7 @@ struct BuildingMap: UIViewRepresentable {
             if view.annotation is BuildingAnnotation { parent.selected = nil }
         }
         func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {
+            reported = mapView.region
             parent.region = mapView.region
             // Ignore the programmatic fits during the first second; anything
             // after is the user panning.

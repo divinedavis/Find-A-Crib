@@ -90,11 +90,19 @@ final class AuthService {
         }
     }
 
-    /// Supabase's web OAuth flow in an ASWebAuthenticationSession, using the
-    /// site's existing Google client — no separate iOS OAuth client needed.
+    /// Supabase's web OAuth flow (PKCE) in an ASWebAuthenticationSession,
+    /// using the site's existing Google client — no separate iOS OAuth client.
+    /// The authorize URL is opened at findacrib.com, which nginx bounces to
+    /// GoTrue, so the consent dialog says "findacrib.com" not the project ref.
     func signInWithGoogle() async {
         await run {
-            _ = try await self.client!.auth.signInWithOAuth(provider: .google, redirectTo: URL(string: "findacrib://auth-callback")!)
+            let client = self.client!
+            let redirect = URL(string: "findacrib://auth-callback")!
+            let url = try client.auth.getOAuthSignInURL(provider: .google, redirectTo: redirect)
+            var comps = URLComponents(url: url, resolvingAgainstBaseURL: false)!
+            comps.scheme = "https"; comps.host = "findacrib.com"; comps.port = nil
+            let callback = try await WebAuth.run(url: comps.url!, callbackScheme: "findacrib")
+            _ = try await client.auth.session(from: callback)
         }
     }
 
@@ -117,7 +125,7 @@ final class AuthService {
         guard client != nil else { error = "Sign-in isn't configured in this build."; return }
         busy = true; error = nil; defer { busy = false }
         do { try await block() } catch {
-            if (error as? AppleSignInService.Failure) == .cancelled { return }
+            if (error as? AppleSignInService.Failure) == .cancelled || (error as? WebAuth.Failure) == .cancelled { return }
             let text = error.localizedDescription
             if text.localizedCaseInsensitiveContains("cancel") { return }
             self.error = text

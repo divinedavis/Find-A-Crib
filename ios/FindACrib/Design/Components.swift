@@ -112,19 +112,27 @@ struct SEUnderlineTabs<T: Hashable>: View {
     @Binding var selection: T
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 28) {
-                ForEach(Array(options.enumerated()), id: \.offset) { _, opt in
+            // Each tab is exactly as wide as its word (underline included) and
+            // never wraps; the words spread out with spacers. A flexible
+            // underline used to split the row into equal thirds, and at larger
+            // text sizes "Stabilized" broke onto two lines.
+            HStack(spacing: 0) {
+                ForEach(Array(options.enumerated()), id: \.offset) { i, opt in
                     let on = selection == opt.0
+                    if i > 0 { Spacer(minLength: 12) }
                     Button { withAnimation(.easeInOut(duration: 0.15)) { selection = opt.0 } } label: {
                         VStack(spacing: 8) {
-                            Text(opt.1).font(.se(22, .bold)).foregroundStyle(on ? SE.ink : SE.ink3)
+                            Text(opt.1).font(.se(20, .bold)).foregroundStyle(on ? SE.ink : SE.ink3)
+                                .lineLimit(1).minimumScaleFactor(0.6)
                             Rectangle().fill(on ? SE.royal : .clear).frame(height: 3)
                         }
+                        .fixedSize(horizontal: true, vertical: false)
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("mode-\(opt.1)")
                 }
             }
+            .padding(.horizontal, 8)
             Rectangle().fill(SE.lineSoft).frame(height: 1)
         }
     }

@@ -1572,6 +1572,9 @@ def guide_numbers_html(slug):
         "rent-stabilized-lease-renewal-and-rent-increases": [
             ("/buildings/", "Check whether your building is on the register"),
             ("/landlord/", "See what else your landlord owns")],
+        "deed-theft-nyc": [
+            ("/buildings/", "Find your building's BBL for an ACRIS search"),
+            ("/landlord/", "Look up who is recorded as your building's owner")],
     }
     links = "".join(f"<li><a href='{u}'>{esc(t)}</a></li>" for u, t in NEXT.get(slug, []))
     return (f"<h2>New York City by the numbers</h2>"

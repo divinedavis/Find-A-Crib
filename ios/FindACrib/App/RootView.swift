@@ -32,6 +32,11 @@ struct RootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: nav.hideTabBar)
+        // Type still follows the user's text-size setting, but stops at xLarge:
+        // the layouts are StreetEasy's fixed compositions (segment strips,
+        // three-up fact rows, price lines) and the accessibility sizes wrap
+        // them into columns of single words.
+        .dynamicTypeSize(...DynamicTypeSize.xLarge)
         .overlay {
             if let err = store.loadError, !store.loaded {
                 VStack(spacing: 12) {

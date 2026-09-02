@@ -128,7 +128,7 @@ struct ResultsView: View {
         .navigationBarBackButtonHidden(true)
     }
 
-    private var defaultName: String { "\(query.mode.rawValue) · \(query.locationLabel)" }
+    private var defaultName: String { "\(query.mode.title) · \(query.locationLabel)" }
     private var emptyHint: String {
         switch query.mode {
         case .rent: "Only about 2,000 of the 47,000 rent-stabilized buildings have a recent advertised rent. Try the Stabilized tab to see every building here."

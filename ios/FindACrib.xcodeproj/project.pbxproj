@@ -21,6 +21,7 @@
 		239814C37ED0E60FC84485B9 /* FindACribUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01F62B1CE3CCF2DAD07279F9 /* FindACribUITests.swift */; };
 		2B4DF01382763EDD8546E20A /* Building.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A8CDE81BD0E7DDBEBBC1042 /* Building.swift */; };
 		2EF088CAB2039D21D89C7A35 /* FindACribApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 704D4F6DFB370ACF11ACF60E /* FindACribApp.swift */; };
+		372BCD3B0D02BF530AEFDD93 /* EmailSignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEB1841A5738A151D9E43123 /* EmailSignInView.swift */; };
 		4392AB92BF2A7ADBE5E3A2B9 /* s8.json in Resources */ = {isa = PBXBuildFile; fileRef = C2015DADE5A5CCF0E92E6795 /* s8.json */; };
 		4BF1266D9ABC8EA01C9F26AC /* listings.json in Resources */ = {isa = PBXBuildFile; fileRef = E42AA07F206334B8F58225F1 /* listings.json */; };
 		55415570A82F92F6EDCC19C8 /* BuildingDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA7425E377576FE3E5C2B47B /* BuildingDetailView.swift */; };
@@ -95,6 +96,7 @@
 		B5D0DBDC03E8D5A23A679DA7 /* Activity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Activity.swift; sourceTree = "<group>"; };
 		BA7425E377576FE3E5C2B47B /* BuildingDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildingDetailView.swift; sourceTree = "<group>"; };
 		BE5021FFFE6C939F06530FD2 /* fmr.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = fmr.json; sourceTree = "<group>"; };
+		BEB1841A5738A151D9E43123 /* EmailSignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailSignInView.swift; sourceTree = "<group>"; };
 		C2015DADE5A5CCF0E92E6795 /* s8.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = s8.json; sourceTree = "<group>"; };
 		C82AEFA1B93D2073218086C5 /* PlusStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlusStore.swift; sourceTree = "<group>"; };
 		C86217F159AB095139ABEE8D /* BuildingCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildingCard.swift; sourceTree = "<group>"; };
@@ -109,7 +111,7 @@
 		E42AA07F206334B8F58225F1 /* listings.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = listings.json; sourceTree = "<group>"; };
 		EA50D389BB3AB7B341BD720D /* ImageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageService.swift; sourceTree = "<group>"; };
 		EFD73F478D420E114F0C82CB /* FiltersSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FiltersSheet.swift; sourceTree = "<group>"; };
-		"TEMP_9393F671-CFB4-473F-9AC0-0451C5E52E7C" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_E4CAEE6D-637F-47BC-9D72-CAB446B40FA5" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -189,6 +191,7 @@
 		664897D1C52D9592240A67E7 /* Profile */ = {
 			isa = PBXGroup;
 			children = (
+				BEB1841A5738A151D9E43123 /* EmailSignInView.swift */,
 				41043E1D2462CF0BA147F621 /* PaywallView.swift */,
 				44FBB961CA3E35950616322D /* ProfileView.swift */,
 			);
@@ -317,10 +320,10 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
-		"TEMP_7581AC9C-68AF-4CF5-98F9-237B707615B0" /* ios */ = {
+		"TEMP_39095590-B947-4A54-9CC4-F08126F2452C" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_9393F671-CFB4-473F-9AC0-0451C5E52E7C" /* Secrets.xcconfig */,
+				"TEMP_E4CAEE6D-637F-47BC-9D72-CAB446B40FA5" /* Secrets.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -459,6 +462,7 @@
 				55415570A82F92F6EDCC19C8 /* BuildingDetailView.swift in Sources */,
 				07C22BCCE603D9800EE7EE13 /* Components.swift in Sources */,
 				FF9A0CEB29AD7474B6983303 /* DataStore.swift in Sources */,
+				372BCD3B0D02BF530AEFDD93 /* EmailSignInView.swift in Sources */,
 				71EC779912AE74BE0D6EA8D8 /* FiltersSheet.swift in Sources */,
 				2EF088CAB2039D21D89C7A35 /* FindACribApp.swift in Sources */,
 				B111E02FFA19C4DE7A92BCBB /* Gunzip.swift in Sources */,
@@ -614,7 +618,7 @@
 		};
 		4A043B04EA1D2F1BD0250C61 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_9393F671-CFB4-473F-9AC0-0451C5E52E7C" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_E4CAEE6D-637F-47BC-9D72-CAB446B40FA5" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -655,7 +659,7 @@
 		};
 		7B4EAA1664EF270AD8C579E8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_9393F671-CFB4-473F-9AC0-0451C5E52E7C" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_E4CAEE6D-637F-47BC-9D72-CAB446B40FA5" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;

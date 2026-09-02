@@ -1229,8 +1229,8 @@
     <p class="auth-sub" id="auth-sub">Save buildings to your account so they're on every device.</p>
     <form id="auth-form" autocomplete="on">
       <input id="auth-email" type="email" placeholder="Email" autocomplete="email" required>
-      <input id="auth-pass" type="password" placeholder="Password (6+ characters)" autocomplete="current-password" minlength="6" required>
-      <input id="auth-pass2" type="password" placeholder="Confirm password" autocomplete="new-password" minlength="6" hidden>
+      <input id="auth-pass" type="password" placeholder="Password (8+ characters)" autocomplete="current-password" minlength="8" required>
+      <input id="auth-pass2" type="password" placeholder="Confirm password" autocomplete="new-password" minlength="8" hidden>
       <div id="auth-error" class="auth-error" hidden></div>
       <button id="auth-submit" type="submit" class="auth-submit">Sign in</button>
     </form>
@@ -1244,7 +1244,8 @@
       </svg>
       Continue with Google
     </button>
-    <div class="auth-toggle"><span id="auth-toggle-text">No account?</span> <a id="auth-switch" href="#">Create one</a></div>
+    <div class="auth-toggle"><span id="auth-toggle-text">No account?</span> <a id="auth-switch" href="#">Create one</a>
+      <span id="auth-forgot-wrap"> · <a id="auth-forgot" href="#">Forgot password?</a></span></div>
     <div class="auth-legal">By continuing you agree to our <a href="/terms.html" target="_blank" rel="noopener">Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</div>
   </div>
 </div>
@@ -5368,6 +5369,9 @@
     authPass2.hidden = m !== 'signup';
     authPass2.required = m === 'signup';
     authPass2.value = '';
+    // Reset only makes sense against an existing account.
+    const forgotWrap = document.getElementById('auth-forgot-wrap');
+    if (forgotWrap) forgotWrap.hidden = m === 'signup';
     showAuthError('');
   }
   const AUTH_SUB_DEFAULT = "Creating an account is free — save buildings you like and pick up where you left off on any device.";
@@ -5904,10 +5908,26 @@
         if (error) { showAuthError(error.message); btn.disabled = false; }
       } catch (err) { showAuthError(err.message || 'Google sign-in failed.'); btn.disabled = false; }
     });
+    // Forgot password: Supabase emails a recovery link that lands on /reset/,
+    // where the new password is set. Needs only the email field.
+    document.getElementById('auth-forgot').addEventListener('click', async e => {
+      e.preventDefault();
+      const email = authEmail.value.trim();
+      if (!email) { showAuthError('Enter your email above first, then tap Forgot password.'); authEmail.focus(); return; }
+      authSubmit.disabled = true; showAuthError('');
+      try {
+        const { error } = await supaClient.auth.resetPasswordForEmail(email, { redirectTo: 'https://findacrib.com/reset/' });
+        authSubmit.disabled = false;
+        if (error) { showAuthError(error.message); return; }
+        authErr.textContent = 'Check ' + email + ' for a link to choose a new password.';
+        authErr.hidden = false; authErr.style.color = '#1e7b34';
+        setTimeout(() => { authErr.style.color = ''; }, 8000);
+      } catch (err) { authSubmit.disabled = false; showAuthError(err.message || 'Could not send the reset email.'); }
+    });
     authForm.addEventListener('submit', async e => {
       e.preventDefault();
       const email = authEmail.value.trim(), pass = authPass.value;
-      if (!email || pass.length < 6) { showAuthError('Enter an email and a password of at least 6 characters.'); return; }
+      if (!email || pass.length < 8) { showAuthError('Enter an email and a password of at least 8 characters.'); return; }
       if (authMode === 'signup' && pass !== authPass2.value) { showAuthError('Passwords do not match.'); return; }
       authSubmit.disabled = true; showAuthError('');
       try {

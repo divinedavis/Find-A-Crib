@@ -111,6 +111,30 @@ final class AuthService {
         }
     }
 
+    // MARK: email + password (the website's accounts; autoconfirmed, no verification step)
+
+    func signIn(email: String, password: String) async {
+        await run { try await self.client!.auth.signIn(email: email, password: password) }
+    }
+
+    func signUp(email: String, password: String) async {
+        await run {
+            let r = try await self.client!.auth.signUp(email: email, password: password)
+            if r.session == nil { self.error = "Account created — sign in to continue." }
+        }
+    }
+
+    /// Emails a recovery link that lands on findacrib.com/reset/, where the
+    /// new password is set; the app just needs the address.
+    func sendPasswordReset(email: String) async -> Bool {
+        var ok = false
+        await run {
+            try await self.client!.auth.resetPasswordForEmail(email, redirectTo: URL(string: "https://findacrib.com/reset/"))
+            ok = true
+        }
+        return ok
+    }
+
     func signOut() async {
         guard let client else { return }
         try? await client.auth.signOut()

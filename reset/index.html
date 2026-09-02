@@ -1,0 +1,58 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Choose a new password | Find A Crib</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<style>
+body{margin:0;font:17px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#1a1a1a;background:#f2f2f2}
+header.site{background:#0e2a6e;color:#fff;padding:14px 20px;font-weight:700}header.site a{color:#fff;text-decoration:none}
+main{max-width:440px;margin:40px auto;padding:0 16px}.card{background:#fff;border:1px solid #e4e4e4;border-radius:4px;padding:24px}
+h1{font-size:26px;margin:0 0 6px}p{color:#4a4a4a;margin:0 0 18px}
+input{width:100%;box-sizing:border-box;font:inherit;padding:12px;border:1px solid #bdbdbd;border-radius:2px;margin-bottom:12px}
+button{width:100%;font:inherit;font-weight:700;color:#fff;background:#1b46e5;border:0;border-radius:2px;padding:14px;cursor:pointer}button[disabled]{opacity:.6}
+.msg{margin-top:14px;font-size:15px}.err{color:#b91c1c}.ok{color:#1e7b34}
+a.back{display:inline-block;margin-top:16px;color:#1b46e5;font-weight:600;text-decoration:none}
+</style></head><body>
+<header class="site"><a href="/">🏠 Find A Crib</a></header>
+<main><div class="card">
+<h1>Choose a new password</h1>
+<p id="lead">Type a new password for your Find A Crib account.</p>
+<form id="f" hidden>
+  <input id="p1" type="password" placeholder="New password (8+ characters)" minlength="8" autocomplete="new-password" required>
+  <input id="p2" type="password" placeholder="Confirm new password" minlength="8" autocomplete="new-password" required>
+  <button id="go" type="submit">Save new password</button>
+</form>
+<div id="msg" class="msg"></div>
+<a class="back" href="/">← Back to Find A Crib</a>
+</div></main>
+<script src="/config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+  const msg = document.getElementById('msg'), form = document.getElementById('f'), lead = document.getElementById('lead');
+  function say(t, cls){ msg.textContent = t; msg.className = 'msg ' + (cls||''); }
+  if (!window.supabase || !window.SUPABASE_URL) { say('Sign-in is unavailable right now.', 'err'); return; }
+  const client = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+  // The recovery link carries a one-time code (PKCE) or tokens in the hash; the
+  // client exchanges it for a session and reports PASSWORD_RECOVERY. Until that
+  // happens there is no one to change a password for, so the form stays hidden.
+  let ready = false;
+  function arm(){ ready = true; form.hidden = false; lead.textContent = 'Type a new password for your Find A Crib account.'; }
+  client.auth.onAuthStateChange((event, session) => { if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && session)) arm(); });
+  const code = new URLSearchParams(location.search).get('code');
+  if (code) client.auth.exchangeCodeForSession(code).then(({ error }) => { if (error) say(error.message, 'err'); else arm(); });
+  setTimeout(() => { if (!ready) { lead.textContent = 'This link has expired or was already used.'; say('Go back to Find A Crib, tap Sign in, then "Forgot password?" to get a new one.', 'err'); } }, 6000);
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const a = document.getElementById('p1').value, b = document.getElementById('p2').value;
+    if (a.length < 8) { say('Use at least 8 characters.', 'err'); return; }
+    if (a !== b) { say('Passwords do not match.', 'err'); return; }
+    document.getElementById('go').disabled = true; say('');
+    const { error } = await client.auth.updateUser({ password: a });
+    document.getElementById('go').disabled = false;
+    if (error) { say(error.message, 'err'); return; }
+    form.hidden = true; lead.textContent = 'Done.'; say('Your password is updated — you are signed in. Head back to Find A Crib.', 'ok');
+  });
+})();
+</script>
+</body></html>

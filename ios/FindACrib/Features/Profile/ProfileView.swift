@@ -9,6 +9,7 @@ struct ProfileView: View {
     @Environment(\.openURL) private var openURL
     @State private var confirmDelete = false
     @State private var showPaywall = false
+    @State private var showEmail = false
     @Environment(PlusStore.self) private var plus
     @AppStorage("hereTo") private var hereTo = "Rent"
     @AppStorage("homeBorough") private var homeBorough = "Brooklyn"
@@ -42,7 +43,7 @@ struct ProfileView: View {
                                     }
                                 } else {
                                     Text("Guest").font(.se(30, .bold))
-                                    Text("Sign in with Google to sync your saves and see managing agents.").font(.se(16)).foregroundStyle(SE.ink2)
+                                    Text("Sign in to sync your saves and see managing agents.").font(.se(16)).foregroundStyle(SE.ink2)
                                 }
                             }
                         }
@@ -81,14 +82,24 @@ struct ProfileView: View {
                                     .background(Color.white).overlay(RoundedRectangle(cornerRadius: 6).stroke(SE.line))
                                 }
                                 .buttonStyle(.plain).accessibilityIdentifier("sign-in-google")
+                                Button { showEmail = true } label: {
+                                    HStack(spacing: 10) {
+                                        Image(systemName: "envelope.fill").font(.system(size: 16, weight: .bold)).foregroundStyle(SE.royal)
+                                        Text("Continue with email").font(.se(18, .semibold)).foregroundStyle(SE.ink)
+                                    }
+                                    .frame(maxWidth: .infinity).frame(height: 50)
+                                    .background(Color.white).overlay(RoundedRectangle(cornerRadius: 6).stroke(SE.line))
+                                }
+                                .buttonStyle(.plain).accessibilityIdentifier("sign-in-email")
                                 if auth.busy { ProgressView().tint(SE.royal) }
                                 if let e = auth.error { Text(e).font(.se(14)).foregroundStyle(SE.bad) }
                             }
-                            Text("No passwords. Your saves on this phone merge into the account.")
+                            Text("Your saves on this phone merge into the account.")
                                 .font(.se(14)).foregroundStyle(SE.ink3)
                         }
                     }.padding(16)
                     .sheet(isPresented: $showPaywall) { PaywallView() }
+                    .sheet(isPresented: $showEmail) { EmailSignInView() }
                     .onChange(of: nav.showPaywall) { _, on in if on { showPaywall = true; nav.showPaywall = false } }
                     .onAppear { if nav.showPaywall { showPaywall = true; nav.showPaywall = false } }
                     .alert("Delete your account?", isPresented: $confirmDelete) {

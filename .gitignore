@@ -95,3 +95,8 @@ buildings.slim.json
 buildings.slim.json.gz
 buildings.hpd.json
 buildings.hpd.json.gz
+
+# borough-alert dispatcher state (droplet-side) and the re-rental event feed
+# rerental_daily.py writes for it
+lottery_alerts_state.json
+rerental_new.json

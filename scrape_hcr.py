@@ -194,6 +194,21 @@ def main():
     recs = list_records(ctx)
     nyc = [r for r in recs if r.get("County", "").split(" (")[0] in COUNTY_TO_BORO]
     print(f"{len(recs)} records statewide, {len(nyc)} in NYC")
+    # --incremental: the list call above is ONE request and carries the status
+    # and deadline of every record. Reuse the stored detail (buildings,
+    # incomes, phone, description — ~2 requests + geocoding per record) for
+    # anything already in the output with the same status, and fetch only what
+    # is new or changed. That is what lets the hourly cron exist: ~1 request an
+    # hour instead of ~110, and a lottery that opens at noon is in hcr.json —
+    # and in the borough alerts — within the hour rather than tomorrow.
+    keep = {}
+    if "--incremental" in sys.argv:
+        try:
+            for l in json.loads(out.read_text()).get("listings") or []:
+                keep[l["id"]] = l
+        except (OSError, ValueError, KeyError):
+            keep = {}
+        print(f"incremental: {len(keep)} stored records")
     try:
         blds_all = json.load(open(HERE / "buildings.min.json"))
         addr_idx = {b: build_index([x for x in blds_all if x["b"] == b]) for b in COUNTY_TO_BORO.values()}
@@ -202,7 +217,14 @@ def main():
         print("warn: no DHCR index:", e, file=sys.stderr); addr_idx, dhcr_bbls = {}, set()
     listings = []
     for r in nyc:
-        rid = r["Id"]; time.sleep(PAUSE)
+        rid = r["Id"]
+        old = keep.get(rid)
+        if old and old.get("status") == r.get("Status"):
+            old = dict(old, name=r.get("ProjectName") or old.get("name"),
+                       due=r.get("ApplicationEndDate") or old.get("due"))
+            listings.append(old)
+            continue
+        time.sleep(PAUSE)
         try:
             blds = child_buildings(ctx, rid)
         except Exception as e:

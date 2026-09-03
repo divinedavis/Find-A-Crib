@@ -424,6 +424,54 @@ def update_site(results, today, outdir=None):
         print(f"  PUBLISH FAILED — docroot left unchanged: {e}")
 
 
+NEW_FEED = os.path.join(HERE, "rerental_new.json")
+NEW_FEED_DAYS = 45
+
+
+def record_new(deltas, results, today):
+    """Append this sweep's new listings to rerental_new.json.
+
+    lottery_alerts.py reads that file every 10 minutes and mails whoever is
+    subscribed to the borough, so the sweep itself never has to know about
+    subscribers or SMTP. Each row carries the borough the geocoder confirmed
+    (or nothing — the dispatcher only sends an unplaced listing to people
+    watching the whole city). Rows age out after NEW_FEED_DAYS; the
+    dispatcher keeps its own seen-set, so the window only has to outlast the
+    gap between two of its runs.
+    """
+    try:
+        feed = json.load(open(NEW_FEED))
+        items = feed.get("items") or []
+    except (FileNotFoundError, ValueError):
+        items = []
+    cutoff = (datetime.date.fromisoformat(today)
+              - datetime.timedelta(days=NEW_FEED_DAYS)).isoformat()
+    items = [i for i in items if i.get("seen", "") >= cutoff]
+    have = {(i.get("agent"), i.get("key")) for i in items}
+    places = load_places()
+    added = 0
+    for name, d in deltas.items():
+        for it in d.get("new") or []:
+            if (name, it["key"]) in have:
+                continue
+            pl = place_of(it["label"], places) or {}
+            items.append({"agent": name, "key": it["key"], "label": it["label"],
+                          "url": it.get("url") or results[name]["url"],
+                          "boro": pl.get("boro"), "hood": pl.get("hood"),
+                          "seen": today, "seen_at": datetime.datetime.now(
+                              datetime.timezone.utc).isoformat(timespec="seconds")})
+            added += 1
+    try:
+        json.dump(places, open(PLACES, "w"), indent=1, ensure_ascii=False)
+    except OSError:
+        pass
+    tmp = NEW_FEED + ".tmp"
+    json.dump({"updated": today, "items": items}, open(tmp, "w"), indent=1, ensure_ascii=False)
+    os.replace(tmp, NEW_FEED)
+    if added:
+        print(f"  {added} new listing{'s' if added != 1 else ''} queued for borough alerts")
+
+
 def load_history():
     try:
         return json.load(open(HISTORY))
@@ -442,7 +490,7 @@ def diff(prev, results):
         now = {i["key"] for i in rec["items"]}
         label = {i["key"]: i["label"] for i in rec["items"]}
         href = {i["key"]: i.get("url") for i in rec["items"]}
-        d[name] = {"new": [{"label": label[k], "url": href.get(k)}
+        d[name] = {"new": [{"key": k, "label": label[k], "url": href.get(k)}
                            for k in now - before] if before else [],
                    "gone": sorted(before - now) if before else [],
                    "failed": False,
@@ -462,7 +510,7 @@ def build_report(results, deltas, today, had_history):
         {"label": "Pages with listings", "value": f"{len(live)}/{len(results)}",
          "tone": "good" if live else "warn"},
         {"label": "Units on unit boards", "value": str(total_units)},
-        {"label": "New since yesterday",
+        {"label": "New since last sweep",
          "value": ("—" if not had_history else str(new_total)),
          "tone": "good" if new_total else "mute"},
         {"label": "Pages failing", "value": str(len(failed)),
@@ -546,6 +594,9 @@ def main():
     ap.add_argument("--email", help="comma-separated recipients")
     ap.add_argument("--quiet-if-same", action="store_true",
                     help="only send when something changed or broke")
+    ap.add_argument("--only-if-new", action="store_true",
+                    help="only send when there are new listings (intraday sweeps: "
+                         "a site that is down at 3pm is not worth a second email)")
     ap.add_argument("--update-site", action="store_true",
                     help="also write rerental_pages.json + marketing_agents.json")
     ap.add_argument("--out", help="docroot to copy marketing_agents.json into")
@@ -570,6 +621,9 @@ def main():
             snap[name] = [i["key"] for i in rec["items"]]
     json.dump({"last": snap, "date": today}, open(HISTORY, "w"), indent=1)
 
+    if had_history:
+        record_new(deltas, results, today)
+
     if args.update_site:
         update_site(results, today, args.out)
 
@@ -577,6 +631,9 @@ def main():
         return
     if args.quiet_if_same and had_history and not new_total and not failed:
         print("\nnothing moved — no email sent")
+        return
+    if args.only_if_new and not new_total:
+        print("\nnothing new — no email sent")
         return
 
     sys.path.insert(0, HERE)

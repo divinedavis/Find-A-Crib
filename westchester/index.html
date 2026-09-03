@@ -648,6 +648,12 @@
     color: var(--ink-2); }
   .hc-days.urgent { color: var(--err-ink); }
   .card.feat-card .feat-agent b { font-weight: 600; color: var(--ink); }
+  /* "email me when the next one opens here" — on lottery and re-rental tiles,
+     under the apply button. The tile is the moment someone realises these
+     exist and close fast; the link is the answer to "how do I not miss the
+     next one". */
+  .alert-link { display: block; margin-top: 8px; font-size: 12px; font-weight: 700; color: var(--blue); }
+  .alert-link:hover { text-decoration: underline; }
   /* Income bands are not rent and must never be mistaken for it. */
   .card.feat-card .price.income { font-size: 14px; }
   .card.feat-card .price.income .lab { display: block; font-size: 10.5px; font-weight: 600;
@@ -1229,8 +1235,8 @@
     <p class="auth-sub" id="auth-sub">Save buildings to your account so they're on every device.</p>
     <form id="auth-form" autocomplete="on">
       <input id="auth-email" type="email" placeholder="Email" autocomplete="email" required>
-      <input id="auth-pass" type="password" placeholder="Password (6+ characters)" autocomplete="current-password" minlength="6" required>
-      <input id="auth-pass2" type="password" placeholder="Confirm password" autocomplete="new-password" minlength="6" hidden>
+      <input id="auth-pass" type="password" placeholder="Password (8+ characters)" autocomplete="current-password" minlength="8" required>
+      <input id="auth-pass2" type="password" placeholder="Confirm password" autocomplete="new-password" minlength="8" hidden>
       <div id="auth-error" class="auth-error" hidden></div>
       <button id="auth-submit" type="submit" class="auth-submit">Sign in</button>
     </form>
@@ -1244,7 +1250,8 @@
       </svg>
       Continue with Google
     </button>
-    <div class="auth-toggle"><span id="auth-toggle-text">No account?</span> <a id="auth-switch" href="#">Create one</a></div>
+    <div class="auth-toggle"><span id="auth-toggle-text">No account?</span> <a id="auth-switch" href="#">Create one</a>
+      <span id="auth-forgot-wrap"> · <a id="auth-forgot" href="#">Forgot password?</a></span></div>
     <div class="auth-legal">By continuing you agree to our <a href="/terms.html" target="_blank" rel="noopener">Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</div>
   </div>
 </div>
@@ -1324,6 +1331,13 @@
         <div class="profile-feat-sub">Get an email when a building you saved is listed for rent.</div>
       </div>
       <label class="switch"><input id="profile-alerts" type="checkbox"><span class="slider"></span></label>
+    </div>
+    <div class="profile-row profile-toggle-row nyc-only">
+      <div>
+        <div class="profile-feat">🏛️ Lottery &amp; re-rental alerts</div>
+        <div class="profile-feat-sub">An email the minute a new housing lottery or re-rental opens in your borough. Free.</div>
+      </div>
+      <a class="folder-new" href="/alerts/" style="text-decoration:none;white-space:nowrap">Set up →</a>
     </div>
     <div class="profile-row profile-toggle-row">
       <div>
@@ -2096,7 +2110,17 @@
     return f ? `Est. $${f[0].toLocaleString()}–$${f[2].toLocaleString()}/mo` : '';
   }
   const EST_TITLE = 'Typical rent for this ZIP, studio–2BR (HUD FY2026 Small-Area Fair Market Rents) — not this building’s actual rent';
-  const listingCounts = listingsBlob.counts || {};
+  // "Recently advertised" means posted on Zumper within the last 5 days (owner
+  // rule, 2026-09-01). listings.json is a sticky master that keeps every price
+  // it ever banked, so the counts are narrowed here by the per-building posting
+  // date the scraper records. A blob from before the scraper wrote `posted`
+  // has no dates at all — keep the old behaviour rather than blanking the site.
+  const RECENT_DAYS = 5;
+  const listingPosted = listingsBlob.posted || {};
+  const isRecent = bbl => (Date.now() / 1000 - (listingPosted[bbl] || 0)) < RECENT_DAYS * 86400;
+  const listingCounts = Object.keys(listingPosted).length
+    ? Object.fromEntries(Object.entries(listingsBlob.counts || {}).filter(([bbl]) => isRecent(bbl)))
+    : (listingsBlob.counts || {});
   // What this city actually HAS, measured from the payload rather than assumed
   // from its name. listings.json / s8.json / fmr.json are fetched RELATIVE to
   // the page, so they resolve only on the NYC root and 404 into empty objects
@@ -2273,8 +2297,13 @@
   function listingLink(rec, borough) {
     const direct = (listingsBlob.urls && listingsBlob.urls[rec.bbl]) || null;
     if (IS_NYC) {
-      if (safeHttpUrl(direct))
-        return { href: direct, label: 'View on StreetEasy ↗', short: 'View listing ↗', direct: true };
+      if (safeHttpUrl(direct)) {
+        // The banked URL is whichever source advertised it — StreetEasy for the
+        // Apify feed, Zumper for the weekly scrape. Name the site we're actually
+        // sending them to; a third of NYC's direct links are Zumper's.
+        const src = /(?:^|\.)zumper\.com$/.test(new URL(direct).hostname) ? 'Zumper' : 'StreetEasy';
+        return { href: direct, label: `View on ${src} ↗`, short: 'View listing ↗', direct: true };
+      }
       const q = encodeURIComponent(`${rec.a}, ${borough}, NY ${rec.z || ''}`.trim());
       return { href: `https://streeteasy.com/search?search=${q}`,
                label: 'Look up on StreetEasy ↗', short: 'StreetEasy ↗', direct: false };
@@ -4117,6 +4146,18 @@
   let FEATURED = [];
   let featCursor = 0;
 
+  // "Email me the minute the next one opens in <borough>" — under the apply
+  // button on lottery and re-rental tiles. Free sign-up at /alerts/, no
+  // account; the borough the tile is in is preselected there.
+  const ALERT_BORO = { 'Manhattan': 'M', 'Brooklyn': 'Bk', 'Queens': 'Q', 'Bronx': 'Bx',
+                       'The Bronx': 'Bx', 'Staten Island': 'SI' };
+  function alertLink(borough, kind, src) {
+    const code = ALERT_BORO[borough] || '';
+    const what = kind === 'lottery' ? 'lottery' : 're-rental';
+    const where = code ? (code === 'Bx' ? 'the Bronx' : borough) : 'NYC';
+    return `<a class="alert-link" href="/alerts/?boro=${code}&kind=${kind}&src=${src}">🔔 Email me the minute a new ${what} opens in ${esc(where)}</a>`;
+  }
+
   // ---------- NYC Housing Connect lotteries ----------
   // A separate feed and a separate badge from the re-rental tiles above, on
   // purpose. Housing Connect is the city's LOTTERY: you apply by a deadline and
@@ -4215,6 +4256,7 @@
              href="${esc(outbound(f.href, 'rerental_tile', f.href_kind === 'agent_page' ? 'agent_board' : 'unit_listing'))}">${f.href_kind === 'agent_page'
                ? 'Find it on their listings page ↗' : 'Apply on their site ↗'}</a>
         </div>
+        ${alertLink(f.borough, 'rerental', 'rerental_tile')}
       </div>
     </div>`;
   }
@@ -4312,6 +4354,7 @@
              target="_blank" rel="noopener nofollow"
              href="${esc(h.href)}">Apply on Housing Connect ↗</a>
         </div>
+        ${alertLink(h.borough, 'lottery', 'hc_tile')}
       </div>
     </div>`;
   }
@@ -5353,6 +5396,9 @@
     authPass2.hidden = m !== 'signup';
     authPass2.required = m === 'signup';
     authPass2.value = '';
+    // Reset only makes sense against an existing account.
+    const forgotWrap = document.getElementById('auth-forgot-wrap');
+    if (forgotWrap) forgotWrap.hidden = m === 'signup';
     showAuthError('');
   }
   const AUTH_SUB_DEFAULT = "Creating an account is free — save buildings you like and pick up where you left off on any device.";
@@ -5889,10 +5935,26 @@
         if (error) { showAuthError(error.message); btn.disabled = false; }
       } catch (err) { showAuthError(err.message || 'Google sign-in failed.'); btn.disabled = false; }
     });
+    // Forgot password: Supabase emails a recovery link that lands on /reset/,
+    // where the new password is set. Needs only the email field.
+    document.getElementById('auth-forgot').addEventListener('click', async e => {
+      e.preventDefault();
+      const email = authEmail.value.trim();
+      if (!email) { showAuthError('Enter your email above first, then tap Forgot password.'); authEmail.focus(); return; }
+      authSubmit.disabled = true; showAuthError('');
+      try {
+        const { error } = await supaClient.auth.resetPasswordForEmail(email, { redirectTo: 'https://findacrib.com/reset/' });
+        authSubmit.disabled = false;
+        if (error) { showAuthError(error.message); return; }
+        authErr.textContent = 'Check ' + email + ' for a link to choose a new password.';
+        authErr.hidden = false; authErr.style.color = '#1e7b34';
+        setTimeout(() => { authErr.style.color = ''; }, 8000);
+      } catch (err) { authSubmit.disabled = false; showAuthError(err.message || 'Could not send the reset email.'); }
+    });
     authForm.addEventListener('submit', async e => {
       e.preventDefault();
       const email = authEmail.value.trim(), pass = authPass.value;
-      if (!email || pass.length < 6) { showAuthError('Enter an email and a password of at least 6 characters.'); return; }
+      if (!email || pass.length < 8) { showAuthError('Enter an email and a password of at least 8 characters.'); return; }
       if (authMode === 'signup' && pass !== authPass2.value) { showAuthError('Passwords do not match.'); return; }
       authSubmit.disabled = true; showAuthError('');
       try {

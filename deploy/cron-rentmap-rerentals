@@ -1,0 +1,23 @@
+# Re-rental sweeps of the HPD marketing agents' boards. Installed at
+# /etc/cron.d/rentmap-rerentals (scp this file; never hand-edit on the box).
+#
+# No --email on either line on purpose: this file is mirrored into a PUBLIC
+# repo, so the digest recipient lives in growth.env as GROWTH_REPORT_EMAIL and
+# rerental_daily.sh appends it.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+CRON_TZ=America/New_York
+
+# DAILY (06:45 ET): the full pass — render every board, update the public
+# /marketing-agents/ data, rebuild the featured tiles, and mail the digest.
+# 06:45 sits after the 05:00 growth run and the 06:00 report so the three
+# never collide on the git checkout or in the inbox.
+45 6 * * * root /root/Find-A-Crib/rerental_daily.sh >> /var/log/rentmap-rerentals.log 2>&1
+
+# INTRADAY (09:00–21:00 ET, every 2 hours): digest pass only — one render per
+# board, no featured/photo pass (RERENTAL_FEATURED=0). What it finds new goes
+# to rerental_new.json for the borough alerts (lottery_alerts.sh) and the
+# owner gets a digest only when there IS something new (--only-if-new).
+# Seven extra renders a day per board is the politeness ceiling here: these
+# are small offices' websites, not portals.
+0 9-21/2 * * * root RERENTAL_FEATURED=0 /root/Find-A-Crib/rerental_daily.sh --only-if-new >> /var/log/rentmap-rerentals.log 2>&1

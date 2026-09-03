@@ -1,0 +1,13 @@
+# HousingSearch.ny.gov (HCR) lotteries + Mitchell-Lama waitlists -> hcr.json.
+# Installed at /etc/cron.d/rentmap-hcr (scp this file; never hand-edit on the
+# box). Runs from the git checkout; hcr_chain.pem beside the script supplies
+# the GlobalSign intermediate the portal does not send.
+#
+# NIGHTLY (04:35 UTC): full pass, ~110 POSTs 1s apart plus geocoding.
+# HOURLY (:05): --incremental — one list call, details only for records that
+# are new or changed status, so a lottery that opens at noon reaches the
+# borough alerts (lottery_alerts.sh, every 10 min) within the hour.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+35 4 * * * root cd /root/Find-A-Crib && python3 scrape_hcr.py --out /var/www/rent-map/hcr.json >> /var/log/rentmap-hcr.log 2>&1
+5 0-3,5-23 * * * root cd /root/Find-A-Crib && python3 scrape_hcr.py --incremental --out /var/www/rent-map/hcr.json >> /var/log/rentmap-hcr.log 2>&1

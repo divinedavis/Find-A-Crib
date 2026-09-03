@@ -19,8 +19,26 @@ PY=/var/www/rent-map/venv/bin/python
 "$PY" -c 'import playwright' 2>/dev/null || {
   echo "rerental_daily: no playwright in $PY"; exit 1; }
 
+# The digest recipient lives in growth.env (GROWTH_REPORT_EMAIL), not in the
+# cron line: /etc/cron.d/rentmap-rerentals is mirrored into this PUBLIC repo
+# under deploy/. Only appended when the caller passed no --email of its own.
+if [ -n "${GROWTH_REPORT_EMAIL:-}" ]; then
+  case " $* " in
+    *" --email "*|*" --email="*) ;;
+    *) set -- "$@" --email "$GROWTH_REPORT_EMAIL" ;;
+  esac
+fi
+
 "$PY" rerental_daily.py --update-site --out "$GROWTH_DOCROOT" "$@"
 rc=$?
+
+# Intraday sweeps (RERENTAL_FEATURED=0) stop here: the digest pass above is
+# one render per board and is all the borough alerts need. The featured pass
+# below clicks into up to ten listings per board for photos and rents — fine
+# once a day, not eight times.
+if [ "${RERENTAL_FEATURED:-1}" = 0 ]; then
+  exit $rc
+fi
 
 # Same 14 sites, second pass: pull a full record per apartment (rent, units,
 # photo, apply link) for the featured tiles in the map grid. It is a separate

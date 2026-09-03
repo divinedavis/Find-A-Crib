@@ -648,6 +648,12 @@
     color: var(--ink-2); }
   .hc-days.urgent { color: var(--err-ink); }
   .card.feat-card .feat-agent b { font-weight: 600; color: var(--ink); }
+  /* "email me when the next one opens here" — on lottery and re-rental tiles,
+     under the apply button. The tile is the moment someone realises these
+     exist and close fast; the link is the answer to "how do I not miss the
+     next one". */
+  .alert-link { display: block; margin-top: 8px; font-size: 12px; font-weight: 700; color: var(--blue); }
+  .alert-link:hover { text-decoration: underline; }
   /* Income bands are not rent and must never be mistaken for it. */
   .card.feat-card .price.income { font-size: 14px; }
   .card.feat-card .price.income .lab { display: block; font-size: 10.5px; font-weight: 600;
@@ -1325,6 +1331,13 @@
         <div class="profile-feat-sub">Get an email when a building you saved is listed for rent.</div>
       </div>
       <label class="switch"><input id="profile-alerts" type="checkbox"><span class="slider"></span></label>
+    </div>
+    <div class="profile-row profile-toggle-row nyc-only">
+      <div>
+        <div class="profile-feat">🏛️ Lottery &amp; re-rental alerts</div>
+        <div class="profile-feat-sub">An email the minute a new housing lottery or re-rental opens in your borough. Free.</div>
+      </div>
+      <a class="folder-new" href="/alerts/" style="text-decoration:none;white-space:nowrap">Set up →</a>
     </div>
     <div class="profile-row profile-toggle-row">
       <div>
@@ -4133,6 +4146,18 @@
   let FEATURED = [];
   let featCursor = 0;
 
+  // "Email me the minute the next one opens in <borough>" — under the apply
+  // button on lottery and re-rental tiles. Free sign-up at /alerts/, no
+  // account; the borough the tile is in is preselected there.
+  const ALERT_BORO = { 'Manhattan': 'M', 'Brooklyn': 'Bk', 'Queens': 'Q', 'Bronx': 'Bx',
+                       'The Bronx': 'Bx', 'Staten Island': 'SI' };
+  function alertLink(borough, kind, src) {
+    const code = ALERT_BORO[borough] || '';
+    const what = kind === 'lottery' ? 'lottery' : 're-rental';
+    const where = code ? (code === 'Bx' ? 'the Bronx' : borough) : 'NYC';
+    return `<a class="alert-link" href="/alerts/?boro=${code}&kind=${kind}&src=${src}">🔔 Email me the minute a new ${what} opens in ${esc(where)}</a>`;
+  }
+
   // ---------- NYC Housing Connect lotteries ----------
   // A separate feed and a separate badge from the re-rental tiles above, on
   // purpose. Housing Connect is the city's LOTTERY: you apply by a deadline and
@@ -4231,6 +4256,7 @@
              href="${esc(outbound(f.href, 'rerental_tile', f.href_kind === 'agent_page' ? 'agent_board' : 'unit_listing'))}">${f.href_kind === 'agent_page'
                ? 'Find it on their listings page ↗' : 'Apply on their site ↗'}</a>
         </div>
+        ${alertLink(f.borough, 'rerental', 'rerental_tile')}
       </div>
     </div>`;
   }
@@ -4328,6 +4354,7 @@
              target="_blank" rel="noopener nofollow"
              href="${esc(h.href)}">Apply on Housing Connect ↗</a>
         </div>
+        ${alertLink(h.borough, 'lottery', 'hc_tile')}
       </div>
     </div>`;
   }

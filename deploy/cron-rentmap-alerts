@@ -1,0 +1,13 @@
+# Borough alerts. Installed at /etc/cron.d/rentmap-alerts (scp this file;
+# never hand-edit on the box — see deploy/cron-rentmap-growth).
+#
+# Every 10 minutes: refresh Housing Connect, welcome new sign-ups, mail what
+# is new. "The minute a lottery opens" is a promise about THIS cadence — the
+# Housing Connect refresh is one cheap POST and the run is a no-op when
+# nothing changed, so ten minutes costs nothing.
+#
+# Replaces the twice-daily /etc/cron.d/rentmap-housingconnect: the wrapper
+# writes the same housing_connect.json, so that file is removed on install.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+*/10 * * * * root /root/Find-A-Crib/lottery_alerts.sh >> /var/log/rentmap-alerts.log 2>&1

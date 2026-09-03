@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Housing lottery &amp; re-rental alerts by borough — Find A Crib</title>
+<meta name="description" content="Get an email the minute a new NYC affordable-housing lottery, Mitchell-Lama waitlist or re-rental opens in the borough you choose. Free. Housing Connect, HCR and the HPD marketing agents' own boards, checked every 10 minutes." />
+<link rel="canonical" href="https://findacrib.com/alerts/" />
+<meta name="robots" content="index,follow" />
+<meta name="theme-color" content="#2b39c8" />
+<link rel="icon" href="/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" href="/favicon-32.png" sizes="32x32" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Find A Crib" />
+<meta property="og:title" content="Housing lottery &amp; re-rental alerts by borough — Find A Crib" />
+<meta property="og:description" content="An email the minute a new housing lottery or re-rental opens in your borough. Free." />
+<meta property="og:url" content="https://findacrib.com/alerts/" />
+<meta property="og:image" content="https://findacrib.com/og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Housing lottery &amp; re-rental alerts by borough — Find A Crib" />
+<meta name="twitter:description" content="An email the minute a new housing lottery or re-rental opens in your borough. Free." />
+<meta name="twitter:image" content="https://findacrib.com/og-image.png" />
+<script src="/static/supabase/supabase.js"></script>
+<script src="/config.js?v=2"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-1001356637"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'AW-1001356637');
+  gtag('config', 'G-53D27PD4X6');
+</script>
+<script>
+(function(){
+  var t;
+  try{ t = localStorage.getItem('fac.theme'); }catch(e){}
+  if(t!=='light' && t!=='dark')
+    t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
+<style>
+  :root {
+    --blue: #006aff; --blue-dark: #0052cc; --blue-soft: #e8f0fe; --blue-solid: #006aff;
+    --ink: #0a0a23; --ink-2: #4a4a68; --line: #e2e6ea; --line-strong: #b8c3d0;
+    --bg: #f7f8fa; --surface: #ffffff; --surface-2: #f6f6f6; --surface-3: #e4e8ee;
+    --good: #10683a; --good-bg: #e7f7ed; --good-line: #b6e3c8;
+    --err: #b42318; --err-bg: #fef3f2;
+  }
+  html[data-theme="dark"] {
+    --blue: #5b9bff; --blue-dark: #7fb2ff; --blue-soft: #16233d; --blue-solid: #1f6fe0;
+    --ink: #eef0f6; --ink-2: #a3a7bb; --line: #2b2f3c; --line-strong: #414658;
+    --bg: #0c0c12; --surface: #16161f; --surface-2: #1f1f2b; --surface-3: #282833;
+    --good: #7fe0a8; --good-bg: #123020; --good-line: #1f5236;
+    --err: #ff8a80; --err-bg: #3a1614;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink); background: var(--bg); }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  header.topbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 16px;
+    background: var(--surface); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 30; }
+  @font-face { font-family:'Oxanium'; font-style:normal; font-weight:800; font-display:swap;
+              src:url('/fonts/oxanium-800.woff2') format('woff2'); }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 800; color: var(--blue); font-size: 22px;
+    font-family: 'Oxanium', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  .brand:hover { text-decoration: none; }
+  .brand-dot { width: 22px; height: 22px; background: var(--blue-solid); border-radius: 6px; display: inline-block; transform: rotate(45deg); flex: none; }
+  .spacer { flex: 1 1 auto; }
+  .top-link { font-size: 13px; font-weight: 700; color: var(--ink-2); border: 1px solid var(--line);
+    background: var(--surface); border-radius: 999px; padding: 7px 13px; }
+  .top-link:hover { background: var(--surface-2); border-color: var(--line-strong); text-decoration: none; }
+  .theme-btn { width: 34px; height: 34px; border-radius: 50%; background: var(--surface); color: var(--ink);
+    border: 1px solid var(--line); font-size: 15px; line-height: 1; cursor: pointer; flex: none; }
+
+  main { max-width: 720px; margin: 0 auto; padding: 30px 16px 70px; }
+  h1 { font-size: 30px; letter-spacing: -0.6px; margin: 0 0 10px; line-height: 1.15; }
+  .lede { color: var(--ink-2); font-size: 15.5px; line-height: 1.6; margin: 0 0 22px; }
+  .lede strong { color: var(--ink); }
+
+  form.card, .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px 20px 18px; }
+  label.field { display: block; font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+    color: var(--ink-2); margin: 0 0 8px; }
+  input[type=email] { width: 100%; padding: 12px 13px; font-size: 16px; border: 1px solid var(--line-strong);
+    border-radius: 10px; background: var(--surface); color: var(--ink); }
+  input[type=email]:focus { outline: none; border-color: var(--blue); }
+  .group { margin: 18px 0 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { position: relative; }
+  .chip input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .chip span { display: inline-block; font-size: 14px; font-weight: 700; color: var(--ink-2); background: var(--surface);
+    border: 1px solid var(--line-strong); border-radius: 999px; padding: 9px 15px; cursor: pointer; user-select: none; }
+  .chip input:checked + span { background: var(--blue-solid); border-color: var(--blue-solid); color: #fff; }
+  .chip input:focus-visible + span { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .hint { font-size: 12.5px; color: var(--ink-2); margin: 8px 0 0; line-height: 1.5; }
+  .submit { display: block; width: 100%; margin-top: 20px; padding: 13px 16px; font-size: 16px; font-weight: 800;
+    color: #fff; background: var(--blue-solid); border: none; border-radius: 10px; cursor: pointer; }
+  .submit:hover { filter: brightness(1.07); }
+  .submit[disabled] { opacity: .6; cursor: default; }
+  .err { margin-top: 12px; padding: 10px 12px; border-radius: 9px; font-size: 13.5px; background: var(--err-bg); color: var(--err); }
+  .ok { background: var(--good-bg); border: 1px solid var(--good-line); color: var(--ink); border-radius: 14px; padding: 20px; }
+  .ok b { color: var(--good); }
+  .ok p { margin: 8px 0 0; line-height: 1.6; font-size: 14.5px; }
+  .fine { font-size: 12px; color: var(--ink-2); margin-top: 14px; line-height: 1.55; }
+
+  .how { margin-top: 26px; }
+  .how h2 { font-size: 17px; margin: 0 0 10px; }
+  .how ul { margin: 0; padding-left: 18px; color: var(--ink-2); font-size: 14px; line-height: 1.65; }
+  .how li b { color: var(--ink); }
+  .banner { background: var(--blue-soft); border: 1px solid var(--blue); border-radius: 12px; padding: 14px 16px;
+    margin: 22px 0 0; font-size: 14px; line-height: 1.6; color: var(--ink); }
+  .banner b { color: var(--blue-dark); }
+  @media (max-width: 480px) { main { padding: 22px 12px 60px; } h1 { font-size: 25px; } form.card, .card { padding: 16px 14px; } }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="/"><span class="brand-dot"></span>Find A Crib</a>
+  <span class="spacer"></span>
+  <a class="top-link" href="/marketing-agents/">Lottery agents</a>
+  <a class="top-link" href="/">← Back to the map</a>
+  <button id="theme-btn" type="button" class="theme-btn" aria-label="Switch theme" title="Switch theme">🌙</button>
+</header>
+
+<main>
+  <h1>An email the minute a new housing lottery or re-rental opens in your borough</h1>
+  <p class="lede">
+    Affordable apartments in New York go to whoever applies first, or to whoever applies at all before the
+    deadline. We watch <strong>NYC Housing Connect</strong>, <strong>HCR's HousingSearch</strong> (state lotteries
+    and Mitchell-Lama waitlists) and the re-rental boards of every <strong>HPD-approved marketing agent</strong>,
+    every 10 minutes, and email you the moment something new appears where you want to live. Free, no account.
+  </p>
+
+  <form class="card" id="form" autocomplete="on" novalidate>
+    <label class="field" for="email">Your email</label>
+    <input id="email" type="email" name="email" placeholder="you@example.com" autocomplete="email" required inputmode="email" />
+
+    <div class="group">
+      <label class="field">Boroughs</label>
+      <div class="chips" id="boros">
+        <label class="chip"><input type="checkbox" name="boro" value="M"><span>Manhattan</span></label>
+        <label class="chip"><input type="checkbox" name="boro" value="Bk"><span>Brooklyn</span></label>
+        <label class="chip"><input type="checkbox" name="boro" value="Q"><span>Queens</span></label>
+        <label class="chip"><input type="checkbox" name="boro" value="Bx"><span>The Bronx</span></label>
+        <label class="chip"><input type="checkbox" name="boro" value="SI"><span>Staten Island</span></label>
+      </div>
+      <p class="hint">Pick as many as you like. Housing Connect lets you apply anywhere in the city; commute is the only real constraint.</p>
+    </div>
+
+    <div class="group">
+      <label class="field">Tell me about</label>
+      <div class="chips" id="kinds">
+        <label class="chip"><input type="checkbox" name="kind" value="lottery" checked><span>Lotteries &amp; waitlists</span></label>
+        <label class="chip"><input type="checkbox" name="kind" value="rerental" checked><span>Re-rentals</span></label>
+      </div>
+      <p class="hint">A <b>lottery</b> is applied for by a deadline and drawn by log number. A <b>re-rental</b> is a vacated affordable unit the agent rents directly, often first-come, first-served — the ones worth hearing about within the hour.</p>
+    </div>
+
+    <button class="submit" id="submit" type="submit">Email me when something opens</button>
+    <div class="err" id="err" hidden></div>
+    <p class="fine">Only alerts — no digests, no newsletter. One-click unsubscribe in every email. Already signed up? Submit again to change your boroughs.</p>
+  </form>
+
+  <div class="ok" id="ok" hidden>
+    <b>You're on the list.</b>
+    <p id="ok-text"></p>
+    <p>A confirmation is on its way. Quiet until something opens — then one email, with the link to apply.</p>
+    <p><a href="/">See everything open right now on the map →</a></p>
+  </div>
+
+  <div class="card" id="unsub" hidden>
+    <b>Unsubscribe from borough alerts?</b>
+    <p class="hint" style="font-size:14px">You'll stop getting emails about new lotteries and re-rentals. You can sign up again any time.</p>
+    <button class="submit" id="unsub-btn" type="button">Unsubscribe</button>
+    <div class="err" id="unsub-err" hidden></div>
+  </div>
+  <div class="ok" id="unsub-ok" hidden>
+    <b>You're unsubscribed.</b>
+    <p>No more borough alerts to this address. <a href="/alerts/">Sign up again</a> whenever you like.</p>
+  </div>
+
+  <section class="how">
+    <h2>What gets checked, and how often</h2>
+    <ul>
+      <li><b>NYC Housing Connect</b> — the city's lottery, through HPD's own public API. Every 10 minutes.</li>
+      <li><b>HCR HousingSearch</b> — state-supervised lotteries and Mitchell-Lama waitlists. Every hour.</li>
+      <li><b>Marketing agents' re-rental boards</b> — the pages where HPD's pre-qualified firms post vacated affordable units. Every 2 hours during the day, from 9am to 9pm.</li>
+    </ul>
+    <div class="banner">
+      <b>Why re-rentals matter.</b> When a tenant moves out of an affordable unit, the apartment usually
+      doesn't go back into a lottery. The agent re-rents it from their own website, and far fewer people know
+      to look there. <a href="/marketing-agents/">Every agent and their board →</a>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var NAMES = { M: 'Manhattan', Bk: 'Brooklyn', Q: 'Queens', Bx: 'the Bronx', SI: 'Staten Island' };
+
+  // theme toggle — same localStorage key as the map
+  $('theme-btn').addEventListener('click', function () {
+    var cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', cur);
+    try { localStorage.setItem('fac.theme', cur); } catch (e) {}
+  });
+
+  // ?boro=Bk[,Q]&kind=rerental — arriving from a tile on the map preselects
+  // what the tile was about.
+  var q = new URLSearchParams(location.search);
+  var pre = (q.get('boro') || '').split(',').filter(Boolean);
+  document.querySelectorAll('#boros input').forEach(function (i) { if (pre.indexOf(i.value) >= 0) i.checked = true; });
+  var kind = q.get('kind');
+  if (kind === 'lottery' || kind === 'rerental')
+    document.querySelectorAll('#kinds input').forEach(function (i) { i.checked = i.value === kind; });
+
+  // Signed-in on the map? Prefill the address. Purely a convenience — the
+  // subscription is by email and never touches the account.
+  try {
+    if (window.supabase && window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
+      window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY)
+        .auth.getSession().then(function (r) {
+          var em = r && r.data && r.data.session && r.data.session.user && r.data.session.user.email;
+          if (em && !$('email').value) $('email').value = em;
+        }).catch(function () {});
+    }
+  } catch (e) {}
+
+  function phrase(codes) {
+    var names = ['M', 'Bk', 'Q', 'Bx', 'SI'].filter(function (c) { return codes.indexOf(c) >= 0; }).map(function (c) { return NAMES[c]; });
+    if (names.length === 5) return 'all five boroughs';
+    if (names.length === 1) return names[0];
+    return names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1];
+  }
+
+  var MSG = {
+    invalid_email: 'That email address doesn’t look right.',
+    no_borough: 'Pick at least one borough.',
+    rate_limited: 'Too many sign-ups from this connection. Try again in an hour.',
+    signup_cap: 'We’ve hit today’s sign-up limit. Please try again tomorrow.',
+    temporarily_unavailable: 'Can’t reach the server right now. Try again in a minute.'
+  };
+
+  $('form').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var email = $('email').value.trim();
+    var boros = Array.prototype.map.call(document.querySelectorAll('#boros input:checked'), function (i) { return i.value; });
+    var kinds = Array.prototype.map.call(document.querySelectorAll('#kinds input:checked'), function (i) { return i.value; });
+    var err = $('err'); err.hidden = true;
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = MSG.invalid_email; err.hidden = false; $('email').focus(); return; }
+    if (!boros.length) { err.textContent = MSG.no_borough; err.hidden = false; return; }
+    if (!kinds.length) kinds = ['lottery', 'rerental'];
+    var btn = $('submit'); btn.disabled = true; btn.textContent = 'Saving…';
+    fetch('/api/alerts/subscribe', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email, boroughs: boros, kinds: kinds })
+    }).then(function (r) { return r.json().then(function (j) { return { s: r.status, j: j }; }); })
+      .then(function (x) {
+        if (x.j && x.j.ok) {
+          $('form').hidden = true;
+          var what = kinds.length === 2 ? 'lottery, waitlist or re-rental' : (kinds[0] === 'lottery' ? 'lottery or waitlist' : 're-rental');
+          $('ok-text').textContent = 'We’ll email ' + email + ' the minute a new ' + what + ' opens in ' + phrase(x.j.boroughs || boros) + '.';
+          $('ok').hidden = false;
+          try { gtag('event', 'alert_signup', { boroughs: boros.join(','), kinds: kinds.join(',') }); } catch (e) {}
+          return;
+        }
+        var code = (x.j && x.j.error) || 'temporarily_unavailable';
+        err.textContent = MSG[code] || 'Something went wrong. Please try again.';
+        err.hidden = false;
+      })
+      .catch(function () { err.textContent = MSG.temporarily_unavailable; err.hidden = false; })
+      .then(function () { btn.disabled = false; btn.textContent = 'Email me when something opens'; });
+  });
+
+  // #unsub=<token> from the email footer. The page asks, then POSTs — a GET
+  // never unsubscribes anyone, because mail scanners follow links.
+  var m = /[#&]unsub=([0-9a-f-]{36})/i.exec(location.hash);
+  if (m) {
+    var token = m[1].toLowerCase();
+    $('form').hidden = true;
+    $('unsub').hidden = false;
+    $('unsub-btn').addEventListener('click', function () {
+      var b = $('unsub-btn'); b.disabled = true;
+      fetch('/api/alerts/unsubscribe', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: token })
+      }).then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (j && j.ok) { $('unsub').hidden = true; $('unsub-ok').hidden = false; return; }
+          $('unsub-err').textContent = 'That link has already been used or has expired.'; $('unsub-err').hidden = false; b.disabled = false;
+        })
+        .catch(function () { $('unsub-err').textContent = MSG.temporarily_unavailable; $('unsub-err').hidden = false; b.disabled = false; });
+    });
+  }
+})();
+</script>
+</body>
+</html>

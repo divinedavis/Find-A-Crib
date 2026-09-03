@@ -15,7 +15,7 @@ Run:  DATA_DIR=/var/www/rent-map gunicorn -w 2 -b 127.0.0.1:8010 api_server:app
 """
 import base64, concurrent.futures, datetime, glob, gzip, hashlib, hmac, json, os, re, secrets, threading, time, urllib.request, urllib.error, urllib.parse
 from collections import defaultdict, deque
-from flask import Flask, jsonify, request, g
+from flask import Flask, jsonify, request, g, redirect
 
 import build_log             # which run-log lines are work that shipped
 import crease_metrics
@@ -218,6 +218,7 @@ def gate():
     # the X-API-Key gate applies only to the metered /v1 data endpoints.
     if request.method == "OPTIONS" or request.path in PUBLIC_PATHS \
        or request.path.startswith("/developers/") \
+       or request.path.startswith("/alerts/") \
        or request.path.startswith("/reports/") \
        or request.path.startswith("/embed/") \
        or request.path in ("/dashboard-metrics", "/dashboard-users",
@@ -463,6 +464,65 @@ def signup():
         return jsonify(error="signup_failed"), 400
     return jsonify(ok=True, api_key=plain, tier="free", daily_limit=1000,
                    message="Save this key — it is shown only once.")
+
+
+# ---- borough alerts --------------------------------------------------------
+# Public sign-up at findacrib.com/alerts/: "email me the minute a new housing
+# lottery or re-rental opens in <borough>". No account. The row lives in
+# lottery_alert_subs (db/0021) and is only ever read by lottery_alerts.py on
+# the droplet. Same-origin only — no CORS header is added for /alerts/*.
+ALERT_BOROS = ("M", "Bk", "Q", "Bx", "SI")
+ALERT_KINDS = ("lottery", "rerental")
+TOKEN_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
+
+
+@app.route("/alerts/subscribe", methods=["POST"])
+def alerts_subscribe():
+    if rate_limited("alerts_sub", 6, 3600):           # a few sign-ups per hour per IP
+        return _too_many()
+    if not request.is_json:                            # blocks cross-site form posts
+        return jsonify(error="json_required"), 415
+    body = request.get_json(silent=True) or {}
+    email = str(body.get("email") or "").strip().lower()
+    if not EMAIL_RE.match(email) or len(email) > 254:
+        return jsonify(error="invalid_email"), 400
+    boros = sorted({b for b in (body.get("boroughs") or [])
+                    if isinstance(b, str) and b in ALERT_BOROS})
+    kinds = sorted({k for k in (body.get("kinds") or ALERT_KINDS)
+                    if isinstance(k, str) and k in ALERT_KINDS}) or list(ALERT_KINDS)
+    if not boros:
+        return jsonify(error="no_borough"), 400
+    try:
+        res = rpc("lottery_alerts_subscribe",
+                  {"p_email": email, "p_boroughs": boros, "p_kinds": kinds}) or {}
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
+    if not res.get("ok"):
+        reason = res.get("reason", "signup_failed")
+        return jsonify(error=reason), (429 if reason == "signup_cap" else 400)
+    return jsonify(ok=True, boroughs=res.get("boroughs"), kinds=res.get("kinds"),
+                   welcomed=bool(res.get("welcomed")))
+
+
+@app.route("/alerts/unsubscribe", methods=["GET", "POST"])
+def alerts_unsubscribe():
+    body = request.get_json(silent=True) or {}
+    token = str(request.args.get("t") or body.get("token")
+                or request.form.get("token") or "").strip().lower()
+    if not TOKEN_RE.match(token):
+        return jsonify(error="bad_token"), 400
+    if request.method == "GET":
+        # A link in an email gets followed by mail scanners and link previews.
+        # A GET must never unsubscribe anyone — the page asks, then POSTs.
+        # (Gmail/Apple one-click unsubscribe POSTs to this same URL.)
+        return redirect(f"https://findacrib.com/alerts/#unsub={token}", code=302)
+    if rate_limited("alerts_unsub", 30, 3600):
+        return _too_many()
+    try:
+        ok = rpc("lottery_alerts_unsubscribe", {"p_token": token})
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
+    return jsonify(ok=bool(ok))
 
 
 @app.route("/developers/usage", methods=["GET", "POST"])

@@ -1727,7 +1727,7 @@
     renderFacSearch(d.search);
     renderAds(d.ads);
     renderReferrals(d.referrals);
-    renderSpark(d.sparkline||[]);
+    renderSpark(d.sparkline||[], d.months);
     renderFacBuild(d.build);
     renderFacTiles(d.adtiles);
     renderFacSignage(d.signage);
@@ -2399,7 +2399,7 @@
   // ---------- sparkline ----------
   var SPARK_DAYS = 7;
 
-  function renderSpark(days){
+  function renderSpark(days, M){
     var host=el('spark');
     if(!days.length){ host.innerHTML='<div style="color:var(--muted);font-size:13px">Not enough history yet.</div>'; return; }
     days = days.slice(-SPARK_DAYS);
@@ -2413,19 +2413,61 @@
     // the subtitle says so, instead of drawing a flat line along zero.
     var hasVis = days.some(function(d){ return d.visitors != null; });
     var val = function(d){ return n(hasVis ? d.visitors : d.views); };
+    // The months beside the days. Same metric, different bucket, and — this is
+    // the part that has to be visible — a DIFFERENT SCALE: a good day is 30
+    // visitors and a good month is 400, so one axis would flatten the week
+    // into a row of stubs. Each group is scaled to its own peak and captioned,
+    // so the eye compares day with day and month with month, never across the
+    // divider. Only the Find A Crib tab passes months; the others keep the
+    // seven-day chart they had.
+    var months = (M && M.months) ? M.months.slice(-7) : null;
+    var mval = function(m){ return n(m.visitors); };
     // The heading states the window it actually drew. Early on there is less
     // history than the window, and a card claiming "last 7 days" over four
     // points is a card lying about a trend.
     var t=el('spark-title');
-    if(t) t.textContent = 'Last '+days.length+(days.length===1?' day':' days');
+    if(t) t.textContent = 'Last '+days.length+(days.length===1?' day':' days')+
+                          (months ? ' · last '+months.length+' months' : '');
+    if(months){
+      var sub=el('spark-sub');
+      if(sub) sub.textContent = 'Unique visitors per day, then per month — each group on its own scale'+
+        (M.history_from ? ' · logging began '+fmtDay(M.history_from) : '');
+    }
     // BARS, not a line. Seven daily counts are seven discrete buckets being
     // compared by size; a line draws a slope between Tuesday and Wednesday and
     // invites you to read a rate of change through days that were never
     // continuous. Bars also make a zero day read as zero instead of as a dip.
-    var W=Math.max(host.clientWidth||900,320), H=150, pad={t:20,r:8,b:22,l:8};
+    var W=Math.max(host.clientWidth||900,320), H=months?164:150, pad={t:months?30:20,r:8,b:22,l:8};
     var iw=W-pad.l-pad.r, ih=H-pad.t-pad.b;
-    var max=Math.max.apply(null,days.map(val))||1;
     var base=pad.t+ih;
+    // Two groups side by side when months are present: the week takes the
+    // larger share because seven days need room for seven date labels, the
+    // months sit to the right past a faint divider.
+    var GAP_W = months ? 34 : 0;
+    var dayW = months ? (iw-GAP_W)*0.56 : iw;
+    var monW = months ? iw-GAP_W-dayW : 0;
+    var groups = [{items:days, x0:pad.l, w:dayW, val:val, caption:'Per day',
+                   max:Math.max.apply(null,days.map(val))||1,
+                   label:function(d){ return new Date(d.date+'T00:00').toLocaleString('en-US',{month:'numeric',day:'numeric'}); },
+                   tip:function(d){ return '<b>'+new Date(d.date+'T00:00').toLocaleString('en-US',{month:'short',day:'numeric'})+
+                     '</b> — '+(hasVis ? n(d.visitors)+' visitor'+(n(d.visitors)===1?'':'s')
+                                       : n(d.views)+' view'+(n(d.views)===1?'':'s')); },
+                   dim:function(){ return false; }, missing:function(){ return false; }}];
+    if(months){
+      groups.push({items:months, x0:pad.l+dayW+GAP_W, w:monW, val:mval, caption:'Per month',
+                   max:Math.max.apply(null,months.map(mval))||1,
+                   label:function(m){ var d=new Date(m.month+'-01T00:00'); return d.toLocaleString('en-US',{month:'short'})+(m.partial?'·':''); },
+                   tip:function(m){ var d=new Date(m.month+'-01T00:00');
+                     return '<b>'+d.toLocaleString('en-US',{month:'short',year:'numeric'})+'</b> — '+
+                       (m.logged ? n(m.visitors)+' visitor'+(n(m.visitors)===1?'':'s')+' · '+comma(m.views)+' views'+(m.partial?' · so far':'')
+                                 : 'before logging began'); },
+                   // The month in progress is drawn lighter: a half-month bar
+                   // next to full ones reads as a collapse unless it says so.
+                   dim:function(m){ return !!m.partial; },
+                   // Months before per-site logging get no bar and no zero —
+                   // a gap, which is the truthful mark for "unknown".
+                   missing:function(m){ return !m.logged; }});
+    }
     // 2px of surface between adjacent bars, per the mark spec — the gap is the
     // separator, not a stroke, so nothing is drawn twice at a shared edge.
     // Thin marks. The gap is 2px per the spec, but on a 1,400px card seven
@@ -2433,10 +2475,7 @@
     // bar — it reads as a filled area and the eye stops comparing heights.
     // Cap the width and centre each bar in its slot; the slot still owns the
     // hit area, so the target stays full-width even though the mark is not.
-    var GAP=2, BAR_MAX=46, slot=iw/days.length;
-    var bw=Math.max(Math.min(slot-GAP, BAR_MAX),3);
-    var X=function(i){ return pad.l + slot*i + slot/2; };          // bar centre
-    var Y=function(v){ return base - ih*v/max; };
+    var GAP=2, BAR_MAX=46;
     // A data-end rounded on the top corners only: the bar is anchored to the
     // baseline, so rounding the bottom would lift it off its own zero.
     function barPath(x,y,w,h,r){
@@ -2446,73 +2485,83 @@
              ' L'+(x+w-r)+' '+y+' Q'+(x+w)+' '+y+' '+(x+w)+' '+(y+r)+
              ' L'+(x+w)+' '+(y+h)+' Z';
     }
-    var bars='',labels='',valueLabels='';
-    // Selective direct labels: the peak only. A number over every bar is noise
-    // on a chart whose whole job is the shape of the week.
-    var peak=days.reduce(function(bi,d,i){ return val(d)>val(days[bi])?i:bi; },0);
-    days.forEach(function(d,i){
-      var v=val(d), x=X(i)-bw/2, y=Y(v), h=base-y;
-      bars+='<path class="spark-bar" data-i="'+i+'" d="'+barPath(x,y,bw,h,4)+
-            '" fill="var(--purple)" opacity="'+(i===peak?'1':'.78')+'"></path>';
-      var lbl=new Date(d.date+'T00:00').toLocaleString('en-US',{month:'numeric',day:'numeric'});
-      labels+='<text x="'+X(i)+'" y="'+(H-6)+'" text-anchor="middle" font-size="10.5" fill="var(--muted)">'+lbl+'</text>';
-      if(i===peak && v>0){
-        valueLabels+='<text x="'+X(i)+'" y="'+(y-6)+'" text-anchor="middle" font-size="11" '+
-                     'font-weight="600" fill="var(--ink2)">'+comma(v)+'</text>';
-      }
+    var bars='',labels='',valueLabels='',bands='',captions='';
+    groups.forEach(function(G,g){
+      var slot=G.w/G.items.length;
+      var bw=Math.max(Math.min(slot-GAP, BAR_MAX),3);
+      var X=function(i){ return G.x0 + slot*i + slot/2; };
+      var Y=function(v){ return base - ih*v/G.max; };
+      // Selective direct labels: the peak only. A number over every bar is
+      // noise on a chart whose whole job is the shape of the week.
+      G.peak=G.items.reduce(function(bi,d,i){ return G.val(d)>G.val(G.items[bi])?i:bi; },0);
+      if(months) captions+='<text x="'+G.x0+'" y="12" font-size="10.5" font-weight="700" letter-spacing=".5" fill="var(--muted)">'+G.caption.toUpperCase()+'</text>';
+      G.items.forEach(function(d,i){
+        var v=G.val(d), x=X(i)-bw/2, y=Y(v), h=base-y, miss=G.missing(d);
+        var op = miss ? '0' : (G.dim(d) ? '.45' : (i===G.peak ? '1' : '.78'));
+        bars+='<path class="spark-bar" data-g="'+g+'" data-i="'+i+'" d="'+(miss?'':barPath(x,y,bw,h,4))+
+              '" fill="var(--purple)" opacity="'+op+'" data-op="'+op+'"></path>';
+        labels+='<text x="'+X(i)+'" y="'+(H-6)+'" text-anchor="middle" font-size="10.5" fill="var(--muted)"'+
+                (miss?' opacity=".45"':'')+'>'+(miss?'—':G.label(d))+'</text>';
+        if(i===G.peak && v>0 && !miss){
+          valueLabels+='<text x="'+X(i)+'" y="'+(y-6)+'" text-anchor="middle" font-size="11" '+
+                       'font-weight="600" fill="var(--ink2)">'+comma(v)+'</text>';
+        }
+        // Full-height hit bands, one per bar, tiling the group. A 3-visitor
+        // bar is a few pixels tall; requiring the pointer to land on it would
+        // make the low days — the ones worth reading — the hardest to read.
+        bands+='<rect class="spark-band" x="'+(G.x0+slot*i)+'" y="0" width="'+slot+
+               '" height="'+H+'" fill="transparent" pointer-events="all" data-g="'+g+'" data-i="'+i+'"></rect>';
+      });
     });
     // A zero day has no bar, so the baseline is what says "zero" rather than
     // "missing". Recessive on purpose — it is an axis, not data.
     var axis='<line x1="'+pad.l+'" x2="'+(W-pad.r)+'" y1="'+base+'" y2="'+base+
              '" stroke="var(--border)" stroke-width="1"></line>';
-    // Full-height hit bands, one per day, tiling the plot. A 3-visitor bar is a
-    // few pixels tall; requiring the pointer to land on it would make the low
-    // days — the ones worth reading — the hardest to read.
-    var bands='';
-    days.forEach(function(d,i){
-      bands+='<rect class="spark-band" x="'+(pad.l+slot*i)+'" y="0" width="'+slot+
-             '" height="'+H+'" fill="transparent" pointer-events="all" data-i="'+i+'"></rect>';
-    });
+    // The divider between the two groups: dashed and faint, because it marks a
+    // change of scale, not a data boundary, and must not read as a bar.
+    var divider = months
+      ? '<line x1="'+(pad.l+dayW+GAP_W/2)+'" x2="'+(pad.l+dayW+GAP_W/2)+'" y1="'+(pad.t-14)+'" y2="'+(base+14)+
+        '" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 4"></line>'
+      : '';
     host.innerHTML='<svg width="100%" height="'+H+'" viewBox="0 0 '+W+' '+H+'" id="spark-svg">'+
-      axis+bars+valueLabels+labels+bands+'</svg><div class="spark-tip" id="spark-tip"></div>';
+      axis+divider+captions+bars+valueLabels+labels+bands+'</svg><div class="spark-tip" id="spark-tip"></div>';
     var svg=el('spark-svg'), tip=el('spark-tip');
     var barEls=svg.querySelectorAll('.spark-bar');
+    function barAt(g,i){ return svg.querySelector('.spark-bar[data-g="'+g+'"][data-i="'+i+'"]'); }
 
-    function show(i){
-      var d=days[i], c=barEls[i];
+    function show(g,i){
+      var G=groups[g], d=G&&G.items[i], c=barAt(g,i);
       if(!d||!c) return;
       var rb=host.getBoundingClientRect(), cb=c.getBoundingClientRect();
-      // Visitors only. The chart plots visitors and its subtitle says so, and
-      // page views next to them invited the wrong read — one person reloading a
-      // map ten times is ten views and one visitor, which is the exact
-      // conflation this chart was built to avoid. Crease and Trent still get
-      // views here because their logging never recorded a visitor, so views is
-      // the only number those charts have.
-      tip.innerHTML='<b>'+new Date(d.date+'T00:00').toLocaleString('en-US',{month:'short',day:'numeric'})+
-                    '</b> — '+(hasVis ? n(d.visitors)+' visitor'+(n(d.visitors)===1?'':'s')
-                                      : n(d.views)+' view'+(n(d.views)===1?'':'s'));
+      // For a missing month the bar has no box; anchor the tip to the band.
+      if(!cb.width){ var band=svg.querySelector('.spark-band[data-g="'+g+'"][data-i="'+i+'"]'); cb=band.getBoundingClientRect(); }
+      tip.innerHTML=G.tip(d);
       // Clamp inside the card: the tip is centred on the point, so the first and
       // last columns would otherwise hang off the edge and get clipped.
       var half=tip.offsetWidth/2;
       var x=cb.left-rb.left+cb.width/2;
       tip.style.left=Math.min(Math.max(x,half+2),rb.width-half-2)+'px';
-      tip.style.top=(cb.top-rb.top)+'px';
+      tip.style.top=Math.max(cb.top-rb.top, 0)+'px';
       tip.style.opacity='1';
       // The hovered bar comes forward; the rest recede. No crosshair — that is
       // a line-chart affordance for reading between points, and a bar chart has
       // no between.
-      barEls.forEach(function(o,j){ o.setAttribute('opacity', j===i?'1':'.45'); });
+      barEls.forEach(function(o){
+        var same = o.getAttribute('data-g')==String(g) && o.getAttribute('data-i')==String(i);
+        if(o.getAttribute('data-op')==='0') return;
+        o.setAttribute('opacity', same?'1':'.45');
+      });
     }
     function hide(){
       tip.style.opacity='0';
-      barEls.forEach(function(o,j){ o.setAttribute('opacity', j===peak?'1':'.78'); });
+      barEls.forEach(function(o){ o.setAttribute('opacity', o.getAttribute('data-op')); });
     }
     svg.querySelectorAll('.spark-band').forEach(function(b){
-      var i=+b.getAttribute('data-i');
-      b.addEventListener('mouseenter',function(){ show(i); });
+      var g=+b.getAttribute('data-g'), i=+b.getAttribute('data-i');
+      b.addEventListener('mouseenter',function(){ show(g,i); });
       // Touch gets the same reading; a tap on a column is the mobile equivalent
       // of a hover and there is no other way to read a value on a phone.
-      b.addEventListener('touchstart',function(e){ show(i); }, {passive:true});
+      b.addEventListener('touchstart',function(e){ show(g,i); }, {passive:true});
     });
     // One leave handler on the chart, not per band — moving between adjacent
     // columns must not flicker the tooltip off and on.

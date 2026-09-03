@@ -1071,7 +1071,93 @@ def dashboard_metrics():
                            "consult_clicks": _fac_consult_clicks(),
                            "agents": _fac_agent_pool()}
     data["signage"] = _fac_signage(data.get("since"))
+    # Seven calendar months of distinct visitors, for the bars beside the
+    # seven days. Not range-scoped: a month bar that changed with the picker
+    # would be a different chart wearing the same axis.
+    data["months"] = _fac_months()
     return jsonify(data)
+
+
+FAC_MONTHS = 7
+FAC_TZ = "America/New_York"
+
+
+def _fac_months(count=FAC_MONTHS):
+    """Distinct visitors and page views per calendar month, newest last.
+
+    Computed here rather than by summing the daily sparkline: a person who
+    comes back on three days is three daily visitors and one monthly one,
+    and on a site where returning visitors are the number being watched the
+    sum would flatter every month by exactly the amount that matters.
+
+    Buckets are New York calendar months, the same clock the range picker
+    uses. Months before per-site logging began carry `logged: False` so the
+    chart can draw a gap rather than a zero, and the current month carries
+    `partial: True` so it is not read as a bad month at the start of one.
+    """
+    from zoneinfo import ZoneInfo
+    tz = ZoneInfo(FAC_TZ)
+    now = datetime.datetime.now(tz)
+    first = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    # Walk back count-1 months from the first of this month.
+    y, m = first.year, first.month
+    for _ in range(count - 1):
+        m -= 1
+        if m == 0:
+            y, m = y - 1, 12
+    start = first.replace(year=y, month=m)
+    keys = []
+    y, m = start.year, start.month
+    for _ in range(count):
+        keys.append(f"{y:04d}-{m:02d}")
+        m += 1
+        if m == 13:
+            y, m = y + 1, 1
+    out = {k: {"month": k, "visitors": 0, "views": 0,
+               "partial": k == keys[-1], "logged": False} for k in keys}
+    # PostgREST caps a response at 1,000 rows and says nothing when it does —
+    # the first cut of this function asked for 50,000, got the oldest 1,000,
+    # and reported August as one visitor. Page in created_at order until a
+    # short page comes back.
+    PAGE, MAX_PAGES = 1000, 60
+    rows = []
+    try:
+        mine = _fac_owner_visitors()
+        for page in range(MAX_PAGES):
+            chunk = _rest("GET", "visits?select=visitor_id,created_at"
+                                 f"&created_at=gte.{urllib.parse.quote(start.isoformat())}"
+                                 f"&order=created_at.asc&limit={PAGE}&offset={page * PAGE}") or []
+            rows.extend(chunk)
+            if len(chunk) < PAGE:
+                break
+    except Exception:
+        return {"months": list(out.values()), "ok": False}
+    seen = {k: set() for k in keys}
+    earliest = None
+    for r in rows:
+        ts = r.get("created_at")
+        if not ts:
+            continue
+        try:
+            dt = datetime.datetime.fromisoformat(ts.replace("Z", "+00:00")).astimezone(tz)
+        except Exception:
+            continue
+        k = f"{dt.year:04d}-{dt.month:02d}"
+        if k not in out or r.get("visitor_id") in mine:
+            continue
+        out[k]["views"] += 1
+        if r.get("visitor_id"):
+            seen[k].add(r["visitor_id"])
+        if earliest is None or dt < earliest:
+            earliest = dt
+    for k in keys:
+        out[k]["visitors"] = len(seen[k])
+        # A month is "logged" from the month the first row landed in onward,
+        # even if a later one happened to be empty.
+        out[k]["logged"] = bool(earliest) and k >= f"{earliest.year:04d}-{earliest.month:02d}"
+    return {"months": list(out.values()), "ok": True,
+            "truncated": len(rows) >= PAGE * MAX_PAGES,
+            "history_from": earliest.date().isoformat() if earliest else None}
 
 
 # Channels worth naming on the card, in the order they are shown. The key is

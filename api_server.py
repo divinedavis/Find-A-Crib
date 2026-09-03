@@ -500,8 +500,9 @@ def alerts_subscribe():
     if not res.get("ok"):
         reason = res.get("reason", "signup_failed")
         return jsonify(error=reason), (429 if reason == "signup_cap" else 400)
-    return jsonify(ok=True, boroughs=res.get("boroughs"), kinds=res.get("kinds"),
-                   welcomed=bool(res.get("welcomed")))
+    # Deliberately no "already subscribed" signal in the reply: that would be
+    # an oracle for whether an address is on the list.
+    return jsonify(ok=True, boroughs=res.get("boroughs"), kinds=res.get("kinds"))
 
 
 @app.route("/alerts/unsubscribe", methods=["GET", "POST"])

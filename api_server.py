@@ -1987,9 +1987,14 @@ def _fac_signage(since):
                     "Both arms have cleared the floor, so this is a real "
                     "difference, not a coin flip."))
 
+    # Every live placement, not only the ones attached to a plate that has
+    # already been scanned: a campaign that starts next week has four rows and
+    # zero scans, and the kiosk card has to draw the rows before the scans.
+    live_rows = [r for r in placements if not r.get("removed")]
     return {"arms": out, "log": log_present, "verdict": verdict,
             "truncated": truncated,
-            "placed": len([r for r in placements if not r.get("removed")]),
+            "placements": live_rows,
+            "placed": len(live_rows),
             "rooms": len({r["code"] for r in placements if not r.get("removed")}),
             "excluded_pre": sum(pre_scans.values()),
             "unlogged": sorted(({"code": c, "scans": n} for c, n in unlogged.items()),

@@ -536,6 +536,19 @@
         <div id="sg-arms"></div>
         <div class="callout" id="sg-callout" style="margin-top:16px"></div>
       </div>
+
+      <!-- LinkNYC kiosks: the same short-link plumbing as the plates, on
+           sidewalk screens instead of counters -->
+      <div class="card mb18" id="sec-kiosks">
+        <div class="card-head-row">
+          <div><h2>LinkNYC kiosks — what six free screens are worth</h2><div class="card-sub">One QR code (a11) on four Link units for a 28-day LinkLocal campaign. Plays are the portal’s estimate, not a measurement; scans are nginx counting the redirect; sessions and engagement are the site. The number that decides month two is scans per ten thousand plays, per unit — and the portal’s performance report is the only place the per-unit play count lives.</div></div>
+        </div>
+        <div id="kiosk-status" class="disclaim" style="margin:0 0 14px"></div>
+        <div class="ads-tiles" id="kiosk-tiles"></div>
+        <div class="sg-sub">Units in the campaign</div>
+        <div id="kiosk-units"></div>
+        <div class="callout" id="kiosk-callout" style="margin-top:16px"></div>
+      </div>
       </div><!-- /fac-a -->
 
       <!-- ===== NEMO only ===== -->
@@ -1718,6 +1731,7 @@
     renderFacBuild(d.build);
     renderFacTiles(d.adtiles);
     renderFacSignage(d.signage);
+    renderFacKiosks(d.signage);
   }
 
   // ---------- donut (return channels) ----------
@@ -2280,6 +2294,93 @@
         'findacrib-qr.log, which nginx has not written yet — sessions below are '+
         'still counted from the site, so a zero here is a missing log, not a '+
         'missing scan.</span>');
+  }
+
+  // ---------- LinkNYC kiosks ----------
+  // The campaign facts live here rather than in the payload because they are
+  // facts about a purchase, not about traffic: the portal quoted 96,768 plays
+  // for six screens over 28 days and nothing on the server can re-derive that.
+  // The counts come from the same signage payload as the plates — the kiosk QR
+  // is plate code a11 and rides the same /c/<code> redirect and log.
+  var KIOSK_CAMPAIGN = {
+    code: 'a11',
+    name: 'Find A Crib – Rent Check – Sep 2026',
+    start: '2026-09-08', end: '2026-10-05',
+    screens: 6, units: 4, est_plays: 96768,
+    // Quoted at checkout. The LinkLocal Business tier promises the first
+    // campaign free; until that credit shows on the invoice this is the bill.
+    quoted_usd: 420, credit_pending: true
+  };
+  function renderFacKiosks(S){
+    S = S || {};
+    var C = KIOSK_CAMPAIGN;
+    var host = el('sec-kiosks');
+    if(!host) return;
+    // Rows come from placements (present from the day they were recorded);
+    // counts come from the plate row, which only exists once something scanned.
+    var rows = (S.placements || []).filter(function(r){
+      return r.code === C.code && /^LinkNYC kiosk/i.test(r.store || '');
+    });
+    var plate = null;
+    (S.arms || []).forEach(function(a){
+      (a.plates || []).forEach(function(p){ if(p.code === C.code) plate = p; });
+    });
+    if(!rows.length && !plate){ host.classList.add('hidden'); return; }
+    host.classList.remove('hidden');
+
+    var scans = plate ? n(plate.scans) : 0;
+    var sess  = plate ? n(plate.sessions) : 0;
+    var eng   = plate ? n(plate.engaged) : 0;
+
+    // Where the campaign is in its 28 days, in whole days, from local midnight.
+    var day = 86400000;
+    var t0 = new Date(C.start+'T00:00:00'), t1 = new Date(C.end+'T23:59:59');
+    var now = new Date();
+    var total = Math.round((t1 - t0) / day);
+    var elapsed = Math.max(0, Math.min(total, Math.floor((now - t0) / day) + 1));
+    var status;
+    if (now < t0) {
+      var until = Math.ceil((t0 - now) / day);
+      status = 'Starts '+C.start+' — in '+plural(until,'day')+'. Anything scanned before then is a proof, and the plates card files it under “pre”.';
+    } else if (now > t1) {
+      status = 'Ended '+C.end+'. '+total+' days, '+C.screens+' screens.';
+    } else {
+      status = 'Day '+elapsed+' of '+total+' · '+C.screens+' screens on '+C.units+' units · ends '+C.end+'.';
+    }
+    el('kiosk-status').textContent = status;
+
+    var playsToDate = Math.round(C.est_plays * (elapsed / total));
+    var per10k = playsToDate ? (10000 * scans / playsToDate) : null;
+    var cost = C.credit_pending ? '$'+comma(C.quoted_usd) : '$'+comma(C.quoted_usd);
+    var costSub = C.credit_pending ? 'quoted — free first-campaign credit not yet applied'
+                                   : 'paid';
+    var perVisit = sess ? '$'+(C.quoted_usd / sess).toFixed(2) : '—';
+    var tiles=[
+      {v:comma(scans), l:'Scans', sub:'phones that hit /c/'+C.code},
+      {v:comma(sess),  l:'Sessions', sub:'reached the site'},
+      {v:comma(eng),   l:'Engaged', sub:'searched, opened or saved a building'},
+      {v:comma(playsToDate), l:'Est. plays so far', sub:'of '+comma(C.est_plays)+' quoted — 10% of screen time, spread over 24h'},
+      {v:per10k===null ? '—' : per10k.toFixed(1), l:'Scans per 10k plays', sub: elapsed ? 'the per-screen yield' : 'nothing has played yet'},
+      {v:cost, l:'Cost', sub:costSub + (sess ? ' · '+perVisit+' per session' : '')}
+    ].map(creaseTile).join('');
+    el('kiosk-tiles').innerHTML = tiles;
+
+    el('kiosk-units').innerHTML = rows.length
+      ? rows.map(function(r){
+          var name = (r.store || '').replace(/^LinkNYC kiosk\s*/i,'');
+          var sub = [r.cross, r.notes].filter(Boolean).join(' · ');
+          return '<div class="act-row"><div class="act-l"><div class="act-ico">🖥️</div>'+
+            '<div><div class="act-name">'+esc(name)+'</div>'+
+            '<div class="act-desc">'+esc(sub)+'</div></div></div>'+
+            '<div class="act-val" title="scans are counted per code, not per unit — the portal report has plays per unit">'+esc(r.placed||'')+'</div></div>';
+        }).join('')
+      : '<div class="disclaim">No kiosk placements recorded — run scripts/placement.py add a11 … and deploy.</div>';
+
+    el('kiosk-callout').innerHTML = scans
+      ? ''
+      : (now < t0
+          ? '<span style="opacity:.75">Expect tens of scans over the month, not hundreds — free ads run in unsold time, and a sidewalk screen converts well under 1% of the people who see it. The month answers whether kiosks scan at all; the split by unit comes from the portal’s report.</span>'
+          : '<span style="opacity:.75">No scans yet. Check the portal that the campaign was approved and is playing before reading this as a result.</span>');
   }
 
   // ---------- referrals ----------

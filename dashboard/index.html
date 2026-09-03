@@ -588,7 +588,7 @@
       <!-- ===== Trent's Fresh Spaces only ===== -->
       <div class="card mb18" id="sec-goals">
         <div class="card-head-row">
-          <div><h2>Goals — what each DAU target is actually worth</h2></div>
+          <div><h2>Goals — the audience $20,000/mo of ad revenue needs</h2></div>
         </div>
         <div id="goals-table"></div>
         <div class="callout" id="goals-callout" style="margin-top:16px"></div>
@@ -2598,11 +2598,15 @@
   // constant down every row, and the constancy is the point: they are the only
   // columns that do not require an audience this site does not have.
   var GOAL_FLAT = { api: true, crawl: true };
-  var GOAL_SCENARIOS = [300, 1000, 3000];
-  // The revenue target gets SOLVED for, not guessed at. Hardcoding "25,000 DAU"
+  // The revenue target gets SOLVED for, not guessed at. Hardcoding a DAU
   // would be wrong the moment any assumption below it moves, and the whole
   // point of this card is that the assumptions are the arguable part.
-  var GOAL_REVENUE_TARGET = 50000;
+  //
+  // Two rows, one question each: how big an audience does $20,000/mo take if
+  // the ONLY money is AdSense, and how big if the only money is ad space you
+  // sell yourself. The scenario ladder (300 / 1,000 / 3,000) and the all-streams
+  // $50,000 row were dropped on 2026-09-03 — the table is about advertising now.
+  var GOAL_REVENUE_TARGET = 20000;
 
   // The goals card does NOT follow the range picker, and that is deliberate.
   //
@@ -2680,43 +2684,43 @@
                ref: ref, api: api, crawl: crawl, impressions: adImpressions,
                total: adv + plus + rep + ads + ref + api + crawl };
     }
-    var rows = GOAL_SCENARIOS.map(row);
     var nowDau = n(E.dau), nowRow = nowDau ? row(nowDau) : null;
 
-    // Solving for the target is no longer one division, because two columns are
-    // FLAT. Revenue is now flat + variable×reach, so the flat part has to be
-    // subtracted before dividing. Doing it the old way spread the $1,271 of API
-    // and crawl revenue across a 1,000-visitor probe row, inflated the implied
-    // per-visitor rate, and solved to a DAU whose own row then totalled
-    // $18,554 instead of $50,000 — a target row that missed its target.
-    // SOLVE BY SEARCH, not by division.
-    //
-    // Division worked when every stream was linear in reach. It stopped being
-    // true twice: first when API seats and AI crawls were added as flat
-    // columns, and again when advertiser slots gained a floor (an agent needs
-    // 20 hand-offs before buying) and a hard ceiling (there are 85 agents).
-    // Each time, dividing produced a "$50,000" row whose own total was not
-    // $50,000. A bisection makes no assumption about the shape of the curve —
-    // it just asks the model what a given audience earns and narrows in.
-    function solveDau(target, pick){
+    // Each single-stream row treats its stream as the only money on the page.
+    //   AdSense only  — nothing is sold direct, so AdSense fills EVERY slot at
+    //                   its RPM. That is what backfill means.
+    //   Ad space only — you sell the direct_fill share of the inventory at the
+    //                   direct CPM and the rest earns nothing (no AdSense). The
+    //                   fill assumption stays: "sell 100% of the inventory" is
+    //                   not a plan, it is a wish.
+    function adsenseOnly(dau){
+      var mau = dau / (K.stickiness / 100);
+      var impr = mau * pvPerVisitor * K.ad_slots_per_page;
+      return { dau: dau, mau: mau, adv: 0, ads: (impr / 1000) * K.adsense_rpm };
+    }
+    function directOnly(dau){
+      var mau = dau / (K.stickiness / 100);
+      var impr = mau * pvPerVisitor * K.ad_slots_per_page;
+      return { dau: dau, mau: mau, adv: (impr / 1000) * (K.direct_fill / 100) * K.direct_cpm, ads: 0 };
+    }
+    // SOLVE BY SEARCH, not by division. Both streams here happen to be linear
+    // in reach, but the bisection makes no assumption about the shape of the
+    // curve, and it survived the flat and capped columns the table used to
+    // carry. Keep it.
+    function solveDau(target, model, pick){
       var lo = 0, hi = 1000;
       // Grow the bracket until the target is inside it, or give up: with a
       // capped column the target may simply be unreachable at any audience.
-      for (var g = 0; g < 40 && pick(row(hi)) < target; g++) hi *= 2;
-      if (pick(row(hi)) < target) return null;          // cannot get there
+      for (var g = 0; g < 40 && pick(model(hi)) < target; g++) hi *= 2;
+      if (pick(model(hi)) < target) return null;          // cannot get there
       for (var i = 0; i < 60; i++) {
         var mid = (lo + hi) / 2;
-        if (pick(row(mid)) < target) lo = mid; else hi = mid;
+        if (pick(model(mid)) < target) lo = mid; else hi = mid;
       }
-      return row(hi);
+      return model(hi);
     }
-    var targetRow = solveDau(GOAL_REVENUE_TARGET, function(r){ return r.total; });
-    // The same target on advertising alone — the two streams paid per eyeball.
-    var adOnlyBase = solveDau(GOAL_REVENUE_TARGET, function(r){ return r.adv + r.ads; });
-    var adOnlyRow = adOnlyBase
-      ? { dau: adOnlyBase.dau, mau: adOnlyBase.mau, adv: adOnlyBase.adv, ads: adOnlyBase.ads,
-          total: adOnlyBase.adv + adOnlyBase.ads }
-      : null;
+    var adsenseRow = solveDau(GOAL_REVENUE_TARGET, adsenseOnly, function(r){ return r.ads; });
+    var directRow  = solveDau(GOAL_REVENUE_TARGET, directOnly,  function(r){ return r.adv; });
 
     function usd(v){ return '$' + Math.round(v).toLocaleString('en-US'); }
     el('goals-table').innerHTML =
@@ -2739,30 +2743,22 @@
         '</td><td>' + usd(nowRow.plus) + '</td><td>' + usd(nowRow.rep) +
         '</td><td>' + usd(nowRow.ref) + '</td><td>' + usd(nowRow.api) + '</td><td>' + usd(nowRow.crawl) +
         '</td><td><b>' + usd(nowRow.total) + '</b></td></tr>' : '') +
-      rows.map(function(r){
-        return '<tr><td><b>' + comma(r.dau) + '</b>' +
-          (r.dau === 300 ? ' <span class="goals-tag">your goal</span>' : '') + '</td>' +
-          '<td>' + comma(r.mau) + '</td><td>' + usd(r.adv) + '</td><td>' + usd(r.ads) +
-          '</td><td>' + usd(r.plus) + '</td><td>' + usd(r.rep) +
-          '</td><td>' + usd(r.ref) + '</td><td>' + usd(r.api) + '</td><td>' + usd(r.crawl) +
-          '</td><td><b>' + usd(r.total) + '</b></td></tr>';
-      }).join('') +
-      (targetRow
-        ? '<tr class="goals-target"><td><b>' + comma(targetRow.dau) + '</b> ' +
-          '<span class="goals-tag">for $' + comma(GOAL_REVENUE_TARGET) + '/mo</span></td>' +
-          '<td>' + comma(targetRow.mau) + '</td><td>' + usd(targetRow.adv) + '</td><td>' +
-          usd(targetRow.ads) + '</td><td>' + usd(targetRow.plus) + '</td><td>' +
-          usd(targetRow.rep) + '</td><td>' + usd(targetRow.ref) + '</td><td>' +
-          usd(targetRow.api) + '</td><td>' + usd(targetRow.crawl) +
-          '</td><td><b>' + usd(targetRow.total) + '</b></td></tr>'
-        : '') +
-      (adOnlyRow
-        ? '<tr class="goals-target goals-adonly"><td><b>' + comma(adOnlyRow.dau) + '</b> ' +
-          '<span class="goals-tag">ads only, for $' + comma(GOAL_REVENUE_TARGET) + '/mo</span></td>' +
-          '<td>' + comma(adOnlyRow.mau) + '</td><td>' + usd(adOnlyRow.adv) + '</td><td>' +
-          usd(adOnlyRow.ads) + '</td><td>' + usd(0) + '</td><td>' + usd(0) + '</td><td>' +
+      (adsenseRow
+        ? '<tr class="goals-target"><td><b>' + comma(adsenseRow.dau) + '</b> ' +
+          '<span class="goals-tag">AdSense only, for $' + comma(GOAL_REVENUE_TARGET) + '/mo</span></td>' +
+          '<td>' + comma(adsenseRow.mau) + '</td><td>' + usd(0) + '</td><td>' +
+          usd(adsenseRow.ads) + '</td><td>' + usd(0) + '</td><td>' + usd(0) + '</td><td>' +
           usd(0) + '</td><td>' + usd(0) + '</td><td>' + usd(0) + '</td><td><b>' +
-          usd(adOnlyRow.total) + '</b></td></tr>'
+          usd(adsenseRow.ads) + '</b></td></tr>'
+        : '') +
+      (directRow
+        ? '<tr class="goals-target goals-adonly"><td><b>' + comma(directRow.dau) + '</b> ' +
+          '<span class="goals-tag">ad space you sell, for $' + comma(GOAL_REVENUE_TARGET) +
+          '/mo (' + K.direct_fill + '% of inventory sold)</span></td>' +
+          '<td>' + comma(directRow.mau) + '</td><td>' + usd(directRow.adv) + '</td><td>' +
+          usd(0) + '</td><td>' + usd(0) + '</td><td>' + usd(0) + '</td><td>' +
+          usd(0) + '</td><td>' + usd(0) + '</td><td>' + usd(0) + '</td><td><b>' +
+          usd(directRow.adv) + '</b></td></tr>'
         : '') +
       '</tbody></table></div>';
 

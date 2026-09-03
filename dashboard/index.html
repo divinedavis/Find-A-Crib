@@ -786,18 +786,24 @@
   var RETENTION_BENCHMARK = { d1: 25.5, d7: 12.0, d30: 6.0, label: 'all app categories',
                               tolerance: 0.25, min_cohort: 100 };
 
-  // DAU/MAU. ~20% is the widely repeated "good consumer app" line, ~50%
-  // exceptional, 50–80% for messaging:
+  // DAU/MAU for a LISTINGS PORTAL, derived from Zillow's own filings rather
+  // than the "20% is a good consumer app" line that blogs repeat. Nobody
+  // publishes DAU/MAU for Zillow or StreetEasy, but Zillow reports both halves
+  // of the arithmetic every quarter:
   //
-  //   https://vmobify.com/blog/dau-mau-stickiness-benchmarks
+  //   Q2 2026: 239M average monthly unique users, 2.5B visits in the quarter
+  //   https://zillowgroup.mediaroom.com/2026-08-05-Zillow-Group-Reports-Second-Quarter-2026-Financial-Results
+  //   Q4 2025: 221M uniques, 2.1B visits — same shape
+  //   https://expandedramblings.com/index.php/zillow-statistics/
   //
-  // Weakest benchmark on this page: a rule of thumb repeated between blogs,
-  // not a measured distribution, with no n and no methodology anywhere. It is
-  // stated as a reference line and deliberately given no "above/below average"
-  // verdict, because a number nobody measured cannot support one. It is also
-  // the wrong shape for a housing search, which is periodic by nature — nobody
-  // looks for an apartment daily for a month.
-  var STICKINESS_REFERENCE = { good: 20, exceptional: 50 };
+  // 2.5B / 3 months / 239M = ~3.5 visits per user per month. If every visit
+  // fell on a different day that is 3.5 / 30 = 11.6% DAU/MAU — the CEILING,
+  // since visits cluster on the same days in practice; the real figure sits
+  // somewhere in the high single digits. So ~10% is not "half of good", it is
+  // Zillow-level for this category, and the 20% SaaS line is the wrong shape
+  // for a search that runs in bursts and then stops for a year or two.
+  var STICKINESS_REFERENCE = { zillow_ceiling: 11.6, visits_per_user: 3.5,
+                               label: 'Zillow, Q2 2026' };
 
   // Advertiser-tile click rate. The comparison class is display advertising,
   // and real estate is the best-performing industry in it:
@@ -838,25 +844,41 @@
 
   // MY targets, not anyone's benchmark. Kept separate from the *_BENCHMARK
   // constants above on purpose: those are sourced outside numbers a reading
-  // gets judged against, these are the numbers I decided to aim at. The three
-  // are consistent by construction — 300 of 3,000 IS 10% — so hitting the two
-  // counts lands the ratio exactly on its goal, and missing the ratio while
-  // hitting the counts is arithmetically impossible. 10% is deliberately below
-  // the 20% "good consumer app" line because a housing search is periodic:
-  // nobody hunts for an apartment every day for a month.
-  // WAU is DERIVED, not chosen: the geometric mean of the two counts I picked,
-  // sqrt(300 * 3000) = 949, rounded to 950. That is the only interpolation that
-  // assumes nothing extra — it makes DAU/WAU and WAU/MAU the same step (31.6%
-  // and 31.7%), so the funnel narrows evenly. The arithmetic midpoint (1,650)
-  // would imply 55% of monthlies show up weekly, which contradicts the 10%
-  // stickiness goal sitting right next to it. Sanity check on the scale: 950 is
-  // 5.8x today's WAU, between what DAU (5.3x) and MAU (6.9x) already demand.
-  // Every goal this project has, in one place. The first four are audience;
+  // gets judged against, these are the numbers I decided to aim at.
+  //
+  // Re-cut 2026-09-03 around how a listings portal is actually used. Three
+  // things changed, and the counts follow from the ratios, not the reverse:
+  //
+  //  - DAU/MAU 10% stays, but it is now the CEILING, not the floor: it is
+  //    Zillow's own number (STICKINESS_REFERENCE, ~11.6% at most). Reaching it
+  //    means "as sticky as Zillow", which is as good as this category gets.
+  //  - WAU/MAU 45% is the ratio that matters at this size. A housing search is
+  //    weekly, not daily: someone hunting comes back several times a week for
+  //    a few weeks, then stops. 40–50% is the band; 45% is the midpoint. At 21
+  //    DAU a handful of people swing the daily ratio by whole points, while
+  //    292 of 671 (43.5%) is a stable reading — and already near the goal.
+  //  - Savers returning within 30 days, 50%. Zillow's ~3.5 visits a month are
+  //    driven by saved-search alerts, so the return rate that matters is for
+  //    people who SAVED something, not for everyone. 50% means "more likely
+  //    than not to come back" for someone who signalled intent — a modest bar
+  //    with no outside source, so it is stated as mine. Measured by
+  //    saver_return in dashboard_metrics; cohort is 5 today, so the meter
+  //    will move in big steps until the cohort grows.
+  //
+  // The counts: MAU 3,000 stays. DAU = 10% of it = 300. WAU = 45% of it =
+  // 1,350 (was 950, the geometric mean of the other two — that was consistent
+  // with a 31.7% weekly ratio that nothing here aims at any more). So hitting
+  // the three counts lands both ratios exactly on their goals.
+  //
+  // Every goal this project has, in one place. The first six are audience;
   // the last three are the growth engine's (ledger state: 10k sign-ups,
   // $10k/mo revenue, 90% share of the tracked query universe). Mine, not a
   // benchmark — a benchmark says what is normal, a goal says what I want.
-  var AUDIENCE_GOALS = { dau: 300, wau: 950, mau: 3000, stickiness: 10,
+  var AUDIENCE_GOALS = { dau: 300, wau: 1350, mau: 3000,
+                         stickiness: 10, wau_mau: 45, saver_return: 50,
                          signups: 10000, mrr: 10000, share: 90 };
+  // Below this many savers the return rate is a coin toss, not a reading.
+  var SAVER_RETURN_MIN_COHORT = 20;
   // Every goal tile ends with the same verdict in the same place, in the same
   // two words. A tile that just says "19% of the way" makes you do the compare
   // yourself, and a tile that only badges the wins reads as if the others have
@@ -1875,6 +1897,7 @@
     var R=d.retention||{}, E=d.engagement||{},
         S=d.subscriptions||{}, T=d.totals||{};
     var d30=(R.d30||{}), d7=(R.d7||{}), d1=(R.d1||{});
+    var SV = d.saver_return || {};
     function rate(x){ return x==null ? '—' : (100*Number(x)).toFixed(1)+'%'; }
     // Two different numbers get called "returning", and showing only the
     // kinder one is how a dashboard flatters its owner. `within_rate` is
@@ -1936,13 +1959,32 @@
                 : pctGoalLine('Goal', d30.within_rate, RETURN_BENCHMARK.pct))+
              ' <span class="a-bench-note">(the goal IS the '+RETURN_BENCHMARK.label+
              ' average — 99B sessions, the best-sourced number on this page)</span>'},
+      // The weekly ratio leads: it is the one a housing search is shaped
+      // around (see AUDIENCE_GOALS) and the one that is stable at this size.
+      {val:rate(E.wau_mau),lbl:'Weekly stickiness · WAU/MAU',
+       sub:comma(E.wau)+' weekly of '+comma(E.mau)+' monthly',
+       bench:pctGoalLine('My goal', E.wau_mau, AUDIENCE_GOALS.wau_mau)+
+             ' <span class="a-bench-note">(40–50% is the band for a search people run weekly for a few weeks; the daily ratio below is what Zillow gets)</span>'},
+      // Savers who came back inside 30 days — the return rate a listings
+      // portal actually optimises for, because saved-search alerts are what
+      // bring Zillow's users back ~3.5 times a month. Fixed 30-day window,
+      // cohort = accounts whose first save is at least 30 days old.
+      {val:rate(SV.rate),lbl:'Savers back within 30d',
+       sub:comma(SV.returned)+' of '+comma(SV.cohort)+' who saved a building or search · '+
+           comma(SV.savers)+' savers ever',
+       bench:(n(SV.cohort) < SAVER_RETURN_MIN_COHORT
+                ? 'My goal <b>'+AUDIENCE_GOALS.saver_return+'%</b> · cohort of '+comma(SV.cohort)+
+                  ' too small to judge (need '+SAVER_RETURN_MIN_COHORT+')'
+                : pctGoalLine('My goal', SV.rate, AUDIENCE_GOALS.saver_return))+
+             ' <span class="a-bench-note">(no outside benchmark: the bar is "more likely than not to come back after signalling intent")</span>'},
       {val:rate(E.stickiness),lbl:'Stickiness · DAU/MAU',
        sub:comma(E.dau)+' daily of '+comma(E.mau)+' monthly',
-       // Reference line, no verdict: see STICKINESS_REFERENCE. My own goal sits
-       // below it and is stated as mine, so the two are never confused.
+       // The goal IS the category ceiling: see STICKINESS_REFERENCE. Derived
+       // from Zillow's reported uniques and visits, not a blog rule of thumb.
        bench:stickinessGoalLine(E.stickiness)+
-             ' <span class="a-bench-note">('+STICKINESS_REFERENCE.good+'% is the usual "good consumer app" line, '+
-             STICKINESS_REFERENCE.exceptional+'% exceptional · rule of thumb, not a measured average)</span>'},
+             ' <span class="a-bench-note">(10% is Zillow-level: '+STICKINESS_REFERENCE.visits_per_user+
+             ' visits per user per month, '+STICKINESS_REFERENCE.label+', caps DAU/MAU at ~'+
+             STICKINESS_REFERENCE.zillow_ceiling+'% even if every visit were a separate day)</span>'},
       // DAU had no tile of its own — it existed only as the numerator in the
       // stickiness subtitle, which is the one place a number you have a goal
       // for should not live.
@@ -1957,8 +1999,7 @@
       {val:comma(E.wau),lbl:'Weekly active',
        sub:'unique visitors · last 7 days',
        bench:goalLine(E.wau, AUDIENCE_GOALS.wau, 'weekly')+
-             (n(E.mau) ? ' <span class="a-bench-note">('+rate(E.wau_mau)+
-                         ' of the monthly total came back this week)</span>' : '')},
+             ' <span class="a-bench-note">(45% of the monthly goal — the ratio has its own tile above)</span>'},
       {val:comma(E.mau),lbl:'Monthly active',
        sub:'unique visitors · last 30 days',
        bench:goalLine(E.mau, AUDIENCE_GOALS.mau, 'monthly')},
@@ -1984,7 +2025,17 @@
       goalMeter('Daily active', E.dau, AUDIENCE_GOALS.dau)+
       goalMeter('Weekly active', E.wau, AUDIENCE_GOALS.wau)+
       goalMeter('Monthly active', E.mau, AUDIENCE_GOALS.mau)+
-      meter('Stickiness · DAU/MAU', rate(E.stickiness)+' of '+AUDIENCE_GOALS.stickiness+'%',
+      meter('Weekly stickiness · WAU/MAU', rate(E.wau_mau)+' of '+AUDIENCE_GOALS.wau_mau+'%',
+            pct(100*n(E.wau_mau), AUDIENCE_GOALS.wau_mau),
+            100*n(E.wau_mau) >= AUDIENCE_GOALS.wau_mau ? 'good' : '')+
+      meter('Savers back within 30 days',
+            rate(SV.rate)+' of '+AUDIENCE_GOALS.saver_return+'%'+
+            ' <span class="a-bench-note">('+comma(SV.returned)+' of '+comma(SV.cohort)+
+            (n(SV.cohort) < SAVER_RETURN_MIN_COHORT ? ' · cohort too small to judge' : '')+')</span>',
+            pct(100*n(SV.rate), AUDIENCE_GOALS.saver_return),
+            n(SV.cohort) >= SAVER_RETURN_MIN_COHORT && 100*n(SV.rate) >= AUDIENCE_GOALS.saver_return ? 'good' : '')+
+      meter('Stickiness · DAU/MAU <span class="a-bench-note">(Zillow-level ceiling)</span>',
+            rate(E.stickiness)+' of '+AUDIENCE_GOALS.stickiness+'%',
             pct(100*n(E.stickiness), AUDIENCE_GOALS.stickiness),
             100*n(E.stickiness) >= AUDIENCE_GOALS.stickiness ? 'good' : '')+
       goalMeter('Sign-ups · accounts, all time', T.accounts, AUDIENCE_GOALS.signups)+

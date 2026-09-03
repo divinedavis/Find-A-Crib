@@ -1024,6 +1024,9 @@
       // three sites have no recorded start, so theirs is left unset rather
       // than guessed — Find A Crib's date used to be applied to all four.
       start:'2026-06-24',
+      // The only feed whose payload changes with the range picker, so the
+      // only one worth prefetching the other windows for.
+      ranged:true,
       blocks:['fac-a','fac-b','claude-a'],
       nav:[['top','▦','Dashboard'],['sec-ads','◉','Google Ads'],
            ['sec-tiles','◫','Advertiser metrics'],['sec-goals','◎','Goals & revenue'],
@@ -1244,10 +1247,15 @@
       rangeKey = b.dataset.range;
       try{ localStorage.setItem('fac_dash_range', rangeKey); }catch(err){}
       paintRangeSwitch();
-      // Disable the whole group while the new window loads, the same way the
-      // site switcher does — two ranges in flight would race to paint.
+      // Lock the group only while there is nothing to show. With a cached
+      // payload (prefetched or previously viewed) the numbers land on the
+      // click and the refetch, if any, runs behind them — a disabled button
+      // under numbers that have already changed reads as a stuck page. Two
+      // ranges in flight cannot race to paint: _load paints only the range
+      // that is still selected when its response lands.
       var btns = box.querySelectorAll('button');
-      [].forEach.call(btns, function(x){ x.disabled = true; });
+      var instant = !!cache[cacheKey(siteKey)];
+      if(!instant) [].forEach.call(btns, function(x){ x.disabled = true; });
       load().then(function(){
         [].forEach.call(btns, function(x){ x.disabled = false; });
       }, function(){
@@ -1314,6 +1322,15 @@
     if(!force && cache[ck] && (Date.now()-(cacheAt[ck]||0)) < freshFor){
       if(k===siteKey) paint(cache[ck]); return 'ok';
     }
+    // STALE-WHILE-REVALIDATE. A payload older than five minutes is still the
+    // right shape for this window, so paint it NOW and let the refetch below
+    // replace it when it lands. Before this, flipping back to a range you had
+    // looked at six minutes ago blanked the picker for the full 1–2.4 s the
+    // feed takes (measured 2026-09-03: all-time 1.9 s mean, today 0.9 s), the
+    // same wait as the first click — which is what made flipping feel slow.
+    // Only a paint of the range that is actually selected; a prefetch for
+    // another window must never draw over the one on screen.
+    if(!force && cache[ck] && k===siteKey && ck===cacheKey(siteKey)) paint(cache[ck]);
     // When a refetch fails, stale numbers with their honest "Updated" stamp
     // beat an error card or a blank pane — the data on screen was real once.
     function staleOk(){
@@ -1343,7 +1360,52 @@
     cache[ck]=data;
     cacheAt[ck]=Date.now();
     if(k===siteKey) paint(data);
+    if(k===siteKey && ck===cacheKey(siteKey)) prefetchRanges(k);
     return 'ok';
+  }
+
+  // Warm the OTHER windows once the visible one has painted, so the first
+  // flip to any of them is instant instead of a 1–2 s fetch. Only one button
+  // per distinct window is fetched (6 mo, 3 mo and all time are the same
+  // payload until 25 December — see paintRangeMarks), one at a time so the
+  // feed is never asked for three ranges at once, and never for a window
+  // that already has a fresh payload. Costs at most 2–4 extra calls per page
+  // load against the backend's 120/hour, and nothing while a prefetch is
+  // already running. Only for sites whose feed takes a range.
+  var prefetching = false;
+  function prefetchRanges(k){
+    if(prefetching || !SITES[k] || !SITES[k].ranged) return;
+    var freshFor = 5*60*1000, seen = {}, todo = [];
+    RANGES.forEach(function(r){
+      var st = String(rangeStart(r));
+      if(seen[st]) return;
+      seen[st] = true;
+      if(r === rangeKey) return;
+      var key = k + ':' + r;
+      if(cache[key] && (Date.now()-(cacheAt[key]||0)) < freshFor) return;
+      todo.push(r);
+    });
+    if(!todo.length) return;
+    prefetching = true;
+    (async function(){
+      try{
+        for(var i=0; i<todo.length; i++){
+          if(k!==siteKey || !session || document.hidden) break;
+          var r = todo[i], key = k + ':' + r;
+          if(inflight[key]) continue;
+          try{
+            var res = await feedFetch(SITES[k].endpoint + '?range=' + encodeURIComponent(r),
+                                      await token());
+            if(!res.ok) break;               // a bad token or a limit: stop, don't retry
+            var data = await res.json();
+            cache[key]=data; cacheAt[key]=Date.now();
+            // The owner may have flipped to this very window while it was in
+            // flight; if so it is the one on screen and wants these numbers.
+            if(k===siteKey && r===rangeKey) paint(data);
+          }catch(e){ break; }
+        }
+      } finally { prefetching = false; }
+    })();
   }
 
   // The Claude section sits on the Find A Crib board but comes from its own

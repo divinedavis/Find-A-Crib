@@ -830,6 +830,42 @@ _AUTH_CACHE_LOCK = threading.Lock()
 _AUTH_CACHE_TTL = 60
 
 
+# A short memo for the helpers that /dashboard-metrics bolts onto the RPC.
+# Profiled 2026-09-03 on the droplet, all-time window: the RPC itself is
+# 0.56 s, _fac_adtiles 1.02 s (20 concurrent REST pages of ad-tile events,
+# aggregated here), _fac_channels 0.15 s, _fac_signage 0.11 s,
+# _fac_consult_clicks 0.09 s — so the endpoint's 1.9 s was two-thirds
+# helpers. Each is keyed on its `since` boundary, which is a fixed timestamp
+# for a given range on a given day, so the same window inside the TTL is a
+# dict lookup. Per gunicorn worker, so the first hit on each worker still
+# pays; that is the cost of not adding a shared store for a one-reader page.
+# 120 s is well under the page's own 5-minute refresh, so nothing on screen
+# can be older than it already could be.
+_MEMO = {}
+_MEMO_LOCK = threading.Lock()
+
+
+def _memo(ttl):
+    def wrap(fn):
+        def inner(*args):
+            key = (fn.__name__,) + tuple(str(a) for a in args)
+            now = time.time()
+            with _MEMO_LOCK:
+                hit = _MEMO.get(key)
+                if hit and hit[0] > now:
+                    return hit[1]
+            val = fn(*args)
+            with _MEMO_LOCK:
+                if len(_MEMO) > 64:
+                    _MEMO.clear()
+                _MEMO[key] = (now + ttl, val)
+            return val
+        inner.__name__ = fn.__name__
+        inner.__doc__ = fn.__doc__
+        return inner
+    return wrap
+
+
 def _dashboard_auth():
     """Classify the caller by their Supabase access token.
 
@@ -969,6 +1005,7 @@ FAC_CHANNELS = [("tiktok", "TikTok"), ("instagram", "Instagram"),
                 ("qr-counter", "Counter QR")]
 
 
+@_memo(120)
 def _fac_channels(since):
     """Visitors who arrived through a tagged channel link.
 
@@ -1056,6 +1093,7 @@ AD_CTR_MIN = 100
 AD_WINDOW_MIN_HOURS = 24
 
 
+@_memo(120)
 def _fac_adtiles(since):
     """Advertiser-tile inventory: what the re-rental and lottery tiles earned.
 
@@ -1407,6 +1445,7 @@ def _ai_cache_prewarm():
 _ai_cache_prewarm()
 
 
+@_memo(120)
 def _fac_consult_clicks():
     """All-time outbound clicks to rent-stabilization consultancies."""
     # Counted in Postgres, not in Python. PostgREST caps a response at 1,000
@@ -1748,6 +1787,7 @@ QR_ENGAGED = ("search", "building_view", "save", "outbound",
               "report_checkout_start", "violations_open", "signin")
 
 
+@_memo(120)
 def _fac_signage(since):
     """The counter-plate card: scans, sessions and engagement per question.
 

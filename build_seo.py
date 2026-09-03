@@ -241,6 +241,57 @@ def _city_stats(items):
             "mr": sorted(x["mr"] for x in items if x.get("mr"))}
 
 
+def _city_centroid(items):
+    """Mid-point of a place's mapped records, or None if none carry a position.
+
+    Median rather than mean on purpose: one mis-geocoded record dragging a
+    neighborhood's centre across the city would silently corrupt every distance
+    computed from it, and the median simply ignores it. This is the centre of
+    what THIS dataset maps in a place, not the official centroid of the place's
+    boundary — nothing here reads a boundary file — which is why the pages that
+    use it say "mapped" and give the figure in whole tenths of a mile.
+    """
+    lats = [x["lat"] for x in items if isinstance(x.get("lat"), (int, float))]
+    lngs = [x["lng"] for x in items if isinstance(x.get("lng"), (int, float))]
+    if not lats or not lngs:
+        return None
+    return (_med(lats), _med(lngs))
+
+
+def _miles(a, b):
+    """Great-circle miles between two (lat, lng) pairs."""
+    r = 3958.8
+    p1, p2 = math.radians(a[0]), math.radians(b[0])
+    dp, dl = p2 - p1, math.radians(b[1] - a[1])
+    h = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    return 2 * r * math.asin(min(1.0, math.sqrt(h)))
+
+
+def _city_neighbors(place, centroids, counts, limit=12):
+    """The `limit` places closest to `place`, nearest first, as (place, n, mi).
+
+    Until 2026-09-03 this tier's sibling block was the same twelve
+    highest-count places on every page in the city, under the heading "Nearby
+    in <city>". Two things were wrong with that. It was not true — Bellevue is
+    not near Mount Vernon Square, it is merely large — and this site's
+    credibility is the product, so a false claim repeated on 252 pages is a
+    defect whatever it does for traffic. And because the twelve never varied,
+    every other place in the tier received no inbound link from a sibling at
+    all: 91 of DC's 103 neighborhood hubs, 100 of LA's 112 ZIP hubs and 25 of
+    SF's 37 were linked only from the browse hub.
+
+    Ordering by distance fixes both at once. Returns [] when fewer than two
+    places carry a position, so a dataset without coordinates falls back to the
+    count ordering rather than shipping an empty block.
+    """
+    here = centroids.get(place)
+    if not here or len(centroids) < 2:
+        return []
+    near = sorted(((_miles(here, c), p) for p, c in centroids.items() if p != place),
+                  key=lambda t: (t[0], t[1]))
+    return [(p, counts[p], mi) for mi, p in near[:limit]]
+
+
 def _city_answer(key, place, st):
     """The extractable answer for a city hub. Wording differs per city because
     the underlying legal test and the data's authority differ per city, and
@@ -553,6 +604,7 @@ def city_hub_docs(key, guide_ok=True):
     city, footer = cfg["name"], CITY_FOOTER[key]
     browse_url = f"/{key}/buildings/"
     counts = {k: len(v) for k, v in big.items()}
+    centroids = {k: c for k, c in ((k, _city_centroid(v)) for k, v in big.items()) if c}
     others = [(o, CITY_HUBS[o]) for o in CITY_HUBS if o != key]
     guide_link = (f"<p><a href='/guide/{cfg['guide']}/'>Read: is my apartment rent controlled "
                   f"in {esc(city)}? →</a></p>") if guide_ok else ""
@@ -581,10 +633,26 @@ def city_hub_docs(key, guide_ok=True):
                        + "</div>")
 
         extra = _decade_table(items) if key == "la" else _band_table(items, cfg["things"])
-        sibs = "".join(
-            f"<a href=\"/{key}/{cfg['path']}/"
-            f"{p if cfg['path'] == 'zip' else slugify(p)}/\">{esc(p)} ({c:,})</a>"
-            for p, c in sorted(counts.items(), key=lambda kv: -kv[1])[:12] if p != place)
+        # Ordered by distance from this place, not by size — see
+        # _city_neighbors(). Falls back to the old count ordering only when the
+        # dataset carries no usable coordinates, and the heading follows the
+        # ordering so the page never claims a proximity it did not compute.
+        near = _city_neighbors(place, centroids, counts)
+        if near:
+            sib_h2 = f"Nearest {_place_word(cfg, plural=True)} in {esc(city)}"
+            sib_note = (f"Ordered by distance from the mid-point of the mapped "
+                        f"{cfg['things']} in each, which is not an official boundary.")
+            sibs = "".join(
+                f"<a href=\"/{key}/{cfg['path']}/"
+                f"{p if cfg['path'] == 'zip' else slugify(p)}/\">"
+                f"{esc(p)} — {mi:.1f} mi ({c:,})</a>"
+                for p, c, mi in near)
+        else:
+            sib_h2, sib_note = f"Elsewhere in {esc(city)}", ""
+            sibs = "".join(
+                f"<a href=\"/{key}/{cfg['path']}/"
+                f"{p if cfg['path'] == 'zip' else slugify(p)}/\">{esc(p)} ({c:,})</a>"
+                for p, c in sorted(counts.items(), key=lambda kv: -kv[1])[:12] if p != place)
         body = (f"<div class='crumbs'><a href='/'>Home</a> › "
                 f"<a href='/{key}/'>{esc(city)}</a> › "
                 f"<a href='{browse_url}'>All {esc(cfg['things'])}</a></div>"
@@ -594,7 +662,9 @@ def city_hub_docs(key, guide_ok=True):
                 + _city_stat_table(key, st) + extra
                 + guide_link
                 + listing
-                + (f"<h2>Nearby in {esc(city)}</h2><div class='cols'>{sibs}</div>"
+                + (f"<h2>{sib_h2}</h2>"
+                   + (f"<p class='disclaimer'>{esc(sib_note)}</p>" if sib_note else "")
+                   + f"<div class='cols'>{sibs}</div>"
                    f"<p><a href='{browse_url}'>All {esc(cfg['things'])} in {esc(city)} →</a></p>"
                    if sibs else ""))
         faq = _city_faq(key, place, st)

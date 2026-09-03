@@ -97,6 +97,12 @@
   .chip input:checked + span { background: var(--blue-solid); border-color: var(--blue-solid); color: #fff; }
   .chip input:focus-visible + span { outline: 2px solid var(--blue); outline-offset: 2px; }
   .hint { font-size: 12.5px; color: var(--ink-2); margin: 8px 0 0; line-height: 1.5; }
+  .nums { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .num span { display: block; font-size: 12.5px; color: var(--ink-2); font-weight: 600; margin: 0 0 5px; }
+  .num input { width: 100%; padding: 11px 12px; font-size: 16px; border: 1px solid var(--line-strong);
+    border-radius: 10px; background: var(--surface); color: var(--ink); }
+  .num input:focus { outline: none; border-color: var(--blue); }
+  @media (max-width: 420px) { .nums { grid-template-columns: 1fr; } }
   .submit { display: block; width: 100%; margin-top: 20px; padding: 13px 16px; font-size: 16px; font-weight: 800;
     color: #fff; background: var(--blue-solid); border: none; border-radius: 10px; cursor: pointer; }
   .submit:hover { filter: brightness(1.07); }
@@ -161,6 +167,17 @@
       <p class="hint">A <b>lottery</b> is applied for by a deadline and drawn by log number. A <b>re-rental</b> is a vacated affordable unit the agent rents directly, often first-come, first-served — the ones worth hearing about within the hour.</p>
     </div>
 
+    <div class="group">
+      <label class="field">Only if it fits <span style="text-transform:none;letter-spacing:0;font-weight:600;opacity:.8">(optional)</span></label>
+      <div class="nums">
+        <label class="num"><span>Max rent, $/month</span>
+          <input id="max_rent" type="text" inputmode="numeric" placeholder="e.g. 2000" autocomplete="off" /></label>
+        <label class="num"><span>Household income, $/year</span>
+          <input id="income" type="text" inputmode="numeric" placeholder="e.g. 65000" autocomplete="off" /></label>
+      </div>
+      <p class="hint">Lotteries state a rent and an income band, so these filter them exactly: you only hear about ones with a unit at or under your cap whose income band includes you. Re-rental boards often print no figure — a re-rental with no rent listed still comes through rather than being dropped.</p>
+    </div>
+
     <button class="submit" id="submit" type="submit">Email me when something opens</button>
     <div class="err" id="err" hidden></div>
     <p class="fine">Only alerts — no digests, no newsletter. One-click unsubscribe in every email. Already signed up? Submit again to change your boroughs.</p>
@@ -216,6 +233,8 @@
   var q = new URLSearchParams(location.search);
   var pre = (q.get('boro') || '').split(',').filter(Boolean);
   document.querySelectorAll('#boros input').forEach(function (i) { if (pre.indexOf(i.value) >= 0) i.checked = true; });
+  if (/^\d+$/.test(q.get('rent') || '')) $('max_rent').value = q.get('rent');
+  if (/^\d+$/.test(q.get('income') || '')) $('income').value = q.get('income');
   var kind = q.get('kind');
   if (kind === 'lottery' || kind === 'rerental')
     document.querySelectorAll('#kinds input').forEach(function (i) { i.checked = i.value === kind; });
@@ -242,6 +261,8 @@
   var MSG = {
     invalid_email: 'That email address doesn’t look right.',
     no_borough: 'Pick at least one borough.',
+    bad_rent: 'Max rent should be a number of dollars per month, between 100 and 20,000.',
+    bad_income: 'Income should be a number of dollars per year, between 1,000 and 2,000,000.',
     rate_limited: 'Too many sign-ups from this connection. Try again in an hour.',
     signup_cap: 'We’ve hit today’s sign-up limit. Please try again tomorrow.',
     temporarily_unavailable: 'Can’t reach the server right now. Try again in a minute.'
@@ -256,16 +277,31 @@
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = MSG.invalid_email; err.hidden = false; $('email').focus(); return; }
     if (!boros.length) { err.textContent = MSG.no_borough; err.hidden = false; return; }
     if (!kinds.length) kinds = ['lottery', 'rerental'];
+    function num(id, lo, hi, msg) {
+      var raw = $(id).value.replace(/[$,\s]/g, '');
+      if (!raw) return null;
+      var v = Math.round(Number(raw));
+      if (!isFinite(v) || v < lo || v > hi) { err.textContent = msg; err.hidden = false; $(id).focus(); return NaN; }
+      return v;
+    }
+    var maxRent = num('max_rent', 100, 20000, MSG.bad_rent);
+    if (Number.isNaN(maxRent)) return;
+    var income = num('income', 1000, 2000000, MSG.bad_income);
+    if (Number.isNaN(income)) return;
     var btn = $('submit'); btn.disabled = true; btn.textContent = 'Saving…';
     fetch('/api/alerts/subscribe', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: email, boroughs: boros, kinds: kinds })
+      body: JSON.stringify({ email: email, boroughs: boros, kinds: kinds, max_rent: maxRent, income: income })
     }).then(function (r) { return r.json().then(function (j) { return { s: r.status, j: j }; }); })
       .then(function (x) {
         if (x.j && x.j.ok) {
           $('form').hidden = true;
           var what = kinds.length === 2 ? 'lottery, waitlist or re-rental' : (kinds[0] === 'lottery' ? 'lottery or waitlist' : 're-rental');
-          $('ok-text').textContent = 'We’ll email ' + email + ' the minute a new ' + what + ' opens in ' + phrase(x.j.boroughs || boros) + '.';
+          var fit = [];
+          if (x.j.max_rent) fit.push('rent up to $' + Number(x.j.max_rent).toLocaleString() + '/mo');
+          if (x.j.income) fit.push('an income band that includes $' + Number(x.j.income).toLocaleString() + '/yr');
+          $('ok-text').textContent = 'We’ll email ' + email + ' the minute a new ' + what + ' opens in ' + phrase(x.j.boroughs || boros)
+            + (fit.length ? ' with ' + fit.join(' and ') : '') + '.';
           $('ok').hidden = false;
           try { gtag('event', 'alert_signup', { boroughs: boros.join(','), kinds: kinds.join(',') }); } catch (e) {}
           return;

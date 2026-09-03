@@ -428,6 +428,35 @@ NEW_FEED = os.path.join(HERE, "rerental_new.json")
 NEW_FEED_DAYS = 45
 
 
+def featured_money():
+    """(agent, key) -> rent / income figures from the last featured pass.
+
+    The digest pass keeps only a key per listing; the money lives in
+    featured.json, which the once-a-day photo pass writes. It is a day stale
+    for an intraday sweep, so this only helps a listing that was already on
+    the board this morning — that is the best-effort the rent filter on the
+    alerts can offer for re-rentals, and it is stated as such on /alerts/.
+    """
+    out = {}
+    for base in (os.environ.get("GROWTH_DOCROOT") or "", HERE):
+        try:
+            feats = json.load(open(os.path.join(base, "featured.json"))).get("listings") or []
+            break
+        except (FileNotFoundError, ValueError, OSError):
+            feats = []
+    for f in feats:
+        k = key_of(f.get("address") or "")
+        if not k or not f.get("agent"):
+            continue
+        rec = {"boro": f.get("borough")}
+        if f.get("money_kind") == "rent" and f.get("money_low"):
+            rec["rent_low"] = f["money_low"]
+        if f.get("income_1p_max"):
+            rec["income_max"] = f["income_1p_max"]
+        out.setdefault((f["agent"], k), rec)
+    return out
+
+
 def record_new(deltas, results, today):
     """Append this sweep's new listings to rerental_new.json.
 
@@ -449,15 +478,18 @@ def record_new(deltas, results, today):
     items = [i for i in items if i.get("seen", "") >= cutoff]
     have = {(i.get("agent"), i.get("key")) for i in items}
     places = load_places()
+    money = featured_money()
     added = 0
     for name, d in deltas.items():
         for it in d.get("new") or []:
             if (name, it["key"]) in have:
                 continue
             pl = place_of(it["label"], places) or {}
+            fm = money.get((name, it["key"])) or {}
             items.append({"agent": name, "key": it["key"], "label": it["label"],
                           "url": it.get("url") or results[name]["url"],
-                          "boro": pl.get("boro"), "hood": pl.get("hood"),
+                          "boro": pl.get("boro") or fm.get("boro"), "hood": pl.get("hood"),
+                          "rent_low": fm.get("rent_low"), "income_max": fm.get("income_max"),
                           "seen": today, "seen_at": datetime.datetime.now(
                               datetime.timezone.utc).isoformat(timespec="seconds")})
             added += 1

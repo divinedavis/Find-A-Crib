@@ -492,9 +492,26 @@ def alerts_subscribe():
                     if isinstance(k, str) and k in ALERT_KINDS}) or list(ALERT_KINDS)
     if not boros:
         return jsonify(error="no_borough"), 400
+
+    # Optional filters. Blank = none. Anything unparseable is a 400, not a
+    # silent "no filter" — someone who typed a rent cap expects it to hold.
+    def _num(field, lo, hi, err):
+        raw = body.get(field)
+        if raw in (None, "", 0):
+            return None, None
+        try:
+            v = int(float(str(raw).replace(",", "").replace("$", "").strip()))
+        except (TypeError, ValueError):
+            return None, err
+        return (v, None) if lo <= v <= hi else (None, err)
+    max_rent, e1 = _num("max_rent", 100, 20000, "bad_rent")
+    income, e2 = _num("income", 1000, 2000000, "bad_income")
+    if e1 or e2:
+        return jsonify(error=e1 or e2), 400
     try:
         res = rpc("lottery_alerts_subscribe",
-                  {"p_email": email, "p_boroughs": boros, "p_kinds": kinds}) or {}
+                  {"p_email": email, "p_boroughs": boros, "p_kinds": kinds,
+                   "p_max_rent": max_rent, "p_income": income}) or {}
     except Exception:
         return jsonify(error="temporarily_unavailable"), 503
     if not res.get("ok"):
@@ -502,7 +519,8 @@ def alerts_subscribe():
         return jsonify(error=reason), (429 if reason == "signup_cap" else 400)
     # Deliberately no "already subscribed" signal in the reply: that would be
     # an oracle for whether an address is on the list.
-    return jsonify(ok=True, boroughs=res.get("boroughs"), kinds=res.get("kinds"))
+    return jsonify(ok=True, boroughs=res.get("boroughs"), kinds=res.get("kinds"),
+                   max_rent=res.get("max_rent"), income=res.get("income"))
 
 
 @app.route("/alerts/unsubscribe", methods=["GET", "POST"])

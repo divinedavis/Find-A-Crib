@@ -112,7 +112,9 @@ def hc_items(d):
                     "boro": boro_code(l.get("borough")),
                     "label": "Housing Connect lottery",
                     "text": l.get("name") or l.get("address") or "Housing Connect lottery",
-                    "sub": " · ".join(bits), "url": l.get("href")})
+                    "sub": " · ".join(bits), "url": l.get("href"),
+                    "rent_low": l.get("rent_low"),
+                    "income_min": l.get("income_min"), "income_max": l.get("income_max")})
     return out
 
 
@@ -137,7 +139,9 @@ def hcr_items(d):
                               else "waitlist" if "wait" in kind.lower()
                               else "HCR lottery"),
                     "text": l.get("name") or "HCR listing",
-                    "sub": " · ".join(bits), "url": l.get("url")})
+                    "sub": " · ".join(bits), "url": l.get("url"),
+                    "rent_low": None,
+                    "income_min": l.get("min_income"), "income_max": l.get("max_income")})
     return out
 
 
@@ -146,14 +150,17 @@ def rerental_items(d):
     for e in (d or {}).get("items") or []:
         if not e.get("key") or not e.get("agent"):
             continue
+        rent = money(e["rent_low"]) + "/mo" if e.get("rent_low") else None
         bits = [b for b in (
             " · ".join(x for x in (e.get("hood"), e.get("boro")) if x),
-            f"listed by {e['agent']}") if b]
+            rent, f"listed by {e['agent']}") if b]
         out.append({"id": f"rr:{e['agent']}|{e['key']}", "kind": "rerental",
                     "boro": boro_code(e.get("boro")), "label": "re-rental",
                     "text": e.get("label") or e["key"],
                     "sub": " · ".join(bits),
-                    "url": e.get("url") or f"{SITE}/marketing-agents/"})
+                    "url": e.get("url") or f"{SITE}/marketing-agents/",
+                    "rent_low": e.get("rent_low"),
+                    "income_min": None, "income_max": e.get("income_max")})
     return out
 
 
@@ -220,6 +227,15 @@ def boro_phrase(codes):
     return ", ".join(names[:-1]) + " and " + names[-1]
 
 
+def filter_words(sub):
+    bits = []
+    if sub.get("max_rent"):
+        bits.append(f"rent up to {money(sub['max_rent'])}/mo")
+    if sub.get("income"):
+        bits.append(f"household income {money(sub['income'])}/yr")
+    return (", " + ", ".join(bits)) if bits else ""
+
+
 def render_alert(items, sub, emailkit):
     lot = [i for i in items if i["kind"] == "lottery"]
     rr = [i for i in items if i["kind"] == "rerental"]
@@ -269,8 +285,8 @@ def render_alert(items, sub, emailkit):
         intro=f"You asked to hear the minute something opens in {where}.",
         blocks=blocks,
         cta=("See every open lottery and re-rental", f"{SITE}/?src=alert"),
-        footer_note=f"You are subscribed at {sub['email']} for {where}. "
-                    f"Change boroughs at {SITE}/alerts/.",
+        footer_note=f"You are subscribed at {sub['email']} for {where}{filter_words(sub)}. "
+                    f"Change boroughs or filters at {SITE}/alerts/.",
         unsub_url=page_unsub)
     return subject, html, text, post_unsub
 
@@ -278,13 +294,14 @@ def render_alert(items, sub, emailkit):
 def render_welcome(sub, emailkit):
     where = boro_phrase(sub["boroughs"])
     kinds = sub["kinds"]
-    what = " or ".join(w for w, k in (("housing lottery or waitlist", "lottery"),
-                                      ("re-rental", "rerental")) if k in kinds) \
-        or "housing lottery or re-rental"
+    what = ("housing lottery, waitlist or re-rental" if len(kinds) == 2
+            else "housing lottery or waitlist" if "lottery" in kinds else "re-rental")
     blocks = [
         {"type": "card", "heading": "What you'll get",
          "body": f"One email the minute a new {what} "
-                 f"opens in {where}. The feeds are checked every 10 minutes: NYC Housing "
+                 f"opens in {where}"
+                 + (" that fits your rent cap or income" if (sub.get("max_rent") or sub.get("income")) else "")
+                 + ". The feeds are checked every 10 minutes: NYC Housing "
                  "Connect, HCR's HousingSearch (lotteries and Mitchell-Lama waitlists) and the "
                  "re-rental boards of the HPD-approved marketing agents."},
         {"type": "card", "heading": "Why re-rentals matter",
@@ -299,7 +316,8 @@ def render_welcome(sub, emailkit):
         intro="Quiet until something opens. No digests, no weekly round-ups.",
         blocks=blocks,
         cta=("Open the map", f"{SITE}/?src=alert"),
-        footer_note=f"Subscribed at {sub['email']}. Change boroughs any time at {SITE}/alerts/.",
+        footer_note=f"Subscribed at {sub['email']} for {where}{filter_words(sub)}. "
+                    f"Change boroughs or filters any time at {SITE}/alerts/.",
         unsub_url=page_unsub)
     return f"Find A Crib alerts: {where}", html, text, post_unsub
 
@@ -310,8 +328,26 @@ def wants(sub, item):
     if item["boro"] is None:
         # Unplaced listing: only someone watching the whole city should hear
         # about it — a guess at a borough is worse than a skipped email.
-        return set(sub["boroughs"]) >= ALL_BOROS
-    return item["boro"] in sub["boroughs"]
+        if not set(sub["boroughs"]) >= ALL_BOROS:
+            return False
+    elif item["boro"] not in sub["boroughs"]:
+        return False
+    # Optional filters. A filter only bites on a figure the source actually
+    # printed: Housing Connect states rents and an income band for every
+    # lottery, HCR states incomes, the re-rental boards mostly state nothing.
+    # A listing with no figure still goes out — the alternative is silently
+    # dropping the first-come units for exactly the people who set a cap.
+    cap = sub.get("max_rent")
+    if cap and item.get("rent_low") and item["rent_low"] > cap:
+        return False
+    inc = sub.get("income")
+    if inc:
+        lo, hi = item.get("income_min"), item.get("income_max")
+        if lo and inc < lo:
+            return False
+        if hi and inc > hi:
+            return False
+    return True
 
 
 # ------------------------------------------------------------------ main

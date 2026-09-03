@@ -468,6 +468,13 @@
   .card.is-selected {
     border-color: var(--blue); box-shadow: 0 0 0 2px var(--blue-solid), var(--card-shadow);
   }
+  /* Hovering a pin on the map lights its tile green (2026-09-03). Green rather
+     than the blue of a clicked pin so "you are pointing at this" and "you
+     opened this" never read as the same state. Hover wins over selected while
+     the pointer is on the pin. */
+  .card.is-hover, .card.is-selected.is-hover {
+    border-color: var(--ok-ink); box-shadow: 0 0 0 2px var(--ok-ink), var(--card-shadow-hover);
+  }
   .card {
     position: relative;
     background: var(--surface); border: 1px solid var(--line); border-radius: 10px; cursor: pointer;
@@ -2250,6 +2257,11 @@
       // popup lifecycle — and deliberately NOT selectMarker(), because that
       // swaps the icon, and re-anchoring an icon mid-open can drop the popup.
       m.on('click', () => highlightCard(rec.bbl, true));
+      // Pointer on the pin -> its tile in the results pane lights up green,
+      // scrolled into view only if it is off-screen (sweeping the cursor across
+      // a dense block must not yank the list around).
+      m.on('mouseover', () => hoverCard(rec.bbl));
+      m.on('mouseout', () => hoverCard(null));
     }
     markerByBbl.set(rec.bbl, m);
   }
@@ -4895,6 +4907,22 @@
     }
   }
   function clearCardHighlight() { selectedBbl = null; paintCardHighlight(); }
+  // Hover mirror of the click highlight above. Same BBL-not-node rule: the
+  // grid re-renders on every map move.
+  let hoverBbl = null;
+  function hoverCard(bbl) {
+    hoverBbl = bbl || null;
+    const prev = grid.querySelector('.card.is-hover');
+    if (prev) prev.classList.remove('is-hover');
+    if (!hoverBbl) return;
+    const el = grid.querySelector('.card[data-bbl="' + CSS.escape(String(hoverBbl)) + '"]');
+    if (!el) return;
+    el.classList.add('is-hover');
+    const r = el.getBoundingClientRect(), host = grid.getBoundingClientRect();
+    if (r.top < host.top || r.bottom > host.bottom) {
+      el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }
 
   function clearSelected() {
     if (selectedMarker) {

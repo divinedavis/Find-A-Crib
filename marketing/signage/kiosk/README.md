@@ -14,6 +14,7 @@ quiet zone) -- never edit the PNGs.
 | a14 | 74-04 Roosevelt Ave @ 74th St, Elmhurst, Queens |
 | a15 | 2493 Valentine Ave @ E Fordham Rd, Bronx |
 | a16 | 201 E 60th St @ 3rd Ave, Manhattan |
+| a21 | MTA subway Liveboards (programmatic, via a DSP) — `subway-a21.png`; vanity path findacrib.com/rent 302s to /c/a21 |
 
 Chosen 2026-09-03 by the 10-criteria score (DOT counts, MTA ridership,
 stabilized-unit density, tract mover rate, entrances, weekend share).

@@ -2001,6 +2001,11 @@
     var actPct = actAll ? (100 * actOn / actAll) : null;
     var actRate = actPct == null ? '—' : actPct.toFixed(1) + '%';
 
+    var AL = d.alerts || {};
+    var BORO_SHORT = {M:'MN', Bk:'BK', Q:'QN', Bx:'BX', SI:'SI'};
+    var boroSplit = Object.keys(AL.by_borough || {}).sort(function(a,b){
+        return n(AL.by_borough[b]) - n(AL.by_borough[a]); })
+      .map(function(k){ return (BORO_SHORT[k]||k)+' '+comma(AL.by_borough[k]); }).join(' ');
     var tiles=[
       {val:actRate,lbl:'Activation · opened a listing',
        sub:comma(actOn)+' of '+comma(actAll)+' visitors reached it',
@@ -2065,6 +2070,21 @@
       {val:comma(E.mau),lbl:'Monthly active',
        sub:'unique visitors · last 30 days',
        bench:goalLine(E.mau, AUDIENCE_GOALS.mau, 'monthly')},
+      // Borough-alert sign-ups (/alerts/, shipped 2026-09-03): the first
+      // intent signal on the site that needs no account. Active is all-time;
+      // the sub line follows the range picker. No outside benchmark — the
+      // honest comparison is against accounts, which is what the bench line
+      // shows: an email list that outgrows the account list says the
+      // no-account path was the right one.
+      {val:comma(AL.active),lbl:'Alert sign-ups · lottery & re-rental emails',
+       sub:comma(AL.signups)+' in this range · '+comma(AL.unsubscribed)+' unsubscribed · '+
+           comma(AL.emails_sent)+' alerts sent'+
+           (boroSplit ? ' · '+boroSplit : ''),
+       bench:(n(AL.active) ? '<b>'+comma(AL.with_filter)+'</b> set a rent or income filter' : 'none yet')+
+             ' · <b>'+comma(T.accounts)+'</b> accounts for comparison'+
+             (n(AL.lottery_only)||n(AL.rerental_only)
+               ? ' <span class="a-bench-note">('+comma(AL.lottery_only)+' lotteries only, '+
+                 comma(AL.rerental_only)+' re-rentals only)</span>' : '')},
       {val:'$'+comma(S.mrr),lbl:'MRR',
        sub:comma(S.paying)+' paying · '+comma(S.comped)+' comped',
        bench:'<b>0%</b> free-to-paid · industry free tier converts <b>2–5%</b>'}

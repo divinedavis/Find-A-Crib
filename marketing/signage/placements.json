@@ -1,4 +1,41 @@
 {
   "_readme": "Which plate went to which counter, and when. Written by scripts/placement.py; deployed to the droplet where the dashboard reads it. A scan before a plate's placed date is testing, not a customer.",
-  "placements": []
+  "placements": [
+    {
+      "code": "a11",
+      "venue": "",
+      "store": "LinkNYC kiosk 248 Duffield St, Brooklyn",
+      "cross": "Fulton & Duffield",
+      "placed": "2026-09-08",
+      "removed": null,
+      "notes": "LinkLocal Business campaign 'Find A Crib – Rent Check – Sep 2026', 09/08–10/05/2026, BK-02-134976, 2 screens"
+    },
+    {
+      "code": "a11",
+      "venue": "",
+      "store": "LinkNYC kiosk 2493 Valentine Ave, Bronx",
+      "cross": "E Fordham Rd & Valentine",
+      "placed": "2026-09-08",
+      "removed": null,
+      "notes": "LinkLocal Business campaign 'Find A Crib – Rent Check – Sep 2026', 09/08–10/05/2026, BX-05-119638, 2 screens"
+    },
+    {
+      "code": "a11",
+      "venue": "",
+      "store": "LinkNYC kiosk 74 8th Ave, Manhattan",
+      "cross": "W 14th & 8th Ave",
+      "placed": "2026-09-08",
+      "removed": null,
+      "notes": "LinkLocal Business campaign 'Find A Crib – Rent Check – Sep 2026', 09/08–10/05/2026, MN-02-128511-R, 1 screen"
+    },
+    {
+      "code": "a11",
+      "venue": "",
+      "store": "LinkNYC kiosk 126 N 8th St, Brooklyn",
+      "cross": "Metropolitan & Conselyea",
+      "placed": "2026-09-08",
+      "removed": null,
+      "notes": "LinkLocal Business campaign 'Find A Crib – Rent Check – Sep 2026', 09/08–10/05/2026, BK-01-146014-R, 1 screen"
+    }
+  ]
 }

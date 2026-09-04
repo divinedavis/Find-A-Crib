@@ -366,6 +366,9 @@ def cmd_seo_status(args):
         rec["seo_corpus"] = {"written": age[0], "days_old": age[1]}
     if pipe:
         rec["seo_pipeline"] = pipe
+    techs = _reread_docroot_verifiers(args)
+    if techs is not None:
+        rec["techniques"] = techs
     if args.dry_run:
         log(f"  (dry run) would patch build: {json.dumps(rec, sort_keys=True)}")
         return rec
@@ -373,6 +376,82 @@ def cmd_seo_status(args):
     log(f"  corpus now {age[0] if age else 'UNREADABLE — left the build reading in place'} "
         f"({age[1] if age else '?'}d old); watchdog rc={rc}")
     return rec
+
+
+def _reread_docroot_verifiers(args):
+    """Re-run the pure docroot audits now the SEO pipeline has actually rebuilt.
+
+    The same lag cmd_seo_status corrects for seo_corpus and seo_pipeline applies
+    to every technique that reads the docroot, and it was left uncorrected for a
+    fortnight. `build --deploy` runs the audits, THEN the watchdog rewrites the
+    47,599 pages they audit, so each audit describes yesterday's corpus. See
+    techniques.DOCROOT_VERIFIERS for the membership rule and for the 2026-09-04
+    worked example — a reading that would have had a good change reverted.
+
+    Returns the full `techniques` map to patch back, or None to leave the
+    build's own map standing. None on every failure path on purpose: this runs
+    after the night's measurements are taken and before they are committed, and
+    a crash here must cost the corpus correction above nothing at all. Each
+    audit is caught separately for the same reason — one unreadable section
+    should not strand the other audit's fresh reading.
+
+    Stamps. _stamp_unchanged() compares each detail against the previous run's
+    and carries `same_since` forward, so a card can say how long a line has
+    stood still. Those stamps were computed against the pre-refresh reading, so
+    they are only correct while the re-read agrees with it:
+
+      * detail identical  — the rebuild did not move this audit. Keep the
+        record exactly as the build stamped it.
+      * detail differs    — the sentence changed today. Drop `unchanged` and
+        date `same_since` to today, which is what _stamp_unchanged would have
+        concluded had it been able to read the rebuilt corpus. From the second
+        run onwards the previous night's committed record is itself post-
+        refresh, so this comparison is like-for-like; the first run after this
+        ships compares post- against pre-refresh once, and may date a
+        `same_since` a day early.
+
+    `ok` is written explicitly on every record, including the failure path, for
+    the reason 2026-07-28 taught: an omitted `ok` gets announced to the owner as
+    "DID NOT RUN — unknown error" by a report that tests `ok is False`.
+    """
+    try:
+        techs = dict((ledger.read_last_run().get("build") or {}).get("techniques") or {})
+        if not techs:
+            return None
+        active = {t["slug"] for t in ledger.active()}
+        # dry_run=True is belt-and-braces, not a behaviour switch: every member
+        # of DOCROOT_VERIFIERS reads ctx.docroot and nothing else, so the flag
+        # changes none of their output. It is set so that adding a member that
+        # quietly writes cannot deploy pages from a correction pass.
+        ctx = techniques.Context(args.build_dir, args.docroot, dry_run=True, log=log)
+    except Exception as e:
+        log(f"  verifier re-read skipped: {e}")
+        return None
+
+    today, changed = ledger.today(), 0
+    for slug in techniques.DOCROOT_VERIFIERS:
+        if slug not in active or slug not in techs:
+            continue
+        fn = techniques.REGISTRY.get(slug)
+        if not fn:
+            continue
+        try:
+            res = fn(ctx)
+        except Exception as e:
+            log(f"  verifier re-read: {slug} crashed ({e}) — keeping the build's reading")
+            continue
+        detail, was = res.get("detail", ""), techs[slug]
+        if not detail or detail == was.get("detail"):
+            continue
+        techs[slug] = {"ok": bool(res.get("ok")), "detail": detail,
+                       "reread": "post-seo-refresh", "same_since": today}
+        changed += 1
+        log(f"  verifier re-read: {slug} moved after the rebuild — {detail[:160]}")
+    if not changed:
+        log(f"  verifier re-read: {len(techniques.DOCROOT_VERIFIERS)} audits agree "
+            f"with the pre-refresh reading")
+        return None
+    return techs
 
 
 def cmd_status(args):

@@ -110,7 +110,27 @@ SEEDS = [
          notes="Audits, never publishes. Reads the ledger's own prefix declarations against "
                "the live docroot, so a technique added later is covered without being "
                "listed here. Self-links inside a prefix do not count — a family whose pages "
-               "only link to each other is exactly the orphan case."),
+               "only link to each other is exactly the orphan case. "
+               "REVISIT 2026-09-04, AND THE HYPOTHESIS IS FALSIFIED AS A CAUSAL CLAIM. The "
+               "linking half of it was fully delivered: 15 of 15 published sections now carry "
+               "an inbound internal link and every one sits within 3 clicks of the homepage. "
+               "Indexing did not follow it — it moved the other way, monotonically, over the "
+               "30 days since. gsc_serving_pages 63 (08-20) → 39 (08-24) → 13 (08-30) → 5 "
+               "(09-03, 09-04); index_state_indexed 10 → 1 across the same window; "
+               "index_accept_pct_mature 50% (08-20) → 0.0% every day from 08-26 to 09-04. An "
+               "inbound link is therefore necessary but nowhere near sufficient, and on this "
+               "site it was not the binding constraint. DISTRUST ITS 'WORKS' VERDICT: "
+               "review.py credits it with organic_visitors 9.5/day vs 2.5/day, but "
+               "gsc_nonbranded_clicks has been 0 for seven straight days against 67 branded "
+               "clicks, so the traffic it is being credited with is jayshomefinder and "
+               "findacrib residue that this technique cannot have caused. The metric is "
+               "mis-attributed; the audit is not. KEPT, as a guard and an instrument rather "
+               "than a growth lever: it is read-only, it is what stops the next section "
+               "shipping into an orphan hole, and its click-depth and 'published under no "
+               "ACTIVE technique' readings are what the duplication work is steering by. "
+               "Its own next improvement is to become a pure docroot reader — drop the "
+               "ctx.out staging check and the ledger.set_state first-sighting write — so it "
+               "can join techniques.DOCROOT_VERIFIERS and stop reporting a day late."),
     dict(slug="page_uniqueness", status="active", kind="indexing",
          name="Measure how much of each section's text is identical across its own pages",
          prefixes=[], metric="organic_visitors",

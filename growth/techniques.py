@@ -2576,3 +2576,43 @@ REGISTRY = {
 ORDER = ["fresh_section8", "daily_brief", "city_guides", "city_seo_expansion",
          "hub_direct_answers", "derived_building_facts", "llms_txt",
          "sitemap_daily", "crawl_paths", "page_uniqueness", "indexnow"]
+
+# Techniques whose result is a PURE FUNCTION OF THE LIVE DOCROOT, so re-running
+# one is free of side effects and the only thing that can change its answer is
+# the docroot changing underneath it.
+#
+# They exist as a named set because of an ordering bug that is the twin of the
+# one cmd_seo_status was written for on 2026-08-20, and which cost 2026-09-04 a
+# wrong conclusion. growth_run.sh runs `build --deploy` first — every technique
+# in ORDER, including these — and only THEN fires the SEO watchdog, which
+# re-runs scripts/refresh_seo.sh and rewrites the 47,599 pages these audits
+# measure. The 04:10 pipeline cron has not fired since 2026-08-14, so the
+# watchdog is not an exception path: it is how the corpus gets built, every
+# morning, AFTER the audits have already read yesterday's copy. Every reading
+# these produce is therefore a full day behind any build_seo.py change the
+# review loop pushed the night before.
+#
+# The worked example: 2026-09-03 shipped distance-ordered sibling blocks to the
+# SF/LA/DC hub tier and measured, from the checkout, that /dc/neighborhood/'s
+# duplicate share fell 46.7% -> 37.5%. It pre-registered "does dc read 36-39%
+# tomorrow" as the test, and said a reading near 47% would mean the change never
+# reached the docroot. On 2026-09-04 t_page_uniqueness reported 47% of 472 words
+# — byte-identical to the day before — while the pipeline logged 305 changed
+# URLs at 05:41:57, ninety seconds after the audit had finished reading. Nothing
+# was wrong with the change; the instrument had simply not seen it yet. Acting
+# on that reading would have reverted a good fix.
+#
+# t_page_uniqueness's own docstring already warned about the lag, and the
+# warning was not enough — a caveat in a docstring does not reach the person
+# reading a detail string in last_run.json six weeks later. So cmd_seo_status
+# re-reads these after the watchdog and corrects the record instead.
+#
+# THE MEMBERSHIP RULE, because a wrong entry here would write a false record:
+# a technique belongs only if it touches nothing but ctx.docroot — no
+# ctx.write_page/write_raw/unstage, no ledger.set_state, no network. Both
+# members are report-only audits that satisfy this today. t_crawl_paths and
+# t_hub_direct_answers are also docroot audits and would be just as wrong-by-a-
+# day, but both consult ctx.out for pages staged-but-not-yet-rsynced and
+# t_crawl_paths records first-sighting dates through ledger.set_state, so
+# re-running them is not free. Make them pure first, then add them here.
+DOCROOT_VERIFIERS = ("derived_building_facts", "page_uniqueness")

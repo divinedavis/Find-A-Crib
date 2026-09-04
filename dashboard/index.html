@@ -322,6 +322,25 @@
   .ads-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
   @media(max-width:700px){.ads-tiles{grid-template-columns:repeat(2,1fr)}}
   .ads-tile{background:var(--bg);border:1px solid var(--border2);border-radius:12px;padding:14px 15px}
+  /* product-health tiles: the number leads, a rule, then the measure's name
+     big enough to read from across the room. Everything that used to sit
+     under the number — the counts, the goal, the benchmark, the footnote —
+     lives behind the (i) so the grid reads as eleven numbers, not eleven
+     paragraphs. */
+  .hm-tile{position:relative;padding-top:15px}
+  .hm-i{position:absolute;top:9px;right:9px;width:20px;height:20px;border-radius:50%;border:1px solid var(--border);background:transparent;color:var(--muted);font:600 11px/18px ui-serif,Georgia,"Times New Roman",serif;text-align:center;padding:0;cursor:pointer}
+  .hm-i:hover,.hm-i[aria-expanded="true"]{color:var(--ink);border-color:var(--ink2)}
+  .hm-i:focus-visible{outline:2px solid var(--purple);outline-offset:2px}
+  .hm-val{font-size:26px;font-weight:700;letter-spacing:-.5px;line-height:1.1;padding-right:26px}
+  .hm-rule{border-top:1px solid var(--border);margin:10px 0 8px}
+  .hm-name{font-size:15px;font-weight:700;letter-spacing:-.2px;color:var(--ink);line-height:1.25}
+  .hm-pop{position:absolute;top:32px;right:9px;z-index:30;width:min(320px,calc(100vw - 48px));background:var(--card);border:1px solid var(--border2);border-radius:12px;box-shadow:var(--shadow);padding:12px 13px;font-size:12px;color:var(--ink2);line-height:1.5;text-align:left}
+  .hm-pop .hm-h{font-size:12.5px;font-weight:700;color:var(--ink);margin-bottom:6px}
+  .hm-pop .hm-what{margin-bottom:8px}
+  .hm-pop .hm-now{padding-top:8px;border-top:1px solid var(--border)}
+  .hm-pop .hm-now > div + div{margin-top:4px}
+  .hm-pop b{color:var(--ink)}
+  .hm-pop .a-bench-note{display:block;margin-top:4px;color:var(--muted)}
   .ads-tile .a-val{font-size:21px;font-weight:700;letter-spacing:-.3px;line-height:1.1}
   .ads-tile .a-lbl{font-size:12.5px;color:var(--ink2);margin-top:4px}
   .ads-tile .a-sub{font-size:11.5px;color:var(--muted);margin-top:2px}
@@ -1969,6 +1988,38 @@
   // The tiles above this card count arrivals. These count whether anyone
   // stayed, came back, or did the thing the product exists to do. Every field
   // here already existed in dashboard_metrics(); the page just never asked.
+  // One open (i) at a time; a click on the icon toggles it, a click anywhere
+  // else or Escape closes it. Delegated, so re-rendering the tiles on a range
+  // change does not stack handlers.
+  var healthPopsWired = false;
+  function closeHealthPops(except){
+    document.querySelectorAll('.hm-pop').forEach(function(p){
+      if(p!==except){ p.hidden = true; }
+    });
+    document.querySelectorAll('.hm-i').forEach(function(b){
+      if(!except || b.getAttribute('aria-controls')!==except.id) b.setAttribute('aria-expanded','false');
+    });
+  }
+  function wireHealthPops(host){
+    if(healthPopsWired || !host) return;
+    healthPopsWired = true;
+    host.addEventListener('click', function(e){
+      var btn = e.target.closest('.hm-i');
+      if(btn){
+        var pop = document.getElementById(btn.getAttribute('aria-controls'));
+        var open = pop && pop.hidden;
+        closeHealthPops(open ? pop : null);
+        if(pop){ pop.hidden = !open; btn.setAttribute('aria-expanded', open ? 'true' : 'false'); }
+        e.stopPropagation();
+        return;
+      }
+      // A click inside an open popover keeps it open (text selection, links).
+      if(e.target.closest('.hm-pop')) e.stopPropagation();
+    });
+    document.addEventListener('click', function(){ closeHealthPops(null); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeHealthPops(null); });
+  }
+
   function renderFacHealth(d){
     var R=d.retention||{}, E=d.engagement||{},
         S=d.subscriptions||{}, T=d.totals||{};
@@ -2103,10 +2154,51 @@
        sub:comma(S.paying)+' paying · '+comma(S.comped)+' comped',
        bench:'<b>0%</b> free-to-paid · industry free tier converts <b>2–5%</b>'}
     ];
-    el('fac-health-tiles').innerHTML=tiles.map(function(t){
-      return '<div class="ads-tile"><div class="a-val">'+t.val+'</div><div class="a-lbl">'+t.lbl+'</div>'+
-             '<div class="a-sub">'+t.sub+'</div>'+(t.bench?'<div class="a-bench">'+t.bench+'</div>':'')+'</div>';
+    // What each measure IS, in one or two sentences, for the (i). Keyed by the
+    // label the tile already carries so the tile list above stays the single
+    // place a metric is defined. A label with no entry still renders — it
+    // just gets no definition, which is a visible gap rather than a crash.
+    var HEALTH_META = {
+      'Activation · opened a listing': {name:'Activation',
+        what:'The share of visitors in this range who opened at least one listing. The first sign the site did its job for them: they arrived, searched, and found something worth a click.'},
+      'D30 retention · true': {name:'D30 retention',
+        what:'True cohort retention. Of the visitors first seen at least 30 days ago, the share still active on day 30 itself. The strict survival number — it is what app-category benchmarks measure, and it is always far lower than “came back at some point.”'},
+      'Returned within 30d': {name:'Returned within 30d',
+        what:'The softer return measure: the share of visitors who came back at any point inside 30 days of their first visit. This is the number the cross-industry return benchmark is built on, so it is the goal here.'},
+      'Weekly stickiness · WAU/MAU': {name:'Weekly stickiness',
+        what:'Weekly actives divided by monthly actives. How much of a month’s audience shows up in any given week. A housing search runs weekly for a few weeks, so this is the ratio the product is shaped around.'},
+      'Savers back within 30d': {name:'Savers back within 30d',
+        what:'Among accounts that saved a building or a search at least 30 days ago, the share that returned within 30 days of saving. Saving is a signal of intent; this asks whether the site honoured it.'},
+      'Stickiness · DAU/MAU': {name:'Stickiness',
+        what:'Daily actives divided by monthly actives. Roughly how many days a month a typical user shows up. Listings portals cap out near 10%; nobody checks apartments every day for long.'},
+      'Daily active': {name:'Daily active',
+        what:'Unique visitors today so far, Eastern time. The owner is excluded. This is the number the Goals card turns into revenue.'},
+      'Weekly active': {name:'Weekly active',
+        what:'Unique visitors over the last 7 days. At this size the count is more actionable than the ratio: it says how many people to add, not what percentage.'},
+      'Monthly active': {name:'Monthly active',
+        what:'Unique visitors over the last 30 days — the audience the advertising and subscription streams are priced against.'},
+      'Alert sign-ups · lottery & re-rental emails': {name:'Alert sign-ups',
+        what:'Active email subscriptions to borough lottery and re-rental alerts. No account needed, so this is the first intent signal on the site that costs the visitor nothing. Compared against accounts because that is the path it replaces.'},
+      'MRR': {name:'MRR',
+        what:'Monthly recurring revenue from Plus subscriptions. Paying accounts only; comped accounts are listed so the gap between “using it” and “paying for it” stays visible.'}
+    };
+    el('fac-health-tiles').innerHTML=tiles.map(function(t,i){
+      var m = HEALTH_META[t.lbl] || {name:t.lbl, what:''};
+      var id = 'hm-pop-'+i;
+      return '<div class="ads-tile hm-tile">'+
+        '<button type="button" class="hm-i" aria-label="About '+esc(m.name)+'" aria-expanded="false" aria-controls="'+id+'">i</button>'+
+        '<div class="hm-val">'+t.val+'</div>'+
+        '<div class="hm-rule"></div>'+
+        '<div class="hm-name">'+esc(m.name)+'</div>'+
+        '<div class="hm-pop" id="'+id+'" role="region" hidden>'+
+          '<div class="hm-h">'+esc(t.lbl)+'</div>'+
+          (m.what ? '<div class="hm-what">'+esc(m.what)+'</div>' : '')+
+          '<div class="hm-now"><div><b>Right now:</b> '+t.sub+'</div>'+
+          (t.bench ? '<div>'+t.bench+'</div>' : '')+'</div>'+
+        '</div>'+
+      '</div>';
     }).join('');
+    wireHealthPops(el('fac-health-tiles'));
 
     // The RETENTION CURVE — TRUE COHORT block (header + D1/D7/D30 meters) was
     // removed; the retention figures still appear in the tiles and callout.

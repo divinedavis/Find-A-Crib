@@ -48,6 +48,11 @@ Open lotteries and waitlists from New York State's HousingSearch portal — inco
 SAVE AND SYNC
 Heart a building and it's in My Activity; sign in with Apple or Google and your saves follow you to findacrib.com.
 
+FIND A CRIB PLUS
+Plus unlocks the registered managing agent's phone number on every building page and the landlord directory. Find A Crib Plus Monthly is an auto-renewable subscription at $4.99 per month, charged to your Apple Account and renewed automatically unless cancelled at least 24 hours before the end of the period. Manage or cancel in Settings › Apple Account › Subscriptions.
+Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Privacy Policy: https://findacrib.com/privacy/
+
 Find A Crib is an independent, informational tool. It is not a broker, does not list apartments, and takes no fee. Data: NYS Homes and Community Renewal rent-stabilization register (2024), NYC HPD open data, HUD FY2026 Fair Market Rents, HousingSearch.ny.gov, and advertised rents from Zumper.
 """
 

@@ -341,6 +341,16 @@
   .hm-pop .hm-now > div + div{margin-top:4px}
   .hm-pop b{color:var(--ink)}
   .hm-pop .a-bench-note{display:block;margin-top:4px;color:var(--muted)}
+  /* the verdict outline: green above the standard, yellow inside it, red
+     below. 2px so it survives the card's own border at a glance; no colour
+     at all when the cohort cannot carry a verdict. */
+  .hm-tile.hm-hi{border-color:#1baf7a;box-shadow:0 0 0 1.5px #1baf7a}
+  .hm-tile.hm-mid{border-color:#d9a21b;box-shadow:0 0 0 1.5px #d9a21b}
+  .hm-tile.hm-low{border-color:#d9463d;box-shadow:0 0 0 1.5px #d9463d}
+  html[data-theme="dark"] .hm-tile.hm-hi{border-color:#35c993;box-shadow:0 0 0 1.5px #35c993}
+  html[data-theme="dark"] .hm-tile.hm-mid{border-color:#e5b45c;box-shadow:0 0 0 1.5px #e5b45c}
+  html[data-theme="dark"] .hm-tile.hm-low{border-color:#f38f88;box-shadow:0 0 0 1.5px #f38f88}
+  .hm-nojudge{color:var(--muted)}
   .ads-tile .a-val{font-size:21px;font-weight:700;letter-spacing:-.3px;line-height:1.1}
   .ads-tile .a-lbl{font-size:12.5px;color:var(--ink2);margin-top:4px}
   .ads-tile .a-sub{font-size:11.5px;color:var(--muted);margin-top:2px}
@@ -2073,9 +2083,11 @@
       .map(function(k){ return (BORO_SHORT[k]||k)+' '+comma(AL.by_borough[k]); }).join(' ');
     var tiles=[
       {val:actRate,lbl:'Activation · opened a listing',
+       band:{low:ACTIVATION_BENCHMARK.low, high:ACTIVATION_BENCHMARK.high, value:actPct, unit:'%', src:ACTIVATION_BENCHMARK.label+' activation', ok:actAll>0},
        sub:comma(actOn)+' of '+comma(actAll)+' visitors reached it',
        bench:activationBench(actPct)},
       {val:rate(d30.rate),lbl:'D30 retention · true',
+       band:{low:RETENTION_BENCHMARK.d30*(1-RETENTION_BENCHMARK.tolerance), high:RETENTION_BENCHMARK.d30*(1+RETENTION_BENCHMARK.tolerance), value:d30.rate==null?null:100*Number(d30.rate), unit:'%', src:RETENTION_BENCHMARK.label+' D30 survival, ±'+Math.round(100*RETENTION_BENCHMARK.tolerance)+'%', ok:n(d30.cohort)>=RETENTION_BENCHMARK.min_cohort, why:'cohort of '+comma(d30.cohort)+' under '+RETENTION_BENCHMARK.min_cohort},
        sub:comma(d30.retained)+' of '+comma(d30.cohort)+' still active at day 30',
        bench:survivalBench(d30.rate, RETENTION_BENCHMARK.d30, d30.cohort)},
       // The one goal here that is NOT made up: it is the sourced cross-industry
@@ -2084,6 +2096,7 @@
       // comment argues 13% is a FLOOR for a property site, not par, because a
       // housing search runs for weeks. Clear it, then raise it.
       {val:rate(d30.within_rate),lbl:'Returned within 30d',
+       band:{low:RETURN_BENCHMARK.pct*(1-RETURN_BENCHMARK.tolerance), high:RETURN_BENCHMARK.pct*(1+RETURN_BENCHMARK.tolerance), value:d30.within_rate==null?null:100*Number(d30.within_rate), unit:'%', src:RETURN_BENCHMARK.label+' 30-day return, ±'+Math.round(100*RETURN_BENCHMARK.tolerance)+'%', ok:n(d30.within_cohort)>=RETURN_BENCHMARK.min_cohort, why:'cohort of '+comma(d30.within_cohort)+' under '+RETURN_BENCHMARK.min_cohort},
        sub:'the softer measure · '+comma(d30.within_returned)+' of '+comma(d30.within_cohort),
        bench:(n(d30.within_cohort) < RETURN_BENCHMARK.min_cohort
                 ? 'Goal <b>'+RETURN_BENCHMARK.pct+'%</b> · cohort of '+comma(d30.within_cohort)+
@@ -2094,6 +2107,7 @@
       // The weekly ratio leads: it is the one a housing search is shaped
       // around (see AUDIENCE_GOALS) and the one that is stable at this size.
       {val:rate(E.wau_mau),lbl:'Weekly stickiness · WAU/MAU',
+       band:{low:40, high:50, value:E.wau_mau==null?null:100*Number(E.wau_mau), unit:'%', src:'a search people run weekly for a few weeks', ok:n(E.mau)>0},
        sub:comma(E.wau)+' weekly of '+comma(E.mau)+' monthly',
        bench:pctGoalLine('My goal', E.wau_mau, AUDIENCE_GOALS.wau_mau)+
              ' <span class="a-bench-note">(40–50% is the band for a search people run weekly for a few weeks; the daily ratio below is what Zillow gets)</span>'},
@@ -2102,6 +2116,7 @@
       // bring Zillow's users back ~3.5 times a month. Fixed 30-day window,
       // cohort = accounts whose first save is at least 30 days old.
       {val:rate(SV.rate),lbl:'Savers back within 30d',
+       band:{low:40, high:60, value:SV.rate==null?null:100*Number(SV.rate), unit:'%', src:'no outside benchmark — the owner\u2019s band around the 50% bar', ok:n(SV.cohort)>=SAVER_RETURN_MIN_COHORT, why:'cohort of '+comma(SV.cohort)+' under '+SAVER_RETURN_MIN_COHORT},
        sub:comma(SV.returned)+' of '+comma(SV.cohort)+' who saved a building or search · '+
            comma(SV.savers)+' savers ever',
        bench:(n(SV.cohort) < SAVER_RETURN_MIN_COHORT
@@ -2110,6 +2125,7 @@
                 : pctGoalLine('My goal', SV.rate, AUDIENCE_GOALS.saver_return))+
              ' <span class="a-bench-note">(no outside benchmark: the bar is "more likely than not to come back after signalling intent")</span>'},
       {val:rate(E.stickiness),lbl:'Stickiness · DAU/MAU',
+       band:{low:8, high:STICKINESS_REFERENCE.zillow_ceiling, value:E.stickiness==null?null:100*Number(E.stickiness), unit:'%', src:'listings portals; the top is Zillow\u2019s ceiling, '+STICKINESS_REFERENCE.label, ok:n(E.mau)>0},
        sub:comma(E.dau)+' daily of '+comma(E.mau)+' monthly',
        // The goal IS the category ceiling: see STICKINESS_REFERENCE. Derived
        // from Zillow's reported uniques and visits, not a blog rule of thumb.
@@ -2121,6 +2137,7 @@
       // stickiness subtitle, which is the one place a number you have a goal
       // for should not live.
       {val:comma(E.dau),lbl:'Daily active',
+       band:{low:AUDIENCE_GOALS.dau/2, high:AUDIENCE_GOALS.dau, value:n(E.dau), unit:'n', src:'half the daily goal to the goal', ok:true},
        sub:'unique visitors · today so far (ET)',
        bench:goalLine(E.dau, AUDIENCE_GOALS.dau, 'daily')},
       // Split out of the WAU/MAU ratio, because at this scale the counts are
@@ -2129,10 +2146,12 @@
       // benchmark to be judged against anyway. The ratio survives as the
       // footnote on the weekly tile rather than as a headline of its own.
       {val:comma(E.wau),lbl:'Weekly active',
+       band:{low:AUDIENCE_GOALS.wau/2, high:AUDIENCE_GOALS.wau, value:n(E.wau), unit:'n', src:'half the weekly goal to the goal', ok:true},
        sub:'unique visitors · last 7 days',
        bench:goalLine(E.wau, AUDIENCE_GOALS.wau, 'weekly')+
              ' <span class="a-bench-note">(45% of the monthly goal — the ratio has its own tile above)</span>'},
       {val:comma(E.mau),lbl:'Monthly active',
+       band:{low:AUDIENCE_GOALS.mau/2, high:AUDIENCE_GOALS.mau, value:n(E.mau), unit:'n', src:'half the monthly goal to the goal', ok:true},
        sub:'unique visitors · last 30 days',
        bench:goalLine(E.mau, AUDIENCE_GOALS.mau, 'monthly')},
       // Borough-alert sign-ups (/alerts/, shipped 2026-09-03): the first
@@ -2142,6 +2161,7 @@
       // shows: an email list that outgrows the account list says the
       // no-account path was the right one.
       {val:comma(AL.active),lbl:'Alert sign-ups · lottery & re-rental emails',
+       band:{low:n(T.accounts)/2, high:n(T.accounts), value:n(AL.active), unit:'n', src:'half the account count to the account count — the list should at least match the path it replaces', ok:n(T.accounts)>0},
        sub:comma(AL.signups)+' in this range · '+comma(AL.unsubscribed)+' unsubscribed · '+
            comma(AL.emails_sent)+' alerts sent'+
            (boroSplit ? ' · '+boroSplit : ''),
@@ -2151,6 +2171,7 @@
                ? ' <span class="a-bench-note">('+comma(AL.lottery_only)+' lotteries only, '+
                  comma(AL.rerental_only)+' re-rentals only)</span>' : '')},
       {val:'$'+comma(S.mrr),lbl:'MRR',
+       band:{low:2, high:5, value:n(T.accounts)?100*n(S.paying)/n(T.accounts):null, unit:'%', src:'free-to-paid conversion, industry free tier; judged on paying \u00f7 accounts, not on dollars', ok:n(T.accounts)>0},
        sub:comma(S.paying)+' paying · '+comma(S.comped)+' comped',
        bench:'<b>0%</b> free-to-paid · industry free tier converts <b>2–5%</b>'}
     ];
@@ -2182,10 +2203,32 @@
       'MRR': {name:'MRR',
         what:'Monthly recurring revenue from Plus subscriptions. Paying accounts only; comped accounts are listed so the gap between “using it” and “paying for it” stays visible.'}
     };
+    // The outline is the verdict against the STANDARD, never against the goal
+    // alone: above the band is green, inside it is yellow, below it is red.
+    // A tile whose cohort is too small to judge, or that has nothing measured,
+    // gets no colour — grey is the honest render for "cannot say yet".
+    function bandVerdict(b){
+      if(!b || b.value==null || !b.ok) return {cls:'', word:b&&b.ok===false&&b.why ? 'not judged — '+b.why : 'not judged — nothing measured'};
+      var v=Number(b.value);
+      if(v > b.high)  return {cls:'hm-hi',  word:'above the standard'};
+      if(v >= b.low)  return {cls:'hm-mid', word:'inside the standard'};
+      return {cls:'hm-low', word:'below the standard'};
+    }
+    function bandLine(b){
+      if(!b) return '';
+      var f = function(x){ return b.unit==='%' ? (Math.round(x*10)/10)+'%' : comma(x); };
+      var vd = bandVerdict(b);
+      var badge = vd.cls ? ' <span class="bn '+(vd.cls==='hm-hi'?'bn-hi':vd.cls==='hm-mid'?'bn-mid':'bn-low')+'">'+vd.word+'</span>'
+                         : ' <span class="hm-nojudge">'+esc(vd.word)+'</span>';
+      return '<div><b>Standard:</b> '+f(b.low)+' to '+f(b.high)+
+             (b.src ? ' <span class="a-bench-note" style="display:inline;margin:0">('+esc(b.src)+')</span>' : '')+
+             badge+'</div>';
+    }
     el('fac-health-tiles').innerHTML=tiles.map(function(t,i){
       var m = HEALTH_META[t.lbl] || {name:t.lbl, what:''};
       var id = 'hm-pop-'+i;
-      return '<div class="ads-tile hm-tile">'+
+      var vd = bandVerdict(t.band);
+      return '<div class="ads-tile hm-tile '+vd.cls+'">'+
         '<button type="button" class="hm-i" aria-label="About '+esc(m.name)+'" aria-expanded="false" aria-controls="'+id+'">i</button>'+
         '<div class="hm-val">'+t.val+'</div>'+
         '<div class="hm-rule"></div>'+
@@ -2194,6 +2237,7 @@
           '<div class="hm-h">'+esc(t.lbl)+'</div>'+
           (m.what ? '<div class="hm-what">'+esc(m.what)+'</div>' : '')+
           '<div class="hm-now"><div><b>Right now:</b> '+t.sub+'</div>'+
+          bandLine(t.band)+
           (t.bench ? '<div>'+t.bench+'</div>' : '')+'</div>'+
         '</div>'+
       '</div>';

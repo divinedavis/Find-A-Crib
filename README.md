@@ -69,20 +69,41 @@ links to the NYC Commission on Human Rights complaint page.
 
 ### Saved-building alert emails
 
-`notify_saved_listings.py` (nightly cron, 05:00 UTC, on the report droplet
-alongside `traffic_report.py`) emails signed-in users when a building they
-saved is **newly** advertised. It diffs the public `listings.json` (Zumper) and
-`s8.json` (AffordableHousing.com) feeds against the previous night's snapshot,
-so only fresh listings trigger mail; each (user, building, source) is notified
-at most once per 60 days (`listing_alert_state` in Supabase), and the first run
-seeds the snapshot without sending. Every email carries a one-click
-unsubscribe link (`findacrib.com/#unsub=<token>` → `unsubscribe_alerts` RPC,
-tokens in `alert_prefs`; migration `supabase/migrations/0001_listing_alerts.sql`).
+Saving a building is subscribing to it. `saved_alerts.py` (06:20 ET daily on
+the web droplet, `saved_alerts.sh`, `/etc/cron.d/rentmap-saved`) emails every
+signed-in saver — free or Plus — when a saved building is newly advertised
+(`listings.json`), gets a voucher listing (`s8.json`), drops its asking rent,
+hosts a Housing Connect / HCR lottery or a marketing-agent re-rental (matched by
+house number + lot distance / street), gains or clears open HPD violations, or
+has its DHCR registration change. Only a *change* alerts: the first run seeds a
+snapshot (`saved_alerts_state.json`) and sends nothing; each (user, building,
+kind) is announced at most once per cooldown (`listing_alert_state`, via the
+`saved_alert_state` / `saved_alert_mark` RPCs in `db/0024`). Tuesdays the same
+run sends the weekly round-up instead: pending changes, the state of everything
+saved, and what opened / closes this week in the boroughs the person saves and
+browses in (`building_view` events). New accounts that saved something get a
+"status" email 2–8 days in. Opt-outs: `findacrib.com/#unsub=<token>` (alerts)
+and `#unsub=<token>&k=digest` (round-up only), tokens in `alert_prefs`.
+
+**One email a day, per address, across every job.** `growth/mailcap.py` claims
+the New York day in `public.email_sends` (`email_claim` / `email_release`)
+before any send; the borough dispatcher, this job, the account lifecycle and
+the report sequence all use it. A job that loses the slot holds its content
+(`state["held"]` per subscriber, `state["pending"]` per user) for tomorrow.
 
 ```sh
-python3 notify_saved_listings.py --dry-run                 # print, no sends
-python3 notify_saved_listings.py --test-email you@x.com    # one sample email
+python3 saved_alerts.py --dry-run                        # print, no sends
+python3 saved_alerts.py --weekly --dry-run               # force the digest
+python3 saved_alerts.py --test-email you@x.com           # one sample email
+python3 lottery_alerts.py --nudge --dry-run              # first-week round-up
+python3 lottery_alerts.py --weekly --test-email you@x.com
 ```
+
+The map's first view: `/api/geo` resolves the visitor's network address
+against DB-IP City Lite (`scripts/refresh_geoip.sh`, monthly cron) and returns
+a ~1 km point plus the borough of the nearest building; `index.html` opens
+there on a bare landing with a dismissible chip. No browser permission prompt,
+nothing stored.
 
 ### HPD data
 

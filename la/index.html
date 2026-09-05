@@ -1046,6 +1046,14 @@
   .d-fact .v { font-weight: 700; font-size: 15px; }
   .d-chips { display: flex; flex-wrap: wrap; gap: 8px; }
   .d-chips .chip { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; font-size: 13px; font-weight: 600; }
+  .d-chips button.chip { font: inherit; font-size: 13px; font-weight: 600; color: var(--ink); cursor: pointer; }
+  .d-chips button.chip::after { content: " ⓘ"; color: var(--blue); font-weight: 500; }
+  .d-chips button.chip.active { border-color: var(--blue); background: var(--blue-soft, var(--surface-3)); color: var(--blue); }
+  .d-status-hint { font-size: 12px; color: var(--ink-2); margin-top: 8px; }
+  .d-status-def { margin-top: 10px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 13.5px; line-height: 1.5; color: var(--ink); }
+  .d-status-def[hidden] { display: none; }
+  .d-status-def b { display: block; margin-bottom: 4px; }
+  .d-status-def .src { display: block; margin-top: 6px; font-size: 11.5px; color: var(--ink-2); }
   /* ---- building comments ---- */
   .d-cthread { padding: 12px 0; border-top: 1px solid var(--line); }
   .d-cthread:first-child { border-top: none; padding-top: 0; }
@@ -5248,7 +5256,7 @@
       <div class="d-section" data-sec="facts"><h3>Building facts</h3>
         <div class="d-facts">${facts.map(([l, v]) => `<div class="d-fact"><span class="l">${l}</span><span class="v">${esc(String(v))}</span></div>`).join('')}</div>
       </div>
-      ${statuses.length ? `<div class="d-section" data-sec="status"><h3>${esc(CITY.statusHeading || 'Rent-stabilization status')}</h3><div class="d-chips">${statuses.map(s => `<span class="chip">${esc(s)}</span>`).join('')}</div>${CITY.sourceNote ? `<div class="d-sub" style="margin-top:8px">${CITY.sourceNote}${CITY.likely ? ' <a href="https://zimas.lacity.org/" target="_blank" rel="noopener">Check ZIMAS ↗</a>' : ''}</div>` : ''}</div>` : ''}
+      ${statuses.length ? `<div class="d-section" data-sec="status"><h3>${esc(CITY.statusHeading || 'Rent-stabilization status')}</h3><div class="d-chips">${statuses.map(s => `<button type="button" class="chip" data-status="${esc(s)}" aria-expanded="false">${esc(s)}</button>`).join('')}</div><div class="d-status-hint">Tap a status to see what it means.</div><div class="d-status-def" hidden></div>${CITY.sourceNote ? `<div class="d-sub" style="margin-top:8px">${CITY.sourceNote}${CITY.likely ? ' <a href="https://zimas.lacity.org/" target="_blank" rel="noopener">Check ZIMAS ↗</a>' : ''}</div>` : ''}</div>` : ''}
       ${IS_NYC ? `<div class="d-section" data-sec="hpd"><h3>Owner &amp; HPD record</h3>${hpdHtml(rec, { violations: false, complaints: false })}</div>` : ''}
       <div class="d-section" id="d-comments" data-sec="comments"><h3>Comments</h3>
         <div id="d-comments-list"><div class="d-sub" style="margin:0">Loading comments…</div></div>
@@ -5275,6 +5283,57 @@
     if (recent > 0) return { tone: 'red', label: `🚨 Violations (${total}) · ${recent} ${window_}`, title: `HPD cited this building ${recent} time${recent === 1 ? '' : 's'} ${window_}` };
     return { tone: 'yellow', label: `⚠️ Violations (${total}) · none ${window_}`, title: `${total} on record, none ${window_}` };
   }
+
+  // What each registration status means, in plain words. NYC codes are the
+  // STATUS1/2/3 values in HCR's annual building list; the other cities have
+  // one status each. Sources: HCR Fact Sheet #41 (tax abatements), the Rent
+  // Guidelines Board glossary, NYC HPD program pages, NYS Attorney General on
+  // conversions. Codes that are data noise ("000", "N/A") get the fallback.
+  const STATUS_DEF = {
+    'MULTIPLE DWELLING A': ['Class A multiple dwelling', 'An ordinary apartment building — occupied as permanent homes, not transiently. The standard case for rent stabilization: six or more units, built before 1974, and the building is registered with HCR as stabilized.', 'NYC Multiple Dwelling Law; RGB glossary'],
+    'MULTIPLE DWELLING B': ['Class B multiple dwelling', 'A building occupied transiently, as a more or less temporary abode — hotels, rooming houses, lodging houses, SROs. Permanent residents of these can still be rent-stabilized; short-stay guests are not.', 'NYC Multiple Dwelling Law; RGB glossary'],
+    'GARDEN COMPLEX': ['Garden-apartment complex', 'A group of attached, detached or semi-attached low-rise buildings with six or more apartments sharing facilities like a sewer line, water main or heating plant. HCR treats the whole complex as one stabilized property even though each building is small.', 'RGB glossary'],
+    '421-A (1-15)': ['421-a tax exemption (older program)', 'The building took the 421-a property-tax exemption for new construction under the pre-2017 rules. Its apartments are rent-stabilized for as long as the tax benefit lasts; when it expires, units in a building that was not stabilized before can be deregulated. Leases must carry a rider saying when the benefit ends.', 'HCR Fact Sheet #41'],
+    '421-A (16)': ['421-a(16) — Affordable New York', 'The building took the 2017 "Affordable New York" version of the 421-a exemption. The affordable units it set aside are rent-stabilized for the length of the benefit, typically 35 years; market-rate units in the building may not be.', 'HCR Fact Sheet #41'],
+    '421-G': ['421-g Lower Manhattan conversion', 'A commercial building converted to apartments south of Murray, Frankfort and Dover Streets using the 421-g tax benefit. Apartments are rent-stabilized for the benefit period (14 years of exemption and abatement).', 'HCR Fact Sheet #41'],
+    'J-51': ['J-51 tax abatement', 'The owner took the J-51 tax break for rehabilitating or converting the building. Apartments are rent-stabilized for as long as the abatement runs — and stay stabilized afterwards unless every lease carried a rider warning the tenant that stabilization would end with the benefit.', 'HCR Fact Sheet #41'],
+    'NON-EVICT COOP/CONDO': ['Co-op / condo, non-eviction conversion', 'The building was converted to a co-op or condo under a non-eviction plan. Tenants who did not buy keep their apartments as rent-stabilized renters and cannot be evicted for not purchasing — even by an outside buyer of the unit.', 'NYS Attorney General; RGB glossary'],
+    'EVICT COOP/CONDO': ['Co-op / condo, eviction conversion', 'Converted under an eviction plan, a type the 2019 rent laws abolished for new conversions. Non-purchasing tenants could be evicted after a waiting period, except seniors and people with disabilities, who kept stabilized tenancies. Remaining stabilized units are the ones HCR still lists.', 'NYS Attorney General; Housing Stability and Tenant Protection Act of 2019'],
+    'COOP/CONDO PLAN FILE': ['Co-op / condo plan on file', 'A conversion offering plan has been filed with the Attorney General but the building is still (or was, at registration) a rental. Nothing changes for tenants until a plan is declared effective, and stabilized tenants keep their status under a non-eviction plan.', 'NYS Attorney General'],
+    'SECTION 610 OF PHFL': ['PHFL §610 regulatory agreement', 'Affordable housing under a regulatory agreement citing Section 610 of the Private Housing Finance Law (2022). It lets the owner collect a rental subsidy (Section 8 and similar) above the legal stabilized rent — the tenant\'s own share does not go up. Units stay rent-stabilized under the agreement.', 'NYC HPD; NYS HCR'],
+    'ARTICLE 11': ['HDFC — PHFL Article XI', 'Owned by a Housing Development Fund Company, the low-income housing vehicle of Article XI of the Private Housing Finance Law — often a former city-owned building turned affordable co-op or rental. Rentals stay stabilized under HPD\'s regulatory agreement; income limits usually apply.', 'NYC HPD'],
+    'ARTICLES 14 & 15': ['PHFL Articles 14 & 15', 'Financed under Articles XIV and XV of the Private Housing Finance Law — state and city affordable-housing loan programs. The regulatory agreement that comes with the financing keeps the apartments rent-stabilized, with income limits set by the program.', 'NYS Private Housing Finance Law'],
+    'SEC 608': ['PHFL §608 agreement', 'Affordable housing regulated under Section 608 of the Private Housing Finance Law. Apartments are rent-stabilized under the agreement with HPD or HCR; rents and eligibility follow the program, not the market.', 'NYS Private Housing Finance Law'],
+    'ART V': ['Redevelopment company — PHFL Article V', 'Built by a redevelopment company under Article V of the Private Housing Finance Law, a mid-century urban-renewal program with a partial tax exemption. Apartments are rent-stabilized; when the tax exemption ends they typically stay stabilized.', 'NYS Private Housing Finance Law'],
+    '420C': ['420-c low-income housing', 'Exempt from property tax under Real Property Tax Law §420-c: low-income housing built with federal Low-Income Housing Tax Credits, majority-controlled by a nonprofit, under an HPD regulatory agreement. Units are stabilized and income-restricted for at least 30 years.', 'RPTL §420-c; NYC HPD'],
+    'ROOMING HOUSE': ['Rooming house', 'A building of rented rooms with shared kitchens or bathrooms. Permanent residents — generally anyone living there six months or more, or who has asked for a lease — are rent-stabilized; transient guests are not.', 'RGB glossary; Rent Stabilization Code'],
+    'HOTEL': ['Stabilized hotel', 'A hotel, SRO or lodging house built before 1969 whose permanent residents are covered by rent stabilization (the "hotel stabilization" rules). Nightly and short-stay guests are not covered.', 'RGB glossary; Rent Stabilization Code'],
+    'HPD': ['HPD program building', 'Registered as an HPD-regulated affordable building. Apartments are rent-stabilized under the city agency\'s regulatory agreement.', 'NYC HPD'],
+    'HUD': ['HUD-assisted building', 'Federally assisted housing (a HUD program such as project-based Section 8). Rents follow the federal contract; units listed here are also registered as stabilized.', 'HUD'],
+    'NYCHH': ['NYC Health + Hospitals', 'Housing owned by NYC Health + Hospitals, registered as stabilized.', 'HCR building list'],
+    'SF RENT BOARD INVENTORY': ['SF Rent Board inventory', 'A block-side with units reported to the San Francisco Rent Board\'s housing inventory as rent-controlled. San Francisco rent control generally covers multi-unit buildings with a certificate of occupancy before June 13, 1979.', 'SF Rent Board'],
+    'LIKELY RSO (PRE-1979, 2+ UNITS)': ['Likely covered by the LA Rent Stabilization Ordinance', 'Meets the two tests for Los Angeles rent stabilization from assessor data: two or more units and built on or before October 1, 1978. A few exemptions (e.g. some single-family or government-owned parcels) cannot be seen in tax records, so confirm on ZIMAS.', 'LAHD; ZIMAS'],
+    'DC RENT CONTROL (REGISTERED)': ['DC rent control, registered', 'Registered with DC\'s Department of Housing and Community Development as covered by the Rental Housing Act. Coverage is per unit: a property can hold controlled and exempt units, and the count here is the controlled ones.', 'DC DHCD'],
+  };
+  function statusDefHtml(code) {
+    const d = STATUS_DEF[String(code).toUpperCase().trim()];
+    if (d) return `<b>${esc(d[0])}</b>${esc(d[1])}<span class="src">Source: ${esc(d[2])}</span>`;
+    return `<b>${esc(code)}</b>A registration status code from ${esc(CITY.regSource || 'the rent-regulation register')}. It is not one of the standard codes, so there is no plain-English definition for it here${CITY.sourceNote ? ' — but: ' + CITY.sourceNote : '.'}`;
+  }
+  detailSheet.addEventListener('click', e => {
+    const chip = e.target.closest('button.chip[data-status]');
+    if (!chip) return;
+    const wrap = chip.closest('.d-section');
+    const panel = wrap && wrap.querySelector('.d-status-def');
+    if (!panel) return;
+    const was = chip.classList.contains('active');
+    wrap.querySelectorAll('button.chip').forEach(c => { c.classList.remove('active'); c.setAttribute('aria-expanded', 'false'); });
+    if (was) { panel.hidden = true; return; }
+    chip.classList.add('active'); chip.setAttribute('aria-expanded', 'true');
+    panel.innerHTML = statusDefHtml(chip.dataset.status);
+    panel.hidden = false;
+    track('status_open', { code: chip.dataset.status, bbl: detailRec && detailRec.bbl });
+  });
 
   function syncDetailFav() {
     const f = detailRec && FAVS.has(detailRec.bbl);

@@ -2571,6 +2571,9 @@
   // no such button and keeps the block.
   function hpdHtml(rec, opts) {
     const showViol = !(opts && opts.violations === false);
+    // opts.complaints=false likewise: the building page has "Building (HPD)
+    // Complaints" as a button, so the counts block would repeat it.
+    const showComp = !(opts && opts.complaints === false);
     const h = rec.h;
     if (!h) {
       return `<div class="hpd-section"><h4>HPD Record</h4>
@@ -2645,11 +2648,11 @@
         ${v && v.total ? `<button type="button" class="hpd-viol-btn" data-viol-bbl="${esc(rec.bbl)}" aria-expanded="false">📋 See what the violations are</button>
         <div class="hpd-viols" hidden></div>` : ''}
       </div>` : ''}
-      <div class="hpd-section">
+      ${showComp ? `<div class="hpd-section">
         <h4>HPD complaints</h4>
         <div class="hpd-row">${cChips}</div>
         ${link}
-      </div>
+      </div>` : `<div class="hpd-section">${link}</div>`}
     `;
   }
 
@@ -2683,6 +2686,54 @@
     p.catch(() => violCache.delete(bbl));   // let a failed load be retried
     violCache.set(bbl, p);
     return p;
+  }
+
+  // ---------- what the complaints actually SAY (lazy, per building) ----------
+  // One row per reported problem, newest first. Same dataset the weekly counts
+  // come from, so the button's number and the list agree.
+  const COMP_URL = 'https://data.cityofnewyork.us/resource/ygpa-z7cr.json';
+  const COMP_LIMIT = 60;
+  const compCache = new Map();
+  function loadComplaints(bbl) {
+    if (compCache.has(bbl)) return compCache.get(bbl);
+    if (!/^\d{10}$/.test(bbl)) return Promise.reject(new Error('bad bbl'));
+    const url = COMP_URL
+      + '?$select=' + encodeURIComponent('received_date,major_category,minor_category,problem_code,apartment,unit_type,type,problem_status,problem_status_date,status_description,problem_duplicate_flag')
+      + '&$where=' + encodeURIComponent(`bbl='${bbl}'`)
+      + '&$order=' + encodeURIComponent('received_date DESC')
+      + '&$limit=' + COMP_LIMIT;
+    const p = fetch(url, { headers: { Accept: 'application/json' } })
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(rows => Array.isArray(rows) ? rows : []);
+    p.catch(() => compCache.delete(bbl));
+    compCache.set(bbl, p);
+    return p;
+  }
+  function titleCase(s) { return String(s || '').toLowerCase().replace(/(^|[\s/(-])([a-z])/g, (m, a, b) => a + b.toUpperCase()); }
+  function compRowHtml(r) {
+    const open = (r.problem_status || '').toUpperCase() !== 'CLOSE';
+    const when = (r.received_date || '').slice(0, 10);
+    const what = [titleCase(r.major_category), titleCase(r.minor_category)].filter(Boolean).join(' — ');
+    const code = titleCase(r.problem_code);
+    const where = (r.apartment && r.apartment !== 'BLDG') ? 'Apt ' + r.apartment : titleCase(r.unit_type || '');
+    const meta = [when ? 'Reported ' + when : '', where, (r.type || '').toUpperCase() === 'EMERGENCY' ? 'Emergency' : ''].filter(Boolean).join(' · ');
+    // HPD's closing note is a paragraph; keep its first sentence, which says
+    // what the inspector found.
+    const note = String(r.status_description || '').replace(/\s+/g, ' ').trim().split(/(?<=\.)\s/)[0] || '';
+    const sdate = (r.problem_status_date || '').slice(0, 10);
+    return `<div class="hpd-viol">
+      <div class="hpd-viol-head"><span class="hpd-stat ${open ? 'warn' : ''}">${open ? 'Open' : 'Closed'}</span></div>
+      <div class="hpd-viol-txt">${esc(what || 'Complaint')}${code && code !== what ? ' · ' + esc(code) : ''}</div>
+      ${meta ? `<div class="hpd-viol-meta">${esc(meta)}</div>` : ''}
+      ${note ? `<div class="hpd-viol-last">${esc(note)}${sdate ? ' (' + esc(sdate) + ')' : ''}</div>` : ''}
+    </div>`;
+  }
+  function compListHtml(rows) {
+    if (!rows.length) return '<div class="hpd-viol-note" style="border:none">No complaints on file — nobody has reported this building to 311 / HPD.</div>';
+    const head = rows.length >= COMP_LIMIT
+      ? `<div class="hpd-viol-note" style="border:none">The ${COMP_LIMIT} most recent problems tenants reported to 311 / HPD, newest first. A complaint is a report, not a finding — see Violations for what inspectors confirmed.</div>`
+      : `<div class="hpd-viol-note" style="border:none">${rows.length} problem${rows.length === 1 ? '' : 's'} tenants reported to 311 / HPD, newest first. A complaint is a report, not a finding — see Violations for what inspectors confirmed.</div>`;
+    return head + rows.map(compRowHtml).join('');
   }
 
   // HPD's notice text is written for inspectors: it repeats the address, pads with
@@ -5148,6 +5199,9 @@
       : null;
     const est = estRent(rec);
     const viol = violButton(rec.h && rec.h.violations, violTotal);
+    const compTotal = rec.h && rec.h.complaints
+      ? (rec.h.complaints.total != null ? rec.h.complaints.total : rec.h.complaints.open)
+      : (HPD_FULL ? 0 : null);
     const title = rec.nb || borough || CITY.label;
     const addrLine = [rec.a, [borough, rec.z].filter(Boolean).join(' ')].filter(Boolean).join(', ');
     const spec = [
@@ -5184,6 +5238,9 @@
       <div class="d-actions d-dir-row" style="padding-top:0">
         <button class="d-secondary" data-detail="directions">🧭 Driving directions</button>
       </div>
+      ${IS_NYC ? `<div class="d-actions" style="padding-top:0">
+        <button class="d-secondary" data-detail="complaints">📣 Building (HPD) Complaints${compTotal != null ? ' · ' + compTotal : ''}</button>
+      </div>` : ''}
       ${IS_NYC ? `<div class="d-section" data-sec="vouchers"><h3>Housing vouchers (Section 8)</h3>
         ${s8Html(rec) || '<div class="d-sub" style="margin:0">No voucher listing or subsidy record for this building right now.</div>'}
         <div class="s8-legal">Source-of-income discrimination is illegal in NYC — every landlord must accept Section 8 and other vouchers, tagged here or not. <a href="https://www.nyc.gov/site/cchr/about/report-discrimination.page" target="_blank" rel="noopener">Report discrimination to the NYC Commission on Human Rights ↗</a></div>
@@ -5192,7 +5249,7 @@
       <div class="d-section" data-sec="facts"><h3>Building facts</h3>
         <div class="d-facts">${facts.map(([l, v]) => `<div class="d-fact"><span class="l">${l}</span><span class="v">${esc(String(v))}</span></div>`).join('')}</div>
       </div>
-      ${IS_NYC ? `<div class="d-section" data-sec="hpd"><h3>Owner &amp; HPD record</h3>${hpdHtml(rec, { violations: false })}</div>` : ''}
+      ${IS_NYC ? `<div class="d-section" data-sec="hpd"><h3>Owner &amp; HPD record</h3>${hpdHtml(rec, { violations: false, complaints: false })}</div>` : ''}
       <div class="d-section" id="d-comments" data-sec="comments"><h3>Comments</h3>
         <div id="d-comments-list"><div class="d-sub" style="margin:0">Loading comments…</div></div>
         <div id="d-comments-composer"></div>
@@ -5402,6 +5459,24 @@
       body.innerHTML = '<div class="hpd-viol-note" style="border:none">Couldn\'t reach NYC Open Data just now. Close and tap again to retry, or scroll to the HPD record below.</div>';
     });
   }
+  function openCompSheet(rec) {
+    const c = (rec.h && rec.h.complaints) || {};
+    const total = c.total != null ? c.total : (c.open || 0);
+    const open = c.open || 0;
+    document.getElementById('viol-title').textContent = rec.a || 'Complaints';
+    document.getElementById('viol-sub').textContent =
+      `${total} complaint${total === 1 ? '' : 's'} on record · ${open} open — reported to 311 / NYC HPD`;
+    const body = document.getElementById('viol-body');
+    body.innerHTML = '<div class="hpd-viol-note" style="border:none">Loading complaints from NYC Open Data…</div>';
+    violSheet.hidden = false;
+    track('complaints_open', { bbl: rec.bbl, via: 'detail_button' });
+    loadComplaints(rec.bbl).then(rows => {
+      if (violSheet.hidden) return;
+      body.innerHTML = compListHtml(rows);
+    }).catch(() => {
+      body.innerHTML = '<div class="hpd-viol-note" style="border:none">Couldn\'t reach NYC Open Data just now. Close and tap again to retry.</div>';
+    });
+  }
   function closeViolSheet() { violSheet.hidden = true; }
   violSheet.addEventListener('click', e => {
     if (e.target === violSheet || e.target.closest('[data-viol="close"]')) closeViolSheet();
@@ -5436,6 +5511,7 @@
     if (act === 'directions') { openDirections(rec); return; }
     if (act === 'share') { shareBuilding(rec, e.target.closest('[data-detail]')); return; }
     if (act === 'violations') { openViolSheet(rec); return; }
+    if (act === 'complaints') { openCompSheet(rec); return; }
     if (act === 'report') { buyReport(rec, e.target.closest('[data-detail]')); return; }
     if (act === 'map') {
       const m = markerByBbl.get(rec.bbl);

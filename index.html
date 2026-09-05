@@ -380,6 +380,11 @@
     font-family: inherit; font-size: 15px; font-weight: 800; cursor: pointer; }
   .ref-cta:hover { opacity: .88; }
   .ref-cta svg { width: 17px; height: 17px; flex: 0 0 auto; }
+  /* one-line confirmation after a copy-to-clipboard share (no navigator.share) */
+  .fac-toast { position: fixed; left: 50%; bottom: calc(28px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(12px);
+    z-index: 4000; background: var(--ink); color: var(--surface); font-size: 14px; font-weight: 600; padding: 11px 18px; border-radius: 999px;
+    box-shadow: 0 6px 24px rgba(0,0,0,.25); opacity: 0; pointer-events: none; transition: opacity .18s, transform .18s; max-width: calc(100vw - 32px); }
+  .fac-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   .ref-share { width: 100%; margin-top: 10px; padding: 14px; border-radius: 999px; background: transparent;
     border: 1px solid var(--line); color: var(--ink); font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
   .ref-share:hover { background: var(--bg); }
@@ -1427,6 +1432,7 @@
     <button class="sheet-opt" data-v="yr-desc">Year built (newest first)</button>
   </div>
 </div>
+<div class="fac-toast" id="fac-toast" role="status" aria-live="polite"></div>
 <div id="detail-sheet" hidden>
   <div class="detail-shell">
     <div class="detail-bar">
@@ -1437,6 +1443,7 @@
       <div class="detail-bar-right">
         <button class="detail-plus-cta" data-detail="getplus" hidden>🎁 Get free Plus</button>
         <button class="detail-icon detail-profile" data-detail="profile" hidden aria-label="Profile">👤</button>
+        <button class="detail-icon detail-share" data-detail="share" aria-label="Share this building" title="Share"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg></button>
         <button class="detail-icon detail-fav" data-detail="fav" aria-label="Save">♡</button>
       </div>
     </div>
@@ -5096,6 +5103,7 @@
       </div>
       <div class="d-actions" style="padding-top:0">
         <button class="d-secondary" data-detail="map">View on map</button>
+        <button class="d-secondary" data-detail="share">🔗 Share this building</button>
       </div>
       <div class="d-actions d-dir-row" style="padding-top:0">
         <button class="d-secondary" data-detail="directions">🧭 Driving directions</button>
@@ -5201,7 +5209,59 @@
         loadComments(rec.bbl);
       }
     });
-    if (!_detailNav) { history.pushState({ facDetail: true }, ''); _detailNav = true; }
+    // The address bar carries the building (#d=<bbl>, the deep link boot
+    // already honours), so copying the URL from the browser shares the
+    // building too — not only the Share button. Back still closes the sheet.
+    const dl = buildingShareUrl(rec);
+    if (!_detailNav) { history.pushState({ facDetail: true }, '', dl); _detailNav = true; }
+    else history.replaceState(history.state, '', dl);
+  }
+  function buildingShareUrl(rec) {
+    return location.origin + location.pathname + '#d=' + encodeURIComponent(rec.bbl);
+  }
+  // Native share sheet where there is one (every phone), copy-to-clipboard
+  // everywhere else. Either way the event is logged so the dashboard can say
+  // how often a building gets passed along.
+  function shareBuilding(rec, btn) {
+    const url = buildingShareUrl(rec);
+    const borough = BORO_NAME[rec.b] || '';
+    const where = [rec.nb, borough].filter(Boolean).join(', ') || CITY.label;
+    const est = estRent(rec);
+    const title = rec.a + (borough ? ', ' + borough : '') + ' — Find A Crib';
+    const text = rec.a + ' in ' + where + (rec.u ? ' · ' + rec.u + ' units' : '') +
+      (est ? ' · ' + est.replace(/<[^>]+>/g, '') : '') + ' — rent-stabilized building on Find A Crib';
+    const method = navigator.share ? 'native' : 'copy';
+    track('building_share', { bbl: rec.bbl, addr: rec.a, boro: rec.b, method });
+    if (navigator.share) {
+      navigator.share({ title, text, url }).catch(() => {});
+      return;
+    }
+    copyText(url).then(ok => {
+      showToast(ok ? 'Link copied — paste it anywhere' : url);
+      if (btn && btn.classList.contains('d-secondary')) {
+        const prev = btn.innerHTML; btn.textContent = ok ? '✓ Link copied' : 'Copy failed';
+        setTimeout(() => { btn.innerHTML = prev; }, 1800);
+      }
+    });
+  }
+  function copyText(t) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(t).then(() => true, () => copyTextLegacy(t));
+    }
+    return Promise.resolve(copyTextLegacy(t));
+  }
+  function copyTextLegacy(t) {
+    try {
+      const ta = document.createElement('textarea'); ta.value = t; ta.setAttribute('readonly', '');
+      ta.style.cssText = 'position:fixed;top:-1000px;opacity:0'; document.body.appendChild(ta);
+      ta.select(); const ok = document.execCommand('copy'); ta.remove(); return ok;
+    } catch (e) { return false; }
+  }
+  let _toastT = null;
+  function showToast(msg) {
+    const t = document.getElementById('fac-toast'); if (!t) return;
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(_toastT); _toastT = setTimeout(() => t.classList.remove('show'), 2200);
   }
   function closeDetail() {
     detailSheet.hidden = true; detailRec = null;
@@ -5229,6 +5289,7 @@
       return;
     }
     if (act === 'directions') { openDirections(rec); return; }
+    if (act === 'share') { shareBuilding(rec, e.target.closest('[data-detail]')); return; }
     if (act === 'report') { buyReport(rec, e.target.closest('[data-detail]')); return; }
     if (act === 'map') {
       const m = markerByBbl.get(rec.bbl);

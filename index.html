@@ -380,6 +380,22 @@
     font-family: inherit; font-size: 15px; font-weight: 800; cursor: pointer; }
   .ref-cta:hover { opacity: .88; }
   .ref-cta svg { width: 17px; height: 17px; flex: 0 0 auto; }
+  /* violations popup — centred card on desktop, bottom sheet on phones; sits above the detail sheet */
+  .viol-backdrop { position: fixed; inset: 0; z-index: 3600; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .viol-backdrop[hidden] { display: none; }
+  .viol-panel { position: relative; background: var(--surface); color: var(--ink); width: 100%; max-width: 560px; max-height: min(80vh, 720px);
+    border-radius: 16px; padding: 18px 18px 16px; display: flex; flex-direction: column; box-shadow: 0 18px 60px rgba(0,0,0,.3); }
+  .viol-panel .sheet-close { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border-radius: 50%; border: none;
+    background: var(--bg); color: var(--ink-2); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 1; }
+  .viol-panel .sheet-close:hover { background: var(--surface-3); }
+  .viol-panel h3 { margin: 0 44px 2px 0; font-size: 17px; line-height: 1.3; }
+  .viol-sub { font-size: 12.5px; color: var(--ink-2); margin-bottom: 10px; }
+  .viol-body { overflow-y: auto; -webkit-overflow-scrolling: touch; min-height: 60px; border-top: 1px solid var(--line); }
+  .viol-body .hpd-viol-note:first-child { border: none; }
+  @media (max-width: 760px) {
+    .viol-backdrop { align-items: flex-end; padding: 0; }
+    .viol-panel { max-width: none; max-height: 85vh; border-radius: 16px 16px 0 0; padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+  }
   /* one-line confirmation after a copy-to-clipboard share (no navigator.share) */
   .fac-toast { position: fixed; left: 50%; bottom: calc(28px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(12px);
     z-index: 4000; background: var(--ink); color: var(--surface); font-size: 14px; font-weight: 600; padding: 11px 18px; border-radius: 999px;
@@ -1433,6 +1449,16 @@
   </div>
 </div>
 <div class="fac-toast" id="fac-toast" role="status" aria-live="polite"></div>
+<!-- Violations popup: the same list the HPD section expands inline, one tap
+     from the top of the building page. -->
+<div id="viol-sheet" class="viol-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="viol-title">
+  <div class="viol-panel">
+    <button type="button" class="sheet-close" data-viol="close" aria-label="Close">✕</button>
+    <h3 id="viol-title">Violations</h3>
+    <div class="viol-sub" id="viol-sub"></div>
+    <div class="viol-body" id="viol-body"></div>
+  </div>
+</div>
 <div id="detail-sheet" hidden>
   <div class="detail-shell">
     <div class="detail-bar">
@@ -2336,14 +2362,14 @@
         // Apify feed, Zumper for the weekly scrape. Name the site we're actually
         // sending them to; a third of NYC's direct links are Zumper's.
         const src = /(?:^|\.)zumper\.com$/.test(new URL(direct).hostname) ? 'Zumper' : 'StreetEasy';
-        return { href: direct, label: `View on ${src} ↗`, short: 'View listing ↗', direct: true };
+        return { href: direct, label: `${src} ↗`, short: `${src} ↗`, direct: true };
       }
       const q = encodeURIComponent(`${rec.a}, ${borough}, NY ${rec.z || ''}`.trim());
       return { href: `https://streeteasy.com/search?search=${q}`,
-               label: 'Look up on StreetEasy ↗', short: 'StreetEasy ↗', direct: false };
+               label: 'StreetEasy ↗', short: 'StreetEasy ↗', direct: false };
     }
     if (safeHttpUrl(direct))
-      return { href: direct, label: 'View on Zumper ↗', short: 'View listing ↗', direct: true };
+      return { href: direct, label: 'Zumper ↗', short: 'Zumper ↗', direct: true };
     const zq = encodeURIComponent(`site:zumper.com "${rec.a}" ${borough} ${CITY.state}`);
     return { href: `https://www.google.com/search?q=${zq}`,
              label: 'Search Zumper ↗', short: 'Search ↗', direct: false };
@@ -5108,11 +5134,8 @@
       <div class="d-actions d-dir-row" style="padding-top:0">
         <button class="d-secondary" data-detail="directions">🧭 Driving directions</button>
       </div>
-      ${IS_NYC && REPORTS_ON ? `<div class="d-actions d-report-row" style="padding-top:0">
-        <button class="d-secondary" data-detail="report">📄 Get the full building report — $9</button>
-        <div class="d-sub" style="margin:0">How this building's violation record compares
-        citywide, who owns it and what else they own, and a pre-filled DHCR rent-history
-        request. One-time, no account needed.</div>
+      ${IS_NYC && rec.h && rec.h.violations ? `<div class="d-actions" style="padding-top:0">
+        <button class="d-secondary" data-detail="violations">⚠️ Violations (${violTotal != null ? violTotal : 0})</button>
       </div>` : ''}
       ${IS_NYC ? `<div class="d-section"><h3>Housing vouchers (Section 8)</h3>
         ${s8Html(rec) || '<div class="d-sub" style="margin:0">No voucher listing or subsidy record for this building right now.</div>'}
@@ -5263,6 +5286,32 @@
     t.textContent = msg; t.classList.add('show');
     clearTimeout(_toastT); _toastT = setTimeout(() => t.classList.remove('show'), 2200);
   }
+  // The violations popup. Same fetch and same rows as the HPD section's
+  // inline expander, so the two can never disagree about a building.
+  const violSheet = document.getElementById('viol-sheet');
+  function openViolSheet(rec) {
+    const v = (rec.h && rec.h.violations) || {};
+    const total = v.total != null ? v.total : (v.open || 0);
+    const open = v.open || 0;
+    document.getElementById('viol-title').textContent = rec.a || 'Violations';
+    document.getElementById('viol-sub').textContent =
+      `${total} violation${total === 1 ? '' : 's'} on record · ${open} open — NYC HPD`;
+    const body = document.getElementById('viol-body');
+    body.innerHTML = '<div class="hpd-viol-note" style="border:none">Loading violations from NYC Open Data…</div>';
+    violSheet.hidden = false;
+    track('violations_open', { bbl: rec.bbl, via: 'detail_button' });
+    loadViolations(rec.bbl).then(rows => {
+      if (violSheet.hidden) return;
+      body.innerHTML = violListHtml(rows);
+    }).catch(() => {
+      body.innerHTML = '<div class="hpd-viol-note" style="border:none">Couldn\'t reach NYC Open Data just now. Close and tap again to retry, or scroll to the HPD record below.</div>';
+    });
+  }
+  function closeViolSheet() { violSheet.hidden = true; }
+  violSheet.addEventListener('click', e => {
+    if (e.target === violSheet || e.target.closest('[data-viol="close"]')) closeViolSheet();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !violSheet.hidden) closeViolSheet(); });
   function closeDetail() {
     detailSheet.hidden = true; detailRec = null;
     // consume the pushed entry (popstate below no-ops because _detailNav is now false)
@@ -5290,6 +5339,7 @@
     }
     if (act === 'directions') { openDirections(rec); return; }
     if (act === 'share') { shareBuilding(rec, e.target.closest('[data-detail]')); return; }
+    if (act === 'violations') { openViolSheet(rec); return; }
     if (act === 'report') { buyReport(rec, e.target.closest('[data-detail]')); return; }
     if (act === 'map') {
       const m = markerByBbl.get(rec.bbl);

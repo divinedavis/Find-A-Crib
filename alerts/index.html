@@ -181,13 +181,13 @@
 
     <button class="submit" id="submit" type="submit">Email me when something opens</button>
     <div class="err" id="err" hidden></div>
-    <p class="fine">Only alerts — no digests, no newsletter. One-click unsubscribe in every email. Already signed up? Submit again to change your boroughs.</p>
+    <p class="fine">Alerts the minute something opens, plus a short Tuesday round-up you can switch off on its own. Never more than one email a day. One-click unsubscribe in every email. Already signed up? Submit again to change your boroughs.</p>
   </form>
 
   <div class="ok" id="ok" hidden>
     <b>You're on the list.</b>
     <p id="ok-text"></p>
-    <p>A confirmation is on its way. Quiet until something opens — then one email, with the link to apply.</p>
+    <p>A confirmation is on its way. Quiet until something opens — then one email, with the link to apply. Never more than one a day.</p>
     <p><a href="/">See everything open right now on the map →</a></p>
   </div>
 
@@ -200,6 +200,17 @@
   <div class="ok" id="unsub-ok" hidden>
     <b>You're unsubscribed.</b>
     <p>No more borough alerts to this address. <a href="/alerts/">Sign up again</a> whenever you like.</p>
+  </div>
+
+  <div class="card" id="digestoff" hidden>
+    <b>Stop the Tuesday round-up?</b>
+    <p class="hint" style="font-size:14px">You'll keep getting an email the minute a lottery or re-rental opens in your boroughs — only the weekly round-up stops.</p>
+    <button class="submit" id="digestoff-btn" type="button">Stop the round-up</button>
+    <div class="err" id="digestoff-err" hidden></div>
+  </div>
+  <div class="ok" id="digestoff-ok" hidden>
+    <b>Round-up stopped.</b>
+    <p>Your the-minute-it-opens alerts are unchanged.</p>
   </div>
 
   <section class="how">
@@ -316,6 +327,27 @@
       .catch(function () { err.textContent = MSG.temporarily_unavailable; err.hidden = false; })
       .then(function () { btn.disabled = false; btn.textContent = 'Email me when something opens'; });
   });
+
+  // #digestoff=<token>: stop only the weekly round-up. Same ask-then-POST
+  // shape as unsubscribe below.
+  var dm = /[#&]digestoff=([0-9a-f-]{36})/i.exec(location.hash);
+  if (dm) {
+    var dtoken = dm[1].toLowerCase();
+    $('form').hidden = true;
+    $('digestoff').hidden = false;
+    $('digestoff-btn').addEventListener('click', function () {
+      var b = $('digestoff-btn'); b.disabled = true;
+      fetch('/api/alerts/digest-off', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: dtoken })
+      }).then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (j && j.ok) { $('digestoff').hidden = true; $('digestoff-ok').hidden = false; return; }
+          $('digestoff-err').textContent = 'That link has already been used or has expired.'; $('digestoff-err').hidden = false; b.disabled = false;
+        })
+        .catch(function () { $('digestoff-err').textContent = MSG.temporarily_unavailable; $('digestoff-err').hidden = false; b.disabled = false; });
+    });
+  }
 
   // #unsub=<token> from the email footer. The page asks, then POSTs — a GET
   // never unsubscribes anyone, because mail scanners follow links.

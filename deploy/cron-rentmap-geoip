@@ -1,0 +1,10 @@
+# IP-to-city database for /api/geo (the map's "near you" first view).
+# Installed at /etc/cron.d/rentmap-geoip (scp this file; never hand-edit on
+# the box — see deploy/cron-rentmap-growth).
+#
+# DB-IP publishes the free City Lite MMDB monthly; fetch it on the 3rd and
+# again on the 10th in case the 3rd was early. scripts/refresh_geoip.sh keeps
+# the previous file when the new one is not there yet.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+15 6 3,10 * * root /root/Find-A-Crib/scripts/refresh_geoip.sh >> /var/log/rentmap-geoip.log 2>&1

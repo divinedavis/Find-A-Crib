@@ -100,3 +100,6 @@ buildings.hpd.json.gz
 # rerental_daily.py writes for it
 lottery_alerts_state.json
 rerental_new.json
+
+# saved-building watch state (droplet-side, saved_alerts.py)
+saved_alerts_state.json

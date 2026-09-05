@@ -289,6 +289,15 @@
     background: #1d2430; color: #fff; border-radius: 12px; padding: 12px 14px; max-width: min(92vw, 420px);
     box-shadow: 0 8px 28px rgba(0,0,0,.35); font-size: 13.5px; }
   .folder-toast .ft-title { font-weight: 700; margin-bottom: 8px; }
+  /* "near you" first-view chip, top-centre of the map, above Leaflet's panes */
+  .geo-chip { position: absolute; left: 50%; transform: translateX(-50%); top: 12px; z-index: 1001;
+    display: flex; align-items: center; gap: 10px; max-width: calc(100% - 24px); box-sizing: border-box;
+    background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 999px;
+    padding: 7px 8px 7px 14px; font-size: 13px; box-shadow: 0 4px 16px rgba(0,0,0,.18); }
+  .geo-chip span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .geo-chip button { border: 0; background: var(--blue-solid); color: #fff; border-radius: 999px; padding: 5px 10px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .geo-chip button.geo-x { background: transparent; color: var(--ink-2); padding: 4px 6px; font-size: 14px; }
+  @media (max-width: 900px) { .geo-chip { top: auto; bottom: calc(76px + env(safe-area-inset-bottom)); font-size: 12px; } }
   .folder-toast .ft-opts { display: flex; flex-wrap: wrap; gap: 6px; }
   .folder-toast .ft-opts button { padding: 6px 11px; border-radius: 14px; border: 1px solid #46536a;
     background: #2a3346; color: #fff; font-size: 12.5px; cursor: pointer; }
@@ -1312,7 +1321,7 @@
     <h2>Everything you need to land your crib</h2>
     <p class="auth-sub">One membership unlocks all of Find A Crib:</p>
     <ul class="paywall-feats">
-      <li>🔔 Email alerts the moment a home you saved is listed for rent</li>
+      <li>🔖 Save any search — filters, area and all — and reapply it in one tap</li>
       <li>📞 Managing-agent phone numbers — call who actually runs the building</li>
       <li>🔎 Research any landlord: every building they own across NYC, apartment counts by borough, and their violation record</li>
       <li>🏷️ Organize your saved homes into custom categories</li>
@@ -1376,8 +1385,8 @@
     <button id="profile-upgrade" type="button" class="auth-submit" hidden>Get Plus — $4.99/mo</button>
     <div class="profile-row profile-toggle-row">
       <div>
-        <div class="profile-feat">🔔 Email alerts</div>
-        <div class="profile-feat-sub">Get an email when a building you saved is listed for rent.</div>
+        <div class="profile-feat">🔔 Saved-building alerts</div>
+        <div class="profile-feat-sub">An email when a building you saved is advertised, gets a lottery or re-rental, drops its rent, or its violations change. Free. Never more than one email a day; Tuesdays it’s the weekly round-up.</div>
       </div>
       <label class="switch"><input id="profile-alerts" type="checkbox"><span class="slider"></span></label>
     </div>
@@ -1703,6 +1712,7 @@
   };
   const CITY = CITIES[document.documentElement.dataset.city || 'nyc'] || CITIES.nyc;
   const IS_NYC = !!CITY.nyc;
+  const BORO_LONG = { M: 'Manhattan', Bk: 'Brooklyn', Q: 'Queens', Bx: 'the Bronx', SI: 'Staten Island' };
   // Wording for a record's `mr` (a reported/registered rent, never an asking rent).
   // Each city phrases it differently — SF reports at the block, DC registers a legal rent.
   const RENT = CITY.rent || {
@@ -1878,7 +1888,7 @@
   // traffic). Alerts, phones, research, folders, and saved searches stay Plus.
   function gateSave(isUnsave) {
     if (isUnsave) return true;
-    if (!authUser) { openAuthModal('Create a free account or sign in to save the buildings you like.'); return false; }
+    if (!authUser) { openAuthModal('Create a free account to save this building — you’ll get an email when it’s advertised, a lottery or re-rental opens here, or its violations change. Never more than one email a day.'); return false; }
     return true;
   }
   async function persistFav(bbl, on) {
@@ -1889,8 +1899,11 @@
       // just means it's already saved, which is the desired state.
       if (on) await supaClient.from('saved_buildings').insert({ user_id: authUser.id, bbl });
       else await supaClient.from('saved_buildings').delete().eq('user_id', authUser.id).eq('bbl', bbl);
-      if (on && plusActive) showFolderToast(bbl);   // offer to file it right away
-      else if (on && !plusActive) maybeAlertsUpsell();  // free save = natural Plus moment
+      // Saving IS subscribing: every saver, free or Plus, gets an email when
+      // the building changes (saved_alerts.py). Say so once per session so the
+      // save reads as "we're watching it", then offer Plus members a folder.
+      if (on && plusActive) showFolderToast(bbl);
+      else if (on) confirmWatchToast();
       if (!on) { delete FAVCATS[bbl]; renderFolderBar(); }
     } catch (e) { console.warn('fav sync failed', e); }
   }
@@ -1939,7 +1952,7 @@
     const opts = CATS.map(c =>
       `<button type="button" data-cat="${c.id}">📁 ${escT(c.name)}</button>`).join('');
     t.innerHTML = `<button type="button" class="ft-close" aria-label="Dismiss">✕</button>
-      <div class="ft-title">♥ Saved — add it to a folder?</div>
+      <div class="ft-title">♥ Saved — we’ll email you when it changes. Add it to a folder?</div>
       <div class="ft-opts">${opts}<button type="button" data-newcat>＋ New folder…</button></div>`;
     document.body.appendChild(t);
     const timer = setTimeout(dismissFolderToast, 12000);
@@ -1957,19 +1970,19 @@
   }
   function dismissFolderToast() { document.getElementById('folder-toast')?.remove(); }
   // shown at most once per session, right after a free user saves a building
-  function maybeAlertsUpsell() {
-    try { if (sessionStorage.getItem('fac_upsell')) return; sessionStorage.setItem('fac_upsell', '1'); } catch (e) {}
+  function confirmWatchToast() {
+    try { if (sessionStorage.getItem('fac_watch_toast')) return; sessionStorage.setItem('fac_watch_toast', '1'); } catch (e) {}
     dismissFolderToast();
     const t = document.createElement('div');
     t.className = 'folder-toast'; t.id = 'folder-toast';
     t.innerHTML = `<button type="button" class="ft-close" aria-label="Dismiss">✕</button>
-      <div class="ft-title">♥ Saved!</div>
-      <div style="font-size:13px;margin-bottom:9px">Plus members get an email the moment a saved building lists an apartment.</div>
-      <div class="ft-opts"><button type="button" data-upsell-cta>See Plus — $4.99/mo</button></div>`;
+      <div class="ft-title">♥ Saved — we’ll watch it for you</div>
+      <div style="font-size:13px;margin-bottom:9px">You’ll get an email when it’s advertised for rent, a lottery or re-rental opens here, its rent drops, or its HPD violations change. Never more than one email a day.</div>
+      <div class="ft-opts"><button type="button" data-watch-settings>Alert settings</button></div>`;
     document.body.appendChild(t);
     const timer = setTimeout(dismissFolderToast, 12000);
     t.addEventListener('click', e => {
-      if (e.target.closest('[data-upsell-cta]')) { clearTimeout(timer); dismissFolderToast(); openPaywall(null); }
+      if (e.target.closest('[data-watch-settings]')) { clearTimeout(timer); dismissFolderToast(); openProfile(); }
       else if (e.target.closest('.ft-close')) { clearTimeout(timer); dismissFolderToast(); }
     });
   }
@@ -2049,7 +2062,7 @@
     // the concrete payoff (a saved shortlist that syncs), not a generic ask
     t.innerHTML = `<button type="button" class="ft-close" aria-label="Dismiss">✕</button>
       <div class="ft-title">🏠 Comparing a few buildings?</div>
-      <div style="font-size:13px;margin-bottom:9px">Save your shortlist to a free account — it syncs to your phone and you can pick up right where you left off.</div>
+      <div style="font-size:13px;margin-bottom:9px">Save your shortlist to a free account and we’ll email you when any of them is advertised, gets a lottery or re-rental, or its violations change.</div>
       <div class="ft-opts"><button type="button" data-nudge-cta>Create a free account</button></div>`;
     document.body.appendChild(t);
     const timer = setTimeout(() => t.remove(), 15000);
@@ -2164,6 +2177,12 @@
     if (btn) btn.addEventListener('click', () => location.reload());
   }
 
+  // The visitor's own area, from the network — resolved server-side, no
+  // browser permission prompt (see /api/geo). Started here so it is back by
+  // the time the map has something to show; consumed after the first paint.
+  const geoPromise = (IS_NYC && !location.hash && !location.search && !isBot())
+    ? fetch('/api/geo', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null)
+    : Promise.resolve(null);
   let data, listingsBlob, s8Blob, FMR;
   try {
     [data, listingsBlob, s8Blob, FMR] = await Promise.all([
@@ -5340,7 +5359,7 @@
     detailFavBtn.classList.toggle('faved', !!f);
     detailFavBtn.textContent = f ? '♥' : '♡';
     const cta = detailContent.querySelector('.d-actions [data-detail="fav"]');
-    if (cta) cta.innerHTML = f ? '♥ Saved to your list' : '♡ Save this building — free';
+    if (cta) cta.innerHTML = f ? '♥ Saved — watching it for you' : '♡ Save & get alerts — free';
   }
   // The detail sheet opens via JS, so on its own it adds no browser history —
   // which means the iOS edge-swipe-back gesture (and the browser Back button)
@@ -5770,6 +5789,25 @@
   })();
   applyFilters();
   syncHeaderHeight();
+  // ---------- first view: open on the visitor's own area ----------
+  // Only on a bare landing (no hash, no query): a deep link, a search, a
+  // shared folder or an email click-through all know where they want to be.
+  geoPromise.then(g => {
+    if (!g || !g.ok || !g.boro || location.hash || location.search) return;
+    map.setView([g.lat, g.lng], 14, { animate: false });
+    const chip = document.createElement('div');
+    chip.className = 'geo-chip';
+    chip.innerHTML = `<span>📍 Showing ${esc(BORO_LONG[g.boro] || 'your area')} — from your network location</span>` +
+      `<button type="button" data-geo="all">Show all NYC</button>` +
+      `<button type="button" class="geo-x" data-geo="x" aria-label="Dismiss">✕</button>`;
+    document.getElementById('map').appendChild(chip);
+    chip.addEventListener('click', e => {
+      if (e.target.closest('[data-geo="all"]')) { map.setView(CITY.center, CITY.zoom, { animate: false }); track('geo_reset', { boro: g.boro }); }
+      if (e.target.closest('[data-geo]')) chip.remove();
+    });
+    setTimeout(() => { if (chip.isConnected) chip.remove(); }, 20000);
+    track('geo_start', { boro: g.boro });
+  });
   if (location.hash === '#list') setListOpen(true);
   // Ad landings (gclid) on mobile: open the results list straight away. The ad
   // headline promises a "list of buildings," but mobile otherwise lands on a
@@ -5938,13 +5976,17 @@
     const m = location.hash.match(/[#&]unsub=([0-9a-f-]{36})/i);
     if (!m || !supaClient) return;
     const lifecycle = /[#&]k=lifecycle\b/i.test(location.hash);
+    const digest = /[#&]k=digest\b/i.test(location.hash);
     history.replaceState({}, '', location.pathname + location.search);
     try {
       const { data, error } = await supaClient.rpc(
-        lifecycle ? 'unsubscribe_lifecycle' : 'unsubscribe_alerts', { p_token: m[1] });
+        lifecycle ? 'unsubscribe_lifecycle' : digest ? 'unsubscribe_digest' : 'unsubscribe_alerts',
+        { p_token: m[1] });
       if (error) throw error;
       const ok = lifecycle
         ? 'You’ve been unsubscribed from Find A Crib emails. Saved-building alerts still work.'
+        : digest
+        ? 'The weekly round-up is off. Alerts on your saved buildings still work.'
         : 'You’ve been unsubscribed from saved-building alerts.';
       showPlusToast(data ? ok
                          : 'That unsubscribe link isn’t valid — it may have already been used.');
@@ -6058,12 +6100,10 @@
     document.getElementById('profile-upgrade').hidden = plusActive;
     document.getElementById('profile-dark').checked = themeName() === 'dark';
     profileAlerts.checked = false;
-    if (plusActive) {
-      try {
-        const { data } = await supaClient.rpc('get_alerts_enabled');
-        profileAlerts.checked = data !== false;
-      } catch (e) { /* leave off */ }
-    }
+    try {   // free for every account since 2026-09-05 (saving is subscribing)
+      const { data } = await supaClient.rpc('get_alerts_enabled');
+      profileAlerts.checked = data !== false;
+    } catch (e) { /* leave off */ }
     document.getElementById('profile-folders').hidden = !plusActive;
     document.getElementById('profile-searches').hidden = !plusActive;
     if (plusActive) { await loadFolders(); renderProfileFolders(); renderProfileSearches(); }
@@ -6144,11 +6184,6 @@
   });
   profileAlerts.addEventListener('change', async () => {
     const want = profileAlerts.checked;
-    if (!plusActive) {   // alerts are a Plus feature — flip back and show why
-      profileAlerts.checked = false;
-      profileModal.hidden = true; openPaywall(null);
-      return;
-    }
     try {
       const { error } = await supaClient.rpc('set_alerts_enabled', { p_on: want });
       if (error) throw error;

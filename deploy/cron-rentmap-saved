@@ -1,0 +1,20 @@
+# Saved-building alerts. Installed at /etc/cron.d/rentmap-saved (scp this
+# file; never hand-edit on the box — see deploy/cron-rentmap-growth).
+#
+# 06:20 America/New_York, daily: saved_alerts.sh diffs every saved building
+# against yesterday's snapshot (advertised, voucher listing, price drop,
+# lottery or re-rental at the address, HPD violations, DHCR registration) and
+# mails each watcher ONE email. Tuesdays it is the weekly round-up instead.
+#
+# Why 06:20: after the overnight feeds (voucher scrape 04:15 UTC, HCR full
+# pass 04:35 UTC, Zumper 03:30 UTC, HPD weekly 08:10 UTC Sunday = 04:10 ET),
+# after the 05:00 ET growth run (whose account-lifecycle emails should win the
+# day's one slot for brand-new accounts), and before the 06:45 ET re-rental
+# sweep so the two never collide on the checkout.
+#
+# Replaces the 05:00 UTC notify_saved_listings.py cron on 167.71.170.219,
+# which is now commented out there.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+CRON_TZ=America/New_York
+20 6 * * * root /root/Find-A-Crib/saved_alerts.sh >> /var/log/rentmap-saved.log 2>&1

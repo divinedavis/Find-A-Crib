@@ -27,7 +27,7 @@ import json
 import os
 import urllib.request
 
-from . import emailkit, ledger
+from . import emailkit, ledger, mailcap
 
 SITE = "https://findacrib.com"
 SUPABASE_URL = "https://dbaifotzwlxjvsxjohjt.supabase.co"
@@ -242,9 +242,19 @@ def run(dry_run=False, now=None, voucher_buildings=None):
                   f"({row.get('days_old')}d old, {row.get('save_count')} saves) — {subject}")
             sent.append(step)
             continue
+        # One Find A Crib email a day, whichever job sends it (growth/mailcap).
+        # A step that loses today's slot is simply still due tomorrow.
+        try:
+            if not mailcap.claim(row["email"], "lifecycle"):
+                print(f"  {step} -> {row['email']}: already emailed today, still due")
+                continue
+        except Exception as e:
+            failed.append(f"{step}->{row['email']}: ledger {e}")
+            continue
         try:
             emailkit.send(row["email"], subject, html, text, unsub_url=_unsub(row["token"]))
         except Exception as e:
+            mailcap.release(row["email"])
             failed.append(f"{step}->{row['email']}: {e}")
             continue
         try:

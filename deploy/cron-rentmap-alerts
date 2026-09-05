@@ -6,8 +6,24 @@
 # Housing Connect refresh is one cheap POST and the run is a no-op when
 # nothing changed, so ten minutes costs nothing.
 #
+# One email a day per address, across every job (growth/mailcap.py): the first
+# new item of the day goes out at once, later ones are held per subscriber
+# and lead the next day's first email.
+#
 # Replaces the twice-daily /etc/cron.d/rentmap-housingconnect: the wrapper
 # writes the same housing_connect.json, so that file is removed on install.
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 */10 * * * * root /root/Find-A-Crib/lottery_alerts.sh >> /var/log/rentmap-alerts.log 2>&1
+
+# Below here the clock is New York's. Both lines sit AFTER the 06:20 ET
+# saved-building run (deploy/cron-rentmap-saved): someone who is both an
+# account holder and a borough subscriber gets the personal email and, having
+# had today's one, is skipped here — the round-up content overlaps anyway.
+CRON_TZ=America/New_York
+
+# 06:35 daily: first-week round-up for sign-ups that have had only the welcome.
+35 6 * * * root /root/Find-A-Crib/lottery_alerts.sh --nudge >> /var/log/rentmap-alerts.log 2>&1
+
+# 06:40 Tuesdays: the weekly round-up — opened this week, closing this week.
+40 6 * * 2 root /root/Find-A-Crib/lottery_alerts.sh --weekly >> /var/log/rentmap-alerts.log 2>&1

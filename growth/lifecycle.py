@@ -31,7 +31,7 @@ import os
 import urllib.parse
 import urllib.request
 
-from . import emailkit, ledger
+from . import emailkit, ledger, mailcap
 
 SITE = "https://findacrib.com"
 SUPABASE_URL = "https://dbaifotzwlxjvsxjohjt.supabase.co"
@@ -226,8 +226,16 @@ def run(buildings_by_bbl=None, dry_run=False, now=None):
             sent.append(step)
             continue
         try:
+            if not mailcap.claim(row["email"], "report"):
+                print(f"  {step} -> {row['email']}: already emailed today, still due")
+                continue
+        except Exception as e:
+            failed.append(f"{step}->{row['email']}: ledger {e}")
+            continue
+        try:
             emailkit.send(row["email"], subject, html, text, unsub_url=unsub)
         except Exception as e:
+            mailcap.release(row["email"])
             failed.append(f"{step}->{row['email']}: {e}")
             continue
         # Record immediately after a successful send. If this write fails the

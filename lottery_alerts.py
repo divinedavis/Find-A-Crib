@@ -21,14 +21,31 @@ seen-set is left alone, so a bad morning does not re-announce it all later.
 
 One email per subscriber per run, however many items there are, and the run
 itself is capped (MAX_SENDS_PER_RUN, HOURLY_CAP) under the mailbox's 500/hour
-domain ceiling at Namecheap. A subscriber gets at most DAILY_PER_SUB emails a
-day.
+domain ceiling at Namecheap.
+
+Nobody gets more than ONE Find A Crib email a day, from any job (owner rule,
+2026-09-05; growth/mailcap.py is the shared ledger). The first new item of
+the day goes out the minute it appears; anything after that is HELD per
+subscriber (state["held"]) and rides the next day's first email, so nothing
+is dropped and nothing arrives twice.
+
+Two more entry points share the list, the sender and the opt-out:
+
+  --nudge    first-week round-up. A subscriber who signed up 2–8 days ago and
+             has had nothing but the welcome gets "open right now in your
+             boroughs" once, so the first week is never silent.
+  --weekly   fixed-day digest (Tuesday mornings, deploy/cron-rentmap-alerts):
+             what opened this week in their boroughs and what closes in the
+             next seven days. Its own opt-out (digest_off) so stopping it
+             never stops the alerts.
 
     python3 lottery_alerts.py               # normal run
     python3 lottery_alerts.py --dry-run     # print who would get what
     python3 lottery_alerts.py --seed        # (re)build state, send nothing
     python3 lottery_alerts.py --test-email you@x.com
                                             # one sample from today's feeds
+    python3 lottery_alerts.py --nudge [--dry-run]
+    python3 lottery_alerts.py --weekly [--dry-run] [--test-email you@x.com]
 """
 import argparse
 import datetime
@@ -48,8 +65,10 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://dbaifotzwlxjvsxjohjt.supa
 MAX_ITEMS_PER_EMAIL = 12
 MAX_SENDS_PER_RUN = 300
 HOURLY_CAP = 400          # Namecheap Private Email: 500/hour per domain (Starter)
-DAILY_PER_SUB = 6
 SEEN_TTL_DAYS = 240
+HELD_MAX = 30             # per subscriber; older held items fall off the front
+NUDGE_MIN_DAYS, NUDGE_MAX_DAYS = 2, 8
+WEEK_DAYS = 7
 
 BORO_CODE = {"manhattan": "M", "brooklyn": "Bk", "queens": "Q", "bronx": "Bx",
              "the bronx": "Bx", "staten island": "SI", "new york": "M"}
@@ -77,6 +96,19 @@ def money(v):
         return f"${int(v):,}"
     except (TypeError, ValueError):
         return None
+
+
+def iso_date(v):
+    """'2026-09-08' or '9/7/2026' -> '2026-09-08'; anything else -> None."""
+    if not v:
+        return None
+    v = str(v).strip()
+    for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%m/%d/%y"):
+        try:
+            return datetime.datetime.strptime(v[:10] if fmt == "%Y-%m-%d" else v, fmt).date().isoformat()
+        except ValueError:
+            continue
+    return None
 
 
 def load_json(name):
@@ -113,6 +145,7 @@ def hc_items(d):
                     "label": "Housing Connect lottery",
                     "text": l.get("name") or l.get("address") or "Housing Connect lottery",
                     "sub": " · ".join(bits), "url": l.get("href"),
+                    "closes": iso_date(l.get("closes")),
                     "rent_low": l.get("rent_low"),
                     "income_min": l.get("income_min"), "income_max": l.get("income_max")})
     return out
@@ -140,6 +173,7 @@ def hcr_items(d):
                               else "HCR lottery"),
                     "text": l.get("name") or "HCR listing",
                     "sub": " · ".join(bits), "url": l.get("url"),
+                    "closes": iso_date(l.get("due")),
                     "rent_low": None,
                     "income_min": l.get("min_income"), "income_max": l.get("max_income")})
     return out
@@ -226,8 +260,26 @@ def prune(st, now):
     st["seen"] = {k: v for k, v in st["seen"].items() if v >= cutoff}
     hour_ago = (now - datetime.timedelta(hours=1)).isoformat()
     st["sends"] = [t for t in st.get("sends", []) if t >= hour_ago]
-    today = now.date().isoformat()
-    st["per_sub"] = {k: v for k, v in st.get("per_sub", {}).items() if k.endswith(today)}
+    st.pop("per_sub", None)          # pre-ledger daily counter, superseded
+    st.setdefault("held", {})
+
+
+def prune_held(st, feeds):
+    """Drop held items whose record has left its feed (a lottery that closed
+    while it waited is not news). A feed that was unreadable this run keeps
+    its held items — absence of data is not absence of the listing."""
+    live, readable = set(), set()
+    for src, items in feeds.items():
+        if items is None:
+            continue
+        readable.add(src)
+        live.update(i["id"] for i in items)
+    for sid, items in list(st.get("held", {}).items()):
+        keep = [i for i in items if i["id"] in live or i["id"].split(":", 1)[0] not in readable]
+        if keep:
+            st["held"][sid] = keep[-HELD_MAX:]
+        else:
+            st["held"].pop(sid, None)
 
 
 # ------------------------------------------------------------------ supabase
@@ -328,7 +380,7 @@ def render_alert(items, sub, emailkit):
         blocks=blocks,
         cta=("See every open lottery and re-rental", f"{SITE}/?src=alert"),
         footer_note=f"You are subscribed at {sub['email']} for {where}{filter_words(sub)}. "
-                    f"Change boroughs or filters at {SITE}/alerts/.",
+                    f"Change boroughs or filters at {SITE}/alerts/. Never more than one email a day.",
         unsub_url=page_unsub)
     return subject, html, text, post_unsub
 
@@ -356,13 +408,234 @@ def render_welcome(sub, emailkit):
     page_unsub, post_unsub = unsub_urls(sub["token"])
     html, text = emailkit.render(
         title=f"You're on the list for {where}",
-        intro="Quiet until something opens. No digests, no weekly round-ups.",
+        intro="Quiet until something opens — and never more than one email a day. "
+              "A short Tuesday round-up of the week, which you can switch off on its own.",
         blocks=blocks,
         cta=("Open the map", f"{SITE}/?src=alert"),
         footer_note=f"Subscribed at {sub['email']} for {where}{filter_words(sub)}. "
                     f"Change boroughs or filters any time at {SITE}/alerts/.",
         unsub_url=page_unsub)
     return f"Find A Crib alerts: {where}", html, text, post_unsub
+
+
+def digest_off_urls(token):
+    return (f"{SITE}/alerts/#digestoff={token}",
+            f"{SITE}/api/alerts/digest-off?t={token}")
+
+
+def sort_for_reading(items):
+    """Lotteries first, soonest deadline first; then re-rentals and voucher
+    listings in feed order. Undated lotteries sink below dated ones."""
+    def key(i):
+        rank = {"lottery": 0, "rerental": 1, "voucher": 2}.get(i["kind"], 3)
+        return (rank, i.get("closes") or "9999-99-99")
+    return sorted(items, key=key)
+
+
+def render_roundup(sub, emailkit, *, eyebrow, title, intro, sections, cta_label,
+                   footer_extra="", digest=False):
+    """One email built from named groups of items. `sections` is a list of
+    (heading, tone, items); empty groups are skipped."""
+    blocks = []
+    shown = 0
+    for heading, tone, items in sections:
+        if not items:
+            continue
+        room = max(0, MAX_ITEMS_PER_EMAIL - shown)
+        part = items[:room]
+        shown += len(part)
+        if not part:
+            continue
+        blocks.append({"type": "callout", "tone": tone, "heading": heading,
+                       "items": [{"text": i["text"], "sub": i["sub"], "url": i["url"]} for i in part]})
+        if len(items) > len(part):
+            blocks.append({"type": "note", "text": f"…and {len(items) - len(part)} more on the map."})
+    blocks.append({"type": "note",
+                   "text": "A lottery is applied for on Housing Connect (or HCR) by a deadline "
+                           "and picked by log number. A re-rental is a vacated affordable "
+                           "apartment the agent rents directly, often to the first eligible "
+                           "applicant. Details come from each source's own page; always check "
+                           "there before acting."})
+    where = boro_phrase(sub["boroughs"])
+    page_unsub, post_unsub = unsub_urls(sub["token"])
+    if digest:
+        page_off, _ = digest_off_urls(sub["token"])
+        blocks.append({"type": "note",
+                       "text": f"Don't want the Tuesday round-up? Stop just the round-up here: {page_off} "
+                               "— your the-minute-it-opens alerts keep working."})
+    html, text = emailkit.render(
+        title=title, eyebrow=eyebrow, intro=intro, blocks=blocks,
+        cta=(cta_label, f"{SITE}/?src={'digest' if digest else 'nudge'}"),
+        footer_note=f"You are subscribed at {sub['email']} for {where}{filter_words(sub)}. "
+                    f"{footer_extra}Change boroughs or filters at {SITE}/alerts/. "
+                    "Never more than one email a day.",
+        unsub_url=page_unsub)
+    return html, text, post_unsub
+
+
+def subscriber_rows(key):
+    subs = rpc("lottery_alerts_recipients", {}, key) or []
+    for sub in subs:
+        sub["boroughs"] = list(sub.get("boroughs") or [])
+        sub["kinds"] = list(sub.get("kinds") or ["lottery", "rerental"])
+    return subs
+
+
+def parse_ts(v):
+    if not v:
+        return None
+    t = str(v).strip().replace(" ", "T").replace("Z", "+00:00")
+    if len(t) >= 3 and t[-3] in "+-":
+        t += ":00"
+    try:
+        d = datetime.datetime.fromisoformat(t.split(".")[0] + t[-6:] if "." in t else t)
+    except ValueError:
+        return None
+    return d if d.tzinfo else d.replace(tzinfo=datetime.timezone.utc)
+
+
+def nudge(args_dry=False):
+    """First-week round-up: one email to a subscriber who has had only the
+    welcome, 2–8 days in, listing what is open in their boroughs right now.
+    The point is that the first week is never silent. Sent once, ever."""
+    from growth import emailkit, mailcap
+    key = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+    if not key:
+        sys.exit("SUPABASE_SERVICE_KEY not set (growth.env)")
+    now = datetime.datetime.now(datetime.timezone.utc)
+    feeds = gather()
+    everything = [i for src in ("hc", "hcr", "rr", "s8") for i in (feeds[src] or [])]
+    sent_ids, nudged_ids = [], []
+    for sub in subscriber_rows(key):
+        if sub.get("nudged_at") or not sub.get("welcomed_at") or (sub.get("sent_count") or 0) > 0:
+            continue
+        created = parse_ts(sub.get("created_at"))
+        if not created:
+            continue
+        age = (now - created).days
+        if age < NUDGE_MIN_DAYS or age > NUDGE_MAX_DAYS:
+            continue
+        mine = sort_for_reading([i for i in everything if wants(sub, i)])
+        if not mine:
+            nudged_ids.append(sub["id"])       # nothing to say; don't keep looking
+            print(f"nudge -> {sub['email']}: nothing open that fits — marked, no email")
+            continue
+        lot = [i for i in mine if i["kind"] == "lottery"]
+        rr = [i for i in mine if i["kind"] == "rerental"]
+        vo = [i for i in mine if i["kind"] == "voucher"]
+        where = boro_phrase(sub["boroughs"])
+        parts = [f"{len(g)} {n}{'' if len(g) == 1 else 's'}" for g, n in
+                 ((lot, "lottery"), (rr, "re-rental"), (vo, "voucher listing")) if g]
+        parts = [p.replace("lotterys", "lotteries") for p in parts]
+        subject = f"Open right now in {where}: " + ", ".join(parts)
+        html, text, post_unsub = render_roundup(
+            sub, emailkit, eyebrow="Since you signed up", title=subject,
+            intro="You joined a few days ago and nothing new has opened yet — but this is "
+                  "what is open today. Deadlines first.",
+            sections=[("Lotteries open now — soonest deadline first", "good", lot),
+                      ("Re-rentals listed now — usually first-come, first-served", "info", rr),
+                      ("Landlords accepting vouchers now", "info", vo)],
+            cta_label="See all of it on the map")
+        print(f"nudge -> {sub['email']}: {subject}")
+        if args_dry:
+            continue
+        try:
+            if not mailcap.claim(sub["email"], "nudge"):
+                print("   already emailed today — try tomorrow")
+                continue
+            emailkit.send(sub["email"], subject, html, text, unsub_url=post_unsub)
+        except Exception as e:
+            print(f"   FAILED {type(e).__name__}: {str(e)[:80]}")
+            mailcap.release(sub["email"])
+            continue
+        sent_ids.append(sub["id"]); nudged_ids.append(sub["id"])
+    if not args_dry and (sent_ids or nudged_ids):
+        rpc("lottery_alerts_mark", {"p_sent": sent_ids, "p_welcomed": [], "p_nudged": nudged_ids}, key)
+    print(f"nudged {len(sent_ids)}")
+
+
+def weekly(args_dry=False, test_email=None):
+    """The Tuesday digest: what opened in the last seven days in the
+    subscriber's boroughs (first-seen stamps in the state file) and what closes
+    in the next seven. Skipped for anyone with nothing in either list, and for
+    anyone who already had today's one email."""
+    from growth import emailkit, mailcap
+    key = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+    if not key and not test_email:
+        sys.exit("SUPABASE_SERVICE_KEY not set (growth.env)")
+    now = datetime.datetime.now(datetime.timezone.utc)
+    feeds = gather()
+    st = load_state() or {"seen": {}}
+    week_ago = (now - datetime.timedelta(days=WEEK_DAYS)).isoformat()
+    horizon = (now + datetime.timedelta(days=WEEK_DAYS)).date().isoformat()
+    today = now.date().isoformat()
+    everything = [i for src in ("hc", "hcr", "rr", "s8") for i in (feeds[src] or [])]
+    new_week = [i for i in everything if (st["seen"].get(i["id"]) or "") >= week_ago]
+    closing = [i for i in everything
+               if i["kind"] == "lottery" and i.get("closes") and today <= i["closes"] <= horizon]
+
+    def build(sub):
+        mine_new = sort_for_reading([i for i in new_week if wants(sub, i)])
+        mine_close = sort_for_reading([i for i in closing if wants(sub, i)
+                                       and i["id"] not in {n["id"] for n in mine_new}])
+        if not mine_new and not mine_close:
+            return None
+        where = boro_phrase(sub["boroughs"])
+        bits = []
+        if mine_new:
+            bits.append(f"{len(mine_new)} new this week")
+        if mine_close:
+            bits.append(f"{len(mine_close)} closing soon")
+        subject = f"This week in {where}: " + " · ".join(bits)
+        html, text, post_unsub = render_roundup(
+            sub, emailkit, eyebrow="Tuesday round-up", title=subject,
+            intro=f"Everything that opened in {where} in the last seven days, and the "
+                  "deadlines coming up. The minute-it-opens alerts continue as usual.",
+            sections=[("Opened this week", "good", mine_new),
+                      ("Closing in the next seven days", "warn", mine_close)],
+            cta_label="See everything open on the map", digest=True)
+        return subject, html, text, post_unsub
+
+    if test_email:
+        sub = {"email": test_email, "boroughs": ["M", "Bk", "Q", "Bx", "SI"],
+               "kinds": ["lottery", "rerental", "voucher"],
+               "token": "00000000-0000-0000-0000-000000000000"}
+        built = build(sub)
+        if not built:
+            sys.exit("nothing new or closing this week to build a sample from")
+        subject, html, text, post_unsub = built
+        emailkit.send(test_email, "[TEST] " + subject, html, text, unsub_url=post_unsub)
+        print(f"sent weekly sample to {test_email}")
+        return
+
+    sent_ids, sent = [], 0
+    for sub in subscriber_rows(key):
+        if sub.get("digest_off") or not sub.get("welcomed_at"):
+            continue
+        built = build(sub)
+        if not built:
+            continue
+        subject, html, text, post_unsub = built
+        print(f"weekly -> {sub['email']}: {subject}")
+        if args_dry:
+            continue
+        if sent >= MAX_SENDS_PER_RUN:
+            print("   send budget exhausted for this run")
+            break
+        try:
+            if not mailcap.claim(sub["email"], "weekly"):
+                print("   already emailed today — skipped (they heard from us)")
+                continue
+            emailkit.send(sub["email"], subject, html, text, unsub_url=post_unsub)
+        except Exception as e:
+            print(f"   FAILED {type(e).__name__}: {str(e)[:80]}")
+            mailcap.release(sub["email"])
+            continue
+        sent += 1
+        sent_ids.append(sub["id"])
+    if not args_dry and sent_ids:
+        rpc("lottery_alerts_mark", {"p_sent": sent_ids, "p_welcomed": [], "p_nudged": []}, key)
+    print(f"weekly sent {sent}")
 
 
 def wants(sub, item):
@@ -402,16 +675,24 @@ def main():
     ap.add_argument("--test-email", help="send one sample built from today's feeds")
     ap.add_argument("--welcome", action="store_true",
                     help="only send welcome emails to new sign-ups")
+    ap.add_argument("--nudge", action="store_true",
+                    help="first-week round-up for sign-ups that have heard nothing yet")
+    ap.add_argument("--weekly", action="store_true",
+                    help="the fixed-day digest: new this week + closing this week")
     args = ap.parse_args()
     if args.welcome:
         return welcome(args.dry_run)
+    if args.nudge:
+        return nudge(args.dry_run)
+    if args.weekly:
+        return weekly(args.dry_run, args.test_email)
 
     now = datetime.datetime.now(datetime.timezone.utc)
     feeds = gather()
     for src, items in feeds.items():
         print(f"{src}: {'unreadable' if items is None else str(len(items)) + ' items'}")
 
-    from growth import emailkit
+    from growth import emailkit, mailcap
 
     if args.test_email:
         items = [i for src in ("hc", "hcr", "rr", "s8") for i in (feeds[src] or [])][:6]
@@ -427,9 +708,10 @@ def main():
     st = load_state()
     first = st is None
     if first:
-        st = {"seen": {}, "sends": [], "per_sub": {}}
-    st.setdefault("seen", {}); st.setdefault("sends", []); st.setdefault("per_sub", {})
+        st = {"seen": {}, "sends": [], "held": {}}
+    st.setdefault("seen", {}); st.setdefault("sends", []); st.setdefault("held", {})
     prune(st, now)
+    prune_held(st, feeds)
 
     new = []
     stamp = now.isoformat()
@@ -451,12 +733,12 @@ def main():
         if not args.dry_run:
             save_state(st)
         return
-    if not new:
+    if not new and not st["held"]:
         print("nothing new")
         if not args.dry_run:
             save_state(st)
         return
-    print(f"{len(new)} new:")
+    print(f"{len(new)} new, {sum(len(v) for v in st['held'].values())} held:")
     for i in new:
         print(f"  {i['kind']:8s} {i['boro'] or '??':3s} {i['text'][:60]}")
 
@@ -477,18 +759,30 @@ def main():
     for sub in subs:
         sub["boroughs"] = list(sub.get("boroughs") or [])
         sub["kinds"] = list(sub.get("kinds") or ["lottery", "rerental"])
-        mine = [i for i in new if wants(sub, i)]
+        sid = str(sub["id"])
+        held = st["held"].get(sid, [])
+        fresh = [i for i in new if wants(sub, i) and i["id"] not in {h["id"] for h in held}]
+        mine = held + fresh
         if not mine:
             continue
-        day_key = f"{sub['id']}:{now.date().isoformat()}"
-        if st["per_sub"].get(day_key, 0) >= DAILY_PER_SUB:
-            print(f"  skip {sub['email']}: daily cap")
-            continue
+
+        def hold(reason):
+            st["held"][sid] = mine[-HELD_MAX:]
+            print(f"  hold {sub['email']} ({len(mine)}): {reason}")
+
         if sent >= MAX_SENDS_PER_RUN or len(st["sends"]) >= HOURLY_CAP:
-            print("  send budget exhausted — remaining subscribers wait for the next run")
-            # Leave the unsent items out of state so they go out next run.
-            for i in mine:
-                st["seen"].pop(i["id"], None)
+            hold("send budget exhausted — next run")
+            continue
+        # The day's one email. A claim that fails means another job (the
+        # morning saved-building mail, the weekly digest, a welcome) already
+        # wrote to this address today; the items wait for tomorrow's first send.
+        try:
+            ok = mailcap.claim(sub["email"], "alert", dry=args.dry_run)
+        except Exception as e:
+            hold(f"ledger unreachable ({type(e).__name__})")
+            continue
+        if not ok:
+            hold("already emailed today")
             continue
         subject, html, text, post_unsub = render_alert(mine, sub, emailkit)
         print(f"  -> {sub['email']}: {subject}")
@@ -498,17 +792,19 @@ def main():
             emailkit.send(sub["email"], subject, html, text, unsub_url=post_unsub)
         except Exception as e:
             print(f"     FAILED {type(e).__name__}: {str(e)[:80]}")
+            mailcap.release(sub["email"])
+            hold("send failed")
             continue
         sent += 1
         st["sends"].append(now.isoformat())
-        st["per_sub"][day_key] = st["per_sub"].get(day_key, 0) + 1
+        st["held"].pop(sid, None)
         sent_ids.append(sub["id"])
 
     if not args.dry_run:
         save_state(st)
         if sent_ids or welcomed_ids:
             try:
-                rpc("lottery_alerts_mark", {"p_sent": sent_ids, "p_welcomed": welcomed_ids}, key)
+                rpc("lottery_alerts_mark", {"p_sent": sent_ids, "p_welcomed": welcomed_ids, "p_nudged": []}, key)
             except Exception as e:
                 print(f"mark failed: {e}")
     print(f"sent {sent}")
@@ -516,8 +812,10 @@ def main():
 
 def welcome(args_dry=False):
     """Welcome anyone who signed up since the last run. Separate entry point
-    so the wrapper can call it even when the feeds have nothing new."""
-    from growth import emailkit
+    so the wrapper can call it even when the feeds have nothing new. Counts
+    against the day's one email: someone who already heard from us today is
+    welcomed tomorrow, not twice today."""
+    from growth import emailkit, mailcap
     key = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
     if not key:
         sys.exit("SUPABASE_SERVICE_KEY not set (growth.env)")
@@ -532,12 +830,20 @@ def welcome(args_dry=False):
         if args_dry:
             continue
         try:
+            if not mailcap.claim(sub["email"], "welcome"):
+                print("   already emailed today — welcome waits for tomorrow")
+                continue
+        except Exception as e:
+            print(f"   ledger unreachable ({type(e).__name__}) — retry next run")
+            continue
+        try:
             emailkit.send(sub["email"], subject, html, text, unsub_url=post_unsub)
             done.append(sub["id"])
         except Exception as e:
             print(f"   FAILED {type(e).__name__}: {str(e)[:80]}")
+            mailcap.release(sub["email"])
     if done:
-        rpc("lottery_alerts_mark", {"p_sent": [], "p_welcomed": done}, key)
+        rpc("lottery_alerts_mark", {"p_sent": [], "p_welcomed": done, "p_nudged": []}, key)
     print(f"welcomed {len(done)}")
 
 

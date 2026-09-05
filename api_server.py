@@ -219,6 +219,7 @@ def gate():
     if request.method == "OPTIONS" or request.path in PUBLIC_PATHS \
        or request.path.startswith("/developers/") \
        or request.path.startswith("/alerts/") \
+       or request.path == "/geo" \
        or request.path.startswith("/reports/") \
        or request.path.startswith("/embed/") \
        or request.path in ("/dashboard-metrics", "/dashboard-users",
@@ -523,6 +524,26 @@ def alerts_subscribe():
                    max_rent=res.get("max_rent"), income=res.get("income"))
 
 
+@app.route("/alerts/digest-off", methods=["GET", "POST"])
+def alerts_digest_off():
+    """Stop only the Tuesday round-up for a borough subscriber; the
+    the-minute-it-opens alerts keep going. Same shape as unsubscribe: a GET
+    (from the email) only redirects to the page, which asks and then POSTs."""
+    body = request.get_json(silent=True) or {}
+    token = str(request.args.get("t") or body.get("token") or "").strip().lower()
+    if not TOKEN_RE.match(token):
+        return jsonify(error="bad_token"), 400
+    if request.method == "GET":
+        return redirect(f"https://findacrib.com/alerts/#digestoff={token}", code=302)
+    if rate_limited("alerts_unsub", 30, 3600):
+        return _too_many()
+    try:
+        ok = rpc("lottery_alerts_digest_off", {"p_token": token})
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
+    return jsonify(ok=bool(ok))
+
+
 @app.route("/alerts/unsubscribe", methods=["GET", "POST"])
 def alerts_unsubscribe():
     body = request.get_json(silent=True) or {}
@@ -542,6 +563,87 @@ def alerts_unsubscribe():
     except Exception:
         return jsonify(error="temporarily_unavailable"), 503
     return jsonify(ok=bool(ok))
+
+
+# ---- /geo: coarse network location for the map's first view -----------------
+#
+# The map opens on the visitor's own neighbourhood without asking the browser
+# for location (no permission prompt — owner rule). The IP is resolved
+# server-side against DB-IP's free City Lite database (scripts/refresh_geoip.sh)
+# and only a rounded point plus the borough of the nearest rent-stabilized
+# building goes back. Nothing is stored: the address is not logged here and
+# the visits table has never held IPs.
+GEOIP_DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dbip-city-lite.mmdb")
+_GEO = {"reader": None, "mtime": 0.0}
+_GEO_LOCK = threading.Lock()
+_GEO_CACHE = {}                      # rounded (lat, lng) -> boro; bounded below
+NYC_BBOX = (40.49, -74.27, 40.92, -73.68)     # lat_min, lng_min, lat_max, lng_max
+
+
+def _geo_reader():
+    try:
+        import maxminddb
+    except ImportError:
+        return None
+    try:
+        mtime = os.stat(GEOIP_DB).st_mtime
+    except OSError:
+        return None
+    with _GEO_LOCK:
+        if _GEO["reader"] is None or _GEO["mtime"] != mtime:
+            try:
+                if _GEO["reader"] is not None:
+                    _GEO["reader"].close()
+            except Exception:
+                pass
+            _GEO["reader"] = maxminddb.open_database(GEOIP_DB)
+            _GEO["mtime"] = mtime
+        return _GEO["reader"]
+
+
+def _nearest_boro(lat, lng):
+    """Borough of the nearest building within ~2 km, by the map's own data —
+    so "near you" means near something the map can actually show."""
+    key = (round(lat, 2), round(lng, 2))
+    if key in _GEO_CACHE:
+        return _GEO_CACHE[key]
+    best, best_d = None, (0.02 ** 2) * 2       # ~2 km in squared degrees
+    coslat = 0.757                             # cos(40.7°): scale lng to lat
+    for b in BUILDINGS:
+        blat, blng = b.get("lat"), b.get("lng")
+        if not isinstance(blat, (int, float)) or not isinstance(blng, (int, float)):
+            continue
+        d = (blat - lat) ** 2 + ((blng - lng) * coslat) ** 2
+        if d < best_d:
+            best, best_d = b.get("b"), d
+    if len(_GEO_CACHE) > 4000:
+        _GEO_CACHE.clear()
+    _GEO_CACHE[key] = best
+    return best
+
+
+@app.route("/geo")
+def geo():
+    if rate_limited("geo", 60, 60):
+        return _too_many()
+    reader = _geo_reader()
+    if reader is None:
+        return jsonify(ok=False, reason="unavailable")
+    try:
+        rec = reader.get(_client_ip()) or {}
+    except Exception:
+        rec = {}
+    loc = rec.get("location") or {}
+    lat, lng = loc.get("latitude"), loc.get("longitude")
+    if not isinstance(lat, (int, float)) or not isinstance(lng, (int, float)):
+        return jsonify(ok=False, reason="unknown")
+    inside = NYC_BBOX[0] <= lat <= NYC_BBOX[2] and NYC_BBOX[1] <= lng <= NYC_BBOX[3]
+    boro = _nearest_boro(lat, lng) if inside else None
+    city = ((rec.get("city") or {}).get("names") or {}).get("en")
+    # Rounded to ~1 km: enough to open the map on the right neighbourhood,
+    # not enough to place a household.
+    return jsonify(ok=bool(boro), lat=round(lat, 2), lng=round(lng, 2),
+                   boro=boro, city=city)
 
 
 @app.route("/developers/usage", methods=["GET", "POST"])

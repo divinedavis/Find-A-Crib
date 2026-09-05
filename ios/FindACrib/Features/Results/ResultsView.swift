@@ -9,11 +9,14 @@ import SwiftUI
 struct ResultsHeader: View {
     @Environment(DataStore.self) private var store
     let query: SearchQuery
-    let onBack: () -> Void
+    /// Tapping the location field opens the borough / neighborhood picker in
+    /// a sheet. It used to pop back to the previous screen, which read as a
+    /// broken button — the system chevron beside it is the back control.
+    let onLocation: () -> Void
     let onFilter: () -> Void
     var body: some View {
         HStack(spacing: 8) {
-            Button(action: onBack) {
+            Button(action: onLocation) {
                 HStack(spacing: 8) {
                     Image(systemName: "mappin").font(.system(size: 13, weight: .bold)).foregroundStyle(SE.royal)
                     Text(query.shortLocationLabel(boroughOf: store.boroughOfNeighborhood)).font(.se(16)).foregroundStyle(SE.ink).lineLimit(1).truncationMode(.tail).frame(minWidth: 70, alignment: .leading)
@@ -25,7 +28,7 @@ struct ResultsHeader: View {
                 .background(Color.white).clipShape(RoundedRectangle(cornerRadius: 2))
             }
             .buttonStyle(.plain)
-            .accessibilityIdentifier("results-back")
+            .accessibilityIdentifier("results-location-field")
 
             Button(action: onFilter) {
                 HStack(spacing: 5) {
@@ -56,10 +59,14 @@ struct ResultsView: View {
     @Environment(DataStore.self) private var store
     @Environment(Activity.self) private var activity
     @Environment(AppNav.self) private var nav
+    @Environment(AuthService.self) private var auth
     @State var query: SearchQuery
     @State private var results: [Building] = []
     @State private var shown = 30
     @State private var showFilters = false
+    @State private var showLocation = false
+    @State private var showAlerts = false
+    @State private var showSignIn = false
     @State private var showSave = false
     @State private var saveName = ""
     @State private var toast: String?
@@ -115,7 +122,18 @@ struct ResultsView: View {
                 FloatingPill(title: "Map", icon: "map.fill") {
                     nav.searchPath.append(.map(query))
                 }
-                FloatingPill(title: activity.isSearchSaved(query) ? "Search saved" : "Save search", icon: "bell.fill", fill: SE.navy, ink: .white) {
+                // Available-now and Accepting-vouchers are the two views where
+                // "tell me when one opens" means something; the alert is the
+                // site's borough alert, so it needs an account (an email).
+                if query.normalized.availableOnly || query.normalized.vouchersOnly {
+                    FloatingPill(title: "Alerts", icon: "bell.badge.fill") {
+                        if auth.isSignedIn { showAlerts = true } else { showSignIn = true }
+                    }
+                    .accessibilityIdentifier("pill-Alerts")
+                }
+                // Three pills do not fit "Save search" on a 390pt phone; with
+                // Alerts beside it the save pill goes by its short name.
+                FloatingPill(title: activity.isSearchSaved(query) ? (hasAlertsPill ? "Saved" : "Search saved") : (hasAlertsPill ? "Save" : "Save search"), icon: "bell.fill", fill: SE.navy, ink: .white) {
                     if activity.isSearchSaved(query) { toast = "Already in My Activity" }
                     else { saveName = defaultName; showSave = true }
                 }
@@ -129,8 +147,13 @@ struct ResultsView: View {
                     .task { try? await Task.sleep(for: .seconds(2)); self.toast = nil }
             }
         }
-        .toolbar { ToolbarItem(placement: .principal) { ResultsHeader(query: query, onBack: { dismiss() }, onFilter: { showFilters = true }) } }
+        .toolbar { ToolbarItem(placement: .principal) { ResultsHeader(query: query, onLocation: { showLocation = true }, onFilter: { showFilters = true }) } }
         .sheet(isPresented: $showFilters) { FiltersSheet(query: $query) }
+        .sheet(isPresented: $showLocation) { LocationPickerView(selected: $query.locations) }
+        .sheet(isPresented: $showAlerts) { AlertsSheet(query: query) }
+        .sheet(isPresented: $showSignIn) { EmailSignInView() }
+        .onChange(of: auth.isSignedIn) { _, on in if on, showSignIn { showSignIn = false; showAlerts = true } }
+        .onAppear { if CommandLine.arguments.contains("--open-alerts") { showAlerts = true } }
         .alert("Save this search", isPresented: $showSave) {
             TextField("Name", text: $saveName)
             Button("Save") { activity.saveSearch(query, name: saveName.isEmpty ? defaultName : saveName, count: results.count); toast = "Saved to My Activity" }
@@ -141,6 +164,7 @@ struct ResultsView: View {
         .swipeBackEnabled()
     }
 
+    private var hasAlertsPill: Bool { query.normalized.availableOnly || query.normalized.vouchersOnly }
     private var defaultName: String { "\(query.normalized.hcrOnly ? "HCR lotteries" : (query.normalized.availableOnly ? "Available" : (query.normalized.vouchersOnly ? "Vouchers" : "Stabilized"))) · \(query.locationLabel)" }
     private var emptyHint: String {
         let n = query.normalized

@@ -61,6 +61,9 @@ struct RouteView: View {
         case .building(let bbl):
             if let b = store.byBBL[bbl] { BuildingDetailView(building: b) }
             else { Text("Building not found").font(.se(18)) }
+        case .hpdRecords(let bbl, let kind):
+            if let b = store.byBBL[bbl] { HPDRecordsView(building: b, kind: kind) }
+            else { Text("Building not found").font(.se(18)) }
         }
     }
 }

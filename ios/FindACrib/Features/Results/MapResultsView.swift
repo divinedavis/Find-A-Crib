@@ -10,6 +10,7 @@ struct MapResultsView: View {
     @State private var selected: Building?
     @State private var moved = false
     @State private var showFilters = false
+    @State private var showLocation = false
     @State private var initialFit = true
     @State private var calloutDrag: CGFloat = 0
 
@@ -71,8 +72,9 @@ struct MapResultsView: View {
             .padding(.bottom, 92)
             .animation(.easeInOut(duration: 0.2), value: selected?.bbl)
         }
-        .toolbar { ToolbarItem(placement: .principal) { ResultsHeader(query: query, onBack: { backToList() }, onFilter: { showFilters = true }) } }
+        .toolbar { ToolbarItem(placement: .principal) { ResultsHeader(query: query, onLocation: { showLocation = true }, onFilter: { showFilters = true }) } }
         .sheet(isPresented: $showFilters) { FiltersSheet(query: $query) }
+        .sheet(isPresented: $showLocation) { LocationPickerView(selected: $query.locations) }
         .task(id: query) {
             results = SearchEngine.run(query, store: store)
             // A custom map area IS the viewport the user was looking at, so

@@ -38,6 +38,7 @@ enum Route: Hashable {
     case results(SearchQuery)
     case map(SearchQuery)
     case building(String)
+    case hpdRecords(String, HPDRecordsView.Kind)   // bbl + violations|complaints
 }
 
 @Observable @MainActor
@@ -65,6 +66,12 @@ enum LaunchArgs {
         else if r == "hcr" { var h = SearchQuery(); h.hcrOnly = true; nav.searchPath = [.results(h)] }
         else if r == "map" { nav.searchPath = [.results(q), .map(q)] }
         else if r == "mapall" { let a = SearchQuery(); nav.searchPath = [.results(a), .map(a)] }
+        else if r.hasPrefix("hpd") {
+            // hpd[:bbl] — the violations screen, for screenshots.
+            let bbl = r.split(separator: ":").dropFirst().first.map(String.init)
+                ?? store.buildings.first { ($0.h?.violations?.open ?? 0) > 5 }?.bbl ?? store.buildings.first?.bbl ?? ""
+            nav.searchPath = [.results(q), .building(bbl), .hpdRecords(bbl, .violations)]
+        }
         else if r.hasPrefix("detail") {
             let bbl = r.split(separator: ":").dropFirst().first.map(String.init)
                 ?? SearchEngine.run(q, store: store).first?.bbl ?? store.buildings.first?.bbl ?? ""

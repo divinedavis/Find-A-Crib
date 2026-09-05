@@ -49,10 +49,12 @@ struct BuildingCard: View {
                 statusBadge
             }
 
-            VStack(alignment: .leading, spacing: 8) {
+            // One vertical gap everywhere in the card body (10pt); no row adds
+            // its own padding on top of it.
+            VStack(alignment: .leading, spacing: 10) {
                 // Neighborhood sits right on top of the address: the heart's
                 // 44pt frame was pushing the two apart by a full line.
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 4) {
                     HStack(alignment: .center) {
                         Text(b.neighborhood.isEmpty ? b.borough : b.neighborhood)
                             .font(.se(18, .semibold)).foregroundStyle(SE.ink2).lineLimit(1).minimumScaleFactor(0.85)
@@ -85,10 +87,9 @@ struct BuildingCard: View {
                     Spacer(minLength: 6)
                     fact("calendar", b.yr.map { "Built \($0)" } ?? "Built –")
                 }
-                .padding(.top, 8)
                 }
 
-                Text(store.isSyntheticHCR(b) ? "Listed on HousingSearch.ny.gov" : attribution).font(.se(18)).foregroundStyle(SE.ink2).padding(.top, 4)
+                Text(store.isSyntheticHCR(b) ? "Listed on HousingSearch.ny.gov" : attribution).font(.se(18)).foregroundStyle(SE.ink2)
 
                 HStack(spacing: 14) {
                     ShareLink(item: b.webURL) {
@@ -187,12 +188,9 @@ struct BuildingCard: View {
             Text("Landlord soliciting voucher tenants on AffordableHousing.com").font(.se(17)).foregroundStyle(SE.ink2)
         } else if let est = store.estimate(b), est.count >= 3 {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("\(Formatters.dollars(est[0]))–\(Formatters.dollars(est[2]))").font(.se(30, .bold)).foregroundStyle(SE.ink).lineLimit(1).layoutPriority(2)
-                Text("estimation").font(.se(16)).foregroundStyle(SE.ink2).lineLimit(1).layoutPriority(1)
-                InfoDot(title: "Estimation", text: estimateNote).layoutPriority(1)
-            }
-            if let (p, d) = store.lastPrice(b) {
-                Text("Last advertised at \(Formatters.dollars(p))" + (d.map { " · \(Formatters.long.string(from: $0))" } ?? "")).font(.se(16)).foregroundStyle(SE.ink3)
+                Text("\(Formatters.dollars(est[0]))–\(Formatters.dollars(est[2]))").font(.se(28, .bold)).foregroundStyle(SE.ink).lineLimit(1).minimumScaleFactor(0.8).layoutPriority(2)
+                Text("estimation").font(.se(16)).foregroundStyle(SE.ink2).lineLimit(1).fixedSize().layoutPriority(3)
+                InfoDot(title: "Estimation", text: estimateNote).layoutPriority(3)
             }
         } else {
             Text("No recent listing").font(.se(22, .bold)).foregroundStyle(SE.ink2)

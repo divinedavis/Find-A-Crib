@@ -340,18 +340,28 @@ struct BuildingDetailView: View {
         if v == nil && c == nil {
             Text("No HPD violation or complaint records on file.").font(.se(18)).foregroundStyle(SE.ink2)
         } else {
+            // Each tile opens the full list on its own screen.
             HStack(spacing: 12) {
-                stat("Open violations", v?.open ?? 0, tone: (v?.open ?? 0) == 0 ? SE.good : ((v?.oc ?? 0) > 0 ? SE.bad : SE.warn))
-                stat("Open complaints", c?.open ?? 0, tone: (c?.open ?? 0) == 0 ? SE.good : SE.warn)
+                NavigationLink(value: Route.hpdRecords(b.bbl, .violations)) {
+                    stat("Open violations", v?.open ?? 0, tone: (v?.open ?? 0) == 0 ? SE.good : ((v?.oc ?? 0) > 0 ? SE.bad : SE.warn))
+                }.buttonStyle(.plain).accessibilityIdentifier("open-violations")
+                NavigationLink(value: Route.hpdRecords(b.bbl, .complaints)) {
+                    stat("Open complaints", c?.open ?? 0, tone: (c?.open ?? 0) == 0 ? SE.good : SE.warn)
+                }.buttonStyle(.plain).accessibilityIdentifier("open-complaints")
             }
+            Text("Tap a number to see each one.").font(.se(14)).foregroundStyle(SE.ink3)
+            // The app boots from the slim building file, which carries only
+            // the open counts; the class split, 12-month and all-time figures
+            // are nil there, not zero. Show a row only when it has a number —
+            // six "0" rows under "20 open" were a contradiction.
             if let v {
                 VStack(alignment: .leading, spacing: 6) {
-                    nrow("Class A (non-hazardous) open", v.oa ?? 0)
-                    nrow("Class B (hazardous) open", v.ob ?? 0)
-                    nrow("Class C (immediately hazardous) open", v.oc ?? 0)
-                    nrow("Violations issued, last 12 months", v.last_12mo ?? 0)
-                    nrow("Violations on record, all time", v.total ?? 0)
-                    if let c { nrow("Complaints, all time", c.total ?? 0) }
+                    if let n = v.oa { nrow("Class A (non-hazardous) open", n) }
+                    if let n = v.ob { nrow("Class B (hazardous) open", n) }
+                    if let n = v.oc { nrow("Class C (immediately hazardous) open", n) }
+                    if let n = v.last_12mo { nrow("Violations issued, last 12 months", n) }
+                    if let n = v.total { nrow("Violations on record, all time", n) }
+                    if let n = c?.total { nrow("Complaints, all time", n) }
                 }.padding(.top, 6)
             }
             Text("From NYC HPD's open data. Class C means the city considers the condition immediately hazardous — heat, hot water, lead, pests.")
@@ -363,6 +373,8 @@ struct BuildingDetailView: View {
             Text("\(n)").font(.se(34, .bold)).foregroundStyle(tone)
             Text(k).font(.se(15, .semibold)).foregroundStyle(SE.ink2)
         }.frame(maxWidth: .infinity, alignment: .leading).padding(14).background(SE.canvas)
+        .overlay(alignment: .topTrailing) { Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)).foregroundStyle(SE.ink3).padding(12) }
+        .contentShape(Rectangle())
     }
     private func nrow(_ k: String, _ n: Int) -> some View {
         HStack { Text(k).font(.se(17)).foregroundStyle(SE.ink2); Spacer(); Text("\(n)").font(.se(17, .bold)) }

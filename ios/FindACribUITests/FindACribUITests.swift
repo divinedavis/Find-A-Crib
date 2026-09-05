@@ -79,9 +79,9 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(search.waitForExistence(timeout: 5))
         search.tap()
         list.tap()
-        let back = app.buttons["results-back"]
-        XCTAssertTrue(back.waitForExistence(timeout: 10))
-        XCTAssertTrue(back.label.contains("Custom map area"), "list header was: \(back.label)")
+        let field = app.buttons["results-location-field"]
+        XCTAssertTrue(field.waitForExistence(timeout: 10))
+        XCTAssertTrue(field.label.contains("Map area"), "list header was: \(field.label)")
     }
 
     /// Both price bounds are set on one wheel now rather than typed into two

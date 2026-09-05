@@ -224,7 +224,7 @@ struct FloatingPill: View {
         Button(action: action) {
             HStack(spacing: 10) {
                 Image(systemName: icon).font(.system(size: 17, weight: .bold))
-                Text(title).font(.se(20, .bold))
+                Text(title).font(.se(20, .bold).lineLimit(1).fixedSize())
             }
             .foregroundStyle(ink)
             .padding(.horizontal, 22).frame(height: 56)

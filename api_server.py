@@ -472,7 +472,7 @@ def signup():
 # lottery_alert_subs (db/0021) and is only ever read by lottery_alerts.py on
 # the droplet. Same-origin only — no CORS header is added for /alerts/*.
 ALERT_BOROS = ("M", "Bk", "Q", "Bx", "SI")
-ALERT_KINDS = ("lottery", "rerental")
+ALERT_KINDS = ("lottery", "rerental", "voucher")
 TOKEN_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 
 

@@ -164,14 +164,46 @@ def rerental_items(d):
     return out
 
 
+BBL_BORO = {"1": "M", "2": "Bx", "3": "Bk", "4": "Q", "5": "SI"}
+
+
+def voucher_items(d):
+    """s8.json `avail`: one entry per building where a landlord is currently
+    soliciting Section 8 / voucher tenants on AffordableHousing.com. The
+    borough is the BBL's first digit; the address comes from the listing URL's
+    slug ("/140-w-133rd-st-1029236/") so the dispatcher need not load the
+    17MB building file every ten minutes."""
+    out = []
+    for bbl, e in ((d or {}).get("avail") or {}).items():
+        if not isinstance(e, dict) or not str(bbl).isdigit():
+            continue
+        url = e.get("url") or f"{SITE}/?s8=1"
+        slug = url.rstrip("/").split("/")[-1]
+        words = [w for w in slug.split("-") if not w.isdigit() or slug.startswith(w + "-")]
+        addr = " ".join(w.upper() if w in ("w", "e", "n", "s", "ne", "nw", "se", "sw") else w.capitalize()
+                        for w in words) or "Voucher listing"
+        n = e.get("n") or 1
+        rent = money(e["p"]) + "/mo" if e.get("p") else None
+        boro = BBL_BORO.get(str(bbl)[0])
+        bits = [b for b in (BORO_NAME.get(boro, "").replace("the ", ""), rent,
+                            f"{n} unit{'' if n == 1 else 's'}", "on AffordableHousing.com") if b]
+        out.append({"id": f"s8:{bbl}", "kind": "voucher", "boro": boro,
+                    "label": "voucher listing", "text": addr,
+                    "sub": " · ".join(bits), "url": url,
+                    "rent_low": e.get("p"), "income_min": None, "income_max": None})
+    return out
+
+
 def gather():
     """{source: [items] or None}. None = feed unreadable, leave its seen-set."""
     hc = load_json("housing_connect.json")
     hcr = load_json("hcr.json")
     rr = load_json("rerental_new.json")
+    s8 = load_json("s8.json")
     return {"hc": hc_items(hc) if hc is not None else None,
             "hcr": hcr_items(hcr) if hcr is not None else None,
-            "rr": rerental_items(rr) if rr is not None else None}
+            "rr": rerental_items(rr) if rr is not None else None,
+            "s8": voucher_items(s8) if s8 is not None else None}
 
 
 # ------------------------------------------------------------------ state
@@ -239,6 +271,7 @@ def filter_words(sub):
 def render_alert(items, sub, emailkit):
     lot = [i for i in items if i["kind"] == "lottery"]
     rr = [i for i in items if i["kind"] == "rerental"]
+    vo = [i for i in items if i["kind"] == "voucher"]
     shown = items[:MAX_ITEMS_PER_EMAIL]
     more = len(items) - len(shown)
     where = boro_phrase(sub["boroughs"])
@@ -247,6 +280,8 @@ def render_alert(items, sub, emailkit):
         it = items[0]
         subject = (f"New {it['label']} in {BORO_NAME.get(it['boro'], 'NYC')}: {it['text']}"
                    if it["kind"] == "lottery" else
+                   f"New voucher listing in {BORO_NAME.get(it['boro'], 'NYC')}: {it['text']}"
+                   if it["kind"] == "voucher" else
                    f"New re-rental in {BORO_NAME.get(it['boro'], 'NYC')}: {it['text']}")
     else:
         parts = []
@@ -254,7 +289,9 @@ def render_alert(items, sub, emailkit):
             parts.append(f"{len(lot)} new lotter{'y' if len(lot) == 1 else 'ies'}")
         if rr:
             parts.append(f"{len(rr)} new re-rental{'' if len(rr) == 1 else 's'}")
-        subject = " and ".join(parts) + f" in {where}"
+        if vo:
+            parts.append(f"{len(vo)} new voucher listing{'' if len(vo) == 1 else 's'}")
+        subject = ", ".join(parts[:-1]) + (" and " if len(parts) > 1 else "") + parts[-1] + f" in {where}"
 
     blocks = []
 
@@ -262,6 +299,7 @@ def render_alert(items, sub, emailkit):
         return [{"text": i["text"], "sub": i["sub"], "url": i["url"]} for i in group]
     lot_shown = [i for i in shown if i["kind"] == "lottery"]
     rr_shown = [i for i in shown if i["kind"] == "rerental"]
+    vo_shown = [i for i in shown if i["kind"] == "voucher"]
     if lot_shown:
         blocks.append({"type": "callout", "tone": "good",
                        "heading": f"{len(lot)} new lotter{'y' if len(lot) == 1 else 'ies'} — apply by the deadline",
@@ -270,6 +308,10 @@ def render_alert(items, sub, emailkit):
         blocks.append({"type": "callout", "tone": "info",
                        "heading": f"{len(rr)} new re-rental{'' if len(rr) == 1 else 's'} — usually first-come, first-served",
                        "items": rows(rr_shown)})
+    if vo_shown:
+        blocks.append({"type": "callout", "tone": "info",
+                       "heading": f"{len(vo)} landlord{'' if len(vo) == 1 else 's'} now accepting vouchers — first come, first served",
+                       "items": rows(vo_shown)})
     if more > 0:
         blocks.append({"type": "note", "text": f"…and {more} more. Everything open is on the map."})
     blocks.append({"type": "note",
@@ -294,8 +336,9 @@ def render_alert(items, sub, emailkit):
 def render_welcome(sub, emailkit):
     where = boro_phrase(sub["boroughs"])
     kinds = sub["kinds"]
-    what = ("housing lottery, waitlist or re-rental" if len(kinds) == 2
-            else "housing lottery or waitlist" if "lottery" in kinds else "re-rental")
+    names = [n for k, n in (("lottery", "housing lottery or waitlist"), ("rerental", "re-rental"),
+                            ("voucher", "voucher-friendly listing")) if k in kinds] or ["housing lottery, waitlist or re-rental"]
+    what = ", ".join(names[:-1]) + (" or " if len(names) > 1 else "") + names[-1]
     blocks = [
         {"type": "card", "heading": "What you'll get",
          "body": f"One email the minute a new {what} "
@@ -371,11 +414,11 @@ def main():
     from growth import emailkit
 
     if args.test_email:
-        items = [i for src in ("hc", "hcr", "rr") for i in (feeds[src] or [])][:6]
+        items = [i for src in ("hc", "hcr", "rr", "s8") for i in (feeds[src] or [])][:6]
         if not items:
             sys.exit("no items in any feed to build a sample from")
         sub = {"email": args.test_email, "boroughs": ["M", "Bk", "Q", "Bx", "SI"],
-               "kinds": ["lottery", "rerental"], "token": "00000000-0000-0000-0000-000000000000"}
+               "kinds": ["lottery", "rerental", "voucher"], "token": "00000000-0000-0000-0000-000000000000"}
         subject, html, text, post_unsub = render_alert(items, sub, emailkit)
         emailkit.send(args.test_email, "[TEST] " + subject, html, text, unsub_url=post_unsub)
         print(f"sent sample ({len(items)} items) to {args.test_email}")

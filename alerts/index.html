@@ -163,6 +163,7 @@
       <div class="chips" id="kinds">
         <label class="chip"><input type="checkbox" name="kind" value="lottery" checked><span>Lotteries &amp; waitlists</span></label>
         <label class="chip"><input type="checkbox" name="kind" value="rerental" checked><span>Re-rentals</span></label>
+        <label class="chip"><input type="checkbox" name="kind" value="voucher"><span>Voucher listings</span></label>
       </div>
       <p class="hint">A <b>lottery</b> is applied for by a deadline and drawn by log number. A <b>re-rental</b> is a vacated affordable unit the agent rents directly, often first-come, first-served — the ones worth hearing about within the hour.</p>
     </div>
@@ -296,7 +297,9 @@
       .then(function (x) {
         if (x.j && x.j.ok) {
           $('form').hidden = true;
-          var what = kinds.length === 2 ? 'lottery, waitlist or re-rental' : (kinds[0] === 'lottery' ? 'lottery or waitlist' : 're-rental');
+          var names = { lottery: 'lottery or waitlist', rerental: 're-rental', voucher: 'voucher listing' };
+          var ws = kinds.map(function (k) { return names[k] || k; });
+          var what = ws.slice(0, -1).join(', ') + (ws.length > 1 ? ' or ' : '') + ws[ws.length - 1];
           var fit = [];
           if (x.j.max_rent) fit.push('rent up to $' + Number(x.j.max_rent).toLocaleString() + '/mo');
           if (x.j.income) fit.push('an income band that includes $' + Number(x.j.income).toLocaleString() + '/yr');

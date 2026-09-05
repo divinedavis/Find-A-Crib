@@ -21,6 +21,11 @@ COMPLAINTS = "https://data.cityofnewyork.us/resource/ygpa-z7cr.json"
 BORO_NAME = {"1": "manhattan", "2": "bronx", "3": "brooklyn", "4": "queens", "5": "staten_island"}
 NAME_BORO = {v: k for k, v in BORO_NAME.items()}
 ONE_YEAR_AGO = (datetime.utcnow() - timedelta(days=365)).strftime("%Y-%m-%dT00:00:00")
+# Calendar year, not trailing 12 months: the building page's Violations button
+# is red when HPD cited the building THIS year, amber when it has a record but
+# nothing this year, green with no record at all. "This year" has to mean the
+# year on the calendar or the colour would flip on an anniversary nobody sees.
+YEAR_START = datetime.utcnow().strftime("%Y-01-01T00:00:00")
 
 CONTACT_PRIORITY = [
     "HeadOfficer", "IndividualOwner", "CorporateOwner", "JointOwner",
@@ -218,7 +223,7 @@ def fetch_violations(by_boro):
     # sitting above a list of open violations that disagrees with them.
     out = defaultdict(lambda: {"open": 0, "closed": 0, "total": 0,
                                 "a": 0, "b": 0, "c": 0,
-                                "oa": 0, "ob": 0, "oc": 0, "last_12mo": 0})
+                                "oa": 0, "ob": 0, "oc": 0, "last_12mo": 0, "ytd": 0})
     for boroid, parts in by_boro.items():
         blocks = sorted({p[0] for p in parts})
         lots = sorted({p[1] for p in parts})
@@ -261,6 +266,14 @@ def fetch_violations(by_boro):
                     if (blk, lt) not in parts_set:
                         continue
                     out[parts_to_bbl(boroid, blk, lt)]["last_12mo"] += int(row["n"])
+                for row in counts(VIOLATIONS, "block,lot",
+                                  where + f" AND novissueddate >= '{YEAR_START}'",
+                                  "block,lot"):
+                    blk = str(int(row["block"]))
+                    lt = str(int(row["lot"]))
+                    if (blk, lt) not in parts_set:
+                        continue
+                    out[parts_to_bbl(boroid, blk, lt)]["ytd"] += int(row["n"])
             if i % 5 == 0:
                 print(f"  violations boro {boroid}: blocks {i*60}/{len(blocks)}, "
                       f"violations counted {seen}, BBLs matched {len(out)}")

@@ -1027,6 +1027,12 @@
     font-weight: 700; border: 1px solid var(--blue); cursor: pointer; text-decoration: none; white-space: nowrap; }
   .d-actions .d-primary { background: var(--blue-solid); color: #fff; }
   .d-actions .d-secondary { background: var(--surface); color: var(--blue); }
+  /* Violations button: red = cited this year, amber = a record but nothing this
+     year, green = nothing on record. Neutral until the all-time blob arrives. */
+  .d-actions .d-viol { font-weight: 700; border: 1px solid var(--blue); background: var(--surface); color: var(--blue); }
+  .d-actions .d-viol.red { background: var(--bad-bg); color: var(--bad-ink); border-color: var(--bad-ink); }
+  .d-actions .d-viol.yellow { background: var(--warn-bg); color: var(--warn-ink); border-color: var(--warn-ink); }
+  .d-actions .d-viol.green { background: var(--ok-bg); color: var(--ok-ink); border-color: var(--ok-ink); }
   /* report CTA + its explainer stack; they are siblings inside a .d-actions flex row */
   .d-report-row { flex-direction: column; align-items: stretch; }
   .d-report-row button { white-space: normal; }
@@ -5141,6 +5147,7 @@
       ? (rec.h.violations.total != null ? rec.h.violations.total : rec.h.violations.open)
       : null;
     const est = estRent(rec);
+    const viol = violButton(rec.h && rec.h.violations, violTotal);
     const title = rec.nb || borough || CITY.label;
     const addrLine = [rec.a, [borough, rec.z].filter(Boolean).join(' ')].filter(Boolean).join(', ');
     const spec = [
@@ -5165,7 +5172,10 @@
            removed 2026-09-05 as a duplicate). The listing link is first: it is
            the single most-clicked thing on the site (60% of all outbound
            clicks) and used to sit several screens down under the HPD record. -->
-      <div class="d-actions" data-sec="actions">
+      ${IS_NYC ? `<div class="d-actions" data-sec="actions">
+        <button class="d-viol ${viol.tone}" data-detail="violations" title="${esc(viol.title)}">${viol.label}</button>
+      </div>` : ''}
+      <div class="d-actions"${IS_NYC ? ' style="padding-top:0"' : ' data-sec="actions"'}>
         <a class="d-secondary" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.label}</a>
       </div>
       <div class="d-actions" style="padding-top:0">
@@ -5174,9 +5184,6 @@
       <div class="d-actions d-dir-row" style="padding-top:0">
         <button class="d-secondary" data-detail="directions">🧭 Driving directions</button>
       </div>
-      ${IS_NYC && rec.h && rec.h.violations ? `<div class="d-actions" style="padding-top:0">
-        <button class="d-secondary" data-detail="violations">⚠️ Violations (${violTotal != null ? violTotal : 0})</button>
-      </div>` : ''}
       ${IS_NYC ? `<div class="d-section" data-sec="vouchers"><h3>Housing vouchers (Section 8)</h3>
         ${s8Html(rec) || '<div class="d-sub" style="margin:0">No voucher listing or subsidy record for this building right now.</div>'}
         <div class="s8-legal">Source-of-income discrimination is illegal in NYC — every landlord must accept Section 8 and other vouchers, tagged here or not. <a href="https://www.nyc.gov/site/cchr/about/report-discrimination.page" target="_blank" rel="noopener">Report discrimination to the NYC Commission on Human Rights ↗</a></div>
@@ -5190,6 +5197,26 @@
         <div id="d-comments-list"><div class="d-sub" style="margin:0">Loading comments…</div></div>
         <div id="d-comments-composer"></div>
       </div>`;
+  }
+
+  // Colour and wording for the Violations button. `ytd` (this calendar year)
+  // comes from the weekly HPD pull; a blob built before it existed falls back
+  // to the trailing-12-month count and says so. Before the all-time blob has
+  // arrived only the open count is known, so the button stays neutral rather
+  // than guessing green.
+  function violButton(v, total) {
+    const yr = new Date().getFullYear();
+    // The boot file only carries open counts, and omits the block entirely for
+    // a building with nothing open — which is exactly what a clean building
+    // looks like too. Don't call it green until the all-time blob says so.
+    if (!HPD_FULL && (!v || total == null)) return { tone: '', label: `⚠️ Violations${v && v.open ? ' (' + v.open + ' open)' : ''}`, title: 'Loading the full HPD record…' };
+    if (!v) return { tone: 'green', label: '✅ No violations on record', title: 'HPD has no violations on file for this building' };
+    if (!total) return { tone: 'green', label: '✅ No violations on record', title: 'HPD has no violations on file for this building' };
+    const hasYtd = v.ytd != null;
+    const recent = hasYtd ? v.ytd : (v.last_12mo || 0);
+    const window_ = hasYtd ? `in ${yr}` : 'in the last 12 months';
+    if (recent > 0) return { tone: 'red', label: `🚨 Violations (${total}) · ${recent} ${window_}`, title: `HPD cited this building ${recent} time${recent === 1 ? '' : 's'} ${window_}` };
+    return { tone: 'yellow', label: `⚠️ Violations (${total}) · none ${window_}`, title: `${total} on record, none ${window_}` };
   }
 
   function syncDetailFav() {

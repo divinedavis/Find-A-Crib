@@ -647,6 +647,10 @@
   .hpd-viol-head { margin-bottom: 3px; }
   .hpd-viol-head .hpd-stat { font-weight: 700; }
   .hpd-viol-meta { color: var(--ink-2); font-size: 11px; }
+  /* last HPD action on the row; the stale variant marks a record nobody has touched in 10+ years */
+  .hpd-viol-last { font-size: 11px; color: var(--ink-2); margin-top: 3px; }
+  .hpd-viol-last.stale { color: var(--warn-ink, #8a5a00); }
+  .hpd-viol-last.stale b { font-weight: 700; }
   .hpd-viol-txt { color: var(--ink); }
   .hpd-viol-note { font-size: 11px; color: var(--ink-2); padding: 8px 0; border-top: 1px solid var(--line); }
   .hpd-link { font-size: 11px; margin-top: 6px; }
@@ -2658,7 +2662,7 @@
     // dismissed notice as a live problem is worse than a chip being off by one.
     const where = `bbl='${bbl}' AND violationstatus='Open'`;
     const url = VIOL_URL
-      + '?$select=' + encodeURIComponent('class,novdescription,novissueddate,currentstatus,apartment,story')
+      + '?$select=' + encodeURIComponent('class,novdescription,novissueddate,currentstatus,currentstatusdate,apartment,story')
       + '&$where=' + encodeURIComponent(where)
       + '&$order=' + encodeURIComponent('novissueddate DESC')
       + '&$limit=' + VIOL_LIMIT;
@@ -2697,6 +2701,38 @@
     return n + suf + ' floor';
   }
 
+  // HPD's currentstatus is inspector shorthand. Say what it means to a tenant.
+  const STATUS_WORD = {
+    'NOV SENT OUT': 'Notice sent to the owner',
+    'NOV CERTIFIED LATE': 'Owner certified the fix late',
+    'NOT COMPLIED WITH': 'Owner did not certify a fix',
+    'DEFECT LETTER ISSUED': 'Owner\'s certification rejected',
+    'FIRST NO ACCESS TO RE- INSPECT VIOLATION': 'Inspector could not get in to verify',
+    'SECOND NO ACCESS TO RE-INSPECT VIOLATION': 'Inspector could not get in to verify (2nd try)',
+    'INFO NOV SENT OUT': 'Informational notice sent',
+    'CIV14 MAILED': 'Civil-penalty notice mailed',
+  };
+  // HPD never closes a violation on its own: it stays "Open" until the owner
+  // certifies the repair or an inspector verifies it. So a 1998 window that was
+  // fixed and never certified is still Open today. About 100,000 open
+  // violations citywide predate 2005 (Sep 2026). A record nobody has touched
+  // in ten years is labelled as exactly that rather than shown as a live hazard.
+  const STALE_YEARS = 10;
+  function violLastHtml(r) {
+    const raw = String(r.currentstatus || '').replace(/\s+/g, ' ').trim();
+    if (!raw) return '';
+    const word = STATUS_WORD[raw] || raw.charAt(0) + raw.slice(1).toLowerCase();
+    const when = (r.currentstatusdate || '').slice(0, 10);
+    const d = when ? new Date(when + 'T00:00') : null;
+    const stale = d && (Date.now() - d.getTime()) > STALE_YEARS * 365.25 * 864e5;
+    const whenTxt = d ? d.toLocaleString('en-US', { month: 'short', year: 'numeric' }) : '';
+    if (stale) {
+      const yrs = Math.floor((Date.now() - d.getTime()) / (365.25 * 864e5));
+      return `<div class="hpd-viol-last stale"><b>Open on record, never certified.</b> Last HPD action: ${esc(word.toLowerCase())}, ${esc(whenTxt)} — nothing since, ${yrs} years.</div>`;
+    }
+    return `<div class="hpd-viol-last">Last HPD action: ${esc(word)}${whenTxt ? ' · ' + esc(whenTxt) : ''}</div>`;
+  }
+
   function violRowHtml(r) {
     const cls = (r.class || '').toUpperCase();
     const chipCls = cls === 'C' ? 'bad' : (cls === 'B' ? 'warn' : '');
@@ -2714,6 +2750,7 @@
       </div>
       <div class="hpd-viol-txt">${esc(body || 'No description on file.')}</div>
       ${meta ? `<div class="hpd-viol-meta">${esc(meta)}</div>` : ''}
+      ${violLastHtml(r)}
     </div>`;
   }
 

@@ -175,6 +175,14 @@ final class DataStore {
     func postedDate(_ b: Building) -> Date? { listings.postedDate(b.bbl) }
     func beds(_ b: Building) -> [Int] { listings.beds[b.bbl] ?? [] }
     func listingURL(_ b: Building) -> URL? { listings.urls[b.bbl].flatMap(URL.init) }
+    /// The button that opens a listing says where it goes — "StreetEasy" or
+    /// "Zumper" — not "View listing". Anything else falls back to the generic.
+    func listingSite(_ b: Building) -> String {
+        let host = (listingURL(b)?.host ?? "").lowercased()
+        if host.hasSuffix("streeteasy.com") { return "StreetEasy" }
+        if host.hasSuffix("zumper.com") { return "Zumper" }
+        return "View listing"
+    }
     func listingCount(_ b: Building) -> Int { listings.counts[b.bbl] ?? 0 }
     func isAdvertised(_ b: Building) -> Bool { listings.isRecent(b.bbl) }
     /// HUD estimate for the ZIP: [studio, 1BR, 2BR, 3BR]

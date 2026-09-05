@@ -94,7 +94,7 @@ struct BuildingCard: View {
                         }.frame(maxWidth: 1000)
                     } else if let url = store.listingURL(b) {
                         Link(destination: url) {
-                            Text("View listing").font(.se(18, .bold)).foregroundStyle(.white)
+                            Text(store.listingSite(b)).font(.se(18, .bold)).foregroundStyle(.white)
                                 .frame(maxWidth: .infinity).frame(height: 50).background(SE.royal)
                         }.frame(maxWidth: 1000)
                     } else {

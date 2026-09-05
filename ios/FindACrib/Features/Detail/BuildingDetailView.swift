@@ -75,7 +75,7 @@ struct BuildingDetailView: View {
                 if let apply = store.hcrListings(b).first(where: { $0.isOpen })?.applyURL ?? store.hcrListings(b).first?.applyURL {
                     SEPrimaryButton(title: "Apply on HousingSearch.ny.gov") { openURL(apply) }
                 } else if let url = store.listingURL(b) {
-                    SEPrimaryButton(title: "View listing") { openURL(url) }
+                    SEPrimaryButton(title: store.listingSite(b)) { openURL(url) }
                 } else if let url = store.voucherAvail(b)?.url.flatMap(URL.init) {
                     SEPrimaryButton(title: "Voucher listing") { openURL(url) }
                 } else {
@@ -100,8 +100,8 @@ struct BuildingDetailView: View {
                     Button { openURL(b.webURL) } label: { Label("Open on findacrib.com", systemImage: "safari") }
                     Button {
                         let item = MKMapItem(placemark: MKPlacemark(coordinate: b.coordinate)); item.name = b.address
-                        item.openInMaps()
-                    } label: { Label("Open in Maps", systemImage: "map") }
+                        item.openInMaps(launchOptions: [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDefault])
+                    } label: { Label("Directions", systemImage: "arrow.triangle.turn.up.right.diamond") }
                     Button { activity.toggleSaved(b.bbl) } label: {
                         Label(activity.isSaved(b.bbl) ? "Unsave" : "Save", systemImage: activity.isSaved(b.bbl) ? "heart.fill" : "heart")
                     }

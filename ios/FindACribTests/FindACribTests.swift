@@ -88,6 +88,23 @@ final class SearchEngineTests: XCTestCase {
         XCTAssertTrue(blob.isRecent("a")); XCTAssertFalse(blob.isRecent("b")); XCTAssertFalse(blob.isRecent("zzz"))
     }
 
+    /// The listing button names the site it opens. Every banked URL is
+    /// StreetEasy's or Zumper's; a building with no URL gets the generic label.
+    func testListingButtonNamesTheSite() {
+        let urls = Self.store.listings.urls
+        XCTAssertFalse(urls.isEmpty, "bundled listings.json has no URLs")
+        for b in Self.store.buildings where urls[b.bbl] != nil {
+            let site = Self.store.listingSite(b)
+            let host = (Self.store.listingURL(b)?.host ?? "").lowercased()
+            if host.hasSuffix("streeteasy.com") { XCTAssertEqual(site, "StreetEasy") }
+            else if host.hasSuffix("zumper.com") { XCTAssertEqual(site, "Zumper") }
+            else { XCTAssertEqual(site, "View listing") }
+        }
+        if let plain = Self.store.buildings.first(where: { urls[$0.bbl] == nil }) {
+            XCTAssertEqual(Self.store.listingSite(plain), "View listing")
+        }
+    }
+
     func testAvailableOnlyIsPriced() {
         var q = SearchQuery(); q.mode = .stabilized; q.availableOnly = true
         let r = SearchEngine.run(q, store: Self.store)

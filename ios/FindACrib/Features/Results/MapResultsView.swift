@@ -307,17 +307,39 @@ struct BuildingMap: UIViewRepresentable {
     }
 }
 
-/// White capsule with the asking rent, royal border; a small royal dot when
-/// the building has no advertised price. Navy when selected.
+/// White capsule with the asking rent, royal border; a royal pin with a
+/// building glyph when the building has no advertised price. Navy when
+/// selected.
+///
+/// The unpriced pin used to be a 12pt dot — on a street map at block zoom it
+/// read as a speck and took a precise tap to hit. It is now a 28pt disc with
+/// a white ring, a drop shadow so it lifts off the map, and a glyph so it is
+/// unmistakably a building; the touch target is padded to 44pt either way.
 final class PriceBubbleView: MKAnnotationView {
     private let label = UILabel()
+    private let glyph = UIImageView(image: UIImage(systemName: "building.2.fill",
+        withConfiguration: UIImage.SymbolConfiguration(pointSize: 12, weight: .bold)))
+    static let dotSize: CGFloat = 28
     override init(annotation: MKAnnotation?, reuseIdentifier: String?) {
         super.init(annotation: annotation, reuseIdentifier: reuseIdentifier)
         collisionMode = .rectangle
         label.font = UIFont(name: "SourceSans3-Bold", size: 13) ?? .boldSystemFont(ofSize: 13)
         label.textAlignment = .center
         addSubview(label)
+        glyph.tintColor = .white
+        glyph.contentMode = .center
+        addSubview(glyph)
+        layer.shadowColor = UIColor.black.cgColor
+        layer.shadowOpacity = 0.28
+        layer.shadowRadius = 3
+        layer.shadowOffset = CGSize(width: 0, height: 1.5)
         displayPriority = .defaultHigh
+    }
+    /// Apple's 44pt minimum: a 28pt pin (or a 26pt-tall capsule) alone is
+    /// under it, so accept touches in a padded rect around the view.
+    override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
+        let dx = max(0, (44 - bounds.width) / 2), dy = max(0, (44 - bounds.height) / 2)
+        return bounds.insetBy(dx: -dx, dy: -dy).contains(point)
     }
     required init?(coder: NSCoder) { fatalError() }
     override var annotation: MKAnnotation? { didSet { render() } }
@@ -332,20 +354,29 @@ final class PriceBubbleView: MKAnnotationView {
             let w = label.bounds.width + 16
             bounds = CGRect(x: 0, y: 0, width: w, height: 26)
             label.frame = bounds
+            glyph.isHidden = true
             layer.cornerRadius = 13
             layer.borderWidth = 1.5
             displayPriority = .required
         } else {
             label.text = nil
-            bounds = CGRect(x: 0, y: 0, width: 12, height: 12)
-            layer.cornerRadius = 6
-            layer.borderWidth = 2
-            displayPriority = .defaultLow
+            let d = Self.dotSize
+            bounds = CGRect(x: 0, y: 0, width: d, height: d)
+            glyph.isHidden = false
+            glyph.frame = bounds
+            layer.cornerRadius = d / 2
+            layer.borderWidth = 2.5
+            displayPriority = .defaultHigh
         }
         let royal = UIColor(SE.royal), navy = UIColor(SE.navy)
         backgroundColor = isSelected ? navy : (a.price != nil ? .white : royal)
         layer.borderColor = isSelected ? navy.cgColor : (a.price != nil ? royal.cgColor : UIColor.white.cgColor)
         label.textColor = isSelected ? .white : royal
+        // An explicit shadow path keeps Core Animation from rasterising each
+        // pin's alpha mask every frame — hundreds of pins pan at 60fps.
+        layer.shadowPath = UIBezierPath(roundedRect: bounds, cornerRadius: layer.cornerRadius).cgPath
+        // A selected pin grows a touch so the tap visibly landed.
+        transform = (isSelected && a.price == nil) ? CGAffineTransform(scaleX: 1.2, y: 1.2) : .identity
         centerOffset = .zero
     }
 }

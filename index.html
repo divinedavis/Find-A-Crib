@@ -2559,7 +2559,12 @@
       + `</div>`;
   }
 
-  function hpdHtml(rec) {
+  // opts.violations=false drops the "HPD violations" block: the building page
+  // has the ⚠️ Violations (N) button up top, so the counts, the class legend
+  // and the inline expander would be the same thing twice. The map popup has
+  // no such button and keeps the block.
+  function hpdHtml(rec, opts) {
+    const showViol = !(opts && opts.violations === false);
     const h = rec.h;
     if (!h) {
       return `<div class="hpd-section"><h4>HPD Record</h4>
@@ -2627,13 +2632,13 @@
         ${regDate}
         ${researchBtn}
       </div>
-      <div class="hpd-section">
+      ${showViol ? `<div class="hpd-section">
         <h4>HPD violations</h4>
         <div class="hpd-row">${vChips}</div>
         ${vLegend}
         ${v && v.total ? `<button type="button" class="hpd-viol-btn" data-viol-bbl="${esc(rec.bbl)}" aria-expanded="false">📋 See what the violations are</button>
         <div class="hpd-viols" hidden></div>` : ''}
-      </div>
+      </div>` : ''}
       <div class="hpd-section">
         <h4>HPD complaints</h4>
         <div class="hpd-row">${cChips}</div>
@@ -3821,7 +3826,11 @@
     if (/zumper\.com/i.test(href)) kind = 'zumper';
     else if (/google\.[^/]+\/maps|maps\.google/i.test(href)) kind = 'google_maps';
     else if (/google\.[^/]+\/search/i.test(href)) kind = 'google_search';
-    else if (/hpdonline|hpd/i.test(href)) kind = 'hpd';
+    // Housing Connect first: it is on nyc.gov but it is the lottery portal,
+    // not a data source. And "hpd" only for HPD Online itself — a marketing
+    // agent's site with /hpd in the path was being counted as the city record.
+    else if (/housingconnect\.nyc\.gov/i.test(href)) kind = 'housing_connect';
+    else if (/hpdonline\.nyc\.gov/i.test(href)) kind = 'hpd';
     else if (/nyc\.gov|cityofnewyork/i.test(href)) kind = 'nyc_data';
     const bbl = a.closest('[data-bbl]')?.dataset.bbl || null;
     track('outbound', { kind, href, bbl });
@@ -5140,33 +5149,27 @@
       ['🏗️', rec.yr || '—', ''],
     ];
     return `
-      <div class="d-hero">
+      <div class="d-hero" data-sec="photo">
         <img class="d-photo" src="${sv}" alt="" onerror="this.style.visibility='hidden'">
         <div class="d-spec">
           ${spec.map(([ic, v, l]) => `<div class="d-spec-item"><span class="d-spec-ico">${ic}</span><span class="d-spec-txt"><b>${esc(String(v))}</b>${l ? ' ' + l : ''}</span></div>`).join('')}
         </div>
       </div>
-      <div class="d-head">
+      <div class="d-head" data-sec="header">
         <h2 class="d-title">${esc(title)}</h2>
         <div class="d-tagline"><span class="d-tag">${esc(CITY.label)}</span>${est ? ` <span class="d-dot">·</span> <span class="d-est" title="${esc(EST_TITLE)}">${est}</span>` : ''}</div>
         <div class="d-addr"><span class="d-pin">📍</span> ${esc(addrLine)}</div>
       </div>
-      <div class="agent-card" data-agentcard="${esc(rec.bbl)}">${agentCardInner(rec.bbl, !!(rec.h && rec.h.op))}</div>
-      <div class="d-actions">
-        <button class="d-primary" data-detail="fav">${FAVS.has(rec.bbl) ? '♥ Saved to your list' : '♡ Save this building — free'}</button>
-      </div>
-      <!-- Straight under Save on purpose. It used to sit in a "Find this
-           listing" section below the vouchers, the status chips, the building
-           facts and the whole HPD record — several screens down. It is the
-           single most-clicked thing on the site (60% of all outbound clicks),
-           and the first thing half of the people who re-open a building they
-           saved reach for, so it belongs next to the save, not under a fold. -->
-      <div class="d-actions" style="padding-top:0">
+      <div class="agent-card" data-sec="agent" data-agentcard="${esc(rec.bbl)}">${agentCardInner(rec.bbl, !!(rec.h && rec.h.op))}</div>
+      <!-- Save lives in the header heart only (the full-width Save row was
+           removed 2026-09-05 as a duplicate). The listing link is first: it is
+           the single most-clicked thing on the site (60% of all outbound
+           clicks) and used to sit several screens down under the HPD record. -->
+      <div class="d-actions" data-sec="actions">
         <a class="d-secondary" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.label}</a>
       </div>
       <div class="d-actions" style="padding-top:0">
         <button class="d-secondary" data-detail="map">View on map</button>
-        <button class="d-secondary" data-detail="share">🔗 Share this building</button>
       </div>
       <div class="d-actions d-dir-row" style="padding-top:0">
         <button class="d-secondary" data-detail="directions">🧭 Driving directions</button>
@@ -5174,16 +5177,16 @@
       ${IS_NYC && rec.h && rec.h.violations ? `<div class="d-actions" style="padding-top:0">
         <button class="d-secondary" data-detail="violations">⚠️ Violations (${violTotal != null ? violTotal : 0})</button>
       </div>` : ''}
-      ${IS_NYC ? `<div class="d-section"><h3>Housing vouchers (Section 8)</h3>
+      ${IS_NYC ? `<div class="d-section" data-sec="vouchers"><h3>Housing vouchers (Section 8)</h3>
         ${s8Html(rec) || '<div class="d-sub" style="margin:0">No voucher listing or subsidy record for this building right now.</div>'}
         <div class="s8-legal">Source-of-income discrimination is illegal in NYC — every landlord must accept Section 8 and other vouchers, tagged here or not. <a href="https://www.nyc.gov/site/cchr/about/report-discrimination.page" target="_blank" rel="noopener">Report discrimination to the NYC Commission on Human Rights ↗</a></div>
       </div>` : ''}
-      ${statuses.length ? `<div class="d-section"><h3>${esc(CITY.statusHeading || 'Rent-stabilization status')}</h3><div class="d-chips">${statuses.map(s => `<span class="chip">${esc(s)}</span>`).join('')}</div>${CITY.sourceNote ? `<div class="d-sub" style="margin-top:8px">${CITY.sourceNote}${CITY.likely ? ' <a href="https://zimas.lacity.org/" target="_blank" rel="noopener">Check ZIMAS ↗</a>' : ''}</div>` : ''}</div>` : ''}
-      <div class="d-section"><h3>Building facts</h3>
+      ${statuses.length ? `<div class="d-section" data-sec="status"><h3>${esc(CITY.statusHeading || 'Rent-stabilization status')}</h3><div class="d-chips">${statuses.map(s => `<span class="chip">${esc(s)}</span>`).join('')}</div>${CITY.sourceNote ? `<div class="d-sub" style="margin-top:8px">${CITY.sourceNote}${CITY.likely ? ' <a href="https://zimas.lacity.org/" target="_blank" rel="noopener">Check ZIMAS ↗</a>' : ''}</div>` : ''}</div>` : ''}
+      <div class="d-section" data-sec="facts"><h3>Building facts</h3>
         <div class="d-facts">${facts.map(([l, v]) => `<div class="d-fact"><span class="l">${l}</span><span class="v">${esc(String(v))}</span></div>`).join('')}</div>
       </div>
-      ${IS_NYC ? `<div class="d-section"><h3>Owner &amp; HPD record</h3>${hpdHtml(rec)}</div>` : ''}
-      <div class="d-section" id="d-comments"><h3>Comments</h3>
+      ${IS_NYC ? `<div class="d-section" data-sec="hpd"><h3>Owner &amp; HPD record</h3>${hpdHtml(rec, { violations: false })}</div>` : ''}
+      <div class="d-section" id="d-comments" data-sec="comments"><h3>Comments</h3>
         <div id="d-comments-list"><div class="d-sub" style="margin:0">Loading comments…</div></div>
         <div id="d-comments-composer"></div>
       </div>`;
@@ -5243,11 +5246,38 @@
   }
 
   let _detailNav = false;
+  // Which parts of the building page people actually reach. Clicks only ever
+  // said what they tapped; this says what they scrolled to. One section_view
+  // per section per open (the Set resets with each building), fired when at
+  // least 40% of the section is on screen — or, for a section taller than the
+  // panel such as the HPD record, when it fills 60% of the panel. At most nine
+  // events per open, so a busy month is a few thousand rows.
+  let secObserver = null, secSeen = new Set();
+  function watchDetailSections(rec) {
+    if (secObserver) { secObserver.disconnect(); secObserver = null; }
+    if (!('IntersectionObserver' in window)) return;
+    const rootH = detailContent.clientHeight || window.innerHeight;
+    secObserver = new IntersectionObserver(entries => {
+      entries.forEach(en => {
+        if (!en.isIntersecting) return;
+        const big = en.intersectionRect.height >= rootH * 0.6;
+        if (en.intersectionRatio < 0.4 && !big) return;
+        const sec = en.target.dataset.sec;
+        if (!sec || secSeen.has(sec) || detailRec !== rec) return;
+        secSeen.add(sec);
+        secObserver.unobserve(en.target);
+        track('section_view', { bbl: rec.bbl, sec });
+      });
+    }, { root: detailContent, threshold: [0.4, 0.6, 1] });
+    detailContent.querySelectorAll('[data-sec]').forEach(el => { if (!secSeen.has(el.dataset.sec)) secObserver.observe(el); });
+  }
   function openDetail(rec, listed) {
     detailRec = rec; detailListed = listed || 0;
     track('building_view', { bbl: rec.bbl, addr: rec.a, boro: rec.b, listed: detailListed, via: 'detail' });
+    secSeen = new Set();
     detailContent.innerHTML = renderDetail(rec, detailListed);
     detailContent.scrollTop = 0;
+    watchDetailSections(rec);
     syncDetailFav();
     loadComments(rec.bbl);
     detailSheet.hidden = false;
@@ -5257,6 +5287,7 @@
     if (!HPD_FULL) ensureHpdFull().then(ok => {
       if (ok && detailRec === rec && !detailSheet.hidden) {
         detailContent.innerHTML = renderDetail(rec, detailListed);
+        watchDetailSections(rec);   // the repaint replaced every observed node
         syncDetailFav();
         // This repaint throws away everything loadComments() wrote and puts the
         // "Loading comments…" placeholder back, so the comments have to be
@@ -5351,6 +5382,7 @@
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !violSheet.hidden) closeViolSheet(); });
   function closeDetail() {
     detailSheet.hidden = true; detailRec = null;
+    if (secObserver) { secObserver.disconnect(); secObserver = null; }
     // consume the pushed entry (popstate below no-ops because _detailNav is now false)
     if (_detailNav) { _detailNav = false; history.back(); }
   }

@@ -101,8 +101,8 @@
     "notes": "2026-08-17: widened from 'the daily pages' to 'every page in a family this build owns that no pipeline shard lists'. It had been built purely from the lastmod state, and Ctx.unstage() drops a URL's lastmod entry when it hands a page back to the SEO pipeline \u2014 correct for the bytes, wrong for the sitemap, because the pipeline's own shard never picked the city hub tier up. Result: 103 DC, 112 LA and 37 SF hub pages live in the docroot against two sitemap URLs per city, i.e. 252 finished pages in no sitemap at all, on the same morning the URL Inspection sample read 'unknown to Google' \u2014 never fetched \u2014 for 159 of 198 URLs. Watch the 'rescued' count in the detail line: it is the size of that hole and should go to 0 when the SEO pipeline emits its own city shards.",
     "verdict": {
       "decided": "2026-09-05",
-      "works": true,
-      "why": "organic_visitors median 11.0/day vs 6.0/day before activation [155 in the last 14d vs 110 in the 14d before]",
+      "works": null,
+      "why": "organic_visitors median 11.0/day vs 6.0/day before activation [155 in the last 14d vs 110 in the 14d before] \u2014 but 6 other active techniques are judged on the same site-wide organic_visitors series (T005 indexnow, T010 gsc_integration, T015 dataset_schema_ai_citation and 3 more), so the movement cannot be attributed to any one of them",
       "measured": {
         "metric": "organic_visitors",
         "median_after": 11.0,
@@ -110,7 +110,15 @@
         "total_after": 155,
         "total_before": 110,
         "window_days": 14,
-        "days_measured": 40
+        "days_measured": 40,
+        "co_claimants": [
+          "T005 indexnow",
+          "T010 gsc_integration",
+          "T015 dataset_schema_ai_citation",
+          "T016 embeddable_building_lookup_widget",
+          "T037 crawl_paths",
+          "T072 page_uniqueness"
+        ]
       }
     },
     "revisit_on": "2026-09-24"
@@ -132,8 +140,8 @@
     "notes": "[2026-08-25] REVISIT DECISION: keep, with its verdict explicitly disowned. IndexNow submits to Bing, Yandex, Seznam and Naver; the technique's own docstring says Google does not consume it. It is judged on site-wide organic_visitors, which is overwhelmingly Google. So the metric cannot rise when the technique succeeds and cannot fall when it fails \u2014 the UNPROVEN verdict recorded today is a statement about the instrument. It stays because it is free and is the only indexing lever here that needs no account. Worth a future run's attention: it submitted 0 URLs today ('nothing new or changed'), while the SEO pipeline changed 98 \u2014 it only ever sees growth-technique URLs, so the corpus that actually moves is never submitted.",
     "verdict": {
       "decided": "2026-09-05",
-      "works": true,
-      "why": "organic_visitors median 11.0/day vs 6.0/day before activation [155 in the last 14d vs 110 in the 14d before]",
+      "works": null,
+      "why": "organic_visitors median 11.0/day vs 6.0/day before activation [155 in the last 14d vs 110 in the 14d before] \u2014 but 6 other active techniques are judged on the same site-wide organic_visitors series (T004 sitemap_daily, T010 gsc_integration, T015 dataset_schema_ai_citation and 3 more), so the movement cannot be attributed to any one of them",
       "measured": {
         "metric": "organic_visitors",
         "median_after": 11.0,
@@ -141,7 +149,15 @@
         "total_after": 155,
         "total_before": 110,
         "window_days": 14,
-        "days_measured": 40
+        "days_measured": 40,
+        "co_claimants": [
+          "T004 sitemap_daily",
+          "T010 gsc_integration",
+          "T015 dataset_schema_ai_citation",
+          "T016 embeddable_building_lookup_widget",
+          "T037 crawl_paths",
+          "T072 page_uniqueness"
+        ]
       }
     },
     "revisit_on": "2026-09-24"
@@ -251,8 +267,8 @@
     "notes": "Needs: a Google Cloud service account with the Search Console API enabled, added as a user on the findacrib.com property, key stored in keychain rent-map-gsc-service-account. 2026-08-04: gsc_serving_pages alone was being read as the gating number and it cannot carry that weight \u2014 a rolling count of distinct URLs served says nothing about whether it is the same set twice. searchconsole.py now keeps a per-URL serving history in gsc_pages.json and records gsc_serving_stable / _entered / _left / _ever beside it. Backfilled from the six committed snapshots 2026-07-30..08-04: the daily count sat at 78-89 the whole time while distinct-pages-ever went 82 -> 142, i.e. newly-served pages displace old ones instead of adding to the total. _ever is the monotone one and the one to steer by; it survives history eviction via a running dropped total. 2026-08-15: gsc_serving_pages is not an INDEXING number either, which this note and searchconsole.py's docstring both said it was. An impression needs the page indexed AND somebody to have searched for something it answers, and on 47,165 single-address pages the second condition is what almost every page fails \u2014 so '63 of ~47,600 served' is equally consistent with 63 indexed pages and with 47,000, and those imply opposite next moves. growth/indexstatus.py now asks the Search Console URL Inspection API for Google's own coverage state on a stable stratified cohort of ~430 URLs, 100 a night, and records index_pct / index_pct_building. Read gsc_serving_pages as the search FOOTPRINT and index_pct as the indexing rate. [2026-08-27 revisit] KEEP, and disown this technique's own verdict as a category error. The hypothesis had two halves. The measurement half succeeded beyond what it claimed: every finding this loop has made since late July \u2014 the serving-tier census, the per-URL history in gsc_pages.json, the 0.0% mature-acceptance reading, and the 08-27 building-richness test that refuted T027's criteria \u2014 exists only because this technique wired up Search Console. The 'cheapest rankings' half is REFUTED BY ITS OWN INSTRUMENT: it said page-2 queries would be cheap wins, and after 30 days tracked_ranking is 0 of 315 \u2014 there is no page-2 tier to harvest because nothing ranks anywhere. Its standing verdict ('organic_visitors \u2014 no measurable lift after 30d') is meaningless: an instrument cannot move the series it measures, the same category error corrected for T011/T018 on 08-26. Deliberately NOT repointing the metric \u2014 every candidate is one it also cannot cause, so a repoint would buy a differently-worded false verdict, not a truer one.",
     "verdict": {
       "decided": "2026-09-05",
-      "works": true,
-      "why": "organic_visitors median 11.0/day vs 6.0/day before activation [155 in the last 14d vs 107 in the 14d before]",
+      "works": null,
+      "why": "organic_visitors median 11.0/day vs 6.0/day before activation [155 in the last 14d vs 107 in the 14d before] \u2014 but 6 other active techniques are judged on the same site-wide organic_visitors series (T004 sitemap_daily, T005 indexnow, T015 dataset_schema_ai_citation and 3 more), so the movement cannot be attributed to any one of them",
       "measured": {
         "metric": "organic_visitors",
         "median_after": 11.0,
@@ -260,7 +276,15 @@
         "total_after": 155,
         "total_before": 107,
         "window_days": 14,
-        "days_measured": 39
+        "days_measured": 39,
+        "co_claimants": [
+          "T004 sitemap_daily",
+          "T005 indexnow",
+          "T015 dataset_schema_ai_citation",
+          "T016 embeddable_building_lookup_widget",
+          "T037 crawl_paths",
+          "T072 page_uniqueness"
+        ]
       }
     },
     "revisit_on": "2026-09-26"
@@ -830,8 +854,8 @@
     "notes": "Audits, never publishes. Reads the ledger's own prefix declarations against the live docroot, so a technique added later is covered without being listed here. Self-links inside a prefix do not count \u2014 a family whose pages only link to each other is exactly the orphan case. REVISIT 2026-09-04, AND THE HYPOTHESIS IS FALSIFIED AS A CAUSAL CLAIM. The linking half of it was fully delivered: 15 of 15 published sections now carry an inbound internal link and every one sits within 3 clicks of the homepage. Indexing did not follow it \u2014 it moved the other way, monotonically, over the 30 days since. gsc_serving_pages 63 (08-20) \u2192 39 (08-24) \u2192 13 (08-30) \u2192 5 (09-03, 09-04); index_state_indexed 10 \u2192 1 across the same window; index_accept_pct_mature 50% (08-20) \u2192 0.0% every day from 08-26 to 09-04. An inbound link is therefore necessary but nowhere near sufficient, and on this site it was not the binding constraint. DISTRUST ITS 'WORKS' VERDICT: review.py credits it with organic_visitors 9.5/day vs 2.5/day, but gsc_nonbranded_clicks has been 0 for seven straight days against 67 branded clicks, so the traffic it is being credited with is jayshomefinder and findacrib residue that this technique cannot have caused. The metric is mis-attributed; the audit is not. KEPT, as a guard and an instrument rather than a growth lever: it is read-only, it is what stops the next section shipping into an orphan hole, and its click-depth and 'published under no ACTIVE technique' readings are what the duplication work is steering by. Its own next improvement is to become a pure docroot reader \u2014 drop the ctx.out staging check and the ledger.set_state first-sighting write \u2014 so it can join techniques.DOCROOT_VERIFIERS and stop reporting a day late.",
     "verdict": {
       "decided": "2026-09-05",
-      "works": true,
-      "why": "organic_visitors median 11.0/day vs 2.5/day before activation [155 in the last 14d vs 51 in the 14d before]",
+      "works": null,
+      "why": "organic_visitors median 11.0/day vs 2.5/day before activation [155 in the last 14d vs 51 in the 14d before] \u2014 but 6 other active techniques are judged on the same site-wide organic_visitors series (T004 sitemap_daily, T005 indexnow, T010 gsc_integration and 3 more), so the movement cannot be attributed to any one of them",
       "measured": {
         "metric": "organic_visitors",
         "median_after": 11.0,
@@ -839,7 +863,15 @@
         "total_after": 155,
         "total_before": 51,
         "window_days": 14,
-        "days_measured": 31
+        "days_measured": 31,
+        "co_claimants": [
+          "T004 sitemap_daily",
+          "T005 indexnow",
+          "T010 gsc_integration",
+          "T015 dataset_schema_ai_citation",
+          "T016 embeddable_building_lookup_widget",
+          "T072 page_uniqueness"
+        ]
       }
     }
   },

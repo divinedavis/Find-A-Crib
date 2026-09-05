@@ -36,6 +36,12 @@ breeds. So:
 None is not the same as no verdict at all. No verdict means "too young to
 look"; None means "we looked, and the instrument could not resolve it" — which
 is a finding about the instrument, and belongs in front of someone.
+
+The second way a false WORKS gets written is not a bad threshold but a bad
+attribution: a technique with no prefixes of its own is judged on a __site__
+series, and on 2026-09-05 seven active techniques were being judged on the same
+`organic_visitors` numbers. Four of them carried a WORKS quoting the identical
+"median 11.0/day vs 6.0/day" lift. See _co_claimants and _guard_shared_metric.
 """
 import datetime
 import statistics
@@ -110,6 +116,12 @@ STOCK_METRICS = frozenset({
 # growth rate measured on it means anything. One reading either side of the
 # activation date is not a baseline, it is a coincidence.
 MIN_BASELINE_DAYS = 7
+
+# How many co-claimants to name in the `why` string before summarising the rest.
+# The string is rendered in the daily email next to the verdict; naming three is
+# enough for a reader to recognise the pile, and the full list is kept in
+# measured["co_claimants"] either way.
+CO_CLAIMANTS_NAMED = 3
 
 
 def _span_days(pairs):
@@ -220,6 +232,70 @@ def _judge_stock(res, metric, after, before, days):
     return res
 
 
+def _co_claimants(t, metric, techs):
+    """Other live techniques judged on the SAME site-wide series as `t`.
+
+    A technique with no prefixes of its own is judged on a __site__ metric —
+    one series that belongs to the whole site and to no technique in
+    particular. When several active techniques declare the same one, the loop
+    below compares each of them against those identical numbers and hands the
+    same movement to every one of them. On 2026-09-05 SEVEN active techniques
+    declared `organic_visitors` (T004, T005, T010, T015, T016, T037, T072) and
+    two declared `reports_sold` (T011, T017); four of the seven were carrying a
+    WORKS verdict quoting the same "median 11.0/day vs 6.0/day" lift.
+
+    They cannot all have caused it, and this instrument cannot say which did.
+    Yesterday's entry found this the hard way on T037 crawl_paths: its linking
+    work was fully delivered while every indexing series went the other way
+    (serving_pages 63 -> 5, index_state_indexed 10 -> 1), and it still read
+    WORKS because it happened to be active while a site-wide number drifted up.
+
+    All of these techniques are live simultaneously, so their trailing windows
+    are identical by construction and there is no date arithmetic to do: sharing
+    the metric IS the overlap. A technique that declares its own `prefixes` is
+    judged on the owned path instead and never reaches here, so it is not a
+    claimant on the site-wide series and is not counted.
+    """
+    out = []
+    for other in techs or ():
+        if other.get("id") == t.get("id"):
+            continue
+        if other.get("status") != "active" or other.get("prefixes"):
+            continue
+        if (other.get("metric") or "organic_visitors") != metric:
+            continue
+        out.append(f"{other.get('id')} {other.get('slug')}")
+    return sorted(out)
+
+
+def _guard_shared_metric(res, metric, co):
+    """Demote a positive verdict that several techniques are claiming at once.
+
+    ONLY works=True is demoted, and the asymmetry is deliberate — the same
+    reasoning as the MIN_CENSUS_READ guard above. A false WORKS does not sit
+    still: scout.py feeds the WORKS list into the prompt that proposes
+    tomorrow's techniques, so it breeds, and it also tells a future review that
+    a question is settled when it is not. A false "no lift" costs one flag that
+    a person reads and dismisses. Guard the direction that propagates.
+
+    Nothing here touches res["action"], so this can never retire anything: a
+    demoted technique keeps running and keeps being measured. What changes is
+    that the ledger stops asserting a causal claim the numbers cannot support.
+    """
+    if not co or res.get("works") is not True:
+        return res
+    named = ", ".join(co[:CO_CLAIMANTS_NAMED])
+    if len(co) > CO_CLAIMANTS_NAMED:
+        named += f" and {len(co) - CO_CLAIMANTS_NAMED} more"
+    res["works"] = None
+    res.setdefault("measured", {})["co_claimants"] = co
+    res["why"] = (f"{res['why']} — but {len(co)} other active technique"
+                  f"{'s are' if len(co) != 1 else ' is'} judged on the same site-wide "
+                  f"{metric} series ({named}), so the movement cannot be attributed to "
+                  f"any one of them")
+    return res
+
+
 def _num(v):
     if v is None:
         return "?"
@@ -232,8 +308,14 @@ def _signed(v):
     return ("+" if v > 0 else "") + _num(v)
 
 
-def evaluate(t):
-    """Judge one technique. Returns a dict; does not mutate the ledger."""
+def evaluate(t, techs=None):
+    """Judge one technique. Returns a dict; does not mutate the ledger.
+
+    `techs` is the full ledger, used only to find the other techniques judged on
+    the same site-wide series (see _co_claimants). It is optional so that a
+    caller holding a single record can still evaluate it; passing nothing simply
+    means no co-claimant is visible and the guard cannot fire.
+    """
     days = _days_active(t)
     slug = t["slug"]
     # works defaults to None: a path has to earn True by measuring something.
@@ -370,13 +452,16 @@ def evaluate(t):
     # Site-wide technique: judged on its declared global metric, comparing the
     # trailing window against the window immediately before it was activated.
     metric = t.get("metric") or "organic_visitors"
+    co = _co_claimants(t, metric, techs)
     pairs = _global(metric)
     after = [(d, v) for d, v in pairs if d >= (t.get("activated") or "")]
     before = [(d, v) for d, v in pairs if d < (t.get("activated") or "")][-WINDOW:]
     if metric in STOCK_METRICS:
-        return _judge_stock(res, metric, after,
-                            [(d, v) for d, v in pairs if d < (t.get("activated") or "")],
-                            days)
+        return _guard_shared_metric(
+            _judge_stock(res, metric, after,
+                         [(d, v) for d, v in pairs if d < (t.get("activated") or "")],
+                         days),
+            metric, co)
     a_med = statistics.median([v for _, v in after[-WINDOW:]]) if after else None
     b_med = statistics.median([v for _, v in before]) if before else None
     # Totals alongside the medians, because at this traffic level the median is
@@ -413,7 +498,7 @@ def evaluate(t):
         return res
     res["works"] = True
     res["why"] = f"{metric} median {a_med}/day vs {b_med}/day before activation{totals}"
-    return res
+    return _guard_shared_metric(res, metric, co)
 
 
 def find_redundant(techs):
@@ -444,7 +529,7 @@ def find_redundant(techs):
 def run(apply=True):
     """Evaluate everything; optionally write the decisions back to the ledger."""
     techs = ledger.load_techniques()
-    results = [evaluate(t) for t in techs]
+    results = [evaluate(t, techs) for t in techs]
     redundant = find_redundant(techs)
     red_ids = {r["weak"] for r in redundant}
 

@@ -294,10 +294,11 @@
     display: flex; align-items: center; gap: 10px; max-width: calc(100% - 24px); box-sizing: border-box;
     background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 999px;
     padding: 7px 8px 7px 14px; font-size: 13px; box-shadow: 0 4px 16px rgba(0,0,0,.18); }
-  .geo-chip span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .geo-chip > span { min-width: 0; flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .geo-chip button { border: 0; background: var(--blue-solid); color: #fff; border-radius: 999px; padding: 5px 10px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
   .geo-chip button.geo-x { background: transparent; color: var(--ink-2); padding: 4px 6px; font-size: 14px; }
-  @media (max-width: 900px) { .geo-chip { top: auto; bottom: calc(76px + env(safe-area-inset-bottom)); font-size: 12px; } }
+  @media (max-width: 900px) { .geo-chip { top: auto; bottom: calc(76px + env(safe-area-inset-bottom)); font-size: 12px; padding-left: 10px; gap: 6px; }
+    .geo-chip .geo-src { display: none; } }
   .folder-toast .ft-opts { display: flex; flex-wrap: wrap; gap: 6px; }
   .folder-toast .ft-opts button { padding: 6px 11px; border-radius: 14px; border: 1px solid #46536a;
     background: #2a3346; color: #fff; font-size: 12.5px; cursor: pointer; }
@@ -5797,7 +5798,7 @@
     map.setView([g.lat, g.lng], 14, { animate: false });
     const chip = document.createElement('div');
     chip.className = 'geo-chip';
-    chip.innerHTML = `<span>📍 Showing ${esc(BORO_LONG[g.boro] || 'your area')} — from your network location</span>` +
+    chip.innerHTML = `<span>📍 Showing ${esc(BORO_LONG[g.boro] || 'your area')}<span class="geo-src"> — from your network location</span></span>` +
       `<button type="button" data-geo="all">Show all NYC</button>` +
       `<button type="button" class="geo-x" data-geo="x" aria-label="Dismiss">✕</button>`;
     document.getElementById('map').appendChild(chip);

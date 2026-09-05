@@ -53,10 +53,12 @@ struct FiltersSheet: View {
             .scrollDismissesKeyboard(.interactively)
             .safeAreaInset(edge: .bottom) {
                 HStack(spacing: 12) {
+                    // Reset takes only the width it needs; the Show button gets the rest.
                     SEOutlineButton(title: "Reset") {
                         let l = draft.locations
                         draft = SearchQuery(); draft.locations = l
                     }
+                    .fixedSize(horizontal: true, vertical: false)
                     SEPrimaryButton(title: "Show \(count.formatted()) \(draft.noun)") { query = draft; dismiss() }
                         .accessibilityIdentifier("filters-apply")
                 }

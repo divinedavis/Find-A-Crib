@@ -11,9 +11,12 @@ struct SEPrimaryButton: View {
         Button(action: action) {
             HStack(spacing: 8) {
                 if let icon { Image(systemName: icon).font(.system(size: 15, weight: .bold)) }
-                Text(title).font(.se(18, .bold))
+                // One line, shrinking to fit: "Show 1,234 voucher-friendly
+                // buildings" was wrapping and clipping inside the 50pt button.
+                Text(title).font(.se(18, .bold)).lineLimit(1).minimumScaleFactor(0.65)
             }
             .foregroundStyle(.white)
+            .padding(.horizontal, 12)
             .frame(maxWidth: .infinity)
             .frame(height: 50)
             .background(fill)

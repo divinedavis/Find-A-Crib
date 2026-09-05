@@ -97,6 +97,8 @@
   nav{display:flex;flex-direction:column;gap:2px;margin-top:6px}
   .nav-item{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:10px;color:var(--ink2);font-weight:500;font-size:14px;cursor:pointer;border:none;background:none;text-align:left;width:100%;position:relative;text-decoration:none}
   .nav-item:hover{background:var(--hover)}
+  .menu-btn{display:none;margin-left:auto;width:40px;height:40px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--ink);font-size:20px;line-height:1;cursor:pointer;align-items:center;justify-content:center;padding:0}
+  .menu-btn[aria-expanded="true"]{background:var(--purple-soft);color:var(--purple-ink);border-color:var(--purple)}
   .nav-item.active{background:var(--purple-soft);color:var(--purple-ink);font-weight:600}
   .nav-item.active::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:3px;background:var(--purple)}
   .nav-ico{width:17px;height:17px;flex:0 0 17px;opacity:.85}
@@ -170,14 +172,17 @@
   .foot{text-align:center;font-size:12px;color:var(--muted);margin-top:22px}
 
   /* ---- mobile: stack the sidebar into a top nav, full-width content ---- */
+  /* Same phone shell as ../index.html: compact sticky header, ☰ drawer. */
   @media (max-width:760px){
     #app{flex-direction:column}
-    aside{width:100%;flex:none;height:auto;position:sticky;top:0;border-right:none;border-bottom:1px solid var(--border);padding:10px 12px;gap:6px;z-index:20}
-    .brand{padding:2px 4px 6px}
-    .brand-mark{width:30px;height:30px;flex-basis:30px;font-size:16px}
-    nav{flex-direction:row;overflow-x:auto;gap:4px;margin-top:0;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-    nav::-webkit-scrollbar{display:none}
-    .nav-item{white-space:nowrap;padding:8px 12px;flex:0 0 auto}
+    aside{width:100%;flex:none;height:auto;position:sticky;top:0;border-right:none;border-bottom:1px solid var(--border);padding:8px 12px;gap:0;z-index:20}
+    .brand{padding:0 2px;align-items:center}
+    .brand-mark{width:32px;height:32px;flex-basis:32px;font-size:16px}
+    .menu-btn{display:inline-flex}
+    nav{display:none;flex-direction:column;gap:2px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border2)}
+    aside.open nav{display:flex}
+    aside.open>a.nav-item{display:flex}
+    .nav-item{padding:11px 12px;font-size:15px}
     .nav-item.active::before{display:none}
     .nav-spacer,.nav-foot,aside>.nav-item{display:none}
     .topbar{height:52px;padding:0 16px}
@@ -210,6 +215,7 @@
     <div class="brand">
       <div class="brand-mark">🏙️</div>
       <div><div class="brand-name">Find A Crib</div><div class="brand-sub">Owner analytics</div></div>
+      <button class="menu-btn" id="menu-btn" type="button" aria-label="Open menu" aria-expanded="false">☰</button>
     </div>
     <nav>
       <!-- ?site=fac because these sections only exist on the Find A Crib tab:
@@ -275,6 +281,13 @@
 <script src="/config.js"></script>
 <script src="/static/supabase/supabase.js"></script>
 <script>
+  (function(){
+    var aside=document.querySelector('aside'), btn=document.getElementById('menu-btn');
+    function setMenu(open){ aside.classList.toggle('open',!!open); btn.setAttribute('aria-expanded',open?'true':'false'); btn.setAttribute('aria-label',open?'Close menu':'Open menu'); }
+    btn.onclick=function(e){ e.stopPropagation(); setMenu(!aside.classList.contains('open')); };
+    document.addEventListener('click',function(e){ if(aside.classList.contains('open') && !aside.contains(e.target)) setMenu(false); });
+    document.addEventListener('keydown',function(e){ if(e.key==='Escape') setMenu(false); });
+  })();
 (function(){
   "use strict";
   var sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);

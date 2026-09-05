@@ -144,6 +144,9 @@
   .brand-mark{width:34px;height:34px;border-radius:10px;background:var(--purple);display:flex;align-items:center;justify-content:center;font-size:18px;flex:0 0 34px}
   .brand-name{font-weight:700;font-size:16px;letter-spacing:-.2px}
   .brand-sub{font-size:11px;color:var(--muted);font-weight:500}
+  /* Phone-only. On a desktop the sidebar is always open, so there is nothing to toggle. */
+  .menu-btn{display:none;margin-left:auto;width:40px;height:40px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--ink);font-size:20px;line-height:1;cursor:pointer;align-items:center;justify-content:center;padding:0}
+  .menu-btn[aria-expanded="true"]{background:var(--purple-soft);color:var(--purple-ink);border-color:var(--purple)}
   nav{display:flex;flex-direction:column;gap:2px;margin-top:6px}
   .nav-item{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:10px;color:var(--ink2);font-weight:500;font-size:14px;cursor:pointer;border:none;background:none;text-align:left;width:100%;position:relative}
   .nav-item:hover{background:var(--hover)}
@@ -222,9 +225,9 @@
   .card-head-row h2{margin:0}
 
   /* stat tiles */
-  .tiles{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:20px}
-  @media(max-width:1080px){.tiles{grid-template-columns:repeat(3,1fr)}}
-  @media(max-width:560px){.tiles{grid-template-columns:repeat(2,1fr)}}
+  .tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px;margin-bottom:20px}
+  @media(max-width:1080px){.tiles{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  @media(max-width:560px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
   .tile{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:15px 16px}
   .tile .t-ico{width:30px;height:30px;border-radius:9px;background:var(--purple-soft);display:flex;align-items:center;justify-content:center;margin-bottom:11px;font-size:15px}
   .tile .t-val{font-size:23px;font-weight:700;letter-spacing:-.5px;line-height:1.1}
@@ -319,9 +322,9 @@
   .callout b{color:var(--purple-ink)}
 
   /* google ads tiles */
-  .ads-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
-  @media(max-width:700px){.ads-tiles{grid-template-columns:repeat(2,1fr)}}
-  .ads-tile{background:var(--bg);border:1px solid var(--border2);border-radius:12px;padding:14px 15px}
+  .ads-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+  @media(max-width:700px){.ads-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  .ads-tile{background:var(--bg);border:1px solid var(--border2);border-radius:12px;padding:14px 15px;min-width:0;overflow-wrap:anywhere}
   /* product-health tiles: the number leads, a rule, then the measure's name
      big enough to read from across the room. Everything that used to sit
      under the number — the counts, the goal, the benchmark, the footnote —
@@ -375,26 +378,42 @@
   .foot{text-align:center;font-size:12px;color:var(--muted);margin-top:34px}
   .mb18{margin-bottom:18px}
 
-  /* ---- mobile: stack the sidebar into a top nav, full-width content ---- */
+  /* ---- mobile: compact sticky header with a ☰ drawer, full-width content ----
+     The first phone layout laid the nav out as a horizontally scrolling row with
+     the scrollbar hidden, and never undid the sidebar's width:100% on each item:
+     every item was a full-width button, so only "Dashboard" was ever on screen
+     and it looked like a menu button that did nothing. The header, the wrapped
+     site/range bar and the topbar were all sticky too, together covering the
+     top 60% of the screen. Now: a 56px sticky header (brand + ☰), the sections
+     in a drawer under it, and the site/range bar scrolls with the page. */
   @media (max-width:760px){
     #app{flex-direction:column}
-    aside{width:100%;flex:none;height:auto;position:sticky;top:0;border-right:none;border-bottom:1px solid var(--border);padding:10px 12px;gap:6px;z-index:20}
-    .brand{padding:2px 4px 6px}
-    .brand-mark{width:30px;height:30px;flex-basis:30px;font-size:16px}
-    nav{flex-direction:row;overflow-x:auto;gap:4px;margin-top:0;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-    nav::-webkit-scrollbar{display:none}
-    .nav-item{white-space:nowrap;padding:8px 12px;flex:0 0 auto}
+    aside{width:100%;flex:none;height:auto;position:sticky;top:0;border-right:none;border-bottom:1px solid var(--border);padding:8px 12px;gap:0;z-index:20}
+    .brand{padding:0 2px;align-items:center}
+    .brand-mark{width:32px;height:32px;flex-basis:32px;font-size:16px}
+    .menu-btn{display:inline-flex}
+    nav{display:none;flex-direction:column;gap:2px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border2)}
+    aside.open nav{display:flex}
+    aside.open>a.nav-item{display:flex}
+    .nav-item{padding:11px 12px;font-size:15px}
     .nav-item.active::before{display:none}
     .nav-spacer,.nav-foot,aside>.nav-item{display:none}
-    /* The top bar wrapped, but .tb-left did not: four site tabs, the live
+    /* A section scrolled to must land below the sticky header, not under it. */
+    .content [id]{scroll-margin-top:64px}
+    /* The topbar wrapped, but .tb-left did not: four site tabs, the live
        pill and five range buttons stayed on one 853px line inside a 390px
        screen. Everything past the second tab was simply off the right edge —
        the whole date-range filter included, with no scroll to reach it. Both
-       segmented controls wrap onto as many rows as they need instead. */
-    .topbar{min-height:52px;padding:8px 16px;gap:8px}
+       segmented controls wrap onto as many rows as they need instead, and the
+       bar is no longer sticky: wrapped it is ~200px tall. */
+    .topbar{position:static;min-height:52px;padding:8px 16px;gap:8px}
     .tb-left{width:100%;gap:8px}
     .site-switch,.range-switch{flex-wrap:wrap;max-width:100%}
     .site-switch button{padding:6px 10px;font-size:12.5px}
+    /* Health tiles: goal under the value on every tile, and the info popover
+       opens toward the screen's centre from whichever column it is in. */
+    .hm-goal{display:block;margin-top:3px}
+    .ads-tiles>.hm-tile:nth-child(odd) .hm-pop{right:auto;left:9px}
     .content{padding:18px 16px 48px}
     .page-head{flex-direction:column;align-items:flex-start;gap:12px}
     .card{padding:18px 16px}
@@ -431,6 +450,7 @@
         <div class="brand-name" id="brand-name">Find A Crib</div>
         <div class="brand-sub">Owner analytics</div>
       </div>
+      <button class="menu-btn" id="menu-btn" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="nav">☰</button>
     </div>
     <nav id="nav"></nav>
     <div class="nav-spacer"></div>
@@ -1142,11 +1162,27 @@
     });
   }
 
+  // ☰ drawer (phone only; the button is display:none on desktop).
+  var asideEl=document.querySelector('aside'), menuBtn=el('menu-btn');
+  function setMenu(open){
+    asideEl.classList.toggle('open', !!open);
+    menuBtn.setAttribute('aria-expanded', open?'true':'false');
+    menuBtn.setAttribute('aria-label', open?'Close menu':'Open menu');
+  }
+  menuBtn.onclick=function(e){ e.stopPropagation(); setMenu(!asideEl.classList.contains('open')); };
+  document.addEventListener('click',function(e){
+    if(asideEl.classList.contains('open') && !asideEl.contains(e.target)) setMenu(false);
+  });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') setMenu(false); });
+
   function bindNav(){
     document.querySelectorAll('.nav-item[data-scroll]').forEach(function(b){
       b.onclick=function(){
         document.querySelectorAll('.nav-item').forEach(function(x){x.classList.remove('active');});
         b.classList.add('active');
+        // Close the drawer before measuring: with it open the header is taller
+        // and the target's position is wrong by the drawer's height.
+        setMenu(false);
         var t=el(b.getAttribute('data-scroll')); if(!t) return;
         // The board is long enough that a smooth scroll from the top to the
         // revenue model animates for over a second — the click reads as the
@@ -2548,9 +2584,27 @@
 
   // ---------- sparkline ----------
   var SPARK_DAYS = 7;
-
+  // The chart is an SVG with a viewBox as wide as the host was when it drew.
+  // Drawn while the card was hidden (clientWidth 0) it fell back to 900px and
+  // Safari then scaled that 900px drawing into a 358px phone column: bars a
+  // third of their size, 4px labels, and empty space above and below. Keep
+  // the last data and redraw whenever the host's width actually changes —
+  // reveal, rotation, or a resized window.
+  var sparkLast=null, sparkW=0;
+  (function(){
+    var t;
+    function refit(){
+      var host=el('spark'); if(!host||!sparkLast) return;
+      var w=host.clientWidth; if(!w||w===sparkW) return;
+      renderSpark(sparkLast[0], sparkLast[1]);
+    }
+    function queue(){ clearTimeout(t); t=setTimeout(refit,80); }
+    window.addEventListener('resize',queue);
+    if(window.ResizeObserver){ var host=el('spark'); if(host) new ResizeObserver(queue).observe(host); }
+  })();
   function renderSpark(days, M){
     var host=el('spark');
+    sparkLast=[days, M];
     if(!days.length){ host.innerHTML='<div style="color:var(--muted);font-size:13px">Not enough history yet.</div>'; return; }
     days = days.slice(-SPARK_DAYS);
     // Plot unique visitors. Page views flatter the chart — one person reloading
@@ -2570,7 +2624,12 @@
     // so the eye compares day with day and month with month, never across the
     // divider. Only the Find A Crib tab passes months; the others keep the
     // seven-day chart they had.
-    var months = (M && M.months) ? M.months.slice(-7) : null;
+    // A phone column is ~360px. Seven month slots there are 17px each and
+    // "Jun Jul Aug Sep" runs together, so the narrow layout keeps the last
+    // four months (the heading says how many it drew) and gives the days a
+    // little more of the width.
+    var narrow = (host.clientWidth||900) < 520;
+    var months = (M && M.months) ? M.months.slice(narrow?-4:-7) : null;
     var mval = function(m){ return n(m.visitors); };
     // The heading states the window it actually drew. Early on there is less
     // history than the window, and a card claiming "last 7 days" over four
@@ -2587,14 +2646,19 @@
     // compared by size; a line draws a slope between Tuesday and Wednesday and
     // invites you to read a rate of change through days that were never
     // continuous. Bars also make a zero day read as zero instead of as a dip.
-    var W=Math.max(host.clientWidth||900,320), H=months?164:150, pad={t:months?30:20,r:8,b:22,l:8};
+    var W=Math.max(host.clientWidth||900,320); sparkW=host.clientWidth;
+    // A phone column is ~360px: seven day bars plus seven month bars in 164px
+    // of height is a strip. Give the narrow layout more height so the bars
+    // are readable at arm's length.
+    var H=narrow?(months?220:190):(months?164:150), pad={t:months?30:20,r:8,b:22,l:8};
+    var LBL = narrow ? 10 : 10.5;
     var iw=W-pad.l-pad.r, ih=H-pad.t-pad.b;
     var base=pad.t+ih;
     // Two groups side by side when months are present: the week takes the
     // larger share because seven days need room for seven date labels, the
     // months sit to the right past a faint divider.
     var GAP_W = months ? 34 : 0;
-    var dayW = months ? (iw-GAP_W)*0.56 : iw;
+    var dayW = months ? (iw-GAP_W)*(narrow?0.62:0.56) : iw;
     var monW = months ? iw-GAP_W-dayW : 0;
     var groups = [{items:days, x0:pad.l, w:dayW, val:val, caption:'Per day',
                    max:Math.max.apply(null,days.map(val))||1,
@@ -2650,7 +2714,7 @@
         var op = miss ? '0' : (G.dim(d) ? '.45' : (i===G.peak ? '1' : '.78'));
         bars+='<path class="spark-bar" data-g="'+g+'" data-i="'+i+'" d="'+(miss?'':barPath(x,y,bw,h,4))+
               '" fill="var(--purple)" opacity="'+op+'" data-op="'+op+'"></path>';
-        labels+='<text x="'+X(i)+'" y="'+(H-6)+'" text-anchor="middle" font-size="10.5" fill="var(--muted)"'+
+        labels+='<text x="'+X(i)+'" y="'+(H-6)+'" text-anchor="middle" font-size="'+LBL+'" fill="var(--muted)"'+
                 (miss?' opacity=".45"':'')+'>'+(miss?'—':G.label(d))+'</text>';
         if(i===G.peak && v>0 && !miss){
           valueLabels+='<text x="'+X(i)+'" y="'+(y-6)+'" text-anchor="middle" font-size="11" '+

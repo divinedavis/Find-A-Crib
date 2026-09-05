@@ -67,7 +67,7 @@ struct BuildingDetailView: View {
         .background(SE.canvas)
         .safeAreaInset(edge: .bottom) {
             HStack(spacing: 12) {
-                ShareLink(item: b.webURL, message: Text("\(b.address) — rent-stabilized building on Find A Crib")) {
+                ShareLink(item: b.webURL) {
                     Text("Share").font(.se(18, .bold)).foregroundStyle(SE.royal)
                         .frame(maxWidth: .infinity).frame(height: 50).background(Color.white)
                         .overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.royal, lineWidth: 1))

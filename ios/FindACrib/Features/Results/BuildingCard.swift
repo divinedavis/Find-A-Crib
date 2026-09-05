@@ -50,17 +50,21 @@ struct BuildingCard: View {
             }
 
             VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .top) {
-                    Text(b.neighborhood.isEmpty ? b.borough : b.neighborhood)
-                        .font(.se(18, .semibold)).foregroundStyle(SE.ink2).lineLimit(1).minimumScaleFactor(0.85)
-                    Spacer(minLength: 8)
-                    HeartButton(on: activity.isSaved(b.bbl)) { activity.toggleSaved(b.bbl) }
-                        .offset(x: 8, y: -6)
+                // Neighborhood sits right on top of the address: the heart's
+                // 44pt frame was pushing the two apart by a full line.
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(alignment: .center) {
+                        Text(b.neighborhood.isEmpty ? b.borough : b.neighborhood)
+                            .font(.se(18, .semibold)).foregroundStyle(SE.ink2).lineLimit(1).minimumScaleFactor(0.85)
+                        Spacer(minLength: 8)
+                        HeartButton(on: activity.isSaved(b.bbl)) { activity.toggleSaved(b.bbl) }
+                            .offset(x: 8).frame(height: 28)
+                    }
+                    Button(action: open) {
+                        Text(b.address).font(.se(27, .bold)).foregroundStyle(SE.royal).lineLimit(1).minimumScaleFactor(0.8)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }.buttonStyle(.plain).accessibilityIdentifier("card-address")
                 }
-                Button(action: open) {
-                    Text(b.address).font(.se(27, .bold)).foregroundStyle(SE.royal).lineLimit(1).minimumScaleFactor(0.8)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }.buttonStyle(.plain).accessibilityIdentifier("card-address")
 
                 priceLines
 
@@ -68,11 +72,17 @@ struct BuildingCard: View {
                 // Three facts on one row on a 390pt phone: at 20pt "Built 1908"
                 // truncated to "Built 1…". 16pt text, tighter dividers, and a
                 // lower scale floor keep all three whole.
+                // Spread across the card: beds flush left, year flush right,
+                // dividers centred in the gaps, so the row uses the whole width.
                 HStack(spacing: 0) {
                     fact("bed.double", bedsText)
-                    Rectangle().fill(SE.line).frame(width: 1, height: 22).padding(.horizontal, 9)
+                    Spacer(minLength: 6)
+                    Rectangle().fill(SE.line).frame(width: 1, height: 22)
+                    Spacer(minLength: 6)
                     fact("building.2", "\(b.u.map { "\($0) unit\($0 == 1 ? "" : "s")" } ?? "– units")")
-                    Rectangle().fill(SE.line).frame(width: 1, height: 22).padding(.horizontal, 9)
+                    Spacer(minLength: 6)
+                    Rectangle().fill(SE.line).frame(width: 1, height: 22)
+                    Spacer(minLength: 6)
                     fact("calendar", b.yr.map { "Built \($0)" } ?? "Built –")
                 }
                 .padding(.top, 8)
@@ -81,7 +91,7 @@ struct BuildingCard: View {
                 Text(store.isSyntheticHCR(b) ? "Listed on HousingSearch.ny.gov" : attribution).font(.se(18)).foregroundStyle(SE.ink2).padding(.top, 4)
 
                 HStack(spacing: 14) {
-                    ShareLink(item: b.webURL, message: Text("\(b.address) — rent-stabilized building on Find A Crib")) {
+                    ShareLink(item: b.webURL) {
                         HStack(spacing: 8) {
                             Image(systemName: "square.and.arrow.up").font(.system(size: 15, weight: .semibold))
                             Text("Share").font(.se(18, .bold))
@@ -156,15 +166,15 @@ struct BuildingCard: View {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(Formatters.dollars(p)).font(.se(34, .bold)).foregroundStyle(SE.ink).lineLimit(1).layoutPriority(3)
                 Text("asking rent").font(.se(20)).foregroundStyle(SE.ink2).lineLimit(1).layoutPriority(2)
-                InfoDot().layoutPriority(2)
+                InfoDot(title: "Asking rent", text: "The rent this building was last advertised at on StreetEasy or Zumper. It is one apartment's listing — stabilized rents differ unit by unit.").layoutPriority(2)
                 Text("Advertised").font(.se(18)).foregroundStyle(SE.ink2).lineLimit(1).minimumScaleFactor(0.7)
             }
             let n = store.listingCount(b)
             if let est = store.estimate(b), est.count >= 3 {
-                HStack(spacing: 6) {
-                    Text("\(Formatters.dollars(est[0]))–\(Formatters.dollars(est[2]))").font(.se(18, .bold))
-                    Text("typical for ZIP \(b.z ?? "")").font(.se(18)).foregroundStyle(SE.ink2)
-                    InfoDot()
+                HStack(spacing: 4) {
+                    Text("\(Formatters.dollars(est[0]))–\(Formatters.dollars(est[2]))").font(.se(18, .bold)).lineLimit(1).layoutPriority(2)
+                    Text("estimation · ZIP \(b.z ?? "")").font(.se(15)).foregroundStyle(SE.ink2).lineLimit(1).minimumScaleFactor(0.8)
+                    InfoDot(title: "Estimation", text: estimateNote)
                 }
             }
             Text("\(n) listing\(n == 1 ? "" : "s") · \(b.statusLine.isEmpty ? "Rent stabilized" : b.statusLine)")
@@ -178,14 +188,12 @@ struct BuildingCard: View {
         } else if let est = store.estimate(b), est.count >= 3 {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text("\(Formatters.dollars(est[0]))–\(Formatters.dollars(est[2]))").font(.se(30, .bold)).foregroundStyle(SE.ink).lineLimit(1).layoutPriority(2)
-                Text("typical rent").font(.se(20)).foregroundStyle(SE.ink2).lineLimit(1)
-                InfoDot()
+                Text("estimation").font(.se(16)).foregroundStyle(SE.ink2).lineLimit(1).layoutPriority(1)
+                InfoDot(title: "Estimation", text: estimateNote).layoutPriority(1)
             }
             if let (p, d) = store.lastPrice(b) {
                 Text("Last advertised at \(Formatters.dollars(p))" + (d.map { " · \(Formatters.long.string(from: $0))" } ?? "")).font(.se(16)).foregroundStyle(SE.ink3)
             }
-            Text("HUD FY2026 fair market rent for ZIP \(b.z ?? ""), studio–2BR · not this building's rent")
-                .font(.se(16)).foregroundStyle(SE.ink3)
         } else {
             Text("No recent listing").font(.se(22, .bold)).foregroundStyle(SE.ink2)
         }
@@ -198,6 +206,10 @@ struct BuildingCard: View {
         return s.count == 1 ? (bd[0] == 0 ? "Studio" : "\(bd[0]) bed") : "\(s.first!)–\(s.last!) bed"
     }
 
+    private var estimateNote: String {
+        "HUD FY2026 Small-Area Fair Market Rent for ZIP \(b.z ?? ""), studio to 2-bedroom. A neighborhood-level estimate of what apartments go for — not this building's rent."
+    }
+
     private var attribution: String {
         let v = b.openViolations
         if v == 0 { return "No open HPD violations" }
@@ -206,8 +218,8 @@ struct BuildingCard: View {
 
     private func fact(_ icon: String, _ text: String) -> some View {
         HStack(spacing: 8) {
-            Image(systemName: icon).font(.system(size: 15)).foregroundStyle(SE.ink2)
-            Text(text).font(.se(16)).foregroundStyle(SE.ink).lineLimit(1).minimumScaleFactor(0.7)
+            Image(systemName: icon).font(.system(size: 17)).foregroundStyle(SE.ink2)
+            Text(text).font(.se(19)).foregroundStyle(SE.ink).lineLimit(1).minimumScaleFactor(0.7)
         }
     }
 }

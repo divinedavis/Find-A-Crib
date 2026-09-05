@@ -1503,7 +1503,12 @@ CITY_NAV = (
     '<a href="/dc/">rent-controlled Washington DC</a></span>')
 
 
-def page(title, desc, canonical, body, jsonld=None, footer=None, robots=None):
+def page(title, desc, canonical, body, jsonld=None, footer=None, robots=None, og_title=None):
+    # og_title: what a shared link shows in iMessage / Slack / social cards.
+    # Defaults to the <title>; the building tier passes a plain address so a
+    # share reads "164 Sherman Ave — Inwood, Manhattan" while the <title> keeps
+    # the question form that matches what people type into Google.
+    og_title = og_title or title
     ld = ""
     if jsonld:
         ld = '<script type="application/ld+json">%s</script>' % json.dumps(jsonld)
@@ -1519,7 +1524,7 @@ def page(title, desc, canonical, body, jsonld=None, footer=None, robots=None):
 <link rel="canonical" href="{canonical}">
 <link rel="icon" href="/favicon.ico" sizes="any">
 <meta property="og:type" content="website"><meta property="og:site_name" content="Find A Crib">
-<meta property="og:title" content="{esc(title)}"><meta property="og:description" content="{esc(desc)}">
+<meta property="og:title" content="{esc(og_title)}"><meta property="og:description" content="{esc(desc)}">
 <meta property="og:url" content="{canonical}"><meta property="og:image" content="{SITE}/og-image.png">
 <meta name="twitter:card" content="summary_large_image">
 <style>{CSS}</style>{ld}</head><body>
@@ -2371,7 +2376,8 @@ def main():
                    building_meta_desc(addr, nb, units, yr,
                                       (h.get("violations") or {}).get("open"), adv),
                    canonical, body, jsonld,
-                   robots=None if promoted else "noindex,follow"))
+                   robots=None if promoted else "noindex,follow",
+                   og_title=f"{addr} — {nb}, {boro}"))
         if promoted:
             urls.append((canonical, "0.6", b["b"]))
             promoted_bbls.add(b["bbl"])

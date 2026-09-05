@@ -172,9 +172,27 @@ struct HeartButton: View {
     }
 }
 
+/// The ⓘ beside a number. It used to be a bare image that did nothing when
+/// tapped; now it is a button that pops the explanation up in place.
 struct InfoDot: View {
+    var title: String = "About this number"
+    var text: String = ""
+    @State private var showing = false
     var body: some View {
-        Image(systemName: "info.circle").font(.system(size: 15)).foregroundStyle(SE.ink3)
+        Button { showing = true } label: {
+            Image(systemName: "info.circle").font(.system(size: 15)).foregroundStyle(SE.ink3)
+                .frame(width: 32, height: 32).contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
+        .popover(isPresented: $showing, arrowEdge: .top) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(title).font(.se(17, .bold)).foregroundStyle(SE.ink)
+                Text(text).font(.se(16)).foregroundStyle(SE.ink2).fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(16).frame(maxWidth: 320)
+            .presentationCompactAdaptation(.popover)
+        }
     }
 }
 

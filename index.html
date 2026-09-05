@@ -6473,7 +6473,7 @@
       authUser = sess?.user || null;
       adoptAccountTheme(authUser);   // the account's choice beats this device's
       adoptAccountHome(authUser);
-      if (HOME && !(authUser.user_metadata || {}).home_bbl) saveHome();   // this device set it before signing in
+      if (authUser && HOME && !(authUser.user_metadata || {}).home_bbl) saveHome();   // this device set it before signing in
       updateAuthUI();
       refreshPlus();
       // signing in (or out) with the detail sheet open swaps the composer in/out

@@ -5245,10 +5245,10 @@
         ${s8Html(rec) || '<div class="d-sub" style="margin:0">No voucher listing or subsidy record for this building right now.</div>'}
         <div class="s8-legal">Source-of-income discrimination is illegal in NYC — every landlord must accept Section 8 and other vouchers, tagged here or not. <a href="https://www.nyc.gov/site/cchr/about/report-discrimination.page" target="_blank" rel="noopener">Report discrimination to the NYC Commission on Human Rights ↗</a></div>
       </div>` : ''}
-      ${statuses.length ? `<div class="d-section" data-sec="status"><h3>${esc(CITY.statusHeading || 'Rent-stabilization status')}</h3><div class="d-chips">${statuses.map(s => `<span class="chip">${esc(s)}</span>`).join('')}</div>${CITY.sourceNote ? `<div class="d-sub" style="margin-top:8px">${CITY.sourceNote}${CITY.likely ? ' <a href="https://zimas.lacity.org/" target="_blank" rel="noopener">Check ZIMAS ↗</a>' : ''}</div>` : ''}</div>` : ''}
       <div class="d-section" data-sec="facts"><h3>Building facts</h3>
         <div class="d-facts">${facts.map(([l, v]) => `<div class="d-fact"><span class="l">${l}</span><span class="v">${esc(String(v))}</span></div>`).join('')}</div>
       </div>
+      ${statuses.length ? `<div class="d-section" data-sec="status"><h3>${esc(CITY.statusHeading || 'Rent-stabilization status')}</h3><div class="d-chips">${statuses.map(s => `<span class="chip">${esc(s)}</span>`).join('')}</div>${CITY.sourceNote ? `<div class="d-sub" style="margin-top:8px">${CITY.sourceNote}${CITY.likely ? ' <a href="https://zimas.lacity.org/" target="_blank" rel="noopener">Check ZIMAS ↗</a>' : ''}</div>` : ''}</div>` : ''}
       ${IS_NYC ? `<div class="d-section" data-sec="hpd"><h3>Owner &amp; HPD record</h3>${hpdHtml(rec, { violations: false, complaints: false })}</div>` : ''}
       <div class="d-section" id="d-comments" data-sec="comments"><h3>Comments</h3>
         <div id="d-comments-list"><div class="d-sub" style="margin:0">Loading comments…</div></div>

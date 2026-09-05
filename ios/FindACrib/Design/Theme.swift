@@ -9,6 +9,8 @@ enum SE {
     static let navyDeep  = Color(hex: 0x0A1F52)
     static let royal     = Color(hex: 0x1B46E5)
     static let royalDark = Color(hex: 0x1338C2)
+    /// The "Rent stabilized" card label — green reads as a good thing.
+    static let green     = Color(hex: 0x1E8E3E)
     static let paleBlue  = Color(hex: 0xD8EAFB)
     static let paleBand  = Color(hex: 0xE6F2FC)
     static let ink       = Color(hex: 0x1A1A1A)

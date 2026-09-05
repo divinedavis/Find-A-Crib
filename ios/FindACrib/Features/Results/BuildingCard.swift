@@ -51,7 +51,7 @@ struct BuildingCard: View {
 
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .top) {
-                    Text(store.isSyntheticHCR(b) ? "Affordable housing in \(b.borough)" : "Stabilized building in \(b.neighborhood)")
+                    Text(b.neighborhood.isEmpty ? b.borough : b.neighborhood)
                         .font(.se(18, .semibold)).foregroundStyle(SE.ink2).lineLimit(1).minimumScaleFactor(0.85)
                     Spacer(minLength: 8)
                     HeartButton(on: activity.isSaved(b.bbl)) { activity.toggleSaved(b.bbl) }
@@ -65,11 +65,14 @@ struct BuildingCard: View {
                 priceLines
 
                 if !store.isSyntheticHCR(b) {
+                // Three facts on one row on a 390pt phone: at 20pt "Built 1908"
+                // truncated to "Built 1…". 16pt text, tighter dividers, and a
+                // lower scale floor keep all three whole.
                 HStack(spacing: 0) {
                     fact("bed.double", bedsText)
-                    Rectangle().fill(SE.line).frame(width: 1, height: 26).padding(.horizontal, 12)
+                    Rectangle().fill(SE.line).frame(width: 1, height: 22).padding(.horizontal, 9)
                     fact("building.2", "\(b.u.map { "\($0) unit\($0 == 1 ? "" : "s")" } ?? "– units")")
-                    Rectangle().fill(SE.line).frame(width: 1, height: 26).padding(.horizontal, 12)
+                    Rectangle().fill(SE.line).frame(width: 1, height: 22).padding(.horizontal, 9)
                     fact("calendar", b.yr.map { "Built \($0)" } ?? "Built –")
                 }
                 .padding(.top, 8)
@@ -122,15 +125,20 @@ struct BuildingCard: View {
         }
     }
 
+    /// Every building on the register gets the green "Rent stabilized" label;
+    /// the listed date, when there is one, sits beside it rather than
+    /// replacing it. HCR sites are not on the register and keep their own.
     @ViewBuilder private var statusBadge: some View {
         if store.isSyntheticHCR(b) {
             SEBadge(text: "HousingSearch.ny.gov", fill: SE.badge.opacity(0.95))
-        } else if store.price(b) != nil, let d = store.postedDate(b) ?? store.listings.updatedDate {
-            SEBadge(text: "Listed \(Formatters.mdy.string(from: d))", fill: SE.badge.opacity(0.95))
-        } else if let reg = b.h?.lastregistration, let d = ISO8601DateFormatter.ymd.date(from: reg) {
-            SEBadge(text: "HPD registered (\(Formatters.mdy.string(from: d)))", fill: SE.badge.opacity(0.95))
         } else {
-            SEBadge(text: "Rent stabilized", fill: SE.badge.opacity(0.95))
+            HStack(spacing: 6) {
+                if store.price(b) != nil, let d = store.postedDate(b) ?? store.listings.updatedDate {
+                    SEBadge(text: "Listed \(Formatters.mdy.string(from: d))", fill: SE.badge.opacity(0.95))
+                }
+                SEBadge(text: "Rent stabilized", icon: "checkmark.circle.fill", fill: SE.green, ink: .white)
+                    .accessibilityIdentifier("badge-stabilized")
+            }
         }
     }
 
@@ -198,8 +206,8 @@ struct BuildingCard: View {
 
     private func fact(_ icon: String, _ text: String) -> some View {
         HStack(spacing: 8) {
-            Image(systemName: icon).font(.system(size: 17)).foregroundStyle(SE.ink2)
-            Text(text).font(.se(20)).foregroundStyle(SE.ink).lineLimit(1).minimumScaleFactor(0.8)
+            Image(systemName: icon).font(.system(size: 15)).foregroundStyle(SE.ink2)
+            Text(text).font(.se(16)).foregroundStyle(SE.ink).lineLimit(1).minimumScaleFactor(0.7)
         }
     }
 }

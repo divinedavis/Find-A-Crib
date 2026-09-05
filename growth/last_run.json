@@ -91,16 +91,16 @@
     "accept_pct": 1.1,
     "accept_pct_mature": 0.0,
     "added": 0,
-    "at": "2026-09-04T05:11:07+00:00",
+    "at": "2026-09-05T05:11:08+00:00",
     "by_crawl_age": {
       "0-6d": {
-        "accept_pct": 16.7,
-        "fetched": 6,
+        "accept_pct": 25.0,
+        "fetched": 4,
         "indexed": 1
       },
       "14-20d": {
         "accept_pct": 0.0,
-        "fetched": 17,
+        "fetched": 16,
         "indexed": 0
       },
       "21-27d": {
@@ -110,20 +110,20 @@
       },
       "28d+": {
         "accept_pct": 0.0,
-        "fetched": 49,
+        "fetched": 51,
         "indexed": 0
       },
       "7-13d": {
         "accept_pct": 0.0,
-        "fetched": 10,
+        "fetched": 11,
         "indexed": 0
       }
     },
     "cohort": 455,
-    "date": "2026-09-04",
+    "date": "2026-09-05",
     "dropped": 0,
     "errors": 0,
-    "fetched_mature": 62,
+    "fetched_mature": 64,
     "fetched_pct": 20.9,
     "gained_indexed": 0,
     "indexed_pct": 0.2,
@@ -131,53 +131,52 @@
     "last_crawl": "2026-09-03",
     "lost_indexed": 0,
     "ok": true,
-    "published_urls": 3745,
+    "published_urls": 3770,
     "read": 455,
     "rechecked": 100,
     "states": {
       "crawled_not_indexed": 94,
-      "discovered_not_indexed": 3,
       "indexed": 1,
-      "unknown_to_google": 357
+      "unknown_to_google": 360
     }
   },
   "measure": {
-    "at": "2026-09-04T05:11:08+00:00",
-    "coverage_pct": 82.3,
-    "date": "2026-09-04",
+    "at": "2026-09-05T05:11:09+00:00",
+    "coverage_pct": 82.4,
+    "date": "2026-09-05",
     "days": 1,
-    "keywords_covered": 321,
-    "keywords_total": 390,
-    "latest_measured_day": "2026-09-03"
+    "keywords_covered": 342,
+    "keywords_total": 415,
+    "latest_measured_day": "2026-09-04"
   },
   "outreach": {
-    "at": "2026-09-04T05:19:06+00:00",
-    "date": "2026-09-04",
+    "at": "2026-09-05T05:19:29+00:00",
+    "date": "2026-09-05",
     "drafted": 0,
     "ok": true,
-    "segment": "legal"
+    "segment": "brokerage"
   },
   "scout": {
-    "at": "2026-09-04T05:16:51+00:00",
-    "date": "2026-09-04",
+    "at": "2026-09-05T05:16:24+00:00",
+    "date": "2026-09-05",
     "keywords_added": 25,
     "ok": true,
     "techniques_added": 3
   },
   "searchconsole": {
-    "at": "2026-09-04T05:00:07+00:00",
-    "clicks": 67,
-    "date": "2026-09-04",
-    "impressions": 82,
+    "at": "2026-09-05T05:00:11+00:00",
+    "clicks": 71,
+    "date": "2026-09-05",
+    "impressions": 87,
     "nonbranded_clicks": 0,
     "nonbranded_impressions": 0,
-    "page_clicks": 86,
-    "page_impressions": 132,
+    "page_clicks": 85,
+    "page_impressions": 130,
     "serving_ever": 277,
-    "serving_pages": 5,
-    "serving_stable": 5,
+    "serving_pages": 4,
+    "serving_stable": 4,
     "share_pct": 0.0,
     "tracked_ranking": 0,
-    "window": "2026-08-26..2026-09-02"
+    "window": "2026-08-27..2026-09-03"
   }
 }

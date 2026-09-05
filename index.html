@@ -988,6 +988,15 @@
   .d-tagline { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 6px; font-size: 14px; }
   .d-tag { background: var(--blue-soft); color: var(--blue); font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; }
   .d-dot { color: var(--ink-2); }
+  /* "My apartment": the pinned home block at the top of the detail sheet */
+  .d-home { margin: 0 18px; padding: 12px 14px; border: 1px solid var(--blue); background: var(--blue-soft); border-radius: 12px; }
+  .d-home-title { font-weight: 800; font-size: 14px; color: var(--blue); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .d-home-title .d-home-change { margin-left: auto; background: transparent; border: 0; color: var(--blue); font-size: 12px; font-weight: 700; cursor: pointer; text-decoration: underline; padding: 0; }
+  .d-home-line { font-size: 13.5px; color: var(--ink); margin-top: 6px; line-height: 1.45; }
+  .d-home-line b.up { color: var(--err-ink); }
+  .d-home-line b.down { color: var(--ok-ink); }
+  .d-home-links { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .d-home-links a, .d-home-links button { font-size: 12.5px; font-weight: 700; color: var(--blue); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; text-decoration: none; cursor: pointer; }
   .d-est { color: var(--ink); font-weight: 700; }
   .agent-card {
     display: flex; align-items: center; gap: 12px; margin: 16px 18px 4px;
@@ -1131,6 +1140,7 @@
   <div class="filter-bar">
     <input class="search-input" id="q" type="text" placeholder="Search only rent stabilized apartments" />
     <div class="chip-row">
+    <div class="filter-pill toggle-pill nyc-only" id="pill-home" role="button" tabindex="0" hidden title="Your own building: status, violations, landlord, and what changed since your last visit">🏠 My apartment</div>
     <div class="filter-pill toggle-pill" id="pill-fav" role="button" tabindex="0">
       <span class="fav-heart">♡</span> Saved <span class="count-badge" id="badge-fav" style="display:none">0</span>
     </div>
@@ -1390,6 +1400,13 @@
         <div class="profile-feat-sub">An email when a building you saved is advertised, gets a lottery or re-rental, drops its rent, or its violations change. Free. Never more than one email a day; Tuesdays it’s the weekly round-up.</div>
       </div>
       <label class="switch"><input id="profile-alerts" type="checkbox"><span class="slider"></span></label>
+    </div>
+    <div class="profile-row profile-toggle-row nyc-only">
+      <div>
+        <div class="profile-feat">🏠 My apartment</div>
+        <div class="profile-feat-sub" id="profile-home-sub">Not set. Search your address, open the building and tap “This is my apartment”.</div>
+      </div>
+      <button type="button" class="folder-new" id="profile-home-btn" style="white-space:nowrap">Find it →</button>
     </div>
     <div class="profile-row profile-toggle-row nyc-only">
       <div>
@@ -1854,6 +1871,105 @@
     const badge = document.getElementById('badge-fav');
     if (FAVS.size) { badge.textContent = FAVS.size; badge.style.display = ''; }
     else { badge.style.display = 'none'; }
+  }
+  // ---------- my apartment (the visitor's own building) ----------
+  // A renter who is not searching still has one building they care about:
+  // the one they live in. Pinning it gives a standing view (status,
+  // violations, landlord, what changed since they last looked) and saves it,
+  // so the alert engine watches it. Stored in localStorage and, when signed
+  // in, on user_metadata.home_bbl (same pattern as the theme — no table).
+  const HOME_KEY = 'fac_home';
+  let HOME = null;   // {bbl, set_at, snap:{vo,co,listed,s8,at}}
+  try { HOME = JSON.parse(localStorage.getItem(HOME_KEY) || 'null'); } catch (e) { HOME = null; }
+  if (HOME && !/^\d{10}$/.test(String(HOME.bbl || ''))) HOME = null;
+  function homeSnap(rec) {
+    const h = rec.h || {};
+    return { vo: (h.violations || {}).open || 0, co: (h.complaints || {}).open || 0,
+             listed: (typeof listingCounts !== 'undefined' && listingCounts[rec.bbl]) ? 1 : 0,
+             s8: (typeof s8Avail !== 'undefined' && s8Avail[rec.bbl]) ? 1 : 0, at: Date.now() };
+  }
+  function saveHome() {
+    try { if (HOME) localStorage.setItem(HOME_KEY, JSON.stringify(HOME)); else localStorage.removeItem(HOME_KEY); } catch (e) {}
+    if (supaClient && authUser) supaClient.auth.updateUser({ data: { home_bbl: HOME ? HOME.bbl : null } }).then(() => {}, () => {});
+  }
+  function homeRec() {
+    if (!HOME) return null;
+    const m = (typeof markerByBbl !== 'undefined') && markerByBbl.get(HOME.bbl);
+    return m ? m._rec : null;
+  }
+  function syncHomeUI() {
+    const pill = document.getElementById('pill-home');
+    if (pill) pill.hidden = !HOME;
+    const sub = document.getElementById('profile-home-sub'), btn = document.getElementById('profile-home-btn');
+    const rec = homeRec();
+    if (sub && btn) {
+      if (rec) { sub.textContent = rec.a + (rec.nb ? ' · ' + rec.nb : '') + '. Saved and watched — you get an email when it changes.'; btn.textContent = 'Open →'; }
+      else { sub.textContent = 'Not set. Search your address, open the building and tap “This is my apartment”.'; btn.textContent = 'Find it →'; }
+    }
+  }
+  function setHome(rec) {
+    HOME = { bbl: rec.bbl, set_at: Date.now(), snap: homeSnap(rec) };
+    saveHome();
+    // Your own building is the one you most want watched.
+    if (!FAVS.has(rec.bbl)) { FAVS.add(rec.bbl); saveFavs(); updateFavBadge(); persistFav(rec.bbl, true); }
+    syncHomeUI();
+    track('home_set', { bbl: rec.bbl, boro: rec.b });
+  }
+  function clearHome() {
+    const bbl = HOME && HOME.bbl;
+    HOME = null; saveHome(); syncHomeUI();
+    track('home_clear', { bbl });
+  }
+  function openHome() {
+    const rec = homeRec();
+    if (!rec) {
+      if (HOME) clearHome();
+      showPlusToast('Search your address, open the building, and tap “This is my apartment”.');
+      const q = document.getElementById('q'); if (q) q.focus();
+      return;
+    }
+    track('home_open', { bbl: rec.bbl });
+    setListOpen(false);
+    openDetail(rec, listingCounts[rec.bbl] || 0);
+  }
+  function adoptAccountHome(user) {
+    const b = user && user.user_metadata && user.user_metadata.home_bbl;
+    if (!HOME && b && /^\d{10}$/.test(String(b))) {
+      HOME = { bbl: String(b), set_at: Date.now(), snap: null };
+      try { localStorage.setItem(HOME_KEY, JSON.stringify(HOME)); } catch (e) {}
+      syncHomeUI();
+    }
+  }
+  // "Since your last visit" — the diff between the snapshot taken the last
+  // time this building was opened as home and what the map knows now.
+  function homeChanges(rec) {
+    const prev = HOME && HOME.snap, cur = homeSnap(rec), out = [];
+    if (!prev) return { out, prev: null };
+    if (cur.vo > prev.vo) out.push(`<b class="up">+${cur.vo - prev.vo} open violation${cur.vo - prev.vo === 1 ? '' : 's'}</b> (${cur.vo} now)`);
+    else if (cur.vo < prev.vo) out.push(`<b class="down">${prev.vo - cur.vo} violation${prev.vo - cur.vo === 1 ? '' : 's'} cleared</b> (${cur.vo} open)`);
+    if (cur.co > prev.co) out.push(`<b class="up">+${cur.co - prev.co} open complaint${cur.co - prev.co === 1 ? '' : 's'}</b>`);
+    else if (cur.co < prev.co) out.push(`<b class="down">${prev.co - cur.co} complaint${prev.co - cur.co === 1 ? '' : 's'} closed</b>`);
+    if (cur.listed && !prev.listed) out.push('<b class="up">advertised for rent</b>');
+    if (cur.s8 && !prev.s8) out.push('<b class="up">listed for voucher holders</b>');
+    return { out, prev };
+  }
+  function homeBlock(rec) {
+    if (!IS_NYC || !HOME || HOME.bbl !== rec.bbl) return '';
+    const { out, prev } = homeChanges(rec);
+    const when = d => new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    const since = prev ? `Since your last visit (${when(prev.at)}): ${out.length ? out.join(', ') : 'nothing has changed'}.`
+                       : `Pinned ${when(HOME.set_at)}. Next time you open it, this line says what changed.`;
+    const statuses = (rec.s || []).length ? `Registered rent-stabilized with DHCR (${esc((rec.s || []).join(', '))}).` : 'Registered rent-stabilized with DHCR.';
+    return `<div class="d-home" data-sec="home">
+      <div class="d-home-title">🏠 Your apartment <button type="button" class="d-home-change" data-detail="unhome">Change</button></div>
+      <div class="d-home-line">${statuses} A registered building does not guarantee <i>your</i> unit is stabilized — only the rent history settles it, and it is free to request.</div>
+      <div class="d-home-line">${since}</div>
+      <div class="d-home-line">We email you when this building is advertised, gets a lottery or re-rental, or its violations change.</div>
+      <div class="d-home-links">
+        <a href="https://hcr.ny.gov/records-access" target="_blank" rel="noopener">Request your rent history (HCR) ↗</a>
+        <a href="https://www.nyc.gov/site/cchr/about/report-discrimination.page" target="_blank" rel="noopener">Tenant rights ↗</a>
+      </div>
+    </div>`;
   }
   // when signed in, mirror each heart toggle to the user's Supabase account
   let supaClient = null, authUser = null, pendingPhoneBbl = null, plusActive = false;
@@ -5249,6 +5365,7 @@
         <div class="d-tagline"><span class="d-tag">${esc(CITY.label)}</span>${est ? ` <span class="d-dot">·</span> <span class="d-est" title="${esc(EST_TITLE)}">${est}</span>` : ''}</div>
         <div class="d-addr"><span class="d-pin">📍</span> ${esc(addrLine)}</div>
       </div>
+      ${homeBlock(rec)}
       <div class="agent-card" data-sec="agent" data-agentcard="${esc(rec.bbl)}">${agentCardInner(rec.bbl, !!(rec.h && rec.h.op))}</div>
       <!-- Save lives in the header heart only (the full-width Save row was
            removed 2026-09-05 as a duplicate). The listing link is first: it is
@@ -5256,6 +5373,9 @@
            clicks) and used to sit several screens down under the HPD record. -->
       ${IS_NYC ? `<div class="d-actions" data-sec="actions">
         <button class="d-viol ${viol.tone}" data-detail="violations" title="${esc(viol.title)}">${viol.label}</button>
+      </div>` : ''}
+      ${IS_NYC && !(HOME && HOME.bbl === rec.bbl) ? `<div class="d-actions" style="padding-top:0">
+        <button class="d-secondary" data-detail="home" title="Pin your own building: a standing view of its status, violations and landlord, and an email when anything changes">🏠 This is my apartment</button>
       </div>` : ''}
       <div class="d-actions"${IS_NYC ? ' style="padding-top:0"' : ' data-sec="actions"'}>
         <a class="d-secondary" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.label}</a>
@@ -5439,6 +5559,9 @@
     track('building_view', { bbl: rec.bbl, addr: rec.a, boro: rec.b, listed: detailListed, via: 'detail' });
     secSeen = new Set();
     detailContent.innerHTML = renderDetail(rec, detailListed);
+    // The "since your last visit" line was just rendered from the old
+    // snapshot; now this visit becomes the baseline for the next one.
+    if (HOME && HOME.bbl === rec.bbl) { HOME.snap = homeSnap(rec); try { localStorage.setItem(HOME_KEY, JSON.stringify(HOME)); } catch (e) {} }
     detailContent.scrollTop = 0;
     watchDetailSections(rec);
     syncDetailFav();
@@ -5585,6 +5708,18 @@
       if (!gateSave(FAVS.has(rec.bbl))) return;
       if (FAVS.has(rec.bbl)) FAVS.delete(rec.bbl); else FAVS.add(rec.bbl);
       saveFavs(); updateFavBadge(); syncDetailFav(); persistFav(rec.bbl, FAVS.has(rec.bbl));
+      return;
+    }
+    if (act === 'home') {
+      setHome(rec);
+      detailContent.innerHTML = renderDetail(rec, detailListed); watchDetailSections(rec); syncDetailFav(); loadComments(rec.bbl);
+      detailContent.scrollTop = 0;
+      showPlusToast('🏠 Pinned as your apartment — saved and watched. Find it any time under “My apartment”.');
+      return;
+    }
+    if (act === 'unhome') {
+      clearHome();
+      detailContent.innerHTML = renderDetail(rec, detailListed); watchDetailSections(rec); syncDetailFav(); loadComments(rec.bbl);
       return;
     }
     if (act === 'directions') { openDirections(rec); return; }
@@ -5823,6 +5958,15 @@
     const m = markerByBbl.get(location.hash.slice(3));
     if (m) openDetail(m._rec, m._listed || 0);
   }
+  // ---------- my apartment: entry points ----------
+  syncHomeUI();
+  document.getElementById('pill-home').addEventListener('click', openHome);
+  document.getElementById('pill-home').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openHome(); } });
+  document.getElementById('profile-home-btn').addEventListener('click', () => {
+    document.getElementById('profile-modal').hidden = true;
+    openHome();
+  });
+  if (location.hash === '#home' && HOME) { history.replaceState({}, '', location.pathname + location.search); openHome(); }
 
   // ---------- auth: email sign in/up + saved-buildings sync ----------
   const authBtn = document.getElementById('auth-btn');
@@ -6100,6 +6244,7 @@
     plan.classList.toggle('plus', plusActive);
     document.getElementById('profile-upgrade').hidden = plusActive;
     document.getElementById('profile-dark').checked = themeName() === 'dark';
+    syncHomeUI();
     profileAlerts.checked = false;
     try {   // free for every account since 2026-09-05 (saving is subscribing)
       const { data } = await supaClient.rpc('get_alerts_enabled');
@@ -6327,6 +6472,8 @@
     supaClient.auth.onAuthStateChange((_evt, sess) => {
       authUser = sess?.user || null;
       adoptAccountTheme(authUser);   // the account's choice beats this device's
+      adoptAccountHome(authUser);
+      if (HOME && !(authUser.user_metadata || {}).home_bbl) saveHome();   // this device set it before signing in
       updateAuthUI();
       refreshPlus();
       // signing in (or out) with the detail sheet open swaps the composer in/out

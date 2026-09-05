@@ -295,19 +295,32 @@ def gather_feeds():
 
 # ------------------------------------------------------------------ email
 
-def card_for(rec, change):
+def card_for(rec, change, home=False):
     where = ", ".join(x for x in (rec.get("nb"), BORO_NAME.get(rec.get("b"))) if x)
-    link = ("View the listing", change["url"]) if change.get("url") else ("View building", building_url(rec))
+    link = ("View the listing", change["url"]) if change.get("url") else (
+        ("Open my apartment", f"{SITE}/#home") if home else ("View building", building_url(rec)))
+    meta = f"{where} · rent-stabilized building" if where else "rent-stabilized building"
+    if home:
+        meta = "🏠 your apartment · " + meta
     return {"type": "card", "heading": titlecase_addr(rec.get("a")),
-            "meta": f"{where} · rent-stabilized building" if where else "rent-stabilized building",
-            "body": change["text"], "link": link}
+            "meta": meta, "body": change["text"], "link": link}
 
 
-def subject_for(items, buildings):
+def subject_for(items, buildings, home_bbl=None):
     kinds = {i["kind"] for i in items}
     bbls = {i["bbl"] for i in items}
     first = buildings.get(next(iter(bbls)), {})
     addr = titlecase_addr(first.get("a"))
+    if len(bbls) == 1 and home_bbl and home_bbl in bbls:
+        k = items[0]["kind"]
+        return {"zumper": "Your building was just advertised for rent",
+                "s8": "Your building has a listing for voucher holders",
+                "price": "Rent dropped in your building",
+                "lottery": "A housing lottery opened in your building",
+                "rerental": "A re-rental opened in your building",
+                "violations": "New HPD violations in your building",
+                "cleared": "Violations cleared in your building",
+                "status": "Your building's DHCR registration changed"}.get(k, "Your building changed")
     if len(bbls) == 1:
         k = items[0]["kind"]
         return {"zumper": f"{addr} was just advertised for rent",
@@ -329,20 +342,23 @@ def render_changes(user, items, buildings, emailkit):
     by_bbl = {}
     for it in items:
         by_bbl.setdefault(it["bbl"], []).append(it)
-    for bbl, group in list(by_bbl.items())[:MAX_CARDS]:
+    home = user.get("home_bbl")
+    # Your own building leads.
+    ordered = sorted(by_bbl.items(), key=lambda kv: 0 if kv[0] == home else 1)
+    for bbl, group in ordered[:MAX_CARDS]:
         rec = buildings.get(bbl)
         if not rec:
             continue
         if len(group) == 1:
-            blocks.append(card_for(rec, group[0]))
+            blocks.append(card_for(rec, group[0], home=(bbl == home)))
         else:
             merged = {"text": " ".join(g["text"] for g in group),
                       "url": next((g["url"] for g in group if g.get("url")), None)}
-            blocks.append(card_for(rec, merged))
+            blocks.append(card_for(rec, merged, home=(bbl == home)))
     if len(by_bbl) > MAX_CARDS:
         blocks.append({"type": "note", "text": f"…and {len(by_bbl) - MAX_CARDS} more — "
                                                f"everything you saved is on the map."})
-    subject = subject_for(items, buildings)
+    subject = subject_for(items, buildings, home)
     unsub = f"{SITE}/#unsub={user['token']}"
     html, text = emailkit.render(
         title=subject, eyebrow="A building you saved",
@@ -437,12 +453,13 @@ def render_digest(user, pending, buildings, listings, s8, feeds, seen, emailkit,
         by_bbl = {}
         for it in pending:
             by_bbl.setdefault(it["bbl"], []).append(it)
-        for bbl, group in list(by_bbl.items())[:MAX_CARDS]:
+        home = user.get("home_bbl")
+        for bbl, group in sorted(by_bbl.items(), key=lambda kv: 0 if kv[0] == home else 1)[:MAX_CARDS]:
             rec = buildings.get(bbl)
             if rec:
                 merged = {"text": " ".join(g["text"] for g in group),
                           "url": next((g["url"] for g in group if g.get("url")), None)}
-                blocks.append(card_for(rec, merged))
+                blocks.append(card_for(rec, merged, home=(bbl == home)))
     st_blocks = status_blocks(user, buildings, listings, s8)
     if st_blocks:
         blocks.append({"type": "section", "label": "Your saved buildings"})

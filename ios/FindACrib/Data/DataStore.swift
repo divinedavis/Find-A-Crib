@@ -23,6 +23,9 @@ final class DataStore {
 
     /// Neighborhood names with their borough + building count, for the picker.
     private(set) var neighborhoods: [(name: String, borough: String, count: Int)] = []
+    /// Neighborhood name -> borough code, for collapsing a neighborhood pick to
+    /// its borough in the results header.
+    private(set) var boroughOfNeighborhood: [String: String] = [:]
     private(set) var zips: [String] = []
 
     static let host = URL(string: "https://findacrib.com/")!
@@ -93,6 +96,7 @@ final class DataStore {
         }
         neighborhoods = nbCount.map { (name: $0.key, borough: Borough.name($0.value.0), count: $0.value.1) }
             .sorted { $0.name < $1.name }
+        boroughOfNeighborhood = nbCount.mapValues { $0.0 }
         zips = zipSet.sorted()
         loaded = true
     }

@@ -7,6 +7,7 @@ import SwiftUI
 /// summary, and a Filter button. Used as the `.principal` toolbar item; the
 /// navy behind it is the thin `NavyHeader` the screen keeps at the top.
 struct ResultsHeader: View {
+    @Environment(DataStore.self) private var store
     let query: SearchQuery
     let onBack: () -> Void
     let onFilter: () -> Void
@@ -15,7 +16,8 @@ struct ResultsHeader: View {
             Button(action: onBack) {
                 HStack(spacing: 8) {
                     Image(systemName: "mappin").font(.system(size: 13, weight: .bold)).foregroundStyle(SE.royal)
-                    Text(query.locationLabel).font(.se(16)).foregroundStyle(SE.ink).lineLimit(1).truncationMode(.tail).frame(minWidth: 70, alignment: .leading)
+                    Text(query.shortLocationLabel(boroughOf: store.boroughOfNeighborhood)).font(.se(16)).foregroundStyle(SE.ink).lineLimit(1).truncationMode(.tail).frame(minWidth: 70, alignment: .leading)
+                        .accessibilityIdentifier("results-location")
                     Text(query.summary).font(.se(16)).foregroundStyle(SE.ink2).lineLimit(1).layoutPriority(1)
                     Spacer(minLength: 0)
                 }

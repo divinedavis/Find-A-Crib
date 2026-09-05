@@ -1,4 +1,5 @@
 import XCTest
+import MapKit
 @testable import FindACrib
 
 final class DataTests: XCTestCase {
@@ -103,6 +104,24 @@ final class SearchEngineTests: XCTestCase {
         if let plain = Self.store.buildings.first(where: { urls[$0.bbl] == nil }) {
             XCTAssertEqual(Self.store.listingSite(plain), "View listing")
         }
+    }
+
+    /// The results header shows borough abbreviations only — a neighborhood
+    /// pick collapses into its borough, boroughs come out in register order,
+    /// nothing repeats.
+    func testShortLocationLabel() {
+        let nbOf = Self.store.boroughOfNeighborhood
+        XCTAssertFalse(nbOf.isEmpty)
+        let bk = nbOf.first { $0.value == "Bk" }!.key
+        let mn = nbOf.first { $0.value == "M" }!.key
+        var q = SearchQuery()
+        XCTAssertEqual(q.shortLocationLabel(boroughOf: nbOf), "NYC")
+        q.locations = [.neighborhood(bk), .borough("M"), .neighborhood(mn), .neighborhood(bk)]
+        XCTAssertEqual(q.shortLocationLabel(boroughOf: nbOf), "MN, BK")
+        q.locations = [.borough("SI"), .borough("Q"), .zip("10012")]
+        XCTAssertEqual(q.shortLocationLabel(boroughOf: nbOf), "QN, SI, 10012")
+        q.locations = [.mapArea(MapBox(region: .init(center: .init(latitude: 40.75, longitude: -73.95), span: .init(latitudeDelta: 0.1, longitudeDelta: 0.1))))]
+        XCTAssertEqual(q.shortLocationLabel(boroughOf: nbOf), "Map area")
     }
 
     func testAvailableOnlyIsPriced() {

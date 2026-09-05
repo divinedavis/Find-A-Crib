@@ -128,6 +128,29 @@ struct SearchQuery: Codable, Hashable {
         locations.isEmpty ? "All of NYC" : locations.map(\.label).joined(separator: ", ")
     }
 
+    /// The results header's short form: one borough abbreviation per borough
+    /// touched, in borough order, neighborhoods collapsed into their borough
+    /// ("Manhattan, Bushwick, Bed-Stuy" -> "MN, BK"). ZIPs and a map area keep
+    /// their own short words. `boroughOf` maps a neighborhood name to its
+    /// borough code (DataStore.boroughOfNeighborhood).
+    func shortLocationLabel(boroughOf: [String: String]) -> String {
+        if locations.isEmpty { return "NYC" }
+        var codes: [String] = [], extras: [String] = []
+        for l in locations {
+            switch l {
+            case .borough(let c): if !codes.contains(c) { codes.append(c) }
+            case .neighborhood(let n):
+                if let c = boroughOf[n] { if !codes.contains(c) { codes.append(c) } }
+                else { extras.append(n) }
+            case .zip(let z): extras.append(z)
+            case .mapArea: extras.append("Map area")
+            }
+        }
+        let order = Borough.all.map(\.code)
+        let boroughs = codes.sorted { (order.firstIndex(of: $0) ?? 99) < (order.firstIndex(of: $1) ?? 99) }.map(Borough.abbrev)
+        return (boroughs + extras).joined(separator: ", ")
+    }
+
     /// Filters beyond location, for the "Filter (3)" count.
     var activeFilterCount: Int {
         var n = 0

@@ -78,6 +78,10 @@ enum Borough {
         ("M", "Manhattan"), ("Bk", "Brooklyn"), ("Q", "Queens"), ("Bx", "Bronx"), ("SI", "Staten Island")
     ]
     static func name(_ code: String) -> String { all.first { $0.code == code }?.name ?? code }
+    /// The two-letter form the results header uses: MN, BK, QN, BX, SI.
+    static func abbrev(_ code: String) -> String {
+        switch code { case "M": "MN"; case "Bk": "BK"; case "Q": "QN"; case "Bx": "BX"; case "SI": "SI"; default: code }
+    }
     static func slug(_ code: String) -> String {
         switch code { case "M": "manhattan"; case "Bk": "brooklyn"; case "Q": "queens"; case "Bx": "bronx"; case "SI": "staten-island"; default: "nyc" }
     }

@@ -2447,7 +2447,8 @@
   // typed-array index (a few MB) and marker objects exist only for what is on
   // screen; the cluster pills look and behave as before.
   const SC_MAX_ZOOM = 17;          // clusters exist up to this zoom; past it every pin stands alone
-  const PIN_RADIUS = 60;           // px — the radius markercluster used
+  const PIN_RADIUS = 80;           // screen px. Wider than markercluster's 60: the city view was a wall of pills
+  const PIN_EXTENT = 256;          // Leaflet's tile size; supercluster defaults to 512, which halves the radius on screen
   function clusterIcon(n) {
     const w = String(n).length * 8 + 22;
     return L.divIcon({
@@ -2461,7 +2462,7 @@
   const shown = new Map();         // key -> marker currently on the map
   const toFeature = rec => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [rec.lng, rec.lat] }, properties: { bbl: rec.bbl } });
   function buildIndex(recs) {
-    return new Supercluster({ radius: PIN_RADIUS, maxZoom: SC_MAX_ZOOM, minPoints: 2 }).load(recs.map(toFeature));
+    return new Supercluster({ radius: PIN_RADIUS, extent: PIN_EXTENT, maxZoom: SC_MAX_ZOOM, minPoints: 2 }).load(recs.map(toFeature));
   }
   function setPins(recs) {
     tr('setPins ' + recs.length);
@@ -2558,7 +2559,7 @@
   // Is this building hidden inside a cluster at zoom z?
   function pinClusteredAt(rec, z) {
     if (!sc || z > SC_MAX_ZOOM) return false;
-    const d = 2 * PIN_RADIUS * 360 / (512 * Math.pow(2, z));
+    const d = 2 * PIN_RADIUS * 360 / (PIN_EXTENT * Math.pow(2, z));
     const items = sc.getClusters([rec.lng - d, rec.lat - d, rec.lng + d, rec.lat + d], z);
     return items.some(it => it.properties.cluster && sc.getLeaves(it.properties.cluster_id, Infinity).some(l => l.properties.bbl === rec.bbl));
   }

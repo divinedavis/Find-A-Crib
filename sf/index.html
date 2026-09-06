@@ -709,8 +709,9 @@
   .card.feat-card .price.income { font-size: 14px; }
   .card.feat-card .price.income .lab { display: block; font-size: 10.5px; font-weight: 600;
     text-transform: uppercase; letter-spacing: .03em; color: var(--ink-2); }
-  .card .hpd-mini { font-size: 11px; color: var(--ink-2); margin-top: 4px; }
-  .card .hpd-mini .bad { color: var(--err-ink); font-weight: 700; }
+  .card .hpd-mini, #building-card .hpd-mini { font-size: 11px; color: var(--ink-2); margin-top: 4px; }
+  .card .hpd-mini .bad, #building-card .hpd-mini .bad { color: var(--err-ink); font-weight: 700; }
+  #building-card .hpd-mini { font-size: 13px; margin: 2px 0 8px; }
   .card .hpd-mini .warn { color: var(--warn-ink); font-weight: 700; }
 
   .footer-credit { font-size: 11px; color: var(--ink-2); padding: 8px 16px; border-top: 1px solid var(--line); background: var(--bg); }
@@ -4150,16 +4151,10 @@
     // The filters were set aside so the search could be answered. Say so, and
     // offer the way back — silently ignoring them would be worse than the
     // blank map this replaces.
-    if (st.relaxed) {
-      card(`<div class="sh-head">Your filters hid every match for “${esc(q)}”. Showing <b>${n.toLocaleString()}</b> result${n === 1 ? '' : 's'} with the filters ignored.</div>
-        <div class="sh-chips"><button data-sh="keepfilters">↩ Keep my filters instead</button></div>`);
-      return;
-    }
-    if (st.tier === 'kept') {
-      card(`<div class="sh-head">Nothing matches “${esc(q)}” with your filters on — <b>${st.hidden.toLocaleString()}</b> building${st.hidden === 1 ? '' : 's'} match${st.hidden === 1 ? 'es' : ''} it without them.</div>
-        <div class="sh-chips"><button data-sh="relax">🔄 Ignore my filters</button></div>`);
-      return;
-    }
+    // A search that the filters would have zeroed is answered with the
+    // filters set aside, and that is all: the card that announced it was
+    // removed 2026-09-06 (it sat over the list on a phone).
+    if (st.relaxed || st.tier === 'kept') { searchHelper.hidden = true; return; }
     if (st.tier === 'zipmiss') {
       const where = st.label ? ` — that’s <b>${esc(st.label)}</b>` : '';
       // Some of these now have a home. A ZIP we cover on ANOTHER map should
@@ -4210,7 +4205,15 @@
         : '';
       const beds = /\b(\d\s*(br|bd|bed)|bedroom|studio)\b/i.test(q)
         ? `<div class="sh-chips"><button data-sh="beds">🛏 Filter by bedrooms instead</button></div>` : '';
-      card(`<div class="sh-head">Nothing matches “${esc(q)}” — no address, area, street or landlord. Showing all <b>${n.toLocaleString()}</b> buildings you can browse.</div>${guesses}${beds}`);
+      // "rent stabilized" typed into the box is the biggest no-match query:
+      // people echo the placeholder back as a keyword. Answer the question.
+      if (/^(only\s+)?rent[\s-]*stab/i.test(q)) {
+        card(`<div class="sh-head">Every building on this map is rent-stabilized — that’s all it shows. Search an address, a neighborhood, a ZIP or a landlord to narrow it.</div>${beds}`);
+        return;
+      }
+      const reg = IS_NYC ? 'rent-stabilized' : 'rent-regulated';
+      const where = IS_NYC ? 'New York City' : esc(CITY.name);
+      card(`<div class="sh-head">We couldn’t find “${esc(q)}”. That usually means one of two things: it isn’t a ${reg} building${IS_NYC ? ' (only buildings on the DHCR register are here)' : ''}, or the address is outside ${where}. Showing all <b>${n.toLocaleString()}</b> buildings you can browse.</div>${guesses}${beds}`);
       return;
     }
     // A search that simply worked gets no card. The "Showing every building
@@ -5570,6 +5573,7 @@
         ${s8Avail[rec.bbl] ? `<div class="s8-mini">✓ Accepting Section 8 — on AffordableHousing.com${s8Avail[rec.bbl].p ? ' from $' + s8Avail[rec.bbl].p.toLocaleString() + '/mo' : ''}</div>` : (s8Bldg[rec.bbl] ? '<div class="s8-mini soft">Subsidized / voucher-friendly building</div>' : '')}
         <div class="card-addr">${esc(rec.a)}</div>
         <div class="card-meta">${rec.nb ? esc(rec.nb) + ' · ' : ''}${esc(borough)}${rec.z ? ' ' + esc(rec.z) : ''}</div>
+        ${cardHpdLine(rec)}
         <div class="card-actions">
           <button class="cbtn cbtn-2" data-card="details">Details</button>
           <a class="cbtn cbtn-1" data-card="search" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.short}</a>

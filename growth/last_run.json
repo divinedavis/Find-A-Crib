@@ -93,7 +93,7 @@
     "accept_pct": 1.1,
     "accept_pct_mature": 0.0,
     "added": 0,
-    "at": "2026-09-05T05:11:08+00:00",
+    "at": "2026-09-06T05:11:11+00:00",
     "by_crawl_age": {
       "0-6d": {
         "accept_pct": 25.0,
@@ -102,27 +102,27 @@
       },
       "14-20d": {
         "accept_pct": 0.0,
-        "fetched": 16,
+        "fetched": 17,
         "indexed": 0
       },
       "21-27d": {
         "accept_pct": 0.0,
-        "fetched": 13,
+        "fetched": 11,
         "indexed": 0
       },
       "28d+": {
         "accept_pct": 0.0,
-        "fetched": 51,
+        "fetched": 53,
         "indexed": 0
       },
       "7-13d": {
         "accept_pct": 0.0,
-        "fetched": 11,
+        "fetched": 10,
         "indexed": 0
       }
     },
     "cohort": 455,
-    "date": "2026-09-05",
+    "date": "2026-09-06",
     "dropped": 0,
     "errors": 0,
     "fetched_mature": 64,
@@ -130,10 +130,10 @@
     "gained_indexed": 0,
     "indexed_pct": 0.2,
     "inspected": 100,
-    "last_crawl": "2026-09-03",
+    "last_crawl": "2026-09-04",
     "lost_indexed": 0,
     "ok": true,
-    "published_urls": 3770,
+    "published_urls": 3777,
     "read": 455,
     "rechecked": 100,
     "states": {
@@ -143,42 +143,42 @@
     }
   },
   "measure": {
-    "at": "2026-09-05T05:11:09+00:00",
-    "coverage_pct": 82.4,
-    "date": "2026-09-05",
+    "at": "2026-09-06T05:11:12+00:00",
+    "coverage_pct": 82.5,
+    "date": "2026-09-06",
     "days": 1,
-    "keywords_covered": 342,
-    "keywords_total": 415,
-    "latest_measured_day": "2026-09-04"
+    "keywords_covered": 363,
+    "keywords_total": 440,
+    "latest_measured_day": "2026-09-05"
   },
   "outreach": {
-    "at": "2026-09-05T05:19:29+00:00",
-    "date": "2026-09-05",
+    "at": "2026-09-06T05:20:14+00:00",
+    "date": "2026-09-06",
     "drafted": 0,
     "ok": true,
-    "segment": "brokerage"
+    "segment": "research"
   },
   "scout": {
-    "at": "2026-09-05T05:16:24+00:00",
-    "date": "2026-09-05",
+    "at": "2026-09-06T05:17:26+00:00",
+    "date": "2026-09-06",
     "keywords_added": 25,
     "ok": true,
     "techniques_added": 3
   },
   "searchconsole": {
-    "at": "2026-09-05T05:00:11+00:00",
-    "clicks": 71,
-    "date": "2026-09-05",
-    "impressions": 87,
+    "at": "2026-09-06T05:00:10+00:00",
+    "clicks": 53,
+    "date": "2026-09-06",
+    "impressions": 70,
     "nonbranded_clicks": 0,
     "nonbranded_impressions": 0,
-    "page_clicks": 85,
-    "page_impressions": 130,
+    "page_clicks": 65,
+    "page_impressions": 101,
     "serving_ever": 277,
     "serving_pages": 4,
     "serving_stable": 4,
     "share_pct": 0.0,
     "tracked_ranking": 0,
-    "window": "2026-08-27..2026-09-03"
+    "window": "2026-08-28..2026-09-04"
   }
 }

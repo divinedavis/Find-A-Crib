@@ -1545,6 +1545,31 @@
     if (errSent++ >= 5) return;
     try { const r = e.reason; track('js_error', { kind: 'promise', msg: String(r && (r.message || r) || '').slice(0, 200) }); } catch (_) {}
   });
+  // ---------- crash trace ----------
+  // Safari kills the page with no error and no time for a network request.
+  // Every step below writes to localStorage synchronously; a page that boots
+  // and finds a trace not ending in 'pagehide' reports it as crash_trace.
+  const TRACE_KEY = 'fac.trace';
+  const TR = [];
+  function tr(step) {
+    try {
+      TR.push([Date.now() % 10000000, step]);
+      if (TR.length > 80) TR.shift();
+      localStorage.setItem(TRACE_KEY, JSON.stringify(TR));
+    } catch (_) {}
+  }
+  try {
+    const prev = JSON.parse(localStorage.getItem(TRACE_KEY) || 'null');
+    localStorage.removeItem(TRACE_KEY);
+    if (Array.isArray(prev) && prev.length && prev[prev.length - 1][1] !== 'pagehide') {
+      setTimeout(() => { try { track('crash_trace', { steps: prev.slice(-50), ua: navigator.userAgent.slice(0, 140), mem: navigator.deviceMemory || null, sw: screen.width, sh: screen.height }); } catch (_) {} }, 4000);
+    }
+  } catch (_) {}
+  window.addEventListener('pagehide', () => tr('pagehide'));
+  window.addEventListener('resize', () => tr('win-resize ' + innerWidth + 'x' + innerHeight));
+  if (window.visualViewport) visualViewport.addEventListener('resize', () => tr('vv-resize ' + Math.round(visualViewport.height)));
+  document.addEventListener('visibilitychange', () => tr('vis ' + document.visibilityState));
+  tr('boot');
   // ---------- theme ----------
   // Three layers, in order of authority: the account (survives a new device),
   // localStorage (survives a reload and is readable before first paint — set in
@@ -1767,9 +1792,9 @@
   const DIAG = { resize: 0, vv: 0, moveend: 0, zoomend: 0, mapresize: 0, hdr: 0, grid: 0, pins: 0, hdrH: [], mapH: [], sent: 0, last: 0 };
   window.addEventListener('resize', () => { DIAG.resize++; });
   if (window.visualViewport) visualViewport.addEventListener('resize', () => { DIAG.vv++; });
-  map.on('moveend', () => { DIAG.moveend++; });
-  map.on('zoomend', () => { DIAG.zoomend++; });
-  map.on('resize', e => { DIAG.mapresize++; DIAG.mapH.push(Math.round(e.newSize.y)); if (DIAG.mapH.length > 10) DIAG.mapH.shift(); });
+  map.on('moveend', () => { DIAG.moveend++; tr('moveend'); });
+  map.on('zoomend', () => { DIAG.zoomend++; tr('zoomend'); });
+  map.on('resize', e => { DIAG.mapresize++; tr('map-resize ' + Math.round(e.newSize.y)); DIAG.mapH.push(Math.round(e.newSize.y)); if (DIAG.mapH.length > 10) DIAG.mapH.shift(); });
   setInterval(() => {
     const storm = DIAG.grid >= 4 || DIAG.moveend >= 6 || DIAG.resize >= 4 || DIAG.hdr >= 4 || DIAG.vv >= 6;
     if (storm && DIAG.sent < 6 && Date.now() - DIAG.last > 20000) {
@@ -1979,6 +2004,7 @@
     openDetail(rec, listingCounts[rec.bbl] || 0);
   }
   function adoptAccountHome(user) {
+    tr('adoptHome');
     const b = user && user.user_metadata && user.user_metadata.home_bbl;
     if (!HOME && b && /^\d{10}$/.test(String(b))) {
       HOME = { bbl: String(b), set_at: Date.now(), snap: null };
@@ -2436,6 +2462,7 @@
     return new Supercluster({ radius: PIN_RADIUS, maxZoom: SC_MAX_ZOOM, minPoints: 2 }).load(recs.map(toFeature));
   }
   function setPins(recs) {
+    tr('setPins ' + recs.length);
     if (recs.length === data.length) { scAll = scAll || buildIndex(recs); sc = scAll; }
     else sc = recs.length ? buildIndex(recs) : null;
     unspiderfy();
@@ -2443,7 +2470,7 @@
   }
   function zoomNow() { return Math.round(map.getZoom()); }
   function renderPins() {
-    DIAG.pins++;
+    DIAG.pins++; tr('pins ' + zoomNow());
     const want = new Map();
     if (sc) {
       const z = zoomNow();
@@ -2492,6 +2519,7 @@
       pinLayer.addLayer(m); shown.set(k, m);
     }
     trimMarkerCache();
+    tr('pins:done ' + shown.size);
   }
   // Same-spot group: fan the buildings out on a ring with legs back to the
   // point, the way markercluster spiderfied. Collapses when the zoom changes
@@ -2535,6 +2563,7 @@
   // Zoom just far enough that this building's own pin is on screen, then cb —
   // what cluster.zoomToShowLayer did.
   function showPin(m, cb) {
+    tr('showPin');
     const rec = m._rec, ll = L.latLng(rec.lat, rec.lng);
     let z = zoomNow();
     while (z <= SC_MAX_ZOOM && pinClusteredAt(rec, z)) z++;
@@ -4040,6 +4069,7 @@
     qTrackTimer = setTimeout(trackSearch, 1200);
   });
   function trackSearch() {
+    tr('trackSearch');
     const q = qInput.value.trim();
     if (!q) return;
     track('search', {
@@ -4320,6 +4350,7 @@
   window.addEventListener('resize', positionAC);
   // Clicking a borough suggestion narrows the borough filter to just that one.
   function selectBorough(code) {
+    tr('selectBorough ' + code);
     document.querySelectorAll('#borough-list input').forEach(c => { c.checked = (c.dataset.b === code); });
     nbListEl.querySelectorAll('input:checked').forEach(c => { c.checked = false; });  // clear nb filter
     document.querySelector('#borough-list input').dispatchEvent(new Event('change', { bubbles: true }));
@@ -4327,6 +4358,7 @@
   }
   // Clicking a neighborhood suggestion filters to just that neighborhood.
   function selectNeighborhood(nb, code) {
+    tr('selectNb ' + nb);
     const bcb = code && document.querySelector(`#borough-list input[data-b="${code}"]`);
     if (bcb && !bcb.checked) { bcb.checked = true; updateBoroughBadge(); }
     syncNbVisibility();
@@ -4339,6 +4371,7 @@
   }
   // Frame a set of buildings without re-deriving bounds at four call sites.
   function fitTo(recs) {
+    tr('fitTo ' + recs.length);
     if (!recs.length) return;
     const lats = recs.map(r => r.lat), lngs = recs.map(r => r.lng);
     map.fitBounds([[Math.min(...lats), Math.min(...lngs)], [Math.max(...lats), Math.max(...lngs)]],
@@ -4347,6 +4380,7 @@
   // A resolved area can be several neighbourhoods across more than one borough
   // ("lower manhattan"), so it sets the checkboxes as a group.
   function selectArea(a) {
+    tr('selectArea ' + [...a.boros].join('') + '/' + a.nbs.size);
     document.querySelectorAll('#borough-list input').forEach(c => { c.checked = a.boros.size ? a.boros.has(c.dataset.b) : true; });
     updateBoroughBadge();
     syncNbVisibility();
@@ -4490,6 +4524,7 @@
   }
 
   function applyFilters(opts) {
+    tr('applyFilters ' + document.getElementById('q').value.slice(0, 20));
     const keepFilters = !!(opts && opts.keepFilters)
       || keepFiltersFor === document.getElementById('q').value.trim().toUpperCase();
     const boroughs = new Set([...document.querySelectorAll('#borough-list input:checked')].map(c => c.dataset.b));
@@ -4608,7 +4643,9 @@
 
     filtered = recs;
     gridGen++;
+    tr('af:collected ' + recs.length + ' ' + tier);
     setPins(filtered);
+    tr('af:pins');
 
     // Frame the result when the query picked out something rather than the
     // whole city — a neighbourhood filter, an area word, an address, a street,
@@ -4619,6 +4656,7 @@
     // latLngBounds over them is instant.
     const framed = selectedNbs.size > 0 || SEARCH_HIT_TIERS.has(tier);
     if (framed && filtered.length) {
+      tr('af:frame');
       const bounds = L.latLngBounds(filtered.map(r => [r.lat, r.lng]));
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15, animate: false });
     }
@@ -4962,6 +5000,7 @@
         entries.forEach(en => {
           if (!en.isIntersecting) return;
           const img = en.target;
+          tr('sv-load');
           obs.unobserve(img);
           const url = img.dataset.sv;
           if (url) { img.removeAttribute('data-sv'); img.src = url; }
@@ -5059,7 +5098,7 @@
   }
 
   function refreshGrid() {
-    DIAG.grid++;
+    DIAG.grid++; tr('grid ' + map.getZoom());
     const b = map.getBounds();
     const citywide = !!searchState.q && CITYWIDE_LIST_TIERS.has(searchState.tier);
     const visible = [];
@@ -5128,8 +5167,9 @@
     const favMode = document.getElementById('pill-fav').classList.contains('active');
     const sig = [gridGen, sortMode, selectedBbl, favMode ? 1 : 0, sharedFolder ? 1 : 0, truncated ? 1 : 0, citywide ? 1 : 0,
                  shown.length, shown.map(r => r.bbl).join(',')].join('|');
-    if (sig === lastGridSig && grid.childElementCount) return;
+    if (sig === lastGridSig && grid.childElementCount) { tr('grid:same'); return; }
     lastGridSig = sig;
+    tr('grid:build ' + shown.length);
     // pinned is visible[0] at this point, so it survives the cap; take it out
     // of the paged run so it can lead the list ahead of the promo tiles.
     if (pinned) shown.shift();
@@ -5174,6 +5214,7 @@
     watchStreetview(grid);
     initAds();
     watchAdTiles();
+    tr('grid:done');
   }
 
   function bedsLabel(arr) {
@@ -5339,7 +5380,7 @@
   function syncHeaderHeight() {
     const h = headerEl.offsetHeight;
     if (h === headerH) return;
-    DIAG.hdr++; DIAG.hdrH.push(h); if (DIAG.hdrH.length > 10) DIAG.hdrH.shift();   // ResizeObserver → invalidateSize → resize would otherwise loop
+    DIAG.hdr++; DIAG.hdrH.push(h); tr('hdr ' + h); if (DIAG.hdrH.length > 10) DIAG.hdrH.shift();   // ResizeObserver → invalidateSize → resize would otherwise loop
     headerH = h;
     document.documentElement.style.setProperty('--header-h', h + 'px');
     map.invalidateSize();
@@ -5495,6 +5536,7 @@
   }
 
   function openCard(m) {
+    tr('openCard');
     setListOpen(false);
     cardMarker = m;
     const rec = m._rec, listed = m._listed || 0;
@@ -5791,6 +5833,7 @@
     detailContent.querySelectorAll('[data-sec]').forEach(el => { if (!secSeen.has(el.dataset.sec)) secObserver.observe(el); });
   }
   function openDetail(rec, listed) {
+    tr('openDetail');
     detailRec = rec; detailListed = listed || 0;
     track('building_view', { bbl: rec.bbl, addr: rec.a, boro: rec.b, listed: detailListed, via: 'detail' });
     secSeen = new Set();
@@ -6706,6 +6749,7 @@
       }
     } catch (e) { /* analytics is best-effort */ }
     supaClient.auth.onAuthStateChange((_evt, sess) => {
+      tr('auth ' + _evt);
       authUser = sess?.user || null;
       adoptAccountTheme(authUser);   // the account's choice beats this device's
       adoptAccountHome(authUser);

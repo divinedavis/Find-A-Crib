@@ -1797,29 +1797,14 @@
   // doubleClickZoom: true → a double-click (desktop) or double-tap (mobile) zooms in
   // one level toward the tapped point. zoomDelta 1 keeps it gentle ("a little").
   const map = L.map('map', { preferCanvas: true, doubleClickZoom: true, zoomDelta: 1, zoomControl: true }).setView(CITY.center, CITY.zoom);
-  // ---------- remember the view ----------
-  // A refresh comes back to the centre and zoom you left, not to the city
-  // default or the network-location zoom-in. Per city; deep links (hash or
-  // query) still win because they name where they want to be.
-  const VIEW_KEY = 'fac.view.' + (document.documentElement.dataset.city || 'nyc');
-  let SAVED_VIEW = null;
-  try {
-    const v = JSON.parse(localStorage.getItem(VIEW_KEY) || 'null');
-    if (v && isFinite(v.lat) && isFinite(v.lng) && isFinite(v.z) && !location.hash && !location.search) {
-      SAVED_VIEW = v;
-      map.setView([v.lat, v.lng], v.z, { animate: false });
-    }
-  } catch (_) {}
-  let viewTimer = null;
-  map.on('moveend', () => {
-    clearTimeout(viewTimer);
-    viewTimer = setTimeout(() => {
-      try {
-        const c = map.getCenter();
-        localStorage.setItem(VIEW_KEY, JSON.stringify({ lat: +c.lat.toFixed(5), lng: +c.lng.toFixed(5), z: map.getZoom(), t: Date.now() }));
-      } catch (_) {}
-    }, 400);
-  });
+  // ---------- boot view ----------
+  // A refresh lands on the whole city, every time (2026-09-06). The map used
+  // to come back to the last view, and before that zoomed to the visitor's
+  // network location; both left people on one block with no way to know
+  // where the rest was. Deep links (hash or query) still take the map where
+  // they point.
+  const SAVED_VIEW = null;
+  try { localStorage.removeItem('fac.view.' + (document.documentElement.dataset.city || 'nyc')); } catch (_) {}
   // ---------- render-storm diagnostics ----------
   // A phone was seen re-rendering the results list every 1-2 s until Safari
   // killed the page (2026-09-06), and it never reproduced in emulation. Count
@@ -6300,7 +6285,8 @@
   // Only on a bare landing (no hash, no query): a deep link, a search, a
   // shared folder or an email click-through all know where they want to be.
   geoPromise.then(g => {
-    if (!g || !g.ok || !g.boro || location.hash || location.search || SAVED_VIEW) return;   // a returning visitor keeps their own view
+    if (g && g.ok && g.boro && !location.hash && !location.search) track('geo_start', { boro: g.boro });
+    return;   // the map no longer moves to the network location: every landing shows the whole city (2026-09-06)
     map.setView([g.lat, g.lng], 14, { animate: false });
     const chip = document.createElement('div');
     chip.className = 'geo-chip';

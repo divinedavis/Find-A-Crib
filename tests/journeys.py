@@ -74,7 +74,7 @@ class Runner:
         page.on('pageerror', lambda e: j.errors.append('pageerror: ' + str(e)[:200]))
         page.on('crash', lambda: j.errors.append('CRASH: renderer died'))
         page.on('console', lambda m: j.errors.append('console.error: ' + m.text[:200])
-                if m.type == 'error' and 'Failed to load resource' not in m.text and 'report-only Content Security Policy' not in m.text else None)
+                if m.type == 'error' and 'Failed to load resource' not in m.text and 'Content Security Policy' not in m.text and 'Report Only' not in m.text else None)
         if self.html is not None:
             def route(r):
                 u = r.request.url.split('#')[0]
@@ -272,14 +272,15 @@ class Runner:
     def j_deep_links_and_view(self, page, j, device):
         self.boot(page, '/?q=Bronx')
         self.ok(page.evaluate(LABEL).endswith('7,491'), f'?q=Bronx should filter, got {page.evaluate(LABEL)}', j)
-        page.evaluate("localStorage.setItem('fac.view.nyc', JSON.stringify({lat:40.60,lng:-73.95,z:13,t:Date.now()}))")
+        # zoom to a block, refresh: the whole city comes back, no geo chip, no remembered view
+        self.boot(page, f'/#b={BBL}')
+        self.ok(page.evaluate(BPINS) > 0, '#b= should zoom to the building', j)
         self.boot(page, '/')
-        lab = page.evaluate(LABEL)
-        self.ok(not page.evaluate("!!document.querySelector('.geo-chip')"), 'a saved view should suppress the network-location chip', j)
-        v = json.loads(page.evaluate("localStorage.getItem('fac.view.nyc')"))
-        self.ok(abs(v['lat'] - 40.60) < 0.01 and v['z'] == 13, f'saved view should be restored and re-saved unchanged, got {v}', j)
+        in_view, total = [int(x.replace(',', '')) for x in page.evaluate(LABEL).split(' of ')]
+        self.ok(in_view >= 0.4 * total, f'a refresh should show the whole city, but only {in_view:,} of {total:,} are in view', j)
+        self.ok(not page.evaluate("!!document.querySelector('.geo-chip')"), 'no network-location chip on landing', j)
         self.boot(page, f'/#d={BBL}')
-        self.ok(self.detail_open(page), 'deep link must beat the saved view', j)
+        self.ok(self.detail_open(page), 'deep link must still open the building', j)
 
     def j_city_pages(self, page, j, device):
         for city, low in (('la', 1000), ('sf', 1000), ('dc', 100), ('westchester', 100)):

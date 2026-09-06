@@ -613,7 +613,10 @@
   .popup-actions a.primary:hover { background: var(--blue-dark); }
   .popup-actions a.secondary { background: var(--surface); color: var(--blue); }
   .popup-actions a.secondary:hover { background: var(--blue-soft); }
-  .leaflet-popup-content-wrapper { min-width: 260px; max-width: 360px; }
+  .leaflet-popup-content-wrapper { min-width: 240px; max-width: 300px; }
+  .leaflet-popup-content .hpd-mini { margin-top: 6px; font-size: 12px; font-weight: 700; }
+  .leaflet-popup-content .hpd-mini .bad { color: var(--err-ink); }
+  .leaflet-popup-content .hpd-mini .warn { color: #b26a00; }
   /* never taller than the visible map, so the whole popup stays reachable;
      long content scrolls inside instead of vanishing under the header */
   .leaflet-popup-content { max-height: min(56vh, 520px); overflow-y: auto; }
@@ -2444,7 +2447,7 @@
       // click rather than the map's popupopen so it does not depend on the
       // popup lifecycle — and deliberately NOT selectMarker(), because that
       // swaps the icon, and re-anchoring an icon mid-open can drop the popup.
-      m.on('click', () => highlightCard(rec.bbl, true));
+      m.on('click', () => { highlightCard(rec.bbl, true); openDetail(rec, m._listed || 0); });
       // Pointer on the pin -> its tile in the results pane lights up green,
       // scrolled into view only if it is off-screen (sweeping the cursor across
       // a dense block must not yank the list around).
@@ -2530,6 +2533,10 @@
              label: 'Search Zumper ↗', short: 'Search ↗', direct: false };
   }
 
+  // The desktop pin popup is a PREVIEW: address, the one-line facts, badges,
+  // and a Details button. The full HPD record (operator, violation classes,
+  // complaints) lives in the detail sheet, which a pin click also opens — the
+  // popup used to carry all of it and ran to 600px on a bad building.
   function buildPopup(rec, listed) {
     track('building_view', { bbl: rec.bbl, addr: rec.a, boro: rec.b, listed, via: 'popup' });
     const borough = BORO_NAME[rec.b] || '';
@@ -2556,11 +2563,11 @@
       ${vacHtml}
       ${s8Html(rec)}
       <div style="margin-top:6px">${statusHtml}</div>
-      ${CITY.idLabel ? `<div class="popup-meta" style="margin-top:6px">${CITY.idLabel} ${esc(idShort(rec))}</div>` : ''}
       ${noteHtml}
-      ${IS_NYC ? hpdHtml(rec) : ''}
+      ${IS_NYC ? cardHpdLine(rec) : ''}
       <div class="popup-actions">
-        <a class="primary" href="${esc(listing.href)}" target="_blank" rel="noopener">${listing.label}</a>
+        <a class="primary" href="#" data-popup-details>Details</a>
+        <a class="secondary" href="${esc(listing.href)}" target="_blank" rel="noopener">${listing.label}</a>
       </div>
     `;
   }
@@ -3060,7 +3067,15 @@
       box.innerHTML = '<div class="hpd-viol-note" style="border:none">Couldn\'t reach NYC Open Data just now. Tap again to retry, or open the full HPD record below.</div>';
     });
   }
-  map.on('popupopen', e => { const el = e.popup.getElement(); if (el) wireHpdLegend(el); });
+  map.on('popupopen', e => {
+    const el = e.popup.getElement(); if (!el) return;
+    wireHpdLegend(el);
+    const m = e.popup._source;
+    el.querySelector('[data-popup-details]')?.addEventListener('click', ev => {
+      ev.preventDefault();
+      if (m && m._rec) openDetail(m._rec, m._listed || 0);
+    });
+  });
 
   // ---------- filters ----------
   const PRESET_NB = ['Bed-Stuy (West)', 'Bed-Stuy (East)', 'Williamsburg', 'East Village', 'SoHo', 'Nolita'];

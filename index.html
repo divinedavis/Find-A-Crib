@@ -1527,7 +1527,7 @@
   </div>
 </div>
 <script src="/static/leaflet/leaflet.js"></script>
-<script src="/static/markercluster/markercluster.js"></script>
+<script src="/static/supercluster/supercluster.min.js"></script>
 <script src="/static/supabase/supabase.js"></script>
 <!-- ?v= busts the 7-day JS browser cache — bump it whenever a key in config.js rotates -->
 <script src="config.js?v=2"></script>
@@ -1899,8 +1899,7 @@
   }
   function homeRec() {
     if (!HOME) return null;
-    const m = (typeof markerByBbl !== 'undefined') && markerByBbl.get(HOME.bbl);
-    return m ? m._rec : null;
+    return (typeof recByBbl !== 'undefined' && recByBbl.get(HOME.bbl)) || null;
   }
   function syncHomeUI() {
     const pill = document.getElementById('pill-home');
@@ -2368,28 +2367,145 @@
     : '';
 
   // ---------- markers ----------
-  const cluster = L.markerClusterGroup({
-    chunkedLoading: true,
-    // Indexing 47k markers into the cluster tree is where load-time actually
-    // goes — ~2 s of work, dwarfing the parse (~100 ms) and the marker build
-    // (~60 ms). chunkedLoading already splits it, but the stock 200 ms slice
-    // is four times the 50 ms threshold at which a task starts being felt as
-    // a freeze, so each slice showed up as jank. Cutting the slice to 40 ms
-    // keeps every one of them under that line; the extra yields cost a little
-    // total time in exchange for a page that stays responsive throughout.
-    chunkInterval: 40,
-    chunkDelay: 10,
-    spiderfyOnMaxZoom: true,
-    maxClusterRadius: 60,
-    iconCreateFunction: (c) => {
-      const n = c.getChildCount();
-      const w = String(n).length * 8 + 22;
-      return L.divIcon({
-        html: `<div class="price-pill">${n.toLocaleString()}</div>`,
-        className: '', iconSize: [w, 22], iconAnchor: [w/2, 11],
-      });
-    },
-  });
+  // Pins are rendered for the viewport only. The previous Leaflet.markercluster
+  // setup built an L.Marker for all 47k buildings up front and indexed every
+  // one of them at every zoom level: ~570 MB of web-process memory on load and
+  // a ~90 MB spike on every borough change, measured in WebKit. Mobile Safari
+  // kills the tab past that line ("A problem repeatedly occurred") — 20 of 66
+  // landing visitors in the fortnight before this reloaded within minutes,
+  // several right after picking Brooklyn or the Bronx. Supercluster keeps a
+  // typed-array index (a few MB) and marker objects exist only for what is on
+  // screen; the cluster pills look and behave as before.
+  const SC_MAX_ZOOM = 17;          // clusters exist up to this zoom; past it every pin stands alone
+  const PIN_RADIUS = 60;           // px — the radius markercluster used
+  function clusterIcon(n) {
+    const w = String(n).length * 8 + 22;
+    return L.divIcon({
+      html: `<div class="price-pill">${n.toLocaleString()}</div>`,
+      className: '', iconSize: [w, 22], iconAnchor: [w/2, 11],
+    });
+  }
+  const pinLayer = L.layerGroup().addTo(map);
+  let sc = null;                   // Supercluster index over the current filtered set
+  let scAll = null;                // cached index for the whole city, the common case
+  const shown = new Map();         // key -> marker currently on the map
+  const toFeature = rec => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [rec.lng, rec.lat] }, properties: { bbl: rec.bbl } });
+  function buildIndex(recs) {
+    return new Supercluster({ radius: PIN_RADIUS, maxZoom: SC_MAX_ZOOM, minPoints: 2 }).load(recs.map(toFeature));
+  }
+  function setPins(recs) {
+    if (recs.length === data.length) { scAll = scAll || buildIndex(recs); sc = scAll; }
+    else sc = recs.length ? buildIndex(recs) : null;
+    unspiderfy();
+    renderPins();
+  }
+  function zoomNow() { return Math.round(map.getZoom()); }
+  function renderPins() {
+    const want = new Map();
+    if (sc) {
+      const z = zoomNow();
+      const b = map.getBounds().pad(0.25);
+      const items = sc.getClusters([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()], Math.min(z, SC_MAX_ZOOM + 1));
+      if (z <= SC_MAX_ZOOM) {
+        for (const it of items) {
+          if (it.properties.cluster) want.set('c' + it.properties.cluster_id, it);
+          else want.set('b' + it.properties.bbl, it);
+        }
+      } else {
+        // Past the clustering zoom, buildings that share one coordinate would
+        // stack invisibly; they become one pill that fans out on tap.
+        const groups = new Map();
+        for (const it of items) {
+          const k = it.geometry.coordinates[1].toFixed(6) + ',' + it.geometry.coordinates[0].toFixed(6);
+          if (!groups.has(k)) groups.set(k, []);
+          groups.get(k).push(it);
+        }
+        for (const [k, g] of groups) {
+          if (g.length === 1) want.set('b' + g[0].properties.bbl, g[0]);
+          else want.set('g' + k, g);
+        }
+      }
+    }
+    for (const [k, m] of shown) {
+      if (want.has(k)) continue;
+      if (spider && m === spider.pill) continue;   // fanned out: leave it until the zoom changes
+      pinLayer.removeLayer(m); shown.delete(k);
+    }
+    for (const [k, it] of want) {
+      if (shown.has(k)) continue;
+      let m;
+      if (k[0] === 'b') { m = markerFor(it.properties.bbl); if (!m) continue; }
+      else if (k[0] === 'c') {
+        const ll = [it.geometry.coordinates[1], it.geometry.coordinates[0]];
+        const id = it.properties.cluster_id;
+        m = L.marker(ll, { icon: clusterIcon(it.properties.point_count) });
+        m.on('click', () => map.setView(ll, Math.min(sc.getClusterExpansionZoom(id), SC_MAX_ZOOM + 1), { animate: false }));
+      } else {
+        const ll = [it[0].geometry.coordinates[1], it[0].geometry.coordinates[0]];
+        m = L.marker(ll, { icon: clusterIcon(it.length) });
+        m._group = it.map(f => f.properties.bbl);
+        m.on('click', () => spiderfy(m));
+      }
+      pinLayer.addLayer(m); shown.set(k, m);
+    }
+    trimMarkerCache();
+  }
+  // Same-spot group: fan the buildings out on a ring with legs back to the
+  // point, the way markercluster spiderfied. Collapses when the zoom changes
+  // or the map is tapped; panning keeps it, so opening a card does not lose it.
+  let spider = null;
+  function spiderfy(pill) {
+    unspiderfy();
+    const c = map.latLngToLayerPoint(pill.getLatLng());
+    const n = pill._group.length;
+    const r = Math.max(36, 10 + n * 6);
+    const leaves = [], legs = [];
+    pill._group.forEach((bbl, i) => {
+      const m = markerFor(bbl); if (!m) return;
+      const a = 2 * Math.PI * i / n;
+      const ll = map.layerPointToLatLng(L.point(c.x + r * Math.cos(a), c.y + r * Math.sin(a)));
+      m._home = m.getLatLng(); m.setLatLng(ll);
+      const leg = L.polyline([pill.getLatLng(), ll], { color: '#222', weight: 1.5, opacity: 0.5, interactive: false });
+      pinLayer.addLayer(leg); pinLayer.addLayer(m);
+      leaves.push(m); legs.push(leg);
+    });
+    pinLayer.removeLayer(pill);
+    spider = { pill, leaves, legs };
+  }
+  function unspiderfy() {
+    if (!spider) return;
+    spider.legs.forEach(l => pinLayer.removeLayer(l));
+    spider.leaves.forEach(m => { pinLayer.removeLayer(m); if (m._home) { m.setLatLng(m._home); m._home = null; } });
+    pinLayer.addLayer(spider.pill);   // renderPins drops it again if the view moved on
+    spider = null;
+  }
+  map.on('zoomstart', unspiderfy);
+  map.on('click', unspiderfy);
+  map.on('moveend', renderPins);
+  // Is this building hidden inside a cluster at zoom z?
+  function pinClusteredAt(rec, z) {
+    if (!sc || z > SC_MAX_ZOOM) return false;
+    const d = 2 * PIN_RADIUS * 360 / (512 * Math.pow(2, z));
+    const items = sc.getClusters([rec.lng - d, rec.lat - d, rec.lng + d, rec.lat + d], z);
+    return items.some(it => it.properties.cluster && sc.getLeaves(it.properties.cluster_id, Infinity).some(l => l.properties.bbl === rec.bbl));
+  }
+  // Zoom just far enough that this building's own pin is on screen, then cb —
+  // what cluster.zoomToShowLayer did.
+  function showPin(m, cb) {
+    const rec = m._rec, ll = L.latLng(rec.lat, rec.lng);
+    let z = zoomNow();
+    while (z <= SC_MAX_ZOOM && pinClusteredAt(rec, z)) z++;
+    let fired = false;
+    const done = () => {
+      if (fired) return; fired = true;
+      renderPins();
+      for (const pm of shown.values()) if (pm._group && pm._group.includes(rec.bbl)) { spiderfy(pm); break; }
+      if (cb) cb();
+    };
+    map.once('moveend', done);
+    map.setView(ll, z, { animate: false });
+    done();
+  }
 
   // Zillow-style pills for EVERY building — uniform height, easy to tap.
   // Listed buildings: blue pill with the asking rent (or "N listed");
@@ -2418,19 +2534,13 @@
   }
 
   const isMobile = window.matchMedia('(max-width: 900px)').matches;
+  // Marker objects are made on demand — for the pins in view, the open card,
+  // a deep link — and cached; recByBbl answers every "which building is this"
+  // lookup without one.
   const markerByBbl = new Map();
-  // Building every marker in one uninterrupted pass blocked the main thread for
-  // ~550 ms on a throttled CPU, right after load, which reads as a frozen page.
-  // Same markers, same order — just handed back to the browser every batch so
-  // it can paint and answer clicks. Everything downstream still awaits the full
-  // set, so nothing observes a half-built markerByBbl.
-  const MARKER_BATCH = 2000;
-  const yieldToBrowser = () => (window.scheduler && scheduler.yield)
-    ? scheduler.yield()
-    : new Promise(res => setTimeout(res, 0));
-  for (let i = 0; i < data.length; i++) {
-    const rec = data[i];
-    if (i && i % MARKER_BATCH === 0) await yieldToBrowser();
+  const recByBbl = new Map();
+  for (const rec of data) recByBbl.set(rec.bbl, rec);
+  function buildMarker(rec) {
     const listed = listingCounts[rec.bbl] || 0;
     const m = L.marker([rec.lat, rec.lng], { icon: null });
     m._rec = rec;
@@ -2455,7 +2565,29 @@
       m.on('mouseover', () => hoverCard(rec.bbl));
       m.on('mouseout', () => hoverCard(null));
     }
-    markerByBbl.set(rec.bbl, m);
+    return m;
+  }
+  function markerFor(bbl) {
+    let m = markerByBbl.get(bbl);
+    if (m) return m;
+    const rec = recByBbl.get(bbl);
+    if (!rec) return null;
+    m = buildMarker(rec); markerByBbl.set(bbl, m);
+    return m;
+  }
+  // A long pan session would otherwise rebuild the 47k-marker set one screen
+  // at a time. Keep what is on the map, selected or fanned out; drop the rest.
+  function trimMarkerCache() {
+    if (markerByBbl.size < 4000) return;
+    const keep = new Set();
+    for (const m of shown.values()) if (m._rec) keep.add(m._rec.bbl);
+    if (spider) spider.leaves.forEach(m => keep.add(m._rec.bbl));
+    let sel = null, card = null;
+    try { sel = selectedMarker; card = cardMarker; } catch (e) {}
+    for (const [bbl, m] of markerByBbl) {
+      if (keep.has(bbl) || m === sel || m === card) continue;
+      markerByBbl.delete(bbl);
+    }
   }
 
   // Desktop clicks a pin into a Leaflet popup and never goes through
@@ -4221,7 +4353,7 @@
       selectNeighborhood(m.name, m.boro);
       return;
     }
-    const mk = markerByBbl.get(m.rec.bbl);
+    const mk = markerFor(m.rec.bbl);
     if (!mk) return;
     qInput.value = m.rec.a;
     qInput.blur();
@@ -4432,8 +4564,7 @@
     searchState = { q, tier, relaxed, label, note, suggest, hidden };
 
     filtered = recs;
-    cluster.clearLayers();
-    cluster.addLayers(filtered.map(r => markerByBbl.get(r.bbl)).filter(Boolean));
+    setPins(filtered);
 
     // Frame the result when the query picked out something rather than the
     // whole city — a neighbourhood filter, an area word, an address, a street,
@@ -5071,7 +5202,7 @@
       return;
     }
     const bbl = card.dataset.bbl;
-    const m = markerByBbl.get(bbl);
+    const m = markerFor(bbl);
     if (!m) return;
     const rec = m._rec;
     const action = e.target.dataset.action;
@@ -5098,8 +5229,8 @@
     // "View on map" button → jump to the pin (card on mobile, popup on desktop)
     if (action === 'map') {
       e.preventDefault(); flyTo();
-      if (isMobile) { setListOpen(false); cluster.zoomToShowLayer(m, () => openCard(m)); }
-      else if (m.openPopup) { cluster.zoomToShowLayer(m, () => m.openPopup()); }
+      if (isMobile) { setListOpen(false); showPin(m, () => openCard(m)); }
+      else if (m.openPopup) { showPin(m, () => m.openPopup()); }
       return;
     }
     // tapping the card → Zillow-style detail (full page on mobile, centered
@@ -5109,7 +5240,6 @@
     openDetail(rec, listed);
   });
 
-  map.addLayer(cluster);
   map.on('moveend', refreshGrid);
 
   // ---------- Saved (favorites) filter chip ----------
@@ -5775,9 +5905,9 @@
     if (act === 'complaints') { openCompSheet(rec); return; }
     if (act === 'report') { buyReport(rec, e.target.closest('[data-detail]')); return; }
     if (act === 'map') {
-      const m = markerByBbl.get(rec.bbl);
+      const m = markerFor(rec.bbl);
       closeDetail(); setListOpen(false);
-      if (m) { map.setView(m.getLatLng(), Math.max(map.getZoom(), 16), { animate: false }); cluster.zoomToShowLayer(m, () => openCard(m)); }
+      if (m) showPin(m, () => openCard(m));
       return;
     }
   });
@@ -5998,11 +6128,11 @@
   // (vs 33% organic). Show them the photos+prices list they came for.
   if (isMobile && /[?&]gclid=/.test(location.search)) setListOpen(true);
   if (location.hash.startsWith('#b=')) {
-    const m = markerByBbl.get(location.hash.slice(3));
+    const m = markerFor(location.hash.slice(3));
     if (m) { map.setView(m.getLatLng(), 16, { animate: false }); openCard(m); }
   }
   if (location.hash.startsWith('#d=')) {
-    const m = markerByBbl.get(location.hash.slice(3));
+    const m = markerFor(location.hash.slice(3));
     if (m) openDetail(m._rec, m._listed || 0);
   }
   // ---------- my apartment: entry points ----------

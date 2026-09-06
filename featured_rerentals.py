@@ -599,7 +599,42 @@ def fetch_image(url, timeout=20):
            "image/gif": ".gif"}.get(ctype)
     if not ext:
         return None, None
-    return data, ext
+    return shrink_image(data, ext)
+
+
+# The tile shows the photo at ~360 px wide, and the agents publish it at
+# whatever their CMS holds — 1600 px PNGs of 0.5-1.3 MB were the norm, and
+# a phone decodes each one into 5+ MB of bitmap for every tile in the list.
+# That is the same memory budget the map crash of 2026-09-06 came out of.
+IMG_MAX_W = 800
+IMG_QUALITY = 80
+
+
+def shrink_image(data, ext):
+    """Re-encode a listing photo as a JPEG no wider than IMG_MAX_W.
+
+    GIFs and anything Pillow cannot read pass through unchanged (a broken
+    image is the source's problem, and Pillow is optional on the droplet).
+    """
+    if ext == ".gif":
+        return data, ext
+    try:
+        from PIL import Image, ImageOps
+        import io
+        im = Image.open(io.BytesIO(data))
+        im = ImageOps.exif_transpose(im)
+        if im.width > IMG_MAX_W:
+            im = im.resize((IMG_MAX_W, max(1, round(im.height * IMG_MAX_W / im.width))), Image.LANCZOS)
+        if im.mode not in ("RGB", "L"):
+            im = im.convert("RGB")
+        out = io.BytesIO()
+        im.save(out, "JPEG", quality=IMG_QUALITY, optimize=True, progressive=True)
+        small = out.getvalue()
+        if len(small) < len(data):
+            return small, ".jpg"
+        return data, ext
+    except Exception:
+        return data, ext
 
 
 def save_images(records, apply_changes):

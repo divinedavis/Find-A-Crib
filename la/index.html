@@ -289,6 +289,16 @@
     background: #1d2430; color: #fff; border-radius: 12px; padding: 12px 14px; max-width: min(92vw, 420px);
     box-shadow: 0 8px 28px rgba(0,0,0,.35); font-size: 13.5px; }
   .folder-toast .ft-title { font-weight: 700; margin-bottom: 8px; }
+  /* "near you" first-view chip, top-centre of the map, above Leaflet's panes */
+  .geo-chip { position: absolute; left: 50%; transform: translateX(-50%); top: 12px; z-index: 1001;
+    display: flex; align-items: center; gap: 10px; max-width: calc(100% - 24px); box-sizing: border-box;
+    background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 999px;
+    padding: 7px 8px 7px 14px; font-size: 13px; box-shadow: 0 4px 16px rgba(0,0,0,.18); }
+  .geo-chip > span { min-width: 0; flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .geo-chip button { border: 0; background: var(--blue-solid); color: #fff; border-radius: 999px; padding: 5px 10px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+  .geo-chip button.geo-x { background: transparent; color: var(--ink-2); padding: 4px 6px; font-size: 14px; }
+  @media (max-width: 900px) { .geo-chip { top: auto; bottom: calc(76px + env(safe-area-inset-bottom)); font-size: 12px; padding-left: 10px; gap: 6px; }
+    .geo-chip .geo-src { display: none; } }
   .folder-toast .ft-opts { display: flex; flex-wrap: wrap; gap: 6px; }
   .folder-toast .ft-opts button { padding: 6px 11px; border-radius: 14px; border: 1px solid #46536a;
     background: #2a3346; color: #fff; font-size: 12.5px; cursor: pointer; }
@@ -483,11 +493,12 @@
   }
   .load-retry:hover { border-color: var(--blue); }
 
-  /* The card for the building whose pin is open on the map. A ring rather than
-     a background change: these cards are mostly photo, and tinting them fights
-     the image while a ring reads at a glance in both themes. */
+  /* The card for the building whose pin is open on the map: pinned to the
+     first slot of the list and ringed green. A ring rather than a background
+     change: these cards are mostly photo, and tinting them fights the image
+     while a ring reads at a glance in both themes. */
   .card.is-selected {
-    border-color: var(--blue); box-shadow: 0 0 0 2px var(--blue-solid), var(--card-shadow);
+    border-color: var(--ok-ink); box-shadow: 0 0 0 2px var(--ok-ink), var(--card-shadow);
   }
   /* Hovering a pin on the map lights its tile green (2026-09-03). Green rather
      than the blue of a clicked pin so "you are pointing at this" and "you
@@ -602,7 +613,10 @@
   .popup-actions a.primary:hover { background: var(--blue-dark); }
   .popup-actions a.secondary { background: var(--surface); color: var(--blue); }
   .popup-actions a.secondary:hover { background: var(--blue-soft); }
-  .leaflet-popup-content-wrapper { min-width: 260px; max-width: 360px; }
+  .leaflet-popup-content-wrapper { min-width: 240px; max-width: 300px; }
+  .leaflet-popup-content .hpd-mini { margin-top: 6px; font-size: 12px; font-weight: 700; }
+  .leaflet-popup-content .hpd-mini .bad { color: var(--err-ink); }
+  .leaflet-popup-content .hpd-mini .warn { color: #b26a00; }
   /* never taller than the visible map, so the whole popup stays reachable;
      long content scrolls inside instead of vanishing under the header */
   .leaflet-popup-content { max-height: min(56vh, 520px); overflow-y: auto; }
@@ -978,6 +992,15 @@
   .d-tagline { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 6px; font-size: 14px; }
   .d-tag { background: var(--blue-soft); color: var(--blue); font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; }
   .d-dot { color: var(--ink-2); }
+  /* "My apartment": the pinned home block at the top of the detail sheet */
+  .d-home { margin: 0 18px; padding: 12px 14px; border: 1px solid var(--blue); background: var(--blue-soft); border-radius: 12px; }
+  .d-home-title { font-weight: 800; font-size: 14px; color: var(--blue); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .d-home-title .d-home-change { margin-left: auto; background: transparent; border: 0; color: var(--blue); font-size: 12px; font-weight: 700; cursor: pointer; text-decoration: underline; padding: 0; }
+  .d-home-line { font-size: 13.5px; color: var(--ink); margin-top: 6px; line-height: 1.45; }
+  .d-home-line b.up { color: var(--err-ink); }
+  .d-home-line b.down { color: var(--ok-ink); }
+  .d-home-links { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .d-home-links a, .d-home-links button { font-size: 12.5px; font-weight: 700; color: var(--blue); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; text-decoration: none; cursor: pointer; }
   .d-est { color: var(--ink); font-weight: 700; }
   .agent-card {
     display: flex; align-items: center; gap: 12px; margin: 16px 18px 4px;
@@ -1027,8 +1050,9 @@
     font-weight: 700; border: 1px solid var(--blue); cursor: pointer; text-decoration: none; white-space: nowrap; }
   .d-actions .d-primary { background: var(--blue-solid); color: #fff; }
   .d-actions .d-secondary { background: var(--surface); color: var(--blue); }
-  /* Violations button: red = cited this year, amber = a record but nothing this
-     year, green = nothing on record. Neutral until the all-time blob arrives. */
+  /* Violations button: red = open class C or more than 5 open, amber = anything
+     open, green = nothing open (the year's count still shows, marked closed).
+     Neutral until the all-time blob arrives. */
   .d-actions .d-viol { font-weight: 700; border: 1px solid var(--blue); background: var(--surface); color: var(--blue); }
   .d-actions .d-viol.red { background: var(--bad-bg); color: var(--bad-ink); border-color: var(--bad-ink); }
   .d-actions .d-viol.yellow { background: var(--warn-bg); color: var(--warn-ink); border-color: var(--warn-ink); }
@@ -1121,6 +1145,7 @@
   <div class="filter-bar">
     <input class="search-input" id="q" type="text" placeholder="Search only rent stabilized apartments" />
     <div class="chip-row">
+    <div class="filter-pill toggle-pill nyc-only" id="pill-home" role="button" tabindex="0" hidden title="Your own building: status, violations, landlord, and what changed since your last visit">🏠 My apartment</div>
     <div class="filter-pill toggle-pill" id="pill-fav" role="button" tabindex="0">
       <span class="fav-heart">♡</span> Saved <span class="count-badge" id="badge-fav" style="display:none">0</span>
     </div>
@@ -1312,7 +1337,7 @@
     <h2>Everything you need to land your crib</h2>
     <p class="auth-sub">One membership unlocks all of Find A Crib:</p>
     <ul class="paywall-feats">
-      <li>🔔 Email alerts the moment a home you saved is listed for rent</li>
+      <li>🔖 Save any search — filters, area and all — and reapply it in one tap</li>
       <li>📞 Managing-agent phone numbers — call who actually runs the building</li>
       <li>🔎 Research any landlord: every building they own across NYC, apartment counts by borough, and their violation record</li>
       <li>🏷️ Organize your saved homes into custom categories</li>
@@ -1376,10 +1401,17 @@
     <button id="profile-upgrade" type="button" class="auth-submit" hidden>Get Plus — $4.99/mo</button>
     <div class="profile-row profile-toggle-row">
       <div>
-        <div class="profile-feat">🔔 Email alerts</div>
-        <div class="profile-feat-sub">Get an email when a building you saved is listed for rent.</div>
+        <div class="profile-feat">🔔 Saved-building alerts</div>
+        <div class="profile-feat-sub">An email when a building you saved is advertised, gets a lottery or re-rental, drops its rent, or its violations change. Free. Never more than one email a day; Tuesdays it’s the weekly round-up.</div>
       </div>
       <label class="switch"><input id="profile-alerts" type="checkbox"><span class="slider"></span></label>
+    </div>
+    <div class="profile-row profile-toggle-row nyc-only">
+      <div>
+        <div class="profile-feat">🏠 My apartment</div>
+        <div class="profile-feat-sub" id="profile-home-sub">Not set. Search your address, open the building and tap “This is my apartment”.</div>
+      </div>
+      <button type="button" class="folder-new" id="profile-home-btn" style="white-space:nowrap">Find it →</button>
     </div>
     <div class="profile-row profile-toggle-row nyc-only">
       <div>
@@ -1485,7 +1517,7 @@
         <span class="detail-brand" hidden>Find A Crib</span>
       </div>
       <div class="detail-bar-right">
-        <button class="detail-plus-cta" data-detail="getplus" hidden>🎁 Get free Plus</button>
+        <button class="detail-plus-cta" data-detail="getplus" hidden>Get free Plus</button>
         <button class="detail-icon detail-profile" data-detail="profile" hidden aria-label="Profile">👤</button>
         <button class="detail-icon detail-share" data-detail="share" aria-label="Share this building" title="Share"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg></button>
         <button class="detail-icon detail-fav" data-detail="fav" aria-label="Save">♡</button>
@@ -1495,7 +1527,7 @@
   </div>
 </div>
 <script src="/static/leaflet/leaflet.js"></script>
-<script src="/static/markercluster/markercluster.js"></script>
+<script src="/static/supercluster/supercluster.min.js"></script>
 <script src="/static/supabase/supabase.js"></script>
 <!-- ?v= busts the 7-day JS browser cache — bump it whenever a key in config.js rotates -->
 <script src="../config.js?v=2"></script>
@@ -1703,6 +1735,7 @@
   };
   const CITY = CITIES[document.documentElement.dataset.city || 'nyc'] || CITIES.nyc;
   const IS_NYC = !!CITY.nyc;
+  const BORO_LONG = { M: 'Manhattan', Bk: 'Brooklyn', Q: 'Queens', Bx: 'the Bronx', SI: 'Staten Island' };
   // Wording for a record's `mr` (a reported/registered rent, never an asking rent).
   // Each city phrases it differently — SF reports at the block, DC registers a legal rent.
   const RENT = CITY.rent || {
@@ -1844,6 +1877,104 @@
     if (FAVS.size) { badge.textContent = FAVS.size; badge.style.display = ''; }
     else { badge.style.display = 'none'; }
   }
+  // ---------- my apartment (the visitor's own building) ----------
+  // A renter who is not searching still has one building they care about:
+  // the one they live in. Pinning it gives a standing view (status,
+  // violations, landlord, what changed since they last looked) and saves it,
+  // so the alert engine watches it. Stored in localStorage and, when signed
+  // in, on user_metadata.home_bbl (same pattern as the theme — no table).
+  const HOME_KEY = 'fac_home';
+  let HOME = null;   // {bbl, set_at, snap:{vo,co,listed,s8,at}}
+  try { HOME = JSON.parse(localStorage.getItem(HOME_KEY) || 'null'); } catch (e) { HOME = null; }
+  if (HOME && !/^\d{10}$/.test(String(HOME.bbl || ''))) HOME = null;
+  function homeSnap(rec) {
+    const h = rec.h || {};
+    return { vo: (h.violations || {}).open || 0, co: (h.complaints || {}).open || 0,
+             listed: (typeof listingCounts !== 'undefined' && listingCounts[rec.bbl]) ? 1 : 0,
+             s8: (typeof s8Avail !== 'undefined' && s8Avail[rec.bbl]) ? 1 : 0, at: Date.now() };
+  }
+  function saveHome() {
+    try { if (HOME) localStorage.setItem(HOME_KEY, JSON.stringify(HOME)); else localStorage.removeItem(HOME_KEY); } catch (e) {}
+    if (supaClient && authUser) supaClient.auth.updateUser({ data: { home_bbl: HOME ? HOME.bbl : null } }).then(() => {}, () => {});
+  }
+  function homeRec() {
+    if (!HOME) return null;
+    return (typeof recByBbl !== 'undefined' && recByBbl.get(HOME.bbl)) || null;
+  }
+  function syncHomeUI() {
+    const pill = document.getElementById('pill-home');
+    if (pill) pill.hidden = !HOME;
+    const sub = document.getElementById('profile-home-sub'), btn = document.getElementById('profile-home-btn');
+    const rec = homeRec();
+    if (sub && btn) {
+      if (rec) { sub.textContent = rec.a + (rec.nb ? ' · ' + rec.nb : '') + '. Saved and watched — you get an email when it changes.'; btn.textContent = 'Open →'; }
+      else { sub.textContent = 'Not set. Search your address, open the building and tap “This is my apartment”.'; btn.textContent = 'Find it →'; }
+    }
+  }
+  function setHome(rec) {
+    HOME = { bbl: rec.bbl, set_at: Date.now(), snap: homeSnap(rec) };
+    saveHome();
+    // Your own building is the one you most want watched.
+    if (!FAVS.has(rec.bbl)) { FAVS.add(rec.bbl); saveFavs(); updateFavBadge(); persistFav(rec.bbl, true); }
+    syncHomeUI();
+    track('home_set', { bbl: rec.bbl, boro: rec.b });
+  }
+  function clearHome() {
+    const bbl = HOME && HOME.bbl;
+    HOME = null; saveHome(); syncHomeUI();
+    track('home_clear', { bbl });
+  }
+  function openHome() {
+    const rec = homeRec();
+    if (!rec) {
+      if (HOME) clearHome();
+      showPlusToast('Search your address, open the building, and tap “This is my apartment”.');
+      const q = document.getElementById('q'); if (q) q.focus();
+      return;
+    }
+    track('home_open', { bbl: rec.bbl });
+    setListOpen(false);
+    openDetail(rec, listingCounts[rec.bbl] || 0);
+  }
+  function adoptAccountHome(user) {
+    const b = user && user.user_metadata && user.user_metadata.home_bbl;
+    if (!HOME && b && /^\d{10}$/.test(String(b))) {
+      HOME = { bbl: String(b), set_at: Date.now(), snap: null };
+      try { localStorage.setItem(HOME_KEY, JSON.stringify(HOME)); } catch (e) {}
+      syncHomeUI();
+    }
+  }
+  // "Since your last visit" — the diff between the snapshot taken the last
+  // time this building was opened as home and what the map knows now.
+  function homeChanges(rec) {
+    const prev = HOME && HOME.snap, cur = homeSnap(rec), out = [];
+    if (!prev) return { out, prev: null };
+    if (cur.vo > prev.vo) out.push(`<b class="up">+${cur.vo - prev.vo} open violation${cur.vo - prev.vo === 1 ? '' : 's'}</b> (${cur.vo} now)`);
+    else if (cur.vo < prev.vo) out.push(`<b class="down">${prev.vo - cur.vo} violation${prev.vo - cur.vo === 1 ? '' : 's'} cleared</b> (${cur.vo} open)`);
+    if (cur.co > prev.co) out.push(`<b class="up">+${cur.co - prev.co} open complaint${cur.co - prev.co === 1 ? '' : 's'}</b>`);
+    else if (cur.co < prev.co) out.push(`<b class="down">${prev.co - cur.co} complaint${prev.co - cur.co === 1 ? '' : 's'} closed</b>`);
+    if (cur.listed && !prev.listed) out.push('<b class="up">advertised for rent</b>');
+    if (cur.s8 && !prev.s8) out.push('<b class="up">listed for voucher holders</b>');
+    return { out, prev };
+  }
+  function homeBlock(rec) {
+    if (!IS_NYC || !HOME || HOME.bbl !== rec.bbl) return '';
+    const { out, prev } = homeChanges(rec);
+    const when = d => new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    const since = prev ? `Since your last visit (${when(prev.at)}): ${out.length ? out.join(', ') : 'nothing has changed'}.`
+                       : `Pinned ${when(HOME.set_at)}. Next time you open it, this line says what changed.`;
+    const statuses = (rec.s || []).length ? `Registered rent-stabilized with DHCR (${esc((rec.s || []).join(', '))}).` : 'Registered rent-stabilized with DHCR.';
+    return `<div class="d-home" data-sec="home">
+      <div class="d-home-title">🏠 Your apartment <button type="button" class="d-home-change" data-detail="unhome">Change</button></div>
+      <div class="d-home-line">${statuses} A registered building does not guarantee <i>your</i> unit is stabilized — only the rent history settles it, and it is free to request.</div>
+      <div class="d-home-line">${since}</div>
+      <div class="d-home-line">We email you when this building is advertised, gets a lottery or re-rental, or its violations change.</div>
+      <div class="d-home-links">
+        <a href="https://hcr.ny.gov/records-access" target="_blank" rel="noopener">Request your rent history (HCR) ↗</a>
+        <a href="https://www.nyc.gov/site/cchr/about/report-discrimination.page" target="_blank" rel="noopener">Tenant rights ↗</a>
+      </div>
+    </div>`;
+  }
   // when signed in, mirror each heart toggle to the user's Supabase account
   let supaClient = null, authUser = null, pendingPhoneBbl = null, plusActive = false;
   // Set by ?plus=1 below; consumed by refreshPlus() once membership is known.
@@ -1878,7 +2009,7 @@
   // traffic). Alerts, phones, research, folders, and saved searches stay Plus.
   function gateSave(isUnsave) {
     if (isUnsave) return true;
-    if (!authUser) { openAuthModal('Create a free account or sign in to save the buildings you like.'); return false; }
+    if (!authUser) { openAuthModal('Create a free account to save this building — you’ll get an email when it’s advertised, a lottery or re-rental opens here, or its violations change. Never more than one email a day.'); return false; }
     return true;
   }
   async function persistFav(bbl, on) {
@@ -1889,8 +2020,11 @@
       // just means it's already saved, which is the desired state.
       if (on) await supaClient.from('saved_buildings').insert({ user_id: authUser.id, bbl });
       else await supaClient.from('saved_buildings').delete().eq('user_id', authUser.id).eq('bbl', bbl);
-      if (on && plusActive) showFolderToast(bbl);   // offer to file it right away
-      else if (on && !plusActive) maybeAlertsUpsell();  // free save = natural Plus moment
+      // Saving IS subscribing: every saver, free or Plus, gets an email when
+      // the building changes (saved_alerts.py). Say so once per session so the
+      // save reads as "we're watching it", then offer Plus members a folder.
+      if (on && plusActive) showFolderToast(bbl);
+      else if (on) confirmWatchToast();
       if (!on) { delete FAVCATS[bbl]; renderFolderBar(); }
     } catch (e) { console.warn('fav sync failed', e); }
   }
@@ -1939,7 +2073,7 @@
     const opts = CATS.map(c =>
       `<button type="button" data-cat="${c.id}">📁 ${escT(c.name)}</button>`).join('');
     t.innerHTML = `<button type="button" class="ft-close" aria-label="Dismiss">✕</button>
-      <div class="ft-title">♥ Saved — add it to a folder?</div>
+      <div class="ft-title">♥ Saved — we’ll email you when it changes. Add it to a folder?</div>
       <div class="ft-opts">${opts}<button type="button" data-newcat>＋ New folder…</button></div>`;
     document.body.appendChild(t);
     const timer = setTimeout(dismissFolderToast, 12000);
@@ -1957,19 +2091,19 @@
   }
   function dismissFolderToast() { document.getElementById('folder-toast')?.remove(); }
   // shown at most once per session, right after a free user saves a building
-  function maybeAlertsUpsell() {
-    try { if (sessionStorage.getItem('fac_upsell')) return; sessionStorage.setItem('fac_upsell', '1'); } catch (e) {}
+  function confirmWatchToast() {
+    try { if (sessionStorage.getItem('fac_watch_toast')) return; sessionStorage.setItem('fac_watch_toast', '1'); } catch (e) {}
     dismissFolderToast();
     const t = document.createElement('div');
     t.className = 'folder-toast'; t.id = 'folder-toast';
     t.innerHTML = `<button type="button" class="ft-close" aria-label="Dismiss">✕</button>
-      <div class="ft-title">♥ Saved!</div>
-      <div style="font-size:13px;margin-bottom:9px">Plus members get an email the moment a saved building lists an apartment.</div>
-      <div class="ft-opts"><button type="button" data-upsell-cta>See Plus — $4.99/mo</button></div>`;
+      <div class="ft-title">♥ Saved — we’ll watch it for you</div>
+      <div style="font-size:13px;margin-bottom:9px">You’ll get an email when it’s advertised for rent, a lottery or re-rental opens here, its rent drops, or its HPD violations change. Never more than one email a day.</div>
+      <div class="ft-opts"><button type="button" data-watch-settings>Alert settings</button></div>`;
     document.body.appendChild(t);
     const timer = setTimeout(dismissFolderToast, 12000);
     t.addEventListener('click', e => {
-      if (e.target.closest('[data-upsell-cta]')) { clearTimeout(timer); dismissFolderToast(); openPaywall(null); }
+      if (e.target.closest('[data-watch-settings]')) { clearTimeout(timer); dismissFolderToast(); openProfile(); }
       else if (e.target.closest('.ft-close')) { clearTimeout(timer); dismissFolderToast(); }
     });
   }
@@ -2049,7 +2183,7 @@
     // the concrete payoff (a saved shortlist that syncs), not a generic ask
     t.innerHTML = `<button type="button" class="ft-close" aria-label="Dismiss">✕</button>
       <div class="ft-title">🏠 Comparing a few buildings?</div>
-      <div style="font-size:13px;margin-bottom:9px">Save your shortlist to a free account — it syncs to your phone and you can pick up right where you left off.</div>
+      <div style="font-size:13px;margin-bottom:9px">Save your shortlist to a free account and we’ll email you when any of them is advertised, gets a lottery or re-rental, or its violations change.</div>
       <div class="ft-opts"><button type="button" data-nudge-cta>Create a free account</button></div>`;
     document.body.appendChild(t);
     const timer = setTimeout(() => t.remove(), 15000);
@@ -2164,6 +2298,12 @@
     if (btn) btn.addEventListener('click', () => location.reload());
   }
 
+  // The visitor's own area, from the network — resolved server-side, no
+  // browser permission prompt (see /api/geo). Started here so it is back by
+  // the time the map has something to show; consumed after the first paint.
+  const geoPromise = (IS_NYC && !location.hash && !location.search && !isBot())
+    ? fetch('/api/geo', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null)
+    : Promise.resolve(null);
   let data, listingsBlob, s8Blob, FMR;
   try {
     [data, listingsBlob, s8Blob, FMR] = await Promise.all([
@@ -2227,28 +2367,145 @@
     : '';
 
   // ---------- markers ----------
-  const cluster = L.markerClusterGroup({
-    chunkedLoading: true,
-    // Indexing 47k markers into the cluster tree is where load-time actually
-    // goes — ~2 s of work, dwarfing the parse (~100 ms) and the marker build
-    // (~60 ms). chunkedLoading already splits it, but the stock 200 ms slice
-    // is four times the 50 ms threshold at which a task starts being felt as
-    // a freeze, so each slice showed up as jank. Cutting the slice to 40 ms
-    // keeps every one of them under that line; the extra yields cost a little
-    // total time in exchange for a page that stays responsive throughout.
-    chunkInterval: 40,
-    chunkDelay: 10,
-    spiderfyOnMaxZoom: true,
-    maxClusterRadius: 60,
-    iconCreateFunction: (c) => {
-      const n = c.getChildCount();
-      const w = String(n).length * 8 + 22;
-      return L.divIcon({
-        html: `<div class="price-pill">${n.toLocaleString()}</div>`,
-        className: '', iconSize: [w, 22], iconAnchor: [w/2, 11],
-      });
-    },
-  });
+  // Pins are rendered for the viewport only. The previous Leaflet.markercluster
+  // setup built an L.Marker for all 47k buildings up front and indexed every
+  // one of them at every zoom level: ~570 MB of web-process memory on load and
+  // a ~90 MB spike on every borough change, measured in WebKit. Mobile Safari
+  // kills the tab past that line ("A problem repeatedly occurred") — 20 of 66
+  // landing visitors in the fortnight before this reloaded within minutes,
+  // several right after picking Brooklyn or the Bronx. Supercluster keeps a
+  // typed-array index (a few MB) and marker objects exist only for what is on
+  // screen; the cluster pills look and behave as before.
+  const SC_MAX_ZOOM = 17;          // clusters exist up to this zoom; past it every pin stands alone
+  const PIN_RADIUS = 60;           // px — the radius markercluster used
+  function clusterIcon(n) {
+    const w = String(n).length * 8 + 22;
+    return L.divIcon({
+      html: `<div class="price-pill">${n.toLocaleString()}</div>`,
+      className: '', iconSize: [w, 22], iconAnchor: [w/2, 11],
+    });
+  }
+  const pinLayer = L.layerGroup().addTo(map);
+  let sc = null;                   // Supercluster index over the current filtered set
+  let scAll = null;                // cached index for the whole city, the common case
+  const shown = new Map();         // key -> marker currently on the map
+  const toFeature = rec => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [rec.lng, rec.lat] }, properties: { bbl: rec.bbl } });
+  function buildIndex(recs) {
+    return new Supercluster({ radius: PIN_RADIUS, maxZoom: SC_MAX_ZOOM, minPoints: 2 }).load(recs.map(toFeature));
+  }
+  function setPins(recs) {
+    if (recs.length === data.length) { scAll = scAll || buildIndex(recs); sc = scAll; }
+    else sc = recs.length ? buildIndex(recs) : null;
+    unspiderfy();
+    renderPins();
+  }
+  function zoomNow() { return Math.round(map.getZoom()); }
+  function renderPins() {
+    const want = new Map();
+    if (sc) {
+      const z = zoomNow();
+      const b = map.getBounds().pad(0.25);
+      const items = sc.getClusters([b.getWest(), b.getSouth(), b.getEast(), b.getNorth()], Math.min(z, SC_MAX_ZOOM + 1));
+      if (z <= SC_MAX_ZOOM) {
+        for (const it of items) {
+          if (it.properties.cluster) want.set('c' + it.properties.cluster_id, it);
+          else want.set('b' + it.properties.bbl, it);
+        }
+      } else {
+        // Past the clustering zoom, buildings that share one coordinate would
+        // stack invisibly; they become one pill that fans out on tap.
+        const groups = new Map();
+        for (const it of items) {
+          const k = it.geometry.coordinates[1].toFixed(6) + ',' + it.geometry.coordinates[0].toFixed(6);
+          if (!groups.has(k)) groups.set(k, []);
+          groups.get(k).push(it);
+        }
+        for (const [k, g] of groups) {
+          if (g.length === 1) want.set('b' + g[0].properties.bbl, g[0]);
+          else want.set('g' + k, g);
+        }
+      }
+    }
+    for (const [k, m] of shown) {
+      if (want.has(k)) continue;
+      if (spider && m === spider.pill) continue;   // fanned out: leave it until the zoom changes
+      pinLayer.removeLayer(m); shown.delete(k);
+    }
+    for (const [k, it] of want) {
+      if (shown.has(k)) continue;
+      let m;
+      if (k[0] === 'b') { m = markerFor(it.properties.bbl); if (!m) continue; }
+      else if (k[0] === 'c') {
+        const ll = [it.geometry.coordinates[1], it.geometry.coordinates[0]];
+        const id = it.properties.cluster_id;
+        m = L.marker(ll, { icon: clusterIcon(it.properties.point_count) });
+        m.on('click', () => map.setView(ll, Math.min(sc.getClusterExpansionZoom(id), SC_MAX_ZOOM + 1), { animate: false }));
+      } else {
+        const ll = [it[0].geometry.coordinates[1], it[0].geometry.coordinates[0]];
+        m = L.marker(ll, { icon: clusterIcon(it.length) });
+        m._group = it.map(f => f.properties.bbl);
+        m.on('click', () => spiderfy(m));
+      }
+      pinLayer.addLayer(m); shown.set(k, m);
+    }
+    trimMarkerCache();
+  }
+  // Same-spot group: fan the buildings out on a ring with legs back to the
+  // point, the way markercluster spiderfied. Collapses when the zoom changes
+  // or the map is tapped; panning keeps it, so opening a card does not lose it.
+  let spider = null;
+  function spiderfy(pill) {
+    unspiderfy();
+    const c = map.latLngToLayerPoint(pill.getLatLng());
+    const n = pill._group.length;
+    const r = Math.max(36, 10 + n * 6);
+    const leaves = [], legs = [];
+    pill._group.forEach((bbl, i) => {
+      const m = markerFor(bbl); if (!m) return;
+      const a = 2 * Math.PI * i / n;
+      const ll = map.layerPointToLatLng(L.point(c.x + r * Math.cos(a), c.y + r * Math.sin(a)));
+      m._home = m.getLatLng(); m.setLatLng(ll);
+      const leg = L.polyline([pill.getLatLng(), ll], { color: '#222', weight: 1.5, opacity: 0.5, interactive: false });
+      pinLayer.addLayer(leg); pinLayer.addLayer(m);
+      leaves.push(m); legs.push(leg);
+    });
+    pinLayer.removeLayer(pill);
+    spider = { pill, leaves, legs };
+  }
+  function unspiderfy() {
+    if (!spider) return;
+    spider.legs.forEach(l => pinLayer.removeLayer(l));
+    spider.leaves.forEach(m => { pinLayer.removeLayer(m); if (m._home) { m.setLatLng(m._home); m._home = null; } });
+    pinLayer.addLayer(spider.pill);   // renderPins drops it again if the view moved on
+    spider = null;
+  }
+  map.on('zoomstart', unspiderfy);
+  map.on('click', unspiderfy);
+  map.on('moveend', renderPins);
+  // Is this building hidden inside a cluster at zoom z?
+  function pinClusteredAt(rec, z) {
+    if (!sc || z > SC_MAX_ZOOM) return false;
+    const d = 2 * PIN_RADIUS * 360 / (512 * Math.pow(2, z));
+    const items = sc.getClusters([rec.lng - d, rec.lat - d, rec.lng + d, rec.lat + d], z);
+    return items.some(it => it.properties.cluster && sc.getLeaves(it.properties.cluster_id, Infinity).some(l => l.properties.bbl === rec.bbl));
+  }
+  // Zoom just far enough that this building's own pin is on screen, then cb —
+  // what cluster.zoomToShowLayer did.
+  function showPin(m, cb) {
+    const rec = m._rec, ll = L.latLng(rec.lat, rec.lng);
+    let z = zoomNow();
+    while (z <= SC_MAX_ZOOM && pinClusteredAt(rec, z)) z++;
+    let fired = false;
+    const done = () => {
+      if (fired) return; fired = true;
+      renderPins();
+      for (const pm of shown.values()) if (pm._group && pm._group.includes(rec.bbl)) { spiderfy(pm); break; }
+      if (cb) cb();
+    };
+    map.once('moveend', done);
+    map.setView(ll, z, { animate: false });
+    done();
+  }
 
   // Zillow-style pills for EVERY building — uniform height, easy to tap.
   // Listed buildings: blue pill with the asking rent (or "N listed");
@@ -2277,19 +2534,13 @@
   }
 
   const isMobile = window.matchMedia('(max-width: 900px)').matches;
+  // Marker objects are made on demand — for the pins in view, the open card,
+  // a deep link — and cached; recByBbl answers every "which building is this"
+  // lookup without one.
   const markerByBbl = new Map();
-  // Building every marker in one uninterrupted pass blocked the main thread for
-  // ~550 ms on a throttled CPU, right after load, which reads as a frozen page.
-  // Same markers, same order — just handed back to the browser every batch so
-  // it can paint and answer clicks. Everything downstream still awaits the full
-  // set, so nothing observes a half-built markerByBbl.
-  const MARKER_BATCH = 2000;
-  const yieldToBrowser = () => (window.scheduler && scheduler.yield)
-    ? scheduler.yield()
-    : new Promise(res => setTimeout(res, 0));
-  for (let i = 0; i < data.length; i++) {
-    const rec = data[i];
-    if (i && i % MARKER_BATCH === 0) await yieldToBrowser();
+  const recByBbl = new Map();
+  for (const rec of data) recByBbl.set(rec.bbl, rec);
+  function buildMarker(rec) {
     const listed = listingCounts[rec.bbl] || 0;
     const m = L.marker([rec.lat, rec.lng], { icon: null });
     m._rec = rec;
@@ -2307,14 +2558,36 @@
       // click rather than the map's popupopen so it does not depend on the
       // popup lifecycle — and deliberately NOT selectMarker(), because that
       // swaps the icon, and re-anchoring an icon mid-open can drop the popup.
-      m.on('click', () => highlightCard(rec.bbl, true));
+      m.on('click', () => { highlightCard(rec.bbl, true); openDetail(rec, m._listed || 0); });
       // Pointer on the pin -> its tile in the results pane lights up green,
       // scrolled into view only if it is off-screen (sweeping the cursor across
       // a dense block must not yank the list around).
       m.on('mouseover', () => hoverCard(rec.bbl));
       m.on('mouseout', () => hoverCard(null));
     }
-    markerByBbl.set(rec.bbl, m);
+    return m;
+  }
+  function markerFor(bbl) {
+    let m = markerByBbl.get(bbl);
+    if (m) return m;
+    const rec = recByBbl.get(bbl);
+    if (!rec) return null;
+    m = buildMarker(rec); markerByBbl.set(bbl, m);
+    return m;
+  }
+  // A long pan session would otherwise rebuild the 47k-marker set one screen
+  // at a time. Keep what is on the map, selected or fanned out; drop the rest.
+  function trimMarkerCache() {
+    if (markerByBbl.size < 4000) return;
+    const keep = new Set();
+    for (const m of shown.values()) if (m._rec) keep.add(m._rec.bbl);
+    if (spider) spider.leaves.forEach(m => keep.add(m._rec.bbl));
+    let sel = null, card = null;
+    try { sel = selectedMarker; card = cardMarker; } catch (e) {}
+    for (const [bbl, m] of markerByBbl) {
+      if (keep.has(bbl) || m === sel || m === card) continue;
+      markerByBbl.delete(bbl);
+    }
   }
 
   // Desktop clicks a pin into a Leaflet popup and never goes through
@@ -2393,6 +2666,10 @@
              label: 'Search Zumper ↗', short: 'Search ↗', direct: false };
   }
 
+  // The desktop pin popup is a PREVIEW: address, the one-line facts, badges,
+  // and a Details button. The full HPD record (operator, violation classes,
+  // complaints) lives in the detail sheet, which a pin click also opens — the
+  // popup used to carry all of it and ran to 600px on a bad building.
   function buildPopup(rec, listed) {
     track('building_view', { bbl: rec.bbl, addr: rec.a, boro: rec.b, listed, via: 'popup' });
     const borough = BORO_NAME[rec.b] || '';
@@ -2419,11 +2696,11 @@
       ${vacHtml}
       ${s8Html(rec)}
       <div style="margin-top:6px">${statusHtml}</div>
-      ${CITY.idLabel ? `<div class="popup-meta" style="margin-top:6px">${CITY.idLabel} ${esc(idShort(rec))}</div>` : ''}
       ${noteHtml}
-      ${IS_NYC ? hpdHtml(rec) : ''}
+      ${IS_NYC ? cardHpdLine(rec) : ''}
       <div class="popup-actions">
-        <a class="primary" href="${esc(listing.href)}" target="_blank" rel="noopener">${listing.label}</a>
+        <a class="primary" href="#" data-popup-details>Details</a>
+        <a class="secondary" href="${esc(listing.href)}" target="_blank" rel="noopener">${listing.label}</a>
       </div>
     `;
   }
@@ -2456,7 +2733,7 @@
   // makes the UI tell the truth about it; deleting it would re-expose nothing.
   function signInForOperator() {
     return '<div class="hpd-row" style="color:var(--ink-2)">'
-      + '🔒 <a href="#" data-op-signin>Sign in</a> to see the owner, managing agent '
+      + '<a href="#" data-op-signin>Sign in</a> to see the owner, managing agent '
       + 'and head officer on file with HPD.</div>';
   }
   function operatorRows(c, bbl) {
@@ -2640,7 +2917,7 @@
     // Portfolio research (Plus): aggregates live in private tables, fetched via
     // the has_plus-gated get_research() RPC — non-subscribers get the paywall.
     const researchBtn = h.op
-      ? `<button type="button" class="hpd-research-btn" data-research data-bbl="${esc(rec.bbl)}">🔎 Research this owner &amp; agent</button>`
+      ? `<button type="button" class="hpd-research-btn" data-research data-bbl="${esc(rec.bbl)}">Research this owner &amp; agent</button>`
       : '';
     return `
       <div class="hpd-section">
@@ -2923,7 +3200,15 @@
       box.innerHTML = '<div class="hpd-viol-note" style="border:none">Couldn\'t reach NYC Open Data just now. Tap again to retry, or open the full HPD record below.</div>';
     });
   }
-  map.on('popupopen', e => { const el = e.popup.getElement(); if (el) wireHpdLegend(el); });
+  map.on('popupopen', e => {
+    const el = e.popup.getElement(); if (!el) return;
+    wireHpdLegend(el);
+    const m = e.popup._source;
+    el.querySelector('[data-popup-details]')?.addEventListener('click', ev => {
+      ev.preventDefault();
+      if (m && m._rec) openDetail(m._rec, m._listed || 0);
+    });
+  });
 
   // ---------- filters ----------
   const PRESET_NB = ['Bed-Stuy (West)', 'Bed-Stuy (East)', 'Williamsburg', 'East Village', 'SoHo', 'Nolita'];
@@ -4068,7 +4353,7 @@
       selectNeighborhood(m.name, m.boro);
       return;
     }
-    const mk = markerByBbl.get(m.rec.bbl);
+    const mk = markerFor(m.rec.bbl);
     if (!mk) return;
     qInput.value = m.rec.a;
     qInput.blur();
@@ -4279,8 +4564,7 @@
     searchState = { q, tier, relaxed, label, note, suggest, hidden };
 
     filtered = recs;
-    cluster.clearLayers();
-    cluster.addLayers(filtered.map(r => markerByBbl.get(r.bbl)).filter(Boolean));
+    setPins(filtered);
 
     // Frame the result when the query picked out something rather than the
     // whole city — a neighbourhood filter, an area word, an address, a street,
@@ -4298,6 +4582,10 @@
   }
 
   const MAX_CARDS = 200;
+  // BBL of the building whose pin is open on the map (see "map ⇄ list" below).
+  // Declared up here because refreshGrid() reads it to pin that building's
+  // card to the first slot of the list.
+  let selectedBbl = null;
 
   // ---------- in-feed ads (Google AdSense) ----------
   // Paste your AdSense IDs after the site is approved to switch ads on.
@@ -4759,7 +5047,17 @@
         });
       }
     }
-    const totalListings = visible.reduce((s, r) => s + (listingCounts[r.bbl]||0), 0);
+    // The building whose pin is open goes first, ahead of the promo tiles and
+    // clear of the 200-card cap. Before this it kept its sorted position, so
+    // on a dense block (1,000+ buildings in view) the clicked building was
+    // usually past the cap and the list showed nothing at all for the click.
+    let pinned = null;
+    if (selectedBbl != null) {
+      const i = visible.findIndex(r => r.bbl === selectedBbl);
+      if (i >= 0) pinned = visible.splice(i, 1)[0];
+    }
+    const totalListings = visible.reduce((s, r) => s + (listingCounts[r.bbl]||0), 0) + (pinned ? (listingCounts[pinned.bbl]||0) : 0);
+    if (pinned) visible.unshift(pinned);
     if (resultsSub) resultsSub.textContent = citywide
       ? `${visible.length.toLocaleString()} building${visible.length === 1 ? ' matches' : 's match'} across NYC · ${totalListings.toLocaleString()} recently advertised on Zumper`
       : `${visible.length.toLocaleString()} buildings in view · ${filtered.length.toLocaleString()} match filters · ${totalListings.toLocaleString()} recently advertised on Zumper`;
@@ -4774,6 +5072,9 @@
     grid.classList.remove('empty-state');
     const truncated = visible.length > MAX_CARDS;
     const shown = truncated ? visible.slice(0, MAX_CARDS) : visible;
+    // pinned is visible[0] at this point, so it survives the cap; take it out
+    // of the paged run so it can lead the list ahead of the promo tiles.
+    if (pinned) shown.shift();
     // Saved is the user's own shortlist and a shared folder is someone else's:
     // both are lists a person built on purpose, and nobody's advertising
     // belongs inside one. A saved list of a single building was leading with a
@@ -4790,6 +5091,7 @@
     // buildings. It goes first because it is the only inventory on this page
     // someone can actually apply to today — burying it eight cards down meant
     // most visitors never scrolled to one.
+    if (pinned) parts.push(cardHtml(pinned));
     if (promos) parts.push(nextFeatured());
     // Housing Connect takes the second slot on every render. hcCursor was just
     // reset, and the pool is sorted by soonest deadline, so the lead tile is
@@ -4900,7 +5202,7 @@
       return;
     }
     const bbl = card.dataset.bbl;
-    const m = markerByBbl.get(bbl);
+    const m = markerFor(bbl);
     if (!m) return;
     const rec = m._rec;
     const action = e.target.dataset.action;
@@ -4927,8 +5229,8 @@
     // "View on map" button → jump to the pin (card on mobile, popup on desktop)
     if (action === 'map') {
       e.preventDefault(); flyTo();
-      if (isMobile) { setListOpen(false); cluster.zoomToShowLayer(m, () => openCard(m)); }
-      else if (m.openPopup) { cluster.zoomToShowLayer(m, () => m.openPopup()); }
+      if (isMobile) { setListOpen(false); showPin(m, () => openCard(m)); }
+      else if (m.openPopup) { showPin(m, () => m.openPopup()); }
       return;
     }
     // tapping the card → Zillow-style detail (full page on mobile, centered
@@ -4938,7 +5240,6 @@
     openDetail(rec, listed);
   });
 
-  map.addLayer(cluster);
   map.on('moveend', refreshGrid);
 
   // ---------- Saved (favorites) filter chip ----------
@@ -5043,7 +5344,6 @@
   // Tracked by BBL rather than by element, because the list re-renders on every
   // map move — holding the node would leave a stale reference to something no
   // longer in the document, and the highlight would silently vanish on a pan.
-  let selectedBbl = null;
   function paintCardHighlight() {
     const prev = grid.querySelector('.card.is-selected');
     if (prev) prev.classList.remove('is-selected');
@@ -5054,14 +5354,15 @@
   }
   function highlightCard(bbl, scroll) {
     selectedBbl = bbl || null;
+    // The selected building is rendered as the first tile (refreshGrid pins
+    // it), so unless it is already there the list has to be rebuilt.
+    const first = grid.querySelector('.card[data-bbl]');
+    if (selectedBbl != null && (!first || first.dataset.bbl !== String(selectedBbl))) {
+      refreshGrid();
+    }
     const el = paintCardHighlight();
     if (!el || !scroll) return;
-    // Only scroll when it isn't already visible. Yanking the list under the
-    // cursor on every pin click is worse than leaving it where it is.
-    const r = el.getBoundingClientRect(), host = grid.getBoundingClientRect();
-    if (r.top < host.top || r.bottom > host.bottom) {
-      el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    }
+    grid.scrollTo({ top: 0, behavior: 'smooth' });
   }
   function clearCardHighlight() { selectedBbl = null; paintCardHighlight(); }
   // Hover mirror of the click highlight above. Same BBL-not-node rule: the
@@ -5172,9 +5473,9 @@
     const v = rec.h && rec.h.violations;
     if (!v) return '';
     const open = v.open || 0;
-    if (open === 0) return `<div class="d-health ok">✅ No open HPD violations on record</div>`;
+    if (open === 0) return `<div class="d-health ok">No open HPD violations on record</div>`;
     const cls = v.c ? 'bad' : 'warn';
-    return `<div class="d-health ${cls}">⚠️ ${open} open HPD violation${open === 1 ? '' : 's'}`
+    return `<div class="d-health ${cls}">${open} open HPD violation${open === 1 ? '' : 's'}`
       + (v.c ? ` · ${v.c} hazardous (Class C)` : '') + ` — see details below</div>`;
   }
   function renderDetail(rec, listed) {
@@ -5213,22 +5514,23 @@
     const title = rec.nb || borough || CITY.label;
     const addrLine = [rec.a, [borough, rec.z].filter(Boolean).join(' ')].filter(Boolean).join(', ');
     const spec = [
-      ['🏢', rec.u != null ? rec.u : '—', rec.u === 1 ? 'unit' : 'units'],
-      ['⚠️', violTotal != null ? violTotal : '—', violTotal === 1 ? 'violation' : 'violations'],
-      ['🏗️', rec.yr || '—', ''],
+      [rec.u != null ? rec.u : '—', rec.u === 1 ? 'unit' : 'units'],
+      [violTotal != null ? violTotal : '—', violTotal === 1 ? 'violation' : 'violations'],
+      [rec.yr || '—', 'built'],
     ];
     return `
       <div class="d-hero" data-sec="photo">
         <img class="d-photo" src="${sv}" alt="" onerror="this.style.visibility='hidden'">
         <div class="d-spec">
-          ${spec.map(([ic, v, l]) => `<div class="d-spec-item"><span class="d-spec-ico">${ic}</span><span class="d-spec-txt"><b>${esc(String(v))}</b>${l ? ' ' + l : ''}</span></div>`).join('')}
+          ${spec.map(([v, l]) => `<div class="d-spec-item"><span class="d-spec-txt">${l === 'built' ? 'built <b>' + esc(String(v)) + '</b>' : '<b>' + esc(String(v)) + '</b>' + (l ? ' ' + l : '')}</span></div>`).join('')}
         </div>
       </div>
       <div class="d-head" data-sec="header">
         <h2 class="d-title">${esc(title)}</h2>
         <div class="d-tagline"><span class="d-tag">${esc(CITY.label)}</span>${est ? ` <span class="d-dot">·</span> <span class="d-est" title="${esc(EST_TITLE)}">${est}</span>` : ''}</div>
-        <div class="d-addr"><span class="d-pin">📍</span> ${esc(addrLine)}</div>
+        <div class="d-addr">${esc(addrLine)}</div>
       </div>
+      ${homeBlock(rec)}
       <div class="agent-card" data-sec="agent" data-agentcard="${esc(rec.bbl)}">${agentCardInner(rec.bbl, !!(rec.h && rec.h.op))}</div>
       <!-- Save lives in the header heart only (the full-width Save row was
            removed 2026-09-05 as a duplicate). The listing link is first: it is
@@ -5237,6 +5539,9 @@
       ${IS_NYC ? `<div class="d-actions" data-sec="actions">
         <button class="d-viol ${viol.tone}" data-detail="violations" title="${esc(viol.title)}">${viol.label}</button>
       </div>` : ''}
+      ${IS_NYC && !(HOME && HOME.bbl === rec.bbl) ? `<div class="d-actions" style="padding-top:0">
+        <button class="d-secondary" data-detail="home" title="Pin your own building: a standing view of its status, violations and landlord, and an email when anything changes">This is my apartment</button>
+      </div>` : ''}
       <div class="d-actions"${IS_NYC ? ' style="padding-top:0"' : ' data-sec="actions"'}>
         <a class="d-secondary" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.label}</a>
       </div>
@@ -5244,10 +5549,10 @@
         <button class="d-secondary" data-detail="map">View on map</button>
       </div>
       <div class="d-actions d-dir-row" style="padding-top:0">
-        <button class="d-secondary" data-detail="directions">🧭 Driving directions</button>
+        <button class="d-secondary" data-detail="directions">Driving directions</button>
       </div>
       ${IS_NYC ? `<div class="d-actions" style="padding-top:0">
-        <button class="d-secondary" data-detail="complaints">📣 Building (HPD) Complaints${compTotal != null ? ' · ' + compTotal : ''}</button>
+        <button class="d-secondary" data-detail="complaints">Building (HPD) Complaints${compTotal != null ? ' · ' + compTotal : ''}</button>
       </div>` : ''}
       ${IS_NYC ? `<div class="d-section" data-sec="vouchers"><h3>Housing vouchers (Section 8)</h3>
         ${s8Html(rec) || '<div class="d-sub" style="margin:0">No voucher listing or subsidy record for this building right now.</div>'}
@@ -5274,14 +5579,26 @@
     // The boot file only carries open counts, and omits the block entirely for
     // a building with nothing open — which is exactly what a clean building
     // looks like too. Don't call it green until the all-time blob says so.
-    if (!HPD_FULL && (!v || total == null)) return { tone: '', label: `⚠️ Violations${v && v.open ? ' (' + v.open + ' open)' : ''}`, title: 'Loading the full HPD record…' };
-    if (!v) return { tone: 'green', label: '✅ No violations on record', title: 'HPD has no violations on file for this building' };
-    if (!total) return { tone: 'green', label: '✅ No violations on record', title: 'HPD has no violations on file for this building' };
+    if (!HPD_FULL && (!v || total == null)) return { tone: '', label: `Violations${v && v.open ? ' (' + v.open + ' open)' : ''}`, title: 'Loading the full HPD record…' };
+    if (!v) return { tone: 'green', label: 'No violations on record', title: 'HPD has no violations on file for this building' };
+    if (!total) return { tone: 'green', label: 'No violations on record', title: 'HPD has no violations on file for this building' };
     const hasYtd = v.ytd != null;
     const recent = hasYtd ? v.ytd : (v.last_12mo || 0);
     const window_ = hasYtd ? `in ${yr}` : 'in the last 12 months';
-    if (recent > 0) return { tone: 'red', label: `🚨 Violations (${total}) · ${recent} ${window_}`, title: `HPD cited this building ${recent} time${recent === 1 ? '' : 's'} ${window_}` };
-    return { tone: 'yellow', label: `⚠️ Violations (${total}) · none ${window_}`, title: `${total} on record, none ${window_}` };
+    const open = v.open || 0;
+    // Colour follows what is OPEN, not what was issued. 906 E 141st St had
+    // four citations in April 2026, every one dismissed a few weeks later, and
+    // the button was the same red as a building with four live class C
+    // hazards — then the sheet under it said "nothing open right now".
+    if (open > 0) {
+      const hazard = (v.oc || 0) > 0 || open > 5;
+      const openTxt = `${open} open`;
+      return { tone: hazard ? 'red' : 'yellow',
+        label: `Violations (${total}) · ${openTxt}${recent ? ` · ${recent} ${window_}` : ''}`,
+        title: `${open} open violation${open === 1 ? '' : 's'}${(v.oc || 0) ? `, ${v.oc} class C (immediately hazardous)` : ''}; ${total} on record` };
+    }
+    if (recent > 0) return { tone: 'green', label: `Violations (${total}) · ${recent} ${window_}, all closed`, title: `HPD cited this building ${recent} time${recent === 1 ? '' : 's'} ${window_}; every one has since been closed or dismissed` };
+    return { tone: 'green', label: `Violations (${total}) · none ${window_}`, title: `${total} on record, none ${window_}, nothing open` };
   }
 
   // What each registration status means, in plain words. NYC codes are the
@@ -5340,7 +5657,7 @@
     detailFavBtn.classList.toggle('faved', !!f);
     detailFavBtn.textContent = f ? '♥' : '♡';
     const cta = detailContent.querySelector('.d-actions [data-detail="fav"]');
-    if (cta) cta.innerHTML = f ? '♥ Saved to your list' : '♡ Save this building — free';
+    if (cta) cta.innerHTML = f ? '♥ Saved — watching it for you' : '♡ Save & get alerts — free';
   }
   // The detail sheet opens via JS, so on its own it adds no browser history —
   // which means the iOS edge-swipe-back gesture (and the browser Back button)
@@ -5383,7 +5700,7 @@
       if (d.checkout_url) { window.location.href = d.checkout_url; return; }
       throw new Error(d.error || 'unavailable');
     } catch (err) {
-      if (btn) { btn.disabled = false; btn.textContent = '📄 Get the full building report — $9'; }
+      if (btn) { btn.disabled = false; btn.textContent = 'Get the full building report — $9'; }
       alert('Sorry — checkout could not be opened just now. Please try again in a moment.');
     }
   }
@@ -5419,6 +5736,9 @@
     track('building_view', { bbl: rec.bbl, addr: rec.a, boro: rec.b, listed: detailListed, via: 'detail' });
     secSeen = new Set();
     detailContent.innerHTML = renderDetail(rec, detailListed);
+    // The "since your last visit" line was just rendered from the old
+    // snapshot; now this visit becomes the baseline for the next one.
+    if (HOME && HOME.bbl === rec.bbl) { HOME.snap = homeSnap(rec); try { localStorage.setItem(HOME_KEY, JSON.stringify(HOME)); } catch (e) {} }
     detailContent.scrollTop = 0;
     watchDetailSections(rec);
     syncDetailFav();
@@ -5567,15 +5887,27 @@
       saveFavs(); updateFavBadge(); syncDetailFav(); persistFav(rec.bbl, FAVS.has(rec.bbl));
       return;
     }
+    if (act === 'home') {
+      setHome(rec);
+      detailContent.innerHTML = renderDetail(rec, detailListed); watchDetailSections(rec); syncDetailFav(); loadComments(rec.bbl);
+      detailContent.scrollTop = 0;
+      showPlusToast('Pinned as your apartment — saved and watched. Find it any time under “My apartment”.');
+      return;
+    }
+    if (act === 'unhome') {
+      clearHome();
+      detailContent.innerHTML = renderDetail(rec, detailListed); watchDetailSections(rec); syncDetailFav(); loadComments(rec.bbl);
+      return;
+    }
     if (act === 'directions') { openDirections(rec); return; }
     if (act === 'share') { shareBuilding(rec, e.target.closest('[data-detail]')); return; }
     if (act === 'violations') { openViolSheet(rec); return; }
     if (act === 'complaints') { openCompSheet(rec); return; }
     if (act === 'report') { buyReport(rec, e.target.closest('[data-detail]')); return; }
     if (act === 'map') {
-      const m = markerByBbl.get(rec.bbl);
+      const m = markerFor(rec.bbl);
       closeDetail(); setListOpen(false);
-      if (m) { map.setView(m.getLatLng(), Math.max(map.getZoom(), 16), { animate: false }); cluster.zoomToShowLayer(m, () => openCard(m)); }
+      if (m) showPin(m, () => openCard(m));
       return;
     }
   });
@@ -5770,6 +6102,25 @@
   })();
   applyFilters();
   syncHeaderHeight();
+  // ---------- first view: open on the visitor's own area ----------
+  // Only on a bare landing (no hash, no query): a deep link, a search, a
+  // shared folder or an email click-through all know where they want to be.
+  geoPromise.then(g => {
+    if (!g || !g.ok || !g.boro || location.hash || location.search) return;
+    map.setView([g.lat, g.lng], 14, { animate: false });
+    const chip = document.createElement('div');
+    chip.className = 'geo-chip';
+    chip.innerHTML = `<span>📍 Showing ${esc(BORO_LONG[g.boro] || 'your area')}<span class="geo-src"> — from your network location</span></span>` +
+      `<button type="button" data-geo="all">Show all NYC</button>` +
+      `<button type="button" class="geo-x" data-geo="x" aria-label="Dismiss">✕</button>`;
+    document.getElementById('map').appendChild(chip);
+    chip.addEventListener('click', e => {
+      if (e.target.closest('[data-geo="all"]')) { map.setView(CITY.center, CITY.zoom, { animate: false }); track('geo_reset', { boro: g.boro }); }
+      if (e.target.closest('[data-geo]')) chip.remove();
+    });
+    setTimeout(() => { if (chip.isConnected) chip.remove(); }, 20000);
+    track('geo_start', { boro: g.boro });
+  });
   if (location.hash === '#list') setListOpen(true);
   // Ad landings (gclid) on mobile: open the results list straight away. The ad
   // headline promises a "list of buildings," but mobile otherwise lands on a
@@ -5777,13 +6128,22 @@
   // (vs 33% organic). Show them the photos+prices list they came for.
   if (isMobile && /[?&]gclid=/.test(location.search)) setListOpen(true);
   if (location.hash.startsWith('#b=')) {
-    const m = markerByBbl.get(location.hash.slice(3));
+    const m = markerFor(location.hash.slice(3));
     if (m) { map.setView(m.getLatLng(), 16, { animate: false }); openCard(m); }
   }
   if (location.hash.startsWith('#d=')) {
-    const m = markerByBbl.get(location.hash.slice(3));
+    const m = markerFor(location.hash.slice(3));
     if (m) openDetail(m._rec, m._listed || 0);
   }
+  // ---------- my apartment: entry points ----------
+  syncHomeUI();
+  document.getElementById('pill-home').addEventListener('click', openHome);
+  document.getElementById('pill-home').addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openHome(); } });
+  document.getElementById('profile-home-btn').addEventListener('click', () => {
+    document.getElementById('profile-modal').hidden = true;
+    openHome();
+  });
+  if (location.hash === '#home' && HOME) { history.replaceState({}, '', location.pathname + location.search); openHome(); }
 
   // ---------- auth: email sign in/up + saved-buildings sync ----------
   const authBtn = document.getElementById('auth-btn');
@@ -5938,13 +6298,17 @@
     const m = location.hash.match(/[#&]unsub=([0-9a-f-]{36})/i);
     if (!m || !supaClient) return;
     const lifecycle = /[#&]k=lifecycle\b/i.test(location.hash);
+    const digest = /[#&]k=digest\b/i.test(location.hash);
     history.replaceState({}, '', location.pathname + location.search);
     try {
       const { data, error } = await supaClient.rpc(
-        lifecycle ? 'unsubscribe_lifecycle' : 'unsubscribe_alerts', { p_token: m[1] });
+        lifecycle ? 'unsubscribe_lifecycle' : digest ? 'unsubscribe_digest' : 'unsubscribe_alerts',
+        { p_token: m[1] });
       if (error) throw error;
       const ok = lifecycle
         ? 'You’ve been unsubscribed from Find A Crib emails. Saved-building alerts still work.'
+        : digest
+        ? 'The weekly round-up is off. Alerts on your saved buildings still work.'
         : 'You’ve been unsubscribed from saved-building alerts.';
       showPlusToast(data ? ok
                          : 'That unsubscribe link isn’t valid — it may have already been used.');
@@ -6057,13 +6421,12 @@
     plan.classList.toggle('plus', plusActive);
     document.getElementById('profile-upgrade').hidden = plusActive;
     document.getElementById('profile-dark').checked = themeName() === 'dark';
+    syncHomeUI();
     profileAlerts.checked = false;
-    if (plusActive) {
-      try {
-        const { data } = await supaClient.rpc('get_alerts_enabled');
-        profileAlerts.checked = data !== false;
-      } catch (e) { /* leave off */ }
-    }
+    try {   // free for every account since 2026-09-05 (saving is subscribing)
+      const { data } = await supaClient.rpc('get_alerts_enabled');
+      profileAlerts.checked = data !== false;
+    } catch (e) { /* leave off */ }
     document.getElementById('profile-folders').hidden = !plusActive;
     document.getElementById('profile-searches').hidden = !plusActive;
     if (plusActive) { await loadFolders(); renderProfileFolders(); renderProfileSearches(); }
@@ -6144,11 +6507,6 @@
   });
   profileAlerts.addEventListener('change', async () => {
     const want = profileAlerts.checked;
-    if (!plusActive) {   // alerts are a Plus feature — flip back and show why
-      profileAlerts.checked = false;
-      profileModal.hidden = true; openPaywall(null);
-      return;
-    }
     try {
       const { error } = await supaClient.rpc('set_alerts_enabled', { p_on: want });
       if (error) throw error;
@@ -6291,6 +6649,8 @@
     supaClient.auth.onAuthStateChange((_evt, sess) => {
       authUser = sess?.user || null;
       adoptAccountTheme(authUser);   // the account's choice beats this device's
+      adoptAccountHome(authUser);
+      if (authUser && HOME && !(authUser.user_metadata || {}).home_bbl) saveHome();   // this device set it before signing in
       updateAuthUI();
       refreshPlus();
       // signing in (or out) with the detail sheet open swaps the composer in/out

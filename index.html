@@ -5458,6 +5458,13 @@
   // sheet — pinned to top: var(--header-h) — opened a chip-row-tall dead strip
   // under the search field. Watch the element itself instead.
   if (window.ResizeObserver) new ResizeObserver(syncHeaderHeight).observe(headerEl);
+  // The map box is sized in lvh, and iOS Safari settles that unit only after
+  // the first layout — after Leaflet has already measured the container. With
+  // nothing telling Leaflet the box grew, tiles and pins stopped at the old
+  // height and a bare band sat above the toolbar (2026-09-06 phone screenshot).
+  // Watch the container itself: any size change re-measures the map. Leaflet
+  // no-ops when the size is unchanged, so this cannot loop.
+  if (window.ResizeObserver) new ResizeObserver(() => map.invalidateSize({ pan: false })).observe(document.getElementById('map'));
 
   const toggleBtn = document.getElementById('btn-toggle-view');
   const sortBtn = document.getElementById('btn-sort');

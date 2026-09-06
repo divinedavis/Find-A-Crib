@@ -5677,7 +5677,6 @@
         <div class="d-tagline"><span class="d-tag">${esc(CITY.label)}</span>${est ? ` <span class="d-dot">·</span> <span class="d-est" title="${esc(EST_TITLE)}">${est}</span>` : ''}</div>
         <div class="d-addr">${esc(addrLine)}</div>
       </div>
-      ${homeBlock(rec)}
       <div class="agent-card" data-sec="agent" data-agentcard="${esc(rec.bbl)}">${agentCardInner(rec.bbl, !!(rec.h && rec.h.op))}</div>
       <!-- Save lives in the header heart only (the full-width Save row was
            removed 2026-09-05 as a duplicate). The listing link is first: it is
@@ -5685,9 +5684,6 @@
            clicks) and used to sit several screens down under the HPD record. -->
       ${IS_NYC ? `<div class="d-actions" data-sec="actions">
         <button class="d-viol ${viol.tone}" data-detail="violations" title="${esc(viol.title)}">${viol.label}</button>
-      </div>` : ''}
-      ${IS_NYC && !(HOME && HOME.bbl === rec.bbl) ? `<div class="d-actions" style="padding-top:0">
-        <button class="d-secondary" data-detail="home" title="Pin your own building: a standing view of its status, violations and landlord, and an email when anything changes">This is my apartment</button>
       </div>` : ''}
       <div class="d-actions"${IS_NYC ? ' style="padding-top:0"' : ' data-sec="actions"'}>
         <a class="d-secondary" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.label}</a>
@@ -5701,6 +5697,9 @@
       ${IS_NYC ? `<div class="d-actions" style="padding-top:0">
         <button class="d-secondary" data-detail="complaints">Building (HPD) Complaints${compTotal != null ? ' · ' + compTotal : ''}</button>
       </div>` : ''}
+      ${IS_NYC ? (HOME && HOME.bbl === rec.bbl
+        ? `<div class="d-actions" style="padding-top:0"><button class="d-secondary" data-detail="unhome" title="Unpin this building">Not my apartment</button></div>`
+        : `<div class="d-actions" style="padding-top:0"><button class="d-secondary" data-detail="home" title="Pin your own building: a standing view of its status, violations and landlord, and an email when anything changes">This is my apartment</button></div>`) : ''}
       ${IS_NYC ? `<div class="d-section" data-sec="vouchers"><h3>Housing vouchers (Section 8)</h3>
         ${s8Html(rec) || '<div class="d-sub" style="margin:0">No voucher listing or subsidy record for this building right now.</div>'}
         <div class="s8-legal">Source-of-income discrimination is illegal in NYC — every landlord must accept Section 8 and other vouchers, tagged here or not. <a href="https://www.nyc.gov/site/cchr/about/report-discrimination.page" target="_blank" rel="noopener">Report discrimination to the NYC Commission on Human Rights ↗</a></div>

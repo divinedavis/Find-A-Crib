@@ -4213,7 +4213,11 @@
       }
       const reg = IS_NYC ? 'rent-stabilized' : 'rent-regulated';
       const where = IS_NYC ? 'New York City' : esc(CITY.name);
-      card(`<div class="sh-head">We couldn’t find “${esc(q)}”. That usually means one of two things: it isn’t a ${reg} building${IS_NYC ? ' (only buildings on the DHCR register are here)' : ''}, or the address is outside ${where}. Showing all <b>${n.toLocaleString()}</b> buildings you can browse.</div>${guesses}${beds}`);
+      // A name typed by someone signed out never reached the landlord table
+      // (orgFetch bails before the request). Say what would make it work.
+      const orgHint = (IS_NYC && !authUser && orgNameish(q))
+        ? `<div class="sh-signup">💡 Searching by landlord or managing-agent name needs a free account — <a data-sh="save">sign in</a> and this search will run again.</div>` : '';
+      card(`<div class="sh-head">We couldn’t find “${esc(q)}”. That usually means one of two things: it isn’t a ${reg} building${IS_NYC ? ' (only buildings on the DHCR register are here)' : ''}, or the address is outside ${where}. Showing all <b>${n.toLocaleString()}</b> buildings you can browse.</div>${orgHint}${guesses}${beds}`);
       return;
     }
     // A search that simply worked gets no card. The "Showing every building

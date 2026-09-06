@@ -190,6 +190,12 @@ independently of the pull's exit code and resets the conflicted paths to
 `origin/main`, which is safe because the droplet is their only writer and pushes
 them every run.
 
+**Deploying the app shell.** `scripts/deploy_app.sh` is the only way to
+ship `index.html`: it runs `tests/journeys.py` (every visitor path, as an
+iPhone and as a desktop browser) against the local file, regenerates the
+city pages, copies everything to the docroot, and runs the journeys again
+against the live site. A real-iPhone lane is described in `tests/DEVICE.md`.
+
 **What a git push does and does not deploy.** Only two paths reach the docroot
 on their own: `growth_daily.py build --deploy` rsyncs `growth_out/`, and
 `scripts/refresh_seo.sh` rsyncs `build_seo.py`'s `seo/`. **Nothing in either

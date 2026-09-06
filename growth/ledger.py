@@ -91,9 +91,16 @@ def next_id():
 
 
 def add(slug, name, hypothesis, kind, prefixes=None, metric="owned_visitors",
-        source="seed", evidence="", status="candidate", notes=""):
+        source="seed", evidence="", status="candidate", notes="", judge=None):
     """Register a new technique. Returns the record (existing one if the slug
-    is already known — the scout re-proposing an old idea must not duplicate it)."""
+    is already known — the scout re-proposing an old idea must not duplicate it).
+
+    `judge="site"` means: this technique owns `prefixes` (so the crawl-path
+    audit and the redundancy check still see them) but its verdict comes from
+    the declared site-wide `metric`, not from traffic to those URLs. For a
+    technique whose hypothesis is about the site rather than about its own
+    pages, owned-visitor counting answers the wrong question. See the note in
+    review.evaluate(). Absent, prefixes decide as they always have."""
     with _LOCK:
         techs = load_techniques()
         for t in techs:
@@ -121,6 +128,8 @@ def add(slug, name, hypothesis, kind, prefixes=None, metric="owned_visitors",
             "notes": notes,
             "verdict": None,
         }
+        if judge:
+            rec["judge"] = judge
         techs.append(rec)
         save_techniques(techs)
         return rec

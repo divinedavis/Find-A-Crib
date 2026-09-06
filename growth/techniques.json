@@ -1722,5 +1722,26 @@
     "retired": null,
     "notes": "effort: days\nexpected: >=300 clicks per city at <=$0.50 CPC, a measured landing-to-checkout rate per city, and a decision rule agreed in advance: fewer than 1 sale per 300 high-intent clicks means the offer/price is the problem and every traffic technique in the ledger is premature; 3+ sales per 300 means traffic is the only constraint and indexing work is correctly prioritised.\nfirst step: Build four exact-match campaigns ($10/day, 14 days) on already-tracked lookup queries (e.g. 'lahd rso lookup', 'sf rent board lookup', 'dc rentregistry lookup', 'rent stabilized apartment lookup'), each pointing at its city hub with the priced report above the fold, tagged utm_source=probe&utm_campaign=<city> so the paid visits are excluded from the organic series.",
     "verdict": null
+  },
+  {
+    "id": "T085",
+    "slug": "provenance_page",
+    "name": "Published methodology: where every record comes from (/methodology/)",
+    "hypothesis": "Google is refusing this site wholesale, not page by page. On 2026-09-06 the URL Inspection census read 455 sampled published URLs and found ONE indexed \u2014 the homepage \u2014 while all 94 it had fetched and settled on came back 'Crawled - currently not indexed', spread evenly across every template the site owns (67 building pages, 15 neighborhood hubs, 5 borough, 4 ZIP, /developers/, /buildings/). Acceptance among pages crawled more than 21 days ago has been 0.0% for thirteen consecutive days. Click depth (all sections within 3 clicks) and link volume (47,165 pages linking the city tier for a fortnight, 0 fetches) were both tested and both died, so what is left is a site-level judgement. This site tells people where to live, which puts it in the category everything published on trust signals treats most harshly, and it had no page stating who compiles the data, from which records, how the join is made, how often each part refreshes, or what each city's list does NOT mean. Those facts existed only in Python docstrings. Publishing them should raise the site-level judgement that gates acceptance.",
+    "kind": "indexing",
+    "status": "active",
+    "prefixes": [
+      "/methodology/"
+    ],
+    "metric": "index_accept_pct_mature",
+    "source": "seed",
+    "evidence": "build_dc.py, build_la.py, build_sf.py and fetch_hpd.py already document every source, join key, refresh cadence and limit precisely \u2014 nothing had to be invented, only published. Named sources with a stated methodology are also what the 2026 answer-engine material consistently reports as the thing that gets a data publisher cited rather than paraphrased.",
+    "added": "2026-09-06",
+    "activated": "2026-09-06",
+    "revisit_on": "2026-10-06",
+    "retired": null,
+    "notes": "JUDGED SITE-WIDE ON PURPOSE (judge='site'). It owns /methodology/ so t_crawl_paths audits its reachability, but a one-page trust artifact judged on its own visitor count would be retired at day 21 for failing at something it was never for. Its claim is about index_accept_pct_mature, which is 0.0% today, so there is a real floor to move and no way to fake a win. It is also the only claimant on that metric, so the 2026-09-05 co-claimant guard has nothing to demote. If acceptance is still 0.0% at 2026-09-27, this hypothesis is wrong too and the next honest suspects are domain history (this domain published jayshomefinder.com before) and corpus size \u2014 not another page.",
+    "verdict": null,
+    "judge": "site"
   }
 ]

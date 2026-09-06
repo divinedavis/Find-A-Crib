@@ -29,6 +29,9 @@ SITE = "https://findacrib.com"
 # Search engines that consume IndexNow. Google does not participate; it
 # re-crawls from sitemap <lastmod>, which is why lastmod stays honest below.
 INDEXNOW_ENDPOINT = "https://api.indexnow.org/indexnow"
+# Per-request URL cap the endpoint accepts. Anything past it is dropped, and
+# t_indexnow now reports the drop rather than counting it as submitted.
+INDEXNOW_MAX = 10_000
 
 BORO_NAME = {"M": "Manhattan", "Bk": "Brooklyn", "Q": "Queens",
              "Bx": "the Bronx", "SI": "Staten Island"}
@@ -818,6 +821,16 @@ def t_llms_txt(ctx):
         "- SF: DataSF gdc7-dmcn, SF Rent Board Housing Inventory",
         "- LA: LA County Assessor parcel rolls filtered by LAHD RSO criteria",
         "- DC: DC DHCD RentRegistry public data exports",
+    ]
+    # The page that states all of the above in full — join keys, refresh
+    # cadence, and what each city's list does NOT mean. Written by the SEO
+    # pipeline (build_seo.methodology_page), so it is listed only once it is
+    # actually live, on the same rule as the city guides above: a citation map
+    # that advertises a 404 is worse than one that omits a page.
+    if ctx.live_or_staged("methodology/index.html"):
+        lines.append(f"- Full method, sources, refresh cadence and per-city limits: "
+                     f"{SITE}/methodology/")
+    lines += [
         "",
         "## Important caveats to repeat when citing this data",
         "",
@@ -1072,19 +1085,32 @@ def t_indexnow(ctx):
     if not key:
         return {"ok": False, "detail": "no IndexNow key found"}
 
+    # The payload has always been capped at 10,000, but `submitted` and the
+    # detail line reported len(urls) — the number we WANTED to send. Those two
+    # differ only on the days it matters most: on 2026-08-18 a three-link edit
+    # to build_seo.py's site header changed the hash of all 47,596 pages, so
+    # this technique had ~47.6k "changed" URLs in hand, sent 10,000 of them and
+    # recorded "submitted 47,596". A ledger that overstates a bulk submission is
+    # the worst possible place to be imprecise about one. Report what was sent,
+    # and say so when the rest was dropped.
+    sent = urls[:INDEXNOW_MAX]
+    dropped = len(urls) - len(sent)
+    tail = f" ({dropped:,} more changed but over the {INDEXNOW_MAX:,}-URL cap)" if dropped else ""
     payload = {"host": "findacrib.com", "key": key,
                "keyLocation": f"{SITE}/{key}.txt",
-               "urlList": urls[:10000]}
+               "urlList": sent}
     if ctx.dry_run:
-        return {"ok": True, "submitted": 0, "detail": f"dry run — would submit {len(urls)} URLs",
-                "urls": urls[:20]}
+        return {"ok": True, "submitted": 0,
+                "detail": f"dry run — would submit {len(sent)} URLs{tail}",
+                "urls": sent[:20]}
     req = urllib.request.Request(
         INDEXNOW_ENDPOINT, data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json; charset=utf-8"})
     try:
         r = urllib.request.urlopen(req, timeout=30)
-        return {"ok": True, "submitted": len(urls), "http": r.status,
-                "detail": f"submitted {len(urls)} URLs → HTTP {r.status}"}
+        return {"ok": True, "submitted": len(sent), "http": r.status,
+                "dropped": dropped,
+                "detail": f"submitted {len(sent)} URLs → HTTP {r.status}{tail}"}
     except Exception as e:
         return {"ok": False, "submitted": 0, "detail": f"IndexNow submit failed: {e}"}
 

@@ -1502,6 +1502,10 @@ CITY_NAV = (
     '<a href="/la/">rent-stabilized (RSO) Los Angeles</a> &nbsp;·&nbsp; '
     '<a href="/dc/">rent-controlled Washington DC</a></span>')
 
+# The provenance page every page this pipeline writes links to from its footer.
+# Defined here rather than beside methodology_page() because page() needs it.
+METHODOLOGY_URL = "/methodology/"
+
 
 def page(title, desc, canonical, body, jsonld=None, footer=None, robots=None, og_title=None):
     # og_title: what a shared link shows in iMessage / Slack / social cards.
@@ -1533,6 +1537,7 @@ def page(title, desc, canonical, body, jsonld=None, footer=None, robots=None, og
 <a href="/guide/">Guides</a>{CITY_NAV}</header>
 <main>{body}</main>
 <footer class="site">{footer or NYC_FOOTER}
+<a href="{METHODOLOGY_URL}">How this data is compiled</a> &nbsp;·&nbsp;
 &copy; Find A Crib. <a href="/">Open the interactive map →</a></footer>
 {TRACK_SNIPPET}
 </body></html>"""
@@ -1548,7 +1553,43 @@ def _lastmod_body(contents):
     change is precisely the signal Google learns to distrust, and it would have
     buried the few hundred pages that genuinely did change.
 
-    So the hash covers everything except the <style> block.
+    SITE CHROME IS EXCLUDED FOR THE SAME REASON, and it took a corpus-wide
+    restamp to notice. The <style> block was the only exclusion until today,
+    while page() also injects a site <header> and a site <footer> that are
+    byte-identical across every page in a tier. On 2026-08-18 CITY_NAV added
+    three links to that header. That is one edit to one string, and it changed
+    the hash of all 47,596 pages: every lastmod in the corpus was restamped to
+    2026-08-18, and the whole submitted set went into LM_CHANGED and out to
+    IndexNow in a single payload (capped at 10,000, so 10,000 of them). Two
+    days later gsc_serving_pages began the monotonic 63 -> 4 slide it has not
+    come out of, and gsc_serving_ever has been frozen at 277 ever since.
+    That sequence is correlation, not proof — nothing here can prove what
+    Google did with it — but the code four hundred lines down already calls a
+    bulk submission of an unchanged corpus "the kind of bulk submission that
+    makes a small domain look like a spam farm", and it is right. A chrome edit
+    must never again be able to claim 47,596 pages changed.
+
+    The cost is real and accepted: the footer carries each tier's data caveat,
+    so a genuine caveat rewrite will no longer bump lastmod either. That is the
+    correct trade. Restamping the entire corpus is never the right way to
+    announce a footer edit; if one ever needs announcing, announce those URLs
+    deliberately rather than by hashing the boilerplate into every page.
+
+    So the hash covers everything except <style>, header.site and footer.site.
+    """
+    body = _lastmod_body_v1(contents)
+    body = re.sub(r'<header class="site">.*?</header>', "", body, flags=re.S)
+    return re.sub(r'<footer class="site">.*?</footer>', "", body, flags=re.S)
+
+
+def _lastmod_body_v1(contents):
+    """The pre-2026-09-06 rule: strip the stylesheet only.
+
+    Kept solely so the first build after the change above can tell "this page's
+    content moved" from "the hashing rule moved". Without it, narrowing the
+    hash would itself restamp all 47,596 lastmods and ping IndexNow with the
+    whole corpus — precisely the event it exists to prevent, committed once on
+    the way to preventing it. See the migration branch in write().
     """
     return re.sub(r"<style>.*?</style>", "", contents, flags=re.S)
 
@@ -1563,13 +1604,22 @@ def write(relpath, contents):
         loc = SITE + "/" + relpath[:-len("index.html")]  # …/foo/index.html -> …/foo/
         h = hashlib.sha1(_lastmod_body(contents).encode("utf-8")).hexdigest()
         prev = LM_STATE.get(loc)
+        # One-time migration: a state entry written under the old rule (no "v")
+        # is re-checked against the old rule before it is called a change. Only
+        # the answer "the v1 hash still matches, so nothing but the rule moved"
+        # is accepted; a page that genuinely changed falls through and bumps as
+        # normal. Entries are stamped v:2 below, so this branch stops firing
+        # after the first build and can be deleted once no v1 entry survives.
+        if prev is not None and prev.get("v") != 2 and prev.get("h") != h:
+            if hashlib.sha1(_lastmod_body_v1(contents).encode("utf-8")).hexdigest() == prev["h"]:
+                prev = dict(prev, h=h)
         if prev and prev.get("h") == h:
             lastmod = prev["m"]                 # unchanged -> keep old date (honest)
         else:
             lastmod = BUILD_DATE                # new or changed -> bump
             if prev is not None:
                 LM_CHANGED.append(loc)          # changed (not brand-new) -> ping IndexNow
-        LM_NEW[loc] = {"h": h, "m": lastmod}
+        LM_NEW[loc] = {"h": h, "m": lastmod, "v": 2}
         LASTMOD[loc] = lastmod
 
 
@@ -2070,6 +2120,239 @@ def building_meta_desc(addr, nb, units, yr, open_viol, advertised, limit=DESC_LI
         if len(out) + 1 + len(e) <= limit:
             out += " " + e
     return out
+
+
+# ---- /methodology/ — where every number on this site comes from ------------
+# WHY THIS PAGE EXISTS, and why it is one page rather than a tier.
+#
+# The 2026-09-06 URL Inspection census read 455 sampled published URLs and
+# found exactly ONE indexed: the homepage. Of the 94 it has fetched and settled
+# on, all 94 came back "Crawled - currently not indexed", and they are spread
+# across every template the site owns — 67 building pages, 15 neighborhood
+# hubs, 5 borough hubs, 4 ZIP hubs, one SF hub, /buildings/ and /developers/.
+# Acceptance among pages crawled more than 21 days ago has read 0.0% for
+# thirteen consecutive days. A refusal that uniform across templates is not a
+# template defect. It is a judgement about the site.
+#
+# This site is YMYL by any reading — people decide where to live on it — and it
+# had no page anywhere stating who compiles the data, from which records, how
+# the join is made, how often each part refreshes, or what each city's list
+# does NOT mean. Those facts existed, precisely and honestly, only in the
+# source comments of build_dc.py, build_la.py, build_sf.py and fetch_hpd.py:
+# nowhere a reader, a journalist, a crawler or an answer engine could see them.
+# This publishes them.
+#
+# THREE RULES IT IS BUILT UNDER, because a provenance page that overclaims is
+# worse than none:
+#   1. Every caveat here is the one the relevant pages already carry
+#      (NYC_FOOTER, CITY_FOOTER), not a softer restatement of it.
+#   2. Every figure is computed from the data files this build reads, at build
+#      time. Nothing is typed in.
+#   3. No named author, no credential, no licence, no review claim. Nobody has
+#      one on file, and inventing one is exactly the failure this page exists
+#      to correct.
+#
+# It is ONE page. The site's problem is not too few URLs.
+def _methodology_counts():
+    """Record counts for the four cities, read from the files this build uses."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    out = {}
+    try:
+        blds = json.load(open(os.path.join(here, "buildings.min.json")))
+        out["nyc"] = (len(blds), sum(b.get("u") or 0 for b in blds))
+    except Exception:
+        out["nyc"] = (0, 0)
+    for key in ("sf", "la", "dc"):
+        try:
+            out[key] = (len(json.load(open(os.path.join(here, key, "buildings.min.json")))), 0)
+        except Exception:
+            out[key] = (0, 0)
+    return out
+
+
+def methodology_page():
+    """Render /methodology/. Returns (canonical, html) or (None, None)."""
+    c = _methodology_counts()
+    if not c["nyc"][0]:
+        # No corpus, nothing true to say about it. A provenance page with
+        # placeholder numbers would be the opposite of the point.
+        return None, None
+    n_nyc, u_nyc = c["nyc"]
+    n_sf, n_la, n_dc = c["sf"][0], c["la"][0], c["dc"][0]
+    total = n_nyc + n_sf + n_la + n_dc
+    canonical = SITE + METHODOLOGY_URL
+
+    def row(k, v):
+        return f"<tr><td class='k'>{k}</td><td>{v}</td></tr>"
+
+    overview = "<table class='facts'>" + "".join([
+        row("New York City",
+            f"{n_nyc:,} buildings on the DHCR rent-stabilized register, "
+            f"{u_nyc:,} apartments by PLUTO's tax-lot unit counts"),
+        row("San Francisco", f"{n_sf:,} block-side records from the Rent Board inventory"),
+        row("Los Angeles", f"{n_la:,} parcels meeting the RSO criteria (derived, likely RSO)"),
+        row("Washington, DC", f"{n_dc:,} properties on the DC Rent Registry"),
+    ]) + "</table>"
+
+    cadence = "<table class='facts'>" + "".join([
+        row("Housing-voucher listings (/section8/)", "Rebuilt nightly"),
+        row("HPD violations, complaints, owner and agent", "Refreshed from NYC Open Data on the "
+            "data build, not on every page build"),
+        row("DC Rent Registry", "The source publishes nightly export files"),
+        row("SF Rent Board inventory", "DataSF refreshes the extract every 24 hours; owners "
+            "report annually, so the underlying filings move once a year"),
+        row("LA County Assessor parcels", "The source layer refreshes monthly"),
+        row("DHCR rent-stabilized building files", "Annual. The edition in use is 2024"),
+    ]) + "</table>"
+
+    body = f"""<div class='crumbs'><a href='/'>Home</a> › How this data is compiled</div>
+<h1>How Find A Crib compiles its rent-regulation data</h1>
+<p class='lead'>Every building on this site comes from a public record, and this page says which
+one, how it was joined to the rest, how often it changes, and what it does not prove. Four cities,
+four different registries, and they are not alike — the differences are the most important thing
+on this page.</p>
+<div class='answer'><p>Find A Crib maps {total:,} records across New York City, San Francisco,
+Los Angeles and Washington, DC. New York and DC are official registries of rent-regulated
+buildings. San Francisco is an owner-reported inventory the city publishes anonymized to the block
+rather than the address. Los Angeles publishes no building-level list at all, so the Los Angeles
+layer is derived from assessor records against the city's own criteria and is labelled likely RSO.
+No listing here is a determination about a specific apartment.</p></div>
+
+<h2>What is on the map</h2>
+{overview}
+
+<h2>New York City — DHCR register, joined to PLUTO and HPD</h2>
+<div class='guide-body'>
+<p>The starting record is the New York State Division of Housing and Community Renewal's 2024
+rent-stabilized building file, which DHCR publishes as one PDF per borough. Those five files are
+parsed into rows keyed by Borough-Block-Lot (BBL), which is the join key for everything that
+follows.</p>
+<ul>
+<li><strong>Coordinates, year built and apartment counts</strong> come from the NYC Department of
+City Planning's PLUTO extract. Unit counts are tax-lot figures, which is why every apartment count
+on this site is written as "about".</li>
+<li><strong>Registered owner and managing agent, open housing-maintenance-code violations, and
+complaints</strong> come from NYC Open Data — HPD's registrations
+(<a href="https://data.cityofnewyork.us/d/tesw-yqqr">tesw-yqqr</a>), registration contacts
+(<a href="https://data.cityofnewyork.us/d/feu5-w2e2">feu5-w2e2</a>), violations
+(<a href="https://data.cityofnewyork.us/d/wvxf-dwi5">wvxf-dwi5</a>) and complaints
+(<a href="https://data.cityofnewyork.us/d/ygpa-z7cr">ygpa-z7cr</a>) — matched on BBL and linked
+back to the building's own record on HPD Online.</li>
+<li><strong>Recently advertised units</strong> come from the overnight AffordableHousing.com feed,
+matched to DHCR-registered buildings. New York City only; there is no equivalent feed for the
+other three cities.</li>
+</ul>
+<p class='disclaimer'>{NYC_FOOTER}</p>
+</div>
+
+<h2>San Francisco — reported to the Rent Board, published by the block</h2>
+<div class='guide-body'>
+<p>The source is the San Francisco Rent Board housing inventory, published by DataSF as dataset
+<a href="https://data.sfgov.org/d/gdc7-dmcn">gdc7-dmcn</a>: one row per unit per submission year,
+from the annual reports owners of units covered by the Rent Ordinance are required to file. Build
+years come from the San Francisco Assessor.</p>
+<p>The anonymization is the source's, not ours, and it changes what a record means. DataSF
+publishes the address as a block ("1000 Block of Revere Ave") and the coordinate as the nearest
+mid-block point, so <strong>one San Francisco record is a block-side, not a building</strong>. That
+is why San Francisco is published here only as neighborhood aggregates: a per-address page would
+assert something the data does not contain.</p>
+<p class='disclaimer'>{CITY_FOOTER['sf']}</p>
+</div>
+
+<h2>Los Angeles — derived, not published</h2>
+<div class='guide-body'>
+<p>Los Angeles publishes no building-level RSO inventory. The city's criteria, however, are
+mechanical: a residential property in the City of Los Angeles with two or more units, built on or
+before 1 October 1978. This site applies those criteria to the Los Angeles County Assessor parcel
+layer and keeps what matches — {n_la:,} parcels.</p>
+<p>Two limits worth stating plainly. Year built is tax-roll data, and the filter actually applied
+is assessor year-built of 1978 or earlier, which is marginally wider than an ordinance cut-off of
+1 October 1978. And exemptions that exist in the ordinance — luxury-exempt units, substantially
+renovated buildings — cannot be derived from assessor records at all. Both are reasons this layer
+is labelled likely RSO and carries a verification link rather than an answer.</p>
+<p class='disclaimer'>{CITY_FOOTER['la']}</p>
+</div>
+
+<h2>Washington, DC — the Rent Registry, counted per unit</h2>
+<div class='guide-body'>
+<p>The source is the District's RentRegistry, run by the Rental Accommodations Division, which has
+published public export files of the whole registry since June 2025. Three files are used: one row
+per housing-provider registration, one per registered property, and one per unit.</p>
+<p>Coverage under the Rental Housing Act is a <strong>per-unit</strong> determination, not a
+per-building one: a single property can hold both covered and exempt units — subsidized housing,
+new construction, an owner of four units or fewer, co-ops and others. So coverage here is counted
+from the unit file, a property is kept when at least one of its units is not exempt, and the rent
+shown is the median <em>registered</em> rent of the non-exempt units. A registered rent is the
+legal rent on file with the District. It is not an asking rent and not what a unit is listed
+for.</p>
+<p>Two derived fields to know about: DC publishes no ZIP on the accommodation record and no
+neighborhood polygons, so the ZIP comes from a Census ZCTA point-in-polygon test and the
+neighborhood is the nearest DC neighborhood label point. The neighborhood label is a nearest-point
+assignment, not an official boundary.</p>
+<p class='disclaimer'>{CITY_FOOTER['dc']}</p>
+</div>
+
+<h2>How often each part changes</h2>
+{cadence}
+<p>Page-level dates follow the same rule. A page's sitemap <code>lastmod</code> is only moved when
+that page's own content hash changes, so an unchanged building page keeps the date it last
+genuinely changed.</p>
+
+<h2>What none of this decides</h2>
+<div class='guide-body'>
+<ul>
+<li>None of it is legal advice, and none of it is a determination about a particular apartment. A
+building's presence on a register is about the building.</li>
+<li>Regulated status can change, and a registry reflects what was filed, at the time it was filed.
+The New York edition here is the 2024 file.</li>
+<li>Where a city's record is derived or anonymized — Los Angeles and San Francisco — the label on
+the page says so, and the verification route is named on the page rather than here.</li>
+</ul>
+<p>If a record here is wrong, that is worth knowing and worth fixing:
+<a href="/support/">tell us what is wrong with it</a> and name the address.</p>
+</div>
+
+<h2>Using or citing this data</h2>
+<div class='guide-body'>
+<p>The New York corpus is downloadable in full as
+<a href="{SITE}/buildings.min.json">buildings.min.json</a>, and there is a
+<a href="/developers/">REST API</a> for querying it. If you cite the figures on this site, cite the
+underlying registry as the source of the record and Find A Crib for the join and the derivation —
+the agencies named above did the collecting.</p>
+<p class='aka'>Find A Crib was previously published as Jay's Home Finder (jayshomefinder.com) —
+same rent-stabilization data, same maps, new name.</p>
+</div>
+<a class='cta' href='/'>🔎 Open the interactive map →</a>"""
+
+    ld = {"@context": "https://schema.org", "@graph": [
+        breadcrumb([("Home", SITE + "/"),
+                    ("How this data is compiled", canonical)]),
+        {"@type": "WebPage", "@id": canonical + "#page", "url": canonical,
+         "name": "How Find A Crib compiles its rent-regulation data",
+         "description": "The public record behind every building on Find A Crib: sources, join "
+                        "keys, refresh cadence and the limits of each city's data.",
+         "dateModified": BUILD_DATE,
+         "isPartOf": {"@id": SITE + "/#website"},
+         "publisher": {"@id": SITE + "/#org"}},
+    ]}
+    # breadcrumb() carries its own @context; inside an @graph that is redundant
+    # and, on some validators, an error. Strip it.
+    ld["@graph"][0].pop("@context", None)
+
+    return canonical, page(
+        "How Find A Crib compiles its rent-regulation data — sources & method",
+        # Under DESC_LIMIT (158) like every other description this build writes.
+        "Where every record comes from: DHCR, PLUTO and HPD in New York, the SF Rent Board, "
+        "LA assessor data, the DC Rent Registry — and each list's limits.",
+        canonical, body, ld,
+        # NOT the default NYC_FOOTER. This is the one page on the site that
+        # covers all four cities, and footing a four-city page with "Data: NYC
+        # DHCR…" is the same error guide_page() already guards against — it
+        # would be the only untrue sentence on a page about being true. Every
+        # caveat it would have carried is stated in full in the body above.
+        footer="Sources in full above: New York State DHCR, NYC PLUTO and HPD, the San Francisco "
+               "Rent Board, the Los Angeles County Assessor and the DC Rent Registry. Each city's "
+               "list means something different; the section for that city says what.")
 
 
 def main():
@@ -2753,6 +3036,18 @@ def main():
                "check if your apartment is covered, tenant rights, lease renewals, and the exemptions that matter.",
                hub_canonical, hub_body, hub_crumb))
     urls.append((hub_canonical, "0.9", "guide"))
+
+    # ---- /methodology/ (see methodology_page) ----
+    # In the guide shard rather than a shard of its own: it is one URL, and a
+    # one-URL sitemap shard is noise in the index. Priority 0.9 — every page on
+    # the site links to it and it is the page that says why any of them can be
+    # believed.
+    meth_canonical, meth_doc = methodology_page()
+    if meth_doc:
+        write("methodology/index.html", meth_doc)
+        urls.append((meth_canonical, "0.9", "guide"))
+    else:
+        print("methodology: skipped — no corpus to describe")
 
     # ---- the SF / LA / DC browse tier (see CITY_HUBS above) ----
     # Sharded into its own sitemap per city by the loop below, because the key

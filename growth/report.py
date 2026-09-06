@@ -743,7 +743,11 @@ def build_blocks(run_log=None, review_out=None):
     B.append({"type": "section", "label": f"Active techniques ({len(active)})"})
     rows = []
     for t in active:
-        if t.get("prefixes"):
+        # Same split as review.evaluate(): prefixes decide, unless the technique
+        # declares judge="site". If the two ever disagree the report shows a
+        # column the verdict was never drawn from, which is how a reader comes
+        # to believe a technique was judged on a number nobody judged it on.
+        if t.get("prefixes") and t.get("judge") != "site":
             pairs = ledger.series(t["slug"], "owned_visitors", since=t.get("activated"))
             total = sum(v for _, v in pairs)
             recent = statistics.median([v for _, v in pairs[-7:]]) if pairs else None
@@ -760,8 +764,9 @@ def build_blocks(run_log=None, review_out=None):
                          _fmt(total), _fmt(recent)])
         else:
             last, med, _arrow, _tone = _trend(t.get("metric"))
+            owns = (f"owns {', '.join(t['prefixes'])}, " if t.get("prefixes") else "")
             rows.append([{"text": f"{t['id']} {t['name']}",
-                          "sub": f"site-wide · judged on {t.get('metric')}"},
+                          "sub": f"{owns}judged site-wide on {t.get('metric')}"},
                          _fmt(last), _fmt(med)])
     if rows:
         B.append({"type": "table", "cols": ["Technique", "Total", "Recent/day"],

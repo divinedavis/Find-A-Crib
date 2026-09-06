@@ -333,7 +333,27 @@ def evaluate(t, techs=None):
         res["why"] = f"only {days}d active — under the {GRACE_DAYS}d grace period"
         return res
 
-    if t.get("prefixes"):
+    # OWNING URLS AND BEING JUDGED ON THEIR TRAFFIC ARE TWO DIFFERENT CLAIMS,
+    # and until now `prefixes` asserted both. That is right for nearly
+    # everything here — a section exists to draw traffic to itself — but it has
+    # no answer for a technique whose whole hypothesis is site-level. The case
+    # that forced it is T085 provenance_page: one page, linked from every
+    # footer, whose claim is that the site is refused wholesale on trust and
+    # that publishing its sources changes that. Judged on visits to
+    # /methodology/ it would be retired at day 21 for not being a traffic page,
+    # which is not a finding about the hypothesis at all — it is the instrument
+    # answering a question nobody asked.
+    #
+    # So `judge: "site"` says "own these URLs, but judge me on my declared
+    # metric". prefixes still do their other jobs — t_crawl_paths audits the
+    # section for reachability, find_redundant sees the overlap — while the
+    # verdict comes from the site-wide path below, which flags but never
+    # retires. The default is unchanged: absent the field, prefixes win exactly
+    # as before, so no existing technique moves. Deliberately NOT inferred from
+    # `metric` alone: T023 city_guides carries prefixes and metric
+    # "organic_visitors", and it is better judged on its owned path than thrown
+    # onto the seven-way site-wide pile.
+    if t.get("prefixes") and t.get("judge") != "site":
         pairs = _owned(t)
         total = sum(v for _, v in pairs)
         recent, prior = _trend(pairs)

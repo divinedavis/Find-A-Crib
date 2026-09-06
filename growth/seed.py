@@ -227,6 +227,39 @@ SEEDS = [
                "file. Fallback-published guides are listed in sitemap-daily.xml because no "
                "SEO shard knows they exist."),
 
+    dict(slug="provenance_page", status="active", kind="indexing",
+         name="Published methodology: where every record comes from (/methodology/)",
+         prefixes=["/methodology/"], metric="index_accept_pct_mature", judge="site",
+         hypothesis="Google is refusing this site wholesale, not page by page. On 2026-09-06 the "
+                    "URL Inspection census read 455 sampled published URLs and found ONE indexed "
+                    "— the homepage — while all 94 it had fetched and settled on came back "
+                    "'Crawled - currently not indexed', spread evenly across every template the "
+                    "site owns (67 building pages, 15 neighborhood hubs, 5 borough, 4 ZIP, "
+                    "/developers/, /buildings/). Acceptance among pages crawled more than 21 days "
+                    "ago has been 0.0% for thirteen consecutive days. Click depth (all sections "
+                    "within 3 clicks) and link volume (47,165 pages linking the city tier for a "
+                    "fortnight, 0 fetches) were both tested and both died, so what is left is a "
+                    "site-level judgement. This site tells people where to live, which puts it in "
+                    "the category everything published on trust signals treats most harshly, and "
+                    "it had no page stating who compiles the data, from which records, how the "
+                    "join is made, how often each part refreshes, or what each city's list does "
+                    "NOT mean. Those facts existed only in Python docstrings. Publishing them "
+                    "should raise the site-level judgement that gates acceptance.",
+         evidence="build_dc.py, build_la.py, build_sf.py and fetch_hpd.py already document every "
+                  "source, join key, refresh cadence and limit precisely — nothing had to be "
+                  "invented, only published. Named sources with a stated methodology are also "
+                  "what the 2026 answer-engine material consistently reports as the thing that "
+                  "gets a data publisher cited rather than paraphrased.",
+         notes="JUDGED SITE-WIDE ON PURPOSE (judge='site'). It owns /methodology/ so t_crawl_paths "
+               "audits its reachability, but a one-page trust artifact judged on its own visitor "
+               "count would be retired at day 21 for failing at something it was never for. Its "
+               "claim is about index_accept_pct_mature, which is 0.0% today, so there is a real "
+               "floor to move and no way to fake a win. It is also the only claimant on that "
+               "metric, so the 2026-09-05 co-claimant guard has nothing to demote. If acceptance "
+               "is still 0.0% at 2026-09-27, this hypothesis is wrong too and the next honest "
+               "suspects are domain history (this domain published jayshomefinder.com before) and "
+               "corpus size — not another page.")
+    ,
     # ------------------------------------------------------------- CANDIDATE
     dict(slug="adsense_activation", status="candidate", kind="conversion",
          name="Turn on ad inventory (AdSense)",
@@ -440,7 +473,7 @@ def run():
         ledger.add(slug=s["slug"], name=s["name"], hypothesis=s["hypothesis"],
                    kind=s["kind"], prefixes=s.get("prefixes"), metric=s.get("metric", "owned_visitors"),
                    source="seed", evidence=s.get("evidence", ""), status=s["status"],
-                   notes=s.get("notes", ""))
+                   notes=s.get("notes", ""), judge=s.get("judge"))
         if s["slug"] not in before:
             added.append(s["slug"])
             continue
@@ -451,7 +484,8 @@ def run():
                 continue
             for field, key in (("name", "name"), ("hypothesis", "hypothesis"),
                                ("evidence", "evidence"), ("notes", "notes"),
-                               ("prefixes", "prefixes"), ("metric", "metric")):
+                               ("prefixes", "prefixes"), ("metric", "metric"),
+                               ("judge", "judge")):
                 new = s.get(key, t.get(field))
                 if new is not None and t.get(field) != new:
                     t[field] = new

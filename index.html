@@ -4189,22 +4189,12 @@
       card(`<div class="sh-head">Nothing matches “${esc(q)}” — no address, area, street or landlord. Showing all <b>${n.toLocaleString()}</b> buildings you can browse.</div>${guesses}${beds}`);
       return;
     }
-    // A tier below the literal match answered: say which one, so the result
-    // set never looks like it came from nowhere.
-    if (st.note) {
-      card(`<div class="sh-head">${st.note}</div>${n >= 25 ? narrowChips() : ''}`);
-      return;
-    }
-    // only worth showing for a broad result set from an actual query
-    if (n < 25) { searchHelper.hidden = true; return; }
-    const advertised = filtered.filter(r => (listingCounts[r.bbl] || 0) > 0).length;
-    const chips = narrowChips();
-    // "Narrow it down:" is a promise the chips keep. Where a city has none of
-    // the data they filter on, the invitation was left standing over an empty
-    // row — so it is only offered when something can actually act on it.
-    card(`<div class="sh-head"><b>${n.toLocaleString()}</b> ${esc((CITY.label || '').toLowerCase())} buildings match${advertised ? ` · <b>${advertised}</b> recently advertised` : ''}.${chips ? ' Narrow it down:' : ''}</div>
-        ${chips}
-        ${authUser ? '' : `<div class="sh-signup">💡 <a data-sh="save">Create a free account</a> to save the ones you like.</div>`}`);
+    // A search that simply worked gets no card. The "Showing every building
+    // in Bronx" note and the "N buildings match — narrow it down" chips sat
+    // over the top of the list on a phone and said what the map already
+    // showed (removed 2026-09-06). The cards above stay: each one explains
+    // why the result is not what was typed.
+    searchHelper.hidden = true;
   }
   searchHelper.addEventListener('click', e => {
     const act = e.target.closest('[data-sh]')?.dataset.sh;

@@ -223,6 +223,7 @@ def gate():
        or request.path.startswith("/reports/") \
        or request.path.startswith("/embed/") \
        or request.path in ("/dashboard-metrics", "/dashboard-users",
+                           "/dashboard-claude",  # added 2026-09-06: it was answering missing_api_key (401) on every dashboard load
                            "/dashboard-nemo",    # own Supabase-token owner gate
                            "/dashboard-crease",
                            "/dashboard-trent"):

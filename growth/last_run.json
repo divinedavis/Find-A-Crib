@@ -1,34 +1,27 @@
 {
   "build": {
-    "at": "2026-09-05T05:40:38+00:00",
+    "at": "2026-09-06T05:40:29+00:00",
     "changed_urls": 6,
-    "date": "2026-09-05",
+    "date": "2026-09-06",
     "deployed": true,
     "new_urls": 0,
     "seo_corpus": {
-      "days_old": 0,
+      "days_old": 1,
       "written": "2026-09-05"
     },
     "seo_pipeline": {
-      "at": "2026-09-05T05:42:01Z",
-      "changed_urls": 19,
+      "at": "2026-09-05T21:17:28Z",
+      "changed_urls": 2667,
       "code": "synced-1",
       "corpus_pages": 49374,
       "head": "unknown",
-      "hours_ago": 0.0,
+      "hours_ago": 8.4,
       "phase": "finish",
       "pull": "no-worktree",
       "rc": 0,
-      "started": "2026-09-05T05:40:38Z",
+      "started": "2026-09-05T21:16:02Z",
       "state": "ran clean (source handed over from the checkout: synced-1)",
       "step": "done"
-    },
-    "seo_watchdog": {
-      "at": "2026-09-05T05:42:01+00:00",
-      "note": "ran refresh_seo.sh to completion",
-      "ok": true,
-      "ran": true,
-      "rc": 0
     },
     "techniques": {
       "city_guides": {
@@ -44,7 +37,7 @@
         "unchanged": true
       },
       "crawl_paths": {
-        "detail": "15 of 15 published sections have an inbound internal link (62 docroot pages read) \u2014 single inbound source: /available/ \u2190 nyc browse hub, /dc/neighborhood/ \u2190 dc browse hub, /la/zip/ \u2190 la browse hub, /sf/neighborhood/ \u2190 sf browse hub, /zip/ \u2190 building page \u2014 click depth from the homepage (600 pages read, levels 0-3 fully expanded): /dc/neighborhood/ 3, /la/zip/ 3, /sf/neighborhood/ 3, /zip/ 3, /available/ 2, /building/ 2, /dc/buildings/ 2, /guide/is-my-apartment-rent-controlled- 2, +7 shallower \u2014 3 of 15 audited sections are published under no ACTIVE technique, so nothing rebuilds them; link them or stop publishing them: /available/ [candidate], /brief/ [retired], /developers/ [candidate]",
+        "detail": "15 of 15 published sections have an inbound internal link (62 docroot pages read) \u2014 single inbound source: /available/ \u2190 nyc browse hub, /dc/neighborhood/ \u2190 dc browse hub, /la/zip/ \u2190 la browse hub, /sf/neighborhood/ \u2190 sf browse hub, /zip/ \u2190 building page \u2014 click depth from the homepage (604 pages read, levels 0-3 fully expanded): /dc/neighborhood/ 3, /la/zip/ 3, /sf/neighborhood/ 3, /zip/ 3, /available/ 2, /building/ 2, /dc/buildings/ 2, /guide/is-my-apartment-rent-controlled- 2, +7 shallower \u2014 3 of 15 audited sections are published under no ACTIVE technique, so nothing rebuilds them; link them or stop publishing them: /available/ [candidate], /brief/ [retired], /developers/ [candidate]",
         "ok": true
       },
       "derived_building_facts": {
@@ -54,7 +47,7 @@
         "unchanged": true
       },
       "fresh_section8": {
-        "detail": "296 buildings across 5 boroughs",
+        "detail": "297 buildings across 5 boroughs",
         "ok": true
       },
       "hub_direct_answers": {
@@ -78,8 +71,8 @@
       "page_uniqueness": {
         "detail": "text shared with siblings (8-word shingles, 211 pages read across 10 sections): /brief/ 49% of 182 words (n=17 of 17), /available/ 42% of 211 words (n=24 of 90), /dc/neighborhood/ 38% of 528 words (n=24 of 103), /building/ 32% of 492 words (n=24 of 47,165), /section8/ 22% of 812 words (n=6 of 6), /la/zip/ 20% of 1,408 words (n=24 of 112), /neighborhood/ 19% of 1,024 words (n=24 of 198), /zip/ 15% of 1,231 words (n=24 of 165), +2 less duplicated \u2014 too few pages to compare: /dc/buildings/ (1 page), /developers/ (1 page), /guide/is-my-apartment-rent-controlled- (3 pages), /la/buildings/ (1 page), /sf/buildings/ (1 page)",
         "ok": true,
-        "reread": "post-seo-refresh",
-        "same_since": "2026-09-05"
+        "same_since": "2026-09-05",
+        "unchanged": true
       },
       "sitemap_daily": {
         "detail": "sitemap-daily.xml with 23 URLs",

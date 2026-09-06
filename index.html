@@ -1050,8 +1050,9 @@
     font-weight: 700; border: 1px solid var(--blue); cursor: pointer; text-decoration: none; white-space: nowrap; }
   .d-actions .d-primary { background: var(--blue-solid); color: #fff; }
   .d-actions .d-secondary { background: var(--surface); color: var(--blue); }
-  /* Violations button: red = cited this year, amber = a record but nothing this
-     year, green = nothing on record. Neutral until the all-time blob arrives. */
+  /* Violations button: red = open class C or more than 5 open, amber = anything
+     open, green = nothing open (the year's count still shows, marked closed).
+     Neutral until the all-time blob arrives. */
   .d-actions .d-viol { font-weight: 700; border: 1px solid var(--blue); background: var(--surface); color: var(--blue); }
   .d-actions .d-viol.red { background: var(--bad-bg); color: var(--bad-ink); border-color: var(--bad-ink); }
   .d-actions .d-viol.yellow { background: var(--warn-bg); color: var(--warn-ink); border-color: var(--warn-ink); }
@@ -5454,8 +5455,20 @@
     const hasYtd = v.ytd != null;
     const recent = hasYtd ? v.ytd : (v.last_12mo || 0);
     const window_ = hasYtd ? `in ${yr}` : 'in the last 12 months';
-    if (recent > 0) return { tone: 'red', label: `🚨 Violations (${total}) · ${recent} ${window_}`, title: `HPD cited this building ${recent} time${recent === 1 ? '' : 's'} ${window_}` };
-    return { tone: 'yellow', label: `⚠️ Violations (${total}) · none ${window_}`, title: `${total} on record, none ${window_}` };
+    const open = v.open || 0;
+    // Colour follows what is OPEN, not what was issued. 906 E 141st St had
+    // four citations in April 2026, every one dismissed a few weeks later, and
+    // the button was the same red as a building with four live class C
+    // hazards — then the sheet under it said "nothing open right now".
+    if (open > 0) {
+      const hazard = (v.oc || 0) > 0 || open > 5;
+      const openTxt = `${open} open`;
+      return { tone: hazard ? 'red' : 'yellow',
+        label: `${hazard ? '🚨' : '⚠️'} Violations (${total}) · ${openTxt}${recent ? ` · ${recent} ${window_}` : ''}`,
+        title: `${open} open violation${open === 1 ? '' : 's'}${(v.oc || 0) ? `, ${v.oc} class C (immediately hazardous)` : ''}; ${total} on record` };
+    }
+    if (recent > 0) return { tone: 'green', label: `✅ Violations (${total}) · ${recent} ${window_}, all closed`, title: `HPD cited this building ${recent} time${recent === 1 ? '' : 's'} ${window_}; every one has since been closed or dismissed` };
+    return { tone: 'green', label: `✅ Violations (${total}) · none ${window_}`, title: `${total} on record, none ${window_}, nothing open` };
   }
 
   // What each registration status means, in plain words. NYC codes are the

@@ -334,7 +334,13 @@
   .price-row select { flex: 1; min-width: 0; padding: 9px 10px; font-size: 14px; font-weight: 500;
     border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); cursor: pointer; }
   .price-row .dash { color: var(--ink-2); flex: none; }
-  .filters-card { max-width: min(480px, calc(100vw - 24px)); min-width: 0; max-height: 84vh; overflow-y: auto; }
+  .filters-card { max-width: min(480px, calc(100vw - 24px)); min-width: 0; max-height: 84vh; display: flex; flex-direction: column; overflow: hidden; }
+  .filters-card h2 { flex: none; }
+  #filters-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-right: 4px; }
+  .filters-card .filters-actions { flex: none; padding-top: 12px; border-top: 1px solid var(--line); background: var(--surface); flex-wrap: wrap; }
+  .filters-actions #filters-save { flex: 1 1 100%; background: var(--surface); border: 1px solid var(--line); color: var(--ink); font-weight: 700; border-radius: 10px; padding: 12px; cursor: pointer; }
+  /* five neighborhoods at a time; the rest scroll inside the box */
+  #nb-list { max-height: 160px; }
   .filters-card .filter-pill { display: block; background: none; border: none; padding: 0;
     margin: 0 0 18px; cursor: default; font-weight: 800; font-size: 14px; color: var(--ink);
     white-space: normal; }
@@ -937,6 +943,8 @@
   }
   /* selected map pin (both layouts) */
   .price-pill.selected { background: #0a0a23; border-color: #fff; transform: scale(1.06); }
+  /* the list tile under the pointer: its pin goes green (matches .card.is-hover) */
+  .pin-hover .price-pill, .pin-hover .unit-pill { background: #16a34a !important; color: #fff !important; border-color: #fff !important; transform: scale(1.12); box-shadow: 0 4px 14px rgba(22,163,74,.55); }
   .building-dot.selected { background: #0a0a23; width: 18px; height: 18px; border-width: 2px; }
   @media (min-width: 901px) { #building-card { display: none !important; } }
 
@@ -1179,11 +1187,11 @@
       </div>
     </div>
     <div class="filter-pill nyc-only" id="pill-listed">
-      Recently advertised<span class="caret">▾</span>
+      Recently available<span class="caret">▾</span>
       <div class="pill-popover">
         <label class="row"><input type="radio" name="listed" value="any" checked> Any</label>
-        <label class="row"><input type="radio" name="listed" value="yes"> Recently advertised on Zumper</label>
-        <label class="row"><input type="radio" name="listed" value="no"> Not recently advertised</label>
+        <label class="row"><input type="radio" name="listed" value="yes"> Recently available on Zumper</label>
+        <label class="row"><input type="radio" name="listed" value="no"> Not recently available</label>
       </div>
     </div>
     <div class="filter-pill nyc-only" id="pill-s8">
@@ -1191,7 +1199,7 @@
       <div class="pill-popover">
         <label class="row"><input type="radio" name="s8" value="any" checked> Any</label>
         <label class="row"><input type="radio" name="s8" value="avail"> Listed for voucher holders now (AffordableHousing.com)</label>
-        <label class="row"><input type="radio" name="s8" value="bldg"> Subsidized / voucher-friendly building (HPD · HUD)</label>
+        <label class="row"><input type="radio" name="s8" value="bldg"> Subsidized / voucher-friendly building</label>
         <label class="row"><input type="radio" name="s8" value="either"> Either</label>
         <div style="font-size:11px;color:var(--ink-2);margin-top:8px;padding-top:8px;border-top:1px solid var(--line)">Every NYC landlord must accept vouchers by law — a building without a tag isn't off-limits. <a href="https://www.nyc.gov/site/cchr/about/report-discrimination.page" target="_blank" rel="noopener">Report voucher discrimination ↗</a></div>
       </div>
@@ -1385,6 +1393,7 @@
     <div class="filters-actions">
       <button id="filters-reset" type="button">Reset all filters</button>
       <button id="filters-done" type="button" class="auth-submit">Show results</button>
+      <button id="filters-save" type="button" title="Save these filters and the map position to reapply later">🔖 Save this search</button>
     </div>
   </div>
 </div>
@@ -1407,7 +1416,7 @@
       </div>
       <label class="switch"><input id="profile-alerts" type="checkbox"><span class="slider"></span></label>
     </div>
-    <div class="profile-row profile-toggle-row nyc-only">
+    <div class="profile-row profile-toggle-row nyc-only" hidden>
       <div>
         <div class="profile-feat">🏠 My apartment</div>
         <div class="profile-feat-sub" id="profile-home-sub">Not set. Search your address, open the building and tap “This is my apartment”.</div>
@@ -1996,7 +2005,7 @@
   }
   function syncHomeUI() {
     const pill = document.getElementById('pill-home');
-    if (pill) pill.hidden = !HOME;
+    if (pill) pill.hidden = true;   // feature retired 2026-09-06; the pill never shows
     const sub = document.getElementById('profile-home-sub'), btn = document.getElementById('profile-home-btn');
     const rec = homeRec();
     if (sub && btn) {
@@ -2103,7 +2112,7 @@
   // traffic). Alerts, phones, research, folders, and saved searches stay Plus.
   function gateSave(isUnsave) {
     if (isUnsave) return true;
-    if (!authUser) { openAuthModal('Create a free account to save this building — you’ll get an email when it’s advertised, a lottery or re-rental opens here, or its violations change. Never more than one email a day.'); return false; }
+    if (!authUser) { openAuthModal('Create a free account to save this building — you’ll get an email when it’s available, a lottery or re-rental opens here, or its violations change. Never more than one email a day.'); setAuthMode('signup'); return false; }
     return true;
   }
   async function persistFav(bbl, on) {
@@ -2756,7 +2765,7 @@
       }
       const q = encodeURIComponent(`${rec.a}, ${borough}, NY ${rec.z || ''}`.trim());
       return { href: `https://streeteasy.com/search?search=${q}`,
-               label: 'StreetEasy ↗', short: 'StreetEasy ↗', direct: false };
+               label: 'View on StreetEasy ↗', short: 'View on StreetEasy ↗', direct: false };
     }
     if (safeHttpUrl(direct))
       return { href: direct, label: 'Zumper ↗', short: 'Zumper ↗', direct: true };
@@ -2781,7 +2790,7 @@
     if (rec.u != null) meta.push(`${rec.u} residential units`);
     const statusHtml = (rec.s || []).map(s => `<span class="popup-status">${esc(s)}</span>`).join('');
     const advSrc = IS_NYC ? '' : ' on Zumper';
-    const listedHtml = listed ? `<div style="margin-top:8px;color:#6b3df5;font-weight:700">Recently advertised${advSrc} (${listed} listing${listed===1?'':'s'})<span style="font-weight:500;color:#8a8aa0">${asOf}</span></div>` : '';
+    const listedHtml = listed ? `<div style="margin-top:8px;color:#6b3df5;font-weight:700">Recently available${advSrc} (${listed} listing${listed===1?'':'s'})<span style="font-weight:500;color:#8a8aa0">${asOf}</span></div>` : '';
     // SF blocks and DC registrations carry a median reported/registered rent (mr)
     const rentHtml = rec.mr ? `<div style="margin-top:8px;color:var(--ok-ink);font-weight:700">${RENT.label} $${rec.mr.toLocaleString()}/mo <span style="font-weight:500;color:var(--ink-2)">${esc(RENT.note)}</span></div>` : '';
     const vacHtml = rec.vac ? `<div style="margin-top:6px;color:#b26a00;font-weight:700">${rec.vac} vacant unit${rec.vac === 1 ? '' : 's'} <span style="font-weight:500;color:#8a8aa0">(reported at last registration)</span></div>` : '';
@@ -3548,6 +3557,7 @@
       filtersModal.hidden = true; return;
     }
     if (e.target.closest('#filters-reset')) resetAllFilters();
+    if (e.target.closest('#filters-save')) saveCurrentSearch();
   });
   function resetAllFilters() {
     document.querySelectorAll('#borough-list input').forEach(c => { c.checked = true; });
@@ -4468,6 +4478,7 @@
   // list sort, chosen from the mobile FAB "Sort" sheet. 'loc' = natural viewport order.
   let sortMode = 'loc';
   let filtered = [];
+  let lastAreaKey = null;     // borough|neighborhood selection at the last applyFilters
   // What the last search resolved to, for the header, the helper card and the
   // event log: which tier answered, whether the filters had to be set aside,
   // and the closest names we know if nothing matched at all.
@@ -4677,7 +4688,14 @@
     // silently off-screen, and the viewport-scoped list then said "no
     // buildings in view". No size guard: a borough is ~20k points and
     // latLngBounds over them is instant.
-    const framed = selectedNbs.size > 0 || SEARCH_HIT_TIERS.has(tier);
+    // A changed borough or neighborhood selection frames the map on what is
+    // left (2026-09-06: filtering to Staten Island used to leave the map on
+    // Manhattan with no pins). The first pass at boot keeps the remembered
+    // view; deep links and searches still frame on their own terms.
+    const areaKey = [...boroughs].sort().join(',') + '|' + [...selectedNbs].sort().join(',');
+    const areaChanged = lastAreaKey !== null && areaKey !== lastAreaKey;
+    lastAreaKey = areaKey;
+    const framed = selectedNbs.size > 0 || SEARCH_HIT_TIERS.has(tier) || areaChanged;
     if (framed && filtered.length) {
       tr('af:frame');
       const bounds = L.latLngBounds(filtered.map(r => [r.lat, r.lng]));
@@ -5173,8 +5191,8 @@
     const totalListings = visible.reduce((s, r) => s + (listingCounts[r.bbl]||0), 0) + (pinned ? (listingCounts[pinned.bbl]||0) : 0);
     if (pinned) visible.unshift(pinned);
     if (resultsSub) resultsSub.textContent = citywide
-      ? `${visible.length.toLocaleString()} building${visible.length === 1 ? ' matches' : 's match'} across NYC · ${totalListings.toLocaleString()} recently advertised on Zumper`
-      : `${visible.length.toLocaleString()} buildings in view · ${filtered.length.toLocaleString()} match filters · ${totalListings.toLocaleString()} recently advertised on Zumper`;
+      ? `${visible.length.toLocaleString()} building${visible.length === 1 ? ' matches' : 's match'} across NYC · ${totalListings.toLocaleString()} recently available on Zumper`
+      : `${visible.length.toLocaleString()} buildings in view · ${filtered.length.toLocaleString()} match filters · ${totalListings.toLocaleString()} recently available on Zumper`;
     // Zillow-style "X of Y" pill over the map on mobile
     document.getElementById('map-count').textContent = `${visible.length.toLocaleString()} of ${filtered.length.toLocaleString()}`;
     document.getElementById('fab-label').textContent = document.body.classList.contains('list-open') ? 'Map' : 'List';
@@ -5292,7 +5310,7 @@
     const listed = listingCounts[rec.bbl] || 0;
     const price = listingPrices[rec.bbl];
     const beds = listingBeds[rec.bbl];
-    const listedHtml = listed > 0 ? `<span class="listed-pill">Recently advertised</span>` : `<span></span>`;
+    const listedHtml = listed > 0 ? `<span class="listed-pill">Recently available</span>` : `<span></span>`;
     const stats = [];
     if (rec.u != null) stats.push(`${rec.u} units`);
     if (rec.yr) stats.push(`built ${rec.yr}`);
@@ -5314,7 +5332,7 @@
       </div>
       <div class="body">
         ${rec.nb ? `<div class="nb">${esc(rec.nb)}</div>` : ''}
-        ${listed > 0 ? `<div class="price">${price ? '$' + price.toLocaleString() + '/mo' : `Recently advertised${IS_NYC ? '' : ' on Zumper'} · ${listed} listing${listed===1?'':'s'}${asOf}`}</div>`
+        ${listed > 0 ? `<div class="price">${price ? '$' + price.toLocaleString() + '/mo' : `Recently available${IS_NYC ? '' : ' on Zumper'} · ${listed} listing${listed===1?'':'s'}${asOf}`}</div>`
                      : rec.mr ? `<div class="price est" title="${esc(RENT.title)}">${RENT.short} $${rec.mr.toLocaleString()}/mo</div>`
                      : (estRent(rec) ? `<div class="price est" title="${EST_TITLE}">${estRent(rec)}</div>` : '')}
         ${beds && beds.length ? `<div class="beds-line">${bedsLabel(beds)} available</div>` : ''}
@@ -5517,6 +5535,26 @@
   // Hover mirror of the click highlight above. Same BBL-not-node rule: the
   // grid re-renders on every map move.
   let hoverBbl = null;
+  // List tile -> map pin. The pin is on the map when the building stands alone
+  // at this zoom; when it is folded into a cluster a green pin is dropped at
+  // its spot for the hover so there is always something to see.
+  let hoverPinMarker = null, hoverPinEl = null;
+  function hoverPin(bbl) {
+    if (hoverPinEl) { hoverPinEl.classList.remove('pin-hover'); hoverPinEl = null; }
+    if (hoverPinMarker) { pinLayer.removeLayer(hoverPinMarker); hoverPinMarker = null; }
+    if (!bbl) return;
+    const m = markerByBbl.get(bbl);
+    const el = m && m.getElement && m.getElement();
+    if (el && el.isConnected) { hoverPinEl = el; el.classList.add('pin-hover'); m.setZIndexOffset(2000); return; }
+    const rec = recByBbl.get(bbl);
+    if (!rec) return;
+    const text = rec.u != null ? `${rec.u} unit${rec.u === 1 ? '' : 's'}` : 'bldg';
+    hoverPinMarker = L.marker([rec.lat, rec.lng], { icon: pillIcon(`<div class="unit-pill">${text}</div>`, text.length), zIndexOffset: 2000, interactive: false });
+    pinLayer.addLayer(hoverPinMarker);
+    const he = hoverPinMarker.getElement(); if (he) he.classList.add('pin-hover');
+  }
+  grid.addEventListener('mouseover', e => { const c = e.target.closest('.card[data-bbl]'); if (c) hoverPin(c.dataset.bbl); });
+  grid.addEventListener('mouseout', e => { const c = e.target.closest('.card[data-bbl]'); if (c && !c.contains(e.relatedTarget)) hoverPin(null); });
   function hoverCard(bbl) {
     hoverBbl = bbl || null;
     const prev = grid.querySelector('.card.is-hover');
@@ -5557,7 +5595,7 @@
     const faved = FAVS.has(rec.bbl);
     const sv = streetviewUrl(rec.lat, rec.lng, 640, 360);
     const priceLine = listed > 0
-      ? (price ? '$' + price.toLocaleString() + '/mo' : 'Recently advertised')
+      ? (price ? '$' + price.toLocaleString() + '/mo' : 'Recently available')
       : rec.mr ? `${RENT.short} $${rec.mr.toLocaleString()}/mo`
       : (estRent(rec) || (rec.u != null ? rec.u + ' residential units' : CITY.label + ' building'));
     const sub = [
@@ -5570,7 +5608,7 @@
       <button class="card-close" data-card="close" aria-label="Close">✕</button>
       <img class="card-photo" src="${sv}" alt="" onerror="this.removeAttribute('src')">
       <button class="card-fav ${faved ? 'faved' : ''}" data-card="fav" aria-label="${faved ? 'Saved' : 'Save'}" aria-pressed="${faved}">${faved ? '♥' : '♡'}</button>
-      ${listed > 0 ? `<span class="card-badge">Recently advertised${IS_NYC ? '' : ' on Zumper'}</span>` : ''}
+      ${listed > 0 ? `<span class="card-badge">Recently available${IS_NYC ? '' : ' on Zumper'}</span>` : ''}
       <div class="card-body">
         <div class="card-price">${priceLine}</div>
         <div class="card-sub">${esc(sub)}</div>
@@ -5635,7 +5673,7 @@
     const borough = BORO_NAME[rec.b] || '';
     const sv = streetviewUrl(rec.lat, rec.lng, 800, 480);
     const priceLine = listed > 0
-      ? (price ? '$' + price.toLocaleString() + '/mo' : 'Recently advertised on Zumper')
+      ? (price ? '$' + price.toLocaleString() + '/mo' : 'Recently available on Zumper')
       : rec.mr ? `${RENT.label} $${rec.mr.toLocaleString()}/mo`
       : CITY.label + ' building';
     const keyBits = [];
@@ -5701,9 +5739,6 @@
       ${IS_NYC ? `<div class="d-actions" style="padding-top:0">
         <button class="d-secondary" data-detail="complaints">Building (HPD) Complaints${compTotal != null ? ' · ' + compTotal : ''}</button>
       </div>` : ''}
-      ${IS_NYC ? (HOME && HOME.bbl === rec.bbl
-        ? `<div class="d-actions" style="padding-top:0"><button class="d-secondary" data-detail="unhome" title="Unpin this building">Not my apartment</button></div>`
-        : `<div class="d-actions" style="padding-top:0"><button class="d-secondary" data-detail="home" title="Pin your own building: a standing view of its status, violations and landlord, and an email when anything changes">This is my apartment</button></div>`) : ''}
       ${IS_NYC ? `<div class="d-section" data-sec="vouchers"><h3>Housing vouchers (Section 8)</h3>
         ${s8Html(rec) || '<div class="d-sub" style="margin:0">No voucher listing or subsidy record for this building right now.</div>'}
         <div class="s8-legal">Source-of-income discrimination is illegal in NYC — every landlord must accept Section 8 and other vouchers, tagged here or not. <a href="https://www.nyc.gov/site/cchr/about/report-discrimination.page" target="_blank" rel="noopener">Report discrimination to the NYC Commission on Human Rights ↗</a></div>

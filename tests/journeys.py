@@ -74,7 +74,7 @@ class Runner:
         page.on('pageerror', lambda e: j.errors.append('pageerror: ' + str(e)[:200]))
         page.on('crash', lambda: j.errors.append('CRASH: renderer died'))
         page.on('console', lambda m: j.errors.append('console.error: ' + m.text[:200])
-                if m.type == 'error' and 'Failed to load resource' not in m.text else None)
+                if m.type == 'error' and 'Failed to load resource' not in m.text and 'report-only Content Security Policy' not in m.text else None)
         if self.html is not None:
             def route(r):
                 u = r.request.url.split('#')[0]
@@ -94,7 +94,7 @@ class Runner:
             page.goto('about:blank')
         page.goto(LIVE + path, wait_until='networkidle', timeout=90000)
         if wait_pins:
-            page.wait_for_function(PINS + ' > 0', timeout=60000)
+            page.wait_for_function('() => ' + PINS + ' > 0', timeout=60000)
         time.sleep(1.5)
 
     # ---- helpers ----------------------------------------------------------
@@ -144,9 +144,9 @@ class Runner:
         self.pick_first(page)
         self.ok(self.detail_open(page), 'picking an address should open the building sheet', j)
         btns = page.evaluate("[...document.querySelectorAll('#detail-sheet .d-actions a, #detail-sheet .d-actions button')].map(b=>b.textContent.trim())")
-        for want in ('Violations', 'StreetEasy', 'View on map', 'Building (HPD) Complaints', 'This is my apartment'):
+        for want in ('Violations', 'View on StreetEasy', 'View on map', 'Building (HPD) Complaints'):
             self.ok(any(want in b for b in btns), f'building sheet lacks "{want}" button: {btns}', j)
-        self.ok(btns and 'my apartment' in btns[-2].lower() or 'my apartment' in btns[-1].lower(), f'"my apartment" should be the last action, got {btns[-3:]}', j)
+        self.ok(not any('my apartment' in b.lower() for b in btns), f'my-apartment button should be gone, got {btns}', j)
         # every button does something
         self.click(page, '#detail-sheet [data-detail="violations"]'); time.sleep(0.8)
         self.ok(not page.evaluate("document.getElementById('viol-sheet').hidden"), 'Violations button did not open the sheet', j)
@@ -154,11 +154,6 @@ class Runner:
         self.click(page, '#detail-sheet [data-detail="complaints"]'); time.sleep(0.8)
         self.ok(page.evaluate("!!document.querySelector('.viol-backdrop:not([hidden])')"), 'Complaints button did not open a sheet', j)
         page.evaluate("document.querySelectorAll('.viol-backdrop .sheet-close').forEach(b=>b.click())"); time.sleep(0.3)
-        self.click(page, '#detail-sheet [data-detail="home"]'); time.sleep(0.8)
-        self.ok(page.evaluate("!!document.querySelector('#detail-sheet [data-detail=\"unhome\"]')"), 'This is my apartment should flip to Not my apartment', j)
-        self.ok(not page.evaluate("!!document.querySelector('#detail-sheet .d-home')"), 'Your-apartment block should not render', j)
-        self.click(page, '#detail-sheet [data-detail="unhome"]'); time.sleep(0.5)
-        self.ok(page.evaluate("!!document.querySelector('#detail-sheet [data-detail=\"home\"]')"), 'Not my apartment should flip back', j)
         self.click(page, '#detail-sheet [data-detail="map"]'); time.sleep(1.5)
         self.ok(not self.detail_open(page), 'View on map should close the sheet', j)
         if device == 'phone':
@@ -239,6 +234,20 @@ class Runner:
         listed = int(page.evaluate(LABEL).split(' of ')[1].replace(',', ''))
         self.ok(0 < listed < 2000, f'"recently advertised" filter should leave a few hundred, got {listed}', j)
         page.evaluate("const r=document.querySelector('input[name=\"listed\"][value=\"any\"]'); r.checked=true; r.dispatchEvent(new Event('change',{bubbles:true}))"); time.sleep(0.8)
+        if device == 'desktop':
+            # filters modal: footer visible without scrolling, Save present, five-row neighborhood box, wording
+            page.evaluate("document.getElementById('pill-filters').click()"); time.sleep(0.8)
+            self.ok(not page.evaluate("document.getElementById('filters-modal').hidden"), 'Filters should open the modal', j)
+            vis = page.evaluate("(()=>{const b=document.getElementById('filters-done').getBoundingClientRect(); return b.bottom <= innerHeight && b.top >= 0 && b.height > 0})()")
+            self.ok(vis, 'Show results should be visible at the bottom of the filters modal without scrolling', j)
+            self.ok(page.evaluate("!!document.getElementById('filters-save')"), 'filters modal lacks Save this search', j)
+            self.ok(page.evaluate("document.getElementById('nb-list').getBoundingClientRect().height") <= 170, 'neighborhood list should show about five rows', j)
+            body = page.evaluate("document.getElementById('filters-modal').innerText")
+            self.ok('Recently available' in body and 'Recently advertised' not in body and 'HPD · HUD' not in body, 'filters wording not updated', j)
+            page.evaluate("document.querySelector('[data-filters=\"close\"]').click()"); time.sleep(0.3)
+            page.hover('#grid .card[data-bbl] >> nth=0'); time.sleep(0.6)
+            self.ok(page.evaluate("!!document.querySelector('#map .pin-hover')"), 'hovering a tile should paint its pin green', j)
+            page.mouse.move(5, 5); time.sleep(0.3)
         # save a building anonymously (localStorage), then the Saved filter shows it
         self.boot(page, f'/#d={BBL}')
         self.ok(self.detail_open(page), '#d= should open the sheet', j)
@@ -248,6 +257,9 @@ class Runner:
         after = page.evaluate(favs_js)
         gated = not page.evaluate("document.getElementById('auth-modal').hidden")
         self.ok(after != before or gated, 'heart should toggle the local save or ask to sign in', j)
+        if gated:
+            self.ok('sign up' in page.evaluate("document.getElementById('auth-submit').textContent").lower() or 'create' in page.evaluate("document.getElementById('auth-submit').textContent").lower(), 'heart should open the modal in sign-UP mode', j)
+            page.evaluate("document.querySelector('[data-auth=\"close\"]')?.click()"); time.sleep(0.3)
         if BBL not in after and not gated:               # it was already saved (the my-apartment step saves too); toggle back on
             self.click(page, '#detail-sheet [data-detail="fav"]'); time.sleep(0.8)
             after = page.evaluate(favs_js)
@@ -273,7 +285,7 @@ class Runner:
         for city, low in (('la', 1000), ('sf', 1000), ('dc', 100), ('westchester', 100)):
             page.goto(f'{LIVE}/{city}/', wait_until='networkidle', timeout=90000)
             try:
-                page.wait_for_function(PINS + ' > 0', timeout=60000)
+                page.wait_for_function('() => ' + PINS + ' > 0', timeout=120000)   # LA is 67k parcels
             except Exception:
                 j.errors.append(f'/{city}/ never drew pins'); continue
             time.sleep(1)

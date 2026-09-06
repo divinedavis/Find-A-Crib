@@ -19,7 +19,7 @@ from pathlib import Path
 HERE = Path(__file__).parent
 SRC = HERE / "index.html"
 
-NYC_TITLE = "Rent-Stabilized NYC — Manhattan, Bronx, Brooklyn, Queens + Staten Island"
+NYC_TITLE = "Find A Crib — Rent-Stabilized NYC: Manhattan, Bronx, Brooklyn, Queens + Staten Island"
 NYC_DESC = "Find NYC rent-stabilized apartments across Manhattan, Bronx, Brooklyn, Queens & Staten Island."
 NYC_OG_TITLE = "Rent-Stabilized NYC — Find A Crib"
 NYC_TAGLINE = "(NYC Rent Stabilized Homes)"

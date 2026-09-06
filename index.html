@@ -4468,6 +4468,7 @@
   // list sort, chosen from the mobile FAB "Sort" sheet. 'loc' = natural viewport order.
   let sortMode = 'loc';
   let filtered = [];
+  let lastAreaKey = null;     // borough|neighborhood selection at the last applyFilters
   // What the last search resolved to, for the header, the helper card and the
   // event log: which tier answered, whether the filters had to be set aside,
   // and the closest names we know if nothing matched at all.
@@ -4677,7 +4678,14 @@
     // silently off-screen, and the viewport-scoped list then said "no
     // buildings in view". No size guard: a borough is ~20k points and
     // latLngBounds over them is instant.
-    const framed = selectedNbs.size > 0 || SEARCH_HIT_TIERS.has(tier);
+    // A changed borough or neighborhood selection frames the map on what is
+    // left (2026-09-06: filtering to Staten Island used to leave the map on
+    // Manhattan with no pins). The first pass at boot keeps the remembered
+    // view; deep links and searches still frame on their own terms.
+    const areaKey = [...boroughs].sort().join(',') + '|' + [...selectedNbs].sort().join(',');
+    const areaChanged = lastAreaKey !== null && areaKey !== lastAreaKey;
+    lastAreaKey = areaKey;
+    const framed = selectedNbs.size > 0 || SEARCH_HIT_TIERS.has(tier) || areaChanged;
     if (framed && filtered.length) {
       tr('af:frame');
       const bounds = L.latLngBounds(filtered.map(r => [r.lat, r.lng]));

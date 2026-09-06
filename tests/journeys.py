@@ -231,8 +231,9 @@ class Runner:
         self.boot(page)
         total = int(page.evaluate(LABEL).split(' of ')[1].replace(',', ''))
         page.evaluate("document.querySelectorAll('#borough-list input').forEach(c=>{c.checked=(c.dataset.b==='SI')}); document.querySelector('#borough-list input').dispatchEvent(new Event('change',{bubbles:true}))"); time.sleep(1)
-        si = int(page.evaluate(LABEL).split(' of ')[1].replace(',', ''))
+        lab = page.evaluate(LABEL); in_view, si = [int(x.replace(',', '')) for x in lab.split(' of ')]
         self.ok(0 < si < total, f'Staten Island filter should shrink the match count, {total} -> {si}', j)
+        self.ok(in_view >= 0.9 * si, f'the map should frame the filtered borough, but only {lab} are in view', j)
         page.evaluate("document.querySelectorAll('#borough-list input').forEach(c=>{c.checked=true}); document.querySelector('#borough-list input').dispatchEvent(new Event('change',{bubbles:true}))"); time.sleep(1)
         page.evaluate("const r=document.querySelector('input[name=\"listed\"][value=\"yes\"]'); r.checked=true; r.dispatchEvent(new Event('change',{bubbles:true}))"); time.sleep(1)
         listed = int(page.evaluate(LABEL).split(' of ')[1].replace(',', ''))

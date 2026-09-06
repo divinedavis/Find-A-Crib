@@ -493,11 +493,12 @@
   }
   .load-retry:hover { border-color: var(--blue); }
 
-  /* The card for the building whose pin is open on the map. A ring rather than
-     a background change: these cards are mostly photo, and tinting them fights
-     the image while a ring reads at a glance in both themes. */
+  /* The card for the building whose pin is open on the map: pinned to the
+     first slot of the list and ringed green. A ring rather than a background
+     change: these cards are mostly photo, and tinting them fights the image
+     while a ring reads at a glance in both themes. */
   .card.is-selected {
-    border-color: var(--blue); box-shadow: 0 0 0 2px var(--blue-solid), var(--card-shadow);
+    border-color: var(--ok-ink); box-shadow: 0 0 0 2px var(--ok-ink), var(--card-shadow);
   }
   /* Hovering a pin on the map lights its tile green (2026-09-03). Green rather
      than the blue of a clicked pin so "you are pointing at this" and "you
@@ -4434,6 +4435,10 @@
   }
 
   const MAX_CARDS = 200;
+  // BBL of the building whose pin is open on the map (see "map ⇄ list" below).
+  // Declared up here because refreshGrid() reads it to pin that building's
+  // card to the first slot of the list.
+  let selectedBbl = null;
 
   // ---------- in-feed ads (Google AdSense) ----------
   // Paste your AdSense IDs after the site is approved to switch ads on.
@@ -4895,7 +4900,17 @@
         });
       }
     }
-    const totalListings = visible.reduce((s, r) => s + (listingCounts[r.bbl]||0), 0);
+    // The building whose pin is open goes first, ahead of the promo tiles and
+    // clear of the 200-card cap. Before this it kept its sorted position, so
+    // on a dense block (1,000+ buildings in view) the clicked building was
+    // usually past the cap and the list showed nothing at all for the click.
+    let pinned = null;
+    if (selectedBbl != null) {
+      const i = visible.findIndex(r => r.bbl === selectedBbl);
+      if (i >= 0) pinned = visible.splice(i, 1)[0];
+    }
+    const totalListings = visible.reduce((s, r) => s + (listingCounts[r.bbl]||0), 0) + (pinned ? (listingCounts[pinned.bbl]||0) : 0);
+    if (pinned) visible.unshift(pinned);
     if (resultsSub) resultsSub.textContent = citywide
       ? `${visible.length.toLocaleString()} building${visible.length === 1 ? ' matches' : 's match'} across NYC · ${totalListings.toLocaleString()} recently advertised on Zumper`
       : `${visible.length.toLocaleString()} buildings in view · ${filtered.length.toLocaleString()} match filters · ${totalListings.toLocaleString()} recently advertised on Zumper`;
@@ -4910,6 +4925,9 @@
     grid.classList.remove('empty-state');
     const truncated = visible.length > MAX_CARDS;
     const shown = truncated ? visible.slice(0, MAX_CARDS) : visible;
+    // pinned is visible[0] at this point, so it survives the cap; take it out
+    // of the paged run so it can lead the list ahead of the promo tiles.
+    if (pinned) shown.shift();
     // Saved is the user's own shortlist and a shared folder is someone else's:
     // both are lists a person built on purpose, and nobody's advertising
     // belongs inside one. A saved list of a single building was leading with a
@@ -4926,6 +4944,7 @@
     // buildings. It goes first because it is the only inventory on this page
     // someone can actually apply to today — burying it eight cards down meant
     // most visitors never scrolled to one.
+    if (pinned) parts.push(cardHtml(pinned));
     if (promos) parts.push(nextFeatured());
     // Housing Connect takes the second slot on every render. hcCursor was just
     // reset, and the pool is sorted by soonest deadline, so the lead tile is
@@ -5179,7 +5198,6 @@
   // Tracked by BBL rather than by element, because the list re-renders on every
   // map move — holding the node would leave a stale reference to something no
   // longer in the document, and the highlight would silently vanish on a pan.
-  let selectedBbl = null;
   function paintCardHighlight() {
     const prev = grid.querySelector('.card.is-selected');
     if (prev) prev.classList.remove('is-selected');
@@ -5190,14 +5208,15 @@
   }
   function highlightCard(bbl, scroll) {
     selectedBbl = bbl || null;
+    // The selected building is rendered as the first tile (refreshGrid pins
+    // it), so unless it is already there the list has to be rebuilt.
+    const first = grid.querySelector('.card[data-bbl]');
+    if (selectedBbl != null && (!first || first.dataset.bbl !== String(selectedBbl))) {
+      refreshGrid();
+    }
     const el = paintCardHighlight();
     if (!el || !scroll) return;
-    // Only scroll when it isn't already visible. Yanking the list under the
-    // cursor on every pin click is worse than leaving it where it is.
-    const r = el.getBoundingClientRect(), host = grid.getBoundingClientRect();
-    if (r.top < host.top || r.bottom > host.bottom) {
-      el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    }
+    grid.scrollTo({ top: 0, behavior: 'smooth' });
   }
   function clearCardHighlight() { selectedBbl = null; paintCardHighlight(); }
   // Hover mirror of the click highlight above. Same BBL-not-node rule: the

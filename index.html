@@ -1517,7 +1517,7 @@
         <span class="detail-brand" hidden>Find A Crib</span>
       </div>
       <div class="detail-bar-right">
-        <button class="detail-plus-cta" data-detail="getplus" hidden>🎁 Get free Plus</button>
+        <button class="detail-plus-cta" data-detail="getplus" hidden>Get free Plus</button>
         <button class="detail-icon detail-profile" data-detail="profile" hidden aria-label="Profile">👤</button>
         <button class="detail-icon detail-share" data-detail="share" aria-label="Share this building" title="Share"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg></button>
         <button class="detail-icon detail-fav" data-detail="fav" aria-label="Save">♡</button>
@@ -2601,7 +2601,7 @@
   // makes the UI tell the truth about it; deleting it would re-expose nothing.
   function signInForOperator() {
     return '<div class="hpd-row" style="color:var(--ink-2)">'
-      + '🔒 <a href="#" data-op-signin>Sign in</a> to see the owner, managing agent '
+      + '<a href="#" data-op-signin>Sign in</a> to see the owner, managing agent '
       + 'and head officer on file with HPD.</div>';
   }
   function operatorRows(c, bbl) {
@@ -2785,7 +2785,7 @@
     // Portfolio research (Plus): aggregates live in private tables, fetched via
     // the has_plus-gated get_research() RPC — non-subscribers get the paywall.
     const researchBtn = h.op
-      ? `<button type="button" class="hpd-research-btn" data-research data-bbl="${esc(rec.bbl)}">🔎 Research this owner &amp; agent</button>`
+      ? `<button type="button" class="hpd-research-btn" data-research data-bbl="${esc(rec.bbl)}">Research this owner &amp; agent</button>`
       : '';
     return `
       <div class="hpd-section">
@@ -5343,9 +5343,9 @@
     const v = rec.h && rec.h.violations;
     if (!v) return '';
     const open = v.open || 0;
-    if (open === 0) return `<div class="d-health ok">✅ No open HPD violations on record</div>`;
+    if (open === 0) return `<div class="d-health ok">No open HPD violations on record</div>`;
     const cls = v.c ? 'bad' : 'warn';
-    return `<div class="d-health ${cls}">⚠️ ${open} open HPD violation${open === 1 ? '' : 's'}`
+    return `<div class="d-health ${cls}">${open} open HPD violation${open === 1 ? '' : 's'}`
       + (v.c ? ` · ${v.c} hazardous (Class C)` : '') + ` — see details below</div>`;
   }
   function renderDetail(rec, listed) {
@@ -5384,21 +5384,21 @@
     const title = rec.nb || borough || CITY.label;
     const addrLine = [rec.a, [borough, rec.z].filter(Boolean).join(' ')].filter(Boolean).join(', ');
     const spec = [
-      ['🏢', rec.u != null ? rec.u : '—', rec.u === 1 ? 'unit' : 'units'],
-      ['⚠️', violTotal != null ? violTotal : '—', violTotal === 1 ? 'violation' : 'violations'],
-      ['🏗️', rec.yr || '—', ''],
+      [rec.u != null ? rec.u : '—', rec.u === 1 ? 'unit' : 'units'],
+      [violTotal != null ? violTotal : '—', violTotal === 1 ? 'violation' : 'violations'],
+      [rec.yr || '—', 'built'],
     ];
     return `
       <div class="d-hero" data-sec="photo">
         <img class="d-photo" src="${sv}" alt="" onerror="this.style.visibility='hidden'">
         <div class="d-spec">
-          ${spec.map(([ic, v, l]) => `<div class="d-spec-item"><span class="d-spec-ico">${ic}</span><span class="d-spec-txt"><b>${esc(String(v))}</b>${l ? ' ' + l : ''}</span></div>`).join('')}
+          ${spec.map(([v, l]) => `<div class="d-spec-item"><span class="d-spec-txt">${l === 'built' ? 'built <b>' + esc(String(v)) + '</b>' : '<b>' + esc(String(v)) + '</b>' + (l ? ' ' + l : '')}</span></div>`).join('')}
         </div>
       </div>
       <div class="d-head" data-sec="header">
         <h2 class="d-title">${esc(title)}</h2>
         <div class="d-tagline"><span class="d-tag">${esc(CITY.label)}</span>${est ? ` <span class="d-dot">·</span> <span class="d-est" title="${esc(EST_TITLE)}">${est}</span>` : ''}</div>
-        <div class="d-addr"><span class="d-pin">📍</span> ${esc(addrLine)}</div>
+        <div class="d-addr">${esc(addrLine)}</div>
       </div>
       ${homeBlock(rec)}
       <div class="agent-card" data-sec="agent" data-agentcard="${esc(rec.bbl)}">${agentCardInner(rec.bbl, !!(rec.h && rec.h.op))}</div>
@@ -5410,7 +5410,7 @@
         <button class="d-viol ${viol.tone}" data-detail="violations" title="${esc(viol.title)}">${viol.label}</button>
       </div>` : ''}
       ${IS_NYC && !(HOME && HOME.bbl === rec.bbl) ? `<div class="d-actions" style="padding-top:0">
-        <button class="d-secondary" data-detail="home" title="Pin your own building: a standing view of its status, violations and landlord, and an email when anything changes">🏠 This is my apartment</button>
+        <button class="d-secondary" data-detail="home" title="Pin your own building: a standing view of its status, violations and landlord, and an email when anything changes">This is my apartment</button>
       </div>` : ''}
       <div class="d-actions"${IS_NYC ? ' style="padding-top:0"' : ' data-sec="actions"'}>
         <a class="d-secondary" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.label}</a>
@@ -5419,10 +5419,10 @@
         <button class="d-secondary" data-detail="map">View on map</button>
       </div>
       <div class="d-actions d-dir-row" style="padding-top:0">
-        <button class="d-secondary" data-detail="directions">🧭 Driving directions</button>
+        <button class="d-secondary" data-detail="directions">Driving directions</button>
       </div>
       ${IS_NYC ? `<div class="d-actions" style="padding-top:0">
-        <button class="d-secondary" data-detail="complaints">📣 Building (HPD) Complaints${compTotal != null ? ' · ' + compTotal : ''}</button>
+        <button class="d-secondary" data-detail="complaints">Building (HPD) Complaints${compTotal != null ? ' · ' + compTotal : ''}</button>
       </div>` : ''}
       ${IS_NYC ? `<div class="d-section" data-sec="vouchers"><h3>Housing vouchers (Section 8)</h3>
         ${s8Html(rec) || '<div class="d-sub" style="margin:0">No voucher listing or subsidy record for this building right now.</div>'}
@@ -5449,9 +5449,9 @@
     // The boot file only carries open counts, and omits the block entirely for
     // a building with nothing open — which is exactly what a clean building
     // looks like too. Don't call it green until the all-time blob says so.
-    if (!HPD_FULL && (!v || total == null)) return { tone: '', label: `⚠️ Violations${v && v.open ? ' (' + v.open + ' open)' : ''}`, title: 'Loading the full HPD record…' };
-    if (!v) return { tone: 'green', label: '✅ No violations on record', title: 'HPD has no violations on file for this building' };
-    if (!total) return { tone: 'green', label: '✅ No violations on record', title: 'HPD has no violations on file for this building' };
+    if (!HPD_FULL && (!v || total == null)) return { tone: '', label: `Violations${v && v.open ? ' (' + v.open + ' open)' : ''}`, title: 'Loading the full HPD record…' };
+    if (!v) return { tone: 'green', label: 'No violations on record', title: 'HPD has no violations on file for this building' };
+    if (!total) return { tone: 'green', label: 'No violations on record', title: 'HPD has no violations on file for this building' };
     const hasYtd = v.ytd != null;
     const recent = hasYtd ? v.ytd : (v.last_12mo || 0);
     const window_ = hasYtd ? `in ${yr}` : 'in the last 12 months';
@@ -5464,11 +5464,11 @@
       const hazard = (v.oc || 0) > 0 || open > 5;
       const openTxt = `${open} open`;
       return { tone: hazard ? 'red' : 'yellow',
-        label: `${hazard ? '🚨' : '⚠️'} Violations (${total}) · ${openTxt}${recent ? ` · ${recent} ${window_}` : ''}`,
+        label: `Violations (${total}) · ${openTxt}${recent ? ` · ${recent} ${window_}` : ''}`,
         title: `${open} open violation${open === 1 ? '' : 's'}${(v.oc || 0) ? `, ${v.oc} class C (immediately hazardous)` : ''}; ${total} on record` };
     }
-    if (recent > 0) return { tone: 'green', label: `✅ Violations (${total}) · ${recent} ${window_}, all closed`, title: `HPD cited this building ${recent} time${recent === 1 ? '' : 's'} ${window_}; every one has since been closed or dismissed` };
-    return { tone: 'green', label: `✅ Violations (${total}) · none ${window_}`, title: `${total} on record, none ${window_}, nothing open` };
+    if (recent > 0) return { tone: 'green', label: `Violations (${total}) · ${recent} ${window_}, all closed`, title: `HPD cited this building ${recent} time${recent === 1 ? '' : 's'} ${window_}; every one has since been closed or dismissed` };
+    return { tone: 'green', label: `Violations (${total}) · none ${window_}`, title: `${total} on record, none ${window_}, nothing open` };
   }
 
   // What each registration status means, in plain words. NYC codes are the
@@ -5570,7 +5570,7 @@
       if (d.checkout_url) { window.location.href = d.checkout_url; return; }
       throw new Error(d.error || 'unavailable');
     } catch (err) {
-      if (btn) { btn.disabled = false; btn.textContent = '📄 Get the full building report — $9'; }
+      if (btn) { btn.disabled = false; btn.textContent = 'Get the full building report — $9'; }
       alert('Sorry — checkout could not be opened just now. Please try again in a moment.');
     }
   }
@@ -5761,7 +5761,7 @@
       setHome(rec);
       detailContent.innerHTML = renderDetail(rec, detailListed); watchDetailSections(rec); syncDetailFav(); loadComments(rec.bbl);
       detailContent.scrollTop = 0;
-      showPlusToast('🏠 Pinned as your apartment — saved and watched. Find it any time under “My apartment”.');
+      showPlusToast('Pinned as your apartment — saved and watched. Find it any time under “My apartment”.');
       return;
     }
     if (act === 'unhome') {

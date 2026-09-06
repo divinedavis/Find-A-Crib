@@ -818,7 +818,7 @@
     aside.results {
       position: fixed; left: 0; right: 0; bottom: 0; top: var(--header-h);
       border-left: none; border-top: none; z-index: 1400;
-      transform: translateY(110%); transition: transform .28s ease; will-change: transform;
+      transform: translateY(110%); transition: transform .28s ease;
       box-shadow: 0 -8px 24px rgba(0,0,0,0.18);
     }
     body.list-open aside.results { transform: translateY(0); }
@@ -1570,6 +1570,8 @@
   if (window.visualViewport) visualViewport.addEventListener('resize', () => tr('vv-resize ' + Math.round(visualViewport.height)));
   document.addEventListener('visibilitychange', () => tr('vis ' + document.visibilityState));
   tr('boot');
+  setInterval(() => tr('tick'), 250);   // stops early in the trace = the main thread hung before the kill
+  document.addEventListener('transitionend', e => { if (e.target && e.target.matches && e.target.matches('aside.results')) tr('sheet-transitionend'); });
   // ---------- theme ----------
   // Three layers, in order of authority: the account (survives a new device),
   // localStorage (survives a reload and is readable before first paint — set in
@@ -4664,6 +4666,11 @@
   }
 
   const MAX_CARDS = 200;
+  // Phones get the list in pages. 200 cards, each with a photo, as one DOM
+  // and one composited sheet is what the iPhone traces died on.
+  const PAGE_CARDS = window.matchMedia('(max-width: 900px)').matches ? 40 : MAX_CARDS;
+  let gridRest = [];          // card HTML not yet appended
+  let gridMore = null;        // sentinel observer
   // BBL of the building whose pin is open on the map (see "map ⇄ list" below).
   // Declared up here because refreshGrid() reads it to pin that building's
   // card to the first slot of the list.
@@ -5003,7 +5010,7 @@
           tr('sv-load');
           obs.unobserve(img);
           const url = img.dataset.sv;
-          if (url) { img.removeAttribute('data-sv'); img.src = url; }
+          if (url) { img.removeAttribute('data-sv'); img.addEventListener('load', () => tr('sv-ok'), { once: true }); img.addEventListener('error', () => tr('sv-err'), { once: true }); img.src = url; }
         });
       }, { rootMargin: '150px' })
     : null;
@@ -5205,9 +5212,13 @@
       if (promos && (i + 1) % HC_EVERY === 0) parts.push(nextHc());
       if (promos && (i + 1) % FEAT_EVERY === 0) parts.push(nextFeatured());
     });
-    grid.innerHTML = parts.join('') + (truncated
+    const tailNote = truncated
       ? `<div class="empty" style="flex-basis:100%;padding:18px">${citywide ? `Add a filter or a street number to narrow it — ${MAX_CARDS}+ buildings match.` : `Zoom in to see more — ${MAX_CARDS}+ buildings in view.`}</div>`
-      : '');
+      : '';
+    if (gridMore) { gridMore.disconnect(); gridMore = null; }
+    gridRest = parts.slice(PAGE_CARDS);
+    grid.innerHTML = parts.slice(0, PAGE_CARDS).join('') + (gridRest.length ? '<div class="grid-more" aria-hidden="true"></div>' : tailNote);
+    if (gridRest.length) armGridMore(tailNote);
     // The list just lost every node it had; re-mark the open building so
     // panning the map doesn't quietly drop the selection.
     paintCardHighlight();
@@ -5215,6 +5226,22 @@
     initAds();
     watchAdTiles();
     tr('grid:done');
+  }
+  // Append the next page when the sentinel scrolls into view.
+  function armGridMore(tailNote) {
+    const sentinel = grid.querySelector('.grid-more');
+    if (!sentinel) return;
+    const more = () => {
+      const chunk = gridRest.splice(0, PAGE_CARDS);
+      tr('grid:more ' + chunk.length);
+      sentinel.insertAdjacentHTML('beforebegin', chunk.join(''));
+      if (!gridRest.length) { sentinel.outerHTML = tailNote; if (gridMore) { gridMore.disconnect(); gridMore = null; } }
+      watchStreetview(grid);
+      watchAdTiles();
+    };
+    if (!('IntersectionObserver' in window)) { while (gridRest.length) more(); return; }
+    gridMore = new IntersectionObserver(entries => { if (entries.some(en => en.isIntersecting)) more(); }, { rootMargin: '400px' });
+    gridMore.observe(sentinel);
   }
 
   function bedsLabel(arr) {
@@ -5396,6 +5423,7 @@
   const toggleBtn = document.getElementById('btn-toggle-view');
   const sortBtn = document.getElementById('btn-sort');
   function setListOpen(open) {
+    tr('setListOpen ' + open);
     document.body.classList.toggle('list-open', open);
     document.getElementById('fab-label').textContent = open ? 'Map' : 'List';
     document.getElementById('fab-ico').textContent = open ? '▤' : '≣';

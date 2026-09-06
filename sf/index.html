@@ -1533,6 +1533,18 @@
 <script src="../config.js?v=2"></script>
 <script>
 (async function () {
+  // ---------- error telemetry ----------
+  // Until 2026-09-06 nothing the page threw ever left the phone it threw on.
+  // Best-effort rows in `events` (js_error), capped per session.
+  let errSent = 0;
+  window.addEventListener('error', e => {
+    if (errSent++ >= 5) return;
+    try { track('js_error', { msg: String(e.message || '').slice(0, 200), src: String(e.filename || '').slice(-60), line: e.lineno || 0, col: e.colno || 0 }); } catch (_) {}
+  });
+  window.addEventListener('unhandledrejection', e => {
+    if (errSent++ >= 5) return;
+    try { const r = e.reason; track('js_error', { kind: 'promise', msg: String(r && (r.message || r) || '').slice(0, 200) }); } catch (_) {}
+  });
   // ---------- theme ----------
   // Three layers, in order of authority: the account (survives a new device),
   // localStorage (survives a reload and is readable before first paint — set in
@@ -1747,6 +1759,36 @@
   // doubleClickZoom: true → a double-click (desktop) or double-tap (mobile) zooms in
   // one level toward the tapped point. zoomDelta 1 keeps it gentle ("a little").
   const map = L.map('map', { preferCanvas: true, doubleClickZoom: true, zoomDelta: 1, zoomControl: true }).setView(CITY.center, CITY.zoom);
+  // ---------- render-storm diagnostics ----------
+  // A phone was seen re-rendering the results list every 1-2 s until Safari
+  // killed the page (2026-09-06), and it never reproduced in emulation. Count
+  // what fires, and if the list or the map churns, send one row saying which
+  // signal drove it and what the viewport looked like — at most six a session.
+  const DIAG = { resize: 0, vv: 0, moveend: 0, zoomend: 0, mapresize: 0, hdr: 0, grid: 0, pins: 0, hdrH: [], mapH: [], sent: 0, last: 0 };
+  window.addEventListener('resize', () => { DIAG.resize++; });
+  if (window.visualViewport) visualViewport.addEventListener('resize', () => { DIAG.vv++; });
+  map.on('moveend', () => { DIAG.moveend++; });
+  map.on('zoomend', () => { DIAG.zoomend++; });
+  map.on('resize', e => { DIAG.mapresize++; DIAG.mapH.push(Math.round(e.newSize.y)); if (DIAG.mapH.length > 10) DIAG.mapH.shift(); });
+  setInterval(() => {
+    const storm = DIAG.grid >= 4 || DIAG.moveend >= 6 || DIAG.resize >= 4 || DIAG.hdr >= 4 || DIAG.vv >= 6;
+    if (storm && DIAG.sent < 6 && Date.now() - DIAG.last > 20000) {
+      DIAG.sent++; DIAG.last = Date.now();
+      let vv = null; try { vv = [Math.round(visualViewport.width), Math.round(visualViewport.height), Math.round(visualViewport.offsetTop)]; } catch (_) {}
+      const hdr = document.querySelector('header.topbar');
+      const q = document.getElementById('q');
+      try {
+        track('render_storm', {
+          resize: DIAG.resize, vv: DIAG.vv, moveend: DIAG.moveend, zoomend: DIAG.zoomend, mapresize: DIAG.mapresize,
+          hdr: DIAG.hdr, grid: DIAG.grid, pins: DIAG.pins, hdrH: DIAG.hdrH.slice(-8), mapH: DIAG.mapH.slice(-8),
+          inner: [innerWidth, innerHeight], vvp: vv, doc: [document.documentElement.clientWidth, document.documentElement.clientHeight, document.documentElement.scrollHeight, Math.round(scrollY)],
+          hdrNow: hdr ? hdr.offsetHeight : null, mapSize: [map.getSize().x, map.getSize().y], zoom: map.getZoom(),
+          q: q ? q.value.slice(0, 40) : '', focus: document.activeElement === q, body: document.body.className.slice(0, 80),
+        });
+      } catch (_) {}
+    }
+    DIAG.resize = DIAG.vv = DIAG.moveend = DIAG.zoomend = DIAG.mapresize = DIAG.hdr = DIAG.grid = DIAG.pins = 0;
+  }, 5000);
   // A light basemap under a dark UI is the one thing that gives dark mode away,
   // so the tiles switch too — same CARTO tileset family, dark variant.
   // CARTO now watermarks unauthenticated raster tiles with "API KEY REQUIRED"
@@ -2401,6 +2443,7 @@
   }
   function zoomNow() { return Math.round(map.getZoom()); }
   function renderPins() {
+    DIAG.pins++;
     const want = new Map();
     if (sc) {
       const z = zoomNow();
@@ -4564,6 +4607,7 @@
     searchState = { q, tier, relaxed, label, note, suggest, hidden };
 
     filtered = recs;
+    gridGen++;
     setPins(filtered);
 
     // Frame the result when the query picked out something rather than the
@@ -4586,6 +4630,8 @@
   // Declared up here because refreshGrid() reads it to pin that building's
   // card to the first slot of the list.
   let selectedBbl = null;
+  // Bumped by anything that changes what a card shows; part of the render signature below.
+  let gridGen = 0, lastGridSig = '';
 
   // ---------- in-feed ads (Google AdSense) ----------
   // Paste your AdSense IDs after the site is approved to switch ads on.
@@ -4651,7 +4697,7 @@
     .then(d => {
       if (!d || !Array.isArray(d.lotteries) || !d.lotteries.length) return;
       HC = d.lotteries;
-      refreshGrid();
+      gridGen++; refreshGrid();
     })
     .catch(() => { /* no lottery feed today: the grid just has no HC tiles */ });
 
@@ -4663,7 +4709,7 @@
     .then(d => {
       if (!d || !Array.isArray(d.listings) || !d.listings.length) return;
       FEATURED = d.listings;
-      refreshGrid();                    // they arrived after the first paint
+      gridGen++; refreshGrid();                    // they arrived after the first paint
     })
     .catch(() => { /* no featured feed today: the grid is unchanged */ });
 
@@ -5013,6 +5059,7 @@
   }
 
   function refreshGrid() {
+    DIAG.grid++;
     const b = map.getBounds();
     const citywide = !!searchState.q && CITYWIDE_LIST_TIERS.has(searchState.tier);
     const visible = [];
@@ -5067,11 +5114,22 @@
     if (!visible.length) {
       grid.classList.add('empty-state');
       grid.innerHTML = '<div class="empty">No buildings in view. Pan or zoom out, or change filters.</div>';
+      lastGridSig = '';
       return;
     }
     grid.classList.remove('empty-state');
     const truncated = visible.length > MAX_CARDS;
     const shown = truncated ? visible.slice(0, MAX_CARDS) : visible;
+    // Rebuild the list only when what it would show has changed. A resize or
+    // moveend that leaves the same cards in the same order used to throw the
+    // whole list away and rebuild it — every tile image refetched, every
+    // observer re-armed — and on one iPhone that ran in a loop until Safari
+    // killed the page. Same cards, same list.
+    const favMode = document.getElementById('pill-fav').classList.contains('active');
+    const sig = [gridGen, sortMode, selectedBbl, favMode ? 1 : 0, sharedFolder ? 1 : 0, truncated ? 1 : 0, citywide ? 1 : 0,
+                 shown.length, shown.map(r => r.bbl).join(',')].join('|');
+    if (sig === lastGridSig && grid.childElementCount) return;
+    lastGridSig = sig;
     // pinned is visible[0] at this point, so it survives the cap; take it out
     // of the paged run so it can lead the list ahead of the promo tiles.
     if (pinned) shown.shift();
@@ -5280,7 +5338,8 @@
   let headerH = 0;
   function syncHeaderHeight() {
     const h = headerEl.offsetHeight;
-    if (h === headerH) return;   // ResizeObserver → invalidateSize → resize would otherwise loop
+    if (h === headerH) return;
+    DIAG.hdr++; DIAG.hdrH.push(h); if (DIAG.hdrH.length > 10) DIAG.hdrH.shift();   // ResizeObserver → invalidateSize → resize would otherwise loop
     headerH = h;
     document.documentElement.style.setProperty('--header-h', h + 'px');
     map.invalidateSize();
@@ -6530,7 +6589,7 @@
       FAVS = new Set([...(rows || []).map(r => r.bbl), ...local]);
       FAVCATS = {};
       for (const r of rows || []) if (r.category_id) FAVCATS[r.bbl] = r.category_id;
-      saveFavs(); updateFavBadge(); refreshGrid();
+      saveFavs(); updateFavBadge(); gridGen++; refreshGrid();
     } catch (e) { console.warn('load favs failed', e); }
     loadFolders();
   }

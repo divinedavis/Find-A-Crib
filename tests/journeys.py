@@ -135,6 +135,21 @@ class Runner:
         self.ok('of' in page.evaluate(LABEL), 'count pill missing', j)
         self.ok(page.evaluate("document.getElementById('search-helper').hidden"), 'helper card shown with no search', j)
         j.notes.append(f'{n} pills')
+        if device == 'desktop':
+            # Airbnb placement: brand, search and the right-hand buttons on one line, chips centred below —
+            # at the normal width and at a zoomed-in one (a 1000px layout width is 130% zoom on a 1300px window)
+            for w in (1300, 1000):
+                page.set_viewport_size({'width': w, 'height': 900}); time.sleep(0.5)
+                row = page.evaluate("(()=>{const r=s=>document.querySelector(s).getBoundingClientRect(); const b=r('.brand'), q=r('#q'), a=r('#auth-btn'), m=r('#menu-btn'), c=r('.chip-row'); return {b:b.top+b.height/2, q:q.top+q.height/2, a:a.top+a.height/2, m:m.top+m.height/2, chipsTop:c.top, rowBottom:Math.max(b.bottom,q.bottom,a.bottom), qCenter:(q.left+q.right)/2, W:innerWidth}})()")
+                same = max(row['b'], row['q'], row['a'], row['m']) - min(row['b'], row['q'], row['a'], row['m']) < 14
+                self.ok(same, f'header row not on one line at {w}px: {row}', j)
+                self.ok(row['chipsTop'] >= row['rowBottom'] - 2, f'chips should sit below the top row at {w}px: {row}', j)
+                self.ok(abs(row['qCenter'] - row['W'] / 2) < 0.2 * row['W'], f'search box should be roughly centred at {w}px: {row}', j)
+            page.evaluate("document.getElementById('menu-btn').click()"); time.sleep(0.3)
+            self.ok(not page.evaluate("document.getElementById('menu-pop').hidden"), 'menu button should open the menu', j)
+            self.ok(page.evaluate("[...document.querySelectorAll('#menu-pop a, #menu-pop button')].length") >= 8, 'menu should list the header actions', j)
+            page.keyboard.press('Escape'); time.sleep(0.2)
+            self.ok(page.evaluate("document.getElementById('menu-pop').hidden"), 'Escape should close the menu', j)
 
     def j_search_address(self, page, j, device):
         self.boot(page)
@@ -245,9 +260,12 @@ class Runner:
             body = page.evaluate("document.getElementById('filters-modal').innerText")
             self.ok('Recently available' in body and 'Recently advertised' not in body and 'HPD · HUD' not in body, 'filters wording not updated', j)
             page.evaluate("document.querySelector('[data-filters=\"close\"]').click()"); time.sleep(0.3)
-            page.hover('#grid .card[data-bbl] >> nth=0'); time.sleep(0.6)
-            self.ok(page.evaluate("!!document.querySelector('#map .pin-hover')"), 'hovering a tile should paint its pin green', j)
-            page.mouse.move(5, 5); time.sleep(0.3)
+            first = page.evaluate("document.querySelector('#grid .card[data-bbl]').dataset.bbl")
+            page.hover('#grid .card[data-bbl] >> nth=0'); time.sleep(1.0)
+            self.ok(page.evaluate("!!document.querySelector('#map .pin-hover')"), 'hovering a tile should paint its pin blue', j)
+            self.ok(page.evaluate("document.querySelector('#grid .card[data-bbl]').dataset.bbl") == first, 'the list must hold still while a tile is hovered', j)
+            page.mouse.move(5, 5); time.sleep(0.5)
+            self.ok(not page.evaluate("!!document.querySelector('#map .pin-hover')"), 'leaving the tile should clear the highlight', j)
         # save a building anonymously (localStorage), then the Saved filter shows it
         self.boot(page, f'/#d={BBL}')
         self.ok(self.detail_open(page), '#d= should open the sheet', j)

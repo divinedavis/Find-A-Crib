@@ -724,6 +724,42 @@
   .footer-credit { font-size: 11px; color: var(--ink-2); padding: 8px 16px; border-top: 1px solid var(--line); background: var(--bg); }
   .footer-credit a { color: var(--ink-2); text-decoration: underline; }
 
+  /* Desktop header, Airbnb placement (2026-09-06): brand left, search centred,
+     round icon buttons right, the chips on a centred second row. A grid, so
+     a zoomed-in browser narrows the search box instead of wrapping a pill
+     onto its own line. Phones keep the flex layout below. */
+  .desktop-only { display: none; }
+  .top-right { display: contents; }
+  @media (min-width: 901px) {
+    .desktop-only { display: inline-flex; }
+    header.topbar { display: grid; grid-template-columns: auto auto minmax(220px, 1fr) auto;
+      grid-template-areas: "brand cities search right" "chips chips chips chips";
+      column-gap: 16px; row-gap: 10px; align-items: center; padding-bottom: 12px; }
+    .brand { grid-area: brand; }
+    .city-nav { grid-area: cities; }
+    .filter-bar { display: contents; }
+    .filter-bar input.search-input { grid-area: search; justify-self: center; width: 100%; max-width: 620px; min-width: 0; flex: none;
+      padding: 12px 22px; font-size: 15px; box-shadow: 0 2px 10px rgba(0,0,0,.08); }
+    .chip-row { grid-area: chips; display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; }
+    #pill-filters { order: -1; }
+    .top-right { display: flex; grid-area: right; align-items: center; gap: 8px; justify-self: end; position: relative; }
+    #agents-btn, #dir-btn { display: none; }        /* they sit in the chip row and the menu on desktop */
+    .desktop-chip { align-items: center; gap: 6px; text-decoration: none; color: var(--ink); }
+    .desktop-chip:hover { text-decoration: none; }
+    .theme-btn, .auth-btn.signed-in { width: 40px; height: 40px; font-size: 17px; }
+    .menu-btn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface);
+      color: var(--ink); font-size: 17px; line-height: 1; cursor: pointer; align-items: center; justify-content: center; padding: 0; }
+    .menu-btn:hover { background: var(--surface-2); border-color: var(--line-strong); }
+    .menu-pop { position: absolute; right: 0; top: calc(100% + 8px); z-index: 1800; min-width: 220px; padding: 6px;
+      background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 12px 32px rgba(0,0,0,.22);
+      display: flex; flex-direction: column; }
+    .menu-pop[hidden] { display: none; }
+    .menu-pop a, .menu-pop button { display: block; width: 100%; text-align: left; padding: 10px 12px; border: 0; background: none;
+      font: inherit; font-size: 14px; font-weight: 600; color: var(--ink); text-decoration: none; border-radius: 8px; cursor: pointer; }
+    .menu-pop a:hover, .menu-pop button:hover { background: var(--surface-2); text-decoration: none; }
+    .menu-sep { height: 1px; background: var(--line); margin: 6px 4px; }
+  }
+
   @media (max-width: 900px) {
     :root { --header-h: 104px; }
     .mobile-only { display: flex; }
@@ -945,7 +981,7 @@
   /* selected map pin (both layouts) */
   .price-pill.selected { background: #0a0a23; border-color: #fff; transform: scale(1.06); }
   /* the list tile under the pointer: its pin goes green (matches .card.is-hover) */
-  .pin-hover .price-pill, .pin-hover .unit-pill { background: #16a34a !important; color: #fff !important; border-color: #fff !important; transform: scale(1.12); box-shadow: 0 4px 14px rgba(22,163,74,.55); }
+  .pin-hover .price-pill, .pin-hover .unit-pill { background: var(--blue-solid) !important; color: #fff !important; border-color: #fff !important; transform: scale(1.12); box-shadow: 0 4px 14px rgba(37,99,235,.55); }
   .building-dot.selected { background: #0a0a23; width: 18px; height: 18px; border-width: 2px; }
   @media (min-width: 901px) { #building-card { display: none !important; } }
 
@@ -1149,9 +1185,23 @@
   </nav>
   <a id="agents-btn" class="agents-btn nyc-only" href="/marketing-agents/" title="Every HPD-approved firm that runs NYC affordable-housing lotteries" aria-label="Lottery agents">🏛️<span class="agents-label"> Lottery agents</span></a>
   <a id="dir-btn" class="agents-btn nyc-only" href="/directory/" title="Search every registered owner and managing agent in NYC by name, borough or neighborhood — a Plus feature" aria-label="Landlord directory">🔎<span class="agents-label"> Landlords</span></a>
+  <div class="top-right">
+  <button id="ref-btn" type="button" class="ref-btn" hidden>🎁 <span class="ref-free">Free </span>Plus</button>
   <button id="theme-btn" type="button" class="theme-btn" aria-label="Switch to dark mode" title="Switch to dark mode">🌙</button>
   <button id="auth-btn" type="button" class="auth-btn">Sign in</button>
-  <button id="ref-btn" type="button" class="ref-btn" hidden>🎁 <span class="ref-free">Free </span>Plus</button>
+  <button id="menu-btn" type="button" class="menu-btn desktop-only" aria-label="Menu" aria-expanded="false" title="Menu">☰</button>
+  <div id="menu-pop" class="menu-pop" hidden>
+    <button type="button" data-menu="auth">Sign in</button>
+    <button type="button" data-menu="saved">♡ Saved</button>
+    <button type="button" data-menu="filters">Filters</button>
+    <a href="/marketing-agents/" class="nyc-only">🏛️ Lottery agents</a>
+    <a href="/directory/" class="nyc-only">🔍 Landlords</a>
+    <div class="menu-sep"></div>
+    <a href="/">NYC</a><a href="/sf/">San Francisco</a><a href="/la/">Los Angeles</a><a href="/dc/">Washington DC</a>
+    <div class="menu-sep"></div>
+    <a href="/developers/">API for developers</a><a href="/privacy/">Privacy</a><a href="/terms.html">Terms</a>
+  </div>
+  </div>
   <div class="filter-bar">
     <input class="search-input" id="q" type="text" placeholder="Search only rent stabilized apartments" />
     <div class="chip-row">
@@ -1264,6 +1314,8 @@
         <div style="font-size:11px;color:var(--ink-2);margin-top:8px">HPD registers a managing agent for most buildings but a contact number for far fewer. This narrows the map to the ones you can actually call.</div>
       </div>
     </div>
+    <a class="filter-pill desktop-chip desktop-only nyc-only" href="/marketing-agents/" title="Every HPD-approved firm that runs NYC affordable-housing lotteries">🏛️ Lottery agents</a>
+    <a class="filter-pill desktop-chip desktop-only nyc-only" href="/directory/" title="Search every registered owner and managing agent in NYC — a Plus feature">🔍 Landlords</a>
     </div><!-- /chip-row -->
   </div>
 </header>
@@ -1621,6 +1673,25 @@
     if (themeTouched) return;
     const t = user && user.user_metadata && user.user_metadata.theme;
     if (t === 'dark' || t === 'light') setTheme(t);
+  }
+  // Desktop hamburger: every header action one tap away, Airbnb-style.
+  const menuBtn = document.getElementById('menu-btn'), menuPop = document.getElementById('menu-pop');
+  if (menuBtn && menuPop) {
+    const closeMenu = () => { menuPop.hidden = true; menuBtn.setAttribute('aria-expanded', 'false'); };
+    menuBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      const open = menuPop.hidden;
+      menuPop.hidden = !open; menuBtn.setAttribute('aria-expanded', String(open));
+      const a = menuPop.querySelector('[data-menu="auth"]'); if (a) a.textContent = authUser ? '👤 Profile' : 'Sign in';
+    });
+    menuPop.addEventListener('click', e => {
+      const b = e.target.closest('[data-menu]'); if (!b) return;
+      closeMenu();
+      const target = { auth: 'auth-btn', saved: 'pill-fav', filters: 'pill-filters' }[b.dataset.menu];
+      const el = target && document.getElementById(target); if (el) el.click();
+    });
+    document.addEventListener('click', e => { if (!menuPop.hidden && !menuPop.contains(e.target)) closeMenu(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); });
   }
   themeBtn.addEventListener('click', () => {
     themeTouched = true;
@@ -5210,6 +5281,7 @@
     const sig = [gridGen, sortMode, selectedBbl, favMode ? 1 : 0, sharedFolder ? 1 : 0, truncated ? 1 : 0, citywide ? 1 : 0,
                  shown.length, shown.map(r => r.bbl).join(',')].join('|');
     if (sig === lastGridSig && grid.childElementCount) { tr('grid:same'); return; }
+    if (tileHover && grid.childElementCount) { tr('grid:hover-hold'); return; }   // rebuilt on mouseleave
     lastGridSig = sig;
     tr('grid:build ' + shown.length);
     // pinned is visible[0] at this point, so it survives the cap; take it out
@@ -5541,11 +5613,17 @@
   // List tile -> map pin. The pin is on the map when the building stands alone
   // at this zoom; when it is folded into a cluster a green pin is dropped at
   // its spot for the hover so there is always something to see.
-  let hoverPinMarker = null, hoverPinEl = null;
+  let hoverPinMarker = null, hoverPinEl = null, tileHover = null;
   function hoverPin(bbl) {
     if (hoverPinEl) { hoverPinEl.classList.remove('pin-hover'); hoverPinEl = null; }
     if (hoverPinMarker) { pinLayer.removeLayer(hoverPinMarker); hoverPinMarker = null; }
+    tileHover = bbl || null;
     if (!bbl) return;
+    // Bring the building to the middle of the map. The list holds still while
+    // the pointer is on a tile (see refreshGrid), so the pan cannot swap the
+    // card out from under the cursor and hover the next one.
+    const hr = recByBbl.get(bbl);
+    if (hr) map.panTo([hr.lat, hr.lng], { animate: true, duration: 0.35 });
     const m = markerByBbl.get(bbl);
     const el = m && m.getElement && m.getElement();
     if (el && el.isConnected) { hoverPinEl = el; el.classList.add('pin-hover'); m.setZIndexOffset(2000); return; }
@@ -5558,6 +5636,7 @@
   }
   grid.addEventListener('mouseover', e => { const c = e.target.closest('.card[data-bbl]'); if (c) hoverPin(c.dataset.bbl); });
   grid.addEventListener('mouseout', e => { const c = e.target.closest('.card[data-bbl]'); if (c && !c.contains(e.relatedTarget)) hoverPin(null); });
+  grid.addEventListener('mouseleave', () => { hoverPin(null); refreshGrid(); });
   function hoverCard(bbl) {
     hoverBbl = bbl || null;
     const prev = grid.querySelector('.card.is-hover');

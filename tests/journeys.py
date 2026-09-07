@@ -148,6 +148,7 @@ class Runner:
             page.evaluate("document.getElementById('menu-btn').click()"); time.sleep(0.3)
             self.ok(not page.evaluate("document.getElementById('menu-pop').hidden"), 'menu button should open the menu', j)
             self.ok(page.evaluate("[...document.querySelectorAll('#menu-pop a, #menu-pop button')].length") >= 8, 'menu should list the header actions', j)
+            self.ok(page.evaluate("!!document.querySelector('#menu-pop a[href^=\"/alerts/\"]')") and 'Alerts' in page.evaluate("document.getElementById('menu-pop').innerText"), 'menu should offer Alerts', j)
             page.keyboard.press('Escape'); time.sleep(0.2)
             self.ok(page.evaluate("document.getElementById('menu-pop').hidden"), 'Escape should close the menu', j)
 

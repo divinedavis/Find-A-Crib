@@ -2070,19 +2070,29 @@
   let plusUpsellPending = false;
   // Is the signed-in user a Plus subscriber? Mirrors has_plus() server-side;
   // the client flag only decides which UI to show — RLS enforces the truth.
+  let plusKnown = false;   // true once a membership check has actually answered; an error is not "free"
   async function refreshPlus() {
-    plusActive = false;
+    plusActive = false; plusKnown = false;
     if (!supaClient || !authUser) return;
     try {
-      const { data } = await supaClient.from('subscriptions')
-        .select('status,current_period_end').eq('user_id', authUser.id).maybeSingle();
-      plusActive = !!data && ['active', 'trialing'].includes(data.status) &&
-        (!data.current_period_end || new Date(data.current_period_end) > new Date());
-    } catch (e) { /* treat as free tier */ }
+      // Ask the server the same question every gated feature asks (has_plus is
+      // SECURITY DEFINER, so RLS and a second subscription row cannot turn a
+      // member into a free user — which is how the owner was offered the
+      // referral deal on 2026-09-06). The table read stays as the fallback.
+      const { data: hp, error: hpErr } = await supaClient.rpc('has_plus', { uid: authUser.id });
+      if (!hpErr && typeof hp === 'boolean') { plusActive = hp; plusKnown = true; }
+      else {
+        const { data, error } = await supaClient.from('subscriptions')
+          .select('status,current_period_end').eq('user_id', authUser.id).limit(1).maybeSingle();
+        plusActive = !!data && ['active', 'trialing'].includes(data.status) &&
+          (!data.current_period_end || new Date(data.current_period_end) > new Date());
+        plusKnown = !error;
+      }
+    } catch (e) { /* unknown — nothing below may treat this as free */ }
     // An arriving ?plus=1 (a lock chip on /marketing-agents/ or /directory/)
     // waits here rather than firing on load: membership is not known until this
     // resolves, and showing a subscriber the paywall is worse than a beat's delay.
-    if (plusUpsellPending) { plusUpsellPending = false; if (!plusActive) openPaywall(null); }
+    if (plusUpsellPending) { plusUpsellPending = false; if (plusKnown && !plusActive) openPaywall(null); }
     // Membership is only known once this resolves, and the callers above run
     // updateAuthUI() before awaiting it — so anything that depends on Plus has
     // to be re-synced here or a member sees the invite button flash in.
@@ -2098,7 +2108,7 @@
   // traffic). Alerts, phones, research, folders, and saved searches stay Plus.
   function gateSave(isUnsave) {
     if (isUnsave) return true;
-    if (!authUser) { openAuthModal('Create a free account to save this building — you’ll get an email when it’s available, a lottery or re-rental opens here, or its violations change. Never more than one email a day.'); setAuthMode('signup'); return false; }
+    if (!authUser) { openAuthModal('Create a free account to save this building.'); setAuthMode('signup'); return false; }
     return true;
   }
   async function persistFav(bbl, on) {
@@ -6771,10 +6781,10 @@
       // the one place a stale read shows the wrong person an offer.
       await refreshPlus();
       if (plusActive) return;
-      // Stamp only once it is going to be shown — a prompt suppressed for a
-      // member must not burn the cooldown they would need if they ever lapse.
-      try { localStorage.setItem('ref_prompt_last', String(Date.now())); } catch (e) { return; }
-      setTimeout(function () { openReferralModal('auto'); }, 1200);   // let the app settle first
+      // Retired 2026-09-06: nothing opens on entry uninvited. The invite is one
+      // tap away on the header button and in the profile; it was auto-shown
+      // 103 times to 33 people in the previous fortnight and shared 5 times.
+      return;
     }
     if (refModal) {
       refModal.addEventListener('click', e => { if (e.target === refModal || e.target.closest('[data-ref="close"]')) closeReferralModal(); });

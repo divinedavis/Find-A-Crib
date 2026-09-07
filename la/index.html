@@ -435,6 +435,12 @@
   #search-ac { position: fixed; z-index: 1750; background: var(--surface); border: 1px solid var(--line);
     border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.18); overflow: hidden; }
   #search-ac[hidden] { display: none; }
+  /* The answer to a search that found nothing, pinned under the search box
+     itself (the box keeps what was typed, so a placeholder cannot carry it). */
+  .q-note { position: fixed; z-index: 1740; background: var(--bad-bg, #fdecec); color: var(--bad-ink, #b42318); border: 1px solid var(--bad-ink, #b42318);
+    border-radius: 10px; padding: 8px 12px; font-size: 13px; font-weight: 600; line-height: 1.35; box-shadow: 0 6px 18px rgba(0,0,0,.14); }
+  .q-note[hidden] { display: none; }
+  input.search-input.q-nomatch { border-color: var(--bad-ink, #b42318); }
   .ac-item { display: block; width: 100%; text-align: left; background: var(--surface); border: none;
     border-bottom: 1px solid var(--line); padding: 11px 14px; cursor: pointer; }
   .ac-item:last-child { border-bottom: none; }
@@ -1363,6 +1369,7 @@
 </div>
 <!-- address search autocomplete -->
 <div id="search-ac" hidden></div>
+<div id="q-note" class="q-note" role="status" hidden></div>
 <!-- sign in / sign up -->
 <div id="auth-modal" class="auth-backdrop" hidden>
   <div class="auth-card">
@@ -4095,6 +4102,14 @@
     searchAC.style.left = r.left + 'px';
     searchAC.style.top = (r.bottom + 4) + 'px';
     searchAC.style.width = r.width + 'px';
+    const n = document.getElementById('q-note');
+    if (n && !n.hidden) { n.style.left = r.left + 'px'; n.style.top = (r.bottom + 4) + 'px'; n.style.width = r.width + 'px'; }
+  }
+  // Under the search box: what a no-match means. Hidden again on the next keystroke.
+  function setQueryNote(text) {
+    const n = document.getElementById('q-note'); if (!n) return;
+    if (!text) { n.hidden = true; qInput.classList.remove('q-nomatch'); return; }
+    n.textContent = text; n.hidden = false; qInput.classList.add('q-nomatch'); positionAC();
   }
   // The rendered list is kept in memory and rows address it by index, so a
   // suggestion can carry a whole resolved area or landlord rather than
@@ -4149,6 +4164,7 @@
   }
   let qTimer, qTrackTimer, qOrgTimer;
   qInput.addEventListener('input', () => {
+    setQueryNote('');
     keepFiltersFor = '';                 // a new keystroke re-arms the auto-relax
     renderAC(searchMatches(qInput.value));
     clearTimeout(qTimer);
@@ -4193,6 +4209,13 @@
   const searchHelper = document.getElementById('search-helper');
   function renderSearchHelper(q) {
     const st = searchState;
+    if (q && (st.tier === 'nomatch' || st.tier === 'zipmiss')) {
+      setQueryNote(st.tier === 'zipmiss'
+        ? `No rent-stabilized buildings in ZIP ${q}${st.label ? ' — ' + st.label : ''}.`
+        : (/^(only\s+)?rent[\s-]*stab/i.test(q)
+            ? 'Every building on this map is rent-stabilized — search an address, neighborhood or ZIP.'
+            : `You’re searching for a building that isn’t rent-stabilized, or an address outside ${IS_NYC ? 'New York City' : CITY.name}.`));
+    } else setQueryNote('');
     const card = html => { searchHelper.innerHTML = `<div class="sh-card">${html}</div>`; searchHelper.hidden = false; };
     // These chips drive the filter pills, and outside NYC those pills are
     // hidden by .nyc-only because their data files (listings.json, s8.json,
@@ -4347,6 +4370,7 @@
     if (!/^https?:/i.test(href)) return;
     let kind = 'other';
     if (/zumper\.com/i.test(href)) kind = 'zumper';
+    else if (/streeteasy\.com/i.test(href)) kind = 'streeteasy';
     else if (/google\.[^/]+\/maps|maps\.google/i.test(href)) kind = 'google_maps';
     else if (/google\.[^/]+\/search/i.test(href)) kind = 'google_search';
     // Housing Connect first: it is on nyc.gov but it is the lottery portal,
@@ -4355,8 +4379,19 @@
     else if (/housingconnect\.nyc\.gov/i.test(href)) kind = 'housing_connect';
     else if (/hpdonline\.nyc\.gov/i.test(href)) kind = 'hpd';
     else if (/nyc\.gov|cityofnewyork/i.test(href)) kind = 'nyc_data';
-    const bbl = a.closest('[data-bbl]')?.dataset.bbl || null;
-    track('outbound', { kind, href, bbl });
+    // Which building, from which surface, and whether a live listing existed —
+    // the StreetEasy button is on every building, so without `listed` the
+    // click count cannot say how many land on an empty search page.
+    let bbl = a.closest('[data-bbl]')?.dataset.bbl || null;
+    let src = 'page';
+    try {
+      if (a.closest('#detail-sheet')) { src = 'sheet'; if (!bbl && detailRec) bbl = detailRec.bbl; }
+      else if (a.closest('#building-card')) { src = 'pin'; if (!bbl && cardMarker && cardMarker._rec) bbl = cardMarker._rec.bbl; }
+      else if (a.closest('#grid')) src = 'card';
+      else if (a.closest('.leaflet-popup')) src = 'popup';
+    } catch (_) {}
+    const listed = bbl ? (listingCounts[bbl] || 0) > 0 : null;
+    track('outbound', { kind, href, bbl, src, listed });
   }, true);
 
   // managing-agent phone: "Show number" (paid) reveal flow + click-to-call tracking

@@ -1679,7 +1679,7 @@
       // place here because it is the only figure the industry average can
       // legitimately be held against — the headline median cannot.
       if(D.mean_all_secs != null){
-        dwellOwn = '<b>'+fmtDur(D.mean_all_secs)+'</b> average, counting single-page visits';
+        dwellOwn = '';   // the GA-style mean line was removed 2026-09-07; the benchmark below still uses it
       }
       // Below the hairline, somebody else's number and the verdict drawn from it.
       // Under 30 sessions the average swings on one long visit — "today" ranked
@@ -1720,8 +1720,7 @@
     var retOwn='', retBench='', retTitle='';
     if(RET.within_rate != null){
       var rw = RET.within_rate*100;
-      retOwn = '<b>'+rw.toFixed(1)+'%</b> came back within 30 days · '+comma(RET.within_cohort)+
-               ' visitors, fixed window';
+      retOwn = '';     // the fixed-window line was removed 2026-09-07; the benchmark verdict below still uses rw
       if(n(RET.within_cohort) < RETURN_BENCHMARK.min_cohort){
         retBench = 'Industry average <b>'+RETURN_BENCHMARK.pct+'%</b> return within 30 days'+
                    ' · cohort too small to compare';
@@ -1751,7 +1750,7 @@
     // pair because the benchmark never says which denominator it used — the
     // verdict comes from the interval they bracket, not from either alone.
     var convPerVisit = pct(n(T.accounts), n(T.visits));
-    var convOwn = '<b>'+convPerVisit.toFixed(1)+'%</b> per visit · '+comma(T.visits)+' visits';
+    var convOwn = '';  // the per-visit line was removed 2026-09-07; convPerVisit still feeds the verdict
     var convBench='', convTitle='';
     if(n(T.visitors) < SIGNUP_BENCHMARK.min_visitors){
       convBench = 'Industry <b>'+bandPct(SIGNUP_BENCHMARK.low)+'–'+bandPct(SIGNUP_BENCHMARK.high)+'%</b> for '+

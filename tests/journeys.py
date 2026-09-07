@@ -333,6 +333,18 @@ class Runner:
         self.ok(heap < HEAP_BUDGET_MB, f'JS heap {heap:.0f} MB over the {HEAP_BUDGET_MB} MB budget', j)
         self.ok(nodes < DOM_BUDGET, f'{nodes:.0f} DOM nodes over budget', j)
 
+    def j_alerts_page(self, page, j, device):
+        page.goto(LIVE + '/alerts/', wait_until='networkidle', timeout=90000); time.sleep(1)
+        self.ok(page.evaluate("document.getElementById('submit').textContent.trim()") == 'Email me when something opens', 'signed-out alerts page should offer a fresh sign-up', j)
+        page.click('text=Brooklyn'); time.sleep(0.3)
+        self.ok(page.evaluate("document.querySelector('#boros input[value=Bk]').checked"), 'borough chip should toggle on', j)
+        self.ok(page.evaluate("getComputedStyle(document.querySelector('#boros input[value=Bk] + span')).backgroundColor") != 'rgba(0, 0, 0, 0)', 'a chosen borough should be filled', j)
+        page.click('text=Brooklyn'); time.sleep(0.3)
+        self.ok(not page.evaluate("document.querySelector('#boros input[value=Bk]').checked"), 'borough chip should toggle off', j)
+        r = page.request.get(LIVE + '/api/alerts/prefs')
+        self.ok(r.status == 401, f'/api/alerts/prefs without a session should be 401, got {r.status}', j)
+        j.notes.append('prefs endpoint gated')
+
     def j_signin_modal(self, page, j, device):
         self.boot(page)
         self.click(page, '#auth-btn'); time.sleep(0.6)
@@ -342,7 +354,7 @@ class Runner:
         self.ok(page.evaluate("document.getElementById('auth-modal').hidden"), 'modal should close', j)
 
     JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'pin_and_list',
-                'filters_and_save', 'deep_links_and_view', 'city_pages', 'memory', 'signin_modal']
+                'filters_and_save', 'deep_links_and_view', 'city_pages', 'memory', 'alerts_page', 'signin_modal']
 
     # ---- run --------------------------------------------------------------
     def run(self):

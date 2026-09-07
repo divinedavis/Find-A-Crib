@@ -96,6 +96,8 @@
     border: 1px solid var(--line-strong); border-radius: 999px; padding: 9px 15px; cursor: pointer; user-select: none; }
   .chip input:checked + span { background: var(--blue-solid); border-color: var(--blue-solid); color: #fff; }
   .chip input:focus-visible + span { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .editing-note { font-size: 13px; color: var(--ink-2); margin: 0 0 10px; }
+  .editing-note[hidden] { display: none; }
   .hint { font-size: 12.5px; color: var(--ink-2); margin: 8px 0 0; line-height: 1.5; }
   .nums { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .num span { display: block; font-size: 12.5px; color: var(--ink-2); font-weight: 600; margin: 0 0 5px; }
@@ -179,6 +181,7 @@
       <p class="hint">Lotteries state a rent and an income band, so these filter them exactly: you only hear about ones with a unit at or under your cap whose income band includes you. Re-rental boards often print no figure — a re-rental with no rent listed still comes through rather than being dropped.</p>
     </div>
 
+    <p class="editing-note" id="editing-note" hidden>These are the alerts this address gets today. Change anything and tap <b>Save changes</b>.</p>
     <button class="submit" id="submit" type="submit">Email me when something opens</button>
     <div class="err" id="err" hidden></div>
     <p class="fine">Alerts the minute something opens, plus a short Tuesday round-up you can switch off on its own. Never more than one email a day. One-click unsubscribe in every email. Already signed up? Submit again to change your boroughs.</p>
@@ -257,8 +260,25 @@
     if (window.supabase && window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
       window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY)
         .auth.getSession().then(function (r) {
-          var em = r && r.data && r.data.session && r.data.session.user && r.data.session.user.email;
+          var sess = r && r.data && r.data.session;
+          var em = sess && sess.user && sess.user.email;
           if (em && !$('email').value) $('email').value = em;
+          if (!sess || !sess.access_token) return;
+          // Signed in: load what this address already gets, tick it, and make
+          // the button an edit rather than a fresh sign-up. Keyed on the
+          // verified session server-side, never on the typed address.
+          return fetch('/api/alerts/prefs', { headers: { Authorization: 'Bearer ' + sess.access_token } })
+            .then(function (x) { return x.ok ? x.json() : null; })
+            .then(function (j) {
+              if (!j || !j.exists || j.unsubscribed) return;
+              document.querySelectorAll('#boros input').forEach(function (i) { i.checked = (j.boroughs || []).indexOf(i.value) >= 0; });
+              document.querySelectorAll('#kinds input').forEach(function (i) { i.checked = (j.kinds || []).indexOf(i.value) >= 0; });
+              if (j.max_rent) $('max_rent').value = j.max_rent;
+              if (j.income) $('income').value = j.income;
+              $('submit').textContent = 'Save changes';
+              $('submit').dataset.editing = '1';
+              var note = $('editing-note'); if (note) { note.hidden = false; }
+            });
         }).catch(function () {});
     }
   } catch (e) {}
@@ -314,7 +334,7 @@
           var fit = [];
           if (x.j.max_rent) fit.push('rent up to $' + Number(x.j.max_rent).toLocaleString() + '/mo');
           if (x.j.income) fit.push('an income band that includes $' + Number(x.j.income).toLocaleString() + '/yr');
-          $('ok-text').textContent = 'We’ll email ' + email + ' the minute a new ' + what + ' opens in ' + phrase(x.j.boroughs || boros)
+          $('ok-text').textContent = (btn.dataset.editing ? 'Saved. ' : '') + 'We’ll email ' + email + ' the minute a new ' + what + ' opens in ' + phrase(x.j.boroughs || boros)
             + (fit.length ? ' with ' + fit.join(' and ') : '') + '.';
           $('ok').hidden = false;
           try { gtag('event', 'alert_signup', { boroughs: boros.join(','), kinds: kinds.join(',') }); } catch (e) {}
@@ -325,7 +345,7 @@
         err.hidden = false;
       })
       .catch(function () { err.textContent = MSG.temporarily_unavailable; err.hidden = false; })
-      .then(function () { btn.disabled = false; btn.textContent = 'Email me when something opens'; });
+      .then(function () { btn.disabled = false; btn.textContent = btn.dataset.editing ? 'Save changes' : 'Email me when something opens'; });
   });
 
   // #digestoff=<token>: stop only the weekly round-up. Same ask-then-POST

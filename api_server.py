@@ -525,6 +525,48 @@ def alerts_subscribe():
                    max_rent=res.get("max_rent"), income=res.get("income"))
 
 
+def _session_email():
+    """Email of the Supabase session in the Authorization header, or None.
+
+    Verified server-side (GET /auth/v1/user), same as the dashboard gate —
+    the client's own claims are never trusted, and the email is the only
+    thing this returns."""
+    auth = request.headers.get("Authorization", "")
+    token = auth[7:].strip() if auth.startswith("Bearer ") else ""
+    if not token:
+        return None
+    try:
+        req = urllib.request.Request(
+            f"{SUPABASE_URL}/auth/v1/user",
+            headers={"apikey": ANON_KEY, "Authorization": f"Bearer {token}"})
+        with urllib.request.urlopen(req, timeout=8) as r:
+            u = json.loads(r.read())
+    except Exception:
+        return None
+    email = (u.get("email") or "").strip().lower()
+    return email if EMAIL_RE.match(email) else None
+
+
+@app.route("/alerts/prefs")
+def alerts_prefs():
+    """The caller's own alert preferences, for the /alerts/ page to pre-fill.
+
+    Keyed on the verified session email only — there is no email parameter,
+    so it cannot say whether anyone else is subscribed."""
+    if rate_limited("alerts_prefs", 60, 3600):
+        return _too_many()
+    email = _session_email()
+    if not email:
+        return jsonify(error="sign_in_required"), 401
+    try:
+        res = rpc("lottery_alerts_prefs", {"p_email": email}) or {}
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
+    res["ok"] = True
+    res["email"] = email
+    return jsonify(res)
+
+
 @app.route("/alerts/digest-off", methods=["GET", "POST"])
 def alerts_digest_off():
     """Stop only the Tuesday round-up for a borough subscriber; the

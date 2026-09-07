@@ -195,17 +195,31 @@ def cmd_measure(args):
                 log(f"  index status unavailable: {ix.get('detail')}")
         except Exception as e:
             log(f"  index status failed: {type(e).__name__}: {e}")
+    rec = {"days": args.days,
+           "latest_measured_day": max(data) if data else None}
+    # Where yesterday's visitors entered and what sent them. state.json is
+    # gitignored, so anything a later review needs to read has to ride in
+    # last_run.json — see growth/metrics.census().
+    if data:
+        cen = data[max(data)].get("_census")
+        if cen:
+            rec["traffic"] = cen
+            log(f"  entry: {cen['visitors']} visitors, channels {cen['by_channel']}"
+                + (f", tagged {cen['by_src']}" if cen["by_src"] else ""))
     try:
         _, changed = keywords.check_coverage(args.docroot)
         s = keywords.summary()
         log(f"  keywords: {s['covered']}/{s['total']} covered ({s['coverage_pct']}%), "
             f"{changed} changed")
-        ledger.write_last_run("measure", {
-            "days": args.days, "keywords_covered": s["covered"],
-            "keywords_total": s["total"], "coverage_pct": s["coverage_pct"],
-            "latest_measured_day": max(data) if data else None})
+        rec.update({"keywords_covered": s["covered"], "keywords_total": s["total"],
+                    "coverage_pct": s["coverage_pct"]})
     except Exception as e:
+        # A coverage failure used to take the whole record with it, because the
+        # write was inside this try — and an absent `measure` record is exactly
+        # what a review reads as "measurement did not run last night".
         log(f"  keyword coverage failed: {e}")
+        rec["keyword_coverage_error"] = f"{type(e).__name__}: {e}"[:200]
+    ledger.write_last_run("measure", rec)
     return data
 
 

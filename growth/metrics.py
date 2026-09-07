@@ -78,20 +78,45 @@ def _host(ref):
         return None
 
 
+def _entry_src(path):
+    """The channel tag on an entry URL, or "".
+
+    Two tagging schemes reach this site and both land in visits.path:
+
+      utm_source=  the standard one. AI engines increasingly send no referrer
+                   header and tag the URL instead — that is how chatgpt.com
+                   traffic shows up at all.
+      src=         this site's own. nginx serves /tt, /ig, /yt and /rd as 302s
+                   to /?src=<channel>, which is the ONLY attribution that
+                   survives a link pasted into a social app: the reader arrives
+                   with no referrer, so an untagged share is indistinguishable
+                   from a bookmark. channel_report.py has read these since it
+                   was written; classify() honoured utm_source alone, so every
+                   visit from the one channel this site can actually track was
+                   filed as "direct" — invisible to the loop that decides what
+                   to do more of.
+    """
+    if not path or ("utm_source=" not in path and "src=" not in path):
+        return ""
+    try:
+        q = urllib.parse.parse_qs(urllib.parse.urlparse("http://x" + path).query)
+    except Exception:
+        return ""
+    for key in ("utm_source", "src"):
+        v = (q.get(key) or [""])[0].strip().lower()
+        if v:
+            return v[:24]
+    return ""
+
+
 def classify(referrer, path):
     """Which channel did this visit come from?"""
-    # An explicit utm_source wins — AI engines increasingly send no referrer
-    # header and tag the URL instead (that is how chatgpt.com traffic shows up).
-    if path and "utm_source=" in path:
-        try:
-            src = urllib.parse.parse_qs(urllib.parse.urlparse("http://x" + path).query
-                                        ).get("utm_source", [""])[0].lower()
-        except Exception:
-            src = ""
+    # An explicit tag wins over the referrer header, which is usually absent.
+    src = _entry_src(path)
+    if src:
         if any(a.split(".")[0] in src for a in AI_HOSTS):
             return "ai"
-        if src:
-            return "campaign"
+        return "campaign"
     h = _host(referrer)
     if not h:
         return "direct"
@@ -102,6 +127,68 @@ def classify(referrer, path):
     if "findacrib.com" in h:
         return "internal"
     return "referral"
+
+
+def _entry_rows(day_visits):
+    """One row per visitor: the FIRST visit they made that day.
+
+    A landing page is where somebody arrived, not every page they then opened,
+    and a channel is decided by that first hit too — the second pageview of a
+    session carries a findacrib.com referrer and would otherwise re-file the
+    same person as "internal".
+    """
+    first = {}
+    for v in sorted(day_visits, key=lambda r: str(r.get("created_at") or "")):
+        vid = v.get("visitor_id")
+        if vid and vid not in first:
+            first[vid] = v
+    return list(first.values())
+
+
+def _clean_path(path):
+    """Landing path without its query string, so ?src= tags do not split it."""
+    p = (path or "/").split("?")[0].split("#")[0] or "/"
+    return p[:80]
+
+
+def census(day_visits, top=6):
+    """Where one day's visitors entered and what sent them.
+
+    Plain counts of distinct visitors, computed from rows already fetched — no
+    extra query, so this cannot fail the day's measurement. Written into
+    last_run.json (which is committed) rather than state.json (which is not),
+    because the point of it is that a LATER review can read it: on 2026-09-06
+    the site had its largest day ever — 247 visitors, 198 of them "direct" —
+    and nothing anywhere recorded where they landed or what sent them.
+    """
+    entries = _entry_rows(day_visits)
+    chan, src, paths, refs = {}, {}, {}, {}
+    deep = 0
+    for v in entries:
+        c = classify(v.get("referrer"), v.get("path"))
+        chan[c] = chan.get(c, 0) + 1
+        # A referrer-less arrival on a deep URL is a shared link: nobody types
+        # /building/2023190002 or bookmarks it before they have been sent it.
+        # A referrer-less arrival on "/" is genuinely ambiguous — typed,
+        # bookmarked, or shared — so it is left out. This is a FLOOR under
+        # link-sharing, never a total, and must not be reported as one.
+        if c == "direct" and _clean_path(v.get("path")) not in ("/", "/index.html"):
+            deep += 1
+        t = _entry_src(v.get("path"))
+        if t:
+            src[t] = src.get(t, 0) + 1
+        p = _clean_path(v.get("path"))
+        paths[p] = paths.get(p, 0) + 1
+        h = _host(v.get("referrer"))
+        if h and "findacrib.com" not in h:
+            refs[h] = refs.get(h, 0) + 1
+
+    def rank(d):
+        return [[k, n] for k, n in sorted(d.items(), key=lambda kv: (-kv[1], kv[0]))[:top]]
+
+    return {"visitors": len(entries), "by_channel": dict(sorted(chan.items())),
+            "by_src": dict(sorted(src.items())), "direct_deep": deep,
+            "top_paths": rank(paths), "top_referrers": rank(refs)}
 
 
 def collect(days=1, sb=None, end=None):
@@ -166,6 +253,18 @@ def collect(days=1, sb=None, end=None):
             ev = [e for e in de if e.get("event") == name]
             m[f"ev_{name}"] = len(ev)
             m[f"ev_{name}_visitors"] = len({e["visitor_id"] for e in ev if e.get("visitor_id")})
+
+        # Where they entered and what sent them. `_census` is not a
+        # measurement — record_day() skips underscore keys — it is carried out
+        # to cmd_measure, which files it in last_run.json where a later review
+        # can still read it. The per-tag counts beside it ARE a series, one
+        # metric per channel actually seen, so a tagged campaign that works
+        # leaves fourteen days of evidence instead of one line in a report.
+        cen = census(dv)
+        m["_census"] = cen
+        m["direct_deep_visitors"] = cen["direct_deep"]
+        for tag, n in cen["by_src"].items():
+            m["src_" + "".join(c for c in tag if c.isalnum() or c in "-_")] = n
 
         # per-technique owned traffic
         for slug, prefixes in prefixed:
@@ -288,6 +387,8 @@ def snapshot_totals(sb=None):
 def record_day(date, m):
     """Write one day's measurements into the ledger, attributing where we can."""
     for k, v in m.items():
+        if k.startswith("_"):
+            continue            # carried out to the caller, not a measurement
         if k.startswith("owned::"):
             ledger.record_result(date, k.split("::", 1)[1], "owned_visitors", v)
         else:

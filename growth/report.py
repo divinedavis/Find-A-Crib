@@ -326,6 +326,53 @@ def _trend(metric, days=14):
     return vals[-1], recent, "=", "mute"
 
 
+def _entry_census():
+    """Blocks naming where yesterday's visitors landed and what sent them.
+
+    The traffic table above says how many arrived by channel; on the days that
+    matter it does not say from where. On 2026-09-06 this site had its largest
+    day ever — 247 visitors, 198 of them filed as "direct" — and nothing
+    recorded a single landing page or referring host, so the one question worth
+    asking ("can we do that again?") had no evidence behind it at all.
+
+    Written by cmd_measure into last_run.json. Records taken before 2026-09-07
+    carry no `traffic` key, so this renders nothing rather than a row of dashes.
+    """
+    rec = (ledger.read_last_run() or {}).get("measure") or {}
+    cen = rec.get("traffic") or {}
+    paths = cen.get("top_paths") or []
+    refs = cen.get("top_referrers") or []
+    srcs = cen.get("by_src") or {}
+    if not paths:
+        return []
+    total = cen.get("visitors") or 0
+    B = [{"type": "section", "label": "Where they came in",
+          "note": f"{_fmt(total)} visitors, counted at their first page of the day"}]
+    B.append({"type": "table", "cols": ["Landing page", "Visitors"],
+              "align": ["left", "right"], "mono": True,
+              "rows": [[p, _fmt(n)] for p, n in paths]})
+    sent = [f"{h} {n}" for h, n in refs] + [f"?src={t} {n}" for t, n in sorted(srcs.items())]
+    B.append({"type": "note",
+              "text": ("Sent by: " + ", ".join(sent) + "." if sent else
+                       "No referring host and no ?src= tag on a single entry — "
+                       "every one of them typed the domain, used a bookmark, or "
+                       "came from an app that strips the referrer. Only a tagged "
+                       "link (/tt, /ig, /yt, /rd) can tell those apart.")})
+    deep = cen.get("direct_deep")
+    if deep:
+        B.append({"type": "note",
+                  # A floor, and labelled as one: a referrer-less arrival on "/"
+                  # is genuinely ambiguous and is excluded, so the real number
+                  # of shared-link arrivals is this or higher, never lower.
+                  "text": f"{_fmt(deep)} of them arrived with no referrer on a page "
+                          f"deeper than the homepage — nobody types or bookmarks "
+                          f"those, so that is a floor under links being shared "
+                          f"privately. Posting the tagged /tt, /ig, /yt or /rd "
+                          f"short links instead of the bare domain is what turns "
+                          f"that floor into a channel you can read."})
+    return B
+
+
 def _pretty_date(iso):
     try:
         return datetime.date.fromisoformat(str(iso)).strftime("%A, %B %d, %Y")
@@ -721,13 +768,18 @@ def build_blocks(run_log=None, review_out=None):
     rows = []
     for m, label in (("visitors", "All visitors"), ("organic_visitors", "Organic search"),
                      ("ai_visitors", "AI answer engines"), ("direct_visitors", "Direct"),
-                     ("referral_visitors", "Referral")):
+                     ("referral_visitors", "Referral"),
+                     # Tagged entry is the only attribution that survives a link
+                     # pasted into a social app, and it had no row here because
+                     # classify() did not read the site's own ?src= tags.
+                     ("campaign_visitors", "Tagged link (?src=)")):
         last, med, arrow, tone = _trend(m)
         # The arrow rides on the median rather than taking a fourth column —
         # four columns do not fit a phone, and the arrow is about the median.
         rows.append([label, _fmt(last), {"text": f"{arrow} {_fmt(med)}".strip(), "tone": tone}])
     B.append({"type": "table", "cols": ["Source", "Yesterday", "Median/day"],
               "align": ["left", "right", "right"], "mono": True, "rows": rows})
+    B += _entry_census()
 
     # ---- what ran
     if run_log:

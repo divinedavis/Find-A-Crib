@@ -7,6 +7,10 @@ import Foundation
 enum HPDRecords {
     static let violationsURL = "https://data.cityofnewyork.us/resource/wvxf-dwi5.json"
     static let complaintsURL = "https://data.cityofnewyork.us/resource/ygpa-z7cr.json"
+    /// HPD's annual bedbug filings and DOHMH rodent inspections — the two
+    /// "Inspections" tiles, same datasets as the site's buttons.
+    static let bedbugsURL = "https://data.cityofnewyork.us/resource/wz6d-d3jb.json"
+    static let rodentsURL = "https://data.cityofnewyork.us/resource/p937-wjvj.json"
     static let limit = 100
 
     struct Violation: Decodable, Identifiable, Hashable {
@@ -42,8 +46,68 @@ enum HPDRecords {
         var statusDate: String { String((problem_status_date ?? "").prefix(10)) }
     }
 
+    /// One annual landlord filing: every multiple dwelling must report its
+    /// bedbug history to HPD each year. Socrata sends the numbers as strings.
+    struct BedbugFiling: Decodable, Identifiable, Hashable {
+        let filing_date: String?
+        let of_dwelling_units: String?
+        let infested_dwelling_unit_count: String?
+        let re_infested_dwelling_unit: String?
+        let eradicated_unit_count: String?
+        let filing_period_start_date: String?
+        let filling_period_end_date: String?   // sic — the dataset's own column name
+        var id: String { (filing_date ?? "") + "/" + (filing_period_start_date ?? "") + "/" + (infested_dwelling_unit_count ?? "") }
+        var filed: String { String((filing_date ?? "").prefix(10)) }
+        var units: Int { HPDRecords.int(of_dwelling_units) }
+        var infested: Int { HPDRecords.int(infested_dwelling_unit_count) }
+        var reinfested: Int { HPDRecords.int(re_infested_dwelling_unit) }
+        var treated: Int { HPDRecords.int(eradicated_unit_count) }
+        var periodStart: String { String((filing_period_start_date ?? "").prefix(10)) }
+        var periodEnd: String { String((filling_period_end_date ?? "").prefix(10)) }
+        /// "A problem": the filing reported at least one infested unit.
+        var hadBedbugs: Bool { infested > 0 }
+        var year: Int? { Int(filed.prefix(4)) }
+    }
+
+    /// One Health Department rodent inspection.
+    struct RodentInspection: Decodable, Identifiable, Hashable {
+        let job_id: String?
+        let inspection_date: String?
+        let inspection_type: String?
+        let result: String?
+        var id: String { (job_id ?? "") + "/" + (inspection_date ?? "") + "/" + (inspection_type ?? "") }
+        var date: String { String((inspection_date ?? "").prefix(10)) }
+        /// The site's rule: rat activity, a failed inspection, or a problem
+        /// condition counts against the building; "Passed" and the
+        /// stoppage/monitoring visits do not.
+        var failed: Bool {
+            let r = (result ?? "").uppercased()
+            return r.contains("RAT ACTIVITY") || r.contains("FAIL") || r.contains("PROBLEM")
+        }
+        var year: Int? { Int(date.prefix(4)) }
+    }
+
+    /// What the two tiles say: how many records are on file and how many of
+    /// them were a problem this calendar year. `nil` = still loading.
+    struct InspectionSummary: Hashable {
+        let total: Int
+        let problemsThisYear: Int
+        var clean: Bool { problemsThisYear == 0 }
+    }
+
+    static func summary(bedbugs rows: [BedbugFiling], year: Int = currentYear) -> InspectionSummary {
+        InspectionSummary(total: rows.count, problemsThisYear: rows.filter { $0.year == year && $0.hadBedbugs }.count)
+    }
+    static func summary(rodents rows: [RodentInspection], year: Int = currentYear) -> InspectionSummary {
+        InspectionSummary(total: rows.count, problemsThisYear: rows.filter { $0.year == year && $0.failed }.count)
+    }
+    static var currentYear: Int { Calendar(identifier: .gregorian).component(.year, from: Date()) }
+    static func int(_ s: String?) -> Int { Int(Double(s ?? "") ?? 0) }
+
     private static var violationCache: [String: [Violation]] = [:]
     private static var complaintCache: [String: [Complaint]] = [:]
+    private static var bedbugCache: [String: [BedbugFiling]] = [:]
+    private static var rodentCache: [String: [RodentInspection]] = [:]
 
     /// Open violations only, newest first — HPD's own Open/Close flag, not the
     /// free-text status that counts "VIOLATION DISMISSED" as open.
@@ -81,6 +145,39 @@ enum HPDRecords {
         ]
         let rows: [Complaint] = try await fetch(comps.url!)
         complaintCache[bbl] = rows
+        return rows
+    }
+
+    /// Annual bedbug filings, newest first. bbl is text in this dataset.
+    static func bedbugs(bbl: String) async throws -> [BedbugFiling] {
+        if let c = bedbugCache[bbl] { return c }
+        guard bbl.count == 10, bbl.allSatisfy(\.isNumber) else { return [] }
+        var comps = URLComponents(string: bedbugsURL)!
+        comps.queryItems = [
+            .init(name: "$select", value: "filing_date,of_dwelling_units,infested_dwelling_unit_count,re_infested_dwelling_unit,eradicated_unit_count,filing_period_start_date,filling_period_end_date"),
+            .init(name: "$where", value: "bbl='\(bbl)'"),
+            .init(name: "$order", value: "filing_date DESC"),
+            .init(name: "$limit", value: String(limit)),
+        ]
+        let rows: [BedbugFiling] = try await fetch(comps.url!)
+        bedbugCache[bbl] = rows
+        return rows
+    }
+
+    /// Rodent inspections, newest first. bbl is a number in this dataset, so
+    /// the quotes come off — with them Socrata returns nothing, not an error.
+    static func rodents(bbl: String) async throws -> [RodentInspection] {
+        if let c = rodentCache[bbl] { return c }
+        guard bbl.count == 10, bbl.allSatisfy(\.isNumber), let n = Int(bbl) else { return [] }
+        var comps = URLComponents(string: rodentsURL)!
+        comps.queryItems = [
+            .init(name: "$select", value: "job_id,inspection_date,inspection_type,result"),
+            .init(name: "$where", value: "bbl=\(n)"),
+            .init(name: "$order", value: "inspection_date DESC"),
+            .init(name: "$limit", value: String(limit)),
+        ]
+        let rows: [RodentInspection] = try await fetch(comps.url!)
+        rodentCache[bbl] = rows
         return rows
     }
 

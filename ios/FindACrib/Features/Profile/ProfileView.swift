@@ -10,6 +10,7 @@ struct ProfileView: View {
     @State private var confirmDelete = false
     @State private var showPaywall = false
     @State private var showEmail = false
+    @State private var showAlerts = false
     @Environment(PlusStore.self) private var plus
     @AppStorage("hereTo") private var hereTo = "Rent"
     @AppStorage("homeBorough") private var homeBorough = "Brooklyn"
@@ -110,6 +111,7 @@ struct ProfileView: View {
                     }.padding(16)
                     .sheet(isPresented: $showPaywall) { PaywallView() }
                     .sheet(isPresented: $showEmail) { EmailSignInView() }
+                    .sheet(isPresented: $showAlerts) { AlertsSheet() }
                     .onChange(of: nav.showPaywall) { _, on in if on { showPaywall = true; nav.showPaywall = false } }
                     .onAppear { if nav.showPaywall { showPaywall = true; nav.showPaywall = false } }
                     .alert("Delete your account?", isPresented: $confirmDelete) {
@@ -128,6 +130,19 @@ struct ProfileView: View {
                     }
                     settingRow("Saved buildings") { Text("\(activity.saved.count)" + (auth.isSignedIn ? " · synced" : "")).font(.se(18, .bold)) }
                     settingRow("Saved searches") { Text("\(activity.savedSearches.count)").font(.se(18, .bold)) }
+                    // The site's borough alerts — lotteries, re-rentals and
+                    // voucher listings by borough, rent cap and income — set
+                    // up or changed from here, not only from a results list.
+                    settingRow("Alerts") {
+                        if auth.isSignedIn {
+                            Button { showAlerts = true } label: {
+                                HStack(spacing: 4) { Text("Set up or change").font(.se(18, .semibold)); Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)) }
+                                    .foregroundStyle(SE.royal)
+                            }.buttonStyle(.plain).accessibilityIdentifier("profile-alerts")
+                        } else {
+                            Text("Sign in to set up").font(.se(16)).foregroundStyle(SE.ink3)
+                        }
+                    }
 
                     // data
                     VStack(alignment: .leading, spacing: 12) {

@@ -19,9 +19,14 @@ struct ResultsHeader: View {
             Button(action: onLocation) {
                 HStack(spacing: 8) {
                     Image(systemName: "mappin").font(.system(size: 13, weight: .bold)).foregroundStyle(SE.royal)
-                    Text(query.shortLocationLabel(boroughOf: store.boroughOfNeighborhood)).font(.se(16)).foregroundStyle(SE.ink).lineLimit(1).truncationMode(.tail).frame(minWidth: 70, alignment: .leading)
-                        .accessibilityIdentifier("results-location")
-                    Text(query.summary).font(.se(16)).foregroundStyle(SE.ink2).lineLimit(1).layoutPriority(1)
+                    // Two lines inside the 40pt pill: the place, then the filter
+                    // summary ("Up to $3k, 2 bd") small underneath. Side by side
+                    // the summary was cut to "Up to…" on a phone (2026-09-08).
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(query.shortLocationLabel(boroughOf: store.boroughOfNeighborhood)).font(.se(15)).foregroundStyle(SE.ink).lineLimit(1).truncationMode(.tail)
+                            .accessibilityIdentifier("results-location")
+                        Text(query.summary).font(.se(12)).foregroundStyle(SE.ink2).lineLimit(1).minimumScaleFactor(0.8)
+                    }
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 10).frame(height: 40)
@@ -122,10 +127,10 @@ struct ResultsView: View {
                 FloatingPill(title: "Map", icon: "map.fill") {
                     nav.searchPath.append(.map(query))
                 }
-                // Available-now and Accepting-vouchers are the two views where
-                // "tell me when one opens" means something; the alert is the
-                // site's borough alert, so it needs an account (an email).
-                if query.normalized.availableOnly || query.normalized.vouchersOnly {
+                // Available-now, Accepting-vouchers and Lotteries are the views
+                // where "tell me when one opens" means something; the alert is
+                // the site's borough alert, so it needs an account (an email).
+                if query.normalized.availableOnly || query.normalized.vouchersOnly || query.normalized.hcrOnly {
                     FloatingPill(title: "Alerts", icon: "bell.badge.fill") {
                         if auth.isSignedIn { showAlerts = true } else { showSignIn = true }
                     }

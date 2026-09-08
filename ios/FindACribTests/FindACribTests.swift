@@ -234,4 +234,44 @@ final class ActivityTests: XCTestCase {
         a.deleteSearch(a.savedSearches.first { $0.name == "t" }!.id)
         XCTAssertFalse(a.isSearchSaved(q))
     }
+
+    /// The two inspection tiles: red when a filing this year reported
+    /// bedbugs or an inspection this year failed, green when the year is
+    /// clean — regardless of what happened in earlier years.
+    func testInspectionSummariesFollowTheSiteRule() throws {
+        let y = HPDRecords.currentYear
+        let dec = JSONDecoder()
+        let bb = try dec.decode([HPDRecords.BedbugFiling].self, from: Data("""
+        [{"filing_date":"\(y)-08-13T00:00:00.000","of_dwelling_units":"210","infested_dwelling_unit_count":"1","eradicated_unit_count":"1","re_infested_dwelling_unit":"0"},
+         {"filing_date":"\(y - 1)-08-01T00:00:00.000","of_dwelling_units":"210","infested_dwelling_unit_count":"4"},
+         {"filing_date":"\(y)-01-02T00:00:00.000","of_dwelling_units":"210","infested_dwelling_unit_count":"0"}]
+        """.utf8))
+        let bs = HPDRecords.summary(bedbugs: bb)
+        XCTAssertEqual(bs.total, 3)
+        XCTAssertEqual(bs.problemsThisYear, 1)
+        XCTAssertFalse(bs.clean)
+        XCTAssertEqual(bb[0].units, 210); XCTAssertEqual(bb[0].infested, 1); XCTAssertEqual(bb[0].treated, 1)
+        XCTAssertTrue(HPDRecords.summary(bedbugs: [bb[1], bb[2]]).clean, "last year's bedbugs do not make this year red")
+
+        let ro = try dec.decode([HPDRecords.RodentInspection].self, from: Data("""
+        [{"job_id":"a","inspection_date":"\(y)-03-01T10:00:00.000","inspection_type":"Initial","result":"Passed"},
+         {"job_id":"b","inspection_date":"\(y)-04-01T10:00:00.000","inspection_type":"Compliance","result":"Rat Activity"},
+         {"job_id":"c","inspection_date":"\(y - 2)-04-01T10:00:00.000","inspection_type":"Initial","result":"Failed for Other R"}]
+        """.utf8))
+        let rs = HPDRecords.summary(rodents: ro)
+        XCTAssertEqual(rs.total, 3)
+        XCTAssertEqual(rs.problemsThisYear, 1)
+        XCTAssertTrue(ro[2].failed); XCTAssertFalse(ro[0].failed)
+        XCTAssertTrue(HPDRecords.summary(rodents: [ro[0], ro[2]]).clean)
+    }
+
+    /// The alert sheet's rent/income boxes accept what people type ("$2,000")
+    /// and reject nonsense before it reaches the API.
+    func testAlertDollarParsing() {
+        XCTAssertNil(AlertsSheet.dollars(""))
+        XCTAssertNil(AlertsSheet.dollars("  "))
+        XCTAssertEqual(AlertsSheet.dollars("$2,000"), 2000)
+        XCTAssertEqual(AlertsSheet.dollars("65000"), 65000)
+        XCTAssertEqual(AlertsSheet.dollars("abc"), -1)
+    }
 }

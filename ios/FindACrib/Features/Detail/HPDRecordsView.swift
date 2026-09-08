@@ -1,19 +1,29 @@
 import SwiftUI
 
-/// The building's violations or complaints, one row each, on their own
-/// screen. Reached from the two tiles in "Violations & complaints".
+/// The building's violations, complaints, bedbug filings or rodent
+/// inspections, one row each, on their own screen. Reached from the four
+/// tiles in "Violations & inspections" (signed-in only).
 struct HPDRecordsView: View {
-    enum Kind: String, Hashable { case violations, complaints }
+    enum Kind: String, Hashable { case violations, complaints, bedbugs, rodents }
     let building: Building
     let kind: Kind
 
     @State private var violations: [HPDRecords.Violation] = []
     @State private var complaints: [HPDRecords.Complaint] = []
+    @State private var bedbugs: [HPDRecords.BedbugFiling] = []
+    @State private var rodents: [HPDRecords.RodentInspection] = []
     @State private var loading = true
     @State private var failed = false
 
     private var b: Building { building }
-    private var title: String { kind == .violations ? "Violations" : "Complaints" }
+    private var title: String {
+        switch kind {
+        case .violations: "Violations"
+        case .complaints: "Complaints"
+        case .bedbugs: "Bedbug inspections"
+        case .rodents: "Rodent inspections"
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -58,6 +68,8 @@ struct HPDRecordsView: View {
             switch kind {
             case .violations: violations = try await HPDRecords.violations(bbl: b.bbl)
             case .complaints: complaints = try await HPDRecords.complaints(bbl: b.bbl)
+            case .bedbugs: bedbugs = try await HPDRecords.bedbugs(bbl: b.bbl)
+            case .rodents: rodents = try await HPDRecords.rodents(bbl: b.bbl)
             }
         } catch { failed = true }
         loading = false
@@ -76,6 +88,22 @@ struct HPDRecordsView: View {
             case .complaints:
                 Text("\(c?.open ?? 0) open").font(.se(30, .black)).foregroundStyle(SE.ink)
                 Text("Problems tenants reported to 311 / HPD, newest first. A complaint is a report, not a finding — Violations are what inspectors confirmed.")
+                    .font(.se(15)).foregroundStyle(SE.ink2)
+            case .bedbugs:
+                let s = HPDRecords.summary(bedbugs: bedbugs)
+                if !loading {
+                    Text(s.clean ? "None found this year" : "\(s.problemsThisYear) filing\(s.problemsThisYear == 1 ? "" : "s") with bedbugs this year")
+                        .font(.se(30, .black)).foregroundStyle(s.clean ? SE.good : SE.bad)
+                }
+                Text("Every multiple dwelling must report its bedbug history to HPD once a year — how many units had bedbugs, how many were re-infested, how many were treated. Newest filing first.")
+                    .font(.se(15)).foregroundStyle(SE.ink2)
+            case .rodents:
+                let s = HPDRecords.summary(rodents: rodents)
+                if !loading {
+                    Text(s.clean ? "None failed this year" : "\(s.problemsThisYear) failed this year")
+                        .font(.se(30, .black)).foregroundStyle(s.clean ? SE.good : SE.bad)
+                }
+                Text("Health Department rodent inspections, newest first. \"Rat activity\" or \"failed\" means the inspector found signs of rats; a passed compliance visit means the problem was fixed.")
                     .font(.se(15)).foregroundStyle(SE.ink2)
             }
         }
@@ -106,7 +134,50 @@ struct HPDRecordsView: View {
                 LazyVStack(spacing: 0) { ForEach(complaints) { complaintRow($0) } }
                     .background(Color.white)
             }
+        case .bedbugs:
+            if bedbugs.isEmpty {
+                note("No bedbug filings on record for this building.")
+            } else {
+                if bedbugs.count >= HPDRecords.limit { note("The \(HPDRecords.limit) most recent annual filings, newest first.") }
+                LazyVStack(spacing: 0) { ForEach(bedbugs) { bedbugRow($0) } }
+                    .background(Color.white)
+            }
+        case .rodents:
+            if rodents.isEmpty {
+                note("No rodent inspections on record for this building.")
+            } else {
+                if rodents.count >= HPDRecords.limit { note("The \(HPDRecords.limit) most recent inspections, newest first.") }
+                LazyVStack(spacing: 0) { ForEach(rodents) { rodentRow($0) } }
+                    .background(Color.white)
+            }
         }
+    }
+
+    private func bedbugRow(_ r: HPDRecords.BedbugFiling) -> some View {
+        let tone: Color = r.hadBedbugs ? SE.bad : SE.good
+        let extras = [r.reinfested > 0 ? "\(r.reinfested) re-infested" : "", r.treated > 0 ? "\(r.treated) treated" : ""].filter { !$0.isEmpty }
+        return VStack(alignment: .leading, spacing: 5) {
+            Text(r.hadBedbugs ? "Bedbugs reported" : "None reported").font(.se(13, .bold)).foregroundStyle(tone)
+                .padding(.horizontal, 8).padding(.vertical, 3).background(tone.opacity(0.1))
+            Text("\(r.infested) of \(r.units) unit\(r.units == 1 ? "" : "s") infested" + (extras.isEmpty ? "" : " · " + extras.joined(separator: " · ")))
+                .font(.se(17)).foregroundStyle(SE.ink)
+            Text(["Filed \(r.filed)", r.periodStart.isEmpty ? "" : "covers \(r.periodStart) – \(r.periodEnd)"].filter { !$0.isEmpty }.joined(separator: " · "))
+                .font(.se(14)).foregroundStyle(SE.ink2)
+        }
+        .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+        .overlay(alignment: .bottom) { Rectangle().fill(SE.line).frame(height: 1) }
+    }
+
+    private func rodentRow(_ r: HPDRecords.RodentInspection) -> some View {
+        let tone: Color = r.failed ? SE.bad : SE.good
+        return VStack(alignment: .leading, spacing: 5) {
+            Text(r.result ?? "Inspection").font(.se(13, .bold)).foregroundStyle(tone)
+                .padding(.horizontal, 8).padding(.vertical, 3).background(tone.opacity(0.1))
+            Text(r.inspection_type ?? "Inspection").font(.se(17)).foregroundStyle(SE.ink)
+            if !r.date.isEmpty { Text("Inspected \(r.date)").font(.se(14)).foregroundStyle(SE.ink2) }
+        }
+        .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+        .overlay(alignment: .bottom) { Rectangle().fill(SE.line).frame(height: 1) }
     }
 
     private func note(_ s: String) -> some View {

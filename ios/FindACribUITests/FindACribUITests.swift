@@ -170,6 +170,39 @@ final class FindACribUITests: XCTestCase {
 
     /// The pushed screens hide the system nav bar, which normally kills the
     /// edge swipe; this pins that swiping from the left edge still pops.
+    /// Violations, complaints and the bedbug/rodent inspections are behind an
+    /// account (2026-09-08, same as the site): signed out — which the
+    /// simulator always is — the section offers sign-in and shows no tiles.
+    func testViolationsGatedWhenSignedOut() throws {
+        app.terminate()
+        app.launchArguments = ["--route", "detail"]
+        app.launch()
+        XCTAssertTrue(app.buttons["detail-menu"].waitForExistence(timeout: 30))
+        let gate = app.buttons["hpd-sign-in"]
+        for _ in 0..<12 where !gate.exists { app.swipeUp() }
+        XCTAssertTrue(gate.waitForExistence(timeout: 5), "signed out, the HPD section must offer sign-in")
+        XCTAssertFalse(app.buttons["open-violations"].exists, "violations tile leaked past the gate")
+        XCTAssertFalse(app.buttons["bedbug-inspections"].exists, "bedbug tile leaked past the gate")
+        XCTAssertFalse(app.buttons["rodent-inspections"].exists, "rodent tile leaked past the gate")
+        gate.tap()
+        XCTAssertTrue(app.buttons["sign-in-apple"].waitForExistence(timeout: 10), "the gate should land on the Profile sign-in")
+    }
+
+    /// The Alerts sheet carries the web form's filters: rent cap and
+    /// household income beside boroughs and kinds.
+    func testAlertsSheetOffersRentAndIncome() throws {
+        app.terminate()
+        app.launchArguments = ["--route", "results", "--open-alerts"]
+        app.launch()
+        XCTAssertTrue(app.otherElements["alerts-sheet"].firstMatch.waitForExistence(timeout: 30) || app.descendants(matching: .any)["alerts-sheet"].firstMatch.waitForExistence(timeout: 5))
+        let rent = app.descendants(matching: .any)["alerts-max-rent"].firstMatch
+        let income = app.descendants(matching: .any)["alerts-income"].firstMatch
+        for _ in 0..<6 where !rent.exists { app.swipeUp() }
+        XCTAssertTrue(rent.waitForExistence(timeout: 5), "max-rent box missing from the alerts sheet")
+        XCTAssertTrue(income.exists, "income box missing from the alerts sheet")
+        XCTAssertTrue(app.descendants(matching: .any)["alerts-subscribe"].firstMatch.exists)
+    }
+
     func testEdgeSwipePopsDetail() throws {
         app.terminate()
         app.launchArguments = ["--route", "detail"]

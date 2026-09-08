@@ -12,6 +12,10 @@ struct BuildingDetailView: View {
     @State private var contacts: HPDContacts?
     @State private var phone: String?
     @State private var contactsLoading = false
+    /// The two inspection tiles, fetched live once the person is signed in.
+    @State private var bedbugSummary: HPDRecords.InspectionSummary?
+    @State private var rodentSummary: HPDRecords.InspectionSummary?
+    @State private var inspectionsFailed = false
     @State private var showPaywall = false
     @State private var scene: MKLookAroundScene?
     @State private var sceneChecked = false
@@ -52,12 +56,12 @@ struct BuildingDetailView: View {
 
                     voucherCard
 
-                    section("Violations & complaints") { hpdBlock }
+                    section("Violations & inspections") { hpdBlock }
 
                     similarRail
                     }
 
-                    Text("Sources: NYS HCR 2024 rent-stabilized building file · NYC HPD violations and complaints · HUD FY2026 Small-Area Fair Market Rents · Recently advertised rents via Zumper. Find A Crib is not a broker and does not list apartments.")
+                    Text("Sources: NYS HCR 2024 rent-stabilized building file · NYC HPD violations, complaints and bedbug filings · NYC DOHMH rodent inspections · HUD FY2026 Small-Area Fair Market Rents · Recently advertised rents via Zumper. Find A Crib is not a broker and does not list apartments.")
                         .font(.se(14)).foregroundStyle(SE.ink3).padding(16)
                     Color.clear.frame(height: 100)
                 }
@@ -119,6 +123,7 @@ struct BuildingDetailView: View {
             sceneChecked = true
         }
         .task(id: "\(auth.isSignedIn)-\(auth.hasPlus)") { await loadContacts() }
+        .task(id: "\(b.bbl)-\(auth.isSignedIn)") { await loadInspections() }
     }
 
     private func loadContacts() async {
@@ -335,21 +340,44 @@ struct BuildingDetailView: View {
         .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white).padding(.bottom, 10)
     }
 
+    /// Signed-in only, like the website since 2026-09-08: the open
+    /// violations and complaints, plus this year's bedbug filings and rodent
+    /// inspections from NYC Open Data. Signed out, the section says what is
+    /// behind the account and sends the person to Profile to sign in.
     @ViewBuilder private var hpdBlock: some View {
         let v = b.h?.violations; let c = b.h?.complaints
-        if v == nil && c == nil {
-            Text("No HPD violation or complaint records on file.").font(.se(18)).foregroundStyle(SE.ink2)
+        if !auth.isSignedIn {
+            Text("HPD's open violations and complaints for this building, plus this year's bedbug filings and Health Department rodent inspections. Free with an account.")
+                .font(.se(17)).foregroundStyle(SE.ink2)
+            SEOutlineButton(title: "Sign in to see violations & inspections", icon: "person.crop.circle") { nav.tab = .profile }
+                .accessibilityIdentifier("hpd-sign-in")
         } else {
-            // Each tile opens the full list on its own screen.
-            HStack(spacing: 12) {
-                NavigationLink(value: Route.hpdRecords(b.bbl, .violations)) {
-                    stat("Open violations", v?.open ?? 0, tone: (v?.open ?? 0) == 0 ? SE.good : ((v?.oc ?? 0) > 0 ? SE.bad : SE.warn))
-                }.buttonStyle(.plain).accessibilityIdentifier("open-violations")
-                NavigationLink(value: Route.hpdRecords(b.bbl, .complaints)) {
-                    stat("Open complaints", c?.open ?? 0, tone: (c?.open ?? 0) == 0 ? SE.good : SE.warn)
-                }.buttonStyle(.plain).accessibilityIdentifier("open-complaints")
+            if v == nil && c == nil {
+                Text("No HPD violation or complaint records on file.").font(.se(18)).foregroundStyle(SE.ink2)
+            } else {
+                // Each tile opens the full list on its own screen.
+                HStack(spacing: 12) {
+                    NavigationLink(value: Route.hpdRecords(b.bbl, .violations)) {
+                        stat("Open violations", v?.open ?? 0, tone: (v?.open ?? 0) == 0 ? SE.good : ((v?.oc ?? 0) > 0 ? SE.bad : SE.warn))
+                    }.buttonStyle(.plain).accessibilityIdentifier("open-violations")
+                    NavigationLink(value: Route.hpdRecords(b.bbl, .complaints)) {
+                        stat("Open complaints", c?.open ?? 0, tone: (c?.open ?? 0) == 0 ? SE.good : SE.warn)
+                    }.buttonStyle(.plain).accessibilityIdentifier("open-complaints")
+                }
             }
-            Text("Tap a number to see each one.").font(.se(14)).foregroundStyle(SE.ink3)
+            // Bedbugs and rodents: red when something was found this year,
+            // green when the year is clean, grey while loading or with no
+            // record on file. Same rule as the site's buttons.
+            HStack(spacing: 12) {
+                NavigationLink(value: Route.hpdRecords(b.bbl, .bedbugs)) {
+                    inspectionTile("Bedbug inspections", bedbugSummary, found: "with bedbugs", clean: "none found this year")
+                }.buttonStyle(.plain).accessibilityIdentifier("bedbug-inspections")
+                NavigationLink(value: Route.hpdRecords(b.bbl, .rodents)) {
+                    inspectionTile("Rodent inspections", rodentSummary, found: "failed", clean: "none failed this year")
+                }.buttonStyle(.plain).accessibilityIdentifier("rodent-inspections")
+            }
+            Text(inspectionsFailed ? "Couldn't reach NYC Open Data for the inspections just now. Tap a tile to try again." : "Tap a tile to see each one.")
+                .font(.se(14)).foregroundStyle(SE.ink3)
             // The app boots from the slim building file, which carries only
             // the open counts; the class split, 12-month and all-time figures
             // are nil there, not zero. Show a row only when it has a number —
@@ -364,9 +392,34 @@ struct BuildingDetailView: View {
                     if let n = c?.total { nrow("Complaints, all time", n) }
                 }.padding(.top, 6)
             }
-            Text("From NYC HPD's open data. Class C means the city considers the condition immediately hazardous — heat, hot water, lead, pests.")
+            Text("From NYC HPD's open data. Class C means the city considers the condition immediately hazardous — heat, hot water, lead, pests. Bedbug filings are the landlord's own annual report; rodent inspections are the Health Department's.")
                 .font(.se(15)).foregroundStyle(SE.ink3)
         }
+    }
+
+    private func loadInspections() async {
+        guard auth.isSignedIn else { bedbugSummary = nil; rodentSummary = nil; return }
+        inspectionsFailed = false
+        async let bb = HPDRecords.bedbugs(bbl: b.bbl)
+        async let ro = HPDRecords.rodents(bbl: b.bbl)
+        do { bedbugSummary = HPDRecords.summary(bedbugs: try await bb) } catch { inspectionsFailed = true }
+        do { rodentSummary = HPDRecords.summary(rodents: try await ro) } catch { inspectionsFailed = true }
+    }
+
+    /// A tile whose headline is the year's verdict, not a bare count: "none
+    /// found this year" in green, "2 with bedbugs" in red, with the number of
+    /// records on file underneath.
+    private func inspectionTile(_ k: String, _ s: HPDRecords.InspectionSummary?, found: String, clean: String) -> some View {
+        let tone: Color = s == nil ? SE.ink3 : (s!.clean ? SE.good : SE.bad)
+        let head: String = s == nil ? (inspectionsFailed ? "—" : "…") : (s!.clean ? clean : "\(s!.problemsThisYear) \(found)")
+        let sub: String = s == nil ? "" : (s!.total == 0 ? "no record on file" : "\(s!.total)\(s!.total >= HPDRecords.limit ? "+" : "") on file")
+        return VStack(alignment: .leading, spacing: 2) {
+            Text(k).font(.se(15, .semibold)).foregroundStyle(SE.ink2)
+            Text(head).font(.se(17, .bold)).foregroundStyle(tone).lineLimit(2).minimumScaleFactor(0.85)
+            Text(sub.isEmpty ? " " : sub).font(.se(13)).foregroundStyle(SE.ink3)
+        }.frame(maxWidth: .infinity, minHeight: 92, alignment: .topLeading).padding(14).background(SE.canvas)
+        .overlay(alignment: .topTrailing) { Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)).foregroundStyle(SE.ink3).padding(12) }
+        .contentShape(Rectangle())
     }
     private func stat(_ k: String, _ n: Int, tone: Color) -> some View {
         VStack(alignment: .leading, spacing: 2) {

@@ -5845,7 +5845,7 @@
       ${IS_NYC ? `<div class="d-actions" data-sec="actions">
         <button class="d-viol ${viol.tone}" data-detail="violations" title="${esc(viol.title)}">${viol.label}</button>
       </div>
-      <div class="d-actions" style="padding-top:0"><button class="d-viol" data-detail="bedbugs" title="Annual landlord bedbug filings with HPD">Bedbugs<span data-oc="bedbugs"></span></button></div>
+      <div class="d-actions" style="padding-top:0"><button class="d-viol" data-detail="bedbugs" title="Annual landlord bedbug filings with HPD">Bedbug inspections<span data-oc="bedbugs"></span></button></div>
       <div class="d-actions" style="padding-top:0"><button class="d-viol" data-detail="rodents" title="Health Department rodent inspections">Rodent inspections<span data-oc="rodents"></span></button></div>` : ''}
       <div class="d-actions"${IS_NYC ? ' style="padding-top:0"' : ' data-sec="actions"'}>
         <a class="d-secondary" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.label}</a>
@@ -6178,7 +6178,7 @@
                    sub: n => `${n} case${n === 1 ? '' : 's'} brought by or with NYC HPD against this building — Housing Litigations`,
                    row: r => `<div class="hpd-row"><b>${esc(fmtDate(r.caseopendate))}</b> · ${esc(r.casetype || 'case')} · ${esc((r.casestatus || '').toLowerCase())}${r.findingofharassment && r.findingofharassment !== 'No Finding' ? ' · <span class="bad">harassment: ' + esc(r.findingofharassment) + '</span>' : ''}${r.penalty ? ' · penalty ' + esc(r.penalty) : ''}<br><span style="color:var(--ink-2)">${r.respondent ? 'v. ' + esc(r.respondent) : ''}</span></div>`,
                    none: 'No HPD housing-court cases on record for this building.' },
-    bedbugs:     { id: 'wz6d-d3jb', bbl: b => `bbl='${b}'`, order: 'filing_date DESC', title: 'Bedbugs', unit: ['bedbug filing', 'bedbug filings'],
+    bedbugs:     { id: 'wz6d-d3jb', bbl: b => `bbl='${b}'`, order: 'filing_date DESC', title: 'Bedbug inspections', unit: ['bedbug filing', 'bedbug filings'],
                    // red when a filing this year reported infested units
                    thisYear: (b, y) => `bbl='${b}' AND filing_date >= '${y}-01-01' AND infested_dwelling_unit_count > 0`, thisYearWord: 'with bedbugs',
                    sub: n => `${n} annual landlord filing${n === 1 ? '' : 's'} — every multiple dwelling must report bedbug history to HPD each year`,

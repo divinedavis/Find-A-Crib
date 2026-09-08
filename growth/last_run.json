@@ -84,8 +84,8 @@
   "indexstatus": {
     "accept_pct": 1.1,
     "accept_pct_mature": 0.0,
-    "added": 0,
-    "at": "2026-09-07T05:11:18+00:00",
+    "added": 1,
+    "at": "2026-09-08T05:11:12+00:00",
     "by_crawl_age": {
       "0-6d": {
         "accept_pct": 25.0,
@@ -99,7 +99,7 @@
       },
       "21-27d": {
         "accept_pct": 0.0,
-        "fetched": 8,
+        "fetched": 12,
         "indexed": 0
       },
       "28d+": {
@@ -109,69 +109,129 @@
       },
       "7-13d": {
         "accept_pct": 0.0,
-        "fetched": 9,
+        "fetched": 5,
         "indexed": 0
       }
     },
-    "cohort": 455,
-    "date": "2026-09-07",
+    "cohort": 456,
+    "date": "2026-09-08",
     "dropped": 0,
     "errors": 0,
-    "fetched_mature": 65,
-    "fetched_pct": 20.9,
+    "fetched_mature": 69,
+    "fetched_pct": 20.8,
     "gained_indexed": 0,
     "indexed_pct": 0.2,
     "inspected": 100,
     "last_crawl": "2026-09-05",
     "lost_indexed": 0,
     "ok": true,
-    "published_urls": 3777,
-    "read": 455,
-    "rechecked": 100,
+    "published_urls": 3826,
+    "read": 456,
+    "rechecked": 99,
     "states": {
       "crawled_not_indexed": 94,
-      "discovered_not_indexed": 23,
+      "discovered_not_indexed": 39,
       "indexed": 1,
-      "unknown_to_google": 337
+      "unknown_to_google": 322
     }
   },
   "measure": {
-    "at": "2026-09-07T05:11:20+00:00",
-    "coverage_pct": 82.4,
-    "date": "2026-09-07",
+    "at": "2026-09-08T05:11:14+00:00",
+    "coverage_pct": 81.6,
+    "date": "2026-09-08",
     "days": 1,
-    "keywords_covered": 383,
-    "keywords_total": 465,
-    "latest_measured_day": "2026-09-06"
+    "keywords_covered": 400,
+    "keywords_total": 490,
+    "latest_measured_day": "2026-09-07",
+    "traffic": {
+      "by_channel": {
+        "ai": 2,
+        "direct": 293,
+        "internal": 5,
+        "organic": 78,
+        "referral": 2
+      },
+      "by_src": {
+        "chatgpt.com": 2
+      },
+      "direct_deep": 0,
+      "top_paths": [
+        [
+          "/",
+          376
+        ],
+        [
+          "/available/",
+          1
+        ],
+        [
+          "/building/brooklyn/507-henry-st-3003320004/",
+          1
+        ],
+        [
+          "/building/manhattan/250-w-105th-st-1018760060/",
+          1
+        ],
+        [
+          "/dc/",
+          1
+        ]
+      ],
+      "top_referrers": [
+        [
+          "www.google.com",
+          66
+        ],
+        [
+          "com.google.android.googlequicksearchbox",
+          9
+        ],
+        [
+          "m.facebook.com",
+          2
+        ],
+        [
+          "chatgpt.com",
+          1
+        ],
+        [
+          "duckduckgo.com",
+          1
+        ],
+        [
+          "www.bing.com",
+          1
+        ]
+      ],
+      "visitors": 380
+    }
   },
   "outreach": {
-    "at": "2026-09-07T05:21:40+00:00",
-    "date": "2026-09-07",
-    "drafted": 0,
-    "ok": true,
-    "segment": "lending"
+    "at": "2026-09-08T05:11:15+00:00",
+    "date": "2026-09-08",
+    "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
+    "ok": false
   },
   "scout": {
-    "at": "2026-09-07T05:18:59+00:00",
-    "date": "2026-09-07",
-    "keywords_added": 25,
-    "ok": true,
-    "techniques_added": 3
+    "at": "2026-09-08T05:11:15+00:00",
+    "date": "2026-09-08",
+    "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
+    "ok": false
   },
   "searchconsole": {
-    "at": "2026-09-07T05:00:12+00:00",
-    "clicks": 53,
-    "date": "2026-09-07",
-    "impressions": 80,
+    "at": "2026-09-08T05:00:13+00:00",
+    "clicks": 49,
+    "date": "2026-09-08",
+    "impressions": 75,
     "nonbranded_clicks": 0,
     "nonbranded_impressions": 0,
-    "page_clicks": 68,
-    "page_impressions": 130,
+    "page_clicks": 61,
+    "page_impressions": 119,
     "serving_ever": 277,
     "serving_pages": 7,
-    "serving_stable": 4,
+    "serving_stable": 7,
     "share_pct": 0.0,
     "tracked_ranking": 0,
-    "window": "2026-08-29..2026-09-05"
+    "window": "2026-08-30..2026-09-06"
   }
 }

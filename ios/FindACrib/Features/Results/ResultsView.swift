@@ -77,7 +77,7 @@ struct ResultsView: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 16) {
                     HStack(alignment: .firstTextBaseline) {
-                        Text("\(results.count.formatted()) \(query.resultNoun)\(results.count == 1 ? "" : "s")")
+                        Text(query.resultHeadline(count: results.count))
                             .font(.se(24, .bold)).foregroundStyle(SE.ink).lineLimit(1).minimumScaleFactor(0.75)
                             .accessibilityIdentifier("results-count")
                         Spacer()

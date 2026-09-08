@@ -1,38 +1,8 @@
 {
-"updated": 1788635105,
-"updated_iso": "2026-09-05T19:05:05+00:00",
-"count": 52,
+"updated": 1788869105,
+"updated_iso": "2026-09-08T12:05:05+00:00",
+"count": 51,
 "listings": [
-{
-"id": "a0Ycs000026ew7GEAQ",
-"name": "Castle III",
-"kind": "Lottery",
-"status": "Open",
-"ptype": "Rental",
-"boro": "M",
-"county": "New York (Manhattan)",
-"min_income": 19989,
-"max_income": 109920,
-"due": "9/7/2026",
-"fee": null,
-"phone": "7184631200",
-"url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs000026ew7GEAQ/detail",
-"info": "www.castle3apartments.com",
-"desc": "Castle III is offering 23 newly constructed units at 111 East 123rd Street in East Harlem section of Manhattan. The building features the following amenities: on-site resident super, elevator, bike storage, community room, mail room, outdoor recreation area, free secure in-unit access to broadband internet for all households, *card-operated laundry room (*additional fees apply). The building is a ",
-"image": "https://nyshcr.my.site.com/housing/file-asset/069cs000023OaNmAAK?oid=00D8y0000008f2FEAQ",
-"senior": false,
-"accessible": false,
-"approx": false,
-"buildings": [
-{
-"street": "111 East 123rd Street",
-"zip": "10035",
-"bbl": null,
-"lat": 40.80365,
-"lng": -73.93916
-}
-]
-},
 {
 "id": "a0Ycs000023NXVBEA4",
 "name": "Knickerbocker Village",

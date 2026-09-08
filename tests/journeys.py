@@ -173,11 +173,17 @@ class Runner:
         self.ok(page.evaluate("!!document.querySelector('.viol-backdrop:not([hidden])')"), 'Complaints button did not open a sheet', j)
         page.evaluate("document.querySelectorAll('.viol-backdrop .sheet-close').forEach(b=>b.click())"); time.sleep(0.3)
         # NYC Open Data buttons: present, counted, and the sheets list real rows
+        labels = page.evaluate("[...document.querySelectorAll('#detail-sheet .d-actions button')].map(b=>b.textContent.trim())")
         for want in ('Evictions', 'Housing court', 'Bedbugs', 'Rodent inspections'):
-            self.ok(any(want in b for b in page.evaluate("[...document.querySelectorAll('#detail-sheet .d-actions button')].map(b=>b.textContent)")), f'building sheet lacks "{want}" button', j)
+            self.ok(any(want in b for b in labels), f'building sheet lacks "{want}" button', j)
+        vi = next((i for i, b in enumerate(labels) if b.startswith('Violations')), -1)
+        self.ok(vi >= 0 and labels[vi + 1].startswith('Bedbugs') and labels[vi + 2].startswith('Rodent'), f'Bedbugs and Rodents should sit right under Violations, got {labels[:5]}', j)
         time.sleep(3)
         counts = page.evaluate("Object.fromEntries([...document.querySelectorAll('#detail-sheet [data-oc]')].map(e=>[e.dataset.oc, e.textContent.trim()]))")
         self.ok(all(v.startswith('·') for v in counts.values()), f'open-data counts should fill in on the buttons, got {counts}', j)
+        tones = page.evaluate("Object.fromEntries(['bedbugs','rodents'].map(k=>[k, document.querySelector('#detail-sheet [data-detail=\"'+k+'\"]').className]))")
+        self.ok(all('d-viol' in v for v in tones.values()), f'bedbug and rodent buttons should carry the violations styling, got {tones}', j)
+        self.ok(all(('this year' in counts[k]) == ('red' in tones[k]) for k in ('bedbugs','rodents')), f'red must mean a problem this year: {counts} {tones}', j)
         self.click(page, '#detail-sheet [data-detail="litigations"]'); time.sleep(3)
         body = page.evaluate("document.getElementById('viol-body').innerText")
         self.ok('Tenant Action' in body or 'case' in body.lower(), f'litigations sheet should list the case, got {body[:120]!r}', j)

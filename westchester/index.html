@@ -5844,7 +5844,9 @@
            clicks) and used to sit several screens down under the HPD record. -->
       ${IS_NYC ? `<div class="d-actions" data-sec="actions">
         <button class="d-viol ${viol.tone}" data-detail="violations" title="${esc(viol.title)}">${viol.label}</button>
-      </div>` : ''}
+      </div>
+      <div class="d-actions" style="padding-top:0"><button class="d-viol" data-detail="bedbugs" title="Annual landlord bedbug filings with HPD">Bedbugs<span data-oc="bedbugs"></span></button></div>
+      <div class="d-actions" style="padding-top:0"><button class="d-viol" data-detail="rodents" title="Health Department rodent inspections">Rodent inspections<span data-oc="rodents"></span></button></div>` : ''}
       <div class="d-actions"${IS_NYC ? ' style="padding-top:0"' : ' data-sec="actions"'}>
         <a class="d-secondary" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.label}</a>
       </div>
@@ -5858,9 +5860,7 @@
         <button class="d-secondary" data-detail="complaints">Building (HPD) Complaints${compTotal != null ? ' · ' + compTotal : ''}</button>
       </div>
       <div class="d-actions" style="padding-top:0"><button class="d-secondary" data-detail="evictions">Evictions<span data-oc="evictions"></span></button></div>
-      <div class="d-actions" style="padding-top:0"><button class="d-secondary" data-detail="litigations">Housing court (HPD lawsuits)<span data-oc="litigations"></span></button></div>
-      <div class="d-actions" style="padding-top:0"><button class="d-secondary" data-detail="bedbugs">Bedbugs<span data-oc="bedbugs"></span></button></div>
-      <div class="d-actions" style="padding-top:0"><button class="d-secondary" data-detail="rodents">Rodent inspections<span data-oc="rodents"></span></button></div>` : ''}
+      <div class="d-actions" style="padding-top:0"><button class="d-secondary" data-detail="litigations">Housing court (HPD lawsuits)<span data-oc="litigations"></span></button></div>` : ''}
       ${IS_NYC ? `<div class="d-section" data-sec="vouchers"><h3>Housing vouchers (Section 8)</h3>
         ${s8Html(rec) || '<div class="d-sub" style="margin:0">No voucher listing or subsidy record for this building right now.</div>'}
         <div class="s8-legal">Source-of-income discrimination is illegal in NYC — every landlord must accept Section 8 and other vouchers, tagged here or not. <a href="https://www.nyc.gov/site/cchr/about/report-discrimination.page" target="_blank" rel="noopener">Report discrimination to the NYC Commission on Human Rights ↗</a></div>
@@ -6179,10 +6179,14 @@
                    row: r => `<div class="hpd-row"><b>${esc(fmtDate(r.caseopendate))}</b> · ${esc(r.casetype || 'case')} · ${esc((r.casestatus || '').toLowerCase())}${r.findingofharassment && r.findingofharassment !== 'No Finding' ? ' · <span class="bad">harassment: ' + esc(r.findingofharassment) + '</span>' : ''}${r.penalty ? ' · penalty ' + esc(r.penalty) : ''}<br><span style="color:var(--ink-2)">${r.respondent ? 'v. ' + esc(r.respondent) : ''}</span></div>`,
                    none: 'No HPD housing-court cases on record for this building.' },
     bedbugs:     { id: 'wz6d-d3jb', bbl: b => `bbl='${b}'`, order: 'filing_date DESC', title: 'Bedbugs', unit: ['bedbug filing', 'bedbug filings'],
+                   // red when a filing this year reported infested units
+                   thisYear: (b, y) => `bbl='${b}' AND filing_date >= '${y}-01-01' AND infested_dwelling_unit_count > 0`, thisYearWord: 'with bedbugs',
                    sub: n => `${n} annual landlord filing${n === 1 ? '' : 's'} — every multiple dwelling must report bedbug history to HPD each year`,
                    row: r => `<div class="hpd-row"><b>${esc(fmtDate(r.filing_date))}</b> · ${n0(r.infested_dwelling_unit_count)} of ${n0(r.of_dwelling_units)} unit${n0(r.of_dwelling_units) === 1 ? '' : 's'} infested${n0(r.re_infested_dwelling_unit) ? ' · ' + n0(r.re_infested_dwelling_unit) + ' re-infested' : ''}${n0(r.eradicated_unit_count) ? ' · ' + n0(r.eradicated_unit_count) + ' treated' : ''}<br><span style="color:var(--ink-2)">period ${esc(fmtDate(r.filing_period_start_date))} – ${esc(fmtDate(r.filling_period_end_date))}</span></div>`,
                    none: 'No bedbug filings on record for this building.' },
     rodents:     { id: 'p937-wjvj', bbl: b => `bbl=${Number(b)}`, order: 'inspection_date DESC', title: 'Rodent inspections', unit: ['inspection', 'inspections'],
+                   // red when an inspection this year found rat activity or failed
+                   thisYear: (b, y) => `bbl=${Number(b)} AND inspection_date >= '${y}-01-01' AND (upper(result) like '%RAT ACTIVITY%' OR upper(result) like '%FAIL%')`, thisYearWord: 'failed',
                    sub: n => `${n} Health Department inspection${n === 1 ? '' : 's'} on record`,
                    row: r => `<div class="hpd-row"><b>${esc(fmtDate(r.inspection_date))}</b> · ${esc(r.inspection_type || 'inspection')} · <span class="${/fail|rat activity|problem/i.test(r.result || '') ? 'bad' : ''}">${esc(r.result || '')}</span></div>`,
                    none: 'No rodent inspections on record for this building.' },
@@ -6193,25 +6197,40 @@
     const d = new Date(iso); return isNaN(d) ? String(iso).slice(0, 10) : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
   const OD_COUNTS = new Map();   // bbl -> {kind: n}
-  function odFetch(kind, bbl, list) {
+  function odFetch(kind, bbl, list, where) {
     const c = OPEN_DATA[kind];
-    const q = list ? `?$where=${encodeURIComponent(c.bbl(bbl))}&$order=${encodeURIComponent(c.order)}&$limit=60`
-                   : `?$select=${encodeURIComponent('count(*) as n')}&$where=${encodeURIComponent(c.bbl(bbl))}`;
+    const w = encodeURIComponent(where || c.bbl(bbl));
+    const q = list ? `?$where=${w}&$order=${encodeURIComponent(c.order)}&$limit=60`
+                   : `?$select=${encodeURIComponent('count(*) as n')}&$where=${w}`;
     return fetch(OD + c.id + '.json' + q).then(r => r.ok ? r.json() : Promise.reject(r.status));
   }
   // Counts on the four buttons. Each is one tiny query; the cache means a
   // building reopened in the same session asks nothing again.
   function loadOpenDataCounts(rec) {
     if (!IS_NYC || !rec || !rec.bbl) return;
+    const year = new Date().getFullYear();
     const paint = counts => Object.keys(OPEN_DATA).forEach(k => {
       const el = detailContent.querySelector(`[data-oc="${k}"]`);
-      if (el && counts[k] != null) el.textContent = ' · ' + counts[k];
+      if (!el || counts[k] == null) return;
+      const yr = counts[k + '_year'];
+      el.textContent = ' · ' + counts[k] + (yr ? ` · ${yr} ${OPEN_DATA[k].thisYearWord} this year` : '');
+      // Bedbugs and rodents sit with Violations and take its colours: red for
+      // a problem this year, green for a clean record, neutral otherwise.
+      const btn = el.closest('button');
+      if (btn && btn.classList.contains('d-viol')) {
+        btn.classList.remove('red', 'green');
+        if (yr) btn.classList.add('red');
+        else if (counts[k] === 0 || (yr === 0 && k === 'rodents')) btn.classList.add('green');
+      }
     });
     if (OD_COUNTS.has(rec.bbl)) { paint(OD_COUNTS.get(rec.bbl)); return; }
     const counts = {};
-    Promise.all(Object.keys(OPEN_DATA).map(k => odFetch(k, rec.bbl, false)
-      .then(rows => { counts[k] = Number(rows && rows[0] && rows[0].n) || 0; })
-      .catch(() => {}))).then(() => {
+    const jobs = [];
+    Object.keys(OPEN_DATA).forEach(k => {
+      jobs.push(odFetch(k, rec.bbl, false).then(rows => { counts[k] = Number(rows && rows[0] && rows[0].n) || 0; }).catch(() => {}));
+      if (OPEN_DATA[k].thisYear) jobs.push(odFetch(k, rec.bbl, false, OPEN_DATA[k].thisYear(rec.bbl, year)).then(rows => { counts[k + '_year'] = Number(rows && rows[0] && rows[0].n) || 0; }).catch(() => {}));
+    });
+    Promise.all(jobs).then(() => {
         OD_COUNTS.set(rec.bbl, counts);
         if (detailRec && detailRec.bbl === rec.bbl) paint(counts);
       });

@@ -579,6 +579,28 @@ def _save_pages(sc, token, start, end, rows, by_query):
          if q not in tracked and v.get("impressions", 0) > 0),
         key=lambda x: -x["impressions"])[:60]
 
+    # The keywords that actually bring people in: top queries over 28 days
+    # (the 7-day query dimension is mostly anonymised away on a site whose
+    # traffic is one-off address lookups), each with the page that earned it.
+    # Rendered as tiles on the dashboard's Search card (2026-09-08).
+    top_queries = []
+    try:
+        q28 = sc.query(token, sc.d(30), sc.d(2), ["query"], row_limit=25)
+        best_page = {}
+        if isinstance(per_page, dict) and "__error__" not in per_page:
+            for url, qs in per_page.items():
+                for q in qs:
+                    cur = best_page.get(q["query"])
+                    if not cur or q["impressions"] > cur[1]:
+                        best_page[q["query"]] = (url, q["impressions"])
+        for r in sorted(q28, key=lambda r: (-r.get("clicks", 0), -r.get("impressions", 0))):
+            qtext = (r.get("keys") or [""])[0]
+            top_queries.append({"query": qtext, "clicks": r.get("clicks", 0), "impressions": r.get("impressions", 0),
+                                "ctr": round(r.get("ctr", 0), 4), "position": round(r.get("position", 0), 1),
+                                "page": (best_page.get(qtext) or ("",))[0]})
+    except Exception as e:
+        top_queries = [{"__error__": str(e)}]
+
     today = ledger.today()
     # Read the previous snapshot before overwriting it: it carries the serving
     # history, and losing it would reset "ever" to today's count every night.
@@ -593,6 +615,7 @@ def _save_pages(sc, token, start, end, rows, by_query):
         # not the previous snapshot, so `now` and `ever` are the same night.
         "serving_tiers": serving_tiers(rows, history),
         "history": history,
+        "queries_28d": top_queries,
         "pages": rows[:300],
         "queries_by_page": {r["url"]: per_page.get(r["url"], []) for r in rows[:60]},
         "discovered_untracked": discovered,

@@ -553,6 +553,7 @@
           <div><h2>Search — is Google sending anyone?</h2><div class="card-sub">findacrib.com has been a verified Search Console property since June and this card never existed, so these numbers were collected every morning and read by nobody. From the 05:40 build, not live.</div></div>
         </div>
         <div class="ads-tiles" id="fac-search-tiles"></div>
+        <div id="fac-search-keywords"></div>
         <div id="fac-index-meters" style="margin-top:18px"></div>
         <div class="callout" id="fac-search-callout" style="margin-top:16px"></div>
       </div>
@@ -2356,6 +2357,22 @@
     el('fac-search-tiles').innerHTML=tiles.map(function(t){
       return '<div class="ads-tile"><div class="a-val">'+t.val+'</div><div class="a-lbl">'+t.lbl+'</div><div class="a-sub">'+t.sub+'</div></div>';
     }).join('');
+    // The keywords: what people typed into Google that led here, last 28 days,
+    // with the page each one lands on. Google anonymises one-off queries, so
+    // a site of address lookups shows fewer here than it earns clicks for.
+    var qs = (S.queries || []).filter(function(q){ return q && q.query; });
+    var kw = el('fac-search-keywords');
+    if (kw) {
+      kw.innerHTML = '<div class="sg-sub" style="margin-top:18px">WHAT PEOPLE SEARCHED · last 28 days</div>' +
+        (qs.length
+          ? '<div class="ads-tiles">' + qs.map(function(q){
+              var page = (q.page || '').replace(/^https?:\/\/[^/]+/, '') || '';
+              return '<div class="ads-tile" title="'+esc(q.query)+'"><div class="a-val">'+comma(q.clicks)+'</div>' +
+                '<div class="a-lbl">'+esc(q.query)+'</div>' +
+                '<div class="a-sub">'+comma(q.impressions)+' impressions · position '+Number(q.position).toFixed(1)+(page ? ' · '+esc(page) : '')+'</div></div>';
+            }).join('') + '</div>'
+          : '<div class="disclaim">No query rows in the last 28 days. Google only reports a query once several people have typed it; on a site of one-off address lookups most clicks arrive under queries it keeps anonymous.</div>');
+    }
 
     // The indexing cohort is the honest denominator for a site that publishes
     // 48,000 pages: not "how many did we make" but "how many did Google agree

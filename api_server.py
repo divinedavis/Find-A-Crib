@@ -2304,6 +2304,8 @@ def _fac_search():
             "serving_ever": (g.get("churn") or {}).get("gsc_serving_ever"),
             "date": g.get("date"),
             "untracked": (g.get("discovered_untracked") or [])[:8],
+            # top queries over 28 days, with the page each one lands on
+            "queries": [q for q in (g.get("queries_28d") or []) if "query" in q][:20],
         })
     try:
         with open(FAC_INDEX_STATUS) as f:

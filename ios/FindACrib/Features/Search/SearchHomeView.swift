@@ -58,11 +58,12 @@ struct SearchHomeView: View {
                         SEFieldLabel(text: "Show")
                         ShowChecklist(query: $query)
                     }
-                    if query.availableOnly {
-                        VStack(alignment: .leading, spacing: 10) {
-                            SEFieldLabel(text: "Bedrooms")
-                            SESegmentRow(options: [(0, "Studio"), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: $query.beds)
-                        }
+                    VStack(alignment: .leading, spacing: 10) {
+                        SEFieldLabel(text: "Bedrooms")
+                        SESegmentRow(options: [(0, "Studio"), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: $query.beds)
+                            .accessibilityIdentifier("beds-row")
+                        Text("From recent listings — picking a size narrows to buildings with an advertised apartment.")
+                            .font(.se(14)).foregroundStyle(SE.ink3)
                     }
 
                     SEPrimaryButton(title: "Search \(count.formatted()) \(query.noun)") { runSearch() }

@@ -147,6 +147,18 @@ final class SearchEngineTests: XCTestCase {
         }
     }
 
+    /// A bedroom count without Available now: every hit must carry that
+    /// bedroom in its recent listings — the filter narrows to advertised
+    /// buildings by itself.
+    func testBedsFilterWithoutAvailableOnly() {
+        var q = SearchQuery(); q.mode = .stabilized; q.beds = [2]
+        let r = SearchEngine.run(q, store: Self.store)
+        XCTAssertFalse(r.isEmpty)
+        XCTAssertTrue(r.allSatisfy { Self.store.beds($0).contains(2) })
+        var all = SearchQuery(); all.mode = .stabilized
+        XCTAssertLessThan(r.count, SearchEngine.run(all, store: Self.store).count)
+    }
+
     func testBoroughScope() {
         var q = SearchQuery(); q.mode = .stabilized; q.locations = [.borough("Bk")]
         let r = SearchEngine.run(q, store: Self.store)

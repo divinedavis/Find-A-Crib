@@ -33,14 +33,18 @@ enum SearchEngine {
             guard let p = store.price(b) else { return false }
             if let lo = q.minPrice, p < lo { return false }
             if let hi = q.maxPrice, p > hi { return false }
-            if !q.beds.isEmpty {
-                let bd = store.beds(b)
-                if !bd.contains(where: { n in q.beds.contains(n >= 4 ? 4 : n) }) { return false }
-            }
         } else if q.minPrice != nil || q.maxPrice != nil {
             guard let p = store.voucherAvail(b)?.p ?? store.priceOf(b) else { return false }
             if let lo = q.minPrice, p < lo { return false }
             if let hi = q.maxPrice, p > hi { return false }
+        }
+        // Bedrooms come from recent listings, so a bedroom filter narrows to
+        // advertised buildings on its own — it no longer needs Available now
+        // ticked first (2026-09-08: the control was hidden behind that box and
+        // read as missing).
+        if !q.beds.isEmpty {
+            let bd = store.beds(b)
+            if bd.isEmpty || !bd.contains(where: { n in q.beds.contains(n >= 4 ? 4 : n) }) { return false }
         }
         if q.vouchersOnly {
             if q.voucherLiveOnly { if store.voucherAvail(b) == nil { return false } }

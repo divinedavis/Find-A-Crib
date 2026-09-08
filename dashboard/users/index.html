@@ -268,7 +268,7 @@
         <div class="tbl-wrap">
           <table class="utable">
             <thead><tr id="uhead">
-              <th data-sort="name" tabindex="0" role="button" aria-sort="none">Name<span class="sarr"></span></th><th data-sort="provider" tabindex="0" role="button" aria-sort="none">Sign-in<span class="sarr"></span></th><th data-sort="plan" tabindex="0" role="button" aria-sort="none">Plan<span class="sarr"></span></th><th data-sort="saves" tabindex="0" role="button" aria-sort="none">Saved<span class="sarr"></span></th><th data-sort="alerts" tabindex="0" role="button" aria-sort="none" title="On borough lottery/re-rental emails, or saved-building emails">Alerts<span class="sarr"></span></th><th data-sort="created_at" tabindex="0" role="button" aria-sort="none">Joined<span class="sarr"></span></th><th data-sort="last_seen" tabindex="0" role="button" aria-sort="none">Last seen<span class="sarr"></span></th><th data-sort="device" tabindex="0" role="button" aria-sort="none">Last device<span class="sarr"></span></th>
+              <th data-sort="name" tabindex="0" role="button" aria-sort="none">Name<span class="sarr"></span></th><th data-sort="provider" tabindex="0" role="button" aria-sort="none">Sign-in<span class="sarr"></span></th><th data-sort="plan" tabindex="0" role="button" aria-sort="none">Plan<span class="sarr"></span></th><th data-sort="saves" tabindex="0" role="button" aria-sort="none">Saved<span class="sarr"></span></th><th data-sort="alerts" tabindex="0" role="button" aria-sort="none" title="On borough lottery/re-rental emails, or saved-building emails">Alerts<span class="sarr"></span></th><th data-sort="created_at" tabindex="0" role="button" aria-sort="none">Joined<span class="sarr"></span></th><th data-sort="device" tabindex="0" role="button" aria-sort="none">Last device<span class="sarr"></span></th>
             </tr></thead>
             <tbody id="urows"></tbody>
           </table>
@@ -538,8 +538,7 @@
         '<td>'+planBadge(u.plan)+'</td>'+
         '<td>'+(u.saves ? u.saves : '<span class="u-muted">0</span>')+'</td>'+
         '<td>'+(u.alerts ? '<span style="display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:700;background:rgba(30,123,52,.15);color:#3ccf6a">Y</span>' : '<span class="u-muted">N</span>')+'</td>'+
-        '<td>'+fdate(u.created_at)+'</td>'+
-        '<td class="'+(didReturn(u)?'u-returned':'u-muted')+'">'+fdate(u.last_seen)+(didReturn(u)?' ↩':'')+'</td>'+
+        '<td><button type="button" class="u-namebtn u-joinedbtn" data-lastseen="'+esc(fdate(u.last_seen)+(didReturn(u)?' ↩ came back':''))+'" data-returned="'+(didReturn(u)?'1':'0')+'" title="Click to show when this user was last seen">'+fdate(u.created_at)+'</button></td>'+
         '<td>'+deviceBadge(u.device)+'</td>'+
       '</tr>';
     }).join('');
@@ -550,7 +549,10 @@
     var b = e.target.closest('.u-namebtn'); if(!b) return;
     var td = b.parentNode, shown = td.querySelector('.u-email-reveal');
     if(shown){ shown.remove(); return; }
-    var d = document.createElement('div'); d.className = 'u-email-reveal'; d.textContent = b.getAttribute('data-email') || '—';
+    var d = document.createElement('div'); d.className = 'u-email-reveal';
+    // the same reveal serves the Joined cell, which shows "Last seen" on click
+    if(b.classList.contains('u-joinedbtn')){ d.textContent = 'Last seen ' + (b.getAttribute('data-lastseen') || '—'); if(b.getAttribute('data-returned')==='1') d.classList.add('u-returned'); }
+    else d.textContent = b.getAttribute('data-email') || '—';
     td.appendChild(d);
   });
 })();

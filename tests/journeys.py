@@ -153,12 +153,22 @@ class Runner:
             self.ok(any('Alerts' in c for c in chips) and not any('Lottery agents' in c for c in chips), f'top-bar chips should show Alerts, not Lottery agents: {chips}', j)
             page.keyboard.press('Escape'); time.sleep(0.2)
             self.ok(page.evaluate("document.getElementById('menu-pop').hidden"), 'Escape should close the menu', j)
+            # Signed out, the menu's Alerts link opens the sign-up modal instead of leaving the page.
+            self.click(page, '#menu-btn'); time.sleep(0.3)
+            page.evaluate("document.querySelector('#menu-pop a[href^=\"/alerts/\"]').click()"); time.sleep(0.5)
+            self.ok(not page.evaluate("document.getElementById('auth-modal').hidden") and page.evaluate("document.getElementById('auth-title').textContent") == 'Create account'
+                    and page.evaluate("location.pathname") == '/', 'menu Alerts should open the sign-up modal when signed out', j)
+            page.evaluate("document.querySelector('[data-auth=\"close\"]')?.click()"); time.sleep(0.2)
         else:
             # Phones: the Alerts chip sits immediately to the right of Saved (asked 2026-09-08).
             pos = page.evaluate("(()=>{const r=s=>document.querySelector(s).getBoundingClientRect(); const f=r('#pill-fav'), a=r('#pill-alerts-m'); return {fr:f.right, al:a.left, fy:f.top+f.height/2, ay:a.top+a.height/2, aw:a.width, href:document.getElementById('pill-alerts-m').getAttribute('href')}})()")
             self.ok(pos['aw'] > 0 and pos['al'] >= pos['fr'] and pos['al'] - pos['fr'] < 24 and abs(pos['ay'] - pos['fy']) < 4,
                     f'Alerts chip should sit right of Saved on phones: {pos}', j)
             self.ok(pos['href'].startswith('/alerts/'), f'Alerts chip should link to /alerts/: {pos}', j)
+            page.evaluate("document.getElementById('pill-alerts-m').click()"); time.sleep(0.5)
+            self.ok(not page.evaluate("document.getElementById('auth-modal').hidden") and page.evaluate("document.getElementById('auth-title').textContent") == 'Create account'
+                    and page.evaluate("location.pathname") == '/', 'Alerts chip should open the sign-up modal when signed out', j)
+            page.evaluate("document.querySelector('[data-auth=\"close\"]')?.click()"); time.sleep(0.2)
 
     def j_search_address(self, page, j, device):
         self.boot(page)
@@ -376,7 +386,14 @@ class Runner:
 
     def j_alerts_page(self, page, j, device):
         page.goto(LIVE + '/alerts/', wait_until='networkidle', timeout=90000); time.sleep(1)
-        self.ok(page.evaluate("document.getElementById('submit').textContent.trim()") == 'Email me when something opens', 'signed-out alerts page should offer a fresh sign-up', j)
+        # Signed out (2026-09-08): the gate card, not the form; its button goes to the map's sign-up modal and back.
+        self.ok(not page.evaluate("document.getElementById('gate').hidden") and page.evaluate("document.getElementById('form').hidden"), 'signed-out alerts page should show the account gate, not the form', j)
+        href = page.evaluate("document.getElementById('gate-btn').getAttribute('href')")
+        self.ok(href.startswith('/?auth=signup') and 'next=%2Falerts%2F' in href, f'gate button should open sign-up and come back: {href}', j)
+        r = page.request.post(LIVE + '/api/alerts/subscribe', data=json.dumps({'email': 'x@example.com', 'boroughs': ['Bk']}), headers={'Content-Type': 'application/json'})
+        self.ok(r.status == 401, f'/api/alerts/subscribe without a session should be 401, got {r.status}', j)
+        page.evaluate("document.getElementById('form').hidden = false")   # the form itself still works once revealed
+        self.ok(page.evaluate("document.getElementById('submit').textContent.trim()") == 'Email me when something opens', 'alerts form should offer a fresh sign-up', j)
         page.click('text=Brooklyn'); time.sleep(0.3)
         self.ok(page.evaluate("document.querySelector('#boros input[value=Bk]').checked"), 'borough chip should toggle on', j)
         self.ok(page.evaluate("getComputedStyle(document.querySelector('#boros input[value=Bk] + span')).backgroundColor") != 'rgba(0, 0, 0, 0)', 'a chosen borough should be filled', j)

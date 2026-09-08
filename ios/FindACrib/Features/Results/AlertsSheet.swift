@@ -207,6 +207,8 @@ struct AlertsSheet: View {
             req.httpMethod = "POST"
             req.setValue("application/json", forHTTPHeaderField: "Content-Type")
             req.setValue("application/json", forHTTPHeaderField: "Accept")
+            // The API takes the address from the verified session, not the body.
+            if let token = auth.session?.accessToken { req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
             var payload: [String: Any] = ["email": email, "boroughs": Array(boroughs).sorted(), "kinds": Array(kinds).sorted()]
             if let rent { payload["max_rent"] = rent }
             if let inc { payload["income"] = inc }
@@ -219,6 +221,7 @@ struct AlertsSheet: View {
             case "signup_cap": error = "Sign-ups are paused for today — try again tomorrow."
             case "invalid_email": error = "Your account email doesn't look valid. Update it under Profile."
             case "no_borough": error = "Pick at least one borough."
+            case "sign_in_required": error = "Your session expired — sign in again under Profile."
             case "bad_rent": error = "Max rent should be a number of dollars per month, between 100 and 20,000."
             case "bad_income": error = "Income should be a number of dollars per year, between 1,000 and 2,000,000."
             default: error = code == 429 ? "Too many tries — give it an hour." : "Couldn't reach findacrib.com just now. Try again."

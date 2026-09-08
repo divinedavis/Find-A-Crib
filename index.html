@@ -6649,6 +6649,7 @@
   }
   // returning from Stripe Checkout
   let plusPurchasePending = false;   // fires the Ads purchase conversion once the session loads
+  let authGatePending = false, authGateNext = null;   // ?auth= deep link + where to go after sign-in
   (function () {
     const p = new URLSearchParams(location.search);
     if (p.get('plus') === 'success') {
@@ -6659,7 +6660,29 @@
     // the sign-in step first — startCheckout() already routes them there.
     if (p.get('plus') === '1') plusUpsellPending = true;
     if (p.has('plus')) { p.delete('plus'); history.replaceState({}, '', location.pathname + (p.toString() ? '?' + p : '')); }
+    // ?auth=signup&next=/alerts/ — the alerts page sends a signed-out visitor
+    // here to create the account, then goes back. `next` is a same-site path
+    // only: never a full URL, so the modal cannot be used as an open redirect.
+    if (p.has('auth')) {
+      authGatePending = true;
+      const n = p.get('next') || '';
+      authGateNext = /^\/[^\/\\][^\s]*$/.test(n) ? n : null;
+      p.delete('auth'); p.delete('next');
+      history.replaceState({}, '', location.pathname + (p.toString() ? '?' + p : ''));
+    }
   })();
+  // Alerts need an account (asked 2026-09-08): every /alerts/ link in the
+  // header, chips and menu opens the sign-up modal when signed out, and the
+  // page opens on its own once the session lands.
+  const ALERTS_GATE_MSG = 'Create a free account to get an email the minute a lottery or re-rental opens in your borough.';
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a[href^="/alerts/"]');
+    if (!a || authUser) return;
+    e.preventDefault();
+    authGateNext = a.getAttribute('href');
+    try { track('outbound', { kind: 'gate_alerts', src: new URL(a.href, location.href).searchParams.get('src') || null }); } catch (err) {}
+    openAuthModal(ALERTS_GATE_MSG); setAuthMode('signup');
+  }, true);
   // ---------- arriving from /directory/ with a portfolio to open ----------
   // ?portfolio=<kind>:<key> is a click on a name in the landlord directory.
   // The map already knows how to show one landlord's buildings — that is the
@@ -7033,6 +7056,11 @@
     authUser = session?.user || null;
     updateAuthUI();
     refreshPlus();   // also re-checked on auth changes and on profile open
+    if (authGatePending) {
+      authGatePending = false;
+      if (authUser && authGateNext) { const n = authGateNext; authGateNext = null; location.href = n; }
+      else if (!authUser) { openAuthModal(ALERTS_GATE_MSG); setAuthMode('signup'); }
+    }
     // Google Ads purchase conversion for a completed Plus checkout ($4.99).
     // Enhanced conversions: pass the account email (Google hashes it) so the
     // purchase can be matched back to the ad click.
@@ -7064,6 +7092,7 @@
     supaClient.auth.onAuthStateChange((_evt, sess) => {
       tr('auth ' + _evt);
       authUser = sess?.user || null;
+      if (authUser && authGateNext) { const n = authGateNext; authGateNext = null; closeAuthModal(); location.href = n; return; }
       adoptAccountTheme(authUser);   // the account's choice beats this device's
       adoptAccountHome(authUser);
       if (authUser && HOME && !(authUser.user_metadata || {}).home_bbl) saveHome();   // this device set it before signing in

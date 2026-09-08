@@ -485,9 +485,12 @@ def alerts_subscribe():
     if not request.is_json:                            # blocks cross-site form posts
         return jsonify(error="json_required"), 415
     body = request.get_json(silent=True) or {}
-    email = str(body.get("email") or "").strip().lower()
-    if not EMAIL_RE.match(email) or len(email) > 254:
-        return jsonify(error="invalid_email"), 400
+    # Alerts need an account (2026-09-08): the address is the verified
+    # session's, never the one in the body — so nobody can subscribe someone
+    # else, and the sign-up modal on the map is a real gate, not a curtain.
+    email = _session_email()
+    if not email:
+        return jsonify(error="sign_in_required"), 401
     boros = sorted({b for b in (body.get("boroughs") or [])
                     if isinstance(b, str) and b in ALERT_BOROS})
     kinds = sorted({k for k in (body.get("kinds") or ALERT_KINDS)

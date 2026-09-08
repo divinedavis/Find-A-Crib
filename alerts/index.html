@@ -141,10 +141,19 @@
     Affordable apartments in New York go to whoever applies first, or to whoever applies at all before the
     deadline. We watch <strong>NYC Housing Connect</strong>, <strong>HCR's HousingSearch</strong> (state lotteries
     and Mitchell-Lama waitlists) and the re-rental boards of every <strong>HPD-approved marketing agent</strong>,
-    every 10 minutes, and email you the moment something new appears where you want to live. Free, no account.
+    every 10 minutes, and email you the moment something new appears where you want to live. Free with a Find A Crib account.
   </p>
 
-  <form class="card" id="form" autocomplete="on" novalidate>
+  <!-- Alerts need an account (2026-09-08). The form stays hidden until the
+       session is known; signed out, this card sends the visitor to the map's
+       sign-up modal, which comes straight back here. -->
+  <div class="card" id="gate" hidden>
+    <b>Alerts are free with an account</b>
+    <p class="hint" style="font-size:14px">Create a free Find A Crib account, or sign in, and your alerts go to the address on the account.</p>
+    <a class="submit" id="gate-btn" href="/?auth=signup&amp;next=%2Falerts%2F" style="text-align:center;text-decoration:none;box-sizing:border-box">Create a free account or sign in</a>
+  </div>
+
+  <form class="card" id="form" autocomplete="on" novalidate hidden>
     <label class="field" for="email">Your email</label>
     <input id="email" type="email" name="email" placeholder="you@example.com" autocomplete="email" required inputmode="email" />
 
@@ -245,16 +254,22 @@
   if (kind === 'lottery' || kind === 'rerental')
     document.querySelectorAll('#kinds input').forEach(function (i) { i.checked = i.value === kind; });
 
-  // Signed-in on the map? Prefill the address. Purely a convenience — the
-  // subscription is by email and never touches the account.
+  // The account is the gate: the form shows only with a session, and the
+  // address is the account's (the API takes it from the verified session,
+  // never from the field). Signed out — or with no auth client at all — the
+  // gate card shows instead.
+  var sessToken = null;
+  function showGate() { $('gate').hidden = false; $('form').hidden = true; }
   try {
     if (window.supabase && window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
       window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY)
         .auth.getSession().then(function (r) {
           var sess = r && r.data && r.data.session;
           var em = sess && sess.user && sess.user.email;
-          if (em && !$('email').value) $('email').value = em;
-          if (!sess || !sess.access_token) return;
+          if (!sess || !sess.access_token || !em) { showGate(); return; }
+          sessToken = sess.access_token;
+          $('email').value = em; $('email').readOnly = true;
+          $('gate').hidden = true; $('form').hidden = false;
           // Signed in: load what this address already gets, tick it, and make
           // the button an edit rather than a fresh sign-up. Keyed on the
           // verified session server-side, never on the typed address.
@@ -270,9 +285,9 @@
               $('submit').dataset.editing = '1';
               var note = $('editing-note'); if (note) { note.hidden = false; }
             });
-        }).catch(function () {});
-    }
-  } catch (e) {}
+        }).catch(function () { showGate(); });
+    } else { showGate(); }
+  } catch (e) { showGate(); }
 
   function phrase(codes) {
     var names = ['M', 'Bk', 'Q', 'Bx', 'SI'].filter(function (c) { return codes.indexOf(c) >= 0; }).map(function (c) { return NAMES[c]; });
@@ -313,7 +328,7 @@
     if (Number.isNaN(income)) return;
     var btn = $('submit'); btn.disabled = true; btn.textContent = 'Saving…';
     fetch('/api/alerts/subscribe', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (sessToken || '') },
       body: JSON.stringify({ email: email, boroughs: boros, kinds: kinds, max_rent: maxRent, income: income })
     }).then(function (r) { return r.json().then(function (j) { return { s: r.status, j: j }; }); })
       .then(function (x) {

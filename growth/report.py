@@ -348,10 +348,37 @@ def _entry_census():
     total = cen.get("visitors") or 0
     B = [{"type": "section", "label": "Where they came in",
           "note": f"{_fmt(total)} visitors, counted at their first page of the day"}]
+    # New vs returning leads, because on a site whose entire audience arrives
+    # branded and direct it is the only thing that separates "word of mouth is
+    # compounding" from "the same people came back". Absent on records written
+    # before 2026-09-08, and absent on any night the lookback query failed —
+    # `new` is omitted rather than guessed, so `is not None` is the right test.
+    new, ret = cen.get("new"), cen.get("returning")
+    if new is not None and ret is not None and total:
+        win = cen.get("new_window_days") or 30
+        B.append({"type": "note",
+                  # Ceiling and floor, labelled: a cleared cookie, a private
+                  # window or a second device all read as a new visitor, and
+                  # nothing reads a returning visitor as new. So the error runs
+                  # one way only and the honest words for these two numbers are
+                  # "at most" and "at least".
+                  "text": f"{_fmt(new)} of them ({round(100 * new / total)}%) had not "
+                          f"visited in the previous {win} days; {_fmt(ret)} had. A "
+                          f"cleared cookie, a private window or a second device all "
+                          f"count as new, so {_fmt(new)} is a ceiling on genuinely new "
+                          f"people and {_fmt(ret)} is a floor under repeat ones. A "
+                          f"rising ceiling is brand demand growing; a rising floor with "
+                          f"a flat ceiling is one audience refreshing the page."})
     B.append({"type": "table", "cols": ["Landing page", "Visitors"],
               "align": ["left", "right"], "mono": True,
               "rows": [[p, _fmt(n)] for p, n in paths]})
-    sent = [f"{h} {n}" for h, n in refs] + [f"?src={t} {n}" for t, n in sorted(srcs.items())]
+    # "tagged", not "?src=". _entry_src() folds two schemes into one bucket —
+    # this site's own ?src= (nginx serves /tt, /ig, /yt, /rd) and the standard
+    # utm_source= — and the key alone does not say which. On 2026-09-07 this
+    # line read "?src=chatgpt.com 2", which claims a findacrib short link that
+    # cannot exist: nginx serves four tags and chatgpt.com is not one of them,
+    # so that tag arrived as utm_source. Name only what the record supports.
+    sent = [f"{h} {n}" for h, n in refs] + [f"tagged {t} {n}" for t, n in sorted(srcs.items())]
     B.append({"type": "note",
               "text": ("Sent by: " + ", ".join(sent) + "." if sent else
                        "No referring host and no ?src= tag on a single entry — "

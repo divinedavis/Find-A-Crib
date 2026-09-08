@@ -32,6 +32,22 @@ AI_HOSTS = ("chatgpt.com", "chat.openai.com", "openai.com", "perplexity.ai",
             "claude.ai", "anthropic.com", "copilot.microsoft.com", "gemini.google.com",
             "bard.google.com", "you.com", "phind.com")
 
+# How long a visitor has to have been absent to count as "new".
+#
+# Thirty days is a choice, not a free parameter. The fac_vid cookie is set by
+# nginx (index.html:2323), so it survives Safari's 7-day cap on script-written
+# storage and a month is comfortably inside its life; and a month of one narrow
+# column is a cheap nightly query.
+#
+# The window is in the metric NAME on purpose. "new_visitors" would be read, six
+# months from now by someone with no memory of today, as "never seen before" —
+# which this is not and cannot be: this loop can only see as far back as it
+# queries. Both constants below are derived from the one number so the name and
+# the window can never drift apart.
+NEW_VISITOR_LOOKBACK_DAYS = 30
+NEW_VISITORS_METRIC = f"new_visitors_{NEW_VISITOR_LOOKBACK_DAYS}d"
+RETURNING_VISITORS_METRIC = f"returning_visitors_{NEW_VISITOR_LOOKBACK_DAYS}d"
+
 
 def _env(name, *alts):
     for n in (name,) + alts:
@@ -151,8 +167,8 @@ def _clean_path(path):
     return p[:80]
 
 
-def census(day_visits, top=6):
-    """Where one day's visitors entered and what sent them.
+def census(day_visits, top=6, prior_vids=None):
+    """Where one day's visitors entered, what sent them, and how many are new.
 
     Plain counts of distinct visitors, computed from rows already fetched — no
     extra query, so this cannot fail the day's measurement. Written into
@@ -160,6 +176,13 @@ def census(day_visits, top=6):
     because the point of it is that a LATER review can read it: on 2026-09-06
     the site had its largest day ever — 247 visitors, 198 of them "direct" —
     and nothing anywhere recorded where they landed or what sent them.
+
+    `prior_vids` is the set of visitor ids seen in the previous
+    NEW_VISITOR_LOOKBACK_DAYS days, handed IN by collect() — this function still
+    issues no query of its own. Pass None (the default, and what collect() does
+    when its lookback query fails) and the new/returning keys are simply absent,
+    which is the honest reading; a caller must never substitute an empty set,
+    because that reports every visitor as new.
     """
     entries = _entry_rows(day_visits)
     chan, src, paths, refs = {}, {}, {}, {}
@@ -186,9 +209,30 @@ def census(day_visits, top=6):
     def rank(d):
         return [[k, n] for k, n in sorted(d.items(), key=lambda kv: (-kv[1], kv[0]))[:top]]
 
-    return {"visitors": len(entries), "by_channel": dict(sorted(chan.items())),
-            "by_src": dict(sorted(src.items())), "direct_deep": deep,
-            "top_paths": rank(paths), "top_referrers": rank(refs)}
+    out = {"visitors": len(entries), "by_channel": dict(sorted(chan.items())),
+           "by_src": dict(sorted(src.items())), "direct_deep": deep,
+           "top_paths": rank(paths), "top_referrers": rank(refs)}
+    if prior_vids is not None:
+        vids = {v.get("visitor_id") for v in entries if v.get("visitor_id")}
+        out["returning"] = len(vids & prior_vids)
+        out["new"] = len(vids - prior_vids)
+        out["new_window_days"] = NEW_VISITOR_LOOKBACK_DAYS
+    return out
+
+
+def _prior_visitor_ids(sb, before, days=NEW_VISITOR_LOOKBACK_DAYS):
+    """Every visitor_id seen in the `days` before the ISO date `before`.
+
+    One narrow column, paged by Supabase.select(), so nothing is silently
+    truncated the way a single capped request would be — a truncated prior set
+    would report the visitors it failed to fetch as brand new, which is exactly
+    the direction of error that flatters the site.
+    """
+    lo = (datetime.date.fromisoformat(before) - datetime.timedelta(days=days)).isoformat()
+    rows = sb.select("visits", {"select": "visitor_id",
+                                "created_at": f"gte.{lo}",
+                                "and": f"(created_at.lt.{before})"})
+    return {r["visitor_id"] for r in rows if r.get("visitor_id")}
 
 
 def collect(days=1, sb=None, end=None):
@@ -227,6 +271,24 @@ def collect(days=1, sb=None, end=None):
     visits = [v for v in visits if keep(v)]
     events = [e for e in events if keep(e)]
 
+    # New vs returning — the fork this loop could not read on 2026-09-07.
+    # 380 visitors that day, 376 of them landing on "/", nothing shared, nothing
+    # ranking and non-branded impressions still zero. That is either word of
+    # mouth bringing new people in (brand demand compounding, so find the source
+    # and feed it) or the same audience coming back (one event, decaying, so
+    # stop treating the median as growth). Those point at opposite next actions
+    # and nothing in this repo told them apart.
+    #
+    # One extra query, and the only one in collect() that is allowed to fail
+    # without taking the day with it. On failure `prior` stays None and both
+    # metrics are omitted — an absent day is honest, and the tempting
+    # `except: prior = set()` would have published every visitor as new, which
+    # would read as the best news this site has ever had.
+    try:
+        prior = _prior_visitor_ids(sb, lo) - owner_vids
+    except Exception:
+        prior = None
+
     techs = ledger.load_techniques()
     prefixed = [(t["slug"], t.get("prefixes") or []) for t in techs if t.get("prefixes")]
 
@@ -260,9 +322,16 @@ def collect(days=1, sb=None, end=None):
         # can still read it. The per-tag counts beside it ARE a series, one
         # metric per channel actually seen, so a tagged campaign that works
         # leaves fourteen days of evidence instead of one line in a report.
-        cen = census(dv)
+        cen = census(dv, prior_vids=prior)
         m["_census"] = cen
         m["direct_deep_visitors"] = cen["direct_deep"]
+        if prior is not None:
+            m[RETURNING_VISITORS_METRIC] = cen["returning"]
+            m[NEW_VISITORS_METRIC] = cen["new"]
+            # A multi-day window scores each day against everything before it,
+            # this window's own earlier days included — otherwise somebody who
+            # arrived on day 1 and came back on day 3 is counted as new twice.
+            prior = prior | {v["visitor_id"] for v in dv if v.get("visitor_id")}
         for tag, n in cen["by_src"].items():
             m["src_" + "".join(c for c in tag if c.isalnum() or c in "-_")] = n
 

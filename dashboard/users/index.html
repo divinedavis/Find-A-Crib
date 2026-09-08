@@ -265,7 +265,7 @@
         <div class="tbl-wrap">
           <table class="utable">
             <thead><tr id="uhead">
-              <th data-sort="name" tabindex="0" role="button" aria-sort="none">Name<span class="sarr"></span></th><th data-sort="email" tabindex="0" role="button" aria-sort="none">Email<span class="sarr"></span></th><th data-sort="provider" tabindex="0" role="button" aria-sort="none">Sign-in<span class="sarr"></span></th><th data-sort="plan" tabindex="0" role="button" aria-sort="none">Plan<span class="sarr"></span></th><th data-sort="saves" tabindex="0" role="button" aria-sort="none">Saved<span class="sarr"></span></th><th data-sort="shares" tabindex="0" role="button" aria-sort="none">Links sent<span class="sarr"></span></th><th data-sort="created_at" tabindex="0" role="button" aria-sort="none">Joined<span class="sarr"></span></th><th data-sort="last_seen" tabindex="0" role="button" aria-sort="none">Last seen<span class="sarr"></span></th><th data-sort="device" tabindex="0" role="button" aria-sort="none">Last device<span class="sarr"></span></th>
+              <th data-sort="name" tabindex="0" role="button" aria-sort="none">Name<span class="sarr"></span></th><th data-sort="email" tabindex="0" role="button" aria-sort="none">Email<span class="sarr"></span></th><th data-sort="provider" tabindex="0" role="button" aria-sort="none">Sign-in<span class="sarr"></span></th><th data-sort="plan" tabindex="0" role="button" aria-sort="none">Plan<span class="sarr"></span></th><th data-sort="saves" tabindex="0" role="button" aria-sort="none">Saved<span class="sarr"></span></th><th data-sort="alerts" tabindex="0" role="button" aria-sort="none" title="On borough lottery/re-rental emails, or saved-building emails">Alerts<span class="sarr"></span></th><th data-sort="created_at" tabindex="0" role="button" aria-sort="none">Joined<span class="sarr"></span></th><th data-sort="last_seen" tabindex="0" role="button" aria-sort="none">Last seen<span class="sarr"></span></th><th data-sort="device" tabindex="0" role="button" aria-sort="none">Last device<span class="sarr"></span></th>
             </tr></thead>
             <tbody id="urows"></tbody>
           </table>
@@ -468,7 +468,7 @@
     provider:   { get:function(u){ return u.provider || null; }, num:false },
     plan:       { get:function(u){ var r=PLAN_RANK[u.plan]; return r==null?null:r; }, num:true },
     saves:      { get:function(u){ return u.saves||0; }, num:true },
-    shares:     { get:function(u){ return u.shares||0; }, num:true },
+    alerts:     { get:function(u){ return u.alerts ? 1 : 0; }, num:true },
     created_at: { get:function(u){ return u.created_at ? Date.parse(u.created_at) : null; }, num:true },
     last_seen:  { get:function(u){ return u.last_seen ? Date.parse(u.last_seen) : null; }, num:true },
     device:     { get:function(u){ return u.device || null; }, num:false }
@@ -535,7 +535,7 @@
         '<td>'+provBadge(u.provider)+'</td>'+
         '<td>'+planBadge(u.plan)+'</td>'+
         '<td>'+(u.saves ? u.saves : '<span class="u-muted">0</span>')+'</td>'+
-        '<td>'+(u.shares ? u.shares : '<span class="u-muted">0</span>')+'</td>'+
+        '<td>'+(u.alerts ? '<span style="display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:700;background:rgba(30,123,52,.15);color:#3ccf6a">Y</span>' : '<span class="u-muted">N</span>')+'</td>'+
         '<td>'+fdate(u.created_at)+'</td>'+
         '<td class="'+(didReturn(u)?'u-returned':'u-muted')+'">'+fdate(u.last_seen)+(didReturn(u)?' ↩':'')+'</td>'+
         '<td>'+deviceBadge(u.device)+'</td>'+

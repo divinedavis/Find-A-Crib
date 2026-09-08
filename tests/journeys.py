@@ -183,7 +183,10 @@ class Runner:
         self.ok(all(v.startswith('·') for v in counts.values()), f'open-data counts should fill in on the buttons, got {counts}', j)
         tones = page.evaluate("Object.fromEntries(['bedbugs','rodents'].map(k=>[k, document.querySelector('#detail-sheet [data-detail=\"'+k+'\"]').className]))")
         self.ok(all('d-viol' in v for v in tones.values()), f'bedbug and rodent buttons should carry the violations styling, got {tones}', j)
-        self.ok(all(('this year' in counts[k]) == ('red' in tones[k]) for k in ('bedbugs','rodents')), f'red must mean a problem this year: {counts} {tones}', j)
+        for k in ('bedbugs', 'rodents'):
+            red, green = 'red' in tones[k], 'green' in tones[k]
+            self.ok(red or green, f'{k} button should be red or green once the year is known: {counts} {tones}', j)
+            self.ok((red and 'this year' in counts[k] and 'none' not in counts[k]) or (green and 'none' in counts[k] and 'this year' in counts[k]), f'{k} button must say why it is {"red" if red else "green"}: {counts[k]!r}', j)
         self.click(page, '#detail-sheet [data-detail="litigations"]'); time.sleep(3)
         body = page.evaluate("document.getElementById('viol-body').innerText")
         self.ok('Tenant Action' in body or 'case' in body.lower(), f'litigations sheet should list the case, got {body[:120]!r}', j)

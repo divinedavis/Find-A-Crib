@@ -6213,14 +6213,16 @@
       const el = detailContent.querySelector(`[data-oc="${k}"]`);
       if (!el || counts[k] == null) return;
       const yr = counts[k + '_year'];
-      el.textContent = ' · ' + counts[k] + (yr ? ` · ${yr} ${OPEN_DATA[k].thisYearWord} this year` : '');
+      const cleanWord = k === 'bedbugs' ? 'none found this year' : 'none failed this year';
+      el.textContent = ' · ' + counts[k] + (yr ? ` · ${yr} ${OPEN_DATA[k].thisYearWord} this year` : (yr === 0 ? ` · ${cleanWord}` : ''));
       // Bedbugs and rodents sit with Violations and take its colours: red for
-      // a problem this year, green for a clean record, neutral otherwise.
+      // a problem this year, green when this year is clean, and the button
+      // says which; neutral only while the year is still unknown.
       const btn = el.closest('button');
       if (btn && btn.classList.contains('d-viol')) {
         btn.classList.remove('red', 'green');
         if (yr) btn.classList.add('red');
-        else if (counts[k] === 0 || (yr === 0 && k === 'rodents')) btn.classList.add('green');
+        else if (yr === 0) btn.classList.add('green');
       }
     });
     if (OD_COUNTS.has(rec.bbl)) { paint(OD_COUNTS.get(rec.bbl)); return; }

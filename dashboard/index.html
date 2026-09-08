@@ -317,6 +317,10 @@
   .bar.good > span{background:var(--good)}
   .bar.cost > span{background:var(--c2)}
   .meter-note{font-size:11.5px;color:var(--muted);margin-top:5px}
+  .meter .bar{position:relative;overflow:visible}
+  .gmark{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink);opacity:.85;border-radius:1px;pointer-events:auto}
+  .gmark-labels{position:relative;height:16px;margin-top:4px}
+  .gmark-label{position:absolute;transform:translateX(-50%);font-size:10.5px;color:var(--muted);white-space:nowrap}
 
   .callout{background:var(--purple-soft);border:1px solid var(--purple-line);border-radius:12px;padding:13px 15px;font-size:13px;color:var(--purple-ink);margin-top:4px}
   .callout b{color:var(--purple-ink)}
@@ -1647,6 +1651,7 @@
 
   // ---------- render: Find A Crib ----------
   function render(user, d){
+    adoptServerGoals(d);
     // Neither card in the traffic row is shown for Find A Crib any more — the
     // return-channel donut went the way of the Today card — so the whole row
     // is hidden rather than left as an empty grid. Both are shared with the
@@ -2303,9 +2308,9 @@
     el('fac-health-meters').innerHTML=
       '<div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">'+
       'GOALS <span style="font-weight:400;text-transform:none">(mine, not a benchmark)</span></div>'+
-      goalMeter('Daily active', E.dau, AUDIENCE_GOALS.dau)+
-      goalMeter('Weekly active', E.wau, AUDIENCE_GOALS.wau)+
-      goalMeter('Monthly active', E.mau, AUDIENCE_GOALS.mau)+
+      goalMeter('Daily active', E.dau, AUDIENCE_GOALS.dau, 'dau')+
+      goalMeter('Weekly active', E.wau, AUDIENCE_GOALS.wau, 'wau')+
+      goalMeter('Monthly active', E.mau, AUDIENCE_GOALS.mau, 'mau')+
       meter('Weekly stickiness · WAU/MAU', rate(E.wau_mau)+' of '+AUDIENCE_GOALS.wau_mau+'%',
             pct(100*n(E.wau_mau), AUDIENCE_GOALS.wau_mau),
             100*n(E.wau_mau) >= AUDIENCE_GOALS.wau_mau ? 'good' : '')+
@@ -2783,9 +2788,34 @@
 
   // A goal bar, unlike a benchmark bar, is allowed to sit near zero and should
   // read that way — no *4 exaggeration multiplier like the retention meters use.
-  function goalMeter(name,cur,goal){
-    return meter(name, comma(n(cur))+' of '+comma(goal), pct(n(cur),goal),
-                 n(cur)>=goal ? 'good' : '');
+  // Goals reached so far, from the API (dashboard_goals): {dau:{goal,history:[{goal,value,achieved_at}]}, ...}
+  var GOAL_HISTORY = {};
+  function adoptServerGoals(d){
+    var g = (d && d.goals) || {};
+    ['dau','wau','mau'].forEach(function(k){
+      if (g[k] && n(g[k].goal) > 0) AUDIENCE_GOALS[k] = n(g[k].goal);
+      if (g[k] && g[k].history) GOAL_HISTORY[k] = g[k].history;
+    });
+  }
+  function shortDate(iso){
+    try { return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); } catch(e){ return ''; }
+  }
+  // A bar for a count goal. Every goal reached before this one is drawn as a
+  // vertical mark at its place on the bar, with its value and the date, so a
+  // goal that has been raised three times shows the climb rather than just
+  // the latest bar.
+  function goalMeter(name,cur,goal,key){
+    var hist = (key && GOAL_HISTORY[key]) || [];
+    var marks = '', labels = '';
+    hist.forEach(function(h){
+      var x = Math.max(0, Math.min(100, 100 * n(h.goal) / Math.max(1, goal)));
+      var when = shortDate(h.achieved_at);
+      marks += '<i class="gmark" style="left:'+x.toFixed(1)+'%" title="Goal of '+comma(h.goal)+' reached '+when+' at '+comma(h.value)+'"></i>';
+      labels += '<span class="gmark-label" style="left:'+x.toFixed(1)+'%">✓ '+comma(h.goal)+' · '+when+'</span>';
+    });
+    var m = meter(name, comma(n(cur))+' of '+comma(goal), pct(n(cur),goal), n(cur)>=goal ? 'good' : '');
+    if (!hist.length) return m;
+    return m.replace('</span></div></div>', '</span>'+marks+'</div><div class="gmark-labels">'+labels+'</div></div>');
   }
   function meter(name,val,w,cls){
     return '<div class="meter"><div class="meter-top"><span class="m-name">'+name+'</span><span class="m-val">'+val+'</span></div>'+

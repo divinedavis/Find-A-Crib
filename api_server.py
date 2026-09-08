@@ -1220,7 +1220,36 @@ def dashboard_metrics():
     # seven days. Not range-scoped: a month bar that changed with the picker
     # would be a different chart wearing the same axis.
     data["months"] = _fac_months()
+    # Moving goals for the three audience counts. The check runs against the
+    # numbers of the all-time call (the same fixed windows every range shows)
+    # and only reads on the others, so switching the range picker cannot
+    # record an achievement twice.
+    data["goals"] = _fac_goals(data.get("engagement") or {}, rng == "all")
     return jsonify(data)
+
+
+FAC_GOAL_DEFAULTS = (("dau", 300), ("wau", 1350), ("mau", 3000))
+
+
+def _fac_goals(engagement, evaluate):
+    """Current goal and the record of goals reached, per audience count.
+
+    dashboard_goal_check (db/0027) raises a reached goal by 30%, rounded up to
+    a ten, and appends {goal, value, achieved_at}. With evaluate=False it only
+    reads."""
+    out = {}
+    for key, default in FAC_GOAL_DEFAULTS:
+        val = engagement.get(key) if evaluate else None
+        try:
+            val = float(val) if val is not None else None
+        except (TypeError, ValueError):
+            val = None
+        try:
+            out[key] = rpc("dashboard_goal_check",
+                           {"p_metric": key, "p_value": val, "p_default": default}) or {}
+        except Exception:
+            out[key] = {}
+    return out
 
 
 FAC_MONTHS = 7

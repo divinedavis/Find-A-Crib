@@ -31,8 +31,24 @@ final class FindACribUITests: XCTestCase {
         app.navigationBars.buttons.element(boundBy: 0).tap()   // the system chevron is the back control
         XCTAssertTrue(count.waitForExistence(timeout: 10))
 
-        app.buttons["results-back"].tap()
+        // The results screen has no back button of its own since 2c25b69; the
+        // system chevron pops it, as it does the detail.
+        app.navigationBars.buttons.element(boundBy: 0).tap()
         XCTAssertTrue(search.waitForExistence(timeout: 10))
+    }
+
+    /// App Review 4.8: a third-party login must come with an equivalent that
+    /// can hide the user's email. Signed out, the profile offers Sign in with
+    /// Apple first, then Google, then email. Build 14 shipped without the
+    /// Apple button and was rejected for exactly this.
+    func testSignInOffersAppleFirst() throws {
+        XCTAssertTrue(app.buttons["tab-Profile"].waitForExistence(timeout: 20))
+        app.buttons["tab-Profile"].tap()
+        let apple = app.buttons["sign-in-apple"], google = app.buttons["sign-in-google"], email = app.buttons["sign-in-email"]
+        XCTAssertTrue(apple.waitForExistence(timeout: 10), "Sign in with Apple must be offered")
+        XCTAssertTrue(google.exists && email.exists)
+        XCTAssertLessThan(apple.frame.minY, google.frame.minY, "Apple sits above Google")
+        XCTAssertTrue(apple.label.contains("Apple"))
     }
 
     func testTabsSwitch() throws {

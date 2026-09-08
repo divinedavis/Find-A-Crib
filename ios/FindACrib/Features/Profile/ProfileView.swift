@@ -69,10 +69,20 @@ struct ProfileView: View {
                             }
                         } else if auth.configured {
                             VStack(spacing: 10) {
-                                // Sign in with Apple is hidden for now (owner decision, 2026-09-02):
-                                // Apple's account service fails to create the credential for this
-                                // brand-new App ID ("Sign Up Not Completed"), so the button could
-                                // only fail. AppleSignInService stays wired for when it clears.
+                                // Sign in with Apple leads (App Review guideline 4.8: a third-party
+                                // login needs an equivalent that limits data to name + email and
+                                // can hide the address). Hidden 2026-09-02 while Apple's account
+                                // service refused to create credentials for the day-old App ID;
+                                // restored 2026-09-08 after the 4.8 rejection of build 14.
+                                Button { Task { await auth.signInWithApple() } } label: {
+                                    HStack(spacing: 10) {
+                                        Image(systemName: "apple.logo").font(.system(size: 19, weight: .medium)).foregroundStyle(.white)
+                                        Text("Continue with Apple").font(.se(18, .semibold)).foregroundStyle(.white)
+                                    }
+                                    .frame(maxWidth: .infinity).frame(height: 50)
+                                    .background(Color.black).clipShape(RoundedRectangle(cornerRadius: 6))
+                                }
+                                .buttonStyle(.plain).accessibilityIdentifier("sign-in-apple")
                                 Button { Task { await auth.signInWithGoogle() } } label: {
                                     HStack(spacing: 10) {
                                         GoogleG().frame(width: 18, height: 18)

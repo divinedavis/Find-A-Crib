@@ -56,7 +56,10 @@ Privacy Policy: https://findacrib.com/privacy/
 Find A Crib is an independent, informational tool. It is not a broker, does not list apartments, and takes no fee. Data: NYS Homes and Community Renewal rent-stabilization register (2024), NYC HPD open data, HUD FY2026 Fair Market Rents, HousingSearch.ny.gov, and advertised rents from Zumper.
 """
 
-REVIEW_NOTES = """WHAT THE APP DOES
+REVIEW_NOTES = """RESUBMISSION FOR GUIDELINE 4.8 (build 21)
+Sign in with Apple is the first sign-in option on the Profile tab when signed out, above Google and email. It limits collection to name and email, supports Hide My Email, and nothing is collected for advertising. Build 14 omitted the button while an Apple-side credential issue on the newly registered App ID was being resolved; build 21 restores it. To test: open the Profile tab signed out and tap Continue with Apple.
+
+WHAT THE APP DOES
 Find A Crib is an informational map of New York City's ~47,000 rent-stabilized buildings (public NYS/NYC records) with advertised rents, HPD violation records, and affordable-housing lotteries. It is not a marketplace and does not take applications or payments.
 
 SIGN-IN

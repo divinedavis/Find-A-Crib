@@ -5856,7 +5856,11 @@
       </div>
       ${IS_NYC ? `<div class="d-actions" style="padding-top:0">
         <button class="d-secondary" data-detail="complaints">Building (HPD) Complaints${compTotal != null ? ' · ' + compTotal : ''}</button>
-      </div>` : ''}
+      </div>
+      <div class="d-actions" style="padding-top:0"><button class="d-secondary" data-detail="evictions">Evictions<span data-oc="evictions"></span></button></div>
+      <div class="d-actions" style="padding-top:0"><button class="d-secondary" data-detail="litigations">Housing court (HPD lawsuits)<span data-oc="litigations"></span></button></div>
+      <div class="d-actions" style="padding-top:0"><button class="d-secondary" data-detail="bedbugs">Bedbugs<span data-oc="bedbugs"></span></button></div>
+      <div class="d-actions" style="padding-top:0"><button class="d-secondary" data-detail="rodents">Rodent inspections<span data-oc="rodents"></span></button></div>` : ''}
       ${IS_NYC ? `<div class="d-section" data-sec="vouchers"><h3>Housing vouchers (Section 8)</h3>
         ${s8Html(rec) || '<div class="d-sub" style="margin:0">No voucher listing or subsidy record for this building right now.</div>'}
         <div class="s8-legal">Source-of-income discrimination is illegal in NYC — every landlord must accept Section 8 and other vouchers, tagged here or not. <a href="https://www.nyc.gov/site/cchr/about/report-discrimination.page" target="_blank" rel="noopener">Report discrimination to the NYC Commission on Human Rights ↗</a></div>
@@ -6046,7 +6050,7 @@
     detailContent.scrollTop = 0;
     watchDetailSections(rec);
     syncDetailFav();
-    loadComments(rec.bbl);
+    loadComments(rec.bbl); loadOpenDataCounts(rec);
     detailSheet.hidden = false;
     // The panel renders immediately from what boot already had, then fills in
     // the all-time and class-breakdown numbers when the rest arrives. Guarded
@@ -6160,6 +6164,77 @@
       body.innerHTML = '<div class="hpd-viol-note" style="border:none">Couldn\'t reach NYC Open Data just now. Close and tap again to retry.</div>';
     });
   }
+  // ---------- NYC Open Data, live by BBL: evictions, HPD lawsuits, bedbugs, rodents ----------
+  // Asked when a building sheet opens (four count queries) and listed on tap.
+  // No build step and nothing stored: the city updates these daily to weekly
+  // and the sheet is the only reader. data.cityofnewyork.us is in connect-src.
+  const OD = 'https://data.cityofnewyork.us/resource/';
+  const OPEN_DATA = {
+    evictions:   { id: '6z8x-wfk4', bbl: b => `bbl='${b}'`, order: 'executed_date DESC', title: 'Evictions', unit: ['eviction', 'evictions'],
+                   sub: n => `${n} marshal-executed eviction${n === 1 ? '' : 's'} at this address since 2017 — NYC Department of Investigation`,
+                   row: r => `<div class="hpd-row"><b>${esc(fmtDate(r.executed_date))}</b> · ${esc(r.residential_commercial_ind || '')}${r.eviction_apt_num ? ' · apt ' + esc(r.eviction_apt_num) : ''}${r.ejectment === 'Ejectment' ? ' · ejectment' : ''}<br><span style="color:var(--ink-2)">${r.eviction_possession ? esc(r.eviction_possession) : ''}${r.marshal_last_name ? ' · Marshal ' + esc((r.marshal_first_name || '') + ' ' + r.marshal_last_name) : ''}</span></div>`,
+                   none: 'No marshal-executed evictions on record for this building since 2017.' },
+    litigations: { id: '59kj-x8nc', bbl: b => `bbl='${b}'`, order: 'caseopendate DESC', title: 'Housing court', unit: ['HPD lawsuit', 'HPD lawsuits'],
+                   sub: n => `${n} case${n === 1 ? '' : 's'} brought by or with NYC HPD against this building — Housing Litigations`,
+                   row: r => `<div class="hpd-row"><b>${esc(fmtDate(r.caseopendate))}</b> · ${esc(r.casetype || 'case')} · ${esc((r.casestatus || '').toLowerCase())}${r.findingofharassment && r.findingofharassment !== 'No Finding' ? ' · <span class="bad">harassment: ' + esc(r.findingofharassment) + '</span>' : ''}${r.penalty ? ' · penalty ' + esc(r.penalty) : ''}<br><span style="color:var(--ink-2)">${r.respondent ? 'v. ' + esc(r.respondent) : ''}</span></div>`,
+                   none: 'No HPD housing-court cases on record for this building.' },
+    bedbugs:     { id: 'wz6d-d3jb', bbl: b => `bbl='${b}'`, order: 'filing_date DESC', title: 'Bedbugs', unit: ['bedbug filing', 'bedbug filings'],
+                   sub: n => `${n} annual landlord filing${n === 1 ? '' : 's'} — every multiple dwelling must report bedbug history to HPD each year`,
+                   row: r => `<div class="hpd-row"><b>${esc(fmtDate(r.filing_date))}</b> · ${n0(r.infested_dwelling_unit_count)} of ${n0(r.of_dwelling_units)} unit${n0(r.of_dwelling_units) === 1 ? '' : 's'} infested${n0(r.re_infested_dwelling_unit) ? ' · ' + n0(r.re_infested_dwelling_unit) + ' re-infested' : ''}${n0(r.eradicated_unit_count) ? ' · ' + n0(r.eradicated_unit_count) + ' treated' : ''}<br><span style="color:var(--ink-2)">period ${esc(fmtDate(r.filing_period_start_date))} – ${esc(fmtDate(r.filling_period_end_date))}</span></div>`,
+                   none: 'No bedbug filings on record for this building.' },
+    rodents:     { id: 'p937-wjvj', bbl: b => `bbl=${Number(b)}`, order: 'inspection_date DESC', title: 'Rodent inspections', unit: ['inspection', 'inspections'],
+                   sub: n => `${n} Health Department inspection${n === 1 ? '' : 's'} on record`,
+                   row: r => `<div class="hpd-row"><b>${esc(fmtDate(r.inspection_date))}</b> · ${esc(r.inspection_type || 'inspection')} · <span class="${/fail|rat activity|problem/i.test(r.result || '') ? 'bad' : ''}">${esc(r.result || '')}</span></div>`,
+                   none: 'No rodent inspections on record for this building.' },
+  };
+  function n0(v) { const x = Number(v); return isFinite(x) ? x : 0; }
+  function fmtDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso); return isNaN(d) ? String(iso).slice(0, 10) : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+  const OD_COUNTS = new Map();   // bbl -> {kind: n}
+  function odFetch(kind, bbl, list) {
+    const c = OPEN_DATA[kind];
+    const q = list ? `?$where=${encodeURIComponent(c.bbl(bbl))}&$order=${encodeURIComponent(c.order)}&$limit=60`
+                   : `?$select=${encodeURIComponent('count(*) as n')}&$where=${encodeURIComponent(c.bbl(bbl))}`;
+    return fetch(OD + c.id + '.json' + q).then(r => r.ok ? r.json() : Promise.reject(r.status));
+  }
+  // Counts on the four buttons. Each is one tiny query; the cache means a
+  // building reopened in the same session asks nothing again.
+  function loadOpenDataCounts(rec) {
+    if (!IS_NYC || !rec || !rec.bbl) return;
+    const paint = counts => Object.keys(OPEN_DATA).forEach(k => {
+      const el = detailContent.querySelector(`[data-oc="${k}"]`);
+      if (el && counts[k] != null) el.textContent = ' · ' + counts[k];
+    });
+    if (OD_COUNTS.has(rec.bbl)) { paint(OD_COUNTS.get(rec.bbl)); return; }
+    const counts = {};
+    Promise.all(Object.keys(OPEN_DATA).map(k => odFetch(k, rec.bbl, false)
+      .then(rows => { counts[k] = Number(rows && rows[0] && rows[0].n) || 0; })
+      .catch(() => {}))).then(() => {
+        OD_COUNTS.set(rec.bbl, counts);
+        if (detailRec && detailRec.bbl === rec.bbl) paint(counts);
+      });
+  }
+  function openOpenDataSheet(kind, rec) {
+    const c = OPEN_DATA[kind];
+    const known = (OD_COUNTS.get(rec.bbl) || {})[kind];
+    document.getElementById('viol-title').textContent = rec.a || c.title;
+    document.getElementById('viol-sub').textContent = known != null ? c.sub(known) : c.title;
+    const body = document.getElementById('viol-body');
+    body.innerHTML = `<div class="hpd-viol-note" style="border:none">Loading ${c.title.toLowerCase()} from NYC Open Data…</div>`;
+    violSheet.hidden = false;
+    track(kind + '_open', { bbl: rec.bbl, via: 'detail_button', n: known });
+    odFetch(kind, rec.bbl, true).then(rows => {
+      if (violSheet.hidden) return;
+      document.getElementById('viol-sub').textContent = c.sub(rows.length);
+      body.innerHTML = rows.length
+        ? rows.map(c.row).join('') + `<div class="hpd-link"><a href="https://data.cityofnewyork.us/d/${c.id}" target="_blank" rel="noopener">Source: NYC Open Data ↗</a></div>`
+        : `<div class="hpd-viol-note" style="border:none">${c.none}</div>`;
+    }).catch(() => {
+      body.innerHTML = '<div class="hpd-viol-note" style="border:none">Couldn\'t reach NYC Open Data just now. Close and tap again to retry.</div>';
+    });
+  }
   function closeViolSheet() { violSheet.hidden = true; }
   violSheet.addEventListener('click', e => {
     if (e.target === violSheet || e.target.closest('[data-viol="close"]')) closeViolSheet();
@@ -6193,20 +6268,21 @@
     }
     if (act === 'home') {
       setHome(rec);
-      detailContent.innerHTML = renderDetail(rec, detailListed); watchDetailSections(rec); syncDetailFav(); loadComments(rec.bbl);
+      detailContent.innerHTML = renderDetail(rec, detailListed); watchDetailSections(rec); syncDetailFav(); loadComments(rec.bbl); loadOpenDataCounts(rec);
       detailContent.scrollTop = 0;
       showPlusToast('Pinned as your apartment — saved and watched. Find it any time under “My apartment”.');
       return;
     }
     if (act === 'unhome') {
       clearHome();
-      detailContent.innerHTML = renderDetail(rec, detailListed); watchDetailSections(rec); syncDetailFav(); loadComments(rec.bbl);
+      detailContent.innerHTML = renderDetail(rec, detailListed); watchDetailSections(rec); syncDetailFav(); loadComments(rec.bbl); loadOpenDataCounts(rec);
       return;
     }
     if (act === 'directions') { openDirections(rec); return; }
     if (act === 'share') { shareBuilding(rec, e.target.closest('[data-detail]')); return; }
     if (act === 'violations') { openViolSheet(rec); return; }
     if (act === 'complaints') { openCompSheet(rec); return; }
+    if (OPEN_DATA[act]) { openOpenDataSheet(act, rec); return; }
     if (act === 'report') { buyReport(rec, e.target.closest('[data-detail]')); return; }
     if (act === 'map') {
       const m = markerFor(rec.bbl);

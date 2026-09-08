@@ -1,30 +1,30 @@
 {
   "build": {
-    "at": "2026-09-07T05:40:31+00:00",
+    "at": "2026-09-08T05:40:29+00:00",
     "changed_urls": 6,
-    "date": "2026-09-07",
+    "date": "2026-09-08",
     "deployed": true,
-    "new_urls": 258,
+    "new_urls": 0,
     "seo_corpus": {
       "days_old": 0,
-      "written": "2026-09-07"
+      "written": "2026-09-08"
     },
     "seo_pipeline": {
-      "at": "2026-09-07T05:42:02Z",
-      "changed_urls": 3795,
-      "code": "synced-2",
+      "at": "2026-09-08T05:41:52Z",
+      "changed_urls": 52,
+      "code": "synced-1",
       "corpus_pages": 49375,
       "head": "unknown",
       "hours_ago": 0.0,
       "phase": "finish",
       "pull": "no-worktree",
       "rc": 0,
-      "started": "2026-09-07T05:40:31Z",
-      "state": "ran clean (source handed over from the checkout: synced-2)",
+      "started": "2026-09-08T05:40:29Z",
+      "state": "ran clean (source handed over from the checkout: synced-1)",
       "step": "done"
     },
     "seo_watchdog": {
-      "at": "2026-09-07T05:42:03+00:00",
+      "at": "2026-09-08T05:41:52+00:00",
       "note": "ran refresh_seo.sh to completion",
       "ok": true,
       "ran": true,
@@ -32,15 +32,15 @@
     },
     "techniques": {
       "city_guides": {
-        "detail": "3 of 3 city guides live with their data caveat \u2014 3 published by the daily growth build (dc, la, sf) because the SEO pipeline has not deployed them \u2014 the docroot's SEO corpus was last written 2026-09-05 (2d ago)",
+        "detail": "3 of 3 city guides live with their data caveat",
         "ok": true
       },
       "city_seo_expansion": {
-        "detail": "hub pages live: dc 103, la 112, sf 37 \u2014 255 pages published by the daily growth build, browse hubs included (dc 104, la 113, sf 38), because the SEO pipeline is behind this checkout \u2014 the docroot's SEO corpus was last written 2026-09-05 (2d ago) \u2014 255 of them were live but stale, still serving the SEO pipeline's older render of the same page",
+        "detail": "hub pages live: dc 103, la 112, sf 37 \u2014 handed 255 pages back to the SEO pipeline, which has deployed its own copies",
         "ok": true
       },
       "crawl_paths": {
-        "detail": "16 of 16 published sections have an inbound internal link (62 docroot pages read) \u2014 single inbound source: /available/ \u2190 nyc browse hub, /dc/neighborhood/ \u2190 dc browse hub, /la/zip/ \u2190 la browse hub, /methodology/ \u2190 home shell, /sf/neighborhood/ \u2190 sf browse hub, /zip/ \u2190 building page \u2014 click depth from the homepage (608 pages read, levels 0-3 fully expanded): /dc/neighborhood/ 3, /la/zip/ 3, /sf/neighborhood/ 3, /zip/ 3, /available/ 2, /building/ 2, /dc/buildings/ 2, /guide/is-my-apartment-rent-controlled- 2, +8 shallower \u2014 3 of 16 audited sections are published under no ACTIVE technique, so nothing rebuilds them; link them or stop publishing them: /available/ [candidate], /brief/ [retired], /developers/ [candidate]",
+        "detail": "16 of 16 published sections have an inbound internal link (62 docroot pages read) \u2014 single inbound source: /available/ \u2190 nyc browse hub, /dc/neighborhood/ \u2190 dc browse hub, /la/zip/ \u2190 la browse hub, /sf/neighborhood/ \u2190 sf browse hub, /zip/ \u2190 building page \u2014 click depth from the homepage (608 pages read, levels 0-3 fully expanded): /dc/neighborhood/ 3, /la/zip/ 3, /sf/neighborhood/ 3, /zip/ 3, /available/ 2, /building/ 2, /dc/buildings/ 2, /guide/is-my-apartment-rent-controlled- 2, +8 shallower \u2014 3 of 16 audited sections are published under no ACTIVE technique, so nothing rebuilds them; link them or stop publishing them: /available/ [candidate], /brief/ [retired], /developers/ [candidate]",
         "ok": true
       },
       "derived_building_facts": {
@@ -50,10 +50,8 @@
         "unchanged": true
       },
       "fresh_section8": {
-        "detail": "297 buildings across 5 boroughs",
-        "ok": true,
-        "same_since": "2026-09-07",
-        "unchanged": true
+        "detail": "298 buildings across 5 boroughs",
+        "ok": true
       },
       "hub_direct_answers": {
         "detail": "answer block on 623 of 623 hub pages (neighborhood 198/198, borough 5/5, zip 165/165, dc hub 103/103, la hub 112/112, sf hub 37/37, city browse hub 3/3)",
@@ -62,21 +60,23 @@
         "unchanged": true
       },
       "indexnow": {
-        "detail": "submitted 264 URLs \u2192 HTTP 200",
+        "detail": "submitted 6 URLs \u2192 HTTP 200",
         "ok": true
       },
       "llms_txt": {
         "detail": "llms.txt (64 lines), robots.txt naming 15 AI crawlers",
-        "ok": true
+        "ok": true,
+        "same_since": "2026-09-08",
+        "unchanged": true
       },
       "page_uniqueness": {
-        "detail": "text shared with siblings (8-word shingles, 211 pages read across 10 sections): /brief/ 49% of 182 words (n=17 of 17), /available/ 42% of 222 words (n=24 of 90), /dc/neighborhood/ 38% of 534 words (n=24 of 103), /building/ 33% of 498 words (n=24 of 47,165), /section8/ 22% of 812 words (n=6 of 6), /la/zip/ 20% of 1,414 words (n=24 of 112), /neighborhood/ 19% of 1,030 words (n=24 of 198), /zip/ 16% of 1,237 words (n=24 of 165), +2 less duplicated \u2014 too few pages to compare: /dc/buildings/ (1 page), /developers/ (1 page), /guide/is-my-apartment-rent-controlled- (3 pages), /la/buildings/ (1 page), /methodology/ (1 page), /sf/buildings/ (1 page)",
+        "detail": "text shared with siblings (8-word shingles, 211 pages read across 10 sections): /brief/ 49% of 182 words (n=17 of 17), /available/ 42% of 222 words (n=24 of 90), /dc/neighborhood/ 38% of 534 words (n=24 of 103), /building/ 33% of 498 words (n=24 of 47,165), /section8/ 22% of 818 words (n=6 of 6), /la/zip/ 20% of 1,414 words (n=24 of 112), /neighborhood/ 19% of 1,030 words (n=24 of 198), /zip/ 16% of 1,237 words (n=24 of 165), +2 less duplicated \u2014 too few pages to compare: /dc/buildings/ (1 page), /developers/ (1 page), /guide/is-my-apartment-rent-controlled- (3 pages), /la/buildings/ (1 page), /methodology/ (1 page), /sf/buildings/ (1 page)",
         "ok": true,
         "reread": "post-seo-refresh",
-        "same_since": "2026-09-07"
+        "same_since": "2026-09-08"
       },
       "sitemap_daily": {
-        "detail": "sitemap-daily.xml with 281 URLs (incl. 3 fallback-published guides, 255 city hub pages)",
+        "detail": "sitemap-daily.xml with 23 URLs",
         "ok": true
       }
     }

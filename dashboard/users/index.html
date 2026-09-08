@@ -190,6 +190,9 @@
     .page-head{flex-direction:column;align-items:flex-start;gap:12px}
     .usearch{width:100%;min-width:0}
   }
+  .u-namebtn{background:none;border:0;padding:0;font:inherit;font-weight:inherit;color:inherit;cursor:pointer;text-align:left}
+  .u-namebtn:hover{text-decoration:underline}
+  .u-email-reveal{font-size:12px;color:var(--muted);margin-top:3px;user-select:all}
 </style>
 </head>
 <body>
@@ -265,7 +268,7 @@
         <div class="tbl-wrap">
           <table class="utable">
             <thead><tr id="uhead">
-              <th data-sort="name" tabindex="0" role="button" aria-sort="none">Name<span class="sarr"></span></th><th data-sort="email" tabindex="0" role="button" aria-sort="none">Email<span class="sarr"></span></th><th data-sort="provider" tabindex="0" role="button" aria-sort="none">Sign-in<span class="sarr"></span></th><th data-sort="plan" tabindex="0" role="button" aria-sort="none">Plan<span class="sarr"></span></th><th data-sort="saves" tabindex="0" role="button" aria-sort="none">Saved<span class="sarr"></span></th><th data-sort="alerts" tabindex="0" role="button" aria-sort="none" title="On borough lottery/re-rental emails, or saved-building emails">Alerts<span class="sarr"></span></th><th data-sort="created_at" tabindex="0" role="button" aria-sort="none">Joined<span class="sarr"></span></th><th data-sort="last_seen" tabindex="0" role="button" aria-sort="none">Last seen<span class="sarr"></span></th><th data-sort="device" tabindex="0" role="button" aria-sort="none">Last device<span class="sarr"></span></th>
+              <th data-sort="name" tabindex="0" role="button" aria-sort="none">Name<span class="sarr"></span></th><th data-sort="provider" tabindex="0" role="button" aria-sort="none">Sign-in<span class="sarr"></span></th><th data-sort="plan" tabindex="0" role="button" aria-sort="none">Plan<span class="sarr"></span></th><th data-sort="saves" tabindex="0" role="button" aria-sort="none">Saved<span class="sarr"></span></th><th data-sort="alerts" tabindex="0" role="button" aria-sort="none" title="On borough lottery/re-rental emails, or saved-building emails">Alerts<span class="sarr"></span></th><th data-sort="created_at" tabindex="0" role="button" aria-sort="none">Joined<span class="sarr"></span></th><th data-sort="last_seen" tabindex="0" role="button" aria-sort="none">Last seen<span class="sarr"></span></th><th data-sort="device" tabindex="0" role="button" aria-sort="none">Last device<span class="sarr"></span></th>
             </tr></thead>
             <tbody id="urows"></tbody>
           </table>
@@ -530,8 +533,7 @@
     el('empty').classList.toggle('hidden', rows.length>0);
     el('urows').innerHTML = rows.map(function(u){
       return '<tr>'+
-        '<td class="u-name">'+esc(u.name)+'</td>'+
-        '<td class="u-email">'+esc(u.email)+'</td>'+
+        '<td class="u-name"><button type="button" class="u-namebtn" data-email="'+esc(u.email)+'" title="Click to show the email">'+esc(u.name)+'</button></td>'+
         '<td>'+provBadge(u.provider)+'</td>'+
         '<td>'+planBadge(u.plan)+'</td>'+
         '<td>'+(u.saves ? u.saves : '<span class="u-muted">0</span>')+'</td>'+
@@ -543,6 +545,14 @@
     }).join('');
   }
   el('usearch').addEventListener('input', function(e){ renderRows(e.target.value); });
+  // Emails are off the table by default (2026-09-07); the name is the button.
+  el('urows').addEventListener('click', function(e){
+    var b = e.target.closest('.u-namebtn'); if(!b) return;
+    var td = b.parentNode, shown = td.querySelector('.u-email-reveal');
+    if(shown){ shown.remove(); return; }
+    var d = document.createElement('div'); d.className = 'u-email-reveal'; d.textContent = b.getAttribute('data-email') || '—';
+    td.appendChild(d);
+  });
 })();
 </script>
 </body>

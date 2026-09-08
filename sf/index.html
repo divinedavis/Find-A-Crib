@@ -6301,7 +6301,17 @@
     if (act === 'share') { shareBuilding(rec, e.target.closest('[data-detail]')); return; }
     if (act === 'violations') { openViolSheet(rec); return; }
     if (act === 'complaints') { openCompSheet(rec); return; }
-    if (OPEN_DATA[act]) { openOpenDataSheet(act, rec); return; }
+    if (OPEN_DATA[act]) {
+      // Bedbug and rodent records are behind a free account (2026-09-07);
+      // the count and the red/green on the button stay visible to everyone.
+      if ((act === 'bedbugs' || act === 'rodents') && !authUser) {
+        track('outbound', { kind: 'gate_' + act, bbl: rec.bbl });
+        openAuthModal(`Create a free account to see this building’s ${act === 'bedbugs' ? 'bedbug' : 'rodent inspection'} record.`);
+        setAuthMode('signup');
+        return;
+      }
+      openOpenDataSheet(act, rec); return;
+    }
     if (act === 'report') { buyReport(rec, e.target.closest('[data-detail]')); return; }
     if (act === 'map') {
       const m = markerFor(rec.bbl);

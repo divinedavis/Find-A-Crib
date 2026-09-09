@@ -6,7 +6,8 @@ is a file in the repo rather than a memory of which boxes were ticked:
 categories, subtitle, description, keywords, promo text, URLs, copyright, the
 age-rating questionnaire, the review contact + notes, the free price, territory
 availability (every territory, and new ones as Apple adds them), and the 6.9"
-screenshots from marketing/asc-screenshots/. Idempotent.
+screenshots from marketing/asc-screenshots/, and the What's New text on any
+version after 1.0 (Apple rejects a whatsNew on the first version). Idempotent.
 
 An app created over the API has NO availability record, so even a version in
 READY_FOR_SALE shows "removed from sale" and never reaches the store until one
@@ -62,8 +63,17 @@ Privacy Policy: https://findacrib.com/privacy/
 Find A Crib is an independent, informational tool. It is not a broker, does not list apartments, and takes no fee. Data: NYS Homes and Community Renewal rent-stabilization register (2024), NYC HPD open data, HUD FY2026 Fair Market Rents, HousingSearch.ny.gov, and advertised rents from Zumper.
 """
 
-REVIEW_NOTES = """RESUBMISSION FOR GUIDELINE 4.8 (build 21)
-Sign in with Apple is the first sign-in option on the Profile tab when signed out, above Google and email. It limits collection to name and email, supports Hide My Email, and nothing is collected for advertising. Build 14 omitted the button while an Apple-side credential issue on the newly registered App ID was being resolved; build 21 restores it. To test: open the Profile tab signed out and tap Continue with Apple.
+WHATS_NEW = """- Bedrooms filter is always available, in every mode
+- The results headline now says how many of the buildings on screen are rent-stabilized
+- Building violations and inspections are shown once you're signed in
+- Alerts use the same filters as findacrib.com, and setting one up now works reliably
+"""
+
+REVIEW_NOTES = """VERSION 1.0.1 (build 24) — small update to the approved 1.0
+Bedrooms filter always offered; results headline counts the stabilized buildings on screen; violations and inspections shown to signed-in users; alerts share the website's filters and a sign-in bug in alert set-up is fixed. Nothing changed in permissions, purchases or data collection.
+
+SIGN IN WITH APPLE
+Sign in with Apple is the first sign-in option on the Profile tab when signed out, above Google and email (Guideline 4.8, in place since 1.0 build 21). It limits collection to name and email, supports Hide My Email, and nothing is collected for advertising. To test: open the Profile tab signed out and tap Continue with Apple.
 
 WHAT THE APP DOES
 Find A Crib is an informational map of New York City's ~47,000 rent-stabilized buildings (public NYS/NYC records) with advertised rents, HPD violation records, and affordable-housing lotteries. It is not a marketplace and does not take applications or payments.
@@ -133,7 +143,11 @@ class ASC:
 
 
 def resolve(asc, app_id, any_version=False):
-    info = asc.get(f"/apps/{app_id}/appInfos")["data"][0]
+    # An app with a live version has TWO appInfos: the live one (READY_FOR_SALE,
+    # rejects every PATCH with 409 INVALID_STATE) and the editable one for the
+    # version being prepared. Take the editable one, fall back to the first.
+    infos = asc.get(f"/apps/{app_id}/appInfos")["data"]
+    info = next((i for i in infos if i["attributes"].get("state") in EDITABLE + ("WAITING_FOR_REVIEW", "IN_REVIEW")), None) or infos[0]
     versions = asc.get(f"/apps/{app_id}/appStoreVersions", limit=10)["data"]
     editable = [v for v in versions if v["attributes"]["appStoreState"] in EDITABLE]
     if not editable and any_version:
@@ -231,8 +245,9 @@ def apply(asc, cfg):
     print("    subtitle + privacy policy URL")
     asc.patch(f"/appStoreVersionLocalizations/{ids['version_loc']}", {"data": {"type": "appStoreVersionLocalizations", "id": ids["version_loc"],
               "attributes": {"description": DESCRIPTION, "keywords": KEYWORDS, "promotionalText": PROMO,
-                             "supportUrl": SUPPORT, "marketingUrl": SITE}}})
-    print("    description, keywords, promo, URLs")
+                             "supportUrl": SUPPORT, "marketingUrl": SITE,
+                             **({} if ids["version_string"] == "1.0" else {"whatsNew": WHATS_NEW})}}})
+    print("    description, keywords, promo, URLs" + ("" if ids["version_string"] == "1.0" else ", what's new"))
     asc.patch(f"/appStoreVersions/{ids['version']}", {"data": {"type": "appStoreVersions", "id": ids["version"],
               "attributes": {"copyright": COPYRIGHT, "usesIdfa": False}}})
     print("    copyright, no IDFA")

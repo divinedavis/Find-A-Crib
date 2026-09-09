@@ -580,6 +580,15 @@
         <div class="callout" id="ads-callout" style="margin-top:16px"></div>
       </div>
 
+      <!-- iPhone app: App Store downloads, from App Store Connect analytics -->
+      <div class="card mb18" id="sec-appstore" hidden>
+        <div class="card-head-row">
+          <div><h2>iPhone app — is anyone downloading it?</h2><div class="card-sub" id="appstore-sub">Apple’s own counts, one to two days behind. The number that matters is the conversion: of the people who opened the product page, how many tapped Get.</div></div>
+        </div>
+        <div class="ref-tiles" id="appstore-tiles"></div>
+        <div class="card-sub" id="appstore-note" style="margin-top:10px"></div>
+      </div>
+
       <!-- referrals -->
       <div class="card mb18" id="sec-referrals">
         <div class="card-head-row">
@@ -1801,6 +1810,7 @@
     renderFacSearch(d.search);
     renderAds(d.ads);
     renderReferrals(d.referrals);
+    renderAppStore(d.appstore);
     renderSpark(d.sparkline||[], d.months);
     renderFacBuild(d.build);
     renderFacTiles(d.adtiles);
@@ -2589,6 +2599,43 @@
       : (now < t0
           ? '<span style="opacity:.75">Expect tens of scans over the month, not hundreds — free ads run in unsold time, and a sidewalk screen converts well under 1% of the people who see it. The month answers whether kiosks scan at all; the split by unit comes from the portal’s report.</span>'
           : '<span style="opacity:.75">No scans yet. Check the portal that the campaign was approved and is playing before reading this as a result.</span>');
+  }
+
+  // ---------- iPhone app (App Store Connect) ----------
+  // What counts as good, so the tiles judge themselves. Apple's own peer
+  // benchmark lives in App Store Connect (25th/50th/75th percentile by
+  // category); published medians run ~4% (games) to ~32% (music) for product
+  // page view → download, ~25% overall, with impression → download around 3–5%.
+  // Lifestyle/Reference utilities like this one: page-view conversion under
+  // 15% means the page isn't selling it, 25%+ is good.
+  function appstoreVerdict(pv, imp){
+    if(pv==null && imp==null) return '';
+    var v=[];
+    if(pv!=null) v.push(pv>=25?'page → Get '+pv+'%: good (peer median ≈25%)':pv>=15?'page → Get '+pv+'%: middling (peer median ≈25%)':'page → Get '+pv+'%: weak — the page isn’t selling it (peer median ≈25%)');
+    if(imp!=null) v.push(imp>=4?'impression → Get '+imp+'%: good (typical 3–5%)':'impression → Get '+imp+'%: below typical 3–5%');
+    return v.join(' · ');
+  }
+  function renderAppStore(A){
+    var card=el('sec-appstore'); if(!card) return;
+    if(!A || (!A.as_of && !A.note)){ card.hidden=true; return; }
+    card.hidden=false;
+    var S=(A.summary||{}), w7=S.d7||{}, w28=S.d28||{};
+    if(!A.as_of){
+      el('appstore-tiles').innerHTML='';
+      el('appstore-note').textContent=A.note||'No App Store data yet.';
+      return;
+    }
+    var tiles=[
+      {val:comma(w7.downloads||0),lbl:'Downloads · 7 days',sub:comma(w7.downloads_first||0)+' first-time · '+comma(w7.redownloads||0)+' re-downloads'},
+      {val:comma(w28.downloads||0),lbl:'Downloads · 28 days',sub:comma(w28.installs||0)+' installs · '+comma(w28.deletions||0)+' deletions'},
+      {val:comma(w28.page_views||0),lbl:'Product page views · 28 days',sub:comma(w28.impressions||0)+' impressions in search & browse'},
+      {val:(w28.conv_page_view!=null?w28.conv_page_view+'%':'—'),lbl:'Page view → download',sub:(w28.conv_impression!=null?w28.conv_impression+'% from impressions':'impression rate unknown')}
+    ];
+    el('appstore-tiles').innerHTML=tiles.map(function(t){
+      return '<div class="ads-tile"><div class="a-val">'+t.val+'</div><div class="a-lbl">'+t.lbl+'</div><div class="a-sub">'+t.sub+'</div></div>';
+    }).join('');
+    var verdict=appstoreVerdict(w28.conv_page_view, w28.conv_impression);
+    el('appstore-note').textContent=(verdict?verdict+' · ':'')+'Apple data through '+A.as_of+(A.updated?' · pulled '+String(A.updated).slice(0,16).replace('T',' ')+'Z':'');
   }
 
   // ---------- referrals ----------

@@ -1219,6 +1219,7 @@ def dashboard_metrics():
                            "consult_clicks": _fac_consult_clicks(),
                            "agents": _fac_agent_pool()}
     data["signage"] = _fac_signage(data.get("since"))
+    data["appstore"] = _fac_appstore()
     # Seven calendar months of distinct visitors, for the bars beside the
     # seven days. Not range-scoped: a month bar that changed with the picker
     # would be a different chart wearing the same axis.
@@ -1805,6 +1806,25 @@ def _fac_consult_clicks():
 
 FAC_LAST_RUN = os.environ.get(
     "FAC_LAST_RUN", "/root/Find-A-Crib/growth/last_run.json")
+
+
+APPSTORE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "appstore.json")
+
+
+def _fac_appstore():
+    """The iPhone app's App Store numbers, as pulled by ios/scripts/asc_downloads.py.
+
+    That script runs on the owner's Mac (the App Store Connect key does not
+    live on this droplet) and scp's appstore.json next to this file twice a
+    day. Missing or unreadable -> {} and the dashboard drops the card rather
+    than 500ing.
+    """
+    try:
+        with open(APPSTORE_FILE) as f:
+            d = json.load(f)
+    except Exception:
+        return {}
+    return d if isinstance(d, dict) else {}
 
 
 def _fac_build():

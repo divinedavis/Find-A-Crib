@@ -615,6 +615,22 @@
     box-shadow: 0 2px 6px rgba(0,0,0,.28); border: 1.5px solid #9aa7bd;
     display: inline-block;
   }
+  /* rent on the white pill at street zoom; the ~ estimate is a shade softer */
+  .unit-pill.rent-pill { color: #0a0a23; }
+  .unit-pill.rent-pill.est { color: #3b4761; }
+  /* hover card floating over a pin (desktop) */
+  .map-hover { position: absolute; z-index: 1200; width: 272px; display: flex; gap: 10px; padding: 8px;
+    background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 12px;
+    box-shadow: 0 10px 28px rgba(0,0,0,.22); pointer-events: none; font-size: 12px; line-height: 1.3; }
+  .map-hover[hidden] { display: none; }
+  .map-hover .mh-photo { width: 96px; height: 72px; object-fit: cover; border-radius: 8px; background: var(--bg); flex: none; }
+  .map-hover .mh-photo:not([src]) { visibility: hidden; }
+  .map-hover .mh-body { min-width: 0; }
+  .map-hover .mh-price { font-size: 15px; font-weight: 800; letter-spacing: -.3px; }
+  .map-hover .mh-price.est { color: var(--ink-2); font-weight: 700; font-size: 13px; }
+  .map-hover .mh-addr { font-weight: 700; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .map-hover .mh-meta { color: var(--ink-2); margin-top: 1px; }
+  .map-hover .hpd-mini { margin-top: 3px; }
   .leaflet-div-icon { background: transparent; border: none; }
   .leaflet-popup-content { font-family: inherit; }
   .popup-addr { font-weight: 700; font-size: 15px; }
@@ -1340,7 +1356,7 @@
      matches the <title> and the page's actual content, so this describes the
      page rather than hiding anything from anyone. -->
 <h1 class="sr-only">Rent-Stabilized (ETPA) Apartments in Yonkers and Westchester County</h1>
-  <div id="map"></div>
+  <div id="map"><div id="map-hover" class="map-hover" hidden aria-hidden="true"></div></div>
   <aside class="results">
     <div class="results-head">
       <div class="sub" id="results-sub">Loading…</div>
@@ -1879,6 +1895,7 @@
   // doubleClickZoom: true → a double-click (desktop) or double-tap (mobile) zooms in
   // one level toward the tapped point. zoomDelta 1 keeps it gentle ("a little").
   const map = L.map('map', { preferCanvas: true, doubleClickZoom: true, zoomDelta: 1, zoomControl: true }).setView(CITY.center, CITY.zoom);
+  window.__facMap = map;   // test hook: tests/journeys.py reads the centre and sets the zoom
   // ---------- boot view ----------
   // A refresh lands on the whole city, every time (2026-09-06). The map used
   // to come back to the last view, and before that zoomed to the visitor's
@@ -2557,7 +2574,11 @@
   // several right after picking Brooklyn or the Bronx. Supercluster keeps a
   // typed-array index (a few MB) and marker objects exist only for what is on
   // screen; the cluster pills look and behave as before.
-  const SC_MAX_ZOOM = 17;          // clusters exist up to this zoom; past it every pin stands alone
+  // Clusters exist up to this zoom; past it every pin stands alone. Tried 15
+  // on 2026-09-08 so street zoom showed every building with its rent, as
+  // StreetEasy does — but 47,000 buildings 20 ft apart made a wall of pills
+  // that all read the same ZIP estimate. Back to 17.
+  const SC_MAX_ZOOM = 17;
   const PIN_RADIUS = 80;           // screen px. Wider than markercluster's 60: the city view was a wall of pills
   const PIN_EXTENT = 256;          // Leaflet's tile size; supercluster defaults to 512, which halves the radius on screen
   function clusterIcon(n) {
@@ -2667,6 +2688,11 @@
   map.on('zoomstart', unspiderfy);
   map.on('click', unspiderfy);
   map.on('moveend', renderPins);
+  // Crossing RENT_ZOOM relabels the white pills already on screen.
+  map.on('zoomend', () => {
+    const mode = rentMode();
+    for (const m of shown.values()) if (m._rec && !m._listed && m._rentMode !== mode && !m._sel) m.setIcon(markerIcon(m));
+  });
   // Is this building hidden inside a cluster at zoom z?
   function pinClusteredAt(rec, z) {
     if (!sc || z > SC_MAX_ZOOM) return false;
@@ -2711,11 +2737,27 @@
     const text = price ? fmtRent(price) : `${n} listed`;
     return pillIcon(`<div class="price-pill">${text}</div>`, text.length);
   }
+  // Close enough to read a block, the white pill carries the rent rather than
+  // the unit count (asked 2026-09-08): the building's reported median where
+  // one is on file, else the ZIP's typical studio–2BR figure with a ~ so it
+  // reads as an estimate. Further out the count stays — a screen of rents at
+  // borough zoom is noise.
+  const RENT_ZOOM = 16;
+  function rentMode() { return zoomNow() >= RENT_ZOOM; }
+  function orbRent(rec) {
+    if (rec.mr) return { text: fmtRent(rec.mr), est: false };
+    const f = FMR[rec.z];
+    if (f && f[1]) return { text: '~' + fmtRent(f[1]), est: true };
+    return null;
+  }
   function unitIcon(rec) {
+    const r = rentMode() ? orbRent(rec) : null;
+    if (r) return pillIcon(`<div class="unit-pill rent-pill${r.est ? ' est' : ''}" title="${r.est ? EST_TITLE : RENT.title}">${r.text}</div>`, r.text.length);
     const text = rec.u != null ? `${rec.u} unit${rec.u === 1 ? '' : 's'}` : 'bldg';
     return pillIcon(`<div class="unit-pill">${text}</div>`, text.length);
   }
   function markerIcon(m) {
+    m._rentMode = rentMode();
     return m._listed > 0 ? listedIcon(m._listed, m._rec.bbl) : unitIcon(m._rec);
   }
 
@@ -2748,14 +2790,59 @@
       // Pointer on the pin -> its tile in the results pane lights up green,
       // scrolled into view only if it is off-screen (sweeping the cursor across
       // a dense block must not yank the list around).
-      m.on('mouseover', () => hoverCard(rec.bbl));
-      m.on('mouseout', () => hoverCard(null));
+      m.on('mouseover', () => { hoverCard(rec.bbl); mapHoverSchedule(m); });
+      m.on('mouseout', () => { hoverCard(null); mapHoverHide(); });
+      m.on('click', mapHoverHide);
     }
     return m;
   }
+
+  // ---------- hover card on a pin (desktop) ----------
+  // Rest the pointer on a pin for a moment and a small card floats above it —
+  // photo, rent, address, violations — the way StreetEasy's map does (asked
+  // 2026-09-08). Not interactive: it clears the instant the pointer leaves.
+  const mapHoverEl = document.getElementById('map-hover');
+  let mapHoverTimer = null;
+  function mapHoverSchedule(m) {
+    clearTimeout(mapHoverTimer);
+    mapHoverTimer = setTimeout(() => mapHoverShow(m), 350);
+  }
+  function mapHoverHide() {
+    clearTimeout(mapHoverTimer); mapHoverTimer = null;
+    if (mapHoverEl && !mapHoverEl.hidden) mapHoverEl.hidden = true;
+  }
+  function mapHoverShow(m) {
+    if (!mapHoverEl || !m._rec) return;
+    const rec = m._rec, listed = m._listed || 0, price = listingPrices[rec.bbl];
+    const rent = orbRent(rec);
+    const priceLine = listed > 0
+      ? (price ? '$' + price.toLocaleString() + '/mo' : 'Recently available')
+      : rec.mr ? `${RENT.short} $${rec.mr.toLocaleString()}/mo`
+      : (estRent(rec) || (rec.u != null ? rec.u + ' residential units' : CITY.label + ' building'));
+    const sub = [rec.u != null ? `${rec.u} unit${rec.u === 1 ? '' : 's'}` : null, rec.yr ? 'built ' + rec.yr : null].filter(Boolean).join(' · ');
+    mapHoverEl.innerHTML = `
+      <img class="mh-photo" src="${streetviewUrl(rec.lat, rec.lng, 240, 180)}" alt="" onerror="this.removeAttribute('src')">
+      <div class="mh-body">
+        <div class="mh-price${(!listed && !rec.mr && rent) ? ' est' : ''}">${priceLine}</div>
+        <div class="mh-addr">${esc(rec.a)}</div>
+        <div class="mh-meta">${rec.nb ? esc(rec.nb) + ' · ' : ''}${esc(BORO_NAME[rec.b] || '')}${sub ? ' · ' + esc(sub) : ''}</div>
+        ${cardHpdLine(rec)}
+      </div>`;
+    // above the pin, flipped below it when the pin sits near the top edge
+    const pt = map.latLngToContainerPoint(m.getLatLng());
+    const mapBox = map.getContainer().getBoundingClientRect();
+    mapHoverEl.hidden = false;
+    const w = mapHoverEl.offsetWidth, h = mapHoverEl.offsetHeight;
+    let left = pt.x - w / 2; left = Math.max(8, Math.min(mapBox.width - w - 8, left));
+    let top = pt.y - h - DOT / 2 - 10;
+    if (top < 8) top = pt.y + DOT / 2 + 10;
+    mapHoverEl.style.left = left + 'px'; mapHoverEl.style.top = top + 'px';
+  }
+  map.on('movestart zoomstart', mapHoverHide);
   function markerFor(bbl) {
     let m = markerByBbl.get(bbl);
-    if (m) return m;
+    // A cached pin made at another zoom may carry the wrong label kind.
+    if (m) { if (!m._listed && m._rentMode !== rentMode() && !m._sel) m.setIcon(markerIcon(m)); return m; }
     const rec = recByBbl.get(bbl);
     if (!rec) return null;
     m = buildMarker(rec); markerByBbl.set(bbl, m);
@@ -5658,11 +5745,9 @@
     if (hoverPinMarker) { pinLayer.removeLayer(hoverPinMarker); hoverPinMarker = null; }
     tileHover = bbl || null;
     if (!bbl) return;
-    // Bring the building to the middle of the map. The list holds still while
-    // the pointer is on a tile (see refreshGrid), so the pan cannot swap the
-    // card out from under the cursor and hover the next one.
-    const hr = recByBbl.get(bbl);
-    if (hr) map.panTo([hr.lat, hr.lng], { animate: true, duration: 0.35 });
+    // The map stays put (asked 2026-09-08 — the pan made the pins slide out
+    // from under the pointer); the pin just lights up where it is. The list
+    // still holds while the pointer is on a tile (see refreshGrid).
     const m = markerByBbl.get(bbl);
     const el = m && m.getElement && m.getElement();
     if (el && el.isConnected) { hoverPinEl = el; el.classList.add('pin-hover'); m.setZIndexOffset(2000); return; }
@@ -5692,6 +5777,7 @@
 
   function clearSelected() {
     if (selectedMarker) {
+      selectedMarker._sel = false;
       selectedMarker.setIcon(markerIcon(selectedMarker));
       selectedMarker = null;
     }
@@ -5705,6 +5791,7 @@
       : (listed > 0 ? listed + ' listed'
       : (rec.u != null ? `${rec.u} unit${rec.u === 1 ? '' : 's'}` : 'bldg'));
     m.setIcon(pillIcon(`<div class="price-pill selected">${esc(txt)}</div>`, txt.length));
+    m._sel = true;
     selectedMarker = m;
     highlightCard(rec.bbl, true);
   }
@@ -6649,6 +6736,7 @@
   }
   // returning from Stripe Checkout
   let plusPurchasePending = false;   // fires the Ads purchase conversion once the session loads
+  let authGatePending = false, authGateNext = null;   // ?auth= deep link + where to go after sign-in
   (function () {
     const p = new URLSearchParams(location.search);
     if (p.get('plus') === 'success') {
@@ -6659,7 +6747,29 @@
     // the sign-in step first — startCheckout() already routes them there.
     if (p.get('plus') === '1') plusUpsellPending = true;
     if (p.has('plus')) { p.delete('plus'); history.replaceState({}, '', location.pathname + (p.toString() ? '?' + p : '')); }
+    // ?auth=signup&next=/alerts/ — the alerts page sends a signed-out visitor
+    // here to create the account, then goes back. `next` is a same-site path
+    // only: never a full URL, so the modal cannot be used as an open redirect.
+    if (p.has('auth')) {
+      authGatePending = true;
+      const n = p.get('next') || '';
+      authGateNext = /^\/[^\/\\][^\s]*$/.test(n) ? n : null;
+      p.delete('auth'); p.delete('next');
+      history.replaceState({}, '', location.pathname + (p.toString() ? '?' + p : ''));
+    }
   })();
+  // Alerts need an account (asked 2026-09-08): every /alerts/ link in the
+  // header, chips and menu opens the sign-up modal when signed out, and the
+  // page opens on its own once the session lands.
+  const ALERTS_GATE_MSG = 'Create a free account to get an email the minute a lottery or re-rental opens in your borough.';
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a[href^="/alerts/"]');
+    if (!a || authUser) return;
+    e.preventDefault();
+    authGateNext = a.getAttribute('href');
+    try { track('outbound', { kind: 'gate_alerts', src: new URL(a.href, location.href).searchParams.get('src') || null }); } catch (err) {}
+    openAuthModal(ALERTS_GATE_MSG); setAuthMode('signup');
+  }, true);
   // ---------- arriving from /directory/ with a portfolio to open ----------
   // ?portfolio=<kind>:<key> is a click on a name in the landlord directory.
   // The map already knows how to show one landlord's buildings — that is the
@@ -7033,6 +7143,11 @@
     authUser = session?.user || null;
     updateAuthUI();
     refreshPlus();   // also re-checked on auth changes and on profile open
+    if (authGatePending) {
+      authGatePending = false;
+      if (authUser && authGateNext) { const n = authGateNext; authGateNext = null; location.href = n; }
+      else if (!authUser) { openAuthModal(ALERTS_GATE_MSG); setAuthMode('signup'); }
+    }
     // Google Ads purchase conversion for a completed Plus checkout ($4.99).
     // Enhanced conversions: pass the account email (Google hashes it) so the
     // purchase can be matched back to the ad click.
@@ -7064,6 +7179,7 @@
     supaClient.auth.onAuthStateChange((_evt, sess) => {
       tr('auth ' + _evt);
       authUser = sess?.user || null;
+      if (authUser && authGateNext) { const n = authGateNext; authGateNext = null; closeAuthModal(); location.href = n; return; }
       adoptAccountTheme(authUser);   // the account's choice beats this device's
       adoptAccountHome(authUser);
       if (authUser && HOME && !(authUser.user_metadata || {}).home_bbl) saveHome();   // this device set it before signing in

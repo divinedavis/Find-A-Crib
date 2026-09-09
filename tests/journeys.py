@@ -318,11 +318,34 @@ class Runner:
             self.ok('Recently available' in body and 'Recently advertised' not in body and 'HPD · HUD' not in body, 'filters wording not updated', j)
             page.evaluate("document.querySelector('[data-filters=\"close\"]').click()"); time.sleep(0.3)
             first = page.evaluate("document.querySelector('#grid .card[data-bbl]').dataset.bbl")
+            centre = page.evaluate("(()=>{const c=__facMap.getCenter(); return [c.lat, c.lng]})()")
             page.hover('#grid .card[data-bbl] >> nth=0'); time.sleep(1.0)
             self.ok(page.evaluate("!!document.querySelector('#map .pin-hover')"), 'hovering a tile should paint its pin blue', j)
             self.ok(page.evaluate("document.querySelector('#grid .card[data-bbl]').dataset.bbl") == first, 'the list must hold still while a tile is hovered', j)
+            self.ok(page.evaluate("(()=>{const c=__facMap.getCenter(); return [c.lat, c.lng]})()") == centre, 'hovering a tile must not move the map (2026-09-08)', j)
+            # Where that pin is, so the street-zoom checks land on real buildings rather than the city centre.
+            here = page.evaluate("(()=>{const e=document.querySelector('#map .pin-hover'); if(!e) return null; const r=e.getBoundingClientRect(), m=document.getElementById('map').getBoundingClientRect(); const ll=__facMap.containerPointToLatLng([r.left+r.width/2-m.left, r.top+r.height/2-m.top]); return [ll.lat, ll.lng]})()")
             page.mouse.move(5, 5); time.sleep(0.5)
             self.ok(not page.evaluate("!!document.querySelector('#map .pin-hover')"), 'leaving the tile should clear the highlight', j)
+            # Close enough (zoom 16+), the white pills read as rent, not unit counts.
+            page.evaluate("ll => __facMap.setView(ll || __facMap.getCenter(), 17, {animate:false})", here); time.sleep(1.5)
+            pills = page.evaluate("(()=>{const u=[...document.querySelectorAll('#map .unit-pill')]; return {n:u.length, rent:u.filter(e=>e.classList.contains('rent-pill')).length, sample:u.slice(0,3).map(e=>e.textContent)}})()")
+            self.ok(pills['n'] == 0 or pills['rent'] > 0, f'at street zoom white pills should show rent: {pills}', j)
+            self.ok(pills['n'] == 0 or all('$' in t for t in pills['sample']), f'rent pills should carry a dollar figure: {pills}', j)
+            # Resting on a pin floats a hover card above it after a moment; leaving clears it.
+            # Pins are drawn a margin past the viewport, so pick one actually on screen and not under the results pane.
+            pt = page.evaluate("(()=>{const g=document.getElementById('grid')?.closest('aside')?.getBoundingClientRect(); for (const e of document.querySelectorAll('#map .building-dot-hit')) { const r=e.getBoundingClientRect(); if (r.width && r.top>120 && r.bottom<innerHeight-20 && r.left>20 && r.right<innerWidth-20 && !(g && r.left<g.right && r.right>g.left && r.top<g.bottom && r.bottom>g.top)) return [r.left+r.width/2, r.top+r.height/2]; } return null})()")
+            if pt:
+                page.mouse.move(pt[0], pt[1]); time.sleep(0.9)
+                hov = page.evaluate("(()=>{const h=document.getElementById('map-hover'); return {hidden:h.hidden, text:h.innerText, price:!!h.querySelector('.mh-price'), addr:!!h.querySelector('.mh-addr')}})()")
+                self.ok(not hov['hidden'] and hov['price'] and hov['addr'] and len(hov['text']) > 10, f'hovering a pin should show the hover card: {hov}', j)
+                page.mouse.move(5, 5); time.sleep(0.4)
+                self.ok(page.evaluate("document.getElementById('map-hover').hidden"), 'leaving the pin should hide the hover card', j)
+            else:
+                j.notes.append('no building pins at zoom 17 here — hover card unchecked')
+            page.evaluate("__facMap.setView(__facMap.getCenter(), 14, {animate:false})"); time.sleep(1.5)
+            pills = page.evaluate("(()=>{const u=[...document.querySelectorAll('#map .unit-pill')]; return {n:u.length, rent:u.filter(e=>e.classList.contains('rent-pill')).length}})()")
+            self.ok(pills['rent'] == 0, f'zoomed out, white pills should go back to unit counts: {pills}', j)
         # save a building anonymously (localStorage), then the Saved filter shows it
         self.boot(page, f'/#d={BBL}')
         self.ok(self.detail_open(page), '#d= should open the sheet', j)

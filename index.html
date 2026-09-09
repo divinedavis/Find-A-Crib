@@ -808,7 +808,25 @@
        way, so the crawler still follows them. */
     .city-nav { margin-left: 6px; gap: 3px; position: relative; }
     .city-nav a { padding: 4px 9px; }
-    .city-nav a.cur::after { content: '▾'; margin-left: 4px; font-size: 10px; opacity: .8; }
+    .city-nav a.cur::after,
+    html:not([data-city]) .city-nav > a[data-city-link="nyc"]::after,
+    html[data-city="nyc"] .city-nav > a[data-city-link="nyc"]::after,
+    html[data-city="sf"] .city-nav > a[data-city-link="sf"]::after,
+    html[data-city="la"] .city-nav > a[data-city-link="la"]::after,
+    html[data-city="dc"] .city-nav > a[data-city-link="dc"]::after { content: '▾'; margin-left: 4px; font-size: 10px; opacity: .8; }
+    /* The header ships all four city links; on a phone JS moves the three you
+       are not in under the chip. Until that ran, four chips painted, the row
+       overflowed and the whole header reflowed — a visible flash on every
+       load (2026-09-09). <html data-city> already says which city this is, so
+       CSS can paint the right one from the first frame and JS only has to
+       move nodes that were never on screen. The selector is a direct child of
+       .city-nav, so the links keep showing once they are inside .city-more. */
+    .city-nav > a { display: none; }
+    html:not([data-city]) .city-nav > a[data-city-link="nyc"],
+    html[data-city="nyc"] .city-nav > a[data-city-link="nyc"],
+    html[data-city="sf"] .city-nav > a[data-city-link="sf"],
+    html[data-city="la"] .city-nav > a[data-city-link="la"],
+    html[data-city="dc"] .city-nav > a[data-city-link="dc"] { display: inline-block; }
     .city-more { position: absolute; top: calc(100% + 9px); left: 0; z-index: 1700;
       display: flex; flex-direction: column; gap: 2px; padding: 6px;
       background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
@@ -1096,7 +1114,12 @@
   .city-nav { display: flex; gap: 4px; align-items: center; margin-left: 10px; }
   .city-nav a { font-size: 12px; font-weight: 700; color: var(--ink-2); text-decoration: none;
     padding: 4px 8px; border-radius: 999px; border: 1px solid var(--line); }
-  .city-nav a.cur { background: var(--blue-solid); border-color: var(--blue); color: #fff; }
+  .city-nav a.cur,
+  html:not([data-city]) .city-nav > a[data-city-link="nyc"],
+  html[data-city="nyc"] .city-nav > a[data-city-link="nyc"],
+  html[data-city="sf"] .city-nav > a[data-city-link="sf"],
+  html[data-city="la"] .city-nav > a[data-city-link="la"],
+  html[data-city="dc"] .city-nav > a[data-city-link="dc"] { background: var(--blue-solid); border-color: var(--blue); color: #fff; }
   /* The other cities are moved into this wrapper so a phone can drop them below
      the chip. On a desktop there is room for all four, so the wrapper itself
      disappears from layout and its links sit in the nav exactly as before —
@@ -7123,7 +7146,14 @@
     const refModal = document.getElementById('referral-modal');
     const refLinkInput = document.getElementById('ref-link');
     async function openReferralModal(via) {
-      if (!authUser) { openAuthModal('Create a free account, then invite a friend — you both get Plus free.'); return; }
+      if (!authUser) {
+        // The line says "create a free account", so open the form on sign-up
+        // rather than sign-in — the gate on the bedbug and rodent records has
+        // done this since 2026-09-07 and this one was left behind.
+        openAuthModal('Create a free account, then invite a friend — you both get Plus free.');
+        setAuthMode('signup');
+        return;
+      }
       try { track('referral_open', { via: via || 'button' }); } catch (e) {}
       refLinkInput.value = 'Generating your link…';
       document.getElementById('ref-note').textContent = '';

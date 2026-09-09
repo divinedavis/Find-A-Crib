@@ -42,6 +42,48 @@ HEAP_BUDGET_MB = 120        # desktop Chromium, after GC, after an area pick (wa
 DOM_BUDGET = 40000
 
 
+
+# Which analytics event each journey exercises. tests/journey_coverage.py reads
+# this, asks the events table what real visitors actually did, and names the
+# events no journey covers — so the suite grows from real behaviour instead of
+# from guesses. Add the event here when you add a journey that drives it.
+#
+# Note the suite itself never writes these rows: the page's track() bails on
+# navigator.webdriver, which Playwright always sets. Journeys therefore assert
+# the DOM contract the event depends on (the data- attributes it reads), which
+# is what actually breaks.
+JOURNEY_EVENTS = {
+    'land':                 ['geo_start'],
+    'search_address':       ['search', 'building_view', 'section_view', 'violations_open', 'complaints_open',
+                             'evictions_open', 'litigations_open', 'bedbugs_open', 'rodents_open'],
+    'search_area':          ['search'],
+    'search_zip_and_miss':  ['search'],
+    'pin_and_list':         ['building_view'],
+    'filters_and_save':     ['save', 'unsave', 'saved_view'],
+    'deep_links_and_view':  ['building_view'],
+    'city_pages':           [],
+    'memory':               [],
+    'alerts_page':          [],
+    'signin_modal':         ['signin'],
+    'app_chip':             [],
+    'city_chip':            [],
+    'ad_tiles':             ['tile_served', 'tile_impression', 'featured_click', 'hc_click'],
+    'outbound_links':       ['outbound'],
+    'status_chips':         ['status_open'],
+    'referral_gate':        ['referral_open', 'referral_share'],
+    # home_set / home_open / home_clear are pre-2026-09-06 history: the
+    # my-apartment pin was retired from the UI that day (no sheet button, no
+    # profile row, no pill) and the code left dormant. Nothing to cover.
+}
+# Diagnostics and server-side rows, not things a visitor does.
+NON_JOURNEY_EVENTS = {
+    'render_storm', 'crash_trace', 'js_error', 'portfolio_open',   # diagnostics, not visitor actions
+    # The my-apartment pin was retired from the UI on 2026-09-06 (no sheet
+    # button, no profile row, no pill; the code left dormant). Rows older than
+    # that still show in a 30-day window — there is nothing left to drive.
+    'home_set', 'home_open', 'home_clear',
+}
+
 class Journey:
     def __init__(self, name, device):
         self.name, self.device = name, device
@@ -470,6 +512,147 @@ class Runner:
             self.ok(not info['shown'], 'iPhone app chip must not show on desktop', j)
             j.notes.append('hidden on desktop')
 
+    def j_city_chip(self, page, j, device):
+        """The header must not flash four city chips before JS collapses them.
+
+        The links ship in the HTML and JS moves the three you are not in under
+        the current one; until CSS did that from <html data-city>, a phone
+        painted all four, the row overflowed and the whole header reflowed on
+        every load. (2026-09-09)
+        """
+        vis = "[...document.querySelectorAll('#city-nav a')].filter(a=>a.getBoundingClientRect().width>0).map(a=>a.textContent.trim())"
+        self.boot(page)
+        after = page.evaluate(vis)
+        headerH = page.evaluate("Math.round(document.querySelector('header.topbar').getBoundingClientRect().height)")
+        self.ok(page.evaluate("[...document.querySelectorAll('#profile-cities a')].map(a=>a.textContent.trim())") == ['NYC', 'SF', 'LA', 'DC'],
+                'the profile sheet lists every city', j)
+        self.ok(not page.evaluate("document.documentElement.scrollWidth > innerWidth"), 'the header must not overflow sideways', j)
+        if device == 'phone':
+            self.ok(after == ['NYC'], f'a phone should rest on one city chip, got {after}', j)
+            self.ok(page.evaluate("[...document.querySelectorAll('#city-more a')].map(a=>a.textContent.trim())") == ['SF', 'LA', 'DC'],
+                    'the other cities should be under the chip', j)
+            # Tapping the chip opens them. It navigates on a synthetic click, so
+            # this is the last thing the journey does with this page.
+            self.click(page, '#city-nav a.cur'); time.sleep(0.5)
+            try:
+                opened = page.evaluate(vis)
+            except Exception:
+                opened = None
+            self.ok(opened is None or opened == ['NYC', 'SF', 'LA', 'DC'], f'tapping the chip should show every city, got {opened}', j)
+            j.notes.append(f'1 chip at rest, header {headerH}px')
+        else:
+            self.ok(after == ['NYC', 'SF', 'LA', 'DC'], f'desktop shows every city, got {after}', j)
+            j.notes.append(f'4 chips, header {headerH}px')
+
+    def j_ad_tiles(self, page, j, device):
+        """The re-rental and lottery tiles — the only inventory anyone would buy.
+
+        1,491 people saw a tile in the last 30 days and no journey covered them.
+        The advertiser numbers are built from data- attributes on these cards
+        (tile_served / tile_impression read the agent and address off the node),
+        so an attribute quietly disappearing would empty the dashboard while the
+        page still looked fine. Added 2026-09-09 from the events table.
+        """
+        self.boot(page)
+        if device == 'phone':
+            page.evaluate("document.getElementById('btn-toggle-view').click()"); time.sleep(1.5)
+        self.wait_until(page, "document.querySelectorAll('#grid .card').length > 0", 20000)
+        feat = page.evaluate("""(() => {
+            const c = document.querySelector('#grid .card.feat-card');
+            if (!c) return null;
+            return {agent: c.dataset.featAgent || '', addr: c.dataset.featAddr || '', flag: !!c.querySelector('.feat-flag')};
+        })()""")
+        hc = page.evaluate("""(() => {
+            const c = document.querySelector('#grid .card.hc-card');
+            if (!c) return null;
+            return {name: c.dataset.hcName || '', boro: c.dataset.hcBoro || '', flag: !!c.querySelector('.hc-flag')};
+        })()""")
+        self.ok(feat is not None or hc is not None, 'no sponsored or lottery tile rendered in the list at all', j)
+        if feat:
+            self.ok(feat['agent'] and feat['addr'],
+                    f"a re-rental tile must carry the agent and address the advertiser report counts, got {feat}", j)
+            self.ok(feat['flag'], 'a sponsored tile must be flagged as one', j)
+        if hc:
+            self.ok(hc['name'], f'a lottery tile must carry its name, got {hc}', j)
+            self.ok(hc['flag'], 'a lottery tile must be flagged as one', j)
+        j.notes.append('re-rental ' + ('ok' if feat else 'none') + ', lottery ' + ('ok' if hc else 'none'))
+
+    def j_outbound_links(self, page, j, device):
+        """Every hand-off off the site: 695 people did one last month.
+
+        A link that loses target or rel, or an agent phone number that stops
+        being a tel:, is a dead end for the visitor and an uncounted click for
+        the dashboard. Added 2026-09-09 from the events table.
+        """
+        self.boot(page)
+        self.typeq(page, ADDR)
+        self.pick_first(page)
+        self.ok(self.detail_open(page), 'the building sheet should be open', j)
+        links = page.evaluate("""(() => {
+            const out = [];
+            document.querySelectorAll('#detail-sheet a[href^="http"], #detail-sheet a[href^="tel:"]').forEach(a => {
+                const ext = /^https?:/.test(a.getAttribute('href')) && !a.href.startsWith(location.origin);
+                out.push({href: a.getAttribute('href').slice(0, 60), ext,
+                          target: a.getAttribute('target') || '', rel: a.getAttribute('rel') || ''});
+            });
+            return out;
+        })()""")
+        ext = [l for l in links if l['ext']]
+        self.ok(bool(links), 'the building sheet should offer somewhere to go', j)
+        bad = [l for l in ext if l['target'] != '_blank' or 'noopener' not in l['rel']]
+        self.ok(not bad, f'every off-site link needs target=_blank and rel=noopener, got {bad[:3]}', j)
+        j.notes.append(f'{len(ext)} off-site link(s)')
+
+    def j_status_chips(self, page, j, device):
+        """The chips that explain what the register actually says.
+
+        30 people opened one last month and nothing covered them. The chip also
+        re-renders part of the sheet, which is the same place the open-data
+        counts were being wiped, so this checks those survive too.
+        Added 2026-09-09 from the events table.
+        """
+        self.boot(page, f'/#d={BBL}')
+        if not self.detail_open(page):
+            page.evaluate(f"location.hash = '#d={BBL}'"); time.sleep(1.5)
+        self.ok(self.detail_open(page), 'the building sheet should open from a #d= link', j)
+        chips = page.evaluate("document.querySelectorAll('#detail-sheet [data-status]').length")
+        self.ok(chips > 0, 'a stabilized building should show at least one status chip', j)
+        self.click(page, '#detail-sheet [data-status]'); time.sleep(0.6)
+        shown = page.evaluate("(()=>{const d=document.querySelector('#detail-sheet .d-status-def'); return d && !d.hidden && d.textContent.trim().length > 20})()")
+        self.ok(shown, 'tapping a status chip should explain what it means', j)
+        self.ok(page.evaluate("document.querySelector('#detail-sheet [data-status]').getAttribute('aria-expanded') === 'true'"),
+                'the chip should report its expanded state to a screen reader', j)
+        self.ok(page.evaluate("document.querySelectorAll('#detail-sheet [data-oc]').length") == 4,
+                'the open-data buttons must survive the status re-render', j)
+        j.notes.append(f'{chips} status chip(s)')
+
+    def j_referral_gate(self, page, j, device):
+        """Invite a friend, both get Plus — 39 people opened it last month.
+
+        Signed out it must become the sign-up modal rather than a broken empty
+        sheet, because the link can only be minted for an account. That gate is
+        the whole journey: it is the difference between an invite flow and a
+        dead button. Added 2026-09-09 from the events table.
+        """
+        self.boot(page)
+        # The button only shows once auth has resolved; signed out it is hidden,
+        # so drive the same entry point the header button uses.
+        hidden = page.evaluate("(()=>{const b=document.getElementById('ref-btn'); return !b || b.hidden})()")
+        self.ok(hidden, 'the Free Plus button should stay hidden until someone is signed in', j)
+        page.evaluate("document.getElementById('ref-btn').hidden = false")
+        self.click(page, '#ref-btn'); time.sleep(0.8)
+        self.ok(page.evaluate("document.getElementById('referral-modal').hidden"),
+                'signed out, the referral modal must not open with an empty link', j)
+        self.ok(not page.evaluate("document.getElementById('auth-modal').hidden"),
+                'signed out, inviting should ask for an account first', j)
+        sub = (page.evaluate("document.getElementById('auth-submit').textContent") or '').lower()
+        self.ok('create' in sub or 'sign up' in sub, f'the gate should open in sign-up mode, got {sub!r}', j)
+        # and the modal it would have opened is wired: close button and a copy CTA
+        page.evaluate("document.querySelector('[data-auth=\"close\"]')?.click()"); time.sleep(0.3)
+        self.ok(page.evaluate("!!document.getElementById('ref-copy') && !!document.getElementById('ref-link')"),
+                'the referral modal needs its link field and copy button', j)
+        j.notes.append('gated to sign-up')
+
     def j_signin_modal(self, page, j, device):
         self.boot(page)
         self.click(page, '#auth-btn'); time.sleep(0.6)
@@ -479,7 +662,8 @@ class Runner:
         self.ok(page.evaluate("document.getElementById('auth-modal').hidden"), 'modal should close', j)
 
     JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'pin_and_list',
-                'filters_and_save', 'deep_links_and_view', 'city_pages', 'memory', 'alerts_page', 'signin_modal', 'app_chip']
+                'filters_and_save', 'deep_links_and_view', 'city_pages', 'memory', 'alerts_page', 'signin_modal', 'app_chip', 'city_chip',
+                'ad_tiles', 'outbound_links', 'status_chips', 'referral_gate']
 
     # ---- run --------------------------------------------------------------
     def run(self):

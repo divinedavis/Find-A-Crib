@@ -22,9 +22,9 @@ FONTS = os.path.join(ROOT, "FindACrib/Resources/Fonts")
 OUT = os.path.join(ROOT, "marketing/asc-header")
 SIZES = [(1280, 720), (5244, 2950)]
 
-BLUE = (0, 106, 255)          # the icon's blue
-ROYAL = (27, 70, 229)         # the app's royal
-NAVY = (14, 42, 110)
+BLUE = (96, 166, 178)         # the icon's lit teal (scripts/make_icon.py CORE)
+ROYAL = (40, 92, 105)         # its rim
+NAVY = (22, 58, 68)
 YELLOW = (255, 214, 10)
 GREEN = (16, 160, 80)
 WHITE = (255, 255, 255)

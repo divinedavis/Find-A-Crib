@@ -24,8 +24,9 @@ enum SE {
     static let good      = Color(hex: 0x1E7B34)
     static let warn      = Color(hex: 0xB45309)
     static let bad       = Color(hex: 0xB91C1C)
-    /// Find A Crib's own brand blue, kept for the mark in the hero card.
-    static let brand     = Color(hex: 0x006AFF)
+    /// The app icon's teal (scripts/make_icon.py MID/RIM), for the mark in the hero card.
+    static let brand     = Color(hex: 0x3C7E8C)
+    static let brandRim  = Color(hex: 0x285C69)
 }
 
 extension Color {

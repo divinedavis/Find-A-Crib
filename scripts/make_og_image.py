@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Regenerate the social-share banner (og-image.png) for Find A Crib.
 
-1200x630, blue gradient, diamond accent + brand, subtitle, borough list,
+1200x630, blue gradient, app icon + brand, subtitle, borough list,
 and a white pill with the domain. Run: python3 scripts/make_og_image.py
 """
 import os
@@ -41,8 +41,9 @@ f_sub   = ImageFont.truetype(BOLD, 52)
 f_boro  = ImageFont.truetype(REG, 34)
 f_pill  = ImageFont.truetype(BOLD, 32)
 
-# diamond accent + brand
-d.polygon([(110,168),(130,148),(150,168),(130,188)], fill=(255,255,255,255))
+# the app icon (scripts/make_icon.py) + brand
+_icon = Image.open(os.path.join(os.path.dirname(OUT), "icon-512.png")).convert("RGBA").resize((56, 56), Image.LANCZOS)
+img.paste(_icon, (104, 140), _icon)
 d.text((172, 130), "Find A Crib", font=f_brand, fill="white")
 # subtitle
 d.text((90, 255), "Find NYC rent-stabilized apartments", font=f_sub, fill="white")

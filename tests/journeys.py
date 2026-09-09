@@ -74,7 +74,7 @@ class Runner:
         page.on('pageerror', lambda e: j.errors.append('pageerror: ' + str(e)[:200]))
         page.on('crash', lambda: j.errors.append('CRASH: renderer died'))
         page.on('console', lambda m: j.errors.append('console.error: ' + m.text[:200])
-                if m.type == 'error' and 'Failed to load resource' not in m.text and 'Content Security Policy' not in m.text and 'Report Only' not in m.text else None)
+                if m.type == 'error' and 'Failed to load resource' not in m.text and 'Content Security Policy' not in m.text and 'Report Only' not in m.text and 'doubleclick.net' not in m.text else None)  # WebKit words Google's own conversion-ping refusal as 'Refused to execute'
         if self.html is not None:
             def route(r):
                 u = r.request.url.split('#')[0]
@@ -121,6 +121,14 @@ class Runner:
     def close_detail(page):
         page.evaluate("const b=document.querySelector('#detail-sheet [data-detail=\"close\"]'); b && b.click()")
         time.sleep(0.5)
+
+    @staticmethod
+    def sheet_loaded(page, timeout=20000):
+        """The open-data sheet has answered: its body no longer says Loading."""
+        try:
+            page.wait_for_function("!document.getElementById('viol-sheet').hidden && !/Loading /.test(document.getElementById('viol-body').innerText)", timeout=timeout)
+        except Exception:
+            pass
 
     @staticmethod
     def ok(cond, msg, j):
@@ -185,7 +193,7 @@ class Runner:
         self.click(page, '#detail-sheet [data-detail="violations"]'); time.sleep(0.8)
         self.ok(not page.evaluate("document.getElementById('viol-sheet').hidden"), 'Violations button did not open the sheet', j)
         page.evaluate("document.querySelector('#viol-sheet .sheet-close')?.click()"); time.sleep(0.3)
-        self.click(page, '#detail-sheet [data-detail="complaints"]'); time.sleep(0.8)
+        self.click(page, '#detail-sheet [data-detail="complaints"]'); self.sheet_loaded(page)
         self.ok(page.evaluate("!!document.querySelector('.viol-backdrop:not([hidden])')"), 'Complaints button did not open a sheet', j)
         page.evaluate("document.querySelectorAll('.viol-backdrop .sheet-close').forEach(b=>b.click())"); time.sleep(0.3)
         # NYC Open Data buttons: present, counted, and the sheets list real rows
@@ -194,16 +202,22 @@ class Runner:
             self.ok(any(want in b for b in labels), f'building sheet lacks "{want}" button', j)
         vi = next((i for i, b in enumerate(labels) if b.startswith('Violations')), -1)
         self.ok(vi >= 0 and labels[vi + 1].startswith('Bedbug inspections') and labels[vi + 2].startswith('Rodent'), f'Bedbugs and Rodents should sit right under Violations, got {labels[:5]}', j)
-        time.sleep(3)
+        # Six Socrata queries; the slow one has taken 3s+, so wait for the
+        # counts rather than a fixed pause (flaked on 2026-09-09).
+        try:
+            # every count, and the bedbug/rodent "this year" verdicts, which arrive from their own queries
+            page.wait_for_function("[...document.querySelectorAll('#detail-sheet [data-oc]')].every(e=>e.textContent.trim().startsWith('·') && (!/bedbugs|rodents/.test(e.dataset.oc) || /this year/.test(e.textContent)))", timeout=20000)
+        except Exception:
+            pass
         counts = page.evaluate("Object.fromEntries([...document.querySelectorAll('#detail-sheet [data-oc]')].map(e=>[e.dataset.oc, e.textContent.trim()]))")
-        self.ok(all(v.startswith('·') for v in counts.values()), f'open-data counts should fill in on the buttons, got {counts}', j)
+        self.ok(all(v.startswith('·') for v in counts.values()), f'open-data counts should fill in on the buttons within 20s, got {counts}', j)
         tones = page.evaluate("Object.fromEntries(['bedbugs','rodents'].map(k=>[k, document.querySelector('#detail-sheet [data-detail=\"'+k+'\"]').className]))")
         self.ok(all('d-viol' in v for v in tones.values()), f'bedbug and rodent buttons should carry the violations styling, got {tones}', j)
         for k in ('bedbugs', 'rodents'):
             red, green = 'red' in tones[k], 'green' in tones[k]
             self.ok(red or green, f'{k} button should be red or green once the year is known: {counts} {tones}', j)
             self.ok((red and 'this year' in counts[k] and 'none' not in counts[k]) or (green and 'none' in counts[k] and 'this year' in counts[k]), f'{k} button must say why it is {"red" if red else "green"}: {counts[k]!r}', j)
-        self.click(page, '#detail-sheet [data-detail="litigations"]'); time.sleep(3)
+        self.click(page, '#detail-sheet [data-detail="litigations"]'); self.sheet_loaded(page)
         body = page.evaluate("document.getElementById('viol-body').innerText")
         self.ok('Tenant Action' in body or 'case' in body.lower(), f'litigations sheet should list the case, got {body[:120]!r}', j)
         page.evaluate("document.querySelectorAll('.viol-backdrop .sheet-close').forEach(b=>b.click())"); time.sleep(0.3)
@@ -217,7 +231,7 @@ class Runner:
         self.click(page, '#detail-sheet [data-detail="bedbugs"]'); time.sleep(1)
         self.ok(not page.evaluate("document.getElementById('auth-modal').hidden") and page.evaluate("document.getElementById('viol-sheet').hidden"), 'bedbug record should be gated when signed out', j)
         page.evaluate("document.querySelector('[data-auth=\"close\"]')?.click()"); time.sleep(0.3)
-        self.click(page, '#detail-sheet [data-detail="evictions"]'); time.sleep(3)
+        self.click(page, '#detail-sheet [data-detail="evictions"]'); self.sheet_loaded(page)
         body = page.evaluate("document.getElementById('viol-body').innerText")
         self.ok('No marshal-executed evictions' in body or 'Marshal' in body, f'evictions sheet should answer, got {body[:120]!r}', j)
         page.evaluate("document.querySelectorAll('.viol-backdrop .sheet-close').forEach(b=>b.click())"); time.sleep(0.3)

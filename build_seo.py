@@ -1526,7 +1526,7 @@ def page(title, desc, canonical, body, jsonld=None, footer=None, robots=None, og
 <title>{esc(title)}</title>
 <meta name="description" content="{esc(desc)}">{rb}
 <link rel="canonical" href="{canonical}">
-<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon.ico?v=2" sizes="any">
 <meta property="og:type" content="website"><meta property="og:site_name" content="Find A Crib">
 <meta property="og:title" content="{esc(og_title)}"><meta property="og:description" content="{esc(desc)}">
 <meta property="og:url" content="{canonical}"><meta property="og:image" content="{SITE}/og-image.png">

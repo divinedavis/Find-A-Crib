@@ -68,12 +68,19 @@ def paste_with_shadow(img, dev, x, y):
     return out.convert("RGB")
 
 
-def brand(draw, on_yellow):
-    # small mark + name in the corner, as the style sheet asks
+ICON = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "FindACrib/Resources/Assets.xcassets/AppIcon.appiconset/icon-1024.png")
+
+
+def brand(draw, on_yellow, canvas=None):
+    # the app icon + name in the corner, as the style sheet asks
     f = font(44, medium=True)
     ink = INK if on_yellow else NAVY
-    draw.rounded_rectangle([72, 88, 72 + 52, 88 + 52], radius=14, fill=ROYAL)
-    draw.ellipse([84, 100, 84 + 28, 100 + 28], outline=WHITE, width=6)
+    if canvas is not None:
+        icon = Image.open(ICON).convert("RGBA").resize((52, 52), Image.LANCZOS)
+        m = Image.new("L", (52 * 4, 52 * 4), 0); ImageDraw.Draw(m).rounded_rectangle([0, 0, 52 * 4 - 1, 52 * 4 - 1], radius=14 * 4, fill=255)
+        icon.putalpha(m.resize((52, 52), Image.LANCZOS)); canvas.paste(icon, (72, 88), icon)
+    else:
+        draw.rounded_rectangle([72, 88, 72 + 52, 88 + 52], radius=14, fill=ROYAL)
     draw.text((140, 84), "Find A Crib", font=f, fill=ink)
 
 
@@ -101,7 +108,7 @@ def panel(n, name, bg, lines, subline, shot, cue_text=None, dev_w=980):
     ink = INK if on_yellow else NAVY
     img = Image.new("RGB", (W, H), bg)
     d = ImageDraw.Draw(img)
-    brand(d, on_yellow)
+    brand(d, on_yellow, img)
     y = headline(d, lines, 220, ink)
     y = sub(d, subline, y + 24, (60, 60, 60) if on_yellow else (74, 74, 74))
     dev = device(shot, dev_w)

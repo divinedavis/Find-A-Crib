@@ -491,20 +491,33 @@ struct BrandCard: View {
     }
 }
 
-/// The brand's "a" mark from brand/icon.svg, drawn in SwiftUI so it scales.
+/// The app icon's mark — three homes on the teal field — drawn in SwiftUI so it
+/// scales. Same geometry as scripts/make_icon.py (1024 grid), flat here.
 struct BrandMark: View {
     var body: some View {
         GeometryReader { g in
-            let w = g.size.width
+            let u = g.size.width / 1024
+            let homes: [[CGPoint]] = [
+                [CGPoint(x: 228, y: 566), CGPoint(x: 330, y: 440), CGPoint(x: 432, y: 566), CGPoint(x: 432, y: 760), CGPoint(x: 228, y: 760)],
+                [CGPoint(x: 592, y: 546), CGPoint(x: 700, y: 412), CGPoint(x: 808, y: 546), CGPoint(x: 808, y: 760), CGPoint(x: 592, y: 760)],
+                [CGPoint(x: 388, y: 470), CGPoint(x: 512, y: 316), CGPoint(x: 636, y: 470), CGPoint(x: 636, y: 760), CGPoint(x: 388, y: 760)],
+            ]
             ZStack {
+                RoundedRectangle(cornerRadius: 229 * u, style: .continuous)
+                    .fill(RadialGradient(colors: [SE.brand, SE.brandRim], center: UnitPoint(x: 0.5, y: 0.44), startRadius: 0, endRadius: 800 * u))
                 Path { p in
-                    // squared-off "a": half-disc on the left, flat right edge
-                    p.addRoundedRect(in: CGRect(x: 0, y: w * 0.15, width: w, height: w * 0.7), cornerRadii: RectangleCornerRadii(topLeading: w * 0.35, bottomLeading: w * 0.35, bottomTrailing: 0, topTrailing: 0))
+                    for h in homes {
+                        p.move(to: CGPoint(x: h[0].x * u, y: h[0].y * u))
+                        for pt in h.dropFirst() { p.addLine(to: CGPoint(x: pt.x * u, y: pt.y * u)) }
+                        p.closeSubpath()
+                    }
+                }
+                .fill(Color.white)
+                // the door, cut back to the field
+                Path { p in
+                    p.addRoundedRect(in: CGRect(x: 480 * u, y: 632 * u, width: 64 * u, height: 128 * u), cornerRadii: RectangleCornerRadii(topLeading: 32 * u, bottomLeading: 0, bottomTrailing: 0, topTrailing: 32 * u))
                 }
                 .fill(SE.brand)
-                Circle().stroke(Color.white, lineWidth: w * 0.09).frame(width: w * 0.36, height: w * 0.36).offset(x: -w * 0.13)
-                Path { p in p.move(to: CGPoint(x: w * 0.5, y: w * 0.62)); p.addLine(to: CGPoint(x: w * 0.6, y: w * 0.72)) }
-                    .stroke(Color.white, style: StrokeStyle(lineWidth: w * 0.09, lineCap: .round))
             }
         }
     }

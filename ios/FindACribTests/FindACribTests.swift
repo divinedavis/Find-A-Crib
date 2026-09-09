@@ -42,7 +42,7 @@ final class DataTests: XCTestCase {
         XCTAssertEqual(AddressCase.pretty("204 E 76TH ST"), "204 E 76th St")
         XCTAssertEqual(Slug.make("204 E 76TH ST"), "204-e-76th-st")
         let b = Building(bbl: "1014300144", b: "M", a: "204 E 76TH ST", z: "10021", lat: 40.77, lng: -73.95)
-        XCTAssertEqual(b.webURL.absoluteString, "https://findacrib.com/building/manhattan/204-e-76th-st-1014300144/")
+        XCTAssertEqual(b.webURL(in: .nyc).absoluteString, "https://findacrib.com/building/manhattan/204-e-76th-st-1014300144/")
     }
 
     func testShortMoney() {
@@ -273,5 +273,91 @@ final class ActivityTests: XCTestCase {
         XCTAssertEqual(AlertsSheet.dollars("$2,000"), 2000)
         XCTAssertEqual(AlertsSheet.dollars("65000"), 65000)
         XCTAssertEqual(AlertsSheet.dollars("abc"), -1)
+    }
+}
+
+// MARK: - Cities (LA, SF, DC alongside NYC)
+
+final class CityTests: XCTestCase {
+    /// The three non-NYC cities publish a slimmer record: no HPD block, and
+    /// LA carries no neighborhood at all while SF and DC do. One odd field
+    /// must not sink the decode of a 67k-row file.
+    func testOtherCityRecordsDecode() throws {
+        let json = """
+        [{"bbl":"LA-2010004040","b":"LA","a":"9035 TOPANGA CANYON BLVD","z":"91304","lat":34.23,"lng":-118.60,
+          "s":["LIKELY RSO (PRE-1979, 2+ UNITS)"],"yr":1978,"u":59,"nb":null},
+         {"bbl":"SF--1000BLOCKOFREVER","b":"SF","a":"1000 Block of REVERE AVE","z":"","lat":37.72,"lng":-122.37,
+          "s":["SF RENT BOARD INVENTORY"],"yr":null,"u":1,"nb":"Bayview Hunters Point","mr":2450},
+         {"bbl":"DC-185084_1","b":"DC","a":"1314 HOLBROOK ST NE","z":"20002","lat":38.90,"lng":-76.98,
+          "s":["DC RENT CONTROL (REGISTERED)"],"yr":null,"u":4,"nb":"Carver","mr":2800}]
+        """
+        let rows = try JSONDecoder().decode([Building].self, from: Data(json.utf8))
+        XCTAssertEqual(rows.count, 3)
+        XCTAssertNil(rows[0].nb)                 // LA: no neighborhood in the source
+        XCTAssertNil(rows[0].mr)
+        XCTAssertEqual(rows[1].mr, 2450)         // SF: block median
+        XCTAssertEqual(rows[2].nb, "Carver")     // DC: real neighborhood
+        XCTAssertEqual(rows[2].mr, 2800)
+        XCTAssertEqual(rows[0].openViolations, 0, "no HPD block must read as zero, not crash")
+    }
+
+    /// Each city divides differently, and the picker offers whatever it has.
+    func testRegionsFollowTheCity() {
+        let la = [Building(bbl: "LA-1", b: "LA", a: "A", z: "90001", lat: 34, lng: -118),
+                  Building(bbl: "LA-2", b: "LA", a: "B", z: "90001", lat: 34, lng: -118),
+                  Building(bbl: "LA-3", b: "LA", a: "C", z: "90210", lat: 34, lng: -118)]
+        let laR = DataStore.regions(for: .la, buildings: la, neighborhoods: [])
+        XCTAssertEqual(laR.map(\.name), ["90001", "90210"])
+        XCTAssertEqual(laR.first?.count, 2)
+
+        let nb = [(name: "Carver", borough: "DC", count: 213), (name: "Dupont Circle", borough: "DC", count: 206)]
+        let dcR = DataStore.regions(for: .dc, buildings: [], neighborhoods: nb)
+        XCTAssertEqual(dcR.map(\.name), ["Carver", "Dupont Circle"])
+
+        let nyc = [Building(bbl: "1", b: "M", a: "A", z: "10001", lat: 40, lng: -73),
+                   Building(bbl: "2", b: "Bk", a: "B", z: "11201", lat: 40, lng: -73)]
+        let nycR = DataStore.regions(for: .nyc, buildings: nyc, neighborhoods: [])
+        XCTAssertEqual(nycR.map(\.name), ["Manhattan", "Brooklyn"], "boroughs, in the app's own order, empty ones dropped")
+    }
+
+    /// Only New York has a page per building; the rest deep-link into the city map.
+    func testWebURLPerCity() {
+        let nyc = Building(bbl: "1007220003", b: "M", a: "246 10TH AVE", z: "10001", lat: 40.7, lng: -74.0)
+        XCTAssertEqual(nyc.webURL(in: .nyc).absoluteString,
+                       "https://findacrib.com/building/manhattan/246-10th-ave-1007220003/")
+        let dc = Building(bbl: "DC-185084_1", b: "DC", a: "1314 HOLBROOK ST NE", z: "20002", lat: 38.9, lng: -77.0)
+        XCTAssertTrue(dc.webURL(in: .dc).absoluteString.hasPrefix("https://findacrib.com/dc/#d="))
+    }
+
+    /// The New York feeds are New York's; nothing else should ask for them.
+    func testOnlyNYCFetchesTheExtraFeeds() {
+        XCTAssertEqual(DataStore.files(for: .nyc).count, 5)
+        XCTAssertEqual(DataStore.files(for: .la), ["la/buildings.min.json.gz"])
+        XCTAssertEqual(DataStore.files(for: .sf), ["sf/buildings.min.json.gz"])
+        XCTAssertFalse(City.la.hasNYCExtras)
+        XCTAssertTrue(City.nyc.hasNYCExtras)
+    }
+
+    /// Cities cache to distinct filenames, or one would overwrite another.
+    func testCacheNamesAreDistinct() {
+        let names = City.all.map(\.cacheName)
+        XCTAssertEqual(Set(names).count, names.count, "each city needs its own cache file")
+        XCTAssertEqual(City.nyc.cacheName, "buildings.slim.json.gz", "NYC keeps its name so the shipped seed still loads")
+        XCTAssertFalse(City.la.cacheName.contains("/"), "a cache filename cannot be a path")
+    }
+
+    func testFindFallsBackToNYC() {
+        XCTAssertEqual(City.find("dc"), .dc)
+        XCTAssertEqual(City.find(nil), .nyc)
+        XCTAssertEqual(City.find("atlantis"), .nyc)
+    }
+
+    func testPlaceReadsInTheCitysOwnTerms() {
+        let la = Building(bbl: "LA-1", b: "LA", a: "A", z: "90210", lat: 34, lng: -118)
+        XCTAssertEqual(la.place(in: .la), "ZIP 90210")
+        let sf = Building(bbl: "SF-1", b: "SF", a: "A", z: "", lat: 37, lng: -122, nb: "Mission")
+        XCTAssertEqual(sf.place(in: .sf), "Mission")
+        let nyc = Building(bbl: "1", b: "M", a: "A", z: "10001", lat: 40, lng: -73, nb: "Chelsea")
+        XCTAssertEqual(nyc.place(in: .nyc), "Chelsea")
     }
 }

@@ -17,13 +17,27 @@ struct LocationPickerView: View {
         guard !q.isEmpty, q.allSatisfy(\.isNumber) else { return [] }
         return store.zips.filter { $0.hasPrefix(q) }
     }
+    /// Outside New York the register divides the city differently — named
+    /// neighborhoods in SF and DC, ZIP areas in LA, whose parcel source has no
+    /// neighborhood at all — so the picker offers whatever that city has.
+    private var regions: [(name: String, sub: String, count: Int)] {
+        q.isEmpty ? store.regions : store.regions.filter { $0.name.lowercased().contains(q) }
+    }
+    private var scopeKind: City.RegionKind { store.city.regionKind }
+    private func scope(_ name: String) -> LocationScope {
+        switch scopeKind {
+        case .borough: return .borough(Borough.all.first { $0.name == name }?.code ?? name)
+        case .neighborhood: return .neighborhood(name)
+        case .zip: return .zip(name)
+        }
+    }
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
                 HStack(spacing: 10) {
                     Image(systemName: "magnifyingglass").foregroundStyle(SE.ink3)
-                    TextField("Neighborhood, borough or ZIP", text: $text).font(.se(18))
+                    TextField(store.city.searchPlaceholder, text: $text).font(.se(18))
                         .textInputAutocapitalization(.words).autocorrectionDisabled()
                         .accessibilityIdentifier("location-search")
                     if !text.isEmpty { Button { text = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(SE.ink3) } }
@@ -40,26 +54,40 @@ struct LocationPickerView: View {
                 }
 
                 List {
-                    if !boroughs.isEmpty {
-                        Section(header: header("Boroughs")) {
-                            ForEach(boroughs, id: \.code) { b in row(.borough(b.code), title: b.name, sub: "\(store.buildings.lazy.filter { $0.b == b.code }.count.formatted()) buildings") }
+                    if store.city.isNYC {
+                        if !boroughs.isEmpty {
+                            Section(header: header("Boroughs")) {
+                                ForEach(boroughs, id: \.code) { b in row(.borough(b.code), title: b.name, sub: "\(store.buildings.lazy.filter { $0.b == b.code }.count.formatted()) buildings") }
+                            }
                         }
-                    }
-                    if !zips.isEmpty {
-                        Section(header: header("ZIP codes")) {
-                            ForEach(zips.prefix(20), id: \.self) { z in row(.zip(z), title: z, sub: nil) }
+                        if !zips.isEmpty {
+                            Section(header: header("ZIP codes")) {
+                                ForEach(zips.prefix(20), id: \.self) { z in row(.zip(z), title: z, sub: nil) }
+                            }
                         }
-                    }
-                    Section(header: header("Neighborhoods")) {
-                        ForEach(neighborhoods.prefix(q.isEmpty ? 400 : 60), id: \.name) { n in
-                            row(.neighborhood(n.name), title: n.name, sub: "\(n.borough) · \(n.count.formatted())")
+                        Section(header: header("Neighborhoods")) {
+                            ForEach(neighborhoods.prefix(q.isEmpty ? 400 : 60), id: \.name) { n in
+                                row(.neighborhood(n.name), title: n.name, sub: "\(n.borough) · \(n.count.formatted())")
+                            }
+                        }
+                    } else {
+                        Section(header: header(store.city.regionLabel + "s")) {
+                            if regions.isEmpty {
+                                Text(store.loaded ? "Nothing matches that." : "Loading \(store.city.name)…")
+                                    .font(.se(16)).foregroundStyle(SE.ink3)
+                            }
+                            ForEach(regions.prefix(q.isEmpty ? 400 : 60), id: \.name) { r in
+                                row(scope(r.name),
+                                    title: scopeKind == .zip ? "ZIP \(r.name)" : r.name,
+                                    sub: "\(r.count.formatted()) buildings")
+                            }
                         }
                     }
                 }
                 .listStyle(.plain)
             }
             .background(Color.white)
-            .navigationTitle("Location")
+            .navigationTitle(store.city.isNYC ? "Location" : store.city.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {

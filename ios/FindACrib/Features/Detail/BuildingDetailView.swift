@@ -71,7 +71,7 @@ struct BuildingDetailView: View {
         .background(SE.canvas)
         .safeAreaInset(edge: .bottom) {
             HStack(spacing: 12) {
-                ShareLink(item: b.webURL) {
+                ShareLink(item: b.webURL(in: store.city)) {
                     Text("Share").font(.se(18, .bold)).foregroundStyle(SE.royal)
                         .frame(maxWidth: .infinity).frame(height: 50).background(Color.white)
                         .overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.royal, lineWidth: 1))
@@ -83,7 +83,7 @@ struct BuildingDetailView: View {
                 } else if let url = store.voucherAvail(b)?.url.flatMap(URL.init) {
                     SEPrimaryButton(title: "Voucher listing") { openURL(url) }
                 } else {
-                    SEPrimaryButton(title: "Open on findacrib.com") { openURL(b.webURL) }
+                    SEPrimaryButton(title: "Open on findacrib.com") { openURL(b.webURL(in: store.city)) }
                 }
             }
             .padding(16)
@@ -100,8 +100,8 @@ struct BuildingDetailView: View {
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
-                    ShareLink(item: b.webURL) { Label("Share", systemImage: "square.and.arrow.up") }
-                    Button { openURL(b.webURL) } label: { Label("Open on findacrib.com", systemImage: "safari") }
+                    ShareLink(item: b.webURL(in: store.city)) { Label("Share", systemImage: "square.and.arrow.up") }
+                    Button { openURL(b.webURL(in: store.city)) } label: { Label("Open on findacrib.com", systemImage: "safari") }
                     Button {
                         let item = MKMapItem(placemark: MKPlacemark(coordinate: b.coordinate)); item.name = b.address
                         item.openInMaps(launchOptions: [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDefault])

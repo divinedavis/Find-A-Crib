@@ -21,6 +21,12 @@ final class DataStore {
     private(set) var refreshing = false
     private(set) var dataAsOf: Date? = nil
 
+    /// Which city the app is showing. Persisted, so it reopens where it was.
+    private(set) var city: City = City.find(UserDefaults.standard.string(forKey: "city"))
+    /// Regions to offer once a city is chosen: boroughs in NYC, neighborhoods
+    /// in SF and DC, ZIP areas in LA. Name, the place it sits in, and a count.
+    private(set) var regions: [(name: String, sub: String, count: Int)] = []
+
     /// Neighborhood names with their borough + building count, for the picker.
     private(set) var neighborhoods: [(name: String, borough: String, count: Int)] = []
     /// Neighborhood name -> borough code, for collapsing a neighborhood pick to
@@ -29,7 +35,12 @@ final class DataStore {
     private(set) var zips: [String] = []
 
     static let host = URL(string: "https://findacrib.com/")!
-    static let files = ["buildings.slim.json.gz", "listings.json", "s8.json", "fmr.json", "hcr.json"]
+    /// Advertised rents, vouchers and lotteries are New York feeds; the other
+    /// cities have buildings only, so nothing else is even requested for them.
+    static let nycExtras = ["listings.json", "s8.json", "fmr.json", "hcr.json"]
+    nonisolated static func files(for city: City) -> [String] {
+        city.hasNYCExtras ? [city.dataPath] + nycExtras : [city.dataPath]
+    }
 
     nonisolated static var cacheDir: URL {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -38,7 +49,8 @@ final class DataStore {
         return d
     }
 
-    /// Cached copy if present, else the bundled seed.
+    /// Cached copy if present, else the bundled seed. `name` is the flat cache
+    /// filename, which for a city file is not its remote path.
     nonisolated static func localURL(_ name: String, bundleOnly: Bool = false) -> URL? {
         let cached = cacheDir.appendingPathComponent(name)
         if !bundleOnly, FileManager.default.fileExists(atPath: cached.path) { return cached }
@@ -55,16 +67,20 @@ final class DataStore {
     /// `bundleOnly` is for the unit tests: the test host shares the app's
     /// container, so its cache holds whatever the last simulator run fetched,
     /// and a test about the shipped seed must not read that instead.
-    nonisolated static func decodeLocal(bundleOnly: Bool = false) throws -> Payload {
+    nonisolated static func decodeLocal(_ city: City = .nyc, bundleOnly: Bool = false) throws -> Payload {
         let dec = JSONDecoder()
-        guard let bURL = localURL("buildings.slim.json.gz", bundleOnly: bundleOnly) else {
-            throw NSError(domain: "FindACrib", code: 1, userInfo: [NSLocalizedDescriptionKey: "Building data missing from bundle"])
+        guard let bURL = localURL(city.cacheName, bundleOnly: bundleOnly) else {
+            // Only NYC ships a seed in the bundle; the other cities are fetched
+            // on first use, so "no local copy" there means "not downloaded yet".
+            throw NSError(domain: "FindACrib", code: 1,
+                          userInfo: [NSLocalizedDescriptionKey: city.isNYC ? "Building data missing from bundle"
+                                                                           : "\(city.name) hasn't been downloaded yet"])
         }
         let raw = try Data(contentsOf: bURL)
-        let json = try Gunzip.inflate(raw)
+        let json = city.cacheName.hasSuffix(".gz") ? try Gunzip.inflate(raw) : raw
         let buildings = try dec.decode([Building].self, from: json)
         func opt<T: Decodable>(_ name: String, _ empty: T) -> T {
-            guard let u = localURL(name, bundleOnly: bundleOnly), let d = try? Data(contentsOf: u) else { return empty }
+            guard city.hasNYCExtras, let u = localURL(name, bundleOnly: bundleOnly), let d = try? Data(contentsOf: u) else { return empty }
             do { return try dec.decode(T.self, from: d) }
             catch { NSLog("FindACrib: %@ failed to decode: %@", name, String(describing: error)); return empty }
         }
@@ -73,13 +89,29 @@ final class DataStore {
     }
 
     func load() async {
+        let c = city
         do {
-            let p = try await Task.detached(priority: .userInitiated) { try Self.decodeLocal() }.value
+            let p = try await Task.detached(priority: .userInitiated) { try Self.decodeLocal(c) }.value
             applyPayload(p)
         } catch {
             loadError = error.localizedDescription
         }
         await refresh()
+    }
+
+    /// Switch cities: show whatever is already on disk immediately, then fetch.
+    /// A city with nothing cached (its first use) reports not-loaded until the
+    /// download lands, so the UI can say it is fetching rather than say zero.
+    func switchCity(to c: City) async {
+        guard c != city else { return }
+        city = c
+        UserDefaults.standard.set(c.id, forKey: "city")
+        loadError = nil
+        buildings = []; byBBL = [:]; regions = []; neighborhoods = []; zips = []
+        listings = ListingsBlob(); s8 = S8Blob(); fmr = [:]; hcr = HCRBlob()
+        hcrBuildings = []; hcrByBBL = [:]
+        loaded = false
+        await load()
     }
 
     func applyPayload(_ p: Payload) {
@@ -98,25 +130,54 @@ final class DataStore {
             .sorted { $0.name < $1.name }
         boroughOfNeighborhood = nbCount.mapValues { $0.0 }
         zips = zipSet.sorted()
+        regions = Self.regions(for: city, buildings: p.buildings, neighborhoods: neighborhoods)
         loaded = true
     }
 
-    /// ETag-conditional fetch of each public file into the cache; redecodes
-    /// only when something actually changed. Bounded: 4 requests per launch.
-    func refresh() async {
-        guard !refreshing else { return }
-        refreshing = true; defer { refreshing = false }
-        var changed = false
-        for name in Self.files {
-            if await Self.fetchIfChanged(name) { changed = true }
-        }
-        if changed, let p = try? await Task.detached(priority: .utility, operation: { try Self.decodeLocal() }).value {
-            applyPayload(p)
+    /// What the picker offers once a city is chosen.
+    nonisolated static func regions(for city: City, buildings: [Building],
+                                    neighborhoods: [(name: String, borough: String, count: Int)])
+        -> [(name: String, sub: String, count: Int)] {
+        switch city.regionKind {
+        case .borough:
+            return Borough.all.map { b in
+                (name: b.name, sub: city.short, count: buildings.lazy.filter { $0.b == b.code }.count)
+            }.filter { $0.count > 0 }
+        case .neighborhood:
+            return neighborhoods.map { (name: $0.name, sub: city.short, count: $0.count) }
+        case .zip:
+            // LA's parcel source carries no neighborhood, so its areas are ZIPs.
+            var byZip: [String: Int] = [:]
+            for b in buildings { if let z = b.z, !z.isEmpty { byZip[z, default: 0] += 1 } }
+            return byZip.map { (name: $0.key, sub: city.short, count: $0.value) }.sorted { $0.name < $1.name }
         }
     }
 
-    nonisolated private static func fetchIfChanged(_ name: String) async -> Bool {
-        let etagKey = "etag.\(name)"
+    /// ETag-conditional fetch of each public file into the cache; redecodes
+    /// only when something actually changed. Bounded: one request per file per
+    /// launch, and non-NYC cities have only the one file.
+    func refresh() async {
+        guard !refreshing else { return }
+        refreshing = true; defer { refreshing = false }
+        let c = city
+        var changed = false
+        for name in Self.files(for: c) {
+            let cacheAs = name == c.dataPath ? c.cacheName : name
+            if await Self.fetchIfChanged(name, cacheAs: cacheAs) { changed = true }
+        }
+        // A city fetched for the first time has no payload yet, so decode even
+        // when nothing "changed" — otherwise its first launch stays empty.
+        guard c == city else { return }   // the user switched away mid-fetch
+        if changed || !loaded, let p = try? await Task.detached(priority: .utility, operation: { try Self.decodeLocal(c) }).value {
+            guard c == city else { return }
+            applyPayload(p)
+            loadError = nil
+        }
+    }
+
+    nonisolated private static func fetchIfChanged(_ name: String, cacheAs: String? = nil) async -> Bool {
+        let cacheName = cacheAs ?? name
+        let etagKey = "etag.\(cacheName)"
         var req = URLRequest(url: host.appendingPathComponent(name))
         req.timeoutInterval = 20
         // Ask for the raw bytes: the .gz file must land on disk still gzipped
@@ -130,7 +191,7 @@ final class DataStore {
         // Validate before trusting: a truncated body must not replace a good cache.
         if name.hasSuffix(".gz") { guard (try? Gunzip.inflate(data)) != nil else { return false } }
         else { guard (try? JSONSerialization.jsonObject(with: data)) != nil else { return false } }
-        let dest = cacheDir.appendingPathComponent(name)
+        let dest = cacheDir.appendingPathComponent(cacheName)
         do { try data.write(to: dest, options: .atomic) } catch { return false }
         if let etag = http.value(forHTTPHeaderField: "ETag") { UserDefaults.standard.set(etag, forKey: etagKey) }
         return true

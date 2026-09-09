@@ -27,10 +27,10 @@ HOST = "https://api.appstoreconnect.apple.com"
 API = HOST + "/v1"
 SHOTS = HERE.parent / "marketing" / "asc-screenshots"
 
-SUBTITLE = "Rent-stabilized NYC, mapped"                       # <= 30 chars
-KEYWORDS = "rent stabilized,nyc apartments,brooklyn,manhattan,bronx,queens,affordable housing,section 8,lottery"  # <=100
-PROMO = ("Every rent-stabilized building in New York City on one map — what's for rent this "
-         "week, who runs the building, and the lotteries you can apply for today.")
+SUBTITLE = "NYC, LA, SF & DC rent maps"                       # <= 30 chars
+KEYWORDS = "rent stabilized,rent control,los angeles,san francisco,washington dc,apartments,rso,brooklyn,nyc"  # <=100 — cities carry the search demand; the title already says Find A Crib
+PROMO = ("Rent-stabilized and rent-controlled buildings on one map — New York, Los Angeles, "
+         "San Francisco and Washington DC, from each city's own public register.")
 SITE = "https://findacrib.com/"
 SUPPORT = "https://findacrib.com/support/"
 PRIVACY = "https://findacrib.com/privacy/"
@@ -38,7 +38,20 @@ COPYRIGHT = "2026 Divine Davis"
 PRIMARY_CATEGORY = "LIFESTYLE"
 SECONDARY_CATEGORY = "REFERENCE"
 
-DESCRIPTION = """Find A Crib puts every rent-stabilized building in New York City on a map — all 47,000 of them, from the state's own register — and tells you what you can't see from the sidewalk.
+DESCRIPTION = """Find A Crib maps the buildings where the rent is legally limited — in New York City, Los Angeles, San Francisco and Washington DC — using each city's own public register, and tells you what you can't see from the sidewalk.
+
+FOUR CITIES, FOUR REGISTERS
+Pick a city, then narrow it the way that city is actually divided: by borough in New York, by neighborhood in San Francisco and Washington DC, by area in Los Angeles.
+
+- New York City: all 47,000 rent-stabilized buildings on the NYS HCR register
+- Los Angeles: parcels meeting the city's RSO criteria (2+ units, built on or before Oct 1, 1978)
+- San Francisco: rent-controlled units reported to the SF Rent Board, at block level
+- Washington DC: units registered with DHCD under the Rental Housing Act
+
+Each city says plainly where its data comes from and what it does not prove.
+
+IN NEW YORK, THERE IS MORE
+The New York map adds what only that city publishes: what's for rent this week, the building's HPD record, who runs it, and the lotteries you can apply for today.
 
 WHAT'S FOR RENT RIGHT NOW
 Tick "Available now" and the map narrows to buildings with an apartment advertised in the last five days, with the asking rent on the pin. Filter by price and bedrooms, draw your own map area, and save the search.
@@ -60,32 +73,37 @@ Plus unlocks the registered managing agent's phone number on every building page
 Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 Privacy Policy: https://findacrib.com/privacy/
 
-Find A Crib is an independent, informational tool. It is not a broker, does not list apartments, and takes no fee. Data: NYS Homes and Community Renewal rent-stabilization register (2024), NYC HPD open data, HUD FY2026 Fair Market Rents, HousingSearch.ny.gov, and advertised rents from Zumper.
+Find A Crib is an independent, informational tool. It is not a broker, does not list apartments, and takes no fee. Data: NYS Homes and Community Renewal rent-stabilization register (2024), NYC HPD open data, HUD FY2026 Fair Market Rents, HousingSearch.ny.gov, advertised rents from Zumper, LA County Assessor parcel data under LAHD's RSO criteria, the SF Rent Board Housing Inventory via DataSF, and the DC DHCD RentRegistry.
 """
 
-WHATS_NEW = """- Bedrooms filter is always available, in every mode
-- The results headline now says how many of the buildings on screen are rent-stabilized
-- Building violations and inspections are shown once you're signed in
-- Alerts use the same filters as findacrib.com, and setting one up now works reliably
+WHATS_NEW = """Find A Crib now covers four cities.
+
+- Pick a city — New York, Los Angeles, San Francisco or Washington DC — then narrow it the way that city is divided: by borough in New York, by neighborhood in San Francisco and DC, by area in Los Angeles
+- Each city comes from its own public register, and says so
+- New York keeps everything it had: what's for rent this week, HPD violations and complaints, the managing agent, and open lotteries
+- A new app icon, and the app now matches it
+- Bedrooms filter is always available, the results headline counts the stabilized buildings on screen, and setting up an alert works reliably
 """
 
-REVIEW_NOTES = """VERSION 1.0.1 (build 24) — small update to the approved 1.0
-Bedrooms filter always offered; results headline counts the stabilized buildings on screen; violations and inspections shown to signed-in users; alerts share the website's filters and a sign-in bug in alert set-up is fixed. Nothing changed in permissions, purchases or data collection.
+REVIEW_NOTES = """VERSION 1.1 (build __BUILD__) — three more cities
 
-SIGN IN WITH APPLE
-Sign in with Apple is the first sign-in option on the Profile tab when signed out, above Google and email (Guideline 4.8, in place since 1.0 build 21). It limits collection to name and email, supports Hide My Email, and nothing is collected for advertising. To test: open the Profile tab signed out and tap Continue with Apple.
+WHAT CHANGED
+The app covered New York City only. It now also covers Los Angeles, San Francisco and Washington DC. On the Search tab, "City" is the first field; choosing one loads that city's buildings from findacrib.com and the Location field below then offers that city's own divisions — boroughs in New York, neighborhoods in San Francisco and Washington DC, ZIP areas in Los Angeles (its source, the LA County assessor roll, carries no neighborhood). To test: Search tab, tap City, pick Los Angeles, then tap the Area field.
 
-WHAT THE APP DOES
-Find A Crib is an informational map of New York City's ~47,000 rent-stabilized buildings (public NYS/NYC records) with advertised rents, HPD violation records, and affordable-housing lotteries. It is not a marketplace and does not take applications or payments.
+WHERE THE DATA COMES FROM
+Every city is a public register, fetched as static JSON from findacrib.com, no key and no account: New York — NYS Homes and Community Renewal rent-stabilization register; Los Angeles — LA County Assessor parcels meeting LAHD's RSO criteria (2+ units, built on or before Oct 1, 1978), labelled "likely" in the app because a few exemptions cannot be derived from tax data; San Francisco — SF Rent Board Housing Inventory via DataSF, anonymised by the Rent Board to the block, which the app states on screen; Washington DC — DHCD RentRegistry. The app is informational, is not a broker, lists no apartments and takes no fee.
+
+NEW YORK-ONLY FEATURES
+Advertised rents, vouchers, HPD violations and lotteries are New York feeds. In the other three cities those filters are not shown at all, rather than shown and returning nothing.
 
 SIGN-IN
-No account is needed to use the app. Signing in is optional; it syncs saved buildings with our website and reveals the building's registered managing agent (public HPD registration data). Two ways in: Google, or email + password (Profile → Continue with email → "No account? Create one"; accounts are active immediately, no verification step). No demo account is required — create one in seconds with any email, or use any Google account. "Forgot password?" emails a reset link to findacrib.com/reset/. Account deletion is under Profile → Delete account.
+No account is needed to use the app. Signing in is optional; it syncs saved buildings with our website and reveals the building's registered managing agent (public HPD registration data). Sign in with Apple is the first option on the Profile tab when signed out, above Google and email. It limits collection to name and email, supports Hide My Email, and nothing is collected for advertising. No demo account is required — create one in seconds with any email, or use any Google account. Account deletion is under Profile → Delete account.
 
 LOCATION
-The app never requests location permission. The map is Apple Maps; the "Search this area" button uses the visible map region, not the device location.
+The app never requests location permission. The map is Apple Maps; "Search this area" uses the visible map region, not the device location.
 
 DATA REFRESH
-On launch the app refreshes five public JSON files from findacrib.com; without a network it falls back to the copy bundled in the app, so every screen works offline in review.
+On launch the app refreshes public JSON files from findacrib.com; without a network it falls back to the copy bundled in the app, so New York works offline in review. The three new cities download on first use.
 
 CONTACT
 Any question at all: the email and phone above.
@@ -254,9 +272,13 @@ def apply(asc, cfg):
     asc.patch(f"/ageRatingDeclarations/{ids['info']}", {"data": {"type": "ageRatingDeclarations", "id": ids["info"], "attributes": AGE_RATING}})
     print("    age rating (4+)")
     detail = asc.get(f"/appStoreVersions/{ids['version']}/appStoreReviewDetail").get("data")
+    # The notes name the build under review; ask the version which one that is
+    # rather than leaving a number in the file to go stale.
+    b = asc.get(f"/appStoreVersions/{ids['version']}/build").get("data")
+    notes = REVIEW_NOTES.replace("__BUILD__", (b or {}).get("attributes", {}).get("version", "?"))
     attrs = {"contactFirstName": cfg["ASC_CONTACT_FIRST_NAME"], "contactLastName": cfg["ASC_CONTACT_LAST_NAME"],
              "contactPhone": cfg["ASC_CONTACT_PHONE"], "contactEmail": cfg["ASC_CONTACT_EMAIL"],
-             "demoAccountRequired": False, "notes": REVIEW_NOTES}
+             "demoAccountRequired": False, "notes": notes}
     if detail:
         asc.patch(f"/appStoreReviewDetails/{detail['id']}", {"data": {"type": "appStoreReviewDetails", "id": detail["id"], "attributes": attrs}})
     else:

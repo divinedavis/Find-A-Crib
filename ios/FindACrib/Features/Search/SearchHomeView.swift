@@ -8,6 +8,7 @@ struct SearchHomeView: View {
     @AppStorage("lastQuery") private var lastQueryData: Data = Data()
     @State private var query = SearchQuery()
     @State private var showLocation = false
+    @State private var showCity = false
     @State private var count = 0
 
     var body: some View {
@@ -17,9 +18,34 @@ struct SearchHomeView: View {
 
 
                 VStack(alignment: .leading, spacing: 18) {
+                    // City first: it decides what the Location field can offer.
+                    VStack(alignment: .leading, spacing: 10) {
+                        SEFieldLabel(text: "City")
+                        SEFieldBox {
+                            HStack(spacing: 10) {
+                                Image(systemName: "building.2").font(.system(size: 18, weight: .bold)).foregroundStyle(SE.royal).accessibilityHidden(true)
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(store.city.name).font(.se(19)).foregroundStyle(SE.ink)
+                                    Text(store.loaded ? "\(store.buildings.count.formatted()) \(store.city.statusLabel.lowercased()) buildings"
+                                                      : "Loading \(store.city.name)…")
+                                        .font(.se(13)).foregroundStyle(SE.ink3)
+                                }
+                                Spacer(minLength: 0)
+                                Image(systemName: "chevron.down").font(.system(size: 13, weight: .bold)).foregroundStyle(SE.ink3)
+                            }
+                            .padding(.horizontal, 12).padding(.vertical, 6)
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture { showCity = true }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityIdentifier("city-field")
+                        .accessibilityAddTraits(.isButton)
+                        .accessibilityLabel("City: \(store.city.name)")
+                    }
+
                     // Location
                     VStack(alignment: .leading, spacing: 10) {
-                        SEFieldLabel(text: "Location")
+                        SEFieldLabel(text: store.city.isNYC ? "Location" : store.city.regionLabel)
                         // Not a Button: chips inside a Button label get flattened into
                         // one accessibility element, so their remove buttons vanish
                         // for VoiceOver and XCUITest. The box takes the tap instead.
@@ -27,7 +53,7 @@ struct SearchHomeView: View {
                             HStack(spacing: 10) {
                                 Image(systemName: "mappin").font(.system(size: 18, weight: .bold)).foregroundStyle(SE.royal).accessibilityHidden(true)
                                 if query.locations.isEmpty {
-                                    Text("Neighborhood, borough or ZIP").font(.se(19)).foregroundStyle(SE.ink3)
+                                    Text(store.city.searchPlaceholder).font(.se(19)).foregroundStyle(SE.ink3)
                                     Spacer(minLength: 0)
                                 } else {
                                     ScrollView(.horizontal, showsIndicators: false) {
@@ -52,18 +78,26 @@ struct SearchHomeView: View {
                     // Price
                     PriceRangeFields(minPrice: $query.minPrice, maxPrice: $query.maxPrice)
 
-                    // Show: multi-select. Every building here is rent-stabilized, so
-                    // that box is the always-on baseline; the others narrow it.
-                    VStack(alignment: .leading, spacing: 10) {
-                        SEFieldLabel(text: "Show")
-                        ShowChecklist(query: $query)
-                    }
-                    VStack(alignment: .leading, spacing: 10) {
-                        SEFieldLabel(text: "Bedrooms")
-                        SESegmentRow(options: [(0, "Studio"), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: $query.beds)
-                            .accessibilityIdentifier("beds-row")
-                        Text("From recent listings — picking a size narrows to buildings with an advertised apartment.")
-                            .font(.se(14)).foregroundStyle(SE.ink3)
+                    // Show and Bedrooms both read New York feeds — advertised
+                    // rents, vouchers and lotteries. The other cities publish a
+                    // register and nothing else, so offering those filters there
+                    // would be offering a way to get zero results.
+                    if store.city.hasNYCExtras {
+                        // Show: multi-select. Every building here is rent-stabilized, so
+                        // that box is the always-on baseline; the others narrow it.
+                        VStack(alignment: .leading, spacing: 10) {
+                            SEFieldLabel(text: "Show")
+                            ShowChecklist(query: $query)
+                        }
+                        VStack(alignment: .leading, spacing: 10) {
+                            SEFieldLabel(text: "Bedrooms")
+                            SESegmentRow(options: [(0, "Studio"), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: $query.beds)
+                                .accessibilityIdentifier("beds-row")
+                            Text("From recent listings — picking a size narrows to buildings with an advertised apartment.")
+                                .font(.se(14)).foregroundStyle(SE.ink3)
+                        }
+                    } else {
+                        Text(store.city.sourceNote).font(.se(14)).foregroundStyle(SE.ink3)
                     }
 
                     SEPrimaryButton(title: "Search \(count.formatted()) \(query.noun)") { runSearch() }
@@ -97,6 +131,20 @@ struct SearchHomeView: View {
         .scrollDismissesKeyboard(.interactively)
         .sheet(isPresented: $showLocation) {
             LocationPickerView(selected: $query.locations)
+        }
+        .sheet(isPresented: $showCity) {
+            CityPickerView { c in
+                // A scope from the old city cannot match anything in the new
+                // one, and the New York-only flags have no data behind them
+                // elsewhere, so both are cleared rather than silently emptying
+                // the results.
+                query.locations = []
+                if !c.hasNYCExtras {
+                    query.availableOnly = false; query.vouchersOnly = false
+                    query.hcrOnly = false; query.voucherLiveOnly = false; query.beds = []
+                }
+                Task { await store.switchCity(to: c) }
+            }
         }
         .onAppear {
             if query == SearchQuery(), let q = try? JSONDecoder().decode(SearchQuery.self, from: lastQueryData) { query = q.normalized }

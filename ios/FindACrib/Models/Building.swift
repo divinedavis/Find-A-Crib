@@ -13,7 +13,8 @@ struct Building: Identifiable, Codable, Hashable {
     let s: [String]?        // DHCR status lines
     let yr: Int?
     let u: Int?             // units
-    let nb: String?         // 2020 NTA neighborhood name
+    let nb: String?         // 2020 NTA neighborhood name (SF/DC carry their own)
+    let mr: Int?            // median reported/registered rent — SF and DC only
     let h: HPD?
 
     var id: String { bbl }
@@ -50,13 +51,19 @@ struct Building: Identifiable, Codable, Hashable {
         yr = try c.decodeIfPresent(Int.self, forKey: .yr)
         u = try c.decodeIfPresent(Int.self, forKey: .u)
         nb = try c.decodeIfPresent(String.self, forKey: .nb)
+        // SF reports a block median, DC a registered legal rent; both arrive as
+        // a number, and NYC has no such field at all.
+        if let mi = try? c.decodeIfPresent(Int.self, forKey: .mr) { mr = mi }
+        else if let md = try? c.decodeIfPresent(Double.self, forKey: .mr) { mr = Int(md) }
+        else { mr = nil }
         h = try c.decodeIfPresent(HPD.self, forKey: .h)
     }
 
     init(bbl: String, b: String, a: String, z: String?, lat: Double, lng: Double,
-         s: [String]? = nil, yr: Int? = nil, u: Int? = nil, nb: String? = nil, h: HPD? = nil) {
+         s: [String]? = nil, yr: Int? = nil, u: Int? = nil, nb: String? = nil,
+         mr: Int? = nil, h: HPD? = nil) {
         self.bbl = bbl; self.b = b; self.a = a; self.z = z; self.lat = lat; self.lng = lng
-        self.s = s; self.yr = yr; self.u = u; self.nb = nb; self.h = h
+        self.s = s; self.yr = yr; self.u = u; self.nb = nb; self.mr = mr; self.h = h
     }
 
     var coordinate: CLLocationCoordinate2D { .init(latitude: lat, longitude: lng) }
@@ -68,8 +75,23 @@ struct Building: Identifiable, Codable, Hashable {
     var openViolations: Int { h?.violations?.open ?? 0 }
     var openComplaints: Int { h?.complaints?.open ?? 0 }
     var statusLine: String { (s ?? []).map { AddressCase.pretty($0) }.joined(separator: " · ") }
-    var webURL: URL {
-        URL(string: "https://findacrib.com/building/\(boroughSlug)/\(Slug.make(a))-\(bbl)/")!
+    /// NYC has a page per building; the other cities do not, so those link to
+    /// the city map with the building already open (#d=<id>, what the web's own
+    /// share button produces).
+    func webURL(in city: City) -> URL {
+        if city.isNYC {
+            return URL(string: "https://findacrib.com/building/\(boroughSlug)/\(Slug.make(a))-\(bbl)/")!
+        }
+        let id = bbl.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? bbl
+        return URL(string: "https://findacrib.com/\(city.id)/#d=\(id)")!
+    }
+    /// Where this building sits, in whatever terms its city uses.
+    func place(in city: City) -> String {
+        switch city.regionKind {
+        case .borough: return nb ?? borough
+        case .neighborhood: return nb ?? city.name
+        case .zip: return z.map { "ZIP \($0)" } ?? city.name
+        }
     }
 }
 

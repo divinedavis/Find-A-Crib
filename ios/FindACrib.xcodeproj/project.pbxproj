@@ -16,6 +16,7 @@
 		1488C890724AD279E0177491 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB6A940EC2510A1E63699B6A /* RootView.swift */; };
 		17B1E6D55E507C00DC25FB0E /* ImageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA50D389BB3AB7B341BD720D /* ImageService.swift */; };
 		1B0A6E98D9106FCDFD97D973 /* fmr.json in Resources */ = {isa = PBXBuildFile; fileRef = BE5021FFFE6C939F06530FD2 /* fmr.json */; };
+		1D2C0E5ACC26EC55A19AD0F3 /* City.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EDD14746F84061336060AD5 /* City.swift */; };
 		1D4842B47A65A9237090D64D /* PlusStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82AEFA1B93D2073218086C5 /* PlusStore.swift */; };
 		216D8003A64546DC1DED920D /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96A59BAA0D560AEC7D0E1BF8 /* Theme.swift */; };
 		239814C37ED0E60FC84485B9 /* FindACribUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01F62B1CE3CCF2DAD07279F9 /* FindACribUITests.swift */; };
@@ -36,6 +37,7 @@
 		77119B1CD94A4E7C0C3B77D4 /* MyActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67EAA0737B2B2E5474B5BE9D /* MyActivityView.swift */; };
 		7AFD10F6B321EADAB58210EA /* SearchQuery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C5230FE7E960A89326516B1 /* SearchQuery.swift */; };
 		975FC0D78B115A6A80887B03 /* buildings.slim.json.gz in Resources */ = {isa = PBXBuildFile; fileRef = 7AB083E634E08974E9E2C973 /* buildings.slim.json.gz */; };
+		A200EEBA4BB5BBA64BBDA05A /* CityPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F98DDB6CAE27151A26A25D9 /* CityPickerView.swift */; };
 		A9D531537DD9B5581365FBFB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CCFBDF3CE45EAFE74FADE6C4 /* Assets.xcassets */; };
 		B111E02FFA19C4DE7A92BCBB /* Gunzip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F650FE59DC17EC3E4DC6591 /* Gunzip.swift */; };
 		B8568A5D36520E6A5FCCC98A /* SourceSans3-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = DBADFE6B0EF45D112E3C4837 /* SourceSans3-Bold.ttf */; };
@@ -81,7 +83,9 @@
 		3ED34FDA9213D6B7F0195FB7 /* DataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataStore.swift; sourceTree = "<group>"; };
 		41043E1D2462CF0BA147F621 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
 		44FBB961CA3E35950616322D /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+		4F98DDB6CAE27151A26A25D9 /* CityPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CityPickerView.swift; sourceTree = "<group>"; };
 		5A8CDE81BD0E7DDBEBBC1042 /* Building.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Building.swift; sourceTree = "<group>"; };
+		5EDD14746F84061336060AD5 /* City.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = City.swift; sourceTree = "<group>"; };
 		5F0A512AC04B8BF2FA246DAF /* SourceSans3-Black.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SourceSans3-Black.ttf"; sourceTree = "<group>"; };
 		67EAA0737B2B2E5474B5BE9D /* MyActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyActivityView.swift; sourceTree = "<group>"; };
 		704D4F6DFB370ACF11ACF60E /* FindACribApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FindACribApp.swift; sourceTree = "<group>"; };
@@ -117,7 +121,7 @@
 		EA50D389BB3AB7B341BD720D /* ImageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageService.swift; sourceTree = "<group>"; };
 		EFD73F478D420E114F0C82CB /* FiltersSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FiltersSheet.swift; sourceTree = "<group>"; };
 		F4EAE491E6B0AE7EF404FA62 /* HPDRecords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HPDRecords.swift; sourceTree = "<group>"; };
-		"TEMP_201BC2C9-686D-4EF9-BF34-30E8D61E59BF" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_FF26CB98-1C4D-47A8-A40F-BBF95F38657E" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -277,6 +281,7 @@
 		AF1D3552858B34257CB7534D /* Search */ = {
 			isa = PBXGroup;
 			children = (
+				4F98DDB6CAE27151A26A25D9 /* CityPickerView.swift */,
 				3C345F6E17169EEB81A7265B /* LocationPickerView.swift */,
 				7E81DF56B127517559D83AFC /* SearchHomeView.swift */,
 			);
@@ -324,15 +329,16 @@
 			isa = PBXGroup;
 			children = (
 				5A8CDE81BD0E7DDBEBBC1042 /* Building.swift */,
+				5EDD14746F84061336060AD5 /* City.swift */,
 				3C5230FE7E960A89326516B1 /* SearchQuery.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
 		};
-		"TEMP_CFCC4F5A-3698-4435-851A-A365C5712960" /* ios */ = {
+		"TEMP_316D446B-FF3C-442E-8CFD-C3FD36140CC0" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_201BC2C9-686D-4EF9-BF34-30E8D61E59BF" /* Secrets.xcconfig */,
+				"TEMP_FF26CB98-1C4D-47A8-A40F-BBF95F38657E" /* Secrets.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -470,6 +476,8 @@
 				2B4DF01382763EDD8546E20A /* Building.swift in Sources */,
 				57861D606FFBA7F23A414A91 /* BuildingCard.swift in Sources */,
 				55415570A82F92F6EDCC19C8 /* BuildingDetailView.swift in Sources */,
+				1D2C0E5ACC26EC55A19AD0F3 /* City.swift in Sources */,
+				A200EEBA4BB5BBA64BBDA05A /* CityPickerView.swift in Sources */,
 				07C22BCCE603D9800EE7EE13 /* Components.swift in Sources */,
 				FF9A0CEB29AD7474B6983303 /* DataStore.swift in Sources */,
 				372BCD3B0D02BF530AEFDD93 /* EmailSignInView.swift in Sources */,
@@ -596,7 +604,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 24;
+				CURRENT_PROJECT_VERSION = 27;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -616,7 +624,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.1;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -630,7 +638,7 @@
 		};
 		4A043B04EA1D2F1BD0250C61 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_201BC2C9-686D-4EF9-BF34-30E8D61E59BF" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_FF26CB98-1C4D-47A8-A40F-BBF95F38657E" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -671,7 +679,7 @@
 		};
 		7B4EAA1664EF270AD8C579E8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_201BC2C9-686D-4EF9-BF34-30E8D61E59BF" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_FF26CB98-1C4D-47A8-A40F-BBF95F38657E" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -744,7 +752,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 24;
+				CURRENT_PROJECT_VERSION = 27;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -758,7 +766,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.1;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

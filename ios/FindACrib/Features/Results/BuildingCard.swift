@@ -92,7 +92,7 @@ struct BuildingCard: View {
                 Text(store.isSyntheticHCR(b) ? "Listed on HousingSearch.ny.gov" : attribution).font(.se(18)).foregroundStyle(SE.ink2)
 
                 HStack(spacing: 14) {
-                    ShareLink(item: b.webURL) {
+                    ShareLink(item: b.webURL(in: store.city)) {
                         HStack(spacing: 8) {
                             Image(systemName: "square.and.arrow.up").font(.system(size: 15, weight: .semibold))
                             Text("Share").font(.se(18, .bold))

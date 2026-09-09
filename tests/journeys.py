@@ -61,19 +61,12 @@ class Runner:
 
     # ---- browser plumbing -------------------------------------------------
     def context(self, p, device):
-        # bypass_csp: the live site's Content Security Policy has no
-        # 'unsafe-eval', and Playwright's wait_for_function polls by building a
-        # Function inside the page — under that CSP it throws EvalError at once,
-        # the wait returns immediately, and every "should fill in" assertion
-        # fails on an empty button (2026-09-09, live only; the local pass is
-        # served without headers). These are functional journeys, not a CSP
-        # test — the console filter already drops CSP reports.
         if device == 'phone':
             b = p.webkit.launch(headless=not self.headed)
-            ctx = b.new_context(**p.devices['iPhone 14 Pro'], bypass_csp=True)
+            ctx = b.new_context(**p.devices['iPhone 14 Pro'])
         else:
             b = p.chromium.launch(headless=not self.headed)
-            ctx = b.new_context(viewport={'width': 1300, 'height': 900}, bypass_csp=True)
+            ctx = b.new_context(viewport={'width': 1300, 'height': 900})
         return b, ctx
 
     def page(self, ctx, j):
@@ -101,7 +94,7 @@ class Runner:
             page.goto('about:blank')
         page.goto(LIVE + path, wait_until='networkidle', timeout=90000)
         if wait_pins:
-            page.wait_for_function('() => ' + PINS + ' > 0', timeout=60000)
+            Runner.wait_until(page, PINS + ' > 0', timeout=60000)
         time.sleep(1.5)
 
     # ---- helpers ----------------------------------------------------------
@@ -130,12 +123,30 @@ class Runner:
         time.sleep(0.5)
 
     @staticmethod
+    def wait_until(page, js, timeout=20000, step=0.25):
+        """Poll `js` (an expression) from here until it is truthy.
+
+        NOT page.wait_for_function: that polls by building a Function inside
+        the page, which the live site's CSP (no 'unsafe-eval') refuses — on
+        WebKit it throws EvalError immediately, the wait returns at once, and
+        every assertion after it reads a half-drawn page. page.evaluate is
+        injected over the debugging protocol and is unaffected, so polling it
+        from Python tests the real production policy. (2026-09-09)
+        """
+        end = time.time() + timeout / 1000.0
+        while time.time() < end:
+            try:
+                if page.evaluate('() => !!(' + js + ')'):
+                    return True
+            except Exception:
+                pass
+            time.sleep(step)
+        return False
+
+    @staticmethod
     def sheet_loaded(page, timeout=20000):
         """The open-data sheet has answered: its body no longer says Loading."""
-        try:
-            page.wait_for_function("!document.getElementById('viol-sheet').hidden && !/Loading /.test(document.getElementById('viol-body').innerText)", timeout=timeout)
-        except Exception:
-            pass
+        Runner.wait_until(page, "!document.getElementById('viol-sheet').hidden && !/Loading /.test(document.getElementById('viol-body').innerText)", timeout)
 
     @staticmethod
     def ok(cond, msg, j):
@@ -211,11 +222,8 @@ class Runner:
         self.ok(vi >= 0 and labels[vi + 1].startswith('Bedbug inspections') and labels[vi + 2].startswith('Rodent'), f'Bedbugs and Rodents should sit right under Violations, got {labels[:5]}', j)
         # Six Socrata queries; the slow one has taken 3s+, so wait for the
         # counts rather than a fixed pause (flaked on 2026-09-09).
-        try:
-            # every count, and the bedbug/rodent "this year" verdicts, which arrive from their own queries
-            page.wait_for_function("[...document.querySelectorAll('#detail-sheet [data-oc]')].every(e=>e.textContent.trim().startsWith('·') && (!/bedbugs|rodents/.test(e.dataset.oc) || /this year/.test(e.textContent)))", timeout=20000)
-        except Exception:
-            pass
+        # every count, and the bedbug/rodent "this year" verdicts, which arrive from their own queries
+        self.wait_until(page, "[...document.querySelectorAll('#detail-sheet [data-oc]')].every(e=>e.textContent.trim().startsWith('\u00b7') && (!/bedbugs|rodents/.test(e.dataset.oc) || /this year/.test(e.textContent)))")
         counts = page.evaluate("Object.fromEntries([...document.querySelectorAll('#detail-sheet [data-oc]')].map(e=>[e.dataset.oc, e.textContent.trim()]))")
         self.ok(all(v.startswith('·') for v in counts.values()), f'open-data counts should fill in on the buttons within 20s, got {counts}', j)
         tones = page.evaluate("Object.fromEntries(['bedbugs','rodents'].map(k=>[k, document.querySelector('#detail-sheet [data-detail=\"'+k+'\"]').className]))")
@@ -405,7 +413,7 @@ class Runner:
         for city, low in (('la', 1000), ('sf', 1000), ('dc', 100), ('westchester', 100)):
             page.goto(f'{LIVE}/{city}/', wait_until='networkidle', timeout=90000)
             try:
-                page.wait_for_function('() => ' + PINS + ' > 0', timeout=120000)   # LA is 67k parcels
+                self.wait_until(page, PINS + ' > 0', timeout=120000)   # LA is 67k parcels
             except Exception:
                 j.errors.append(f'/{city}/ never drew pins'); continue
             time.sleep(1)

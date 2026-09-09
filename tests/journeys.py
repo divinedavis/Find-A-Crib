@@ -426,6 +426,21 @@ class Runner:
         self.ok(r.status == 401, f'/api/alerts/prefs without a session should be 401, got {r.status}', j)
         j.notes.append('prefs endpoint gated')
 
+    def j_app_chip(self, page, j, device):
+        # iPhone app chip right of Alerts (asked 2026-09-09): iPhones see it, desktop never does.
+        self.boot(page)
+        info = page.evaluate("(()=>{const a=document.getElementById('pill-app-m'), al=document.getElementById('pill-alerts-m'); const r=a.getBoundingClientRect(), ar=al.getBoundingClientRect(); return {shown:r.width>0&&getComputedStyle(a).display!=='none', href:a.getAttribute('href'), left:r.left, alertsRight:ar.right, sameRow:Math.abs(r.top-ar.top)<4, overflow:document.documentElement.scrollWidth>innerWidth, ios:document.documentElement.classList.contains('ios')}})()")
+        self.ok(info['href'].startswith('https://apps.apple.com/us/app/find-a-crib/id6807549249'), f"chip should link to the App Store listing: {info['href']}", j)
+        self.ok(not info['overflow'], 'page must not scroll sideways with the chip in the row', j)
+        if device == 'phone':
+            self.ok(info['ios'], 'an iPhone should be detected as iOS', j)
+            self.ok(info['shown'], 'iPhone app chip should be visible on an iPhone', j)
+            self.ok(info['sameRow'] and info['left'] >= info['alertsRight'] - 1, f"chip should sit right of Alerts: {info}", j)
+            j.notes.append('chip right of Alerts')
+        else:
+            self.ok(not info['shown'], 'iPhone app chip must not show on desktop', j)
+            j.notes.append('hidden on desktop')
+
     def j_signin_modal(self, page, j, device):
         self.boot(page)
         self.click(page, '#auth-btn'); time.sleep(0.6)
@@ -435,7 +450,7 @@ class Runner:
         self.ok(page.evaluate("document.getElementById('auth-modal').hidden"), 'modal should close', j)
 
     JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'pin_and_list',
-                'filters_and_save', 'deep_links_and_view', 'city_pages', 'memory', 'alerts_page', 'signin_modal']
+                'filters_and_save', 'deep_links_and_view', 'city_pages', 'memory', 'alerts_page', 'signin_modal', 'app_chip']
 
     # ---- run --------------------------------------------------------------
     def run(self):

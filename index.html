@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <script>if(/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1))document.documentElement.classList.add("ios")</script>
 <title>Find A Crib — Rent-Stabilized NYC: Manhattan, Bronx, Brooklyn, Queens + Staten Island</title>
 <meta name="application-name" content="Find A Crib" />
 <meta name="description" content="Find NYC rent-stabilized apartments across Manhattan, Bronx, Brooklyn, Queens & Staten Island." />
@@ -430,6 +431,8 @@
   .toggle-pill.active { border-color: var(--blue); color: var(--blue); background: var(--blue-soft); }
   .toggle-pill .fav-heart { color: #e0457b; }
   .mobile-only { display: none; }
+  /* iOS-only chips (the App Store link): html.ios comes from the head script */
+  html:not(.ios) .ios-only { display: none !important; }
 
   /* address search autocomplete dropdown (positioned under the search box via JS) */
   #search-ac { position: fixed; z-index: 1750; background: var(--surface); border: 1px solid var(--line);
@@ -1235,6 +1238,9 @@
     <!-- Phones: Alerts sits right of Saved (asked 2026-09-08). Desktop has its
          own Alerts chip at the end of the row, so this one is mobile-only. -->
     <a class="filter-pill desktop-chip mobile-only nyc-only" id="pill-alerts-m" href="/alerts/?src=chip-m" title="An email the minute a new lottery or re-rental opens in your borough">🔔 Alerts</a>
+    <!-- iPhones only (asked 2026-09-09): the App Store link right of Alerts.
+         html.ios is set by the head script; Android and desktop never see it. -->
+    <a class="filter-pill desktop-chip mobile-only nyc-only ios-only" id="pill-app-m" href="https://apps.apple.com/us/app/find-a-crib/id6807549249" rel="noopener" title="Find A Crib for iPhone — the same map and filters, on the App Store">📲 iPhone app</a>
     <!-- Hidden on phones, where the bottom control already carries Filters. It
          stays on desktop, which has no bottom control — this pill is the only
          way into the filters sheet there. -->

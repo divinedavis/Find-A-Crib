@@ -205,7 +205,7 @@ PHONE = """
           <rect x="186" y="272" width="44" height="40" rx="3"/>
           <rect x="8" y="272" width="42" height="40" rx="3"/>
         </g>
-        <g fill="#006aff">
+        <g fill="#2a6f7e">
           <path d="M96 96 l14 14 -14 14 -14-14z"/>
           <path d="M150 168 l11 11 -11 11 -11-11z"/>
           <path d="M40 214 l11 11 -11 11 -11-11z"/>
@@ -237,7 +237,7 @@ CREATIVE = f"""
     <div class="lockup">
       <span class="lock-mark">
         <svg viewBox="0 0 100 100"><path d="M50 12 88 50 50 88 12 50z" fill="#fff"/>
-        <path d="M50 33 67 50 50 67 33 50z" fill="#006aff"/></svg>
+        <path d="M50 33 67 50 50 67 33 50z" fill="#2a6f7e"/></svg>
       </span>
       <span class="lock-word">FINDACRIB</span>
     </div>
@@ -256,7 +256,7 @@ body { background:#000; }
 
 /* --- fake instagram chrome (preview file only) --- */
 .chrome { display:flex; align-items:center; gap:20px; padding:22px 30px; background:#111214; }
-.chrome .avatar { width:64px; height:64px; border-radius:50%; background:#006aff;
+.chrome .avatar { width:64px; height:64px; border-radius:50%; background:#2a6f7e;
   display:flex; align-items:center; justify-content:center; flex:none; }
 .chrome .avatar svg { width:38px; height:38px; }
 .chrome .who { flex:1; min-width:0; }
@@ -289,7 +289,7 @@ body { background:#000; }
   letter-spacing:-1.5px; transform:none; margin-top:6px; }
 
 .lockup { margin-top:30px; display:inline-flex; align-items:center; gap:12px;
-  background:#006aff; border-radius:8px; padding:11px 20px 11px 14px;
+  background:#2a6f7e; border-radius:8px; padding:11px 20px 11px 14px;
   box-shadow:0 6px 22px rgba(0,0,0,.45); }
 .lock-mark { width:34px; height:34px; display:block; }
 .lock-mark svg { width:100%; height:100%; display:block; }
@@ -310,10 +310,10 @@ body { background:#000; }
   padding:0 16px; box-shadow:0 3px 10px rgba(10,10,35,.16);
   white-space:nowrap; overflow:hidden;
   font:600 17px/1 -apple-system, "Helvetica Neue", Arial, sans-serif; color:#0a0a23; }
-.search .mag { color:#006aff; font-size:20px; }
+.search .mag { color:#2a6f7e; font-size:20px; }
 .callout { position:absolute; left:14px; right:14px; bottom:16px; background:#fff;
   border-radius:16px; padding:15px 17px; box-shadow:0 8px 22px rgba(10,10,35,.24);
-  border-left:6px solid #006aff; text-align:left; }
+  border-left:6px solid #2a6f7e; text-align:left; }
 .co-addr { white-space:nowrap; font:700 21px/1.2 -apple-system, "Helvetica Neue", Arial, sans-serif;
   color:#0a0a23; }
 .co-tag { margin-top:5px; white-space:nowrap;
@@ -338,7 +338,7 @@ VERIFIED = (
 
 MARK = (
     '<svg viewBox="0 0 100 100"><path d="M50 12 88 50 50 88 12 50z" fill="#fff"/>'
-    '<path d="M50 33 67 50 50 67 33 50z" fill="#006aff"/></svg>'
+    '<path d="M50 33 67 50 50 67 33 50z" fill="#2a6f7e"/></svg>'
 )
 
 

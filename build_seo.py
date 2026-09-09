@@ -1296,7 +1296,7 @@ def titlecase_addr(a):
 
 # ---- shared chrome ---------------------------------------------------------
 CSS = """
-:root{--blue:#006aff;--ink:#0a0a23;--ink2:#4a4a68;--line:#e2e6ea;--bg:#f7f8fa}
+:root{--blue:#2a6f7e;--ink:#0a0a23;--ink2:#4a4a68;--line:#e2e6ea;--bg:#f7f8fa}
 *{box-sizing:border-box}
 body{margin:0;font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg)}
 a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}

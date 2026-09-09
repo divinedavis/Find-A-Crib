@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <script>if(/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1))document.documentElement.classList.add("ios")</script>
 <title>Rent-Stabilized (RSO) Los Angeles — 67,000+ Likely-Covered Buildings | Find A Crib</title>
 <meta name="application-name" content="Find A Crib" />
 <meta name="description" content="Map 67,000+ Los Angeles buildings that meet the Rent Stabilization Ordinance criteria (2+ units, built before Oct 1979), derived from LA County assessor rolls. Verify any address on ZIMAS." />
@@ -25,9 +26,9 @@
 <link rel="dns-prefetch" href="https://maps.googleapis.com" />
 <link rel="dns-prefetch" href="https://dbaifotzwlxjvsxjohjt.supabase.co" />
 <!-- icons (favicon + iOS home-screen / iMessage fallback icon) -->
-<link rel="icon" href="/favicon.ico" sizes="any" />
-<link rel="icon" type="image/png" href="/favicon-32.png" sizes="32x32" />
-<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="icon" href="/favicon.ico?v=2" sizes="any" />
+<link rel="icon" type="image/png" href="/favicon-32.png?v=2" sizes="32x32" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2" />
 <!-- Open Graph: rich link preview in iMessage, Slack, Facebook, etc. -->
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="Find A Crib" />
@@ -160,7 +161,7 @@
            /* Oxanium is a wide chamfered face; the -0.5px tightening that suited
               the old grotesque closes its counters up. */
            letter-spacing: 0; }
-  .brand-dot { width: 22px; height: 22px; background: var(--blue-solid); border-radius: 6px; display: inline-block; transform: rotate(45deg); flex: none; }
+  .brand-dot { width: 22px; height: 22px; border-radius: 5px; display: inline-block; flex: none; }  /* the app icon: brand/mark.svg, scripts/make_icon.py */
   .brand-text { display: flex; flex-direction: column; line-height: 1.05; }
   .brand-sub { font-weight: 600; font-size: 11px; color: var(--blue); opacity: 0.7; letter-spacing: 0; margin-top: 1px;
                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
@@ -430,6 +431,8 @@
   .toggle-pill.active { border-color: var(--blue); color: var(--blue); background: var(--blue-soft); }
   .toggle-pill .fav-heart { color: #e0457b; }
   .mobile-only { display: none; }
+  /* iOS-only chips (the App Store link): html.ios comes from the head script */
+  html:not(.ios) .ios-only { display: none !important; }
 
   /* address search autocomplete dropdown (positioned under the search box via JS) */
   #search-ac { position: fixed; z-index: 1750; background: var(--surface); border: 1px solid var(--line);
@@ -1199,7 +1202,7 @@
 </head>
 <body>
 <header class="topbar">
-  <div class="brand"><span class="brand-dot"></span><span class="brand-text">Find A Crib<span class="brand-sub">(LA Rent Stabilized Homes)</span></span></div>
+  <div class="brand"><img class="brand-dot" src="/brand/mark.svg?v=2" alt="" width="22" height="22" decoding="async"><span class="brand-text">Find A Crib<span class="brand-sub">(LA Rent Stabilized Homes)</span></span></div>
   <nav class="city-nav" id="city-nav" aria-label="City">
     <a href="/" data-city-link="nyc">NYC</a><a href="/sf/" data-city-link="sf">SF</a><a href="/la/" data-city-link="la">LA</a><a href="/dc/" data-city-link="dc">DC</a>
     <!-- on phones the cities you are NOT in move in here, behind the chip -->
@@ -1235,6 +1238,9 @@
     <!-- Phones: Alerts sits right of Saved (asked 2026-09-08). Desktop has its
          own Alerts chip at the end of the row, so this one is mobile-only. -->
     <a class="filter-pill desktop-chip mobile-only nyc-only" id="pill-alerts-m" href="/alerts/?src=chip-m" title="An email the minute a new lottery or re-rental opens in your borough">🔔 Alerts</a>
+    <!-- iPhones only (asked 2026-09-09): the App Store link right of Alerts.
+         html.ios is set by the head script; Android and desktop never see it. -->
+    <a class="filter-pill desktop-chip mobile-only nyc-only ios-only" id="pill-app-m" href="https://apps.apple.com/us/app/find-a-crib/id6807549249" rel="noopener" title="Find A Crib for iPhone — the same map and filters, on the App Store">📲 iPhone app</a>
     <!-- Hidden on phones, where the bottom control already carries Filters. It
          stays on desktop, which has no bottom control — this pill is the only
          way into the filters sheet there. -->
@@ -6228,11 +6234,14 @@
     const body = document.getElementById('viol-body');
     body.innerHTML = '<div class="hpd-viol-note" style="border:none">Loading violations from NYC Open Data…</div>';
     violSheet.hidden = false;
+    const gen = sheetOpened();
     track('violations_open', { bbl: rec.bbl, via: 'detail_button' });
     loadViolations(rec.bbl).then(rows => {
+      if (!sheetCurrent(gen)) return;
       if (violSheet.hidden) return;
       body.innerHTML = violListHtml(rows);
     }).catch(() => {
+      if (!sheetCurrent(gen)) return;
       body.innerHTML = '<div class="hpd-viol-note" style="border:none">Couldn\'t reach NYC Open Data just now. Close and tap again to retry, or scroll to the HPD record below.</div>';
     });
   }
@@ -6246,11 +6255,14 @@
     const body = document.getElementById('viol-body');
     body.innerHTML = '<div class="hpd-viol-note" style="border:none">Loading complaints from NYC Open Data…</div>';
     violSheet.hidden = false;
+    const gen = sheetOpened();
     track('complaints_open', { bbl: rec.bbl, via: 'detail_button' });
     loadComplaints(rec.bbl).then(rows => {
+      if (!sheetCurrent(gen)) return;
       if (violSheet.hidden) return;
       body.innerHTML = compListHtml(rows);
     }).catch(() => {
+      if (!sheetCurrent(gen)) return;
       body.innerHTML = '<div class="hpd-viol-note" style="border:none">Couldn\'t reach NYC Open Data just now. Close and tap again to retry.</div>';
     });
   }
@@ -6292,7 +6304,11 @@
     const w = encodeURIComponent(where || c.bbl(bbl));
     const q = list ? `?$where=${w}&$order=${encodeURIComponent(c.order)}&$limit=60`
                    : `?$select=${encodeURIComponent('count(*) as n')}&$where=${w}`;
-    return fetch(OD + c.id + '.json' + q).then(r => r.ok ? r.json() : Promise.reject(r.status));
+    // Socrata answers 503 or hangs now and then (three identical queries on
+    // 2026-09-09: 4s, 8s, 503). One retry after a beat covers the blip; a real
+    // outage still surfaces as the "couldn't reach" note.
+    const go = () => fetch(OD + c.id + '.json' + q).then(r => r.ok ? r.json() : Promise.reject(r.status));
+    return go().catch(() => new Promise(res => setTimeout(res, 1500)).then(go));
   }
   // Counts on the four buttons. Each is one tiny query; the cache means a
   // building reopened in the same session asks nothing again.
@@ -6318,14 +6334,15 @@
     if (OD_COUNTS.has(rec.bbl)) { paint(OD_COUNTS.get(rec.bbl)); return; }
     const counts = {};
     const jobs = [];
+    // Six independent Socrata queries: paint each count the moment it lands.
+    // Waiting for all six meant one slow dataset (evictions has taken 3s+)
+    // left every button blank, which is what the journeys caught on 2026-09-09.
+    const arrived = () => { if (detailRec && detailRec.bbl === rec.bbl) paint(counts); };
     Object.keys(OPEN_DATA).forEach(k => {
-      jobs.push(odFetch(k, rec.bbl, false).then(rows => { counts[k] = Number(rows && rows[0] && rows[0].n) || 0; }).catch(() => {}));
-      if (OPEN_DATA[k].thisYear) jobs.push(odFetch(k, rec.bbl, false, OPEN_DATA[k].thisYear(rec.bbl, year)).then(rows => { counts[k + '_year'] = Number(rows && rows[0] && rows[0].n) || 0; }).catch(() => {}));
+      jobs.push(odFetch(k, rec.bbl, false).then(rows => { counts[k] = Number(rows && rows[0] && rows[0].n) || 0; arrived(); }).catch(() => {}));
+      if (OPEN_DATA[k].thisYear) jobs.push(odFetch(k, rec.bbl, false, OPEN_DATA[k].thisYear(rec.bbl, year)).then(rows => { counts[k + '_year'] = Number(rows && rows[0] && rows[0].n) || 0; arrived(); }).catch(() => {}));
     });
-    Promise.all(jobs).then(() => {
-        OD_COUNTS.set(rec.bbl, counts);
-        if (detailRec && detailRec.bbl === rec.bbl) paint(counts);
-      });
+    Promise.all(jobs).then(() => { OD_COUNTS.set(rec.bbl, counts); arrived(); });
   }
   function openOpenDataSheet(kind, rec) {
     const c = OPEN_DATA[kind];
@@ -6335,17 +6352,26 @@
     const body = document.getElementById('viol-body');
     body.innerHTML = `<div class="hpd-viol-note" style="border:none">Loading ${c.title.toLowerCase()} from NYC Open Data…</div>`;
     violSheet.hidden = false;
+    const gen = sheetOpened();
     track(kind + '_open', { bbl: rec.bbl, via: 'detail_button', n: known });
     odFetch(kind, rec.bbl, true).then(rows => {
+      if (!sheetCurrent(gen)) return;
       if (violSheet.hidden) return;
       document.getElementById('viol-sub').textContent = c.sub(rows.length);
       body.innerHTML = rows.length
         ? rows.map(c.row).join('') + `<div class="hpd-link"><a href="https://data.cityofnewyork.us/d/${c.id}" target="_blank" rel="noopener">Source: NYC Open Data ↗</a></div>`
         : `<div class="hpd-viol-note" style="border:none">${c.none}</div>`;
     }).catch(() => {
+      if (!sheetCurrent(gen)) return;
       body.innerHTML = '<div class="hpd-viol-note" style="border:none">Couldn\'t reach NYC Open Data just now. Close and tap again to retry.</div>';
     });
   }
+  // The four sheets share #viol-body. Each open bumps this and a response only
+  // writes if it is still the latest one, so a slow complaints query cannot
+  // overwrite the evictions sheet that replaced it (seen 2026-09-09).
+  let sheetGen = 0;
+  function sheetOpened() { return ++sheetGen; }
+  function sheetCurrent(g) { return g === sheetGen; }
   function closeViolSheet() { violSheet.hidden = true; }
   violSheet.addEventListener('click', e => {
     if (e.target === violSheet || e.target.closest('[data-viol="close"]')) closeViolSheet();

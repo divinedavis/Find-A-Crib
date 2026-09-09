@@ -1,18 +1,19 @@
 import SwiftUI
 
-/// StreetEasy's visual system, transcribed from the reference recording:
-/// navy chrome, royal-blue links and CTAs, pale-blue selection fills,
+/// StreetEasy's visual system, transcribed from the reference recording,
+/// recoloured 2026-09-09 to the app icon's teal (scripts/make_icon.py):
+/// deep-teal chrome, teal links and CTAs, pale-teal selection fills,
 /// hairline-bordered white cards on a light grey canvas, and a humanist
 /// sans (Source Sans 3) set heavy.
 enum SE {
-    static let navy      = Color(hex: 0x0E2A6E)
-    static let navyDeep  = Color(hex: 0x0A1F52)
-    static let royal     = Color(hex: 0x1B46E5)
-    static let royalDark = Color(hex: 0x1338C2)
+    static let navy      = Color(hex: 0x163C47)
+    static let navyDeep  = Color(hex: 0x0F2B33)
+    static let royal     = Color(hex: 0x2F7A8A)
+    static let royalDark = Color(hex: 0x255F6C)
     /// The "Rent stabilized" card label — green reads as a good thing.
     static let green     = Color(hex: 0x1E8E3E)
-    static let paleBlue  = Color(hex: 0xD8EAFB)
-    static let paleBand  = Color(hex: 0xE6F2FC)
+    static let paleBlue  = Color(hex: 0xD6ECF0)
+    static let paleBand  = Color(hex: 0xE6F3F5)
     static let ink       = Color(hex: 0x1A1A1A)
     static let ink2      = Color(hex: 0x4A4A4A)
     static let ink3      = Color(hex: 0x6F6F6F)

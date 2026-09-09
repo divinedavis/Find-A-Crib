@@ -28,7 +28,7 @@ UPEM, XH, CAP = 1000, 532, 690
 STEM = 167          # Oxanium 800 stem width, measured off the 'i'
 BAR_STROKE = 116    # the search field's outline: lighter than a stem on purpose
 INK = "#0a0a23"
-BLUE = "#006aff"
+BLUE = "#2a6f7e"
 
 _font = TTFont(FONT)
 _gs = _font.getGlyphSet()
@@ -135,7 +135,7 @@ if __name__ == "__main__":
     made = []
     for name, kw in VARIANTS.items():
         for theme, ink in (("", INK), ("-dark", "#eef0f6")):
-            blue = BLUE if not theme else "#5b9bff"
+            blue = BLUE if not theme else "#6cc0d0"
             svg, w, h = wordmark(ink=ink, blue=blue, **kw)
             p = os.path.join(OUT, f"{name}{theme}.svg")
             open(p, "w").write(svg)

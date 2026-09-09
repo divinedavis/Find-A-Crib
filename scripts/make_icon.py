@@ -24,13 +24,13 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 IOS_ICON = os.path.join(ROOT, "ios/FindACrib/Resources/Assets.xcassets/AppIcon.appiconset/icon-1024.png")
 
 # Teal field: darker rim, lit centre (sampled off the reference)
-RIM = (40, 92, 105)
-MID = (60, 126, 140)
-CORE = (96, 166, 178)
+RIM = (30, 76, 88)
+MID = (56, 122, 136)
+CORE = (86, 158, 170)
 # Glyph
 GLYPH_TOP = (255, 255, 255)
-GLYPH_BOT = (214, 226, 229)
-BEVEL = (168, 192, 198)
+GLYPH_BOT = (226, 236, 238)
+BEVEL = (168, 196, 204)     # inner bottom-edge shade only
 SHADOW = (14, 44, 54)
 
 S = 1024                      # master size; everything else is a resample
@@ -84,36 +84,31 @@ def render(size=S):
     img = field(size).convert("RGBA")
     mask = glyph_mask(size)
     u = size / 1024
-    # a soft halo behind the glyph, the lit patch the reference has around its letter
-    halo = Image.new("RGBA", (size, size), (255, 255, 255, 0))
-    halo.putalpha(mask.filter(ImageFilter.GaussianBlur(90 * u)).point(lambda v: int(v * 0.22)))
-    img.alpha_composite(halo)
-    # soft shadow under the glyph
+    # a crisp, close shadow under the glyph (a wide one blurred the edge)
     sh = Image.new("RGBA", (size, size), SHADOW + (0,))
-    sh.putalpha(mask.point(lambda v: int(v * 0.55)))
-    sh = sh.filter(ImageFilter.GaussianBlur(18 * u))
-    sh = ImageChops.offset(sh, 0, int(22 * u))
+    sh.putalpha(mask.point(lambda v: int(v * 0.5)))
+    sh = sh.filter(ImageFilter.GaussianBlur(6 * u))
+    sh = ImageChops.offset(sh, 0, int(12 * u))
     img.alpha_composite(sh)
-    # bevel: the mask slightly enlarged, in the darker edge tone
-    bev = Image.new("RGBA", (size, size), BEVEL + (255,))
-    bev.putalpha(mask.filter(ImageFilter.MaxFilter(int(2 * SS * u) * 2 + 1)))
-    img.alpha_composite(bev)
-    # the glyph itself: vertical sheen, brighter at the top
+    # the glyph: full mask, pure white edge, a gentle sheen toward the bottom
     sheen = Image.new("RGBA", (size, size))
     sp = sheen.load()
     for y in range(size):
         t = y / size
-        t = min(1.0, max(0.0, (t - 0.28) / 0.50))
+        t = min(1.0, max(0.0, (t - 0.30) / 0.48))
         c = tuple(int(GLYPH_TOP[i] + (GLYPH_BOT[i] - GLYPH_TOP[i]) * t) for i in range(3))
         for x in range(size): sp[x, y] = c + (255,)
-    # inset the fill by ~1px so the bevel shows as a hairline
-    inner = mask.filter(ImageFilter.MinFilter(3))
-    sheen.putalpha(inner)
+    sheen.putalpha(mask)
     img.alpha_composite(sheen)
-    # a light catch along the top edges of the roofs
+    # emboss, inside the shape: a hairline shade along the bottom edges and a
+    # light catch along the top edges — the edge itself stays white
+    inner = mask.filter(ImageFilter.MinFilter(3))
+    bottom = ImageChops.subtract(inner, ImageChops.offset(inner, 0, -int(9 * u)))
+    sd = Image.new("RGBA", (size, size), BEVEL + (0,)); sd.putalpha(bottom.filter(ImageFilter.GaussianBlur(2 * u)).point(lambda v: int(v * 0.9)))
+    img.alpha_composite(sd)
     hl = Image.new("RGBA", (size, size), (255, 255, 255, 0))
-    edge = ImageChops.subtract(inner, ImageChops.offset(inner, 0, int(6 * u)))
-    hl.putalpha(edge.point(lambda v: int(v * 0.9)))
+    top = ImageChops.subtract(inner, ImageChops.offset(inner, 0, int(9 * u)))
+    hl.putalpha(top)
     img.alpha_composite(hl)
     return img
 
@@ -137,15 +132,15 @@ def svg():
       <stop offset="0" stop-color="rgb{CORE}"/><stop offset=".35" stop-color="rgb{MID}"/><stop offset="1" stop-color="rgb{RIM}"/>
     </radialGradient>
     <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-      <stop offset=".28" stop-color="rgb{GLYPH_TOP}"/><stop offset=".78" stop-color="rgb{GLYPH_BOT}"/>
+      <stop offset=".30" stop-color="rgb{GLYPH_TOP}"/><stop offset=".78" stop-color="rgb{GLYPH_BOT}"/>
     </linearGradient>
-    <filter id="s" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="22" stdDeviation="18" flood-color="rgb{SHADOW}" flood-opacity=".55"/></filter>
+    <filter id="s" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="14" stdDeviation="9" flood-color="rgb{SHADOW}" flood-opacity=".5"/></filter>
     <clipPath id="c"><rect width="1024" height="1024" rx="229"/></clipPath>
     <mask id="m"><rect width="1024" height="1024" fill="#fff"/><rect x="{x0:.0f}" y="{y0:.0f}" width="{x1 - x0:.0f}" height="{y1 - y0:.0f}" fill="#000"/><circle cx="{(x0 + x1) / 2:.0f}" cy="{y0:.0f}" r="{r:.0f}" fill="#000"/></mask>
   </defs>
   <g clip-path="url(#c)">
     <rect width="1024" height="1024" fill="url(#f)"/>
-    <g mask="url(#m)" filter="url(#s)" stroke="rgb{BEVEL}" stroke-width="6" stroke-linejoin="round" fill="url(#g)">
+    <g mask="url(#m)" filter="url(#s)" fill="url(#g)">
       {"".join(f'<polygon points="{pts(p)}"/>' for p in polys)}
     </g>
   </g>

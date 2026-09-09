@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Regenerate the social-share banner (og-image.png) for Find A Crib.
 
-1200x630, blue gradient, app icon + brand, subtitle, borough list,
+1200x630, teal gradient, app icon + brand, subtitle, borough list,
 and a white pill with the domain. Run: python3 scripts/make_og_image.py
 """
 import os
@@ -10,9 +10,9 @@ from PIL import Image, ImageDraw, ImageFont
 W, H = 1200, 630
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "og-image.png")
 
-# diagonal gradient: deep blue (top-left) -> indigo/violet (bottom-right)
-c1 = (43, 57, 200)    # 2b39c8
-c2 = (108, 64, 200)   # 6c40c8
+# diagonal gradient: lit teal (top-left) -> teal rim (bottom-right), the icon's field
+c1 = (96, 166, 178)   # the icon's lit teal (scripts/make_icon.py CORE)
+c2 = (40, 92, 105)    # its rim
 img = Image.new("RGB", (W, H))
 px = img.load()
 for y in range(H):

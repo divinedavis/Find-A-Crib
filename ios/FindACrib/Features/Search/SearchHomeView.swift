@@ -475,7 +475,7 @@ struct HeroTile: View {
 struct BrandCard: View {
     var body: some View {
         ZStack {
-            LinearGradient(colors: [Color(hex: 0xDCE9F5), Color(hex: 0xF3F7FB)], startPoint: .top, endPoint: .bottom)
+            LinearGradient(colors: [Color(hex: 0xDDEEF1), Color(hex: 0xF2F8F9)], startPoint: .top, endPoint: .bottom)
             VStack(spacing: 6) {
                 HStack(spacing: 8) {
                     BrandMark().frame(width: 24, height: 24)

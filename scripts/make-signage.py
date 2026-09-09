@@ -77,9 +77,9 @@ FACE_W_MM, FACE_H_MM = 70.0, 105.0
 PT = 72.0            # points per inch; SVG user units throughout, so PDF is exact
 BLEED = 0.125 * PT   # 9pt. Every printer asks for it, none complain about it.
 
-BLUE = "#006AFF"
-BLUE_DEEP = "#0052CC"
-BLUE_SOFT = "#E8F0FE"
+BLUE = "#2A6F7E"
+BLUE_DEEP = "#1F5866"
+BLUE_SOFT = "#E3F1F3"
 BLUE_LIFT = "#2F86FF"     # the lighter accent wave riding above the divider
 INK = "#0A0A23"
 MUTED = "#4A4A68"

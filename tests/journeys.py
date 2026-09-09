@@ -61,12 +61,19 @@ class Runner:
 
     # ---- browser plumbing -------------------------------------------------
     def context(self, p, device):
+        # bypass_csp: the live site's Content Security Policy has no
+        # 'unsafe-eval', and Playwright's wait_for_function polls by building a
+        # Function inside the page — under that CSP it throws EvalError at once,
+        # the wait returns immediately, and every "should fill in" assertion
+        # fails on an empty button (2026-09-09, live only; the local pass is
+        # served without headers). These are functional journeys, not a CSP
+        # test — the console filter already drops CSP reports.
         if device == 'phone':
             b = p.webkit.launch(headless=not self.headed)
-            ctx = b.new_context(**p.devices['iPhone 14 Pro'])
+            ctx = b.new_context(**p.devices['iPhone 14 Pro'], bypass_csp=True)
         else:
             b = p.chromium.launch(headless=not self.headed)
-            ctx = b.new_context(viewport={'width': 1300, 'height': 900})
+            ctx = b.new_context(viewport={'width': 1300, 'height': 900}, bypass_csp=True)
         return b, ctx
 
     def page(self, ctx, j):

@@ -6165,6 +6165,14 @@
         // The operator block survives because renderDetail reads it from the
         // CONTACTS cache; comments have no cache to read.
         loadComments(rec.bbl);
+        // Same for the four NYC Open Data counts: any that had already landed
+        // were just wiped off the buttons, and nothing else would ever put
+        // them back. OD_COUNTS makes the re-ask free once the queries have
+        // finished, and if they are still in flight they paint into these new
+        // nodes when they land. Only the FIRST building of a session takes
+        // this path (HPD_FULL short-circuits the rest), which is exactly why
+        // the empty buttons looked intermittent. (2026-09-09)
+        loadOpenDataCounts(rec);
       }
     });
     // The address bar carries the building (#d=<bbl>, the deep link boot

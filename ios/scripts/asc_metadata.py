@@ -4,8 +4,13 @@
 Everything App Store Connect accepts over its API lives here, so the listing
 is a file in the repo rather than a memory of which boxes were ticked:
 categories, subtitle, description, keywords, promo text, URLs, copyright, the
-age-rating questionnaire, the review contact + notes, the free price, and the
-6.9" screenshots from marketing/asc-screenshots/. Idempotent.
+age-rating questionnaire, the review contact + notes, the free price, territory
+availability (every territory, and new ones as Apple adds them), and the 6.9"
+screenshots from marketing/asc-screenshots/. Idempotent.
+
+An app created over the API has NO availability record, so even a version in
+READY_FOR_SALE shows "removed from sale" and never reaches the store until one
+is created (that is what happened to 1.0 on 2026-09-09).
 
     python3 scripts/asc_metadata.py            # apply everything
     python3 scripts/asc_metadata.py --show     # print what is there now
@@ -17,7 +22,8 @@ import hashlib, os, pathlib, sys, time
 import jwt, requests
 
 HERE = pathlib.Path(__file__).resolve().parent
-API = "https://api.appstoreconnect.apple.com/v1"
+HOST = "https://api.appstoreconnect.apple.com"
+API = HOST + "/v1"
 SHOTS = HERE.parent / "marketing" / "asc-screenshots"
 
 SUBTITLE = "Rent-stabilized NYC, mapped"                       # <= 30 chars
@@ -126,10 +132,12 @@ class ASC:
     def delete(self, path): return self._ok(self.s.delete(API + path, timeout=30))
 
 
-def resolve(asc, app_id):
+def resolve(asc, app_id, any_version=False):
     info = asc.get(f"/apps/{app_id}/appInfos")["data"][0]
     versions = asc.get(f"/apps/{app_id}/appStoreVersions", limit=10)["data"]
     editable = [v for v in versions if v["attributes"]["appStoreState"] in EDITABLE]
+    if not editable and any_version:
+        editable = versions  # --show: report the live version too
     if not editable:
         raise SystemExit("no editable App Store version")
     v = editable[0]
@@ -172,6 +180,40 @@ def upload_screenshots(asc, version_loc):
         asc.patch(f"/appScreenshots/{res['id']}", {"data": {"type": "appScreenshots", "id": res["id"],
                   "attributes": {"uploaded": True, "sourceFileChecksum": hashlib.md5(data).hexdigest()}}})
         print("    uploaded", f.name)
+
+
+def ensure_availability(asc, app_id):
+    """Create the availability record if the app has none. Without it Apple shows
+    the approved version as "removed from sale". Lives at /v2, not /v1."""
+    r = asc.s.get(f"{HOST}/v1/apps/{app_id}/appAvailabilityV2", timeout=30)
+    if r.status_code == 200 and r.json().get("data"):
+        print("    availability already set")
+        return
+    url, params, terr = f"{API}/territories", {"limit": 200}, []
+    while url:
+        j = asc._ok(asc.s.get(url, params=params, timeout=30)); params = None
+        terr += [t["id"] for t in j["data"]]; url = j.get("links", {}).get("next")
+    asc._ok(asc.s.post(f"{HOST}/v2/appAvailabilities", timeout=60, json={
+        "data": {"type": "appAvailabilities", "attributes": {"availableInNewTerritories": True},
+                 "relationships": {"app": {"data": {"type": "apps", "id": app_id}},
+                                   "territoryAvailabilities": {"data": [{"type": "territoryAvailabilities", "id": f"${{{t}}}"} for t in terr]}}},
+        "included": [{"type": "territoryAvailabilities", "id": f"${{{t}}}", "attributes": {"available": True},
+                      "relationships": {"territory": {"data": {"type": "territories", "id": t}}}} for t in terr]}))
+    print(f"    availability: {len(terr)} territories + new ones")
+
+
+def availability_summary(asc, app_id):
+    r = asc.s.get(f"{HOST}/v1/apps/{app_id}/appAvailabilityV2", timeout=30)
+    if r.status_code != 200 or not r.json().get("data"):
+        return "MISSING (shows as removed from sale)"
+    url, params, rows = f"{HOST}/v2/appAvailabilities/{r.json()['data']['id']}/territoryAvailabilities", {"limit": 200}, []
+    while url:
+        j = asc._ok(asc.s.get(url, params=params, timeout=30)); params = None
+        rows += j["data"]; url = j.get("links", {}).get("next")
+    from collections import Counter
+    on = sum(1 for d in rows if d["attributes"].get("available"))
+    status = Counter(s for d in rows for s in (d["attributes"].get("contentStatuses") or []))
+    return f"{on}/{len(rows)} territories; " + ", ".join(f"{k} {v}" for k, v in status.most_common())
 
 
 def apply(asc, cfg):
@@ -219,11 +261,12 @@ def apply(asc, cfg):
             "included": [{"type": "appPrices", "id": "${free}", "attributes": {"startDate": None},
                           "relationships": {"appPricePoint": {"data": {"type": "appPricePoints", "id": free["id"]}}}}]})
         print("    price: free (USA base)")
+    ensure_availability(asc, app_id)
     upload_screenshots(asc, ids["version_loc"])
 
 
 def show(asc, cfg):
-    ids = resolve(asc, cfg["ASC_APP_ID"])
+    ids = resolve(asc, cfg["ASC_APP_ID"], any_version=True)
     loc = asc.get(f"/appStoreVersionLocalizations/{ids['version_loc']}")["data"]["attributes"]
     il = asc.get(f"/appInfoLocalizations/{ids['info_loc']}")["data"]["attributes"]
     v = asc.get(f"/appStoreVersions/{ids['version']}")["data"]["attributes"]
@@ -234,7 +277,7 @@ def show(asc, cfg):
     print(f"version {v['versionString']} {v['appStoreState']}\n  subtitle    {il.get('subtitle')}\n  privacy     {il.get('privacyPolicyUrl')}"
           f"\n  description {len(loc.get('description') or '')} chars\n  keywords    {loc.get('keywords')}\n  support     {loc.get('supportUrl')}"
           f"\n  copyright   {v.get('copyright')}\n  build       {b['attributes']['version'] if b else '(none)'}\n  review info {'set' if det else 'MISSING'}"
-          f"\n  screenshots {n} in {len(sets)} set(s)")
+          f"\n  screenshots {n} in {len(sets)} set(s)\n  availability {availability_summary(asc, cfg['ASC_APP_ID'])}")
 
 
 if __name__ == "__main__":

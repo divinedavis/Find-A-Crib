@@ -12,7 +12,8 @@ Apple locks a version while it waits for review, so the order is:
      — the screenshots re-upload when their checksums changed);
   5. submit again (submit_for_review.submit).
 Used 2026-09-09 to replace build 25 (old icon, blue chrome) with the teal
-build on 1.0.1 without losing the review slot's metadata.
+build on 1.0.1 without losing the review slot's metadata, and again with
+--rename-to 1.1 to fold the four-city release into the same slot.
 """
 import argparse, sys, time
 from pathlib import Path
@@ -42,6 +43,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--build", required=True)
     ap.add_argument("--version", default="1.0.1")
+    ap.add_argument("--rename-to", default=None,
+                    help="rename the version once it is out of review (e.g. 1.1), for folding more work into the same slot")
     ap.add_argument("--wait", type=int, default=2400)
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
@@ -64,6 +67,14 @@ def main():
         if state in m.EDITABLE: break
         time.sleep(5)
     print("version now:", state)
+    if a.rename_to:
+        # Renaming beats creating a second version: App Store Connect allows
+        # only one editable version at a time, and the new name inherits the
+        # metadata, screenshots and review contact already on this one.
+        asc.patch(f"/appStoreVersions/{ver['id']}",
+                  {"data": {"type": "appStoreVersions", "id": ver["id"],
+                            "attributes": {"versionString": a.rename_to}}})
+        print(f"  renamed {a.version} -> {a.rename_to}")
     asc.patch(f"/appStoreVersions/{ver['id']}/relationships/build", {"data": {"type": "builds", "id": build["id"]}})
     print("  attached build", a.build)
     m.apply(asc, cfg)

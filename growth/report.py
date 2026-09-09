@@ -369,6 +369,33 @@ def _entry_census():
                           f"people and {_fmt(ret)} is a floor under repeat ones. A "
                           f"rising ceiling is brand demand growing; a rising floor with "
                           f"a flat ceiling is one audience refreshing the page."})
+    # Then the clock. New-vs-returning says whether these are the same people;
+    # this says whether they are people in these cities at all. Absent on every
+    # record written before 2026-09-09, and absent for any cohort that did not
+    # clear metrics.MIN_SHAPE_N.
+    shape = cen.get("arrival_shape") or {}
+    dsh, osh = shape.get("direct"), shape.get("organic")
+    if dsh:
+        line = (f"By the clock, the {_fmt(dsh['n'])} who arrived with no referrer "
+                f"put {dsh['night_pct']}% of their day in the four deadest hours "
+                f"for these four cities (04:00–08:00 in New York, 01:00–05:00 in "
+                f"Los Angeles) and {dsh['busiest_6h_pct']}% in their busiest six "
+                f"in a row.")
+        line += (" A population spread evenly around the clock would read 16.7% and "
+                 "25%.")
+        if osh:
+            # The comparison sentence only earns its place when there is
+            # something to compare against; on a day the organic cohort is too
+            # thin to shape, the direct numbers stand alone against the
+            # uniform null and the reader is told nothing they cannot check.
+            line += (f" The {_fmt(osh['n'])} who came out of a search box — humans, "
+                     f"same day, same site — sat at {osh['night_pct']}% and "
+                     f"{osh['busiest_6h_pct']}%. Two cohorts keeping the same hours "
+                     f"are the same kind of visitor; a direct cohort flat around the "
+                     f"clock while the organic one is not would mean they are not.")
+        line += (" This is a screen, not proof — a national or overseas audience "
+                 "would flatten the curve too.")
+        B.append({"type": "note", "text": line})
     B.append({"type": "table", "cols": ["Landing page", "Visitors"],
               "align": ["left", "right"], "mono": True,
               "rows": [[p, _fmt(n)] for p, n in paths]})

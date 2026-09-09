@@ -48,6 +48,31 @@ NEW_VISITOR_LOOKBACK_DAYS = 30
 NEW_VISITORS_METRIC = f"new_visitors_{NEW_VISITOR_LOOKBACK_DAYS}d"
 RETURNING_VISITORS_METRIC = f"returning_visitors_{NEW_VISITOR_LOOKBACK_DAYS}d"
 
+# The deadest four hours of the day, in UTC, for a site about four US cities.
+#
+# New York and Washington are Eastern, Los Angeles and San Francisco Pacific,
+# and nothing else is covered. UTC 08:00–11:59 is 04:00–07:59 Eastern and
+# 01:00–04:59 Pacific on daylight time, 03:00–06:59 and 00:00–03:59 on
+# standard time — night in every city this site is about, in either half of
+# the year, so the window needs no seasonal adjustment.
+#
+# It exists because the visits table records nothing that identifies a
+# referrer-less arrival — no user agent, no country, no screen size — and the
+# clock is the one signal already in the rows. A visitor population spread
+# evenly around the clock puts 4 of 24 hours, 16.7%, in this window. People in
+# these four cities put a small fraction of that. So a direct cohort sitting
+# near 16.7% while the organic cohort (definitionally humans, arriving from a
+# search box on the same day) sits far below it is evidence that the two are
+# not the same kind of visitor.
+NIGHT_HOURS_UTC = (8, 9, 10, 11)
+
+# A cohort smaller than this gets no shape reported at all. At n=20 a single
+# arrival moves night_pct by 5 points — more than the effect being looked for —
+# and hours_in_a_day is a hard ceiling on how spread a small sample can look.
+# Omitting is the same discipline as omitting new/returning when the lookback
+# query fails: an absent number is honest, a noisy one is not.
+MIN_SHAPE_N = 20
+
 
 def _env(name, *alts):
     for n in (name,) + alts:
@@ -167,6 +192,55 @@ def _clean_path(path):
     return p[:80]
 
 
+def _hour_utc(created_at):
+    """The UTC hour (0–23) of a PostgREST timestamp, or None if unreadable.
+
+    Parsed rather than sliced. `created_at[11:13]` is right for the
+    "+00:00" strings PostgREST returns today and silently wrong the day a row
+    arrives with any other offset — and an hour histogram that is quietly one
+    timezone out reads as an audience on the wrong continent.
+    """
+    s = str(created_at or "")
+    if not s:
+        return None
+    try:
+        t = datetime.datetime.fromisoformat(s.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if t.tzinfo is not None:
+        t = t.astimezone(datetime.timezone.utc)
+    return t.hour
+
+
+def _shape(counts):
+    """Summarise one cohort's 24-hour arrival histogram, or None if too small.
+
+    Three numbers, each with a stated null:
+
+      night_pct     share arriving in NIGHT_HOURS_UTC. Uniform = 16.7%.
+      busiest_6h_pct  share in the busiest CONTIGUOUS six hours, wrapping past
+                    midnight. Uniform = 25%; a population that sleeps together
+                    runs far above it. Contiguous and not merely "top six
+                    hours" because the point is whether arrivals cluster into
+                    one part of the day, which scattered peaks do not.
+      peak_hour_utc the busiest single hour, for reading the cluster's centre.
+
+    Both percentages move the same way — up means "keeps human hours in these
+    cities", down means "flat around the clock" — so neither can be read as
+    good news on its own. This is a SCREEN, not proof: a national or overseas
+    audience would flatten the curve too, and so would a cohort of people who
+    all arrive at 3am for a reason nobody here has thought of.
+    """
+    n = sum(counts)
+    if n < MIN_SHAPE_N:
+        return None
+    windows = [sum(counts[(h + i) % 24] for i in range(6)) for h in range(24)]
+    return {"n": n,
+            "night_pct": round(100.0 * sum(counts[h] for h in NIGHT_HOURS_UTC) / n, 1),
+            "busiest_6h_pct": round(100.0 * max(windows) / n, 1),
+            "peak_hour_utc": max(range(24), key=lambda h: counts[h])}
+
+
 def census(day_visits, top=6, prior_vids=None):
     """Where one day's visitors entered, what sent them, and how many are new.
 
@@ -186,10 +260,21 @@ def census(day_visits, top=6, prior_vids=None):
     """
     entries = _entry_rows(day_visits)
     chan, src, paths, refs = {}, {}, {}, {}
+    # Arrivals by the clock. "organic" is the calibration cohort and the reason
+    # this is worth recording: those visitors came out of a search box on the
+    # same day, so they are humans, and whatever daily shape they have is what
+    # this site's real audience looks like. The direct cohort is then measured
+    # against them rather than against a number this loop made up.
+    hours = {"all": [0] * 24, "direct": [0] * 24, "organic": [0] * 24}
     deep = 0
     for v in entries:
         c = classify(v.get("referrer"), v.get("path"))
         chan[c] = chan.get(c, 0) + 1
+        hr = _hour_utc(v.get("created_at"))
+        if hr is not None:
+            hours["all"][hr] += 1
+            if c in hours:
+                hours[c][hr] += 1
         # A referrer-less arrival on a deep URL is a shared link: nobody types
         # /building/2023190002 or bookmarks it before they have been sent it.
         # A referrer-less arrival on "/" is genuinely ambiguous — typed,
@@ -211,7 +296,14 @@ def census(day_visits, top=6, prior_vids=None):
 
     out = {"visitors": len(entries), "by_channel": dict(sorted(chan.items())),
            "by_src": dict(sorted(src.items())), "direct_deep": deep,
-           "top_paths": rank(paths), "top_referrers": rank(refs)}
+           "top_paths": rank(paths), "top_referrers": rank(refs),
+           "by_hour_utc": hours,
+           # Cohorts under MIN_SHAPE_N are absent from this dict rather than
+           # present with a shrug, so a reader never has to guess whether a
+           # number was measured or manufactured. On a quiet day that can be
+           # every cohort, and an empty dict is the correct answer.
+           "arrival_shape": {k: s for k, s in
+                             ((k, _shape(v)) for k, v in hours.items()) if s}}
     if prior_vids is not None:
         vids = {v.get("visitor_id") for v in entries if v.get("visitor_id")}
         out["returning"] = len(vids & prior_vids)
@@ -334,6 +426,18 @@ def collect(days=1, sb=None, end=None):
             prior = prior | {v["visitor_id"] for v in dv if v.get("visitor_id")}
         for tag, n in cen["by_src"].items():
             m["src_" + "".join(c for c in tag if c.isalnum() or c in "-_")] = n
+
+        # The clock shape as a SERIES, not just one day's picture in
+        # last_run.json. One day's night_pct is a coin flip; the question is
+        # whether the direct cohort's shape tracks the organic cohort's across
+        # a fortnight, and only results.jsonl can answer that. Cohorts that
+        # did not clear MIN_SHAPE_N leave no row at all, so a thin day reads
+        # as a gap rather than as a change.
+        for cohort in ("direct", "organic"):
+            sh = cen["arrival_shape"].get(cohort)
+            if sh:
+                m[f"{cohort}_night_pct"] = sh["night_pct"]
+                m[f"{cohort}_busiest6h_pct"] = sh["busiest_6h_pct"]
 
         # per-technique owned traffic
         for slug, prefixes in prefixed:

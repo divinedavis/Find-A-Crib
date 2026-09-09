@@ -531,9 +531,12 @@ class Runner:
             self.ok(after == ['NYC'], f'a phone should rest on one city chip, got {after}', j)
             self.ok(page.evaluate("[...document.querySelectorAll('#city-more a')].map(a=>a.textContent.trim())") == ['SF', 'LA', 'DC'],
                     'the other cities should be under the chip', j)
-            # Tapping the chip opens them. It navigates on a synthetic click, so
-            # this is the last thing the journey does with this page.
-            self.click(page, '#city-nav a.cur'); time.sleep(0.5)
+            # Tapping the chip opens them. Wait for the popover rather than
+            # sleeping — half a second was enough locally and not on live
+            # (2026-09-09). A synthetic click can also navigate, which tears the
+            # context down, so both outcomes are read defensively.
+            self.click(page, '#city-nav a.cur')
+            self.wait_until(page, "!document.getElementById('city-more').hidden", 5000)
             try:
                 opened = page.evaluate(vis)
             except Exception:

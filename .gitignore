@@ -103,3 +103,6 @@ rerental_new.json
 
 # saved-building watch state (droplet-side, saved_alerts.py)
 saved_alerts_state.json
+
+# App Store analytics pull (regenerated twice a day by ios/scripts/asc_downloads.py)
+ios/scripts/appstore.json

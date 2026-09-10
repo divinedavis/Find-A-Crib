@@ -91,12 +91,12 @@
     "accept_pct": 1.1,
     "accept_pct_mature": 0.0,
     "added": 0,
-    "at": "2026-09-09T05:11:24+00:00",
+    "at": "2026-09-10T05:11:54+00:00",
     "by_crawl_age": {
       "0-6d": {
-        "accept_pct": 25.0,
+        "accept_pct": 0.0,
         "fetched": 4,
-        "indexed": 1
+        "indexed": 0
       },
       "14-20d": {
         "accept_pct": 0.0,
@@ -105,33 +105,33 @@
       },
       "21-27d": {
         "accept_pct": 0.0,
-        "fetched": 20,
+        "fetched": 17,
         "indexed": 0
       },
       "28d+": {
         "accept_pct": 0.0,
-        "fetched": 57,
+        "fetched": 61,
         "indexed": 0
       },
       "7-13d": {
-        "accept_pct": 0.0,
-        "fetched": 5,
-        "indexed": 0
+        "accept_pct": 25.0,
+        "fetched": 4,
+        "indexed": 1
       }
     },
     "cohort": 456,
-    "date": "2026-09-09",
+    "date": "2026-09-10",
     "dropped": 0,
     "errors": 0,
-    "fetched_mature": 77,
+    "fetched_mature": 78,
     "fetched_pct": 20.8,
     "gained_indexed": 0,
     "indexed_pct": 0.2,
     "inspected": 100,
-    "last_crawl": "2026-09-05",
+    "last_crawl": "2026-09-08",
     "lost_indexed": 0,
     "ok": true,
-    "published_urls": 3846,
+    "published_urls": 3861,
     "read": 456,
     "rechecked": 100,
     "states": {
@@ -142,109 +142,200 @@
     }
   },
   "measure": {
-    "at": "2026-09-09T05:11:26+00:00",
-    "coverage_pct": 81.6,
-    "date": "2026-09-09",
+    "at": "2026-09-10T05:11:56+00:00",
+    "coverage_pct": 81.4,
+    "date": "2026-09-10",
     "days": 1,
-    "keywords_covered": 400,
+    "keywords_covered": 399,
     "keywords_total": 490,
-    "latest_measured_day": "2026-09-08",
+    "latest_measured_day": "2026-09-09",
     "traffic": {
+      "arrival_shape": {
+        "all": {
+          "busiest_6h_pct": 44.4,
+          "n": 266,
+          "night_pct": 8.6,
+          "peak_hour_utc": 1
+        },
+        "direct": {
+          "busiest_6h_pct": 45.2,
+          "n": 210,
+          "night_pct": 9.0,
+          "peak_hour_utc": 1
+        },
+        "organic": {
+          "busiest_6h_pct": 40.4,
+          "n": 52,
+          "night_pct": 7.7,
+          "peak_hour_utc": 4
+        }
+      },
       "by_channel": {
-        "ai": 2,
-        "direct": 303,
+        "ai": 1,
+        "direct": 210,
         "internal": 3,
-        "organic": 66,
-        "referral": 1
+        "organic": 52
+      },
+      "by_hour_utc": {
+        "all": [
+          20,
+          24,
+          22,
+          21,
+          20,
+          3,
+          2,
+          3,
+          4,
+          4,
+          6,
+          9,
+          12,
+          8,
+          13,
+          12,
+          10,
+          10,
+          14,
+          9,
+          7,
+          17,
+          5,
+          11
+        ],
+        "direct": [
+          16,
+          21,
+          19,
+          18,
+          11,
+          2,
+          1,
+          2,
+          3,
+          3,
+          6,
+          7,
+          10,
+          6,
+          11,
+          11,
+          7,
+          9,
+          10,
+          5,
+          6,
+          15,
+          1,
+          10
+        ],
+        "organic": [
+          3,
+          3,
+          3,
+          3,
+          8,
+          1,
+          1,
+          1,
+          1,
+          1,
+          0,
+          2,
+          2,
+          2,
+          2,
+          1,
+          3,
+          0,
+          3,
+          4,
+          1,
+          2,
+          4,
+          1
+        ]
       },
       "by_src": {
         "chatgpt.com": 1
       },
       "direct_deep": 2,
-      "new": 305,
+      "new": 192,
       "new_window_days": 30,
-      "returning": 70,
+      "returning": 74,
       "top_paths": [
         [
           "/",
-          368
+          260
         ],
         [
-          "/guide/is-my-apartment-rent-stabilized/",
-          3
-        ],
-        [
-          "/building/queens/148-45-89th-ave-4096930042/",
+          "/building/manhattan/206-to-222-w-70th-st-1011580038/",
           1
         ],
         [
-          "/building/queens/805-seneca-ave-4034630006/",
+          "/building/queens/144-05-88th-ave-4096890001/",
           1
         ],
         [
-          "/dc/",
+          "/guide/rent-stabilized-tenant-rights/",
           1
         ],
         [
-          "/neighborhood/brooklyn/fort-greene/",
+          "/guide/what-is-rent-stabilization/",
+          1
+        ],
+        [
+          "/neighborhood/brooklyn/windsor-terrace-south-slope/",
           1
         ]
       ],
       "top_referrers": [
         [
           "www.google.com",
-          51
+          46
         ],
         [
           "com.google.android.googlequicksearchbox",
-          4
-        ],
-        [
-          "duckduckgo.com",
           3
         ],
         [
+          "duckduckgo.com",
+          2
+        ],
+        [
           "accounts.google.com",
-          2
-        ],
-        [
-          "www.ecosia.org",
-          2
-        ],
-        [
-          "bing.com",
           1
         ]
       ],
-      "visitors": 375
+      "visitors": 266
     }
   },
   "outreach": {
-    "at": "2026-09-09T05:11:27+00:00",
-    "date": "2026-09-09",
+    "at": "2026-09-10T05:11:57+00:00",
+    "date": "2026-09-10",
     "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
     "ok": false
   },
   "scout": {
-    "at": "2026-09-09T05:11:27+00:00",
-    "date": "2026-09-09",
+    "at": "2026-09-10T05:11:56+00:00",
+    "date": "2026-09-10",
     "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
     "ok": false
   },
   "searchconsole": {
-    "at": "2026-09-09T05:00:12+00:00",
-    "clicks": 106,
-    "date": "2026-09-09",
-    "impressions": 148,
+    "at": "2026-09-10T05:00:12+00:00",
+    "clicks": 164,
+    "date": "2026-09-10",
+    "impressions": 212,
     "nonbranded_clicks": 0,
     "nonbranded_impressions": 0,
-    "page_clicks": 118,
-    "page_impressions": 219,
-    "serving_ever": 277,
-    "serving_pages": 7,
+    "page_clicks": 180,
+    "page_impressions": 304,
+    "serving_ever": 278,
+    "serving_pages": 8,
     "serving_stable": 7,
     "share_pct": 0.0,
     "tracked_ranking": 0,
-    "window": "2026-08-31..2026-09-07"
+    "window": "2026-09-01..2026-09-08"
   }
 }

@@ -146,18 +146,39 @@ class ASC:
         self.s = requests.Session()
         self.s.headers.update({"Authorization": f"Bearer {tok}", "Content-Type": "application/json"})
 
+    # Apple's API stalls on some endpoints — the build relationship PATCH timed
+    # out three times running on 2026-09-09 at 30s while the same call succeeded
+    # moments later. Give it room and retry the idle ones rather than leaving a
+    # version half-swapped.
+    TIMEOUT = 90
+    RETRIES = 3
+
+    def _send(self, method, path, **kw):
+        import time as _t
+        last = None
+        for attempt in range(self.RETRIES):
+            try:
+                return self.s.request(method, path, timeout=self.TIMEOUT, **kw)
+            except requests.exceptions.RequestException as e:
+                last = e
+                if attempt + 1 < self.RETRIES:
+                    print(f"    {method} timed out, retrying ({attempt + 2}/{self.RETRIES})")
+                    _t.sleep(5 * (attempt + 1))
+        raise last
+
     def _ok(self, r, ok=(200, 201, 204)):
         if r.status_code not in ok:
             raise SystemExit(f"{r.request.method} {r.url} -> {r.status_code}\n{r.text[:800]}")
         return r.json() if r.text else {}
 
     def get(self, path, **params):
-        return self._ok(self.s.get(API + path, params=params, timeout=30), ok=(200, 404)) if path.endswith("appStoreReviewDetail") or path.endswith("/build") \
-            else self._ok(self.s.get(API + path, params=params, timeout=30))
+        soft = path.endswith("appStoreReviewDetail") or path.endswith("/build")
+        return self._ok(self._send("GET", API + path, params=params), ok=(200, 404)) if soft \
+            else self._ok(self._send("GET", API + path, params=params))
 
-    def patch(self, path, body): return self._ok(self.s.patch(API + path, json=body, timeout=30))
-    def post(self, path, body): return self._ok(self.s.post(API + path, json=body, timeout=30))
-    def delete(self, path): return self._ok(self.s.delete(API + path, timeout=30))
+    def patch(self, path, body): return self._ok(self._send("PATCH", API + path, json=body))
+    def post(self, path, body): return self._ok(self._send("POST", API + path, json=body))
+    def delete(self, path): return self._ok(self._send("DELETE", API + path))
 
 
 def resolve(asc, app_id, any_version=False):

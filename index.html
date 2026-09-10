@@ -2428,11 +2428,14 @@
       if (event === 'building_view') maybeSignupNudge();
       if (!supaClient || isBot()) return;
       const vid = visitorId();
+      // platform: the iPhone app writes to this same table with platform:"ios"
+      // (ios/FindACrib/Services/Analytics.swift). Without it the two clients
+      // are indistinguishable and every per-platform number is wrong.
       supaClient.from('events').insert({
         visitor_id: vid,
         user_id: authUser ? authUser.id : null,
         event,
-        props: props || null,
+        props: Object.assign({ platform: 'web', city: document.documentElement.dataset.city || 'nyc' }, props || {}),
         path: location.pathname + location.search,
       }).then(() => {}, () => {});
     } catch (e) { /* best-effort */ }

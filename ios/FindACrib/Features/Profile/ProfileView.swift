@@ -15,6 +15,7 @@ struct ProfileView: View {
     @AppStorage("hereTo") private var hereTo = "Rent"
     @AppStorage("homeBorough") private var homeBorough = "Brooklyn"
     @State private var refreshing = false
+    @State private var shareUsage = Analytics.shared.enabled
 
     var body: some View {
         VStack(spacing: 0) {
@@ -161,6 +162,23 @@ struct ProfileView: View {
                                 Text(refreshing ? "Checking findacrib.com…" : "Refresh data").font(.se(18, .bold)).foregroundStyle(SE.royal)
                             }
                         }.buttonStyle(.plain).disabled(refreshing)
+                    }
+                    .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(SE.canvas)
+
+                    // Privacy: one switch, in the menu where settings belong —
+                    // never a prompt on the way in.
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Privacy").font(.se(22, .bold))
+                        Toggle(isOn: $shareUsage) {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text("Share anonymous usage").font(.se(18)).foregroundStyle(SE.ink)
+                                Text("Which screens get used, so the app can be improved. Never what you type, never sold, no advertising.")
+                                    .font(.se(14)).foregroundStyle(SE.ink3)
+                            }
+                        }
+                        .tint(SE.royal)
+                        .accessibilityIdentifier("profile-share-usage")
+                        .onChange(of: shareUsage) { _, on in Analytics.shared.enabled = on }
                     }
                     .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(SE.canvas)
 

@@ -10,6 +10,7 @@ behaviour instead of from guesses.
     ~/.venvs/dhcr-map/bin/python tests/journey_coverage.py            # last 30 days
     ~/.venvs/dhcr-map/bin/python tests/journey_coverage.py --days 90
     ~/.venvs/dhcr-map/bin/python tests/journey_coverage.py --min-people 25
+    ~/.venvs/dhcr-map/bin/python tests/journey_coverage.py --platform ios
 
 Needs SUPABASE_ACCESS_TOKEN (the PAT; ~/.zshrc exports it from the keychain).
 Read-only: one aggregate query, no rows leave the database.
@@ -60,13 +61,24 @@ def main() -> int:
     ap.add_argument("--days", type=int, default=30)
     ap.add_argument("--min-people", type=int, default=5,
                     help="ignore events fewer than this many people did")
+    ap.add_argument("--platform", choices=["web", "ios", "all"], default="web",
+                    help="which client's journeys to check. The web suite is "
+                         "tests/journeys.py; the iPhone app's is XCUITest.")
     a = ap.parse_args()
 
     covered = {e for evs in JOURNEY_EVENTS.values() for e in evs}
+    # Events carry props->>'platform' since 2026-09-10 ("web" or "ios"). Rows
+    # written before that have none, and they are all web.
+    where = {
+        "web": "and coalesce(props->>'platform', 'web') = 'web'",
+        "ios": "and props->>'platform' = 'ios'",
+        "all": "",
+    }[a.platform]
     rows = query(f"""
         select event, count(*) as n, count(distinct visitor_id) as people
           from public.events
          where created_at > now() - interval '{a.days} days'
+           {where}
          group by 1 order by 3 desc
     """)
     gaps = [r for r in rows
@@ -74,7 +86,7 @@ def main() -> int:
             and r["event"] not in NON_JOURNEY_EVENTS
             and int(r["people"]) >= a.min_people]
 
-    print(f"{len(rows)} distinct events in the last {a.days} days; "
+    print(f"{a.platform}: {len(rows)} distinct events in the last {a.days} days; "
           f"{len(covered)} covered by {len(JOURNEY_EVENTS)} journeys")
     if gaps:
         print(f"\nNOT covered by any journey ({a.min_people}+ people):")

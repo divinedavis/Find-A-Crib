@@ -416,3 +416,29 @@ final class CitySearchTests: XCTestCase {
         XCTAssertEqual(inNYC.maxPrice, 3500); XCTAssertTrue(inNYC.availableOnly)
     }
 }
+
+// MARK: - Analytics
+
+@MainActor
+final class AnalyticsTests: XCTestCase {
+    /// The app must not send usage data while App Store Connect's App Privacy
+    /// answers still say it collects only name and email. Flipping this on is
+    /// a deliberate act that belongs in the same commit as the label change —
+    /// this test is here so it cannot happen by accident.
+    func testAnalyticsIsDarkUntilThePrivacyLabelIsDeclared() {
+        XCTAssertFalse(Analytics.privacyLabelDeclared,
+                       "declare Product Interaction / Usage Data in App Store Connect, then flip this and update this test in the same commit")
+    }
+
+    /// Whatever the gate says, the setting is real and defaults to on.
+    func testShareUsageDefaultsOnAndPersists() {
+        let a = Analytics.shared
+        let original = a.enabled
+        a.enabled = false
+        XCTAssertFalse(a.enabled)
+        XCTAssertEqual(UserDefaults.standard.bool(forKey: "analytics.enabled"), false)
+        a.enabled = true
+        XCTAssertTrue(a.enabled)
+        a.enabled = original
+    }
+}

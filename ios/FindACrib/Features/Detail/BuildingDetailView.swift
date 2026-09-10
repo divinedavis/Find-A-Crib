@@ -83,7 +83,10 @@ struct BuildingDetailView: View {
                 } else if let url = store.voucherAvail(b)?.url.flatMap(URL.init) {
                     SEPrimaryButton(title: "Voucher listing") { openURL(url) }
                 } else {
-                    SEPrimaryButton(title: "Open on findacrib.com") { openURL(b.webURL(in: store.city)) }
+                    SEPrimaryButton(title: "Open on findacrib.com") {
+                        Analytics.shared.track("outbound", ["kind": "website", "bbl": b.bbl])
+                        openURL(b.webURL(in: store.city))
+                    }
                 }
             }
             .padding(16)

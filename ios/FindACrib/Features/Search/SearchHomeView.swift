@@ -154,6 +154,8 @@ struct SearchHomeView: View {
                 // rent feeds are New York's. Start each city clean.
                 query.minPrice = nil; query.maxPrice = nil
                 query = query.sanitized(for: c)
+                Analytics.shared.track("city_switch", ["from": store.city.id, "to": c.id, "city": c.id])
+                Analytics.shared.city = c.id
                 Task { await store.switchCity(to: c) }
             }
         }

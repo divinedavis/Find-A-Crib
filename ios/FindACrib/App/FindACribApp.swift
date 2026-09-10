@@ -19,6 +19,10 @@ struct FindACribApp: App {
                 .task {
                     auth.activity = activity
                     plus.auth = auth; auth.plus = plus
+                    Analytics.shared.auth = auth
+                    Analytics.shared.city = store.city.id
+                    activity.analytics = Analytics.shared
+                    Analytics.shared.track("app_open")
                     plus.start()
                     activity.remoteToggle = { [weak auth] bbl, on in auth?.remoteToggle(bbl: bbl, saved: on) }
                     await store.load()

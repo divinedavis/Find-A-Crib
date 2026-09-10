@@ -35,6 +35,9 @@ final class Activity {
 
     /// Set by AuthService; mirrors each toggle into saved_buildings when signed in.
     var remoteToggle: ((String, Bool) -> Void)?
+    /// Set at launch. The same three actions the website records — a search, a
+    /// building opened, a save — so one report covers both clients.
+    weak var analytics: Analytics?
 
     func isSaved(_ bbl: String) -> Bool { saved.contains(bbl) }
     func toggleSaved(_ bbl: String) {
@@ -42,6 +45,7 @@ final class Activity {
         if let i = saved.firstIndex(of: bbl) { saved.remove(at: i); nowSaved = false } else { saved.insert(bbl, at: 0); nowSaved = true }
         persist()
         remoteToggle?(bbl, nowSaved)
+        analytics?.track(nowSaved ? "save" : "unsave", ["bbl": bbl])
     }
     /// Account saves win on order; anything only known locally stays.
     func mergeRemoteSaves(_ remote: [String]) {
@@ -52,6 +56,16 @@ final class Activity {
     }
 
     func recordSearch(_ q: SearchQuery) {
+        // The shape of the search, never its text: which filters were used, not
+        // the address someone typed.
+        analytics?.track("search", [
+            "locations": q.locations.count,
+            "priced": q.minPrice != nil || q.maxPrice != nil,
+            "beds": q.beds.count,
+            "available_only": q.availableOnly,
+            "vouchers_only": q.vouchersOnly,
+            "hcr_only": q.hcrOnly,
+        ])
         recentSearches.removeAll { $0 == q }
         recentSearches.insert(q, at: 0)
         if recentSearches.count > 10 { recentSearches.removeLast(recentSearches.count - 10) }
@@ -66,6 +80,7 @@ final class Activity {
     func isSearchSaved(_ q: SearchQuery) -> Bool { savedSearches.contains { $0.query == q } }
 
     func recordView(_ bbl: String) {
+        analytics?.track("building_view", ["bbl": bbl], path: "/app/building")
         recentlyViewed.removeAll { $0 == bbl }
         recentlyViewed.insert(bbl, at: 0)
         if recentlyViewed.count > 50 { recentlyViewed.removeLast(recentlyViewed.count - 50) }

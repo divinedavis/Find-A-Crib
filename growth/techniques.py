@@ -908,6 +908,28 @@ def _sitemap_covered(docroot):
     return covered
 
 
+def _frozen_prefixes():
+    """URL prefixes owned only by RETIRED techniques, read from the ledger.
+
+    "Retired" and not "not active" on purpose. A CANDIDATE technique never
+    published anything, so a live section under a candidate prefix (/available/,
+    /developers/ — both flagged by t_crawl_paths) is somebody else's pipeline's
+    page and this build has no standing to describe it as archived. A retired
+    technique is different: it ran, it stopped, its pages are still in the
+    docroot, and cmd_build skips it every night, so those pages provably cannot
+    change again.
+
+    A prefix that any non-retired technique also declares is NOT frozen — the
+    section is still being rebuilt by whichever technique kept it — so the two
+    sets are subtracted rather than the retired one taken alone.
+    """
+    techs = ledger.load_techniques()
+    live = {p for t in techs if t.get("status") != "retired"
+            for p in (t.get("prefixes") or [])}
+    return sorted({p for t in techs if t.get("status") == "retired"
+                   for p in (t.get("prefixes") or []) if p not in live})
+
+
 def t_sitemap_daily(ctx):
     """A dedicated sitemap for the daily-changing pages, plus any page in a
     family this build owns that no pipeline shard lists.
@@ -939,9 +961,42 @@ def t_sitemap_daily(ctx):
     listing it. No page is published to have a URL — these are already live.
     """
     lm = ledger.get_state("lastmod", {})
+    frozen = _frozen_prefixes()
 
     def entry(u):
-        """(changefreq, priority) for a URL the growth build published, else None."""
+        """(changefreq, priority) for a URL the growth build published, else None.
+
+        A URL under a RETIRED section keeps its place in the shard — the page is
+        live and honest and dropping it would orphan it — but it is declared
+        "never" rather than "daily", because nothing in ORDER rebuilds it and
+        sitemaps.org reserves that value for exactly this case: archived URLs.
+
+        This matters more than 17 URLs suggests. /brief/ retired on 2026-08-16
+        and its 17 frozen pages are the majority of a 23-URL shard whose entire
+        purpose (T004's hypothesis, verbatim: "Google does not consume IndexNow;
+        sitemap lastmod is its re-crawl signal") is to say "come back, this
+        changed". Six /section8/ URLs really do change nightly and were paying
+        for seventeen that said so and did not. _price's own comment two
+        screens down states the rule this restores: a sitemap that overstates
+        change frequency is the signal crawlers learn to discount.
+
+        DO NOT READ THIS AS A GOOGLE LEVER. Google has said for years, and
+        restated through 2026, that it ignores <changefreq> and <priority>
+        outright — only <lastmod> is used, and only while it is believed. So
+        this changes nothing Google sees. It is worth doing anyway on two
+        narrow grounds and no others: the shard is also read by the crawlers
+        t_indexnow feeds, which do use changefreq; and a build that publishes a
+        claim it knows to be false is the failure mode this whole loop keeps
+        having to correct. The date on the index entry below is the half that
+        Google reads.
+        """
+        priced = _price(u)
+        if priced and any(u.startswith(SITE + p) for p in frozen):
+            return ("never", "0.2")
+        return priced
+
+    def _price(u):
+        """The family's own changefreq/priority, ignoring retirement."""
         if u == SITE + "/section8/":
             return ("daily", "0.9")
         if u.startswith(SITE + "/section8/"):
@@ -1018,6 +1073,18 @@ def t_sitemap_daily(ctx):
 
     # Splice sitemap-daily.xml into the live sitemap index without disturbing
     # the shards build_seo.py owns.
+    #
+    # The index entry's <lastmod> is the newest lastmod IN the shard, not
+    # today's date. It was today's date, written unconditionally on both paths
+    # below, which said "sitemap-daily.xml changed today" on every night since
+    # /brief/ retired on 2026-08-16 that no /section8/ listing actually moved.
+    # Every lastmod inside the shard is already honest — content-hashed for the
+    # pages this build wrote, the file's own mtime for the ones it rescued — so
+    # the max over them is the one date the index can defend, and it is the rule
+    # build_seo.py applies to every shard it owns. build_seo.py rewrites this
+    # file 90 seconds later and now derives the same figure from the shard on
+    # disk; the two agree because they are computing the same number.
+    shard_lastmod = max(v["m"] for v in daily.values())
     idx_path = os.path.join(ctx.docroot, "sitemap.xml")
     try:
         with open(idx_path) as f:
@@ -1025,14 +1092,16 @@ def t_sitemap_daily(ctx):
     except FileNotFoundError:
         idx = None
     if idx and "sitemap-daily.xml" not in idx:
-        entry = (f"<sitemap><loc>{SITE}/sitemap-daily.xml</loc>"
-                 f"<lastmod>{ledger.today()}</lastmod></sitemap>")
-        idx = idx.replace("</sitemapindex>", entry + "</sitemapindex>")
+        # Not named `entry`: that is the pricing function above, and rebinding it
+        # here left it uncallable for the rest of this function.
+        idx_entry = (f"<sitemap><loc>{SITE}/sitemap-daily.xml</loc>"
+                     f"<lastmod>{shard_lastmod}</lastmod></sitemap>")
+        idx = idx.replace("</sitemapindex>", idx_entry + "</sitemapindex>")
         ctx.write_raw("sitemap.xml", idx)
     elif idx:
         # keep the index's lastmod for our shard current
         idx = re.sub(r"(<sitemap><loc>[^<]*sitemap-daily\.xml</loc><lastmod>)[^<]*(</lastmod>)",
-                     rf"\g<1>{ledger.today()}\g<2>", idx)
+                     rf"\g<1>{shard_lastmod}\g<2>", idx)
         ctx.write_raw("sitemap.xml", idx)
 
     guides = sum(1 for u in daily if u.startswith(SITE + "/guide/"))
@@ -1051,9 +1120,18 @@ def t_sitemap_daily(ctx):
     elif rescued:
         note = (f" — {rescued} of them live in the docroot but listed in no sitemap the SEO "
                 f"pipeline owns, so they had no crawl path at all until this run")
-    return {"ok": True, "urls": len(daily), "rescued": rescued,
+    # How much of this shard is archive rather than daily, in the one place a
+    # cloud review can see it. The whole shard exists to say "come back, this
+    # changed"; a night where most of it is `never` is a night where that claim
+    # is carried by a handful of URLs, and that ratio is the thing to watch.
+    archived = sum(1 for u in daily if entry(u)[0] == "never")
+    return {"ok": True, "urls": len(daily), "rescued": rescued, "archived": archived,
             "detail": f"sitemap-daily.xml with {len(daily)} URLs"
-                      + (f" (incl. {extra})" if extra else "") + note}
+                      + (f" (incl. {extra})" if extra else "")
+                      + (f"; {archived} declared never (retired sections: "
+                         f"{', '.join(frozen)}), newest lastmod {shard_lastmod}"
+                         if archived else f"; newest lastmod {shard_lastmod}")
+                      + note}
 
 
 def t_indexnow(ctx):

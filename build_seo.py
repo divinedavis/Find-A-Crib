@@ -1594,6 +1594,36 @@ def _lastmod_body_v1(contents):
     return re.sub(r"<style>.*?</style>", "", contents, flags=re.S)
 
 
+def _track_lastmod(loc, contents):
+    """Record loc's <lastmod> from the page's own bytes, and return it.
+
+    Split out of write() on 2026-09-10 so the six pages sitemap-main.xml LISTS
+    but this build does not GENERATE can go through the identical rule — see
+    track_static_lastmods. One code path, so the migration branch below cannot
+    be right for the corpus and wrong for the app shells.
+    """
+    h = hashlib.sha1(_lastmod_body(contents).encode("utf-8")).hexdigest()
+    prev = LM_STATE.get(loc)
+    # One-time migration: a state entry written under the old rule (no "v")
+    # is re-checked against the old rule before it is called a change. Only
+    # the answer "the v1 hash still matches, so nothing but the rule moved"
+    # is accepted; a page that genuinely changed falls through and bumps as
+    # normal. Entries are stamped v:2 below, so this branch stops firing
+    # after the first build and can be deleted once no v1 entry survives.
+    if prev is not None and prev.get("v") != 2 and prev.get("h") != h:
+        if hashlib.sha1(_lastmod_body_v1(contents).encode("utf-8")).hexdigest() == prev["h"]:
+            prev = dict(prev, h=h)
+    if prev and prev.get("h") == h:
+        lastmod = prev["m"]                 # unchanged -> keep old date (honest)
+    else:
+        lastmod = BUILD_DATE                # new or changed -> bump
+        if prev is not None:
+            LM_CHANGED.append(loc)          # changed (not brand-new) -> ping IndexNow
+    LM_NEW[loc] = {"h": h, "m": lastmod, "v": 2}
+    LASTMOD[loc] = lastmod
+    return lastmod
+
+
 def write(relpath, contents):
     full = os.path.join(OUT, relpath)
     os.makedirs(os.path.dirname(full), exist_ok=True)
@@ -1602,25 +1632,135 @@ def write(relpath, contents):
     # track lastmod for crawlable HTML pages (…/index.html) only
     if relpath.endswith("index.html"):
         loc = SITE + "/" + relpath[:-len("index.html")]  # …/foo/index.html -> …/foo/
-        h = hashlib.sha1(_lastmod_body(contents).encode("utf-8")).hexdigest()
-        prev = LM_STATE.get(loc)
-        # One-time migration: a state entry written under the old rule (no "v")
-        # is re-checked against the old rule before it is called a change. Only
-        # the answer "the v1 hash still matches, so nothing but the rule moved"
-        # is accepted; a page that genuinely changed falls through and bumps as
-        # normal. Entries are stamped v:2 below, so this branch stops firing
-        # after the first build and can be deleted once no v1 entry survives.
-        if prev is not None and prev.get("v") != 2 and prev.get("h") != h:
-            if hashlib.sha1(_lastmod_body_v1(contents).encode("utf-8")).hexdigest() == prev["h"]:
-                prev = dict(prev, h=h)
-        if prev and prev.get("h") == h:
-            lastmod = prev["m"]                 # unchanged -> keep old date (honest)
-        else:
-            lastmod = BUILD_DATE                # new or changed -> bump
-            if prev is not None:
-                LM_CHANGED.append(loc)          # changed (not brand-new) -> ping IndexNow
-        LM_NEW[loc] = {"h": h, "m": lastmod, "v": 2}
-        LASTMOD[loc] = lastmod
+        _track_lastmod(loc, contents)
+
+
+# --- the six pages this build LISTS but does not GENERATE -----------------
+# sitemap-main.xml carries the highest-priority URLs on the domain — the map
+# shell at 1.0, the three city maps at 0.9, the developer portal and the
+# lottery-agent directory at 0.8 — and until 2026-09-10 every one of them was
+# stamped <lastmod>today</lastmod> on every nightly build, unconditionally,
+# because they are app shells deployed by scripts/deploy_app.sh rather than
+# pages write() hashes. The date did not depend on the page in any way: the
+# shard containing the homepage said the homepage had changed, on every night
+# this pipeline has ever run, whether it had or not.
+#
+# NO EDIT-RATE FIGURE IS QUOTED HERE ON PURPOSE. The obvious sentence to write
+# is "index.html really changes on N nights in 30", and the daily review cannot
+# check it: the cloud checkout it runs in is a SHALLOW clone (2026-09-10:
+# `git rev-parse --is-shallow-repository` = true, four days of history), so
+# `git log -- index.html` there answers a question about the clone, not about
+# the page. The defect does not need the figure. "Unconditional" is visible in
+# the line itself, and a lastmod that cannot be wrong cannot be informative.
+#
+# That is the exact claim _lastmod_body's docstring calls "precisely the signal
+# Google learns to distrust", made about the six URLs this domain can least
+# afford to have discounted — and the homepage is the one URL in the whole
+# 456-page index census Google has ever kept. Google's own line on it hardened
+# in July 2026: it uses lastmod only while it believes it, it discounts the
+# signal for the whole site once it does not, and Illyes' advice for a site
+# with unreliable dates is that it is "probably better off without the
+# lastmods" at all. Being right about six URLs is cheaper than that.
+#
+# The pages are read from the LIVE DOCROOT, not from this build directory.
+# refresh_seo.sh hands only build_seo.py, seo_guides.py, split_hpd.py and three
+# data files over from the checkout, and $BUILD has not been a git worktree on
+# any recorded night, so $BUILD's own index.html is whatever was on the droplet
+# the day it was set up. The docroot copy is the page Google actually fetches.
+# SEO_DOCROOT is the same variable refresh_seo.sh and growth_run.sh read, with
+# the same default, so the three cannot disagree about which directory is live.
+#
+# Ordering is already right and must stay that way: growth_run.sh runs the
+# growth build first and fires this pipeline afterwards, and this pipeline reads
+# the docroot BEFORE its own rsync, so what is hashed here is the page that has
+# been live all day and will still be live tonight.
+#
+# Unreadable is non-fatal and falls back to today's date — the behaviour this
+# replaces — but it says so in the build log, because a silent fallback here
+# would look exactly like the bug being fixed.
+DOCROOT = os.environ.get("SEO_DOCROOT", "/var/www/rent-map")
+STATIC_PAGE_SOURCES = {
+    "/": "index.html",
+    "/developers/": "developers/index.html",
+    "/marketing-agents/": "marketing-agents/index.html",
+    "/sf/": "sf/index.html",
+    "/la/": "la/index.html",
+    "/dc/": "dc/index.html",
+}
+
+
+def track_static_lastmods(paths):
+    """Hash the live copy of each listed-but-not-generated page.
+
+    Returns how many were read. A path with no source mapping, or whose file
+    cannot be read, is left out of LASTMOD entirely so the caller's
+    LASTMOD.get(loc, BUILD_DATE) falls back to today exactly as before.
+
+    A genuine change to one of these six DOES reach IndexNow, via
+    _track_lastmod's LM_CHANGED, and that is intended: `submitted` at the end of
+    main() has always included static_pages, and six URLs on the night the
+    homepage really changed is the opposite of a bulk submission. On the first
+    build after this shipped there is no prior hash for any of them, so all six
+    take the brand-new branch — dated today, and NOT announced.
+    """
+    read = []
+    missing = []
+    for path in paths:
+        if SITE + path in LASTMOD:
+            # This build generated it after all, so write() has already dated it
+            # from the bytes it wrote. Those are the bytes about to be rsynced;
+            # the docroot copy is the previous deploy. Never overwrite the
+            # generator's answer with the older one.
+            read.append(path)
+            continue
+        rel = STATIC_PAGE_SOURCES.get(path)
+        if not rel:
+            missing.append(path)
+            continue
+        try:
+            with open(os.path.join(DOCROOT, rel), encoding="utf-8", errors="replace") as f:
+                contents = f.read()
+        except OSError:
+            missing.append(path)
+            continue
+        _track_lastmod(SITE + path, contents)
+        read.append(path)
+    if missing:
+        print(f"static lastmod: could not read {', '.join(missing)} under {DOCROOT} "
+              f"— those URLs keep today's date")
+    return len(read)
+
+
+_SITEMAP_LASTMOD_RE = re.compile(r"<lastmod>\s*(\d{4}-\d{2}-\d{2})")
+
+
+def daily_shard_lastmod():
+    """The newest <lastmod> inside the live sitemap-daily.xml, or today's date.
+
+    The sitemap index entry for this shard was also stamped BUILD_DATE
+    unconditionally, and that one was worse than the six above, because the
+    shard it describes is mostly frozen: /brief/ was retired on 2026-08-16 and
+    its 17 pages cannot change again, so "sitemap-daily.xml changed today" has
+    been false on every night since that no /section8/ listing moved. Every
+    other shard's index entry is already the max of its own URLs' lastmods;
+    this makes the daily shard obey the same rule.
+
+    growth/techniques.py:t_sitemap_daily writes the shard into the docroot at
+    05:40, before growth_run.sh fires this pipeline, so the file read here is
+    tonight's. If it cannot be read — a workstation run, or a night the growth
+    build failed before writing it — fall back to today, which is what this
+    line did unconditionally before.
+    """
+    try:
+        with open(os.path.join(DOCROOT, "sitemap-daily.xml"), encoding="utf-8") as f:
+            dates = _SITEMAP_LASTMOD_RE.findall(f.read())
+    except OSError:
+        dates = []
+    if not dates:
+        print(f"daily shard lastmod: no dated URLs in {DOCROOT}/sitemap-daily.xml "
+              f"— the index entry keeps today's date")
+        return BUILD_DATE
+    return max(dates)
 
 
 # --- what a guide can say that a law firm's cannot ------------------------
@@ -3080,13 +3220,6 @@ def main():
         smaps.append(name)
     idx = "".join(f"<sitemap><loc>{SITE}/{n}</loc><lastmod>{shard_lastmod.get(n, BUILD_DATE)}</lastmod></sitemap>"
                   for n in sorted(smaps))
-    # sitemap-daily.xml is owned by the daily growth engine (growth/techniques.py).
-    # This monthly build must still list it, or a rebuild would silently drop the
-    # daily section out of the index until the next growth run repaired it.
-    idx += f"<sitemap><loc>{SITE}/sitemap-daily.xml</loc><lastmod>{BUILD_DATE}</lastmod></sitemap>"
-    write("sitemap.xml", f'<?xml version="1.0" encoding="UTF-8"?>'
-          f'<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
-          f'<sitemap><loc>{SITE}/sitemap-main.xml</loc><lastmod>{BUILD_DATE}</lastmod></sitemap>{idx}</sitemapindex>')
     # main sitemap = homepage + hand-authored pages (developer API portal).
     # These aren't generated in the loop above, so list them here explicitly.
     static_pages = [("/", "1.0"), ("/developers/", "0.8"),
@@ -3095,8 +3228,26 @@ def main():
                     ("/marketing-agents/", "0.8"),
                     # city maps (sf/la/dc pages are generated by build_city_pages.py)
                     ("/sf/", "0.9"), ("/la/", "0.9"), ("/dc/", "0.9")]
-    main_urls = "".join(f'<url><loc>{SITE}{p}</loc><lastmod>{BUILD_DATE}</lastmod>'
+    # Their <lastmod> now comes from the live pages' own bytes rather than from
+    # today's date — see track_static_lastmods. This runs before the index is
+    # written because sitemap-main.xml's entry in the index is the max of what
+    # the shard contains, exactly like every generated shard above.
+    n_static = track_static_lastmods([p for p, _ in static_pages])
+    main_lastmod = max((LASTMOD.get(SITE + p, BUILD_DATE) for p, _ in static_pages),
+                       default=BUILD_DATE)
+    main_urls = "".join(f'<url><loc>{SITE}{p}</loc>'
+                        f'<lastmod>{LASTMOD.get(SITE + p, BUILD_DATE)}</lastmod>'
                         f'<priority>{pr}</priority></url>' for p, pr in static_pages)
+    print(f"static lastmod: {n_static} of {len(static_pages)} listed-but-not-generated "
+          f"pages dated from their own bytes; sitemap-main.xml lastmod {main_lastmod}")
+    # sitemap-daily.xml is owned by the daily growth engine (growth/techniques.py).
+    # This monthly build must still list it, or a rebuild would silently drop the
+    # daily section out of the index until the next growth run repaired it.
+    idx += (f"<sitemap><loc>{SITE}/sitemap-daily.xml</loc>"
+            f"<lastmod>{daily_shard_lastmod()}</lastmod></sitemap>")
+    write("sitemap.xml", f'<?xml version="1.0" encoding="UTF-8"?>'
+          f'<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+          f'<sitemap><loc>{SITE}/sitemap-main.xml</loc><lastmod>{main_lastmod}</lastmod></sitemap>{idx}</sitemapindex>')
     write("sitemap-main.xml", f'<?xml version="1.0" encoding="UTF-8"?>'
           f'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{main_urls}</urlset>')
     # robots.txt is deliberately NOT written here. The daily growth engine owns it

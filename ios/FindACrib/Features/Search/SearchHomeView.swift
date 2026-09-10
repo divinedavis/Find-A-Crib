@@ -75,8 +75,18 @@ struct SearchHomeView: View {
                         .accessibilityLabel(query.locations.isEmpty ? "Location" : "Location: \(query.locationLabel)")
                     }
 
-                    // Price
-                    PriceRangeFields(minPrice: $query.minPrice, maxPrice: $query.maxPrice)
+                    // Price. Los Angeles publishes no rent at all — its source is
+                    // an assessor roll — so the fields are not offered there
+                    // rather than offered and filtering everything away.
+                    if store.city.hasPrices {
+                        VStack(alignment: .leading, spacing: 8) {
+                            PriceRangeFields(minPrice: $query.minPrice, maxPrice: $query.maxPrice)
+                            if !store.city.isNYC {
+                                Text("\(store.city.priceLabel) — what the register has on file, not an asking rent. Buildings with no rent on file are not shown when you set a price.")
+                                    .font(.se(14)).foregroundStyle(SE.ink3)
+                            }
+                        }
+                    }
 
                     // Show and Bedrooms both read New York feeds — advertised
                     // rents, vouchers and lotteries. The other cities publish a
@@ -139,15 +149,20 @@ struct SearchHomeView: View {
                 // elsewhere, so both are cleared rather than silently emptying
                 // the results.
                 query.locations = []
-                if !c.hasNYCExtras {
-                    query.availableOnly = false; query.vouchersOnly = false
-                    query.hcrOnly = false; query.voucherLiveOnly = false; query.beds = []
-                }
+                // $3,500 in New York is not $3,500 in Los Angeles, and outside
+                // New York a carried-over price matched nothing at all — the
+                // rent feeds are New York's. Start each city clean.
+                query.minPrice = nil; query.maxPrice = nil
+                query = query.sanitized(for: c)
                 Task { await store.switchCity(to: c) }
             }
         }
         .onAppear {
-            if query == SearchQuery(), let q = try? JSONDecoder().decode(SearchQuery.self, from: lastQueryData) { query = q.normalized }
+            // The saved query may predate the city the app reopens in, so drop
+            // anything that city cannot answer before it is counted.
+            if query == SearchQuery(), let q = try? JSONDecoder().decode(SearchQuery.self, from: lastQueryData) {
+                query = q.normalized.sanitized(for: store.city)
+            }
             recount()
         }
         .onChange(of: query) { _, q in

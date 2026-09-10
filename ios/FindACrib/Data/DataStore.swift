@@ -257,7 +257,11 @@ final class DataStore {
     func priceOf(_ b: Building) -> Int? {
         if let p = listings.prices[b.bbl] { return p }
         if let f = estimate(b), f.count >= 3 { return (f[0] + f[2]) / 2 }
-        return nil
+        // Outside New York there are no listings and no HUD table; SF reports a
+        // block median and DC a registered legal rent, and that is the only
+        // rent those cities have. Without this a price filter set in New York
+        // rejected every building in every other city (2026-09-09).
+        return b.mr
     }
     func voucherAvail(_ b: Building) -> S8Blob.Avail? { s8.avail[b.bbl] }
     func voucherBuilding(_ b: Building) -> S8Blob.Bldg? { s8.bldg[b.bbl] }

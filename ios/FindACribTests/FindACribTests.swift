@@ -361,3 +361,58 @@ final class CityTests: XCTestCase {
         XCTAssertEqual(nyc.place(in: .nyc), "Chelsea")
     }
 }
+
+// MARK: - A search carried from one city to another
+
+@MainActor
+final class CitySearchTests: XCTestCase {
+    /// The bug this pins (2026-09-09): the app opened Los Angeles with the
+    /// $3,500 maximum still set from a New York search. Price comes from
+    /// listings and the HUD table, both New York feeds, so every LA building
+    /// had no price, the filter rejected all 67,511 of them and the button
+    /// read "Search 0 buildings".
+    func testPriceFilterDoesNotEmptyACityWithNoRents() {
+        let store = DataStore()
+        let la = [Building(bbl: "LA-1", b: "LA", a: "A", z: "90001", lat: 34, lng: -118, u: 4),
+                  Building(bbl: "LA-2", b: "LA", a: "B", z: "90002", lat: 34, lng: -118, u: 9)]
+        store.applyForTesting(.init(buildings: la, listings: ListingsBlob(), s8: S8Blob(), fmr: [:], hcr: HCRBlob()))
+        var q = SearchQuery()
+        XCTAssertEqual(SearchEngine.count(q, store: store), 2, "no filter: every building")
+        q.maxPrice = 3500
+        XCTAssertEqual(SearchEngine.count(q, store: store), 0,
+                       "a price filter still excludes buildings with no rent on file — which is exactly why LA must not offer one")
+        XCTAssertFalse(City.la.hasPrices, "so LA hides the price fields")
+        XCTAssertTrue(City.nyc.hasPrices)
+        XCTAssertTrue(City.sf.hasPrices)
+        XCTAssertTrue(City.dc.hasPrices)
+    }
+
+    /// SF and DC do publish a rent — the block median and the registered legal
+    /// rent — so a price filter there has to use it.
+    func testRegisteredRentFeedsThePriceFilter() {
+        let store = DataStore()
+        let dc = [Building(bbl: "DC-1", b: "DC", a: "A", z: "20002", lat: 38.9, lng: -77, u: 4, mr: 2800),
+                  Building(bbl: "DC-2", b: "DC", a: "B", z: "20011", lat: 38.9, lng: -77, u: 6, mr: 4200),
+                  Building(bbl: "DC-3", b: "DC", a: "C", z: "20009", lat: 38.9, lng: -77, u: 2)]
+        store.applyForTesting(.init(buildings: dc, listings: ListingsBlob(), s8: S8Blob(), fmr: [:], hcr: HCRBlob()))
+        XCTAssertEqual(store.priceOf(dc[0]), 2800, "the registered rent is the price DC has")
+        XCTAssertNil(store.priceOf(dc[2]), "no rent on file stays unknown")
+        var q = SearchQuery()
+        q.maxPrice = 3500
+        XCTAssertEqual(SearchEngine.count(q, store: store), 1, "only the $2,800 building is under the cap")
+    }
+
+    /// A query restored from disk in a different city must not filter it empty.
+    func testSanitizeDropsWhatACityCannotAnswer() {
+        var q = SearchQuery()
+        q.maxPrice = 3500; q.minPrice = 1000; q.availableOnly = true; q.beds = [1, 2]; q.hcrOnly = true
+        let inLA = q.sanitized(for: .la)
+        XCTAssertNil(inLA.maxPrice); XCTAssertNil(inLA.minPrice)
+        XCTAssertFalse(inLA.availableOnly); XCTAssertFalse(inLA.hcrOnly); XCTAssertTrue(inLA.beds.isEmpty)
+        let inDC = q.sanitized(for: .dc)
+        XCTAssertEqual(inDC.maxPrice, 3500, "DC has registered rents, so a price still means something")
+        XCTAssertFalse(inDC.availableOnly, "but advertised-now is a New York feed")
+        let inNYC = q.sanitized(for: .nyc)
+        XCTAssertEqual(inNYC.maxPrice, 3500); XCTAssertTrue(inNYC.availableOnly)
+    }
+}

@@ -87,6 +87,22 @@ struct SearchQuery: Codable, Hashable {
         q.mode = .stabilized
         return q
     }
+    /// A query only makes sense in the city it was built for. Restoring one
+    /// from disk, or carrying it across a city switch, has to drop whatever
+    /// that city cannot answer — otherwise the filter silently matches nothing
+    /// and the app looks empty (Los Angeles, 2026-09-09: a $3,500 maximum left
+    /// over from New York rejected all 67,511 buildings).
+    func sanitized(for city: City) -> SearchQuery {
+        var q = self
+        if !city.hasPrices { q.minPrice = nil; q.maxPrice = nil }
+        if !city.hasNYCExtras {
+            q.availableOnly = false; q.vouchersOnly = false
+            q.hcrOnly = false; q.voucherLiveOnly = false
+            q.beds = []
+        }
+        return q
+    }
+
     /// What the results screen counts.
     var noun: String {
         let n = normalized

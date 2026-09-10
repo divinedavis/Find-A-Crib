@@ -38,6 +38,13 @@ struct City: Identifiable, Hashable, Codable, Sendable {
     /// The caveat that belongs with every result from this source.
     let sourceNote: String
     let searchPlaceholder: String
+    /// Whether ANY building in this city carries a rent. New York has
+    /// advertised rents and HUD estimates; SF and DC publish a reported or
+    /// registered rent on some rows; LA's assessor roll has no rent at all, so
+    /// a price filter there can only ever return nothing.
+    let hasPrices: Bool
+    /// What a rent on a card means here — never an asking rent outside NYC.
+    let priceLabel: String
 
     var isNYC: Bool { id == "nyc" }
     /// Advertised rents, vouchers, HPD violations/complaints and HCR lotteries
@@ -55,7 +62,8 @@ struct City: Identifiable, Hashable, Codable, Sendable {
         regionKind: .borough, regionLabel: "Borough",
         statusLabel: "Rent-stabilized", idLabel: "BBL",
         sourceNote: "Registered with NYS Homes and Community Renewal under rent stabilization.",
-        searchPlaceholder: "Neighborhood, borough or ZIP")
+        searchPlaceholder: "Neighborhood, borough or ZIP",
+        hasPrices: true, priceLabel: "Asking rent")
 
     static let la = City(
         id: "la", name: "Los Angeles", short: "LA", state: "CA",
@@ -64,7 +72,8 @@ struct City: Identifiable, Hashable, Codable, Sendable {
         regionKind: .zip, regionLabel: "Area",
         statusLabel: "Likely rent-stabilized (RSO)", idLabel: "APN",
         sourceNote: "Meets LA's RSO criteria — 2+ units, built on or before Oct 1, 1978 (LA County assessor rolls). A few exemptions can't be derived from tax data, so verify the address on ZIMAS.",
-        searchPlaceholder: "Address, ZIP or APN")
+        searchPlaceholder: "Address, ZIP or APN",
+        hasPrices: false, priceLabel: "")
 
     static let sf = City(
         id: "sf", name: "San Francisco", short: "SF", state: "CA",
@@ -73,7 +82,8 @@ struct City: Identifiable, Hashable, Codable, Sendable {
         regionKind: .neighborhood, regionLabel: "Neighborhood",
         statusLabel: "Rent-controlled (reported)", idLabel: "",
         sourceNote: "Block-level data: the SF Rent Board anonymises owner reports to the block, so a pin is a block-side of rent-controlled units, not one specific building.",
-        searchPlaceholder: "Neighborhood, address or block")
+        searchPlaceholder: "Neighborhood, address or block",
+        hasPrices: true, priceLabel: "Median reported rent")
 
     static let dc = City(
         id: "dc", name: "Washington DC", short: "DC", state: "DC",
@@ -82,7 +92,8 @@ struct City: Identifiable, Hashable, Codable, Sendable {
         regionKind: .neighborhood, regionLabel: "Neighborhood",
         statusLabel: "Rent-controlled (registered)", idLabel: "Reg. #",
         sourceNote: "Registered with DHCD under the Rental Housing Act. Coverage is per unit, so a property can hold both controlled and exempt units — the count here is the controlled ones.",
-        searchPlaceholder: "Neighborhood, address or ZIP")
+        searchPlaceholder: "Neighborhood, address or ZIP",
+        hasPrices: true, priceLabel: "Median registered rent")
 
     static let all: [City] = [.nyc, .la, .sf, .dc]
     static func find(_ id: String?) -> City { all.first { $0.id == id } ?? .nyc }

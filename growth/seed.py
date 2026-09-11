@@ -380,7 +380,18 @@ SEEDS = [
          notes="Accounts created before the 2026-07-27 cutover never enter the sequence — "
                "gating only the welcome on age would still have fired the day-3 and day-21 "
                "steps at 17 cold accounts at once, which is the backfill blast the owner "
-               "explicitly ruled out."),
+               "explicitly ruled out. "
+               "2026-09-11: a fourth step, `saved`, day 5+, to accounts that have saved a "
+               "building AND been on the site in the last 14 days. It is the first paid ask "
+               "this sequence has ever made, and it exists because the sequence's own metric "
+               "kept rising while revenue did not: accounts_with_saves 6 -> 21 since 08-25, "
+               "reports_sold and paying_subs 0 for the products' entire lives. An engaged "
+               "saver used to receive `welcome` and then nothing ever — `activate` is skipped "
+               "once they save, `lapsed` while they keep visiting — so the one audience with "
+               "proven intent was the one never asked. Measured by sent_saved (the ask) "
+               "against reports_sold (the answer); the ask is only made when a saved building "
+               "resolves in the corpus with an HPD record behind it, and never to somebody "
+               "who already bought a report."),
     dict(slug="listings_freshness", status="candidate", kind="content",
          name="Refresh the 'recently advertised' feed more than monthly",
          prefixes=["/available/"], metric="owned_visitors",

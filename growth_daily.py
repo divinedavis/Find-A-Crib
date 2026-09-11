@@ -568,7 +568,17 @@ def cmd_accounts(args):
                 n = len((json.load(f).get("avail") or {}))
         except Exception:
             pass
-        return accounts.run(dry_run=args.dry_run, voucher_buildings=n)
+        # The saved email names the building it is about and offers the report
+        # on it, so it needs the corpus. Without it the step still sends, but
+        # names no building and makes no offer — see accounts.report_target.
+        by_bbl = {}
+        try:
+            with open(os.path.join(args.docroot, "buildings.min.json")) as f:
+                by_bbl = {str(b["bbl"]): b for b in json.load(f)}
+        except Exception:
+            pass
+        return accounts.run(dry_run=args.dry_run, voucher_buildings=n,
+                            buildings_by_bbl=by_bbl)
     except Exception as e:
         log(f"  accounts failed: {e}")
         return None

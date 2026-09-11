@@ -76,19 +76,18 @@ Privacy Policy: https://findacrib.com/privacy/
 Find A Crib is an independent, informational tool. It is not a broker, does not list apartments, and takes no fee. Data: NYS Homes and Community Renewal rent-stabilization register (2024), NYC HPD open data, HUD FY2026 Fair Market Rents, HousingSearch.ny.gov, advertised rents from Zumper, LA County Assessor parcel data under LAHD's RSO criteria, the SF Rent Board Housing Inventory via DataSF, and the DC DHCD RentRegistry.
 """
 
-WHATS_NEW = """Find A Crib now covers four cities.
+WHATS_NEW = """Small improvements behind the scenes.
 
-- Pick a city — New York, Los Angeles, San Francisco or Washington DC — then narrow it the way that city is divided: by borough in New York, by neighborhood in San Francisco and DC, by area in Los Angeles
-- Each city comes from its own public register, and says so
-- New York keeps everything it had: what's for rent this week, HPD violations and complaints, the managing agent, and open lotteries
-- A new app icon, and the app now matches it
-- Bedrooms filter is always available, the results headline counts the stabilized buildings on screen, and setting up an alert works reliably
+Find A Crib covers New York, Los Angeles, San Francisco and Washington DC: pick a city and see every rent-stabilized building on one map, with what's for rent this week, violations, the managing agent and open lotteries in New York.
 """
 
-REVIEW_NOTES = """VERSION 1.1 (build __BUILD__) — three more cities
+REVIEW_NOTES = """VERSION 1.1.1 (build __BUILD__) — maintenance release
 
 WHAT CHANGED
-The app covered New York City only. It now also covers Los Angeles, San Francisco and Washington DC. On the Search tab, "City" is the first field; choosing one loads that city's buildings from findacrib.com and the Location field below then offers that city's own divisions — boroughs in New York, neighborhoods in San Francisco and Washington DC, ZIP areas in Los Angeles (its source, the LA County assessor roll, carries no neighborhood). To test: Search tab, tap City, pick Los Angeles, then tap the Area field.
+No user-facing changes since 1.1: internal groundwork only, and refreshed App Store screenshots that show the current design. Everything below describes the app as it has been since 1.1.
+
+CITIES
+The app covered New York City only until 1.1. It now also covers Los Angeles, San Francisco and Washington DC. On the Search tab, "City" is the first field; choosing one loads that city's buildings from findacrib.com and the Location field below then offers that city's own divisions — boroughs in New York, neighborhoods in San Francisco and Washington DC, ZIP areas in Los Angeles (its source, the LA County assessor roll, carries no neighborhood). To test: Search tab, tap City, pick Los Angeles, then tap the Area field.
 
 WHERE THE DATA COMES FROM
 Every city is a public register, fetched as static JSON from findacrib.com, no key and no account: New York — NYS Homes and Community Renewal rent-stabilization register; Los Angeles — LA County Assessor parcels meeting LAHD's RSO criteria (2+ units, built on or before Oct 1, 1978), labelled "likely" in the app because a few exemptions cannot be derived from tax data; San Francisco — SF Rent Board Housing Inventory via DataSF, anonymised by the Rent Board to the block, which the app states on screen; Washington DC — DHCD RentRegistry. The app is informational, is not a broker, lists no apartments and takes no fee.

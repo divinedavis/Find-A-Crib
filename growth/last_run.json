@@ -93,16 +93,16 @@
     "accept_pct": 1.1,
     "accept_pct_mature": 0.0,
     "added": 0,
-    "at": "2026-09-10T05:11:54+00:00",
+    "at": "2026-09-11T05:11:42+00:00",
     "by_crawl_age": {
       "0-6d": {
         "accept_pct": 0.0,
-        "fetched": 4,
+        "fetched": 3,
         "indexed": 0
       },
       "14-20d": {
         "accept_pct": 0.0,
-        "fetched": 9,
+        "fetched": 8,
         "indexed": 0
       },
       "21-27d": {
@@ -112,20 +112,20 @@
       },
       "28d+": {
         "accept_pct": 0.0,
-        "fetched": 61,
+        "fetched": 62,
         "indexed": 0
       },
       "7-13d": {
-        "accept_pct": 25.0,
-        "fetched": 4,
+        "accept_pct": 20.0,
+        "fetched": 5,
         "indexed": 1
       }
     },
     "cohort": 456,
-    "date": "2026-09-10",
+    "date": "2026-09-11",
     "dropped": 0,
     "errors": 0,
-    "fetched_mature": 78,
+    "fetched_mature": 79,
     "fetched_pct": 20.8,
     "gained_indexed": 0,
     "indexed_pct": 0.2,
@@ -133,211 +133,208 @@
     "last_crawl": "2026-09-08",
     "lost_indexed": 0,
     "ok": true,
-    "published_urls": 3861,
+    "published_urls": 3875,
     "read": 456,
     "rechecked": 100,
     "states": {
       "crawled_not_indexed": 94,
-      "discovered_not_indexed": 39,
+      "discovered_not_indexed": 27,
       "indexed": 1,
-      "unknown_to_google": 322
+      "unknown_to_google": 334
     }
   },
   "measure": {
-    "at": "2026-09-10T05:11:56+00:00",
+    "at": "2026-09-11T05:11:43+00:00",
     "coverage_pct": 81.4,
-    "date": "2026-09-10",
+    "date": "2026-09-11",
     "days": 1,
     "keywords_covered": 399,
     "keywords_total": 490,
-    "latest_measured_day": "2026-09-09",
+    "latest_measured_day": "2026-09-10",
     "traffic": {
       "arrival_shape": {
         "all": {
-          "busiest_6h_pct": 44.4,
-          "n": 266,
-          "night_pct": 8.6,
-          "peak_hour_utc": 1
+          "busiest_6h_pct": 37.9,
+          "n": 145,
+          "night_pct": 4.8,
+          "peak_hour_utc": 0
         },
         "direct": {
-          "busiest_6h_pct": 45.2,
-          "n": 210,
-          "night_pct": 9.0,
-          "peak_hour_utc": 1
+          "busiest_6h_pct": 37.0,
+          "n": 119,
+          "night_pct": 5.0,
+          "peak_hour_utc": 3
         },
         "organic": {
-          "busiest_6h_pct": 40.4,
-          "n": 52,
-          "night_pct": 7.7,
-          "peak_hour_utc": 4
+          "busiest_6h_pct": 44.0,
+          "n": 25,
+          "night_pct": 4.0,
+          "peak_hour_utc": 0
         }
       },
       "by_channel": {
-        "ai": 1,
-        "direct": 210,
-        "internal": 3,
-        "organic": 52
+        "direct": 119,
+        "internal": 1,
+        "organic": 25
       },
       "by_hour_utc": {
         "all": [
-          20,
-          24,
-          22,
-          21,
-          20,
+          16,
+          10,
+          8,
+          12,
+          6,
+          1,
+          3,
+          3,
+          0,
           3,
           2,
+          2,
           3,
-          4,
-          4,
+          10,
+          7,
+          6,
+          8,
+          5,
+          9,
           6,
           9,
-          12,
-          8,
-          13,
-          12,
-          10,
-          10,
-          14,
           9,
-          7,
-          17,
-          5,
-          11
+          4,
+          3
         ],
         "direct": [
-          16,
-          21,
-          19,
-          18,
+          10,
+          8,
+          8,
           11,
-          2,
+          4,
           1,
-          2,
           3,
           3,
-          6,
-          7,
-          10,
-          6,
-          11,
-          11,
-          7,
-          9,
-          10,
-          5,
-          6,
-          15,
+          0,
+          3,
           1,
-          10
+          2,
+          2,
+          8,
+          6,
+          4,
+          6,
+          4,
+          6,
+          6,
+          8,
+          8,
+          4,
+          3
         ],
         "organic": [
-          3,
-          3,
-          3,
-          3,
-          8,
+          5,
+          2,
+          0,
           1,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
           1,
+          0,
           1,
+          2,
+          1,
+          2,
+          2,
+          1,
+          3,
+          0,
           1,
           1,
           0,
-          2,
-          2,
-          2,
-          2,
-          1,
-          3,
-          0,
-          3,
-          4,
-          1,
-          2,
-          4,
-          1
+          0
         ]
       },
-      "by_src": {
-        "chatgpt.com": 1
-      },
-      "direct_deep": 2,
-      "new": 192,
+      "by_src": {},
+      "direct_deep": 4,
+      "new": 103,
       "new_window_days": 30,
-      "returning": 74,
+      "returning": 42,
       "top_paths": [
         [
           "/",
-          260
+          140
         ],
         [
-          "/building/manhattan/206-to-222-w-70th-st-1011580038/",
+          "/building/brooklyn/117-e-95th-st-3046140068/",
           1
         ],
         [
-          "/building/queens/144-05-88th-ave-4096890001/",
+          "/building/brooklyn/2019-union-st-3035100024/",
+          1
+        ],
+        [
+          "/building/manhattan/14-e-28th-st-1008570066/",
+          1
+        ],
+        [
+          "/building/queens/107-29-sutphin-blvd-4101310010/",
           1
         ],
         [
           "/guide/rent-stabilized-tenant-rights/",
-          1
-        ],
-        [
-          "/guide/what-is-rent-stabilization/",
-          1
-        ],
-        [
-          "/neighborhood/brooklyn/windsor-terrace-south-slope/",
           1
         ]
       ],
       "top_referrers": [
         [
           "www.google.com",
-          46
-        ],
-        [
-          "com.google.android.googlequicksearchbox",
-          3
-        ],
-        [
-          "duckduckgo.com",
-          2
+          22
         ],
         [
           "accounts.google.com",
           1
+        ],
+        [
+          "com.google.android.googlequicksearchbox",
+          1
+        ],
+        [
+          "search.yahoo.com",
+          1
         ]
       ],
-      "visitors": 266
+      "visitors": 145
     }
   },
   "outreach": {
-    "at": "2026-09-10T05:11:57+00:00",
-    "date": "2026-09-10",
+    "at": "2026-09-11T05:11:44+00:00",
+    "date": "2026-09-11",
     "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
     "ok": false
   },
   "scout": {
-    "at": "2026-09-10T05:11:56+00:00",
-    "date": "2026-09-10",
+    "at": "2026-09-11T05:11:44+00:00",
+    "date": "2026-09-11",
     "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
     "ok": false
   },
   "searchconsole": {
-    "at": "2026-09-10T05:00:12+00:00",
-    "clicks": 164,
-    "date": "2026-09-10",
-    "impressions": 212,
+    "at": "2026-09-11T05:00:11+00:00",
+    "clicks": 199,
+    "date": "2026-09-11",
+    "impressions": 252,
     "nonbranded_clicks": 0,
     "nonbranded_impressions": 0,
-    "page_clicks": 180,
-    "page_impressions": 304,
+    "page_clicks": 217,
+    "page_impressions": 352,
     "serving_ever": 278,
     "serving_pages": 8,
-    "serving_stable": 7,
+    "serving_stable": 8,
     "share_pct": 0.0,
     "tracked_ranking": 0,
-    "window": "2026-09-01..2026-09-08"
+    "window": "2026-09-02..2026-09-09"
   }
 }

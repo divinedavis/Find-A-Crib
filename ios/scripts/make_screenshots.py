@@ -16,8 +16,8 @@ W, H = 1320, 2868
 YELLOW = (255, 214, 10)
 WHITE = (255, 255, 255)
 INK = (18, 18, 22)
-NAVY = (14, 42, 110)
-ROYAL = (27, 70, 229)
+NAVY = (22, 60, 71)     # SE.navy 0x163C47, the app's teal chrome
+ROYAL = (47, 122, 138)  # SE.royal 0x2F7A8A
 HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RAW = os.path.join(HERE, "marketing", "raw")
 OUT = os.path.join(HERE, "marketing", "asc-screenshots")
@@ -126,7 +126,7 @@ def panel(n, name, bg, lines, subline, shot, cue_text=None, dev_w=980):
 
 if __name__ == "__main__":
     panel(1, "home", YELLOW, ["every rent-", "stabilized", "building"],
-          "all 47,000 of them, on one map", os.path.join(RAW, "home.png"), "what's available? →")
+          "131,000 of them · NYC, LA, SF & DC", os.path.join(RAW, "home.png"), "what's available? →")
     panel(2, "results", WHITE, ["what's for", "rent right", "now"],
           "asking rents posted in the last 5 days", os.path.join(RAW, "results.png"), "see it on the map →")
     panel(3, "map", YELLOW, ["search the", "block you", "want"],

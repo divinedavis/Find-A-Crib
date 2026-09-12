@@ -32,6 +32,15 @@ from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parent.parent
 LIVE = 'https://findacrib.com'
+CITY_PAGES = ('la', 'sf', 'dc', 'westchester')
+# One building per city known to carry a full record blob, for j_city_records.
+# Picked by "richest h" from each city's buildings.hpd.json; if a rebuild ever
+# drops one the journey says which city and which id, not just "no panel".
+CITY_RECORD_CASES = {
+    'la': ('LA-5511008010', ['Housing code violations', 'Complaints to LAHD', 'Eviction notices filed']),
+    'sf': ('SF-1237-200BLOCKOFDIVISA', ['Eviction notices', 'Rent Board petitions', 'Buyout agreements']),
+    'dc': ('DC-69000755_1', ['Owner of record']),
+}
 BBL = '2023190002'          # 2401 3RD AVE, Bronx — has violations, listings nearby
 ADDR = '2401 3RD AVE'
 PINS = "document.querySelectorAll('#map .leaflet-marker-icon').length"
@@ -62,6 +71,7 @@ JOURNEY_EVENTS = {
     'filters_and_save':     ['save', 'unsave', 'saved_view'],
     'deep_links_and_view':  ['building_view'],
     'city_pages':           [],
+    'city_records':         ['building_view'],
     'memory':               [],
     'alerts_page':          [],
     'signin_modal':         ['signin'],
@@ -98,6 +108,18 @@ class Runner:
     def __init__(self, target, only, headed):
         self.target, self.only, self.headed = target, only, headed
         self.html = None if target == 'live' else (ROOT / 'index.html').read_text()
+        # The city pages are generated FROM index.html by build_city_pages.py, so
+        # a local run has to serve the generated copies too — otherwise a journey
+        # that opens /la/ silently tests the deployed site and passes on a change
+        # that was never built.
+        self.city_html = {} if target == 'live' else {
+            c: (ROOT / c / 'index.html').read_text()
+            for c in CITY_PAGES if (ROOT / c / 'index.html').exists()
+        }
+        # …and the buildings files with them. Serving a local page against the
+        # DEPLOYED data is the worst of both: the page is the new one, the blob
+        # is last week's, and the panel the change added renders empty. Read
+        # lazily — LA's slim file is 14 MB and most journeys never ask for it.
         self.sc = (ROOT / 'static' / 'supercluster' / 'supercluster.min.js').read_text()
         self.results = []
 
@@ -120,14 +142,35 @@ class Runner:
         if self.html is not None:
             def route(r):
                 u = r.request.url.split('#')[0]
+                city = next((c for c in self.city_html
+                             if u == f'{LIVE}/{c}/' or u == f'{LIVE}/{c}/index.html'
+                             or u.startswith(f'{LIVE}/{c}/?')), None)
                 if u == LIVE + '/' or u.startswith(LIVE + '/?'):
                     r.fulfill(status=200, content_type='text/html; charset=utf-8', body=self.html)
+                elif city:
+                    r.fulfill(status=200, content_type='text/html; charset=utf-8', body=self.city_html[city])
+                elif self.local_data_path(u):
+                    r.fulfill(status=200, content_type='application/json',
+                              body=self.local_data_path(u).read_text())
                 elif u.startswith(LIVE + '/static/supercluster/'):
                     r.fulfill(status=200, content_type='application/javascript', body=self.sc)
                 else:
                     r.continue_()
             page.route(LIVE + '/**', route)
         return page
+
+    def local_data_path(self, url):
+        """The on-disk buildings file a city-page request is asking for, or None.
+        Only the two the app fetches, and only for a city page — everything else
+        (listings, s8, fmr, seo pages) still comes from the live site."""
+        if not self.city_html:
+            return None
+        for c in self.city_html:
+            for name in ('buildings.slim.json', 'buildings.hpd.json', 'buildings.min.json'):
+                if url == f'{LIVE}/{c}/{name}':
+                    p = ROOT / c / name
+                    return p if p.exists() else None
+        return None
 
     def boot(self, page, path='/', wait_pins=True):
         # A hash-only change to a loaded page is not a navigation; a deep link
@@ -463,6 +506,38 @@ class Runner:
             self.ok(int(lab.split(' of ')[1].replace(',', '')) >= low, f'/{city}/ count looks wrong: {lab}', j)
             j.notes.append(f'{city} {lab}')
 
+    def j_city_records(self, page, j, device):
+        """Every city's building page must show the record ITS city publishes.
+
+        Until 2026-09-12 only New York had one: LA, SF and DC buildings showed
+        an address, a unit count and a year, and the whole owner/violation panel
+        was gated on IS_NYC. Each of those cities does publish a per-property
+        record — LAHD enforcement, the SF Rent Board's case history, the DC
+        assessor's roll — and this asserts each one arrives and is named in that
+        city's own words, not New York's.
+        """
+        if device != 'desktop':
+            return                       # same markup either way; once is enough
+        for city, (bid, want) in CITY_RECORD_CASES.items():
+            page.goto('about:blank')
+            page.goto(f'{LIVE}/{city}/#d={bid}', wait_until='networkidle', timeout=90000)
+            try:
+                self.wait_until(page, "!document.getElementById('detail-sheet').hidden", timeout=60000)
+            except Exception:
+                j.errors.append(f'/{city}/#d={bid} never opened the building'); continue
+            # the blob is lazy — buildings.hpd.json arrives after the first paint
+            try:
+                self.wait_until(page, "!!document.querySelector('[data-sec=\"hpd\"] .hpd-section h4')", timeout=30000)
+            except Exception:
+                j.errors.append(f'{city}: no record panel on {bid}'); continue
+            heads = page.evaluate("[...document.querySelectorAll('[data-sec=\"hpd\"] h4')].map(e=>e.textContent.trim())")
+            for w in want:
+                self.ok(w in heads, f'{city}: record panel should show "{w}", got {heads}', j)
+            # New York's wording must not leak into another city's panel.
+            txt = page.evaluate("document.querySelector('[data-sec=\"hpd\"]').innerText")
+            self.ok('HPD' not in txt, f'{city}: panel mentions HPD, which is a New York agency', j)
+            j.notes.append(f'{city} {len(heads)} sections')
+
     def j_memory(self, page, j, device):
         if device != 'desktop':
             return
@@ -665,7 +740,7 @@ class Runner:
         self.ok(page.evaluate("document.getElementById('auth-modal').hidden"), 'modal should close', j)
 
     JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'pin_and_list',
-                'filters_and_save', 'deep_links_and_view', 'city_pages', 'memory', 'alerts_page', 'signin_modal', 'app_chip', 'city_chip',
+                'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'memory', 'alerts_page', 'signin_modal', 'app_chip', 'city_chip',
                 'ad_tiles', 'outbound_links', 'status_chips', 'referral_gate']
 
     # ---- run --------------------------------------------------------------

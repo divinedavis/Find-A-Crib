@@ -45,6 +45,7 @@ Usage:
 import argparse
 import json
 import math
+import re
 import sys
 import time
 import urllib.parse
@@ -76,6 +77,156 @@ DATASETS = {
 
 NOW = datetime.now(timezone.utc)
 YEAR_AGO = NOW - timedelta(days=365)
+
+# LAHD types a violation the way an inspector writes on a clipboard — 134
+# distinct strings, mostly shouted abbreviations ("W/H T/P EXTENSION",
+# "PLMG FIXTURE SURFACE", "RECEPTACLE N/G"). The renter reading the building
+# page has to be told what was wrong with the flat, so the common ones get a
+# plain-English name and everything else falls through to title case with the
+# abbreviations expanded. Ordered by how often each appears in the feed.
+VIOLATION_NAME = {
+    "SMOKE DETECTORS": "Smoke detectors",
+    "INTER-WALLS/CEILING": "Interior walls or ceiling",
+    "WINDOW/DOOR MAINT": "Window or door disrepair",
+    "FLOOR COVERING": "Floor covering",
+    "FIXTURE DEF/LEAK": "Leaking or defective fixture",
+    "INSECT SCREENS": "Missing insect screens",
+    "CAULKING": "Caulking",
+    "GENERAL MAINTENANCE": "General disrepair",
+    "PLMG FIXTURE SURFACE": "Plumbing fixture surface",
+    "COVERS-SWITCH/RECEP": "Missing switch or outlet covers",
+    "LIGHT FIXTURE": "Light fixture",
+    "VENTING SYSTEM": "Venting system",
+    "EXTERIOR PAINT": "Exterior paint",
+    "W/H T/P EXTENSION": "Water heater relief-valve pipe",
+    "W/H STRAP/SECURE": "Water heater not strapped down",
+    "WINDOW/DOOR GLASS": "Broken window or door glass",
+    "VENT-KITCHEN": "Kitchen ventilation",
+    "EXTERIOR ELEVATED ELEMENTS INSPECTION": "Balcony/walkway inspection overdue",
+    "EXTERIOR ELEVATED ELEMENTS REPAIRS": "Balcony or walkway repairs",
+    "LOOSE FIXTURES": "Loose fixtures",
+    "HEATING APPLIANCE": "Heating appliance",
+    "STAIR/WALK/DECK": "Stairs, walkway or deck",
+    "EXTERIOR WALLS": "Exterior walls",
+    "GENERAL FIRE SAFETY": "Fire safety",
+    "PLUMBING TRAP/TAILPIECE": "Plumbing trap or tailpiece",
+    "GFI RECEPTACLES": "Missing GFCI outlets",
+    "SEAL PENETRATIONS": "Unsealed wall penetrations",
+    "DAMPNESS IN ROOMS": "Damp rooms",
+    "OPEN STORAGE": "Open storage",
+    "COUNTER/DRAINBOARD": "Counter or drainboard",
+    "PREMISES MAINTENANCE": "Premises upkeep",
+    "FOUNDATION VENTS": "Foundation vents",
+    "GENERAL PLUMBING": "Plumbing",
+    "FIRE EXTINGUISHERS": "Fire extinguishers",
+    "EXPOSED WIRING": "Exposed wiring",
+    "VENTILATION-BATHS": "Bathroom ventilation",
+    "UNAPPROVED ELECTRIC": "Unpermitted electrical work",
+    "HOT/COLD WATER": "Hot or cold water supply",
+    "DRY-ROT/TERMITES": "Dry rot or termites",
+    "VENT CONNECTOR/CAP": "Vent connector or cap",
+    "DRAINS BLOCKED": "Blocked drains",
+    "ILLEGAL CONSTRUCTION": "Unpermitted construction",
+    "ELECTRICAL-GENERAL": "Electrical",
+    "RECEPTACLE N/G": "Ungrounded outlet",
+    "DOUBLE-KEYED LOCKS": "Double-keyed locks (an exit hazard)",
+    "FIRE SEP UNITS": "Fire separation between units",
+    "FIRE SEP GARAGE": "Fire separation from the garage",
+    "PANEL WIRING COVER": "Electrical panel cover",
+    "HAND/GUARDRAILS": "Handrails or guardrails",
+    "UNAPPROVED PLUMBING": "Unpermitted plumbing",
+    "EXTENSION CORDS": "Extension cords used as wiring",
+    "FIRE DOORS": "Fire doors",
+    "FENCE MAINTENANCE": "Fence upkeep",
+    "SECURITY BARS": "Security bars (an exit hazard)",
+    "GENERAL WEATHERPROOFING": "Weatherproofing",
+    "ROOF WEATHERPROOFING": "Roof weatherproofing",
+    "GENERAL HVAC": "Heating or cooling",
+    "CLEAN YARDS": "Yard cleanliness",
+    "EXIT DOORS/WAYS": "Exit doors or routes",
+    "CONDUIT-KITCHEN SINK": "Conduit at the kitchen sink",
+    "NEW C/O REQUIRED": "New certificate of occupancy required",
+    "INOPERATIVE VEHICLES": "Inoperative vehicles on site",
+    "UNDERFLOOR SUPPORTS": "Underfloor supports",
+    "OPEN WASTE PIPING": "Open waste piping",
+    "FUSE/BREAKER": "Fuse or breaker",
+    "FIXT. SHUT-OFF VALVE": "Fixture shut-off valve",
+    "FAUCET AIRGAP": "Faucet air gap",
+    "ELECTRICAL SERVICE": "Electrical service",
+    "TENANT SANITATION": "Sanitation",
+    "CLEAN BUILDING": "Building cleanliness",
+    "GENERAL STRUCTURAL": "Structural",
+    "OWNER CONTACT": "Owner contact details",
+    "GENERAL SANITATION": "Sanitation",
+    "UNAPPROVED HEATING": "Unpermitted heating",
+    "CLOTHES DRYERS": "Clothes dryer venting",
+    "HORIZONTAL SUPPORTS": "Horizontal supports",
+    "COMBUSTION AIR": "Combustion air supply",
+    "EXIT SIGNS": "Exit signs",
+    "EXIT ILLUMINATION": "Exit lighting",
+    "DAMAGED CONDUIT": "Damaged conduit",
+    "PIPING-ISOLATION FTG": "Pipe isolation fitting",
+    "RECEPTACLES PAINTED": "Painted-over outlets",
+    "GAS OUTLET-ABANDONED": "Abandoned gas outlet",
+    "GAS-SHUT-OFF VALVE": "Gas shut-off valve",
+    "GAS CONN/VALVE": "Gas connector or valve",
+    "WIRING ABANDONED": "Abandoned wiring",
+    "OVERHEAD WIRING": "Overhead wiring",
+    "SPRINKLER HEADS": "Sprinkler heads",
+    "LIGHT/VENTILATION": "Light or ventilation",
+    "MASONRY MORTAR": "Masonry mortar",
+    "HEATERS UNVENTED": "Unvented heaters",
+    "SECURE/CLEAN": "Secure and clean the property",
+    "GENERAL ZONING": "Zoning",
+    "GENERAL NUISANCE": "Nuisance",
+    "NUISANCE BUILDING": "Nuisance building",
+    "FLOORS/STAIRWAYS/RAILINGS": "Floors, stairways or railings",
+    "STOP WORK": "Stop-work order",
+    "SHORT TERM RENTAL": "Short-term rental",
+    "RH CONVERSION/DEMOLITION": "Residential hotel conversion or demolition",
+    "RH DOCUMENTATION": "Residential hotel documentation",
+    "HISTORICAL PRESERVAT": "Historic preservation",
+    "PLUMBING/GAS FACILITIES": "Plumbing or gas facilities",
+    "WEATHER PROTECTION": "Weather protection",
+    "HEATING FACILITIES": "Heating facilities",
+    "RUBBISH RECEPTACLES": "Rubbish bins",
+    "POOL/FENCE": "Pool fence",
+    "POOL WATER": "Pool water",
+    "FIRE DAMAGE": "Fire damage",
+    "GUARDRAIL HEIGHT": "Guardrail height",
+    "OPEN AIR SALES": "Open-air sales",
+    "UNAPPROVED PARKING": "Unpermitted parking",
+    "FRONT YARD PARKING/PAVING": "Front-yard parking or paving",
+    "OVER HEIGHT FENCE": "Over-height fence",
+}
+# Anything not named above: expand the clerk's shorthand, then title-case.
+_ABBREV = {
+    "W/H": "water heater", "T/P": "relief valve", "PLMG": "plumbing",
+    "MAINT": "maintenance", "RECEP": "receptacle", "DEF": "defective",
+    "N/G": "not grounded", "SEP": "separation", "FTG": "fitting",
+    "C/O": "certificate of occupancy", "GFI": "GFCI", "RH": "residential hotel",
+    "INTER": "interior", "MISC": "Miscellaneous", "FIXT": "fixture",
+    "THP": "tenant habitability", "HVAC": "heating and cooling",
+}
+
+
+def pretty_violation(raw):
+    t = " ".join((raw or "").split())
+    if not t:
+        return None
+    named = VIOLATION_NAME.get(t.upper())
+    if named:
+        return named
+    words = []
+    for w in re.split(r"[\s]+", t):
+        key = w.rstrip(".").upper()
+        words.append(_ABBREV.get(key, w))
+    out = " ".join(words)
+    # Leave a string that is already mixed case alone; only de-shout the
+    # all-caps ones, and never lowercase an abbreviation that was substituted in.
+    if out.isupper():
+        out = out.capitalize()
+    return out
 
 
 def get(url, retries=4):
@@ -169,7 +320,7 @@ def agg_violations(rows):
             hi = cited if hi is None or cited > hi else hi
             if cited >= YEAR_AGO:
                 s["last_12mo"] += 1
-        t = (r.get("violationtype") or "").strip()
+        t = pretty_violation(r.get("violationtype"))
         if t:
             s["types"][t] += 1
     window = [lo.date().isoformat(), hi.date().isoformat()] if lo and hi else None

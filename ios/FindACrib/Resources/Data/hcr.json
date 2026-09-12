@@ -1,7 +1,7 @@
 {
-"updated": 1788905106,
-"updated_iso": "2026-09-08T22:05:06+00:00",
-"count": 51,
+"updated": 1789232705,
+"updated_iso": "2026-09-12T17:05:05+00:00",
+"count": 52,
 "listings": [
 {
 "id": "a0Ycs000023NXVBEA4",
@@ -137,6 +137,36 @@
 "bbl": null,
 "lat": 40.679168,
 "lng": -73.876591
+}
+]
+},
+{
+"id": "a0Ycs00002BceQ6EAJ",
+"name": "Baez Place Apartments",
+"kind": "Waitlist",
+"status": "Open",
+"ptype": "Rental",
+"boro": "Bx",
+"county": "Bronx",
+"min_income": 50709,
+"max_income": 103680,
+"due": "10/9/2026",
+"fee": null,
+"phone": "3473414693",
+"url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs00002BceQ6EAJ/detail",
+"info": "Income Guidelines and permitted household size are subject to change. Household size includes everyone who will live with you, including parents and children. Subject to occupancy criteria. Household earnings include salary, hourly wages, tips, Social Security Benefits, Pension and other income. Minimum income listed may not apply to applicants with Section 8 or other qualifying rental subsidies. Asset limits also apply.",
+"desc": "Baez Place is accepting applications for current and future vacancies. There are currently Senior specific units available - 7 studio units at 60% AMI, and 3 studio units at 80% AMI. Baez Place provides affordable, supportive, and senior housing options featuring studio spaces and 1-, 2- and 3-bedroom apartments. The apartments are split into two distinct wings. The building's lobby feeds into the",
+"image": "https://housingsearch.hcr.ny.gov/housing/file-asset/069cs00001B5zgmAAB?oid=00D8y0000008f2F",
+"senior": true,
+"accessible": false,
+"approx": false,
+"buildings": [
+{
+"street": "334 East 176th Street",
+"zip": "10457",
+"bbl": null,
+"lat": 40.84745,
+"lng": -73.90231
 }
 ]
 },
@@ -978,13 +1008,13 @@
 "id": "a0Ycs00001nyK1AEAU",
 "name": "Nagle House",
 "kind": "Mitchell-Lama Waitlist",
-"status": "Open",
+"status": "Closed",
 "ptype": "Co-op",
 "boro": "M",
 "county": "New York (Manhattan)",
 "min_income": 21879,
 "max_income": 31235,
-"due": "Ongoing",
+"due": "Check Listing",
 "fee": 75,
 "phone": "212-567-7500",
 "url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs00001nyK1AEAU/detail",

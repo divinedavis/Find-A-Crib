@@ -35,14 +35,14 @@
 <meta property="og:title" content="Rent-Controlled San Francisco — Find A Crib" />
 <meta property="og:description" content="Map 12,000+ San Francisco block-sides with rent-controlled apartments, from official SF Rent Board owner reports — median reported rents, unit counts, year built, by neighborhood." />
 <meta property="og:url" content="https://findacrib.com/sf/" />
-<meta property="og:image" content="https://findacrib.com/og-image.png" />
+<meta property="og:image" content="https://findacrib.com/og-image.png?v=3" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <!-- Twitter/X large card -->
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Rent-Controlled San Francisco — Find A Crib" />
 <meta name="twitter:description" content="Map 12,000+ San Francisco block-sides with rent-controlled apartments, from official SF Rent Board owner reports — median reported rents, unit counts, year built, by neighborhood." />
-<meta name="twitter:image" content="https://findacrib.com/og-image.png" />
+<meta name="twitter:image" content="https://findacrib.com/og-image.png?v=3" />
 <!-- structured data: site identity for richer search results -->
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
@@ -1772,6 +1772,7 @@
       slugs: { M: 'manhattan-ny', Bx: 'bronx-ny', Bk: 'brooklyn-ny', Q: 'queens-ny', SI: 'staten-island-ny' },
       searchPh: 'Search only rent stabilized apartments',
       nyc: true,
+      rec: { heading: 'Owner &amp; HPD record', agency: 'HPD' },
     },
     sf: {
       name: 'San Francisco', state: 'CA', center: [37.7749, -122.4194], zoom: 13,
@@ -1785,6 +1786,21 @@
         title: 'Median owner-reported rent for this block (SF Rent Board Housing Inventory) — not an asking rent',
       },
       sourceNote: 'Block-level data: the SF Rent Board anonymizes owner reports to the block, so a pin is a block-side of rent-controlled units, not one specific building.',
+      // SF's Rent Board publishes eviction notices and petitions anonymized to
+      // the block exactly as the inventory is, so they join; DBI's code
+      // violations are at real addresses and deliberately are NOT joined —
+      // pinning one to a block would invent the precision the source removed.
+      rec: {
+        heading: 'Rent Board record', agency: 'SF Rent Board',
+        scope: 'this block',
+        note: 'Filed with the SF Rent Board for this block. Like the rent figures, these are anonymized to the block, so they cover every building on this block-side rather than one address.',
+        none: 'No Rent Board eviction, petition or buyout on file for this block.',
+        noViol: 'San Francisco publishes housing-code violations by street address, and the Rent Board anonymizes this map to the block — so there is no honest way to show them here. Look an address up directly with SF DBI.',
+        violLink: { href: 'https://dbiweb02.sfgov.org/dbipts/', label: 'Look up an address at SF DBI ↗' },
+        ev: { label: 'Eviction notices', unit: 'notice' },
+        pet: { label: 'Rent Board petitions' },
+        by: { label: 'Buyout agreements' },
+      },
       credit: 'Source: <a href="https://data.sfgov.org/Housing-and-Buildings/Rent-Board-Housing-Inventory/gdc7-dmcn" target="_blank" rel="noopener">SF Rent Board Housing Inventory</a> via DataSF (owner-reported under the Rent Ordinance, refreshed daily, anonymized to the block) · Created by <a href="https://divinedavis.com" target="_blank" rel="noopener">Divine Davis</a> · <a href="/developers/">API for developers</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a>',
     },
     la: {
@@ -1794,6 +1810,25 @@
       regions: { LA: 'Los Angeles' }, slugs: { LA: 'los-angeles-ca' },
       searchPh: 'Rent-stabilized? Address, ZIP or APN',
       sourceNote: 'Meets LA’s RSO criteria — 2+ units, built on or before Oct 1, 1978 (LA County assessor rolls). A small number of exemptions can’t be derived from tax data, so verify the address on ZIMAS.',
+      // LAHD's Property Look-Up datasets are keyed by APN, which is this
+      // record's own id, so they join exactly. Two differences from NYC the
+      // wording has to carry: LA grades no violation A/B/C (no hazard classes
+      // to colour by), and the violations file is a rolling window rather than
+      // an all-time register — `h.window` says which dates, and the panel
+      // prints them rather than implying a lifetime count.
+      rec: {
+        heading: 'LAHD record', agency: 'LAHD', scope: 'this property',
+        viol: { label: 'Housing code violations', rolling: true,
+                note: 'Cited by Los Angeles Housing Department inspectors under the Systematic Code Enforcement Program and on complaint. LA does not grade violations by hazard class the way New York does.' },
+        comp: { label: 'Complaints to LAHD', btn: 'Complaints (LAHD)',
+                note: 'Every complaint case LAHD has opened on this property, back to 1986.' },
+        ev: { label: 'Eviction notices filed', unit: 'notice',
+              note: 'LA landlords must file every eviction notice on an RSO unit with LAHD. A no-fault notice — Ellis Act, owner move-in, demolition — means a tenant can be made to leave without having done anything.' },
+        by: { label: 'Tenant buyouts' },
+        cases: { label: 'Enforcement cases' },
+        none: 'LAHD has no enforcement record for this parcel.',
+        link: { href: 'https://housing.lacity.gov/', label: 'LAHD property look-up ↗' },
+      },
       credit: 'Derived from <a href="https://data.lacounty.gov/" target="_blank" rel="noopener">LA County Assessor parcel data</a> using <a href="https://housing.lacity.gov/residents/rso-overview" target="_blank" rel="noopener">LAHD’s RSO criteria</a> (residential, 2+ units, built ≤ 1978, City of LA) — verify any building on <a href="https://zimas.lacity.org/" target="_blank" rel="noopener">ZIMAS</a> · Created by <a href="https://divinedavis.com" target="_blank" rel="noopener">Divine Davis</a> · <a href="/developers/">API for developers</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a>',
     },
     westchester: {
@@ -1822,6 +1857,17 @@
         title: 'Median rent registered with DC DHCD for this property’s rent-controlled units — the legal registered rent, not an asking rent',
       },
       sourceNote: 'Registered with DHCD under the Rental Housing Act. Coverage is per unit, so a property can hold both controlled and exempt units — the count here is the controlled ones. A few large landlords register an entire complex under one street address.',
+      // DHCD knows a property is rent-controlled; it does not know when the
+      // building went up or who owns it. Both come from the DC assessor, joined
+      // through the registration's Master Address Repository id.
+      rec: {
+        heading: 'Owner &amp; assessor record', agency: 'the DC assessor',
+        scope: 'this property', owner: true,
+        note: 'From the DC Office of Tax and Revenue — the owner on the tax roll and the assessor’s record of the building, matched to this registration through its address.',
+        none: 'No assessor record matched this registration.',
+        noViol: 'Washington DC publishes no housing-code violation data — the Department of Buildings releases none, so no map can show it. File or check a complaint with DOB directly.',
+        violLink: { href: 'https://dob.dc.gov/', label: 'DC Department of Buildings ↗' },
+      },
       credit: 'Source: <a href="https://dhcd.dc.gov/page/rentregistry-rent-control-database" target="_blank" rel="noopener">DC DHCD RentRegistry</a> public data exports (nightly) — registered rent-controlled units under the Rental Housing Act; exempt units under § 2.05(a) are excluded · Created by <a href="https://divinedavis.com" target="_blank" rel="noopener">Divine Davis</a> · <a href="/developers/">API for developers</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a>',
     },
   };
@@ -2029,10 +2075,39 @@
     const hideNycOnly = document.createElement('style');
     hideNycOnly.textContent = '.nyc-only{display:none!important}';
     document.head.appendChild(hideNycOnly);
+    // LA's LAHD feed carries the same two eager counts NYC's HPD one does
+    // (violations.open, complaints.open), so the condition filters and the
+    // sorts built on them work there unchanged — they were hidden only because
+    // no city but New York had the data. Put them back for any city that does,
+    // in that city's words, and drop the parts it has no equivalent for: LA
+    // grades no violation A/B/C, so the Class C option would match nothing.
+    const R = CITY.rec || {};
+    const keepSort = new RegExp(
+      [R.viol ? 'viol' : '', R.comp ? 'comp' : '', CITY.rent ? 'price' : ''].filter(Boolean).join('|') || '(?!)');
     document.querySelectorAll('#sort-select option, #sort-sheet .sheet-opt').forEach(el => {
       const v = el.value || el.dataset.v || '';
-      if (/viol|comp|price/.test(v)) el.remove();
+      if (/viol|comp|price/.test(v) && !keepSort.test(v)) el.remove();
+      else if (/viol/.test(v) && R.viol) el.textContent = el.textContent.replace(/Violations/, R.viol.label);
+      else if (/comp/.test(v) && R.comp) el.textContent = el.textContent.replace(/Complaints/, R.comp.label);
     });
+    if (R.viol || R.comp) {
+      const show = [];
+      if (R.viol || R.comp) show.push('#pill-viol', '#btn-filters');
+      show.forEach(sel => document.querySelectorAll(sel).forEach(el => el.classList.remove('nyc-only')));
+      // Relabel the group headings and drop the radios this city cannot answer.
+      document.querySelectorAll('.sheet-group-title, #filter-sheet .sheet-group').forEach(el => {
+        const t = el.matches('.sheet-group-title') ? el : el.querySelector('.sheet-group-title');
+        if (!t) return;
+        if (/violations/i.test(t.textContent)) {
+          if (R.viol) { t.textContent = R.viol.label; el.closest('.sheet-group')?.classList.remove('nyc-only'); }
+        } else if (/complaints/i.test(t.textContent)) {
+          if (R.comp) { t.textContent = R.comp.label; el.closest('.sheet-group')?.classList.remove('nyc-only'); }
+        }
+      });
+      if (!(R.viol && R.viol.classes)) {
+        document.querySelectorAll('input[value="classc"]').forEach(i => i.closest('label')?.remove());
+      }
+    }
     const sub = document.querySelector('.brand-sub');
     if (sub && CITY.tagline) sub.textContent = CITY.tagline;
     const creditEl = document.getElementById('credit');
@@ -2428,11 +2503,14 @@
       if (event === 'building_view') maybeSignupNudge();
       if (!supaClient || isBot()) return;
       const vid = visitorId();
+      // platform: the iPhone app writes to this same table with platform:"ios"
+      // (ios/FindACrib/Services/Analytics.swift). Without it the two clients
+      // are indistinguishable and every per-platform number is wrong.
       supaClient.from('events').insert({
         visitor_id: vid,
         user_id: authUser ? authUser.id : null,
         event,
-        props: props || null,
+        props: Object.assign({ platform: 'web', city: document.documentElement.dataset.city || 'nyc' }, props || {}),
         path: location.pathname + location.search,
       }).then(() => {}, () => {});
     } catch (e) { /* best-effort */ }
@@ -2578,7 +2656,11 @@
   const listingBeds = listingsBlob.beds || {};
   // one price per building, shared by the price sort and the price filter:
   // real asking rent when advertised, else the ZIP's HUD estimate midpoint
-  const priceOf = r => listingPrices[r.bbl] ?? (FMR[r.z] ? (FMR[r.z][0] + FMR[r.z][2]) / 2 : null);
+  // An advertised rent first, then HUD's ZIP estimate (NYC), then the rent the
+  // city itself publishes on the record — SF's block median and DC's registered
+  // legal rent. Without that last fallback the price sort had nothing to read
+  // outside New York and silently ranked every building equal.
+  const priceOf = r => listingPrices[r.bbl] ?? (FMR[r.z] ? (FMR[r.z][0] + FMR[r.z][2]) / 2 : (r.mr ?? null));
   // when the listing/price data was last collected by the nightly scrape
   const listingsAsOf = listingsBlob.updated
     ? new Date(listingsBlob.updated * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -2999,7 +3081,7 @@
       ${s8Html(rec)}
       <div style="margin-top:6px">${statusHtml}</div>
       ${noteHtml}
-      ${IS_NYC ? cardHpdLine(rec) : ''}
+      ${cardHpdLine(rec)}
       <div class="popup-actions">
         <a class="primary" href="#" data-popup-details>Details</a>
         <a class="secondary" href="${esc(listing.href)}" target="_blank" rel="noopener">${listing.label}</a>
@@ -3241,6 +3323,133 @@
         ${link}
       </div>` : `<div class="hpd-section">${link}</div>`}
     `;
+  }
+
+  // ---------- the same panel, for the cities that are not New York ----------
+  // LA, SF and DC each publish a per-property record; none of them publishes
+  // the SAME record, so this renders what the city actually has rather than an
+  // HPD-shaped form with most of it blank. The blob arrives the same way NYC's
+  // does — eager counts in buildings.slim.json, the rest in buildings.hpd.json
+  // on the first detail open — so ensureHpdFull() serves every city unchanged.
+  const REC = CITY.rec || {};
+  // `br` keys are bedroom counts as strings; 4 is the "and up" bucket.
+  const BED_LABEL = { '0': 'Studio', '1': '1 bed', '2': '2 bed', '3': '3 bed', '4': '4+ bed' };
+  const UTIL_LABEL = { water: 'water', gas: 'gas', electric: 'electricity', refuse: 'refuse' };
+
+  function statChip(n, label, tone) {
+    return `<span class="hpd-stat ${tone || ''}">${esc(String(n))} ${esc(label)}</span>`;
+  }
+
+  // "3 notices" / "1 notice" without a second template string at each call.
+  function plural(n, word) { return `${n.toLocaleString()} ${word}${n === 1 ? '' : 's'}`; }
+
+  function recBlock(title, chips, note, extra) {
+    if (!chips) return '';
+    return `<div class="hpd-section"><h4>${title}</h4>
+      <div class="hpd-row">${chips}</div>
+      ${extra || ''}
+      ${note ? `<div class="popup-meta" style="margin-top:6px;font-size:11px">${note}</div>` : ''}
+    </div>`;
+  }
+
+  // A short "what was actually wrong / why" list: [[label, count], …] as the
+  // builders emit it. Capped at the source, not here.
+  function recReasons(rows, lead) {
+    if (!rows || !rows.length) return '';
+    return `<div class="popup-meta" style="margin-top:6px;font-size:11px">${lead}
+      ${rows.map(([label, n]) => `${esc(label)}${n > 1 ? ` (${n})` : ''}`).join(' · ')}</div>`;
+  }
+
+  function cityRecordHtml(rec) {
+    const h = rec.h;
+    const out = [];
+    // DC: the assessor's record and the owner on the tax roll.
+    if (REC.owner && h && (h.owner || h.yr || h.rooms || h.beds)) {
+      const bits = [];
+      if (h.owner) bits.push(`<div class="hpd-row"><b>${esc(h.owner)}</b></div>`);
+      const spec = [];
+      if (h.ptype) spec.push(esc(h.ptype));
+      if (h.units_total) spec.push(plural(h.units_total, 'unit') + ' in the building');
+      if (h.beds) spec.push(plural(h.beds, 'bedroom'));
+      if (h.baths) spec.push(plural(h.baths, 'bathroom'));
+      if (h.rooms) spec.push(plural(h.rooms, 'room'));
+      if (h.cond) spec.push(`condition: ${esc(h.cond)}`);
+      if (h.renov) spec.push(`brought up to date ~${h.renov}`);
+      if (h.assessed) spec.push(`assessed at $${h.assessed.toLocaleString()}`);
+      if (spec.length) bits.push(`<div class="popup-meta" style="font-size:11px;margin-top:4px">${spec.join(' · ')}</div>`);
+      if (h.vacreg) bits.push(`<div class="hpd-row" style="margin-top:6px">${statChip(1, 'on DC’s vacant &amp; blighted register', 'bad')}</div>`);
+      out.push(`<div class="hpd-section"><h4>Owner of record</h4>${bits.join('')}
+        ${REC.note ? `<div class="popup-meta" style="margin-top:6px;font-size:11px">${REC.note}</div>` : ''}</div>`);
+    }
+    // LA: violations, then complaints — the two NYC has, named as LA names them.
+    const v = h && h.violations;
+    if (REC.viol && v) {
+      const win = h.window ? ` Covers citations from ${esc(h.window[0])} to ${esc(h.window[1])} — LAHD’s file is a rolling window, not an all-time register.` : '';
+      out.push(recBlock(esc(REC.viol.label),
+        `${statChip(v.open, 'open', v.open > 5 ? 'bad' : (v.open > 0 ? 'warn' : ''))}
+         ${v.total == null ? '' : statChip(v.total, 'cited')}
+         ${v.last_12mo ? statChip(v.last_12mo, 'in last 12mo') : ''}`,
+        (REC.viol.note || '') + win,
+        recReasons(v.types, 'Cited for:')));
+    }
+    const c = h && h.complaints;
+    if (REC.comp && c) {
+      out.push(recBlock(esc(REC.comp.label),
+        `${statChip(c.open, 'open', c.open > 10 ? 'bad' : (c.open > 0 ? 'warn' : ''))}
+         ${c.total == null ? '' : statChip(c.total, 'all-time')}
+         ${c.last_12mo ? statChip(c.last_12mo, 'in last 12mo') : ''}
+         ${h.insp ? statChip(h.insp, 'inspections scheduled') : ''}`,
+        REC.comp.note));
+    }
+    // Evictions — LA files them per property, SF per block. Same shape either way.
+    const ev = h && h.ev;
+    if (REC.ev && ev) {
+      out.push(recBlock(esc(REC.ev.label),
+        `${statChip(ev.total, 'filed')}
+         ${ev.nofault ? statChip(ev.nofault, 'no-fault', 'warn') : ''}
+         ${ev.recent ? statChip(ev.recent, 'in last 5 yrs') : ''}
+         ${ev.last_12mo ? statChip(ev.last_12mo, 'in last 12mo') : ''}`,
+        REC.ev.note, recReasons(ev.reasons, 'Grounds cited:')));
+    }
+    const pet = h && h.pet;
+    if (REC.pet && pet) {
+      out.push(recBlock(esc(REC.pet.label),
+        `${statChip(pet.total, 'filed')}
+         ${pet.landlord ? statChip(pet.landlord, 'by the landlord') : ''}
+         ${pet.tenant ? statChip(pet.tenant, 'by a tenant') : ''}
+         ${pet.recent ? statChip(pet.recent, 'in last 5 yrs') : ''}`));
+    }
+    const by = h && h.by;
+    if (REC.by && by) {
+      out.push(recBlock(esc(REC.by.label),
+        `${statChip(by.n, 'agreement' + (by.n === 1 ? '' : 's'))}
+         ${by.med ? statChip('$' + by.med.toLocaleString(), 'median') : ''}
+         ${by.recent ? statChip(by.recent, 'in last 5 yrs') : ''}`,
+        'A buyout is a landlord paying a tenant to leave a rent-controlled unit. It has to be disclosed, so a run of them on one address is a signal.'));
+    }
+    const cs = h && h.cases;
+    if (REC.cases && cs && cs.total) {
+      out.push(recBlock(esc(REC.cases.label),
+        `${statChip(cs.open, 'open', cs.open > 0 ? 'warn' : '')} ${statChip(cs.total, 'all-time')}`));
+    }
+    // What this city has no data for at all — said out loud, because an absent
+    // panel reads as a clean building rather than as an unpublished one.
+    if (REC.noViol) {
+      out.push(`<div class="hpd-section"><h4>Housing code violations</h4>
+        <div class="hpd-row" style="color:var(--ink-2)">${REC.noViol}</div>
+        ${REC.violLink ? `<div class="hpd-link"><a href="${esc(REC.violLink.href)}" target="_blank" rel="noopener">${esc(REC.violLink.label)}</a></div>` : ''}
+      </div>`);
+    }
+    if (!out.length) {
+      return `<div class="hpd-section">
+        <div class="hpd-row" style="color:var(--ink-2)">${esc(REC.none || 'No record on file.')}</div>
+        ${REC.link ? `<div class="hpd-link"><a href="${esc(REC.link.href)}" target="_blank" rel="noopener">${esc(REC.link.label)}</a></div>` : ''}
+      </div>`;
+    }
+    if (REC.link) {
+      out.push(`<div class="hpd-section"><div class="hpd-link"><a href="${esc(REC.link.href)}" target="_blank" rel="noopener">${esc(REC.link.label)}</a></div></div>`);
+    }
+    return out.join('');
   }
 
   // ---------- what the violations actually SAY (lazy, per building) ----------
@@ -5524,6 +5733,19 @@
       const cls = c.open > 10 ? 'bad' : 'warn';
       bits.push(`<span class="${cls}">${c.open} open complaint${c.open===1?'':'s'}</span>`);
     }
+    // Cities with no code-enforcement feed still have something worth a line
+    // here — the card is the only place most visitors ever see. These read from
+    // buildings.hpd.json, so they appear once it lands rather than at boot;
+    // the violation/complaint counts above are eager and paint immediately.
+    if (!bits.length && !IS_NYC) {
+      if (h.ev && h.ev.nofault) {
+        bits.push(`<span class="warn">${h.ev.nofault} no-fault eviction${h.ev.nofault===1?'':'s'}</span>`);
+      } else if (h.ev && h.ev.total) {
+        bits.push(`<span>${h.ev.total} eviction notice${h.ev.total===1?'':'s'}</span>`);
+      }
+      if (h.by && h.by.n) bits.push(`<span>${h.by.n} buyout${h.by.n===1?'':'s'}</span>`);
+      if (!bits.length && h.owner) bits.push(`<span>${esc(h.owner)}</span>`);
+    }
     if (!bits.length) return '';
     return `<div class="hpd-mini">${bits.join(' · ')}</div>`;
   }
@@ -5926,6 +6148,16 @@
     ];
     if (CITY.idLabel) facts.push([CITY.idLabel, idShort(rec)]);
     if (rec.mr) facts.push([RENT.label, '$' + rec.mr.toLocaleString() + '/mo']);
+    // The block median split by bedroom count (SF). A blended median that mixes
+    // studios with three-beds answers nobody's question; each bucket carries
+    // the same five-report privacy floor the blended one does.
+    if (rec.br) {
+      for (const [k, v] of Object.entries(rec.br)) {
+        facts.push([BED_LABEL[k] || (k + ' bed'), '$' + v.toLocaleString() + '/mo']);
+      }
+    }
+    if (rec.sq) facts.push(['Typical size', rec.sq.toLocaleString() + ' sq ft']);
+    if (rec.ui && rec.ui.length) facts.push(['Included in rent', rec.ui.map(u => UTIL_LABEL[u] || u).join(', ')]);
     if (rec.vac) facts.push(['Vacant units', rec.vac]);
     const statuses = rec.s || [];
     const listing = listingLink(rec, borough);
@@ -5939,9 +6171,23 @@
       : (HPD_FULL ? 0 : null);
     const title = rec.nb || borough || CITY.label;
     const addrLine = [rec.a, [borough, rec.z].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+    // The middle stat is whichever enforcement number this city actually
+    // publishes. NYC and LA cite violations; SF's Rent Board files evictions by
+    // block and no violations at all; DC's assessor knows the layout and its
+    // Department of Buildings publishes nothing. Showing "— violations" in the
+    // last two read as a clean building rather than as an unpublished one.
+    const h = rec.h;
+    let mid = [violTotal != null ? violTotal : '—', violTotal === 1 ? 'violation' : 'violations'];
+    if (!REC.viol && !IS_NYC) {
+      // DC's assessor counts bedrooms for the WHOLE property, so "4 bedrooms"
+      // beside "4 units" reads as one bedroom per apartment. It belongs in the
+      // assessor panel, where it is labelled, and nowhere near this headline.
+      if (REC.ev && h && h.ev) mid = [h.ev.total, h.ev.total === 1 ? 'eviction' : 'evictions'];
+      else mid = null;
+    }
     const spec = [
       [rec.u != null ? rec.u : '—', rec.u === 1 ? 'unit' : 'units'],
-      [violTotal != null ? violTotal : '—', violTotal === 1 ? 'violation' : 'violations'],
+      ...(mid ? [mid] : []),
       [rec.yr || '—', 'built'],
     ];
     return `
@@ -5988,7 +6234,9 @@
         <div class="d-facts">${facts.map(([l, v]) => `<div class="d-fact"><span class="l">${l}</span><span class="v">${esc(String(v))}</span></div>`).join('')}</div>
       </div>
       ${statuses.length ? `<div class="d-section" data-sec="status"><h3>${esc(CITY.statusHeading || 'Rent-stabilization status')}</h3><div class="d-chips">${statuses.map(s => `<button type="button" class="chip" data-status="${esc(s)}" aria-expanded="false">${esc(s)}</button>`).join('')}</div><div class="d-status-hint">Tap a status to see what it means.</div><div class="d-status-def" hidden></div>${CITY.sourceNote ? `<div class="d-sub" style="margin-top:8px">${CITY.sourceNote}${CITY.likely ? ' <a href="https://zimas.lacity.org/" target="_blank" rel="noopener">Check ZIMAS ↗</a>' : ''}</div>` : ''}</div>` : ''}
-      ${IS_NYC ? `<div class="d-section" data-sec="hpd"><h3>Owner &amp; HPD record</h3>${hpdHtml(rec, { violations: false, complaints: false })}</div>` : ''}
+      ${IS_NYC
+        ? `<div class="d-section" data-sec="hpd"><h3>${REC.heading}</h3>${hpdHtml(rec, { violations: false, complaints: false })}</div>`
+        : (REC.heading ? `<div class="d-section" data-sec="hpd"><h3>${REC.heading}</h3>${cityRecordHtml(rec)}</div>` : '')}
       <div class="d-section" id="d-comments" data-sec="comments"><h3>Comments</h3>
         <div id="d-comments-list"><div class="d-sub" style="margin:0">Loading comments…</div></div>
         <div id="d-comments-composer"></div>

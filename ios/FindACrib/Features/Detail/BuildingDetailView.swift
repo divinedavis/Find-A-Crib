@@ -19,11 +19,16 @@ struct BuildingDetailView: View {
     @State private var showPaywall = false
     @State private var scene: MKLookAroundScene?
     @State private var sceneChecked = false
+    /// Computed once per building, not once per render. `body` is evaluated
+    /// seven times on a single visit — every observable the screen reads
+    /// invalidates it — and this used to be recomputed on every one of them.
+    @State private var similar: [Building] = []
 
     private var b: Building { building }
 
     var body: some View {
-        VStack(spacing: 0) {
+        let _ = Perf.mark("BuildingDetailView.body")
+        return VStack(spacing: 0) {
             NavyBarBackdrop()
 
             ScrollView {
@@ -129,8 +134,9 @@ struct BuildingDetailView: View {
             }
         }
         .sheet(isPresented: $showPaywall) { PaywallView() }
-        .onAppear { nav.hideTabBar = true; activity.recordView(b.bbl) }
-        .onDisappear { nav.hideTabBar = false }
+        .onAppear { Perf.mark("detail onAppear"); nav.hideTabBar = true; activity.recordView(b.bbl) }
+        .task(id: b.bbl) { similar = SearchEngine.similar(to: b, store: store) }
+        .onDisappear { Perf.mark("detail onDisappear"); nav.hideTabBar = false }
         .task {
             scene = try? await MKLookAroundSceneRequest(coordinate: b.coordinate).scene
             sceneChecked = true
@@ -309,7 +315,7 @@ struct BuildingDetailView: View {
         }
         if store.city.isNYC, store.voucherBuilding(b) != nil { l.append("SUBSIDIZED / VOUCHER-FRIENDLY BUILDING") }
         if let r = b.h?.lastregistration { l.append("HPD REGISTRATION \(r)") }
-        if let t = b.h?.ptype { l.append(t.uppercased()) }
+        if let t = store.record(b)?.ptype { l.append(t.uppercased()) }
         return l
     }
 
@@ -377,7 +383,7 @@ struct BuildingDetailView: View {
     /// owner and the assessor's read of the building, and none of them has what
     /// the others have.
     @ViewBuilder private func cityRecordBlock(_ r: City.Records) -> some View {
-        let h = b.h
+        let h = store.record(b)
         let hasAny = h != nil && (h?.violations != nil || h?.complaints != nil || h?.ev != nil
                                   || h?.by != nil || h?.pet != nil || h?.owner != nil
                                   || (h?.cases?.total ?? 0) > 0)
@@ -476,7 +482,7 @@ struct BuildingDetailView: View {
         return line.isEmpty ? "" : line.prefix(1).uppercased() + line.dropFirst()
     }
 
-    private func ownerSpec(_ h: Building.HPD) -> String {
+    private func ownerSpec(_ h: BuildingRecord) -> String {
         var bits: [String] = []
         if let t = h.units_total { bits.append("\(t) unit\(t == 1 ? "" : "s") in the building") }
         if let n = h.beds { bits.append("\(n) bedroom\(n == 1 ? "" : "s")") }
@@ -622,7 +628,7 @@ struct BuildingDetailView: View {
     }
 
     @ViewBuilder private var similarRail: some View {
-        let sim = SearchEngine.similar(to: b, store: store)
+        let sim = similar
         if !sim.isEmpty {
             VStack(alignment: .leading, spacing: 14) {
                 Text("Nearby in \(b.neighborhood)").font(.se(30, .black)).padding(.horizontal, 16)

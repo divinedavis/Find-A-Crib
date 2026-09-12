@@ -77,6 +77,7 @@ struct ResultsView: View {
     @State private var toast: String?
 
     var body: some View {
+        let _ = Perf.mark("ResultsView.body shown=\(shown) results=\(results.count)")
         VStack(spacing: 0) {
             NavyBarBackdrop()
             ScrollView {

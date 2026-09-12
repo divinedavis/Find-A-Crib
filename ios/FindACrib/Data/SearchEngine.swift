@@ -76,9 +76,33 @@ enum SearchEngine {
 
     /// Nearest buildings to `b` in the same neighborhood — the "Similar
     /// homes" rail on the detail page.
+    /// The nearest few buildings in the same neighborhood.
+    ///
+    /// Reads DataStore's neighborhood index rather than scanning the whole
+    /// city: this used to filter all 47,165 rows and sort the matches, and the
+    /// detail screen called it from `body`, so a single visit ran it seven
+    /// times. Same answer, a dictionary hit and a partial selection instead.
     static func similar(to b: Building, store: DataStore, limit: Int = 8) -> [Building] {
-        let pool = store.buildings.filter { $0.nb == b.nb && $0.bbl != b.bbl }
-        func d2(_ x: Building) -> Double { let dl = x.lat - b.lat, dg = x.lng - b.lng; return dl * dl + dg * dg }
-        return Array(pool.sorted { d2($0) < d2($1) }.prefix(limit))
+        Perf.span("SearchEngine.similar") {
+            guard let nb = b.nb, let pool = store.byNeighborhood[nb] else { return [] }
+            func d2(_ x: Building) -> Double { let dl = x.lat - b.lat, dg = x.lng - b.lng; return dl * dl + dg * dg }
+            // Selection beats a full sort here: the rail shows 8 of what can be
+            // a few thousand, and only the ids are needed to look rows up again.
+            var best: [(Double, Int)] = []
+            best.reserveCapacity(limit + 1)
+            for (i, x) in pool.enumerated() where x.bbl != b.bbl {
+                let d = d2(x)
+                if best.count < limit {
+                    best.append((d, i))
+                    if best.count == limit { best.sort { $0.0 < $1.0 } }
+                } else if d < best[limit - 1].0 {
+                    best[limit - 1] = (d, i)
+                    var k = limit - 1
+                    while k > 0, best[k].0 < best[k - 1].0 { best.swapAt(k, k - 1); k -= 1 }
+                }
+            }
+            if best.count < limit { best.sort { $0.0 < $1.0 } }
+            return best.map { pool[$0.1] }
+        }
     }
 }

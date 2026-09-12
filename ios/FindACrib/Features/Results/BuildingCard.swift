@@ -29,6 +29,7 @@ struct BuildingCard: View {
     private var b: Building { building }
 
     var body: some View {
+        let _ = Perf.mark("BuildingCard.body \(b.bbl)")
         VStack(alignment: .leading, spacing: 0) {
             ZStack(alignment: .bottomTrailing) {
                 BuildingImage(building: b).frame(height: 226).frame(maxWidth: .infinity)

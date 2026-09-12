@@ -5,8 +5,9 @@ struct RootView: View {
     @Environment(DataStore.self) private var store
 
     var body: some View {
+        let _ = Perf.mark("RootView.body")
         @Bindable var nav = nav
-        ZStack(alignment: .bottom) {
+        return ZStack(alignment: .bottom) {
             Group {
                 switch nav.tab {
                 case .search:

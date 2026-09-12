@@ -224,6 +224,27 @@ final class FindACribUITests: XCTestCase {
         }
     }
 
+    /// The measurement rig for "back takes long", kept because it will be
+    /// wanted again. Run with the log stream open:
+    ///
+    ///   xcrun simctl spawn booted log stream --predicate \
+    ///     'subsystem == "com.divinedavis.findacrib" && category == "perf"'
+    ///   scripts/run_tests.sh FindACribUITests/FindACribUITests/testPopFromDetailIsInstrumented
+    ///
+    /// It asserts nothing about timing — the simulator is not the device, and a
+    /// threshold here would either be met on a Mac while the phone stutters, or
+    /// fail on a busy CI box. What it guarantees is that the marks are still
+    /// wired up, so the rig is not silently dead the next time it is needed.
+    func testPopFromDetailIsInstrumented() throws {
+        app.terminate()
+        app.launchArguments = ["--perf", "--route", "detail"]
+        app.launch()
+        XCTAssertTrue(app.buttons["detail-menu"].waitForExistence(timeout: 60))
+        sleep(4)
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 30))
+    }
+
     /// The Alerts sheet carries the web form's filters: rent cap and
     /// household income beside boroughs and kinds.
     func testAlertsSheetOffersRentAndIncome() throws {

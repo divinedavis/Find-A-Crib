@@ -8,6 +8,12 @@ import Observation
 final class DataStore {
     private(set) var buildings: [Building] = []
     private(set) var byBBL: [String: Building] = [:]
+    /// The per-building record blob, held once rather than folded into every
+    /// row — see BuildingRecord for why that matters at 47k rows.
+    private(set) var records: [String: BuildingRecord] = [:]
+    /// Buildings grouped by neighborhood, so "nearby in this neighborhood" is a
+    /// dictionary hit instead of a scan of the whole city on every render.
+    private(set) var byNeighborhood: [String: [Building]] = [:]
     private(set) var listings = ListingsBlob()
     private(set) var s8 = S8Blob()
     private(set) var fmr: FMRTable = [:]
@@ -72,7 +78,8 @@ final class DataStore {
     }
 
     struct Payload: Sendable {
-        var buildings: [Building]; var listings: ListingsBlob; var s8: S8Blob; var fmr: FMRTable; var hcr: HCRBlob
+        var buildings: [Building]; var records: [String: BuildingRecord] = [:]
+        var listings: ListingsBlob; var s8: S8Blob; var fmr: FMRTable; var hcr: HCRBlob
     }
 
     /// `bundleOnly` is for the unit tests: the test host shares the app's
@@ -89,27 +96,26 @@ final class DataStore {
         }
         let raw = try Data(contentsOf: bURL)
         let json = city.cacheName.hasSuffix(".gz") ? try Gunzip.inflate(raw) : raw
-        var buildings = try dec.decode([Building].self, from: json)
+        let buildings = try dec.decode([Building].self, from: json)
         // The boot file carries only the counts the list and filters read; the
         // rest of each record arrives in a second blob, exactly as it does on
-        // the web. Merge rather than replace, so a field that is eager in one
-        // and absent in the other survives. A city with no blob, or a blob that
-        // has not downloaded yet, simply keeps the eager half.
+        // the web. It is kept in its own dictionary and read by the one screen
+        // that shows it — folding it into each Building instead took the row
+        // from 217 to 680 bytes, 22 MB of array New York never reads, and made
+        // every filter and sort carry it.
+        var records: [String: BuildingRecord] = [:]
         if let rp = city.recordsPath, let u = localURL(cacheName(rp, in: city), bundleOnly: bundleOnly),
            let raw = try? Data(contentsOf: u),
            let inflated = try? (rp.hasSuffix(".gz") ? Gunzip.inflate(raw) : raw),
-           let full = try? dec.decode([String: Building.HPD].self, from: inflated) {
-            for i in buildings.indices {
-                guard let f = full[buildings[i].bbl] else { continue }
-                buildings[i] = buildings[i].merging(f)
-            }
+           let full = try? dec.decode([String: BuildingRecord].self, from: inflated) {
+            records = full
         }
         func opt<T: Decodable>(_ name: String, _ empty: T) -> T {
             guard city.hasNYCExtras, let u = localURL(name, bundleOnly: bundleOnly), let d = try? Data(contentsOf: u) else { return empty }
             do { return try dec.decode(T.self, from: d) }
             catch { NSLog("FindACrib: %@ failed to decode: %@", name, String(describing: error)); return empty }
         }
-        return Payload(buildings: buildings, listings: opt("listings.json", ListingsBlob()),
+        return Payload(buildings: buildings, records: records, listings: opt("listings.json", ListingsBlob()),
                        s8: opt("s8.json", S8Blob()), fmr: opt("fmr.json", [:]), hcr: opt("hcr.json", HCRBlob()))
     }
 
@@ -136,7 +142,8 @@ final class DataStore {
         city = c
         if persist { UserDefaults.standard.set(c.id, forKey: "city") }
         loadError = nil
-        buildings = []; byBBL = [:]; regions = []; neighborhoods = []; zips = []
+        buildings = []; byBBL = [:]; records = [:]; byNeighborhood = [:]
+        regions = []; neighborhoods = []; zips = []
         listings = ListingsBlob(); s8 = S8Blob(); fmr = [:]; hcr = HCRBlob()
         hcrBuildings = []; hcrByBBL = [:]
         loaded = false
@@ -145,7 +152,10 @@ final class DataStore {
 
     func applyPayload(_ p: Payload) {
         buildings = p.buildings
+        records = p.records
         byBBL = Dictionary(p.buildings.map { ($0.bbl, $0) }, uniquingKeysWith: { a, _ in a })
+        byNeighborhood = Dictionary(grouping: p.buildings.compactMap { b in b.nb.map { ($0, b) } },
+                                    by: { $0.0 }).mapValues { $0.map(\.1) }
         listings = p.listings; s8 = p.s8; fmr = p.fmr; hcr = p.hcr
         dataAsOf = p.listings.updatedDate
         indexHCR()
@@ -162,6 +172,10 @@ final class DataStore {
         regions = Self.regions(for: city, buildings: p.buildings, neighborhoods: neighborhoods)
         loaded = true
     }
+
+    /// This building's full record, if its city publishes one and the blob has
+    /// downloaded. Nil is the normal state for New York, which has none.
+    func record(_ b: Building) -> BuildingRecord? { records[b.bbl] }
 
     /// What the picker offers once a city is chosen.
     nonisolated static func regions(for city: City, buildings: [Building],

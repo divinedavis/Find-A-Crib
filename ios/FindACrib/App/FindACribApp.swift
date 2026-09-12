@@ -26,6 +26,7 @@ struct FindACribApp: App {
                     plus.start()
                     activity.remoteToggle = { [weak auth] bbl, on in auth?.remoteToggle(bbl: bbl, saved: on) }
                     await store.load()
+                    Perf.startWatchdog()
                     LaunchArgs.apply(to: nav, store: store)
                 }
                 .task { await auth.listen() }
@@ -99,11 +100,17 @@ enum LaunchArgs {
             // Outside NYC, prefer a building that actually carries a record —
             // a screenshot or a test of the record panel on one of the many
             // parcels with no case history proves nothing.
-            let withRecord = store.city.isNYC ? nil
-                : store.buildings.first { $0.h?.owner != nil || $0.h?.ev != nil || $0.h?.violations != nil }?.bbl
-            let bbl = r.split(separator: ":").dropFirst().first.map(String.init)
-                ?? withRecord
-                ?? SearchEngine.run(q, store: store).first?.bbl ?? store.buildings.first?.bbl ?? ""
+            var withRecord: String? = nil
+            if !store.city.isNYC {
+                withRecord = store.buildings.first { b in
+                    guard let rec = store.records[b.bbl] else { return false }
+                    return rec.owner != nil || rec.ev != nil || rec.violations != nil
+                }?.bbl
+            }
+            let asked: String? = r.split(separator: ":").dropFirst().first.map(String.init)
+            let fallback: String = SearchEngine.run(q, store: store).first?.bbl
+                ?? store.buildings.first?.bbl ?? ""
+            let bbl: String = asked ?? withRecord ?? fallback
             nav.searchPath = [.results(q), .building(bbl)]
         }
     }

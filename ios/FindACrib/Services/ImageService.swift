@@ -14,12 +14,14 @@ actor ImageService {
     private let maxConcurrent = 3
     private var waiters: [CheckedContinuation<Void, Never>] = []
 
-    private static var dir: URL {
+    /// Made once, not on every lookup — this was a computed `var` that ran
+    /// createDirectory on each of the 30-odd image requests a list produces.
+    private static let dir: URL = {
         let base = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
         let d = base.appendingPathComponent("lookaround", isDirectory: true)
         try? FileManager.default.createDirectory(at: d, withIntermediateDirectories: true)
         return d
-    }
+    }()
 
     init() { mem.countLimit = 300 }
 
@@ -28,7 +30,13 @@ actor ImageService {
         if let hit = mem.object(forKey: key as NSString) { return hit }
         let file = Self.dir.appendingPathComponent("\(key).jpg")
         if let d = try? Data(contentsOf: file), let img = UIImage(data: d) {
-            mem.setObject(img, forKey: key as NSString); return img
+            // UIImage(data:) does not decompress — it defers that to the render
+            // pass, ON THE MAIN THREAD, when the image is first drawn. A screen
+            // of cards coming back therefore paid for a JPEG decode each, at
+            // exactly the moment it had to draw. byPreparingForDisplay does it
+            // here, off the main actor, where nobody is waiting on it.
+            let ready = await img.byPreparingForDisplay() ?? img
+            mem.setObject(ready, forKey: key as NSString); return ready
         }
         if let t = inflight[key] { return await t.value }
         let task = Task<UIImage?, Never> { [weak self] in
@@ -37,7 +45,8 @@ actor ImageService {
             defer { Task { await self.release() } }
             let img = await Self.render(b, size: size)
             if let img, let d = img.jpegData(compressionQuality: 0.8) { try? d.write(to: file, options: .atomic) }
-            return img
+            guard let img else { return nil }
+            return await img.byPreparingForDisplay() ?? img
         }
         inflight[key] = task
         let img = await task.value

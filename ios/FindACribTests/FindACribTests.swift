@@ -321,18 +321,21 @@ final class CityTests: XCTestCase {
         XCTAssertEqual(nycR.map(\.name), ["Manhattan", "Brooklyn"], "boroughs, in the app's own order, empty ones dropped")
     }
 
-    /// The second blob folds into the first without disturbing what the list
-    /// and the filters have already ranked on. The eager copy carries only the
-    /// open counts; the full one carries everything, and `open` must survive
-    /// the merge unchanged or a building can move in the list under the user.
-    func testRecordsMergeKeepsTheEagerCounts() throws {
+    /// The boot payload and the record blob stay SEPARATE — that is the point.
+    ///
+    /// Folding the record into each Building took the row from 217 to 680
+    /// bytes: 22 MB of array across New York's 47,165 rows, none of which New
+    /// York reads, carried again by every filter and sort. The eager counts the
+    /// list and filters rank on stay on Building; everything else is looked up
+    /// by id on the one screen that shows it.
+    func testRecordBlobIsHeldApartFromTheRow() throws {
         let slim = """
         [{"bbl":"LA-5511008010","b":"LA","a":"106 N SWEETZER AVE","z":"90048","lat":34.07,"lng":-118.36,
           "s":["LIKELY RSO"],"yr":1937,"u":6,"nb":"Beverly Grove",
           "h":{"violations":{"open":6},"complaints":{"open":0}}}]
         """
         let full = """
-        {"LA-5511008010":{"violations":{"open":99,"total":6,"last_12mo":6,
+        {"LA-5511008010":{"violations":{"open":6,"total":6,"last_12mo":6,
            "types":[["Smoke detectors",2],["Damp rooms",1]]},
           "complaints":{"open":0,"total":11,"last_12mo":0},
           "ev":{"total":4,"nofault":1,"last_12mo":0},
@@ -340,22 +343,31 @@ final class CityTests: XCTestCase {
           "window":["2025-11-04","2026-07-31"]}}
         """
         let dec = JSONDecoder()
-        let rows = try dec.decode([Building].self, from: Data(slim.utf8))
-        let blobs = try dec.decode([String: Building.HPD].self, from: Data(full.utf8))
-        let merged = rows[0].merging(blobs[rows[0].bbl]!)
-        XCTAssertEqual(merged.h?.violations?.open, 6, "the eager open count must win over the blob's")
-        XCTAssertEqual(merged.h?.violations?.total, 6)
-        XCTAssertEqual(merged.h?.violations?.last_12mo, 6)
-        XCTAssertEqual(merged.h?.complaints?.total, 11)
-        XCTAssertEqual(merged.h?.ev?.nofault, 1)
-        XCTAssertEqual(merged.h?.by?.med, 25000)
-        XCTAssertEqual(merged.h?.window, ["2025-11-04", "2026-07-31"])
-        XCTAssertEqual(merged.h?.violations?.named.map(\.0), ["Smoke detectors", "Damp rooms"],
+        let row = try dec.decode([Building].self, from: Data(slim.utf8))[0]
+        let recs = try dec.decode([String: BuildingRecord].self, from: Data(full.utf8))
+        let rec = try XCTUnwrap(recs[row.bbl])
+
+        // the row keeps only what ranks a list
+        XCTAssertEqual(row.openViolations, 6)
+        XCTAssertEqual(row.h?.complaints?.open, 0)
+        // …and the record carries the rest
+        XCTAssertEqual(rec.violations?.total, 6)
+        XCTAssertEqual(rec.complaints?.total, 11)
+        XCTAssertEqual(rec.ev?.nofault, 1)
+        XCTAssertEqual(rec.by?.med, 25000)
+        XCTAssertEqual(rec.window, ["2025-11-04", "2026-07-31"])
+        XCTAssertEqual(rec.violations?.named.map(\.0), ["Smoke detectors", "Damp rooms"],
                        "a [String, Int] pair from the wire has to survive into a usable list")
-        XCTAssertEqual(merged.openViolations, 6)
+
+        // The row is the thing stored 47k times and copied by every scan, so
+        // its size is a budget, not an implementation detail. 217 bytes was the
+        // shape before the records shipped; anything near 680 means the record
+        // has been folded back in.
+        XCTAssertLessThan(MemoryLayout<Building.HPD?>.size, 300,
+                          "Building.HPD has grown — is a record field being stored on every row?")
     }
 
-    /// The DC blob is a different shape again: no violations at all, an owner
+    /// The DC record is a different shape again: no violations at all, an owner
     /// and the assessor's read of the building instead.
     func testDCRecordCarriesOwnerAndAssessor() throws {
         let full = """
@@ -363,14 +375,12 @@ final class CityTests: XCTestCase {
           "cond":"Average","units_total":4,"owner":"Minnesota Avenue SE Trustee LLC",
           "op":1,"assessed":684490,"ptype":"Multi-family (3 to 4 units)"}}
         """
-        let blobs = try JSONDecoder().decode([String: Building.HPD].self, from: Data(full.utf8))
-        let b = Building(bbl: "DC-1", b: "DC", a: "2815 MINNESOTA AVE SE", z: "20019",
-                         lat: 38.87, lng: -76.96).merging(blobs["DC-1"]!)
-        XCTAssertEqual(b.h?.owner, "Minnesota Avenue SE Trustee LLC")
-        XCTAssertEqual(b.h?.assessed, 684490)
-        XCTAssertEqual(b.h?.cond, "Average")
-        XCTAssertNil(b.h?.violations, "DC publishes no code violations — this must stay nil, not zero")
-        XCTAssertEqual(b.openViolations, 0)
+        let rec = try XCTUnwrap(try JSONDecoder()
+            .decode([String: BuildingRecord].self, from: Data(full.utf8))["DC-1"])
+        XCTAssertEqual(rec.owner, "Minnesota Avenue SE Trustee LLC")
+        XCTAssertEqual(rec.assessed, 684490)
+        XCTAssertEqual(rec.cond, "Average")
+        XCTAssertNil(rec.violations, "DC publishes no code violations — this must stay nil, not zero")
     }
 
     /// SF's extra rent detail: the block median split by bedroom, the typical

@@ -76,21 +76,33 @@ Privacy Policy: https://findacrib.com/privacy/
 Find A Crib is an independent, informational tool. It is not a broker, does not list apartments, and takes no fee. Data: NYS Homes and Community Renewal rent-stabilization register (2024), NYC HPD open data, HUD FY2026 Fair Market Rents, HousingSearch.ny.gov, advertised rents from Zumper, LA County Assessor parcel data under LAHD's RSO criteria, the SF Rent Board Housing Inventory via DataSF, and the DC DHCD RentRegistry.
 """
 
-WHATS_NEW = """Small improvements behind the scenes.
+WHATS_NEW = """Every city now has a building record, not just New York.
 
-Find A Crib covers New York, Los Angeles, San Francisco and Washington DC: pick a city and see every rent-stabilized building on one map, with what's for rent this week, violations, the managing agent and open lotteries in New York.
+Los Angeles: housing code violations with what was cited, complaints to LAHD, eviction notices marked at-fault or no-fault, tenant buyouts with the payment — and neighborhoods, so you can finally filter by one.
+
+San Francisco: eviction notices with the grounds cited, Rent Board petitions and buyout agreements for the block, plus the reported rent split by bedroom count.
+
+Washington DC: the owner on the tax roll, the year built, the unit mix and the assessor's condition.
+
+Where a city publishes nothing, the app now says so rather than leaving a blank.
 """
 
-REVIEW_NOTES = """VERSION 1.1.1 (build __BUILD__) — maintenance release
+REVIEW_NOTES = """VERSION 1.2.0 (build __BUILD__) — per-city building records
 
-WHAT CHANGED
-No user-facing changes since 1.1: internal groundwork only, and refreshed App Store screenshots that show the current design. Everything below describes the app as it has been since 1.1.
+WHAT CHANGED SINCE 1.1.1
+Until now the building screen was New York's in every city: a Los Angeles parcel was captioned with a New York agency's name and carried New York violation tiles that had no data behind them. Each city now shows the record its own housing authority publishes, in that authority's words. Nothing about how the app is used has changed — same screens, same navigation, more on the building page.
 
-CITIES
-The app covered New York City only until 1.1. It now also covers Los Angeles, San Francisco and Washington DC. On the Search tab, "City" is the first field; choosing one loads that city's buildings from findacrib.com and the Location field below then offers that city's own divisions — boroughs in New York, neighborhoods in San Francisco and Washington DC, ZIP areas in Los Angeles (its source, the LA County assessor roll, carries no neighborhood). To test: Search tab, tap City, pick Los Angeles, then tap the Area field.
+Los Angeles — Los Angeles Housing Department property look-ups (data.lacity.org, public, no key): code violations with the conditions cited, complaint cases, eviction notices split at-fault / no-fault, tenant buyouts, enforcement cases. LA parcels also carry neighborhood names for the first time, from the LA Times Mapping L.A. boundaries, so the Location field offers neighborhoods there instead of ZIP areas.
+San Francisco — SF Rent Board eviction notices, petitions and buyout agreements via DataSF. The Rent Board anonymises these to the block exactly as it does the rent data, and the app says so on screen.
+Washington DC — the DC Office of Tax and Revenue assessor roll and Integrated Tax System: owner of record, year built, unit mix, condition, assessed value. Owner names are published verbatim in DC's own open data; no contact details accompany them.
+
+To test: Search tab, tap City, pick Los Angeles, Search, open any building, scroll to "LAHD record". Repeat for San Francisco ("Rent Board record") and Washington DC ("Owner & assessor record").
+
+WHAT THE APP DOES NOT CLAIM
+San Francisco publishes code violations by street address and this map is anonymised to the block, so joining the two would invent precision the source removed; Washington DC's Department of Buildings publishes no violation data at all. In both cities the app says that in a sentence and links to the city's own lookup, rather than showing an empty panel that would read as a clean building. Los Angeles does not grade violations by hazard class, and its violation file is a rolling window rather than a lifetime register, so the app prints the dates it covers.
 
 WHERE THE DATA COMES FROM
-Every city is a public register, fetched as static JSON from findacrib.com, no key and no account: New York — NYS Homes and Community Renewal rent-stabilization register; Los Angeles — LA County Assessor parcels meeting LAHD's RSO criteria (2+ units, built on or before Oct 1, 1978), labelled "likely" in the app because a few exemptions cannot be derived from tax data; San Francisco — SF Rent Board Housing Inventory via DataSF, anonymised by the Rent Board to the block, which the app states on screen; Washington DC — DHCD RentRegistry. The app is informational, is not a broker, lists no apartments and takes no fee.
+Every city is a public register, fetched as static JSON from findacrib.com, no key and no account: New York — NYS Homes and Community Renewal rent-stabilization register; Los Angeles — LA County Assessor parcels meeting LAHD's RSO criteria (2+ units, built on or before Oct 1, 1978), labelled "likely" in the app because a few exemptions cannot be derived from tax data; San Francisco — SF Rent Board Housing Inventory via DataSF, anonymised by the Rent Board to the block; Washington DC — DHCD RentRegistry. The app is informational, is not a broker, lists no apartments and takes no fee.
 
 NEW YORK-ONLY FEATURES
 Advertised rents, vouchers, HPD violations and lotteries are New York feeds. In the other three cities those filters are not shown at all, rather than shown and returning nothing.
@@ -102,7 +114,7 @@ LOCATION
 The app never requests location permission. The map is Apple Maps; "Search this area" uses the visible map region, not the device location.
 
 DATA REFRESH
-On launch the app refreshes public JSON files from findacrib.com; without a network it falls back to the copy bundled in the app, so New York works offline in review. The three new cities download on first use.
+On launch the app refreshes public JSON files from findacrib.com; without a network it falls back to the copy bundled in the app, so New York works offline in review. The three other cities download on first use — each is two small files, the map data and the building records.
 
 CONTACT
 Any question at all: the email and phone above.

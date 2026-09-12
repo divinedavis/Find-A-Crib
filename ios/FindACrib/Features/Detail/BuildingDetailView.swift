@@ -19,7 +19,6 @@ struct BuildingDetailView: View {
     @State private var showPaywall = false
     @State private var scene: MKLookAroundScene?
     @State private var sceneChecked = false
-    @State private var showLookAround = false
     /// Computed once per building, not once per render. `body` is evaluated
     /// seven times on a single visit — every observable the screen reads
     /// invalidates it — and this used to be recomputed on every one of them.
@@ -254,50 +253,23 @@ struct BuildingDetailView: View {
 
     // MARK: pieces
 
-    /// The street view at the top of the screen.
-    ///
-    /// This used to be a live `LookAroundPreview(allowsNavigation: true)` — a
-    /// running Apple Maps 3D panorama, rendering the whole time the screen was
-    /// open. It is the one thing this screen has that no other screen has, and
-    /// going back from here was the one navigation that felt slow (reported
-    /// 2026-09-12; a device recording shows 767ms frozen after the back press
-    /// before the animation could start, where going from the list to the home
-    /// screen is instant). It never reproduced in the simulator, whose GPU
-    /// absorbs what a phone's does not: profiling both pops there showed
-    /// identical main-thread work, 110ms of CoreAnimation commit each.
-    ///
-    /// So the hero is now the same cached snapshot the result cards use —
-    /// already on disk, so it paints immediately instead of after an async
-    /// scene request — and Look Around opens full screen on a tap, which is
-    /// what the panorama's own navigation did anyway.
     @ViewBuilder private var hero: some View {
         ZStack(alignment: .bottomTrailing) {
-            BuildingImage(building: b).frame(height: 280).frame(maxWidth: .infinity)
-                .overlay(alignment: .topLeading) {
-                    if scene != nil {
-                        // A real Button, not a decorated tap target: it is the
-                        // only way into Look Around now, so it has to be
-                        // reachable by VoiceOver and by a UI test.
-                        Button { showLookAround = true } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: "binoculars.fill").font(.system(size: 13, weight: .semibold))
-                                Text("Look Around").font(.se(15, .bold))
-                            }
-                            .foregroundStyle(SE.ink)
-                            .padding(.horizontal, 12).padding(.vertical, 8)
-                            .background(Capsule().fill(.white.opacity(0.92)))
-                        }
-                        .buttonStyle(.plain)
-                        .padding(12)
-                        .accessibilityIdentifier("look-around")
-                        .accessibilityLabel("Look Around at this address")
-                    }
-                }
-                .contentShape(Rectangle())
-                .onTapGesture { if scene != nil { showLookAround = true } }
-                .lookAroundViewer(isPresented: $showLookAround, initialScene: scene,
-                                  allowsNavigation: true, showsRoadLabels: false,
-                                  pointsOfInterest: .excludingAll)
+            if let scene {
+                // A LIVE panorama, deliberately. It was swapped for the cached
+                // snapshot with a tap-to-open button on 2026-09-12, to test
+                // whether rendering it continuously was what made going back
+                // from this screen slow. The owner put it straight back: the
+                // full-screen viewer sits on a black loading screen for a beat,
+                // and having the panorama already there is the point of it.
+                // So if the back-from-detail delay is ever chased again, this
+                // is a known suspect that has already been ruled out by choice,
+                // not by evidence — find another answer.
+                LookAroundPreview(initialScene: scene, allowsNavigation: true, showsRoadLabels: false, pointsOfInterest: .excludingAll)
+                    .frame(height: 280)
+            } else {
+                BuildingImage(building: b).frame(height: 280).frame(maxWidth: .infinity)
+            }
             // Save lives in the ··· menu; a heart over the photo covered the
             // Look Around imagery and the owner asked for it gone.
             if store.voucherAvail(b) != nil {

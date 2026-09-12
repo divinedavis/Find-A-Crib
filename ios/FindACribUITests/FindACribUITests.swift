@@ -245,31 +245,6 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 30))
     }
 
-    /// Look Around is still reachable after the hero stopped being a live one.
-    ///
-    /// The building screen used to render `LookAroundPreview(allowsNavigation:
-    /// true)` — a panorama running the whole time the screen was open, and the
-    /// one thing this screen had that no other had. Going back from it was the
-    /// one navigation that felt slow. The hero is a cached snapshot now, so the
-    /// panorama has to be one tap away or the feature is simply gone.
-    func testLookAroundIsStillOneTapAway() throws {
-        app.terminate()
-        app.launchArguments = ["--route", "detail"]
-        app.launch()
-        XCTAssertTrue(app.buttons["detail-menu"].waitForExistence(timeout: 60))
-        let badge = app.buttons["look-around"].firstMatch
-        // Coverage is Apple's; where there is none the hero is a map and no
-        // badge is offered, which is correct rather than a failure.
-        guard badge.waitForExistence(timeout: 20) else {
-            throw XCTSkip("no Look Around coverage for this building on this host")
-        }
-        badge.tap()
-        // the viewer is a full-screen presentation over the detail
-        let gone = NSPredicate(format: "exists == false")
-        expectation(for: gone, evaluatedWith: app.staticTexts["About"])
-        waitForExpectations(timeout: 15)
-    }
-
     /// The Alerts sheet carries the web form's filters: rent cap and
     /// household income beside boroughs and kinds.
     func testAlertsSheetOffersRentAndIncome() throws {

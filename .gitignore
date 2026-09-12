@@ -106,3 +106,7 @@ saved_alerts_state.json
 
 # App Store analytics pull (regenerated twice a day by ios/scripts/asc_downloads.py)
 ios/scripts/appstore.json
+
+# Raw Socrata/DCGIS pulls cached by build_la_records.py and build_sf_records.py
+la_raw/
+sf_raw/

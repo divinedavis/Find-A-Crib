@@ -244,6 +244,14 @@ def main():
             "u": covered,
             "nb": None,
         }
+        # The registration's Master Address Repository id. DHCD publishes no
+        # square/suffix/lot, but MAR ids resolve to one through DCGIS's public
+        # cross-reference — which is how build_dc_records.py reaches the
+        # assessor's year built, unit mix and owner of record. Carried on the
+        # record so that join needs no second pass over the 15 MB CSV.
+        mar = (r.get("BBL MAR ID") or "").strip()
+        if mar.isdigit():
+            rec["mar"] = int(mar)
         if s and len(s["rents"]) >= 3:
             rec["mr"] = int(statistics.median(s["rents"]))
         if s and s["vacant"]:
@@ -255,7 +263,28 @@ def main():
             slim[key] = rec
 
     out = sorted(slim.values(), key=lambda x: x["bbl"])
+
+    # A Registration Number is NOT unique: one housing provider registers a
+    # whole address under one number and DHCD splits it into several registered
+    # accommodations, so 243 of 4,316 ids collided (6931 Georgia Ave NW carried
+    # four records all called DC-39202089_1). Colliding ids silently clobber
+    # each other in buildings.hpd.json, in the app's id->record map, in a saved
+    # building and in a #d= deep link. Suffix the SECOND and later record of
+    # each id rather than the first, so ids already saved by a visitor keep
+    # pointing at the record they always did.
+    seen_ids = {}
+    collisions = 0
+    for rec in out:
+        base = rec["bbl"]
+        n = seen_ids.get(base, 0) + 1
+        seen_ids[base] = n
+        if n > 1:
+            rec["bbl"] = f"{base}-{n}"
+            collisions += 1
+
     print(f"\nassigning zip + neighborhood to {len(out):,} records …", flush=True)
+    if collisions:
+        print(f"  {collisions:,} duplicate registration numbers given a suffix")
     for rec in out:
         rec["z"] = zip_for(rec["lat"], rec["lng"])
         rec["nb"] = nb_for(rec["lat"], rec["lng"])

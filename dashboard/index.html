@@ -553,7 +553,6 @@
           <div><h2>Search — is Google sending anyone?</h2><div class="card-sub">findacrib.com has been a verified Search Console property since June and this card never existed, so these numbers were collected every morning and read by nobody. From the 05:40 build, not live.</div></div>
         </div>
         <div class="ads-tiles" id="fac-search-tiles"></div>
-        <div id="fac-search-keywords"></div>
         <div id="fac-index-meters" style="margin-top:18px"></div>
         <div class="callout" id="fac-search-callout" style="margin-top:16px"></div>
       </div>
@@ -571,15 +570,6 @@
         <div class="callout" id="kiosk-callout" style="margin-top:16px"></div>
       </div>
 
-      <!-- google ads -->
-      <div class="card mb18" id="sec-ads">
-        <div class="card-head-row">
-          <div><h2>Google Ads — did the clicks convert?</h2><div class="card-sub">Sign-up is server-side, so Google can’t see it — but you can. (First-party, from ad-click gclid.)</div></div>
-        </div>
-        <div class="ads-tiles" id="ads-tiles"></div>
-        <div class="callout" id="ads-callout" style="margin-top:16px"></div>
-      </div>
-
       <!-- iPhone app: App Store downloads, from App Store Connect analytics -->
       <div class="card mb18" id="sec-appstore" hidden>
         <div class="card-head-row">
@@ -587,14 +577,6 @@
         </div>
         <div class="ref-tiles" id="appstore-tiles"></div>
         <div class="card-sub" id="appstore-note" style="margin-top:10px"></div>
-      </div>
-
-      <!-- referrals -->
-      <div class="card mb18" id="sec-referrals">
-        <div class="card-head-row">
-          <div><h2>Referrals — invite a friend, both get Plus</h2><div class="card-sub">Who’s spreading the word, and how many friends signed up through a link.</div></div>
-        </div>
-        <div class="ref-tiles" id="ref-tiles"></div>
       </div>
 
       <!-- advertiser tiles: the only inventory somebody else would pay for -->
@@ -1108,7 +1090,7 @@
       // only one worth prefetching the other windows for.
       ranged:true,
       blocks:['fac-a','fac-b','claude-a'],
-      nav:[['top','▦','Dashboard'],['sec-ads','◉','Google Ads'],
+      nav:[['top','▦','Dashboard'],
            ['sec-tiles','◫','Advertiser metrics'],['sec-goals','◎','Goals & revenue'],
            ['link:/dashboard/users/','☺','Users'],
            // Users is a separate PAGE with its own hardcoded copy of this list
@@ -1808,8 +1790,6 @@
 
     renderFacHealth(d);
     renderFacSearch(d.search);
-    renderAds(d.ads);
-    renderReferrals(d.referrals);
     renderAppStore(d.appstore);
     renderSpark(d.sparkline||[], d.months);
     renderFacBuild(d.build);
@@ -2367,23 +2347,6 @@
     el('fac-search-tiles').innerHTML=tiles.map(function(t){
       return '<div class="ads-tile"><div class="a-val">'+t.val+'</div><div class="a-lbl">'+t.lbl+'</div><div class="a-sub">'+t.sub+'</div></div>';
     }).join('');
-    // The keywords: what people typed into Google that led here, last 28 days,
-    // with the page each one lands on. Google anonymises one-off queries, so
-    // a site of address lookups shows fewer here than it earns clicks for.
-    var qs = (S.queries || []).filter(function(q){ return q && q.query; });
-    var kw = el('fac-search-keywords');
-    if (kw) {
-      kw.innerHTML = '<div class="sg-sub" style="margin-top:18px">WHAT PEOPLE SEARCHED · last 28 days</div>' +
-        (qs.length
-          ? '<div class="ads-tiles">' + qs.map(function(q){
-              var page = (q.page || '').replace(/^https?:\/\/[^/]+/, '') || '';
-              return '<div class="ads-tile" title="'+esc(q.query)+'"><div class="a-val">'+comma(q.clicks)+'</div>' +
-                '<div class="a-lbl">'+esc(q.query)+'</div>' +
-                '<div class="a-sub">'+comma(q.impressions)+' impressions · position '+Number(q.position).toFixed(1)+(page ? ' · '+esc(page) : '')+'</div></div>';
-            }).join('') + '</div>'
-          : '<div class="disclaim">No query rows in the last 28 days. Google only reports a query once several people have typed it; on a site of one-off address lookups most clicks arrive under queries it keeps anonymous.</div>');
-    }
-
     // The indexing cohort is the honest denominator for a site that publishes
     // 48,000 pages: not "how many did we make" but "how many did Google agree
     // to keep". A sample is inspected, not the whole corpus — the URL
@@ -2401,31 +2364,6 @@
       sc.style.display='';
       sc.innerHTML = '<b>No Search Console data on disk.</b> The 05:40 build writes it; if this stays empty, that run is failing.';
     }
-  }
-
-  function renderAds(A){
-    A = A || {};
-    var v=n(A.visitors), sg=n(A.signups), ret=n(A.returned), op=n(A.opened_listing);
-    var tiles=[
-      {val:comma(v),lbl:'Visitors from ads',sub:comma(A.click_visits)+' ad clicks'},
-      {val:comma(sg)+' · '+pctS(sg,v),lbl:'Signed up',sub:'the goal'},
-      {val:comma(ret)+' · '+pctS(ret,v),lbl:'Came back',sub:'returned ≥1×'},
-      {val:comma(op)+' · '+pctS(op,v),lbl:'Opened a listing',sub:'engaged'}
-    ];
-    el('ads-tiles').innerHTML=tiles.map(function(t){
-      return '<div class="ads-tile"><div class="a-val">'+t.val+'</div><div class="a-lbl">'+t.lbl+'</div><div class="a-sub">'+t.sub+'</div></div>';
-    }).join('');
-    el('ads-callout').innerHTML = sg>0
-      ? '<b>'+comma(sg)+' of '+comma(v)+' ad visitors signed up ('+pctS(sg,v)+').</b> Compare that to your overall sign-up rate to see if ads pull their weight.'
-      // "They engage — 0% open a listing, 0% come back" was written for a case
-      // where the engagement numbers were non-zero. At 0/0 it asserts the
-      // opposite of the figures printed beside it, and a reader (human or
-      // model) reasonably takes the sentence over the numbers. Say which it is.
-      // Both no-sign-up verdicts were removed — the engaged-but-not-converting
-      // one and the all-zero one. With nothing to say the callout stays empty
-      // rather than printing an empty box.
-      : '';
-    el('ads-callout').style.display = el('ads-callout').innerHTML ? '' : 'none';
   }
 
   // ---------- counter signage ----------
@@ -2636,19 +2574,6 @@
     }).join('');
     var verdict=appstoreVerdict(w28.conv_page_view, w28.conv_impression);
     el('appstore-note').textContent=(verdict?verdict+' · ':'')+'Apple data through '+A.as_of+(A.updated?' · pulled '+String(A.updated).slice(0,16).replace('T',' ')+'Z':'');
-  }
-
-  // ---------- referrals ----------
-  function renderReferrals(R){
-    R = R || {};
-    var tiles=[
-      {val:comma(R.opened),lbl:'Clicked “share”',sub:'opened the invite'},
-      {val:comma(R.shared),lbl:'Shared a link',sub:'copied or shared'},
-      {val:comma(R.redemptions),lbl:'Links used',sub:'friend signed up → both got Plus'}
-    ];
-    el('ref-tiles').innerHTML=tiles.map(function(t){
-      return '<div class="ads-tile"><div class="a-val">'+t.val+'</div><div class="a-lbl">'+t.lbl+'</div><div class="a-sub">'+t.sub+'</div></div>';
-    }).join('');
   }
 
   // ---------- sparkline ----------

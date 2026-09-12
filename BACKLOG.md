@@ -62,10 +62,27 @@ anything at the property level; the rest are municipality-level or nothing.
 - [ ] SF/LA/DC SEO: per-neighborhood landing pages (build_seo.py is NYC-only;
   city pages are in sitemap-main.xml for now). DC already carries real
   neighborhood names, so it's the easiest of the three.
-- [ ] LA neighborhoods: assign nb from LA Times neighborhood polygons so the
-  Neighborhood filter works in LA (currently empty there).
-- [ ] Refresh cadence: cron build_sf.py (DataSF refreshes daily), build_dc.py
-  (RentRegistry exports nightly) and build_la.py (assessor layer refreshes
-  monthly) + scp to droplet.
-- [ ] Non-NYC detail sheets still show the NYC-only violation/construction stat
-  tiles as "—" (pre-existing on SF/LA too). Hide them when `!IS_NYC`.
+- [x] **LA neighborhoods** — DONE 2026-09-12. `build_la_records.py` assigns `nb`
+  from the LA Times Mapping L.A. boundaries on GeoHub; 100% of the 67,511
+  parcels land inside one, so the Neighborhood filter works there and the iOS
+  region picker offers neighborhoods instead of ZIP areas.
+- [x] **Per-building records for LA, SF and DC** — DONE 2026-09-12. Every one of
+  them publishes a per-property record and none of it was wired up:
+  `build_la_records.py` (LAHD property look-ups, keyed by APN, CCRIS reaches
+  98.9% of parcels), `build_sf_records.py` (Rent Board evictions/petitions/
+  buyouts, joined on the block address; ZIPs from ZCTAs) and
+  `build_dc_records.py` (MAR id → SSL → CAMA + ITSPE, 97.2% resolve). Shown on
+  the web and in the app, each in its own city's words.
+- [ ] Refresh cadence: `scripts/refresh_cities.sh [la|sf|dc]` now chains builder
+  → records → split → deploy for a city, but nothing runs it on a schedule.
+  Sources refresh daily (LAHD, DataSF, RentRegistry) except the LA assessor
+  layer and DCGIS/CAMA, which are monthly or slower. A weekly cron on the Mac
+  (like `asc_downloads.py`) is probably the right home — the droplet has no
+  shapely and the LA pull is 655k rows.
+- [x] **Non-NYC detail tiles** — DONE 2026-09-12. The "—" violation tile is
+  replaced by whatever that city counts, or dropped; SF and DC say in words that
+  their violations are unpublished rather than showing an empty panel.
+- [ ] SF/DC have no code-violation feed and never will: SF's DBI cites street
+  addresses that cannot honestly be joined to a block-anonymised map, and DC's
+  Department of Buildings publishes none at all. If DOB ever opens one, DC is a
+  one-day build — everything else is already joined through the MAR id.

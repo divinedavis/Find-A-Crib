@@ -56,14 +56,22 @@
 <!-- Paint the chosen theme before the first frame. Signed-in visitors have the
      preference on their account, but that only arrives with the session — this
      localStorage copy is the one readable synchronously, and without it the page
-     flashes white for a frame on every load. New visitors follow their OS. -->
+     flashes white for a frame on every load. New visitors follow their OS.
+
+     Same trick for the header's sign-in control. The session is restored
+     asynchronously by Supabase, so the markup's "Sign in" used to paint first
+     and turn into the avatar a moment later — a signed-in visitor was shown a
+     Sign in button on every reload. `data-auth` is the last state we saw on
+     this device, written by updateAuthUI, and is only ever a HINT about what
+     to draw: nothing is unlocked by it, and the real session still decides. -->
 <script>
 (function(){
-  var t;
-  try{ t = localStorage.getItem('fac.theme'); }catch(e){}
+  var t, a;
+  try{ t = localStorage.getItem('fac.theme'); a = localStorage.getItem('fac.auth'); }catch(e){}
   if(t!=='light' && t!=='dark')
     t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
   document.documentElement.setAttribute('data-theme', t);
+  if(a === 'in') document.documentElement.setAttribute('data-auth', 'in');
 })();
 </script>
 <style>
@@ -187,6 +195,14 @@
     padding: 0; width: 34px; height: 34px; border-radius: 50%; overflow: hidden;
     display: flex; align-items: center; justify-content: center; font-size: 16px; }
   .auth-btn.signed-in img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  /* Before the session has been restored, draw the signed-in shape rather than
+     the words: an empty circle that the avatar drops into is invisible as a
+     change, where "Sign in" -> a photo is a flash of the wrong state. Only ever
+     applied to a device that HAS been signed in — see the head script. */
+  html[data-auth="in"] .auth-btn { color: var(--ink); border-color: var(--line);
+    padding: 0; width: 34px; height: 34px; border-radius: 50%; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0; background: var(--surface-2); }
   /* sign in / sign up modal */
   .auth-backdrop { position: fixed; inset: 0; z-index: 1900; background: rgba(0,0,0,0.45);
     display: flex; align-items: center; justify-content: center; padding: 16px; }
@@ -835,7 +851,8 @@
     .city-more a { display: block; padding: 8px 16px; text-align: center; }
     .filter-bar { gap: 8px; width: 100%; flex: 1 1 100%; order: 3; }
     .auth-btn { margin-left: auto; order: 2; padding: 7px 14px; font-size: 13px; }
-    .auth-btn.signed-in { padding: 0; width: 30px; height: 30px; }
+    .auth-btn.signed-in,
+    html[data-auth="in"] .auth-btn { padding: 0; width: 30px; height: 30px; }
     .theme-btn { width: 30px; height: 30px; font-size: 14px; }
     .ref-btn { padding: 5px 10px; font-size: 11.5px; }
     /* An SE-sized phone is ~25px short of holding the whole row once the
@@ -7220,6 +7237,14 @@
       authBtn.title = '';
       authBtn.removeAttribute('aria-label');
     }
+    // What the next load should paint before the session comes back. A hint
+    // only: it decides which of two shapes is drawn for one frame and unlocks
+    // nothing, so a tampered value costs a visitor a wrong-looking button and
+    // nothing else. Cleared on sign-out so a shared device does not show the
+    // previous person's avatar slot.
+    document.documentElement.toggleAttribute('data-auth', false);
+    if (authUser) document.documentElement.setAttribute('data-auth', 'in');
+    try { localStorage.setItem('fac.auth', authUser ? 'in' : 'out'); } catch (e) {}
     // The referral offer is "invite a friend, you BOTH get Plus free". There is
     // nothing in that for someone who already has Plus — permanent is already
     // permanent — so it is hidden for members rather than dangled at them.

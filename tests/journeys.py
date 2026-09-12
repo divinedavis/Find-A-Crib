@@ -72,6 +72,7 @@ JOURNEY_EVENTS = {
     'deep_links_and_view':  ['building_view'],
     'city_pages':           [],
     'city_records':         ['building_view'],
+    'no_signed_out_flash':  [],
     'memory':               [],
     'alerts_page':          [],
     'signin_modal':         ['signin'],
@@ -506,6 +507,56 @@ class Runner:
             self.ok(int(lab.split(' of ')[1].replace(',', '')) >= low, f'/{city}/ count looks wrong: {lab}', j)
             j.notes.append(f'{city} {lab}')
 
+    def j_no_signed_out_flash(self, page, j, device):
+        """A signed-in visitor must not be shown a Sign in button on reload.
+
+        Reported 2026-09-12 with a screen recording: refreshing on a phone
+        flashed "Sign in" and a wider header for a frame or two before the
+        avatar appeared. The session is restored asynchronously by Supabase, so
+        the markup's signed-out state painted first. A `fac.auth` hint in
+        localStorage, read by the head script, now paints the avatar's shape
+        immediately — the same trick the theme already used.
+        """
+        # Write the hint by visiting the origin and setting it there, not with
+        # add_init_script: an init script races the document-start head script
+        # and this flipped between passing and failing by device.
+        page.goto(LIVE + '/', wait_until='domcontentloaded', timeout=90000)
+        page.evaluate("localStorage.setItem('fac.auth','in')")
+        page.goto('about:blank')
+        # 'commit' returns as soon as the document starts — the earliest the
+        # first paint could happen, which is the moment being tested.
+        page.goto(LIVE + '/', wait_until='commit', timeout=90000)
+        page.wait_for_selector('#auth-btn', state='attached', timeout=30000)
+        early = page.evaluate("""() => {
+            const b = document.getElementById('auth-btn');
+            const cs = getComputedStyle(b);
+            return { auth: document.documentElement.getAttribute('data-auth'),
+                     fontSize: parseFloat(cs.fontSize),
+                     radius: cs.borderRadius,
+                     width: b.getBoundingClientRect().width };
+        }""")
+        self.ok(early['auth'] == 'in', f"head script should stamp data-auth=in, got {early['auth']}", j)
+        self.ok(early['fontSize'] == 0,
+                f"'Sign in' is legible on a signed-in device's first paint (font-size {early['fontSize']})", j)
+        self.ok(early['width'] <= 40,
+                f"the header paints the wide Sign in pill before the avatar ({early['width']:.0f}px)", j)
+        j.notes.append(f"first paint {early['width']:.0f}px circle")
+
+        # …and a device that has never signed in still gets a real Sign in button.
+        page.evaluate("localStorage.removeItem('fac.auth')")
+        page.goto('about:blank')
+        page.goto(LIVE + '/', wait_until='commit', timeout=90000)
+        page.wait_for_selector('#auth-btn', state='attached', timeout=30000)
+        out = page.evaluate("""() => {
+            const b = document.getElementById('auth-btn');
+            return { auth: document.documentElement.getAttribute('data-auth'),
+                     text: b.textContent.trim(),
+                     fontSize: parseFloat(getComputedStyle(b).fontSize) };
+        }""")
+        self.ok(out['auth'] is None, f"a signed-out device must not be stamped, got {out['auth']}", j)
+        self.ok(out['text'] == 'Sign in' and out['fontSize'] > 0,
+                f"signed out, the button has to say Sign in, got {out!r}", j)
+
     def j_city_records(self, page, j, device):
         """Every city's building page must show the record ITS city publishes.
 
@@ -740,7 +791,7 @@ class Runner:
         self.ok(page.evaluate("document.getElementById('auth-modal').hidden"), 'modal should close', j)
 
     JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'pin_and_list',
-                'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'memory', 'alerts_page', 'signin_modal', 'app_chip', 'city_chip',
+                'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'memory', 'alerts_page', 'signin_modal', 'app_chip', 'city_chip',
                 'ad_tiles', 'outbound_links', 'status_chips', 'referral_gate']
 
     # ---- run --------------------------------------------------------------

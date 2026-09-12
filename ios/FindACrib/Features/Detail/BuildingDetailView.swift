@@ -107,6 +107,7 @@ struct BuildingDetailView: View {
             .padding(16)
             .background(Color.white.shadow(.drop(color: .black.opacity(0.08), radius: 6, y: -2)))
         }
+        .perfFirstMovement("detail")
         .swipeBackEnabled()
         .toolbar {
             ToolbarItem(placement: .principal) {

@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import os
 
 /// Wall-clock spans for the paths that have to stay off the main thread's
@@ -61,5 +62,48 @@ enum Perf {
         }
         RunLoop.main.add(t, forMode: .common)
         log.notice("watchdog on")
+    }
+
+    /// Marks the instant a screen physically starts to move.
+    ///
+    /// "Back takes long" is the gap between the tap and the first pixel of the
+    /// transition — not the transition's duration, and not when `onDisappear`
+    /// fires. `onDisappear` turned out to be ~670ms after the tap for BOTH the
+    /// pop that feels slow and the one that feels instant, so it measures
+    /// SwiftUI's teardown schedule and nothing a user can see.
+    ///
+    /// A GeometryReader on the outgoing screen sees its own global origin move
+    /// the moment UIKit starts sliding it. That IS the first pixel.
+    struct FirstMovement: ViewModifier {
+        let name: String
+        /// Arms only once the screen has come to rest at x = 0. Without this it
+        /// fires during the PUSH, while the view is still sliding in from the
+        /// right — a timestamp several seconds before the back tap.
+        @State private var settled = false
+        @State private var moved = false
+        func body(content: Content) -> some View {
+            content.background(
+                GeometryReader { g -> Color in
+                    let x = g.frame(in: .global).minX
+                    if Perf.on, !moved {
+                        Task { @MainActor in
+                            if !settled, abs(x) < 1 { settled = true; return }
+                            if settled, !moved, abs(x) > 1 {
+                                moved = true
+                                Perf.mark("FACMOVED \(name)")
+                            }
+                        }
+                    }
+                    return Color.clear
+                })
+        }
+    }
+}
+
+extension View {
+    /// Logs `MOVED <name>` on the first frame this view is displaced — the
+    /// start of a navigation transition. No-op unless launched with --perf.
+    func perfFirstMovement(_ name: String) -> some View {
+        modifier(Perf.FirstMovement(name: name))
     }
 }

@@ -159,6 +159,7 @@ struct ResultsView: View {
         .sheet(isPresented: $showAlerts) { AlertsSheet(query: query) }
         .sheet(isPresented: $showSignIn) { EmailSignInView() }
         .onChange(of: auth.isSignedIn) { _, on in if on, showSignIn { showSignIn = false; showAlerts = true } }
+        .perfFirstMovement("results")
         .onAppear { if CommandLine.arguments.contains("--open-alerts") { showAlerts = true } }
         .alert("Save this search", isPresented: $showSave) {
             TextField("Name", text: $saveName)

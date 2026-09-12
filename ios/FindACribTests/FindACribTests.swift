@@ -278,6 +278,41 @@ final class ActivityTests: XCTestCase {
 
 // MARK: - Cities (LA, SF, DC alongside NYC)
 
+final class MapClusterTests: XCTestCase {
+    /// Cluster bubbles are spaced in SCREEN POINTS, not in degrees.
+    ///
+    /// The grid used to be "9 columns across the viewport" with cells 1.2x as
+    /// tall as wide. A phone's map is about twice as tall as it is wide, so
+    /// that came out at 9 by ~16 — up to 145 cells on screen, and a 44pt bubble
+    /// in each of them, which is what "too many bubbles" looked like.
+    func testGridCellsAreSquareOnScreenAtEveryZoom() {
+        let phone = CGSize(width: 393, height: 700)
+        for lngSpan in [0.6, 0.2, 0.05, 0.01] {          // city down to a few blocks
+            let region = MKCoordinateRegion(center: .init(latitude: 40.72, longitude: -73.97),
+                                            span: .init(latitudeDelta: lngSpan * 1.8, longitudeDelta: lngSpan))
+            let (cw, ch) = BuildingMap.cellSize(region: region, viewSize: phone)
+            // a cell is cellPoints across and cellPoints down, in points
+            let wPts = cw / region.span.longitudeDelta * Double(phone.width)
+            let hPts = ch / region.span.latitudeDelta * Double(phone.height)
+            XCTAssertEqual(wPts, Double(BuildingMap.cellPoints), accuracy: 0.5, "zoom \(lngSpan)")
+            XCTAssertEqual(hPts, Double(BuildingMap.cellPoints), accuracy: 0.5, "zoom \(lngSpan)")
+            // …and that is few enough cells to read
+            let cols = Double(phone.width) / wPts, rows = Double(phone.height) / hPts
+            XCTAssertLessThanOrEqual(cols * rows, 20, "zoom \(lngSpan): \(Int(cols))x\(Int(rows)) cells on screen is a mat of bubbles")
+        }
+    }
+
+    /// Two bubbles in neighbouring cells cannot touch: each sits at its cell's
+    /// average position, clamped into the middle of the cell, so the closest
+    /// two can be is a cell minus the clamp — which has to beat a bubble's width.
+    func testNeighbouringBubblesCannotOverlap() {
+        let widestBubble: CGFloat = 44          // ClusterBubbleView at 3+ digits
+        let minGap = BuildingMap.cellPoints * (1 - BuildingMap.centroidClamp)
+        XCTAssertGreaterThan(minGap, widestBubble,
+                             "cellPoints/centroidClamp let two bubbles overlap")
+    }
+}
+
 final class CityTests: XCTestCase {
     /// The three non-NYC cities publish a slimmer record: no HPD block, and
     /// LA carries no neighborhood at all while SF and DC do. One odd field

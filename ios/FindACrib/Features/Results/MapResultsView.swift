@@ -167,7 +167,32 @@ struct BuildingMap: UIViewRepresentable {
     /// the map and a "nearest 6,000 to the centre" sample left most of the
     /// city blank; a fixed grid is cheap at any zoom and covers everything.
     static let pinLimit = 700
-    static let gridCols = 9
+    /// How far apart cluster bubbles are, in POINTS ON SCREEN — not in degrees
+    /// and not as a column count.
+    ///
+    /// The grid used to be "9 columns across the viewport" with cells 1.2x as
+    /// tall as wide. A phone's map is roughly twice as tall as it is wide, so
+    /// that came out at 9 columns by ~16 rows — up to 145 cells on screen, and
+    /// the bubbles (44pt across for a three-digit count) overlapped each other
+    /// in a solid mat. Sizing the cell in screen points instead makes it square
+    /// where it matters, gives the same spacing on any device and at any zoom,
+    /// and is the number to turn if the map ever wants to be busier or calmer.
+    static let cellPoints: CGFloat = 132
+    /// A bubble sits at the average position of its cell's buildings, which can
+    /// land right on a cell edge and touch its neighbour. Clamping that average
+    /// into the middle of the cell keeps the layout organic rather than a rigid
+    /// lattice, while guaranteeing bubbles stay `cellPoints * (1 - clamp)`
+    /// apart — 66pt here, comfortably more than the widest bubble.
+    static let centroidClamp: CGFloat = 0.5
+
+    /// Degrees per grid cell for a viewport, from a cell measured in screen
+    /// points. Square on screen, which is the only place squareness matters —
+    /// a phone's map is about twice as tall as it is wide, so a grid defined in
+    /// degrees gives twice as many rows as columns and the bubbles collide.
+    static func cellSize(region: MKCoordinateRegion, viewSize: CGSize) -> (lng: Double, lat: Double) {
+        (lng: region.span.longitudeDelta * Double(cellPoints / max(viewSize.width, 1)),
+         lat: region.span.latitudeDelta * Double(cellPoints / max(viewSize.height, 1)))
+    }
 
     func makeUIView(context: Context) -> MKMapView {
         let m = MKMapView()
@@ -235,7 +260,11 @@ struct BuildingMap: UIViewRepresentable {
             if !force && key == lastLayoutKey { return }
             lastLayoutKey = key
             let all = parent.buildings, prices = parent.prices
-            let cols = BuildingMap.gridCols, limit = BuildingMap.pinLimit
+            let limit = BuildingMap.pinLimit
+            // Degrees per cell, from a cell measured in screen points. The map
+            // view's own size is the only honest source for this: it differs by
+            // device, and by whether the list sheet is up.
+            let (cw, ch) = BuildingMap.cellSize(region: region, viewSize: m.bounds.size)
             generation += 1; let gen = generation
             // Padded viewport; the work runs off the main thread.
             let pad = 0.6
@@ -251,18 +280,29 @@ struct BuildingMap: UIViewRepresentable {
                 if visible.count <= limit {
                     pins = visible.map { BuildingAnnotation($0, price: prices[$0.bbl]) }
                 } else {
-                    // grid over the padded viewport, ~cols across the screen
-                    let cw = region.span.longitudeDelta / Double(cols)
-                    let ch = cw * 1.2
+                    // A grid over the padded viewport whose cells are square on
+                    // screen, so bubbles are spaced the same in both directions
+                    // and at every zoom.
                     var cells: [Int: (lat: Double, lng: Double, n: Int)] = [:]
                     for b in visible {
                         let ci = Int((b.lng - minLng) / cw), cj = Int((b.lat - minLat) / ch)
-                        let k = cj * 10_000 + ci
-                        var cell = cells[k] ?? (0, 0, 0)
-                        cell.lat += b.lat; cell.lng += b.lng; cell.n += 1
-                        cells[k] = cell
+                        let k = cj &* 100_000 &+ ci
+                        var acc = cells[k] ?? (0, 0, 0)
+                        acc.lat += b.lat; acc.lng += b.lng; acc.n += 1
+                        cells[k] = acc
                     }
-                    pins = cells.values.map { GridAnnotation(coordinate: .init(latitude: $0.lat / Double($0.n), longitude: $0.lng / Double($0.n)), count: $0.n) }
+                    let clamp = Double(BuildingMap.centroidClamp) / 2
+                    pins = cells.map { k, acc in
+                        let ci = Double(k % 100_000), cj = Double(k / 100_000)
+                        let lng = acc.lng / Double(acc.n), lat = acc.lat / Double(acc.n)
+                        // Pull the average back toward the middle of its cell so
+                        // two neighbours cannot end up touching on a shared edge.
+                        let cLng = minLng + (ci + 0.5) * cw, cLat = minLat + (cj + 0.5) * ch
+                        return GridAnnotation(
+                            coordinate: .init(latitude: min(max(lat, cLat - ch * clamp), cLat + ch * clamp),
+                                              longitude: min(max(lng, cLng - cw * clamp), cLng + cw * clamp)),
+                            count: acc.n)
+                    }
                 }
                 DispatchQueue.main.async {
                     guard let self, gen == self.generation else { return }

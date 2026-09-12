@@ -1682,6 +1682,7 @@ DOCROOT = os.environ.get("SEO_DOCROOT", "/var/www/rent-map")
 STATIC_PAGE_SOURCES = {
     "/": "index.html",
     "/developers/": "developers/index.html",
+    "/embed/": "embed/index.html",
     "/marketing-agents/": "marketing-agents/index.html",
     "/sf/": "sf/index.html",
     "/la/": "la/index.html",
@@ -3223,6 +3224,13 @@ def main():
     # main sitemap = homepage + hand-authored pages (developer API portal).
     # These aren't generated in the loop above, so list them here explicitly.
     static_pages = [("/", "1.0"), ("/developers/", "0.8"),
+                    # The free keyless address-check widget (T016). Live since
+                    # before 2026-08-08 and, until 2026-09-12, in no sitemap and
+                    # linked from nowhere on the site — the only way to reach it
+                    # was to type the URL. Its technique's hypothesis is that
+                    # every embed becomes a permanent backlink, which cannot
+                    # start while the page describing the widget is unreachable.
+                    ("/embed/", "0.6"),
                     # HPD lottery-agent directory (hand-written page, data from
                     # build_marketing_agents.py)
                     ("/marketing-agents/", "0.8"),

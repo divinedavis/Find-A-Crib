@@ -540,6 +540,29 @@ def build_blocks(run_log=None, review_out=None):
                       # number it was labelled as. The real one is below.
                       "sub": "pages that earned an impression — indexed *and* searched for",
                       "pct": indexed_pct, "tone": "bad" if indexed_pct < 5 else "info"})
+            # ...and how much of that count is the site's own name. This number
+            # rises when brand demand rises, because Google hangs sitelinks off
+            # the brand result: on 2026-09-12 it went 8 -> 13 and every one of
+            # the thirteen served "findacrib" and nothing else. Say so next to
+            # the count, or the next reader takes a PR result for an SEO one.
+            _sb = _last("gsc_serving_nonbranded")
+            _sbo, _sbu = _last("gsc_serving_branded_only"), _last("gsc_serving_unattributed")
+            if _sb is None:
+                _snap_sb = searchconsole.saved_serving_brand_split()
+                if _snap_sb:
+                    _sb = _snap_sb["nonbranded"]
+                    _sbo, _sbu = _snap_sb["branded_only"], _snap_sb["unattributed"]
+            if _sb is not None:
+                _tail = ""
+                if _sbu:
+                    _tail = (f" Search Console gave no query for {_fmt(_sbu)} of them, so "
+                             f"that first number is a floor.")
+                B.append({"type": "note", "text":
+                          f"{_fmt(_sb)} of those {_fmt(serving)} earned an impression for a "
+                          f"query that was not the site's own name; {_fmt(_sbo)} served brand "
+                          f"navigation only.{_tail} This count climbs on its own as brand "
+                          f"search grows, because Google hangs sitelinks off the brand "
+                          f"result — the non-branded half is the one the 90% goal is about."})
             # That count on its own reads as a plateau when it is really a
             # rotation: on 2026-08-04 it held at 89 while nine URLs entered the
             # set and nine left it. Say which it is, or the number misleads.

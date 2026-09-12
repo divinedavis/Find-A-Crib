@@ -168,6 +168,88 @@ def saved_branded_split():
     return branded_split(rows) if rows else None
 
 
+def serving_brand_split(rows, per_page):
+    """The SAME brand rule, applied one dimension over: per PAGE, not per query.
+
+    Why this exists, and it is the mirror image of the 2026-08-30 mistake that
+    branded_split was written for. That day gsc_clicks went 5 -> 33 overnight
+    and all 33 were people typing the site's own name. On 2026-09-12 the *page*
+    count did the same thing: gsc_serving_pages went 8 -> 13, a 62% rise in the
+    one number every review since 2026-07-27 has been told gates everything
+    else. Reading the saved per-page queries shows what the five newcomers were
+    — /sf/, /la/, /dc/, /alerts/, /directory/, /marketing-agents/, /developers/,
+    each at position 1.1-1.2 with 19-26 impressions and ZERO clicks. That is the
+    signature of Google's sitelinks under the brand result, not of seven pages
+    starting to rank. Every one of the 13 served "findacrib", "findacrib.com" or
+    "jayshomefinder" and nothing else — including the five building pages, which
+    served "findacrib.com" rather than their own addresses.
+
+    So the gating metric can rise purely because brand demand rose, and brand
+    demand IS rising fast here: 53 -> 225 clicks per 8-day window in ten days,
+    off-search, while organic visitors fell. As it rises Google shows more
+    sitelinks, so gsc_serving_pages will keep climbing with the corpus exactly
+    as invisible as it is today, and "the corpus is finally being discovered,
+    publish more" is the opposite of the right instruction. Current practice
+    says the same thing in general terms: branded traffic grows with PR, ads and
+    word of mouth at zero SEO effort, so conflating the two overstates SEO's
+    contribution precisely when brand is growing.
+
+    Three counts, because the two-number version would be a guess:
+
+      nonbranded      pages with at least one impression on a query that is not
+                      brand navigation. THIS is the number the 90% share goal is
+                      about, and the one to read instead of gsc_serving_pages.
+      branded_only    pages whose every attributed query is branded.
+      unattributed    pages Search Console gave us no query rows for at all.
+                      NOT branded, NOT non-branded — unknown. On a corpus of
+                      single-address pages almost every query is anonymized
+                      away, so on a big serving day this is the bulk of it.
+
+    The three sum to len(rows), so the split can never quietly lose a page.
+
+    `nonbranded` is a FLOOR in the same direction as BRAND_TOKENS: a page whose
+    only non-branded queries were anonymized lands in `unattributed`, never in
+    `branded_only`'s favour, and the blunt substring rule counts a generic
+    phrase like "find a crib brooklyn" as branded. Both biases understate
+    progress, which is the safe direction for a metric whose whole purpose is to
+    stop this loop over-claiming.
+
+    Returns None when `per_page` is missing or carries the collector's error
+    marker — zero-because-the-query-failed and a measured zero are different
+    facts, and the ledger reads a missing row as "not measured".
+    """
+    if not isinstance(per_page, dict) or "__error__" in per_page or not per_page:
+        return None
+    out = {"nonbranded": 0, "branded_only": 0, "unattributed": 0}
+    for r in rows:
+        qs = per_page.get(r.get("url")) or []
+        if not qs:
+            out["unattributed"] += 1
+        elif any(not is_branded(q.get("query")) for q in qs):
+            out["nonbranded"] += 1
+        else:
+            out["branded_only"] += 1
+    return out
+
+
+def saved_serving_brand_split():
+    """The page-level split, read back from the committed gsc_pages.json.
+
+    Prefers the counts the collector stored, which were computed against the
+    FULL page x query pull. Falls back to recomputing from `queries_by_page`,
+    which the snapshot caps at the 60 busiest pages and 10 queries each — so on
+    a fallback read everything past the cap lands in `unattributed`, which is
+    the honest place for it. Returns None when neither is available.
+    """
+    snap = load_pages() or {}
+    stored = snap.get("serving_brand")
+    if isinstance(stored, dict) and "nonbranded" in stored:
+        return stored
+    pages = snap.get("pages") or []
+    qbp = snap.get("queries_by_page") or {}
+    return serving_brand_split(pages, qbp) if pages and qbp else None
+
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
@@ -277,6 +359,19 @@ def collect(days=7):
         if ch.get(metric) is not None:
             ledger.record_result(today, "__site__", metric, ch[metric])
 
+    # ---- and how much of that serving set is the site's own name. On
+    # 2026-09-12 gsc_serving_pages rose 8 -> 13 and all thirteen served nothing
+    # but "findacrib" / "jayshomefinder" — see serving_brand_split() for why the
+    # gating metric can climb while the corpus stays exactly as invisible.
+    # Recorded only when the split could be measured: a zero here must mean
+    # "zero pages earned a housing-intent impression", never "the pull failed".
+    brand = (saved or {}).get("serving_brand") or {}
+    for metric, key in (("gsc_serving_nonbranded", "nonbranded"),
+                        ("gsc_serving_branded_only", "branded_only"),
+                        ("gsc_serving_unattributed", "unattributed")):
+        if brand.get(key) is not None:
+            ledger.record_result(today, "__site__", metric, brand[key])
+
     # ---- and which tier those pages are. Only the daily count goes into the
     # series: `ever`, the medians and the never-served tiers are all
     # recomputable from the history in gsc_pages.json, which is committed every
@@ -296,6 +391,12 @@ def collect(days=7):
         "tracked_ranking": matched, "share_pct": share,
         "nonbranded_clicks": split["nonbranded_clicks"],
         "nonbranded_impressions": split["nonbranded_impressions"],
+        # The review agent is told to read last_run.json as ground truth and to
+        # check serving_pages every run, so the number that qualifies it belongs
+        # in the same record rather than one file over.
+        "serving_nonbranded": brand.get("nonbranded"),
+        "serving_branded_only": brand.get("branded_only"),
+        "serving_unattributed": brand.get("unattributed"),
         "serving_stable": ch.get("gsc_serving_stable"),
         "serving_ever": ch.get("gsc_serving_ever")})
 
@@ -566,10 +667,16 @@ def _save_pages(sc, token, start, end, rows, by_query):
             per_page.setdefault(keys[0], []).append(
                 {"query": keys[1], "impressions": r.get("impressions", 0),
                  "clicks": r.get("clicks", 0), "position": round(r.get("position", 0), 1)})
+        # Split branded from non-branded BEFORE the cap below. Truncating to the
+        # ten busiest queries first would let a page whose 11th query is the
+        # only housing-intent one read as brand-only, and that is the one error
+        # this metric exists to prevent.
+        brand = serving_brand_split(rows, per_page)
         for url in per_page:
             per_page[url] = sorted(per_page[url], key=lambda q: -q["impressions"])[:10]
     except Exception as e:
         per_page = {"__error__": str(e)}
+        brand = None
 
     # Queries we earn impressions for but never chose to track. Free demand
     # signal, and the honest input to "what should the next page be about".
@@ -610,6 +717,12 @@ def _save_pages(sc, token, start, end, rows, by_query):
         "date": today,
         "window": f"{start}..{end}",
         "serving_pages": len(rows),
+        # How many of those serving pages earned anything but brand navigation.
+        # Stored rather than left to be recomputed because the counts here were
+        # taken against the full page x query pull, and `queries_by_page` below
+        # is capped — see saved_serving_brand_split(). Omitted, not zeroed, when
+        # the per-page pull failed.
+        **({"serving_brand": brand} if brand else {}),
         "churn": churn,
         # Computed against the history this run just folded today's rows into,
         # not the previous snapshot, so `now` and `ever` are the same night.

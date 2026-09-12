@@ -110,6 +110,15 @@ header.site .brand{font-weight:800;color:var(--ink);font-size:18px;font-family:'
     <div id="signup-out"></div>
   </section>
 
+  <section id="embed" class="card">
+    <h2 style="margin-top:0">Don't want to write any code?</h2>
+    <p class="muted">If you run a tenant organisation, a legal-aid site or a housing desk and just
+      need readers to check one address at a time, there's a free embeddable widget instead — one
+      line of HTML, no key, no signup, no tracking. It checks the same 47,000+ DHCR-registered NYC
+      buildings and states its own limits on every result.</p>
+    <p style="margin:10px 0 0"><a href="/embed/">Get the address-check widget →</a></p>
+  </section>
+
   <section id="auth">
     <h2>Authentication</h2>
     <p>Send your key in the <code>X-API-Key</code> header on every request. Base URL: <code>https://findacrib.com/api/v1</code></p>
@@ -170,7 +179,7 @@ GET /v1/section8?zip={zip}</pre>
     <div id="dash-out"></div>
   </section>
 </main>
-<footer>Data: NYC DHCR, HPD Open Data, HUD, and AffordableHousing.com. Public government data, compiled by Find A Crib. · <a href="/">Home</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></footer>
+<footer>Data: NYC DHCR, HPD Open Data, HUD, and AffordableHousing.com. Public government data, compiled by Find A Crib. · <a href="/">Home</a> · <a href="/embed/">Embeddable widget</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></footer>
 
 <script>
   const API = '/api/developers';

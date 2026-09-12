@@ -1803,6 +1803,16 @@ def _crawl_sources():
     """[(family label, glob relative to the docroot, how many to read)]."""
     src = [("home shell", "index.html", 1),
            ("guide hub", "guide/index.html", 1),
+           # Hand-authored, listed in sitemap-main.xml, and one click from the
+           # homepage — so a link from here is as crawlable as one from any
+           # generated hub. It was missing from this list until 2026-09-12, and
+           # the omission was not harmless: the audit scores reachability by
+           # reading THESE families only, so a section whose only inbound link
+           # came from /developers/ would have been reported ORPHANED forever
+           # while the depth crawl, which follows real links, found it at depth
+           # 2. That is the false-red case — worse than a missed orphan, because
+           # it sends the next reader to fix a link that already exists.
+           ("developers portal", "developers/index.html", 1),
            ("nyc browse hub", "buildings/index.html", 1),
            ("borough hub", "borough/*/index.html", 5),
            ("zip hub", "zip/*/index.html", 8),

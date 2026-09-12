@@ -63,9 +63,28 @@ enum LaunchArgs {
         let a = CommandLine.arguments
         func val(_ flag: String) -> String? { a.firstIndex(of: flag).flatMap { $0 + 1 < a.count ? a[$0 + 1] : nil } }
         if let t = val("--tab") { nav.tab = t == "activity" ? .activity : (t == "profile" ? .profile : .search) }
+        // `--city la|sf|dc` — land in another city, for the screenshot script
+        // and the UI tests. Only NYC ships a seed in the bundle, so the others
+        // have to download first; the route has to wait for that, or it
+        // resolves against New York's buildings and opens the wrong one.
         if a.contains("--paywall") { nav.tab = .profile; nav.showPaywall = true }
-        guard let r = val("--route") else { return }
+        if let c = val("--city"), c != store.city.id {
+            let target = City.find(c)
+            Task { @MainActor in
+                await store.switchCity(to: target, persist: false)
+                route(val("--route"), nav: nav, store: store)
+            }
+            return
+        }
+        route(val("--route"), nav: nav, store: store)
+    }
+
+    @MainActor private static func route(_ r: String?, nav: AppNav, store: DataStore) {
+        guard let r else { return }
         var q = SearchQuery(); q.mode = .stabilized; q.availableOnly = true; q.locations = [.borough("Bk")]
+        // Brooklyn and "available only" are New York's defaults and match
+        // nothing anywhere else; outside NYC start from the unfiltered city.
+        if !store.city.isNYC { q = SearchQuery() }
         if r == "results" { nav.searchPath = [.results(q)] }
         else if r == "hcr" { var h = SearchQuery(); h.hcrOnly = true; nav.searchPath = [.results(h)] }
         else if r == "map" { nav.searchPath = [.results(q), .map(q)] }
@@ -77,7 +96,13 @@ enum LaunchArgs {
             nav.searchPath = [.results(q), .building(bbl), .hpdRecords(bbl, .violations)]
         }
         else if r.hasPrefix("detail") {
+            // Outside NYC, prefer a building that actually carries a record —
+            // a screenshot or a test of the record panel on one of the many
+            // parcels with no case history proves nothing.
+            let withRecord = store.city.isNYC ? nil
+                : store.buildings.first { $0.h?.owner != nil || $0.h?.ev != nil || $0.h?.violations != nil }?.bbl
             let bbl = r.split(separator: ":").dropFirst().first.map(String.init)
+                ?? withRecord
                 ?? SearchEngine.run(q, store: store).first?.bbl ?? store.buildings.first?.bbl ?? ""
             nav.searchPath = [.results(q), .building(bbl)]
         }

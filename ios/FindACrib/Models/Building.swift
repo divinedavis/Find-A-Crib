@@ -15,23 +15,98 @@ struct Building: Identifiable, Codable, Hashable {
     let u: Int?             // units
     let nb: String?         // 2020 NTA neighborhood name (SF/DC carry their own)
     let mr: Int?            // median reported/registered rent — SF and DC only
-    let h: HPD?
+    let br: [String: Int]?  // that rent split by bedroom count — SF only
+    let sq: Int?            // median unit size in sq ft — SF only
+    let ui: [String]?       // utilities included in the base rent — SF only
+    let vac: Int?           // vacant units on the register — DC only
+    var h: HPD?
 
     var id: String { bbl }
 
+    /// The building's record with whatever agency keeps one. NYC's is HPD's;
+    /// LA's is the Housing Department's; SF's is the Rent Board's case history
+    /// for the block; DC's is the assessor's roll and the owner on it. One
+    /// container because the pipeline writes one — every field is optional and
+    /// a city fills in only what it publishes.
     struct HPD: Codable, Hashable {
-        let violations: Violations?
-        let complaints: Complaints?
+        var violations: Violations?
+        var complaints: Complaints?
         let lastregistration: String?
         let op: Int?
+        // LA: the inspections CCRIS has scheduled, and the dates its violation
+        // file actually covers — it is a rolling window, not an all-time
+        // register, so "6 cited" must not be read as a lifetime count.
+        let insp: Int?
+        let window: [String]?
+        let ev: Evictions?
+        let by: Buyouts?
+        let pet: Petitions?
+        let cases: Cases?
+        let decl: Cases?
+        // DC: the assessor's roll and the owner of record on it.
+        let owner: String?
+        let ptype: String?
+        let assessed: Int?
+        let rooms: Int?
+        let beds: Int?
+        let baths: Int?
+        let cond: String?
+        let renov: Int?
+        let units_total: Int?
+        let vacreg: String?
+        let ssl: String?
+
         struct Violations: Codable, Hashable {
             let open: Int?; let total: Int?
             let a: Int?; let b: Int?; let c: Int?
             let oa: Int?; let ob: Int?; let oc: Int?
             let last_12mo: Int?
+            /// What was actually cited, commonest first: [["Smoke detectors", 3], …].
+            /// LA only; NYC's descriptions are fetched per building instead.
+            let types: [[Types]]?
+            /// A cited-for line, already in reading order.
+            var named: [(String, Int)] {
+                (types ?? []).compactMap { pair in
+                    guard pair.count == 2, case let .text(t) = pair[0], case let .number(n) = pair[1] else { return nil }
+                    return (t, n)
+                }
+            }
         }
         struct Complaints: Codable, Hashable {
             let open: Int?; let total: Int?; let last_12mo: Int?
+        }
+        struct Evictions: Codable, Hashable {
+            let total: Int?; let nofault: Int?; let last_12mo: Int?; let recent: Int?
+            let reasons: [[Types]]?
+            var named: [(String, Int)] {
+                (reasons ?? []).compactMap { pair in
+                    guard pair.count == 2, case let .text(t) = pair[0], case let .number(n) = pair[1] else { return nil }
+                    return (t, n)
+                }
+            }
+        }
+        struct Buyouts: Codable, Hashable {
+            let n: Int?; let med: Int?; let recent: Int?
+        }
+        struct Petitions: Codable, Hashable {
+            let total: Int?; let landlord: Int?; let tenant: Int?; let recent: Int?
+        }
+        struct Cases: Codable, Hashable {
+            let open: Int?; let total: Int?
+        }
+        /// The builders emit ["Smoke detectors", 3] — a mixed array JSON can
+        /// hold and Swift cannot, so each cell decodes as whichever it is.
+        enum Types: Codable, Hashable {
+            case text(String), number(Int)
+            init(from d: Decoder) throws {
+                let c = try d.singleValueContainer()
+                if let s = try? c.decode(String.self) { self = .text(s) }
+                else { self = .number((try? c.decode(Int.self)) ?? 0) }
+            }
+            func encode(to e: Encoder) throws {
+                var c = e.singleValueContainer()
+                switch self { case .text(let s): try c.encode(s); case .number(let n): try c.encode(n) }
+            }
         }
     }
 
@@ -56,14 +131,62 @@ struct Building: Identifiable, Codable, Hashable {
         if let mi = try? c.decodeIfPresent(Int.self, forKey: .mr) { mr = mi }
         else if let md = try? c.decodeIfPresent(Double.self, forKey: .mr) { mr = Int(md) }
         else { mr = nil }
+        br = try? c.decodeIfPresent([String: Int].self, forKey: .br)
+        sq = try? c.decodeIfPresent(Int.self, forKey: .sq)
+        ui = try? c.decodeIfPresent([String].self, forKey: .ui)
+        vac = try? c.decodeIfPresent(Int.self, forKey: .vac)
         h = try c.decodeIfPresent(HPD.self, forKey: .h)
     }
 
     init(bbl: String, b: String, a: String, z: String?, lat: Double, lng: Double,
          s: [String]? = nil, yr: Int? = nil, u: Int? = nil, nb: String? = nil,
-         mr: Int? = nil, h: HPD? = nil) {
+         mr: Int? = nil, br: [String: Int]? = nil, sq: Int? = nil, ui: [String]? = nil,
+         vac: Int? = nil, h: HPD? = nil) {
         self.bbl = bbl; self.b = b; self.a = a; self.z = z; self.lat = lat; self.lng = lng
-        self.s = s; self.yr = yr; self.u = u; self.nb = nb; self.mr = mr; self.h = h
+        self.s = s; self.yr = yr; self.u = u; self.nb = nb; self.mr = mr
+        self.br = br; self.sq = sq; self.ui = ui; self.vac = vac; self.h = h
+    }
+
+    /// "Studio", "1 bed" … "4+ bed" — the keys `br` uses, in reading order.
+    static let bedOrder = ["0", "1", "2", "3", "4"]
+    static func bedLabel(_ key: String) -> String {
+        switch key { case "0": "Studio"; case "4": "4+ bed"; default: "\(key) bed" }
+    }
+    static func utilityLabel(_ key: String) -> String {
+        switch key { case "water": "water"; case "gas": "gas"; case "electric": "electricity"
+        case "refuse": "refuse"; default: key }
+    }
+
+    /// This record with the lazily-fetched half of its `h` folded in. The eager
+    /// copy wins field by field: it is what the list and the filters have been
+    /// reading since launch, and they must not see a value change under them.
+    func merging(_ full: HPD) -> Building {
+        var out = self
+        let e = h
+        out.h = HPD(
+            violations: e?.violations ?? full.violations,
+            complaints: e?.complaints ?? full.complaints,
+            lastregistration: e?.lastregistration ?? full.lastregistration,
+            op: e?.op ?? full.op,
+            insp: full.insp, window: full.window, ev: full.ev, by: full.by,
+            pet: full.pet, cases: full.cases, decl: full.decl,
+            owner: full.owner, ptype: full.ptype, assessed: full.assessed,
+            rooms: full.rooms, beds: full.beds, baths: full.baths,
+            cond: full.cond, renov: full.renov, units_total: full.units_total,
+            vacreg: full.vacreg, ssl: full.ssl)
+        // The eager violation blob carries `open` and nothing else; the full one
+        // carries every count. Take the full one's totals but keep the eager
+        // `open`, which the sort and the condition filters already ranked on.
+        if let ev = e?.violations, let fv = full.violations {
+            out.h?.violations = HPD.Violations(
+                open: ev.open ?? fv.open, total: fv.total, a: fv.a, b: fv.b, c: fv.c,
+                oa: fv.oa, ob: fv.ob, oc: fv.oc, last_12mo: fv.last_12mo, types: fv.types)
+        }
+        if let ec = e?.complaints, let fc = full.complaints {
+            out.h?.complaints = HPD.Complaints(
+                open: ec.open ?? fc.open, total: fc.total, last_12mo: fc.last_12mo)
+        }
+        return out
     }
 
     var coordinate: CLLocationCoordinate2D { .init(latitude: lat, longitude: lng) }
@@ -124,11 +247,18 @@ enum Slug {
 }
 
 enum AddressCase {
-    static let keepUpper: Set<String> = ["NY", "NE", "NW", "SE", "SW", "N", "S", "E", "W", "II", "III"]
+    // Acronyms that must not be title-cased. The register's own words end up in
+    // headline positions — LA's status line read "Likely Rso (pre-1979…)" in the
+    // building-type strip until RSO was listed here.
+    static let keepUpper: Set<String> = ["NY", "NE", "NW", "SE", "SW", "N", "S", "E", "W", "II", "III",
+                                         "RSO", "SRO", "APN", "BBL", "HCR", "DHCR", "HPD", "DHCD",
+                                         "SF", "LA", "DC", "ETPA", "LLC", "LP"]
     static func pretty(_ raw: String) -> String {
         raw.split(separator: " ").map { w -> String in
             let s = String(w)
-            if keepUpper.contains(s) { return s }
+            // The acronym is usually bracketed or punctuated — "(RSO)", "RSO," —
+            // so test the bare word, not the token as it appears.
+            if keepUpper.contains(s.trimmingCharacters(in: CharacterSet(charactersIn: "(),.:;"))) { return s }
             // ordinal suffixes: 10TH -> 10th, 1ST -> 1st
             if let first = s.first, first.isNumber { return s.lowercased() }
             return s.prefix(1).uppercased() + s.dropFirst().lowercased()

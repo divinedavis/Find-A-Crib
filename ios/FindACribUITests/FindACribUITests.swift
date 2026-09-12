@@ -188,6 +188,42 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.buttons["sign-in-apple"].waitForExistence(timeout: 10), "the gate should land on the Profile sign-in")
     }
 
+    /// A building outside New York shows the record ITS city publishes, and
+    /// never New York's wording.
+    ///
+    /// Until 2026-09-12 the detail screen was New York's for every city: an LA
+    /// parcel carried "Registered with NYS Homes and Community Renewal", a
+    /// "Managing agent" section with no agent to show, and HPD violation tiles
+    /// wired to NYC Open Data. DC is the check here because its record blob is
+    /// the smallest download of the three — the other cities ship no seed in
+    /// the bundle, so this test needs the network and a patient timeout.
+    func testOtherCityShowsItsOwnRecord() throws {
+        for (city, heading) in [("la", "LAHD record"), ("sf", "Rent Board record"),
+                                ("dc", "Owner & assessor record")] {
+            app.terminate()
+            app.launchArguments = ["--city", city, "--route", "detail"]
+            app.launch()
+            XCTAssertTrue(app.buttons["detail-menu"].waitForExistence(timeout: 90),
+                          "\(city) buildings never downloaded — this test needs the network")
+            XCTAssertTrue(app.staticTexts[heading].waitForExistence(timeout: 20),
+                          "a \(city) building must show its own record panel")
+            // New York's chrome must be gone, not merely empty.
+            XCTAssertFalse(app.staticTexts["Managing agent"].exists, "NYC's agent section leaked into \(city)")
+            XCTAssertFalse(app.staticTexts["Violations & inspections"].exists, "NYC's HPD section leaked into \(city)")
+            XCTAssertFalse(app.buttons["open-violations"].exists, "NYC's violations tile leaked into \(city)")
+            XCTAssertFalse(app.staticTexts.containing(
+                NSPredicate(format: "label CONTAINS 'Homes and Community Renewal'")).firstMatch.exists,
+                "New York's register is named on a \(city) building")
+            // …and the two cities that publish no violations have to say so,
+            // rather than leave a gap that reads as a clean building.
+            if city != "la" {
+                XCTAssertTrue(app.staticTexts.containing(
+                    NSPredicate(format: "label CONTAINS 'housing-code violations by street address' OR label CONTAINS 'publishes no housing-code violation'")).firstMatch.exists,
+                    "\(city) must say its violations are unpublished, not show nothing")
+            }
+        }
+    }
+
     /// The Alerts sheet carries the web form's filters: rent cap and
     /// household income beside boroughs and kinds.
     func testAlertsSheetOffersRentAndIncome() throws {

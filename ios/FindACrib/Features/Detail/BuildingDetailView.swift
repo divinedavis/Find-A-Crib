@@ -43,25 +43,35 @@ struct BuildingDetailView: View {
                         VStack(alignment: .leading, spacing: 10) {
                             ForEach(aboutLines, id: \.self) { Text($0).font(.se(19)).foregroundStyle(SE.ink) }
                         }
-                        Text("Registered with NYS Homes and Community Renewal as rent stabilized (2024 building file). Rents in stabilized units rise only by the Rent Guidelines Board's annual percentage, and tenants have a right to renew.")
+                        // Each city's register is a different thing and says so
+                        // in its own words. Until 2026-09-12 every city got
+                        // New York's sentence, which named a New York agency
+                        // under a Los Angeles parcel.
+                        Text(store.city.aboutNote)
                             .font(.se(16)).foregroundStyle(SE.ink2).padding(.top, 12)
-                        Button { openURL(URL(string: "https://findacrib.com/guide/what-is-rent-stabilization/")!) } label: {
-                            Text("What rent stabilization means for you").font(.se(19, .bold)).foregroundStyle(SE.royal)
-                        }.buttonStyle(.plain).padding(.top, 12)
+                        if store.city.isNYC {
+                            Button { openURL(URL(string: "https://findacrib.com/guide/what-is-rent-stabilization/")!) } label: {
+                                Text("What rent stabilization means for you").font(.se(19, .bold)).foregroundStyle(SE.royal)
+                            }.buttonStyle(.plain).padding(.top, 12)
+                        }
                     }
 
-                    section("Rent") { rentBlock }
+                    if store.city.isNYC || b.mr != nil { section("Rent") { rentBlock } }
 
-                    section("Managing agent") { agentBlock }
+                    if store.city.isNYC { section("Managing agent") { agentBlock } }
 
-                    voucherCard
+                    if store.city.isNYC { voucherCard }
 
-                    section("Violations & inspections") { hpdBlock }
+                    if store.city.isNYC {
+                        section("Violations & inspections") { hpdBlock }
+                    } else if let r = store.city.records {
+                        section(r.heading) { cityRecordBlock(r) }
+                    }
 
                     similarRail
                     }
 
-                    Text("Sources: NYS HCR 2024 rent-stabilized building file · NYC HPD violations, complaints and bedbug filings · NYC DOHMH rodent inspections · HUD FY2026 Small-Area Fair Market Rents · Recently advertised rents via Zumper. Find A Crib is not a broker and does not list apartments.")
+                    Text(store.city.sourcesNote + " Find A Crib is not a broker and does not list apartments.")
                         .font(.se(14)).foregroundStyle(SE.ink3).padding(16)
                     Color.clear.frame(height: 100)
                 }
@@ -285,16 +295,28 @@ struct BuildingDetailView: View {
     }
 
     private var aboutLines: [String] {
-        var l = ["RENT STABILIZED"]
-        for s in b.s ?? [] where !s.uppercased().contains("MULTIPLE DWELLING") { l.append(s.uppercased()) }
-        if let z = b.z { l.append("\(b.borough.uppercased()) · ZIP \(z)") }
-        if store.voucherBuilding(b) != nil { l.append("SUBSIDIZED / VOUCHER-FRIENDLY BUILDING") }
+        // The register's own status line and the city's label are the same fact
+        // in two voices — LA stacked "LIKELY RENT-STABILIZED (RSO)" on top of
+        // "LIKELY RSO (PRE-1979, 2+ UNITS)", and DC did the same. Lead with the
+        // source's wording, which is the more specific of the two, and fall
+        // back to the city's label only when the record carries none — which is
+        // New York, whose one status line is the dwelling class.
+        var l = (b.s ?? []).filter { !$0.uppercased().contains("MULTIPLE DWELLING") }.map { $0.uppercased() }
+        if l.isEmpty { l = [store.city.statusLabel.uppercased()] }
+        if let z = b.z, !z.isEmpty {
+            let place = store.city.isNYC ? b.borough : (b.nb ?? store.city.name)
+            l.append("\(place.uppercased()) · ZIP \(z)")
+        }
+        if store.city.isNYC, store.voucherBuilding(b) != nil { l.append("SUBSIDIZED / VOUCHER-FRIENDLY BUILDING") }
         if let r = b.h?.lastregistration { l.append("HPD REGISTRATION \(r)") }
+        if let t = b.h?.ptype { l.append(t.uppercased()) }
         return l
     }
 
     @ViewBuilder private var rentBlock: some View {
-        if let p = store.price(b) {
+        if !store.city.isNYC {
+            cityRentBlock
+        } else if let p = store.price(b) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(Formatters.dollars(p)).font(.se(38, .bold))
                 Text("asking rent").font(.se(20)).foregroundStyle(SE.ink2)
@@ -321,6 +343,169 @@ struct BuildingDetailView: View {
             Text("No recent listing and no ZIP estimate on file.").font(.se(18)).foregroundStyle(SE.ink2)
         }
     }
+    /// SF and DC publish a rent on the record itself — never an asking rent.
+    /// SF's is what owners reported to the Rent Board for the block; DC's is
+    /// the legal rent registered with DHCD, which is the whole point of the
+    /// city being on this map at all.
+    @ViewBuilder private var cityRentBlock: some View {
+        if let r = b.mr {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(Formatters.dollars(r)).font(.se(38, .bold))
+                Text(store.city.priceLabel.lowercased()).font(.se(20)).foregroundStyle(SE.ink2)
+            }
+            // Split by bedroom count where the source carries it. A blended
+            // median that mixes studios with three-beds answers nobody.
+            let beds = Building.bedOrder.compactMap { k in (b.br?[k]).map { (Building.bedLabel(k), $0) } }
+            if !beds.isEmpty {
+                HStack(spacing: 0) { ForEach(beds, id: \.0) { estCell($0.0, $0.1) } }.padding(.top, 4)
+            }
+            if !rentExtras.isEmpty {
+                Text(rentExtras).font(.se(17)).foregroundStyle(SE.ink2)
+            }
+            Text(store.city.id == "sf"
+                 ? "Reported to the SF Rent Board by owners on this block — not an asking rent, and not one address."
+                 : "The legal rent on file with DC DHCD for this property's rent-controlled units — not an asking rent.")
+                .font(.se(15)).foregroundStyle(SE.ink3)
+        } else {
+            Text("No rent on file for this \(store.city.records?.scope ?? "property").")
+                .font(.se(18)).foregroundStyle(SE.ink2)
+        }
+    }
+
+    /// The record this city keeps, in this city's words. Every block is
+    /// optional: LA cites violations, SF files evictions by block, DC knows the
+    /// owner and the assessor's read of the building, and none of them has what
+    /// the others have.
+    @ViewBuilder private func cityRecordBlock(_ r: City.Records) -> some View {
+        let h = b.h
+        let hasAny = h != nil && (h?.violations != nil || h?.complaints != nil || h?.ev != nil
+                                  || h?.by != nil || h?.pet != nil || h?.owner != nil
+                                  || (h?.cases?.total ?? 0) > 0)
+        if !hasAny {
+            Text(r.emptyNote).font(.se(18)).foregroundStyle(SE.ink2)
+        } else {
+            if r.showsOwner, let h {
+                if let owner = h.owner {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Owner of record").font(.se(15, .semibold)).foregroundStyle(SE.ink2)
+                        Text(owner).font(.se(21, .bold)).foregroundStyle(SE.ink)
+                    }
+                }
+                let spec = ownerSpec(h)
+                if !spec.isEmpty { Text(spec).font(.se(17)).foregroundStyle(SE.ink2) }
+                if let v = h.vacreg {
+                    Text("On DC's vacant & blighted register — \(v)").font(.se(17, .bold)).foregroundStyle(SE.bad)
+                }
+            }
+            if let label = r.violationsLabel, let v = h?.violations {
+                recStat(label, [("\(v.open ?? 0)", "open", (v.open ?? 0) > 5 ? SE.bad : ((v.open ?? 0) > 0 ? SE.warn : SE.good)),
+                                (v.total.map(String.init) ?? "—", "cited", SE.ink),
+                                (v.last_12mo.map(String.init) ?? "—", "last 12mo", SE.ink)])
+                let named = v.named
+                if !named.isEmpty {
+                    Text("Cited for: " + named.map { $0.1 > 1 ? "\($0.0) (\($0.1))" : $0.0 }.joined(separator: " · "))
+                        .font(.se(15)).foregroundStyle(SE.ink3)
+                }
+                // The LA file is a rolling window, not an all-time register —
+                // without the dates "6 cited" reads as a lifetime count.
+                if let w = h?.window, w.count == 2 {
+                    Text("Covers citations from \(w[0]) to \(w[1]) — \(r.agency)'s file is a rolling window, not an all-time register.")
+                        .font(.se(15)).foregroundStyle(SE.ink3)
+                }
+            }
+            if let label = r.complaintsLabel, let c = h?.complaints {
+                recStat(label, [("\(c.open ?? 0)", "open", (c.open ?? 0) > 10 ? SE.bad : ((c.open ?? 0) > 0 ? SE.warn : SE.good)),
+                                (c.total.map(String.init) ?? "—", "all time", SE.ink),
+                                ((h?.insp).map(String.init) ?? "—", "inspections", SE.ink)])
+            }
+            if let label = r.evictionsLabel, let e = h?.ev {
+                recStat(label, [("\(e.total ?? 0)", "filed", SE.ink),
+                                ("\(e.nofault ?? 0)", "no-fault", (e.nofault ?? 0) > 0 ? SE.warn : SE.ink),
+                                ("\(e.recent ?? e.last_12mo ?? 0)", "last 5 yrs", SE.ink)])
+                let named = e.named
+                if !named.isEmpty {
+                    Text("Grounds cited: " + named.map { $0.1 > 1 ? "\($0.0) (\($0.1))" : $0.0 }.joined(separator: " · "))
+                        .font(.se(15)).foregroundStyle(SE.ink3)
+                }
+                Text("A no-fault notice — Ellis Act, owner move-in, demolition — means a tenant can be made to leave without having done anything.")
+                    .font(.se(15)).foregroundStyle(SE.ink3)
+            }
+            if let label = r.petitionsLabel, let pt = h?.pet {
+                recStat(label, [("\(pt.total ?? 0)", "filed", SE.ink),
+                                ("\(pt.landlord ?? 0)", "by landlord", SE.ink),
+                                ("\(pt.tenant ?? 0)", "by tenant", SE.ink)])
+            }
+            if let label = r.buyoutsLabel, let by = h?.by, (by.n ?? 0) > 0 {
+                recStat(label, [("\(by.n ?? 0)", "agreed", SE.ink),
+                                (by.med.map { Formatters.dollars($0) } ?? "—", "median", SE.ink),
+                                ("\(by.recent ?? 0)", "last 5 yrs", SE.ink)])
+                Text("A buyout is a landlord paying a tenant to leave a rent-controlled unit. It has to be disclosed, so a run of them on one \(r.scope == "this block" ? "block" : "address") is a signal.")
+                    .font(.se(15)).foregroundStyle(SE.ink3)
+            }
+            if let label = r.casesLabel, let cs = h?.cases, (cs.total ?? 0) > 0 {
+                recStat(label, [("\(cs.open ?? 0)", "open", (cs.open ?? 0) > 0 ? SE.warn : SE.good),
+                                ("\(cs.total ?? 0)", "all time", SE.ink),
+                                ("", "", SE.ink)])
+            }
+            if let note = r.note { Text(note).font(.se(15)).foregroundStyle(SE.ink3) }
+        }
+        // Said even when the rest is empty: an absent panel reads as a clean
+        // building, and only a sentence reads as "nobody publishes this".
+        if let note = r.noViolationsNote {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Housing code violations").font(.se(19, .bold)).foregroundStyle(SE.ink)
+                Text(note).font(.se(16)).foregroundStyle(SE.ink2)
+                if let link = r.noViolationsLink, let url = URL(string: link) {
+                    Button { openURL(url) } label: {
+                        Text(r.noViolationsLinkLabel ?? "Look it up").font(.se(18, .bold)).foregroundStyle(SE.royal)
+                    }.buttonStyle(.plain)
+                }
+            }.padding(.top, 6)
+        }
+    }
+
+    /// "Typically 1,125 sq ft · water, refuse included in the rent" — the two
+    /// things SF reports about a unit beyond its rent.
+    private var rentExtras: String {
+        var bits: [String] = []
+        if let sq = b.sq { bits.append("typically \(sq.formatted()) sq ft") }
+        if let ui = b.ui, !ui.isEmpty {
+            bits.append("\(ui.map(Building.utilityLabel).joined(separator: ", ")) included in the rent")
+        }
+        let line = bits.joined(separator: " · ")
+        return line.isEmpty ? "" : line.prefix(1).uppercased() + line.dropFirst()
+    }
+
+    private func ownerSpec(_ h: Building.HPD) -> String {
+        var bits: [String] = []
+        if let t = h.units_total { bits.append("\(t) unit\(t == 1 ? "" : "s") in the building") }
+        if let n = h.beds { bits.append("\(n) bedroom\(n == 1 ? "" : "s")") }
+        if let n = h.baths { bits.append("\(n) bathroom\(n == 1 ? "" : "s")") }
+        if let n = h.rooms { bits.append("\(n) room\(n == 1 ? "" : "s")") }
+        if let c = h.cond { bits.append("condition: \(c)") }
+        if let y = h.renov { bits.append("brought up to date ~\(y)") }
+        if let a = h.assessed { bits.append("assessed at \(Formatters.dollars(a))") }
+        return bits.joined(separator: " · ")
+    }
+
+    /// Three figures across, the way the HPD tiles read — but flat, because
+    /// none of these opens a screen of its own.
+    private func recStat(_ title: String, _ cells: [(String, String, Color)]) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title).font(.se(19, .bold)).foregroundStyle(SE.ink)
+            HStack(spacing: 0) {
+                ForEach(Array(cells.enumerated()), id: \.offset) { _, c in
+                    VStack(spacing: 2) {
+                        Text(c.0.isEmpty ? " " : c.0).font(.se(24, .bold)).foregroundStyle(c.2)
+                            .lineLimit(1).minimumScaleFactor(0.6)
+                        Text(c.1.isEmpty ? " " : c.1).font(.se(14)).foregroundStyle(SE.ink3)
+                    }.frame(maxWidth: .infinity).padding(.vertical, 8)
+                    .overlay(Rectangle().stroke(c.1.isEmpty ? Color.clear : SE.lineSoft))
+                }
+            }
+        }.padding(.top, 6)
+    }
+
     private func estCell(_ k: String, _ v: Int) -> some View {
         VStack(spacing: 4) {
             Text(Formatters.dollars(v)).font(.se(19, .bold))

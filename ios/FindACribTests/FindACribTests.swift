@@ -302,13 +302,14 @@ final class CityTests: XCTestCase {
     }
 
     /// Each city divides differently, and the picker offers whatever it has.
+    /// LA offered ZIP areas until 2026-09-12, when the LA Times boundaries were
+    /// joined to every parcel and it could finally offer neighborhoods.
     func testRegionsFollowTheCity() {
-        let la = [Building(bbl: "LA-1", b: "LA", a: "A", z: "90001", lat: 34, lng: -118),
-                  Building(bbl: "LA-2", b: "LA", a: "B", z: "90001", lat: 34, lng: -118),
-                  Building(bbl: "LA-3", b: "LA", a: "C", z: "90210", lat: 34, lng: -118)]
-        let laR = DataStore.regions(for: .la, buildings: la, neighborhoods: [])
-        XCTAssertEqual(laR.map(\.name), ["90001", "90210"])
-        XCTAssertEqual(laR.first?.count, 2)
+        let laNb = [(name: "Boyle Heights", borough: "LA", count: 2021),
+                    (name: "Koreatown", borough: "LA", count: 1827)]
+        let laR = DataStore.regions(for: .la, buildings: [], neighborhoods: laNb)
+        XCTAssertEqual(laR.map(\.name), ["Boyle Heights", "Koreatown"])
+        XCTAssertEqual(laR.first?.count, 2021)
 
         let nb = [(name: "Carver", borough: "DC", count: 213), (name: "Dupont Circle", borough: "DC", count: 206)]
         let dcR = DataStore.regions(for: .dc, buildings: [], neighborhoods: nb)
@@ -318,6 +319,96 @@ final class CityTests: XCTestCase {
                    Building(bbl: "2", b: "Bk", a: "B", z: "11201", lat: 40, lng: -73)]
         let nycR = DataStore.regions(for: .nyc, buildings: nyc, neighborhoods: [])
         XCTAssertEqual(nycR.map(\.name), ["Manhattan", "Brooklyn"], "boroughs, in the app's own order, empty ones dropped")
+    }
+
+    /// The second blob folds into the first without disturbing what the list
+    /// and the filters have already ranked on. The eager copy carries only the
+    /// open counts; the full one carries everything, and `open` must survive
+    /// the merge unchanged or a building can move in the list under the user.
+    func testRecordsMergeKeepsTheEagerCounts() throws {
+        let slim = """
+        [{"bbl":"LA-5511008010","b":"LA","a":"106 N SWEETZER AVE","z":"90048","lat":34.07,"lng":-118.36,
+          "s":["LIKELY RSO"],"yr":1937,"u":6,"nb":"Beverly Grove",
+          "h":{"violations":{"open":6},"complaints":{"open":0}}}]
+        """
+        let full = """
+        {"LA-5511008010":{"violations":{"open":99,"total":6,"last_12mo":6,
+           "types":[["Smoke detectors",2],["Damp rooms",1]]},
+          "complaints":{"open":0,"total":11,"last_12mo":0},
+          "ev":{"total":4,"nofault":1,"last_12mo":0},
+          "by":{"n":2,"med":25000},"cases":{"open":0,"total":2},
+          "window":["2025-11-04","2026-07-31"]}}
+        """
+        let dec = JSONDecoder()
+        let rows = try dec.decode([Building].self, from: Data(slim.utf8))
+        let blobs = try dec.decode([String: Building.HPD].self, from: Data(full.utf8))
+        let merged = rows[0].merging(blobs[rows[0].bbl]!)
+        XCTAssertEqual(merged.h?.violations?.open, 6, "the eager open count must win over the blob's")
+        XCTAssertEqual(merged.h?.violations?.total, 6)
+        XCTAssertEqual(merged.h?.violations?.last_12mo, 6)
+        XCTAssertEqual(merged.h?.complaints?.total, 11)
+        XCTAssertEqual(merged.h?.ev?.nofault, 1)
+        XCTAssertEqual(merged.h?.by?.med, 25000)
+        XCTAssertEqual(merged.h?.window, ["2025-11-04", "2026-07-31"])
+        XCTAssertEqual(merged.h?.violations?.named.map(\.0), ["Smoke detectors", "Damp rooms"],
+                       "a [String, Int] pair from the wire has to survive into a usable list")
+        XCTAssertEqual(merged.openViolations, 6)
+    }
+
+    /// The DC blob is a different shape again: no violations at all, an owner
+    /// and the assessor's read of the building instead.
+    func testDCRecordCarriesOwnerAndAssessor() throws {
+        let full = """
+        {"DC-1":{"ssl":"5507 0021","renov":1965,"rooms":16,"beds":4,"baths":4,
+          "cond":"Average","units_total":4,"owner":"Minnesota Avenue SE Trustee LLC",
+          "op":1,"assessed":684490,"ptype":"Multi-family (3 to 4 units)"}}
+        """
+        let blobs = try JSONDecoder().decode([String: Building.HPD].self, from: Data(full.utf8))
+        let b = Building(bbl: "DC-1", b: "DC", a: "2815 MINNESOTA AVE SE", z: "20019",
+                         lat: 38.87, lng: -76.96).merging(blobs["DC-1"]!)
+        XCTAssertEqual(b.h?.owner, "Minnesota Avenue SE Trustee LLC")
+        XCTAssertEqual(b.h?.assessed, 684490)
+        XCTAssertEqual(b.h?.cond, "Average")
+        XCTAssertNil(b.h?.violations, "DC publishes no code violations — this must stay nil, not zero")
+        XCTAssertEqual(b.openViolations, 0)
+    }
+
+    /// SF's extra rent detail: the block median split by bedroom, the typical
+    /// size, and what the base rent includes.
+    func testSFRentDetailDecodes() throws {
+        let json = """
+        [{"bbl":"SF-1237-X","b":"SF","a":"200 Block of DIVISADERO ST","z":"94117","lat":37.77,"lng":-122.43,
+          "s":["SF RENT BOARD INVENTORY"],"yr":1900,"u":9,"nb":"Haight Ashbury",
+          "mr":4625,"br":{"0":2100,"1":3200,"4":5875},"sq":1125,"ui":["water","refuse"]}]
+        """
+        let r = try JSONDecoder().decode([Building].self, from: Data(json.utf8))[0]
+        XCTAssertEqual(r.mr, 4625)
+        XCTAssertEqual(r.br?["1"], 3200)
+        XCTAssertEqual(r.sq, 1125)
+        XCTAssertEqual(r.ui, ["water", "refuse"])
+        XCTAssertEqual(Building.bedOrder.compactMap { r.br?[$0] != nil ? Building.bedLabel($0) : nil },
+                       ["Studio", "1 bed", "4+ bed"])
+    }
+
+    /// Every city says what it publishes in its own words, and never names
+    /// another city's agency. This is the check that catches New York wording
+    /// leaking into an LA or DC screen, which is what shipped until 2026-09-12.
+    func testEachCityNamesItsOwnSources() {
+        for c in City.all where !c.isNYC {
+            XCTAssertFalse(c.aboutNote.contains("HPD"), "\(c.id) about note names a New York agency")
+            XCTAssertFalse(c.aboutNote.contains("Rent Guidelines Board"), "\(c.id) about note is New York's")
+            XCTAssertFalse(c.sourcesNote.contains("NYS HCR"), "\(c.id) sources are New York's")
+            XCTAssertNotNil(c.records, "\(c.id) has a record blob but no wording for it")
+            XCTAssertNotNil(c.recordsPath, "\(c.id) must fetch its record blob")
+            XCTAssertTrue(DataStore.files(for: c).contains(c.recordsPath!),
+                          "\(c.id) record blob is configured but never fetched")
+        }
+        // …and the two that publish no code violations have to say so.
+        for id in ["sf", "dc"] {
+            XCTAssertNotNil(City.find(id).records?.noViolationsNote,
+                            "\(id) publishes no violations and must say so, not show an empty panel")
+        }
+        XCTAssertNotNil(City.la.records?.violationsLabel, "LA does publish violations")
     }
 
     /// Only New York has a page per building; the rest deep-link into the city map.
@@ -330,12 +421,20 @@ final class CityTests: XCTestCase {
     }
 
     /// The New York feeds are New York's; nothing else should ask for them.
+    /// Advertised rents, vouchers and lotteries stay New York feeds. What every
+    /// city now fetches is two files, not one: the boot payload and the record
+    /// blob behind it, the same split the website boots from.
     func testOnlyNYCFetchesTheExtraFeeds() {
         XCTAssertEqual(DataStore.files(for: .nyc).count, 5)
-        XCTAssertEqual(DataStore.files(for: .la), ["la/buildings.min.json.gz"])
-        XCTAssertEqual(DataStore.files(for: .sf), ["sf/buildings.min.json.gz"])
+        XCTAssertEqual(DataStore.files(for: .la), ["la/buildings.slim.json.gz", "la/buildings.hpd.json.gz"])
+        XCTAssertEqual(DataStore.files(for: .sf), ["sf/buildings.slim.json.gz", "sf/buildings.hpd.json.gz"])
+        XCTAssertEqual(DataStore.files(for: .dc), ["dc/buildings.slim.json.gz", "dc/buildings.hpd.json.gz"])
         XCTAssertFalse(City.la.hasNYCExtras)
         XCTAssertTrue(City.nyc.hasNYCExtras)
+        // Two cities' record blobs must not land on the same cache file.
+        let caches = City.all.compactMap { c in c.recordsPath.map { DataStore.cacheName($0, in: c) } }
+        XCTAssertEqual(Set(caches).count, caches.count, "each city needs its own record cache file")
+        XCTAssertFalse(caches.contains { $0.contains("/") }, "a cache filename cannot be a path")
     }
 
     /// Cities cache to distinct filenames, or one would overwrite another.
@@ -353,8 +452,12 @@ final class CityTests: XCTestCase {
     }
 
     func testPlaceReadsInTheCitysOwnTerms() {
-        let la = Building(bbl: "LA-1", b: "LA", a: "A", z: "90210", lat: 34, lng: -118)
-        XCTAssertEqual(la.place(in: .la), "ZIP 90210")
+        // LA read as "ZIP 90210" until the LA Times boundaries landed on every
+        // parcel (2026-09-12); it now names the neighborhood like SF and DC.
+        let la = Building(bbl: "LA-1", b: "LA", a: "A", z: "90210", lat: 34, lng: -118, nb: "Beverly Grove")
+        XCTAssertEqual(la.place(in: .la), "Beverly Grove")
+        let laNoNb = Building(bbl: "LA-2", b: "LA", a: "B", z: "90210", lat: 34, lng: -118)
+        XCTAssertEqual(laNoNb.place(in: .la), "Los Angeles", "a parcel outside every polygon still has to say where it is")
         let sf = Building(bbl: "SF-1", b: "SF", a: "A", z: "", lat: 37, lng: -122, nb: "Mission")
         XCTAssertEqual(sf.place(in: .sf), "Mission")
         let nyc = Building(bbl: "1", b: "M", a: "A", z: "10001", lat: 40, lng: -73, nb: "Chelsea")

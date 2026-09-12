@@ -39,7 +39,18 @@ final class DataStore {
     /// cities have buildings only, so nothing else is even requested for them.
     static let nycExtras = ["listings.json", "s8.json", "fmr.json", "hcr.json"]
     nonisolated static func files(for city: City) -> [String] {
-        city.hasNYCExtras ? [city.dataPath] + nycExtras : [city.dataPath]
+        var f = [city.dataPath]
+        // The per-building record blob, where the city has one. NYC's detail is
+        // fetched live from NYC Open Data per building instead, so it has none.
+        if let r = city.recordsPath { f.append(r) }
+        if city.hasNYCExtras { f += nycExtras }
+        return f
+    }
+    /// Flat cache filename for a city file, whose remote path has a directory in it.
+    nonisolated static func cacheName(_ remote: String, in city: City) -> String {
+        if remote == city.dataPath { return city.cacheName }
+        if remote == city.recordsPath { return "\(city.id)-records.json.gz" }
+        return remote
     }
 
     nonisolated static var cacheDir: URL {
@@ -78,7 +89,21 @@ final class DataStore {
         }
         let raw = try Data(contentsOf: bURL)
         let json = city.cacheName.hasSuffix(".gz") ? try Gunzip.inflate(raw) : raw
-        let buildings = try dec.decode([Building].self, from: json)
+        var buildings = try dec.decode([Building].self, from: json)
+        // The boot file carries only the counts the list and filters read; the
+        // rest of each record arrives in a second blob, exactly as it does on
+        // the web. Merge rather than replace, so a field that is eager in one
+        // and absent in the other survives. A city with no blob, or a blob that
+        // has not downloaded yet, simply keeps the eager half.
+        if let rp = city.recordsPath, let u = localURL(cacheName(rp, in: city), bundleOnly: bundleOnly),
+           let raw = try? Data(contentsOf: u),
+           let inflated = try? (rp.hasSuffix(".gz") ? Gunzip.inflate(raw) : raw),
+           let full = try? dec.decode([String: Building.HPD].self, from: inflated) {
+            for i in buildings.indices {
+                guard let f = full[buildings[i].bbl] else { continue }
+                buildings[i] = buildings[i].merging(f)
+            }
+        }
         func opt<T: Decodable>(_ name: String, _ empty: T) -> T {
             guard city.hasNYCExtras, let u = localURL(name, bundleOnly: bundleOnly), let d = try? Data(contentsOf: u) else { return empty }
             do { return try dec.decode(T.self, from: d) }
@@ -102,10 +127,14 @@ final class DataStore {
     /// Switch cities: show whatever is already on disk immediately, then fetch.
     /// A city with nothing cached (its first use) reports not-loaded until the
     /// download lands, so the UI can say it is fetching rather than say zero.
-    func switchCity(to c: City) async {
+    /// `persist: false` is for the `--city` launch argument: a screenshot run or
+    /// a UI test asking to start in Los Angeles must not rewrite the city the
+    /// user last chose. It did until 2026-09-12, and one UI test landing in DC
+    /// left every test after it in DC — which read as three unrelated failures.
+    func switchCity(to c: City, persist: Bool = true) async {
         guard c != city else { return }
         city = c
-        UserDefaults.standard.set(c.id, forKey: "city")
+        if persist { UserDefaults.standard.set(c.id, forKey: "city") }
         loadError = nil
         buildings = []; byBBL = [:]; regions = []; neighborhoods = []; zips = []
         listings = ListingsBlob(); s8 = S8Blob(); fmr = [:]; hcr = HCRBlob()
@@ -162,7 +191,7 @@ final class DataStore {
         let c = city
         var changed = false
         for name in Self.files(for: c) {
-            let cacheAs = name == c.dataPath ? c.cacheName : name
+            let cacheAs = Self.cacheName(name, in: c)
             if await Self.fetchIfChanged(name, cacheAs: cacheAs) { changed = true }
         }
         // A city fetched for the first time has no payload yet, so decode even

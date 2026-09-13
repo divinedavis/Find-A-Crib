@@ -66,12 +66,22 @@
      to draw: nothing is unlocked by it, and the real session still decides. -->
 <script>
 (function(){
-  var t, a;
-  try{ t = localStorage.getItem('fac.theme'); a = localStorage.getItem('fac.auth'); }catch(e){}
+  var t, a = false;
+  try{
+    t = localStorage.getItem('fac.theme');
+    // Supabase's own session key is the authoritative answer and is written by
+    // the sign-in itself, so this is right on the FIRST load after signing in —
+    // and after clearing site data, which wipes any hint we wrote ourselves.
+    for(var i = 0; i < localStorage.length; i++){
+      var k = localStorage.key(i);
+      if(k && k.slice(0,3) === 'sb-' && k.slice(-11) === '-auth-token' && localStorage.getItem(k)){ a = true; break; }
+    }
+    if(!a) a = localStorage.getItem('fac.auth') === 'in';
+  }catch(e){}
   if(t!=='light' && t!=='dark')
     t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
   document.documentElement.setAttribute('data-theme', t);
-  if(a === 'in') document.documentElement.setAttribute('data-auth', 'in');
+  if(a) document.documentElement.setAttribute('data-auth', 'in');
 })();
 </script>
 <style>
@@ -366,6 +376,16 @@
   .filters-card .pill-popover input[type=checkbox], .filters-card .pill-popover input[type=radio] {
     width: auto; padding: 0; margin: 0; border: none; flex: none; font-size: inherit; }
   .filters-card .filter-pill .caret { display: none; }
+  /* These eight live in the filters modal. They are written into .chip-row in
+     the markup and moved into #filters-body by the boot script — so until that
+     runs they paint in the chip row and then vanish, which on a phone is a row
+     of buttons appearing and disappearing on every load (reported 2026-09-12).
+     Hiding them WHILE THEY ARE STILL IN THE CHIP ROW costs nothing: the
+     selector stops matching the moment appendChild moves them, so the modal
+     copies are unaffected and nothing has to be un-hidden. */
+  .chip-row > #pill-borough, .chip-row > #pill-nb, .chip-row > #pill-listed,
+  .chip-row > #pill-s8, .chip-row > #pill-beds, .chip-row > #pill-price,
+  .chip-row > #pill-viol, .chip-row > #pill-agent { display: none; }
   .filters-card .pill-popover { position: static !important; display: block !important;
     visibility: visible !important; opacity: 1 !important; transform: none !important;
     box-shadow: none; border: 1px solid var(--line); border-radius: 10px;

@@ -73,6 +73,7 @@ JOURNEY_EVENTS = {
     'city_pages':           [],
     'city_records':         ['building_view'],
     'no_signed_out_flash':  [],
+    'no_chip_row_flash':    [],
     'memory':               [],
     'alerts_page':          [],
     'signin_modal':         ['signin'],
@@ -511,51 +512,82 @@ class Runner:
         """A signed-in visitor must not be shown a Sign in button on reload.
 
         Reported 2026-09-12 with a screen recording: refreshing on a phone
-        flashed "Sign in" and a wider header for a frame or two before the
-        avatar appeared. The session is restored asynchronously by Supabase, so
-        the markup's signed-out state painted first. A `fac.auth` hint in
-        localStorage, read by the head script, now paints the avatar's shape
-        immediately — the same trick the theme already used.
+        flashed "Sign in" and a wider header before the avatar appeared. The
+        session is restored asynchronously by Supabase, so the markup's
+        signed-out state painted first. The head script now decides from
+        storage, before the first frame.
         """
-        # Write the hint by visiting the origin and setting it there, not with
-        # add_init_script: an init script races the document-start head script
-        # and this flipped between passing and failing by device.
-        page.goto(LIVE + '/', wait_until='domcontentloaded', timeout=90000)
-        page.evaluate("localStorage.setItem('fac.auth','in')")
-        page.goto('about:blank')
-        # 'commit' returns as soon as the document starts — the earliest the
-        # first paint could happen, which is the moment being tested.
-        page.goto(LIVE + '/', wait_until='commit', timeout=90000)
-        page.wait_for_selector('#auth-btn', state='attached', timeout=30000)
-        early = page.evaluate("""() => {
-            const b = document.getElementById('auth-btn');
-            const cs = getComputedStyle(b);
-            return { auth: document.documentElement.getAttribute('data-auth'),
-                     fontSize: parseFloat(cs.fontSize),
-                     radius: cs.borderRadius,
-                     width: b.getBoundingClientRect().width };
-        }""")
-        self.ok(early['auth'] == 'in', f"head script should stamp data-auth=in, got {early['auth']}", j)
-        self.ok(early['fontSize'] == 0,
-                f"'Sign in' is legible on a signed-in device's first paint (font-size {early['fontSize']})", j)
-        self.ok(early['width'] <= 40,
-                f"the header paints the wide Sign in pill before the avatar ({early['width']:.0f}px)", j)
-        j.notes.append(f"first paint {early['width']:.0f}px circle")
+        # Each state is set on a FULLY LOADED page and read back on the next
+        # load. Setting storage on a 'commit'-state page, or seeding it with
+        # add_init_script, both raced the document-start head script and made
+        # this pass on one device and fail on the other.
+        def paint_after(setup):
+            page.goto(LIVE + '/', wait_until='domcontentloaded', timeout=90000)
+            page.evaluate(setup)
+            page.goto('about:blank')
+            # 'commit' returns as the document starts — the earliest the first
+            # paint could happen, which is the moment being tested.
+            page.goto(LIVE + '/', wait_until='commit', timeout=90000)
+            page.wait_for_selector('#auth-btn', state='attached', timeout=30000)
+            return page.evaluate("""() => {
+                const b = document.getElementById('auth-btn');
+                const cs = getComputedStyle(b);
+                return { auth: document.documentElement.getAttribute('data-auth'),
+                         text: b.textContent.trim(),
+                         fontSize: parseFloat(cs.fontSize),
+                         width: b.getBoundingClientRect().width };
+            }""")
+
+        CLEAR = ("localStorage.removeItem('fac.auth');"
+                 "Object.keys(localStorage).filter(k=>k.startsWith('sb-')).forEach(k=>localStorage.removeItem(k));")
+
+        # a device that has signed in here before
+        r = paint_after(CLEAR + "localStorage.setItem('fac.auth','in')")
+        self.ok(r['auth'] == 'in', f"head script should stamp data-auth=in, got {r['auth']}", j)
+        self.ok(r['fontSize'] == 0,
+                f"'Sign in' is legible on a signed-in device's first paint (font-size {r['fontSize']})", j)
+        self.ok(r['width'] <= 40,
+                f"the header paints the wide Sign in pill before the avatar ({r['width']:.0f}px)", j)
+        j.notes.append(f"first paint {r['width']:.0f}px circle")
+
+        # Supabase's own session key is enough on its own, so the header is
+        # right on the FIRST load after signing in — including straight after
+        # clearing site data, which wipes any hint of ours.
+        r = paint_after(CLEAR + "localStorage.setItem('sb-test-auth-token','{\"access_token\":\"x\"}')")
+        self.ok(r['auth'] == 'in', f"a live Supabase session key should be enough, got {r['auth']}", j)
 
         # …and a device that has never signed in still gets a real Sign in button.
-        page.evaluate("localStorage.removeItem('fac.auth')")
+        r = paint_after(CLEAR)
+        self.ok(r['auth'] is None, f"a signed-out device must not be stamped, got {r['auth']}", j)
+        self.ok(r['text'] == 'Sign in' and r['fontSize'] > 0,
+                f"signed out, the button has to say Sign in, got {r!r}", j)
+
+    def j_no_chip_row_flash(self, page, j, device):
+        """The filter pills must not paint in the chip row and then vanish.
+
+        Eight of them are written into .chip-row in the markup and moved into
+        the filters modal by the boot script, so until that ran they rendered in
+        the row and disappeared — a line of buttons flashing on every load
+        (reported 2026-09-12; on a phone #pill-agent was 140x36 at first paint
+        and gone by the time the page settled).
+        """
         page.goto('about:blank')
         page.goto(LIVE + '/', wait_until='commit', timeout=90000)
-        page.wait_for_selector('#auth-btn', state='attached', timeout=30000)
-        out = page.evaluate("""() => {
-            const b = document.getElementById('auth-btn');
-            return { auth: document.documentElement.getAttribute('data-auth'),
-                     text: b.textContent.trim(),
-                     fontSize: parseFloat(getComputedStyle(b).fontSize) };
-        }""")
-        self.ok(out['auth'] is None, f"a signed-out device must not be stamped, got {out['auth']}", j)
-        self.ok(out['text'] == 'Sign in' and out['fontSize'] > 0,
-                f"signed out, the button has to say Sign in, got {out!r}", j)
+        page.wait_for_selector('.chip-row', state='attached', timeout=30000)
+        early = page.evaluate("""() => [...document.querySelectorAll('.chip-row > [id^=pill-]')]
+            .filter(e => e.getBoundingClientRect().width > 0)
+            .map(e => e.id + ' ' + Math.round(e.getBoundingClientRect().width) + 'px')""")
+        moved = ['pill-borough', 'pill-nb', 'pill-listed', 'pill-s8',
+                 'pill-beds', 'pill-price', 'pill-viol', 'pill-agent']
+        leaked = [e for e in early if e.split()[0] in moved]
+        self.ok(not leaked, f"filter pills painted in the chip row before being moved: {leaked}", j)
+        # and they must still be reachable once the boot script has run
+        page.wait_for_load_state('networkidle', timeout=90000)
+        time.sleep(1.5)
+        inside = page.evaluate("""() => [...document.querySelectorAll('#filters-body > [id^=pill-]')].map(e => e.id)""")
+        for m in moved:
+            self.ok(m in inside, f"{m} never reached the filters modal", j)
+        j.notes.append(f"{len(inside)} pills in the filters sheet, none leaked")
 
     def j_city_records(self, page, j, device):
         """Every city's building page must show the record ITS city publishes.
@@ -791,7 +823,7 @@ class Runner:
         self.ok(page.evaluate("document.getElementById('auth-modal').hidden"), 'modal should close', j)
 
     JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'pin_and_list',
-                'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'memory', 'alerts_page', 'signin_modal', 'app_chip', 'city_chip',
+                'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'signin_modal', 'app_chip', 'city_chip',
                 'ad_tiles', 'outbound_links', 'status_chips', 'referral_gate']
 
     # ---- run --------------------------------------------------------------

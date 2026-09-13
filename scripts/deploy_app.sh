@@ -11,6 +11,14 @@
 # A failure on the live pass prints loudly but does not roll back — fix
 # forward and run again. See tests/DEVICE.md for the real-iPhone lane, which
 # this script cannot run on its own.
+#
+# What this script does NOT deploy, and where those pages go instead:
+# /developers/, /embed/ and /marketing-agents/ are hand-authored HTML that was
+# never on the scp list below and had no deploy path anywhere until
+# 2026-09-13. They now ride the nightly SEO rsync — build_seo.py's
+# stage_static_pages() copies them into $BUILD/seo and scripts/refresh_seo.sh
+# rsyncs that into the docroot. Do not add them here as well; one deploy path
+# per file, and the nightly one is the one that runs without a human.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 HOST=root@104.236.120.144

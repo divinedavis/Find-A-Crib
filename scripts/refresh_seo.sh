@@ -152,8 +152,17 @@ else
   # rule silently did nothing: 5 of 6 sampled ever-served building pages were
   # live with noindex on them. The fallback in _ever_served_bbls() is
   # deliberately non-fatal, which is why this printed one line and never failed.
+  # The three hand-authored HTML pages added 2026-09-13. build_seo.py's
+  # stage_static_pages() copies them into $BUILD/seo so the rsync below
+  # deploys them, and it reads them from its OWN directory — which is $BUILD.
+  # Without them on this list it would stage whatever stale copies the droplet
+  # was set up with, which is the same bug growth/gsc_pages.json had. They have
+  # no other deploy path: deploy_app.sh scp's index.html, the four city shells
+  # and supercluster.min.js, and nothing else. The app shells are deliberately
+  # NOT here — deploy_app.sh gates those behind tests/journeys.py.
   for f in build_seo.py seo_guides.py split_hpd.py landlords.json hpd_contacts.json \
-           growth/gsc_pages.json; do
+           growth/gsc_pages.json \
+           developers/index.html embed/index.html marketing-agents/index.html; do
     if [ -f "$SRC/$f" ] && ! cmp -s "$SRC/$f" "$BUILD/$f"; then
       mkdir -p "$BUILD/$(dirname "$f")"
       # `cp && n=…` as the last statement of the loop body would take the whole

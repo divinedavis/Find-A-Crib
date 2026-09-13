@@ -72,8 +72,6 @@ struct ResultsView: View {
     @State private var showLocation = false
     @State private var showAlerts = false
     @State private var showSignIn = false
-    @State private var showSave = false
-    @State private var saveName = ""
     @State private var toast: String?
 
     var body: some View {
@@ -128,21 +126,16 @@ struct ResultsView: View {
                 FloatingPill(title: "Map", icon: "map.fill") {
                     nav.searchPath.append(.map(query))
                 }
-                // Available-now, Accepting-vouchers and Lotteries are the views
-                // where "tell me when one opens" means something; the alert is
-                // the site's borough alert, so it needs an account (an email).
-                if query.normalized.availableOnly || query.normalized.vouchersOnly || query.normalized.hcrOnly {
-                    FloatingPill(title: "Alerts", icon: "bell.badge.fill") {
-                        if auth.isSignedIn { showAlerts = true } else { showSignIn = true }
-                    }
-                    .accessibilityIdentifier("pill-Alerts")
+                // Alerts took this slot from "Save search" (owner, 2026-09-12).
+                // It used to appear only on Available-now / vouchers / lottery
+                // searches, where "tell me when one opens" obviously means
+                // something — but it means the same thing on any search, and a
+                // standing email beats a bookmark the visitor has to come back
+                // and re-read. It needs an account, because it needs an email.
+                FloatingPill(title: "Alerts", icon: "bell.badge.fill", fill: SE.navy, ink: .white) {
+                    if auth.isSignedIn { showAlerts = true } else { showSignIn = true }
                 }
-                // Three pills do not fit "Save search" on a 390pt phone; with
-                // Alerts beside it the save pill goes by its short name.
-                FloatingPill(title: activity.isSearchSaved(query) ? (hasAlertsPill ? "Saved" : "Search saved") : (hasAlertsPill ? "Save" : "Save search"), icon: "bell.fill", fill: SE.navy, ink: .white) {
-                    if activity.isSearchSaved(query) { toast = "Already in My Activity" }
-                    else { saveName = defaultName; showSave = true }
-                }
+                .accessibilityIdentifier("pill-Alerts")
             }
             .padding(.bottom, 92)
         }
@@ -161,18 +154,11 @@ struct ResultsView: View {
         .onChange(of: auth.isSignedIn) { _, on in if on, showSignIn { showSignIn = false; showAlerts = true } }
         .perfFirstMovement("results")
         .onAppear { if CommandLine.arguments.contains("--open-alerts") { showAlerts = true } }
-        .alert("Save this search", isPresented: $showSave) {
-            TextField("Name", text: $saveName)
-            Button("Save") { activity.saveSearch(query, name: saveName.isEmpty ? defaultName : saveName, count: results.count); toast = "Saved to My Activity" }
-            Button("Cancel", role: .cancel) {}
-        } message: { Text("Find it again under My Activity › Searches.") }
         .task(id: query) { run() }
         .onChange(of: store.loaded) { _, _ in run() }
         .swipeBackEnabled()
     }
 
-    private var hasAlertsPill: Bool { query.normalized.availableOnly || query.normalized.vouchersOnly }
-    private var defaultName: String { "\(query.normalized.hcrOnly ? "HCR lotteries" : (query.normalized.availableOnly ? "Available" : (query.normalized.vouchersOnly ? "Vouchers" : "Stabilized"))) · \(query.locationLabel)" }
     private var emptyHint: String {
         let n = query.normalized
         if n.hcrOnly { return "HousingSearch.ny.gov lists about 50 open lotteries and waitlists in the city at a time. Clear the other Show boxes and the price range to see them all." }

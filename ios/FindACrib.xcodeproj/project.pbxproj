@@ -129,7 +129,7 @@
 		EA50D389BB3AB7B341BD720D /* ImageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageService.swift; sourceTree = "<group>"; };
 		EFD73F478D420E114F0C82CB /* FiltersSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FiltersSheet.swift; sourceTree = "<group>"; };
 		F4EAE491E6B0AE7EF404FA62 /* HPDRecords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HPDRecords.swift; sourceTree = "<group>"; };
-		"TEMP_A3B77CA9-7561-48EB-9C49-1F85591EC44B" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_85814578-52C7-4A90-A6BB-369100844F92" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -347,10 +347,10 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
-		"TEMP_BBD4D7FF-4312-468C-BCA1-602DE8ABA8AE" /* ios */ = {
+		"TEMP_2FE85732-B236-4267-B139-F26053D6AE4D" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_A3B77CA9-7561-48EB-9C49-1F85591EC44B" /* Secrets.xcconfig */,
+				"TEMP_85814578-52C7-4A90-A6BB-369100844F92" /* Secrets.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -654,7 +654,7 @@
 		};
 		4A043B04EA1D2F1BD0250C61 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_A3B77CA9-7561-48EB-9C49-1F85591EC44B" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_85814578-52C7-4A90-A6BB-369100844F92" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -695,7 +695,7 @@
 		};
 		7B4EAA1664EF270AD8C579E8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_A3B77CA9-7561-48EB-9C49-1F85591EC44B" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_85814578-52C7-4A90-A6BB-369100844F92" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;

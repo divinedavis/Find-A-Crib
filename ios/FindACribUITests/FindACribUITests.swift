@@ -245,6 +245,27 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 30))
     }
 
+    /// The bottom bar offers Alerts, on every search.
+    ///
+    /// It used to be "Save search", with Alerts appearing only on
+    /// Available-now / vouchers / lottery searches. The owner swapped them on
+    /// 2026-09-12: a standing email beats a bookmark you have to come back and
+    /// re-read, and it means the same thing on any search.
+    func testResultsOffersAlertsNotSaveSearch() throws {
+        app.terminate()
+        // the plain stabilized search — the one that used to show only Save search
+        app.launchArguments = ["--route", "results"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 60))
+        let alerts = app.descendants(matching: .any)["pill-Alerts"].firstMatch
+        XCTAssertTrue(alerts.waitForExistence(timeout: 10), "Alerts should be offered on every search")
+        // Only the pill's own titles — a bare "Save" is the card heart's
+        // accessibility label and has nothing to do with this bar.
+        for gone in ["Save search", "Search saved"] {
+            XCTAssertFalse(app.buttons[gone].exists, "the \(gone) pill is still in the bottom bar")
+        }
+    }
+
     /// The Alerts sheet carries the web form's filters: rent cap and
     /// household income beside boroughs and kinds.
     func testAlertsSheetOffersRentAndIncome() throws {

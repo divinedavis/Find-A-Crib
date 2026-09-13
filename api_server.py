@@ -611,6 +611,55 @@ def alerts_unsubscribe():
     return jsonify(ok=bool(ok))
 
 
+# Alert-email click counter (2026-09-12). lottery_alerts.py:track_links routes
+# every link in an alert email through here: record who clicked, then 302 on.
+# The signature must match lottery_alerts.alert_link_sig byte for byte. A bad
+# or missing signature still gets somewhere useful — the map — but never the
+# `u` it carried, so this is not an open redirect.
+ALERT_LINK_KINDS = ("alert", "welcome", "nudge", "weekly")
+# Corporate mail gateways fetch every link before the reader sees the message.
+# Those hits are stored with is_bot so the dashboard can leave them out.
+LINK_SCANNER_RE = re.compile(
+    r"bot|crawl|spider|preview|scan|safelinks|proofpoint|mimecast|barracuda|"
+    r"forcepoint|symantec|trendmicro|sophos|fireeye|cisco|zscaler|urldefense|"
+    r"python|curl|wget|go-http|java/|okhttp|headless", re.I)
+
+
+def _alert_link_sig(sub_id, kind, url):
+    k = hashlib.sha256(b"fac-alert-link-v1:" + SERVICE_KEY.encode()).digest()
+    return hmac.new(k, f"{sub_id}|{kind}|{url}".encode(), hashlib.sha256).hexdigest()[:32]
+
+
+@app.route("/alerts/go", methods=["GET", "HEAD"])
+def alerts_go():
+    sub_id = str(request.args.get("s") or "").strip().lower()
+    kind = str(request.args.get("k") or "")
+    url = str(request.args.get("u") or "")
+    sig = str(request.args.get("g") or "")
+    fallback = "https://findacrib.com/?src=alert"
+    if not (SERVICE_KEY and TOKEN_RE.match(sub_id) and kind in ALERT_LINK_KINDS
+            and url.startswith(("https://", "http://")) and len(url) <= 2048
+            and hmac.compare_digest(sig, _alert_link_sig(sub_id, kind, url))):
+        resp = redirect(fallback, code=302)
+    else:
+        ua = request.headers.get("User-Agent", "")
+        bot = request.method == "HEAD" or not ua or bool(LINK_SCANNER_RE.search(ua))
+        host = (urllib.parse.urlsplit(url).hostname or "")[:253]
+        if not rate_limited("alerts_go", 120, 3600):
+            # Off the request thread: the click must never wait on Supabase.
+            def _record():
+                try:
+                    rpc("alert_click_record", {"p_sub": sub_id, "p_kind": kind,
+                                               "p_host": host, "p_bot": bot})
+                except Exception:
+                    pass
+            threading.Thread(target=_record, daemon=True).start()
+        resp = redirect(url, code=302)
+    resp.headers["Cache-Control"] = "no-store"
+    resp.headers["Referrer-Policy"] = "no-referrer"
+    return resp
+
+
 # ---- /geo: coarse network location for the map's first view -----------------
 #
 # The map opens on the visitor's own neighbourhood without asking the browser

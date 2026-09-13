@@ -302,6 +302,50 @@ def unsub_urls(token):
             f"{SITE}/api/alerts/unsubscribe?t={token}")
 
 
+# Click counting (2026-09-12). Every link in the HTML part goes through
+# findacrib.com/api/alerts/go, which records (subscriber, email kind, target
+# host) and 302s on. The link is HMAC-signed so the redirect can't be used to
+# bounce anyone to an arbitrary site; the key is derived from the service-role
+# key both this job and findacrib-api already hold, so there is no new secret
+# to keep in step. api_server.py:_alert_link_sig must match this exactly.
+# Unsubscribe and digest-off links are left alone — they aren't engagement.
+LINK_KINDS = ("alert", "welcome", "nudge", "weekly")
+_UNTRACKED = ("/alerts/unsubscribe", "#unsub=", "/alerts/digest-off", "#digestoff=")
+
+
+def alert_link_sig(sub_id, kind, url):
+    import hashlib
+    import hmac
+    key = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or ""
+    if not key:
+        return ""
+    k = hashlib.sha256(b"fac-alert-link-v1:" + key.encode()).digest()
+    return hmac.new(k, f"{sub_id}|{kind}|{url}".encode(), hashlib.sha256).hexdigest()[:32]
+
+
+def track_links(html, sub, kind):
+    """Rewrite each href in an alert email to the signed click redirect.
+    Test sends carry no subscriber id and come back unchanged."""
+    import html as htmllib
+    import re
+    import urllib.parse
+    sub_id = str(sub.get("id") or "")
+    if not sub_id or kind not in LINK_KINDS:
+        return html
+
+    def swap(m):
+        url = htmllib.unescape(m.group(1))
+        if not url.startswith(("https://", "http://")) or any(t in url for t in _UNTRACKED):
+            return m.group(0)
+        sig = alert_link_sig(sub_id, kind, url)
+        if not sig:
+            return m.group(0)
+        go = f"{SITE}/api/alerts/go?" + urllib.parse.urlencode(
+            {"s": sub_id, "k": kind, "u": url, "g": sig})
+        return f'href="{htmllib.escape(go, quote=True)}"'
+    return re.sub(r'href="([^"]+)"', swap, html)
+
+
 def boro_phrase(codes):
     names = [BORO_NAME[c] for c in ("M", "Bk", "Q", "Bx", "SI") if c in codes]
     if len(names) == 5:
@@ -382,7 +426,7 @@ def render_alert(items, sub, emailkit):
         footer_note=f"You are subscribed at {sub['email']} for {where}{filter_words(sub)}. "
                     f"Change boroughs or filters at {SITE}/alerts/. Never more than one email a day.",
         unsub_url=page_unsub)
-    return subject, html, text, post_unsub
+    return subject, track_links(html, sub, "alert"), text, post_unsub
 
 
 def render_welcome(sub, emailkit):
@@ -415,7 +459,7 @@ def render_welcome(sub, emailkit):
         footer_note=f"Subscribed at {sub['email']} for {where}{filter_words(sub)}. "
                     f"Change boroughs or filters any time at {SITE}/alerts/.",
         unsub_url=page_unsub)
-    return f"Find A Crib alerts: {where}", html, text, post_unsub
+    return f"Find A Crib alerts: {where}", track_links(html, sub, "welcome"), text, post_unsub
 
 
 def digest_off_urls(token):
@@ -470,7 +514,7 @@ def render_roundup(sub, emailkit, *, eyebrow, title, intro, sections, cta_label,
                     f"{footer_extra}Change boroughs or filters at {SITE}/alerts/. "
                     "Never more than one email a day.",
         unsub_url=page_unsub)
-    return html, text, post_unsub
+    return track_links(html, sub, "weekly" if digest else "nudge"), text, post_unsub
 
 
 def subscriber_rows(key):

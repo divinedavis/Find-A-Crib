@@ -226,8 +226,10 @@
 
   /* stat tiles */
   .tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px;margin-bottom:20px}
-  @media(max-width:1080px){.tiles{grid-template-columns:repeat(3,minmax(0,1fr))}}
-  @media(max-width:560px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  /* Find A Crib's row is eight tiles: two rows of four rather than six and an orphan pair */
+  .tiles:has(> .tile:nth-child(8)){grid-template-columns:repeat(4,minmax(0,1fr))}
+  @media(max-width:1080px){.tiles,.tiles:has(> .tile:nth-child(8)){grid-template-columns:repeat(3,minmax(0,1fr))}}
+  @media(max-width:560px){.tiles,.tiles:has(> .tile:nth-child(8)){grid-template-columns:repeat(2,minmax(0,1fr))}}
   .tile{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:15px 16px}
   .tile .t-ico{width:30px;height:30px;border-radius:9px;background:var(--purple-soft);display:flex;align-items:center;justify-content:center;margin-bottom:11px;font-size:15px}
   .tile .t-val{font-size:23px;font-weight:700;letter-spacing:-.5px;line-height:1.1}
@@ -1771,6 +1773,52 @@
       'Under '+comma(SIGNUP_BENCHMARK.min_visitors)+' visitors no verdict is drawn — one sign-up moves a rate '+
       'this small too far to mean anything.';
 
+    // Alert sign-up conversion (2026-09-12): borough-alert sign-ups created in
+    // the range over the same unique visitors the account rate divides by, so
+    // the two tiles sit side by side on one denominator. Same real-estate band:
+    // the sources define a conversion as "an email or alert capture", which is
+    // this tile more literally than it is the account one. Same interval rule.
+    var AL = d.alerts || {};
+    var alertRate = pct(n(AL.signups), n(T.visitors));
+    var alertPerVisit = pct(n(AL.signups), n(T.visits));
+    var alertBench;
+    if(n(T.visitors) < SIGNUP_BENCHMARK.min_visitors){
+      alertBench = 'Industry <b>'+bandPct(SIGNUP_BENCHMARK.low)+'–'+bandPct(SIGNUP_BENCHMARK.high)+'%</b> for '+
+                   SIGNUP_BENCHMARK.label+' · too few visitors to compare';
+    } else {
+      var averdict, acls;
+      if(alertPerVisit > SIGNUP_BENCHMARK.high) { averdict='above average'; acls='bn-hi';  }
+      else if(alertRate < SIGNUP_BENCHMARK.low) { averdict='below average'; acls='bn-low'; }
+      else                                      { averdict='in line';       acls='bn-mid'; }
+      alertBench = 'Industry <b>'+bandPct(SIGNUP_BENCHMARK.low)+'–'+bandPct(SIGNUP_BENCHMARK.high)+'%</b> for '+
+                   SIGNUP_BENCHMARK.label+' <span class="bn '+acls+'">'+averdict+'</span>';
+    }
+    var alertOwn = '<b>'+comma(AL.signups)+'</b> alert sign-ups of '+comma(T.visitors)+' visitors';
+    var alertTitle = 'Borough-alert sign-ups created in the selected range over unique visitors in the same range — '+
+      'the same denominator as Sign-up conversion, so the two compare directly. The owner’s own subscription is '+
+      'excluded. Since 2026-09-08 an alert needs an account, so an alert sign-up is usually also a sign-up. The band and '+
+      'the verdict rule are the Sign-up conversion tile’s ('+alertPerVisit.toFixed(1)+'% per visit against '+
+      alertRate.toFixed(1)+'% per visitor here).';
+
+    // Alert clicks (2026-09-12): people, not clicks, because one keen reader
+    // opening six listings is still one person the email worked for. Every
+    // link in an alert email goes through /api/alerts/go; mail-gateway
+    // scanners are stored but left out. No outside benchmark on purpose: a
+    // campaign click rate is per send, and this is "ever clicked in the range"
+    // over everyone emailed, which would read as flattering against it.
+    var clickOwn = !AL.clicks_since && !n(AL.clicks)
+      ? 'Counting from 12 Sep 2026 · no clicks yet'
+      : '<b>'+comma(AL.clicks)+'</b> clicks · '+comma(AL.bot_clicks)+' scanner hits left out';
+    var CK = AL.clicks_by_kind || {};
+    var clickBench = ['alert','weekly','nudge','welcome'].filter(function(k){ return n(CK[k]); })
+      .map(function(k){ return comma(CK[k])+' '+k; }).join(' · ') ||
+      'of <b>'+comma(AL.emailed)+'</b> subscribers emailed';
+    var clickTitle = 'Subscribers who clicked any link in a borough-alert email (the alert itself, the welcome, the '+
+      'first-week nudge or the Tuesday round-up) in the selected range, over every subscriber who has been emailed '+
+      'at least once. Links are counted by a findacrib.com redirect before they go on to Housing Connect, HCR or the '+
+      'agent’s site. Unsubscribe links are not counted, and corporate mail scanners that pre-open every link are '+
+      'recorded separately and excluded. Counting began 12 Sep 2026; earlier emails carry no counter.';
+
     // tiles
     var tiles=[
       {ic:'👣',v:comma(T.visitors),l:'Unique visitors'},
@@ -1779,6 +1827,9 @@
       {ic:'⏱️',v:dwellV,l:'Median time on site · engaged sessions',own:dwellOwn,bench:dwellBench,title:dwellTitle},
       {ic:'✅',v:comma(T.accounts),l:'Sign-ups'},
       {ic:'🎯',v:convRate.toFixed(1)+'%',l:'Sign-up conversion',own:convOwn,bench:convBench,title:convTitle},
+      {ic:'🔔',v:alertRate.toFixed(1)+'%',l:'Alert sign-up conversion',own:alertOwn,bench:alertBench,title:alertTitle},
+      {ic:'📬',v:comma(AL.clickers)+' · '+pctS(AL.clickers,AL.emailed),l:'Alert clicks · people who clicked',
+       own:clickOwn,bench:clickBench,title:clickTitle},
       {ic:'💳',v:money(n(S.mrr)),l:comma(S.paying)+' paying'+(n(S.comped)?' · '+comma(S.comped)+' comped':'')+' · MRR',accent:true}
     ];
     el('tiles').innerHTML=tiles.map(function(t){

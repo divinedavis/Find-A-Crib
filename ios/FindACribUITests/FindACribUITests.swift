@@ -245,6 +245,43 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 30))
     }
 
+    func testAlertsSignInOffersAppleGoogleAndEmail() throws {
+        app.terminate()
+        app.launchArguments = ["--route", "results"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 60))
+        app.descendants(matching: .any)["pill-Alerts"].firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["Sign in for alerts"].waitForExistence(timeout: 10))
+        let apple = app.buttons["sign-in-apple"]
+        let google = app.buttons["sign-in-google"]
+        XCTAssertTrue(apple.isHittable)
+        XCTAssertTrue(google.isHittable)
+        XCTAssertLessThan(apple.frame.minY, google.frame.minY)
+        XCTAssertTrue(app.textFields["email-field"].exists)
+        XCTAssertTrue(app.secureTextFields["password-field"].exists)
+        XCTAssertFalse(app.keyboards.firstMatch.exists)
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["Sign in for alerts"].exists)
+        XCTAssertFalse(app.buttons["alerts-subscribe"].exists)
+    }
+
+    func testAlertsEmailValidationStillWorks() throws {
+        app.terminate()
+        app.launchArguments = ["--route", "results"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 60))
+        app.descendants(matching: .any)["pill-Alerts"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["sign-in-google"].waitForExistence(timeout: 10))
+        let submit = app.buttons["email-submit"]
+        if !submit.isHittable { app.swipeUp() }
+        submit.tap()
+        XCTAssertTrue(app.staticTexts["Enter your email."].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["forgot-password"].exists)
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 5))
+    }
+
     /// The bottom bar offers Alerts, on every search.
     ///
     /// It used to be "Save search", with Alerts appearing only on

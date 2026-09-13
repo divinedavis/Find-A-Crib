@@ -71,29 +71,7 @@ struct ProfileView: View {
                             }
                         } else if auth.configured {
                             VStack(spacing: 10) {
-                                // Sign in with Apple leads (App Review guideline 4.8: a third-party
-                                // login needs an equivalent that limits data to name + email and
-                                // can hide the address). Hidden 2026-09-02 while Apple's account
-                                // service refused to create credentials for the day-old App ID;
-                                // restored 2026-09-08 after the 4.8 rejection of build 14.
-                                Button { Task { await auth.signInWithApple() } } label: {
-                                    HStack(spacing: 10) {
-                                        Image(systemName: "apple.logo").font(.system(size: 19, weight: .medium)).foregroundStyle(.white)
-                                        Text("Continue with Apple").font(.se(18, .semibold)).foregroundStyle(.white)
-                                    }
-                                    .frame(maxWidth: .infinity).frame(height: 50)
-                                    .background(Color.black).clipShape(RoundedRectangle(cornerRadius: 6))
-                                }
-                                .buttonStyle(.plain).accessibilityIdentifier("sign-in-apple")
-                                Button { Task { await auth.signInWithGoogle() } } label: {
-                                    HStack(spacing: 10) {
-                                        GoogleG().frame(width: 18, height: 18)
-                                        Text("Continue with Google").font(.se(18, .semibold)).foregroundStyle(SE.ink)
-                                    }
-                                    .frame(maxWidth: .infinity).frame(height: 50)
-                                    .background(Color.white).overlay(RoundedRectangle(cornerRadius: 6).stroke(SE.line))
-                                }
-                                .buttonStyle(.plain).accessibilityIdentifier("sign-in-google")
+                                SocialSignInButtons()
                                 Button { showEmail = true } label: {
                                     HStack(spacing: 10) {
                                         Image(systemName: "envelope.fill").font(.system(size: 16, weight: .bold)).foregroundStyle(SE.royal)
@@ -102,7 +80,7 @@ struct ProfileView: View {
                                     .frame(maxWidth: .infinity).frame(height: 50)
                                     .background(Color.white).overlay(RoundedRectangle(cornerRadius: 6).stroke(SE.line))
                                 }
-                                .buttonStyle(.plain).accessibilityIdentifier("sign-in-email")
+                                .buttonStyle(.plain).accessibilityIdentifier("sign-in-email").disabled(auth.busy)
                                 if auth.busy { ProgressView().tint(SE.royal) }
                                 if let e = auth.error { Text(e).font(.se(14)).foregroundStyle(SE.bad) }
                             }

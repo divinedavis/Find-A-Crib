@@ -150,8 +150,9 @@ struct ResultsView: View {
         .sheet(isPresented: $showFilters) { FiltersSheet(query: $query) }
         .sheet(isPresented: $showLocation) { LocationPickerView(selected: $query.locations) }
         .sheet(isPresented: $showAlerts) { AlertsSheet(query: query) }
-        .sheet(isPresented: $showSignIn) { EmailSignInView() }
-        .onChange(of: auth.isSignedIn) { _, on in if on, showSignIn { showSignIn = false; showAlerts = true } }
+        .sheet(isPresented: $showSignIn, onDismiss: {
+            if auth.isSignedIn { showAlerts = true }
+        }) { EmailSignInView(offersSocialSignIn: true) }
         .perfFirstMovement("results")
         .onAppear { if CommandLine.arguments.contains("--open-alerts") { showAlerts = true } }
         .task(id: query) { run() }

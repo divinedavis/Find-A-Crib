@@ -40,6 +40,12 @@ Regression checks: `scripts/run_tests.sh FindACribTests/LaunchSequenceTests` and
 and interrupted launch on a physical iPhone too; simulator tests do not establish
 device frame pacing.
 
-## Not yet
-- Sign-in + sync with the web app's `saved_buildings` (Supabase project `dbaifotzwlxjvsxjohjt`).
-- App Store Connect record, TestFlight ship script.
+## Sign-in
+Profile and the results-list Alerts sign-in sheet share Apple and Google
+buttons backed by the existing `AuthService` flows. The Alerts sheet also
+keeps email/password, account creation, and password reset on the same screen;
+it does not open the keyboard until the user selects an email field.
+After successful authentication, alert preferences open only after sign-in
+has dismissed. Cancelling returns to results without opening preferences.
+
+Ship with `scripts/ship.sh` (tests, simulator smoke launch, archive, TestFlight).

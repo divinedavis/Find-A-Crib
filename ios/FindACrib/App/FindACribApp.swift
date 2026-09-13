@@ -10,7 +10,7 @@ struct FindACribApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView()
+            LaunchPresentation { RootView() }
                 .environment(store)
                 .environment(activity)
                 .environment(nav)

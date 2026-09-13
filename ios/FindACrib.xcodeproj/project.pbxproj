@@ -27,6 +27,7 @@
 		4392AB92BF2A7ADBE5E3A2B9 /* s8.json in Resources */ = {isa = PBXBuildFile; fileRef = C2015DADE5A5CCF0E92E6795 /* s8.json */; };
 		4BF1266D9ABC8EA01C9F26AC /* listings.json in Resources */ = {isa = PBXBuildFile; fileRef = E42AA07F206334B8F58225F1 /* listings.json */; };
 		4C60CA570B0FD87DBCAB3270 /* HPDRecords.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4EAE491E6B0AE7EF404FA62 /* HPDRecords.swift */; };
+		4EA64C3DB786713310EB705F /* LaunchAnimationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 295157FB248292C1429E1C15 /* LaunchAnimationTests.swift */; };
 		54D6A47D8C4E582C0633D8CE /* AlertsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B079F80D171436B72B29BA21 /* AlertsSheet.swift */; };
 		55415570A82F92F6EDCC19C8 /* BuildingDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA7425E377576FE3E5C2B47B /* BuildingDetailView.swift */; };
 		57861D606FFBA7F23A414A91 /* BuildingCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C86217F159AB095139ABEE8D /* BuildingCard.swift */; };
@@ -41,6 +42,7 @@
 		975FC0D78B115A6A80887B03 /* buildings.slim.json.gz in Resources */ = {isa = PBXBuildFile; fileRef = 7AB083E634E08974E9E2C973 /* buildings.slim.json.gz */; };
 		A200EEBA4BB5BBA64BBDA05A /* CityPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F98DDB6CAE27151A26A25D9 /* CityPickerView.swift */; };
 		A9D531537DD9B5581365FBFB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CCFBDF3CE45EAFE74FADE6C4 /* Assets.xcassets */; };
+		AA818F2CAF355C2D26CEDCEE /* LaunchPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3EEF5834FCD3DDE360290CF /* LaunchPresentation.swift */; };
 		B111E02FFA19C4DE7A92BCBB /* Gunzip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F650FE59DC17EC3E4DC6591 /* Gunzip.swift */; };
 		B8568A5D36520E6A5FCCC98A /* SourceSans3-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = DBADFE6B0EF45D112E3C4837 /* SourceSans3-Bold.ttf */; };
 		B9832014BFBAE12D564BE84D /* FindACribTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98EA9658998D86C1B18B3B70 /* FindACribTests.swift */; };
@@ -81,6 +83,7 @@
 		18FD23E9A200B17C92436714 /* FindACrib.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FindACrib.entitlements; sourceTree = "<group>"; };
 		1F485D02A5570CFBB0B8EDA8 /* SearchEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchEngine.swift; sourceTree = "<group>"; };
 		29346FF1C5BB5747E8F6660B /* SourceSans3-Semibold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SourceSans3-Semibold.ttf"; sourceTree = "<group>"; };
+		295157FB248292C1429E1C15 /* LaunchAnimationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAnimationTests.swift; sourceTree = "<group>"; };
 		2BF31F5CBC53724752881713 /* ResultsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultsView.swift; sourceTree = "<group>"; };
 		3C345F6E17169EEB81A7265B /* LocationPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationPickerView.swift; sourceTree = "<group>"; };
 		3C5230FE7E960A89326516B1 /* SearchQuery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchQuery.swift; sourceTree = "<group>"; };
@@ -103,6 +106,7 @@
 		96A59BAA0D560AEC7D0E1BF8 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		98EA9658998D86C1B18B3B70 /* FindACribTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FindACribTests.swift; sourceTree = "<group>"; };
 		9F650FE59DC17EC3E4DC6591 /* Gunzip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Gunzip.swift; sourceTree = "<group>"; };
+		A3EEF5834FCD3DDE360290CF /* LaunchPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchPresentation.swift; sourceTree = "<group>"; };
 		A8B4C6BAFBAB36BCC61E8C51 /* AppleSignIn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleSignIn.swift; sourceTree = "<group>"; };
 		ACFF6FF6AFF4A2D1729699C2 /* MapResultsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapResultsView.swift; sourceTree = "<group>"; };
 		B079F80D171436B72B29BA21 /* AlertsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsSheet.swift; sourceTree = "<group>"; };
@@ -129,7 +133,7 @@
 		EA50D389BB3AB7B341BD720D /* ImageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageService.swift; sourceTree = "<group>"; };
 		EFD73F478D420E114F0C82CB /* FiltersSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FiltersSheet.swift; sourceTree = "<group>"; };
 		F4EAE491E6B0AE7EF404FA62 /* HPDRecords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HPDRecords.swift; sourceTree = "<group>"; };
-		"TEMP_C441E390-0ECF-4D45-BEF8-F29EA8365A39" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_E4CAA641-8759-4334-98FE-2FA63FE18EEB" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -195,6 +199,7 @@
 			children = (
 				01F62B1CE3CCF2DAD07279F9 /* FindACribUITests.swift */,
 				B2D6C468CBF1CC17D6480192 /* FreezeTest.swift */,
+				295157FB248292C1429E1C15 /* LaunchAnimationTests.swift */,
 			);
 			path = FindACribUITests;
 			sourceTree = "<group>";
@@ -283,6 +288,7 @@
 			isa = PBXGroup;
 			children = (
 				DCFB5318551DD17B54EE6524 /* Components.swift */,
+				A3EEF5834FCD3DDE360290CF /* LaunchPresentation.swift */,
 				855488736B82051BFCB10DF5 /* SwipeBack.swift */,
 				96A59BAA0D560AEC7D0E1BF8 /* Theme.swift */,
 			);
@@ -347,10 +353,10 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
-		"TEMP_6BB3F9C2-31A6-4912-A505-FC71DC3A31CB" /* ios */ = {
+		"TEMP_AAA13860-760D-4645-8E1D-A285675B0229" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_C441E390-0ECF-4D45-BEF8-F29EA8365A39" /* Secrets.xcconfig */,
+				"TEMP_E4CAA641-8759-4334-98FE-2FA63FE18EEB" /* Secrets.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -501,6 +507,7 @@
 				4C60CA570B0FD87DBCAB3270 /* HPDRecords.swift in Sources */,
 				CA405D2EBBE651265F2F803A /* HPDRecordsView.swift in Sources */,
 				17B1E6D55E507C00DC25FB0E /* ImageService.swift in Sources */,
+				AA818F2CAF355C2D26CEDCEE /* LaunchPresentation.swift in Sources */,
 				D06140B2770579898ABA0FFB /* LocationPickerView.swift in Sources */,
 				0520A5F1A16409B5EDD7B003 /* MapResultsView.swift in Sources */,
 				77119B1CD94A4E7C0C3B77D4 /* MyActivityView.swift in Sources */,
@@ -533,6 +540,7 @@
 			files = (
 				239814C37ED0E60FC84485B9 /* FindACribUITests.swift in Sources */,
 				FAB92101828BCF949523AF8B /* FreezeTest.swift in Sources */,
+				4EA64C3DB786713310EB705F /* LaunchAnimationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -654,7 +662,7 @@
 		};
 		4A043B04EA1D2F1BD0250C61 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_C441E390-0ECF-4D45-BEF8-F29EA8365A39" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_E4CAA641-8759-4334-98FE-2FA63FE18EEB" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -695,7 +703,7 @@
 		};
 		7B4EAA1664EF270AD8C579E8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_C441E390-0ECF-4D45-BEF8-F29EA8365A39" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_E4CAA641-8759-4334-98FE-2FA63FE18EEB" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;

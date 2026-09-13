@@ -26,6 +26,20 @@ scripts/run_tests.sh         # unit + UI tests
 ```
 Launch arguments for screenshots / tests: `--route results|map|detail[:bbl]`, `--tab activity|profile`.
 
+## Launch animation
+`Design/LaunchPresentation.swift` adds a one-shot teal circle expansion and
+logo-to-home fade (about one second). It reuses `BrandMark`, mounts the real
+screen once underneath, and never waits for network requests. Only scale and
+opacity animate; navigation and the inline Look Around panorama are unchanged.
+Reduce Motion uses a short fade instead. Backgrounding cancels the intro without
+replaying it on return, and animation completions cannot restart a finished intro.
+
+Regression checks: `scripts/run_tests.sh FindACribTests/LaunchSequenceTests` and
+`scripts/run_tests.sh FindACribUITests/LaunchAnimationTests`. Debug builds accept
+`--reduce-launch-motion` to exercise the reduced-motion path. Verify cold launch
+and interrupted launch on a physical iPhone too; simulator tests do not establish
+device frame pacing.
+
 ## Not yet
 - Sign-in + sync with the web app's `saved_buildings` (Supabase project `dbaifotzwlxjvsxjohjt`).
 - App Store Connect record, TestFlight ship script.

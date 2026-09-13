@@ -2,6 +2,43 @@ import XCTest
 import MapKit
 @testable import FindACrib
 
+final class LaunchSequenceTests: XCTestCase {
+    func testSequenceFinishesOnce() {
+        var sequence = LaunchSequence()
+        XCTAssertEqual(sequence.phase, .ready)
+        sequence.advance(from: .ready)
+        XCTAssertEqual(sequence.phase, .expanding)
+        sequence.advance(from: .ready)
+        XCTAssertEqual(sequence.phase, .expanding)
+        sequence.advance(from: .expanding)
+        XCTAssertEqual(sequence.phase, .revealing)
+        sequence.advance(from: .revealing)
+        XCTAssertEqual(sequence.phase, .finished)
+        sequence.advance(from: .ready)
+        XCTAssertEqual(sequence.phase, .finished)
+    }
+
+    func testInterruptedAnimationCannotRestartFromStaleCompletion() {
+        for phase in [LaunchSequence.Phase.ready, .expanding, .revealing] {
+            var sequence = LaunchSequence()
+            if phase != .ready { sequence.advance(from: .ready) }
+            if phase == .revealing { sequence.advance(from: .expanding) }
+            sequence.finish()
+            sequence.advance(from: phase)
+            XCTAssertEqual(sequence.phase, .finished)
+        }
+    }
+
+    func testCircleCoversEveryCornerWithoutChangingLayout() {
+        for size in [CGSize(width: 320, height: 568), CGSize(width: 402, height: 874),
+                     CGSize(width: 440, height: 956), CGSize(width: 956, height: 440)] {
+            let diameter = LaunchSequence.coverScale(for: size) * 180
+            XCTAssertGreaterThan(diameter, hypot(size.width, size.height))
+        }
+        XCTAssertEqual(LaunchSequence.coverScale(for: .zero), 1)
+    }
+}
+
 final class DataTests: XCTestCase {
     func testBundledDataDecodes() throws {
         let p = try DataStore.decodeLocal(bundleOnly: true)

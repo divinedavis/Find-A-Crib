@@ -158,6 +158,44 @@ SEEDS = [
                "the ledger's prefix declarations whatever a technique's status, because a "
                "retired section is still in the docroot and still part of what Google prices "
                "this domain on."),
+    dict(slug="canonical_integrity", status="active", kind="indexing",
+         name="Audit canonical and robots tags on the pages the docroot actually serves",
+         prefixes=[], metric="organic_visitors",
+         hypothesis="The working diagnosis since 2026-09-06 is that Google refuses this "
+                    "corpus on quality/duplication grounds, and it may well be right — but "
+                    "it has never been tested against the one rival explanation that "
+                    "produces an IDENTICAL signature. Current practice names three technical "
+                    "causes that mimic crawled-not-indexed at scale: internal linking, crawl "
+                    "capacity, and canonicalization. The first two are instrumented here "
+                    "(t_crawl_paths, since 2026-08-31) and read green — everything within 3 "
+                    "clicks, 16 of 17 sections linked. Canonical tags have never been looked "
+                    "at, on any page, on any night. On this site the stakes are specific: "
+                    "index_triage() leaves ~46,000 of 47,165 building pages on noindex,follow, "
+                    "so a canonical that drifts from a promoted page onto a demoted neighbour "
+                    "withdraws that page from the index silently, and no other audit here "
+                    "would see it. If the canonical layer reads clean, the duplication "
+                    "diagnosis stands on firmer ground than it does today; if it does not, "
+                    "the last six weeks of duplication work has been treating a symptom.",
+         evidence="Read from the generator, this audit could only ever confirm itself: "
+                  "build_seo.page() emits exactly one self-referential canonical from "
+                  "`canonical = SITE + url`, and the four app shells and three hand-authored "
+                  "pages each carry a correct self-canonical in the checkout. That is the "
+                  "reason it reads the DOCROOT instead. 2026-09-12 and 2026-09-13 are the "
+                  "standing evidence for why those are different claims: /developers/, "
+                  "/embed/ and /marketing-agents/ were correct in git for weeks while the "
+                  "live site served something else, because nothing deployed them.",
+         notes="Audits, never publishes; adds no URL. Unlike page_uniqueness it DOES fail, "
+               "because every class it reports has a known mechanism rather than being a "
+               "number with no distribution yet: no canonical, more than one, one pointing "
+               "off-host, one pointing at a URL with no page, one pointing at a noindexed "
+               "page, and a URL the sitemaps advertise that is noindexed or canonicalized "
+               "away on arrival (noindex does not save the fetch — Google requests the page "
+               "and then drops it). A cross-URL canonical onto a live indexable page is "
+               "counted and named but NOT failed: that is what canonicals are for. Pages "
+               "whose </head> sits past the read cap are UNDETERMINED, never 'missing' — the "
+               "one way this audit could invent a defect. Member of "
+               "techniques.DOCROOT_VERIFIERS, so it is re-read after the SEO watchdog "
+               "rebuilds the corpus instead of reporting a day late."),
     dict(slug="hub_direct_answers", status="active", kind="content",
          prefixes=["/neighborhood/", "/borough/", "/zip/"], metric="owned_visitors",
          name="Direct-answer blocks on hub pages",

@@ -1808,5 +1808,23 @@
     "retired": null,
     "notes": "effort: hours\nexpected: First non-zero revenue within 14 days. 60 days: 15-40 recurring supporters at $5-10/mo, $100-350 MRR, and 100+ new registered accounts from the supporter flow \u2014 small money, but it converts the $0-to-$1 question from unanswered to answered, and it tells you whether willingness-to-pay here is absent or merely mispriced. 6 months: one institutional supporter at $250-1,000/mo (tenant union, legal-aid org, housing research centre) and a fiscal-sponsorship or entity structure that makes the grant candidate actionable.\nfirst step: Publish a single /support/ page stating the real annual cost of running the dataset (hosting, data refresh hours, API costs) as a line-item table, with one Stripe recurring link at $5/mo and one at $25/mo and no feature gate attached, then link it from the footer of every hub and from the methodology page \u2014 nowhere in the middle of a lookup.",
     "verdict": null
+  },
+  {
+    "id": "T089",
+    "slug": "canonical_integrity",
+    "name": "Audit canonical and robots tags on the pages the docroot actually serves",
+    "hypothesis": "The working diagnosis since 2026-09-06 is that Google refuses this corpus on quality/duplication grounds, and it may well be right \u2014 but it has never been tested against the one rival explanation that produces an IDENTICAL signature. Current practice names three technical causes that mimic crawled-not-indexed at scale: internal linking, crawl capacity, and canonicalization. The first two are instrumented here (t_crawl_paths, since 2026-08-31) and read green \u2014 everything within 3 clicks, 16 of 17 sections linked. Canonical tags have never been looked at, on any page, on any night. On this site the stakes are specific: index_triage() leaves ~46,000 of 47,165 building pages on noindex,follow, so a canonical that drifts from a promoted page onto a demoted neighbour withdraws that page from the index silently, and no other audit here would see it. If the canonical layer reads clean, the duplication diagnosis stands on firmer ground than it does today; if it does not, the last six weeks of duplication work has been treating a symptom.",
+    "kind": "indexing",
+    "status": "active",
+    "prefixes": [],
+    "metric": "organic_visitors",
+    "source": "seed",
+    "evidence": "Read from the generator, this audit could only ever confirm itself: build_seo.page() emits exactly one self-referential canonical from `canonical = SITE + url`, and the four app shells and three hand-authored pages each carry a correct self-canonical in the checkout. That is the reason it reads the DOCROOT instead. 2026-09-12 and 2026-09-13 are the standing evidence for why those are different claims: /developers/, /embed/ and /marketing-agents/ were correct in git for weeks while the live site served something else, because nothing deployed them.",
+    "added": "2026-09-14",
+    "activated": "2026-09-14",
+    "revisit_on": "2026-10-14",
+    "retired": null,
+    "notes": "Audits, never publishes; adds no URL. Unlike page_uniqueness it DOES fail, because every class it reports has a known mechanism rather than being a number with no distribution yet: no canonical, more than one, one pointing off-host, one pointing at a URL with no page, one pointing at a noindexed page, and a URL the sitemaps advertise that is noindexed or canonicalized away on arrival (noindex does not save the fetch \u2014 Google requests the page and then drops it). A cross-URL canonical onto a live indexable page is counted and named but NOT failed: that is what canonicals are for. Pages whose </head> sits past the read cap are UNDETERMINED, never 'missing' \u2014 the one way this audit could invent a defect. Member of techniques.DOCROOT_VERIFIERS, so it is re-read after the SEO watchdog rebuilds the corpus instead of reporting a day late.",
+    "verdict": null
   }
 ]

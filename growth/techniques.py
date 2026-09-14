@@ -2647,6 +2647,355 @@ def t_derived_building_facts(ctx):
     return {"ok": False, "detail": detail, "pages": have}
 
 
+# ---------------------------------------------------------------- canonicals
+#
+# WHY THIS EXISTS, and why it is an instrument rather than a lever. As of
+# 2026-09-14 Google has fetched 100 of a 457-URL census and kept exactly one of
+# them — the homepage — for twenty-two consecutive days; 94 read "Crawled -
+# currently not indexed" and acceptance among the 80 MATURE fetches is 0.0%.
+# Since 2026-09-06 the working diagnosis has been quality/duplication, because
+# current practice holds that crawled-not-indexed at scale is a quality signal
+# roughly four times in five. Current practice ALSO says, in the same breath,
+# that canonicalization mimics the quality pattern exactly and is the cheapest
+# of the three technical causes to rule out — the other two, internal linking
+# and click depth, this loop has instrumented since 2026-08-31 (t_crawl_paths)
+# and found green. Canonical tags have never been audited here at all. So the
+# quality diagnosis is currently standing on an un-ruled-out alternative, and
+# this closes that hole: a clean reading is worth as much as a dirty one,
+# because it is what lets the duplication work proceed without a rival
+# explanation sitting underneath it.
+#
+# IT READS THE GENERATED PAGES IN THE DOCROOT, NOT THE TEMPLATES, and that is
+# the whole point of writing it as a technique instead of grepping build_seo.py
+# from a review. build_seo.page() emits one self-referential <link rel=canonical>
+# from `canonical = SITE + url`, so read from the generator this audit could
+# only ever say "correct by construction". 2026-09-12 and 2026-09-13 are the
+# standing lesson on what that reasoning is worth: /developers/, /embed/ and
+# /marketing-agents/ were correct in the repo for weeks while the docroot served
+# something else entirely, because nothing deployed them. The docroot is the
+# site; the repo is a hypothesis about the site.
+#
+# The four defect classes it looks for are the ones that actually kill indexing,
+# in the order they bite:
+#   * NO canonical, or MORE THAN ONE — a second tag makes the whole signal
+#     ambiguous and Google may discard both and pick its own.
+#   * Canonical pointing at a URL that has no page in the docroot — the signal
+#     names a document that does not exist, so the page volunteers itself out
+#     of the index and nothing takes its place.
+#   * Canonical pointing at a NOINDEXED page. This is the sharpest check on this
+#     specific site: index_triage() leaves ~46k of 47,165 building pages on
+#     noindex,follow, so a promoted page whose canonical drifts onto a demoted
+#     neighbour is silently withdrawn from the index, and no existing audit
+#     would see it.
+#   * A URL the sitemaps INVITE Google to crawl that is, on arrival, noindexed
+#     or canonicalized somewhere else. Noindex does not save the fetch — Google
+#     requests the page and then drops it — so each one is a crawl request spent
+#     to be told "not this one", on a site whose measured problem is that its
+#     pages are fetched and refused.
+#
+# A cross-URL canonical that resolves to a real, indexable page is DELIBERATELY
+# NOT A FAILURE: consolidating duplicates onto one URL is what canonicals are
+# for, and this site may legitimately want it later. Those are counted and named
+# so a future review can see them appear, never flagged.
+CANON_SECTION_SAMPLE = 40      # pages per declared section, strided like _dup_measure's
+CANON_SITEMAP_CAP = 1500       # sitemap URLs read per night, strided across the sorted set
+# Canonical and robots live in the first bytes of <head> — build_seo.page() puts
+# both above the inlined stylesheet — so this reads a head, not a document. The
+# app shells are ~342KB and would otherwise dominate the night's IO for two tags.
+CANON_HEAD_BYTES = 32_768
+# Below this, say nothing. A bare checkout holds the static pages and no
+# generated corpus, and a canonical reading taken from that would describe the
+# checkout. Same guard and same reason as CRAWL_DEPTH_FLOOR and DUP_FLOOR.
+CANON_FLOOR = 20
+# Named in the detail line whenever it bites, because a truncated head is the
+# one way this audit could invent a defect: a page whose canonical sits past the
+# read cap looks exactly like a page with no canonical at all. Pages that hit it
+# are counted as UNDETERMINED and never as missing.
+_CANON_HEAD_END_RE = re.compile(r"(?i)</head\s*>")
+_CANON_TAG_RE = re.compile(r"(?is)<link\b[^>]*>")
+_REL_CANON_RE = re.compile(r"(?is)\brel\s*=\s*(?:\"\s*canonical\s*\"|'\s*canonical\s*'|canonical\b)")
+_CANON_HREF_RE = re.compile(r"(?is)\bhref\s*=\s*(?:\"([^\"]*)\"|'([^']*)'|([^\s>]+))")
+_CANON_META_RE = re.compile(r"(?is)<meta\b[^>]*>")
+_CANON_NAME_ROBOTS_RE = re.compile(r"(?is)\bname\s*=\s*(?:\"\s*robots\s*\"|'\s*robots\s*'|robots\b)")
+_CANON_CONTENT_RE = re.compile(r"(?is)\bcontent\s*=\s*(?:\"([^\"]*)\"|'([^']*)'|([^\s>]+))")
+
+
+def _canon_attr(match):
+    """The value of an href=/content= match, whichever quoting style was used."""
+    return (match.group(1) or match.group(2) or match.group(3) or "").strip()
+
+
+def _canon_read_head(path):
+    """(canonical hrefs, robots directives, head_complete) for one page.
+
+    head_complete is False when </head> was not reached inside CANON_HEAD_BYTES,
+    which is the difference between "this page has no canonical" and "this audit
+    did not read far enough to say" — see the note on _CANON_HEAD_END_RE.
+    """
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            chunk = f.read(CANON_HEAD_BYTES)
+    except OSError:
+        return None
+    end = _CANON_HEAD_END_RE.search(chunk)
+    complete = end is not None
+    head = chunk[:end.start()] if end else chunk
+    hrefs = []
+    for tag in _CANON_TAG_RE.finditer(head):
+        if not _REL_CANON_RE.search(tag.group(0)):
+            continue
+        href = _CANON_HREF_RE.search(tag.group(0))
+        hrefs.append(_canon_attr(href) if href else "")
+    robots = []
+    for tag in _CANON_META_RE.finditer(head):
+        if not _CANON_NAME_ROBOTS_RE.search(tag.group(0)):
+            continue
+        content = _CANON_CONTENT_RE.search(tag.group(0))
+        if content:
+            robots.append(_canon_attr(content).lower())
+    return hrefs, robots, complete
+
+
+def _canon_normalize(href, page_url):
+    """A canonical href as a site-relative path, or None if it points off-site.
+
+    Relative and root-relative hrefs are RESOLVED rather than flagged: both are
+    valid and Google resolves them the same way a browser does. Only a different
+    host is a defect. Query strings and fragments are dropped — a canonical
+    differing from the page URL by a #fragment is the same document.
+    """
+    href = (href or "").split("#", 1)[0].split("?", 1)[0].strip()
+    if not href:
+        return None
+    if href.startswith("//"):
+        href = "https:" + href
+    if re.match(r"(?i)^[a-z][a-z0-9+.-]*:", href):
+        for scheme in ("https://", "http://"):
+            for host in ("findacrib.com", "www.findacrib.com"):
+                if href.lower().startswith(scheme + host):
+                    return href[len(scheme + host):] or "/"
+        return None                      # a real off-site canonical
+    if href.startswith("/"):
+        return href
+    base = page_url.rsplit("/", 1)[0] + "/"
+    return os.path.normpath(base + href).replace(os.sep, "/")
+
+
+def _canon_same(a, b):
+    """Do two site paths name the same document? Trailing slash is not a defect."""
+    if a is None or b is None:
+        return False
+
+    def strip(p):
+        p = p[:-len("index.html")] if p.endswith("index.html") else p
+        return p.rstrip("/") or "/"
+
+    return strip(a) == strip(b)
+
+
+def _canon_docroot_file(docroot, url_path):
+    """The docroot file a site path would serve, or None.
+
+    Tries the three shapes this site publishes: a directory index, a bare .html
+    file, and a path that already names one. Never escapes the docroot — a
+    canonical href is untrusted input in exactly the way _sitemap_covered's
+    <loc> is, and this one is attacker-controllable only via the corpus, but the
+    check costs one comparison.
+    """
+    root = os.path.abspath(docroot)
+    rel = url_path.lstrip("/")
+    for cand in (rel + "index.html" if url_path.endswith("/") else rel,
+                 rel + ".html", rel.rstrip("/") + "/index.html"):
+        # Absolute from the start: a relative docroot (`--docroot .` on a dry
+        # run) would otherwise fail the containment test on every candidate and
+        # report the whole corpus as dangling.
+        p = os.path.normpath(os.path.join(root, cand))
+        if p != root and not p.startswith(root + os.sep):
+            continue
+        if os.path.isfile(p):
+            return p
+    return None
+
+
+def _canon_sitemap_urls(docroot):
+    """Every URL this site's own sitemaps advertise, from the index downward.
+
+    Unlike _sitemap_covered this INCLUDES sitemap-daily.xml: the question here
+    is not "which URLs does the SEO pipeline already list" but "which URLs has
+    this domain invited Google to spend a fetch on", and the growth-owned shard
+    invites just as loudly. Returns None when the index cannot be read, so a
+    bare checkout reports "could not tell" rather than "nothing is advertised".
+    """
+    try:
+        with open(os.path.join(docroot, "sitemap.xml")) as f:
+            index = f.read()
+    except OSError:
+        return None
+    urls, shards = set(), []
+    for loc in _SITEMAP_LOC.findall(index):
+        name = loc.rsplit("/", 1)[-1]
+        if _SITEMAP_SHARD.fullmatch(name):
+            shards.append(name)          # a shard, never a path chosen by <loc>
+        else:
+            urls.add(loc)                # a flat sitemap.xml listing pages directly
+    for name in shards:
+        try:
+            with open(os.path.join(docroot, name)) as f:
+                urls.update(_SITEMAP_LOC.findall(f.read()))
+        except OSError:
+            continue
+    return urls
+
+
+def t_canonical_integrity(ctx):
+    """Audit the canonical and robots tags on the pages the docroot actually serves.
+
+    REPORT-AND-FAIL, unlike t_page_uniqueness: every class this returns False on
+    is a defect with a known mechanism, not a number without a distribution. See
+    the block comment above for the four classes and for why a cross-URL
+    canonical onto a live indexable page is counted rather than flagged.
+
+    Two populations, unioned and deduplicated by file:
+      * a strided sample of each section the ledger declares, whatever the
+        owning technique's status — a retired section is still in the docroot
+        and still part of what Google prices this domain on, the same rule
+        t_crawl_paths and t_page_uniqueness follow;
+      * the URLs the sitemaps advertise, strided to CANON_SITEMAP_CAP. This is
+        the population that matters most: these are the fetches this domain has
+        asked for by name.
+
+    Pure docroot reader — no ctx.write_*, no ledger writes, no network — so it
+    is a member of DOCROOT_VERIFIERS and cmd_seo_status re-reads it after the
+    watchdog rebuilds the corpus. Without that it would report a day late, which
+    on a morning after a build_seo.py change is the difference between "the fix
+    did not work" and "the instrument has not seen it yet".
+    """
+    pages = _dup_docroot_pages(ctx.docroot)
+    by_file, sources = {}, {}
+    prefixes = sorted({p for t in ledger.load_techniques()
+                       for p in (t.get("prefixes") or [])})
+    for pref in prefixes:
+        paths = [(url, fp) for url, fp in pages if url.startswith(pref)]
+        step = max(1, len(paths) // CANON_SECTION_SAMPLE)
+        for url, fp in paths[::step][:CANON_SECTION_SAMPLE]:
+            by_file[fp] = url
+            sources.setdefault(fp, set()).add("section")
+
+    advertised = _canon_sitemap_urls(ctx.docroot)
+    sitemap_paths, sitemap_unserved, n_unserved = set(), [], 0
+    if advertised:
+        for loc in sorted(advertised):
+            path = _canon_normalize(loc, "/")
+            if path is None:
+                continue                 # a sitemap entry on another host is not ours to audit
+            sitemap_paths.add(path)
+        listed = sorted(sitemap_paths)
+        step = max(1, len(listed) // CANON_SITEMAP_CAP)
+        for path in listed[::step][:CANON_SITEMAP_CAP]:
+            fp = _canon_docroot_file(ctx.docroot, path)
+            if fp is None:
+                # Reported, never failed: this site serves four app shells and
+                # may serve other routes without a matching file on disk.
+                n_unserved += 1
+                if len(sitemap_unserved) < 3:
+                    sitemap_unserved.append(path)
+                continue
+            by_file[fp] = path
+            sources.setdefault(fp, set()).add("sitemap")
+
+    missing, multiple, offsite, dangling, to_noindex = [], [], [], [], []
+    advertised_noindex, advertised_elsewhere = [], []
+    consolidating, undetermined, unreadable, read = 0, 0, 0, 0
+    noindex_cache = {}
+
+    def _is_noindex(fp):
+        if fp not in noindex_cache:
+            got = _canon_read_head(fp)
+            noindex_cache[fp] = bool(got and any("noindex" in r for r in got[1]))
+        return noindex_cache[fp]
+
+    def _name(url, bucket):
+        if len(bucket) < 3:
+            bucket.append(url)
+
+    for fp, url in sorted(by_file.items(), key=lambda kv: kv[1]):
+        got = _canon_read_head(fp)
+        if got is None:
+            unreadable += 1
+            continue
+        hrefs, robots, complete = got
+        noindex_cache[fp] = any("noindex" in r for r in robots)
+        read += 1
+        in_sitemap = "sitemap" in sources.get(fp, ())
+        if len(hrefs) > 1:
+            _name(url, multiple)
+            continue
+        if not hrefs:
+            if complete:
+                _name(url, missing)
+            else:
+                undetermined += 1
+            continue
+        target = _canon_normalize(hrefs[0], url)
+        if target is None:
+            _name(f"{url} → {hrefs[0]}", offsite)
+            continue
+        if _canon_same(target, url):
+            if in_sitemap and noindex_cache[fp]:
+                _name(url, advertised_noindex)
+            continue
+        tf = _canon_docroot_file(ctx.docroot, target)
+        if tf is None:
+            _name(f"{url} → {target}", dangling)
+        elif _is_noindex(tf):
+            _name(f"{url} → {target}", to_noindex)
+        else:
+            consolidating += 1
+            if in_sitemap:
+                _name(f"{url} → {target}", advertised_elsewhere)
+
+    if read < CANON_FLOOR:
+        return {"ok": True, "pages": read,
+                "detail": (f"canonical tags NOT AUDITED: only {read} page"
+                           f"{'' if read == 1 else 's'} were readable, below the "
+                           f"{CANON_FLOOR}-page floor — this is a bare checkout rather than a "
+                           f"deployed docroot")}
+
+    n_sitemap = sum(1 for fp in by_file if "sitemap" in sources.get(fp, ()))
+    detail = (f"canonical tags read on {read} pages "
+              f"({n_sitemap} of them advertised in a sitemap"
+              + (f" of {len(sitemap_paths):,} listed" if advertised else ", sitemaps unreadable")
+              + ")")
+    faults = []
+    for label, bucket in (("NO canonical", missing),
+                          ("MORE THAN ONE canonical", multiple),
+                          ("canonical on another host", offsite),
+                          ("canonical to a URL with no page", dangling),
+                          ("canonical to a NOINDEXED page", to_noindex),
+                          ("advertised in a sitemap but NOINDEXED", advertised_noindex),
+                          ("advertised in a sitemap but canonicalized elsewhere",
+                           advertised_elsewhere)):
+        if bucket:
+            faults.append(f"{label}: {', '.join(bucket)}")
+    if consolidating:
+        detail += (f" — {consolidating} page{'' if consolidating == 1 else 's'} canonicalize to "
+                   f"a different live indexable URL, which is legitimate consolidation and is "
+                   f"counted, not flagged")
+    if undetermined:
+        detail += (f" — {undetermined} UNDETERMINED: </head> was past the "
+                   f"{CANON_HEAD_BYTES:,}-byte read cap, so 'no canonical' could not be "
+                   f"distinguished from 'not read far enough'")
+    if sitemap_unserved:
+        detail += (f" — {n_unserved} advertised in a sitemap with no file in the docroot (may be "
+                   f"served by a route rather than a file), e.g. " + ", ".join(sitemap_unserved))
+    if unreadable:
+        detail += f" — {unreadable} page{'' if unreadable == 1 else 's'} could not be read at all"
+    if faults or unreadable:
+        return {"ok": False, "pages": read,
+                "detail": detail + (" — " + "; ".join(faults) if faults else "")}
+    return {"ok": True, "pages": read, "detail": detail + " — no canonical defects found"}
+
+
 REGISTRY = {
     "city_guides": t_city_guides,
     "city_seo_expansion": t_city_seo_expansion,
@@ -2658,6 +3007,7 @@ REGISTRY = {
     "sitemap_daily": t_sitemap_daily,
     "crawl_paths": t_crawl_paths,
     "page_uniqueness": t_page_uniqueness,
+    "canonical_integrity": t_canonical_integrity,
     "indexnow": t_indexnow,
 }
 
@@ -2687,9 +3037,20 @@ REGISTRY = {
 # everything that publishes and before the sitemap and the ping. It reads the
 # docroot only, so its position cannot change its reading — the slot is for the
 # log, where "what we published" then "how duplicated it is" reads in order.
-ORDER = ["fresh_section8", "daily_brief", "city_guides", "city_seo_expansion",
+#
+# canonical_integrity joins crawl_paths and page_uniqueness in the audit block
+# for the same reason and with the same caveat: it is a whole-corpus audit, so
+# it runs after everything that publishes and before the ping. Its position
+# CANNOT change its reading, and the temptation to think otherwise is worth
+# naming, because it consults the sitemaps and sitemap_daily rewrites them.
+# ctx.write_raw stages into ctx.out; the docroot's sitemap.xml only changes
+# when the driver rsyncs afterwards. So this audit reads yesterday's sitemaps
+# beside yesterday's pages wherever it sits in ORDER, which is at least
+# consistent — both halves of every reading are the same age.
+ORDER =["fresh_section8", "daily_brief", "city_guides", "city_seo_expansion",
          "hub_direct_answers", "derived_building_facts", "llms_txt",
-         "sitemap_daily", "crawl_paths", "page_uniqueness", "indexnow"]
+         "sitemap_daily", "crawl_paths", "page_uniqueness",
+         "canonical_integrity", "indexnow"]
 
 # Techniques whose result is a PURE FUNCTION OF THE LIVE DOCROOT, so re-running
 # one is free of side effects and the only thing that can change its answer is
@@ -2729,4 +3090,11 @@ ORDER = ["fresh_section8", "daily_brief", "city_guides", "city_seo_expansion",
 # day, but both consult ctx.out for pages staged-but-not-yet-rsynced and
 # t_crawl_paths records first-sighting dates through ledger.set_state, so
 # re-running them is not free. Make them pure first, then add them here.
-DOCROOT_VERIFIERS = ("derived_building_facts", "page_uniqueness")
+# canonical_integrity satisfies the membership rule as written: it opens files
+# under ctx.docroot and does nothing else — no ctx.write_page/write_raw/unstage,
+# no ledger.set_state, no network. It is in from its first night rather than
+# added later, because the reading it produces is at its most valuable on
+# exactly the mornings the corpus has just been rebuilt, and a canonical defect
+# reported a day late is a defect that shipped to Googlebot overnight.
+DOCROOT_VERIFIERS = ("derived_building_facts", "page_uniqueness",
+                     "canonical_integrity")

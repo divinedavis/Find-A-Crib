@@ -1,30 +1,30 @@
 {
   "build": {
-    "at": "2026-09-13T05:40:43+00:00",
+    "at": "2026-09-14T05:40:42+00:00",
     "changed_urls": 6,
-    "date": "2026-09-13",
+    "date": "2026-09-14",
     "deployed": true,
     "new_urls": 0,
     "seo_corpus": {
       "days_old": 0,
-      "written": "2026-09-13"
+      "written": "2026-09-14"
     },
     "seo_pipeline": {
-      "at": "2026-09-13T05:42:18Z",
-      "changed_urls": 191,
-      "code": "synced-2",
-      "corpus_pages": 49377,
+      "at": "2026-09-14T05:42:18Z",
+      "changed_urls": 1233,
+      "code": "synced-5",
+      "corpus_pages": 49380,
       "head": "unknown",
       "hours_ago": 0.0,
       "phase": "finish",
       "pull": "no-worktree",
       "rc": 0,
-      "started": "2026-09-13T05:40:43Z",
-      "state": "ran clean (source handed over from the checkout: synced-2)",
+      "started": "2026-09-14T05:40:42Z",
+      "state": "ran clean (source handed over from the checkout: synced-5)",
       "step": "done"
     },
     "seo_watchdog": {
-      "at": "2026-09-13T05:42:19+00:00",
+      "at": "2026-09-14T05:42:18+00:00",
       "note": "ran refresh_seo.sh to completion",
       "ok": true,
       "ran": true,
@@ -39,10 +39,12 @@
       },
       "city_seo_expansion": {
         "detail": "hub pages live: dc 103, la 112, sf 36",
-        "ok": true
+        "ok": true,
+        "same_since": "2026-09-14",
+        "unchanged": true
       },
       "crawl_paths": {
-        "detail": "16 of 17 published sections have an inbound internal link (63 docroot pages read) \u2014 ORPHANED, reachable only from sitemap-daily.xml: /embed/ (embeddable_building_lookup_widget) \u2014 the docroot's SEO corpus was last written 2026-09-12 (1d ago) \u2014 click depth from the homepage (2000 pages read, levels 0-3 fully expanded): /dc/neighborhood/ 3, /la/zip/ 3, /sf/neighborhood/ 3, /zip/ 3, /available/ 2, /building/ 2, /dc/buildings/ 2, /guide/is-my-apartment-rent-controlled- 2, +8 shallower \u2014 NOT REACHED within 3 clicks, so deeper than that or reachable only from a sitemap: /embed/ \u2014 3 of 17 audited sections are published under no ACTIVE technique, so nothing rebuilds them; link them or stop publishing them: /available/ [candidate], /brief/ [retired], /developers/ [candidate]",
+        "detail": "16 of 17 published sections have an inbound internal link (63 docroot pages read) \u2014 ORPHANED, reachable only from sitemap-daily.xml: /embed/ (embeddable_building_lookup_widget) \u2014 the docroot's SEO corpus was last written 2026-09-13 (1d ago) \u2014 click depth from the homepage (2000 pages read, levels 0-3 fully expanded): /dc/neighborhood/ 3, /la/zip/ 3, /sf/neighborhood/ 3, /zip/ 3, /available/ 2, /building/ 2, /dc/buildings/ 2, /guide/is-my-apartment-rent-controlled- 2, +8 shallower \u2014 NOT REACHED within 3 clicks, so deeper than that or reachable only from a sitemap: /embed/ \u2014 3 of 17 audited sections are published under no ACTIVE technique, so nothing rebuilds them; link them or stop publishing them: /available/ [candidate], /brief/ [retired], /developers/ [candidate]",
         "ok": false
       },
       "derived_building_facts": {
@@ -52,10 +54,8 @@
         "unchanged": true
       },
       "fresh_section8": {
-        "detail": "304 buildings across 5 boroughs",
-        "ok": true,
-        "same_since": "2026-09-12",
-        "unchanged": true
+        "detail": "303 buildings across 5 boroughs",
+        "ok": true
       },
       "hub_direct_answers": {
         "detail": "answer block on 623 of 623 hub pages (neighborhood 198/198, borough 5/5, zip 165/165, dc hub 103/103, la hub 112/112, sf hub 37/37, city browse hub 3/3)",
@@ -78,11 +78,11 @@
       "page_uniqueness": {
         "detail": "text shared with siblings (8-word shingles, 211 pages read across 10 sections): /brief/ 49% of 182 words (n=17 of 17), /available/ 42% of 226 words (n=24 of 92), /dc/neighborhood/ 38% of 543 words (n=24 of 103), /building/ 33% of 498 words (n=24 of 47,165), /section8/ 22% of 836 words (n=6 of 6), /la/zip/ 20% of 1,414 words (n=24 of 112), /neighborhood/ 19% of 1,030 words (n=24 of 198), /zip/ 16% of 1,237 words (n=24 of 165), +2 less duplicated \u2014 too few pages to compare: /dc/buildings/ (1 page), /developers/ (1 page), /embed/ (1 page), /guide/is-my-apartment-rent-controlled- (3 pages), /la/buildings/ (1 page), /methodology/ (1 page), /sf/buildings/ (1 page)",
         "ok": true,
-        "reread": "post-seo-refresh",
-        "same_since": "2026-09-13"
+        "same_since": "2026-09-13",
+        "unchanged": true
       },
       "sitemap_daily": {
-        "detail": "sitemap-daily.xml with 23 URLs; 17 declared never (retired sections: /brief/), newest lastmod 2026-09-13",
+        "detail": "sitemap-daily.xml with 24 URLs (incl. 1 city hub pages); 17 declared never (retired sections: /brief/), newest lastmod 2026-09-14 \u2014 1 of them live in the docroot but listed in no sitemap the SEO pipeline owns, so they had no crawl path at all until this run",
         "ok": true
       }
     }

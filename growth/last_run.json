@@ -90,12 +90,12 @@
   "indexstatus": {
     "accept_pct": 1.1,
     "accept_pct_mature": 0.0,
-    "added": 0,
-    "at": "2026-09-13T05:11:15+00:00",
+    "added": 2,
+    "at": "2026-09-14T05:11:19+00:00",
     "by_crawl_age": {
       "0-6d": {
-        "accept_pct": 33.3,
-        "fetched": 3,
+        "accept_pct": 25.0,
+        "fetched": 4,
         "indexed": 1
       },
       "14-20d": {
@@ -115,211 +115,227 @@
       },
       "7-13d": {
         "accept_pct": 0.0,
-        "fetched": 3,
+        "fetched": 2,
         "indexed": 0
       }
     },
-    "cohort": 456,
-    "date": "2026-09-13",
-    "dropped": 0,
+    "cohort": 457,
+    "date": "2026-09-14",
+    "dropped": 1,
     "errors": 0,
     "fetched_mature": 80,
     "fetched_pct": 20.8,
     "gained_indexed": 0,
     "indexed_pct": 0.2,
     "inspected": 100,
-    "last_crawl": "2026-09-11",
+    "last_crawl": "2026-09-12",
     "lost_indexed": 0,
     "ok": true,
-    "published_urls": 3908,
-    "read": 456,
-    "rechecked": 100,
+    "published_urls": 3924,
+    "read": 457,
+    "rechecked": 98,
     "states": {
       "crawled_not_indexed": 94,
-      "discovered_not_indexed": 1,
+      "discovered_not_indexed": 2,
       "indexed": 1,
       "unknown_to_google": 360
     }
   },
   "measure": {
-    "at": "2026-09-13T05:11:17+00:00",
+    "at": "2026-09-14T05:11:21+00:00",
     "coverage_pct": 82.4,
-    "date": "2026-09-13",
+    "date": "2026-09-14",
     "days": 1,
     "keywords_covered": 404,
     "keywords_total": 490,
-    "latest_measured_day": "2026-09-12",
+    "latest_measured_day": "2026-09-13",
     "traffic": {
       "arrival_shape": {
         "all": {
-          "busiest_6h_pct": 55.0,
-          "n": 120,
-          "night_pct": 3.3,
-          "peak_hour_utc": 22
+          "busiest_6h_pct": 42.7,
+          "n": 379,
+          "night_pct": 3.4,
+          "peak_hour_utc": 23
         },
         "direct": {
-          "busiest_6h_pct": 56.2,
-          "n": 96,
-          "night_pct": 2.1,
-          "peak_hour_utc": 22
+          "busiest_6h_pct": 43.6,
+          "n": 319,
+          "night_pct": 3.4,
+          "peak_hour_utc": 23
         },
         "organic": {
-          "busiest_6h_pct": 50.0,
-          "n": 22,
-          "night_pct": 9.1,
-          "peak_hour_utc": 22
+          "busiest_6h_pct": 37.0,
+          "n": 54,
+          "night_pct": 3.7,
+          "peak_hour_utc": 23
         }
       },
       "by_channel": {
-        "direct": 96,
-        "internal": 2,
-        "organic": 22
+        "ai": 2,
+        "direct": 319,
+        "internal": 3,
+        "organic": 54,
+        "referral": 1
       },
       "by_hour_utc": {
         "all": [
+          20,
+          32,
+          27,
+          26,
+          17,
+          7,
+          13,
           6,
-          3,
-          10,
-          5,
-          5,
-          3,
-          3,
-          3,
-          0,
-          1,
-          0,
-          3,
+          6,
           1,
           3,
-          4,
+          3,
+          8,
           5,
-          5,
-          2,
-          5,
-          5,
-          1,
-          10,
-          24,
-          13
+          13,
+          17,
+          19,
+          19,
+          19,
+          22,
+          19,
+          20,
+          18,
+          39
         ],
         "direct": [
-          4,
-          3,
-          9,
-          5,
-          4,
+          16,
+          31,
+          22,
+          23,
+          15,
+          6,
+          12,
           2,
-          1,
-          1,
-          0,
-          0,
-          0,
-          2,
+          4,
           1,
           3,
-          4,
+          3,
           5,
           3,
-          2,
-          3,
-          5,
-          1,
-          9,
-          17,
-          12
+          11,
+          13,
+          14,
+          18,
+          18,
+          18,
+          15,
+          19,
+          15,
+          32
         ],
         "organic": [
+          3,
+          1,
+          4,
+          3,
+          1,
+          1,
+          1,
+          4,
           2,
           0,
           0,
           0,
+          3,
+          2,
+          2,
+          3,
+          5,
           1,
+          1,
+          4,
+          3,
           1,
           2,
-          1,
-          0,
-          1,
-          0,
-          1,
-          0,
-          0,
-          0,
-          0,
-          2,
-          0,
-          2,
-          0,
-          0,
-          1,
-          7,
-          1
+          7
         ]
       },
-      "by_src": {},
-      "direct_deep": 3,
-      "new": 86,
+      "by_src": {
+        "chatgpt.com": 2
+      },
+      "direct_deep": 2,
+      "new": 325,
       "new_window_days": 30,
-      "returning": 34,
+      "returning": 54,
       "top_paths": [
         [
           "/",
-          117
+          376
         ],
         [
-          "/building/brooklyn/6910-avenue-u-3084290036/",
-          1
+          "/guide/what-is-rent-stabilization/",
+          2
         ],
         [
-          "/guide/rent-stabilized-lease-renewal-and-rent-increases/",
-          1
-        ],
-        [
-          "/guide/rent-stabilized-tenant-rights/",
+          "/la/",
           1
         ]
       ],
       "top_referrers": [
         [
           "www.google.com",
-          21
+          48
         ],
         [
           "com.google.android.googlequicksearchbox",
+          2
+        ],
+        [
+          "duckduckgo.com",
+          2
+        ],
+        [
+          "accounts.google.com",
+          1
+        ],
+        [
+          "github.com",
+          1
+        ],
+        [
+          "www.bing.com",
           1
         ]
       ],
-      "visitors": 120
+      "visitors": 379
     }
   },
   "outreach": {
-    "at": "2026-09-13T05:11:18+00:00",
-    "date": "2026-09-13",
+    "at": "2026-09-14T05:11:22+00:00",
+    "date": "2026-09-14",
     "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
     "ok": false
   },
   "scout": {
-    "at": "2026-09-13T05:11:18+00:00",
-    "date": "2026-09-13",
+    "at": "2026-09-14T05:11:22+00:00",
+    "date": "2026-09-14",
     "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
     "ok": false
   },
   "searchconsole": {
-    "at": "2026-09-13T05:00:12+00:00",
-    "clicks": 232,
-    "date": "2026-09-13",
-    "impressions": 282,
+    "at": "2026-09-14T05:00:11+00:00",
+    "clicks": 241,
+    "date": "2026-09-14",
+    "impressions": 295,
     "nonbranded_clicks": 0,
     "nonbranded_impressions": 0,
-    "page_clicks": 253,
-    "page_impressions": 687,
+    "page_clicks": 264,
+    "page_impressions": 730,
     "serving_branded_only": 13,
     "serving_ever": 284,
     "serving_nonbranded": 0,
     "serving_pages": 14,
-    "serving_stable": 13,
+    "serving_stable": 14,
     "serving_unattributed": 1,
     "share_pct": 0.0,
     "tracked_ranking": 0,
-    "window": "2026-09-04..2026-09-11"
+    "window": "2026-09-05..2026-09-12"
   }
 }

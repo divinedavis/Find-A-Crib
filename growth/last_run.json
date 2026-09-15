@@ -1,36 +1,42 @@
 {
   "build": {
-    "at": "2026-09-14T05:40:42+00:00",
+    "at": "2026-09-15T05:40:40+00:00",
     "changed_urls": 6,
-    "date": "2026-09-14",
+    "date": "2026-09-15",
     "deployed": true,
     "new_urls": 0,
     "seo_corpus": {
       "days_old": 0,
-      "written": "2026-09-14"
+      "written": "2026-09-15"
     },
     "seo_pipeline": {
-      "at": "2026-09-14T05:42:18Z",
-      "changed_urls": 1233,
-      "code": "synced-5",
+      "at": "2026-09-15T05:42:13Z",
+      "changed_urls": 35,
+      "code": "synced-1",
       "corpus_pages": 49380,
       "head": "unknown",
       "hours_ago": 0.0,
       "phase": "finish",
       "pull": "no-worktree",
       "rc": 0,
-      "started": "2026-09-14T05:40:42Z",
-      "state": "ran clean (source handed over from the checkout: synced-5)",
+      "started": "2026-09-15T05:40:41Z",
+      "state": "ran clean (source handed over from the checkout: synced-1)",
       "step": "done"
     },
     "seo_watchdog": {
-      "at": "2026-09-14T05:42:18+00:00",
+      "at": "2026-09-15T05:42:14+00:00",
       "note": "ran refresh_seo.sh to completion",
       "ok": true,
       "ran": true,
       "rc": 0
     },
     "techniques": {
+      "canonical_integrity": {
+        "detail": "canonical tags read on 1807 pages (1500 of them advertised in a sitemap of 3,950 listed) \u2014 no canonical defects found",
+        "ok": true,
+        "reread": "post-seo-refresh",
+        "same_since": "2026-09-15"
+      },
       "city_guides": {
         "detail": "3 of 3 city guides live with their data caveat",
         "ok": true,
@@ -44,8 +50,8 @@
         "unchanged": true
       },
       "crawl_paths": {
-        "detail": "16 of 17 published sections have an inbound internal link (63 docroot pages read) \u2014 ORPHANED, reachable only from sitemap-daily.xml: /embed/ (embeddable_building_lookup_widget) \u2014 the docroot's SEO corpus was last written 2026-09-13 (1d ago) \u2014 click depth from the homepage (2000 pages read, levels 0-3 fully expanded): /dc/neighborhood/ 3, /la/zip/ 3, /sf/neighborhood/ 3, /zip/ 3, /available/ 2, /building/ 2, /dc/buildings/ 2, /guide/is-my-apartment-rent-controlled- 2, +8 shallower \u2014 NOT REACHED within 3 clicks, so deeper than that or reachable only from a sitemap: /embed/ \u2014 3 of 17 audited sections are published under no ACTIVE technique, so nothing rebuilds them; link them or stop publishing them: /available/ [candidate], /brief/ [retired], /developers/ [candidate]",
-        "ok": false
+        "detail": "17 of 17 published sections have an inbound internal link (63 docroot pages read) \u2014 single inbound source: /available/ \u2190 nyc browse hub, /dc/neighborhood/ \u2190 dc browse hub, /embed/ \u2190 developers portal, /la/zip/ \u2190 la browse hub, /sf/neighborhood/ \u2190 sf browse hub, /zip/ \u2190 building page \u2014 click depth from the homepage (615 pages read, levels 0-3 fully expanded): /dc/neighborhood/ 3, /la/zip/ 3, /sf/neighborhood/ 3, /zip/ 3, /available/ 2, /building/ 2, /dc/buildings/ 2, /embed/ 2, +9 shallower \u2014 3 of 17 audited sections are published under no ACTIVE technique, so nothing rebuilds them; link them or stop publishing them: /available/ [candidate], /brief/ [retired], /developers/ [candidate]",
+        "ok": true
       },
       "derived_building_facts": {
         "detail": "comparison block on 399 of 400 sampled building pages (99%) across 47,165 published",
@@ -55,7 +61,9 @@
       },
       "fresh_section8": {
         "detail": "303 buildings across 5 boroughs",
-        "ok": true
+        "ok": true,
+        "same_since": "2026-09-15",
+        "unchanged": true
       },
       "hub_direct_answers": {
         "detail": "answer block on 623 of 623 hub pages (neighborhood 198/198, borough 5/5, zip 165/165, dc hub 103/103, la hub 112/112, sf hub 37/37, city browse hub 3/3)",
@@ -82,7 +90,7 @@
         "unchanged": true
       },
       "sitemap_daily": {
-        "detail": "sitemap-daily.xml with 24 URLs (incl. 1 city hub pages); 17 declared never (retired sections: /brief/), newest lastmod 2026-09-14 \u2014 1 of them live in the docroot but listed in no sitemap the SEO pipeline owns, so they had no crawl path at all until this run",
+        "detail": "sitemap-daily.xml with 24 URLs (incl. 1 city hub pages); 17 declared never (retired sections: /brief/), newest lastmod 2026-09-15 \u2014 1 of them live in the docroot but listed in no sitemap the SEO pipeline owns, so they had no crawl path at all until this run",
         "ok": true
       }
     }

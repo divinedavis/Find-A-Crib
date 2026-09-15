@@ -191,6 +191,7 @@ BORO_SLUG = {"M": "manhattan", "Bk": "brooklyn", "Q": "queens",
 # record a neighborhood, LA records only a ZIP — and every page states only
 # stats that city holds: LA has no reported rents, DC has no build years.
 MIN_CITY_HUB = 5      # below this a place gets no page rather than a thin one
+ZIP_HUB_MIN = 5       # same floor for the NYC ZIP tier — see zip_hubs below
 CITY_LIST_CAP = 300   # addresses listed per page; overflow is stated, not hidden
 
 CITY_HUBS = {
@@ -2885,6 +2886,65 @@ def main():
             urls.append((canonical, "0.6", b["b"]))
             promoted_bbls.add(b["bbl"])
 
+    # ---- which ZIP codes get a hub page: decided HERE, once ---------------
+    # The ZIP hubs themselves are built much further down, but the neighborhood
+    # and borough pages above them now link into that tier, so membership has
+    # to be settled before the first page that mentions it is written. One dict,
+    # three readers: a link can never point at a ZIP that fell under the
+    # ZIP_HUB_MIN floor and got no page.
+    #
+    # WHY THE LINKS WERE ADDED, 2026-09-15. t_crawl_paths has reported for weeks
+    # that /zip/'s single inbound source is "building page", and it is the only
+    # section on the site whose one source is a tier that is 92% noindex,follow:
+    # index_triage() promotes ~3,000 of 47,165 buildings and leaves the rest
+    # noindexed, so the crawl path into 165 indexable ZIP hubs ran through pages
+    # Google is told to discard. It showed: in the 2026-09-15 URL Inspection
+    # census /zip/ read 4 of 40 ever fetched (10%), the worst of the established
+    # NYC families, against /neighborhood/ 37.5%, /borough/ 50% and /buildings/
+    # 100% — the three tiers that now link into it. Nothing here publishes a new
+    # page; it links pages that have been live for weeks from pages a crawler
+    # actually reaches, and the reciprocal is one a reader wants anyway, since
+    # the ZIP hubs have always linked back out to their neighborhoods.
+    by_zip = defaultdict(list)
+    for b in blds:
+        if b.get("z"):
+            by_zip[str(b["z"])].append(b)
+    zip_hubs = {}                  # zip -> (buildings sorted by address, dominant borough)
+    for z, zitems in by_zip.items():
+        if len(zitems) < ZIP_HUB_MIN:
+            continue               # skip thin pages
+        zboro = defaultdict(int)
+        for x in zitems:
+            zboro[x["b"]] += 1
+        zip_hubs[z] = (sorted(zitems, key=lambda x: x.get("a", "")),
+                       max(zboro, key=zboro.get))
+    zips_by_boro = defaultdict(list)
+    for z, (zitems, dom) in zip_hubs.items():
+        zips_by_boro[dom].append((z, len(zitems)))
+
+    def zip_links_html(zips, counts=None):
+        """A ZIP link row, or "" when there is nothing to link.
+
+        `counts` is the ZIP's own citywide building total and is shown only
+        where the page can support that number. The borough page can — it is
+        listing the whole tier. A neighborhood page cannot: the only count it
+        knows is how many of ITS buildings fall in that ZIP, and rendering that
+        in the same "ZIP 11221 (12)" shape the borough page uses would read as
+        the ZIP's size on one page and as something else on the other. So the
+        neighborhood page links the bare ZIP rather than publish an ambiguous
+        figure.
+
+        Returns "" rather than an empty <h2> so a borough or neighborhood with
+        no qualifying ZIP does not publish a heading over nothing.
+        """
+        zips = sorted(zips)
+        if not zips:
+            return ""
+        return "".join(
+            f"<a href=\"{zip_url(z)}\">ZIP {esc(z)}"
+            + (f" ({counts[z]:,})" if counts else "") + "</a>"
+            for z in zips)
+
     # ---- neighborhood pages ----
     for (boro, nb), items in by_nb.items():
         boroname = BORO_NAME.get(boro, "New York")
@@ -2899,6 +2959,9 @@ def main():
         # alphabetically. The promoted buildings — advertised now, among the
         # largest, or already earning search impressions — get their own block
         # above it, with the reason they are there written next to them.
+        # ZIP codes this neighborhood's own buildings actually sit in. No count:
+        # see zip_links_html for why this page is not entitled to print one.
+        nb_zips = zip_links_html({str(x.get("z") or "") for x in items} & set(zip_hubs))
         notable = [x for x in items if x["bbl"] in promoted_bbls][:40]
         notable_html = ""
         if notable:
@@ -2932,6 +2995,13 @@ def main():
                 + f"<a class='cta' href='/'>Explore {esc(nb)} on the map →</a>"
                 + VOUCHER_XLINK
                 + notable_html
+                # The ZIP hubs have always linked out to the neighborhoods they
+                # overlap; this is the reciprocal. Only ZIPs actually present in
+                # THIS neighborhood's buildings, so the link is a fact about the
+                # page's own records rather than a borough-wide link block
+                # stamped onto every page.
+                + (f"<h2>ZIP codes in {esc(nb)}</h2>"
+                   f"<div class='cols'>{nb_zips}</div>" if nb_zips else "")
                 + f"<h2>All {n:,} buildings</h2><div class='cols'>{links}</div>")
         nb_faq = [(f"How many rent-stabilized buildings are in {nb}, {boroname}?",
                    f"There are {n:,} registered rent-stabilized buildings in {nb}, {boroname}, "
@@ -2976,6 +3046,8 @@ def main():
         total = sum(c for _, c in nbs)
         links = "".join(f"<a href=\"{nb_url(boro, nb)}\">{esc(nb)} ({c:,})</a>"
                         for nb, c in sorted(nbs))
+        boro_zip_pairs = dict(zips_by_boro.get(boro, []))
+        boro_zips = zip_links_html(boro_zip_pairs, counts=boro_zip_pairs)
         body = (f"<div class='crumbs'><a href='/'>Home</a></div>"
                 f"<h1>Rent-stabilized buildings in {esc(boroname)}</h1>"
                 + answer_block([
@@ -2990,7 +3062,14 @@ def main():
                 f"<p><a href='{boro_list_url(boro,'largest')}'>Largest buildings in {esc(boroname)}</a> "
                 f"&nbsp;·&nbsp; <a href='{boro_list_url(boro,'oldest')}'>Oldest buildings</a></p>"
                 + VOUCHER_XLINK
-                + f"<h2>Neighborhoods</h2><div class='cols'>{links}</div>")
+                + f"<h2>Neighborhoods</h2><div class='cols'>{links}</div>"
+                # The second way into the same buildings, and the one crawl path
+                # into /zip/ that does not run through the noindexed building
+                # tier. A ZIP is listed under the borough that holds most of its
+                # buildings, which is the same rule its own breadcrumb uses, so
+                # the two cannot point at different boroughs for one ZIP.
+                + (f"<h2>ZIP codes in {esc(boroname)}</h2>"
+                   f"<div class='cols'>{boro_zips}</div>" if boro_zips else ""))
         boro_faq = [(f"How many rent-stabilized buildings are in {boroname}?",
                      f"There are {total:,} registered rent-stabilized buildings across {len(nbs)} "
                      f"neighborhoods in {boroname}, according to NY State DHCR registration data.")]
@@ -2998,7 +3077,8 @@ def main():
         boro_crumb = breadcrumb([("Home", SITE + "/"), (boroname, canonical)])
         write(url.strip("/") + "/index.html",
               page(f"Rent-stabilized buildings in {boroname} ({total}) | Find A Crib",
-                   f"Browse {total} rent-stabilized buildings across {boroname} by neighborhood.",
+                   f"Browse {total} rent-stabilized buildings across {boroname} by "
+                   + ("neighborhood and ZIP code." if boro_zips else "neighborhood."),
                    canonical, body, [boro_crumb, faq_jsonld(boro_faq)]))
         urls.append((canonical, "0.8", boro))
 
@@ -3044,19 +3124,12 @@ def main():
 
     # ===== long-tail hub + listicle pages (high-intent searches) =====
     # ---- ZIP-code hubs: "rent-stabilized buildings in ZIP 11221" ----
-    by_zip = defaultdict(list)
-    for b in blds:
-        if b.get("z"):
-            by_zip[str(b["z"])].append(b)
-    for z, items in by_zip.items():
-        if len(items) < 5:
-            continue  # skip thin pages
-        items = sorted(items, key=lambda x: x.get("a", ""))
-        boro_counts = defaultdict(int)
-        for x in items:
-            boro_counts[x["b"]] += 1
-        dom = max(boro_counts, key=boro_counts.get)  # dominant borough for breadcrumb
-        boroname = BORO_NAME.get(dom, "New York")
+    # Membership, the address sort and the dominant borough were all settled in
+    # zip_hubs above, because the neighborhood and borough pages link into this
+    # tier and are written first. Recomputing them here would let the links and
+    # the pages drift apart on a future edit.
+    for z, (items, dom) in zip_hubs.items():
+        boroname = BORO_NAME.get(dom, "New York")     # dominant borough: breadcrumb + copy
         nbs = sorted({x["nb"] for x in items if x.get("nb")})
         url = zip_url(z)
         canonical = SITE + url

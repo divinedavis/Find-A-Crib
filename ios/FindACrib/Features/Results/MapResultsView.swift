@@ -13,6 +13,9 @@ struct MapResultsView: View {
     @State private var showLocation = false
     @State private var initialFit = true
     @State private var calloutDrag: CGFloat = 0
+    /// Computed with the results, not in `body`: as a computed property it
+    /// rebuilt up to 47k entries on every frame of the callout drag.
+    @State private var pricesByBBL: [String: Int] = [:]
 
     var body: some View {
         VStack(spacing: 0) {
@@ -77,6 +80,9 @@ struct MapResultsView: View {
         .sheet(isPresented: $showLocation) { LocationPickerView(selected: $query.locations) }
         .task(id: query) {
             results = SearchEngine.run(query, store: store)
+            var prices: [String: Int] = [:]
+            for b in results { if let p = store.price(b) ?? store.voucherAvail(b)?.p { prices[b.bbl] = p } }
+            pricesByBBL = prices
             // A custom map area IS the viewport the user was looking at, so
             // reopening the map lands exactly there instead of on all of NYC.
             if case .mapArea(let box)? = query.locations.first(where: { if case .mapArea = $0 { return true }; return false }) {
@@ -97,12 +103,6 @@ struct MapResultsView: View {
         if !path.isEmpty { path.removeLast() }
         if case .results? = path.last { path[path.count - 1] = .results(query) } else { path.append(.results(query)) }
         nav.searchPath = path
-    }
-
-    private var pricesByBBL: [String: Int] {
-        var d: [String: Int] = [:]
-        for b in results { if let p = store.price(b) ?? store.voucherAvail(b)?.p { d[b.bbl] = p } }
-        return d
     }
 }
 

@@ -67,6 +67,10 @@ final class FindACribUITests: XCTestCase {
         field.tap()
         let brooklyn = app.buttons["loc-Brooklyn"]
         XCTAssertTrue(brooklyn.waitForExistence(timeout: 10))
+        // The borough count now comes from DataStore.boroughCounts (built at
+        // decode) rather than a scan in body; it must still show a real number.
+        let counted = NSPredicate(format: "label MATCHES %@", ".*[1-9][0-9,]* buildings.*")
+        expectation(for: counted, evaluatedWith: brooklyn); waitForExpectations(timeout: 10)
         brooklyn.tap()
         // the chip row appears inside the sheet once the selection lands; a tap
         // during the sheet's presentation animation can be dropped, so retry once

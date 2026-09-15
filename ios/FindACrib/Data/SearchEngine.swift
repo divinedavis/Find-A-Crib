@@ -11,23 +11,30 @@ enum SearchEngine {
     }
 
     static func run(_ q: SearchQuery, store: DataStore) -> [Building] {
+        let n = q.normalized
         var out: [Building] = []
         out.reserveCapacity(1024)
-        for b in pool(q, store) where matches(b, q, store) { out.append(b) }
+        for b in pool(n, store) where matchesNormalized(b, n, store) { out.append(b) }
         return sort(out, q.sort, store)
     }
 
     static func count(_ q: SearchQuery, store: DataStore) -> Int {
-        var n = 0
-        for b in pool(q, store) where matches(b, q, store) { n += 1 }
-        return n
+        let n = q.normalized
+        var c = 0
+        for b in pool(n, store) where matchesNormalized(b, n, store) { c += 1 }
+        return c
     }
 
     /// Every building in the dataset is rent-stabilized; the Show flags narrow
     /// it (AND). Price filters use the real asking rent when the search is
     /// available-only, otherwise the building's price-or-ZIP-estimate.
     static func matches(_ b: Building, _ raw: SearchQuery, _ store: DataStore) -> Bool {
-        let q = raw.normalized
+        matchesNormalized(b, raw.normalized, store)
+    }
+
+    /// `matches` with the query already normalized. The scans call this so
+    /// the query is copied once per search, not once per building.
+    static func matchesNormalized(_ b: Building, _ q: SearchQuery, _ store: DataStore) -> Bool {
         if !q.locations.isEmpty, !q.locations.contains(where: { $0.matches(b) }) { return false }
         if q.availableOnly {
             guard let p = store.price(b) else { return false }
@@ -61,10 +68,15 @@ enum SearchEngine {
 
     static func sort(_ xs: [Building], _ order: SortOrder, _ store: DataStore) -> [Building] {
         switch order {
+        // Price is looked up once per row, then sorted on: calling priceOf
+        // inside the comparator was two dictionary hits per comparison, ~1.5M
+        // for an all-of-New-York search.
         case .cheapest:
-            return xs.sorted { (store.priceOf($0) ?? .max, $0.a) < (store.priceOf($1) ?? .max, $1.a) }
+            return xs.map { (store.priceOf($0) ?? .max, $0) }
+                .sorted { ($0.0, $0.1.a) < ($1.0, $1.1.a) }.map(\.1)
         case .priciest:
-            return xs.sorted { (store.priceOf($0) ?? -1, $0.a) > (store.priceOf($1) ?? -1, $1.a) }
+            return xs.map { (store.priceOf($0) ?? -1, $0) }
+                .sorted { ($0.0, $0.1.a) > ($1.0, $1.1.a) }.map(\.1)
         case .fewestViolations:
             return xs.sorted { ($0.openViolations, $0.a) < ($1.openViolations, $1.a) }
         case .mostUnits:

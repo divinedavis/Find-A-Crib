@@ -39,6 +39,8 @@ final class DataStore {
     /// its borough in the results header.
     private(set) var boroughOfNeighborhood: [String: String] = [:]
     private(set) var zips: [String] = []
+    /// Building count per borough code, for the location picker's rows.
+    private(set) var boroughCounts: [String: Int] = [:]
 
     static let host = URL(string: "https://findacrib.com/")!
     /// Advertised rents, vouchers and lotteries are New York feeds; the other
@@ -80,6 +82,50 @@ final class DataStore {
     struct Payload: Sendable {
         var buildings: [Building]; var records: [String: BuildingRecord] = [:]
         var listings: ListingsBlob; var s8: S8Blob; var fmr: FMRTable; var hcr: HCRBlob
+        /// Built alongside the decode, off the main actor. Nil only for payloads
+        /// the unit tests assemble by hand; applyPayload builds it then.
+        var index: Index? = nil
+    }
+
+    /// The four small New York feeds. They change daily and the building file
+    /// does not, so a refresh that only touched these re-decodes only these.
+    struct Extras: Sendable {
+        var listings: ListingsBlob; var s8: S8Blob; var fmr: FMRTable; var hcr: HCRBlob
+    }
+
+    /// Every lookup table derived from the building array. Building these on
+    /// the main actor was five-plus passes over 47k rows blocking launch
+    /// (2026-09-15), so decodeLocal builds them on its detached task instead.
+    struct Index: Sendable {
+        var byBBL: [String: Building] = [:]
+        var byNeighborhood: [String: [Building]] = [:]
+        var neighborhoods: [(name: String, borough: String, count: Int)] = []
+        var boroughOfNeighborhood: [String: String] = [:]
+        var zips: [String] = []
+        var regions: [(name: String, sub: String, count: Int)] = []
+        var boroughCounts: [String: Int] = [:]
+    }
+
+    nonisolated static func buildIndex(_ buildings: [Building], city: City) -> Index {
+        var ix = Index()
+        ix.byBBL.reserveCapacity(buildings.count)
+        var nbCount: [String: (String, Int)] = [:]
+        var zipSet = Set<String>()
+        for b in buildings {
+            if ix.byBBL[b.bbl] == nil { ix.byBBL[b.bbl] = b }
+            if let n = b.nb {
+                ix.byNeighborhood[n, default: []].append(b)
+                nbCount[n, default: (b.b, 0)].1 += 1
+            }
+            if let z = b.z, z.count == 5 { zipSet.insert(z) }
+            ix.boroughCounts[b.b, default: 0] += 1
+        }
+        ix.neighborhoods = nbCount.map { (name: $0.key, borough: Borough.name($0.value.0), count: $0.value.1) }
+            .sorted { $0.name < $1.name }
+        ix.boroughOfNeighborhood = nbCount.mapValues { $0.0 }
+        ix.zips = zipSet.sorted()
+        ix.regions = regions(for: city, buildings: buildings, neighborhoods: ix.neighborhoods)
+        return ix
     }
 
     /// `bundleOnly` is for the unit tests: the test host shares the app's
@@ -110,13 +156,20 @@ final class DataStore {
            let full = try? dec.decode([String: BuildingRecord].self, from: inflated) {
             records = full
         }
+        let e = decodeExtras(city, bundleOnly: bundleOnly)
+        return Payload(buildings: buildings, records: records, listings: e.listings,
+                       s8: e.s8, fmr: e.fmr, hcr: e.hcr, index: buildIndex(buildings, city: city))
+    }
+
+    nonisolated static func decodeExtras(_ city: City, bundleOnly: Bool = false) -> Extras {
+        let dec = JSONDecoder()
         func opt<T: Decodable>(_ name: String, _ empty: T) -> T {
             guard city.hasNYCExtras, let u = localURL(name, bundleOnly: bundleOnly), let d = try? Data(contentsOf: u) else { return empty }
             do { return try dec.decode(T.self, from: d) }
             catch { NSLog("FindACrib: %@ failed to decode: %@", name, String(describing: error)); return empty }
         }
-        return Payload(buildings: buildings, records: records, listings: opt("listings.json", ListingsBlob()),
-                       s8: opt("s8.json", S8Blob()), fmr: opt("fmr.json", [:]), hcr: opt("hcr.json", HCRBlob()))
+        return Extras(listings: opt("listings.json", ListingsBlob()), s8: opt("s8.json", S8Blob()),
+                      fmr: opt("fmr.json", [:]), hcr: opt("hcr.json", HCRBlob()))
     }
 
     func load() async {
@@ -143,7 +196,7 @@ final class DataStore {
         if persist { UserDefaults.standard.set(c.id, forKey: "city") }
         loadError = nil
         buildings = []; byBBL = [:]; records = [:]; byNeighborhood = [:]
-        regions = []; neighborhoods = []; zips = []
+        regions = []; neighborhoods = []; zips = []; boroughCounts = [:]
         listings = ListingsBlob(); s8 = S8Blob(); fmr = [:]; hcr = HCRBlob()
         hcrBuildings = []; hcrByBBL = [:]
         loaded = false
@@ -151,26 +204,30 @@ final class DataStore {
     }
 
     func applyPayload(_ p: Payload) {
+        let ix = p.index ?? Self.buildIndex(p.buildings, city: city)
         buildings = p.buildings
         records = p.records
-        byBBL = Dictionary(p.buildings.map { ($0.bbl, $0) }, uniquingKeysWith: { a, _ in a })
-        byNeighborhood = Dictionary(grouping: p.buildings.compactMap { b in b.nb.map { ($0, b) } },
-                                    by: { $0.0 }).mapValues { $0.map(\.1) }
+        byBBL = ix.byBBL
+        byNeighborhood = ix.byNeighborhood
         listings = p.listings; s8 = p.s8; fmr = p.fmr; hcr = p.hcr
         dataAsOf = p.listings.updatedDate
         indexHCR()
-        var nbCount: [String: (String, Int)] = [:]
-        var zipSet = Set<String>()
-        for b in p.buildings {
-            if let n = b.nb { nbCount[n, default: (b.b, 0)].1 += 1 }
-            if let z = b.z, z.count == 5 { zipSet.insert(z) }
-        }
-        neighborhoods = nbCount.map { (name: $0.key, borough: Borough.name($0.value.0), count: $0.value.1) }
-            .sorted { $0.name < $1.name }
-        boroughOfNeighborhood = nbCount.mapValues { $0.0 }
-        zips = zipSet.sorted()
-        regions = Self.regions(for: city, buildings: p.buildings, neighborhoods: neighborhoods)
+        neighborhoods = ix.neighborhoods
+        boroughOfNeighborhood = ix.boroughOfNeighborhood
+        zips = ix.zips
+        regions = ix.regions
+        boroughCounts = ix.boroughCounts
         loaded = true
+    }
+
+    /// Swap in fresh New York feeds without touching the building array.
+    private func applyExtras(_ e: Extras) {
+        // indexHCR mints synthetic rows into byBBL; drop the old ones first so
+        // a lottery that closed does not linger as a stray pin.
+        for b in hcrBuildings where HCRListing.isSynthetic(b.bbl) { byBBL[b.bbl] = nil }
+        listings = e.listings; s8 = e.s8; fmr = e.fmr; hcr = e.hcr
+        dataAsOf = e.listings.updatedDate
+        indexHCR()
     }
 
     /// This building's full record, if its city publishes one and the blob has
@@ -183,9 +240,10 @@ final class DataStore {
         -> [(name: String, sub: String, count: Int)] {
         switch city.regionKind {
         case .borough:
-            return Borough.all.map { b in
-                (name: b.name, sub: city.short, count: buildings.lazy.filter { $0.b == b.code }.count)
-            }.filter { $0.count > 0 }
+            var n: [String: Int] = [:]
+            for b in buildings { n[b.b, default: 0] += 1 }
+            return Borough.all.map { b in (name: b.name, sub: city.short, count: n[b.code] ?? 0) }
+                .filter { $0.count > 0 }
         case .neighborhood:
             return neighborhoods.map { (name: $0.name, sub: city.short, count: $0.count) }
         case .zip:
@@ -203,18 +261,33 @@ final class DataStore {
         guard !refreshing else { return }
         refreshing = true; defer { refreshing = false }
         let c = city
-        var changed = false
-        for name in Self.files(for: c) {
-            let cacheAs = Self.cacheName(name, in: c)
-            if await Self.fetchIfChanged(name, cacheAs: cacheAs) { changed = true }
+        // The files are independent, so fetch them together: five conditional
+        // GETs one after another were ~4 extra round trips on every launch.
+        let changed: Set<String> = await withTaskGroup(of: String?.self) { g in
+            for name in Self.files(for: c) {
+                let cacheAs = Self.cacheName(name, in: c)
+                g.addTask { await Self.fetchIfChanged(name, cacheAs: cacheAs) ? name : nil }
+            }
+            var s = Set<String>()
+            for await n in g { if let n { s.insert(n) } }
+            return s
         }
+        guard c == city else { return }   // the user switched away mid-fetch
         // A city fetched for the first time has no payload yet, so decode even
         // when nothing "changed" — otherwise its first launch stays empty.
-        guard c == city else { return }   // the user switched away mid-fetch
-        if changed || !loaded, let p = try? await Task.detached(priority: .utility, operation: { try Self.decodeLocal(c) }).value {
+        // Only the building file or the record blob needs the 11 MB decode;
+        // listings.json changes daily and used to trigger it on most launches.
+        let core = Set([c.dataPath] + (c.recordsPath.map { [$0] } ?? []))
+        if !loaded || !changed.isDisjoint(with: core) {
+            if let p = try? await Task.detached(priority: .utility, operation: { try Self.decodeLocal(c) }).value {
+                guard c == city else { return }
+                applyPayload(p)
+                loadError = nil
+            }
+        } else if !changed.isEmpty {
+            let e = await Task.detached(priority: .utility) { Self.decodeExtras(c) }.value
             guard c == city else { return }
-            applyPayload(p)
-            loadError = nil
+            applyExtras(e)
         }
     }
 

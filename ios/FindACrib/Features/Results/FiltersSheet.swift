@@ -70,7 +70,11 @@ struct FiltersSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.foregroundStyle(SE.ink2) } }
             .onAppear { draft = query.normalized; recount() }
-            .onChange(of: draft) { _, _ in recount() }
+            // Each count is a scan of the whole city; coalesce quick taps into one.
+            .task(id: draft) {
+                try? await Task.sleep(for: .milliseconds(150))
+                if !Task.isCancelled { recount() }
+            }
         }
     }
     private func recount() { count = SearchEngine.count(draft, store: store) }

@@ -119,6 +119,31 @@ final class SearchEngineTests: XCTestCase {
         XCTAssertEqual(SearchEngine.count(q, store: Self.store), SearchEngine.count(n, store: Self.store))
     }
 
+    /// The picker's borough counts come from the index built at decode time,
+    /// not from a scan in `body`; they must still agree with the rows.
+    func testBoroughCountsMatchTheRows() {
+        let s = Self.store!
+        XCTAssertFalse(s.boroughCounts.isEmpty)
+        for (code, n) in s.boroughCounts {
+            XCTAssertEqual(n, s.buildings.lazy.filter { $0.b == code }.count, code)
+        }
+        for r in s.regions {
+            let code = Borough.all.first { $0.name == r.name }?.code ?? ""
+            XCTAssertEqual(r.count, s.boroughCounts[code], r.name)
+        }
+    }
+
+    /// The price sort looks each price up once, then sorts; same order as
+    /// comparing priceOf inside the comparator.
+    func testPriceSortMatchesTheComparatorSort() {
+        let s = Self.store!
+        let xs = Array(s.buildings.prefix(3000))
+        let naive = xs.sorted { (s.priceOf($0) ?? .max, $0.a) < (s.priceOf($1) ?? .max, $1.a) }
+        XCTAssertEqual(SearchEngine.sort(xs, .cheapest, s).map(\.bbl), naive.map(\.bbl))
+        let naiveHi = xs.sorted { (s.priceOf($0) ?? -1, $0.a) > (s.priceOf($1) ?? -1, $1.a) }
+        XCTAssertEqual(SearchEngine.sort(xs, .priciest, s).map(\.bbl), naiveHi.map(\.bbl))
+    }
+
     func testRecencyRule() {
         var blob = ListingsBlob()
         blob.prices = ["a": 1000, "b": 2000]

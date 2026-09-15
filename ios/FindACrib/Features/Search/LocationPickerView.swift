@@ -57,7 +57,7 @@ struct LocationPickerView: View {
                     if store.city.isNYC {
                         if !boroughs.isEmpty {
                             Section(header: header("Boroughs")) {
-                                ForEach(boroughs, id: \.code) { b in row(.borough(b.code), title: b.name, sub: "\(store.buildings.lazy.filter { $0.b == b.code }.count.formatted()) buildings") }
+                                ForEach(boroughs, id: \.code) { b in row(.borough(b.code), title: b.name, sub: "\((store.boroughCounts[b.code] ?? 0).formatted()) buildings") }
                             }
                         }
                         if !zips.isEmpty {

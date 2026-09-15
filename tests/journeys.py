@@ -247,7 +247,18 @@ class Runner:
         self.ok(20 <= n <= 400, f'city view should show a readable number of pills, got {n}', j)
         self.ok('of' in page.evaluate(LABEL), 'count pill missing', j)
         self.ok(page.evaluate("document.getElementById('search-helper').hidden"), 'helper card shown with no search', j)
-        j.notes.append(f'{n} pills')
+        # The boot payload's fetch() is started from <head>, so it goes out once
+        # — the boot script awaits that same response — and it starts before the
+        # blocking scripts rather than ~1 s into the page. Pinned at 1 request
+        # because a <link rel=preload> looked identical here and made WebKit
+        # download the whole 1.1 MB file TWICE (2026-09-15).
+        boot = page.evaluate(r"()=>{const e=performance.getEntriesByType('resource').filter(r=>/buildings\.(slim|min)\.json/.test(r.name));"
+                             r"const l=performance.getEntriesByType('resource').filter(r=>/leaflet\.js/.test(r.name))[0];"
+                             "return {n:e.length, start:e.length?Math.round(e[0].startTime):null, leaflet:l?Math.round(l.startTime):null}}")
+        self.ok(boot['n'] == 1, f'the boot payload should be fetched once, not {boot["n"]} times: {boot}', j)
+        self.ok(boot['start'] is not None and boot['leaflet'] is not None and boot['start'] <= boot['leaflet'] + 50,
+                f'the boot payload should start with the head, not after the scripts: {boot}', j)
+        j.notes.append(f'{n} pills, data at {boot["start"]}ms')
         if device == 'desktop':
             # Airbnb placement: brand, search and the right-hand buttons on one line, chips centred below —
             # at the normal width and at a zoomed-in one (a 1000px layout width is 130% zoom on a 1300px window)
@@ -521,8 +532,50 @@ class Runner:
         # load. Setting storage on a 'commit'-state page, or seeding it with
         # add_init_script, both raced the document-start head script and made
         # this pass on one device and fail on the other.
+        # data-auth is stamped by the head script and then CORRECTED by the app
+        # once Supabase reports the real session — and since the boot got faster
+        # (2026-09-15) that correction can land before the assertions read it.
+        # Record the value the first frame actually had.
+        page.add_init_script("""
+            window.__firstAuth = undefined; window.__firstBtn = undefined;
+            const rec = () => {
+                if (window.__firstAuth === undefined && document.documentElement)
+                    window.__firstAuth = document.documentElement.getAttribute('data-auth');
+            };
+            // Snapshot the button on the first frame it exists — reading it at
+            // the end of the test measures the settled header, not the paint.
+            const snap = () => {
+                const b = document.getElementById('auth-btn');
+                if (!b) { requestAnimationFrame(snap); return; }
+                rec();
+                if (window.__firstBtn === undefined) {
+                    const cs = getComputedStyle(b);
+                    window.__firstBtn = { text: b.textContent.trim(), fontSize: parseFloat(cs.fontSize),
+                                          width: b.getBoundingClientRect().width };
+                }
+            };
+            // documentElement does not exist yet at document-start, so watch the
+            // document itself and let the attribute change bubble up to it.
+            new MutationObserver(rec).observe(document, { attributes: true, subtree: true, attributeFilter: ['data-auth'] });
+            document.addEventListener('DOMContentLoaded', rec);
+            requestAnimationFrame(snap);
+        """)
+
         def paint_after(setup):
-            page.goto(LIVE + '/', wait_until='domcontentloaded', timeout=90000)
+            # Let whatever the previous load started finish first. Leaving while
+            # the app's feed fetches are in flight aborts them, and WebKit
+            # reports those aborts as page errors — which got common once the
+            # boot payload started earlier and the feeds followed it sooner.
+            try:
+                page.wait_for_load_state('networkidle', timeout=30000)
+            except Exception:
+                pass
+            # Seed on a page that does NOT run the app. The app writes fac.auth
+            # itself the moment Supabase reports no session, and once the boot
+            # got faster (buildings.slim.json is preloaded since 2026-09-15)
+            # that write started beating the seed on the landing page, so the
+            # state under test never survived to the next load.
+            page.goto(LIVE + '/privacy.html', wait_until='domcontentloaded', timeout=90000)
             page.evaluate(setup)
             page.goto('about:blank')
             # 'commit' returns as the document starts — the earliest the first
@@ -532,17 +585,22 @@ class Runner:
             return page.evaluate("""() => {
                 const b = document.getElementById('auth-btn');
                 const cs = getComputedStyle(b);
-                return { auth: document.documentElement.getAttribute('data-auth'),
-                         text: b.textContent.trim(),
-                         fontSize: parseFloat(cs.fontSize),
-                         width: b.getBoundingClientRect().width };
+                const first = window.__firstAuth, fb = window.__firstBtn;
+                return { auth: first === undefined ? document.documentElement.getAttribute('data-auth') : first,
+                         text: fb ? fb.text : b.textContent.trim(),
+                         fontSize: fb ? fb.fontSize : parseFloat(cs.fontSize),
+                         width: fb ? fb.width : b.getBoundingClientRect().width };
             }""")
 
         CLEAR = ("localStorage.removeItem('fac.auth');"
                  "Object.keys(localStorage).filter(k=>k.startsWith('sb-')).forEach(k=>localStorage.removeItem(k));")
 
-        # a device that has signed in here before
-        r = paint_after(CLEAR + "localStorage.setItem('fac.auth','in')")
+        # A device that has signed in here before — which means it carries a
+        # Supabase session too. Seeding only our own hint made the app revert the
+        # header the moment Supabase reported no session, and once the boot got
+        # faster (2026-09-15) that revert beat the frame being measured.
+        r = paint_after(CLEAR + "localStorage.setItem('fac.auth','in');"
+                        "localStorage.setItem('sb-test-auth-token','{\"access_token\":\"x\"}')")
         self.ok(r['auth'] == 'in', f"head script should stamp data-auth=in, got {r['auth']}", j)
         self.ok(r['fontSize'] == 0,
                 f"'Sign in' is legible on a signed-in device's first paint (font-size {r['fontSize']})", j)

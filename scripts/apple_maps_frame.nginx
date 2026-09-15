@@ -1,0 +1,16 @@
+    # Apple Look Around runs inside one same-origin document per photo.
+    # Its renderer permission and CDN access are scoped to this endpoint.
+    location = /static/apple-street-frame.html {
+        # The URL is versioned (?v=N), so it can be cached hard: every photo
+        # loads this document in its own iframe and each one was paying a
+        # revalidation round trip first. Bump ?v= in apple-street-preview.js
+        # when this file changes.
+        add_header Cache-Control "public, max-age=604800";
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=()" always;
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.apple-mapkit.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.apple-mapkit.com; connect-src 'self' https://*.apple-mapkit.com; font-src 'self' data: https://cdn.apple-mapkit.com; worker-src 'self' blob:; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'" always;
+    }
+

@@ -23,6 +23,12 @@
 </script>
 <!-- warm up the map + asset origins for a faster first paint (LCP) -->
 <link rel="preconnect" href="https://basemaps.cartocdn.com" crossorigin />
+<!-- Every street photo boots Apple's MapKit inside its own iframe: ~1.2 MB of
+     SDK from cdn.apple-mapkit.com on a first visit, then imagery from
+     gspe72. Warming both connections here saves the DNS+TLS handshake the
+     first card would otherwise pay before it can start. -->
+<link rel="preconnect" href="https://cdn.apple-mapkit.com" crossorigin />
+<link rel="preconnect" href="https://gspe72.apple-mapkit.com" crossorigin />
 <link rel="dns-prefetch" href="https://maps.googleapis.com" />
 <link rel="dns-prefetch" href="https://dbaifotzwlxjvsxjohjt.supabase.co" />
 <!-- Start the 1.1 MB boot payload with the HTML. Its fetch() lives deep in
@@ -584,15 +590,10 @@
     color: #fff; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden;
     border-radius: 10px 10px 0 0;
   }
-  .card .photo img.streetview {
+  .card .photo img.listing-photo {
     position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;
     transition: opacity .25s ease;
   }
-  /* Street View is requested only once a card scrolls into view, so until then
-     the <img> has no src and the .photo gradient shows through on its own.
-     It must stay in layout — a display:none element never intersects, so
-     hiding it that way would keep the observer from ever firing. */
-  img.streetview:not([src]) { opacity: 0; }
   .card .photo .photo-shade {
     position: absolute; inset: 0; z-index: 1;
     background: linear-gradient(180deg, rgba(0,0,0,0.45) 0%, transparent 35%, transparent 55%, rgba(0,0,0,0.7) 100%);
@@ -673,8 +674,6 @@
     background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 12px;
     box-shadow: 0 10px 28px rgba(0,0,0,.22); pointer-events: none; font-size: 12px; line-height: 1.3; }
   .map-hover[hidden] { display: none; }
-  .map-hover .mh-photo { width: 96px; height: 72px; object-fit: cover; border-radius: 8px; background: var(--bg); flex: none; }
-  .map-hover .mh-photo:not([src]) { visibility: hidden; }
   .map-hover .mh-body { min-width: 0; }
   .map-hover .mh-price { font-size: 15px; font-weight: 800; letter-spacing: -.3px; }
   .map-hover .mh-price.est { color: var(--ink-2); font-weight: 700; font-size: 13px; }
@@ -763,7 +762,9 @@
     font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
     color: #fff; background: var(--pill); padding: 3px 8px; border-radius: 4px;
     pointer-events: none; }
-  .card.feat-card .photo { background: var(--surface-3); }
+  .card.feat-card { display: flex; flex-direction: column; }
+  .card.feat-card .photo { background: var(--surface-3); flex: 1 0 150px; min-height: 150px; }
+  .card.feat-card .body { flex: 0 0 auto; }
   .card.feat-card .feat-agent { font-size: 11px; color: var(--ink-2); margin-top: 6px; }
   /* Housing Connect. A different badge colour from the re-rental tiles because
      it is a different kind of offer — a lottery with a deadline, not a unit you
@@ -1111,8 +1112,18 @@
     border-radius: 999px; padding: 8px 14px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
   .detail-plus-cta:hover { filter: brightness(1.06); }
   .detail-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-  .d-photo { width: 100%; height: 240px; object-fit: cover; display: block;
-    background: linear-gradient(135deg, #1f3a8a 0%, #3151c8 50%, #6b3df5 100%); }
+  .street-view, .street-view-empty {
+    background: var(--blue-soft); color: var(--ink); padding: 24px 16px 40px;
+  }
+  .street-view-controls { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 16px; }
+  .street-view-controls a { color: var(--blue); font-size: 13px; }
+  .street-view-button { background: var(--blue-solid); color: #fff; border: none;
+    border-radius: 8px; padding: 12px 20px; font: inherit; font-weight: 700; cursor: pointer; }
+  .street-view-button:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+  .street-view-frame:not([hidden]) { margin-top: 16px; }
+  .street-view-frame iframe { display: block; width: 100%; height: 280px; border: 0; border-radius: 8px; }
+  .card-street { display: flex; align-items: center; justify-content: center; }
+  .card-street .street-view-button { background: #fff; color: #1f3a8a; }
   /* redesigned detail header: hero photo + floating spec pills + agent card */
   .d-hero { position: relative; }
   .d-spec {
@@ -1264,11 +1275,43 @@
     background: rgba(22,22,31,.85); color: var(--ink-2);
   }
   html[data-theme="dark"] .leaflet-control-attribution a { color: var(--blue); }
-  /* The Street View thumbnails are bright daylight photos; take a little of the
-     glare off so a card doesn't blaze out of a dark list. */
-  html[data-theme="dark"] .card .photo img.streetview,
-  html[data-theme="dark"] .card-photo,
-  html[data-theme="dark"] .d-photo { filter: brightness(.88); }
+  .mly-visual { position: absolute; inset: 0; }
+  .mly-visual img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
+  .mly-visual [hidden] { display: none !important; }
+  .mly-status { position: absolute; inset: 42px 12px auto; font-size: 12px; text-align: center; color: #fff; z-index: 2; }
+  .mly-label { position: absolute; top: 40px; left: 8px; padding: 2px 5px; background: rgba(0,0,0,.75); color: white; font-size: 10px; z-index: 3; }
+  .mly-credit { position: absolute; bottom: 37px; left: 8px; right: 8px; color: white; font-size: 10px; z-index: 3; width: fit-content; max-width: calc(100% - 16px); background: rgba(0,0,0,.75); padding: 2px 5px; }
+  .mly-credit a { color: white; }
+  .street-photo-card, .street-photo-detail { position: relative; }
+  .street-photo-detail { height: 240px; background: #244057; }
+  .street-photo-detail .mly-credit { bottom: 8px; }
+  .street-photo-detail .mly-label { top: 8px; }
+  .apple-street-preview { position: absolute; inset: 0; background: var(--surface-2); }
+  .apple-street-canvas { width: 100%; height: 100%; }
+  .apple-street-status { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    padding: 20px; text-align: center; font-size: 13px; color: var(--ink); background: var(--surface-2); }
+  .apple-street-status[hidden] { display: none; }
+  .apple-street-status a { color: var(--blue); }
+  /* Keep our address and badges below Apple's renderer so its attribution and controls stay visible. */
+  .card:has(> .photo.apple-photo) { display: flex; flex-direction: column; }
+  .card .photo.apple-photo {
+    flex: 1 0 auto; height: auto; padding: 0 14px 7px;
+    display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(195px, 1fr) auto auto; gap: 7.4px;
+    background: var(--surface); color: var(--ink);
+  }
+  .card .photo.apple-photo + .body { flex: 0 0 auto; padding-top: 6px; }
+  .card .photo.apple-photo .badge-row { margin-top: 8.6px; }
+  .card .photo.apple-photo .addr-overlay { color: var(--ink); text-shadow: none; }
+  .apple-photo .apple-street-preview {
+    position: relative; inset: auto; min-height: 195px; height: 100%;
+    margin: 0 -14px; width: calc(100% + 28px);
+  }
+  .apple-photo .photo-shade { display: none; }
+  .street-photo-card:has(.apple-street-preview) { height: 235px; }
+  .street-photo-card .apple-street-preview { height: 195px; bottom: auto; }
+  #building-card:has(.apple-street-preview) .card-badge { top: 202px; }
+  /* Soften listing photos in the dark theme. */
+  html[data-theme="dark"] .card .photo img.listing-photo { filter: brightness(.88); }
 </style>
 </head>
 <body>
@@ -1697,7 +1740,9 @@
 <script src="/static/supercluster/supercluster.min.js"></script>
 <script src="/static/supabase/supabase.js"></script>
 <!-- ?v= busts the 7-day JS browser cache — bump it whenever a key in config.js rotates -->
-<script src="config.js?v=2"></script>
+<script src="config.js?v=6"></script>
+<script src="/static/mapillary-preview.js?v=1"></script>
+<script src="/static/apple-street-preview.js?v=7"></script>
 <script>
 (async function () {
   // ---------- error telemetry ----------
@@ -2107,8 +2152,7 @@
   }
 
   // ---------- data ----------
-  // GMAPS_KEY is provided by config.js (gitignored). See config.example.js.
-  const GMAPS_KEY = window.GMAPS_KEY || '';
+  // Maps Embed API key from config.js; no Static Street View requests are made.
   // short region code -> display name / Zumper city slug (from the city config)
   const BORO_NAME = CITY.regions;
   const BORO_SLUG = CITY.slugs;
@@ -2203,9 +2247,24 @@
     document.addEventListener('click', e => { if (!nav.contains(e.target)) close(); });
     addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
   })();
-  function streetviewUrl(lat, lng, w = 400, h = 240) {
-    return `https://maps.googleapis.com/maps/api/streetview?size=${w}x${h}&location=${lat},${lng}&fov=80&pitch=0&source=outdoor&key=${GMAPS_KEY}`;
+  // Apple imagery is rendered in tiles and the building detail hero.
+  function streetViewLocation(lat, lng) {
+    if (lat == null || lng == null || lat === '' || lng === '') return null;
+    const y = Number(lat), x = Number(lng);
+    return Number.isFinite(y) && Number.isFinite(x) && Math.abs(y) <= 90 && Math.abs(x) <= 180
+      ? `${y},${x}` : null;
   }
+  function streetViewHtml(rec) {
+    const location = streetViewLocation(rec.lat, rec.lng);
+    if (!location) return '<div class="street-view-empty">Street imagery unavailable for this location</div>';
+    const href = 'https://maps.apple.com/look-around?coordinate=' + encodeURIComponent(location);
+    return `<section class="street-view" aria-label="Street view of ${esc(rec.a || 'this building')}">
+      <div class="street-view-controls">
+        <a href="${esc(href)}" target="_blank" rel="noopener">Open in Apple Maps ↗</a>
+      </div>
+    </section>`;
+  }
+  const PHOTO_PREVIEW = window.AppleStreetPreview?.enabled ? window.AppleStreetPreview : window.MapillaryPreview;
   const resultsSub = document.getElementById('results-sub');
   const grid = document.getElementById('grid');
 
@@ -2970,7 +3029,7 @@
 
   // ---------- hover card on a pin (desktop) ----------
   // Rest the pointer on a pin for a moment and a small card floats above it —
-  // photo, rent, address, violations — the way StreetEasy's map does (asked
+  // rent, address, violations — the way StreetEasy's map does (asked
   // 2026-09-08). Not interactive: it clears the instant the pointer leaves.
   const mapHoverEl = document.getElementById('map-hover');
   let mapHoverTimer = null;
@@ -2992,7 +3051,6 @@
       : (estRent(rec) || (rec.u != null ? rec.u + ' residential units' : CITY.label + ' building'));
     const sub = [rec.u != null ? `${rec.u} unit${rec.u === 1 ? '' : 's'}` : null, rec.yr ? 'built ' + rec.yr : null].filter(Boolean).join(' · ');
     mapHoverEl.innerHTML = `
-      <img class="mh-photo" src="${streetviewUrl(rec.lat, rec.lng, 240, 180)}" alt="" onerror="this.removeAttribute('src')">
       <div class="mh-body">
         <div class="mh-price${(!listed && !rec.mr && rent) ? ' est' : ''}">${priceLine}</div>
         <div class="mh-addr">${esc(rec.a)}</div>
@@ -5333,7 +5391,7 @@
     return `<div class="card feat-card" data-feat-agent="${esc(f.agent)}" data-feat-addr="${esc(f.address)}">
       <span class="feat-flag">Featured</span>
       <div class="photo">
-        ${f.image ? `<img class="streetview" loading="lazy" src="${esc(f.image)}" alt=""
+        ${f.image ? `<img class="listing-photo" loading="lazy" src="${esc(f.image)}" alt=""
              onerror="this.style.display='none'">` : ''}
         <div class="photo-shade"></div>
         <div class="badge-row">
@@ -5435,12 +5493,10 @@
     const urgent = d != null && d <= 7;
     const left = d == null ? '' :
       `<span class="hc-days${urgent ? ' urgent' : ''}">${d === 1 ? 'Closes tomorrow' : 'Closes in ' + d + ' days'}</span>`;
-    const sv = (h.lat && h.lng) ? streetviewUrl(h.lat, h.lng) : null;
     return `<div class="card hc-card" data-hc-name="${esc(h.name || h.address || 'Housing Connect lottery')}" data-hc-boro="${esc(h.borough || '')}" data-hc-href="${esc(h.href || '')}">
       <span class="hc-flag">Housing Connect</span>
-      <div class="photo">
-        ${sv ? `<img class="streetview" data-sv="${sv}" alt=""
-             onerror="this.style.display='none'">` : ''}
+      <div class="photo${PHOTO_PREVIEW?.provider === 'apple' ? ' apple-photo' : ''}">
+        ${PHOTO_PREVIEW?.html(h) || ''}
         <div class="photo-shade"></div>
         <div class="badge-row"><span></span><span class="listed-pill">Lottery</span></div>
         <div class="addr-overlay">${esc(h.name || h.address || 'Housing Connect lottery')}</div>
@@ -5526,39 +5582,6 @@
     return el.classList.contains('hc-card')
       ? 'lottery|NYC Housing Connect|' + (el.dataset.hcName || '')
       : 'rerental|' + (el.dataset.featAgent || '') + '|' + (el.dataset.featAddr || '');
-  }
-
-  // Street View Static is billed per image ($7/1000 after 10k free a month) and
-  // every card carries one, so a scrolled grid of MAX_CARDS asked Google for
-  // 255 photos in a single session — that was the whole August bill. The Maps
-  // Platform terms forbid caching the imagery ourselves, so the only lever is
-  // asking for fewer: native loading="lazy" fetches hundreds of pixels ahead
-  // (and fired for cards behind the closed mobile list), so gate the request on
-  // a tight IntersectionObserver instead. A card that is never scrolled to
-  // never costs anything.
-  const svObserver = ('IntersectionObserver' in window)
-    ? new IntersectionObserver((entries, obs) => {
-        entries.forEach(en => {
-          if (!en.isIntersecting) return;
-          const img = en.target;
-          tr('sv-load');
-          obs.unobserve(img);
-          const url = img.dataset.sv;
-          if (url) { img.removeAttribute('data-sv'); img.addEventListener('load', () => tr('sv-ok'), { once: true }); img.addEventListener('error', () => tr('sv-err'), { once: true }); img.src = url; }
-        });
-      }, { rootMargin: '150px' })
-    : null;
-
-  // Arm every not-yet-loaded Street View image under `root`. Without an
-  // observer (old browser) fall back to loading them, which is the previous
-  // behaviour rather than a blank grid.
-  function watchStreetview(root) {
-    (root || document).querySelectorAll('img.streetview[data-sv]').forEach(img => {
-      if (svObserver) { svObserver.observe(img); return; }
-      const url = img.dataset.sv;
-      img.removeAttribute('data-sv');
-      img.src = url;
-    });
   }
 
   const tileObserver = ('IntersectionObserver' in window)
@@ -5760,7 +5783,7 @@
     // The list just lost every node it had; re-mark the open building so
     // panning the map doesn't quietly drop the selection.
     paintCardHighlight();
-    watchStreetview(grid);
+    PHOTO_PREVIEW?.watch(grid);
     initAds();
     watchAdTiles();
     tr('grid:done');
@@ -5773,8 +5796,8 @@
       const chunk = gridRest.splice(0, PAGE_CARDS);
       tr('grid:more ' + chunk.length);
       sentinel.insertAdjacentHTML('beforebegin', chunk.join(''));
+      PHOTO_PREVIEW?.watch(grid);
       if (!gridRest.length) { sentinel.outerHTML = tailNote; if (gridMore) { gridMore.disconnect(); gridMore = null; } }
-      watchStreetview(grid);
       watchAdTiles();
     };
     if (!('IntersectionObserver' in window)) { while (gridRest.length) more(); return; }
@@ -5828,12 +5851,11 @@
     if (rec.yr) stats.push(`built ${rec.yr}`);
     if (rec.z) stats.push(`ZIP ${esc(rec.z)}`);
     const listing = listingLink(rec, borough);
-    const sv = streetviewUrl(rec.lat, rec.lng);
     const faved = FAVS.has(rec.bbl);
     return `<div class="card" data-bbl="${esc(rec.bbl)}">
       <button class="fav-btn ${faved ? 'faved' : ''}" data-action="fav" aria-label="${faved ? 'Remove from saved' : 'Save'}" aria-pressed="${faved}">${faved ? '♥' : '♡'}</button>
-      <div class="photo">
-        <img class="streetview" data-sv="${sv}" alt="" onerror="this.style.display='none'">
+      <div class="photo${PHOTO_PREVIEW?.provider === 'apple' ? ' apple-photo' : ''}">
+        ${PHOTO_PREVIEW?.html(rec) || ''}
         <div class="photo-shade"></div>
         <div class="badge-row">
           <span class="borough-pill">${borough}</span>
@@ -6119,7 +6141,6 @@
     const beds = listingBeds[rec.bbl];
     const borough = BORO_NAME[rec.b] || '';
     const faved = FAVS.has(rec.bbl);
-    const sv = streetviewUrl(rec.lat, rec.lng, 640, 360);
     const priceLine = listed > 0
       ? (price ? '$' + price.toLocaleString() + '/mo' : 'Recently available')
       : rec.mr ? `${RENT.short} $${rec.mr.toLocaleString()}/mo`
@@ -6132,7 +6153,7 @@
     const listing = listingLink(rec, borough);
     return `
       <button class="card-close" data-card="close" aria-label="Close">✕</button>
-      <img class="card-photo" src="${sv}" alt="" onerror="this.removeAttribute('src')">
+      ${PHOTO_PREVIEW?.enabled ? `<div class="card-photo street-photo-card">${PHOTO_PREVIEW.html(rec)}</div>` : '<div class="card-photo card-street"><button type="button" class="street-view-button" data-card="street">View street</button></div>'}
       <button class="card-fav ${faved ? 'faved' : ''}" data-card="fav" aria-label="${faved ? 'Saved' : 'Save'}" aria-pressed="${faved}">${faved ? '♥' : '♡'}</button>
       ${listed > 0 ? `<span class="card-badge">Recently available${IS_NYC ? '' : ' on Zumper'}</span>` : ''}
       <div class="card-body">
@@ -6157,6 +6178,7 @@
     track('building_view', { bbl: rec.bbl, addr: rec.a, boro: rec.b, listed, via: 'card' });
     selectMarker(m);
     cardEl.innerHTML = renderCard(rec, listed);
+    PHOTO_PREVIEW?.watch(cardEl);
     cardEl.hidden = false;
     document.body.classList.add('card-open');
     // keep the pin visible above the card
@@ -6197,7 +6219,6 @@
     const price = listingPrices[rec.bbl];
     const beds = listingBeds[rec.bbl];
     const borough = BORO_NAME[rec.b] || '';
-    const sv = streetviewUrl(rec.lat, rec.lng, 800, 480);
     const priceLine = listed > 0
       ? (price ? '$' + price.toLocaleString() + '/mo' : 'Recently available on Zumper')
       : rec.mr ? `${RENT.label} $${rec.mr.toLocaleString()}/mo`
@@ -6259,7 +6280,8 @@
     ];
     return `
       <div class="d-hero" data-sec="photo">
-        <img class="d-photo" src="${sv}" alt="" onerror="this.style.visibility='hidden'">
+        ${PHOTO_PREVIEW?.enabled ? `<div class="street-photo-detail">${PHOTO_PREVIEW.html(rec)}</div>` : ''}
+        ${streetViewHtml(rec)}
         <div class="d-spec">
           ${spec.map(([v, l]) => `<div class="d-spec-item"><span class="d-spec-txt">${l === 'built' ? 'built <b>' + esc(String(v)) + '</b>' : '<b>' + esc(String(v)) + '</b>' + (l ? ' ' + l : '')}</span></div>`).join('')}
         </div>
@@ -6482,6 +6504,7 @@
     // snapshot; now this visit becomes the baseline for the next one.
     if (HOME && HOME.bbl === rec.bbl) { HOME.snap = homeSnap(rec); try { localStorage.setItem(HOME_KEY, JSON.stringify(HOME)); } catch (e) {} }
     detailContent.scrollTop = 0;
+    PHOTO_PREVIEW?.watch(detailContent);
     watchDetailSections(rec);
     syncDetailFav();
     loadComments(rec.bbl); loadOpenDataCounts(rec);
@@ -6491,7 +6514,20 @@
     // on detailRec so a fast second tap does not repaint the previous building.
     if (!HPD_FULL) ensureHpdFull().then(ok => {
       if (ok && detailRec === rec && !detailSheet.hidden) {
-        detailContent.innerHTML = renderDetail(rec, detailListed);
+        // Keep an opened panorama mounted while the building records arrive.
+        // Replacing its iframe would reset the visitor's view and focus.
+        const hero = detailContent.querySelector('.d-hero');
+        if (hero?.querySelector('iframe')) {
+          const fresh = document.createElement('template');
+          fresh.innerHTML = renderDetail(rec, detailListed);
+          hero.querySelector('.d-spec').replaceWith(fresh.content.querySelector('.d-spec'));
+          fresh.content.querySelector('.d-hero').remove();
+          [...detailContent.childNodes].forEach(node => { if (node !== hero) node.remove(); });
+          detailContent.appendChild(fresh.content);
+        } else {
+          detailContent.innerHTML = renderDetail(rec, detailListed);
+        }
+        PHOTO_PREVIEW?.watch(detailContent);
         watchDetailSections(rec);   // the repaint replaced every observed node
         syncDetailFav();
         // This repaint throws away everything loadComments() wrote and puts the
@@ -6723,15 +6759,27 @@
     if (e.target === violSheet || e.target.closest('[data-viol="close"]')) closeViolSheet();
   });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !violSheet.hidden) closeViolSheet(); });
-  function closeDetail() {
+  function hideDetail() {
+    // Dismiss Apple's top-layer viewer before hiding the sheet, then let the
+    // browser paint the map before tearing down its WebGL iframe.
+    PHOTO_PREVIEW?.close?.(detailContent);
     detailSheet.hidden = true; detailRec = null;
     if (secObserver) { secObserver.disconnect(); secObserver = null; }
+    requestAnimationFrame(() => setTimeout(() => {
+      if (detailSheet.hidden && !detailRec) PHOTO_PREVIEW?.release?.(detailContent);
+    }, 80));
+  }
+  function closeDetail() {
+    hideDetail();
     // consume the pushed entry (popstate below no-ops because _detailNav is now false)
     if (_detailNav) { _detailNav = false; history.back(); }
   }
   // swipe-back / Back button: the entry was already popped, so just hide the sheet
   window.addEventListener('popstate', () => {
-    if (_detailNav) { _detailNav = false; detailSheet.hidden = true; detailRec = null; }
+    if (_detailNav) {
+      _detailNav = false;
+      hideDetail();
+    }
   });
 
   detailSheet.addEventListener('click', e => {
@@ -6786,6 +6834,7 @@
   });
 
   cardEl.addEventListener('click', e => {
+    if (e.target.closest('.mly-credit a')) return;
     const act = e.target.closest('[data-card]')?.dataset.card;
     if (!cardMarker) return;
     const rec = cardMarker._rec, listed = cardMarker._listed || 0;
@@ -6799,6 +6848,7 @@
       saveFavs(); updateFavBadge(); persistFav(rec.bbl, FAVS.has(rec.bbl));
       return;
     }
+    if (act === 'street') { openDetail(rec, listed); return; }
     if (act === 'details') { openDetail(rec, listed); return; }
     // The whole card is the tap target, not just the Details button — on a phone
     // the photo and the address are the biggest things on screen and the button

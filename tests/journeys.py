@@ -154,6 +154,11 @@ class Runner:
                 elif self.local_data_path(u):
                     r.fulfill(status=200, content_type='application/json',
                               body=self.local_data_path(u).read_text())
+                elif any(u.split('?')[0] == LIVE + '/static/' + name for name in
+                         ('apple-street-preview.js', 'apple-street-frame.html', 'mapillary-preview.js')):
+                    asset = ROOT / 'static' / u.split('?')[0].rsplit('/', 1)[-1]
+                    r.fulfill(status=200, content_type='text/html' if asset.suffix == '.html'
+                              else 'application/javascript', body=asset.read_text())
                 elif u.startswith(LIVE + '/static/supercluster/'):
                     r.fulfill(status=200, content_type='application/javascript', body=self.sc)
                 else:

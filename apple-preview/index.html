@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Try Apple street photos — Find A Crib</title>
+<style>
+*{box-sizing:border-box}body{font:16px/1.6 system-ui,sans-serif;background:#f3f7f8;color:#152f38;margin:0;padding:32px 20px}main{max-width:620px;margin:5vh auto;background:white;border:1px solid #d5e1e5;border-radius:18px;padding:32px}h1{line-height:1.2;margin-top:0}a{color:#246c7d}label{display:block;font-weight:650}input{width:100%;padding:12px;border:1px solid #a7bdc4;border-radius:8px;font:inherit;margin:8px 0 18px}button{padding:12px 20px;background:#246c7d;color:white;border:0;border-radius:8px;font:inherit;font-weight:650;cursor:pointer}small{display:block;margin-top:16px;color:#536b74}#error{color:#b42318}[hidden]{display:none!important}
+</style></head><body><main>
+<h1>Try Apple street photos</h1>
+<p>Use your Apple Developer membership to preview Look Around directly on the property tiles.</p>
+<ol><li>Open <a href="https://developer.apple.com/account/resources/services/maps-tokens" target="_blank" rel="noopener">Apple Maps tokens</a> and click <b>+</b>.</li>
+<li>Select <b>MapKit JS</b>. For this local test, allow <b>localhost</b> if you choose a domain restriction.</li>
+<li>Copy the generated Maps token and paste it below.</li></ol>
+<form id="token-form"><label for="token">Maps token</label><input id="token" type="password" autocomplete="off" spellcheck="false" required placeholder="Paste your generated Maps token"><button type="submit">Preview Apple photos</button></form>
+<p id="error" role="alert" hidden></p>
+<small>This saves the token in this browser tab’s session storage. It does not change the live website. Use a generated web token, never a private key or Apple account password.</small>
+<p><a href="/?photos=apple">Open preview with the configured token</a></p>
+<script>
+const local = ['localhost','127.0.0.1','[::1]'].includes(location.hostname);
+const error = document.getElementById('error');
+if (!local) { document.getElementById('token-form').hidden=true; error.hidden=false; error.textContent='This preview is available on localhost only.'; }
+document.getElementById('token-form').addEventListener('submit',event=>{
+  event.preventDefault(); if (!local) return;
+  const token=document.getElementById('token').value.trim();
+  if (token.split('.').length!==3 || token.includes('PRIVATE KEY')) { error.hidden=false; error.textContent='Paste the generated Maps web token from Apple.'; return; }
+  try { sessionStorage.setItem('fac.apple_maps_token',token); location.assign('/?photos=apple&preview=1'); }
+  catch (_) { error.hidden=false; error.textContent='Browser storage is unavailable. Add APPLE_MAPS_TOKEN to your local config.js instead.'; }
+});
+</script></main></body></html>

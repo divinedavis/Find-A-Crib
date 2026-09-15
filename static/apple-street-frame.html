@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Apple street preview</title>
+<style>html,body,#preview{margin:0;width:100%;height:100%;overflow:hidden;background:#e6e8eb}</style>
+</head><body><div id="preview"></div><script>
+(() => {
+  if (parent === window || !['localhost','127.0.0.1','[::1]','findacrib.com','www.findacrib.com'].includes(location.hostname)) return;
+  let started = false, view, timer;
+  const send = state => parent.postMessage({type:'fac-apple-state',state}, location.origin);
+  window.addEventListener('message', event => {
+    if (event.origin !== location.origin || event.source !== parent) return;
+    if (event.data?.type === 'fac-apple-close') { if (view) view.openDialog = false; return; }
+    if (event.data?.type !== 'fac-apple-init' || started) return;
+    const {token,lat,lng} = event.data;
+    if (typeof token !== 'string' || !Number.isFinite(lat) || !Number.isFinite(lng)) return;
+    started = true;
+    timer = setTimeout(() => send('error'), 20000);
+    window.facAppleFrameReady = error => {
+      clearTimeout(timer);
+      if (error) { send('error'); return; }
+      try {
+        view = new mapkit.LookAroundPreview(document.getElementById('preview'),
+          new mapkit.Coordinate(lat,lng), {
+            showsPointsOfInterest:false, showsRoadLabels:false,
+            isNavigationEnabled:true, isScrollEnabled:true, isZoomEnabled:true,
+            badgePosition:'bottomTrailing'
+          });
+        view.addEventListener('load', () => send('complete'));
+        view.addEventListener('error', event => send(event.detail?.type === 'browser-error' ? 'browser-error' : 'error'));
+        view.addEventListener('readystatechange', () => { if (view.readyState === 'complete') send('complete'); });
+        view.addEventListener('open-dialog', () => send('open'));
+        view.addEventListener('enter-dialog', () => send('open'));
+        view.addEventListener('leave-dialog', () => send('close'));
+        send(view.readyState);
+      } catch (_) { send('error'); }
+    };
+    const script = document.createElement('script');
+    script.src = 'https://cdn.apple-mapkit.com/mk/x/mapkit.core.js';
+    script.crossOrigin = 'anonymous'; script.async = true;
+    script.dataset.callback = 'facAppleFrameReady';
+    script.dataset.libraries = 'look-around'; script.dataset.token = token;
+    script.onerror = () => { clearTimeout(timer); send('error'); };
+    document.head.appendChild(script);
+  });
+  window.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && view) { view.openDialog = false; send('close'); }
+  });
+  window.addEventListener('pagehide', () => { clearTimeout(timer); view?.destroy(); });
+})();
+</script></body></html>

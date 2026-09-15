@@ -1,36 +1,42 @@
 {
   "build": {
-    "at": "2026-09-13T05:40:43+00:00",
+    "at": "2026-09-15T05:40:40+00:00",
     "changed_urls": 6,
-    "date": "2026-09-13",
+    "date": "2026-09-15",
     "deployed": true,
     "new_urls": 0,
     "seo_corpus": {
       "days_old": 0,
-      "written": "2026-09-13"
+      "written": "2026-09-15"
     },
     "seo_pipeline": {
-      "at": "2026-09-13T05:42:18Z",
-      "changed_urls": 191,
-      "code": "synced-2",
-      "corpus_pages": 49377,
+      "at": "2026-09-15T05:42:13Z",
+      "changed_urls": 35,
+      "code": "synced-1",
+      "corpus_pages": 49380,
       "head": "unknown",
       "hours_ago": 0.0,
       "phase": "finish",
       "pull": "no-worktree",
       "rc": 0,
-      "started": "2026-09-13T05:40:43Z",
-      "state": "ran clean (source handed over from the checkout: synced-2)",
+      "started": "2026-09-15T05:40:41Z",
+      "state": "ran clean (source handed over from the checkout: synced-1)",
       "step": "done"
     },
     "seo_watchdog": {
-      "at": "2026-09-13T05:42:19+00:00",
+      "at": "2026-09-15T05:42:14+00:00",
       "note": "ran refresh_seo.sh to completion",
       "ok": true,
       "ran": true,
       "rc": 0
     },
     "techniques": {
+      "canonical_integrity": {
+        "detail": "canonical tags read on 1807 pages (1500 of them advertised in a sitemap of 3,950 listed) \u2014 no canonical defects found",
+        "ok": true,
+        "reread": "post-seo-refresh",
+        "same_since": "2026-09-15"
+      },
       "city_guides": {
         "detail": "3 of 3 city guides live with their data caveat",
         "ok": true,
@@ -39,11 +45,13 @@
       },
       "city_seo_expansion": {
         "detail": "hub pages live: dc 103, la 112, sf 36",
-        "ok": true
+        "ok": true,
+        "same_since": "2026-09-14",
+        "unchanged": true
       },
       "crawl_paths": {
-        "detail": "16 of 17 published sections have an inbound internal link (63 docroot pages read) \u2014 ORPHANED, reachable only from sitemap-daily.xml: /embed/ (embeddable_building_lookup_widget) \u2014 the docroot's SEO corpus was last written 2026-09-12 (1d ago) \u2014 click depth from the homepage (2000 pages read, levels 0-3 fully expanded): /dc/neighborhood/ 3, /la/zip/ 3, /sf/neighborhood/ 3, /zip/ 3, /available/ 2, /building/ 2, /dc/buildings/ 2, /guide/is-my-apartment-rent-controlled- 2, +8 shallower \u2014 NOT REACHED within 3 clicks, so deeper than that or reachable only from a sitemap: /embed/ \u2014 3 of 17 audited sections are published under no ACTIVE technique, so nothing rebuilds them; link them or stop publishing them: /available/ [candidate], /brief/ [retired], /developers/ [candidate]",
-        "ok": false
+        "detail": "17 of 17 published sections have an inbound internal link (63 docroot pages read) \u2014 single inbound source: /available/ \u2190 nyc browse hub, /dc/neighborhood/ \u2190 dc browse hub, /embed/ \u2190 developers portal, /la/zip/ \u2190 la browse hub, /sf/neighborhood/ \u2190 sf browse hub, /zip/ \u2190 building page \u2014 click depth from the homepage (615 pages read, levels 0-3 fully expanded): /dc/neighborhood/ 3, /la/zip/ 3, /sf/neighborhood/ 3, /zip/ 3, /available/ 2, /building/ 2, /dc/buildings/ 2, /embed/ 2, +9 shallower \u2014 3 of 17 audited sections are published under no ACTIVE technique, so nothing rebuilds them; link them or stop publishing them: /available/ [candidate], /brief/ [retired], /developers/ [candidate]",
+        "ok": true
       },
       "derived_building_facts": {
         "detail": "comparison block on 399 of 400 sampled building pages (99%) across 47,165 published",
@@ -52,9 +60,9 @@
         "unchanged": true
       },
       "fresh_section8": {
-        "detail": "304 buildings across 5 boroughs",
+        "detail": "303 buildings across 5 boroughs",
         "ok": true,
-        "same_since": "2026-09-12",
+        "same_since": "2026-09-15",
         "unchanged": true
       },
       "hub_direct_answers": {
@@ -78,11 +86,11 @@
       "page_uniqueness": {
         "detail": "text shared with siblings (8-word shingles, 211 pages read across 10 sections): /brief/ 49% of 182 words (n=17 of 17), /available/ 42% of 226 words (n=24 of 92), /dc/neighborhood/ 38% of 543 words (n=24 of 103), /building/ 33% of 498 words (n=24 of 47,165), /section8/ 22% of 836 words (n=6 of 6), /la/zip/ 20% of 1,414 words (n=24 of 112), /neighborhood/ 19% of 1,030 words (n=24 of 198), /zip/ 16% of 1,237 words (n=24 of 165), +2 less duplicated \u2014 too few pages to compare: /dc/buildings/ (1 page), /developers/ (1 page), /embed/ (1 page), /guide/is-my-apartment-rent-controlled- (3 pages), /la/buildings/ (1 page), /methodology/ (1 page), /sf/buildings/ (1 page)",
         "ok": true,
-        "reread": "post-seo-refresh",
-        "same_since": "2026-09-13"
+        "same_since": "2026-09-13",
+        "unchanged": true
       },
       "sitemap_daily": {
-        "detail": "sitemap-daily.xml with 23 URLs; 17 declared never (retired sections: /brief/), newest lastmod 2026-09-13",
+        "detail": "sitemap-daily.xml with 24 URLs (incl. 1 city hub pages); 17 declared never (retired sections: /brief/), newest lastmod 2026-09-15 \u2014 1 of them live in the docroot but listed in no sitemap the SEO pipeline owns, so they had no crawl path at all until this run",
         "ok": true
       }
     }
@@ -91,16 +99,16 @@
     "accept_pct": 1.1,
     "accept_pct_mature": 0.0,
     "added": 0,
-    "at": "2026-09-13T05:11:15+00:00",
+    "at": "2026-09-15T05:11:23+00:00",
     "by_crawl_age": {
       "0-6d": {
-        "accept_pct": 33.3,
-        "fetched": 3,
+        "accept_pct": 25.0,
+        "fetched": 4,
         "indexed": 1
       },
       "14-20d": {
         "accept_pct": 0.0,
-        "fetched": 9,
+        "fetched": 5,
         "indexed": 0
       },
       "21-27d": {
@@ -110,216 +118,229 @@
       },
       "28d+": {
         "accept_pct": 0.0,
-        "fetched": 64,
+        "fetched": 68,
         "indexed": 0
       },
       "7-13d": {
         "accept_pct": 0.0,
-        "fetched": 3,
+        "fetched": 2,
         "indexed": 0
       }
     },
-    "cohort": 456,
-    "date": "2026-09-13",
+    "cohort": 457,
+    "date": "2026-09-15",
     "dropped": 0,
     "errors": 0,
-    "fetched_mature": 80,
+    "fetched_mature": 84,
     "fetched_pct": 20.8,
     "gained_indexed": 0,
     "indexed_pct": 0.2,
     "inspected": 100,
-    "last_crawl": "2026-09-11",
+    "last_crawl": "2026-09-12",
     "lost_indexed": 0,
     "ok": true,
-    "published_urls": 3908,
-    "read": 456,
+    "published_urls": 3939,
+    "read": 457,
     "rechecked": 100,
     "states": {
       "crawled_not_indexed": 94,
-      "discovered_not_indexed": 1,
+      "discovered_not_indexed": 3,
       "indexed": 1,
-      "unknown_to_google": 360
+      "unknown_to_google": 359
     }
   },
   "measure": {
-    "at": "2026-09-13T05:11:17+00:00",
+    "at": "2026-09-15T05:11:25+00:00",
     "coverage_pct": 82.4,
-    "date": "2026-09-13",
+    "date": "2026-09-15",
     "days": 1,
     "keywords_covered": 404,
     "keywords_total": 490,
-    "latest_measured_day": "2026-09-12",
+    "latest_measured_day": "2026-09-14",
     "traffic": {
       "arrival_shape": {
         "all": {
-          "busiest_6h_pct": 55.0,
-          "n": 120,
-          "night_pct": 3.3,
-          "peak_hour_utc": 22
+          "busiest_6h_pct": 44.7,
+          "n": 338,
+          "night_pct": 4.4,
+          "peak_hour_utc": 0
         },
         "direct": {
-          "busiest_6h_pct": 56.2,
-          "n": 96,
-          "night_pct": 2.1,
-          "peak_hour_utc": 22
+          "busiest_6h_pct": 42.6,
+          "n": 270,
+          "night_pct": 4.8,
+          "peak_hour_utc": 0
         },
         "organic": {
-          "busiest_6h_pct": 50.0,
-          "n": 22,
-          "night_pct": 9.1,
-          "peak_hour_utc": 22
+          "busiest_6h_pct": 56.7,
+          "n": 60,
+          "night_pct": 3.3,
+          "peak_hour_utc": 0
         }
       },
       "by_channel": {
-        "direct": 96,
+        "ai": 3,
+        "campaign": 3,
+        "direct": 270,
         "internal": 2,
-        "organic": 22
+        "organic": 60
       },
       "by_hour_utc": {
         "all": [
-          6,
+          44,
+          33,
+          22,
+          22,
+          13,
+          15,
+          8,
           3,
-          10,
-          5,
-          5,
           3,
-          3,
-          3,
-          0,
-          1,
-          0,
-          3,
-          1,
-          3,
-          4,
-          5,
-          5,
           2,
-          5,
-          5,
-          1,
+          4,
+          6,
+          9,
+          15,
+          13,
+          18,
+          20,
+          18,
+          14,
           10,
-          24,
-          13
+          7,
+          11,
+          11,
+          17
         ],
         "direct": [
-          4,
-          3,
-          9,
-          5,
-          4,
-          2,
-          1,
-          1,
-          0,
-          0,
-          0,
-          2,
-          1,
-          3,
-          4,
-          5,
-          3,
-          2,
-          3,
-          5,
-          1,
-          9,
+          33,
+          22,
+          20,
           17,
-          12
+          9,
+          10,
+          6,
+          2,
+          3,
+          1,
+          3,
+          6,
+          8,
+          14,
+          11,
+          12,
+          18,
+          16,
+          11,
+          9,
+          6,
+          10,
+          9,
+          14
         ],
         "organic": [
+          10,
+          10,
+          1,
+          5,
+          3,
+          5,
+          2,
+          1,
+          0,
+          1,
+          1,
+          0,
+          1,
+          1,
+          2,
+          6,
           2,
           0,
-          0,
-          0,
+          3,
+          1,
           1,
           1,
           2,
-          1,
-          0,
-          1,
-          0,
-          1,
-          0,
-          0,
-          0,
-          0,
-          2,
-          0,
-          2,
-          0,
-          0,
-          1,
-          7,
           1
         ]
       },
-      "by_src": {},
-      "direct_deep": 3,
-      "new": 86,
+      "by_src": {
+        "alert": 3,
+        "chatgpt.com": 3
+      },
+      "direct_deep": 0,
+      "new": 273,
       "new_window_days": 30,
-      "returning": 34,
+      "returning": 65,
       "top_paths": [
         [
           "/",
-          117
+          336
         ],
         [
-          "/building/brooklyn/6910-avenue-u-3084290036/",
+          "/building/manhattan/531-to-533-w-112th-st-1018840011/",
           1
         ],
         [
-          "/guide/rent-stabilized-lease-renewal-and-rent-increases/",
-          1
-        ],
-        [
-          "/guide/rent-stabilized-tenant-rights/",
+          "/sf/",
           1
         ]
       ],
       "top_referrers": [
         [
           "www.google.com",
-          21
+          51
         ],
         [
           "com.google.android.googlequicksearchbox",
+          5
+        ],
+        [
+          "www.bing.com",
+          2
+        ],
+        [
+          "accounts.google.com",
+          1
+        ],
+        [
+          "duckduckgo.com",
           1
         ]
       ],
-      "visitors": 120
+      "visitors": 338
     }
   },
   "outreach": {
-    "at": "2026-09-13T05:11:18+00:00",
-    "date": "2026-09-13",
+    "at": "2026-09-15T05:11:26+00:00",
+    "date": "2026-09-15",
     "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
     "ok": false
   },
   "scout": {
-    "at": "2026-09-13T05:11:18+00:00",
-    "date": "2026-09-13",
+    "at": "2026-09-15T05:11:26+00:00",
+    "date": "2026-09-15",
     "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
     "ok": false
   },
   "searchconsole": {
-    "at": "2026-09-13T05:00:12+00:00",
-    "clicks": 232,
-    "date": "2026-09-13",
-    "impressions": 282,
+    "at": "2026-09-15T05:00:13+00:00",
+    "clicks": 252,
+    "date": "2026-09-15",
+    "impressions": 300,
     "nonbranded_clicks": 0,
     "nonbranded_impressions": 0,
-    "page_clicks": 253,
-    "page_impressions": 687,
+    "page_clicks": 277,
+    "page_impressions": 908,
     "serving_branded_only": 13,
     "serving_ever": 284,
     "serving_nonbranded": 0,
     "serving_pages": 14,
-    "serving_stable": 13,
+    "serving_stable": 14,
     "serving_unattributed": 1,
     "share_pct": 0.0,
     "tracked_ranking": 0,
-    "window": "2026-09-04..2026-09-11"
+    "window": "2026-09-06..2026-09-13"
   }
 }

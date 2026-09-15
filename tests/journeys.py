@@ -586,38 +586,57 @@ class Runner:
                 const b = document.getElementById('auth-btn');
                 const cs = getComputedStyle(b);
                 const first = window.__firstAuth, fb = window.__firstBtn;
+                // What the stamp BUYS: with data-auth set, the button has to be
+                // the small avatar circle. Measured with the attribute applied
+                // rather than off the first frame, because WebKit sometimes
+                // runs that frame before it has applied the stylesheet and then
+                // reports the unstyled width for any build, good or bad.
+                const had = document.documentElement.getAttribute('data-auth');
+                document.documentElement.setAttribute('data-auth', 'in');
+                const stamped = { fontSize: parseFloat(getComputedStyle(b).fontSize),
+                                  width: b.getBoundingClientRect().width };
+                if (had === null) document.documentElement.removeAttribute('data-auth');
+                else document.documentElement.setAttribute('data-auth', had);
                 return { auth: first === undefined ? document.documentElement.getAttribute('data-auth') : first,
                          text: fb ? fb.text : b.textContent.trim(),
-                         fontSize: fb ? fb.fontSize : parseFloat(cs.fontSize),
-                         width: fb ? fb.width : b.getBoundingClientRect().width };
+                         fontSize: stamped.fontSize,
+                         width: stamped.width,
+                         firstWidth: fb ? Math.round(fb.width) : null,
+                         liveFontSize: parseFloat(cs.fontSize) };
             }""")
 
         CLEAR = ("localStorage.removeItem('fac.auth');"
                  "Object.keys(localStorage).filter(k=>k.startsWith('sb-')).forEach(k=>localStorage.removeItem(k));")
+        # A session the client accepts at rest and only rejects after a round
+        # trip. A bare {access_token} is thrown out synchronously, so the header
+        # reverted before the frame under test could be measured.
+        SESSION = ("localStorage.setItem('sb-test-auth-token', JSON.stringify({"
+                   "access_token:'x', refresh_token:'y', token_type:'bearer', expires_in:3600,"
+                   "expires_at: Math.floor(Date.now()/1000) + 3600,"
+                   "user:{id:'00000000-0000-0000-0000-000000000000', aud:'authenticated', role:'authenticated'}}));")
 
         # A device that has signed in here before — which means it carries a
         # Supabase session too. Seeding only our own hint made the app revert the
         # header the moment Supabase reported no session, and once the boot got
         # faster (2026-09-15) that revert beat the frame being measured.
-        r = paint_after(CLEAR + "localStorage.setItem('fac.auth','in');"
-                        "localStorage.setItem('sb-test-auth-token','{\"access_token\":\"x\"}')")
+        r = paint_after(CLEAR + "localStorage.setItem('fac.auth','in');" + SESSION)
         self.ok(r['auth'] == 'in', f"head script should stamp data-auth=in, got {r['auth']}", j)
         self.ok(r['fontSize'] == 0,
                 f"'Sign in' is legible on a signed-in device's first paint (font-size {r['fontSize']})", j)
         self.ok(r['width'] <= 40,
                 f"the header paints the wide Sign in pill before the avatar ({r['width']:.0f}px)", j)
-        j.notes.append(f"first paint {r['width']:.0f}px circle")
+        j.notes.append(f"stamped {r['width']:.0f}px circle, first frame {r['firstWidth']}px")
 
         # Supabase's own session key is enough on its own, so the header is
         # right on the FIRST load after signing in — including straight after
         # clearing site data, which wipes any hint of ours.
-        r = paint_after(CLEAR + "localStorage.setItem('sb-test-auth-token','{\"access_token\":\"x\"}')")
+        r = paint_after(CLEAR + SESSION)
         self.ok(r['auth'] == 'in', f"a live Supabase session key should be enough, got {r['auth']}", j)
 
         # …and a device that has never signed in still gets a real Sign in button.
         r = paint_after(CLEAR)
         self.ok(r['auth'] is None, f"a signed-out device must not be stamped, got {r['auth']}", j)
-        self.ok(r['text'] == 'Sign in' and r['fontSize'] > 0,
+        self.ok(r['text'] == 'Sign in' and r['liveFontSize'] > 0,
                 f"signed out, the button has to say Sign in, got {r!r}", j)
 
     def j_no_chip_row_flash(self, page, j, device):

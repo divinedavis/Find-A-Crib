@@ -24,7 +24,14 @@ final class LaunchAnimationTests: XCTestCase {
         XCUIDevice.shared.press(.home)
         app.activate()
         XCTAssertFalse(app.otherElements["launch-animation"].exists)
-        XCTAssertTrue(app.buttons["tab-Profile"].isSelected)
+        // activate() returns while the foreground transition is still running
+        // and the first snapshot can catch the tab bar before it re-renders;
+        // the app keeps Profile selected (verified 2026-09-16 by polling after
+        // the same steps), so give it a moment rather than read it once.
+        let profile = app.buttons["tab-Profile"]
+        let selected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isSelected == true"), object: profile)
+        XCTAssertEqual(XCTWaiter().wait(for: [selected], timeout: 5), .completed,
+                       "Profile tab lost its selection after foregrounding: profile=\(profile.isSelected) search=\(app.buttons["tab-Search"].isSelected) state=\(app.state.rawValue)")
         app.buttons["tab-Search"].tap()
         XCTAssertTrue(app.buttons["city-field"].waitForExistence(timeout: 5))
     }

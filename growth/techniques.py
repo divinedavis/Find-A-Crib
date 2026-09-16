@@ -48,17 +48,51 @@ class Context:
     across afterwards. Nothing here writes to the live docroot directly.
     """
 
-    def __init__(self, build_dir, docroot, dry_run=False, log=print):
+    def __init__(self, build_dir, docroot, dry_run=False, log=print, reread=False):
         self.build_dir = build_dir
         self.docroot = docroot
         self.out = os.path.join(build_dir, "growth_out")
         self.dry_run = dry_run
+        # The post-deploy correction pass (growth_daily._reread_docroot_verifiers).
+        # It differs from a dry run in the one way that matters to a docroot
+        # audit: a dry run happens INSTEAD of a build, so the docroot and
+        # growth_out both hold whatever the last real run left behind, while a
+        # re-read happens AFTER this run's build, its rsync and the SEO
+        # watchdog's rebuild. Both must write nothing; only the re-read is
+        # looking at the corpus this run actually published.
+        self.reread = reread
         self.log = log
         self.new_urls = []        # brand-new URLs created this run
         self.changed_urls = []    # URLs whose content actually changed
         self._buildings = None
         self._by_bbl = None
         self._s8 = None
+
+    # ---- what this pass is allowed to do
+
+    @property
+    def readonly(self):
+        """True when nothing this pass does may persist — dry run or re-read.
+
+        Techniques that record a little state as a side effect of auditing
+        (t_crawl_paths' first-sighting dates) must test THIS, not dry_run: the
+        re-read pass runs a second time over the same night and a second write
+        would either double-count or reset a lag it is only supposed to watch.
+        """
+        return self.dry_run or self.reread
+
+    @property
+    def staging_is_current(self):
+        """Does growth_out hold pages THIS run staged?
+
+        Only an audit that reads the staging dir needs to ask. In a real build,
+        yes — the audits run before cmd_deploy rsyncs it across. In the re-read
+        pass, yes and already deployed, which is what makes a prefix still
+        missing from the docroot a failed rsync rather than ordinary lag. In a
+        dry run, no: nothing was staged, and any growth_out lying around is a
+        previous run's, so reading it would describe a deploy that is over.
+        """
+        return self.reread or not self.dry_run
 
     # ---- data (lazy; buildings.min.json is 16 MB)
 
@@ -2188,13 +2222,19 @@ def t_crawl_paths(ctx):
     CRAWL_DEPTH_BYTES); the depths that reading produced should be discarded,
     not adjusted.
 
-    Writes nothing. It scores the live docroot, which is deliberate — the fix
-    for an orphaned section usually lives in the app shells, and this is how a
-    review running on a bare checkout learns whether that fix ever deployed.
-    It reads this run's staging dir too, but only ever to explain a docroot
-    orphan ("the link is staged, the rsync has not happened yet"), never to
-    call one healthy: a link that exists solely in growth_out is not a link
-    Google can follow.
+    Publishes nothing. It scores the live docroot, which is deliberate — the
+    fix for an orphaned section usually lives in the app shells, and this is
+    how a review running on a bare checkout learns whether that fix ever
+    deployed. It reads this run's staging dir too, but only ever to explain a
+    docroot orphan ("the link is staged, the rsync has not happened yet"),
+    never to call one healthy: a link that exists solely in growth_out is not a
+    link Google can follow.
+
+    Its one side effect is the first-sighting date `_staged_since` records, and
+    that is suppressed whenever ctx.readonly — which is what lets this join
+    DOCROOT_VERIFIERS and be read a second time, after the corpus it audits has
+    actually been rebuilt. See that set's membership rule for the morning that
+    made it necessary.
     """
     import glob
     # Every prefix any technique claims, whatever that technique's status.
@@ -2262,15 +2302,18 @@ def t_crawl_paths(ctx):
     # run that reported both sections ORPHANED — and a reader has no way to
     # tell that from a fix that is simply wrong. Skipped in a dry run, which
     # stages nothing this run but may still hold a previous run's growth_out.
+    # Read in the re-read pass, where growth_out is this run's AND has already
+    # been rsynced — see ctx.staging_is_current, and the `pending` branch below
+    # for why the same finding means something harsher there.
     staged = {p: set() for p in live}
-    if not ctx.dry_run and os.path.isdir(ctx.out):
+    if ctx.staging_is_current and os.path.isdir(ctx.out):
         staged, _ = _crawl_link_audit(ctx.out, live)
 
     orphaned = sorted(p for p in live if not found[p])
     for p in live:                     # linked in the docroot: forget any lag we recorded
         if found[p]:
-            _staged_since(p, False, ctx.dry_run)
-    pending = {p: _staged_since(p, bool(staged.get(p)), ctx.dry_run) for p in orphaned}
+            _staged_since(p, False, ctx.readonly)
+    pending = {p: _staged_since(p, bool(staged.get(p)), ctx.readonly) for p in orphaned}
     pending = {p: s for p, s in pending.items() if s}
     stuck = sorted(p for p, s in pending.items() if _staged_age(s) > STAGED_GRACE_DAYS)
     dead = [p for p in orphaned if p not in pending]
@@ -2338,11 +2381,21 @@ def t_crawl_paths(ctx):
                 + _stale_note(ctx.docroot) + tail
                 + (" — awaiting this run's rsync: " + _pend(sorted(pending)) if pending else "")}
     if pending:
+        # The two passes reach this branch meaning opposite things, and a
+        # reader six weeks later has only this sentence to tell them apart. In
+        # the build pass the rsync has not happened yet, so this is ordinary
+        # lag and the instruction is to wait one night. In the re-read pass it
+        # already has, so the same reading says the rsync did not land — the
+        # finding `stuck` exists for, arrived at before the grace window.
+        note = (" — the deploy has already run in this pass, so the link did NOT land: "
+                "check the build log's rsync line"
+                if ctx.reread else
+                " — this audit reads the docroot before the deploy, so expect it to clear "
+                "on the next run")
         return {"ok": False, "pages": read,
                 "detail": detail + " — awaiting this run's rsync, linked from a page staged "
                 "minutes ago and not yet in the docroot: " + _pend(sorted(pending))
-                + " — this audit reads the docroot before the deploy, so expect it to clear "
-                "on the next run" + tail}
+                + note + tail}
     # Name where the link comes from when there is exactly one source family:
     # a single thread is the one worth knowing about before it breaks.
     thin = sorted(f"{p} ← {next(iter(found[p]))}" for p in live if len(found[p]) == 1)
@@ -3083,18 +3136,58 @@ ORDER =["fresh_section8", "daily_brief", "city_guides", "city_seo_expansion",
 # re-reads these after the watchdog and corrects the record instead.
 #
 # THE MEMBERSHIP RULE, because a wrong entry here would write a false record:
-# a technique belongs only if it touches nothing but ctx.docroot — no
-# ctx.write_page/write_raw/unstage, no ledger.set_state, no network. Both
-# members are report-only audits that satisfy this today. t_crawl_paths and
-# t_hub_direct_answers are also docroot audits and would be just as wrong-by-a-
-# day, but both consult ctx.out for pages staged-but-not-yet-rsynced and
-# t_crawl_paths records first-sighting dates through ledger.set_state, so
-# re-running them is not free. Make them pure first, then add them here.
-# canonical_integrity satisfies the membership rule as written: it opens files
-# under ctx.docroot and does nothing else — no ctx.write_page/write_raw/unstage,
-# no ledger.set_state, no network. It is in from its first night rather than
-# added later, because the reading it produces is at its most valuable on
+# a technique belongs only if RE-RUNNING IT CHANGES NOTHING BUT ITS OWN ANSWER
+# — no ctx.write_page/write_raw/unstage, no network, and no state write that
+# survives the pass. derived_building_facts, page_uniqueness and
+# canonical_integrity are report-only audits that open files under ctx.docroot
+# and do nothing else. canonical_integrity was in from its first night rather
+# than added later, because the reading it produces is at its most valuable on
 # exactly the mornings the corpus has just been rebuilt, and a canonical defect
 # reported a day late is a defect that shipped to Googlebot overnight.
+#
+# t_hub_direct_answers is NOT eligible and never will be: it calls
+# ctx.write_page and ctx.unstage on the hub tier, so it is a publisher that
+# reports, not an audit. Re-running it would stage pages from a correction pass
+# that nothing afterwards deploys.
+#
+# t_crawl_paths JOINED ON 2026-09-16, and the morning that forced it is the
+# exact twin of the 2026-09-04 worked example above. 2026-09-15 shipped ZIP
+# blocks on the borough and neighborhood tiers specifically to give /zip/ an
+# inbound link that does not run through the ~92%-noindex building tier, and
+# pre-registered the test: "tomorrow, t_crawl_paths must no longer list
+# '/zip/ <- building page' among its single-inbound-source sections". On
+# 2026-09-16 it listed it, byte-identical to the day before, while the pipeline
+# logged 239 changed URLs at 05:42:09 — ninety seconds after the audit had
+# finished reading. The change had landed; the instrument had not seen it. Left
+# alone, the next review would have read its own pre-registered failure signal
+# and reverted a fix that was working.
+#
+# That is worse here than anywhere else in the set, because crawl_paths is the
+# ONLY instrument this loop has for judging an internal-linking change, and
+# internal linking is what it has shipped two runs running. An audit that
+# cannot see the class of change it exists to judge is not slow, it is
+# inverted: every such fix reads as a failure on the morning it lands.
+#
+# What made it eligible (it was blocked for two reasons, both now gone):
+#   * ledger.set_state, via _staged_since's first-sighting dates. Those were
+#     already suppressed under ctx.dry_run, which the re-read pass sets — but
+#     incidentally, and the pass documented dry_run as "not a behaviour
+#     switch". Relying on that would have been a coincidence one edit from
+#     breaking. _staged_since now tests ctx.readonly, which names the property
+#     the rule actually requires.
+#   * the ctx.out read, which dry_run disabled — and disabling it would have
+#     cost the audit its most serious finding, "STAGED BUT NOT DEPLOYED, the
+#     growth build's own rsync is not reaching the docroot". So the re-read
+#     pass keeps reading growth_out, under ctx.staging_is_current, and the
+#     `pending` branch says the harsher thing there: in the re-read pass the
+#     rsync has already run, so a link still missing from the docroot did not
+#     land, rather than being ordinary one-night lag.
+#
+# COST, since this is the expensive member: it walks the docroot twice more (63
+# pages for the link audit, ~615 for the depth crawl, 4MB cap each). That is
+# bounded by CRAWL_DEPTH_PAGES/CRAWL_DEPTH_BYTES and runs after the night's
+# measurements are already taken, so the worst case is a slower cron, not a
+# lost reading — _reread_docroot_verifiers catches each audit separately and
+# keeps the build's own record if one crashes.
 DOCROOT_VERIFIERS = ("derived_building_facts", "page_uniqueness",
-                     "canonical_integrity")
+                     "canonical_integrity", "crawl_paths")

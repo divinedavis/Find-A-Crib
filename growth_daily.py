@@ -400,7 +400,9 @@ def _reread_docroot_verifiers(args):
     fortnight. `build --deploy` runs the audits, THEN the watchdog rewrites the
     47,599 pages they audit, so each audit describes yesterday's corpus. See
     techniques.DOCROOT_VERIFIERS for the membership rule and for the 2026-09-04
-    worked example — a reading that would have had a good change reverted.
+    and 2026-09-16 worked examples — two mornings on which an audit reported a
+    good change as a failure because it had read the corpus ninety seconds
+    before the pipeline rebuilt it.
 
     Returns the full `techniques` map to patch back, or None to leave the
     build's own map standing. None on every failure path on purpose: this runs
@@ -433,11 +435,17 @@ def _reread_docroot_verifiers(args):
         if not techs:
             return None
         active = {t["slug"] for t in ledger.active()}
-        # dry_run=True is belt-and-braces, not a behaviour switch: every member
-        # of DOCROOT_VERIFIERS reads ctx.docroot and nothing else, so the flag
-        # changes none of their output. It is set so that adding a member that
-        # quietly writes cannot deploy pages from a correction pass.
-        ctx = techniques.Context(args.build_dir, args.docroot, dry_run=True, log=log)
+        # dry_run=True stops a member that quietly writes from deploying pages
+        # out of a correction pass. reread=True is the one that carries meaning:
+        # it tells an audit that this pass runs AFTER the build, its rsync and
+        # the watchdog's rebuild, which is not what a dry run means — a dry run
+        # happens instead of a build, over whatever the last real run left
+        # behind. t_crawl_paths is the first member to need the distinction; it
+        # reads growth_out under ctx.staging_is_current (true in both passes,
+        # false in a dry run) and suppresses its state writes under
+        # ctx.readonly (true in both). See techniques.DOCROOT_VERIFIERS.
+        ctx = techniques.Context(args.build_dir, args.docroot,
+                                 dry_run=True, reread=True, log=log)
     except Exception as e:
         log(f"  verifier re-read skipped: {e}")
         return None

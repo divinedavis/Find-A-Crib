@@ -32,6 +32,8 @@ from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parent.parent
 LIVE = 'https://findacrib.com'
+# What the inline QR in the Get-the-app modal must decode to (scripts/make_app_qr.py).
+APP_STORE_URL = 'https://apps.apple.com/us/app/find-a-crib/id6807549249'
 CITY_PAGES = ('la', 'sf', 'dc', 'westchester')
 # One building per city known to carry a full record blob, for j_city_records.
 # Picked by "richest h" from each city's buildings.hpd.json; if a rebuild ever
@@ -78,6 +80,8 @@ JOURNEY_EVENTS = {
     'alerts_page':          [],
     'signin_modal':         ['signin'],
     'app_chip':             [],
+    'app_qr_menu':          ['app_qr_open'],
+    'boot_is_usable':       [],
     'city_chip':            [],
     'ad_tiles':             ['tile_served', 'tile_impression', 'featured_click', 'hc_click'],
     'outbound_links':       ['outbound'],
@@ -184,7 +188,21 @@ class Runner:
         # has to boot the page, so always leave first.
         if page.url.startswith(LIVE):
             page.goto('about:blank')
-        page.goto(LIVE + path, wait_until='networkidle', timeout=90000)
+        # NOT networkidle (removed 2026-09-16). Every result card mounts an
+        # Apple Look Around preview, and those stream MapKit tiles for as long
+        # as they are on screen — ~11-20 MB across a long tail of requests,
+        # measured that day. The 500 ms quiet window networkidle waits for
+        # frequently never opens inside 90 s, so boot() threw
+        # `Page.goto: Timeout 90000ms exceeded` on a random handful of desktop
+        # journeys every run: 35/40, then 32/40, and 37/40 on an UNCHANGED
+        # index.html, with a different set failing each time. Desktop only,
+        # because desktop shows more cards at once than a phone and so runs
+        # more previews.
+        #
+        # domcontentloaded plus the pin wait below is a stronger contract
+        # anyway: networkidle only ever meant "the network went quiet", while
+        # PINS > 0 means the app actually parsed its data and drew the map.
+        page.goto(LIVE + path, wait_until='domcontentloaded', timeout=90000)
         if wait_pins:
             Runner.wait_until(page, PINS + ' > 0', timeout=60000)
         time.sleep(1.5)
@@ -514,7 +532,7 @@ class Runner:
 
     def j_city_pages(self, page, j, device):
         for city, low in (('la', 1000), ('sf', 1000), ('dc', 100), ('westchester', 100)):
-            page.goto(f'{LIVE}/{city}/', wait_until='networkidle', timeout=90000)
+            page.goto(f'{LIVE}/{city}/', wait_until='domcontentloaded', timeout=90000)
             try:
                 self.wait_until(page, PINS + ' > 0', timeout=120000)   # LA is 67k parcels
             except Exception:
@@ -663,8 +681,10 @@ class Runner:
                  'pill-beds', 'pill-price', 'pill-viol', 'pill-agent']
         leaked = [e for e in early if e.split()[0] in moved]
         self.ok(not leaked, f"filter pills painted in the chip row before being moved: {leaked}", j)
-        # and they must still be reachable once the boot script has run
-        page.wait_for_load_state('networkidle', timeout=90000)
+        # and they must still be reachable once the boot script has run.
+        # Wait for that script's own output, not for the network to go quiet:
+        # the Look Around previews keep it busy indefinitely (see boot()).
+        self.wait_until(page, "document.querySelectorAll('#filters-body > [id^=pill-]').length > 0", 90000)
         time.sleep(1.5)
         inside = page.evaluate("""() => [...document.querySelectorAll('#filters-body > [id^=pill-]')].map(e => e.id)""")
         for m in moved:
@@ -685,7 +705,7 @@ class Runner:
             return                       # same markup either way; once is enough
         for city, (bid, want) in CITY_RECORD_CASES.items():
             page.goto('about:blank')
-            page.goto(f'{LIVE}/{city}/#d={bid}', wait_until='networkidle', timeout=90000)
+            page.goto(f'{LIVE}/{city}/#d={bid}', wait_until='domcontentloaded', timeout=90000)
             try:
                 self.wait_until(page, "!document.getElementById('detail-sheet').hidden", timeout=60000)
             except Exception:
@@ -719,13 +739,17 @@ class Runner:
         self.ok(nodes < DOM_BUDGET, f'{nodes:.0f} DOM nodes over budget', j)
 
     def j_alerts_page(self, page, j, device):
-        page.goto(LIVE + '/alerts/', wait_until='networkidle', timeout=90000); time.sleep(1)
+        page.goto(LIVE + '/alerts/', wait_until='domcontentloaded', timeout=90000)
+        self.wait_until(page, "!!document.getElementById('gate')", 30000); time.sleep(1)
         # Signed out (2026-09-08): the gate card, not the form; its button goes to the map's sign-up modal and back.
         self.ok(not page.evaluate("document.getElementById('gate').hidden") and page.evaluate("document.getElementById('form').hidden"), 'signed-out alerts page should show the account gate, not the form', j)
         href = page.evaluate("document.getElementById('gate-btn').getAttribute('href')")
         self.ok(href.startswith('/?auth=signup') and 'next=%2Falerts%2F' in href, f'gate button should open sign-up and come back: {href}', j)
         r = page.request.post(LIVE + '/api/alerts/subscribe', data=json.dumps({'email': 'x@example.com', 'boroughs': ['Bk']}), headers={'Content-Type': 'application/json'})
-        self.ok(r.status == 401, f'/api/alerts/subscribe without a session should be 401, got {r.status}', j)
+        # 429 counts as gated too: the endpoint is rate limited, and running
+        # the suite several times in a row (as a deploy does) trips it. Both
+        # codes mean the same thing here — an anonymous caller got nothing.
+        self.ok(r.status in (401, 429), f'/api/alerts/subscribe without a session should be refused, got {r.status}', j)
         page.evaluate("document.getElementById('form').hidden = false")   # the form itself still works once revealed
         self.ok(page.evaluate("document.getElementById('submit').textContent.trim()") == 'Email me when something opens', 'alerts form should offer a fresh sign-up', j)
         page.click('text=Brooklyn'); time.sleep(0.3)
@@ -734,7 +758,10 @@ class Runner:
         page.click('text=Brooklyn'); time.sleep(0.3)
         self.ok(not page.evaluate("document.querySelector('#boros input[value=Bk]').checked"), 'borough chip should toggle off', j)
         r = page.request.get(LIVE + '/api/alerts/prefs')
-        self.ok(r.status == 401, f'/api/alerts/prefs without a session should be 401, got {r.status}', j)
+        # 429 counts as gated too: the endpoint is rate limited, and running
+        # the suite several times in a row (as a deploy does) trips it. Both
+        # codes mean the same thing here — an anonymous caller got nothing.
+        self.ok(r.status in (401, 429), f'/api/alerts/prefs without a session should be refused, got {r.status}', j)
         j.notes.append('prefs endpoint gated')
 
     def j_app_chip(self, page, j, device):
@@ -750,7 +777,106 @@ class Runner:
             j.notes.append('chip right of Alerts')
         else:
             self.ok(not info['shown'], 'iPhone app chip must not show on desktop', j)
-            j.notes.append('hidden on desktop')
+            self.app_qr(page, j)
+
+    def app_qr(self, page, j):
+        """Desktop's Get-the-app chip, and the QR behind it, actually decoded.
+
+        A laptop cannot follow an App Store link to the device the app installs
+        on, so desktop gets a QR instead of #pill-app-m (asked 2026-09-16).
+
+        Asserting the <path> is non-empty would prove nothing — a QR fails in
+        ways that still look like a QR. The generator can mask wrongly, CSS can
+        scale it below the point where modules survive rasterising, dark mode
+        can invert it, and a quiet zone one module too thin stops a camera
+        finding the symbol at all even though the code itself is perfect. All
+        four render as "a square of noise nobody can scan". So this screenshots
+        the panel as painted and hands the pixels to OpenCV: if the detector can
+        read it, a phone can. The 24px of panel padding IS the quiet zone and
+        nothing is added on this side — at 14px the detector found nothing,
+        which is how that bug was caught before it shipped.
+
+        Both themes, because the panel's fixed white background is the only
+        thing keeping the modules dark-on-light when the page goes dark.
+        """
+        import cv2, numpy as np
+        chip = page.evaluate("(()=>{const a=document.getElementById('pill-app-d'),l=document.querySelector('.chip-row a[href=\\'/directory/\\']');"
+                             "const r=a.getBoundingClientRect(),lr=l.getBoundingClientRect();"
+                             "return {shown:r.width>0&&getComputedStyle(a).display!=='none',left:r.left,landlordsRight:lr.right,"
+                             "sameRow:Math.abs(r.top-lr.top)<4,overflow:document.documentElement.scrollWidth>innerWidth}})()")
+        self.ok(chip['shown'], 'desktop should offer a Get-the-app chip', j)
+        self.ok(chip['sameRow'] and chip['left'] >= chip['landlordsRight'] - 1,
+                f'the chip should sit right of Landlords: {chip}', j)
+        self.ok(not chip['overflow'], 'the chip must not push the row sideways', j)
+        for theme in ('light', 'dark'):
+            page.evaluate("document.documentElement.setAttribute('data-theme', %r)" % theme)
+            self.click(page, '#pill-app-d')
+            self.wait_until(page, "!document.getElementById('app-modal').hidden", 5000)
+            panel = page.query_selector('#app-modal .qr-panel')
+            img = cv2.imdecode(np.frombuffer(panel.screenshot(), np.uint8), cv2.IMREAD_COLOR)
+            txt, _pts, _rect = cv2.QRCodeDetector().detectAndDecode(img)
+            self.ok(txt == APP_STORE_URL, f'{theme}: the QR should decode to the App Store listing, got {txt!r}', j)
+            box = page.evaluate("(()=>{const r=document.querySelector('#app-modal .qr-code').getBoundingClientRect();"
+                                "return {w:r.width, onscreen:r.top>=0&&r.bottom<=innerHeight}})()")
+            self.ok(box['w'] >= 140, f'{theme}: the QR paints {box["w"]:.0f}px wide, too small to scan off a screen', j)
+            self.ok(box['onscreen'], f'{theme}: the QR is cut off in a {page.viewport_size["height"]}px window', j)
+            page.keyboard.press('Escape')
+            self.wait_until(page, "document.getElementById('app-modal').hidden", 5000)
+        page.evaluate("document.documentElement.removeAttribute('data-theme')")
+        j.notes.append('QR decodes in both themes')
+
+    def j_app_qr_menu(self, page, j, device):
+        """The other way into the Get-the-app modal: the desktop ☰ menu.
+
+        The chip and the menu row are separate entry points — the menu row
+        works by clicking the chip it mirrors, so a rename of #pill-app-d would
+        break the menu silently while the chip kept working. Desktop only; the
+        phone has no ☰ and reaches the App Store through #pill-app-m.
+        """
+        self.boot(page)
+        if device == 'phone':
+            self.ok(not page.evaluate("!!document.getElementById('menu-btn')?.offsetParent"),
+                    'phones should not show the desktop menu button', j)
+            j.notes.append('n/a on phone')
+            return
+        self.click(page, '#menu-btn')
+        self.wait_until(page, "!document.getElementById('menu-pop').hidden", 5000)
+        row = page.evaluate("[...document.querySelectorAll('#menu-pop [data-menu]')].map(b=>b.dataset.menu)")
+        self.ok('app' in row, f'the menu should offer Get the app, got {row}', j)
+        self.click(page, '#menu-pop [data-menu="app"]')
+        self.wait_until(page, "!document.getElementById('app-modal').hidden", 5000)
+        self.ok(page.evaluate("document.getElementById('menu-pop').hidden"),
+                'opening the modal should close the menu behind it', j)
+        store = page.evaluate("document.getElementById('app-store-link').getAttribute('href')")
+        self.ok(store == APP_STORE_URL, f'the modal should link to the App Store, got {store}', j)
+        self.ok(page.evaluate("document.getElementById('app-store-link').getAttribute('target')") == '_blank'
+                and 'noopener' in (page.evaluate("document.getElementById('app-store-link').getAttribute('rel')") or ''),
+                'the App Store link is off-site: it needs target=_blank and rel=noopener', j)
+        page.keyboard.press('Escape')
+        self.wait_until(page, "document.getElementById('app-modal').hidden", 5000)
+        j.notes.append('menu -> modal -> Escape')
+
+    def j_boot_is_usable(self, page, j, device):
+        """The page must become usable without waiting for the network to stop.
+
+        It never stops: the Look Around previews stream MapKit tiles for as
+        long as they are on screen. boot() used to wait for networkidle and a
+        random handful of desktop journeys therefore died on
+        `Page.goto: Timeout 90000ms` every run — including on an unchanged
+        index.html (2026-09-16). This pins the property that replaced it: pins
+        on the map, a usable search box and a results list, all well inside the
+        old 90 s timeout, while requests are still in flight.
+        """
+        import time as _t
+        start = _t.time()
+        self.boot(page)
+        ready_ms = int((_t.time() - start) * 1000)
+        self.ok(ready_ms < 45000, f'the map should be usable in well under 45 s, took {ready_ms} ms', j)
+        self.ok(page.evaluate(PINS) > 0, 'the map should have drawn pins', j)
+        self.ok(page.evaluate("!document.getElementById('q').disabled"), 'the search box should accept input', j)
+        self.ok(page.evaluate("document.querySelectorAll('#grid .card').length") > 0,
+                'the results list should have cards', j)
+        j.notes.append(f'usable in {ready_ms} ms')
 
     def j_city_chip(self, page, j, device):
         """The header must not flash four city chips before JS collapses them.
@@ -905,7 +1031,7 @@ class Runner:
         self.ok(page.evaluate("document.getElementById('auth-modal').hidden"), 'modal should close', j)
 
     JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'pin_and_list',
-                'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'signin_modal', 'app_chip', 'city_chip',
+                'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'signin_modal', 'app_chip', 'app_qr_menu', 'boot_is_usable', 'city_chip',
                 'ad_tiles', 'outbound_links', 'status_chips', 'referral_gate']
 
     # ---- run --------------------------------------------------------------

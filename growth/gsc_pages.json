@@ -1,36 +1,36 @@
 {
  "churn": {
-  "gsc_serving_entered": 0,
-  "gsc_serving_ever": 284,
+  "gsc_serving_entered": 3,
+  "gsc_serving_ever": 287,
   "gsc_serving_left": 0,
   "gsc_serving_stable": 14,
   "history_dropped": 0,
   "history_dropped_total": 0
  },
- "date": "2026-09-15",
+ "date": "2026-09-16",
  "discovered_untracked": [
   {
-   "clicks": 187,
-   "impressions": 211,
+   "clicks": 190,
+   "impressions": 210,
    "position": 1.0,
    "query": "findacrib"
   },
   {
-   "clicks": 63,
-   "impressions": 73,
+   "clicks": 57,
+   "impressions": 67,
    "position": 1,
    "query": "findacrib.com"
   },
   {
    "clicks": 1,
-   "impressions": 8,
+   "impressions": 7,
    "position": 5,
    "query": "jayshomefinder"
   },
   {
    "clicks": 0,
-   "impressions": 6,
-   "position": 3.5,
+   "impressions": 5,
+   "position": 3.4,
    "query": "jays home finder"
   },
   {
@@ -43,13 +43,13 @@
  "history": {
   "https://findacrib.com/": [
    "2026-07-30",
-   "2026-09-15",
-   46
+   "2026-09-16",
+   47
   ],
   "https://findacrib.com/alerts/?src=menu": [
    "2026-09-12",
-   "2026-09-15",
-   4
+   "2026-09-16",
+   5
   ],
   "https://findacrib.com/building/bronx/1005-walton-ave-2024770034/": [
    "2026-07-30",
@@ -83,8 +83,8 @@
   ],
   "https://findacrib.com/building/bronx/1188-sheridan-ave-2024560222/": [
    "2026-08-30",
-   "2026-09-15",
-   17
+   "2026-09-16",
+   18
   ],
   "https://findacrib.com/building/bronx/1235-grand-concourse-2024640023/": [
    "2026-08-09",
@@ -583,8 +583,8 @@
   ],
   "https://findacrib.com/building/brooklyn/42-driggs-ave-3026890049/": [
    "2026-08-30",
-   "2026-09-15",
-   17
+   "2026-09-16",
+   18
   ],
   "https://findacrib.com/building/brooklyn/420-eastern-pkwy-3012670014/": [
    "2026-07-30",
@@ -781,10 +781,15 @@
    "2026-08-14",
    7
   ],
+  "https://findacrib.com/building/brooklyn/909-manhattan-ave-3025580048/": [
+   "2026-09-16",
+   "2026-09-16",
+   1
+  ],
   "https://findacrib.com/building/brooklyn/96-milton-st-3025660013/": [
    "2026-08-30",
-   "2026-09-15",
-   17
+   "2026-09-16",
+   18
   ],
   "https://findacrib.com/building/manhattan/1-bank-st-1006150036/": [
    "2026-08-16",
@@ -823,8 +828,8 @@
   ],
   "https://findacrib.com/building/manhattan/105-w-72nd-st-1011447501/": [
    "2026-09-10",
-   "2026-09-15",
-   6
+   "2026-09-16",
+   7
   ],
   "https://findacrib.com/building/manhattan/107-e-100th-st-1016280103/": [
    "2026-08-20",
@@ -1186,6 +1191,11 @@
    "2026-08-07",
    7
   ],
+  "https://findacrib.com/building/manhattan/308-mott-st-1005210030/": [
+   "2026-09-16",
+   "2026-09-16",
+   1
+  ],
   "https://findacrib.com/building/manhattan/313-e-9th-st-1004510055/": [
    "2026-07-30",
    "2026-08-02",
@@ -1213,8 +1223,8 @@
   ],
   "https://findacrib.com/building/manhattan/364-w-19th-st-1007420072/": [
    "2026-09-12",
-   "2026-09-15",
-   4
+   "2026-09-16",
+   5
   ],
   "https://findacrib.com/building/manhattan/37-e-1st-st-1004420014/": [
    "2026-08-07",
@@ -1351,10 +1361,15 @@
    "2026-08-18",
    8
   ],
+  "https://findacrib.com/building/queens/140-27-to-140-29-183rd-st-4130410051/": [
+   "2026-09-16",
+   "2026-09-16",
+   1
+  ],
   "https://findacrib.com/building/queens/144-30-roosevelt-ave-4050250020/": [
    "2026-09-13",
-   "2026-09-15",
-   3
+   "2026-09-16",
+   4
   ],
   "https://findacrib.com/building/queens/144-45-35th-ave-4049950064/": [
    "2026-07-31",
@@ -1388,28 +1403,28 @@
   ],
   "https://findacrib.com/dc/": [
    "2026-08-01",
-   "2026-09-15",
-   25
+   "2026-09-16",
+   26
   ],
   "https://findacrib.com/developers/": [
    "2026-09-12",
-   "2026-09-15",
-   4
+   "2026-09-16",
+   5
   ],
   "https://findacrib.com/directory/": [
    "2026-09-12",
-   "2026-09-15",
-   4
+   "2026-09-16",
+   5
   ],
   "https://findacrib.com/la/": [
    "2026-08-01",
-   "2026-09-15",
-   25
+   "2026-09-16",
+   26
   ],
   "https://findacrib.com/marketing-agents/": [
    "2026-09-12",
-   "2026-09-15",
-   4
+   "2026-09-16",
+   5
   ],
   "https://findacrib.com/neighborhood/brooklyn/ocean-hill/": [
    "2026-08-14",
@@ -1423,8 +1438,8 @@
   ],
   "https://findacrib.com/sf/": [
    "2026-08-01",
-   "2026-09-15",
-   25
+   "2026-09-16",
+   26
   ],
   "https://findacrib.com/zip/10021/": [
    "2026-08-09",
@@ -1464,76 +1479,76 @@
  },
  "pages": [
   {
-   "clicks": 276,
-   "impressions": 381,
-   "position": 2.3,
+   "clicks": 279,
+   "impressions": 379,
+   "position": 2.1,
    "url": "https://findacrib.com/"
   },
   {
    "clicks": 0,
-   "impressions": 76,
-   "position": 1.2,
+   "impressions": 146,
+   "position": 1.1,
    "url": "https://findacrib.com/alerts/?src=menu"
   },
   {
    "clicks": 0,
-   "impressions": 76,
-   "position": 1.2,
+   "impressions": 146,
+   "position": 1.1,
    "url": "https://findacrib.com/directory/"
   },
   {
    "clicks": 0,
-   "impressions": 76,
-   "position": 1.2,
+   "impressions": 146,
+   "position": 1.1,
    "url": "https://findacrib.com/marketing-agents/"
   },
   {
    "clicks": 0,
-   "impressions": 76,
-   "position": 1.2,
+   "impressions": 146,
+   "position": 1.1,
    "url": "https://findacrib.com/sf/"
   },
   {
    "clicks": 0,
-   "impressions": 58,
+   "impressions": 121,
    "position": 1.1,
    "url": "https://findacrib.com/dc/"
   },
   {
    "clicks": 0,
-   "impressions": 58,
+   "impressions": 121,
    "position": 1.1,
    "url": "https://findacrib.com/developers/"
   },
   {
    "clicks": 0,
-   "impressions": 58,
+   "impressions": 121,
    "position": 1.1,
    "url": "https://findacrib.com/la/"
   },
   {
    "clicks": 0,
-   "impressions": 16,
-   "position": 4.8,
+   "impressions": 13,
+   "position": 4.6,
    "url": "https://findacrib.com/building/brooklyn/42-driggs-ave-3026890049/"
   },
   {
-   "clicks": 1,
-   "impressions": 14,
-   "position": 5.2,
+   "clicks": 0,
+   "impressions": 9,
+   "position": 5.6,
    "url": "https://findacrib.com/building/bronx/1188-sheridan-ave-2024560222/"
   },
   {
    "clicks": 0,
-   "impressions": 10,
-   "position": 6,
-   "url": "https://findacrib.com/building/brooklyn/96-milton-st-3025660013/"
+   "impressions": 9,
+   "position": 4.1,
+   "url": "https://findacrib.com/building/manhattan/105-w-72nd-st-1011447501/"
   },
   {
    "clicks": 0,
-   "impressions": 5,
+   "impressions": 3,
    "position": 4,
-   "url": "https://findacrib.com/building/manhattan/105-w-72nd-st-1011447501/"
+   "url": "https://findacrib.com/building/brooklyn/96-milton-st-3025660013/"
   },
   {
    "clicks": 0,
@@ -1546,21 +1561,39 @@
    "impressions": 2,
    "position": 2.5,
    "url": "https://findacrib.com/building/queens/144-30-roosevelt-ave-4050250020/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 1,
+   "position": 3,
+   "url": "https://findacrib.com/building/brooklyn/909-manhattan-ave-3025580048/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 1,
+   "position": 2,
+   "url": "https://findacrib.com/building/manhattan/308-mott-st-1005210030/"
+  },
+  {
+   "clicks": 0,
+   "impressions": 1,
+   "position": 5,
+   "url": "https://findacrib.com/building/queens/140-27-to-140-29-183rd-st-4130410051/"
   }
  ],
  "queries_28d": [
   {
-   "clicks": 275,
-   "ctr": 0.873,
-   "impressions": 315,
+   "clicks": 320,
+   "ctr": 0.8719,
+   "impressions": 367,
    "page": "https://findacrib.com/",
    "position": 1.0,
    "query": "findacrib"
   },
   {
-   "clicks": 66,
-   "ctr": 0.8684,
-   "impressions": 76,
+   "clicks": 81,
+   "ctr": 0.8617,
+   "impressions": 94,
    "page": "https://findacrib.com/",
    "position": 1,
    "query": "findacrib.com"
@@ -1583,10 +1616,10 @@
   },
   {
    "clicks": 4,
-   "ctr": 0.1481,
-   "impressions": 27,
+   "ctr": 0.1429,
+   "impressions": 28,
    "page": "https://findacrib.com/",
-   "position": 4.9,
+   "position": 5.0,
    "query": "jayshomefinder"
   },
   {
@@ -1601,27 +1634,27 @@
  "queries_by_page": {
   "https://findacrib.com/": [
    {
-    "clicks": 187,
-    "impressions": 211,
+    "clicks": 190,
+    "impressions": 210,
     "position": 1.0,
     "query": "findacrib"
    },
    {
-    "clicks": 62,
-    "impressions": 73,
+    "clicks": 57,
+    "impressions": 67,
     "position": 1,
     "query": "findacrib.com"
    },
    {
     "clicks": 1,
-    "impressions": 8,
+    "impressions": 7,
     "position": 5,
     "query": "jayshomefinder"
    },
    {
     "clicks": 0,
-    "impressions": 6,
-    "position": 3.5,
+    "impressions": 5,
+    "position": 3.4,
     "query": "jays home finder"
    },
    {
@@ -1634,13 +1667,13 @@
   "https://findacrib.com/alerts/?src=menu": [
    {
     "clicks": 0,
-    "impressions": 46,
-    "position": 1.0,
+    "impressions": 93,
+    "position": 1.1,
     "query": "findacrib"
    },
    {
     "clicks": 0,
-    "impressions": 22,
+    "impressions": 38,
     "position": 1,
     "query": "findacrib.com"
    },
@@ -1659,36 +1692,38 @@
   ],
   "https://findacrib.com/building/bronx/1188-sheridan-ave-2024560222/": [
    {
-    "clicks": 1,
-    "impressions": 12,
-    "position": 5,
+    "clicks": 0,
+    "impressions": 5,
+    "position": 5.8,
     "query": "findacrib.com"
    }
   ],
   "https://findacrib.com/building/brooklyn/42-driggs-ave-3026890049/": [
    {
     "clicks": 0,
-    "impressions": 13,
-    "position": 4.7,
+    "impressions": 7,
+    "position": 4.3,
     "query": "findacrib.com"
    }
   ],
+  "https://findacrib.com/building/brooklyn/909-manhattan-ave-3025580048/": [],
   "https://findacrib.com/building/brooklyn/96-milton-st-3025660013/": [
    {
     "clicks": 0,
-    "impressions": 9,
-    "position": 6.3,
+    "impressions": 2,
+    "position": 4.5,
     "query": "findacrib.com"
    }
   ],
   "https://findacrib.com/building/manhattan/105-w-72nd-st-1011447501/": [
    {
     "clicks": 0,
-    "impressions": 4,
-    "position": 4,
+    "impressions": 5,
+    "position": 3.4,
     "query": "findacrib.com"
    }
   ],
+  "https://findacrib.com/building/manhattan/308-mott-st-1005210030/": [],
   "https://findacrib.com/building/manhattan/364-w-19th-st-1007420072/": [
    {
     "clicks": 0,
@@ -1697,17 +1732,18 @@
     "query": "findacrib.com"
    }
   ],
+  "https://findacrib.com/building/queens/140-27-to-140-29-183rd-st-4130410051/": [],
   "https://findacrib.com/building/queens/144-30-roosevelt-ave-4050250020/": [],
   "https://findacrib.com/dc/": [
    {
     "clicks": 0,
-    "impressions": 35,
+    "impressions": 79,
     "position": 1.1,
     "query": "findacrib"
    },
    {
     "clicks": 0,
-    "impressions": 19,
+    "impressions": 33,
     "position": 1,
     "query": "findacrib.com"
    },
@@ -1721,13 +1757,13 @@
   "https://findacrib.com/developers/": [
    {
     "clicks": 0,
-    "impressions": 35,
+    "impressions": 79,
     "position": 1.1,
     "query": "findacrib"
    },
    {
     "clicks": 0,
-    "impressions": 19,
+    "impressions": 33,
     "position": 1,
     "query": "findacrib.com"
    },
@@ -1741,13 +1777,13 @@
   "https://findacrib.com/directory/": [
    {
     "clicks": 0,
-    "impressions": 46,
-    "position": 1.0,
+    "impressions": 93,
+    "position": 1.1,
     "query": "findacrib"
    },
    {
     "clicks": 0,
-    "impressions": 22,
+    "impressions": 38,
     "position": 1,
     "query": "findacrib.com"
    },
@@ -1767,13 +1803,13 @@
   "https://findacrib.com/la/": [
    {
     "clicks": 0,
-    "impressions": 35,
+    "impressions": 79,
     "position": 1.1,
     "query": "findacrib"
    },
    {
     "clicks": 0,
-    "impressions": 19,
+    "impressions": 33,
     "position": 1,
     "query": "findacrib.com"
    },
@@ -1787,13 +1823,13 @@
   "https://findacrib.com/marketing-agents/": [
    {
     "clicks": 0,
-    "impressions": 46,
-    "position": 1.0,
+    "impressions": 93,
+    "position": 1.1,
     "query": "findacrib"
    },
    {
     "clicks": 0,
-    "impressions": 22,
+    "impressions": 38,
     "position": 1,
     "query": "findacrib.com"
    },
@@ -1813,13 +1849,13 @@
   "https://findacrib.com/sf/": [
    {
     "clicks": 0,
-    "impressions": 46,
-    "position": 1.0,
+    "impressions": 93,
+    "position": 1.1,
     "query": "findacrib"
    },
    {
     "clicks": 0,
-    "impressions": 22,
+    "impressions": 38,
     "position": 1,
     "query": "findacrib.com"
    },
@@ -1840,9 +1876,9 @@
  "serving_brand": {
   "branded_only": 13,
   "nonbranded": 0,
-  "unattributed": 1
+  "unattributed": 4
  },
- "serving_pages": 14,
+ "serving_pages": 17,
  "serving_tiers": {
   "available": {
    "ever": 0,
@@ -1851,15 +1887,15 @@
    "now": 0
   },
   "building": {
-   "ever": 267,
-   "max_days": 17,
-   "median_days": 7,
-   "now": 6
+   "ever": 270,
+   "max_days": 18,
+   "median_days": 7.0,
+   "now": 9
   },
   "city_hub": {
    "ever": 3,
-   "max_days": 25,
-   "median_days": 25,
+   "max_days": 26,
+   "median_days": 26,
    "now": 3
   },
   "council": {
@@ -1870,8 +1906,8 @@
   },
   "developers": {
    "ever": 1,
-   "max_days": 4,
-   "median_days": 4,
+   "max_days": 5,
+   "median_days": 5,
    "now": 1
   },
   "guide": {
@@ -1882,8 +1918,8 @@
   },
   "home": {
    "ever": 1,
-   "max_days": 46,
-   "median_days": 46,
+   "max_days": 47,
+   "median_days": 47,
    "now": 1
   },
   "nyc_hub": {
@@ -1894,8 +1930,8 @@
   },
   "other": {
    "ever": 3,
-   "max_days": 4,
-   "median_days": 4,
+   "max_days": 5,
+   "median_days": 5,
    "now": 3
   },
   "voucher": {
@@ -1905,5 +1941,5 @@
    "now": 0
   }
  },
- "window": "2026-09-06..2026-09-13"
+ "window": "2026-09-07..2026-09-14"
 }

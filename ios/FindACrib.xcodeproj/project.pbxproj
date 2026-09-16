@@ -21,6 +21,7 @@
 		1D4842B47A65A9237090D64D /* PlusStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82AEFA1B93D2073218086C5 /* PlusStore.swift */; };
 		216D8003A64546DC1DED920D /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96A59BAA0D560AEC7D0E1BF8 /* Theme.swift */; };
 		239814C37ED0E60FC84485B9 /* FindACribUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01F62B1CE3CCF2DAD07279F9 /* FindACribUITests.swift */; };
+		2585F491140B42102014866A /* CitySkyline.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBDF25AF911F10445D3687A0 /* CitySkyline.swift */; };
 		2B4DF01382763EDD8546E20A /* Building.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A8CDE81BD0E7DDBEBBC1042 /* Building.swift */; };
 		2EF088CAB2039D21D89C7A35 /* FindACribApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 704D4F6DFB370ACF11ACF60E /* FindACribApp.swift */; };
 		372BCD3B0D02BF530AEFDD93 /* EmailSignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEB1841A5738A151D9E43123 /* EmailSignInView.swift */; };
@@ -113,6 +114,7 @@
 		B2D6C468CBF1CC17D6480192 /* FreezeTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FreezeTest.swift; sourceTree = "<group>"; };
 		B5D0DBDC03E8D5A23A679DA7 /* Activity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Activity.swift; sourceTree = "<group>"; };
 		BA7425E377576FE3E5C2B47B /* BuildingDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildingDetailView.swift; sourceTree = "<group>"; };
+		BBDF25AF911F10445D3687A0 /* CitySkyline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CitySkyline.swift; sourceTree = "<group>"; };
 		BE5021FFFE6C939F06530FD2 /* fmr.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = fmr.json; sourceTree = "<group>"; };
 		BEB1841A5738A151D9E43123 /* EmailSignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailSignInView.swift; sourceTree = "<group>"; };
 		BFF3D4B68CACA452540E0DEC /* Analytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Analytics.swift; sourceTree = "<group>"; };
@@ -133,7 +135,7 @@
 		EA50D389BB3AB7B341BD720D /* ImageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageService.swift; sourceTree = "<group>"; };
 		EFD73F478D420E114F0C82CB /* FiltersSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FiltersSheet.swift; sourceTree = "<group>"; };
 		F4EAE491E6B0AE7EF404FA62 /* HPDRecords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HPDRecords.swift; sourceTree = "<group>"; };
-		"TEMP_86DE29C7-2B03-4036-8573-9B697A5CFCD8" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_8AD19544-420C-4F97-93AC-B42FE18E9EBA" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -287,6 +289,7 @@
 		AAF3B8F7B2884718871E1EF3 /* Design */ = {
 			isa = PBXGroup;
 			children = (
+				BBDF25AF911F10445D3687A0 /* CitySkyline.swift */,
 				DCFB5318551DD17B54EE6524 /* Components.swift */,
 				A3EEF5834FCD3DDE360290CF /* LaunchPresentation.swift */,
 				855488736B82051BFCB10DF5 /* SwipeBack.swift */,
@@ -353,10 +356,10 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
-		"TEMP_492CAA9B-968D-41A6-A856-067BA091E675" /* ios */ = {
+		"TEMP_B6364F6E-8123-4938-9251-0C95788D3C00" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_86DE29C7-2B03-4036-8573-9B697A5CFCD8" /* Secrets.xcconfig */,
+				"TEMP_8AD19544-420C-4F97-93AC-B42FE18E9EBA" /* Secrets.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -498,6 +501,7 @@
 				D6E61BCA921CC1B2F547DF15 /* BuildingRecord.swift in Sources */,
 				1D2C0E5ACC26EC55A19AD0F3 /* City.swift in Sources */,
 				A200EEBA4BB5BBA64BBDA05A /* CityPickerView.swift in Sources */,
+				2585F491140B42102014866A /* CitySkyline.swift in Sources */,
 				07C22BCCE603D9800EE7EE13 /* Components.swift in Sources */,
 				FF9A0CEB29AD7474B6983303 /* DataStore.swift in Sources */,
 				372BCD3B0D02BF530AEFDD93 /* EmailSignInView.swift in Sources */,
@@ -628,7 +632,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 39;
+				CURRENT_PROJECT_VERSION = 42;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -648,7 +652,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.2.0;
+				MARKETING_VERSION = 1.2.1;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -662,7 +666,7 @@
 		};
 		4A043B04EA1D2F1BD0250C61 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_86DE29C7-2B03-4036-8573-9B697A5CFCD8" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_8AD19544-420C-4F97-93AC-B42FE18E9EBA" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -703,7 +707,7 @@
 		};
 		7B4EAA1664EF270AD8C579E8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_86DE29C7-2B03-4036-8573-9B697A5CFCD8" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_8AD19544-420C-4F97-93AC-B42FE18E9EBA" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -776,7 +780,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 39;
+				CURRENT_PROJECT_VERSION = 42;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -790,7 +794,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.2.0;
+				MARKETING_VERSION = 1.2.1;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

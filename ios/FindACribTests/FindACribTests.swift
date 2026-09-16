@@ -178,6 +178,8 @@ final class SearchEngineTests: XCTestCase {
         let mn = nbOf.first { $0.value == "M" }!.key
         var q = SearchQuery()
         XCTAssertEqual(q.shortLocationLabel(boroughOf: nbOf), "NYC")
+        XCTAssertEqual(q.shortLocationLabel(boroughOf: nbOf, city: "LA"), "LA", "the header names the city the search is in")
+        XCTAssertEqual(q.locationLabel(city: "SF"), "All of SF")
         q.locations = [.neighborhood(bk), .borough("M"), .neighborhood(mn), .neighborhood(bk)]
         XCTAssertEqual(q.shortLocationLabel(boroughOf: nbOf), "MN, BK")
         q.locations = [.borough("SI"), .borough("Q"), .zip("10012")]
@@ -650,5 +652,54 @@ final class AnalyticsTests: XCTestCase {
         a.enabled = true
         XCTAssertTrue(a.enabled)
         a.enabled = original
+    }
+}
+
+final class SkylineTests: XCTestCase {
+    func testEveryCityHasItsOwnScene() {
+        XCTAssertEqual(Skyline.Scene.scene(for: "nyc"), .newYork)
+        XCTAssertEqual(Skyline.Scene.scene(for: "sf"), .sanFrancisco)
+        XCTAssertEqual(Skyline.Scene.scene(for: "dc"), .washington)
+        XCTAssertEqual(Skyline.Scene.scene(for: "la"), .losAngeles)
+        XCTAssertEqual(Skyline.Scene.scene(for: "nowhere"), .newYork, "an unknown city falls back to New York, like City.find")
+        for city in City.all { XCTAssertEqual(Skyline.Scene.scene(for: city.id).rawValue.isEmpty, false) }
+    }
+
+    func testScenesShowTheLandmarksAsked() {
+        let ny = Skyline.Scene.newYork.landmarks.map(\.name)
+        XCTAssertTrue(ny.contains("Statue of Liberty") && ny.contains("Brooklyn Bridge") && ny.contains("One Times Square"))
+        XCTAssertTrue(Skyline.Scene.sanFrancisco.landmarks.map(\.name).contains("Golden Gate Bridge"))
+        XCTAssertTrue(Skyline.Scene.washington.landmarks.map(\.name).contains("Washington Monument"))
+        XCTAssertTrue(Skyline.Scene.losAngeles.landmarks.map(\.name).contains("Hollywood Sign"))
+        for scene in Skyline.Scene.allCases {
+            let xs = scene.landmarks.map(\.x)
+            XCTAssertEqual(xs, xs.sorted(), "\(scene) landmarks are laid out left to right")
+            XCTAssertTrue(xs.allSatisfy { $0 > 0 && $0 < 1 }, "\(scene) landmarks sit inside the band")
+        }
+    }
+
+    func testBlinkingIsDeterministicAndMostlyOn() {
+        // Same window, same second → same answer, run after run.
+        XCTAssertEqual(Skyline.windowLit(id: 42, at: 1000), Skyline.windowLit(id: 42, at: 1000))
+        var lit = 0, changes = 0
+        for id in 0..<200 {
+            var last: Bool? = nil
+            for step in 0..<20 {
+                let on = Skyline.windowLit(id: id, at: Double(step) * 0.5)
+                if on { lit += 1 }
+                if let l = last, l != on { changes += 1 }
+                last = on
+            }
+        }
+        XCTAssertGreaterThan(Double(lit) / 4000, 0.6, "most windows are lit")
+        XCTAssertGreaterThan(changes, 100, "windows actually blink over 10 s")
+    }
+
+    func testStarsFillTheSkyWithoutLeavingIt() {
+        let size = CGSize(width: 393, height: Skyline.skyHeight)
+        let stars = Skyline.stars(in: size)
+        XCTAssertGreaterThanOrEqual(stars.count, 18)
+        XCTAssertTrue(stars.allSatisfy { $0.x >= 0 && $0.x <= size.width && $0.y >= 0 && $0.y <= size.height })
+        XCTAssertEqual(stars.map(\.x), Skyline.stars(in: size).map(\.x), "positions are stable between draws")
     }
 }

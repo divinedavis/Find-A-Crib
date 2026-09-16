@@ -354,3 +354,63 @@ final class FindACribUITests: XCTestCase {
         XCTAssertEqual(wheel.value as? String, target, "wheel would not settle on \(target)", file: file, line: line)
     }
 }
+
+/// The skyline band at the top of the results list (CitySkyline.swift). It is
+/// decorative and hidden from accessibility, so what XCUITest can pin is that
+/// pulling the list past its top — which reveals the night sky — leaves the
+/// list working, in every city, and that the band did not push the count off
+/// the screen. Set TEST_RUNNER_SKYLINE_SHOT_DIR to also save a screenshot of
+/// the pulled state per city for eyeballing.
+final class SkylineUITests: XCTestCase {
+    func testPullingPastTheTopKeepsTheListWorkingInEveryCity() throws {
+        let app = XCUIApplication()
+        let shotDir = ProcessInfo.processInfo.environment["SKYLINE_SHOT_DIR"]
+        for city in ["nyc", "sf", "dc", "la"] {
+            app.terminate()
+            app.launchArguments = ["--city", city, "--route", "results"]
+            app.launch()
+            let count = app.staticTexts["results-count"]
+            XCTAssertTrue(count.waitForExistence(timeout: 90), "\(city) results never appeared")
+            XCTAssertTrue(count.isHittable, "\(city): the skyline band pushed the results count out of view")
+            // Drag the list down past its top and hold, the way a person peeks
+            // at the sky; then let go and make sure the list snapped back.
+            let start = count.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            let end = start.withOffset(CGVector(dx: 0, dy: 220))
+            // The gesture blocks this thread, so the mid-pull frames — the
+            // only ones that show the sky — are grabbed from another one and
+            // kept in the .xcresult (xcresulttool export attachments) for
+            // eyeballing; SKYLINE_SHOT_DIR also gets them as files.
+            let frames = MidGestureFrames(after: [1.0, 1.8, 2.6])
+            start.press(forDuration: 0.1, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 2.4)
+            for (i, png) in frames.collect().enumerated() {
+                let shot = XCTAttachment(uniformTypeIdentifier: "public.png", name: "skyline-pull-\(city)-\(i).png", payload: png)
+                shot.lifetime = .keepAlways
+                add(shot)
+                if let shotDir { try? png.write(to: URL(fileURLWithPath: shotDir).appendingPathComponent("pull_\(city)_\(i).png")) }
+            }
+            XCTAssertTrue(count.waitForExistence(timeout: 5), "\(city): the list did not come back after the pull")
+            XCTAssertTrue(count.isHittable, "\(city): results count is off screen after the pull")
+            // The list still scrolls and the first card is still reachable.
+            app.swipeUp()
+            XCTAssertTrue(app.descendants(matching: .any)["pill-Map"].firstMatch.exists, "\(city): the results screen chrome is gone after the pull")
+        }
+    }
+}
+
+/// Screenshots taken on a background queue while a blocking gesture runs.
+private final class MidGestureFrames {
+    private let lock = NSLock()
+    private var frames: [Data] = []
+    private let group = DispatchGroup()
+    init(after delays: [TimeInterval]) {
+        for d in delays {
+            group.enter()
+            DispatchQueue.global().asyncAfter(deadline: .now() + d) { [self] in
+                let png = XCUIScreen.main.screenshot().pngRepresentation
+                lock.lock(); frames.append(png); lock.unlock()
+                group.leave()
+            }
+        }
+    }
+    func collect() -> [Data] { group.wait(); lock.lock(); defer { lock.unlock() }; return frames }
+}

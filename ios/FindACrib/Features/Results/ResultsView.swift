@@ -23,7 +23,7 @@ struct ResultsHeader: View {
                     // summary ("Up to $3k, 2 bd") small underneath. Side by side
                     // the summary was cut to "Up to…" on a phone (2026-09-08).
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(query.shortLocationLabel(boroughOf: store.boroughOfNeighborhood)).font(.se(15)).foregroundStyle(SE.ink).lineLimit(1).truncationMode(.tail)
+                        Text(query.shortLocationLabel(boroughOf: store.boroughOfNeighborhood, city: store.city.short)).font(.se(15)).foregroundStyle(SE.ink).lineLimit(1).truncationMode(.tail)
                             .accessibilityIdentifier("results-location")
                         Text(query.summary).font(.se(12)).foregroundStyle(SE.ink2).lineLimit(1).minimumScaleFactor(0.8)
                     }
@@ -78,7 +78,9 @@ struct ResultsView: View {
         let _ = Perf.mark("ResultsView.body shown=\(shown) results=\(results.count)")
         VStack(spacing: 0) {
             NavyBarBackdrop()
-            ScrollView {
+            // The city's skyline rides at the top of the list; pull past the
+            // top and the night sky shows above it (CitySkyline.swift).
+            SkylineScrollView(scene: Skyline.Scene.scene(for: store.city.id)) {
                 LazyVStack(alignment: .leading, spacing: 16) {
                     HStack(alignment: .firstTextBaseline) {
                         Text(query.resultHeadline(count: results.count))
@@ -118,7 +120,6 @@ struct ResultsView: View {
                     Color.clear.frame(height: 150)
                 }
             }
-            .background(SE.canvas)
         }
         .background(SE.canvas)
         .overlay(alignment: .bottom) {

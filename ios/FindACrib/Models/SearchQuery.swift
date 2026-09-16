@@ -150,8 +150,11 @@ struct SearchQuery: Codable, Hashable {
         return parts.isEmpty ? "Any price" : parts.joined(separator: ", ")
     }
 
-    var locationLabel: String {
-        locations.isEmpty ? "All of NYC" : locations.map(\.label).joined(separator: ", ")
+    /// "All of NYC" / "All of LA" with nothing chosen — `city` is the short
+    /// name of the city the search is in (it read "NYC" in every city until
+    /// 2026-09-16).
+    func locationLabel(city: String = "NYC") -> String {
+        locations.isEmpty ? "All of \(city)" : locations.map(\.label).joined(separator: ", ")
     }
 
     /// The results header's short form: one borough abbreviation per borough
@@ -159,8 +162,8 @@ struct SearchQuery: Codable, Hashable {
     /// ("Manhattan, Bushwick, Bed-Stuy" -> "MN, BK"). ZIPs and a map area keep
     /// their own short words. `boroughOf` maps a neighborhood name to its
     /// borough code (DataStore.boroughOfNeighborhood).
-    func shortLocationLabel(boroughOf: [String: String]) -> String {
-        if locations.isEmpty { return "NYC" }
+    func shortLocationLabel(boroughOf: [String: String], city: String = "NYC") -> String {
+        if locations.isEmpty { return city }
         var codes: [String] = [], extras: [String] = []
         for l in locations {
             switch l {

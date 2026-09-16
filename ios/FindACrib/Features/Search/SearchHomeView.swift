@@ -72,7 +72,7 @@ struct SearchHomeView: View {
                         .accessibilityElement(children: .contain)
                         .accessibilityIdentifier("location-field")
                         .accessibilityAddTraits(.isButton)
-                        .accessibilityLabel(query.locations.isEmpty ? "Location" : "Location: \(query.locationLabel)")
+                        .accessibilityLabel(query.locations.isEmpty ? "Location" : "Location: \(query.locationLabel(city: store.city.short))")
                     }
 
                     // Price. Los Angeles publishes no rent at all — its source is
@@ -435,7 +435,7 @@ struct RecentSearchCard: View {
                         Image(systemName: activity.isSearchSaved(query) ? "heart.fill" : "heart")
                             .font(.system(size: 20)).foregroundStyle(SE.royal)
                     }
-                    Text(query.locationLabel).font(.se(17)).foregroundStyle(SE.ink2).lineLimit(1)
+                    Text(query.locationLabel(city: store.city.short)).font(.se(17)).foregroundStyle(SE.ink2).lineLimit(1)
                     Text(query.summary).font(.se(16)).foregroundStyle(SE.ink3).lineLimit(2)
                 }
                 .padding(12)

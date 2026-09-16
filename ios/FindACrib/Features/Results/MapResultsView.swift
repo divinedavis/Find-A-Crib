@@ -16,35 +16,28 @@ struct MapResultsView: View {
     /// Computed with the results, not in `body`: as a computed property it
     /// rebuilt up to 47k entries on every frame of the callout drag.
     @State private var pricesByBBL: [String: Int] = [:]
+    /// How many of `results` sit inside the viewport right now; the map
+    /// reports it after each move (StreetEasy's count follows the map, and
+    /// so did the owner's expectation on 2026-09-16 — no "Search this area"
+    /// tap in between).
+    @State private var inView: Int?
 
     var body: some View {
         VStack(spacing: 0) {
             NavyBarBackdrop()
             ZStack(alignment: .top) {
                 BuildingMap(buildings: results, prices: pricesByBBL, region: $region, selected: $selected, initialFit: $initialFit,
-                            onUserMoved: { moved = true })
+                            onUserMoved: { moved = true }, onVisibleCount: { inView = $0 })
                     .ignoresSafeArea(edges: .bottom)
-                VStack(spacing: 10) {
-                    Text("\(results.count.formatted()) \(query.noun)")
-                        .font(.se(15, .bold)).foregroundStyle(SE.ink)
-                        .padding(.horizontal, 12).padding(.vertical, 6).background(Color.white.opacity(0.95)).clipShape(Capsule())
-                    if moved {
-                        Button {
-                            query.locations = [.mapArea(MapBox(region: region))]
-                            moved = false
-                        } label: {
-                            HStack(spacing: 8) {
-                                Image(systemName: "arrow.clockwise").font(.system(size: 14, weight: .bold))
-                                Text("Search this area").font(.se(17, .bold))
-                            }
-                            .foregroundStyle(.white).padding(.horizontal, 18).frame(height: 44).background(SE.royal).clipShape(Capsule())
-                            .shadow(color: .black.opacity(0.2), radius: 6, y: 2)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityIdentifier("search-this-area")
-                    }
-                }
-                .padding(.top, 12)
+                // The count follows the viewport: pan or zoom and it reads what
+                // is on screen, and List opens on exactly that. Until the user
+                // moves the map it is the whole search.
+                Text(moved ? "\((inView ?? results.count).formatted()) \(query.noun) in view"
+                           : "\(results.count.formatted()) \(query.noun)")
+                    .font(.se(15, .bold)).foregroundStyle(SE.ink)
+                    .padding(.horizontal, 12).padding(.vertical, 6).background(Color.white.opacity(0.95)).clipShape(Capsule())
+                    .accessibilityIdentifier("map-count")
+                    .padding(.top, 12)
             }
         }
         .overlay(alignment: .bottom) {
@@ -79,7 +72,14 @@ struct MapResultsView: View {
         .sheet(isPresented: $showFilters) { FiltersSheet(query: $query) }
         .sheet(isPresented: $showLocation) { LocationPickerView(selected: $query.locations) }
         .task(id: query) {
-            results = SearchEngine.run(query, store: store)
+            // A map area only says where to LOOK. The pins cover the whole
+            // search so panning past the box keeps showing buildings, and the
+            // box (or the viewport, on the way back to the list) is what gets
+            // listed.
+            var wide = query
+            wide.locations.removeAll { if case .mapArea = $0 { return true }; return false }
+            results = SearchEngine.run(wide, store: store)
+            inView = nil
             var prices: [String: Int] = [:]
             for b in results { if let p = store.price(b) ?? store.voucherAvail(b)?.p { prices[b.bbl] = p } }
             pricesByBBL = prices
@@ -95,13 +95,16 @@ struct MapResultsView: View {
     }
 
     /// The list underneath was pushed with the query the map STARTED from.
-    /// "Search this area" and the map's Filter sheet change this view's copy,
-    /// so a plain pop would show the old results. Rewrite the results route
-    /// with the map's current query instead.
+    /// The map's Filter sheet changes this view's copy, and a moved map means
+    /// the viewport, so a plain pop would show the old results. Rewrite the
+    /// results route with the map's current query instead.
     private func backToList() {
+        // Once the user has moved the map, the list is what the map shows.
+        var q = query
+        if moved { q.locations = [.mapArea(MapBox(region: region))] }
         var path = nav.searchPath
         if !path.isEmpty { path.removeLast() }
-        if case .results? = path.last { path[path.count - 1] = .results(query) } else { path.append(.results(query)) }
+        if case .results? = path.last { path[path.count - 1] = .results(q) } else { path.append(.results(q)) }
         nav.searchPath = path
     }
 }
@@ -162,6 +165,19 @@ struct BuildingMap: UIViewRepresentable {
     @Binding var selected: Building?
     @Binding var initialFit: Bool
     var onUserMoved: () -> Void
+    /// Called after each (debounced) move with the number of `buildings`
+    /// inside the viewport — the exact viewport, not the padded one the pins
+    /// are built from.
+    var onVisibleCount: (Int) -> Void
+
+    /// Buildings whose coordinate lies inside the region's box.
+    static func countInView(_ buildings: [Building], region r: MKCoordinateRegion) -> Int {
+        let minLat = r.center.latitude - r.span.latitudeDelta / 2, maxLat = r.center.latitude + r.span.latitudeDelta / 2
+        let minLng = r.center.longitude - r.span.longitudeDelta / 2, maxLng = r.center.longitude + r.span.longitudeDelta / 2
+        var n = 0
+        for b in buildings where b.lat >= minLat && b.lat <= maxLat && b.lng >= minLng && b.lng <= maxLng { n += 1 }
+        return n
+    }
 
     /// Above this many buildings in view, cells replace pins. 47k pins froze
     /// the map and a "nearest 6,000 to the centre" sample left most of the
@@ -237,6 +253,7 @@ struct BuildingMap: UIViewRepresentable {
         private var work: DispatchWorkItem?
         private var lastLayoutKey = ""
         private var generation = 0
+        private var countGeneration = 0
         init(_ p: BuildingMap) { parent = p }
 
         /// Debounced: pinch/pan fire regionDidChange continuously; rebuilding
@@ -253,13 +270,23 @@ struct BuildingMap: UIViewRepresentable {
 
         private func rebuild(_ m: MKMapView, force: Bool) {
             let region = m.region
+            let all = parent.buildings
+            // The in-view count is exact and cheap (one bounds check per row,
+            // off the main thread), so it follows every settled move even when
+            // the pins below decide the view has not moved enough to redraw.
+            let report = parent.onVisibleCount
+            countGeneration += 1; let cgen = countGeneration
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                let n = BuildingMap.countInView(all, region: region)
+                DispatchQueue.main.async { guard let self, cgen == self.countGeneration else { return }; report(n) }
+            }
             // Only re-aggregate when the view moved a meaningful amount.
             let zoom = Int((log2(360 / max(region.span.longitudeDelta, 1e-6))).rounded())
             let cellLat = region.span.latitudeDelta / 3, cellLng = region.span.longitudeDelta / 3
             let key = "\(zoom):\(Int(region.center.latitude / cellLat)):\(Int(region.center.longitude / cellLng))"
             if !force && key == lastLayoutKey { return }
             lastLayoutKey = key
-            let all = parent.buildings, prices = parent.prices
+            let prices = parent.prices
             let limit = BuildingMap.pinLimit
             // Degrees per cell, from a cell measured in screen points. The map
             // view's own size is the only honest source for this: it differs by

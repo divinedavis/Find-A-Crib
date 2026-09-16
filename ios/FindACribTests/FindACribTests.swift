@@ -703,3 +703,15 @@ final class SkylineTests: XCTestCase {
         XCTAssertEqual(stars.map(\.x), Skyline.stars(in: size).map(\.x), "positions are stable between draws")
     }
 }
+
+final class MapViewportTests: XCTestCase {
+    func testCountInViewUsesTheExactViewport() {
+        let mk = { (lat: Double, lng: Double) in Building(bbl: "\(lat),\(lng)", b: "", a: "", z: nil, lat: lat, lng: lng) }
+        let inside = [mk(40.688, -73.97), mk(40.692, -73.96)]
+        let outside = [mk(40.75, -73.97), mk(40.68, -74.10), mk(40.6849, -73.97)]   // north, west, just under the edge
+        let region = MKCoordinateRegion(center: .init(latitude: 40.69, longitude: -73.965),
+                                        span: .init(latitudeDelta: 0.01, longitudeDelta: 0.02))
+        XCTAssertEqual(BuildingMap.countInView(inside + outside, region: region), 2)
+        XCTAssertEqual(BuildingMap.countInView([], region: region), 0)
+    }
+}

@@ -82,26 +82,33 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Remove Brooklyn"].waitForExistence(timeout: 5))
     }
 
-    /// Regression: "Search this area" then "List" must show the buildings in
-    /// the map's view, not the results the map was opened from.
-    func testMapSearchThisAreaCarriesToList() throws {
+    /// The list follows the map: pan or zoom, and the count pill reads what
+    /// is in view; "List" then opens on that area — no "Search this area" tap
+    /// (removed 2026-09-16 at the owner's request, from a recording of the
+    /// count sitting at 47,165 through a whole zoom into Clinton Hill).
+    func testMapViewportCarriesToList() throws {
         app.terminate()
         app.launchArguments = ["--route", "map"]
         app.launch()
         let list = app.buttons["pill-List"]
         XCTAssertTrue(list.waitForExistence(timeout: 30))
+        let count = app.staticTexts["map-count"]
+        XCTAssertTrue(count.waitForExistence(timeout: 10))
+        let before = count.label
+        XCTAssertFalse(before.contains("in view"), "the pill must read the whole search before the map is moved: \(before)")
         sleep(3)   // let the initial fit settle so the pan reads as the user's
         let map = app.maps.firstMatch
         XCTAssertTrue(map.waitForExistence(timeout: 10))
         map.swipeUp()
         map.pinch(withScale: 3, velocity: 2)
-        let search = app.buttons["search-this-area"]
-        XCTAssertTrue(search.waitForExistence(timeout: 5))
-        search.tap()
+        let followed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS 'in view'"), object: count)
+        XCTAssertEqual(XCTWaiter().wait(for: [followed], timeout: 8), .completed, "count did not follow the map: \(count.label)")
+        XCTAssertNotEqual(count.label, before, "zooming into a few blocks must change the count")
         list.tap()
         let field = app.buttons["results-location-field"]
         XCTAssertTrue(field.waitForExistence(timeout: 10))
         XCTAssertTrue(field.label.contains("Map area"), "list header was: \(field.label)")
+        XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 10))
     }
 
     /// Both price bounds are set on one wheel now rather than typed into two

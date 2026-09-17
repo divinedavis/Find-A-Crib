@@ -534,7 +534,8 @@ final class CityTests: XCTestCase {
     /// city now fetches is two files, not one: the boot payload and the record
     /// blob behind it, the same split the website boots from.
     func testOnlyNYCFetchesTheExtraFeeds() {
-        XCTAssertEqual(DataStore.files(for: .nyc).count, 5)
+        XCTAssertEqual(DataStore.files(for: .nyc).count, 6, "buildings + listings, s8, fmr, hcr, featured")
+        XCTAssertTrue(DataStore.files(for: .nyc).contains("featured.json"), "the re-rental feed is a New York extra")
         XCTAssertEqual(DataStore.files(for: .la), ["la/buildings.slim.json.gz", "la/buildings.hpd.json.gz"])
         XCTAssertEqual(DataStore.files(for: .sf), ["sf/buildings.slim.json.gz", "sf/buildings.hpd.json.gz"])
         XCTAssertEqual(DataStore.files(for: .dc), ["dc/buildings.slim.json.gz", "dc/buildings.hpd.json.gz"])
@@ -713,5 +714,68 @@ final class MapViewportTests: XCTestCase {
                                         span: .init(latitudeDelta: 0.01, longitudeDelta: 0.02))
         XCTAssertEqual(BuildingMap.countInView(inside + outside, region: region), 2)
         XCTAssertEqual(BuildingMap.countInView([], region: region), 0)
+    }
+}
+
+final class RerentalFeedTests: XCTestCase {
+    private func b(_ i: Int, boro: String = "Bk") -> Building { Building(bbl: "b\(i)", b: boro, a: "", z: nil, lat: 40.6, lng: -73.9) }
+    private func f(_ i: Int, boro: String? = "Brooklyn") -> FeaturedListing {
+        FeaturedListing(agent: "Agent \(i)", address: "\(i) Main St", borough: boro, href: "https://example.com/\(i)")
+    }
+
+    func testFirstTileIsThirdThenEvery8To15NeverAdjacent() {
+        for seed: UInt64 in [1, 7, 99, 12345, .max] {
+            let slots = RerentalFeed.slots(tiles: 400, seed: seed)
+            XCTAssertEqual(slots.first, 2, "the first re-rental is the 3rd tile (seed \(seed))")
+            for (a, z) in zip(slots, slots.dropFirst()) {
+                let between = z - a - 1
+                XCTAssertTrue((8...15).contains(between), "\(between) tiles between re-rentals (seed \(seed))")
+            }
+            XCTAssertEqual(slots, RerentalFeed.slots(tiles: 400, seed: seed), "same seed, same feed")
+            XCTAssertEqual(Array(slots.prefix(3)), Array(RerentalFeed.slots(tiles: 60, seed: seed).prefix(3)), "paging further extends, never reshuffles")
+        }
+        XCTAssertNotEqual(RerentalFeed.slots(tiles: 400, seed: 1), RerentalFeed.slots(tiles: 400, seed: 2), "different launches differ")
+    }
+
+    func testRowsInterleaveWithoutRepeatingOrTouching() {
+        let buildings = (0..<100).map { b($0) }
+        let pool = (0..<3).map { f($0) }
+        let rows = RerentalFeed.rows(buildings: buildings, pool: pool, seed: 42)
+        XCTAssertEqual(rows.filter { if case .building = $0 { return true }; return false }.count, 100, "every building is still in the feed")
+        var lastWasRerental = false, previous: FeaturedListing? = nil, rerentals = 0
+        for (i, r) in rows.enumerated() {
+            if case .rerental(let l, _) = r {
+                rerentals += 1
+                XCTAssertFalse(lastWasRerental, "two re-rentals touched at row \(i)")
+                XCTAssertNotEqual(previous?.id, l.id, "the same apartment twice running at row \(i)")
+                previous = l; lastWasRerental = true
+            } else { lastWasRerental = false }
+        }
+        if case .rerental = rows[2] {} else { XCTFail("the 3rd tile is a re-rental") }
+        XCTAssertGreaterThanOrEqual(rerentals, 6)
+        XCTAssertEqual(Set(rows.map(\.id)).count, rows.count, "row ids are unique for ForEach")
+        XCTAssertEqual(RerentalFeed.rows(buildings: buildings, pool: [], seed: 42).count, 100, "no pool, no tiles")
+    }
+
+    func testPoolFollowsTheBoroughsInTheResults() {
+        let featured = [f(0, boro: "Brooklyn"), f(1, boro: "Bronx"), f(2, boro: "The Bronx"), f(3, boro: nil), f(4, boro: "Manhattan")]
+        let pool = RerentalFeed.pool(featured, for: [b(0, boro: "Bk"), b(1, boro: "Bx")])
+        XCTAssertEqual(pool.map(\.agent), ["Agent 0", "Agent 1", "Agent 2"], "Brooklyn and both Bronx spellings; Manhattan and the unnamed one stay out")
+    }
+
+    func testFeaturedSeedDecodesAndTagsOutboundLinks() throws {
+        guard let url = Bundle(for: DataStore.self).url(forResource: "featured", withExtension: "json", subdirectory: "Data")
+                ?? Bundle(for: DataStore.self).url(forResource: "featured", withExtension: "json") else {
+            return XCTFail("featured.json is not in the bundle — scripts/refresh_data.sh seeds it")
+        }
+        let blob = try JSONDecoder().decode(FeaturedBlob.self, from: Data(contentsOf: url))
+        XCTAssertGreaterThan(blob.listings.count, 5)
+        XCTAssertTrue(blob.listings.contains { $0.moneyKind == "rent" && $0.moneyLine.text.hasSuffix("/mo") })
+        XCTAssertTrue(blob.listings.allSatisfy { !$0.href.isEmpty && !$0.address.isEmpty })
+        let out = try XCTUnwrap(blob.listings[0].outboundURL)
+        XCTAssertTrue(out.absoluteString.contains("utm_source=findacrib.com") && out.absoluteString.contains("utm_campaign=rerental_tile"))
+        XCTAssertNil(FeaturedListing(agent: "", address: "", borough: nil, href: "javascript:alert(1)").outboundURL, "only http(s) hands off")
+        XCTAssertEqual(FeaturedListing(agent: "", address: "", borough: nil, href: "https://x.org/u?utm_source=other").outboundURL?.absoluteString,
+                       "https://x.org/u?utm_source=other", "never overwrite a campaign somebody else set")
     }
 }

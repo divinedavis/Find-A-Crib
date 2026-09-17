@@ -82,6 +82,33 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Remove Brooklyn"].waitForExistence(timeout: 5))
     }
 
+    /// Re-rentals ride along in the results feed: the 3rd tile is one, with a
+    /// "Rerental" flag and a hand-off button, and it never displaces a building
+    /// (the count headline is unchanged). The default route is Brooklyn, and
+    /// the bundled featured.json has Brooklyn re-rentals, so this runs offline.
+    func testThirdResultTileIsARerental() throws {
+        app.terminate()
+        app.launchArguments = ["--route", "results"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 60))
+        let card = app.descendants(matching: .any)["rerental-card"].firstMatch
+        // A lazy stack can report the tile before it is on screen; bring it
+        // into view so the checks (and the screenshot) are of the real thing.
+        for _ in 0..<8 where !card.isHittable { app.swipeUp() }
+        XCTAssertTrue(card.isHittable, "no re-rental tile within the first screens of results")
+        // ...and fully, for the screenshot: a hittable tile can be one row peeking in at the bottom.
+        let from = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.8))
+        from.press(forDuration: 0.05, thenDragTo: from.withOffset(CGVector(dx: 0, dy: -520)), withVelocity: .slow, thenHoldForDuration: 0.3)
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "rerental-tile"; shot.lifetime = .keepAlways; add(shot)
+        XCTAssertTrue(app.descendants(matching: .any)["badge-rerental"].firstMatch.exists, "the tile is not flagged Rerental")
+        XCTAssertTrue(app.descendants(matching: .any)["rerental-apply"].firstMatch.exists, "the tile has no hand-off button")
+        // Order: exactly two building cards come before it.
+        let all = app.descendants(matching: .any).matching(NSPredicate(format: "identifier == 'building-card' OR identifier == 'rerental-card'")).allElementsBoundByIndex
+        if let i = all.firstIndex(where: { $0.identifier == "rerental-card" }) {
+            XCTAssertEqual(i, 2, "the first re-rental must be the 3rd tile, found at \(i + 1)")
+        }
+    }
+
     /// The list follows the map: pan or zoom, and the count pill reads what
     /// is in view; "List" then opens on that area — no "Search this area" tap
     /// (removed 2026-09-16 at the owner's request, from a recording of the

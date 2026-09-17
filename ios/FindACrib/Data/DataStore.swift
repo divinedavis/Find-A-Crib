@@ -18,6 +18,8 @@ final class DataStore {
     private(set) var s8 = S8Blob()
     private(set) var fmr: FMRTable = [:]
     private(set) var hcr = HCRBlob()
+    /// Re-rentals from the HPD marketing agents (featured.json), NYC only.
+    private(set) var featured = FeaturedBlob()
     /// DHCR buildings that host an HCR listing, plus one synthetic Building per
     /// listing site that is not on the register — the pool "HCR" searches run over.
     private(set) var hcrBuildings: [Building] = []
@@ -45,7 +47,7 @@ final class DataStore {
     static let host = URL(string: "https://findacrib.com/")!
     /// Advertised rents, vouchers and lotteries are New York feeds; the other
     /// cities have buildings only, so nothing else is even requested for them.
-    static let nycExtras = ["listings.json", "s8.json", "fmr.json", "hcr.json"]
+    static let nycExtras = ["listings.json", "s8.json", "fmr.json", "hcr.json", "featured.json"]
     nonisolated static func files(for city: City) -> [String] {
         var f = [city.dataPath]
         // The per-building record blob, where the city has one. NYC's detail is
@@ -82,6 +84,7 @@ final class DataStore {
     struct Payload: Sendable {
         var buildings: [Building]; var records: [String: BuildingRecord] = [:]
         var listings: ListingsBlob; var s8: S8Blob; var fmr: FMRTable; var hcr: HCRBlob
+        var featured: FeaturedBlob = FeaturedBlob()
         /// Built alongside the decode, off the main actor. Nil only for payloads
         /// the unit tests assemble by hand; applyPayload builds it then.
         var index: Index? = nil
@@ -91,6 +94,7 @@ final class DataStore {
     /// does not, so a refresh that only touched these re-decodes only these.
     struct Extras: Sendable {
         var listings: ListingsBlob; var s8: S8Blob; var fmr: FMRTable; var hcr: HCRBlob
+        var featured: FeaturedBlob = FeaturedBlob()
     }
 
     /// Every lookup table derived from the building array. Building these on
@@ -158,7 +162,7 @@ final class DataStore {
         }
         let e = decodeExtras(city, bundleOnly: bundleOnly)
         return Payload(buildings: buildings, records: records, listings: e.listings,
-                       s8: e.s8, fmr: e.fmr, hcr: e.hcr, index: buildIndex(buildings, city: city))
+                       s8: e.s8, fmr: e.fmr, hcr: e.hcr, featured: e.featured, index: buildIndex(buildings, city: city))
     }
 
     nonisolated static func decodeExtras(_ city: City, bundleOnly: Bool = false) -> Extras {
@@ -169,7 +173,7 @@ final class DataStore {
             catch { NSLog("FindACrib: %@ failed to decode: %@", name, String(describing: error)); return empty }
         }
         return Extras(listings: opt("listings.json", ListingsBlob()), s8: opt("s8.json", S8Blob()),
-                      fmr: opt("fmr.json", [:]), hcr: opt("hcr.json", HCRBlob()))
+                      fmr: opt("fmr.json", [:]), hcr: opt("hcr.json", HCRBlob()), featured: opt("featured.json", FeaturedBlob()))
     }
 
     func load() async {
@@ -209,7 +213,7 @@ final class DataStore {
         records = p.records
         byBBL = ix.byBBL
         byNeighborhood = ix.byNeighborhood
-        listings = p.listings; s8 = p.s8; fmr = p.fmr; hcr = p.hcr
+        listings = p.listings; s8 = p.s8; fmr = p.fmr; hcr = p.hcr; featured = p.featured
         dataAsOf = p.listings.updatedDate
         indexHCR()
         neighborhoods = ix.neighborhoods
@@ -225,7 +229,7 @@ final class DataStore {
         // indexHCR mints synthetic rows into byBBL; drop the old ones first so
         // a lottery that closed does not linger as a stray pin.
         for b in hcrBuildings where HCRListing.isSynthetic(b.bbl) { byBBL[b.bbl] = nil }
-        listings = e.listings; s8 = e.s8; fmr = e.fmr; hcr = e.hcr
+        listings = e.listings; s8 = e.s8; fmr = e.fmr; hcr = e.hcr; featured = e.featured
         dataAsOf = e.listings.updatedDate
         indexHCR()
     }

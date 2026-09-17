@@ -112,10 +112,18 @@ struct ResultsView: View {
                         .padding(18).seCard().padding(.horizontal, 16)
                     }
 
-                    ForEach(results.prefix(shown)) { b in
-                        BuildingCard(building: b)
-                            .padding(.horizontal, 16)
-                            .onAppear { if b.bbl == results[min(shown, results.count) - 1].bbl, shown < results.count { shown += 30 } }
+                    // Re-rentals from the HPD marketing agents ride along in
+                    // the feed: the 3rd tile, then one every 8–15 (RerentalFeed).
+                    ForEach(RerentalFeed.rows(buildings: Array(results.prefix(shown)), pool: rerentalPool, seed: RerentalFeed.launchSeed)) { row in
+                        switch row {
+                        case .building(let b):
+                            BuildingCard(building: b)
+                                .padding(.horizontal, 16)
+                                .onAppear { if b.bbl == results[min(shown, results.count) - 1].bbl, shown < results.count { shown += 30 } }
+                        case .rerental(let f, _):
+                            RerentalCard(listing: f)
+                                .padding(.horizontal, 16)
+                        }
                     }
                     Color.clear.frame(height: 150)
                 }
@@ -161,6 +169,10 @@ struct ResultsView: View {
         .swipeBackEnabled()
     }
 
+    /// The re-rentals that belong in this feed: New York only, and only in
+    /// a borough the results are in. Recomputed with the results, not per row.
+    @State private var rerentalPool: [FeaturedListing] = []
+
     private var emptyHint: String {
         let n = query.normalized
         if n.hcrOnly { return "HousingSearch.ny.gov lists about 50 open lotteries and waitlists in the city at a time. Clear the other Show boxes and the price range to see them all." }
@@ -173,5 +185,6 @@ struct ResultsView: View {
         guard store.loaded else { return }
         results = SearchEngine.run(query, store: store)
         shown = 30
+        rerentalPool = store.city.isNYC ? RerentalFeed.pool(store.featured.listings, for: results) : []
     }
 }

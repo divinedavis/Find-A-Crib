@@ -52,15 +52,15 @@ final class Analytics {
     /// caps its impression rows the same way.
     private let capPerLaunch = 400
 
-    /// OFF UNTIL THE APP PRIVACY LABEL SAYS SO.
+    /// ON since 2026-09-16, because the App Privacy answers now say so.
     ///
-    /// Sending usage data while App Store Connect's App Privacy answers say the
-    /// app collects only name and email is a false declaration, and that page
-    /// is browser-only — there is no API to change it from here. So the code
-    /// ships dark: every call below is a no-op until Product Interaction /
-    /// Usage Data is declared (linked to identity when signed in, NOT used for
-    /// tracking) and this is flipped to true in the same commit that says so.
-    static let privacyLabelDeclared = false
+    /// `scripts/asc_push_privacy_iris.py` published NAME, EMAIL_ADDRESS,
+    /// USER_ID and PURCHASE_HISTORY (App Functionality) plus
+    /// PRODUCT_INTERACTION and OTHER_USAGE_DATA (Analytics) — every one
+    /// linked to the account, none used for tracking. Adding an event that
+    /// collects anything outside those six types means publishing the label
+    /// again BEFORE the build ships.
+    static let privacyLabelDeclared = true
 
     var enabled: Bool {
         get { UserDefaults.standard.object(forKey: "analytics.enabled") as? Bool ?? true }

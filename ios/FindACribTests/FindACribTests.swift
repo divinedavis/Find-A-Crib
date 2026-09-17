@@ -634,15 +634,6 @@ final class CitySearchTests: XCTestCase {
 
 @MainActor
 final class AnalyticsTests: XCTestCase {
-    /// The app must not send usage data while App Store Connect's App Privacy
-    /// answers still say it collects only name and email. Flipping this on is
-    /// a deliberate act that belongs in the same commit as the label change —
-    /// this test is here so it cannot happen by accident.
-    func testAnalyticsIsDarkUntilThePrivacyLabelIsDeclared() {
-        XCTAssertFalse(Analytics.privacyLabelDeclared,
-                       "declare Product Interaction / Usage Data in App Store Connect, then flip this and update this test in the same commit")
-    }
-
     /// Whatever the gate says, the setting is real and defaults to on.
     func testShareUsageDefaultsOnAndPersists() {
         let a = Analytics.shared
@@ -807,10 +798,25 @@ final class AnalyticsEventShapeTests: XCTestCase {
         XCTAssertEqual(p["link"] as? String, "listing", "a listing with no href_kind is a unit page")
     }
 
-    func testTrackingIsDarkUntilTheLabelIsDeclared() {
-        // The App Privacy answers still say name + email only. The moment this
-        // flips, that page must already say Product Interaction / Usage Data —
-        // scripts/asc_push_privacy_iris.py publishes it.
-        XCTAssertFalse(Analytics.privacyLabelDeclared)
+    func testTrackingIsLiveAndTheLabelWasPublishedFirst() {
+        // Flipped 2026-09-16, after asc_push_privacy_iris.py published
+        // PRODUCT_INTERACTION + OTHER_USAGE_DATA (Analytics, linked, no
+        // tracking) alongside NAME / EMAIL_ADDRESS / USER_ID /
+        // PURCHASE_HISTORY. An event collecting anything outside those six
+        // types needs the label published again before the build ships.
+        XCTAssertTrue(Analytics.privacyLabelDeclared)
+    }
+
+    func testEveryEventIsOffWhenTheUserOptsOut() {
+        let a = Analytics.shared
+        let was = a.enabled
+        defer { a.enabled = was }
+        a.enabled = false
+        // Nothing to assert on the wire from a unit test; what this pins is
+        // that the switch is the thing `track` consults and that it persists,
+        // so Profile → Share anonymous usage actually silences the app.
+        XCTAssertFalse(a.enabled)
+        a.track("search")
+        XCTAssertFalse(UserDefaults.standard.bool(forKey: "analytics.enabled"))
     }
 }

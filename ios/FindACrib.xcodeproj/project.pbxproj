@@ -39,6 +39,7 @@
 		71EC779912AE74BE0D6EA8D8 /* FiltersSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFD73F478D420E114F0C82CB /* FiltersSheet.swift */; };
 		77119B1CD94A4E7C0C3B77D4 /* MyActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67EAA0737B2B2E5474B5BE9D /* MyActivityView.swift */; };
 		7AFD10F6B321EADAB58210EA /* SearchQuery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C5230FE7E960A89326516B1 /* SearchQuery.swift */; };
+		912D4908F1D4876F89FA2785 /* RerentalCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65301E425C2A38F09A1C9C87 /* RerentalCard.swift */; };
 		9134BE67A61C675A32B53598 /* Analytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFF3D4B68CACA452540E0DEC /* Analytics.swift */; };
 		975FC0D78B115A6A80887B03 /* buildings.slim.json.gz in Resources */ = {isa = PBXBuildFile; fileRef = 7AB083E634E08974E9E2C973 /* buildings.slim.json.gz */; };
 		A200EEBA4BB5BBA64BBDA05A /* CityPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F98DDB6CAE27151A26A25D9 /* CityPickerView.swift */; };
@@ -53,7 +54,9 @@
 		D06140B2770579898ABA0FFB /* LocationPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C345F6E17169EEB81A7265B /* LocationPickerView.swift */; };
 		D6E61BCA921CC1B2F547DF15 /* BuildingRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1D26A69E307FE608B06AA79 /* BuildingRecord.swift */; };
 		DE9AB6F87BE8AB6E7F23F0E2 /* Activity.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5D0DBDC03E8D5A23A679DA7 /* Activity.swift */; };
+		E57C95D3DBA91F4B5E4486CC /* featured.json in Resources */ = {isa = PBXBuildFile; fileRef = 607D7C368FDC8ECF23075BAF /* featured.json */; };
 		EE8FB6404DECF616C6331A7C /* ResultsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BF31F5CBC53724752881713 /* ResultsView.swift */; };
+		F01F8CC2D35CFD12A1556DFC /* Featured.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF0E6DE346509DF0B51FC834 /* Featured.swift */; };
 		F352BA38267B7AE6FEB41498 /* SearchHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E81DF56B127517559D83AFC /* SearchHomeView.swift */; };
 		F7BB0C6F38114DBBBAD8DF51 /* SourceSans3-Black.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 5F0A512AC04B8BF2FA246DAF /* SourceSans3-Black.ttf */; };
 		FAB92101828BCF949523AF8B /* FreezeTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2D6C468CBF1CC17D6480192 /* FreezeTest.swift */; };
@@ -95,6 +98,8 @@
 		5A8CDE81BD0E7DDBEBBC1042 /* Building.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Building.swift; sourceTree = "<group>"; };
 		5EDD14746F84061336060AD5 /* City.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = City.swift; sourceTree = "<group>"; };
 		5F0A512AC04B8BF2FA246DAF /* SourceSans3-Black.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SourceSans3-Black.ttf"; sourceTree = "<group>"; };
+		607D7C368FDC8ECF23075BAF /* featured.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = featured.json; sourceTree = "<group>"; };
+		65301E425C2A38F09A1C9C87 /* RerentalCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RerentalCard.swift; sourceTree = "<group>"; };
 		67EAA0737B2B2E5474B5BE9D /* MyActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyActivityView.swift; sourceTree = "<group>"; };
 		704D4F6DFB370ACF11ACF60E /* FindACribApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FindACribApp.swift; sourceTree = "<group>"; };
 		71591CE242BD5799D49A3AFC /* FindACribTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FindACribTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -117,6 +122,7 @@
 		BBDF25AF911F10445D3687A0 /* CitySkyline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CitySkyline.swift; sourceTree = "<group>"; };
 		BE5021FFFE6C939F06530FD2 /* fmr.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = fmr.json; sourceTree = "<group>"; };
 		BEB1841A5738A151D9E43123 /* EmailSignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailSignInView.swift; sourceTree = "<group>"; };
+		BF0E6DE346509DF0B51FC834 /* Featured.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Featured.swift; sourceTree = "<group>"; };
 		BFF3D4B68CACA452540E0DEC /* Analytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Analytics.swift; sourceTree = "<group>"; };
 		C2015DADE5A5CCF0E92E6795 /* s8.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = s8.json; sourceTree = "<group>"; };
 		C82AEFA1B93D2073218086C5 /* PlusStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlusStore.swift; sourceTree = "<group>"; };
@@ -135,7 +141,7 @@
 		EA50D389BB3AB7B341BD720D /* ImageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageService.swift; sourceTree = "<group>"; };
 		EFD73F478D420E114F0C82CB /* FiltersSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FiltersSheet.swift; sourceTree = "<group>"; };
 		F4EAE491E6B0AE7EF404FA62 /* HPDRecords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HPDRecords.swift; sourceTree = "<group>"; };
-		"TEMP_9F9062A0-1107-40C3-8AA5-9A4805E7A491" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_2AFC4356-2760-4D81-965C-75F48D02D4B8" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -183,6 +189,7 @@
 				C86217F159AB095139ABEE8D /* BuildingCard.swift */,
 				EFD73F478D420E114F0C82CB /* FiltersSheet.swift */,
 				ACFF6FF6AFF4A2D1729699C2 /* MapResultsView.swift */,
+				65301E425C2A38F09A1C9C87 /* RerentalCard.swift */,
 				2BF31F5CBC53724752881713 /* ResultsView.swift */,
 			);
 			path = Results;
@@ -278,6 +285,7 @@
 			isa = PBXGroup;
 			children = (
 				7AB083E634E08974E9E2C973 /* buildings.slim.json.gz */,
+				607D7C368FDC8ECF23075BAF /* featured.json */,
 				BE5021FFFE6C939F06530FD2 /* fmr.json */,
 				91590C5C68756FD6803793E5 /* hcr.json */,
 				E42AA07F206334B8F58225F1 /* listings.json */,
@@ -351,15 +359,16 @@
 				5A8CDE81BD0E7DDBEBBC1042 /* Building.swift */,
 				E1D26A69E307FE608B06AA79 /* BuildingRecord.swift */,
 				5EDD14746F84061336060AD5 /* City.swift */,
+				BF0E6DE346509DF0B51FC834 /* Featured.swift */,
 				3C5230FE7E960A89326516B1 /* SearchQuery.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
 		};
-		"TEMP_592E455F-66E2-4423-A1E7-EAE7FE483B81" /* ios */ = {
+		"TEMP_68E4F701-40BB-449E-9D18-74EEB626E8B4" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_9F9062A0-1107-40C3-8AA5-9A4805E7A491" /* Secrets.xcconfig */,
+				"TEMP_2AFC4356-2760-4D81-965C-75F48D02D4B8" /* Secrets.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -476,6 +485,7 @@
 				B9A374F440D085EA1D5F9E4D /* SourceSans3-Regular.ttf in Resources */,
 				68768EA92CC0D2364159A378 /* SourceSans3-Semibold.ttf in Resources */,
 				975FC0D78B115A6A80887B03 /* buildings.slim.json.gz in Resources */,
+				E57C95D3DBA91F4B5E4486CC /* featured.json in Resources */,
 				1B0A6E98D9106FCDFD97D973 /* fmr.json in Resources */,
 				6CE136038F9CEFACA5F58F6C /* hcr.json in Resources */,
 				4BF1266D9ABC8EA01C9F26AC /* listings.json in Resources */,
@@ -505,6 +515,7 @@
 				07C22BCCE603D9800EE7EE13 /* Components.swift in Sources */,
 				FF9A0CEB29AD7474B6983303 /* DataStore.swift in Sources */,
 				372BCD3B0D02BF530AEFDD93 /* EmailSignInView.swift in Sources */,
+				F01F8CC2D35CFD12A1556DFC /* Featured.swift in Sources */,
 				71EC779912AE74BE0D6EA8D8 /* FiltersSheet.swift in Sources */,
 				2EF088CAB2039D21D89C7A35 /* FindACribApp.swift in Sources */,
 				B111E02FFA19C4DE7A92BCBB /* Gunzip.swift in Sources */,
@@ -519,6 +530,7 @@
 				08D6A13231D727354B66F3BD /* Perf.swift in Sources */,
 				1D4842B47A65A9237090D64D /* PlusStore.swift in Sources */,
 				64498DC63C55C20134BBB5DE /* ProfileView.swift in Sources */,
+				912D4908F1D4876F89FA2785 /* RerentalCard.swift in Sources */,
 				EE8FB6404DECF616C6331A7C /* ResultsView.swift in Sources */,
 				1488C890724AD279E0177491 /* RootView.swift in Sources */,
 				0F1D27EEB4666DE3CC60230B /* SearchEngine.swift in Sources */,
@@ -632,7 +644,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 43;
+				CURRENT_PROJECT_VERSION = 44;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -666,7 +678,7 @@
 		};
 		4A043B04EA1D2F1BD0250C61 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_9F9062A0-1107-40C3-8AA5-9A4805E7A491" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_2AFC4356-2760-4D81-965C-75F48D02D4B8" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -707,7 +719,7 @@
 		};
 		7B4EAA1664EF270AD8C579E8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_9F9062A0-1107-40C3-8AA5-9A4805E7A491" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_2AFC4356-2760-4D81-965C-75F48D02D4B8" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -780,7 +792,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 43;
+				CURRENT_PROJECT_VERSION = 44;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;

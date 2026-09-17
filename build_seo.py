@@ -609,6 +609,37 @@ def city_hub_docs(key, guide_ok=True):
     others = [(o, CITY_HUBS[o]) for o in CITY_HUBS if o != key]
     guide_link = (f"<p><a href='/guide/{cfg['guide']}/'>Read: is my apartment rent controlled "
                   f"in {esc(city)}? →</a></p>") if guide_ok else ""
+    # Dataset markup for this tier — see CITY_DATASET. Computed once over the
+    # records that actually got a page, so the box describes what is published
+    # rather than what was read and dropped under MIN_CITY_HUB.
+    published = [x for v in big.values() for x in v]
+    city_box = _city_bbox(published)
+    copy = CITY_BROWSE_COPY[key]
+
+    def place_dataset(place, items, canonical):
+        """The Dataset node for one place page.
+
+        The city's caveat travels inside `description` on purpose: Dataset
+        Search shows that string verbatim, and a record that says "67,502
+        rent-stabilized LA buildings" without "derived, not the City's official
+        inventory" is the one sentence this site cannot afford to lose.
+
+        `canonical` is passed in rather than re-derived from `place`. A Dataset
+        whose `url` disagreed with the page's own canonical would point a
+        consumer at a URL this page does not claim, and re-deriving the slug
+        here is exactly how the two would drift apart.
+        """
+        n = len(items)
+        where = (f"ZIP code {place}" if cfg["path"] == "zip" else place)
+        return city_dataset_jsonld(
+            key,
+            name=cfg["h1"].format(place=place),
+            description=(f"The {n:,} {cfg['things']} in {where}, {city} listed from "
+                         f"{copy['source']}. {copy['caveat']} A slice of the Find A Crib "
+                         f"{city} dataset."),
+            url=canonical,
+            spatial=_city_place(key, place),
+            size=n)
 
     docs = []
     for place, items in sorted(big.items()):
@@ -678,7 +709,13 @@ def city_hub_docs(key, guide_ok=True):
             "html": page(f"{h1} ({st['n']}) | Find A Crib",
                          f"{st['n']} {cfg['things']} in {place}, {city} — counts, unit sizes and "
                          f"what rent regulation there actually means. Check any address on the map.",
-                         canonical, body, [crumb, faq_jsonld(faq)], footer=footer)})
+                         canonical, body,
+                         # This page IS a collection — every record this site
+                         # holds for one place — so it carries a Dataset node
+                         # for that slice, exactly as the NYC neighborhood
+                         # pages have since 2026-08.
+                         [crumb, faq_jsonld(faq), place_dataset(place, items, canonical)],
+                         footer=footer)})
 
     # ---- the city's browse hub: the page that makes the rest non-orphans
     total_places = len(big)
@@ -699,7 +736,7 @@ def city_hub_docs(key, guide_ok=True):
     # count sentence moved out of the lead and into the answer block rather than
     # being repeated in both: two adjacent paragraphs saying the same number is
     # the boilerplate this tier does not need.
-    agg = _city_stats([x for v in big.values() for x in v])
+    agg = _city_stats(published)
     browse_faq = _city_browse_faq(key, cfg, total_recs, total_places, small, counts, agg)
     body = (f"<div class='crumbs'><a href='/'>Home</a> › <a href='/{key}/'>{esc(city)}</a></div>"
             f"<h1>{esc(cfg['browse_h1'])}</h1>"
@@ -718,13 +755,29 @@ def city_hub_docs(key, guide_ok=True):
             + faq_html(browse_faq))
     crumb = breadcrumb([("Home", SITE + "/"), (city, SITE + f"/{key}/"),
                         (cfg["browse_h1"], SITE + browse_url)])
+    # The city's dataset landing page. /developers/ carries the equivalent node
+    # for NYC; this tier had none, which is why the catalog described one city
+    # out of four. Scoped to the index, not to the city, for the same reason
+    # _city_browse_answer is: total_recs counts only places that cleared
+    # MIN_CITY_HUB, so "San Francisco has n" would overstate it.
+    city_ds = city_dataset_jsonld(
+        key,
+        name=CITY_DATASET[key]["name"],
+        description=(f"{total_recs:,} {cfg['things']} across {total_places} "
+                     f"{_place_word(cfg, plural=True)} in {city}, indexed from "
+                     f"{copy['source']}. {copy['rule']} {copy['caveat']}"),
+        url=SITE + browse_url,
+        spatial={"@type": "Place", "name": f"{city}, United States",
+                 **({"geo": city_box} if city_box else {})},
+        size=total_recs)
     docs.append({
         "kind": "browse", "relpath": browse_url.strip("/") + "/index.html",
         "canonical": SITE + browse_url, "priority": "0.9",
         "html": page(f"{cfg['browse_h1']} | Find A Crib",
                      f"Browse {total_recs:,} {cfg['things']} across {total_places} "
                      f"{'ZIP codes' if cfg['path'] == 'zip' else 'neighborhoods'} in {city}.",
-                     SITE + browse_url, body, [crumb, faq_jsonld(browse_faq)], footer=footer)})
+                     SITE + browse_url, body,
+                     [crumb, faq_jsonld(browse_faq), city_ds], footer=footer)})
     return docs
 
 
@@ -1404,11 +1457,24 @@ DATA_VARIABLES = ["Street address", "Borough", "Neighborhood (NTA)", "ZIP code",
                   "Open HPD complaints"]
 
 
-def dataset_jsonld(name, description, url, spatial, size=None, part_of_catalog=True):
-    """A Dataset node for a page that presents a collection of buildings.
+def _dataset_node(name, description, url, size=None, unit_text="buildings",
+                  part_of_catalog=True, **middle):
+    """The fields every Dataset node on this site shares, in a fixed order.
 
-    `size` is the building count, published as a QuantitativeValue so a consumer
-    can see the slice's scale without downloading 16 MB to find out.
+    `middle` carries the per-corpus fields — sourceOrganization,
+    temporalCoverage, spatialCoverage, variableMeasured, conditionsOfAccess,
+    distribution — and is spliced in between `creator` and `size` in the order
+    the caller passes them. Any of them may be omitted entirely; a field passed
+    as None is dropped rather than published empty.
+
+    THE ORDER MATTERS AND IS NOT COSMETIC. write() hashes the rendered bytes to
+    decide whether a URL is new, changed or identical, and only a changed URL
+    gets its <lastmod> bumped and its address handed to IndexNow. Re-ordering
+    these keys would rewrite 198 NYC neighborhood pages that had not actually
+    changed and announce all of them as fresh — the exact dishonest-lastmod
+    failure t_sitemap_daily's own comments keep having to correct. So
+    dataset_jsonld() below passes its six fields in the order it always emitted
+    them, and its output is byte-identical to the pre-2026-09-17 version.
     """
     d = {
         "@context": "https://schema.org",
@@ -1418,21 +1484,39 @@ def dataset_jsonld(name, description, url, spatial, size=None, part_of_catalog=T
         "url": url,
         "isAccessibleForFree": True,
         "creator": {"@type": "Organization", "name": "Find A Crib", "url": SITE + "/"},
+    }
+    d.update({k: v for k, v in middle.items() if v is not None})
+    if size:
+        d["size"] = {"@type": "QuantitativeValue", "value": size,
+                     "unitText": unit_text}
+    if part_of_catalog:
+        d["includedInDataCatalog"] = DATA_CATALOG
+    return d
+
+
+def dataset_jsonld(name, description, url, spatial, size=None, part_of_catalog=True):
+    """A Dataset node for an NYC page that presents a collection of buildings.
+
+    `size` is the building count, published as a QuantitativeValue so a consumer
+    can see the slice's scale without downloading 16 MB to find out.
+    """
+    return _dataset_node(
+        name, description, url, size=size, part_of_catalog=part_of_catalog,
         # Provenance, not decoration: these are the agencies whose records this
         # is derived from, and the reason the data can be trusted at all.
-        "sourceOrganization": [
+        sourceOrganization=[
             {"@type": "GovernmentOrganization",
              "name": "New York State Division of Housing and Community Renewal"},
             {"@type": "GovernmentOrganization", "name": "NYC Department of City Planning"},
             {"@type": "GovernmentOrganization",
              "name": "NYC Department of Housing Preservation and Development"},
         ],
-        "temporalCoverage": "2024",
-        "spatialCoverage": spatial,
-        "variableMeasured": DATA_VARIABLES,
-        "conditionsOfAccess":
-            "Free to read on the site. Bulk JSON is public; the REST API requires a free key.",
-        "distribution": [
+        temporalCoverage="2024",
+        spatialCoverage=spatial,
+        variableMeasured=DATA_VARIABLES,
+        conditionsOfAccess=(
+            "Free to read on the site. Bulk JSON is public; the REST API requires a free key."),
+        distribution=[
             {"@type": "DataDownload",
              "name": "Bulk JSON — every registered building",
              "encodingFormat": "application/json",
@@ -1441,14 +1525,138 @@ def dataset_jsonld(name, description, url, spatial, size=None, part_of_catalog=T
              "name": "REST API (free key required)",
              "encodingFormat": "application/json",
              "contentUrl": SITE + "/api/v1/buildings"},
-        ],
-    }
-    if size:
-        d["size"] = {"@type": "QuantitativeValue", "value": size,
-                     "unitText": "buildings"}
-    if part_of_catalog:
-        d["includedInDataCatalog"] = DATA_CATALOG
-    return d
+        ])
+
+
+# ------------------------------------------------- the three non-NYC datasets
+# WHY THIS EXISTS, 2026-09-17. Everything above describes ONE city. The catalog
+# both the /developers/ node and the 198 neighborhood slices hang off is called
+# "Find A Crib rent-regulation data", and until today it held exactly one
+# Dataset: the NYC DHCR roll. San Francisco (12,331 reported block-side
+# locations), Los Angeles (67,511 likely-RSO parcels) and Washington DC (4,316
+# registered properties) appeared in NO Dataset record anywhere on this site —
+# so the one index that reads this vocabulary, Google Dataset Search, plus the
+# answer engines that consume the same markup, have never been told that three
+# of the four cities the product is positioned on exist at all.
+#
+# That gap is worth closing here rather than anywhere else: for DC, SF and LA
+# this site is plausibly the only mapped, structured, address-level index of
+# the rolls, which is exactly the case Dataset Search exists to serve, and it
+# is a different index from the one where 0 of 490 tracked queries rank.
+#
+# THREE FIELDS THE NYC NODES CARRY ARE DELIBERATELY ABSENT, and adding any of
+# them later needs evidence, not a hunch:
+#   * no `temporalCoverage`. The DHCR file is dated 2024 and the NYC node says
+#     so. NOTHING in this checkout dates the SF, LA or DC extracts, and vintage
+#     is the first field anyone deciding whether to trust a housing dataset
+#     reads. Publishing a guessed year would be worse than publishing none.
+#   * no `distribution`. /buildings.min.json is the NYC bulk file and is known
+#     public. The city map shells fetch 'buildings.min.json' RELATIVELY from
+#     /sf/, /la/ and /dc/, which is suggestive but not proof that the docroot
+#     serves those three paths — scripts/deploy_app.sh ships the shells and not
+#     the data. A DataDownload pointing at a 404 is worse than no DataDownload,
+#     so conditionsOfAccess states access in words instead. The day someone
+#     confirms the docroot serves them, this is a three-line change.
+#   * no `license`, for the same reason the NYC node has none: /terms.html is a
+#     terms-of-use page, not a licence, and stamping one on a derived corpus is
+#     a legal claim this site has never made.
+#
+# `spatialCoverage` IS asserted and is computed from the records' own
+# coordinates — the claim is "this is the box the mapped records fall in", not
+# "this is the city", which is the only one the data supports.
+#
+# Every sentence of provenance and every caveat below is lifted verbatim from
+# CITY_FOOTER and CITY_BROWSE_COPY, which the pages already publish. Dataset
+# Search shows `description` to a human verbatim, so the LA "derived, not the
+# City's official inventory" line and the SF "anonymized to the block" line
+# travel WITH the record rather than being left behind on the page.
+CITY_DATASET = {
+    "sf": dict(
+        name="Rent-controlled housing in San Francisco (SF Rent Board inventory)",
+        sources=["San Francisco Rent Board",
+                 "San Francisco Office of the Assessor-Recorder"],
+        # Only variables the records demonstrably carry and the pages are
+        # willing to state. 'Block-side location', not 'Street address': the
+        # inventory is anonymized to the block and the field name has to say so.
+        variables=["Block-side location", "Neighborhood", "ZIP code",
+                   "Latitude", "Longitude", "Year built", "Units reported",
+                   "Reported rent", "Rent Board inventory status"],
+    ),
+    "la": dict(
+        name="Likely rent-stabilized (RSO) buildings in Los Angeles",
+        sources=["Los Angeles County Office of the Assessor"],
+        variables=["Street address", "Neighborhood", "ZIP code",
+                   "Latitude", "Longitude", "Year built", "Unit count",
+                   "RSO criteria match", "Open housing-code violations",
+                   "Open complaints"],
+    ),
+    "dc": dict(
+        name="Rent-controlled properties in Washington DC (RentRegistry filings)",
+        sources=["District of Columbia Rental Accommodations Division"],
+        variables=["Street address", "Neighborhood", "ZIP code",
+                   "Latitude", "Longitude", "Year built", "Registered units",
+                   "Reported rent", "Rent control registration status"],
+    ),
+}
+
+CITY_DATASET_ACCESS = ("Free to read on findacrib.com. No bulk download is "
+                       "published for this city.")
+
+
+def _city_bbox(items):
+    """A GeoShape box around a city's mapped records, or None.
+
+    Computed from the records themselves, never from a municipal boundary —
+    nothing here reads a boundary file, and the honest claim is the extent of
+    what this dataset maps. Returns None rather than a degenerate point when
+    too few records carry a usable position.
+    """
+    lats = [x["lat"] for x in items if isinstance(x.get("lat"), (int, float))]
+    lngs = [x["lng"] for x in items if isinstance(x.get("lng"), (int, float))]
+    if len(lats) < MIN_CITY_HUB or len(lngs) < MIN_CITY_HUB:
+        return None
+    if min(lats) == max(lats) or min(lngs) == max(lngs):
+        return None
+    return {"@type": "GeoShape",
+            "box": f"{min(lats):.4f} {min(lngs):.4f} {max(lats):.4f} {max(lngs):.4f}"}
+
+
+def _city_place(key, place):
+    """The spatialCoverage Place for one city slice.
+
+    LA is grouped on ZIP and the other two on neighborhood, so the ZIP goes in
+    `postalCode` where it is one and in the name where it is not — a
+    neighborhood name in postalCode would be a lie a consumer parses.
+    """
+    cfg = CITY_HUBS[key]
+    locality, region = {"sf": ("San Francisco", "CA"),
+                        "la": ("Los Angeles", "CA"),
+                        "dc": ("Washington", "DC")}[key]
+    addr = {"@type": "PostalAddress", "addressLocality": locality,
+            "addressRegion": region, "addressCountry": "US"}
+    if cfg["path"] == "zip":
+        addr["postalCode"] = str(place)
+        name = f"ZIP {place}, {locality}, {region}"
+    else:
+        name = f"{place}, {locality}, {region}"
+    return {"@type": "Place", "name": name, "address": addr}
+
+
+def city_dataset_jsonld(key, name, description, url, spatial, size=None):
+    """A Dataset node for an SF / LA / DC page that presents a collection.
+
+    Same shape as dataset_jsonld() and the same catalog, with this city's own
+    provenance and without the three fields named in the block comment above.
+    """
+    meta = CITY_DATASET[key]
+    return _dataset_node(
+        name, description, url, size=size,
+        unit_text=CITY_HUBS[key]["things"],
+        sourceOrganization=[{"@type": "GovernmentOrganization", "name": s}
+                            for s in meta["sources"]],
+        spatialCoverage=spatial,
+        variableMeasured=meta["variables"],
+        conditionsOfAccess=CITY_DATASET_ACCESS)
 
 
 NYC_FOOTER = """Data: NYC DHCR 2024 rent-stabilized building files, NYC PLUTO (coordinates),

@@ -361,9 +361,19 @@ final class FindACribUITests: XCTestCase {
         app.launchArguments = ["--route", "detail"]
         app.launch()
         XCTAssertTrue(app.buttons["detail-menu"].waitForExistence(timeout: 30))
+        // The menu exists while the push is still animating; an edge swipe
+        // that lands mid-transition is swallowed, and on a loaded Mac (the
+        // site's journey suite running beside this) that read as a broken
+        // swipe-back 2 runs in 3 (2026-09-16). Let the screen rest first, and
+        // allow one retry — a genuinely dead swipe-back fails both.
+        _ = app.buttons["detail-menu"].waitForExistence(timeout: 5)
+        Thread.sleep(forTimeInterval: 1.0)
         let from = app.coordinate(withNormalizedOffset: CGVector(dx: 0.01, dy: 0.55))
         let to = app.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.55))
         from.press(forDuration: 0.05, thenDragTo: to, withVelocity: .fast, thenHoldForDuration: 0.05)
+        if !app.staticTexts["results-count"].waitForExistence(timeout: 8) {
+            from.press(forDuration: 0.05, thenDragTo: to, withVelocity: .fast, thenHoldForDuration: 0.05)
+        }
         XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 8), "edge swipe did not pop back to the results list")
     }
 

@@ -710,12 +710,22 @@ class Runner:
                 self.wait_until(page, "!document.getElementById('detail-sheet').hidden", timeout=60000)
             except Exception:
                 j.errors.append(f'/{city}/#d={bid} never opened the building'); continue
-            # the blob is lazy — buildings.hpd.json arrives after the first paint
+            # The blob is lazy — buildings.hpd.json arrives after the first
+            # paint — AND the panel fills in a section at a time as each one
+            # resolves. Waiting for the first h4 and reading straight away is
+            # a race that only shows up over the network: on 2026-09-17 it read
+            # "sf 1 sections" live, twice, against a file identical to the local
+            # one that gives 4. Wait for the headings this case asserts, then
+            # assert, so a genuine miss still fails with the list it found.
+            heads_js = "[...document.querySelectorAll('[data-sec=\"hpd\"] h4')].map(e=>e.textContent.trim())"
+            wanted = json.dumps(want)
             try:
-                self.wait_until(page, "!!document.querySelector('[data-sec=\"hpd\"] .hpd-section h4')", timeout=30000)
+                self.wait_until(page, f"{wanted}.every(w => {heads_js}.includes(w))", timeout=30000)
             except Exception:
+                pass                     # fall through to the assertions below
+            heads = page.evaluate(heads_js)
+            if not heads:
                 j.errors.append(f'{city}: no record panel on {bid}'); continue
-            heads = page.evaluate("[...document.querySelectorAll('[data-sec=\"hpd\"] h4')].map(e=>e.textContent.trim())")
             for w in want:
                 self.ok(w in heads, f'{city}: record panel should show "{w}", got {heads}', j)
             # New York's wording must not leak into another city's panel.

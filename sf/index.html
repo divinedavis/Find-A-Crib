@@ -1128,11 +1128,9 @@
     border-radius: 999px; padding: 8px 14px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
   .detail-plus-cta:hover { filter: brightness(1.06); }
   .detail-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-  .street-view, .street-view-empty {
+  .street-view-empty {
     background: var(--blue-soft); color: var(--ink); padding: 24px 16px 40px;
   }
-  .street-view-controls { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 16px; }
-  .street-view-controls a { color: var(--blue); font-size: 13px; }
   .street-view-button { background: var(--blue-solid); color: #fff; border: none;
     border-radius: 8px; padding: 12px 20px; font: inherit; font-weight: 700; cursor: pointer; }
   .street-view-button:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
@@ -1143,7 +1141,7 @@
   /* redesigned detail header: hero photo + floating spec pills + agent card */
   .d-hero { position: relative; }
   .d-spec {
-    position: relative; margin: -28px 16px 0; z-index: 1;
+    position: relative; margin: 12px 16px 0; z-index: 1;
     display: flex; justify-content: space-between; gap: 8px;
     background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
     box-shadow: 0 6px 20px rgba(20,20,50,.12); padding: 12px 8px;
@@ -2294,15 +2292,15 @@
     return Number.isFinite(y) && Number.isFinite(x) && Math.abs(y) <= 90 && Math.abs(x) <= 180
       ? `${y},${x}` : null;
   }
+  // The "Open in Apple Maps" band under the hero photo is gone (owner,
+  // 2026-09-17): the photo itself is already tappable into Look Around and
+  // carries Apple's own attribution, so the band was a second, duller way to
+  // do the same thing taking up a whole strip of the sheet. Only the
+  // no-coordinates note is left — there is no photo to explain itself then.
   function streetViewHtml(rec) {
-    const location = streetViewLocation(rec.lat, rec.lng);
-    if (!location) return '<div class="street-view-empty">Street imagery unavailable for this location</div>';
-    const href = 'https://maps.apple.com/look-around?coordinate=' + encodeURIComponent(location);
-    return `<section class="street-view" aria-label="Street view of ${esc(rec.a || 'this building')}">
-      <div class="street-view-controls">
-        <a href="${esc(href)}" target="_blank" rel="noopener">Open in Apple Maps ↗</a>
-      </div>
-    </section>`;
+    return streetViewLocation(rec.lat, rec.lng)
+      ? ''
+      : '<div class="street-view-empty">Street imagery unavailable for this location</div>';
   }
   const PHOTO_PREVIEW = window.AppleStreetPreview?.enabled ? window.AppleStreetPreview : window.MapillaryPreview;
   const resultsSub = document.getElementById('results-sub');
@@ -2607,6 +2605,52 @@
     try { localStorage.setItem('fac_vid', vid); } catch (e) {}
     return vid;
   }
+  // Where this visitor came from, on every event — a re-rental hand-off most
+  // of all — instead of leaving it to be guessed from GA4 later. Two touches:
+  // the first ever (localStorage, for the life of the browser profile) and
+  // this session's (sessionStorage). Referrer is the host only; utm_* and the
+  // ad click ids come from the landing URL; `src`/`ref` query params are the
+  // site's own links (QR codes, emails, the app). Nothing typed, nothing
+  // personal.
+  function readTouch() {
+    const p = new URLSearchParams(location.search);
+    const t = {};
+    try {
+      const r = document.referrer ? new URL(document.referrer) : null;
+      if (r && r.hostname !== location.hostname) t.ref = r.hostname.replace(/^www\./, '').slice(0, 80);
+    } catch (e) {}
+    for (const k of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term']) {
+      const v = p.get(k); if (v) t[k.slice(4)] = v.slice(0, 80);
+    }
+    for (const k of ['gclid', 'fbclid', 'ttclid', 'msclkid']) if (p.has(k)) { t.click = k; break; }
+    const own = p.get('src') || p.get('ref'); if (own) t.src = own.slice(0, 40);
+    t.land = (location.pathname + location.search).slice(0, 160);
+    t.at = new Date().toISOString().slice(0, 19);
+    return t;
+  }
+  let ATTR = null;
+  function attribution() {
+    if (ATTR) return ATTR;
+    let first = null, touch = null;
+    try { touch = JSON.parse(sessionStorage.getItem('fac_touch') || 'null'); } catch (e) {}
+    try { first = JSON.parse(localStorage.getItem('fac_first') || 'null'); } catch (e) {}
+    if (!touch) { touch = readTouch(); try { sessionStorage.setItem('fac_touch', JSON.stringify(touch)); } catch (e) {} }
+    if (!first) { first = touch; try { localStorage.setItem('fac_first', JSON.stringify(first)); } catch (e) {} }
+    ATTR = { first, touch };
+    return ATTR;
+  }
+  // One id per tab-session, so a visit's events chain together (visitor id
+  // spans months; this spans one sitting).
+  let SID = null;
+  function sessionId() {
+    if (SID) return SID;
+    try { SID = sessionStorage.getItem('fac_sid'); } catch (e) {}
+    if (!SID) {
+      SID = 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      try { sessionStorage.setItem('fac_sid', SID); } catch (e) {}
+    }
+    return SID;
+  }
   // The signup nudge is OFF, deliberately.
   //
   // On 27 Aug 2026 it was shown 31 times to real visitors and clicked 0 times;
@@ -2657,11 +2701,16 @@
       // platform: the iPhone app writes to this same table with platform:"ios"
       // (ios/FindACrib/Services/Analytics.swift). Without it the two clients
       // are indistinguishable and every per-platform number is wrong.
+      const A = attribution();
       supaClient.from('events').insert({
         visitor_id: vid,
         user_id: authUser ? authUser.id : null,
         event,
-        props: Object.assign({ platform: 'web', city: document.documentElement.dataset.city || 'nyc' }, props || {}),
+        // Every row says which client, which sitting, and where the visitor
+        // came from (this session and the first time ever). `touch`/`first`
+        // are reserved names: a caller's props must not reuse them.
+        props: Object.assign({ platform: 'web', city: document.documentElement.dataset.city || 'nyc',
+                               sid: sessionId(), touch: A.touch, first: A.first }, props || {}),
         path: location.pathname + location.search,
       }).then(() => {}, () => {});
     } catch (e) { /* best-effort */ }
@@ -5417,7 +5466,7 @@
     return '<div class="price est">Income-restricted · see agent for rent</div>';
   }
 
-  function featuredCardHtml(f) {
+  function featuredCardHtml(f, slot) {
     // Several agents print the building name above the postal address, so the
     // two are often the same words twice ("188-11 Hillside Avenue" over
     // "188-11 Hillside Avenue, Queens, NY 11423"). Only show a name that adds
@@ -5428,7 +5477,8 @@
     if (f.beds) bits.push(f.beds === 'studio' ? 'Studio' : f.beds + '-bed');
     if (f.units) bits.push(f.units + (f.units === 1 ? ' unit' : ' units'));
     if (f.zip) bits.push('ZIP ' + esc(f.zip));
-    return `<div class="card feat-card" data-feat-agent="${esc(f.agent)}" data-feat-addr="${esc(f.address)}">
+    return `<div class="card feat-card" data-feat-agent="${esc(f.agent)}" data-feat-addr="${esc(f.address)}"
+         data-feat-boro="${esc(f.borough || '')}" data-feat-kind="${esc(f.href_kind || 'listing')}" data-feat-slot="${slot}">
       <span class="feat-flag">Featured</span>
       <div class="photo">
         ${f.image ? `<img class="listing-photo" loading="lazy" src="${esc(f.image)}" alt=""
@@ -5507,8 +5557,9 @@
   function nextFeatured() {
     if (!featPool.length) return '';
     const f = featPool[featCursor % featPool.length];
+    const slot = featCursor;            // 0 = the lead tile, 1 = after FEAT_EVERY cards, …
     featCursor++;
-    return featuredCardHtml(f);
+    return featuredCardHtml(f, slot);
   }
 
   function hcCardHtml(h) {
@@ -5642,6 +5693,13 @@
       }, { threshold: [0, IMPR_RATIO] })
     : null;
 
+  // What a re-rental tile event says about the tile: who, where, which slot
+  // and what kind of link — the same shape on every one of the three events
+  // and on the iPhone app's, so the funnel can be cut the same way anywhere.
+  function featProps(el) {
+    return { kind: 'rerental', agent: el.dataset.featAgent || '', addr: el.dataset.featAddr || '',
+             boro: el.dataset.featBoro || '', slot: +(el.dataset.featSlot || 0), link: el.dataset.featKind || '' };
+  }
   function countServed(el) {
     const key = tileKey(el);
     if (servedSeen.has(key) || servedCount >= IMPR_MAX) return;
@@ -5650,8 +5708,7 @@
     track('tile_served', hc
       ? { kind: 'lottery', agent: 'NYC Housing Connect',
           addr: el.dataset.hcName || '', boro: el.dataset.hcBoro || '' }
-      : { kind: 'rerental', agent: el.dataset.featAgent || '',
-          addr: el.dataset.featAddr || '' });
+      : featProps(el));
   }
 
   function countImpression(el) {
@@ -5668,8 +5725,7 @@
     track('tile_impression', hc
       ? { kind: 'lottery', agent: 'NYC Housing Connect',
           addr: el.dataset.hcName || '', boro: el.dataset.hcBoro || '' }
-      : { kind: 'rerental', agent: el.dataset.featAgent || '',
-          addr: el.dataset.featAddr || '' });
+      : featProps(el));
   }
 
   // Called after every render. The previous render's nodes are detached but
@@ -5929,7 +5985,7 @@
     // so there is nothing to fly to. Count the hand-off and let the link go.
     if (card.classList.contains('feat-card')) {
       if (e.target.closest('a[data-action="featured"]'))
-        track('featured_click', { agent: card.dataset.featAgent, addr: card.dataset.featAddr });
+        track('featured_click', Object.assign(featProps(card), { href: e.target.closest('a').getAttribute('href') || '' }));
       return;
     }
     // A lottery tile is the same kind of hand-off and had no counter at all,

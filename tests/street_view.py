@@ -50,7 +50,18 @@ def main():
                 route.fulfill(content_type='application/json', body=(ROOT / 'buildings.hpd.json').read_text())
             page.wait_for_timeout(1200)
             assert frame.get_attribute('data-test-identity') == 'retained', 'Records refresh reset photo'
-            assert page.locator('.street-view-controls a').get_attribute('href').startswith('https://maps.apple.com/look-around?coordinate=')
+            # The "Open in Apple Maps" band was removed on 2026-09-17; the photo
+            # itself opens Look Around. Assert it stays gone, and that nothing
+            # now overlaps the bottom of the photo, where Apple's attribution
+            # badge sits.
+            assert not page.locator('.street-view-controls').count(), 'the Open in Apple Maps band is back'
+            # Rendered markup only — the page's own source still mentions the
+            # band in the comment that explains its removal.
+            assert not page.locator('#detail-sheet a[href*="maps.apple.com"]').count(), 'an Apple Maps link is back in the sheet'
+            photo = page.locator('#detail-sheet .street-photo-detail').bounding_box()
+            pills = page.locator('#detail-sheet .d-spec').bounding_box()
+            assert pills['y'] >= photo['y'] + photo['height'] - 1, \
+                f"spec pills overlap the photo (pills at {pills['y']}, photo ends {photo['y'] + photo['height']})"
             page.evaluate('''()=>{
               window.testReleaseTimes=[];
               const release=AppleStreetPreview.release;
@@ -79,10 +90,10 @@ def main():
                 runner.typeq(page, ADDR)
                 runner.pick_first(page)
             page.locator('#detail-sheet').get_by_text('Street photo temporarily unavailable', exact=True).wait_for()
-            assert page.locator('.street-view-controls a').is_visible()
+            assert not page.locator('.street-view-controls').count(), 'the Open in Apple Maps band is back'
             assert not page.locator('#detail-sheet iframe').count()
             assert not j.errors, j.errors
-            print(f'PASS {device}: missing token leaves Apple Maps link', flush=True)
+            print(f'PASS {device}: missing token says so, with no Apple Maps band', flush=True)
             browser.close()
 
 

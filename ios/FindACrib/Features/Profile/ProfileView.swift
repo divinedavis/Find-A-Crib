@@ -156,7 +156,11 @@ struct ProfileView: View {
                         }
                         .tint(SE.royal)
                         .accessibilityIdentifier("profile-share-usage")
-                        .onChange(of: shareUsage) { _, on in Analytics.shared.enabled = on }
+                        .onChange(of: shareUsage) { _, on in
+                            if !on { Analytics.shared.track("usage_optout") }
+                            Analytics.shared.enabled = on
+                            if on { Analytics.shared.track("usage_optin") }
+                        }
                     }
                     .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(SE.canvas)
 

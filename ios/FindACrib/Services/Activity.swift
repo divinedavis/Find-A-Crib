@@ -58,14 +58,7 @@ final class Activity {
     func recordSearch(_ q: SearchQuery) {
         // The shape of the search, never its text: which filters were used, not
         // the address someone typed.
-        analytics?.track("search", [
-            "locations": q.locations.count,
-            "priced": q.minPrice != nil || q.maxPrice != nil,
-            "beds": q.beds.count,
-            "available_only": q.availableOnly,
-            "vouchers_only": q.vouchersOnly,
-            "hcr_only": q.hcrOnly,
-        ])
+        analytics?.track("search", Analytics.shape(q))
         recentSearches.removeAll { $0 == q }
         recentSearches.insert(q, at: 0)
         if recentSearches.count > 10 { recentSearches.removeLast(recentSearches.count - 10) }

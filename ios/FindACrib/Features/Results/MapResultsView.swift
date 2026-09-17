@@ -68,7 +68,9 @@ struct MapResultsView: View {
             .padding(.bottom, 92)
             .animation(.easeInOut(duration: 0.2), value: selected?.bbl)
         }
-        .toolbar { ToolbarItem(placement: .principal) { ResultsHeader(query: query, onLocation: { showLocation = true }, onFilter: { showFilters = true }) } }
+        .toolbar { ToolbarItem(placement: .principal) { ResultsHeader(query: query,
+            onLocation: { Analytics.shared.track("location_open", ["src": "map"]); showLocation = true },
+            onFilter: { Analytics.shared.track("filters_open", ["src": "map"]); showFilters = true }) } }
         .sheet(isPresented: $showFilters) { FiltersSheet(query: $query) }
         .sheet(isPresented: $showLocation) { LocationPickerView(selected: $query.locations) }
         .task(id: query) {
@@ -102,6 +104,7 @@ struct MapResultsView: View {
         // Once the user has moved the map, the list is what the map shows.
         var q = query
         if moved { q.locations = [.mapArea(MapBox(region: region))] }
+        Analytics.shared.track("map_list", ["moved": moved, "in_view": inView ?? results.count, "results": results.count])
         var path = nav.searchPath
         if !path.isEmpty { path.removeLast() }
         if case .results? = path.last { path[path.count - 1] = .results(q) } else { path.append(.results(q)) }

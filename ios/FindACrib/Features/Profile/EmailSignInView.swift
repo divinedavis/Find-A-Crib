@@ -16,7 +16,9 @@ struct EmailSignInView: View {
     @FocusState private var focus: Field?
     enum Field { case email, password, confirm }
 
-    var body: some View {
+    var body: some View { content.onAppear { Analytics.shared.track("signin_view", ["for": offersSocialSignIn ? "alerts" : "profile"]) } }
+
+    private var content: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {

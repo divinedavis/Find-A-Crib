@@ -10,7 +10,9 @@ struct PaywallView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
 
-    var body: some View {
+    var body: some View { content.onAppear { Analytics.shared.track("paywall_view", ["signed_in": auth.isSignedIn]) } }
+
+    private var content: some View {
         VStack(spacing: 0) {
             NavyHeader {
                 HStack {

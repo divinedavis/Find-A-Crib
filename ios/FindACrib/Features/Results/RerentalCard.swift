@@ -6,6 +6,8 @@ import SwiftUI
 /// never passes for a register building.
 struct RerentalCard: View {
     let listing: FeaturedListing
+    /// Which re-rental slot of the feed this is (0 = the 3rd tile), for the funnel.
+    var slot: Int = 0
     @Environment(\.openURL) private var openURL
 
     var body: some View {
@@ -69,7 +71,11 @@ struct RerentalCard: View {
                     }
                     if let out = f.outboundURL {
                         Button {
-                            Analytics.shared.track("outbound", ["kind": "rerental", "agent": f.agent])
+                            // Both rows the site writes for a hand-off: the funnel's
+                            // click and the generic outbound.
+                            var p = Analytics.tileProps(f, slot: slot); p["href"] = out.absoluteString
+                            Analytics.shared.track("featured_click", p)
+                            Analytics.shared.track("outbound", ["kind": "rerental", "agent": f.agent, "href": out.absoluteString])
                             openURL(out)
                         } label: {
                             Text(f.actionTitle).font(.se(18, .bold)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
@@ -88,6 +94,7 @@ struct RerentalCard: View {
         .seCard()
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("rerental-card")
+        .onAppear { Analytics.shared.tileSeen(f, slot: slot) }
     }
 
     /// A building name above the address, when it adds something ("Forten at

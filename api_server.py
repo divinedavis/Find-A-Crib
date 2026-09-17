@@ -1586,9 +1586,37 @@ def _fac_adtiles(since):
 
     # agent -> {kind, impressions, clicks, clicks_measured, reach set, addrs set}
     by_agent, kinds = {}, {}
+    # Where the people who clicked a re-rental came from (the session's touch
+    # the site records on every event since 2026-09-16: utm_source, else the
+    # referrer host, else an ad click id, else direct), which client they were
+    # on, and which borough's tile they took. Older rows carry none of it and
+    # count as "unknown" rather than being guessed.
+    platforms, sources, boros = {}, {}, {}
+    def _source(props):
+        if (props.get("platform") or "web") == "ios":
+            return "iPhone app"
+        t = props.get("touch")
+        if not isinstance(t, dict):
+            return "unknown (before 9/16)"
+        if t.get("source"):
+            return t["source"] + ("/" + t["medium"] if t.get("medium") else "")
+        if t.get("src"):
+            return "own link: " + t["src"]
+        if t.get("click") == "gclid":
+            return "google ads"
+        if t.get("ref"):
+            return t["ref"]
+        return "direct"
     for r in rows:
         props = r.get("props") or {}
         ev = r.get("event")
+        if ev == "featured_click":
+            plat = props.get("platform") or "web"
+            platforms[plat] = platforms.get(plat, 0) + 1
+            src = _source(props)
+            sources[src] = sources.get(src, 0) + 1
+            if props.get("boro"):
+                boros[props["boro"]] = boros.get(props["boro"], 0) + 1
         if ev in ("tile_impression", "tile_served"):
             kind = props.get("kind") or "rerental"
             agent = props.get("agent") or "—"
@@ -1599,7 +1627,10 @@ def _fac_adtiles(since):
         a = by_agent.setdefault(agent, {"agent": agent, "kind": kind,
                                         "impressions": 0, "served": 0, "clicks": 0,
                                         "clicks_measured": 0, "clicks_served": 0,
+                                        "clicks_ios": 0,
                                         "_reach": set(), "_units": set()})
+        if ev == "featured_click" and (props.get("platform") or "web") == "ios":
+            a["clicks_ios"] += 1
         k = kinds.setdefault(kind, {"kind": kind, "impressions": 0, "served": 0,
                                     "clicks": 0, "clicks_measured": 0,
                                     "clicks_served": 0, "_reach": set()})
@@ -1677,6 +1708,13 @@ def _fac_adtiles(since):
         "reach": len(set().union(*[v["_reach"] for v in by_agent.values()]) if by_agent else set()),
         "advertisers": len([a for a in agents if a["agent"] != "NYC Housing Connect"]),
         "first_impression": first_impr,
+        # Re-rental clicks by client, by where the clicker came from, and by
+        # the tile's borough — the three cuts the owner asked for (2026-09-16).
+        "click_platforms": platforms,
+        "click_sources": [{"source": k, "clicks": v} for k, v in
+                          sorted(sources.items(), key=lambda kv: (-kv[1], kv[0]))[:12]],
+        "click_boroughs": [{"borough": k, "clicks": v} for k, v in
+                           sorted(boros.items(), key=lambda kv: (-kv[1], kv[0]))],
     }
 
 

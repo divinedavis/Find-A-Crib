@@ -77,7 +77,7 @@ struct PillTabBar: View {
         HStack(spacing: 0) {
             ForEach(Tab.allCases, id: \.self) { tab in
                 let on = selected == tab
-                Button { selected = tab } label: {
+                Button { if selected != tab { Analytics.shared.track("tab", ["to": tab.rawValue]) }; selected = tab } label: {
                     VStack(spacing: 4) {
                         Image(systemName: tab.icon).font(.system(size: 22, weight: on ? .semibold : .regular))
                         Text(tab.rawValue).font(.se(14, .semibold))

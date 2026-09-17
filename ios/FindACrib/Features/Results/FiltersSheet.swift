@@ -61,7 +61,11 @@ struct FiltersSheet: View {
                         draft = SearchQuery(); draft.locations = l
                     }
                     .fixedSize(horizontal: true, vertical: false)
-                    SEPrimaryButton(title: "Show \(count.formatted()) \(draft.noun)") { query = draft; dismiss() }
+                    SEPrimaryButton(title: "Show \(count.formatted()) \(draft.noun)") {
+                        var p = Analytics.shape(draft); p["results"] = count
+                        Analytics.shared.track("filters_apply", p)
+                        query = draft; dismiss()
+                    }
                         .accessibilityIdentifier("filters-apply")
                 }
                 .padding(16).background(Color.white.shadow(.drop(color: .black.opacity(0.08), radius: 6, y: -2)))

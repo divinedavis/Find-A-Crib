@@ -22,7 +22,7 @@ struct FindACribApp: App {
                     Analytics.shared.auth = auth
                     Analytics.shared.city = store.city.id
                     activity.analytics = Analytics.shared
-                    Analytics.shared.track("app_open")
+                    Analytics.shared.track("app_open", ["first": Analytics.shared.isFirstLaunch])
                     plus.start()
                     activity.remoteToggle = { [weak auth] bbl, on in auth?.remoteToggle(bbl: bbl, saved: on) }
                     await store.load()
@@ -30,6 +30,10 @@ struct FindACribApp: App {
                     LaunchArgs.apply(to: nav, store: store)
                 }
                 .task { await auth.listen() }
+                .onOpenURL { url in
+                    Analytics.shared.launchSource = Analytics.source(for: url)
+                    Analytics.shared.track("open_url", ["src": Analytics.shared.launchSource])
+                }
                 .preferredColorScheme(.light)   // StreetEasy ships light-only; the palette is tuned for it
         }
     }

@@ -87,7 +87,7 @@ final class AuthService {
     // MARK: sign-in
 
     func signInWithApple() async {
-        await run {
+        await run(provider: "apple") {
             let cred = try await AppleSignInService.authorize()
             // Send the nonce only when Apple put the claim in the token.
             let claim = IDToken.stringClaim("nonce", from: cred.idToken)
@@ -100,7 +100,7 @@ final class AuthService {
     /// The authorize URL is opened at findacrib.com, which nginx bounces to
     /// GoTrue, so the consent dialog says "findacrib.com" not the project ref.
     func signInWithGoogle() async {
-        await run {
+        await run(provider: "google") {
             let client = self.client!
             let redirect = URL(string: "findacrib://auth-callback")!
             let url = try client.auth.getOAuthSignInURL(provider: .google, redirectTo: redirect)
@@ -114,7 +114,7 @@ final class AuthService {
     // MARK: email + password (the website's accounts; autoconfirmed, no verification step)
 
     func signIn(email: String, password: String) async {
-        await run { try await self.client!.auth.signIn(email: email, password: password) }
+        await run(provider: "email") { try await self.client!.auth.signIn(email: email, password: password) }
     }
 
     func signUp(email: String, password: String) async {
@@ -150,13 +150,25 @@ final class AuthService {
         }
     }
 
-    private func run(_ block: @escaping () async throws -> Void) async {
+    /// `provider` names a sign-in attempt so its outcome is recorded —
+    /// succeeded, cancelled or failed — never the credentials.
+    private func run(provider: String? = nil, _ block: @escaping () async throws -> Void) async {
         guard client != nil else { error = "Sign-in isn't configured in this build."; return }
         busy = true; error = nil; defer { busy = false }
-        do { try await block() } catch {
-            if (error as? AppleSignInService.Failure) == .cancelled || (error as? WebAuth.Failure) == .cancelled { return }
+        do {
+            try await block()
+            if let provider { Analytics.shared.track("signin", ["provider": provider, "result": "ok"]) }
+        } catch {
+            if (error as? AppleSignInService.Failure) == .cancelled || (error as? WebAuth.Failure) == .cancelled {
+                if let provider { Analytics.shared.track("signin", ["provider": provider, "result": "cancelled"]) }
+                return
+            }
             let text = error.localizedDescription
-            if text.localizedCaseInsensitiveContains("cancel") { return }
+            if text.localizedCaseInsensitiveContains("cancel") {
+                if let provider { Analytics.shared.track("signin", ["provider": provider, "result": "cancelled"]) }
+                return
+            }
+            if let provider { Analytics.shared.track("signin", ["provider": provider, "result": "error"]) }
             self.error = text
         }
     }

@@ -66,7 +66,13 @@
   // that script never runs and its own timer would never be set, leaving a
   // spinner that spins forever. A gate the visitor can act on beats that.
   setTimeout(function(){
+    if(!document.documentElement.hasAttribute('data-auth')) return;
     document.documentElement.removeAttribute('data-auth');
+    var err = document.getElementById('gate-err');
+    if(err){
+      err.textContent = 'Sign-in is taking too long. Reload this page to retry. If it keeps happening, try a private window.';
+      err.classList.remove('hidden');
+    }
   }, 8000);
 })();
 </script>
@@ -366,14 +372,6 @@
   .ads-tile .a-val{font-size:21px;font-weight:700;letter-spacing:-.3px;line-height:1.1}
   .ads-tile .a-lbl{font-size:12.5px;color:var(--ink2);margin-top:4px}
   .ads-tile .a-sub{font-size:11.5px;color:var(--muted);margin-top:2px}
-  /* counter signage: one block per question a plate can ask */
-  .sg-arm{border:1px solid var(--border2);border-radius:14px;padding:16px 17px;margin-bottom:16px;background:var(--bg)}
-  .sg-arm:last-child{margin-bottom:0}
-  .sg-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:12px}
-  .sg-q{font-size:16px;font-weight:700;letter-spacing:-.3px}
-  .sg-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;color:var(--muted);white-space:nowrap}
-  .sg-why{font-size:12.5px;color:var(--ink2);line-height:1.55;margin-top:13px}
-  .sg-sub{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin:16px 0 8px}
   .ref-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
   @media(max-width:700px){.ref-tiles{grid-template-columns:1fr}}
 
@@ -442,7 +440,7 @@
       <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.6 2.4 30.2 0 24 0 14.6 0 6.4 5.4 2.5 13.3l7.9 6.1C12.3 13.2 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.9 7.2l7.6 5.9c4.4-4.1 7.1-10.1 7.1-17.6z"/><path fill="#FBBC05" d="M10.4 28.6c-.5-1.5-.8-3-.8-4.6s.3-3.1.8-4.6l-7.9-6.1C.9 16.3 0 20 0 24s.9 7.7 2.5 10.7l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.6-5.9c-2.1 1.4-4.8 2.3-7.6 2.3-6.3 0-11.7-3.7-13.6-9.1l-7.9 6.1C6.4 42.6 14.6 48 24 48z"/></svg>
       Sign in with Google
     </button>
-    <div class="g-err hidden" id="gate-err"></div>
+    <div class="g-err hidden" id="gate-err" role="alert"></div>
     <div class="g-note">Private. Sign in with the Google account you were given access on — NEMO owners see the NEMO tab only.</div>
   </div>
 </div>
@@ -559,19 +557,6 @@
         <div class="callout" id="fac-search-callout" style="margin-top:16px"></div>
       </div>
 
-      <!-- LinkNYC kiosks: the same short-link plumbing as the plates, on
-           sidewalk screens instead of counters -->
-      <div class="card mb18" id="sec-kiosks">
-        <div class="card-head-row">
-          <div><h2>LinkNYC kiosks — what six free screens are worth</h2><div class="card-sub">One QR code (a11) on four Link units for a 28-day LinkLocal campaign. Plays are the portal’s estimate, not a measurement; scans are nginx counting the redirect; sessions and engagement are the site. The number that decides month two is scans per ten thousand plays, per unit — and the portal’s performance report is the only place the per-unit play count lives.</div></div>
-        </div>
-        <div id="kiosk-status" class="disclaim" style="margin:0 0 14px"></div>
-        <div class="ads-tiles" id="kiosk-tiles"></div>
-        <div class="sg-sub">Units in the campaign</div>
-        <div id="kiosk-units"></div>
-        <div class="callout" id="kiosk-callout" style="margin-top:16px"></div>
-      </div>
-
       <!-- iPhone app: App Store downloads, from App Store Connect analytics -->
       <div class="card mb18" id="sec-appstore" hidden>
         <div class="card-head-row">
@@ -588,16 +573,8 @@
         </div>
         <div class="ads-tiles" id="tile-tiles"></div>
         <div id="tile-agents" style="margin-top:18px"></div>
+        <div id="tile-sources" style="margin-top:18px"></div>
         <div class="callout" id="tile-callout" style="margin-top:16px"></div>
-      </div>
-
-      <!-- printed counter plates: which question earns the scan -->
-      <div class="card mb18" id="sec-signage">
-        <div class="card-head-row">
-          <div><h2>Counter signage — which question earns the scan</h2><div class="card-sub">Two printed plates asking two different things, each with its own short link, so a scan can be traced back to the plate it came off. Scans are counted by nginx at the redirect, which catches the people who pointed a camera and then closed the tab; sessions and engagement are counted on the site, which cannot see them. The headline earns the scan — the site earns everything after it.</div></div>
-        </div>
-        <div id="sg-arms"></div>
-        <div class="callout" id="sg-callout" style="margin-top:16px"></div>
       </div>
 
       </div><!-- /fac-a -->
@@ -658,33 +635,6 @@
         <div class="callout" id="goals-callout" style="margin-top:16px"></div>
       </div>
 
-      <div id="claude-a" class="hidden">
-        <div class="card mb18" id="sec-claude-spend">
-          <div class="card-head-row">
-            <div><h2>Spend this month</h2><div class="card-sub" id="claude-sub">—</div></div>
-          </div>
-          <div class="ads-tiles" id="claude-tiles"></div>
-          <div id="claude-meters" style="margin-top:18px"></div>
-          <div id="claude-spark" style="margin-top:18px"></div>
-          <div class="callout" id="claude-callout" style="margin-top:16px"></div>
-        </div>
-
-        <div class="card mb18" id="sec-claude-models">
-          <div class="card-head-row">
-            <div><h2>What is spending it</h2><div class="card-sub">Cost by line item this month, and tokens by model over the last 7 days.</div></div>
-          </div>
-          <div id="claude-desc"></div>
-          <div id="claude-models" style="margin-top:18px"></div>
-        </div>
-
-        <div class="card mb18" id="sec-claude-limits">
-          <div class="card-head-row">
-            <div><h2>Rate limits</h2><div class="card-sub">The other kind of limit — requests and tokens per minute, as configured on the organization.</div></div>
-          </div>
-          <div id="claude-limits"></div>
-        </div>
-      </div>
-
       <div id="trent-a" class="hidden">
         <!-- the market: the denominator every other number here is a fraction of -->
         <div class="card mb18" id="sec-market">
@@ -716,19 +666,6 @@
         </div>
       </div>
 
-      <!-- ===== Find A Crib only ===== -->
-      <div id="fac-b">
-      <!-- funnel cards (Sign-up conversion, The listing-open hook) removed -->
-
-        <div class="card" id="sec-fac-build">
-          <div class="card-head-row">
-            <div><h2>What the growth engine shipped</h2><div class="card-sub" id="fac-build-sub">The daily loop measures, judges what’s running, builds and deploys.</div></div>
-          </div>
-          <div id="fac-build-list"></div>
-          <div class="disclaim" id="fac-build-note">Straight from the engine’s own run log on the server — this is what it did, including anything that did not work.</div>
-        </div>
-      </div><!-- /fac-b -->
-
       <!-- ===== NEMO only ===== -->
       <div id="nemo-b" class="hidden">
         <div class="card" id="sec-build">
@@ -752,6 +689,7 @@
   "use strict";
   var sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
   var gate = document.getElementById('gate'), app = document.getElementById('app');
+  var googleButtonHTML = document.getElementById('google-btn').innerHTML;
 
   // ---------- helpers ----------
   function n(x){ return (x==null?0:x); }
@@ -791,18 +729,11 @@
   // weeks. Read 13% as a floor to clear rather than par, which is why the "in
   // line" band is wider here than on the dwell tile.
   //
-  // CRITICAL — it is a RETURN rate over a fixed 30-day window with a fully
-  // observed cohort. The tile's headline is neither of those things: it counts
-  // returns inside the SELECTED RANGE, and it leaves visitors who first arrived
-  // yesterday in the denominator without having had a chance to come back. It
-  // is therefore range-dependent and biased low. Only retention.d30.within_rate
-  // is like-for-like, and that is the figure the verdict is computed from.
-  //
-  // Note that retention.d30.rate is NOT that figure — it is a survival rate
-  // (still turning up on or after day 30) and reads an order of magnitude lower
-  // by construction. Holding it against 13% would be the same mistake the dwell
-  // tile was built to avoid.
-  var RETURN_BENCHMARK = { pct: 13, label: 'all industries', tolerance: 0.20, min_cohort: 100 };
+  // A fixed 30-day return window differs from the selected-range headline.
+  // The top tile compares its visible percentage numerically to this reference
+  // and labels the window mismatch. Product health still uses the fully
+  // observed cohort (within_rate), never the day-30 survival rate (rate).
+  var RETURN_BENCHMARK = { pct: 13, label: 'all industries', tolerance: 0.20, min_cohort: 100, min_visitors: 100 };
 
   // Visitor-to-lead conversion for real estate. Four sources, none publishing a
   // methodology, clustering tightly enough to state as a band and not a point:
@@ -816,13 +747,10 @@
   // — First Page Sage names free property alerts as the mechanism — so a Find A
   // Crib account is a fair analogue for it, not a stretch.
   //
-  // THE DENOMINATOR IS THE PROBLEM: not one of the four says whether it divides
-  // by sessions or by unique visitors, and those two differ by roughly 1.9x on
-  // this traffic. Rather than quietly pick the flattering reading, the verdict
-  // is drawn from the INTERVAL the two bracket — per-visit at the bottom,
-  // per-visitor at the top. "Above" requires the pessimistic figure to clear the
-  // band, "below" requires the optimistic one to miss it, and anything that
-  // straddles reads "in line", because straddling is genuinely all we know.
+  // The sources do not specify sessions versus unique visitors. The tiles
+  // consistently compare the displayed per-visitor percentage to this reference
+  // band; their tooltips state the denominator limitation. Do not substitute
+  // a hidden per-visit rate for the headline when choosing a badge.
   var SIGNUP_BENCHMARK = { low: 2.0, high: 3.0, label: 'real estate', min_visitors: 500 };
 
   // Cohort retention curve — the share of a signup cohort still active on the
@@ -1072,7 +1000,32 @@
       t.textContent='Something went wrong'; m.textContent='Couldn’t load the dashboard. Try again in a moment.';
     } else {
       t.textContent='Private dashboard'; m.textContent='This is the Find A Crib owner dashboard. Sign in to continue.';
+      btn.innerHTML=googleButtonHTML; btn.onclick=signIn;
     }
+  }
+
+  function showAuthError(){
+    showGate('signin');
+    // Failed OAuth callbacks otherwise leave credentials in the address bar,
+    // and reloading repeats the same failed callback indefinitely.
+    var hash = new URLSearchParams(location.hash.slice(1));
+    if(hash.has('access_token') || hash.has('error') || hash.has('error_description') || hash.has('error_code')){
+      history.replaceState(history.state, '', location.pathname + location.search);
+    }
+    var err = el('gate-err');
+    err.textContent='Couldn’t finish signing you in. Try Sign in with Google again. If it keeps happening, try a private window.';
+    err.classList.remove('hidden');
+  }
+
+  async function signIn(){
+    var btn=el('google-btn');
+    btn.disabled=true;
+    el('gate-err').classList.add('hidden');
+    try{
+      var r=await sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: location.origin + '/dashboard/' } });
+      if(r.error) showAuthError();
+    }catch(e){ showAuthError(); }
+    finally{ btn.disabled=false; }
   }
   // ---------- the two sites ----------
   // Same shell, same tiles/donut/today/sparkline components; each site brings
@@ -1091,14 +1044,11 @@
       // The only feed whose payload changes with the range picker, so the
       // only one worth prefetching the other windows for.
       ranged:true,
-      blocks:['fac-a','fac-b','claude-a'],
+      blocks:['fac-a'],
       nav:[['top','▦','Dashboard'],
            ['sec-tiles','◫','Advertiser metrics'],['sec-goals','◎','Goals & revenue'],
-           ['link:/dashboard/users/','☺','Users'],
-           // Users is a separate PAGE with its own hardcoded copy of this list
-           // in dashboard/users/index.html. Change one, change the other, or
-           // the pane rearranges when you open it.
-           ['sec-claude-spend','🤖','Claude API']]
+           // Keep this list in sync with dashboard/users/index.html.
+           ['link:/dashboard/users/','☺','Users']]
     },
     crease:{
       mark:'👔', name:'Crease', endpoint:'/api/dashboard-crease',
@@ -1488,40 +1438,13 @@
     })();
   }
 
-  // The Claude section sits on the Find A Crib board but comes from its own
-  // endpoint, so it is fetched separately rather than being wedged into
-  // /dashboard-metrics — the bill is org-wide and has nothing to do with this
-  // site's traffic. Kept independent on purpose: a failure here must not blank
-  // the board it is a section of.
-  var claudeAt = 0, claudeData = null;
-  async function loadClaude(force){
-    if(!force && claudeData && Date.now()-claudeAt < 5*60*1000){
-      renderClaude(session && session.user, claudeData); return;
-    }
-    var t = await token();
-    if(!t) return;
-    try{
-      var res = await feedFetch('/api/dashboard-claude', t);
-      if(!res.ok){
-        renderClaude(session && session.user,
-          {ok:false, reason:'http', message:'The dashboard API answered '+res.status+'.'});
-        return;
-      }
-      claudeData = await res.json(); claudeAt = Date.now();
-      renderClaude(session && session.user, claudeData);
-    }catch(e){
-      renderClaude(session && session.user,
-        {ok:false, reason:'network', message:'Could not reach the dashboard API.'});
-    }
-  }
-
   function paint(data){
     applyShell();
     paintRangeSwitch();
     if(siteKey==='nemo') renderNemo(session.user, data);
     else if(siteKey==='crease') renderCrease(session.user, data);
     else if(siteKey==='trent') renderTrent(session.user, data);
-    else { render(session.user, data); renderGoals(data); loadClaude(false); }
+    else { render(session.user, data); renderGoals(data); }
   }
 
   // Eric signs in to see NEMO and is refused Find A Crib's feed by the API.
@@ -1620,12 +1543,20 @@
     };
   });
 
-  el('google-btn').onclick = function(){
-    sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: location.origin + '/dashboard/' } });
-  };
+  el('google-btn').onclick = signIn;
   el('signout').onclick = function(){ sb.auth.signOut(); };
-  sb.auth.onAuthStateChange(function(_e, session){ route(session); });
-  sb.auth.getSession().then(function(r){ route(r.data.session); });
+  // getSession() alone does not report errors from processing the OAuth URL.
+  // Check initialization before routing a null session to the ordinary gate.
+  (async function(){
+    try{
+      var initialized=await sb.auth.initialize();
+      if(initialized.error){ showAuthError(); return; }
+      sb.auth.onAuthStateChange(function(_e, session){
+        // route() calls getSession(): run after the auth callback releases its lock.
+        setTimeout(function(){ route(session).catch(showAuthError); }, 0);
+      });
+    }catch(e){ showAuthError(); }
+  })();
 
   // Keep an open tab honest: refetch the visible site+range once its payload
   // is 5 minutes old — on a timer while the tab is visible, and immediately
@@ -1711,94 +1642,54 @@
         'Only a client-side unload or heartbeat ping would measure the last page.';
     }
 
-    // Returning visitors. Same split as the dwell tile: our own numbers above
-    // the hairline, somebody else's below it. The headline counts returns
-    // inside the selected range, which no published figure can be held against
-    // — see RETURN_BENCHMARK — so the fixed 30-day cohort rate goes above the
-    // hairline to carry the comparison, and it reads the same on every range.
-    var RET=(d.retention||{}).d30||{};
-    var retOwn='', retBench='', retTitle='';
-    if(RET.within_rate != null){
-      var rw = RET.within_rate*100;
-      retOwn = '';     // the fixed-window line was removed 2026-09-07; the benchmark verdict below still uses rw
-      if(n(RET.within_cohort) < RETURN_BENCHMARK.min_cohort){
-        retBench = 'Industry average <b>'+RETURN_BENCHMARK.pct+'%</b> return within 30 days'+
-                   ' · cohort too small to compare';
-      } else {
-        var rb=RETURN_BENCHMARK.pct, rtol=rb*RETURN_BENCHMARK.tolerance, rverdict, rcls;
-        if(rw > rb+rtol)      { rverdict='above average'; rcls='bn-hi';  }
-        else if(rw < rb-rtol) { rverdict='below average'; rcls='bn-low'; }
-        else                  { rverdict='in line';       rcls='bn-mid'; }
-        retBench = 'Industry average <b>'+rb+'%</b> return within 30 days'+
-                   ' <span class="bn '+rcls+'">'+rverdict+'</span>';
-      }
+    // Compare the percentage the tile actually displays, including rounding.
+    // Benchmark badges describe numerical position, not statistical significance.
+    function referenceBadge(value, low, high){
+      var label='in line', cls='bn-mid';
+      if(value > high){ label='above benchmark'; cls='bn-hi'; }
+      else if(value < low){ label='below benchmark'; cls='bn-low'; }
+      return ' <span class="bn '+cls+'">'+label+'</span>';
     }
-    retTitle = 'Headline is visitors who came back on a DIFFERENT DAY inside the selected range — a second page '+
-      'load in the same visit is not a return. It moves with the range picker and runs low, because someone first '+
-      'seen yesterday sits in the denominator without having had a chance to return, so it is not the figure '+
-      'compared to the benchmark. The 30-day rate is: the window is fixed whatever range is selected, and the '+
-      'cohort holds only visitors whose first day was 30+ days ago, so every one of them had the full window. '+
-      (RET.rate != null ? 'Day-30 retention — the stricter question of who was still turning up on or after day '+
-        '30 — is '+(RET.rate*100).toFixed(1)+'%; that is a survival rate, not a return rate, and is not what the '+
-        'benchmark measures. ' : '')+
-      'The industry figure is Contentsquare’s 2026 benchmark over 99 billion sessions. It is cross-industry, and '+
-      'property sites are generally said to run above it because a housing search takes weeks — so 13% is a floor '+
-      'to clear, not par, hence the wide "in line" band.';
 
-    // Sign-up conversion. The headline divides by unique visitors; the line
-    // above the hairline divides by visits. Both are ours, and they exist as a
-    // pair because the benchmark never says which denominator it used — the
-    // verdict comes from the interval they bracket, not from either alone.
-    var convPerVisit = pct(n(T.accounts), n(T.visits));
-    var convOwn = '';  // the per-visit line was removed 2026-09-07; convPerVisit still feeds the verdict
-    var convBench='', convTitle='';
-    if(n(T.visitors) < SIGNUP_BENCHMARK.min_visitors){
-      convBench = 'Industry <b>'+bandPct(SIGNUP_BENCHMARK.low)+'–'+bandPct(SIGNUP_BENCHMARK.high)+'%</b> for '+
-                  SIGNUP_BENCHMARK.label+' · too few visitors to compare';
+    var returnRate = Number(pctS(T.returning, T.visitors).slice(0,-1));
+    var retOwn='', retBench='30-day industry reference <b>'+RETURN_BENCHMARK.pct+'%</b>', retTitle='';
+    if(n(T.visitors) < RETURN_BENCHMARK.min_visitors){
+      retBench += ' · too few visitors to compare';
     } else {
-      var sverdict, scls;
-      if(convPerVisit > SIGNUP_BENCHMARK.high)   { sverdict='above average'; scls='bn-hi';  }
-      else if(convRate < SIGNUP_BENCHMARK.low)   { sverdict='below average'; scls='bn-low'; }
-      else                                       { sverdict='in line';       scls='bn-mid'; }
-      convBench = 'Industry <b>'+bandPct(SIGNUP_BENCHMARK.low)+'–'+bandPct(SIGNUP_BENCHMARK.high)+'%</b> for '+
-                  SIGNUP_BENCHMARK.label+' <span class="bn '+scls+'">'+sverdict+'</span>';
+      retBench += referenceBadge(returnRate, RETURN_BENCHMARK.pct, RETURN_BENCHMARK.pct);
     }
-    convTitle = 'Sign-ups created in the selected range over unique visitors in the same range. The industry band '+
-      'is four published real-estate readings (2.0%, 2.4%, 2.6%, and a 1–3% range) and a real-estate "conversion" '+
-      'there means an email or alert capture, not a sale, so an account here is a fair match for it. None of the '+
-      'four states whether it divides by sessions or by visitors, and those differ by about 1.9x on this traffic '+
-      '('+convPerVisit.toFixed(1)+'% per visit against '+convRate.toFixed(1)+'% per visitor), so the verdict is '+
-      'drawn from the whole interval: "above" needs the per-visit figure to clear the band, "below" needs the '+
-      'per-visitor figure to miss it, and a straddle reads "in line" because that is all the sources support. '+
-      'Under '+comma(SIGNUP_BENCHMARK.min_visitors)+' visitors no verdict is drawn — one sign-up moves a rate '+
-      'this small too far to mean anything.';
+    retBench += '<div class="a-bench-note">Selected range vs. a 30-day window</div>';
+    retTitle = 'Returning visitors came back on a different day inside the selected range. '+
+      'The badge compares the displayed percentage with the 13% cross-industry reference. '+
+      'The reference measures returns within 30 days of a first visit, so the windows and cohorts differ; '+
+      'this is a numerical reference comparison, not a like-for-like retention verdict. '+
+      'The fully observed 30-day cohort rate is shown separately in Product health.';
 
-    // Alert sign-up conversion (2026-09-12): borough-alert sign-ups created in
-    // the range over the same unique visitors the account rate divides by, so
-    // the two tiles sit side by side on one denominator. Same real-estate band:
-    // the sources define a conversion as "an email or alert capture", which is
-    // this tile more literally than it is the account one. Same interval rule.
+    // Account and alert conversion both use unique visitors in this range.
+    function conversionBench(rate){
+      var line='Industry reference <b>'+bandPct(SIGNUP_BENCHMARK.low)+'–'+
+        bandPct(SIGNUP_BENCHMARK.high)+'%</b> for '+SIGNUP_BENCHMARK.label;
+      if(n(T.visitors) < SIGNUP_BENCHMARK.min_visitors)
+        return line+' · too few visitors to compare';
+      return line+referenceBadge(Number(rate.toFixed(1)), SIGNUP_BENCHMARK.low, SIGNUP_BENCHMARK.high);
+    }
+    var convOwn = '', convBench=conversionBench(convRate);
+    var convTitle = 'Sign-ups created in the selected range divided by unique visitors in the same range. '+
+      'The badge compares the displayed percentage with the 2–3% real-estate reference band: '+
+      'above 3% is above benchmark, 2–3% is in line, and below 2% is below benchmark. '+
+      'The published sources do not specify whether they divide by visits or unique visitors, '+
+      'so this is a reference comparison. No badge is shown below '+
+      comma(SIGNUP_BENCHMARK.min_visitors)+' visitors.';
+
     var AL = d.alerts || {};
     var alertRate = pct(n(AL.signups), n(T.visitors));
-    var alertPerVisit = pct(n(AL.signups), n(T.visits));
-    var alertBench;
-    if(n(T.visitors) < SIGNUP_BENCHMARK.min_visitors){
-      alertBench = 'Industry <b>'+bandPct(SIGNUP_BENCHMARK.low)+'–'+bandPct(SIGNUP_BENCHMARK.high)+'%</b> for '+
-                   SIGNUP_BENCHMARK.label+' · too few visitors to compare';
-    } else {
-      var averdict, acls;
-      if(alertPerVisit > SIGNUP_BENCHMARK.high) { averdict='above average'; acls='bn-hi';  }
-      else if(alertRate < SIGNUP_BENCHMARK.low) { averdict='below average'; acls='bn-low'; }
-      else                                      { averdict='in line';       acls='bn-mid'; }
-      alertBench = 'Industry <b>'+bandPct(SIGNUP_BENCHMARK.low)+'–'+bandPct(SIGNUP_BENCHMARK.high)+'%</b> for '+
-                   SIGNUP_BENCHMARK.label+' <span class="bn '+acls+'">'+averdict+'</span>';
-    }
+    var alertBench = conversionBench(alertRate);
     var alertOwn = '<b>'+comma(AL.signups)+'</b> alert sign-ups of '+comma(T.visitors)+' visitors';
-    var alertTitle = 'Borough-alert sign-ups created in the selected range over unique visitors in the same range — '+
-      'the same denominator as Sign-up conversion, so the two compare directly. The owner’s own subscription is '+
-      'excluded. Since 2026-09-08 an alert needs an account, so an alert sign-up is usually also a sign-up. The band and '+
-      'the verdict rule are the Sign-up conversion tile’s ('+alertPerVisit.toFixed(1)+'% per visit against '+
-      alertRate.toFixed(1)+'% per visitor here).';
+    var alertTitle = 'Borough-alert sign-ups created in the selected range divided by unique visitors in '+
+      'the same range. The badge compares the displayed percentage with the same 2–3% reference band '+
+      'as Sign-up conversion. The published sources do not specify visits versus unique visitors. '+
+      'The owner’s own subscription is excluded. Since 2026-09-08 an alert needs an account, '+
+      'so an alert sign-up is usually also an account sign-up.';
 
     // Alert clicks (2026-09-12): people, not clicks, because one keen reader
     // opening six listings is still one person the email worked for. Every
@@ -1843,10 +1734,7 @@
     renderFacSearch(d.search);
     renderAppStore(d.appstore);
     renderSpark(d.sparkline||[], d.months);
-    renderFacBuild(d.build);
     renderFacTiles(d.adtiles);
-    renderFacSignage(d.signage);
-    renderFacKiosks(d.signage);
   }
 
   // ---------- donut (return channels) ----------
@@ -1971,6 +1859,31 @@
         }).join('')
       : '<div class="disclaim">No tile has been seen or clicked yet in this range.</div>';
 
+    // Where the people who clicked a re-rental came from, which client they
+    // were on, and which borough's tile they took (2026-09-16). Rows from
+    // before the site stamped a source on every event are "unknown", not
+    // guessed. The iPhone app is its own source: nothing inside the app can
+    // know which ad or page sent someone to the App Store.
+    var P=A.click_platforms||{}, S=A.click_sources||[], Bo=A.click_boroughs||[];
+    var webC=n(P.web), iosC=n(P.ios);
+    function chips(list, key){
+      return list.length
+        ? '<div class="act-desc" style="line-height:1.9">'+list.map(function(r){
+            return '<span style="display:inline-block;padding:1px 9px;border:1px solid var(--line,#dfe3e8);border-radius:999px;margin:0 6px 4px 0">'+esc(r[key])+' <b>'+comma(n(r.clicks))+'</b></span>';
+          }).join('')+'</div>'
+        : '<div class="act-desc">nothing yet</div>';
+    }
+    el('tile-sources').innerHTML = clicks
+      ? '<div class="act-row"><div class="act-l"><div class="act-ico">📍</div><div>'+
+          '<div class="act-name">Where re-rental clickers came from</div>'+
+          '<div class="act-desc">'+comma(webC)+' on the website · '+comma(iosC)+' in the iPhone app</div>'+
+          chips(S,'source')+'</div></div></div>'+
+        (Bo.length
+          ? '<div class="act-row"><div class="act-l"><div class="act-ico">🗺️</div><div>'+
+            '<div class="act-name">Which borough\u2019s tile</div>'+chips(Bo,'borough')+'</div></div></div>'
+          : '')
+      : '';
+
     // The sentence that goes in the email. It is deliberately built from the
     // top advertiser rather than the total: nobody is buying "the site", they
     // are buying the slot their own apartments went into, and the only honest
@@ -2010,74 +1923,6 @@
            'window is a recent slice rather than the whole range — the oldest rows were dropped.</span>';
     }
     el('tile-callout').innerHTML=msg;
-  }
-
-  // ---------- google ads (first-party ad-click funnel) ----------
-  // What the Find A Crib engine shipped on its last run. Mirrors the NEMO
-  // card, with one difference: this engine records per-technique ok/failed, so
-  // a step that did not work is shown as such. A card where every line is a
-  // green tick is a card that cannot tell you anything went wrong.
-  function renderFacBuild(B){
-    B = B || {};
-    var steps = B.steps || [];
-    // Lines the API withheld because they were word-for-word the previous
-    // run's. Several techniques are verifiers, not builders — they re-read the
-    // docroot and report the same sentence every night. Listing those under
-    // "what the engine shipped" made the card look frozen, which is what it
-    // was: the sentences had not moved in days. They are counted here instead,
-    // so a quiet morning still reads as a run that happened.
-    var heldN = n(B.unchanged);
-    var card = el('sec-fac-build');
-    if(!card) return;
-    if(!steps.length && !heldN){
-      // No run log means the engine has not reported, which is itself worth
-      // saying — quietly hiding the card would read as "nothing to ship".
-      card.classList.add('hidden');
-      return;
-    }
-    card.classList.remove('hidden');
-
-    var when = B.date
-      ? new Date(B.date+'T00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})
-      : null;
-    var failed = steps.filter(function(s){ return !s.ok; }).length;
-    var shipped = steps.length - failed;
-    el('fac-build-sub').textContent =
-      (when ? 'Last run '+when+' — ' : '')
-      + shipped + ' change' + (shipped===1?'':'s') + ' shipped'
-      + (failed ? ', '+failed+' needing attention' : '')
-      + (heldN ? ', '+heldN+' re-verified unchanged' : '')
-      + (B.deployed ? ' · deployed' : ' · not deployed');
-
-    var rows = steps.map(function(s){
-      return '<div class="act-row"><div class="act-l"><div class="act-ico">'+(s.ok?'✅':'⚠️')+'</div>'+
-        '<div><div class="act-name">'+esc(s.detail)+'</div>'+
-        '<div class="act-desc">'+esc(s.slug)+'</div></div></div></div>';
-    });
-    var newU = n(B.new_urls), chg = n(B.changed_urls);
-    if(newU || chg){
-      rows.push('<div class="act-row"><div class="act-l"><div class="act-ico">📄</div>'+
-        '<div><div class="act-name">Pages published or updated</div>'+
-        '<div class="act-desc">'+comma(newU)+' new · '+comma(chg)+' changed</div></div></div>'+
-        '<div class="act-val">'+comma(newU+chg)+'</div></div>');
-    }
-    if(heldN){
-      var sinceTxt = '';
-      if(B.unchanged_since){
-        var sd = new Date(B.unchanged_since+'T00:00');
-        var days = Math.round((Date.now()-sd.getTime())/86400000);
-        sinceTxt = days > 1 ? ' — the longest unmoved since '+
-          sd.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' ('+days+' days)' : '';
-      }
-      rows.push('<div class="act-row"><div class="act-l"><div class="act-ico">🔁</div>'+
-        '<div><div class="act-name">Re-verified, nothing to change</div>'+
-        '<div class="act-desc">'+heldN+' technique'+(heldN===1?'':'s')+
-        ' reported exactly what they reported last run'+esc(sinceTxt)+
-        '. Checks that passed, not work that shipped.</div></div></div>'+
-        '<div class="act-val">'+heldN+'</div></div>');
-    }
-    el('fac-build-list').innerHTML = rows.length ? rows.join('')
-      : '<div style="color:var(--muted);font-size:13px">Nothing shipped on the last run.</div>';
   }
 
   // ---------- product health ----------
@@ -2415,179 +2260,6 @@
       sc.style.display='';
       sc.innerHTML = '<b>No Search Console data on disk.</b> The 05:40 build writes it; if this stays empty, that run is failing.';
     }
-  }
-
-  // ---------- counter signage ----------
-  // The card exists to stop a decision being made too early. Two questions are
-  // on plates, both of them true, and the temptation is to read whichever is
-  // ahead this week as the winner — on counts where a single busy laundromat
-  // moves the whole arm. So the rate is withheld under a floor, the verdict
-  // sentence says outright when nothing is callable, and the venue list sits
-  // underneath because the real lever is which room the plate is standing in,
-  // not which sentence is on it.
-  function renderFacSignage(S){
-    S = S || {};
-    // Arm B ("Find rent-stabilized apartments") was removed from this card at
-    // the owner's request; the plates and the /c/b<n> redirects still exist and
-    // are still counted server-side, they are just not drawn here.
-    var arms = (S.arms || []).filter(function(a){ return a.key !== 'b'; });
-    if(!arms.length){ el('sec-signage').classList.add('hidden'); return; }
-    var floor = n(S.rate_floor)||30;
-
-    el('sg-arms').innerHTML = arms.map(function(a){
-      var scans=n(a.scans), sess=n(a.sessions), eng=n(a.engaged);
-      var hasRate = a.rate !== null && a.rate !== undefined;
-      // "0%" off four scans is a number that looks like a finding. A dash and
-      // the reason is the honest render.
-      var rateSub = hasRate ? 'engaged ÷ scans — what the question is worth'
-                  : (scans ? comma(scans)+' scans so far — needs '+floor+' to divide by'
-                           : (S.log ? 'no scans through this plate yet'
-                                    : 'scan log not readable on the server'));
-      var tiles=[
-        {v:comma(scans), l:'Scans', sub:'redirects through the short link'},
-        {v:comma(sess),  l:'Sessions', sub:'reached the site'},
-        {v:comma(eng),   l:'Engaged', sub:'searched, opened or saved a building'},
-        {v:hasRate ? a.rate.toFixed(1)+'%' : '—', l:'Engaged per scan', sub:rateSub}
-      ].map(creaseTile).join('');
-
-      var plates=(a.plates||[]).filter(function(p){ return n(p.scans)||n(p.sessions); });
-      var plateRows = plates.length
-        ? plates.map(function(p){
-            var d=[plural(p.scans,'scan'), plural(p.sessions,'session'),
-                   comma(n(p.engaged))+' engaged'].join(' · ');
-            // The plate cut before the codes existed answers on /c with no
-            // suffix; printing it as "/c/" would name a path that 404s.
-            var url = p.code==='counter' ? 'findacrib.com/c'
-                                         : 'findacrib.com/c/'+p.code;
-            // The venue leads. "a4" is a code the reader has to go and look up,
-            // and a row nobody can read at a glance is a row that gets skipped
-            // — which is the whole point of having cut nine of them.
-            var name = p.venue ? p.venue : url;
-            // Where it physically is, when there is somewhere. "Laundromats:
-            // 4 scans" is a category; "Sunshine Laundromat since Aug 28" is a
-            // place you can walk back to and ask about.
-            var st = p.stores || [];
-            var whereTxt = st.length===1
-                  ? st[0].store + (st[0].cross ? ' · '+st[0].cross : '')
-              : st.length ? st.length+' counters'
-              : '';
-            var sub = [p.venue ? url : null, whereTxt,
-                       p.since ? 'since '+p.since : null, d]
-                      .filter(Boolean).join(' · ');
-            return '<div class="act-row"><div class="act-l"><div class="act-ico">🏷️</div>'+
-              '<div><div class="act-name">'+esc(name)+'</div>'+
-              '<div class="act-desc">'+esc(sub)+'</div></div></div>'+
-              '<div class="act-val">'+comma(n(p.scans))+'</div></div>';
-          }).join('')
-        : '<div class="disclaim">No plate carrying this question has been scanned yet.</div>';
-
-      return '<div class="sg-arm">'+
-        '<div class="sg-head"><div class="sg-q">“'+esc(a.headline)+'”</div>'+
-        '<div class="sg-code">'+esc(a.code)+'</div></div>'+
-        '<div class="ads-tiles">'+tiles+'</div>'+
-        '<div class="sg-why">'+esc(a.why)+'</div>'+
-        '<div class="sg-sub">Plates in the field</div>'+plateRows+
-        '</div>';
-    }).join('');
-
-    // Removed: the verdict sentence and the two warnings that hung off it. The
-    // log/truncation notes stay — those say the numbers above are incomplete,
-    // which nothing else on the card can tell you.
-    el('sg-callout').innerHTML =
-      (S.truncated ? ' <span style="opacity:.75">Session counts hit the feed’s '+
-        'page limit and are floors, not totals — the scan counts above them are '+
-        'complete.</span>' : '')+
-      (S.log ? '' : ' <span style="opacity:.75">Scans are read from '+
-        'findacrib-qr.log, which nginx has not written yet — sessions below are '+
-        'still counted from the site, so a zero here is a missing log, not a '+
-        'missing scan.</span>');
-  }
-
-  // ---------- LinkNYC kiosks ----------
-  // The campaign facts live here rather than in the payload because they are
-  // facts about a purchase, not about traffic: the portal quoted 96,768 plays
-  // for six screens over 28 days and nothing on the server can re-derive that.
-  // The counts come from the same signage payload as the plates — the kiosk QR
-  // is plate code a11 and rides the same /c/<code> redirect and log.
-  var KIOSK_CAMPAIGN = {
-    code: 'a11',
-    name: 'Find A Crib – Rent Check – Sep 2026',
-    start: '2026-09-08', end: '2026-10-05',
-    screens: 6, units: 4, est_plays: 96768,
-    // Quoted at checkout. The LinkLocal Business tier promises the first
-    // campaign free; until that credit shows on the invoice this is the bill.
-    quoted_usd: 420, credit_pending: true
-  };
-  function renderFacKiosks(S){
-    S = S || {};
-    var C = KIOSK_CAMPAIGN;
-    var host = el('sec-kiosks');
-    if(!host) return;
-    // Rows come from placements (present from the day they were recorded);
-    // counts come from the plate row, which only exists once something scanned.
-    var rows = (S.placements || []).filter(function(r){
-      return r.code === C.code && /^LinkNYC kiosk/i.test(r.store || '');
-    });
-    var plate = null;
-    (S.arms || []).forEach(function(a){
-      (a.plates || []).forEach(function(p){ if(p.code === C.code) plate = p; });
-    });
-    if(!rows.length && !plate){ host.classList.add('hidden'); return; }
-    host.classList.remove('hidden');
-
-    var scans = plate ? n(plate.scans) : 0;
-    var sess  = plate ? n(plate.sessions) : 0;
-    var eng   = plate ? n(plate.engaged) : 0;
-
-    // Where the campaign is in its 28 days, in whole days, from local midnight.
-    var day = 86400000;
-    var t0 = new Date(C.start+'T00:00:00'), t1 = new Date(C.end+'T23:59:59');
-    var now = new Date();
-    var total = Math.round((t1 - t0) / day);
-    var elapsed = Math.max(0, Math.min(total, Math.floor((now - t0) / day) + 1));
-    var status;
-    if (now < t0) {
-      var until = Math.ceil((t0 - now) / day);
-      status = 'Starts '+C.start+' — in '+plural(until,'day')+'. Anything scanned before then is a proof, and the plates card files it under “pre”.';
-    } else if (now > t1) {
-      status = 'Ended '+C.end+'. '+total+' days, '+C.screens+' screens.';
-    } else {
-      status = 'Day '+elapsed+' of '+total+' · '+C.screens+' screens on '+C.units+' units · ends '+C.end+'.';
-    }
-    el('kiosk-status').textContent = status;
-
-    var playsToDate = Math.round(C.est_plays * (elapsed / total));
-    var per10k = playsToDate ? (10000 * scans / playsToDate) : null;
-    var cost = C.credit_pending ? '$'+comma(C.quoted_usd) : '$'+comma(C.quoted_usd);
-    var costSub = C.credit_pending ? 'quoted — free first-campaign credit not yet applied'
-                                   : 'paid';
-    var perVisit = sess ? '$'+(C.quoted_usd / sess).toFixed(2) : '—';
-    var tiles=[
-      {v:comma(scans), l:'Scans', sub:'phones that hit /c/'+C.code},
-      {v:comma(sess),  l:'Sessions', sub:'reached the site'},
-      {v:comma(eng),   l:'Engaged', sub:'searched, opened or saved a building'},
-      {v:comma(playsToDate), l:'Est. plays so far', sub:'of '+comma(C.est_plays)+' quoted — 10% of screen time, spread over 24h'},
-      {v:per10k===null ? '—' : per10k.toFixed(1), l:'Scans per 10k plays', sub: elapsed ? 'the per-screen yield' : 'nothing has played yet'},
-      {v:cost, l:'Cost', sub:costSub + (sess ? ' · '+perVisit+' per session' : '')}
-    ].map(creaseTile).join('');
-    el('kiosk-tiles').innerHTML = tiles;
-
-    el('kiosk-units').innerHTML = rows.length
-      ? rows.map(function(r){
-          var name = (r.store || '').replace(/^LinkNYC kiosk\s*/i,'');
-          var sub = [r.cross, r.notes].filter(Boolean).join(' · ');
-          return '<div class="act-row"><div class="act-l"><div class="act-ico">🖥️</div>'+
-            '<div><div class="act-name">'+esc(name)+'</div>'+
-            '<div class="act-desc">'+esc(sub)+'</div></div></div>'+
-            '<div class="act-val" title="scans are counted per code, not per unit — the portal report has plays per unit">'+esc(r.placed||'')+'</div></div>';
-        }).join('')
-      : '<div class="disclaim">No kiosk placements recorded — run scripts/placement.py add a11 … and deploy.</div>';
-
-    el('kiosk-callout').innerHTML = scans
-      ? ''
-      : (now < t0
-          ? '<span style="opacity:.75">Expect tens of scans over the month, not hundreds — free ads run in unsold time, and a sidewalk screen converts well under 1% of the people who see it. The month answers whether kiosks scan at all; the split by unit comes from the portal’s report.</span>'
-          : '<span style="opacity:.75">No scans yet. Check the portal that the campaign was approved and is playing before reading this as a result.</span>');
   }
 
   // ---------- iPhone app (App Store Connect) ----------
@@ -3221,152 +2893,6 @@
     var goalCallout = el('goals-callout');
     goalCallout.innerHTML = '';
     goalCallout.style.display = 'none';
-  }
-
-  // ---------- render: Claude API spend ----------
-  // The number that matters here is not the bill, it is the DISTANCE to the
-  // cap. On 2026-07-28 this account topped up, ran fine, and tripped a
-  // self-imposed spend limit the same day — NEMO's 06:00 scout died with
-  // "you will regain access on 2026-08-01", and a top-up would not have fixed
-  // it. This tab exists to make that visible a week early.
-  function renderClaude(user, d){
-    d = d || {};
-    var setup = el('claude-callout');
-    if(!d.ok){
-      // Not configured, or the key is wrong. Say which, and say the fix — a
-      // blank tab reads as a broken dashboard.
-      el('claude-sub').textContent = 'Not connected yet';
-      el('claude-tiles').innerHTML = '';
-      el('claude-meters').innerHTML = '';
-      el('claude-spark').innerHTML = '';
-      el('claude-desc').innerHTML = '';
-      el('claude-models').innerHTML = '';
-      el('claude-limits').innerHTML = '';
-      setup.innerHTML = '<b>This tab needs an Anthropic <em>admin</em> key.</b> ' +
-        esc(d.message || 'Unavailable.') +
-        '<br><br>Create one at <b>platform.claude.com → Settings → Organization → Admin keys</b> ' +
-        '(it starts <code>sk-ant-admin01-</code>; the keys the apps send messages with are rejected here, ' +
-        'and the Admin API is not available to individual accounts — the organization has to exist). ' +
-        'Then add <code>ANTHROPIC_ADMIN_KEY</code> and <code>CLAUDE_MONTHLY_CAP_USD</code> to ' +
-        '<code>/root/findacrib-api/.env</code> and restart the service.';
-      return;
-    }
-    var cap = d.cap_usd, mtd = n(d.mtd_usd);
-    el('claude-sub').textContent = 'Billing month ' + (d.month || '') +
-      ' · day ' + n(d.days_elapsed) + ', ' + n(d.days_left) + ' left';
-
-    function usd(v){ return v == null ? '—' : '$' + Number(v).toFixed(2); }
-    var tiles = [
-      {val: usd(mtd), lbl: 'Spent this month',
-       sub: 'across every project on the account',
-       bench: cap ? '<b>' + pctS(mtd, cap, 0) + '</b> of the $' + cap.toFixed(0) + ' cap'
-                  : 'No cap set — add CLAUDE_MONTHLY_CAP_USD to measure against one'},
-      {val: usd(d.avg_per_day_7d), lbl: 'Per day',
-       sub: 'average of the last 7 days',
-       bench: 'What the projection below is built from'},
-      {val: usd(d.projected_month_usd), lbl: 'Projected month',
-       sub: 'today\u2019s spend plus ' + n(d.days_left) + ' more days at that rate',
-       bench: cap
-         ? (n(d.projected_month_usd) > cap
-              ? '<span class="bn bn-low">over the cap</span> at this rate'
-              : '<span class="bn bn-hi">inside the cap</span> at this rate')
-         : 'A straight line, not a forecast'},
-      {val: d.over_cap_on == null ? (cap && mtd >= cap ? '0' : '—') : String(d.over_cap_on),
-       lbl: 'Days of headroom',
-       sub: cap ? 'at the current daily rate' : 'needs a cap to compute',
-       bench: cap && d.over_cap_on != null && d.over_cap_on < n(d.days_left)
-                ? '<span class="bn bn-low">runs out before the month does</span>'
-                : 'Days until the cap is reached'}
-    ];
-    el('claude-tiles').innerHTML = tiles.map(function(t){
-      return '<div class="ads-tile"><div class="a-val">'+t.val+'</div><div class="a-lbl">'+t.lbl+'</div>'+
-             '<div class="a-sub">'+t.sub+'</div>'+(t.bench?'<div class="a-bench">'+t.bench+'</div>':'')+'</div>';
-    }).join('');
-
-    el('claude-meters').innerHTML = cap
-      ? '<div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">'+
-        'AGAINST THE CAP <span style="font-weight:400;text-transform:none">'+
-        '(typed in by hand — the API cannot read it)</span></div>'+
-        // Green means ON PACE, not merely "not over yet". 90% of the cap on
-        // day 14 of 31 is a fire, and the first version of this bar drew it
-        // green because the only test was mtd < cap. Compare the two
-        // percentages instead: spending faster than the month is elapsing is
-        // the whole signal this tab exists to give.
-        meter('Spent so far', usd(mtd)+' of $'+cap.toFixed(0), pct(mtd, cap),
-              pct(mtd, cap) <= pct(n(d.days_elapsed), n(d.days_elapsed)+n(d.days_left))
-                ? 'good' : '')+
-        meter('Month elapsed', n(d.days_elapsed)+' of '+(n(d.days_elapsed)+n(d.days_left))+' days',
-              pct(n(d.days_elapsed), n(d.days_elapsed)+n(d.days_left)), '')
-      : '';
-
-    renderClaudeSpark(d.sparkline || []);
-
-    var desc = (d.by_description || []);
-    el('claude-desc').innerHTML = desc.length
-      ? '<div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">COST BY LINE ITEM</div>'+
-        desc.map(function(r){
-          return '<div class="act-row"><div class="act-l"><div class="act-ico">💵</div>'+
-            '<div><div class="act-name">'+esc(r.description)+'</div></div></div>'+
-            '<div class="act-val">'+usd(r.usd)+'</div></div>';
-        }).join('')
-      : '<div style="color:var(--muted);font-size:13px">No cost recorded in this window.</div>';
-
-    var ms = d.models || [];
-    el('claude-models').innerHTML =
-      '<div style="font-size:12px;color:var(--muted);margin:14px 0 8px;font-weight:600">TOKENS BY MODEL · LAST 7 DAYS</div>'+
-      (d.models_error
-        ? '<div style="color:var(--muted);font-size:13px">Token report unavailable: '+esc(String(d.models_error))+'</div>'
-        : (ms.length
-            ? ms.map(function(m){
-                var tot = n(m['in']) + n(m.out);
-                // Cache reads are the cheap ones; showing them beside the
-                // billed input is how you tell whether caching is working.
-                return '<div class="act-row"><div class="act-l"><div class="act-ico">🧠</div>'+
-                  '<div><div class="act-name">'+esc(m.model)+'</div>'+
-                  '<div class="act-desc">'+comma(m['in'])+' in · '+comma(m.out)+' out · '+
-                  comma(m.cache_read)+' cache read</div></div></div>'+
-                  '<div class="act-val">'+comma(tot)+'</div></div>';
-              }).join('')
-            : '<div style="color:var(--muted);font-size:13px">No token usage in the last 7 days.</div>'));
-
-    var rl = d.rate_limits || [];
-    el('claude-limits').innerHTML = d.rate_limits_error
-      ? '<div style="color:var(--muted);font-size:13px">Unavailable: '+esc(String(d.rate_limits_error))+'</div>'
-      : (rl.length
-          ? rl.slice(0, 12).map(function(r){
-              var bits = Object.keys(r).filter(function(k){ return /limit|rpm|tpm|tokens|requests/i.test(k) && r[k] != null; })
-                          .map(function(k){ return k.replace(/_/g,' ')+': '+r[k]; });
-              return '<div class="act-row"><div class="act-l"><div class="act-ico">⚙️</div>'+
-                '<div><div class="act-name">'+esc(String(r.model || r.group_type || 'organization'))+'</div>'+
-                '<div class="act-desc">'+esc(bits.join(' · ') || '—')+'</div></div></div>'+
-                '<div class="act-val"></div></div>';
-            }).join('')
-          : '<div style="color:var(--muted);font-size:13px">No rate limits reported.</div>');
-
-    setup.innerHTML = cap
-      ? '<b>'+usd(mtd)+' of $'+cap.toFixed(0)+' this month'+
-        (d.over_cap_on != null ? ', about '+d.over_cap_on+' days of headroom left' : '')+'.</b> '+
-        'The cap is <b>not readable from the API</b> — it is CLAUDE_MONTHLY_CAP_USD in the service env, '+
-        'so if you change the limit in the Console you have to change it here too or this tile will lie. '+
-        'The bill itself is live: cost data lands within about five minutes and this is cached for ten.'
-      : '<b>'+usd(mtd)+' spent this month.</b> No cap is configured, so there is nothing to measure it against — '+
-        'set <code>CLAUDE_MONTHLY_CAP_USD</code> to whatever the Console spend limit says and this tab will '+
-        'start warning you before the crons die.';
-  }
-
-  // Same shape as the traffic sparkline, but the bars are dollars.
-  function renderClaudeSpark(rows){
-    var box = el('claude-spark');
-    if(!rows.length){ box.innerHTML=''; return; }
-    var max = Math.max.apply(null, rows.map(function(r){ return n(r.usd); })) || 1;
-    box.innerHTML =
-      '<div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">DAILY SPEND · LAST 30 DAYS</div>'+
-      '<div style="display:flex;align-items:flex-end;gap:3px;height:70px">'+
-      rows.map(function(r){
-        var h = Math.max(2, Math.round(100 * n(r.usd) / max));
-        return '<div title="'+esc(r.date)+' — $'+n(r.usd).toFixed(2)+'" style="flex:1;height:'+h+'%;'+
-               'background:var(--accent,#4a7dff);border-radius:2px 2px 0 0;opacity:.85"></div>';
-      }).join('')+'</div>';
   }
 
   function renderTrent(user, d){

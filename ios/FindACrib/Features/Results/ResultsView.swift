@@ -89,7 +89,7 @@ struct ResultsView: View {
                         Spacer()
                         Menu {
                             ForEach(SortOrder.allCases, id: \.self) { s in
-                                Button { query.sort = s } label: {
+                                Button { Analytics.shared.track("sort", ["to": s.rawValue]); query.sort = s } label: {
                                     if s == query.sort { Label(s.rawValue, systemImage: "checkmark") } else { Text(s.rawValue) }
                                 }
                             }
@@ -120,8 +120,8 @@ struct ResultsView: View {
                             BuildingCard(building: b)
                                 .padding(.horizontal, 16)
                                 .onAppear { if b.bbl == results[min(shown, results.count) - 1].bbl, shown < results.count { shown += 30 } }
-                        case .rerental(let f, _):
-                            RerentalCard(listing: f)
+                        case .rerental(let f, let slot):
+                            RerentalCard(listing: f, slot: slot)
                                 .padding(.horizontal, 16)
                         }
                     }
@@ -133,6 +133,7 @@ struct ResultsView: View {
         .overlay(alignment: .bottom) {
             HStack(spacing: 14) {
                 FloatingPill(title: "Map", icon: "map.fill") {
+                    Analytics.shared.track("map_open", Analytics.shape(query))
                     nav.searchPath.append(.map(query))
                 }
                 // Alerts took this slot from "Save search" (owner, 2026-09-12).
@@ -142,6 +143,7 @@ struct ResultsView: View {
                 // standing email beats a bookmark the visitor has to come back
                 // and re-read. It needs an account, because it needs an email.
                 FloatingPill(title: "Alerts", icon: "bell.badge.fill", fill: SE.navy, ink: .white) {
+                    Analytics.shared.track("alerts_open", ["signed_in": auth.isSignedIn, "src": "results"])
                     if auth.isSignedIn { showAlerts = true } else { showSignIn = true }
                 }
                 .accessibilityIdentifier("pill-Alerts")
@@ -155,7 +157,9 @@ struct ResultsView: View {
                     .task { try? await Task.sleep(for: .seconds(2)); self.toast = nil }
             }
         }
-        .toolbar { ToolbarItem(placement: .principal) { ResultsHeader(query: query, onLocation: { showLocation = true }, onFilter: { showFilters = true }) } }
+        .toolbar { ToolbarItem(placement: .principal) { ResultsHeader(query: query,
+            onLocation: { Analytics.shared.track("location_open", ["src": "results"]); showLocation = true },
+            onFilter: { Analytics.shared.track("filters_open", ["src": "results"]); showFilters = true }) } }
         .sheet(isPresented: $showFilters) { FiltersSheet(query: $query) }
         .sheet(isPresented: $showLocation) { LocationPickerView(selected: $query.locations) }
         .sheet(isPresented: $showAlerts) { AlertsSheet(query: query) }
@@ -186,5 +190,9 @@ struct ResultsView: View {
         results = SearchEngine.run(query, store: store)
         shown = 30
         rerentalPool = store.city.isNYC ? RerentalFeed.pool(store.featured.listings, for: results) : []
+        // The list itself: how many matched, how the search was shaped, and
+        // whether re-rentals were in the mix — the denominator for the funnel.
+        var p = Analytics.shape(query); p["results"] = results.count; p["rerental_pool"] = rerentalPool.count
+        Analytics.shared.track("results_view", p)
     }
 }

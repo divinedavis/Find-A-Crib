@@ -33,6 +33,20 @@ final class Analytics {
     /// Stable per install, like the site's fac_vid cookie. Not tied to a person
     /// until they sign in, and thrown away when the app is deleted.
     private let visitorID: String
+    /// One id per launch, so a sitting's events chain together the way the
+    /// site's tab-session id does (the visitor id spans the install).
+    let sessionID = String(UUID().uuidString.lowercased().prefix(12))
+    /// How the app was opened this time: "direct", or the link it was opened
+    /// with (a findacrib.com universal link or a findacrib:// URL, host and
+    /// path only). Set from onOpenURL before the first event that needs it.
+    var launchSource = "direct"
+    /// The install's first launch, kept so every event can say how old the
+    /// install is — the app-side stand-in for the site's first-touch record.
+    private let installedAt: Date
+    let isFirstLaunch: Bool
+    /// Re-rental tiles already counted as seen this launch (per apartment,
+    /// like the site's once-per-session impression rule).
+    private var seenTiles = Set<String>()
     private var sent = 0
     /// A runaway loop must not be able to write rows all afternoon; the site
     /// caps its impression rows the same way.
@@ -63,6 +77,45 @@ final class Analytics {
             visitorID = UUID().uuidString
             UserDefaults.standard.set(visitorID, forKey: "analytics.vid")
         }
+        if let t = UserDefaults.standard.object(forKey: "analytics.installed") as? Date {
+            installedAt = t; isFirstLaunch = false
+        } else {
+            installedAt = Date(); isFirstLaunch = true
+            UserDefaults.standard.set(installedAt, forKey: "analytics.installed")
+        }
+    }
+
+    // MARK: - Pure helpers (unit-tested)
+
+    /// The launch source for a URL the app was opened with: host and path,
+    /// never the query (a magic link or a token must not land in a log).
+    nonisolated static func source(for url: URL) -> String {
+        let host = url.host ?? url.scheme ?? "url"
+        let path = url.path.isEmpty ? "" : url.path
+        return "\(url.scheme == "findacrib" ? "app" : "link"):\(host)\(path)".prefix(120).description
+    }
+
+    /// The shape of a search, never its text: which filters were used.
+    nonisolated static func shape(_ q: SearchQuery) -> [String: Any] {
+        ["locations": q.locations.count, "priced": q.minPrice != nil || q.maxPrice != nil,
+         "beds": q.beds.count, "available_only": q.availableOnly, "vouchers_only": q.vouchersOnly,
+         "hcr_only": q.hcrOnly, "filters": q.activeFilterCount]
+    }
+
+    /// What a re-rental tile event says about the tile — the same shape the
+    /// site sends (featProps in index.html), so the funnel cuts the same way.
+    nonisolated static func tileProps(_ f: FeaturedListing, slot: Int) -> [String: Any] {
+        ["kind": "rerental", "agent": f.agent, "addr": f.address, "boro": f.borough ?? "",
+         "slot": slot, "link": f.hrefKind ?? "listing"]
+    }
+
+    /// A re-rental tile came on screen: one `tile_impression` per apartment
+    /// per launch. (On the phone the list is lazy, so "served" and "seen" are
+    /// the same moment; the site's `tile_served` has no separate meaning here.)
+    func tileSeen(_ f: FeaturedListing, slot: Int) {
+        guard !seenTiles.contains(f.id) else { return }
+        seenTiles.insert(f.id)
+        track("tile_impression", Self.tileProps(f, slot: slot))
     }
 
     private var build: String {
@@ -77,6 +130,12 @@ final class Analytics {
         p["platform"] = "ios"
         p["build"] = build
         p["city"] = props["city"] as? String ?? city
+        // The same reserved names the site uses on every row: which sitting,
+        // how the app was opened this time, and how old the install is.
+        p["sid"] = sessionID
+        p["touch"] = ["src": launchSource]
+        p["first"] = ["at": ISO8601DateFormatter().string(from: installedAt),
+                      "days": Int(Date().timeIntervalSince(installedAt) / 86400)]
         let uid = auth?.session?.user.id.uuidString
         let token = auth?.session?.accessToken
         var row: [String: Any] = ["visitor_id": visitorID, "event": event,

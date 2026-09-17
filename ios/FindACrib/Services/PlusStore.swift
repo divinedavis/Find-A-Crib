@@ -51,13 +51,18 @@ final class PlusStore {
             let result = try await product.purchase()
             switch result {
             case .success(let verification):
-                guard case .verified(let tx) = verification else { error = "Apple couldn't verify the purchase."; return }
+                guard case .verified(let tx) = verification else {
+                    Analytics.shared.track("purchase", ["result": "unverified"])
+                    error = "Apple couldn't verify the purchase."; return
+                }
+                Analytics.shared.track("purchase", ["result": "ok", "product": tx.productID])
                 await handle(tx, jws: verification.jwsRepresentation)
                 await tx.finish()
-            case .userCancelled, .pending: break
+            case .userCancelled: Analytics.shared.track("purchase", ["result": "cancelled"])
+            case .pending: Analytics.shared.track("purchase", ["result": "pending"])
             @unknown default: break
             }
-        } catch { self.error = error.localizedDescription }
+        } catch { Analytics.shared.track("purchase", ["result": "error"]); self.error = error.localizedDescription }
     }
 
     func restore() async {

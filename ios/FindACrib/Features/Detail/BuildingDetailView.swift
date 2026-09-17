@@ -92,11 +92,17 @@ struct BuildingDetailView: View {
                         .overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.royal, lineWidth: 1))
                 }
                 if let apply = store.hcrListings(b).first(where: { $0.isOpen })?.applyURL ?? store.hcrListings(b).first?.applyURL {
-                    SEPrimaryButton(title: "Apply on HousingSearch.ny.gov") { openURL(apply) }
+                    SEPrimaryButton(title: "Apply on HousingSearch.ny.gov") {
+                        Analytics.shared.track("outbound", ["kind": "hcr_apply", "bbl": b.bbl, "href": apply.absoluteString]); openURL(apply)
+                    }
                 } else if let url = store.listingURL(b) {
-                    SEPrimaryButton(title: store.listingSite(b)) { openURL(url) }
+                    SEPrimaryButton(title: store.listingSite(b)) {
+                        Analytics.shared.track("outbound", ["kind": "listing", "site": store.listingSite(b), "bbl": b.bbl, "href": url.absoluteString]); openURL(url)
+                    }
                 } else if let url = store.voucherAvail(b)?.url.flatMap(URL.init) {
-                    SEPrimaryButton(title: "Voucher listing") { openURL(url) }
+                    SEPrimaryButton(title: "Voucher listing") {
+                        Analytics.shared.track("outbound", ["kind": "voucher", "bbl": b.bbl, "href": url.absoluteString]); openURL(url)
+                    }
                 } else {
                     SEPrimaryButton(title: "Open on findacrib.com") {
                         Analytics.shared.track("outbound", ["kind": "website", "bbl": b.bbl])
@@ -120,8 +126,9 @@ struct BuildingDetailView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     ShareLink(item: b.webURL(in: store.city)) { Label("Share", systemImage: "square.and.arrow.up") }
-                    Button { openURL(b.webURL(in: store.city)) } label: { Label("Open on findacrib.com", systemImage: "safari") }
+                    Button { Analytics.shared.track("outbound", ["kind": "website", "bbl": b.bbl]); openURL(b.webURL(in: store.city)) } label: { Label("Open on findacrib.com", systemImage: "safari") }
                     Button {
+                        Analytics.shared.track("outbound", ["kind": "directions", "bbl": b.bbl])
                         let item = MKMapItem(placemark: MKPlacemark(coordinate: b.coordinate)); item.name = b.address
                         item.openInMaps(launchOptions: [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDefault])
                     } label: { Label("Directions", systemImage: "arrow.triangle.turn.up.right.diamond") }

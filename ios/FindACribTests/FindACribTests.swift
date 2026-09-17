@@ -779,3 +779,38 @@ final class RerentalFeedTests: XCTestCase {
                        "https://x.org/u?utm_source=other", "never overwrite a campaign somebody else set")
     }
 }
+
+@MainActor
+final class AnalyticsEventShapeTests: XCTestCase {
+    func testLaunchSourceKeepsHostAndPathNeverTheQuery() {
+        XCTAssertEqual(Analytics.source(for: URL(string: "https://findacrib.com/building/brooklyn/x-3001?token=SECRET")!), "link:findacrib.com/building/brooklyn/x-3001")
+        XCTAssertEqual(Analytics.source(for: URL(string: "findacrib://auth-callback?code=abc")!), "app:auth-callback")
+        XCTAssertFalse(Analytics.source(for: URL(string: "https://findacrib.com/?utm_source=qr&email=a@b.c")!).contains("email"))
+    }
+
+    func testSearchShapeCarriesNoText() {
+        var q = SearchQuery(); q.locations = [.borough("Bk"), .neighborhood("Bushwick")]; q.maxPrice = 3000; q.availableOnly = true
+        let p = Analytics.shape(q)
+        XCTAssertEqual(p["locations"] as? Int, 2)
+        XCTAssertEqual(p["priced"] as? Bool, true)
+        XCTAssertEqual(p["available_only"] as? Bool, true)
+        XCTAssertNil(p["q"]); XCTAssertNil(p["text"])
+        XCTAssertFalse(p.values.contains { ($0 as? String)?.contains("Bushwick") == true }, "a neighborhood name is text, not shape")
+    }
+
+    func testTilePropsMatchTheSiteShape() {
+        let f = FeaturedListing(agent: "MGNY", address: "1 Main St", borough: "Bronx", href: "https://x.org/1")
+        let p = Analytics.tileProps(f, slot: 2)
+        XCTAssertEqual(Set(p.keys), ["kind", "agent", "addr", "boro", "slot", "link"], "featProps() in index.html sends exactly these")
+        XCTAssertEqual(p["kind"] as? String, "rerental")
+        XCTAssertEqual(p["slot"] as? Int, 2)
+        XCTAssertEqual(p["link"] as? String, "listing", "a listing with no href_kind is a unit page")
+    }
+
+    func testTrackingIsDarkUntilTheLabelIsDeclared() {
+        // The App Privacy answers still say name + email only. The moment this
+        // flips, that page must already say Product Interaction / Usage Data —
+        // scripts/asc_push_privacy_iris.py publishes it.
+        XCTAssertFalse(Analytics.privacyLabelDeclared)
+    }
+}

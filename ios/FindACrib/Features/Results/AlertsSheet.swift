@@ -216,7 +216,10 @@ struct AlertsSheet: View {
             let (data, resp) = try await URLSession.shared.data(for: req)
             let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
             let body = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
-            if code == 200, (body?["ok"] as? Bool) == true { done = true; return }
+            if code == 200, (body?["ok"] as? Bool) == true {
+                Analytics.shared.track("alerts_saved", ["editing": editing, "kinds": kinds.count])
+                done = true; return
+            }
             switch body?["error"] as? String {
             case "signup_cap": error = "Sign-ups are paused for today — try again tomorrow."
             case "invalid_email": error = "Your account email doesn't look valid. Update it under Profile."

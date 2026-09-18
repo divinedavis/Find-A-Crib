@@ -892,3 +892,14 @@ final class PushSubscriberPromptTests: XCTestCase {
         XCTAssertFalse(PushService.isSubscribed(prefs: [:]))
     }
 }
+
+final class PushStateLineTests: XCTestCase {
+    func testOnMeansRegisteredNotMerelyAllowed() {
+        XCTAssertTrue(PushService.stateLine(status: .authorized, registration: .registered).ok)
+        XCTAssertFalse(PushService.stateLine(status: .authorized, registration: .none).ok, "allowed but never filed is not on")
+        XCTAssertFalse(PushService.stateLine(status: .authorized, registration: .failed).ok, "builds 48–50: allowed, registration failed, still said on")
+        XCTAssertTrue(PushService.stateLine(status: .authorized, registration: .failed).text.contains("update the app"))
+        XCTAssertTrue(PushService.stateLine(status: .denied, registration: .registered).text.contains("Settings"), "a denial wins even with a stale token")
+        XCTAssertEqual(PushService.stateLine(status: .notDetermined, registration: .none).text, "Turn on phone alerts")
+    }
+}

@@ -139,7 +139,8 @@ struct ProfileView: View {
                     settingRow("Push alerts") {
                         switch PushService.shared.status {
                         case .authorized, .provisional, .ephemeral:
-                            Text("On").font(.se(18, .bold)).foregroundStyle(SE.good)
+                            let ok = PushService.stateLine(status: PushService.shared.status, registration: PushService.shared.registration).ok
+                            Text(ok ? "On" : "Allowed · not connected").font(.se(18, .bold)).foregroundStyle(ok ? SE.good : SE.warn)
                         case .denied:
                             Button { UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!) } label: {
                                 HStack(spacing: 4) { Text("Off · turn on in Settings").font(.se(16, .semibold)); Image(systemName: "arrow.up.right").font(.system(size: 12, weight: .bold)) }

@@ -27,6 +27,14 @@ final class PushService {
     weak var nav: AppNav?
     private(set) var status: UNAuthorizationStatus = .notDetermined
     private(set) var registeredToken: String?
+    /// Whether this phone's token has actually been filed on the server —
+    /// permission alone alerts nobody. Persisted, so the status line is right
+    /// on the next launch too. Builds 48–50 said "Phone alerts are on" off the
+    /// permission while registration was failing underneath (2026-09-18).
+    enum Registration: String { case none, registered, failed }
+    private(set) var registration: Registration = Registration(rawValue: UserDefaults.standard.string(forKey: "push.registration") ?? "") ?? .none {
+        didSet { UserDefaults.standard.set(registration.rawValue, forKey: "push.registration") }
+    }
     /// A token that arrived while signed out; uploaded on the next sign-in.
     private var pendingToken: String?
     /// Set while the "get alerts on this phone?" card should be up (RootView
@@ -149,7 +157,9 @@ final class PushService {
     }
 
     func didFailToRegister(_ error: Error) {
-        Analytics.shared.track("push_register_failed", ["error": String(describing: type(of: error))])
+        registration = .failed
+        let ns = error as NSError
+        Analytics.shared.track("push_register_failed", ["error": ns.domain, "code": ns.code, "text": String(ns.localizedDescription.prefix(120))])
     }
 
     private func upload(_ token: String) async {
@@ -161,10 +171,28 @@ final class PushService {
         let build = (Bundle.main.infoDictionary?["CFBundleVersion"] as? String) ?? "?"
         req.httpBody = try? JSONSerialization.data(withJSONObject: ["token": token, "env": Self.environment, "build": build])
         let code = (try? await URLSession.shared.data(for: req)).flatMap { ($0.1 as? HTTPURLResponse)?.statusCode } ?? 0
+        registration = code == 200 ? .registered : .failed
         Analytics.shared.track("push_registered", ["env": Self.environment, "status": code])
     }
 
     // MARK: - Pure helpers (unit-tested)
+
+    /// The one line the alerts sheet and Profile show. Permission on but the
+    /// phone not filed is NOT "on" — that was the lie of builds 48–50.
+    nonisolated static func stateLine(status: UNAuthorizationStatus, registration: Registration) -> (text: String, ok: Bool) {
+        switch (status, registration) {
+        case (.authorized, .registered), (.provisional, .registered), (.ephemeral, .registered):
+            return ("Phone alerts are on.", true)
+        case (.authorized, .failed), (.provisional, .failed), (.ephemeral, .failed):
+            return ("Allowed, but this phone couldn't register — update the app and reopen this sheet.", false)
+        case (.authorized, .none), (.provisional, .none), (.ephemeral, .none):
+            return ("Phone alerts allowed — connecting…", false)
+        case (.denied, _):
+            return ("Phone alerts are off — turn them on in Settings", false)
+        default:
+            return ("Turn on phone alerts", false)
+        }
+    }
 
     /// "sandbox" or "production": what the embedded provisioning profile says
     /// (`aps-environment`), else what the build configuration implies. Never a

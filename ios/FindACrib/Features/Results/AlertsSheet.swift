@@ -201,25 +201,37 @@ struct AlertsSheet: View {
     /// Where phone alerts stand, with the one action that fixes it: ask
     /// (never asked yet) or Settings (turned off). Nothing when they are on.
     @ViewBuilder private var pushStateLine: some View {
-        switch PushService.shared.status {
+        let push = PushService.shared
+        let line = PushService.stateLine(status: push.status, registration: push.registration)
+        switch push.status {
         case .authorized, .provisional, .ephemeral:
-            HStack(spacing: 6) {
-                Image(systemName: "bell.badge.fill").foregroundStyle(SE.good)
-                Text("Phone alerts are on.").font(.se(15, .semibold)).foregroundStyle(SE.good)
+            if line.ok {
+                HStack(spacing: 6) {
+                    Image(systemName: "bell.badge.fill").foregroundStyle(SE.good)
+                    Text(line.text).font(.se(15, .semibold)).foregroundStyle(SE.good)
+                }.accessibilityIdentifier("alerts-push-on")
+            } else {
+                // Allowed but not (yet) filed: retry the registration on tap.
+                Button { Task { await push.reregisterIfAuthorized() } } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: push.registration == .failed ? "exclamationmark.triangle.fill" : "bell.badge")
+                        Text(line.text).font(.se(15, .semibold))
+                    }.foregroundStyle(push.registration == .failed ? SE.warn : SE.ink2)
+                }.buttonStyle(.plain).accessibilityIdentifier("alerts-push-pending")
             }
         case .denied:
             Button { UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!) } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "bell.slash.fill")
-                    Text("Phone alerts are off — turn them on in Settings").font(.se(15, .semibold))
+                    Text(line.text).font(.se(15, .semibold))
                     Image(systemName: "arrow.up.right").font(.system(size: 12, weight: .bold))
                 }.foregroundStyle(SE.warn)
             }.buttonStyle(.plain).accessibilityIdentifier("alerts-push-settings")
         default:
-            Button { Task { await PushService.shared.requestAfterAlerts(); await PushService.shared.refreshStatus() } } label: {
+            Button { Task { await push.requestAfterAlerts(); await push.refreshStatus() } } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "bell.badge")
-                    Text("Turn on phone alerts").font(.se(15, .bold))
+                    Text(line.text).font(.se(15, .bold))
                 }.foregroundStyle(SE.royal)
             }.buttonStyle(.plain).accessibilityIdentifier("alerts-push-enable")
         }

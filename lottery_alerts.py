@@ -55,6 +55,8 @@ import sys
 import urllib.error
 import urllib.request
 
+import apns   # the phone side of an alert (APNs); no-op until growth.env names the key
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 DATA_DIR = os.environ.get("GROWTH_DOCROOT") or os.environ.get("DATA_DIR") or HERE
@@ -429,6 +431,28 @@ def render_alert(items, sub, emailkit):
     return subject, track_links(html, sub, "alert"), text, post_unsub
 
 
+def push_text(items):
+    """Title and body for the phone. One item: what and where in the title,
+    the item on the line below. Several: the count, then the first few."""
+    first = items[0]
+    where = BORO_NAME.get(first["boro"], "NYC")
+    if len(items) == 1:
+        what = {"lottery": "lottery", "voucher": "voucher listing"}.get(first["kind"], "re-rental")
+        title = f"New {what} in {where}"
+        body = first["text"] + (f" — {first['sub']}" if first.get("sub") else "")
+    else:
+        lot = sum(1 for i in items if i["kind"] == "lottery")
+        rr = sum(1 for i in items if i["kind"] == "rerental")
+        vo = len(items) - lot - rr
+        parts = [p for p in (
+            f"{lot} lotter{'y' if lot == 1 else 'ies'}" if lot else None,
+            f"{rr} re-rental{'' if rr == 1 else 's'}" if rr else None,
+            f"{vo} voucher listing{'' if vo == 1 else 's'}" if vo else None) if p]
+        title = "New: " + ", ".join(parts)
+        body = " · ".join(i["text"] for i in items[:3]) + (f" +{len(items) - 3} more" if len(items) > 3 else "")
+    return title[:60], body[:170]
+
+
 def render_welcome(sub, emailkit):
     where = boro_phrase(sub["boroughs"])
     kinds = sub["kinds"]
@@ -798,8 +822,20 @@ def main():
         sys.exit(f"could not load subscribers: {e}")
     print(f"{len(subs)} active subscribers")
 
+    # Devices behind these addresses — the iPhone app registered against the
+    # same account the alert subscription came from. One lookup per run.
+    devices = {}
+    if apns.config() and subs:
+        try:
+            for d in rpc("device_tokens_for_emails", {"p_emails": [s["email"] for s in subs]}, key) or []:
+                devices.setdefault((d.get("email") or "").lower(), []).append(d)
+        except Exception as e:
+            print(f"device lookup failed: {e}")
+    if devices:
+        print(f"{sum(len(v) for v in devices.values())} phone(s) across {len(devices)} subscriber(s)")
+
     sent_ids, welcomed_ids = [], []
-    sent = 0
+    sent = pushed = 0
     for sub in subs:
         sub["boroughs"] = list(sub.get("boroughs") or [])
         sub["kinds"] = list(sub.get("kinds") or ["lottery", "rerental"])
@@ -843,6 +879,23 @@ def main():
         st["sends"].append(now.isoformat())
         st["held"].pop(sid, None)
         sent_ids.append(sub["id"])
+        # The same alert on the phone, to every device on the account. Rides
+        # with the email deliberately: one moment, both channels, and the
+        # email's one-a-day cap already decided this was the moment.
+        title, text_body = push_text(mine)
+        for dev in devices.get(sub["email"].lower(), []):
+            r = apns.send(dev["token"], dev.get("env") or "production", title, text_body,
+                          url=mine[0].get("url"), collapse=f"alert-{sid}")
+            print(f"     push {dev['token'][:8]}… {r['status']} {r['reason'] or 'ok'}" + (f" (refiled as {r['refile']})" if r["refile"] else ""))
+            if r["ok"]:
+                pushed += 1
+            try:
+                if r["refile"]:
+                    rpc("device_token_refile", {"p_token": dev["token"], "p_env": r["refile"]}, key)
+                if r["remove"]:
+                    rpc("device_token_remove", {"p_token": dev["token"]}, key)
+            except Exception as e:
+                print(f"     token upkeep failed: {e}")
 
     if not args.dry_run:
         save_state(st)
@@ -851,7 +904,7 @@ def main():
                 rpc("lottery_alerts_mark", {"p_sent": sent_ids, "p_welcomed": welcomed_ids, "p_nudged": []}, key)
             except Exception as e:
                 print(f"mark failed: {e}")
-    print(f"sent {sent}")
+    print(f"sent {sent}, pushed {pushed}")
 
 
 def welcome(args_dry=False):

@@ -42,7 +42,8 @@ BUNDLE_NAME = "Find A Crib"
 
 # Sign In with Apple is shipped in SignInView, so the identifier needs it or
 # the entitlement will not sign. Google needs nothing from Apple.
-CAPABILITIES = ["APPLE_ID_AUTH"]   # native Sign in with Apple (Supabase id-token flow)
+CAPABILITIES = ["APPLE_ID_AUTH",    # native Sign in with Apple (Supabase id-token flow)
+                "PUSH_NOTIFICATIONS"]  # borough alerts on the phone (Services/PushService.swift)
 
 
 def load_config() -> dict:

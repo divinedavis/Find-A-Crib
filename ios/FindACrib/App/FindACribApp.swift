@@ -2,6 +2,8 @@ import SwiftUI
 
 @main
 struct FindACribApp: App {
+    /// UIKit delegate for the APNs registration callbacks (PushService.swift).
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var store = DataStore()
     @State private var activity = Activity()
     @State private var nav = AppNav()
@@ -29,8 +31,14 @@ struct FindACribApp: App {
                     Perf.startWatchdog()
                     LaunchArgs.apply(to: nav, store: store)
                     ReviewPrompt.shared.applyLaunchArguments()
+                    // Keep the push token current when permission already
+                    // exists (tokens rotate); never asks.
+                    PushService.shared.auth = auth; PushService.shared.nav = nav
+                    await PushService.shared.reregisterIfAuthorized()
                 }
                 .task { await auth.listen() }
+                // A token that arrived signed out is filed once there is an account.
+                .onChange(of: auth.isSignedIn) { _, on in if on { Task { await PushService.shared.reregisterIfAuthorized() } } }
                 .onOpenURL { url in
                     Analytics.shared.launchSource = Analytics.source(for: url)
                     Analytics.shared.track("open_url", ["src": Analytics.shared.launchSource])

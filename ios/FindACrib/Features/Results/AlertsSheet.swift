@@ -41,7 +41,7 @@ struct AlertsSheet: View {
                     if done {
                         VStack(alignment: .leading, spacing: 10) {
                             Text("You're on the list").font(.se(26, .bold)).foregroundStyle(SE.ink)
-                            Text("One email the minute something opens in \(boroughPhrase)\(fitPhrase). Quiet until then — no digests. A welcome note is on its way to \(auth.email ?? "your inbox").")
+                            Text("A notification on this phone and an email the minute something opens in \(boroughPhrase)\(fitPhrase). Quiet until then — no digests. A welcome note is on its way to \(auth.email ?? "your inbox").")
                                 .font(.se(17)).foregroundStyle(SE.ink2)
                             Text("Change boroughs or stop the emails any time at findacrib.com/alerts/.").font(.se(15)).foregroundStyle(SE.ink3)
                         }
@@ -221,7 +221,12 @@ struct AlertsSheet: View {
                 // Turning alerts on is the other good moment. Not on an edit:
                 // changing a rent cap is housekeeping, not delight.
                 if !editing { ReviewPrompt.shared.record(.alerts) }
-                done = true; return
+                done = true
+                // The one moment we ask for notification permission: alerts
+                // were just turned on. Editing an existing subscription only
+                // re-registers if permission is already there.
+                Task { if editing { await PushService.shared.reregisterIfAuthorized() } else { await PushService.shared.requestAfterAlerts() } }
+                return
             }
             switch body?["error"] as? String {
             case "signup_cap": error = "Sign-ups are paused for today — try again tomorrow."

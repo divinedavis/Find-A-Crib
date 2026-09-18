@@ -528,6 +528,76 @@ def alerts_subscribe():
                    max_rent=res.get("max_rent"), income=res.get("income"))
 
 
+def _session_user():
+    """{id, email} of the Supabase session in the Authorization header, or
+    None. Verified server-side (GET /auth/v1/user) — the client's own claims
+    are never trusted."""
+    auth = request.headers.get("Authorization", "")
+    token = auth[7:].strip() if auth.startswith("Bearer ") else ""
+    if not token:
+        return None
+    try:
+        req = urllib.request.Request(
+            f"{SUPABASE_URL}/auth/v1/user",
+            headers={"apikey": ANON_KEY, "Authorization": f"Bearer {token}"})
+        with urllib.request.urlopen(req, timeout=8) as r:
+            u = json.loads(r.read())
+    except Exception:
+        return None
+    email = (u.get("email") or "").strip().lower()
+    uid = str(u.get("id") or "")
+    if not EMAIL_RE.match(email) or not re.fullmatch(r"[0-9a-f-]{36}", uid):
+        return None
+    return {"id": uid, "email": email}
+
+
+# The iPhone app files its APNs token against the signed-in account
+# (Services/PushService.swift); lottery_alerts.py pushes the borough alerts
+# it emails to every device behind that address. The account id comes from
+# the verified session, never from the body.
+PUSH_TOKEN_RE = re.compile(r"^[0-9a-f]{64}$")
+
+
+@app.route("/push/register", methods=["POST"])
+def push_register():
+    if rate_limited("push_reg", 30, 3600):
+        return _too_many()
+    if not request.is_json:
+        return jsonify(error="json_required"), 415
+    u = _session_user()
+    if not u:
+        return jsonify(error="sign_in_required"), 401
+    body = request.get_json(silent=True) or {}
+    token = str(body.get("token") or "").strip().lower()
+    if not PUSH_TOKEN_RE.match(token):
+        return jsonify(error="bad_token"), 400
+    env = "sandbox" if body.get("env") == "sandbox" else "production"
+    build = str(body.get("build") or "")[:20]
+    try:
+        rpc("device_token_upsert", {"p_user_id": u["id"], "p_token": token, "p_env": env, "p_build": build})
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
+    return jsonify(ok=True, env=env)
+
+
+@app.route("/push/unregister", methods=["POST"])
+def push_unregister():
+    if rate_limited("push_reg", 30, 3600):
+        return _too_many()
+    if not request.is_json:
+        return jsonify(error="json_required"), 415
+    if not _session_user():
+        return jsonify(error="sign_in_required"), 401
+    token = str((request.get_json(silent=True) or {}).get("token") or "").strip().lower()
+    if not PUSH_TOKEN_RE.match(token):
+        return jsonify(error="bad_token"), 400
+    try:
+        rpc("device_token_remove", {"p_token": token})
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
+    return jsonify(ok=True)
+
+
 def _session_email():
     """Email of the Supabase session in the Authorization header, or None.
 

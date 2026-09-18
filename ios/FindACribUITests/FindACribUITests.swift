@@ -487,6 +487,24 @@ final class ReviewPromptUITests: XCTestCase {
         XCTAssertTrue(app.buttons["city-field"].waitForExistence(timeout: 10))
     }
 
+    /// Push alerts (Services/PushService.swift). The permission dialog is only
+    /// ever asked after alerts are turned on, which needs a signed-in account
+    /// the anonymous UI suite does not have — so what this pins is the
+    /// Profile row that reports the state, and that a launch with the
+    /// notification delegate installed still reaches the home screen.
+    func testProfileShowsPushAlertsState() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--tab", "profile"]
+        app.launch()
+        let row = app.descendants(matching: .any)["profile-push"].firstMatch
+        for _ in 0..<6 where !row.exists { app.swipeUp() }
+        XCTAssertTrue(row.waitForExistence(timeout: 10), "Profile has no Push alerts row")
+        // The row is a container (its label is not its text); the state is a
+        // static text inside it. Anonymous, never asked: "Sign in and turn on alerts".
+        let state = app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'turn on alerts' OR label == 'On' OR label CONTAINS 'Settings'")).firstMatch
+        XCTAssertTrue(state.waitForExistence(timeout: 5), "the Push alerts row shows no state")
+    }
+
     func testProfileHasARateLink() throws {
         let app = XCUIApplication()
         app.launchArguments = ["--tab", "profile"]

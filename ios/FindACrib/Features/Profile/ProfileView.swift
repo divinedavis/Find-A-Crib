@@ -122,6 +122,23 @@ struct ProfileView: View {
                             Text("Sign in to set up").font(.se(16)).foregroundStyle(SE.ink3)
                         }
                     }
+                    // Where alerts land besides email. Denied in Settings can only be
+                    // undone in Settings, so that is where the row sends people.
+                    settingRow("Push alerts") {
+                        switch PushService.shared.status {
+                        case .authorized, .provisional, .ephemeral:
+                            Text("On").font(.se(18, .bold)).foregroundStyle(SE.good)
+                        case .denied:
+                            Button { UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!) } label: {
+                                HStack(spacing: 4) { Text("Off · turn on in Settings").font(.se(16, .semibold)); Image(systemName: "arrow.up.right").font(.system(size: 12, weight: .bold)) }
+                                    .foregroundStyle(SE.royal)
+                            }.buttonStyle(.plain)
+                        default:
+                            Text(auth.isSignedIn ? "Asked when you turn on alerts" : "Sign in and turn on alerts").font(.se(16)).foregroundStyle(SE.ink3)
+                        }
+                    }
+                    .accessibilityIdentifier("profile-push")
+                    .task { await PushService.shared.refreshStatus() }
                     // A link to the App Store's own review page. Apple's rule is
                     // that the in-app rating SHEET may not hang off a button; a
                     // link to the store page is fine, and is the only way to rate

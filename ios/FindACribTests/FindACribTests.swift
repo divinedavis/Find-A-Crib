@@ -856,3 +856,21 @@ final class ReviewPromptTests: XCTestCase {
         XCTAssertEqual(d.object(forKey: "review.lastAsked") as? Date, firstAsk, "a second good moment on the same version does not ask again")
     }
 }
+
+final class PushServiceTests: XCTestCase {
+    func testEnvironmentComesFromTheProfileNotAGuess() {
+        XCTAssertEqual(PushService.environment(fromProfile: "<key>aps-environment</key>\n\t<string>development</string>"), "sandbox")
+        XCTAssertEqual(PushService.environment(fromProfile: "<key>aps-environment</key><string>production</string>"), "production")
+        XCTAssertNil(PushService.environment(fromProfile: "<key>get-task-allow</key><true/>"), "no aps-environment: fall back to the build configuration, never to a blanket sandbox")
+        XCTAssertNil(PushService.environment(fromProfile: ""))
+    }
+
+    func testDeepLinkAndBuildingParsing() {
+        XCTAssertEqual(PushService.deepLink(in: ["url": "https://afny.org/re-rentals/1"])?.host, "afny.org")
+        XCTAssertNil(PushService.deepLink(in: ["aps": ["alert": "x"]]))
+        XCTAssertEqual(PushService.buildingBBL(in: URL(string: "https://findacrib.com/building/brooklyn/172-union-st-3003430015/")!), "3003430015")
+        XCTAssertNil(PushService.buildingBBL(in: URL(string: "https://findacrib.com/alerts/")!), "not a building page")
+        XCTAssertNil(PushService.buildingBBL(in: URL(string: "https://housingconnect.nyc.gov/building/brooklyn/x-3003430015/")!), "another host never opens in-app")
+        XCTAssertNil(PushService.buildingBBL(in: URL(string: "https://findacrib.com/building/brooklyn/x-300343/")!), "a bbl is ten digits")
+    }
+}

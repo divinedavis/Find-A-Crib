@@ -40,7 +40,7 @@ ssh "$HOST" "set -e
 sleep 4
 ssh "$HOST" "set -e
   systemctl is-active findacrib-api
-  cd $LIVE && ./venv/bin/python -c \"
+  cd $LIVE && set -a && . ./.env && set +a && ./venv/bin/python -c \"
 import crease_metrics, nemo_metrics, trent_metrics, marracat_metrics
 t = crease_metrics.traffic('all')
 print('    crease traffic:', {k: t[k] for k in ('visitors', 'visits', 'visitors_today')})

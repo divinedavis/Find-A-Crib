@@ -35,10 +35,15 @@ struct FindACribApp: App {
                     // exists (tokens rotate); never asks.
                     PushService.shared.auth = auth; PushService.shared.nav = nav
                     await PushService.shared.reregisterIfAuthorized()
+                    // The one notifications card, after the launch settles.
+                    try? await Task.sleep(for: .seconds(2))
+                    await PushService.shared.offerAtLaunchIfNeeded()
                 }
                 .task { await auth.listen() }
                 // A token that arrived signed out is filed once there is an account.
-                .onChange(of: auth.isSignedIn) { _, on in if on { Task { await PushService.shared.reregisterIfAuthorized() } } }
+                .onChange(of: auth.isSignedIn) { _, on in
+                    if on { Task { await PushService.shared.reregisterIfAuthorized() } }
+                }
                 .onOpenURL { url in
                     Analytics.shared.launchSource = Analytics.source(for: url)
                     Analytics.shared.track("open_url", ["src": Analytics.shared.launchSource])
@@ -68,6 +73,9 @@ final class AppNav {
     var profilePath: [Route] = []
     /// Opened by the Profile screen; set by the --paywall launch argument.
     var showPaywall = false
+    /// Opened by the Profile screen (after sign-in if needed); set by the
+    /// notifications card for someone who has no alerts yet.
+    var showAlerts = false
 }
 
 /// `--tab activity|profile`, `--route results|map|detail[:bbl]` — used by the

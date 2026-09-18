@@ -29,6 +29,15 @@ final class PushService {
     private(set) var registeredToken: String?
     /// A token that arrived while signed out; uploaded on the next sign-in.
     private var pendingToken: String?
+    /// Set while the "get alerts on this phone?" card should be up (RootView
+    /// shows it) — see offerAtLaunchIfNeeded. `promptForSubscriber` picks the
+    /// wording: someone already signed up is told their alerts will land
+    /// here; everyone else is invited to set them up.
+    var launchPrompt = false
+    var promptForSubscriber = false
+    private let defaults = UserDefaults.standard
+    /// After "Not now", leave it a week before asking again.
+    nonisolated static let snoozeDays = 7
 
     func refreshStatus() async {
         status = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
@@ -60,6 +69,75 @@ final class PushService {
             Analytics.shared.track("push_permission", ["granted": false, "error": String(describing: type(of: error))])
             return false
         }
+    }
+
+    // MARK: - The launch-time ask
+
+    /// Owner (2026-09-18): everyone with the app gets asked to allow
+    /// notifications — alerts only reach the phone after an Allow, and most
+    /// people never reopen the alerts sheet where the ask used to live. So
+    /// at launch, once, while permission is undetermined, a card says what
+    /// the ask is for BEFORE the system prompt (which is one-shot: a
+    /// reflexive Don't Allow can only be undone in Settings). A subscriber is
+    /// told their alerts will land here; anyone else is invited to set alerts
+    /// up, and "Turn on" takes them there after the prompt. "Not now" snoozes
+    /// a week. This is the owner's deliberate exception to "no unsolicited
+    /// prompts on entry".
+    func offerAtLaunchIfNeeded() async {
+        // The UI test suite launches with --no-launch-prompt: an in-app alert
+        // two seconds into every test would sit on top of its taps. The one
+        // test that pins the card launches with --reset-launch-prompt instead,
+        // so a snooze left by an earlier run cannot hide it.
+        let args = CommandLine.arguments
+        if args.contains("--no-launch-prompt") { return }
+        if args.contains("--reset-launch-prompt") { defaults.removeObject(forKey: "push.snoozedUntil") }
+        await refreshStatus()
+        guard Self.shouldOffer(status: status, snoozedUntil: defaults.object(forKey: "push.snoozedUntil") as? Date) else { return }
+        if let session = auth?.session {
+            promptForSubscriber = await Self.hasAlertSubscription(token: session.accessToken)
+        } else {
+            promptForSubscriber = false
+        }
+        Analytics.shared.track("push_prompt", ["step": "shown", "subscriber": promptForSubscriber])
+        launchPrompt = true
+    }
+
+    func acceptLaunchPrompt() {
+        Analytics.shared.track("push_prompt", ["step": "turn_on", "subscriber": promptForSubscriber])
+        let toAlerts = !promptForSubscriber
+        Task {
+            await requestAfterAlerts()
+            // Permission without a subscription alerts nobody: take them to
+            // set one up (Profile → Alerts; it asks for sign-in first if needed).
+            if toAlerts, let nav { nav.tab = .profile; nav.showAlerts = true }
+        }
+    }
+
+    func snoozeLaunchPrompt() {
+        Analytics.shared.track("push_prompt", ["step": "not_now", "subscriber": promptForSubscriber])
+        defaults.set(Date().addingTimeInterval(Double(Self.snoozeDays) * 86_400), forKey: "push.snoozedUntil")
+    }
+
+    nonisolated static func shouldOffer(status: UNAuthorizationStatus, snoozedUntil: Date?, now: Date = Date()) -> Bool {
+        guard status == .notDetermined else { return false }
+        if let snoozedUntil, snoozedUntil > now { return false }
+        return true
+    }
+
+    /// Whether the account has a live alert subscription, per the same
+    /// endpoint the alerts sheet prefills from.
+    nonisolated static func hasAlertSubscription(token: String) async -> Bool {
+        var req = URLRequest(url: URL(string: "https://findacrib.com/api/alerts/prefs")!, timeoutInterval: 15)
+        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        req.setValue("application/json", forHTTPHeaderField: "Accept")
+        guard let (data, resp) = try? await URLSession.shared.data(for: req),
+              (resp as? HTTPURLResponse)?.statusCode == 200,
+              let j = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { return false }
+        return Self.isSubscribed(prefs: j)
+    }
+
+    nonisolated static func isSubscribed(prefs j: [String: Any]) -> Bool {
+        (j["exists"] as? Bool) == true && (j["unsubscribed"] as? Bool) != true
     }
 
     // MARK: - From the app delegate

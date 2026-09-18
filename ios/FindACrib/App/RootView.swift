@@ -33,6 +33,16 @@ struct RootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: nav.hideTabBar)
+        // The one launch-time ask (PushService.offerAtLaunchIfNeeded).
+        .alert("Get alerts on this phone?", isPresented: Binding(get: { PushService.shared.launchPrompt },
+                                                                  set: { PushService.shared.launchPrompt = $0 })) {
+            Button("Turn on") { PushService.shared.acceptLaunchPrompt() }
+            Button("Not now", role: .cancel) { PushService.shared.snoozeLaunchPrompt() }
+        } message: {
+            Text(PushService.shared.promptForSubscriber
+                 ? "You're signed up for borough alerts. Allow notifications and each lottery or re-rental lands here the minute it opens — not just in your email."
+                 : "Be told the minute a rent-stabilized lottery or re-rental opens in your borough. Allow notifications, then pick your boroughs — ten seconds.")
+        }
         // TestFlight never shows Apple's rating sheet, so a beta build shows
         // this stand-in at the same moment instead (ReviewPrompt.isBeta).
         .alert("Enjoying Find A Crib?", isPresented: Binding(get: { ReviewPrompt.shared.showBetaStandIn },

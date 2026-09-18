@@ -5,19 +5,21 @@ final class LaunchAnimationTests: XCTestCase {
 
     func testLaunchRevealsInteractiveHome() {
         let app = XCUIApplication()
+        app.launchArguments = ["--no-launch-prompt"]
         app.launch()
         assertHomeIsInteractive(app)
     }
 
     func testReducedMotionRevealsInteractiveHome() {
         let app = XCUIApplication()
-        app.launchArguments = ["--reduce-launch-motion"]
+        app.launchArguments = ["--no-launch-prompt", "--reduce-launch-motion"]
         app.launch()
         assertHomeIsInteractive(app)
     }
 
     func testForegroundDoesNotReplayLaunchOrResetSelectedTab() {
         let app = XCUIApplication()
+        app.launchArguments = ["--no-launch-prompt"]
         app.launch()
         XCTAssertTrue(app.buttons["tab-Profile"].waitForExistence(timeout: 10))
         app.buttons["tab-Profile"].tap()

@@ -26,7 +26,7 @@ final class FreezeTest: XCTestCase {
         let anchorIsResults = ProcessInfo.processInfo.environment["ANCHOR"] == "results"
         for run in 1...5 {
             let app = XCUIApplication()
-            app.launchArguments = ["--perf", "--route", route]
+            app.launchArguments = ["--no-launch-prompt", "--perf", "--route", route]
             app.launch()
             if anchorIsResults {
                 XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 120), "run \(run)")

@@ -92,7 +92,19 @@ struct ProfileView: View {
                     .sheet(isPresented: $showEmail) { EmailSignInView() }
                     .sheet(isPresented: $showAlerts) { AlertsSheet() }
                     .onChange(of: nav.showPaywall) { _, on in if on { showPaywall = true; nav.showPaywall = false } }
-                    .onAppear { if nav.showPaywall { showPaywall = true; nav.showPaywall = false } }
+                    // The notifications card sends people here to set alerts up.
+                    // Signed out, the sign-in sheet comes first and the alerts
+                    // sheet follows once there is an account.
+                    .onChange(of: nav.showAlerts) { _, on in
+                        if on { if auth.isSignedIn { showAlerts = true; nav.showAlerts = false } else { showEmail = true } }
+                    }
+                    .onChange(of: auth.isSignedIn) { _, on in
+                        if on, nav.showAlerts { showAlerts = true; nav.showAlerts = false }
+                    }
+                    .onAppear {
+                        if nav.showPaywall { showPaywall = true; nav.showPaywall = false }
+                        if nav.showAlerts { if auth.isSignedIn { showAlerts = true; nav.showAlerts = false } else { showEmail = true } }
+                    }
                     .alert("Delete your account?", isPresented: $confirmDelete) {
                         Button("Delete", role: .destructive) { Task { await auth.deleteAccount() } }
                         Button("Cancel", role: .cancel) {}

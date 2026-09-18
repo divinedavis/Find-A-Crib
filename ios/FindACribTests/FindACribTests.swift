@@ -874,3 +874,21 @@ final class PushServiceTests: XCTestCase {
         XCTAssertNil(PushService.buildingBBL(in: URL(string: "https://findacrib.com/building/brooklyn/x-300343/")!), "a bbl is ten digits")
     }
 }
+
+final class PushSubscriberPromptTests: XCTestCase {
+    func testEveryoneNeverAskedIsOfferedOnce() {
+        let now = Date()
+        XCTAssertTrue(PushService.shouldOffer(status: .notDetermined, snoozedUntil: nil, now: now), "signed in or not: everyone with the app is asked (owner, 2026-09-18)")
+        XCTAssertFalse(PushService.shouldOffer(status: .authorized, snoozedUntil: nil, now: now), "already on")
+        XCTAssertFalse(PushService.shouldOffer(status: .denied, snoozedUntil: nil, now: now), "declined at the system level: only Settings can undo it, never a re-ask")
+        XCTAssertFalse(PushService.shouldOffer(status: .notDetermined, snoozedUntil: now.addingTimeInterval(3 * 86_400), now: now), "snoozed")
+        XCTAssertTrue(PushService.shouldOffer(status: .notDetermined, snoozedUntil: now.addingTimeInterval(-60), now: now), "snooze expired")
+    }
+
+    func testSubscriptionReadsTheSameFieldsAsTheSheet() {
+        XCTAssertTrue(PushService.isSubscribed(prefs: ["exists": true, "unsubscribed": false, "kinds": ["rerental"]]))
+        XCTAssertFalse(PushService.isSubscribed(prefs: ["exists": true, "unsubscribed": true]))
+        XCTAssertFalse(PushService.isSubscribed(prefs: ["exists": false]))
+        XCTAssertFalse(PushService.isSubscribed(prefs: [:]))
+    }
+}

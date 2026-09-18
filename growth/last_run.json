@@ -99,26 +99,26 @@
     "accept_pct": 1.1,
     "accept_pct_mature": 0.0,
     "added": 0,
-    "at": "2026-09-17T05:11:16+00:00",
+    "at": "2026-09-18T05:11:24+00:00",
     "by_crawl_age": {
       "0-6d": {
-        "accept_pct": 33.3,
-        "fetched": 3,
+        "accept_pct": 50.0,
+        "fetched": 2,
         "indexed": 1
       },
       "14-20d": {
         "accept_pct": 0.0,
-        "fetched": 3,
+        "fetched": 4,
         "indexed": 0
       },
       "21-27d": {
         "accept_pct": 0.0,
-        "fetched": 9,
+        "fetched": 8,
         "indexed": 0
       },
       "28d+": {
         "accept_pct": 0.0,
-        "fetched": 77,
+        "fetched": 78,
         "indexed": 0
       },
       "7-13d": {
@@ -128,7 +128,7 @@
       }
     },
     "cohort": 457,
-    "date": "2026-09-17",
+    "date": "2026-09-18",
     "dropped": 0,
     "errors": 0,
     "fetched_mature": 86,
@@ -139,118 +139,122 @@
     "last_crawl": "2026-09-15",
     "lost_indexed": 0,
     "ok": true,
-    "published_urls": 3967,
+    "published_urls": 3975,
     "read": 457,
     "rechecked": 100,
     "states": {
       "crawled_not_indexed": 94,
-      "discovered_not_indexed": 5,
+      "discovered_not_indexed": 30,
       "indexed": 1,
-      "unknown_to_google": 357
+      "unknown_to_google": 332
     }
   },
   "measure": {
-    "at": "2026-09-17T05:11:17+00:00",
-    "coverage_pct": 82.0,
-    "date": "2026-09-17",
+    "at": "2026-09-18T05:11:25+00:00",
+    "coverage_pct": 82.7,
+    "date": "2026-09-18",
     "days": 1,
-    "keywords_covered": 402,
+    "keywords_covered": 405,
     "keywords_total": 490,
-    "latest_measured_day": "2026-09-16",
+    "latest_measured_day": "2026-09-17",
     "traffic": {
       "arrival_shape": {
         "all": {
-          "busiest_6h_pct": 39.4,
-          "n": 213,
-          "night_pct": 8.0,
+          "busiest_6h_pct": 41.6,
+          "n": 185,
+          "night_pct": 7.6,
           "peak_hour_utc": 0
         },
         "direct": {
-          "busiest_6h_pct": 35.6,
-          "n": 174,
-          "night_pct": 8.0,
-          "peak_hour_utc": 1
+          "busiest_6h_pct": 39.9,
+          "n": 153,
+          "night_pct": 9.2,
+          "peak_hour_utc": 21
         },
         "organic": {
-          "busiest_6h_pct": 64.7,
-          "n": 34,
-          "night_pct": 8.8,
-          "peak_hour_utc": 23
+          "busiest_6h_pct": 59.1,
+          "n": 22,
+          "night_pct": 0.0,
+          "peak_hour_utc": 0
         }
       },
       "by_channel": {
-        "direct": 174,
+        "ai": 3,
+        "campaign": 1,
+        "direct": 153,
         "internal": 5,
-        "organic": 34
+        "organic": 22,
+        "referral": 1
       },
       "by_hour_utc": {
         "all": [
-          19,
-          19,
-          10,
-          3,
-          9,
-          11,
-          1,
-          3,
-          4,
-          4,
-          6,
-          3,
-          5,
-          11,
-          8,
-          11,
-          8,
-          10,
-          12,
+          14,
           13,
+          11,
+          14,
+          11,
+          4,
+          3,
+          4,
+          2,
+          4,
+          2,
+          6,
+          6,
+          5,
+          5,
+          9,
+          8,
           7,
+          5,
+          3,
+          11,
+          14,
           10,
-          10,
-          16
+          14
         ],
         "direct": [
-          14,
-          15,
-          7,
-          3,
-          9,
           10,
-          1,
-          3,
-          3,
-          4,
-          4,
-          3,
-          3,
-          10,
-          8,
-          10,
-          7,
+          12,
           8,
           11,
-          12,
+          8,
+          4,
+          3,
+          4,
+          2,
+          4,
+          2,
+          6,
+          6,
+          2,
+          5,
+          7,
+          7,
+          6,
+          4,
           3,
           8,
+          13,
           8,
           10
         ],
         "organic": [
-          5,
-          4,
+          3,
+          1,
+          3,
+          2,
           3,
           0,
           0,
-          1,
           0,
           0,
-          1,
+          0,
+          0,
+          0,
           0,
           2,
           0,
-          2,
-          1,
           0,
           1,
           1,
@@ -259,95 +263,93 @@
           1,
           1,
           2,
-          2,
-          6
+          1
         ]
       },
-      "by_src": {},
-      "direct_deep": 3,
-      "new": 155,
+      "by_src": {
+        "alert": 1,
+        "chatgpt.com": 3
+      },
+      "direct_deep": 5,
+      "new": 141,
       "new_window_days": 30,
-      "returning": 58,
+      "returning": 44,
       "top_paths": [
         [
           "/",
-          208
+          177
         ],
         [
-          "/building/brooklyn/90-atlantic-ave-3002840015/",
+          "/dc/",
           2
         ],
         [
-          "/building/brooklyn/141-india-st-3025330001/",
-          1
+          "/sf/",
+          2
         ],
         [
-          "/building/brooklyn/250-ocean-pkwy-3053380081/",
+          "/building/queens/68-37-yellowstone-blvd-4022100001/",
           1
         ],
         [
           "/guide/what-is-rent-stabilization/",
+          1
+        ],
+        [
+          "/landlord/",
           1
         ]
       ],
       "top_referrers": [
         [
           "www.google.com",
-          26
+          19
         ],
         [
           "com.google.android.googlequicksearchbox",
-          3
+          2
         ],
         [
-          "duckduckgo.com",
-          2
+          "newtab",
+          1
         ],
         [
           "search.yahoo.com",
           1
-        ],
-        [
-          "www.bing.com",
-          1
-        ],
-        [
-          "www.startpage.com",
-          1
         ]
       ],
-      "visitors": 213
+      "visitors": 185
     }
   },
   "outreach": {
-    "at": "2026-09-17T05:11:19+00:00",
-    "date": "2026-09-17",
+    "at": "2026-09-18T05:11:27+00:00",
+    "date": "2026-09-18",
     "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
     "ok": false
   },
   "scout": {
-    "at": "2026-09-17T05:11:18+00:00",
-    "date": "2026-09-17",
+    "at": "2026-09-18T05:11:26+00:00",
+    "date": "2026-09-18",
     "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
     "ok": false
   },
   "searchconsole": {
-    "at": "2026-09-17T05:00:11+00:00",
-    "clicks": 220,
-    "date": "2026-09-17",
-    "impressions": 259,
+    "at": "2026-09-18T05:00:15+00:00",
+    "clicks": 200,
+    "date": "2026-09-18",
+    "impressions": 237,
     "nonbranded_clicks": 0,
     "nonbranded_impressions": 0,
-    "page_clicks": 248,
-    "page_impressions": 1549,
-    "serving_branded_only": 12,
+    "page_clicks": 230,
+    "page_impressions": 1705,
+    "serving_branded_only": 11,
     "serving_ever": 287,
     "serving_nonbranded": 0,
     "serving_pages": 16,
     "serving_stable": 16,
-    "serving_unattributed": 4,
+    "serving_unattributed": 5,
     "share_pct": 0.0,
     "tracked_ranking": 0,
-    "window": "2026-09-08..2026-09-15"
+    "window": "2026-09-09..2026-09-16"
   }
 }

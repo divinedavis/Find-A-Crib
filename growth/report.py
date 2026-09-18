@@ -649,6 +649,43 @@ def build_blocks(run_log=None, review_out=None):
                     {"label": "Kept, of fetched", "value": f"{_acc}%",
                      "delta": "and did not drop it again",
                      "tone": "bad" if _acc < 50 else "info"}]})
+            # ---- is Googlebot still coming? Every rate above is a level over
+            # a fixed cohort and cannot fall, so all of them read "flat" on
+            # 2026-09-18 — index_fetched_pct had been 20.8% for sixteen days —
+            # while the weekly crawl count behind them had gone 24 → 3 since
+            # the week of 07-27. A collapse in crawl demand and a stable
+            # corpus look identical in a cumulative number; this is the block
+            # that tells them apart. See CRAWL_WINDOWS in indexstatus.py.
+            _c14, _c28 = _ixtot.get("crawls_14d"), _ixtot.get("crawls_28d")
+            if _c14 is None:
+                _c14, _c28 = _last("index_crawls_14d"), _last("index_crawls_28d")
+            if _c14 is not None and _c28 is not None:
+                B.append({"type": "tiles", "items": [
+                    {"label": "Pages crawled, 14d", "value": _fmt(_c14),
+                     "delta": f"of {_fmt(_read)} sampled",
+                     "tone": "bad" if not _c14 else "info"},
+                    {"label": "Pages crawled, 28d", "value": _fmt(_c28),
+                     "delta": "distinct URLs Googlebot fetched",
+                     "tone": "bad" if not _c28 else "info"}]})
+                _wk = _ixtot.get("crawls_by_week") or {}
+                if _wk:
+                    # Chips and not a table: it is one number per week and the
+                    # only thing being read off it is the shape. The newest
+                    # week is marked partial because today is rarely a Sunday
+                    # and an unmarked short week reads as a fresh collapse.
+                    _part = _ixtot.get("crawls_week_partial")
+                    B.append({"type": "chips", "items": [
+                        f"{w[5:]} — {n}" + (" (partial)" if w == _part else "")
+                        for w, n in _wk.items()]})
+                _lag = _ixtot.get("crawl_read_lag_days")
+                B.append({"type": "note", "text": (
+                    "Distinct sampled URLs Googlebot fetched in the window, by the week "
+                    "of its last crawl. Google reports only a page's most recent crawl, so "
+                    "a page fetched repeatedly counts once and these are floors. "
+                    + (f"Rows are re-read every {_lag} days on average, so the newest "
+                       f"week undercounts by roughly that much."
+                       if _lag else ""))})
+
             # "Kept, of fetched" is an average over crawls of every age, and on
             # 2026-08-19 that average (15.8%) sat between a 62.5% matured slice
             # and three consecutive 0% bands — a number that described no page

@@ -155,6 +155,52 @@ MATURE_DAYS = 21
 _AGE_BANDS = (("0-6d", 7), ("7-13d", 14), ("14-20d", 21), ("21-27d", 28),
               ("28d+", None))
 
+# Trailing windows for the crawl RATE — how many distinct cohort URLs Googlebot
+# fetched in the last N days.
+#
+# Every other number in this module is a LEVEL over a fixed cohort, and a level
+# cannot fall: index_fetched counts URLs Google has *ever* fetched, so once a
+# page is crawled it stays counted forever and the series only ever ratchets
+# up. That is the right shape for "how much of the corpus has Google seen" and
+# the wrong shape for "is Google still coming", and on 2026-09-18 the
+# difference was the whole story: index_fetched had read exactly 95 and
+# index_fetched_pct exactly 20.8% for sixteen consecutive days, which every
+# review read as "flat/stable", while the crawls those numbers are made of had
+# gone 24 → 16 → 11 → 16 → 9 → 3 → 3 per week since the week of 07-27. An 8x
+# collapse in Googlebot's attention was invisible in the metric built to watch
+# it, and had to be hand-derived out of index_status.json by eye. `last_crawl`
+# below was the closest thing to an answer and it is a single max date: it can
+# say "the newest crawl is 6 days old" and cannot say whether that is one
+# straggler or a healthy rate.
+#
+# THREE THINGS THIS NUMBER IS NOT, and each one is a way to over-read it:
+#
+#  1. It is not a count of crawls. Google returns lastCrawlTime — the MOST
+#     RECENT fetch, not a history — so a URL fetched five times in the window
+#     counts once. Read it as "distinct pages Googlebot touched", which is a
+#     floor on crawl volume and an exact count of reach.
+#  2. It is not site-wide. The cohort is a stratified sample of the published
+#     corpus (see COHORT), so this is crawls *into the sample*. The direction
+#     and the ratio between weeks are the signal; the absolute number is only
+#     meaningful against the cohort size.
+#  3. It is not fully observed at the recent end. A URL's crawl date is only as
+#     current as the night this sampler last inspected it, so crawls that
+#     happened after that reading are invisible until the URL comes round
+#     again. At DAILY_BUDGET=100 over a ~457 cohort the mean read lag is ~2.3
+#     days, which biases a window LOW by roughly lag/window — about 8% at 28
+#     days and 16% at 14. crawl_read_lag_days is recorded alongside so the
+#     correction is arithmetic rather than a guess.
+#
+# No 7-day window for exactly reason 3: at a ~2.3-day lag a weekly count would
+# run a third short and would read as a crash that was the instrument. 14 is
+# the shortest window this sampling rate can honestly support.
+CRAWL_WINDOWS = (14, 28)
+
+# How many trailing ISO weeks of crawl counts to carry. Eight spans the whole
+# of the 2026-08 → 2026-09 decline with a month of pre-decline baseline either
+# side of it, and fits on one line of a last_run.json a human reads by eye.
+CRAWL_WEEKS = 8
+
 # 2,000/day and 600/min are the per-property quotas. 100 keeps a wide margin for
 # anything else that ever wants the API, refreshes the whole cohort in ~5 days,
 # and costs about two minutes of wall clock at the pace set below.
@@ -448,6 +494,21 @@ def _band(age):
     return _AGE_BANDS[-1][0]
 
 
+def _week_start(datestr):
+    """The Monday of the ISO week `datestr` falls in, or None if unparseable.
+
+    Weeks and not days because the cohort only yields a few crawls a day even
+    in a good month — a daily series of this would be almost all zeroes with
+    single-digit spikes, and nobody could see a trend in it. Monday-anchored so
+    the bucket a date lands in never depends on when the report happens to run.
+    """
+    try:
+        d = datetime.date.fromisoformat(datestr)
+    except (ValueError, TypeError):
+        return None
+    return (d - datetime.timedelta(days=d.weekday())).isoformat()
+
+
 def summarise(cohort, today=None):
     """Per-family and overall counts over whatever has been read so far.
 
@@ -477,6 +538,11 @@ def summarise(cohort, today=None):
     ages = {label: [0, 0] for label, _ in _AGE_BANDS}
     mature = [0, 0]
     settled = [0, 0]
+    # The crawl RATE — see CRAWL_WINDOWS for what these count and, more
+    # importantly, for the three things they do not.
+    windows = {w: 0 for w in CRAWL_WINDOWS}
+    weeks = {}
+    read_lags = []
     fams = {}
     for url, rec in cohort.items():
         fam = rec.get("family") or family(url)
@@ -494,6 +560,13 @@ def summarise(cohort, today=None):
         b = bucket(rec.get("state"))
         f["read"] += 1
         f["buckets"][b] = f["buckets"].get(b, 0) + 1
+        # How stale this row's crawl date is allowed to be. Collected over
+        # every read URL, fetched or not, because it describes the sampler's
+        # rotation and not Google's behaviour — it is the denominator of the
+        # recent-end bias in the window counts below.
+        lag = _age_days(rec.get("checked"), today)
+        if lag is not None:
+            read_lags.append(lag)
         if b == "indexed":
             f["indexed"] += 1
         # Has Google ever fetched this URL? lastCrawlTime is the direct
@@ -504,6 +577,14 @@ def summarise(cohort, today=None):
         # crawl time is the fact and the coverage prose is the summary of it.
         if rec.get("crawled"):
             f["fetched"] += 1
+            # The newest crawl in this family, for the same reason the cohort
+            # carries one: a family whose last fetch is two months old is a
+            # different fact from a low fetched_pct, and until this existed the
+            # two were indistinguishable in every per-family report. On
+            # 2026-09-18 /sf/ read 1 of 20 fetched and that one crawl was
+            # 2026-07-28 — a tier the engine had shipped work into all month.
+            if rec["crawled"] > (f.get("last_crawl") or ""):
+                f["last_crawl"] = rec["crawled"]
             age = _age_days(rec.get("crawled"), today)
             if age is not None:
                 slot = ages[_band(age)]
@@ -514,6 +595,13 @@ def summarise(cohort, today=None):
                     mature[0] += 1
                     if b == "indexed":
                         mature[1] += 1
+                for w in CRAWL_WINDOWS:
+                    if age < w:
+                        windows[w] += 1
+                        f[f"crawls_{w}d"] = f.get(f"crawls_{w}d", 0) + 1
+                wk = _week_start(rec["crawled"])
+                if wk:
+                    weeks[wk] = weeks.get(wk, 0) + 1
             # The unconfounded version of the same question, keyed off OUR first
             # reading rather than Google's last crawl. A URL this sampler first
             # saw fetched-and-not-indexed MATURE_DAYS ago and still sees
@@ -582,6 +670,34 @@ def summarise(cohort, today=None):
     # is a different emergency from one that is crawled nightly and declined.
     crawls = [r.get("crawled") for r in cohort.values() if r.get("crawled")]
     total["last_crawl"] = max(crawls) if crawls else None
+    # ...and the rate behind it. `last_crawl` answers "is Googlebot still
+    # coming at all" with a single date, which cannot tell one straggler from a
+    # healthy cadence; these count how many distinct cohort pages it actually
+    # touched. Read CRAWL_WINDOWS before quoting any of them — in particular
+    # they are counts into a stratified SAMPLE, they undercount at the recent
+    # end by about crawl_read_lag_days / window, and a URL fetched repeatedly
+    # counts once.
+    for w in CRAWL_WINDOWS:
+        total[f"crawls_{w}d"] = windows[w]
+    # Trailing weeks, oldest first, INCLUDING the zeroes. A dict built only
+    # from weeks that saw a crawl would silently drop a dead week, and a dead
+    # week is the single most informative entry this series can hold.
+    if weeks:
+        this_week = _week_start(today)
+        if this_week:
+            span = [(datetime.date.fromisoformat(this_week)
+                     - datetime.timedelta(weeks=i)).isoformat()
+                    for i in range(CRAWL_WEEKS - 1, -1, -1)]
+            total["crawls_by_week"] = {w: weeks.get(w, 0) for w in span}
+    # The newest week in that span is always partial — today is rarely a
+    # Sunday — so it must never be compared with a full week as if it were one.
+    total["crawls_week_partial"] = _week_start(today)
+    # Mean days since this sampler last read a cohort row. It is the size of
+    # the blind spot at the recent end of every window count above, and it is
+    # recorded rather than assumed because it moves with DAILY_BUDGET and with
+    # the cohort size, both of which have changed before.
+    total["crawl_read_lag_days"] = (round(sum(read_lags) / len(read_lags), 1)
+                                    if read_lags else None)
     # The site-wide state split. "3% indexed" says the corpus is not being
     # accepted; it does not say why, and the two dominant failure states imply
     # opposite work. "Discovered - currently not indexed" means Google knows the
@@ -808,7 +924,24 @@ def collect(docroot, budget=None):
                               # a re-crawl cannot reset. None — and so absent —
                               # until 2026-09-06.
                               ("index_fetched_settled", tot["fetched_settled"]),
-                              ("index_accept_pct_settled", tot["accept_pct_settled"])):
+                              ("index_accept_pct_settled", tot["accept_pct_settled"]),
+                              # The crawl RATE. Every metric above this line is
+                              # a level over a fixed cohort and therefore
+                              # cannot fall; these can, and on 2026-09-18 they
+                              # were the only numbers in this module that could
+                              # have shown Googlebot's weekly reach dropping
+                              # from 24 pages to 3 while index_fetched_pct sat
+                              # at 20.8% for sixteen days. See CRAWL_WINDOWS
+                              # for the three ways to over-read them.
+                              ("index_crawls_14d", tot.get("crawls_14d")),
+                              ("index_crawls_28d", tot.get("crawls_28d")),
+                              # Recorded as a series, not just in last_run,
+                              # because it is the correction factor for the two
+                              # above and a reading taken six weeks from now
+                              # has to be adjustable with the lag that applied
+                              # on the night it was taken, not tonight's.
+                              ("index_crawl_read_lag_days",
+                               tot.get("crawl_read_lag_days"))):
             if value is not None:
                 ledger.record_result(today, "__site__", metric, value)
         # index_status.json holds only the LATEST state per URL, so it can never
@@ -855,6 +988,31 @@ def collect(docroot, budget=None):
            "by_crawl_age": {k: v for k, v in tot["by_crawl_age"].items()
                             if v["fetched"]},
            "last_crawl": tot["last_crawl"],
+           # ...and the rate behind that date, which is what a level cannot
+           # show. last_run.json is the first thing the cloud review reads, and
+           # before this landed the only way to see that Googlebot's weekly
+           # reach had fallen 8x since August was to open index_status.json and
+           # tally 457 crawl dates by hand. crawls_by_week is the whole trend
+           # on one line; crawl_read_lag_days is how much the newest entries
+           # undercount. See CRAWL_WINDOWS.
+           "crawls_14d": tot.get("crawls_14d"),
+           "crawls_28d": tot.get("crawls_28d"),
+           "crawls_by_week": tot.get("crawls_by_week"),
+           "crawls_week_partial": tot.get("crawls_week_partial"),
+           "crawl_read_lag_days": tot.get("crawl_read_lag_days"),
+           # Families this sampler has read and Google has never once fetched.
+           # Named here because "0% fetched" is invisible in a site-wide rate
+           # and decides whether a technique's zero measured its pages or the
+           # crawler: on 2026-09-18 every published family outside NYC was on
+           # this list — dc 0/20, la 0/20, guide 0/10, section8 0/6,
+           # available 0/15, brief 0/10 — while three active techniques were
+           # shipping work into them. `read` is carried with each so a small
+           # stratum reads as the weak evidence it is, and a family with
+           # nothing read yet is left out entirely rather than reported as
+           # never-fetched, which would blame Google for this sampler's queue.
+           "never_fetched": {name: f["read"]
+                             for name, f in sorted(summary["by_family"].items())
+                             if f.get("read") and not f.get("fetched")},
            # What moved overnight, among the URLs re-read tonight. Every rate
            # above is a level and a level cannot distinguish "Google has not
            # got to these pages yet" from "Google is taking them back", which

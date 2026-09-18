@@ -28,6 +28,7 @@ struct FindACribApp: App {
                     await store.load()
                     Perf.startWatchdog()
                     LaunchArgs.apply(to: nav, store: store)
+                    ReviewPrompt.shared.applyLaunchArguments()
                 }
                 .task { await auth.listen() }
                 .onOpenURL { url in

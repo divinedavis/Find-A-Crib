@@ -33,6 +33,15 @@ struct RootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: nav.hideTabBar)
+        // TestFlight never shows Apple's rating sheet, so a beta build shows
+        // this stand-in at the same moment instead (ReviewPrompt.isBeta).
+        .alert("Enjoying Find A Crib?", isPresented: Binding(get: { ReviewPrompt.shared.showBetaStandIn },
+                                                              set: { ReviewPrompt.shared.showBetaStandIn = $0 })) {
+            Button("Rate on the App Store") { ReviewPrompt.shared.openWriteReview() }
+            Button("Not now", role: .cancel) {}
+        } message: {
+            Text("TestFlight build: this is where the App Store rating prompt appears in the released app. Tap through to leave a rating.")
+        }
         // Type still follows the user's text-size setting, but stops at xLarge:
         // the layouts are StreetEasy's fixed compositions (segment strips,
         // three-up fact rows, price lines) and the accessibility sizes wrap

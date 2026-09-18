@@ -122,6 +122,16 @@ struct ProfileView: View {
                             Text("Sign in to set up").font(.se(16)).foregroundStyle(SE.ink3)
                         }
                     }
+                    // A link to the App Store's own review page. Apple's rule is
+                    // that the in-app rating SHEET may not hang off a button; a
+                    // link to the store page is fine, and is the only way to rate
+                    // on demand once the sheet has had its three asks a year.
+                    settingRow("Rate Find A Crib") {
+                        Button { ReviewPrompt.shared.openWriteReview() } label: {
+                            HStack(spacing: 4) { Text("On the App Store").font(.se(18, .semibold)); Image(systemName: "arrow.up.right").font(.system(size: 13, weight: .bold)) }
+                                .foregroundStyle(SE.royal)
+                        }.buttonStyle(.plain).accessibilityIdentifier("profile-rate")
+                    }
 
                     // data
                     VStack(alignment: .leading, spacing: 12) {

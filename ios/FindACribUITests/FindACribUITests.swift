@@ -458,3 +458,41 @@ private final class MidGestureFrames {
     }
     func collect() -> [Data] { group.wait(); lock.lock(); defer { lock.unlock() }; return frames }
 }
+
+
+/// The App Store rating ask (Services/ReviewPrompt.swift). A build run from
+/// Xcode always gets Apple's real sheet, so `--review-now` must put it on
+/// screen — it belongs to SpringBoard, not the app. TestFlight shows the
+/// stand-in alert instead; that path is not reachable from a simulator.
+final class ReviewPromptUITests: XCTestCase {
+    func testReviewNowShowsTheSystemRatingSheet() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--review-now"]
+        app.launch()
+        // Apple's sheet ("Enjoying Find A Crib? Tap a star…", Not Now) is a
+        // remote view hosted by StoreKitUIService — not SpringBoard, and not
+        // the app. Any of its buttons proves the request reached StoreKit and
+        // StoreKit chose to show it.
+        let host = XCUIApplication(bundleIdentifier: "com.apple.ios.StoreKitUIService")
+        let candidates = [host.buttons["Not Now"], app.buttons["Not Now"], host.buttons["Submit"]]
+        var notNow: XCUIElement? = nil
+        let deadline = Date().addingTimeInterval(15)
+        while Date() < deadline, notNow == nil {
+            notNow = candidates.first { $0.exists }
+            if notNow == nil { Thread.sleep(forTimeInterval: 0.5) }
+        }
+        XCTAssertNotNil(notNow, "the system rating sheet never appeared after --review-now")
+        if let b = notNow, b.label == "Not Now" { b.tap() }
+        // The app is still usable underneath.
+        XCTAssertTrue(app.buttons["city-field"].waitForExistence(timeout: 10))
+    }
+
+    func testProfileHasARateLink() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--tab", "profile"]
+        app.launch()
+        let rate = app.descendants(matching: .any)["profile-rate"].firstMatch
+        for _ in 0..<6 where !rate.exists { app.swipeUp() }
+        XCTAssertTrue(rate.waitForExistence(timeout: 10), "Profile has no Rate Find A Crib row")
+    }
+}

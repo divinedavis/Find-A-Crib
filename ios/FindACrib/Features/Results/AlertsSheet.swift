@@ -218,6 +218,9 @@ struct AlertsSheet: View {
             let body = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
             if code == 200, (body?["ok"] as? Bool) == true {
                 Analytics.shared.track("alerts_saved", ["editing": editing, "kinds": kinds.count])
+                // Turning alerts on is the other good moment. Not on an edit:
+                // changing a rent cap is housekeeping, not delight.
+                if !editing { ReviewPrompt.shared.record(.alerts) }
                 done = true; return
             }
             switch body?["error"] as? String {

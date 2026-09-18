@@ -46,6 +46,9 @@ final class Activity {
         persist()
         remoteToggle?(bbl, nowSaved)
         analytics?.track(nowSaved ? "save" : "unsave", ["bbl": bbl])
+        // Saving a building is one of the two good moments we ask for a
+        // rating after (ReviewPrompt decides whether this one earns an ask).
+        if nowSaved { ReviewPrompt.shared.record(.save) }
     }
     /// Account saves win on order; anything only known locally stays.
     func mergeRemoteSaves(_ remote: [String]) {

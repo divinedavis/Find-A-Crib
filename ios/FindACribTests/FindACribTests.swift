@@ -820,3 +820,39 @@ final class AnalyticsEventShapeTests: XCTestCase {
         XCTAssertFalse(UserDefaults.standard.bool(forKey: "analytics.enabled"))
     }
 }
+
+final class ReviewPromptTests: XCTestCase {
+    private let day: TimeInterval = 86_400
+
+    func testAsksOnceThenGoesQuietForTheVersionAndTheWindow() {
+        let now = Date()
+        // Never asked: ask.
+        XCTAssertTrue(ReviewPrompt.shouldAsk(version: "1.2.1", lastVersion: nil, lastAsked: nil, now: now))
+        // Asked on this version, whenever: never again on it.
+        XCTAssertFalse(ReviewPrompt.shouldAsk(version: "1.2.1", lastVersion: "1.2.1", lastAsked: now.addingTimeInterval(-400 * day), now: now))
+        // New version but asked recently: still quiet.
+        XCTAssertFalse(ReviewPrompt.shouldAsk(version: "1.3.0", lastVersion: "1.2.1", lastAsked: now.addingTimeInterval(-30 * day), now: now))
+        // New version and the quiet window has passed: ask again.
+        XCTAssertTrue(ReviewPrompt.shouldAsk(version: "1.3.0", lastVersion: "1.2.1", lastAsked: now.addingTimeInterval(-Double(ReviewPrompt.quietDays + 1) * day), now: now))
+        // The boundary itself is still quiet.
+        XCTAssertFalse(ReviewPrompt.shouldAsk(version: "1.3.0", lastVersion: "1.2.1", lastAsked: now.addingTimeInterval(-Double(ReviewPrompt.quietDays) * day + 60), now: now))
+    }
+
+    func testWriteReviewLinkIsTheAppsOwnPage() {
+        let u = ReviewPrompt.writeReviewURL.absoluteString
+        XCTAssertTrue(u.contains("id6807549249"), "must point at Find A Crib, ASC app 6807549249")
+        XCTAssertTrue(u.contains("action=write-review"))
+    }
+
+    @MainActor
+    func testRecordingAMomentIsGatedThroughTheSameRule() {
+        let d = UserDefaults(suiteName: "review-tests-\(UUID().uuidString)")!
+        let p = ReviewPrompt(defaults: d)
+        XCTAssertNil(d.string(forKey: "review.lastVersion"))
+        p.record(.save)
+        XCTAssertNotNil(d.string(forKey: "review.lastVersion"), "the first save asks, and the ask is recorded before the sheet")
+        let firstAsk = d.object(forKey: "review.lastAsked") as? Date
+        p.record(.alerts)
+        XCTAssertEqual(d.object(forKey: "review.lastAsked") as? Date, firstAsk, "a second good moment on the same version does not ask again")
+    }
+}

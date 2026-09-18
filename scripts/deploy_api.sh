@@ -27,6 +27,12 @@ ssh "$HOST" "set -e
     cmp -s $REPO/\$f $LIVE/\$f || echo \"    updating \$f\"
     cp $REPO/\$f $LIVE/\$f
   done
+  # The unit's drop-in lives in the repo (deploy/), so a worker-count change
+  # ships like any other and the box has nothing hand-edited to drift.
+  mkdir -p /etc/systemd/system/findacrib-api.service.d
+  cmp -s $REPO/deploy/findacrib-api.override.conf /etc/systemd/system/findacrib-api.service.d/override.conf || echo '    updating systemd override'
+  cp $REPO/deploy/findacrib-api.override.conf /etc/systemd/system/findacrib-api.service.d/override.conf
+  systemctl daemon-reload
   # Stale bytecode outlives a file copy when the mtime granularity is coarse.
   rm -rf $LIVE/__pycache__
   systemctl restart findacrib-api"

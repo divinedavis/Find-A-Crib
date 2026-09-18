@@ -13,7 +13,7 @@ reads are fast and need no DB round-trip. The DB is used only for auth/metering.
 
 Run:  DATA_DIR=/var/www/rent-map gunicorn -w 2 -b 127.0.0.1:8010 api_server:app
 """
-import base64, concurrent.futures, datetime, glob, gzip, hashlib, hmac, json, os, re, secrets, threading, time, urllib.request, urllib.error, urllib.parse
+import base64, datetime, glob, gzip, hashlib, hmac, json, os, re, secrets, threading, time, urllib.request, urllib.error, urllib.parse
 from collections import defaultdict, deque
 from flask import Flask, jsonify, request, g, redirect
 
@@ -1306,6 +1306,33 @@ def _dashboard_denial(verdict, allowed):
     return None
 
 
+# Tracking began 24 June 2026. A `since` before that selects the same rows as
+# no `since` at all — but dashboard_metrics() computes 6m/3m as now() minus an
+# interval, so the value moved on every call and a memo keyed on it never hit:
+# those two windows paid the full adtiles scan on every click, TTL or not.
+FAC_TRACKING_START = datetime.datetime(2026, 6, 24, 4, tzinfo=datetime.timezone.utc)
+
+
+def _fac_since(since):
+    """The range boundary as a memo key: None when it is before tracking began."""
+    if not since:
+        return None
+    try:
+        if datetime.datetime.fromisoformat(str(since).replace("Z", "+00:00")) <= FAC_TRACKING_START:
+            return None
+    except ValueError:
+        pass
+    return since
+
+
+# The SQL function is 2.2 s for all-time (0.4 s today) and its answer does not
+# change inside a minute. The page asks for the same window from two tabs, a
+# reload and its 5-minute refresh; this is what keeps those from each paying.
+@_memo(60)
+def _fac_metrics_rpc(rng):
+    return rpc("dashboard_metrics", {"p_range": rng})
+
+
 @app.route("/dashboard-metrics")
 def dashboard_metrics():
     if rate_limited("dashboard", 120, 3600):
@@ -1322,23 +1349,26 @@ def dashboard_metrics():
     if rng not in DASHBOARD_RANGES:
         rng = "all"
     try:
-        data = rpc("dashboard_metrics", {"p_range": rng})
+        # A copy: the memo hands every caller the same dict, and the keys added
+        # below must not leak into it.
+        data = dict(_fac_metrics_rpc(rng))
     except Exception:
         return jsonify(error="temporarily_unavailable"), 503
+    since = _fac_since(data.get("since"))
     # The engine's own build log. It lives on disk in the growth checkout, not
     # in Postgres, because the 05:40 build runs on this droplet and never writes
     # to the database. NEMO's tab has had this from the start; Find A Crib
     # reported traffic and revenue but never what was actually shipped for it.
     data["build"] = _fac_build()
     data["search"] = _fac_search()
-    data["channels"] = _fac_channels(data.get("since"))
-    data["adtiles"] = _fac_adtiles(data.get("since"))
+    data["channels"] = _fac_channels(since)
+    data["adtiles"] = _fac_adtiles(since)
     # Inputs for the goals card's audience-INDEPENDENT streams. Deliberately
     # not range-scoped: that card is pinned to all-time for the same reason.
     data["goalstreams"] = {"ai": _fac_ai_crawls(),
                            "consult_clicks": _fac_consult_clicks(),
                            "agents": _fac_agent_pool()}
-    data["signage"] = _fac_signage(data.get("since"))
+    data["signage"] = _fac_signage(since)
     data["appstore"] = _fac_appstore()
     # Seven calendar months of distinct visitors, for the bars beside the
     # seven days. Not range-scoped: a month bar that changed with the picker
@@ -1348,7 +1378,8 @@ def dashboard_metrics():
     # numbers of the all-time call (the same fixed windows every range shows)
     # and only reads on the others, so switching the range picker cannot
     # record an achievement twice.
-    data["goals"] = _fac_goals(data.get("engagement") or {}, rng == "all")
+    data["goals"] = (_fac_goals(data.get("engagement") or {}, True) if rng == "all"
+                     else _fac_goals_read())
     return jsonify(data)
 
 
@@ -1376,10 +1407,20 @@ def _fac_goals(engagement, evaluate):
     return out
 
 
+# The read-only copy the non-all-time ranges show: three RPCs whose answer
+# only changes when an all-time call records a goal.
+@_memo(120)
+def _fac_goals_read():
+    return _fac_goals({}, False)
+
+
 FAC_MONTHS = 7
 FAC_TZ = "America/New_York"
 
 
+# Not range-scoped (see the docstring), so it was 0.8 s of PostgREST paging
+# recomputed on every flip for an answer that changes once a day.
+@_memo(600)
 def _fac_months(count=FAC_MONTHS):
     """Distinct visitors and page views per calendar month, newest last.
 
@@ -1526,6 +1567,7 @@ def _fac_channels(since):
 FAC_OWNER_UID = "af2629f7-1121-4bee-8a2b-cede9318c864"
 
 
+@_memo(600)
 def _fac_owner_visitors():
     """visitor_ids belonging to the owner, from both logs. () on failure."""
     ids = set()
@@ -1556,7 +1598,7 @@ AD_CTR_MIN = 100
 AD_WINDOW_MIN_HOURS = 24
 
 
-@_memo(120)
+@_memo(600)
 def _fac_adtiles(since):
     """Advertiser-tile inventory: what the re-rental and lottery tiles earned.
 
@@ -1581,149 +1623,25 @@ def _fac_adtiles(since):
     is withheld entirely until the window has banked AD_CTR_MIN impressions,
     because below that the margin of error is wider than the number.
 
+    The counting is dashboard_adtiles() in Postgres (migration
+    20260918150000). It used to happen here, over every ad-tile event pulled
+    through PostgREST: 123,000 rows in 123 offset-paged requests by
+    2026-09-18, ~25 MB parsed per call, 5.8 s cold on every range flip. The
+    rules above moved with it, unchanged; the thresholds, the sort and the
+    served-window age rule stay here. The owner's visitor ids are still
+    decided here and passed in, so every card shares one definition of "mine".
+
     Returns {} on any failure — one card should drop, not the page.
     """
-    # 50,000 is a CEILING, not a promise. tile_served banked ~1,500 on its first
-    # full day, so this window reaches the cap in about a month — and because the
-    # order is created_at.desc, hitting it silently drops the OLDEST rows, which
-    # is exactly where every click older than impression-counting lives. The
-    # all-time card would quietly lose its own history. Detect and report it
-    # rather than let the numbers shrink without saying why.
-    # PAGINATE. `limit=50000` is a lie PostgREST tells politely: it caps a
-    # response at 1,000 rows whatever you ask for, and the guard below used to
-    # test len(rows) >= 50000, which could never fire. The moment tile_served
-    # began firing ~1,500 times a day, the newest 1,000 ad-tile events were
-    # almost entirely today's renders and every click fell off the end — this
-    # card reported 0 clicks against a real 72, with `truncated` reading False.
-    #
-    # FETCH THE PAGES CONCURRENTLY. Walking them one at a time was the second
-    # of the two things making /dashboard-metrics slow (the first was the
-    # nginx log scan in _fac_ai_crawls): all-time is 19,530 ad-tile events, so
-    # 20 sequential round-trips at ~83ms each, ~1.7s of the endpoint's ~2.5s.
-    # One count query says how many pages there are up front, then a small
-    # pool fetches them at once. Same number of requests to PostgREST, same
-    # rows, three waves instead of twenty.
-    #
-    # Offset paging over a table still being written can shift a row between
-    # pages either way; fetching them together narrows that window rather than
-    # widening it, because every page is read at nearly the same instant
-    # instead of over a second and a half.
-    PAGE = 1000
-    MAX_PAGES = 200          # 200k events; a real ceiling, and it is reported
-    base = ("events?select=event,props,visitor_id,created_at"
-            f"&event=in.({','.join(AD_TILE_EVENTS)})"
-            "&order=created_at.desc")
-    if since:
-        base += f"&created_at=gte.{urllib.parse.quote(str(since))}"
-    rows, truncated = [], False
     try:
-        total = _rest_count(base)
-        pages = min(-(-total // PAGE), MAX_PAGES) if total else 1
-        truncated = total > MAX_PAGES * PAGE
-        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
-            for batch in pool.map(
-                    lambda i: _rest("GET", f"{base}&offset={i * PAGE}&limit={PAGE}") or [],
-                    range(pages)):
-                rows += batch
+        agg = rpc("dashboard_adtiles",
+                  {"p_since": since, "p_exclude": sorted(_fac_owner_visitors())}) or {}
     except Exception:
-        # The count is one more thing that can fail. Fall back to the sequential
-        # walk rather than dropping the card: slow beats absent.
-        rows, truncated = [], False
-        try:
-            for p_ in range(MAX_PAGES):
-                batch = _rest("GET", f"{base}&offset={p_ * PAGE}&limit={PAGE}") or []
-                rows += batch
-                if len(batch) < PAGE:
-                    break
-            else:
-                truncated = True
-        except Exception:
-            return {}
-    mine = _fac_owner_visitors()
-    rows = [r for r in rows if r.get("visitor_id") not in mine]
+        return {}
+    first_impr = agg.get("first_impression")
+    first_served = agg.get("first_served")
 
-    # The first impression has to be known before anything is bucketed: it is
-    # the left edge of the only window in which a click rate means anything.
-    first_impr = min((r["created_at"] for r in rows
-                      if r.get("event") == "tile_impression" and r.get("created_at")),
-                     default=None)
-    # Served impressions started being counted later than viewable ones, so they
-    # get their own left edge. Sharing first_impr would divide clicks banked
-    # before `tile_served` existed by a denominator that did not exist yet —
-    # the exact mistake the viewable window was built to avoid.
-    first_served = min((r["created_at"] for r in rows
-                        if r.get("event") == "tile_served" and r.get("created_at")),
-                       default=None)
-
-    # agent -> {kind, impressions, clicks, clicks_measured, reach set, addrs set}
-    by_agent, kinds = {}, {}
-    # Where the people who clicked a re-rental came from (the session's touch
-    # the site records on every event since 2026-09-16: utm_source, else the
-    # referrer host, else an ad click id, else direct), which client they were
-    # on, and which borough's tile they took. Older rows carry none of it and
-    # count as "unknown" rather than being guessed.
-    platforms, sources, boros = {}, {}, {}
-    def _source(props):
-        if (props.get("platform") or "web") == "ios":
-            return "iPhone app"
-        t = props.get("touch")
-        if not isinstance(t, dict):
-            return "unknown (before 9/16)"
-        if t.get("source"):
-            return t["source"] + ("/" + t["medium"] if t.get("medium") else "")
-        if t.get("src"):
-            return "own link: " + t["src"]
-        if t.get("click") == "gclid":
-            return "google ads"
-        if t.get("ref"):
-            return t["ref"]
-        return "direct"
-    for r in rows:
-        props = r.get("props") or {}
-        ev = r.get("event")
-        if ev == "featured_click":
-            plat = props.get("platform") or "web"
-            platforms[plat] = platforms.get(plat, 0) + 1
-            src = _source(props)
-            sources[src] = sources.get(src, 0) + 1
-            if props.get("boro"):
-                boros[props["boro"]] = boros.get(props["boro"], 0) + 1
-        if ev in ("tile_impression", "tile_served"):
-            kind = props.get("kind") or "rerental"
-            agent = props.get("agent") or "—"
-        elif ev == "hc_click":
-            kind, agent = "lottery", "NYC Housing Connect"
-        else:                                     # featured_click
-            kind, agent = "rerental", props.get("agent") or "—"
-        a = by_agent.setdefault(agent, {"agent": agent, "kind": kind,
-                                        "impressions": 0, "served": 0, "clicks": 0,
-                                        "clicks_measured": 0, "clicks_served": 0,
-                                        "clicks_ios": 0,
-                                        "_reach": set(), "_units": set()})
-        if ev == "featured_click" and (props.get("platform") or "web") == "ios":
-            a["clicks_ios"] += 1
-        k = kinds.setdefault(kind, {"kind": kind, "impressions": 0, "served": 0,
-                                    "clicks": 0, "clicks_measured": 0,
-                                    "clicks_served": 0, "_reach": set()})
-        field = ("impressions" if ev == "tile_impression"
-                 else "served" if ev == "tile_served" else "clicks")
-        a[field] += 1
-        k[field] += 1
-        if field == "clicks":
-            when = r.get("created_at") or ""
-            if first_impr and when >= first_impr:
-                a["clicks_measured"] += 1
-                k["clicks_measured"] += 1
-            if first_served and when >= first_served:
-                a["clicks_served"] += 1
-                k["clicks_served"] += 1
-        if r.get("visitor_id"):
-            a["_reach"].add(r["visitor_id"])
-            k["_reach"].add(r["visitor_id"])
-        if props.get("addr"):
-            a["_units"].add(props["addr"])
-
-    # Age of the served window, in hours. Timestamps are ISO from PostgREST.
+    # Age of the served window, in hours. Timestamps are ISO from Postgres.
     served_window_ready = False
     if first_served:
         try:
@@ -1733,11 +1651,8 @@ def _fac_adtiles(since):
         except Exception:
             served_window_ready = False
 
-    def finish(d, extra=()):
-        out = {kk: vv for kk, vv in d.items() if not kk.startswith("_")}
-        out["reach"] = len(d["_reach"])
-        for e in extra:
-            out[e] = len(d["_" + e])
+    def finish(d):
+        out = dict(d)
         # CTR is left null rather than 0 when nothing was measured — a "0.0%"
         # click rate on zero impressions reads as a tile nobody clicks — and
         # null again while the sample is too small to survive being quoted.
@@ -1753,39 +1668,39 @@ def _fac_adtiles(since):
             if (d["served"] >= AD_CTR_MIN and served_window_ready) else None
         return out
 
-    agents = sorted((finish(v, ("units",)) for v in by_agent.values()),
+    agents = sorted((finish(a) for a in agg.get("agents") or []),
                     key=lambda x: (-x["impressions"], -x["clicks"], x["agent"]))
+    kinds = {k["kind"]: k for k in agg.get("kinds") or []}
+    impressions = sum(a["impressions"] for a in agents)
+    served = sum(a["served"] for a in agents)
+    clicks_measured = sum(a["clicks_measured"] for a in agents)
+    clicks_served = sum(a["clicks_served"] for a in agents)
     return {
         "agents": agents,
         "kinds": [finish(kinds[k]) for k in ("rerental", "lottery") if k in kinds],
-        "impressions": sum(a["impressions"] for a in agents),
-        "served": sum(a["served"] for a in agents),
+        "impressions": impressions,
+        "served": served,
         "clicks": sum(a["clicks"] for a in agents),
-        "clicks_measured": sum(a["clicks_measured"] for a in agents),
-        "clicks_served": sum(a["clicks_served"] for a in agents),
-        "ctr": (100.0 * sum(a["clicks_measured"] for a in agents)
-                / sum(a["impressions"] for a in agents))
-               if sum(a["impressions"] for a in agents) >= AD_CTR_MIN else None,
-        "ctr_served": (100.0 * sum(a["clicks_served"] for a in agents)
-                       / sum(a["served"] for a in agents))
-                      if (sum(a["served"] for a in agents) >= AD_CTR_MIN
-                          and served_window_ready) else None,
+        "clicks_measured": clicks_measured,
+        "clicks_served": clicks_served,
+        "ctr": (100.0 * clicks_measured / impressions) if impressions >= AD_CTR_MIN else None,
+        "ctr_served": (100.0 * clicks_served / served)
+                      if (served >= AD_CTR_MIN and served_window_ready) else None,
         "served_window_ready": served_window_ready,
         "ctr_min": AD_CTR_MIN,
         "first_served": first_served,
-        # True when the query came back full: the numbers are then a recent
-        # slice, not the window asked for, and the card must say so.
-        "truncated": truncated,
-        "reach": len(set().union(*[v["_reach"] for v in by_agent.values()]) if by_agent else set()),
+        # Kept for the card: one aggregate has no page cap, so this can no
+        # longer be True. It was, for the month the paging silently dropped
+        # every click older than the newest 1,000 events.
+        "truncated": False,
+        "reach": agg.get("reach") or 0,
         "advertisers": len([a for a in agents if a["agent"] != "NYC Housing Connect"]),
         "first_impression": first_impr,
         # Re-rental clicks by client, by where the clicker came from, and by
         # the tile's borough — the three cuts the owner asked for (2026-09-16).
-        "click_platforms": platforms,
-        "click_sources": [{"source": k, "clicks": v} for k, v in
-                          sorted(sources.items(), key=lambda kv: (-kv[1], kv[0]))[:12]],
-        "click_boroughs": [{"borough": k, "clicks": v} for k, v in
-                           sorted(boros.items(), key=lambda kv: (-kv[1], kv[0]))],
+        "click_platforms": agg.get("click_platforms") or {},
+        "click_sources": (agg.get("click_sources") or [])[:12],
+        "click_boroughs": agg.get("click_boroughs") or [],
     }
 
 

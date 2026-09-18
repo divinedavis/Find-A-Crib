@@ -1207,9 +1207,21 @@
     return Math.max(s, t);
   }
 
-  function cacheKey(k){ return k + ':' + rangeKey; }
-  function feedUrl(k){
-    return SITES[k].endpoint + '?range=' + encodeURIComponent(rangeKey);
+  // The window the feed is asked for. Two buttons whose windows start on the
+  // same instant select the same rows (paintRangeMarks dims the repeat), so
+  // they share one request and one cache entry: "6 mo" and "3 mo" fetch and
+  // cache as "all" until they stop being repeats. Before this each repeat was
+  // its own 2–9 s fetch of byte-identical numbers — and on the API side its
+  // memo was keyed on a since-timestamp that moved every second, so those two
+  // windows never hit it at all.
+  function canonicalRange(r){
+    var start = rangeStart(r);
+    for(var i=0; i<RANGES.length; i++) if(rangeStart(RANGES[i]) === start) return RANGES[i];
+    return r;
+  }
+  function cacheKey(k, r){ return k + ':' + canonicalRange(r || rangeKey); }
+  function feedUrl(k, r){
+    return SITES[k].endpoint + '?range=' + encodeURIComponent(canonicalRange(r || rangeKey));
   }
 
   // Dim every button that repeats a window already offered, and say in words
@@ -1274,6 +1286,9 @@
   function wireRangeSwitch(){
     var box = document.getElementById('range-switch');
     if(!box) return;
+    // route() runs this on every sign-in event; the listener goes on once.
+    if(box.dataset.wired){ paintRangeSwitch(); return; }
+    box.dataset.wired = '1';
     box.addEventListener('click', function(e){
       var b = e.target.closest('button[data-range]');
       if(!b || b.dataset.range === rangeKey) return;
@@ -1298,22 +1313,44 @@
     paintRangeSwitch();
   }
 
-  // Keyed on site AND range, not site alone. Keyed on the site only, a range
-  // click landing while any fetch for the same site was still open was handed
-  // that fetch's promise instead of starting its own — the picker moved to the
-  // new window, the numbers stayed on the old one, and because rangeKey had
-  // already been updated, clicking the same button again did nothing. The
-  // 5-minute auto-refresh runs on a timer with no visible sign, and dashboard
-  // feeds take 0.6-3.9 s, so the collision needs no unusual clicking to hit.
-  function load(force){
-    var k = cacheKey(siteKey);
-    if(!force && inflight[k]) return inflight[k];
-    var pr = _load(force);
-    inflight[k] = pr;
-    pr.then(function(){ if(inflight[k]===pr) delete inflight[k]; },
-            function(){ if(inflight[k]===pr) delete inflight[k]; });
+  // One fetch per site+window, shared by everyone who asks for it: the boot
+  // route, a range click, the 5-minute refresh and the prefetch. Each used to
+  // keep its own — a click on a window the prefetch was already fetching
+  // started a second identical request and disabled the picker for the slower
+  // of the two — and the site-keyed version before that handed a range click
+  // whatever fetch was open, so the picker moved and the numbers did not.
+  // Resolves to {status, data?}; never rejects.
+  function fetchPayload(k, r, force){
+    var key = cacheKey(k, r);
+    if(!force && inflight[key]) return inflight[key];
+    var pr = (async function(){
+      var res;
+      try{ res = await feedFetch(feedUrl(k, r), await token()); }
+      catch(e){ return {status:'error'}; }
+      // A 401 means this token is dead, not that the owner is signed out.
+      // Force one refresh and retry before anything can show the sign-in card.
+      if(res.status===401){
+        var fresh = null;
+        try{ var rr = await sb.auth.refreshSession(); fresh = rr.data && rr.data.session; }catch(e){}
+        if(fresh){
+          session = fresh;
+          try{ res = await feedFetch(feedUrl(k, r), fresh.access_token); }
+          catch(e){ return {status:'error'}; }
+        }
+      }
+      if(res.status===403) return {status:'forbidden'};
+      if(res.status===401) return {status:'signin'};
+      if(!res.ok) return {status:'error'};
+      var data = await res.json();
+      cache[key]=data; cacheAt[key]=Date.now();
+      return {status:'ok', data:data};
+    })();
+    inflight[key] = pr;
+    pr.then(function(){ if(inflight[key]===pr) delete inflight[key]; },
+            function(){ if(inflight[key]===pr) delete inflight[key]; });
     return pr;
   }
+  function load(force){ return _load(force); }
 
   // A feed fetch with no ceiling is what turns a slow request into a frozen
   // board: the switcher stays disabled for as long as the request runs, and a
@@ -1335,88 +1372,65 @@
     return fetch(url, opts).finally(function(){ clearTimeout(timer); });
   }
 
-  // The site is captured once, up front: siteKey is a global and every await
-  // below is a chance for a switch click to change it. A slow NEMO response
-  // landing after the owner had already switched to Find A Crib used to run
-  // `cache[siteKey]=data` against the NEW key — NEMO's payload cached under
-  // 'fac' and painted through the Find A Crib renderer, wrong until a reload.
+  // The site AND the range are captured once, up front: both are globals and
+  // every await below is a chance for a click to change them. A slow NEMO
+  // response landing after a switch to Find A Crib used to cache and paint
+  // under the new site; and an all-time response landing after a flip to
+  // "This month" painted all-time numbers under a lit "This month" button —
+  // the picker said one window, the tiles showed another, and clicking the
+  // button again did nothing because it was already selected. Every paint
+  // below asks onScreen() first: a response for a window that is no longer
+  // selected goes into the cache and nowhere else.
   async function _load(force){
-    var k = siteKey;
+    var k = siteKey, r = rangeKey, ck = cacheKey(k, r);
     if(!session) return 'signin';
-    // The range is part of the cache identity. Keying on the site alone would
-    // hand "this month" the all-time payload the moment it had been loaded
-    // once — the picker would move and the numbers would not.
-    var ck = cacheKey(k);
+    function onScreen(){ return k===siteKey && ck===cacheKey(siteKey); }
     // A cached payload is only good for 5 minutes. This page used to fetch
     // once per load and never again — a tab left open overnight wore the
     // "Live data" badge over yesterday-evening numbers (and the backend's day
     // rolls at UTC midnight = 8 PM ET, so that snapshot reads all-zero).
     var freshFor = 5*60*1000;
     if(!force && cache[ck] && (Date.now()-(cacheAt[ck]||0)) < freshFor){
-      if(k===siteKey) paint(cache[ck]); return 'ok';
+      if(onScreen()) paint(cache[ck]);
+      return 'ok';
     }
     // STALE-WHILE-REVALIDATE. A payload older than five minutes is still the
     // right shape for this window, so paint it NOW and let the refetch below
-    // replace it when it lands. Before this, flipping back to a range you had
-    // looked at six minutes ago blanked the picker for the full 1–2.4 s the
-    // feed takes (measured 2026-09-03: all-time 1.9 s mean, today 0.9 s), the
-    // same wait as the first click — which is what made flipping feel slow.
-    // Only a paint of the range that is actually selected; a prefetch for
-    // another window must never draw over the one on screen.
-    if(!force && cache[ck] && k===siteKey && ck===cacheKey(siteKey)) paint(cache[ck]);
-    // When a refetch fails, stale numbers with their honest "Updated" stamp
-    // beat an error card or a blank pane — the data on screen was real once.
-    function staleOk(){
-      if(cache[ck]){ if(k===siteKey) paint(cache[ck]); return 'ok'; }
-      return null;
+    // replace it when it lands. Flipping back to a range looked at six minutes
+    // ago used to blank the picker for the full fetch, the same wait as the
+    // first click — which is what made flipping feel slow.
+    if(!force && cache[ck] && onScreen()) paint(cache[ck]);
+    var out = await fetchPayload(k, r, force);
+    if(out.status!=='ok'){
+      // When a refetch fails, stale numbers with their honest "Updated" stamp
+      // beat an error card or a blank pane — the data on screen was real once.
+      if(out.status==='error' && cache[ck]){ if(onScreen()) paint(cache[ck]); return 'ok'; }
+      return out.status;
     }
-    var res;
-    try{
-      res = await feedFetch(feedUrl(k), await token());
-    }catch(e){ return staleOk() || 'error'; }
-    // A 401 means this token is dead, not that the owner is signed out. Force
-    // one refresh and retry before anything can show him the sign-in card.
-    if(res.status===401){
-      var fresh = null;
-      try{ var rr = await sb.auth.refreshSession(); fresh = rr.data && rr.data.session; }catch(e){}
-      if(fresh){
-        session = fresh;
-        try{
-          res = await feedFetch(feedUrl(k), fresh.access_token);
-        }catch(e){ return staleOk() || 'error'; }
-      }
-    }
-    if(res.status===403) return 'forbidden';
-    if(res.status===401) return 'signin';
-    if(!res.ok) return staleOk() || 'error';
-    var data = await res.json();
-    cache[ck]=data;
-    cacheAt[ck]=Date.now();
-    if(k===siteKey) paint(data);
-    if(k===siteKey && ck===cacheKey(siteKey)) prefetchRanges(k);
+    if(onScreen()){ paint(out.data); prefetchRanges(k); }
     return 'ok';
   }
 
   // Warm the OTHER windows once the visible one has painted, so the first
-  // flip to any of them is instant instead of a 1–2 s fetch. Only one button
-  // per distinct window is fetched (6 mo, 3 mo and all time are the same
-  // payload until 25 December — see paintRangeMarks), one at a time so the
-  // feed is never asked for three ranges at once, and never for a window
-  // that already has a fresh payload. Costs at most 2–4 extra calls per page
-  // load against the backend's 120/hour, and nothing while a prefetch is
-  // already running. Only for sites whose feed takes a range.
+  // flip to any of them is instant instead of a fetch. One fetch per distinct
+  // window (repeats share a canonical range), one at a time so the feed is
+  // never asked for three ranges at once, and never for a window that already
+  // has a fresh payload or a fetch in flight. Costs at most 2 extra calls per
+  // page load against the backend's 120/hour. Only for sites whose feed takes
+  // a range.
   var prefetching = false;
   function prefetchRanges(k){
     if(prefetching || !SITES[k] || !SITES[k].ranged) return;
     var freshFor = 5*60*1000, seen = {}, todo = [];
     RANGES.forEach(function(r){
-      var st = String(rangeStart(r));
-      if(seen[st]) return;
-      seen[st] = true;
-      if(r === rangeKey) return;
-      var key = k + ':' + r;
+      var cr = canonicalRange(r);
+      if(seen[cr]) return;
+      seen[cr] = true;
+      if(cr === canonicalRange(rangeKey)) return;
+      var key = cacheKey(k, cr);
+      if(inflight[key]) return;                       // someone else will paint it
       if(cache[key] && (Date.now()-(cacheAt[key]||0)) < freshFor) return;
-      todo.push(r);
+      todo.push(cr);
     });
     if(!todo.length) return;
     prefetching = true;
@@ -1424,18 +1438,11 @@
       try{
         for(var i=0; i<todo.length; i++){
           if(k!==siteKey || !session || document.hidden) break;
-          var r = todo[i], key = k + ':' + r;
-          if(inflight[key]) continue;
-          try{
-            var res = await feedFetch(SITES[k].endpoint + '?range=' + encodeURIComponent(r),
-                                      await token());
-            if(!res.ok) break;               // a bad token or a limit: stop, don't retry
-            var data = await res.json();
-            cache[key]=data; cacheAt[key]=Date.now();
-            // The owner may have flipped to this very window while it was in
-            // flight; if so it is the one on screen and wants these numbers.
-            if(k===siteKey && r===rangeKey) paint(data);
-          }catch(e){ break; }
+          var out = await fetchPayload(k, todo[i]);
+          if(out.status!=='ok') break;               // a bad token or a limit: stop, don't retry
+          // The owner may have flipped to this very window while it was in
+          // flight; if so it is the one on screen and wants these numbers.
+          if(k===siteKey && cacheKey(k, todo[i])===cacheKey(siteKey)) paint(out.data);
         }
       } finally { prefetching = false; }
     })();

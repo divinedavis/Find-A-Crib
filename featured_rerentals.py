@@ -140,7 +140,16 @@ EXTRACT_JS = r"""() => {
   // /hpd/home, and denying it sent every one of their tiles to a Drive PDF.
   const NAVISH = /\/(about|contact|careers?|privacy|terms|login|sign-?in|team|news|blog|faq|accessibility|residents?|capabilities|vendors?)\b/i;
   const ACTION = /\b(apply|view|details?|more|learn|floor\s*plans?|availab|listings?|inquire|see)\b/i;
-  const JUNK_HOST = /(facebook|twitter|x|instagram|linkedin|youtube|tiktok|pinterest|accessibe|google\.com\/maps)\./i;
+  // Tested against host + path: the google.com/maps entry below never matched
+  // when only the hostname was tested, and a Tax Solute tile shipped pointing
+  // at Google Maps (2026-09-18).
+  const JUNK_HOST = /(facebook|twitter|x|instagram|linkedin|youtube|tiktok|pinterest|accessibe)\.|google\.[a-z.]+\/maps|maps\.google\.|goo\.gl\/maps|maps\.app\.goo\.gl/i;
+  // An application form is not the apartment. Taxace NY publishes no page per
+  // unit — each tile on their board has an "Apply" button straight into a
+  // ClickUp form — and the card sent people into a form for an apartment they
+  // had not seen yet (owner, 2026-09-18). A form link never counts as the
+  // listing; the board, scrolled to the unit, does (see board_link).
+  const FORMISH = /forms\.clickup\.com|docs\.google\.com\/forms|forms\.gle|jotform\.|typeform\.com|airtable\.com\/(shr|app)|forms\.office\.com|formstack\.|cognitoforms\.|wufoo\.|123formbuilder\.|surveymonkey\./i;
   // A flyer is a document, not a page you can apply on. Tax Solute links both
   // the PDF and the building's own section of their board from the same card,
   // and the PDF names the building so it outscores everything — but "Apply on
@@ -169,7 +178,8 @@ EXTRACT_JS = r"""() => {
     for (const a of cands) {
       let u;
       try { u = new URL(a.getAttribute('href') || '', location.href); } catch (e) { continue; }
-      if (!/^https?:$/.test(u.protocol) || JUNK_HOST.test(u.hostname)) continue;
+      if (!/^https?:$/.test(u.protocol) || JUNK_HOST.test(u.hostname + u.pathname)) continue;
+      if (FORMISH.test(u.hostname + u.pathname)) continue;
       const path = u.pathname.replace(/\/+$/, '');
       const isRoot = path === '';
       const samePage = path === herePath && !u.search;
@@ -377,6 +387,24 @@ def clean_address(line):
     return s.strip(" ,-·|")[:80]
 
 
+def board_link(page_url, address):
+    """The agent's board, scrolled to this apartment.
+
+    When an agent publishes no page per unit (Taxace NY, Clinton Management,
+    K&G Upright) the board is the only honest link — but a board of 32 units
+    with nothing pointing at the right one is a hunt. A text fragment
+    (`#:~:text=`, Safari 16.1+, every Chromium) scrolls to and highlights the
+    first match on the page; the number plus the first street word ("1952
+    Anthony") is distinctive on a board and survives the punctuation the agent
+    prints around it. A browser that ignores fragments simply opens the board.
+    """
+    m = re.match(r'\s*(\d+[\w-]*\s+[A-Za-z0-9]+)', address or "")
+    base = page_url.split("#", 1)[0]
+    if not m:
+        return base
+    return base + "#:~:text=" + urllib.parse.quote(m.group(1), safe="")
+
+
 def parse_card(c, agent, page_url):
     """A raw DOM candidate -> a listing record, or None if it isn't one."""
     lines = c["lines"]
@@ -425,7 +453,7 @@ def parse_card(c, agent, page_url):
         "income_1p_max": one_person_income(lines),
         "units": int(um.group(1)) if um else None,
         "beds": bm.group(1).lower() if bm else None,
-        "href": c["href"] or page_url,
+        "href": c["href"] or board_link(page_url, address),
         # Whether that link is the apartment or just the board it sits on. The
         # tile says which, because "Apply on their site" pointing at a grid of
         # 35 other apartments is a promise the link doesn't keep.

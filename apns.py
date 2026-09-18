@@ -159,7 +159,8 @@ def probe(cfg: dict) -> int:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--probe", action="store_true")
-    ap.add_argument("--to")
+    ap.add_argument("--to", help="device token (64 hex)")
+    ap.add_argument("--to-email", help="every phone registered to this account (needs SUPABASE_SERVICE_KEY)")
     ap.add_argument("--env", default="production")
     ap.add_argument("--title", default="Find A Crib")
     ap.add_argument("--body", default="Test alert")
@@ -170,8 +171,28 @@ def main() -> int:
         sys.exit("APNS_KEY_PATH / APNS_KEY_ID / APNS_TEAM_ID / APNS_TOPIC not set, or the key file is missing")
     if a.probe:
         return probe(cfg)
+    if a.to_email:
+        # The dispatcher's own lookup, so a test goes exactly where a real
+        # alert would.
+        key = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+        url = os.environ.get("SUPABASE_URL", "https://dbaifotzwlxjvsxjohjt.supabase.co")
+        if not key:
+            sys.exit("SUPABASE_SERVICE_KEY not set (growth.env)")
+        import urllib.request
+        req = urllib.request.Request(f"{url}/rest/v1/rpc/device_tokens_for_emails",
+                                     data=json.dumps({"p_emails": [a.to_email]}).encode(),
+                                     headers={"apikey": key, "Authorization": f"Bearer {key}",
+                                              "Content-Type": "application/json"}, method="POST")
+        with urllib.request.urlopen(req, timeout=20) as r:
+            devices = json.loads(r.read() or b"[]")
+        if not devices:
+            sys.exit(f"no phone registered for {a.to_email} — install the app, sign in, turn alerts on")
+        for d in devices:
+            r = send(d["token"], d.get("env") or "production", a.title, a.body, a.url, cfg=cfg)
+            print(d["token"][:8] + "…", json.dumps(r))
+        return 0
     if not a.to:
-        sys.exit("--to <device token hex> or --probe")
+        sys.exit("--to <device token hex>, --to-email <address> or --probe")
     print(json.dumps(send(a.to, a.env, a.title, a.body, a.url, cfg=cfg)))
     return 0
 

@@ -470,6 +470,7 @@
           <button data-site="nemo">🏠 NEMO Gutter</button>
           <button data-site="crease">👔 Crease</button>
           <button data-site="trent">🎨 Fresh Spaces</button>
+          <button data-site="marracat">🛍️ Marracat</button>
         </div>
         <span class="live-pill"><span class="live-dot"></span> Live data</span>
         <!-- Scopes every tile that counts something over a period, on both
@@ -663,6 +664,37 @@
           </div>
           <div class="ads-tiles" id="trent-bookings"></div>
           <div class="callout" id="trent-bookings-callout" style="margin-top:16px"></div>
+        </div>
+      </div>
+
+      <!-- ===== Marracat only ===== -->
+      <div id="marracat-a" class="hidden">
+        <!-- orders: the only number that means money for the brands -->
+        <div class="card mb18" id="sec-mc-orders">
+          <div class="card-head-row">
+            <div><h2>Shoppers &amp; orders — the money signal</h2><div class="card-sub">An order is counted only when Shopify’s checkout reports it complete inside the app, and only for signed-in shoppers — a guest’s orders stay on their phone until they sign in. The money goes straight to each brand; Marracat never holds it. Counts only: no shopper’s name, email or order reaches this page.</div></div>
+          </div>
+          <div class="ads-tiles" id="mc-orders"></div>
+          <div class="callout" id="mc-orders-callout" style="margin-top:16px"></div>
+        </div>
+
+        <!-- the iPhone app -->
+        <div class="card mb18" id="sec-mc-app">
+          <div class="card-head-row">
+            <div><h2>iPhone app — who is opening it?</h2><div class="card-sub">From marracat.com’s server log. The app names itself and its build on every request and checks for a newer catalog once per cold launch, so a launch is that check. It sends no device id, so a device is an address + build + iOS version — a phone that changes network counts again.</div></div>
+          </div>
+          <div class="ads-tiles" id="mc-app"></div>
+          <div id="mc-builds" style="margin-top:18px"></div>
+          <div class="callout" id="mc-app-callout" style="margin-top:16px"></div>
+        </div>
+
+        <!-- the web storefront -->
+        <div class="card mb18" id="sec-mc-web">
+          <div class="card-head-row">
+            <div><h2>Web storefront — marracat.com</h2><div class="card-sub">A visitor is a browser that loaded the catalog, which only happens once the storefront’s JavaScript runs — a scraper that takes the page and leaves is never counted. Bots and datacenter addresses are removed.</div></div>
+          </div>
+          <div class="ads-tiles" id="mc-web"></div>
+          <div class="callout" id="mc-web-callout" style="margin-top:16px"></div>
         </div>
       </div>
 
@@ -1069,6 +1101,14 @@
       nav:[['top','▦','Dashboard'],['sec-market','◎','The market'],
            ['sec-trent-search','◉','Search'],['sec-trent-bookings','⇅','Bookings']]
     },
+    marracat:{
+      mark:'🛍️', name:'Marracat', endpoint:'/api/dashboard-marracat',
+      title:'Marracat', sub:'Black-owned brands in one app — who is opening it, who signed up, and what they bought.',
+      live:'https://marracat.com', foot:'iPhone app + marracat.com',
+      blocks:['marracat-a'],
+      nav:[['top','▦','Dashboard'],['sec-mc-orders','⇅','Shoppers & orders'],
+           ['sec-mc-app','▢','iPhone app'],['sec-mc-web','◉','Web storefront']]
+    },
     nemo:{
       mark:'🏠', name:'NEMO Gutter', endpoint:'/api/dashboard-nemo',
       title:'NEMO Seamless Gutter', sub:'Web traffic, search rankings &amp; leads — Eric’s site, same template.',
@@ -1451,9 +1491,13 @@
   function paint(data){
     applyShell();
     paintRangeSwitch();
+    // Find A Crib's goals card sits outside fac-a, so without this every other
+    // tab showed it as an empty panel.
+    el('sec-goals').classList.toggle('hidden', siteKey!=='fac');
     if(siteKey==='nemo') renderNemo(session.user, data);
     else if(siteKey==='crease') renderCrease(session.user, data);
     else if(siteKey==='trent') renderTrent(session.user, data);
+    else if(siteKey==='marracat') renderMarracat(session.user, data);
     else { render(session.user, data); renderGoals(data); }
   }
 
@@ -3061,6 +3105,121 @@
 
   // An ISO day as a person would say it. Guards the null so a missing date
   // renders as a dash rather than "Invalid Date" in the middle of a sentence.
+  // ---- Marracat ----------------------------------------------------------
+  // Computed on Marracat's own droplet (web/metrics/marracat_metrics.py in
+  // the Marracat repo) and fetched by the API with a shared key, so a payload
+  // with ok:false is "couldn't reach it", said on the page, not an error.
+  function renderMarracat(user, d){
+    var email=(user&&user.email)||'';
+    el('avatar').textContent=(email[0]||'D').toUpperCase();
+    var ts=d.generated_at?new Date(d.generated_at):new Date();
+    var upd='Updated '+ts.toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+    if((d.warnings||[]).length) upd+=' · '+d.warnings.join(' ');
+    el('updated').textContent=upd;
+
+    var A=d.app||{}, W=d.web||{}, S=d.shoppers||{};
+    el('nav-foot').textContent = d.log_since ? ('Since '+fmtDay(d.log_since)) : 'iPhone app + marracat.com';
+    el('donut-title').textContent='Where shoppers use Marracat';
+    el('donut-sub').textContent='App devices vs. web visitors, owner excluded';
+    el('sec-traffic').classList.remove('hidden');
+    el('sec-traffic').classList.add('cols-2');
+    el('card-today').classList.remove('hidden');
+    el('today-sub').textContent='From the server log and the account database, every five minutes';
+    el('spark-sub').textContent='App devices plus web visitors per day, owner excluded';
+
+    var usd=function(v){ return '$'+n(v).toLocaleString('en-US',{minimumFractionDigits:n(v)%1?2:0,maximumFractionDigits:2}); };
+    var tiles=[
+      {ic:'📱',v:comma(n(A.devices)),l:'App devices',
+       own:comma(n(A.launches))+' launches',
+       bench:n(A.apple_review_devices)?(comma(n(A.apple_review_devices))+' more were Apple App Review'):''},
+      {ic:'🌐',v:comma(n(W.visitors)),l:'Web visitors',
+       own:comma(n(W.product_views))+' product pages opened'},
+      {ic:'👤',v:comma(n(S.accounts)),l:'Shopper accounts',
+       own:comma(n(S['new']))+' new in this range',
+       bench:n(S.owner_excluded)?'your own account not counted':''},
+      {ic:'🧾',v:comma(n(S.orders)),l:'Orders placed',
+       own:comma(n(S.items))+' items · '+comma(n(S.brands))+' brands'},
+      {ic:'💵',v:usd(S.gmv_usd),l:'Sales sent to brands',accent:true,
+       own:'order totals, USD, paid to the brands directly'}
+    ];
+    el('tiles').innerHTML=tiles.map(function(t){
+      return '<div class="tile'+(t.accent?' accent':'')+'">'+
+        '<div class="t-ico">'+t.ic+'</div><div class="t-val">'+t.v+'</div><div class="t-lbl">'+t.l+'</div>'+
+        (t.own?'<div class="t-own">'+esc(t.own)+'</div>':'')+
+        (t.bench?'<div class="t-bench">'+esc(t.bench)+'</div>':'')+'</div>';
+    }).join('');
+
+    var split=[{name:'iPhone app',hex:'#4C7DF0',val:n(A.devices)},{name:'Web storefront',hex:'#F0B429',val:n(W.visitors)}];
+    if(n(A.devices)+n(W.visitors)) drawDonut(split,'shoppers');
+    else drawDonut([{name:'Nobody yet',hex:'#C9CCD6',val:1}],'shoppers');
+    el('returns-callout').innerHTML = !d.ok
+      ? 'Marracat’s numbers could not be fetched just now. '+esc((d.warnings||[]).join(' '))
+      : (n(A.devices)+n(W.visitors)
+          ? '<b>'+pctS(n(A.devices),n(A.devices)+n(W.visitors))+' of shoppers came through the app.</b> '+
+            'Your own phone, Mac and work network are left out'+(n(A.owner_devices_excluded)?' ('+comma(n(A.owner_devices_excluded))+' of your devices this range)':'')+
+            ' — but a phone on cellular that never signed in can still slip through, so read small numbers as an upper bound.'
+          : '<b>No shoppers outside your own devices in this range.</b>');
+
+    // ---- orders -----------------------------------------------------------
+    var prov=S.providers||{};
+    el('mc-orders').innerHTML=[
+      {v:comma(n(S.orders)),l:'Orders placed',sub:S.first_order?('first '+fmtDay(S.first_order)):'none yet from a shopper'},
+      {v:usd(S.gmv_usd),l:'Sales sent to brands',sub:'order totals, USD'},
+      {v:comma(n(S.accounts)),l:'Shopper accounts',sub:comma(n(prov.google))+' Google · '+comma(n(prov.apple))+' Apple'+(n(prov.web)?' · '+comma(n(prov.web))+' web':'')},
+      {v:comma(n(S['new'])),l:'New accounts',sub:'signed up in this range'},
+      {v:comma(n(S.saved)),l:'Items saved',sub:'across shoppers, right now'},
+      {v:comma(n(S.searches)),l:'Recent searches',sub:comma(n(S.viewed))+' recently viewed products'}
+    ].map(creaseTile).join('');
+    el('mc-orders-callout').innerHTML = !n(S.accounts)
+      ? '<b>No shopper has signed in yet — only you.</b> Orders are counted from signed-in accounts, so until someone signs in this card stays at zero even if a guest buys something.'
+      : (!n(S.orders)
+          ? '<b>'+comma(n(S.accounts))+' shopper'+(n(S.accounts)===1?' has':'s have')+' signed in, and none has placed an order in this range.</b>'
+          : '<b>'+comma(n(S.orders))+' order'+(n(S.orders)===1?'':'s')+' worth '+usd(S.gmv_usd)+'</b> sent to '+comma(n(S.brands))+' brand'+(n(S.brands)===1?'':'s')+'.');
+
+    // ---- app --------------------------------------------------------------
+    el('mc-app').innerHTML=[
+      {v:comma(n(A.devices)),l:'Devices',sub:'address + build + iOS version'},
+      {v:comma(n(A.launches)),l:'Launches',sub:'cold starts that checked the catalog'},
+      {v:comma(n(A.apple_review_devices)),l:'Apple App Review',sub:'launches from Apple’s own network'},
+      {v:comma(n(A.owner_devices_excluded)),l:'Yours, excluded',sub:'signed in as you, SSH, or your work network'}
+    ].map(creaseTile).join('');
+    el('mc-builds').innerHTML=(A.builds||[]).map(function(b){
+      return '<div class="act-row"><div class="act-l"><div class="act-ico">📦</div>'+
+        '<div><div class="act-name">Build '+esc(String(b.build))+'</div><div class="act-desc">devices running it</div></div></div>'+
+        '<div class="act-val">'+comma(n(b.devices))+'</div></div>';
+    }).join('') || '<div class="disclaim">No app launches from anyone but you in this range.</div>';
+    el('mc-app-callout').innerHTML = n(A.devices)
+      ? 'The app is still in TestFlight and App Review, so every device here is a tester or someone you sent a link to — not the public yet.'
+      : 'The app is still in TestFlight and App Review. Once it is on the App Store, launches here are the first sign of real use.';
+
+    // ---- web --------------------------------------------------------------
+    el('mc-web').innerHTML=[
+      {v:comma(n(W.visitors)),l:'Visitors',sub:'browsers that loaded the catalog'},
+      {v:comma(n(W.visits)),l:'Visits',sub:'one per visitor per day'},
+      {v:comma(n(W.product_views)),l:'Product pages',sub:'opened on the web'},
+      {v:comma((W.referrers||[]).length),l:'Referring sites',sub:(W.referrers||[]).length?esc(W.referrers[0].host):'all direct so far'}
+    ].map(creaseTile).join('');
+    el('mc-web-callout').innerHTML = !n(W.visitors)
+      ? 'Nobody outside your own devices loaded the web storefront in this range.'
+      : '<b>'+comma(n(W.visitors))+' visitor'+(n(W.visitors)===1?'':'s')+' opened '+comma(n(W.product_views))+' product page'+(n(W.product_views)===1?'':'s')+'.</b> '+
+        (d.site_log_since?'Per-site logging began '+fmtDay(d.site_log_since)+'; before that, visits were picked out of the server’s shared log by the storefront’s own API calls.':'');
+
+    el('today-list').innerHTML=[
+      {ic:'📱',name:'App devices today',desc:'owner excluded',val:comma(n(A.devices_today))},
+      {ic:'🚀',name:'App launches today',desc:'cold starts',val:comma(n(A.launches_today))},
+      {ic:'🌐',name:'Web visitors today',desc:'unique',val:comma(n(W.visitors_today))},
+      {ic:'🧾',name:'Orders today',desc:'signed-in shoppers',val:comma(n(S.orders_today))},
+      {ic:'👤',name:'New accounts today',desc:'sign-ups',val:comma(n(S.new_today))}
+    ].map(function(r){
+      return '<div class="act-row"><div class="act-l"><div class="act-ico">'+r.ic+'</div>'+
+        '<div><div class="act-name">'+r.name+'</div><div class="act-desc">'+r.desc+'</div></div></div>'+
+        '<div class="act-val">'+r.val+'</div></div>';
+    }).join('');
+    renderSpark((d.sparkline||[]).map(function(p){
+      var v=n(p.app_devices)+n(p.web_visitors); return {date:p.date, views:v, visitors:v};
+    }));
+  }
+
   function fmtDay(iso){
     if(!iso) return '—';
     var dt=new Date(String(iso).length===7 ? iso+'-01T00:00' : iso+'T00:00');

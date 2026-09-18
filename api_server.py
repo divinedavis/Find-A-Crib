@@ -21,6 +21,7 @@ import build_log             # which run-log lines are work that shipped
 import crease_metrics
 import nemo_metrics          # NEMO Seamless Gutter traffic, same droplet
 import trent_metrics         # Trent's Fresh Spaces traffic, same droplet
+import marracat_metrics      # Marracat, fetched from its own droplet
 import claude_usage          # Anthropic API spend, owner-only tab
 
 DATA_DIR = os.environ.get("DATA_DIR", ".")
@@ -227,7 +228,8 @@ def gate():
                            "/dashboard-claude",  # added 2026-09-06: it was answering missing_api_key (401) on every dashboard load
                            "/dashboard-nemo",    # own Supabase-token owner gate
                            "/dashboard-crease",
-                           "/dashboard-trent"):
+                           "/dashboard-trent",
+                           "/dashboard-marracat"):
         return
     # Header only — never accept the key in the query string, where it would be
     # captured in nginx access logs, browser history, and Referer headers.
@@ -2509,6 +2511,29 @@ def dashboard_trent():
         rng = "all"
     try:
         return jsonify(trent_metrics.build_cached(rng=rng))
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
+
+
+@app.route("/dashboard-marracat")
+def dashboard_marracat():
+    """Marracat — the dashboard's fifth site tab.
+
+    Owner scope only: another of the owner's businesses, not Eric's. The
+    numbers are computed on Marracat's own droplet and fetched with a shared
+    key (see marracat_metrics.py). Counts only: no shopper's name, email or
+    order crosses this endpoint.
+    """
+    if rate_limited("dashboard", 120, 3600):
+        return _too_many()
+    denied = _dashboard_denial(_dashboard_auth(), ("ok",))
+    if denied:
+        return denied
+    rng = (request.args.get("range") or "all").lower()
+    if rng not in DASHBOARD_RANGES:
+        rng = "all"
+    try:
+        return jsonify(marracat_metrics.build_cached(rng=rng))
     except Exception:
         return jsonify(error="temporarily_unavailable"), 503
 

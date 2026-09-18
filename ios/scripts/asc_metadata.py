@@ -76,45 +76,46 @@ Privacy Policy: https://findacrib.com/privacy/
 Find A Crib is an independent, informational tool. It is not a broker, does not list apartments, and takes no fee. Data: NYS Homes and Community Renewal rent-stabilization register (2024), NYC HPD open data, HUD FY2026 Fair Market Rents, HousingSearch.ny.gov, advertised rents from Zumper, LA County Assessor parcel data under LAHD's RSO criteria, the SF Rent Board Housing Inventory via DataSF, and the DC DHCD RentRegistry.
 """
 
-WHATS_NEW = """Every city now has a building record, not just New York.
+WHATS_NEW = """Alerts on your phone. Turn on alerts and the minute a housing lottery or re-rental opens in your borough, it arrives as a notification on your iPhone, alongside the email. Tap it to go straight to the listing.
 
-Los Angeles: housing code violations with what was cited, complaints to LAHD, eviction notices marked at-fault or no-fault, tenant buyouts with the payment — and neighborhoods, so you can finally filter by one.
+Re-rentals in your results. Income-restricted apartments that HPD-approved marketing agents are re-renting right now appear in the list, marked Rerental, with a button to apply on the agent's site. They go fast and are not on the big listing sites.
 
-San Francisco: eviction notices with the grounds cited, Rent Board petitions and buyout agreements for the block, plus the reported rent split by bedroom count.
+The map follows you. Pan or zoom and the count shows how many buildings are in view; tap List to see just those.
 
-Washington DC: the owner on the tax roll, the year built, the unit mix and the assessor's condition.
+A skyline for every city. Pull down on your results for New York, San Francisco, Washington DC and Los Angeles landmarks under a night sky.
 
-Where a city publishes nothing, the app now says so rather than leaving a blank.
+Faster launch, smoother map, quicker filters, and the header now names the city you are searching in.
 """
 
-REVIEW_NOTES = """VERSION 1.2.0 (build __BUILD__) — per-city building records
+REVIEW_NOTES = """VERSION 1.2.1 (build __BUILD__) — push alerts, re-rentals in results, map follows the viewport
 
-WHAT CHANGED SINCE 1.1.1
-Until now the building screen was New York's in every city: a Los Angeles parcel was captioned with a New York agency's name and carried New York violation tiles that had no data behind them. Each city now shows the record its own housing authority publishes, in that authority's words. Nothing about how the app is used has changed — same screens, same navigation, more on the building page.
+WHAT CHANGED SINCE 1.2.0
+1. Push notifications for borough alerts. A signed-in user who turns on alerts (Profile > Alerts, or the Alerts button on the results list) gets a notification the moment a new housing lottery, re-rental or voucher listing matching their boroughs opens. The same alert is emailed; push is an additional channel. Notifications are never required to use the app.
+2. Re-rental tiles in the results list. Income-restricted apartments that HPD-approved marketing agents publish on their own websites appear in the list, labelled "Rerental" (first as the 3rd card, then every 8 to 15 cards). The button opens the agent's own page in Safari. We take no fee and do not handle applications.
+3. The map's count follows the visible region and "List" opens on the buildings in view.
+4. A decorative city skyline at the top of the results list.
 
-Los Angeles — Los Angeles Housing Department property look-ups (data.lacity.org, public, no key): code violations with the conditions cited, complaint cases, eviction notices split at-fault / no-fault, tenant buyouts, enforcement cases. LA parcels also carry neighborhood names for the first time, from the LA Times Mapping L.A. boundaries, so the Location field offers neighborhoods there instead of ZIP areas.
-San Francisco — SF Rent Board eviction notices, petitions and buyout agreements via DataSF. The Rent Board anonymises these to the block exactly as it does the rent data, and the app says so on screen.
-Washington DC — the DC Office of Tax and Revenue assessor roll and Integrated Tax System: owner of record, year built, unit mix, condition, assessed value. Owner names are published verbatim in DC's own open data; no contact details accompany them.
+NOTIFICATIONS — HOW THE PERMISSION IS ASKED
+Once, a few seconds after launch, while the notification permission is still undetermined, the app shows its own card ("Get alerts on this phone?") explaining what notifications are used for. "Turn on" shows the iOS permission dialog; "Not now" dismisses it for a week. If the user declines the iOS dialog the app never asks again; it points to Settings instead. Notifications are only ever borough alerts the user subscribed to: no marketing, no promotional pushes.
+To see a push in review: sign in (Sign in with Apple is fine), open Profile > Alerts, pick a borough, tap "Turn on alerts", allow notifications. Alerts arrive when a matching listing opens; the feeds are checked every 10 minutes.
 
-To test: Search tab, tap City, pick Los Angeles, Search, open any building, scroll to "LAHD record". Repeat for San Francisco ("Rent Board record") and Washington DC ("Owner & assessor record").
+APP STORE RATING
+The app calls StoreKit's requestReview after a building is saved or alerts are turned on, at most once per app version and never within 120 days of the previous request. Profile also has a "Rate Find A Crib" link to the App Store review page.
 
-WHAT THE APP DOES NOT CLAIM
-San Francisco publishes code violations by street address and this map is anonymised to the block, so joining the two would invent precision the source removed; Washington DC's Department of Buildings publishes no violation data at all. In both cities the app says that in a sentence and links to the city's own lookup, rather than showing an empty panel that would read as a clean building. Los Angeles does not grade violations by hazard class, and its violation file is a rolling window rather than a lifetime register, so the app prints the dates it covers.
+USAGE ANALYTICS
+The app records what is done in it (screens opened, searches by their filters, taps on listing links), linked to the account when signed in, declared under Product Interaction / Other Usage Data (Analytics) in App Privacy. No advertising identifier, no tracking, no third-party SDK. Profile > "Share anonymous usage" turns it off.
 
 WHERE THE DATA COMES FROM
-Every city is a public register, fetched as static JSON from findacrib.com, no key and no account: New York — NYS Homes and Community Renewal rent-stabilization register; Los Angeles — LA County Assessor parcels meeting LAHD's RSO criteria (2+ units, built on or before Oct 1, 1978), labelled "likely" in the app because a few exemptions cannot be derived from tax data; San Francisco — SF Rent Board Housing Inventory via DataSF, anonymised by the Rent Board to the block; Washington DC — DHCD RentRegistry. The app is informational, is not a broker, lists no apartments and takes no fee.
-
-NEW YORK-ONLY FEATURES
-Advertised rents, vouchers, HPD violations and lotteries are New York feeds. In the other three cities those filters are not shown at all, rather than shown and returning nothing.
+Every city is a public register, fetched as static JSON from findacrib.com, no key and no account: New York — NYS Homes and Community Renewal rent-stabilization register; Los Angeles — LA County Assessor parcels meeting the RSO criteria; San Francisco — SF Rent Board housing inventory, anonymised to the block; Washington DC — DHCD rental registrations. Re-rentals come from the marketing agents' public listing pages.
 
 SIGN-IN
-No account is needed to use the app. Signing in is optional; it syncs saved buildings with our website and reveals the building's registered managing agent (public HPD registration data). Sign in with Apple is the first option on the Profile tab when signed out, above Google and email. It limits collection to name and email, supports Hide My Email, and nothing is collected for advertising. No demo account is required — create one in seconds with any email, or use any Google account. Account deletion is under Profile → Delete account.
+No account is needed to use the app. Signing in is optional; it syncs saved buildings with our website, enables alerts, and reveals the building's registered managing agent (public HPD registration data). Sign in with Apple, Google or email.
 
 LOCATION
-The app never requests location permission. The map is Apple Maps; "Search this area" uses the visible map region, not the device location.
+The app never requests location permission. The map is Apple Maps; the in-view count and List use the visible map region, not the device location.
 
 DATA REFRESH
-On launch the app refreshes public JSON files from findacrib.com; without a network it falls back to the copy bundled in the app, so New York works offline in review. The three other cities download on first use — each is two small files, the map data and the building records.
+On launch the app refreshes public JSON files from findacrib.com; without a network it falls back to the copy bundled in the app, so New York works offline in review. The three other cities download on first selection.
 
 CONTACT
 Any question at all: the email and phone above.

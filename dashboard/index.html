@@ -2757,12 +2757,16 @@
   function renderGoals(d){
     if (rangeKey === 'all') { goalsBase = d; return paintGoals(d); }
     if (goalsBase) return paintGoals(goalsBase);
+    // The all-time payload comes through the shared cache and fetch, never a
+    // request of its own. This used to call feedFetch directly, so on a
+    // "This month" boot the page fetched all-time twice back to back: once
+    // here, and once more when the prefetch that follows the first paint
+    // found nothing in the cache under that key.
+    var have = cache[cacheKey('fac', 'all')];
+    if (have) { goalsBase = have; return paintGoals(have); }
     paintGoals(null);                       // "measuring" state, not a zero
-    token().then(function(t){
-      if(!t) return;
-      return feedFetch('/api/dashboard-metrics?range=all', t)
-        .then(function(r){ return r.ok ? r.json() : null; })
-        .then(function(all){ if(all){ goalsBase = all; paintGoals(all); } });
+    fetchPayload('fac', 'all').then(function(out){
+      if(out.status==='ok'){ goalsBase = out.data; paintGoals(out.data); }
     }).catch(function(){ /* the card stays in its measuring state */ });
   }
 

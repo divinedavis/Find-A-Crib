@@ -4,24 +4,24 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
-<title>Find A Crib — Owner Dashboard</title>
+<title>Owner Dashboard</title>
 <!-- Link preview. This URL gets texted, and with no og: tags iMessage renders
      a bare grey rectangle showing only the domain, which reads like a broken
      link. noindex above still applies: og: tags describe the card, they don't
      invite crawlers, and the page's data stays behind the sign-in gate. -->
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Find A Crib">
+<meta property="og:site_name" content="Divine Davis">
 <meta property="og:title" content="Owner Dashboard">
 <meta property="og:description" content="Web traffic, search rankings and leads — updated live, every day.">
-<meta property="og:url" content="https://findacrib.com/dashboard/">
-<meta property="og:image" content="https://findacrib.com/dashboard/og-dashboard.png">
+<meta property="og:url" content="https://divinedavis.com/dashboard/">
+<meta property="og:image" content="https://divinedavis.com/dashboard/og-dashboard.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Owner Dashboard — web traffic, search rankings and leads.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Owner Dashboard">
 <meta name="twitter:description" content="Web traffic, search rankings and leads — updated live, every day.">
-<meta name="twitter:image" content="https://findacrib.com/dashboard/og-dashboard.png">
+<meta name="twitter:image" content="https://divinedavis.com/dashboard/og-dashboard.png">
 <link rel="apple-touch-icon" href="/dashboard/og-dashboard.png">
 <!-- Paint the saved theme before the first frame. Without this the page flashes
      light for one frame on every load, which is worst in the dark. The profile
@@ -682,8 +682,11 @@
   </main>
 </div>
 
-<script src="/config.js"></script>
-<script src="/static/supabase/supabase.js"></script>
+<!-- Served from divinedavis.com/dashboard/, so the Supabase config and client
+     ship beside the page; /api/dashboard-* is proxied to findacrib.com by the
+     divinedavis.com nginx (see scripts/deploy_dashboard.sh). -->
+<script src="/dashboard/supabase-config.js?v=1"></script>
+<script src="/dashboard/supabase.js?v=1"></script>
 <script>
 (function(){
   "use strict";

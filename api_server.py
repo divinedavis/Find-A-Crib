@@ -30,7 +30,7 @@ STRIPE_SECRET = os.environ.get("STRIPE_SECRET_KEY", "")
 STRIPE_WH_SECRET = os.environ.get("STRIPE_API_WEBHOOK_SECRET", "")
 PRICES = {"pro": os.environ.get("STRIPE_PRICE_PRO", ""),
           "business": os.environ.get("STRIPE_PRICE_BUSINESS", "")}
-# Owner-only analytics dashboard (findacrib.com/dashboard). The anon key is the
+# Owner-only analytics dashboard (divinedavis.com/dashboard/, proxied here). The anon key is the
 # public browser key (safe in source); it's only used server-side here to ask
 # Supabase Auth "who is this access token?" — the real gate is the email check.
 ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRiYWlmb3R6d2x4anZzeGpvaGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzI2MTQsImV4cCI6MjA5Njk0ODYxNH0.5hoLfoKkNnEnFuu7jsfCTq_rUQqn8gf32BEI9qiyCI4"

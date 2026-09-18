@@ -20,7 +20,7 @@ from . import emailkit, keywords, ledger, review, searchconsole
 # Pages published across NYC/SF/LA/DC. The gap between this and the pages that
 # have ever earned an impression is the single biggest number in the report.
 PUBLISHED_PAGES = 47600
-DASHBOARD = "https://findacrib.com/dashboard"
+DASHBOARD = "https://divinedavis.com/dashboard/"
 
 # How many days the SEO corpus may go unwritten before the report says so.
 # refresh_seo.sh is nightly, so 1 day old is normal and 2 is already a miss.

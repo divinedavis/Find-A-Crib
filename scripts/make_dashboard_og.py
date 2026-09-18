@@ -61,7 +61,7 @@ for label in chips:
     d.text((x + 28, 404), label, font=f_stat, fill="white")
     x += tw + 56 + 18
 
-pill = "findacrib.com/dashboard"
+pill = "divinedavis.com/dashboard"
 tb = d.textbbox((0, 0), pill, font=f_pill)
 tw, th = tb[2] - tb[0], tb[3] - tb[1]
 d.rounded_rectangle([96, 516, 96 + tw + 56, 516 + th + 44], radius=33,

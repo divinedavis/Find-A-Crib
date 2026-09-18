@@ -41,15 +41,17 @@ struct AlertsSheet: View {
                     if done {
                         VStack(alignment: .leading, spacing: 10) {
                             Text("You're on the list").font(.se(26, .bold)).foregroundStyle(SE.ink)
-                            Text("A notification on this phone and an email the minute something opens in \(boroughPhrase)\(fitPhrase). Quiet until then — no digests. A welcome note is on its way to \(auth.email ?? "your inbox").")
+                            Text("The minute a lottery or re-rental opens in \(boroughPhrase)\(fitPhrase), you'll get a notification on this phone and an email — not a weekly round-up. Nothing in between. A welcome note is on its way to \(auth.email ?? "your inbox").")
                                 .font(.se(17)).foregroundStyle(SE.ink2)
-                            Text("Change boroughs or stop the emails any time at findacrib.com/alerts/.").font(.se(15)).foregroundStyle(SE.ink3)
+                            pushStateLine
+                            Text("Change boroughs or stop the alerts any time here or at findacrib.com/alerts/.").font(.se(15)).foregroundStyle(SE.ink3)
                         }
                         SEPrimaryButton(title: "Done") { dismiss() }
                     } else {
-                        Text(editing ? "Your alerts" : "Email me the minute one opens").font(.se(26, .bold)).foregroundStyle(SE.ink)
-                        Text("Sent to \(auth.email ?? "your account email"). The feeds are checked every 10 minutes.")
+                        Text(editing ? "Your alerts" : "Tell me the minute one opens").font(.se(26, .bold)).foregroundStyle(SE.ink)
+                        Text("A notification on this phone and an email to \(auth.email ?? "your account email") the minute a lottery or re-rental opens — not a weekly digest. The feeds are checked every 10 minutes.")
                             .font(.se(16)).foregroundStyle(SE.ink2)
+                        if editing { pushStateLine }
                         if loadingPrefs {
                             HStack(spacing: 8) { ProgressView().tint(SE.royal); Text("Loading what this email gets today…").font(.se(14)).foregroundStyle(SE.ink3) }
                         } else if editing {
@@ -100,6 +102,7 @@ struct AlertsSheet: View {
             .background(Color.white)
             .navigationTitle("Alerts").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
+            .task { await PushService.shared.refreshStatus() }
         }
         .onAppear { seed() }
         .task { await loadPrefs() }
@@ -195,6 +198,33 @@ struct AlertsSheet: View {
         .overlay(alignment: .bottom) { Rectangle().fill(SE.line).frame(height: 1) }
     }
 
+    /// Where phone alerts stand, with the one action that fixes it: ask
+    /// (never asked yet) or Settings (turned off). Nothing when they are on.
+    @ViewBuilder private var pushStateLine: some View {
+        switch PushService.shared.status {
+        case .authorized, .provisional, .ephemeral:
+            HStack(spacing: 6) {
+                Image(systemName: "bell.badge.fill").foregroundStyle(SE.good)
+                Text("Phone alerts are on.").font(.se(15, .semibold)).foregroundStyle(SE.good)
+            }
+        case .denied:
+            Button { UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!) } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "bell.slash.fill")
+                    Text("Phone alerts are off — turn them on in Settings").font(.se(15, .semibold))
+                    Image(systemName: "arrow.up.right").font(.system(size: 12, weight: .bold))
+                }.foregroundStyle(SE.warn)
+            }.buttonStyle(.plain).accessibilityIdentifier("alerts-push-settings")
+        default:
+            Button { Task { await PushService.shared.requestAfterAlerts(); await PushService.shared.refreshStatus() } } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "bell.badge")
+                    Text("Turn on phone alerts").font(.se(15, .bold))
+                }.foregroundStyle(SE.royal)
+            }.buttonStyle(.plain).accessibilityIdentifier("alerts-push-enable")
+        }
+    }
+
     private func subscribe() async {
         guard let email = auth.email else { error = "Sign in first."; return }
         let rent = Self.dollars(maxRent), inc = Self.dollars(income)
@@ -225,7 +255,9 @@ struct AlertsSheet: View {
                 // The one moment we ask for notification permission: alerts
                 // were just turned on. Editing an existing subscription only
                 // re-registers if permission is already there.
-                Task { if editing { await PushService.shared.reregisterIfAuthorized() } else { await PushService.shared.requestAfterAlerts() } }
+                // Also for an edit: a subscriber from before push existed has
+                // never been asked, and saving their alerts is the moment.
+                Task { await PushService.shared.requestAfterAlerts(); await PushService.shared.refreshStatus() }
                 return
             }
             switch body?["error"] as? String {

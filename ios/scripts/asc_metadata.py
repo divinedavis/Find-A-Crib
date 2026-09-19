@@ -76,20 +76,17 @@ Privacy Policy: https://findacrib.com/privacy/
 Find A Crib is an independent, informational tool. It is not a broker, does not list apartments, and takes no fee. Data: NYS Homes and Community Renewal rent-stabilization register (2024), NYC HPD open data, HUD FY2026 Fair Market Rents, HousingSearch.ny.gov, advertised rents from Zumper, LA County Assessor parcel data under LAHD's RSO criteria, the SF Rent Board Housing Inventory via DataSF, and the DC DHCD RentRegistry.
 """
 
-WHATS_NEW = """Alerts on your phone. Turn on alerts and the minute a housing lottery or re-rental opens in your borough, it arrives as a notification on your iPhone, alongside the email. Tap it to go straight to the listing.
+WHATS_NEW = """Tapping an alert now opens Find A Crib on every new listing in it — each re-rental or lottery with its borough, rent and a button to the agent's page — instead of jumping straight to one website. When an alert has several apartments, you can now reach all of them.
 
-Re-rentals in your results. Income-restricted apartments that HPD-approved marketing agents are re-renting right now appear in the list, marked Rerental, with a button to apply on the agent's site. They go fast and are not on the big listing sites.
-
-The map follows you. Pan or zoom and the count shows how many buildings are in view; tap List to see just those.
-
-A skyline for every city. Pull down on your results for New York, San Francisco, Washington DC and Los Angeles landmarks under a night sky.
-
-Faster launch, smoother map, quicker filters, and the header now names the city you are searching in.
+Links to agents who list every apartment on one page now scroll straight to the one you picked.
 """
 
-REVIEW_NOTES = """VERSION 1.2.1 (build __BUILD__) — push alerts, re-rentals in results, map follows the viewport
+REVIEW_NOTES = """VERSION 1.2.2 (build __BUILD__) — tapping an alert notification opens an in-app list of its listings
 
-WHAT CHANGED SINCE 1.2.0
+WHAT CHANGED SINCE 1.2.1
+Tapping a borough-alert notification now opens the app on a list of every listing in that alert, each with a button to the agent's own page, instead of opening the first listing's website directly. No new permissions, data or features otherwise.
+
+CHANGED IN 1.2.1 (for context)
 1. Push notifications for borough alerts. A signed-in user who turns on alerts (Profile > Alerts, or the Alerts button on the results list) gets a notification the moment a new housing lottery, re-rental or voucher listing matching their boroughs opens. The same alert is emailed; push is an additional channel. Notifications are never required to use the app.
 2. Re-rental tiles in the results list. Income-restricted apartments that HPD-approved marketing agents publish on their own websites appear in the list, labelled "Rerental" (first as the 3rd card, then every 8 to 15 cards). The button opens the agent's own page in Safari. We take no fee and do not handle applications.
 3. The map's count follows the visible region and "List" opens on the buildings in view.

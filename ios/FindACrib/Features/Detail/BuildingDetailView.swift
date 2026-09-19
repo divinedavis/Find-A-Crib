@@ -44,6 +44,15 @@ struct BuildingDetailView: View {
                                 .font(.se(17)).foregroundStyle(SE.ink2)
                         }
                     } else {
+                    // Violations sit above About (owner, 2026-09-19): on the web
+                    // the violations tile is the most-tapped thing on a building
+                    // page (442 people since 9/5, next is 195).
+                    if store.city.isNYC {
+                        section("Violations & inspections") { hpdBlock }
+                    } else if let r = store.city.records {
+                        section(r.heading) { cityRecordBlock(r) }
+                    }
+
                     section("About") {
                         VStack(alignment: .leading, spacing: 10) {
                             ForEach(aboutLines, id: \.self) { Text($0).font(.se(19)).foregroundStyle(SE.ink) }
@@ -66,12 +75,6 @@ struct BuildingDetailView: View {
                     if store.city.isNYC { section("Managing agent") { agentBlock } }
 
                     if store.city.isNYC { voucherCard }
-
-                    if store.city.isNYC {
-                        section("Violations & inspections") { hpdBlock }
-                    } else if let r = store.city.records {
-                        section(r.heading) { cityRecordBlock(r) }
-                    }
 
                     similarRail
                     }

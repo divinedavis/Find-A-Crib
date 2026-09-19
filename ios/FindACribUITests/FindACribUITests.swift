@@ -227,6 +227,21 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.buttons["sign-in-apple"].waitForExistence(timeout: 10), "the gate should land on the Profile sign-in")
     }
 
+    /// Violations & inspections comes before About (owner, 2026-09-19): it
+    /// is what people tap most on a building page.
+    func testViolationsSectionSitsAboveAbout() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--route", "detail"]
+        app.launch()
+        XCTAssertTrue(app.buttons["detail-menu"].waitForExistence(timeout: 30))
+        let violations = app.staticTexts["Violations & inspections"]
+        let about = app.staticTexts["About"]
+        for _ in 0..<12 where !(violations.exists && about.exists) { app.swipeUp() }
+        if !about.exists { for _ in 0..<4 where !about.exists { app.swipeDown() } }
+        XCTAssertTrue(violations.exists && about.exists, "both section headings should be reachable")
+        XCTAssertLessThan(violations.frame.minY, about.frame.minY, "Violations & inspections must sit above About")
+    }
+
     /// A building outside New York shows the record ITS city publishes, and
     /// never New York's wording.
     ///

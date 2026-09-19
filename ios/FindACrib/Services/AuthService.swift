@@ -50,6 +50,11 @@ final class AuthService {
     weak var plus: PlusStore?
 
     var isSignedIn: Bool { session != nil }
+    /// True once the stored session has been confirmed (or refreshed) at
+    /// launch. Until then `session` may be an expired token that every API
+    /// call rejects — which showed a signed-in owner the Lotteries sign-up
+    /// screen for a few seconds (2026-09-19). The launch splash waits on it.
+    private(set) var restored = false
     var email: String? { session?.user.email }
     var configured: Bool { client != nil }
 
@@ -63,6 +68,23 @@ final class AuthService {
         } else {
             client = nil   // a build without Secrets.xcconfig: the app still works, signed out
         }
+    }
+
+    /// Confirm the stored session before the app shows: `auth.session`
+    /// returns it as-is when still valid and refreshes it when expired. Capped
+    /// at 3 s so a phone with no signal is not held on the splash; it then
+    /// keeps the stored session and listen() sorts out the refresh.
+    func restore() async {
+        defer { restored = true }
+        guard let client, session != nil else { return }
+        let fresh: Session? = await withTaskGroup(of: Session?.self) { g in
+            g.addTask { try? await client.auth.session }
+            g.addTask { try? await Task.sleep(for: .seconds(3)); return nil }
+            let first = await g.next() ?? nil
+            g.cancelAll()
+            return first
+        }
+        if let fresh { session = fresh }
     }
 
     /// Long-running: follows the auth stream for the life of the app.

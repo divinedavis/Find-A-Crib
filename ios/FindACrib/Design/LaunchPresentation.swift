@@ -26,8 +26,14 @@ struct LaunchPresentation<Content: View>: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var sequence = LaunchSequence()
     let content: Content
+    /// The splash stays up until this is true (or 3.5 s pass) — used to hold
+    /// it while a signed-in user's session is restored.
+    let isReady: () -> Bool
 
-    init(@ViewBuilder content: () -> Content) { self.content = content() }
+    init(isReady: @escaping () -> Bool = { true }, @ViewBuilder content: () -> Content) {
+        self.isReady = isReady
+        self.content = content()
+    }
 
     private var isFinished: Bool { sequence.phase == .finished }
     private var prefersReducedMotion: Bool {
@@ -73,6 +79,10 @@ struct LaunchPresentation<Content: View>: View {
                 guard sequence.phase == .ready, scenePhase == .active else { return }
                 do { try await Task.sleep(for: .milliseconds(160)) }
                 catch { return }
+                let start = Date()
+                while !isReady(), Date().timeIntervalSince(start) < 3.5 {
+                    do { try await Task.sleep(for: .milliseconds(50)) } catch { return }
+                }
                 guard sequence.phase == .ready, scenePhase == .active else { return }
                 if prefersReducedMotion {
                     var transaction = Transaction(animation: nil)

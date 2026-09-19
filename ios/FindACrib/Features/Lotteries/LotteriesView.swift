@@ -3,8 +3,7 @@ import SwiftUI
 /// The Lotteries tab: for an alert subscriber, Housing Connect lotteries open in the
 /// boroughs they get alerts for, soonest deadline first, and (owner, same
 /// day) the HPD marketing agents' re-rentals in those boroughs. Everyone
-/// else is prompted to sign up for alerts the moment they tap the tab
-/// (owner, 2026-09-19), and sees a sign-up screen if they close it.
+/// else sees a sign-up screen; only its button opens the sign-up sheet.
 /// See LotteryFeed.
 struct LotteriesView: View {
     @Environment(\.openURL) private var openURL
@@ -18,7 +17,8 @@ struct LotteriesView: View {
 
     var body: some View {
         Group {
-            if feed.subscribed { list } else { signup }
+            // Never show the sign-up until we KNOW they are not subscribed.
+            if feed.subscribed { list } else if feed.checked { signup } else { checking }
         }
         .sheet(isPresented: $showAlerts, onDismiss: { Task { await feed.refresh() } }) { AlertsSheet() }
         // Signed out: sign in first, then straight on to the alerts sheet —
@@ -27,17 +27,37 @@ struct LotteriesView: View {
             guard auth.isSignedIn else { return }
             Task { await feed.refresh(); if !feed.subscribed { showAlerts = true } }
         }) { EmailSignInView() }
-        .onAppear {
-            Task {
-                if !feed.checked { await feed.refresh() }
-                if feed.checked, !feed.subscribed { promptSignup(auto: true) }
-            }
-        }
+        // No sheet opens by itself (owner, 2026-09-19): the tab shows the
+        // sign-up screen, and only its button opens the sign-up.
     }
 
-    private func promptSignup(auto: Bool) {
-        Analytics.shared.track("lotteries_signup_prompt", ["auto": auto, "signed_in": auth.isSignedIn])
+    private func promptSignup() {
+        Analytics.shared.track("lotteries_signup_prompt", ["signed_in": auth.isSignedIn])
         if auth.isSignedIn { showAlerts = true } else { showSignIn = true }
+    }
+
+    private var checking: some View {
+        VStack(spacing: 0) {
+            NavyHeader {
+                Text("Lotteries").font(.se(24, .bold)).foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.bottom, 12)
+            }
+            ProgressView().tint(SE.royal).frame(maxWidth: .infinity, maxHeight: .infinity)
+                .accessibilityIdentifier("lotteries-checking")
+        }
+        .background(SE.canvas)
+        .task {
+            // Retried until the answer is in (the session restore finishing
+            // after this tab opened, or a dropped connection), backing off
+            // 1, 2, 4… 30 s: /api/alerts/prefs allows 60 reads an hour.
+            var wait = 1.0
+            while !feed.checked, !Task.isCancelled {
+                await feed.refresh()
+                if feed.checked { break }
+                try? await Task.sleep(for: .seconds(wait))
+                wait = min(wait * 2, 30)
+            }
+        }
     }
 
     private var signup: some View {
@@ -52,7 +72,7 @@ struct LotteriesView: View {
                     Text("Lotteries & re-rentals for your boroughs").font(.se(24, .bold)).foregroundStyle(SE.ink)
                     Text("Sign up for free alerts and this tab lists every NYC Housing Connect lottery and income-restricted re-rental open in the boroughs you pick. We'll also tell you the minute a new one opens.")
                         .font(.se(17)).foregroundStyle(SE.ink2)
-                    SEPrimaryButton(title: "Sign up for alerts") { promptSignup(auto: false) }
+                    SEPrimaryButton(title: "Sign up for alerts") { promptSignup() }
                         .accessibilityIdentifier("lotteries-signup")
                         .padding(.top, 6)
                     Text("Free. Unsubscribe any time.").font(.se(14)).foregroundStyle(SE.ink3)

@@ -54,6 +54,9 @@ final class LotteryFeed {
     /// Re-read the prefs; called on launch, sign-in/out, return to the app and
     /// after the alerts sheet saves.
     func refresh() async {
+        // Before the launch restore, the stored token may be expired: an
+        // answer now would be a wrong "not subscribed". Wait for it.
+        if !demo, let auth, !auth.restored { return }
         if demo {
             subscribed = true; boroughs = ["Bx", "Bk", "M", "Q", "SI"]; income = 70_000; checked = true
         } else if let token = auth?.session?.accessToken {

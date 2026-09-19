@@ -14,13 +14,16 @@ struct FindACribApp: App {
 
     var body: some Scene {
         WindowGroup {
-            LaunchPresentation { RootView() }
+            // The splash holds until a signed-in user's session is confirmed,
+            // so no screen ever renders as signed out first.
+            LaunchPresentation(isReady: { [auth] in auth.restored }) { RootView() }
                 .environment(store)
                 .environment(activity)
                 .environment(nav)
                 .environment(auth)
                 .environment(plus)
                 .task {
+                    await auth.restore()
                     auth.activity = activity
                     plus.auth = auth; auth.plus = plus
                     Analytics.shared.auth = auth

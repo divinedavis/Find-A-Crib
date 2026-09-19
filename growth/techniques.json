@@ -355,7 +355,7 @@
     "added": "2026-07-26",
     "activated": null,
     "retired": null,
-    "notes": "",
+    "notes": "[2026-09-19] 2026-09-19 review, measured rather than assumed. This candidate was written as a FRESHNESS problem ('the signal decays for a month between refreshes'). It was also, until this morning, an ACCURACY problem, and that half needed no scrape-cadence change to fix. build_seo.py decided 'recently advertised' from listings.json's `counts` map, which combine_listings.py's own docstring calls a sticky master that is never pruned ('sold/delisted buildings aren't pruned - that's the intended sticky behavior'). So 312 building pages, 41 /available/ pages, 59 neighborhood pages and a guide asserted 'recently advertised for rent' - in the h1 lead, a badge, the meta description - from a set that carries no date at all. index.html has implemented the owner's actual rule (RECENT_DAYS = 5, on the non-sticky `posted` map) since 2026-09-01; only the SEO corpus ignored it. Fixed today: claims read `posted` + 5 days, promotion still reads `counts` (see promoted_building), page set and sitemap byte-identical. The checkout's listings.json is dated 2026-05-09 and yields 0 buildings inside the 5-day window, so on this data the honest answer to 'how many are advertised right now' is zero and the pages now say nothing rather than guessing. THAT is the remaining case for this candidate, and it is stronger than the original one: the accuracy fix means a stale feed now costs the site the claim outright instead of letting it publish a false one.",
     "verdict": null
   },
   {

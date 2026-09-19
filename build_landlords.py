@@ -116,10 +116,15 @@ def main():
     print(f"hpd_contacts rows: {len(rows):,}")
 
     blds = {b["bbl"]: b for b in json.load(open(os.path.join(HERE, "buildings.min.json")))}
-    try:
-        listed = set(json.load(open(os.path.join(HERE, "listings.json"))).get("counts") or {})
-    except Exception:
-        listed = set()
+    # "advertised" here means advertised in the last RECENT_DAYS days, which is
+    # the only reading build_seo.py's landlord badge can print. Until
+    # 2026-09-19 this counted membership of listings.json's `counts` map, which
+    # combine_listings.py keeps as a sticky master that is never pruned — so it
+    # was a count of buildings ever matched, rendered as "advertised for rent
+    # now". One definition, imported rather than restated: build_seo's
+    # recently_advertised_bbls().
+    from build_seo import load_listings, recently_advertised_bbls
+    listed = recently_advertised_bbls(load_listings(os.path.join(HERE, "listings.json")))
 
     by_name = collections.defaultdict(lambda: {"bbls": set(), "roles": set()})
     for r in rows:

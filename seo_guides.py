@@ -325,7 +325,11 @@ GUIDES = [
             "<a href='/borough/bronx/'>Bronx</a>"
             "<a href='/borough/staten-island/'>Staten Island</a>"
             "</div>"
-            "<p>You can also see buildings that have <a href='/available/'>recently advertised a unit for rent</a>.</p>"
+            # Not "recently": /available/ is built from a listing file that
+            # accumulates and is never pruned, so the honest verb is the past
+            # one. See recently_advertised_bbls() in build_seo.py (2026-09-19).
+            "<p>You can also see buildings that have <a href='/available/'>advertised a unit for "
+            "rent</a> — a record of past listings, not a live vacancy list.</p>"
 
             "<h2>3. Verify before you sign</h2>"
             "<p>Once you have a lead, confirm it:</p>"

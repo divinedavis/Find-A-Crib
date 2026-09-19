@@ -963,3 +963,40 @@ final class AlertPushTests: XCTestCase {
         XCTAssertNil(AlertPush.from(userInfo: [:], title: "", body: ""), "nothing to show: no sheet")
     }
 }
+
+final class LotteryFeedTests: XCTestCase {
+    private func lot(_ id: Int, _ boro: String, _ closes: String?, income: (Int, Int)? = nil) -> LotteryFeed.Lottery {
+        LotteryFeed.Lottery(id: id, name: "L\(id)", borough: boro, neighborhood: nil, rent_low: 1500, rent_high: 2000,
+                            income_min: income?.0, income_max: income?.1, household_min: 1, household_max: 3,
+                            beds: ["Studio", "1-bed"], closes: closes, href: "https://housingconnect.nyc.gov/PublicWeb/details/\(id)")
+    }
+
+    func testOnlyTheirBoroughsStillOpenSoonestFirst() {
+        let all = [lot(1, "Bronx", "2026-10-05"), lot(2, "Brooklyn", "2026-09-22"), lot(3, "Queens", "2026-09-20"),
+                   lot(4, "Bronx", "2026-09-18"), lot(5, "Bronx", "2026-09-19")]
+        let got = LotteryFeed.filter(all, boroughs: ["Bx", "Bk"], today: "2026-09-19")
+        XCTAssertEqual(got.map(\.id), [5, 2, 1], "Queens excluded, closed-yesterday excluded, closing-today kept, soonest first")
+        XCTAssertTrue(LotteryFeed.filter(all, boroughs: [], today: "2026-09-19").isEmpty)
+    }
+
+    func testIncomeFitIsInclusiveAndNeedsBothNumbers() {
+        XCTAssertTrue(LotteryFeed.incomeFits(70_000, lot(1, "Bronx", nil, income: (45_000, 70_000))))
+        XCTAssertFalse(LotteryFeed.incomeFits(80_000, lot(1, "Bronx", nil, income: (45_000, 70_000))))
+        XCTAssertFalse(LotteryFeed.incomeFits(nil, lot(1, "Bronx", nil, income: (45_000, 70_000))), "no income entered: no badge")
+        XCTAssertFalse(LotteryFeed.incomeFits(60_000, lot(1, "Bronx", nil)), "no band published: no badge")
+    }
+
+    func testDaysLeft() {
+        XCTAssertEqual(LotteryFeed.daysLeft("2026-09-22", today: "2026-09-19"), 3)
+        XCTAssertEqual(LotteryFeed.daysLeft("2026-09-19", today: "2026-09-19"), 0)
+        XCTAssertEqual(LotteryFeed.daysLeft("2026-11-02", today: "2026-11-01"), 1, "DST week")
+        XCTAssertNil(LotteryFeed.daysLeft(nil))
+    }
+
+    func testDecodesTheLiveShape() throws {
+        let json = #"{"generated":"2026-09-19","lotteries":[{"id":7569,"name":"1760 3rd Avenue Residence","borough":"Manhattan","neighborhood":"East Harlem","address":"1768 3 Avenue","zip":"10029","lat":40.7,"lng":-73.9,"rent_low":1328,"rent_high":1660,"income_min":45532,"income_max":91620,"household_min":1,"household_max":3,"beds":["Studio","1-bed"],"days_left":2,"closes":"2026-08-10","href":"https://housingconnect.nyc.gov/PublicWeb/details/7569"}]}"#
+        struct P: Decodable { let lotteries: [LotteryFeed.Lottery] }
+        let p = try JSONDecoder().decode(P.self, from: Data(json.utf8))
+        XCTAssertEqual(p.lotteries.first?.borough, "Manhattan")
+    }
+}

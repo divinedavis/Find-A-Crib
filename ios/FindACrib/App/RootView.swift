@@ -18,6 +18,8 @@ struct RootView: View {
                     NavigationStack(path: $nav.activityPath) {
                         MyActivityView().navigationDestination(for: Route.self) { RouteView(route: $0) }
                     }
+                case .lotteries:
+                    NavigationStack { LotteriesView() }
                 case .profile:
                     NavigationStack(path: $nav.profilePath) {
                         ProfileView().navigationDestination(for: Route.self) { RouteView(route: $0) }
@@ -96,17 +98,19 @@ struct RouteView: View {
 /// sitting in a grey disc with royal-blue icon and label.
 struct PillTabBar: View {
     @Binding var selected: Tab
+    /// Lotteries only for alert subscribers (owner, 2026-09-19).
+    private var tabs: [Tab] { Tab.allCases.filter { $0 != .lotteries || LotteryFeed.shared.subscribed } }
     var body: some View {
         HStack(spacing: 0) {
-            ForEach(Tab.allCases, id: \.self) { tab in
+            ForEach(tabs, id: \.self) { tab in
                 let on = selected == tab
                 Button { if selected != tab { Analytics.shared.track("tab", ["to": tab.rawValue]) }; selected = tab } label: {
                     VStack(spacing: 4) {
                         Image(systemName: tab.icon).font(.system(size: 22, weight: on ? .semibold : .regular))
-                        Text(tab.rawValue).font(.se(14, .semibold))
+                        Text(tab.rawValue).font(.se(14, .semibold)).lineLimit(1).minimumScaleFactor(0.75)
                     }
                     .foregroundStyle(on ? SE.royal : SE.ink)
-                    .frame(width: 104, height: 66)
+                    .frame(width: tabs.count > 3 ? 86 : 104, height: 66)
                     .background(on ? SE.badge : .clear)
                     .clipShape(Capsule())
                 }

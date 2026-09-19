@@ -264,6 +264,7 @@ struct AlertsSheet: View {
                 // changing a rent cap is housekeeping, not delight.
                 if !editing { ReviewPrompt.shared.record(.alerts) }
                 done = true
+                Task { await LotteryFeed.shared.refresh() }
                 // The one moment we ask for notification permission: alerts
                 // were just turned on. Editing an existing subscription only
                 // re-registers if permission is already there.

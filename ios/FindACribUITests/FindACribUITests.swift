@@ -227,6 +227,36 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.buttons["sign-in-apple"].waitForExistence(timeout: 10), "the gate should land on the Profile sign-in")
     }
 
+    /// The Lotteries tab exists only for alert subscribers (owner, 2026-09-19).
+    /// The simulator is signed out: no tab. --lotteries-demo stands in for a
+    /// subscriber to all five boroughs: the tab appears and lists live
+    /// Housing Connect lotteries (or says nothing is open).
+    func testLotteriesTabOnlyForSubscribers() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt"]
+        app.launch()
+        XCTAssertTrue(app.buttons["tab-Search"].waitForExistence(timeout: 20))
+        XCTAssertFalse(app.buttons["tab-Lotteries"].exists, "not subscribed: no Lotteries tab")
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--lotteries-demo"]
+        app.launch()
+        let tab = app.buttons["tab-Lotteries"]
+        XCTAssertTrue(tab.waitForExistence(timeout: 20), "a subscriber gets the Lotteries tab")
+        XCTAssertTrue(app.buttons["tab-My Activity"].isHittable && app.buttons["tab-Profile"].isHittable, "four tabs must all fit")
+        tab.tap()
+        let card = app.descendants(matching: .any)["lottery-card"].firstMatch
+        let empty = app.descendants(matching: .any)["lotteries-empty"].firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 15) || empty.exists, "the tab should list lotteries or say none are open")
+        if card.exists {
+            XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS 'Apply on Housing Connect'")).firstMatch.exists)
+        }
+        // The Re-rentals pane: the agents' re-rentals in the same boroughs.
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Re-rentals'")).firstMatch.tap()
+        let rerental = app.descendants(matching: .any)["rerental-card"].firstMatch
+        XCTAssertTrue(rerental.waitForExistence(timeout: 10) || app.descendants(matching: .any)["lotteries-empty"].firstMatch.exists,
+                      "the Re-rentals pane should list re-rentals or say none are posted")
+    }
+
     /// Violations & inspections leads and About is the last section (owner,
     /// 2026-09-19): violations are what people tap most on a building page.
     func testViolationsFirstAndAboutLast() throws {

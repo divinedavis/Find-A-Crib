@@ -37,6 +37,9 @@ struct FindACribApp: App {
                     // Keep the push token current when permission already
                     // exists (tokens rotate); never asks.
                     PushService.shared.auth = auth; PushService.shared.nav = nav
+                    LotteryFeed.shared.auth = auth
+                    await LotteryFeed.shared.refresh()
+                    if CommandLine.arguments.contains("--tab"), CommandLine.arguments.contains("lotteries"), LotteryFeed.shared.subscribed { nav.tab = .lotteries }
                     await PushService.shared.reregisterIfAuthorized()
                     // The one notifications card, after the launch settles.
                     try? await Task.sleep(for: .seconds(2))
@@ -49,6 +52,7 @@ struct FindACribApp: App {
                     if phase == .background { wasBackgrounded = true }
                     if phase == .active, wasBackgrounded {
                         wasBackgrounded = false
+                        Task { await LotteryFeed.shared.refresh() }
                         ReviewPrompt.shared.appOpened(signedIn: auth.isSignedIn, pushCardShowing: PushService.shared.launchPrompt)
                     }
                 }
@@ -56,6 +60,7 @@ struct FindACribApp: App {
                 // A token that arrived signed out is filed once there is an account.
                 .onChange(of: auth.isSignedIn) { _, on in
                     if on { Task { await PushService.shared.reregisterIfAuthorized() } }
+                    Task { await LotteryFeed.shared.refresh() }
                 }
                 .onOpenURL { url in
                     Analytics.shared.launchSource = Analytics.source(for: url)
@@ -66,8 +71,8 @@ struct FindACribApp: App {
     }
 }
 
-enum Tab: String, CaseIterable { case search = "Search", activity = "My Activity", profile = "Profile"
-    var icon: String { switch self { case .search: "magnifyingglass"; case .activity: "heart"; case .profile: "person" } }
+enum Tab: String, CaseIterable { case search = "Search", lotteries = "Lotteries", activity = "My Activity", profile = "Profile"
+    var icon: String { switch self { case .search: "magnifyingglass"; case .lotteries: "ticket"; case .activity: "heart"; case .profile: "person" } }
 }
 
 enum Route: Hashable {

@@ -1,0 +1,151 @@
+import SwiftUI
+
+/// The subscriber-only Lotteries tab: Housing Connect lotteries open in the
+/// boroughs they get alerts for, soonest deadline first, and (owner, same
+/// day) the HPD marketing agents' re-rentals in those boroughs. See LotteryFeed.
+struct LotteriesView: View {
+    @Environment(\.openURL) private var openURL
+    @Environment(DataStore.self) private var store
+    @State private var showAlerts = false
+    enum Pane: Hashable { case lotteries, rerentals }
+    @State private var pane: Pane = .lotteries
+    private var feed: LotteryFeed { LotteryFeed.shared }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            NavyHeader {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Lotteries").font(.se(24, .bold)).foregroundStyle(.white)
+                    Text(boroughLine).font(.se(15, .semibold)).foregroundStyle(.white.opacity(0.85))
+                }
+                .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.bottom, 12)
+            }
+            SEUnderlineTabs(options: [(Pane.lotteries, "Lotteries (\(feed.mine.count))"), (.rerentals, "Re-rentals (\(rerentals.count))")], selection: $pane)
+                .padding(.horizontal, 16).padding(.top, 8).background(Color.white)
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 12) {
+                    if pane == .rerentals { rerentalList } else {
+                    HStack {
+                        Text(countLine).font(.se(17, .bold)).foregroundStyle(SE.ink)
+                        Spacer()
+                        Button("Edit boroughs") { showAlerts = true }
+                            .font(.se(16, .bold)).foregroundStyle(SE.royal)
+                            .accessibilityIdentifier("lotteries-edit")
+                    }
+                    .padding(.horizontal, 16)
+                    if feed.loadFailed {
+                        message("Couldn't load lotteries", "Check your connection and pull down to try again.")
+                    } else if feed.mine.isEmpty && !feed.loading {
+                        message("Nothing open right now",
+                                "No Housing Connect lotteries are open in \(boroughNames) right now. We'll alert you the minute one opens.")
+                    }
+                    ForEach(feed.mine) { card($0) }
+                    Text("From NYC Housing Connect, updated every 10 minutes. Eligibility also depends on household size — check each listing.")
+                        .font(.se(14)).foregroundStyle(SE.ink3).padding(.horizontal, 16).padding(.top, 4)
+                    }
+                    Color.clear.frame(height: 120)
+                }
+                .padding(.top, 16)
+            }
+            .refreshable { await feed.refresh() }
+            .background(SE.canvas)
+        }
+        .background(SE.canvas)
+        .task { Analytics.shared.track("lotteries_view", ["open": feed.mine.count]) }
+        .sheet(isPresented: $showAlerts, onDismiss: { Task { await feed.refresh() } }) { AlertsSheet() }
+    }
+
+    /// Re-rentals in their boroughs, from the same featured.json the search
+    /// feed's tiles use (refreshed with the rest of the app's data).
+    private var rerentals: [FeaturedListing] {
+        let codes = Set(feed.boroughs)
+        return store.featured.listings.filter { $0.boroughCode.map(codes.contains) ?? false }
+    }
+
+    @ViewBuilder private var rerentalList: some View {
+        HStack {
+            Text("\(rerentals.count) available").font(.se(17, .bold)).foregroundStyle(SE.ink)
+            Spacer()
+            Button("Edit boroughs") { showAlerts = true }.font(.se(16, .bold)).foregroundStyle(SE.royal)
+        }
+        .padding(.horizontal, 16)
+        if rerentals.isEmpty {
+            message("No re-rentals right now",
+                    "No HPD marketing agent is advertising a re-rental in \(boroughNames) today. We'll alert you when one is posted.")
+        }
+        // slot -1 marks this tab in the re-rental funnel, apart from the
+        // search feed's slots 0, 1, 2…
+        ForEach(rerentals) { RerentalCard(listing: $0, slot: -1).padding(.horizontal, 16) }
+        Text("Income-restricted apartments that HPD-approved marketing agents are re-renting, from their own websites. Apply through the agent.")
+            .font(.se(14)).foregroundStyle(SE.ink3).padding(.horizontal, 16).padding(.top, 4)
+    }
+
+    private var boroughNames: String {
+        let n = feed.boroughs.map { Borough.name($0) }
+        if n.count == Borough.all.count { return "all five boroughs" }
+        return ListFormatter.localizedString(byJoining: n)
+    }
+    private var boroughLine: String { feed.boroughs.count == Borough.all.count ? "All five boroughs" : feed.boroughs.map { Borough.name($0) }.joined(separator: " · ") }
+    private var countLine: String {
+        if feed.loading && feed.all.isEmpty { return "Loading…" }
+        return "\(feed.mine.count) open"
+    }
+
+    private func card(_ l: LotteryFeed.Lottery) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(l.name).font(.se(19, .bold)).foregroundStyle(SE.ink)
+            Text(whereWhen(l)).font(.se(15, .semibold)).foregroundStyle(urgent(l) ? SE.warn : SE.ink2)
+            if let rent = rent(l) { Text(rent).font(.se(16)).foregroundStyle(SE.ink) }
+            if let lo = l.income_min, let hi = l.income_max {
+                HStack(spacing: 8) {
+                    Text("Income \(k(lo))–\(k(hi))").font(.se(15)).foregroundStyle(SE.ink2)
+                    if LotteryFeed.incomeFits(feed.income, l) {
+                        Label("Your income fits", systemImage: "checkmark.circle.fill")
+                            .font(.se(14, .bold)).foregroundStyle(SE.good)
+                    }
+                }
+            }
+            if let href = l.href, let url = URL(string: href) {
+                SEPrimaryButton(title: "Apply on Housing Connect", icon: "arrow.up.right") {
+                    Analytics.shared.track("outbound", ["kind": "housing_connect", "href": href, "from": "lotteries_tab"])
+                    openURL(url)
+                }
+                .padding(.top, 6)
+            }
+        }
+        .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white)
+        .accessibilityIdentifier("lottery-card")
+    }
+
+    private func message(_ title: String, _ body: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title).font(.se(19, .bold)).foregroundStyle(SE.ink)
+            Text(body).font(.se(16)).foregroundStyle(SE.ink2)
+        }
+        .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white)
+        .accessibilityIdentifier("lotteries-empty")
+    }
+
+    private func urgent(_ l: LotteryFeed.Lottery) -> Bool { (LotteryFeed.daysLeft(l.closes) ?? 99) <= 3 }
+
+    private func whereWhen(_ l: LotteryFeed.Lottery) -> String {
+        var s = [l.neighborhood, l.borough].compactMap { $0 }.joined(separator: ", ")
+        if let c = l.closes, let d = LotteryFeed.daysLeft(c) {
+            let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; f.timeZone = TimeZone(identifier: "America/New_York")
+            let out = DateFormatter(); out.dateFormat = "EEE MMM d"; out.timeZone = f.timeZone
+            let when = f.date(from: c).map { out.string(from: $0) } ?? c
+            s += " · Closes \(when)" + (d == 0 ? " (today)" : d == 1 ? " (tomorrow)" : " (\(d)d)")
+        }
+        return s
+    }
+
+    private func rent(_ l: LotteryFeed.Lottery) -> String? {
+        let money = { (n: Int) in "$" + n.formatted() }
+        var parts: [String] = []
+        if let lo = l.rent_low, let hi = l.rent_high { parts.append(lo == hi ? "\(money(lo))/mo" : "\(money(lo))–\(money(hi))/mo") }
+        if let b = l.beds, !b.isEmpty { parts.append(b.count == 1 ? b[0] : "\(b.first!)–\(b.last!)") }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    private func k(_ n: Int) -> String { n >= 1000 ? "$\(n / 1000)k" : "$\(n)" }
+}

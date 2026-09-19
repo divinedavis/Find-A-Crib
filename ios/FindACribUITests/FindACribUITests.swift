@@ -227,19 +227,30 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.buttons["sign-in-apple"].waitForExistence(timeout: 10), "the gate should land on the Profile sign-in")
     }
 
-    /// Violations & inspections comes before About (owner, 2026-09-19): it
-    /// is what people tap most on a building page.
-    func testViolationsSectionSitsAboveAbout() throws {
+    /// Violations & inspections leads and About is the last section (owner,
+    /// 2026-09-19): violations are what people tap most on a building page.
+    func testViolationsFirstAndAboutLast() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--route", "detail"]
         app.launch()
         XCTAssertTrue(app.buttons["detail-menu"].waitForExistence(timeout: 30))
         let violations = app.staticTexts["Violations & inspections"]
+        let agent = app.staticTexts["Managing agent"]
         let about = app.staticTexts["About"]
-        for _ in 0..<12 where !(violations.exists && about.exists) { app.swipeUp() }
-        if !about.exists { for _ in 0..<4 where !about.exists { app.swipeDown() } }
-        XCTAssertTrue(violations.exists && about.exists, "both section headings should be reachable")
-        XCTAssertLessThan(violations.frame.minY, about.frame.minY, "Violations & inspections must sit above About")
+        XCTAssertTrue(violations.waitForExistence(timeout: 5))
+        var violY = violations.frame.minY
+        // Scroll in steps, keeping each heading's position relative to About's
+        // as both come on screen, until About appears.
+        var agentAbove = false
+        for _ in 0..<20 where !about.exists {
+            if agent.exists { agentAbove = true }
+            app.swipeUp()
+        }
+        if agent.exists, about.exists { agentAbove = agent.frame.minY < about.frame.minY }
+        if violations.exists { violY = violations.frame.minY }
+        XCTAssertTrue(about.exists, "About should be reachable at the bottom")
+        XCTAssertTrue(agentAbove, "Managing agent must come before About")
+        XCTAssertLessThan(violY, about.frame.minY, "Violations & inspections must sit above About")
     }
 
     /// A building outside New York shows the record ITS city publishes, and

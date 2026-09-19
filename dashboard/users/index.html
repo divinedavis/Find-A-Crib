@@ -132,7 +132,7 @@
 
   .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
   .tbl-wrap{overflow-x:auto}
-  .utable{width:100%;border-collapse:collapse;font-size:13.5px;min-width:760px}
+  .utable{width:100%;border-collapse:collapse;font-size:13.5px;min-width:840px}
   .utable th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:600;padding:11px 14px;border-bottom:1px solid var(--border);background:var(--card);white-space:nowrap}
   .utable td{padding:12px 14px;border-bottom:1px solid var(--border2);vertical-align:middle;white-space:nowrap}
   .utable tr:last-child td{border-bottom:none}
@@ -168,6 +168,10 @@
   html[data-theme="dark"] .b-free{background:#22222b;color:#7b7a8c}
   html[data-theme="dark"] .b-mobile{background:#3a2312;color:#f0a86a}
   html[data-theme="dark"] .b-desktop{background:#23283a;color:#9fb0d0}
+  .b-iphone{background:#eef1f6;color:#1d1d1f}
+  .b-android{background:#e6f6ea;color:#1e7b34}
+  html[data-theme="dark"] .b-iphone{background:#2a2d36;color:#e8e8ed}
+  html[data-theme="dark"] .b-android{background:#15301d;color:#3ddc84}
   .empty{padding:40px;text-align:center;color:var(--muted);font-size:14px}
   .foot{text-align:center;font-size:12px;color:var(--muted);margin-top:22px}
 
@@ -251,7 +255,7 @@
           <h1>Users</h1>
           <div class="sub">Everyone who created an account. Click a column to sort.</div>
         </div>
-        <input class="usearch" id="usearch" type="text" placeholder="Search name, email, device, or “ios”…">
+        <input class="usearch" id="usearch" type="text" placeholder="Search name, email, device, iphone, or android…">
       </div>
 
       <div class="chips" id="chips"></div>
@@ -260,7 +264,7 @@
         <div class="tbl-wrap">
           <table class="utable">
             <thead><tr id="uhead">
-              <th data-sort="name" tabindex="0" role="button" aria-sort="none">Name<span class="sarr"></span></th><th data-sort="provider" tabindex="0" role="button" aria-sort="none">Sign-in<span class="sarr"></span></th><th data-sort="ios_app" tabindex="0" role="button" aria-sort="none" title="Has this user signed in from the iPhone app? (Plan moved off the table 2026-09-09; the paying/comped chips above still count it)">iOS app<span class="sarr"></span></th><th data-sort="saves" tabindex="0" role="button" aria-sort="none">Saved<span class="sarr"></span></th><th data-sort="alerts" tabindex="0" role="button" aria-sort="none" title="On borough lottery/re-rental emails, or saved-building emails">Alerts<span class="sarr"></span></th><th data-sort="created_at" tabindex="0" role="button" aria-sort="none">Joined<span class="sarr"></span></th><th data-sort="device" tabindex="0" role="button" aria-sort="none">Last device<span class="sarr"></span></th>
+              <th data-sort="name" tabindex="0" role="button" aria-sort="none">Name<span class="sarr"></span></th><th data-sort="provider" tabindex="0" role="button" aria-sort="none">Sign-in<span class="sarr"></span></th><th data-sort="ios_app" tabindex="0" role="button" aria-sort="none" title="Has this user signed in from the iPhone app? (Plan moved off the table 2026-09-09; the paying/comped chips above still count it)">iOS app<span class="sarr"></span></th><th data-sort="saves" tabindex="0" role="button" aria-sort="none">Saved<span class="sarr"></span></th><th data-sort="alerts" tabindex="0" role="button" aria-sort="none" title="On borough lottery/re-rental emails, or saved-building emails">Alerts<span class="sarr"></span></th><th data-sort="created_at" tabindex="0" role="button" aria-sort="none">Joined<span class="sarr"></span></th><th data-sort="phone" tabindex="0" role="button" aria-sort="none" title="iPhone or Android, from any signed-in session (web or the iPhone app). — = only seen on a computer/iPad.">Phone<span class="sarr"></span></th><th data-sort="device" tabindex="0" role="button" aria-sort="none">Last device<span class="sarr"></span></th>
             </tr></thead>
             <tbody id="urows"></tbody>
           </table>
@@ -422,6 +426,8 @@
         savers=USERS.filter(function(u){return (u.saves||0)>0;}).length,
         mobile=USERS.filter(function(u){return u.device==='mobile'||u.device==='tablet';}).length,
         iosapp=USERS.filter(function(u){return !!u.ios_app;}).length,
+        iphone=USERS.filter(function(u){return u.phone==='iphone';}).length,
+        android=USERS.filter(function(u){return u.phone==='android';}).length,
         returned=USERS.filter(didReturn).length;
     el('chips').innerHTML =
       '<div class="chip"><b>'+total+'</b><span>total users</span></div>'+
@@ -431,7 +437,9 @@
       '<div class="chip"><b>'+returned+'</b><span>came back after signup</span></div>'+
       '<div class="chip"><b>'+savers+'</b><span>have saved a building</span></div>'+
       '<div class="chip"><b>'+mobile+'</b><span>last on mobile</span></div>'+
-      '<div class="chip"><b>'+iosapp+'</b><span>have the iPhone app</span></div>';
+      '<div class="chip"><b>'+iosapp+'</b><span>have the iPhone app</span></div>'+
+      '<div class="chip"><b>'+iphone+'</b><span>on iPhone</span></div>'+
+      '<div class="chip"><b>'+android+'</b><span>on Android</span></div>';
   }
 
   // iOS app: Y with the build and first sign-in from the app, N otherwise.
@@ -452,6 +460,13 @@
   // Device of the newest auth session, not of the last visit — see the
   // dashboard_users() migration. A user with no live session reads "—" rather
   // than being guessed at.
+  // Phone OS from ANY session, not just the newest (see the
+  // 20260918170000_dashboard_users_phone migration).
+  function phoneBadge(p){
+    if(p==='iphone')  return '<span class="badge b-iphone">🍎 iPhone</span>';
+    if(p==='android') return '<span class="badge b-android">🤖 Android</span>';
+    return '<span class="u-muted">—</span>';
+  }
   function deviceBadge(d){
     if(d==='mobile')  return '<span class="badge b-mobile">📱 Mobile</span>';
     if(d==='tablet')  return '<span class="badge b-mobile">📱 Tablet</span>';
@@ -474,6 +489,7 @@
     alerts:     { get:function(u){ return u.alerts ? 1 : 0; }, num:true },
     created_at: { get:function(u){ return u.created_at ? Date.parse(u.created_at) : null; }, num:true },
     last_seen:  { get:function(u){ return u.last_seen ? Date.parse(u.last_seen) : null; }, num:true },
+    phone:      { get:function(u){ return u.phone || null; }, num:false },
     device:     { get:function(u){ return u.device || null; }, num:false }
   };
   // Opens where the page already was, so the first paint is unchanged.
@@ -529,6 +545,7 @@
       return (u.name||'').toLowerCase().indexOf(q)>=0
           || (u.email||'').toLowerCase().indexOf(q)>=0
           || (u.device||'').indexOf(q)>=0
+          || (u.phone||'').indexOf(q)>=0
           || (q==='ios' && !!u.ios_app);
     }).sort(cmp);
     el('empty').classList.toggle('hidden', rows.length>0);
@@ -540,6 +557,7 @@
         '<td>'+(u.saves ? u.saves : '<span class="u-muted">0</span>')+'</td>'+
         '<td>'+(u.alerts ? '<span style="display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:700;background:rgba(30,123,52,.15);color:#3ccf6a">Y</span>' : '<span class="u-muted">N</span>')+'</td>'+
         '<td><button type="button" class="u-namebtn u-joinedbtn" data-lastseen="'+esc(fdate(u.last_seen)+(didReturn(u)?' ↩ came back':''))+'" data-returned="'+(didReturn(u)?'1':'0')+'" title="Click to show when this user was last seen">'+fdate(u.created_at)+'</button></td>'+
+        '<td>'+phoneBadge(u.phone)+'</td>'+
         '<td>'+deviceBadge(u.device)+'</td>'+
       '</tr>';
     }).join('');

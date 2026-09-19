@@ -103,11 +103,6 @@ struct BuildingDetailView: View {
                     SEPrimaryButton(title: "Voucher listing") {
                         Analytics.shared.track("outbound", ["kind": "voucher", "bbl": b.bbl, "href": url.absoluteString]); openURL(url)
                     }
-                } else {
-                    SEPrimaryButton(title: "Open on findacrib.com") {
-                        Analytics.shared.track("outbound", ["kind": "website", "bbl": b.bbl])
-                        openURL(b.webURL(in: store.city))
-                    }
                 }
             }
             .padding(16)
@@ -126,7 +121,6 @@ struct BuildingDetailView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     ShareLink(item: b.webURL(in: store.city)) { Label("Share", systemImage: "square.and.arrow.up") }
-                    Button { Analytics.shared.track("outbound", ["kind": "website", "bbl": b.bbl]); openURL(b.webURL(in: store.city)) } label: { Label("Open on findacrib.com", systemImage: "safari") }
                     Button {
                         Analytics.shared.track("outbound", ["kind": "directions", "bbl": b.bbl])
                         let item = MKMapItem(placemark: MKPlacemark(coordinate: b.coordinate)); item.name = b.address

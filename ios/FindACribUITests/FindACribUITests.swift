@@ -245,6 +245,9 @@ final class FindACribUITests: XCTestCase {
         signup.tap()
         let cancel = app.buttons["Cancel"]
         XCTAssertTrue(cancel.waitForExistence(timeout: 10), "signed out, the button opens sign-in first")
+        XCTAssertTrue(app.buttons["sign-in-apple"].exists, "sign-in for alerts must offer Apple")
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "identifier CONTAINS 'google'")).firstMatch.exists, "…and Google")
+        XCTAssertFalse(app.keyboards.firstMatch.exists, "no keyboard until they choose email")
         cancel.tap()
         XCTAssertTrue(signup.waitForExistence(timeout: 5))
         app.terminate()

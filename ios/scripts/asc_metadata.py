@@ -76,21 +76,26 @@ Privacy Policy: https://findacrib.com/privacy/
 Find A Crib is an independent, informational tool. It is not a broker, does not list apartments, and takes no fee. Data: NYS Homes and Community Renewal rent-stabilization register (2024), NYC HPD open data, HUD FY2026 Fair Market Rents, HousingSearch.ny.gov, advertised rents from Zumper, LA County Assessor parcel data under LAHD's RSO criteria, the SF Rent Board Housing Inventory via DataSF, and the DC DHCD RentRegistry.
 """
 
-WHATS_NEW = """Tapping an alert now opens Find A Crib on every new listing in it — each re-rental or lottery with its borough, rent and a button to the agent's page — instead of jumping straight to one website. When an alert has several apartments, you can now reach all of them.
+WHATS_NEW = """New Lotteries tab: every NYC Housing Connect lottery and income-restricted re-rental open in the boroughs you get alerts for, soonest deadline first, with the rent, sizes and income range — and a "Your income fits" badge when the income you gave matches.
 
-Links to agents who list every apartment on one page now scroll straight to the one you picked.
+Building pages now lead with violations and inspections; the About section moved to the bottom.
+
+Tapping an alert opens Find A Crib on every new listing in it, instead of jumping straight to one website.
+
+Signed-in users stay signed in from the first screen, and a few small fixes.
 """
 
-REVIEW_NOTES = """VERSION 1.2.2 (build __BUILD__) — tapping an alert notification opens an in-app list of its listings
+REVIEW_NOTES = """VERSION 1.2.2 (build __BUILD__) — Lotteries tab; alert notifications open an in-app list
 
 WHAT CHANGED SINCE 1.2.1
-Tapping a borough-alert notification now opens the app on a list of every listing in that alert, each with a button to the agent's own page, instead of opening the first listing's website directly. No new permissions, data or features otherwise.
+1. A fourth tab, "Lotteries". For a user subscribed to borough alerts it lists the NYC Housing Connect lotteries and the HPD marketing agents' re-rentals open in their alert boroughs, each with a button to the official page (housingconnect.nyc.gov or the agent's own site) in Safari. Without a subscription the tab shows a short explanation and a "Sign up for alerts" button; no sheet opens by itself. To see the list in review: sign in (Sign in with Apple is fine), tap Lotteries > "Sign up for alerts", pick a borough, save.
+2. Tapping a borough-alert notification opens the app on a list of every listing in that alert, each with a button to the agent's own page, instead of opening the first listing's website directly.
+3. Building pages: "Violations & inspections" now comes first and "About" last; the "Open on findacrib.com" menu item was removed.
+4. The launch screen waits (at most 3 seconds) for a signed-in user's saved session to be confirmed, so no screen shows as signed out first.
+No new permissions and no new data types.
 
-CHANGED IN 1.2.1 (for context)
-1. Push notifications for borough alerts. A signed-in user who turns on alerts (Profile > Alerts, or the Alerts button on the results list) gets a notification the moment a new housing lottery, re-rental or voucher listing matching their boroughs opens. The same alert is emailed; push is an additional channel. Notifications are never required to use the app.
-2. Re-rental tiles in the results list. Income-restricted apartments that HPD-approved marketing agents publish on their own websites appear in the list, labelled "Rerental" (first as the 3rd card, then every 8 to 15 cards). The button opens the agent's own page in Safari. We take no fee and do not handle applications.
-3. The map's count follows the visible region and "List" opens on the buildings in view.
-4. A decorative city skyline at the top of the results list.
+ALSO IN THIS VERSION (from 1.2.1)
+Push notifications for borough alerts the user subscribed to (the same alert is also emailed). Re-rental tiles in the results list, labelled "Rerental", opening the HPD marketing agent's own page; we take no fee and handle no applications.
 
 NOTIFICATIONS — HOW THE PERMISSION IS ASKED
 Once, a few seconds after launch, while the notification permission is still undetermined, the app shows its own card ("Get alerts on this phone?") explaining what notifications are used for. "Turn on" shows the iOS permission dialog; "Not now" dismisses it for a week. If the user declines the iOS dialog the app never asks again; it points to Settings instead. Notifications are only ever borough alerts the user subscribed to: no marketing, no promotional pushes.
@@ -98,22 +103,22 @@ Tapping a notification opens the app on a list of every new listing in that aler
 To see a push in review: sign in (Sign in with Apple is fine), open Profile > Alerts, pick a borough, tap "Turn on alerts", allow notifications. Alerts arrive when a matching listing opens; the feeds are checked every 10 minutes.
 
 APP STORE RATING
-The app calls StoreKit's requestReview after a building is saved or alerts are turned on, at most once per app version and never within 120 days of the previous request. Profile also has a "Rate Find A Crib" link to the App Store review page.
+The app calls StoreKit's requestReview after a building is saved or alerts are turned on (at most once per app version, never within 120 days of the previous such request), on the next app open on the day an account is created, and on the first app open on the 1st of each month for signed-in users; never twice in one day and never on a launch that shows the notifications card. Only the system sheet is used, so iOS's own limit applies. Profile also has a "Rate Find A Crib" link to the App Store review page.
 
 USAGE ANALYTICS
 The app records what is done in it (screens opened, searches by their filters, taps on listing links), linked to the account when signed in, declared under Product Interaction / Other Usage Data (Analytics) in App Privacy. No advertising identifier, no tracking, no third-party SDK. Profile > "Share anonymous usage" turns it off.
 
 WHERE THE DATA COMES FROM
-Every city is a public register, fetched as static JSON from findacrib.com, no key and no account: New York — NYS Homes and Community Renewal rent-stabilization register; Los Angeles — LA County Assessor parcels meeting the RSO criteria; San Francisco — SF Rent Board housing inventory, anonymised to the block; Washington DC — DHCD rental registrations. Re-rentals come from the marketing agents' public listing pages.
+Public registers fetched as static JSON from findacrib.com (NYS HCR rent-stabilization register, LA County Assessor RSO parcels, SF Rent Board inventory, DC DHCD registrations); re-rentals from the marketing agents' public pages.
 
 SIGN-IN
 No account is needed to use the app. Signing in is optional; it syncs saved buildings with our website, enables alerts, and reveals the building's registered managing agent (public HPD registration data). Sign in with Apple, Google or email.
 
 LOCATION
-The app never requests location permission. The map is Apple Maps; the in-view count and List use the visible map region, not the device location.
+Never requested. The map is Apple Maps; counts use the visible map region.
 
 DATA REFRESH
-On launch the app refreshes public JSON files from findacrib.com; without a network it falls back to the copy bundled in the app, so New York works offline in review. The three other cities download on first selection.
+Offline, the app uses the New York copy bundled in it; other cities download on first selection.
 
 CONTACT
 Any question at all: the email and phone above.

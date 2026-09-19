@@ -10,6 +10,9 @@ struct ProfileView: View {
     @State private var confirmDelete = false
     @State private var showPaywall = false
     @State private var showEmail = false
+    /// The sign-in sheet was opened to set up alerts (not by "Continue with
+    /// email"): show Apple/Google first and don't raise the keyboard.
+    @State private var emailForAlerts = false
     @State private var showAlerts = false
     @Environment(PlusStore.self) private var plus
     @AppStorage("hereTo") private var hereTo = "Rent"
@@ -89,21 +92,21 @@ struct ProfileView: View {
                         }
                     }.padding(16)
                     .sheet(isPresented: $showPaywall) { PaywallView() }
-                    .sheet(isPresented: $showEmail) { EmailSignInView() }
+                    .sheet(isPresented: $showEmail, onDismiss: { emailForAlerts = false }) { EmailSignInView(offersSocialSignIn: emailForAlerts) }
                     .sheet(isPresented: $showAlerts) { AlertsSheet() }
                     .onChange(of: nav.showPaywall) { _, on in if on { showPaywall = true; nav.showPaywall = false } }
                     // The notifications card sends people here to set alerts up.
                     // Signed out, the sign-in sheet comes first and the alerts
                     // sheet follows once there is an account.
                     .onChange(of: nav.showAlerts) { _, on in
-                        if on { if auth.isSignedIn { showAlerts = true; nav.showAlerts = false } else { showEmail = true } }
+                        if on { if auth.isSignedIn { showAlerts = true; nav.showAlerts = false } else { emailForAlerts = true; showEmail = true } }
                     }
                     .onChange(of: auth.isSignedIn) { _, on in
                         if on, nav.showAlerts { showAlerts = true; nav.showAlerts = false }
                     }
                     .onAppear {
                         if nav.showPaywall { showPaywall = true; nav.showPaywall = false }
-                        if nav.showAlerts { if auth.isSignedIn { showAlerts = true; nav.showAlerts = false } else { showEmail = true } }
+                        if nav.showAlerts { if auth.isSignedIn { showAlerts = true; nav.showAlerts = false } else { emailForAlerts = true; showEmail = true } }
                     }
                     .alert("Delete your account?", isPresented: $confirmDelete) {
                         Button("Delete", role: .destructive) { Task { await auth.deleteAccount() } }

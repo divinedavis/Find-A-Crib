@@ -26,7 +26,8 @@ struct LotteriesView: View {
         .sheet(isPresented: $showSignIn, onDismiss: {
             guard auth.isSignedIn else { return }
             Task { await feed.refresh(); if !feed.subscribed { showAlerts = true } }
-        }) { EmailSignInView() }
+        // Apple and Google first, no keyboard until they pick email (owner, 2026-09-19).
+        }) { EmailSignInView(offersSocialSignIn: true) }
         // No sheet opens by itself (owner, 2026-09-19): the tab shows the
         // sign-up screen, and only its button opens the sign-up.
     }

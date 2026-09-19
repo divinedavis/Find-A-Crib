@@ -4,7 +4,7 @@ portrait panels alternating a yellow accent field and white, an oversized
 lowercase headline, the real app screen in a rounded device bezel, the brand
 small in the corner, and a continuation cue leading into the next panel.
 
-Input : marketing/raw/{home,results,map,detail,hcr}.png (1320x2868 simulator shots)
+Input : marketing/raw/{home,results,map,detail,lotteries}.png (1320x2868 simulator shots)
 Output: marketing/asc-screenshots/0N-*.png at 1320x2868 (App Store 6.9")
 
     python3 scripts/make_screenshots.py
@@ -133,5 +133,5 @@ if __name__ == "__main__":
           "prices on pins · drag, then tap search this area", os.path.join(RAW, "map.png"), "who runs it? →")
     panel(4, "detail", WHITE, ["know the", "building", "first"],
           "violations, the managing agent, typical rent", os.path.join(RAW, "detail.png"), "apply for a lottery →")
-    panel(5, "hcr", YELLOW, ["lotteries &", "waitlists,", "one tap"],
-          "HCR affordable housing · Section 8 buildings", os.path.join(RAW, "hcr.png"))
+    panel(5, "lotteries", YELLOW, ["lotteries in", "your", "boroughs"],
+          "Housing Connect lotteries & re-rentals", os.path.join(RAW, "lotteries.png"))

@@ -33,6 +33,10 @@ struct RootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: nav.hideTabBar)
+        // A tapped alert notification opens here, on all of its items.
+        .sheet(item: Binding(get: { PushService.shared.incoming }, set: { PushService.shared.incoming = $0 })) { push in
+            AlertPushSheet(push: push)
+        }
         // The one launch-time ask (PushService.offerAtLaunchIfNeeded).
         .alert("Get alerts on this phone?", isPresented: Binding(get: { PushService.shared.launchPrompt },
                                                                   set: { PushService.shared.launchPrompt = $0 })) {

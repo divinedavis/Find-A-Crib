@@ -120,7 +120,7 @@ def _post(host: str, token: str, cfg: dict, payload: dict, collapse: str | None 
 
 
 def send(token: str, env: str, title: str, body: str, url: str | None = None, *,
-         collapse: str | None = None, cfg: dict | None = None) -> dict:
+         collapse: str | None = None, cfg: dict | None = None, extra: dict | None = None) -> dict:
     """Deliver one alert. Returns {ok, status, reason, env, refile, remove}:
     `refile` names the environment that actually worked when the stored one
     did not; `remove` is True only on 410 Unregistered."""
@@ -130,6 +130,13 @@ def send(token: str, env: str, title: str, body: str, url: str | None = None, *,
     payload = {"aps": {"alert": {"title": title, "body": body}, "sound": "default"}}
     if url:
         payload["url"] = url
+    # Anything else the app reads on tap (the alert's items). APNs caps the
+    # whole payload at 4 KB; the caller keeps under that, and this is the
+    # backstop — drop extras rather than have Apple reject the push.
+    for k, v in (extra or {}).items():
+        payload[k] = v
+    while len(json.dumps(payload).encode()) > 3900 and isinstance(payload.get("items"), list) and payload["items"]:
+        payload["items"].pop()
     env = env if env in HOSTS else "production"
     code, reason = _post(HOSTS[env], token, cfg, payload, collapse)
     refile = None

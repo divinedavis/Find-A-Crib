@@ -502,7 +502,7 @@ final class ReviewPromptUITests: XCTestCase {
         XCTAssertTrue(row.waitForExistence(timeout: 10), "Profile has no Push alerts row")
         // The row is a container (its label is not its text); the state is a
         // static text inside it. Anonymous, never asked: "Sign in and turn on alerts".
-        let state = app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'turn on alerts' OR label == 'On' OR label CONTAINS 'Settings'")).firstMatch
+        let state = app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'turn on alerts' OR label == 'On' OR label CONTAINS 'Settings' OR label CONTAINS 'not connected'")).firstMatch
         XCTAssertTrue(state.waitForExistence(timeout: 5), "the Push alerts row shows no state")
     }
 
@@ -527,6 +527,25 @@ final class ReviewPromptUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.buttons["city-field"].waitForExistence(timeout: 15))
         XCTAssertFalse(app.alerts["Get alerts on this phone?"].waitForExistence(timeout: 5), "Not now must snooze the card")
+    }
+
+    /// A tapped alert opens the app on every item in it (AlertPushSheet) —
+    /// never straight onto one agent's website. Driven by --simulate-push,
+    /// which feeds the payload through the same code path a tap does: XCUITest
+    /// cannot open a notification from Notification Center.
+    func testTappedAlertShowsEveryItem() throws {
+        let payload = #"{"aps":{"alert":{"title":"New: 3 re-rentals","body":"x"}},"url":"https://residenewyork.com/property/a/","items":[{"k":"rerental","t":"2067 Anthony Avenue, Unit 305","s":"Bronx","u":"https://residenewyork.com/property/a/","b":"Bx"},{"k":"rerental","t":"1952 Anthony Avenue. Unit 2F","s":"","u":"https://www.taxaceny.com/projects-8","b":"Bx"},{"k":"lottery","t":"Astoria Commons","s":"Queens","u":"https://housingconnect.nyc.gov/","b":"Q"}]}"#
+        let app = XCUIApplication()
+        app.launchArguments = ["--no-launch-prompt", "--simulate-push", payload]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["push-sheet-title"].waitForExistence(timeout: 15), "a tapped alert did not open the alert screen")
+        XCTAssertEqual(app.staticTexts["push-sheet-title"].label, "New: 3 re-rentals")
+        for t in ["2067 Anthony Avenue, Unit 305", "1952 Anthony Avenue. Unit 2F", "Astoria Commons"] {
+            XCTAssertTrue(app.staticTexts[t].exists, "\(t) is missing from the alert screen")
+        }
+        XCTAssertEqual(app.buttons.matching(identifier: "push-item-open").count, 3, "every item gets its own link")
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "push-sheet"; shot.lifetime = .keepAlways; add(shot)
+        XCTAssertFalse(app.alerts["Get alerts on this phone?"].exists, "the launch card must not stack on a tapped alert")
     }
 
     func testProfileHasARateLink() throws {

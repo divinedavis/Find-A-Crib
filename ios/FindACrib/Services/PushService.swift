@@ -41,6 +41,10 @@ final class PushService {
     /// shows it) — see offerAtLaunchIfNeeded. `promptForSubscriber` picks the
     /// wording: someone already signed up is told their alerts will land
     /// here; everyone else is invited to set them up.
+    /// A tapped alert waiting to be shown (RootView presents AlertPushSheet).
+    /// Set from the notification delegate, which on a cold launch runs before
+    /// any view exists — the sheet appears as soon as RootView does.
+    var incoming: AlertPush?
     var launchPrompt = false
     var promptForSubscriber = false
     private let defaults = UserDefaults.standard
@@ -97,7 +101,7 @@ final class PushService {
         // test that pins the card launches with --reset-launch-prompt instead,
         // so a snooze left by an earlier run cannot hide it.
         let args = CommandLine.arguments
-        if args.contains("--no-launch-prompt") { return }
+        if args.contains("--no-launch-prompt") || incoming != nil { return }
         if args.contains("--reset-launch-prompt") { defaults.removeObject(forKey: "push.snoozedUntil") }
         await refreshStatus()
         guard Self.shouldOffer(status: status, snoozedUntil: defaults.object(forKey: "push.snoozedUntil") as? Date) else { return }
@@ -108,6 +112,18 @@ final class PushService {
         }
         Analytics.shared.track("push_prompt", ["step": "shown", "subscriber": promptForSubscriber])
         launchPrompt = true
+    }
+
+    /// `--simulate-push '<payload json>'` feeds a payload through the same
+    /// path a tap takes. XCUITest cannot open a notification from Notification
+    /// Center (the tap only swipes it), so this is how the screen is tested.
+    func applyLaunchArguments() {
+        let a = CommandLine.arguments
+        guard let i = a.firstIndex(of: "--simulate-push"), i + 1 < a.count,
+              let data = a[i + 1].data(using: .utf8),
+              let info = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { return }
+        let alert = ((info["aps"] as? [String: Any])?["alert"] as? [String: Any]) ?? [:]
+        incoming = AlertPush.from(userInfo: info, title: alert["title"] as? String ?? "", body: alert["body"] as? String ?? "")
     }
 
     func acceptLaunchPrompt() {
@@ -276,9 +292,11 @@ final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
                                 withCompletionHandler completionHandler: @escaping () -> Void) {
-        let info = response.notification.request.content.userInfo
-        if let url = PushService.deepLink(in: info) {
-            Task { @MainActor in PushService.shared.open(url) }
+        let content = response.notification.request.content
+        // Never hand the tap straight to a third-party site: open the app on
+        // the alert's items (AlertPushSheet), every one of them reachable.
+        if let push = AlertPush.from(userInfo: content.userInfo, title: content.title, body: content.body) {
+            Task { @MainActor in PushService.shared.incoming = push }
         }
         completionHandler()
     }

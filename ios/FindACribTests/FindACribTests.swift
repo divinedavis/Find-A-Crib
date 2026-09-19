@@ -903,3 +903,29 @@ final class PushStateLineTests: XCTestCase {
         XCTAssertEqual(PushService.stateLine(status: .notDetermined, registration: .none).text, "Turn on phone alerts")
     }
 }
+
+final class AlertPushTests: XCTestCase {
+    func testEveryItemInThePayloadIsReachable() {
+        let info: [AnyHashable: Any] = [
+            "url": "https://residenewyork.com/property/a/",
+            "items": [
+                ["k": "rerental", "t": "2067 Anthony Avenue, Unit 305", "s": "Bronx · $2,100/mo", "u": "https://residenewyork.com/property/a/", "b": "Bx"],
+                ["k": "rerental", "t": "1952 Anthony Avenue. Unit 2F", "s": "", "u": "https://www.taxaceny.com/projects-8#:~:text=1952%20Anthony", "b": "Bx"],
+                ["k": "lottery", "t": "Astoria Commons", "s": "Queens · closes 10/1", "u": "", "b": "Q"],
+                ["k": "rerental", "t": "", "s": "no headline is skipped", "u": "https://x.org", "b": ""],
+            ]]
+        let p = AlertPush.from(userInfo: info, title: "New: 3 re-rentals", body: "…")
+        XCTAssertEqual(p?.items.count, 3, "all items with a headline, not just the first")
+        XCTAssertEqual(p?.items[1].url?.absoluteString, "https://www.taxaceny.com/projects-8#:~:text=1952%20Anthony", "the scroll-to-unit fragment survives")
+        XCTAssertNil(p?.items[2].url, "an empty link is no link, not a broken button")
+        XCTAssertEqual(p?.title, "New: 3 re-rentals")
+    }
+
+    func testAnOldPayloadStillOpensTheAppNotASite() {
+        let p = AlertPush.from(userInfo: ["url": "https://findacrib.com/alerts/"], title: "Find A Crib: push alerts are on", body: "This is a test.")
+        XCTAssertEqual(p?.items.count, 1)
+        XCTAssertEqual(p?.items.first?.text, "This is a test.")
+        XCTAssertEqual(p?.items.first?.url?.host, "findacrib.com")
+        XCTAssertNil(AlertPush.from(userInfo: [:], title: "", body: ""), "nothing to show: no sheet")
+    }
+}

@@ -181,9 +181,25 @@ def hcr_items(d):
     return out
 
 
+def board_fragment(url, label):
+    """An agent board shared by several listings, scrolled to this one with a
+    text fragment (the same rule as featured_rerentals.board_link)."""
+    import re as _re
+    import urllib.parse as _up
+    m = _re.match(r'\s*(\d+[\w-]*\s+[A-Za-z0-9]+)', label or "")
+    if not url or "#" in url or not m:
+        return url
+    return url + "#:~:text=" + _up.quote(m.group(1), safe="")
+
+
 def rerental_items(d):
     out = []
-    for e in (d or {}).get("items") or []:
+    feed = (d or {}).get("items") or []
+    shared = {}
+    for e in feed:
+        if e.get("url"):
+            shared[e["url"]] = shared.get(e["url"], 0) + 1
+    for e in feed:
         if not e.get("key") or not e.get("agent"):
             continue
         rent = money(e["rent_low"]) + "/mo" if e.get("rent_low") else None
@@ -194,7 +210,8 @@ def rerental_items(d):
                     "boro": boro_code(e.get("boro")), "label": "re-rental",
                     "text": e.get("label") or e["key"],
                     "sub": " · ".join(bits),
-                    "url": e.get("url") or f"{SITE}/marketing-agents/",
+                    "url": (board_fragment(e["url"], e.get("label") or e["key"]) if shared.get(e.get("url"), 0) > 1
+                            else e.get("url")) or f"{SITE}/marketing-agents/",
                     "rent_low": e.get("rent_low"),
                     "income_min": None, "income_max": e.get("income_max")})
     return out
@@ -429,6 +446,13 @@ def render_alert(items, sub, emailkit):
                     f"Change boroughs or filters at {SITE}/alerts/. Never more than one email a day.",
         unsub_url=page_unsub)
     return subject, track_links(html, sub, "alert"), text, post_unsub
+
+
+def push_items(items, limit=8):
+    """The alert's items in the compact shape the app reads on tap:
+    k kind, t headline, s detail line, u link, b borough."""
+    return [{"k": i["kind"], "t": (i.get("text") or "")[:90], "s": (i.get("sub") or "")[:120],
+             "u": i.get("url") or "", "b": i.get("boro") or ""} for i in items[:limit]]
 
 
 def push_text(items):
@@ -884,8 +908,13 @@ def main():
         # email's one-a-day cap already decided this was the moment.
         title, text_body = push_text(mine)
         for dev in devices.get(sub["email"].lower(), []):
+            # Every item rides in the payload so a tap opens the app on the
+            # whole alert — not one agent's website for the first item, which
+            # left the rest unreachable and was a blank page when the site did
+            # not load (owner, 2026-09-19). `url` stays for build 51.
             r = apns.send(dev["token"], dev.get("env") or "production", title, text_body,
-                          url=mine[0].get("url"), collapse=f"alert-{sid}")
+                          url=mine[0].get("url"), collapse=f"alert-{sid}",
+                          extra={"items": push_items(mine)})
             print(f"     push {dev['token'][:8]}… {r['status']} {r['reason'] or 'ok'}" + (f" (refiled as {r['refile']})" if r["refile"] else ""))
             if r["ok"]:
                 pushed += 1

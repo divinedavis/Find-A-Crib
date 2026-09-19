@@ -31,6 +31,7 @@ struct FindACribApp: App {
                     Perf.startWatchdog()
                     LaunchArgs.apply(to: nav, store: store)
                     ReviewPrompt.shared.applyLaunchArguments()
+                    PushService.shared.applyLaunchArguments()
                     // Keep the push token current when permission already
                     // exists (tokens rotate); never asks.
                     PushService.shared.auth = auth; PushService.shared.nav = nav

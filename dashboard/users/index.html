@@ -255,7 +255,7 @@
           <h1>Users</h1>
           <div class="sub">Everyone who created an account. Click a column to sort.</div>
         </div>
-        <input class="usearch" id="usearch" type="text" placeholder="Search name, email, device, iphone, or android…">
+        <input class="usearch" id="usearch" type="text" placeholder="Search name, email, device, iphone, android, or 1.2…">
       </div>
 
       <div class="chips" id="chips"></div>
@@ -264,7 +264,7 @@
         <div class="tbl-wrap">
           <table class="utable">
             <thead><tr id="uhead">
-              <th data-sort="name" tabindex="0" role="button" aria-sort="none">Name<span class="sarr"></span></th><th data-sort="provider" tabindex="0" role="button" aria-sort="none">Sign-in<span class="sarr"></span></th><th data-sort="ios_app" tabindex="0" role="button" aria-sort="none" title="Has this user signed in from the iPhone app? (Plan moved off the table 2026-09-09; the paying/comped chips above still count it)">iOS app<span class="sarr"></span></th><th data-sort="saves" tabindex="0" role="button" aria-sort="none">Saved<span class="sarr"></span></th><th data-sort="alerts" tabindex="0" role="button" aria-sort="none" title="On borough lottery/re-rental emails, or saved-building emails">Alerts<span class="sarr"></span></th><th data-sort="created_at" tabindex="0" role="button" aria-sort="none">Joined<span class="sarr"></span></th><th data-sort="phone" tabindex="0" role="button" aria-sort="none" title="iPhone or Android, from any signed-in session (web or the iPhone app). — = only seen on a computer/iPad.">Phone<span class="sarr"></span></th><th data-sort="device" tabindex="0" role="button" aria-sort="none">Last device<span class="sarr"></span></th>
+              <th data-sort="name" tabindex="0" role="button" aria-sort="none">Name<span class="sarr"></span></th><th data-sort="provider" tabindex="0" role="button" aria-sort="none">Sign-in<span class="sarr"></span></th><th data-sort="ios_app" tabindex="0" role="button" aria-sort="none" title="The app version last seen from this account's iPhone app, from its build number. — = never signed in from the app.">iOS version<span class="sarr"></span></th><th data-sort="alerts" tabindex="0" role="button" aria-sort="none" title="On borough lottery/re-rental emails, or saved-building emails">Alerts<span class="sarr"></span></th><th data-sort="created_at" tabindex="0" role="button" aria-sort="none">Joined<span class="sarr"></span></th><th data-sort="phone" tabindex="0" role="button" aria-sort="none" title="iPhone or Android, from any signed-in session (web or the iPhone app). — = only seen on a computer/iPad.">Phone<span class="sarr"></span></th><th data-sort="device" tabindex="0" role="button" aria-sort="none">Last device<span class="sarr"></span></th>
             </tr></thead>
             <tbody id="urows"></tbody>
           </table>
@@ -442,11 +442,22 @@
       '<div class="chip"><b>'+android+'</b><span>on Android</span></div>';
   }
 
-  // iOS app: Y with the build and first sign-in from the app, N otherwise.
+  // Which app version an account last used. The app reports its BUILD number
+  // (ios_app_users.last_build); these are the builds each marketing version
+  // started at, from ios/project.yml's history. Add a row when a version ships.
+  var IOS_VERSIONS = [[53,'1.2.2'],[41,'1.2.1'],[32,'1.2.0'],[30,'1.1.1'],[28,'1.1'],[25,'1.0.1'],[1,'1.0']];
+  function iosVersion(build){
+    var b = parseInt(build, 10);
+    if(!b) return null;
+    for(var i=0;i<IOS_VERSIONS.length;i++){ if(b >= IOS_VERSIONS[i][0]) return IOS_VERSIONS[i][1]; }
+    return null;
+  }
+  // iOS app: the version (and build) last seen, — when they never used the app.
   function iosBadge(u){
-    if(!u.ios_app) return '<span class="u-muted">N</span>';
+    if(!u.ios_app) return '<span class="u-muted">—</span>';
+    var v = iosVersion(u.ios_build), label = v ? v : (u.ios_build ? 'build '+esc(u.ios_build) : 'yes');
     var t='Signed in from the iPhone app'+(u.ios_build?' (build '+esc(u.ios_build)+')':'')+(u.ios_first_seen?' since '+fdate(u.ios_first_seen):'');
-    return '<span title="'+t+'" style="display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:700;background:rgba(47,122,138,.18);color:#6cc0d0">📲 Y</span>';
+    return '<span title="'+t+'" style="display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:700;background:rgba(47,122,138,.18);color:#6cc0d0">📲 '+esc(label)+'</span>';
   }
   function planBadge(p){
     if(p==='plus') return '<span class="badge b-plus">Plus</span>';
@@ -484,8 +495,7 @@
     name:       { get:function(u){ return (u.name||'').toLowerCase() || null; }, num:false },
     email:      { get:function(u){ return (u.email||'').toLowerCase() || null; }, num:false },
     provider:   { get:function(u){ return u.provider || null; }, num:false },
-    ios_app:    { get:function(u){ return u.ios_app ? (u.ios_first_seen ? Date.parse(u.ios_first_seen) : 1) : 0; }, num:true },
-    saves:      { get:function(u){ return u.saves||0; }, num:true },
+    ios_app:    { get:function(u){ return u.ios_app ? (parseInt(u.ios_build, 10) || 1) : 0; }, num:true },
     alerts:     { get:function(u){ return u.alerts ? 1 : 0; }, num:true },
     created_at: { get:function(u){ return u.created_at ? Date.parse(u.created_at) : null; }, num:true },
     last_seen:  { get:function(u){ return u.last_seen ? Date.parse(u.last_seen) : null; }, num:true },
@@ -546,7 +556,8 @@
           || (u.email||'').toLowerCase().indexOf(q)>=0
           || (u.device||'').indexOf(q)>=0
           || (u.phone||'').indexOf(q)>=0
-          || (q==='ios' && !!u.ios_app);
+          || (q==='ios' && !!u.ios_app)
+          || (!!u.ios_app && (iosVersion(u.ios_build)||'').indexOf(q)===0);
     }).sort(cmp);
     el('empty').classList.toggle('hidden', rows.length>0);
     el('urows').innerHTML = rows.map(function(u){
@@ -554,7 +565,6 @@
         '<td class="u-name"><button type="button" class="u-namebtn" data-email="'+esc(u.email)+'" title="Click to show the email">'+esc(u.name)+'</button></td>'+
         '<td>'+provBadge(u.provider)+'</td>'+
         '<td>'+iosBadge(u)+'</td>'+
-        '<td>'+(u.saves ? u.saves : '<span class="u-muted">0</span>')+'</td>'+
         '<td>'+(u.alerts ? '<span style="display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:700;background:rgba(30,123,52,.15);color:#3ccf6a">Y</span>' : '<span class="u-muted">N</span>')+'</td>'+
         '<td><button type="button" class="u-namebtn u-joinedbtn" data-lastseen="'+esc(fdate(u.last_seen)+(didReturn(u)?' ↩ came back':''))+'" data-returned="'+(didReturn(u)?'1':'0')+'" title="Click to show when this user was last seen">'+fdate(u.created_at)+'</button></td>'+
         '<td>'+phoneBadge(u.phone)+'</td>'+

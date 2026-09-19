@@ -1,0 +1,7 @@
+# /etc/cron.d/rentmap-report — mirrored from deploy/cron-rentmap-report.
+# findacrib.com/rent-report/: archives that night's Zumper scrape (03:30 UTC,
+# done by ~03:45) into /var/lib/findacrib/rent_history and rebuilds the page.
+# The service key comes from the API's .env for the visitor-demand section.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+10 4 * * * root cd /root/Find-A-Crib && set -a && . /root/findacrib-api/.env && set +a && python3 build_rent_report.py >> /var/log/rentmap-report.log 2>&1

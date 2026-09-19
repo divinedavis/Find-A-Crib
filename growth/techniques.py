@@ -1047,6 +1047,10 @@ def t_sitemap_daily(ctx):
         # signal crawlers learn to discount.
         if u.startswith(SITE + "/guide/"):
             return ("monthly", "0.8")
+        # The rent report (build_rent_report.py): rebuilt every morning from
+        # that night's listings scrape, so daily is the honest changefreq.
+        if u == SITE + "/rent-report/":
+            return ("daily", "0.9")
         # The SF/LA/DC aggregate hub tier, for the same reason and on the same
         # terms (t_city_seo_expansion). Monthly: these summarise the SF Rent
         # Board inventory, the LA assessor roll and DC's RentRegistry, none of
@@ -1070,7 +1074,8 @@ def t_sitemap_daily(ctx):
     if covered is not None:
         globs = ["section8/index.html", "section8/*/index.html",
                  "brief/index.html", "brief/*/index.html",
-                 "guide/index.html", "guide/*/index.html"]
+                 "guide/index.html", "guide/*/index.html",
+                 "rent-report/index.html"]
         for _city, _rel in CITY_HUB_DIRS.items():
             globs += [f"{_city}/buildings/index.html", f"{_rel}/*/index.html"]
         for pattern in globs:

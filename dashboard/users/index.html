@@ -126,7 +126,11 @@
   .usearch:focus{border-color:var(--purple)}
 
   .chips{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
-  .chip{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 14px;box-shadow:var(--shadow)}
+  .chip{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 14px;box-shadow:var(--shadow);font:inherit;color:inherit;text-align:left;cursor:pointer}
+  .chip:hover{border-color:var(--purple-ink)}
+  .chip:focus-visible{outline:2px solid var(--purple-ink);outline-offset:2px}
+  .chip-on{border-color:var(--purple-ink);box-shadow:0 0 0 1px var(--purple-ink) inset}
+  .chip-on b,.chip-on span{color:var(--purple-ink)}
   .chip b{font-size:19px;font-weight:700;letter-spacing:-.3px}
   .chip span{font-size:12px;color:var(--ink2);margin-left:6px}
 
@@ -145,6 +149,15 @@
   .sarr{display:inline-block;width:9px;margin-left:5px;opacity:0}
   .utable th[aria-sort]:not([aria-sort="none"]){color:var(--ink)}
   .utable th[aria-sort]:not([aria-sort="none"]) .sarr{opacity:1}
+  .utable th{position:relative}
+  .fbtn{background:none;border:0;color:inherit;font:inherit;cursor:pointer;padding:0 2px;margin-left:4px;opacity:.55;line-height:1}
+  .fbtn:hover,.fbtn.on{opacity:1;color:var(--purple-ink)}
+  .fmenu{position:absolute;z-index:40;top:100%;left:6px;min-width:190px;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.35);padding:6px;text-transform:none;letter-spacing:0;font-size:13px}
+  .fmenu button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--ink);font:inherit;padding:7px 9px;border-radius:7px;cursor:pointer;white-space:nowrap}
+  .fmenu button:hover{background:var(--hover)}
+  .fmenu button.sel{color:var(--purple-ink);font-weight:700}
+  .fmenu .fsep{height:1px;background:var(--border);margin:5px 2px}
+  .fmenu .fhead{padding:4px 9px;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.4px}
   .u-name{font-weight:600}
   .u-email{color:var(--ink2);font-size:12.5px}
   .u-muted{color:var(--muted)}
@@ -253,7 +266,7 @@
       <div class="page-head">
         <div>
           <h1>Users</h1>
-          <div class="sub">Everyone who created an account. Click a column to sort.</div>
+          <div class="sub">Everyone who created an account. Click a column to sort, the ▾ beside it to filter, or a number above to filter by it.</div>
         </div>
         <input class="usearch" id="usearch" type="text" placeholder="Search name, email, device, iphone, android, or 1.2…">
       </div>
@@ -264,7 +277,7 @@
         <div class="tbl-wrap">
           <table class="utable">
             <thead><tr id="uhead">
-              <th data-sort="name" tabindex="0" role="button" aria-sort="none">Name<span class="sarr"></span></th><th data-sort="provider" tabindex="0" role="button" aria-sort="none">Sign-in<span class="sarr"></span></th><th data-sort="ios_app" tabindex="0" role="button" aria-sort="none" title="The app version last seen from this account's iPhone app, from its build number. — = never signed in from the app.">iOS version<span class="sarr"></span></th><th data-sort="alerts" tabindex="0" role="button" aria-sort="none" title="On borough lottery/re-rental emails, or saved-building emails">Alerts<span class="sarr"></span></th><th data-sort="created_at" tabindex="0" role="button" aria-sort="none">Joined<span class="sarr"></span></th><th data-sort="phone" tabindex="0" role="button" aria-sort="none" title="iPhone or Android, from any signed-in session (web or the iPhone app). — = only seen on a computer/iPad.">Phone<span class="sarr"></span></th><th data-sort="device" tabindex="0" role="button" aria-sort="none">Last device<span class="sarr"></span></th>
+              <th data-sort="name" tabindex="0" role="button" aria-sort="none">Name<span class="sarr"></span></th><th data-sort="provider" tabindex="0" role="button" aria-sort="none">Sign-in<span class="sarr"></span></th><th data-sort="ios_app" tabindex="0" role="button" aria-sort="none" title="The app version last seen from this account's iPhone app, from its build number. — = never signed in from the app.">iOS version<span class="sarr"></span></th><th data-sort="alerts" tabindex="0" role="button" aria-sort="none" title="On borough lottery/re-rental emails, or saved-building emails">Alerts<span class="sarr"></span></th><th data-sort="last_seen" tabindex="0" role="button" aria-sort="none" title="The last time this account did anything signed in — a visit or an app session, not only an explicit login. Click a date in the column to see when they joined.">Last signed in<span class="sarr"></span></th><th data-sort="phone" tabindex="0" role="button" aria-sort="none" title="iPhone or Android, from any signed-in session (web or the iPhone app). — = only seen on a computer/iPad.">Phone<span class="sarr"></span></th><th data-sort="device" tabindex="0" role="button" aria-sort="none">Last device<span class="sarr"></span></th>
             </tr></thead>
             <tbody id="urows"></tbody>
           </table>
@@ -430,16 +443,16 @@
         android=USERS.filter(function(u){return u.phone==='android';}).length,
         returned=USERS.filter(didReturn).length;
     el('chips').innerHTML =
-      '<div class="chip"><b>'+total+'</b><span>total users</span></div>'+
-      '<div class="chip"><b>'+google+'</b><span>via Google</span></div>'+
-      '<div class="chip"><b>'+paying+'</b><span>paying Plus</span></div>'+
-      '<div class="chip"><b>'+comped+'</b><span>comped</span></div>'+
-      '<div class="chip"><b>'+returned+'</b><span>came back after signup</span></div>'+
-      '<div class="chip"><b>'+savers+'</b><span>have saved a building</span></div>'+
-      '<div class="chip"><b>'+mobile+'</b><span>last on mobile</span></div>'+
-      '<div class="chip"><b>'+iosapp+'</b><span>have the iPhone app</span></div>'+
-      '<div class="chip"><b>'+iphone+'</b><span>on iPhone</span></div>'+
-      '<div class="chip"><b>'+android+'</b><span>on Android</span></div>';
+      chip('', total, 'total users')+
+      chip('google', google, 'via Google')+
+      chip('plus', paying, 'paying Plus')+
+      chip('comp', comped, 'comped')+
+      chip('returned', returned, 'came back after signup')+
+      chip('savers', savers, 'have saved a building')+
+      chip('mobile', mobile, 'last on mobile')+
+      chip('iosapp', iosapp, 'have the iPhone app')+
+      chip('iphone', iphone, 'on iPhone')+
+      chip('android', android, 'on Android');
   }
 
   // Which app version an account last used. The app reports its BUILD number
@@ -502,8 +515,123 @@
     phone:      { get:function(u){ return u.phone || null; }, num:false },
     device:     { get:function(u){ return u.device || null; }, num:false }
   };
-  // Opens where the page already was, so the first paint is unchanged.
-  var sortKey='created_at', sortDir=-1;      // 1 ascending, -1 descending
+  // Newest activity first: the table is read as "who is here now".
+  var sortKey='last_seen', sortDir=-1;       // 1 ascending, -1 descending
+
+  // ---- column filters ------------------------------------------------------
+  // One value per column at a time, picked from that column's own header menu.
+  // Options are built from the data that actually loaded, so a version nobody
+  // is on never appears.
+  var FILTERS = {};                          // column key -> chosen label
+
+  // ---- the chips above the table are filters too (owner, 2026-09-19) -------
+  // Clicking one shows only those users; clicking it again (or "total users")
+  // clears it. They read as headline numbers first, so the whole chip is the
+  // button and the active one is outlined rather than restyled.
+  var CHIPS = {
+    google:   { label:'signed in with Google',      test:function(u){ return u.provider==='google'; } },
+    plus:     { label:'paying for Plus',            test:function(u){ return u.plan==='plus'; } },
+    comp:     { label:'comped',                     test:function(u){ return u.plan==='comp'; } },
+    returned: { label:'came back after signing up', test:didReturn },
+    savers:   { label:'have saved a building',      test:function(u){ return (u.saves||0)>0; } },
+    mobile:   { label:'last seen on mobile',        test:function(u){ return u.device==='mobile'||u.device==='tablet'; } },
+    iosapp:   { label:'have the iPhone app',        test:function(u){ return !!u.ios_app; } },
+    iphone:   { label:'on iPhone',                  test:function(u){ return u.phone==='iphone'; } },
+    android:  { label:'on Android',                 test:function(u){ return u.phone==='android'; } }
+  };
+  var chipKey = '';
+  function chip(key, n, label){
+    var on = key && chipKey===key;
+    return '<button type="button" class="chip'+(on?' chip-on':'')+'" data-chip="'+esc(key)+'"'
+      + ' aria-pressed="'+(on?'true':'false')+'"'
+      + ' title="'+(key ? 'Show only users who '+esc(CHIPS[key].label) : 'Show every user')+'">'
+      + '<b>'+n+'</b><span>'+esc(label)+'</span></button>';
+  }
+  function daysAgo(n){ return Date.now() - n*86400000; }
+  function filterOptions(key){
+    var seen, out = [];
+    function opt(label, test){ out.push({label:label, test:test}); }
+    if(key==='provider'){
+      seen = {};
+      USERS.forEach(function(u){ seen[u.provider||'email'] = 1; });
+      Object.keys(seen).sort().forEach(function(p){
+        opt(p.charAt(0).toUpperCase()+p.slice(1), function(u){ return (u.provider||'email')===p; });
+      });
+    } else if(key==='ios_app'){
+      opt('Has the iPhone app', function(u){ return !!u.ios_app; });
+      opt('No app', function(u){ return !u.ios_app; });
+      seen = {};
+      USERS.forEach(function(u){ if(u.ios_app){ var v=iosVersion(u.ios_build); if(v) seen[v]=1; } });
+      Object.keys(seen).sort().reverse().forEach(function(v){
+        opt('On '+v, function(u){ return !!u.ios_app && iosVersion(u.ios_build)===v; });
+      });
+    } else if(key==='alerts'){
+      opt('On alerts', function(u){ return !!u.alerts; });
+      opt('Not on alerts', function(u){ return !u.alerts; });
+    } else if(key==='phone'){
+      opt('iPhone', function(u){ return u.phone==='iphone'; });
+      opt('Android', function(u){ return u.phone==='android'; });
+      opt('No phone seen', function(u){ return !u.phone; });
+    } else if(key==='device'){
+      opt('Desktop', function(u){ return u.device==='desktop'; });
+      opt('Mobile', function(u){ return u.device==='mobile'; });
+      opt('Tablet', function(u){ return u.device==='tablet'; });
+      opt('Never seen', function(u){ return !u.device; });
+    } else if(key==='last_seen'){
+      opt('Today', function(u){ return !!u.last_seen && sameDay(u.last_seen, new Date().toISOString()); });
+      opt('Last 7 days', function(u){ return !!u.last_seen && Date.parse(u.last_seen) >= daysAgo(7); });
+      opt('Last 30 days', function(u){ return !!u.last_seen && Date.parse(u.last_seen) >= daysAgo(30); });
+      opt('Over 30 days ago', function(u){ return !!u.last_seen && Date.parse(u.last_seen) < daysAgo(30); });
+      opt('Came back after signing up', function(u){ return didReturn(u); });
+    }
+    return out;
+  }
+  function passesFilters(u){
+    if(chipKey && CHIPS[chipKey] && !CHIPS[chipKey].test(u)) return false;
+    for(var key in FILTERS){
+      var label = FILTERS[key];
+      if(!label) continue;
+      var opts = filterOptions(key), hit = null;
+      for(var i=0;i<opts.length;i++){ if(opts[i].label===label) hit = opts[i]; }
+      if(hit && !hit.test(u)) return false;
+    }
+    return true;
+  }
+  function closeMenus(){
+    [].forEach.call(document.querySelectorAll('.fmenu'), function(m){ m.remove(); });
+    [].forEach.call(document.querySelectorAll('.fbtn'), function(b){ b.setAttribute('aria-expanded','false'); });
+  }
+  function openMenu(th){
+    var key = th.dataset.sort, already = th.querySelector('.fmenu');
+    closeMenus();
+    if(already) return;
+    var m = document.createElement('div');
+    m.className = 'fmenu'; m.setAttribute('role','menu');
+    var num = COLS[key] && COLS[key].num;
+    var html = '<div class="fhead">Sort</div>'
+      + '<button type="button" data-act="asc"' + (sortKey===key && sortDir===1 ? ' class="sel"' : '') + '>' + (num ? 'Lowest first' : 'A to Z') + '</button>'
+      + '<button type="button" data-act="desc"' + (sortKey===key && sortDir===-1 ? ' class="sel"' : '') + '>' + (num ? 'Highest first' : 'Z to A') + '</button>';
+    var opts = filterOptions(key);
+    if(opts.length){
+      html += '<div class="fsep"></div><div class="fhead">Show</div>'
+        + '<button type="button" data-filter=""' + (FILTERS[key] ? '' : ' class="sel"') + '>All</button>';
+      opts.forEach(function(o){
+        html += '<button type="button" data-filter="' + esc(o.label) + '"' + (FILTERS[key]===o.label ? ' class="sel"' : '') + '>' + esc(o.label) + '</button>';
+      });
+    }
+    m.innerHTML = html;
+    th.appendChild(m);
+    th.querySelector('.fbtn').setAttribute('aria-expanded','true');
+    m.addEventListener('click', function(e){
+      var b = e.target.closest('button'); if(!b) return;
+      e.stopPropagation();
+      if(b.dataset.act){ sortKey = key; sortDir = b.dataset.act==='asc' ? 1 : -1; }
+      else { FILTERS[key] = b.getAttribute('data-filter') || ''; }
+      closeMenus();
+      paintHead();
+      renderRows(el('usearch').value);
+    });
+  }
 
   function cmp(a,b){
     var c=COLS[sortKey], x=c.get(a), y=c.get(b);
@@ -531,6 +659,17 @@
 
   function paintHead(){
     [].forEach.call(document.querySelectorAll('#uhead th[data-sort]'), function(th){
+      var fkey = th.dataset.sort;
+      var fb = th.querySelector('.fbtn');
+      if(!fb){
+        fb = document.createElement('button');
+        fb.type = 'button'; fb.className = 'fbtn';
+        fb.setAttribute('aria-haspopup','menu'); fb.setAttribute('aria-expanded','false');
+        th.appendChild(fb);
+      }
+      fb.textContent = FILTERS[fkey] ? '\u25BE\u00A0' + FILTERS[fkey] : '\u25BE';
+      fb.title = 'Sort or filter this column';
+      fb.classList.toggle('on', !!FILTERS[fkey]);
       var on = th.dataset.sort===sortKey;
       th.setAttribute('aria-sort', on ? (sortDir===1?'ascending':'descending') : 'none');
       th.querySelector('.sarr').textContent = on ? (sortDir===1?'\u2191':'\u2193') : '';
@@ -538,9 +677,13 @@
   }
 
   el('uhead').addEventListener('click', function(e){
-    var th = e.target.closest('th[data-sort]');
-    if(th) setSort(th.dataset.sort);
+    var th = e.target.closest('th[data-sort]'); if(!th) return;
+    if(e.target.closest('.fmenu')) return;
+    if(e.target.closest('.fbtn')){ e.stopPropagation(); openMenu(th); return; }
+    setSort(th.dataset.sort);
   });
+  document.addEventListener('click', function(e){ if(!e.target.closest('#uhead')) closeMenus(); });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeMenus(); });
   // The headers are reachable by keyboard, so they have to act on a key too.
   el('uhead').addEventListener('keydown', function(e){
     if(e.key!=='Enter' && e.key!==' ') return;
@@ -551,6 +694,7 @@
   function renderRows(q){
     q = (q||'').trim().toLowerCase();
     var rows = USERS.filter(function(u){
+      if(!passesFilters(u)) return false;
       if(!q) return true;
       return (u.name||'').toLowerCase().indexOf(q)>=0
           || (u.email||'').toLowerCase().indexOf(q)>=0
@@ -559,6 +703,8 @@
           || (q==='ios' && !!u.ios_app)
           || (!!u.ios_app && (iosVersion(u.ios_build)||'').indexOf(q)===0);
     }).sort(cmp);
+    el('empty').textContent = (chipKey || Object.keys(FILTERS).some(function(k){ return FILTERS[k]; }) || q)
+      ? 'No users match this filter.' : 'No users yet.';
     el('empty').classList.toggle('hidden', rows.length>0);
     el('urows').innerHTML = rows.map(function(u){
       return '<tr>'+
@@ -566,12 +712,18 @@
         '<td>'+provBadge(u.provider)+'</td>'+
         '<td>'+iosBadge(u)+'</td>'+
         '<td>'+(u.alerts ? '<span style="display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:700;background:rgba(30,123,52,.15);color:#3ccf6a">Y</span>' : '<span class="u-muted">N</span>')+'</td>'+
-        '<td><button type="button" class="u-namebtn u-joinedbtn" data-lastseen="'+esc(fdate(u.last_seen)+(didReturn(u)?' ↩ came back':''))+'" data-returned="'+(didReturn(u)?'1':'0')+'" title="Click to show when this user was last seen">'+fdate(u.created_at)+'</button></td>'+
+        '<td><button type="button" class="u-namebtn u-joinedbtn" data-joined="'+esc(fdate(u.created_at))+'" data-returned="'+(didReturn(u)?'1':'0')+'" title="Click to show when this user joined">'+fdate(u.last_seen)+(didReturn(u)?' <span class="u-muted">↩</span>':'')+'</button></td>'+
         '<td>'+phoneBadge(u.phone)+'</td>'+
         '<td>'+deviceBadge(u.device)+'</td>'+
       '</tr>';
     }).join('');
   }
+  el('chips').addEventListener('click', function(e){
+    var b = e.target.closest('.chip'); if(!b) return;
+    var key = b.getAttribute('data-chip') || '';
+    chipKey = (key && key !== chipKey) ? key : '';
+    renderChips(); renderRows(el('usearch').value);
+  });
   el('usearch').addEventListener('input', function(e){ renderRows(e.target.value); });
   // Emails are off the table by default (2026-09-07); the name is the button.
   el('urows').addEventListener('click', function(e){
@@ -580,7 +732,7 @@
     if(shown){ shown.remove(); return; }
     var d = document.createElement('div'); d.className = 'u-email-reveal';
     // the same reveal serves the Joined cell, which shows "Last seen" on click
-    if(b.classList.contains('u-joinedbtn')){ d.textContent = 'Last seen ' + (b.getAttribute('data-lastseen') || '—'); if(b.getAttribute('data-returned')==='1') d.classList.add('u-returned'); }
+    if(b.classList.contains('u-joinedbtn')){ d.textContent = 'Joined ' + (b.getAttribute('data-joined') || '—'); if(b.getAttribute('data-returned')==='1') d.classList.add('u-returned'); }
     else d.textContent = b.getAttribute('data-email') || '—';
     td.appendChild(d);
   });

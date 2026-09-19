@@ -101,7 +101,7 @@
     "accept_pct": 1.1,
     "accept_pct_mature": 0.0,
     "added": 0,
-    "at": "2026-09-18T05:11:24+00:00",
+    "at": "2026-09-19T05:11:21+00:00",
     "by_crawl_age": {
       "0-6d": {
         "accept_pct": 50.0,
@@ -120,181 +120,194 @@
       },
       "28d+": {
         "accept_pct": 0.0,
-        "fetched": 78,
+        "fetched": 79,
         "indexed": 0
       },
       "7-13d": {
         "accept_pct": 0.0,
-        "fetched": 3,
+        "fetched": 2,
         "indexed": 0
       }
     },
     "cohort": 457,
-    "date": "2026-09-18",
+    "crawl_read_lag_days": 1.8,
+    "crawls_14d": 4,
+    "crawls_28d": 16,
+    "crawls_by_week": {
+      "2026-07-27": 24,
+      "2026-08-03": 16,
+      "2026-08-10": 11,
+      "2026-08-17": 16,
+      "2026-08-24": 9,
+      "2026-08-31": 3,
+      "2026-09-07": 2,
+      "2026-09-14": 2
+    },
+    "crawls_week_partial": "2026-09-14",
+    "date": "2026-09-19",
     "dropped": 0,
     "errors": 0,
-    "fetched_mature": 86,
+    "fetched_mature": 87,
     "fetched_pct": 20.8,
     "gained_indexed": 0,
     "indexed_pct": 0.2,
     "inspected": 100,
-    "last_crawl": "2026-09-15",
+    "last_crawl": "2026-09-17",
     "lost_indexed": 0,
+    "never_fetched": {
+      "available": 15,
+      "brief": 10,
+      "council-district": 5,
+      "dc": 20,
+      "embed": 1,
+      "guide": 10,
+      "la": 20,
+      "landlord": 5,
+      "marketing-agents": 1,
+      "methodology": 1,
+      "section8": 6
+    },
     "ok": true,
-    "published_urls": 3975,
+    "published_urls": 3992,
     "read": 457,
     "rechecked": 100,
     "states": {
       "crawled_not_indexed": 94,
-      "discovered_not_indexed": 30,
+      "discovered_not_indexed": 52,
       "indexed": 1,
-      "unknown_to_google": 332
+      "unknown_to_google": 310
     }
   },
   "measure": {
-    "at": "2026-09-18T05:11:25+00:00",
+    "at": "2026-09-19T05:11:22+00:00",
     "coverage_pct": 82.7,
-    "date": "2026-09-18",
+    "date": "2026-09-19",
     "days": 1,
     "keywords_covered": 405,
     "keywords_total": 490,
-    "latest_measured_day": "2026-09-17",
+    "latest_measured_day": "2026-09-18",
     "traffic": {
       "arrival_shape": {
         "all": {
-          "busiest_6h_pct": 41.6,
-          "n": 185,
-          "night_pct": 7.6,
+          "busiest_6h_pct": 35.8,
+          "n": 179,
+          "night_pct": 9.5,
           "peak_hour_utc": 0
         },
         "direct": {
-          "busiest_6h_pct": 39.9,
+          "busiest_6h_pct": 35.3,
           "n": 153,
-          "night_pct": 9.2,
-          "peak_hour_utc": 21
+          "night_pct": 10.5,
+          "peak_hour_utc": 0
         },
         "organic": {
-          "busiest_6h_pct": 59.1,
+          "busiest_6h_pct": 45.5,
           "n": 22,
-          "night_pct": 0.0,
-          "peak_hour_utc": 0
+          "night_pct": 4.5,
+          "peak_hour_utc": 3
         }
       },
       "by_channel": {
-        "ai": 3,
         "campaign": 1,
         "direct": 153,
-        "internal": 5,
+        "internal": 2,
         "organic": 22,
         "referral": 1
       },
       "by_hour_utc": {
         "all": [
-          14,
+          13,
+          10,
+          7,
           13,
           11,
-          14,
-          11,
+          6,
           4,
+          0,
           3,
-          4,
-          2,
-          4,
-          2,
+          1,
           6,
-          6,
-          5,
-          5,
+          7,
+          7,
+          11,
           9,
-          8,
-          7,
-          5,
-          3,
-          11,
-          14,
-          10,
-          14
-        ],
-        "direct": [
-          10,
-          12,
-          8,
           11,
           8,
-          4,
-          3,
-          4,
-          2,
-          4,
-          2,
-          6,
-          6,
-          2,
-          5,
+          7,
+          10,
+          8,
           7,
           7,
-          6,
-          4,
           3,
-          8,
-          13,
-          8,
           10
         ],
+        "direct": [
+          11,
+          9,
+          6,
+          9,
+          10,
+          5,
+          4,
+          0,
+          3,
+          1,
+          5,
+          7,
+          5,
+          10,
+          9,
+          8,
+          6,
+          5,
+          8,
+          8,
+          6,
+          6,
+          3,
+          9
+        ],
         "organic": [
-          3,
+          2,
           1,
+          1,
+          4,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          2,
+          0,
+          0,
           3,
           2,
-          3,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          0,
-          2,
-          0,
-          0,
-          1,
           1,
           1,
           0,
           1,
-          1,
-          2,
+          0,
+          0,
           1
         ]
       },
       "by_src": {
-        "alert": 1,
-        "chatgpt.com": 3
+        "alert": 1
       },
-      "direct_deep": 5,
-      "new": 141,
+      "direct_deep": 1,
+      "new": 130,
       "new_window_days": 30,
-      "returning": 44,
+      "returning": 49,
       "top_paths": [
         [
           "/",
           177
         ],
         [
-          "/dc/",
-          2
-        ],
-        [
-          "/sf/",
-          2
-        ],
-        [
-          "/building/queens/68-37-yellowstone-blvd-4022100001/",
-          1
-        ],
-        [
-          "/guide/what-is-rent-stabilization/",
+          "/building/queens/40-01-150th-st-4050340020/",
           1
         ],
         [
@@ -305,14 +318,14 @@
       "top_referrers": [
         [
           "www.google.com",
-          19
+          20
         ],
         [
           "com.google.android.googlequicksearchbox",
-          2
+          1
         ],
         [
-          "newtab",
+          "divinedavis.com",
           1
         ],
         [
@@ -320,38 +333,38 @@
           1
         ]
       ],
-      "visitors": 185
+      "visitors": 179
     }
   },
   "outreach": {
-    "at": "2026-09-18T05:11:27+00:00",
-    "date": "2026-09-18",
+    "at": "2026-09-19T05:11:24+00:00",
+    "date": "2026-09-19",
     "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
     "ok": false
   },
   "scout": {
-    "at": "2026-09-18T05:11:26+00:00",
-    "date": "2026-09-18",
+    "at": "2026-09-19T05:11:24+00:00",
+    "date": "2026-09-19",
     "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
     "ok": false
   },
   "searchconsole": {
-    "at": "2026-09-18T05:00:15+00:00",
-    "clicks": 200,
-    "date": "2026-09-18",
-    "impressions": 237,
+    "at": "2026-09-19T05:00:13+00:00",
+    "clicks": 189,
+    "date": "2026-09-19",
+    "impressions": 224,
     "nonbranded_clicks": 0,
     "nonbranded_impressions": 0,
-    "page_clicks": 230,
-    "page_impressions": 1705,
+    "page_clicks": 219,
+    "page_impressions": 1638,
     "serving_branded_only": 11,
     "serving_ever": 287,
     "serving_nonbranded": 0,
-    "serving_pages": 16,
-    "serving_stable": 16,
-    "serving_unattributed": 5,
+    "serving_pages": 15,
+    "serving_stable": 15,
+    "serving_unattributed": 4,
     "share_pct": 0.0,
     "tracked_ranking": 0,
-    "window": "2026-09-09..2026-09-16"
+    "window": "2026-09-10..2026-09-17"
   }
 }

@@ -97,6 +97,7 @@ WHAT CHANGED SINCE 1.2.0
 
 NOTIFICATIONS — HOW THE PERMISSION IS ASKED
 Once, a few seconds after launch, while the notification permission is still undetermined, the app shows its own card ("Get alerts on this phone?") explaining what notifications are used for. "Turn on" shows the iOS permission dialog; "Not now" dismisses it for a week. If the user declines the iOS dialog the app never asks again; it points to Settings instead. Notifications are only ever borough alerts the user subscribed to: no marketing, no promotional pushes.
+Tapping a notification opens the app on a list of every new listing in that alert, each with a button to the agent's own page; the app never jumps straight to a website from a notification.
 To see a push in review: sign in (Sign in with Apple is fine), open Profile > Alerts, pick a borough, tap "Turn on alerts", allow notifications. Alerts arrive when a matching listing opens; the feeds are checked every 10 minutes.
 
 APP STORE RATING

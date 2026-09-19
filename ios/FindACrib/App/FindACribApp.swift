@@ -39,7 +39,7 @@ struct FindACribApp: App {
                     PushService.shared.auth = auth; PushService.shared.nav = nav
                     LotteryFeed.shared.auth = auth
                     await LotteryFeed.shared.refresh()
-                    if CommandLine.arguments.contains("--tab"), CommandLine.arguments.contains("lotteries"), LotteryFeed.shared.subscribed { nav.tab = .lotteries }
+                    if CommandLine.arguments.contains("--tab"), CommandLine.arguments.contains("lotteries") { nav.tab = .lotteries }
                     await PushService.shared.reregisterIfAuthorized()
                     // The one notifications card, after the launch settles.
                     try? await Task.sleep(for: .seconds(2))

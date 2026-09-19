@@ -1,17 +1,71 @@
 import SwiftUI
 
-/// The subscriber-only Lotteries tab: Housing Connect lotteries open in the
+/// The Lotteries tab: for an alert subscriber, Housing Connect lotteries open in the
 /// boroughs they get alerts for, soonest deadline first, and (owner, same
-/// day) the HPD marketing agents' re-rentals in those boroughs. See LotteryFeed.
+/// day) the HPD marketing agents' re-rentals in those boroughs. Everyone
+/// else is prompted to sign up for alerts the moment they tap the tab
+/// (owner, 2026-09-19), and sees a sign-up screen if they close it.
+/// See LotteryFeed.
 struct LotteriesView: View {
     @Environment(\.openURL) private var openURL
     @Environment(DataStore.self) private var store
+    @Environment(AuthService.self) private var auth
     @State private var showAlerts = false
+    @State private var showSignIn = false
     enum Pane: Hashable { case lotteries, rerentals }
     @State private var pane: Pane = .lotteries
     private var feed: LotteryFeed { LotteryFeed.shared }
 
     var body: some View {
+        Group {
+            if feed.subscribed { list } else { signup }
+        }
+        .sheet(isPresented: $showAlerts, onDismiss: { Task { await feed.refresh() } }) { AlertsSheet() }
+        // Signed out: sign in first, then straight on to the alerts sheet —
+        // unless the account they signed into already has alerts.
+        .sheet(isPresented: $showSignIn, onDismiss: {
+            guard auth.isSignedIn else { return }
+            Task { await feed.refresh(); if !feed.subscribed { showAlerts = true } }
+        }) { EmailSignInView() }
+        .onAppear {
+            Task {
+                if !feed.checked { await feed.refresh() }
+                if feed.checked, !feed.subscribed { promptSignup(auto: true) }
+            }
+        }
+    }
+
+    private func promptSignup(auto: Bool) {
+        Analytics.shared.track("lotteries_signup_prompt", ["auto": auto, "signed_in": auth.isSignedIn])
+        if auth.isSignedIn { showAlerts = true } else { showSignIn = true }
+    }
+
+    private var signup: some View {
+        VStack(spacing: 0) {
+            NavyHeader {
+                Text("Lotteries").font(.se(24, .bold)).foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.bottom, 12)
+            }
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    Image(systemName: "ticket").font(.system(size: 40, weight: .semibold)).foregroundStyle(SE.royal)
+                    Text("Lotteries & re-rentals for your boroughs").font(.se(24, .bold)).foregroundStyle(SE.ink)
+                    Text("Sign up for free alerts and this tab lists every NYC Housing Connect lottery and income-restricted re-rental open in the boroughs you pick. We'll also tell you the minute a new one opens.")
+                        .font(.se(17)).foregroundStyle(SE.ink2)
+                    SEPrimaryButton(title: "Sign up for alerts") { promptSignup(auto: false) }
+                        .accessibilityIdentifier("lotteries-signup")
+                        .padding(.top, 6)
+                    Text("Free. Unsubscribe any time.").font(.se(14)).foregroundStyle(SE.ink3)
+                }
+                .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white)
+                .padding(.top, 16)
+            }
+            .background(SE.canvas)
+        }
+        .background(SE.canvas)
+    }
+
+    private var list: some View {
         VStack(spacing: 0) {
             NavyHeader {
                 VStack(alignment: .leading, spacing: 2) {
@@ -52,7 +106,6 @@ struct LotteriesView: View {
         }
         .background(SE.canvas)
         .task { Analytics.shared.track("lotteries_view", ["open": feed.mine.count]) }
-        .sheet(isPresented: $showAlerts, onDismiss: { Task { await feed.refresh() } }) { AlertsSheet() }
     }
 
     /// Re-rentals in their boroughs, from the same featured.json the search

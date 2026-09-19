@@ -227,21 +227,26 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.buttons["sign-in-apple"].waitForExistence(timeout: 10), "the gate should land on the Profile sign-in")
     }
 
-    /// The Lotteries tab exists only for alert subscribers (owner, 2026-09-19).
-    /// The simulator is signed out: no tab. --lotteries-demo stands in for a
-    /// subscriber to all five boroughs: the tab appears and lists live
-    /// Housing Connect lotteries (or says nothing is open).
-    func testLotteriesTabOnlyForSubscribers() throws {
+    /// The Lotteries tab shows for everyone (owner, 2026-09-19). Tapping it
+    /// signed out prompts the sign-up at once (sign-in first); closing that
+    /// leaves a sign-up screen. --lotteries-demo stands in for a subscriber
+    /// to all five boroughs: the tab lists live lotteries and re-rentals.
+    func testLotteriesTabPromptsSignupThenListsForSubscribers() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt"]
         app.launch()
-        XCTAssertTrue(app.buttons["tab-Search"].waitForExistence(timeout: 20))
-        XCTAssertFalse(app.buttons["tab-Lotteries"].exists, "not subscribed: no Lotteries tab")
+        let tab = app.buttons["tab-Lotteries"]
+        XCTAssertTrue(tab.waitForExistence(timeout: 20), "the Lotteries tab shows for everyone")
+        tab.tap()
+        let cancel = app.buttons["Cancel"]
+        XCTAssertTrue(cancel.waitForExistence(timeout: 10), "signed out, tapping the tab should open sign-in to set up alerts")
+        cancel.tap()
+        XCTAssertTrue(app.buttons["lotteries-signup"].waitForExistence(timeout: 10), "after closing, the tab shows the sign-up screen")
+        XCTAssertFalse(app.descendants(matching: .any)["lottery-card"].firstMatch.exists, "no list without a subscription")
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--lotteries-demo"]
         app.launch()
-        let tab = app.buttons["tab-Lotteries"]
-        XCTAssertTrue(tab.waitForExistence(timeout: 20), "a subscriber gets the Lotteries tab")
+        XCTAssertTrue(tab.waitForExistence(timeout: 20))
         XCTAssertTrue(app.buttons["tab-My Activity"].isHittable && app.buttons["tab-Profile"].isHittable, "four tabs must all fit")
         tab.tap()
         let card = app.descendants(matching: .any)["lottery-card"].firstMatch

@@ -1,9 +1,9 @@
 import Foundation
 import Observation
 
-/// The Lotteries tab (owner, 2026-09-19): alert subscribers get a fourth tab
-/// listing the NYC Housing Connect lotteries open in the boroughs they signed
-/// up for. Everyone else keeps the three tabs.
+/// The Lotteries tab (owner, 2026-09-19): the NYC Housing Connect lotteries
+/// open in the boroughs an alert subscriber signed up for. The tab shows for
+/// everyone; tapping it without a subscription prompts the sign-up.
 ///
 /// Two reads, both from findacrib.com: the person's own alert prefs (session
 /// token; the API keys them on the verified email) and the public
@@ -32,6 +32,9 @@ final class LotteryFeed {
 
     /// Subscribed (and not unsubscribed) — the tab shows only when true.
     private(set) var subscribed = false
+    /// True once we actually know whether they are subscribed (prefs read, or
+    /// signed out). A tap before that must not prompt a real subscriber.
+    private(set) var checked = false
     /// Borough codes from the signup: M, Bk, Q, Bx, SI.
     private(set) var boroughs: [String] = []
     private(set) var income: Int?
@@ -52,16 +55,17 @@ final class LotteryFeed {
     /// after the alerts sheet saves.
     func refresh() async {
         if demo {
-            subscribed = true; boroughs = ["Bx", "Bk", "M", "Q", "SI"]; income = 70_000
+            subscribed = true; boroughs = ["Bx", "Bk", "M", "Q", "SI"]; income = 70_000; checked = true
         } else if let token = auth?.session?.accessToken {
             let j = await Self.prefs(token: token)
             if let j {
                 subscribed = PushService.isSubscribed(prefs: j)
                 boroughs = (j["boroughs"] as? [String]) ?? []
                 income = j["income"] as? Int
+                checked = true
             }   // a failed read keeps what we had: a flaky network should not hide the tab
         } else {
-            subscribed = false; boroughs = []; income = nil
+            subscribed = false; boroughs = []; income = nil; checked = true
         }
         if subscribed { await loadLotteries() }
     }

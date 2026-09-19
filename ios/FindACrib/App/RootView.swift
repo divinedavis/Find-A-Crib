@@ -98,8 +98,7 @@ struct RouteView: View {
 /// sitting in a grey disc with royal-blue icon and label.
 struct PillTabBar: View {
     @Binding var selected: Tab
-    /// Lotteries only for alert subscribers (owner, 2026-09-19).
-    private var tabs: [Tab] { Tab.allCases.filter { $0 != .lotteries || LotteryFeed.shared.subscribed } }
+    private var tabs: [Tab] { Tab.allCases }
     var body: some View {
         HStack(spacing: 0) {
             ForEach(tabs, id: \.self) { tab in
@@ -110,7 +109,7 @@ struct PillTabBar: View {
                         Text(tab.rawValue).font(.se(14, .semibold)).lineLimit(1).minimumScaleFactor(0.75)
                     }
                     .foregroundStyle(on ? SE.royal : SE.ink)
-                    .frame(width: tabs.count > 3 ? 86 : 104, height: 66)
+                    .frame(width: 86, height: 66)
                     .background(on ? SE.badge : .clear)
                     .clipShape(Capsule())
                 }

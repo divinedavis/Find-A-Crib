@@ -9,6 +9,8 @@ struct FindACribApp: App {
     @State private var nav = AppNav()
     @State private var auth = AuthService()
     @State private var plus = PlusStore()
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var wasBackgrounded = false
 
     var body: some Scene {
         WindowGroup {
@@ -39,6 +41,16 @@ struct FindACribApp: App {
                     // The one notifications card, after the launch settles.
                     try? await Task.sleep(for: .seconds(2))
                     await PushService.shared.offerAtLaunchIfNeeded()
+                    ReviewPrompt.shared.appOpened(signedIn: auth.isSignedIn, pushCardShowing: PushService.shared.launchPrompt)
+                }
+                // Back from the background counts as an open for the scheduled
+                // rating ask; .inactive alone (a sign-in sheet, Control Center) does not.
+                .onChange(of: scenePhase) { _, phase in
+                    if phase == .background { wasBackgrounded = true }
+                    if phase == .active, wasBackgrounded {
+                        wasBackgrounded = false
+                        ReviewPrompt.shared.appOpened(signedIn: auth.isSignedIn, pushCardShowing: PushService.shared.launchPrompt)
+                    }
                 }
                 .task { await auth.listen() }
                 // A token that arrived signed out is filed once there is an account.

@@ -838,6 +838,40 @@ final class ReviewPromptTests: XCTestCase {
         XCTAssertFalse(ReviewPrompt.shouldAsk(version: "1.3.0", lastVersion: "1.2.1", lastAsked: now.addingTimeInterval(-Double(ReviewPrompt.quietDays) * day + 60), now: now))
     }
 
+    func testScheduledAsks() {
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "America/New_York")!
+        func at(_ y: Int, _ m: Int, _ d: Int, _ h: Int = 12) -> Date { cal.date(from: DateComponents(year: y, month: m, day: d, hour: h))! }
+        let s = { (signedIn: Bool, signup: String?, monthly: String?, last: String?, now: Date) in
+            ReviewPrompt.scheduledMoment(signedIn: signedIn, signupDay: signup, lastMonthly: monthly, lastAskDay: last, now: now, calendar: cal) }
+        // Signed up today: the next open asks.
+        XCTAssertEqual(s(true, "2026-09-19", nil, nil, at(2026, 9, 19)), .signup)
+        // Signed up yesterday and never came back that day: no catch-up ask.
+        XCTAssertNil(s(true, "2026-09-18", nil, nil, at(2026, 9, 19)))
+        // The 1st: signed-in people are asked once that month.
+        XCTAssertEqual(s(true, nil, nil, nil, at(2026, 10, 1)), .monthly)
+        XCTAssertNil(s(true, nil, "2026-10", nil, at(2026, 10, 1)), "already asked this month")
+        XCTAssertEqual(s(true, nil, "2026-10", nil, at(2026, 11, 1)), .monthly)
+        XCTAssertNil(s(true, nil, nil, nil, at(2026, 10, 2)), "only on the 1st")
+        // Never signed out, never twice in a day.
+        XCTAssertNil(s(false, "2026-10-01", nil, nil, at(2026, 10, 1)))
+        XCTAssertNil(s(true, "2026-10-01", nil, "2026-10-01", at(2026, 10, 1)))
+        // Local midnight edge: 12:30am on the 1st in New York is the 1st.
+        XCTAssertEqual(s(true, nil, nil, nil, at(2026, 10, 1, 0)), .monthly)
+    }
+
+    @MainActor
+    func testScheduledAskIsSpentAndBlocksTheSameDay() {
+        let d = UserDefaults(suiteName: "review-sched-\(UUID().uuidString)")!
+        let p = ReviewPrompt(defaults: d)
+        let now = Date()
+        p.noteSignup(now: now)
+        p.appOpened(signedIn: true, pushCardShowing: true, now: now)
+        XCTAssertNotNil(d.string(forKey: "review.signupDay"), "the notifications card had this launch; the ask waits")
+        p.appOpened(signedIn: true, pushCardShowing: false, now: now)
+        XCTAssertNil(d.string(forKey: "review.signupDay"), "the sign-up ask is spent")
+        XCTAssertEqual(d.string(forKey: "review.lastAskDay"), ReviewPrompt.dayKey(now))
+    }
+
     func testWriteReviewLinkIsTheAppsOwnPage() {
         let u = ReviewPrompt.writeReviewURL.absoluteString
         XCTAssertTrue(u.contains("id6807549249"), "must point at Find A Crib, ASC app 6807549249")

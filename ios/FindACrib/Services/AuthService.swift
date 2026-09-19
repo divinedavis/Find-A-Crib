@@ -74,6 +74,8 @@ final class AuthService {
                 let wasSignedIn = session != nil
                 session = s
                 if s != nil {
+                    // A brand-new account: the rating ask comes on the next open today.
+                    if event == .signedIn, let u = s?.user, Date().timeIntervalSince(u.createdAt) < 600 { ReviewPrompt.shared.noteSignup() }
                     await refreshPlus()
                     if !wasSignedIn || event == .signedIn { await syncSaves(); await plus?.sync() }
                 }

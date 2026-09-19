@@ -8,6 +8,13 @@ import UIKit
 /// person has just decided the app is worth keeping, which is the only kind of
 /// moment Apple's guidance allows.
 ///
+/// Plus two scheduled asks (owner, 2026-09-19, approved from a mockup):
+/// someone who created their account today is asked on their NEXT open that
+/// day, and everyone signed in is asked on their first open on the 1st of each
+/// month. Never on a launch where the notifications card shows, never twice in
+/// a day. These are still Apple's sheet: iOS caps it at three a year, so most
+/// monthly asks will quietly show nothing — that is expected, not a bug.
+///
 /// What the system does with the request is not ours to control: iOS shows the
 /// sheet at most three times per person per 365 days and may show nothing at
 /// all, and there is no callback saying which happened. So everything here is
@@ -24,7 +31,7 @@ final class ReviewPrompt {
 
     /// What earned the ask. Recorded on the event so the two triggers can be
     /// compared later.
-    enum Moment: String { case save, alerts }
+    enum Moment: String { case save, alerts, signup, monthly }
 
     /// Never ask twice for the same version, and never inside this many days —
     /// well inside Apple's own cap, so the few asks we do get are spent on
@@ -58,7 +65,56 @@ final class ReviewPrompt {
         return true
     }
 
+    /// The scheduled ask due on this app open, if any.
+    ///
+    /// - `signupDay`: the local day ("yyyy-MM-dd") the account was created on
+    ///   this phone, cleared once that ask is spent.
+    /// - `lastMonthly`: the month ("yyyy-MM") the 1st-of-month ask last went.
+    /// - `lastAskDay`: the day of the last ask of any kind.
+    nonisolated static func scheduledMoment(signedIn: Bool, signupDay: String?, lastMonthly: String?,
+                                            lastAskDay: String?, now: Date = Date(), calendar: Calendar = .current) -> Moment? {
+        guard signedIn else { return nil }
+        let today = dayKey(now, calendar)
+        if lastAskDay == today { return nil }                   // never twice in one day
+        if signupDay == today { return .signup }
+        if calendar.component(.day, from: now) == 1, lastMonthly != monthKey(now, calendar) { return .monthly }
+        return nil
+    }
+
+    nonisolated static func dayKey(_ d: Date, _ cal: Calendar = .current) -> String {
+        let c = cal.dateComponents([.year, .month, .day], from: d)
+        return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
+    }
+
+    nonisolated static func monthKey(_ d: Date, _ cal: Calendar = .current) -> String {
+        String(dayKey(d, cal).prefix(7))
+    }
+
     // MARK: - Triggers
+
+    /// An account was just created on this phone (AuthService, on a sign-in
+    /// whose user is minutes old). The ask waits for the next open, so it
+    /// never lands on top of the sign-in itself.
+    func noteSignup(now: Date = Date()) {
+        defaults.set(Self.dayKey(now), forKey: "review.signupDay")
+    }
+
+    /// Called on a cold launch (after the notifications card had its chance)
+    /// and whenever the app comes back from the background.
+    func appOpened(signedIn: Bool, pushCardShowing: Bool, now: Date = Date()) {
+        if CommandLine.arguments.contains("--no-launch-prompt") || pushCardShowing { return }
+        guard let moment = Self.scheduledMoment(signedIn: signedIn,
+                                                signupDay: defaults.string(forKey: "review.signupDay"),
+                                                lastMonthly: defaults.string(forKey: "review.lastMonthly"),
+                                                lastAskDay: defaults.string(forKey: "review.lastAskDay"),
+                                                now: now) else { return }
+        switch moment {
+        case .signup: defaults.removeObject(forKey: "review.signupDay")
+        case .monthly: defaults.set(Self.monthKey(now), forKey: "review.lastMonthly")
+        default: break
+        }
+        ask(moment, forced: false)
+    }
 
     /// A building was saved, or alerts were turned on. Safe to call on every
     /// save — the gate decides, and a declined ask is never retried inside the
@@ -83,6 +139,7 @@ final class ReviewPrompt {
         if !forced {
             defaults.set(version, forKey: "review.lastVersion")
             defaults.set(Date(), forKey: "review.lastAsked")
+            defaults.set(Self.dayKey(Date()), forKey: "review.lastAskDay")
         }
         Analytics.shared.track("review_prompt", ["moment": moment.rawValue, "kind": Self.isBeta ? "beta_standin" : "system", "forced": forced])
         // A beat, so the sheet does not land on top of the heart still

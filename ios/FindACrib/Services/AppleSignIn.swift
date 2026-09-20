@@ -54,10 +54,31 @@ final class AppleSignInService: NSObject {
     private var rawNonce = ""
     private static var active: AppleSignInService?
 
+    /// Apple answers `.unknown` (1000) when the sheet cannot be presented —
+    /// which is what a half-presented anchor looks like from its side. Two
+    /// users hit six or seven straight failures that way (2026-09-19/20),
+    /// both from a button inside one of our own sheets, while a sign-in from
+    /// the Profile screen succeeded. So: wait a beat for whatever is
+    /// animating to settle, and try once more if Apple still says "unknown".
     static func authorize() async throws -> Credential {
-        let s = AppleSignInService(); active = s; defer { active = nil }
+        do {
+            return try await run()
+        } catch {
+            guard (error as? ASAuthorizationError)?.code == .unknown else { throw error }
+            Analytics.shared.track("signin_retry", ["provider": "apple"])
+            try? await Task.sleep(for: .milliseconds(600))
+            return try await run()
+        }
+    }
+
+    private static func run() async throws -> Credential {
+        // A second sheet while one is up is what Apple refuses; never leave a
+        // previous attempt holding the delegate.
+        active?.finish(.failure(Failure.cancelled))
+        let s = AppleSignInService(); active = s; defer { if active === s { active = nil } }
         return try await s.start()
     }
+
     private func start() async throws -> Credential {
         rawNonce = AuthNonce.random()
         let req = ASAuthorizationAppleIDProvider().createRequest()
@@ -65,6 +86,9 @@ final class AppleSignInService: NSObject {
         req.nonce = AuthNonce.sha256(rawNonce)
         let c = ASAuthorizationController(authorizationRequests: [req])
         c.delegate = self; c.presentationContextProvider = self
+        // The sheet this was tapped in may still be animating; presenting into
+        // a window mid-transition is the failure above.
+        try? await Task.sleep(for: .milliseconds(250))
         return try await withCheckedThrowingContinuation { cont in self.continuation = cont; c.performRequests() }
     }
     private func finish(_ r: Result<Credential, Error>) { continuation?.resume(with: r); continuation = nil }
@@ -84,8 +108,16 @@ extension AppleSignInService: ASAuthorizationControllerDelegate {
     }
 }
 extension AppleSignInService: ASAuthorizationControllerPresentationContextProviding {
+    /// A real window on a real scene. The old fallback built a bare
+    /// `ASPresentationAnchor()` — a window belonging to no scene, which Apple
+    /// cannot present into, and which is the difference between "cancelled"
+    /// and six straight "unknown" errors for a user who tapped sign-in inside
+    /// a sheet (2026-09-20).
     func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-        UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
-            .first { $0.activationState == .foregroundActive }?.keyWindow ?? ASPresentationAnchor()
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        let scene = scenes.first { $0.activationState == .foregroundActive } ?? scenes.first
+        if let w = scene?.keyWindow ?? scene?.windows.first(where: \.isKeyWindow) ?? scene?.windows.first { return w }
+        if let scene { return UIWindow(windowScene: scene) }
+        return ASPresentationAnchor()
     }
 }

@@ -1751,14 +1751,22 @@
     // scanners are stored but left out. No outside benchmark on purpose: a
     // campaign click rate is per send, and this is "ever clicked in the range"
     // over everyone emailed, which would read as flattering against it.
-    var clickOwn = !AL.clicks_since && !n(AL.clicks)
+    // A tapped push notification is the same act as a clicked link, so both
+    // count here (owner, 2026-09-20). The split stays on the line below.
+    var pushOpens = n(AL.push_opens), pushPeople = n(AL.push_openers);
+    var reachedPeople = n(AL.clickers) + pushPeople;
+    var clickOwn = !AL.clicks_since && !n(AL.clicks) && !pushOpens
       ? 'Counting from 12 Sep 2026 · no clicks yet'
-      : '<b>'+comma(AL.clicks)+'</b> clicks · '+comma(AL.bot_clicks)+' scanner hits left out';
+      : '<b>'+comma(n(AL.clicks) + pushOpens)+'</b> opens · '+comma(AL.clicks)+' email link'+(n(AL.clicks)===1?'':'s')
+        + ' · '+comma(pushOpens)+' app notification'+(pushOpens===1?'':'s')
+        + ' · '+comma(AL.bot_clicks)+' scanner hits left out';
     var CK = AL.clicks_by_kind || {};
     var clickBench = ['alert','weekly','nudge','welcome'].filter(function(k){ return n(CK[k]); })
       .map(function(k){ return comma(CK[k])+' '+k; }).join(' · ') ||
       'of <b>'+comma(AL.emailed)+'</b> subscribers emailed';
-    var clickTitle = 'Subscribers who clicked any link in a borough-alert email (the alert itself, the welcome, the '+
+    var clickTitle = 'People who acted on an alert in the selected range: a link clicked in a borough-alert email, '+
+      'or a push notification tapped in the iPhone app (counted separately, then added). '+
+      'Email side: subscribers who clicked any link in a borough-alert email (the alert itself, the welcome, the '+
       'first-week nudge or the Tuesday round-up) in the selected range, over every subscriber who has been emailed '+
       'at least once. Links are counted by a findacrib.com redirect before they go on to Housing Connect, HCR or the '+
       'agent’s site. Unsubscribe links are not counted, and corporate mail scanners that pre-open every link are '+
@@ -1773,7 +1781,7 @@
       {ic:'✅',v:comma(T.accounts),l:'Sign-ups'},
       {ic:'🎯',v:convRate.toFixed(1)+'%',l:'Sign-up conversion',own:convOwn,bench:convBench,title:convTitle},
       {ic:'🔔',v:alertRate.toFixed(1)+'%',l:'Alert sign-up conversion',own:alertOwn,bench:alertBench,title:alertTitle},
-      {ic:'📬',v:comma(AL.clickers)+' · '+pctS(AL.clickers,AL.emailed),l:'Alert clicks · people who clicked',
+      {ic:'📬',v:comma(reachedPeople)+' · '+pctS(reachedPeople,AL.emailed),l:'Alert opens · people who clicked or tapped',
        own:clickOwn,bench:clickBench,title:clickTitle},
       {ic:'💳',v:money(n(S.mrr)),l:comma(S.paying)+' paying'+(n(S.comped)?' · '+comma(S.comped)+' comped':'')+' · MRR',accent:true}
     ];

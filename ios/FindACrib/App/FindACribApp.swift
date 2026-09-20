@@ -14,6 +14,11 @@ struct FindACribApp: App {
 
     var body: some Scene {
         WindowGroup {
+            // --splash-preview: the letter splash on a loop, nothing else, so
+            // it can be looked at and recorded before it replaces anything.
+            if CommandLine.arguments.contains("--splash-preview") {
+                LetterSplash(loop: true)
+            } else {
             // The splash holds until a signed-in user's session is confirmed,
             // so no screen ever renders as signed out first.
             LaunchPresentation(isReady: { [auth] in auth.restored }) { RootView() }
@@ -75,6 +80,7 @@ struct FindACribApp: App {
                     Analytics.shared.track("open_url", ["src": Analytics.shared.launchSource])
                 }
                 .preferredColorScheme(.light)   // StreetEasy ships light-only; the palette is tuned for it
+            }
         }
     }
 }

@@ -466,21 +466,30 @@ actor MapThumb {
 
 enum MapRegion {
     static let nyc = MKCoordinateRegion(center: .init(latitude: 40.72, longitude: -73.95), span: .init(latitudeDelta: 0.35, longitudeDelta: 0.35))
+
+    /// Where a city opens. Every fallback below goes through this: the map used
+    /// to fall back to New York, so LA — where a plain search has no location
+    /// and more than 500 results — opened on Manhattan (owner, 2026-09-19).
+    static func of(_ city: City) -> MKCoordinateRegion {
+        MKCoordinateRegion(center: .init(latitude: city.lat, longitude: city.lng),
+                           span: .init(latitudeDelta: city.span, longitudeDelta: city.span))
+    }
+
     @MainActor
     static func forQuery(_ q: SearchQuery, store: DataStore) -> MKCoordinateRegion {
         if case .mapArea(let box)? = q.locations.first { return box.region }
-        guard !q.locations.isEmpty else { return nyc }
+        guard !q.locations.isEmpty else { return of(store.city) }
         var minLat = 90.0, maxLat = -90.0, minLng = 180.0, maxLng = -180.0, n = 0
         for b in store.buildings where q.locations.contains(where: { $0.matches(b) }) {
             minLat = min(minLat, b.lat); maxLat = max(maxLat, b.lat)
             minLng = min(minLng, b.lng); maxLng = max(maxLng, b.lng); n += 1
         }
-        guard n > 0 else { return nyc }
+        guard n > 0 else { return of(store.city) }
         return MKCoordinateRegion(center: .init(latitude: (minLat + maxLat) / 2, longitude: (minLng + maxLng) / 2),
                                   span: .init(latitudeDelta: max(0.01, (maxLat - minLat) * 1.2), longitudeDelta: max(0.01, (maxLng - minLng) * 1.2)))
     }
-    static func fit(_ bs: [Building]) -> MKCoordinateRegion {
-        guard !bs.isEmpty else { return nyc }
+    static func fit(_ bs: [Building], city: City) -> MKCoordinateRegion {
+        guard !bs.isEmpty else { return of(city) }
         var minLat = 90.0, maxLat = -90.0, minLng = 180.0, maxLng = -180.0
         for b in bs { minLat = min(minLat, b.lat); maxLat = max(maxLat, b.lat); minLng = min(minLng, b.lng); maxLng = max(maxLng, b.lng) }
         return MKCoordinateRegion(center: .init(latitude: (minLat + maxLat) / 2, longitude: (minLng + maxLng) / 2),

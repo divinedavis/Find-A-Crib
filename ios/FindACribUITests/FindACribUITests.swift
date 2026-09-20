@@ -227,6 +227,24 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.buttons["sign-in-apple"].waitForExistence(timeout: 10), "the gate should land on the Profile sign-in")
     }
 
+    /// Outside New York the app must not offer New York's things: the
+    /// Lotteries tab (Housing Connect + HPD re-rentals, by borough) is gone,
+    /// and the map opens on THAT city — it used to fall back to New York, so
+    /// LA's map opened on Manhattan (owner, 2026-09-19).
+    func testOtherCitiesHaveNoLotteriesTabAndOpenTheirOwnMap() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--city", "la", "--route", "map"]
+        app.launch()
+        XCTAssertTrue(app.buttons["pill-List"].waitForExistence(timeout: 40)
+                      || app.descendants(matching: .any)["pill-List"].firstMatch.waitForExistence(timeout: 10),
+                      "the LA map should open")
+        XCTAssertFalse(app.buttons["tab-Lotteries"].exists, "Lotteries is New York's; it must not show in LA")
+        // Apple labels the map's own places; New York's would mean the map
+        // opened on the wrong coast.
+        let ny = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] 'Brooklyn' OR label CONTAINS[c] 'Manhattan' OR label CONTAINS[c] 'New York'")).count
+        XCTAssertEqual(ny, 0, "the LA map is showing New York")
+    }
+
     /// The hero mosaic is the city that is loaded, and a tile opens the real
     /// Look Around (owner, 2026-09-19). On a simulator Apple sometimes has no
     /// panorama for a corner, so either the viewer or its "none here" message

@@ -98,7 +98,11 @@ struct RouteView: View {
 /// sitting in a grey disc with royal-blue icon and label.
 struct PillTabBar: View {
     @Binding var selected: Tab
-    private var tabs: [Tab] { Tab.allCases }
+    @Environment(DataStore.self) private var store
+    /// Lotteries is New York's: Housing Connect and the HPD marketing agents'
+    /// re-rentals, matched to boroughs. In LA, SF or DC it would list another
+    /// city's openings, so it is not offered there (owner, 2026-09-19).
+    private var tabs: [Tab] { Tab.allCases.filter { $0 != .lotteries || store.city.isNYC } }
     var body: some View {
         HStack(spacing: 0) {
             ForEach(tabs, id: \.self) { tab in

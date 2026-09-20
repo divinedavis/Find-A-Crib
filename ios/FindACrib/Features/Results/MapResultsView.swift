@@ -6,6 +6,8 @@ struct MapResultsView: View {
     @Environment(AppNav.self) private var nav
     @State var query: SearchQuery
     @State private var results: [Building] = []
+    /// Set from the city on first appear; the initial value is only what the
+    /// first frame draws before .task runs.
     @State private var region: MKCoordinateRegion = MapRegion.nyc
     @State private var selected: Building?
     @State private var moved = false
@@ -90,7 +92,7 @@ struct MapResultsView: View {
             if case .mapArea(let box)? = query.locations.first(where: { if case .mapArea = $0 { return true }; return false }) {
                 region = box.region
             } else {
-                region = (results.count > 0 && results.count <= 500) ? MapRegion.fit(results) : MapRegion.forQuery(query, store: store)
+                region = (results.count > 0 && results.count <= 500) ? MapRegion.fit(results, city: store.city) : MapRegion.forQuery(query, store: store)
             }
         }
         .swipeBackEnabled()

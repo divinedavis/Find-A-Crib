@@ -1,7 +1,7 @@
 {
-"updated": 1789319105,
-"updated_iso": "2026-09-13T17:05:05+00:00",
-"count": 52,
+"updated": 1789833904,
+"updated_iso": "2026-09-19T16:05:04+00:00",
+"count": 54,
 "listings": [
 {
 "id": "a0Ycs000023NXVBEA4",
@@ -167,6 +167,66 @@
 "bbl": null,
 "lat": 40.84745,
 "lng": -73.90231
+}
+]
+},
+{
+"id": "a0Ycs00002G8JOLEA3",
+"name": "44th Drive",
+"kind": "Waitlist",
+"status": "Open",
+"ptype": "Rental",
+"boro": "Q",
+"county": "Queens",
+"min_income": 31755,
+"max_income": 54280,
+"due": "10/14/2026",
+"fee": null,
+"phone": "7183874448",
+"url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs00002G8JOLEA3/detail",
+"info": "https://www.edgre.com/creative-agency/existing-developments/rental-propertise/44-72-11th-street-long-island-city-ny/",
+"desc": "44Th Drive is accepting applications for current and future vacancies. There is currently one studio apartment available. Long Island City’s newest luxury rental, 44-72 Eleventh St, places you right in the center of one of NYC’s most exciting and dynamic neighborhoods. Located less than 2 blocks from the 7, G, E & M trains at Court Square, 44-72 Eleventh makes commuting to the Manhattan, Brooklyn ",
+"image": "https://nyshcr.my.site.com/housing/file-asset/069cs00002RunqOAAR?oid=00D8y0000008f2FEAQ",
+"senior": false,
+"accessible": false,
+"approx": false,
+"buildings": [
+{
+"street": "44-72 11th Street",
+"zip": "11101",
+"bbl": "4000510020",
+"lat": 40.748091,
+"lng": -73.950164
+}
+]
+},
+{
+"id": "a0Ycs00002GAArtEAH",
+"name": "44th Drive",
+"kind": "Waitlist",
+"status": "Open",
+"ptype": "Rental",
+"boro": "Q",
+"county": "Queens",
+"min_income": 32246,
+"max_income": 54280,
+"due": "10/14/2026",
+"fee": null,
+"phone": "7183874448",
+"url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs00002GAArtEAH/detail",
+"info": "https://www.edgre.com/creative-agency/existing-developments/rental-propertise/44-72-11th-street-long-island-city-ny/",
+"desc": "This property is accepting applications for current and future vacancies. There is currently one studio unit available. Long Island City’s newest luxury rental, 44-72 Eleventh St, places you right in the center of one of NYC’s most exciting and dynamic neighborhoods. Located less than 2 blocks from the 7, G, E & M trains at Court Square, 44-72 Eleventh makes commuting to the Manhattan, Brooklyn or",
+"image": "https://nyshcr.my.site.com/housing/file-asset/069cs00002RunqOAAR?oid=00D8y0000008f2FEAQ",
+"senior": false,
+"accessible": false,
+"approx": false,
+"buildings": [
+{
+"street": "44-72 11th Street",
+"zip": "11101",
+"bbl": "4000510020",
+"lat": 40.748091,
+"lng": -73.950164
 }
 ]
 },
@@ -412,7 +472,7 @@
 "county": "Bronx",
 "min_income": 31117,
 "max_income": 194327,
-"due": "Ongoing",
+"due": "Check Listing",
 "fee": 75,
 "phone": "718-320-3373",
 "url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs00001nyK1PEAU/detail",
@@ -1560,8 +1620,8 @@
 "street": "2001 Marcus Ave Lake Success, NY 11042",
 "zip": null,
 "bbl": null,
-"lat": 40.69468,
-"lng": -73.94064
+"lat": 40.699526,
+"lng": -73.941072
 }
 ]
 },

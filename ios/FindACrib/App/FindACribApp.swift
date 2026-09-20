@@ -42,7 +42,7 @@ struct FindACribApp: App {
                     PushService.shared.auth = auth; PushService.shared.nav = nav
                     LotteryFeed.shared.auth = auth
                     await LotteryFeed.shared.refresh()
-                    if CommandLine.arguments.contains("--tab"), CommandLine.arguments.contains("lotteries") { nav.tab = .lotteries }
+                    if CommandLine.arguments.contains("--tab"), CommandLine.arguments.contains("lotteries"), store.city.isNYC { nav.tab = .lotteries }
                     await PushService.shared.reregisterIfAuthorized()
                     // The one notifications card, after the launch settles.
                     try? await Task.sleep(for: .seconds(2))
@@ -61,6 +61,11 @@ struct FindACribApp: App {
                 }
                 .task { await auth.listen() }
                 // A token that arrived signed out is filed once there is an account.
+                // Switching to a city without the Lotteries tab must not leave
+                // the app parked on it.
+                .onChange(of: store.city.id) { _, _ in
+                    if !store.city.isNYC, nav.tab == .lotteries { nav.tab = .search }
+                }
                 .onChange(of: auth.isSignedIn) { _, on in
                     if on { Task { await PushService.shared.reregisterIfAuthorized() } }
                     Task { await LotteryFeed.shared.refresh() }

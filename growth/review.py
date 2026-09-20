@@ -364,6 +364,14 @@ def evaluate(t, techs=None):
                            "owned_serving_pages": vis["pages"],
                            "owned_impressions": vis["impressions"],
                            "owned_best_position": vis["best_position"]}
+        # Recorded beside the raw counts, never instead of them: the raw pair is
+        # the series that goes back to the start and has to stay comparable to
+        # itself. Absent on every reading before 2026-09-20 — see
+        # searchconsole.recent_visibility on why brand_measured gates this.
+        if vis.get("brand_measured"):
+            res["measured"]["owned_nonbranded_pages"] = vis["nonbranded_pages"]
+            res["measured"]["owned_nonbranded_impressions"] = vis["nonbranded_impressions"]
+            res["measured"]["owned_unattributed_pages"] = vis["unattributed_pages"]
         if len(pairs) < GRACE_DAYS // 2:
             res["why"] = f"only {len(pairs)} days of measurement — not enough to judge"
             return res
@@ -378,6 +386,23 @@ def evaluate(t, techs=None):
                 return res
             if vis["impressions"] >= MIN_OWNED_IMPRESSIONS:
                 res["action"] = "flag"
+                # "Served but not clicked — rewrite the titles" is only advice
+                # if somebody typed a query these pages could answer. Where the
+                # whole impression count is sitelinks under "findacrib" /
+                # "findacrib.com", there is no query whose title to rewrite, and
+                # sending a future run to rewrite titles would spend it on a
+                # page Google is not offering to anyone. Same evidence, opposite
+                # instruction, so it has to be said separately.
+                if vis.get("brand_measured") and not vis["nonbranded_impressions"]:
+                    res["why"] = (f"{total} owned visitors in {days}d and {vis['pages']} of its "
+                                  f"pages earned {vis['impressions']} search impressions — but "
+                                  f"0 of those impressions came from a non-branded query "
+                                  f"({vis['unattributed_pages']} of the pages had no query "
+                                  f"attributed at all), so this is brand navigation reaching "
+                                  f"them as sitelinks, not housing-intent visibility. Not a "
+                                  f"title problem and not a retirement: nothing has been "
+                                  f"measured about whether these pages can rank")
+                    return res
                 res["why"] = (f"{total} owned visitors in {days}d, but {vis['pages']} of its "
                               f"pages earned {vis['impressions']} search impressions "
                               f"(best position {vis['best_position']}) — served but not "
@@ -430,7 +455,27 @@ def evaluate(t, techs=None):
         if recent is not None and prior is not None:
             direction = " and rising" if recent > prior else (
                 " but falling" if recent < prior else " and flat")
-        served = f", {vis['pages']} pages serving in search" if vis["measured"] else ""
+        # The corroborating clause on every verdict string below. It used to
+        # read "N pages serving in search" off the raw page count, and on
+        # 2026-09-20 that put "9 pages serving in search" on T046's WORKS when
+        # all nine were brand sitelinks and gsc_serving_nonbranded was 0. A
+        # verdict is read months later by someone with no memory of the day, so
+        # the clause has to carry which of the two it is or it is worse than
+        # absent. Where the split has not been measured the old wording stands,
+        # because the old readings genuinely do not know.
+        if not vis["measured"]:
+            served = ""
+        elif not vis.get("brand_measured") or not vis["pages"]:
+            # No serving pages means there is no split to report — "0 pages
+            # serving, all brand navigation" reads as a finding about brand
+            # when it is a finding about nothing.
+            served = f", {vis['pages']} pages serving in search"
+        elif vis["nonbranded_pages"]:
+            served = (f", {vis['nonbranded_pages']} of {vis['pages']} serving pages on "
+                      f"non-branded queries ({vis['nonbranded_impressions']} impressions)")
+        else:
+            served = (f", but its {vis['pages']} serving pages earned 0 non-branded "
+                      f"impressions — brand sitelinks, not search visibility")
 
         # Reaching here means the technique cleared the floor above — but the
         # floor is `total >= MIN_TOTAL_VISITORS OR recent >= MIN_RECENT_MEDIAN`,

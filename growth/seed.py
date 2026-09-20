@@ -157,7 +157,21 @@ SEEDS = [
                "standing lesson about setting a bar before you have one. Sections come from "
                "the ledger's prefix declarations whatever a technique's status, because a "
                "retired section is still in the docroot and still part of what Google prices "
-               "this domain on."),
+               "this domain on.\n"
+               "[2026-09-20] FIRST EVIDENCE AGAINST THIS HYPOTHESIS, written here so the "
+               "2026-10-02 revisit does not have to rediscover it. T046's computed block cut "
+               "/building/ duplicate share hard: the hand pair above measured 91.4% "
+               "word-for-word overlap, tonight's nightly audit reads 33% of 498 words shared "
+               "with siblings. Different instruments, so read the pair as direction and not "
+               "as a series. Nine building URLs have since been crawled while carrying the "
+               "block (2026-08-25, x4; 08-29; 08-30; 08-31; 09-05; 09-09) and all nine came "
+               "back 'Crawled - currently not indexed'. accept_pct_mature is still 0.0 across "
+               "88 mature fetched URLs. n=9 cannot overturn the hypothesis, but it is the "
+               "first real test of it and it went the wrong way. The revisit should therefore "
+               "weigh the site-level explanation — crawl demand and authority — at least as "
+               "heavily as the per-page duplication one: weekly crawls have run 24, 16, 11, "
+               "16, 9, 2, 2, 3 since 2026-07-27, and no active technique earns a single "
+               "external citation."),
     dict(slug="canonical_integrity", status="active", kind="indexing",
          name="Audit canonical and robots tags on the pages the docroot actually serves",
          prefixes=[], metric="organic_visitors",

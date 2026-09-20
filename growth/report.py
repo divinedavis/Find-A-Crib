@@ -926,6 +926,16 @@ def build_blocks(run_log=None, review_out=None):
                 sub += (f" · {vis['pages']} pages serving, {vis['impressions']} impressions"
                         + (f", best position {vis['best_position']}"
                            if vis["best_position"] is not None else ""))
+                # The same qualifier review.evaluate() puts on the verdict. A
+                # reader who sees "6 pages serving" and not "0 of them on a
+                # non-branded query" draws the opposite conclusion from the
+                # same row — see searchconsole.owned_visibility.
+                # Nothing to qualify when nothing served: "0 pages serving, all
+                # brand navigation" reads as a statement about brand when it is
+                # a statement about an empty set.
+                if vis.get("brand_measured") and vis["pages"]:
+                    sub += (f" ({vis['nonbranded_pages']} non-branded)"
+                            if vis["nonbranded_pages"] else " (all brand navigation)")
             rows.append([{"text": f"{t['id']} {t['name']}", "sub": sub},
                          _fmt(total), _fmt(recent)])
         else:

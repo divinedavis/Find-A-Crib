@@ -304,8 +304,13 @@ def collect(days=7):
     pages = sc.query(token, start, end, ["page"], row_limit=5000)
     serving = len(pages)
     page_rows = _page_rows(pages)
-    saved = _save_pages(sc, token, start, end, page_rows, by_query)
-    record_owned_visibility(page_rows)
+    # `per_page` is the UNCAPPED page x query map. gsc_pages.json keeps only the
+    # 60 busiest pages' queries because it is a file people read; the
+    # per-technique brand split needs the tail, because a technique's own pages
+    # ARE the tail — on 2026-09-18 five of the six serving building pages sat
+    # below the top three by impressions.
+    saved, per_page = _save_pages(sc, token, start, end, page_rows, by_query)
+    record_owned_visibility(page_rows, per_page=per_page)
 
     clicks, impressions, avg_pos = sc.totals(rows)   # returns a 3-tuple, not a dict
 
@@ -431,7 +436,7 @@ def _path(url):
         return url
 
 
-def owned_visibility(rows, techs=None):
+def owned_visibility(rows, techs=None, per_page=None):
     """Per-technique search visibility: which of a technique's own URLs Google
     actually serves, and how often.
 
@@ -442,7 +447,33 @@ def owned_visibility(rows, techs=None):
     site-wide it has no resolution at all: every content technique reads zero
     whether it is invisible in search or ranking well for a query nobody types.
     Impressions move weeks earlier and separate those two cases.
+
+    WHY THIS ALSO SPLITS BRAND OFF, ADDED 2026-09-20. The site-wide read has
+    carried serving_brand since 2026-09-12 (see serving_brand_split) and the
+    per-technique read did not, so the two instruments disagreed about the same
+    pages. What that cost, on the day it was found: review.py decided T046
+    derived_building_facts WORKS and appended "9 pages serving in search" as
+    corroboration. Every impression on every one of those pages was the query
+    "findacrib.com" — gsc_pages.json's queries_by_page for 2026-09-11..18 shows
+    brand navigation on all six attributed building URLs and no query rows at
+    all on the other three, against gsc_serving_nonbranded = 0 site-wide. They
+    are sitelinks under the brand result, not housing-intent visibility, and
+    the number the 90% share goal is about was zero the whole time.
+
+    The same confusion is more expensive one branch over: evaluate()'s
+    "served but not clicked — rewrite the titles, do not retire" advice is
+    unactionable for a page nobody is searching for, because there is no query
+    whose title to rewrite.
+
+    `per_page` is {url: [{query, impressions, ...}]} from the page x query pull.
+    Pass the UNCAPPED map: a technique's own pages are exactly the long tail
+    that gsc_pages.json's 60-page cap drops. Without it the brand keys come back
+    None, which the ledger and the review both read as "not measured" — never as
+    zero. The three page classes are the same ones serving_brand_split defines,
+    and for the same reason: `unattributed` is unknown, not brand, so it can
+    never be counted as evidence in either direction.
     """
+    have_brand = isinstance(per_page, dict) and "__error__" not in per_page and per_page
     out = {}
     for t in (techs if techs is not None else ledger.load_techniques()):
         prefixes = tuple(t.get("prefixes") or ())
@@ -450,30 +481,60 @@ def owned_visibility(rows, techs=None):
             continue
         mine = [r for r in rows if _path(r["url"]).startswith(prefixes)]
         best = min((r["position"] for r in mine if r.get("position")), default=None)
-        out[t["slug"]] = {
+        v = {
             "pages": len(mine),
             "impressions": sum(r["impressions"] for r in mine),
             "clicks": sum(r["clicks"] for r in mine),
             "best_position": best,
+            "nonbranded_pages": None,
+            "nonbranded_impressions": None,
+            "unattributed_pages": None,
         }
+        if have_brand:
+            nb_pages = nb_impressions = unattributed = 0
+            for r in mine:
+                qs = per_page.get(r["url"]) or []
+                if not qs:
+                    unattributed += 1
+                    continue
+                own = sum(q.get("impressions", 0) for q in qs if not is_branded(q.get("query")))
+                if own:
+                    nb_pages += 1
+                    nb_impressions += own
+            v["nonbranded_pages"] = nb_pages
+            v["nonbranded_impressions"] = nb_impressions
+            v["unattributed_pages"] = unattributed
+        out[t["slug"]] = v
     return out
 
 
-def record_owned_visibility(rows, date=None):
+def record_owned_visibility(rows, date=None, per_page=None):
     """Fold owned_visibility() into the ledger, one row per technique+metric.
 
     Recorded even when it is all zeros: "this technique's pages earned no
     impressions" is the finding, and a missing row would be read as "not
     measured" by the review, which deliberately refuses to retire on that.
+
+    The brand-split metrics are the one exception, and it is the same rule read
+    the other way: they are written only when `per_page` let them be computed,
+    because a zero written on a night the page x query pull failed would say
+    "no housing-intent impression" when the truth is "nobody looked".
     """
     date = date or ledger.today()
-    vis = owned_visibility(rows)
+    vis = owned_visibility(rows, per_page=per_page)
     for slug, v in vis.items():
         ledger.record_result(date, slug, "gsc_owned_pages", v["pages"])
         ledger.record_result(date, slug, "gsc_owned_impressions", v["impressions"])
         ledger.record_result(date, slug, "gsc_owned_clicks", v["clicks"])
         if v["best_position"] is not None:
             ledger.record_result(date, slug, "gsc_owned_best_position", v["best_position"])
+        if v["nonbranded_pages"] is not None:
+            ledger.record_result(date, slug, "gsc_owned_nonbranded_pages",
+                                 v["nonbranded_pages"])
+            ledger.record_result(date, slug, "gsc_owned_nonbranded_impressions",
+                                 v["nonbranded_impressions"])
+            ledger.record_result(date, slug, "gsc_owned_unattributed_pages",
+                                 v["unattributed_pages"])
     return vis
 
 
@@ -485,6 +546,11 @@ def recent_visibility(slug, since=None, window=7):
     low day is noise — and the decision this feeds (retire or keep) should never
     turn on one flaky pull. `measured` is False when nothing has been recorded
     yet, which is not the same as zero and must not be treated as one.
+
+    `brand_measured` is the same distinction one level down, and it is False for
+    every reading taken before 2026-09-20 because the metric did not exist —
+    so a caller that reads `nonbranded_*` without checking it would turn the
+    whole back-history into a fictional zero. Callers must gate on it.
     """
     def best(metric, fn=max):
         vals = [v for _, v in ledger.series(slug, metric, since=since)[-window:]]
@@ -492,11 +558,16 @@ def recent_visibility(slug, since=None, window=7):
 
     pages = best("gsc_owned_pages")
     impressions = best("gsc_owned_impressions")
+    nb_impressions = best("gsc_owned_nonbranded_impressions")
     return {"measured": impressions is not None,
             "pages": pages or 0,
             "impressions": impressions or 0,
             "clicks": best("gsc_owned_clicks") or 0,
-            "best_position": best("gsc_owned_best_position", min)}
+            "best_position": best("gsc_owned_best_position", min),
+            "brand_measured": nb_impressions is not None,
+            "nonbranded_pages": best("gsc_owned_nonbranded_pages") or 0,
+            "nonbranded_impressions": nb_impressions or 0,
+            "unattributed_pages": best("gsc_owned_unattributed_pages") or 0}
 
 
 # How many URLs of serving history to keep in gsc_pages.json. The file is
@@ -656,6 +727,13 @@ def _save_pages(sc, token, start, end, rows, by_query):
     Kept small deliberately. The whole point is that a person or an agent reads
     it and decides something, and a 5,000-row dump of every long-tail
     impression does not get read.
+
+    Returns (payload, per_page). The payload is what is written; `per_page` is
+    the uncapped page x query map, handed back out-of-band rather than stored
+    so that owned_visibility() can classify a technique's own long-tail pages
+    without that map bloating a file meant to be read by eye. It is
+    {"__error__": str} when the page x query pull failed, which every consumer
+    must treat as "not measured" rather than as an empty result.
     """
     # Which queries each of the busiest pages actually earns. Capped: the
     # page+query dimension multiplies rows fast and most of the tail is noise.
@@ -738,7 +816,7 @@ def _save_pages(sc, token, start, end, rows, by_query):
             json.dump(payload, f, indent=1, sort_keys=True)
     except OSError:
         pass          # never let a reporting write break the measurement run
-    return payload
+    return payload, per_page
 
 
 def load_pages():

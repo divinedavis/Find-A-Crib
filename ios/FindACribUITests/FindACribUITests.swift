@@ -250,21 +250,19 @@ final class FindACribUITests: XCTestCase {
                       "the map is counting another city: \(app.descendants(matching: .any)["map-count"].firstMatch.label)")
     }
 
-    /// The hero mosaic is the city that is loaded, and a tile opens the real
-    /// Look Around (owner, 2026-09-19). On a simulator Apple sometimes has no
-    /// panorama for a corner, so either the viewer or its "none here" message
-    /// is a pass — what must happen is that the tap opens the sheet.
-    func testHeroTileOpensLookAround() throws {
+    /// The hero mosaic is the city that is loaded, and it is pictures only —
+    /// the owner had a tap open Look Around for a day and took it back out
+    /// (2026-09-20), so a tile must not be a button.
+    func testHeroMosaicIsPicturesOnly() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt"]
         app.launch()
         let tile = app.descendants(matching: .any)["hero-tile"].firstMatch
-        XCTAssertTrue(tile.waitForExistence(timeout: 20), "the hero mosaic should be tappable")
+        XCTAssertTrue(tile.waitForExistence(timeout: 20), "the mosaic should be there")
+        XCTAssertFalse(app.buttons["hero-tile"].exists, "a tile is not tappable any more")
         tile.tap()
-        let close = app.buttons["hero-lookaround-close"]
-        XCTAssertTrue(close.waitForExistence(timeout: 20), "a tile should open Look Around")
-        close.tap()
-        XCTAssertTrue(app.buttons["city-field"].waitForExistence(timeout: 10), "closing returns to Search")
+        XCTAssertFalse(app.buttons["hero-lookaround-close"].waitForExistence(timeout: 6), "tapping must open nothing")
+        XCTAssertTrue(app.buttons["city-field"].exists, "and leaves Search where it was")
     }
 
     /// The Lotteries tab shows for everyone (owner, 2026-09-19). Not

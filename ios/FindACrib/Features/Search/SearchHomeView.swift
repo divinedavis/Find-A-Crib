@@ -503,8 +503,8 @@ enum MapRegion {
 /// Look Around imagery of real NYC blocks — no stock photos, no licensing.
 /// The mosaic at the top of Search: eight Apple Look Around snapshots of the
 /// city that is loaded, re-drawn from a curated pool every time the screen
-/// appears (owner, 2026-09-19), and tappable — a tap opens the real, movable
-/// Look Around for that corner.
+/// appears (owner, 2026-09-19). Pictures only — tapping one opened the movable
+/// Look Around for a day and the owner took it back out (2026-09-20).
 ///
 /// Curated corners rather than random buildings from the register: coverage is
 /// what makes this look good, and a random parcel is as likely to be an alley
@@ -513,7 +513,6 @@ enum MapRegion {
 struct HeroCollage: View {
     @Environment(DataStore.self) private var store
     @State private var picks: [HeroSpot] = []
-    @State private var open: HeroSpot?
 
     var body: some View {
         HStack(spacing: 6) {
@@ -529,18 +528,13 @@ struct HeroCollage: View {
         .padding(.vertical, 6)
         .background(SE.navy.ignoresSafeArea(edges: .top))
         .task(id: store.city.id) { picks = HeroSpot.pick(for: store.city) }
-        .sheet(item: $open) { HeroLookAroundSheet(spot: $0) }
     }
 
     @ViewBuilder private func tile(_ i: Int) -> some View {
         if i < picks.count {
-            let spot = picks[i]
-            Button { Analytics.shared.track("hero_tile", ["spot": spot.id, "city": store.city.id]); open = spot } label: {
-                HeroTile(building: spot.building)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Look around \(spot.name)")
-            .accessibilityIdentifier("hero-tile")
+            HeroTile(building: picks[i].building)
+                .accessibilityLabel(picks[i].name)
+                .accessibilityIdentifier("hero-tile")
         } else {
             SE.navyDeep.frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -623,78 +617,6 @@ struct HeroSpot: Identifiable, Hashable {
             HeroSpot(id: "hero-dc-mt-plsnt",  name: "Mount Pleasant",            lat: 38.9300, lng: -77.0380),
         ],
     ]
-}
-
-/// Apple's own Look Around for a tapped tile, full screen. MKLookAroundViewController,
-/// not SwiftUI's LookAroundPreview: the preview is a still that only opens the
-/// system viewer when tapped, so the owner could not actually look around
-/// (2026-09-20). This one pans, zooms and walks down the street.
-///
-/// Apple's terms forbid rehosting the imagery, so the scene is requested per
-/// tap and never stored.
-struct HeroLookAroundSheet: View {
-    let spot: HeroSpot
-    @Environment(\.dismiss) private var dismiss
-    @State private var scene: MKLookAroundScene?
-    @State private var checked = false
-
-    var body: some View {
-        ZStack(alignment: .top) {
-            Color.black.ignoresSafeArea()
-            if let scene {
-                LookAroundViewer(scene: scene)
-                    .ignoresSafeArea()
-                    .accessibilityIdentifier("hero-lookaround")
-            } else if checked {
-                VStack(spacing: 10) {
-                    Image(systemName: "binoculars").font(.system(size: 34)).foregroundStyle(.white.opacity(0.8))
-                    Text("Apple has no Look Around here yet").font(.se(18, .semibold)).foregroundStyle(.white)
-                    Text(spot.name).font(.se(15)).foregroundStyle(.white.opacity(0.75))
-                }
-                .frame(maxHeight: .infinity)
-            } else {
-                ProgressView().tint(.white).frame(maxHeight: .infinity)
-            }
-            // Close top-right; the neighborhood sits at the bottom centre,
-            // clear of Apple's own controls and of what you came to look at
-            // (owner, 2026-09-20).
-            Button { dismiss() } label: {
-                Image(systemName: "xmark").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
-                    .frame(width: 38, height: 38).background(.black.opacity(0.55), in: Circle())
-            }
-            .accessibilityLabel("Close")
-            .accessibilityIdentifier("hero-lookaround-close")
-            .frame(maxWidth: .infinity, alignment: .trailing)
-            .padding(.horizontal, 16).padding(.top, 12)
-        }
-        .overlay(alignment: .bottom) {
-            Text(spot.name).font(.se(18, .bold)).foregroundStyle(.white)
-                .padding(.horizontal, 16).padding(.vertical, 9)
-                .background(.black.opacity(0.55), in: Capsule())
-                .padding(.bottom, 34)
-                .allowsHitTesting(false)
-        }
-        .task {
-            scene = try? await MKLookAroundSceneRequest(coordinate: spot.coordinate).scene
-            checked = true
-            Analytics.shared.track("look_around", ["spot": spot.id, "ok": scene != nil])
-        }
-    }
-}
-
-/// MKLookAroundViewController in SwiftUI — the interactive viewer.
-struct LookAroundViewer: UIViewControllerRepresentable {
-    let scene: MKLookAroundScene
-    func makeUIViewController(context: Context) -> MKLookAroundViewController {
-        let vc = MKLookAroundViewController(scene: scene)
-        vc.isNavigationEnabled = true      // tap down the street
-        vc.showsRoadLabels = true
-        vc.pointOfInterestFilter = .excludingAll
-        return vc
-    }
-    func updateUIViewController(_ vc: MKLookAroundViewController, context: Context) {
-        if vc.scene != scene { vc.scene = scene }
-    }
 }
 
 struct HeroTile: View {

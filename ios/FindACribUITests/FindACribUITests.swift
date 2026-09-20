@@ -227,6 +227,23 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.buttons["sign-in-apple"].waitForExistence(timeout: 10), "the gate should land on the Profile sign-in")
     }
 
+    /// The hero mosaic is the city that is loaded, and a tile opens the real
+    /// Look Around (owner, 2026-09-19). On a simulator Apple sometimes has no
+    /// panorama for a corner, so either the viewer or its "none here" message
+    /// is a pass — what must happen is that the tap opens the sheet.
+    func testHeroTileOpensLookAround() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt"]
+        app.launch()
+        let tile = app.descendants(matching: .any)["hero-tile"].firstMatch
+        XCTAssertTrue(tile.waitForExistence(timeout: 20), "the hero mosaic should be tappable")
+        tile.tap()
+        let close = app.buttons["hero-lookaround-close"]
+        XCTAssertTrue(close.waitForExistence(timeout: 20), "a tile should open Look Around")
+        close.tap()
+        XCTAssertTrue(app.buttons["city-field"].waitForExistence(timeout: 10), "closing returns to Search")
+    }
+
     /// The Lotteries tab shows for everyone (owner, 2026-09-19). Not
     /// subscribed, it shows a sign-up screen and NO sheet opens by itself;
     /// the button opens sign-in (signed out) then the alerts sheet. --lotteries-demo stands in for a subscriber
@@ -316,6 +333,7 @@ final class FindACribUITests: XCTestCase {
                           "a \(city) building must show its own record panel")
             // New York's chrome must be gone, not merely empty.
             XCTAssertFalse(app.staticTexts["Managing agent"].exists, "NYC's agent section leaked into \(city)")
+            XCTAssertFalse(app.buttons["pill-Alerts"].exists, "alerts are NY-fed; the pill must not show in \(city)")
             XCTAssertFalse(app.staticTexts["Violations & inspections"].exists, "NYC's HPD section leaked into \(city)")
             XCTAssertFalse(app.buttons["open-violations"].exists, "NYC's violations tile leaked into \(city)")
             XCTAssertFalse(app.staticTexts.containing(

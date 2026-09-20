@@ -142,11 +142,18 @@ struct ResultsView: View {
                 // something — but it means the same thing on any search, and a
                 // standing email beats a bookmark the visitor has to come back
                 // and re-read. It needs an account, because it needs an email.
-                FloatingPill(title: "Alerts", icon: "bell.badge.fill", fill: SE.navy, ink: .white) {
-                    Analytics.shared.track("alerts_open", ["signed_in": auth.isSignedIn, "src": "results"])
-                    if auth.isSignedIn { showAlerts = true } else { showSignIn = true }
+                // New York only (2026-09-19): every alert we can send comes
+                // from a NY feed — Housing Connect, HousingSearch.ny.gov, the
+                // HPD marketing agents, and a voucher scrape keyed to NY
+                // counties — and the sign-up form asks for boroughs. In LA, SF
+                // or DC the button could only promise something nothing feeds.
+                if store.city.isNYC {
+                    FloatingPill(title: "Alerts", icon: "bell.badge.fill", fill: SE.navy, ink: .white) {
+                        Analytics.shared.track("alerts_open", ["signed_in": auth.isSignedIn, "src": "results"])
+                        if auth.isSignedIn { showAlerts = true } else { showSignIn = true }
+                    }
+                    .accessibilityIdentifier("pill-Alerts")
                 }
-                .accessibilityIdentifier("pill-Alerts")
             }
             .padding(.bottom, 92)
         }

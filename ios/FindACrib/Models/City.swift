@@ -86,6 +86,17 @@ struct City: Identifiable, Hashable, Codable, Sendable {
     /// Advertised rents, vouchers, HPD violations/complaints and HCR lotteries
     /// exist only for New York; everywhere else those files 404 by design.
     var hasNYCExtras: Bool { isNYC }
+
+    /// What the locked "Show" row says this register covers, in the city's own
+    /// terms — the filter sheet shows it above the options.
+    var registerNote: String {
+        switch id {
+        case "la": return "Parcels meeting LAHD's RSO criteria"
+        case "sf": return "Units reported to the SF Rent Board"
+        case "dc": return "Units registered with DC DHCD"
+        default:   return "Every building on the DHCR register"
+        }
+    }
     var region: MKCoordinateRegion {
         .init(center: .init(latitude: lat, longitude: lng),
               span: .init(latitudeDelta: span, longitudeDelta: span))

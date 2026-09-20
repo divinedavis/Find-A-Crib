@@ -16,13 +16,15 @@ struct FiltersSheet: View {
                         SEFieldLabel(text: "Show")
                         ShowChecklist(query: $draft)
                     }
-                    // Bedrooms are always offered (see SearchEngine): a size narrows
-                    // to advertised buildings on its own.
-                    VStack(alignment: .leading, spacing: 10) {
-                        SEFieldLabel(text: "Bedrooms")
-                        SESegmentRow(options: [(0, "Studio"), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: $draft.beds)
-                        Text("From recent listings — narrows to buildings with an advertised apartment.")
-                            .font(.se(14)).foregroundStyle(SE.ink3)
+                    // Bedrooms come from the listing feeds, which are New York's,
+                    // so outside NYC every size matches nothing.
+                    if store.city.hasNYCExtras {
+                        VStack(alignment: .leading, spacing: 10) {
+                            SEFieldLabel(text: "Bedrooms")
+                            SESegmentRow(options: [(0, "Studio"), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: $draft.beds)
+                            Text("From recent listings — narrows to buildings with an advertised apartment.")
+                                .font(.se(14)).foregroundStyle(SE.ink3)
+                        }
                     }
                     if draft.vouchersOnly {
                         Toggle(isOn: $draft.voucherLiveOnly) {
@@ -32,14 +34,18 @@ struct FiltersSheet: View {
                             }
                         }.tint(SE.royal).padding(14).overlay(Rectangle().stroke(SE.line))
                     }
-                    VStack(alignment: .leading, spacing: 10) {
-                        SEFieldLabel(text: "Building condition")
-                        Toggle(isOn: $draft.noOpenViolations) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("No open HPD violations").font(.se(18, .semibold))
-                                Text("Hide buildings with unresolved housing-code violations").font(.se(14)).foregroundStyle(SE.ink3)
-                            }
-                        }.tint(SE.royal).padding(14).overlay(Rectangle().stroke(SE.line))
+                    // HPD violation counts ride on the New York building rows;
+                    // the other cities publish their own records, not these.
+                    if store.city.isNYC {
+                        VStack(alignment: .leading, spacing: 10) {
+                            SEFieldLabel(text: "Building condition")
+                            Toggle(isOn: $draft.noOpenViolations) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("No open HPD violations").font(.se(18, .semibold))
+                                    Text("Hide buildings with unresolved housing-code violations").font(.se(14)).foregroundStyle(SE.ink3)
+                                }
+                            }.tint(SE.royal).padding(14).overlay(Rectangle().stroke(SE.line))
+                        }
                     }
                     VStack(alignment: .leading, spacing: 10) {
                         SEFieldLabel(text: "Sort")

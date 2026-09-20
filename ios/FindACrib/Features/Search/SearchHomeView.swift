@@ -492,17 +492,20 @@ enum MapRegion {
 
 /// StreetEasy opens on a photo collage around a brand card. Ours is built from
 /// Look Around imagery of real NYC blocks — no stock photos, no licensing.
+/// The mosaic at the top of Search: eight Apple Look Around snapshots of the
+/// city that is loaded, re-drawn from a curated pool every time the screen
+/// appears (owner, 2026-09-19), and tappable — a tap opens the real, movable
+/// Look Around for that corner.
+///
+/// Curated corners rather than random buildings from the register: coverage is
+/// what makes this look good, and a random parcel is as likely to be an alley
+/// wall as a street. Each spot's id is stable, so ImageService caches its
+/// snapshot on disk and a second launch paints instantly.
 struct HeroCollage: View {
-    static let spots: [(String, Double, Double)] = [
-        ("hero-park-slope", 40.6737, -73.9776),
-        ("hero-harlem", 40.8075, -73.9455),
-        ("hero-astoria", 40.7644, -73.9235),
-        ("hero-fort-greene", 40.6892, -73.9740),
-        ("hero-east-village", 40.7265, -73.9815),
-        ("hero-bed-stuy", 40.6872, -73.9418),
-        ("hero-uws", 40.7870, -73.9754),
-        ("hero-bushwick", 40.6944, -73.9213),
-    ]
+    @Environment(DataStore.self) private var store
+    @State private var picks: [HeroSpot] = []
+    @State private var open: HeroSpot?
+
     var body: some View {
         HStack(spacing: 6) {
             VStack(spacing: 6) { tile(0); tile(1); tile(2) }.frame(width: 64)
@@ -516,10 +519,148 @@ struct HeroCollage: View {
         .padding(.horizontal, 6)
         .padding(.vertical, 6)
         .background(SE.navy.ignoresSafeArea(edges: .top))
+        .task(id: store.city.id) { picks = HeroSpot.pick(for: store.city) }
+        .sheet(item: $open) { HeroLookAroundSheet(spot: $0) }
     }
-    private func tile(_ i: Int) -> some View {
-        let s = Self.spots[i]
-        return HeroTile(building: Building(bbl: s.0, b: "", a: "", z: nil, lat: s.1, lng: s.2))
+
+    @ViewBuilder private func tile(_ i: Int) -> some View {
+        if i < picks.count {
+            let spot = picks[i]
+            Button { Analytics.shared.track("hero_tile", ["spot": spot.id, "city": store.city.id]); open = spot } label: {
+                HeroTile(building: spot.building)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Look around \(spot.name)")
+            .accessibilityIdentifier("hero-tile")
+        } else {
+            SE.navyDeep.frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+}
+
+/// One corner of a city: a stable id (the snapshot cache key), what to call it,
+/// and where it is.
+struct HeroSpot: Identifiable, Hashable {
+    let id: String
+    let name: String
+    let lat: Double
+    let lng: Double
+
+    var building: Building { Building(bbl: id, b: "", a: name, z: nil, lat: lat, lng: lng) }
+    var coordinate: CLLocationCoordinate2D { CLLocationCoordinate2D(latitude: lat, longitude: lng) }
+
+    /// Eight of the city's corners, in a fresh order every time.
+    static func pick(for city: City, count: Int = 8) -> [HeroSpot] {
+        let pool = all[city.id] ?? all["nyc"]!
+        return Array(pool.shuffled().prefix(count))
+    }
+
+    /// Street corners with Look Around coverage, one list per city. A spot that
+    /// has no panorama falls back to a map snapshot (ImageService), so a gap
+    /// costs a plain tile and never a blank one.
+    static let all: [String: [HeroSpot]] = [
+        "nyc": [
+            HeroSpot(id: "hero-park-slope",   name: "Park Slope, Brooklyn",      lat: 40.6737, lng: -73.9776),
+            HeroSpot(id: "hero-harlem",       name: "Harlem, Manhattan",         lat: 40.8075, lng: -73.9455),
+            HeroSpot(id: "hero-astoria",      name: "Astoria, Queens",           lat: 40.7644, lng: -73.9235),
+            HeroSpot(id: "hero-fort-greene",  name: "Fort Greene, Brooklyn",     lat: 40.6892, lng: -73.9740),
+            HeroSpot(id: "hero-east-village", name: "East Village, Manhattan",   lat: 40.7265, lng: -73.9815),
+            HeroSpot(id: "hero-bed-stuy",     name: "Bed-Stuy, Brooklyn",        lat: 40.6872, lng: -73.9418),
+            HeroSpot(id: "hero-uws",          name: "Upper West Side",           lat: 40.7870, lng: -73.9754),
+            HeroSpot(id: "hero-bushwick",     name: "Bushwick, Brooklyn",        lat: 40.6944, lng: -73.9213),
+            HeroSpot(id: "hero-williamsburg", name: "Williamsburg, Brooklyn",    lat: 40.7170, lng: -73.9570),
+            HeroSpot(id: "hero-les",          name: "Lower East Side",           lat: 40.7185, lng: -73.9885),
+            HeroSpot(id: "hero-wash-heights", name: "Washington Heights",        lat: 40.8500, lng: -73.9380),
+            HeroSpot(id: "hero-sunset-park",  name: "Sunset Park, Brooklyn",     lat: 40.6450, lng: -74.0100),
+            HeroSpot(id: "hero-jackson-hts",  name: "Jackson Heights, Queens",   lat: 40.7480, lng: -73.8830),
+            HeroSpot(id: "hero-crown-hts",    name: "Crown Heights, Brooklyn",   lat: 40.6710, lng: -73.9570),
+            HeroSpot(id: "hero-greenpoint",   name: "Greenpoint, Brooklyn",      lat: 40.7280, lng: -73.9520),
+            HeroSpot(id: "hero-mott-haven",   name: "Mott Haven, the Bronx",     lat: 40.8160, lng: -73.9200),
+        ],
+        "la": [
+            HeroSpot(id: "hero-la-hollywood",   name: "Hollywood Blvd",          lat: 34.1016, lng: -118.3387),
+            HeroSpot(id: "hero-la-venice",      name: "Venice Beach",            lat: 33.9871, lng: -118.4723),
+            HeroSpot(id: "hero-la-koreatown",   name: "Koreatown",               lat: 34.0619, lng: -118.3090),
+            HeroSpot(id: "hero-la-echo-park",   name: "Echo Park",               lat: 34.0782, lng: -118.2606),
+            HeroSpot(id: "hero-la-silver-lake", name: "Silver Lake",             lat: 34.0906, lng: -118.2760),
+            HeroSpot(id: "hero-la-dtla",        name: "Downtown LA",             lat: 34.0448, lng: -118.2540),
+            HeroSpot(id: "hero-la-weho",        name: "West Hollywood",          lat: 34.0900, lng: -118.3856),
+            HeroSpot(id: "hero-la-highland-pk", name: "Highland Park",           lat: 34.1135, lng: -118.1919),
+            HeroSpot(id: "hero-la-los-feliz",   name: "Los Feliz",               lat: 34.1053, lng: -118.2915),
+            HeroSpot(id: "hero-la-mid-city",    name: "Mid-City",                lat: 34.0619, lng: -118.3440),
+        ],
+        "sf": [
+            HeroSpot(id: "hero-sf-mission",   name: "The Mission",               lat: 37.7616, lng: -122.4216),
+            HeroSpot(id: "hero-sf-haight",    name: "Haight-Ashbury",            lat: 37.7699, lng: -122.4469),
+            HeroSpot(id: "hero-sf-north-bch", name: "North Beach",               lat: 37.7999, lng: -122.4079),
+            HeroSpot(id: "hero-sf-castro",    name: "The Castro",                lat: 37.7626, lng: -122.4350),
+            HeroSpot(id: "hero-sf-sunset",    name: "Inner Sunset",              lat: 37.7635, lng: -122.4665),
+            HeroSpot(id: "hero-sf-nob-hill",  name: "Nob Hill",                  lat: 37.7918, lng: -122.4103),
+            HeroSpot(id: "hero-sf-hayes",     name: "Hayes Valley",              lat: 37.7763, lng: -122.4241),
+            HeroSpot(id: "hero-sf-chinatown", name: "Chinatown",                 lat: 37.7950, lng: -122.4064),
+            HeroSpot(id: "hero-sf-richmond",  name: "Inner Richmond",            lat: 37.7828, lng: -122.4640),
+            HeroSpot(id: "hero-sf-dogpatch",  name: "Dogpatch",                  lat: 37.7600, lng: -122.3885),
+        ],
+        "dc": [
+            HeroSpot(id: "hero-dc-columbia",  name: "Columbia Heights",          lat: 38.9294, lng: -77.0323),
+            HeroSpot(id: "hero-dc-adams-mor", name: "Adams Morgan",              lat: 38.9215, lng: -77.0422),
+            HeroSpot(id: "hero-dc-u-street",  name: "U Street",                  lat: 38.9169, lng: -77.0290),
+            HeroSpot(id: "hero-dc-georgetown",name: "Georgetown",                lat: 38.9050, lng: -77.0630),
+            HeroSpot(id: "hero-dc-cap-hill",  name: "Capitol Hill",              lat: 38.8815, lng: -76.9960),
+            HeroSpot(id: "hero-dc-shaw",      name: "Shaw",                      lat: 38.9145, lng: -77.0219),
+            HeroSpot(id: "hero-dc-dupont",    name: "Dupont Circle",             lat: 38.9105, lng: -77.0435),
+            HeroSpot(id: "hero-dc-petworth",  name: "Petworth",                  lat: 38.9420, lng: -77.0237),
+            HeroSpot(id: "hero-dc-h-street",  name: "H Street NE",               lat: 38.9000, lng: -76.9945),
+            HeroSpot(id: "hero-dc-mt-plsnt",  name: "Mount Pleasant",            lat: 38.9300, lng: -77.0380),
+        ],
+    ]
+}
+
+/// A tapped tile, full screen and movable — Apple's own Look Around, not our
+/// snapshot of it. Apple's terms forbid rehosting the imagery, so this asks for
+/// the scene each time rather than keeping one.
+struct HeroLookAroundSheet: View {
+    let spot: HeroSpot
+    @Environment(\.dismiss) private var dismiss
+    @State private var scene: MKLookAroundScene?
+    @State private var checked = false
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            Color.black.ignoresSafeArea()
+            if let scene {
+                LookAroundPreview(initialScene: scene, allowsNavigation: true, showsRoadLabels: true, pointsOfInterest: .excludingAll)
+                    .ignoresSafeArea()
+                    .accessibilityIdentifier("hero-lookaround")
+            } else if checked {
+                VStack(spacing: 10) {
+                    Image(systemName: "binoculars").font(.system(size: 34)).foregroundStyle(.white.opacity(0.8))
+                    Text("Apple has no Look Around here yet").font(.se(18, .semibold)).foregroundStyle(.white)
+                    Text(spot.name).font(.se(15)).foregroundStyle(.white.opacity(0.75))
+                }
+                .frame(maxHeight: .infinity)
+            } else {
+                ProgressView().tint(.white).frame(maxHeight: .infinity)
+            }
+            HStack {
+                Text(spot.name).font(.se(18, .bold)).foregroundStyle(.white)
+                    .padding(.horizontal, 14).padding(.vertical, 8)
+                    .background(.black.opacity(0.55), in: Capsule())
+                Spacer()
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                        .frame(width: 38, height: 38).background(.black.opacity(0.55), in: Circle())
+                }
+                .accessibilityLabel("Close")
+                .accessibilityIdentifier("hero-lookaround-close")
+            }
+            .padding(.horizontal, 16).padding(.top, 12)
+        }
+        .task {
+            scene = try? await MKLookAroundSceneRequest(coordinate: spot.coordinate).scene
+            checked = true
+            Analytics.shared.track("look_around", ["spot": spot.id, "ok": scene != nil])
+        }
     }
 }
 
@@ -533,11 +674,22 @@ struct HeroTile: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .clipped()
-        .task { image = await ImageService.shared.image(for: building, size: CGSize(width: 300, height: 300)) }
+        .task(id: building.bbl) { image = await ImageService.shared.image(for: building, size: CGSize(width: 300, height: 300)) }
     }
 }
 
 struct BrandCard: View {
+    @Environment(DataStore.self) private var store
+
+    /// "Every rent-stabilized building in NYC" — the register's own word for
+    /// what a building IS, without the qualifier the card has no room for
+    /// ("Likely rent-stabilized (RSO)" -> "rent-stabilized").
+    static func line(for city: City) -> String {
+        var word = city.statusLabel.lowercased()
+        if let paren = word.firstIndex(of: "(") { word = String(word[word.startIndex..<paren]) }
+        word = word.replacingOccurrences(of: "likely ", with: "").trimmingCharacters(in: .whitespaces)
+        return "Every \(word) building in \(city.short)"
+    }
     var body: some View {
         ZStack {
             LinearGradient(colors: [Color(hex: 0xDDEEF1), Color(hex: 0xF2F8F9)], startPoint: .top, endPoint: .bottom)
@@ -548,7 +700,7 @@ struct BrandCard: View {
                 }
                 Text("This is where it starts").font(.se(23, .black)).foregroundStyle(SE.navy)
                     .lineLimit(1).minimumScaleFactor(0.6)
-                Text("Every rent-stabilized building in NYC").font(.se(13, .semibold)).foregroundStyle(SE.ink2).lineLimit(1).minimumScaleFactor(0.7)
+                Text(Self.line(for: store.city)).font(.se(13, .semibold))
             }
             .padding(.horizontal, 14)
         }
@@ -593,12 +745,23 @@ struct BrandMark: View {
 /// Available now and Accepting vouchers narrow it and can be combined.
 struct ShowChecklist: View {
     @Binding var query: SearchQuery
+    @Environment(DataStore.self) private var store
     var body: some View {
-        SECheckList(rows: [
-            .init(title: "Rent stabilized", subtitle: "Every building on the DHCR register", isOn: .constant(true), locked: true),
-            .init(title: "Available now", subtitle: "Posted on Zumper in the last 5 days", isOn: $query.availableOnly),
-            .init(title: "Accepting vouchers", subtitle: "Section 8 / voucher-friendly buildings", isOn: $query.vouchersOnly),
-            .init(title: "HCR lotteries & waitlists", subtitle: "Apply online at HousingSearch.ny.gov", isOn: $query.hcrOnly),
-        ])
+        // Every row below the first is fed by a New York source — Zumper's
+        // postings, the AffordableHousing.com voucher scrape and
+        // HousingSearch.ny.gov — and SearchQuery.sanitized already switches
+        // them off in another city. Offering a filter that can only ever
+        // return nothing is worse than not offering it (owner, 2026-09-19).
+        var rows: [SECheckList.Row] = [
+            .init(title: store.city.statusLabel, subtitle: store.city.registerNote, isOn: .constant(true), locked: true)
+        ]
+        if store.city.hasNYCExtras {
+            rows += [
+                .init(title: "Available now", subtitle: "Posted on Zumper in the last 5 days", isOn: $query.availableOnly),
+                .init(title: "Accepting vouchers", subtitle: "Section 8 / voucher-friendly buildings", isOn: $query.vouchersOnly),
+                .init(title: "HCR lotteries & waitlists", subtitle: "Apply online at HousingSearch.ny.gov", isOn: $query.hcrOnly),
+            ]
+        }
+        return SECheckList(rows: rows)
     }
 }

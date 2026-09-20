@@ -235,14 +235,19 @@ final class FindACribUITests: XCTestCase {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--city", "la", "--route", "map"]
         app.launch()
-        XCTAssertTrue(app.buttons["pill-List"].waitForExistence(timeout: 40)
-                      || app.descendants(matching: .any)["pill-List"].firstMatch.waitForExistence(timeout: 10),
-                      "the LA map should open")
+        // LA downloads on first selection, so wait for ITS count to appear
+        // rather than for a fixed time.
+        let laCount = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS '67,5'")).firstMatch
+        XCTAssertTrue(laCount.waitForExistence(timeout: 90), "the LA map never finished loading LA")
         XCTAssertFalse(app.buttons["tab-Lotteries"].exists, "Lotteries is New York's; it must not show in LA")
-        // Apple labels the map's own places; New York's would mean the map
-        // opened on the wrong coast.
-        let ny = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] 'Brooklyn' OR label CONTAINS[c] 'Manhattan' OR label CONTAINS[c] 'New York'")).count
-        XCTAssertEqual(ny, 0, "the LA map is showing New York")
+        // The count pill is the map's own: it says how many of THIS city's
+        // buildings the map is showing, so 67,5xx means LA's data on LA's map.
+        // (The Search screen underneath still holds its own tiles, so the whole
+        // hierarchy cannot be searched for New York place names.)
+        XCTAssertTrue(app.descendants(matching: .any)["map-count"].firstMatch.waitForExistence(timeout: 20),
+                      "the map should show its count")
+        XCTAssertTrue((app.descendants(matching: .any)["map-count"].firstMatch.label).contains("67,5"),
+                      "the map is counting another city: \(app.descendants(matching: .any)["map-count"].firstMatch.label)")
     }
 
     /// The hero mosaic is the city that is loaded, and a tile opens the real

@@ -625,9 +625,13 @@ struct HeroSpot: Identifiable, Hashable {
     ]
 }
 
-/// A tapped tile, full screen and movable — Apple's own Look Around, not our
-/// snapshot of it. Apple's terms forbid rehosting the imagery, so this asks for
-/// the scene each time rather than keeping one.
+/// Apple's own Look Around for a tapped tile, full screen. MKLookAroundViewController,
+/// not SwiftUI's LookAroundPreview: the preview is a still that only opens the
+/// system viewer when tapped, so the owner could not actually look around
+/// (2026-09-20). This one pans, zooms and walks down the street.
+///
+/// Apple's terms forbid rehosting the imagery, so the scene is requested per
+/// tap and never stored.
 struct HeroLookAroundSheet: View {
     let spot: HeroSpot
     @Environment(\.dismiss) private var dismiss
@@ -638,7 +642,7 @@ struct HeroLookAroundSheet: View {
         ZStack(alignment: .top) {
             Color.black.ignoresSafeArea()
             if let scene {
-                LookAroundPreview(initialScene: scene, allowsNavigation: true, showsRoadLabels: true, pointsOfInterest: .excludingAll)
+                LookAroundViewer(scene: scene)
                     .ignoresSafeArea()
                     .accessibilityIdentifier("hero-lookaround")
             } else if checked {
@@ -651,25 +655,45 @@ struct HeroLookAroundSheet: View {
             } else {
                 ProgressView().tint(.white).frame(maxHeight: .infinity)
             }
-            HStack {
-                Text(spot.name).font(.se(18, .bold)).foregroundStyle(.white)
-                    .padding(.horizontal, 14).padding(.vertical, 8)
-                    .background(.black.opacity(0.55), in: Capsule())
-                Spacer()
-                Button { dismiss() } label: {
-                    Image(systemName: "xmark").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
-                        .frame(width: 38, height: 38).background(.black.opacity(0.55), in: Circle())
-                }
-                .accessibilityLabel("Close")
-                .accessibilityIdentifier("hero-lookaround-close")
+            // Close top-right; the neighborhood sits at the bottom centre,
+            // clear of Apple's own controls and of what you came to look at
+            // (owner, 2026-09-20).
+            Button { dismiss() } label: {
+                Image(systemName: "xmark").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                    .frame(width: 38, height: 38).background(.black.opacity(0.55), in: Circle())
             }
+            .accessibilityLabel("Close")
+            .accessibilityIdentifier("hero-lookaround-close")
+            .frame(maxWidth: .infinity, alignment: .trailing)
             .padding(.horizontal, 16).padding(.top, 12)
+        }
+        .overlay(alignment: .bottom) {
+            Text(spot.name).font(.se(18, .bold)).foregroundStyle(.white)
+                .padding(.horizontal, 16).padding(.vertical, 9)
+                .background(.black.opacity(0.55), in: Capsule())
+                .padding(.bottom, 34)
+                .allowsHitTesting(false)
         }
         .task {
             scene = try? await MKLookAroundSceneRequest(coordinate: spot.coordinate).scene
             checked = true
             Analytics.shared.track("look_around", ["spot": spot.id, "ok": scene != nil])
         }
+    }
+}
+
+/// MKLookAroundViewController in SwiftUI — the interactive viewer.
+struct LookAroundViewer: UIViewControllerRepresentable {
+    let scene: MKLookAroundScene
+    func makeUIViewController(context: Context) -> MKLookAroundViewController {
+        let vc = MKLookAroundViewController(scene: scene)
+        vc.isNavigationEnabled = true      // tap down the street
+        vc.showsRoadLabels = true
+        vc.pointOfInterestFilter = .excludingAll
+        return vc
+    }
+    func updateUIViewController(_ vc: MKLookAroundViewController, context: Context) {
+        if vc.scene != scene { vc.scene = scene }
     }
 }
 

@@ -192,7 +192,16 @@ final class AuthService {
                 if let provider { Analytics.shared.track("signin", ["provider": provider, "result": "cancelled"]) }
                 return
             }
-            if let provider { Analytics.shared.track("signin", ["provider": provider, "result": "error"]) }
+            // Why it failed, in the event: a user on build 60 hit six Apple
+            // failures in a row on 2026-09-19 and the row said only "error",
+            // so there was nothing to debug (owner, 2026-09-20). Domain, code
+            // and Apple's own message — never a token or an address.
+            let ns = error as NSError
+            if let provider {
+                Analytics.shared.track("signin", ["provider": provider, "result": "error",
+                                                  "domain": ns.domain, "code": ns.code,
+                                                  "text": String(text.prefix(140))])
+            }
             self.error = text
         }
     }

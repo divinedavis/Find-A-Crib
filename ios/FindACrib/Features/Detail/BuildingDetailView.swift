@@ -17,12 +17,14 @@ struct BuildingDetailView: View {
     @State private var rodentSummary: HPDRecords.InspectionSummary?
     @State private var inspectionsFailed = false
     @State private var showPaywall = false
+    @State private var showComments = false
     @State private var scene: MKLookAroundScene?
     @State private var sceneChecked = false
     /// Computed once per building, not once per render. `body` is evaluated
     /// seven times on a single visit — every observable the screen reads
     /// invalidates it — and this used to be recomputed on every one of them.
     @State private var similar: [Building] = []
+    @State private var comments = CommentsStore()
 
     private var b: Building { building }
 
@@ -91,11 +93,21 @@ struct BuildingDetailView: View {
         .background(SE.canvas)
         .safeAreaInset(edge: .bottom) {
             HStack(spacing: 12) {
-                ShareLink(item: b.webURL(in: store.city)) {
-                    Text("Share").font(.se(18, .bold)).foregroundStyle(SE.royal)
-                        .frame(maxWidth: .infinity).frame(height: 50).background(Color.white)
-                        .overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.royal, lineWidth: 1))
+                // Share moved into the ··· menu; this slot is comments now
+                // (owner, 2026-09-20). The count comes from the same rows the
+                // website shows.
+                Button { Analytics.shared.track("comments_open", ["bbl": b.bbl, "signed_in": auth.isSignedIn]); showComments = true } label: {
+                    HStack(spacing: 7) {
+                        Image(systemName: "bubble.left").font(.system(size: 16, weight: .bold))
+                        Text(comments.count(for: b.bbl) > 0 ? "Comments \(comments.count(for: b.bbl))" : "Comments")
+                            .font(.se(18, .bold)).lineLimit(1).minimumScaleFactor(0.7)
+                    }
+                    .foregroundStyle(SE.royal)
+                    .frame(maxWidth: .infinity).frame(height: 50).background(Color.white)
+                    .overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.royal, lineWidth: 1))
                 }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("detail-comments")
                 if let apply = store.hcrListings(b).first(where: { $0.isOpen })?.applyURL ?? store.hcrListings(b).first?.applyURL {
                     SEPrimaryButton(title: "Apply on HousingSearch.ny.gov") {
                         Analytics.shared.track("outbound", ["kind": "hcr_apply", "bbl": b.bbl, "href": apply.absoluteString]); openURL(apply)
@@ -147,6 +159,10 @@ struct BuildingDetailView: View {
         .task {
             scene = try? await MKLookAroundSceneRequest(coordinate: b.coordinate).scene
             sceneChecked = true
+        }
+        .task(id: b.bbl) { comments.auth = auth; await comments.refreshCount(bbl: b.bbl) }
+        .sheet(isPresented: $showComments, onDismiss: { Task { await comments.refreshCount(bbl: b.bbl) } }) {
+            CommentsSheet(building: b)
         }
         .task(id: "\(auth.isSignedIn)-\(auth.hasPlus)") { await loadContacts() }
         .task(id: "\(b.bbl)-\(auth.isSignedIn)") { await loadInspections() }

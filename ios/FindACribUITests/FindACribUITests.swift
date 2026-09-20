@@ -335,6 +335,27 @@ final class FindACribUITests: XCTestCase {
         XCTAssertLessThan(violY, about.frame.minY, "Violations & inspections must sit above About")
     }
 
+    /// The building screen's bottom bar carries Comments, not Share (Share
+    /// moved into the ··· menu, owner 2026-09-20), and signed out the sheet
+    /// asks people to sign up rather than showing the thread.
+    func testCommentsButtonReplacesShareAndGatesOnSignUp() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--route", "detail"]
+        app.launch()
+        let comments = app.buttons["detail-comments"]
+        XCTAssertTrue(comments.waitForExistence(timeout: 30), "the bottom bar should offer Comments")
+        XCTAssertFalse(app.buttons["Share"].exists, "Share belongs in the ··· menu now")
+        comments.tap()
+        XCTAssertTrue(app.buttons["comments-signup"].waitForExistence(timeout: 10), "signed out: the sheet asks for an account")
+        XCTAssertFalse(app.descendants(matching: .any)["comment-row"].firstMatch.exists, "no thread without an account")
+        XCTAssertFalse(app.textFields["comment-field"].exists, "and no way to type one")
+        app.buttons["Close"].tap()
+        XCTAssertTrue(comments.waitForExistence(timeout: 10))
+        // Share is still reachable from the menu.
+        app.buttons["detail-menu"].tap()
+        XCTAssertTrue(app.buttons["Share"].waitForExistence(timeout: 5), "the menu keeps Share")
+    }
+
     /// A building outside New York shows the record ITS city publishes, and
     /// never New York's wording.
     ///

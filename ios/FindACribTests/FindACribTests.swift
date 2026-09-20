@@ -1000,3 +1000,48 @@ final class LotteryFeedTests: XCTestCase {
         XCTAssertEqual(p.lotteries.first?.borough, "Manhattan")
     }
 }
+
+@MainActor
+final class CommentsStoreTests: XCTestCase {
+    private func c(_ id: UUID = UUID(), parent: UUID? = nil, at: Date = Date(), likes: [UUID] = []) -> CommentsStore.Comment {
+        CommentsStore.Comment(id: id, userID: UUID(), author: "Ada L", body: "hi", createdAt: at, parentID: parent, likedBy: likes)
+    }
+
+    func testThreadsKeepRepliesUnderTheirParentOldestFirst() {
+        let now = Date()
+        let a = UUID(), b = UUID()
+        let all = [c(b, at: now.addingTimeInterval(-10)),            // second top-level
+                   c(a, at: now.addingTimeInterval(-100)),           // first top-level
+                   c(parent: a, at: now.addingTimeInterval(-50)),
+                   c(parent: a, at: now.addingTimeInterval(-20))]
+        let t = CommentsStore.threads(all)
+        XCTAssertEqual(t.map(\.0.id), [a, b], "top-level comments read down the page, oldest first")
+        XCTAssertEqual(t[0].1.count, 2)
+        XCTAssertTrue(t[0].1[0].createdAt < t[0].1[1].createdAt)
+        XCTAssertTrue(t[1].1.isEmpty)
+    }
+
+    func testAgoMatchesTheWebsitesWording() {
+        let now = Date()
+        XCTAssertEqual(CommentsStore.ago(now.addingTimeInterval(-60), now: now), "just now")
+        XCTAssertEqual(CommentsStore.ago(now.addingTimeInterval(-4 * 3600), now: now), "4h")
+        XCTAssertEqual(CommentsStore.ago(now.addingTimeInterval(-3 * 86_400), now: now), "3d")
+        XCTAssertFalse(CommentsStore.ago(now.addingTimeInterval(-90 * 86_400), now: now).hasSuffix("d"), "older than a month reads as a date")
+    }
+
+    func testLikeAndOwnershipAreByUserID() {
+        let mine = UUID(), other = UUID()
+        var x = c(likes: [other])
+        XCTAssertFalse(x.isLiked(by: mine)); XCTAssertTrue(x.isLiked(by: other))
+        XCTAssertFalse(x.isLiked(by: nil), "signed out, nothing reads as liked")
+        x.likedBy.append(mine)
+        XCTAssertTrue(x.isLiked(by: mine)); XCTAssertEqual(x.likes, 2)
+        XCTAssertFalse(x.isMine(nil))
+    }
+
+    func testTimestampParsingHandlesBothShapesPostgrestSends() {
+        XCTAssertEqual(Int(CommentsStore.date("2026-09-20T17:04:05.123456+00:00").timeIntervalSince1970),
+                       Int(CommentsStore.date("2026-09-20T17:04:05+00:00").timeIntervalSince1970))
+        XCTAssertGreaterThan(CommentsStore.date("2026-09-20T17:04:05+00:00").timeIntervalSince1970, 1_700_000_000)
+    }
+}

@@ -55,6 +55,19 @@ FEED_LOGS = {
 # tab the phone put away.
 CLEAN_LAST_STEPS = {"vis hidden", "vis visible", "tick", "pagehide", "freeze"}
 
+# Browser noise that is not our code and that we cannot fix: a cross-origin
+# script (the ad slot) reports only "Script error." with no file or line, a
+# browser extension talks to its own missing tab, and ResizeObserver's loop
+# warning is fired by Safari itself. These still show in the digest so the
+# picture is honest, but they never wake anyone up and are never "new".
+IGNORED = ("script error.", "runtime.sendmessage", "resizeobserver loop",
+           "extension context invalidated")
+
+
+def is_noise(message: str) -> bool:
+    m = message.lower()
+    return any(n in m for n in IGNORED)
+
 
 def service_key():
     for k in ("SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SERVICE_KEY"):
@@ -82,7 +95,7 @@ def events(since_iso, key):
 # ------------------------------------------------------------------ sources
 
 def js_errors(rows):
-    out = defaultdict(lambda: {"n": 0, "people": set(), "paths": Counter(), "last": ""})
+    out = defaultdict(lambda: {"n": 0, "people": set(), "paths": Counter(), "last": "", "noise": False})
     for r in rows:
         if r["event"] != "js_error":
             continue
@@ -93,6 +106,7 @@ def js_errors(rows):
         src = p.get("src") or ""
         key = f"{msg} — {src.rsplit('/', 1)[-1]}" if src else msg
         e = out[key]
+        e["noise"] = is_noise(key)
         e["n"] += 1
         e["people"].add(r["visitor_id"])
         e["paths"][r.get("path") or "/"] += 1
@@ -233,7 +247,7 @@ def build(window_label, js, crash, app, five, tracebacks, stale, new_msgs):
     parts = []
     parts.append(table("JavaScript errors (web)", ["Message", "Times", "People", "Where", "New?"], [
         [esc(k), v["n"], len(v["people"]), esc(v["paths"].most_common(1)[0][0] if v["paths"] else "—"),
-         "<b style='color:#b3261e'>new</b>" if k in new_msgs else ""]
+         "<b style='color:#b3261e'>new</b>" if k in new_msgs else ("browser noise" if v["noise"] else "")]
         for k, v in sorted(js.items(), key=lambda kv: -kv[1]["n"])[:12]]))
     parts.append(table("Pages that died mid-work", ["Last thing it did", "Times", "People", "Device"], [
         [esc(k), v["n"], len(v["people"]), esc(v["uas"].most_common(1)[0][0] if v["uas"] else "—")]
@@ -286,7 +300,10 @@ def main():
     except Exception:
         state = {}
     known = set(state.get("known_js", []))
-    new_msgs = {k for k in js if k not in known}
+    # A first run has nothing known, so everything would read as new and the
+    # first email would be all alarm and no signal.
+    first_run = "known_js" not in state
+    new_msgs = set() if first_run else {k for k in js if k not in known and not js[k]["noise"]}
 
     # What earns an email: something we have never seen, something breaking on
     # the server, or a real burst. A handful of the same old cross-origin
@@ -327,7 +344,9 @@ def main():
     subject = "Find A Crib errors: " + (", ".join(bits) if bits else label)
     emailkit.send(a.email, subject, html, text, from_name="Find A Crib alerts")
     STATE.parent.mkdir(parents=True, exist_ok=True)
-    STATE.write_text(json.dumps({"known_js": sorted(known | set(js)), "last_sent": datetime.datetime.now(datetime.timezone.utc).isoformat()}))
+    STATE.parent.mkdir(parents=True, exist_ok=True)
+    STATE.write_text(json.dumps({"known_js": sorted(known | set(js)),
+                                 "last_sent": datetime.datetime.now(datetime.timezone.utc).isoformat()}))
     print(f"emailed {a.email}: {counts}")
 
 

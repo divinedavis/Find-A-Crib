@@ -21,10 +21,26 @@ struct LaunchSequence {
     }
 }
 
+/// Wraps the app in the launch splash: FIND A CRIB building letter by letter
+/// (LetterSplash, owner's choice 2026-09-20 over the teal circle that used to
+/// expand here), held until a signed-in user's session is restored, then
+/// lifted away. Content underneath cannot be tapped and is hidden from
+/// VoiceOver until then. Backgrounding mid-splash, or Reduce Motion turning
+/// on, ends it at once.
 struct LaunchPresentation<Content: View>: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
-    @State private var sequence = LaunchSequence()
+    /// UI tests pass --no-launch-splash: the splash takes about two seconds
+    /// and blocks touches while it plays, and a test that taps the first
+    /// thing it sees was tapping the splash (2026-09-20). The three tests
+    /// that ARE about the splash (LaunchAnimationTests) do not pass it.
+    @State private var finished: Bool = {
+        #if DEBUG
+        CommandLine.arguments.contains("--no-launch-splash")
+        #else
+        false
+        #endif
+    }()
     let content: Content
     /// The splash stays up until this is true (or 3.5 s pass) — used to hold
     /// it while a signed-in user's session is restored.
@@ -35,7 +51,6 @@ struct LaunchPresentation<Content: View>: View {
         self.content = content()
     }
 
-    private var isFinished: Bool { sequence.phase == .finished }
     private var prefersReducedMotion: Bool {
         #if DEBUG
         reduceMotion || CommandLine.arguments.contains("--reduce-launch-motion")
@@ -46,55 +61,16 @@ struct LaunchPresentation<Content: View>: View {
 
     var body: some View {
         content
-            .allowsHitTesting(isFinished)
-            .accessibilityHidden(!isFinished)
+            .allowsHitTesting(finished)
+            .accessibilityHidden(!finished)
             .overlay {
-                if !isFinished {
-                    GeometryReader { geometry in
-                        ZStack {
-                            Color("LaunchNavy")
-                            Circle()
-                                .fill(SE.royal)
-                                .frame(width: 180, height: 180)
-                                .scaleEffect(sequence.phase == .ready || prefersReducedMotion ? 1 : LaunchSequence.coverScale(for: geometry.size))
-                            VStack(spacing: 14) {
-                                BrandMark().frame(width: 88, height: 88)
-                                Text("Find A Crib")
-                                    .font(.se(28, .bold))
-                                    .foregroundStyle(.white)
-                            }
-                        }
-                        .frame(width: geometry.size.width, height: geometry.size.height)
-                        .clipped()
-                    }
-                    .ignoresSafeArea()
-                    .opacity(sequence.phase == .revealing ? 0 : 1)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel("Find A Crib")
-                    .accessibilityIdentifier("launch-animation")
-                    .transition(.identity)
-                }
-            }
-            .task(id: scenePhase) {
-                guard sequence.phase == .ready, scenePhase == .active else { return }
-                do { try await Task.sleep(for: .milliseconds(160)) }
-                catch { return }
-                let start = Date()
-                while !isReady(), Date().timeIntervalSince(start) < 3.5 {
-                    do { try await Task.sleep(for: .milliseconds(50)) } catch { return }
-                }
-                guard sequence.phase == .ready, scenePhase == .active else { return }
-                if prefersReducedMotion {
-                    var transaction = Transaction(animation: nil)
-                    transaction.disablesAnimations = true
-                    withTransaction(transaction) { sequence.advance(from: .ready) }
-                    reveal()
-                } else {
-                    withAnimation(.timingCurve(0.4, 0, 0.2, 1, duration: 0.58), completionCriteria: .removed) {
-                        sequence.advance(from: .ready)
-                    } completion: {
-                        reveal()
-                    }
+                if !finished {
+                    LetterSplash(onFinished: { finish() }, holdUntil: isReady, forceReducedMotion: prefersReducedMotion)
+                        .ignoresSafeArea()
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel("Find A Crib")
+                        .accessibilityIdentifier("launch-animation")
+                        .transition(.identity)
                 }
             }
             .onChange(of: scenePhase) { _, phase in
@@ -106,18 +82,9 @@ struct LaunchPresentation<Content: View>: View {
             .onDisappear { finish() }
     }
 
-    private func reveal() {
-        guard sequence.phase == .expanding else { return }
-        withAnimation(.easeOut(duration: 0.22), completionCriteria: .removed) {
-            sequence.advance(from: .expanding)
-        } completion: {
-            sequence.advance(from: .revealing)
-        }
-    }
-
     private func finish() {
         var transaction = Transaction(animation: nil)
         transaction.disablesAnimations = true
-        withTransaction(transaction) { sequence.finish() }
+        withTransaction(transaction) { finished = true }
     }
 }

@@ -8,7 +8,7 @@ final class FindACribUITests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
         app = XCUIApplication()
-        app.launchArguments = ["--no-launch-prompt"]   // the notifications card would sit on every tap
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash"]   // the notifications card would sit on every tap
         app.launch()
     }
 
@@ -89,7 +89,7 @@ final class FindACribUITests: XCTestCase {
     /// the bundled featured.json has Brooklyn re-rentals, so this runs offline.
     func testThirdResultTileIsARerental() throws {
         app.terminate()
-        app.launchArguments = ["--no-launch-prompt", "--route", "results"]
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "results"]
         app.launch()
         XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 60))
         let card = app.descendants(matching: .any)["rerental-card"].firstMatch
@@ -116,7 +116,7 @@ final class FindACribUITests: XCTestCase {
     /// count sitting at 47,165 through a whole zoom into Clinton Hill).
     func testMapViewportCarriesToList() throws {
         app.terminate()
-        app.launchArguments = ["--no-launch-prompt", "--route", "map"]
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "map"]
         app.launch()
         let list = app.buttons["pill-List"]
         XCTAssertTrue(list.waitForExistence(timeout: 30))
@@ -214,7 +214,7 @@ final class FindACribUITests: XCTestCase {
     /// simulator always is — the section offers sign-in and shows no tiles.
     func testViolationsGatedWhenSignedOut() throws {
         app.terminate()
-        app.launchArguments = ["--no-launch-prompt", "--route", "detail"]
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "detail"]
         app.launch()
         XCTAssertTrue(app.buttons["detail-menu"].waitForExistence(timeout: 30))
         let gate = app.buttons["hpd-sign-in"]
@@ -233,7 +233,7 @@ final class FindACribUITests: XCTestCase {
     /// LA's map opened on Manhattan (owner, 2026-09-19).
     func testOtherCitiesHaveNoLotteriesTabAndOpenTheirOwnMap() throws {
         app.terminate()
-        app.launchArguments = ["--no-launch-prompt", "--city", "la", "--route", "map"]
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--city", "la", "--route", "map"]
         app.launch()
         // LA downloads on first selection, so wait for ITS count to appear
         // rather than for a fixed time.
@@ -255,7 +255,7 @@ final class FindACribUITests: XCTestCase {
     /// (2026-09-20), so a tile must not be a button.
     func testHeroMosaicIsPicturesOnly() throws {
         app.terminate()
-        app.launchArguments = ["--no-launch-prompt"]
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash"]
         app.launch()
         let tile = app.descendants(matching: .any)["hero-tile"].firstMatch
         XCTAssertTrue(tile.waitForExistence(timeout: 20), "the mosaic should be there")
@@ -271,7 +271,7 @@ final class FindACribUITests: XCTestCase {
     /// to all five boroughs: the tab lists live lotteries and re-rentals.
     func testLotteriesTabSignupScreenThenListsForSubscribers() throws {
         app.terminate()
-        app.launchArguments = ["--no-launch-prompt"]
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash"]
         app.launch()
         let tab = app.buttons["tab-Lotteries"]
         XCTAssertTrue(tab.waitForExistence(timeout: 20), "the Lotteries tab shows for everyone")
@@ -289,7 +289,7 @@ final class FindACribUITests: XCTestCase {
         cancel.tap()
         XCTAssertTrue(signup.waitForExistence(timeout: 5))
         app.terminate()
-        app.launchArguments = ["--no-launch-prompt", "--lotteries-demo"]
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--lotteries-demo"]
         app.launch()
         XCTAssertTrue(tab.waitForExistence(timeout: 20))
         XCTAssertTrue(app.buttons["tab-My Activity"].isHittable && app.buttons["tab-Profile"].isHittable, "four tabs must all fit")
@@ -311,7 +311,7 @@ final class FindACribUITests: XCTestCase {
     /// 2026-09-19): violations are what people tap most on a building page.
     func testViolationsFirstAndAboutLast() throws {
         app.terminate()
-        app.launchArguments = ["--no-launch-prompt", "--route", "detail"]
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "detail"]
         app.launch()
         XCTAssertTrue(app.buttons["detail-menu"].waitForExistence(timeout: 30))
         let violations = app.staticTexts["Violations & inspections"]
@@ -338,7 +338,7 @@ final class FindACribUITests: XCTestCase {
     /// asks people to sign up rather than showing the thread.
     func testCommentsButtonReplacesShareAndGatesOnSignUp() throws {
         app.terminate()
-        app.launchArguments = ["--no-launch-prompt", "--route", "detail"]
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "detail"]
         app.launch()
         let comments = app.buttons["detail-comments"]
         XCTAssertTrue(comments.waitForExistence(timeout: 30), "the bottom bar should offer Comments")
@@ -368,7 +368,7 @@ final class FindACribUITests: XCTestCase {
         for (city, heading) in [("la", "LAHD record"), ("sf", "Rent Board record"),
                                 ("dc", "Owner & assessor record")] {
             app.terminate()
-            app.launchArguments = ["--no-launch-prompt", "--city", city, "--route", "detail"]
+            app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--city", city, "--route", "detail"]
             app.launch()
             XCTAssertTrue(app.buttons["detail-menu"].waitForExistence(timeout: 90),
                           "\(city) buildings never downloaded — this test needs the network")
@@ -405,7 +405,7 @@ final class FindACribUITests: XCTestCase {
     /// wired up, so the rig is not silently dead the next time it is needed.
     func testPopFromDetailIsInstrumented() throws {
         app.terminate()
-        app.launchArguments = ["--no-launch-prompt", "--perf", "--route", "detail"]
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--perf", "--route", "detail"]
         app.launch()
         XCTAssertTrue(app.buttons["detail-menu"].waitForExistence(timeout: 60))
         sleep(4)
@@ -415,7 +415,7 @@ final class FindACribUITests: XCTestCase {
 
     func testAlertsSignInOffersAppleGoogleAndEmail() throws {
         app.terminate()
-        app.launchArguments = ["--no-launch-prompt", "--route", "results"]
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "results"]
         app.launch()
         XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 60))
         app.descendants(matching: .any)["pill-Alerts"].firstMatch.tap()
@@ -436,7 +436,7 @@ final class FindACribUITests: XCTestCase {
 
     func testAlertsEmailValidationStillWorks() throws {
         app.terminate()
-        app.launchArguments = ["--no-launch-prompt", "--route", "results"]
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "results"]
         app.launch()
         XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 60))
         app.descendants(matching: .any)["pill-Alerts"].firstMatch.tap()
@@ -459,7 +459,7 @@ final class FindACribUITests: XCTestCase {
     func testResultsOffersAlertsNotSaveSearch() throws {
         app.terminate()
         // the plain stabilized search — the one that used to show only Save search
-        app.launchArguments = ["--no-launch-prompt", "--route", "results"]
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "results"]
         app.launch()
         XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 60))
         let alerts = app.descendants(matching: .any)["pill-Alerts"].firstMatch
@@ -475,7 +475,7 @@ final class FindACribUITests: XCTestCase {
     /// household income beside boroughs and kinds.
     func testAlertsSheetOffersRentAndIncome() throws {
         app.terminate()
-        app.launchArguments = ["--no-launch-prompt", "--route", "results", "--open-alerts"]
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "results", "--open-alerts"]
         app.launch()
         XCTAssertTrue(app.otherElements["alerts-sheet"].firstMatch.waitForExistence(timeout: 30) || app.descendants(matching: .any)["alerts-sheet"].firstMatch.waitForExistence(timeout: 5))
         let rent = app.descendants(matching: .any)["alerts-max-rent"].firstMatch
@@ -488,7 +488,7 @@ final class FindACribUITests: XCTestCase {
 
     func testEdgeSwipePopsDetail() throws {
         app.terminate()
-        app.launchArguments = ["--no-launch-prompt", "--route", "detail"]
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "detail"]
         app.launch()
         XCTAssertTrue(app.buttons["detail-menu"].waitForExistence(timeout: 30))
         // The menu exists while the push is still animating; an edge swipe
@@ -541,10 +541,19 @@ final class SkylineUITests: XCTestCase {
         let shotDir = ProcessInfo.processInfo.environment["SKYLINE_SHOT_DIR"]
         for city in ["nyc", "sf", "dc", "la"] {
             app.terminate()
-            app.launchArguments = ["--no-launch-prompt", "--city", city, "--route", "results"]
+            app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--city", city, "--route", "results"]
             app.launch()
             let count = app.staticTexts["results-count"]
             XCTAssertTrue(count.waitForExistence(timeout: 90), "\(city) results never appeared")
+            // The letter splash (2026-09-20) runs about two seconds and covers
+            // the list while it does; a city that loads from the bundle has
+            // its count before the splash is gone. Wait for the hand-over
+            // before asking whether the count can be reached.
+            let splash = app.otherElements["launch-animation"]
+            if splash.exists {
+                let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: splash)
+                XCTAssertEqual(XCTWaiter().wait(for: [gone], timeout: 10), .completed, "\(city): the launch splash never handed over")
+            }
             XCTAssertTrue(count.isHittable, "\(city): the skyline band pushed the results count out of view")
             // Drag the list down past its top and hold, the way a person peeks
             // at the sky; then let go and make sure the list snapped back.
@@ -597,7 +606,7 @@ private final class MidGestureFrames {
 final class ReviewPromptUITests: XCTestCase {
     func testReviewNowShowsTheSystemRatingSheet() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["--no-launch-prompt", "--review-now"]
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--review-now"]
         app.launch()
         // Apple's sheet ("Enjoying Find A Crib? Tap a star…", Not Now) is a
         // remote view hosted by StoreKitUIService — not SpringBoard, and not
@@ -624,7 +633,7 @@ final class ReviewPromptUITests: XCTestCase {
     /// notification delegate installed still reaches the home screen.
     func testProfileShowsPushAlertsState() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["--no-launch-prompt", "--tab", "profile"]
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--tab", "profile"]
         app.launch()
         let row = app.descendants(matching: .any)["profile-push"].firstMatch
         for _ in 0..<6 where !row.exists { app.swipeUp() }
@@ -665,7 +674,7 @@ final class ReviewPromptUITests: XCTestCase {
     func testTappedAlertShowsEveryItem() throws {
         let payload = #"{"aps":{"alert":{"title":"New: 3 re-rentals","body":"x"}},"url":"https://residenewyork.com/property/a/","items":[{"k":"rerental","t":"2067 Anthony Avenue, Unit 305","s":"Bronx","u":"https://residenewyork.com/property/a/","b":"Bx"},{"k":"rerental","t":"1952 Anthony Avenue. Unit 2F","s":"","u":"https://www.taxaceny.com/projects-8","b":"Bx"},{"k":"lottery","t":"Astoria Commons","s":"Queens","u":"https://housingconnect.nyc.gov/","b":"Q"}]}"#
         let app = XCUIApplication()
-        app.launchArguments = ["--no-launch-prompt", "--simulate-push", payload]
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--simulate-push", payload]
         app.launch()
         XCTAssertTrue(app.staticTexts["push-sheet-title"].waitForExistence(timeout: 15), "a tapped alert did not open the alert screen")
         XCTAssertEqual(app.staticTexts["push-sheet-title"].label, "New: 3 re-rentals")
@@ -679,7 +688,7 @@ final class ReviewPromptUITests: XCTestCase {
 
     func testProfileHasARateLink() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["--no-launch-prompt", "--tab", "profile"]
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--tab", "profile"]
         app.launch()
         let rate = app.descendants(matching: .any)["profile-rate"].firstMatch
         for _ in 0..<6 where !rate.exists { app.swipeUp() }

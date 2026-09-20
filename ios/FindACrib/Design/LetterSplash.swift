@@ -18,6 +18,12 @@ struct LetterSplash: View {
     var onFinished: () -> Void = {}
     /// Replays forever, for looking at it (`--splash-preview`).
     var loop = false
+    /// The word stays up until this says the app is ready (a signed-in
+    /// session restored), for at most `readyTimeout` past the hold.
+    var holdUntil: () -> Bool = { true }
+    /// Reduce Motion from the caller, so a launch flag can force it in tests.
+    var forceReducedMotion = false
+    static let readyTimeout = 3.5
 
     private static let word = Array("FIND A CRIB")
     /// Gap between one letter starting and the next.
@@ -31,7 +37,8 @@ struct LetterSplash: View {
 
     @State private var shown = 0            // how many letters have started
     @State private var leaving = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
+    private var reduceMotion: Bool { systemReduceMotion || forceReducedMotion }
 
     var body: some View {
         ZStack {
@@ -79,6 +86,10 @@ struct LetterSplash: View {
                     try? await Task.sleep(for: .seconds(Self.stagger))
                 }
                 try? await Task.sleep(for: .seconds(Self.letterDuration + Self.hold))
+            }
+            let start = Date()
+            while !holdUntil(), Date().timeIntervalSince(start) < Self.readyTimeout, !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(50))
             }
             withAnimation(.easeIn(duration: 0.35)) { leaving = true }
             try? await Task.sleep(for: .seconds(0.35))

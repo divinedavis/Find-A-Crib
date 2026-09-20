@@ -22,6 +22,7 @@ final class LaunchAnimationTests: XCTestCase {
         app.launchArguments = ["--no-launch-prompt"]
         app.launch()
         XCTAssertTrue(app.buttons["tab-Profile"].waitForExistence(timeout: 10))
+        waitForSplashToHandOver(app)
         app.buttons["tab-Profile"].tap()
         XCUIDevice.shared.press(.home)
         app.activate()
@@ -38,9 +39,20 @@ final class LaunchAnimationTests: XCTestCase {
         XCTAssertTrue(app.buttons["city-field"].waitForExistence(timeout: 5))
     }
 
+    private func waitForSplashToHandOver(_ app: XCUIApplication) {
+        let splash = app.otherElements["launch-animation"]
+        guard splash.exists else { return }
+        let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: splash)
+        XCTAssertEqual(XCTWaiter().wait(for: [gone], timeout: 10), .completed, "the launch splash never handed over")
+    }
+
     private func assertHomeIsInteractive(_ app: XCUIApplication) {
         let city = app.buttons["city-field"]
         XCTAssertTrue(city.waitForExistence(timeout: 10))
+        // The home screen is built underneath the splash while the letters
+        // play (about two seconds since 2026-09-20); "interactive" means
+        // after the hand-over, so wait for it rather than read the first frame.
+        waitForSplashToHandOver(app)
         XCTAssertFalse(app.otherElements["launch-animation"].exists)
         XCTAssertTrue(city.isHittable)
         XCTAssertTrue(app.buttons["tab-Profile"].isHittable)

@@ -83,10 +83,7 @@ final class CommentsStore {
                         parentID: $0.parent_id,
                         likedBy: ($0.comment_likes ?? []).compactMap(\.user_id))
             }
-            comments = comments.filter { c in
-                guard let uid = c.userID else { return true }
-                return !blocked.contains(uid) && !reported.contains(c.id)
-            }
+            comments = Self.visible(comments, blocked: blocked, reported: reported)
             counts[bbl] = comments.count
         } catch {
             failed = true
@@ -258,6 +255,17 @@ final class CommentsStore {
         if s < 30 * 86_400 { return "\(Int(s / 86_400))d" }
         let f = DateFormatter(); f.dateFormat = "MMM d"
         return f.string(from: d)
+    }
+
+    /// What a reader is left with after their own blocks and reports. A
+    /// blocked person's replies go too, even under someone else's comment.
+    nonisolated static func visible(_ all: [Comment], blocked: Set<UUID>, reported: Set<UUID>) -> [Comment] {
+        let goneIDs = Set(all.filter { c in
+            reported.contains(c.id) || (c.userID.map(blocked.contains) ?? false)
+        }.map(\.id))
+        return all.filter { c in
+            !goneIDs.contains(c.id) && !(c.parentID.map(goneIDs.contains) ?? false)
+        }
     }
 
     /// Top-level comments, newest last (a thread reads down), each with its replies.

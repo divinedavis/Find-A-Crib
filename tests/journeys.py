@@ -774,6 +774,70 @@ class Runner:
         self.ok(r.status in (401, 429), f'/api/alerts/prefs without a session should be refused, got {r.status}', j)
         j.notes.append('prefs endpoint gated')
 
+    def j_rent_report(self, page, j, device):
+        """/rent-report/ (2026-09-19): the daily asking-rent report and the
+        index built from the archived scrapes. It is a static page a cron
+        rewrites, so the journey checks the page a reader gets — numbers
+        present, the CSV actually downloadable, the promise about visitor
+        counts still printed — rather than the builder's own arithmetic."""
+        page.goto(LIVE + '/rent-report/', wait_until='domcontentloaded', timeout=90000)
+        title = page.evaluate("document.querySelector('h1')?.textContent || ''")
+        self.ok('Rent-Stabilized Rent Report' in title, f'rent report should lead with its title: {title!r}', j)
+        tiles = page.evaluate("[...document.querySelectorAll('.tile b')].map(e=>e.textContent.trim())")
+        self.ok(len(tiles) >= 4, f'the four headline tiles should be there, saw {tiles}', j)
+        self.ok(any(t.startswith('$') for t in tiles), f'a median rent should be one of them: {tiles}', j)
+        heads = page.evaluate("[...document.querySelectorAll('h2')].map(e=>e.textContent.trim())")
+        for need in ('Rent index', 'Asking rents by borough', 'How this is measured'):
+            self.ok(need in heads, f'"{need}" section missing: {heads}', j)
+        # The privacy policy promises no row under ten people; the page has to say so.
+        body = page.evaluate("document.body.innerText")
+        self.ok('at least 10' in body or 'least 10 people' in body, 'the ten-visitor floor should be stated', j)
+        csv = page.request.get(LIVE + '/rent-report/rent-report.csv')
+        self.ok(csv.status == 200, f'the CSV should download, got {csv.status}', j)
+        first = csv.text().splitlines()[0] if csv.text() else ''
+        self.ok(first.startswith('date,section,label'), f'CSV header looks wrong: {first!r}', j)
+        rows = len(csv.text().strip().splitlines())
+        self.ok(rows > 5, f'CSV should carry the numbers, saw {rows} lines', j)
+        if device == 'phone':
+            wide = page.evaluate("document.documentElement.scrollWidth > innerWidth + 1")
+            self.ok(not wide, 'the report must not scroll sideways on a phone', j)
+        j.notes.append(f'{len(tiles)} tiles, {rows}-line CSV')
+
+    def j_legal_pages(self, page, j, device):
+        """Privacy and Terms, which the App Store listing and the app both
+        link to. Rewritten 2026-09-20; App Review 1.2 needs the comment rules
+        and a contact address to actually be on the page."""
+        r301 = page.request.get(LIVE + '/privacy', max_redirects=0)
+        self.ok(r301.status in (301, 308), f'/privacy should redirect to /privacy/, got {r301.status}', j)
+        page.goto(LIVE + '/privacy/', wait_until='domcontentloaded', timeout=90000)
+        priv = page.evaluate("document.body.innerText")
+        for need in ('What we collect', 'Delete your account', 'household income'):
+            self.ok(need.lower() in priv.lower(), f'privacy policy no longer mentions {need!r}', j)
+        self.ok('api@findacrib.com' in priv, 'privacy policy should carry a contact address', j)
+        self.ok('@gmail' not in priv, 'a personal address must not be published', j)
+        page.goto(LIVE + '/terms.html', wait_until='domcontentloaded', timeout=90000)
+        terms = page.evaluate("document.body.innerText")
+        self.ok('zero tolerance' in terms.lower(), 'terms must keep the zero-tolerance clause (App Review 1.2)', j)
+        self.ok('report' in terms.lower() and 'block' in terms.lower(), 'terms should explain reporting and blocking', j)
+        self.ok('@gmail' not in terms, 'a personal address must not be published', j)
+        j.notes.append('privacy + terms carry the rules')
+
+    def j_comments_gate(self, page, j, device):
+        """Comments on a building are the same rows the iPhone app writes.
+        Signed out, the web offers sign-in and no way to type (2026-09-20)."""
+        self.boot(page, f'/#d={BBL}')
+        self.ok(self.detail_open(page), 'the building should open', j)
+        self.wait_until(page, "!!document.getElementById('d-comments')", 30000)
+        info = page.evaluate("(()=>{const s=document.getElementById('d-comments');"
+                             "return {heading:(s?.querySelector('h3')?.textContent||'').trim(),"
+                             "signin:!!s?.querySelector('[data-detail=\"comment-signin\"]'),"
+                             "form:!!s?.querySelector('#d-comment-form'),"
+                             "box:!!s?.querySelector('#d-comment-text')}})()")
+        self.ok(info['heading'] == 'Comments', f"the comments section should be titled Comments: {info}", j)
+        self.ok(info['signin'], 'signed out, comments should offer sign-in', j)
+        self.ok(not info['form'] and not info['box'], f'signed out there must be no composer: {info}', j)
+        j.notes.append('comments gated to an account')
+
     def j_app_chip(self, page, j, device):
         # iPhone app chip right of Alerts (asked 2026-09-09): iPhones see it, desktop never does.
         self.boot(page)
@@ -1042,7 +1106,8 @@ class Runner:
 
     JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'pin_and_list',
                 'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'signin_modal', 'app_chip', 'app_qr_menu', 'boot_is_usable', 'city_chip',
-                'ad_tiles', 'outbound_links', 'status_chips', 'referral_gate']
+                'ad_tiles', 'outbound_links', 'status_chips', 'referral_gate',
+                'rent_report', 'legal_pages', 'comments_gate']
 
     # ---- run --------------------------------------------------------------
     def run(self):

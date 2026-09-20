@@ -1039,6 +1039,20 @@ final class CommentsStoreTests: XCTestCase {
         XCTAssertFalse(x.isMine(nil))
     }
 
+    func testBlockingAndReportingHideTheRightRows() {
+        let me = UUID(), troll = UUID(), other = UUID()
+        let top = UUID(), trollTop = UUID(), reported = UUID()
+        func c(_ id: UUID, by: UUID, parent: UUID? = nil) -> CommentsStore.Comment {
+            CommentsStore.Comment(id: id, userID: by, author: "x", body: "b", createdAt: Date(), parentID: parent, likedBy: [])
+        }
+        let all = [c(top, by: other), c(trollTop, by: troll), c(reported, by: other),
+                   c(UUID(), by: troll, parent: top),      // the troll's reply under someone else
+                   c(UUID(), by: me, parent: trollTop)]    // my reply under the troll
+        let left = CommentsStore.visible(all, blocked: [troll], reported: [reported])
+        XCTAssertEqual(left.map(\.id), [top], "a blocked person's comments and replies go, and so does the reply under them")
+        XCTAssertEqual(CommentsStore.visible(all, blocked: [], reported: []).count, all.count, "no blocks, nothing hidden")
+    }
+
     func testTheWordFilterCatchesSlursWithoutEatingOrdinaryWords() {
         XCTAssertTrue(CommentsStore.isObjectionable("this super is a retard"))
         XCTAssertTrue(CommentsStore.isObjectionable("KYS"), "matched case-insensitively")

@@ -31,9 +31,17 @@ struct LetterSplash: View {
     private static let letterDuration = 0.42
     private static let hold = 0.55
 
-    /// Sized to the screen so the word fills it the way Netflix's does,
-    /// rather than sitting small in the middle of a phone.
-    private var size: CGFloat { min(72, UIScreen.main.bounds.width / 6.1) }
+    /// The word is drawn once at a fixed size, measured, and scaled so it
+    /// always spans the same share of the screen — the proportion the owner
+    /// approved from the preview (an iPhone Pro Max, 2026-09-20). On the
+    /// owner's own phone it then ran to the edges: `.custom(_:size:)` follows
+    /// the Dynamic Type setting, so a larger text size made the letters
+    /// larger. The font is fixed-size now and the fit is measured, so every
+    /// iPhone and every text-size setting gets the same picture.
+    private static let baseSize: CGFloat = 72
+    /// Share of the screen width the finished word covers.
+    private static let widthShare: CGFloat = 0.68
+    @State private var wordWidth: CGFloat = 0
 
     @State private var shown = 0            // how many letters have started
     @State private var leaving = false
@@ -41,28 +49,43 @@ struct LetterSplash: View {
     private var reduceMotion: Bool { systemReduceMotion || forceReducedMotion }
 
     var body: some View {
-        ZStack {
-            Color("LaunchNavy").ignoresSafeArea()
-            HStack(spacing: 0) {
-                ForEach(Array(Self.word.enumerated()), id: \.offset) { i, ch in
-                    letter(ch, index: i)
+        GeometryReader { screen in
+            let fit: CGFloat = wordWidth > 0 ? min(1.4, max(0.4, screen.size.width * Self.widthShare / wordWidth)) : 0.001
+            ZStack {
+                Color("LaunchNavy").ignoresSafeArea()
+                HStack(spacing: 0) {
+                    ForEach(Array(Self.word.enumerated()), id: \.offset) { i, ch in
+                        letter(ch, index: i)
+                    }
                 }
+                .background(GeometryReader { g in
+                    Color.clear.onAppear { wordWidth = g.size.width }
+                        .onChange(of: g.size.width) { _, w in wordWidth = w }
+                })
+                .scaleEffect(fit * (leaving ? 1.06 : 1))
+                .opacity(leaving ? 0 : 1)
+                .frame(width: screen.size.width, height: screen.size.height)
             }
-            .scaleEffect(leaving ? 1.06 : 1)
-            .opacity(leaving ? 0 : 1)
         }
+        .dynamicTypeSize(.large)
+        .ignoresSafeArea()
         .task { await play() }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Find A Crib")
         .accessibilityIdentifier("letter-splash")
     }
 
+    /// Fixed size: a splash must not follow the reader's text-size setting.
+    private static let font: Font = UIFont(name: SEWeight.black.postScript, size: baseSize) != nil
+        ? .custom(SEWeight.black.postScript, fixedSize: baseSize)
+        : .system(size: baseSize, weight: .black)
+
     @ViewBuilder private func letter(_ ch: Character, index: Int) -> some View {
         let on = index < shown
         // A space carries no glyph; it still holds its width so the two words
         // stay apart while the line builds.
         Text(String(ch))
-            .font(.se(size, .black))
+            .font(Self.font)
             .kerning(1)
             .foregroundStyle(on ? Color.white : Color.white.opacity(0))
             // The glow is what makes a letter look struck rather than faded

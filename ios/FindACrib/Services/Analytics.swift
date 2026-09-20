@@ -124,7 +124,16 @@ final class Analytics {
 
     /// Record one thing a person did. Never throws, never blocks, never retries.
     func track(_ event: String, _ props: [String: Any] = [:], path: String? = nil) {
+        // A simulator is never a user. UI tests, smoke launches and screenshot
+        // runs were reporting as real phones — sessions, city switches, and a
+        // Sign in with Apple that fails with error 1000 on every simulator
+        // because there is no Apple ID on it — and that read as "13 users
+        // locked out" in the error email (2026-09-20).
+        #if targetEnvironment(simulator)
+        return
+        #else
         guard Self.privacyLabelDeclared, enabled, !host.isEmpty, !anonKey.isEmpty, sent < capPerLaunch else { return }
+        #endif
         sent += 1
         var p = props
         p["platform"] = "ios"

@@ -16,6 +16,7 @@ struct CommentsSheet: View {
     @State private var replyTo: CommentsStore.Comment?
     @State private var showSignIn = false
     @State private var confirmDelete: CommentsStore.Comment?
+    @State private var moderate: CommentsStore.Comment?
     @FocusState private var writing: Bool
 
     private var uid: UUID? { auth.session?.user.id }
@@ -47,6 +48,21 @@ struct CommentsSheet: View {
             }
             Button("Cancel", role: .cancel) { confirmDelete = nil }
         } message: { Text("It disappears from the app and from findacrib.com.") }
+        .confirmationDialog("Report this comment?", isPresented: Binding(get: { moderate != nil },
+                                                                        set: { if !$0 { moderate = nil } }),
+                            titleVisibility: .visible) {
+            Button("Report comment", role: .destructive) {
+                if let c = moderate { Task { await store.report(c, bbl: building.bbl) } }
+                moderate = nil
+            }
+            Button("Block this person", role: .destructive) {
+                if let c = moderate { Task { await store.block(c, bbl: building.bbl) } }
+                moderate = nil
+            }
+            Button("Cancel", role: .cancel) { moderate = nil }
+        } message: {
+            Text("Reporting hides it for you and sends it to us to review within 24 hours. Blocking hides everything that person writes.")
+        }
     }
 
     // MARK: - Signed out
@@ -115,6 +131,12 @@ struct CommentsSheet: View {
                     if c.isMine(uid) {
                         Button("Delete") { confirmDelete = c }
                             .font(.se(13, .bold)).foregroundStyle(SE.ink3).buttonStyle(.plain)
+                    } else {
+                        // App Review 1.2: a way to report a comment and to
+                        // block whoever wrote it, on the comment itself.
+                        Button("Report") { moderate = c }
+                            .font(.se(13, .bold)).foregroundStyle(SE.ink3).buttonStyle(.plain)
+                            .accessibilityIdentifier("comment-report")
                     }
                 }
             }

@@ -1039,6 +1039,15 @@ final class CommentsStoreTests: XCTestCase {
         XCTAssertFalse(x.isMine(nil))
     }
 
+    func testTheWordFilterCatchesSlursWithoutEatingOrdinaryWords() {
+        XCTAssertTrue(CommentsStore.isObjectionable("this super is a retard"))
+        XCTAssertTrue(CommentsStore.isObjectionable("KYS"), "matched case-insensitively")
+        XCTAssertTrue(CommentsStore.isObjectionable("kill yourself"), "phrases too")
+        XCTAssertFalse(CommentsStore.isObjectionable("the radiator is classic prewar"), "'classic' contains no slur")
+        XCTAssertFalse(CommentsStore.isObjectionable("Scunthorpe Ave has a nice super"))
+        XCTAssertFalse(CommentsStore.isObjectionable("great building, quiet block"))
+    }
+
     func testTimestampParsingHandlesBothShapesPostgrestSends() {
         XCTAssertEqual(Int(CommentsStore.date("2026-09-20T17:04:05.123456+00:00").timeIntervalSince1970),
                        Int(CommentsStore.date("2026-09-20T17:04:05+00:00").timeIntervalSince1970))

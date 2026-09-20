@@ -42,11 +42,18 @@ final class CommentsStore {
         let bbl: String, user_id: String, author: String, body: String, parent_id: String?
     }
     private struct NewLike: Encodable { let comment_id: String, user_id: String }
+    private struct NewReport: Encodable { let comment_id: String, reporter_id: String, reason: String }
+    private struct NewBlock: Encodable { let user_id: String, blocked_id: String }
+    private struct BlockRow: Decodable { let blocked_id: UUID }
 
     private(set) var comments: [Comment] = []
     private(set) var loading = false
     private(set) var failed = false
     private(set) var counts: [String: Int] = [:]      // bbl -> how many, for the button
+    /// People this account blocked, and comments it reported: both hide the
+    /// row at once, the way App Review Guideline 1.2 expects.
+    private(set) var blocked: Set<UUID> = []
+    private(set) var reported: Set<UUID> = []
     var posting = false
     var error: String?
 
@@ -67,6 +74,7 @@ final class CommentsStore {
                 .order("created_at", ascending: true)
                 .limit(500)
                 .execute().value
+            blocked = await loadBlocks()
             comments = rows.map {
                 Comment(id: $0.id, userID: $0.user_id,
                         author: ($0.author?.trimmingCharacters(in: .whitespaces)).flatMap { $0.isEmpty ? nil : $0 } ?? "Member",
@@ -75,10 +83,51 @@ final class CommentsStore {
                         parentID: $0.parent_id,
                         likedBy: ($0.comment_likes ?? []).compactMap(\.user_id))
             }
+            comments = comments.filter { c in
+                guard let uid = c.userID else { return true }
+                return !blocked.contains(uid) && !reported.contains(c.id)
+            }
             counts[bbl] = comments.count
         } catch {
             failed = true
         }
+    }
+
+    private func loadBlocks() async -> Set<UUID> {
+        guard let client, auth?.session != nil else { return [] }
+        guard let rows: [BlockRow] = try? await client.from("comment_blocks")
+            .select("blocked_id").limit(500).execute().value else { return blocked }
+        return Set(rows.map(\.blocked_id))
+    }
+
+    /// Report a comment: it disappears for the reporter straight away and
+    /// lands in comment_reports for the owner to act on.
+    func report(_ c: Comment, bbl: String, reason: String = "inappropriate") async {
+        guard let client, let uid = auth?.session?.user.id else { return }
+        reported.insert(c.id)
+        comments.removeAll { $0.id == c.id || $0.parentID == c.id }
+        counts[bbl] = comments.count
+        _ = try? await client.from("comment_reports")
+            .insert(NewReport(comment_id: c.id.uuidString, reporter_id: uid.uuidString, reason: reason)).execute()
+        Analytics.shared.track("comment_report", ["bbl": bbl, "reason": reason])
+    }
+
+    /// Block the person who wrote it: everything of theirs goes, here and on
+    /// every building, until they are unblocked in Profile.
+    func block(_ c: Comment, bbl: String) async {
+        guard let client, let uid = auth?.session?.user.id, let them = c.userID, them != uid else { return }
+        blocked.insert(them)
+        comments.removeAll { $0.userID == them }
+        counts[bbl] = comments.count
+        _ = try? await client.from("comment_blocks")
+            .insert(NewBlock(user_id: uid.uuidString, blocked_id: them.uuidString)).execute()
+        Analytics.shared.track("comment_block", ["bbl": bbl])
+    }
+
+    func unblockAll() async {
+        guard let client, let uid = auth?.session?.user.id else { return }
+        _ = try? await client.from("comment_blocks").delete().eq("user_id", value: uid.uuidString).execute()
+        blocked = []
     }
 
     /// Just the number, for the button on the building screen.
@@ -100,6 +149,14 @@ final class CommentsStore {
         guard let client, let uid = auth?.session?.user.id else { error = "Sign in to comment."; return false }
         let text = String(body.trimmingCharacters(in: .whitespacesAndNewlines).prefix(Self.maxLength))
         guard !text.isEmpty else { return false }
+        // Guideline 1.2 wants a filter, not just a report button. This is the
+        // floor — slurs and the obvious — and the report/block path handles
+        // what a word list never can.
+        if Self.isObjectionable(text) {
+            error = "That comment breaks the rules. Keep it about the building."
+            Analytics.shared.track("comment_blocked_text", ["bbl": bbl])
+            return false
+        }
         posting = true; error = nil; defer { posting = false }
         do {
             try await client.from("building_comments").insert(NewComment(
@@ -158,6 +215,29 @@ final class CommentsStore {
         let email = auth?.email ?? ""
         let local = email.split(separator: "@").first.map(String.init) ?? ""
         return String((local.isEmpty ? "Member" : local).prefix(60))
+    }
+
+    /// A deliberately small list: slurs and threats, matched on word
+    /// boundaries so "Scunthorpe" and "classic" survive.
+    nonisolated static func isObjectionable(_ text: String) -> Bool {
+        let banned = ["nigger", "nigga", "faggot", "fag", "kike", "spic", "chink", "wetback",
+                      "tranny", "retard", "cunt", "rape", "kill yourself", "kys"]
+        let lower = text.lowercased()
+        for word in banned {
+            if word.contains(" ") {
+                if lower.contains(word) { return true }
+            } else {
+                var start = lower.startIndex
+                while let r = lower.range(of: word, range: start..<lower.endIndex) {
+                    let before = r.lowerBound == lower.startIndex ? nil : lower[lower.index(before: r.lowerBound)]
+                    let after = r.upperBound == lower.endIndex ? nil : lower[r.upperBound]
+                    let edge = { (c: Character?) in c == nil || !(c!.isLetter || c!.isNumber) }
+                    if edge(before) && edge(after) { return true }
+                    start = r.upperBound
+                }
+            }
+        }
+        return false
     }
 
     nonisolated static func date(_ s: String) -> Date {

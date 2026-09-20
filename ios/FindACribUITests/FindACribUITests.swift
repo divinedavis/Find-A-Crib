@@ -349,6 +349,7 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.buttons["comments-signup"].waitForExistence(timeout: 10), "signed out: the sheet asks for an account")
         XCTAssertFalse(app.descendants(matching: .any)["comment-row"].firstMatch.exists, "no thread without an account")
         XCTAssertFalse(app.textFields["comment-field"].exists, "and no way to type one")
+        XCTAssertFalse(app.buttons["comment-report"].exists, "nothing to report without a thread")
         app.buttons["Close"].tap()
         XCTAssertTrue(comments.waitForExistence(timeout: 10))
         // Share is still reachable from the menu.

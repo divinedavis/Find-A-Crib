@@ -76,7 +76,9 @@ Privacy Policy: https://findacrib.com/privacy/
 Find A Crib is an independent, informational tool. It is not a broker, does not list apartments, and takes no fee. Data: NYS Homes and Community Renewal rent-stabilization register (2024), NYC HPD open data, HUD FY2026 Fair Market Rents, HousingSearch.ny.gov, advertised rents from Zumper, LA County Assessor parcel data under LAHD's RSO criteria, the SF Rent Board Housing Inventory via DataSF, and the DC DHCD RentRegistry.
 """
 
-WHATS_NEW = """New Lotteries tab: every NYC Housing Connect lottery and income-restricted re-rental open in the boroughs you get alerts for, soonest deadline first, with the rent, sizes and income range — and a "Your income fits" badge when the income you gave matches.
+WHATS_NEW = """Comments: say what a building is really like — the heat, the super, the block — and read what other renters say. Sign in to join; every comment can be reported or blocked.
+
+New Lotteries tab: every NYC Housing Connect lottery and income-restricted re-rental open in the boroughs you get alerts for, soonest deadline first, with the rent, sizes and income range — and a "Your income fits" badge when the income you gave matches.
 
 Building pages now lead with violations and inspections; the About section moved to the bottom.
 
@@ -91,16 +93,14 @@ WHAT CHANGED SINCE 1.2.1
 1. A fourth tab, "Lotteries". For a user subscribed to borough alerts it lists the NYC Housing Connect lotteries and the HPD marketing agents' re-rentals open in their alert boroughs, each with a button to the official page (housingconnect.nyc.gov or the agent's own site) in Safari. Without a subscription the tab shows a short explanation and a "Sign up for alerts" button; no sheet opens by itself. To see the list in review: sign in (Sign in with Apple is fine), tap Lotteries > "Sign up for alerts", pick a borough, save.
 2. Tapping a borough-alert notification opens the app on a list of every listing in that alert, each with a button to the agent's own page, instead of opening the first listing's website directly.
 3. Building pages: "Violations & inspections" now comes first and "About" last; the "Open on findacrib.com" menu item was removed.
-4. The launch screen waits (at most 3 seconds) for a signed-in user's saved session to be confirmed, so no screen shows as signed out first.
+4. Comments on a building, for signed-in users only. Guideline 1.2: every comment carries Report (hides it at once for the reporter and files it for us to act on within 24 hours) and Block this person (hides everything they write, everywhere); authors can delete their own; a word filter refuses slurs and threats at post time; the same rules and our contact address are in the Terms linked from Profile. The rows are the same ones findacrib.com shows.
+5. The launch screen waits (at most 3 seconds) for a signed-in user's saved session to be confirmed, so no screen shows as signed out first.
+6. In LA, SF and DC the app no longer offers New York's things (alerts, the Lotteries tab, NY-only filters) and the map opens on the chosen city.
 No new permissions and no new data types.
 
-ALSO IN THIS VERSION (from 1.2.1)
-Push notifications for borough alerts the user subscribed to (the same alert is also emailed). Re-rental tiles in the results list, labelled "Rerental", opening the HPD marketing agent's own page; we take no fee and handle no applications.
-
-NOTIFICATIONS — HOW THE PERMISSION IS ASKED
-Once, a few seconds after launch, while the notification permission is still undetermined, the app shows its own card ("Get alerts on this phone?") explaining what notifications are used for. "Turn on" shows the iOS permission dialog; "Not now" dismisses it for a week. If the user declines the iOS dialog the app never asks again; it points to Settings instead. Notifications are only ever borough alerts the user subscribed to: no marketing, no promotional pushes.
-Tapping a notification opens the app on a list of every new listing in that alert, each with a button to the agent's own page; the app never jumps straight to a website from a notification.
-To see a push in review: sign in (Sign in with Apple is fine), open Profile > Alerts, pick a borough, tap "Turn on alerts", allow notifications. Alerts arrive when a matching listing opens; the feeds are checked every 10 minutes.
+NOTIFICATIONS
+Once, a few seconds after launch, while permission is undetermined, the app shows its own card ("Get alerts on this phone?") explaining the ask; "Turn on" shows the iOS dialog, "Not now" waits a week, a system decline is never re-asked. Only borough alerts the user subscribed to — no marketing. Tapping one opens a list of that alert's listings.
+To see a push in review: sign in, Profile > Alerts, pick a borough, Turn on alerts, allow. The feeds are checked every 10 minutes.
 
 APP STORE RATING
 The app calls StoreKit's requestReview after a building is saved or alerts are turned on (at most once per app version, never within 120 days of the previous such request), on the next app open on the day an account is created, and on the first app open on the 1st of each month for signed-in users; never twice in one day and never on a launch that shows the notifications card. Only the system sheet is used, so iOS's own limit applies. Profile also has a "Rate Find A Crib" link to the App Store review page.
@@ -133,7 +133,9 @@ AGE_RATING = {
     "violenceRealisticProlongedGraphicOrSadistic": "NONE",
     "advertising": False, "ageAssurance": False, "gambling": False, "healthOrWellnessTopics": False,
     "lootBox": False, "messagingAndChat": False, "parentalControls": False,
-    "unrestrictedWebAccess": False, "userGeneratedContent": False,
+    # Comments on a building are user-generated (1.2.3, build 65): reportable,
+    # blockable, filtered, and removable by their author.
+    "unrestrictedWebAccess": False, "userGeneratedContent": True,
     "ageRatingOverride": "NONE",
 }
 EDITABLE = ("PREPARE_FOR_SUBMISSION", "DEVELOPER_REJECTED", "REJECTED", "METADATA_REJECTED")

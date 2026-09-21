@@ -435,7 +435,9 @@
     var total=USERS.length,
         google=USERS.filter(function(u){return u.provider==='google';}).length,
         paying=USERS.filter(function(u){return u.plan==='plus';}).length,
-        comped=USERS.filter(function(u){return u.plan==='comp';}).length,
+        // Same definition as the owner dashboard's "comped": a comp, a
+        // founding grant or a referral reward — Plus without paying.
+        comped=USERS.filter(function(u){return u.plan==='comp'||u.plan==='founding'||u.plan==='referral';}).length,
         savers=USERS.filter(function(u){return (u.saves||0)>0;}).length,
         mobile=USERS.filter(function(u){return u.device==='mobile'||u.device==='tablet';}).length,
         iosapp=USERS.filter(function(u){return !!u.ios_app;}).length,
@@ -475,6 +477,7 @@
   function planBadge(p){
     if(p==='plus') return '<span class="badge b-plus">Plus</span>';
     if(p==='comp') return '<span class="badge b-comp">Comped</span>';
+    if(p==='founding') return '<span class="badge b-comp">Founding</span>';
     if(p==='referral') return '<span class="badge b-ref">Referral</span>';
     return '<span class="badge b-free">Free</span>';
   }
@@ -531,7 +534,7 @@
   var CHIPS = {
     google:   { label:'signed in with Google',      test:function(u){ return u.provider==='google'; } },
     plus:     { label:'paying for Plus',            test:function(u){ return u.plan==='plus'; } },
-    comp:     { label:'comped',                     test:function(u){ return u.plan==='comp'; } },
+    comp:     { label:'comped',                     test:function(u){ return u.plan==='comp'||u.plan==='founding'||u.plan==='referral'; } },
     returned: { label:'came back after signing up', test:didReturn },
     savers:   { label:'have saved a building',      test:function(u){ return (u.saves||0)>0; } },
     mobile:   { label:'last seen on mobile',        test:function(u){ return u.device==='mobile'||u.device==='tablet'; } },

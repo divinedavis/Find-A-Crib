@@ -67,29 +67,45 @@ def pull(asc):
         inst = [i for i in instances(asc, rid) if i["attributes"]["processingDate"] >= since]
         inst.sort(key=lambda i: i["attributes"]["processingDate"])
         used[key] = len(inst)
+        # Each DAILY instance carries TWO days: its own, and a revision of the
+        # day before. So every date except the first and last appears in two
+        # instances, and adding them up counted almost every day twice —
+        # 86 first-time downloads where Apple showed 49 (2026-09-16).
+        # Keep the newest instance's numbers for each date instead: the later
+        # instance is Apple's revised figure, not an increment on the earlier
+        # one. Instances are sorted ascending, so a later one simply wins.
+        by_date = {}
         for i in inst:
+            fresh = defaultdict(lambda: defaultdict(int))
             for url in segments(asc, i["id"]):
                 for row in read_tsv(url):
                     d = row.get("Date") or row.get("date")
                     if not d: continue
                     latest = max(latest or d, d)
+                    daily_row = fresh[d]
                     # column names per Apple's report schema
                     if key == "downloads":
                         kind = (row.get("Download Type") or "").lower()
                         n = int(float(row.get("Counts") or 0))
-                        daily[d]["downloads_total"] += n
-                        if "first" in kind: daily[d]["downloads_first"] += n
-                        elif "redownload" in kind: daily[d]["redownloads"] += n
-                        elif "auto" in kind or "update" in kind: daily[d]["updates"] += n
+                        daily_row["downloads_total"] += n
+                        if "first" in kind: daily_row["downloads_first"] += n
+                        elif "redownload" in kind: daily_row["redownloads"] += n
+                        elif "auto" in kind or "update" in kind: daily_row["updates"] += n
                     elif key == "discovery":
                         ev = (row.get("Event") or "").lower(); n = int(float(row.get("Counts") or 0))
-                        if "impression" in ev: daily[d]["impressions"] += n
-                        elif "page view" in ev: daily[d]["page_views"] += n
-                        elif "tap" in ev or "download" in ev: daily[d]["taps"] += n
+                        if "impression" in ev: daily_row["impressions"] += n
+                        elif "page view" in ev: daily_row["page_views"] += n
+                        elif "tap" in ev or "download" in ev: daily_row["taps"] += n
                     elif key == "installs":
                         ev = (row.get("Event") or "").lower(); n = int(float(row.get("Counts") or 0))
-                        if "install" in ev and "uninstall" not in ev and "delet" not in ev: daily[d]["installs"] += n
-                        elif "delet" in ev or "uninstall" in ev: daily[d]["deletions"] += n
+                        if "install" in ev and "uninstall" not in ev and "delet" not in ev: daily_row["installs"] += n
+                        elif "delet" in ev or "uninstall" in ev: daily_row["deletions"] += n
+            for d, vals in fresh.items():
+                by_date[d] = vals          # a later instance replaces an earlier one
+        # merge this report's de-duplicated days in; the three reports
+        # contribute different keys to the same date, so this stays additive
+        for d, vals in by_date.items():
+            for k, v in vals.items(): daily[d][k] += v
     return daily, latest, used
 
 
@@ -103,7 +119,13 @@ def summarise(daily, latest):
             if start <= dd <= end:
                 for k, x in v.items(): s[k] += x
         s = dict(s)
-        pv, imp, dl = s.get("page_views", 0), s.get("impressions", 0), s.get("downloads_first", 0) + s.get("redownloads", 0)
+        # First-time downloads ONLY, so this equals the "App Units" figure on
+        # App Store Connect's own home page. Apple's App Units exclude updates,
+        # re-downloads, and a second device on the same Apple Account; adding
+        # redownloads here made the dashboard read 1-2 higher than ASC and
+        # invited exactly the "which number is right?" question (2026-09-16).
+        pv, imp = s.get("page_views", 0), s.get("impressions", 0)
+        dl = s.get("downloads_first", 0)
         s["downloads"] = dl
         s["conv_page_view"] = round(100.0 * dl / pv, 1) if pv else None
         s["conv_impression"] = round(100.0 * dl / imp, 1) if imp else None
@@ -112,7 +134,7 @@ def summarise(daily, latest):
 
 
 def live_build(asc, app_id):
-    """Highest build number that is on the App Store (READY_FOR_SALE).
+    """(highest build on the App Store, every build that ever reached it).
 
     error_report.py on the droplet reads this: a failure on a NEWER build came
     from TestFlight, App Review or Apple's own post-upload launch — the owner
@@ -122,8 +144,8 @@ def live_build(asc, app_id):
     builds = {b["id"]: b["attributes"].get("version") for b in j.get("included", []) if b["type"] == "builds"}
     live = [builds.get((v["relationships"]["build"].get("data") or {}).get("id"))
             for v in j["data"] if v["attributes"].get("appStoreState") == "READY_FOR_SALE"]
-    live = [int(b) for b in live if b and str(b).isdigit()]
-    return max(live) if live else None
+    live = sorted({int(b) for b in live if b and str(b).isdigit()})
+    return (max(live) if live else None), live
 
 
 def main():
@@ -136,9 +158,12 @@ def main():
     except Exception as e:
         payload = {"as_of": None, "days": {}, "summary": {}, "updated": datetime.now(timezone.utc).isoformat(timespec="seconds"), "note": f"pull failed: {e}"[:300]}
     try:
-        payload["live_build"] = live_build(asc, cfg["ASC_APP_ID"])
+        # live_build: the newest. released_builds: every build any App Store
+        # version ever shipped — dashboard_metrics counts app users from these
+        # builds only, so simulators and TestFlight never read as users.
+        payload["live_build"], payload["released_builds"] = live_build(asc, cfg["ASC_APP_ID"])
     except Exception as e:
-        payload["live_build"] = None
+        payload["live_build"], payload["released_builds"] = None, []
         print("live_build lookup failed:", str(e)[:200])
     OUT.write_text(json.dumps(payload, indent=1) + "\n")
     print("wrote", OUT, "as_of", payload["as_of"], payload.get("note") or "")

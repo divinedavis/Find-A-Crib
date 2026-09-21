@@ -548,6 +548,15 @@
         <div class="callout" id="fac-health-callout" style="margin-top:16px"></div>
       </div>
 
+      <!-- investor view -->
+      <div class="card mb18" id="sec-fac-investor">
+        <div class="card-head-row">
+          <div><h2>For investors — growth, retention, unit economics</h2><div class="card-sub">The numbers a seed investor asks for first, on fixed 30-day windows (the range picker does not apply). Each tile names the outside benchmark it is judged against. Web and iPhone app together.</div></div>
+        </div>
+        <div class="ads-tiles" id="fac-investor-tiles"></div>
+        <div class="callout" id="fac-investor-callout" style="margin-top:16px"></div>
+      </div>
+
       <!-- search -->
       <div class="card mb18" id="sec-fac-search">
         <div class="card-head-row">
@@ -1755,6 +1764,10 @@
     // count here (owner, 2026-09-20). The split stays on the line below.
     var pushOpens = n(AL.push_opens), pushPeople = n(AL.push_openers);
     var reachedPeople = n(AL.clickers) + pushPeople;
+    // Everyone an alert could reach: subscribers who have been emailed plus
+    // accounts with a registered push device. Dividing 37 people by the 26
+    // email subscribers alone printed 144% (2026-09-21).
+    var reachable = n(AL.emailed) + n(AL.push_reach);
     var clickOwn = !AL.clicks_since && !n(AL.clicks) && !pushOpens
       ? 'Counting from 12 Sep 2026 · no clicks yet'
       : '<b>'+comma(n(AL.clicks) + pushOpens)+'</b> opens · '+comma(AL.clicks)+' email link'+(n(AL.clicks)===1?'':'s')
@@ -1763,12 +1776,13 @@
     var CK = AL.clicks_by_kind || {};
     var clickBench = ['alert','weekly','nudge','welcome'].filter(function(k){ return n(CK[k]); })
       .map(function(k){ return comma(CK[k])+' '+k; }).join(' · ') ||
-      'of <b>'+comma(AL.emailed)+'</b> subscribers emailed';
+      'of <b>'+comma(reachable)+'</b> reachable';
+    clickBench += ' <span class="a-bench-note">of '+comma(AL.emailed)+' emailed + '+comma(AL.push_reach)+' with push</span>';
     var clickTitle = 'People who acted on an alert in the selected range: a link clicked in a borough-alert email, '+
       'or a push notification tapped in the iPhone app (counted separately, then added). '+
       'Email side: subscribers who clicked any link in a borough-alert email (the alert itself, the welcome, the '+
-      'first-week nudge or the Tuesday round-up) in the selected range, over every subscriber who has been emailed '+
-      'at least once. Links are counted by a findacrib.com redirect before they go on to Housing Connect, HCR or the '+
+      'first-week nudge or the Tuesday round-up) in the selected range. The percentage is over everyone reachable: '+
+      'subscribers emailed at least once plus accounts with a push device registered. Links are counted by a findacrib.com redirect before they go on to Housing Connect, HCR or the '+
       'agent’s site. Unsubscribe links are not counted, and corporate mail scanners that pre-open every link are '+
       'recorded separately and excluded. Counting began 12 Sep 2026; earlier emails carry no counter.';
 
@@ -1781,9 +1795,9 @@
       {ic:'✅',v:comma(T.accounts),l:'Sign-ups'},
       {ic:'🎯',v:convRate.toFixed(1)+'%',l:'Sign-up conversion',own:convOwn,bench:convBench,title:convTitle},
       {ic:'🔔',v:alertRate.toFixed(1)+'%',l:'Alert sign-up conversion',own:alertOwn,bench:alertBench,title:alertTitle},
-      {ic:'📬',v:comma(reachedPeople)+' · '+pctS(reachedPeople,AL.emailed),l:'Alert opens · people who clicked or tapped',
+      {ic:'📬',v:comma(reachedPeople)+' · '+pctS(reachedPeople,reachable),l:'Alert opens · people who clicked or tapped',
        own:clickOwn,bench:clickBench,title:clickTitle},
-      {ic:'💳',v:money(n(S.mrr)),l:comma(S.paying)+' paying'+(n(S.comped)?' · '+comma(S.comped)+' comped':'')+' · MRR',accent:true}
+      {ic:'💳',v:money(n(S.mrr)),l:comma(S.paying)+' paying'+(n(S.comped)?' · '+comma(S.comped)+' comped'+(n(S.founding)?' ('+comma(S.founding)+' founding)':''):'')+' · MRR',accent:true}
     ];
     el('tiles').innerHTML=tiles.map(function(t){
       return '<div class="tile'+(t.accent?' accent':'')+'"'+(t.title?' title="'+esc(t.title)+'"':'')+'>'+
@@ -1793,6 +1807,7 @@
     }).join('');
 
     renderFacHealth(d);
+    renderFacInvestor(d);
     renderFacSearch(d.search);
     renderAppStore(d.appstore);
     renderSpark(d.sparkline||[], d.months);
@@ -1905,13 +1920,17 @@
     el('tile-agents').innerHTML = rows.length
       ? rows.map(function(a){
           var lottery = a.kind==='lottery';
-          var i=n(a.impressions), c=n(a.clicks);
-          var rate = (a.ctr !== null && a.ctr !== undefined) ? a.ctr.toFixed(1)+' click rate'
+          var i=n(a.impressions), c=n(a.clicks), sv=n(a.served);
+          // The headline rate is clicks over SERVED impressions; these rows
+          // used the viewable rate, so a row read 11.0% under a card saying
+          // 0.6% (2026-09-21). Same denominator here, viewable beside it.
+          var rate = (a.ctr_served !== null && a.ctr_served !== undefined) ? a.ctr_served.toFixed(1)+'% click rate'
+                   : (a.ctr !== null && a.ctr !== undefined) ? a.ctr.toFixed(1)+'% of viewable (served rate not ready)'
                    : (c ? c+(c===1?' click':' clicks')+(i?', still measuring impressions':', impressions not yet counted')
                         : 'no activity yet');
           // "0 impressions" next to "impressions not yet counted" reads as a
           // tile nobody looked at rather than one nobody measured.
-          var desc=[i?comma(i)+' impressions':null, comma(n(a.reach))+' people',
+          var desc=[sv?comma(sv)+' served':null, i?comma(i)+' viewable':null, comma(n(a.reach))+' people',
                     n(a.units)?comma(n(a.units))+(n(a.units)===1?' apartment':' apartments'):null, rate]
                    .filter(Boolean).join(' · ');
           return '<div class="act-row"><div class="act-l"><div class="act-ico">'+(lottery?'🏛️':'🏢')+'</div>'+
@@ -2028,6 +2047,9 @@
         S=d.subscriptions||{}, T=d.totals||{};
     var d30=(R.d30||{}), d7=(R.d7||{}), d1=(R.d1||{});
     var SV = d.saver_return || {};
+    // Every account ever. Older payloads (and the benchmark test's synthetic
+    // ones) carry only the ranged count, which is the same thing on "all".
+    var accountsAll = T.accounts_all != null ? T.accounts_all : T.accounts;
     function rate(x){ return x==null ? '—' : (100*Number(x)).toFixed(1)+'%'; }
     // Two different numbers get called "returning", and showing only the
     // kinder one is how a dashboard flatters its owner. `within_rate` is
@@ -2125,7 +2147,8 @@
       {val:rate(E.stickiness),lbl:'Stickiness · DAU/MAU',
        goal:AUDIENCE_GOALS.stickiness+'%',
        band:{low:8, high:STICKINESS_REFERENCE.zillow_ceiling, value:E.stickiness==null?null:100*Number(E.stickiness), unit:'%', src:'listings portals; the top is Zillow\u2019s ceiling, '+STICKINESS_REFERENCE.label, ok:n(E.mau)>0},
-       sub:comma(E.dau)+' daily of '+comma(E.mau)+' monthly',
+       sub:(E.dau_7avg!=null ? comma(E.dau_7avg)+' a day (7-day mean) of '+comma(E.mau)+' monthly · today so far '+rate(E.stickiness_today)
+                             : comma(E.dau)+' daily of '+comma(E.mau)+' monthly'),
        // The goal IS the category ceiling: see STICKINESS_REFERENCE. Derived
        // from Zillow's reported uniques and visits, not a blog rule of thumb.
        bench:stickinessGoalLine(E.stickiness)+
@@ -2138,7 +2161,7 @@
       {val:comma(E.dau),lbl:'Daily active',
        goal:comma(AUDIENCE_GOALS.dau),
        band:{low:AUDIENCE_GOALS.dau/2, high:AUDIENCE_GOALS.dau, value:n(E.dau), unit:'n', src:'half the daily goal to the goal', ok:true},
-       sub:'unique visitors · today so far (ET)',
+       sub:'unique visitors · today so far (ET)'+(E.dau_yesterday!=null ? ' · yesterday '+comma(E.dau_yesterday) : ''),
        bench:goalLine(E.dau, AUDIENCE_GOALS.dau, 'daily')},
       // Split out of the WAU/MAU ratio, because at this scale the counts are
       // the actionable half and the percentage was hiding them. 101 and 376
@@ -2162,20 +2185,23 @@
       // honest comparison is against accounts, which is what the bench line
       // shows: an email list that outgrows the account list says the
       // no-account path was the right one.
+      // Active subscriptions are all-time, so the account count they are
+      // held against must be too; T.accounts follows the range picker and
+      // made this goal move with it (114 on "This month", 159 all time).
       {val:comma(AL.active),lbl:'Alert sign-ups · lottery & re-rental emails',
-       goal:comma(T.accounts)+' (match accounts)',
-       band:{low:n(T.accounts)/2, high:n(T.accounts), value:n(AL.active), unit:'n', src:'half the account count to the account count — the list should at least match the path it replaces', ok:n(T.accounts)>0},
+       goal:comma(accountsAll)+' (match accounts)',
+       band:{low:n(accountsAll)/2, high:n(accountsAll), value:n(AL.active), unit:'n', src:'half the account count to the account count — the list should at least match the path it replaces', ok:n(accountsAll)>0},
        sub:comma(AL.signups)+' in this range · '+comma(AL.unsubscribed)+' unsubscribed · '+
            comma(AL.emails_sent)+' alerts sent'+
            (boroSplit ? ' · '+boroSplit : ''),
        bench:(n(AL.active) ? '<b>'+comma(AL.with_filter)+'</b> set a rent or income filter' : 'none yet')+
-             ' · <b>'+comma(T.accounts)+'</b> accounts for comparison'+
+             ' · <b>'+comma(accountsAll)+'</b> accounts for comparison'+
              (n(AL.lottery_only)||n(AL.rerental_only)
                ? ' <span class="a-bench-note">('+comma(AL.lottery_only)+' lotteries only, '+
                  comma(AL.rerental_only)+' re-rentals only)</span>' : '')},
       {val:'$'+comma(S.mrr),lbl:'MRR',
        goal:'$'+comma(AUDIENCE_GOALS.mrr),
-       band:{low:2, high:5, value:n(T.accounts)?100*n(S.paying)/n(T.accounts):null, unit:'%', src:'free-to-paid conversion, industry free tier; judged on paying \u00f7 accounts, not on dollars', ok:n(T.accounts)>0},
+       band:{low:2, high:5, value:n(accountsAll)?100*n(S.paying)/n(accountsAll):null, unit:'%', src:'free-to-paid conversion, industry free tier; judged on paying \u00f7 accounts, not on dollars', ok:n(accountsAll)>0},
        sub:comma(S.paying)+' paying · '+comma(S.comped)+' comped',
        bench:'<b>0%</b> free-to-paid · industry free tier converts <b>2–5%</b>'}
     ];
@@ -2195,7 +2221,7 @@
       'Savers back within 30d': {name:'Savers back within 30d',
         what:'Among accounts that saved a building or a search at least 30 days ago, the share that returned within 30 days of saving. Saving is a signal of intent; this asks whether the site honoured it.'},
       'Stickiness · DAU/MAU': {name:'Stickiness',
-        what:'Daily actives divided by monthly actives. Roughly how many days a month a typical user shows up. Listings portals cap out near 10%; nobody checks apartments every day for long.'},
+        what:'Daily actives divided by monthly actives, with the daily figure the mean of the last seven full days so a morning reading is not a partial day. Roughly how many days a month a typical user shows up. Listings portals cap out near 10%; nobody checks apartments every day for long.'},
       'Daily active': {name:'Daily active',
         what:'Unique visitors today so far, Eastern time. The owner is excluded. This is the number the Goals card turns into revenue.'},
       'Weekly active': {name:'Weekly active',
@@ -2274,7 +2300,7 @@
             rate(E.stickiness)+' of '+AUDIENCE_GOALS.stickiness+'%',
             pct(100*n(E.stickiness), AUDIENCE_GOALS.stickiness),
             100*n(E.stickiness) >= AUDIENCE_GOALS.stickiness ? 'good' : '')+
-      goalMeter('Sign-ups · accounts, all time', T.accounts, AUDIENCE_GOALS.signups)+
+      goalMeter('Sign-ups · accounts, all time', accountsAll, AUDIENCE_GOALS.signups)+
       meter('Revenue · MRR', '$'+comma(S.mrr)+' of $'+comma(AUDIENCE_GOALS.mrr)+
             ' <span class="a-bench-note">('+comma(S.paying)+' paying)</span>',
             pct(n(S.mrr), AUDIENCE_GOALS.mrr), n(S.mrr) >= AUDIENCE_GOALS.mrr ? 'good' : '')+
@@ -2288,6 +2314,81 @@
     var healthCallout = el('fac-health-callout');
     healthCallout.innerHTML = '';
     healthCallout.style.display = 'none';
+  }
+
+  // ---------- investor view ----------
+  // What a seed investor asks for, per a16z's "16 Startup Metrics" and the
+  // consumer-app traction guides cited on each tile: month-over-month growth
+  // in actives and sign-ups, a retention curve, DAU/MAU, where new users come
+  // from (organic vs paid), a viral coefficient, and free-to-paid. LTV and CAC
+  // are named as missing rather than faked: no ad spend is recorded anywhere
+  // in this system, so there is no CAC to divide by.
+  var INVESTOR_BENCH = {
+    mom_low: 20, mom_high: 30,          // early-stage consumer MoM user growth
+    stickiness: 20,                     // DAU/MAU "decent" for consumer apps
+    d30_target: 40, d30_top: 25,        // 40% target; 25–30% top quartile
+    free_to_paid_low: 2, free_to_paid_high: 5
+  };
+  function renderFacInvestor(d){
+    var host=el('fac-investor-tiles'); if(!host) return;
+    var E=d.engagement||{}, G=d.growth||{}, R=d.retention||{}, S=d.subscriptions||{}, T=d.totals||{};
+    var d1=R.d1||{}, d7=R.d7||{}, d30=R.d30||{};
+    var accountsAll = T.accounts_all != null ? T.accounts_all : T.accounts;
+    function pc(x){ return x==null ? '—' : (100*Number(x)).toFixed(1)+'%'; }
+    function growth(x){ if(x==null) return '—'; var v=100*Number(x); return (v>=0?'+':'')+(Math.abs(v)>=100?Math.round(v):v.toFixed(1))+'%'; }
+    function badge(label, cls){ return ' <span class="bn '+cls+'">'+label+'</span>'; }
+    function momBadge(x, prev){
+      if(x==null) return badge('no prior window', 'bn-mid');
+      if(n(prev) < 50) return badge('prior window too small to judge', 'bn-mid');
+      var v=100*Number(x);
+      return v>=INVESTOR_BENCH.mom_high ? badge('above the 20–30% band','bn-hi') : v>=INVESTOR_BENCH.mom_low ? badge('inside the 20–30% band','bn-mid') : badge('below the 20–30% band','bn-low');
+    }
+    var CH=G.new_by_channel||{}, newTot=n(G.new_30);
+    var organic=n(CH.organic), paid=n(CH.paid), direct=n(CH.direct), app=n(CH.app), tagged=n(CH.tagged), refl=n(CH.referral);
+    var freeToPaid = n(accountsAll) ? 100*n(S.paying)/n(accountsAll) : null;
+    var arpu = n(E.mau) ? n(S.mrr)/n(E.mau) : null;
+    var stick = E.stickiness==null ? null : 100*Number(E.stickiness);
+    var tiles=[
+      {val:comma(E.mau)+' <span class="hm-goal">'+growth(E.mau_growth)+'</span>', lbl:'Monthly actives · 30 days, vs the 30 before',
+       sub:comma(E.mau_prev)+' in the prior window · web + app'+momBadge(E.mau_growth, E.mau_prev),
+       src:'a16z: MAU and month-over-month growth; 20–30% MoM is the early-stage consumer band'},
+      {val:comma(E.wau)+' <span class="hm-goal">'+growth(E.wau_growth)+'</span>', lbl:'Weekly actives · 7 days, vs the 7 before',
+       sub:comma(E.wau_prev)+' in the prior week'+(E.wau_growth!=null && Number(E.wau_growth)<0 ? badge('down week on week','bn-low') : E.wau_growth!=null ? badge('up week on week','bn-hi') : ''),
+       src:'a16z: weekly actives are the honest cadence for a weekly product'},
+      {val:comma(G.accounts_30)+' <span class="hm-goal">'+growth(G.accounts_growth)+'</span>', lbl:'New accounts · 30 days, vs the 30 before',
+       sub:comma(G.accounts_prev30)+' in the prior window · '+comma(accountsAll)+' all time'+momBadge(G.accounts_growth, G.accounts_prev30),
+       src:'sign-up growth month over month'},
+      {val:pc(E.stickiness), lbl:'Stickiness · DAU/MAU (7-day mean)',
+       sub:(stick==null ? 'not measured' : stick>=INVESTOR_BENCH.stickiness ? 'at or above the 20% consumer bar'+badge('strong','bn-hi') : 'below the 20% consumer bar'+badge('listings portals cap near 10% — Zillow','bn-mid')),
+       src:'DAU/MAU ≥20% reads as habit for consumer apps; Zillow-class listings sites sit near 10%'},
+      {val:pc(d1.within_rate)+' · '+pc(d7.within_rate)+' · '+pc(d30.within_rate), lbl:'Retention curve · came back within 1 / 7 / 30 days',
+       sub:'cohorts of '+comma(d1.within_cohort)+' / '+comma(d7.within_cohort)+' / '+comma(d30.within_cohort)+' visitors old enough to judge'+
+           (d30.within_rate==null ? '' : 100*Number(d30.within_rate)>=INVESTOR_BENCH.d30_target ? badge('D30 at the 40% target','bn-hi') : 100*Number(d30.within_rate)>=INVESTOR_BENCH.d30_top ? badge('D30 in the top-quartile band','bn-mid') : badge('D30 below the 25% top-quartile line','bn-low')),
+       src:'consumer-app D30 target 40%; top quartile 25–30%; investors look for the curve to flatten, not the level alone'},
+      {val:(newTot ? pctS(organic+refl,newTot) : '—')+' <span class="hm-goal">organic</span>', lbl:'Where new visitors come from · 30 days',
+       sub:comma(newTot)+' new: '+comma(direct)+' direct · '+comma(organic)+' search · '+comma(app)+' app · '+comma(paid)+' paid ads · '+comma(tagged)+' tagged links · '+comma(refl)+' referral'+
+           (newTot && paid/newTot>0.5 ? badge('mostly paid','bn-low') : newTot ? badge(paid ? 'mostly unpaid' : 'no paid acquisition','bn-hi') : ''),
+       src:'organic vs paid mix: growth that stops when the ad budget does is what investors screen for'},
+      {val:(G.k_factor==null ? '—' : Number(G.k_factor).toFixed(2)), lbl:'Viral coefficient · K-factor, 30 days',
+       sub:comma(G.referrals_30)+' friends signed up through a referral link per '+comma(G.accounts_30)+' new accounts'+(G.k_factor!=null ? (Number(G.k_factor)>=1 ? badge('self-sustaining','bn-hi') : badge('below 1 — paid or organic still needed','bn-mid')) : ''),
+       src:'K ≥ 1 means each user brings more than one more; most consumer apps sit well under 0.5'},
+      {val:(freeToPaid==null ? '—' : freeToPaid.toFixed(1)+'%')+' <span class="hm-goal">'+(arpu==null ? '' : '$'+arpu.toFixed(2)+' ARPU')+'</span>', lbl:'Free-to-paid · and revenue per monthly active',
+       sub:comma(S.paying)+' paying of '+comma(accountsAll)+' accounts · $'+comma(S.mrr)+' MRR over '+comma(E.mau)+' monthly actives'+
+           (freeToPaid==null ? '' : freeToPaid>=INVESTOR_BENCH.free_to_paid_low ? badge('inside the 2–5% freemium band','bn-mid') : badge('below the 2–5% freemium band','bn-low')),
+       src:'freemium converts 2–5% of free accounts; ARPU is MRR ÷ MAU'},
+      {val:comma(G.app_actives_30)+' <span class="hm-goal">'+pctS(G.app_actives_30, E.mau)+' of actives</span>', lbl:'iPhone app · actives, 30 days',
+       sub:comma(G.app_actives_prev30)+' in the prior window · App Store builds only, simulators and TestFlight excluded',
+       src:'platform mix; the app is where alerts and retention live'}
+    ];
+    host.innerHTML=tiles.map(function(t){
+      return '<div class="ads-tile"><div class="a-val">'+t.val+'</div><div class="a-lbl">'+t.lbl+'</div><div class="a-sub">'+t.sub+'</div>'+
+        (t.src ? '<div class="a-bench-note">'+esc(t.src)+'</div>' : '')+'</div>';
+    }).join('');
+    var co=el('fac-investor-callout');
+    co.innerHTML='<b>Not on this card, on purpose:</b> CAC, LTV and LTV:CAC. No advertising spend is recorded anywhere in this system '+
+      '(Google Ads and the LinkNYC campaign were bought outside it), so a customer acquisition cost cannot be computed, and with '+comma(S.paying)+
+      ' paying accounts there is no lifetime value to divide. Investors expect LTV:CAC of about 3:1; the honest reading today is "unmeasured", not a number. '+
+      'Record spend per campaign and both fall out of what is already here.';
   }
 
   // ---------- search ----------
@@ -2343,6 +2444,10 @@
     if(!A || (!A.as_of && !A.note)){ card.hidden=true; return; }
     card.hidden=false;
     var S=(A.summary||{}), w7=S.d7||{}, w28=S.d28||{};
+    // The installs/deletions report only started producing rows on 9/19, so
+    // "24 installs · 28 days" was two days of data under a 28-day label.
+    var days=A.days||{}, instFrom=Object.keys(days).sort().filter(function(k){ return days[k].installs!=null || days[k].deletions!=null; })[0];
+    var instSub=comma(w28.installs||0)+' installs · '+comma(w28.deletions||0)+' deletions'+(instFrom ? ' (Apple counts these since '+instFrom.slice(5).replace('-','/')+')' : '');
     if(!A.as_of){
       el('appstore-tiles').innerHTML='';
       el('appstore-note').textContent=A.note||'No App Store data yet.';
@@ -2350,14 +2455,20 @@
     }
     var tiles=[
       {val:comma(w7.downloads||0),lbl:'Downloads · 7 days',sub:comma(w7.downloads_first||0)+' first-time · '+comma(w7.redownloads||0)+' re-downloads'},
-      {val:comma(w28.downloads||0),lbl:'Downloads · 28 days',sub:comma(w28.installs||0)+' installs · '+comma(w28.deletions||0)+' deletions'},
+      {val:comma(w28.downloads||0),lbl:'Downloads · 28 days',sub:instSub},
       {val:comma(w28.page_views||0),lbl:'Product page views · 28 days',sub:comma(w28.impressions||0)+' impressions in search & browse'},
       {val:(w28.conv_page_view!=null?w28.conv_page_view+'%':'—'),lbl:'Page view → download',sub:(w28.conv_impression!=null?w28.conv_impression+'% from impressions':'impression rate unknown')}
     ];
     el('appstore-tiles').innerHTML=tiles.map(function(t){
       return '<div class="ads-tile"><div class="a-val">'+t.val+'</div><div class="a-lbl">'+t.lbl+'</div><div class="a-sub">'+t.sub+'</div></div>';
     }).join('');
-    var verdict=appstoreVerdict(w28.conv_page_view, w28.conv_impression);
+    // Apple's impressions cover App Store search and browse only, while page
+    // views include everyone who tapped "Get the app" on findacrib.com — a
+    // page view with no impression behind it. So downloads ÷ impressions
+    // (36.5% on 2026-09-21) is not the 3–5% store-search figure and is never
+    // judged against it; it is shown as a plain number on the tile.
+    var verdict=appstoreVerdict(w28.conv_page_view, null)+
+      ' · impression rate not judged: most page views arrive from findacrib.com links, which carry no store impression';
     el('appstore-note').textContent=(verdict?verdict+' · ':'')+'Apple data through '+A.as_of+(A.updated?' · pulled '+String(A.updated).slice(0,16).replace('T',' ')+'Z':'');
   }
 

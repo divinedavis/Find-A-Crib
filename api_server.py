@@ -1331,8 +1331,20 @@ def _fac_since(since):
 # change inside a minute. The page asks for the same window from two tabs, a
 # reload and its 5-minute refresh; this is what keeps those from each paying.
 @_memo(60)
-def _fac_metrics_rpc(rng):
-    return rpc("dashboard_metrics", {"p_range": rng})
+def _fac_metrics_rpc(rng, builds):
+    # `builds` is the tuple of iOS builds that ever reached the App Store, from
+    # appstore.json. The SQL counts app launches as visits and drops every
+    # other build (simulators, TestFlight, App Review). An empty tuple means
+    # the file is missing, and the SQL then applies no filter — a dashboard
+    # without appstore.json should not silently lose every app user.
+    return rpc("dashboard_metrics", {"p_range": rng,
+                                     "p_ios_builds": list(builds) if builds else None})
+
+
+def _fac_released_builds():
+    """iOS build numbers that reached the App Store, as strings, sorted."""
+    rb = _fac_appstore().get("released_builds") or []
+    return tuple(sorted({str(b) for b in rb if str(b).isdigit()}, key=int))
 
 
 @app.route("/dashboard-metrics")
@@ -1353,7 +1365,7 @@ def dashboard_metrics():
     try:
         # A copy: the memo hands every caller the same dict, and the keys added
         # below must not leak into it.
-        data = dict(_fac_metrics_rpc(rng))
+        data = dict(_fac_metrics_rpc(rng, _fac_released_builds()))
     except Exception:
         return jsonify(error="temporarily_unavailable"), 503
     since = _fac_since(data.get("since"))
@@ -2391,8 +2403,12 @@ def _fac_search():
         # answering a query nobody thought to track.
         clicks = sum(int(p.get("clicks") or 0) for p in pages)
         impressions = sum(int(p.get("impressions") or 0) for p in pages)
-        ranked = [p for p in pages if p.get("position") is not None]
-        avg_pos = (sum(float(p["position"]) for p in ranked) / len(ranked)) if ranked else None
+        # Impression-weighted, the way Search Console's own summary is. The
+        # plain mean of 14 pages put seven one-impression building pages on the
+        # same footing as the home page and read 2.0 (2026-09-21).
+        ranked = [p for p in pages if p.get("position") is not None and int(p.get("impressions") or 0) > 0]
+        wsum = sum(int(p["impressions"]) for p in ranked)
+        avg_pos = (sum(float(p["position"]) * int(p["impressions"]) for p in ranked) / wsum) if wsum else None
         out.update({
             "clicks": clicks,
             "impressions": impressions,

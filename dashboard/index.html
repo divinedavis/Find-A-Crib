@@ -582,9 +582,6 @@
           <div><h2>Advertiser metrics — what a slot is actually worth</h2><div class="card-sub">The re-rental and lottery tiles are the only space on this map somebody else would buy. An impression is counted the way a buyer would check it — half the tile on screen for a full second, once per apartment per session, not once per render, because the grid rebuilds every time you pan. A click is a hand-off to the agent’s own site.</div></div>
         </div>
         <div class="ads-tiles" id="tile-tiles"></div>
-        <div id="tile-agents" style="margin-top:18px"></div>
-        <div id="tile-sources" style="margin-top:18px"></div>
-        <div class="callout" id="tile-callout" style="margin-top:16px"></div>
       </div>
 
       </div><!-- /fac-a -->
@@ -1916,94 +1913,9 @@
        bench:adCtrBench(hasCtr ? A.ctr_served : null, hasView ? A.ctr : null)}
     ].map(creaseTile).join('');
 
-    var rows=(A.agents||[]);
-    el('tile-agents').innerHTML = rows.length
-      ? rows.map(function(a){
-          var lottery = a.kind==='lottery';
-          var i=n(a.impressions), c=n(a.clicks), sv=n(a.served);
-          // The headline rate is clicks over SERVED impressions; these rows
-          // used the viewable rate, so a row read 11.0% under a card saying
-          // 0.6% (2026-09-21). Same denominator here, viewable beside it.
-          var rate = (a.ctr_served !== null && a.ctr_served !== undefined) ? a.ctr_served.toFixed(1)+'% click rate'
-                   : (a.ctr !== null && a.ctr !== undefined) ? a.ctr.toFixed(1)+'% of viewable (served rate not ready)'
-                   : (c ? c+(c===1?' click':' clicks')+(i?', still measuring impressions':', impressions not yet counted')
-                        : 'no activity yet');
-          // "0 impressions" next to "impressions not yet counted" reads as a
-          // tile nobody looked at rather than one nobody measured.
-          var desc=[sv?comma(sv)+' served':null, i?comma(i)+' viewable':null, comma(n(a.reach))+' people',
-                    n(a.units)?comma(n(a.units))+(n(a.units)===1?' apartment':' apartments'):null, rate]
-                   .filter(Boolean).join(' · ');
-          return '<div class="act-row"><div class="act-l"><div class="act-ico">'+(lottery?'🏛️':'🏢')+'</div>'+
-            '<div><div class="act-name">'+esc(a.agent)+'</div>'+
-            '<div class="act-desc">'+esc(desc)+'</div></div></div>'+
-            '<div class="act-val">'+comma(c)+'</div></div>';
-        }).join('')
-      : '<div class="disclaim">No tile has been seen or clicked yet in this range.</div>';
-
-    // Where the people who clicked a re-rental came from, which client they
-    // were on, and which borough's tile they took (2026-09-16). Rows from
-    // before the site stamped a source on every event are "unknown", not
-    // guessed. The iPhone app is its own source: nothing inside the app can
-    // know which ad or page sent someone to the App Store.
-    var P=A.click_platforms||{}, S=A.click_sources||[], Bo=A.click_boroughs||[];
-    var webC=n(P.web), iosC=n(P.ios);
-    function chips(list, key){
-      return list.length
-        ? '<div class="act-desc" style="line-height:1.9">'+list.map(function(r){
-            return '<span style="display:inline-block;padding:1px 9px;border:1px solid var(--line,#dfe3e8);border-radius:999px;margin:0 6px 4px 0">'+esc(r[key])+' <b>'+comma(n(r.clicks))+'</b></span>';
-          }).join('')+'</div>'
-        : '<div class="act-desc">nothing yet</div>';
-    }
-    el('tile-sources').innerHTML = clicks
-      ? '<div class="act-row"><div class="act-l"><div class="act-ico">📍</div><div>'+
-          '<div class="act-name">Where re-rental clickers came from</div>'+
-          '<div class="act-desc">'+comma(webC)+' on the website · '+comma(iosC)+' in the iPhone app</div>'+
-          chips(S,'source')+'</div></div></div>'+
-        (Bo.length
-          ? '<div class="act-row"><div class="act-l"><div class="act-ico">🗺️</div><div>'+
-            '<div class="act-name">Which borough\u2019s tile</div>'+chips(Bo,'borough')+'</div></div></div>'
-          : '')
-      : '';
-
-    // The sentence that goes in the email. It is deliberately built from the
-    // top advertiser rather than the total: nobody is buying "the site", they
-    // are buying the slot their own apartments went into, and the only honest
-    // pitch is what that one slot already did for them for free.
-    var top=rows.filter(function(r){ return r.kind!=='lottery'; })[0];
-    var msg;
-    if(!impr && !clicks){
-      msg='<b>Nothing to sell yet.</b> Impression counting is live on the map — the first numbers land as soon as somebody scrolls a tile into view.';
-    } else if(!impr){
-      msg='<b>'+comma(clicks)+' clicks handed to marketing agents, and the impressions behind them were never counted.</b> '+
-          'Counting shipped 24 August 2026; until a few days of it bank, the click rate here stays blank rather than being '+
-          'divided by a denominator that did not exist.'+
-          (top?' Most of those clicks went to <b>'+esc(top.agent)+'</b>.':'');
-    } else if(!hasCtr){
-      msg='<b>'+comma(clicks)+' clicks handed to marketing agents; the impressions behind them are still being counted.</b> '+
-          'Counting shipped 24 August 2026 and has banked '+comma(impr)+' so far — the click rate stays blank until '+
-          comma(n(A.ctr_min)||100)+', because a rate off a handful of impressions has a margin of error wider than itself.'+
-          (top?' Most of those clicks went to <b>'+esc(top.agent)+'</b>.':'');
-    } else {
-      // Removed: the "N viewable impressions reached N renters" pitch line. The
-      // per-agent rows above it already carry those counts. The three branches
-      // before this one survive because each explains a BLANK click rate, which
-      // the numbers cannot explain by themselves.
-      msg='';
-    }
-    // This card follows the range picker like every other one, but it used to
-    // talk as though it did not — quoting absolute dates while showing a single
-    // day's numbers, which reads as a card that never updates. Name the window.
-    msg+=' <span class="disclaim">Showing <b>'+esc(RANGE_WORDS[rangeKey]||'all time')+'</b>'+
-         (A.first_impression
-            ? ' · impressions counted since '+
-              new Date(A.first_impression).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+
-              ', clicks go back further'
-            : '')+'.</span>';
-    if(A.truncated){
-      msg+=' <span class="disclaim">⚠ The event query hit its 50,000-row ceiling, so this '+
-           'window is a recent slice rather than the whole range — the oldest rows were dropped.</span>';
-    }
-    el('tile-callout').innerHTML=msg;
+    // The per-advertiser rows, the click-source and borough chips and the
+    // counting-status callout were removed at the owner's request
+    // (2026-09-21). The five headline tiles above are the card.
   }
 
   // ---------- product health ----------

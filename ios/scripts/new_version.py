@@ -74,4 +74,5 @@ def main():
 
 
 if __name__ == "__main__":
+    import asc_metadata; asc_metadata.refuse_if_frozen()   # owner's freeze, see ios/ASC_FREEZE
     sys.exit(main())

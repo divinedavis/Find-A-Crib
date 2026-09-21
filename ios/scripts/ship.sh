@@ -4,6 +4,9 @@
 # because the pbxproj is generated. SHIP_RUN_UI=1 also gates on UI tests.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+# Owner's freeze (2026-09-21): nothing goes to App Store Connect until they
+# lift it. Delete ASC_FREEZE only on their word.
+[[ -f ASC_FREEZE ]] && { echo "error: App Store Connect is frozen (ios/ASC_FREEZE). Not uploading." >&2; exit 1; }
 [[ -f scripts/asc-config.env ]] || { echo "error: scripts/asc-config.env missing (copy .example)" >&2; exit 1; }
 # shellcheck disable=SC1091
 source scripts/asc-config.env

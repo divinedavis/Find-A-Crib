@@ -141,6 +141,14 @@ AGE_RATING = {
 EDITABLE = ("PREPARE_FOR_SUBMISSION", "DEVELOPER_REJECTED", "REJECTED", "METADATA_REJECTED")
 
 
+def refuse_if_frozen() -> None:
+    """Owner's freeze (2026-09-21): no uploads, versions or review
+    submissions while ios/ASC_FREEZE exists. Read-only scripts don't call it."""
+    import sys
+    if (HERE.parent / "ASC_FREEZE").exists():
+        sys.exit("error: App Store Connect is frozen (ios/ASC_FREEZE). Nothing sent.")
+
+
 def load_config() -> dict:
     p = HERE / "asc-config.env"
     if not p.exists():

@@ -76,6 +76,7 @@ def submit(asc, app_id, ids):
 
 
 if __name__ == "__main__":
+    import asc_metadata; asc_metadata.refuse_if_frozen()   # owner's freeze, see ios/ASC_FREEZE
     cfg = m.load_config(); asc = m.ASC(cfg); app_id = cfg["ASC_APP_ID"]
     ids = m.resolve(asc, app_id)
     print(f"==> version {ids['version_string']} preflight")

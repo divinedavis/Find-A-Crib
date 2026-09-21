@@ -124,14 +124,36 @@ STABILIZED_DEF = ("Rent stabilization caps how much the rent can rise each year 
 # reads, hours after this one runs, so any number here would be a claim this
 # build cannot substantiate. The destination carries the live figures; this
 # block only has to be true and get a crawler there.
+#
+# THE /brief/ CLAUSE WAS REMOVED ON 2026-09-21, AND THE REASON IS ACCURACY, NOT
+# SEO. Until today this block ended "or read the daily brief on which buildings
+# came on and off the market" — present tense, on every page below. T002
+# daily_brief retired on 2026-08-16 and nothing in growth/techniques.py ORDER
+# has rebuilt /brief/ since: last_run.json's build.techniques block has carried
+# no daily_brief entry for 36 days, and t_sitemap_daily prices its 17 pages
+# "never" precisely because they cannot change again. So 369 NYC hub pages
+# (198 neighborhood, 165 ZIP, 5 borough, /buildings/) have been telling readers
+# this site publishes a daily brief for five weeks after it stopped. That is a
+# claim the build cannot substantiate, which is the same standard the paragraph
+# above applies to counts, and it does not get a pass for being a link.
+#
+# The /section8/ half STAYS and is untouched: T001 fresh_section8 is active and
+# rebuilt it this morning (310 buildings across 5 boroughs), so every word of it
+# is still true, and it is the crawl path the 2026-08-06 audit was written to
+# fix. Only the dead half goes.
+#
+# /brief/ IS NOT ORPHANED BY THIS. Its 17 URLs keep their sitemap-daily.xml
+# entries (t_sitemap_daily entry(): a retired section stays listed, declared
+# "never"), and /section8/ keeps exactly one honest, past-tense link to the
+# archive — see growth/techniques.py t_fresh_section8. One link from the
+# section's own topical parent is what a frozen archive earns; 369 links from
+# the only tier Google still crawls is not.
 VOUCHER_XLINK = (
     "<h2>Renting with a housing voucher?</h2>"
     "<p>Find A Crib rebuilds a list every night of the DHCR-registered "
     "rent-stabilized buildings that have an apartment listed for Section 8 and "
     "other housing vouchers, from the overnight AffordableHousing.com feed — "
-    "<a href='/section8/'>see the current voucher listings</a>, or read the "
-    "<a href='/brief/'>daily brief</a> on which buildings came on and off the "
-    "market.</p>")
+    "<a href='/section8/'>see the current voucher listings</a>.</p>")
 
 # The same crawl path, for the three city browse hubs — and the reason it is a
 # second string rather than a reuse of VOUCHER_XLINK.
@@ -161,15 +183,19 @@ VOUCHER_XLINK = (
 # neighborhood page would be boilerplate on the thinner tier, which is the
 # duplication that plausibly drives the serving-set churn. One good link from a
 # priority-0.9 page two clicks from /sf/ (which serves) beats 252 weak ones.
+#
+# The /brief/ clause went on 2026-09-21 for the reason given above VOUCHER_XLINK:
+# the section has not been rebuilt since 2026-08-16 and "read the daily brief"
+# was false on all three browse hubs. The voucher sentence and the "no equivalent
+# feed for {city} yet" caveat are untouched — both are still exactly true.
 CITY_VOUCHER_XLINK = (
     "<h2>New York City: apartments listed for housing vouchers</h2>"
     "<p>Find A Crib's voucher feed covers New York City only — every night it "
     "rebuilds the list of DHCR-registered rent-stabilized buildings with an "
     "apartment listed for Section 8 and other housing vouchers, from the "
     "overnight AffordableHousing.com feed. "
-    "<a href='/section8/'>See the current New York City voucher listings</a>, or "
-    "read the <a href='/brief/'>daily brief</a> on which buildings came on and "
-    "off the market. There is no equivalent feed for {city} yet.</p>")
+    "<a href='/section8/'>See the current New York City voucher listings</a>. "
+    "There is no equivalent feed for {city} yet.</p>")
 
 BORO_NAME = {"M": "Manhattan", "Bk": "Brooklyn", "Q": "Queens",
              "Bx": "the Bronx", "SI": "Staten Island"}

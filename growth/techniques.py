@@ -553,8 +553,30 @@ def t_fresh_section8(ctx):
         # deliberately NOT counted by t_crawl_paths: a pair of orphans linking
         # to each other is the orphan-cluster case that audit exists to catch,
         # and crediting it here would report both healthy the day they are not.
-        + "<p class='sub'>What changed overnight: the <a href='/brief/'>daily brief</a> "
-          "records which buildings came on and off this list each day.</p>"
+        #
+        # 2026-09-21: PAST TENSE NOW, AND THIS IS THE ONLY /brief/ LINK LEFT ON
+        # THE SITE THAT THIS LOOP CAN DEPLOY. The old wording — "the daily brief
+        # records which buildings came on and off this list each day" — went on
+        # saying "each day" for 36 days after T002 daily_brief retired on
+        # 2026-08-16. Nothing in ORDER rebuilds /brief/, last_run.json has
+        # carried no daily_brief entry since, and t_sitemap_daily prices its 17
+        # pages "never" on exactly that ground, so the sentence was false on
+        # every one of the ~378 pages that carried some version of it. The same
+        # clause was cut from build_seo.py's VOUCHER_XLINK (369 NYC hub pages)
+        # and CITY_VOUCHER_XLINK (3 city browse hubs) in the same commit.
+        #
+        # KEPT RATHER THAN CUT, on one page rather than 378, for two reasons.
+        # The briefs are honest dated records of a real market and an archive is
+        # worth reading; and cutting every inbound link would leave the section
+        # reachable only from sitemap-daily.xml, which is the sitemap-only
+        # orphan state the 2026-08-05 note blames for its never earning an
+        # impression in the first place. The end date is stated because a reader
+        # who clicks deserves to know the series stopped before they work it out
+        # from the table. No count and no "latest" claim: this build does not
+        # read /brief/ and cannot substantiate either.
+        + "<p class='sub'>Archive: dated <a href='/brief/'>daily briefs</a> recorded "
+          "which buildings came on and off this list each day. The series ran until "
+          "16 August 2026 and is no longer updated.</p>"
         + SOI_NOTE
         + "<h2>All live listings, cheapest first</h2>"
         + _listing_table(rows)
@@ -814,7 +836,23 @@ def t_llms_txt(ctx):
         f"- Voucher-friendly listings, refreshed nightly: {len(rows):,} rent-stabilized NYC "
         f"buildings currently have an apartment listed on AffordableHousing.com. "
         f"https://findacrib.com/section8/",
-        "- Dated daily snapshots of that market: https://findacrib.com/brief/",
+        # 2026-09-21: this read "- Dated daily snapshots of that market:
+        # https://findacrib.com/brief/" under the heading "Live listings", and
+        # had done since T002 daily_brief retired on 2026-08-16. llms.txt is the
+        # file answer engines read to learn what this site publishes, and T003
+        # is the one technique here carrying a WORKS verdict on real evidence
+        # (ai_visitors median 0.5/day against 0.0 before it), so a stale line in
+        # it does not sit inert — it is the sentence most likely to be repeated
+        # to a tenant as fact. Moved out of "Live listings", labelled an
+        # archive, and given the date the series stopped. Not deleted: the
+        # briefs are genuine dated records and an answer engine that cites one
+        # should be able to see what it is and when it ends.
+        "",
+        "## Archive",
+        "",
+        "- Dated daily snapshots of the voucher market above, recording which buildings",
+        "  came on and off the list each day. The series ran until 2026-08-16 and is no",
+        "  longer updated: https://findacrib.com/brief/",
         "",
         "## Guides",
         "",

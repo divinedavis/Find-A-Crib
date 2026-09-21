@@ -98,8 +98,8 @@
   "indexstatus": {
     "accept_pct": 1.1,
     "accept_pct_mature": 0.0,
-    "added": 0,
-    "at": "2026-09-20T05:11:18+00:00",
+    "added": 1,
+    "at": "2026-09-21T05:11:07+00:00",
     "by_crawl_age": {
       "0-6d": {
         "accept_pct": 33.3,
@@ -108,7 +108,7 @@
       },
       "14-20d": {
         "accept_pct": 0.0,
-        "fetched": 2,
+        "fetched": 1,
         "indexed": 0
       },
       "21-27d": {
@@ -118,7 +118,7 @@
       },
       "28d+": {
         "accept_pct": 0.0,
-        "fetched": 79,
+        "fetched": 80,
         "indexed": 0
       },
       "7-13d": {
@@ -127,26 +127,26 @@
         "indexed": 0
       }
     },
-    "cohort": 457,
+    "cohort": 458,
     "crawl_read_lag_days": 1.8,
     "crawls_14d": 5,
-    "crawls_28d": 16,
+    "crawls_28d": 15,
     "crawls_by_week": {
-      "2026-07-27": 24,
       "2026-08-03": 16,
       "2026-08-10": 11,
       "2026-08-17": 16,
       "2026-08-24": 9,
       "2026-08-31": 2,
       "2026-09-07": 2,
-      "2026-09-14": 3
+      "2026-09-14": 3,
+      "2026-09-21": 0
     },
-    "crawls_week_partial": "2026-09-14",
-    "date": "2026-09-20",
+    "crawls_week_partial": "2026-09-21",
+    "date": "2026-09-21",
     "dropped": 0,
     "errors": 0,
-    "fetched_mature": 88,
-    "fetched_pct": 20.8,
+    "fetched_mature": 89,
+    "fetched_pct": 20.7,
     "gained_indexed": 0,
     "indexed_pct": 0.2,
     "inspected": 100,
@@ -163,218 +163,205 @@
       "landlord": 5,
       "marketing-agents": 1,
       "methodology": 1,
+      "rent-report": 1,
       "section8": 6
     },
     "ok": true,
-    "published_urls": 4008,
-    "read": 457,
-    "rechecked": 100,
+    "published_urls": 4019,
+    "read": 458,
+    "rechecked": 99,
     "states": {
       "crawled_not_indexed": 94,
-      "discovered_not_indexed": 77,
+      "discovered_not_indexed": 100,
       "indexed": 1,
-      "unknown_to_google": 285
+      "unknown_to_google": 263
     }
   },
   "measure": {
-    "at": "2026-09-20T05:11:19+00:00",
-    "coverage_pct": 82.7,
-    "date": "2026-09-20",
+    "at": "2026-09-21T05:11:09+00:00",
+    "coverage_pct": 82.0,
+    "date": "2026-09-21",
     "days": 1,
-    "keywords_covered": 405,
+    "keywords_covered": 402,
     "keywords_total": 490,
-    "latest_measured_day": "2026-09-19",
+    "latest_measured_day": "2026-09-20",
     "traffic": {
       "arrival_shape": {
         "all": {
-          "busiest_6h_pct": 33.0,
-          "n": 179,
-          "night_pct": 8.9,
-          "peak_hour_utc": 4
+          "busiest_6h_pct": 37.5,
+          "n": 200,
+          "night_pct": 4.0,
+          "peak_hour_utc": 16
         },
         "direct": {
-          "busiest_6h_pct": 33.1,
-          "n": 145,
-          "night_pct": 9.0,
-          "peak_hour_utc": 4
+          "busiest_6h_pct": 37.9,
+          "n": 161,
+          "night_pct": 3.7,
+          "peak_hour_utc": 16
         },
         "organic": {
-          "busiest_6h_pct": 44.8,
-          "n": 29,
-          "night_pct": 6.9,
-          "peak_hour_utc": 14
+          "busiest_6h_pct": 37.5,
+          "n": 32,
+          "night_pct": 6.2,
+          "peak_hour_utc": 0
         }
       },
       "by_channel": {
-        "campaign": 2,
-        "direct": 145,
-        "internal": 2,
-        "organic": 29,
+        "ai": 2,
+        "campaign": 1,
+        "direct": 161,
+        "internal": 3,
+        "organic": 32,
         "referral": 1
       },
       "by_hour_utc": {
         "all": [
-          7,
+          14,
+          15,
           9,
-          10,
-          8,
-          13,
-          7,
-          3,
+          6,
+          9,
+          4,
+          4,
           2,
-          5,
+          1,
+          0,
+          4,
           3,
-          3,
+          6,
+          10,
           5,
-          5,
-          9,
-          12,
+          13,
+          16,
           11,
-          5,
+          10,
+          16,
           9,
-          8,
-          7,
-          7,
-          9,
+          11,
           10,
           12
         ],
         "direct": [
-          6,
+          11,
+          13,
           7,
-          9,
+          4,
           7,
-          10,
-          6,
-          2,
           2,
           4,
-          3,
-          3,
-          3,
+          0,
+          1,
+          0,
           4,
-          6,
+          1,
           6,
           8,
           5,
+          9,
+          15,
+          9,
+          6,
+          14,
           8,
-          7,
-          7,
-          7,
+          9,
           8,
-          8,
-          9
+          10
         ],
         "organic": [
-          1,
-          2,
-          1,
-          1,
-          2,
-          0,
-          0,
-          0,
-          1,
-          0,
-          0,
-          1,
-          1,
           3,
-          5,
-          3,
-          0,
-          1,
-          1,
-          0,
-          0,
+          2,
+          2,
+          2,
           1,
           2,
-          3
+          0,
+          2,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0,
+          3,
+          1,
+          2,
+          3,
+          2,
+          1,
+          1,
+          1,
+          2
         ]
       },
       "by_src": {
-        "alert": 2
+        "alert": 1,
+        "chatgpt.com": 2
       },
-      "direct_deep": 1,
-      "new": 131,
+      "direct_deep": 2,
+      "new": 151,
       "new_window_days": 30,
-      "returning": 48,
+      "returning": 49,
       "top_paths": [
         [
           "/",
-          172
+          197
         ],
         [
-          "/la/",
-          2
-        ],
-        [
-          "/available/manhattan/upper-west-side-central/",
+          "/borough/queens/",
           1
         ],
         [
-          "/building/brooklyn/65-woodbine-st-3033490045/",
+          "/building/brooklyn/1701-albemarle-rd-3050970120/",
           1
         ],
         [
-          "/building/manhattan/250-w-85th-st-1012320055/",
-          1
-        ],
-        [
-          "/building/manhattan/850-amsterdam-ave-1018730031/",
+          "/building/manhattan/127-2nd-ave-1004630031/",
           1
         ]
       ],
       "top_referrers": [
         [
           "www.google.com",
-          21
-        ],
-        [
-          "duckduckgo.com",
-          3
+          29
         ],
         [
           "com.google.android.googlequicksearchbox",
           2
         ],
         [
-          "www.bing.com",
-          2
-        ],
-        [
-          "checkout.stripe.com",
+          "com.google.android.gm",
           1
         ],
         [
-          "search.yahoo.com",
+          "lantern.labaton.com",
           1
         ]
       ],
-      "visitors": 179
+      "visitors": 200
     }
   },
   "outreach": {
-    "at": "2026-09-20T05:11:21+00:00",
-    "date": "2026-09-20",
+    "at": "2026-09-21T05:11:11+00:00",
+    "date": "2026-09-21",
     "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
     "ok": false
   },
   "scout": {
-    "at": "2026-09-20T05:11:21+00:00",
-    "date": "2026-09-20",
+    "at": "2026-09-21T05:11:11+00:00",
+    "date": "2026-09-21",
     "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
     "ok": false
   },
   "searchconsole": {
-    "at": "2026-09-20T05:00:12+00:00",
-    "clicks": 184,
-    "date": "2026-09-20",
-    "impressions": 220,
+    "at": "2026-09-21T05:00:10+00:00",
+    "clicks": 191,
+    "date": "2026-09-21",
+    "impressions": 226,
     "nonbranded_clicks": 0,
     "nonbranded_impressions": 0,
-    "page_clicks": 218,
-    "page_impressions": 1611,
+    "page_clicks": 223,
+    "page_impressions": 1721,
     "serving_branded_only": 11,
     "serving_ever": 287,
     "serving_nonbranded": 0,
@@ -383,6 +370,6 @@
     "serving_unattributed": 3,
     "share_pct": 0.0,
     "tracked_ranking": 0,
-    "window": "2026-09-11..2026-09-18"
+    "window": "2026-09-12..2026-09-19"
   }
 }

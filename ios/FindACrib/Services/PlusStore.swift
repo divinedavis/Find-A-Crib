@@ -103,7 +103,14 @@ final class PlusStore {
             _ = try await client.functions.invoke("apple-subscription", options: .init(body: ["jws": token]))
             await auth.refreshPlus()
         } catch {
-            // Network hiccup: the local entitlement still unlocks Plus this session.
+            // The local entitlement still unlocks Plus this session, but a
+            // failure here means the account has no Plus on the website and
+            // the dashboard never sees the sale — which is exactly how two
+            // paid subscribers went unrecorded for eleven days (2026-09-20).
+            // Recorded so the error email catches the next one.
+            let ns = error as NSError
+            Analytics.shared.track("app_error", ["where": "plus_sync", "domain": ns.domain, "code": ns.code,
+                                                 "text": String(error.localizedDescription.prefix(140))])
         }
     }
 

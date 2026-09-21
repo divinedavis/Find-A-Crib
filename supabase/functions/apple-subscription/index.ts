@@ -14,6 +14,13 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { SignedDataVerifier, Environment } from "npm:@apple/app-store-server-library@1";
 
 const BUNDLE_ID = "com.divinedavis.findacrib";
+// The App Store's numeric id for the app (App Store Connect, ASC_APP_ID).
+// Apple's verifier REQUIRES it for Production and throws without it — which
+// this function swallowed and fell through to Sandbox, so every real
+// customer's receipt read "transaction did not verify" while App Review and
+// TestFlight (Sandbox) passed. Two paid subscribers on 2026-09-09/10 were
+// never recorded (found 2026-09-20).
+const APP_APPLE_ID = 6807549249;
 const PRODUCT_IDS = new Set(["com.divinedavis.findacrib.plus.monthly"]);
 // Apple Root CA - G3 (DER, base64). Public certificate; pinned so a verifier
 // cannot be talked into trusting anything else.
@@ -27,10 +34,13 @@ async function verifyEither(jws: string) {
   // Try Production first, fall back to Sandbox; report which one signed it.
   for (const env of [Environment.PRODUCTION, Environment.SANDBOX]) {
     try {
-      const v = new SignedDataVerifier(ROOTS, true, env, BUNDLE_ID);
+      const v = new SignedDataVerifier(ROOTS, true, env, BUNDLE_ID, APP_APPLE_ID);
       const tx = await v.verifyAndDecodeTransaction(jws);
       return { tx, env: env === Environment.PRODUCTION ? "Production" : "Sandbox" };
-    } catch (_e) { /* try the other environment */ }
+    } catch (e) {
+      // Logged, so the next silent failure is visible in the function logs.
+      console.error("apple-subscription verify failed", env === Environment.PRODUCTION ? "Production" : "Sandbox", String((e as Error)?.message ?? e).slice(0, 200));
+    }
   }
   return null;
 }

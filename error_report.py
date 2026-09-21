@@ -45,6 +45,8 @@ sys.path.insert(0, str(HERE))
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://dbaifotzwlxjvsxjohjt.supabase.co")
 STATE = Path(os.environ.get("ERROR_STATE", "/var/lib/findacrib/error_report_state.json"))
 NGINX_LOGS = ["/var/log/nginx/access.log", "/var/log/nginx/findacrib.access.log"]
+APPSTORE_JSON = os.environ.get("APPSTORE_JSON", "/root/findacrib-api/appstore.json")
+RELEASE_FLOOR = 3      # people on one unreleased build before it counts as users
 FEED_LOGS = {
     "Zumper listings": "/var/log/rentmap-scrape.log",
     "HCR lotteries": "/var/log/rentmap-hcr.log",
@@ -140,12 +142,48 @@ def crashes(rows):
     return out
 
 
-def app_failures(rows):
+def live_build():
+    """The newest build on the App Store, from appstore.json (asc_downloads.py
+    on the Mac writes it twice a day). None when unknown — then nothing is
+    filtered, so a missing file can hide nothing."""
+    try:
+        b = json.loads(Path(APPSTORE_JSON).read_text()).get("live_build")
+        return int(b) if b is not None else None
+    except Exception:
+        return None
+
+
+def unreleased_rows(rows, live):
+    """iOS rows from a build that is not on the App Store yet, unless enough
+    different people run it that it must be a real rollout.
+
+    Only three kinds of device run an unreleased build: the owner's phone on
+    TestFlight, App Review, and Apple's own launch of every upload minutes
+    after it lands. Builds 70 and 71 (2026-09-20) each drew one fresh install
+    ~10 min after upload that tapped Sign in with Apple 14 times and got
+    AuthorizationError 1000 (no Apple ID on the device) — the "19 app
+    failures" email. Those are errors our own shipping creates, not users'.
+    The 3-person floor covers the gap between a release and the next
+    appstore.json refresh."""
+    if live is None:
+        return set()
+    people = defaultdict(set)
+    for r in rows:
+        p = r.get("props") or {}
+        b = str(p.get("build") or "")
+        if p.get("platform") == "ios" and b.isdigit() and int(b) > live:
+            people[b].add(r["visitor_id"])
+    return {b for b, v in people.items() if len(v) < RELEASE_FLOOR}
+
+
+def app_failures(rows, skip_builds=frozenset()):
     """iPhone app rows that record a failure the user saw."""
     out = defaultdict(lambda: {"n": 0, "people": set(), "last": ""})
     for r in rows:
         p = r.get("props") or {}
         if p.get("platform") != "ios":
+            continue
+        if str(p.get("build") or "") in skip_builds:
             continue
         ev, label = r["event"], None
         if ev == "push_register_failed":
@@ -292,7 +330,8 @@ def main():
     minutes = int(a.hours * 60)
     since = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=minutes)).strftime("%Y-%m-%dT%H:%M:%SZ")
     rows = events(since, service_key())
-    js, crash, app = js_errors(rows), crashes(rows), app_failures(rows)
+    skip = unreleased_rows(rows, live_build())
+    js, crash, app = js_errors(rows), crashes(rows), app_failures(rows, skip)
     five, tracebacks, stale = nginx_5xx(minutes), api_tracebacks(minutes), stale_feeds()
 
     try:
@@ -317,7 +356,8 @@ def main():
     html, text = build(label, js, crash, app, five, tracebacks, stale, new_msgs)
     counts = (f"js {sum(v['n'] for v in js.values())} ({len(new_msgs)} new), crashes "
               f"{sum(v['n'] for v in crash.values())}, app {sum(v['n'] for v in app.values())}, "
-              f"5xx {sum(five.values())}, tracebacks {sum(tracebacks.values())}, stale {len(stale)}")
+              f"5xx {sum(five.values())}, tracebacks {sum(tracebacks.values())}, stale {len(stale)}"
+              + (f", ignored unreleased builds {','.join(sorted(skip))}" if skip else ""))
 
     if not worth_it:
         print(f"nothing to report ({counts})")
@@ -343,7 +383,6 @@ def main():
         bits.append(f"{len(stale)} stale feed{'s' if len(stale) > 1 else ''}")
     subject = "Find A Crib errors: " + (", ".join(bits) if bits else label)
     emailkit.send(a.email, subject, html, text, from_name="Find A Crib alerts")
-    STATE.parent.mkdir(parents=True, exist_ok=True)
     STATE.parent.mkdir(parents=True, exist_ok=True)
     STATE.write_text(json.dumps({"known_js": sorted(known | set(js)),
                                  "last_sent": datetime.datetime.now(datetime.timezone.utc).isoformat()}))

@@ -111,6 +111,21 @@ def summarise(daily, latest):
     return {"d7": window(7), "d28": window(28), "all": window(DAYS)}
 
 
+def live_build(asc, app_id):
+    """Highest build number that is on the App Store (READY_FOR_SALE).
+
+    error_report.py on the droplet reads this: a failure on a NEWER build came
+    from TestFlight, App Review or Apple's own post-upload launch — the owner
+    and Apple, not users — and must not wake anyone up.
+    """
+    j = asc.get(f"/apps/{app_id}/appStoreVersions", include="build", limit="20")
+    builds = {b["id"]: b["attributes"].get("version") for b in j.get("included", []) if b["type"] == "builds"}
+    live = [builds.get((v["relationships"]["build"].get("data") or {}).get("id"))
+            for v in j["data"] if v["attributes"].get("appStoreState") == "READY_FOR_SALE"]
+    live = [int(b) for b in live if b and str(b).isdigit()]
+    return max(live) if live else None
+
+
 def main():
     cfg = m.load_config(); asc = m.ASC(cfg)
     try:
@@ -120,6 +135,11 @@ def main():
                    "note": None if latest else "Apple has not produced the first daily report yet (new request 2026-09-09; usually 1–2 days)."}
     except Exception as e:
         payload = {"as_of": None, "days": {}, "summary": {}, "updated": datetime.now(timezone.utc).isoformat(timespec="seconds"), "note": f"pull failed: {e}"[:300]}
+    try:
+        payload["live_build"] = live_build(asc, cfg["ASC_APP_ID"])
+    except Exception as e:
+        payload["live_build"] = None
+        print("live_build lookup failed:", str(e)[:200])
     OUT.write_text(json.dumps(payload, indent=1) + "\n")
     print("wrote", OUT, "as_of", payload["as_of"], payload.get("note") or "")
     if "--deploy" in sys.argv:

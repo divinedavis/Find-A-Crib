@@ -1103,6 +1103,38 @@ class Runner:
                 'the referral modal needs its link field and copy button', j)
         j.notes.append('gated to sign-up')
 
+    def j_landlords_gate(self, page, j, device):
+        """Landlords, signed out: a laptop gets the sign-up modal and stays on
+        the map; a phone goes straight to /directory/ (owner, 2026-09-21)."""
+        self.boot(page)
+        if device == 'desktop':
+            # A real click: self.click dispatches a non-cancelable event, which
+            # no preventDefault can stop, so the page would navigate anyway.
+            page.click('a.desktop-chip[href="/directory/"]'); time.sleep(0.8)
+            self.ok(not page.evaluate("document.getElementById('auth-modal').hidden"),
+                    'signed out on a laptop, Landlords should open the account modal', j)
+            sub = (page.evaluate("document.getElementById('auth-submit').textContent") or '').lower()
+            self.ok('create' in sub, f'the gate should open in sign-up mode, got {sub!r}', j)
+            self.ok('/directory/' not in page.url, 'the laptop should stay on the map behind the modal', j)
+            msg = page.evaluate("document.getElementById('auth-sub').textContent") or ''
+            self.ok('landlord' in msg.lower(), f'the modal should say what it is for, got {msg!r}', j)
+            j.notes.append('gated to sign-up')
+        else:
+            href = page.evaluate("document.querySelector('a[href=\"/directory/\"]')?.getAttribute('href')")
+            self.ok(href == '/directory/', 'the Landlords link should still point at the directory', j)
+            # Click it, but stop the navigation in the bubble phase: the gate
+            # runs in the capture phase, so if it had fired the event would
+            # already be defaultPrevented here and the modal open.
+            gated, modal_hidden = page.evaluate("""(() => {
+                let prevented = null;
+                document.addEventListener('click', e => { prevented = e.defaultPrevented; e.preventDefault(); }, { once: true });
+                document.getElementById('dir-btn').click();
+                return [prevented, document.getElementById('auth-modal').hidden];
+            })()""")
+            self.ok(gated is False, 'on a phone the Landlords link must not be intercepted', j)
+            self.ok(modal_hidden, 'on a phone no account modal should open', j)
+            j.notes.append('phone goes to /directory/')
+
     def j_signin_modal(self, page, j, device):
         self.boot(page)
         self.click(page, '#auth-btn'); time.sleep(0.6)
@@ -1114,7 +1146,7 @@ class Runner:
     JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'pin_and_list',
                 'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'signin_modal', 'app_chip', 'app_qr_menu', 'boot_is_usable', 'city_chip',
                 'ad_tiles', 'outbound_links', 'status_chips', 'referral_gate',
-                'rent_report', 'legal_pages', 'comments_gate']
+                'rent_report', 'legal_pages', 'comments_gate', 'landlords_gate']
 
     # ---- run --------------------------------------------------------------
     def run(self):

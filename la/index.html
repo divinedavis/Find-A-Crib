@@ -7322,6 +7322,19 @@
     try { track('outbound', { kind: 'gate_alerts', src: new URL(a.href, location.href).searchParams.get('src') || null }); } catch (err) {}
     openAuthModal(ALERTS_GATE_MSG); setAuthMode('signup');
   }, true);
+  // Landlords on a laptop, signed out (owner, 2026-09-21): the sign-up modal
+  // instead of the directory page, then on to it once the account exists.
+  // Phones keep going straight to the page. 901px is the breakpoint where the
+  // desktop chip row appears.
+  const LANDLORDS_GATE_MSG = 'Create a free account to search every landlord and managing agent in NYC.';
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a[href^="/directory/"]');
+    if (!a || authUser || !matchMedia('(min-width: 901px)').matches) return;
+    e.preventDefault();
+    authGateNext = a.getAttribute('href');
+    track('outbound', { kind: 'gate_landlords' });
+    openAuthModal(LANDLORDS_GATE_MSG); setAuthMode('signup');
+  }, true);
   // ---------- arriving from /directory/ with a portfolio to open ----------
   // ?portfolio=<kind>:<key> is a click on a name in the landlord directory.
   // The map already knows how to show one landlord's buildings — that is the

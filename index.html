@@ -5381,6 +5381,17 @@
   let selectedBbl = null;
   // Bumped by anything that changes what a card shows; part of the render signature below.
   let gridGen = 0, lastGridSig = '';
+  // The lottery and featured feeds land a few ms apart right after the first
+  // paint, and each used to rebuild the whole list: three 200-card builds in
+  // under 200 ms, every tile photo started and thrown away twice. The phones
+  // that died on boot (crash traces 2026-09-20/21) all ended on exactly that
+  // double rebuild. One rebuild for whatever arrived together.
+  let feedGridT = 0;
+  function feedArrived() {
+    gridGen++;
+    clearTimeout(feedGridT);
+    feedGridT = setTimeout(() => { tr('grid:feeds'); refreshGrid(); }, 60);
+  }
 
   // ---------- in-feed ads (Google AdSense) ----------
   // Paste your AdSense IDs after the site is approved to switch ads on.
@@ -5446,7 +5457,7 @@
     .then(d => {
       if (!d || !Array.isArray(d.lotteries) || !d.lotteries.length) return;
       HC = d.lotteries;
-      gridGen++; refreshGrid();
+      feedArrived();
     })
     .catch(() => { /* no lottery feed today: the grid just has no HC tiles */ });
 
@@ -5458,7 +5469,7 @@
     .then(d => {
       if (!d || !Array.isArray(d.listings) || !d.listings.length) return;
       FEATURED = d.listings;
-      gridGen++; refreshGrid();                    // they arrived after the first paint
+      feedArrived();                               // they arrived after the first paint
     })
     .catch(() => { /* no featured feed today: the grid is unchanged */ });
 

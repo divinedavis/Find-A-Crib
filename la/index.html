@@ -1793,12 +1793,27 @@
   });
   window.addEventListener('unhandledrejection', e => {
     if (errSent++ >= 5) return;
-    try { const r = e.reason; track('js_error', { kind: 'promise', msg: String(r && (r.message || r) || '').slice(0, 200) }); } catch (_) {}
+    // The reason is often an Error with an empty message, or a DOM exception,
+    // or a bare value: without its name and where it came from the row reads
+    // "(empty message)" and cannot be chased (2026-09-20).
+    try {
+      const r = e.reason;
+      const name = (r && (r.name || r.constructor && r.constructor.name)) || typeof r;
+      const where = (r && r.stack ? String(r.stack).split('\n')[1] || '' : '').trim().slice(0, 80);
+      track('js_error', { kind: 'promise', msg: String(r && (r.message || r) || '').slice(0, 200), name: String(name).slice(0, 40), at: where });
+    } catch (_) {}
   });
   // ---------- crash trace ----------
   // Safari kills the page with no error and no time for a network request.
   // Every step below writes to localStorage synchronously; a page that boots
-  // and finds a trace not ending in 'pagehide' reports it as crash_trace.
+  // and finds a trace that did not end cleanly reports it as crash_trace.
+  //
+  // "Ended cleanly" is not simply "last step is pagehide" (2026-09-20). iOS
+  // Safari fires visibilitychange AFTER pagehide, and a suspended tab's
+  // one-second tick can land after that, so on the old rule ~60% of sessions
+  // reported a crash — 104 of 175 one day — and the number said nothing. A
+  // trace counts as clean if pagehide appears ANYWHERE in it, or if the last
+  // thing it did was one of the steps a backgrounded tab does by itself.
   const TRACE_KEY = 'fac.trace';
   const TR = [];
   function tr(step) {
@@ -1811,8 +1826,16 @@
   try {
     const prev = JSON.parse(localStorage.getItem(TRACE_KEY) || 'null');
     localStorage.removeItem(TRACE_KEY);
-    if (Array.isArray(prev) && prev.length && prev[prev.length - 1][1] !== 'pagehide') {
-      setTimeout(() => { try { track('crash_trace', { steps: prev.slice(-50), ua: navigator.userAgent.slice(0, 140), mem: navigator.deviceMemory || null, sw: screen.width, sh: screen.height }); } catch (_) {} }, 4000);
+    const IDLE_STEPS = ['pagehide', 'freeze', 'tick', 'vis hidden', 'vis visible'];
+    if (Array.isArray(prev) && prev.length) {
+      const labels = prev.map(s => (s && s[1]) || '');
+      const last = labels[labels.length - 1];
+      const clean = labels.indexOf('pagehide') >= 0 || IDLE_STEPS.indexOf(last) >= 0;
+      if (!clean) {
+        // `last` rides along so the report groups by what the page was doing
+        // when it died, instead of unpacking the steps array every time.
+        setTimeout(() => { try { track('crash_trace', { last: last, steps: prev.slice(-50), ua: navigator.userAgent.slice(0, 140), mem: navigator.deviceMemory || null, sw: screen.width, sh: screen.height }); } catch (_) {} }, 4000);
+      }
     }
   } catch (_) {}
   window.addEventListener('pagehide', () => tr('pagehide'));
@@ -5358,6 +5381,17 @@
   let selectedBbl = null;
   // Bumped by anything that changes what a card shows; part of the render signature below.
   let gridGen = 0, lastGridSig = '';
+  // The lottery and featured feeds land a few ms apart right after the first
+  // paint, and each used to rebuild the whole list: three 200-card builds in
+  // under 200 ms, every tile photo started and thrown away twice. The phones
+  // that died on boot (crash traces 2026-09-20/21) all ended on exactly that
+  // double rebuild. One rebuild for whatever arrived together.
+  let feedGridT = 0;
+  function feedArrived() {
+    gridGen++;
+    clearTimeout(feedGridT);
+    feedGridT = setTimeout(() => { tr('grid:feeds'); refreshGrid(); }, 60);
+  }
 
   // ---------- in-feed ads (Google AdSense) ----------
   // Paste your AdSense IDs after the site is approved to switch ads on.
@@ -5423,7 +5457,7 @@
     .then(d => {
       if (!d || !Array.isArray(d.lotteries) || !d.lotteries.length) return;
       HC = d.lotteries;
-      gridGen++; refreshGrid();
+      feedArrived();
     })
     .catch(() => { /* no lottery feed today: the grid just has no HC tiles */ });
 
@@ -5435,7 +5469,7 @@
     .then(d => {
       if (!d || !Array.isArray(d.listings) || !d.listings.length) return;
       FEATURED = d.listings;
-      gridGen++; refreshGrid();                    // they arrived after the first paint
+      feedArrived();                               // they arrived after the first paint
     })
     .catch(() => { /* no featured feed today: the grid is unchanged */ });
 

@@ -951,6 +951,13 @@ class Runner:
         self.ok(page.evaluate("document.querySelectorAll('#grid .card').length") > 0,
                 'the results list should have cards', j)
         j.notes.append(f'usable in {ready_ms} ms')
+        # The two late feeds share one rebuild (feedArrived). Three full list
+        # builds on boot was the last thing every iPhone crash trace did.
+        page.wait_for_timeout(1500)
+        builds = page.evaluate("""(() => { try { return (JSON.parse(localStorage.getItem('fac.trace')) || [])
+            .filter(s => String(s[1]).startsWith('grid:build')).length; } catch (e) { return -1; } })()""")
+        self.ok(0 < builds <= 2, f'boot should build the list at most twice (first paint + feeds), built {builds}', j)
+        j.notes.append(f'{builds} list builds on boot')
 
     def j_city_chip(self, page, j, device):
         """The header must not flash four city chips before JS collapses them.

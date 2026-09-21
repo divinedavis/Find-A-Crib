@@ -1,8 +1,10 @@
 import SwiftUI
 
-/// Comments on a building, in the shape people already know from Instagram:
-/// a grabber, a scrolling thread, a like heart on the right of each row, and a
-/// compose bar pinned above the keyboard. Replies go one level deep.
+/// Comments on a building, in the shape people already know from TikTok
+/// (owner, 2026-09-21): most-liked comment first, ONE reply under each — the
+/// most liked — and "View N more replies" for the rest; a heart with its count
+/// on the right; a compose bar pinned above the keyboard. Replies go one level
+/// deep in the table, so Reply on a reply answers the thread it sits in.
 ///
 /// Signed out it shows the sign-in panel instead of the thread — the owner's
 /// rule is that comments are for people who signed up (2026-09-20). Apple and
@@ -17,6 +19,7 @@ struct CommentsSheet: View {
     @State private var showSignIn = false
     @State private var confirmDelete: CommentsStore.Comment?
     @State private var moderate: CommentsStore.Comment?
+    @State private var expanded: Set<UUID> = []      // threads showing every reply
     @FocusState private var writing: Bool
 
     private var uid: UUID? { auth.session?.user.id }
@@ -27,7 +30,7 @@ struct CommentsSheet: View {
                 if auth.isSignedIn { thread } else { signedOut }
             }
             .background(Color.white)
-            .navigationTitle("Comments")
+            .navigationTitle(titleText)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -97,8 +100,10 @@ struct CommentsSheet: View {
                         message("No comments yet", "Be the first to say something about this building.")
                     }
                     ForEach(CommentsStore.threads(store.comments), id: \.0.id) { top, replies in
-                        row(top)
-                        ForEach(replies) { row($0, indented: true) }
+                        row(top, thread: top)
+                        let open = expanded.contains(top.id)
+                        ForEach(open ? replies : Array(replies.prefix(1))) { row($0, indented: true, thread: top) }
+                        if replies.count > 1 { moreReplies(top, hidden: replies.count - 1, open: open) }
                     }
                     Color.clear.frame(height: 12)
                 }
@@ -110,24 +115,22 @@ struct CommentsSheet: View {
         }
     }
 
-    private func row(_ c: CommentsStore.Comment, indented: Bool = false) -> some View {
+    private var titleText: String {
+        let n = store.comments.count
+        return n == 0 ? "Comments" : "\(n) comment\(n == 1 ? "" : "s")"
+    }
+
+    private func row(_ c: CommentsStore.Comment, indented: Bool = false, thread top: CommentsStore.Comment) -> some View {
         HStack(alignment: .top, spacing: 10) {
             Circle().fill(SE.paleBlue).frame(width: indented ? 26 : 34, height: indented ? 26 : 34)
                 .overlay(Text(initials(c.author)).font(.se(indented ? 12 : 14, .bold)).foregroundStyle(SE.navy))
             VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
-                    Text(c.author).font(.se(15, .bold)).foregroundStyle(SE.ink)
-                    Text(CommentsStore.ago(c.createdAt)).font(.se(13)).foregroundStyle(SE.ink3)
-                }
+                Text(c.author).font(.se(14, .bold)).foregroundStyle(SE.ink2)
                 Text(c.body).font(.se(16)).foregroundStyle(SE.ink).fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 16) {
-                    if !indented {
-                        Button("Reply") { replyTo = c; writing = true }
-                            .font(.se(13, .bold)).foregroundStyle(SE.ink3).buttonStyle(.plain)
-                    }
-                    if c.likes > 0 {
-                        Text("\(c.likes) like\(c.likes == 1 ? "" : "s")").font(.se(13)).foregroundStyle(SE.ink3)
-                    }
+                    Text(CommentsStore.ago(c.createdAt)).font(.se(13)).foregroundStyle(SE.ink3)
+                    Button("Reply") { replyTo = top; writing = true }
+                        .font(.se(13, .bold)).foregroundStyle(SE.ink3).buttonStyle(.plain)
                     if c.isMine(uid) {
                         Button("Delete") { confirmDelete = c }
                             .font(.se(13, .bold)).foregroundStyle(SE.ink3).buttonStyle(.plain)
@@ -138,22 +141,50 @@ struct CommentsSheet: View {
                             .font(.se(13, .bold)).foregroundStyle(SE.ink3).buttonStyle(.plain)
                             .accessibilityIdentifier("comment-report")
                     }
+                    Spacer(minLength: 6)
+                    Button {
+                        Task { await store.toggleLike(c, bbl: building.bbl) }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: c.isLiked(by: uid) ? "heart.fill" : "heart")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundStyle(c.isLiked(by: uid) ? SE.bad : SE.ink3)
+                            if c.likes > 0 {
+                                Text("\(c.likes)").font(.se(13)).foregroundStyle(SE.ink3).monospacedDigit()
+                            }
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(c.isLiked(by: uid) ? "Unlike, \(c.likes) likes" : "Like, \(c.likes) likes")
                 }
             }
-            Spacer(minLength: 6)
-            Button {
-                Task { await store.toggleLike(c, bbl: building.bbl) }
-            } label: {
-                Image(systemName: c.isLiked(by: uid) ? "heart.fill" : "heart")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(c.isLiked(by: uid) ? SE.bad : SE.ink3)
-                    .padding(.top, 4)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(c.isLiked(by: uid) ? "Unlike" : "Like")
         }
-        .padding(.leading, indented ? 34 : 0)
+        .padding(.leading, indented ? 44 : 0)
+        .overlay(alignment: .topLeading) {
+            // the thread line TikTok draws down the left of a reply
+            if indented { Rectangle().fill(SE.line).frame(width: 1).padding(.leading, 30).padding(.top, 30) }
+        }
         .accessibilityIdentifier("comment-row")
+    }
+
+    private func moreReplies(_ top: CommentsStore.Comment, hidden: Int, open: Bool) -> some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                if open { expanded.remove(top.id) } else { expanded.insert(top.id) }
+            }
+        } label: {
+            HStack(spacing: 8) {
+                Rectangle().fill(SE.line).frame(width: 24, height: 1)
+                Text(open ? "Hide replies" : "View \(hidden) more repl\(hidden == 1 ? "y" : "ies")")
+                    .font(.se(13, .bold)).foregroundStyle(SE.ink3)
+                Image(systemName: open ? "chevron.up" : "chevron.down").font(.system(size: 10, weight: .bold)).foregroundStyle(SE.ink3)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.leading, 44)
+        .accessibilityIdentifier("comment-more-replies")
     }
 
     private var composer: some View {
@@ -178,6 +209,7 @@ struct CommentsSheet: View {
                     let body = draft, parent = replyTo
                     Task {
                         if await store.post(bbl: building.bbl, body: body, replyingTo: parent) {
+                            if let parent { expanded.insert(parent.id) }   // your reply may not be the top one
                             draft = ""; replyTo = nil; writing = false
                         }
                     }

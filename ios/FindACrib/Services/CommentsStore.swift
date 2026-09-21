@@ -268,11 +268,16 @@ final class CommentsStore {
         }
     }
 
-    /// Top-level comments, newest last (a thread reads down), each with its replies.
+    /// TikTok's order (owner, 2026-09-21): the most-liked top-level comment
+    /// first, ties newest first so a fresh comment is not buried under every
+    /// other zero-like one. Replies most-liked first, ties oldest first, so
+    /// `replies.first` is the one reply the sheet shows before "View more".
     nonisolated static func threads(_ all: [Comment]) -> [(Comment, [Comment])] {
-        let tops = all.filter { $0.parentID == nil }.sorted { $0.createdAt < $1.createdAt }
+        let tops = all.filter { $0.parentID == nil }
+            .sorted { $0.likes != $1.likes ? $0.likes > $1.likes : $0.createdAt > $1.createdAt }
         return tops.map { top in
-            (top, all.filter { $0.parentID == top.id }.sorted { $0.createdAt < $1.createdAt })
+            (top, all.filter { $0.parentID == top.id }
+                .sorted { $0.likes != $1.likes ? $0.likes > $1.likes : $0.createdAt < $1.createdAt })
         }
     }
 }

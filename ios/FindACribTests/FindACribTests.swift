@@ -1007,17 +1007,20 @@ final class CommentsStoreTests: XCTestCase {
         CommentsStore.Comment(id: id, userID: UUID(), author: "Ada L", body: "hi", createdAt: at, parentID: parent, likedBy: likes)
     }
 
-    func testThreadsKeepRepliesUnderTheirParentOldestFirst() {
+    func testThreadsLeadWithTheMostLikedCommentAndReply() {
         let now = Date()
-        let a = UUID(), b = UUID()
-        let all = [c(b, at: now.addingTimeInterval(-10)),            // second top-level
-                   c(a, at: now.addingTimeInterval(-100)),           // first top-level
-                   c(parent: a, at: now.addingTimeInterval(-50)),
-                   c(parent: a, at: now.addingTimeInterval(-20))]
+        let quiet = UUID(), popular = UUID(), fresh = UUID(), topReply = UUID()
+        let all = [c(quiet, at: now.addingTimeInterval(-300)),
+                   c(popular, at: now.addingTimeInterval(-200), likes: [UUID(), UUID()]),
+                   c(fresh, at: now.addingTimeInterval(-10)),
+                   c(parent: popular, at: now.addingTimeInterval(-150)),
+                   c(topReply, parent: popular, at: now.addingTimeInterval(-100), likes: [UUID()]),
+                   c(parent: popular, at: now.addingTimeInterval(-50))]
         let t = CommentsStore.threads(all)
-        XCTAssertEqual(t.map(\.0.id), [a, b], "top-level comments read down the page, oldest first")
-        XCTAssertEqual(t[0].1.count, 2)
-        XCTAssertTrue(t[0].1[0].createdAt < t[0].1[1].createdAt)
+        XCTAssertEqual(t.map(\.0.id), [popular, fresh, quiet], "most liked first; a tie goes to the newest")
+        XCTAssertEqual(t[0].1.count, 3, "every reply stays in the thread for View more")
+        XCTAssertEqual(t[0].1.first?.id, topReply, "the reply shown first is the most liked")
+        XCTAssertTrue(t[0].1[1].createdAt < t[0].1[2].createdAt, "tied replies read oldest first")
         XCTAssertTrue(t[1].1.isEmpty)
     }
 

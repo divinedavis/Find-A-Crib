@@ -51,6 +51,14 @@ HOUSING = re.compile(
 
 BOROUGHS = {"manhattan": "Manhattan", "brooklyn": "Brooklyn", "queens": "Queens",
             "bronx": "Bronx", "the bronx": "Bronx", "staten island": "Staten Island"}
+# The feed's own borough codes (2026-09-22 payload): ["Bk"], ["Qn"], ["Bx"],
+# ["Bk","Other"]. "Other" means online or unstated, not a place.
+BORO_CODE = {"mn": "Manhattan", "m": "Manhattan", "bk": "Brooklyn", "bx": "Bronx",
+             "qn": "Queens", "q": "Queens", "si": "Staten Island"}
+# Addresses that are not addresses. HPD writes these on most outreach events,
+# so they must never make two different events look like the same place.
+NON_ADDRESS = re.compile(r"^\s*(zoom|online|virtual|webinar|tbd|to be (determined|announced)|n/?a|"
+                         r"please see the flyer|see the flyer|see flyer)\b", re.I)
 
 
 # ------------------------------------------------------------------ fetching
@@ -79,16 +87,21 @@ def items_of(payload):
 
 
 def pull(key, today):
+    """Every page for each agency. The response carries pagination.numPages."""
     raw = []
     end = today + dt.timedelta(days=DAYS_AHEAD)
     for agency in AGENCIES:
-        for page in range(1, 30):             # ~12 a page; 30 pages is far past any agency's 60 days
-            got = items_of(fetch(agency, key, today, end, page))
+        page, pages = 1, 1
+        while page <= pages and page <= 40:
+            payload = fetch(agency, key, today, end, page)
+            got = items_of(payload)
             if not got:
                 break
+            pages = int((payload.get("pagination") or {}).get("numPages") or 1) if isinstance(payload, dict) else 1
             for it in got:
                 it["_agency"] = agency
             raw += got
+            page += 1
     return raw
 
 
@@ -149,9 +162,14 @@ def normalise(it):
     if isinstance(loc, dict):
         loc = ", ".join(text(loc.get(k)) for k in ("name", "street", "address", "city", "zip") if loc.get(k))
     address = text(loc)
-    zip_ = text(pick(it, "zip", "zipCode", "postalCode"))
-    if zip_ and zip_ not in address:
-        address = f"{address} {zip_}".strip()
+    online = bool(NON_ADDRESS.match(address))
+    if online:
+        address = "Online" if re.match(r"^\s*(zoom|online|virtual|webinar)", address, re.I) else ""
+    else:
+        for part in (text(pick(it, "city")), text(pick(it, "state")), text(pick(it, "zip", "zipCode", "postalCode"))):
+            if part and part.lower() not in address.lower():
+                address = f"{address}, {part}" if part != text(pick(it, "zip", "zipCode", "postalCode")) else f"{address} {part}"
+        address = re.sub(r"\s+,", ",", address).strip(" ,")
     cats = pick(it, "categories", "category", "eventCategories", "tags") or []
     cats = [text(c) for c in (cats if isinstance(cats, list) else str(cats).split(","))]
     cats = [c for c in cats if c]
@@ -159,17 +177,24 @@ def normalise(it):
     url = text(pick(it, "permalink", "url", "link", "eventUrl", "website"))
     if url and url.startswith("/"):
         url = "https://www.nyc.gov" + url
+    url = url.replace("http://", "https://").replace("https://www1.nyc.gov", "https://www.nyc.gov")
     if not url.startswith("https://"):
         url = ""      # the app opens this; nothing but https leaves the feed
     lat = pick(it, "lat", "latitude")
     lng = pick(it, "lng", "lon", "longitude")
+    boros = pick(it, "boroughs", "borough", "boro") or []
+    boros = [BORO_CODE.get(text(b).lower().strip(), None) for b in (boros if isinstance(boros, list) else [boros])]
+    boro = next((b for b in boros if b), None)
+    img = text(pick(it, "imageUrl", "image"))
     return {
         "title": title, "start": start, "end": end, "address": address,
-        "borough": text(pick(it, "borough", "boro")) or borough_of(address, desc),
+        "online": online, "image": img if img.startswith("https://") else "",
+        "borough": boro or borough_of(address, desc),
         "categories": cats, "description": desc, "url": url,
         "lat": float(lat) if lat not in (None, "") else None,
         "lng": float(lng) if lng not in (None, "") else None,
-        "hosts": [AGENCIES.get(it.get("_agency"), it.get("_agency") or "NYC")],
+        "hosts": [text(pick(it, "agencyName")) or AGENCIES.get(it.get("_agency"), it.get("_agency") or "NYC")],
+        "canceled": bool(pick(it, "canceled") or False),
         "all_day": bool(start and start.hour == 0 and start.minute == 0 and (not end or end.hour in (0, 23))),
     }
 
@@ -189,6 +214,10 @@ def tokens(s):
 
 
 def norm_address(a):
+    """'' for anything that is not a real address — "Zoom", "Please see the
+    Flyer". Two events sharing a placeholder are NOT at the same place."""
+    if not a or NON_ADDRESS.match(a) or a.strip().lower() == "online":
+        return ""
     a = a.lower()
     a = re.sub(r"\b(avenue|ave\.?)\b", "ave", a)
     a = re.sub(r"\b(street|st\.?)\b", "st", a)
@@ -205,13 +234,18 @@ def same_event(a, b):
         return False
     addr_a, addr_b = norm_address(a["address"]), norm_address(b["address"])
     same_place = bool(addr_a) and addr_a == addr_b
+    if a["title"].strip().lower() == b["title"].strip().lower():
+        # Same name, same day, same place (or neither states one): listed twice.
+        # "Tenant Resource Fair" at two addresses is two fairs.
+        return same_place or (not addr_a and not addr_b)
+    # Different names only merge on evidence of the same place. Without a real
+    # address there is none: HPD writes "Please see the Flyer" on most outreach
+    # events, and council districts 38 and 40 on the same day are two events.
+    if not same_place:
+        return False
     ta, tb = tokens(a["title"]), tokens(b["title"])
     similar = bool(ta and tb) and len(ta & tb) / len(ta | tb) >= 0.5
-    if a["title"].strip().lower() == b["title"].strip().lower() and (same_place or not addr_a or not addr_b):
-        return True
-    if same_place and (similar or a["start"] == b["start"]):
-        return True
-    return False
+    return similar or a["start"] == b["start"]
 
 
 def merge(a, b):
@@ -225,7 +259,7 @@ def merge(a, b):
     out["start"] = min(a["start"], b["start"])
     ends = [x for x in (a["end"], b["end"]) if x]
     out["end"] = max(ends) if ends else None
-    for k in ("url", "address", "borough", "lat", "lng"):
+    for k in ("url", "address", "borough", "lat", "lng", "image"):
         out[k] = a[k] or b[k]
     out["links"] = sorted({u for u in (a.get("links") or [a["url"]]) + (b.get("links") or [b["url"]]) if u})
     return out
@@ -251,14 +285,16 @@ def event_id(e):
 def serialise(e):
     fmt = lambda d: d.strftime("%Y-%m-%dT%H:%M:00") if d else None
     return {"id": event_id(e), "title": e["title"], "start": fmt(e["start"]), "end": fmt(e["end"]),
-            "all_day": e["all_day"], "address": e["address"], "borough": e["borough"],
+            "all_day": e["all_day"], "address": e["address"], "online": e.get("online", False),
+            "image": e.get("image", ""), "borough": e["borough"],
             "lat": e["lat"], "lng": e["lng"], "hosts": e["hosts"], "categories": e["categories"],
             "description": e["description"], "url": e["url"], "links": e.get("links") or []}
 
 
 def build(raw, today):
     evs = [normalise(it) for it in raw]
-    evs = [e for e in evs if e["title"] and e["start"] and e["start"].date() >= today and is_housing(e)]
+    evs = [e for e in evs if e["title"] and e["start"] and e["start"].date() >= today
+           and not e.get("canceled") and is_housing(e)]
     return [serialise(e) for e in dedupe(evs)]
 
 

@@ -46,6 +46,27 @@ struct SEOutlineButton: View {
     }
 }
 
+// MARK: - iPad
+
+/// iPad (owner, 2026-09-22): a phone-shaped column centred on the screen
+/// instead of one stretched edge to edge. Regular width only, so the iPhone
+/// and a narrow Split View slice are untouched.
+struct ReadableColumn: ViewModifier {
+    @Environment(\.horizontalSizeClass) private var size
+    var maxWidth: CGFloat
+    func body(content: Content) -> some View {
+        if size == .regular {
+            content.frame(maxWidth: maxWidth).frame(maxWidth: .infinity)
+        } else {
+            content
+        }
+    }
+}
+
+extension View {
+    func readableColumn(_ maxWidth: CGFloat = 720) -> some View { modifier(ReadableColumn(maxWidth: maxWidth)) }
+}
+
 // MARK: - Chips and fields
 
 struct SEChip: View {

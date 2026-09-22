@@ -50,6 +50,13 @@ targets:
           UIColorName: LaunchNavy
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
+        # iPad (owner, 2026-09-22): every orientation, which iPadOS expects of
+        # an app that joins Split View / Stage Manager. The iPhone stays portrait.
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
         UIRequiredDeviceCapabilities:
           - arm64
         ITSAppUsesNonExemptEncryption: false
@@ -74,7 +81,9 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.divinedavis.findacrib
-        TARGETED_DEVICE_FAMILY: "1"
+        # iPhone + iPad, one app (owner, 2026-09-22). Once an App Store
+        # version ships with iPad, later versions cannot drop it (QA1623).
+        TARGETED_DEVICE_FAMILY: "1,2"
         SWIFT_EMIT_LOC_STRINGS: YES
         GENERATE_INFOPLIST_FILE: NO
         CODE_SIGN_STYLE: Automatic

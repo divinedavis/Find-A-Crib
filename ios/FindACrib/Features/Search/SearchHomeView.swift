@@ -116,6 +116,7 @@ struct SearchHomeView: View {
                         .accessibilityIdentifier("search-button")
                         .disabled(!store.loaded)
                 }
+                .readableColumn()
                 .padding(.horizontal, 16)
 
                 if !activity.recentSearches.isEmpty {

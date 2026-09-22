@@ -144,6 +144,7 @@ struct LotteriesView: View {
                     }
                     Color.clear.frame(height: 120)
                 }
+                .readableColumn()
                 .padding(.top, 16)
             }
             .refreshable { await feed.refresh() }

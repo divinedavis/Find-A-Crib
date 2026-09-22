@@ -87,6 +87,7 @@ struct BuildingDetailView: View {
                         .font(.se(14)).foregroundStyle(SE.ink3).padding(16)
                     Color.clear.frame(height: 100)
                 }
+                .readableColumn(760)
             }
             .background(SE.canvas)
         }

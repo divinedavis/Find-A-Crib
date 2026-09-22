@@ -65,6 +65,9 @@ struct ResultsView: View {
     @Environment(Activity.self) private var activity
     @Environment(AppNav.self) private var nav
     @Environment(AuthService.self) private var auth
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    /// iPad: two columns of cards instead of one card the width of the screen.
+    private var wide: Bool { sizeClass == .regular }
     @State var query: SearchQuery
     @State private var results: [Building] = []
     @State private var shown = 30
@@ -114,17 +117,19 @@ struct ResultsView: View {
 
                     // Re-rentals from the HPD marketing agents ride along in
                     // the feed: the 3rd tile, then one every 8–15 (RerentalFeed).
-                    ForEach(RerentalFeed.rows(buildings: Array(results.prefix(shown)), pool: rerentalPool, seed: RerentalFeed.launchSeed)) { row in
-                        switch row {
-                        case .building(let b):
-                            BuildingCard(building: b)
-                                .padding(.horizontal, 16)
-                                .onAppear { if b.bbl == results[min(shown, results.count) - 1].bbl, shown < results.count { shown += 30 } }
-                        case .rerental(let f, let slot):
-                            RerentalCard(listing: f, slot: slot)
-                                .padding(.horizontal, 16)
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16, alignment: .top), count: wide ? 2 : 1),
+                              alignment: .leading, spacing: 16) {
+                        ForEach(RerentalFeed.rows(buildings: Array(results.prefix(shown)), pool: rerentalPool, seed: RerentalFeed.launchSeed)) { row in
+                            switch row {
+                            case .building(let b):
+                                BuildingCard(building: b)
+                                    .onAppear { if b.bbl == results[min(shown, results.count) - 1].bbl, shown < results.count { shown += 30 } }
+                            case .rerental(let f, let slot):
+                                RerentalCard(listing: f, slot: slot)
+                            }
                         }
                     }
+                    .padding(.horizontal, 16)
                     Color.clear.frame(height: 150)
                 }
             }

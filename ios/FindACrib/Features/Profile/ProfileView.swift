@@ -220,6 +220,7 @@ struct ProfileView: View {
                         .font(.se(13)).foregroundStyle(SE.ink3).padding(16)
                     Color.clear.frame(height: 100)
                 }
+                .readableColumn()
             }
             .background(Color.white)
         }

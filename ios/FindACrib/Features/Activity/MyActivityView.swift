@@ -23,7 +23,8 @@ struct MyActivityView: View {
                     case .recent: recentList
                     }
                     Color.clear.frame(height: 120)
-                }.padding(.top, 16)
+                }
+                .readableColumn().padding(.top, 16)
             }
             .background(SE.canvas)
         }

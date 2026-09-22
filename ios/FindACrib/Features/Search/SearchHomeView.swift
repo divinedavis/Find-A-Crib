@@ -502,44 +502,96 @@ enum MapRegion {
 
 /// StreetEasy opens on a photo collage around a brand card. Ours is built from
 /// Look Around imagery of real NYC blocks — no stock photos, no licensing.
-/// The mosaic at the top of Search: eight Apple Look Around snapshots of the
-/// city that is loaded — its landmarks since 2026-09-22 (HeroLandmarks.swift)
-/// — re-drawn from a curated pool every time the screen appears (owner,
-/// 2026-09-19). Pictures only — tapping one opened the movable
-/// Look Around for a day and the owner took it back out (2026-09-20).
-///
-/// Curated corners rather than random buildings from the register: coverage is
-/// what makes this look good, and a random parcel is as likely to be an alley
-/// wall as a street. Each spot's id is stable, so ImageService caches its
-/// snapshot on disk and a second launch paints instantly.
+/// The banner at the top of Search. Until 2026-09-22 it was an eight-tile
+/// mosaic; it is now the Facebook-style banner below. Each landmark's id is
+/// stable, so ImageService caches its snapshot on disk and a second launch
+/// paints instantly.
 struct HeroCollage: View {
     @Environment(DataStore.self) private var store
     @State private var picks: [HeroSpot] = []
 
+    /// Facebook's App Store banner, in our colours (owner, 2026-09-22): a
+    /// teal field, the wordmark big in the middle, and the city's landmarks
+    /// floating around it as round photos, with a few small badges for what
+    /// the app does — save, alert, lottery. Four landmarks, redrawn from the
+    /// fifty every time the screen appears. Pictures only: nothing here taps.
     var body: some View {
-        HStack(spacing: 6) {
-            VStack(spacing: 6) { tile(0); tile(1); tile(2) }.frame(width: 64)
-            VStack(spacing: 6) {
-                BrandCard().frame(height: 128)
-                HStack(spacing: 6) { tile(3); tile(4) }
+        GeometryReader { g in
+            let w = g.size.width, h = g.size.height
+            ZStack {
+                LinearGradient(colors: [Color(hex: 0x3A8FA2), SE.royal, SE.navy],
+                               startPoint: .topLeading, endPoint: .bottomTrailing)
+                // Landmarks, as Facebook places its faces: two big at the
+                // sides, two small tucked toward the corners.
+                // Kept clear of the wordmark's row (h 0.36–0.66): big ones sit
+                // low-left and high-right, small ones in the opposite corners.
+                bubble(0, size: min(84, h * 0.39)).position(x: w * 0.11, y: h * 0.76)
+                bubble(1, size: min(76, h * 0.35)).position(x: w * 0.89, y: h * 0.30)
+                bubble(2, size: min(54, h * 0.25)).position(x: w * 0.24, y: h * 0.17)
+                bubble(3, size: min(60, h * 0.28)).position(x: w * 0.79, y: h * 0.83)
+                // Badges: the three things the app does for someone.
+                badge("heart.fill", fill: Color(hex: 0xE0457B)).position(x: w * 0.23, y: h * 0.91)
+                badge("bell.fill", fill: Color(hex: 0xF5B301)).position(x: w * 0.95, y: h * 0.58)
+                badge("ticket.fill", fill: Color(hex: 0x2FBF8F)).position(x: w * 0.54, y: h * 0.90)
+                VStack(spacing: 4) {
+                    Text("Find A Crib")
+                        .font(.se(min(44, w * 0.115), .black))
+                        .foregroundStyle(.white)
+                        .shadow(color: .black.opacity(0.18), radius: 6, y: 2)
+                        .lineLimit(1).minimumScaleFactor(0.6)
+                    Text(BrandCard.line(for: store.city))
+                        .font(.se(14, .semibold))
+                        .foregroundStyle(.white.opacity(0.88))
+                        .lineLimit(1).minimumScaleFactor(0.7)
+                }
+                .padding(.horizontal, 24)
+                .position(x: w * 0.5, y: h * 0.5)
             }
-            VStack(spacing: 6) { tile(5); tile(6); tile(7) }.frame(width: 64)
         }
         .frame(height: 216)
-        .padding(.horizontal, 6)
-        .padding(.vertical, 6)
         .background(SE.navy.ignoresSafeArea(edges: .top))
-        .task(id: store.city.id) { picks = HeroSpot.pick(for: store.city) }
+        .accessibilityElement(children: .contain)
+        .task(id: store.city.id) {
+            // Walk a random dozen and keep the first four with a panorama, so
+            // a circle is a photo of the place, never a map tile of it. If
+            // fewer than four have one, the rest fill in as maps anyway.
+            let pool = HeroSpot.pick(for: store.city, count: 12)
+            var chosen: [HeroSpot] = []
+            for spot in pool where chosen.count < 4 {
+                if Task.isCancelled { return }
+                if await ImageService.shared.hasPanorama(id: spot.id, at: spot.coordinate) {
+                    chosen.append(spot); picks = chosen
+                }
+            }
+            if chosen.count < 4 { chosen += pool.filter { !chosen.contains($0) }.prefix(4 - chosen.count) }
+            picks = chosen
+        }
     }
 
-    @ViewBuilder private func tile(_ i: Int) -> some View {
+    @ViewBuilder private func bubble(_ i: Int, size: CGFloat) -> some View {
         if i < picks.count {
             HeroTile(building: picks[i].building)
+                .frame(width: size, height: size)
+                .clipShape(Circle())
+                .overlay(Circle().stroke(.white.opacity(0.9), lineWidth: 3))
+                .shadow(color: .black.opacity(0.25), radius: 8, y: 3)
                 .accessibilityLabel(picks[i].name)
                 .accessibilityIdentifier("hero-tile")
         } else {
-            SE.navyDeep.frame(maxWidth: .infinity, maxHeight: .infinity)
+            Circle().fill(.white.opacity(0.12)).frame(width: size, height: size)
         }
+    }
+
+    private func badge(_ symbol: String, fill: Color) -> some View {
+        Image(systemName: symbol)
+            .font(.system(size: 15, weight: .bold))
+            .foregroundStyle(.white)
+            .frame(width: 34, height: 34)
+            .background(fill)
+            .clipShape(Circle())
+            .overlay(Circle().stroke(.white, lineWidth: 2))
+            .shadow(color: .black.opacity(0.2), radius: 5, y: 2)
+            .accessibilityHidden(true)
     }
 }
 

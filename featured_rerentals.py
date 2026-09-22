@@ -460,6 +460,9 @@ def parse_card(c, agent, page_url):
         "href_kind": "listing" if c["href"] else "agent_page",
         "probe": c.get("probe"),
         "image_src": c["img"] if (c.get("imgW") or 0) >= 240 else None,
+        # The card's own text, for jev_review(). Never published.
+        "_card": [re.sub(r'\s+', ' ', l).strip() for l in lines if l.strip()][:30],
+        "_amounts": amounts_in(blob),
     }
 
 
@@ -719,6 +722,76 @@ def prune_images(records, apply_changes):
     return gone
 
 
+# TypeSafe's Jev model reads each card the way a person would and answers three
+# typed questions. The regexes above stay in charge; Jev only vetoes a card
+# (closed, or not an apartment at all) or settles the money label when it is
+# confident. ~60 cards a day at ~600 input tokens is well under a cent. With no
+# TYPESAFE_API_KEY or no SDK the tiles build exactly as before.
+JEV_DROP_BELOW = 0.15      # noul: "still open" / "is an apartment" under this -> drop
+JEV_MONEY_CONFIDENCE = 0.8
+
+
+def jev_questions():
+    from typesafe_sdk import Choice, Noul
+    return {
+        "open": Noul(instructions="Someone could still apply for this apartment today: it is not "
+                                  "marked leased, rented, closed, filled, or a closed waitlist"),
+        "listing": Noul(instructions="This text describes a specific apartment or building for rent, "
+                                     "not an office, a navigation menu, a news post or a table header"),
+        "money": Choice(
+            instructions="What the dollar amounts in this text are",
+            criteria={"rent": "The monthly rent a tenant pays",
+                      "income": "Household income limits (minimum or maximum) to qualify",
+                      "other": "No dollar amounts, or they are fees, deposits or something else"}),
+    }
+
+
+def jev_review(records):
+    """Drop the cards Jev is sure are dead or not apartments; fix the money label.
+
+    Returns (records, changes) where changes is a list of human-readable lines.
+    """
+    if not os.environ.get("TYPESAFE_API_KEY"):
+        return records, ["jev: skipped (no TYPESAFE_API_KEY)"]
+    try:
+        from typesafe_sdk import TypeSafeClient
+    except ImportError:
+        return records, ["jev: skipped (typesafe-sdk not installed)"]
+    qs, kept, changes, tokens = jev_questions(), [], [], 0
+    with TypeSafeClient() as client:
+        for r in records:
+            try:
+                resp = client.system_one(state="\n".join(r["_card"]), questions=qs)
+            except Exception as e:  # noqa: BLE001 — Jev down must never cost a tile
+                changes.append(f"jev: error on {r['address'][:40]}: {type(e).__name__}")
+                kept.append(r)
+                continue
+            tokens += resp.usage.input_tokens
+            a = resp.answers
+            label = f"{r['address'][:40]} ({r['agent'][:24]})"
+            if a["open"].noul < JEV_DROP_BELOW:
+                changes.append(f"drop closed   {label}  open={a['open'].noul:.2f}")
+                continue
+            if a["listing"].noul < JEV_DROP_BELOW:
+                changes.append(f"drop not-apt  {label}  listing={a['listing'].noul:.2f}")
+                continue
+            m = a["money"]
+            rents = [x for x in r["_amounts"] if RENT_MIN <= x <= RENT_MAX]
+            if m.confidence >= JEV_MONEY_CONFIDENCE:
+                # Magnitude already proves an income band (>= INCOME_FLOOR); Jev
+                # only settles the small figures the regexes had to guess at.
+                if r["money_kind"] is None and m.choice == "rent" and rents:
+                    r["money_kind"], r["money_low"], r["money_high"] = "rent", min(rents), max(rents)
+                    changes.append(f"money none->rent ${min(rents):,}  {label}")
+                elif r["money_kind"] == "rent" and m.choice == "income":
+                    r["money_kind"] = r["money_low"] = r["money_high"] = None
+                    changes.append(f"money rent->hidden (it's an income limit)  {label}")
+            kept.append(r)
+    changes.append(f"jev: {len(records)} cards read, {len(records) - len(kept)} dropped, "
+                   f"{tokens:,} input tokens (~${tokens * 0.042 / 1e6:.4f})")
+    return kept, changes
+
+
 def rank(records):
     """Order the tiles: a listing a visitor can act on beats one they can't.
 
@@ -777,6 +850,10 @@ def main():
     records, errors = sweep(pages, args.only)
     offices = office_addresses()
     records = [r for r in records if is_real_listing(r, offices)]
+    records, jev_changes = jev_review(records)
+    for r in records:
+        r.pop("_card", None)
+        r.pop("_amounts", None)
     kept_img = save_images(records, args.apply)
     records = rank(records)[:args.limit]
     dropped_img = prune_images(records, args.apply)
@@ -798,6 +875,8 @@ def main():
         print(f"  {n:3}  {a}")
     for a, e in errors.items():
         print(f"  ERR  {a}: {e}")
+    for line in jev_changes:
+        print(f"  {line}")
     money = {}
     for r in records:
         money[r["money_kind"]] = money.get(r["money_kind"], 0) + 1

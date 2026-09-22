@@ -254,15 +254,17 @@ final class FindACribUITests: XCTestCase {
     /// The hero mosaic is the city that is loaded, and it is pictures only —
     /// the owner had a tap open Look Around for a day and took it back out
     /// (2026-09-20), so a tile must not be a button.
-    func testHeroMosaicIsPicturesOnly() throws {
+    func testHeroBannerIsDecorationOnly() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash"]
         app.launch()
-        let tile = app.descendants(matching: .any)["hero-tile"].firstMatch
-        XCTAssertTrue(tile.waitForExistence(timeout: 20), "the mosaic should be there")
-        XCTAssertFalse(app.buttons["hero-tile"].exists, "a tile is not tappable any more")
-        tile.tap()
-        XCTAssertFalse(app.buttons["hero-lookaround-close"].waitForExistence(timeout: 6), "tapping must open nothing")
+        let banner = app.descendants(matching: .any)["hero-banner"].firstMatch
+        XCTAssertTrue(banner.waitForExistence(timeout: 20), "the banner should be there")
+        XCTAssertTrue(banner.label.contains("Find A Crib"), "the banner carries the wordmark: \(banner.label)")
+        XCTAssertFalse(app.buttons["hero-banner"].exists, "the banner is not a button")
+        XCTAssertFalse(app.descendants(matching: .any)["hero-tile"].firstMatch.exists, "no street photos in the banner (owner, 2026-09-22)")
+        banner.tap()
+        XCTAssertFalse(app.buttons["hero-lookaround-close"].waitForExistence(timeout: 4), "tapping must open nothing")
         XCTAssertTrue(app.buttons["city-field"].exists, "and leaves Search where it was")
     }
 

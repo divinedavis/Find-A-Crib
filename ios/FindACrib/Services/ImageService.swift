@@ -55,24 +55,6 @@ actor ImageService {
         return img
     }
 
-    /// True when Apple has a Look Around panorama at the spot. The banner uses
-    /// it to skip a landmark whose tile would come back as a map (2026-09-22:
-    /// two of four circles were map tiles). Negative answers persist across
-    /// launches — coverage does not appear overnight — positives stay in memory.
-    private var pano: [String: Bool] = [:]
-    private static let noPanoKey = "lookaround.nopano"
-    func hasPanorama(id: String, at c: CLLocationCoordinate2D) async -> Bool {
-        if let known = pano[id] { return known }
-        if (UserDefaults.standard.stringArray(forKey: Self.noPanoKey) ?? []).contains(id) { pano[id] = false; return false }
-        let ok = (try? await MKLookAroundSceneRequest(coordinate: c).scene) != nil
-        pano[id] = ok
-        if !ok {
-            var none = UserDefaults.standard.stringArray(forKey: Self.noPanoKey) ?? []
-            if !none.contains(id) { none.append(id); UserDefaults.standard.set(none, forKey: Self.noPanoKey) }
-        }
-        return ok
-    }
-
     private func acquire() async {
         if running < maxConcurrent { running += 1; return }
         await withCheckedContinuation { waiters.append($0) }

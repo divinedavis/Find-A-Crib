@@ -14,7 +14,7 @@ struct SearchHomeView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                HeroCollage().padding(.bottom, 22)
+                HeroBanner().padding(.bottom, 22)
 
 
                 VStack(alignment: .leading, spacing: 18) {
@@ -502,198 +502,17 @@ enum MapRegion {
 
 /// StreetEasy opens on a photo collage around a brand card. Ours is built from
 /// Look Around imagery of real NYC blocks — no stock photos, no licensing.
-/// The banner at the top of Search. Until 2026-09-22 it was an eight-tile
-/// mosaic; it is now the Facebook-style banner below. Each landmark's id is
-/// stable, so ImageService caches its snapshot on disk and a second launch
-/// paints instantly.
-struct HeroCollage: View {
-    @Environment(DataStore.self) private var store
-    @State private var picks: [HeroSpot] = []
-
-    /// Facebook's App Store banner, in our colours (owner, 2026-09-22): a
-    /// teal field, the wordmark big in the middle, and the city's landmarks
-    /// floating around it as round photos, with a few small badges for what
-    /// the app does — save, alert, lottery. Four landmarks, redrawn from the
-    /// fifty every time the screen appears. Pictures only: nothing here taps.
-    var body: some View {
-        GeometryReader { g in
-            let w = g.size.width, h = g.size.height
-            ZStack {
-                LinearGradient(colors: [Color(hex: 0x3A8FA2), SE.royal, SE.navy],
-                               startPoint: .topLeading, endPoint: .bottomTrailing)
-                // Landmarks, as Facebook places its faces: two big at the
-                // sides, two small tucked toward the corners.
-                // Kept clear of the wordmark's row (h 0.36–0.66): big ones sit
-                // low-left and high-right, small ones in the opposite corners.
-                bubble(0, size: min(84, h * 0.39)).position(x: w * 0.11, y: h * 0.76)
-                bubble(1, size: min(76, h * 0.35)).position(x: w * 0.89, y: h * 0.30)
-                bubble(2, size: min(54, h * 0.25)).position(x: w * 0.24, y: h * 0.17)
-                bubble(3, size: min(60, h * 0.28)).position(x: w * 0.79, y: h * 0.83)
-                // Badges: the three things the app does for someone.
-                badge("heart.fill", fill: Color(hex: 0xE0457B)).position(x: w * 0.23, y: h * 0.91)
-                badge("bell.fill", fill: Color(hex: 0xF5B301)).position(x: w * 0.95, y: h * 0.58)
-                badge("ticket.fill", fill: Color(hex: 0x2FBF8F)).position(x: w * 0.54, y: h * 0.90)
-                VStack(spacing: 4) {
-                    Text("Find A Crib")
-                        .font(.se(min(44, w * 0.115), .black))
-                        .foregroundStyle(.white)
-                        .shadow(color: .black.opacity(0.18), radius: 6, y: 2)
-                        .lineLimit(1).minimumScaleFactor(0.6)
-                    Text(BrandCard.line(for: store.city))
-                        .font(.se(14, .semibold))
-                        .foregroundStyle(.white.opacity(0.88))
-                        .lineLimit(1).minimumScaleFactor(0.7)
-                }
-                .padding(.horizontal, 24)
-                .position(x: w * 0.5, y: h * 0.5)
-            }
-        }
-        .frame(height: 216)
-        .background(SE.navy.ignoresSafeArea(edges: .top))
-        .accessibilityElement(children: .contain)
-        .task(id: store.city.id) {
-            // Walk a random dozen and keep the first four with a panorama, so
-            // a circle is a photo of the place, never a map tile of it. If
-            // fewer than four have one, the rest fill in as maps anyway.
-            let pool = HeroSpot.pick(for: store.city, count: 12)
-            var chosen: [HeroSpot] = []
-            for spot in pool where chosen.count < 4 {
-                if Task.isCancelled { return }
-                if await ImageService.shared.hasPanorama(id: spot.id, at: spot.coordinate) {
-                    chosen.append(spot); picks = chosen
-                }
-            }
-            if chosen.count < 4 { chosen += pool.filter { !chosen.contains($0) }.prefix(4 - chosen.count) }
-            picks = chosen
-        }
-    }
-
-    @ViewBuilder private func bubble(_ i: Int, size: CGFloat) -> some View {
-        if i < picks.count {
-            HeroTile(building: picks[i].building)
-                .frame(width: size, height: size)
-                .clipShape(Circle())
-                .overlay(Circle().stroke(.white.opacity(0.9), lineWidth: 3))
-                .shadow(color: .black.opacity(0.25), radius: 8, y: 3)
-                .accessibilityLabel(picks[i].name)
-                .accessibilityIdentifier("hero-tile")
-        } else {
-            Circle().fill(.white.opacity(0.12)).frame(width: size, height: size)
-        }
-    }
-
-    private func badge(_ symbol: String, fill: Color) -> some View {
-        Image(systemName: symbol)
-            .font(.system(size: 15, weight: .bold))
-            .foregroundStyle(.white)
-            .frame(width: 34, height: 34)
-            .background(fill)
-            .clipShape(Circle())
-            .overlay(Circle().stroke(.white, lineWidth: 2))
-            .shadow(color: .black.opacity(0.2), radius: 5, y: 2)
-            .accessibilityHidden(true)
-    }
-}
-
-/// One corner of a city: a stable id (the snapshot cache key), what to call it,
-/// and where it is.
-struct HeroSpot: Identifiable, Hashable {
-    let id: String
-    let name: String
-    let lat: Double
-    let lng: Double
-
-    var building: Building { Building(bbl: id, b: "", a: name, z: nil, lat: lat, lng: lng) }
-    var coordinate: CLLocationCoordinate2D { CLLocationCoordinate2D(latitude: lat, longitude: lng) }
-
-    /// Eight of the city's fifty landmarks (HeroLandmarks.swift), a fresh
-    /// random draw every time the screen appears. The neighborhood corners
-    /// below stay as the fallback for a city without a landmark list.
-    static func pick(for city: City, count: Int = 8) -> [HeroSpot] {
-        let pool = landmarks[city.id] ?? all[city.id] ?? landmarks["nyc"]!
-        return Array(pool.shuffled().prefix(count))
-    }
-
-    /// Street corners with Look Around coverage, one list per city. A spot that
-    /// has no panorama falls back to a map snapshot (ImageService), so a gap
-    /// costs a plain tile and never a blank one.
-    static let all: [String: [HeroSpot]] = [
-        "nyc": [
-            HeroSpot(id: "hero-park-slope",   name: "Park Slope, Brooklyn",      lat: 40.6737, lng: -73.9776),
-            HeroSpot(id: "hero-harlem",       name: "Harlem, Manhattan",         lat: 40.8075, lng: -73.9455),
-            HeroSpot(id: "hero-astoria",      name: "Astoria, Queens",           lat: 40.7644, lng: -73.9235),
-            HeroSpot(id: "hero-fort-greene",  name: "Fort Greene, Brooklyn",     lat: 40.6892, lng: -73.9740),
-            HeroSpot(id: "hero-east-village", name: "East Village, Manhattan",   lat: 40.7265, lng: -73.9815),
-            HeroSpot(id: "hero-bed-stuy",     name: "Bed-Stuy, Brooklyn",        lat: 40.6872, lng: -73.9418),
-            HeroSpot(id: "hero-uws",          name: "Upper West Side",           lat: 40.7870, lng: -73.9754),
-            HeroSpot(id: "hero-bushwick",     name: "Bushwick, Brooklyn",        lat: 40.6944, lng: -73.9213),
-            HeroSpot(id: "hero-williamsburg", name: "Williamsburg, Brooklyn",    lat: 40.7170, lng: -73.9570),
-            HeroSpot(id: "hero-les",          name: "Lower East Side",           lat: 40.7185, lng: -73.9885),
-            HeroSpot(id: "hero-wash-heights", name: "Washington Heights",        lat: 40.8500, lng: -73.9380),
-            HeroSpot(id: "hero-sunset-park",  name: "Sunset Park, Brooklyn",     lat: 40.6450, lng: -74.0100),
-            HeroSpot(id: "hero-jackson-hts",  name: "Jackson Heights, Queens",   lat: 40.7480, lng: -73.8830),
-            HeroSpot(id: "hero-crown-hts",    name: "Crown Heights, Brooklyn",   lat: 40.6710, lng: -73.9570),
-            HeroSpot(id: "hero-greenpoint",   name: "Greenpoint, Brooklyn",      lat: 40.7280, lng: -73.9520),
-            HeroSpot(id: "hero-mott-haven",   name: "Mott Haven, the Bronx",     lat: 40.8160, lng: -73.9200),
-        ],
-        "la": [
-            HeroSpot(id: "hero-la-hollywood",   name: "Hollywood Blvd",          lat: 34.1016, lng: -118.3387),
-            HeroSpot(id: "hero-la-venice",      name: "Venice Beach",            lat: 33.9871, lng: -118.4723),
-            HeroSpot(id: "hero-la-koreatown",   name: "Koreatown",               lat: 34.0619, lng: -118.3090),
-            HeroSpot(id: "hero-la-echo-park",   name: "Echo Park",               lat: 34.0782, lng: -118.2606),
-            HeroSpot(id: "hero-la-silver-lake", name: "Silver Lake",             lat: 34.0906, lng: -118.2760),
-            HeroSpot(id: "hero-la-dtla",        name: "Downtown LA",             lat: 34.0448, lng: -118.2540),
-            HeroSpot(id: "hero-la-weho",        name: "West Hollywood",          lat: 34.0900, lng: -118.3856),
-            HeroSpot(id: "hero-la-highland-pk", name: "Highland Park",           lat: 34.1135, lng: -118.1919),
-            HeroSpot(id: "hero-la-los-feliz",   name: "Los Feliz",               lat: 34.1053, lng: -118.2915),
-            HeroSpot(id: "hero-la-mid-city",    name: "Mid-City",                lat: 34.0619, lng: -118.3440),
-        ],
-        "sf": [
-            HeroSpot(id: "hero-sf-mission",   name: "The Mission",               lat: 37.7616, lng: -122.4216),
-            HeroSpot(id: "hero-sf-haight",    name: "Haight-Ashbury",            lat: 37.7699, lng: -122.4469),
-            HeroSpot(id: "hero-sf-north-bch", name: "North Beach",               lat: 37.7999, lng: -122.4079),
-            HeroSpot(id: "hero-sf-castro",    name: "The Castro",                lat: 37.7626, lng: -122.4350),
-            HeroSpot(id: "hero-sf-sunset",    name: "Inner Sunset",              lat: 37.7635, lng: -122.4665),
-            HeroSpot(id: "hero-sf-nob-hill",  name: "Nob Hill",                  lat: 37.7918, lng: -122.4103),
-            HeroSpot(id: "hero-sf-hayes",     name: "Hayes Valley",              lat: 37.7763, lng: -122.4241),
-            HeroSpot(id: "hero-sf-chinatown", name: "Chinatown",                 lat: 37.7950, lng: -122.4064),
-            HeroSpot(id: "hero-sf-richmond",  name: "Inner Richmond",            lat: 37.7828, lng: -122.4640),
-            HeroSpot(id: "hero-sf-dogpatch",  name: "Dogpatch",                  lat: 37.7600, lng: -122.3885),
-        ],
-        "dc": [
-            HeroSpot(id: "hero-dc-columbia",  name: "Columbia Heights",          lat: 38.9294, lng: -77.0323),
-            HeroSpot(id: "hero-dc-adams-mor", name: "Adams Morgan",              lat: 38.9215, lng: -77.0422),
-            HeroSpot(id: "hero-dc-u-street",  name: "U Street",                  lat: 38.9169, lng: -77.0290),
-            HeroSpot(id: "hero-dc-georgetown",name: "Georgetown",                lat: 38.9050, lng: -77.0630),
-            HeroSpot(id: "hero-dc-cap-hill",  name: "Capitol Hill",              lat: 38.8815, lng: -76.9960),
-            HeroSpot(id: "hero-dc-shaw",      name: "Shaw",                      lat: 38.9145, lng: -77.0219),
-            HeroSpot(id: "hero-dc-dupont",    name: "Dupont Circle",             lat: 38.9105, lng: -77.0435),
-            HeroSpot(id: "hero-dc-petworth",  name: "Petworth",                  lat: 38.9420, lng: -77.0237),
-            HeroSpot(id: "hero-dc-h-street",  name: "H Street NE",               lat: 38.9000, lng: -76.9945),
-            HeroSpot(id: "hero-dc-mt-plsnt",  name: "Mount Pleasant",            lat: 38.9300, lng: -77.0380),
-        ],
-    ]
-}
-
-struct HeroTile: View {
-    let building: Building
-    @State private var image: UIImage?
-    var body: some View {
-        ZStack {
-            SE.navyDeep
-            if let image { FillImage(image: image) }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .clipped()
-        .task(id: building.bbl) { image = await ImageService.shared.image(for: building, size: CGSize(width: 300, height: 300)) }
-    }
-}
-
-struct BrandCard: View {
+/// The banner at the top of Search (owner, 2026-09-22): Facebook's App Store
+/// banner in Find A Crib's words and colours — a teal field, the wordmark big
+/// and white in the middle with the city line under it, and floating badges
+/// for what the app does where Facebook has its faces and emoji. No photos:
+/// the street-level mosaic that used to be here, and the pale card with
+/// "This is where it starts", are gone. Nothing here taps.
+struct HeroBanner: View {
     @Environment(DataStore.self) private var store
 
     /// "Every rent-stabilized building in NYC" — the register's own word for
-    /// what a building IS, without the qualifier the card has no room for
+    /// what a building IS, without the qualifier the line has no room for
     /// ("Likely rent-stabilized (RSO)" -> "rent-stabilized").
     static func line(for city: City) -> String {
         var word = city.statusLabel.lowercased()
@@ -701,21 +520,60 @@ struct BrandCard: View {
         word = word.replacingOccurrences(of: "likely ", with: "").trimmingCharacters(in: .whitespaces)
         return "Every \(word) building in \(city.short)"
     }
+
     var body: some View {
-        ZStack {
-            LinearGradient(colors: [Color(hex: 0xDDEEF1), Color(hex: 0xF2F8F9)], startPoint: .top, endPoint: .bottom)
-            VStack(spacing: 6) {
-                HStack(spacing: 8) {
-                    BrandMark().frame(width: 24, height: 24)
-                    Text("Find A Crib").font(.se(22, .bold)).foregroundStyle(SE.navy)
+        GeometryReader { g in
+            let w = g.size.width, h = g.size.height
+            ZStack {
+                LinearGradient(colors: [Color(hex: 0x3A8FA2), SE.royal, SE.navy],
+                               startPoint: .topLeading, endPoint: .bottomTrailing)
+                // Soft discs for depth, where Facebook's faces sit.
+                Circle().fill(.white.opacity(0.10)).frame(width: h * 0.42).position(x: w * 0.11, y: h * 0.74)
+                Circle().fill(.white.opacity(0.08)).frame(width: h * 0.36).position(x: w * 0.89, y: h * 0.28)
+                // The app's own mark, tilted like Facebook's photos tile.
+                RoundedRectangle(cornerRadius: 10).fill(.white)
+                    .frame(width: 46, height: 46)
+                    .overlay(BrandMark().frame(width: 30, height: 30))
+                    .rotationEffect(.degrees(-9))
+                    .shadow(color: .black.opacity(0.22), radius: 6, y: 3)
+                    .position(x: w * 0.23, y: h * 0.19)
+                // Badges: save, alert, lottery, building, place.
+                badge("heart.fill",     fill: Color(hex: 0xE0457B), size: 44).position(x: w * 0.12, y: h * 0.72)
+                badge("bell.fill",      fill: Color(hex: 0xF5B301), size: 40).position(x: w * 0.90, y: h * 0.27)
+                badge("ticket.fill",    fill: Color(hex: 0x2FBF8F), size: 40).position(x: w * 0.55, y: h * 0.88)
+                badge("building.2.fill", fill: Color(hex: 0x5B7CFA), size: 36).position(x: w * 0.83, y: h * 0.80)
+                badge("mappin",         fill: Color(hex: 0xFF7A59), size: 34).position(x: w * 0.72, y: h * 0.14)
+                VStack(spacing: 4) {
+                    Text("Find A Crib")
+                        .font(.se(min(46, w * 0.12), .black))
+                        .foregroundStyle(.white)
+                        .shadow(color: .black.opacity(0.18), radius: 6, y: 2)
+                        .lineLimit(1).minimumScaleFactor(0.6)
+                    Text(Self.line(for: store.city))
+                        .font(.se(15, .semibold))
+                        .foregroundStyle(.white.opacity(0.9))
+                        .lineLimit(1).minimumScaleFactor(0.7)
                 }
-                Text("This is where it starts").font(.se(23, .black)).foregroundStyle(SE.navy)
-                    .lineLimit(1).minimumScaleFactor(0.6)
-                Text(Self.line(for: store.city)).font(.se(13, .semibold))
+                .padding(.horizontal, 24)
+                .position(x: w * 0.5, y: h * 0.5)
             }
-            .padding(.horizontal, 14)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 3))
+        .frame(height: 200)
+        .background(SE.navy.ignoresSafeArea(edges: .top))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Find A Crib. \(Self.line(for: store.city))")
+        .accessibilityIdentifier("hero-banner")
+    }
+
+    private func badge(_ symbol: String, fill: Color, size: CGFloat) -> some View {
+        Image(systemName: symbol)
+            .font(.system(size: size * 0.42, weight: .bold))
+            .foregroundStyle(.white)
+            .frame(width: size, height: size)
+            .background(fill)
+            .clipShape(Circle())
+            .overlay(Circle().stroke(.white, lineWidth: 2))
+            .shadow(color: .black.opacity(0.2), radius: 5, y: 2)
     }
 }
 

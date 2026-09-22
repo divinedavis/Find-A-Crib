@@ -728,21 +728,25 @@ def prune_images(records, apply_changes):
 # confident. ~60 cards a day at ~600 input tokens is well under a cent. With no
 # TYPESAFE_API_KEY or no SDK the tiles build exactly as before.
 JEV_DROP_BELOW = 0.15      # noul: "still open" / "is an apartment" under this -> drop
-JEV_MONEY_CONFIDENCE = 0.8
+# Asked about ONE figure, never "the amounts": a card that prints a rent and
+# six income-band lines reads as mostly income, and a whole-card question hid
+# eight real rents on its first run (2026-09-22).
+JEV_RENT_YES, JEV_RENT_NO = 0.85, 0.1
+
+
+def rent_question(amount):
+    from typesafe_sdk import Noul
+    return Noul(instructions=f"${amount:,} is the monthly rent for this apartment "
+                             f"(not an income limit, fee or deposit)")
 
 
 def jev_questions():
-    from typesafe_sdk import Choice, Noul
+    from typesafe_sdk import Noul
     return {
         "open": Noul(instructions="Someone could still apply for this apartment today: it is not "
                                   "marked leased, rented, closed, filled, or a closed waitlist"),
         "listing": Noul(instructions="This text describes a specific apartment or building for rent, "
                                      "not an office, a navigation menu, a news post or a table header"),
-        "money": Choice(
-            instructions="What the dollar amounts in this text are",
-            criteria={"rent": "The monthly rent a tenant pays",
-                      "income": "Household income limits (minimum or maximum) to qualify",
-                      "other": "No dollar amounts, or they are fees, deposits or something else"}),
     }
 
 
@@ -760,8 +764,12 @@ def jev_review(records):
     qs, kept, changes, tokens = jev_questions(), [], [], 0
     with TypeSafeClient() as client:
         for r in records:
+            rents = [x for x in r["_amounts"] if RENT_MIN <= x <= RENT_MAX]
+            # The one figure the tile would show, or would start showing.
+            figure = r["money_low"] if r["money_kind"] == "rent" else (min(rents) if rents and r["money_kind"] is None else None)
+            ask = dict(qs, **({"rent": rent_question(figure)} if figure else {}))
             try:
-                resp = client.system_one(state="\n".join(r["_card"]), questions=qs)
+                resp = client.system_one(state="\n".join(r["_card"]), questions=ask)
             except Exception as e:  # noqa: BLE001 — Jev down must never cost a tile
                 changes.append(f"jev: error on {r['address'][:40]}: {type(e).__name__}")
                 kept.append(r)
@@ -775,17 +783,16 @@ def jev_review(records):
             if a["listing"].noul < JEV_DROP_BELOW:
                 changes.append(f"drop not-apt  {label}  listing={a['listing'].noul:.2f}")
                 continue
-            m = a["money"]
-            rents = [x for x in r["_amounts"] if RENT_MIN <= x <= RENT_MAX]
-            if m.confidence >= JEV_MONEY_CONFIDENCE:
+            if figure:
+                yes = a["rent"].noul
                 # Magnitude already proves an income band (>= INCOME_FLOOR); Jev
                 # only settles the small figures the regexes had to guess at.
-                if r["money_kind"] is None and m.choice == "rent" and rents:
+                if r["money_kind"] is None and yes >= JEV_RENT_YES:
                     r["money_kind"], r["money_low"], r["money_high"] = "rent", min(rents), max(rents)
-                    changes.append(f"money none->rent ${min(rents):,}  {label}")
-                elif r["money_kind"] == "rent" and m.choice == "income":
+                    changes.append(f"money none->rent ${min(rents):,}  {label}  p={yes:.2f}")
+                elif r["money_kind"] == "rent" and yes < JEV_RENT_NO:
                     r["money_kind"] = r["money_low"] = r["money_high"] = None
-                    changes.append(f"money rent->hidden (it's an income limit)  {label}")
+                    changes.append(f"money rent->hidden (${figure:,} is not rent)  {label}  p={yes:.2f}")
             kept.append(r)
     changes.append(f"jev: {len(records)} cards read, {len(records) - len(kept)} dropped, "
                    f"{tokens:,} input tokens (~${tokens * 0.042 / 1e6:.4f})")

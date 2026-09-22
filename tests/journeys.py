@@ -958,6 +958,17 @@ class Runner:
             .filter(s => String(s[1]).startsWith('grid:build')).length; } catch (e) { return -1; } })()""")
         self.ok(0 < builds <= 2, f'boot should build the list at most twice (first paint + feeds), built {builds}', j)
         j.notes.append(f'{builds} list builds on boot')
+        if device == 'phone':
+            # Street photos on a phone: at most three mounted while scrolling.
+            # Twelve at once was what every iPhone death on 9/22 had running.
+            page.evaluate("document.getElementById('fab')?.click()"); time.sleep(1.5)
+            peak = 0
+            for _ in range(6):
+                page.evaluate("(document.querySelector('aside.results')||document.scrollingElement).scrollBy(0, 500); document.getElementById('grid')?.scrollBy(0, 500)")
+                time.sleep(1.0)
+                peak = max(peak, page.evaluate("document.querySelectorAll('.apple-street-canvas iframe').length"))
+            self.ok(peak <= 3, f'a phone should keep at most 3 street photos mounted, peaked at {peak}', j)
+            j.notes.append(f'peak {peak} street photos while scrolling')
 
     def j_city_chip(self, page, j, device):
         """The header must not flash four city chips before JS collapses them.

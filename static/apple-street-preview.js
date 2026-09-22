@@ -8,6 +8,15 @@
   if (local) { try { storedToken = sessionStorage.getItem('fac.apple_maps_token') || ''; } catch (_) {} }
   const token = (window.APPLE_MAPS_TOKEN || storedToken).trim();
   const records = new Map(), queue = [];
+  // Each preview is its own document running MapKit and a WebGL Look Around
+  // renderer. Five loading and twelve kept alive is fine on a desktop and
+  // fatal on a phone: of 13 iPhone pages that died after the crash trace
+  // learned to count them (2026-09-22), 12 had previews running, most with
+  // 8–12 mounted. A touch device keeps only what is on screen, at most
+  // MAX_MOUNTED, loads two at a time and never warms the next row.
+  const TOUCH = (navigator.maxTouchPoints || 0) > 0 || matchMedia('(pointer: coarse)').matches;
+  const MAX_LOADING = TOUCH ? 2 : 5;
+  const MAX_MOUNTED = TOUCH ? 3 : 12;
   let loading = 0;
   const observers = new Map();
   // Steps for index.html's crash trace: how many previews were live when a
@@ -24,11 +33,20 @@
     records.forEach((record, el) => {
       if (!el.isConnected) { record.observer?.unobserve(el); destroy(record); records.delete(el); }
     });
-    // Retain a few offscreen previews so small scrolls don't reload them.
+    // On a touch device the results list keeps only what is on screen. The
+    // detail sheet's one photo is left to its own teardown (release() after
+    // the sheet closes); pruning it here got there first.
     const mounted = [...records.values()].filter(r => r.view);
+    if (TOUCH) {
+      for (const record of mounted) {
+        if (record.root && !onScreen(record) && !record.loading && !record.view.openDialog) destroy(record);
+      }
+    }
+    // Elsewhere, retain a few offscreen previews so small scrolls don't
+    // reload them, down to MAX_MOUNTED.
     for (const record of mounted) {
-      if (mounted.filter(r => r.view).length < 12) break;
-      if (!record.visible && !record.loading && !record.view.openDialog) destroy(record);
+      if (mounted.filter(r => r.view).length < MAX_MOUNTED) break;
+      if (!record.visible && !record.loading && !record.view?.openDialog) destroy(record);
     }
   }
   async function mount(record) {
@@ -117,12 +135,16 @@
     prune();
     // Load visible photos first. Two slots may warm the next row.
     queue.sort((a,b) => Number(onScreen(b)) - Number(onScreen(a)));
-    while (loading < 5 && queue.length) {
+    while (loading < MAX_LOADING && queue.length) {
       const record = queue[0];
       if (!record.el.isConnected || !record.visible || record.view || record.failed || record.loading) {
         queue.shift(); record.queued = false; continue;
       }
       const prefetch = !onScreen(record);
+      if (prefetch && TOUCH) break;
+      // The hard ceiling. A loading preview already has its view (mount sets
+      // it before the first await), so live() counts those too.
+      if (live() >= MAX_MOUNTED) break;
       // Sorted on-screen first, so if this one is off screen none behind it
       // are either, and a record that already stalled off screen waits for the
       // scroll rather than taking a slot again.

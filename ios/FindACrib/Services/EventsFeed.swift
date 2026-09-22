@@ -20,6 +20,7 @@ final class EventsFeed {
         let start: String            // "2026-09-23T10:00:00", New York local time
         let end: String?
         let all_day: Bool?
+        let online: Bool?
         let address: String?
         let borough: String?
         let hosts: [String]?
@@ -123,7 +124,7 @@ final class EventsFeed {
     nonisolated static func demoEvents(today: Date) -> [Event] {
         let d1 = dayKey(today.addingTimeInterval(86_400)), d2 = dayKey(today.addingTimeInterval(3 * 86_400))
         let clinic = Event(id: "demo-clinic", title: "Tenant Support Clinic with the Arab American Association of NY",
-                           start: "\(d1)T10:00:00", end: "\(d1)T16:00:00", all_day: false,
+                           start: "\(d1)T10:00:00", end: "\(d1)T16:00:00", all_day: false, online: false,
                            address: "6206 6th Ave, Brooklyn, NY 11220", borough: "Brooklyn",
                            hosts: ["Mayor's Public Engagement Unit", "NYC Housing Preservation & Development"],
                            categories: ["Tenant Resource Fair"],
@@ -132,11 +133,11 @@ final class EventsFeed {
         return [
             clinic, clinic,   // listed twice: must show once
             Event(id: "demo-district", title: "HPD In Your District: Council District 16", start: "\(d2)T17:30:00",
-                  end: "\(d2)T19:30:00", all_day: false, address: "1 Fordham Plaza, Bronx, NY 10458", borough: "Bronx",
+                  end: "\(d2)T19:30:00", all_day: false, online: false, address: "1 Fordham Plaza, Bronx, NY 10458", borough: "Bronx",
                   hosts: ["NYC Housing Preservation & Development"], categories: ["Tenant Resource Fair"],
                   description: "Ask HPD about repairs, rent-stabilized leases and affordable housing lotteries.",
                   url: "https://www.nyc.gov/site/hpd/events/index.page"),
-            Event(id: "demo-owner", title: "Property Owner Clinic", start: "\(d2)T00:00:00", end: nil, all_day: true,
+            Event(id: "demo-owner", title: "Property Owner Clinic", start: "\(d2)T00:00:00", end: nil, all_day: true, online: true,
                   address: "100 Gold St, New York, NY 10038", borough: "Manhattan",
                   hosts: ["NYC Housing Preservation & Development"], categories: ["Property Owner Clinic"],
                   description: nil, url: "https://www.nyc.gov/site/hpd/events/index.page"),

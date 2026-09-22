@@ -96,13 +96,22 @@ struct EventsView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(e.title).font(.se(19, .bold)).foregroundStyle(SE.ink).fixedSize(horizontal: false, vertical: true)
             Label(EventsFeed.timeLine(e), systemImage: "clock").font(.se(15, .semibold)).foregroundStyle(SE.ink2)
+            // Most City housing events are online, and the feed leaves the
+            // address empty for them: say so rather than showing nothing.
             if let a = e.address, !a.isEmpty {
                 Label(a, systemImage: "mappin.and.ellipse").font(.se(15)).foregroundStyle(SE.ink2)
+            } else if e.online == true {
+                Label("Online", systemImage: "video").font(.se(15)).foregroundStyle(SE.ink2)
+            } else {
+                Label("Location on the City's page", systemImage: "mappin.and.ellipse").font(.se(15)).foregroundStyle(SE.ink3)
             }
             if let h = EventsFeed.hostLine(e) {
                 Text("Hosted by \(h)").font(.se(14)).foregroundStyle(SE.ink3)
             }
-            if let d = e.description, !d.isEmpty {
+            // HPD's shortDesc is often the title again; don't print it twice.
+            if let d = e.description, !d.isEmpty,
+               d.caseInsensitiveCompare(e.title) != .orderedSame,
+               !d.lowercased().hasPrefix(e.title.lowercased()) {
                 Text(d).font(.se(15)).foregroundStyle(SE.ink).lineLimit(3)
             }
             HStack(spacing: 10) {

@@ -1089,7 +1089,7 @@ final class CommentsStoreTests: XCTestCase {
 final class EventsFeedTests: XCTestCase {
     private func e(_ id: String, _ start: String, end: String? = nil, boro: String? = "Brooklyn", allDay: Bool = false,
                    hosts: [String]? = nil) -> EventsFeed.Event {
-        EventsFeed.Event(id: id, title: "T\(id)", start: start, end: end, all_day: allDay, address: "1 Main St",
+        EventsFeed.Event(id: id, title: "T\(id)", start: start, end: end, all_day: allDay, online: false, address: "1 Main St",
                          borough: boro, hosts: hosts, categories: nil, description: nil, url: "https://www.nyc.gov/x")
     }
     private let now = EventsFeed.parse("2026-09-22T09:00:00")!

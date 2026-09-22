@@ -72,7 +72,8 @@ struct MapResultsView: View {
         }
         .toolbar { ToolbarItem(placement: .principal) { ResultsHeader(query: query,
             onLocation: { Analytics.shared.track("location_open", ["src": "map"]); showLocation = true },
-            onFilter: { Analytics.shared.track("filters_open", ["src": "map"]); showFilters = true }) } }
+            onFilter: { Analytics.shared.track("filters_open", ["src": "map"]); showFilters = true },
+            edit: $query) } }
         .sheet(isPresented: $showFilters) { FiltersSheet(query: $query) }
         .sheet(isPresented: $showLocation) { LocationPickerView(selected: $query.locations) }
         .task(id: query) {

@@ -14,6 +14,13 @@ struct ResultsHeader: View {
     /// broken button — the system chevron beside it is the back control.
     let onLocation: () -> Void
     let onFilter: () -> Void
+    /// iPad (owner, 2026-09-22): the field was the whole width of the bar, so
+    /// the row carries one-tap filters beside a shorter field instead. They
+    /// edit the same query the Filter sheet does. nil = no quick filters.
+    var edit: Binding<SearchQuery>? = nil
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    private var quick: Bool { sizeClass == .regular && edit != nil }
+
     var body: some View {
         HStack(spacing: 8) {
             Button(action: onLocation) {
@@ -33,7 +40,10 @@ struct ResultsHeader: View {
                 .background(Color.white).clipShape(RoundedRectangle(cornerRadius: 2))
             }
             .buttonStyle(.plain)
+            .frame(minWidth: quick ? 180 : nil, maxWidth: quick ? 340 : .infinity)
             .accessibilityIdentifier("results-location-field")
+
+            if quick, let edit { quickFilters(edit); Spacer(minLength: 0) }
 
             Button(action: onFilter) {
                 HStack(spacing: 5) {
@@ -49,7 +59,80 @@ struct ResultsHeader: View {
         }
         // Toolbar items size to their content; give the row the bar's free width
         // (screen minus the chevron and margins) so the field can stretch.
-        .frame(width: UIScreen.main.bounds.width - 92)
+        .frame(width: barWidth)
+    }
+
+    @ViewBuilder private func quickFilters(_ q: Binding<SearchQuery>) -> some View {
+        let v = q.wrappedValue
+        Menu {
+            ForEach([(0, "Studio"), (1, "1 bed"), (2, "2 beds"), (3, "3 beds"), (4, "4+ beds")], id: \.0) { n, label in
+                Button {
+                    if q.wrappedValue.beds.contains(n) { q.wrappedValue.beds.remove(n) } else { q.wrappedValue.beds.insert(n) }
+                    Analytics.shared.track("quick_filter", ["f": "beds", "beds": q.wrappedValue.beds.sorted().map(String.init).joined(separator: ",")])
+                } label: {
+                    if v.beds.contains(n) { Label(label, systemImage: "checkmark") } else { Text(label) }
+                }
+            }
+            if !v.beds.isEmpty {
+                Divider()
+                Button("Any size") { q.wrappedValue.beds = [] }
+            }
+        } label: {
+            chipLabel(bedsLabel(v.beds), on: !v.beds.isEmpty, chevron: true)
+        }
+        .accessibilityIdentifier("quick-beds")
+        Button(action: onFilter) { chipLabel(priceLabel(v), on: v.minPrice != nil || v.maxPrice != nil, chevron: true) }
+            .buttonStyle(.plain).accessibilityIdentifier("quick-price")
+        toggle("Available now", q, \.availableOnly, "available")
+        // How many more fit depends on the bar: an iPad mini upright has room
+        // for three, an 11-inch for four, a 13-inch or any iPad sideways for
+        // all six. The rest stay one tap away in the Filter sheet.
+        if barWidth >= 740 { toggle("Vouchers", q, \.vouchersOnly, "vouchers") }
+        if barWidth >= 920 {
+            toggle("Lotteries", q, \.hcrOnly, "lotteries")
+            toggle("No violations", q, \.noOpenViolations, "no_violations")
+        }
+    }
+
+    private var barWidth: CGFloat { UIScreen.main.bounds.width - 92 }
+
+    private func toggle(_ title: String, _ q: Binding<SearchQuery>, _ key: WritableKeyPath<SearchQuery, Bool>, _ name: String) -> some View {
+        let on = q.wrappedValue[keyPath: key]
+        return Button {
+            q.wrappedValue[keyPath: key].toggle()
+            Analytics.shared.track("quick_filter", ["f": name, "on": !on])
+        } label: { chipLabel(title, on: on, chevron: false) }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("quick-\(name)")
+        .accessibilityAddTraits(on ? .isSelected : [])
+    }
+
+    private func chipLabel(_ text: String, on: Bool, chevron: Bool) -> some View {
+        HStack(spacing: 4) {
+            Text(text).font(.se(15, .semibold)).lineLimit(1)
+            if chevron { Image(systemName: "chevron.down").font(.system(size: 10, weight: .bold)) }
+        }
+        .foregroundStyle(on ? Color.white : SE.royal)
+        .padding(.horizontal, 12).frame(height: 40)
+        .background(on ? SE.royal : Color.white)
+        .overlay(RoundedRectangle(cornerRadius: 2).stroke(on ? Color.white.opacity(0.8) : .clear, lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: 2))
+        .fixedSize()
+    }
+
+    private func bedsLabel(_ beds: Set<Int>) -> String {
+        guard !beds.isEmpty else { return "Beds" }
+        return beds.sorted().map { $0 == 0 ? "Studio" : $0 == 4 ? "4+" : "\($0)" }.joined(separator: ", ") + (beds == [0] ? "" : " bd")
+    }
+
+    private func priceLabel(_ v: SearchQuery) -> String {
+        let k = { (n: Int) in n >= 1000 ? "$\(n / 1000)k" : "$\(n)" }
+        switch (v.minPrice, v.maxPrice) {
+        case let (lo?, hi?): return "\(k(lo))–\(k(hi))"
+        case let (lo?, nil): return "\(k(lo))+"
+        case let (nil, hi?): return "Up to \(k(hi))"
+        default: return "Price"
+        }
     }
 }
 
@@ -171,7 +254,8 @@ struct ResultsView: View {
         }
         .toolbar { ToolbarItem(placement: .principal) { ResultsHeader(query: query,
             onLocation: { Analytics.shared.track("location_open", ["src": "results"]); showLocation = true },
-            onFilter: { Analytics.shared.track("filters_open", ["src": "results"]); showFilters = true }) } }
+            onFilter: { Analytics.shared.track("filters_open", ["src": "results"]); showFilters = true },
+            edit: $query) } }
         .sheet(isPresented: $showFilters) { FiltersSheet(query: $query) }
         .sheet(isPresented: $showLocation) { LocationPickerView(selected: $query.locations) }
         .sheet(isPresented: $showAlerts) { AlertsSheet(query: query) }

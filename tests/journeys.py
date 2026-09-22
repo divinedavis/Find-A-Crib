@@ -134,6 +134,17 @@ class Runner:
         if device == 'phone':
             b = p.webkit.launch(headless=not self.headed)
             ctx = b.new_context(**p.devices['iPhone 14 Pro'])
+        elif device == 'ipad':
+            # An iPad in landscape, the way iPadOS Safari really presents
+            # itself: a MAC user agent with touch (2026-09-22 — two iPhone-
+            # style page deaths were iPads reporting "Macintosh"). Wider than
+            # the 901px breakpoint, so it gets the desktop layout on a touch
+            # screen, which neither the phone nor the desktop run covers.
+            b = p.webkit.launch(headless=not self.headed)
+            d = dict(p.devices['iPad Pro 11 landscape'])
+            d['user_agent'] = ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 '
+                               '(KHTML, like Gecko) Version/26.0 Safari/605.1.15')
+            ctx = b.new_context(**d)
         else:
             b = p.chromium.launch(headless=not self.headed)
             ctx = b.new_context(viewport={'width': 1300, 'height': 900})
@@ -141,10 +152,21 @@ class Runner:
 
     def page(self, ctx, j):
         page = ctx.new_page()
-        page.on('pageerror', lambda e: j.errors.append('pageerror: ' + str(e)[:200]))
+        def on_pageerror(e):
+            stack = getattr(e, 'stack', '') or ''
+            # Apple's Look Around code (cdn.apple-mapkit.com) failing to load its
+            # own WebAssembly inside the test browser: not our code, and a real
+            # visitor only ever sees it as the cross-origin "Script error."
+            # (2026-09-22, found by the iPad pass). "int64" is the same
+            # module's BigInt fault, stackless.
+            if 'apple-mapkit.com' in stack or 'apple-mapkit.com' in str(e) or str(e).strip() == 'int64':
+                return
+            where = stack.split('\n')[1].strip()[:120] if '\n' in stack else ''
+            j.errors.append('pageerror: ' + str(e)[:200] + (' @ ' + where if where else ''))
+        page.on('pageerror', on_pageerror)
         page.on('crash', lambda: j.errors.append('CRASH: renderer died'))
         page.on('console', lambda m: j.errors.append('console.error: ' + m.text[:200])
-                if m.type == 'error' and 'Failed to load resource' not in m.text and 'Content Security Policy' not in m.text and 'Report Only' not in m.text and 'doubleclick.net' not in m.text else None)  # WebKit words Google's own conversion-ping refusal as 'Refused to execute'
+                if m.type == 'error' and not m.text.startswith('[MapKit]') and 'wasm streaming compile failed' not in m.text and 'falling back to ArrayBuffer' not in m.text and 'Failed to load resource' not in m.text and 'Content Security Policy' not in m.text and 'Report Only' not in m.text and 'doubleclick.net' not in m.text else None)  # WebKit words Google's own conversion-ping refusal as 'Refused to execute'
         if self.html is not None:
             def route(r):
                 u = r.request.url.split('#')[0]
@@ -736,6 +758,9 @@ class Runner:
     def j_memory(self, page, j, device):
         if device != 'desktop':
             return
+        if page.context.browser.browser_type.name != 'chromium':
+            j.notes.append('heap check is Chromium-only (CDP); skipped on this engine')
+            return
         cdp = page.context.new_cdp_session(page)
         cdp.send('Performance.enable'); cdp.send('HeapProfiler.enable')
         self.boot(page)
@@ -1163,15 +1188,18 @@ class Runner:
     def run(self):
         t0 = time.time()
         with sync_playwright() as p:
-            for device in ('phone', 'desktop'):
+            for device in getattr(self, 'devices', ('phone', 'desktop', 'ipad')):
                 b, ctx = self.context(p, device)
+                # The iPad gets the desktop layout (it is wider than 901px), so
+                # every journey runs its desktop branch, on WebKit with touch.
+                layout = 'desktop' if device == 'ipad' else device
                 for name in self.JOURNEYS:
                     if self.only and self.only not in name:
                         continue
                     j = Journey(name, device)
                     page = self.page(ctx, j)
                     try:
-                        getattr(self, 'j_' + name)(page, j, device)
+                        getattr(self, 'j_' + name)(page, j, layout)
                     except Exception as e:
                         j.errors.append('exception: ' + str(e).splitlines()[0][:200])
                     finally:
@@ -1193,5 +1221,10 @@ if __name__ == '__main__':
     ap.add_argument('--target', choices=['local', 'live'], default='local')
     ap.add_argument('--only', default='')
     ap.add_argument('--headed', action='store_true')
+    ap.add_argument('--device', choices=['phone', 'desktop', 'ipad'], default=None,
+                    help='run one device only (default: all three)')
     a = ap.parse_args()
-    sys.exit(Runner(a.target, a.only, a.headed).run())
+    r = Runner(a.target, a.only, a.headed)
+    if a.device:
+        r.devices = (a.device,)
+    sys.exit(r.run())

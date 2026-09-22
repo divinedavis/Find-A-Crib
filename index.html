@@ -5395,7 +5395,9 @@
   function feedArrived() {
     gridGen++;
     clearTimeout(feedGridT);
-    feedGridT = setTimeout(() => { tr('grid:feeds'); refreshGrid(); }, 60);
+    // 250 ms: the two feeds sometimes land 100+ ms apart, and at 60 ms the
+    // desktop journey caught a third build (2026-09-22).
+    feedGridT = setTimeout(() => { tr('grid:feeds'); refreshGrid(); }, 250);
   }
 
   // ---------- in-feed ads (Google AdSense) ----------

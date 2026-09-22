@@ -44,13 +44,35 @@ final class IPadTourTests: XCTestCase {
         let counted = NSPredicate(format: "label CONTAINS 'Search' AND NOT (label CONTAINS 'Search 0 ')")
         expectation(for: counted, evaluatedWith: search); waitForExpectations(timeout: 30)
         shot("\(tag)-1-search")
-        if !search.isHittable { app.swipeUp() }
+        // On an iPad mini the button can sit under the floating tab bar while
+        // still counting as hittable; scroll until it clears the bar.
+        let bar = app.buttons["tab-Search"]
+        for _ in 0..<4 where !search.isHittable || (bar.exists && search.frame.maxY > bar.frame.minY - 8) { app.swipeUp() }
         search.tap()
         let count = app.staticTexts["results-count"]
         XCTAssertTrue(count.waitForExistence(timeout: 20), "\(tag): results should open")
         let addr = app.buttons["card-address"].firstMatch
         XCTAssertTrue(addr.waitForExistence(timeout: 15), "\(tag): results should list buildings")
         sleep(2); shot("\(tag)-2-results")
+        // One-tap filters beside the shorter location field (owner, 2026-09-22).
+        let avail = app.buttons["quick-available"]
+        XCTAssertTrue(avail.waitForExistence(timeout: 5), "\(tag): the quick filters should sit in the top row")
+        // The core three always; more as the bar gets wider (all six on a
+        // 13-inch or sideways). Whatever shows must fit beside a readable field.
+        for id in ["quick-beds", "quick-price", "results-filter"] {
+            XCTAssertTrue(app.buttons[id].isHittable, "\(tag): \(id) should fit on the row")
+        }
+        let field = app.buttons["results-location-field"]
+        XCTAssertGreaterThanOrEqual(field.frame.width, 170, "\(tag): the location field must not be squeezed out")
+        let filter = app.buttons["results-filter"]
+        XCTAssertLessThanOrEqual(filter.frame.maxX, app.windows.firstMatch.frame.maxX, "\(tag): Filter must stay on screen")
+        XCTAssertTrue(filter.label.contains("Filter"), "\(tag): the Filter button should keep its label, got \(filter.label)")
+        let before = count.label
+        avail.tap()
+        expectation(for: NSPredicate(format: "label != %@", before), evaluatedWith: count); waitForExpectations(timeout: 10)
+        sleep(1); shot("\(tag)-2b-available-now")
+        avail.tap()
+        expectation(for: NSPredicate(format: "label == %@", before), evaluatedWith: count); waitForExpectations(timeout: 10)
         addr.tap()
         XCTAssertTrue(app.otherElements["detail-hero"].waitForExistence(timeout: 20) || app.staticTexts["About"].waitForExistence(timeout: 20),
                       "\(tag): a building should open")

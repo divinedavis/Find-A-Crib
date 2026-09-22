@@ -100,6 +100,28 @@ final class LotteryFeed {
             .sorted { ($0.closes ?? "9999", $0.name) < ($1.closes ?? "9999", $1.name) }
     }
 
+    /// Bedroom count from the feeds' wording: "Studio"/"studio" -> 0,
+    /// "1-bed" or "1" -> 1. Nil when it cannot tell.
+    nonisolated static func bedCount(_ s: String) -> Int? {
+        let t = s.trimmingCharacters(in: .whitespaces).lowercased()
+        if t.hasPrefix("studio") || t == "0" { return 0 }
+        let digits = t.prefix { $0.isNumber }
+        return digits.isEmpty ? nil : Int(digits)
+    }
+
+    /// The bedroom filter on the Lotteries tab (owner, 2026-09-21): someone
+    /// who needs a 1-bed does not see a lottery that only has 2- and 3-beds.
+    /// `want` holds 0 (studio) … 4, where 4 means four or more; empty means
+    /// any. A listing that publishes no sizes is kept — hiding it would say
+    /// "none for you" when the truth is "not stated" (41 of 43 re-rentals
+    /// on 2026-09-22 carry no bedroom count).
+    nonisolated static func bedsMatch(_ beds: [String]?, want: Set<Int>) -> Bool {
+        guard !want.isEmpty else { return true }
+        let counts = (beds ?? []).compactMap(bedCount)
+        guard !counts.isEmpty else { return true }
+        return counts.contains { want.contains(min($0, 4)) }
+    }
+
     /// True when the income they entered sits inside the lottery's band.
     /// Household size also decides eligibility, which is why the card says
     /// "fits" and never hides anything.

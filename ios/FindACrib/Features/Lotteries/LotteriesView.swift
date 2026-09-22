@@ -13,6 +13,17 @@ struct LotteriesView: View {
     @State private var showSignIn = false
     enum Pane: Hashable { case lotteries, rerentals }
     @State private var pane: Pane = .lotteries
+    /// Bedrooms they need, kept across launches: "0,1" = studio or 1-bed.
+    /// Empty = any size.
+    @AppStorage("lotteries.beds") private var bedsRaw = ""
+    private var beds: Set<Int> { Set(bedsRaw.split(separator: ",").compactMap { Int($0) }) }
+    private var bedsBinding: Binding<Set<Int>> {
+        Binding(get: { beds }, set: { new in
+            bedsRaw = new.sorted().map(String.init).joined(separator: ",")
+            Analytics.shared.track("lotteries_beds", ["beds": bedsRaw.isEmpty ? "any" : bedsRaw])
+        })
+    }
+    private var lotteries: [LotteryFeed.Lottery] { feed.mine.filter { LotteryFeed.bedsMatch($0.beds, want: beds) } }
     private var feed: LotteryFeed { LotteryFeed.shared }
 
     var body: some View {
@@ -95,8 +106,18 @@ struct LotteriesView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.bottom, 12)
             }
-            SEUnderlineTabs(options: [(Pane.lotteries, "Lotteries (\(feed.mine.count))"), (.rerentals, "Re-rentals (\(rerentals.count))")], selection: $pane)
-                .padding(.horizontal, 16).padding(.top, 8).background(Color.white)
+            VStack(alignment: .leading, spacing: 10) {
+                SEUnderlineTabs(options: [(Pane.lotteries, "Lotteries (\(lotteries.count))"), (.rerentals, "Re-rentals (\(rerentals.count))")], selection: $pane)
+                HStack(spacing: 10) {
+                    Text("Beds").font(.se(15, .bold)).foregroundStyle(SE.ink2)
+                    // fixedSize: the strip's divider lines are flexible and
+                    // would otherwise stretch it to fill the header.
+                    SESegmentRow(options: [(0, "Studio"), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: bedsBinding)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.bottom, 10)
+            }
+            .padding(.horizontal, 16).padding(.top, 8).background(Color.white)
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 12) {
                     if pane == .rerentals { rerentalList } else {
@@ -113,8 +134,11 @@ struct LotteriesView: View {
                     } else if feed.mine.isEmpty && !feed.loading {
                         message("Nothing open right now",
                                 "No Housing Connect lotteries are open in \(boroughNames) right now. We'll alert you the minute one opens.")
+                    } else if lotteries.isEmpty && !feed.loading {
+                        message("None with \(bedsWords)",
+                                "\(feed.mine.count) open in \(boroughNames), none with \(bedsWords). Change Beds above to see them.")
                     }
-                    ForEach(feed.mine) { card($0) }
+                    ForEach(lotteries) { card($0) }
                     Text("From NYC Housing Connect, updated every 10 minutes. Eligibility also depends on household size — check each listing.")
                         .font(.se(14)).foregroundStyle(SE.ink3).padding(.horizontal, 16).padding(.top, 4)
                     }
@@ -133,7 +157,16 @@ struct LotteriesView: View {
     /// feed's tiles use (refreshed with the rest of the app's data).
     private var rerentals: [FeaturedListing] {
         let codes = Set(feed.boroughs)
-        return store.featured.listings.filter { $0.boroughCode.map(codes.contains) ?? false }
+        return store.featured.listings.filter {
+            ($0.boroughCode.map(codes.contains) ?? false)
+                && LotteryFeed.bedsMatch($0.beds.map { [$0] }, want: beds)
+        }
+    }
+
+    /// "a 1-bed", "a studio or 1-bed", "3+ beds" — for the empty message.
+    private var bedsWords: String {
+        let names = beds.sorted().map { $0 == 0 ? "studio" : $0 == 4 ? "4+ bed" : "\($0)-bed" }
+        return names.isEmpty ? "any size" : "a " + ListFormatter.localizedString(byJoining: names).replacingOccurrences(of: " and ", with: " or ")
     }
 
     @ViewBuilder private var rerentalList: some View {
@@ -143,14 +176,17 @@ struct LotteriesView: View {
             Button("Edit boroughs") { showAlerts = true }.font(.se(16, .bold)).foregroundStyle(SE.royal)
         }
         .padding(.horizontal, 16)
-        if rerentals.isEmpty {
+        if rerentals.isEmpty && !beds.isEmpty {
+            message("None with \(bedsWords)", "No re-rental in \(boroughNames) lists \(bedsWords) today. Change Beds above to see them.")
+        } else if rerentals.isEmpty {
             message("No re-rentals right now",
                     "No HPD marketing agent is advertising a re-rental in \(boroughNames) today. We'll alert you when one is posted.")
         }
         // slot -1 marks this tab in the re-rental funnel, apart from the
         // search feed's slots 0, 1, 2…
         ForEach(rerentals) { RerentalCard(listing: $0, slot: -1).padding(.horizontal, 16) }
-        Text("Income-restricted apartments that HPD-approved marketing agents are re-renting, from their own websites. Apply through the agent.")
+        Text("Income-restricted apartments that HPD-approved marketing agents are re-renting, from their own websites. Apply through the agent."
+             + (beds.isEmpty ? "" : " Most agents don't list bedrooms, so those stay in the list whatever Beds is set to."))
             .font(.se(14)).foregroundStyle(SE.ink3).padding(.horizontal, 16).padding(.top, 4)
     }
 
@@ -162,7 +198,7 @@ struct LotteriesView: View {
     private var boroughLine: String { feed.boroughs.count == Borough.all.count ? "All five boroughs" : feed.boroughs.map { Borough.name($0) }.joined(separator: " · ") }
     private var countLine: String {
         if feed.loading && feed.all.isEmpty { return "Loading…" }
-        return "\(feed.mine.count) open"
+        return beds.isEmpty ? "\(feed.mine.count) open" : "\(lotteries.count) of \(feed.mine.count) open"
     }
 
     private func card(_ l: LotteryFeed.Lottery) -> some View {

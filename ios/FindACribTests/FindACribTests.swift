@@ -979,6 +979,19 @@ final class LotteryFeedTests: XCTestCase {
         XCTAssertTrue(LotteryFeed.filter(all, boroughs: [], today: "2026-09-19").isEmpty)
     }
 
+    func testBedFilterHidesLotteriesWithoutTheirSize() {
+        XCTAssertFalse(LotteryFeed.bedsMatch(["2-bed", "3-bed"], want: [1]), "a 1-bed seeker does not see a 2/3-bed lottery")
+        XCTAssertTrue(LotteryFeed.bedsMatch(["1-bed", "2-bed"], want: [1]))
+        XCTAssertTrue(LotteryFeed.bedsMatch(["Studio", "1-bed"], want: [0]))
+        XCTAssertTrue(LotteryFeed.bedsMatch(["2-bed", "3-bed"], want: [1, 3]), "any chosen size matches")
+        XCTAssertTrue(LotteryFeed.bedsMatch(["5-bed"], want: [4]), "4+ covers five")
+        XCTAssertTrue(LotteryFeed.bedsMatch(["2-bed"], want: []), "no choice = any size")
+        XCTAssertTrue(LotteryFeed.bedsMatch(nil, want: [1]), "sizes not published: kept")
+        XCTAssertTrue(LotteryFeed.bedsMatch(["studio"], want: [0]), "re-rental wording")
+        XCTAssertFalse(LotteryFeed.bedsMatch(["1"], want: [2]))
+        XCTAssertNil(LotteryFeed.bedCount("Loft"))
+    }
+
     func testIncomeFitIsInclusiveAndNeedsBothNumbers() {
         XCTAssertTrue(LotteryFeed.incomeFits(70_000, lot(1, "Bronx", nil, income: (45_000, 70_000))))
         XCTAssertFalse(LotteryFeed.incomeFits(80_000, lot(1, "Bronx", nil, income: (45_000, 70_000))))

@@ -300,6 +300,19 @@ final class FindACribUITests: XCTestCase {
         if card.exists {
             XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS 'Apply on Housing Connect'")).firstMatch.exists)
         }
+        // Beds filter (owner, 2026-09-21): a size no open lottery has leaves the
+        // pane saying so, and clearing it brings the list back.
+        let fourPlus = app.buttons["segment-4+"]
+        XCTAssertTrue(fourPlus.waitForExistence(timeout: 5), "the Beds strip should sit under the tabs")
+        if card.exists {
+            let before = app.descendants(matching: .any).matching(identifier: "lottery-card").count
+            fourPlus.tap()
+            let shown = app.descendants(matching: .any).matching(identifier: "lottery-card").count
+            XCTAssertTrue(shown < before || app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'None with'")).firstMatch.waitForExistence(timeout: 3),
+                          "4+ beds should hide lotteries without a 4-bed")
+            fourPlus.tap()
+            XCTAssertTrue(card.waitForExistence(timeout: 5), "clearing Beds brings the lotteries back")
+        }
         // The Re-rentals pane: the agents' re-rentals in the same boroughs.
         app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Re-rentals'")).firstMatch.tap()
         let rerental = app.descendants(matching: .any)["rerental-card"].firstMatch

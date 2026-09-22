@@ -9,6 +9,11 @@ struct LotteriesView: View {
     @Environment(\.openURL) private var openURL
     @Environment(DataStore.self) private var store
     @Environment(AuthService.self) private var auth
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    /// iPad (owner, 2026-09-22): two columns of lottery and re-rental cards.
+    private var columns: [GridItem] {
+        Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .top), count: sizeClass == .regular ? 2 : 1)
+    }
     @State private var showAlerts = false
     @State private var showSignIn = false
     enum Pane: Hashable { case lotteries, rerentals }
@@ -138,13 +143,15 @@ struct LotteriesView: View {
                         message("None with \(bedsWords)",
                                 "\(feed.mine.count) open in \(boroughNames), none with \(bedsWords). Change Beds above to see them.")
                     }
-                    ForEach(lotteries) { card($0) }
+                    LazyVGrid(columns: columns, alignment: .leading, spacing: 12) {
+                        ForEach(lotteries) { card($0) }
+                    }
+                    .padding(.horizontal, sizeClass == .regular ? 16 : 0)
                     Text("From NYC Housing Connect, updated every 10 minutes. Eligibility also depends on household size — check each listing.")
                         .font(.se(14)).foregroundStyle(SE.ink3).padding(.horizontal, 16).padding(.top, 4)
                     }
                     Color.clear.frame(height: 120)
                 }
-                .readableColumn()
                 .padding(.top, 16)
             }
             .refreshable { await feed.refresh() }
@@ -185,7 +192,10 @@ struct LotteriesView: View {
         }
         // slot -1 marks this tab in the re-rental funnel, apart from the
         // search feed's slots 0, 1, 2…
-        ForEach(rerentals) { RerentalCard(listing: $0, slot: -1).padding(.horizontal, 16) }
+        LazyVGrid(columns: columns, alignment: .leading, spacing: 12) {
+            ForEach(rerentals) { RerentalCard(listing: $0, slot: -1) }
+        }
+        .padding(.horizontal, 16)
         Text("Income-restricted apartments that HPD-approved marketing agents are re-renting, from their own websites. Apply through the agent."
              + (beds.isEmpty ? "" : " Most agents don't list bedrooms, so those stay in the list whatever Beds is set to."))
             .font(.se(14)).foregroundStyle(SE.ink3).padding(.horizontal, 16).padding(.top, 4)

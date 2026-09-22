@@ -69,6 +69,13 @@ final class IPadTourTests: XCTestCase {
             b.tap(); sleep(2)
             shot("\(tag)-tab-\(tab.replacingOccurrences(of: " ", with: ""))")
         }
+        // Lotteries is the last tab tapped: its Re-rentals pane too.
+        let rer = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Re-rentals'")).firstMatch
+        XCTAssertTrue(rer.waitForExistence(timeout: 10), "\(tag): the Re-rentals pane should be reachable")
+        rer.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["rerental-card"].firstMatch.waitForExistence(timeout: 10)
+                      || app.descendants(matching: .any)["lotteries-empty"].firstMatch.exists, "\(tag): re-rentals should list")
+        sleep(3); shot("\(tag)-tab-Rerentals")
         XCTAssertTrue(app.buttons["tab-Profile"].exists)
         app.buttons["tab-Search"].tap()
     }

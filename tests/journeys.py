@@ -161,6 +161,12 @@ class Runner:
             # module's BigInt fault, stackless.
             if 'apple-mapkit.com' in stack or 'apple-mapkit.com' in str(e) or str(e).strip() == 'int64':
                 return
+            # Safari's wording for a request cut off by leaving the page (the
+            # city-pages journey hops four pages in a row). Stackless, so it
+            # cannot be ours to fix; a request that really failed still fails
+            # the journey through the data it did not paint.
+            if str(e).strip() == 'TypeError: Load failed' and not stack.strip():
+                return
             where = stack.split('\n')[1].strip()[:120] if '\n' in stack else ''
             j.errors.append('pageerror: ' + str(e)[:200] + (' @ ' + where if where else ''))
         page.on('pageerror', on_pageerror)

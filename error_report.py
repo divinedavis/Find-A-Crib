@@ -63,7 +63,10 @@ CLEAN_LAST_STEPS = {"vis hidden", "vis visible", "tick", "pagehide", "freeze"}
 # warning is fired by Safari itself. These still show in the digest so the
 # picture is honest, but they never wake anyone up and are never "new".
 IGNORED = ("script error.", "runtime.sendmessage", "resizeobserver loop",
-           "extension context invalidated")
+           "extension context invalidated",
+           # Brave on iOS injects its cosmetic ad-filter as an inline script
+           # into every page; when it trips it reports as ours (2026-09-21).
+           "standardselectors")
 
 
 def is_noise(message: str) -> bool:

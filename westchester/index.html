@@ -1780,7 +1780,7 @@
 <!-- ?v= busts the 7-day JS browser cache — bump it whenever a key in config.js rotates -->
 <script src="../config.js?v=6"></script>
 <script src="/static/mapillary-preview.js?v=1"></script>
-<script src="/static/apple-street-preview.js?v=7"></script>
+<script src="/static/apple-street-preview.js?v=8"></script>
 <script>
 (async function () {
   // ---------- error telemetry ----------
@@ -1838,6 +1838,11 @@
       }
     }
   } catch (_) {}
+  // The Look Around previews (static/apple-street-preview.js) write their own
+  // steps into this trace (2026-09-22): every iPhone death since 9/20 ends
+  // within a second of a list rebuild, which is when up to five previews
+  // start, and the trace could not say whether any had.
+  window.facTrace = tr;
   window.addEventListener('pagehide', () => tr('pagehide'));
   window.addEventListener('resize', () => tr('win-resize ' + innerWidth + 'x' + innerHeight));
   if (window.visualViewport) visualViewport.addEventListener('resize', () => tr('vv-resize ' + Math.round(visualViewport.height)));

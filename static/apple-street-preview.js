@@ -10,6 +10,10 @@
   const records = new Map(), queue = [];
   let loading = 0;
   const observers = new Map();
+  // Steps for index.html's crash trace: how many previews were live when a
+  // page died. Absent (tests, other pages) it is a no-op.
+  const trace = step => { try { window.facTrace?.(step); } catch (_) {} };
+  const live = () => [...records.values()].filter(r => r.view).length;
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   function destroy(record) {
     record.cancel?.();
@@ -35,6 +39,7 @@
     }
     status.hidden = false; status.textContent = 'Loading Apple street view…';
     record.loading = true;
+    trace('la:mount ' + loading + '/' + live());
     try {
       if (!el.isConnected || !record.visible) return;
       // MapKit supports one Look Around instance per document. Each tile gets
@@ -64,6 +69,7 @@
         const finish = message => {
           if (settled) return;
           settled = true; clearTimeout(timer); record.cancel = null;
+          trace((message ? 'la:fail ' : 'la:ready ') + live());
           status.hidden = !message;
           if (message) { status.textContent = message; record.failed = true; }
           resolve();

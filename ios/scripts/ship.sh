@@ -4,9 +4,10 @@
 # because the pbxproj is generated. SHIP_RUN_UI=1 also gates on UI tests.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-# Owner's freeze (2026-09-21): nothing goes to App Store Connect until they
-# lift it. Delete ASC_FREEZE only on their word.
-[[ -f ASC_FREEZE ]] && { echo "error: App Store Connect is frozen (ios/ASC_FREEZE). Not uploading." >&2; exit 1; }
+# Owner's App Store freeze (2026-09-21, narrowed the same day): TestFlight
+# uploads are fine, the App Store is not. While ASC_FREEZE exists this script
+# still builds and uploads, but never attaches the build to an App Store
+# version. Delete ASC_FREEZE only on the owner's word.
 [[ -f scripts/asc-config.env ]] || { echo "error: scripts/asc-config.env missing (copy .example)" >&2; exit 1; }
 # shellcheck disable=SC1091
 source scripts/asc-config.env
@@ -67,5 +68,9 @@ echo "==> verifying internal tester auto-distribution"
 # VERSION, not from the latest TestFlight upload; attach the newest processed
 # build (never submits). Fresh uploads take minutes to process, so a
 # "nothing to attach yet" here is normal right after a ship.
-echo "==> attaching newest processed build to the App Store version"
-"${PY:-$HOME/.venvs/spendcap/bin/python}" scripts/attach_build.py || echo "warning: attach_build.py reported a problem (re-run once the build has processed)"
+if [[ -f ASC_FREEZE ]]; then
+  echo "==> App Store frozen (ios/ASC_FREEZE): TestFlight only, build not attached to any App Store version"
+else
+  echo "==> attaching newest processed build to the App Store version"
+  "${PY:-$HOME/.venvs/spendcap/bin/python}" scripts/attach_build.py || echo "warning: attach_build.py reported a problem (re-run once the build has processed)"
+fi

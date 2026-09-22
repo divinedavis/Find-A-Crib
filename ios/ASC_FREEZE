@@ -1,6 +1,10 @@
-App Store Connect freeze — set by the owner 2026-09-21:
+App Store freeze — set by the owner 2026-09-21:
 "no more updates to the app store until i say so."
+Narrowed the same day: "we can deploy to test flight, just not the app store."
 
-While this file exists, ship.sh and every submission script refuse to run.
-No TestFlight upload, no new version, no review submission.
-Delete this file ONLY when the owner says the freeze is over.
+While this file exists:
+- ship.sh builds and uploads to TestFlight, but does NOT attach the build to
+  an App Store version.
+- submit_for_review.py, resubmit.py, replace_review_build.py, new_version.py
+  and attach_build.py refuse to run.
+Delete this file ONLY when the owner says the App Store freeze is over.

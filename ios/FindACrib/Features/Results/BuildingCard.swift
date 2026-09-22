@@ -131,7 +131,7 @@ struct BuildingCard: View {
     }
     private func push(_ r: Route) {
         switch nav.tab {
-        case .search, .lotteries: nav.searchPath.append(r)
+        case .search, .lotteries, .events: nav.searchPath.append(r)
         case .activity: nav.activityPath.append(r)
         case .profile: nav.profilePath.append(r)
         }

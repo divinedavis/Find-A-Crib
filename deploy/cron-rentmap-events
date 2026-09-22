@@ -1,0 +1,10 @@
+# /etc/cron.d/rentmap-events — mirrored from deploy/cron-rentmap-events.
+# Tenant clinics and housing events for the app's Events tab (build_events.py):
+# the City's Event Calendar API (HPD + Mayor's Public Engagement Unit), housing
+# events only, duplicates merged, written to the docroot as events.json.
+# Twice a day; a failed or empty pull never overwrites the last good file.
+# NYC_API_KEY lives in growth.env (this file is mirrored into a PUBLIC repo).
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+CRON_TZ=America/New_York
+15 6,18 * * * root cd /root/Find-A-Crib && set -a && . ./growth.env && set +a && python3 build_events.py --out /var/www/rent-map/events.json >> /var/log/rentmap-events.log 2>&1

@@ -84,7 +84,7 @@ final class IPadTourTests: XCTestCase {
     }
 
     private func tabs(_ tag: String) {
-        for (tab, check) in [("My Activity", "tab-My Activity"), ("Profile", "tab-Profile"), ("Lotteries", "tab-Lotteries")] {
+        for (tab, check) in [("Events", "tab-Events"), ("My Activity", "tab-My Activity"), ("Profile", "tab-Profile"), ("Lotteries", "tab-Lotteries")] {
             let b = app.buttons[check]
             XCTAssertTrue(b.waitForExistence(timeout: 15), "\(tag): the \(tab) tab should show")
             XCTAssertTrue(b.isHittable, "\(tag): the \(tab) tab should be tappable")
@@ -103,13 +103,13 @@ final class IPadTourTests: XCTestCase {
     }
 
     func testPortraitTour() throws {
-        launch(["--lotteries-demo"])
+        launch(["--lotteries-demo", "--events-demo"])
         searchToDetail("portrait")
         tabs("portrait")
     }
 
     func testLandscapeTour() throws {
-        launch(["--lotteries-demo"])
+        launch(["--lotteries-demo", "--events-demo"])
         XCUIDevice.shared.orientation = .landscapeLeft
         sleep(1)
         searchToDetail("landscape")

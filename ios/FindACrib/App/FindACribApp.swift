@@ -69,7 +69,7 @@ struct FindACribApp: App {
                 // Switching to a city without the Lotteries tab must not leave
                 // the app parked on it.
                 .onChange(of: store.city.id) { _, _ in
-                    if !store.city.isNYC, nav.tab == .lotteries { nav.tab = .search }
+                    if !store.city.isNYC, nav.tab.nycOnly { nav.tab = .search }
                 }
                 .onChange(of: auth.isSignedIn) { _, on in
                     if on { Task { await PushService.shared.reregisterIfAuthorized() } }
@@ -85,8 +85,12 @@ struct FindACribApp: App {
     }
 }
 
-enum Tab: String, CaseIterable { case search = "Search", lotteries = "Lotteries", activity = "My Activity", profile = "Profile"
-    var icon: String { switch self { case .search: "magnifyingglass"; case .lotteries: "ticket"; case .activity: "heart"; case .profile: "person" } }
+enum Tab: String, CaseIterable { case search = "Search", lotteries = "Lotteries", events = "Events", activity = "My Activity", profile = "Profile"
+    var icon: String { switch self { case .search: "magnifyingglass"; case .lotteries: "ticket"; case .events: "calendar"; case .activity: "heart"; case .profile: "person" } }
+    /// Lotteries and Events are New York's feeds (Housing Connect, the HPD
+    /// marketing agents, the City's events calendar); elsewhere they would list
+    /// another city's openings, so those cities do not get the tabs.
+    var nycOnly: Bool { self == .lotteries || self == .events }
 }
 
 enum Route: Hashable {
@@ -116,7 +120,7 @@ enum LaunchArgs {
     @MainActor static func apply(to nav: AppNav, store: DataStore) {
         let a = CommandLine.arguments
         func val(_ flag: String) -> String? { a.firstIndex(of: flag).flatMap { $0 + 1 < a.count ? a[$0 + 1] : nil } }
-        if let t = val("--tab") { nav.tab = t == "activity" ? .activity : (t == "profile" ? .profile : .search) }
+        if let t = val("--tab") { nav.tab = t == "activity" ? .activity : (t == "profile" ? .profile : (t == "events" ? .events : .search)) }
         // `--city la|sf|dc` — land in another city, for the screenshot script
         // and the UI tests. Only NYC ships a seed in the bundle, so the others
         // have to download first; the route has to wait for that, or it

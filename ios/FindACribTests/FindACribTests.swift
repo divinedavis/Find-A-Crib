@@ -1084,3 +1084,54 @@ final class CommentsStoreTests: XCTestCase {
         XCTAssertGreaterThan(CommentsStore.date("2026-09-20T17:04:05+00:00").timeIntervalSince1970, 1_700_000_000)
     }
 }
+
+
+final class EventsFeedTests: XCTestCase {
+    private func e(_ id: String, _ start: String, end: String? = nil, boro: String? = "Brooklyn", allDay: Bool = false,
+                   hosts: [String]? = nil) -> EventsFeed.Event {
+        EventsFeed.Event(id: id, title: "T\(id)", start: start, end: end, all_day: allDay, address: "1 Main St",
+                         borough: boro, hosts: hosts, categories: nil, description: nil, url: "https://www.nyc.gov/x")
+    }
+    private let now = EventsFeed.parse("2026-09-22T09:00:00")!
+
+    func testTheSameEventTwiceShowsOnce() {
+        let all = [e("a", "2026-09-23T10:00:00"), e("a", "2026-09-23T10:00:00"), e("b", "2026-09-24T10:00:00")]
+        XCTAssertEqual(EventsFeed.dedupe(all, now: now).map(\.id), ["a", "b"])
+    }
+
+    func testPastDaysGoAndTodayStays() {
+        let all = [e("old", "2026-09-21T10:00:00"), e("today", "2026-09-22T08:00:00"), e("next", "2026-09-30T10:00:00")]
+        XCTAssertEqual(EventsFeed.dedupe(all, now: now).map(\.id), ["today", "next"], "an event earlier today still shows")
+    }
+
+    func testSoonestFirstAndGroupedByDay() {
+        let all = EventsFeed.dedupe([e("c", "2026-09-24T09:00:00"), e("a", "2026-09-23T15:00:00"), e("b", "2026-09-23T10:00:00")], now: now)
+        let days = EventsFeed.byDay(all)
+        XCTAssertEqual(days.map(\.day), ["2026-09-23", "2026-09-24"])
+        XCTAssertEqual(days[0].events.map(\.id), ["b", "a"])
+    }
+
+    func testBoroughFilter() {
+        let all = [e("bk", "2026-09-23T10:00:00"), e("bx", "2026-09-23T10:00:00", boro: "Bronx"), e("none", "2026-09-23T10:00:00", boro: nil)]
+        XCTAssertEqual(EventsFeed.filter(all, borough: "Bronx").map(\.id), ["bx"])
+        XCTAssertEqual(EventsFeed.filter(all, borough: nil).count, 3, "All shows every event, placed or not")
+    }
+
+    func testLabels() {
+        XCTAssertEqual(EventsFeed.dayTitle("2026-09-22", now: now), "Today")
+        XCTAssertEqual(EventsFeed.dayTitle("2026-09-23", now: now), "Tomorrow")
+        XCTAssertEqual(EventsFeed.dayTitle("2026-09-25", now: now), "Friday, Sep 25")
+        XCTAssertEqual(EventsFeed.timeLine(e("t", "2026-09-23T10:00:00", end: "2026-09-23T16:00:00")), "10:00 AM – 4:00 PM")
+        XCTAssertEqual(EventsFeed.timeLine(e("t", "2026-09-23T00:00:00", allDay: true)), "All day")
+        XCTAssertEqual(EventsFeed.hostLine(e("h", "2026-09-23T10:00:00", hosts: ["Mayor's Public Engagement Unit", "NYC Housing Preservation & Development"])),
+                       "Mayor's Public Engagement Unit · HPD")
+    }
+
+    func testDecodesTheServerShape() throws {
+        let json = #"{"generated":"2026-09-22T10:00:00Z","source":"x","fetched":3,"events":[{"id":"ab12","title":"Tenant Clinic","start":"2026-09-23T10:00:00","end":"2026-09-23T16:00:00","all_day":false,"address":"6206 6th Ave, Brooklyn, NY 11220","borough":"Brooklyn","lat":null,"lng":null,"hosts":["NYC Housing Preservation & Development"],"categories":["Tenant Resource Fair"],"description":"d","url":"https://www.nyc.gov/e","links":["https://www.nyc.gov/e"]}]}"#
+        struct P: Decodable { let events: [EventsFeed.Event] }
+        let p = try JSONDecoder().decode(P.self, from: Data(json.utf8))
+        XCTAssertEqual(p.events.first?.borough, "Brooklyn")
+        XCTAssertNotNil(p.events.first?.startDate)
+    }
+}

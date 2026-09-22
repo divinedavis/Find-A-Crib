@@ -240,6 +240,7 @@ final class FindACribUITests: XCTestCase {
         let laCount = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS '67,5'")).firstMatch
         XCTAssertTrue(laCount.waitForExistence(timeout: 90), "the LA map never finished loading LA")
         XCTAssertFalse(app.buttons["tab-Lotteries"].exists, "Lotteries is New York's; it must not show in LA")
+        XCTAssertFalse(app.buttons["tab-Events"].exists, "Events are New York's calendar; they must not show in LA")
         // The count pill is the map's own: it says how many of THIS city's
         // buildings the map is showing, so 67,5xx means LA's data on LA's map.
         // (The Search screen underneath still holds its own tiles, so the whole
@@ -292,7 +293,8 @@ final class FindACribUITests: XCTestCase {
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--lotteries-demo"]
         app.launch()
         XCTAssertTrue(tab.waitForExistence(timeout: 20))
-        XCTAssertTrue(app.buttons["tab-My Activity"].isHittable && app.buttons["tab-Profile"].isHittable, "four tabs must all fit")
+        XCTAssertTrue(app.buttons["tab-My Activity"].isHittable && app.buttons["tab-Profile"].isHittable
+                      && app.buttons["tab-Events"].isHittable, "all five tabs must fit")
         tab.tap()
         let card = app.descendants(matching: .any)["lottery-card"].firstMatch
         let empty = app.descendants(matching: .any)["lotteries-empty"].firstMatch
@@ -318,6 +320,30 @@ final class FindACribUITests: XCTestCase {
         let rerental = app.descendants(matching: .any)["rerental-card"].firstMatch
         XCTAssertTrue(rerental.waitForExistence(timeout: 10) || app.descendants(matching: .any)["lotteries-empty"].firstMatch.exists,
                       "the Re-rentals pane should list re-rentals or say none are posted")
+    }
+
+    /// The Events tab (owner, 2026-09-22): New York's tenant clinics and
+    /// housing events. --events-demo loads three sample events, one of them
+    /// listed twice, which must show once; the borough chips filter.
+    func testEventsTabListsEachEventOnce() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--events-demo"]
+        app.launch()
+        let tab = app.buttons["tab-Events"]
+        XCTAssertTrue(tab.waitForExistence(timeout: 20), "New York should have an Events tab")
+        XCTAssertTrue(tab.isHittable, "the Events tab must fit on the bar")
+        tab.tap()
+        let cards = app.descendants(matching: .any).matching(identifier: "event-card")
+        XCTAssertTrue(cards.firstMatch.waitForExistence(timeout: 10), "the tab should list events")
+        app.buttons["events-boro-All"].tap()   // the borough choice is remembered between launches, on purpose
+        XCTAssertEqual(cards.count, 3, "three sample events, one listed twice, show three times — not four")
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS 'Details'")).firstMatch.exists)
+        app.buttons["events-boro-Bronx"].tap()
+        XCTAssertEqual(cards.count, 1, "Bronx shows only the Bronx event")
+        app.buttons["events-boro-Queens"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["events-empty"].waitForExistence(timeout: 5), "an empty borough says so")
+        app.buttons["events-boro-All"].tap()
+        XCTAssertEqual(cards.count, 3)
     }
 
     /// Violations & inspections leads and About is the last section (owner,
@@ -529,6 +555,11 @@ final class FindACribUITests: XCTestCase {
         box.tap()
         XCTAssertTrue(app.buttons["price-done"].waitForExistence(timeout: 10),
                       "tapping a price box did not open the picker")
+        // The sheet remembers Increments vs Custom on purpose. A test that left
+        // it on Custom (testPriceCustomTabOffersTypedEntry) opened the next one
+        // to text fields, with no wheels to find — on iPad every run (2026-09-22).
+        let increments = app.segmentedControls["price-mode"].buttons["Increments"]
+        if increments.exists, !increments.isSelected { increments.tap() }
         XCTAssertTrue(app.pickerWheels.element(boundBy: 0).waitForExistence(timeout: 5))
     }
 

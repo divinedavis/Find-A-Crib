@@ -692,7 +692,7 @@ struct BuildingDetailView: View {
     private func pushOther(_ s: Building) {
         // nav.searchPath already handled above when on the Search tab; mirror for the others.
         switch nav.tab {
-        case .search, .lotteries: break
+        case .search, .lotteries, .events: break
         case .activity: nav.searchPath.removeLast(); nav.activityPath.append(.building(s.bbl))
         case .profile: nav.searchPath.removeLast(); nav.profilePath.append(.building(s.bbl))
         }

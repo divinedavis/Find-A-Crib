@@ -20,6 +20,8 @@ struct RootView: View {
                     }
                 case .lotteries:
                     NavigationStack { LotteriesView() }
+                case .events:
+                    NavigationStack { EventsView() }
                 case .profile:
                     NavigationStack(path: $nav.profilePath) {
                         ProfileView().navigationDestination(for: Route.self) { RouteView(route: $0) }
@@ -102,7 +104,11 @@ struct PillTabBar: View {
     /// Lotteries is New York's: Housing Connect and the HPD marketing agents'
     /// re-rentals, matched to boroughs. In LA, SF or DC it would list another
     /// city's openings, so it is not offered there (owner, 2026-09-19).
-    private var tabs: [Tab] { Tab.allCases.filter { $0 != .lotteries || store.city.isNYC } }
+    private var tabs: [Tab] { Tab.allCases.filter { !$0.nycOnly || store.city.isNYC } }
+    /// Five tabs at 86 pt is 438 pt — wider than any iPhone. With the Events
+    /// tab (2026-09-22) the items narrow to fit a 375 pt screen; four keep
+    /// their old width.
+    private var itemWidth: CGFloat { tabs.count >= 5 ? 72 : 86 }
     var body: some View {
         HStack(spacing: 0) {
             ForEach(tabs, id: \.self) { tab in
@@ -110,10 +116,10 @@ struct PillTabBar: View {
                 Button { if selected != tab { Analytics.shared.track("tab", ["to": tab.rawValue]) }; selected = tab } label: {
                     VStack(spacing: 4) {
                         Image(systemName: tab.icon).font(.system(size: 22, weight: on ? .semibold : .regular))
-                        Text(tab.rawValue).font(.se(14, .semibold)).lineLimit(1).minimumScaleFactor(0.75)
+                        Text(tab.rawValue).font(.se(tabs.count >= 5 ? 13 : 14, .semibold)).lineLimit(1).minimumScaleFactor(0.7)
                     }
                     .foregroundStyle(on ? SE.royal : SE.ink)
-                    .frame(width: 86, height: 66)
+                    .frame(width: itemWidth, height: 66)
                     .background(on ? SE.badge : .clear)
                     .clipShape(Capsule())
                 }

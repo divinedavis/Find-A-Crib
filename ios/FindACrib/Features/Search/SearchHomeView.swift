@@ -503,8 +503,9 @@ enum MapRegion {
 /// StreetEasy opens on a photo collage around a brand card. Ours is built from
 /// Look Around imagery of real NYC blocks — no stock photos, no licensing.
 /// The mosaic at the top of Search: eight Apple Look Around snapshots of the
-/// city that is loaded, re-drawn from a curated pool every time the screen
-/// appears (owner, 2026-09-19). Pictures only — tapping one opened the movable
+/// city that is loaded — its landmarks since 2026-09-22 (HeroLandmarks.swift)
+/// — re-drawn from a curated pool every time the screen appears (owner,
+/// 2026-09-19). Pictures only — tapping one opened the movable
 /// Look Around for a day and the owner took it back out (2026-09-20).
 ///
 /// Curated corners rather than random buildings from the register: coverage is
@@ -553,9 +554,11 @@ struct HeroSpot: Identifiable, Hashable {
     var building: Building { Building(bbl: id, b: "", a: name, z: nil, lat: lat, lng: lng) }
     var coordinate: CLLocationCoordinate2D { CLLocationCoordinate2D(latitude: lat, longitude: lng) }
 
-    /// Eight of the city's corners, in a fresh order every time.
+    /// Eight of the city's fifty landmarks (HeroLandmarks.swift), a fresh
+    /// random draw every time the screen appears. The neighborhood corners
+    /// below stay as the fallback for a city without a landmark list.
     static func pick(for city: City, count: Int = 8) -> [HeroSpot] {
-        let pool = all[city.id] ?? all["nyc"]!
+        let pool = landmarks[city.id] ?? all[city.id] ?? landmarks["nyc"]!
         return Array(pool.shuffled().prefix(count))
     }
 

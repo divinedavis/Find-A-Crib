@@ -256,6 +256,11 @@ def stale_feeds():
     out = {}
     docroot = os.environ.get("GROWTH_DOCROOT", "/var/www/rent-map")
     checks = {"listings_zumper.json": 36, "hcr.json": 6, "featured.json": 36, "s8.json": 48}
+    # The Events tab (build_events.py, twice a day). Only checked once the
+    # feed has existed: before the NYC_API_KEY is in place there is no file,
+    # and "missing" would mail every hour about a feature not yet switched on.
+    if os.path.exists(os.path.join(docroot, "events.json")):
+        checks["events.json"] = 30
     now = datetime.datetime.now().timestamp()
     for name, max_hours in checks.items():
         p = os.path.join(docroot, name)

@@ -2845,14 +2845,18 @@
   const geoPromise = (IS_NYC && !location.hash && !location.search && !isBot())
     ? fetch('/api/geo', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null)
     : Promise.resolve(null);
-  let data, listingsBlob, s8Blob, FMR;
+  let data, listingsBlob, s8Blob, FMR, vacancyBlob;
   try {
-    [data, listingsBlob, s8Blob, FMR] = await Promise.all([
+    [data, listingsBlob, s8Blob, FMR, vacancyBlob] = await Promise.all([
       fetchBuildings(),
       fetch('listings.json').then(r => r.ok ? r.json() : { counts: {} }).catch(() => ({ counts: {} })),
       fetch('s8.json').then(r => r.ok ? r.json() : { bldg: {}, avail: {} }).catch(() => ({ bldg: {}, avail: {} })),
       // HUD FY2026 Small-Area Fair Market Rents by ZIP: [studio, 1BR, 2BR, 3BR]
       fetch('fmr.json').then(r => r.ok ? r.json() : {}).catch(() => ({})),
+      // What the companies managing these buildings are advertising on their
+      // own sites (build_vacancies.py, twice a day). A second source for the
+      // same question the Zumper feed answers: is anything free here right now.
+      fetch('vacancies.json').then(r => r.ok ? r.json() : { counts: {} }).catch(() => ({ counts: {} })),
     ]);
   } catch (e) {
     showLoadError();
@@ -2872,9 +2876,15 @@
   const RECENT_DAYS = 5;
   const listingPosted = listingsBlob.posted || {};
   const isRecent = bbl => (Date.now() / 1000 - (listingPosted[bbl] || 0)) < RECENT_DAYS * 86400;
-  const listingCounts = Object.keys(listingPosted).length
+  const zumperCounts = Object.keys(listingPosted).length
     ? Object.fromEntries(Object.entries(listingsBlob.counts || {}).filter(([bbl]) => isRecent(bbl)))
     : (listingsBlob.counts || {});
+  // A manager's own page is swept twice a day, so everything on it is current
+  // by construction — no posting date to age it against.
+  const vacancyCounts = vacancyBlob.counts || {};
+  const listingCounts = Object.assign({}, zumperCounts);
+  for (const [bbl, n] of Object.entries(vacancyCounts))
+    listingCounts[bbl] = Math.max(listingCounts[bbl] || 0, n);
   // What this city actually HAS, measured from the payload rather than assumed
   // from its name. listings.json / s8.json / fmr.json are fetched RELATIVE to
   // the page, so they resolve only on the NYC root and 404 into empty objects
@@ -2888,7 +2898,11 @@
   // answered "no rent-controlled buildings on file for ZIP 94110" — stated as
   // fact, about a ZIP that is squarely inside its coverage.
   const HAS_ZIPS = data.some(r => r.z);
-  const listingPrices = listingsBlob.prices || {};
+  // The cheaper of the two sources, so a manager's own rent can undercut the
+  // portal's — never the other way round by accident.
+  const listingPrices = Object.assign({}, listingsBlob.prices || {});
+  for (const [bbl, p] of Object.entries(vacancyBlob.prices || {}))
+    if (listingPrices[bbl] == null || p < listingPrices[bbl]) listingPrices[bbl] = p;
   const listingBeds = listingsBlob.beds || {};
   // one price per building, shared by the price sort and the price filter:
   // real asking rent when advertised, else the ZIP's HUD estimate midpoint
@@ -3265,6 +3279,15 @@
   // must not call itself a listing. `direct` is returned so callers can style
   // the real thing differently from the lookup.
   function listingLink(rec, borough) {
+    // The company managing the building beats a portal: it is the landlord's
+    // own page, and it is where an application actually goes.
+    const fromManager = (vacancyBlob.urls && vacancyBlob.urls[rec.bbl]) || null;
+    if (safeHttpUrl(fromManager)) {
+      let host = '';
+      try { host = new URL(fromManager).hostname.replace(/^www\./, ''); } catch (e) {}
+      return { href: fromManager, label: `${host || 'Managing agent'} ↗`,
+               short: `${host || 'Agent'} ↗`, direct: true };
+    }
     const direct = (listingsBlob.urls && listingsBlob.urls[rec.bbl]) || null;
     if (IS_NYC) {
       if (safeHttpUrl(direct)) {

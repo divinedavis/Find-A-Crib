@@ -288,17 +288,21 @@ final class FindACribUITests: XCTestCase {
                       "the map is counting another city: \(app.descendants(matching: .any)["map-count"].firstMatch.label)")
     }
 
-    /// The hero mosaic is the city that is loaded, and it is pictures only —
-    /// the owner had a tap open Look Around for a day and took it back out
-    /// (2026-09-20), so a tile must not be a button.
-    func testHeroBannerIsDecorationOnly() throws {
+    /// Outside New York the banner is still the wordmark, and there it is
+    /// decoration: the owner had a tap open Look Around for a day and took it
+    /// back out (2026-09-20), so it must not be a button and must carry no
+    /// street photos. (New York leads with a re-rental photo instead since
+    /// 2026-09-23 — testHeroRerentalBannerOpensRerentals covers that one.)
+    func testHeroBannerIsDecorationOnlyOutsideNewYork() throws {
         app.terminate()
-        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash"]
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--city", "la"]
         app.launch()
         let banner = app.descendants(matching: .any)["hero-banner"].firstMatch
         XCTAssertTrue(banner.waitForExistence(timeout: 20), "the banner should be there")
         XCTAssertTrue(banner.label.contains("Find A Crib"), "the banner carries the wordmark: \(banner.label)")
         XCTAssertFalse(app.buttons["hero-banner"].exists, "the banner is not a button")
+        XCTAssertFalse(app.descendants(matching: .any)["hero-rerental"].firstMatch.exists,
+                       "Los Angeles has no re-rental feed, so no photo banner")
         XCTAssertFalse(app.descendants(matching: .any)["hero-tile"].firstMatch.exists, "no street photos in the banner (owner, 2026-09-22)")
         banner.tap()
         XCTAssertFalse(app.buttons["hero-lookaround-close"].waitForExistence(timeout: 4), "tapping must open nothing")

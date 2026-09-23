@@ -52,43 +52,6 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(apple.label.contains("Apple"))
     }
 
-    /// The Search banner (owner, 2026-09-23): in New York it is a real
-    /// re-rental photo badged with the borough it is in — not the wordmark
-    /// banner — it follows the Location field, and tapping it opens the
-    /// Lotteries tab's Re-rentals pane at that apartment even though this
-    /// simulator is signed out and subscribed to nothing.
-    func testHeroRerentalBannerOpensRerentals() throws {
-        let boroughs = ["Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island"]
-        let hero = app.descendants(matching: .any)["hero-rerental"].firstMatch
-        XCTAssertTrue(hero.waitForExistence(timeout: 25), "New York should lead Search with a re-rental photo")
-        XCTAssertFalse(app.descendants(matching: .any)["hero-banner"].firstMatch.exists,
-                       "the wordmark banner is replaced in New York")
-        XCTAssertTrue(boroughs.contains { hero.label.hasPrefix("Re-rental in \($0):") },
-                      "the badge must name the borough the photo is in — got \(hero.label)")
-
-        // Location steers it: with Brooklyn set, the photo is a Brooklyn one.
-        let field = app.descendants(matching: .any)["location-field"].firstMatch
-        XCTAssertTrue(field.waitForExistence(timeout: 10))
-        field.tap()
-        let brooklyn = app.buttons["loc-Brooklyn"]
-        XCTAssertTrue(brooklyn.waitForExistence(timeout: 10))
-        brooklyn.tap()
-        if !app.buttons["Remove Brooklyn"].waitForExistence(timeout: 3) { brooklyn.tap() }
-        app.buttons["location-done"].tap()
-        let inBrooklyn = NSPredicate(format: "label BEGINSWITH 'Re-rental in Brooklyn:'")
-        expectation(for: inBrooklyn, evaluatedWith: hero)
-        waitForExpectations(timeout: 10)
-
-        // Tapping the photo lands on the apartment in Re-rentals.
-        hero.tap()
-        let card = app.descendants(matching: .any)["rerental-card"].firstMatch
-        XCTAssertTrue(card.waitForExistence(timeout: 20), "the photo should open the Re-rentals pane")
-        XCTAssertFalse(app.buttons["lotteries-signup"].exists,
-                       "arriving from the banner must not land on the sign-up dead end")
-        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Re-rentals'")).firstMatch.exists,
-                      "the Re-rentals pane is the one selected")
-    }
-
     func testTabsSwitch() throws {
         XCTAssertTrue(app.buttons["tab-My Activity"].waitForExistence(timeout: 20))
         app.buttons["tab-My Activity"].tap()
@@ -299,21 +262,20 @@ final class FindACribUITests: XCTestCase {
                       "the map is counting another city: \(app.descendants(matching: .any)["map-count"].firstMatch.label)")
     }
 
-    /// Outside New York the banner is still the wordmark, and there it is
-    /// decoration: the owner had a tap open Look Around for a day and took it
-    /// back out (2026-09-20), so it must not be a button and must carry no
-    /// street photos. (New York leads with a re-rental photo instead since
-    /// 2026-09-23 — testHeroRerentalBannerOpensRerentals covers that one.)
-    func testHeroBannerIsDecorationOnlyOutsideNewYork() throws {
+    /// The banner is the wordmark, and it is decoration: the owner had a tap
+    /// open Look Around for a day and took it back out (2026-09-20), and a
+    /// re-rental photo with a borough badge for half a day on 2026-09-23. So
+    /// it must not be a button and must carry no photos.
+    func testHeroBannerIsDecorationOnly() throws {
         app.terminate()
-        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--city", "la"]
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash"]
         app.launch()
         let banner = app.descendants(matching: .any)["hero-banner"].firstMatch
         XCTAssertTrue(banner.waitForExistence(timeout: 20), "the banner should be there")
         XCTAssertTrue(banner.label.contains("Find A Crib"), "the banner carries the wordmark: \(banner.label)")
         XCTAssertFalse(app.buttons["hero-banner"].exists, "the banner is not a button")
         XCTAssertFalse(app.descendants(matching: .any)["hero-rerental"].firstMatch.exists,
-                       "Los Angeles has no re-rental feed, so no photo banner")
+                       "no re-rental photo banner (owner, 2026-09-23)")
         XCTAssertFalse(app.descendants(matching: .any)["hero-tile"].firstMatch.exists, "no street photos in the banner (owner, 2026-09-22)")
         banner.tap()
         XCTAssertFalse(app.buttons["hero-lookaround-close"].waitForExistence(timeout: 4), "tapping must open nothing")

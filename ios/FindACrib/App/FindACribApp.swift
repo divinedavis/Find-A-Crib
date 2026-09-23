@@ -112,10 +112,6 @@ final class AppNav {
     /// Opened by the Profile screen (after sign-in if needed); set by the
     /// notifications card for someone who has no alerts yet.
     var showAlerts = false
-    /// Set by the Search banner's photo: the Lotteries tab opens its
-    /// Re-rentals pane at this listing (FeaturedListing.id), showing it even
-    /// when their boroughs or Beds filter would otherwise leave it out.
-    var openRerental: String? = nil
 }
 
 /// `--tab activity|profile`, `--route results|map|detail[:bbl]` — used by the

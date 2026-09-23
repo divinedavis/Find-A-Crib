@@ -33,8 +33,10 @@ struct FeaturedListing: Codable, Hashable, Identifiable, Sendable {
     /// Site-relative, e.g. "/featured/img/abc.png".
     var image: String?
     /// The photo is the OUTSIDE of the building, measured by photo_kind.py in
-    /// the sweep. The Search banner may only lead with one of these (owner,
-    /// 2026-09-23); the tiles in the feed still show whatever the agent has.
+    /// the sweep — the agents also post empty living rooms and their own logos.
+    /// Nothing reads it since the photo banner came back out (2026-09-23); it
+    /// stays because the feed writes it and it is what a "building photo"
+    /// filter would need.
     var imageExterior = false
 
     var id: String { href + "|" + address }
@@ -195,20 +197,6 @@ enum RerentalFeed {
     /// different the next time the app opens.
     static let launchSeed: UInt64 = .random(in: 1...UInt64.max)
 
-    /// The photo the Search banner leads with (owner, 2026-09-23): a real
-    /// re-rental, preferring the boroughs they have set as their Location,
-    /// falling back to any borough when nothing there has a photo. A listing
-    /// qualifies only with a borough — the badge names it — and a photo of the
-    /// BUILDING'S OUTSIDE: the agents post empty living rooms and their own
-    /// logos too, and the owner's rule for this banner is the outside only.
-    static func banner(_ featured: [FeaturedListing], boroughs: Set<String>, seed: UInt64) -> FeaturedListing? {
-        let withPhoto = featured.filter { $0.image != nil && $0.imageExterior && $0.boroughCode != nil }
-        guard !withPhoto.isEmpty else { return nil }
-        let here = withPhoto.filter { $0.boroughCode.map(boroughs.contains) ?? false }
-        let pool = here.isEmpty ? withPhoto : here
-        var rng = SplitMix(seed: seed)
-        return pool[Int(rng.next() % UInt64(pool.count))]
-    }
 
     struct SplitMix {
         var state: UInt64

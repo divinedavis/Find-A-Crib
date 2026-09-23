@@ -66,7 +66,12 @@ IGNORED = ("script error.", "runtime.sendmessage", "resizeobserver loop",
            "extension context invalidated",
            # Brave on iOS injects its cosmetic ad-filter as an inline script
            # into every page; when it trips it reports as ours (2026-09-21).
-           "standardselectors")
+           "standardselectors",
+           # axios's wording, from an extension's own code: this site ships no
+           # axios and the string appears nowhere in it. The one visitor who
+           # produced it (2026-09-22) opened eight buildings and came back an
+           # hour later, and no 5xx or API traceback matched the minute.
+           "failed to fetch api data")
 
 
 def is_noise(message: str) -> bool:

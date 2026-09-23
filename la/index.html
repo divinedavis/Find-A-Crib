@@ -7652,6 +7652,27 @@
       profileErr.hidden = false;
     }
   });
+  // The account's saved list arrives a beat after the page settles, and all it
+  // changes on screen is which hearts are filled. It used to bump gridGen and
+  // rebuild all 200 cards for that — every tile image thrown away and re-made
+  // at the exact moment the phone is busiest. Two of the four iPhone pages
+  // that died after the Look Around cap shipped died on that rebuild
+  // (2026-09-23). Repaint the hearts in place instead.
+  function repaintHearts() {
+    document.querySelectorAll('#grid .card').forEach(card => {
+      const btn = card.querySelector('.fav-btn');
+      if (!btn) return;
+      const faved = FAVS.has(card.dataset.bbl);
+      btn.classList.toggle('faved', faved);
+      btn.textContent = faved ? '♥' : '♡';
+      btn.setAttribute('aria-pressed', faved ? 'true' : 'false');
+      btn.setAttribute('aria-label', faved ? 'Remove from saved' : 'Save');
+    });
+    // The Saved filter IS a filter: its membership just changed, so the list
+    // has to be recomputed — but only then.
+    if (document.getElementById('pill-fav')?.classList.contains('active')) { gridGen++; applyFilters(); }
+  }
+
   async function loadAccountFavs() {
     if (!supaClient || !authUser) return;
     const local = [...FAVS]; // merge anonymous (localStorage) saves into the account first
@@ -7665,7 +7686,7 @@
       FAVS = new Set([...(rows || []).map(r => r.bbl), ...local]);
       FAVCATS = {};
       for (const r of rows || []) if (r.category_id) FAVCATS[r.bbl] = r.category_id;
-      saveFavs(); updateFavBadge(); gridGen++; refreshGrid();
+      saveFavs(); updateFavBadge(); repaintHearts();
     } catch (e) { console.warn('load favs failed', e); }
     loadFolders();
   }

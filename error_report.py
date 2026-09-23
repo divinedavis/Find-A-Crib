@@ -137,6 +137,14 @@ def crashes(rows):
         labels = [s[1] if isinstance(s, list) and len(s) > 1 else "" for s in steps]
         if "pagehide" in labels:
             continue                      # it said goodbye; a later tick is not a crash
+        # Backgrounded, then reclaimed: after "vis hidden" the only steps are
+        # the 1s tick and the street photos finishing on their own. iOS taking
+        # a hidden tab's memory back is normal, not a page that died on the
+        # visitor (2026-09-23).
+        if "vis hidden" in labels:
+            after = labels[len(labels) - 1 - labels[::-1].index("vis hidden") + 1:]
+            if all(x == "tick" or x.startswith("la:") for x in after):
+                continue
         last = labels[-1]
         if last in CLEAN_LAST_STEPS:
             continue

@@ -402,27 +402,30 @@ struct PricePickerSheet: View {
     }
 
     private var customEntry: some View {
-        HStack(spacing: 16) {
-            typedField("Minimum price", text: $lowText, placeholder: "No min", bound: .low)
-            typedField("Maximum price", text: $highText, placeholder: "No max", bound: .high)
+        VStack(spacing: 16) {
+            HStack(spacing: 16) {
+                typedField("Minimum price", text: $lowText, placeholder: "No min", bound: .low)
+                typedField("Maximum price", text: $highText, placeholder: "No max", bound: .high)
+            }
+            // iPad floats the number pad OVER the top of this sheet: it covers
+            // the Increments tab, and the way back to the wheel was gone for
+            // anyone who typed a price (2026-09-23 — measured not hittable,
+            // and a .keyboard toolbar does not exist for a floating pad).
+            // These two sit under the fields, where the pad does not reach.
+            HStack {
+                Button("Use the wheel") { custom = false }
+                    .font(.se(17, .semibold))
+                    .foregroundStyle(SE.royal)
+                    .accessibilityIdentifier("price-use-wheel")
+                Spacer()
+                Button("Done") { commit(); dismiss() }
+                    .font(.se(17, .bold))
+                    .foregroundStyle(SE.royal)
+                    .accessibilityIdentifier("price-custom-done")
+            }
         }
         .padding(16)
         .frame(maxHeight: .infinity, alignment: .top)
-        // On iPad the number pad covers this sheet — its own header, with the
-        // Increments tab and Done, sits behind the keyboard, so somebody who
-        // typed a price could not switch back to the wheel or commit what they
-        // typed (2026-09-23; on iPhone the sheet rides above the keyboard).
-        // A bar over the keyboard gives both back.
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Button("Increments") { custom = false }
-                    .accessibilityIdentifier("price-kb-increments")
-                Spacer()
-                Button("Done") { commit(); dismiss() }
-                    .font(.se(18, .bold))
-                    .accessibilityIdentifier("price-kb-done")
-            }
-        }
     }
 
     private func typedField(_ label: String, text: Binding<String>, placeholder: String, bound: PriceBound) -> some View {

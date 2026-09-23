@@ -240,11 +240,17 @@ final class FindACribUITests: XCTestCase {
         mode.buttons["Custom"].tap()
         XCTAssertTrue(app.textFields["price-custom-low"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.textFields["price-custom-high"].exists)
-        // ...and back to the wheel. On iPad the number pad covers the sheet's
-        // own header, so the way back is the bar over the keyboard — which is
-        // why that bar exists (2026-09-23).
-        let barBack = app.buttons["price-kb-increments"]
-        if barBack.exists, barBack.isHittable { barBack.tap() } else { mode.buttons["Increments"].tap() }
+        // The way back to the wheel sits under the fields, because iPad's
+        // floating number pad covers the Increments tab above them.
+        XCTAssertTrue(app.buttons["price-use-wheel"].exists, "there must be a way back to the wheel")
+        // Driving that round trip is iPhone-only. On an iPad simulator with the
+        // minimized (floating) pad up, EVERY control in this sheet reads as not
+        // hittable and even a coordinate tap is swallowed — the app is fine,
+        // the touch never arrives (measured 2026-09-23). The mode switch itself
+        // is covered on both platforms by openPriceSheet(), which opens the
+        // sheet in Custom and taps back before each wheel test.
+        guard app.windows.element(boundBy: 0).frame.width < 700 else { return }
+        app.buttons["price-use-wheel"].tap()
         showIncrements()
         app.buttons["price-done"].tap()
     }
@@ -623,8 +629,8 @@ final class FindACribUITests: XCTestCase {
         let wheel = app.pickerWheels.element(boundBy: 0)
         for _ in 0..<3 {
             if wheel.waitForExistence(timeout: 3) { return }
-            let bar = app.buttons["price-kb-increments"]
-            if bar.exists, bar.isHittable { bar.tap(); continue }
+            let back = app.buttons["price-use-wheel"]
+            if back.exists, back.isHittable { back.tap(); continue }
             let increments = app.segmentedControls["price-mode"].buttons["Increments"]
             if increments.exists, increments.isHittable { increments.tap() }
         }

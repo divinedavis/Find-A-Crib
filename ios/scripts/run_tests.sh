@@ -11,6 +11,15 @@ xcrun simctl bootstatus "$SIMULATOR_ID" -b >/dev/null 2>&1 || true
 # later run with the launch card gone and the Push alerts row reading
 # "allowed" — two tests fail on state, not code (2026-09-19).
 xcrun simctl uninstall "$SIMULATOR_ID" com.divinedavis.findacrib 2>/dev/null || true
+# iPad's minimized (floating) keyboard — which iPadOS turns on once a hardware
+# keyboard has been seen — floats over the app and swallows every tap in the
+# view under it: with it on, EVERY control in the price sheet read as not
+# hittable and a coordinate tap did nothing. Two price tests failed on one iPad
+# simulator and passed on another of the same model because of this one
+# preference (2026-09-23). Dock the keyboard so every run types against the
+# same one.
+xcrun simctl spawn "$SIMULATOR_ID" defaults write com.apple.keyboard.preferences \
+  AutomaticMinimizationEnabled -bool false >/dev/null 2>&1 || true
 ONLY="${1:-}"
 # The whole run goes to a file and only the last 60 lines are printed: a
 # failure earlier than that was invisible twice in one afternoon (2026-09-23),

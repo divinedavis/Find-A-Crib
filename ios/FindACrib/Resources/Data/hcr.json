@@ -1,115 +1,8 @@
 {
-"updated": 1789833904,
-"updated_iso": "2026-09-19T16:05:04+00:00",
-"count": 54,
+"updated": 1790114706,
+"updated_iso": "2026-09-22T22:05:06+00:00",
+"count": 53,
 "listings": [
-{
-"id": "a0Ycs000023NXVBEA4",
-"name": "Knickerbocker Village",
-"kind": "Mitchell-Lama Waitlist",
-"status": "Open",
-"ptype": "Rental",
-"boro": "M",
-"county": "New York (Manhattan)",
-"min_income": 35640,
-"max_income": 255840,
-"due": "9/21/2026",
-"fee": 75,
-"phone": null,
-"url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs000023NXVBEA4/detail",
-"info": "www.knickvill.com",
-"desc": "Knickerbocker Village, a Mitchell Lama Rental Housing Company supervised by New York State Homes and Community Renewal",
-"image": "https://nyshcr.my.site.com/housing/file-asset/069cs00001zWODGAA4?oid=00D8y0000008f2FEAQ",
-"senior": false,
-"accessible": false,
-"approx": false,
-"buildings": [
-{
-"street": "30 Monroe St",
-"zip": "10002",
-"bbl": null,
-"lat": 40.711001,
-"lng": -73.995088
-},
-{
-"street": "12 Monroe St",
-"zip": "10002",
-"bbl": null,
-"lat": 40.71093,
-"lng": -73.99543
-},
-{
-"street": "36 Monroe St",
-"zip": "10002",
-"bbl": null,
-"lat": 40.71093,
-"lng": -73.99543
-},
-{
-"street": "20 Monroe St",
-"zip": "10002",
-"bbl": null,
-"lat": 40.71093,
-"lng": -73.99543
-},
-{
-"street": "34 Monroe St",
-"zip": "10002",
-"bbl": null,
-"lat": 40.71093,
-"lng": -73.99543
-},
-{
-"street": "40 Monroe St",
-"zip": "10002",
-"bbl": null,
-"lat": 40.71093,
-"lng": -73.99543
-},
-{
-"street": "14 Monroe St",
-"zip": "10002",
-"bbl": null,
-"lat": 40.71093,
-"lng": -73.99543
-},
-{
-"street": "16 Monroe St",
-"zip": "10002",
-"bbl": null,
-"lat": 40.71093,
-"lng": -73.99543
-},
-{
-"street": "10 Monroe St",
-"zip": "10002",
-"bbl": null,
-"lat": 40.710852,
-"lng": -73.99635
-},
-{
-"street": "38 Monroe St",
-"zip": "10002",
-"bbl": null,
-"lat": 40.71093,
-"lng": -73.99543
-},
-{
-"street": "32 Monroe St",
-"zip": "10002",
-"bbl": null,
-"lat": 40.71093,
-"lng": -73.99543
-},
-{
-"street": "18 Monroe St",
-"zip": "10002",
-"bbl": null,
-"lat": 40.71093,
-"lng": -73.99543
-}
-]
-},
 {
 "id": "a0Ycs00001saIQFEA2",
 "name": "Vital Brooklyn BDC Phase B1",
@@ -1449,7 +1342,7 @@
 "id": "a0Ycs00001nyK1ZEAU",
 "name": "Stratford Towers",
 "kind": "Mitchell-Lama Waitlist",
-"status": "Closed",
+"status": "Open",
 "ptype": "Rental",
 "boro": "Bx",
 "county": "Bronx",

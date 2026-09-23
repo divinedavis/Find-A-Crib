@@ -10,11 +10,17 @@ struct SearchHomeView: View {
     @State private var showLocation = false
     @State private var showCity = false
     @State private var count = 0
+    /// Borough codes behind the Location field; the banner photo prefers them.
+    @State private var bannerBoroughs: Set<String> = []
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                HeroBanner().padding(.bottom, 22)
+                HeroBanner(boroughs: bannerBoroughs) { f in
+                    nav.openRerental = f.id
+                    nav.tab = .lotteries
+                }
+                .padding(.bottom, 22)
 
 
                 VStack(alignment: .leading, spacing: 18) {
@@ -167,15 +173,43 @@ struct SearchHomeView: View {
                 query = q.normalized.sanitized(for: store.city)
             }
             recount()
+            refreshBannerBoroughs()
         }
         .onChange(of: query) { _, q in
             lastQueryData = (try? JSONEncoder().encode(q)) ?? Data()
             recount()
+            refreshBannerBoroughs()
         }
-        .onChange(of: store.loaded) { _, _ in recount() }
+        .onChange(of: store.loaded) { _, _ in recount(); refreshBannerBoroughs() }
     }
 
     private func recount() { count = store.loaded ? SearchEngine.count(query, store: store) : 0 }
+
+    /// The boroughs their Location field covers, for the banner photo. A
+    /// neighborhood, ZIP or drawn map area doesn't name its borough, so those
+    /// are resolved against the buildings — once per change, never per redraw.
+    private func refreshBannerBoroughs() {
+        var codes = Set<String>()
+        var nbs = Set<String>(), zips = Set<String>(), boxes: [MapBox] = []
+        for l in query.locations {
+            switch l {
+            case .borough(let c): codes.insert(c)
+            case .neighborhood(let n): nbs.insert(n)
+            case .zip(let z): zips.insert(z)
+            case .mapArea(let box): boxes.append(box)
+            }
+        }
+        if !nbs.isEmpty || !zips.isEmpty || !boxes.isEmpty {
+            for b in store.buildings where !codes.contains(b.b) {
+                if (b.nb.map(nbs.contains) ?? false) || (b.z.map(zips.contains) ?? false)
+                    || boxes.contains(where: { $0.contains(b) }) {
+                    codes.insert(b.b)
+                    if codes.count == Borough.all.count { break }
+                }
+            }
+        }
+        bannerBoroughs = codes
+    }
 
     private func runSearch() {
         activity.recordSearch(query)
@@ -507,9 +541,24 @@ enum MapRegion {
 /// and white in the middle with the city line under it, and floating badges
 /// for what the app does where Facebook has its faces and emoji. No photos:
 /// the street-level mosaic that used to be here, and the pale card with
-/// "This is where it starts", are gone. Nothing here taps.
+/// "This is where it starts", are gone.
+///
+/// In New York it leads with a real re-rental photo instead (owner,
+/// 2026-09-23): one of today's HPD marketing-agent apartments, preferring the
+/// boroughs set in Location, badged with the borough it is in, and tapping it
+/// opens the Lotteries tab's Re-rentals pane at that apartment. Every other
+/// city, and New York on a day when no re-rental has a photo, keeps the
+/// wordmark banner below.
 struct HeroBanner: View {
     @Environment(DataStore.self) private var store
+    /// Borough codes from their Location field; empty = anywhere.
+    var boroughs: Set<String> = []
+    var onTapListing: ((FeaturedListing) -> Void)? = nil
+
+    private var listing: FeaturedListing? {
+        guard store.city.isNYC else { return nil }
+        return RerentalFeed.banner(store.featured.listings, boroughs: boroughs, seed: RerentalFeed.launchSeed)
+    }
 
     /// "Every rent-stabilized building in NYC" — the register's own word for
     /// what a building IS, without the qualifier the line has no room for
@@ -522,6 +571,76 @@ struct HeroBanner: View {
     }
 
     var body: some View {
+        if let f = listing { photo(f) } else { wordmark }
+    }
+
+    /// "35R Bay Street, Staten Island, NY 10301" -> "35R Bay Street": the
+    /// badge already names the borough, so the rest is repetition.
+    static func street(_ address: String) -> String {
+        let head = address.split(separator: ",").first.map(String.init) ?? address
+        var parts = head.split(separator: " ")
+        // …and a tail the agents' own titles carry: a ZIP, "NY", or the
+        // posting code MGNY prints ("289 Fenimore Street Unit 2B 0926").
+        while parts.count > 2, let last = parts.last,
+              last == "NY" || (last.allSatisfy(\.isNumber) && (4...5).contains(last.count)) {
+            parts.removeLast()
+        }
+        return parts.joined(separator: " ")
+    }
+
+    /// "$2,000–$2,092/mo", or "Household income · $40,000–$70,000/yr" — the
+    /// card's two lines on one, since the banner has room for one.
+    static func money(_ f: FeaturedListing) -> String {
+        let m = f.moneyLine
+        return [m.label, m.text].compactMap { $0 }.joined(separator: " · ")
+    }
+
+    /// A re-rental photo, badged with its borough, tapping through to it.
+    private func photo(_ f: FeaturedListing) -> some View {
+        Color.clear
+            .overlay {
+                ImagePlaceholder()
+                AsyncImage(url: f.imageURL) { img in
+                    img.resizable().scaledToFill()
+                } placeholder: { Color.clear }
+            }
+            .clipped()
+            .overlay(alignment: .bottomLeading) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(Self.street(f.address)).font(.se(20, .bold)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
+                    Text(Self.money(f)).font(.se(15, .semibold)).foregroundStyle(.white.opacity(0.92)).lineLimit(1)
+                }
+                .padding(.horizontal, 16).padding(.bottom, 14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    LinearGradient(colors: [.clear, .black.opacity(0.62)], startPoint: .top, endPoint: .bottom)
+                        .frame(height: 96), alignment: .bottom)
+            }
+            // The borough, where the tile in the feed says "Rerental": on the
+            // banner the photo is already obviously a re-rental, and WHERE it
+            // is is the thing worth a badge.
+            .overlay(alignment: .topLeading) {
+                SEBadge(text: Borough.name(f.boroughCode ?? ""), icon: "mappin", fill: SE.navy, ink: .white)
+                    .padding(12)
+                    .accessibilityIdentifier("hero-borough")
+            }
+            .overlay(alignment: .topTrailing) {
+                SEBadge(text: "Income-restricted", fill: .white, ink: SE.ink).padding(12)
+            }
+            .frame(height: 200)
+            .background(SE.navy.ignoresSafeArea(edges: .top))
+            .contentShape(Rectangle())
+            .onTapGesture {
+                Analytics.shared.track("hero_rerental_tap", ["borough": f.boroughCode ?? "", "agent": f.agent])
+                onTapListing?(f)
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityLabel("Re-rental in \(Borough.name(f.boroughCode ?? "")): \(f.address), \(Self.money(f)). Opens it in Re-rentals.")
+            .accessibilityIdentifier("hero-rerental")
+    }
+
+    private var wordmark: some View {
         GeometryReader { g in
             let w = g.size.width, h = g.size.height
             ZStack {

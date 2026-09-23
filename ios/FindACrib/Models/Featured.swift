@@ -61,9 +61,10 @@ struct FeaturedListing: Codable, Hashable, Identifiable, Sendable {
         image = try c.decodeIfPresent(String.self, forKey: .image)
     }
 
-    init(agent: String, address: String, borough: String?, href: String, moneyKind: String? = nil, moneyLow: Int? = nil, moneyHigh: Int? = nil) {
+    init(agent: String, address: String, borough: String?, href: String, moneyKind: String? = nil, moneyLow: Int? = nil, moneyHigh: Int? = nil, image: String? = nil) {
         self.agent = agent; self.address = address; self.borough = borough; self.href = href
         self.moneyKind = moneyKind; self.moneyLow = moneyLow; self.moneyHigh = moneyHigh
+        self.image = image
     }
 
     /// The borough code the search uses ("Bk"), from the name the agent's
@@ -187,6 +188,20 @@ enum RerentalFeed {
     /// One seed per launch: the feed is stable while you scroll and page, and
     /// different the next time the app opens.
     static let launchSeed: UInt64 = .random(in: 1...UInt64.max)
+
+    /// The photo the Search banner leads with (owner, 2026-09-23): a real
+    /// re-rental, preferring the boroughs they have set as their Location,
+    /// falling back to any borough when nothing there has a photo. Only
+    /// listings with a photo AND a borough qualify — the banner's badge names
+    /// the borough, so a listing without one cannot fill it.
+    static func banner(_ featured: [FeaturedListing], boroughs: Set<String>, seed: UInt64) -> FeaturedListing? {
+        let withPhoto = featured.filter { $0.image != nil && $0.boroughCode != nil }
+        guard !withPhoto.isEmpty else { return nil }
+        let here = withPhoto.filter { $0.boroughCode.map(boroughs.contains) ?? false }
+        let pool = here.isEmpty ? withPhoto : here
+        var rng = SplitMix(seed: seed)
+        return pool[Int(rng.next() % UInt64(pool.count))]
+    }
 
     struct SplitMix {
         var state: UInt64

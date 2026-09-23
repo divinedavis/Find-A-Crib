@@ -1,25 +1,8 @@
 {
- "generated": "2026-09-19",
+ "generated": "2026-09-22",
  "source": "HPD-approved marketing agents' own re-rental pages",
- "count": 51,
+ "count": 43,
  "listings": [
-  {
-   "agent": "Reside New York LLC",
-   "agent_page": "https://residenewyork.com/property-status/open-market/",
-   "title": "Open Market",
-   "address": "137-20 45th Street Apartment – Unit 2N",
-   "borough": "Queens",
-   "zip": null,
-   "money_kind": "rent",
-   "money_low": 2855,
-   "money_high": 2855,
-   "income_1p_max": null,
-   "units": 1,
-   "beds": null,
-   "href": "https://residenewyork.com/property/137-20-45th-street-apartment-unit-2n/",
-   "href_kind": "listing",
-   "image": "/featured/img/80816bb3422f18de.jpg"
-  },
   {
    "agent": "Affordable for NY",
    "agent_page": "https://afny.org/re-rentals",
@@ -69,7 +52,7 @@
    "beds": null,
    "href": "https://sites.google.com/affordablelivingnyc.com/hpd/home#h.5sjk0fxxt5qd",
    "href_kind": "listing",
-   "image": "/featured/img/541c6bc6437ca102.jpg"
+   "image": "/featured/img/721cc49287fe382c.jpg"
   },
   {
    "agent": "MGNY Consulting Corp.",
@@ -157,23 +140,6 @@
    "image": null
   },
   {
-   "agent": "Reside New York LLC",
-   "agent_page": "https://residenewyork.com/property-status/open-market/",
-   "title": "Open Market",
-   "address": "138 Bruckner Avenue Apartment – Unit 303",
-   "borough": "Staten Island",
-   "zip": null,
-   "money_kind": "rent",
-   "money_low": 3088,
-   "money_high": 3088,
-   "income_1p_max": null,
-   "units": 1,
-   "beds": null,
-   "href": "https://residenewyork.com/property/138-bruckner-avenue-apartment-unit-303/",
-   "href_kind": "listing",
-   "image": "/featured/img/89346c201fc3aa67.jpg"
-  },
-  {
    "agent": "Affordable for NY",
    "agent_page": "https://afny.org/re-rentals",
    "title": "",
@@ -222,7 +188,7 @@
    "beds": "1",
    "href": "https://sites.google.com/affordablelivingnyc.com/hpd/home#h.i7r3ha5dlhyp",
    "href_kind": "listing",
-   "image": "/featured/img/2ff65970295678ec.jpg"
+   "image": "/featured/img/cedb7cbe83d99ac6.jpg"
   },
   {
    "agent": "MGNY Consulting Corp.",
@@ -276,23 +242,6 @@
    "image": null
   },
   {
-   "agent": "Reside New York LLC",
-   "agent_page": "https://residenewyork.com/property-status/open-market/",
-   "title": "Open Market",
-   "address": "1499 Bedford Ave Apartment – Unit 8C",
-   "borough": "Brooklyn",
-   "zip": null,
-   "money_kind": "rent",
-   "money_low": 3219,
-   "money_high": 3219,
-   "income_1p_max": null,
-   "units": 1,
-   "beds": null,
-   "href": "https://residenewyork.com/property/1499-bedford-ave-apartment-unit-8c/",
-   "href_kind": "listing",
-   "image": "/featured/img/4008912d272b2054.jpg"
-  },
-  {
    "agent": "iAfford NY",
    "agent_page": "https://iaffordny.com/re-rentals",
    "title": "",
@@ -324,7 +273,7 @@
    "beds": null,
    "href": "https://sites.google.com/affordablelivingnyc.com/hpd/home#h.6cpcbei83qdb",
    "href_kind": "listing",
-   "image": "/featured/img/ac50b325f7a8448b.jpg"
+   "image": "/featured/img/57613a38a03504b1.jpg"
   },
   {
    "agent": "MGNY Consulting Corp.",
@@ -378,23 +327,6 @@
    "image": null
   },
   {
-   "agent": "Reside New York LLC",
-   "agent_page": "https://residenewyork.com/property-status/open-market/",
-   "title": "Upcoming Project",
-   "address": "9318 Avenue D Apartments",
-   "borough": "Brooklyn",
-   "zip": null,
-   "money_kind": "rent",
-   "money_low": 2225,
-   "money_high": 2579,
-   "income_1p_max": null,
-   "units": 3,
-   "beds": null,
-   "href": "https://residenewyork.com/property/9318-avenue-d-apartments/",
-   "href_kind": "listing",
-   "image": "/featured/img/06a5a728b60220c0.jpg"
-  },
-  {
    "agent": "iAfford NY",
    "agent_page": "https://iaffordny.com/re-rentals",
    "title": "",
@@ -426,7 +358,7 @@
    "beds": null,
    "href": "https://sites.google.com/affordablelivingnyc.com/hpd/home#h.z2xagnbypkt3",
    "href_kind": "listing",
-   "image": "/featured/img/c78146d29872057d.jpg"
+   "image": "/featured/img/2e5a1851f1331957.jpg"
   },
   {
    "agent": "MGNY Consulting Corp.",
@@ -480,23 +412,6 @@
    "image": null
   },
   {
-   "agent": "Reside New York LLC",
-   "agent_page": "https://residenewyork.com/property-status/open-market/",
-   "title": "Closed Project",
-   "address": "66 Linden Street Apartment – Unit 2A",
-   "borough": "Brooklyn",
-   "zip": null,
-   "money_kind": "rent",
-   "money_low": 2284,
-   "money_high": 2284,
-   "income_1p_max": null,
-   "units": 1,
-   "beds": null,
-   "href": "https://residenewyork.com/property/66-linden-street-apartment-unit-2a/",
-   "href_kind": "listing",
-   "image": "/featured/img/cb7ca963fad3e7d6.jpg"
-  },
-  {
    "agent": "iAfford NY",
    "agent_page": "https://iaffordny.com/re-rentals",
    "title": "",
@@ -528,7 +443,7 @@
    "beds": null,
    "href": "https://sites.google.com/affordablelivingnyc.com/hpd/home#h.r9z1ddmbdase",
    "href_kind": "listing",
-   "image": "/featured/img/32bc61662b8a56cc.jpg"
+   "image": "/featured/img/c738df5f58167724.jpg"
   },
   {
    "agent": "MGNY Consulting Corp.",
@@ -582,23 +497,6 @@
    "image": null
   },
   {
-   "agent": "Reside New York LLC",
-   "agent_page": "https://residenewyork.com/property-status/open-market/",
-   "title": "Open Market",
-   "address": "1315 Findlay Ave Apartments – Unit 4D",
-   "borough": "Bronx",
-   "zip": null,
-   "money_kind": "rent",
-   "money_low": 3171,
-   "money_high": 3171,
-   "income_1p_max": null,
-   "units": 1,
-   "beds": null,
-   "href": "https://residenewyork.com/property/1315-findlay-ave-apartments-unit-4d/",
-   "href_kind": "listing",
-   "image": null
-  },
-  {
    "agent": "iAfford NY",
    "agent_page": "https://iaffordny.com/re-rentals",
    "title": "",
@@ -630,7 +528,7 @@
    "beds": null,
    "href": "https://sites.google.com/affordablelivingnyc.com/hpd/home#h.4oli58eayz7g",
    "href_kind": "listing",
-   "image": "/featured/img/ceabb8858360828c.jpg"
+   "image": "/featured/img/2e6b61491c3c9cc2.jpg"
   },
   {
    "agent": "MGNY Consulting Corp.",
@@ -684,23 +582,6 @@
    "image": null
   },
   {
-   "agent": "Reside New York LLC",
-   "agent_page": "https://residenewyork.com/property-status/open-market/",
-   "title": "Open Market",
-   "address": "130 Hope St Apartment – Unit 406",
-   "borough": "Brooklyn",
-   "zip": null,
-   "money_kind": "rent",
-   "money_low": 4069,
-   "money_high": 4069,
-   "income_1p_max": null,
-   "units": 1,
-   "beds": null,
-   "href": "https://residenewyork.com/property/130-hope-st-apartment-unit-406/",
-   "href_kind": "listing",
-   "image": null
-  },
-  {
    "agent": "Tax Solute Consulting",
    "agent_page": "https://sites.google.com/affordablelivingnyc.com/hpd/home",
    "title": "Unit on Hold",
@@ -715,7 +596,7 @@
    "beds": null,
    "href": "https://sites.google.com/affordablelivingnyc.com/hpd/home#h.atn28jibwh3i",
    "href_kind": "listing",
-   "image": "/featured/img/d4e147a27094c2e9.jpg"
+   "image": "/featured/img/c2355266577b12a8.jpg"
   },
   {
    "agent": "MGNY Consulting Corp.",
@@ -749,23 +630,6 @@
    "beds": null,
    "href": "https://www.taxaceny.com/projects-8#:~:text=1952%20Anthony",
    "href_kind": "agent_page",
-   "image": null
-  },
-  {
-   "agent": "Reside New York LLC",
-   "agent_page": "https://residenewyork.com/property-status/open-market/",
-   "title": "Open Market",
-   "address": "2816 8th Ave Apartment – Unit 4H",
-   "borough": "Manhattan",
-   "zip": null,
-   "money_kind": "rent",
-   "money_low": 1221,
-   "money_high": 1221,
-   "income_1p_max": null,
-   "units": 1,
-   "beds": null,
-   "href": "https://residenewyork.com/property/2816-8th-ave-apartment-unit-4h/",
-   "href_kind": "listing",
    "image": null
   },
   {

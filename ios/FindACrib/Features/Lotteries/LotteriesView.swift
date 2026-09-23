@@ -9,6 +9,7 @@ struct LotteriesView: View {
     @Environment(\.openURL) private var openURL
     @Environment(DataStore.self) private var store
     @Environment(AuthService.self) private var auth
+    @Environment(AppNav.self) private var nav
     @Environment(\.horizontalSizeClass) private var sizeClass
     /// iPad (owner, 2026-09-22): two columns of lottery and re-rental cards.
     private var columns: [GridItem] {
@@ -34,7 +35,10 @@ struct LotteriesView: View {
     var body: some View {
         Group {
             // Never show the sign-up until we KNOW they are not subscribed.
-            if feed.subscribed { list } else if feed.checked { signup } else { checking }
+            // A tap on the Search banner's photo opens the Re-rentals pane
+            // whether or not they subscribe to alerts: the apartment is public
+            // and the sign-up screen would be a dead end (owner, 2026-09-23).
+            if feed.subscribed || nav.openRerental != nil { list } else if feed.checked { signup } else { checking }
         }
         .sheet(isPresented: $showAlerts, onDismiss: { Task { await feed.refresh() } }) { AlertsSheet() }
         // Signed out: sign in first, then straight on to the alerts sheet —
@@ -123,6 +127,7 @@ struct LotteriesView: View {
                 .padding(.bottom, 10)
             }
             .padding(.horizontal, 16).padding(.top, 8).background(Color.white)
+            ScrollViewReader { scroll in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 12) {
                     if pane == .rerentals { rerentalList } else {
@@ -156,19 +161,44 @@ struct LotteriesView: View {
             }
             .refreshable { await feed.refresh() }
             .background(SE.canvas)
+            // Arrived from the Search banner's photo: open the Re-rentals
+            // pane at that apartment.
+            .onAppear { focus(scroll) }
+            .onChange(of: nav.openRerental) { _, _ in focus(scroll) }
+            }
         }
         .background(SE.canvas)
+        .onChange(of: pane) { _, p in if p == .lotteries { nav.openRerental = nil } }
         .task { Analytics.shared.track("lotteries_view", ["open": feed.mine.count]) }
+    }
+
+    private func focus(_ scroll: ScrollViewProxy) {
+        guard let want = nav.openRerental else { return }
+        pane = .rerentals
+        // The grid is lazy: give it a runloop to build the row before scrolling.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            withAnimation { scroll.scrollTo(want, anchor: .top) }
+        }
     }
 
     /// Re-rentals in their boroughs, from the same featured.json the search
     /// feed's tiles use (refreshed with the rest of the app's data).
     private var rerentals: [FeaturedListing] {
         let codes = Set(feed.boroughs)
-        return store.featured.listings.filter {
-            ($0.boroughCode.map(codes.contains) ?? false)
+        // No alert boroughs (arrived here from the banner, not subscribed):
+        // every borough, rather than an empty pane.
+        var out = store.featured.listings.filter {
+            (codes.isEmpty || ($0.boroughCode.map(codes.contains) ?? false))
                 && LotteryFeed.bedsMatch($0.beds.map { [$0] }, want: beds)
         }
+        // Arrived from the Search banner: that apartment leads the pane even
+        // when it is outside their alert boroughs or their Beds filter —
+        // tapping a photo and landing on a list without it is a dead end.
+        if let want = nav.openRerental, !out.contains(where: { $0.id == want }),
+           let f = store.featured.listings.first(where: { $0.id == want }) {
+            out.insert(f, at: 0)
+        }
+        return out
     }
 
     /// "a 1-bed", "a studio or 1-bed", "3+ beds" — for the empty message.
@@ -203,10 +233,10 @@ struct LotteriesView: View {
 
     private var boroughNames: String {
         let n = feed.boroughs.map { Borough.name($0) }
-        if n.count == Borough.all.count { return "all five boroughs" }
+        if n.isEmpty || n.count == Borough.all.count { return "all five boroughs" }
         return ListFormatter.localizedString(byJoining: n)
     }
-    private var boroughLine: String { feed.boroughs.count == Borough.all.count ? "All five boroughs" : feed.boroughs.map { Borough.name($0) }.joined(separator: " · ") }
+    private var boroughLine: String { feed.boroughs.isEmpty || feed.boroughs.count == Borough.all.count ? "All five boroughs" : feed.boroughs.map { Borough.name($0) }.joined(separator: " · ") }
     private var countLine: String {
         if feed.loading && feed.all.isEmpty { return "Loading…" }
         return beds.isEmpty ? "\(feed.mine.count) open" : "\(lotteries.count) of \(feed.mine.count) open"

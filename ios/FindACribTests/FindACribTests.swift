@@ -754,6 +754,38 @@ final class RerentalFeedTests: XCTestCase {
         XCTAssertEqual(pool.map(\.agent), ["Agent 0", "Agent 1", "Agent 2"], "Brooklyn and both Bronx spellings; Manhattan and the unnamed one stay out")
     }
 
+    /// The Search banner's photo (owner, 2026-09-23): only a listing with BOTH
+    /// a photo and a borough can fill it, it prefers the boroughs set in
+    /// Location, and it falls back to any borough rather than showing nothing.
+    func testBannerPrefersTheLocationBoroughAndNeedsAPhoto() {
+        let img = "/featured/img/a.jpg"
+        let listings = [
+            FeaturedListing(agent: "No photo", address: "1 Main St", borough: "Brooklyn", href: "https://x.org/1"),
+            FeaturedListing(agent: "No borough", address: "2 Main St", borough: nil, href: "https://x.org/2", image: img),
+            FeaturedListing(agent: "Bronx", address: "3 Main St", borough: "Bronx", href: "https://x.org/3", image: img),
+            FeaturedListing(agent: "Brooklyn", address: "4 Main St", borough: "Brooklyn", href: "https://x.org/4", image: img),
+        ]
+        for seed: UInt64 in [1, 7, 99, 12345, .max] {
+            XCTAssertEqual(RerentalFeed.banner(listings, boroughs: ["Bk"], seed: seed)?.agent, "Brooklyn",
+                           "Brooklyn is set, so the photo is the Brooklyn one (seed \(seed))")
+            XCTAssertEqual(RerentalFeed.banner(listings, boroughs: ["M"], seed: seed)?.agent == "No photo", false)
+            let any = RerentalFeed.banner(listings, boroughs: ["M"], seed: seed)
+            XCTAssertTrue(["Bronx", "Brooklyn"].contains(any?.agent ?? ""),
+                          "nothing in Manhattan has a photo, so any borough will do — got \(any?.agent ?? "nil")")
+        }
+        XCTAssertNil(RerentalFeed.banner([], boroughs: [], seed: 1))
+        XCTAssertNil(RerentalFeed.banner([listings[0], listings[1]], boroughs: [], seed: 1), "no photo AND a borough, no banner")
+    }
+
+    /// The banner prints the street, not the agent's whole title: the badge
+    /// already says the borough.
+    func testBannerStreetDropsTheBoroughZipAndPostingCode() {
+        XCTAssertEqual(HeroBanner.street("35R Bay Street, Staten Island, NY 10301"), "35R Bay Street")
+        XCTAssertEqual(HeroBanner.street("289 Fenimore Street Unit 2B 0926"), "289 Fenimore Street Unit 2B")
+        XCTAssertEqual(HeroBanner.street("2067 Anthony Avenue Bronx NY 10457"), "2067 Anthony Avenue Bronx")
+        XCTAssertEqual(HeroBanner.street("1 Main St"), "1 Main St", "a short address is left alone")
+    }
+
     func testFeaturedSeedDecodesAndTagsOutboundLinks() throws {
         guard let url = Bundle(for: DataStore.self).url(forResource: "featured", withExtension: "json", subdirectory: "Data")
                 ?? Bundle(for: DataStore.self).url(forResource: "featured", withExtension: "json") else {

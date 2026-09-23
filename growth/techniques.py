@@ -3092,6 +3092,191 @@ def t_canonical_integrity(ctx):
     return {"ok": True, "pages": read, "detail": detail + " — no canonical defects found"}
 
 
+# --- pages the nightly builds have stopped writing -------------------------
+#
+# WHY THIS EXISTS, and it is the generalisation of a bug found on 2026-09-22.
+#
+# scripts/refresh_seo.sh deploys with `rsync -a` and NO --delete, deliberately
+# and documented in its STEP=deploy comment, because the docroot also holds the
+# app. growth_run.sh's own rsync does the same. The consequence nobody had drawn
+# until 09-22: a page a build STOPS writing does not become unpublished, it
+# becomes FROZEN — still served, dropped out of every sitemap the build owns,
+# and stuck at whatever text it carried the last night it qualified.
+#
+# That is not a hypothetical. /available/ pages are written where the current
+# listings feed matches AVAIL_MIN=3 buildings in a neighborhood; when the feed
+# changed sources about 52 neighborhoods fell under the line, and 52 live pages
+# — 56% of the section — sat frozen for an unknown number of nights, still
+# telling tenants a unit was "recently advertised" from a feed last refreshed
+# 2026-05-09, three days after a run had fixed exactly that wording on the 41
+# pages it could still reach. Nothing reported the gap, because a build cannot
+# audit a page it has stopped writing, and every audit in this file that walks
+# the docroot was reading per-page CONTENT, never per-page AGE.
+#
+# Every tier whose build set is data-dependent can freeze the same way:
+# build_seo.py gates the city hub tier on MIN_CITY_HUB=5, /landlord/ submits 300
+# of 1,416, index triage moves ~46,000 building pages in and out of the sitemap,
+# and t_fresh_section8 and t_city_guides publish on their own data conditions.
+# Nobody has ever compared "pages live in this tier" against "pages this build
+# writes" for any tier but /available/, and that comparison was done by hand.
+#
+# THE INSTRUMENT IS THE MTIME, and it is not a proxy — it is the record. rsync -a
+# preserves the source mtime, so a page's mtime in the docroot is the moment a
+# build last WROTE it, not the moment it was last copied. build_seo.py's write()
+# rewrites every page in its build set every night whether the bytes changed or
+# not (changed_urls comes from the lastmod content hash, not from skipping the
+# write), so a fresh page carries tonight's date and a frozen one carries the
+# last night it was in the set. t_sitemap_daily already relies on exactly this
+# property to date the pages it rescues into the daily shard; this audit reads
+# the same clock across the whole docroot.
+#
+# WHAT IT FAILS ON, and the rule is narrow on purpose. `ok` is False only for a
+# PARTIALLY frozen tier — some of its pages written tonight, others months old.
+# That combination can only mean a live build is silently abandoning URLs, it is
+# the /available/ bug class exactly, and it is fixable from this loop by making
+# the page set the published set. A WHOLLY frozen tier is named just as loudly
+# in the detail line but does not fail: every one on this site today is either
+# retired (/brief/, 2026-08-16 — and this loop cannot unpublish anything, only
+# stop writing it) or has no deploy path from here at all (the app shells, which
+# scripts/deploy_app.sh scp's and only the owner runs). Failing on those would
+# make this audit permanently red, and a permanently red audit carries no
+# information. The distinction is also the actionable one: partial means "fix the
+# build set", whole means "ask the owner".
+FROZEN_GRACE_DAYS = 2      # a build that skipped one night is not a freeze
+FROZEN_SHOW = 8            # tiers named per class in the detail line
+# This site publishes nothing deeper than three path segments: /building/<boro>/
+# <slug>/, /sf/neighborhood/<slug>/, /brief/<date>/, /zip/<zip>/. The docroot
+# also holds the app, the scraper and a venv, and anything .html in there is not
+# a page — the depth rule is what keeps their files out of a tier count instead
+# of an allowlist that would go stale. Both guards report their counts so a real
+# layout change shows up as a number rather than as silence.
+FROZEN_MAX_DEPTH = 3
+# Below this, a bare checkout rather than a deployed docroot. Set FIFTY TIMES
+# higher than page_uniqueness's and canonical_integrity's floor of 20 on purpose:
+# those sample declared sections, while this one groups whatever it walks into
+# tiers of its own devising, and the daily review's container measures 18 pages
+# at this depth — four more html files in the repo root and a checkout would clear
+# a floor of 20 and start reporting its own directory layout as abandoned tiers,
+# with `ok: False` on any tier whose files happened to have mixed mtimes. The real
+# docroot holds ~49,400, so anything between there and a few hundred is safe; a
+# truncated docroot reads NOT MEASURED here and is caught by
+# derived_building_facts and hub_direct_answers, which fail outright on one.
+FROZEN_FLOOR = 1_000
+
+
+def _frozen_tier(url):
+    """The tier a published URL belongs to, derived from the URL and nothing else.
+
+    Deliberately NOT the ledger's prefix declarations, which is what
+    t_page_uniqueness and t_crawl_paths group by. The failure this audit looks
+    for is a page nobody is tracking, so grouping by what is declared would hide
+    exactly the tiers most likely to be frozen: /landlord/ (1,416 pages) and
+    /council-district/ (51) are in no technique's prefixes and appear in no other
+    audit's readings.
+
+    Two segments for the SF/LA/DC hubs, because /sf/ is the app shell and
+    /sf/neighborhood/… is a generated tier, and a freeze in one says nothing
+    about the other.
+    """
+    parts = [p for p in url.split("/") if p]
+    if not parts:
+        return "/"
+    if parts[0] in CITY_HUB_DIRS and len(parts) > 1:
+        return "/".join(parts[:2]) + "/"
+    return parts[0] + "/"
+
+
+def t_frozen_pages(ctx):
+    """Report every live page the nightly builds no longer write, by tier and age.
+
+    Reads mtimes only — it opens no page — so it is the cheapest member of
+    DOCROOT_VERIFIERS despite walking the whole corpus.
+
+    It reads the LIVE DOCROOT, and unlike its siblings the one-day lag helps
+    rather than hurts. In the pre-watchdog pass every tier's freshest pages carry
+    yesterday's date and the comparison still holds, because the finding is the
+    SPREAD within a tier, not the absolute date. In the post-watchdog re-read the
+    corpus has just been rebuilt, so the split is as sharp as it can be: written
+    tonight, or not written tonight. Either way a page's age is measured against
+    the newest page in the docroot, never against today's date, so a night the
+    whole pipeline failed reports no freezes rather than 49,000 of them.
+    """
+    pages = _dup_docroot_pages(ctx.docroot)
+    deep = notindex = 0
+    seen = []
+    for url, fp in pages:
+        if not fp.endswith("index.html"):
+            notindex += 1
+            continue
+        if len([p for p in url.split("/") if p]) > FROZEN_MAX_DEPTH:
+            deep += 1
+            continue
+        try:
+            mtime = os.stat(fp).st_mtime
+        except OSError:
+            notindex += 1
+            continue
+        seen.append((url, datetime.date.fromtimestamp(mtime)))
+
+    if len(seen) < FROZEN_FLOOR:
+        return {"ok": True, "pages": len(seen),
+                "detail": (f"page ages NOT MEASURED: only {len(seen)} page"
+                           f"{'' if len(seen) == 1 else 's'} were readable, below the "
+                           f"{FROZEN_FLOOR}-page floor — this is a bare checkout rather than a "
+                           f"deployed docroot")}
+
+    newest = max(d for _u, d in seen)
+    cutoff = newest - datetime.timedelta(days=FROZEN_GRACE_DAYS)
+    tiers = {}
+    for url, day in seen:
+        t = tiers.setdefault(_frozen_tier(url), {"n": 0, "stale": [], "newest": day})
+        t["n"] += 1
+        t["newest"] = max(t["newest"], day)
+        if day < cutoff:
+            t["stale"].append(day)
+
+    partial, whole = [], []
+    for name, t in tiers.items():
+        if not t["stale"]:
+            continue
+        oldest = min(t["stale"])
+        age = (newest - oldest).days
+        row = (len(t["stale"]), name,
+               f"{name} {len(t['stale'])} of {t['n']:,} "
+               f"(last written {t['newest'].isoformat()}, oldest {oldest.isoformat()}, {age}d)")
+        (whole if len(t["stale"]) == t["n"] else partial).append(row)
+    partial.sort(key=lambda r: (-r[0], r[1]))
+    whole.sort(key=lambda r: (-r[0], r[1]))
+
+    detail = (f"page ages across {len(seen):,} published pages in {len(tiers)} tier"
+              f"{'' if len(tiers) == 1 else 's'} (newest written {newest.isoformat()}; "
+              f"frozen = older than {cutoff.isoformat()})")
+    if partial:
+        detail += (" — TIERS BEING SILENTLY ABANDONED, some pages rebuilt tonight and some "
+                   "months old: " + "; ".join(r[2] for r in partial[:FROZEN_SHOW]))
+        if len(partial) > FROZEN_SHOW:
+            detail += f", +{len(partial) - FROZEN_SHOW} more"
+    if whole:
+        detail += (" — wholly frozen, nothing rebuilds these at all (retired tiers and the "
+                   "app shells this loop cannot deploy): "
+                   + "; ".join(r[2] for r in whole[:FROZEN_SHOW]))
+        if len(whole) > FROZEN_SHOW:
+            detail += f", +{len(whole) - FROZEN_SHOW} more"
+    if not partial and not whole:
+        detail += " — every published page was written within the grace window"
+    skipped = []
+    if deep:
+        skipped.append(f"{deep:,} deeper than {FROZEN_MAX_DEPTH} segments")
+    if notindex:
+        skipped.append(f"{notindex:,} not a directory index or unreadable")
+    if skipped:
+        detail += " — skipped: " + ", ".join(skipped)
+
+    frozen_n = sum(r[0] for r in partial + whole)
+    return {"ok": not partial, "pages": len(seen), "frozen": frozen_n,
+            "abandoned_tiers": len(partial), "detail": detail}
+
+
 REGISTRY = {
     "city_guides": t_city_guides,
     "city_seo_expansion": t_city_seo_expansion,
@@ -3104,6 +3289,7 @@ REGISTRY = {
     "crawl_paths": t_crawl_paths,
     "page_uniqueness": t_page_uniqueness,
     "canonical_integrity": t_canonical_integrity,
+    "frozen_pages": t_frozen_pages,
     "indexnow": t_indexnow,
 }
 
@@ -3143,10 +3329,16 @@ REGISTRY = {
 # when the driver rsyncs afterwards. So this audit reads yesterday's sitemaps
 # beside yesterday's pages wherever it sits in ORDER, which is at least
 # consistent — both halves of every reading are the same age.
+#
+# frozen_pages joins the same audit block, last, because it is the audit of the
+# audits: it reports which pages the other techniques' own readings can no longer
+# be about. It has to run after every publisher for the ordinary reason, and its
+# position cannot change its reading either — it measures the SPREAD of mtimes
+# within a tier against the newest page in the docroot, never against the clock.
 ORDER =["fresh_section8", "daily_brief", "city_guides", "city_seo_expansion",
          "hub_direct_answers", "derived_building_facts", "llms_txt",
          "sitemap_daily", "crawl_paths", "page_uniqueness",
-         "canonical_integrity", "indexnow"]
+         "canonical_integrity", "frozen_pages", "indexnow"]
 
 # Techniques whose result is a PURE FUNCTION OF THE LIVE DOCROOT, so re-running
 # one is free of side effects and the only thing that can change its answer is
@@ -3232,5 +3424,11 @@ ORDER =["fresh_section8", "daily_brief", "city_guides", "city_seo_expansion",
 # measurements are already taken, so the worst case is a slower cron, not a
 # lost reading — _reread_docroot_verifiers catches each audit separately and
 # keeps the build's own record if one crashes.
+#
+# t_frozen_pages IS eligible and is in from its first night, for the same reason
+# canonical_integrity was: it opens nothing, writes nothing and calls nothing but
+# os.stat, and the reading it produces is at its sharpest on exactly the mornings
+# the corpus has just been rebuilt — after the watchdog, "written tonight" and
+# "not written tonight" are two clean dates instead of one fuzzy one.
 DOCROOT_VERIFIERS = ("derived_building_facts", "page_uniqueness",
-                     "canonical_integrity", "crawl_paths")
+                     "canonical_integrity", "crawl_paths", "frozen_pages")

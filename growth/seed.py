@@ -171,7 +171,26 @@ SEEDS = [
                "weigh the site-level explanation — crawl demand and authority — at least as "
                "heavily as the per-page duplication one: weekly crawls have run 24, 16, 11, "
                "16, 9, 2, 2, 3 since 2026-07-27, and no active technique earns a single "
-               "external citation."),
+               "external citation.\n"
+               "[2026-09-23] THIS AUDIT'S OWN READING IS NOW A VERIFIED INSTRUMENT, which "
+               "matters for how much weight the 10-02 revisit gives it. 2026-09-22 shipped a "
+               "facts table and conditional footnotes to the /available/ tier and "
+               "pre-registered a FALL in that section's duplicate share, explicitly refusing "
+               "to predict the figure because a 93-page docroot is a different corpus from the "
+               "40-page scratch build it was measured in. Today it reads 42% of 418 words "
+               "against 50% of 294 the morning before, same n=24 of 93 — the direction was "
+               "right and the reading tracked a change made in a generator this audit has no "
+               "knowledge of. That is the second time it has moved on command (T046's "
+               "/building/ block was the first) and no time it has moved without one.\n"
+               "[2026-09-23] AND A SECOND INDEPENDENT NEGATIVE ON THE HYPOTHESIS ITSELF, from "
+               "the index census rather than from content. Between 09-22 and 09-23, 25 of the "
+               "458 census URLs moved BACKWARDS from 'Discovered - currently not indexed' to "
+               "'URL is unknown to Google' (20 building, 3 zip, 2 neighborhood) and not one "
+               "moved forwards; crawled_not_indexed held at 94 and indexed at 1. Google is not "
+               "sitting on these pages deciding they are duplicates — it is forgetting it ever "
+               "knew about them, which is a discovery and crawl-demand failure and cannot be "
+               "caused by the text on a page it has never fetched. Weigh this above every "
+               "duplicate-share reading in the revisit."),
     dict(slug="canonical_integrity", status="active", kind="indexing",
          name="Audit canonical and robots tags on the pages the docroot actually serves",
          prefixes=[], metric="organic_visitors",
@@ -511,6 +530,54 @@ SEEDS = [
                "door Googlebot has not opened. Do not re-retire this on an impression count "
                "until at least one of its URLs has been fetched — review.py's census guard now "
                "enforces that."),
+    dict(slug="frozen_pages", status="active", kind="indexing",
+         name="Audit how old every live page is, so a tier the build has abandoned says so",
+         prefixes=[], metric="organic_visitors",
+         hypothesis="Both deploy paths on this droplet rsync WITHOUT --delete, on purpose, "
+                    "because the docroot also holds the app. So a page a build stops writing "
+                    "is not unpublished — it is frozen: still served, out of every sitemap the "
+                    "build owns, and stuck at whatever text it carried the last night it "
+                    "qualified. Several tiers have data-dependent build sets "
+                    "(build_seo.py gates the SF/LA/DC hubs on MIN_CITY_HUB=5, /available/ on "
+                    "AVAIL_MIN=3, /landlord/ submits 300 of 1,416, index triage moves ~46,000 "
+                    "building pages in and out), so any of them can shrink silently. No audit "
+                    "here has ever looked at a page's AGE — all four docroot walks read "
+                    "content — which means the loop can neither see a frozen page nor correct "
+                    "one, because every fix it ships reaches only the pages still in the build "
+                    "set. If frozen pages exist outside /available/, this is the audit that "
+                    "names the tier and the run that follows fixes its build set.",
+         evidence="Measured by hand on 2026-09-22, which is why this exists: "
+                  "t_page_uniqueness read 93 pages under /available/ in the live docroot while "
+                  "build_seo.py wrote 41, so 52 live pages — 56% of the section — had not been "
+                  "rebuilt for an unknown number of nights and still said 'recently advertised "
+                  "for rent' off a feed last refreshed 2026-05-09, three days after a run had "
+                  "fixed that exact wording on the 41 pages it could reach. Confirmed against "
+                  "growth/index_status.json rather than inferred: 6 of the 15 /available/ URLs "
+                  "in the index census were outside the build set and "
+                  "/available/bronx/concourse-concourse-village/ read 'Discovered - currently "
+                  "not indexed', so Google had a frozen page queued for fetch. The same "
+                  "comparison run against the whole census on 2026-09-23 found no OTHER tier "
+                  "with a page outside the build set — but the census samples 5 of 1,416 "
+                  "/landlord/ pages and 250 of 47,165 building pages, so it cannot rule a "
+                  "partial freeze out in a large tier. This audit reads every page.",
+         notes="Audits, never publishes, adds no URL, and opens no page — os.stat only, so it "
+               "is the cheapest member of DOCROOT_VERIFIERS despite walking the whole corpus. "
+               "The mtime is not a proxy for 'last written': rsync -a preserves the source "
+               "mtime and build_seo.py's write() rewrites every page in its set every night, "
+               "so it is the record. t_sitemap_daily already dates its rescued pages from the "
+               "same clock.\n"
+               "IT FAILS ONLY ON A PARTIALLY FROZEN TIER — some pages written tonight, others "
+               "months old — because that combination can only mean a live build is abandoning "
+               "URLs, and that is fixable from this loop by making the page set the published "
+               "set. A WHOLLY frozen tier is named just as loudly and does not fail: every one "
+               "on this site today is either retired (/brief/, 2026-08-16) or has no deploy "
+               "path from here (the app shells, which only scripts/deploy_app.sh reaches). "
+               "Failing on those would make the audit permanently red, and a permanently red "
+               "audit carries no information.\n"
+               "Tiers come from the URL, NOT from the ledger's prefix declarations, which is "
+               "the one design choice worth defending: the failure this looks for is a page "
+               "nobody is tracking, and /landlord/ (1,416 pages) and /council-district/ (51) "
+               "are in no technique's prefixes and appear in no other audit's readings."),
     dict(slug="plus_funnel", status="candidate", kind="conversion",
          name="Rebuild the Plus upgrade funnel",
          prefixes=[], metric="mrr_usd",

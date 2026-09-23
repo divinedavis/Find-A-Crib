@@ -2868,6 +2868,7 @@
     return f ? `Est. $${f[0].toLocaleString()}–$${f[2].toLocaleString()}/mo` : '';
   }
   const EST_TITLE = 'Typical rent for this ZIP, studio–2BR (HUD FY2026 Small-Area Fair Market Rents) — not this building’s actual rent';
+  const ASKING_TITLE = 'The lowest rent advertised for this building right now — on Zumper, or on the managing agent’s own site';
   // "Recently advertised" means posted on Zumper within the last 5 days (owner
   // rule, 2026-09-01). listings.json is a sticky master that keeps every price
   // it ever banked, so the counts are narrowed here by the per-building posting
@@ -6413,6 +6414,10 @@
       ? (rec.h.violations.total != null ? rec.h.violations.total : rec.h.violations.open)
       : null;
     const est = estRent(rec);
+    // An advertised rent beats the ZIP estimate: printing "Est. $3,800–$4,370"
+    // on a building whose managing agent is asking $7,995 today is the sheet
+    // telling the visitor something we know to be wrong (2026-09-23).
+    const asking = listingPrices[rec.bbl];
     const viol = violButton(rec.h && rec.h.violations, violTotal);
     const compTotal = rec.h && rec.h.complaints
       ? (rec.h.complaints.total != null ? rec.h.complaints.total : rec.h.complaints.open)
@@ -6448,7 +6453,9 @@
       </div>
       <div class="d-head" data-sec="header">
         <h2 class="d-title">${esc(title)}</h2>
-        <div class="d-tagline"><span class="d-tag">${esc(CITY.label)}</span>${est ? ` <span class="d-dot">·</span> <span class="d-est" title="${esc(EST_TITLE)}">${est}</span>` : ''}</div>
+        <div class="d-tagline"><span class="d-tag">${esc(CITY.label)}</span>${asking
+            ? ` <span class="d-dot">·</span> <span class="d-est" title="${esc(ASKING_TITLE)}">$${asking.toLocaleString()}/mo asking</span>`
+            : est ? ` <span class="d-dot">·</span> <span class="d-est" title="${esc(EST_TITLE)}">${est}</span>` : ''}</div>
         <div class="d-addr">${esc(addrLine)}</div>
       </div>
       <div class="agent-card" data-sec="agent" data-agentcard="${esc(rec.bbl)}">${agentCardInner(rec.bbl, !!(rec.h && rec.h.op))}</div>

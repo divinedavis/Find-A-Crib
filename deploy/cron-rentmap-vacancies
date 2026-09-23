@@ -11,4 +11,6 @@ SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 CRON_TZ=America/New_York
 
-30 7,19 * * * root cd /root/Find-A-Crib && python3 build_vacancies.py --apply --out /var/www/rent-map >> /var/log/rentmap-vacancies.log 2>&1
+# The headless browser lives in the docroot venv, not in system python —
+# same interpreter rerental_daily.sh picks.
+30 7,19 * * * root cd /root/Find-A-Crib && /var/www/rent-map/venv/bin/python build_vacancies.py --apply --out /var/www/rent-map >> /var/log/rentmap-vacancies.log 2>&1

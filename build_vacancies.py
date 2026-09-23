@@ -41,7 +41,11 @@ import featured_rerentals as FR                  # noqa: E402  (sweep, parse, fi
 from addr_match import normalize_addr, build_index          # noqa: E402
 
 PAGES = os.path.join(HERE, "owner_vacancy_pages.json")
-BUILDINGS = os.path.join(HERE, "buildings.slim.json")
+# The register. In the checkout on a laptop; only in the docroot on the
+# droplet, where the first run died on its absence (2026-09-23).
+BUILDINGS_CANDIDATES = [os.environ.get("BUILDINGS_FILE"),
+                        os.path.join(HERE, "buildings.slim.json"),
+                        "/var/www/rent-map/buildings.slim.json"]
 OUT = os.path.join(HERE, "vacancies.json")
 
 
@@ -63,7 +67,13 @@ def load_pages(only=None):
 
 def match_to_buildings(records):
     """Attach the register's BBL to every listing whose address we recognise."""
-    idx = build_index(json.loads(open(BUILDINGS).read()))
+    path = next((p for p in BUILDINGS_CANDIDATES if p and os.path.exists(p)), None)
+    if not path:
+        print("  (no buildings.slim.json found — listings are published unmatched)")
+        for r in records:
+            r["bbl"] = None
+        return 0
+    idx = build_index(json.loads(open(path).read()))
     matched = 0
     for r in records:
         norm = normalize_addr(r.get("address") or "")

@@ -137,6 +137,76 @@
    "url": "https://www.lisamgmt.com/residential",
    "units": null,
    "note": "JS search"
+  },
+  "Rockrose Development": {
+   "url": "https://rockrose.com/availabilities/",
+   "units": null,
+   "note": "~50 unit-level listings in plain HTML"
+  },
+  "Algin Management": {
+   "url": "https://alginny.com/availabilities/",
+   "units": null,
+   "note": "10 live units, server-rendered table"
+  },
+  "Buchbinder & Warren": {
+   "url": "https://buchbinderwarren.com/Search/Rentals",
+   "units": null,
+   "note": "12 per page, 886 total, server-rendered"
+  },
+  "A.J. Clarke Real Estate": {
+   "url": "https://ajclistings.com/Search/Rentals",
+   "units": null,
+   "note": "4 current rentals in HTML"
+  },
+  "Beach Haven Apartments": {
+   "url": "https://beachhaven.co/",
+   "units": null,
+   "note": "5 studios at $1,750 in an 'available apartments' section"
+  },
+  "Savoy Park (HP Savoy Park II HDFC)": {
+   "url": "https://www.savoyparkapartments.com/savoy-park-harlem-apartments-for-rent-availability.php",
+   "units": null,
+   "note": "RentCafe page, 403 to a plain fetch — retry in the browser"
+  },
+  "Dalan Management": {
+   "url": "https://www.dalanrentals.com/searchlisting",
+   "units": null,
+   "note": "their own RentCafe portal, 403 to a plain fetch"
+  },
+  "Dermot Company": {
+   "url": "https://www.dermotcompany.com/find-your-home",
+   "units": null,
+   "note": "JS search over 21 properties"
+  },
+  "Tri-Hill Management": {
+   "url": "https://www.trihill.com/availability",
+   "units": null,
+   "note": "JS availability widget"
+  },
+  "Finger Management": {
+   "url": "https://www.fingermanagement.com/availability",
+   "units": null,
+   "note": "JS availability grid"
+  },
+  "Livingston Management Services": {
+   "url": "https://livingston.reslisting.com/",
+   "units": null,
+   "note": "branded RentCafe portal"
+  },
+  "All Area Realty Services": {
+   "url": "https://www.aarsny.com/brokerage-services/our-listings/",
+   "units": null,
+   "note": "IDX listings injected by JS"
+  },
+  "WinnResidential NY": {
+   "url": "https://www.winncompanies.com/fyh-results?state=NY",
+   "units": null,
+   "note": "Angular 'find your home' results"
+  },
+  "Akelius": {
+   "url": "https://rent.akelius.com/en/search/united-states/apartment/new%20york",
+   "units": null,
+   "note": "own portal; said zero NYC units at check time"
   }
  },
  "rejected": {
@@ -166,6 +236,12 @@
   "Gazivoda Management": "no official site found",
   "Grenadier Realty Management": "domain dead (DNS)",
   "Columbus Property Management": "name collision, not the NYC company",
-  "Queens Fresh Meadows": "single-portfolio ownership entity, no management site"
+  "Queens Fresh Meadows": "single-portfolio ownership entity, no management site",
+  "Carlyle Property Management": "availability page loads with zero units",
+  "Veritas Property Management": "rentals page shows theme placeholder data, not inventory",
+  "Monadnock Property Management": "availability page broken — unrendered shortcodes",
+  "Manhattan North Management": "main domain has a broken TLS certificate; leasing subdomain 403",
+  "Diego Beekman MHA HDFC": "floor-plan starting prices, not individually available units",
+  "Lemle & Wolff": "rentals index server-renders 'no properties found'"
  }
 }

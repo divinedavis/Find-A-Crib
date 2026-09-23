@@ -32,11 +32,16 @@ struct FeaturedListing: Codable, Hashable, Identifiable, Sendable {
     var hrefKind: String?
     /// Site-relative, e.g. "/featured/img/abc.png".
     var image: String?
+    /// The photo is the OUTSIDE of the building, measured by photo_kind.py in
+    /// the sweep. The Search banner may only lead with one of these (owner,
+    /// 2026-09-23); the tiles in the feed still show whatever the agent has.
+    var imageExterior = false
 
     var id: String { href + "|" + address }
 
     enum CodingKeys: String, CodingKey {
         case agent, title, address, borough, zip, units, beds, href, image
+        case imageExterior = "image_exterior"
         case agentPage = "agent_page", moneyKind = "money_kind", moneyLow = "money_low", moneyHigh = "money_high"
         case income1pMax = "income_1p_max", hrefKind = "href_kind"
     }
@@ -59,12 +64,13 @@ struct FeaturedListing: Codable, Hashable, Identifiable, Sendable {
         href = try c.decodeIfPresent(String.self, forKey: .href) ?? ""
         hrefKind = try c.decodeIfPresent(String.self, forKey: .hrefKind)
         image = try c.decodeIfPresent(String.self, forKey: .image)
+        imageExterior = try c.decodeIfPresent(Bool.self, forKey: .imageExterior) ?? false
     }
 
-    init(agent: String, address: String, borough: String?, href: String, moneyKind: String? = nil, moneyLow: Int? = nil, moneyHigh: Int? = nil, image: String? = nil) {
+    init(agent: String, address: String, borough: String?, href: String, moneyKind: String? = nil, moneyLow: Int? = nil, moneyHigh: Int? = nil, image: String? = nil, imageExterior: Bool = false) {
         self.agent = agent; self.address = address; self.borough = borough; self.href = href
         self.moneyKind = moneyKind; self.moneyLow = moneyLow; self.moneyHigh = moneyHigh
-        self.image = image
+        self.image = image; self.imageExterior = imageExterior
     }
 
     /// The borough code the search uses ("Bk"), from the name the agent's
@@ -191,11 +197,12 @@ enum RerentalFeed {
 
     /// The photo the Search banner leads with (owner, 2026-09-23): a real
     /// re-rental, preferring the boroughs they have set as their Location,
-    /// falling back to any borough when nothing there has a photo. Only
-    /// listings with a photo AND a borough qualify — the banner's badge names
-    /// the borough, so a listing without one cannot fill it.
+    /// falling back to any borough when nothing there has a photo. A listing
+    /// qualifies only with a borough — the badge names it — and a photo of the
+    /// BUILDING'S OUTSIDE: the agents post empty living rooms and their own
+    /// logos too, and the owner's rule for this banner is the outside only.
     static func banner(_ featured: [FeaturedListing], boroughs: Set<String>, seed: UInt64) -> FeaturedListing? {
-        let withPhoto = featured.filter { $0.image != nil && $0.boroughCode != nil }
+        let withPhoto = featured.filter { $0.image != nil && $0.imageExterior && $0.boroughCode != nil }
         guard !withPhoto.isEmpty else { return nil }
         let here = withPhoto.filter { $0.boroughCode.map(boroughs.contains) ?? false }
         let pool = here.isEmpty ? withPhoto : here

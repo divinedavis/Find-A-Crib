@@ -761,20 +761,25 @@ final class RerentalFeedTests: XCTestCase {
         let img = "/featured/img/a.jpg"
         let listings = [
             FeaturedListing(agent: "No photo", address: "1 Main St", borough: "Brooklyn", href: "https://x.org/1"),
-            FeaturedListing(agent: "No borough", address: "2 Main St", borough: nil, href: "https://x.org/2", image: img),
-            FeaturedListing(agent: "Bronx", address: "3 Main St", borough: "Bronx", href: "https://x.org/3", image: img),
-            FeaturedListing(agent: "Brooklyn", address: "4 Main St", borough: "Brooklyn", href: "https://x.org/4", image: img),
+            FeaturedListing(agent: "No borough", address: "2 Main St", borough: nil, href: "https://x.org/2", image: img, imageExterior: true),
+            FeaturedListing(agent: "Interior", address: "5 Main St", borough: "Brooklyn", href: "https://x.org/5", image: img),
+            FeaturedListing(agent: "Bronx", address: "3 Main St", borough: "Bronx", href: "https://x.org/3", image: img, imageExterior: true),
+            FeaturedListing(agent: "Brooklyn", address: "4 Main St", borough: "Brooklyn", href: "https://x.org/4", image: img, imageExterior: true),
         ]
         for seed: UInt64 in [1, 7, 99, 12345, .max] {
             XCTAssertEqual(RerentalFeed.banner(listings, boroughs: ["Bk"], seed: seed)?.agent, "Brooklyn",
                            "Brooklyn is set, so the photo is the Brooklyn one (seed \(seed))")
-            XCTAssertEqual(RerentalFeed.banner(listings, boroughs: ["M"], seed: seed)?.agent == "No photo", false)
+            XCTAssertNotEqual(RerentalFeed.banner(listings, boroughs: ["Bk"], seed: seed)?.agent, "Interior",
+                              "an interior in the right borough still loses to an exterior")
             let any = RerentalFeed.banner(listings, boroughs: ["M"], seed: seed)
             XCTAssertTrue(["Bronx", "Brooklyn"].contains(any?.agent ?? ""),
                           "nothing in Manhattan has a photo, so any borough will do — got \(any?.agent ?? "nil")")
         }
         XCTAssertNil(RerentalFeed.banner([], boroughs: [], seed: 1))
         XCTAssertNil(RerentalFeed.banner([listings[0], listings[1]], boroughs: [], seed: 1), "no photo AND a borough, no banner")
+        // The owner's rule for this banner (2026-09-23): the outside of the
+        // building only. An agent's empty living room never leads the app.
+        XCTAssertNil(RerentalFeed.banner([listings[2]], boroughs: ["Bk"], seed: 1), "an interior photo is not a banner")
     }
 
     /// The banner prints the street, not the agent's whole title: the badge
@@ -795,6 +800,9 @@ final class RerentalFeedTests: XCTestCase {
         XCTAssertGreaterThan(blob.listings.count, 5)
         XCTAssertTrue(blob.listings.contains { $0.moneyKind == "rent" && $0.moneyLine.text.hasSuffix("/mo") })
         XCTAssertTrue(blob.listings.allSatisfy { !$0.href.isEmpty && !$0.address.isEmpty })
+        XCTAssertTrue(blob.listings.contains { $0.imageExterior },
+                      "the sweep marks the outside-of-the-building photos (photo_kind.py) — the banner needs one")
+        XCTAssertTrue(blob.listings.allSatisfy { !$0.imageExterior || $0.image != nil }, "no photo, no flag")
         let out = try XCTUnwrap(blob.listings[0].outboundURL)
         XCTAssertTrue(out.absoluteString.contains("utm_source=findacrib.com") && out.absoluteString.contains("utm_campaign=rerental_tile"))
         XCTAssertNil(FeaturedListing(agent: "", address: "", borough: nil, href: "javascript:alert(1)").outboundURL, "only http(s) hands off")

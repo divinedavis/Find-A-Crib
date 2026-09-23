@@ -300,6 +300,14 @@ final class DataStore {
         let etagKey = "etag.\(cacheName)"
         var req = URLRequest(url: host.appendingPathComponent(name))
         req.timeoutInterval = 20
+        // Ask the SERVER, not the URL cache. The site sends max-age=3600, so
+        // the default policy answered these from the device's own cache and
+        // the If-None-Match below never left the phone — a feed rebuilt this
+        // morning could be up to an hour late reaching an app that had just
+        // been opened (2026-09-23: the app kept yesterday's featured.json for
+        // an hour after the sweep re-ran). Revalidating makes the conditional
+        // GET real; unchanged files still come back 304 and cost nothing.
+        req.cachePolicy = .reloadRevalidatingCacheData
         // Ask for the raw bytes: the .gz file must land on disk still gzipped
         // (decodeLocal inflates it), and JSON should come back plain.
         req.setValue(name.hasSuffix(".gz") ? "identity" : "gzip", forHTTPHeaderField: "Accept-Encoding")

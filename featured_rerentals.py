@@ -669,21 +669,28 @@ def shrink_image(data, ext):
 
 
 def save_images(records, apply_changes):
-    """Re-host each listing photo under featured/img/. Returns how many stuck."""
+    """Re-host each listing photo under featured/img/. Returns how many stuck.
+
+    Each photo that lands is also measured for sky (photo_kind), because the
+    app's Search banner may only lead with the outside of a building.
+    """
     if apply_changes:
         os.makedirs(IMGDIR, exist_ok=True)
     on_disk = {}
     for f in (os.listdir(IMGDIR) if os.path.isdir(IMGDIR) else []):
         on_disk.setdefault(f.split(".")[0], f)
     kept = 0
+    kinds = {}          # file name -> is_exterior, measured once per run
     for rec in records:
         src = rec.pop("image_src", None)
         rec["image"] = None
+        rec["image_exterior"] = False
         if not src:
             continue
         name = hashlib.sha1(src.encode()).hexdigest()[:16]
         if name in on_disk:              # already have it, don't refetch daily
             rec["image"] = "/featured/img/" + on_disk[name]
+            rec["image_exterior"] = exterior(on_disk[name], kinds)
             kept += 1
             continue
         if not apply_changes:
@@ -697,8 +704,20 @@ def save_images(records, apply_changes):
             f.write(data)
         on_disk[name] = name + ext
         rec["image"] = "/featured/img/" + name + ext
+        rec["image_exterior"] = exterior(name + ext, kinds)
         kept += 1
     return kept
+
+
+def exterior(filename, cache):
+    """Is this re-hosted photo the outside of a building? Memoised per run."""
+    if filename not in cache:
+        try:
+            import photo_kind
+            cache[filename] = photo_kind.is_exterior(os.path.join(IMGDIR, filename))
+        except Exception:      # a photo that cannot be measured is not banner material
+            cache[filename] = False
+    return cache[filename]
 
 
 def prune_images(records, apply_changes):

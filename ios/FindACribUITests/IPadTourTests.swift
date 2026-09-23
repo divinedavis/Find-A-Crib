@@ -73,7 +73,15 @@ final class IPadTourTests: XCTestCase {
         sleep(1); shot("\(tag)-2b-available-now")
         avail.tap()
         expectation(for: NSPredicate(format: "label == %@", before), evaluatedWith: count); waitForExpectations(timeout: 10)
-        addr.tap()
+        // Toggling a filter rebuilds the list, so the card captured before it
+        // can be stale or sitting under the floating tab bar (iPad mini
+        // landscape, 2026-09-23). Take the first card as it is NOW, and give
+        // it a scroll if it is not reachable.
+        let card = app.buttons["card-address"].firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 15), "\(tag): the list should still show buildings")
+        for _ in 0..<4 where !card.isHittable { app.swipeUp() }
+        XCTAssertTrue(card.isHittable, "\(tag): a building card should be reachable after filtering")
+        card.tap()
         XCTAssertTrue(app.otherElements["detail-hero"].waitForExistence(timeout: 20) || app.staticTexts["About"].waitForExistence(timeout: 20),
                       "\(tag): a building should open")
         sleep(2); shot("\(tag)-3-detail")

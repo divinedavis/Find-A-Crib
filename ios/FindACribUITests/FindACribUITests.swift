@@ -183,6 +183,7 @@ final class FindACribUITests: XCTestCase {
     /// element), and Done writes BOTH wheels back — the min wheel and the max
     /// wheel are separate selections and only one of them used to exist.
     func testPriceWheelSetsBothBounds() throws {
+        relaunchOnIncrements()
         let minBox = app.buttons["price-Minimum price"]
         let maxBox = app.buttons["price-Maximum price"]
         XCTAssertTrue(minBox.waitForExistence(timeout: 20))
@@ -213,6 +214,7 @@ final class FindACribUITests: XCTestCase {
     /// sheet is the only place both numbers are visible at once, so it is where
     /// the two get put back the right way round.
     func testPriceWheelUninvertsTheRange() throws {
+        relaunchOnIncrements()
         let minBox = app.buttons["price-Minimum price"]
         let maxBox = app.buttons["price-Maximum price"]
         XCTAssertTrue(minBox.waitForExistence(timeout: 20))
@@ -238,9 +240,12 @@ final class FindACribUITests: XCTestCase {
         mode.buttons["Custom"].tap()
         XCTAssertTrue(app.textFields["price-custom-low"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.textFields["price-custom-high"].exists)
-        // and back, without losing the sheet
-        mode.buttons["Increments"].tap()
-        XCTAssertTrue(app.pickerWheels.element(boundBy: 0).waitForExistence(timeout: 5))
+        // ...and back to the wheel. On iPad the number pad covers the sheet's
+        // own header, so the way back is the bar over the keyboard — which is
+        // why that bar exists (2026-09-23).
+        let barBack = app.buttons["price-kb-increments"]
+        if barBack.exists, barBack.isHittable { barBack.tap() } else { mode.buttons["Increments"].tap() }
+        showIncrements()
         app.buttons["price-done"].tap()
     }
 
@@ -594,16 +599,37 @@ final class FindACribUITests: XCTestCase {
     /// lands on depends on where the wheel already was. Asking again from the
     /// new position converges. Failing loudly beats a test that quietly asserts
     /// against whatever row the flick happened to reach.
+    /// Relaunch with the price sheet's mode reset — it is remembered across
+    /// launches, and a test that inherits Custom finds no wheels.
+    private func relaunchOnIncrements() {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--price-increments"]
+        app.launch()
+    }
+
     private func openPriceSheet(from box: XCUIElement) {
         box.tap()
         XCTAssertTrue(app.buttons["price-done"].waitForExistence(timeout: 10),
                       "tapping a price box did not open the picker")
-        // The sheet remembers Increments vs Custom on purpose. A test that left
-        // it on Custom (testPriceCustomTabOffersTypedEntry) opened the next one
-        // to text fields, with no wheels to find — on iPad every run (2026-09-22).
-        let increments = app.segmentedControls["price-mode"].buttons["Increments"]
-        if increments.exists, !increments.isSelected { increments.tap() }
-        XCTAssertTrue(app.pickerWheels.element(boundBy: 0).waitForExistence(timeout: 5))
+        showIncrements()
+    }
+
+    /// The sheet remembers Increments vs Custom on purpose, and in Custom it
+    /// raises the number pad as it appears. A tap on "Increments" that lands
+    /// during that animation is swallowed and the wheels never come — which
+    /// failed two price tests on iPad while passing on iPhone (2026-09-23).
+    /// So: tap until the wheels are actually there.
+    private func showIncrements(file: StaticString = #filePath, line: UInt = #line) {
+        let wheel = app.pickerWheels.element(boundBy: 0)
+        for _ in 0..<3 {
+            if wheel.waitForExistence(timeout: 3) { return }
+            let bar = app.buttons["price-kb-increments"]
+            if bar.exists, bar.isHittable { bar.tap(); continue }
+            let increments = app.segmentedControls["price-mode"].buttons["Increments"]
+            if increments.exists, increments.isHittable { increments.tap() }
+        }
+        XCTAssertTrue(wheel.waitForExistence(timeout: 5),
+                      "the Increments tab never showed its wheels", file: file, line: line)
     }
 
     private func spin(_ wheel: XCUIElement, to target: String, tries: Int = 5,

@@ -408,6 +408,21 @@ struct PricePickerSheet: View {
         }
         .padding(16)
         .frame(maxHeight: .infinity, alignment: .top)
+        // On iPad the number pad covers this sheet — its own header, with the
+        // Increments tab and Done, sits behind the keyboard, so somebody who
+        // typed a price could not switch back to the wheel or commit what they
+        // typed (2026-09-23; on iPhone the sheet rides above the keyboard).
+        // A bar over the keyboard gives both back.
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Button("Increments") { custom = false }
+                    .accessibilityIdentifier("price-kb-increments")
+                Spacer()
+                Button("Done") { commit(); dismiss() }
+                    .font(.se(18, .bold))
+                    .accessibilityIdentifier("price-kb-done")
+            }
+        }
     }
 
     private func typedField(_ label: String, text: Binding<String>, placeholder: String, bound: PriceBound) -> some View {

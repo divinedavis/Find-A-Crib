@@ -12,6 +12,21 @@ xcrun simctl bootstatus "$SIMULATOR_ID" -b >/dev/null 2>&1 || true
 # "allowed" — two tests fail on state, not code (2026-09-19).
 xcrun simctl uninstall "$SIMULATOR_ID" com.divinedavis.findacrib 2>/dev/null || true
 ONLY="${1:-}"
+# The whole run goes to a file and only the last 60 lines are printed: a
+# failure earlier than that was invisible twice in one afternoon (2026-09-23),
+# costing a full re-run to find out which test it was. Now every failing line
+# is printed after the tail, and the full log stays on disk.
+LOG="build.nosync/test-$SIMULATOR_ID.log"
+mkdir -p build.nosync
+set +e
 xcodebuild -project FindACrib.xcodeproj -scheme FindACrib \
   -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -derivedDataPath build.nosync/tests \
-  ${ONLY:+-only-testing:"$ONLY"} test 2>&1 | grep -E "Test Suite|Test Case|error:|failed|passed|\*\* TEST" | tail -60
+  ${ONLY:+-only-testing:"$ONLY"} test 2>&1 | grep -E "Test Suite|Test Case|error:|failed|passed|\*\* TEST" > "$LOG"
+status=${PIPESTATUS[0]}
+set -e
+tail -60 "$LOG"
+if [ "$status" -ne 0 ]; then
+  echo "---- every failure in this run ($LOG) ----"
+  grep -E "error:|' failed \(" "$LOG" || true
+fi
+exit "$status"

@@ -130,6 +130,11 @@ enum LaunchArgs {
         // have to download first; the route has to wait for that, or it
         // resolves against New York's buildings and opens the wrong one.
         if a.contains("--paywall") { nav.tab = .profile; nav.showPaywall = true }
+        // The price sheet remembers Increments vs Custom across launches, on
+        // purpose. A UI test of the wheels inherited whatever the test before
+        // it left (iPad, 2026-09-23: it opened on Custom and found no wheels),
+        // so a test can ask for a known starting mode.
+        if a.contains("--price-increments") { UserDefaults.standard.set(false, forKey: "priceEntryMode") }
         if let c = val("--city"), c != store.city.id {
             let target = City.find(c)
             Task { @MainActor in

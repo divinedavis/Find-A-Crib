@@ -279,7 +279,7 @@
         <div class="tbl-wrap">
           <table class="utable">
             <thead><tr id="uhead">
-              <th data-sort="name" tabindex="0" role="button" aria-sort="none">Name<span class="sarr"></span></th><th data-sort="provider" tabindex="0" role="button" aria-sort="none">Sign-in<span class="sarr"></span></th><th data-sort="ios_app" tabindex="0" role="button" aria-sort="none" title="The app version last seen from this account's iPhone app, from its build number. — = never signed in from the app.">iOS version<span class="sarr"></span></th><th data-sort="alerts" tabindex="0" role="button" aria-sort="none" title="On borough lottery/re-rental emails, or saved-building emails">Alerts<span class="sarr"></span></th><th data-sort="last_seen" tabindex="0" role="button" aria-sort="none" title="The last time this account did anything signed in — a visit or an app session, not only an explicit login. Click a date in the column to see when they joined.">Last signed in<span class="sarr"></span></th><th data-sort="phone" tabindex="0" role="button" aria-sort="none" title="iPhone or Android, from any signed-in session (web or the iPhone app). — = only seen on a computer/iPad.">Phone<span class="sarr"></span></th><th data-sort="device" tabindex="0" role="button" aria-sort="none">Last device<span class="sarr"></span></th>
+              <th data-sort="name" tabindex="0" role="button" aria-sort="none">Name<span class="sarr"></span></th><th data-sort="ios_app" tabindex="0" role="button" aria-sort="none" title="The app version last seen from this account's iPhone app, from its build number. — = never signed in from the app.">iOS version<span class="sarr"></span></th><th data-sort="alerts" tabindex="0" role="button" aria-sort="none" title="On borough lottery/re-rental emails, or saved-building emails">Alerts<span class="sarr"></span></th><th data-sort="last_seen" tabindex="0" role="button" aria-sort="none" title="The last time this account did anything signed in — a visit or an app session, not only an explicit login. Click a date in the column to see when they joined.">Last signed in<span class="sarr"></span></th><th data-sort="phone" tabindex="0" role="button" aria-sort="none" title="iPhone or Android, from any signed-in session (web or the iPhone app). — = only seen on a computer/iPad.">Phone<span class="sarr"></span></th><th data-sort="device" tabindex="0" role="button" aria-sort="none" title="Which front end their newest session is on: the iPhone/iPad app, a browser on a phone or tablet (mobile web), or a browser on a computer.">Last device<span class="sarr"></span></th>
             </tr></thead>
             <tbody id="urows"></tbody>
           </table>
@@ -443,7 +443,7 @@
         // founding grant or a referral reward — Plus without paying.
         comped=USERS.filter(function(u){return u.plan==='comp'||u.plan==='founding'||u.plan==='referral';}).length,
         savers=USERS.filter(function(u){return (u.saves||0)>0;}).length,
-        mobile=USERS.filter(function(u){return u.device==='mobile'||u.device==='tablet';}).length,
+        mobile=USERS.filter(function(u){return u.device==='app'||isMobileWeb(u);}).length,
         iosapp=USERS.filter(function(u){return !!u.ios_app;}).length,
         iphone=USERS.filter(function(u){return u.phone==='iphone';}).length,
         android=USERS.filter(function(u){return u.phone==='android';}).length,
@@ -494,13 +494,9 @@
     if(p==='referral') return '<span class="badge b-ref">Referral</span>';
     return '<span class="badge b-free">Free</span>';
   }
-  // Apple was missing: nine accounts signed in with it and read as "Email"
-  // (owner, 2026-09-23).
-  function provBadge(p){
-    if(p==='google') return '<span class="badge b-google">Google</span>';
-    if(p==='apple') return '<span class="badge b-apple"> Apple</span>';
-    return '<span class="badge b-email">Email</span>';
-  }
+  // A phone or tablet BROWSER. 'mobile'/'tablet' are what dashboard_users()
+  // answered before 0034 and can still be sitting in a page loaded earlier.
+  function isMobileWeb(u){ return u.device==='mobile_web' || u.device==='mobile' || u.device==='tablet'; }
   // Device of the newest auth session, not of the last visit — see the
   // dashboard_users() migration. A user with no live session reads "—" rather
   // than being guessed at.
@@ -511,10 +507,15 @@
     if(p==='android') return '<span class="badge b-android">🤖 Android</span>';
     return '<span class="u-muted">—</span>';
   }
+  // Three answers, because they are three different products to fix (owner,
+  // 2026-09-23): the app, the site on a phone, the site on a computer.
+  // 'tablet' is gone — an iPad in Safari is mobile web, an iPad running the
+  // app sends the app's user agent and reads as the app.
   function deviceBadge(d){
-    if(d==='mobile')  return '<span class="badge b-mobile">📱 Mobile</span>';
-    if(d==='tablet')  return '<span class="badge b-mobile">📱 Tablet</span>';
-    if(d==='desktop') return '<span class="badge b-desktop">🖥 Desktop</span>';
+    if(d==='app')        return '<span class="badge b-iphone">📱 Mobile app</span>';
+    if(d==='mobile_web') return '<span class="badge b-mobile">🌐 Mobile web</span>';
+    if(d==='mobile' || d==='tablet') return '<span class="badge b-mobile">🌐 Mobile web</span>';
+    if(d==='desktop')    return '<span class="badge b-desktop">🖥 Desktop</span>';
     return '<span class="u-muted">—</span>';
   }
 
@@ -527,7 +528,6 @@
   var COLS = {
     name:       { get:function(u){ return (u.name||'').toLowerCase() || null; }, num:false },
     email:      { get:function(u){ return (u.email||'').toLowerCase() || null; }, num:false },
-    provider:   { get:function(u){ return u.provider || null; }, num:false },
     ios_app:    { get:function(u){ return u.ios_app ? (parseInt(u.ios_build, 10) || 1) : 0; }, num:true },
     alerts:     { get:function(u){ return u.alerts ? 1 : 0; }, num:true },
     created_at: { get:function(u){ return u.created_at ? Date.parse(u.created_at) : null; }, num:true },
@@ -555,7 +555,7 @@
     comp:     { label:'comped',                     test:function(u){ return u.plan==='comp'||u.plan==='founding'||u.plan==='referral'; } },
     returned: { label:'came back after signing up', test:didReturn },
     savers:   { label:'have saved a building',      test:function(u){ return (u.saves||0)>0; } },
-    mobile:   { label:'last seen on mobile',        test:function(u){ return u.device==='mobile'||u.device==='tablet'; } },
+    mobile:   { label:'last seen on mobile',        test:function(u){ return u.device==='app'||isMobileWeb(u); } },
     iosapp:   { label:'have the iPhone app',        test:function(u){ return !!u.ios_app; } },
     iphone:   { label:'on iPhone',                  test:function(u){ return u.phone==='iphone'; } },
     android:  { label:'on Android',                 test:function(u){ return u.phone==='android'; } }
@@ -572,13 +572,7 @@
   function filterOptions(key){
     var seen, out = [];
     function opt(label, test){ out.push({label:label, test:test}); }
-    if(key==='provider'){
-      seen = {};
-      USERS.forEach(function(u){ seen[u.provider||'email'] = 1; });
-      Object.keys(seen).sort().forEach(function(p){
-        opt(p.charAt(0).toUpperCase()+p.slice(1), function(u){ return (u.provider||'email')===p; });
-      });
-    } else if(key==='ios_app'){
+    if(key==='ios_app'){
       opt('Has the iPhone app', function(u){ return !!u.ios_app; });
       opt('No app', function(u){ return !u.ios_app; });
       seen = {};
@@ -594,9 +588,9 @@
       opt('Android', function(u){ return u.phone==='android'; });
       opt('No phone seen', function(u){ return !u.phone; });
     } else if(key==='device'){
+      opt('Mobile app', function(u){ return u.device==='app'; });
+      opt('Mobile web', function(u){ return isMobileWeb(u); });
       opt('Desktop', function(u){ return u.device==='desktop'; });
-      opt('Mobile', function(u){ return u.device==='mobile'; });
-      opt('Tablet', function(u){ return u.device==='tablet'; });
       opt('Never seen', function(u){ return !u.device; });
     } else if(key==='last_seen'){
       opt('Today', function(u){ return !!u.last_seen && sameDay(u.last_seen, new Date().toISOString()); });
@@ -730,7 +724,6 @@
     el('urows').innerHTML = rows.map(function(u){
       return '<tr>'+
         '<td class="u-name"><button type="button" class="u-namebtn" data-email="'+esc(u.email)+'" title="Click to show the email">'+esc(u.name)+'</button></td>'+
-        '<td>'+provBadge(u.provider)+'</td>'+
         '<td>'+iosBadge(u)+'</td>'+
         '<td>'+(u.alerts ? '<span style="display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:700;background:rgba(30,123,52,.15);color:#3ccf6a">Y</span>' : '<span class="u-muted">N</span>')+'</td>'+
         '<td><button type="button" class="u-namebtn u-joinedbtn" data-joined="'+esc(fdate(u.created_at))+'" data-returned="'+(didReturn(u)?'1':'0')+'" title="Click to show when this user joined">'+fdate(u.last_seen)+(didReturn(u)?' <span class="u-muted">↩</span>':'')+'</button></td>'+

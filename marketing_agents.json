@@ -2,7 +2,7 @@
  "source": "https://www.nyc.gov/site/hpd/services-and-information/marketing-agent-pql.page",
  "fetched": "2026-09-22",
  "count": 85,
- "rerental_count": 22,
+ "rerental_count": 28,
  "building_agent_count": 4,
  "building_count": 5,
  "agents": [
@@ -19,7 +19,17 @@
     "Sales / homeownership",
     "LIHTC"
    ],
-   "about": "About Real Estate NY, is a full-service minority and woman-owned (MWBE) real estate firm specializing in comprehensive sales and leasing solutions for both market-rate and affordable housing developments. We are an approved HPD Marketing Agent, with a deep understanding of HPD marketing requirements, application and lottery management, and community engagement strategies that help developers meet sales and lease-up goals Efficiently—and with integrity. We ensure full compliance with HPD and LIHTC guidelines while delivering a seamless and respectful applicant experience. Our mission is to deliver strategic marketing, regulatory expertise, and professional sales and leasing services tailored to the unique needs of property owners and developers. Using advanced technology and AI, we simplify leasing and sales, making affordable housing marketing quicker and more efficient. Our team’s multilingual capabilities, technological expertise, and strong community connections ensure we remain responsive, efficient, and easy to work with — making us a trusted partner for developers looking to bring projects to market successfully and on schedule. We are also open for business and welcome the opportunity to be hired by OUTSIDE or in-house teams, for sales or rentals. We have experience with both."
+   "about": "About Real Estate NY, is a full-service minority and woman-owned (MWBE) real estate firm specializing in comprehensive sales and leasing solutions for both market-rate and affordable housing developments. We are an approved HPD Marketing Agent, with a deep understanding of HPD marketing requirements, application and lottery management, and community engagement strategies that help developers meet sales and lease-up goals Efficiently—and with integrity. We ensure full compliance with HPD and LIHTC guidelines while delivering a seamless and respectful applicant experience. Our mission is to deliver strategic marketing, regulatory expertise, and professional sales and leasing services tailored to the unique needs of property owners and developers. Using advanced technology and AI, we simplify leasing and sales, making affordable housing marketing quicker and more efficient. Our team’s multilingual capabilities, technological expertise, and strong community connections ensure we remain responsive, efficient, and easy to work with — making us a trusted partner for developers looking to bring projects to market successfully and on schedule. We are also open for business and welcome the opportunity to be hired by OUTSIDE or in-house teams, for sales or rentals. We have experience with both.",
+   "rerentals": {
+    "url": "https://www.aboutrealestateny.com/houses",
+    "note": "Affordable Housing category, 8 properties (1133 Bedford, 767 Marcy, 323 Quincy...)",
+    "title": "Affordable availabilities",
+    "units_seen": false,
+    "found": "2026-09-22",
+    "source": "HPD PQL re-check (2026-09-23)",
+    "last_ok": "2026-09-23",
+    "checked": "2026-09-23"
+   }
   },
   {
    "name": "ACJ International Realty LLC",
@@ -51,8 +61,8 @@
     "units_seen": true,
     "note": "Filterable board with rent + household size per unit.",
     "unit_count": 3,
-    "last_ok": "2026-09-22",
-    "checked": "2026-09-22"
+    "last_ok": "2026-09-23",
+    "checked": "2026-09-23"
    }
   },
   {
@@ -123,8 +133,8 @@
     "note": "Building browser filterable by which waitlists are currently open; supportive/affordable, PDF applications.",
     "units_seen": false,
     "waitlist": true,
-    "last_ok": "2026-09-22",
-    "checked": "2026-09-22"
+    "last_ok": "2026-09-23",
+    "checked": "2026-09-23"
    }
   },
   {
@@ -146,8 +156,8 @@
     "note": "Waitlist applications; two senior buildings marked Available (rent = 30% of income, HPD PBV S8).",
     "units_seen": false,
     "waitlist": true,
-    "last_ok": "2026-09-22",
-    "checked": "2026-09-22"
+    "last_ok": "2026-09-23",
+    "checked": "2026-09-23"
    }
   },
   {
@@ -164,9 +174,9 @@
     "url": "https://ccmanagers.com/availability/",
     "title": "Rental Availability",
     "units_seen": true,
-    "last_ok": "2026-09-22",
+    "last_ok": "2026-09-23",
     "unit_count": 1,
-    "checked": "2026-09-22"
+    "checked": "2026-09-23"
    }
   },
   {
@@ -228,9 +238,9 @@
     "url": "https://www.clintonmanagement.com/availabilities/affordable",
     "title": "Affordable Availabilities",
     "units_seen": true,
-    "last_ok": "2026-09-22",
+    "last_ok": "2026-09-23",
     "unit_count": 6,
-    "checked": "2026-09-22"
+    "checked": "2026-09-23"
    }
   },
   {
@@ -268,7 +278,17 @@
    "website": "https://www.concernhousing.org/",
    "agency": "HPD",
    "tags": [],
-   "about": "Concern for Independent Living develops and operates high-quality, affordable housing with supportive services for disabled and low-income persons residing in New York State."
+   "about": "Concern for Independent Living develops and operates high-quality, affordable housing with supportive services for disabled and low-income persons residing in New York State.",
+   "rerentals": {
+    "url": "https://concernhousing.org/housing-applications/",
+    "note": "'available housing' with applications; 150 Bedell St, 58 Portion Rd",
+    "title": "Affordable availabilities",
+    "units_seen": false,
+    "found": "2026-09-22",
+    "source": "HPD PQL re-check (2026-09-23)",
+    "last_ok": "2026-09-23",
+    "checked": "2026-09-23"
+   }
   },
   {
    "name": "Conformity Habitat LLC",
@@ -339,7 +359,18 @@
     "Nonprofit",
     "421-a / IH"
    ],
-   "about": "Fifth Avenue Committee (FAC) is an award-winning nonprofit comprehensive community development corporation whose mission is to advance economic, social, and racial justice in New York City. FAC envisions an equitable New York City where all people can live in stable and thriving communities that are inclusive, healthy, and sustainable. FAC is a leader in the tenant selection process and affirmative fair housing marketing in NYC. We have rented thousands of affordable housing units in our own properties and have been the marketing agent for private developers constructing projects with LIHTCs, Inclusionary Housing, 421a/Affordable NY, and other affordable housing programs. FAC has also overseen the sales of affordable homes to first-time low-and-moderate-income homeowners"
+   "about": "Fifth Avenue Committee (FAC) is an award-winning nonprofit comprehensive community development corporation whose mission is to advance economic, social, and racial justice in New York City. FAC envisions an equitable New York City where all people can live in stable and thriving communities that are inclusive, healthy, and sustainable. FAC is a leader in the tenant selection process and affirmative fair housing marketing in NYC. We have rented thousands of affordable housing units in our own properties and have been the marketing agent for private developers constructing projects with LIHTCs, Inclusionary Housing, 421a/Affordable NY, and other affordable housing programs. FAC has also overseen the sales of affordable homes to first-time low-and-moderate-income homeowners",
+   "rerentals": {
+    "url": "https://fifthave.org/re-rental-availabilities/",
+    "title": "Re-rentals / availabilities",
+    "units_seen": true,
+    "note": "Current Units Available for Re-Rental: The Axel, Paseo on Fifth, Sunset Ridge, Sunset Park Apartments, 3 Eleven",
+    "found": "2026-09-22",
+    "source": "beyond HPD's PQL (2026-09-23 sweep)",
+    "unit_count": 2,
+    "last_ok": "2026-09-23",
+    "checked": "2026-09-23"
+   }
   },
   {
    "name": "Fordham-Bedford Housing Corporation",
@@ -365,7 +396,18 @@
     "LIHTC",
     "421-a / IH"
    ],
-   "about": "With over 15 years of Residential Management, Front Door Management has been helping residents find homes all over New York, including New York City and Westchester County. We currently manage more than 4,500 units, with another 3,500 on the way in construction or planning. Our portfolio covers just about everything—affordable housing programs like Article XI, LIHTC, ELLA, 15/15, 421-a, as well as market-rate apartments, shelters, and commercial spaces. We are a Qualified Marketing Agent approved by HPD and HDC. Our team will work on in-house projects only."
+   "about": "With over 15 years of Residential Management, Front Door Management has been helping residents find homes all over New York, including New York City and Westchester County. We currently manage more than 4,500 units, with another 3,500 on the way in construction or planning. Our portfolio covers just about everything—affordable housing programs like Article XI, LIHTC, ELLA, 15/15, 421-a, as well as market-rate apartments, shelters, and commercial spaces. We are a Qualified Marketing Agent approved by HPD and HDC. Our team will work on in-house projects only.",
+   "rerentals": {
+    "url": "https://www.frntdoor.com/affordablehousing-existingproperties",
+    "note": "5 affordable properties; 773 E 233rd St in tenant selection",
+    "title": "Affordable availabilities",
+    "units_seen": true,
+    "found": "2026-09-22",
+    "source": "HPD PQL re-check (2026-09-23)",
+    "unit_count": 3,
+    "last_ok": "2026-09-23",
+    "checked": "2026-09-23"
+   }
   },
   {
    "name": "Grenadier Realty Management",
@@ -413,8 +455,8 @@
     "note": "General application by mail for their Bronx portfolio; no unit board.",
     "units_seen": false,
     "waitlist": true,
-    "last_ok": "2026-09-22",
-    "checked": "2026-09-22"
+    "last_ok": "2026-09-23",
+    "checked": "2026-09-23"
    }
   },
   {
@@ -448,9 +490,9 @@
     "url": "https://www.housingpartnership.com/services/current-vacancies",
     "title": "Current Vacancies",
     "units_seen": true,
-    "last_ok": "2026-09-22",
+    "last_ok": "2026-09-23",
     "unit_count": 13,
-    "checked": "2026-09-22"
+    "checked": "2026-09-23"
    },
    "buildings": [
     {
@@ -477,9 +519,9 @@
     "title": "Outside Market / Re-rentals",
     "units_seen": true,
     "note": "Same operator as Affordable for NY, but lists different units — check both.",
-    "last_ok": "2026-09-22",
-    "unit_count": 8,
-    "checked": "2026-09-22"
+    "last_ok": "2026-09-23",
+    "unit_count": 7,
+    "checked": "2026-09-23"
    }
   },
   {
@@ -525,8 +567,8 @@
     "note": "Income-restricted rent-stabilized lease-ups (Verdant Fort Greene). No per-unit prices; downloadable application.",
     "units_seen": true,
     "unit_count": 1,
-    "last_ok": "2026-09-22",
-    "checked": "2026-09-22"
+    "last_ok": "2026-09-23",
+    "checked": "2026-09-23"
    }
   },
   {
@@ -558,8 +600,8 @@
     "note": "AMI-banded units with stated rents; apply by email. First-come style.",
     "units_seen": true,
     "unit_count": 3,
-    "last_ok": "2026-09-22",
-    "checked": "2026-09-22"
+    "last_ok": "2026-09-23",
+    "checked": "2026-09-23"
    }
   },
   {
@@ -628,9 +670,9 @@
     "url": "https://mgnyconsulting.com/listings/",
     "title": "Listings",
     "units_seen": true,
-    "last_ok": "2026-09-22",
+    "last_ok": "2026-09-23",
     "unit_count": 28,
-    "checked": "2026-09-22"
+    "checked": "2026-09-23"
    },
    "buildings": [
     {
@@ -665,9 +707,9 @@
     "url": "https://www.mutualhousingny.org/avaliable-properties",
     "title": "Available Properties",
     "units_seen": true,
-    "last_ok": "2026-09-22",
+    "last_ok": "2026-09-23",
     "unit_count": 3,
-    "checked": "2026-09-22"
+    "checked": "2026-09-23"
    }
   },
   {
@@ -712,8 +754,8 @@
     "note": "Filterable availability table with unit-level rents across their affordable buildings.",
     "units_seen": true,
     "unit_count": 2,
-    "last_ok": "2026-09-22",
-    "checked": "2026-09-22"
+    "last_ok": "2026-09-23",
+    "checked": "2026-09-23"
    }
   },
   {
@@ -734,8 +776,8 @@
     "note": "Directory of 42 buildings with waitlist/vacancy applications (e.g. Rockaway Village). Applications, not a priced unit board.",
     "units_seen": false,
     "waitlist": true,
-    "last_ok": "2026-09-22",
-    "checked": "2026-09-22"
+    "last_ok": "2026-09-23",
+    "checked": "2026-09-23"
    }
   },
   {
@@ -915,9 +957,10 @@
     "url": "https://residenewyork.com/property-status/open-market/",
     "title": "Open Market",
     "note": "Open-market (non-lottery) re-rentals with unit-level rents. Their /listings/ 404s and /my-properties/ throws a WP error - this taxonomy URL is the live board. Same operator as the dead Reside Affordable Inc domain.",
-    "units_seen": false,
-    "last_ok": "2026-09-22",
-    "checked": "2026-09-22"
+    "units_seen": true,
+    "last_ok": "2026-09-23",
+    "unit_count": 7,
+    "checked": "2026-09-23"
    }
   },
   {
@@ -938,9 +981,9 @@
     "title": "Available Homes & Open Houses",
     "units_seen": false,
     "note": "Homeownership, not rentals.",
-    "last_ok": "2026-09-22",
+    "last_ok": "2026-09-23",
     "waitlist": true,
-    "checked": "2026-09-22"
+    "checked": "2026-09-23"
    }
   },
   {
@@ -981,7 +1024,17 @@
     "LIHTC",
     "421-a / IH"
    ],
-   "about": "Settlement Housing Fund is a leader in tenant selection and affirmative fair housing marketing. Over the past 40 years, we have rented up over 12,000 units both in buildings we develop and own and as the marketing agent for private developers constructing projects with Low Income Housing Tax Credits, Inclusionary Housing, 421-a and other affordable housing programs. Settlement Housing Fund has also overseen the sales process for affordable homes, and our expertise ensures developers that rent ups will occur expeditiously and in compliance with complex government regulations. Our staff are experts in overseeing lotteries under the auspices of HPD, HDC and HCR marketing guidelines and in compliance matters pertaining to the Low-Income Housing Tax Credit and Inclusionary Housing, among other programs. Our experienced and trained staff assures that the tenant selection process complies with all fair housing laws while following all eligibility criteria, HPD preferences and sound management criteria."
+   "about": "Settlement Housing Fund is a leader in tenant selection and affirmative fair housing marketing. Over the past 40 years, we have rented up over 12,000 units both in buildings we develop and own and as the marketing agent for private developers constructing projects with Low Income Housing Tax Credits, Inclusionary Housing, 421-a and other affordable housing programs. Settlement Housing Fund has also overseen the sales process for affordable homes, and our expertise ensures developers that rent ups will occur expeditiously and in compliance with complex government regulations. Our staff are experts in overseeing lotteries under the auspices of HPD, HDC and HCR marketing guidelines and in compliance matters pertaining to the Low-Income Housing Tax Credit and Inclusionary Housing, among other programs. Our experienced and trained staff assures that the tenant selection process complies with all fair housing laws while following all eligibility criteria, HPD preferences and sound management criteria.",
+   "rerentals": {
+    "url": "https://www.settlementhousingfund.org/find-housing/",
+    "title": "Re-rentals / availabilities",
+    "units_seen": false,
+    "note": "re-rental vacancies are named in prose (Waterside Plaza, 3333 Broadway), no per-unit card the extractor can read",
+    "found": "2026-09-22",
+    "source": "beyond HPD's PQL (2026-09-23 sweep)",
+    "last_ok": "2026-09-23",
+    "checked": "2026-09-23"
+   }
   },
   {
    "name": "Shinda Management Corporation (SMC)",
@@ -1011,8 +1064,8 @@
     "url": "https://www.sjpny.com/affordable-rerentals",
     "title": "Affordable Re-Rentals",
     "units_seen": false,
-    "last_ok": "2026-09-22",
-    "checked": "2026-09-22"
+    "last_ok": "2026-09-23",
+    "checked": "2026-09-23"
    }
   },
   {
@@ -1059,9 +1112,9 @@
     "url": "https://springmanagement.net/apartments-for-rent",
     "title": "Apartments For Rent",
     "units_seen": true,
-    "last_ok": "2026-09-22",
+    "last_ok": "2026-09-23",
     "unit_count": 1,
-    "checked": "2026-09-22"
+    "checked": "2026-09-23"
    }
   },
   {
@@ -1073,7 +1126,18 @@
    "website": "https://stnicksalliance.org/",
    "agency": "HPD",
    "tags": [],
-   "about": "St. Nicks Alliance is one of the oldest and most accomplished community development groups in NYC. It seeks to transform the lives of low- and moderate-income people through employment, education, housing, social services and health care. We do this by delivering impactful services with measurable outcomes to children, adults, and the elderly to over 18,000 residents annually. It’s housing accomplishments include:"
+   "about": "St. Nicks Alliance is one of the oldest and most accomplished community development groups in NYC. It seeks to transform the lives of low- and moderate-income people through employment, education, housing, social services and health care. We do this by delivering impactful services with measurable outcomes to children, adults, and the elderly to over 18,000 residents annually. It’s housing accomplishments include:",
+   "rerentals": {
+    "url": "https://stnicksalliance.org/get-help-affordable-housing/",
+    "title": "Re-rentals / availabilities",
+    "units_seen": true,
+    "note": "two live re-rentals, but each is a linked PDF flyer rather than a listing card",
+    "found": "2026-09-22",
+    "source": "beyond HPD's PQL (2026-09-23 sweep)",
+    "unit_count": 6,
+    "last_ok": "2026-09-23",
+    "checked": "2026-09-23"
+   }
   },
   {
    "name": "5 Star Affordable Inc",
@@ -1146,9 +1210,9 @@
     "title": "Affordable Living NYC",
     "units_seen": true,
     "note": "First-come, first-served. Separate domain from their HPD-listed site.",
-    "last_ok": "2026-09-22",
+    "last_ok": "2026-09-23",
     "unit_count": 8,
-    "checked": "2026-09-22"
+    "checked": "2026-09-23"
    }
   },
   {
@@ -1165,9 +1229,9 @@
     "url": "https://www.taxaceny.com/projects-8",
     "title": "Available Units",
     "units_seen": true,
-    "last_ok": "2026-09-22",
+    "last_ok": "2026-09-23",
     "unit_count": 32,
-    "checked": "2026-09-22"
+    "checked": "2026-09-23"
    }
   },
   {
@@ -1184,9 +1248,9 @@
     "url": "https://tfc.com/about/affordable-re-rentals",
     "title": "Affordable Re-rentals",
     "units_seen": false,
-    "last_ok": "2026-09-22",
+    "last_ok": "2026-09-23",
     "waitlist": true,
-    "checked": "2026-09-22"
+    "checked": "2026-09-23"
    }
   },
   {
@@ -1245,9 +1309,9 @@
     "title": "Wavecrest Rentals",
     "units_seen": false,
     "note": "Application portal for their LAMP / HDC / LIHTC developments.",
-    "last_ok": "2026-09-22",
+    "last_ok": "2026-09-23",
     "waitlist": true,
-    "checked": "2026-09-22"
+    "checked": "2026-09-23"
    }
   },
   {

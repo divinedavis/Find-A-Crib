@@ -1,0 +1,14 @@
+# Vacancies from the managers' own availability pages (build_vacancies.py).
+# Installed at /etc/cron.d/rentmap-vacancies (scp this file; never hand-edit
+# on the box). Owner, 2026-09-23: the second-best way to learn a building has
+# an apartment free is to read what the company managing it advertises.
+#
+# Twice a day, offset from the 06:45 re-rental sweep so the two headless
+# passes never run together. Every page belongs to a company that manages
+# 800+ rent-stabilized units; one render per page per run is the politeness
+# ceiling, the same rule the re-rental sweep keeps.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+CRON_TZ=America/New_York
+
+30 7,19 * * * root cd /root/Find-A-Crib && python3 build_vacancies.py --apply --out /var/www/rent-map >> /var/log/rentmap-vacancies.log 2>&1

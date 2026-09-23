@@ -1,0 +1,171 @@
+{
+ "_comment": [
+  "Managers' OWN availability pages — the second way to learn a building has an apartment free",
+  "(owner, 2026-09-23). Sourced from the register's largest organisations by stabilized units,",
+  "then each page fetched and checked. Unlike rerental_pages.json these are mostly MARKET-RATE",
+  "listings, which is why they feed vacancies.json and never the affordable re-rental tiles.",
+  "skip: true keeps a checked-and-rejected page recorded without scanning it."
+ ],
+ "checked": "2026-09-22",
+ "pages": {
+  "Related Management": {
+   "url": "https://www.relatedrentals.com/apartment-rentals/new-york-city",
+   "units": 4505,
+   "note": "74 NYC apartments, JS filters"
+  },
+  "Stonehenge Management": {
+   "url": "https://www.stonehengenyc.com/apartments",
+   "units": 2000,
+   "note": "~100 apartments listed, JS"
+  },
+  "Stellar Management": {
+   "url": "https://www.stellarmanagement.com/featuredlistings.aspx",
+   "units": 2600,
+   "note": "featured units only, not full inventory"
+  },
+  "Nelson Management Group": {
+   "url": "https://nelsonmanagementgroup.net/rentals/",
+   "units": 1300,
+   "note": "plain HTML, thin; 'availability not guaranteed'"
+  },
+  "Progressive Management of NY": {
+   "url": "https://www.progressivemgmt.net/vacant-apartments",
+   "units": 1000,
+   "note": "5 properties by name, prices behind 'Learn more'"
+  },
+  "Goldfarb Properties (Pelican Management)": {
+   "url": "https://www.goldfarbproperties.com/rentals",
+   "units": 1500,
+   "note": "2 featured + JS search"
+  },
+  "C&C Apartment Management": {
+   "url": "https://ccmanagers.com/rental-apartments/",
+   "units": 9030,
+   "note": "market-rate side; their /availability/ affordable board is in rerental_pages.json"
+  },
+  "Highrise Property Management": {
+   "url": "https://www.highrisepm.com/availability",
+   "units": 900,
+   "note": "'view our available apartments and apply online' — unverified render"
+  },
+  "R.E.M. Residential": {
+   "url": "https://remny.com/nyc-apartment-listings/",
+   "units": 1200,
+   "note": "listings page exists; did not render for the research fetch"
+  },
+  "AvalonBay Communities": {
+   "url": "https://www.avaloncommunities.com/new-york/new-york-city-apartments/",
+   "units": 3940,
+   "note": "REIT, live availability app"
+  },
+  "Equity Residential": {
+   "url": "https://www.equityapartments.com/new-york-city-apartments",
+   "units": 1500,
+   "note": "REIT, live availability app"
+  },
+  "TF Cornerstone": {
+   "url": "https://www.tfc.com/rentals",
+   "units": 4879,
+   "note": "market-rate side; their affordable re-rental page is in rerental_pages.json"
+  },
+  "Two Trees Management": {
+   "url": "https://www.twotreesny.com/apartments",
+   "units": 1000,
+   "note": "Domino / One South First"
+  },
+  "Rose Associates": {
+   "url": "https://www.rosenyc.com/info/NYC-Rental-Properties/",
+   "units": 1200,
+   "note": "directory linking out to building sites"
+  },
+  "Glenwood Management": {
+   "url": "https://www.glenwoodnyc.com/properties/",
+   "units": 1200,
+   "note": "directory + JS price filter"
+  },
+  "Zara Realty": {
+   "url": "https://discover.zararealty.com/",
+   "units": 1000,
+   "note": "Jamaica, Queens portfolio portal"
+  },
+  "Argo Real Estate": {
+   "url": "https://www.argo.com/properties",
+   "units": 1200,
+   "note": "5,500 owned/managed units"
+  },
+  "Metro Management": {
+   "url": "https://metromanagement.com/properties.html",
+   "units": 3817,
+   "note": "directory; may carry no prices"
+  },
+  "Concord Management of NY": {
+   "url": "https://concordny.com/communities",
+   "units": 5210,
+   "note": "'Find Your Home' nav"
+  },
+  "Vector New York": {
+   "url": "https://www.vectorny.com/listings",
+   "units": null,
+   "note": "146 properties available"
+  },
+  "The Bouklis Group": {
+   "url": "https://www.bouklisgroup.com/astoria-rentals",
+   "units": null,
+   "note": "113 Astoria rentals, no-fee brokerage"
+  },
+  "The Brodsky Organization": {
+   "url": "https://brodsky.com/rentals",
+   "units": null,
+   "note": "~40 available apartments"
+  },
+  "Places.NYC": {
+   "url": "https://places.nyc/units/",
+   "units": null,
+   "note": "4 available units, no-fee"
+  },
+  "Style & Haus Realty": {
+   "url": "https://styleandhaus.com/properties/",
+   "units": null,
+   "note": "market-rate brokerage listings"
+  },
+  "Lemle & Wolff": {
+   "url": "https://www.lemlewolff.com/rentals-search/",
+   "units": null,
+   "note": "JS search; worth a browser pass"
+  },
+  "Lisa Management": {
+   "url": "https://www.lisamgmt.com/residential",
+   "units": null,
+   "note": "JS search"
+  }
+ },
+ "rejected": {
+  "FirstService Residential": "board management for co-ops/condos; no public vacancy list",
+  "AKAM Associates": "condo/co-op board management, no rentals",
+  "Douglas Elliman Property Management": "building management for boards; no central availability list",
+  "Halstead Management": "co-op/condo management only",
+  "Century Management Services": "co-op/condo focus, resident tools only",
+  "Choice NY Management": "resident/client portal only",
+  "Maxwell-Kates": "condo/co-op management",
+  "Wavecrest MGMT Group": "'currently not accepting applications' across all categories",
+  "Alma Realty Corp": "properties page is a static directory, no availability",
+  "Kaled Management": "static building directory, no prices or vacancy state",
+  "Shinda Management Corporation": "no public vacancy page (8,000+ units, tenant login only)",
+  "Bldg Management": "leases through outside brokers, no public listings",
+  "First Management Corp": "'find apartments' points off-domain to a broker",
+  "New Bedford Management": "sales/leasing dept page, no listings",
+  "Metropolitan Property Services": "resident portal only",
+  "GPG Management": "contact/tenant services only",
+  "RCR Management Group": "tenant login/handbook only",
+  "EBMG": "boutique manager, no public listings",
+  "Royal Realty Corp": "listings appear only on third-party NYBits, no owned portal",
+  "Rose Property MGMT GRP": "no official site found (distinct from Rose Associates)",
+  "BRG Management": "no confirmed site; search conflates with Benedict Realty Group",
+  "Estates NY Real Estate Services": "no official site found",
+  "Central Queens Properties": "no official site found",
+  "Gazivoda Management": "no official site found",
+  "Grenadier Realty Management": "domain dead (DNS)",
+  "Columbus Property Management": "name collision, not the NYC company",
+  "Queens Fresh Meadows": "single-portfolio ownership entity, no management site"
+ }
+}

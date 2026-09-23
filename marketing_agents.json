@@ -1,8 +1,10 @@
 {
  "source": "https://www.nyc.gov/site/hpd/services-and-information/marketing-agent-pql.page",
- "fetched": "2026-07-30",
+ "fetched": "2026-09-22",
  "count": 85,
  "rerental_count": 22,
+ "building_agent_count": 4,
+ "building_count": 5,
  "agents": [
   {
    "name": "About Real Estate NY",
@@ -1318,7 +1320,5 @@
    ],
    "about": "The founder Anthony Verrelli, Esq. has over 25 years of experience representing developers in the 421a and 485x tax abatement programs in the NYC area. Our goal at YNH, LLC is to provide assistance and guidance to tenants and developers in the tax abatement process. Our team takes great pride in participating in the great partnership between HPD and developers in the placing of tenants in affordable housing throughout the City of New York. Your Neighborhood Housing is open to being hired by outside teams."
   }
- ],
- "building_agent_count": 4,
- "building_count": 5
+ ]
 }

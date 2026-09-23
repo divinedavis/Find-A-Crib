@@ -21,7 +21,6 @@
   "The Brodsky Organization / Urban Associates LLC": "brodsky.com/rentals is 'NYC Luxury Apartments'",
   "Related Management Companies, L.P": "relatedrentals.com is market-rate luxury",
   "K&R Realty Management Inc": "gonofee.com is a market-rate no-fee brokerage",
-  "About Real Estate NY": "/rentals shows RENTED PROPERTIES — a past-deals archive, not live listings",
   "Vector New York": "/listings is market-rate luxury",
   "Diamond Mine Real Estate": "soft-404: /about/affordable-re-rentals renders their About page",
   "Micki Garcia Realty": "soft-404: same",
@@ -39,7 +38,6 @@
   "Regtime": "B2B software brand; same operator as MGNY (already listed), listings live there",
   "RiseBoro": "program/service pages, no unit board",
   "SCT Compliance, LLC": "B2B compliance consultancy",
-  "Settlement Housing Fund": "corporate site; the /marketing-leasing/ page has no listings",
   "Sterling23": "market-rate brokerage",
   "Style & Haus Realty": "market-rate broker/investment site",
   "The Bouklis Group Inc.": "market-rate Astoria brokerage",
@@ -217,6 +215,83 @@
    "units_seen": false,
    "waitlist": true,
    "last_ok": "2026-09-22"
+  },
+  "Fifth Avenue Committee": {
+   "url": "https://fifthave.org/re-rental-availabilities/",
+   "title": "Re-rentals / availabilities",
+   "units_seen": null,
+   "note": "Current Units Available for Re-Rental: The Axel, Paseo on Fifth, Sunset Ridge, Sunset Park Apartments, 3 Eleven",
+   "found": "2026-09-22",
+   "source": "beyond HPD's PQL (2026-09-23 sweep)"
+  },
+  "Settlement Housing Fund": {
+   "url": "https://www.settlementhousingfund.org/find-housing/",
+   "title": "Re-rentals / availabilities",
+   "units_seen": null,
+   "note": "re-rental vacancies are named in prose (Waterside Plaza, 3333 Broadway), no per-unit card the extractor can read",
+   "found": "2026-09-22",
+   "source": "beyond HPD's PQL (2026-09-23 sweep)",
+   "waitlist": true
+  },
+  "St. Nicks Alliance": {
+   "url": "https://stnicksalliance.org/get-help-affordable-housing/",
+   "title": "Re-rentals / availabilities",
+   "units_seen": null,
+   "note": "two live re-rentals, but each is a linked PDF flyer rather than a listing card",
+   "found": "2026-09-22",
+   "source": "beyond HPD's PQL (2026-09-23 sweep)",
+   "waitlist": true
+  },
+  "CAMBA Housing Ventures": {
+   "url": "https://www.cambahousingventures.org/rentals/",
+   "title": "Re-rentals / availabilities",
+   "units_seen": null,
+   "note": "listings behind a JS rental-search widget the extractor returns nothing from",
+   "found": "2026-09-22",
+   "source": "beyond HPD's PQL (2026-09-23 sweep)",
+   "waitlist": true
+  },
+  "Glenwood Management": {
+   "url": "https://www.glenwoodnyc.com/company/assisted-housing/",
+   "title": "Re-rentals / availabilities",
+   "units_seen": null,
+   "note": "80/20 moderate-income applications open for Barclay St and Liberty St",
+   "found": "2026-09-22",
+   "source": "beyond HPD's PQL (2026-09-23 sweep)",
+   "waitlist": true
+  },
+  "Northern Manhattan Improvement Corporation": {
+   "url": "https://www.nmic.org/en/housing-development/",
+   "title": "Re-rentals / availabilities",
+   "units_seen": null,
+   "note": "ANCP co-op openings at 21 Arden Street, Washington Heights",
+   "found": "2026-09-22",
+   "source": "beyond HPD's PQL (2026-09-23 sweep)",
+   "waitlist": true
+  },
+  "About Real Estate NY": {
+   "url": "https://www.aboutrealestateny.com/houses",
+   "note": "Affordable Housing category, 8 properties (1133 Bedford, 767 Marcy, 323 Quincy...)",
+   "title": "Affordable availabilities",
+   "units_seen": null,
+   "found": "2026-09-22",
+   "source": "HPD PQL re-check (2026-09-23)"
+  },
+  "Concern Housing": {
+   "url": "https://concernhousing.org/housing-applications/",
+   "note": "'available housing' with applications; 150 Bedell St, 58 Portion Rd",
+   "title": "Affordable availabilities",
+   "units_seen": null,
+   "found": "2026-09-22",
+   "source": "HPD PQL re-check (2026-09-23)"
+  },
+  "Front Door Management": {
+   "url": "https://www.frntdoor.com/affordablehousing-existingproperties",
+   "note": "5 affordable properties; 773 E 233rd St in tenant selection",
+   "title": "Affordable availabilities",
+   "units_seen": null,
+   "found": "2026-09-22",
+   "source": "HPD PQL re-check (2026-09-23)"
   }
  }
 }

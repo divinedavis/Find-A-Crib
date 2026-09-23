@@ -25,68 +25,11 @@ LOG = HERE / "scrape.log"
 
 UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 
-SUFFIX_MAP = {
-    "STREET": "ST", "AVENUE": "AVE", "BOULEVARD": "BLVD", "PLACE": "PL",
-    "ROAD": "RD", "DRIVE": "DR", "LANE": "LN", "TERRACE": "TER",
-    "COURT": "CT", "PARKWAY": "PKWY", "SQUARE": "SQ", "HEIGHTS": "HTS",
-}
-DIRECTION_MAP = {"WEST": "W", "EAST": "E", "NORTH": "N", "SOUTH": "S"}
-SPECIAL_NAME_MAP = {
-    "AVENUE OF THE AMERICAS": "6TH AVE",
-    "AVE OF THE AMERICAS": "6TH AVE",
-}
+from addr_match import (SUFFIX_MAP, DIRECTION_MAP, SPECIAL_NAME_MAP,  # noqa: F401
+                        normalize_addr, build_index)
 
 ZIP_RE = re.compile(r"\b\d{5}\b")
 ADDR_NUM_RE = re.compile(r"^(\d+)(?:\s+|\b)")
-
-
-def normalize_addr(s: str) -> str:
-    """Return canonical 'NUMBER REST' string (e.g. '246 10TH AVE')."""
-    if not s:
-        return ""
-    s = s.upper().strip()
-    # strip unit / apt
-    s = re.split(r"\s+(?:#|APT|UNIT|SUITE|STE)\b", s)[0].strip()
-    s = re.sub(r"[#,.;]", " ", s)
-    s = re.sub(r"\s+", " ", s).strip()
-    # special multi-word names first
-    for k, v in SPECIAL_NAME_MAP.items():
-        if k in s:
-            s = s.replace(k, v)
-    parts = s.split(" ")
-    out = []
-    for tok in parts:
-        if tok in SUFFIX_MAP:
-            out.append(SUFFIX_MAP[tok])
-        elif tok in DIRECTION_MAP:
-            out.append(DIRECTION_MAP[tok])
-        else:
-            out.append(tok)
-    return " ".join(out)
-
-
-def build_index(records):
-    """Return dict normalized_addr -> bbl. For range-numbered DHCR rows, index every number in the range."""
-    idx = {}
-    for r in records:
-        if r["b"] not in ("M", "Bk", "Q", "Bx", "SI"):  # all five boroughs
-            continue
-        for raw in (r.get("a"), r.get("address_alt")):
-            if not raw:
-                continue
-            norm = normalize_addr(raw)
-            if not norm:
-                continue
-            # handle range like "303 TO 309 10TH AVE"
-            m = re.match(r"^(\d+)\s+TO\s+(\d+)\s+(.+)$", norm)
-            if m:
-                lo, hi, rest = int(m.group(1)), int(m.group(2)), m.group(3)
-                step = 2 if (hi - lo) % 2 == 0 else 1
-                for n in range(lo, hi + 1, step):
-                    idx[f"{n} {rest}"] = r["bbl"]
-            else:
-                idx[norm] = r["bbl"]
-    return idx
 
 
 async def fetch_page(ctx, url, *, wait_ms=2500, timeout_ms=25000):

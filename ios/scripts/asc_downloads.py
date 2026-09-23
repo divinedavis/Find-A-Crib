@@ -133,6 +133,24 @@ def summarise(daily, latest):
     return {"d7": window(7), "d28": window(28), "all": window(DAYS)}
 
 
+def released_versions(asc, app_id):
+    """[[build, "1.2.3"], ...] for every version on the App Store, newest
+    first. The owner dashboard labels an app user's build with it: that map
+    used to be typed by hand in dashboard/users/index.html, stopped at 1.2.2
+    and had four of its seven rows wrong, so everyone on 1.2.3 read as 1.2.2
+    (owner, 2026-09-23)."""
+    j = asc.get(f"/apps/{app_id}/appStoreVersions", include="build", limit="50")
+    builds = {b["id"]: b["attributes"].get("version") for b in j.get("included", []) if b["type"] == "builds"}
+    out = []
+    for v in j["data"]:
+        if v["attributes"].get("appStoreState") != "READY_FOR_SALE":
+            continue
+        b = builds.get((v["relationships"]["build"].get("data") or {}).get("id"))
+        if b and str(b).isdigit():
+            out.append([int(b), v["attributes"]["versionString"]])
+    return sorted(out, reverse=True)
+
+
 def live_build(asc, app_id):
     """(highest build on the App Store, every build that ever reached it).
 
@@ -162,8 +180,9 @@ def main():
         # version ever shipped — dashboard_metrics counts app users from these
         # builds only, so simulators and TestFlight never read as users.
         payload["live_build"], payload["released_builds"] = live_build(asc, cfg["ASC_APP_ID"])
+        payload["versions"] = released_versions(asc, cfg["ASC_APP_ID"])
     except Exception as e:
-        payload["live_build"], payload["released_builds"] = None, []
+        payload["live_build"], payload["released_builds"], payload["versions"] = None, [], []
         print("live_build lookup failed:", str(e)[:200])
     OUT.write_text(json.dumps(payload, indent=1) + "\n")
     print("wrote", OUT, "as_of", payload["as_of"], payload.get("note") or "")

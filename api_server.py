@@ -2589,7 +2589,9 @@ def dashboard_users():
         data = rpc("dashboard_users", {})
     except Exception:
         return jsonify(error="temporarily_unavailable"), 503
-    return jsonify(users=data or [])
+    # [[build, version]] from App Store Connect (asc_downloads.py writes it
+    # into appstore.json), so the page never hand-maintains that map again.
+    return jsonify(users=data or [], versions=_fac_appstore().get("versions") or [])
 
 
 if __name__ == "__main__":

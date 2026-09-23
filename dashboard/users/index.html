@@ -165,6 +165,7 @@
   .badge{display:inline-block;font-size:11px;font-weight:600;padding:2px 9px;border-radius:999px}
   .b-google{background:#eef3fe;color:#2a5bd7}
   .b-email{background:#f0f0f4;color:#6b6a76}
+  .b-apple{background:#ececf0;color:#111}
   .b-plus{background:#efe9ff;color:#5a49d0}
   .b-comp{background:#eaf7ef;color:#1a8f57}
   .b-ref{background:#e6f7f4;color:#0f766e}
@@ -175,6 +176,7 @@
      dark set — the light fills wash out to near-white against a dark row. */
   html[data-theme="dark"] .b-google{background:#152b52;color:#8fb6ff}
   html[data-theme="dark"] .b-email{background:#26262f;color:#a9a8b8}
+  html[data-theme="dark"] .b-apple{background:#2b2b33;color:#f2f2f7}
   html[data-theme="dark"] .b-plus{background:#271f4d;color:#bdb0ff}
   html[data-theme="dark"] .b-comp{background:#123020;color:#5fd39a}
   html[data-theme="dark"] .b-ref{background:#0e2e2a;color:#4fd0be}
@@ -420,6 +422,7 @@
     var d = await res.json();
     if(mine!==routeSeq) return;
     USERS = d.users || [];
+    if (Array.isArray(d.versions) && d.versions.length) IOS_VERSIONS = d.versions;
     el('avatar').textContent = ((session.user&&session.user.email)||'D')[0].toUpperCase();
     renderChips(); paintHead(); renderRows('');
     settle();
@@ -434,6 +437,7 @@
   function renderChips(){
     var total=USERS.length,
         google=USERS.filter(function(u){return u.provider==='google';}).length,
+        apple=USERS.filter(function(u){return u.provider==='apple';}).length,
         paying=USERS.filter(function(u){return u.plan==='plus';}).length,
         // Same definition as the owner dashboard's "comped": a comp, a
         // founding grant or a referral reward — Plus without paying.
@@ -447,6 +451,7 @@
     el('chips').innerHTML =
       chip('', total, 'total users')+
       chip('google', google, 'via Google')+
+      chip('apple', apple, 'via Apple')+
       chip('plus', paying, 'paying Plus')+
       chip('comp', comped, 'comped')+
       chip('returned', returned, 'came back after signup')+
@@ -460,10 +465,18 @@
   // Which app version an account last used. The app reports its BUILD number
   // (ios_app_users.last_build); these are the builds each marketing version
   // started at, from ios/project.yml's history. Add a row when a version ships.
-  var IOS_VERSIONS = [[53,'1.2.2'],[41,'1.2.1'],[32,'1.2.0'],[30,'1.1.1'],[28,'1.1'],[25,'1.0.1'],[1,'1.0']];
+  // Build -> App Store version, sent by /api/dashboard-users from App Store
+  // Connect itself (appstore.json). The list used to be typed here, stopped at
+  // 1.2.2 and had the wrong build for four of its seven versions, so everyone
+  // on 1.2.3 was labelled 1.2.2 (owner, 2026-09-23). The fallback below is
+  // only for a payload from before this shipped.
+  var IOS_VERSIONS = [[71,'1.2.3'],[60,'1.2.2'],[51,'1.2.1'],[37,'1.2.0'],[30,'1.1.1'],[29,'1.1'],[21,'1.0']];
   function iosVersion(build){
     var b = parseInt(build, 10);
     if(!b) return null;
+    // Above every released build: a TestFlight build, not a version anyone
+    // downloaded from the App Store.
+    if(IOS_VERSIONS.length && b > IOS_VERSIONS[0][0]) return 'TestFlight ' + b;
     for(var i=0;i<IOS_VERSIONS.length;i++){ if(b >= IOS_VERSIONS[i][0]) return IOS_VERSIONS[i][1]; }
     return null;
   }
@@ -481,8 +494,12 @@
     if(p==='referral') return '<span class="badge b-ref">Referral</span>';
     return '<span class="badge b-free">Free</span>';
   }
+  // Apple was missing: nine accounts signed in with it and read as "Email"
+  // (owner, 2026-09-23).
   function provBadge(p){
-    return p==='google' ? '<span class="badge b-google">Google</span>' : '<span class="badge b-email">Email</span>';
+    if(p==='google') return '<span class="badge b-google">Google</span>';
+    if(p==='apple') return '<span class="badge b-apple"> Apple</span>';
+    return '<span class="badge b-email">Email</span>';
   }
   // Device of the newest auth session, not of the last visit — see the
   // dashboard_users() migration. A user with no live session reads "—" rather
@@ -533,6 +550,7 @@
   // button and the active one is outlined rather than restyled.
   var CHIPS = {
     google:   { label:'signed in with Google',      test:function(u){ return u.provider==='google'; } },
+    apple:    { label:'signed in with Apple',       test:function(u){ return u.provider==='apple'; } },
     plus:     { label:'paying for Plus',            test:function(u){ return u.plan==='plus'; } },
     comp:     { label:'comped',                     test:function(u){ return u.plan==='comp'||u.plan==='founding'||u.plan==='referral'; } },
     returned: { label:'came back after signing up', test:didReturn },

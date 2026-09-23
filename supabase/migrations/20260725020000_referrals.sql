@@ -113,3 +113,8 @@ grant execute on function public.get_or_create_referral() to authenticated;
 grant execute on function public.redeem_referral(text) to authenticated;
 
 notify pgrst, 'reload schema';
+
+-- Explicit Data API grants (Supabase stops auto-granting new public tables
+-- on 2026-10-30). Mirrors the grants live in production, so a rebuild from
+-- these migrations exposes exactly what prod exposes. RLS still gates rows.
+grant select, insert, update, delete on public.referrals to service_role;

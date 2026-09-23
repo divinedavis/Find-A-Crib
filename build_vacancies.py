@@ -49,6 +49,18 @@ BUILDINGS_CANDIDATES = [os.environ.get("BUILDINGS_FILE"),
 OUT = os.path.join(HERE, "vacancies.json")
 
 
+def free_mb():
+    """Free + reclaimable memory, or None where that cannot be read (macOS)."""
+    try:
+        info = {}
+        for line in open("/proc/meminfo"):
+            k, v = line.split(":", 1)
+            info[k] = int(v.strip().split()[0])
+        return (info.get("MemAvailable") or info.get("MemFree", 0)) // 1024
+    except Exception:
+        return None
+
+
 def load_pages(only=None):
     """{company: {url, …}} for every company with a live availability page."""
     try:
@@ -96,12 +108,33 @@ def main():
     ap.add_argument("--out", help="also write into this docroot (droplet-side)")
     ap.add_argument("--only", help="one company (substring match)")
     ap.add_argument("--limit", type=int, default=400, help="max listings to publish")
+    ap.add_argument("--chunk", type=int, default=6,
+                    help="pages per browser; a fresh browser hands memory back (default 6)")
+    ap.add_argument("--min-free", type=int, default=250, dest="min_free",
+                    help="stop when free memory drops below this many MB (default 250)")
     a = ap.parse_args()
 
     pages, registry = load_pages(a.only)
     if not pages:
         sys.exit("no companies with an availability page to scan")
-    records, errors = FR.sweep(pages)
+    # In CHUNKS, each with its own browser. The droplet has 2 GB and also
+    # serves the site: forty pages in one browser left 79 MB free, eleven
+    # renderers alive and the run wedged at 0% CPU (2026-09-23). A browser
+    # per chunk hands the memory back between them. The re-rental sweep gets
+    # away with one browser because it walks half as many pages.
+    names = list(pages)
+    records, errors = [], {}
+    for i in range(0, len(names), a.chunk):
+        part = {n: pages[n] for n in names[i:i + a.chunk]}
+        got, err = FR.sweep(part)
+        records += got
+        errors.update(err)
+        free = free_mb()
+        print(f"  …{min(i + a.chunk, len(names))}/{len(names)} pages, {len(records)} listings"
+              + (f", {free} MB free" if free is not None else ""))
+        if free is not None and free < a.min_free:
+            errors["(stopped)"] = f"only {free} MB free after {i + a.chunk} pages; the rest were skipped"
+            break
     offices = FR.office_addresses()
     records = [r for r in records if FR.is_real_listing(r, offices)]
     for r in records:

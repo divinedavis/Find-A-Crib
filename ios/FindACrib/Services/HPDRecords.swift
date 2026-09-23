@@ -13,6 +13,25 @@ enum HPDRecords {
     static let rodentsURL = "https://data.cityofnewyork.us/resource/p937-wjvj.json"
     static let limit = 100
 
+    /// Roaches, mice, rats and bedbugs as an INSPECTOR found them. HPD writes
+    /// these as "ABATE THE INFESTATION/NUISANCE CONSISTING OF <pest>" under
+    /// § 27-2017.4 / 27-2018. Requiring "CONSISTING OF" is what keeps out the
+    /// 73,000 "FILE ANNUAL BEDBUG REPORT" notices, which are a paperwork
+    /// violation and not a bug in anyone's apartment (measured 2026-09-23).
+    static let pestWhere = """
+    (upper(novdescription) like '%INFESTATION CONSISTING OF%' OR upper(novdescription) like '%NUISANCE CONSISTING OF%')     AND (upper(novdescription) like '%ROACH%' OR upper(novdescription) like '%MICE%'     OR upper(novdescription) like '%RATS%' OR upper(novdescription) like '%BEDBUG%'     OR upper(novdescription) like '%BED BUG%' OR upper(novdescription) like '%VERMIN%')
+    """
+
+    /// Which pest a violation is about, from its notice text.
+    static func pestWord(_ description: String?) -> String {
+        let t = (description ?? "").uppercased()
+        if t.contains("ROACH") { return "roaches" }
+        if t.contains("MICE") { return "mice" }
+        if t.contains("RATS") { return "rats" }
+        if t.contains("BEDBUG") || t.contains("BED BUG") { return "bedbugs" }
+        return "vermin"
+    }
+
     struct Violation: Decodable, Identifiable, Hashable {
         let violationid: String?
         let `class`: String?
@@ -104,6 +123,87 @@ enum HPDRecords {
     static var currentYear: Int { Calendar(identifier: .gregorian).component(.year, from: Date()) }
     static func int(_ s: String?) -> Int { Int(Double(s ?? "") ?? 0) }
 
+    /// Pest violations at a building this calendar year. Counted by Socrata,
+    /// not by counting the rows we fetch: the lists stop at `limit`, so a big
+    /// building would undercount its own pests (owner, 2026-09-23).
+    struct PestSummary: Hashable {
+        /// Issued this calendar year, whatever their status now.
+        let thisYear: Int
+        /// …of which HPD still has open.
+        let openThisYear: Int
+        /// Every pest violation on record, any year.
+        let total: Int
+        /// "5 roaches · 3 mice", most first.
+        let kinds: [(word: String, count: Int)]
+        var clean: Bool { thisYear == 0 }
+        var kindLine: String { kinds.map { "\($0.count) \($0.word)" }.joined(separator: " · ") }
+        static func == (a: PestSummary, b: PestSummary) -> Bool {
+            a.thisYear == b.thisYear && a.openThisYear == b.openThisYear && a.total == b.total
+                && a.kinds.map(\.word) == b.kinds.map(\.word) && a.kinds.map(\.count) == b.kinds.map(\.count)
+        }
+        func hash(into h: inout Hasher) { h.combine(thisYear); h.combine(openThisYear); h.combine(total) }
+    }
+
+    /// One row of the grouped count query.
+    private struct PestCount: Decodable { let kind: String?; let status: String?; let n: String? }
+
+    /// Two small aggregate queries: this year by pest and status, and the
+    /// all-time total.
+    static func pests(bbl: String, year: Int = currentYear) async throws -> PestSummary {
+        if let c = pestCache[bbl] { return c }
+        guard bbl.count == 10, bbl.allSatisfy(\.isNumber) else {
+            return PestSummary(thisYear: 0, openThisYear: 0, total: 0, kinds: [])
+        }
+        let kindCase = "case(upper(novdescription) like '%ROACH%','roaches', upper(novdescription) like '%MICE%','mice', "
+            + "upper(novdescription) like '%RATS%','rats', upper(novdescription) like '%BEDBUG%','bedbugs', "
+            + "upper(novdescription) like '%BED BUG%','bedbugs', true,'vermin')"
+        var thisYear = URLComponents(string: violationsURL)!
+        thisYear.queryItems = [
+            .init(name: "$select", value: "\(kindCase) as kind, violationstatus as status, count(*) as n"),
+            .init(name: "$group", value: "kind,status"),
+            .init(name: "$where", value: "bbl='\(bbl)' AND novissueddate>='\(year)-01-01T00:00:00' AND \(pestWhere)"),
+        ]
+        var everything = URLComponents(string: violationsURL)!
+        everything.queryItems = [
+            .init(name: "$select", value: "count(*) as n"),
+            .init(name: "$where", value: "bbl='\(bbl)' AND \(pestWhere)"),
+        ]
+        async let yearRows: [PestCount] = fetch(thisYear.url!)
+        async let allRows: [PestCount] = fetch(everything.url!)
+        let rows = try await yearRows, totals = try await allRows
+        var byKind: [String: Int] = [:], open = 0, count = 0
+        for r in rows {
+            let n = Int(r.n ?? "") ?? 0
+            count += n
+            byKind[r.kind ?? "vermin", default: 0] += n
+            if (r.status ?? "").uppercased() == "OPEN" { open += n }
+        }
+        let summary = PestSummary(thisYear: count, openThisYear: open,
+                                  total: Int(totals.first?.n ?? "") ?? 0,
+                                  kinds: byKind.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }
+                                               .map { (word: $0.key, count: $0.value) })
+        pestCache[bbl] = summary
+        return summary
+    }
+
+    /// Every pest violation at a building, newest first — the list behind the tile.
+    static func pestViolations(bbl: String) async throws -> [Violation] {
+        if let c = pestListCache[bbl] { return c }
+        guard bbl.count == 10, bbl.allSatisfy(\.isNumber) else { return [] }
+        var comps = URLComponents(string: violationsURL)!
+        comps.queryItems = [
+            .init(name: "$select", value: "violationid,class,novdescription,novissueddate,currentstatus,currentstatusdate,apartment,story"),
+            .init(name: "$where", value: "bbl='\(bbl)' AND \(pestWhere)"),
+            .init(name: "$order", value: "novissueddate DESC"),
+            .init(name: "$limit", value: String(limit)),
+        ]
+        let rows: [Violation] = try await fetch(comps.url!)
+        pestListCache[bbl] = rows
+        return rows
+    }
+
+    private static var pestCache: [String: PestSummary] = [:]
+    private static var pestListCache: [String: [Violation]] = [:]
     private static var violationCache: [String: [Violation]] = [:]
     private static var complaintCache: [String: [Complaint]] = [:]
     private static var bedbugCache: [String: [BedbugFiling]] = [:]

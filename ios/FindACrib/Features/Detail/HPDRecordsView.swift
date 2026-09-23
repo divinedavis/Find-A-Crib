@@ -4,12 +4,13 @@ import SwiftUI
 /// inspections, one row each, on their own screen. Reached from the four
 /// tiles in "Violations & inspections" (signed-in only).
 struct HPDRecordsView: View {
-    enum Kind: String, Hashable { case violations, complaints, bedbugs, rodents }
+    enum Kind: String, Hashable { case violations, complaints, pests, bedbugs, rodents }
     let building: Building
     let kind: Kind
 
     @State private var violations: [HPDRecords.Violation] = []
     @State private var complaints: [HPDRecords.Complaint] = []
+    @State private var pests: HPDRecords.PestSummary?
     @State private var bedbugs: [HPDRecords.BedbugFiling] = []
     @State private var rodents: [HPDRecords.RodentInspection] = []
     @State private var loading = true
@@ -20,8 +21,9 @@ struct HPDRecordsView: View {
         switch kind {
         case .violations: "Violations"
         case .complaints: "Complaints"
-        case .bedbugs: "Bedbug inspections"
-        case .rodents: "Rodent inspections"
+        case .pests: "Pest violations"
+        case .bedbugs: "Bedbug filings"
+        case .rodents: "Rat inspections"
         }
     }
 
@@ -67,6 +69,9 @@ struct HPDRecordsView: View {
         do {
             switch kind {
             case .violations: violations = try await HPDRecords.violations(bbl: b.bbl)
+            case .pests:
+                violations = try await HPDRecords.pestViolations(bbl: b.bbl)
+                pests = try await HPDRecords.pests(bbl: b.bbl)
             case .complaints: complaints = try await HPDRecords.complaints(bbl: b.bbl)
             case .bedbugs: bedbugs = try await HPDRecords.bedbugs(bbl: b.bbl)
             case .rodents: rodents = try await HPDRecords.rodents(bbl: b.bbl)
@@ -88,6 +93,14 @@ struct HPDRecordsView: View {
             case .complaints:
                 Text("\(c?.open ?? 0) open").font(.se(30, .black)).foregroundStyle(SE.ink)
                 Text("Problems tenants reported to 311 / HPD, newest first. A complaint is a report, not a finding — Violations are what inspectors confirmed.")
+                    .font(.se(15)).foregroundStyle(SE.ink2)
+            case .pests:
+                if !loading, let p = pests {
+                    Text(p.clean ? "None cited this year" : "\(p.thisYear) cited this year")
+                        .font(.se(30, .black)).foregroundStyle(p.clean ? SE.good : SE.bad)
+                    if !p.kindLine.isEmpty { Text(p.kindLine).font(.se(17, .bold)).foregroundStyle(SE.ink2) }
+                }
+                Text("Roaches, mice, rats and bedbugs an HPD inspector confirmed inside an apartment here, newest first. This is the one record that is current: the bedbug filings are the landlord's own annual report about last year, and the Health Department only inspects for rats.")
                     .font(.se(15)).foregroundStyle(SE.ink2)
             case .bedbugs:
                 let s = HPDRecords.summary(bedbugs: bedbugs)
@@ -120,6 +133,16 @@ struct HPDRecordsView: View {
             } else {
                 if violations.count >= HPDRecords.limit {
                     note("The \(HPDRecords.limit) most recent violations HPD still has open here — most serious first.")
+                }
+                LazyVStack(spacing: 0) { ForEach(violations) { violationRow($0) } }
+                    .background(Color.white)
+            }
+        case .pests:
+            if violations.isEmpty {
+                note("No pest violation on record for this building — HPD has never cited roaches, mice, rats or bedbugs here.")
+            } else {
+                if violations.count >= HPDRecords.limit {
+                    note("The \(HPDRecords.limit) most recent pest violations, newest first.")
                 }
                 LazyVStack(spacing: 0) { ForEach(violations) { violationRow($0) } }
                     .background(Color.white)

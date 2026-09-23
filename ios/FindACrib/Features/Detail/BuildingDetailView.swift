@@ -14,6 +14,7 @@ struct BuildingDetailView: View {
     @State private var contactsLoading = false
     /// The two inspection tiles, fetched live once the person is signed in.
     @State private var bedbugSummary: HPDRecords.InspectionSummary?
+    @State private var pestSummary: HPDRecords.PestSummary?
     @State private var rodentSummary: HPDRecords.InspectionSummary?
     @State private var inspectionsFailed = false
     @State private var showPaywall = false
@@ -567,14 +568,14 @@ struct BuildingDetailView: View {
         .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white).padding(.bottom, 10)
     }
 
-    /// Signed-in only, like the website since 2026-09-08: the open
-    /// violations and complaints, plus this year's bedbug filings and rodent
-    /// inspections from NYC Open Data. Signed out, the section says what is
-    /// behind the account and sends the person to Profile to sign in.
+    /// Signed-in only, like the website since 2026-09-08: the open violations
+    /// and complaints, this year's pest violations, and the two inspection
+    /// records from NYC Open Data. Signed out, the section says what is behind
+    /// the account and sends the person to Profile to sign in.
     @ViewBuilder private var hpdBlock: some View {
         let v = b.h?.violations; let c = b.h?.complaints
         if !auth.isSignedIn {
-            Text("HPD's open violations and complaints for this building, plus this year's bedbug filings and Health Department rodent inspections. Free with an account.")
+            Text("HPD's open violations and complaints for this building, the roaches, mice and rats an inspector confirmed here this year, and the bedbug and rat records. Free with an account.")
                 .font(.se(17)).foregroundStyle(SE.ink2)
             SEOutlineButton(title: "Sign in to see violations & inspections", icon: "person.crop.circle") { nav.tab = .profile }
                 .accessibilityIdentifier("hpd-sign-in")
@@ -592,15 +593,24 @@ struct BuildingDetailView: View {
                     }.buttonStyle(.plain).accessibilityIdentifier("open-complaints")
                 }
             }
-            // Bedbugs and rodents: red when something was found this year,
-            // green when the year is clean, grey while loading or with no
-            // record on file. Same rule as the site's buttons.
+            // Pests first, because it is the only one of the three that can
+            // answer "are there bugs here THIS YEAR" (owner, 2026-09-23): a
+            // bedbug filing is the landlord's own annual report and runs about
+            // a year behind, and the Health Department only inspects for rats,
+            // where it inspects at all. Roaches have no inspection dataset at
+            // all — they exist only as violations.
+            NavigationLink(value: Route.hpdRecords(b.bbl, .pests)) {
+                pestTile
+            }.buttonStyle(.plain).accessibilityIdentifier("pest-violations")
+            // Red when something was found this year, green when the year is
+            // clean, grey while loading or with no record on file. Same rule
+            // as the site's buttons.
             HStack(spacing: 12) {
                 NavigationLink(value: Route.hpdRecords(b.bbl, .bedbugs)) {
-                    inspectionTile("Bedbug inspections", bedbugSummary, found: "with bedbugs", clean: "none found this year")
+                    inspectionTile("Bedbug filings (landlord's)", bedbugSummary, found: "with bedbugs", clean: "none in the filed year")
                 }.buttonStyle(.plain).accessibilityIdentifier("bedbug-inspections")
                 NavigationLink(value: Route.hpdRecords(b.bbl, .rodents)) {
-                    inspectionTile("Rodent inspections", rodentSummary, found: "failed", clean: "none failed this year")
+                    inspectionTile("Rat inspections (Health Dept.)", rodentSummary, found: "failed", clean: "none failed this year")
                 }.buttonStyle(.plain).accessibilityIdentifier("rodent-inspections")
             }
             Text(inspectionsFailed ? "Couldn't reach NYC Open Data for the inspections just now. Tap a tile to try again." : "Tap a tile to see each one.")
@@ -619,18 +629,41 @@ struct BuildingDetailView: View {
                     if let n = c?.total { nrow("Complaints, all time", n) }
                 }.padding(.top, 6)
             }
-            Text("From NYC HPD's open data. Class C means the city considers the condition immediately hazardous — heat, hot water, lead, pests. Bedbug filings are the landlord's own annual report; rodent inspections are the Health Department's.")
+            Text("From NYC HPD's open data. Class C means the city considers the condition immediately hazardous — heat, hot water, lead, pests. Pest violations are what an HPD inspector confirmed inside an apartment. Bedbug filings are the landlord's own annual report, covering the year to the previous 31 October, so they run about a year behind; rat inspections are the Health Department's, and only exist where the city inspected.")
                 .font(.se(15)).foregroundStyle(SE.ink3)
         }
     }
 
     private func loadInspections() async {
-        guard auth.isSignedIn else { bedbugSummary = nil; rodentSummary = nil; return }
+        guard auth.isSignedIn else { bedbugSummary = nil; rodentSummary = nil; pestSummary = nil; return }
         inspectionsFailed = false
         async let bb = HPDRecords.bedbugs(bbl: b.bbl)
         async let ro = HPDRecords.rodents(bbl: b.bbl)
+        async let pe = HPDRecords.pests(bbl: b.bbl)
         do { bedbugSummary = HPDRecords.summary(bedbugs: try await bb) } catch { inspectionsFailed = true }
         do { rodentSummary = HPDRecords.summary(rodents: try await ro) } catch { inspectionsFailed = true }
+        do { pestSummary = try await pe } catch { inspectionsFailed = true }
+    }
+
+    /// "3 cited this year · 2 roaches · 1 mice" in red, or "none cited this
+    /// year" in green, with what is on record underneath. Counted by Socrata,
+    /// so a building with more pest violations than a page fits still adds up.
+    private var pestTile: some View {
+        let s = pestSummary
+        let tone: Color = s == nil ? SE.ink3 : (s!.clean ? SE.good : SE.bad)
+        let head: String = s == nil ? (inspectionsFailed ? "—" : "…")
+            : (s!.clean ? "None cited this year"
+                        : "\(s!.thisYear) cited this year" + (s!.openThisYear > 0 ? " · \(s!.openThisYear) still open" : ""))
+        let sub: String = s == nil ? ""
+            : (s!.thisYear > 0 ? s!.kindLine
+               : (s!.total == 0 ? "no pest violation on record" : "\(s!.total) on record, none this year"))
+        return VStack(alignment: .leading, spacing: 2) {
+            Text("Pest violations").font(.se(15, .semibold)).foregroundStyle(SE.ink2)
+            Text(head).font(.se(17, .bold)).foregroundStyle(tone).lineLimit(2).minimumScaleFactor(0.85)
+            Text(sub.isEmpty ? " " : sub).font(.se(13)).foregroundStyle(SE.ink3)
+        }.frame(maxWidth: .infinity, minHeight: 92, alignment: .topLeading).padding(14).background(SE.canvas)
+        .overlay(alignment: .topTrailing) { Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)).foregroundStyle(SE.ink3).padding(12) }
+        .contentShape(Rectangle())
     }
 
     /// A tile whose headline is the year's verdict, not a bare count: "none

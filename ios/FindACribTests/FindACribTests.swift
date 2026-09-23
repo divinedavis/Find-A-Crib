@@ -754,6 +754,40 @@ final class RerentalFeedTests: XCTestCase {
         XCTAssertEqual(pool.map(\.agent), ["Agent 0", "Agent 1", "Agent 2"], "Brooklyn and both Bronx spellings; Manhattan and the unnamed one stay out")
     }
 
+    /// The pest filter has one job beyond finding pests: NOT counting the
+    /// 73,000 "FILE ANNUAL BEDBUG REPORT" notices, which are a paperwork
+    /// violation and not a bug in anyone's apartment.
+    func testPestWordReadsTheNoticeText() {
+        XCTAssertEqual(HPDRecords.pestWord("HMC ADM CODE: § 27-2017.4 ABATE THE INFESTATION CONSISTING OF ROACHES IN THE ENTIRE APARTMENT"), "roaches")
+        XCTAssertEqual(HPDRecords.pestWord("§ 27-2018 ADM CODE ABATE THE NUISANCE CONSISTING OF VERMIN MICE IN THE ENTIRE APARTMENT"), "mice")
+        XCTAssertEqual(HPDRecords.pestWord("ABATE THE NUISANCE CONSISTING OF EVIDENCE OF RATS"), "rats")
+        XCTAssertEqual(HPDRecords.pestWord("ABATE THE INFESTATION CONSISTING OF BEDBUGS IN THE ENTIRE APARTMENT"), "bedbugs")
+        XCTAssertEqual(HPDRecords.pestWord("ABATE THE NUISANCE CONSISTING OF VERMIN"), "vermin")
+        XCTAssertEqual(HPDRecords.pestWord(nil), "vermin")
+    }
+
+    func testPestFilterDemandsAConfirmedInfestation() {
+        let w = HPDRecords.pestWhere
+        // Both halves: the wording an inspector uses, AND a named pest.
+        XCTAssertTrue(w.contains("INFESTATION CONSISTING OF") && w.contains("NUISANCE CONSISTING OF"),
+                      "without CONSISTING OF, 'FILE ANNUAL BEDBUG REPORT' counts as bedbugs")
+        for pest in ["ROACH", "MICE", "RATS", "BEDBUG", "BED BUG", "VERMIN"] {
+            XCTAssertTrue(w.contains("'%\(pest)%'"), "\(pest) is missing from the pest filter")
+        }
+        XCTAssertFalse(w.contains("FILE ANNUAL"), "the paperwork violation is not a pest")
+    }
+
+    /// The tile's numbers come from Socrata's own grouped count, so a building
+    /// with more pest violations than one page holds still adds up.
+    func testPestSummaryLineReadsMostFirst() {
+        let s = HPDRecords.PestSummary(thisYear: 8, openThisYear: 3, total: 43,
+                                       kinds: [(word: "roaches", count: 5), (word: "mice", count: 3)])
+        XCTAssertEqual(s.kindLine, "5 roaches · 3 mice")
+        XCTAssertFalse(s.clean)
+        XCTAssertTrue(HPDRecords.PestSummary(thisYear: 0, openThisYear: 0, total: 43, kinds: []).clean,
+                      "43 on record but none this year is a clean year, and the tile says so")
+    }
+
     func testFeaturedSeedDecodesAndTagsOutboundLinks() throws {
         guard let url = Bundle(for: DataStore.self).url(forResource: "featured", withExtension: "json", subdirectory: "Data")
                 ?? Bundle(for: DataStore.self).url(forResource: "featured", withExtension: "json") else {

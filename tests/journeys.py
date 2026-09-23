@@ -66,7 +66,7 @@ DOM_BUDGET = 40000
 JOURNEY_EVENTS = {
     'land':                 ['geo_start'],
     'search_address':       ['search', 'building_view', 'section_view', 'violations_open', 'complaints_open',
-                             'evictions_open', 'litigations_open', 'bedbugs_open', 'rodents_open'],
+                             'evictions_open', 'litigations_open', 'pests_open', 'bedbugs_open', 'rodents_open'],
     'search_area':          ['search'],
     'search_zip_and_miss':  ['search'],
     'pin_and_list':         ['building_view'],
@@ -365,25 +365,39 @@ class Runner:
         page.evaluate("document.querySelectorAll('.viol-backdrop .sheet-close').forEach(b=>b.click())"); time.sleep(0.3)
         # NYC Open Data buttons: present, counted, and the sheets list real rows
         labels = page.evaluate("[...document.querySelectorAll('#detail-sheet .d-actions button')].map(b=>b.textContent.trim())")
-        for want in ('Evictions', 'Housing court', 'Bedbug inspections', 'Rodent inspections'):
+        for want in ('Evictions', 'Housing court', 'Pest violations', 'Bedbug filings', 'Rat inspections'):
             self.ok(any(want in b for b in labels), f'building sheet lacks "{want}" button', j)
+        # Pests first of the three: it is the only one that answers "this year"
+        # (owner, 2026-09-23). The other two are a landlord's annual filing and
+        # the Health Department's rat programme, and say so on the button.
         vi = next((i for i, b in enumerate(labels) if b.startswith('Violations')), -1)
-        self.ok(vi >= 0 and labels[vi + 1].startswith('Bedbug inspections') and labels[vi + 2].startswith('Rodent'), f'Bedbugs and Rodents should sit right under Violations, got {labels[:5]}', j)
+        self.ok(vi >= 0 and labels[vi + 1].startswith('Pest violations') and labels[vi + 2].startswith('Bedbug filings')
+                and labels[vi + 3].startswith('Rat inspections'),
+                f'Pests, bedbug filings and rat inspections should sit under Violations in that order, got {labels[:6]}', j)
         # Six Socrata queries; the slow one has taken 3s+, so wait for the
         # counts rather than a fixed pause (flaked on 2026-09-09).
         # every count, and the bedbug/rodent "this year" verdicts, which arrive from their own queries
-        self.wait_until(page, "[...document.querySelectorAll('#detail-sheet [data-oc]')].every(e=>e.textContent.trim().startsWith('\u00b7') && (!/bedbugs|rodents/.test(e.dataset.oc) || /this year/.test(e.textContent)))")
+        self.wait_until(page, "[...document.querySelectorAll('#detail-sheet [data-oc]')].every(e=>e.textContent.trim().startsWith('\u00b7') && (!/pests|bedbugs|rodents/.test(e.dataset.oc) || /this year|filed period/.test(e.textContent)))")
         counts = page.evaluate("Object.fromEntries([...document.querySelectorAll('#detail-sheet [data-oc]')].map(e=>[e.dataset.oc, e.textContent.trim()]))")
         self.ok(all(v.startswith('·') for v in counts.values()), f'open-data counts should fill in on the buttons within 20s, got {counts}', j)
-        tones = page.evaluate("Object.fromEntries(['bedbugs','rodents'].map(k=>[k, document.querySelector('#detail-sheet [data-detail=\"'+k+'\"]').className]))")
-        self.ok(all('d-viol' in v for v in tones.values()), f'bedbug and rodent buttons should carry the violations styling, got {tones}', j)
-        for k in ('bedbugs', 'rodents'):
+        tones = page.evaluate("Object.fromEntries(['pests','bedbugs','rodents'].map(k=>[k, document.querySelector('#detail-sheet [data-detail=\"'+k+'\"]').className]))")
+        self.ok(all('d-viol' in v for v in tones.values()), f'pest, bedbug and rodent buttons should carry the violations styling, got {tones}', j)
+        for k in ('pests', 'bedbugs', 'rodents'):
             red, green = 'red' in tones[k], 'green' in tones[k]
             self.ok(red or green, f'{k} button should be red or green once the year is known: {counts} {tones}', j)
-            self.ok((red and 'this year' in counts[k] and 'none' not in counts[k]) or (green and 'none' in counts[k] and 'this year' in counts[k]), f'{k} button must say why it is {"red" if red else "green"}: {counts[k]!r}', j)
+            said = 'this year' in counts[k] or 'filed period' in counts[k]
+            self.ok((red and said and 'none' not in counts[k]) or (green and 'none' in counts[k] and said), f'{k} button must say why it is {"red" if red else "green"}: {counts[k]!r}', j)
         self.click(page, '#detail-sheet [data-detail="litigations"]'); self.sheet_loaded(page)
         body = page.evaluate("document.getElementById('viol-body').innerText")
         self.ok('Tenant Action' in body or 'case' in body.lower(), f'litigations sheet should list the case, got {body[:120]!r}', j)
+        page.evaluate("document.querySelectorAll('.viol-backdrop .sheet-close').forEach(b=>b.click())"); time.sleep(0.3)
+        # Pest violations are violations: open to everyone, like the Violations
+        # sheet, and listing the same rows (owner, 2026-09-23).
+        self.click(page, '#detail-sheet [data-detail="pests"]'); self.sheet_loaded(page)
+        body = page.evaluate("document.getElementById('viol-body').innerText")
+        self.ok('No pest violation' in body or 'Class' in body,
+                f'pest sheet should list the violations or say there are none, got {body[:140]!r}', j)
+        self.ok(page.evaluate("document.getElementById('auth-modal').hidden"), 'pest violations must not be behind the account gate', j)
         page.evaluate("document.querySelectorAll('.viol-backdrop .sheet-close').forEach(b=>b.click())"); time.sleep(0.3)
         # signed out, bedbug and rodent records ask for a free account (sign-up mode); the sheet must not open
         self.click(page, '#detail-sheet [data-detail="rodents"]'); time.sleep(1)
@@ -1114,7 +1128,8 @@ class Runner:
         self.ok(shown, 'tapping a status chip should explain what it means', j)
         self.ok(page.evaluate("document.querySelector('#detail-sheet [data-status]').getAttribute('aria-expanded') === 'true'"),
                 'the chip should report its expanded state to a screen reader', j)
-        self.ok(page.evaluate("document.querySelectorAll('#detail-sheet [data-oc]').length") == 4,
+        # Five since 2026-09-23: evictions, housing court, pests, bedbugs, rats.
+        self.ok(page.evaluate("document.querySelectorAll('#detail-sheet [data-oc]').length") == 5,
                 'the open-data buttons must survive the status re-render', j)
         j.notes.append(f'{chips} status chip(s)')
 

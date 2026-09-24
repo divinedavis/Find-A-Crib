@@ -27,8 +27,8 @@
     "units_seen": false,
     "found": "2026-09-22",
     "source": "HPD PQL re-check (2026-09-23)",
-    "last_ok": "2026-09-23",
-    "checked": "2026-09-23"
+    "last_ok": "2026-09-24",
+    "checked": "2026-09-24"
    }
   },
   {
@@ -61,8 +61,8 @@
     "units_seen": true,
     "note": "Filterable board with rent + household size per unit.",
     "unit_count": 3,
-    "last_ok": "2026-09-23",
-    "checked": "2026-09-23"
+    "last_ok": "2026-09-24",
+    "checked": "2026-09-24"
    }
   },
   {
@@ -133,8 +133,8 @@
     "note": "Building browser filterable by which waitlists are currently open; supportive/affordable, PDF applications.",
     "units_seen": false,
     "waitlist": true,
-    "last_ok": "2026-09-23",
-    "checked": "2026-09-23"
+    "last_ok": "2026-09-24",
+    "checked": "2026-09-24"
    }
   },
   {
@@ -156,8 +156,8 @@
     "note": "Waitlist applications; two senior buildings marked Available (rent = 30% of income, HPD PBV S8).",
     "units_seen": false,
     "waitlist": true,
-    "last_ok": "2026-09-23",
-    "checked": "2026-09-23"
+    "last_ok": "2026-09-24",
+    "checked": "2026-09-24"
    }
   },
   {
@@ -174,9 +174,9 @@
     "url": "https://ccmanagers.com/availability/",
     "title": "Rental Availability",
     "units_seen": true,
-    "last_ok": "2026-09-23",
+    "last_ok": "2026-09-24",
     "unit_count": 1,
-    "checked": "2026-09-23"
+    "checked": "2026-09-24"
    }
   },
   {
@@ -238,9 +238,9 @@
     "url": "https://www.clintonmanagement.com/availabilities/affordable",
     "title": "Affordable Availabilities",
     "units_seen": true,
-    "last_ok": "2026-09-23",
+    "last_ok": "2026-09-24",
     "unit_count": 6,
-    "checked": "2026-09-23"
+    "checked": "2026-09-24"
    }
   },
   {
@@ -286,8 +286,8 @@
     "units_seen": false,
     "found": "2026-09-22",
     "source": "HPD PQL re-check (2026-09-23)",
-    "last_ok": "2026-09-23",
-    "checked": "2026-09-23"
+    "last_ok": "2026-09-24",
+    "checked": "2026-09-24"
    }
   },
   {
@@ -368,8 +368,8 @@
     "found": "2026-09-22",
     "source": "beyond HPD's PQL (2026-09-23 sweep)",
     "unit_count": 2,
-    "last_ok": "2026-09-23",
-    "checked": "2026-09-23"
+    "last_ok": "2026-09-24",
+    "checked": "2026-09-24"
    }
   },
   {
@@ -405,8 +405,8 @@
     "found": "2026-09-22",
     "source": "HPD PQL re-check (2026-09-23)",
     "unit_count": 3,
-    "last_ok": "2026-09-23",
-    "checked": "2026-09-23"
+    "last_ok": "2026-09-24",
+    "checked": "2026-09-24"
    }
   },
   {
@@ -455,8 +455,8 @@
     "note": "General application by mail for their Bronx portfolio; no unit board.",
     "units_seen": false,
     "waitlist": true,
-    "last_ok": "2026-09-23",
-    "checked": "2026-09-23"
+    "last_ok": "2026-09-24",
+    "checked": "2026-09-24"
    }
   },
   {
@@ -490,9 +490,9 @@
     "url": "https://www.housingpartnership.com/services/current-vacancies",
     "title": "Current Vacancies",
     "units_seen": true,
-    "last_ok": "2026-09-23",
+    "last_ok": "2026-09-24",
     "unit_count": 13,
-    "checked": "2026-09-23"
+    "checked": "2026-09-24"
    },
    "buildings": [
     {
@@ -519,9 +519,9 @@
     "title": "Outside Market / Re-rentals",
     "units_seen": true,
     "note": "Same operator as Affordable for NY, but lists different units — check both.",
-    "last_ok": "2026-09-23",
-    "unit_count": 7,
-    "checked": "2026-09-23"
+    "last_ok": "2026-09-24",
+    "unit_count": 9,
+    "checked": "2026-09-24"
    }
   },
   {
@@ -567,8 +567,8 @@
     "note": "Income-restricted rent-stabilized lease-ups (Verdant Fort Greene). No per-unit prices; downloadable application.",
     "units_seen": true,
     "unit_count": 1,
-    "last_ok": "2026-09-23",
-    "checked": "2026-09-23"
+    "last_ok": "2026-09-24",
+    "checked": "2026-09-24"
    }
   },
   {
@@ -600,8 +600,8 @@
     "note": "AMI-banded units with stated rents; apply by email. First-come style.",
     "units_seen": true,
     "unit_count": 3,
-    "last_ok": "2026-09-23",
-    "checked": "2026-09-23"
+    "last_ok": "2026-09-24",
+    "checked": "2026-09-24"
    }
   },
   {
@@ -670,9 +670,9 @@
     "url": "https://mgnyconsulting.com/listings/",
     "title": "Listings",
     "units_seen": true,
-    "last_ok": "2026-09-23",
-    "unit_count": 28,
-    "checked": "2026-09-23"
+    "last_ok": "2026-09-24",
+    "unit_count": 27,
+    "checked": "2026-09-24"
    },
    "buildings": [
     {
@@ -707,9 +707,9 @@
     "url": "https://www.mutualhousingny.org/avaliable-properties",
     "title": "Available Properties",
     "units_seen": true,
-    "last_ok": "2026-09-23",
+    "last_ok": "2026-09-24",
     "unit_count": 3,
-    "checked": "2026-09-23"
+    "checked": "2026-09-24"
    }
   },
   {
@@ -754,8 +754,8 @@
     "note": "Filterable availability table with unit-level rents across their affordable buildings.",
     "units_seen": true,
     "unit_count": 2,
-    "last_ok": "2026-09-23",
-    "checked": "2026-09-23"
+    "last_ok": "2026-09-24",
+    "checked": "2026-09-24"
    }
   },
   {
@@ -776,8 +776,8 @@
     "note": "Directory of 42 buildings with waitlist/vacancy applications (e.g. Rockaway Village). Applications, not a priced unit board.",
     "units_seen": false,
     "waitlist": true,
-    "last_ok": "2026-09-23",
-    "checked": "2026-09-23"
+    "last_ok": "2026-09-24",
+    "checked": "2026-09-24"
    }
   },
   {
@@ -958,9 +958,9 @@
     "title": "Open Market",
     "note": "Open-market (non-lottery) re-rentals with unit-level rents. Their /listings/ 404s and /my-properties/ throws a WP error - this taxonomy URL is the live board. Same operator as the dead Reside Affordable Inc domain.",
     "units_seen": true,
-    "last_ok": "2026-09-23",
+    "last_ok": "2026-09-24",
     "unit_count": 7,
-    "checked": "2026-09-23"
+    "checked": "2026-09-24"
    }
   },
   {
@@ -981,9 +981,9 @@
     "title": "Available Homes & Open Houses",
     "units_seen": false,
     "note": "Homeownership, not rentals.",
-    "last_ok": "2026-09-23",
+    "last_ok": "2026-09-24",
     "waitlist": true,
-    "checked": "2026-09-23"
+    "checked": "2026-09-24"
    }
   },
   {
@@ -1032,8 +1032,8 @@
     "note": "re-rental vacancies are named in prose (Waterside Plaza, 3333 Broadway), no per-unit card the extractor can read",
     "found": "2026-09-22",
     "source": "beyond HPD's PQL (2026-09-23 sweep)",
-    "last_ok": "2026-09-23",
-    "checked": "2026-09-23"
+    "last_ok": "2026-09-24",
+    "checked": "2026-09-24"
    }
   },
   {
@@ -1064,8 +1064,8 @@
     "url": "https://www.sjpny.com/affordable-rerentals",
     "title": "Affordable Re-Rentals",
     "units_seen": false,
-    "last_ok": "2026-09-23",
-    "checked": "2026-09-23"
+    "last_ok": "2026-09-24",
+    "checked": "2026-09-24"
    }
   },
   {
@@ -1112,9 +1112,9 @@
     "url": "https://springmanagement.net/apartments-for-rent",
     "title": "Apartments For Rent",
     "units_seen": true,
-    "last_ok": "2026-09-23",
+    "last_ok": "2026-09-24",
     "unit_count": 1,
-    "checked": "2026-09-23"
+    "checked": "2026-09-24"
    }
   },
   {
@@ -1135,8 +1135,8 @@
     "found": "2026-09-22",
     "source": "beyond HPD's PQL (2026-09-23 sweep)",
     "unit_count": 6,
-    "last_ok": "2026-09-23",
-    "checked": "2026-09-23"
+    "last_ok": "2026-09-24",
+    "checked": "2026-09-24"
    }
   },
   {
@@ -1210,9 +1210,9 @@
     "title": "Affordable Living NYC",
     "units_seen": true,
     "note": "First-come, first-served. Separate domain from their HPD-listed site.",
-    "last_ok": "2026-09-23",
+    "last_ok": "2026-09-24",
     "unit_count": 8,
-    "checked": "2026-09-23"
+    "checked": "2026-09-24"
    }
   },
   {
@@ -1229,9 +1229,9 @@
     "url": "https://www.taxaceny.com/projects-8",
     "title": "Available Units",
     "units_seen": true,
-    "last_ok": "2026-09-23",
+    "last_ok": "2026-09-24",
     "unit_count": 32,
-    "checked": "2026-09-23"
+    "checked": "2026-09-24"
    }
   },
   {
@@ -1248,9 +1248,9 @@
     "url": "https://tfc.com/about/affordable-re-rentals",
     "title": "Affordable Re-rentals",
     "units_seen": false,
-    "last_ok": "2026-09-23",
+    "last_ok": "2026-09-24",
     "waitlist": true,
-    "checked": "2026-09-23"
+    "checked": "2026-09-24"
    }
   },
   {
@@ -1309,9 +1309,9 @@
     "title": "Wavecrest Rentals",
     "units_seen": false,
     "note": "Application portal for their LAMP / HDC / LIHTC developments.",
-    "last_ok": "2026-09-23",
+    "last_ok": "2026-09-24",
     "waitlist": true,
-    "checked": "2026-09-23"
+    "checked": "2026-09-24"
    }
   },
   {

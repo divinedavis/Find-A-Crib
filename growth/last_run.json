@@ -1,30 +1,30 @@
 {
   "build": {
-    "at": "2026-09-23T05:40:44+00:00",
+    "at": "2026-09-24T05:40:41+00:00",
     "changed_urls": 6,
-    "date": "2026-09-23",
+    "date": "2026-09-24",
     "deployed": true,
     "new_urls": 0,
     "seo_corpus": {
       "days_old": 0,
-      "written": "2026-09-23"
+      "written": "2026-09-24"
     },
     "seo_pipeline": {
-      "at": "2026-09-23T05:42:12Z",
-      "changed_urls": 223,
-      "code": "synced-2",
-      "corpus_pages": 49381,
+      "at": "2026-09-24T05:42:14Z",
+      "changed_urls": 241,
+      "code": "synced-1",
+      "corpus_pages": 49382,
       "head": "unknown",
       "hours_ago": 0.0,
       "phase": "finish",
       "pull": "no-worktree",
       "rc": 0,
-      "started": "2026-09-23T05:40:44Z",
-      "state": "ran clean (source handed over from the checkout: synced-2)",
+      "started": "2026-09-24T05:40:41Z",
+      "state": "ran clean (source handed over from the checkout: synced-1)",
       "step": "done"
     },
     "seo_watchdog": {
-      "at": "2026-09-23T05:42:12+00:00",
+      "at": "2026-09-24T05:42:15+00:00",
       "note": "ran refresh_seo.sh to completion",
       "ok": true,
       "ran": true,
@@ -32,10 +32,10 @@
     },
     "techniques": {
       "canonical_integrity": {
-        "detail": "canonical tags read on 1810 pages (1500 of them advertised in a sitemap of 4,036 listed) \u2014 no canonical defects found",
+        "detail": "canonical tags read on 1808 pages (1500 of them advertised in a sitemap of 4,049 listed) \u2014 no canonical defects found",
         "ok": true,
         "reread": "post-seo-refresh",
-        "same_since": "2026-09-23"
+        "same_since": "2026-09-24"
       },
       "city_guides": {
         "detail": "3 of 3 city guides live with their data caveat",
@@ -50,10 +50,10 @@
         "unchanged": true
       },
       "crawl_paths": {
-        "detail": "17 of 17 published sections have an inbound internal link (63 docroot pages read) \u2014 single inbound source: /available/ \u2190 nyc browse hub, /brief/ \u2190 home shell, /dc/neighborhood/ \u2190 dc browse hub, /embed/ \u2190 developers portal, /la/zip/ \u2190 la browse hub, /sf/neighborhood/ \u2190 sf browse hub \u2014 click depth from the homepage (788 pages read, levels 0-3 fully expanded): /dc/neighborhood/ 3, /la/zip/ 3, /sf/neighborhood/ 3, /available/ 2, /building/ 2, /dc/buildings/ 2, /embed/ 2, /guide/is-my-apartment-rent-controlled- 2, +9 shallower \u2014 3 of 17 audited sections are published under no ACTIVE technique, so nothing rebuilds them; link them or stop publishing them: /available/ [candidate], /brief/ [retired], /developers/ [candidate]",
+        "detail": "17 of 17 published sections have an inbound internal link (63 docroot pages read) \u2014 single inbound source: /available/ \u2190 nyc browse hub, /brief/ \u2190 home shell, /dc/neighborhood/ \u2190 dc browse hub, /embed/ \u2190 developers portal, /la/zip/ \u2190 la browse hub, /sf/neighborhood/ \u2190 sf browse hub \u2014 click depth from the homepage (787 pages read, levels 0-3 fully expanded): /dc/neighborhood/ 3, /la/zip/ 3, /sf/neighborhood/ 3, /available/ 2, /building/ 2, /dc/buildings/ 2, /embed/ 2, /guide/is-my-apartment-rent-controlled- 2, +9 shallower \u2014 3 of 17 audited sections are published under no ACTIVE technique, so nothing rebuilds them; link them or stop publishing them: /available/ [candidate], /brief/ [retired], /developers/ [candidate]",
         "ok": true,
         "reread": "post-seo-refresh",
-        "same_since": "2026-09-23"
+        "same_since": "2026-09-24"
       },
       "derived_building_facts": {
         "detail": "comparison block on 399 of 400 sampled building pages (99%) across 47,165 published",
@@ -62,8 +62,14 @@
         "unchanged": true
       },
       "fresh_section8": {
-        "detail": "310 buildings across 5 boroughs",
+        "detail": "309 buildings across 5 boroughs",
         "ok": true
+      },
+      "frozen_pages": {
+        "detail": "page ages across 49,418 published pages in 34 tiers (newest written 2026-09-24; frozen = older than 2026-09-22) \u2014 TIERS BEING SILENTLY ABANDONED, some pages rebuilt tonight and some months old: sf/neighborhood/ 1 of 37 (last written 2026-09-24, oldest 2026-09-12, 12d) \u2014 wholly frozen, nothing rebuilds these at all (retired tiers and the app shells this loop cannot deploy): brief/ 17 of 17 (last written 2026-08-15, oldest 2026-07-26, 60d); alerts/ 1 of 1 (last written 2026-09-09, oldest 2026-09-09, 15d); brand/ 1 of 1 (last written 2026-09-09, oldest 2026-09-09, 15d); directory/ 1 of 1 (last written 2026-09-09, oldest 2026-09-09, 15d); privacy/ 1 of 1 (last written 2026-09-19, oldest 2026-09-19, 5d); report-ready/ 1 of 1 (last written 2026-07-27, oldest 2026-07-27, 59d); reset/ 1 of 1 (last written 2026-09-09, oldest 2026-09-09, 15d); support/ 1 of 1 (last written 2026-09-09, oldest 2026-09-09, 15d) \u2014 skipped: 5 deeper than 3 segments, 7 not a directory index or unreadable",
+        "ok": false,
+        "reread": "post-seo-refresh",
+        "same_since": "2026-09-24"
       },
       "hub_direct_answers": {
         "detail": "answer block on 623 of 623 hub pages (neighborhood 198/198, borough 5/5, zip 165/165, dc hub 103/103, la hub 112/112, sf hub 37/37, city browse hub 3/3)",
@@ -84,13 +90,13 @@
         "unchanged": true
       },
       "page_uniqueness": {
-        "detail": "text shared with siblings (8-word shingles, 211 pages read across 10 sections): /brief/ 49% of 182 words (n=17 of 17), /available/ 42% of 418 words (n=24 of 93), /dc/neighborhood/ 38% of 543 words (n=24 of 103), /building/ 33% of 498 words (n=24 of 47,165), /section8/ 23% of 836 words (n=6 of 6), /la/zip/ 20% of 1,414 words (n=24 of 112), /neighborhood/ 18% of 1,048 words (n=24 of 198), /sf/neighborhood/ 15% of 1,522 words (n=24 of 37), +2 less duplicated \u2014 too few pages to compare: /dc/buildings/ (1 page), /developers/ (1 page), /embed/ (1 page), /guide/is-my-apartment-rent-controlled- (3 pages), /la/buildings/ (1 page), /methodology/ (1 page), /sf/buildings/ (1 page)",
+        "detail": "text shared with siblings (8-word shingles, 211 pages read across 10 sections): /brief/ 49% of 182 words (n=17 of 17), /available/ 42% of 418 words (n=24 of 94), /dc/neighborhood/ 38% of 543 words (n=24 of 103), /building/ 33% of 498 words (n=24 of 47,165), /section8/ 23% of 836 words (n=6 of 6), /la/zip/ 20% of 1,414 words (n=24 of 112), /neighborhood/ 18% of 1,048 words (n=24 of 198), /sf/neighborhood/ 15% of 1,522 words (n=24 of 37), +2 less duplicated \u2014 too few pages to compare: /dc/buildings/ (1 page), /developers/ (1 page), /embed/ (1 page), /guide/is-my-apartment-rent-controlled- (3 pages), /la/buildings/ (1 page), /methodology/ (1 page), /sf/buildings/ (1 page)",
         "ok": true,
         "reread": "post-seo-refresh",
-        "same_since": "2026-09-23"
+        "same_since": "2026-09-24"
       },
       "sitemap_daily": {
-        "detail": "sitemap-daily.xml with 25 URLs (incl. 1 city hub pages); 17 declared never (retired sections: /brief/), newest lastmod 2026-09-23 \u2014 2 of them live in the docroot but listed in no sitemap the SEO pipeline owns, so they had no crawl path at all until this run",
+        "detail": "sitemap-daily.xml with 25 URLs (incl. 1 city hub pages); 17 declared never (retired sections: /brief/), newest lastmod 2026-09-24 \u2014 2 of them live in the docroot but listed in no sitemap the SEO pipeline owns, so they had no crawl path at all until this run",
         "ok": true
       }
     }

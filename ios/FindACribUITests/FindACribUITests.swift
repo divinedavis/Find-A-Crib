@@ -336,6 +336,19 @@ final class FindACribUITests: XCTestCase {
         let rerental = app.descendants(matching: .any)["rerental-card"].firstMatch
         XCTAssertTrue(rerental.waitForExistence(timeout: 10) || app.descendants(matching: .any)["lotteries-empty"].firstMatch.exists,
                       "the Re-rentals pane should list re-rentals or say none are posted")
+        // The NJ pane (owner, 2026-09-24): Affordable Homes New Jersey's
+        // drawings, each with a way to apply; no Beds strip, as NJ lists no sizes.
+        let njTab = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'NJ'")).firstMatch
+        XCTAssertTrue(njTab.isHittable, "the NJ pane must fit beside the other two")
+        njTab.tap()
+        let nj = app.descendants(matching: .any)["nj-lottery-card"].firstMatch
+        XCTAssertTrue(nj.waitForExistence(timeout: 10) || app.descendants(matching: .any)["lotteries-empty"].firstMatch.exists,
+                      "the NJ pane should list drawings or say none are open")
+        if nj.exists {
+            XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS 'Apply on Affordable Homes NJ'")).firstMatch.exists)
+        }
+        XCTAssertFalse(app.buttons["segment-4+"].exists, "no Beds strip on the NJ pane")
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "lotteries-nj"; shot.lifetime = .keepAlways; add(shot)
     }
 
     /// The Events tab (owner, 2026-09-22): New York's tenant clinics and

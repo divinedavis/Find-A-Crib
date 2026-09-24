@@ -4,6 +4,8 @@ import SwiftUI
 /// boroughs they get alerts for, soonest deadline first, and (owner, same
 /// day) the HPD marketing agents' re-rentals in those boroughs. Everyone
 /// else sees a sign-up screen; only its button opens the sign-up sheet.
+/// The NJ pane (owner, 2026-09-24) lists the New Jersey towns holding
+/// affordable-housing drawings, from Affordable Homes New Jersey (CGP&H).
 /// See LotteryFeed.
 struct LotteriesView: View {
     @Environment(\.openURL) private var openURL
@@ -16,7 +18,7 @@ struct LotteriesView: View {
     }
     @State private var showAlerts = false
     @State private var showSignIn = false
-    enum Pane: Hashable { case lotteries, rerentals }
+    enum Pane: Hashable { case lotteries, rerentals, newJersey }
     @State private var pane: Pane = .lotteries
     /// Bedrooms they need, kept across launches: "0,1" = studio or 1-bed.
     /// Empty = any size.
@@ -112,7 +114,13 @@ struct LotteriesView: View {
                 .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.bottom, 12)
             }
             VStack(alignment: .leading, spacing: 10) {
-                SEUnderlineTabs(options: [(Pane.lotteries, "Lotteries (\(lotteries.count))"), (.rerentals, "Re-rentals (\(rerentals.count))")], selection: $pane)
+                // Three panes: "Lotteries (n)" no longer fits beside the other
+                // two on a 375 pt phone, and the header already says Lotteries.
+                SEUnderlineTabs(options: [(Pane.lotteries, "NYC (\(lotteries.count))"), (.rerentals, "Re-rentals (\(rerentals.count))"),
+                                          (.newJersey, "NJ (\(feed.njOpen.count))")], selection: $pane)
+                    .padding(.bottom, pane == .newJersey ? 10 : 0)
+                // NJ's source publishes no bedroom sizes, so no Beds strip there.
+                if pane != .newJersey {
                 HStack(spacing: 10) {
                     Text("Beds").font(.se(15, .bold)).foregroundStyle(SE.ink2)
                     // fixedSize: the strip's divider lines are flexible and
@@ -121,11 +129,12 @@ struct LotteriesView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(.bottom, 10)
+                }
             }
             .padding(.horizontal, 16).padding(.top, 8).background(Color.white)
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 12) {
-                    if pane == .rerentals { rerentalList } else {
+                    if pane == .newJersey { njList } else if pane == .rerentals { rerentalList } else {
                     HStack {
                         Text(countLine).font(.se(17, .bold)).foregroundStyle(SE.ink)
                         Spacer()
@@ -199,6 +208,64 @@ struct LotteriesView: View {
         Text("Income-restricted apartments that HPD-approved marketing agents are re-renting, from their own websites. Apply through the agent."
              + (beds.isEmpty ? "" : " Most agents don't list bedrooms, so those stay in the list whatever Beds is set to."))
             .font(.se(14)).foregroundStyle(SE.ink3).padding(.horizontal, 16).padding(.top, 4)
+    }
+
+    // MARK: - New Jersey
+
+    private var njRentals: [LotteryFeed.NJLottery] { feed.njOpen.filter(\.isRental) }
+    private var njSales: [LotteryFeed.NJLottery] { feed.njOpen.filter { !$0.isRental } }
+
+    @ViewBuilder private var njList: some View {
+        Text(feed.loading && feed.nj.isEmpty ? "Loading…" : "\(feed.njOpen.count) open in New Jersey")
+            .font(.se(17, .bold)).foregroundStyle(SE.ink).padding(.horizontal, 16)
+        if feed.njOpen.isEmpty && !feed.loading {
+            message("No New Jersey drawings right now",
+                    "Affordable Homes New Jersey isn't listing an open drawing today. Pull down to check again.")
+        }
+        if !njRentals.isEmpty {
+            njSection("Rentals", njRentals)
+        }
+        if !njSales.isEmpty {
+            njSection("Homes for sale", njSales)
+        }
+        Text("From Affordable Homes New Jersey (CGP&H), checked daily. To be in a drawing, fill in CGP&H's free pre-application, then join that town's waiting list from your CGP&H profile by the date shown. Units, rents and income limits are shown in your profile.")
+            .font(.se(14)).foregroundStyle(SE.ink3).padding(.horizontal, 16).padding(.top, 4)
+    }
+
+    @ViewBuilder private func njSection(_ title: String, _ items: [LotteryFeed.NJLottery]) -> some View {
+        Text(title).font(.se(15, .bold)).foregroundStyle(SE.ink2).textCase(.uppercase)
+            .padding(.horizontal, 16).padding(.top, 4)
+        LazyVGrid(columns: columns, alignment: .leading, spacing: 12) {
+            ForEach(items) { njCard($0) }
+        }
+        .padding(.horizontal, sizeClass == .regular ? 16 : 0)
+    }
+
+    private func njCard(_ l: LotteryFeed.NJLottery) -> some View {
+        let days = LotteryFeed.daysLeft(l.closes)
+        return VStack(alignment: .leading, spacing: 6) {
+            Text(l.town).font(.se(19, .bold)).foregroundStyle(SE.ink)
+            Text([l.county.map { "\($0) County, NJ" } ?? "New Jersey", l.isRental ? "Rental" : "For sale"].joined(separator: " · "))
+                .font(.se(15, .semibold)).foregroundStyle(SE.ink2)
+            Text(njWhen(l, days)).font(.se(16)).foregroundStyle((days ?? 99) <= 3 ? SE.warn : SE.ink)
+            if let href = l.href, let url = URL(string: href) {
+                SEPrimaryButton(title: "Apply on Affordable Homes NJ", icon: "arrow.up.right") {
+                    Analytics.shared.track("outbound", ["kind": "nj_cgph", "href": href, "town": l.town, "from": "lotteries_tab"])
+                    openURL(url)
+                }
+                .padding(.top, 6)
+            }
+        }
+        .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white)
+        .accessibilityIdentifier("nj-lottery-card")
+    }
+
+    private func njWhen(_ l: LotteryFeed.NJLottery, _ days: Int?) -> String {
+        guard let c = l.closes, let d = days else { return "Waiting list opening soon" }
+        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; f.timeZone = TimeZone(identifier: "America/New_York")
+        let out = DateFormatter(); out.dateFormat = "EEE MMM d"; out.timeZone = f.timeZone
+        let when = f.date(from: c).map { out.string(from: $0) } ?? c
+        return "Join the waiting list by \(when)" + (d == 0 ? " (today)" : d == 1 ? " (tomorrow)" : " (\(d)d)")
     }
 
     private var boroughNames: String {

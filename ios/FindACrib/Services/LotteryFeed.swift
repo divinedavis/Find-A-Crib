@@ -30,6 +30,23 @@ final class LotteryFeed {
     }
     private struct Payload: Decodable { let lotteries: [Lottery] }
 
+    /// A New Jersey drawing (owner, 2026-09-24): a town's affordable rentals or
+    /// sales, from the list Affordable Homes New Jersey (CGP&H) publishes. The
+    /// source names only the town and the date to join its waiting list by —
+    /// units, rents and income limits show only inside a CGP&H profile.
+    /// scrape_nj_lotteries.py writes the file once a day.
+    struct NJLottery: Decodable, Identifiable, Equatable {
+        let id: String
+        let town: String
+        let county: String?
+        let tenure: String      // "rent" or "buy"
+        let closes: String?     // nil while "COMING SOON"
+        let coming_soon: Bool?
+        let href: String?
+        var isRental: Bool { tenure == "rent" }
+    }
+    private struct NJPayload: Decodable { let lotteries: [NJLottery] }
+
     /// Subscribed (and not unsubscribed) — the tab shows only when true.
     private(set) var subscribed = false
     /// True once we actually know whether they are subscribed (prefs read, or
@@ -39,6 +56,9 @@ final class LotteryFeed {
     private(set) var boroughs: [String] = []
     private(set) var income: Int?
     private(set) var all: [Lottery] = []
+    /// Every NJ drawing in the file; `njOpen` drops the ones already closed.
+    private(set) var nj: [NJLottery] = []
+    var njOpen: [NJLottery] { Self.njFilter(nj, today: Self.todayKey()) }
     private(set) var loadFailed = false
     private(set) var loading = false
 
@@ -75,12 +95,26 @@ final class LotteryFeed {
 
     func loadLotteries() async {
         loading = true; defer { loading = false }
+        // Both files at once; NJ's result lands whatever Housing Connect does.
+        async let jersey = Self.loadNJ()
         var req = URLRequest(url: URL(string: "https://findacrib.com/housing_connect.json")!, timeoutInterval: 20)
         req.cachePolicy = .reloadRevalidatingCacheData
-        guard let (data, resp) = try? await URLSession.shared.data(for: req),
+        let got = try? await URLSession.shared.data(for: req)
+        if let j = await jersey { nj = j }
+        guard let (data, resp) = got,
               (resp as? HTTPURLResponse)?.statusCode == 200,
               let p = try? JSONDecoder().decode(Payload.self, from: data) else { loadFailed = all.isEmpty; return }
         all = p.lotteries; loadFailed = false
+    }
+
+    /// NJ drawings; nil on any failure so a dropped connection keeps what we had.
+    private static func loadNJ() async -> [NJLottery]? {
+        var req = URLRequest(url: URL(string: "https://findacrib.com/nj_lotteries.json")!, timeoutInterval: 20)
+        req.cachePolicy = .reloadRevalidatingCacheData
+        guard let (data, resp) = try? await URLSession.shared.data(for: req),
+              (resp as? HTTPURLResponse)?.statusCode == 200,
+              let p = try? JSONDecoder().decode(NJPayload.self, from: data) else { return nil }
+        return p.lotteries
     }
 
     private static func prefs(token: String) async -> [String: Any]? {
@@ -98,6 +132,13 @@ final class LotteryFeed {
         let names = Set(boroughs.map { Borough.name($0) })
         return l.filter { names.contains($0.borough) && ($0.closes ?? "9999") >= today }
             .sorted { ($0.closes ?? "9999", $0.name) < ($1.closes ?? "9999", $1.name) }
+    }
+
+    /// NJ drawings still open: a join-by date today or later, or "coming
+    /// soon". Soonest first; coming-soon ones last, as they have no date.
+    nonisolated static func njFilter(_ l: [NJLottery], today: String) -> [NJLottery] {
+        l.filter { $0.closes.map { $0 >= today } ?? ($0.coming_soon ?? false) }
+            .sorted { ($0.closes ?? "9999", $0.town) < ($1.closes ?? "9999", $1.town) }
     }
 
     /// Bedroom count from the feeds' wording: "Studio"/"studio" -> 0,

@@ -69,7 +69,7 @@ struct FindACribApp: App {
                 // Switching to a city without the Lotteries tab must not leave
                 // the app parked on it.
                 .onChange(of: store.city.id) { _, _ in
-                    if !store.city.isNYC, nav.tab.nycOnly { nav.tab = .search }
+                    if !nav.tab.available(in: store.city) { nav.tab = .search }
                 }
                 .onChange(of: auth.isSignedIn) { _, on in
                     if on { Task { await PushService.shared.reregisterIfAuthorized() } }
@@ -87,10 +87,20 @@ struct FindACribApp: App {
 
 enum Tab: String, CaseIterable { case search = "Search", lotteries = "Lotteries", events = "Events", activity = "My Activity", profile = "Profile"
     var icon: String { switch self { case .search: "magnifyingglass"; case .lotteries: "ticket"; case .events: "calendar"; case .activity: "heart"; case .profile: "person" } }
-    /// Lotteries and Events are New York's feeds (Housing Connect, the HPD
+    /// Lotteries and Events began as New York's feeds (Housing Connect, the HPD
     /// marketing agents, the City's events calendar); elsewhere they would list
     /// another city's openings, so those cities do not get the tabs.
     var nycOnly: Bool { self == .lotteries || self == .events }
+    /// Lotteries also shows where a place has openings of its own — LA, SF,
+    /// California, New Jersey (OpeningsFeed, owner 2026-09-24). Events stays
+    /// New York's calendar.
+    func available(in city: City) -> Bool {
+        switch self {
+        case .lotteries: city.hasLotteries
+        case .events: city.isNYC
+        default: true
+        }
+    }
 }
 
 enum Route: Hashable {

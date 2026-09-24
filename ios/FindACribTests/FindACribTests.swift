@@ -1034,6 +1034,31 @@ final class LotteryFeedTests: XCTestCase {
         XCTAssertEqual(b.webURL(in: nj).host, "maps.apple.com", "no web page for state maps yet: share the place")
     }
 
+    /// Openings outside New York: a state takes its whole state, LA and SF
+    /// their own agency's list, and closed ones drop out. Only places with a
+    /// feed get the Lotteries tab.
+    func testOpeningsBelongToTheirPlace() throws {
+        let j = #"""
+        {"openings":[
+         {"id":"a","src":"Access Housing LA","state":"CA","kind":"waitlist","tenure":"rent","closes":null},
+         {"id":"b","src":"SF DAHLIA","state":"CA","kind":"lottery","tenure":"buy","closes":"2026-09-30"},
+         {"id":"c","src":"Doorway Bay Area","state":"CA","kind":"lottery","tenure":"rent","closes":"2026-09-20"},
+         {"id":"d","src":"Boston Metrolist","state":"MA","kind":"lottery","tenure":"rent","closes":"2026-10-01","income_min":54286}
+        ]}
+        """#
+        struct P: Decodable { let openings: [OpeningsFeed.Opening] }
+        let all = try JSONDecoder().decode(P.self, from: Data(j.utf8)).openings
+        let t = "2026-09-24"
+        XCTAssertEqual(OpeningsFeed.filter(all, for: .la, today: t).map(\.id), ["a"])
+        XCTAssertEqual(OpeningsFeed.filter(all, for: .sf, today: t).map(\.id), ["b"])
+        XCTAssertEqual(OpeningsFeed.filter(all, for: City.find("st-ca"), today: t).map(\.id), ["b", "a"], "closed c dropped; dated first")
+        XCTAssertEqual(OpeningsFeed.filter(all, for: City.find("st-ma"), today: t).map(\.id), ["d"])
+        XCTAssertTrue(OpeningsFeed.filter(all, for: .dc, today: t).isEmpty)
+        XCTAssertTrue(Tab.lotteries.available(in: .la)); XCTAssertTrue(Tab.lotteries.available(in: City.find("st-nj")))
+        XCTAssertFalse(Tab.lotteries.available(in: .dc)); XCTAssertFalse(Tab.lotteries.available(in: City.find("st-wy")))
+        XCTAssertFalse(Tab.events.available(in: .la)); XCTAssertTrue(Tab.events.available(in: .nyc))
+    }
+
     /// The record file's LIHTC fields decode (build_lihtc_states.py's keys).
     func testTaxCreditRecordDecodes() throws {
         let j = #"{"name":"Baxter Terrace","li":80,"units_total":90,"mix":{"1":40,"2":50},"inc":"60% of area median income","serves":["seniors"],"mgr":"Acme Llc","tel":"609-656-4205","pis":2012,"np":1}"#

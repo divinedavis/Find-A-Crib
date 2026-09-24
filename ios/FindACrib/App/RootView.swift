@@ -104,7 +104,7 @@ struct PillTabBar: View {
     /// Lotteries is New York's: Housing Connect and the HPD marketing agents'
     /// re-rentals, matched to boroughs. In LA, SF or DC it would list another
     /// city's openings, so it is not offered there (owner, 2026-09-19).
-    private var tabs: [Tab] { Tab.allCases.filter { !$0.nycOnly || store.city.isNYC } }
+    private var tabs: [Tab] { Tab.allCases.filter { $0.available(in: store.city) } }
     /// Five tabs at 86 pt is 438 pt — wider than any iPhone. With the Events
     /// tab (2026-09-22) the items narrow to fit a 375 pt screen; four keep
     /// their old width.

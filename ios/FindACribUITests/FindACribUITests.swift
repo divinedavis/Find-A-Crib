@@ -242,7 +242,7 @@ final class FindACribUITests: XCTestCase {
     /// Lotteries tab (Housing Connect + HPD re-rentals, by borough) is gone,
     /// and the map opens on THAT city — it used to fall back to New York, so
     /// LA's map opened on Manhattan (owner, 2026-09-19).
-    func testOtherCitiesHaveNoLotteriesTabAndOpenTheirOwnMap() throws {
+    func testOtherCitiesListTheirOwnLotteriesAndOpenTheirOwnMap() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--city", "la", "--route", "map"]
         app.launch()
@@ -250,7 +250,9 @@ final class FindACribUITests: XCTestCase {
         // rather than for a fixed time.
         let laCount = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS '67,5'")).firstMatch
         XCTAssertTrue(laCount.waitForExistence(timeout: 90), "the LA map never finished loading LA")
-        XCTAssertFalse(app.buttons["tab-Lotteries"].exists, "Lotteries is New York's; it must not show in LA")
+        // LA has its own openings since 2026-09-24 (Access Housing LA), so the
+        // tab is back — listing LA's, never New York's.
+        XCTAssertTrue(app.buttons["tab-Lotteries"].exists, "LA lists Access Housing LA's openings")
         XCTAssertFalse(app.buttons["tab-Events"].exists, "Events are New York's calendar; they must not show in LA")
         // The count pill is the map's own: it says how many of THIS city's
         // buildings the map is showing, so 67,5xx means LA's data on LA's map.
@@ -260,6 +262,15 @@ final class FindACribUITests: XCTestCase {
                       "the map should show its count")
         XCTAssertTrue((app.descendants(matching: .any)["map-count"].firstMatch.label).contains("67,5"),
                       "the map is counting another city: \(app.descendants(matching: .any)["map-count"].firstMatch.label)")
+        // LA's Lotteries tab: Access Housing LA's openings, no sign-up screen.
+        app.buttons["tab-Lotteries"].tap()
+        let opening = app.descendants(matching: .any)["opening-card"].firstMatch
+        XCTAssertTrue(opening.waitForExistence(timeout: 20) || app.descendants(matching: .any)["lotteries-empty"].firstMatch.exists,
+                      "LA's tab should list openings or say none are open")
+        XCTAssertFalse(app.buttons["lotteries-signup"].exists, "no New York alert sign-up outside New York")
+        if opening.exists {
+            XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS 'Apply on Access Housing LA'")).firstMatch.exists)
+        }
     }
 
     /// Every state's income-restricted buildings (owner, 2026-09-24: "State
@@ -270,6 +281,20 @@ final class FindACribUITests: XCTestCase {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash"]
         app.launch()
+        // Picking a city is remembered across launches, and the tests after
+        // this one expect New York: put it back even if this test fails.
+        addTeardownBlock { [app] in
+            guard let app else { return }
+            app.terminate()
+            app.launchArguments = ["--no-launch-prompt", "--no-launch-splash"]
+            app.launch()
+            let field = app.buttons["city-field"]
+            guard field.waitForExistence(timeout: 20) else { return }
+            field.tap()
+            let nyc = app.buttons["city-nyc"]
+            if nyc.waitForExistence(timeout: 5) { nyc.tap() }
+            _ = app.buttons["search-button"].waitForExistence(timeout: 30)
+        }
         let cityField = app.buttons["city-field"]
         XCTAssertTrue(cityField.waitForExistence(timeout: 20))
         cityField.tap()
@@ -285,7 +310,8 @@ final class FindACribUITests: XCTestCase {
         // NJ downloads on first selection; wait for its count, not a fixed time.
         expectation(for: NSPredicate(format: "label CONTAINS 'Search' AND NOT (label CONTAINS 'Search 0 ')"), evaluatedWith: go)
         waitForExpectations(timeout: 90)
-        XCTAssertFalse(app.buttons["tab-Lotteries"].exists, "no New York lottery tab on a state map")
+        XCTAssertTrue(app.buttons["tab-Lotteries"].exists, "New Jersey lists CGP&H's drawings")
+        XCTAssertFalse(app.buttons["tab-Events"].exists, "Events are New York's calendar")
         let bar = app.buttons["tab-Search"]
         for _ in 0..<4 where !go.isHittable || (bar.exists && go.frame.maxY > bar.frame.minY - 8) { app.swipeUp() }
         go.tap()
@@ -296,6 +322,17 @@ final class FindACribUITests: XCTestCase {
         for _ in 0..<5 where !block.exists { app.swipeUp() }
         XCTAssertTrue(block.waitForExistence(timeout: 10), "a state building shows HUD's income-restricted record")
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "state-nj-building"; shot.lifetime = .keepAlways; add(shot)
+        // New Jersey's Lotteries tab lists CGP&H's town drawings. The detail
+        // screen hides the tab bar; a relaunch lands on Search, still in NJ
+        // because the pick is remembered.
+        app.terminate(); app.launch()
+        let lotteriesTab = app.buttons["tab-Lotteries"]
+        XCTAssertTrue(lotteriesTab.waitForExistence(timeout: 20), "New Jersey is still picked after a relaunch")
+        lotteriesTab.tap()
+        let drawing = app.descendants(matching: .any)["nj-lottery-card"].firstMatch
+        XCTAssertTrue(drawing.waitForExistence(timeout: 20) || app.descendants(matching: .any)["lotteries-empty"].firstMatch.exists,
+                      "NJ's tab should list drawings or say none are open")
+        let tabShot = XCTAttachment(screenshot: app.screenshot()); tabShot.name = "state-nj-lotteries"; tabShot.lifetime = .keepAlways; add(tabShot)
     }
 
     /// The banner is the wordmark, and it is decoration: the owner had a tap

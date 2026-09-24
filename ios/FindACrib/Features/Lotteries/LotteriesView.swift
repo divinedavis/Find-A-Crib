@@ -34,6 +34,11 @@ struct LotteriesView: View {
     private var feed: LotteryFeed { LotteryFeed.shared }
 
     var body: some View {
+        // Outside New York: the place's own openings, no sign-up (2026-09-24).
+        if !store.city.isNYC { OpeningsView() } else { nycBody }
+    }
+
+    private var nycBody: some View {
         Group {
             // Never show the sign-up until we KNOW they are not subscribed.
             if feed.subscribed { list } else if feed.checked { signup } else { checking }

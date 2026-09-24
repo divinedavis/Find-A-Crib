@@ -322,6 +322,12 @@ final class FindACribUITests: XCTestCase {
         // pane saying so, and clearing it brings the list back.
         let fourPlus = app.buttons["segment-4+"]
         XCTAssertTrue(fourPlus.waitForExistence(timeout: 5), "the Beds strip should sit under the tabs")
+        // Beds is remembered across launches (@AppStorage): a simulator that
+        // last had "1" picked would make 4+ mean "1 or 4+" and hide nothing.
+        for label in ["Studio", "1", "2", "3", "4+"] {
+            let seg = app.buttons["segment-\(label)"]
+            if seg.exists && seg.isSelected { seg.tap() }
+        }
         if card.exists {
             let before = app.descendants(matching: .any).matching(identifier: "lottery-card").count
             fourPlus.tap()

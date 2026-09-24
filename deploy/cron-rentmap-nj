@@ -1,0 +1,9 @@
+# /etc/cron.d/rentmap-nj — mirrored from deploy/cron-rentmap-nj.
+# New Jersey affordable-housing drawings for the Lotteries tab's NJ pane
+# (scrape_nj_lotteries.py): the "What's New" list on Affordable Homes New
+# Jersey (CGP&H) -> nj_lotteries.json in the docroot. One page fetch a day;
+# a failed fetch or an empty list never overwrites the last good file.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+CRON_TZ=America/New_York
+40 6 * * * root cd /root/Find-A-Crib && python3 scrape_nj_lotteries.py --out /var/www/rent-map/nj_lotteries.json >> /var/log/rentmap-nj.log 2>&1

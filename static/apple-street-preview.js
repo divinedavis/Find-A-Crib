@@ -84,10 +84,10 @@
       window.addEventListener('keydown', escape);
       await new Promise(resolve => {
         let settled = false;
-        const finish = message => {
+        const finish = (message, why) => {
           if (settled) return;
           settled = true; clearTimeout(timer); record.cancel = null;
-          trace((message ? 'la:fail ' : 'la:ready ') + live());
+          trace((message ? 'la:fail:' + why + ' ' : 'la:ready ') + live());
           status.hidden = !message;
           if (message) { status.textContent = message; record.failed = true; }
           resolve();
@@ -97,8 +97,8 @@
           if (event.data?.type !== 'fac-apple-state') return;
           const state = event.data.state;
           if (state === 'complete') finish('');
-          if (state === 'error') finish('Apple street imagery is unavailable here');
-          if (state === 'browser-error') finish('Street photos are unavailable in this browser');
+          if (state === 'error') finish('Apple street imagery is unavailable here', 'error');
+          if (state === 'browser-error') finish('Street photos are unavailable in this browser', 'browser');
           if (state === 'open' && !expanded && frame.showPopover) {
             expanded = true;
             frame.popover = 'manual';
@@ -110,7 +110,7 @@
         window.addEventListener('message', receive);
         const remove = record.view.destroy;
         record.view.destroy = () => { window.removeEventListener('message', receive); remove(); };
-        const timer = setTimeout(() => finish('Apple street view took too long to load'), 45000);
+        const timer = setTimeout(() => finish('Apple street view took too long to load', 'timeout'), 45000);
         record.cancel = () => finish('');
         frame.addEventListener('load', () => frame.contentWindow.postMessage({
           type:'fac-apple-init', token,

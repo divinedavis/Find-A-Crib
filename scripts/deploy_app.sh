@@ -26,24 +26,27 @@ DOC=/var/www/rent-map
 PY=${PY:-$HOME/.venvs/dhcr-map/bin/python}
 SKIP=${1:-}
 
+echo "== regenerating city pages from index.html"
+"$PY" build_city_pages.py | tail -1
+
 if [ "$SKIP" != "--skip-tests" ]; then
+  "$PY" tests/apple_street_preview.py
+  "$PY" tests/street_view.py
   echo "== journeys against the local build"
   "$PY" tests/journeys.py --target local
 fi
 
-echo "== regenerating city pages from index.html"
-"$PY" build_city_pages.py | tail -1
-
 echo "== deploying"
-scp -q index.html "$HOST:$DOC/index.html"
-for c in la sf dc westchester; do scp -q "$c/index.html" "$HOST:$DOC/$c/index.html"; done
 ssh "$HOST" "mkdir -p $DOC/static/supercluster"
 scp -q static/supercluster/supercluster.min.js "$HOST:$DOC/static/supercluster/supercluster.min.js"
+scp -q static/mapillary-preview.js static/apple-street-preview.js static/apple-street-frame.html "$HOST:$DOC/static/"
+scp -q index.html "$HOST:$DOC/index.html"
+for c in la sf dc westchester; do scp -q "$c/index.html" "$HOST:$DOC/$c/index.html"; done
 for u in / /la/ /sf/ /dc/ /westchester/ /static/supercluster/supercluster.min.js; do
   printf '%-45s %s\n' "$u" "$(curl -s -o /dev/null -w '%{http_code}' "https://findacrib.com$u")"
 done
 
 if [ "$SKIP" != "--skip-tests" ]; then
   echo "== journeys against the live site"
-  "$PY" tests/journeys.py --target live || echo "!! LIVE JOURNEYS FAILED — the deploy is up; fix forward now"
+  "$PY" tests/journeys.py --target live
 fi

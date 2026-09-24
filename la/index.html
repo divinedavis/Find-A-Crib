@@ -1780,7 +1780,7 @@
 <!-- ?v= busts the 7-day JS browser cache — bump it whenever a key in config.js rotates -->
 <script src="../config.js?v=6"></script>
 <script src="/static/mapillary-preview.js?v=1"></script>
-<script src="/static/apple-street-preview.js?v=9"></script>
+<script src="/static/apple-street-preview.js?v=10"></script>
 <script>
 (async function () {
   // ---------- error telemetry ----------
@@ -1815,6 +1815,11 @@
   // trace counts as clean if pagehide appears ANYWHERE in it, or if the last
   // thing it did was one of the steps a backgrounded tab does by itself.
   const TRACE_KEY = 'fac.trace';
+  // The steps carry Date.now() % 1e7, which wraps every 2.8 hours, so a trace
+  // could not say which DAY it died — a phone that died on old code and came
+  // back a week later read as a fresh death (2026-09-24). The boot's wall
+  // clock rides along as `booted`; error_report.py drops stale ones.
+  const TRACE_AT = 'fac.trace.at';
   const TR = [];
   function tr(step) {
     try {
@@ -1825,7 +1830,9 @@
   }
   try {
     const prev = JSON.parse(localStorage.getItem(TRACE_KEY) || 'null');
+    const prevAt = +localStorage.getItem(TRACE_AT) || 0;
     localStorage.removeItem(TRACE_KEY);
+    localStorage.setItem(TRACE_AT, String(Date.now()));
     const IDLE_STEPS = ['pagehide', 'freeze', 'tick', 'vis hidden', 'vis visible'];
     if (Array.isArray(prev) && prev.length) {
       const labels = prev.map(s => (s && s[1]) || '');
@@ -1834,7 +1841,7 @@
       if (!clean) {
         // `last` rides along so the report groups by what the page was doing
         // when it died, instead of unpacking the steps array every time.
-        setTimeout(() => { try { track('crash_trace', { last: last, steps: prev.slice(-50), ua: navigator.userAgent.slice(0, 140), mem: navigator.deviceMemory || null, sw: screen.width, sh: screen.height }); } catch (_) {} }, 4000);
+        setTimeout(() => { try { track('crash_trace', { last: last, steps: prev.slice(-50), ua: navigator.userAgent.slice(0, 140), mem: navigator.deviceMemory || null, sw: screen.width, sh: screen.height, booted: prevAt ? new Date(prevAt).toISOString() : null }); } catch (_) {} }, 4000);
       }
     }
   } catch (_) {}
@@ -6466,8 +6473,9 @@
       ${IS_NYC ? `<div class="d-actions" data-sec="actions">
         <button class="d-viol ${viol.tone}" data-detail="violations" title="${esc(viol.title)}">${viol.label}</button>
       </div>
-      <div class="d-actions" style="padding-top:0"><button class="d-viol" data-detail="bedbugs" title="Annual landlord bedbug filings with HPD">Bedbug inspections<span data-oc="bedbugs"></span></button></div>
-      <div class="d-actions" style="padding-top:0"><button class="d-viol" data-detail="rodents" title="Health Department rodent inspections">Rodent inspections<span data-oc="rodents"></span></button></div>` : ''}
+      <div class="d-actions" style="padding-top:0"><button class="d-viol" data-detail="pests" title="HPD violations for roaches, mice, rats or bedbugs — what an inspector confirmed in an apartment">Pest violations<span data-oc="pests"></span></button></div>
+      <div class="d-actions" style="padding-top:0"><button class="d-viol" data-detail="bedbugs" title="The landlord's own annual bedbug report to HPD — not an inspection, and about a year behind">Bedbug filings (landlord's)<span data-oc="bedbugs"></span></button></div>
+      <div class="d-actions" style="padding-top:0"><button class="d-viol" data-detail="rodents" title="Health Department rat inspections — only where the city inspected">Rat inspections (Health Dept.)<span data-oc="rodents"></span></button></div>` : ''}
       <div class="d-actions"${IS_NYC ? ' style="padding-top:0"' : ' data-sec="actions"'}>
         <a class="d-secondary" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.label}</a>
       </div>
@@ -6820,6 +6828,15 @@
   // No build step and nothing stored: the city updates these daily to weekly
   // and the sheet is the only reader. data.cityofnewyork.us is in connect-src.
   const OD = 'https://data.cityofnewyork.us/resource/';
+  // Roaches, mice, rats and bedbugs as an INSPECTOR found them: HPD writes
+  // these as "ABATE THE INFESTATION/NUISANCE CONSISTING OF <pest>" under
+  // § 27-2017.4 / 27-2018. The "CONSISTING OF" half is what keeps out the
+  // 73,000 "FILE ANNUAL BEDBUG REPORT" notices, which are paperwork, not bugs.
+  const PEST_WHERE = "(upper(novdescription) like '%INFESTATION CONSISTING OF%'"
+    + " OR upper(novdescription) like '%NUISANCE CONSISTING OF%')"
+    + " AND (upper(novdescription) like '%ROACH%' OR upper(novdescription) like '%MICE%'"
+    + " OR upper(novdescription) like '%RATS%' OR upper(novdescription) like '%BEDBUG%'"
+    + " OR upper(novdescription) like '%BED BUG%' OR upper(novdescription) like '%VERMIN%')";
   const OPEN_DATA = {
     evictions:   { id: '6z8x-wfk4', bbl: b => `bbl='${b}'`, order: 'executed_date DESC', title: 'Evictions', unit: ['eviction', 'evictions'],
                    sub: n => `${n} marshal-executed eviction${n === 1 ? '' : 's'} at this address since 2017 — NYC Department of Investigation`,
@@ -6829,16 +6846,30 @@
                    sub: n => `${n} case${n === 1 ? '' : 's'} brought by or with NYC HPD against this building — Housing Litigations`,
                    row: r => `<div class="hpd-row"><b>${esc(fmtDate(r.caseopendate))}</b> · ${esc(r.casetype || 'case')} · ${esc((r.casestatus || '').toLowerCase())}${r.findingofharassment && r.findingofharassment !== 'No Finding' ? ' · <span class="bad">harassment: ' + esc(r.findingofharassment) + '</span>' : ''}${r.penalty ? ' · penalty ' + esc(r.penalty) : ''}<br><span style="color:var(--ink-2)">${r.respondent ? 'v. ' + esc(r.respondent) : ''}</span></div>`,
                    none: 'No HPD housing-court cases on record for this building.' },
-    bedbugs:     { id: 'wz6d-d3jb', bbl: b => `bbl='${b}'`, order: 'filing_date DESC', title: 'Bedbug inspections', unit: ['bedbug filing', 'bedbug filings'],
+    // The one that answers "are there bugs in this building THIS YEAR": the
+    // other two tiles cannot (a landlord's filing is a year behind, and the
+    // Health Department only inspects for rats, where it inspects at all).
+    pests:       { id: 'wvxf-dwi5', bbl: b => `bbl='${b}' AND ${PEST_WHERE}`, order: 'novissueddate DESC',
+                   title: 'Pest violations', unit: ['pest violation', 'pest violations'],
+                   thisYear: (b, y) => `bbl='${b}' AND ${PEST_WHERE} AND novissueddate >= '${y}-01-01'`,
+                   thisYearWord: 'cited this year', cleanWord: 'none cited this year',
+                   sub: n => `${n} HPD violation${n === 1 ? '' : 's'} for roaches, mice, rats or bedbugs — what an inspector confirmed inside an apartment`,
+                   // Same row as the Violations sheet — it is the same dataset,
+                   // and a pest violation should not read differently there.
+                   row: r => violRowHtml(r),
+                   none: 'No pest violations on record for this building.' },
+    bedbugs:     { id: 'wz6d-d3jb', bbl: b => `bbl='${b}'`, order: 'filing_date DESC', title: "Bedbug filings (landlord's)", unit: ['bedbug filing', 'bedbug filings'],
                    // red when a filing this year reported infested units
                    thisYear: (b, y) => `bbl='${b}' AND filing_date >= '${y}-01-01' AND infested_dwelling_unit_count > 0`, thisYearWord: 'with bedbugs',
-                   sub: n => `${n} annual landlord filing${n === 1 ? '' : 's'} — every multiple dwelling must report bedbug history to HPD each year`,
+                   cleanWord: 'none infested in the filed period',
+                   sub: n => `${n} annual filing${n === 1 ? '' : 's'} by the landlord, not an inspection — each covers the year to the previous 31 October, so it runs about a year behind. See Pest violations for this year.`,
                    row: r => `<div class="hpd-row"><b>${esc(fmtDate(r.filing_date))}</b> · ${n0(r.infested_dwelling_unit_count)} of ${n0(r.of_dwelling_units)} unit${n0(r.of_dwelling_units) === 1 ? '' : 's'} infested${n0(r.re_infested_dwelling_unit) ? ' · ' + n0(r.re_infested_dwelling_unit) + ' re-infested' : ''}${n0(r.eradicated_unit_count) ? ' · ' + n0(r.eradicated_unit_count) + ' treated' : ''}<br><span style="color:var(--ink-2)">period ${esc(fmtDate(r.filing_period_start_date))} – ${esc(fmtDate(r.filling_period_end_date))}</span></div>`,
                    none: 'No bedbug filings on record for this building.' },
-    rodents:     { id: 'p937-wjvj', bbl: b => `bbl=${Number(b)}`, order: 'inspection_date DESC', title: 'Rodent inspections', unit: ['inspection', 'inspections'],
+    rodents:     { id: 'p937-wjvj', bbl: b => `bbl=${Number(b)}`, order: 'inspection_date DESC', title: 'Rat inspections (Health Dept.)', unit: ['inspection', 'inspections'],
                    // red when an inspection this year found rat activity or failed
                    thisYear: (b, y) => `bbl=${Number(b)} AND inspection_date >= '${y}-01-01' AND (upper(result) like '%RAT ACTIVITY%' OR upper(result) like '%FAIL%')`, thisYearWord: 'failed',
-                   sub: n => `${n} Health Department inspection${n === 1 ? '' : 's'} on record`,
+                   cleanWord: 'none failed this year',
+                   sub: n => `${n} Health Department rat inspection${n === 1 ? '' : 's'} on record — the city inspects for rats on complaint or by neighbourhood sweep, so a building with none was never inspected. Mice indoors are a pest violation, not one of these.`,
                    row: r => `<div class="hpd-row"><b>${esc(fmtDate(r.inspection_date))}</b> · ${esc(r.inspection_type || 'inspection')} · <span class="${/fail|rat activity|problem/i.test(r.result || '') ? 'bad' : ''}">${esc(r.result || '')}</span></div>`,
                    none: 'No rodent inspections on record for this building.' },
   };
@@ -6868,7 +6899,7 @@
       const el = detailContent.querySelector(`[data-oc="${k}"]`);
       if (!el || counts[k] == null) return;
       const yr = counts[k + '_year'];
-      const cleanWord = k === 'bedbugs' ? 'none found this year' : 'none failed this year';
+      const cleanWord = OPEN_DATA[k].cleanWord || 'none this year';
       el.textContent = ' · ' + counts[k] + (yr ? ` · ${yr} ${OPEN_DATA[k].thisYearWord} this year` : (yr === 0 ? ` · ${cleanWord}` : ''));
       // Bedbugs and rodents sit with Violations and take its colours: red for
       // a problem this year, green when this year is clean, and the button

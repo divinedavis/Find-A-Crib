@@ -124,6 +124,16 @@ def js_errors(rows):
     return out
 
 
+STALE_TRACE = datetime.timedelta(hours=48)
+
+
+def _ts(v):
+    try:
+        return datetime.datetime.fromisoformat(str(v).replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return None
+
+
 def crashes(rows):
     """Traces that look like the page died mid-work (see the module docstring)."""
     out = defaultdict(lambda: {"n": 0, "people": set(), "uas": Counter(), "last": ""})
@@ -147,6 +157,13 @@ def crashes(rows):
                 continue
         last = labels[-1]
         if last in CLEAN_LAST_STEPS:
+            continue
+        # A trace is only sent on the visitor's NEXT boot, which can be days
+        # later — so a death on code since replaced read as today's news
+        # (2026-09-24: two "deaths" were from 9/18 and 9/22). index.html now
+        # stamps the dead page's boot time; older than STALE_TRACE is history.
+        booted = _ts(p.get("booted"))
+        if booted and _ts(r["created_at"]) - booted > STALE_TRACE:
             continue
         e = out[last or "(no step)"]
         e["n"] += 1

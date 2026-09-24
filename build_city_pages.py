@@ -179,7 +179,7 @@ def main():
                           f'<meta name="twitter:description" content="{m["desc"]}" />', "twitter:description")
         html = substitute(html, f'<span class="brand-sub">{NYC_TAGLINE}</span>',
                           f'<span class="brand-sub">{m["tagline"]}</span>', "brand tagline")
-        html = substitute(html, 'src="config.js?v=2"', 'src="../config.js?v=2"', "config.js path")
+        html = substitute(html, 'src="config.js?v=6"', 'src="../config.js?v=6"', "config.js path")
         html = substitute(html, f'<h1 class="sr-only">{NYC_H1}</h1>',
                           f'<h1 class="sr-only">{m["h1"]}</h1>', "h1")
         html = substitute(html, NYC_SEO_NAV, m["seo_nav"], "seo nav")

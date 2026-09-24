@@ -1780,7 +1780,7 @@
 <!-- ?v= busts the 7-day JS browser cache — bump it whenever a key in config.js rotates -->
 <script src="config.js?v=6"></script>
 <script src="/static/mapillary-preview.js?v=1"></script>
-<script src="/static/apple-street-preview.js?v=9"></script>
+<script src="/static/apple-street-preview.js?v=10"></script>
 <script>
 (async function () {
   // ---------- error telemetry ----------
@@ -1815,6 +1815,11 @@
   // trace counts as clean if pagehide appears ANYWHERE in it, or if the last
   // thing it did was one of the steps a backgrounded tab does by itself.
   const TRACE_KEY = 'fac.trace';
+  // The steps carry Date.now() % 1e7, which wraps every 2.8 hours, so a trace
+  // could not say which DAY it died — a phone that died on old code and came
+  // back a week later read as a fresh death (2026-09-24). The boot's wall
+  // clock rides along as `booted`; error_report.py drops stale ones.
+  const TRACE_AT = 'fac.trace.at';
   const TR = [];
   function tr(step) {
     try {
@@ -1825,7 +1830,9 @@
   }
   try {
     const prev = JSON.parse(localStorage.getItem(TRACE_KEY) || 'null');
+    const prevAt = +localStorage.getItem(TRACE_AT) || 0;
     localStorage.removeItem(TRACE_KEY);
+    localStorage.setItem(TRACE_AT, String(Date.now()));
     const IDLE_STEPS = ['pagehide', 'freeze', 'tick', 'vis hidden', 'vis visible'];
     if (Array.isArray(prev) && prev.length) {
       const labels = prev.map(s => (s && s[1]) || '');
@@ -1834,7 +1841,7 @@
       if (!clean) {
         // `last` rides along so the report groups by what the page was doing
         // when it died, instead of unpacking the steps array every time.
-        setTimeout(() => { try { track('crash_trace', { last: last, steps: prev.slice(-50), ua: navigator.userAgent.slice(0, 140), mem: navigator.deviceMemory || null, sw: screen.width, sh: screen.height }); } catch (_) {} }, 4000);
+        setTimeout(() => { try { track('crash_trace', { last: last, steps: prev.slice(-50), ua: navigator.userAgent.slice(0, 140), mem: navigator.deviceMemory || null, sw: screen.width, sh: screen.height, booted: prevAt ? new Date(prevAt).toISOString() : null }); } catch (_) {} }, 4000);
       }
     }
   } catch (_) {}

@@ -1209,6 +1209,134 @@ def listings_asof(listings):
         return None
 
 
+# ---- the voucher feed, on the pages Google actually crawls -----------------
+# WHY THIS BUILD NOW READS s8.json, and why the note above VOUCHER_XLINK that
+# says it never should is superseded rather than ignored.
+#
+# That note's reasoning was: "The voucher pages are rebuilt by the growth build
+# from a feed this pipeline never reads, hours after this one runs, so any
+# number here would be a claim this build cannot substantiate." Two of its three
+# premises have since stopped being true.
+#
+#   1. THE ORDER REVERSED. When that was written the SEO pipeline ran on its own
+#      schedule. Since the seo_watchdog landed, refresh_seo.sh is invoked BY the
+#      05:40 growth build, after it finishes: growth/cron_heartbeat.jsonl reads
+#      "build --deploy finish 05:40:44" then "seo_watchdog_start 05:40:44",
+#      "seo_watchdog_finish 05:42:12" every night. scrape_affordablehousing.py
+#      writes s8.json beside this file at 04:15 UTC. So this build reads the
+#      same snapshot t_fresh_section8 read ninety seconds earlier, not an older
+#      one and not a newer one.
+#   2. "CANNOT SUBSTANTIATE" IS NOW TESTABLE RATHER THAN ASSUMED. Every claim
+#      below is conditioned on the feed's own avail_updated timestamp, on the
+#      same 48-hour rule the owner's error_report.py already applies to this
+#      exact file and growth/techniques.py:_feed_freshness already applies to
+#      /section8/. An undated or stale feed yields no claim at all — not a
+#      hedged one, not a dated past-tense one, none — because a building page is
+#      read by one tenant about one address and has no room to explain a
+#      snapshot the way the /section8/ hub does.
+#
+# WHY IT IS WORTH DOING AT ALL, which is the part the note could not have known.
+# The 2026-09-23 URL Inspection census (growth/index_status.json) says Google
+# has fetched /building/ 67 times, /neighborhood/ 15, /borough/ 5 and / once —
+# and /section8/ ZERO times, ever, across all 6 of its URLs. The voucher feed is
+# the only dataset on this site that genuinely changes every night, and it was
+# being published exclusively onto the six pages Google has never once visited,
+# while the ~47,000 pages it does visit changed only when a monthly rebuild
+# moved them. This puts the daily fact on the daily-crawled surface. It mints no
+# new URL, which the 2026-08-25 T002 decision established this domain cannot
+# afford, and it is the answer to T001's own revisit question — the idea was
+# right, the placement was wrong.
+#
+# THE ACCURACY HAZARD, and it is specific. Source-of-income discrimination is
+# illegal in New York City: a landlord may not refuse a voucher. So no wording
+# here may imply that a building WITHOUT a listing refuses vouchers. Every
+# sentence below is therefore a claim about a listing on AffordableHousing.com,
+# never about a landlord's policy, and the hub block says so outright.
+VOUCHER_STALE_HOURS = 48
+VOUCHER_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "s8.json")
+
+
+def load_voucher_listings(path=None, now=None):
+    """({bbl: {"n","p","url"}}, "June 3, 2026") for tonight's voucher listings.
+
+    ({}, None) whenever the feed cannot support a present-tense claim: missing,
+    unreadable, the wrong shape, undated, or older than VOUCHER_STALE_HOURS. An
+    unknown age is not evidence of freshness — the failure that leaves the
+    timestamp missing is the same one that leaves the data old.
+
+    Only entries flagged b8 are returned. s8.json's `avail` also carries
+    listings that never mention vouchers (15 of 253 in the committed snapshot),
+    and this build makes no voucher claim about those.
+    """
+    try:
+        with open(path or VOUCHER_PATH) as f:
+            d = json.load(f)
+        avail = d.get("avail")
+        ts = float(d["avail_updated"])
+        if not isinstance(avail, dict):
+            raise ValueError("no avail map")
+    except Exception as e:
+        print(f"s8.json: no usable voucher feed ({e}) — no voucher claims will be made")
+        return {}, None
+    now = time.time() if now is None else now
+    hours = (now - ts) / 3600.0
+    if hours > VOUCHER_STALE_HOURS or hours < -1:
+        print(f"s8.json: voucher feed is {hours / 24:.1f} days old "
+              f"(limit {VOUCHER_STALE_HOURS}h) — no voucher claims will be made")
+        return {}, None
+    out = {}
+    for bbl, v in avail.items():
+        if not isinstance(v, dict) or not v.get("b8") or not v.get("url"):
+            continue
+        out[str(bbl)] = {"n": v.get("n") or 1, "p": v.get("p"), "url": v["url"]}
+    label = time.strftime("%B %-d, %Y", time.gmtime(ts))
+    print(f"voucher feed: {len(out):,} buildings with a live voucher listing as of {label}")
+    return out, label
+
+
+# Two sentences, both about listings rather than about landlords, and the second
+# is not optional: see the SOI note above. Kept short because it rides on hub
+# pages whose duplicate-share t_page_uniqueness measures — the count, the date
+# and the addresses are per-page, this framing is the only shared part.
+def voucher_hub_block(bbls, avail, asof, place, addr_links=None):
+    """VOUCHER_XLINK, plus tonight's count where this page has one to quote.
+
+    `place` is what this page covers ("Bushwick, Brooklyn", "ZIP 11221", "New
+    York City") and not "this page": the borough and citywide hubs list
+    neighborhoods rather than buildings, so "the buildings on this page" would
+    be false on two of the four tiers that call this.
+    """
+    live = [b for b in bbls if b in avail] if avail else []
+    if not live:
+        return VOUCHER_XLINK
+    n = len(live)
+    units = sum(avail[b]["n"] for b in live)
+    names = ""
+    if addr_links:
+        shown = [addr_links[b] for b in live if b in addr_links][:12]
+        if shown:
+            names = (" " + ("It is " if len(shown) == 1 else "They are ")
+                     + ", ".join(shown)
+                     + ("." if len(shown) == n else f", and {n - len(shown):,} more."))
+    return (VOUCHER_XLINK
+            + f"<p><b>{n:,} rent-stabilized building{'' if n == 1 else 's'} in "
+            # Present tense, with the date still stated: this block renders only
+            # when the feed is inside VOUCHER_STALE_HOURS, which is the same
+            # threshold on which /section8/ says "listed right now" and on which
+            # the owner's error_report.py stops calling s8.json stale. Past
+            # tense would be the wording for a snapshot the reader cannot act
+            # on, and this one they can.
+            + f"{esc(place)}</b> {'has' if n == 1 else 'have'} "
+            + ("an apartment" if units == 1 else f"{units:,} apartments")
+            + " listed to housing-voucher holders on AffordableHousing.com as of "
+            + f"{esc(asof)}.{names} "
+            + "<a href='/section8/'>See the full voucher list →</a></p>"
+            + "<p class='disclaimer'>A building missing from that list has "
+              "refused nobody — it simply has no listing on that site today. "
+              "Refusing a tenant because they pay with a Section 8 voucher or any "
+              "other subsidy is illegal in New York City.</p>")
+
+
 LANDLORD_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "landlords.json")
 # How many landlord pages go into the sitemap on the first run. The census that
 # prompted the index triage is just as binding here: dropping 1,400 new URLs on
@@ -2629,7 +2757,8 @@ def hpd_registration_line(h):
 DESC_LIMIT = 158
 
 
-def building_meta_desc(addr, nb, units, yr, open_viol, advertised, limit=DESC_LIMIT):
+def building_meta_desc(addr, nb, units, yr, open_viol, advertised, voucher=False,
+                       limit=DESC_LIMIT):
     """The <meta name="description"> for one building page.
 
     It used to be a template with one variable slot:
@@ -2668,9 +2797,10 @@ def building_meta_desc(addr, nb, units, yr, open_viol, advertised, limit=DESC_LI
         facts.append(f"about {units} apartment{'' if units == 1 else 's'}")
     if yr:
         facts.append(f"built {yr}")
-    def _lead(head):
-        if facts:
-            return head + ": " + ", ".join(facts) + ", registered as rent stabilized with NY State DHCR."
+    def _lead(head, drop_year=False):
+        f = [x for x in facts if not (drop_year and x.startswith("built "))]
+        if f:
+            return head + ": " + ", ".join(f) + ", registered as rent stabilized with NY State DHCR."
         return head + ": registered as rent stabilized with NY State DHCR."
 
     lead = _lead(f"{addr}, {nb}")
@@ -2683,10 +2813,37 @@ def building_meta_desc(addr, nb, units, yr, open_viol, advertised, limit=DESC_LI
         lead = _lead(addr)
 
     extras = []
+    # FIRST of the three, on the ~250 pages a night that get it, and the order
+    # is the whole of the decision: DESC_LIMIT is 158 and a typical lead already
+    # spends 104 of it, so exactly one extra survives on most pages. Of the
+    # three this is the rarest (0.5% of the corpus against 0.7% advertised and
+    # most of the rest carrying a violation count) and the only one that matches
+    # a query a voucher holder actually types. It is a claim about a listing on
+    # AffordableHousing.com, never about the landlord — see load_voucher_listings.
+    if voucher:
+        extras.append("An apartment here is listed to voucher holders.")
     if advertised:
         extras.append("A unit here was recently advertised for rent.")
     if open_viol:
         extras.append(f"{open_viol} open HPD violation{'' if open_viol == 1 else 's'} on file.")
+
+    # BUY THE VOUCHER LINE OUT OF THE LEAD'S OPTIONAL DETAIL WHEN IT WILL NOT
+    # OTHERWISE FIT. Measured before this branch existed: only 75 of the 238
+    # voucher pages in a full scratch build had room for it, because a lead like
+    # "229 W 115th St, Harlem (South): about 20 apartments, built 1900, …" spends
+    # 114 of 158 characters and the shorter violation count then wins the
+    # remainder. The year built is the least useful fact a snippet can carry for
+    # someone searching for an apartment they can rent this month; it stays on
+    # the page and in the facts table either way. Same escalation as the
+    # neighborhood drop above, and it applies ONLY when there is a voucher
+    # listing — no other page loses its year.
+    if voucher and len(lead) + 1 + len(extras[0]) > limit:
+        for cand in (_lead(f"{addr}, {nb}", drop_year=True),
+                     _lead(addr, drop_year=True)):
+            if len(cand) + 1 + len(extras[0]) <= limit:
+                lead = cand
+                break
+
     out = lead
     for e in extras:
         if len(out) + 1 + len(e) <= limit:
@@ -2967,6 +3124,11 @@ def main():
     print(f"listings: {len(adv_ever):,} buildings ever advertised, "
           f"{len(adv_recent):,} in the last {RECENT_DAYS} days"
           + (f" (feed as of {feed_date})" if feed_date else " (feed carries no date)"))
+    # A separate feed and a separate claim: these are apartments listed to
+    # housing-voucher holders on AffordableHousing.com tonight, not units
+    # advertised on Zumper. See load_voucher_listings for why this build reads
+    # it at all and why an old feed yields nothing rather than a hedge.
+    voucher_avail, voucher_asof = load_voucher_listings()
 
     # index buildings by (borough, neighborhood) for neighborhood pages + nearby links
     by_nb = defaultdict(list)
@@ -2994,6 +3156,20 @@ def main():
     def nb_url(boro, nb):
         return f"/neighborhood/{BORO_SLUG.get(boro,'nyc')}/{slugify(nb)}/"
 
+    def vblock(items, place):
+        """voucher_hub_block for a hub page, from the buildings it covers.
+
+        The addresses link to their own building pages rather than out to
+        AffordableHousing.com: the listing link belongs on the page about that
+        address, and a hub that sends a crawler off-site at the one place it
+        found something new is spending the crawl it just earned.
+        """
+        return voucher_hub_block(
+            [x["bbl"] for x in items], voucher_avail, voucher_asof, place,
+            addr_links={x["bbl"]: f"<a href=\"{bld_url(x)}\">"
+                                  f"{esc(titlecase_addr(x.get('a')))}</a>"
+                        for x in items if x["bbl"] in voucher_avail})
+
     def zip_url(z):
         return f"/zip/{z}/"
 
@@ -3017,6 +3193,7 @@ def main():
         units = b.get("u")
         yr = b.get("yr")
         adv = b["bbl"] in adv_recent
+        vch = voucher_avail.get(b["bbl"])
         promoted = promoted_building(b, b["bbl"] in adv_ever)
 
         # unique, data-driven lead sentence (avoids thin/duplicate content)
@@ -3030,7 +3207,36 @@ def main():
                         + (f", built in {esc(yr)}." if yr else "."))
         if adv:
             bits.append("A unit here was <strong>recently advertised for rent</strong>.")
+        if vch:
+            bits.append("An apartment here is <strong>listed to housing-voucher "
+                        "holders</strong> on AffordableHousing.com.")
         lead = " ".join(bits)
+
+        # The daily fact, on the daily-crawled page. Everything in it comes from
+        # the one feed and carries that feed's date; no sentence here describes
+        # the landlord's policy, only the listing. Rendered as its own block
+        # rather than folded into the hook above because the hook is a signup
+        # ask and this is a fact about the address.
+        voucher_html = ""
+        if vch:
+            price = f" from <b>${vch['p']:,}/mo</b>" if vch.get("p") else ""
+            units_txt = ("An apartment" if vch["n"] == 1
+                         else f"{vch['n']:,} apartments")
+            voucher_html = (
+                f"<div class='hook'><strong>🎟️ {units_txt} here "
+                f"{'is' if vch['n'] == 1 else 'are'} listed to housing-voucher "
+                f"holders.</strong> Posted on AffordableHousing.com{price}, from the "
+                f"feed as of {esc(voucher_asof)} — "
+                f"<a href='{esc(vch['url'])}' rel='nofollow noopener' target='_blank'>"
+                f"view the listing →</a> or see "
+                # /section8/ and not /section8/<borough>/: t_fresh_section8 skips
+                # a borough page below three listings, so the per-borough URL is
+                # not guaranteed to exist and the hub always is.
+                f"<a href='/section8/'>every rent-stabilized building with a "
+                f"voucher listing</a>. Listing this apartment as "
+                f"voucher-friendly is the landlord's own statement; a building with "
+                f"no listing here has refused nobody, and refusing a voucher is "
+                f"illegal in New York City.</div>")
 
         # The abbreviation the city files an address under is often not the one a
         # searcher types. Rendered as visible text, not a hidden keyword list.
@@ -3232,6 +3438,8 @@ def main():
                 f"<p class='lead'>{lead}</p>"
                 + aka_html
                 + (f"<p><span class='badge'>Recently advertised for rent</span></p>" if adv else "")
+                + (f"<p><span class='badge'>Listed to voucher holders</span></p>" if vch else "")
+                + voucher_html
                 + compare_html
                 + f"<a class='cta' href='/#d={b['bbl']}'>View {esc(addr)} on the map →</a>"
                 # conversion hook: give organic readers a reason to act, not just leave
@@ -3251,7 +3459,8 @@ def main():
         write(url.strip("/") + "/index.html",
               page(f"Is {addr} rent stabilized? — {nb}, {boro} | Find A Crib",
                    building_meta_desc(addr, nb, units, yr,
-                                      (h.get("violations") or {}).get("open"), adv),
+                                      (h.get("violations") or {}).get("open"), adv,
+                                      voucher=bool(vch)),
                    canonical, body, jsonld,
                    robots=None if promoted else "noindex,follow",
                    og_title=f"{addr} — {nb}, {boro}"))
@@ -3370,7 +3579,7 @@ def main():
                     "rent history.",
                 ])
                 + f"<a class='cta' href='/'>Explore {esc(nb)} on the map →</a>"
-                + VOUCHER_XLINK
+                + vblock(items, f"{nb}, {boroname}")
                 + notable_html
                 # The ZIP hubs have always linked out to the neighborhoods they
                 # overlap; this is the reciprocal. Only ZIPs actually present in
@@ -3438,7 +3647,7 @@ def main():
                 + f"<a class='cta' href='/'>Open the map →</a>"
                 f"<p><a href='{boro_list_url(boro,'largest')}'>Largest buildings in {esc(boroname)}</a> "
                 f"&nbsp;·&nbsp; <a href='{boro_list_url(boro,'oldest')}'>Oldest buildings</a></p>"
-                + VOUCHER_XLINK
+                + vblock([x for nb, _c in nbs for x in by_nb[(boro, nb)]], boroname)
                 + f"<h2>Neighborhoods</h2><div class='cols'>{links}</div>"
                 # The second way into the same buildings, and the one crawl path
                 # into /zip/ that does not run through the noindexed building
@@ -3479,7 +3688,11 @@ def main():
                f"{len(blds):,} DHCR rent-stabilized buildings by borough and neighborhood, "
                f"or <a href='/'>open the interactive map</a>. See which buildings have "
                f"<a href='/available/'>advertised a unit for rent →</a></p>"
-               + VOUCHER_XLINK
+               # The citywide count, with no address list: naming twelve of a few
+               # hundred on the page that covers all five boroughs would be an
+               # arbitrary sample, and the hub link already leads to all of them.
+               + voucher_hub_block([b["bbl"] for b in blds], voucher_avail,
+                                   voucher_asof, "New York City")
                # /buildings/ is one of the few pages a crawler reliably reaches,
                # so the council tier hangs off it rather than depending on the
                # homepage nav alone.
@@ -3526,7 +3739,7 @@ def main():
                 ])
                 + (f"<h2>Neighborhoods in {esc(z)}</h2><div class='cols'>{nb_links}</div>" if nb_links else "")
                 + f"<a class='cta' href='/'>Explore ZIP {esc(z)} on the map →</a>"
-                + VOUCHER_XLINK
+                + vblock(items, f"ZIP {z}")
                 + f"<h2>All {n:,} buildings in {esc(z)}</h2><div class='cols'>{links}</div>")
         zip_faq = [(f"How many rent-stabilized buildings are in ZIP code {z}?",
                     f"There are {n:,} registered rent-stabilized buildings in ZIP code {z} "

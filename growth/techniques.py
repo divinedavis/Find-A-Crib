@@ -980,6 +980,30 @@ def _sitemap_covered(docroot):
     return covered
 
 
+def _age_changefreq(lastmod, today=None):
+    """changefreq derived from when a page was last written, never asserted.
+
+    For the one URL in sitemap-daily.xml this build neither writes nor can
+    substantiate a cadence for (/rent-report/). Two days of slack, not one, so
+    a single missed night does not downgrade a page that really is nightly.
+    An unreadable or future date returns "weekly": the middle value, because
+    guessing "daily" would restate the claim this replaces and guessing
+    "monthly" would understate a page that may well be fresh.
+    """
+    try:
+        d = datetime.date.fromisoformat(lastmod)
+        age = (datetime.date.fromisoformat(today or ledger.today()) - d).days
+    except (TypeError, ValueError):
+        return "weekly"
+    if age < 0:
+        return "weekly"
+    if age <= 2:
+        return "daily"
+    if age <= 31:
+        return "weekly"
+    return "monthly"
+
+
 def _frozen_prefixes():
     """URL prefixes owned only by RETIRED techniques, read from the ledger.
 
@@ -1035,7 +1059,7 @@ def t_sitemap_daily(ctx):
     lm = ledger.get_state("lastmod", {})
     frozen = _frozen_prefixes()
 
-    def entry(u):
+    def entry(u, lastmod=None):
         """(changefreq, priority) for a URL the growth build published, else None.
 
         A URL under a RETIRED section keeps its place in the shard — the page is
@@ -1062,13 +1086,17 @@ def t_sitemap_daily(ctx):
         having to correct. The date on the index entry below is the half that
         Google reads.
         """
-        priced = _price(u)
+        priced = _price(u, lastmod)
         if priced and any(u.startswith(SITE + p) for p in frozen):
             return ("never", "0.2")
         return priced
 
-    def _price(u):
-        """The family's own changefreq/priority, ignoring retirement."""
+    def _price(u, lastmod=None):
+        """The family's own changefreq/priority, ignoring retirement.
+
+        `lastmod` is the URL's own entry date in this shard, and only
+        /rent-report/ reads it — see the comment on that branch.
+        """
         if u == SITE + "/section8/":
             return ("daily", "0.9")
         if u.startswith(SITE + "/section8/"):
@@ -1085,10 +1113,30 @@ def t_sitemap_daily(ctx):
         # signal crawlers learn to discount.
         if u.startswith(SITE + "/guide/"):
             return ("monthly", "0.8")
-        # The rent report (build_rent_report.py): rebuilt every morning from
-        # that night's listings scrape, so daily is the honest changefreq.
+        # The rent report (build_rent_report.py). It was priced "daily" on the
+        # assertion, written into this comment on 2026-09-19, that it is
+        # "rebuilt every morning from that night's listings scrape". NOTHING HAS
+        # EVER CHECKED THAT, and on 2026-09-24 it was checked: no .sh in this
+        # repo invokes build_rent_report.py — not refresh_seo.sh, not
+        # refresh_listings.sh, not growth_run.sh, not any of the fourteen
+        # scripts in scripts/ — and neither does growth_daily.py or
+        # api_server.py. That does not prove the page is never rebuilt; the
+        # owner may run it from a cron this repo cannot see. It does mean this
+        # build cannot substantiate "daily", which is the same standard the
+        # comment above VOUCHER_XLINK applies to a count and the one this
+        # function's own docstring applies to a retired section.
+        #
+        # So price it from the evidence the shard already holds instead of from
+        # a claim: the entry's lastmod, which for a rescued page is the file's
+        # own mtime — the date the deploying pipeline last wrote it. A page
+        # written in the last two days really is on a daily rhythm and gets
+        # "daily"; one written this month gets "weekly"; an older one gets
+        # "monthly". If the owner's cron does run nightly this reads "daily" and
+        # nothing changes. If it does not, the sitemap stops saying so, and
+        # t_frozen_pages will name the page under a wholly-frozen tier on the
+        # same morning — two independent instruments on one question.
         if u == SITE + "/rent-report/":
-            return ("daily", "0.9")
+            return (_age_changefreq(lastmod), "0.9")
         # The SF/LA/DC aggregate hub tier, for the same reason and on the same
         # terms (t_city_seo_expansion). Monthly: these summarise the SF Rent
         # Board inventory, the LA assessor roll and DC's RentRegistry, none of
@@ -1141,7 +1189,8 @@ def t_sitemap_daily(ctx):
 
     urls = "".join(
         f"<url><loc>{u}</loc><lastmod>{v['m']}</lastmod>"
-        f"<changefreq>{entry(u)[0]}</changefreq><priority>{entry(u)[1]}</priority></url>"
+        f"<changefreq>{entry(u, v['m'])[0]}</changefreq>"
+        f"<priority>{entry(u, v['m'])[1]}</priority></url>"
         for u, v in sorted(daily.items()))
     ctx.write_raw("sitemap-daily.xml",
                   '<?xml version="1.0" encoding="UTF-8"?>'
@@ -1201,7 +1250,7 @@ def t_sitemap_daily(ctx):
     # cloud review can see it. The whole shard exists to say "come back, this
     # changed"; a night where most of it is `never` is a night where that claim
     # is carried by a handful of URLs, and that ratio is the thing to watch.
-    archived = sum(1 for u in daily if entry(u)[0] == "never")
+    archived = sum(1 for u, v in daily.items() if entry(u, v['m'])[0] == "never")
     return {"ok": True, "urls": len(daily), "rescued": rescued, "archived": archived,
             "detail": f"sitemap-daily.xml with {len(daily)} URLs"
                       + (f" (incl. {extra})" if extra else "")
@@ -3277,6 +3326,108 @@ def t_frozen_pages(ctx):
             "abandoned_tiers": len(partial), "detail": detail}
 
 
+# The marker build_seo.py stamps on a building page that carries tonight's
+# voucher listing. Matched as a string, not parsed: it is a badge this loop does
+# not write and cannot fix from here, so the audit's job is to say whether it
+# arrived, not to know how it was rendered.
+VOUCHER_PAGE_MARKER = "Listed to voucher holders"
+
+
+def t_voucher_reach(ctx):
+    """Did tonight's voucher listings reach the building pages Google crawls?
+
+    THE MEASUREMENT GAP THIS CLOSES. As of 2026-09-24 the AffordableHousing.com
+    feed — the only dataset here that genuinely changes every night — was
+    published onto exactly six URLs, /section8/ and five borough pages, and the
+    2026-09-23 URL Inspection census says Google has fetched none of the six,
+    ever, while it has fetched 67 /building/ pages, 15 /neighborhood/, 5
+    /borough/ and the homepage. build_seo.py now writes the same fact onto the
+    building page of every listed address. That write happens in refresh_seo.sh,
+    a process this loop starts but whose stdout growth_run.sh discards, so
+    without this audit the change would be invisible here in exactly the way the
+    build's "available: N qualify" line was until 2026-09-22.
+
+    WHY IT READS EXACTLY THE PAGES THE FEED NAMES rather than sampling. The feed
+    is a few hundred BBLs and their page paths are computable, so the audit can
+    be a census instead of an estimate — 310 stat+read calls against
+    derived_building_facts' 400-page sample, for an exact answer to a yes/no
+    question. A sample would answer "roughly how many", which is not the
+    question: one page missing the marker means the address→page join is broken
+    for that address, and a 400-of-47,165 sample would almost never contain it.
+
+    ok is False only when the feed is fresh and NO page carries the marker —
+    that is the integration failing. A partial miss is reported in the detail
+    line and stays green: a listed BBL with no page on disk is an ordinary
+    outcome (a building not in buildings.min.json, or one whose page the index
+    triage wrote this morning under a slug a re-titlecased address changed), and
+    failing on it would make this permanently red for a reason nobody can fix.
+    A stale or missing feed is NOT a failure either — build_seo.py is then
+    correctly making no claim at all, which is the behaviour, not a fault.
+    """
+    s8 = ctx.s8 or {}
+    ts = s8.get("avail_updated")
+    avail = s8.get("avail") or {}
+    b8 = {str(k): v for k, v in avail.items()
+          if isinstance(v, dict) and v.get("b8") and v.get("url")}
+    if not ts or not b8:
+        return {"ok": True, "listed": 0, "carried": 0,
+                "detail": "voucher feed carries no dated listings — "
+                          "build_seo.py makes no voucher claim, which is correct"}
+    hours = (datetime.datetime.now(datetime.timezone.utc)
+             - datetime.datetime.fromtimestamp(ts, datetime.timezone.utc)
+             ).total_seconds() / 3600.0
+    when = datetime.datetime.fromtimestamp(ts, datetime.timezone.utc).strftime("%Y-%m-%d")
+    if hours > FEED_STALE_HOURS:
+        return {"ok": True, "listed": len(b8), "carried": 0,
+                "detail": f"voucher feed is {hours / 24:.1f}d old (limit "
+                          f"{FEED_STALE_HOURS}h, last {when}) — build_seo.py suppresses "
+                          f"every voucher claim at that age, so {len(b8):,} listings are "
+                          f"deliberately absent from the building tier"}
+
+    carried = no_page = no_marker = unknown_bbl = 0
+    misses = []
+    for bbl in sorted(b8):
+        b = ctx.by_bbl.get(bbl)
+        if not b:
+            unknown_bbl += 1
+            continue
+        rel = _bld_url(b).strip("/") + "/index.html"
+        path = os.path.join(ctx.docroot, rel)
+        try:
+            with open(path, encoding="utf-8", errors="replace") as f:
+                if VOUCHER_PAGE_MARKER in f.read():
+                    carried += 1
+                else:
+                    no_marker += 1
+                    if len(misses) < 5:
+                        misses.append(rel)
+        except OSError:
+            no_page += 1
+            if len(misses) < 5:
+                misses.append(rel + " [no page]")
+
+    reach = len(b8)
+    # Truncated, not rounded: 237 of 238 must not print as "100%" on the one
+    # audit whose whole job is to notice a single address that did not make it.
+    pct = int(carried * 100 / reach) if reach else 0
+    detail = (f"{carried:,} of {reach:,} voucher-listed buildings carry the listing on "
+              f"their own page ({pct}%), feed dated {when}")
+    gaps = []
+    if no_marker:
+        gaps.append(f"{no_marker:,} page(s) live but without the block")
+    if no_page:
+        gaps.append(f"{no_page:,} with no page in the docroot")
+    if unknown_bbl:
+        gaps.append(f"{unknown_bbl:,} BBL(s) not in buildings.min.json")
+    if gaps:
+        detail += " — " + ", ".join(gaps)
+    if misses:
+        detail += " — e.g. " + ", ".join(misses)
+    return {"ok": carried > 0, "listed": reach, "carried": carried,
+            "missing_page": no_page, "missing_block": no_marker,
+            "detail": detail}
+
+
 REGISTRY = {
     "city_guides": t_city_guides,
     "city_seo_expansion": t_city_seo_expansion,
@@ -3290,6 +3441,7 @@ REGISTRY = {
     "page_uniqueness": t_page_uniqueness,
     "canonical_integrity": t_canonical_integrity,
     "frozen_pages": t_frozen_pages,
+    "voucher_reach": t_voucher_reach,
     "indexnow": t_indexnow,
 }
 
@@ -3338,7 +3490,7 @@ REGISTRY = {
 ORDER =["fresh_section8", "daily_brief", "city_guides", "city_seo_expansion",
          "hub_direct_answers", "derived_building_facts", "llms_txt",
          "sitemap_daily", "crawl_paths", "page_uniqueness",
-         "canonical_integrity", "frozen_pages", "indexnow"]
+         "canonical_integrity", "frozen_pages", "voucher_reach", "indexnow"]
 
 # Techniques whose result is a PURE FUNCTION OF THE LIVE DOCROOT, so re-running
 # one is free of side effects and the only thing that can change its answer is
@@ -3431,4 +3583,5 @@ ORDER =["fresh_section8", "daily_brief", "city_guides", "city_seo_expansion",
 # the corpus has just been rebuilt — after the watchdog, "written tonight" and
 # "not written tonight" are two clean dates instead of one fuzzy one.
 DOCROOT_VERIFIERS = ("derived_building_facts", "page_uniqueness",
-                     "canonical_integrity", "crawl_paths", "frozen_pages")
+                     "canonical_integrity", "crawl_paths", "frozen_pages",
+                     "voucher_reach")

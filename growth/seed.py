@@ -80,7 +80,31 @@ SEEDS = [
                "city, i.e. 252 finished pages in no sitemap at all, on the same morning the URL "
                "Inspection sample read 'unknown to Google' — never fetched — for 159 of 198 "
                "URLs. Watch the 'rescued' count in the detail line: it is the size of that hole "
-               "and should go to 0 when the SEO pipeline emits its own city shards."),
+               "and should go to 0 when the SEO pipeline emits its own city shards.\n"
+               "[2026-09-24] REVISIT DECISION: KEEP, WITH ONE CLAIM REMOVED IN CODE. The "
+               "hypothesis still holds and nothing else in this loop does its job: the shard "
+               "carries 25 URLs, 2 of which exist in the docroot and appear in no sitemap the "
+               "SEO pipeline owns, so without it they would have no crawl path at all. The "
+               "'rescued' count has not gone to 0, which is the standing signal that the "
+               "pipeline still emits no city shards. WHAT CHANGED TODAY AND WHY. _price() gave "
+               "/rent-report/ changefreq=daily on an assertion written into its own comment on "
+               "2026-09-19 — 'rebuilt every morning from that night's listings scrape' — which "
+               "nothing had ever checked. Checked on 2026-09-24: NO .sh IN THIS REPO INVOKES "
+               "build_rent_report.py. Not refresh_seo.sh, not refresh_listings.sh, not "
+               "growth_run.sh, not any of the fourteen scripts in scripts/, and not "
+               "growth_daily.py or api_server.py either. That does not prove the page is never "
+               "rebuilt — the owner may run it from a cron outside this repo — it proves this "
+               "build cannot substantiate 'daily', which is the same standard the function's "
+               "own docstring applies to a retired section and build_seo.py applies to a count. "
+               "It is now priced from the evidence the shard already holds: the entry's lastmod, "
+               "which for a rescued page is the file's own mtime. Written within 2 days reads "
+               "'daily', within a month 'weekly', older 'monthly'. If the owner's cron does run "
+               "nightly nothing changes; if it does not, the sitemap stops saying so and "
+               "t_frozen_pages names the page on the same morning — two instruments, one "
+               "question. NOTE WHAT THIS IS NOT: Google ignores changefreq and priority "
+               "outright, so this moves no ranking. It is an accuracy fix on an artifact the "
+               "IndexNow crawlers do read, and it removes a claim the build knew it could not "
+               "support."),
     dict(slug="indexnow", status="active", kind="indexing",
          name="IndexNow submission of new/changed URLs",
          prefixes=[], metric="organic_visitors",
@@ -366,7 +390,27 @@ SEEDS = [
                   "since July.",
          notes="Drafts only, never auto-sends — bulk cold mail from findacrib.com would put "
                "the saved-building alert emails into spam, and cold outreach carries CAN-SPAM "
-               "and GDPR obligations that need a human decision. Needs the Anthropic key."),
+               "and GDPR obligations that need a human decision. Needs the Anthropic key.\n"
+               "[2026-09-24] REVISIT DECISION: KEEP, AND THE VERDICT ON IT IS MEASURING AN "
+               "OUTAGE RATHER THAN AN IDEA. review.py records UNPROVEN on the ground that "
+               "mrr_usd went 0 to 0 over 59 days. True, and it cannot mean what it looks like "
+               "it means: this technique HAS NOT EXECUTED ONCE IN SIXTEEN CONSECUTIVE RUNS. "
+               "last_run.json's outreach record read 'invalid_request_error: Your credit "
+               "balance is too low to access the Anthropic API' on every run from 2026-09-08 "
+               "to 2026-09-23 inclusive (the 2026-09-24 cron did not fire, so there is no "
+               "reading for today) "
+               "— the empty-account string, NOT the 'you have reached your specified API usage "
+               "limits' string, so it is a balance at zero and not the self-imposed spend cap "
+               "that was in force at the end of July. It drafts nothing, so nothing is sent, so "
+               "mrr cannot move. A technique that cannot run cannot be judged, and retiring it "
+               "on this reading would retire it for the owner's billing state. "
+               "WHAT WOULD ACTUALLY TEST IT, so the next revisit is not another no-op: the "
+               "question is not whether outreach converts but whether any draft was ever SENT. "
+               "This technique writes drafts to growth/outreach_drafts/ and never sends — by "
+               "design, because CAN-SPAM and GDPR need a human — so mrr_usd is downstream of a "
+               "human step nothing here records. Before the next revisit, either point it at a "
+               "metric this loop owns (drafts produced, prospects researched) or accept that "
+               "its verdict will stay uninterpretable however long it runs."),
     dict(slug="data_pr_outreach", status="candidate", kind="distribution",
          name="Pitch data stories to housing reporters (earns links)",
          prefixes=[], metric="organic_visitors",
@@ -578,6 +622,44 @@ SEEDS = [
                "the one design choice worth defending: the failure this looks for is a page "
                "nobody is tracking, and /landlord/ (1,416 pages) and /council-district/ (51) "
                "are in no technique's prefixes and appear in no other audit's readings."),
+    dict(slug="voucher_reach", status="active", kind="indexing",
+         name="Put the nightly voucher feed on the pages Google actually crawls",
+         prefixes=[], metric="organic_visitors",
+         hypothesis="The AffordableHousing.com voucher feed is the only dataset on this site "
+                    "that genuinely changes every night, and until 2026-09-24 it was published "
+                    "onto exactly six URLs — /section8/ and five borough pages — which the URL "
+                    "Inspection census says Google has never fetched, not once, across their "
+                    "whole lives. Meanwhile the ~47,000 building pages and 200 hub pages that "
+                    "Google DOES fetch changed only when a monthly rebuild moved them. "
+                    "Google's July 2026 crawl-budget documentation is explicit that crawl "
+                    "demand follows genuine change, so a site whose only fresh data sits "
+                    "behind an unvisited door earns nothing for it. Writing the same dated, "
+                    "sourced fact onto the building page of every listed address — no new "
+                    "URL, which the 2026-08-25 T002 decision established this domain cannot "
+                    "afford — puts nightly change on the daily-crawled surface and puts the "
+                    "phrase a voucher holder actually searches on the page about the address "
+                    "they are searching. This technique is the audit half: it reads the live "
+                    "page of every BBL the feed names and reports how many carry the block.",
+         evidence="2026-09-23 URL Inspection census (growth/index_status.json), 458 URLs: "
+                  "/building/ 67 ever fetched of 250 sampled, /neighborhood/ 15 of 40, "
+                  "/borough/ 5 of 10, / 1 of 1 — and /section8/ 0 of 6, /guide/ 0 of 10, "
+                  "/available/ 0 of 15, /brief/ 0 of 10. The committed s8.json snapshot "
+                  "carries 253 available listings, 238 of them flagged as accepting vouchers, "
+                  "and all 253 BBLs match a building in buildings.min.json.",
+         notes="Audits only — it writes no page and adds no URL; build_seo.py writes the "
+               "block, this reads it back out of the docroot. It is a CENSUS, not a sample: "
+               "the feed names a few hundred BBLs and their page paths are computable, so it "
+               "opens exactly those pages. ok is False only when the feed is fresh and not one "
+               "page carries the marker, which is the integration being broken. A stale or "
+               "undated feed is reported and passes, because build_seo.py suppresses every "
+               "voucher claim at that age (48h, the same limit error_report.py already applies "
+               "to s8.json) and silence is then the correct behaviour rather than a fault.\n"
+               "THE ACCURACY RULE THAT GOVERNS THE COPY IT CHECKS FOR: source-of-income "
+               "discrimination is illegal in New York City, so no wording may imply that a "
+               "building without a listing refuses vouchers. Every sentence build_seo.py "
+               "writes is a claim about a listing on AffordableHousing.com, never about a "
+               "landlord's policy, and both the building block and the hub block say so "
+               "outright."),
     dict(slug="plus_funnel", status="candidate", kind="conversion",
          name="Rebuild the Plus upgrade funnel",
          prefixes=[], metric="mrr_usd",

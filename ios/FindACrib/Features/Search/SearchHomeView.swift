@@ -522,9 +522,9 @@ enum MapRegion {
 /// StreetEasy opens on a photo collage around a brand card. Ours is built from
 /// Look Around imagery of real NYC blocks — no stock photos, no licensing.
 /// The banner at the top of Search (owner, 2026-09-22): Facebook's App Store
-/// banner in Find A Crib's words and colours — a teal field, the wordmark big
-/// and white in the middle with the city line under it, and floating badges
-/// for what the app does where Facebook has its faces and emoji. No photos:
+/// banner in Find A Crib's words and colours — a teal field with the wordmark
+/// big and white in the middle and the city line under it. The floating badges
+/// for what the app does came out on 2026-09-23. No photos:
 /// the street-level mosaic that used to be here, and the pale card with
 /// "This is where it starts", are gone. Nothing here taps.
 ///
@@ -550,23 +550,16 @@ struct HeroBanner: View {
             ZStack {
                 LinearGradient(colors: [Color(hex: 0x3A8FA2), SE.royal, SE.navy],
                                startPoint: .topLeading, endPoint: .bottomTrailing)
-                // Soft discs for depth, where Facebook's faces sit.
-                Circle().fill(.white.opacity(0.10)).frame(width: h * 0.42).position(x: w * 0.11, y: h * 0.74)
-                Circle().fill(.white.opacity(0.08)).frame(width: h * 0.36).position(x: w * 0.89, y: h * 0.28)
-                // The app's own mark, tilted like Facebook's photos tile.
-                RoundedRectangle(cornerRadius: 10).fill(.white)
-                    .frame(width: 46, height: 46)
-                    .overlay(BrandMark().frame(width: 30, height: 30))
-                    .rotationEffect(.degrees(-9))
-                    .shadow(color: .black.opacity(0.22), radius: 6, y: 3)
-                    .position(x: w * 0.23, y: h * 0.19)
-                // Badges: save, alert, lottery, building, place.
-                badge("heart.fill",     fill: Color(hex: 0xE0457B), size: 44).position(x: w * 0.12, y: h * 0.72)
-                badge("bell.fill",      fill: Color(hex: 0xF5B301), size: 40).position(x: w * 0.90, y: h * 0.27)
-                badge("ticket.fill",    fill: Color(hex: 0x2FBF8F), size: 40).position(x: w * 0.55, y: h * 0.88)
-                badge("building.2.fill", fill: Color(hex: 0x5B7CFA), size: 36).position(x: w * 0.83, y: h * 0.80)
-                badge("mappin",         fill: Color(hex: 0xFF7A59), size: 34).position(x: w * 0.72, y: h * 0.14)
-                VStack(spacing: 4) {
+                // With the badges gone (owner, 2026-09-23) the mark has no
+                // scatter to sit in, so it stacks with the words: one centred
+                // lockup, mark over wordmark over city line.
+                VStack(spacing: 10) {
+                    RoundedRectangle(cornerRadius: 10).fill(.white)
+                        .frame(width: 46, height: 46)
+                        .overlay(BrandMark().frame(width: 30, height: 30))
+                        .rotationEffect(.degrees(-9))
+                        .shadow(color: .black.opacity(0.22), radius: 6, y: 3)
+                    VStack(spacing: 4) {
                     Text("Find A Crib")
                         .font(.se(min(46, w * 0.12), .black))
                         .foregroundStyle(.white)
@@ -576,6 +569,7 @@ struct HeroBanner: View {
                         .font(.se(15, .semibold))
                         .foregroundStyle(.white.opacity(0.9))
                         .lineLimit(1).minimumScaleFactor(0.7)
+                    }
                 }
                 .padding(.horizontal, 24)
                 .position(x: w * 0.5, y: h * 0.5)
@@ -588,16 +582,6 @@ struct HeroBanner: View {
         .accessibilityIdentifier("hero-banner")
     }
 
-    private func badge(_ symbol: String, fill: Color, size: CGFloat) -> some View {
-        Image(systemName: symbol)
-            .font(.system(size: size * 0.42, weight: .bold))
-            .foregroundStyle(.white)
-            .frame(width: size, height: size)
-            .background(fill)
-            .clipShape(Circle())
-            .overlay(Circle().stroke(.white, lineWidth: 2))
-            .shadow(color: .black.opacity(0.2), radius: 5, y: 2)
-    }
 }
 
 /// The app icon's mark — three homes on the teal field — drawn in SwiftUI so it

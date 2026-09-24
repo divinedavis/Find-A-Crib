@@ -17,14 +17,14 @@
     "retired": null,
     "notes": "2026-08-05 decision (the date set on 2026-07-31, when the retirement rule was moved from owned visitors to owned search impressions): KEPT, not retired. Six consecutive readings of gsc_owned_impressions = 0 over ten days live. Retiring on that would have blamed the content for a structural fault: nothing on findacrib.com linked to /section8/ at all, so it was an orphan discoverable only from sitemap-daily.xml, and Google treats a sitemap-only URL as unimportant. The homepage nav now links it (index.html) and T037 crawl_paths audits that link nightly. NEW DECISION DATE 2026-08-26: if /section8/ still earns zero impressions 21 days after it has a verified inbound link, the fault is the content and it retires then. If the T037 audit still reports it ORPHANED, the app shell never deployed and the clock has not started.\n[2026-08-16] active\u2192retired: 1 owned visitors in 21d, and its pages earned 0 search impressions across 0 URLs \u2014 invisible in search, not merely un-clicked\n[2026-08-23] THIS VERDICT IS UNSUPPORTED AND THE REVISIT MUST RE-DECIDE IT, NOT RATIFY IT. Retired 2026-08-16 on 'invisible in search', 9 days before the revisit booked for 2026-08-25. Two independent reasons the evidence behind it cannot carry the conclusion. (1) The corpus was frozen: from 2026-07-29 to 2026-08-23 refresh_seo.sh rebuilt the site nightly from a pre-07-29 build_seo.py (found 2026-08-22, fixed the same day; confirmed 2026-08-23 when the first correct rebuild changed 47,638 URLs against 0 the day before). Every inbound-link fix this section was waiting on sat in git, unpublished, for the whole measurement window. (2) review.py never read revisit_on, so the automatic rule fired nine days before every scheduled second look by construction (GRACE_DAYS 21 vs REVISIT_DAYS 30) and, because revisit_due() filtered to active, retiring then cancelled that look outright. Both fixed 2026-08-23: revisit_due() now returns a technique retired before its own revisit date, which is why this record is in front of you.\n\n2026-08-24 TIER CENSUS: /section8/ and /brief/ together have never served a single URL \u2014 0 of the 271 that have earned an impression since the per-URL record began 2026-07-30, which spans the whole period the homepage link has been live. The revisit due 2026-08-25 now has the number the 2026-08-16 retirement asserted without one. Note what it does and does not settle: it confirms zero search visibility, and it says nothing about whether the content is bad, because the same census shows /guide/, /available/, /developers/ and /council-district/ at zero too \u2014 every tier except /building/ and the hubs.\n[2026-08-25] retired\u2192active (clock restarted, first activated 2026-07-26): REVISIT DECISION: the 2026-08-16 retirement is overturned, not ratified. Its stated basis was 'invisible in search, so the fault is the content'. The 2026-08-24 tier census shows /guide/, /available/, /developers/ and /council-district/ at 0 served URLs too \u2014 every family except /building/ and the hubs \u2014 so zero impressions is a site-wide distribution fact and cannot single out this content. The 21-day window it was judged on ran 2026-07-26..08-16, entirely against the frozen corpus (07-29..08-23), so the inbound-link fix the 2026-08-05 decision was explicitly waiting on was never live for one day of it. That clock started 2026-08-23 and resolves 09-13. DECIDING FACT, and the reason this is a change rather than a note: retirement stops the rebuild but does not unpublish. /section8/ has been live since 08-16 with an H1 reading 'updated August 16, 2026', a subhead promising 'Rebuilt daily from the overnight feed', and a table presenting nine-day-old apartment listings as available right now \u2014 still in sitemap-daily.xml, still submitted to IndexNow nightly. Leaving it retired-and-published was the one option that was not defensible. Reactivated with the clock restarted so review.py cannot re-retire it tomorrow on the evidence this revisit just rejected. It now retires on its merits on 2026-09-15 if it is still at zero impressions with its links live.\n[2026-09-24] REVISIT DECISION 2026-09-24: CHANGE, not keep and not retire \u2014 the hypothesis was right about the data and wrong about where it was published. The original wording is worth re-reading: 'the voucher feed is the only data on the site that genuinely changes daily \u2026 pages that are both rebuilt daily and uniquely cross-referenced should earn rankings a static list cannot.' Every clause of that is still true except the implied one \u2014 that /section8/ is where the feed belongs. The 2026-09-23 URL Inspection census settles it: of 458 sampled URLs Google has fetched /building/ 67 times, /neighborhood/ 15, /borough/ 5 and the homepage once, and /section8/ ZERO times across all 6 of its URLs in their whole lives. So the one dataset here that changes nightly was landing exclusively on the six pages Googlebot has never opened, while the ~47,000 it does open changed only when a monthly rebuild moved them. WHAT SHIPPED TODAY: build_seo.py now reads s8.json and writes the same dated, sourced fact onto the building page of every listed address (238 in the committed snapshot) and a per-place count onto the NYC hub tier (133 pages: 71 neighborhood, 56 zip, 5 borough, /buildings/). No new URL \u2014 the 2026-08-25 T002 decision established this domain cannot afford those \u2014 and every claim is suppressed entirely when the feed is older than 48h, the limit error_report.py already applies to s8.json. T091 voucher_reach audits the join nightly. /section8/ STAYS ACTIVE AND UNCHANGED: it is now the destination those 371 pages link to rather than an orphan, which is the only version of this idea that has a crawl path. NEXT REVISIT ASKS ONE THING: has any /section8/ URL been fetched, and has any of the 238 building pages earned a NON-BRANDED impression? Do not retire on owned_visitors before either.",
     "verdict": {
-      "decided": "2026-09-23",
+      "decided": "2026-09-24",
       "works": null,
-      "why": "6 owned visitors in 29d and 0 search impressions, but Google has never fetched any of the 6 of its URLs the index census has inspected \u2014 that zero measures crawl reach, not these pages, so there is nothing to retire on yet. Re-judge once any of them is crawled",
+      "why": "7 owned visitors in 30d and 0 search impressions, but Google has never fetched any of the 6 of its URLs the index census has inspected \u2014 that zero measures crawl reach, not these pages, so there is nothing to retire on yet. Re-judge once any of them is crawled",
       "measured": {
-        "total_owned_visitors": 6,
+        "total_owned_visitors": 7,
         "recent_median": 0.0,
         "prior_median": 0.0,
-        "days_measured": 29,
+        "days_measured": 30,
         "owned_serving_pages": 0,
         "owned_impressions": 0,
         "owned_best_position": null,
@@ -87,17 +87,17 @@
     "retired": null,
     "notes": "[2026-08-25] REVISIT DECISION: keep, and the reason is that its verdict is now legible rather than good. With the paid flight of 2026-07-17/18 excluded from the comparison, ai_visitors reads 8 in the last 14d against 6 in the 14d before \u2014 flat-to-marginally-up, on counts far too small to call either way, and the medians are 0.0 vs 0.0. review.py flags that as 'no measurable lift' and records it UNPROVEN, which is the honest reading: this technique has never been measured, because a 0-2/day series has no resolution. It stays because it costs one text file a night and because AI citation is a stated goal with no other instrument pointed at it \u2014 not because anything says it works. If a future review wants a real answer here it needs a metric that counts citations, not visitors.\n[2026-08-25] SAME-DAY CORRECTION to the revisit note above, from 2026-08-25 research. I wrote that this technique 'costs one text file a night'. That is probably wrong, and the cost may land exactly where this site can least afford it. Google updated its crawl-budget documentation on 2026-07-22 to state that every site starts at the same conservative default crawl capacity limit and that THE CRAWL CAPACITY LIMIT IS SHARED ACROSS ALL CRAWLERS \u2014 high demand from one reduces what is available to the others. Google-Extended, which this technique's robots.txt explicitly allows, is a Google crawler and therefore draws on the same pool as Googlebot. On a 47,954-page corpus with 18.2% ever-fetched, capacity is the binding constraint, so inviting AI-training crawls is not free \u2014 it is a trade against search crawling. NOT ACTED ON TODAY, deliberately: the trade runs directly against this technique's own goal (AI citation is a stated objective and there is no other instrument pointed at it), so choosing between them is T043's decision, not a note's. What a future review needs is the number neither of us has: the server-log split of Googlebot vs Google-Extended vs third-party AI crawler hits. Non-Google AI crawlers (GPTBot, CCBot) sit outside Google's pool and cost bandwidth rather than capacity \u2014 a weaker and different argument, so do not merge the two. Source: developers.google.com crawl-budget doc, updated 2026-07-22.\n[2026-08-26] Research note, not a decision (revisit stays 2026-09-24). T003 flipped to WORKS this morning on ai_visitors median 0.5/day vs 0.0 [10 in the last 14d vs 6 before]. Treat that as fragile: it is 10 visitors, and two 2026 studies point the other way \u2014 Shepard's citation study rates llms.txt 2.0/10 with no credible evidence it influences LLM citations, and Google's May 2026 AI-features guidance says AI Overviews and AI Mode require no llms.txt and no special AI markup. Also note the metric mismatch: ai_visitors counts referral clicks from AI hosts, which is not the same thing as being cited. What the same research says DOES correlate with citations is corroboration off-site \u2014 unlinked brand mentions at 0.664 vs 0.218 for backlinks \u2014 which is the premise T047 and T056 already carry, and neither is active.\n[2026-09-24] REVISIT DECISION 2026-09-24: KEEP, on the same narrow grounds as 2026-08-25 and with the same disclaimer. It costs one text file a night; ai_visitors reads 17 in the last 14d against 6 before, which review.py now calls WORKS, and which is still 17 visitors and still not a measure of citation. Nothing has changed there. WHAT HAS CHANGED IS THE COST SIDE OF THE 2026-08-25 correction, and it is worth writing down precisely because it still is not actionable. That note argued Google-Extended draws on the same crawl capacity pool as Googlebot (crawl-budget doc, updated 2026-07-22), so allowing it is a trade against search crawling. On 08-25 Googlebot's weekly reach was 16 pages; the series since is 16, 9, 2, 2, 3, 0(partial). If that pool is shared, the share this technique invites away is now a much larger fraction of a much smaller pool. It STILL does not license an action: the decision belongs to T043, and the number neither review has is the server-log split of Googlebot vs Google-Extended vs third-party AI crawler hits, which cannot be read from this container. What a future run CAN do without that number: nothing. Do not disallow Google-Extended on a hunch \u2014 it would trade a measured 17 for an unmeasured maybe.",
     "verdict": {
-      "decided": "2026-09-23",
+      "decided": "2026-09-24",
       "works": true,
-      "why": "ai_visitors median 0.5/day vs 0.0/day before activation [17 in the last 14d vs 6 in the 14d before]",
+      "why": "ai_visitors median 1.0/day vs 0.0/day before activation [18 in the last 14d vs 6 in the 14d before]",
       "measured": {
         "metric": "ai_visitors",
-        "median_after": 0.5,
+        "median_after": 1.0,
         "median_before": 0.0,
-        "total_after": 17,
+        "total_after": 18,
         "total_before": 6,
         "window_days": 14,
-        "days_measured": 58
+        "days_measured": 59
       }
     },
     "revisit_on": "2026-10-24"
@@ -118,24 +118,25 @@
     "retired": null,
     "notes": "2026-08-17: widened from 'the daily pages' to 'every page in a family this build owns that no pipeline shard lists'. It had been built purely from the lastmod state, and Ctx.unstage() drops a URL's lastmod entry when it hands a page back to the SEO pipeline \u2014 correct for the bytes, wrong for the sitemap, because the pipeline's own shard never picked the city hub tier up. Result: 103 DC, 112 LA and 37 SF hub pages live in the docroot against two sitemap URLs per city, i.e. 252 finished pages in no sitemap at all, on the same morning the URL Inspection sample read 'unknown to Google' \u2014 never fetched \u2014 for 159 of 198 URLs. Watch the 'rescued' count in the detail line: it is the size of that hole and should go to 0 when the SEO pipeline emits its own city shards.\n[2026-09-24] REVISIT DECISION: KEEP, WITH ONE CLAIM REMOVED IN CODE. The hypothesis still holds and nothing else in this loop does its job: the shard carries 25 URLs, 2 of which exist in the docroot and appear in no sitemap the SEO pipeline owns, so without it they would have no crawl path at all. The 'rescued' count has not gone to 0, which is the standing signal that the pipeline still emits no city shards. WHAT CHANGED TODAY AND WHY. _price() gave /rent-report/ changefreq=daily on an assertion written into its own comment on 2026-09-19 \u2014 'rebuilt every morning from that night's listings scrape' \u2014 which nothing had ever checked. Checked on 2026-09-24: NO .sh IN THIS REPO INVOKES build_rent_report.py. Not refresh_seo.sh, not refresh_listings.sh, not growth_run.sh, not any of the fourteen scripts in scripts/, and not growth_daily.py or api_server.py either. That does not prove the page is never rebuilt \u2014 the owner may run it from a cron outside this repo \u2014 it proves this build cannot substantiate 'daily', which is the same standard the function's own docstring applies to a retired section and build_seo.py applies to a count. It is now priced from the evidence the shard already holds: the entry's lastmod, which for a rescued page is the file's own mtime. Written within 2 days reads 'daily', within a month 'weekly', older 'monthly'. If the owner's cron does run nightly nothing changes; if it does not, the sitemap stops saying so and t_frozen_pages names the page on the same morning \u2014 two instruments, one question. NOTE WHAT THIS IS NOT: Google ignores changefreq and priority outright, so this moves no ranking. It is an accuracy fix on an artifact the IndexNow crawlers do read, and it removes a claim the build knew it could not support.",
     "verdict": {
-      "decided": "2026-09-23",
+      "decided": "2026-09-24",
       "works": null,
-      "why": "organic_visitors median 36.0/day vs 6.0/day before activation [537 in the last 14d vs 110 in the 14d before] \u2014 but 6 other active techniques are judged on the same site-wide organic_visitors series (T005 indexnow, T010 gsc_integration, T015 dataset_schema_ai_citation and 3 more), so the movement cannot be attributed to any one of them",
+      "why": "organic_visitors median 36.0/day vs 6.0/day before activation [523 in the last 14d vs 110 in the 14d before] \u2014 but 7 other active techniques are judged on the same site-wide organic_visitors series (T005 indexnow, T010 gsc_integration, T015 dataset_schema_ai_citation and 4 more), so the movement cannot be attributed to any one of them",
       "measured": {
         "metric": "organic_visitors",
         "median_after": 36.0,
         "median_before": 6.0,
-        "total_after": 537,
+        "total_after": 523,
         "total_before": 110,
         "window_days": 14,
-        "days_measured": 58,
+        "days_measured": 59,
         "co_claimants": [
           "T005 indexnow",
           "T010 gsc_integration",
           "T015 dataset_schema_ai_citation",
           "T037 crawl_paths",
           "T072 page_uniqueness",
-          "T089 canonical_integrity"
+          "T089 canonical_integrity",
+          "T090 frozen_pages"
         ]
       }
     },
@@ -157,24 +158,25 @@
     "retired": null,
     "notes": "[2026-08-25] REVISIT DECISION: keep, with its verdict explicitly disowned. IndexNow submits to Bing, Yandex, Seznam and Naver; the technique's own docstring says Google does not consume it. It is judged on site-wide organic_visitors, which is overwhelmingly Google. So the metric cannot rise when the technique succeeds and cannot fall when it fails \u2014 the UNPROVEN verdict recorded today is a statement about the instrument. It stays because it is free and is the only indexing lever here that needs no account. Worth a future run's attention: it submitted 0 URLs today ('nothing new or changed'), while the SEO pipeline changed 98 \u2014 it only ever sees growth-technique URLs, so the corpus that actually moves is never submitted.\n[2026-09-24] REVISIT DECISION 2026-09-24: KEEP \u2014 and THE 2026-08-25 NOTE'S CLOSING CLAIM IS WRONG AND IS WITHDRAWN. It said: 'it submitted 0 URLs today while the SEO pipeline changed 98 \u2014 it only ever sees growth-technique URLs, so the corpus that actually moves is never submitted.' The first half is right and the conclusion is not. scripts/refresh_seo.sh has its own IndexNow submitter (STEP=indexnow, lines 217-239) which posts $BUILD/seo/changed_urls.txt \u2014 the list build_seo.py writes from its own lastmod hashes, intersected with the submitted set so the ~46k noindexed building pages are excluded. A scratch build today emitted 'IndexNow: 8 changed URLs to ping (163 pages changed, 155 not submitted so not announced)'. So the pipeline corpus IS submitted, by a second submitter this ledger did not know existed, and t_indexnow's narrow scope is correct rather than a gap. WHAT IS ACTUALLY WRONG, and it is a measurement gap not a coverage one: that second submission is INVISIBLE to this loop. Its python block catches every exception and prints; refresh_seo.sh records no `status` heartbeat step for it (it goes STEP=split, status split, STEP=indexnow, then straight to STEP=done); and growth_run.sh discards the stdout. A revoked key, a 403 or a changed endpoint would look exactly like success from here, for as long as it lasted. That is the same class of blindness the 2026-09-22 run found in the build's 'available: N qualify' line and the 2026-09-23 run fixed with T090. NEXT RUN'S WORK, and it is small: capture that block's outcome into the heartbeat with a `status indexnow` line and surface it beside seo_pipeline in last_run.json.",
     "verdict": {
-      "decided": "2026-09-23",
+      "decided": "2026-09-24",
       "works": null,
-      "why": "organic_visitors median 36.0/day vs 6.0/day before activation [537 in the last 14d vs 110 in the 14d before] \u2014 but 6 other active techniques are judged on the same site-wide organic_visitors series (T004 sitemap_daily, T010 gsc_integration, T015 dataset_schema_ai_citation and 3 more), so the movement cannot be attributed to any one of them",
+      "why": "organic_visitors median 36.0/day vs 6.0/day before activation [523 in the last 14d vs 110 in the 14d before] \u2014 but 7 other active techniques are judged on the same site-wide organic_visitors series (T004 sitemap_daily, T010 gsc_integration, T015 dataset_schema_ai_citation and 4 more), so the movement cannot be attributed to any one of them",
       "measured": {
         "metric": "organic_visitors",
         "median_after": 36.0,
         "median_before": 6.0,
-        "total_after": 537,
+        "total_after": 523,
         "total_before": 110,
         "window_days": 14,
-        "days_measured": 58,
+        "days_measured": 59,
         "co_claimants": [
           "T004 sitemap_daily",
           "T010 gsc_integration",
           "T015 dataset_schema_ai_citation",
           "T037 crawl_paths",
           "T072 page_uniqueness",
-          "T089 canonical_integrity"
+          "T089 canonical_integrity",
+          "T090 frozen_pages"
         ]
       }
     },
@@ -232,21 +234,21 @@
     "retired": null,
     "notes": "Drafts only, never auto-sends \u2014 bulk cold mail from findacrib.com would put the saved-building alert emails into spam, and cold outreach carries CAN-SPAM and GDPR obligations that need a human decision. Needs the Anthropic key.\n[2026-09-24] REVISIT DECISION: KEEP, AND THE VERDICT ON IT IS MEASURING AN OUTAGE RATHER THAN AN IDEA. review.py records UNPROVEN on the ground that mrr_usd went 0 to 0 over 59 days. True, and it cannot mean what it looks like it means: this technique HAS NOT EXECUTED ONCE IN SIXTEEN CONSECUTIVE RUNS. last_run.json's outreach record read 'invalid_request_error: Your credit balance is too low to access the Anthropic API' on every run from 2026-09-08 to 2026-09-23 inclusive (the 2026-09-24 cron did not fire, so there is no reading for today) \u2014 the empty-account string, NOT the 'you have reached your specified API usage limits' string, so it is a balance at zero and not the self-imposed spend cap that was in force at the end of July. It drafts nothing, so nothing is sent, so mrr cannot move. A technique that cannot run cannot be judged, and retiring it on this reading would retire it for the owner's billing state. WHAT WOULD ACTUALLY TEST IT, so the next revisit is not another no-op: the question is not whether outreach converts but whether any draft was ever SENT. This technique writes drafts to growth/outreach_drafts/ and never sends \u2014 by design, because CAN-SPAM and GDPR need a human \u2014 so mrr_usd is downstream of a human step nothing here records. Before the next revisit, either point it at a metric this loop owns (drafts produced, prospects researched) or accept that its verdict will stay uninterpretable however long it runs.",
     "verdict": {
-      "decided": "2026-09-23",
+      "decided": "2026-09-24",
       "works": null,
-      "why": "mrr_usd went 0 \u2192 0 (0) over 59d \u2014 the counter has not moved at all since activation, so either nothing reaches this technique or nothing it does converts",
+      "why": "mrr_usd went 0 \u2192 0 (0) over 60d \u2014 the counter has not moved at all since activation, so either nothing reaches this technique or nothing it does converts",
       "measured": {
         "metric": "mrr_usd",
         "kind": "stock",
         "start": 0.0,
         "end": 0.0,
         "delta_after": 0.0,
-        "span_days_after": 59,
+        "span_days_after": 60,
         "per_day_after": 0.0,
         "delta_before": null,
         "span_days_before": 0,
         "per_day_before": null,
-        "days_measured": 59
+        "days_measured": 60
       }
     },
     "revisit_on": "2026-10-24"
@@ -284,24 +286,25 @@
     "retired": null,
     "notes": "Needs: a Google Cloud service account with the Search Console API enabled, added as a user on the findacrib.com property, key stored in keychain rent-map-gsc-service-account. 2026-08-04: gsc_serving_pages alone was being read as the gating number and it cannot carry that weight \u2014 a rolling count of distinct URLs served says nothing about whether it is the same set twice. searchconsole.py now keeps a per-URL serving history in gsc_pages.json and records gsc_serving_stable / _entered / _left / _ever beside it. Backfilled from the six committed snapshots 2026-07-30..08-04: the daily count sat at 78-89 the whole time while distinct-pages-ever went 82 -> 142, i.e. newly-served pages displace old ones instead of adding to the total. _ever is the monotone one and the one to steer by; it survives history eviction via a running dropped total. 2026-08-15: gsc_serving_pages is not an INDEXING number either, which this note and searchconsole.py's docstring both said it was. An impression needs the page indexed AND somebody to have searched for something it answers, and on 47,165 single-address pages the second condition is what almost every page fails \u2014 so '63 of ~47,600 served' is equally consistent with 63 indexed pages and with 47,000, and those imply opposite next moves. growth/indexstatus.py now asks the Search Console URL Inspection API for Google's own coverage state on a stable stratified cohort of ~430 URLs, 100 a night, and records index_pct / index_pct_building. Read gsc_serving_pages as the search FOOTPRINT and index_pct as the indexing rate. [2026-08-27 revisit] KEEP, and disown this technique's own verdict as a category error. The hypothesis had two halves. The measurement half succeeded beyond what it claimed: every finding this loop has made since late July \u2014 the serving-tier census, the per-URL history in gsc_pages.json, the 0.0% mature-acceptance reading, and the 08-27 building-richness test that refuted T027's criteria \u2014 exists only because this technique wired up Search Console. The 'cheapest rankings' half is REFUTED BY ITS OWN INSTRUMENT: it said page-2 queries would be cheap wins, and after 30 days tracked_ranking is 0 of 315 \u2014 there is no page-2 tier to harvest because nothing ranks anywhere. Its standing verdict ('organic_visitors \u2014 no measurable lift after 30d') is meaningless: an instrument cannot move the series it measures, the same category error corrected for T011/T018 on 08-26. Deliberately NOT repointing the metric \u2014 every candidate is one it also cannot cause, so a repoint would buy a differently-worded false verdict, not a truer one. [2026-09-26 revisit] KEEP, unchanged in substance from 08-27, with one new line on each half. THE INSTRUMENT HALF HAS KEPT PAYING: since that revisit it produced the per-technique brand / non-branded split (2026-09-20, which caught T046's nine 'serving' pages as sitelinks) and the crawl-reach-by-family census (09-24, which found /section8/, /guide/, /available/, /brief/, /dc/ and /la/ at 0 URLs ever fetched), and today's review.py verdict guard rests entirely on the gsc_owned_nonbranded_* series only this technique collects. THE REFUTED HALF IS MORE REFUTED, NOT LESS: tracked_ranking is 0 of 490 against 0 of 315 on 08-27, so the tracked query universe grew 56% and the page-2 tier this hypothesis predicted still does not exist anywhere in it. Verdict and metric both left alone for the 08-27 reason, which has not weakened: an instrument is not judged by the series it reads, and every candidate metric is one it also cannot cause.",
     "verdict": {
-      "decided": "2026-09-23",
+      "decided": "2026-09-24",
       "works": null,
-      "why": "organic_visitors median 36.0/day vs 6.0/day before activation [537 in the last 14d vs 107 in the 14d before] \u2014 but 6 other active techniques are judged on the same site-wide organic_visitors series (T004 sitemap_daily, T005 indexnow, T015 dataset_schema_ai_citation and 3 more), so the movement cannot be attributed to any one of them",
+      "why": "organic_visitors median 36.0/day vs 6.0/day before activation [523 in the last 14d vs 107 in the 14d before] \u2014 but 7 other active techniques are judged on the same site-wide organic_visitors series (T004 sitemap_daily, T005 indexnow, T015 dataset_schema_ai_citation and 4 more), so the movement cannot be attributed to any one of them",
       "measured": {
         "metric": "organic_visitors",
         "median_after": 36.0,
         "median_before": 6.0,
-        "total_after": 537,
+        "total_after": 523,
         "total_before": 107,
         "window_days": 14,
-        "days_measured": 57,
+        "days_measured": 58,
         "co_claimants": [
           "T004 sitemap_daily",
           "T005 indexnow",
           "T015 dataset_schema_ai_citation",
           "T037 crawl_paths",
           "T072 page_uniqueness",
-          "T089 canonical_integrity"
+          "T089 canonical_integrity",
+          "T090 frozen_pages"
         ]
       }
     },
@@ -323,21 +326,21 @@
     "retired": null,
     "notes": "[2026-07-27] candidate\u2192active: re-scoped to Building Report buyers 2026-07-27; free-account base too small to measure\n[2026-08-26] metric mrr_usd \u2192 reports_sold; prior verdict cleared because it was decided against mrr_usd: revisit 2026-08-26. mrr_usd is monthly RECURRING revenue and was computed as paying_subs * 4.99; the Building Report is a one-time $9 purchase, so this technique's declared metric could not have registered its own revenue if the sequence had worked perfectly. Same failure mode as T008 on 2026-08-25: judged on a number structurally incapable of resolving it. reports_sold (added to metrics.py today) is a GATE, not an attribution \u2014 T011 emails people who have already bought and does not cause sales \u2014 but while it reads 0 this technique has no audience and any verdict on it is noise.\n[2026-08-26] revisit: KEEP, dormant and honestly labelled. Lifetime output is 2 emails, both on 2026-07-27, and nothing in the 30 days since, because no Building Report has sold. The code is sound (idempotent via sent_steps, unsubscribe honoured forever, nothing sends without SMTP) and costs nothing to keep. Its measurability is downstream of T017. DATED CONDITION, mirroring T008's: if reports_sold is still 0 on 2026-09-25, retire it as unmeasurable-by-construction \u2014 NOT as failed. Retiring it as failed would tell the scout this idea was tried and lost, when it has never once run.\n[2026-08-26] metric mrr_usd \u2192 reports_sold; prior verdict cleared because it was decided against mrr_usd: revisit 2026-08-26, RE-APPLIED after the first attempt silently reverted via seed.run(); seed.py now declares reports_sold. mrr_usd is monthly RECURRING revenue computed as paying_subs * 4.99, and the Building Report is a one-time $9 purchase, so the declared metric could not have registered this technique's own revenue if it had worked perfectly. Same failure mode as T008 on 2026-08-25.\n[2026-09-25] revisit: KEEP \u2014 the 2026-08-26 dated condition ('if reports_sold is still 0 on 2026-09-25, retire it as unmeasurable-by-construction') is OVERTURNED, not forgotten, and the reason is a line of code the 08-26 self had not read. growth_daily.py:540 gates cmd_lifecycle on `lifecycle_email` being ACTIVE in the ledger, so `retired` here does not merely stop this technique being judged \u2014 it switches off the only follow-up any paying customer ever receives, permanently and silently, for the first person who ever buys a $9 report. The condition's own words ('NOT as failed') show the intent was about the VERDICT, not about the sending. Retiring it would satisfy the letter of the pre-registration by doing the one thing it was written to prevent. The verdict noise ('UNPROVEN \u2014 0 -> 0 over 27d') is a review.py limitation, not a reason to break the product. WHAT IS ACTUALLY NEW TODAY, and it changes this technique's status from unmeasurable to downstream-of-a-measured-failure: T018's per-step series (recorded since 2026-09-12 and never read until now) shows the `saved` step \u2014 the only paid ask this product makes to free accounts \u2014 was sent 11 times between 09-12 and 09-23, against reports_sold 0. So the $9 report has had 11 qualified asks and no sales. T011 is empty because nothing upstream converts, which is T017's question (revisit 2026-09-26), not this one's. n=11 is far too small to condemn the offer; it is decisive that the ask is being MADE. Keep, dormant, honestly labelled, costing nothing.",
     "verdict": {
-      "decided": "2026-09-23",
+      "decided": "2026-09-24",
       "works": null,
-      "why": "reports_sold went 0 \u2192 0 (0) over 27d \u2014 the counter has not moved at all since activation, so either nothing reaches this technique or nothing it does converts",
+      "why": "reports_sold went 0 \u2192 0 (0) over 28d \u2014 the counter has not moved at all since activation, so either nothing reaches this technique or nothing it does converts",
       "measured": {
         "metric": "reports_sold",
         "kind": "stock",
         "start": 0,
         "end": 0,
         "delta_after": 0,
-        "span_days_after": 27,
+        "span_days_after": 28,
         "per_day_after": 0.0,
         "delta_before": null,
         "span_days_before": 0,
         "per_day_before": null,
-        "days_measured": 28
+        "days_measured": 29
       }
     },
     "revisit_on": "2026-10-25"
@@ -384,14 +387,14 @@
     "retired": null,
     "notes": "Rendered by build_seo.py:city_hub_docs() at /<city>/neighborhood/<slug>/ (SF, DC) and /la/zip/<zip>/, plus a browse hub at /<city>/buildings/. Grouped on the dimension each city's data actually carries: SF and DC record a neighborhood, LA records only a ZIP. No page states a stat its city does not hold \u2014 LA has no reported rents, DC has no build years \u2014 and no place with fewer than 5 records gets a page. Deliberately NOT building-level: SF is anonymized to the block and LA is a derived 'likely RSO' list, so the aggregate is the honest unit of publication for those two. Since 2026-08-03 the technique also PUBLISHES the tier the SEO pipeline has not deployed, through the growth build's own rsync, on the same terms as the city guides: ownership by FALLBACK_MARKER, so a docroot copy the SEO build wrote is never overwritten and this steps aside on the day /root/dhcr-build starts pulling again. 255 pages had been finished in git and live nowhere for five days. Fallback-published hubs are listed in sitemap-daily.xml (changefreq monthly) and the three browse hubs in llms.txt, because no SEO-owned shard knows these URLs exist. 2026-08-29 REVISIT \u2014 retired 08-20 on '0 owned visitors in 21d, and its pages earned 0 search impressions across 0 URLs \u2014 invisible in search'. That verdict is withdrawn: the URL Inspection census has now inspected 57 of these URLs and all 57 come back 'unknown to Google' with not one crawl between them, so the zero measured the crawler's reach and not the pages. Reactivated with the clock restarted. The hypothesis itself SURVIVES the revisit on the site's own numbers: NYC's equivalent aggregate tier (198 neighborhood + 165 zip + 5 borough = 368 pages) has 9 URLs that have ever earned an impression, 2.4%, against 261 of 47,165 building pages, 0.55% \u2014 a 4.4x higher serving rate per page, and NOT a crawl artefact, because the census fetches the two tiers at almost the same rate (NYC hubs 23 of 90, buildings 55 of 206). So aggregates do earn more visibility per page than address pages; this tier is simply the one Google has never reached. The constraint is crawl reach, not the pages, and the reachability defect is specific: /<city>/buildings/ is the sole inbound path to these hubs and is itself uncrawled (3 sampled, 0 fetched), so the whole tier sits behind a door Googlebot has not opened. Do not re-retire this on an impression count until at least one of its URLs has been fetched \u2014 review.py's census guard now enforces that.",
     "verdict": {
-      "decided": "2026-09-23",
+      "decided": "2026-09-24",
       "works": null,
-      "why": "0 owned visitors in 25d and 0 search impressions, but Google has never fetched any of the 57 of its URLs the index census has inspected \u2014 that zero measures crawl reach, not these pages, so there is nothing to retire on yet. Re-judge once any of them is crawled",
+      "why": "0 owned visitors in 26d and 0 search impressions, but Google has never fetched any of the 57 of its URLs the index census has inspected \u2014 that zero measures crawl reach, not these pages, so there is nothing to retire on yet. Re-judge once any of them is crawled",
       "measured": {
         "total_owned_visitors": 0,
         "recent_median": 0.0,
-        "prior_median": 0,
-        "days_measured": 25,
+        "prior_median": 0.0,
+        "days_measured": 26,
         "owned_serving_pages": 0,
         "owned_impressions": 0,
         "owned_best_position": null,
@@ -476,21 +479,21 @@
     "retired": null,
     "notes": "effort: days\nexpected: First paid dollar on the site; target 50-100 one-time purchases/month at $7-9.99 within 90 days of launch, tracked via Stripe one-time checkout separate from the Plus subscription funnel.\nfirst step: Pick 3 high-traffic building pages, add a 'Get the full building report' one-time-purchase button (Stripe Checkout, no account required) that unlocks owner/agent history, full violation timeline, and portfolio cross-reference as a downloadable PDF.\n[2026-07-28] candidate\u2192active: was live in production since 2026-07-27 (api_server.py Stripe checkout + building_reports table + lifecycle.py buyer sequence) but never flipped from candidate \u2014 same unfixed claim as gsc_integration. Confirmed by code before flipping.\n[2026-08-26] metric organic_visitors \u2192 reports_sold; prior verdict cleared because it was decided against organic_visitors: The Building Report's own conversion metric. It was judged on site-wide organic_visitors, which measures whether the site gets search traffic, not whether the $9 ask converts. Repointed the day before its scheduled revisit so tomorrow's revisit has a metric that can answer it; the revisit decision itself is deliberately NOT taken here.\n[2026-08-27] REVISIT (due 2026-08-27) \u2014 KEEP, and the reason it has not sold is now measured rather than assumed. The offer was NEVER PUT TO THE AUDIENCE IT WAS BUILT FOR. The $9 button existed only in index.html's map detail panel, gated IS_NYC && REPORTS_ON. The 47,165 static /building/ pages carried no mention of it at all \u2014 and those pages are the only tier that earns search impressions: 260 of the 273 URLs that have ever served are /building/, against 9 hubs and the home page. So for 30 days the one product built to convert search visitors was invisible to every search visitor, and the only offer those pages made was Plus at $4.99/mo, which has 0 conversions for its entire lifetime. The denominator that IS real: 217 distinct visitors viewed a building record in the last 30d (1,998 views) and bought 0 reports. 0/217 rules out a strong conversion rate \u2014 a true rate above ~1.4% would have shown by now at 95% \u2014 but it cannot separate 'wrong offer' from 'a ~0.5% rate on a small sample'. CHANGED TODAY: build_seo.py now renders the report offer on every static building page that has enough on file for the report to have substance (gated on the compare block; 1,371 of 1,375 in a 6-neighborhood render, the 4 correctly withheld). Copy is word-for-word index.html's so the two surfaces cannot drift. Do NOT retire this before the new surface has had 21 days.\n[2026-09-26] [2026-09-26 revisit] KEEP. The 08-27 revisit said 'do NOT retire before the new surface has had 21 days'; it has now had 30, and reports_sold is still 0. What changed is that the denominator is finally real and finally small \u2014 and SMALLER THAN YESTERDAY'S ENTRY CLAIMED. The 2026-09-25 entry read 11 qualified asks off account_lifecycle/sent_saved. That counter cannot say it: the saved step is two different emails under one name, and only the branch with a BBL that resolves in the corpus AND carries an HPD record makes the $9 ask at all \u2014 the no-BBL branch, which is every save outside New York City, makes no offer. So 11 is the UPPER BOUND on the asks, not the count, and the true figure is unknown and lower. CORRECTED IN CODE TODAY: growth/accounts.py now records account_lifecycle/sent_saved_paid_ask beside sent_saved, counted from the same report_target() call the email builder makes, so the two cannot disagree about what was asked. Until that series has data this technique has NO measured denominator. Even at the upper bound, 0 of 11 condemns nothing \u2014 it cannot rule out any true rate below ~24% at 95% \u2014 so retiring here would be retiring on n<=11, which the evidence does not support. It does retire the 08-27 framing: 'the offer was never put to the audience it was built for' is no longer true, and the open question has moved from distribution to the offer itself. DELIBERATELY NOT changing the offer copy today: the growth engine has been down since 2026-09-23, so nothing shipped now can be measured against the existing baseline, and rewriting the ask while its only measurement channel is dead would spend the baseline and buy no reading. PRE-REGISTERED so the next revisit cannot drift: if by 2026-10-26 sent_saved_paid_ask totals 40 or more and reports_sold is still 0, that rules out any rate above ~7%, which at this ask volume cannot produce anything like the 50-100 purchases/month this record claims \u2014 change the offer then rather than extending again. If the ask total is still under 40, the finding is distribution and the offer stays unjudged.",
     "verdict": {
-      "decided": "2026-09-23",
+      "decided": "2026-09-24",
       "works": null,
-      "why": "reports_sold went 0 \u2192 0 (0) over 27d \u2014 the counter has not moved at all since activation, so either nothing reaches this technique or nothing it does converts",
+      "why": "reports_sold went 0 \u2192 0 (0) over 28d \u2014 the counter has not moved at all since activation, so either nothing reaches this technique or nothing it does converts",
       "measured": {
         "metric": "reports_sold",
         "kind": "stock",
         "start": 0,
         "end": 0,
         "delta_after": 0,
-        "span_days_after": 27,
+        "span_days_after": 28,
         "per_day_after": 0.0,
         "delta_before": null,
         "span_days_before": 0,
         "per_day_before": null,
-        "days_measured": 28
+        "days_measured": 29
       }
     },
     "revisit_on": "2026-10-26"
@@ -511,21 +514,21 @@
     "retired": null,
     "notes": "Accounts created before the 2026-07-27 cutover never enter the sequence \u2014 gating only the welcome on age would still have fired the day-3 and day-21 steps at 17 cold accounts at once, which is the backfill blast the owner explicitly ruled out. 2026-09-11: a fourth step, `saved`, day 5+, to accounts that have saved a building AND been on the site in the last 14 days. It is the first paid ask this sequence has ever made, and it exists because the sequence's own metric kept rising while revenue did not: accounts_with_saves 6 -> 21 since 08-25, reports_sold and paying_subs 0 for the products' entire lives. An engaged saver used to receive `welcome` and then nothing ever \u2014 `activate` is skipped once they save, `lapsed` while they keep visiting \u2014 so the one audience with proven intent was the one never asked. Measured by sent_saved (the ask) against reports_sold (the answer); the ask is only made when a saved building resolves in the corpus with an HPD record behind it, and never to somebody who already bought a report. 2026-09-25 revisit: CHANGE. The hypothesis is answered on its own terms and is no longer the interesting question \u2014 the sequence runs at real volume. Per-step sends 09-12..09-23 total ~216 emails in 16 days (welcome 3-10/day, activate 67 over 12 days, lapsed ~1/day, saved 11 in total) against accounts_with_saves 21 -> 30. Not dormant, not unmeasured. What the volume exposed is why this is CHANGE: ~6 welcome emails a day means ~100 new accounts in 16 days, and every one read a first paragraph claiming the site 'maps every building registered rent-stabilized with DHCR \u2014 all 47,000 of them across the five boroughs, plus San Francisco, Los Angeles and Washington DC'. That hangs three cities off a DHCR claim true in one. LA publishes no building-level list, so that layer is derived from assessor records and labelled likely RSO; SF is published anonymized to the block, not the address. `activate` \u2014 the highest-volume step \u2014 was worse: it told the reader 'before signing a lease, search the exact address. If it comes up, the building is registered rent-stabilized', resting a lease decision on a lookup that does not mean that in two of four cities. Every published page already carries the four-city caveat and /methodology/ states it in full; the account emails were the ONLY surface that did not, and they are the first thing a new account ever reads. Fixed in growth/accounts.py: COVERAGE_NOTE, rendered by _coverage_block() with a link to /methodology/, now appears in `welcome`, in `activate`, and in the no-BBL branch of `saved` \u2014 that branch fires for every save outside New York City and was handing out DHCR instructions that are the wrong route in the other three cities. `lapsed`'s voucher count and `activate`'s /section8/ card now say New York City, because that feed has only ever been NYC. The paid-ask branch of `saved` was not touched. The caveat was added; no claim was softened or removed. [2026-09-26 correction] The sentence above said COVERAGE_NOTE was 'lifted word-for-word from the /methodology/ answer block ... so the surfaces cannot drift'. It is not, and they can. COVERAGE_NOTE states the same four facts in the same order but shares no sentence with build_seo.py, whose wording is 'Derived from assessor records and labelled likely RSO' and 'The inventory is published anonymized to the block, not the individual address'. Nothing a reader sees is wrong \u2014 both surfaces are accurate and agree today \u2014 but the drift protection that claim asserted does not exist, and a future reader who believed it would skip the check. The two are separate strings in separate modules and must be edited together; corrected here rather than by importing build_seo.py into the email path, which would pull a whole build script into a mailer to share six lines of prose.",
     "verdict": {
-      "decided": "2026-09-23",
+      "decided": "2026-09-24",
       "works": null,
-      "why": "accounts_with_saves went 3 \u2192 30 (+27) over 58d, but only 0d of pre-activation history \u2014 no comparable baseline, so the movement cannot be attributed either way",
+      "why": "accounts_with_saves went 3 \u2192 32 (+29) over 59d, but only 0d of pre-activation history \u2014 no comparable baseline, so the movement cannot be attributed either way",
       "measured": {
         "metric": "accounts_with_saves",
         "kind": "stock",
         "start": 3,
-        "end": 30,
-        "delta_after": 27,
-        "span_days_after": 58,
-        "per_day_after": 0.4655,
+        "end": 32,
+        "delta_after": 29,
+        "span_days_after": 59,
+        "per_day_after": 0.4915,
         "delta_before": null,
         "span_days_before": 0,
         "per_day_before": null,
-        "days_measured": 58
+        "days_measured": 59
       }
     },
     "revisit_on": "2026-10-25"
@@ -551,14 +554,14 @@
     "retired": null,
     "notes": "Implementation lives in build_seo.py:answer_block(), not in techniques.py \u2014 the hub pages are generated by the SEO build, so the growth technique here only verifies the blocks are present and counts them. [2026-08-27 revisit] KEEP the block, REJECT the WORKS verdict it carried. It read 'WORKS \u2014 27 owned visitors in 30d (median 0.5/day but falling)': the why-string described a halving while the verdict said True. Cause found and fixed in review.py the same day \u2014 the owned-prefix branch set works=True unconditionally, and its floor is 'total >= 20 OR recent >= 1' where total is CUMULATIVE, so a sum over a lengthening window cannot fall and a technique that drew traffic early and nothing since clears it forever. Same false-positive class fixed on the site-wide paths 2026-08-25 and the stock metrics 08-26; this branch went through neither. Now reads UNPROVEN. On the hypothesis itself ('depth on ~370 hubs beats volume'): after 30 days the hubs hold 9 of 273 ever-served URLs while building pages hold 260, so it is NOT confirmed \u2014 but not refuted either, because mature index acceptance is 0.0% site-wide and a page Google declines cannot demonstrate depth. The blocks are built and cost nothing to maintain; re-judge when acceptance is non-zero. [2026-09-26 revisit] KEEP the block; CHANGED review.py so the verdict this record keeps having to disown cannot be written again. On 2026-09-23 it read 'WORKS \u2014 62 owned visitors in 57d (median 1.5/day and rising), 0 pages serving in search'. That is the 08-27 defect in its third form: 08-27 stopped works=True being UNCONDITIONAL, 09-20 made the verdict STRING say when serving pages are brand sitelinks, and neither stopped True being asserted beside a clause that contradicts it. review.py's owned branch now requires non-branded search impressions before it will call an owned technique WORKING; with none it reads UNPROVEN \u2014 never False, because these are all above the retirement floor. Re-judged across every active technique: exactly two verdicts moved, T019 and T046, both True -> None, both action=keep, zero retirements proposed. ON THE HYPOTHESIS, 60 days in and still NOT CONFIRMED. The blocks were written 'to be lifted whole by an AI answer engine or a featured snippet' and this record set its own test: 'whether gsc_serving_pages and hub-page positions move while thin-page counts stay flat'. gsc_owned_impressions is 0 and owned_serving_pages is 0. The 62 owned visitors are NOT evidence for it \u2014 they are internal navigation: 233 of 241 visitors on 2026-09-22 landed on '/' and clicked through the map, which no answer block caused and none could have prevented. Not refuted either, for the unchanged 08-27 reason. KEEP because the blocks are accurate and cost nothing, NOT because the visitor count looks alive.",
     "verdict": {
-      "decided": "2026-09-23",
+      "decided": "2026-09-24",
       "works": true,
-      "why": "62 owned visitors in 57d (median 1.5/day and rising), 0 pages serving in search",
+      "why": "62 owned visitors in 58d (median 1.5/day and rising), 0 pages serving in search",
       "measured": {
         "total_owned_visitors": 62,
         "recent_median": 1.5,
         "prior_median": 1.0,
-        "days_measured": 57,
+        "days_measured": 58,
         "owned_serving_pages": 0,
         "owned_impressions": 0,
         "owned_best_position": 5,
@@ -641,14 +644,14 @@
     "retired": null,
     "notes": "Content lives in seo_guides.py, rendered by build_seo.guide_page(). The technique verifies the three pages exist in the docroot AND still carry their data caveat \u2014 LA is derived from assessor criteria and labelled 'likely RSO', SF is anonymized to the block. A guide that loses its caveat is a credibility bug, so it fails the run. Since 2026-08-02 it also PUBLISHES a guide the SEO pipeline has not deployed, through the growth build's own rsync: that pipeline's checkout stopped taking pushes and these three pages sat finished in git for four days, live nowhere. Ownership is by marker \u2014 a docroot copy without FALLBACK_MARKER belongs to the SEO build and is never overwritten \u2014 so the two pipelines cannot fight over one file. Fallback-published guides are listed in sitemap-daily.xml because no SEO shard knows they exist.",
     "verdict": {
-      "decided": "2026-09-23",
+      "decided": "2026-09-24",
       "works": null,
-      "why": "0 owned visitors in 26d and 0 search impressions, but Google has never fetched any of the 3 of its URLs the index census has inspected \u2014 that zero measures crawl reach, not these pages, so there is nothing to retire on yet. Re-judge once any of them is crawled",
+      "why": "0 owned visitors in 27d and 0 search impressions, but Google has never fetched any of the 3 of its URLs the index census has inspected \u2014 that zero measures crawl reach, not these pages, so there is nothing to retire on yet. Re-judge once any of them is crawled",
       "measured": {
         "total_owned_visitors": 0,
         "recent_median": 0.0,
-        "prior_median": 0.0,
-        "days_measured": 26,
+        "prior_median": 0,
+        "days_measured": 27,
         "owned_serving_pages": 0,
         "owned_impressions": 0,
         "owned_best_position": null,
@@ -912,24 +915,25 @@
     "retired": null,
     "notes": "Audits, never publishes. Reads the ledger's own prefix declarations against the live docroot, so a technique added later is covered without being listed here. Self-links inside a prefix do not count \u2014 a family whose pages only link to each other is exactly the orphan case. REVISIT 2026-09-04, AND THE HYPOTHESIS IS FALSIFIED AS A CAUSAL CLAIM. The linking half of it was fully delivered: 15 of 15 published sections now carry an inbound internal link and every one sits within 3 clicks of the homepage. Indexing did not follow it \u2014 it moved the other way, monotonically, over the 30 days since. gsc_serving_pages 63 (08-20) \u2192 39 (08-24) \u2192 13 (08-30) \u2192 5 (09-03, 09-04); index_state_indexed 10 \u2192 1 across the same window; index_accept_pct_mature 50% (08-20) \u2192 0.0% every day from 08-26 to 09-04. An inbound link is therefore necessary but nowhere near sufficient, and on this site it was not the binding constraint. DISTRUST ITS 'WORKS' VERDICT: review.py credits it with organic_visitors 9.5/day vs 2.5/day, but gsc_nonbranded_clicks has been 0 for seven straight days against 67 branded clicks, so the traffic it is being credited with is jayshomefinder and findacrib residue that this technique cannot have caused. The metric is mis-attributed; the audit is not. KEPT, as a guard and an instrument rather than a growth lever: it is read-only, it is what stops the next section shipping into an orphan hole, and its click-depth and 'published under no ACTIVE technique' readings are what the duplication work is steering by. Its own next improvement is to become a pure docroot reader \u2014 drop the ctx.out staging check and the ledger.set_state first-sighting write \u2014 so it can join techniques.DOCROOT_VERIFIERS and stop reporting a day late.",
     "verdict": {
-      "decided": "2026-09-23",
+      "decided": "2026-09-24",
       "works": null,
-      "why": "organic_visitors median 36.0/day vs 2.5/day before activation [537 in the last 14d vs 51 in the 14d before] \u2014 but 6 other active techniques are judged on the same site-wide organic_visitors series (T004 sitemap_daily, T005 indexnow, T010 gsc_integration and 3 more), so the movement cannot be attributed to any one of them",
+      "why": "organic_visitors median 36.0/day vs 2.5/day before activation [523 in the last 14d vs 51 in the 14d before] \u2014 but 7 other active techniques are judged on the same site-wide organic_visitors series (T004 sitemap_daily, T005 indexnow, T010 gsc_integration and 4 more), so the movement cannot be attributed to any one of them",
       "measured": {
         "metric": "organic_visitors",
         "median_after": 36.0,
         "median_before": 2.5,
-        "total_after": 537,
+        "total_after": 523,
         "total_before": 51,
         "window_days": 14,
-        "days_measured": 49,
+        "days_measured": 50,
         "co_claimants": [
           "T004 sitemap_daily",
           "T005 indexnow",
           "T010 gsc_integration",
           "T015 dataset_schema_ai_citation",
           "T072 page_uniqueness",
-          "T089 canonical_integrity"
+          "T089 canonical_integrity",
+          "T090 frozen_pages"
         ]
       }
     }
@@ -1097,17 +1101,17 @@
     "retired": null,
     "notes": "effort: days\nexpected: Ship on 1,000 NYC test buildings first. Success at 60 days: those 1,000 pages hold 5\u201310x the impressions-per-page of the untouched control set in Search Console, building-tier impressions move from ~89 to 1,000+, and at least 5 building URLs earn a first click. Failure = no impression lift, which tells you the problem is authority/indexing, not page quality \u2014 a genuinely useful negative result.\nfirst step: Compute one metric \u2014 registered stabilized units vs. total dwelling units on record \u2014 for every NYC building, and render it on 1,000 test pages as one plain labelled sentence plus a linked /methodology page stating the source files, vintage and the caveat that a building-level match is a lead, not proof for a specific unit.\n[2026-08-21] candidate\u2192active: computed comparison block shipped in build_seo.py:building_facts(); t_derived_building_facts audits the docroot nightly\n[2026-08-21] Shipped to the WHOLE corpus, not the 1,000-building test set the seed proposed, and deliberately with no control group. At the fetch rate the 2026-08-21 index sample measures \u2014 82 of 445 sampled URLs ever fetched, roughly 1-5 URLs a night \u2014 a 1,000-page treated set would expect about two of its pages to be fetched inside the 60-day window, so the controlled test the seed asked for cannot resolve. Leaving 46,165 thin pages standing as a control also preserves the site-level quality drag the change exists to remove. Read it instead on the index sample's per-family rates for /building/ (2026-08-21 baseline: 18.4% fetched, 2.0% indexed, 11.0% accept) and on index_lost_indexed vs index_gained_indexed.\n[2026-08-21] Seeded name also promised rent-freeze (RGB Order #58) exposure and a registration gap. Neither shipped: this build cannot substantiate which leases at an address begin on or after 1 October 2026, and 'years since last registration' needs a statement about whether a registration is validly in force that the data does not support. The HPD lastregistrationdate ships as a dated table row and nothing more.\n[2026-08-22] CORRECTION TO THE ACTIVATION DATE'S MEANING: this shipped into build_seo.py on 08-21, but /root/dhcr-build is not a git worktree, so the 05:41 rebuild on 08-22 ran a pre-2026-07-29 generator and reported 0 changed URLs where the block alone guarantees ~46,853. The pages were not live on 08-22. scripts/refresh_seo.sh now copies build_seo.py and seo_guides.py from the pulled checkout into the build dir when that dir cannot pull for itself, so the first corpus actually carrying the block is the 05:41 rebuild on 2026-08-23 and the first day t_derived_building_facts can read it is 2026-08-24 (techniques run before the watchdog). Judge the 60-day window from 08-23, not 08-21; the 09-20 revisit stands.\n[2026-09-20] 2026-09-20 REVISIT \u2014 DECISION: KEEP THE BLOCK, CHANGE THE INSTRUMENT. This technique's own notes pre-registered the test: read it on the index sample's per-family rates for /building/, baseline 2026-08-21 = 18.4% fetched, 2.0% indexed, 11.0% accept. Today's census: 26.8% fetched (67 of 250), 0.0% indexed, 0.0% accept. The sharper read, URL by URL: exactly 9 building URLs have been crawled on or after 2026-08-24, the first day a build could carry the block (crawl dates 08-25 x4, 08-29, 08-30, 08-31, 09-05, 09-09). All 9 came back 'Crawled - currently not indexed'. 0 of 9 kept. That is a NEGATIVE first result on the pre-registered metric and it is recorded as one. It is not a retirement: n=9 at a crawl rate of 16 URLs/28d site-wide and 1/14d for this family cannot separate 'the block does not clear the bar' from 'not enough of the treated corpus has been re-crawled yet' \u2014 the same resolution problem that killed the seeded 1,000-page control. KEEP, because the alternative is restoring 47,165 pages that shared 91.4% of their words, and because the block is true, sourced and useful to a reader whatever Google does with it. WHAT CHANGED INSTEAD: review.py issued this technique's first verdict TODAY \u2014 'WORKS: 90 owned visitors in 30d (median 3.0/day and flat), 9 pages serving in search'. The second clause was false corroboration. gsc_pages.json for 2026-09-11..18 shows every attributed impression on every serving building page came from the query 'findacrib.com' (42-driggs 8, 105-w-72nd 7, 1188-sheridan 3) with no query rows at all on the other three, against gsc_serving_nonbranded = 0 site-wide. Those are sitelinks under the brand result, not housing-intent visibility. So the per-technique visibility read now carries the same brand split the site-wide read has carried since 2026-09-12: gsc_owned_nonbranded_pages / _impressions / gsc_owned_unattributed_pages, recorded only when the page x query pull succeeded, and verdict strings that say which of the two they are. The verdict above is left standing rather than rewritten \u2014 it was honest about the traffic, and entries are append-only \u2014 but from tomorrow it will read '...but its 9 serving pages earned 0 non-branded impressions - brand sitelinks, not search visibility'.",
     "verdict": {
-      "decided": "2026-09-23",
+      "decided": "2026-09-24",
       "works": true,
-      "why": "104 owned visitors in 33d (median 3.5/day and rising), but its 8 serving pages earned 0 non-branded impressions \u2014 brand sitelinks, not search visibility",
+      "why": "110 owned visitors in 34d (median 4.0/day and rising), but its 8 serving pages earned 0 non-branded impressions \u2014 brand sitelinks, not search visibility",
       "measured": {
-        "total_owned_visitors": 104,
-        "recent_median": 3.5,
+        "total_owned_visitors": 110,
+        "recent_median": 4.0,
         "prior_median": 3.0,
-        "days_measured": 33,
+        "days_measured": 34,
         "owned_serving_pages": 8,
         "owned_impressions": 38,
-        "owned_best_position": 1.5,
+        "owned_best_position": 1,
         "owned_nonbranded_pages": 0,
         "owned_nonbranded_impressions": 0,
         "owned_unattributed_pages": 5
@@ -1581,24 +1585,25 @@
     "retired": null,
     "notes": "Audits, never publishes, and reports without a threshold on purpose \u2014 the site has no distribution of duplicate share yet, and the depth crawler is the standing lesson about setting a bar before you have one. Sections come from the ledger's prefix declarations whatever a technique's status, because a retired section is still in the docroot and still part of what Google prices this domain on.\n[2026-09-20] FIRST EVIDENCE AGAINST THIS HYPOTHESIS, written here so the 2026-10-02 revisit does not have to rediscover it. T046's computed block cut /building/ duplicate share hard: the hand pair above measured 91.4% word-for-word overlap, tonight's nightly audit reads 33% of 498 words shared with siblings. Different instruments, so read the pair as direction and not as a series. Nine building URLs have since been crawled while carrying the block (2026-08-25, x4; 08-29; 08-30; 08-31; 09-05; 09-09) and all nine came back 'Crawled - currently not indexed'. accept_pct_mature is still 0.0 across 88 mature fetched URLs. n=9 cannot overturn the hypothesis, but it is the first real test of it and it went the wrong way. The revisit should therefore weigh the site-level explanation \u2014 crawl demand and authority \u2014 at least as heavily as the per-page duplication one: weekly crawls have run 24, 16, 11, 16, 9, 2, 2, 3 since 2026-07-27, and no active technique earns a single external citation.\n[2026-09-23] THIS AUDIT'S OWN READING IS NOW A VERIFIED INSTRUMENT, which matters for how much weight the 10-02 revisit gives it. 2026-09-22 shipped a facts table and conditional footnotes to the /available/ tier and pre-registered a FALL in that section's duplicate share, explicitly refusing to predict the figure because a 93-page docroot is a different corpus from the 40-page scratch build it was measured in. Today it reads 42% of 418 words against 50% of 294 the morning before, same n=24 of 93 \u2014 the direction was right and the reading tracked a change made in a generator this audit has no knowledge of. That is the second time it has moved on command (T046's /building/ block was the first) and no time it has moved without one.\n[2026-09-23] AND A SECOND INDEPENDENT NEGATIVE ON THE HYPOTHESIS ITSELF, from the index census rather than from content. Between 09-22 and 09-23, 25 of the 458 census URLs moved BACKWARDS from 'Discovered - currently not indexed' to 'URL is unknown to Google' (20 building, 3 zip, 2 neighborhood) and not one moved forwards; crawled_not_indexed held at 94 and indexed at 1. Google is not sitting on these pages deciding they are duplicates \u2014 it is forgetting it ever knew about them, which is a discovery and crawl-demand failure and cannot be caused by the text on a page it has never fetched. Weigh this above every duplicate-share reading in the revisit.",
     "verdict": {
-      "decided": "2026-09-23",
+      "decided": "2026-09-24",
       "works": null,
-      "why": "organic_visitors median 36.0/day vs 6.5/day before activation [537 in the last 14d vs 112 in the 14d before] \u2014 but 6 other active techniques are judged on the same site-wide organic_visitors series (T004 sitemap_daily, T005 indexnow, T010 gsc_integration and 3 more), so the movement cannot be attributed to any one of them",
+      "why": "organic_visitors median 36.0/day vs 6.5/day before activation [523 in the last 14d vs 112 in the 14d before] \u2014 but 7 other active techniques are judged on the same site-wide organic_visitors series (T004 sitemap_daily, T005 indexnow, T010 gsc_integration and 4 more), so the movement cannot be attributed to any one of them",
       "measured": {
         "metric": "organic_visitors",
         "median_after": 36.0,
         "median_before": 6.5,
-        "total_after": 537,
+        "total_after": 523,
         "total_before": 112,
         "window_days": 14,
-        "days_measured": 21,
+        "days_measured": 22,
         "co_claimants": [
           "T004 sitemap_daily",
           "T005 indexnow",
           "T010 gsc_integration",
           "T015 dataset_schema_ai_citation",
           "T037 crawl_paths",
-          "T089 canonical_integrity"
+          "T089 canonical_integrity",
+          "T090 frozen_pages"
         ]
       }
     }

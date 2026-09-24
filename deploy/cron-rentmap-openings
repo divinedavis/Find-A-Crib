@@ -1,0 +1,10 @@
+# /etc/cron.d/rentmap-openings — mirrored from deploy/cron-rentmap-openings.
+# Affordable-housing openings outside New York (build_openings.py): SF DAHLIA,
+# Boston Metrolist, Access Housing LA and Doorway Bay Area, each the public JSON
+# behind the agency's own listings site -> openings.json in the docroot, for
+# the app's Lotteries tab outside NYC. Four requests every three hours; a source
+# that fails keeps its openings from the last good file.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+CRON_TZ=America/New_York
+25 */3 * * * root cd /root/Find-A-Crib && python3 build_openings.py --out /var/www/rent-map/openings.json >> /var/log/rentmap-openings.log 2>&1

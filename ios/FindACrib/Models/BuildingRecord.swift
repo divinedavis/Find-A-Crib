@@ -44,6 +44,24 @@ struct BuildingRecord: Codable, Hashable, Sendable {
     /// Mirrors Building.HPD.op — "there is an operator worth showing".
     var op: Int?
 
+    // States — HUD's Low-Income Housing Tax Credit record (build_lihtc_states.py).
+    var name: String?
+    /// Low-income units, of `units_total`.
+    var li: Int?
+    /// Units by bedroom count, keyed like `Building.br`: "0" studio … "4" 4+.
+    var mix: [String: Int]?
+    /// The income ceiling: "60% of area median income".
+    var inc: String?
+    /// Who it is set aside for: families, seniors, people with disabilities…
+    var serves: [String]?
+    /// The owner company on file with HUD, and its phone.
+    var mgr: String?
+    var tel: String?
+    /// Year placed in service.
+    var pis: Int?
+    /// 1 = sponsored by a nonprofit.
+    var np: Int?
+
     struct Violations: Codable, Hashable, Sendable {
         var open: Int?; var total: Int?; var last_12mo: Int?
         var a: Int?; var b: Int?; var c: Int?

@@ -86,7 +86,7 @@ struct BuildingCard: View {
                     Spacer(minLength: 6)
                     Rectangle().fill(SE.line).frame(width: 1, height: 22)
                     Spacer(minLength: 6)
-                    fact("calendar", b.yr.map { "Built \($0)" } ?? "Built –")
+                    fact("calendar", store.city.isState ? (b.yr.map { "Opened \($0)" } ?? "Opened –") : (b.yr.map { "Built \($0)" } ?? "Built –"))
                 }
                 }
 

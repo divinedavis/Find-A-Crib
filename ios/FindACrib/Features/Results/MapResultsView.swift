@@ -132,7 +132,7 @@ struct MapCalloutCard: View {
                     } else if let e = store.estimate(building), e.count >= 3 {
                         Text("\(Formatters.dollars(e[0]))–\(Formatters.dollars(e[2])) typical").font(.se(15)).foregroundStyle(SE.ink2)
                     }
-                    Text("\(building.u.map { "\($0) units" } ?? "") · \(building.yr.map { "built \($0)" } ?? "")").font(.se(14)).foregroundStyle(SE.ink3)
+                    Text("\(building.u.map { "\($0) units" } ?? "") · \(building.yr.map { (store.city.isState ? "opened " : "built ") + "\($0)" } ?? "")").font(.se(14)).foregroundStyle(SE.ink3)
                 }
                 Spacer()
                 HeartButton(on: activity.isSaved(building.bbl)) { activity.toggleSaved(building.bbl) }

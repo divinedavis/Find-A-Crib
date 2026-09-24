@@ -52,6 +52,10 @@ struct BuildingDetailView: View {
                     // page (442 people since 9/5, next is 195).
                     if store.city.isNYC {
                         section("Violations & inspections") { hpdBlock }
+                    } else if store.city.isState {
+                        // Its own block: HUD's record is units and eligibility,
+                        // not the violations/evictions shape cityRecordBlock draws.
+                        section(store.city.records?.heading ?? "Income-restricted units") { taxCreditBlock }
                     } else if let r = store.city.records {
                         section(r.heading) { cityRecordBlock(r) }
                     }
@@ -306,9 +310,13 @@ struct BuildingDetailView: View {
 
     private var factsStrip: some View {
         HStack(spacing: 0) {
-            factCell("Building type", b.s?.first.map { AddressCase.pretty($0) } ?? "Multiple dwelling")
+            // A state map's status line is a sentence ("Likely income-
+            // restricted (tax credit)") that truncates in a cell; say the kind.
+            factCell("Building type", store.city.isState ? "Tax credit" : (b.s?.first.map { AddressCase.pretty($0) } ?? "Multiple dwelling"))
             Rectangle().fill(Color.white.opacity(0.25)).frame(width: 1, height: 44)
-            factCell("Year built", b.yr.map(String.init) ?? "–")
+            // HUD's year is when the building entered the program — for a
+            // rehab that is not when it was built.
+            factCell(store.city.isState ? "Opened" : "Year built", b.yr.map(String.init) ?? "–")
             Rectangle().fill(Color.white.opacity(0.25)).frame(width: 1, height: 44)
             factCell("Units", b.u.map { $0.formatted() } ?? "–")
         }
@@ -504,6 +512,56 @@ struct BuildingDetailView: View {
         }
     }
 
+    /// A state map's building: HUD's tax-credit record. What someone deciding
+    /// whether to call needs, in order: what it is, who qualifies, what sizes,
+    /// and who to call — the app cannot say whether a unit is free today.
+    @ViewBuilder private var taxCreditBlock: some View {
+        let h = store.record(b)
+        VStack(alignment: .leading, spacing: 12) {
+            if let name = h?.name, !name.isEmpty {
+                Text(name).font(.se(21, .bold)).foregroundStyle(SE.ink)
+            }
+            if let li = h?.li {
+                let total = h?.units_total ?? b.u
+                Text(total.map { $0 > li ? "\(li) of \($0) units are income-restricted" : "All \($0) units are income-restricted" }
+                     ?? "\(li) income-restricted units")
+                    .font(.se(18, .semibold)).foregroundStyle(SE.ink)
+            } else if let u = b.u {
+                Text("\(u) units in the building").font(.se(18, .semibold)).foregroundStyle(SE.ink)
+            }
+            if let inc = h?.inc {
+                Text("Income limit: \(inc)").font(.se(17)).foregroundStyle(SE.ink2)
+            }
+            let mix = Building.bedOrder.compactMap { k in (h?.mix?[k]).map { (Building.bedLabel(k), $0) } }
+            if !mix.isEmpty {
+                HStack(spacing: 0) { ForEach(mix, id: \.0) { countCell($0.0, $0.1) } }
+                Text("Units by size across the whole building.").font(.se(14)).foregroundStyle(SE.ink3)
+            }
+            if let who = h?.serves, !who.isEmpty {
+                Text("Set aside for " + ListFormatter.localizedString(byJoining: who)).font(.se(17)).foregroundStyle(SE.ink2)
+            }
+            let bits = [h?.pis.map { "Opened \($0)" }, h?.np == 1 ? "nonprofit sponsor" : nil].compactMap { $0 }
+            if !bits.isEmpty { Text(bits.joined(separator: " · ")).font(.se(15)).foregroundStyle(SE.ink3) }
+            if h?.mgr != nil || h?.tel != nil {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Owner on file with HUD").font(.se(15, .semibold)).foregroundStyle(SE.ink2)
+                    if let m = h?.mgr { Text(m).font(.se(18, .bold)).foregroundStyle(SE.ink) }
+                    if let t = h?.tel, let url = URL(string: "tel:\(t.filter(\.isNumber))") {
+                        Button {
+                            Analytics.shared.track("outbound", ["kind": "lihtc_phone", "bbl": b.bbl])
+                            openURL(url)
+                        } label: {
+                            Label(t, systemImage: "phone.fill").font(.se(18, .bold)).foregroundStyle(SE.royal)
+                        }.buttonStyle(.plain).accessibilityIdentifier("lihtc-phone")
+                    }
+                }.padding(.top, 2)
+            }
+            Text("Openings and waiting lists go through the building's leasing office. HUD's register says which buildings are income-restricted, not which have a unit free today.")
+                .font(.se(15)).foregroundStyle(SE.ink3)
+        }
+        .accessibilityIdentifier("lihtc-block")
+    }
+
     /// "Typically 1,125 sq ft · water, refuse included in the rent" — the two
     /// things SF reports about a unit beyond its rent.
     private var rentExtras: String {
@@ -544,6 +602,13 @@ struct BuildingDetailView: View {
                 }
             }
         }.padding(.top, 6)
+    }
+
+    private func countCell(_ k: String, _ v: Int) -> some View {
+        VStack(spacing: 4) {
+            Text(v.formatted()).font(.se(19, .bold))
+            Text(k).font(.se(14)).foregroundStyle(SE.ink3)
+        }.frame(maxWidth: .infinity).padding(.vertical, 10).overlay(Rectangle().stroke(SE.lineSoft))
     }
 
     private func estCell(_ k: String, _ v: Int) -> some View {

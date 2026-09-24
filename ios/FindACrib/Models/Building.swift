@@ -109,6 +109,11 @@ struct Building: Identifiable, Codable, Hashable {
     /// the city map with the building already open (#d=<id>, what the web's own
     /// share button produces).
     func webURL(in city: City) -> URL {
+        // State maps have no page on the website yet: share the place itself.
+        if city.isState {
+            let q = "\(address), \(nb ?? "") \(city.short) \(z ?? "")".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+            return URL(string: "https://maps.apple.com/?q=\(q)")!
+        }
         if city.isNYC {
             return URL(string: "https://findacrib.com/building/\(boroughSlug)/\(Slug.make(a))-\(bbl)/")!
         }

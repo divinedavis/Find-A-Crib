@@ -262,6 +262,42 @@ final class FindACribUITests: XCTestCase {
                       "the map is counting another city: \(app.descendants(matching: .any)["map-count"].firstMatch.label)")
     }
 
+    /// Every state's income-restricted buildings (owner, 2026-09-24: "State
+    /// picker + map"). The picker lists the states apart from the rent-regulated
+    /// cities and can be searched; a state loads its own HUD tax-credit
+    /// buildings, and a building shows its units, income limit and phone.
+    func testStatePickerOpensAStatesIncomeRestrictedBuildings() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash"]
+        app.launch()
+        let cityField = app.buttons["city-field"]
+        XCTAssertTrue(cityField.waitForExistence(timeout: 20))
+        cityField.tap()
+        let search = app.searchFields.firstMatch
+        XCTAssertTrue(search.waitForExistence(timeout: 5), "52 states: the picker must be searchable")
+        search.tap(); search.typeText("New Jer")
+        let nj = app.buttons["city-st-nj"]
+        XCTAssertTrue(nj.waitForExistence(timeout: 5), "searching finds New Jersey")
+        XCTAssertFalse(app.buttons["city-st-tx"].exists, "and filters the rest out")
+        nj.tap()
+        let go = app.buttons["search-button"]
+        XCTAssertTrue(go.waitForExistence(timeout: 20))
+        // NJ downloads on first selection; wait for its count, not a fixed time.
+        expectation(for: NSPredicate(format: "label CONTAINS 'Search' AND NOT (label CONTAINS 'Search 0 ')"), evaluatedWith: go)
+        waitForExpectations(timeout: 90)
+        XCTAssertFalse(app.buttons["tab-Lotteries"].exists, "no New York lottery tab on a state map")
+        let bar = app.buttons["tab-Search"]
+        for _ in 0..<4 where !go.isHittable || (bar.exists && go.frame.maxY > bar.frame.minY - 8) { app.swipeUp() }
+        go.tap()
+        let card = app.buttons["card-address"].firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 20), "results should list NJ buildings")
+        card.tap()
+        let block = app.descendants(matching: .any)["lihtc-block"].firstMatch
+        for _ in 0..<5 where !block.exists { app.swipeUp() }
+        XCTAssertTrue(block.waitForExistence(timeout: 10), "a state building shows HUD's income-restricted record")
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "state-nj-building"; shot.lifetime = .keepAlways; add(shot)
+    }
+
     /// The banner is the wordmark, and it is decoration: the owner had a tap
     /// open Look Around for a day and took it back out (2026-09-20), and a
     /// re-rental photo with a borough badge for half a day on 2026-09-23. So

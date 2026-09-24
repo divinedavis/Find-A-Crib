@@ -11,7 +11,7 @@ import SwiftUI
 /// The landmark set for a city and the deterministic pieces the tests pin.
 enum Skyline {
     enum Scene: String, CaseIterable {
-        case newYork, sanFrancisco, washington, losAngeles
+        case newYork, sanFrancisco, washington, losAngeles, homes
 
         /// One scene per city; anything unknown gets New York, like `City.find`.
         static func scene(for cityID: String) -> Scene {
@@ -19,6 +19,9 @@ enum Skyline {
             case "sf": .sanFrancisco
             case "dc": .washington
             case "la": .losAngeles
+            // A state's map is every town in it: no one city's landmarks fit,
+            // so it gets the kind of building it lists.
+            case _ where cityID.hasPrefix("st-"): .homes
             default: .newYork
             }
         }
@@ -45,6 +48,12 @@ enum Skyline {
                 Landmark("Washington Monument", x: 0.36, draw: Draw.washingtonMonument),
                 Landmark("US Capitol", x: 0.6, draw: Draw.capitol),
                 Landmark("Jefferson Memorial", x: 0.86, draw: Draw.jeffersonMemorial),
+            ]
+            case .homes: [
+                Landmark("Garden apartments", x: 0.16, draw: Draw.gardenApartments),
+                Landmark("Row houses", x: 0.4, draw: Draw.rowHouses),
+                Landmark("Mid-rise apartments", x: 0.64, draw: Draw.midrise),
+                Landmark("Water tower", x: 0.88, draw: Draw.waterTower),
             ]
             case .losAngeles: [
                 Landmark("Hollywood Sign", x: 0.16, draw: Draw.hollywoodSign),
@@ -411,6 +420,44 @@ enum Draw {
         c.fill(k.rect(x: 0, y: 44, w: 6, h: 4), with: near)
         c.fill(k.rect(x: 0, y: 48, w: 1.2, h: 22), with: near)
         c.fill(k.circle(x: 0, y: 70, r: 1.3), with: .color(Color.red.opacity(k.animated && Int(k.time * 2) % 2 == 0 ? 0.95 : 0.3)))
+    }
+
+    // Anywhere (state maps) ---------------------------------------------
+
+    static func gardenApartments(_ c: inout GraphicsContext, _ k: Pen) {
+        // two low walk-up blocks with pitched roofs, the tax-credit staple
+        for (x, w) in [(-16, 30), (18, 26)] as [(CGFloat, CGFloat)] {
+            c.fill(k.rect(x: x, y: 0, w: w, h: 22), with: x < 0 ? near : far)
+            c.fill(k.poly([(x - w / 2 - 2, 22), (x + w / 2 + 2, 22), (x, 32)]), with: x < 0 ? near : far)
+            k.windows(&c, id: 60 + Int(x), x: x, y: 5, cols: 4, rows: 3, pitch: 5.5, size: 2.2)
+        }
+    }
+
+    static func rowHouses(_ c: inout GraphicsContext, _ k: Pen) {
+        for i in 0..<5 {
+            let x = CGFloat(i - 2) * 13
+            let h: CGFloat = [26, 30, 28, 32, 27][i]
+            c.fill(k.rect(x: x, y: 0, w: 12, h: h), with: i % 2 == 0 ? near : far)
+            c.fill(k.rect(x: x, y: h, w: 13, h: 2), with: near)                        // cornice
+            k.windows(&c, id: 70 + i, x: x, y: 8, cols: 2, rows: 3, pitch: 5, size: 2)
+        }
+    }
+
+    static func midrise(_ c: inout GraphicsContext, _ k: Pen) {
+        c.fill(k.rect(x: -4, y: 0, w: 30, h: 52), with: near)
+        c.fill(k.rect(x: 18, y: 0, w: 16, h: 36), with: far)
+        c.fill(k.rect(x: -4, y: 52, w: 10, h: 5), with: near)                           // stair bulkhead
+        k.windows(&c, id: 80, x: -4, y: 6, cols: 4, rows: 8, pitch: 5.5, size: 2.1)
+        k.windows(&c, id: 81, x: 18, y: 6, cols: 2, rows: 5, pitch: 5.5, size: 2)
+    }
+
+    static func waterTower(_ c: inout GraphicsContext, _ k: Pen) {
+        for lx: CGFloat in [-7, -2.5, 2.5, 7] {
+            c.fill(k.rect(x: lx, y: 0, w: 1.2, h: 40), with: near)
+        }
+        c.fill(k.rect(x: 0, y: 40, w: 22, h: 12), with: near)
+        c.fill(k.dome(x: 0, y: 52, w: 24, h: 5), with: near)
+        c.fill(k.rect(x: 0, y: 58, w: 1, h: 5), with: near)
     }
 
     static func palms(_ c: inout GraphicsContext, _ k: Pen) {

@@ -654,6 +654,7 @@ final class SkylineTests: XCTestCase {
         XCTAssertEqual(Skyline.Scene.scene(for: "dc"), .washington)
         XCTAssertEqual(Skyline.Scene.scene(for: "la"), .losAngeles)
         XCTAssertEqual(Skyline.Scene.scene(for: "nowhere"), .newYork, "an unknown city falls back to New York, like City.find")
+        XCTAssertEqual(Skyline.Scene.scene(for: "st-nj"), .homes, "a state map gets no one city's landmarks")
         for city in City.all { XCTAssertEqual(Skyline.Scene.scene(for: city.id).rawValue.isEmpty, false) }
     }
 
@@ -1014,6 +1015,30 @@ final class LotteryFeedTests: XCTestCase {
         let got = LotteryFeed.filter(all, boroughs: ["Bx", "Bk"], today: "2026-09-19")
         XCTAssertEqual(got.map(\.id), [5, 2, 1], "Queens excluded, closed-yesterday excluded, closing-today kept, soonest first")
         XCTAssertTrue(LotteryFeed.filter(all, boroughs: [], today: "2026-09-19").isEmpty)
+    }
+
+    /// Every state is a place in the picker (owner, 2026-09-24), each its own
+    /// files under states/<st>/, and none of them is taken for New York.
+    func testStatesArePickableAndPointAtTheirOwnFiles() {
+        XCTAssertGreaterThanOrEqual(City.states.count, 51, "50 states and DC")
+        let nj = City.find("st-nj")
+        XCTAssertEqual(nj.name, "New Jersey")
+        XCTAssertTrue(nj.isState); XCTAssertFalse(nj.isNYC); XCTAssertFalse(nj.hasNYCExtras)
+        XCTAssertEqual(nj.dataPath, "states/nj/buildings.slim.json.gz")
+        XCTAssertEqual(nj.recordsPath, "states/nj/buildings.hpd.json.gz")
+        XCTAssertEqual(Set(City.all.map(\.id)).count, City.all.count, "no two places share an id")
+        XCTAssertEqual(Set(City.all.map(\.cacheName)).count, City.all.count, "no two places share a cache file")
+        XCTAssertEqual(City.find("st-ny").name, "New York State", "not confused with the NYC register")
+        XCTAssertEqual(HeroBanner.line(for: nj), "Every income-restricted building in NJ")
+        let b = Building(bbl: "LIHTC-NJA1", b: "NJ", a: "1 MILL ST", z: "07416", lat: 41, lng: -74.5, nb: "Franklin")
+        XCTAssertEqual(b.webURL(in: nj).host, "maps.apple.com", "no web page for state maps yet: share the place")
+    }
+
+    /// The record file's LIHTC fields decode (build_lihtc_states.py's keys).
+    func testTaxCreditRecordDecodes() throws {
+        let j = #"{"name":"Baxter Terrace","li":80,"units_total":90,"mix":{"1":40,"2":50},"inc":"60% of area median income","serves":["seniors"],"mgr":"Acme Llc","tel":"609-656-4205","pis":2012,"np":1}"#
+        let r = try JSONDecoder().decode(BuildingRecord.self, from: Data(j.utf8))
+        XCTAssertEqual(r.li, 80); XCTAssertEqual(r.mix?["2"], 50); XCTAssertEqual(r.tel, "609-656-4205"); XCTAssertEqual(r.pis, 2012)
     }
 
     /// NJ drawings (owner, 2026-09-24): past join-by dates drop out, the

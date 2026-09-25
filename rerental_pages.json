@@ -49,22 +49,22 @@
   "Grenadier Realty Management": "HPD-listed domain parked at sedo; grenadierrealty.com also dead (checked 2026-08-10)",
   "Sycamore Birch Management LLC": "site times out (checked 2026-08-10)"
  },
- "checked": "2026-09-24",
+ "checked": "2026-09-25",
  "pages": {
   "Affordable for NY": {
    "url": "https://afny.org/re-rentals",
    "title": "Outside Market / Re-rentals",
    "units_seen": true,
    "note": "Filterable board with rent + household size per unit.",
-   "unit_count": 3,
-   "last_ok": "2026-09-24"
+   "unit_count": 4,
+   "last_ok": "2026-09-25"
   },
   "iAfford NY": {
    "url": "https://iaffordny.com/re-rentals",
    "title": "Outside Market / Re-rentals",
    "units_seen": true,
    "note": "Same operator as Affordable for NY, but lists different units — check both.",
-   "last_ok": "2026-09-24",
+   "last_ok": "2026-09-25",
    "unit_count": 9
   },
   "The Wavecrest Management Team Ltd.": {
@@ -72,14 +72,14 @@
    "title": "Wavecrest Rentals",
    "units_seen": false,
    "note": "Application portal for their LAMP / HDC / LIHTC developments.",
-   "last_ok": "2026-09-24",
+   "last_ok": "2026-09-25",
    "waitlist": true
   },
   "TF Cornerstone": {
    "url": "https://tfc.com/about/affordable-re-rentals",
    "title": "Affordable Re-rentals",
    "units_seen": false,
-   "last_ok": "2026-09-24",
+   "last_ok": "2026-09-25",
    "waitlist": true
   },
   "Tax Solute Consulting": {
@@ -87,41 +87,41 @@
    "title": "Affordable Living NYC",
    "units_seen": true,
    "note": "First-come, first-served. Separate domain from their HPD-listed site.",
-   "last_ok": "2026-09-24",
-   "unit_count": 8
+   "last_ok": "2026-09-25",
+   "unit_count": 9
   },
   "Taxace NY LLC": {
    "url": "https://www.taxaceny.com/projects-8",
    "title": "Available Units",
    "units_seen": true,
-   "last_ok": "2026-09-24",
+   "last_ok": "2026-09-25",
    "unit_count": 32
   },
   "SJP Tax Consultants Inc": {
    "url": "https://www.sjpny.com/affordable-rerentals",
    "title": "Affordable Re-Rentals",
    "units_seen": false,
-   "last_ok": "2026-09-24"
+   "last_ok": "2026-09-25"
   },
   "Clinton Management": {
    "url": "https://www.clintonmanagement.com/availabilities/affordable",
    "title": "Affordable Availabilities",
    "units_seen": true,
-   "last_ok": "2026-09-24",
+   "last_ok": "2026-09-25",
    "unit_count": 6
   },
   "MHANY Management, Inc.": {
    "url": "https://www.mutualhousingny.org/avaliable-properties",
    "title": "Available Properties",
    "units_seen": true,
-   "last_ok": "2026-09-24",
+   "last_ok": "2026-09-25",
    "unit_count": 3
   },
   "Housing Partnership Development Corporation": {
    "url": "https://www.housingpartnership.com/services/current-vacancies",
    "title": "Current Vacancies",
    "units_seen": true,
-   "last_ok": "2026-09-24",
+   "last_ok": "2026-09-25",
    "unit_count": 13
   },
   "Restored Homes": {
@@ -129,28 +129,28 @@
    "title": "Available Homes & Open Houses",
    "units_seen": false,
    "note": "Homeownership, not rentals.",
-   "last_ok": "2026-09-24",
+   "last_ok": "2026-09-25",
    "waitlist": true
   },
   "MGNY Consulting Corp.": {
    "url": "https://mgnyconsulting.com/listings/",
    "title": "Listings",
    "units_seen": true,
-   "last_ok": "2026-09-24",
-   "unit_count": 27
+   "last_ok": "2026-09-25",
+   "unit_count": 26
   },
   "Spring Leasing and Management, LLC": {
    "url": "https://springmanagement.net/apartments-for-rent",
    "title": "Apartments For Rent",
    "units_seen": true,
-   "last_ok": "2026-09-24",
+   "last_ok": "2026-09-25",
    "unit_count": 1
   },
   "C+C Apartment Management, LLC": {
    "url": "https://ccmanagers.com/availability/",
    "title": "Rental Availability",
    "units_seen": true,
-   "last_ok": "2026-09-24",
+   "last_ok": "2026-09-25",
    "unit_count": 1
   },
   "K&G Upright Consulting, Inc.": {
@@ -159,7 +159,7 @@
    "note": "Income-restricted rent-stabilized lease-ups (Verdant Fort Greene). No per-unit prices; downloadable application.",
    "units_seen": true,
    "unit_count": 1,
-   "last_ok": "2026-09-24"
+   "last_ok": "2026-09-25"
   },
   "Langsam Property Services Corp": {
    "url": "https://www.langsampropertyservices.com/affordable-rental-opportunities",
@@ -167,7 +167,7 @@
    "note": "AMI-banded units with stated rents; apply by email. First-come style.",
    "units_seen": true,
    "unit_count": 3,
-   "last_ok": "2026-09-24"
+   "last_ok": "2026-09-25"
   },
   "MNS": {
    "url": "https://www.mns.com/affordable_units",
@@ -175,14 +175,14 @@
    "note": "Filterable availability table with unit-level rents across their affordable buildings.",
    "units_seen": true,
    "unit_count": 2,
-   "last_ok": "2026-09-24"
+   "last_ok": "2026-09-25"
   },
   "Reside New York LLC": {
    "url": "https://residenewyork.com/property-status/open-market/",
    "title": "Open Market",
    "note": "Open-market (non-lottery) re-rentals with unit-level rents. Their /listings/ 404s and /my-properties/ throws a WP error - this taxonomy URL is the live board. Same operator as the dead Reside Affordable Inc domain.",
    "units_seen": true,
-   "last_ok": "2026-09-24",
+   "last_ok": "2026-09-25",
    "unit_count": 7
   },
   "Phipps Houses": {
@@ -191,7 +191,7 @@
    "note": "Directory of 42 buildings with waitlist/vacancy applications (e.g. Rockaway Village). Applications, not a priced unit board.",
    "units_seen": false,
    "waitlist": true,
-   "last_ok": "2026-09-24"
+   "last_ok": "2026-09-25"
   },
   "Bronx Pro Group LLC": {
    "url": "https://bronxprogroup.com/apartments",
@@ -199,7 +199,7 @@
    "note": "Waitlist applications; two senior buildings marked Available (rent = 30% of income, HPD PBV S8).",
    "units_seen": false,
    "waitlist": true,
-   "last_ok": "2026-09-24"
+   "last_ok": "2026-09-25"
   },
   "Breaking Ground": {
    "url": "https://www.breakingground.org/need-housing",
@@ -207,7 +207,7 @@
    "note": "Building browser filterable by which waitlists are currently open; supportive/affordable, PDF applications.",
    "units_seen": false,
    "waitlist": true,
-   "last_ok": "2026-09-24"
+   "last_ok": "2026-09-25"
   },
   "Highbridge Community Development Corporation (HCDC)": {
    "url": "https://hcdcny.com/apply/",
@@ -215,7 +215,7 @@
    "note": "General application by mail for their Bronx portfolio; no unit board.",
    "units_seen": false,
    "waitlist": true,
-   "last_ok": "2026-09-24"
+   "last_ok": "2026-09-25"
   },
   "Fifth Avenue Committee": {
    "url": "https://fifthave.org/re-rental-availabilities/",
@@ -225,7 +225,7 @@
    "found": "2026-09-22",
    "source": "beyond HPD's PQL (2026-09-23 sweep)",
    "unit_count": 2,
-   "last_ok": "2026-09-24"
+   "last_ok": "2026-09-25"
   },
   "Settlement Housing Fund": {
    "url": "https://www.settlementhousingfund.org/find-housing/",
@@ -234,7 +234,7 @@
    "note": "re-rental vacancies are named in prose (Waterside Plaza, 3333 Broadway), no per-unit card the extractor can read",
    "found": "2026-09-22",
    "source": "beyond HPD's PQL (2026-09-23 sweep)",
-   "last_ok": "2026-09-24"
+   "last_ok": "2026-09-25"
   },
   "St. Nicks Alliance": {
    "url": "https://stnicksalliance.org/get-help-affordable-housing/",
@@ -244,7 +244,7 @@
    "found": "2026-09-22",
    "source": "beyond HPD's PQL (2026-09-23 sweep)",
    "unit_count": 6,
-   "last_ok": "2026-09-24"
+   "last_ok": "2026-09-25"
   },
   "CAMBA Housing Ventures": {
    "url": "https://www.cambahousingventures.org/rentals/",
@@ -254,7 +254,7 @@
    "found": "2026-09-22",
    "source": "beyond HPD's PQL (2026-09-23 sweep)",
    "unit_count": 1,
-   "last_ok": "2026-09-24"
+   "last_ok": "2026-09-25"
   },
   "Glenwood Management": {
    "url": "https://www.glenwoodnyc.com/company/assisted-housing/",
@@ -263,7 +263,7 @@
    "note": "80/20 moderate-income applications open for Barclay St and Liberty St",
    "found": "2026-09-22",
    "source": "beyond HPD's PQL (2026-09-23 sweep)",
-   "last_ok": "2026-09-24"
+   "last_ok": "2026-09-25"
   },
   "Northern Manhattan Improvement Corporation": {
    "url": "https://www.nmic.org/en/housing-development/",
@@ -273,7 +273,7 @@
    "found": "2026-09-22",
    "source": "beyond HPD's PQL (2026-09-23 sweep)",
    "unit_count": 3,
-   "last_ok": "2026-09-24"
+   "last_ok": "2026-09-25"
   },
   "About Real Estate NY": {
    "url": "https://www.aboutrealestateny.com/houses",
@@ -282,7 +282,7 @@
    "units_seen": false,
    "found": "2026-09-22",
    "source": "HPD PQL re-check (2026-09-23)",
-   "last_ok": "2026-09-24"
+   "last_ok": "2026-09-25"
   },
   "Concern Housing": {
    "url": "https://concernhousing.org/housing-applications/",
@@ -291,7 +291,7 @@
    "units_seen": false,
    "found": "2026-09-22",
    "source": "HPD PQL re-check (2026-09-23)",
-   "last_ok": "2026-09-24"
+   "last_ok": "2026-09-25"
   },
   "Front Door Management": {
    "url": "https://www.frntdoor.com/affordablehousing-existingproperties",
@@ -301,7 +301,7 @@
    "found": "2026-09-22",
    "source": "HPD PQL re-check (2026-09-23)",
    "unit_count": 3,
-   "last_ok": "2026-09-24"
+   "last_ok": "2026-09-25"
   },
   "Rockrose Development (affordable)": {
    "url": "https://rockrose.com/affordable-availabilities/",
@@ -310,8 +310,8 @@
    "note": "affordable side of the Rockrose portfolio",
    "found": "2026-09-23",
    "source": "owner sweep (2026-09-23)",
-   "unit_count": 1,
-   "last_ok": "2026-09-24"
+   "unit_count": 2,
+   "last_ok": "2026-09-25"
   }
  }
 }

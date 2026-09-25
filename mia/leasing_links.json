@@ -1,0 +1,125 @@
+{
+ "buildings": {
+  "Ambar Trail II": {
+   "note": null,
+   "official": true,
+   "phone": "(305) 400-0995",
+   "url": "https://www.ambartrail.com/floorplans"
+  },
+  "Brownsville Transit Village V": {
+   "note": null,
+   "official": true,
+   "phone": "(833) 307-1375",
+   "url": "https://www.brownsvilletransitliving.com/Floor-Plans.aspx"
+  },
+  "Council Towers North & South": {
+   "note": "Seniors 62+. Enquire through EHDOC; South (533 Collins) has its own page.",
+   "official": true,
+   "phone": "(305) 538-1639",
+   "url": "https://ehdoc.org/property/council-towers-north-housing-senior-miami-beach/"
+  },
+  "Courtside II": {
+   "note": null,
+   "official": true,
+   "phone": "(833) 504-1219",
+   "url": "https://www.courtside2htgm.com/"
+  },
+  "Culmer Place": {
+   "note": null,
+   "official": true,
+   "phone": "(855) 535-0071",
+   "url": "https://www.culmerplaceliving.com/Floor-Plans.aspx"
+  },
+  "Edison Towers": {
+   "note": "55+. Apply with Tacolcy's application packet.",
+   "official": true,
+   "phone": "(305) 759-2752",
+   "url": "https://tpmcmiami.net/portfolio/edison-towers/"
+  },
+  "Gallery At Marti Park": {
+   "note": null,
+   "official": true,
+   "phone": "(645) 238-1574",
+   "url": "https://gallerymartipark.com/ami-floor-plans/"
+  },
+  "Gardens Of Homestead": {
+   "note": "Contact form and phone only \u2014 no online availability.",
+   "official": true,
+   "phone": "(786) 634-5505",
+   "url": "https://gardensofhomesteadfl.com/"
+  },
+  "Jose Marti Villas": {
+   "note": "Marketed as Brisas del Sol.",
+   "official": true,
+   "phone": "(305) 306-1512",
+   "url": "https://brisasdelsolmiami.com/"
+  },
+  "Magnus Brickell": {
+   "note": "Workforce units (up to 140% of area median).",
+   "official": true,
+   "phone": "(754) 663-2834",
+   "url": "https://magnusbrickell.com/workforce-housing/"
+  },
+  "Naranja Grand II": {
+   "note": null,
+   "official": true,
+   "phone": "(855) 416-4084",
+   "url": "https://www.naranjagrand2.com/"
+  },
+  "Platform 3750": {
+   "note": null,
+   "official": true,
+   "phone": "(866) 931-9577",
+   "url": "https://affordable.platform3750.com/"
+  },
+  "Princeton Crossings": {
+   "note": "No website of its own; leasing office at sister property Harbour Springs.",
+   "official": false,
+   "phone": "(786) 655-9785",
+   "url": "https://www.forrent.com/fl/naranja/princeton-crossings/4m6ht1j"
+  },
+  "Princeton Landings": {
+   "note": null,
+   "official": true,
+   "phone": "(786) 822-7821",
+   "url": "https://princetonlandings.com/affordable-program/"
+  },
+  "Quail Roost Transit Village II": {
+   "note": "55+; listed as Quail Roost 55+ Living.",
+   "official": true,
+   "phone": "(888) 402-3116",
+   "url": "https://www.quailrooststationliving.com/floor-plans.aspx?siteId=9252433"
+  },
+  "Residences At Sawyer's Walk": {
+   "note": "Seniors 62+; waitlists being updated.",
+   "official": true,
+   "phone": "(305) 433-4376",
+   "url": "https://liveatsawyerswalk.com/"
+  },
+  "Royal Pointe": {
+   "note": "Call for pricing.",
+   "official": true,
+   "phone": "(833) 315-5704",
+   "url": "https://www.rentatroyalpointe.com/floorplans"
+  },
+  "Sol Vista": {
+   "note": "Seniors 62+; join the interest list.",
+   "official": true,
+   "phone": "(786) 347-3774",
+   "url": "https://solvistaapartments.com/"
+  },
+  "Vista Breeze": {
+   "note": "Seniors 62+.",
+   "official": true,
+   "phone": "(786) 299-5830",
+   "url": "https://www.vistabreezeliving.com/Floor-Plans.aspx"
+  },
+  "Wynwood Works": {
+   "note": "Not taking waitlist applications \u2014 the wait is over two years.",
+   "official": true,
+   "phone": "(305) 379-6300",
+   "url": "https://www.wynwoodworksapts.com/floorplans.aspx"
+  }
+ },
+ "note": "Hand-checked 2026-09-24: each Miami-Dade lease-up building's own leasing / availability page (opened in a browser). build_openings.py links the Lotteries card here instead of a web search. Refresh when Florida Housing's lease-up list changes."
+}

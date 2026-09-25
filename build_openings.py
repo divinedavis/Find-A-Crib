@@ -206,17 +206,25 @@ def miami_leasing():
     """Miami-Dade buildings Florida Housing marks "Active - In Lease-Up" —
     taking their first tenants now. build_affordable_cities.py writes the
     list; there is no application portal, so the link searches for the
-    building's leasing office."""
+    building's leasing office — unless mia/leasing_links.json has the
+    building's own leasing page (owner, 2026-09-24: "these should take users to
+    the actual leasing site or availabilities")."""
     rows = json.loads(Path(LEASING_FILE).read_text())
+    try:
+        links = json.loads((HERE / "mia" / "leasing_links.json").read_text())["buildings"]
+    except (OSError, ValueError, KeyError):
+        links = {}
     out = []
     for r in rows:
+        link = links.get(r.get("name") or "") or {}
         q = urllib.parse.quote_plus(f"{r.get('name') or ''} {r.get('addr') or ''} Miami leasing office")
         out.append(clean({
             "id": "mia-" + re.sub(r"[^a-z0-9]+", "-", (r.get("name") or r.get("addr") or "").lower()).strip("-"),
             "src": "Florida Housing", "state": "FL", "city": "Miami-Dade", "name": r.get("name"),
             "address": r.get("addr"), "zip": r.get("zip"), "lat": r.get("lat"), "lng": r.get("lng"),
             "kind": "leasing", "tenure": "rent", "units": r.get("li") or r.get("units"),
-            "href": f"https://www.google.com/search?q={q}"}))
+            "phone": link.get("phone"), "note": link.get("note"),
+            "href": link.get("url") or f"https://www.google.com/search?q={q}"}))
     return out
 
 

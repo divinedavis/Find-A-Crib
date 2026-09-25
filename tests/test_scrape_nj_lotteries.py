@@ -25,7 +25,9 @@ MUNIS = {"washington township": ["Bergen", "Gloucester", "Morris", "Warren"],
 
 class Parse(unittest.TestCase):
     def setUp(self):
-        self.items = {i["id"]: i for i in N.parse(PAGE, MUNIS)}
+        links = {"paramus": {"tenure": "rent", "lid": "a0JUq000008DDFlMAO", "development": "Vermella Paramus"},
+                 "wall": {"tenure": "rent", "lid": "WRONGTENURE"}}
+        self.items = {i["id"]: i for i in N.parse(PAGE, MUNIS, links)}
 
     def test_every_item_parsed_and_odd_one_skipped(self):
         self.assertEqual(sorted(self.items), ["buy-wall", "buy-wayne", "rent-paramus",
@@ -52,7 +54,20 @@ class Parse(unittest.TestCase):
         self.assertIsNone(N.county_for("Washington Township", "", MUNIS))
 
     def test_no_box_means_nothing(self):
-        self.assertEqual(N.parse("<html>maintenance</html>", MUNIS), [])
+        self.assertEqual(N.parse("<html>maintenance</html>", MUNIS, {}), [])
+
+    def test_links_go_to_listings_never_the_home_page(self):
+        p = self.items["rent-paramus"]
+        self.assertEqual(p["href"], "https://www.affordablehomesnewjersey.com/rental-opportunities/current-listings/?lid=a0JUq000008DDFlMAO")
+        self.assertEqual(p["development"], "Vermella Paramus")
+        # no curated link: the tenure's listings page; a rent link never serves a sale
+        self.assertEqual(self.items["rent-south-brunswick"]["href"], N.LISTINGS["rent"])
+        self.assertEqual(self.items["buy-wall"]["href"], N.LISTINGS["buy"])
+        self.assertTrue(all(i["href"] != N.URL for i in self.items.values()))
+
+    def test_town_key(self):
+        self.assertEqual(N.town_key("Washington Township – Bergen"), N.town_key("Washington Township - Bergen"))
+        self.assertEqual(N.town_key("Paramus Rental"), N.town_key("Paramus Borough"))
 
 
 if __name__ == "__main__":

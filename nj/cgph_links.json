@@ -1,0 +1,181 @@
+{
+ "note": "Hand-curated 2026-09-24 from CGP&H's public Current Listings page (one visitor view; its Salesforce host's robots.txt disallows automated fetching, so scrape_nj_lotteries.py never requests it). lid opens that listing on affordablehomesnewjersey.com. Towns missing here link to the rental/ownership current-listings page instead.",
+ "towns": {
+  "barnegat": {
+   "county": "Ocean",
+   "development": "Ocean Breeze",
+   "lid": "a0JUq000001aADBMA2",
+   "listings": 2,
+   "tenure": "rent",
+   "town": "Barnegat"
+  },
+  "beverly": {
+   "county": "Burlington",
+   "development": "Beverly Homeownership Program",
+   "lid": "a0JUq000001JK7JMAW",
+   "listings": 1,
+   "tenure": "buy",
+   "town": "Beverly"
+  },
+  "branchburg": {
+   "county": "Somerset",
+   "development": "Branchburg Village 55 Plus",
+   "lid": "a0JUq000008fHxxMAE",
+   "listings": 4,
+   "tenure": "buy",
+   "town": "Branchburg"
+  },
+  "colts neck": {
+   "county": "Monmouth",
+   "development": "Charleston Meadows",
+   "lid": "a0JUq0000097hshMAA",
+   "listings": 8,
+   "tenure": "buy",
+   "town": "Colts Neck"
+  },
+  "edison": {
+   "county": "Middlesex",
+   "development": "Edison Affordable Homeownership Program",
+   "lid": "a0Jo000000moiGFEAY",
+   "listings": 3,
+   "tenure": "buy",
+   "town": "Edison"
+  },
+  "evesham": {
+   "county": "Burlington",
+   "development": "Marlton Gardens Gracious Retirement Living \u00b7 Brightview Greentree",
+   "lid": "a0JUq000002NxvtMAC",
+   "listings": 3,
+   "tenure": "rent",
+   "town": "Evesham"
+  },
+  "hainesport": {
+   "county": "Burlington",
+   "development": "The Glen At Masons Creek",
+   "lid": "a0J1N00001Cm23IUAR",
+   "listings": 1,
+   "tenure": "buy",
+   "town": "Hainesport"
+  },
+  "harding": {
+   "county": "Morris",
+   "development": "Harding Run",
+   "lid": "a0JUq000009UWbaMAG",
+   "listings": 12,
+   "tenure": "buy",
+   "town": "Harding"
+  },
+  "manalapan": {
+   "county": "Monmouth",
+   "development": "Knob Hill",
+   "lid": "a0J6O00000hpRSRUA2",
+   "listings": 1,
+   "tenure": "buy",
+   "town": "Manalapan"
+  },
+  "middle township": {
+   "county": "Cape May",
+   "development": "Coral Point",
+   "lid": "a0JUq000009P5NZMA0",
+   "listings": 10,
+   "tenure": "buy",
+   "town": "Middle Township"
+  },
+  "morristown": {
+   "county": "Morris",
+   "development": "Cannon House Apartments",
+   "lid": "a0JUq0000095RVTMA2",
+   "listings": 3,
+   "tenure": "rent",
+   "town": "Morristown"
+  },
+  "mount holly": {
+   "county": "Burlington",
+   "development": "Mount Holly Single Family Homes",
+   "lid": "a0J6O00000kJAFNUA4",
+   "listings": 1,
+   "tenure": "buy",
+   "town": "Mount Holly"
+  },
+  "paramus": {
+   "county": "Bergen",
+   "development": "Vermella Paramus",
+   "lid": "a0JUq000008DDFlMAO",
+   "listings": 3,
+   "tenure": "rent",
+   "town": "Paramus Borough"
+  },
+  "pennington": {
+   "county": "Mercer",
+   "development": "Pennington Point",
+   "lid": "a0J6O00000hoklNUAQ",
+   "listings": 1,
+   "tenure": "buy",
+   "town": "Pennington"
+  },
+  "south brunswick": {
+   "county": "Middlesex",
+   "development": "Princeton Orchards",
+   "lid": "a0JUq000009GRDZMA4",
+   "listings": 3,
+   "tenure": "rent",
+   "town": "South Brunswick"
+  },
+  "springfield union": {
+   "county": "Union",
+   "development": "Springfield Greens",
+   "lid": "a0JUq000009WmnXMAS",
+   "listings": 3,
+   "tenure": "rent",
+   "town": "Springfield - Union"
+  },
+  "stafford": {
+   "county": "Ocean",
+   "development": "Pine Crest Village \u00b7 Perry's Lake",
+   "lid": "a0Jo00000042FObEAM",
+   "listings": 2,
+   "tenure": "buy",
+   "town": "Stafford"
+  },
+  "wall": {
+   "county": "Monmouth",
+   "development": "Horizons at Wall",
+   "lid": "a0JUq000009ANW5MAO",
+   "listings": 10,
+   "tenure": "buy",
+   "town": "Wall"
+  },
+  "washington township bergen": {
+   "county": "Bergen",
+   "development": "The Overlook at Van Emburgh",
+   "lid": "a0JUq000009DGTDMA4",
+   "listings": 3,
+   "tenure": "rent",
+   "town": "Washington Township - Bergen"
+  },
+  "wayne": {
+   "county": "Passaic",
+   "development": "Wayne Villas",
+   "lid": "a0JUq000008v585MAA",
+   "listings": 10,
+   "tenure": "buy",
+   "town": "Wayne"
+  },
+  "west long branch": {
+   "county": "Monmouth",
+   "development": "Townes at West Long Branch",
+   "lid": "a0JUq000009NM7YMAW",
+   "listings": 9,
+   "tenure": "buy",
+   "town": "West Long Branch"
+  },
+  "woodland park": {
+   "county": "Passaic",
+   "development": "1108 McBride Avenue",
+   "lid": "a0JUq000009H79ZMAS",
+   "listings": 1,
+   "tenure": "rent",
+   "town": "Woodland Park"
+  }
+ }
+}

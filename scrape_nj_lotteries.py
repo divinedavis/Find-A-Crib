@@ -39,6 +39,13 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 URL = "https://www.affordablehomesnewjersey.com/"
+# Where a card sends people (owner, 2026-09-24: "these links take me to a
+# generic website - i dont see the actual listing"). CGP&H's current-listings
+# pages show the units themselves; ?lid= opens one listing. The lids come from
+# nj/cgph_links.json, curated by hand, because the Salesforce host that serves
+# them disallows automated fetching in its robots.txt.
+LISTINGS = {"rent": URL + "rental-opportunities/current-listings/",
+            "buy": URL + "ownership-opportunities/current-listings/"}
 UA = "findacrib.com affordable-housing listings (+https://findacrib.com)"
 
 # CGP&H's own live/work regions (profile page), for "Region 1" labels.
@@ -74,6 +81,21 @@ def municipalities():
     return {k: sorted(v) for k, v in out.items()}
 
 
+def town_key(t):
+    """'Washington Township – Bergen' / 'Paramus Borough' / 'Paramus Rental' ->
+    'washington township bergen' / 'paramus' / 'paramus'."""
+    t = (t or "").lower().replace("–", " ").replace("—", " ").replace("-", " ")
+    t = re.sub(r"\b(borough|rental|sale|sales)\b", " ", t)
+    return " ".join(t.split())
+
+
+def curated_links():
+    try:
+        return json.load(open(HERE / "nj" / "cgph_links.json"))["towns"]
+    except (OSError, ValueError, KeyError):
+        return {}
+
+
 def county_for(town, hint, munis):
     """The county of a CGP&H town label, or None when it can't be told apart
     (NJ has six Washington Townships; the label then carries the county)."""
@@ -92,8 +114,9 @@ def county_for(town, hint, munis):
 ITEM = re.compile(r"^(?P<label>.+?)\s*(?:[–—-]\s*COMING SOON|\s+by\s+(?P<m>\d{1,2})/(?P<d>\d{1,2})/(?P<y>\d{4}))\s*$", re.I)
 
 
-def parse(page, munis=None):
+def parse(page, munis=None, links=None):
     munis = munis if munis is not None else municipalities()
+    links = links if links is not None else curated_links()
     i = page.find("WHAT")
     box = page[i:i + 20000] if i >= 0 else ""
     out = []
@@ -113,6 +136,10 @@ def parse(page, munis=None):
             if m.group("y"):
                 closes = f"{int(m.group('y')):04d}-{int(m.group('m')):02d}-{int(m.group('d')):02d}"
             county = county_for(town, hint, munis)
+            link = links.get(town_key(label))
+            if link and link.get("tenure") != tenure:
+                link = None
+            href = LISTINGS[tenure] + (f"?lid={link['lid']}" if link and link.get("lid") else "")
             out.append({
                 "id": f"{tenure}-{re.sub(r'[^a-z0-9]+', '-', label.lower()).strip('-')}",
                 "town": town,
@@ -121,7 +148,8 @@ def parse(page, munis=None):
                 "tenure": tenure,
                 "closes": closes,
                 "coming_soon": closes is None,
-                "href": URL,
+                "development": (link or {}).get("development"),
+                "href": href,
             })
     return out
 
@@ -144,7 +172,7 @@ def main():
         "generated": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "source": "Affordable Homes New Jersey (CGP&H)",
         "source_url": URL,
-        "apply_url": URL,
+        "apply_url": URL + "apply-now/",
         "lotteries": items,
     }
     if a.dry_run:

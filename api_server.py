@@ -1377,6 +1377,7 @@ def dashboard_metrics():
     data["search"] = _fac_search()
     data["channels"] = _fac_channels(since)
     data["adtiles"] = _fac_adtiles(since)
+    data["ads_served"] = _fac_ads_served(since)
     # Inputs for the goals card's audience-INDEPENDENT streams. Deliberately
     # not range-scoped: that card is pinned to all-time for the same reason.
     data["goalstreams"] = {"ai": _fac_ai_crawls(),
@@ -1593,6 +1594,45 @@ def _fac_owner_visitors():
             continue
         ids.update(r.get("visitor_id") for r in rows if r.get("visitor_id"))
     return ids
+
+
+# Every ad the owner's platforms have put in front of someone, one number.
+# Find A Crib is the only product that serves ads (checked 2026-09-25: no
+# other repo logs an ad event), so "all platforms" is its three surfaces:
+#   * web advertiser tiles — `tile_served` (rendered into the grid);
+#   * iPhone advertiser tiles — `tile_impression` with platform=ios, which the
+#     app logs at render time (it has no separate tile_served);
+#   * the iPhone AdMob banner — `ad_impression` with mode=live. TestFlight's
+#     mode=test rows are Google's sample ads, not inventory: reported beside
+#     the total, never in it.
+# AdSense on the web is wired but has no slot id, so it serves nothing yet.
+# Owner traffic is dropped the same way the ad-tile card drops it.
+FAC_AD_SOURCES = (
+    ("web_tiles", "event=eq.tile_served"),
+    ("app_tiles", "event=eq.tile_impression&props->>platform=eq.ios"),
+    ("admob", "event=eq.ad_impression&props->>mode=eq.live"),
+    ("admob_test", "event=eq.ad_impression&props->>mode=eq.test"),
+)
+
+
+@_memo(600)
+def _fac_ads_served(since):
+    """Ads served across every surface, counted in Postgres. {} on failure."""
+    base = ""
+    if since:
+        base += f"&created_at=gte.{urllib.parse.quote(str(since))}"
+    mine = sorted(_fac_owner_visitors())
+    if mine:
+        ids = ",".join('"' + v.replace('"', "") + '"' for v in mine)
+        base += "&or=" + urllib.parse.quote(f"(visitor_id.is.null,visitor_id.not.in.({ids}))", safe="(),.")
+    out = {}
+    try:
+        for key, flt in FAC_AD_SOURCES:
+            out[key] = _rest_count("events?select=id&" + flt + base)
+    except Exception:
+        return {}
+    out["total"] = out["web_tiles"] + out["app_tiles"] + out["admob"]
+    return out
 
 
 # The three tile events, and which advertiser each one belongs to.

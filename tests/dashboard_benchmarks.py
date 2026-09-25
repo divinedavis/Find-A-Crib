@@ -89,6 +89,23 @@ def run(browser, live):
         expect(tile).to_contain_text(want)
         assert not errors, errors
         print(f'PASS {browser.browser_type.name}: app time {want}', flush=True)
+
+    # The ads-served tile (replaced MRR): total of the three live surfaces;
+    # TestFlight test ads are named but never added in.
+    payload['ads_served'] = {'web_tiles': 146455, 'app_tiles': 884, 'admob': 12,
+                             'admob_test': 40, 'total': 147351}
+    page.reload(wait_until='networkidle')
+    tile = page.locator('#tiles .tile').filter(
+        has=page.get_by_text('Ads served · all platforms', exact=True))
+    expect(tile.locator('.t-val')).to_have_text('147,351')
+    expect(tile).to_contain_text('146,455 web tiles · 884 app tiles · 12 AdMob banner')
+    expect(tile).to_contain_text('40 TestFlight test ads not counted')
+    expect(page.locator('#tiles')).not_to_contain_text('· MRR')
+    payload.pop('ads_served')
+    page.reload(wait_until='networkidle')
+    expect(tile.locator('.t-val')).to_have_text('—')
+    assert not errors, errors
+    print(f'PASS {browser.browser_type.name}: ads served tile', flush=True)
     context.close()
 
 

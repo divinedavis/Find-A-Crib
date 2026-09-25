@@ -295,6 +295,7 @@
   .tile.accent{background:linear-gradient(150deg,#6d5ce7,#8a5cf0);border:none;color:#fff}
   .tile.accent .t-ico{background:rgba(255,255,255,.18)}
   .tile.accent .t-lbl{color:rgba(255,255,255,.82)}
+  .tile.accent .t-own{color:rgba(255,255,255,.82);border-color:rgba(255,255,255,.22)}
 
   /* donut */
   .donut-wrap{display:flex;gap:24px;align-items:center;flex-wrap:wrap}
@@ -1813,8 +1814,19 @@
       {ic:'🔔',v:alertRate.toFixed(1)+'%',l:'Alert sign-up conversion',own:alertOwn,bench:alertBench,title:alertTitle},
       {ic:'📬',v:comma(reachedPeople)+' · '+pctS(reachedPeople,reachable),l:'Alert opens · people who clicked or tapped',
        own:clickOwn,bench:clickBench,title:clickTitle},
-      {ic:'💳',v:money(n(S.mrr)),l:comma(S.paying)+' paying'+(n(S.comped)?' · '+comma(S.comped)+' comped'+(n(S.founding)?' ('+comma(S.founding)+' founding)':''):'')+' · MRR',accent:true}
+      // Ads served on every surface (api_server._fac_ads_served). Replaced the
+      // MRR tile 2026-09-25 — MRR still shows in the goals card. AdMob test
+      // ads (TestFlight) are named but never counted.
+      adsTile(d.ads_served)
     ];
+    function adsTile(A){
+      if(!A || A.total == null) return {ic:'📣',v:'—',l:'Ads served · all platforms',own:'Ad counts unavailable right now',accent:true};
+      var parts=[comma(A.web_tiles)+' web tiles', comma(A.app_tiles)+' app tiles', comma(A.admob)+' AdMob banner'];
+      return {ic:'📣',v:comma(A.total),l:'Ads served · all platforms',
+              own:parts.join(' · ')+(n(A.admob_test)?' · '+comma(A.admob_test)+' TestFlight test ads not counted':''),
+              title:'Web advertiser tiles rendered + iPhone advertiser tiles + live AdMob banner impressions, this range, your own visits excluded. AdSense has no slot yet, so it serves nothing.',
+              accent:true};
+    }
     el('tiles').innerHTML=tiles.map(function(t){
       return '<div class="tile'+(t.accent?' accent':'')+'"'+(t.title?' title="'+esc(t.title)+'"':'')+'>'+
         '<div class="t-ico">'+t.ic+'</div><div class="t-val">'+t.v+'</div><div class="t-lbl">'+t.l+'</div>'+

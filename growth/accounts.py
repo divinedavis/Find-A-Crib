@@ -81,6 +81,43 @@ REPORT_PROMISE = (
     "no account needed. The report also states plainly what the data cannot "
     "tell you.")
 
+# The four-city coverage caveat, said the way /methodology/ says it (the
+# <div class='answer'> block in build_seo.py). The four registries are NOT
+# alike and the difference changes what a match on the map means, so no surface
+# may describe them as one thing. Every page on the site already carries this;
+# until 2026-09-25 the account emails were the only surface that did not, and
+# they are the first thing a new account ever reads. If this changes, change it
+# at /methodology/ too.
+#
+# SCOPE, and it needs re-reading as the site grows: these four are the
+# RENT-REGULATION cities. As of 241469f the site also builds Chicago,
+# Miami-Dade, Atlanta and Philadelphia, but those are subsidized and
+# tax-credit affordable-housing registers (ARO, LIHTC, public housing) —
+# a different dataset answering a different question, so they do not belong
+# in a sentence about rent regulation and are not silently folded in here.
+# Whether this sequence should introduce them at all is an open question for
+# a later run; until it is answered, every line here says "rent-regulated"
+# rather than implying these four are the whole map.
+COVERAGE_NOTE = (
+    "New York City and Washington, DC are official registries of rent-regulated "
+    "buildings. San Francisco is an owner-reported inventory the city publishes "
+    "anonymized to the block rather than the individual address. Los Angeles "
+    "publishes no building-level list at all, so that layer is derived from "
+    "assessor records against the city's own criteria and is labelled likely RSO.")
+
+
+def _coverage_block():
+    """The coverage caveat as a card, for any step that describes the map.
+
+    A block rather than a sentence because it has to survive being skimmed:
+    somebody deciding whether to trust a lookup in Los Angeles needs to hit
+    this before they act on it, not after a paragraph about saving buildings.
+    """
+    return {"type": "card",
+            "heading": "Four cities, four different registries",
+            "body": COVERAGE_NOTE,
+            "link": ("Where every record comes from", f"{SITE}/methodology/")}
+
 
 def _service_key():
     return (os.environ.get("SUPABASE_SERVICE_KEY")
@@ -217,9 +254,9 @@ def welcome(row, ctx):
         intro="You can now save buildings across devices — here's the part worth knowing.",
         blocks=[
             {"type": "paragraph",
-             "text": "Find A Crib maps every building registered rent-stabilized with "
-                     "DHCR — all 47,000 of them across the five boroughs, plus San "
-                     "Francisco, Los Angeles and Washington DC."},
+             "text": "Find A Crib maps rent-regulated buildings in four cities: New York "
+                     "City, San Francisco, Los Angeles and Washington, DC. New York alone "
+                     "is about 47,000 buildings across the five boroughs."},
             {"type": "card",
              "heading": "Save a building, and we'll watch it for you",
              "body": "When an apartment in a building you saved gets advertised — "
@@ -227,10 +264,12 @@ def welcome(row, ctx):
                      "get an email that night. It's the single most useful thing an "
                      "account does.",
              "link": ("Open the map", f"{SITE}/")},
+            _coverage_block(),
             {"type": "paragraph",
-             "text": "One caveat we'd rather say up front: a building being registered "
-                     "doesn't guarantee a particular apartment is stabilized. Only the "
-                     "DHCR rent history for that unit settles it, and it's free to request."},
+             "text": "And one caveat we'd rather say up front: a building being registered "
+                     "doesn't guarantee a particular apartment in it is regulated. Only "
+                     "the rent history for that unit settles it — in New York that's "
+                     "DHCR's record, and it's free to request if you rent there."},
         ],
         footer_note=FOOTER_NOTE, unsub_url=_unsub(row["token"]),
         unsub_label="Stop these emails")
@@ -244,19 +283,22 @@ def activate(row, ctx):
               "the map is actually for.",
         blocks=[
             {"type": "paragraph",
-             "text": "Before signing a lease, search the exact address. If it comes up, "
-                     "the building is registered rent-stabilized, which means the rent is "
-                     "capped by the Rent Guidelines Board every year rather than set by "
-                     "whatever the market will bear."},
+             "text": "Before signing a lease, search the exact address. In New York City a "
+                     "match means the building is on DHCR's rent-stabilization registry, "
+                     "so the rent is capped by what the Rent Guidelines Board allows each "
+                     "year rather than set by whatever the market will bear. What a match "
+                     "means in the other three cities is not the same thing, and that is "
+                     "worth knowing before you act on one."},
+            _coverage_block(),
             {"type": "steps", "items": [
                 "Search the address on the map.",
-                "Open the building to see its owner, managing agent, and open HPD "
-                "violations.",
+                "Open the building for its owner, managing agent and open HPD violations "
+                "— New York City, where that building-level record exists.",
                 "Save it — you'll get an email the night anything there is advertised.",
             ]},
             {"type": "card",
              "heading": "Apartments listed for voucher holders right now",
-             "meta": "Updated every night",
+             "meta": "New York City, updated every night",
              "body": "Rent-stabilized buildings with an apartment currently listed on "
                      "AffordableHousing.com, cheapest first.",
              "link": ("See what's listed", f"{SITE}/section8/")},
@@ -269,9 +311,13 @@ def activate(row, ctx):
 
 def lapsed(row, ctx):
     n = ctx.get("voucher_buildings")
-    listed_line = (f"{n:,} rent-stabilized buildings have an apartment listed for voucher "
-                   f"holders right now." if n else
-                   "Rent-stabilized buildings are being listed for voucher holders daily.")
+    # The /section8/ feed is New York City only — 310 buildings across the five
+    # boroughs — so the count has to say so. Unqualified it reads as a four-city
+    # number, which it has never been.
+    listed_line = (f"{n:,} rent-stabilized buildings in New York City have an apartment "
+                   f"listed for voucher holders right now." if n else
+                   "Rent-stabilized buildings in New York City are being listed for "
+                   "voucher holders daily.")
     html, text = emailkit.render(
         title="What's changed since you were last here",
         intro="The listings move constantly — here's where things stand today.",
@@ -280,9 +326,9 @@ def lapsed(row, ctx):
             {"type": "card",
              "heading": "Today's voucher listings",
              "meta": "Rebuilt every night from the AffordableHousing.com feed",
-             "body": "Every building on this list is registered rent-stabilized AND has "
-                     "an apartment listed now — the two things are rarely cross-referenced "
-                     "anywhere else.",
+             "body": "Every building on this list is registered rent-stabilized with DHCR "
+                     "AND has an apartment listed now — the two things are rarely "
+                     "cross-referenced anywhere else.",
              "link": ("Open the list", f"{SITE}/section8/")},
             {"type": "paragraph",
              "text": "If you're not looking right now, no problem — save any building you "
@@ -330,12 +376,19 @@ def saved(row, ctx):
                   f"Here's the part the map deliberately doesn't claim to know.",
             blocks=[
                 {"type": "paragraph",
-                 "text": "A building being registered rent-stabilized doesn't guarantee a "
-                         "particular apartment in it is — a registered building can hold "
-                         "deregulated units, and the map cannot see inside one. The DHCR "
-                         "rent history for the specific apartment is the only thing that "
-                         "settles it, and if you rent there it's free to request."},
+                 "text": "A building being registered doesn't guarantee a particular "
+                         "apartment in it is regulated — a registered building can hold "
+                         "deregulated units, and the map cannot see inside one. In New "
+                         "York the DHCR rent history for the specific apartment is the "
+                         "only thing that settles it, and if you rent there it's free to "
+                         "request."},
                 dhcr_steps,
+                # This branch fires when we could not resolve a saved building to a
+                # BBL, which includes every save outside New York City. So it must
+                # not assume the reader saved a New York building: the DHCR route
+                # above is the wrong instruction in the other three cities, and this
+                # says which city it applies to rather than leaving them to find out.
+                _coverage_block(),
                 {"type": "card",
                  "heading": "Meanwhile, we'll watch the buildings you saved",
                  "body": "When an apartment in one of them is advertised — including "

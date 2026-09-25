@@ -31,6 +31,10 @@ final class OpeningsFeed {
         let income_min: Int?        // yearly (Boston)
         let income_min_mo: Int?     // monthly (Bloom: LA, Doorway)
         let ami: Int?
+        /// Miami's lease-ups: the leasing office's phone and a caveat worth
+        /// reading first ("Not taking waitlist applications…").
+        let phone: String?
+        let note: String?
         let href: String?
     }
     private struct Payload: Decodable { let openings: [Opening] }

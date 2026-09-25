@@ -1061,7 +1061,7 @@ final class LotteryFeedTests: XCTestCase {
          {"id":"a","src":"Access Housing LA","state":"CA","kind":"waitlist","tenure":"rent","closes":null},
          {"id":"b","src":"SF DAHLIA","state":"CA","kind":"lottery","tenure":"buy","closes":"2026-09-30"},
          {"id":"c","src":"Doorway Bay Area","state":"CA","kind":"lottery","tenure":"rent","closes":"2026-09-20"},
-         {"id":"d","src":"Florida Housing","state":"FL","kind":"leasing","tenure":"rent","closes":null}
+         {"id":"d","src":"Florida Housing","state":"FL","kind":"leasing","tenure":"rent","closes":null,"phone":"(305) 400-0995","note":"Seniors 62+.","href":"https://www.ambartrail.com/floorplans"}
         ]}
         """#
         struct P: Decodable { let openings: [OpeningsFeed.Opening] }
@@ -1071,6 +1071,7 @@ final class LotteryFeedTests: XCTestCase {
         XCTAssertEqual(OpeningsFeed.filter(all, for: .sf, today: t).map(\.id), ["b"])
         XCTAssertEqual(OpeningsFeed.filter(all, for: .mia, today: t).map(\.id), ["d"], "Miami's lease-up buildings")
         XCTAssertEqual(OpeningsFeed.kindLabel("leasing"), "Leasing now")
+        XCTAssertEqual(OpeningsFeed.filter(all, for: .mia, today: t).first?.phone, "(305) 400-0995")
         XCTAssertTrue(OpeningsFeed.filter(all, for: .dc, today: t).isEmpty)
         XCTAssertTrue(Tab.lotteries.available(in: .la)); XCTAssertTrue(Tab.lotteries.available(in: .mia))
         XCTAssertFalse(Tab.lotteries.available(in: .dc)); XCTAssertFalse(Tab.lotteries.available(in: .chi))

@@ -343,7 +343,8 @@ final class FindACribUITests: XCTestCase {
         let opening = app.descendants(matching: .any)["opening-card"].firstMatch
         XCTAssertTrue(opening.waitForExistence(timeout: 20) || app.descendants(matching: .any)["lotteries-empty"].firstMatch.exists)
         if opening.exists {
-            XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS 'Find the leasing office'")).firstMatch.exists)
+            XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS 'View availability'")).firstMatch.exists,
+                          "lease-ups open the building's own leasing site, not a search")
         }
         let tabShot = XCTAttachment(screenshot: app.screenshot()); tabShot.name = "mia-leasing"; tabShot.lifetime = .keepAlways; add(tabShot)
     }

@@ -214,9 +214,21 @@ struct OpeningsView: View {
             }
             if let line = rentLine(o) { Text(line).font(.se(16)).foregroundStyle(SE.ink) }
             if let line = incomeLine(o) { Text(line).font(.se(15)).foregroundStyle(SE.ink2) }
+            if let note = o.note { Text(note).font(.se(15, .semibold)).foregroundStyle(SE.ink2) }
+            if let ph = o.phone, let url = URL(string: "tel:\(ph.filter(\.isNumber))") {
+                Button {
+                    Analytics.shared.track("outbound", ["kind": "opening_phone", "src": o.src, "from": "lotteries_tab"])
+                    openURL(url)
+                } label: {
+                    Label(ph, systemImage: "phone.fill").font(.se(17, .bold)).foregroundStyle(SE.royal)
+                }.buttonStyle(.plain)
+            }
             if let href = o.href, let url = URL(string: href) {
-                // Lease-up buildings have no portal: the link searches for the office.
-                SEPrimaryButton(title: o.kind == "leasing" ? "Find the leasing office" : "Apply on \(o.src)", icon: "arrow.up.right") {
+                // Lease-ups link to the building's own leasing site (a search
+                // only if none was found).
+                SEPrimaryButton(title: o.kind != "leasing" ? "Apply on \(o.src)"
+                                : href.contains("google.com/search") ? "Find the leasing office" : "View availability",
+                                icon: "arrow.up.right") {
                     Analytics.shared.track("outbound", ["kind": "opening", "src": o.src, "href": href, "from": "lotteries_tab"])
                     openURL(url)
                 }

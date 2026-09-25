@@ -4,6 +4,7 @@
 Run with ~/.venvs/dhcr-map/bin/python tests/dashboard_benchmarks.py [--live].
 """
 import argparse
+import re
 
 from playwright.sync_api import expect, sync_playwright
 
@@ -106,6 +107,25 @@ def run(browser, live):
     expect(tile.locator('.t-val')).to_have_text('—')
     assert not errors, errors
     print(f'PASS {browser.browser_type.name}: ads served tile', flush=True)
+
+    # A range with nothing cached dims the old numbers and says "Loading…"
+    # until its payload lands, instead of sitting there looking frozen.
+    # Delay in the page, not the route handler: a sleeping sync handler
+    # stalls Playwright itself and the click lands after every fetch is done.
+    page.add_init_script("""(() => {
+      const f = window.fetch;
+      window.fetch = (u, o) => String(u).includes('/api/dashboard-')
+        ? new Promise(r => setTimeout(() => r(f(u, o)), 1500)) : f(u, o);
+    })()""")
+    page.reload(wait_until='domcontentloaded')
+    expect(page.locator('#tiles .tile').first).to_be_visible(timeout=15000)
+    content = page.locator('#top')
+    page.locator('#range-switch button[data-range="today"]').click()
+    expect(content).to_have_class(re.compile(r'\bloading\b'))
+    expect(page.locator('#range-note')).to_contain_text('today')
+    expect(content).not_to_have_class(re.compile(r'\bloading\b'), timeout=15000)
+    assert not errors, errors
+    print(f'PASS {browser.browser_type.name}: range loading state clears', flush=True)
     context.close()
 
 

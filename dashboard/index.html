@@ -222,6 +222,8 @@
      buttons, two outcomes, and nothing on the page admitting it. */
   .range-note{color:var(--muted);font-size:12.5px;margin-top:4px;max-width:78ch}
   .range-note b{color:var(--ink)}
+  .content.loading > :not(.page-head){opacity:.4;pointer-events:none;transition:opacity .15s}
+  .content.loading .range-note::after{content:' \00b7  Loading\2026';color:var(--ink);font-weight:600}
 
   .grid{display:grid;gap:18px}
   .cols-2{grid-template-columns:1.35fr 1fr}
@@ -1356,12 +1358,18 @@
       // that is still selected when its response lands.
       var btns = box.querySelectorAll('button');
       var instant = !!cache[cacheKey(siteKey)];
-      if(!instant) [].forEach.call(btns, function(x){ x.disabled = true; });
-      load().then(function(){
+      // Nothing cached means the old window's numbers stay up while the new
+      // one loads; dim them and say so, or the page reads as frozen.
+      var top = el('top');
+      if(!instant){
+        [].forEach.call(btns, function(x){ x.disabled = true; });
+        top.classList.add('loading');
+      }
+      function done(){
         [].forEach.call(btns, function(x){ x.disabled = false; });
-      }, function(){
-        [].forEach.call(btns, function(x){ x.disabled = false; });
-      });
+        top.classList.remove('loading');
+      }
+      load().then(done, done);
     });
     paintRangeSwitch();
   }

@@ -15,6 +15,7 @@ Run:  DATA_DIR=/var/www/rent-map gunicorn -w 2 -b 127.0.0.1:8010 api_server:app
 """
 import base64, datetime, glob, gzip, hashlib, hmac, json, os, re, secrets, threading, time, urllib.request, urllib.error, urllib.parse
 from collections import defaultdict, deque
+from concurrent.futures import ThreadPoolExecutor
 from flask import Flask, jsonify, request, g, redirect
 
 import build_log             # which run-log lines are work that shipped
@@ -145,7 +146,7 @@ def rpc(name, body):
         data=json.dumps(body).encode(),
         headers={"apikey": SERVICE_KEY, "Authorization": f"Bearer {SERVICE_KEY}",
                  "Content-Type": "application/json"}, method="POST")
-    with urllib.request.urlopen(req, timeout=8) as r:
+    with urllib.request.urlopen(req, timeout=15) as r:
         raw = r.read()
         return json.loads(raw) if raw else None   # void RPCs return an empty body (204)
 
@@ -1315,16 +1316,29 @@ def _dashboard_denial(verdict, allowed):
 FAC_TRACKING_START = datetime.datetime(2026, 6, 24, 4, tzinfo=datetime.timezone.utc)
 
 
+# That covered 6m only while 3m still reached back past 24 June. On
+# 2026-09-25 "3 months ago" became 25 June, the 3m boundary started moving
+# again, and every 3-month click paid the adtiles scan (~2.3 s) on top of the
+# main RPC — past 8 s cold, so the picker sat disabled and then failed. A
+# moving boundary is therefore floored to FAC_SINCE_STEP: the side cards count
+# from up to ten minutes before the headline window on a 90-day range, and the
+# memo hits for the whole step. Midnight and month boundaries are already on
+# a step and do not move.
+FAC_SINCE_STEP = 600
+
+
 def _fac_since(since):
     """The range boundary as a memo key: None when it is before tracking began."""
     if not since:
         return None
     try:
-        if datetime.datetime.fromisoformat(str(since).replace("Z", "+00:00")) <= FAC_TRACKING_START:
-            return None
+        t = datetime.datetime.fromisoformat(str(since).replace("Z", "+00:00"))
     except ValueError:
-        pass
-    return since
+        return since
+    if t <= FAC_TRACKING_START:
+        return None
+    ts = int(t.timestamp()) // FAC_SINCE_STEP * FAC_SINCE_STEP
+    return datetime.datetime.fromtimestamp(ts, datetime.timezone.utc).isoformat()
 
 
 # The SQL function is 2.2 s for all-time (0.4 s today) and its answer does not
@@ -1369,26 +1383,36 @@ def dashboard_metrics():
     except Exception:
         return jsonify(error="temporarily_unavailable"), 503
     since = _fac_since(data.get("since"))
-    # The engine's own build log. It lives on disk in the growth checkout, not
-    # in Postgres, because the 05:40 build runs on this droplet and never writes
-    # to the database. NEMO's tab has had this from the start; Find A Crib
-    # reported traffic and revenue but never what was actually shipped for it.
-    data["build"] = _fac_build()
-    data["search"] = _fac_search()
-    data["channels"] = _fac_channels(since)
-    data["adtiles"] = _fac_adtiles(since)
-    data["ads_served"] = _fac_ads_served(since)
-    # Inputs for the goals card's audience-INDEPENDENT streams. Deliberately
-    # not range-scoped: that card is pinned to all-time for the same reason.
-    data["goalstreams"] = {"ai": _fac_ai_crawls(),
-                           "consult_clicks": _fac_consult_clicks(),
-                           "agents": _fac_agent_pool()}
-    data["signage"] = _fac_signage(since)
-    data["appstore"] = _fac_appstore()
-    # Seven calendar months of distinct visitors, for the bars beside the
-    # seven days. Not range-scoped: a month bar that changed with the picker
-    # would be a different chart wearing the same axis.
-    data["months"] = _fac_months()
+    # The side cards are independent network calls, so they run side by side
+    # rather than one after another: cold, the sequence was adtiles 2.3 s +
+    # ads_served 0.4 s + the rest, stacked on the main RPC. Each helper
+    # already returns {} (or its own empty shape) on failure.
+    jobs = {
+        # The engine's own build log. It lives on disk in the growth checkout,
+        # not in Postgres, because the 05:40 build runs on this droplet and
+        # never writes to the database.
+        "build": (_fac_build,),
+        "search": (_fac_search,),
+        "channels": (_fac_channels, since),
+        "adtiles": (_fac_adtiles, since),
+        "ads_served": (_fac_ads_served, since),
+        # Inputs for the goals card's audience-INDEPENDENT streams. Deliberately
+        # not range-scoped: that card is pinned to all-time for the same reason.
+        "ai": (_fac_ai_crawls,),
+        "consult_clicks": (_fac_consult_clicks,),
+        "agents": (_fac_agent_pool,),
+        "signage": (_fac_signage, since),
+        "appstore": (_fac_appstore,),
+        # Seven calendar months of distinct visitors, for the bars beside the
+        # seven days. Not range-scoped: a month bar that changed with the
+        # picker would be a different chart wearing the same axis.
+        "months": (_fac_months,),
+    }
+    with ThreadPoolExecutor(max_workers=len(jobs)) as pool:
+        futs = {k: pool.submit(*v) for k, v in jobs.items()}
+        got = {k: f.result() for k, f in futs.items()}
+    data["goalstreams"] = {k: got.pop(k) for k in ("ai", "consult_clicks", "agents")}
+    data.update(got)
     # Moving goals for the three audience counts. The check runs against the
     # numbers of the all-time call (the same fixed windows every range shows)
     # and only reads on the others, so switching the range picker cannot

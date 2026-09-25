@@ -125,6 +125,9 @@ def dahlia():
             # DAHLIA's income fields mix monthly and yearly figures by listing
             # type, so only the AMI ceiling is kept — it is unambiguous.
             "ami": int(ami) if ami else None,
+            "image": x.get("imageURL") or next((i.get("displayImageURL") or i.get("Image_URL")
+                                                for i in sorted(x.get("Listing_Images") or [], key=lambda i: i.get("Display_Order") or 0)
+                                                if (i.get("displayImageURL") or i.get("Image_URL") or "").startswith("http")), None),
             "href": f"https://housing.sfgov.org/listings/{x['listingID']}"}))
     return out
 
@@ -158,6 +161,17 @@ BLOOM_KIND = {"lottery": "lottery", "waitlist": "waitlist", "waitlistLottery": "
               "firstComeFirstServe": "first_come"}
 
 
+def first_image(x):
+    """The listing's first photo (Bloom orders them by ordinal); spaces in the
+    S3 key are escaped so the URL loads on iOS."""
+    imgs = sorted(x.get("listingImages") or [], key=lambda i: i.get("ordinal") or 0)
+    for i in imgs:
+        u = ((i.get("assets") or {}).get("fileId") or "").strip()
+        if u.startswith("http"):
+            return urllib.parse.quote(u, safe=":/?=&%")
+    return None
+
+
 def bloom(items, base, src):
     out = []
     for x in items:
@@ -182,7 +196,7 @@ def bloom(items, base, src):
             "closes": day(x.get("applicationDueDate")),
             "units": x.get("unitsAvailable") or None, "beds": sort_beds([b for b in beds if b]),
             # Bloom's minimum income is per MONTH ("$3,098"), unlike Boston's yearly figure.
-            "rent_low": rent[0], "rent_high": rent[1], "income_min_mo": span(incomes)[0],
+            "rent_low": rent[0], "rent_high": rent[1], "income_min_mo": span(incomes)[0], "image": first_image(x),
             "href": f"{base}/listing/{x['id']}/{x.get('urlSlug') or ''}"}))
     return out
 

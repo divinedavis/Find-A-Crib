@@ -14,6 +14,7 @@ Sources, each the public JSON behind the agency's own listings site, tested
   Boston Metrolist  boston.gov/metrolist/api/v1/developments     City of Boston — OFF: WAF blocks servers
   Access Housing LA access.housing.lacity.gov/api/adapter/...    LA Housing Department (Bloom)
   Doorway           housingbayarea.mtc.ca.gov/api/adapter/...    Bay Area Housing Finance Authority (Bloom)
+  Florida Housing   mia/leasing.json (build_affordable_cities.py) Miami-Dade buildings in lease-up
 
 Everything else surveyed that day is a login, a vendor whose terms forbid
 copying (Emphasys' myhousingsearch.com, which runs ~25 states' registries), or
@@ -32,6 +33,7 @@ import datetime as dt
 import json
 import re
 import sys
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -197,7 +199,29 @@ def doorway():
     return bloom(d.get("items") or [], "https://housingbayarea.mtc.ca.gov", "Doorway Bay Area")
 
 
-SOURCES = {"SF DAHLIA": dahlia, "Access Housing LA": access_la, "Doorway Bay Area": doorway}
+LEASING_FILE = None   # set in main(): <docroot>/mia/leasing.json
+
+
+def miami_leasing():
+    """Miami-Dade buildings Florida Housing marks "Active - In Lease-Up" —
+    taking their first tenants now. build_affordable_cities.py writes the
+    list; there is no application portal, so the link searches for the
+    building's leasing office."""
+    rows = json.loads(Path(LEASING_FILE).read_text())
+    out = []
+    for r in rows:
+        q = urllib.parse.quote_plus(f"{r.get('name') or ''} {r.get('addr') or ''} Miami leasing office")
+        out.append(clean({
+            "id": "mia-" + re.sub(r"[^a-z0-9]+", "-", (r.get("name") or r.get("addr") or "").lower()).strip("-"),
+            "src": "Florida Housing", "state": "FL", "city": "Miami-Dade", "name": r.get("name"),
+            "address": r.get("addr"), "zip": r.get("zip"), "lat": r.get("lat"), "lng": r.get("lng"),
+            "kind": "leasing", "tenure": "rent", "units": r.get("li") or r.get("units"),
+            "href": f"https://www.google.com/search?q={q}"}))
+    return out
+
+
+SOURCES = {"SF DAHLIA": dahlia, "Access Housing LA": access_la, "Doorway Bay Area": doorway,
+           "Florida Housing": miami_leasing}
 # Boston's Metrolist answers from a laptop but its Imperva WAF serves a bot
 # challenge to the droplet (2026-09-24). We do not work around a WAF; the
 # adapter stays for when the City grants access (python3 build_openings.py
@@ -237,6 +261,8 @@ def main():
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--with-boston", action="store_true")
     a = ap.parse_args()
+    global LEASING_FILE
+    LEASING_FILE = Path(a.out).resolve().parent / "mia" / "leasing.json"
     try:
         previous = json.loads(Path(a.out).read_text())
     except (OSError, ValueError):

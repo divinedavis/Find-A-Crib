@@ -1,9 +1,0 @@
-# /etc/cron.d/rentmap-states — mirrored from deploy/cron-rentmap-states.
-# Every state's income-restricted buildings (build_lihtc_states.py): HUD's
-# Low-Income Housing Tax Credit layer -> states/<st>/ in the docroot, for the
-# app's state maps. HUD updates the database about once a year, so monthly is
-# plenty; a state that comes back empty keeps its last files.
-SHELL=/bin/bash
-PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-CRON_TZ=America/New_York
-20 5 3 * * root cd /root/Find-A-Crib && python3 build_lihtc_states.py --out /var/www/rent-map/states >> /var/log/rentmap-states.log 2>&1

@@ -1,0 +1,10 @@
+# /etc/cron.d/rentmap-cities — mirrored from deploy/cron-rentmap-cities.
+# Chicago, Miami-Dade, Atlanta and Philadelphia income-restricted buildings
+# (build_affordable_cities.py): each city's own open data merged with HUD's
+# tax-credit and public-housing registers -> <city>/ in the docroot. Weekly —
+# the sources change monthly at most. A city whose sources fail keeps its last
+# files. Runs before the openings job so Miami's lease-up list is fresh.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+CRON_TZ=America/New_York
+10 5 * * 1 root cd /root/Find-A-Crib && python3 build_affordable_cities.py --out /var/www/rent-map >> /var/log/rentmap-cities.log 2>&1

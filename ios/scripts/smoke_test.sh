@@ -43,7 +43,10 @@ crash_seen() { [[ -n "$(find ~/Library/Logs/DiagnosticReports -name 'FindACrib*'
 alive=0
 for attempt in 1 2; do
   for _ in $(seq 1 15); do
-    if xcrun simctl spawn "$SIMULATOR_ID" launchctl list 2>/dev/null | grep -q "$BUNDLE_ID"; then alive=1; break 2; fi
+    # Capture first: under pipefail, `list | grep -q` fails when grep exits
+    # early and launchctl dies of SIGPIPE — a false "not running" (2026-09-24).
+    running=$(xcrun simctl spawn "$SIMULATOR_ID" launchctl list 2>/dev/null || true)
+    if grep -q "$BUNDLE_ID" <<<"$running"; then alive=1; break 2; fi
     if crash_seen; then break 2; fi
     sleep 2
   done

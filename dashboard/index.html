@@ -1687,7 +1687,9 @@
         dwellBench = 'Industry average <b>'+fmtDur(bs)+'</b> for '+DWELL_BENCHMARK.label+
                      ' <span class="bn '+bcls+'">'+bverdict+'</span>';
       }
-      dwellTitle = 'Headline is the median over '+comma(D.engaged)+' of '+comma(D.sessions)+' sessions — the '+
+      dwellTitle = 'Headline is the WEBSITE only — the iPhone app is measured separately on the line below, the '+
+        'same way (its last screen is unmeasured too, since the app logs nothing when it goes to the background). '+
+        'Headline is the median over '+comma(D.engaged)+' of '+comma(D.sessions)+' sessions — the '+
         'ones with 2+ recorded hits. A session is one visitor’s activity split wherever the gap exceeds 30 '+
         'minutes. Nothing is logged when a page closes, so the final page of every session counts as zero and '+
         'a single-page visit measures 0s however long it really lasted ('+
@@ -1783,12 +1785,23 @@
       'agent’s site. Unsubscribe links are not counted, and corporate mail scanners that pre-open every link are '+
       'recorded separately and excluded. Counting began 12 Sep 2026; earlier emails carry no counter.';
 
+    // Time in the iPhone app, measured apart from the website since
+    // 2026-09-24 (dwell_app): same session rule, same floor. It rides on the
+    // time tile rather than a ninth tile so the 4×2 grid stays whole.
+    var DA=d.dwell_app||{};
+    if(DA.median_secs != null){
+      dwellOwn = 'iPhone app <b>'+fmtDur(DA.median_secs)+'</b> median · '+comma(DA.engaged)+' session'+(n(DA.engaged)===1?'':'s')+
+                 (n(DA.engaged) < 30 ? ' · small sample' : '');
+    } else if(DA.sessions != null){
+      dwellOwn = 'iPhone app — no engaged sessions in this range';
+    }
+
     // tiles
     var tiles=[
       {ic:'👣',v:comma(T.visitors),l:'Unique visitors'},
       {ic:'🔁',v:comma(T.returning)+' · '+pctS(T.returning,T.visitors),l:'Returning visitors · this range',
        own:retOwn,bench:retBench,title:retTitle},
-      {ic:'⏱️',v:dwellV,l:'Median time on site · engaged sessions',own:dwellOwn,bench:dwellBench,title:dwellTitle},
+      {ic:'⏱️',v:dwellV,l:'Median time on site · website',own:dwellOwn,bench:dwellBench,title:dwellTitle},
       {ic:'✅',v:comma(T.accounts),l:'Sign-ups'},
       {ic:'🎯',v:convRate.toFixed(1)+'%',l:'Sign-up conversion',own:convOwn,bench:convBench,title:convTitle},
       {ic:'🔔',v:alertRate.toFixed(1)+'%',l:'Alert sign-up conversion',own:alertOwn,bench:alertBench,title:alertTitle},

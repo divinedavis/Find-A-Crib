@@ -52,10 +52,10 @@ struct BuildingDetailView: View {
                     // page (442 people since 9/5, next is 195).
                     if store.city.isNYC {
                         section("Violations & inspections") { hpdBlock }
-                    } else if store.city.isState {
-                        // Its own block: HUD's record is units and eligibility,
-                        // not the violations/evictions shape cityRecordBlock draws.
-                        section(store.city.records?.heading ?? "Income-restricted units") { taxCreditBlock }
+                    } else if store.city.isIncomeRestricted {
+                        // Its own block: units and eligibility, not the
+                        // violations/evictions shape cityRecordBlock draws.
+                        section(store.city.records?.heading ?? "Income-restricted units") { incomeRestrictedBlock }
                     } else if let r = store.city.records {
                         section(r.heading) { cityRecordBlock(r) }
                     }
@@ -310,13 +310,11 @@ struct BuildingDetailView: View {
 
     private var factsStrip: some View {
         HStack(spacing: 0) {
-            // A state map's status line is a sentence ("Likely income-
-            // restricted (tax credit)") that truncates in a cell; say the kind.
-            factCell("Building type", store.city.isState ? "Tax credit" : (b.s?.first.map { AddressCase.pretty($0) } ?? "Multiple dwelling"))
+            factCell("Building type", store.city.isIncomeRestricted ? "Income-restricted" : (b.s?.first.map { AddressCase.pretty($0) } ?? "Multiple dwelling"))
             Rectangle().fill(Color.white.opacity(0.25)).frame(width: 1, height: 44)
-            // HUD's year is when the building entered the program — for a
-            // rehab that is not when it was built.
-            factCell(store.city.isState ? "Opened" : "Year built", b.yr.map(String.init) ?? "–")
+            // The year is built, rehabbed or entered a program depending on
+            // the source, so it is only "since".
+            factCell(store.city.isIncomeRestricted ? "Since" : "Year built", b.yr.map(String.init) ?? "–")
             Rectangle().fill(Color.white.opacity(0.25)).frame(width: 1, height: 44)
             factCell("Units", b.u.map { $0.formatted() } ?? "–")
         }
@@ -512,12 +510,17 @@ struct BuildingDetailView: View {
         }
     }
 
-    /// A state map's building: HUD's tax-credit record. What someone deciding
-    /// whether to call needs, in order: what it is, who qualifies, what sizes,
-    /// and who to call — the app cannot say whether a unit is free today.
-    @ViewBuilder private var taxCreditBlock: some View {
+    /// An income-restricted building (Chicago, Miami-Dade, Atlanta,
+    /// Philadelphia): what someone deciding whether to call needs, in order —
+    /// is it leasing, what it is, who qualifies, what sizes, who to call. The
+    /// app cannot say whether a unit is free today unless the source does.
+    @ViewBuilder private var incomeRestrictedBlock: some View {
         let h = store.record(b)
         VStack(alignment: .leading, spacing: 12) {
+            if h?.leasing == 1 {
+                Label("Leasing now — taking its first tenants", systemImage: "key.fill")
+                    .font(.se(17, .bold)).foregroundStyle(SE.good)
+            }
             if let name = h?.name, !name.isEmpty {
                 Text(name).font(.se(21, .bold)).foregroundStyle(SE.ink)
             }
@@ -529,9 +532,8 @@ struct BuildingDetailView: View {
             } else if let u = b.u {
                 Text("\(u) units in the building").font(.se(18, .semibold)).foregroundStyle(SE.ink)
             }
-            if let inc = h?.inc {
-                Text("Income limit: \(inc)").font(.se(17)).foregroundStyle(SE.ink2)
-            }
+            if let ami = h?.ami { Text(ami).font(.se(17)).foregroundStyle(SE.ink2) }
+            if let inc = h?.inc { Text("Income limit: \(inc)").font(.se(17)).foregroundStyle(SE.ink2) }
             let mix = Building.bedOrder.compactMap { k in (h?.mix?[k]).map { (Building.bedLabel(k), $0) } }
             if !mix.isEmpty {
                 HStack(spacing: 0) { ForEach(mix, id: \.0) { countCell($0.0, $0.1) } }
@@ -540,26 +542,45 @@ struct BuildingDetailView: View {
             if let who = h?.serves, !who.isEmpty {
                 Text("Set aside for " + ListFormatter.localizedString(byJoining: who)).font(.se(17)).foregroundStyle(SE.ink2)
             }
+            if let v = h?.vacant, v > 0 {
+                Text("\(v) vacant unit\(v == 1 ? "" : "s") at the housing authority's last report — apply through its waiting list")
+                    .font(.se(16)).foregroundStyle(SE.ink2)
+            }
+            if let w = h?.wait_mo {
+                Text("Typical wait to get in: about \(w >= 24 ? "\(w / 12) years" : "\(w) months") (HUD)")
+                    .font(.se(16)).foregroundStyle(SE.ink2)
+            }
+            if let p = h?.prog, !p.isEmpty {
+                Text("Funded through " + ListFormatter.localizedString(byJoining: p)).font(.se(15)).foregroundStyle(SE.ink3)
+            }
             let bits = [h?.pis.map { "Opened \($0)" }, h?.np == 1 ? "nonprofit sponsor" : nil].compactMap { $0 }
             if !bits.isEmpty { Text(bits.joined(separator: " · ")).font(.se(15)).foregroundStyle(SE.ink3) }
-            if h?.mgr != nil || h?.tel != nil {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Owner on file with HUD").font(.se(15, .semibold)).foregroundStyle(SE.ink2)
+            if h?.mgr != nil || h?.tel != nil || h?.web != nil {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Manager or owner on file").font(.se(15, .semibold)).foregroundStyle(SE.ink2)
                     if let m = h?.mgr { Text(m).font(.se(18, .bold)).foregroundStyle(SE.ink) }
                     if let t = h?.tel, let url = URL(string: "tel:\(t.filter(\.isNumber))") {
                         Button {
-                            Analytics.shared.track("outbound", ["kind": "lihtc_phone", "bbl": b.bbl])
+                            Analytics.shared.track("outbound", ["kind": "affordable_phone", "bbl": b.bbl, "city": store.city.id])
                             openURL(url)
                         } label: {
                             Label(t, systemImage: "phone.fill").font(.se(18, .bold)).foregroundStyle(SE.royal)
-                        }.buttonStyle(.plain).accessibilityIdentifier("lihtc-phone")
+                        }.buttonStyle(.plain).accessibilityIdentifier("affordable-phone")
+                    }
+                    if let w = h?.web, let url = URL(string: w) {
+                        Button {
+                            Analytics.shared.track("outbound", ["kind": "affordable_web", "bbl": b.bbl, "city": store.city.id])
+                            openURL(url)
+                        } label: {
+                            Label("Building website", systemImage: "globe").font(.se(18, .bold)).foregroundStyle(SE.royal)
+                        }.buttonStyle(.plain)
                     }
                 }.padding(.top, 2)
             }
-            Text("Openings and waiting lists go through the building's leasing office. HUD's register says which buildings are income-restricted, not which have a unit free today.")
+            Text("There is no citywide lottery here: each building keeps its own waiting list, so call or apply through the leasing office.")
                 .font(.se(15)).foregroundStyle(SE.ink3)
         }
-        .accessibilityIdentifier("lihtc-block")
+        .accessibilityIdentifier("affordable-block")
     }
 
     /// "Typically 1,125 sq ft · water, refuse included in the rent" — the two

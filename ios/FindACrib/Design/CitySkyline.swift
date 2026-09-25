@@ -19,9 +19,9 @@ enum Skyline {
             case "sf": .sanFrancisco
             case "dc": .washington
             case "la": .losAngeles
-            // A state's map is every town in it: no one city's landmarks fit,
-            // so it gets the kind of building it lists.
-            case _ where cityID.hasPrefix("st-"): .homes
+            // The income-restricted cities (2026-09-24) get the kind of
+            // building they list until each has landmarks drawn.
+            case "chi", "mia", "atl", "phl": .homes
             default: .newYork
             }
         }

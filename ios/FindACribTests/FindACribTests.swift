@@ -654,7 +654,7 @@ final class SkylineTests: XCTestCase {
         XCTAssertEqual(Skyline.Scene.scene(for: "dc"), .washington)
         XCTAssertEqual(Skyline.Scene.scene(for: "la"), .losAngeles)
         XCTAssertEqual(Skyline.Scene.scene(for: "nowhere"), .newYork, "an unknown city falls back to New York, like City.find")
-        XCTAssertEqual(Skyline.Scene.scene(for: "st-nj"), .homes, "a state map gets no one city's landmarks")
+        XCTAssertEqual(Skyline.Scene.scene(for: "chi"), .homes, "the income-restricted cities get no other city's landmarks")
         for city in City.all { XCTAssertEqual(Skyline.Scene.scene(for: city.id).rawValue.isEmpty, false) }
     }
 
@@ -1017,25 +1017,26 @@ final class LotteryFeedTests: XCTestCase {
         XCTAssertTrue(LotteryFeed.filter(all, boroughs: [], today: "2026-09-19").isEmpty)
     }
 
-    /// Every state is a place in the picker (owner, 2026-09-24), each its own
-    /// files under states/<st>/, and none of them is taken for New York.
-    func testStatesArePickableAndPointAtTheirOwnFiles() {
-        XCTAssertGreaterThanOrEqual(City.states.count, 51, "50 states and DC")
-        let nj = City.find("st-nj")
-        XCTAssertEqual(nj.name, "New Jersey")
-        XCTAssertTrue(nj.isState); XCTAssertFalse(nj.isNYC); XCTAssertFalse(nj.hasNYCExtras)
-        XCTAssertEqual(nj.dataPath, "states/nj/buildings.slim.json.gz")
-        XCTAssertEqual(nj.recordsPath, "states/nj/buildings.hpd.json.gz")
-        XCTAssertEqual(Set(City.all.map(\.id)).count, City.all.count, "no two places share an id")
-        XCTAssertEqual(Set(City.all.map(\.cacheName)).count, City.all.count, "no two places share a cache file")
-        XCTAssertEqual(City.find("st-ny").name, "New York State", "not confused with the NYC register")
-        XCTAssertEqual(HeroBanner.line(for: nj), "Every income-restricted building in NJ")
-        let b = Building(bbl: "LIHTC-NJA1", b: "NJ", a: "1 MILL ST", z: "07416", lat: 41, lng: -74.5, nb: "Franklin")
-        XCTAssertEqual(b.webURL(in: nj).host, "maps.apple.com", "no web page for state maps yet: share the place")
+    /// Eight cities (owner, 2026-09-24: "lets only add cities"): the four
+    /// rent-regulated ones and four income-restricted ones, each with its own
+    /// files, and none taken for New York.
+    func testEightCitiesEachWithItsOwnFiles() {
+        XCTAssertEqual(City.all.map(\.id), ["nyc", "la", "sf", "dc", "chi", "mia", "atl", "phl"])
+        let chi = City.find("chi")
+        XCTAssertEqual(chi.name, "Chicago")
+        XCTAssertTrue(chi.isIncomeRestricted); XCTAssertFalse(chi.isNYC); XCTAssertFalse(chi.hasNYCExtras)
+        XCTAssertFalse(City.nyc.isIncomeRestricted); XCTAssertFalse(City.dc.isIncomeRestricted)
+        XCTAssertEqual(chi.dataPath, "chi/buildings.slim.json.gz")
+        XCTAssertEqual(chi.recordsPath, "chi/buildings.hpd.json.gz")
+        XCTAssertEqual(Set(City.all.map(\.cacheName)).count, City.all.count, "no two cities share a cache file")
+        XCTAssertEqual(HeroBanner.line(for: chi), "Every income-restricted building in CHI")
+        let b = Building(bbl: "CHI-1", b: "CHI", a: "3414 W DIVERSEY AVE", z: "60647", lat: 41.93, lng: -87.71)
+        XCTAssertEqual(b.webURL(in: chi).host, "maps.apple.com", "no web page for these cities yet: share the place")
+        XCTAssertEqual(City.find("st-nj").id, "nyc", "the state maps are gone; an old saved state falls back to New York")
     }
 
-    /// Openings outside New York: a state takes its whole state, LA and SF
-    /// their own agency's list, and closed ones drop out. Only places with a
+    /// Openings outside New York: LA, SF and Miami-Dade take their own
+    /// agency's list, and closed ones drop out. Only places with a
     /// feed get the Lotteries tab.
     func testOpeningsBelongToTheirPlace() throws {
         let j = #"""
@@ -1043,7 +1044,7 @@ final class LotteryFeedTests: XCTestCase {
          {"id":"a","src":"Access Housing LA","state":"CA","kind":"waitlist","tenure":"rent","closes":null},
          {"id":"b","src":"SF DAHLIA","state":"CA","kind":"lottery","tenure":"buy","closes":"2026-09-30"},
          {"id":"c","src":"Doorway Bay Area","state":"CA","kind":"lottery","tenure":"rent","closes":"2026-09-20"},
-         {"id":"d","src":"Boston Metrolist","state":"MA","kind":"lottery","tenure":"rent","closes":"2026-10-01","income_min":54286}
+         {"id":"d","src":"Florida Housing","state":"FL","kind":"leasing","tenure":"rent","closes":null}
         ]}
         """#
         struct P: Decodable { let openings: [OpeningsFeed.Opening] }
@@ -1051,19 +1052,20 @@ final class LotteryFeedTests: XCTestCase {
         let t = "2026-09-24"
         XCTAssertEqual(OpeningsFeed.filter(all, for: .la, today: t).map(\.id), ["a"])
         XCTAssertEqual(OpeningsFeed.filter(all, for: .sf, today: t).map(\.id), ["b"])
-        XCTAssertEqual(OpeningsFeed.filter(all, for: City.find("st-ca"), today: t).map(\.id), ["b", "a"], "closed c dropped; dated first")
-        XCTAssertEqual(OpeningsFeed.filter(all, for: City.find("st-ma"), today: t).map(\.id), ["d"])
+        XCTAssertEqual(OpeningsFeed.filter(all, for: .mia, today: t).map(\.id), ["d"], "Miami's lease-up buildings")
+        XCTAssertEqual(OpeningsFeed.kindLabel("leasing"), "Leasing now")
         XCTAssertTrue(OpeningsFeed.filter(all, for: .dc, today: t).isEmpty)
-        XCTAssertTrue(Tab.lotteries.available(in: .la)); XCTAssertTrue(Tab.lotteries.available(in: City.find("st-nj")))
-        XCTAssertFalse(Tab.lotteries.available(in: .dc)); XCTAssertFalse(Tab.lotteries.available(in: City.find("st-wy")))
+        XCTAssertTrue(Tab.lotteries.available(in: .la)); XCTAssertTrue(Tab.lotteries.available(in: .mia))
+        XCTAssertFalse(Tab.lotteries.available(in: .dc)); XCTAssertFalse(Tab.lotteries.available(in: .chi))
         XCTAssertFalse(Tab.events.available(in: .la)); XCTAssertTrue(Tab.events.available(in: .nyc))
     }
 
     /// The record file's LIHTC fields decode (build_lihtc_states.py's keys).
     func testTaxCreditRecordDecodes() throws {
-        let j = #"{"name":"Baxter Terrace","li":80,"units_total":90,"mix":{"1":40,"2":50},"inc":"60% of area median income","serves":["seniors"],"mgr":"Acme Llc","tel":"609-656-4205","pis":2012,"np":1}"#
+        let j = #"{"name":"Baxter Terrace","li":80,"units_total":90,"mix":{"1":40,"2":50},"inc":"60% of area median income","ami":"43 at 50% AMI","serves":["seniors"],"mgr":"Acme Llc","tel":"609-656-4205","web":"https://x.org","pis":2012,"np":1,"prog":["ARO","Public housing"],"leasing":1,"vacant":3,"wait_mo":30}"#
         let r = try JSONDecoder().decode(BuildingRecord.self, from: Data(j.utf8))
         XCTAssertEqual(r.li, 80); XCTAssertEqual(r.mix?["2"], 50); XCTAssertEqual(r.tel, "609-656-4205"); XCTAssertEqual(r.pis, 2012)
+        XCTAssertEqual(r.prog, ["ARO", "Public housing"]); XCTAssertEqual(r.leasing, 1); XCTAssertEqual(r.wait_mo, 30); XCTAssertEqual(r.web, "https://x.org")
     }
 
     /// NJ drawings (owner, 2026-09-24): past join-by dates drop out, the

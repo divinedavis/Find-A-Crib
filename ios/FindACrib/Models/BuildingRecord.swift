@@ -44,7 +44,8 @@ struct BuildingRecord: Codable, Hashable, Sendable {
     /// Mirrors Building.HPD.op — "there is an operator worth showing".
     var op: Int?
 
-    // States — HUD's Low-Income Housing Tax Credit record (build_lihtc_states.py).
+    // Income-restricted cities — Chicago, Miami-Dade, Atlanta, Philadelphia
+    // (build_affordable_cities.py): the city's own data merged with HUD's.
     var name: String?
     /// Low-income units, of `units_total`.
     var li: Int?
@@ -54,13 +55,23 @@ struct BuildingRecord: Codable, Hashable, Sendable {
     var inc: String?
     /// Who it is set aside for: families, seniors, people with disabilities…
     var serves: [String]?
-    /// The owner company on file with HUD, and its phone.
+    /// Units by income band: "43 at 50% AMI · 44 at 80% AMI".
+    var ami: String?
+    /// The manager or owner on file, its phone and website.
     var mgr: String?
     var tel: String?
-    /// Year placed in service.
+    var web: String?
+    /// Year placed in service (tax credit).
     var pis: Int?
     /// 1 = sponsored by a nonprofit.
     var np: Int?
+    /// Every program that funds it: "Low-Income Housing Tax Credit", "ARO"…
+    var prog: [String]?
+    /// 1 = Florida Housing lists it as in lease-up: first tenants now.
+    var leasing: Int?
+    /// Public housing: vacant units at last report, and HUD's average wait.
+    var vacant: Int?
+    var wait_mo: Int?
 
     struct Violations: Codable, Hashable, Sendable {
         var open: Int?; var total: Int?; var last_12mo: Int?

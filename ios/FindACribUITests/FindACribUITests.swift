@@ -273,11 +273,11 @@ final class FindACribUITests: XCTestCase {
         }
     }
 
-    /// Every state's income-restricted buildings (owner, 2026-09-24: "State
-    /// picker + map"). The picker lists the states apart from the rent-regulated
-    /// cities and can be searched; a state loads its own HUD tax-credit
-    /// buildings, and a building shows its units, income limit and phone.
-    func testStatePickerOpensAStatesIncomeRestrictedBuildings() throws {
+    /// The four income-restricted cities (owner, 2026-09-24: "lets add the
+    /// four cities - lets only add cities"). Picking Chicago loads its own
+    /// buildings, and a building shows its units and who to call. Miami-Dade's
+    /// Lotteries tab lists the buildings leasing now.
+    func testIncomeRestrictedCitiesLoadTheirBuildingsAndMiamiLeasing() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash"]
         app.launch()
@@ -298,41 +298,41 @@ final class FindACribUITests: XCTestCase {
         let cityField = app.buttons["city-field"]
         XCTAssertTrue(cityField.waitForExistence(timeout: 20))
         cityField.tap()
-        let search = app.searchFields.firstMatch
-        XCTAssertTrue(search.waitForExistence(timeout: 5), "52 states: the picker must be searchable")
-        search.tap(); search.typeText("New Jer")
-        let nj = app.buttons["city-st-nj"]
-        XCTAssertTrue(nj.waitForExistence(timeout: 5), "searching finds New Jersey")
-        XCTAssertFalse(app.buttons["city-st-tx"].exists, "and filters the rest out")
-        nj.tap()
+        let chi = app.buttons["city-chi"]
+        XCTAssertTrue(chi.waitForExistence(timeout: 5), "Chicago is in the picker")
+        XCTAssertFalse(app.buttons["city-st-nj"].exists, "no state maps (owner: cities only)")
+        for id in ["city-mia", "city-atl", "city-phl"] { XCTAssertTrue(app.buttons[id].exists, "\(id) is in the picker") }
+        chi.tap()
         let go = app.buttons["search-button"]
         XCTAssertTrue(go.waitForExistence(timeout: 20))
-        // NJ downloads on first selection; wait for its count, not a fixed time.
+        // Chicago downloads on first selection; wait for its count, not a fixed time.
         expectation(for: NSPredicate(format: "label CONTAINS 'Search' AND NOT (label CONTAINS 'Search 0 ')"), evaluatedWith: go)
         waitForExpectations(timeout: 90)
-        XCTAssertTrue(app.buttons["tab-Lotteries"].exists, "New Jersey lists CGP&H's drawings")
+        XCTAssertFalse(app.buttons["tab-Lotteries"].exists, "Chicago has no lottery feed, so no Lotteries tab")
         XCTAssertFalse(app.buttons["tab-Events"].exists, "Events are New York's calendar")
         let bar = app.buttons["tab-Search"]
         for _ in 0..<4 where !go.isHittable || (bar.exists && go.frame.maxY > bar.frame.minY - 8) { app.swipeUp() }
         go.tap()
         let card = app.buttons["card-address"].firstMatch
-        XCTAssertTrue(card.waitForExistence(timeout: 20), "results should list NJ buildings")
+        XCTAssertTrue(card.waitForExistence(timeout: 20), "results should list Chicago buildings")
         card.tap()
-        let block = app.descendants(matching: .any)["lihtc-block"].firstMatch
+        let block = app.descendants(matching: .any)["affordable-block"].firstMatch
         for _ in 0..<5 where !block.exists { app.swipeUp() }
-        XCTAssertTrue(block.waitForExistence(timeout: 10), "a state building shows HUD's income-restricted record")
-        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "state-nj-building"; shot.lifetime = .keepAlways; add(shot)
-        // New Jersey's Lotteries tab lists CGP&H's town drawings. The detail
-        // screen hides the tab bar; a relaunch lands on Search, still in NJ
-        // because the pick is remembered.
-        app.terminate(); app.launch()
+        XCTAssertTrue(block.waitForExistence(timeout: 10), "a Chicago building shows its income-restricted record")
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "chi-building"; shot.lifetime = .keepAlways; add(shot)
+        // Miami-Dade (not persisted: --city): its Lotteries tab lists lease-ups.
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--city", "mia"]
+        app.launch()
         let lotteriesTab = app.buttons["tab-Lotteries"]
-        XCTAssertTrue(lotteriesTab.waitForExistence(timeout: 20), "New Jersey is still picked after a relaunch")
+        XCTAssertTrue(lotteriesTab.waitForExistence(timeout: 90), "Miami-Dade lists buildings leasing now")
         lotteriesTab.tap()
-        let drawing = app.descendants(matching: .any)["nj-lottery-card"].firstMatch
-        XCTAssertTrue(drawing.waitForExistence(timeout: 20) || app.descendants(matching: .any)["lotteries-empty"].firstMatch.exists,
-                      "NJ's tab should list drawings or say none are open")
-        let tabShot = XCTAttachment(screenshot: app.screenshot()); tabShot.name = "state-nj-lotteries"; tabShot.lifetime = .keepAlways; add(tabShot)
+        let opening = app.descendants(matching: .any)["opening-card"].firstMatch
+        XCTAssertTrue(opening.waitForExistence(timeout: 20) || app.descendants(matching: .any)["lotteries-empty"].firstMatch.exists)
+        if opening.exists {
+            XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS 'Find the leasing office'")).firstMatch.exists)
+        }
+        let tabShot = XCTAttachment(screenshot: app.screenshot()); tabShot.name = "mia-leasing"; tabShot.lifetime = .keepAlways; add(tabShot)
     }
 
     /// The banner is the wordmark, and it is decoration: the owner had a tap

@@ -83,9 +83,9 @@ struct City: Identifiable, Hashable, Codable, Sendable {
     }
 
     var isNYC: Bool { id == "nyc" }
-    /// A state's income-restricted (tax-credit) map rather than a city's
-    /// rent-regulation register. Ids are "st-" + the postal code.
-    var isState: Bool { id.hasPrefix("st-") }
+    /// A city whose map is its income-restricted buildings rather than a
+    /// rent-regulation register (Chicago, Miami-Dade, Atlanta, Philadelphia).
+    var isIncomeRestricted: Bool { ["chi", "mia", "atl", "phl"].contains(id) }
     /// Advertised rents, vouchers, HPD violations/complaints and HCR lotteries
     /// exist only for New York; everywhere else those files 404 by design.
     var hasNYCExtras: Bool { isNYC }
@@ -97,7 +97,7 @@ struct City: Identifiable, Hashable, Codable, Sendable {
         case "la": return "Parcels meeting LAHD's RSO criteria"
         case "sf": return "Units reported to the SF Rent Board"
         case "dc": return "Units registered with DC DHCD"
-        case _ where isState: return "Tax-credit buildings on HUD's register"
+        case _ where isIncomeRestricted: return "Income-restricted buildings"
         default:   return "Every building on the DHCR register"
         }
     }
@@ -198,33 +198,44 @@ struct City: Identifiable, Hashable, Codable, Sendable {
         aboutNote: "Registered with DC DHCD under the Rental Housing Act. Coverage is decided per unit, so a property can hold both controlled and exempt units — the count here is the controlled ones.",
         sourcesNote: "Sources: DC DHCD RentRegistry public exports · DC Office of Tax and Revenue (CAMA assessor roll, Integrated Tax System) · DCGIS address-to-lot cross reference.")
 
-    /// The rent-regulated cities, each with its own register.
-    static let cities: [City] = [.nyc, .la, .sf, .dc]
-    static let all: [City] = cities + states
+    /// The rent-regulated cities, each with its own register, then the four
+    /// whose map is their income-restricted buildings (owner, 2026-09-24:
+    /// "lets add the four cities - lets only add cities").
+    static let all: [City] = [.nyc, .la, .sf, .dc, .chi, .mia, .atl, .phl]
 
-    /// One state's income-restricted map. Every state is the same kind of
-    /// thing — HUD's tax-credit register, split by state — so they differ only
-    /// in name and where the map opens.
-    static func state(_ code: String, _ name: String, lat: Double, lng: Double, span: Double) -> City {
-        let dir = "states/\(code.lowercased())"
-        return City(
-            id: "st-\(code.lowercased())", name: name, short: code, state: code,
+    static let chi = affordable(id: "chi", name: "Chicago", short: "CHI", state: "IL", lat: 41.84, lng: -87.69, span: 0.42,
+        sources: "Chicago Department of Housing (Affordable Requirements Ordinance buildings; affordable rental developments) · HUD Low-Income Housing Tax Credit database · HUD public housing (Chicago Housing Authority).")
+    static let mia = affordable(id: "mia", name: "Miami-Dade", short: "MIA", state: "FL", lat: 25.70, lng: -80.30, span: 0.6,
+        sources: "Florida Housing Finance Corporation rental properties and HUD/USDA assisted properties (via UF Shimberg Center) · HUD Low-Income Housing Tax Credit database · HUD public housing (Miami-Dade PHCD).")
+    static let atl = affordable(id: "atl", name: "Atlanta", short: "ATL", state: "GA", lat: 33.76, lng: -84.42, span: 0.26,
+        sources: "City of Atlanta Office of Housing Housing Tracker · Atlanta Beltline affordable housing developments · HUD Low-Income Housing Tax Credit database · HUD public housing (Atlanta Housing).")
+    static let phl = affordable(id: "phl", name: "Philadelphia", short: "PHL", state: "PA", lat: 39.99, lng: -75.14, span: 0.26,
+        sources: "Philadelphia DHCD Affordable Housing Production · HUD Low-Income Housing Tax Credit database · HUD public housing (Philadelphia Housing Authority).")
+
+    /// A city whose map is its income-restricted buildings: none of these
+    /// has a rent-stabilization register, and none runs a lottery portal —
+    /// each merges its own open data with HUD's (build_affordable_cities.py).
+    static func affordable(id: String, name: String, short: String, state: String,
+                           lat: Double, lng: Double, span: Double, sources: String) -> City {
+        City(
+            id: id, name: name, short: short, state: state,
             lat: lat, lng: lng, span: span,
-            dataPath: "\(dir)/buildings.slim.json.gz", cacheName: "st-\(code.lowercased())-buildings.slim.json.gz",
-            regionKind: .neighborhood, regionLabel: "City",
-            statusLabel: "Likely income-restricted (tax credit)", idLabel: "",
-            sourceNote: "A Low-Income Housing Tax Credit building on HUD's register. Its low-income units carry income limits and capped rents for 30 years or more; a few leave early, so confirm with the building.",
-            searchPlaceholder: "City, address or ZIP",
+            dataPath: "\(id)/buildings.slim.json.gz", cacheName: "\(id)-buildings.slim.json.gz",
+            regionKind: .zip, regionLabel: "ZIP",
+            statusLabel: "Income-restricted", idLabel: "",
+            sourceNote: "An income-restricted building: some or all of its units are for households under an income limit, at capped rents. Apply through the building's leasing office or waiting list.",
+            searchPlaceholder: "Address or ZIP",
             hasPrices: false, priceLabel: "",
-            recordsPath: "\(dir)/buildings.hpd.json.gz", records: Records(
-                heading: "Income-restricted units", agency: "HUD", scope: "this building",
+            recordsPath: "\(id)/buildings.hpd.json.gz", records: Records(
+                heading: "Income-restricted units", agency: "the city and HUD", scope: "this building",
                 violationsLabel: nil, complaintsLabel: nil, evictionsLabel: nil, petitionsLabel: nil,
                 buyoutsLabel: nil, casesLabel: nil, showsOwner: false,
                 noViolationsNote: nil, noViolationsLink: nil, noViolationsLinkLabel: nil,
-                emptyNote: "HUD's file has no unit detail for this building.",
-                note: "From HUD's Low-Income Housing Tax Credit database."),
-            aboutNote: "Built or rehabbed with Low-Income Housing Tax Credits. In exchange, the owner keeps the low-income units for households under an income limit — usually 60% of the area median — at capped rents, for at least 30 years. A few properties leave the program early and HUD's file does not say which, so confirm with the building. Apply through the building's own office or waiting list.",
-            sourcesNote: "Sources: HUD Low-Income Housing Tax Credit database (placed in service 1990 or later; owner contacts from HUD's AFFH copy).")
+                emptyNote: "No unit detail on file for this building.",
+                note: nil),
+            aboutNote: "Income-restricted housing: built or kept affordable with public money — tax credits, city programs, inclusionary zoning or public housing — so some or all of its units are for households under an income limit, at capped rents. There is no citywide lottery here; each building keeps its own waiting list, so call or apply through the leasing office.",
+            sourcesNote: "Sources: " + sources)
     }
+
     static func find(_ id: String?) -> City { all.first { $0.id == id } ?? .nyc }
 }

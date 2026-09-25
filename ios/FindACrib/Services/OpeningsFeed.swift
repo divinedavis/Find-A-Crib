@@ -5,10 +5,10 @@ import Observation
 /// every state/city that has income restricted and lottery housing").
 ///
 /// findacrib.com/openings.json is rebuilt every three hours by
-/// build_openings.py from the public JSON behind SF DAHLIA, Access Housing LA
-/// and Doorway (Bay Area). New Jersey's drawings come from LotteryFeed's
-/// nj_lotteries.json. Nothing here needs an account: these are public lists,
-/// and the borough alerts that gate New York's tab do not exist elsewhere.
+/// build_openings.py from the public JSON behind SF DAHLIA and Access Housing
+/// LA, plus the Miami-Dade buildings Florida Housing marks as in lease-up.
+/// Nothing here needs an account: these are public lists, and the borough
+/// alerts that gate New York's tab do not exist elsewhere.
 @Observable @MainActor
 final class OpeningsFeed {
     static let shared = OpeningsFeed()
@@ -21,7 +21,7 @@ final class OpeningsFeed {
         let neighborhood: String?
         let name: String?
         let address: String?
-        let kind: String            // lottery | waitlist | first_come
+        let kind: String            // lottery | waitlist | first_come | leasing
         let tenure: String          // rent | buy
         let closes: String?
         let units: Int?
@@ -52,34 +52,33 @@ final class OpeningsFeed {
 
     // MARK: - Pure pieces (unit-tested)
 
-    /// Which openings belong to a place: a state takes its whole state; the
-    /// rent-regulated cities take their own agency's list.
+    /// Which openings belong to a place: each city takes its own agency's list.
     nonisolated static func filter(_ l: [Opening], for city: City, today: String) -> [Opening] {
         l.filter { o in
             guard o.closes.map({ $0 >= today }) ?? true else { return false }
-            if city.isState { return o.state == city.state }
             if let srcs = sources[city.id] { return srcs.contains(o.src) }
             return false
         }
         .sorted { ($0.closes ?? "9999", $0.name ?? "") < ($1.closes ?? "9999", $1.name ?? "") }
     }
 
-    /// The rent-regulated cities with an agency feed of their own.
+    /// The cities with an agency feed of their own.
     nonisolated static let sources: [String: Set<String>] = [
         "la": ["Access Housing LA"],
         "sf": ["SF DAHLIA"],
+        "mia": ["Florida Housing"],
     ]
-    /// Places whose Lotteries tab has something to list: the cities above,
-    /// California (all three feeds) and New Jersey (CGP&H's drawings).
-    nonisolated static let places: Set<String> = ["la", "sf", "st-ca", "st-nj"]
+    /// Places whose Lotteries tab has something to list.
+    nonisolated static var places: Set<String> { Set(sources.keys) }
 
     nonisolated static func kindLabel(_ k: String) -> String {
-        switch k { case "lottery": "Lottery"; case "waitlist": "Waitlist"; case "first_come": "First come, first served"; default: k.capitalized }
+        switch k { case "lottery": "Lottery"; case "waitlist": "Waitlist"; case "first_come": "First come, first served"
+        case "leasing": "Leasing now"; default: k.capitalized }
     }
 }
 
 extension City {
     /// Whether this place gets a Lotteries tab: New York's own, or a feed
-    /// of openings for it (OpeningsFeed.places).
+    /// of openings for it (OpeningsFeed.places) — LA, SF, Miami-Dade.
     var hasLotteries: Bool { isNYC || OpeningsFeed.places.contains(id) }
 }

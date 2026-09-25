@@ -1782,6 +1782,15 @@
 <script src="/static/mapillary-preview.js?v=1"></script>
 <script src="/static/apple-street-preview.js?v=10"></script>
 <script>
+// Whether the Saved chip is on. Null-safe (2026-09-25 error report: one
+// visitor's page threw "Cannot read properties of null (reading
+// 'classList')" in renderGrid, most likely an extension or in-page translator
+// having removed the chip): no chip means not in Saved mode, never a crash.
+function favActive() {
+  const el = document.getElementById('pill-fav');
+  return !!(el && el.classList.contains('active'));
+}
+
 (async function () {
   // ---------- error telemetry ----------
   // Until 2026-09-06 nothing the page threw ever left the phone it threw on.
@@ -2597,7 +2606,7 @@
   // chip bar above the results grid: narrows the Saved view to one folder
   function renderFolderBar() {
     const bar = document.getElementById('folder-bar');
-    const favOnly = document.getElementById('pill-fav').classList.contains('active');
+    const favOnly = favActive();
     if (!favOnly || sharedFolder) { bar.hidden = true; return; }
     const counts = {};
     for (const id of Object.values(FAVCATS)) counts[id] = (counts[id] || 0) + 1;
@@ -4842,7 +4851,7 @@
       }
       return chips.length ? `<div class="sh-chips">${chips.join('')}</div>` : '';
     };
-    if (!q || document.getElementById('pill-fav').classList.contains('active') || sharedFolder) {
+    if (!q || favActive() || sharedFolder) {
       searchHelper.hidden = true; return;
     }
     const n = filtered.length;
@@ -5270,7 +5279,7 @@
     const priceMin = +document.getElementById('price-min').value || 0;
     const priceMax = +document.getElementById('price-max').value || Infinity;
     const priceSet = priceMin > 0 || priceMax < Infinity;
-    const favOnly = document.getElementById('pill-fav').classList.contains('active');
+    const favOnly = favActive();
     const q = document.getElementById('q').value.trim().toUpperCase();
 
     // One pass over the data. `test` is the tier being tried; `ignoreFilters`
@@ -5899,7 +5908,7 @@
     // whole list away and rebuild it — every tile image refetched, every
     // observer re-armed — and on one iPhone that ran in a loop until Safari
     // killed the page. Same cards, same list.
-    const favMode = document.getElementById('pill-fav').classList.contains('active');
+    const favMode = favActive();
     const sig = [gridGen, sortMode, selectedBbl, favMode ? 1 : 0, sharedFolder ? 1 : 0, truncated ? 1 : 0, citywide ? 1 : 0,
                  shown.length, shown.map(r => r.bbl).join(',')].join('|');
     if (sig === lastGridSig && grid.childElementCount) { tr('grid:same'); return; }
@@ -5914,7 +5923,7 @@
     // belongs inside one. A saved list of a single building was leading with a
     // featured re-rental and a lottery tile before the building itself — two
     // adverts above the one thing the list was for.
-    const promos = !document.getElementById('pill-fav').classList.contains('active') && !sharedFolder;
+    const promos = !favActive() && !sharedFolder;
     const ads = ADS_ON() && promos;
     const parts = [];
     featCursor = 0;
@@ -6082,7 +6091,7 @@
       else { FAVS.add(bbl); btn.classList.add('faved'); btn.textContent = '♥'; btn.setAttribute('aria-pressed','true'); }
       saveFavs(); updateFavBadge(); persistFav(bbl, FAVS.has(bbl));
       // if the Saved filter is on, an unsaved card should drop out of the list
-      if (document.getElementById('pill-fav').classList.contains('active')) applyFilters();
+      if (favActive()) applyFilters();
       return;
     }
     // Search button: let the link do its thing

@@ -217,15 +217,79 @@ struct LotteriesView: View {
 
     // MARK: - New Jersey
 
-    private var njRentals: [LotteryFeed.NJLottery] { feed.njOpen.filter(\.isRental) }
-    private var njSales: [LotteryFeed.NJLottery] { feed.njOpen.filter { !$0.isRental } }
+    /// County and Rentals/For sale filters (owner, 2026-09-25: "allow
+    /// filtering for nj counties"). The county is remembered across launches;
+    /// "" = every county.
+    @AppStorage("nj.county") private var njCounty = ""
+    @State private var njTenure: String? = nil
+    private var njShown: [LotteryFeed.NJLottery] {
+        LotteryFeed.njNarrow(feed.njOpen, county: njCounty.isEmpty ? nil : njCounty, tenure: njTenure)
+    }
+    private var njFiltering: Bool { !njCounty.isEmpty || njTenure != nil }
+    private var njRentals: [LotteryFeed.NJLottery] { njShown.filter(\.isRental) }
+    private var njSales: [LotteryFeed.NJLottery] { njShown.filter { !$0.isRental } }
+
+    private var njFilterBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                Menu {
+                    Button("All counties") { njCounty = "" }
+                    ForEach(LotteryFeed.njCounties(feed.njOpen), id: \.0) { c in
+                        Button("\(c.0) County (\(c.1))") {
+                            njCounty = c.0
+                            Analytics.shared.track("nj_filter", ["county": c.0])
+                        }
+                    }
+                } label: {
+                    njChip(njCounty.isEmpty ? "County" : "\(njCounty) County", on: !njCounty.isEmpty, chevron: true)
+                }
+                .accessibilityIdentifier("nj-county")
+                ForEach([("rent", "Rentals"), ("buy", "For sale")], id: \.0) { t in
+                    Button {
+                        njTenure = njTenure == t.0 ? nil : t.0
+                        Analytics.shared.track("nj_filter", ["tenure": njTenure ?? "any"])
+                    } label: { njChip(t.1, on: njTenure == t.0, chevron: false) }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("nj-tenure-\(t.0)")
+                        .accessibilityAddTraits(njTenure == t.0 ? .isSelected : [])
+                }
+            }
+        }
+    }
+
+    private func njChip(_ title: String, on: Bool, chevron: Bool) -> some View {
+        HStack(spacing: 5) {
+            Text(title).font(.se(15, .semibold)).lineLimit(1)
+            if chevron { Image(systemName: "chevron.down").font(.system(size: 11, weight: .bold)) }
+        }
+        .foregroundStyle(on ? .white : SE.ink)
+        .padding(.horizontal, 12).padding(.vertical, 8)
+        .background(on ? SE.royal : Color.white)
+        .overlay(Capsule().stroke(on ? SE.royal : SE.lineSoft, lineWidth: 1))
+        .clipShape(Capsule())
+    }
 
     @ViewBuilder private var njList: some View {
-        Text(feed.loading && feed.nj.isEmpty ? "Loading…" : "\(feed.njOpen.count) open in New Jersey")
-            .font(.se(17, .bold)).foregroundStyle(SE.ink).padding(.horizontal, 16)
+        njFilterBar.padding(.horizontal, 16)
+        HStack {
+            Text(feed.loading && feed.nj.isEmpty ? "Loading…"
+                 : njFiltering ? "\(njShown.count) of \(feed.njOpen.count) open in New Jersey" : "\(feed.njOpen.count) open in New Jersey")
+                .font(.se(17, .bold)).foregroundStyle(SE.ink)
+                .accessibilityIdentifier("nj-count")
+            Spacer()
+            if njFiltering {
+                Button("Clear") { njCounty = ""; njTenure = nil }
+                    .font(.se(16, .bold)).foregroundStyle(SE.royal)
+                    .accessibilityIdentifier("nj-clear")
+            }
+        }
+        .padding(.horizontal, 16)
         if feed.njOpen.isEmpty && !feed.loading {
             message("No New Jersey drawings right now",
                     "Affordable Homes New Jersey isn't listing an open drawing today. Pull down to check again.")
+        } else if njShown.isEmpty && !feed.loading {
+            message("None in \(njCounty.isEmpty ? "this selection" : "\(njCounty) County")",
+                    "\(feed.njOpen.count) drawings are open elsewhere in New Jersey. Pick another county or tap Clear.")
         }
         if !njRentals.isEmpty {
             njSection("Rentals", njRentals)

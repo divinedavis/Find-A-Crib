@@ -460,6 +460,21 @@ final class FindACribUITests: XCTestCase {
             XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS 'View the listing'")).firstMatch.exists)
         }
         XCTAssertFalse(app.buttons["segment-4+"].exists, "no Beds strip on the NJ pane")
+        // County filter (owner, 2026-09-25): pick the first county in the menu,
+        // the count reads N of M, and Clear brings every drawing back.
+        let county = app.buttons["nj-county"]
+        XCTAssertTrue(county.waitForExistence(timeout: 5), "the NJ pane has a County menu")
+        if nj.exists {
+            county.tap()
+            let firstCounty = app.buttons.matching(NSPredicate(format: "label ENDSWITH ')' AND label CONTAINS 'County ('")).firstMatch
+            XCTAssertTrue(firstCounty.waitForExistence(timeout: 5), "the menu lists counties with their counts")
+            firstCounty.tap()
+            let njCount = app.staticTexts["nj-count"]
+            XCTAssertTrue(njCount.label.contains(" of "), "filtered by county, the count says N of M: \(njCount.label)")
+            let njShot = XCTAttachment(screenshot: app.screenshot()); njShot.name = "nj-county"; njShot.lifetime = .keepAlways; add(njShot)
+            app.buttons["nj-clear"].tap()
+            XCTAssertFalse(njCount.label.contains(" of "), "Clear shows every county again")
+        }
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "lotteries-nj"; shot.lifetime = .keepAlways; add(shot)
     }
 

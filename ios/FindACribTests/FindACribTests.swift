@@ -1131,6 +1131,11 @@ final class LotteryFeedTests: XCTestCase {
         XCTAssertEqual(got.map(\.id), ["rent-wt", "rent-paramus", "buy-wayne"], "closed Wall dropped, today kept, coming soon last")
         XCTAssertTrue(got[0].isRental); XCTAssertFalse(got[2].isRental)
         XCTAssertEqual(got[1].development, "Vermella Paramus"); XCTAssertNil(got[0].development)
+        // County and tenure filters (owner, 2026-09-25)
+        XCTAssertEqual(LotteryFeed.njNarrow(got, county: "Bergen", tenure: nil).map(\.id), ["rent-paramus"])
+        XCTAssertEqual(LotteryFeed.njNarrow(got, county: nil, tenure: "buy").map(\.id), ["buy-wayne"])
+        XCTAssertTrue(LotteryFeed.njNarrow(got, county: "Passaic", tenure: "rent").isEmpty)
+        XCTAssertEqual(LotteryFeed.njCounties(got).map(\.0), ["Bergen", "Passaic"], "rent-wt has no county and is not listed")
     }
 
     func testBedFilterHidesLotteriesWithoutTheirSize() {

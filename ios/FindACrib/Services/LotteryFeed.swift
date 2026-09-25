@@ -145,6 +145,19 @@ final class LotteryFeed {
             .sorted { ($0.closes ?? "9999", $0.town) < ($1.closes ?? "9999", $1.town) }
     }
 
+    /// The NJ pane's filters (owner, 2026-09-25: "allow filtering for nj
+    /// counties"). `county` nil = every county; `tenure` "rent"/"buy"/nil.
+    nonisolated static func njNarrow(_ l: [NJLottery], county: String?, tenure: String?) -> [NJLottery] {
+        l.filter { (county == nil || $0.county == county) && (tenure == nil || $0.tenure == tenure) }
+    }
+
+    /// Counties with an open drawing, most drawings first, then by name.
+    nonisolated static func njCounties(_ l: [NJLottery]) -> [(String, Int)] {
+        var n: [String: Int] = [:]
+        for d in l { if let c = d.county { n[c, default: 0] += 1 } }
+        return n.sorted { ($0.value, $1.key) > ($1.value, $0.key) }.map { ($0.key, $0.value) }
+    }
+
     /// Bedroom count from the feeds' wording: "Studio"/"studio" -> 0,
     /// "1-bed" or "1" -> 1. Nil when it cannot tell.
     nonisolated static func bedCount(_ s: String) -> Int? {

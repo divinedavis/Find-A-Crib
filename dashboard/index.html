@@ -212,6 +212,9 @@
   .page-head{margin-bottom:22px}
   .page-head h1{font-size:26px;margin:0 0 3px;letter-spacing:-.5px}
   .page-head .sub{color:var(--ink2);font-size:14px}
+  /* Same size as the page title, so the target reads as loudly as the name. */
+  .page-head .goal{font-size:26px;font-weight:700;margin:0 0 6px;letter-spacing:-.5px;color:var(--ink)}
+  .page-head .goal[hidden]{display:none}
   .updated{color:var(--muted);font-size:12.5px;margin-top:2px}
   /* Names the window actually on screen. The picker alone could not say
      it: on 1 September "This month" and "Today" are the same day, and
@@ -493,6 +496,7 @@
     <div class="content" id="top">
       <div class="page-head">
         <h1 id="page-title">Find A Crib</h1>
+        <div class="goal" id="page-goal" hidden></div>
         <div class="sub" id="page-sub">Traffic, funnel &amp; revenue — everything in one place.</div>
         <div class="updated" id="updated">—</div>
         <div class="range-note" id="range-note"></div>
@@ -1075,7 +1079,8 @@
   var SITES = {
     fac:{
       mark:'🏙️', name:'Find A Crib', endpoint:'/api/dashboard-metrics',
-      title:'Find A Crib', sub:'Traffic, funnel &amp; revenue — everything in one place.',
+      title:'Find A Crib', goal:'Goal: 100\u2013200k ad impressions',
+      sub:'Traffic, funnel &amp; revenue — everything in one place.',
       live:'https://findacrib.com', foot:'Since 24 June 2026',
       // First row in the table. Every window is clamped to it, so the picker
       // can say which of its buttons currently select the same one. The other
@@ -1138,6 +1143,7 @@
     el('brand-name').textContent=S.name;
     el('page-title').textContent=S.title;
     el('page-sub').innerHTML=S.sub;
+    var g=el('page-goal'); g.textContent=S.goal||''; g.hidden=!S.goal;
     el('nav-foot').textContent=S.foot;
     var ls=el('live-site'); ls.href=S.live;
     // nav

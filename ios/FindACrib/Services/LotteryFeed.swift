@@ -42,6 +42,10 @@ final class LotteryFeed {
         let tenure: String      // "rent" or "buy"
         let closes: String?     // nil while "COMING SOON"
         let coming_soon: Bool?
+        /// The development behind the drawing ("The Overlook at Van
+        /// Emburgh"), from nj/cgph_links.json; nil for a town not curated yet.
+        let development: String?
+        /// That listing on CGP&H (?lid=), or its rental/ownership listings page.
         let href: String?
         var isRental: Bool { tenure == "rent" }
     }

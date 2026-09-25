@@ -249,12 +249,15 @@ struct LotteriesView: View {
     private func njCard(_ l: LotteryFeed.NJLottery) -> some View {
         let days = LotteryFeed.daysLeft(l.closes)
         return VStack(alignment: .leading, spacing: 6) {
-            Text(l.town).font(.se(19, .bold)).foregroundStyle(SE.ink)
-            Text([l.county.map { "\($0) County, NJ" } ?? "New Jersey", l.isRental ? "Rental" : "For sale"].joined(separator: " · "))
+            Text(l.development ?? l.town).font(.se(19, .bold)).foregroundStyle(SE.ink)
+            Text([l.development == nil ? nil : l.town, l.county.map { "\($0) County, NJ" } ?? "New Jersey", l.isRental ? "Rental" : "For sale"]
+                    .compactMap { $0 }.joined(separator: " · "))
                 .font(.se(15, .semibold)).foregroundStyle(SE.ink2)
             Text(njWhen(l, days)).font(.se(16)).foregroundStyle((days ?? 99) <= 3 ? SE.warn : SE.ink)
             if let href = l.href, let url = URL(string: href) {
-                SEPrimaryButton(title: "Apply on Affordable Homes NJ", icon: "arrow.up.right") {
+                // Opens the listing itself on CGP&H (owner, 2026-09-24: the home
+                // page "is a generic website - i dont see the actual listing").
+                SEPrimaryButton(title: "View the listing", icon: "arrow.up.right") {
                     Analytics.shared.track("outbound", ["kind": "nj_cgph", "href": href, "town": l.town, "from": "lotteries_tab"])
                     openURL(url)
                 }

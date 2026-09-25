@@ -1076,7 +1076,7 @@ final class LotteryFeedTests: XCTestCase {
         {"lotteries":[
          {"id":"buy-wall","town":"Wall","county":"Monmouth","tenure":"buy","closes":"2026-09-21","coming_soon":false,"href":"https://www.affordablehomesnewjersey.com/"},
          {"id":"buy-wayne","town":"Wayne","county":"Passaic","tenure":"buy","closes":null,"coming_soon":true,"href":"https://www.affordablehomesnewjersey.com/"},
-         {"id":"rent-paramus","town":"Paramus","county":"Bergen","tenure":"rent","closes":"2026-11-19","coming_soon":false,"href":"https://www.affordablehomesnewjersey.com/"},
+         {"id":"rent-paramus","town":"Paramus","county":"Bergen","tenure":"rent","closes":"2026-11-19","coming_soon":false,"development":"Vermella Paramus","href":"https://www.affordablehomesnewjersey.com/rental-opportunities/current-listings/?lid=a0JUq000008DDFlMAO"},
          {"id":"rent-wt","town":"Washington Township","county":null,"tenure":"rent","closes":"2026-09-24","coming_soon":false,"href":null}
         ]}
         """#
@@ -1085,6 +1085,7 @@ final class LotteryFeedTests: XCTestCase {
         let got = LotteryFeed.njFilter(all, today: "2026-09-24")
         XCTAssertEqual(got.map(\.id), ["rent-wt", "rent-paramus", "buy-wayne"], "closed Wall dropped, today kept, coming soon last")
         XCTAssertTrue(got[0].isRental); XCTAssertFalse(got[2].isRental)
+        XCTAssertEqual(got[1].development, "Vermella Paramus"); XCTAssertNil(got[0].development)
     }
 
     func testBedFilterHidesLotteriesWithoutTheirSize() {

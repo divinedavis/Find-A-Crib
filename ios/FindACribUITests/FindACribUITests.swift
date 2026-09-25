@@ -424,7 +424,7 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(nj.waitForExistence(timeout: 10) || app.descendants(matching: .any)["lotteries-empty"].firstMatch.exists,
                       "the NJ pane should list drawings or say none are open")
         if nj.exists {
-            XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS 'Apply on Affordable Homes NJ'")).firstMatch.exists)
+            XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS 'View the listing'")).firstMatch.exists)
         }
         XCTAssertFalse(app.buttons["segment-4+"].exists, "no Beds strip on the NJ pane")
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "lotteries-nj"; shot.lifetime = .keepAlways; add(shot)

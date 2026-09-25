@@ -7,30 +7,30 @@
   "history_dropped": 0,
   "history_dropped_total": 0
  },
- "date": "2026-09-24",
+ "date": "2026-09-25",
  "discovered_untracked": [
   {
-   "clicks": 123,
-   "impressions": 137,
+   "clicks": 126,
+   "impressions": 144,
    "position": 1.0,
    "query": "findacrib"
   },
   {
-   "clicks": 43,
-   "impressions": 50,
+   "clicks": 40,
+   "impressions": 45,
    "position": 1,
    "query": "findacrib.com"
   },
   {
    "clicks": 2,
-   "impressions": 8,
+   "impressions": 9,
    "position": 4,
    "query": "jays home finder"
   },
   {
    "clicks": 0,
-   "impressions": 3,
-   "position": 4.3,
+   "impressions": 4,
+   "position": 5.5,
    "query": "jayshomefinder"
   },
   {
@@ -43,13 +43,13 @@
  "history": {
   "https://findacrib.com/": [
    "2026-07-30",
-   "2026-09-24",
-   55
+   "2026-09-25",
+   56
   ],
   "https://findacrib.com/alerts/?src=menu": [
    "2026-09-12",
-   "2026-09-24",
-   13
+   "2026-09-25",
+   14
   ],
   "https://findacrib.com/building/bronx/1005-walton-ave-2024770034/": [
    "2026-07-30",
@@ -68,8 +68,8 @@
   ],
   "https://findacrib.com/building/bronx/1144-to-1170-walton-ave-2024630001/": [
    "2026-08-24",
-   "2026-09-24",
-   10
+   "2026-09-25",
+   11
   ],
   "https://findacrib.com/building/bronx/1160-cromwell-ave-2024960034/": [
    "2026-07-30",
@@ -83,8 +83,8 @@
   ],
   "https://findacrib.com/building/bronx/1188-sheridan-ave-2024560222/": [
    "2026-08-30",
-   "2026-09-24",
-   26
+   "2026-09-25",
+   27
   ],
   "https://findacrib.com/building/bronx/1235-grand-concourse-2024640023/": [
    "2026-08-09",
@@ -583,8 +583,8 @@
   ],
   "https://findacrib.com/building/brooklyn/42-driggs-ave-3026890049/": [
    "2026-08-30",
-   "2026-09-24",
-   26
+   "2026-09-25",
+   27
   ],
   "https://findacrib.com/building/brooklyn/420-eastern-pkwy-3012670014/": [
    "2026-07-30",
@@ -828,8 +828,8 @@
   ],
   "https://findacrib.com/building/manhattan/105-w-72nd-st-1011447501/": [
    "2026-09-10",
-   "2026-09-24",
-   15
+   "2026-09-25",
+   16
   ],
   "https://findacrib.com/building/manhattan/107-e-100th-st-1016280103/": [
    "2026-08-20",
@@ -1243,8 +1243,8 @@
   ],
   "https://findacrib.com/building/manhattan/433-e-6th-st-1004340041/": [
    "2026-09-22",
-   "2026-09-24",
-   3
+   "2026-09-25",
+   4
   ],
   "https://findacrib.com/building/manhattan/439-e-9th-st-1004370033/": [
    "2026-07-30",
@@ -1408,28 +1408,28 @@
   ],
   "https://findacrib.com/dc/": [
    "2026-08-01",
-   "2026-09-24",
-   34
+   "2026-09-25",
+   35
   ],
   "https://findacrib.com/developers/": [
    "2026-09-12",
-   "2026-09-24",
-   13
+   "2026-09-25",
+   14
   ],
   "https://findacrib.com/directory/": [
    "2026-09-12",
-   "2026-09-24",
-   13
+   "2026-09-25",
+   14
   ],
   "https://findacrib.com/la/": [
    "2026-08-01",
-   "2026-09-24",
-   34
+   "2026-09-25",
+   35
   ],
   "https://findacrib.com/marketing-agents/": [
    "2026-09-12",
-   "2026-09-24",
-   13
+   "2026-09-25",
+   14
   ],
   "https://findacrib.com/neighborhood/brooklyn/ocean-hill/": [
    "2026-08-14",
@@ -1443,8 +1443,8 @@
   ],
   "https://findacrib.com/sf/": [
    "2026-08-01",
-   "2026-09-24",
-   34
+   "2026-09-25",
+   35
   ],
   "https://findacrib.com/zip/10021/": [
    "2026-08-09",
@@ -1484,62 +1484,62 @@
  },
  "pages": [
   {
-   "clicks": 200,
-   "impressions": 257,
+   "clicks": 198,
+   "impressions": 258,
    "position": 1.5,
    "url": "https://findacrib.com/"
   },
   {
    "clicks": 0,
-   "impressions": 188,
+   "impressions": 196,
    "position": 1.0,
    "url": "https://findacrib.com/alerts/?src=menu"
   },
   {
    "clicks": 0,
-   "impressions": 188,
+   "impressions": 196,
    "position": 1.0,
    "url": "https://findacrib.com/directory/"
   },
   {
    "clicks": 0,
-   "impressions": 188,
+   "impressions": 196,
    "position": 1.0,
    "url": "https://findacrib.com/marketing-agents/"
   },
   {
    "clicks": 0,
-   "impressions": 188,
+   "impressions": 196,
    "position": 1.0,
    "url": "https://findacrib.com/sf/"
   },
   {
    "clicks": 0,
-   "impressions": 164,
+   "impressions": 169,
    "position": 1.0,
    "url": "https://findacrib.com/dc/"
   },
   {
    "clicks": 0,
-   "impressions": 164,
+   "impressions": 169,
    "position": 1.0,
    "url": "https://findacrib.com/developers/"
   },
   {
    "clicks": 0,
-   "impressions": 164,
+   "impressions": 169,
    "position": 1.0,
    "url": "https://findacrib.com/la/"
   },
   {
    "clicks": 0,
-   "impressions": 8,
-   "position": 1.1,
+   "impressions": 6,
+   "position": 1.2,
    "url": "https://findacrib.com/building/brooklyn/42-driggs-ave-3026890049/"
   },
   {
    "clicks": 0,
-   "impressions": 5,
+   "impressions": 4,
    "position": 1,
    "url": "https://findacrib.com/building/manhattan/105-w-72nd-st-1011447501/"
   },
@@ -1564,27 +1564,27 @@
  ],
  "queries_28d": [
   {
-   "clicks": 467,
-   "ctr": 0.8828,
-   "impressions": 529,
+   "clicks": 483,
+   "ctr": 0.8766,
+   "impressions": 551,
    "page": "https://findacrib.com/",
    "position": 1.0,
    "query": "findacrib"
   },
   {
-   "clicks": 130,
-   "ctr": 0.8553,
-   "impressions": 152,
+   "clicks": 139,
+   "ctr": 0.858,
+   "impressions": 162,
    "page": "https://findacrib.com/",
    "position": 1,
    "query": "findacrib.com"
   },
   {
-   "clicks": 6,
-   "ctr": 0.2222,
+   "clicks": 5,
+   "ctr": 0.1852,
    "impressions": 27,
    "page": "https://findacrib.com/",
-   "position": 4.0,
+   "position": 3.9,
    "query": "jays home finder"
   },
   {
@@ -1596,11 +1596,11 @@
    "query": "jayshomefinder.com"
   },
   {
-   "clicks": 3,
-   "ctr": 0.1154,
+   "clicks": 2,
+   "ctr": 0.0769,
    "impressions": 26,
    "page": "https://findacrib.com/",
-   "position": 4.9,
+   "position": 5.1,
    "query": "jayshomefinder"
   },
   {
@@ -1610,40 +1610,32 @@
    "page": "https://findacrib.com/",
    "position": 2,
    "query": "find a crib.com"
-  },
-  {
-   "clicks": 0,
-   "ctr": 0,
-   "impressions": 1,
-   "page": "",
-   "position": 51,
-   "query": "finder nyc"
   }
  ],
  "queries_by_page": {
   "https://findacrib.com/": [
    {
-    "clicks": 123,
-    "impressions": 137,
+    "clicks": 126,
+    "impressions": 144,
     "position": 1.0,
     "query": "findacrib"
    },
    {
-    "clicks": 43,
-    "impressions": 50,
+    "clicks": 40,
+    "impressions": 45,
     "position": 1,
     "query": "findacrib.com"
    },
    {
     "clicks": 2,
-    "impressions": 8,
+    "impressions": 9,
     "position": 4,
     "query": "jays home finder"
    },
    {
     "clicks": 0,
-    "impressions": 3,
-    "position": 4.3,
+    "impressions": 4,
+    "position": 5.5,
     "query": "jayshomefinder"
    },
    {
@@ -1656,13 +1648,13 @@
   "https://findacrib.com/alerts/?src=menu": [
    {
     "clicks": 0,
-    "impressions": 130,
+    "impressions": 139,
     "position": 1.0,
     "query": "findacrib"
    },
    {
     "clicks": 0,
-    "impressions": 41,
+    "impressions": 38,
     "position": 1,
     "query": "findacrib.com"
    }
@@ -1679,7 +1671,7 @@
   "https://findacrib.com/building/brooklyn/42-driggs-ave-3026890049/": [
    {
     "clicks": 0,
-    "impressions": 7,
+    "impressions": 5,
     "position": 1,
     "query": "findacrib.com"
    }
@@ -1687,7 +1679,7 @@
   "https://findacrib.com/building/manhattan/105-w-72nd-st-1011447501/": [
    {
     "clicks": 0,
-    "impressions": 5,
+    "impressions": 4,
     "position": 1,
     "query": "findacrib.com"
    }
@@ -1696,13 +1688,13 @@
   "https://findacrib.com/dc/": [
    {
     "clicks": 0,
-    "impressions": 110,
+    "impressions": 116,
     "position": 1.0,
     "query": "findacrib"
    },
    {
     "clicks": 0,
-    "impressions": 39,
+    "impressions": 36,
     "position": 1,
     "query": "findacrib.com"
    }
@@ -1710,13 +1702,13 @@
   "https://findacrib.com/developers/": [
    {
     "clicks": 0,
-    "impressions": 110,
+    "impressions": 116,
     "position": 1.0,
     "query": "findacrib"
    },
    {
     "clicks": 0,
-    "impressions": 39,
+    "impressions": 36,
     "position": 1,
     "query": "findacrib.com"
    }
@@ -1724,13 +1716,13 @@
   "https://findacrib.com/directory/": [
    {
     "clicks": 0,
-    "impressions": 130,
+    "impressions": 139,
     "position": 1.0,
     "query": "findacrib"
    },
    {
     "clicks": 0,
-    "impressions": 41,
+    "impressions": 38,
     "position": 1,
     "query": "findacrib.com"
    }
@@ -1738,13 +1730,13 @@
   "https://findacrib.com/la/": [
    {
     "clicks": 0,
-    "impressions": 110,
+    "impressions": 116,
     "position": 1.0,
     "query": "findacrib"
    },
    {
     "clicks": 0,
-    "impressions": 39,
+    "impressions": 36,
     "position": 1,
     "query": "findacrib.com"
    }
@@ -1752,13 +1744,13 @@
   "https://findacrib.com/marketing-agents/": [
    {
     "clicks": 0,
-    "impressions": 130,
+    "impressions": 139,
     "position": 1.0,
     "query": "findacrib"
    },
    {
     "clicks": 0,
-    "impressions": 41,
+    "impressions": 38,
     "position": 1,
     "query": "findacrib.com"
    }
@@ -1766,13 +1758,13 @@
   "https://findacrib.com/sf/": [
    {
     "clicks": 0,
-    "impressions": 130,
+    "impressions": 139,
     "position": 1.0,
     "query": "findacrib"
    },
    {
     "clicks": 0,
-    "impressions": 41,
+    "impressions": 38,
     "position": 1,
     "query": "findacrib.com"
    }
@@ -1793,14 +1785,14 @@
   },
   "building": {
    "ever": 271,
-   "max_days": 26,
+   "max_days": 27,
    "median_days": 7,
    "now": 5
   },
   "city_hub": {
    "ever": 3,
-   "max_days": 34,
-   "median_days": 34,
+   "max_days": 35,
+   "median_days": 35,
    "now": 3
   },
   "council": {
@@ -1811,8 +1803,8 @@
   },
   "developers": {
    "ever": 1,
-   "max_days": 13,
-   "median_days": 13,
+   "max_days": 14,
+   "median_days": 14,
    "now": 1
   },
   "guide": {
@@ -1823,8 +1815,8 @@
   },
   "home": {
    "ever": 1,
-   "max_days": 55,
-   "median_days": 55,
+   "max_days": 56,
+   "median_days": 56,
    "now": 1
   },
   "nyc_hub": {
@@ -1835,8 +1827,8 @@
   },
   "other": {
    "ever": 3,
-   "max_days": 13,
-   "median_days": 13,
+   "max_days": 14,
+   "median_days": 14,
    "now": 3
   },
   "voucher": {
@@ -1846,5 +1838,5 @@
    "now": 0
   }
  },
- "window": "2026-09-15..2026-09-22"
+ "window": "2026-09-16..2026-09-23"
 }

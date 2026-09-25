@@ -1060,6 +1060,33 @@ final class LotteryFeedTests: XCTestCase {
         XCTAssertFalse(Tab.events.available(in: .la)); XCTAssertTrue(Tab.events.available(in: .nyc))
     }
 
+    /// The Lotteries tab's filters outside New York (owner, 2026-09-24):
+    /// beds (unstated sizes kept), how you get in, area and units open now.
+    func testOpeningsFilters() throws {
+        let j = #"""
+        {"openings":[
+         {"id":"a","src":"Access Housing LA","state":"CA","neighborhood":"Westlake","kind":"waitlist","tenure":"rent","beds":["Studio","1-bed"],"units":0},
+         {"id":"b","src":"Access Housing LA","state":"CA","neighborhood":"Westlake","kind":"lottery","tenure":"rent","beds":["2-bed","3-bed"],"units":4},
+         {"id":"c","src":"Access Housing LA","state":"CA","neighborhood":"Hollywood","kind":"first_come","tenure":"rent","units":1},
+         {"id":"d","src":"Access Housing LA","state":"CA","city":"Los Angeles","kind":"waitlist","tenure":"rent","beds":["1-bed"]}
+        ]}
+        """#
+        struct P: Decodable { let openings: [OpeningsFeed.Opening] }
+        let all = try JSONDecoder().decode(P.self, from: Data(j.utf8)).openings
+        func ids(beds: Set<Int> = [], kinds: Set<String> = [], area: String? = nil, now: Bool = false) -> [String] {
+            OpeningsFeed.narrow(all, beds: beds, kinds: kinds, area: area, unitsNow: now).map(\.id)
+        }
+        XCTAssertEqual(ids(), ["a", "b", "c", "d"])
+        XCTAssertEqual(ids(beds: [1]), ["a", "c", "d"], "c publishes no sizes and stays")
+        XCTAssertEqual(ids(beds: [3]), ["b", "c"])
+        XCTAssertEqual(ids(kinds: ["lottery", "first_come"]), ["b", "c"])
+        XCTAssertEqual(ids(area: "Westlake"), ["a", "b"])
+        XCTAssertEqual(ids(area: "Los Angeles"), ["d"], "no neighborhood: the city is its area")
+        XCTAssertEqual(ids(now: true), ["b", "c"], "waitlists with no unit free drop out")
+        XCTAssertEqual(ids(beds: [2], kinds: ["lottery"], area: "Westlake", now: true), ["b"])
+        XCTAssertEqual(OpeningsFeed.areas(all).map(\.0), ["Westlake", "Hollywood", "Los Angeles"], "most listings first, then by name")
+    }
+
     /// The record file's LIHTC fields decode (build_lihtc_states.py's keys).
     func testTaxCreditRecordDecodes() throws {
         let j = #"{"name":"Baxter Terrace","li":80,"units_total":90,"mix":{"1":40,"2":50},"inc":"60% of area median income","ami":"43 at 50% AMI","serves":["seniors"],"mgr":"Acme Llc","tel":"609-656-4205","web":"https://x.org","pis":2012,"np":1,"prog":["ARO","Public housing"],"leasing":1,"vacant":3,"wait_mo":30}"#

@@ -270,6 +270,19 @@ final class FindACribUITests: XCTestCase {
         XCTAssertFalse(app.buttons["lotteries-signup"].exists, "no New York alert sign-up outside New York")
         if opening.exists {
             XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS 'Apply on Access Housing LA'")).firstMatch.exists)
+            // Filters (owner, 2026-09-24): a way-in chip narrows the list and
+            // says so in the count; Clear filters brings it all back.
+            let count = app.staticTexts["openings-count"]
+            XCTAssertTrue(count.waitForExistence(timeout: 5))
+            let lottery = app.buttons["openings-kind-lottery"]
+            XCTAssertTrue(lottery.waitForExistence(timeout: 5), "LA lists lotteries and waitlists, so both chips show")
+            XCTAssertTrue(app.buttons["segment-4+"].exists, "the Beds strip sits under Rent/Buy")
+            XCTAssertTrue(app.buttons["openings-area"].exists, "LA's listings span neighborhoods, so the Area menu shows")
+            lottery.tap()
+            XCTAssertTrue(count.label.contains(" of "), "filtered, the count says how many of how many: \(count.label)")
+            app.buttons["openings-clear"].tap()
+            XCTAssertFalse(count.label.contains(" of "), "Clear filters shows every listing again: \(count.label)")
+            let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "la-openings-filters"; shot.lifetime = .keepAlways; add(shot)
         }
     }
 

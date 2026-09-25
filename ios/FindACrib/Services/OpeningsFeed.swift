@@ -62,6 +62,27 @@ final class OpeningsFeed {
         .sorted { ($0.closes ?? "9999", $0.name ?? "") < ($1.closes ?? "9999", $1.name ?? "") }
     }
 
+    /// The Lotteries tab's filters. A listing that publishes no sizes is
+    /// kept under any Beds choice — hiding it would say "none for you" when
+    /// the truth is "not stated" (LotteryFeed.bedsMatch).
+    nonisolated static func narrow(_ l: [Opening], beds: Set<Int>, kinds: Set<String>, area: String?, unitsNow: Bool) -> [Opening] {
+        l.filter { o in
+            LotteryFeed.bedsMatch(o.beds, want: beds)
+                && (kinds.isEmpty || kinds.contains(o.kind))
+                && (area == nil || areaName(o) == area)
+                && (!unitsNow || (o.units ?? 0) > 0)
+        }
+    }
+
+    nonisolated static func areaName(_ o: Opening) -> String? { o.neighborhood ?? o.city }
+
+    /// Areas present, most listings first, then by name.
+    nonisolated static func areas(_ l: [Opening]) -> [(String, Int)] {
+        var n: [String: Int] = [:]
+        for o in l { if let a = areaName(o), !a.isEmpty { n[a, default: 0] += 1 } }
+        return n.sorted { ($0.value, $1.key) > ($1.value, $0.key) }.map { ($0.key, $0.value) }
+    }
+
     /// The cities with an agency feed of their own.
     nonisolated static let sources: [String: Set<String>] = [
         "la": ["Access Housing LA"],

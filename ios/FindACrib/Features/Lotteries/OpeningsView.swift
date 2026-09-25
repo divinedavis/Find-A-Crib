@@ -14,13 +14,40 @@ struct OpeningsView: View {
     }
     enum Tenure: Hashable { case rent, buy }
     @State private var tenure: Tenure = .rent
+    // Filters (owner, 2026-09-24: "for each city you should allow people to
+    // do filtering"). Only what the feeds actually carry: every listing has
+    // sizes and a way in, LA has 69 neighborhoods, and rent is published on
+    // too few (9 of LA's 258) for a rent filter to do anything but hide.
+    /// Bedrooms, shared with New York's tab: "0,1" = studio or 1-bed.
+    @AppStorage("lotteries.beds") private var bedsRaw = ""
+    private var beds: Set<Int> { Set(bedsRaw.split(separator: ",").compactMap { Int($0) }) }
+    private var bedsBinding: Binding<Set<Int>> {
+        Binding(get: { beds }, set: { new in
+            bedsRaw = new.sorted().map(String.init).joined(separator: ",")
+            Analytics.shared.track("openings_filter", ["city": city.id, "beds": bedsRaw.isEmpty ? "any" : bedsRaw])
+        })
+    }
+    /// Ways in: lottery, waitlist, first_come, leasing. Empty = any.
+    @State private var kinds: Set<String> = []
+    @State private var area: String? = nil
+    @State private var unitsNow = false
     private var feed: OpeningsFeed { OpeningsFeed.shared }
     private var city: City { store.city }
 
-    private var openings: [OpeningsFeed.Opening] {
+    /// This city's open listings for Rent or Buy, before the filters below.
+    private var pool: [OpeningsFeed.Opening] {
         OpeningsFeed.filter(feed.all, for: city, today: LotteryFeed.todayKey())
             .filter { ($0.tenure == "buy") == (tenure == .buy) }
     }
+    private var openings: [OpeningsFeed.Opening] {
+        OpeningsFeed.narrow(pool, beds: beds, kinds: kinds, area: area, unitsNow: unitsNow)
+    }
+    /// Neighborhoods (or cities) present, most listings first.
+    private var areas: [(String, Int)] { OpeningsFeed.areas(pool) }
+    private var kindOptions: [String] {
+        ["lottery", "waitlist", "first_come", "leasing"].filter { k in pool.contains { $0.kind == k } }
+    }
+    private var filtering: Bool { !beds.isEmpty || !kinds.isEmpty || area != nil || unitsNow }
     private var count: Int { openings.count }
     private var loading: Bool { feed.loading }
 
@@ -33,12 +60,25 @@ struct OpeningsView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.bottom, 12)
             }
-            SEUnderlineTabs(options: [(Tenure.rent, "Rent"), (.buy, "Buy")], selection: $tenure)
-                .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 10).background(Color.white)
+            VStack(alignment: .leading, spacing: 10) {
+                SEUnderlineTabs(options: [(Tenure.rent, "Rent"), (.buy, "Buy")], selection: $tenure)
+                filterBar
+            }
+            .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 10).background(Color.white)
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 12) {
-                    Text(loading && count == 0 ? "Loading…" : "\(count) open")
-                        .font(.se(17, .bold)).foregroundStyle(SE.ink).padding(.horizontal, 16)
+                    HStack {
+                        Text(loading && pool.isEmpty ? "Loading…" : filtering ? "\(count) of \(pool.count) open" : "\(count) open")
+                            .font(.se(17, .bold)).foregroundStyle(SE.ink)
+                            .accessibilityIdentifier("openings-count")
+                        Spacer()
+                        if filtering {
+                            Button("Clear filters") { bedsRaw = ""; kinds = []; area = nil; unitsNow = false }
+                                .font(.se(16, .bold)).foregroundStyle(SE.royal)
+                                .accessibilityIdentifier("openings-clear")
+                        }
+                    }
+                    .padding(.horizontal, 16)
                     if count == 0 && !loading {
                         empty
                     }
@@ -55,10 +95,77 @@ struct OpeningsView: View {
             .background(SE.canvas)
         }
         .background(SE.canvas)
+        .onChange(of: city.id) { _, _ in kinds = []; area = nil; unitsNow = false }
+        .onChange(of: tenure) { _, _ in area = nil }
         .task(id: city.id) {
             await reload()
             Analytics.shared.track("openings_view", ["city": city.id, "open": count])
         }
+    }
+
+    /// Beds strip, then a scrolling row of chips: how you get in, units open
+    /// now, and the area menu.
+    private var filterBar: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                Text("Beds").font(.se(15, .bold)).foregroundStyle(SE.ink2)
+                SESegmentRow(options: [(0, "Studio"), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: bedsBinding)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    // Area first: it is the one people reach for, and last it
+                    // sat off the edge of a phone.
+                    if areas.count > 1 {
+                        Menu {
+                            Button("Any area") { area = nil }
+                            ForEach(areas, id: \.0) { a in
+                                Button("\(a.0) (\(a.1))") {
+                                    area = a.0
+                                    Analytics.shared.track("openings_filter", ["city": city.id, "area": a.0])
+                                }
+                            }
+                        } label: {
+                            chipLabel(area ?? "Area", on: area != nil, chevron: true)
+                        }
+                        .accessibilityIdentifier("openings-area")
+                    }
+                    if kindOptions.count > 1 {
+                        ForEach(kindOptions, id: \.self) { k in
+                            chip(k == "first_come" ? "First come" : OpeningsFeed.kindLabel(k), on: kinds.contains(k), id: "openings-kind-\(k)") {
+                                if kinds.contains(k) { kinds.remove(k) } else { kinds.insert(k) }
+                                Analytics.shared.track("openings_filter", ["city": city.id, "kind": k])
+                            }
+                        }
+                    }
+                    if pool.contains(where: { ($0.units ?? 0) > 0 }) && pool.contains(where: { ($0.units ?? 0) == 0 }) {
+                        chip("Units open now", on: unitsNow, id: "openings-units-now") {
+                            unitsNow.toggle()
+                            Analytics.shared.track("openings_filter", ["city": city.id, "units_now": unitsNow])
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func chip(_ title: String, on: Bool, id: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) { chipLabel(title, on: on, chevron: false) }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier(id)
+            .accessibilityAddTraits(on ? .isSelected : [])
+    }
+
+    private func chipLabel(_ title: String, on: Bool, chevron: Bool) -> some View {
+        HStack(spacing: 5) {
+            Text(title).font(.se(15, .semibold)).lineLimit(1)
+            if chevron { Image(systemName: "chevron.down").font(.system(size: 11, weight: .bold)) }
+        }
+        .foregroundStyle(on ? .white : SE.ink)
+        .padding(.horizontal, 12).padding(.vertical, 8)
+        .background(on ? SE.royal : Color.white)
+        .overlay(Capsule().stroke(on ? SE.royal : SE.lineSoft, lineWidth: 1))
+        .clipShape(Capsule())
     }
 
     private func reload() async {
@@ -76,9 +183,10 @@ struct OpeningsView: View {
 
     @ViewBuilder private var empty: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(feed.loadFailed ? "Couldn't load openings" : "Nothing open right now")
+            Text(feed.loadFailed ? "Couldn't load openings" : filtering && !pool.isEmpty ? "None match these filters" : "Nothing open right now")
                 .font(.se(19, .bold)).foregroundStyle(SE.ink)
             Text(feed.loadFailed ? "Check your connection and pull down to try again."
+                 : filtering && !pool.isEmpty ? "\(pool.count) open in \(city.name), none with these filters. Tap Clear filters to see them all."
                  : "No \(tenure == .rent ? "rentals" : "homes for sale") are taking applications in \(city.name) today. Pull down to check again.")
                 .font(.se(16)).foregroundStyle(SE.ink2)
         }

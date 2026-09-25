@@ -7,7 +7,10 @@ struct RootView: View {
     var body: some View {
         let _ = Perf.mark("RootView.body")
         @Bindable var nav = nav
-        return ZStack(alignment: .bottom) {
+        // The Google banner sits UNDER the app, not over it (Ads.swift): a
+        // safe-area inset let the building page's Apply bar draw behind it.
+        return VStack(spacing: 0) {
+        ZStack(alignment: .bottom) {
             Group {
                 switch nav.tab {
                 case .search:
@@ -37,6 +40,9 @@ struct RootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: nav.hideTabBar)
+        AdSlot()
+        }
+        .onChange(of: screenKey) { _, key in Ads.shared.screenChanged(to: key) }
         // A tapped alert notification opens here, on all of its items.
         .sheet(item: Binding(get: { PushService.shared.incoming }, set: { PushService.shared.incoming = $0 })) { push in
             AlertPushSheet(push: push)
@@ -74,6 +80,19 @@ struct RootView: View {
                 }.padding(24).background(Color.white).clipShape(RoundedRectangle(cornerRadius: 8)).padding()
             }
         }
+    }
+}
+
+extension RootView {
+    /// Which screen is up: the tab plus the top of its navigation stack.
+    var screenKey: String {
+        let path: [Route] = switch nav.tab {
+        case .search: nav.searchPath
+        case .activity: nav.activityPath
+        case .profile: nav.profilePath
+        default: []
+        }
+        return "\(nav.tab.rawValue)|\(path.count)|\(path.last.map { String(describing: $0) } ?? "")"
     }
 }
 

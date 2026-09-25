@@ -2819,7 +2819,22 @@
     crawl_price: 0.001,   // $/request. Cloudflare's documented pay-per-crawl minimum.
     consult_qualified: 25,// % of consultancy hand-offs that become a billable referral.
     consult_fee: 75,      // $ per qualified referral. Never negotiated with anyone.
-    stickiness: 10        // DAU/MAU used to turn a DAU target into monthly reach.
+    stickiness: 10,       // DAU/MAU used to turn a DAU target into monthly reach.
+    // --- the other ways to sell the same audience (owner, 2026-09-25) -------
+    agent_cpc: 2.50,      // $ an agent pays per hand-off from a re-rental tile.
+                          // Below Google's real-estate search CPCs ($3–5+), the
+                          // price it has to beat to be worth buying.
+    sponsor_fee: 350,     // $/mo for one sponsored re-rental slot, flat. Portals
+                          // this size ask $200–500 (the middle is used).
+    // Google (AdMob) banner on every iPhone-app screen, ios/Services/Ads.swift.
+    admob_ecpm: 0.60,     // $ per 1,000 banner impressions, US iOS, anchored
+                          // adaptive ($0.40–0.80, revenuelab.fyi 2026 benchmarks).
+    app_ad_impr: 4        // banner impressions per app active per day. AdMob
+                          // allows a new ad per screen change only once a
+                          // minute, so it is capped by minutes in the app, not
+                          // screens (~11 screens/day but a 3½-min median
+                          // session). Replace with the measured ad_impression
+                          // count once the banner is live.
   };
   // Two of the streams do not scale with visitors at all, and saying so is the
   // most useful thing this table does. API seats are sold to businesses; AI
@@ -2994,6 +3009,36 @@
           usd(0) + '</td><td>' + usd(0) + '</td><td>' + usd(0) + '</td><td><b>' +
           usd(directRow.adv) + '</b></td></tr>'
         : '') +
+      '</tbody></table></div>';
+
+    // Other ways to sell the same audience, each alone: what $20,000/mo takes
+    // and where it stands today. Per-click scales with sellable agent clicks
+    // (featured_click only — Housing Connect hand-offs are not for sale); a flat
+    // fee scales with advertisers, not visitors; AdMob scales with APP actives.
+    var target = GOAL_REVENUE_TARGET;
+    var sellablePerVisitor = visitors ? n(EV.featured_click) / visitors : 0;
+    var clicksNeeded = target / K.agent_cpc;                  // per month
+    var cpcDau = sellablePerVisitor ? clicksNeeded / 30 / sellablePerVisitor : null;
+    var cpcNow = nowDau * sellablePerVisitor * 30 * K.agent_cpc;
+    var sponsorsNeeded = Math.ceil(target / K.sponsor_fee);
+    var admobPerAppDau = K.app_ad_impr * 30 / 1000 * K.admob_ecpm;   // $/mo per app DAU
+    var admobDau = target / admobPerAppDau;
+    var appMau = n((d.growth || {}).app_actives_30);
+    var otherRow = function(name, how, needs, today){
+      return '<tr><td><b>' + name + '</b><span class="goals-off">' + how + '</span></td><td>' +
+        needs + '</td><td>' + today + '</td></tr>';
+    };
+    el('goals-table').innerHTML +=
+      '<div style="overflow-x:auto;margin-top:18px"><table class="goals-tbl">' +
+      '<thead><tr><th>Other ways to $' + comma(target) + '/mo, each alone</th><th>What it takes</th><th>Today</th></tr></thead><tbody>' +
+      otherRow('Per click to agents', '$' + K.agent_cpc.toFixed(2) + ' per re-rental hand-off',
+        comma(Math.round(clicksNeeded / 30)) + ' clicks/day' + (cpcDau ? ' · ~' + comma(cpcDau) + ' daily actives' : ''),
+        usd(cpcNow) + '/mo at ' + (sellablePerVisitor * 100).toFixed(2) + '% clicks per visitor') +
+      otherRow('Flat sponsored slots', usd(K.sponsor_fee) + '/mo per agent, any traffic',
+        comma(sponsorsNeeded) + ' paying agents', '0 sold') +
+      otherRow('Google banner in the iPhone app', '$' + K.admob_ecpm.toFixed(2) + ' per 1,000 · ' + K.app_ad_impr + ' ads per app active per day',
+        comma(admobDau) + ' app daily actives · ' + comma(admobDau * K.app_ad_impr) + ' ads/day',
+        comma(appMau) + ' app actives in 30 days · test ads only (TestFlight)') +
       '</tbody></table></div>';
 
     // The goals narrative callout was removed; the scenario table above carries

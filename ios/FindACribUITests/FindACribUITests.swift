@@ -238,6 +238,29 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.buttons["sign-in-apple"].waitForExistence(timeout: 10), "the gate should land on the Profile sign-in")
     }
 
+    /// The Google banner (Ads.swift) sits under the app, never over it: the
+    /// building page's Comments/Apply bar and the tab bar stay tappable with
+    /// a (test) ad showing. A safe-area inset version drew the Apply bar
+    /// behind the banner (2026-09-25).
+    func testAdBannerNeverCoversTheActionBar() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--ads-demo", "--route", "detail"]
+        app.launch()
+        let comments = app.buttons["detail-comments"]
+        XCTAssertTrue(comments.waitForExistence(timeout: 30))
+        // Give Google's test ad time to fill; the check holds either way.
+        _ = app.otherElements["ad.slot"].waitForExistence(timeout: 15)
+        sleep(4)
+        let slot = app.otherElements["ad.slot"]
+        if slot.exists, slot.frame.height > 0 {
+            XCTAssertLessThanOrEqual(comments.frame.maxY, slot.frame.minY + 1, "the ad covers the Comments/Apply bar")
+        }
+        XCTAssertTrue(comments.isHittable, "the Comments button must stay tappable with an ad up")
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertTrue(app.buttons["Profile"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["Profile"].isHittable, "the tab bar must stay tappable with an ad up")
+    }
+
     /// Outside New York the app must not offer New York's things: the
     /// Lotteries tab (Housing Connect + HPD re-rentals, by borough) is gone,
     /// and the map opens on THAT city — it used to fall back to New York, so

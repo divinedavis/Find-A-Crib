@@ -1294,3 +1294,34 @@ final class EventsFeedTests: XCTestCase {
         XCTAssertNotNil(p.events.first?.startDate)
     }
 }
+
+/// The Google banner (Services/Ads.swift): which builds show which ads, and
+/// AdMob's one-minute floor between requests as someone moves between screens.
+final class AdsTests: XCTestCase {
+    func testModeByBuild() {
+        // Simulator / UI tests: nothing, unless asked to demo.
+        XCTAssertEqual(Ads.mode(debug: true, beta: false, demo: false, liveUnit: "u", labelDeclared: true), .off)
+        XCTAssertEqual(Ads.mode(debug: true, beta: false, demo: true, liveUnit: "", labelDeclared: false), .test)
+        // TestFlight: Google's test ads, never the live unit.
+        XCTAssertEqual(Ads.mode(debug: false, beta: true, demo: false, liveUnit: "u", labelDeclared: true), .test)
+        // App Store: dark until BOTH the real unit and the privacy label exist.
+        XCTAssertEqual(Ads.mode(debug: false, beta: false, demo: false, liveUnit: "", labelDeclared: true), .off)
+        XCTAssertEqual(Ads.mode(debug: false, beta: false, demo: false, liveUnit: "u", labelDeclared: false), .off)
+        XCTAssertEqual(Ads.mode(debug: false, beta: false, demo: false, liveUnit: "u", labelDeclared: true), .live)
+    }
+
+    func testReloadFloor() {
+        let t = Date()
+        XCTAssertTrue(Ads.mayReload(lastLoad: nil, now: t))
+        XCTAssertFalse(Ads.mayReload(lastLoad: t, now: t.addingTimeInterval(59)))
+        XCTAssertTrue(Ads.mayReload(lastLoad: t, now: t.addingTimeInterval(60)))
+        XCTAssertGreaterThanOrEqual(Ads.minReload, 60)
+    }
+
+    /// Ad events name the screen, never the search on it.
+    func testScreenNameDropsTheSearch() {
+        XCTAssertEqual(Ads.screenName("Search|0|"), "Search")
+        XCTAssertEqual(Ads.screenName("Search|2|results(FindACrib.SearchQuery(text: \"597 halsey\"))"), "Search/results")
+        XCTAssertEqual(Ads.screenName("My Activity|1|building(\"3012110035\")"), "My Activity/building")
+    }
+}

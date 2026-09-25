@@ -22,6 +22,10 @@ packages:
   Supabase:
     url: https://github.com/supabase/supabase-swift
     from: "2.20.0"
+  # Google (AdMob) banner on every screen, Services/Ads.swift (owner, 2026-09-25).
+  GoogleMobileAds:
+    url: https://github.com/googleads/swift-package-manager-google-mobile-ads.git
+    from: "13.0.0"
 
 targets:
   FindACrib:
@@ -73,6 +77,15 @@ targets:
         SUPABASE_ANON_KEY: $(SUPABASE_ANON_KEY)
         # Google sign-in runs Supabase's web OAuth flow in an
         # ASWebAuthenticationSession and comes back on this scheme.
+        # AdMob (Services/Ads.swift). Google's TEST app ID until the AdMob
+        # app exists — swap it for the real one together with
+        # Ads.liveBannerUnit. The SDK refuses to launch without this key.
+        GADApplicationIdentifier: ca-app-pub-3940256099942544~1458002511
+        # Nothing of Google's runs at launch; Ads.start() is the only thing
+        # that starts it, and an App Store build that is still dark never does.
+        GADDelayAppMeasurementInit: true
+        SKAdNetworkItems:
+          - SKAdNetworkIdentifier: cstr6suwn9.skadnetwork
         CFBundleURLTypes:
           - CFBundleTypeRole: Editor
             CFBundleURLName: com.divinedavis.findacrib.auth
@@ -95,6 +108,8 @@ targets:
     dependencies:
       - package: Supabase
         product: Supabase
+      - package: GoogleMobileAds
+        product: GoogleMobileAds
     entitlements:
       path: FindACrib/FindACrib.entitlements
       properties:

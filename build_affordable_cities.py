@@ -116,9 +116,25 @@ def arcgis(layer, where="1=1", fields="*", page=1000):
 
 # ------------------------------------------------------------------ helpers
 
+ROMAN = re.compile(r"^(i{1,3}|iv|vi{0,3}|ix|x)([.,)]?)$")
+
+
 def title(s):
+    """'LAWNDALE RESTORATION II APTS. (SCATTERED SITES)' ->
+    'Lawndale Restoration II Apts. (Scattered Sites)'."""
     s = re.sub(r"\s+", " ", (s or "").strip())
-    return " ".join(w if re.match(r"^\d", w) else w.capitalize() for w in s.lower().split(" ")) if s else ""
+    if not s:
+        return ""
+    out = []
+    for w in s.lower().split(" "):
+        if re.match(r"^\d", w):
+            out.append(w)
+        elif m := ROMAN.match(w):
+            out.append(m.group(1).upper() + m.group(2))
+        else:
+            lead = re.match(r"^[(\"']*", w).group()
+            out.append(lead + w[len(lead):].capitalize())
+    return " ".join(out)
 
 
 def num(v):

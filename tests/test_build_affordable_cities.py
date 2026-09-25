@@ -42,6 +42,8 @@ class Merge(unittest.TestCase):
         self.assertIsNone(C.addr_key("Scattered sites", "60601"))
         self.assertEqual(C.split_city_zip("835 OGLETHORPE AVE SW, ATLANTA, GA 30310"), ("835 OGLETHORPE AVE SW", "30310"))
         self.assertEqual(C.fmt_ami([("50%", 43), ("60%", None), ("80%", 44)]), "43 at 50% AMI · 44 at 80% AMI")
+        self.assertEqual(C.title("LAWNDALE RESTORATION II APTS. (SCATTERED SITES)"), "Lawndale Restoration II Apts. (Scattered Sites)")
+        self.assertEqual(C.title("VIVA APARTMENTS"), "Viva Apartments", "'vi' inside a word is not a numeral")
 
     def test_rows_fill_zip_from_neighbour_and_ids_unique(self):
         merged = [{"addr": "1 A ST", "zip": "19133", "lat": 40.0, "lng": -75.13, "name": "A", "prog": ["x"]},

@@ -852,6 +852,25 @@ final class ReviewPromptUITests: XCTestCase {
         XCTAssertTrue(app.buttons["city-field"].waitForExistence(timeout: 10))
     }
 
+    /// TestFlight's look-alike (owner, 2026-09-25: the old one's button sent
+    /// people to the App Store). It sits over the app with stars and Not Now,
+    /// and neither leaves the app.
+    func testTestFlightRatingPreviewStaysInTheApp() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--review-standin"]
+        app.launch()
+        let preview = app.descendants(matching: .any)["rating-preview"].firstMatch
+        XCTAssertTrue(preview.waitForExistence(timeout: 15), "the preview shows over the app")
+        XCTAssertTrue(app.staticTexts["Enjoying Find A Crib?"].exists)
+        for i in 1...5 { XCTAssertTrue(app.buttons["rating-star-\(i)"].exists, "star \(i)") }
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "rating-preview"; shot.lifetime = .keepAlways; add(shot)
+        app.buttons["rating-star-5"].tap()
+        expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: preview)
+        waitForExpectations(timeout: 5)
+        XCTAssertTrue(app.buttons["city-field"].waitForExistence(timeout: 5), "tapping a star closes it and stays in the app")
+        XCTAssertEqual(app.state, .runningForeground, "never hands off to the App Store")
+    }
+
     /// Push alerts (Services/PushService.swift). The permission dialog is only
     /// ever asked after alerts are turned on, which needs a signed-in account
     /// the anonymous UI suite does not have — so what this pins is the

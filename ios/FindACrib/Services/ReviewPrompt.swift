@@ -131,6 +131,9 @@ final class ReviewPrompt {
     /// on a simulator without saving a building first.
     func applyLaunchArguments() {
         if CommandLine.arguments.contains("--review-now") { ask(.save, forced: true) }
+        // The TestFlight look-alike, on a simulator (it is otherwise only
+        // reachable from a TestFlight install).
+        if CommandLine.arguments.contains("--review-standin") { showBetaStandIn = true }
     }
 
     private func ask(_ moment: Moment, forced: Bool) {

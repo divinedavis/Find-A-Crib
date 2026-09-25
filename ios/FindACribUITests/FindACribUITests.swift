@@ -270,6 +270,8 @@ final class FindACribUITests: XCTestCase {
         XCTAssertFalse(app.buttons["lotteries-signup"].exists, "no New York alert sign-up outside New York")
         if opening.exists {
             XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS 'Apply on Access Housing LA'")).firstMatch.exists)
+            XCTAssertTrue(app.descendants(matching: .any)["lottery-photo"].firstMatch.waitForExistence(timeout: 5),
+                          "LA listings show the agency's photo")
             // Filters (owner, 2026-09-24): a way-in chip narrows the list and
             // says so in the count; Clear filters brings it all back.
             let count = app.staticTexts["openings-count"]
@@ -423,6 +425,9 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(card.waitForExistence(timeout: 15) || empty.exists, "the tab should list lotteries or say none are open")
         if card.exists {
             XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS 'Apply on Housing Connect'")).firstMatch.exists)
+            // A photo of the building (owner, 2026-09-25: "are we not able to get images for these?")
+            XCTAssertTrue(app.descendants(matching: .any)["lottery-photo"].firstMatch.waitForExistence(timeout: 5),
+                          "Housing Connect cards show the street at the address")
         }
         // Beds filter (owner, 2026-09-21): a size no open lottery has leaves the
         // pane saying so, and clearing it brings the list back.

@@ -1013,7 +1013,7 @@ final class AlertPushTests: XCTestCase {
 
 final class LotteryFeedTests: XCTestCase {
     private func lot(_ id: Int, _ boro: String, _ closes: String?, income: (Int, Int)? = nil) -> LotteryFeed.Lottery {
-        LotteryFeed.Lottery(id: id, name: "L\(id)", borough: boro, neighborhood: nil, rent_low: 1500, rent_high: 2000,
+        LotteryFeed.Lottery(id: id, name: "L\(id)", borough: boro, neighborhood: nil, address: nil, lat: nil, lng: nil, rent_low: 1500, rent_high: 2000,
                             income_min: income?.0, income_max: income?.1, household_min: 1, household_max: 3,
                             beds: ["Studio", "1-bed"], closes: closes, href: "https://housingconnect.nyc.gov/PublicWeb/details/\(id)")
     }

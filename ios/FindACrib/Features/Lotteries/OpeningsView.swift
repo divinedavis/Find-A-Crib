@@ -202,7 +202,9 @@ struct OpeningsView: View {
 
     private func card(_ o: OpeningsFeed.Opening) -> some View {
         let days = LotteryFeed.daysLeft(o.closes)
-        return VStack(alignment: .leading, spacing: 6) {
+        return VStack(alignment: .leading, spacing: 0) {
+        LotteryPhoto(key: o.id, url: o.image.flatMap(URL.init(string:)), lat: o.lat, lng: o.lng)
+        VStack(alignment: .leading, spacing: 6) {
             Text(o.name ?? o.address ?? "Listing").font(.se(19, .bold)).foregroundStyle(SE.ink)
             Text([o.neighborhood ?? o.city, OpeningsFeed.kindLabel(o.kind)].compactMap { $0 }.joined(separator: " · "))
                 .font(.se(15, .semibold)).foregroundStyle(SE.ink2)
@@ -235,7 +237,10 @@ struct OpeningsView: View {
                 .padding(.top, 6)
             }
         }
-        .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white)
+        .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(Color.white)
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("opening-card")
     }
 

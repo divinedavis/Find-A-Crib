@@ -18,6 +18,10 @@ final class LotteryFeed {
         let name: String
         let borough: String
         let neighborhood: String?
+        /// Where it is — for the card's street photo (Look Around).
+        let address: String?
+        let lat: Double?
+        let lng: Double?
         let rent_low: Int?
         let rent_high: Int?
         let income_min: Int?

@@ -31,6 +31,11 @@ final class OpeningsFeed {
         let income_min: Int?        // yearly (Boston)
         let income_min_mo: Int?     // monthly (Bloom: LA, Doorway)
         let ami: Int?
+        /// The listing's own photo (DAHLIA, Bloom), or nil; lat/lng give a
+        /// street photo instead where there is none.
+        let image: String?
+        let lat: Double?
+        let lng: Double?
         /// Miami's lease-ups: the leasing office's phone and a caveat worth
         /// reading first ("Not taking waitlist applications…").
         let phone: String?

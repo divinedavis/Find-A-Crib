@@ -654,7 +654,10 @@ final class SkylineTests: XCTestCase {
         XCTAssertEqual(Skyline.Scene.scene(for: "dc"), .washington)
         XCTAssertEqual(Skyline.Scene.scene(for: "la"), .losAngeles)
         XCTAssertEqual(Skyline.Scene.scene(for: "nowhere"), .newYork, "an unknown city falls back to New York, like City.find")
-        XCTAssertEqual(Skyline.Scene.scene(for: "chi"), .homes, "the income-restricted cities get no other city's landmarks")
+        XCTAssertEqual(Skyline.Scene.scene(for: "chi"), .chicago)
+        XCTAssertEqual(Skyline.Scene.scene(for: "mia"), .miami)
+        XCTAssertEqual(Skyline.Scene.scene(for: "atl"), .atlanta)
+        XCTAssertEqual(Skyline.Scene.scene(for: "phl"), .philadelphia)
         for city in City.all { XCTAssertEqual(Skyline.Scene.scene(for: city.id).rawValue.isEmpty, false) }
     }
 
@@ -664,6 +667,12 @@ final class SkylineTests: XCTestCase {
         XCTAssertTrue(Skyline.Scene.sanFrancisco.landmarks.map(\.name).contains("Golden Gate Bridge"))
         XCTAssertTrue(Skyline.Scene.washington.landmarks.map(\.name).contains("Washington Monument"))
         XCTAssertTrue(Skyline.Scene.losAngeles.landmarks.map(\.name).contains("Hollywood Sign"))
+        // owner, 2026-09-24: "for the other cities there should be landmarks too"
+        XCTAssertTrue(Skyline.Scene.chicago.landmarks.map(\.name).contains("Willis Tower"))
+        XCTAssertTrue(Skyline.Scene.miami.landmarks.map(\.name).contains("Freedom Tower"))
+        XCTAssertTrue(Skyline.Scene.atlanta.landmarks.map(\.name).contains("Bank of America Plaza"))
+        XCTAssertTrue(Skyline.Scene.philadelphia.landmarks.map(\.name).contains("Liberty Bell"))
+        for city in City.all { XCTAssertNotEqual(Skyline.Scene.scene(for: city.id), .homes, "\(city.id) has its own landmarks") }
         for scene in Skyline.Scene.allCases {
             let xs = scene.landmarks.map(\.x)
             XCTAssertEqual(xs, xs.sorted(), "\(scene) landmarks are laid out left to right")
@@ -1033,6 +1042,14 @@ final class LotteryFeedTests: XCTestCase {
         let b = Building(bbl: "CHI-1", b: "CHI", a: "3414 W DIVERSEY AVE", z: "60647", lat: 41.93, lng: -87.71)
         XCTAssertEqual(b.webURL(in: chi).host, "maps.apple.com", "no web page for these cities yet: share the place")
         XCTAssertEqual(City.find("st-nj").id, "nyc", "the state maps are gone; an old saved state falls back to New York")
+        // New York's words stay New York's (owner's Philadelphia screenshot, 2026-09-24)
+        XCTAssertEqual(SearchQuery().resultHeadline(count: 656, city: .phl), "656 are income-restricted")
+        XCTAssertEqual(SearchQuery().resultHeadline(count: 2, city: .nyc), "2 are rent-stabilized")
+        XCTAssertEqual(SearchQuery().resultHeadline(count: 2, city: .sf), "2 are rent-controlled")
+        XCTAssertEqual(City.phl.badgeLabel, "Income-restricted"); XCTAssertEqual(City.nyc.badgeLabel, "Rent stabilized")
+        XCTAssertEqual(City.dc.badgeLabel, "Rent controlled"); XCTAssertEqual(City.la.badgeLabel, "Likely RSO")
+        let p = Building(bbl: "PHL-1", b: "PHL", a: "100 W OXFORD ST", z: "19122", lat: 39.97, lng: -75.14)
+        XCTAssertEqual(p.place(in: .phl), "ZIP 19122", "not the city code")
     }
 
     /// Openings outside New York: LA, SF and Miami-Dade take their own

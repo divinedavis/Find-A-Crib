@@ -169,7 +169,7 @@ struct ResultsView: View {
             SkylineScrollView(scene: Skyline.Scene.scene(for: store.city.id)) {
                 LazyVStack(alignment: .leading, spacing: 16) {
                     HStack(alignment: .firstTextBaseline) {
-                        Text(query.resultHeadline(count: results.count))
+                        Text(query.resultHeadline(count: results.count, city: store.city))
                             .font(.se(24, .bold)).foregroundStyle(SE.ink).lineLimit(1).minimumScaleFactor(0.75)
                             .accessibilityIdentifier("results-count")
                         Spacer()

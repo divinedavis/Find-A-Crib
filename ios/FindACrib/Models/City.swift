@@ -83,6 +83,24 @@ struct City: Identifiable, Hashable, Codable, Sendable {
     }
 
     var isNYC: Bool { id == "nyc" }
+    /// What a building here IS, as one word for headlines: "rent-stabilized",
+    /// "rent-controlled", "income-restricted" — the status label without its
+    /// qualifier ("Likely rent-stabilized (RSO)" -> "rent-stabilized").
+    var registerWord: String {
+        var word = statusLabel.lowercased()
+        if let paren = word.firstIndex(of: "(") { word = String(word[word.startIndex..<paren]) }
+        return word.replacingOccurrences(of: "likely ", with: "").trimmingCharacters(in: .whitespaces)
+    }
+    /// The green badge on every card (owner, 2026-09-24: Philadelphia's cards
+    /// said "Rent stabilized"). New York's wording stays New York's.
+    var badgeLabel: String {
+        switch id {
+        case "nyc": return "Rent stabilized"
+        case "la": return "Likely RSO"
+        case "sf", "dc": return "Rent controlled"
+        default: return isIncomeRestricted ? "Income-restricted" : statusLabel
+        }
+    }
     /// A city whose map is its income-restricted buildings rather than a
     /// rent-regulation register (Chicago, Miami-Dade, Atlanta, Philadelphia).
     var isIncomeRestricted: Bool { ["chi", "mia", "atl", "phl"].contains(id) }

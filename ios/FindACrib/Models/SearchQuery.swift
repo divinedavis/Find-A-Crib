@@ -114,10 +114,12 @@ struct SearchQuery: Codable, Hashable {
     /// The results headline. Plain stabilized search reads "205 are
     /// rent-stabilized" — the old "205 rent-stabilized buildings" truncated to
     /// "205 rent-stabilized bu…" on a phone (2026-09-08).
-    func resultHeadline(count: Int) -> String {
+    /// "656 are income-restricted" — in the city's own word; it said
+    /// "rent-stabilized" everywhere until 2026-09-24.
+    func resultHeadline(count: Int, city: City = .nyc) -> String {
         let n = normalized
         if !n.hcrOnly && !n.availableOnly && !n.vouchersOnly {
-            return "\(count.formatted()) \(count == 1 ? "is" : "are") rent-stabilized"
+            return "\(count.formatted()) \(count == 1 ? "is" : "are") \(city.registerWord)"
         }
         return "\(count.formatted()) \(resultNoun)\(count == 1 ? "" : "s")"
     }

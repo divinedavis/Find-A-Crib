@@ -57,7 +57,9 @@ struct BuildingCard: View {
                 // 44pt frame was pushing the two apart by a full line.
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(alignment: .center) {
-                        Text(b.neighborhood.isEmpty ? b.borough : b.neighborhood)
+                        // Outside New York the borough code is the city's own
+                        // ("PHL"): say where in the city instead.
+                        Text(store.city.isNYC ? (b.neighborhood.isEmpty ? b.borough : b.neighborhood) : b.place(in: store.city))
                             .font(.se(18, .semibold)).foregroundStyle(SE.ink2).lineLimit(1).minimumScaleFactor(0.85)
                         Spacer(minLength: 8)
                         HeartButton(on: activity.isSaved(b.bbl)) { activity.toggleSaved(b.bbl) }
@@ -148,7 +150,8 @@ struct BuildingCard: View {
                 if store.price(b) != nil, let d = store.postedDate(b) ?? store.listings.updatedDate {
                     SEBadge(text: "Listed \(Formatters.mdy.string(from: d))", fill: SE.badge.opacity(0.95))
                 }
-                SEBadge(text: "Rent stabilized", icon: "checkmark.circle.fill", fill: SE.green, ink: .white)
+                SEBadge(text: store.record(b)?.leasing == 1 ? "Leasing now" : store.city.badgeLabel,
+                        icon: "checkmark.circle.fill", fill: SE.green, ink: .white)
                     .accessibilityIdentifier("badge-stabilized")
             }
         }
@@ -193,13 +196,20 @@ struct BuildingCard: View {
                 Text("estimation").font(.se(16)).foregroundStyle(SE.ink2).lineLimit(1).fixedSize().layoutPriority(3)
                 InfoDot(title: "Estimation", text: estimateNote).layoutPriority(3)
             }
+        } else if store.city.isIncomeRestricted {
+            // No rents here: lead with the development and its restricted units.
+            let r = store.record(b)
+            Text(r?.name ?? "Income-restricted building").font(.se(22, .bold)).foregroundStyle(SE.ink).lineLimit(2)
         } else {
             Text("No recent listing").font(.se(22, .bold)).foregroundStyle(SE.ink2)
         }
     }
 
     private var bedsText: String {
-        let bd = store.beds(b)
+        // The income-restricted cities publish a building's bedroom mix, not listings.
+        let bd = store.city.isIncomeRestricted
+            ? (store.record(b)?.mix ?? [:]).keys.compactMap { Int($0) }.sorted()
+            : store.beds(b)
         if bd.isEmpty { return "– bed" }
         let s = bd.sorted().map { $0 == 0 ? "Studio" : "\($0)" }
         return s.count == 1 ? (bd[0] == 0 ? "Studio" : "\(bd[0]) bed") : "\(s.first!)–\(s.last!) bed"
@@ -210,9 +220,28 @@ struct BuildingCard: View {
     }
 
     private var attribution: String {
+        if !store.city.isNYC { return cityAttribution }
         let v = b.openViolations
         if v == 0 { return "No open HPD violations" }
         return "\(v) open HPD violation\(v == 1 ? "" : "s")" + ((b.h?.violations?.oc ?? 0) > 0 ? " · \(b.h!.violations!.oc!) class C" : "")
+    }
+
+    /// The line under the facts outside New York — never HPD's, which is
+    /// New York's agency. LA's LAHD file has violations; the income-restricted
+    /// cities say how much of the building is restricted and who funds it.
+    private var cityAttribution: String {
+        let r = store.record(b)
+        if store.city.isIncomeRestricted {
+            var bits: [String] = []
+            if let li = r?.li { bits.append("\(li) income-restricted unit\(li == 1 ? "" : "s")") }
+            if let p = r?.prog?.first { bits.append(p) }
+            return bits.isEmpty ? "Income-restricted building" : bits.joined(separator: " · ")
+        }
+        if let rec = store.city.records, rec.violationsLabel != nil, let v = r?.violations {
+            let open = v.open ?? 0
+            return open == 0 ? "No open \(rec.agency) violations" : "\(open) open \(rec.agency) violation\(open == 1 ? "" : "s")"
+        }
+        return store.city.registerNote
     }
 
     private func fact(_ icon: String, _ text: String) -> some View {

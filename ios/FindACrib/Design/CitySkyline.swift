@@ -11,7 +11,7 @@ import SwiftUI
 /// The landmark set for a city and the deterministic pieces the tests pin.
 enum Skyline {
     enum Scene: String, CaseIterable {
-        case newYork, sanFrancisco, washington, losAngeles, homes
+        case newYork, sanFrancisco, washington, losAngeles, chicago, miami, atlanta, philadelphia, homes
 
         /// One scene per city; anything unknown gets New York, like `City.find`.
         static func scene(for cityID: String) -> Scene {
@@ -19,9 +19,12 @@ enum Skyline {
             case "sf": .sanFrancisco
             case "dc": .washington
             case "la": .losAngeles
-            // The income-restricted cities (2026-09-24) get the kind of
-            // building they list until each has landmarks drawn.
-            case "chi", "mia", "atl", "phl": .homes
+            // The income-restricted cities (owner, 2026-09-24: "for the
+            // other cities there should be landmarks too with the animations").
+            case "chi": .chicago
+            case "mia": .miami
+            case "atl": .atlanta
+            case "phl": .philadelphia
             default: .newYork
             }
         }
@@ -48,6 +51,34 @@ enum Skyline {
                 Landmark("Washington Monument", x: 0.36, draw: Draw.washingtonMonument),
                 Landmark("US Capitol", x: 0.6, draw: Draw.capitol),
                 Landmark("Jefferson Memorial", x: 0.86, draw: Draw.jeffersonMemorial),
+            ]
+            case .chicago: [
+                Landmark("Navy Pier Centennial Wheel", x: 0.13, draw: Draw.navyPierWheel),
+                Landmark("Willis Tower", x: 0.34, draw: Draw.willisTower),
+                Landmark("Cloud Gate", x: 0.52, draw: Draw.cloudGate),
+                Landmark("875 North Michigan (Hancock)", x: 0.7, draw: Draw.hancockCenter),
+                Landmark("Marina City", x: 0.89, draw: Draw.marinaCity),
+            ]
+            case .miami: [
+                Landmark("Palm trees", x: 0.1, draw: Draw.palms),
+                Landmark("Freedom Tower", x: 0.3, draw: Draw.freedomTower),
+                Landmark("Art Deco hotel", x: 0.5, draw: Draw.artDecoHotel),
+                Landmark("Brickell towers", x: 0.7, draw: Draw.brickellTowers),
+                Landmark("Lifeguard stand", x: 0.9, draw: Draw.lifeguardStand),
+            ]
+            case .atlanta: [
+                Landmark("SkyView Atlanta", x: 0.12, draw: Draw.skyViewWheel),
+                Landmark("Georgia State Capitol", x: 0.32, draw: Draw.georgiaCapitol),
+                Landmark("Bank of America Plaza", x: 0.52, draw: Draw.bankOfAmericaPlaza),
+                Landmark("Westin Peachtree Plaza", x: 0.7, draw: Draw.westinPeachtree),
+                Landmark("Mercedes-Benz Stadium", x: 0.89, draw: Draw.mercedesBenzStadium),
+            ]
+            case .philadelphia: [
+                Landmark("Boathouse Row", x: 0.12, draw: Draw.boathouseRow),
+                Landmark("Philadelphia Museum of Art", x: 0.32, draw: Draw.artMuseum),
+                Landmark("City Hall", x: 0.5, draw: Draw.phillyCityHall),
+                Landmark("Comcast Technology Center", x: 0.7, draw: Draw.comcastTower),
+                Landmark("Liberty Bell", x: 0.9, draw: Draw.libertyBell),
             ]
             case .homes: [
                 Landmark("Garden apartments", x: 0.16, draw: Draw.gardenApartments),
@@ -420,6 +451,244 @@ enum Draw {
         c.fill(k.rect(x: 0, y: 44, w: 6, h: 4), with: near)
         c.fill(k.rect(x: 0, y: 48, w: 1.2, h: 22), with: near)
         c.fill(k.circle(x: 0, y: 70, r: 1.3), with: .color(Color.red.opacity(k.animated && Int(k.time * 2) % 2 == 0 ? 0.95 : 0.3)))
+    }
+
+    // Chicago -------------------------------------------------------------
+
+    /// A Ferris wheel whose spokes and cars turn; shared by Navy Pier and SkyView.
+    private static func wheel(_ c: inout GraphicsContext, _ k: Pen, r: CGFloat, hub: CGFloat, cars: Int, speed: Double) {
+        c.fill(k.poly([(-2, 0), (2, 0), (0.6, hub), (-0.6, hub)]), with: near)
+        c.fill(k.poly([(-10, 0), (-8, 0), (0.4, hub), (-0.4, hub)]), with: near)
+        c.fill(k.poly([(8, 0), (10, 0), (0.4, hub), (-0.4, hub)]), with: near)
+        var rim = Path(); rim.addEllipse(in: CGRect(x: k.cx - r * k.u, y: k.ground - (hub + r) * k.u, width: 2 * r * k.u, height: 2 * r * k.u))
+        c.stroke(rim, with: near, lineWidth: max(1, 1.4 * k.u))
+        let turn = k.animated ? k.time * speed : 0
+        for i in 0..<cars {
+            let a = Double(i) / Double(cars) * 2 * .pi + turn
+            let x = CGFloat(cos(a)) * r, y = hub + CGFloat(sin(a)) * r
+            c.stroke(k.line((0, hub), (x, y)), with: .color(Skyline.near.opacity(0.7)), lineWidth: max(0.5, 0.5 * k.u))
+            let lit = !k.animated || Skyline.noise(i, Int(k.time / 1.3)) < 0.8
+            c.fill(k.circle(x: x, y: y - 1.8, r: 1.5), with: .color(Skyline.lit.opacity(lit ? 0.85 : 0.3)))
+        }
+    }
+
+    static func navyPierWheel(_ c: inout GraphicsContext, _ k: Pen) {
+        c.fill(k.rect(x: 0, y: 0, w: 44, h: 4), with: far)                              // the pier
+        wheel(&c, k, r: 18, hub: 26, cars: 12, speed: 0.25)
+    }
+
+    static func willisTower(_ c: inout GraphicsContext, _ k: Pen) {
+        // the bundled tubes stepping back, and the two white antennas
+        c.fill(k.rect(x: -8, y: 0, w: 8, h: 50), with: near)
+        c.fill(k.rect(x: 8, y: 0, w: 8, h: 58), with: near)
+        c.fill(k.rect(x: 0, y: 0, w: 8, h: 74), with: near)
+        c.fill(k.rect(x: -3, y: 74, w: 8, h: 6), with: near)
+        for ax: CGFloat in [-3, 3] {
+            c.fill(k.rect(x: ax, y: 80, w: 1.1, h: 14), with: near)
+            c.fill(k.circle(x: ax, y: 94.5, r: 1.1), with: .color(Color.red.opacity(k.animated && Int(k.time * 1.5 + Double(ax)) % 2 == 0 ? 0.95 : 0.35)))
+        }
+        k.windows(&c, id: 110, x: 0, y: 6, cols: 2, rows: 12, pitch: 5, size: 1.8)
+        k.windows(&c, id: 111, x: -8, y: 6, cols: 2, rows: 8, pitch: 5, size: 1.8)
+    }
+
+    static func cloudGate(_ c: inout GraphicsContext, _ k: Pen) {
+        // the Bean: a mirrored bulge with a sheen that slides across it
+        c.fill(k.rect(x: 0, y: 0, w: 40, h: 2), with: far)                              // the plaza
+        var bean = Path()
+        bean.move(to: k.p(-17, 2))
+        bean.addCurve(to: k.p(17, 2), control1: k.p(-24, 22), control2: k.p(24, 22))
+        bean.addQuadCurve(to: k.p(-17, 2), control: k.p(0, 7))
+        c.fill(bean, with: near)
+        let sx: CGFloat = k.animated ? CGFloat(sin(k.time * 0.6)) * 10 : -4
+        c.fill(k.circle(x: sx, y: 12, r: 2.4), with: .color(Skyline.lit.opacity(0.55)))
+    }
+
+    static func hancockCenter(_ c: inout GraphicsContext, _ k: Pen) {
+        // the tapered black tower with its X-braces and two masts
+        c.fill(k.poly([(-11, 0), (11, 0), (7, 70), (-7, 70)]), with: near)
+        for y: CGFloat in stride(from: 4, through: 58, by: 18) {
+            let w0 = 11 - y * 4 / 70, w1 = 11 - (y + 18) * 4 / 70
+            c.stroke(k.line((-w0, y), (w1, y + 18)), with: far, lineWidth: max(0.6, 0.8 * k.u))
+            c.stroke(k.line((w0, y), (-w1, y + 18)), with: far, lineWidth: max(0.6, 0.8 * k.u))
+        }
+        for ax: CGFloat in [-3, 3] { c.fill(k.rect(x: ax, y: 70, w: 1, h: 18), with: near) }
+        c.fill(k.circle(x: 3, y: 88.5, r: 1), with: .color(Color.red.opacity(k.animated && Int(k.time) % 2 == 1 ? 0.95 : 0.35)))
+    }
+
+    static func marinaCity(_ c: inout GraphicsContext, _ k: Pen) {
+        // the twin corncobs: scalloped balcony rings over a parking spiral
+        for x: CGFloat in [-8, 8] {
+            c.fill(k.rect(x: x, y: 0, w: 12, h: 52), with: near)
+            for i in 0..<10 {
+                let y = 14 + CGFloat(i) * 4
+                c.fill(k.dome(x: x, y: y, w: 14, h: 1.3), with: near)
+                k.windows(&c, id: 120 + i * 2 + (x < 0 ? 0 : 1), x: x, y: y + 0.6, cols: 3, rows: 1, pitch: 3.5, size: 1.4)
+            }
+        }
+    }
+
+    // Miami ---------------------------------------------------------------
+
+    static func freedomTower(_ c: inout GraphicsContext, _ k: Pen) {
+        // Mediterranean Revival tower with a lantern cupola
+        c.fill(k.rect(x: 0, y: 0, w: 34, h: 16), with: far)
+        c.fill(k.rect(x: 0, y: 0, w: 14, h: 52), with: near)
+        c.fill(k.rect(x: 0, y: 52, w: 10, h: 6), with: near)
+        c.fill(k.dome(x: 0, y: 58, w: 10, h: 4), with: near)
+        c.fill(k.rect(x: 0, y: 65, w: 1, h: 6), with: near)
+        c.fill(k.rect(x: 0, y: 53, w: 6, h: 3), with: .color(Skyline.lit.opacity(k.animated ? 0.55 + 0.35 * sin(k.time * 2) : 0.8)))
+        k.windows(&c, id: 130, x: 0, y: 18, cols: 2, rows: 6, pitch: 5, size: 1.8)
+    }
+
+    static func artDecoHotel(_ c: inout GraphicsContext, _ k: Pen) {
+        // Ocean Drive: stepped parapet, eyebrow ledges and a neon sign
+        c.fill(k.rect(x: 0, y: 0, w: 34, h: 30), with: near)
+        c.fill(k.poly([(-6, 30), (6, 30), (6, 36), (3, 36), (3, 42), (-3, 42), (-3, 36), (-6, 36)]), with: near)
+        for y: CGFloat in [10, 18, 26] { c.fill(k.rect(x: 0, y: y, w: 36, h: 1), with: far) }
+        let neon = !k.animated || Int(k.time * 2.5) % 5 != 0                            // flickers now and then
+        c.fill(k.rect(x: 0, y: 32, w: 1.6, h: 12), with: .color(Color(red: 1, green: 0.45, blue: 0.75).opacity(neon ? 0.9 : 0.25)))
+        k.windows(&c, id: 140, x: 0, y: 3, cols: 5, rows: 3, pitch: 6, size: 2)
+    }
+
+    static func brickellTowers(_ c: inout GraphicsContext, _ k: Pen) {
+        c.fill(k.rect(x: -12, y: 0, w: 12, h: 66), with: near)
+        c.fill(k.poly([(-18, 66), (-6, 66), (-12, 72)]), with: near)
+        c.fill(k.rect(x: 6, y: 0, w: 14, h: 80), with: near)
+        c.fill(k.rect(x: 18, y: 0, w: 8, h: 44), with: far)
+        c.fill(k.circle(x: 6, y: 81, r: 1.1), with: .color(Color.red.opacity(k.animated && Int(k.time * 2) % 2 == 0 ? 0.95 : 0.35)))
+        k.windows(&c, id: 150, x: -12, y: 6, cols: 2, rows: 11, pitch: 5, size: 1.8)
+        k.windows(&c, id: 151, x: 6, y: 6, cols: 2, rows: 14, pitch: 5, size: 1.8)
+    }
+
+    static func lifeguardStand(_ c: inout GraphicsContext, _ k: Pen) {
+        // South Beach: a pastel hut on stilts with a flag that flutters
+        c.fill(k.rect(x: 0, y: 0, w: 40, h: 2), with: far)                              // sand
+        for x: CGFloat in [-6, 6] { c.fill(k.rect(x: x, y: 2, w: 1.4, h: 12), with: near) }
+        c.fill(k.poly([(-8, 12), (8, 12), (6, 13), (-6, 13)]), with: near)
+        c.fill(k.rect(x: 0, y: 13, w: 12, h: 9), with: .color(Color(red: 0.98, green: 0.62, blue: 0.55).opacity(0.85)))
+        c.fill(k.poly([(-8, 22), (8, 22), (0, 28)]), with: near)
+        c.fill(k.rect(x: 0, y: 28, w: 0.8, h: 8), with: near)
+        let wave: CGFloat = k.animated ? CGFloat(sin(k.time * 5)) * 1.2 : 0
+        c.fill(k.poly([(0.4, 36), (6, 35 + wave), (0.4, 33)]), with: .color(Color.red.opacity(0.8)))
+    }
+
+    // Atlanta -------------------------------------------------------------
+
+    static func skyViewWheel(_ c: inout GraphicsContext, _ k: Pen) {
+        wheel(&c, k, r: 16, hub: 22, cars: 10, speed: 0.3)
+    }
+
+    static func georgiaCapitol(_ c: inout GraphicsContext, _ k: Pen) {
+        // the gold dome (it glints) over a columned front
+        c.fill(k.rect(x: 0, y: 0, w: 40, h: 16), with: near)
+        c.fill(k.poly([(-10, 16), (10, 16), (0, 22)]), with: near)
+        c.fill(k.rect(x: 0, y: 22, w: 12, h: 8), with: near)
+        let gold = Color(red: 0.9, green: 0.75, blue: 0.35)
+        c.fill(k.dome(x: 0, y: 30, w: 12, h: 6), with: .color(gold.opacity(k.animated ? 0.6 + 0.3 * sin(k.time * 1.5) : 0.8)))
+        c.fill(k.rect(x: 0, y: 42, w: 1, h: 5), with: near)
+        for x: CGFloat in stride(from: -15, through: 15, by: 5) { c.fill(k.rect(x: x, y: 2, w: 1.2, h: 12), with: far) }
+    }
+
+    static func bankOfAmericaPlaza(_ c: inout GraphicsContext, _ k: Pen) {
+        // the tallest in the Southeast: a shaft with a gold-lit lattice pyramid and spire
+        c.fill(k.rect(x: 0, y: 0, w: 14, h: 64), with: near)
+        c.fill(k.poly([(-7, 64), (7, 64), (0, 78)]), with: near)
+        let gold = Color(red: 0.95, green: 0.78, blue: 0.4)
+        for i in 0..<4 {
+            let y = 66 + CGFloat(i) * 3, w = 5.5 - CGFloat(i) * 1.3
+            let on = !k.animated || Skyline.noise(160 + i, Int(k.time / 0.9)) < 0.85
+            c.fill(k.rect(x: 0, y: y, w: w * 2, h: 0.9), with: .color(gold.opacity(on ? 0.9 : 0.4)))
+        }
+        c.fill(k.rect(x: 0, y: 78, w: 0.9, h: 12), with: near)
+        k.windows(&c, id: 161, x: 0, y: 6, cols: 2, rows: 11, pitch: 5, size: 1.8)
+    }
+
+    static func westinPeachtree(_ c: inout GraphicsContext, _ k: Pen) {
+        // the glass cylinder with its revolving-restaurant crown
+        c.fill(k.rect(x: 0, y: 0, w: 14, h: 62), with: near)
+        c.fill(k.rect(x: 0, y: 62, w: 17, h: 5), with: near)
+        c.fill(k.rect(x: 0, y: 67, w: 12, h: 2), with: near)
+        // the crown's lights run round as the restaurant turns
+        for i in 0..<5 {
+            let lit = !k.animated || (Int(k.time * 2) + i) % 5 < 2
+            c.fill(k.rect(x: CGFloat(i - 2) * 3.2, y: 63.5, w: 1.8, h: 1.8), with: .color(Skyline.lit.opacity(lit ? 0.9 : 0.3)))
+        }
+        for x: CGFloat in [-4.5, 0, 4.5] { c.fill(k.rect(x: x, y: 2, w: 0.6, h: 58), with: far) }
+        k.windows(&c, id: 170, x: 0, y: 6, cols: 3, rows: 10, pitch: 5, size: 1.6)
+    }
+
+    static func mercedesBenzStadium(_ c: inout GraphicsContext, _ k: Pen) {
+        // the pinwheel roof: angled petals over a low bowl
+        c.fill(k.poly([(-26, 0), (26, 0), (22, 14), (-22, 14)]), with: near)
+        for i in 0..<5 {
+            let x = CGFloat(i - 2) * 9
+            c.fill(k.poly([(x - 5, 14), (x + 5, 14), (x + 1, 20)]), with: i % 2 == 0 ? near : far)
+        }
+        c.fill(k.rect(x: 0, y: 7, w: 36, h: 2), with: .color(Skyline.lit.opacity(k.animated ? 0.5 + 0.35 * sin(k.time * 2.4) : 0.8)))
+    }
+
+    // Philadelphia ---------------------------------------------------------
+
+    static func boathouseRow(_ c: inout GraphicsContext, _ k: Pen) {
+        // the Schuylkill boathouses, outlined in lights that twinkle
+        c.fill(k.rect(x: 0, y: 0, w: 46, h: 2), with: far)                              // the river bank
+        for i in 0..<4 {
+            let x = CGFloat(i - 2) * 11 + 5.5
+            c.fill(k.rect(x: x, y: 2, w: 10, h: 10), with: near)
+            c.fill(k.poly([(x - 5.5, 12), (x + 5.5, 12), (x, 18)]), with: near)
+            for j in 0..<4 {
+                let on = !k.animated || Skyline.noise(180 + i * 4 + j, Int(k.time / 0.8)) < 0.8
+                let pts: [(CGFloat, CGFloat)] = [(x - 5, 12), (x - 2.5, 15), (x + 2.5, 15), (x + 5, 12)]
+                c.fill(k.circle(x: pts[j].0, y: pts[j].1, r: 0.8), with: .color(Skyline.lit.opacity(on ? 0.95 : 0.35)))
+            }
+        }
+    }
+
+    static func artMuseum(_ c: inout GraphicsContext, _ k: Pen) {
+        // the temple front at the top of the Rocky steps
+        c.fill(k.poly([(-24, 0), (24, 0), (16, 8), (-16, 8)]), with: far)               // the steps
+        c.fill(k.rect(x: 0, y: 8, w: 30, h: 14), with: near)
+        c.fill(k.poly([(-17, 22), (17, 22), (0, 30)]), with: near)
+        for x: CGFloat in stride(from: -12, through: 12, by: 4) { c.fill(k.rect(x: x, y: 9, w: 1.2, h: 12), with: far) }
+    }
+
+    static func phillyCityHall(_ c: inout GraphicsContext, _ k: Pen) {
+        // the tower with its lit clock faces and William Penn on top
+        c.fill(k.rect(x: 0, y: 0, w: 40, h: 20), with: near)
+        c.fill(k.rect(x: 0, y: 20, w: 12, h: 30), with: near)
+        c.fill(k.rect(x: 0, y: 50, w: 9, h: 10), with: near)
+        c.fill(k.circle(x: 0, y: 44, r: 3), with: .color(Skyline.lit.opacity(k.animated ? 0.7 + 0.2 * sin(k.time * 0.8) : 0.9)))
+        c.fill(k.dome(x: 0, y: 60, w: 9, h: 5), with: near)
+        c.fill(k.rect(x: 0, y: 68, w: 1.6, h: 6), with: near)                           // Billy Penn
+        c.fill(k.circle(x: 0, y: 75, r: 1), with: near)
+        k.windows(&c, id: 190, x: 0, y: 4, cols: 6, rows: 3, pitch: 5.5, size: 1.8)
+    }
+
+    static func comcastTower(_ c: inout GraphicsContext, _ k: Pen) {
+        // Comcast Technology Center: the tallest, with its open crown
+        c.fill(k.poly([(-8, 0), (8, 0), (7, 84), (-7, 84)]), with: near)
+        c.fill(k.rect(x: -5, y: 84, w: 2, h: 5), with: near)
+        c.fill(k.rect(x: 5, y: 84, w: 2, h: 5), with: near)
+        c.fill(k.rect(x: 0, y: 88, w: 12, h: 1.5), with: near)
+        c.fill(k.rect(x: 18, y: 0, w: 12, h: 58), with: far)                           // Comcast Center beside it
+        c.fill(k.circle(x: 0, y: 91, r: 1), with: .color(Color.red.opacity(k.animated && Int(k.time * 1.5) % 2 == 0 ? 0.95 : 0.35)))
+        k.windows(&c, id: 200, x: 0, y: 6, cols: 2, rows: 15, pitch: 5, size: 1.8)
+    }
+
+    static func libertyBell(_ c: inout GraphicsContext, _ k: Pen) {
+        // the Bell in its frame, swinging a little
+        c.fill(k.rect(x: -10, y: 0, w: 1.6, h: 30), with: near)
+        c.fill(k.rect(x: 10, y: 0, w: 1.6, h: 30), with: near)
+        c.fill(k.rect(x: 0, y: 29, w: 22, h: 2.4), with: near)
+        let swing: CGFloat = k.animated ? CGFloat(sin(k.time * 1.2)) * 1.6 : 0
+        var bell = Path()
+        bell.move(to: k.p(-2 + swing * 0.3, 28))
+        bell.addQuadCurve(to: k.p(-7 + swing, 12), control: k.p(-5, 24))
+        bell.addLine(to: k.p(7 + swing, 12))
+        bell.addQuadCurve(to: k.p(2 + swing * 0.3, 28), control: k.p(5, 24))
+        bell.closeSubpath()
+        c.fill(bell, with: near)
+        c.stroke(k.line((0.5 + swing * 0.6, 18), (1.5 + swing * 0.8, 13)), with: .color(Skyline.lit.opacity(0.7)), lineWidth: max(0.6, 0.6 * k.u))   // the crack
     }
 
     // Anywhere (state maps) ---------------------------------------------

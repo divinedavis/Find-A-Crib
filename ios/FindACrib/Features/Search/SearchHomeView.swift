@@ -538,10 +538,7 @@ struct HeroBanner: View {
     /// what a building IS, without the qualifier the line has no room for
     /// ("Likely rent-stabilized (RSO)" -> "rent-stabilized").
     static func line(for city: City) -> String {
-        var word = city.statusLabel.lowercased()
-        if let paren = word.firstIndex(of: "(") { word = String(word[word.startIndex..<paren]) }
-        word = word.replacingOccurrences(of: "likely ", with: "").trimmingCharacters(in: .whitespaces)
-        return "Every \(word) building in \(city.short)"
+        "Every \(city.registerWord) building in \(city.short)"
     }
 
     var body: some View {

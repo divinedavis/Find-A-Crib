@@ -348,6 +348,25 @@ final class FindACribUITests: XCTestCase {
         let tabShot = XCTAttachment(screenshot: app.screenshot()); tabShot.name = "mia-leasing"; tabShot.lifetime = .keepAlways; add(tabShot)
     }
 
+    /// Each income-restricted city's results (owner, 2026-09-24, with a
+    /// Philadelphia screenshot): its own landmarks over the list, and none of
+    /// New York's words — not "rent-stabilized", not "Rent stabilized", not HPD.
+    func testNewCitiesResultsUseTheirOwnWordsAndLandmarks() throws {
+        for id in ["chi", "mia", "atl", "phl"] {
+            app.terminate()
+            app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--city", id, "--route", "results"]
+            app.launch()
+            let count = app.staticTexts["results-count"]
+            XCTAssertTrue(count.waitForExistence(timeout: 90), "\(id): results should open")
+            expectation(for: NSPredicate(format: "label CONTAINS 'income-restricted'"), evaluatedWith: count)
+            waitForExpectations(timeout: 60)
+            XCTAssertTrue(app.buttons["card-address"].firstMatch.waitForExistence(timeout: 20), "\(id): cards should load")
+            XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'HPD'")).firstMatch.exists, "\(id): no HPD wording")
+            XCTAssertFalse(app.staticTexts["Rent stabilized"].exists, "\(id): no New York badge")
+            let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "results-\(id)"; shot.lifetime = .keepAlways; add(shot)
+        }
+    }
+
     /// The banner is the wordmark, and it is decoration: the owner had a tap
     /// open Look Around for a day and took it back out (2026-09-20), and a
     /// re-rental photo with a borough badge for half a day on 2026-09-23. So

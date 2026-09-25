@@ -40,14 +40,18 @@ struct OpeningsView: View {
             .filter { ($0.tenure == "buy") == (tenure == .buy) }
     }
     private var openings: [OpeningsFeed.Opening] {
-        OpeningsFeed.narrow(pool, beds: beds, kinds: kinds, area: area, unitsNow: unitsNow)
+        OpeningsFeed.narrow(pool, beds: activeBeds, kinds: kinds, area: area, unitsNow: unitsNow)
     }
+    /// Beds only where listings publish sizes: Miami's lease-ups publish none,
+    /// and a remembered "1-bed" there read "20 of 20 open" (owner, 2026-09-24).
+    private var showsBeds: Bool { pool.contains { !($0.beds ?? []).isEmpty } }
+    private var activeBeds: Set<Int> { showsBeds ? beds : [] }
     /// Neighborhoods (or cities) present, most listings first.
     private var areas: [(String, Int)] { OpeningsFeed.areas(pool) }
     private var kindOptions: [String] {
         ["lottery", "waitlist", "first_come", "leasing"].filter { k in pool.contains { $0.kind == k } }
     }
-    private var filtering: Bool { !beds.isEmpty || !kinds.isEmpty || area != nil || unitsNow }
+    private var filtering: Bool { !activeBeds.isEmpty || !kinds.isEmpty || area != nil || unitsNow }
     private var count: Int { openings.count }
     private var loading: Bool { feed.loading }
 
@@ -107,10 +111,12 @@ struct OpeningsView: View {
     /// now, and the area menu.
     private var filterBar: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 10) {
-                Text("Beds").font(.se(15, .bold)).foregroundStyle(SE.ink2)
-                SESegmentRow(options: [(0, "Studio"), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: bedsBinding)
-                    .fixedSize(horizontal: false, vertical: true)
+            if showsBeds {
+                HStack(spacing: 10) {
+                    Text("Beds").font(.se(15, .bold)).foregroundStyle(SE.ink2)
+                    SESegmentRow(options: [(0, "Studio"), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: bedsBinding)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {

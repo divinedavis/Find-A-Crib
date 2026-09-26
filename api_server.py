@@ -1795,6 +1795,10 @@ def _fac_adtiles(since):
         # every click older than the newest 1,000 events.
         "truncated": False,
         "reach": agg.get("reach") or 0,
+        # Every ad, not one kind of tile (owner, 2026-09-25): people shown any
+        # ad, and every click on one — our tiles' hand-offs plus Google's taps.
+        "reach_all": agg.get("reach_all") or agg.get("reach") or 0,
+        "clicks_all": sum(a["clicks"] for a in agents) + int(agg.get("google_clicks") or 0),
         "advertisers": len([a for a in agents if a["agent"] != "NYC Housing Connect"]),
         "first_impression": first_impr,
         # Re-rental clicks by client, by where the clicker came from, and by

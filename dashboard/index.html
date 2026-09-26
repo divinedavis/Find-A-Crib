@@ -548,7 +548,7 @@
       <!-- advertiser tiles: the only inventory somebody else would pay for -->
       <div class="card mb18" id="sec-tiles">
         <div class="card-head-row">
-          <div><h2>Advertiser metrics — what a slot is actually worth</h2><div class="card-sub">The re-rental and lottery tiles are the only space on this map somebody else would buy. An impression is counted the way a buyer would check it — half the tile on screen for a full second, once per apartment per session, not once per render, because the grid rebuilds every time you pan. A click is a hand-off to the agent’s own site.</div></div>
+          <div><h2>Advertiser metrics — how our ads are performing</h2><div class="card-sub">Every ad we show, on the website and in the iPhone app: our sponsored tiles and Google’s ads. Served means the ad was put on the page; viewable means at least half of it was on screen for a full second, once per ad per visit; a click is someone tapping through to the advertiser.</div></div>
         </div>
         <div class="ads-tiles" id="tile-tiles"></div>
       </div>
@@ -1915,7 +1915,7 @@
       ' <span class="bn ' + (mine > B.realestate ? 'bn-hi' : 'bn-low') + '">' +
       (mine > B.realestate ? x.toFixed(1) + '\u00d7 higher' : 'below') + '</span>' +
       '<span class="a-bench-note">Same denominator as theirs: an impression is ' +
-      'counted when the tile is rendered, viewed or not' +
+      'counted when the ad is rendered, viewed or not' +
       (viewable != null ? '. On viewable impressions only, it is ' + viewable.toFixed(1) + '%' : '') +
       '. Native is quoted anywhere from ' + B.native_low + '% to ' + B.native_high +
       '%, too wide to judge against.</span>';
@@ -1923,7 +1923,10 @@
 
   function renderFacTiles(A){
     A = A || {};
-    var impr=n(A.impressions), clicks=n(A.clicks), reach=n(A.reach);
+    // Every tile measures our ads as a whole — sponsored tiles plus Google's,
+    // website plus app (owner, 2026-09-25) — not one kind of listing.
+    var impr=n(A.impressions), reach=n(A.reach_all != null ? A.reach_all : A.reach);
+    var clicks=n(A.clicks_all != null ? A.clicks_all : A.clicks);
     // The rate comes from the API, which knows two things this function cannot:
     // which clicks fell inside the measured window, and how many impressions a
     // slot has to bank before a rate off them is worth printing. A null means
@@ -1938,15 +1941,15 @@
     // all-time split as A.alltime; the ranged numbers stay behind the CTR.
     var AT=A.alltime||A, G=AT.google_ads||{};
     var servedAll = AT.served_all != null ? n(AT.served_all) : served;
-    var servedSub = 'all time, every platform — website tiles '+comma(AT.served_web != null ? AT.served_web : served)
-      +' · app tiles '+comma(n(AT.served_app))
+    var servedSub = 'all time, website + app — website '+comma(AT.served_web != null ? AT.served_web : served)
+      +' · app '+comma(n(AT.served_app))
       +' · Google ads '+comma(n(G.web)+n(G.app))
       +(n(G.test) ? ' (+'+comma(G.test)+' TestFlight test ads, not counted)' : '');
     var hasCtr = A.ctr_served !== null && A.ctr_served !== undefined;
     var ctr = hasCtr ? A.ctr_served.toFixed(1)+'%' : '—';
     var hasView = A.ctr !== null && A.ctr !== undefined;
     var ctrSub = hasCtr
-      ? 'clicks ÷ served impressions — the industry denominator'
+      ? 'clicks ÷ ads served — the industry denominator'
       : (served ? comma(served)+' served so far — impressions bank in minutes and '
                    +'clicks do not, so the rate waits a full day'
                 : 'served impressions are being counted from today');
@@ -1954,10 +1957,10 @@
     el('tile-tiles').innerHTML=[
       // Every platform (owner, 2026-09-25): website + app advertiser tiles and
       // Google's own ads. The click rate stays on the tiles (see _fac_adtiles).
-      {v:comma(servedAll), l:'Served impressions', sub:servedSub},
-      {v:comma(impr), l:'Viewable impressions', sub:'half on screen, one second'},
-      {v:comma(reach), l:'People reached', sub:'distinct visitors'},
-      {v:comma(clicks), l:'Clicks to the agent', sub:'hand-offs off this site'},
+      {v:comma(servedAll), l:'Ads served', sub:servedSub},
+      {v:comma(impr), l:'Viewable impressions', sub:'at least half on screen for one second'},
+      {v:comma(reach), l:'People reached', sub:'distinct people shown an ad'},
+      {v:comma(clicks), l:'Ad clicks', sub:'taps through to an advertiser, website and app'},
       {v:ctr, l:'Click rate', sub:ctrSub,
        bench:adCtrBench(hasCtr ? A.ctr_served : null, hasView ? A.ctr : null)}
     ].map(creaseTile).join('');

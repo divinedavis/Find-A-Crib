@@ -72,8 +72,11 @@ MAX_STALE = 600
 _CACHE = {}                      # rng -> {"at": float, "data": dict}
 _LOCK = threading.Lock()
 _REFRESHING = set()              # ranges with a rebuild already in flight
-PAYLOAD_CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                             "nemo_payload_cache.json")
+# NEMO_PAYLOAD_CACHE moves the files out of the (read-only) code directory: the
+# API runs as the unprivileged `findacrib` user, which may write only its
+# StateDirectory, /var/lib/findacrib-api. Default kept for running by hand.
+PAYLOAD_CACHE = os.environ.get("NEMO_PAYLOAD_CACHE") or os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "nemo_payload_cache.json")
 
 
 def _cache_path(rng):

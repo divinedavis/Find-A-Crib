@@ -10,6 +10,10 @@
 # in the checkout, and the dashboard went on serving the old numbers from the
 # other copy for an hour.
 #
+# It runs as the nologin user `findacrib`, not root (2026-09-26): the drop-in
+# in deploy/ sets User=, the state dir and the cache paths, and this script
+# re-applies the code dir's ownership after every copy.
+#
 #   ./scripts/deploy_api.sh                 # pull on the box, sync, restart
 #
 set -euo pipefail
@@ -35,6 +39,12 @@ ssh "$HOST" "set -e
   systemctl daemon-reload
   # Stale bytecode outlives a file copy when the mtime granularity is coarse.
   rm -rf $LIVE/__pycache__
+  # Since 2026-09-26 the API runs as the unprivileged user findacrib (see
+  # deploy/findacrib-api.override.conf). Keep the code root-owned and
+  # read-only to it; only the group may enter the dir or read .env. It writes
+  # nothing here — its caches live in /var/lib/findacrib-api.
+  chown -R root:root $LIVE && chmod -R go-w $LIVE
+  chown root:findacrib $LIVE $LIVE/.env && chmod 0750 $LIVE && chmod 0640 $LIVE/.env
   systemctl restart findacrib-api"
 
 sleep 4

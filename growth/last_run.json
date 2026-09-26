@@ -105,7 +105,7 @@
     "accept_pct": 1.1,
     "accept_pct_mature": 0.0,
     "added": 0,
-    "at": "2026-09-25T05:11:22+00:00",
+    "at": "2026-09-26T05:12:08+00:00",
     "by_crawl_age": {
       "0-6d": {
         "accept_pct": 50.0,
@@ -114,7 +114,7 @@
       },
       "14-20d": {
         "accept_pct": 0.0,
-        "fetched": 2,
+        "fetched": 1,
         "indexed": 0
       },
       "21-27d": {
@@ -124,7 +124,7 @@
       },
       "28d+": {
         "accept_pct": 0.0,
-        "fetched": 86,
+        "fetched": 87,
         "indexed": 0
       },
       "7-13d": {
@@ -136,7 +136,7 @@
     "cohort": 458,
     "crawl_read_lag_days": 1.8,
     "crawls_14d": 4,
-    "crawls_28d": 9,
+    "crawls_28d": 8,
     "crawls_by_week": {
       "2026-08-03": 16,
       "2026-08-10": 11,
@@ -148,10 +148,10 @@
       "2026-09-21": 2
     },
     "crawls_week_partial": "2026-09-21",
-    "date": "2026-09-25",
+    "date": "2026-09-26",
     "dropped": 0,
     "errors": 0,
-    "fetched_mature": 89,
+    "fetched_mature": 90,
     "fetched_pct": 20.7,
     "gained_indexed": 0,
     "indexed_pct": 0.2,
@@ -173,219 +173,216 @@
       "section8": 6
     },
     "ok": true,
-    "published_urls": 4049,
+    "published_urls": 4054,
     "read": 458,
     "rechecked": 100,
     "states": {
       "crawled_not_indexed": 94,
-      "discovered_not_indexed": 13,
+      "discovered_not_indexed": 2,
       "indexed": 1,
-      "unknown_to_google": 350
+      "unknown_to_google": 361
     }
   },
   "measure": {
-    "at": "2026-09-25T05:11:24+00:00",
+    "at": "2026-09-26T05:12:10+00:00",
     "coverage_pct": 82.0,
-    "date": "2026-09-25",
+    "date": "2026-09-26",
     "days": 1,
     "keywords_covered": 402,
     "keywords_total": 490,
-    "latest_measured_day": "2026-09-24",
+    "latest_measured_day": "2026-09-25",
     "traffic": {
       "arrival_shape": {
         "all": {
-          "busiest_6h_pct": 40.3,
-          "n": 268,
-          "night_pct": 7.8,
-          "peak_hour_utc": 0
+          "busiest_6h_pct": 35.0,
+          "n": 223,
+          "night_pct": 9.4,
+          "peak_hour_utc": 17
         },
         "direct": {
-          "busiest_6h_pct": 41.4,
-          "n": 210,
-          "night_pct": 9.0,
-          "peak_hour_utc": 0
+          "busiest_6h_pct": 34.4,
+          "n": 183,
+          "night_pct": 10.9,
+          "peak_hour_utc": 17
         },
         "organic": {
-          "busiest_6h_pct": 49.1,
-          "n": 55,
-          "night_pct": 3.6,
-          "peak_hour_utc": 19
+          "busiest_6h_pct": 51.4,
+          "n": 35,
+          "night_pct": 2.9,
+          "peak_hour_utc": 1
         }
       },
       "by_channel": {
         "ai": 1,
         "campaign": 2,
-        "direct": 210,
-        "organic": 55
+        "direct": 183,
+        "internal": 2,
+        "organic": 35
       },
       "by_hour_utc": {
         "all": [
-          28,
-          21,
-          15,
           17,
+          17,
+          17,
+          10,
+          7,
+          4,
+          7,
+          3,
+          3,
           5,
+          4,
           9,
           9,
-          3,
-          3,
+          8,
+          10,
           6,
           7,
-          5,
-          6,
-          8,
-          11,
-          8,
+          20,
+          10,
           14,
-          15,
-          12,
-          19,
-          12,
-          8,
-          12,
-          15
+          10,
+          11,
+          5,
+          10
         ],
         "direct": [
-          23,
-          17,
           12,
-          14,
-          3,
+          11,
+          15,
+          10,
           7,
-          8,
+          4,
+          3,
           2,
           3,
           5,
-          7,
           4,
+          8,
+          5,
+          7,
+          8,
           6,
-          6,
-          10,
-          6,
+          5,
+          20,
           10,
           13,
-          10,
-          11,
-          8,
-          4,
-          10,
-          11
+          7,
+          7,
+          3,
+          8
         ],
         "organic": [
-          5,
           4,
+          6,
+          2,
+          0,
+          0,
+          0,
+          4,
+          1,
+          0,
+          0,
+          0,
+          1,
+          4,
+          1,
+          1,
+          0,
+          2,
+          0,
+          0,
+          1,
+          2,
           3,
-          2,
-          2,
-          2,
           1,
-          1,
-          0,
-          1,
-          0,
-          1,
-          0,
-          0,
-          1,
-          2,
-          4,
-          2,
-          2,
-          8,
-          4,
-          4,
-          2,
-          4
+          2
         ]
       },
       "by_src": {
         "alert": 2,
         "chatgpt.com": 1
       },
-      "direct_deep": 2,
-      "new": 201,
+      "direct_deep": 0,
+      "new": 146,
       "new_window_days": 30,
-      "returning": 67,
+      "returning": 77,
       "top_paths": [
         [
           "/",
-          261
+          219
         ],
         [
-          "/building/brooklyn/2019-union-st-3035100024/",
+          "/building/bronx/2800-jerome-ave-2033180023/",
           1
         ],
         [
-          "/building/manhattan/223-e-61st-st-1014160012/",
+          "/building/manhattan/545-w-125th-st-1019820005/",
           1
         ],
         [
-          "/building/manhattan/403-w-48th-st-1010580028/",
+          "/landlord/bec-continuum-owner-llc/",
           1
         ],
         [
-          "/building/queens/35-64-90th-st-4014630035/",
-          1
-        ],
-        [
-          "/building/queens/41-03-53rd-st-4013160052/",
+          "/landlord/veritas-property-management-llc/",
           1
         ]
       ],
       "top_referrers": [
         [
           "www.google.com",
-          46
-        ],
-        [
-          "www.bing.com",
-          4
-        ],
-        [
-          "duckduckgo.com",
-          3
+          26
         ],
         [
           "com.google.android.googlequicksearchbox",
+          3
+        ],
+        [
+          "www.bing.com",
+          3
+        ],
+        [
+          "duckduckgo.com",
           2
         ],
         [
-          "mail.google.com",
+          "accounts.google.com",
           1
         ]
       ],
-      "visitors": 268
+      "visitors": 223
     }
   },
   "outreach": {
-    "at": "2026-09-25T05:11:27+00:00",
-    "date": "2026-09-25",
+    "at": "2026-09-26T05:12:13+00:00",
+    "date": "2026-09-26",
     "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
     "ok": false
   },
   "scout": {
-    "at": "2026-09-25T05:11:26+00:00",
-    "date": "2026-09-25",
+    "at": "2026-09-26T05:12:13+00:00",
+    "date": "2026-09-26",
     "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
     "ok": false
   },
   "searchconsole": {
-    "at": "2026-09-25T05:00:12+00:00",
-    "clicks": 168,
-    "date": "2026-09-25",
-    "impressions": 203,
+    "at": "2026-09-26T05:00:12+00:00",
+    "clicks": 184,
+    "date": "2026-09-26",
+    "impressions": 219,
     "nonbranded_clicks": 0,
     "nonbranded_impressions": 0,
-    "page_clicks": 198,
-    "page_impressions": 1564,
-    "serving_branded_only": 11,
+    "page_clicks": 213,
+    "page_impressions": 1715,
+    "serving_branded_only": 10,
     "serving_ever": 288,
     "serving_nonbranded": 0,
-    "serving_pages": 13,
-    "serving_stable": 13,
+    "serving_pages": 12,
+    "serving_stable": 12,
     "serving_unattributed": 2,
     "share_pct": 0.0,
     "tracked_ranking": 0,
-    "window": "2026-09-16..2026-09-23"
+    "window": "2026-09-17..2026-09-24"
   }
 }

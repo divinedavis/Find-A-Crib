@@ -260,18 +260,11 @@ final class FindACribUITests: XCTestCase {
 
     func testFeedAdsTakeTheRerentalSlotNotTheBottom() throws {
         app.terminate()
-        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--ads-demo"]
+        // --route results, not the home form: the form keeps whatever an
+        // earlier test typed into it, and a leftover filter can empty the list.
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--ads-demo", "--route", "results"]
         app.launch()
-        // The pool preloads from launch; give Google's test ads time to land
-        // before the search, the way a person spends a few seconds typing.
-        sleep(8)
-        let search = app.buttons["search-button"].firstMatch
-        if search.waitForExistence(timeout: 5) { search.tap() } else {
-            app.terminate()
-            app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--ads-demo", "--route", "results"]
-            app.launch()
-        }
-        XCTAssertTrue(app.descendants(matching: .any)["card-address"].firstMatch.waitForExistence(timeout: 30))
+        XCTAssertTrue(app.descendants(matching: .any)["card-address"].firstMatch.waitForExistence(timeout: 60))
         let ad = app.descendants(matching: .any)["feed-ad"].firstMatch
         let rerental = app.descendants(matching: .any)["rerental-card"].firstMatch
         for _ in 0..<4 where !ad.exists && !rerental.exists { app.swipeUp() }

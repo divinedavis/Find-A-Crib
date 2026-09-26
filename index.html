@@ -2637,7 +2637,7 @@ function favActive() {
   // signed in. Never blocks or breaks the app — analytics is strictly best-effort.
   function isBot() {
     return !!navigator.webdriver ||
-      /bot|crawl|spider|slurp|headless|lighthouse|prerender|facebookexternal/i.test(navigator.userAgent);
+      /bot|crawl|spider|slurp|headless|lighthouse|prerender|facebookexternal|mediapartners|google-inspectiontool|googleother|feedfetcher|apis-google/i.test(navigator.userAgent);
   }
   // Visitor id: prefer the nginx-set fac_vid cookie (server-set cookies survive
   // Safari's 7-day cap on script-writable storage); fall back to localStorage

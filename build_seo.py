@@ -1665,7 +1665,7 @@ footer.site{border-top:1px solid var(--line);margin-top:40px;padding:22px 20px;c
 TRACK_SNIPPET = """<script src="/config.js"></script>
 <script>
 (function(){try{
-  if(navigator.webdriver||/bot|crawl|spider|slurp|headless|lighthouse|prerender|facebookexternal/i.test(navigator.userAgent))return;
+  if(navigator.webdriver||/bot|crawl|spider|slurp|headless|lighthouse|prerender|facebookexternal|mediapartners|google-inspectiontool|googleother|feedfetcher|apis-google/i.test(navigator.userAgent))return;
   if(!window.SUPABASE_URL||!window.SUPABASE_ANON_KEY)return;
   var m=document.cookie.match(/(?:^|;\\s*)fac_vid=([\\w-]+)/),vid=m?m[1]:null;
   if(!vid){try{vid=localStorage.getItem('fac_vid')}catch(e){}}

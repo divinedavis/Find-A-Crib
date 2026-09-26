@@ -42,11 +42,20 @@ OWNER_EMAIL = "divinejdavis@gmail.com"
 # business. `_dashboard_auth()` returns a scope, and only the full owner scope
 # reaches /dashboard-metrics and /dashboard-users.
 #
-# Both addresses are listed on purpose. `eric@` is only a Workspace ALIAS and
-# cannot authenticate; his actual Google identity is `enemo@`, which is the
-# email Google returns to Supabase on sign-in. Allowlisting `eric@` alone would
-# reject the only account he can log in with.
-NEMO_EMAILS = {"enemo@nemoseamlessgutter.com", "eric@nemoseamlessgutter.com"}
+# Gated by Supabase auth.users UUID, NOT email. Sign-up is auto-confirmed
+# (mailer_autoconfirm=true, no email verification), so an email allowlist lets
+# anyone register an unclaimed address and walk in — which is exactly what the
+# old NEMO_EMAILS set allowed: neither enemo@ nor eric@nemoseamlessgutter.com
+# had an account (security audit 2026-09-25).
+#
+# To grant Eric the NEMO tab: have him sign in once (Google, as
+# enemo@nemoseamlessgutter.com — eric@ is only a Workspace alias and cannot
+# authenticate), confirm the row is really his (provider = google in
+# auth.identities), then add its id here and redeploy with deploy_api.sh:
+#   select u.id, u.email, i.provider from auth.users u
+#     join auth.identities i on i.user_id = u.id
+#    where u.email = 'enemo@nemoseamlessgutter.com';
+NEMO_USER_IDS = frozenset()   # lowercase UUID strings
 BORO = {"M": "manhattan", "Bk": "brooklyn", "Q": "queens", "Bx": "bronx", "SI": "staten_island"}
 BORO_REV = {v: k for k, v in BORO.items()}
 MAX_LIMIT = 100
@@ -1254,14 +1263,16 @@ def _dashboard_auth():
     except Exception:
         return "error"     # never cached: a Supabase blip is not a verdict
     email = (u.get("email") or "").strip().lower()
-    verified = bool(u.get("email_confirmed_at")
-                    or (u.get("user_metadata") or {}).get("email_verified"))
-    if not verified:
+    uid = (u.get("id") or "").strip().lower()
+    # email_confirmed_at only. user_metadata is writable by the user themself
+    # (supabase.auth.updateUser({data: …})), so user_metadata.email_verified
+    # proves nothing and must never be a fallback.
+    if not u.get("email_confirmed_at"):
         return _auth_cached(key, "forbidden", token)
     if email == OWNER_EMAIL:
         return _auth_cached(key, "ok", token)
-    if email in NEMO_EMAILS:
-        return _auth_cached(key, "nemo", token)   # NEMO tab only, see NEMO_EMAILS
+    if uid and uid in NEMO_USER_IDS:
+        return _auth_cached(key, "nemo", token)   # NEMO tab only, see NEMO_USER_IDS
     return _auth_cached(key, "forbidden", token)
 
 

@@ -113,3 +113,7 @@ sf_raw/
 
 # APNs auth key on the droplet (secrets/AuthKey_*.p8) — never in the repo
 secrets/
+
+# Local env files (secrets). Only the template is tracked.
+.env*
+!.env.example

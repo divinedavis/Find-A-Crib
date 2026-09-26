@@ -21,6 +21,24 @@ function corsFor(req: Request) {
   };
 }
 
+// Stripe redirects to success_url/cancel_url after payment, so an
+// unchecked return_url was an open redirect wearing Stripe's domain.
+// Parse it (a string prefix check passes https://findacrib.com.evil.tld
+// and https://findacrib.com@evil.tld) and fall back to the home page.
+const DEFAULT_RETURN = "https://findacrib.com";
+function safeReturn(raw: unknown): string {
+  if (typeof raw !== "string" || raw.length > 2048) return DEFAULT_RETURN;
+  try {
+    const u = new URL(raw);
+    if (u.protocol !== "https:" || !ALLOWED.has(u.origin)) return DEFAULT_RETURN;
+    if (u.username || u.password) return DEFAULT_RETURN;
+    u.hash = "";
+    return u.toString();
+  } catch {
+    return DEFAULT_RETURN;
+  }
+}
+
 function form(obj: Record<string, string>) {
   return new URLSearchParams(obj).toString();
 }
@@ -39,7 +57,7 @@ Deno.serve(async (req) => {
     if (!user) return new Response(JSON.stringify({ error: "not signed in" }), { status: 401, headers: { ...cors, "Content-Type": "application/json" } });
 
     const { return_url } = await req.json().catch(() => ({}));
-    const base = return_url || "https://findacrib.com";
+    const base = safeReturn(return_url);
     const sep = base.includes("?") ? "&" : "?";
 
     const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {

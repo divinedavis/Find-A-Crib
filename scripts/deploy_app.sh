@@ -45,6 +45,7 @@ for c in la sf dc westchester; do scp -q "$c/index.html" "$HOST:$DOC/$c/index.ht
 for u in / /la/ /sf/ /dc/ /westchester/ /static/supercluster/supercluster.min.js; do
   printf '%-45s %s\n' "$u" "$(curl -s -o /dev/null -w '%{http_code}' "https://findacrib.com$u")"
 done
+scripts/check_docroot_leaks.sh
 
 if [ "$SKIP" != "--skip-tests" ]; then
   echo "== journeys against the live site"

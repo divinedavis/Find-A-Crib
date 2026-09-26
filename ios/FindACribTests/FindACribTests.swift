@@ -1311,12 +1311,15 @@ final class AdsTests: XCTestCase {
         XCTAssertEqual(Ads.mode(debug: false, beta: false, demo: false, liveUnit: "u", labelDeclared: true), .live)
     }
 
-    func testReloadFloor() {
-        let t = Date()
-        XCTAssertTrue(Ads.mayReload(lastLoad: nil, now: t))
-        XCTAssertFalse(Ads.mayReload(lastLoad: t, now: t.addingTimeInterval(59)))
-        XCTAssertTrue(Ads.mayReload(lastLoad: t, now: t.addingTimeInterval(60)))
-        XCTAssertGreaterThanOrEqual(Ads.minReload, 60)
+    /// A feed slot takes an ad only if one is already loaded, and only once:
+    /// a slot never waits on the network and never swaps under the reader.
+    func testFeedSlotDecidesOnce() {
+        XCTAssertTrue(Ads.decide(existing: nil, readyAds: 1, showsAds: true))
+        XCTAssertFalse(Ads.decide(existing: nil, readyAds: 0, showsAds: true), "no ad ready: the re-rental")
+        XCTAssertFalse(Ads.decide(existing: nil, readyAds: 2, showsAds: false), "Plus: never an ad")
+        XCTAssertFalse(Ads.decide(existing: .rerental, readyAds: 2, showsAds: true), "a re-rental slot stays one")
+        XCTAssertFalse(Ads.decide(existing: .ad(1), readyAds: 2, showsAds: true), "an ad slot keeps its ad")
+        XCTAssertGreaterThanOrEqual(Ads.poolSize, 1)
     }
 
     /// Real ads only where no consent screen is required: the US storefront.
@@ -1342,10 +1345,4 @@ final class AdsTests: XCTestCase {
         XCTAssertEqual(extras?.additionalParameters?["npa"] as? String, "1")
     }
 
-    /// Ad events name the screen, never the search on it.
-    func testScreenNameDropsTheSearch() {
-        XCTAssertEqual(Ads.screenName("Search|0|"), "Search")
-        XCTAssertEqual(Ads.screenName("Search|2|results(FindACrib.SearchQuery(text: \"597 halsey\"))"), "Search/results")
-        XCTAssertEqual(Ads.screenName("My Activity|1|building(\"3012110035\")"), "My Activity/building")
-    }
 }

@@ -208,7 +208,9 @@ struct ResultsView: View {
                                 BuildingCard(building: b)
                                     .onAppear { if b.bbl == results[min(shown, results.count) - 1].bbl, shown < results.count { shown += 30 } }
                             case .rerental(let f, let slot):
-                                RerentalCard(listing: f, slot: slot)
+                                // Google's ad when one is ready, else the
+                                // re-rental (Ads.swift, owner 2026-09-25).
+                                FeedAdSlot(listing: f, slot: slot, key: "\(slot):\(f.id)")
                             }
                         }
                     }
@@ -264,7 +266,7 @@ struct ResultsView: View {
         }) { EmailSignInView(offersSocialSignIn: true) }
         .perfFirstMovement("results")
         .onAppear { if CommandLine.arguments.contains("--open-alerts") { showAlerts = true } }
-        .task(id: query) { run() }
+        .task(id: query) { Ads.shared.beginFeed(query); run() }
         .onChange(of: store.loaded) { _, _ in run() }
         .swipeBackEnabled()
     }

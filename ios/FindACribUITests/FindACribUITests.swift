@@ -238,27 +238,32 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.buttons["sign-in-apple"].waitForExistence(timeout: 10), "the gate should land on the Profile sign-in")
     }
 
-    /// The Google banner (Ads.swift) sits under the app, never over it: the
-    /// building page's Comments/Apply bar and the tab bar stay tappable with
-    /// a (test) ad showing. A safe-area inset version drew the Apply bar
-    /// behind the banner (2026-09-25).
-    func testAdBannerNeverCoversTheActionBar() throws {
+    /// Google's ads live in the feed, in the re-rental slots (Ads.swift,
+    /// owner 2026-09-25): no banner under the app, and the 3rd tile is an ad
+    /// or — when none was loaded in time — the re-rental, never a blank.
+    func testFeedAdsTakeTheRerentalSlotNotTheBottom() throws {
         app.terminate()
-        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--ads-demo", "--route", "detail"]
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--ads-demo"]
         app.launch()
-        let comments = app.buttons["detail-comments"]
-        XCTAssertTrue(comments.waitForExistence(timeout: 30))
-        // Give Google's test ad time to fill; the check holds either way.
-        _ = app.otherElements["ad.slot"].waitForExistence(timeout: 15)
-        sleep(4)
-        let slot = app.otherElements["ad.slot"]
-        if slot.exists, slot.frame.height > 0 {
-            XCTAssertLessThanOrEqual(comments.frame.maxY, slot.frame.minY + 1, "the ad covers the Comments/Apply bar")
+        // The pool preloads from launch; give Google's test ads time to land
+        // before the search, the way a person spends a few seconds typing.
+        sleep(8)
+        let search = app.buttons["search-button"].firstMatch
+        if search.waitForExistence(timeout: 5) { search.tap() } else {
+            app.terminate()
+            app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--ads-demo", "--route", "results"]
+            app.launch()
         }
-        XCTAssertTrue(comments.isHittable, "the Comments button must stay tappable with an ad up")
-        app.navigationBars.buttons.firstMatch.tap()
-        XCTAssertTrue(app.buttons["Profile"].waitForExistence(timeout: 10))
-        XCTAssertTrue(app.buttons["Profile"].isHittable, "the tab bar must stay tappable with an ad up")
+        XCTAssertTrue(app.descendants(matching: .any)["card-address"].firstMatch.waitForExistence(timeout: 30))
+        let ad = app.descendants(matching: .any)["feed-ad"].firstMatch
+        let rerental = app.descendants(matching: .any)["rerental-card"].firstMatch
+        for _ in 0..<4 where !ad.exists && !rerental.exists { app.swipeUp() }
+        XCTAssertTrue(ad.waitForExistence(timeout: 10) || rerental.exists, "the re-rental slot should hold an ad or the re-rental")
+        let slotCard = ad.exists ? ad : rerental
+        for _ in 0..<4 where slotCard.exists && slotCard.frame.minY > app.frame.height * 0.35 { app.swipeUp(velocity: .slow) }
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "feed-slot"; shot.lifetime = .keepAlways; add(shot)
+        XCTAssertFalse(app.descendants(matching: .any)["ad.slot"].exists, "the bottom banner is gone")
+        XCTAssertTrue(app.buttons["Profile"].isHittable, "the tab bar stays tappable")
     }
 
     /// Outside New York the app must not offer New York's things: the

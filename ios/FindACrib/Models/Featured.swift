@@ -136,10 +136,16 @@ enum RerentalFeed {
     enum Row: Identifiable {
         case building(Building)
         case rerental(FeaturedListing, slot: Int)
+        /// A Google ad with no re-rental behind it: every city outside New
+        /// York, and New York searches whose boroughs have no re-rentals
+        /// (owner, 2026-09-26: ads "at the same frequency that we have the
+        /// rerental tiles for nyc").
+        case ad(slot: Int)
         var id: String {
             switch self {
             case .building(let b): "b:\(b.bbl)"
             case .rerental(let f, let slot): "r:\(slot):\(f.id)"
+            case .ad(let slot): "a:\(slot)"
             }
         }
     }
@@ -163,8 +169,21 @@ enum RerentalFeed {
     /// Interleaves the re-rentals into the buildings. `pool` is walked in a
     /// seeded order so one feed shows different apartments and never the same
     /// one twice running; an empty pool leaves the feed as it was.
-    static func rows(buildings: [Building], pool: [FeaturedListing], seed: UInt64) -> [Row] {
-        guard !pool.isEmpty, !buildings.isEmpty else { return buildings.map { .building($0) } }
+    static func rows(buildings: [Building], pool: [FeaturedListing], seed: UInt64, adSlots: Bool = false) -> [Row] {
+        guard !buildings.isEmpty else { return [] }
+        if pool.isEmpty {
+            // No re-rentals to show: the same positions carry ad slots, or
+            // nothing at all.
+            guard adSlots else { return buildings.map { .building($0) } }
+            let positions = Set(slots(tiles: buildings.count * 2 + 2, seed: seed))
+            var out: [Row] = []
+            var bi = 0, ai = 0
+            while bi < buildings.count {
+                if positions.contains(out.count) { out.append(.ad(slot: ai)); ai += 1 }
+                else { out.append(.building(buildings[bi])); bi += 1 }
+            }
+            return out
+        }
         // At least 8 buildings sit between tiles, so the feed is never longer
         // than twice the buildings; that bounds the positions to generate.
         let positions = Set(slots(tiles: buildings.count * 2 + 2, seed: seed))

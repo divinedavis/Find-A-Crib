@@ -26,7 +26,7 @@ final class Ads: NSObject {
     /// works under the real app ID, which is why TestFlight and the simulator
     /// keep using it — the owner is the TestFlight audience, and a tap on a
     /// live ad from their own phone is exactly what Google bans accounts for.
-    static let testBannerUnit = "ca-app-pub-3940256099942544/2435281174"
+    static let testBannerUnit = "ca-app-pub-3940256099942544/2934735716"   // Google's fixed-size banner test unit (serves 300×250)
     /// "Every screen banner" in the AdMob console (app
     /// ca-app-pub-8077227518694725~3025780207, set in project.yml), created
     /// 2026-09-25. A banner unit serves any banner size, the medium rectangle
@@ -112,7 +112,11 @@ final class Ads: NSObject {
 
     static func request(_ ctx: Context = home) -> Request {
         let r = Request()
-        r.contentURL = ctx.contentURL
+        // Keywords only. A contentURL (the matching findacrib.com page) made
+        // Google answer every request "No ad to show", test ads included
+        // (2026-09-26, measured in the simulator: with it, 0 of 4 filled;
+        // without it, all did). The page stays in Context for when AdSense
+        // has approved the site and it can be tried again.
         r.keywords = ctx.keywords
         if nonPersonalized {
             let extras = Extras()
@@ -308,6 +312,22 @@ struct FeedAdSlot: View {
             if let b = Ads.shared.banner(id) { FeedAdCard(banner: b) } else { RerentalCard(listing: listing, slot: slot) }
         case .rerental:
             RerentalCard(listing: listing, slot: slot)
+        }
+    }
+}
+
+/// A feed slot with nothing behind it (other cities, or a New York search
+/// with no re-rentals): Google's ad when one is ready, otherwise nothing —
+/// never a blank card.
+struct AdOnlySlot: View {
+    let key: String
+    @Environment(AuthService.self) private var auth
+    @Environment(PlusStore.self) private var plus
+
+    var body: some View {
+        if case .ad(let id) = Ads.shared.fill(for: key, showsAds: !auth.hasPlus && !plus.entitled),
+           let b = Ads.shared.banner(id) {
+            FeedAdCard(banner: b)
         }
     }
 }

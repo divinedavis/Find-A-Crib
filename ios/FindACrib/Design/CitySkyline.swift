@@ -114,14 +114,66 @@ enum Skyline {
     /// How much sky is drawn above the band; a pull rarely reveals more.
     static let skyHeight: CGFloat = 260
 
+    // MARK: Day and night (owner, 2026-09-26: "two versions … based on the
+    // time of day")
+
+    /// Where each scene's city is, for its own sunrise and sunset.
+    static func coordinate(of scene: Scene) -> (lat: Double, lng: Double) {
+        switch scene {
+        case .newYork, .homes: (40.71, -74.00)
+        case .sanFrancisco: (37.77, -122.42)
+        case .washington: (38.90, -77.04)
+        case .losAngeles: (34.05, -118.24)
+        case .chicago: (41.88, -87.63)
+        case .miami: (25.76, -80.19)
+        case .atlanta: (33.75, -84.39)
+        case .philadelphia: (39.95, -75.17)
+        }
+    }
+
+    /// The sun's elevation in degrees at `date` over (lat, lng) — the
+    /// standard low-precision solar position (NOAA / Astronomical Almanac),
+    /// good to well under a minute of sunrise time, which is all a skyline
+    /// needs.
+    static func sunElevation(at date: Date, lat: Double, lng: Double) -> Double {
+        let rad = Double.pi / 180
+        let n = date.timeIntervalSince1970 / 86_400 + 2_440_587.5 - 2_451_545.0
+        let L = (280.46 + 0.985_647_4 * n).truncatingRemainder(dividingBy: 360)
+        let g = (357.528 + 0.985_600_3 * n).truncatingRemainder(dividingBy: 360) * rad
+        let lambda = (L + 1.915 * sin(g) + 0.020 * sin(2 * g)) * rad
+        let eps = (23.439 - 0.000_000_4 * n) * rad
+        let dec = asin(sin(eps) * sin(lambda))
+        let ra = atan2(cos(eps) * sin(lambda), cos(lambda))
+        let gmst = (280.460_618_37 + 360.985_647_366_29 * n).truncatingRemainder(dividingBy: 360)
+        let ha = (gmst + lng) * rad - ra
+        let phi = lat * rad
+        return asin(sin(phi) * sin(dec) + cos(phi) * cos(dec) * cos(ha)) / rad
+    }
+
+    /// Day from sunrise to sunset in that city (the sun's upper edge on the
+    /// horizon, refraction included: -0.833°).
+    static func isDaytime(_ scene: Scene, at date: Date = Date()) -> Bool {
+        // `--skyline-day` / `--skyline-night`: pin one, for screenshots and UI tests.
+        if CommandLine.arguments.contains("--skyline-day") { return true }
+        if CommandLine.arguments.contains("--skyline-night") { return false }
+        let c = coordinate(of: scene)
+        return sunElevation(at: date, lat: c.lat, lng: c.lng) > -0.833
+    }
+
+    /// The palette the drawing reads. Set by the views from `isDaytime` before
+    /// each draw; every landmark reads the colours below, so none of the
+    /// landmark code knows about day or night.
+    nonisolated(unsafe) static var daytime = false
+
     // MARK: Colours — the teal family from the app icon (Theme.swift)
 
-    static let skyTop    = SE.navyDeep
-    static let skyBottom = SE.navy
-    static let far       = Color(hex: 0x214F5C)
-    static let near      = SE.royal
-    static let lit       = SE.paleBlue
-    static let ground    = Color(hex: 0x1B4653)
+    static var skyTop: Color    { daytime ? Color(hex: 0x5AA6D1) : SE.navyDeep }
+    static var skyBottom: Color { daytime ? Color(hex: 0xB4DDEE) : SE.navy }
+    static var far: Color       { daytime ? Color(hex: 0x9DBFC9) : Color(hex: 0x214F5C) }
+    static var near: Color      { daytime ? Color(hex: 0x4F8596) : SE.royal }
+    /// Windows: lamps at night, glass catching the sky by day.
+    static var lit: Color       { daytime ? Color.white.opacity(0.55) : SE.paleBlue }
+    static var ground: Color    { daytime ? Color(hex: 0x6E97A3) : Color(hex: 0x1B4653) }
 
     // MARK: Deterministic pseudo-randomness (stars, windows, blinking)
 
@@ -207,7 +259,7 @@ struct Pen {
         for r in 0..<rows {
             for c in 0..<cols {
                 let wid = id &* 131 &+ r * 17 &+ c
-                let on = animated ? Skyline.windowLit(id: wid, at: time) : Skyline.noise(wid, 9) < 0.72
+                let on = animated && !Skyline.daytime ? Skyline.windowLit(id: wid, at: time) : Skyline.noise(wid, 9) < 0.72
                 guard on else { continue }
                 let wx = x + (CGFloat(c) - CGFloat(cols - 1) / 2) * pitch
                 ctx.fill(rect(x: wx, y: y + CGFloat(r) * pitch, w: size, h: size), with: .color(Skyline.lit.opacity(0.85)))
@@ -756,8 +808,10 @@ struct SkylineBand: View {
 
     var body: some View {
         let animated = !reduceMotion && scenePhase == .active
-        TimelineView(.periodic(from: .now, by: animated ? 0.5 : 3600)) { tl in
+        TimelineView(.periodic(from: .now, by: animated ? 0.5 : 600)) { tl in
+            let day = Skyline.isDaytime(scene, at: tl.date)
             Canvas(rendersAsynchronously: true) { ctx, size in
+                Skyline.daytime = day
                 let u = size.height / 100
                 let ground = size.height
                 // the far row of blocks, one every ~28 units, heights from the hash
@@ -780,30 +834,41 @@ struct SkylineBand: View {
             }
         }
         .frame(height: Skyline.bandHeight)
-        .background(LinearGradient(colors: [Skyline.skyTop, Skyline.skyBottom], startPoint: .top, endPoint: .bottom))
+        .background {
+            TimelineView(.periodic(from: .now, by: 600)) { tl in
+                let day = Skyline.isDaytime(scene, at: tl.date)
+                LinearGradient(colors: day ? [Color(hex: 0x5AA6D1), Color(hex: 0xB4DDEE)] : [SE.navyDeep, SE.navy],
+                               startPoint: .top, endPoint: .bottom)
+            }
+        }
         .accessibilityHidden(true)
     }
 }
 
-/// The night sky behind the list: stars that twinkle, a crescent moon that
-/// drifts, two slow clouds. It only shows when the list is pulled down, so
-/// it only animates then (`revealed`) — at rest it is a still image.
+/// The sky behind the list. At night: stars that twinkle, a crescent moon
+/// that drifts, two slow clouds. By day (sunrise to sunset in that city): a
+/// blue sky, a sun, and brighter clouds. It only shows when the list is
+/// pulled down, so it only animates then (`revealed`) — at rest it is a
+/// still image.
 struct NightSky: View {
     var revealed: Bool
+    var scene: Skyline.Scene = .newYork
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         let animated = revealed && !reduceMotion && scenePhase == .active
         TimelineView(.animation(minimumInterval: 1 / 20, paused: !animated)) { tl in
+            let day = Skyline.isDaytime(scene, at: tl.date)
             Canvas(rendersAsynchronously: true) { ctx, size in
+                Skyline.daytime = day
                 let t = tl.date.timeIntervalSinceReferenceDate
                 let sky = GraphicsContext.Shading.linearGradient(
                     Gradient(colors: [Skyline.skyTop, Skyline.skyBottom]),
                     startPoint: .zero, endPoint: CGPoint(x: 0, y: size.height))
                 ctx.fill(Path(CGRect(origin: .zero, size: size)), with: sky)
 
-                for s in Skyline.stars(in: size) {
+                for s in (day ? [] : Skyline.stars(in: size)) {
                     let tw = animated ? 0.55 + 0.45 * sin(t * 1.7 + s.phase) : 0.8
                     ctx.fill(Path(ellipseIn: CGRect(x: s.x - s.r, y: s.y - s.r, width: 2 * s.r, height: 2 * s.r)),
                              with: .color(.white.opacity(tw)))
@@ -821,14 +886,23 @@ struct NightSky: View {
                     let y = 46 + CGFloat(i) * 58
                     var cloud = Path(roundedRect: CGRect(x: x, y: y, width: w, height: h), cornerRadius: h / 2)
                     cloud.addEllipse(in: CGRect(x: x + w * 0.3, y: y - h * 0.5, width: w * 0.36, height: h * 1.4))
-                    ctx.fill(cloud, with: .color(.white.opacity(0.09)))
+                    ctx.fill(cloud, with: .color(.white.opacity(day ? 0.75 : 0.09)))
                 }
 
-                // the moon: a crescent, bobbing a hair
                 let bob = animated ? sin(t * 0.6) * 2 : 0
                 let mx = size.width * 0.2, my = 44 + bob, r: CGFloat = 12
-                ctx.fill(Path(ellipseIn: CGRect(x: mx - r, y: my - r, width: 2 * r, height: 2 * r)), with: .color(.white))
-                ctx.fill(Path(ellipseIn: CGRect(x: mx - r + 7, y: my - r - 3, width: 2 * r, height: 2 * r)), with: sky)
+                if day {
+                    // the sun: a warm disc in a soft halo
+                    let g = r * 2.6
+                    ctx.fill(Path(ellipseIn: CGRect(x: mx - g, y: my - g, width: 2 * g, height: 2 * g)),
+                             with: .radialGradient(Gradient(colors: [Color(hex: 0xFFE9A8).opacity(0.7), Color(hex: 0xFFE9A8).opacity(0)]),
+                                                   center: CGPoint(x: mx, y: my), startRadius: r, endRadius: g))
+                    ctx.fill(Path(ellipseIn: CGRect(x: mx - r, y: my - r, width: 2 * r, height: 2 * r)), with: .color(Color(hex: 0xFFD66B)))
+                } else {
+                    // the moon: a crescent, bobbing a hair
+                    ctx.fill(Path(ellipseIn: CGRect(x: mx - r, y: my - r, width: 2 * r, height: 2 * r)), with: .color(.white))
+                    ctx.fill(Path(ellipseIn: CGRect(x: mx - r + 7, y: my - r - 3, width: 2 * r, height: 2 * r)), with: sky)
+                }
             }
         }
         .frame(height: Skyline.skyHeight)
@@ -863,7 +937,7 @@ struct SkylineScrollView<Content: View>: View {
             })
         }
         .coordinateSpace(.named("skyline"))
-        .background(alignment: .top) { NightSky(revealed: revealed) }
+        .background(alignment: .top) { NightSky(revealed: revealed, scene: scene) }
         .background(SE.canvas)
         .scrollBounceBehavior(.always)
 

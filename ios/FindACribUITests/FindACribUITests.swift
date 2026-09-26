@@ -241,6 +241,24 @@ final class FindACribUITests: XCTestCase {
     /// Google's ads live in the feed, in the re-rental slots (Ads.swift,
     /// owner 2026-09-25): no banner under the app, and the 3rd tile is an ad
     /// or — when none was loaded in time — the re-rental, never a blank.
+    /// Outside New York there are no re-rentals, so the same feed slots
+    /// carry Google's ads (owner, 2026-09-26) — and never a blank card.
+    func testOtherCitiesGetAdsInTheRerentalSlots() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--ads-demo", "--city", "la"]
+        app.launch()
+        let search = app.buttons["search-button"].firstMatch
+        XCTAssertTrue(search.waitForExistence(timeout: 90))
+        sleep(8)                                   // let the pool load Google's test ads
+        search.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["card-address"].firstMatch.waitForExistence(timeout: 30))
+        let ad = app.descendants(matching: .any)["feed-ad"].firstMatch
+        for _ in 0..<5 where !ad.exists { app.swipeUp() }
+        XCTAssertTrue(ad.waitForExistence(timeout: 10), "an LA search should carry an ad in the re-rental slot")
+        XCTAssertFalse(app.descendants(matching: .any)["rerental-card"].firstMatch.exists, "no New York re-rentals in LA")
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "la-feed-ad"; shot.lifetime = .keepAlways; add(shot)
+    }
+
     func testFeedAdsTakeTheRerentalSlotNotTheBottom() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--ads-demo"]

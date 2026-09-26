@@ -202,7 +202,7 @@ struct ResultsView: View {
                     // the feed: the 3rd tile, then one every 8–15 (RerentalFeed).
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16, alignment: .top), count: wide ? 2 : 1),
                               alignment: .leading, spacing: 16) {
-                        ForEach(RerentalFeed.rows(buildings: Array(results.prefix(shown)), pool: rerentalPool, seed: RerentalFeed.launchSeed)) { row in
+                        ForEach(RerentalFeed.rows(buildings: Array(results.prefix(shown)), pool: rerentalPool, seed: RerentalFeed.launchSeed, adSlots: true)) { row in
                             switch row {
                             case .building(let b):
                                 BuildingCard(building: b)
@@ -211,6 +211,8 @@ struct ResultsView: View {
                                 // Google's ad when one is ready, else the
                                 // re-rental (Ads.swift, owner 2026-09-25).
                                 FeedAdSlot(listing: f, slot: slot, key: "\(slot):\(f.id)")
+                            case .ad(let slot):
+                                AdOnlySlot(key: "ad:\(slot)")
                             }
                         }
                     }

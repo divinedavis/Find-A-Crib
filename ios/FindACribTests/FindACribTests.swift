@@ -757,6 +757,14 @@ final class RerentalFeedTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(rerentals, 6)
         XCTAssertEqual(Set(rows.map(\.id)).count, rows.count, "row ids are unique for ForEach")
         XCTAssertEqual(RerentalFeed.rows(buildings: buildings, pool: [], seed: 42).count, 100, "no pool, no tiles")
+        // No re-rentals (other cities): the same positions become ad slots.
+        let withAds = RerentalFeed.rows(buildings: buildings, pool: [], seed: 42, adSlots: true)
+        let adAt = withAds.indices.filter { if case .ad = withAds[$0] { return true }; return false }
+        let rrAt = RerentalFeed.rows(buildings: buildings, pool: pool, seed: 42).indices.filter {
+            if case .rerental = RerentalFeed.rows(buildings: buildings, pool: pool, seed: 42)[$0] { return true }; return false }
+        XCTAssertEqual(adAt, rrAt, "ads sit exactly where New York's re-rentals do")
+        XCTAssertEqual(adAt.first, RerentalFeed.firstSlot)
+        XCTAssertEqual(withAds.filter { if case .building = $0 { return true }; return false }.count, 100, "every building still shown")
     }
 
     func testPoolFollowsTheBoroughsInTheResults() {
@@ -1350,7 +1358,7 @@ final class AdsTests: XCTestCase {
         XCTAssertEqual(Ads.context(for: SearchQuery(), city: .la).contentURL, "https://findacrib.com/la/")
         XCTAssertEqual(Ads.context(for: SearchQuery(), city: .chi).contentURL, "https://findacrib.com/", "no Chicago page: home")
         let r = Ads.request(bk)
-        XCTAssertEqual(r.contentURL, bk.contentURL)
+        XCTAssertNil(r.contentURL, "a contentURL made Google fill nothing (2026-09-26)")
         XCTAssertEqual(r.keywords, bk.keywords)
         let extras = r.adNetworkExtras(for: Extras.self) as? Extras
         XCTAssertEqual(extras?.additionalParameters?["npa"] as? String, "1", "still non-personalized")
@@ -1391,3 +1399,29 @@ final class AdsTests: XCTestCase {
     }
 
 }
+
+/// Day and night skylines follow each city's real sunrise and sunset.
+final class SkylineDayNightTests: XCTestCase {
+    private func utc(_ s: String) -> Date { ISO8601DateFormatter().date(from: s)! }
+
+    func testNewYorkDayAndNight() {
+        XCTAssertTrue(Skyline.isDaytime(.newYork, at: utc("2026-06-21T16:00:00Z")), "noon in June")
+        XCTAssertFalse(Skyline.isDaytime(.newYork, at: utc("2026-06-21T04:00:00Z")), "midnight")
+        // Dec 21 sunrise in New York is about 7:16 EST (12:16 UTC).
+        XCTAssertFalse(Skyline.isDaytime(.newYork, at: utc("2026-12-21T12:00:00Z")), "7:00, before sunrise")
+        XCTAssertTrue(Skyline.isDaytime(.newYork, at: utc("2026-12-21T12:35:00Z")), "7:35, after sunrise")
+        // Sep 26 sunset in New York is about 18:48 EDT (22:48 UTC).
+        XCTAssertTrue(Skyline.isDaytime(.newYork, at: utc("2026-09-26T22:30:00Z")))
+        XCTAssertFalse(Skyline.isDaytime(.newYork, at: utc("2026-09-26T23:10:00Z")))
+    }
+
+    func testEachCityUsesItsOwnSun() {
+        // 9 PM in New York (01:00 UTC) is 6 PM in Los Angeles: dark there, light here.
+        let t = utc("2026-09-27T01:00:00Z")
+        XCTAssertFalse(Skyline.isDaytime(.newYork, at: t))
+        XCTAssertFalse(Skyline.isDaytime(.losAngeles, at: utc("2026-09-27T03:30:00Z")))
+        XCTAssertTrue(Skyline.isDaytime(.losAngeles, at: utc("2026-09-27T00:30:00Z")), "5:30 PM in LA")
+        XCTAssertFalse(Skyline.isDaytime(.newYork, at: utc("2026-09-27T00:30:00Z")), "8:30 PM in NY")
+    }
+}
+

@@ -1,0 +1,9 @@
+# Only the per-function settings matter here: `supabase functions deploy`
+# reads them so a redeploy can't silently re-enable the JWT gate.
+project_id = "dbaifotzwlxjvsxjohjt"
+
+# Stripe can't send a Supabase JWT; the function verifies the Stripe
+# HMAC signature instead. Deploying with verify_jwt=true 401'd every
+# webhook from ~7/27 to 9/25 and dropped live Plus purchases.
+[functions.stripe-webhook]
+verify_jwt = false

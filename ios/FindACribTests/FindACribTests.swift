@@ -1446,3 +1446,17 @@ final class AffordableCityNeighborhoodTests: XCTestCase {
     }
 }
 
+/// NJ street photos only for a search hit in the drawing's own town.
+final class NJPhotoMatchTests: XCTestCase {
+    func testOnlyTheDrawingsOwnBuildingCounts() {
+        // Real hits from Apple's search, 2026-09-26.
+        XCTAssertTrue(NJPhotos.accept(town: "Paramus", development: "Vermella Paramus", name: "Vermella Way", locality: "Paramus", state: "NJ"))
+        XCTAssertTrue(NJPhotos.accept(town: "Washington Township", development: "The Overlook at Van Emburgh", name: "Van Emburgh Ave", locality: "Township Of Washington", state: "NJ"))
+        XCTAssertTrue(NJPhotos.accept(town: "South Brunswick", development: "Princeton Orchards", name: "Princeton Orchards Apartments", locality: "Dayton", state: "NJ"), "two words carry it outside the postal town")
+        XCTAssertTrue(NJPhotos.accept(town: "Woodland Park", development: "1108 McBride Avenue", name: "1108 McBride Ave", locality: "Woodland Park", state: "NJ"))
+        XCTAssertFalse(NJPhotos.accept(town: "Wayne", development: "Wayne Villas", name: "Wayne St", locality: "Wayne", state: "NJ"), "only the town's name")
+        XCTAssertFalse(NJPhotos.accept(town: "Middle Township", development: "Coral Point", name: "Coral Ln", locality: "Ocean City", state: "NJ"), "one word, wrong town")
+        XCTAssertFalse(NJPhotos.accept(town: "Springfield", development: "Springfield Greens", name: "Springfield Ave", locality: "Union", state: "NJ"))
+        XCTAssertFalse(NJPhotos.accept(town: "Paramus", development: "Vermella Paramus", name: "Vermella Way", locality: "Paramus", state: "NY"), "not New Jersey")
+    }
+}

@@ -313,6 +313,7 @@ struct LotteriesView: View {
     private func njCard(_ l: LotteryFeed.NJLottery) -> some View {
         let days = LotteryFeed.daysLeft(l.closes)
         return VStack(alignment: .leading, spacing: 6) {
+            NJPhoto(lottery: l)
             Text(l.development ?? l.town).font(.se(19, .bold)).foregroundStyle(SE.ink)
             Text([l.development == nil ? nil : l.town, l.county.map { "\($0) County, NJ" } ?? "New Jersey", l.isRental ? "Rental" : "For sale"]
                     .compactMap { $0 }.joined(separator: " · "))
@@ -329,6 +330,9 @@ struct LotteriesView: View {
             }
         }
         .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white)
+        // A container, so the card's id is not stamped onto the photo and
+        // buttons inside it (the Events cards had the same problem).
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("nj-lottery-card")
     }
 

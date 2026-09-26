@@ -64,6 +64,7 @@
 		B9832014BFBAE12D564BE84D /* FindACribTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98EA9658998D86C1B18B3B70 /* FindACribTests.swift */; };
 		B9A374F440D085EA1D5F9E4D /* SourceSans3-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1016C836BC07645D2229A1AA /* SourceSans3-Regular.ttf */; };
 		BD828B5AEA9205924F48103A /* PushService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EB36920320EBBD2EB5BD4F9 /* PushService.swift */; };
+		BFD55023CCE4271FFCE20550 /* NJPhotos.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DDA638A8DF3FC7F35013459 /* NJPhotos.swift */; };
 		CA405D2EBBE651265F2F803A /* HPDRecordsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79122B1DAE5687F075A32A34 /* HPDRecordsView.swift */; };
 		CDF6FAD38255D480ABD5E685 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 8F8E47784BB7A4505DE2A3A2 /* Supabase */; };
 		CE4C8ABD5AD683EDE7DFC438 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 7BDE3E1759F8BFE6F7F6E368 /* GoogleMobileAds */; };
@@ -105,6 +106,7 @@
 		1016C836BC07645D2229A1AA /* SourceSans3-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SourceSans3-Regular.ttf"; sourceTree = "<group>"; };
 		11B11FD29257010BBAE21E0A /* ReviewPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewPrompt.swift; sourceTree = "<group>"; };
 		18FD23E9A200B17C92436714 /* FindACrib.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FindACrib.entitlements; sourceTree = "<group>"; };
+		1DDA638A8DF3FC7F35013459 /* NJPhotos.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NJPhotos.swift; sourceTree = "<group>"; };
 		1F485D02A5570CFBB0B8EDA8 /* SearchEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchEngine.swift; sourceTree = "<group>"; };
 		29346FF1C5BB5747E8F6660B /* SourceSans3-Semibold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SourceSans3-Semibold.ttf"; sourceTree = "<group>"; };
 		295157FB248292C1429E1C15 /* LaunchAnimationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAnimationTests.swift; sourceTree = "<group>"; };
@@ -174,7 +176,7 @@
 		EA50D389BB3AB7B341BD720D /* ImageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageService.swift; sourceTree = "<group>"; };
 		EFD73F478D420E114F0C82CB /* FiltersSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FiltersSheet.swift; sourceTree = "<group>"; };
 		F4EAE491E6B0AE7EF404FA62 /* HPDRecords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HPDRecords.swift; sourceTree = "<group>"; };
-		"TEMP_A6B19FDB-CD6D-4B3A-9C87-174789EFBA35" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_109B210D-5FD0-4F48-B456-E84BD955C00F" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -203,6 +205,7 @@
 				F4EAE491E6B0AE7EF404FA62 /* HPDRecords.swift */,
 				EA50D389BB3AB7B341BD720D /* ImageService.swift */,
 				BDC2C16DFF4D97DB0D222348 /* LotteryFeed.swift */,
+				1DDA638A8DF3FC7F35013459 /* NJPhotos.swift */,
 				C69876E034A5740AA9ED9874 /* OpeningsFeed.swift */,
 				D14BD1315F39813181DA5A1A /* Perf.swift */,
 				C82AEFA1B93D2073218086C5 /* PlusStore.swift */,
@@ -431,10 +434,10 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
-		"TEMP_153671D0-A240-4349-BCE3-F35243219577" /* ios */ = {
+		"TEMP_457B56B9-DDB8-4779-9ED0-EADADB447FA4" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_A6B19FDB-CD6D-4B3A-9C87-174789EFBA35" /* Secrets.xcconfig */,
+				"TEMP_109B210D-5FD0-4F48-B456-E84BD955C00F" /* Secrets.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -604,6 +607,7 @@
 				6EE4B0ACFD4CD09B8E068ADA /* LotteryPhoto.swift in Sources */,
 				0520A5F1A16409B5EDD7B003 /* MapResultsView.swift in Sources */,
 				77119B1CD94A4E7C0C3B77D4 /* MyActivityView.swift in Sources */,
+				BFD55023CCE4271FFCE20550 /* NJPhotos.swift in Sources */,
 				5287C49C7E3C8498B42534F8 /* OpeningsFeed.swift in Sources */,
 				B1FC0A4E1574A530A13E9C17 /* OpeningsView.swift in Sources */,
 				04D97E5CDE97B0E4A936D811 /* PaywallView.swift in Sources */,
@@ -728,7 +732,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 89;
+				CURRENT_PROJECT_VERSION = 93;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -762,7 +766,7 @@
 		};
 		4A043B04EA1D2F1BD0250C61 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_A6B19FDB-CD6D-4B3A-9C87-174789EFBA35" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_109B210D-5FD0-4F48-B456-E84BD955C00F" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -803,7 +807,7 @@
 		};
 		7B4EAA1664EF270AD8C579E8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_A6B19FDB-CD6D-4B3A-9C87-174789EFBA35" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_109B210D-5FD0-4F48-B456-E84BD955C00F" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -876,7 +880,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 89;
+				CURRENT_PROJECT_VERSION = 93;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;

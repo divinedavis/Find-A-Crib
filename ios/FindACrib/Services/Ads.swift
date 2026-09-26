@@ -37,7 +37,9 @@ final class Ads: NSObject {
     /// Privacy label now declares what the SDK collects — device ID, coarse
     /// location, advertising data, product interaction, crash and performance
     /// data (developers.google.com/admob/ios/privacy/data-disclosure) — as
-    /// linked, NOT used for tracking (scripts/asc_push_privacy_iris.py).
+    /// linked, NOT used for tracking (scripts/asc_push_privacy_iris.py). Search
+    /// history (the page + words Ads.context sends) was added to it the same
+    /// night, before the build that sends them.
     static let privacyLabelDeclared = true
 
     enum Mode: Equatable { case off, test, live }
@@ -59,8 +61,59 @@ final class Ads: NSObject {
     /// only together with an ATT prompt and a relabel.
     static let nonPersonalized = true
 
-    static func request() -> Request {
+    /// What the ads should be about. Non-personalized ads can only be as
+    /// relevant as the context Google is told, and an app gives it almost
+    /// none on its own (owner, 2026-09-25: ads "tailored towards people
+    /// looking for apartments"). So each request names the findacrib.com page
+    /// that shows the same search, which Google reads as it would any page it
+    /// places an ad on, plus the search's words. Nothing here is about the
+    /// person — the privacy label and npa=1 are unaffected.
+    struct Context: Equatable {
+        var contentURL: String
+        var keywords: [String]
+    }
+
+    static let home = Context(contentURL: "https://findacrib.com/",
+                              keywords: ["apartments for rent", "rent stabilized apartments",
+                                         "New York City apartments", "renters insurance", "movers"])
+
+    /// The page and words for a search: NYC boroughs and ZIPs have their own
+    /// pages (/borough/<slug>/, /zip/<zip>/); LA, SF and DC have a city page;
+    /// everything else falls back to the home page.
+    nonisolated static func context(for q: SearchQuery, city: City) -> Context {
+        var words = ["apartments for rent", "renters insurance", "movers"]
+        var url = "https://findacrib.com/"
+        if city.isNYC {
+            words += ["rent stabilized apartments", "New York City apartments"]
+            switch q.locations.first {
+            case .borough(let code)?:
+                url = "https://findacrib.com/borough/\(Borough.slug(code))/"
+                words.append("\(Borough.name(code)) apartments")
+            case .zip(let z)?:
+                url = "https://findacrib.com/zip/\(z)/"
+                words.append("apartments \(z)")
+            case .neighborhood(let nb)?:
+                words.append("\(nb) apartments")
+            default:
+                break   // a map area or nothing picked: the home page
+            }
+            if q.vouchersOnly { words.append("housing voucher apartments") }
+            if q.hcrOnly { words.append("affordable housing lottery") }
+        } else {
+            if ["la", "sf", "dc"].contains(city.id) { url = "https://findacrib.com/\(city.id)/" }
+            words.append("\(city.name) apartments")
+            words.append(city.isIncomeRestricted ? "affordable housing" : "rent controlled apartments")
+        }
+        return Context(contentURL: url, keywords: words)
+    }
+
+    /// The context the next ad requests carry; set by the results screen.
+    @ObservationIgnored private(set) var context = home
+
+    static func request(_ ctx: Context = home) -> Request {
         let r = Request()
+        r.contentURL = ctx.contentURL
+        r.keywords = ctx.keywords
         if nonPersonalized {
             let extras = Extras()
             extras.additionalParameters = ["npa": "1"]
@@ -162,7 +215,7 @@ final class Ads: NSObject {
             b.delegate = self
             b.accessibilityIdentifier = "feed-ad-banner"
             loading.append(b)
-            b.load(Self.request())
+            b.load(Self.request(context))
         }
     }
 
@@ -170,9 +223,12 @@ final class Ads: NSObject {
 
     /// A new search: slots start undecided again. The same search coming back
     /// into view (back from a building) keeps its slots and their ads.
-    func beginFeed(_ key: AnyHashable) {
+    func beginFeed(_ key: AnyHashable, context ctx: Context? = nil) {
         guard key != feedKey else { return }
         feedKey = key
+        // Ads loaded from here on are about this search. The ones already in
+        // the pool keep the context they were requested with.
+        if let ctx { context = ctx }
         fills = [:]
         shown = [:]
     }

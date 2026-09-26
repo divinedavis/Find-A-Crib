@@ -1311,6 +1311,26 @@ final class AdsTests: XCTestCase {
         XCTAssertEqual(Ads.mode(debug: false, beta: false, demo: false, liveUnit: "u", labelDeclared: true), .live)
     }
 
+    /// Every ad request says what the screen is about: the matching
+    /// findacrib.com page and the search's words (non-personalized context).
+    @MainActor func testAdContextMatchesTheSearch() {
+        var q = SearchQuery(); q.locations = [.borough("Bk")]; q.vouchersOnly = true
+        let bk = Ads.context(for: q, city: .nyc)
+        XCTAssertEqual(bk.contentURL, "https://findacrib.com/borough/brooklyn/")
+        XCTAssertTrue(bk.keywords.contains("Brooklyn apartments"))
+        XCTAssertTrue(bk.keywords.contains("housing voucher apartments"))
+        XCTAssertTrue(bk.keywords.contains("renters insurance"))
+        var z = SearchQuery(); z.locations = [.zip("11201")]
+        XCTAssertEqual(Ads.context(for: z, city: .nyc).contentURL, "https://findacrib.com/zip/11201/")
+        XCTAssertEqual(Ads.context(for: SearchQuery(), city: .la).contentURL, "https://findacrib.com/la/")
+        XCTAssertEqual(Ads.context(for: SearchQuery(), city: .chi).contentURL, "https://findacrib.com/", "no Chicago page: home")
+        let r = Ads.request(bk)
+        XCTAssertEqual(r.contentURL, bk.contentURL)
+        XCTAssertEqual(r.keywords, bk.keywords)
+        let extras = r.adNetworkExtras(for: Extras.self) as? Extras
+        XCTAssertEqual(extras?.additionalParameters?["npa"] as? String, "1", "still non-personalized")
+    }
+
     /// A feed slot takes an ad only if one is already loaded, and only once:
     /// a slot never waits on the network and never swaps under the reader.
     func testFeedSlotDecidesOnce() {

@@ -32,6 +32,9 @@ every screen, Services/Ads.swift). Per Google's data disclosure
     PRODUCT_INTERACTION   ad taps, launches
   Analytics
     CRASH_DATA, PERFORMANCE_DATA   the SDK's own diagnostics
+  Third-Party Advertising
+    SEARCH_HISTORY        the search's page + keywords on each ad request
+                          (Ads.context, 2026-09-25)
 
 Nothing is used for tracking in Apple's sense (linking app data with other
 companies' data for targeting or measurement): the app requests
@@ -88,6 +91,10 @@ USAGES = [
     ("PRODUCT_INTERACTION", "THIRD_PARTY_ADVERTISING"),
     ("CRASH_DATA", "ANALYTICS"),
     ("PERFORMANCE_DATA", "ANALYTICS"),
+    # 2026-09-25: each ad request names the search's page and words (borough,
+    # ZIP, voucher/lottery filter) so Google can match ads to it — search
+    # history shared for third-party advertising, still not tracking.
+    ("SEARCH_HISTORY", "THIRD_PARTY_ADVERTISING"),
 ]
 
 

@@ -266,7 +266,7 @@ struct ResultsView: View {
         }) { EmailSignInView(offersSocialSignIn: true) }
         .perfFirstMovement("results")
         .onAppear { if CommandLine.arguments.contains("--open-alerts") { showAlerts = true } }
-        .task(id: query) { Ads.shared.beginFeed(query); run() }
+        .task(id: query) { Ads.shared.beginFeed(query, context: Ads.context(for: query, city: store.city)); run() }
         .onChange(of: store.loaded) { _, _ in run() }
         .swipeBackEnabled()
     }

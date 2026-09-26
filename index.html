@@ -11,7 +11,7 @@
 <meta name="robots" content="index,follow,max-image-preview:large" />
 <meta name="theme-color" content="#2b39c8" />
 <!-- Google AdSense — site-ownership verification + ad serving (ca-pub-8077227518694725) -->
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8077227518694725" crossorigin="anonymous"></script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8077227518694725" crossorigin="anonymous" onerror="window.__adsBlocked=true"></script>
 <!-- Google tag (gtag.js) — Google Ads conversion tracking + GA4 analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=AW-1001356637"></script>
 <script>
@@ -5453,21 +5453,22 @@ function favActive() {
   // code box: data-ad-slot and data-ad-layout-key. Until both are set the
   // grid is exactly as before, featured tile first.
   const ADSENSE_CLIENT = 'ca-pub-8077227518694725';
-  const ADSENSE_SLOT   = '';            // In-feed unit's data-ad-slot
-  const ADSENSE_LAYOUT = '';            // In-feed unit's data-ad-layout-key
+  const ADSENSE_SLOT   = '9742308358';        // "Results lead tile" In-feed unit, 2026-09-25
+  const ADSENSE_LAYOUT = '-6s+cp+2f-10+5u';   // its data-ad-layout-key
   const AD_EVERY       = 6;             // insert one ad tile after every N building cards
   const ADS_ON = () => !!(ADSENSE_CLIENT && ADSENSE_SLOT && ADSENSE_LAYOUT);
 
-  if (ADS_ON()) {
-    const s = document.createElement('script');
-    s.async = true;
-    s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + ADSENSE_CLIENT;
-    s.crossOrigin = 'anonymous';
-    document.head.appendChild(s);
-  }
+  // The ad script loads once, from <head> (Google warns against loading it
+  // twice). Its onerror sets window.__adsBlocked — an ad blocker, mostly — so
+  // the ad cards fall back at once instead of sitting blank until AD_SETTLE_MS.
+  const adsBlocked = () => !!window.__adsBlocked;
 
-  function adCardHtml() {
-    return `<div class="card ad-card">
+  // An ad card carries what it replaced (the lead featured tile) in a
+  // <template>. Google does not fill a slot for a site still in review, for an
+  // ad blocker, or when it has nothing to sell; settleAds() then swaps the
+  // fallback back in, or drops the card, so the grid never leads with a blank.
+  function adCardHtml(fallback) {
+    return `<div class="card ad-card"><template class="ad-fallback">${fallback || ''}</template>
       <span class="ad-flag">Sponsored</span>
       <ins class="adsbygoogle" style="display:block;width:100%"
            data-ad-format="fluid" data-ad-layout-key="${ADSENSE_LAYOUT}"
@@ -5843,6 +5844,27 @@ function favActive() {
     grid.querySelectorAll('ins.adsbygoogle:not([data-adsbygoogle-status])').forEach(() => {
       try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) { /* ad blocker / not ready */ }
     });
+    settleAds();
+  }
+
+  // Google marks each slot data-ad-status="filled" or "unfilled". Swap an
+  // unfilled one as soon as it says so; anything still unsettled after
+  // AD_SETTLE_MS (blocked script, no answer) is treated the same way.
+  const AD_SETTLE_MS = 6000;
+  function settleAds() {
+    const started = Date.now();
+    const tick = () => {
+      let pending = 0;
+      grid.querySelectorAll('.card.ad-card').forEach(card => {
+        const st = card.querySelector('ins.adsbygoogle')?.getAttribute('data-ad-status');
+        if (st === 'filled') return;
+        if (st !== 'unfilled' && !adsBlocked() && Date.now() - started < AD_SETTLE_MS) { pending++; return; }
+        const fb = card.querySelector('template.ad-fallback')?.innerHTML.trim();
+        if (fb) card.outerHTML = fb; else card.remove();
+      });
+      if (pending) setTimeout(tick, 1000); else watchAdTiles();
+    };
+    setTimeout(tick, 1000);
   }
 
   function refreshGrid() {
@@ -5944,7 +5966,7 @@ function favActive() {
     if (pinned) parts.push(cardHtml(pinned));
     // With ads on, the lead slot is Google's in-feed ad instead (owner,
     // 2026-09-25); re-rentals keep their FEAT_EVERY slots further down.
-    if (promos) parts.push(ads ? adCardHtml() : nextFeatured());
+    if (promos) parts.push(ads ? adCardHtml(nextFeatured()) : nextFeatured());
     // Housing Connect takes the second slot on every render. hcCursor was just
     // reset, and the pool is sorted by soonest deadline, so the lead tile is
     // always the lottery closest to closing in the boroughs on screen — the one
@@ -5984,6 +6006,7 @@ function favActive() {
       sentinel.insertAdjacentHTML('beforebegin', chunk.join(''));
       PHOTO_PREVIEW?.watch(grid);
       if (!gridRest.length) { sentinel.outerHTML = tailNote; if (gridMore) { gridMore.disconnect(); gridMore = null; } }
+      initAds();        // the ad cards in this page need their push too
       watchAdTiles();
     };
     if (!('IntersectionObserver' in window)) { while (gridRest.length) more(); return; }

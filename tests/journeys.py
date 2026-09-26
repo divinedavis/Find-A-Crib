@@ -1081,7 +1081,20 @@ class Runner:
         if hc:
             self.ok(hc['name'], f'a lottery tile must carry its name, got {hc}', j)
             self.ok(hc['flag'], 'a lottery tile must be flagged as one', j)
-        j.notes.append('re-rental ' + ('ok' if feat else 'none') + ', lottery ' + ('ok' if hc else 'none'))
+        # Google's in-feed ad takes the lead slot (2026-09-25), but a slot Google
+        # does not fill — a site still in review, an ad blocker, no demand —
+        # must fall back to the featured tile or vanish, never sit blank.
+        # settleAds() gives up at 6 s; check after that.
+        time.sleep(7.5)
+        ads = page.evaluate("""(() => [...document.querySelectorAll('#grid .card.ad-card')].map(c =>
+            c.querySelector('ins.adsbygoogle')?.getAttribute('data-ad-status') || 'none'))()""")
+        blank = [st for st in ads if st != 'filled']
+        self.ok(not blank, f'an ad card was left unfilled in the list: {ads}', j)
+        lead = page.evaluate("(document.querySelector('#grid .card:not(.pinned)')?.className || '')")
+        self.ok('feat-card' in lead or 'ad-card' in lead or 'hc-card' in lead or not (feat or hc),
+                f'the list should lead with the featured tile or a filled ad, got {lead!r}', j)
+        j.notes.append('re-rental ' + ('ok' if feat else 'none') + ', lottery ' + ('ok' if hc else 'none')
+                       + f', ads filled {len(ads) - len(blank)}/{len(ads)}')
 
     def j_outbound_links(self, page, j, device):
         """Every hand-off off the site: 695 people did one last month.

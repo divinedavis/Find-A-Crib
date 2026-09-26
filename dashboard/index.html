@@ -66,7 +66,10 @@
   // that script never runs and its own timer would never be set, leaving a
   // spinner that spins forever. A gate the visitor can act on beats that.
   setTimeout(function(){
-    if(!document.documentElement.hasAttribute('data-auth')) return;
+    // Only while sign-in itself is unresolved. Once route() has a session it
+    // flips this to "loading" and the feed's own 20 s timeout owns the wait —
+    // a slow cold metrics call (8-9 s) used to trip this and blame sign-in.
+    if(document.documentElement.getAttribute('data-auth')!=='pending') return;
     document.documentElement.removeAttribute('data-auth');
     var err = document.getElementById('gate-err');
     if(err){
@@ -125,9 +128,9 @@
   /* While auth is still resolving, neither answer is known: show the splash
      and keep the sign-in card off screen. route() clears data-auth the moment
      it knows, so the gate is only ever painted once it is the real answer. */
-  html[data-auth="pending"] #gate{display:none}
+  html[data-auth="pending"] #gate, html[data-auth="loading"] #gate{display:none}
   #boot{display:none}
-  html[data-auth="pending"] #boot{position:fixed; inset:0; display:flex; align-items:center;
+  html[data-auth="pending"] #boot, html[data-auth="loading"] #boot{position:fixed; inset:0; display:flex; align-items:center;
     justify-content:center; background:var(--bg); z-index:60}
   #boot .spin{width:26px;height:26px;border-radius:50%;border:2.5px solid var(--border);
     border-top-color:var(--ink2); animation:bootspin .7s linear infinite}
@@ -1556,6 +1559,10 @@
     session = s;
     adoptProfileTheme(s);
     if(!s){ shown = false; showGate('signin'); return; }
+    // Signed in: keep the splash up for the data, but tell the head failsafe
+    // that sign-in is no longer what's being waited on.
+    if(document.documentElement.getAttribute('data-auth')==='pending')
+      document.documentElement.setAttribute('data-auth','loading');
     applyShell();
     wireRangeSwitch();
     var r = await load(false);

@@ -1202,17 +1202,18 @@ _AUTH_CACHE_TTL = 60
 # can be older than it already could be.
 _MEMO = {}
 _MEMO_LOCK = threading.Lock()
+_MEMO_REFRESHING = set()
+# Past its ttl an entry is still served for this long while a background thread
+# recomputes it. Before this, every expired entry was paid in the foreground:
+# by 2026-09-26 a cold all-time load was the 3.5 s RPC then a 4.5 s adtiles
+# scan — 8-9 s, 336 of 1,613 dashboard-metrics calls over 8 s — and the page's
+# 8 s sign-in failsafe told the owner "Sign-in is taking too long".
+_MEMO_STALE = 1800
 
 
 def _memo(ttl):
     def wrap(fn):
-        def inner(*args):
-            key = (fn.__name__,) + tuple(str(a) for a in args)
-            now = time.time()
-            with _MEMO_LOCK:
-                hit = _MEMO.get(key)
-                if hit and hit[0] > now:
-                    return hit[1]
+        def compute(key, args):
             val = fn(*args)
             # Every helper returns {} (or None) on failure. Caching that for
             # the full ttl turned one slow query into ten minutes of a blank
@@ -1221,11 +1222,43 @@ def _memo(ttl):
             # memo expired. A failure is retried on the next load instead.
             if val is None or val == {}:
                 return val
+            now = time.time()
             with _MEMO_LOCK:
-                if len(_MEMO) > 64:
-                    _MEMO.clear()
+                if len(_MEMO) > 128:
+                    for k in [k for k, v in _MEMO.items() if v[0] + _MEMO_STALE < now]:
+                        del _MEMO[k]
+                    if len(_MEMO) > 128:
+                        _MEMO.clear()
                 _MEMO[key] = (now + ttl, val)
             return val
+
+        def background(key, args):
+            try:
+                compute(key, args)
+            except Exception:
+                pass
+            finally:
+                with _MEMO_LOCK:
+                    _MEMO_REFRESHING.discard(key)
+
+        def inner(*args):
+            key = (fn.__name__,) + tuple(str(a) for a in args)
+            now = time.time()
+            with _MEMO_LOCK:
+                hit = _MEMO.get(key)
+                if hit and hit[0] > now:
+                    return hit[1]
+                stale = hit is not None and hit[0] + _MEMO_STALE > now
+                kick = stale and key not in _MEMO_REFRESHING
+                if kick:
+                    _MEMO_REFRESHING.add(key)
+            if stale:
+                if kick:
+                    threading.Thread(target=background, args=(key, args), daemon=True).start()
+                return hit[1]
+            return compute(key, args)
+
+        inner.refresh = lambda *args: compute((fn.__name__,) + tuple(str(a) for a in args), args)
         inner.__name__ = fn.__name__
         inner.__doc__ = fn.__doc__
         return inner
@@ -2703,6 +2736,31 @@ def dashboard_users():
     # [[build, version]] from App Store Connect (asc_downloads.py writes it
     # into appstore.json), so the page never hand-maintains that map again.
     return jsonify(users=data or [], versions=_fac_appstore().get("versions") or [])
+
+
+# Keep every range's expensive parts fresh so no page load pays them cold —
+# the page prefetches all five windows after its first paint anyway, so this
+# is about one page load's worth of queries every 10 minutes. Only under
+# gunicorn (one worker, see deploy/findacrib-api.override.conf), never on a
+# plain import.
+def _fac_keep_warm():
+    time.sleep(5)
+    while True:
+        try:
+            builds = _fac_released_builds()
+            for rng in sorted(DASHBOARD_RANGES):
+                since = _fac_since((_fac_metrics_rpc.refresh(rng, builds) or {}).get("since"))
+                for helper in (_fac_adtiles, _fac_ads_served, _fac_channels, _fac_signage):
+                    helper.refresh(since)
+            _fac_adtiles.refresh(None)
+            _fac_months.refresh()
+        except Exception:
+            pass
+        time.sleep(600)
+
+
+if "gunicorn" in os.path.basename(__import__("sys").argv[0]):
+    threading.Thread(target=_fac_keep_warm, daemon=True).start()
 
 
 if __name__ == "__main__":

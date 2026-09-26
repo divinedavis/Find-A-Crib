@@ -251,7 +251,9 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(search.waitForExistence(timeout: 90))
         sleep(8)                                   // let the pool load Google's test ads
         search.tap()
-        XCTAssertTrue(app.descendants(matching: .any)["card-address"].firstMatch.waitForExistence(timeout: 30))
+        // LA downloads on first selection; under the full suite that can take
+        // a minute (the other LA test waits 90 s for the same reason).
+        XCTAssertTrue(app.descendants(matching: .any)["card-address"].firstMatch.waitForExistence(timeout: 90))
         let ad = app.descendants(matching: .any)["feed-ad"].firstMatch
         for _ in 0..<5 where !ad.exists { app.swipeUp() }
         XCTAssertTrue(ad.waitForExistence(timeout: 10), "an LA search should carry an ad in the re-rental slot")

@@ -14,7 +14,7 @@ from urllib.parse import urlencode
 from playwright.sync_api import expect, sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
-BASE = 'https://findacrib.com'
+BASE = 'https://divinedavis.com'   # the dashboard's home since 2026-09-18
 USER = {'id': 'dashboard-test-owner', 'email': 'owner@example.com', 'user_metadata': {}}
 
 
@@ -39,8 +39,9 @@ def run(browser, live, scenario):
     if not live:
         page.route(BASE + '/dashboard/', lambda route: route.fulfill(
             path=str(ROOT / 'dashboard/index.html'), content_type='text/html'))
-        for path in ('config.js', 'static/supabase/supabase.js'):
-            page.route(BASE + '/' + path, lambda route, request, path=path: route.fulfill(
+        for served, path in (('dashboard/supabase-config.js', 'dashboard/supabase-config.js'),
+                             ('dashboard/supabase.js', 'static/supabase/supabase.js')):
+            page.route(BASE + '/' + served + '*', lambda route, request, path=path: route.fulfill(
                 path=str(ROOT / path), content_type='application/javascript'))
 
     def auth(route):
@@ -59,14 +60,32 @@ def run(browser, live, scenario):
             raise AssertionError('Unexpected auth request: ' + url.split('?')[0])
 
     page.route('**/auth/v1/**', auth)
-    page.route('**/api/dashboard-*', lambda route: route.fulfill(
-        status=403 if scenario == 'forbidden_signout' else 200, json={}))
+    slowed = []
+
+    def feed(route):
+        # slow_feed: a signed-in owner whose metrics take longer than the 8 s
+        # sign-in failsafe (cold all-time loads ran 8-9 s on 2026-09-26).
+        # Only the first call: the page then prefetches every range, and each
+        # blocked handler would stack another 10 s onto the wait.
+        if scenario == 'slow_feed' and not slowed:
+            slowed.append(1)
+            time.sleep(10)
+        route.fulfill(status=403 if scenario == 'forbidden_signout' else 200, json={})
+    page.route('**/api/dashboard-*', feed)
     suffix = '' if scenario == 'signed_out' else callback()
     if scenario == 'provider_error':
         suffix = '#error=access_denied&error_description=Test+denial'
     page.goto(BASE + '/dashboard/' + suffix, wait_until='networkidle')
 
-    if scenario == 'success':
+    if scenario == 'slow_feed':
+        expect(page.locator('#app')).to_be_visible()
+        # The failsafe used to fire at 8 s and write this under the sign-in
+        # button, blaming sign-in for a slow data load.
+        assert 'taking too long' not in (page.locator('#gate-err').text_content() or '')
+        assert not errors, errors
+        context.close()
+        return
+    elif scenario == 'success':
         expect(page.locator('#app')).to_be_visible()
         assert not page.evaluate('location.hash')
         page.reload(wait_until='networkidle')
@@ -90,7 +109,7 @@ def run(browser, live, scenario):
     page.locator('#google-btn').click()
     page.wait_for_url('**/auth/v1/authorize?**')
     assert authorizations and 'provider=google' in authorizations[0]
-    assert 'redirect_to=https%3A%2F%2Ffindacrib.com%2Fdashboard%2F' in authorizations[0]
+    assert 'redirect_to=https%3A%2F%2Fdivinedavis.com%2Fdashboard%2F' in authorizations[0]
     assert not errors, errors
     context.close()
 
@@ -121,8 +140,9 @@ def run_users_table(browser, live):
     if not live:
         page.route(BASE + '/dashboard/users/', lambda route: route.fulfill(
             path=str(ROOT / 'dashboard/users/index.html'), content_type='text/html'))
-        for path in ('config.js', 'static/supabase/supabase.js'):
-            page.route(BASE + '/' + path, lambda route, request, path=path: route.fulfill(
+        for served, path in (('dashboard/supabase-config.js', 'dashboard/supabase-config.js'),
+                             ('dashboard/supabase.js', 'static/supabase/supabase.js')):
+            page.route(BASE + '/' + served + '*', lambda route, request, path=path: route.fulfill(
                 path=str(ROOT / path), content_type='application/javascript'))
     page.route('**/auth/v1/**', lambda route: route.fulfill(json=USER)
                if '/user' in route.request.url else route.fulfill(status=204))
@@ -150,7 +170,7 @@ if __name__ == '__main__':
     with sync_playwright() as playwright:
         for engine in (playwright.chromium, playwright.webkit):
             browser = engine.launch()
-            for scenario in ('signed_out', 'success', 'rejected_callback',
+            for scenario in ('signed_out', 'success', 'slow_feed', 'rejected_callback',
                              'provider_error', 'forbidden_signout'):
                 run(browser, args.live, scenario)
                 print(f'PASS {engine.name}: {scenario}', flush=True)

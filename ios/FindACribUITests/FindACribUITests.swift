@@ -546,10 +546,13 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS 'Details'")).firstMatch.exists)
         app.buttons["events-boro-Bronx"].tap()
         XCTAssertEqual(cards.count, 1, "Bronx shows only the Bronx event")
+        // The City's flyer tops the card that has one (2026-09-26), and only that one.
+        XCTAssertTrue(app.buttons["event-flyer"].waitForExistence(timeout: 5), "the Bronx sample carries a flyer")
         app.buttons["events-boro-Queens"].tap()
         XCTAssertTrue(app.descendants(matching: .any)["events-empty"].waitForExistence(timeout: 5), "an empty borough says so")
         app.buttons["events-boro-All"].tap()
         XCTAssertEqual(cards.count, 3)
+        XCTAssertEqual(app.buttons.matching(identifier: "event-flyer").count, 1, "events without a flyer show none")
     }
 
     /// Violations & inspections leads and About is the last section (owner,

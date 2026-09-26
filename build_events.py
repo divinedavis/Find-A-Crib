@@ -185,7 +185,7 @@ def normalise(it):
     boros = pick(it, "boroughs", "borough", "boro") or []
     boros = [BORO_CODE.get(text(b).lower().strip(), None) for b in (boros if isinstance(boros, list) else [boros])]
     boro = next((b for b in boros if b), None)
-    img = text(pick(it, "imageUrl", "image"))
+    img = flyer_url(text(pick(it, "imageUrl", "image")))
     return {
         "title": title, "start": start, "end": end, "address": address,
         "online": online, "image": img if img.startswith("https://") else "",
@@ -298,6 +298,60 @@ def build(raw, today):
     return [serialise(e) for e in dedupe(evs)]
 
 
+def flyer_url(v):
+    """The City sends HPD's flyers as site paths ("/assets/hpd/images/…"),
+    which the old https-only check threw away — 9 of 22 events had one
+    (2026-09-26). Make them absolute on www.nyc.gov; anything else that is
+    not https is dropped."""
+    v = (v or "").strip()
+    if v.startswith("/assets/"):
+        v = "https://www.nyc.gov" + v
+    v = v.replace("http://", "https://").replace("https://www1.nyc.gov", "https://www.nyc.gov")
+    return v if v.startswith("https://") else ""
+
+
+THUMB_W = 720          # 2x a phone card's width; flyers arrive at up to 2.3 MB
+THUMB_MAX_RATIO = 1.3  # height:width kept; the card shows the top of a flyer
+
+
+def add_thumbnails(events, docroot, site="https://findacrib.com"):
+    """A small JPEG of each flyer, served from findacrib.com/events/img/, so
+    the Events list does not pull a 2 MB poster per card. `image` becomes the
+    thumbnail and `flyer` keeps the City's full-size file for a tap. Without
+    Pillow, or on any failure, the event keeps the City's own URL."""
+    try:
+        from PIL import Image
+    except ImportError:
+        return
+    import io
+    outdir = Path(docroot) / "events" / "img"
+    outdir.mkdir(parents=True, exist_ok=True)
+    for e in events:
+        src = e.get("image")
+        if not src or not src.startswith("https://www.nyc.gov/"):
+            continue
+        name = hashlib.sha1(src.encode()).hexdigest()[:16] + ".jpg"
+        dest = outdir / name
+        try:
+            if not dest.exists():
+                req = urllib.request.Request(src, headers={"User-Agent": "Mozilla/5.0 (findacrib.com events)"})
+                data = urllib.request.urlopen(req, timeout=30).read(8_000_000)
+                im = Image.open(io.BytesIO(data)).convert("RGB")
+                # Tall flyers (one poster repeated in five languages, top to
+                # bottom) keep their top: the title and first block of details.
+                if im.height > im.width * THUMB_MAX_RATIO:
+                    im = im.crop((0, 0, im.width, round(im.width * THUMB_MAX_RATIO)))
+                if im.width > THUMB_W:
+                    im = im.resize((THUMB_W, round(im.height * THUMB_W / im.width)), Image.LANCZOS)
+                tmp = dest.with_suffix(".tmp")
+                im.save(tmp, "JPEG", quality=72, optimize=True, progressive=True)
+                os.replace(tmp, dest)
+            e["flyer"] = src
+            e["image"] = f"{site}/events/img/{name}"
+        except Exception as ex:
+            print(f"  thumbnail failed for {src}: {ex}", file=sys.stderr)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=str(HERE / "events.json"))
@@ -312,6 +366,8 @@ def main():
     except Exception as e:
         sys.exit(f"fetch failed, keeping the existing file: {e}")
     events = build(raw, today)
+    if not a.dry_run:
+        add_thumbnails(events, Path(a.out).parent)
     payload = {"generated": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                "source": "NYC Event Calendar (api.nyc.gov), HPD and the Mayor's Public Engagement Unit",
                "fetched": len(raw), "events": events}

@@ -94,6 +94,28 @@ struct EventsView: View {
 
     private func card(_ e: EventsFeed.Event) -> some View {
         VStack(alignment: .leading, spacing: 6) {
+            // The City's flyer (owner, 2026-09-26: "does nyc not give us
+            // images"): its top, the title and first details, at a fixed
+            // height; a tap opens the whole flyer.
+            if let s = e.image, s.hasPrefix("https://"), let thumb = URL(string: s) {
+                Button {
+                    Analytics.shared.track("event_open", ["kind": "flyer", "id": e.id])
+                    openURL(e.flyer.flatMap(URL.init(string:)) ?? thumb)
+                } label: {
+                    SE.badge
+                        .frame(maxWidth: .infinity).frame(height: 200)
+                        .overlay(alignment: .top) {
+                            AsyncImage(url: thumb) { phase in
+                                if let img = phase.image { img.resizable().scaledToFill() }
+                            }
+                        }
+                        .clipped()
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Event flyer")
+                .accessibilityIdentifier("event-flyer")
+                .padding(.bottom, 6)
+            }
             Text(e.title).font(.se(19, .bold)).foregroundStyle(SE.ink).fixedSize(horizontal: false, vertical: true)
             Label(EventsFeed.timeLine(e), systemImage: "clock").font(.se(15, .semibold)).foregroundStyle(SE.ink2)
             // Most City housing events are online, and the feed leaves the

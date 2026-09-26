@@ -85,5 +85,19 @@ class Build(unittest.TestCase):
         self.assertEqual(B.items_of({"nothing": 1}), [])
 
 
+
+
+
+class FlyerTests(unittest.TestCase):
+    def test_flyer_paths_become_nyc_gov_urls(self):
+        """HPD's flyers arrive as site paths; they were dropped as not-https."""
+        import build_events as b
+        self.assertEqual(b.flyer_url("/assets/hpd/images/content/events/fbo-flyer.png"),
+                         "https://www.nyc.gov/assets/hpd/images/content/events/fbo-flyer.png")
+        self.assertEqual(b.flyer_url("http://www1.nyc.gov/assets/x.jpg"), "https://www.nyc.gov/assets/x.jpg")
+        self.assertEqual(b.flyer_url("ftp://x/y.png"), "")
+        self.assertEqual(b.flyer_url(""), "")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

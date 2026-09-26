@@ -27,6 +27,11 @@ final class EventsFeed {
         let categories: [String]?
         let description: String?
         let url: String?
+        /// A thumbnail of the City's flyer on findacrib.com (build_events.py
+        /// add_thumbnails), and the full-size flyer on nyc.gov for a tap.
+        /// Absent on most Mayor's-office events, which carry no flyer.
+        var image: String? = nil
+        var flyer: String? = nil
 
         var startDate: Date? { EventsFeed.parse(start) }
         var endDate: Date? { end.flatMap(EventsFeed.parse) }
@@ -136,7 +141,9 @@ final class EventsFeed {
                   end: "\(d2)T19:30:00", all_day: false, online: false, address: "1 Fordham Plaza, Bronx, NY 10458", borough: "Bronx",
                   hosts: ["NYC Housing Preservation & Development"], categories: ["Tenant Resource Fair"],
                   description: "Ask HPD about repairs, rent-stabilized leases and affordable housing lotteries.",
-                  url: "https://www.nyc.gov/site/hpd/events/index.page"),
+                  url: "https://www.nyc.gov/site/hpd/events/index.page",
+                  image: "https://findacrib.com/events/img/e1c9ad480b33f314.jpg",
+                  flyer: "https://www.nyc.gov/assets/hpd/images/content/events/CM-Sandy-Nurse-Flyers-Combined.jpg"),
             Event(id: "demo-owner", title: "Property Owner Clinic", start: "\(d2)T00:00:00", end: nil, all_day: true, online: true,
                   address: "100 Gold St, New York, NY 10038", borough: "Manhattan",
                   hosts: ["NYC Housing Preservation & Development"], categories: ["Property Owner Clinic"],

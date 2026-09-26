@@ -1083,7 +1083,9 @@ final class LotteryFeedTests: XCTestCase {
         XCTAssertEqual(City.phl.badgeLabel, "Income-restricted"); XCTAssertEqual(City.nyc.badgeLabel, "Rent stabilized")
         XCTAssertEqual(City.dc.badgeLabel, "Rent controlled"); XCTAssertEqual(City.la.badgeLabel, "Likely RSO")
         let p = Building(bbl: "PHL-1", b: "PHL", a: "100 W OXFORD ST", z: "19122", lat: 39.97, lng: -75.14)
-        XCTAssertEqual(p.place(in: .phl), "ZIP 19122", "not the city code")
+        // Neighborhood cities since 2026-09-26: the building's neighborhood,
+        // else the city's name — never the "PHL" code.
+        XCTAssertEqual(p.place(in: .phl), "Philadelphia", "not the city code")
     }
 
     /// Openings outside New York: LA, SF and Miami-Dade take their own

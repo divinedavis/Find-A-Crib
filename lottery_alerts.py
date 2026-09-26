@@ -864,7 +864,12 @@ def main():
         sub["boroughs"] = list(sub.get("boroughs") or [])
         sub["kinds"] = list(sub.get("kinds") or ["lottery", "rerental"])
         sid = str(sub["id"])
-        held = st["held"].get(sid, [])
+        # Held items are re-checked against the subscriber's CURRENT boroughs,
+        # kinds and filters: they were matched when first held, and a
+        # subscriber who has since narrowed their alerts must not get the
+        # old matches. 2026-09-26: the owner (Manhattan + Brooklyn, lotteries
+        # + re-rentals) was emailed a held Bronx voucher listing.
+        held = [h for h in st["held"].get(sid, []) if wants(sub, h)]
         fresh = [i for i in new if wants(sub, i) and i["id"] not in {h["id"] for h in held}]
         mine = held + fresh
         if not mine:

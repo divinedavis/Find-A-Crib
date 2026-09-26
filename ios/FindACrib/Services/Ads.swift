@@ -24,7 +24,7 @@ final class Ads: NSObject {
     /// nothing and can never get the account banned for invalid clicks. It
     /// works under the real app ID, which is why TestFlight and the simulator
     /// keep using it — the owner is the TestFlight audience, and a tap on a
-    /// live ad from his own phone is exactly what Google bans accounts for.
+    /// live ad from their own phone is exactly what Google bans accounts for.
     static let testBannerUnit = "ca-app-pub-3940256099942544/2435281174"
     /// "Every screen banner" in the AdMob console (app
     /// ca-app-pub-8077227518694725~3025780207, set in project.yml), created

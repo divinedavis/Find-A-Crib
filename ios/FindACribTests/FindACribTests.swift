@@ -886,6 +886,31 @@ final class ReviewPromptTests: XCTestCase {
         XCTAssertFalse(ReviewPrompt.shouldAsk(version: "1.3.0", lastVersion: "1.2.1", lastAsked: now.addingTimeInterval(-Double(ReviewPrompt.quietDays) * day + 60), now: now))
     }
 
+    /// Everyone is asked on their 7th open, once (owner, 2026-09-26).
+    func testSeventhOpenRule() {
+        let today = "2026-09-26"
+        XCTAssertEqual(ReviewPrompt.askOnOpen, 7)
+        for n in 1...6 { XCTAssertFalse(ReviewPrompt.seventhOpenDue(opens: n, done: false, lastAskDay: nil, today: today), "open \(n)") }
+        XCTAssertTrue(ReviewPrompt.seventhOpenDue(opens: 7, done: false, lastAskDay: nil, today: today))
+        XCTAssertFalse(ReviewPrompt.seventhOpenDue(opens: 7, done: true, lastAskDay: nil, today: today), "only once")
+        XCTAssertFalse(ReviewPrompt.seventhOpenDue(opens: 7, done: false, lastAskDay: today, today: today), "not twice in a day")
+        XCTAssertTrue(ReviewPrompt.seventhOpenDue(opens: 8, done: false, lastAskDay: today, today: "2026-09-27"), "a blocked 7th passes to the next open")
+    }
+
+    /// Opens are counted on every appOpened, and the 7th spends the ask.
+    @MainActor func testSeventhOpenCountsAndFiresOnce() {
+        let d = UserDefaults(suiteName: "review.test.\(UUID())")!
+        let rp = ReviewPrompt(defaults: d)
+        for _ in 1...6 { rp.appOpened(signedIn: false, pushCardShowing: false) }
+        XCTAssertEqual(d.integer(forKey: "review.opens"), 6)
+        XCTAssertFalse(d.bool(forKey: "review.seventhDone"))
+        rp.appOpened(signedIn: false, pushCardShowing: true)          // 7th, card up: deferred
+        XCTAssertFalse(d.bool(forKey: "review.seventhDone"))
+        rp.appOpened(signedIn: false, pushCardShowing: false)         // 8th: asks
+        XCTAssertTrue(d.bool(forKey: "review.seventhDone"))
+        XCTAssertEqual(d.integer(forKey: "review.opens"), 8)
+    }
+
     func testScheduledAsks() {
         var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "America/New_York")!
         func at(_ y: Int, _ m: Int, _ d: Int, _ h: Int = 12) -> Date { cal.date(from: DateComponents(year: y, month: m, day: d, hour: h))! }

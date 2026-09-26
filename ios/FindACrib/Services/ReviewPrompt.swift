@@ -31,7 +31,17 @@ final class ReviewPrompt {
 
     /// What earned the ask. Recorded on the event so the two triggers can be
     /// compared later.
-    enum Moment: String { case save, alerts, signup, monthly }
+    enum Moment: String { case save, alerts, signup, monthly, seventhOpen }
+
+    /// Everyone is asked on their 7th open of the app, signed in or not
+    /// (owner, 2026-09-26). Launches and returns from the background both
+    /// count. Asked once; a 7th open that cannot ask (the notifications card
+    /// is up, or there was already an ask today) passes it to the next open.
+    nonisolated static let askOnOpen = 7
+
+    nonisolated static func seventhOpenDue(opens: Int, done: Bool, lastAskDay: String?, today: String) -> Bool {
+        !done && opens >= askOnOpen && lastAskDay != today
+    }
 
     /// Never ask twice for the same version, and never inside this many days —
     /// well inside Apple's own cap, so the few asks we do get are spent on
@@ -102,7 +112,17 @@ final class ReviewPrompt {
     /// Called on a cold launch (after the notifications card had its chance)
     /// and whenever the app comes back from the background.
     func appOpened(signedIn: Bool, pushCardShowing: Bool, now: Date = Date()) {
-        if CommandLine.arguments.contains("--no-launch-prompt") || pushCardShowing { return }
+        if CommandLine.arguments.contains("--no-launch-prompt") { return }
+        let opens = defaults.integer(forKey: "review.opens") + 1
+        defaults.set(opens, forKey: "review.opens")
+        if pushCardShowing { return }
+        if Self.seventhOpenDue(opens: opens, done: defaults.bool(forKey: "review.seventhDone"),
+                               lastAskDay: defaults.string(forKey: "review.lastAskDay"),
+                               today: Self.dayKey(now)) {
+            defaults.set(true, forKey: "review.seventhDone")
+            ask(.seventhOpen, forced: false)
+            return
+        }
         guard let moment = Self.scheduledMoment(signedIn: signedIn,
                                                 signupDay: defaults.string(forKey: "review.signupDay"),
                                                 lastMonthly: defaults.string(forKey: "review.lastMonthly"),

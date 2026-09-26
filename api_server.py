@@ -1395,6 +1395,10 @@ def dashboard_metrics():
         "search": (_fac_search,),
         "channels": (_fac_channels, since),
         "adtiles": (_fac_adtiles, since),
+        # "Served impressions" is ALL-TIME on every range (owner, 2026-09-25):
+        # the card's headline is inventory banked, not this window's traffic.
+        # Memoized like the ranged call, so "All time" costs nothing extra.
+        "adtiles_all": (_fac_adtiles, None),
         "ads_served": (_fac_ads_served, since),
         # Inputs for the goals card's audience-INDEPENDENT streams. Deliberately
         # not range-scoped: that card is pinned to all-time for the same reason.
@@ -1412,6 +1416,11 @@ def dashboard_metrics():
         futs = {k: pool.submit(*v) for k, v in jobs.items()}
         got = {k: f.result() for k, f in futs.items()}
     data["goalstreams"] = {k: got.pop(k) for k in ("ai", "consult_clicks", "agents")}
+    at_all = got.pop("adtiles_all") or {}
+    if isinstance(got.get("adtiles"), dict) and got["adtiles"]:
+        got["adtiles"] = dict(got["adtiles"])   # the memo's dict is shared
+        got["adtiles"]["alltime"] = {k: at_all.get(k) for k in
+                                     ("served_all", "served", "served_web", "served_app", "google_ads")}
     data.update(got)
     # Moving goals for the three audience counts. The check runs against the
     # numbers of the all-time call (the same fixed windows every range shows)
@@ -1634,7 +1643,10 @@ def _fac_owner_visitors():
 FAC_AD_SOURCES = (
     ("web_tiles", "event=eq.tile_served"),
     ("app_tiles", "event=eq.tile_impression&props->>platform=eq.ios"),
-    ("admob", "event=eq.ad_impression&props->>mode=eq.live"),
+    ("admob", "event=eq.ad_impression&props->>mode=eq.live&props->>platform=eq.ios"),
+    # The website's AdSense in-feed tiles, logged when a slot fills (index.html
+    # settleAds, 2026-09-25). Web rows carry platform=web.
+    ("adsense", "event=eq.ad_impression&props->>mode=eq.live&props->>platform=eq.web"),
     ("admob_test", "event=eq.ad_impression&props->>mode=eq.test"),
 )
 
@@ -1655,7 +1667,7 @@ def _fac_ads_served(since):
             out[key] = _rest_count("events?select=id&" + flt + base)
     except Exception:
         return {}
-    out["total"] = out["web_tiles"] + out["app_tiles"] + out["admob"]
+    out["total"] = out["web_tiles"] + out["app_tiles"] + out["admob"] + out["adsense"]
     return out
 
 
@@ -1753,11 +1765,22 @@ def _fac_adtiles(since):
     served = sum(a["served"] for a in agents)
     clicks_measured = sum(a["clicks_measured"] for a in agents)
     clicks_served = sum(a["clicks_served"] for a in agents)
+    # Every served ad on every platform (owner, 2026-09-25): the advertiser
+    # tiles on the web and in the app, plus Google's own ads (AdSense on the
+    # web, AdMob in the app). The click rates above stay on the tiles alone —
+    # a Google ad's click goes to Google's advertiser, not to an agent.
+    google = agg.get("google_ads") or {}
+    google_live = int(google.get("web") or 0) + int(google.get("app") or 0)
     return {
         "agents": agents,
         "kinds": [finish(kinds[k]) for k in ("rerental", "lottery") if k in kinds],
         "impressions": impressions,
         "served": served,
+        "served_web": int(agg.get("served_web") or 0),
+        "served_app": int(agg.get("served_app") or 0),
+        "google_ads": {"web": int(google.get("web") or 0), "app": int(google.get("app") or 0),
+                       "test": int(google.get("test") or 0)},
+        "served_all": served + google_live,
         "clicks": sum(a["clicks"] for a in agents),
         "clicks_measured": clicks_measured,
         "clicks_served": clicks_served,

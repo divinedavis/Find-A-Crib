@@ -1934,6 +1934,14 @@
     // a buyer — but it is not the comparable one, and quoting it against an
     // industry average overstated this slot by roughly an order of magnitude.
     var served=n(A.served);
+    // All-time on every range (owner, 2026-09-25): the API sends the
+    // all-time split as A.alltime; the ranged numbers stay behind the CTR.
+    var AT=A.alltime||A, G=AT.google_ads||{};
+    var servedAll = AT.served_all != null ? n(AT.served_all) : served;
+    var servedSub = 'all time, every platform — website tiles '+comma(AT.served_web != null ? AT.served_web : served)
+      +' · app tiles '+comma(n(AT.served_app))
+      +' · Google ads '+comma(n(G.web)+n(G.app))
+      +(n(G.test) ? ' (+'+comma(G.test)+' TestFlight test ads, not counted)' : '');
     var hasCtr = A.ctr_served !== null && A.ctr_served !== undefined;
     var ctr = hasCtr ? A.ctr_served.toFixed(1)+'%' : '—';
     var hasView = A.ctr !== null && A.ctr !== undefined;
@@ -1944,7 +1952,9 @@
                 : 'served impressions are being counted from today');
 
     el('tile-tiles').innerHTML=[
-      {v:comma(served), l:'Served impressions', sub:'rendered into the grid — what the industry counts'},
+      // Every platform (owner, 2026-09-25): website + app advertiser tiles and
+      // Google's own ads. The click rate stays on the tiles (see _fac_adtiles).
+      {v:comma(servedAll), l:'Served impressions', sub:servedSub},
       {v:comma(impr), l:'Viewable impressions', sub:'half on screen, one second'},
       {v:comma(reach), l:'People reached', sub:'distinct visitors'},
       {v:comma(clicks), l:'Clicks to the agent', sub:'hand-offs off this site'},

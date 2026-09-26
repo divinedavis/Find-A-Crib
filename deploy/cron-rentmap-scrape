@@ -1,0 +1,16 @@
+# DAILY (03:30 UTC; was weekly until 2026-09-01 — "recently advertised" now means posted <5 days, which a weekly run cannot honour): free Zumper scrape -> listings_zumper.json, then
+# accumulate new buildings into the sticky master listings.json. Was monthly,
+# which left the "recently advertised" signal decaying for up to 30 days —
+# it is the most commercial content on the site. Weekly rather than nightly is
+# a deliberate politeness ceiling on someone else's search pages.
+# Headless Chromium runs as the unprivileged `scraper` user (2026-09-26 audit):
+# it may write only listings_zumper.json, scrape.log, listings_archive/; browsers in
+# /var/lib/scraper/ms-playwright. combine_listings.py stays root because listings.json
+# is also replaced by deploys (ownership would drift) and it parses JSON only, no browser.
+30 3 * * * root cd /var/www/rent-map && { runuser -u scraper -- env HOME=/var/lib/scraper PLAYWRIGHT_BROWSERS_PATH=/var/lib/scraper/ms-playwright venv/bin/python scrape_listings.py && python3 combine_listings.py ; } >> /var/log/rentmap-scrape.log 2>&1
+# MONTHLY (1st, 04:40 UTC): Section 8 building signals (HPD affordable production
+# + HUD project-based Section 8 contracts) -> the "bldg" half of s8.json.
+40 4 1 * * root cd /var/www/rent-map && python3 fetch_section8.py >> /var/log/rentmap-s8.log 2>&1
+# NIGHTLY (04:15 UTC): live voucher listings from AffordableHousing.com
+# -> the "avail" half of s8.json. Plain JSON POSTs, ~85 requests, 1s apart.
+15 4 * * * root cd /var/www/rent-map && python3 scrape_affordablehousing.py >> /var/log/rentmap-s8.log 2>&1

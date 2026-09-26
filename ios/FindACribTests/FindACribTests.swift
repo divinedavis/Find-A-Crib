@@ -1318,6 +1318,21 @@ final class AdsTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(Ads.minReload, 60)
     }
 
+    /// Real ads only where no consent screen is required: the US storefront.
+    func testLiveAdsAreUSOnly() {
+        XCTAssertTrue(Ads.servesLive(countryCode: "USA"))
+        for cc in ["GBR", "DEU", "FRA", "CHE", "CAN", nil] as [String?] {
+            XCTAssertFalse(Ads.servesLive(countryCode: cc), "\(cc ?? "nil") must not get live ads")
+        }
+    }
+
+    /// TestFlight must never carry the live unit: the owner is its audience.
+    func testTestFlightNeverServesTheLiveUnit() {
+        XCTAssertEqual(Ads.mode(debug: false, beta: true, demo: false,
+                                liveUnit: Ads.liveBannerUnit, labelDeclared: true), .test)
+        XCTAssertTrue(Ads.testBannerUnit.hasPrefix("ca-app-pub-3940256099942544/"), "Google's test publisher")
+    }
+
     /// Ad events name the screen, never the search on it.
     func testScreenNameDropsTheSearch() {
         XCTAssertEqual(Ads.screenName("Search|0|"), "Search")

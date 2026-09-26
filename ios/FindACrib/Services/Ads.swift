@@ -1,4 +1,5 @@
 import GoogleMobileAds
+import StoreKit
 import SwiftUI
 import UIKit
 
@@ -12,19 +13,23 @@ import UIKit
 /// (support.google.com/admob/answer/2936217: no new request inside 60 s).
 /// Faster than that and Google discards the impressions and flags the account.
 ///
-/// Plus subscribers see no banner.
+/// Plus subscribers see no banner. Real ads run on the US App Store only:
+/// anywhere in the EEA, UK or Switzerland Google requires a certified consent
+/// screen first, and the app is about American cities anyway.
 @Observable @MainActor
 final class Ads: NSObject {
     static let shared = Ads()
 
-    /// Google's published test IDs: they serve real-looking "Test mode" ads
-    /// that pay nothing and can never get the account banned for invalid
-    /// clicks. The app ID in Info.plist (project.yml GADApplicationIdentifier)
-    /// is the matching test app until the AdMob app exists.
+    /// Google's published test unit: real-looking "Test mode" ads that pay
+    /// nothing and can never get the account banned for invalid clicks. It
+    /// works under the real app ID, which is why TestFlight and the simulator
+    /// keep using it — the owner is the TestFlight audience, and a tap on a
+    /// live ad from his own phone is exactly what Google bans accounts for.
     static let testBannerUnit = "ca-app-pub-3940256099942544/2435281174"
-    /// The real banner unit from the AdMob console. Empty until the owner has
-    /// an AdMob account with Find A Crib registered in it.
-    static let liveBannerUnit = ""
+    /// "Every screen banner" in the AdMob console (app
+    /// ca-app-pub-8077227518694725~3025780207, set in project.yml), created
+    /// 2026-09-25 with a 60-second custom refresh and Google-optimized floors.
+    static let liveBannerUnit = "ca-app-pub-8077227518694725/7882431778"
     /// Like Analytics.privacyLabelDeclared. The SDK collects a device ID,
     /// coarse location (IP), advertising data, product interaction and
     /// performance data (developers.google.com/admob/ios/privacy/data-disclosure)
@@ -49,12 +54,18 @@ final class Ads: NSObject {
     static let minReload: TimeInterval = 60
 
     /// Whether a screen change may ask for a new ad now.
+    /// Live ads only on the US storefront (StoreKit's alpha-3 code).
+    nonisolated static func servesLive(countryCode: String?) -> Bool { countryCode == "USA" }
+
     nonisolated static func mayReload(lastLoad: Date?, now: Date, min: TimeInterval = minReload) -> Bool {
         guard let lastLoad else { return true }
         return now.timeIntervalSince(lastLoad) >= min
     }
 
     let mode: Mode
+    /// Whether the slot shows at all: test builds at once, a live build only
+    /// after StoreKit confirms the US storefront.
+    private(set) var active = false
     private(set) var started = false
     /// True once a banner has filled; the slot keeps no height before that,
     /// so an empty (unfilled) request never leaves a blank strip.
@@ -93,8 +104,21 @@ final class Ads: NSObject {
     /// Starts the SDK — only when this build shows ads, so an App Store build
     /// that is still dark never runs Google's code or sends it anything.
     func start() {
-        guard mode != .off, !started else { return }
+        switch mode {
+        case .off: return
+        case .test: begin()
+        case .live:
+            Task { @MainActor in
+                guard Self.servesLive(countryCode: await Storefront.current?.countryCode) else { return }
+                begin()
+            }
+        }
+    }
+
+    private func begin() {
+        guard !started else { return }
         started = true
+        active = true
         MobileAds.shared.start()
         // The slot is on screen (and its banner built) before the launch
         // task gets here; its first request was held back, so send it now.
@@ -185,7 +209,7 @@ struct AdSlot: View {
     private var ads: Ads { Ads.shared }
 
     var body: some View {
-        if ads.mode != .off, !auth.hasPlus, !plus.entitled {
+        if ads.active, !auth.hasPlus, !plus.entitled {
             GeometryReader { geo in
                 BannerRepresentable(width: geo.size.width)
             }

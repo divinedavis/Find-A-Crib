@@ -77,10 +77,11 @@ targets:
         SUPABASE_ANON_KEY: $(SUPABASE_ANON_KEY)
         # Google sign-in runs Supabase's web OAuth flow in an
         # ASWebAuthenticationSession and comes back on this scheme.
-        # AdMob (Services/Ads.swift). Google's TEST app ID until the AdMob
-        # app exists — swap it for the real one together with
-        # Ads.liveBannerUnit. The SDK refuses to launch without this key.
-        GADApplicationIdentifier: ca-app-pub-3940256099942544~1458002511
+        # AdMob (Services/Ads.swift): the Find A Crib app in the owner's
+        # AdMob account (publisher pub-8077227518694725, 2026-09-25). The SDK
+        # refuses to launch without this key. findacrib.com/app-ads.txt
+        # authorizes the same publisher.
+        GADApplicationIdentifier: ca-app-pub-8077227518694725~3025780207
         # Nothing of Google's runs at launch; Ads.start() is the only thing
         # that starts it, and an App Store build that is still dark never does.
         GADDelayAppMeasurementInit: true

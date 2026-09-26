@@ -172,7 +172,13 @@ class Runner:
         page.on('pageerror', on_pageerror)
         page.on('crash', lambda: j.errors.append('CRASH: renderer died'))
         page.on('console', lambda m: j.errors.append('console.error: ' + m.text[:200])
-                if m.type == 'error' and not m.text.startswith('[MapKit]') and 'wasm streaming compile failed' not in m.text and 'falling back to ArrayBuffer' not in m.text and 'Failed to load resource' not in m.text and 'Content Security Policy' not in m.text and 'Report Only' not in m.text and 'doubleclick.net' not in m.text else None)  # WebKit words Google's own conversion-ping refusal as 'Refused to execute'
+                if m.type == 'error' and not m.text.startswith('[MapKit]') and 'wasm streaming compile failed' not in m.text and 'falling back to ArrayBuffer' not in m.text and 'Failed to load resource' not in m.text and 'Content Security Policy' not in m.text and 'Report Only' not in m.text and 'doubleclick.net' not in m.text
+                and not (m.text.startswith('Error: no_div')
+                         and 'googlesyndication.com' in (m.text + (m.location or {}).get('url', ''))) else None)  # WebKit words Google's own conversion-ping refusal as 'Refused to execute'
+        # AdSense's "no_div": a queued push found no empty <ins> because the
+        # list re-rendered (every map move rebuilds it) before Google got to
+        # it, or Google's own Auto ads took one. No request is made and the
+        # visitor sees nothing; filtered only when the stack is Google's.
         if self.html is not None:
             def route(r):
                 u = r.request.url.split('#')[0]

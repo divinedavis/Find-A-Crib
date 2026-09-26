@@ -11,7 +11,7 @@
 <meta name="robots" content="index,follow,max-image-preview:large" />
 <meta name="theme-color" content="#2b39c8" />
 <!-- Google AdSense — site-ownership verification + ad serving (ca-pub-8077227518694725) -->
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8077227518694725" crossorigin="anonymous" onerror="window.__adsBlocked=true"></script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8077227518694725" crossorigin="anonymous" onerror="window.__adsBlocked=true" onload="window.__adsLoaded=true;window.__facInitAds&&window.__facInitAds()"></script>
 <!-- Google tag (gtag.js) — Google Ads conversion tracking + GA4 analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=AW-1001356637"></script>
 <script>
@@ -5839,13 +5839,23 @@ function favActive() {
   }
 
   // fill any ad slots that were just rendered but not yet initialized
+  // Push only once Google's script has run. A push queued before that is
+  // replayed later against whatever <ins> is in the list THEN — and the list
+  // re-renders on every map move, so the slot was often gone and Google threw
+  // "no_div". The <head> tag's onload calls this again when it arrives.
   function initAds() {
     if (!ADS_ON()) return;
-    grid.querySelectorAll('ins.adsbygoogle:not([data-adsbygoogle-status])').forEach(() => {
+    settleAds();
+    if (!window.__adsLoaded) return;
+    // Mark each slot before pushing: Google sets data-adsbygoogle-status only
+    // once its script has run, so a second initAds() before then (the next
+    // list page) pushed the same slots again and Google threw "no_div".
+    grid.querySelectorAll('ins.adsbygoogle:not([data-fac-pushed])').forEach(ins => {
+      ins.setAttribute('data-fac-pushed', '1');
       try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) { /* ad blocker / not ready */ }
     });
-    settleAds();
   }
+  window.__facInitAds = initAds;
 
   // Google marks each slot data-ad-status="filled" or "unfilled". Swap an
   // unfilled one as soon as it says so; anything still unsettled after

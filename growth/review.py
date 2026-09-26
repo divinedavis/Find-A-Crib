@@ -494,10 +494,53 @@ def evaluate(t, techs=None):
         # its own false claim: these are all above the retirement floor.
         alive_now = (recent or 0) >= MIN_RECENT_MEDIAN
         falling = recent is not None and prior is not None and recent < prior
-        if alive_now and not falling:
+
+        # And being alive is still not enough to call it WORKING. Every
+        # technique in this ledger exists to earn search or answer-engine
+        # visibility — that is what the 90% share goal measures. Where Search
+        # Console has been measured for these prefixes and reports no
+        # non-branded impressions at all, nobody reached these pages from a
+        # housing search, so whatever the visitor count is counting, it is not
+        # the thing the technique was built to cause. On this site that is
+        # mostly internal navigation: 233 of 241 visitors on 2026-09-22 landed
+        # on "/" and clicked through the map, which no content change to a hub
+        # page caused and none would have prevented.
+        #
+        # The WORDING for this already landed on 2026-09-20, in the `served`
+        # clause above, after T046 carried "9 pages serving in search" on a
+        # WORKS verdict while all nine were brand sitelinks. Only the wording:
+        # the verdict itself was left asserting True beside a clause that
+        # contradicted it, which is strictly worse than either alone. This
+        # closes the other half, and it is the third member of the same family
+        # as 2026-08-25 (unconditional works=True), 08-26 (stocks through a
+        # flow test) and 08-27 (this branch's cumulative floor).
+        #
+        # works=None, never False: these techniques all cleared the retirement
+        # floor above, and "failed" would be its own unsupported claim. The
+        # cost of the false positive is concrete — scout.py feeds the WORKS
+        # list to the model under the heading ALREADY MEASURED AS WORKING, so
+        # a technique that earned nothing in search becomes the template the
+        # next proposals are modelled on.
+        unseen = ""
+        if vis["measured"] and not vis["impressions"]:
+            unseen = ("its pages earned 0 search impressions over the same window, "
+                      "so none of those visitors arrived from a search")
+        elif vis.get("brand_measured") and vis["pages"] and not vis["nonbranded_impressions"]:
+            unseen = (f"all {vis['impressions']} impressions its {vis['pages']} serving "
+                      f"pages earned came from branded queries, so none of those "
+                      f"visitors arrived from a housing-intent search")
+
+        if alive_now and not falling and not unseen:
             res["works"] = True
             res["why"] = (f"{total} owned visitors in {days}d "
                           f"(median {recent}/day{direction})" + served)
+        elif alive_now and not falling:
+            res["works"] = None
+            res["why"] = (f"{total} owned visitors in {days}d "
+                          f"(median {recent}/day{direction}), but {unseen} — "
+                          f"unproven rather than failed: the traffic is real and above "
+                          f"the floor, but it is not evidence for a technique whose "
+                          f"premise is search visibility")
         elif falling:
             res["works"] = None
             res["why"] = (f"{total} owned visitors in {days}d, but the trailing "

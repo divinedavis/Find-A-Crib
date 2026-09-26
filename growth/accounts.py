@@ -526,12 +526,25 @@ def run(dry_run=False, now=None, voucher_buildings=None, buildings_by_bbl=None):
     ctx = {"voucher_buildings": voucher_buildings,
            "buildings": buildings_by_bbl or {}}
     sent, failed = [], []
+    # The saved step is TWO different emails under one name. With a BBL that
+    # resolves in the corpus and carries an HPD record it makes the $9 Building
+    # Report ask; without one it makes no offer at all and sends DHCR routing
+    # instead. So sent_saved counts sends, not asks, and on 2026-09-25 the
+    # review read it as "11 qualified asks" when 11 is only its upper bound —
+    # T017 is the technique that turns on that number and it was being judged
+    # against an instrument that cannot see it. Counted from the same
+    # report_target() the builder itself calls, on the same row and the same
+    # corpus, so the counter and the email cannot disagree about what was asked.
+    asks = 0
     for row, step in pending:
         subject, html, text = BUILDERS[step](row, ctx)
+        asked = bool(step == "saved" and report_target(row, ctx.get("buildings"))[0])
         if dry_run:
             print(f"  [dry-run] {step} -> {row['email']} "
-                  f"({row.get('days_old')}d old, {row.get('save_count')} saves) — {subject}")
+                  f"({row.get('days_old')}d old, {row.get('save_count')} saves"
+                  f"{', $9 ask' if asked else ''}) — {subject}")
             sent.append(step)
+            asks += asked
             continue
         # One Find A Crib email a day, whichever job sends it (growth/mailcap).
         # A step that loses today's slot is simply still due tomorrow.
@@ -553,12 +566,15 @@ def run(dry_run=False, now=None, voucher_buildings=None, buildings_by_bbl=None):
         except Exception as e:
             failed.append(f"{step} sent but not recorded for {row['email']}: {e}")
         sent.append(step)
-        print(f"  sent {step} -> {row['email']} ({row.get('days_old')}d old)")
+        asks += asked
+        print(f"  sent {step} -> {row['email']} ({row.get('days_old')}d old"
+              f"{', $9 ask' if asked else ''})")
 
     by_step = {s: sent.count(s) for s in set(sent)}
     detail = f"{len(sent)} sent {by_step}" + (f", {len(failed)} failed" if failed else "")
     ledger.set_state("accounts_last", {"date": ledger.today(), "ok": not failed,
                                        "sent": len(sent), "by_step": by_step,
+                                       "paid_asks": asks,
                                        "failed": failed[:5], "detail": detail})
     ledger.record_result(ledger.today(), "account_lifecycle", "emails_sent", len(sent))
     # Per-step series, so a later review can ask "how many times was the paid
@@ -568,5 +584,10 @@ def run(dry_run=False, now=None, voucher_buildings=None, buildings_by_bbl=None):
     for step in STEPS:
         ledger.record_result(ledger.today(), "account_lifecycle",
                              f"sent_{step}", by_step.get(step, 0))
-    return {"ok": not failed, "sent": len(sent), "by_step": by_step,
+    # The number T017's revisit actually needs: how many times the $9 ask was
+    # put to somebody. Recorded even when zero, for the reason above — a step
+    # nobody was due and a step whose paid branch never fires look identical
+    # otherwise, and those are opposite findings.
+    ledger.record_result(ledger.today(), "account_lifecycle", "sent_saved_paid_ask", asks)
+    return {"ok": not failed, "sent": len(sent), "by_step": by_step, "paid_asks": asks,
             "failed": failed, "detail": detail}

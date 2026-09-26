@@ -285,7 +285,27 @@ SEEDS = [
                "hold 9 of 273 ever-served URLs while building pages hold 260, so it is NOT "
                "confirmed — but not refuted either, because mature index acceptance is 0.0% "
                "site-wide and a page Google declines cannot demonstrate depth. The blocks are "
-               "built and cost nothing to maintain; re-judge when acceptance is non-zero."),
+               "built and cost nothing to maintain; re-judge when acceptance is non-zero. "
+               "[2026-09-26 revisit] KEEP the block; CHANGED review.py so the verdict this "
+               "record keeps having to disown cannot be written again. On 2026-09-23 it read "
+               "'WORKS — 62 owned visitors in 57d (median 1.5/day and rising), 0 pages serving "
+               "in search'. That is the 08-27 defect in its third form: 08-27 stopped works=True "
+               "being UNCONDITIONAL, 09-20 made the verdict STRING say when serving pages are "
+               "brand sitelinks, and neither stopped True being asserted beside a clause that "
+               "contradicts it. review.py's owned branch now requires non-branded search "
+               "impressions before it will call an owned technique WORKING; with none it reads "
+               "UNPROVEN — never False, because these are all above the retirement floor. "
+               "Re-judged across every active technique: exactly two verdicts moved, T019 and "
+               "T046, both True -> None, both action=keep, zero retirements proposed. "
+               "ON THE HYPOTHESIS, 60 days in and still NOT CONFIRMED. The blocks were written "
+               "'to be lifted whole by an AI answer engine or a featured snippet' and this "
+               "record set its own test: 'whether gsc_serving_pages and hub-page positions move "
+               "while thin-page counts stay flat'. gsc_owned_impressions is 0 and "
+               "owned_serving_pages is 0. The 62 owned visitors are NOT evidence for it — they "
+               "are internal navigation: 233 of 241 visitors on 2026-09-22 landed on '/' and "
+               "clicked through the map, which no answer block caused and none could have "
+               "prevented. Not refuted either, for the unchanged 08-27 reason. KEEP because the "
+               "blocks are accurate and cost nothing, NOT because the visitor count looks alive."),
     dict(slug="city_guides", status="active", kind="content",
          prefixes=["/guide/is-my-apartment-rent-controlled-"], metric="organic_visitors",
          name="Cornerstone guides for San Francisco, Los Angeles and Washington DC",
@@ -461,7 +481,19 @@ SEEDS = [
                "meaningless: an instrument cannot move the series it measures, the same "
                "category error corrected for T011/T018 on 08-26. Deliberately NOT repointing "
                "the metric — every candidate is one it also cannot cause, so a repoint would "
-               "buy a differently-worded false verdict, not a truer one."),
+               "buy a differently-worded false verdict, not a truer one. "
+               "[2026-09-26 revisit] KEEP, unchanged in substance from 08-27, with one new line "
+               "on each half. THE INSTRUMENT HALF HAS KEPT PAYING: since that revisit it "
+               "produced the per-technique brand / non-branded split (2026-09-20, which caught "
+               "T046's nine 'serving' pages as sitelinks) and the crawl-reach-by-family census "
+               "(09-24, which found /section8/, /guide/, /available/, /brief/, /dc/ and /la/ at "
+               "0 URLs ever fetched), and today's review.py verdict guard rests entirely on the "
+               "gsc_owned_nonbranded_* series only this technique collects. THE REFUTED HALF IS "
+               "MORE REFUTED, NOT LESS: tracked_ranking is 0 of 490 against 0 of 315 on 08-27, "
+               "so the tracked query universe grew 56% and the page-2 tier this hypothesis "
+               "predicted still does not exist anywhere in it. Verdict and metric both left "
+               "alone for the 08-27 reason, which has not weakened: an instrument is not judged "
+               "by the series it reads, and every candidate metric is one it also cannot cause."),
     dict(slug="lifecycle_email", status="candidate", kind="lifecycle",
          name="Buyer follow-up sequence (Building Report)",
          # reports_sold, not mrr_usd: mrr_usd is monthly RECURRING revenue and the
@@ -526,14 +558,26 @@ SEEDS = [
                "page already carries the four-city caveat and /methodology/ states it in "
                "full; the account emails were the ONLY surface that did not, and they are "
                "the first thing a new account ever reads. Fixed in growth/accounts.py: "
-               "COVERAGE_NOTE, lifted word-for-word from the /methodology/ answer block and "
-               "rendered by _coverage_block() with a link to /methodology/, now appears in "
+               "COVERAGE_NOTE, rendered by _coverage_block() with a link to /methodology/, "
+               "now appears in "
                "`welcome`, in `activate`, and in the no-BBL branch of `saved` — that branch "
                "fires for every save outside New York City and was handing out DHCR "
                "instructions that are the wrong route in the other three cities. `lapsed`'s "
                "voucher count and `activate`'s /section8/ card now say New York City, "
                "because that feed has only ever been NYC. The paid-ask branch of `saved` "
-               "was not touched. The caveat was added; no claim was softened or removed."),
+               "was not touched. The caveat was added; no claim was softened or removed. "
+               "[2026-09-26 correction] The sentence above said COVERAGE_NOTE was 'lifted "
+               "word-for-word from the /methodology/ answer block ... so the surfaces cannot "
+               "drift'. It is not, and they can. COVERAGE_NOTE states the same four facts in "
+               "the same order but shares no sentence with build_seo.py, whose wording is "
+               "'Derived from assessor records and labelled likely RSO' and 'The inventory is "
+               "published anonymized to the block, not the individual address'. Nothing a "
+               "reader sees is wrong — both surfaces are accurate and agree today — but the "
+               "drift protection that claim asserted does not exist, and a future reader who "
+               "believed it would skip the check. The two are separate strings in separate "
+               "modules and must be edited together; corrected here rather than by importing "
+               "build_seo.py into the email path, which would pull a whole build script into "
+               "a mailer to share six lines of prose."),
     dict(slug="listings_freshness", status="candidate", kind="content",
          name="Refresh the 'recently advertised' feed more than monthly",
          prefixes=["/available/"], metric="owned_visitors",

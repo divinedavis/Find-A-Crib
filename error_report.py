@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
 """Email the owner when users hit errors — web, mobile web and the iPhone app.
 
-Runs on the droplet (cron in deploy/cron-rentmap-errors). Four sources:
+Runs on the droplet (cron in deploy/cron-rentmap-errors). Five sources:
 
   1. `public.events` — js_error (web), crash_trace (a page that never said
      goodbye), push_register_failed / purchase / signin failures (iOS).
   2. nginx — 5xx served to real people on findacrib.com and /api/.
   3. journalctl -u findacrib-api — Python tracebacks behind those 5xx.
-  4. The feeds' own cron logs — a scrape that died leaves the app showing
-     yesterday's listings, which is a user-facing error nobody reports.
+  4. The feeds' own files in the docroot — a scrape that died leaves the app
+     showing yesterday's listings, which is a user-facing error nobody
+     reports. (This was documented as reading the feeds' cron LOGS, and a
+     FEED_LOGS table sat here for weeks to say so; nothing ever read it.
+     stale_feeds() has always checked the output files' mtimes instead, which
+     is the better test — a cron that runs and writes nothing is still a dead
+     feed — so the table is gone and the docstring now matches the code.)
+  5. The growth engine's own heartbeat — see dead_crons().
 
 It is quiet on purpose. A run mails only when something is worth waking up
 for — a NEW JavaScript message, a 5xx burst, a traceback, a crash-shaped
@@ -47,12 +53,22 @@ STATE = Path(os.environ.get("ERROR_STATE", "/var/lib/findacrib/error_report_stat
 NGINX_LOGS = ["/var/log/nginx/access.log", "/var/log/nginx/findacrib.access.log"]
 APPSTORE_JSON = os.environ.get("APPSTORE_JSON", "/root/findacrib-api/appstore.json")
 RELEASE_FLOOR = 3      # people on one unreleased build before it counts as users
-FEED_LOGS = {
-    "Zumper listings": "/var/log/rentmap-scrape.log",
-    "HCR lotteries": "/var/log/rentmap-hcr.log",
-    "Re-rentals": "/var/log/rentmap-rerentals.log",
-    "Borough alerts": "/var/log/rentmap-alerts.log",
-}
+
+# The growth engine's liveness record, written by growth_run.sh in this same
+# checkout. Overridable only for testing; on the droplet it is always here.
+HEARTBEAT = Path(os.environ.get("GROWTH_HEARTBEAT", HERE / "growth" / "cron_heartbeat.jsonl"))
+# The engine's two crons are at their widest 20h40m apart — 05:40 UTC (build,
+# pinned to the voucher feed's UTC clock) and 05:00 America/New_York (measure),
+# which is 09:00 UTC in summer and 10:00 in winter. 24h is therefore one full
+# cycle plus over three hours of margin for a cron that starts late, and it
+# trips on the morning digest after the FIRST missed night rather than the
+# third. See deploy/cron-rentmap-growth for both schedules.
+CRON_MAX_GAP_HOURS = 24
+# A record whose phase is a *_start with no matching finish means the script
+# was invoked and then died or hung. The longest legitimate run is the build
+# job plus its SEO watchdog, which carries its own 3600s timeout; 3h is past
+# any of it.
+CRON_MAX_INFLIGHT_HOURS = 3
 # A step that means the page was still working when it died, rather than a
 # tab the phone put away.
 CLEAN_LAST_STEPS = {"vis hidden", "vis visible", "tick", "pagehide", "freeze"}
@@ -303,13 +319,92 @@ def stale_feeds():
     return out
 
 
+def dead_crons():
+    """The growth engine stopped and nothing on this box noticed for 72 hours.
+
+    growth_run.sh appends a record to growth/cron_heartbeat.jsonl before it
+    does anything else and again when it finishes, and its own header states
+    the invariant that makes the file worth reading: EVERY INVOCATION LEAVES A
+    RECORD, so no record means the script did not run at all — cron, the host
+    or the checkout — and never means "it ran but stayed quiet".
+
+    Nothing on the droplet has ever read that file. It was written for the
+    daily review agent, which runs in Anthropic's cloud with only a git
+    checkout, and which therefore can report a dead engine to git and to
+    nobody. On 2026-09-24 the growth crons stopped. The heartbeat had run
+    unbroken for 34 days and its last record is 2026-09-23T05:42:12Z; the
+    09-24, 09-25 and 09-26 slots are all missing. In those three days the
+    owner pushed around forty commits to this repository, several of them
+    changes to this very droplet, and did not know the engine was down — the
+    site measured nothing, deployed nothing, and every change the review loop
+    pushed sat in git undeployed.
+
+    This is the missing half of that instrument. error_report.py runs hourly
+    from a cron of its own, independent of the growth cron, and already mails
+    the one person who can restart it.
+
+    Deliberately only reported on the --digest run (see main()): a dead cron
+    is a once-a-day fact, and the hourly path would mail the same sentence
+    seventy-two times over an outage this length, which is how an alert gets
+    filtered into a folder and stops working.
+    """
+    out = {}
+    # Only speak for a host that actually runs the engine. A checkout without
+    # growth_run.sh is not a broken engine, it is a box that never had one —
+    # the same reason stale_feeds() checks events.json only once it exists.
+    if not (HERE / "growth_run.sh").exists():
+        return out
+    try:
+        last = ""
+        with open(HEARTBEAT) as fh:
+            for line in fh:
+                if line.strip():
+                    last = line.strip()
+    except FileNotFoundError:
+        out["growth engine"] = ("no heartbeat file at growth/cron_heartbeat.jsonl — "
+                                "growth_run.sh has never completed a run on this host")
+        return out
+    except OSError as e:
+        out["growth engine"] = f"heartbeat unreadable: {e}"
+        return out
+    if not last:
+        out["growth engine"] = "heartbeat file is empty — no run has ever been recorded"
+        return out
+
+    try:
+        rec = json.loads(last)
+        at = datetime.datetime.strptime(rec["at"], "%Y-%m-%dT%H:%M:%SZ").replace(
+            tzinfo=datetime.timezone.utc)
+    except (ValueError, KeyError, TypeError):
+        # A heartbeat we cannot parse is itself a failure of the instrument,
+        # and staying quiet about it would leave the engine unwatched again.
+        out["growth engine"] = f"last heartbeat record is unreadable: {last[:120]}"
+        return out
+
+    age = (datetime.datetime.now(datetime.timezone.utc) - at).total_seconds() / 3600
+    job, phase = rec.get("job") or "?", rec.get("phase") or "?"
+    if age > CRON_MAX_GAP_HOURS:
+        out["growth engine"] = (
+            f"last ran {age:.0f}h ago ({rec['at']}, {job}/{phase}) — expected under "
+            f"{CRON_MAX_GAP_HOURS}h. /etc/cron.d/rentmap-growth is not firing: "
+            f"nothing is being measured, built or deployed")
+    elif phase.endswith("start") and age > CRON_MAX_INFLIGHT_HOURS:
+        # The other half of the three-way ambiguity growth_run.sh was written
+        # to resolve: this one ran, and then died or hung part way through.
+        out["growth engine"] = (
+            f"started {age:.0f}h ago ({rec['at']}, {job}/{phase}) and never "
+            f"recorded a finish — the run is hung or was killed. "
+            f"Check /var/log/rentmap-growth.log")
+    return out
+
+
 # ------------------------------------------------------------------- report
 
 def esc(s):
     return (str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"))
 
 
-def build(window_label, js, crash, app, five, tracebacks, stale, new_msgs):
+def build(window_label, js, crash, app, five, tracebacks, stale, new_msgs, crons=None):
     def table(title, headers, rows):
         if not rows:
             return ""
@@ -320,7 +415,12 @@ def build(window_label, js, crash, app, five, tracebacks, stale, new_msgs):
                 f"<table cellspacing='0' style='border-collapse:collapse;width:100%'>"
                 f"<tr>{th}</tr>{body}</table>")
 
+    crons = crons or {}
     parts = []
+    # First, above the user-facing errors. A stopped engine is not one more
+    # thing that went wrong that hour — it is every following number in this
+    # email being measured by something that is no longer running.
+    parts.append(table("Engine", ["Job", "State"], [[esc(k), esc(v)] for k, v in crons.items()]))
     parts.append(table("JavaScript errors (web)", ["Message", "Times", "People", "Where", "New?"], [
         [esc(k), v["n"], len(v["people"]), esc(v["paths"].most_common(1)[0][0] if v["paths"] else "—"),
          "<b style='color:#b3261e'>new</b>" if k in new_msgs else ("browser noise" if v["noise"] else "")]
@@ -342,6 +442,8 @@ def build(window_label, js, crash, app, five, tracebacks, stale, new_msgs):
             f"dashboard: https://divinedavis.com/dashboard/</p></div>")
 
     lines = [f"Find A Crib errors — {window_label}", ""]
+    if crons:
+        lines += ["Engine:"] + [f"  {k}: {v}" for k, v in crons.items()] + [""]
     for title, d in (("JavaScript errors", js), ("Pages that died mid-work", crash), ("iPhone app failures", app)):
         if d:
             lines.append(title + ":")
@@ -371,6 +473,7 @@ def main():
     skip = unreleased_rows(rows, live_build())
     js, crash, app = js_errors(rows), crashes(rows), app_failures(rows, skip)
     five, tracebacks, stale = nginx_5xx(minutes), api_tracebacks(minutes), stale_feeds()
+    crons = dead_crons()
 
     try:
         state = json.loads(STATE.read_text())
@@ -385,16 +488,25 @@ def main():
     # What earns an email: something we have never seen, something breaking on
     # the server, or a real burst. A handful of the same old cross-origin
     # "Script error." does not.
+    # A dead cron is deliberately NOT in the hourly path's list. It is a fact
+    # with a daily cadence, and an outage lasts days: the 2026-09-24 one ran
+    # 72 hours, which the hourly run would have turned into 72 identical
+    # emails. The digest fires once a morning at 08:10 ET and names it in the
+    # subject line, which is one email per day of outage and the first of them
+    # on the morning after the first missed night.
     worth_it = bool(new_msgs) or bool(tracebacks) or bool(stale) or sum(five.values()) >= 5 \
         or sum(v["n"] for v in crash.values()) >= 10 or sum(v["n"] for v in app.values()) >= 3
     if a.digest:
-        worth_it = bool(js or crash or app or five or tracebacks or stale)
+        worth_it = bool(js or crash or app or five or tracebacks or stale or crons)
+    else:
+        crons = {}
 
     label = f"last {a.hours:g}h" if a.hours != 24 else "last 24 hours"
-    html, text = build(label, js, crash, app, five, tracebacks, stale, new_msgs)
+    html, text = build(label, js, crash, app, five, tracebacks, stale, new_msgs, crons)
     counts = (f"js {sum(v['n'] for v in js.values())} ({len(new_msgs)} new), crashes "
               f"{sum(v['n'] for v in crash.values())}, app {sum(v['n'] for v in app.values())}, "
               f"5xx {sum(five.values())}, tracebacks {sum(tracebacks.values())}, stale {len(stale)}"
+              + (f", dead crons {len(crons)}" if crons else "")
               + (f", ignored unreleased builds {','.join(sorted(skip))}" if skip else ""))
 
     if not worth_it:
@@ -407,6 +519,12 @@ def main():
 
     from growth import emailkit
     bits = []
+    # Leads the subject. Everything else in this email is something users hit;
+    # this one is the machine that measures and deploys the site having
+    # stopped, and it needs to be readable in a phone notification without
+    # opening the mail.
+    if crons:
+        bits.append("GROWTH ENGINE NOT RUNNING")
     if new_msgs:
         bits.append(f"{len(new_msgs)} new JS error{'s' if len(new_msgs) > 1 else ''}")
     if five:

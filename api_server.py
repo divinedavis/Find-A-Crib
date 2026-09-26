@@ -1203,6 +1203,10 @@ _AUTH_CACHE_TTL = 60
 _MEMO = {}
 _MEMO_LOCK = threading.Lock()
 _MEMO_REFRESHING = set()
+# One computation per key at a time. The all-time window asks _fac_adtiles(None)
+# twice in the same request (the ranged card and the all-time card), and both
+# used to run the heaviest query side by side.
+_MEMO_KEYLOCKS = {}
 # Past its ttl an entry is still served for this long while a background thread
 # recomputes it. Before this, every expired entry was paid in the foreground:
 # by 2026-09-26 a cold all-time load was the 3.5 s RPC then a 4.5 s adtiles
@@ -1213,7 +1217,18 @@ _MEMO_STALE = 1800
 
 def _memo(ttl):
     def wrap(fn):
-        def compute(key, args):
+        def compute(key, args, fresh_ok=False):
+            with _MEMO_LOCK:
+                keylock = _MEMO_KEYLOCKS.setdefault(key, threading.Lock())
+            with keylock:
+                if fresh_ok:
+                    with _MEMO_LOCK:
+                        hit = _MEMO.get(key)
+                    if hit and hit[0] > time.time():
+                        return hit[1]   # a concurrent caller just computed it
+                return _compute(key, args)
+
+        def _compute(key, args):
             val = fn(*args)
             # Every helper returns {} (or None) on failure. Caching that for
             # the full ttl turned one slow query into ten minutes of a blank
@@ -1256,7 +1271,7 @@ def _memo(ttl):
                 if kick:
                     threading.Thread(target=background, args=(key, args), daemon=True).start()
                 return hit[1]
-            return compute(key, args)
+            return compute(key, args, fresh_ok=True)
 
         inner.refresh = lambda *args: compute((fn.__name__,) + tuple(str(a) for a in args), args)
         inner.__name__ = fn.__name__

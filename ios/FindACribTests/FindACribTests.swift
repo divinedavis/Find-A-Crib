@@ -1422,6 +1422,8 @@ final class SkylineDayNightTests: XCTestCase {
         XCTAssertFalse(Skyline.isDaytime(.losAngeles, at: utc("2026-09-27T03:30:00Z")))
         XCTAssertTrue(Skyline.isDaytime(.losAngeles, at: utc("2026-09-27T00:30:00Z")), "5:30 PM in LA")
         XCTAssertFalse(Skyline.isDaytime(.newYork, at: utc("2026-09-27T00:30:00Z")), "8:30 PM in NY")
+    }
+}
 
 /// Chicago, Miami, Atlanta and Philadelphia search by neighborhood now, from
 /// the cities' official boundaries (owner, 2026-09-26), with ZIPs still found

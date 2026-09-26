@@ -245,14 +245,11 @@ final class FindACribUITests: XCTestCase {
     /// carry Google's ads (owner, 2026-09-26) — and never a blank card.
     func testOtherCitiesGetAdsInTheRerentalSlots() throws {
         app.terminate()
-        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--ads-demo", "--city", "la"]
+        // --route results opens LA's unfiltered list (LaunchArgs), so a search
+        // form left filled by an earlier test (e.g. "BK, $1k–3k") cannot
+        // empty it. LA downloads first, which also gives the ad pool time.
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--ads-demo", "--city", "la", "--route", "results"]
         app.launch()
-        let search = app.buttons["search-button"].firstMatch
-        XCTAssertTrue(search.waitForExistence(timeout: 90))
-        sleep(8)                                   // let the pool load Google's test ads
-        search.tap()
-        // LA downloads on first selection; under the full suite that can take
-        // a minute (the other LA test waits 90 s for the same reason).
         XCTAssertTrue(app.descendants(matching: .any)["card-address"].firstMatch.waitForExistence(timeout: 90))
         let ad = app.descendants(matching: .any)["feed-ad"].firstMatch
         for _ in 0..<5 where !ad.exists { app.swipeUp() }

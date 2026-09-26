@@ -1829,10 +1829,12 @@
     ];
     function adsTile(A){
       if(!A || A.total == null) return {ic:'📣',v:'—',l:'Ads served · all platforms',own:'Ad counts unavailable right now',accent:true};
-      var parts=[comma(A.web_tiles)+' web tiles', comma(A.app_tiles)+' app tiles', comma(A.admob)+' AdMob banner'];
+      // The app's ads moved from a bottom banner into the feed (build 91), and
+      // the website has Google in-feed ads too: one "Google ads" count.
+      var parts=[comma(A.web_tiles)+' web tiles', comma(A.app_tiles)+' app tiles', comma(n(A.admob)+n(A.adsense))+' Google ads'];
       return {ic:'📣',v:comma(A.total),l:'Ads served · all platforms',
               own:parts.join(' · ')+(n(A.admob_test)?' · '+comma(A.admob_test)+' TestFlight test ads not counted':''),
-              title:'Web advertiser tiles rendered + iPhone advertiser tiles + live AdMob banner impressions, this range, your own visits excluded. AdSense has no slot yet, so it serves nothing.',
+              title:'Web advertiser tiles rendered + iPhone advertiser tiles + live Google ads (AdSense on the website, AdMob in the app), this range, your own visits excluded. Google ads count once Google approves the site and the app ships to the App Store.',
               accent:true};
     }
     el('tiles').innerHTML=tiles.map(function(t){
@@ -1939,9 +1941,13 @@
     var served=n(A.served);
     // All-time on every range (owner, 2026-09-25): the API sends the
     // all-time split as A.alltime; the ranged numbers stay behind the CTR.
-    var AT=A.alltime||A, G=AT.google_ads||{};
-    var servedAll = AT.served_all != null ? n(AT.served_all) : served;
-    var servedSub = 'all time, website + app — website '+comma(AT.served_web != null ? AT.served_web : served)
+    // If the all-time call did not answer, say so rather than print this
+    // range's count under an all-time label (2026-09-26: "28 · all time").
+    var hasAll = !!(A.alltime && A.alltime.served_all != null);
+    var AT=hasAll ? A.alltime : A, G=AT.google_ads||{};
+    var servedAll = hasAll ? n(AT.served_all) : (A.served_all != null ? n(A.served_all) : served);
+    var servedSub = (hasAll ? 'all time' : 'this range (all-time total unavailable — reload)')
+      +', website + app — website '+comma(AT.served_web != null ? AT.served_web : served)
       +' · app '+comma(n(AT.served_app))
       +' · Google ads '+comma(n(G.web)+n(G.app))
       +(n(G.test) ? ' (+'+comma(G.test)+' TestFlight test ads, not counted)' : '');

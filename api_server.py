@@ -1205,6 +1205,13 @@ def _memo(ttl):
                 if hit and hit[0] > now:
                     return hit[1]
             val = fn(*args)
+            # Every helper returns {} (or None) on failure. Caching that for
+            # the full ttl turned one slow query into ten minutes of a blank
+            # card: on 2026-09-26 the all-time ad count failed once and the
+            # dashboard showed today's 28 under an "all time" label until the
+            # memo expired. A failure is retried on the next load instead.
+            if val is None or val == {}:
+                return val
             with _MEMO_LOCK:
                 if len(_MEMO) > 64:
                     _MEMO.clear()
@@ -1417,7 +1424,9 @@ def dashboard_metrics():
         got = {k: f.result() for k, f in futs.items()}
     data["goalstreams"] = {k: got.pop(k) for k in ("ai", "consult_clicks", "agents")}
     at_all = got.pop("adtiles_all") or {}
-    if isinstance(got.get("adtiles"), dict) and got["adtiles"]:
+    # Only when the all-time call answered: an empty "alltime" would let the
+    # card show this range's count under an all-time label.
+    if at_all and isinstance(got.get("adtiles"), dict) and got["adtiles"]:
         got["adtiles"] = dict(got["adtiles"])   # the memo's dict is shared
         got["adtiles"]["alltime"] = {k: at_all.get(k) for k in
                                      ("served_all", "served", "served_web", "served_app", "google_ads")}

@@ -1,4 +1,5 @@
 import XCTest
+import GoogleMobileAds
 import MapKit
 @testable import FindACrib
 
@@ -1331,6 +1332,14 @@ final class AdsTests: XCTestCase {
         XCTAssertEqual(Ads.mode(debug: false, beta: true, demo: false,
                                 liveUnit: Ads.liveBannerUnit, labelDeclared: true), .test)
         XCTAssertTrue(Ads.testBannerUnit.hasPrefix("ca-app-pub-3940256099942544/"), "Google's test publisher")
+    }
+
+    /// The label says "not used to track" and there is no ATT prompt, so
+    /// every ad request must be non-personalized.
+    @MainActor func testEveryRequestIsNonPersonalized() {
+        XCTAssertTrue(Ads.nonPersonalized)
+        let extras = Ads.request().adNetworkExtras(for: Extras.self) as? Extras
+        XCTAssertEqual(extras?.additionalParameters?["npa"] as? String, "1")
     }
 
     /// Ad events name the screen, never the search on it.

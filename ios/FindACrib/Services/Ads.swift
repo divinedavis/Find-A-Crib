@@ -30,12 +30,12 @@ final class Ads: NSObject {
     /// ca-app-pub-8077227518694725~3025780207, set in project.yml), created
     /// 2026-09-25 with a 60-second custom refresh and Google-optimized floors.
     static let liveBannerUnit = "ca-app-pub-8077227518694725/7882431778"
-    /// Like Analytics.privacyLabelDeclared. The SDK collects a device ID,
-    /// coarse location (IP), advertising data, product interaction and
-    /// performance data (developers.google.com/admob/ios/privacy/data-disclosure)
-    /// — none of which the App Privacy label published on 2026-09-16 declares.
-    /// Flip only after asc_push_privacy_iris.py has published those types.
-    static let privacyLabelDeclared = false
+    /// Like Analytics.privacyLabelDeclared. ON since 2026-09-25: the App
+    /// Privacy label now declares what the SDK collects — device ID, coarse
+    /// location, advertising data, product interaction, crash and performance
+    /// data (developers.google.com/admob/ios/privacy/data-disclosure) — as
+    /// linked, NOT used for tracking (scripts/asc_push_privacy_iris.py).
+    static let privacyLabelDeclared = true
 
     enum Mode: Equatable { case off, test, live }
 
@@ -54,6 +54,23 @@ final class Ads: NSObject {
     static let minReload: TimeInterval = 60
 
     /// Whether a screen change may ask for a new ad now.
+    /// Every request asks for NON-PERSONALIZED ads. The App Privacy label says
+    /// nothing is used to track, and the app never shows Apple's tracking
+    /// (ATT) prompt; personalized ads would be targeting on other companies'
+    /// data, which is tracking in Apple's sense and needs both. Flip this
+    /// only together with an ATT prompt and a relabel.
+    static let nonPersonalized = true
+
+    static func request() -> Request {
+        let r = Request()
+        if nonPersonalized {
+            let extras = Extras()
+            extras.additionalParameters = ["npa": "1"]
+            r.register(extras)
+        }
+        return r
+    }
+
     /// Live ads only on the US storefront (StoreKit's alpha-3 code).
     nonisolated static func servesLive(countryCode: String?) -> Bool { countryCode == "USA" }
 
@@ -168,7 +185,7 @@ final class Ads: NSObject {
             return
         }
         lastLoad = Date()
-        banner.load(Request())
+        banner.load(Self.request())
     }
 }
 

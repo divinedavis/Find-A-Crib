@@ -20,9 +20,28 @@ What the app collects, and why (2026-09-16):
                           (Services/Analytics.swift writes public.events)
     OTHER_USAGE_DATA      launch source, session id, install age
 
-Nothing is used for tracking (no ad network, no data broker, no
-cross-app identifier), and the analytics has an in-app off switch
-(Profile → Share anonymous usage).
+Since 2026-09-25 the app also carries Google's AdMob SDK (a banner under
+every screen, Services/Ads.swift). Per Google's data disclosure
+(developers.google.com/admob/ios/privacy/data-disclosure) it collects:
+
+  Third-Party Advertising + Analytics
+    DEVICE_ID             an app/developer-scoped device identifier (no
+                          IDFA: the app never asks for ATT)
+    COARSE_LOCATION       from the IP address
+    ADVERTISING_DATA      the ads the person has seen
+    PRODUCT_INTERACTION   ad taps, launches
+  Analytics
+    CRASH_DATA, PERFORMANCE_DATA   the SDK's own diagnostics
+
+Nothing is used for tracking in Apple's sense (linking app data with other
+companies' data for targeting or measurement): the app requests
+NON-PERSONALIZED ads only (npa=1 in Ads.swift) and never asks for ATT, so
+Google has no IDFA and no permission to target across apps. Declaring
+tracking without an ATT prompt is itself a rejection. If ATT is ever added
+for personalized ads, these records move to DATA_USED_TO_TRACK_YOU.
+
+Everything is declared linked to the user, the stricter answer. The
+analytics has an in-app off switch (Profile → Share anonymous usage).
 
 Existing records are deleted first, then one record per (category,
 purpose), then the publish PATCH. The publish state can only be UPDATEd,
@@ -59,6 +78,16 @@ USAGES = [
     ("PURCHASE_HISTORY", "APP_FUNCTIONALITY"),
     ("PRODUCT_INTERACTION", "ANALYTICS"),
     ("OTHER_USAGE_DATA", "ANALYTICS"),
+    # Google AdMob SDK (2026-09-25), see the docstring.
+    ("DEVICE_ID", "THIRD_PARTY_ADVERTISING"),
+    ("DEVICE_ID", "ANALYTICS"),
+    ("COARSE_LOCATION", "THIRD_PARTY_ADVERTISING"),
+    ("COARSE_LOCATION", "ANALYTICS"),
+    ("ADVERTISING_DATA", "THIRD_PARTY_ADVERTISING"),
+    ("ADVERTISING_DATA", "ANALYTICS"),
+    ("PRODUCT_INTERACTION", "THIRD_PARTY_ADVERTISING"),
+    ("CRASH_DATA", "ANALYTICS"),
+    ("PERFORMANCE_DATA", "ANALYTICS"),
 ]
 
 
@@ -154,7 +183,7 @@ def main() -> int:
         show("publish failed", r)
         return 1
     print("App Privacy published: " + ", ".join(c for c, _ in USAGES) + " (linked, no tracking)")
-    print("Now set Analytics.privacyLabelDeclared = true and ship.")
+    print("Now set Analytics.privacyLabelDeclared / Ads.privacyLabelDeclared = true and ship.")
     return 0
 
 

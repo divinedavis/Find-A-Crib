@@ -331,13 +331,13 @@ def dead_crons():
     Nothing on the droplet has ever read that file. It was written for the
     daily review agent, which runs in Anthropic's cloud with only a git
     checkout, and which therefore can report a dead engine to git and to
-    nobody. On 2026-09-24 the growth crons stopped. The heartbeat had run
-    unbroken for 34 days and its last record is 2026-09-23T05:42:12Z; the
-    09-24, 09-25 and 09-26 slots are all missing. In those three days the
-    owner pushed around forty commits to this repository, several of them
-    changes to this very droplet, and did not know the engine was down — the
-    site measured nothing, deployed nothing, and every change the review loop
-    pushed sat in git undeployed.
+    nobody. From 2026-09-24 GitHub's copy of the heartbeat stopped at
+    2026-09-23T05:42:12Z and the review agent read that as dead crons. They
+    were not: they ran every night, but every `git pull` failed (six untracked
+    files on the droplet collided with files since committed), so every job
+    ran three-day-old code and every ledger push was rejected — including the
+    heartbeat that recorded pull=failed. Only this box can see that, which is
+    why the pull state is checked here too.
 
     This is the missing half of that instrument. error_report.py runs hourly
     from a cron of its own, independent of the growth cron, and already mails
@@ -355,11 +355,12 @@ def dead_crons():
     if not (HERE / "growth_run.sh").exists():
         return out
     try:
-        last = ""
+        last, lines = "", []
         with open(HEARTBEAT) as fh:
             for line in fh:
                 if line.strip():
                     last = line.strip()
+                    lines.append(last)
     except FileNotFoundError:
         out["growth engine"] = ("no heartbeat file at growth/cron_heartbeat.jsonl — "
                                 "growth_run.sh has never completed a run on this host")
@@ -395,6 +396,27 @@ def dead_crons():
             f"started {age:.0f}h ago ({rec['at']}, {job}/{phase}) and never "
             f"recorded a finish — the run is hung or was killed. "
             f"Check /var/log/rentmap-growth.log")
+    else:
+        # Running, but on what code? Every run in the last day failing its
+        # pull means every cron on this box is running a frozen checkout and
+        # nothing it commits reaches GitHub.
+        now = datetime.datetime.now(datetime.timezone.utc)
+        recent = []
+        for line in lines[-200:]:
+            try:
+                r = json.loads(line)
+                t = datetime.datetime.strptime(r["at"], "%Y-%m-%dT%H:%M:%SZ").replace(
+                    tzinfo=datetime.timezone.utc)
+            except (ValueError, KeyError, TypeError):
+                continue
+            if (now - t).total_seconds() < CRON_MAX_GAP_HOURS * 3600 and r.get("pull") in ("ok", "failed"):
+                recent.append(r)
+        if recent and all(r["pull"] == "failed" for r in recent):
+            out["growth engine"] = (
+                f"runs, but every git pull in the last {CRON_MAX_GAP_HOURS}h failed "
+                f"({len(recent)} records) — all Find A Crib crons are running a stale "
+                f"checkout and ledger pushes are rejected. Run `git status` and "
+                f"`git pull --rebase origin main` in /root/Find-A-Crib")
     return out
 
 

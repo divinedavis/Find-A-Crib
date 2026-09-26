@@ -765,7 +765,7 @@
   /* in-feed ad tile: same footprint as a building card */
   .card.ad-card { cursor: default; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 0; }
   .card.ad-card:hover { box-shadow: none; transform: none; border-color: var(--line); }
-  .card.ad-card .adsbygoogle { width: 100%; height: 100%; min-height: 288px; }
+  .card.ad-card .adsbygoogle { width: 100%; min-height: 288px; }   /* fluid in-feed: Google sets the height */
   .card.ad-card .ad-flag { position: absolute; top: 8px; left: 8px; z-index: 3;
     font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
     color: var(--ink-2); background: rgba(255,255,255,.92); border: 1px solid var(--line);
@@ -5446,10 +5446,17 @@ function favActive() {
   // The verification/loader script is in <head>. In-feed ad TILES only render
   // once ADSENSE_SLOT is set (create an In-feed ad unit after Google approves
   // the site, then paste its slot id here). Client id is live for verification.
+  //
+  // One In-feed unit fills every ad position (owner, 2026-09-25): the LEAD
+  // slot, which the featured re-rental held until ads are on, and one after
+  // every AD_EVERY building cards. In-feed ads need both ids from AdSense's
+  // code box: data-ad-slot and data-ad-layout-key. Until both are set the
+  // grid is exactly as before, featured tile first.
   const ADSENSE_CLIENT = 'ca-pub-8077227518694725';
-  const ADSENSE_SLOT   = '';            // in-feed ad-unit slot id (set after approval)
+  const ADSENSE_SLOT   = '';            // In-feed unit's data-ad-slot
+  const ADSENSE_LAYOUT = '';            // In-feed unit's data-ad-layout-key
   const AD_EVERY       = 6;             // insert one ad tile after every N building cards
-  const ADS_ON = () => !!(ADSENSE_CLIENT && ADSENSE_SLOT);
+  const ADS_ON = () => !!(ADSENSE_CLIENT && ADSENSE_SLOT && ADSENSE_LAYOUT);
 
   if (ADS_ON()) {
     const s = document.createElement('script');
@@ -5462,9 +5469,9 @@ function favActive() {
   function adCardHtml() {
     return `<div class="card ad-card">
       <span class="ad-flag">Sponsored</span>
-      <ins class="adsbygoogle" style="display:block;width:100%;height:100%"
-           data-ad-client="${ADSENSE_CLIENT}" data-ad-slot="${ADSENSE_SLOT}"
-           data-ad-format="auto" data-full-width-responsive="false"></ins>
+      <ins class="adsbygoogle" style="display:block;width:100%"
+           data-ad-format="fluid" data-ad-layout-key="${ADSENSE_LAYOUT}"
+           data-ad-client="${ADSENSE_CLIENT}" data-ad-slot="${ADSENSE_SLOT}"></ins>
     </div>`;
   }
 
@@ -5935,7 +5942,9 @@ function favActive() {
     // someone can actually apply to today — burying it eight cards down meant
     // most visitors never scrolled to one.
     if (pinned) parts.push(cardHtml(pinned));
-    if (promos) parts.push(nextFeatured());
+    // With ads on, the lead slot is Google's in-feed ad instead (owner,
+    // 2026-09-25); re-rentals keep their FEAT_EVERY slots further down.
+    if (promos) parts.push(ads ? adCardHtml() : nextFeatured());
     // Housing Connect takes the second slot on every render. hcCursor was just
     // reset, and the pool is sorted by soonest deadline, so the lead tile is
     // always the lottery closest to closing in the boroughs on screen — the one

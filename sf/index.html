@@ -5866,8 +5866,17 @@ function favActive() {
     const tick = () => {
       let pending = 0;
       grid.querySelectorAll('.card.ad-card').forEach(card => {
-        const st = card.querySelector('ins.adsbygoogle')?.getAttribute('data-ad-status');
-        if (st === 'filled') return;
+        const ins = card.querySelector('ins.adsbygoogle');
+        const st = ins?.getAttribute('data-ad-status');
+        if (st === 'filled') {
+          // Google served this slot: count it once, beside the tiles, so the
+          // dashboard's served impressions cover every ad on every platform.
+          if (!ins.hasAttribute('data-fac-counted')) {
+            ins.setAttribute('data-fac-counted', '1');
+            track('ad_impression', { mode: 'live', network: 'adsense', slot: 'grid' });
+          }
+          return;
+        }
         if (st !== 'unfilled' && !adsBlocked() && Date.now() - started < AD_SETTLE_MS) { pending++; return; }
         const fb = card.querySelector('template.ad-fallback')?.innerHTML.trim();
         if (fb) card.outerHTML = fb; else card.remove();

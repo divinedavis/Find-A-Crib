@@ -38,6 +38,7 @@ import gzip
 import hashlib
 import json
 import math
+import os
 import re
 import sys
 import time
@@ -361,6 +362,140 @@ def philly_dhcd():
     return out
 
 
+# ------------------------------------------------------------------ neighborhoods
+
+# Every building gets a neighborhood from the city's own official boundaries
+# (owner, 2026-09-26: Chicago, Miami, Atlanta and Philadelphia "need
+# neighborhood too"). The sources' own neighborhood fields covered 576 of 881
+# Chicago buildings, 66 of 389 in Atlanta and none in Miami or Philadelphia.
+# Each layer is (name field, GeoJSON URL); Miami's buildings span the county,
+# so outside the City of Miami the municipality names the area.
+BOUNDARIES = {
+    "chi": [("community", "https://data.cityofchicago.org/resource/igwz-8jzy.geojson?$limit=200")],
+    "phl": [("LISTNAME", "https://raw.githubusercontent.com/opendataphilly/open-geo-data/master/"
+                         "philadelphia-neighborhoods/philadelphia-neighborhoods.geojson")],
+    "atl": [("NAME", "https://gis.atlantaga.gov/dpcd/rest/services/AdministrativeArea/GeopoliticalArea/"
+                     "MapServer/1/query?where=1%3D1&outFields=NAME&outSR=4326&f=geojson"),
+            ("BASENAME", "tiger:4"), ("BASENAME", "tiger:5")],
+    "mia": [("LABEL", "https://services1.arcgis.com/CvuPhqcTQpZPT9qY/arcgis/rest/services/"
+                      "Miami_Neighborhoods_Shapefile/FeatureServer/0/query?where=1%3D1&outFields=LABEL&outSR=4326&f=geojson"),
+            ("NAME", "https://services.arcgis.com/8Pc9XBTAsYuxx9Ny/arcgis/rest/services/"
+                     "Municipalitypoly_gdb/FeatureServer/0/query?where=1%3D1&outFields=NAME&outSR=4326&f=geojson"),
+            ("BASENAME", "tiger:5")],
+}
+# Outside a city's own neighborhoods: the Census Bureau's places around it —
+# layer 4 incorporated places (East Point, Decatur), layer 5 census-designated
+# places (Kendall, Westchester — what people call unincorporated Miami-Dade).
+TIGER = ("https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Places_CouSub_ConCity_SubMCD/MapServer/{layer}/"
+         "query?where=1%3D1&geometry={x0},{y0},{x1},{y1}&geometryType=esriGeometryEnvelope&inSR=4326"
+         "&spatialRel=esriSpatialRelIntersects&outFields=BASENAME&outSR=4326&f=geojson")
+# The county's own "UNINCORPORATED" polygon is not a place anyone names;
+# skipping it lets the census places below answer.
+NOT_A_PLACE = {"UNINCORPORATED", "UNINCORPORATED MIAMI-DADE"}
+BOUNDARY_CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "boundaries")
+
+
+def boundary_layers(city, bbox=None):
+    """[(name, [rings…], bbox)] per layer, fetched fresh and cached; a failed
+    fetch falls back to the last good copy, so one slow city server does not
+    strip every neighborhood."""
+    layers = []
+    os.makedirs(BOUNDARY_CACHE, exist_ok=True)
+    for i, (field, url) in enumerate(BOUNDARIES.get(city, [])):
+        if url.startswith("tiger:"):
+            la0, la1, ln0, ln1 = CITIES[city].get("bbox") or bbox
+            url = TIGER.format(layer=url[6:], x0=ln0, y0=la0, x1=ln1, y1=la1)
+        cache = os.path.join(BOUNDARY_CACHE, f"{city}-{i}.geojson")
+        try:
+            gj = http_json(url)
+            if not gj.get("features"):
+                raise ValueError("no features")
+            json.dump(gj, open(cache, "w"))
+        except Exception as e:
+            print(f"  boundaries {city}-{i}: {e}; using cache", file=sys.stderr)
+            if not os.path.exists(cache):
+                layers.append([]); continue
+            gj = json.load(open(cache))
+        polys = []
+        for f in gj["features"]:
+            name = (f.get("properties") or {}).get(field)
+            if str(name or "").strip().upper() in NOT_A_PLACE:
+                continue
+            g = f.get("geometry") or {}
+            parts = g.get("coordinates") or []
+            if g.get("type") == "Polygon":
+                parts = [parts]
+            elif g.get("type") != "MultiPolygon":
+                continue
+            for poly in parts:
+                ring = poly[0]
+                xs = [pt[0] for pt in ring]; ys = [pt[1] for pt in ring]
+                polys.append((name, poly, (min(xs), max(xs), min(ys), max(ys))))
+        layers.append(polys)
+    return layers
+
+
+def _in_ring(x, y, ring):
+    inside = False
+    j = len(ring) - 1
+    for i in range(len(ring)):
+        xi, yi = ring[i][0], ring[i][1]
+        xj, yj = ring[j][0], ring[j][1]
+        if (yi > y) != (yj > y) and x < (xj - xi) * (y - yi) / ((yj - yi) or 1e-12) + xi:
+            inside = not inside
+        j = i
+    return inside
+
+
+def neighborhood_at(lat, lng, layers):
+    """The first layer's polygon that holds the point (outer ring in, holes
+    out); None when no layer does."""
+    for polys in layers:
+        for name, poly, (x0, x1, y0, y1) in polys:
+            if not (x0 <= lng <= x1 and y0 <= lat <= y1) or not name:
+                continue
+            if _in_ring(lng, lat, poly[0]) and not any(_in_ring(lng, lat, h) for h in poly[1:]):
+                return name
+    return None
+
+
+def nb_name(city, raw):
+    n = re.sub(r"\s+", " ", str(raw or "")).strip()
+    if not n:
+        return None
+    if city == "mia" and n.upper() in ("UNINCORPORATED", "UNINCORPORATED MIAMI-DADE"):
+        return "Unincorporated Miami-Dade"
+    return title(n) if n.isupper() else n
+
+
+def assign_neighborhoods(city, slim):
+    """Official neighborhood for every building; the source's own field only
+    where no boundary holds the point."""
+    lats = [r["lat"] for r in slim]; lngs = [r["lng"] for r in slim]
+    bbox = (min(lats), max(lats), min(lngs), max(lngs)) if slim else None
+    layers = boundary_layers(city, bbox)
+    if not any(layers):
+        return 0
+    hit = 0
+    for r in slim:
+        nb = nb_name(city, neighborhood_at(r["lat"], r["lng"], layers))
+        if nb:
+            r["nb"] = nb; hit += 1
+    # Between polygons (a sliver of unincorporated land, a boundary that stops
+    # at the city line): the nearest placed building's area within 1.5 km,
+    # then the source's own field, then — in Miami — the county.
+    placed = [r for r in slim if r.get("nb")]
+    for r in slim:
+        if r.get("nb"):
+            continue
+        best = min(placed, key=lambda o: metres((r["lat"], r["lng"]), (o["lat"], o["lng"])), default=None)
+        if best and metres((r["lat"], r["lng"]), (best["lat"], best["lng"])) < 1500:
+            r["nb"] = best["nb"]
+        elif city == "mia":
+            r["nb"] = "Unincorporated Miami-Dade"
+    return hit
+
+
 # ------------------------------------------------------------------ merging
 
 RICH = ("name", "zip", "units", "li", "mix", "inc", "ami", "serves", "mgr", "tel", "web", "yr", "pis", "status",
@@ -467,6 +602,8 @@ def build_city(city):
     rows += lihtc(city) + public_housing(city)
     merged = merge(rows, c.get("bbox"))
     slim, recs = rows_for(city, merged)
+    placed = assign_neighborhoods(city, slim)
+    print(f"  {city}: neighborhood from official boundaries for {placed} of {len(slim)}", file=sys.stderr)
     return slim, recs, leasing, len(rows)
 
 

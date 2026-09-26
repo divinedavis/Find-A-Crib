@@ -1422,6 +1422,23 @@ final class SkylineDayNightTests: XCTestCase {
         XCTAssertFalse(Skyline.isDaytime(.losAngeles, at: utc("2026-09-27T03:30:00Z")))
         XCTAssertTrue(Skyline.isDaytime(.losAngeles, at: utc("2026-09-27T00:30:00Z")), "5:30 PM in LA")
         XCTAssertFalse(Skyline.isDaytime(.newYork, at: utc("2026-09-27T00:30:00Z")), "8:30 PM in NY")
+
+/// Chicago, Miami, Atlanta and Philadelphia search by neighborhood now, from
+/// the cities' official boundaries (owner, 2026-09-26), with ZIPs still found
+/// by typing digits.
+final class AffordableCityNeighborhoodTests: XCTestCase {
+    func testIncomeRestrictedCitiesSearchByNeighborhood() {
+        for c in [City.chi, .mia, .atl, .phl] {
+            XCTAssertEqual(c.regionKind, .neighborhood, c.id)
+            XCTAssertEqual(c.regionLabel, "Neighborhood", c.id)
+            XCTAssertTrue(c.searchPlaceholder.contains("ZIP"), "\(c.id) still says ZIP works")
+        }
+    }
+
+    func testPickerListsTheirNeighborhoods() {
+        let r = DataStore.regions(for: .chi, buildings: [],
+                                  neighborhoods: [(name: "Uptown", borough: "CHI", count: 49), (name: "West Town", borough: "CHI", count: 49)])
+        XCTAssertEqual(r.map(\.name), ["Uptown", "West Town"])
     }
 }
 

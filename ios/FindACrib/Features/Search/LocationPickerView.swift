@@ -71,6 +71,12 @@ struct LocationPickerView: View {
                             }
                         }
                     } else {
+                        // Typing digits in a neighborhood city also finds ZIPs.
+                        if scopeKind != .zip, !zips.isEmpty {
+                            Section(header: header("ZIP codes")) {
+                                ForEach(zips.prefix(20), id: \.self) { z in row(.zip(z), title: "ZIP \(z)", sub: nil) }
+                            }
+                        }
                         Section(header: header(store.city.regionLabel + "s")) {
                             if regions.isEmpty {
                                 Text(store.loaded ? "Nothing matches that." : "Loading \(store.city.name)…")

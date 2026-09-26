@@ -239,10 +239,13 @@ struct City: Identifiable, Hashable, Codable, Sendable {
             id: id, name: name, short: short, state: state,
             lat: lat, lng: lng, span: span,
             dataPath: "\(id)/buildings.slim.json.gz", cacheName: "\(id)-buildings.slim.json.gz",
-            regionKind: .zip, regionLabel: "ZIP",
+            // Neighborhoods from each city's official boundaries
+            // (build_affordable_cities.py, owner 2026-09-26); ZIPs still
+            // search from the picker when digits are typed.
+            regionKind: .neighborhood, regionLabel: "Neighborhood",
             statusLabel: "Income-restricted", idLabel: "",
             sourceNote: "An income-restricted building: some or all of its units are for households under an income limit, at capped rents. Apply through the building's leasing office or waiting list.",
-            searchPlaceholder: "Address or ZIP",
+            searchPlaceholder: "Neighborhood, address or ZIP",
             hasPrices: false, priceLabel: "",
             recordsPath: "\(id)/buildings.hpd.json.gz", records: Records(
                 heading: "Income-restricted units", agency: "the city and HUD", scope: "this building",

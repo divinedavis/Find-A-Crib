@@ -117,3 +117,4 @@ secrets/
 # Local env files (secrets). Only the template is tracked.
 .env*
 !.env.example
+data/boundaries/

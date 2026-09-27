@@ -340,7 +340,30 @@ SEEDS = [
                "by marker — a docroot copy without FALLBACK_MARKER belongs to the SEO "
                "build and is never overwritten — so the two pipelines cannot fight over one "
                "file. Fallback-published guides are listed in sitemap-daily.xml because no "
-               "SEO shard knows they exist."),
+               "SEO shard knows they exist.\n"
+               "2026-09-27 REVISIT — KEEP, content unchanged, and the hypothesis' own test "
+               "re-scoped rather than extended. 30 days on: 0 owned visitors, 0 impressions, "
+               "and 0 of the 3 URLs the index census has inspected have EVER been fetched by "
+               "Googlebot. The hypothesis was that these queries were 'counted as covered "
+               "while being unanswerable'; that was true and the guides fixed it. What it "
+               "assumed is that addressable implied reachable. It does not: every Google-"
+               "facing inbound link these three pages have comes from the SF/LA/DC hub tier "
+               "(build_seo.py's guide_link, CITY_HUBS), and the census reads /la/ 0 of 20 and "
+               "/dc/ 0 of 20 fetched — the whole link supply runs through families Googlebot "
+               "has never touched. So the zero is not evidence about the guides. DELIBERATELY "
+               "NOT DONE, and the next revisit should not do it either: link them from the "
+               "NYC building/borough/neighborhood tier, which is the only ground Google does "
+               "crawl (67 of 250 /building/ fetched). A Brooklyn building page linking to a "
+               "Los Angeles explainer is an off-topic link placed for a crawler's benefit and "
+               "against the reader's, and this site's credibility is the product. The AI-"
+               "crawler surface already does have them: t_llms_txt lists all three by name. "
+               "What earns their place meanwhile is not traffic — they are the only pages on "
+               "the site that answer the exemption question for 3 of the 4 cities, and they "
+               "are where the LA 'likely RSO' and SF block-anonymization caveats are stated "
+               "in prose. REFUTATION PRE-REGISTERED for 2026-10-27: if any /guide/ URL has "
+               "been fetched by then and still earns 0 impressions, that is a real failure of "
+               "the guides and they should be rewritten or replaced. Until one is fetched, "
+               "the zero measures crawl reach and belongs to T037/T027, not here."),
 
     dict(slug="provenance_page", status="active", kind="indexing",
          name="Published methodology: where every record comes from (/methodology/)",

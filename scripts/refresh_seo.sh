@@ -58,13 +58,15 @@ CORPUS_N=0            # pages in the built corpus — a truncated build looks
                       # identical to a good one from the docroot's mtime alone
 PULL_STATE=pending    # did $BUILD take the night's commits? see STEP=pull
 CODE_STATE=pending    # …and if it did not, did we hand them over anyway?
+DATA_STATE=pending    # …and the nightly feeds: see STEP=data
+VOUCHER_H=null        # age in hours of the s8.json build_seo.py will actually read
 
 status() {
   {
-    printf '{"started":"%s","at":"%s","phase":"%s","step":"%s","rc":%s,"head":"%s","changed_urls":%s,"corpus_pages":%s,"pull":"%s","code":"%s"}\n' \
+    printf '{"started":"%s","at":"%s","phase":"%s","step":"%s","rc":%s,"head":"%s","changed_urls":%s,"corpus_pages":%s,"pull":"%s","code":"%s","data":"%s","voucher_feed_h":%s}\n' \
       "$STARTED" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$1" "$STEP" "${2:-null}" \
       "$(git -C "$BUILD" rev-parse --short HEAD 2>/dev/null || echo unknown)" \
-      "$CHANGED_N" "$CORPUS_N" "$PULL_STATE" "$CODE_STATE" \
+      "$CHANGED_N" "$CORPUS_N" "$PULL_STATE" "$CODE_STATE" "$DATA_STATE" "$VOUCHER_H" \
       > "$STATUS.tmp" && mv -f "$STATUS.tmp" "$STATUS"
   } 2>/dev/null || true
 }
@@ -174,6 +176,108 @@ else
   echo "refresh_seo: code $CODE_STATE (from $SRC at $(git -C "$SRC" rev-parse --short HEAD 2>/dev/null || echo '?'))"
 fi
 status code
+
+# ------------------------------------------------ hand the nightly feeds over
+# The twin of the block above, for data instead of code, and the same "two
+# doors" shape: a pipeline reading one copy of something while everything else
+# on the box updates another.
+#
+# build_seo.py reads every feed from ITS OWN directory, which is $BUILD:
+# VOUCHER_PATH and load_listings() both join dirname(__file__). The live copies
+# are in the docroot. What establishes that, rather than assumes it:
+# findacrib.com/s8.json and findacrib.com/listings.json are served from $DOC and
+# ios/scripts/refresh_data.sh curls them from the site; api_server.py loads "the
+# same files the site serves"; growth's Context._load() looks in the docroot
+# FIRST and got a 2026-09-27 s8.json with 288 voucher listings out of it, while
+# the git checkout's committed copy is dated 2026-07-11 with 238. Nothing has
+# ever copied the docroot's into $BUILD, and $BUILD is not a git worktree either
+# ("pull":"no-worktree" every night), so its copies are whatever that directory
+# was set up with.
+#
+# HOW FAR THAT IS PROVEN, because it was diagnosed from a cloud checkout with no
+# droplet access: the second incident below is an inference, not a reading. What
+# is certain is that the docroot's feed was fresh, that 288 building pages that
+# were rebuilt that morning carry the neighbouring comparison block and not the
+# voucher badge, and that a >48h feed is the one documented way build_seo.py
+# writes the first without the second. voucher_feed_h below settles it either
+# way on the first night this runs: a number over 48 confirms it, and a number
+# under 48 with the badge still missing moves the fault to the address->page
+# join and this block is then a harmless no-op.
+#
+# What the shape has cost:
+#   * 2026-09-19 found 312 building pages calling a unit "recently advertised"
+#     off a listings.json last refreshed 2026-05-09. That was read as a pruning
+#     bug in the feed. The feed was fine; $BUILD's copy of it was four months old.
+#   * 2026-09-24 shipped the voucher badge onto the building tier — the one
+#     dataset that changes every night, onto the one tier Google crawls. On
+#     2026-09-27 t_voucher_reach read 0 of 288 pages carrying it. load_voucher_
+#     listings() suppresses every voucher claim once the feed passes
+#     VOUCHER_STALE_HOURS=48 and says so in one line of stdout, which
+#     growth_run.sh discards. So the badge rendered nowhere, for the same reason,
+#     and the audit built to catch it could not name the cause: it reads the
+#     DOCROOT's s8.json (fresh, 288 listings) and the builder reads this one.
+#
+# Deliberately narrow, and safe under either belief about who writes $BUILD:
+#   * ONLY when the docroot's copy is strictly newer (-nt, which is also true
+#     when $BUILD has no copy at all). If the scrapes do write into $BUILD, or
+#     already ran tonight, every test fails and this is a no-op — it can never
+#     make a feed older than it found it, which is the one thing that would
+#     turn a stale claim into a false one;
+#   * ONE file, named. s8.json is pure input — build_seo.py reads it and writes
+#     nothing back — and its consumer fails safe: load_voucher_listings() drops
+#     the claim rather than making a wrong one, so the worst a surprise in that
+#     file can do is what is already happening.
+#     DELIBERATELY NOT listings.json, though it has the identical defect (the
+#     2026-09-19 incident above). build_seo.py reads two different keys out of
+#     it: `posted` backs the "recently advertised" sentence and `counts` backs
+#     SITEMAP PROMOTION via ever_advertised_bbls(). The committed copy carries
+#     counts (312 BBLs) and no posted map at all, and nothing in this checkout
+#     can say what shape the docroot serves. If its counts map were slimmer,
+#     handing it over would de-promote building pages into the noindex tier —
+#     a silent, site-wide indexing change — to fix a sentence. Verify the
+#     served file's shape against ever_advertised_bbls() first, then add it.
+#     Not buildings.min.json either (carried in git, generated on a workstation,
+#     and the docroot's copy is a deploy artifact rather than a scrape), and not
+#     seo_lastmod.json (per-corpus state — replacing it would bump every lastmod
+#     on the site);
+#   * a copy, never a move or a delete, and never the reverse direction;
+#   * non-fatal at every step, like the heartbeat and the code handover: this
+#     must not become the new reason the night's rebuild does not happen.
+#
+# VOUCHER_H is reported because it is the number the 48h gate is decided on, and
+# until now no one off the droplet could see it. A red t_voucher_reach with
+# voucher_feed_h=1861 is a diagnosis; the same red with no number is a mystery,
+# and it stayed a mystery for three days.
+STEP=data
+if [ "$DOC" = "$BUILD" ]; then
+  DATA_STATE=same-dir
+elif [ ! -d "$DOC" ]; then
+  DATA_STATE=no-docroot
+else
+  n=0
+  for f in s8.json; do
+    if [ -f "$DOC/$f" ] && [ "$DOC/$f" -nt "$BUILD/$f" ]; then
+      if cp -pf "$DOC/$f" "$BUILD/$f" 2>/dev/null; then n=$((n + 1)); fi
+    fi
+  done
+  if [ "$n" -gt 0 ]; then DATA_STATE="synced-$n"; else DATA_STATE=in-sync; fi
+  echo "refresh_seo: nightly feeds $DATA_STATE (from $DOC)"
+fi
+# Whatever the handover did or did not do, report the age of the feed the build
+# is about to read — from `avail_updated` INSIDE the file, which is the field
+# load_voucher_listings() applies VOUCHER_STALE_HOURS to. Not the mtime: a copy
+# or a touch moves an mtime without making the data any newer, and this number
+# exists to be trusted on the one morning that distinction decides the answer.
+# null on a missing, unreadable or undated file, because absent is not the same
+# as old and load_voucher_listings() suppresses on all of them alike.
+VOUCHER_H=$(python3 -c 'import json,sys,time
+try:
+    with open(sys.argv[1]) as f: d = json.load(f)
+    print(int((time.time() - float(d["avail_updated"])) / 3600))
+except Exception:
+    print("null")' "$BUILD/s8.json" 2>/dev/null) || VOUCHER_H=null
+[ -n "$VOUCHER_H" ] || VOUCHER_H=null
+status data
 
 STEP=build
 python3 build_seo.py

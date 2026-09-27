@@ -1252,7 +1252,15 @@ def listings_asof(listings):
 # here may imply that a building WITHOUT a listing refuses vouchers. Every
 # sentence below is therefore a claim about a listing on AffordableHousing.com,
 # never about a landlord's policy, and the hub block says so outright.
+# 48 is also hard-coded as growth.techniques.FEED_STALE_HOURS, which t_voucher_reach
+# uses to decide whether this build suppressed its voucher claims. The two are
+# separate literals and MUST be edited together: a mismatch makes that audit green
+# on exactly the nights this file has gone quiet.
 VOUCHER_STALE_HOURS = 48
+# Beside THIS file, which is $BUILD on the droplet and not the docroot the scrape
+# writes to. refresh_seo.sh's STEP=data hands the docroot's fresher copy over
+# before the build; before 2026-09-27 nothing did, and every voucher claim on the
+# building tier was silently suppressed. See that block for the whole story.
 VOUCHER_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "s8.json")
 
 

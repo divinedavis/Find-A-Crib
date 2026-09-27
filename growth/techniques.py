@@ -1458,7 +1458,15 @@ SEO_STATUS_FILE = ".seo-build-status.json"
 # committed to a public repo. A file that grew a field nobody reviewed here
 # would be published unread; strings are truncated for the same reason.
 SEO_STATUS_FIELDS = ("started", "at", "phase", "step", "rc", "head",
-                     "changed_urls", "corpus_pages", "pull", "code")
+                     "changed_urls", "corpus_pages", "pull", "code",
+                     # `data` and `voucher_feed_h` are the data twins of `code`:
+                     # build_seo.py reads every feed from its own directory, which
+                     # is $BUILD, and the nightly scrapes write into the docroot.
+                     # See refresh_seo.sh's STEP=data block. voucher_feed_h is the
+                     # age in hours of the s8.json the build actually read, which
+                     # is the number VOUCHER_STALE_HOURS is decided on and the one
+                     # number t_voucher_reach could never see.
+                     "data", "voucher_feed_h")
 
 # The corpus has never been near this. A build that completes cleanly and writes
 # a few hundred pages is a catastrophic failure that the docroot's mtime alone
@@ -1539,6 +1547,17 @@ def _seo_pipeline_status(docroot, now=None):
                  f"or seo_guides.py is live. " + state)
     elif isinstance(code, str) and code.startswith("synced"):
         state += f" (source handed over from the checkout: {code})"
+
+    # The data half. A stale feed in $BUILD does not fail the build or truncate
+    # the corpus — it makes build_seo.py drop a freshness-gated claim silently,
+    # so the corpus looks healthy and one dataset has quietly left it.
+    feed_h = rec.get("voucher_feed_h")
+    if isinstance(feed_h, (int, float)) and feed_h > FEED_STALE_HOURS:
+        state += (f" — but the s8.json it read is {feed_h / 24:.0f}d old, so every "
+                  f"voucher claim on the building tier was suppressed")
+    data = rec.get("data")
+    if isinstance(data, str) and data.startswith("synced"):
+        state += f" (nightly feeds handed over from the docroot: {data})"
 
     if hours is not None:
         # 04:10 nightly, read by the 05:40 build, so anything past ~26h is a
@@ -3355,14 +3374,28 @@ def t_voucher_reach(ctx):
     question: one page missing the marker means the address→page join is broken
     for that address, and a 400-of-47,165 sample would almost never contain it.
 
-    ok is False only when the feed is fresh and NO page carries the marker —
-    that is the integration failing. A partial miss is reported in the detail
-    line and stays green: a listed BBL with no page on disk is an ordinary
-    outcome (a building not in buildings.min.json, or one whose page the index
-    triage wrote this morning under a slug a re-titlecased address changed), and
-    failing on it would make this permanently red for a reason nobody can fix.
-    A stale or missing feed is NOT a failure either — build_seo.py is then
-    correctly making no claim at all, which is the behaviour, not a fault.
+    WHICH s8.json — corrected 2026-09-27, after this audit spent a run saying
+    "0 of 288" without being able to say why. It reads ctx.s8, and
+    Context._load() prefers the DOCROOT's copy, which is the one the scrape
+    refreshes and the site serves. build_seo.py reads $BUILD/s8.json, beside
+    itself. Those are different files and on 2026-09-27 they disagreed by 78
+    days, so the sentence "feed dated <today>" was true of a file the page
+    builder had never opened, and the red it produced was unattributable. The
+    builder's own copy is now reported by refresh_seo.sh as voucher_feed_h and
+    read here, so the three causes of a zero are told apart instead of merged:
+    the scrape stopped, the handover into $BUILD stopped, or the address->page
+    join broke.
+
+    ok is False when the docroot has a fresh feed and the pages do not carry it
+    — either because the copy the builder read was too old (the handover) or
+    because it was fresh and no page took it (the join). A partial miss is
+    reported in the detail line and stays green: a listed BBL with no page on
+    disk is an ordinary outcome (a building not in buildings.min.json, or one
+    whose page the index triage wrote this morning under a slug a re-titlecased
+    address changed), and failing on it would make this permanently red for a
+    reason nobody can fix. A stale or missing feed in the DOCROOT is not a
+    failure either — the scrape is then down and build_seo.py is correctly
+    making no claim at all, which is the behaviour, not a fault.
     """
     s8 = ctx.s8 or {}
     ts = s8.get("avail_updated")
@@ -3383,6 +3416,24 @@ def t_voucher_reach(ctx):
                           f"{FEED_STALE_HOURS}h, last {when}) — build_seo.py suppresses "
                           f"every voucher claim at that age, so {len(b8):,} listings are "
                           f"deliberately absent from the building tier"}
+
+    # The feed the PAGE BUILDER read, which is not the one above. None on a
+    # droplet whose refresh_seo.sh predates 2026-09-27, and then a zero below
+    # cannot be attributed — say that rather than blaming the join.
+    pipe = _seo_pipeline_status(ctx.docroot) or {}
+    built_h = pipe.get("voucher_feed_h")
+    if not isinstance(built_h, (int, float)):
+        built_h = None
+    if built_h is not None and built_h > FEED_STALE_HOURS:
+        return {"ok": False, "listed": len(b8), "carried": 0,
+                "built_feed_h": built_h,
+                "detail": f"THE PAGE BUILDER READ A {built_h / 24:.0f}-DAY-OLD FEED: the "
+                          f"docroot's s8.json is fresh ({len(b8):,} listings, dated {when}) "
+                          f"but the copy beside build_seo.py in the SEO build directory is "
+                          f"{built_h:,}h old, past its {FEED_STALE_HOURS}h limit, so it "
+                          f"suppressed every voucher claim and {len(b8):,} listings reached no "
+                          f"building page. Not the scrape and not the join — the feed handover "
+                          f"into the build directory (refresh_seo.sh STEP=data)"}
 
     carried = no_page = no_marker = unknown_bbl = 0
     misses = []
@@ -3412,6 +3463,13 @@ def t_voucher_reach(ctx):
     pct = int(carried * 100 / reach) if reach else 0
     detail = (f"{carried:,} of {reach:,} voucher-listed buildings carry the listing on "
               f"their own page ({pct}%), feed dated {when}")
+    if built_h is None:
+        detail += (" — the age of the s8.json the page builder read is unreadable here "
+                   "(refresh_seo.sh reports no voucher_feed_h), so a zero below cannot be "
+                   "told apart from a suppressed claim")
+    elif carried == 0:
+        detail += (f" — the builder's own copy of the feed was fresh ({built_h:,}h), so this "
+                   f"is the address\u2192page join, not the feed")
     gaps = []
     if no_marker:
         gaps.append(f"{no_marker:,} page(s) live but without the block")

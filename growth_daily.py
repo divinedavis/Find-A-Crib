@@ -426,6 +426,13 @@ def _reread_docroot_verifiers(args):
         ships compares post- against pre-refresh once, and may date a
         `same_since` a day early.
 
+    Every member that this pass reaches is marked, because a record with no mark
+    was silent about three different things: agreed, crashed, or never ran (not
+    active, not in the build's map, or no registry entry). `reread` reads
+    "post-seo-refresh" when the sentence moved, "agreed" when it did not, and
+    "crashed" when the audit raised — and its ABSENCE now means the pass did not
+    reach that audit, which is the one thing it could never say before.
+
     `ok` is written explicitly on every record, including the failure path, for
     the reason 2026-07-28 taught: an omitted `ok` gets announced to the owner as
     "DID NOT RUN — unknown error" by a report that tests `ok is False`.
@@ -450,7 +457,8 @@ def _reread_docroot_verifiers(args):
         log(f"  verifier re-read skipped: {e}")
         return None
 
-    today, changed = ledger.today(), 0
+    today = ledger.today()
+    marks = {"post-seo-refresh": 0, "agreed": 0, "crashed": 0}
     for slug in techniques.DOCROOT_VERIFIERS:
         if slug not in active or slug not in techs:
             continue
@@ -461,18 +469,41 @@ def _reread_docroot_verifiers(args):
             res = fn(ctx)
         except Exception as e:
             log(f"  verifier re-read: {slug} crashed ({e}) — keeping the build's reading")
+            # Say so in the record. Until 2026-09-27 a crash here and an audit
+            # that agreed with itself left byte-identical records, and the one
+            # morning that mattered — t_voucher_reach red at "0 of 288" after a
+            # rebuild that was the first ever to run the code being tested — no
+            # one could tell whether the audit had looked again or fallen over.
+            # A pre-refresh reading of a corpus the refresh then rewrote is not
+            # evidence about the rewrite, so which of the two happened decides
+            # whether the red means anything at all.
+            techs[slug] = dict(techs[slug], reread="crashed")
+            marks["crashed"] += 1
             continue
         detail, was = res.get("detail", ""), techs[slug]
         if not detail or detail == was.get("detail"):
+            # Agreed. Keep ok, detail, `unchanged` and `same_since` exactly as
+            # the build stamped them — those stamps are correct precisely
+            # BECAUSE the re-read agrees, which is the rule this function's
+            # docstring sets out — and add only the fact that it was checked.
+            techs[slug] = dict(techs[slug], reread="agreed")
+            marks["agreed"] += 1
             continue
         techs[slug] = {"ok": bool(res.get("ok")), "detail": detail,
                        "reread": "post-seo-refresh", "same_since": today}
-        changed += 1
+        marks["post-seo-refresh"] += 1
         log(f"  verifier re-read: {slug} moved after the rebuild — {detail[:160]}")
-    if not changed:
-        log(f"  verifier re-read: {len(techniques.DOCROOT_VERIFIERS)} audits agree "
-            f"with the pre-refresh reading")
+    reached = sum(marks.values())
+    if not reached:
+        # Not "they all agreed" — none of them was even reached. The ledger has
+        # no active member of DOCROOT_VERIFIERS, or the build wrote no technique
+        # map. Leave the build's record alone and name the real reason.
+        log(f"  verifier re-read: no member of DOCROOT_VERIFIERS was reached "
+            f"({len(techniques.DOCROOT_VERIFIERS)} in the set) — build record kept")
         return None
+    log(f"  verifier re-read: {reached} of {len(techniques.DOCROOT_VERIFIERS)} audits "
+        f"re-read — {marks['post-seo-refresh']} moved, {marks['agreed']} agreed, "
+        f"{marks['crashed']} crashed")
     return techs
 
 

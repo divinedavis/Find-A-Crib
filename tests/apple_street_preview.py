@@ -95,12 +95,16 @@ def main():
    page.evaluate("document.getElementById('grid').scrollTop=1600")
    page.wait_for_function("!document.querySelector('[data-apple-lat=\"41\"] iframe')")
    page.wait_for_function('window.testCoordinates.some(lat=>lat>=42.09)')
-   before_requests=len(sdk_requests)
    # Default local and production pages use Apple; Mapillary stays opt-in locally.
    page.goto('http://localhost/')
    assert page.evaluate('AppleStreetPreview.enabled')
    page.goto('http://localhost/?photos=mapillary')
    assert not page.evaluate('AppleStreetPreview.enabled')
+   # Counted only now, after two navigations have torn down the grid above:
+   # an SDK request its last frames had already started could still reach the
+   # route handler after the old baseline was taken, and under a loaded Mac
+   # (2026-09-27, load ~150) that failed this assert on an unchanged tree.
+   before_requests=len(sdk_requests)
    page.route('https://findacrib.com/**',app)
    page.goto('https://findacrib.com/')
    assert page.evaluate('AppleStreetPreview.enabled')

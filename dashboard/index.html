@@ -257,38 +257,6 @@
   .ads-tile .a-bench{font-size:11px;color:var(--ink2);margin-top:9px;padding-top:8px;border-top:1px solid var(--border);line-height:1.45}
   .ads-tile .a-bench b{color:var(--ink)}
   .ads-tile .a-bench-note{display:block;margin-top:4px;opacity:.72}
-  .goals-tbl{width:100%;border-collapse:collapse;font-size:13.5px;min-width:560px}
-  .goals-tbl th{text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.04em;
-    color:var(--muted);font-weight:600;padding:0 11px 8px;border-bottom:1px solid var(--border)}
-  .goals-tbl th:first-child,.goals-tbl td:first-child{text-align:left}
-  .goals-tbl td{text-align:right;padding:9px 11px;border-bottom:1px solid var(--border);color:var(--ink)}
-  /* Column rules. Nine money columns sit side by side and the eye was losing
-     which figure belonged to which header halfway across; the horizontal rules
-     alone were not enough. Kept on the same recessive --border as the row
-     lines, and dropped on the last cell so the table has no outer right edge
-     floating away from the card. The 11px padding is what stops a value
-     touching the rule beside it. */
-  .goals-tbl th:not(:last-child),.goals-tbl td:not(:last-child){
-    border-right:1px solid var(--border)}
-  .goals-tbl tbody tr:last-child td{border-bottom:none}
-  /* The first and last columns are the labels and the answer, so they get the
-     surface tint that separates them from the seven streams in between. */
-  .goals-tbl td:first-child,.goals-tbl th:first-child,
-  .goals-tbl td:last-child,.goals-tbl th:last-child{background:var(--sunken)}
-  /* Today's row is context, not a target — recessive so it cannot be misread
-     as a fourth scenario. */
-  .goals-tbl tr.goals-now td{color:var(--ink2);background:var(--sunken)}
-  /* The revenue-target row is a consequence, not a plan — set apart from the
-     three scenarios above it so it is never read as a fourth target. */
-  .goals-tbl tr.goals-target td{border-top:2px solid var(--border);padding-top:12px}
-  /* The ads-only row follows the mixed target directly, so it takes a lighter
-     rule — it is a variant of the question above it, not a new section. */
-  .goals-tbl tr.goals-adonly td{border-top:1px solid var(--border);padding-top:9px}
-  .goals-tbl tr.goals-adonly .goals-tag{color:var(--muted)}
-  .goals-tbl tr.goals-target .goals-tag{color:var(--purple)}
-  .goals-off{display:block;font-size:9.5px;font-weight:600;color:var(--muted);text-transform:none;letter-spacing:0;opacity:.8}
-  .goals-tag{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
-  .goals-tbl tr.goals-now .goals-tag{color:var(--ink2)}
   .tile .t-bench b{color:var(--ink)}
   .bn{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;margin-left:2px;white-space:nowrap}
   .bn-low{background:#fdecec;color:#c0342c}
@@ -644,13 +612,6 @@
       </div>
 
       <!-- ===== Trent's Fresh Spaces only ===== -->
-      <div class="card mb18" id="sec-goals">
-        <div class="card-head-row">
-          <div><h2>Goals — the audience $200k/year ($16,667/mo) of ad revenue needs</h2></div>
-        </div>
-        <div id="goals-table"></div>
-        <div class="callout" id="goals-callout" style="margin-top:16px"></div>
-      </div>
 
       <div id="trent-a" class="hidden">
         <!-- the market: the denominator every other number here is a fraction of -->
@@ -1102,7 +1063,7 @@
       ranged:true,
       blocks:['fac-a'],
       nav:[['top','▦','Dashboard'],
-           ['sec-tiles','◫','Advertiser metrics'],['sec-goals','◎','Goals & revenue'],
+           ['sec-tiles','◫','Advertiser metrics'],
            // Keep this list in sync with dashboard/users/index.html.
            ['link:/dashboard/users/','☺','Users']]
     },
@@ -1519,14 +1480,11 @@
   function paint(data){
     applyShell();
     paintRangeSwitch();
-    // Find A Crib's goals card sits outside fac-a, so without this every other
-    // tab showed it as an empty panel.
-    el('sec-goals').classList.toggle('hidden', siteKey!=='fac');
     if(siteKey==='nemo') renderNemo(session.user, data);
     else if(siteKey==='crease') renderCrease(session.user, data);
     else if(siteKey==='trent') renderTrent(session.user, data);
     else if(siteKey==='marracat') renderMarracat(session.user, data);
-    else { render(session.user, data); renderGoals(data); }
+    else render(session.user, data);
   }
 
   // Eric signs in to see NEMO and is refused Find A Crib's feed by the API.
@@ -2832,273 +2790,6 @@
   // trade, so "265 hire-intent searches a month" is the denominator, and every
   // other tile here is a fraction of it. Without it, "0 impressions" reads as a
   // quiet month rather than as the whole opportunity going to Thumbtack.
-  // ---------- render: goals & revenue ----------
-  // The predecessor to this card was a slider calculator, deleted 2026-08-27
-  // with the note: "Projecting MRR off assumptions while the real MRR tile
-  // above it reads $0 is a wish, not a metric." That judgement was right, and
-  // it is the specification for this one. The difference is not optimism, it
-  // is provenance: every rate below is either measured on this site and shown
-  // WITH its measurement, or assumed and labelled ASSUMED with its value on
-  // screen. A reader can then argue with the four assumptions instead of with
-  // the total, which is the only useful conversation this card can start.
-  //
-  // Prices are the real ones the site charges: Plus $4.99/mo, building report
-  // $9 one-time. Nothing here invents a product.
-  var PLUS_PRICE = 4.99, REPORT_PRICE = 9, API_PRICE = 199;
-  // The four assumptions, in one object so they are trivially editable and
-  // impossible to lose track of.
-  var GOAL_ASSUMPTIONS = {
-    // Direct ad sales: you sell the space on the page yourself.
-    ad_slots_per_page: 2, // ad positions a visitor sees per page view.
-    direct_cpm: 15.00,    // $ per 1,000 impressions sold direct. Above AdSense's
-                          // effective rate because there is no network taking a
-                          // cut and the audience is a narrow, high-intent one.
-    direct_fill: 20,      // % of the inventory you actually manage to sell
-                          // direct. The rest is backfilled by AdSense — the two
-                          // columns share one pool of impressions and must not
-                          // both be paid for the same slot.
-    acct_to_paid: 3.5,    // % of accounts that buy Plus. Measured here: 0 of 13.
-    report_close: 60,     // % of report checkouts that complete. Measured: 0 of 3.
-    // AdSense revenue per 1,000 page views. This is the site's own prior
-    // estimate for the vertical, and it is worth stating that it cuts BOTH
-    // ways: the same $6 that makes the column look small at 3,000 monthly
-    // visitors is what makes it the second-largest column at 250,000.
-    adsense_rpm: 6.00,
-    // --- the three streams that are NOT sold to the audience ---------------
-    api_seats: 5,         // Business seats at $199. Sold today: 0 (3 free test keys).
-    crawl_price: 0.001,   // $/request. Cloudflare's documented pay-per-crawl minimum.
-    consult_qualified: 25,// % of consultancy hand-offs that become a billable referral.
-    consult_fee: 75,      // $ per qualified referral. Never negotiated with anyone.
-    stickiness: 10,       // DAU/MAU used to turn a DAU target into monthly reach.
-    // --- the other ways to sell the same audience (owner, 2026-09-25) -------
-    agent_cpc: 2.50,      // $ an agent pays per hand-off from a re-rental tile.
-                          // Below Google's real-estate search CPCs ($3–5+), the
-                          // price it has to beat to be worth buying.
-    sponsor_fee: 350,     // $/mo for one sponsored re-rental slot, flat. Portals
-                          // this size ask $200–500 (the middle is used).
-    // Google (AdMob) banner on every iPhone-app screen, ios/Services/Ads.swift.
-    admob_ecpm: 0.60,     // $ per 1,000 banner impressions, US iOS, anchored
-                          // adaptive ($0.40–0.80, revenuelab.fyi 2026 benchmarks).
-    app_ad_impr: 4        // banner impressions per app active per day. AdMob
-                          // allows a new ad per screen change only once a
-                          // minute, so it is capped by minutes in the app, not
-                          // screens (~11 screens/day but a 3½-min median
-                          // session). Replace with the measured ad_impression
-                          // count once the banner is live.
-  };
-  // Two of the streams do not scale with visitors at all, and saying so is the
-  // most useful thing this table does. API seats are sold to businesses; AI
-  // crawl revenue is a property of the CORPUS — 47,982 pages get crawled at the
-  // same rate whether one human visits or a million do. They are therefore
-  // constant down every row, and the constancy is the point: they are the only
-  // columns that do not require an audience this site does not have.
-  var GOAL_FLAT = { api: true, crawl: true };
-  // The revenue target gets SOLVED for, not guessed at. Hardcoding a DAU
-  // would be wrong the moment any assumption below it moves, and the whole
-  // point of this card is that the assumptions are the arguable part.
-  //
-  // Two rows, one question each: how big an audience does $20,000/mo take if
-  // the ONLY money is AdSense, and how big if the only money is ad space you
-  // sell yourself. The scenario ladder (300 / 1,000 / 3,000) and the all-streams
-  // $50,000 row were dropped on 2026-09-03 — the table is about advertising now.
-  // $200k/year (owner, 2026-09-27) — the revenue 8,000 DAU is meant to earn.
-  var GOAL_REVENUE_TARGET = Math.round(200000 / 12);
-
-  // The goals card does NOT follow the range picker, and that is deliberate.
-  //
-  // It used to. On "Today" the Advertiser column read $0 at every scale —
-  // correctly, and uselessly: all five of that day's hand-offs happened to go
-  // to NYC Housing Connect, which is excluded as unsellable, so the measured
-  // sellable rate was 0% and the projection inherited it. A forecast about
-  // 25,000 daily actives has no business being rewritten by one afternoon's
-  // click mix. So the rates come from the all-time payload, always, and the
-  // card says so.
-  var goalsBase = null;
-  function renderGoals(d){
-    if (rangeKey === 'all') { goalsBase = d; return paintGoals(d); }
-    if (goalsBase) return paintGoals(goalsBase);
-    // The all-time payload comes through the shared cache and fetch, never a
-    // request of its own. This used to call feedFetch directly, so on a
-    // "This month" boot the page fetched all-time twice back to back: once
-    // here, and once more when the prefetch that follows the first paint
-    // found nothing in the cache under that key.
-    var have = cache[cacheKey('fac', 'all')];
-    if (have) { goalsBase = have; return paintGoals(have); }
-    paintGoals(null);                       // "measuring" state, not a zero
-    fetchPayload('fac', 'all').then(function(out){
-      if(out.status==='ok'){ goalsBase = out.data; paintGoals(out.data); }
-    }).catch(function(){ /* the card stays in its measuring state */ });
-  }
-
-  function paintGoals(d){
-    if(!d){
-      el('goals-table').innerHTML =
-        '<div style="color:var(--muted);font-size:13px">Loading the all-time rates this table is built from…</div>';
-      el('goals-callout').innerHTML='';
-      return;
-    }
-    d = d || {};
-    var E = d.engagement || {}, T = d.totals || {}, EV = d.events || {};
-    var C = d.conversion || {};
-
-    // --- measured inputs, each with the fraction it came from ---------------
-    var visitors = n(T.visitors);
-    var agentClicks = n(EV.featured_click) + n(EV.hc_click);
-    var reportStarts = n(EV.report_checkout_start);
-    var startsPerVisitor = visitors ? reportStarts / visitors : 0;
-    // Page views per visitor, for the one stream that is paid per page rather
-    // than per action.
-    var pageViews = n(T.visits);
-    var pvPerVisitor = visitors ? pageViews / visitors : 0;
-    // Consultancy hand-offs — people who decided their question was worth paying
-    // somebody about. A different, more valuable event than a listing click.
-    var G = d.goalstreams || {};
-    var consultClicks = n(G.consult_clicks);
-    var consultPerVisitor = visitors ? consultClicks / visitors : 0;
-    var aiPerDay = n((G.ai || {}).per_day);
-    var aiPerMonth = aiPerDay * 30;
-    var sVis = n(C.one_time_visitors) + n(C.returning_visitors);
-    var sUps = n(C.one_time_signups) + n(C.returning_signups);
-    var signupRate = sVis ? sUps / sVis : 0;
-
-    var K = GOAL_ASSUMPTIONS;
-    function row(dau){
-      var mau = dau / (K.stickiness / 100);
-      // ONE pool of ad impressions, split between the two ways of filling it.
-      // Selling a slot direct and letting AdSense fill the same slot are
-      // alternatives, not additions; charging for both would bill the same
-      // pixel twice.
-      var adImpressions = mau * pvPerVisitor * K.ad_slots_per_page;
-      var directImpr = adImpressions * (K.direct_fill / 100);
-      var adv = (directImpr / 1000) * K.direct_cpm;
-      var plus = mau * signupRate * (K.acct_to_paid / 100) * PLUS_PRICE;
-      var rep = mau * startsPerVisitor * (K.report_close / 100) * REPORT_PRICE;
-      // AdSense backfills whatever was not sold direct.
-      var ads = ((adImpressions - directImpr) / 1000) * K.adsense_rpm;
-      // Scales with the audience: a referral needs a visitor to refer.
-      var ref = mau * consultPerVisitor * (K.consult_qualified / 100) * K.consult_fee;
-      // Flat: neither of these is bought by a visitor.
-      var api = K.api_seats * API_PRICE;
-      var crawl = aiPerMonth * K.crawl_price;
-      return { dau: dau, mau: mau, adv: adv, ads: ads, plus: plus, rep: rep,
-               ref: ref, api: api, crawl: crawl, impressions: adImpressions,
-               total: adv + plus + rep + ads + ref + api + crawl };
-    }
-    var nowDau = n(E.dau), nowRow = nowDau ? row(nowDau) : null;
-
-    // Each single-stream row treats its stream as the only money on the page.
-    //   AdSense only  — nothing is sold direct, so AdSense fills EVERY slot at
-    //                   its RPM. That is what backfill means.
-    //   Ad space only — you sell the direct_fill share of the inventory at the
-    //                   direct CPM and the rest earns nothing (no AdSense). The
-    //                   fill assumption stays: "sell 100% of the inventory" is
-    //                   not a plan, it is a wish.
-    function adsenseOnly(dau){
-      var mau = dau / (K.stickiness / 100);
-      var impr = mau * pvPerVisitor * K.ad_slots_per_page;
-      return { dau: dau, mau: mau, adv: 0, ads: (impr / 1000) * K.adsense_rpm };
-    }
-    function directOnly(dau){
-      var mau = dau / (K.stickiness / 100);
-      var impr = mau * pvPerVisitor * K.ad_slots_per_page;
-      return { dau: dau, mau: mau, adv: (impr / 1000) * (K.direct_fill / 100) * K.direct_cpm, ads: 0 };
-    }
-    // SOLVE BY SEARCH, not by division. Both streams here happen to be linear
-    // in reach, but the bisection makes no assumption about the shape of the
-    // curve, and it survived the flat and capped columns the table used to
-    // carry. Keep it.
-    function solveDau(target, model, pick){
-      var lo = 0, hi = 1000;
-      // Grow the bracket until the target is inside it, or give up: with a
-      // capped column the target may simply be unreachable at any audience.
-      for (var g = 0; g < 40 && pick(model(hi)) < target; g++) hi *= 2;
-      if (pick(model(hi)) < target) return null;          // cannot get there
-      for (var i = 0; i < 60; i++) {
-        var mid = (lo + hi) / 2;
-        if (pick(model(mid)) < target) lo = mid; else hi = mid;
-      }
-      return model(hi);
-    }
-    var adsenseRow = solveDau(GOAL_REVENUE_TARGET, adsenseOnly, function(r){ return r.ads; });
-    var directRow  = solveDau(GOAL_REVENUE_TARGET, directOnly,  function(r){ return r.adv; });
-
-    function usd(v){ return '$' + Math.round(v).toLocaleString('en-US'); }
-    el('goals-table').innerHTML =
-      '<div style="overflow-x:auto"><table class="goals-tbl">' +
-      '<thead><tr><th>Daily actives</th><th>Monthly reach</th>' +
-      '<th>Ad space sold direct<span class="goals-off">you sell it</span></th>' +
-      '<th>AdSense backfill<span class="goals-off">not live</span></th>' +
-      '<th>Plus $' + PLUS_PRICE.toFixed(2) + '/mo</th>' +
-      '<th>Reports $' + REPORT_PRICE + '</th>' +
-      // NOT the invite-a-friend card further down this same page. That one is
-      // a growth loop that pays in Plus; this is a fee for handing a tenant to
-      // a firm that charges them. Two different things cannot both be called
-      // "Referrals" on one dashboard.
-      '<th>Consultancy fees<span class="goals-off">tenant → paid advisor</span></th>' +
-      '<th>API seats<span class="goals-off">flat — not sold to visitors</span></th>' +
-      '<th>AI crawls<span class="goals-off">flat — a property of the corpus</span></th>' +
-      '<th>Total / month</th></tr></thead><tbody>' +
-      (nowRow ? '<tr class="goals-now"><td><b>' + comma(nowRow.dau) + '</b> <span class="goals-tag">today</span></td>' +
-        '<td>' + comma(E.mau) + '</td><td>' + usd(nowRow.adv) + '</td><td>' + usd(nowRow.ads) +
-        '</td><td>' + usd(nowRow.plus) + '</td><td>' + usd(nowRow.rep) +
-        '</td><td>' + usd(nowRow.ref) + '</td><td>' + usd(nowRow.api) + '</td><td>' + usd(nowRow.crawl) +
-        '</td><td><b>' + usd(nowRow.total) + '</b></td></tr>' : '') +
-      (adsenseRow
-        ? '<tr class="goals-target"><td><b>' + comma(adsenseRow.dau) + '</b> ' +
-          '<span class="goals-tag">AdSense only, for $' + comma(GOAL_REVENUE_TARGET) + '/mo</span></td>' +
-          '<td>' + comma(adsenseRow.mau) + '</td><td>' + usd(0) + '</td><td>' +
-          usd(adsenseRow.ads) + '</td><td>' + usd(0) + '</td><td>' + usd(0) + '</td><td>' +
-          usd(0) + '</td><td>' + usd(0) + '</td><td>' + usd(0) + '</td><td><b>' +
-          usd(adsenseRow.ads) + '</b></td></tr>'
-        : '') +
-      (directRow
-        ? '<tr class="goals-target goals-adonly"><td><b>' + comma(directRow.dau) + '</b> ' +
-          '<span class="goals-tag">ad space you sell, for $' + comma(GOAL_REVENUE_TARGET) +
-          '/mo (' + K.direct_fill + '% of inventory sold)</span></td>' +
-          '<td>' + comma(directRow.mau) + '</td><td>' + usd(directRow.adv) + '</td><td>' +
-          usd(0) + '</td><td>' + usd(0) + '</td><td>' + usd(0) + '</td><td>' +
-          usd(0) + '</td><td>' + usd(0) + '</td><td>' + usd(0) + '</td><td><b>' +
-          usd(directRow.adv) + '</b></td></tr>'
-        : '') +
-      '</tbody></table></div>';
-
-    // Other ways to sell the same audience, each alone: what $20,000/mo takes
-    // and where it stands today. Per-click scales with sellable agent clicks
-    // (featured_click only — Housing Connect hand-offs are not for sale); a flat
-    // fee scales with advertisers, not visitors; AdMob scales with APP actives.
-    var target = GOAL_REVENUE_TARGET;
-    var sellablePerVisitor = visitors ? n(EV.featured_click) / visitors : 0;
-    var clicksNeeded = target / K.agent_cpc;                  // per month
-    var cpcDau = sellablePerVisitor ? clicksNeeded / 30 / sellablePerVisitor : null;
-    var cpcNow = nowDau * sellablePerVisitor * 30 * K.agent_cpc;
-    var sponsorsNeeded = Math.ceil(target / K.sponsor_fee);
-    var admobPerAppDau = K.app_ad_impr * 30 / 1000 * K.admob_ecpm;   // $/mo per app DAU
-    var admobDau = target / admobPerAppDau;
-    var appMau = n((d.growth || {}).app_actives_30);
-    var otherRow = function(name, how, needs, today){
-      return '<tr><td><b>' + name + '</b><span class="goals-off">' + how + '</span></td><td>' +
-        needs + '</td><td>' + today + '</td></tr>';
-    };
-    el('goals-table').innerHTML +=
-      '<div style="overflow-x:auto;margin-top:18px"><table class="goals-tbl">' +
-      '<thead><tr><th>Other ways to $' + comma(target) + '/mo, each alone</th><th>What it takes</th><th>Today</th></tr></thead><tbody>' +
-      otherRow('Per click to agents', '$' + K.agent_cpc.toFixed(2) + ' per re-rental hand-off',
-        comma(Math.round(clicksNeeded / 30)) + ' clicks/day' + (cpcDau ? ' · ~' + comma(cpcDau) + ' daily actives' : ''),
-        usd(cpcNow) + '/mo at ' + (sellablePerVisitor * 100).toFixed(2) + '% clicks per visitor') +
-      otherRow('Flat sponsored slots', usd(K.sponsor_fee) + '/mo per agent, any traffic',
-        comma(sponsorsNeeded) + ' paying agents', '0 sold') +
-      otherRow('Google banner in the iPhone app', '$' + K.admob_ecpm.toFixed(2) + ' per 1,000 · ' + K.app_ad_impr + ' ads per app active per day',
-        comma(admobDau) + ' app daily actives · ' + comma(admobDau * K.app_ad_impr) + ' ads/day',
-        comma(appMau) + ' app actives in 30 days · test ads only (TestFlight)') +
-      '</tbody></table></div>';
-
-    // The goals narrative callout was removed; the scenario table above carries
-    // the numbers on its own.
-    var goalCallout = el('goals-callout');
-    goalCallout.innerHTML = '';
-    goalCallout.style.display = 'none';
-  }
-
   function renderTrent(user, d){
     var email=(user&&user.email)||'';
     el('avatar').textContent=(email[0]||'D').toUpperCase();

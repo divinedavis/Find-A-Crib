@@ -12,6 +12,64 @@
 <link rel="canonical" href="https://findacrib.com/sf/" />
 <meta name="robots" content="index,follow,max-image-preview:large" />
 <meta name="theme-color" content="#2b39c8" />
+<!-- Google Consent Mode v2 (privacy audit 2026-09-27): EEA/UK/CH default-denied,
+     and Global Privacy Control = no ad storage or ad-data sharing anywhere
+     (CCPA "do not share"). MUST come before AdSense, the gtag.js loader and any
+     gtag('config'). Keep every copy identical: index.html (and the city pages
+     build_city_pages.py makes from it), alerts/, directory/, marketing-agents/. -->
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('consent', 'default', {
+    ad_storage: 'denied', analytics_storage: 'denied',
+    ad_user_data: 'denied', ad_personalization: 'denied',
+    region: ['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'],
+    wait_for_update: 500
+  });
+  // Global Privacy Control: an opt-out of "sharing" for cross-context ads.
+  // Ads cookies, the email match (enhanced conversions) and personalized
+  // AdSense all stay off for this browser, in every region.
+  window.__facGPC = navigator.globalPrivacyControl === true;
+  if (window.__facGPC) {
+    gtag('consent', 'default', { ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied' });
+    (window.adsbygoogle = window.adsbygoogle || []).requestNonPersonalizedAds = 1;
+  }
+  (function () {
+    var KEY = 'consent.v1', saved = null;
+    try { saved = localStorage.getItem(KEY); } catch (e) {}
+    function grant(v) {
+      var ad = window.__facGPC ? 'denied' : v;
+      gtag('consent', 'update', {
+        ad_storage: ad, analytics_storage: v, ad_user_data: ad, ad_personalization: ad
+      });
+    }
+    if (saved === 'granted' || saved === 'denied') { grant(saved); return; }
+    // Only visitors whose clock is set to a European zone see the banner; Consent Mode's
+    // region list above is the real gate, this just decides who gets asked.
+    var tz = '';
+    try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) {}
+    if (!/^(Europe\/|Atlantic\/(Reykjavik|Canary|Madeira|Azores|Faroe))/.test(tz)) return;
+    function show() {
+      var b = document.createElement('div');
+      b.id = 'consent-banner';
+      b.setAttribute('role', 'dialog');
+      b.setAttribute('aria-label', 'Cookie choice');
+      b.style.cssText = 'position:fixed;left:16px;right:16px;bottom:16px;z-index:2147483647;max-width:560px;margin:0 auto;padding:14px 16px;border-radius:12px;background:#111;color:#fff;font:14px/1.4 system-ui,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.3);display:flex;flex-wrap:wrap;gap:10px;align-items:center';
+      b.innerHTML = '<span style="flex:1 1 260px">We use Google cookies to see how the site is used and to measure and show ads. <a href="/privacy/" style="color:#9cf">Privacy</a></span>' +
+        '<button type="button" data-v="denied" style="padding:8px 14px;border-radius:8px;border:1px solid #666;background:transparent;color:#fff;cursor:pointer">Decline</button>' +
+        '<button type="button" data-v="granted" style="padding:8px 14px;border-radius:8px;border:0;background:#fff;color:#111;cursor:pointer">Accept</button>';
+      b.addEventListener('click', function (ev) {
+        var v = ev.target && ev.target.getAttribute && ev.target.getAttribute('data-v');
+        if (!v) return;
+        try { localStorage.setItem(KEY, v); } catch (e) {}
+        grant(v);
+        b.remove();
+      });
+      document.body.appendChild(b);
+    }
+    if (document.body) show(); else document.addEventListener('DOMContentLoaded', show);
+  })();
+</script>
 <!-- Google AdSense — site-ownership verification + ad serving (ca-pub-8077227518694725) -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8077227518694725" crossorigin="anonymous" onerror="window.__adsBlocked=true" onload="window.__adsLoaded=true;window.__facInitAds&&window.__facInitAds()"></script>
 <!-- Google tag (gtag.js) — Google Ads conversion tracking + GA4 analytics -->
@@ -286,6 +344,17 @@
   .profile-signout { width: 100%; margin-top: 14px; padding: 11px; background: var(--surface); color: var(--err-ink);
     border: 1px solid var(--line); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
   .profile-signout:hover { background: var(--err-bg-soft); }
+  /* Delete account (privacy audit 2026-09-27): the policy promised it on the web too. */
+  .profile-delete-link { display: block; margin: 12px auto 0; background: none; border: 0; color: var(--ink-2);
+    font-size: 13px; text-decoration: underline; cursor: pointer; }
+  .profile-delete-box { margin-top: 12px; padding: 12px; border: 1px solid var(--err-ink); border-radius: 8px;
+    background: var(--err-bg-soft); font-size: 13px; color: var(--ink); }
+  .profile-delete-box p { margin: 0 0 10px; }
+  .profile-delete-actions { display: flex; gap: 8px; }
+  .profile-delete-actions button { flex: 1; padding: 10px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  #profile-delete-confirm { background: var(--err-ink); color: var(--surface); border: 0; }
+  #profile-delete-confirm:disabled { opacity: .6; cursor: default; }
+  #profile-delete-cancel { background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
   .research-card { max-width: 420px; max-height: 82vh; overflow-y: auto; }
   .research-sec { margin-top: 14px; }
   .research-sec h3 { margin: 0 0 2px; font-size: 15px; }
@@ -1690,6 +1759,15 @@
     </div>
     <div id="profile-error" class="auth-error" hidden></div>
     <button id="profile-signout" type="button" class="profile-signout">Sign out</button>
+    <button id="profile-delete" type="button" class="profile-delete-link">Delete account</button>
+    <div id="profile-delete-box" class="profile-delete-box" role="alertdialog" aria-labelledby="profile-delete-title" hidden>
+      <p id="profile-delete-title"><strong>Delete your account for good?</strong></p>
+      <p>This immediately and permanently deletes your account, saved buildings, folders, saved searches, home building, alert settings, subscription record, comments and likes. It can’t be undone. A Plus subscription bought on the web should be cancelled first so it stops billing.</p>
+      <div class="profile-delete-actions">
+        <button id="profile-delete-cancel" type="button">Cancel</button>
+        <button id="profile-delete-confirm" type="button">Delete my account</button>
+      </div>
+    </div>
   </div>
 </div>
 <!-- Research: owner/agent portfolio (Plus) -->
@@ -7697,6 +7775,7 @@ function favActive() {
     if (!authUser) return;
     document.getElementById('profile-email').textContent = authUser.email || '';
     profileErr.hidden = true;
+    document.getElementById('profile-delete-box').hidden = true;
     await refreshPlus();
     const plan = document.getElementById('profile-plan');
     plan.textContent = plusActive ? '★ Plus member' : 'Free';
@@ -7786,6 +7865,39 @@ function favActive() {
     authUser = null; plusActive = false;
     CATS = []; FAVCATS = {}; folderFilter = null;
     updateAuthUI(); renderFolderBar();
+  });
+  // Delete account (privacy policy: "on the website, sign in and use Profile →
+  // Delete account"). The same delete_account() RPC the iPhone app calls
+  // (db/0019): it deletes auth.users for auth.uid() and every user-owned table
+  // cascades. Two steps — the link opens a confirmation, only its red button
+  // deletes — then the local session is dropped the way Sign out drops it.
+  const delBox = document.getElementById('profile-delete-box');
+  const delBtn = document.getElementById('profile-delete-confirm');
+  document.getElementById('profile-delete').addEventListener('click', () => {
+    delBox.hidden = false; profileErr.hidden = true; delBtn.disabled = false;
+    delBtn.textContent = 'Delete my account';
+  });
+  document.getElementById('profile-delete-cancel').addEventListener('click', () => { delBox.hidden = true; });
+  delBtn.addEventListener('click', async () => {
+    if (!supaClient || !authUser) return;
+    delBtn.disabled = true; delBtn.textContent = 'Deleting…';
+    try {
+      const { error } = await supaClient.rpc('delete_account');
+      if (error) throw error;
+    } catch (e) {
+      delBtn.disabled = false; delBtn.textContent = 'Delete my account';
+      profileErr.textContent = 'Couldn’t delete your account — please try again, or email api@findacrib.com.';
+      profileErr.hidden = false;
+      return;
+    }
+    // The user row is gone, so a server-side sign-out would 403; drop the
+    // session locally.
+    try { await supaClient.auth.signOut({ scope: 'local' }); } catch (e) { /* already gone */ }
+    delBox.hidden = true; profileModal.hidden = true;
+    authUser = null; plusActive = false;
+    CATS = []; FAVCATS = {}; folderFilter = null;
+    updateAuthUI(); renderFolderBar();
+    showToast('Your account has been deleted.');
   });
   profileAlerts.addEventListener('change', async () => {
     const want = profileAlerts.checked;
@@ -7966,7 +8078,9 @@ function favActive() {
     // Enhanced conversions: pass the account email (Google hashes it) so the
     // purchase can be matched back to the ad click.
     if (plusPurchasePending && window.gtag && GADS_PLUS_LABEL) {
-      if (authUser?.email) gtag('set', 'user_data', { email: authUser.email });
+      // Enhanced conversions send the account email to Google (hashed there);
+      // disclosed in /privacy/, and skipped under Global Privacy Control.
+      if (authUser?.email && !window.__facGPC) gtag('set', 'user_data', { email: authUser.email });
       gtag('event', 'conversion', {
         send_to: 'AW-1001356637/' + GADS_PLUS_LABEL,
         value: 4.99, currency: 'USD',
@@ -8026,7 +8140,7 @@ function favActive() {
         if (_evt === 'SIGNED_IN' && window.gtag && GADS_SIGNUP_LABEL &&
             authUser.app_metadata?.provider && authUser.app_metadata.provider !== 'email' &&
             Date.now() - new Date(authUser.created_at).getTime() < 5 * 60 * 1000) {
-          if (authUser.email) gtag('set', 'user_data', { email: authUser.email });  // enhanced conversions
+          if (authUser.email && !window.__facGPC) gtag('set', 'user_data', { email: authUser.email });  // enhanced conversions; off under GPC
           gtag('event', 'conversion', {
             send_to: 'AW-1001356637/' + GADS_SIGNUP_LABEL,
             value: 1.0, currency: 'USD',
@@ -8095,7 +8209,7 @@ function favActive() {
           // into GADS_SIGNUP_LABEL below (e.g. 'AbC-D_efGh'); the conversion is
           // a no-op until it's set, so the base tag stays safe to ship now.
           if (authMode === 'signup' && window.gtag && GADS_SIGNUP_LABEL) {
-            gtag('set', 'user_data', { email });   // enhanced conversions (hashed by Google)
+            if (!window.__facGPC) gtag('set', 'user_data', { email });   // enhanced conversions (hashed by Google); off under GPC
             gtag('event', 'conversion', {
               send_to: 'AW-1001356637/' + GADS_SIGNUP_LABEL,
               value: 1.0, currency: 'USD',

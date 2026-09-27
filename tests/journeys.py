@@ -23,6 +23,10 @@ a change on that path also wants the device lane — see DEVICE.md.
 """
 import argparse
 import json
+import secrets
+import subprocess
+import urllib.error
+import urllib.request
 import sys
 import time
 import traceback
@@ -51,6 +55,25 @@ LABEL = "document.getElementById('map-count').textContent"
 CARDS = "document.querySelectorAll('#grid .card[data-bbl]').length"
 HEAP_BUDGET_MB = 120        # desktop Chromium, after GC, after an area pick (was 114 MB before the fix at rest)
 DOM_BUDGET = 40000
+SUPABASE_URL = 'https://dbaifotzwlxjvsxjohjt.supabase.co'
+
+
+def supabase_admin(method, path, body=None):
+    """Call the Supabase auth admin API with the service-role key from the
+    Mac's keychain (never from the repo). Returns (status, json-or-None)."""
+    key = subprocess.check_output(['security', 'find-generic-password', '-s',
+                                   'rent-map-supabase-service-role', '-w'],
+                                  stderr=subprocess.DEVNULL).decode().strip()
+    req = urllib.request.Request(SUPABASE_URL + '/auth/v1/admin/' + path, method=method,
+                                 data=json.dumps(body).encode() if body is not None else None,
+                                 headers={'apikey': key, 'Authorization': 'Bearer ' + key,
+                                          'Content-Type': 'application/json'})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            raw = r.read()
+            return r.status, (json.loads(raw) if raw else None)
+    except urllib.error.HTTPError as e:
+        return e.code, None
 
 
 
@@ -87,6 +110,8 @@ JOURNEY_EVENTS = {
     'outbound_links':       ['outbound'],
     'status_chips':         ['status_open'],
     'referral_gate':        ['referral_open', 'referral_share'],
+    'consent_mode':         [],
+    'account_delete':       [],
     # home_set / home_open / home_clear are pre-2026-09-06 history: the
     # my-apartment pin was retired from the UI that day (no sheet button, no
     # profile row, no pill) and the code left dormant. Nothing to cover.
@@ -862,7 +887,8 @@ class Runner:
         self.ok(r301.status in (301, 308), f'/privacy should redirect to /privacy/, got {r301.status}', j)
         page.goto(LIVE + '/privacy/', wait_until='domcontentloaded', timeout=90000)
         priv = page.evaluate("document.body.innerText")
-        for need in ('What we collect', 'Delete your account', 'household income'):
+        for need in ('What we collect', 'Delete your account', 'household income',
+                     'AdMob', 'Global Privacy Control', 'Your rights', 'enhanced conversions', 'MapKit JS'):
             self.ok(need.lower() in priv.lower(), f'privacy policy no longer mentions {need!r}', j)
         self.ok('api@findacrib.com' in priv, 'privacy policy should carry a contact address', j)
         self.ok('@gmail' not in priv, 'a personal address must not be published', j)
@@ -1219,10 +1245,100 @@ class Runner:
         page.evaluate("document.querySelector('[data-auth=\"close\"]')?.click()"); time.sleep(0.3)
         self.ok(page.evaluate("document.getElementById('auth-modal').hidden"), 'modal should close', j)
 
+    def j_consent_mode(self, page, j, device):
+        """Google Consent Mode v2 + Global Privacy Control (privacy audit
+        2026-09-27). The consent default must reach the dataLayer BEFORE any
+        gtag('config'); a browser sending GPC gets ad storage, ad-data sharing
+        and personalized AdSense turned off; a European clock gets the cookie
+        banner, whose Privacy link goes to /privacy/."""
+        self.boot(page)
+        dl = page.evaluate("""(() => (window.dataLayer || []).map(a => Array.from(a)).filter(a => a[0] === 'consent' || a[0] === 'config').map(a => [a[0], a[1], a[2] && a[2].region ? 'region' : (a[2] && a[2].ad_storage) || '']))()""")
+        first = next((i for i, a in enumerate(dl) if a[0] == 'consent' and a[1] == 'default'), None)
+        cfg = next((i for i, a in enumerate(dl) if a[0] == 'config'), None)
+        self.ok(first is not None and dl[first][2] == 'region', f'the EEA/UK/CH consent default is missing: {dl[:4]}', j)
+        self.ok(first is not None and cfg is not None and first < cfg, f'consent default must come before gtag config: {dl[:4]}', j)
+        self.ok(page.evaluate("window.__facGPC === false"), 'without GPC the page must not opt out', j)
+        # Global Privacy Control on: a fresh page with the signal set.
+        gpc = self.page(page.context, j)
+        try:
+            gpc.add_init_script("Object.defineProperty(Navigator.prototype, 'globalPrivacyControl', { get: () => true })")
+            # AdSense replaces window.adsbygoogle once it loads, so keep it out
+            # and read the flag Google would have picked up from the queue.
+            gpc.route('**/pagead2.googlesyndication.com/**', lambda r: r.abort())
+            self.boot(gpc, wait_pins=False)
+            r = gpc.evaluate("""(() => ({ gpc: window.__facGPC,
+                npa: (window.adsbygoogle || {}).requestNonPersonalizedAds,
+                d: (window.dataLayer || []).map(a => Array.from(a)).filter(a => a[0] === 'consent' && a[1] === 'default' && !a[2].region).map(a => a[2]) }))()""")
+            self.ok(r['gpc'] is True, 'GPC should be detected', j)
+            self.ok(any(d.get('ad_storage') == 'denied' and d.get('ad_user_data') == 'denied'
+                        and d.get('ad_personalization') == 'denied' for d in r['d']),
+                    f'GPC should deny ad storage/data/personalization everywhere: {r["d"]}', j)
+            self.ok(r['npa'] == 1, 'GPC should ask AdSense for non-personalized ads', j)
+        finally:
+            gpc.close()
+        # A European clock sees the banner (a separate context: the timezone is per context).
+        ctx = page.context.browser.new_context(timezone_id='Europe/Paris', viewport={'width': 1200, 'height': 900})
+        try:
+            eu = self.page(ctx, j)
+            self.boot(eu, wait_pins=False)
+            self.wait_until(eu, "!!document.getElementById('consent-banner')", 15000)
+            href = eu.evaluate("document.querySelector('#consent-banner a')?.getAttribute('href')")
+            self.ok(href == '/privacy/', f'the banner should link /privacy/, got {href!r}', j)
+            eu.evaluate("document.querySelector('#consent-banner [data-v=\"denied\"]').click()")
+            self.ok(eu.evaluate("!document.getElementById('consent-banner') && localStorage.getItem('consent.v1') === 'denied'"),
+                    'Decline should close the banner and remember the choice', j)
+        finally:
+            ctx.close()
+        j.notes.append('default before config; GPC denies ads; EU banner')
+
+    def j_account_delete(self, page, j, device):
+        """Profile → Delete account on the web (privacy audit 2026-09-27: the
+        policy promised it; only the app had it). A throwaway account is made
+        with the admin API, signed in through the real form, deleted through
+        the real confirmation, and the admin API must then say it is gone. The
+        finally-block removes it if any step failed first."""
+        email = f'journey-delete-{secrets.token_hex(6)}@example.com'
+        password = secrets.token_urlsafe(18)
+        st, u = supabase_admin('POST', 'users', {'email': email, 'password': password, 'email_confirm': True})
+        if st not in (200, 201) or not u or not u.get('id'):
+            self.ok(False, f'could not create the throwaway account (HTTP {st})', j)
+            return
+        uid = u['id']
+        try:
+            self.boot(page)
+            self.click(page, '#auth-btn'); time.sleep(0.6)
+            page.fill('#auth-email', email)
+            page.fill('#auth-pass', password)
+            self.click(page, '#auth-submit')
+            signed_in = self.wait_until(page, "document.getElementById('auth-btn').classList.contains('signed-in')", 20000)
+            self.ok(signed_in, 'the throwaway account should sign in', j)
+            if not signed_in:
+                return
+            self.click(page, '#auth-btn')
+            self.wait_until(page, "!document.getElementById('profile-modal').hidden", 15000)
+            self.ok(page.evaluate("document.getElementById('profile-delete-box').hidden"),
+                    'the confirmation must stay closed until asked for', j)
+            self.click(page, '#profile-delete'); time.sleep(0.3)
+            self.ok(not page.evaluate("document.getElementById('profile-delete-box').hidden"),
+                    'Delete account should open a confirmation', j)
+            self.click(page, '#profile-delete-cancel'); time.sleep(0.3)
+            self.ok(page.evaluate("document.getElementById('profile-delete-box').hidden"), 'Cancel should close it', j)
+            self.ok(supabase_admin('GET', f'users/{uid}')[0] == 200, 'Cancel must not delete anything', j)
+            self.click(page, '#profile-delete'); time.sleep(0.3)
+            self.click(page, '#profile-delete-confirm')
+            out = self.wait_until(page, "!document.getElementById('auth-btn').classList.contains('signed-in') && document.getElementById('profile-modal').hidden", 20000)
+            self.ok(out, 'after deleting, the page should be signed out with the profile closed', j)
+            st, _ = supabase_admin('GET', f'users/{uid}')
+            self.ok(st == 404, f'the account should be gone from auth.users, admin API says {st}', j)
+            j.notes.append('throwaway account deleted from the profile')
+        finally:
+            if supabase_admin('GET', f'users/{uid}')[0] == 200:
+                supabase_admin('DELETE', f'users/{uid}')
+
     JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'pin_and_list',
                 'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'signin_modal', 'app_chip', 'app_qr_menu', 'boot_is_usable', 'city_chip',
                 'ad_tiles', 'outbound_links', 'status_chips', 'referral_gate',
-                'rent_report', 'legal_pages', 'comments_gate', 'landlords_gate']
+                'rent_report', 'legal_pages', 'comments_gate', 'landlords_gate', 'consent_mode', 'account_delete']
 
     # ---- run --------------------------------------------------------------
     def run(self):

@@ -1471,3 +1471,26 @@ final class AnalyticsDeviceTests: XCTestCase {
     }
 }
 
+
+/// The privacy manifest (2026-09-27 privacy audit). Apple rejects an upload
+/// whose app uses a required-reason API without declaring it, and the
+/// manifest's collected types must match the App Privacy label that
+/// scripts/asc_push_privacy_iris.py publishes. A resource the generator
+/// forgot is simply missing from the bundle, so check the built app.
+final class PrivacyManifestTests: XCTestCase {
+    func testManifestShipsInTheAppAndMatchesTheLabel() throws {
+        let url = try XCTUnwrap(Bundle(for: DataStore.self).url(forResource: "PrivacyInfo", withExtension: "xcprivacy"),
+                                "PrivacyInfo.xcprivacy is not in the app bundle")
+        let plist = try XCTUnwrap(PropertyListSerialization.propertyList(from: Data(contentsOf: url), format: nil) as? [String: Any])
+        XCTAssertEqual(plist["NSPrivacyTracking"] as? Bool, false, "the app never asks for ATT, so it must not declare tracking")
+        let apis = plist["NSPrivacyAccessedAPITypes"] as? [[String: Any]] ?? []
+        let defaults = apis.first { $0["NSPrivacyAccessedAPIType"] as? String == "NSPrivacyAccessedAPICategoryUserDefaults" }
+        XCTAssertEqual(defaults?["NSPrivacyAccessedAPITypeReasons"] as? [String], ["CA92.1"])
+        let types = Set((plist["NSPrivacyCollectedDataTypes"] as? [[String: Any]] ?? [])
+            .compactMap { ($0["NSPrivacyCollectedDataType"] as? String)?.replacingOccurrences(of: "NSPrivacyCollectedDataType", with: "") })
+        // The same 13 types as USAGES in asc_push_privacy_iris.py.
+        XCTAssertEqual(types, ["Name", "EmailAddress", "UserID", "PurchaseHistory", "OtherUserContent",
+                               "ProductInteraction", "OtherUsageData", "DeviceID", "CoarseLocation",
+                               "AdvertisingData", "CrashData", "PerformanceData", "SearchHistory"])
+    }
+}

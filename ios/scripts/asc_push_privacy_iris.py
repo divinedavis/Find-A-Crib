@@ -14,6 +14,8 @@ What the app collects, and why (2026-09-16):
     NAME, EMAIL_ADDRESS   Sign in with Apple / Google / email
     USER_ID               the Supabase account id
     PURCHASE_HISTORY      the Find A Crib Plus subscription
+    OTHER_USER_CONTENT    public comments posted on a building (2026-09-27;
+                          building_comments, shown with the account name)
   linked to the account when signed in, Analytics
     PRODUCT_INTERACTION   what was done in the app — searches by shape,
                           screens, taps on tiles and hand-off buttons
@@ -79,6 +81,9 @@ USAGES = [
     ("EMAIL_ADDRESS", "APP_FUNCTIONALITY"),
     ("USER_ID", "APP_FUNCTIONALITY"),
     ("PURCHASE_HISTORY", "APP_FUNCTIONALITY"),
+    # Public building comments (2026-09-27 privacy audit): text the person
+    # writes, stored with their account and shown publicly.
+    ("OTHER_USER_CONTENT", "APP_FUNCTIONALITY"),
     ("PRODUCT_INTERACTION", "ANALYTICS"),
     ("OTHER_USAGE_DATA", "ANALYTICS"),
     # Google AdMob SDK (2026-09-25), see the docstring.

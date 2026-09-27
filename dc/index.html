@@ -5469,8 +5469,20 @@ function favActive() {
   // <template>. Google does not fill a slot for a site still in review, for an
   // ad blocker, or when it has nothing to sell; settleAds() then swaps the
   // fallback back in, or drops the card, so the grid never leads with a blank.
-  function adCardHtml(fallback) {
-    return `<div class="card ad-card"><template class="ad-fallback">${fallback || ''}</template>
+  // One ad per SLOT per visit (2026-09-27). The list rebuilds on every map
+  // move, and each rebuild used to ask Google for fresh ads: two real Android
+  // visitors logged ~55 filled ads each in 20 seconds, the kind of churn
+  // Google can treat as invalid traffic. Now each slot ("lead", "e1", "e2"…)
+  // keeps the node it was first given: the rebuild renders a placeholder and
+  // adoptAds() moves the existing ad back in (moveBefore where the browser has
+  // it, which keeps the ad's iframe alive; Chrome 133+). A slot Google left
+  // unfilled stays on its fallback. New ad requests are also capped per minute.
+  const adNodes = new Map();          // key -> element | 'gone'
+  const AD_NEW_PER_MIN = 6;
+  let adStamps = [];
+  let adHold = null;
+  function adCardHtml(fallback, key) {
+    return `<div class="card ad-card" data-ad-key="${key || ''}"><template class="ad-fallback">${fallback || ''}</template>
       <span class="ad-flag">Sponsored</span>
       <ins class="adsbygoogle" style="display:block;width:100%"
            data-ad-format="fluid" data-ad-layout-key="${ADSENSE_LAYOUT}"
@@ -5862,6 +5874,44 @@ function favActive() {
   // Google marks each slot data-ad-status="filled" or "unfilled". Swap an
   // unfilled one as soon as it says so; anything still unsettled after
   // AD_SETTLE_MS (blocked script, no answer) is treated the same way.
+  // Park the live ad cards in the document before the grid is replaced, so
+  // their iframes survive the rebuild where the browser allows it.
+  function move(parent, node, before) {
+    if (parent.moveBefore) { try { parent.moveBefore(node, before || null); return; } catch (e) {} }
+    parent.insertBefore(node, before || null);
+  }
+  function holdAds() {
+    if (!adHold) {
+      adHold = document.createElement('div');
+      adHold.setAttribute('aria-hidden', 'true');
+      adHold.style.cssText = 'position:absolute;left:-9999px;top:0;width:360px;overflow:hidden';
+      document.body.appendChild(adHold);
+    }
+    grid.querySelectorAll('.card.ad-card[data-ad-key]').forEach(card => {
+      if (adNodes.get(card.dataset.adKey) === card) move(adHold, card);
+    });
+  }
+  // Give each placeholder its slot's existing ad, its fallback if the slot
+  // went unfilled, or — within the per-minute cap — let it be a new ad.
+  function adoptAds(root) {
+    const now = Date.now();
+    adStamps = adStamps.filter(t => now - t < 60000);
+    root.querySelectorAll('.card.ad-card[data-ad-key]').forEach(card => {
+      const key = card.dataset.adKey;
+      if (!key) return;
+      const prev = adNodes.get(key);
+      if (prev && prev !== card && prev !== 'gone') { move(card.parentNode, prev, card); card.remove(); return; }
+      if (prev === card) return;
+      if (prev === 'gone' || adStamps.length >= AD_NEW_PER_MIN) {
+        const fb = card.querySelector('template.ad-fallback')?.innerHTML.trim();
+        if (fb) card.outerHTML = fb; else card.remove();
+        return;
+      }
+      adStamps.push(now);
+      adNodes.set(key, card);
+    });
+  }
+
   const AD_SETTLE_MS = 6000;
   function settleAds() {
     const started = Date.now();
@@ -5880,6 +5930,7 @@ function favActive() {
           return;
         }
         if (st !== 'unfilled' && !adsBlocked() && Date.now() - started < AD_SETTLE_MS) { pending++; return; }
+        if (card.dataset.adKey) adNodes.set(card.dataset.adKey, 'gone');
         const fb = card.querySelector('template.ad-fallback')?.innerHTML.trim();
         if (fb) card.outerHTML = fb; else card.remove();
       });
@@ -5987,7 +6038,7 @@ function favActive() {
     if (pinned) parts.push(cardHtml(pinned));
     // With ads on, the lead slot is Google's in-feed ad instead (owner,
     // 2026-09-25); re-rentals keep their FEAT_EVERY slots further down.
-    if (promos) parts.push(ads ? adCardHtml(nextFeatured()) : nextFeatured());
+    if (promos) parts.push(ads ? adCardHtml(nextFeatured(), 'lead') : nextFeatured());
     // Housing Connect takes the second slot on every render. hcCursor was just
     // reset, and the pool is sorted by soonest deadline, so the lead tile is
     // always the lottery closest to closing in the boroughs on screen — the one
@@ -5995,7 +6046,7 @@ function favActive() {
     if (promos) parts.push(nextHc());
     shown.forEach((rec, i) => {
       parts.push(cardHtml(rec));
-      if (ads && (i + 1) % AD_EVERY === 0) parts.push(adCardHtml());
+      if (ads && (i + 1) % AD_EVERY === 0) parts.push(adCardHtml('', 'e' + ((i + 1) / AD_EVERY)));
       // 7 and 8 are deliberately coprime-ish with 6: three interleaved tile
       // types on the same multiple would stack three non-building cards in a
       // row every 24 slots and the grid would read as an ad break.
@@ -6007,7 +6058,9 @@ function favActive() {
       : '';
     if (gridMore) { gridMore.disconnect(); gridMore = null; }
     gridRest = parts.slice(PAGE_CARDS);
+    holdAds();
     grid.innerHTML = parts.slice(0, PAGE_CARDS).join('') + (gridRest.length ? '<div class="grid-more" aria-hidden="true"></div>' : tailNote);
+    adoptAds(grid);
     if (gridRest.length) armGridMore(tailNote);
     // The list just lost every node it had; re-mark the open building so
     // panning the map doesn't quietly drop the selection.
@@ -6025,6 +6078,7 @@ function favActive() {
       const chunk = gridRest.splice(0, PAGE_CARDS);
       tr('grid:more ' + chunk.length);
       sentinel.insertAdjacentHTML('beforebegin', chunk.join(''));
+      adoptAds(grid);
       PHOTO_PREVIEW?.watch(grid);
       if (!gridRest.length) { sentinel.outerHTML = tailNote; if (gridMore) { gridMore.disconnect(); gridMore = null; } }
       initAds();        // the ad cards in this page need their push too

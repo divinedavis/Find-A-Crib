@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import UIKit
 
 /// What people do in the app, written to the same `public.events` table the
 /// website writes to — same event names, so one dashboard and one coverage
@@ -43,6 +44,17 @@ final class Analytics {
     /// The install's first launch, kept so every event can say how old the
     /// install is — the app-side stand-in for the site's first-touch record.
     private let installedAt: Date
+    /// "iphone", "ipad" or "mac" (an Apple Silicon Mac running the app) on
+    /// every event (owner, 2026-09-27: "add device type in the app
+    /// analytics"). The app's network signature is the same on all three, so
+    /// this is the only way the dashboard can tell them apart.
+    private let device = Analytics.deviceKind(idiom: UIDevice.current.userInterfaceIdiom,
+                                              onMac: ProcessInfo.processInfo.isiOSAppOnMac)
+
+    nonisolated static func deviceKind(idiom: UIUserInterfaceIdiom, onMac: Bool) -> String {
+        if onMac || idiom == .mac { return "mac" }
+        return idiom == .pad ? "ipad" : "iphone"
+    }
     let isFirstLaunch: Bool
     /// Re-rental tiles already counted as seen this launch (per apartment,
     /// like the site's once-per-session impression rule).
@@ -138,6 +150,7 @@ final class Analytics {
         var p = props
         p["platform"] = "ios"
         p["build"] = build
+        p["device"] = device
         p["city"] = props["city"] as? String ?? city
         // The same reserved names the site uses on every row: which sitting,
         // how the app was opened this time, and how old the install is.

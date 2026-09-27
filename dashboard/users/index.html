@@ -270,7 +270,7 @@
           <h1>Users</h1>
           <div class="sub">Everyone who created an account. Click a column to sort, the ▾ beside it to filter, or a number above to filter by it.</div>
         </div>
-        <input class="usearch" id="usearch" type="text" placeholder="Search name, email, device, iphone, android, or 1.2…">
+        <input class="usearch" id="usearch" type="text" placeholder="Search name, email, device, iphone, ipad, android, or 1.2…">
       </div>
 
       <div class="chips" id="chips"></div>
@@ -279,7 +279,7 @@
         <div class="tbl-wrap">
           <table class="utable">
             <thead><tr id="uhead">
-              <th data-sort="name" tabindex="0" role="button" aria-sort="none">Name<span class="sarr"></span></th><th data-sort="ios_app" tabindex="0" role="button" aria-sort="none" title="The app version last seen from this account's iPhone app, from its build number. — = never signed in from the app.">iOS version<span class="sarr"></span></th><th data-sort="alerts" tabindex="0" role="button" aria-sort="none" title="On borough lottery/re-rental emails, or saved-building emails">Alerts<span class="sarr"></span></th><th data-sort="last_seen" tabindex="0" role="button" aria-sort="none" title="The last time this account did anything signed in — a visit or an app session, not only an explicit login. Click a date in the column to see when they joined.">Last signed in<span class="sarr"></span></th><th data-sort="phone" tabindex="0" role="button" aria-sort="none" title="iPhone or Android, from any signed-in session (web or the iPhone app). — = only seen on a computer/iPad.">Phone<span class="sarr"></span></th><th data-sort="device" tabindex="0" role="button" aria-sort="none" title="Which front end their newest session is on: the iPhone/iPad app, a browser on a phone or tablet (mobile web), or a browser on a computer.">Last device<span class="sarr"></span></th>
+              <th data-sort="name" tabindex="0" role="button" aria-sort="none">Name<span class="sarr"></span></th><th data-sort="ios_app" tabindex="0" role="button" aria-sort="none" title="The app version last seen from this account's iPhone app, from its build number. — = never signed in from the app.">iOS version<span class="sarr"></span></th><th data-sort="alerts" tabindex="0" role="button" aria-sort="none" title="On borough lottery/re-rental emails, or saved-building emails">Alerts<span class="sarr"></span></th><th data-sort="last_seen" tabindex="0" role="button" aria-sort="none" title="The last time this account did anything signed in — a visit or an app session, not only an explicit login. Click a date in the column to see when they joined.">Last signed in<span class="sarr"></span></th><th data-sort="phone" tabindex="0" role="button" aria-sort="none" title="iPhone or Android, from any signed-in session (web or the iPhone app). — = only seen on a computer/iPad.">Phone<span class="sarr"></span></th><th data-sort="device" tabindex="0" role="button" aria-sort="none" title="Which front end their newest session is on: the app (iPhone, iPad or Mac, once they are on build 96+), a browser on a phone or tablet (mobile web), or a browser on a computer.">Last device<span class="sarr"></span></th>
             </tr></thead>
             <tbody id="urows"></tbody>
           </table>
@@ -511,8 +511,11 @@
   // 2026-09-23): the app, the site on a phone, the site on a computer.
   // 'tablet' is gone — an iPad in Safari is mobile web, an iPad running the
   // app sends the app's user agent and reads as the app.
-  function deviceBadge(d){
-    if(d==='app')        return '<span class="badge b-iphone">📱 Mobile app</span>';
+  // The app now says which device it runs on (app_device, from build 96,
+  // owner 2026-09-27); older builds leave it empty and read "Mobile app".
+  var APP_DEVICE = { iphone:'📱 iPhone app', ipad:'📱 iPad app', mac:'💻 Mac app' };
+  function deviceBadge(d, ad){
+    if(d==='app')        return '<span class="badge b-iphone">'+(APP_DEVICE[ad] || '📱 Mobile app')+'</span>';
     if(d==='mobile_web') return '<span class="badge b-mobile">🌐 Mobile web</span>';
     if(d==='mobile' || d==='tablet') return '<span class="badge b-mobile">🌐 Mobile web</span>';
     if(d==='desktop')    return '<span class="badge b-desktop">🖥 Desktop</span>';
@@ -589,6 +592,9 @@
       opt('No phone seen', function(u){ return !u.phone; });
     } else if(key==='device'){
       opt('Mobile app', function(u){ return u.device==='app'; });
+      opt('iPhone app', function(u){ return u.device==='app' && u.app_device==='iphone'; });
+      opt('iPad app', function(u){ return u.device==='app' && u.app_device==='ipad'; });
+      opt('Mac app', function(u){ return u.device==='app' && u.app_device==='mac'; });
       opt('Mobile web', function(u){ return isMobileWeb(u); });
       opt('Desktop', function(u){ return u.device==='desktop'; });
       opt('Never seen', function(u){ return !u.device; });
@@ -714,6 +720,7 @@
       return (u.name||'').toLowerCase().indexOf(q)>=0
           || (u.email||'').toLowerCase().indexOf(q)>=0
           || (u.device||'').indexOf(q)>=0
+          || (u.app_device||'').indexOf(q)>=0
           || (u.phone||'').indexOf(q)>=0
           || (q==='ios' && !!u.ios_app)
           || (!!u.ios_app && (iosVersion(u.ios_build)||'').indexOf(q)===0);
@@ -728,7 +735,7 @@
         '<td>'+(u.alerts ? '<span style="display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:700;background:rgba(30,123,52,.15);color:#3ccf6a">Y</span>' : '<span class="u-muted">N</span>')+'</td>'+
         '<td><button type="button" class="u-namebtn u-joinedbtn" data-joined="'+esc(fdate(u.created_at))+'" data-returned="'+(didReturn(u)?'1':'0')+'" title="Click to show when this user joined">'+fdate(u.last_seen)+(didReturn(u)?' <span class="u-muted">↩</span>':'')+'</button></td>'+
         '<td>'+phoneBadge(u.phone)+'</td>'+
-        '<td>'+deviceBadge(u.device)+'</td>'+
+        '<td>'+deviceBadge(u.device, u.app_device)+'</td>'+
       '</tr>';
     }).join('');
   }

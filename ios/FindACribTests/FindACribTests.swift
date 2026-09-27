@@ -1460,3 +1460,14 @@ final class NJPhotoMatchTests: XCTestCase {
         XCTAssertFalse(NJPhotos.accept(town: "Paramus", development: "Vermella Paramus", name: "Vermella Way", locality: "Paramus", state: "NY"), "not New Jersey")
     }
 }
+
+/// Every app event says which kind of device sent it (2026-09-27).
+final class AnalyticsDeviceTests: XCTestCase {
+    func testDeviceKind() {
+        XCTAssertEqual(Analytics.deviceKind(idiom: .phone, onMac: false), "iphone")
+        XCTAssertEqual(Analytics.deviceKind(idiom: .pad, onMac: false), "ipad")
+        XCTAssertEqual(Analytics.deviceKind(idiom: .pad, onMac: true), "mac", "an iPad app on an Apple Silicon Mac")
+        XCTAssertEqual(Analytics.deviceKind(idiom: .phone, onMac: true), "mac")
+    }
+}
+

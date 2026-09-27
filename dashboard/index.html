@@ -646,7 +646,7 @@
       <!-- ===== Trent's Fresh Spaces only ===== -->
       <div class="card mb18" id="sec-goals">
         <div class="card-head-row">
-          <div><h2>Goals — the audience $20,000/mo of ad revenue needs</h2></div>
+          <div><h2>Goals — the audience $200k/year ($16,667/mo) of ad revenue needs</h2></div>
         </div>
         <div id="goals-table"></div>
         <div class="callout" id="goals-callout" style="margin-top:16px"></div>
@@ -917,7 +917,11 @@
   // the last three are the growth engine's (ledger state: 10k sign-ups,
   // $10k/mo revenue, 90% share of the tracked query universe). Mine, not a
   // benchmark — a benchmark says what is normal, a goal says what I want.
-  var AUDIENCE_GOALS = { dau: 300, wau: 1350, mau: 3000,
+  // 2026-09-27 (owner): 8,000 DAU is the goal — the audience that earns
+  // $200k/year. WAU and MAU follow from it by the same two ratios (MAU =
+  // DAU / 10%, WAU = 45% of MAU), so hitting all three still lands both
+  // ratios on their goals.
+  var AUDIENCE_GOALS = { dau: 8000, wau: 36000, mau: 80000,
                          stickiness: 10, wau_mau: 45, saver_return: 50,
                          signups: 10000, mrr: 10000, share: 90 };
   // Below this many savers the return rate is a coin toss, not a reading.
@@ -1085,7 +1089,7 @@
   var SITES = {
     fac:{
       mark:'🏙️', name:'Find A Crib', endpoint:'/api/dashboard-metrics',
-      title:'Find A Crib', goal:'Goal: 2M ad impressions',
+      title:'Find A Crib', goal:'Goal: 8k DAU = $200k/year',
       sub:'Traffic, funnel &amp; revenue — everything in one place.',
       live:'https://findacrib.com', foot:'Since 24 June 2026',
       // First row in the table. Every window is clamped to it, so the picker
@@ -2897,7 +2901,8 @@
   // the ONLY money is AdSense, and how big if the only money is ad space you
   // sell yourself. The scenario ladder (300 / 1,000 / 3,000) and the all-streams
   // $50,000 row were dropped on 2026-09-03 — the table is about advertising now.
-  var GOAL_REVENUE_TARGET = 20000;
+  // $200k/year (owner, 2026-09-27) — the revenue 8,000 DAU is meant to earn.
+  var GOAL_REVENUE_TARGET = Math.round(200000 / 12);
 
   // The goals card does NOT follow the range picker, and that is deliberate.
   //

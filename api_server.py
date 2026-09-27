@@ -1499,7 +1499,8 @@ def dashboard_metrics():
     return jsonify(data)
 
 
-FAC_GOAL_DEFAULTS = (("dau", 300), ("wau", 1350), ("mau", 3000))
+# 8k DAU = $200k/year (owner, 2026-09-27); WAU/MAU derived as in the page.
+FAC_GOAL_DEFAULTS = (("dau", 8000), ("wau", 36000), ("mau", 80000))
 
 
 def _fac_goals(engagement, evaluate):

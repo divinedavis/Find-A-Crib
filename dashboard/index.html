@@ -530,7 +530,6 @@
           <div><h2>Product health — the numbers that value the business</h2><div class="card-sub">Visitors and page views say how many people arrived. These say whether the product is worth anything to them once they do. All of it was already being computed; none of it was on this page.</div></div>
         </div>
         <div class="ads-tiles" id="fac-health-tiles"></div>
-        <div id="fac-health-meters" style="margin-top:18px"></div>
         <div class="callout" id="fac-health-callout" style="margin-top:16px"></div>
       </div>
 
@@ -2215,39 +2214,8 @@
 
     // The RETENTION CURVE — TRUE COHORT block (header + D1/D7/D30 meters) was
     // removed; the retention figures still appear in the tiles and callout.
-    // Search share: the growth engine's metric — tracked queries where a
-    // findacrib page ranks in the top 10, as a share of all tracked queries.
-    var SQ = d.search || {};
-    var share = SQ.share_pct != null ? n(SQ.share_pct)
-              : (n(SQ.tracked_queries) ? 100*n(SQ.tracked_ranking)/n(SQ.tracked_queries) : null);
-    el('fac-health-meters').innerHTML=
-      '<div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600">'+
-      'GOALS <span style="font-weight:400;text-transform:none">(mine, not a benchmark)</span></div>'+
-      goalMeter('Daily active', E.dau, AUDIENCE_GOALS.dau, 'dau')+
-      goalMeter('Weekly active', E.wau, AUDIENCE_GOALS.wau, 'wau')+
-      goalMeter('Monthly active', E.mau, AUDIENCE_GOALS.mau, 'mau')+
-      meter('Weekly stickiness · WAU/MAU', rate(E.wau_mau)+' of '+AUDIENCE_GOALS.wau_mau+'%',
-            pct(100*n(E.wau_mau), AUDIENCE_GOALS.wau_mau),
-            100*n(E.wau_mau) >= AUDIENCE_GOALS.wau_mau ? 'good' : '')+
-      meter('Savers back within 30 days',
-            rate(SV.rate)+' of '+AUDIENCE_GOALS.saver_return+'%'+
-            ' <span class="a-bench-note">('+comma(SV.returned)+' of '+comma(SV.cohort)+
-            (n(SV.cohort) < SAVER_RETURN_MIN_COHORT ? ' · cohort too small to judge' : '')+')</span>',
-            pct(100*n(SV.rate), AUDIENCE_GOALS.saver_return),
-            n(SV.cohort) >= SAVER_RETURN_MIN_COHORT && 100*n(SV.rate) >= AUDIENCE_GOALS.saver_return ? 'good' : '')+
-      meter('Stickiness · DAU/MAU <span class="a-bench-note">(Zillow-level ceiling)</span>',
-            rate(E.stickiness)+' of '+AUDIENCE_GOALS.stickiness+'%',
-            pct(100*n(E.stickiness), AUDIENCE_GOALS.stickiness),
-            100*n(E.stickiness) >= AUDIENCE_GOALS.stickiness ? 'good' : '')+
-      goalMeter('Sign-ups · accounts, all time', accountsAll, AUDIENCE_GOALS.signups)+
-      meter('Revenue · MRR', '$'+comma(S.mrr)+' of $'+comma(AUDIENCE_GOALS.mrr)+
-            ' <span class="a-bench-note">('+comma(S.paying)+' paying)</span>',
-            pct(n(S.mrr), AUDIENCE_GOALS.mrr), n(S.mrr) >= AUDIENCE_GOALS.mrr ? 'good' : '')+
-      meter('Search share · tracked queries ranking top 10',
-            (share==null ? '—' : Number(share).toFixed(1)+'%')+' of '+AUDIENCE_GOALS.share+'%'+
-            (n(SQ.tracked_queries) ? ' <span class="a-bench-note">('+comma(SQ.tracked_ranking)+' of '+comma(SQ.tracked_queries)+' queries)</span>' : ''),
-            pct(n(share), AUDIENCE_GOALS.share), n(share) >= AUDIENCE_GOALS.share ? 'good' : '');
-
+    // The GOALS meters block (DAU/WAU/MAU, stickiness, savers, sign-ups,
+    // MRR, search share against the owner's goals) was removed on request.
     // The "Against my goals…" narrative was removed. The tiles and the goal
     // meters above carry every number it recited.
     var healthCallout = el('fac-health-callout');
@@ -2624,23 +2592,6 @@
   }
   function shortDate(iso){
     try { return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); } catch(e){ return ''; }
-  }
-  // A bar for a count goal. Every goal reached before this one is drawn as a
-  // vertical mark at its place on the bar, with its value and the date, so a
-  // goal that has been raised three times shows the climb rather than just
-  // the latest bar.
-  function goalMeter(name,cur,goal,key){
-    var hist = (key && GOAL_HISTORY[key]) || [];
-    var marks = '', labels = '';
-    hist.forEach(function(h){
-      var x = Math.max(0, Math.min(100, 100 * n(h.goal) / Math.max(1, goal)));
-      var when = shortDate(h.achieved_at);
-      marks += '<i class="gmark" style="left:'+x.toFixed(1)+'%" title="Goal of '+comma(h.goal)+' reached '+when+' at '+comma(h.value)+'"></i>';
-      labels += '<span class="gmark-label" style="left:'+x.toFixed(1)+'%">✓ '+comma(h.goal)+' · '+when+'</span>';
-    });
-    var m = meter(name, comma(n(cur))+' of '+comma(goal), pct(n(cur),goal), n(cur)>=goal ? 'good' : '');
-    if (!hist.length) return m;
-    return m.replace('</span></div></div>', '</span>'+marks+'</div><div class="gmark-labels">'+labels+'</div></div>');
   }
   function meter(name,val,w,cls){
     return '<div class="meter"><div class="meter-top"><span class="m-name">'+name+'</span><span class="m-val">'+val+'</span></div>'+

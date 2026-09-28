@@ -25,7 +25,7 @@ _LOCK = threading.Lock()
 
 STAGES = ["not_reached_out", "reached_out", "contract_in_progress",
           "contract_sent", "contract_confirmed", "contract_complete"]
-PRODUCTS = ("marracat", "findacrib")
+PRODUCTS = ("marracat", "findacrib", "haukley")   # haukley: film creators (owner, 2026-09-28)
 HANDLE_RE = re.compile(r"^[a-z0-9._-]{1,40}$")
 EMAIL_RE = re.compile(r"^[^@\s]{1,64}@[^@\s]{1,190}\.[A-Za-z]{2,}$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")

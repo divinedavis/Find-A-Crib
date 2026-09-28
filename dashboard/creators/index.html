@@ -228,6 +228,8 @@
   .b-findacrib{background:#eef3fe;color:#2a5bd7}
   html[data-theme="dark"] .b-marracat{background:#3a1a2b;color:#f59ac6}
   html[data-theme="dark"] .b-findacrib{background:#152b52;color:#8fb6ff}
+  .b-haukley{background:#efe9ff;color:#5a3fc0}
+  html[data-theme="dark"] .b-haukley{background:#271f4d;color:#bdb0ff}
   .b-yes{background:#eaf7ef;color:#1a8f57}
   .b-no{background:#f4f4f6;color:#9a99a5}
   html[data-theme="dark"] .b-yes{background:#123020;color:#5fd39a}
@@ -305,7 +307,7 @@
   <aside>
     <div class="brand">
       <div class="brand-mark">📣</div>
-      <div><div class="brand-name">Creator outreach</div><div class="brand-sub">Marracat + Find A Crib</div></div>
+      <div><div class="brand-name">Creator outreach</div><div class="brand-sub">Marracat · Find A Crib · Haukley</div></div>
       <button class="menu-btn" id="menu-btn" type="button" aria-label="Open menu" aria-expanded="false">☰</button>
     </div>
     <nav>
@@ -390,7 +392,7 @@
                 ['contract_in_progress','Contract in progress'],['contract_sent','Contract sent'],
                 ['contract_confirmed','Contract confirmed'],['contract_complete','Contract complete']];
   var STAGE_LABEL = {}; STAGES.forEach(function(s){ STAGE_LABEL[s[0]] = s[1]; });
-  var APP = { marracat:'Marracat', findacrib:'Find A Crib' };
+  var APP = { marracat:'Marracat', findacrib:'Find A Crib', haukley:'Haukley' };
   function el(id){ return document.getElementById(id); }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function day(s){ return s ? new Date(s+'T12:00:00') : null; }
@@ -494,7 +496,8 @@
     el('chips').innerHTML = chip('', ROWS.length, 'creators') +
       STAGES.map(function(s){ return chip(s[0], counts[s[0]]||0, s[1].toLowerCase()); }).join('') +
       chip('app:marracat', ROWS.filter(function(r){return r.product==='marracat';}).length, 'Marracat') +
-      chip('app:findacrib', ROWS.filter(function(r){return r.product==='findacrib';}).length, 'Find A Crib');
+      chip('app:findacrib', ROWS.filter(function(r){return r.product==='findacrib';}).length, 'Find A Crib') +
+      chip('app:haukley', ROWS.filter(function(r){return r.product==='haukley';}).length, 'Haukley');
     el('chips').querySelectorAll('[data-f]').forEach(function(b){
       b.onclick = function(){ FILTER = (FILTER===b.dataset.f) ? '' : b.dataset.f; render(); };
     });

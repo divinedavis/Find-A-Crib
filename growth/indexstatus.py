@@ -768,6 +768,74 @@ def crawl_evidence(prefixes, cohort=None):
     return out
 
 
+def record_technique_reach(today, cohort, techs=None):
+    """Write each prefixed active technique's crawl reach into results.jsonl.
+
+    review.py already asks crawl_evidence() this question, but only when it
+    runs a verdict, and it keeps the answer inside a verdict STRING. A string
+    cannot be trended, and the trend is the whole point here: on 2026-09-28
+    five of the seven active techniques that declare prefixes sit at zero
+    fetched — T001 /section8/ 0 of 6 read, T013 /sf|/la|/dc/ 0 of 57, T023
+    /guide/ 0 of 10, T016 /embed/ 0 of 1, T085 /methodology/ 0 of 1 — and
+    every one of their verdicts ends "Re-judge once any of them is crawled".
+    Nothing on this box watched for that moment. Four consecutive reviews
+    re-derived these counts by hand out of index_status.json instead, which
+    holds only the LATEST state per URL and therefore cannot answer "did this
+    tier's door open last week" for any tier at all.
+
+    Four series per technique, because the funnel has stages that move at
+    different times and a single number hides which one moved:
+
+      census_cohort   URLs under its prefixes the sampler holds at all. Zero
+                      is a finding rather than a gap: the cohort is built from
+                      the sitemaps, so a tier with no cohort is a tier nothing
+                      is asking to have crawled. This is the one number that
+                      is a fact about OUR files rather than about Google, so
+                      it is recorded unconditionally.
+      census_read     of those, how many the sampler has actually inspected.
+                      The denominator for the two below; a small one is
+                      silence, not evidence — see review.MIN_CENSUS_READ.
+      census_known    inspected URLs Google admits knowing: read minus the
+                      `unknown_to_google` bucket. This stage moves FIRST and
+                      is why `fetched` alone is not enough. On 2026-09-28, 26
+                      URLs went unknown -> discovered in one re-read batch,
+                      the first forward movement in the census record, while
+                      fetched did not move at all; a fetched-only series would
+                      have drawn a flat line straight through it.
+      census_fetched  Googlebot has actually requested the page. The gate each
+                      of those blocked verdicts is explicitly waiting on.
+
+    The three read-dependent series are held back when the census has read
+    nothing under a technique's prefixes, under the same rule the __site__
+    block in collect() states: an absent day is honest, a zero is a claim.
+    Note what that gate does and does not cover — `cohort` here is the
+    persisted census, so `read` counts every URL ever inspected, not those
+    inspected tonight. It guards a tier the sampler has never reached; it does
+    not detect a night the Inspection API was denied, and no series in this
+    module does. Read these as levels over the newest reading per URL.
+
+    Returns the number of techniques recorded, for the caller's log line.
+    """
+    techs = ledger.active() if techs is None else techs
+    n = 0
+    for t in techs:
+        prefixes = t.get("prefixes")
+        if not prefixes:
+            continue            # judged on a __site__ series; nothing to locate
+        slug = t.get("slug")
+        if not slug:
+            continue
+        ev = crawl_evidence(prefixes, cohort=cohort)
+        ledger.record_result(today, slug, "census_cohort", ev["cohort"])
+        if ev["read"]:
+            ledger.record_result(today, slug, "census_read", ev["read"])
+            ledger.record_result(today, slug, "census_known",
+                                 ev["read"] - ev["buckets"].get("unknown_to_google", 0))
+            ledger.record_result(today, slug, "census_fetched", ev["fetched"])
+        n += 1
+    return n
+
+
 # ---------------------------------------------------------------------- run
 
 def collect(docroot, budget=None):
@@ -968,6 +1036,21 @@ def collect(docroot, budget=None):
         if bld.get("indexed_pct") is not None:
             ledger.record_result(today, "__site__", "index_pct_building",
                                  bld["indexed_pct"])
+
+    # Per-technique crawl reach, beside the site-wide block above. See
+    # record_technique_reach() for why a count review.py already computes at
+    # verdict time also has to exist as a daily series. Deliberately OUTSIDE
+    # the tot["read"] gate: census_cohort describes our own sitemaps and is
+    # worth writing on a night the census has read nothing, and the function
+    # applies the read gate per technique anyway. Non-fatal on purpose — the
+    # inspection above is the expensive part of this run and a ledger hiccup
+    # in a reporting tail must not cost the night's readings, which are
+    # already persisted by _save() well before this point.
+    try:
+        reached = record_technique_reach(today, cohort)
+        print(f"  technique reach: {reached} prefixed technique(s) recorded")
+    except Exception as e:
+        print(f"  technique reach: NOT recorded ({e})")
 
     ok = inspected > 0 or not errors
     out = {"ok": ok, "inspected": inspected, "errors": errors,

@@ -259,6 +259,16 @@
   .note-cell textarea{width:100%;min-width:170px;min-height:34px;resize:vertical}
   .mail-link{font-size:12.5px;white-space:nowrap}
 
+  .budget-card{padding:18px 20px;margin-bottom:16px}
+  .budget-card h2{font-size:15px;margin:0 0 2px}
+  .budget-sub{font-size:12.5px;color:var(--ink2);margin-bottom:14px}
+  .budget-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+  .budget-cell{background:var(--sunken);border-radius:12px;padding:12px 14px}
+  .budget-cell .k{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700}
+  .budget-cell .v{font-size:24px;font-weight:750;letter-spacing:-.4px;margin-top:4px;white-space:nowrap}
+  .budget-cell .v small{font-size:14px;font-weight:600;color:var(--ink2)}
+  .budget-foot{font-size:12px;color:var(--ink2);margin-top:12px;line-height:1.55}
+  @media (max-width:760px){ .budget-grid{grid-template-columns:1fr} .budget-cell .v{font-size:21px} }
   .tl-card{padding:18px 20px 16px;margin-bottom:18px}
   .tl-card h2{font-size:16px;margin:0 0 3px}
   .tl-sub{font-size:12.5px;color:var(--ink2);margin-bottom:14px}
@@ -343,6 +353,8 @@
         </div>
         <input class="usearch" id="usearch" type="text" placeholder="Search name, @handle, email, app…">
       </div>
+
+      <div class="card budget-card" id="budget"></div>
 
       <div class="chips" id="chips"></div>
 
@@ -491,7 +503,47 @@
   function chip(key, n, label){
     return '<button class="chip'+(FILTER===key?' chip-on':'')+'" data-f="'+esc(key)+'"><b>'+n+'</b><span>'+esc(label)+'</span></button>';
   }
+  // ---------- marketing budget ----------
+  // One video a week from every creator on the page (owner, 2026-09-28).
+  // Per-video rates from the 2026 TikTok rate guides (Influencer Marketing Hub,
+  // Aspire, Influee): under 1K $25-75; nano 1K-10K $25-150; micro 10K-100K
+  // $10-20 per 1K followers, kept inside $150-1,500; 100K+ $2,000-10,000.
+  // A rate typed into a row is that creator's real quote and replaces the range.
+  function followersNum(s){
+    if(s==null) return null;
+    var m = String(s).replace(/,/g,'').trim().match(/^([\d.]+)\s*([KkMm]?)/);
+    if(!m) return null;
+    var n = parseFloat(m[1]); if(m[2]==='K'||m[2]==='k') n*=1e3; if(m[2]==='M'||m[2]==='m') n*=1e6;
+    return n;
+  }
+  function estimate(f){
+    if(f==null || f<1000) return [25, f==null?150:75];
+    if(f<1e4) return [25,150];
+    if(f<1e5) return [Math.max(150,f/1000*10), Math.min(1500,Math.max(150,f/1000*20))];
+    return [2000,10000];
+  }
+  function quoted(r){ var m = String(r.rate||'').replace(/,/g,'').match(/\d+(\.\d+)?/); return m ? parseFloat(m[0]) : null; }
+  function usd(n){ return '$'+Math.round(n).toLocaleString('en-US'); }
+  function renderBudget(){
+    var lo=0, hi=0, q=0, unknown=0, tiers={nano:0, micro:0, mid:0};
+    ROWS.forEach(function(r){
+      var qr = quoted(r), f = followersNum(r.followers), e = estimate(f);
+      if(f==null) unknown++;
+      else if(f>=1e5) tiers.mid++; else if(f>=1e4) tiers.micro++; else tiers.nano++;
+      if(qr!=null){ lo+=qr; hi+=qr; q++; } else { lo+=e[0]; hi+=e[1]; }
+    });
+    var wk = 52/12, mc = ROWS.filter(function(r){ return r.product==='marracat'; }).length;
+    function cell(k, a, b){ return '<div class="budget-cell"><div class="k">'+k+'</div><div class="v">'+usd(a)+' <small>–</small> '+usd(b)+'</div></div>'; }
+    el('budget').innerHTML = '<h2>Marketing budget</h2>'+
+      '<div class="budget-sub">If every creator here ('+ROWS.length+') posts one video a week. Updates as creators are added and as you enter their rates.</div>'+
+      '<div class="budget-grid">'+cell('Per week', lo, hi)+cell('Per month', lo*wk, hi*wk)+cell('Per year', lo*52, hi*52)+'</div>'+
+      '<div class="budget-foot">'+tiers.nano+' under 10K followers · '+tiers.micro+' at 10K–100K · '+tiers.mid+' over 100K'+(unknown?' · '+unknown+' unknown':'')+
+      (q?' · <b>'+q+' priced from the rate you entered</b>':'')+'. Estimates use 2026 TikTok rates: $25–150 a video under 10K, $10–20 per 1,000 followers at 10K–100K, $2,000–10,000 over 100K.'+
+      (mc?' Plus the Marracat product budget: '+usd(mc*75)+' if paid once per creator.':'')+'</div>';
+  }
+
   function render(){
+    renderBudget();
     var counts = {}; ROWS.forEach(function(r){ counts[r.stage]=(counts[r.stage]||0)+1; });
     el('chips').innerHTML = chip('', ROWS.length, 'creators') +
       STAGES.map(function(s){ return chip(s[0], counts[s[0]]||0, s[1].toLowerCase()); }).join('') +
@@ -523,9 +575,13 @@
     var mail = r.email ? '<a class="mail-link" href="mailto:'+esc(r.email)+'">'+esc(r.email)+'</a>' : '<span class="u-muted">DM only</span>';
     var stage = '<select class="inp st-'+esc(r.stage)+'" data-k="stage">'+STAGES.map(function(s){
                   return '<option value="'+s[0]+'"'+(s[0]===r.stage?' selected':'')+'>'+s[1]+'</option>'; }).join('')+'</select>';
-    var sent = '<input class="inp date" type="date" data-k="sent_at" value="'+esc(r.sent_at||'')+'">';
+    // An empty date input in Safari shows today's date in grey, which read as
+    // "sent today" on rows never contacted. Empty = a text box saying so.
+    var sent = r.sent_at ? '<input class="inp date" type="date" data-k="sent_at" value="'+esc(r.sent_at)+'">'
+                         : '<input class="inp date" type="text" data-k="sent_at" placeholder="Not sent" onfocus="this.type=\'date\'">';
     var done = r.complete ? '<span class="badge b-yes">Y</span>' : '<span class="badge b-no">N</span>';
-    var due = '<input class="inp date" type="date" data-k="due_date" value="'+esc(r.due_date||'')+'">'+daysLeft(r);
+    var due = (r.due_date ? '<input class="inp date" type="date" data-k="due_date" value="'+esc(r.due_date)+'">'
+                          : '<input class="inp date" type="text" data-k="due_date" placeholder="No date" onfocus="this.type=\'date\'">')+daysLeft(r);
     var rate = '<input class="inp rate" type="text" data-k="rate" placeholder="$" value="'+esc(r.rate||'')+'">';
     var notes = '<textarea class="inp" data-k="notes" placeholder="Notes">'+esc(r.notes||'')+'</textarea>';
     return '<tr data-id="'+esc(r.id)+'"><td>'+who+'</td><td>'+app+'</td><td>'+files+'</td><td>'+mail+'</td>'+

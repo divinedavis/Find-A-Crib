@@ -1477,6 +1477,9 @@ def dashboard_metrics():
         # seven days. Not range-scoped: a month bar that changed with the
         # picker would be a different chart wearing the same axis.
         "months": (_fac_months,),
+        # Accounts created per day and per month, for the sign-up bars paired
+        # with the visitor bars. Same windows as the chart, not range-scoped.
+        "signups_series": (_fac_signups_series,),
     }
     with ThreadPoolExecutor(max_workers=len(jobs)) as pool:
         futs = {k: pool.submit(*v) for k, v in jobs.items()}
@@ -1533,6 +1536,18 @@ def _fac_goals_read():
 
 FAC_MONTHS = 7
 FAC_TZ = "America/New_York"
+
+
+@_memo(300)
+def _fac_signups_series():
+    """{"days": {"YYYY-MM-DD": n}, "months": {"YYYY-MM": n}} of Find A Crib
+    accounts, counted as the Sign-ups tile counts them (db/0036). Missing
+    keys are zero. {} on failure, so the chart simply draws no sign-up bars."""
+    try:
+        return rpc("dashboard_signups_series",
+                   {"p_days": 14, "p_months": FAC_MONTHS}) or {}
+    except Exception:
+        return {}
 
 
 # Not range-scoped (see the docstring), so it was 0.8 s of PostgREST paging

@@ -353,6 +353,7 @@
   @media(max-width:700px){.ref-tiles{grid-template-columns:1fr}}
 
   /* sparkline */
+  .spark-key{display:inline-block;width:9px;height:9px;border-radius:2px;margin:0 5px 0 1px;vertical-align:0}
   .spark-tip{position:absolute;background:var(--tip-bg);color:var(--tip-ink);font-size:11.5px;padding:5px 8px;border-radius:7px;pointer-events:none;transform:translate(-50%,-120%);white-space:nowrap;opacity:0;transition:opacity .1s}
 
   .disclaim{font-size:11.5px;color:var(--muted);margin-top:14px;line-height:1.5}
@@ -1816,7 +1817,7 @@
     renderFacInvestor(d);
     renderFacSearch(d.search);
     renderAppStore(d.appstore);
-    renderSpark(d.sparkline||[], d.months);
+    renderSpark(d.sparkline||[], d.months, d.signups_series);
     renderFacTiles(d.adtiles);
   }
 
@@ -2393,15 +2394,20 @@
     function refit(){
       var host=el('spark'); if(!host||!sparkLast) return;
       var w=host.clientWidth; if(!w||w===sparkW) return;
-      renderSpark(sparkLast[0], sparkLast[1]);
+      renderSpark(sparkLast[0], sparkLast[1], sparkLast[2]);
     }
     function queue(){ clearTimeout(t); t=setTimeout(refit,80); }
     window.addEventListener('resize',queue);
     if(window.ResizeObserver){ var host=el('spark'); if(host) new ResizeObserver(queue).observe(host); }
   })();
-  function renderSpark(days, M){
+  function renderSpark(days, M, SU){
     var host=el('spark');
-    sparkLast=[days, M];
+    sparkLast=[days, M, SU];
+    // Sign-ups beside visitors: each column becomes a pair, visitors on the
+    // left, accounts created that day/month on the right. Only the Find A Crib
+    // tab passes SU (db/0036, counted like the Sign-ups tile); a missing key
+    // is a day with no sign-ups, so it reads as zero.
+    SU = (SU && (SU.days || SU.months)) ? SU : null;
     if(!days.length){ host.innerHTML='<div style="color:var(--muted);font-size:13px">Not enough history yet.</div>'; return; }
     days = days.slice(-SPARK_DAYS);
     // Plot unique visitors. Page views flatter the chart — one person reloading
@@ -2428,6 +2434,8 @@
     var narrow = (host.clientWidth||900) < 520;
     var months = (M && M.months) ? M.months.slice(narrow?-4:-7) : null;
     var mval = function(m){ return n(m.visitors); };
+    var sdval = function(d){ return n(((SU && SU.days)||{})[d.date]); };
+    var smval = function(m){ return n(((SU && SU.months)||{})[m.month]); };
     // The heading states the window it actually drew. Early on there is less
     // history than the window, and a card claiming "last 7 days" over four
     // points is a card lying about a trend.
@@ -2436,7 +2444,11 @@
                           (months ? ' · last '+months.length+' months' : '');
     if(months){
       var sub=el('spark-sub');
-      if(sub) sub.textContent = 'Unique visitors per day, then per month — each group on its own scale'+
+      if(sub) sub.innerHTML = (SU
+        ? '<span class="spark-key" style="background:var(--purple)"></span>Unique visitors and '+
+          '<span class="spark-key" style="background:var(--c3)"></span>sign-ups per day, then per month — '+
+          'each series on its own scale'
+        : 'Unique visitors per day, then per month — each group on its own scale')+
         (M.history_from ? ' · logging began '+fmtDay(M.history_from) : '');
     }
     // BARS, not a line. Seven daily counts are seven discrete buckets being
@@ -2459,18 +2471,22 @@
     var monW = months ? iw-GAP_W-dayW : 0;
     var groups = [{items:days, x0:pad.l, w:dayW, val:val, caption:'Per day',
                    max:Math.max.apply(null,days.map(val))||1,
+                   sval:sdval, smax:Math.max.apply(null,days.map(sdval))||1,
                    label:function(d){ return new Date(d.date+'T00:00').toLocaleString('en-US',{month:'numeric',day:'numeric'}); },
                    tip:function(d){ return '<b>'+new Date(d.date+'T00:00').toLocaleString('en-US',{month:'short',day:'numeric'})+
                      '</b> — '+(hasVis ? n(d.visitors)+' visitor'+(n(d.visitors)===1?'':'s')
-                                       : n(d.views)+' view'+(n(d.views)===1?'':'s')); },
+                                       : n(d.views)+' view'+(n(d.views)===1?'':'s'))+
+                     (SU ? ' · '+sdval(d)+' sign-up'+(sdval(d)===1?'':'s') : ''); },
                    dim:function(){ return false; }, missing:function(){ return false; }}];
     if(months){
       groups.push({items:months, x0:pad.l+dayW+GAP_W, w:monW, val:mval, caption:'Per month',
                    max:Math.max.apply(null,months.map(mval))||1,
+                   sval:smval, smax:Math.max.apply(null,months.map(smval))||1,
                    label:function(m){ var d=new Date(m.month+'-01T00:00'); return d.toLocaleString('en-US',{month:'short'})+(m.partial?'·':''); },
                    tip:function(m){ var d=new Date(m.month+'-01T00:00');
                      return '<b>'+d.toLocaleString('en-US',{month:'short',year:'numeric'})+'</b> — '+
-                       (m.logged ? n(m.visitors)+' visitor'+(n(m.visitors)===1?'':'s')+' · '+comma(m.views)+' views'+(m.partial?' · so far':'')
+                       (m.logged ? n(m.visitors)+' visitor'+(n(m.visitors)===1?'':'s')+' · '+comma(m.views)+' views'+
+                                   (SU ? ' · '+comma(smval(m))+' sign-up'+(smval(m)===1?'':'s') : '')+(m.partial?' · so far':'')
                                  : 'before logging began'); },
                    // The month in progress is drawn lighter: a half-month bar
                    // next to full ones reads as a collapse unless it says so.
@@ -2499,22 +2515,45 @@
     var bars='',labels='',valueLabels='',bands='',captions='';
     groups.forEach(function(G,g){
       var slot=G.w/G.items.length;
-      var bw=Math.max(Math.min(slot-GAP, BAR_MAX),3);
+      // Paired, each bar gets half the slot (and half the cap) with the 2px
+      // gap between the two, so a pair is no wider than the single bar was.
+      var bw = SU ? Math.max(Math.min((slot-GAP*2)/2, BAR_MAX/2+4),2)
+                  : Math.max(Math.min(slot-GAP, BAR_MAX),3);
       var X=function(i){ return G.x0 + slot*i + slot/2; };
+      var XV=function(i){ return SU ? X(i)-GAP/2-bw/2 : X(i); };
+      var XS=function(i){ return X(i)+GAP/2+bw/2; };
       var Y=function(v){ return base - ih*v/G.max; };
+      var YS=function(v){ return base - ih*v/G.smax; };
+      G.speak=SU ? G.items.reduce(function(bi,d,i){ return G.sval(d)>G.sval(G.items[bi])?i:bi; },0) : -1;
+      // Every sign-up bar carries its count where there is room: it is on its
+      // own scale, so its height says nothing about the visitor bar beside it
+      // and the number is the honest reading. A phone slot has no room — the
+      // green count lands on the visitor peak's — so there the tap tooltip
+      // carries it.
+      var labelSignups = slot >= 40;
       // Selective direct labels: the peak only. A number over every bar is
       // noise on a chart whose whole job is the shape of the week.
       G.peak=G.items.reduce(function(bi,d,i){ return G.val(d)>G.val(G.items[bi])?i:bi; },0);
       if(months) captions+='<text x="'+G.x0+'" y="12" font-size="10.5" font-weight="700" letter-spacing=".5" fill="var(--muted)">'+G.caption.toUpperCase()+'</text>';
       G.items.forEach(function(d,i){
-        var v=G.val(d), x=X(i)-bw/2, y=Y(v), h=base-y, miss=G.missing(d);
+        var v=G.val(d), x=XV(i)-bw/2, y=Y(v), h=base-y, miss=G.missing(d);
         var op = miss ? '0' : (G.dim(d) ? '.45' : (i===G.peak ? '1' : '.78'));
-        bars+='<path class="spark-bar" data-g="'+g+'" data-i="'+i+'" d="'+(miss?'':barPath(x,y,bw,h,4))+
+        bars+='<path class="spark-bar" data-g="'+g+'" data-i="'+i+'" d="'+(miss?'':barPath(x,y,bw,h,SU?3:4))+
               '" fill="var(--purple)" opacity="'+op+'" data-op="'+op+'"></path>';
+        if(SU){
+          var sv=G.sval(d), sy=YS(sv);
+          var sop = miss ? '0' : (G.dim(d) ? '.45' : (i===G.speak ? '1' : '.8'));
+          bars+='<path class="spark-bar" data-g="'+g+'" data-i="'+i+'" d="'+(miss?'':barPath(XS(i)-bw/2,sy,bw,base-sy,3))+
+                '" fill="var(--c3)" opacity="'+sop+'" data-op="'+sop+'"></path>';
+          if(!miss && sv>0 && labelSignups){
+            valueLabels+='<text x="'+XS(i)+'" y="'+(sy-6)+'" text-anchor="middle" font-size="10.5" '+
+                         'font-weight="600" fill="var(--c3)">'+comma(sv)+'</text>';
+          }
+        }
         labels+='<text x="'+X(i)+'" y="'+(H-6)+'" text-anchor="middle" font-size="'+LBL+'" fill="var(--muted)"'+
                 (miss?' opacity=".45"':'')+'>'+(miss?'—':G.label(d))+'</text>';
         if(i===G.peak && v>0 && !miss){
-          valueLabels+='<text x="'+X(i)+'" y="'+(y-6)+'" text-anchor="middle" font-size="11" '+
+          valueLabels+='<text x="'+XV(i)+'" y="'+(y-6)+'" text-anchor="middle" font-size="11" '+
                        'font-weight="600" fill="var(--ink2)">'+comma(v)+'</text>';
         }
         // Full-height hit bands, one per bar, tiling the group. A 3-visitor
@@ -2546,6 +2585,13 @@
       var rb=host.getBoundingClientRect(), cb=c.getBoundingClientRect();
       // For a missing month the bar has no box; anchor the tip to the band.
       if(!cb.width){ var band=svg.querySelector('.spark-band[data-g="'+g+'"][data-i="'+i+'"]'); cb=band.getBoundingClientRect(); }
+      // A pair: centre on the slot and sit above whichever bar is taller.
+      if(SU && c.getBoundingClientRect().width){
+        var pair=svg.querySelectorAll('.spark-bar[data-g="'+g+'"][data-i="'+i+'"]');
+        var bb=svg.querySelector('.spark-band[data-g="'+g+'"][data-i="'+i+'"]').getBoundingClientRect();
+        var top=Math.min.apply(null,[].map.call(pair,function(p){ var r=p.getBoundingClientRect(); return r.height?r.top:Infinity; }));
+        cb={left:bb.left,width:bb.width,top:isFinite(top)?top:cb.top};
+      }
       tip.innerHTML=G.tip(d);
       // Clamp inside the card: the tip is centred on the point, so the first and
       // last columns would otherwise hang off the edge and get clipped.

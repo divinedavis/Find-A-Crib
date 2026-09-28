@@ -185,6 +185,7 @@
   .site-btn{font-weight:600}
   .site-btn.on{background:var(--purple-soft);color:var(--purple-ink)}
   .site-btn:disabled{opacity:.55;cursor:progress}
+  .site-list #nav:empty{display:none !important}
   .site-list #nav{margin:0 0 6px 18px;padding-left:8px;border-left:1px solid var(--border2)}
   .site-list #nav .nav-item{font-size:13.5px;padding:7px 10px}
   body.nemo-only .owner-tools{display:none !important}
@@ -1130,7 +1131,10 @@
     el('nav-foot').textContent=S.foot;
     var ls=el('live-site'); ls.href=S.live;
     // nav
-    el('nav').innerHTML=S.nav.map(function(item,i){
+    // Only separate pages go in the sidebar (e.g. Users). The in-page jumps
+    // (Dashboard, Advertiser metrics, Traffic…) were dropped 2026-09-28 at the
+    // owner's word: "i can just scroll to it from the main section".
+    el('nav').innerHTML=S.nav.filter(function(item){ return item[0].indexOf('link:')===0; }).map(function(item,i){
       var target=item[0], ico=item[1], label=item[2];
       if(target.indexOf('link:')===0)
         return '<a class="nav-item" href="'+target.slice(5)+'"><span class="nav-ico">'+ico+'</span> '+label+'</a>';

@@ -1120,17 +1120,31 @@ class Runner:
         # Google's in-feed ad takes the lead slot (2026-09-25), but a slot Google
         # does not fill — a site still in review, an ad blocker, no demand —
         # must fall back to the featured tile or vanish, never sit blank.
-        # settleAds() gives up at 6 s; check after that.
+        # And never FLASH blank either (owner, 2026-09-28: "why does this ad
+        # pop up then go away?"): until Google answers, a slot shows no
+        # "Sponsored" flag and no box. Google asks lazily, so a slot below the
+        # fold may still be waiting — allowed only while it is off screen,
+        # unasked and invisible. settleAds() gives up 6 s after asking.
+        early = page.evaluate("""(() => [...document.querySelectorAll('#grid .card.ad-card:not(.ad-filled)')].filter(c => {
+            const f = c.querySelector('.ad-flag'); return f && getComputedStyle(f).display !== 'none'; }).length)()""")
+        self.ok(not early, f'{early} unanswered ad slot(s) showed a Sponsored flag over an empty box', j)
         time.sleep(7.5)
-        ads = page.evaluate("""(() => [...document.querySelectorAll('#grid .card.ad-card')].map(c =>
-            c.querySelector('ins.adsbygoogle')?.getAttribute('data-ad-status') || 'none'))()""")
-        blank = [st for st in ads if st != 'filled']
+        ads = page.evaluate("""(() => { const g = document.getElementById('grid').getBoundingClientRect();
+            return [...document.querySelectorAll('#grid .card.ad-card')].map(c => {
+              const ins = c.querySelector('ins.adsbygoogle'), r = c.getBoundingClientRect();
+              const st = ins?.getAttribute('data-ad-status') || 'none';
+              if (st === 'filled') return 'filled';
+              const onScreen = r.bottom > g.top && r.top < g.bottom;
+              const waiting = !onScreen && !ins?.querySelector('iframe') && getComputedStyle(ins).opacity === '0';
+              return waiting ? 'waiting' : st + (onScreen ? ' on screen' : ' off screen');
+            }); })()""")
+        blank = [st for st in ads if st not in ('filled', 'waiting')]
         self.ok(not blank, f'an ad card was left unfilled in the list: {ads}', j)
         lead = page.evaluate("(document.querySelector('#grid .card:not(.pinned)')?.className || '')")
         self.ok('feat-card' in lead or 'ad-card' in lead or 'hc-card' in lead or not (feat or hc),
                 f'the list should lead with the featured tile or a filled ad, got {lead!r}', j)
         j.notes.append('re-rental ' + ('ok' if feat else 'none') + ', lottery ' + ('ok' if hc else 'none')
-                       + f', ads filled {len(ads) - len(blank)}/{len(ads)}')
+                       + f", ads filled {ads.count('filled')}/{len(ads)}, waiting below the fold {ads.count('waiting')}")
 
     def j_outbound_links(self, page, j, device):
         """Every hand-off off the site: 695 people did one last month.

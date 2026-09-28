@@ -99,7 +99,7 @@ def run(browser, live):
     tile = page.locator('#tiles .tile').filter(
         has=page.get_by_text('Ads served · all platforms', exact=True))
     expect(tile.locator('.t-val')).to_have_text('147,351')
-    expect(tile).to_contain_text('146,455 web tiles · 884 app tiles · 12 AdMob banner')
+    expect(tile).to_contain_text('146,455 web tiles seen · 884 app tiles seen · 12 Google ads')
     expect(tile).to_contain_text('40 TestFlight test ads not counted')
     expect(page.locator('#tiles')).not_to_contain_text('· MRR')
     payload.pop('ads_served')

@@ -150,8 +150,47 @@ def _ts(v):
         return None
 
 
-def crashes(rows):
+# A shadow page: a trace that never reached its first once-a-second tick, from
+# a visitor who kept tapping around the site right after it booted. Signed-in
+# iPhones spawn these — a second copy of the page boots, gets as far as
+# adoptHome or the first viewport resize (~250-500 ms), and is gone without a
+# pagehide, while the visitor carries on in their real page. One visitor on
+# 2026-09-28 produced twelve in three minutes and mailed "12 page deaths";
+# every sub-second adoptHome "death" since 9/25 (five visitors) has the same
+# shape. A page that really died before its first second does not leave its
+# visitor opening buildings, so only a trace that is followed by real
+# interaction is dropped, and a boot loop still reports.
+SHADOW_WINDOW = datetime.timedelta(seconds=90)
+SHADOW_LOOKUPS = 40       # REST calls per run, at most
+INTERACTION_EVENTS = ("building_view", "section_view", "outbound", "status_open",
+                      "violations_open", "rodents_open", "pests_open", "bedbugs_open",
+                      "complaints_open", "portfolio_open", "featured_click", "hc_click",
+                      "geo_start", "home_open", "search")
+
+
+def visitor_kept_going(key, visitor, booted):
+    """True when `visitor` did something on the site in the SHADOW_WINDOW after
+    `booted` (ignoring its first two seconds, which the shadow page itself can
+    log). None when it cannot be told — then the trace is kept."""
+    if not key or not visitor:
+        return None
+    lo, hi = booted + datetime.timedelta(seconds=2), booted + SHADOW_WINDOW
+    q = urllib.parse.urlencode({
+        "select": "id", "visitor_id": f"eq.{visitor}", "limit": "1",
+        "event": "in.(" + ",".join(INTERACTION_EVENTS) + ")",
+        "and": f"(created_at.gte.{lo.isoformat()},created_at.lt.{hi.isoformat()})"})
+    try:
+        req = urllib.request.Request(f"{SUPABASE_URL}/rest/v1/events?{q}", headers={
+            "apikey": key, "Authorization": f"Bearer {key}"})
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return bool(json.load(r))
+    except Exception:
+        return None
+
+
+def crashes(rows, key=None, kept_going=visitor_kept_going):
     """Traces that look like the page died mid-work (see the module docstring)."""
+    lookups = 0
     out = defaultdict(lambda: {"n": 0, "people": set(), "uas": Counter(), "last": ""})
     for r in rows:
         if r["event"] != "crash_trace":
@@ -181,6 +220,10 @@ def crashes(rows):
         booted = _ts(p.get("booted"))
         if booted and _ts(r["created_at"]) - booted > STALE_TRACE:
             continue
+        if booted and "tick" not in labels and lookups < SHADOW_LOOKUPS:
+            lookups += 1
+            if kept_going(key, r.get("visitor_id"), booted):
+                continue
         e = out[last or "(no step)"]
         e["n"] += 1
         e["people"].add(r["visitor_id"])
@@ -493,7 +536,7 @@ def main():
     since = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(minutes=minutes)).strftime("%Y-%m-%dT%H:%M:%SZ")
     rows = events(since, service_key())
     skip = unreleased_rows(rows, live_build())
-    js, crash, app = js_errors(rows), crashes(rows), app_failures(rows, skip)
+    js, crash, app = js_errors(rows), crashes(rows, service_key()), app_failures(rows, skip)
     five, tracebacks, stale = nginx_5xx(minutes), api_tracebacks(minutes), stale_feeds()
     crons = dead_crons()
 

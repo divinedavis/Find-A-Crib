@@ -1,0 +1,5 @@
+# Forward creator replies (hello@marracat.com) to the owner's Gmail every 5 min.
+# Installed to /etc/cron.d/creator-mail-forward by scripts/deploy_api.sh.
+# Credentials live in /var/lib/findacrib-api/creators/mail_forward.json (0600),
+# never here: this repo is public. See creator_mail_forward.py.
+*/5 * * * * findacrib cd /root/findacrib-api && ./venv/bin/python creator_mail_forward.py >> /var/lib/findacrib-api/creators/mail_forward.log 2>&1

@@ -117,6 +117,35 @@ def update(cid, body):
         return _public(row)
 
 
+def _lev(a, b):
+    """Edit distance, for handles a screenshot misread by a letter."""
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        cur = [i]
+        for j, cb in enumerate(b, 1):
+            cur.append(min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (ca != cb)))
+        prev = cur
+    return prev[-1]
+
+
+def find_existing(creators, handle, email=None, name=None):
+    """The row this creator already has, if any (owner, 2026-09-28: "make sure
+    duplicates dont go on the creator dashboard"). Same handle; else the same
+    email; else a handle one edit away with the same name (a screenshot read
+    "dejalashayyy" where the email says "dejalashayy")."""
+    if handle in creators:
+        return handle
+    em = (email or "").strip().lower()
+    nm = (name or "").strip().lower()
+    for key, row in creators.items():
+        if em and (row.get("email") or "").lower() == em:
+            return key
+    for key, row in creators.items():
+        if nm and (row.get("name") or "").strip().lower() == nm and _lev(key, handle) <= 1:
+            return key
+    return None
+
+
 def ingest(payload):
     """Upsert from the laptop app. Never deletes, never moves a stage back.
 
@@ -142,6 +171,13 @@ def ingest(payload):
             blobs[ext] = data
     with _LOCK:
         db = _load()
+        key = find_existing(db["creators"], handle, email, payload.get("name"))
+        if key and key != handle:
+            # Same creator under another spelling: update that row, remember the alias.
+            row = db["creators"][key]
+            if handle not in row.setdefault("aliases", []):
+                row["aliases"].append(handle)
+            handle = key
         row = db["creators"].get(handle)
         new = row is None
         if new:

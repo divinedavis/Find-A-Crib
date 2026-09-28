@@ -65,5 +65,20 @@ def build_cached(rng="all"):
     return data
 
 
+def users():
+    """The shopper roster for /dashboard/marracat-users/ (owner only). Not
+    cached: it is small, and the page is opened by hand."""
+    if not KEY:
+        return {"ok": False, "users": [], "warnings": ["MARRACAT_METRICS_KEY is not set on the dashboard API."]}
+    req = urllib.request.Request(URL.rsplit("/", 1)[0] + "/users",
+                                 headers={"X-Metrics-Key": KEY, "User-Agent": "divinedavis-dashboard"})
+    try:
+        with urllib.request.urlopen(req, timeout=8) as r:
+            body = json.load(r)
+    except (urllib.error.URLError, ValueError, TimeoutError, OSError) as e:
+        return {"ok": False, "users": [], "warnings": [f"marracat.com users unreachable ({type(e).__name__})."]}
+    return {"ok": True, "generated_at": body.get("generated_at"), "users": body.get("users") or []}
+
+
 if __name__ == "__main__":
     print(json.dumps(build_cached("all"), indent=2)[:1500])

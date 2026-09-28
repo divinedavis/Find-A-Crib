@@ -242,7 +242,8 @@ def gate():
                            "/dashboard-nemo",    # own Supabase-token owner gate
                            "/dashboard-crease",
                            "/dashboard-trent",
-                           "/dashboard-marracat"):
+                           "/dashboard-marracat",
+                           "/dashboard-marracat-users"):
         return
     # Header only — never accept the key in the query string, where it would be
     # captured in nginx access logs, browser history, and Referer headers.
@@ -2730,6 +2731,21 @@ def dashboard_marracat():
         return jsonify(marracat_metrics.build_cached(rng=rng))
     except Exception:
         return jsonify(error="temporarily_unavailable"), 503
+
+
+@app.route("/dashboard-marracat-users")
+def dashboard_marracat_users():
+    """Marracat's shopper roster (names, emails, orders) for the owner's
+    /dashboard/marracat-users/ page. Owner scope only, like /dashboard-users."""
+    if rate_limited("dashboard", 120, 3600):
+        return _too_many()
+    denied = _dashboard_denial(_dashboard_auth(), ("ok",))
+    if denied:
+        return denied
+    data = marracat_metrics.users()
+    if not data.get("ok"):
+        return jsonify(error="temporarily_unavailable", warnings=data.get("warnings")), 503
+    return jsonify(data)
 
 
 @app.route("/dashboard-claude")

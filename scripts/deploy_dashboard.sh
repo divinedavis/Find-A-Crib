@@ -16,14 +16,15 @@ cd "$(dirname "$0")/.."
 HOST="${DD_HOST:-root@159.203.110.79}"
 DEST=/var/www/divinedavis/dashboard
 
-ssh "$HOST" "mkdir -p $DEST/users"
+ssh "$HOST" "mkdir -p $DEST/users $DEST/creators"
 scp -q dashboard/index.html dashboard/og-dashboard.png dashboard/supabase-config.js "$HOST:$DEST/"
 scp -q static/supabase/supabase.js "$HOST:$DEST/supabase.js"
 scp -q dashboard/users/index.html "$HOST:$DEST/users/index.html"
+scp -q dashboard/creators/index.html "$HOST:$DEST/creators/index.html"
 ssh "$HOST" "chown -R www-data:www-data $DEST"
 
 # md5, not a 200: a stale copy answers 200 too.
-for pair in index.html:dashboard/index.html users/index.html:dashboard/users/index.html \
+for pair in index.html:dashboard/index.html users/index.html:dashboard/users/index.html creators/index.html:dashboard/creators/index.html \
             supabase-config.js:dashboard/supabase-config.js supabase.js:static/supabase/supabase.js; do
   remote=${pair%%:*}; local=${pair#*:}
   live=$(curl -fsS "https://divinedavis.com/dashboard/$remote" | md5)

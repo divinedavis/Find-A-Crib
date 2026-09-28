@@ -24,6 +24,7 @@ import nemo_metrics          # NEMO Seamless Gutter traffic, same droplet
 import trent_metrics         # Trent's Fresh Spaces traffic, same droplet
 import marracat_metrics      # Marracat, fetched from its own droplet
 import claude_usage          # Anthropic API spend, owner-only tab
+import creator_outreach      # owner's creator-review tracker, /dashboard/creators/
 
 DATA_DIR = os.environ.get("DATA_DIR", ".")
 SUPABASE_URL = "https://dbaifotzwlxjvsxjohjt.supabase.co"
@@ -234,6 +235,8 @@ def gate():
        or request.path == "/geo" \
        or request.path.startswith("/reports/") \
        or request.path.startswith("/embed/") \
+       or request.path.startswith("/dashboard-creators") \
+       or request.path == "/creators-ingest" \
        or request.path in ("/dashboard-metrics", "/dashboard-users",
                            "/dashboard-claude",  # added 2026-09-06: it was answering missing_api_key (401) on every dashboard load
                            "/dashboard-nemo",    # own Supabase-token owner gate
@@ -2767,6 +2770,70 @@ def dashboard_users():
     # [[build, version]] from App Store Connect (asc_downloads.py writes it
     # into appstore.json), so the page never hand-maintains that map again.
     return jsonify(users=data or [], versions=_fac_appstore().get("versions") or [])
+
+
+# ---------- creator outreach (owner only) ----------
+# The page is /dashboard/creators/ on divinedavis.com, whose nginx proxies
+# /api/dashboard-* here. Rows and brief files live outside git, see
+# creator_outreach.py.
+@app.route("/dashboard-creators")
+def dashboard_creators():
+    if rate_limited("dashboard", 120, 3600):
+        return _too_many()
+    denied = _dashboard_denial(_dashboard_auth(), ("ok",))
+    if denied:
+        return denied
+    return jsonify(creators=creator_outreach.listing(), stages=creator_outreach.STAGES)
+
+
+@app.route("/dashboard-creators/<cid>", methods=["POST"])
+def dashboard_creator_update(cid):
+    if rate_limited("dashboard", 120, 3600):
+        return _too_many()
+    denied = _dashboard_denial(_dashboard_auth(), ("ok",))
+    if denied:
+        return denied
+    try:
+        row = creator_outreach.update(cid, request.get_json(silent=True))
+    except KeyError:
+        return jsonify(error="not_found"), 404
+    except ValueError as e:
+        return jsonify(error="bad_request", message=str(e)), 400
+    return jsonify(creator=row)
+
+
+@app.route("/dashboard-creators/<cid>/brief.<ext>")
+def dashboard_creator_brief(cid, ext):
+    denied = _dashboard_denial(_dashboard_auth(), ("ok",))
+    if denied:
+        return denied
+    p = creator_outreach.brief_file(cid, ext)
+    if p is None:
+        return jsonify(error="not_found"), 404
+    from flask import send_file
+    resp = send_file(p, mimetype="application/pdf" if ext == "pdf" else "image/jpeg",
+                     download_name=f"{cid}-brief.{ext}")
+    resp.headers["Cache-Control"] = "private, no-store"
+    return resp
+
+
+@app.route("/creators-ingest", methods=["POST"])
+def creators_ingest():
+    """The owner's laptop app pushes briefs and sent-pitch stages here.
+    Shared secret, compared in constant time; unset key = endpoint off."""
+    if rate_limited("creators-ingest", 300, 3600):
+        return _too_many()
+    want = os.environ.get("CREATOR_INGEST_KEY", "")
+    got = request.headers.get("X-Ingest-Key", "")
+    if not want or not hmac.compare_digest(want.encode(), got.encode()):
+        return jsonify(error="forbidden"), 403
+    # The app-wide 16 KB body cap stays for every other route; a brief JPG +
+    # PDF as base64 is ~350 KB, so this one route (key-checked above) gets more.
+    request.max_content_length = 1_500_000
+    try:
+        return jsonify(creator_outreach.ingest(request.get_json(silent=True)))
+    except ValueError as e:
+        return jsonify(error="bad_request", message=str(e)), 400
 
 
 # Keep every range's expensive parts fresh so no page load pays them cold —

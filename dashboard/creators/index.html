@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Owner Dashboard — Creator outreach</title>
+<!-- Paint the saved theme before the first frame — see /dashboard/. -->
+<script>
+(function(){
+  var t;
+  try{ t = localStorage.getItem('dash.theme'); }catch(e){}
+  if(t!=='light' && t!=='dark')
+    t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
+<!-- Same sign-in pre-paint as /dashboard/. This page was missing it, so every
+     click on "Users" from the sidebar painted the "Private dashboard" card for
+     as long as getSession() + the users fetch took — the owner watched his own
+     dashboard ask him to sign in on the way to a page he was already signed in
+     for. A stored sb-<ref>-auth-token (or a token arriving in the URL mid-OAuth)
+     means a signed-in visitor is likely: paint the splash and let route()
+     decide. With no stored token this does nothing and the gate shows at once,
+     which is right for a signed-out visitor. -->
+<script>
+(function(){
+  var pending = false;
+  try{
+    for(var i=0;i<localStorage.length;i++){
+      var k = localStorage.key(i);
+      if(k && /^sb-.+-auth-token$/.test(k) && localStorage.getItem(k)){ pending = true; break; }
+    }
+  }catch(e){}
+  var h = location.hash || '', q = location.search || '';
+  if(h.indexOf('access_token=')>-1 || h.indexOf('error=')>-1 || /[?&]code=/.test(q)) pending = true;
+  if(!pending) return;
+  document.documentElement.setAttribute('data-auth','pending');
+  // Failsafe here rather than in the app script: if supabase.js never loads,
+  // that script never runs and the spinner would spin forever.
+  setTimeout(function(){ document.documentElement.removeAttribute('data-auth'); }, 8000);
+})();
+</script>
+<style>
+  :root{
+    color-scheme:light;
+    --bg:#f5f6fb; --card:#ffffff; --border:#e2e2ec; --border-strong:#cfcfdd; --border2:#eeeef4;
+    --hover:#f7f7fa; --sunken:#f0f0f6;
+    --ink:#17161c; --ink2:#6b6a76; --muted:#9a99a5;
+    --purple:#6d5ce7; --purple-soft:#f1effe; --purple-ink:#5a49d0;
+    --live-bg:#f1fbe9; --live-ink:#4b7a12; --live-line:#dcecc4;
+    --shadow:0 1px 2px rgba(17,17,34,.09),0 6px 18px rgba(17,17,34,.11);
+    --shadow-lg:0 4px 10px rgba(17,17,34,.10),0 18px 44px rgba(17,17,34,.16);
+    --radius:16px;
+  }
+  html[data-theme="dark"]{
+    color-scheme:dark;
+    --bg:#0d0d13; --card:#16161f; --border:#2c2c3b; --border-strong:#3d3d50; --border2:#23232f;
+    --hover:#1f1f2b; --sunken:#20202c;
+    --ink:#f1f1f6; --ink2:#a9a8b8; --muted:#7b7a8c;
+    --purple:#8b7bff; --purple-soft:#221d40; --purple-ink:#b7abff;
+    --live-bg:#18240f; --live-ink:#a8dd5c; --live-line:#31461a;
+    --shadow:0 1px 2px rgba(0,0,0,.55),0 8px 24px rgba(0,0,0,.55);
+    --shadow-lg:0 6px 14px rgba(0,0,0,.55),0 24px 56px rgba(0,0,0,.6);
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;font-size:15px}
+  a{color:var(--purple);text-decoration:none}
+  .hidden{display:none !important}
+
+  #gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:50;padding:24px}
+  /* While auth is still resolving neither answer is known: hold the gate back
+     and show the splash. route() clears data-auth the moment it knows. */
+  html[data-auth="pending"] #gate{display:none}
+  #boot{display:none}
+  html[data-auth="pending"] #boot{position:fixed;inset:0;display:flex;align-items:center;
+    justify-content:center;background:var(--bg);z-index:60}
+  #boot .spin{width:26px;height:26px;border-radius:50%;border:2.5px solid var(--border);
+    border-top-color:var(--ink2);animation:bootspin .7s linear infinite}
+  @keyframes bootspin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion: reduce){ #boot .spin{animation:none} }
+  .gate-card{background:var(--card);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow-lg);padding:40px 36px;max-width:420px;width:100%;text-align:center}
+  .gate-logo{width:52px;height:52px;border-radius:14px;background:var(--purple);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:26px}
+  .gate-card h1{font-size:22px;margin:0 0 6px}
+  .gate-card p{color:var(--ink2);margin:0 0 24px;font-size:14px}
+  .g-btn{display:inline-flex;align-items:center;gap:10px;justify-content:center;width:100%;padding:12px 18px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--ink);font-weight:600;font-size:15px;cursor:pointer}
+  .g-btn:hover{background:var(--hover);border-color:var(--border-strong)}
+  .g-btn svg{width:18px;height:18px}
+  .g-note{margin-top:18px;font-size:12.5px;color:var(--muted)}
+
+  #app{display:flex;min-height:100vh}
+  aside{width:236px;flex:0 0 236px;background:var(--card);border-right:1px solid var(--border);position:sticky;top:0;height:100vh;padding:20px 14px;display:flex;flex-direction:column;gap:4px}
+  .brand{display:flex;align-items:center;gap:11px;padding:6px 8px 16px}
+  .brand-mark{width:34px;height:34px;border-radius:10px;background:var(--purple);display:flex;align-items:center;justify-content:center;font-size:18px;flex:0 0 34px}
+  .brand-name{font-weight:700;font-size:16px;letter-spacing:-.2px}
+  .brand-sub{font-size:11px;color:var(--muted);font-weight:500}
+  nav{display:flex;flex-direction:column;gap:2px;margin-top:6px}
+  .nav-item{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:10px;color:var(--ink2);font-weight:500;font-size:14px;cursor:pointer;border:none;background:none;text-align:left;width:100%;position:relative;text-decoration:none}
+  .nav-item:hover{background:var(--hover)}
+  .menu-btn{display:none;margin-left:auto;width:40px;height:40px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--ink);font-size:20px;line-height:1;cursor:pointer;align-items:center;justify-content:center;padding:0}
+  .menu-btn[aria-expanded="true"]{background:var(--purple-soft);color:var(--purple-ink);border-color:var(--purple)}
+  .nav-item.active{background:var(--purple-soft);color:var(--purple-ink);font-weight:600}
+  .nav-item.active::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:3px;background:var(--purple)}
+  .nav-ico{width:17px;height:17px;flex:0 0 17px;opacity:.85}
+  .nav-spacer{flex:1}
+  .nav-foot{font-size:11px;color:var(--muted);padding:12px 12px 2px;border-top:1px solid var(--border2)}
+
+  main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .topbar{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;border-bottom:1px solid var(--border);background:var(--card);position:sticky;top:0;z-index:10}
+  .live-pill{display:inline-flex;align-items:center;gap:7px;background:var(--live-bg);color:var(--live-ink);border:1px solid var(--live-line);border-radius:100px;padding:4px 11px;font-size:12px;font-weight:600}
+  .live-dot{width:7px;height:7px;border-radius:50%;background:#7ac70f;box-shadow:0 0 0 3px rgba(122,199,15,.2)}
+  .tb-right{display:flex;align-items:center;gap:14px}
+  .avatar{width:34px;height:34px;border-radius:50%;background:var(--purple);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px}
+  .signout{font-size:13px;color:var(--ink2);cursor:pointer;background:none;border:none;font-weight:500}
+  .signout:hover{color:var(--ink)}
+  .theme-btn{width:34px;height:34px;border-radius:10px;border:1px solid var(--border);background:var(--card);
+    color:var(--ink);font-size:15px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;
+    justify-content:center;padding:0;box-shadow:0 1px 2px rgba(17,17,34,.07)}
+  .theme-btn:hover{background:var(--hover);border-color:var(--border-strong)}
+
+  .content{padding:26px 28px 60px;max-width:1240px;width:100%}
+  .page-head{margin-bottom:18px;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+  .page-head h1{font-size:26px;margin:0 0 3px;letter-spacing:-.5px}
+  .page-head .sub{color:var(--ink2);font-size:14px}
+  .usearch{padding:9px 14px;border:1px solid var(--border);border-radius:10px;font-size:14px;min-width:230px;outline:none;background:var(--card);color:var(--ink)}
+  .usearch:focus{border-color:var(--purple)}
+
+  .chips{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+  .chip{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 14px;box-shadow:var(--shadow);font:inherit;color:inherit;text-align:left;cursor:pointer}
+  .chip:hover{border-color:var(--purple-ink)}
+  .chip:focus-visible{outline:2px solid var(--purple-ink);outline-offset:2px}
+  .chip-on{border-color:var(--purple-ink);box-shadow:0 0 0 1px var(--purple-ink) inset}
+  .chip-on b,.chip-on span{color:var(--purple-ink)}
+  .chip b{font-size:19px;font-weight:700;letter-spacing:-.3px}
+  .chip span{font-size:12px;color:var(--ink2);margin-left:6px}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+  .tbl-wrap{overflow-x:auto}
+  .utable{width:100%;border-collapse:collapse;font-size:13.5px;min-width:840px}
+  .utable th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:600;padding:11px 14px;border-bottom:1px solid var(--border);background:var(--card);white-space:nowrap}
+  .utable td{padding:12px 14px;border-bottom:1px solid var(--border2);vertical-align:middle;white-space:nowrap}
+  .utable tr:last-child td{border-bottom:none}
+  .utable tbody tr:hover td{background:var(--hover)}
+  .utable th[data-sort]{cursor:pointer;user-select:none}
+  .utable th[data-sort]:hover{color:var(--ink2)}
+  .utable th[data-sort]:focus-visible{outline:2px solid var(--purple-ink);outline-offset:-2px}
+  /* The arrow holds its width whether or not it is showing anything, so the
+     header row does not shift sideways every time a column is clicked. */
+  .sarr{display:inline-block;width:9px;margin-left:5px;opacity:0}
+  .utable th[aria-sort]:not([aria-sort="none"]){color:var(--ink)}
+  .utable th[aria-sort]:not([aria-sort="none"]) .sarr{opacity:1}
+  .utable th{position:relative}
+  .fbtn{background:none;border:0;color:inherit;font:inherit;cursor:pointer;padding:0 2px;margin-left:4px;opacity:.55;line-height:1}
+  .fbtn:hover,.fbtn.on{opacity:1;color:var(--purple-ink)}
+  .fmenu{position:absolute;z-index:40;top:100%;left:6px;min-width:190px;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.35);padding:6px;text-transform:none;letter-spacing:0;font-size:13px}
+  .fmenu button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--ink);font:inherit;padding:7px 9px;border-radius:7px;cursor:pointer;white-space:nowrap}
+  .fmenu button:hover{background:var(--hover)}
+  .fmenu button.sel{color:var(--purple-ink);font-weight:700}
+  .fmenu .fsep{height:1px;background:var(--border);margin:5px 2px}
+  .fmenu .fhead{padding:4px 9px;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.4px}
+  .u-name{font-weight:600}
+  .u-email{color:var(--ink2);font-size:12.5px}
+  .u-muted{color:var(--muted)}
+  .u-returned{color:var(--purple-ink);font-weight:600}
+  .badge{display:inline-block;font-size:11px;font-weight:600;padding:2px 9px;border-radius:999px}
+  .b-google{background:#eef3fe;color:#2a5bd7}
+  .b-email{background:#f0f0f4;color:#6b6a76}
+  .b-apple{background:#ececf0;color:#111}
+  .b-plus{background:#efe9ff;color:#5a49d0}
+  .b-comp{background:#eaf7ef;color:#1a8f57}
+  .b-ref{background:#e6f7f4;color:#0f766e}
+  .b-free{background:#f4f4f6;color:#9a99a5}
+  .b-mobile{background:#fdf0e6;color:#b4560f}
+  .b-desktop{background:#eef1f6;color:#4a5875}
+  /* Badge tints are two-colour pairs, not theme tokens, so they get their own
+     dark set — the light fills wash out to near-white against a dark row. */
+  html[data-theme="dark"] .b-google{background:#152b52;color:#8fb6ff}
+  html[data-theme="dark"] .b-email{background:#26262f;color:#a9a8b8}
+  html[data-theme="dark"] .b-apple{background:#2b2b33;color:#f2f2f7}
+  html[data-theme="dark"] .b-plus{background:#271f4d;color:#bdb0ff}
+  html[data-theme="dark"] .b-comp{background:#123020;color:#5fd39a}
+  html[data-theme="dark"] .b-ref{background:#0e2e2a;color:#4fd0be}
+  html[data-theme="dark"] .b-free{background:#22222b;color:#7b7a8c}
+  html[data-theme="dark"] .b-mobile{background:#3a2312;color:#f0a86a}
+  html[data-theme="dark"] .b-desktop{background:#23283a;color:#9fb0d0}
+  .b-iphone{background:#eef1f6;color:#1d1d1f}
+  .b-android{background:#e6f6ea;color:#1e7b34}
+  html[data-theme="dark"] .b-iphone{background:#2a2d36;color:#e8e8ed}
+  html[data-theme="dark"] .b-android{background:#15301d;color:#3ddc84}
+  .empty{padding:40px;text-align:center;color:var(--muted);font-size:14px}
+  .foot{text-align:center;font-size:12px;color:var(--muted);margin-top:22px}
+
+  /* ---- mobile: stack the sidebar into a top nav, full-width content ---- */
+  /* Same phone shell as ../index.html: compact sticky header, ☰ drawer. */
+  @media (max-width:760px){
+    #app{flex-direction:column}
+    aside{width:100%;flex:none;height:auto;position:sticky;top:0;border-right:none;border-bottom:1px solid var(--border);padding:8px 12px;gap:0;z-index:20}
+    .brand{padding:0 2px;align-items:center}
+    .brand-mark{width:32px;height:32px;flex-basis:32px;font-size:16px}
+    .menu-btn{display:inline-flex}
+    nav{display:none;flex-direction:column;gap:2px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border2)}
+    aside.open nav{display:flex}
+    aside.open>a.nav-item{display:flex}
+    .nav-item{padding:11px 12px;font-size:15px}
+    .nav-item.active::before{display:none}
+    .nav-spacer,.nav-foot,aside>.nav-item{display:none}
+    .topbar{height:52px;padding:0 16px}
+    .content{padding:18px 16px 48px}
+    .page-head{flex-direction:column;align-items:flex-start;gap:12px}
+    .usearch{width:100%;min-width:0}
+  }
+  .u-namebtn{background:none;border:0;padding:0;font:inherit;font-weight:inherit;color:inherit;cursor:pointer;text-align:left}
+  .u-namebtn:hover{text-decoration:underline}
+  .u-email-reveal{font-size:12px;color:var(--muted);margin-top:3px;user-select:all}
+  /* ---- creator outreach ---- */
+  .utable{min-width:1180px}
+  .utable td{white-space:normal}
+  .c-name{font-weight:600;white-space:nowrap}
+  .c-sub{color:var(--muted);font-size:12px;white-space:nowrap}
+  .c-flags{color:#b4560f;font-size:11.5px;margin-top:3px;max-width:260px}
+  html[data-theme="dark"] .c-flags{color:#f0a86a}
+  .b-marracat{background:#fdeaf3;color:#a3336b}
+  .b-findacrib{background:#eef3fe;color:#2a5bd7}
+  html[data-theme="dark"] .b-marracat{background:#3a1a2b;color:#f59ac6}
+  html[data-theme="dark"] .b-findacrib{background:#152b52;color:#8fb6ff}
+  .b-yes{background:#eaf7ef;color:#1a8f57}
+  .b-no{background:#f4f4f6;color:#9a99a5}
+  html[data-theme="dark"] .b-yes{background:#123020;color:#5fd39a}
+  html[data-theme="dark"] .b-no{background:#22222b;color:#7b7a8c}
+  .fbtns{display:flex;gap:6px}
+  .file-btn{border:1px solid var(--border);background:var(--card);color:var(--ink);border-radius:8px;padding:5px 10px;
+    font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap}
+  .file-btn:hover{border-color:var(--purple);color:var(--purple-ink)}
+  .file-btn[disabled]{opacity:.35;cursor:default}
+  .inp{border:1px solid var(--border);background:var(--card);color:var(--ink);border-radius:8px;padding:5px 8px;font:inherit;font-size:13px}
+  .inp:focus{outline:none;border-color:var(--purple)}
+  select.inp{padding-right:4px;max-width:190px}
+  .inp.rate{width:84px}
+  .inp.date{width:138px}
+  .st-not_reached_out{border-color:var(--border-strong)}
+  .st-reached_out{border-color:#6d9ee8}
+  .st-contract_in_progress{border-color:#e0a23a}
+  .st-contract_sent{border-color:#c77ae0}
+  .st-contract_confirmed{border-color:#3fb37f}
+  .st-contract_complete{border-color:#1a8f57;background:rgba(26,143,87,.08)}
+  .saved{font-size:11px;color:var(--live-ink);margin-left:6px;opacity:0;transition:opacity .2s}
+  .saved.on{opacity:1}
+  .err{color:#d6453d}
+  .left{font-size:11.5px;color:var(--ink2);margin-top:3px;white-space:nowrap}
+  .left.late{color:#d6453d;font-weight:600}
+  .note-cell{max-width:220px}
+  .note-cell textarea{width:100%;min-width:170px;min-height:34px;resize:vertical}
+  .mail-link{font-size:12.5px;white-space:nowrap}
+
+  .tl-card{padding:18px 20px 16px;margin-bottom:18px}
+  .tl-card h2{font-size:16px;margin:0 0 3px}
+  .tl-sub{font-size:12.5px;color:var(--ink2);margin-bottom:14px}
+  .tl{position:relative}
+  .tl-axis{position:relative;height:18px;margin-left:170px;font-size:11px;color:var(--muted)}
+  .tl-axis span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+  .tl-row{display:flex;align-items:center;height:28px}
+  .tl-label{width:170px;flex:0 0 170px;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:10px}
+  .tl-track{position:relative;flex:1;height:100%;border-left:1px solid var(--border2)}
+  .tl-bar{position:absolute;top:7px;height:14px;border-radius:7px;min-width:6px}
+  .tl-bar.s-reached_out{background:#6d9ee8}
+  .tl-bar.s-contract_in_progress{background:#e0a23a}
+  .tl-bar.s-contract_sent{background:#c77ae0}
+  .tl-bar.s-contract_confirmed{background:#3fb37f}
+  .tl-bar.s-contract_complete{background:#1a8f57;opacity:.55}
+  .tl-due{position:absolute;top:4px;width:2px;height:20px;background:var(--ink);border-radius:1px}
+  .tl-today{position:absolute;top:0;bottom:0;width:0;border-left:2px dashed #d6453d;z-index:2}
+  .tl-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink2);margin-top:12px}
+  .tl-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+  .tl-empty{font-size:13px;color:var(--muted);padding:6px 0}
+  @media (max-width:760px){
+    .tl-label{width:110px;flex-basis:110px}
+    .tl-axis{margin-left:110px}
+  }
+</style>
+</head>
+<body>
+
+<!-- Shown only while auth is resolving; see the data-auth script in <head>. -->
+<div id="boot" aria-hidden="true"><div class="spin"></div></div>
+
+<div id="gate">
+  <div class="gate-card">
+    <div class="gate-logo">📣</div>
+    <h1 id="gate-title">Private dashboard</h1>
+    <p id="gate-msg">This is the owner dashboard. Sign in to continue.</p>
+    <button class="g-btn" id="google-btn">
+      <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.6 2.4 30.2 0 24 0 14.6 0 6.4 5.4 2.5 13.3l7.9 6.1C12.3 13.2 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.9 7.2l7.6 5.9c4.4-4.1 7.1-10.1 7.1-17.6z"/><path fill="#FBBC05" d="M10.4 28.6c-.5-1.5-.8-3-.8-4.6s.3-3.1.8-4.6l-7.9-6.1C.9 16.3 0 20 0 24s.9 7.7 2.5 10.7l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.6-5.9c-2.1 1.4-4.8 2.3-7.6 2.3-6.3 0-11.7-3.7-13.6-9.1l-7.9 6.1C6.4 42.6 14.6 48 24 48z"/></svg>
+      Sign in with Google
+    </button>
+    <div class="g-note">Only <b>divinejdavis@gmail.com</b> can view this page.</div>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <aside>
+    <div class="brand">
+      <div class="brand-mark">📣</div>
+      <div><div class="brand-name">Creator outreach</div><div class="brand-sub">Marracat + Find A Crib</div></div>
+      <button class="menu-btn" id="menu-btn" type="button" aria-label="Open menu" aria-expanded="false">☰</button>
+    </div>
+    <nav>
+      <a class="nav-item" href="/dashboard/?site=marracat"><span class="nav-ico">🛍️</span> Marracat dashboard</a>
+      <a class="nav-item" href="/dashboard/?site=fac"><span class="nav-ico">🏙️</span> Find A Crib dashboard</a>
+      <a class="nav-item active"><span class="nav-ico">✉</span> Creator outreach</a>
+      <a class="nav-item" href="#sec-timeline"><span class="nav-ico">◔</span> Contract timeline</a>
+    </nav>
+    <div class="nav-spacer"></div>
+    <a class="nav-item" href="https://privateemail.com" target="_blank" rel="noopener"><span class="nav-ico">↗</span> Open Drafts (webmail)</a>
+    <div class="nav-foot">Briefs come from the Creator Briefs app</div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <span class="live-pill"><span class="live-dot"></span> Live data</span>
+      <div class="tb-right">
+        <button class="theme-btn" id="theme-btn" type="button" aria-label="Switch to dark mode" title="Switch to dark mode">🌙</button>
+        <button class="signout" id="signout">Sign out</button>
+        <div class="avatar" id="avatar">D</div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="page-head">
+        <div>
+          <h1>Creator outreach</h1>
+          <div class="sub">Every creator you have a brief for. Rows are never removed; move them through the stages. Changes save as you make them.</div>
+        </div>
+        <input class="usearch" id="usearch" type="text" placeholder="Search name, @handle, email, app…">
+      </div>
+
+      <div class="chips" id="chips"></div>
+
+      <div class="card">
+        <div class="tbl-wrap">
+          <table class="utable">
+            <thead><tr>
+              <th>Creator</th><th>App</th><th>Brief</th><th>Email</th><th>Stage</th>
+              <th title="The day you reached out. Set automatically when a row leaves “Not reached out”.">Send date</th>
+              <th>Complete</th>
+              <th title="When the contract should be complete: the post-by date on the brief, editable.">Contract due</th>
+              <th>Rate</th><th>Notes</th>
+            </tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+        <div class="empty hidden" id="empty">No creators match.</div>
+      </div>
+
+      <div class="card tl-card" id="sec-timeline" style="margin-top:18px">
+        <h2>Contract timeline</h2>
+        <div class="tl-sub">Each bar runs from the day you reached out to the day the contract is due. The dashed line is today.</div>
+        <div id="timeline"></div>
+      </div>
+
+      <div class="foot">🔒 Private — only you can see this. New creators arrive from the Creator Briefs app on your laptop.</div>
+    </div>
+  </main>
+</div>
+
+<script src="/dashboard/supabase-config.js?v=1"></script>
+<script src="/dashboard/supabase.js?v=1"></script>
+<script>
+  (function(){
+    var aside=document.querySelector('aside'), btn=document.getElementById('menu-btn');
+    function setMenu(open){ aside.classList.toggle('open',!!open); btn.setAttribute('aria-expanded',open?'true':'false'); btn.setAttribute('aria-label',open?'Close menu':'Open menu'); }
+    btn.onclick=function(e){ e.stopPropagation(); setMenu(!aside.classList.contains('open')); };
+    document.addEventListener('click',function(e){ if(aside.classList.contains('open') && !aside.contains(e.target)) setMenu(false); });
+    document.addEventListener('keydown',function(e){ if(e.key==='Escape') setMenu(false); });
+  })();
+(function(){
+  "use strict";
+  var sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+  var gate = document.getElementById('gate'), app = document.getElementById('app');
+  var ROWS = [], FILTER = '', QUERY = '';
+  var STAGES = [['not_reached_out','Not reached out'],['reached_out','Reached out'],
+                ['contract_in_progress','Contract in progress'],['contract_sent','Contract sent'],
+                ['contract_confirmed','Contract confirmed'],['contract_complete','Contract complete']];
+  var STAGE_LABEL = {}; STAGES.forEach(function(s){ STAGE_LABEL[s[0]] = s[1]; });
+  var APP = { marracat:'Marracat', findacrib:'Find A Crib' };
+  function el(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function day(s){ return s ? new Date(s+'T12:00:00') : null; }
+  function fshort(s){ var d=day(s); return d ? d.toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—'; }
+  function todayISO(){ var d=new Date(); return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10); }
+
+  // ---------- theme (same contract as /dashboard/) ----------
+  var session = null, themeTouched = false;
+  function currentTheme(){ return document.documentElement.getAttribute('data-theme')==='dark' ? 'dark' : 'light'; }
+  function applyTheme(t){
+    t = (t==='dark') ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', t);
+    var b=el('theme-btn'), label=(t==='dark' ? 'Switch to light mode' : 'Switch to dark mode');
+    b.textContent = (t==='dark' ? '☀️' : '🌙'); b.setAttribute('aria-label', label); b.title = label;
+    try{ localStorage.setItem('dash.theme', t); }catch(e){}
+  }
+  function adoptProfileTheme(s){
+    if(themeTouched) return;
+    var t = s && s.user && s.user.user_metadata && s.user.user_metadata.theme;
+    applyTheme(t==='dark'||t==='light' ? t : currentTheme());
+  }
+  el('theme-btn').onclick = function(){
+    var next = (currentTheme()==='dark') ? 'light' : 'dark';
+    themeTouched = true; applyTheme(next);
+    if(session) sb.auth.updateUser({ data:{ theme: next } }).catch(function(){});
+  };
+  applyTheme(currentTheme());
+
+  function settle(){ document.documentElement.removeAttribute('data-auth'); }
+  function showGate(kind, email){
+    settle();
+    app.classList.add('hidden'); gate.classList.remove('hidden');
+    var t=el('gate-title'), m=el('gate-msg'), btn=el('google-btn');
+    if(kind==='forbidden'){ t.textContent='Not your dashboard'; m.textContent='You are signed in as '+(email||'another account')+', which can’t view this page.'; btn.textContent='Sign out'; btn.onclick=function(){ sb.auth.signOut(); }; }
+    else if(kind==='error'){ t.textContent='Something went wrong'; m.textContent='Couldn’t load creators. Try again in a moment.'; }
+    else { t.textContent='Private dashboard'; m.textContent='This is the owner dashboard. Sign in to continue.'; }
+  }
+  async function token(){
+    try{ var r = await sb.auth.getSession(); if(r.data.session){ session = r.data.session; } }catch(e){}
+    return session && session.access_token;
+  }
+  // Every call carries a live token; a 401 gets one forced refresh + retry
+  // before anything is shown as "sign in" (same rule as the Users page).
+  async function api(path, opts){
+    opts = opts || {};
+    var h = Object.assign({}, opts.headers||{}, { Authorization:'Bearer '+(await token()) });
+    var res = await fetch('/api/'+path, Object.assign({}, opts, { headers:h }));
+    if(res.status===401){
+      var fresh=null;
+      try{ var rr = await sb.auth.refreshSession(); fresh = rr.data && rr.data.session; }catch(e){}
+      if(fresh){ session = fresh; h.Authorization = 'Bearer '+fresh.access_token;
+        res = await fetch('/api/'+path, Object.assign({}, opts, { headers:h })); }
+    }
+    return res;
+  }
+
+  var routeSeq = 0, shown = false, routing = null;
+  function route(s){
+    var uid = s && s.user && s.user.id;
+    if(shown && s && session && s.user && session.user && s.user.id === session.user.id){ session = s; return Promise.resolve(); }
+    if(routing !== null && routing === uid){ session = s; return Promise.resolve(); }
+    routing = uid;
+    return _route(s).then(function(){ if(routing===uid) routing = null; }, function(){ if(routing===uid) routing = null; });
+  }
+  async function _route(s){
+    var mine = ++routeSeq;
+    session = s; adoptProfileTheme(s);
+    if(!session){ shown = false; showGate('signin'); return; }
+    var res;
+    try{ res = await api('dashboard-creators'); }catch(e){ if(mine===routeSeq) showGate('error'); return; }
+    if(mine!==routeSeq) return;
+    if(res.status===403){ showGate('forbidden', session.user && session.user.email); return; }
+    if(res.status===401){ showGate('signin'); return; }
+    if(!res.ok){ showGate('error'); return; }
+    var d = await res.json();
+    if(mine!==routeSeq) return;
+    ROWS = d.creators || [];
+    el('avatar').textContent = ((session.user&&session.user.email)||'D')[0].toUpperCase();
+    render();
+    settle(); shown = true;
+    gate.classList.add('hidden'); app.classList.remove('hidden');
+  }
+  el('google-btn').onclick = function(){ sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: location.origin + '/dashboard/creators/' } }); };
+  el('signout').onclick = function(){ sb.auth.signOut(); };
+  sb.auth.onAuthStateChange(function(_e, s){ route(s); });
+  sb.auth.getSession().then(function(r){ route(r.data.session); });
+
+  // ---------- render ----------
+  function matches(r){
+    if(FILTER && FILTER.indexOf('app:')===0 && r.product!==FILTER.slice(4)) return false;
+    if(FILTER && FILTER.indexOf('app:')!==0 && r.stage!==FILTER) return false;
+    if(!QUERY) return true;
+    var hay = [r.name, r.handle, r.email, APP[r.product], STAGE_LABEL[r.stage], r.platform, r.notes].join(' ').toLowerCase();
+    return hay.indexOf(QUERY) > -1;
+  }
+  function chip(key, n, label){
+    return '<button class="chip'+(FILTER===key?' chip-on':'')+'" data-f="'+esc(key)+'"><b>'+n+'</b><span>'+esc(label)+'</span></button>';
+  }
+  function render(){
+    var counts = {}; ROWS.forEach(function(r){ counts[r.stage]=(counts[r.stage]||0)+1; });
+    el('chips').innerHTML = chip('', ROWS.length, 'creators') +
+      STAGES.map(function(s){ return chip(s[0], counts[s[0]]||0, s[1].toLowerCase()); }).join('') +
+      chip('app:marracat', ROWS.filter(function(r){return r.product==='marracat';}).length, 'Marracat') +
+      chip('app:findacrib', ROWS.filter(function(r){return r.product==='findacrib';}).length, 'Find A Crib');
+    el('chips').querySelectorAll('[data-f]').forEach(function(b){
+      b.onclick = function(){ FILTER = (FILTER===b.dataset.f) ? '' : b.dataset.f; render(); };
+    });
+    var list = ROWS.filter(matches);
+    el('rows').innerHTML = list.map(rowHTML).join('');
+    el('empty').classList.toggle('hidden', list.length>0);
+    bindRows();
+    renderTimeline();
+  }
+  function daysLeft(r){
+    if(!r.due_date || r.stage==='contract_complete' || r.stage==='not_reached_out') return '';
+    var n = Math.round((day(r.due_date) - day(todayISO()))/86400000);
+    if(n<0) return '<div class="left late">'+(-n)+' day'+(n===-1?'':'s')+' late</div>';
+    return '<div class="left">'+(n===0?'due today':n+' day'+(n===1?'':'s')+' left')+'</div>';
+  }
+  function rowHTML(r){
+    var flags = (r.flags||[]).length ? '<div class="c-flags">⚠ '+esc(r.flags.join(' · '))+'</div>' : '';
+    var who = '<div class="c-name">'+esc(r.name||r.handle)+'</div><div class="c-sub">@'+esc(r.handle)+
+              (r.platform?' · '+esc(r.platform):'')+(r.followers?' · '+esc(r.followers)+' followers':'')+'</div>'+flags;
+    var app = r.product ? '<span class="badge b-'+esc(r.product)+'">'+esc(APP[r.product]||r.product)+'</span>' : '—';
+    var files = '<div class="fbtns"><button class="file-btn" data-open="pdf" '+(r.has_pdf?'':'disabled title="No PDF: this creator had no email, so only a JPG was made"')+'>PDF</button>'+
+                '<button class="file-btn" data-open="jpg" '+(r.has_jpg?'':'disabled')+'>JPG</button></div>';
+    var mail = r.email ? '<a class="mail-link" href="mailto:'+esc(r.email)+'">'+esc(r.email)+'</a>' : '<span class="u-muted">DM only</span>';
+    var stage = '<select class="inp st-'+esc(r.stage)+'" data-k="stage">'+STAGES.map(function(s){
+                  return '<option value="'+s[0]+'"'+(s[0]===r.stage?' selected':'')+'>'+s[1]+'</option>'; }).join('')+'</select>';
+    var sent = '<input class="inp date" type="date" data-k="sent_at" value="'+esc(r.sent_at||'')+'">';
+    var done = r.complete ? '<span class="badge b-yes">Y</span>' : '<span class="badge b-no">N</span>';
+    var due = '<input class="inp date" type="date" data-k="due_date" value="'+esc(r.due_date||'')+'">'+daysLeft(r);
+    var rate = '<input class="inp rate" type="text" data-k="rate" placeholder="$" value="'+esc(r.rate||'')+'">';
+    var notes = '<textarea class="inp" data-k="notes" placeholder="Notes">'+esc(r.notes||'')+'</textarea>';
+    return '<tr data-id="'+esc(r.id)+'"><td>'+who+'</td><td>'+app+'</td><td>'+files+'</td><td>'+mail+'</td>'+
+           '<td>'+stage+'<span class="saved">saved</span></td><td>'+sent+'</td><td>'+done+'</td><td>'+due+'</td><td>'+rate+'</td>'+
+           '<td class="note-cell">'+notes+'</td></tr>';
+  }
+  function bindRows(){
+    el('rows').querySelectorAll('tr[data-id]').forEach(function(tr){
+      var id = tr.dataset.id;
+      tr.querySelectorAll('[data-k]').forEach(function(inp){
+        var ev = (inp.tagName==='SELECT' || inp.type==='date') ? 'change' : 'blur';
+        inp.addEventListener(ev, function(){
+          var v = inp.value.trim() || null, body = {}; body[inp.dataset.k] = v;
+          var row = ROWS.find(function(r){ return r.id===id; });
+          if(row && (row[inp.dataset.k]||null) === v) return;
+          save(id, body, tr);
+        });
+      });
+      tr.querySelectorAll('[data-open]').forEach(function(b){
+        b.onclick = function(){ openBrief(id, b.dataset.open); };
+      });
+    });
+  }
+  async function save(id, body, tr){
+    var s = tr.querySelector('.saved');
+    try{
+      var res = await api('dashboard-creators/'+encodeURIComponent(id), { method:'POST',
+        headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      var d = await res.json().catch(function(){ return {}; });
+      if(!res.ok) throw new Error(d.message || ('HTTP '+res.status));
+      ROWS = ROWS.map(function(r){ return r.id===id ? d.creator : r; });
+      render();
+      var ns = el('rows').querySelector('tr[data-id="'+CSS.escape(id)+'"] .saved');
+      if(ns){ ns.classList.add('on'); setTimeout(function(){ ns.classList.remove('on'); }, 1400); }
+    }catch(e){
+      if(s){ s.textContent='not saved: '+e.message; s.classList.add('on','err'); }
+    }
+  }
+  // The brief lives behind the owner check, so a plain link can't carry the
+  // token. Open the tab first (inside the click, so it isn't blocked as a
+  // popup), then point it at the downloaded file.
+  async function openBrief(id, ext){
+    var w = window.open('', '_blank');
+    try{
+      var res = await api('dashboard-creators/'+encodeURIComponent(id)+'/brief.'+ext);
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      var url = URL.createObjectURL(await res.blob());
+      if(w) w.location = url; else location.href = url;
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 60000);
+    }catch(e){ if(w) w.close(); alert('Couldn’t open the brief: '+e.message); }
+  }
+  el('usearch').addEventListener('input', function(){ QUERY = this.value.trim().toLowerCase(); render(); });
+
+  // ---------- contract timeline ----------
+  function renderTimeline(){
+    var rows = ROWS.filter(function(r){ return r.stage!=='not_reached_out' && r.due_date && (r.sent_at||r.contract_start); });
+    if(!rows.length){
+      el('timeline').innerHTML = '<div class="tl-empty">Nothing on the clock yet. A creator appears here once you’ve reached out and the row has a contract due date.</div>';
+      return;
+    }
+    rows.sort(function(a,b){ return a.due_date < b.due_date ? -1 : 1; });
+    var t0 = Math.min.apply(null, rows.map(function(r){ return day(r.sent_at||r.contract_start).getTime(); }).concat([day(todayISO()).getTime()]));
+    var t1 = Math.max.apply(null, rows.map(function(r){ return day(r.due_date).getTime(); }).concat([day(todayISO()).getTime()]));
+    t0 -= 86400000; t1 += 2*86400000;
+    function pct(t){ return ((t - t0) / (t1 - t0) * 100).toFixed(2) + '%'; }
+    var ticks = [], step = Math.max(1, Math.round((t1-t0)/86400000/6));
+    for(var t=t0+86400000; t<t1; t+=step*86400000) ticks.push('<span style="left:'+pct(t)+'">'+new Date(t).toLocaleDateString('en-US',{month:'short',day:'numeric'})+'</span>');
+    var today = day(todayISO()).getTime();
+    el('timeline').innerHTML = '<div class="tl"><div class="tl-axis">'+ticks.join('')+'</div>' + rows.map(function(r){
+      var a = day(r.sent_at||r.contract_start).getTime(), b = day(r.due_date).getTime();
+      var title = esc((r.name||r.handle)+': '+STAGE_LABEL[r.stage]+', due '+fshort(r.due_date));
+      return '<div class="tl-row"><div class="tl-label" title="'+title+'">'+esc(r.name||r.handle)+'</div><div class="tl-track">'+
+        '<div class="tl-bar s-'+esc(r.stage)+'" title="'+title+'" style="left:'+pct(a)+';width:calc('+pct(Math.max(b,a))+' - '+pct(a)+')"></div>'+
+        '<div class="tl-due" title="Due '+esc(fshort(r.due_date))+'" style="left:'+pct(b)+'"></div>'+
+        '<div class="tl-today" style="left:'+pct(today)+'"></div></div></div>';
+    }).join('') + '</div><div class="tl-legend">' + STAGES.slice(1).map(function(s){
+      return '<span><i class="tl-bar s-'+s[0]+'" style="position:static;display:inline-block"></i>'+s[1]+'</span>'; }).join('') +
+      '<span><i style="background:var(--ink);width:2px"></i>due date</span></div>';
+  }
+})();
+</script>
+</body>
+</html>

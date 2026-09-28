@@ -1903,36 +1903,62 @@ function favActive() {
   // reported a crash — 104 of 175 one day — and the number said nothing. A
   // trace counts as clean if pagehide appears ANYWHERE in it, or if the last
   // thing it did was one of the steps a backgrounded tab does by itself.
-  const TRACE_KEY = 'fac.trace';
+  // localStorage is shared by every tab, so one key for "the" trace let a page
+  // that boots beside a live one (Safari restoring tabs, or preloading the top
+  // hit while the address bar is still open) read the live page's trace and
+  // report it as a death: on 9/27 four iPhones "died" at adoptHome and three at
+  // boot, and each had two page loads within 100 ms (2026-09-28). So each page
+  // keeps its own key, and a trace only counts once it has stopped moving.
+  const TRACE_PREFIX = 'fac.trace.p.';
+  const TRACE_KEY = TRACE_PREFIX + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  window.facTraceKey = TRACE_KEY;
   // The steps carry Date.now() % 1e7, which wraps every 2.8 hours, so a trace
   // could not say which DAY it died — a phone that died on old code and came
   // back a week later read as a fresh death (2026-09-24). The boot's wall
-  // clock rides along as `booted`; error_report.py drops stale ones.
-  const TRACE_AT = 'fac.trace.at';
+  // clock rides along as `at`; error_report.py drops stale ones.
+  const TRACE_AT = Date.now();
   const TR = [];
   function tr(step) {
     try {
       TR.push([Date.now() % 10000000, step]);
       if (TR.length > 80) TR.shift();
-      localStorage.setItem(TRACE_KEY, JSON.stringify(TR));
+      localStorage.setItem(TRACE_KEY, JSON.stringify({ at: TRACE_AT, s: TR }));
     } catch (_) {}
   }
   try {
-    const prev = JSON.parse(localStorage.getItem(TRACE_KEY) || 'null');
-    const prevAt = +localStorage.getItem(TRACE_AT) || 0;
-    localStorage.removeItem(TRACE_KEY);
-    localStorage.setItem(TRACE_AT, String(Date.now()));
-    const IDLE_STEPS = ['pagehide', 'freeze', 'tick', 'vis hidden', 'vis visible'];
-    if (Array.isArray(prev) && prev.length) {
-      const labels = prev.map(s => (s && s[1]) || '');
-      const last = labels[labels.length - 1];
-      const clean = labels.indexOf('pagehide') >= 0 || IDLE_STEPS.indexOf(last) >= 0;
-      if (!clean) {
-        // `last` rides along so the report groups by what the page was doing
-        // when it died, instead of unpacking the steps array every time.
-        setTimeout(() => { try { track('crash_trace', { last: last, steps: prev.slice(-50), ua: navigator.userAgent.slice(0, 140), mem: navigator.deviceMemory || null, sw: screen.width, sh: screen.height, booted: prevAt ? new Date(prevAt).toISOString() : null }); } catch (_) {} }, 4000);
-      }
+    // Every other page's trace, as it stands right now. A live page ticks once
+    // a second, so if one is unchanged four seconds from now its page is gone.
+    const seen = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(TRACE_PREFIX)) seen[k] = localStorage.getItem(k);
     }
+    // The single shared key from before this change: nothing writes it any more.
+    const legacy = localStorage.getItem('fac.trace');
+    if (legacy) {
+      const at = +localStorage.getItem('fac.trace.at') || null;
+      seen['fac.trace'] = JSON.stringify({ at, s: JSON.parse(legacy) });
+      localStorage.removeItem('fac.trace'); localStorage.removeItem('fac.trace.at');
+    }
+    const IDLE_STEPS = ['pagehide', 'freeze', 'tick', 'vis hidden', 'vis visible'];
+    if (Object.keys(seen).length) setTimeout(() => {
+      for (const k in seen) {
+        try {
+          if (k !== 'fac.trace') {
+            if (localStorage.getItem(k) !== seen[k]) continue;   // still ticking: another live tab
+            localStorage.removeItem(k);
+          }
+          const rec = JSON.parse(seen[k] || 'null'), prev = rec && rec.s;
+          if (!Array.isArray(prev) || !prev.length) continue;
+          const labels = prev.map(s => (s && s[1]) || '');
+          const last = labels[labels.length - 1];
+          if (labels.indexOf('pagehide') >= 0 || IDLE_STEPS.indexOf(last) >= 0) continue;
+          // `last` rides along so the report groups by what the page was doing
+          // when it died, instead of unpacking the steps array every time.
+          track('crash_trace', { last: last, steps: prev.slice(-50), ua: navigator.userAgent.slice(0, 140), mem: navigator.deviceMemory || null, sw: screen.width, sh: screen.height, booted: rec.at ? new Date(rec.at).toISOString() : null });
+        } catch (_) {}
+      }
+    }, 4000);
   } catch (_) {}
   // The Look Around previews (static/apple-street-preview.js) write their own
   // steps into this trace (2026-09-22): every iPhone death since 9/20 ends

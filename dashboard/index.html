@@ -1820,10 +1820,10 @@
       if(!A || A.total == null) return {ic:'📣',v:'—',l:'Ads served · all platforms',own:'Ad counts unavailable right now',accent:true};
       // The app's ads moved from a bottom banner into the feed (build 91), and
       // the website has Google in-feed ads too: one "Google ads" count.
-      var parts=[comma(A.web_tiles)+' web tiles seen', comma(A.app_tiles)+' app tiles seen', comma(n(A.admob)+n(A.adsense))+' Google ads'];
+      var parts=[comma(A.web_tiles)+' web tiles', comma(A.app_tiles)+' app tiles', comma(n(A.admob)+n(A.adsense))+' Google ads'];
       return {ic:'📣',v:comma(A.total),l:'Ads served · all platforms',
               own:parts.join(' · ')+(n(A.admob_test)?' · '+comma(A.admob_test)+' TestFlight test ads not counted':''),
-              title:'Advertiser tiles actually seen (half on screen for a second) on the website and iPhone app + live Google ads (AdSense on the website, AdMob in the app), this range, your own visits excluded. Google ads count once Google approves the site and the app ships to the App Store.',
+              title:'Counted the way Google counts ads: one each time an ad loads on a page, seen or not. Advertiser tiles loaded on the website and iPhone app + live Google ads (AdSense on the website, AdMob in the app), this range, your own visits excluded. Google ads count once Google approves the site and the app ships to the App Store.',
               accent:true};
     }
     el('tiles').innerHTML=tiles.map(function(t){

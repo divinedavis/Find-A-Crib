@@ -1729,12 +1729,14 @@ def _fac_owner_visitors():
 # AdSense on the web is wired but has no slot id, so it serves nothing yet.
 # Owner traffic is dropped the same way the ad-tile card drops it.
 FAC_AD_SOURCES = (
-    # Seen, not drawn (owner, 2026-09-28): the website's tile_impression (half
-    # the tile on screen for a second, once per apartment per session), the
-    # same rule the app's count below uses. tile_served counts every grid
-    # rebuild, and a map pan rebuilds it — 5,721 renders against 688 seen on
-    # 9/28, which made the tile say eight times more ads were seen than were.
-    ("web_tiles", "event=eq.tile_impression&props->>platform=eq.web"),
+    # Counted the way Google counts its own ads (owner, 2026-09-28): an
+    # impression when the ad LOADS, once per ad per page view, seen or not —
+    # AdSense counts one when an ad "has begun to download" and pays on that.
+    # tile_served is exactly that (countServed: once per apartment per page);
+    # tile_impression, the seen count, is the Advertiser metrics page's.
+    # The app has one event for both: its tile_impression fires as the tile
+    # loads onto the screen.
+    ("web_tiles", "event=eq.tile_served"),
     ("app_tiles", "event=eq.tile_impression&props->>platform=eq.ios"),
     ("admob", "event=eq.ad_impression&props->>mode=eq.live&props->>platform=eq.ios"),
     # The website's AdSense in-feed tiles, logged when a slot fills (index.html

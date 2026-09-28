@@ -209,6 +209,11 @@
     .page-head{flex-direction:column;align-items:flex-start;gap:12px}
     .usearch{width:100%;min-width:0}
   }
+  .side-head{font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);padding:10px 12px 4px}
+  .site-btn{font-weight:600}
+  .site-btn.on{background:var(--purple-soft);color:var(--purple-ink)}
+  nav .sub{margin:0 0 6px 18px;padding-left:8px;border-left:1px solid var(--border2);display:flex;flex-direction:column;gap:2px}
+  nav .sub .nav-item{font-size:13.5px;padding:7px 10px}
   .u-namebtn{background:none;border:0;padding:0;font:inherit;font-weight:inherit;color:inherit;cursor:pointer;text-align:left}
   .u-namebtn:hover{text-decoration:underline}
   .u-email-reveal{font-size:12px;color:var(--muted);margin-top:3px;user-select:all}
@@ -240,13 +245,19 @@
       <button class="menu-btn" id="menu-btn" type="button" aria-label="Open menu" aria-expanded="false">☰</button>
     </div>
     <nav>
-      <!-- ?site=fac because these sections only exist on the Find A Crib tab:
-           without it a remembered NEMO tab wins and the link lands on a board
-           that has no funnel to scroll to. -->
-      <!-- Keep this sidebar in sync with SITES.fac.nav in ../index.html. -->
-      <a class="nav-item" href="/dashboard/?site=fac"><span class="nav-ico">▦</span> Dashboard</a>
-      <a class="nav-item" href="/dashboard/?site=fac#sec-tiles"><span class="nav-ico">◫</span> Advertiser metrics</a>
-      <a class="nav-item active"><span class="nav-ico">☺</span> Users</a>
+      <!-- Same app list as ../index.html (apps in the sidebar, 2026-09-28). -->
+      <div class="side-head">Apps</div>
+      <a class="nav-item site-btn on" href="/dashboard/?site=fac"><span class="nav-ico">🏙️</span> Find A Crib</a>
+      <div class="sub">
+        <a class="nav-item" href="/dashboard/?site=fac"><span class="nav-ico">▦</span> Dashboard</a>
+        <a class="nav-item" href="/dashboard/?site=fac#sec-tiles"><span class="nav-ico">◫</span> Advertiser metrics</a>
+        <a class="nav-item active"><span class="nav-ico">☺</span> Users</a>
+      </div>
+      <a class="nav-item site-btn" href="/dashboard/?site=nemo"><span class="nav-ico">🏠</span> NEMO Gutter</a>
+      <a class="nav-item site-btn" href="/dashboard/?site=crease"><span class="nav-ico">👔</span> Crease</a>
+      <a class="nav-item site-btn" href="/dashboard/?site=trent"><span class="nav-ico">🎨</span> Fresh Spaces</a>
+      <a class="nav-item site-btn" href="/dashboard/?site=marracat"><span class="nav-ico">🛍️</span> Marracat</a>
+      <div class="side-head">Tools</div>
       <a class="nav-item" href="/dashboard/creators/"><span class="nav-ico">✉</span> Creator outreach</a>
     </nav>
     <div class="nav-spacer"></div>

@@ -213,6 +213,11 @@
   .u-namebtn:hover{text-decoration:underline}
   .u-email-reveal{font-size:12px;color:var(--muted);margin-top:3px;user-select:all}
   /* ---- creator outreach ---- */
+  .side-head{font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);padding:10px 12px 4px}
+  .site-btn{font-weight:600}
+  .site-btn.on{background:var(--purple-soft);color:var(--purple-ink)}
+  nav .sub{margin:0 0 6px 18px;padding-left:8px;border-left:1px solid var(--border2);display:flex;flex-direction:column;gap:2px}
+  nav .sub .nav-item{font-size:13.5px;padding:7px 10px}
   .utable{min-width:1180px}
   .utable td{white-space:normal}
   .c-name{font-weight:600;white-space:nowrap}
@@ -304,10 +309,15 @@
       <button class="menu-btn" id="menu-btn" type="button" aria-label="Open menu" aria-expanded="false">☰</button>
     </div>
     <nav>
-      <a class="nav-item" href="/dashboard/?site=marracat"><span class="nav-ico">🛍️</span> Marracat dashboard</a>
-      <a class="nav-item" href="/dashboard/?site=fac"><span class="nav-ico">🏙️</span> Find A Crib dashboard</a>
+      <div class="side-head">Apps</div>
+      <a class="nav-item site-btn" href="/dashboard/?site=fac"><span class="nav-ico">🏙️</span> Find A Crib</a>
+      <a class="nav-item site-btn" href="/dashboard/?site=nemo"><span class="nav-ico">🏠</span> NEMO Gutter</a>
+      <a class="nav-item site-btn" href="/dashboard/?site=crease"><span class="nav-ico">👔</span> Crease</a>
+      <a class="nav-item site-btn" href="/dashboard/?site=trent"><span class="nav-ico">🎨</span> Fresh Spaces</a>
+      <a class="nav-item site-btn" href="/dashboard/?site=marracat"><span class="nav-ico">🛍️</span> Marracat</a>
+      <div class="side-head">Tools</div>
       <a class="nav-item active"><span class="nav-ico">✉</span> Creator outreach</a>
-      <a class="nav-item" href="#sec-timeline"><span class="nav-ico">◔</span> Contract timeline</a>
+      <div class="sub"><a class="nav-item" href="#sec-timeline"><span class="nav-ico">◔</span> Contract timeline</a></div>
     </nav>
     <div class="nav-spacer"></div>
     <a class="nav-item" href="https://privateemail.com" target="_blank" rel="noopener"><span class="nav-ico">↗</span> Open Drafts (webmail)</a>

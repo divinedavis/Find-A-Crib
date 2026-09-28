@@ -178,12 +178,16 @@
   .live-dot{width:7px;height:7px;border-radius:50%;background:#7ac70f;box-shadow:0 0 0 3px rgba(122,199,15,.2)}
   .tb-right{display:flex;align-items:center;gap:14px}
   /* site switcher — one dashboard, two sites, same template */
-  .site-switch{display:inline-flex;background:var(--sunken);border:1px solid var(--border);border-radius:11px;padding:3px;gap:2px}
-  .site-switch button{border:none;background:none;font:inherit;font-size:13px;font-weight:600;color:var(--ink2);
-    padding:6px 13px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
-  .site-switch button:hover{color:var(--ink)}
-  .site-switch button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(17,17,34,.16)}
-  .site-switch button:disabled{opacity:.55;cursor:progress}
+  /* Apps in the sidebar. The chosen one is highlighted; its sections sit
+     indented under it. */
+  .site-list{display:flex;flex-direction:column;gap:2px;margin-top:6px}
+  .side-head{font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--muted);padding:10px 12px 4px}
+  .site-btn{font-weight:600}
+  .site-btn.on{background:var(--purple-soft);color:var(--purple-ink)}
+  .site-btn:disabled{opacity:.55;cursor:progress}
+  .site-list #nav{margin:0 0 6px 18px;padding-left:8px;border-left:1px solid var(--border2)}
+  .site-list #nav .nav-item{font-size:13.5px;padding:7px 10px}
+  body.nemo-only .owner-tools{display:none !important}
   /* Date range — same segmented shape as the site switcher, one size down so
      it reads as a filter on the board rather than a peer of it. */
   .range-switch{display:inline-flex;background:var(--sunken);border:1px solid var(--border);
@@ -380,6 +384,9 @@
     .nav-item{padding:11px 12px;font-size:15px}
     .nav-item.active::before{display:none}
     .nav-spacer,.nav-foot,aside>.nav-item{display:none}
+    .site-list{display:none;margin-top:8px;padding-top:4px;border-top:1px solid var(--border2)}
+    aside.open .site-list{display:flex}
+    .site-list #nav{display:flex}
     /* A section scrolled to must land below the sticky header, not under it. */
     .content [id]{scroll-margin-top:64px}
     /* The topbar wrapped, but .tb-left did not: four site tabs, the live
@@ -390,8 +397,7 @@
        bar is no longer sticky: wrapped it is ~200px tall. */
     .topbar{position:static;min-height:52px;padding:8px 16px;gap:8px}
     .tb-left{width:100%;gap:8px}
-    .site-switch,.range-switch{flex-wrap:wrap;max-width:100%}
-    .site-switch button{padding:6px 10px;font-size:12.5px}
+    .range-switch{flex-wrap:wrap;max-width:100%}
     /* Health tiles: goal under the value on every tile, and the info popover
        opens toward the screen's centre from whichever column it is in. */
     .hm-goal{display:block;margin-top:3px}
@@ -434,7 +440,20 @@
       </div>
       <button class="menu-btn" id="menu-btn" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="nav">☰</button>
     </div>
-    <nav id="nav"></nav>
+    <!-- The apps live in the sidebar (owner, 2026-09-28: "put each app on the
+         left pane"). The same buttons and handlers as the old top-row switcher;
+         applyShell() slots the chosen app's sections (#nav) in under it. -->
+    <div class="site-list" id="site-switch">
+      <div class="side-head">Apps</div>
+      <button class="nav-item site-btn on" data-site="fac"><span class="nav-ico">🏙️</span> Find A Crib</button>
+      <button class="nav-item site-btn" data-site="nemo"><span class="nav-ico">🏠</span> NEMO Gutter</button>
+      <button class="nav-item site-btn" data-site="crease"><span class="nav-ico">👔</span> Crease</button>
+      <button class="nav-item site-btn" data-site="trent"><span class="nav-ico">🎨</span> Fresh Spaces</button>
+      <button class="nav-item site-btn" data-site="marracat"><span class="nav-ico">🛍️</span> Marracat</button>
+      <nav id="nav"></nav>
+      <div class="side-head owner-tools">Tools</div>
+      <a class="nav-item owner-tools" href="/dashboard/creators/"><span class="nav-ico">✉</span> Creator outreach</a>
+    </div>
     <div class="nav-spacer"></div>
     <a class="nav-item" id="live-site" href="https://findacrib.com" target="_blank"><span class="nav-ico">↗</span> View live site</a>
     <div class="nav-foot" id="nav-foot">Since 24 June 2026</div>
@@ -443,13 +462,6 @@
   <main>
     <div class="topbar">
       <div class="tb-left">
-        <div class="site-switch" id="site-switch">
-          <button data-site="fac" class="on">🏙️ Find A Crib</button>
-          <button data-site="nemo">🏠 NEMO Gutter</button>
-          <button data-site="crease">👔 Crease</button>
-          <button data-site="trent">🎨 Fresh Spaces</button>
-          <button data-site="marracat">🛍️ Marracat</button>
-        </div>
         <span class="live-pill"><span class="live-dot"></span> Live data</span>
         <!-- Scopes every tile that counts something over a period, on both
              sites. Tiles labelled "(all-time)" stay all-time by design. -->
@@ -1065,8 +1077,7 @@
       nav:[['top','▦','Dashboard'],
            ['sec-tiles','◫','Advertiser metrics'],
            // Keep this list in sync with dashboard/users/index.html.
-           ['link:/dashboard/users/','☺','Users'],
-           ['link:/dashboard/creators/','✉','Creator outreach']]
+           ['link:/dashboard/users/','☺','Users']]
     },
     crease:{
       mark:'👔', name:'Crease', endpoint:'/api/dashboard-crease',
@@ -1090,8 +1101,7 @@
       live:'https://marracat.com', foot:'iPhone app + marracat.com',
       blocks:['marracat-a'],
       nav:[['top','▦','Dashboard'],['sec-mc-orders','⇅','Shoppers & orders'],
-           ['sec-mc-app','▢','iPhone app'],['sec-mc-web','◉','Web storefront'],
-           ['link:/dashboard/creators/','✉','Creator outreach']]
+           ['sec-mc-app','▢','iPhone app'],['sec-mc-web','◉','Web storefront']]
     },
     nemo:{
       mark:'🏠', name:'NEMO Gutter', endpoint:'/api/dashboard-nemo',
@@ -1133,9 +1143,11 @@
         var b=el(id); if(b) b.classList.toggle('hidden', k!==siteKey);
       });
     });
-    // switcher state
+    // switcher state, and this app's sections tucked in under its button
     document.querySelectorAll('#site-switch button').forEach(function(b){
-      b.classList.toggle('on', b.getAttribute('data-site')===siteKey);
+      var on = b.getAttribute('data-site')===siteKey;
+      b.classList.toggle('on', on);
+      if(on) b.after(el('nav'));
     });
   }
 
@@ -1556,6 +1568,7 @@
   document.querySelectorAll('#site-switch button').forEach(function(b){
     b.onclick=async function(){
       var next=b.getAttribute('data-site');
+      setMenu(false);
       if(next===siteKey || !SITES[next]) return;
       var prev=siteKey;
       siteKey=next;

@@ -148,7 +148,11 @@ def js_errors(rows):
         # exactly those two messages started with the ads. Digest only.
         at = p.get("at") or ""
         e["noise"] = (is_noise(key) or any(h in at for h in AD_STACK_HOSTS)
-                      or (p.get("kind") == "promise" and not at and msg in ("Load failed", "Fetch is aborted"))
+                      or (p.get("kind") == "promise" and not at and msg in ("Load failed", "Fetch is aborted",
+                                                                               # Safari: a response body cut off
+                                                                               # mid-read (signal lost / page left);
+                                                                               # our streamed download catches its own
+                                                                               "The I/O read operation failed."))
                       # A rejected XMLHttpRequest object as the reason: this
                       # site never uses XHR (supabase-js and ours are fetch);
                       # Prebid in Mediavine's stack does (9/29).

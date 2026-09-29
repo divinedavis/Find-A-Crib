@@ -114,19 +114,14 @@
     "accept_pct": 1.1,
     "accept_pct_mature": 0.0,
     "added": 0,
-    "at": "2026-09-28T05:11:19+00:00",
+    "at": "2026-09-29T05:11:25+00:00",
     "by_crawl_age": {
       "0-6d": {
-        "accept_pct": 25.0,
-        "fetched": 4,
+        "accept_pct": 20.0,
+        "fetched": 5,
         "indexed": 1
       },
       "14-20d": {
-        "accept_pct": 0.0,
-        "fetched": 1,
-        "indexed": 0
-      },
-      "21-27d": {
         "accept_pct": 0.0,
         "fetched": 1,
         "indexed": 0
@@ -144,28 +139,28 @@
     },
     "cohort": 458,
     "crawl_read_lag_days": 1.8,
-    "crawls_14d": 6,
+    "crawls_14d": 7,
     "crawls_28d": 8,
     "crawls_by_week": {
       "2026-08-10": 11,
       "2026-08-17": 16,
       "2026-08-24": 8,
-      "2026-08-31": 2,
+      "2026-08-31": 1,
       "2026-09-07": 1,
       "2026-09-14": 1,
-      "2026-09-21": 5,
+      "2026-09-21": 6,
       "2026-09-28": 0
     },
     "crawls_week_partial": "2026-09-28",
-    "date": "2026-09-28",
+    "date": "2026-09-29",
     "dropped": 0,
     "errors": 0,
-    "fetched_mature": 88,
+    "fetched_mature": 87,
     "fetched_pct": 20.7,
     "gained_indexed": 0,
     "indexed_pct": 0.2,
     "inspected": 100,
-    "last_crawl": "2026-09-26",
+    "last_crawl": "2026-09-27",
     "lost_indexed": 0,
     "never_fetched": {
       "available": 15,
@@ -182,225 +177,226 @@
       "section8": 6
     },
     "ok": true,
-    "published_urls": 4060,
+    "published_urls": 4068,
     "read": 458,
     "rechecked": 100,
     "states": {
       "crawled_not_indexed": 94,
-      "discovered_not_indexed": 27,
+      "discovered_not_indexed": 52,
       "indexed": 1,
-      "unknown_to_google": 336
+      "unknown_to_google": 311
     }
   },
   "measure": {
-    "at": "2026-09-28T05:11:21+00:00",
+    "at": "2026-09-29T05:11:27+00:00",
     "coverage_pct": 82.0,
-    "date": "2026-09-28",
+    "date": "2026-09-29",
     "days": 1,
     "keywords_covered": 402,
     "keywords_total": 490,
-    "latest_measured_day": "2026-09-27",
+    "latest_measured_day": "2026-09-28",
     "traffic": {
       "arrival_shape": {
         "all": {
-          "busiest_6h_pct": 35.1,
-          "n": 285,
-          "night_pct": 4.9,
-          "peak_hour_utc": 15
+          "busiest_6h_pct": 35.4,
+          "n": 364,
+          "night_pct": 6.6,
+          "peak_hour_utc": 0
         },
         "direct": {
-          "busiest_6h_pct": 34.8,
-          "n": 224,
-          "night_pct": 4.5,
-          "peak_hour_utc": 23
+          "busiest_6h_pct": 35.3,
+          "n": 283,
+          "night_pct": 6.4,
+          "peak_hour_utc": 0
         },
         "organic": {
-          "busiest_6h_pct": 45.1,
-          "n": 51,
-          "night_pct": 7.8,
-          "peak_hour_utc": 14
+          "busiest_6h_pct": 40.8,
+          "n": 71,
+          "night_pct": 8.5,
+          "peak_hour_utc": 2
         }
       },
       "by_channel": {
-        "ai": 4,
-        "campaign": 2,
-        "direct": 224,
+        "ai": 3,
+        "campaign": 3,
+        "direct": 283,
         "internal": 2,
-        "organic": 51,
+        "organic": 71,
         "referral": 2
       },
       "by_hour_utc": {
         "all": [
-          19,
-          9,
-          11,
-          11,
+          28,
+          25,
+          22,
           13,
-          11,
-          5,
+          22,
+          12,
           6,
-          2,
-          2,
           4,
           6,
-          15,
-          12,
-          19,
+          5,
+          8,
+          5,
+          11,
+          16,
           23,
-          12,
+          23,
+          15,
+          23,
+          9,
+          15,
+          22,
           10,
-          14,
-          17,
-          17,
-          13,
-          14,
-          20
+          25,
+          16
         ],
         "direct": [
-          14,
+          23,
+          19,
+          12,
+          9,
+          18,
           7,
-          11,
-          9,
-          11,
-          9,
+          6,
+          4,
           5,
-          5,
-          2,
           1,
-          2,
-          5,
+          8,
+          4,
+          9,
           15,
-          10,
+          17,
+          21,
+          14,
+          16,
+          7,
           10,
           17,
-          10,
           7,
-          10,
-          14,
-          14,
-          8,
-          10,
-          18
+          21,
+          13
         ],
         "organic": [
-          3,
-          0,
-          0,
-          2,
-          1,
-          2,
-          0,
-          1,
-          0,
-          1,
-          2,
-          1,
-          0,
-          2,
-          6,
+          4,
           5,
+          9,
+          4,
+          1,
+          5,
+          0,
+          0,
+          1,
+          4,
+          0,
+          1,
           2,
+          1,
+          5,
+          1,
+          1,
+          6,
+          2,
+          4,
+          5,
           3,
           4,
-          3,
-          3,
-          4,
-          4,
-          2
+          3
         ]
       },
       "by_src": {
-        "alert": 2,
-        "chatgpt.com": 4
+        "alert": 3,
+        "chatgpt.com": 2,
+        "gemini": 1
       },
-      "direct_deep": 9,
-      "new": 226,
+      "direct_deep": 1,
+      "new": 286,
       "new_window_days": 30,
-      "returning": 59,
+      "returning": 78,
       "top_paths": [
         [
           "/",
-          272
+          357
         ],
         [
-          "/guide/what-is-rent-stabilization/",
-          2
-        ],
-        [
-          "/building/bronx/604-e-189th-st-2030770043/",
+          "/available/",
           1
         ],
         [
-          "/building/brooklyn/182-kosciuszko-st-3017850011/",
+          "/building/manhattan/211-w-106th-st-1018780021/",
           1
         ],
         [
-          "/building/brooklyn/240-7th-ave-3009860044/",
+          "/building/manhattan/73-to-75-sherman-ave-1021740034/",
           1
         ],
         [
-          "/building/brooklyn/946-54th-st-3056730025/",
+          "/building/queens/41-06-34th-ave-4006740017/",
+          1
+        ],
+        [
+          "/building/queens/513-woodward-ave-4033890002/",
           1
         ]
       ],
       "top_referrers": [
         [
           "www.google.com",
-          44
+          57
+        ],
+        [
+          "com.google.android.googlequicksearchbox",
+          4
+        ],
+        [
+          "duckduckgo.com",
+          4
         ],
         [
           "www.bing.com",
           3
         ],
         [
-          "com.google.android.googlequicksearchbox",
+          "github.com",
           2
         ],
         [
-          "www.facebook.com",
-          2
-        ],
-        [
-          "duckduckgo.com",
-          1
-        ],
-        [
-          "search.yahoo.com",
+          "accounts.google.com",
           1
         ]
       ],
-      "visitors": 285
+      "visitors": 364
     }
   },
   "outreach": {
-    "at": "2026-09-28T05:11:24+00:00",
-    "date": "2026-09-28",
+    "at": "2026-09-29T05:11:30+00:00",
+    "date": "2026-09-29",
     "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
     "ok": false
   },
   "scout": {
-    "at": "2026-09-28T05:11:24+00:00",
-    "date": "2026-09-28",
+    "at": "2026-09-29T05:11:30+00:00",
+    "date": "2026-09-29",
     "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
     "ok": false
   },
   "searchconsole": {
-    "at": "2026-09-28T05:00:10+00:00",
-    "clicks": 197,
-    "date": "2026-09-28",
-    "impressions": 235,
+    "at": "2026-09-29T05:00:16+00:00",
+    "clicks": 202,
+    "date": "2026-09-29",
+    "impressions": 245,
     "nonbranded_clicks": 0,
     "nonbranded_impressions": 0,
-    "page_clicks": 231,
-    "page_impressions": 1833,
+    "page_clicks": 240,
+    "page_impressions": 1928,
     "serving_branded_only": 12,
     "serving_ever": 289,
     "serving_nonbranded": 0,
-    "serving_pages": 14,
+    "serving_pages": 12,
     "serving_stable": 12,
-    "serving_unattributed": 2,
+    "serving_unattributed": 0,
     "share_pct": 0.0,
     "tracked_ranking": 0,
-    "window": "2026-09-19..2026-09-26"
+    "window": "2026-09-20..2026-09-27"
   }
 }

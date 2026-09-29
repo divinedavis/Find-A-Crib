@@ -73,7 +73,7 @@
      exclusive inventory, so every trace of AdSense (the loader and the
      in-grid slot code) is gone; Mediavine places its own ads. Early in <head>
      on purpose: Mediavine says earlier execution bids better. -->
-<script type="text/javascript" async="async" data-noptimize="1" data-cfasync="false" src="//scripts.scriptwrapper.com/tags/c80d90dc-8d39-4cc8-ae1f-67cf301e7a16.js"></script>
+<script>/* Mediavine (Journey), skipped for Plus members: Plus includes no ads (owner, 2026-09-29). fac.noads is set by index.html once Plus is confirmed and cleared on sign-out/lapse. */(function(){try{if(localStorage.getItem('fac.noads')==='1')return}catch(e){}var s=document.createElement('script');s.async=true;s.setAttribute('data-noptimize','1');s.setAttribute('data-cfasync','false');s.src='//scripts.scriptwrapper.com/tags/c80d90dc-8d39-4cc8-ae1f-67cf301e7a16.js';document.head.appendChild(s)})();</script>
 <!-- Google tag (gtag.js) — Google Ads conversion tracking + GA4 analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=AW-1001356637"></script>
 <script>
@@ -403,7 +403,7 @@
      chips are the same shape as folders because they narrow the view the same way. */
   .folder-chip.action { border-style: dashed; color: var(--blue); border-color: var(--blue); background: none; }
   .folder-chip.sep { flex: none; width: 1px; padding: 0; border: none; border-left: 1px solid var(--line); border-radius: 0; margin: 2px 2px; }
-  .folder-toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(24px + env(safe-area-inset-bottom)); z-index: 4000;
+  .folder-toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(24px + env(safe-area-inset-bottom) + var(--ad-h, 0px)); z-index: 4000;
     background: #1d2430; color: #fff; border-radius: 12px; padding: 12px 14px; max-width: min(92vw, 420px);
     box-shadow: 0 8px 28px rgba(0,0,0,.35); font-size: 13.5px; }
   .folder-toast .ft-title { font-weight: 700; margin-bottom: 8px; }
@@ -415,7 +415,7 @@
   .geo-chip > span { min-width: 0; flex: 1 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .geo-chip button { border: 0; background: var(--blue-solid); color: #fff; border-radius: 999px; padding: 5px 10px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
   .geo-chip button.geo-x { background: transparent; color: var(--ink-2); padding: 4px 6px; font-size: 14px; }
-  @media (max-width: 900px) { .geo-chip { top: auto; bottom: calc(76px + env(safe-area-inset-bottom)); font-size: 12px; padding-left: 10px; gap: 6px; }
+  @media (max-width: 900px) { .geo-chip { top: auto; bottom: calc(76px + env(safe-area-inset-bottom) + var(--ad-h, 0px)); font-size: 12px; padding-left: 10px; gap: 6px; }
     .geo-chip .geo-src { display: none; } }
   .folder-toast .ft-opts { display: flex; flex-wrap: wrap; gap: 6px; }
   .folder-toast .ft-opts button { padding: 6px 11px; border-radius: 14px; border: 1px solid #46536a;
@@ -493,7 +493,7 @@
   .paywall-price .amt { font-size: 28px; font-weight: 800; }
   .paywall-price .per { font-size: 13px; color: var(--ink-2); }
   .paywall-fine { text-align: center; font-size: 11px; color: var(--ink-2); margin: 12px 0 0; }
-  .plus-toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translate(-50%, 120%);
+  .plus-toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom) + var(--ad-h, 0px)); transform: translate(-50%, 120%);
     max-width: 90vw; background: #102a43; color: #fff; padding: 12px 18px; border-radius: 10px;
     font-size: 13px; font-weight: 600; box-shadow: 0 6px 24px rgba(0,0,0,.3); z-index: 9999;
     transition: transform .35s ease; }
@@ -541,7 +541,7 @@
     .viol-panel { max-width: none; max-height: 85vh; border-radius: 16px 16px 0 0; padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
   }
   /* one-line confirmation after a copy-to-clipboard share (no navigator.share) */
-  .fac-toast { position: fixed; left: 50%; bottom: calc(28px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(12px);
+  .fac-toast { position: fixed; left: 50%; bottom: calc(28px + env(safe-area-inset-bottom) + var(--ad-h, 0px)); transform: translateX(-50%) translateY(12px);
     z-index: 4000; background: var(--ink); color: var(--surface); font-size: 14px; font-weight: 600; padding: 11px 18px; border-radius: 999px;
     box-shadow: 0 6px 24px rgba(0,0,0,.25); opacity: 0; pointer-events: none; transition: opacity .18s, transform .18s; max-width: calc(100vw - 32px); }
   .fac-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -626,7 +626,20 @@
   .pill-popover .actions button { flex: 1; padding: 7px 10px; font-size: 12px; font-weight: 600; border-radius: 6px; cursor: pointer; border: 1px solid var(--line); background: var(--surface); }
   .pill-popover .actions button.primary { background: var(--blue-solid); color: #fff; border-color: var(--blue); }
 
-  main { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); height: calc(100vh - 56px); }
+  /* ends above Mediavine's sticky banner (--ad-h, 0 when there is none) instead of running under it */
+  main { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+         grid-template-rows: calc(100vh - 56px - var(--ad-h, 0px));
+         grid-template-rows: calc(100dvh - var(--header-h, 56px) - var(--ad-h, 0px));
+         grid-auto-rows: auto; margin-bottom: var(--ad-h, 0px); }
+  /* The map and the list own row 1, left and right, whatever else lands in
+     <main>. Mediavine sometimes injects a sidebar/in-content ad as a <main>
+     child on the LA/SF/DC pages (owner, 2026-09-29): with auto-placement it
+     took the right-hand cell and pushed the list under the map. Anything that
+     isn't ours now gets its own full-width row below the app, visible on
+     scroll (never hidden — a hidden ad counts as invalid traffic). */
+  main > #map { grid-row: 1; grid-column: 1; }
+  main > aside.results { grid-row: 1; grid-column: 2; }
+  main > :not(#map):not(aside.results):not(h1) { grid-column: 1 / -1; justify-self: center; margin: 16px 0; }
   #map { height: 100%; min-width: 0; }
 
   aside.results { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-left: 1px solid var(--line); background: var(--surface); }
@@ -639,6 +652,12 @@
     border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; background: var(--surface); cursor: pointer;
   }
   /* flexbox wrap (not grid): wrapped flex lines stack and never overlap, even with variable card heights */
+  /* Mediavine's sticky banner follows the site theme (owner, 2026-09-29):
+     their wrapper is a fixed rgba(0,0,0,.9) bar; in light mode it turns white
+     with a hairline, and its report/close icons (white, inside a shadow root)
+     are inverted so they stay visible. Only the frame changes, never the ad. */
+  html:not([data-theme="dark"]) .adhesion_wrapper { background-color: rgba(255,255,255,.97) !important; border-top: 1px solid var(--line); }
+  html:not([data-theme="dark"]) .adhesion_wrapper .adhesion_buttons { filter: invert(1); }
   .results-grid { flex: 1 1 auto; overflow-y: auto; padding: 14px 16px 24px; display: flex; flex-wrap: wrap; gap: 14px; align-content: flex-start; }
   .results-grid.empty-state { display: block; }
   .empty { padding: 60px 20px; text-align: center; color: var(--ink-2); }
@@ -1015,7 +1034,7 @@
        toward scrollHeight). Only position:fixed removes the map from the
        scrollable area. Measured on the device: scrollHeight - innerHeight = 0,
        map still painting to 836. z-index 0 keeps it under the sticky header. */
-    main { display: block; height: calc(100vh - var(--header-h)); height: calc(100dvh - var(--header-h)); }
+    main { display: block; height: calc(100vh - var(--header-h)); height: calc(100dvh - var(--header-h)); margin-bottom: 0; }
     #map { position: fixed; top: var(--header-h); left: 0; right: 0; z-index: 0;
            height: calc(100vh - var(--header-h)); height: calc(100dvh - var(--header-h));
            height: calc(100lvh - var(--header-h)); width: 100%; }
@@ -1029,8 +1048,8 @@
        complements: with the toolbar up, lvh-dvh is its height and the safe-area
        inset reads 0; once it hides, lvh equals dvh and the inset becomes the
        home indicator. */
-    .leaflet-bottom { margin-bottom: env(safe-area-inset-bottom); }
-    .leaflet-bottom { margin-bottom: calc(100lvh - 100dvh + env(safe-area-inset-bottom)); }
+    .leaflet-bottom { margin-bottom: calc(env(safe-area-inset-bottom) + var(--ad-h, 0px)); }
+    .leaflet-bottom { margin-bottom: calc(100lvh - 100dvh + env(safe-area-inset-bottom) + var(--ad-h, 0px)); }
     .leaflet-top.leaflet-left .leaflet-control { margin: 0; }
 
     /* hide the explanatory blurb on mobile (kept on desktop for SEO/crawl links) */
@@ -1038,7 +1057,7 @@
 
     /* results become a full-screen sheet that slides up over the map; chips stay visible on top */
     aside.results {
-      position: fixed; left: 0; right: 0; bottom: 0; top: var(--header-h);
+      position: fixed; left: 0; right: 0; bottom: var(--ad-h, 0px); top: var(--header-h);
       border-left: none; border-top: none; z-index: 1400;
       transform: translateY(110%); transition: transform .28s ease;
       box-shadow: 0 -8px 24px rgba(0,0,0,0.18);
@@ -1068,7 +1087,7 @@
 
     /* live "X of Y" pill, bottom-left over the map (hidden while list is open) */
     #map-count {
-      position: fixed; left: calc(12px + env(safe-area-inset-left)); bottom: calc(22px + env(safe-area-inset-bottom)); z-index: 1500;
+      position: fixed; left: calc(12px + env(safe-area-inset-left)); bottom: calc(22px + env(safe-area-inset-bottom) + var(--ad-h, 0px)); z-index: 1500;
       background: rgba(10,10,35,0.82); color: #fff; font-size: 12px; font-weight: 700;
       padding: 6px 12px; border-radius: 999px; pointer-events: none;
     }
@@ -1076,7 +1095,7 @@
 
     /* floating List/Map (+ Sort) control, bottom center */
     #mobile-fab {
-      position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+      position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom) + var(--ad-h, 0px)); transform: translateX(-50%);
       z-index: 1600; gap: 0; align-items: stretch;
       background: var(--overlay-ink); color: #fff; border-radius: 999px;
       box-shadow: 0 6px 18px rgba(0,0,0,0.35); overflow: hidden;
@@ -1093,7 +1112,7 @@
     .sheet-backdrop { position: fixed; inset: 0; z-index: 1700; background: rgba(0,0,0,0.4); display: flex; align-items: flex-end; }
     .sheet-backdrop[hidden] { display: none; }
     .sheet { position: relative; background: var(--surface); width: 100%; border-radius: 16px 16px 0 0;
-      padding: 8px 16px calc(24px + env(safe-area-inset-bottom)); }
+      padding: 8px 16px calc(24px + env(safe-area-inset-bottom) + var(--ad-h, 0px)); }
     .sheet-handle { width: 40px; height: 4px; background: var(--switch-off); border-radius: 999px; margin: 8px auto 4px; }
     .sheet-close { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border-radius: 50%;
       border: none; background: var(--bg); color: var(--ink-2); font-size: 16px; cursor: pointer;
@@ -1118,7 +1137,7 @@
     /* tap-a-pin listing card that slides up from the bottom of the map */
     #building-card {
       position: fixed; left: calc(8px + env(safe-area-inset-left)); right: calc(8px + env(safe-area-inset-right));
-      bottom: calc(78px + env(safe-area-inset-bottom)); z-index: 1550;
+      bottom: calc(78px + env(safe-area-inset-bottom) + var(--ad-h, 0px)); z-index: 1550;
       background: var(--surface); border-radius: 14px; overflow: hidden;
       box-shadow: 0 10px 30px rgba(0,0,0,0.32);
       transform: translateY(24px); opacity: 0; transition: transform .22s ease, opacity .22s ease;
@@ -1635,6 +1654,7 @@
     <h2>Everything you need to land your crib</h2>
     <p class="auth-sub">One membership unlocks all of Find A Crib:</p>
     <ul class="paywall-feats">
+      <li>🚫 No ads, anywhere on Find A Crib</li>
       <li>🔖 Save any search — filters, area and all — and reapply it in one tap</li>
       <li>📞 Managing-agent phone numbers — call who actually runs the building</li>
       <li>🔎 Research any landlord: every building they own across NYC, apartment counts by borough, and their violation record</li>
@@ -1964,6 +1984,35 @@ function favActive() {
   // within a second of a list rebuild, which is when up to five previews
   // start, and the trace could not say whether any had.
   window.facTrace = tr;
+  // ---------- Mediavine's sticky banner ----------
+  // Journey pins an "adhesion" ad to the bottom of the screen (live 9/29).
+  // On a phone it sat on top of the List / Filters buttons and the "X of Y"
+  // pill, so --ad-h carries its height into every bottom-anchored control:
+  // measured when it appears, resizes or is closed, 0 when there is none.
+  (function () {
+    const root = document.documentElement;
+    let cur = null, ro = null, last = -1;
+    function measure() {
+      const w = document.querySelector('.adhesion_wrapper');
+      let h = 0;
+      if (w) {
+        const r = w.getBoundingClientRect();
+        if (r.height > 0 && r.bottom >= innerHeight - 2) h = Math.round(r.height);
+      }
+      if (h !== last) { last = h; root.style.setProperty('--ad-h', h + 'px'); }
+      if (w !== cur) {
+        if (ro) ro.disconnect();
+        cur = w;
+        // Next frame, not inside the callback: --ad-h resizes the layout, and
+        // doing that within a ResizeObserver delivery is a loop the browser
+        // reports ("ResizeObserver loop completed…", iPad lane, 9/29).
+        if (w && window.ResizeObserver) { ro = new ResizeObserver(() => requestAnimationFrame(measure)); ro.observe(w); }
+      }
+    }
+    if (window.MutationObserver) new MutationObserver(() => requestAnimationFrame(measure)).observe(document.body, { childList: true });
+    addEventListener('resize', measure);
+    measure();
+  })();
   window.addEventListener('pagehide', () => tr('pagehide'));
   window.addEventListener('resize', () => tr('win-resize ' + innerWidth + 'x' + innerHeight));
   if (window.visualViewport) visualViewport.addEventListener('resize', () => tr('vv-resize ' + Math.round(visualViewport.height)));
@@ -2574,6 +2623,7 @@ function favActive() {
   let plusKnown = false;   // true once a membership check has actually answered; an error is not "free"
   async function refreshPlus() {
     plusActive = false; plusKnown = false;
+    if (!authUser) { try { localStorage.removeItem('fac.noads'); } catch (e) {} }
     if (!supaClient || !authUser) return;
     try {
       // Ask the server the same question every gated feature asks (has_plus is
@@ -2593,6 +2643,9 @@ function favActive() {
     // An arriving ?plus=1 (a lock chip on /marketing-agents/ or /directory/)
     // waits here rather than firing on load: membership is not known until this
     // resolves, and showing a subscriber the paywall is worse than a beat's delay.
+    // Plus includes no ads: remember it on this device so the <head> loader
+    // skips Mediavine from the next page on (only a confirmed answer changes it).
+    if (plusKnown) { try { if (plusActive) localStorage.setItem('fac.noads', '1'); else localStorage.removeItem('fac.noads'); } catch (e) {} }
     if (plusUpsellPending) { plusUpsellPending = false; if (plusKnown && !plusActive) openPaywall(null); }
     // Membership is only known once this resolves, and the callers above run
     // updateAuthUI() before awaiting it — so anything that depends on Plus has
@@ -2864,6 +2917,51 @@ function favActive() {
       }).then(() => {}, () => {});
     } catch (e) { /* best-effort */ }
   }
+
+  // ---------- Mediavine ads shown (dashboard "Mediavine ads" tile) ----------
+  // Mediavine has no reporting API, so the page counts its own: each creative
+  // placed in an ad unit (.adunit / .mv-ad-box) once — a banner refresh is a
+  // new creative, i.e. a new impression, the way ad networks count. Mediavine's
+  // own filler ("Grow" house ads, a.grow-housead) is kept apart from paid ones,
+  // which arrive as frames. Batched: one row per 20 s of activity, plus a flush
+  // when the tab is hidden, never a row per ad. Mediavine's dashboard stays the
+  // source of truth for money (owner, 2026-09-29).
+  (function () {
+    if (!window.MutationObserver || !window.WeakSet) return;
+    const UNIT = '.adunit, .mv-ad-box', seen = new WeakSet();
+    let paid = 0, house = 0, timer = null;
+    function flush() {
+      clearTimeout(timer); timer = null;
+      if (!paid && !house) return;
+      const p = paid, h = house; paid = house = 0;
+      track('ad_impression', { mode: 'live', network: 'mediavine', paid: p, house: h, n: p + h });
+    }
+    function tally(unit) {
+      for (const c of unit.children) {
+        if (seen.has(c)) continue;
+        if (c.matches('a.grow-housead')) { seen.add(c); house++; }
+        else if (c.tagName === 'IFRAME' || c.querySelector('iframe')) { seen.add(c); paid++; }
+        else continue;
+        if (!timer) timer = setTimeout(flush, 20000);
+      }
+    }
+    new MutationObserver(ms => {
+      for (const m of ms) {
+        const t = m.target;
+        if (t.nodeType === 1 && t.matches(UNIT)) tally(t);
+        for (const a of m.addedNodes) {
+          if (a.nodeType !== 1) continue;
+          if (a.matches(UNIT)) tally(a);
+          else if (a.firstElementChild) a.querySelectorAll(UNIT).forEach(tally);
+          const u = a.parentElement && a.parentElement.closest(UNIT);
+          if (u) tally(u);
+        }
+      }
+    }).observe(document, { childList: true, subtree: true });
+    document.querySelectorAll(UNIT).forEach(tally);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); });
+    addEventListener('pagehide', flush);
+  })();
 
   // The whole app is gated on buildings.min.json (~1.9 MB gzipped). Unlike the
   // three fetches below it has no fallback value — without it there is nothing
@@ -5656,7 +5754,7 @@ function favActive() {
         ${where ? `<div class="nb">${esc(where)}</div>` : ''}
         ${featMoneyHtml(f)}
         ${bits.length ? `<div class="units-line">${bits.join(' · ')}</div>` : ''}
-        <div class="feat-agent">Listed by <b>${esc(f.agent)}</b> — an HPD-approved marketing agent</div>
+        <div class="feat-agent">Listed by <b>${esc(f.agent)}</b> — ${/Housing Development Corporation/i.test(f.agent || '') ? "the city's affordable-housing finance agency" : 'an HPD-approved marketing agent'}</div>
         <div class="actions">
           <!-- A few agents (Clinton Management) publish a board with no page
                per apartment, so the link can only be that board. Saying "Apply"
@@ -6335,6 +6433,15 @@ function favActive() {
   // at this zoom; when it is folded into a cluster a green pin is dropped at
   // its spot for the hover so there is always something to see.
   let hoverPinMarker = null, hoverPinEl = null, tileHover = null;
+  // Only a MOUSE hovers. iOS Safari turns a finger TAP on a card into a
+  // mouseover and never sends the mouseout, so tileHover stuck on and every
+  // later refreshGrid() returned 'grid:hover-hold': zoom in on a phone, open
+  // the list, and it still showed the buildings from before (owner,
+  // 2026-09-29; the "X of Y" pill updated because it is set before the hold).
+  // The pointerover that precedes each mouseover says what caused it; a
+  // mouse or trackpad (iPad included) keeps the hover, a finger never does.
+  let lastPointer = '';
+  grid.addEventListener('pointerover', e => { lastPointer = e.pointerType || ''; }, true);
   function hoverPin(bbl) {
     if (hoverPinEl) { hoverPinEl.classList.remove('pin-hover'); hoverPinEl = null; }
     if (hoverPinMarker) { pinLayer.removeLayer(hoverPinMarker); hoverPinMarker = null; }
@@ -6353,7 +6460,7 @@ function favActive() {
     pinLayer.addLayer(hoverPinMarker);
     const he = hoverPinMarker.getElement(); if (he) he.classList.add('pin-hover');
   }
-  grid.addEventListener('mouseover', e => { const c = e.target.closest('.card[data-bbl]'); if (c) hoverPin(c.dataset.bbl); });
+  grid.addEventListener('mouseover', e => { if (lastPointer !== 'mouse') return; const c = e.target.closest('.card[data-bbl]'); if (c) hoverPin(c.dataset.bbl); });
   grid.addEventListener('mouseout', e => { const c = e.target.closest('.card[data-bbl]'); if (c && !c.contains(e.relatedTarget)) hoverPin(null); });
   grid.addEventListener('mouseleave', () => { hoverPin(null); refreshGrid(); });
   function hoverCard(bbl) {
@@ -6569,6 +6676,9 @@ function favActive() {
       <div class="d-actions" style="padding-top:0">
         <button class="d-secondary" data-detail="map">View on map</button>
       </div>
+      ${IS_NYC && buildingPageUrl(rec) ? `<div class="d-actions" style="padding-top:0">
+        <a class="d-secondary" data-bpage target="_blank" rel="noopener" href="${esc(buildingPageUrl(rec))}">How this building compares ↗</a>
+      </div>` : ''}
       <div class="d-actions d-dir-row" style="padding-top:0">
         <button class="d-secondary" data-detail="directions">Driving directions</button>
       </div>
@@ -6756,6 +6866,21 @@ function favActive() {
     }, { root: detailContent, threshold: [0.4, 0.6, 1] });
     detailContent.querySelectorAll('[data-sec]').forEach(el => { if (!secSeen.has(el.dataset.sec)) secObserver.observe(el); });
   }
+  // The building's own page (build_seo.py bld_url): how it compares with the
+  // neighborhood, similar buildings, the landlord's other buildings — things
+  // this sheet doesn't show. Also where Mediavine can place in-content ads,
+  // which the map page can't take (owner, 2026-09-29).
+  const BPAGE_BORO = { M: 'manhattan', Bk: 'brooklyn', Q: 'queens', Bx: 'bronx', SI: 'staten-island' };
+  function buildingPageUrl(rec) {
+    const boro = rec && BPAGE_BORO[rec.b];
+    if (!boro || !rec.bbl) return '';
+    const slug = String(rec.a || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'x';
+    return `/building/${boro}/${slug}-${rec.bbl}/`;
+  }
+  document.addEventListener('click', e => {
+    const a = e.target.closest && e.target.closest('a[data-bpage]');
+    if (a && detailRec) track('building_page_open', { bbl: detailRec.bbl, via: 'detail' });
+  });
   function openDetail(rec, listed) {
     tr('openDetail');
     detailRec = rec; detailListed = listed || 0;

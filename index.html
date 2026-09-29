@@ -1984,10 +1984,13 @@ function favActive() {
       if (w !== cur) {
         if (ro) ro.disconnect();
         cur = w;
-        if (w && window.ResizeObserver) { ro = new ResizeObserver(measure); ro.observe(w); }
+        // Next frame, not inside the callback: --ad-h resizes the layout, and
+        // doing that within a ResizeObserver delivery is a loop the browser
+        // reports ("ResizeObserver loop completed…", iPad lane, 9/29).
+        if (w && window.ResizeObserver) { ro = new ResizeObserver(() => requestAnimationFrame(measure)); ro.observe(w); }
       }
     }
-    if (window.MutationObserver) new MutationObserver(measure).observe(document.body, { childList: true });
+    if (window.MutationObserver) new MutationObserver(() => requestAnimationFrame(measure)).observe(document.body, { childList: true });
     addEventListener('resize', measure);
     measure();
   })();

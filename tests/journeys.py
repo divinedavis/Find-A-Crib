@@ -230,6 +230,10 @@ class Runner:
             # city-page loads) the day Mediavine's creatives went live, 9/29.
             if 'createImageBitmap' in str(e) and 'findacrib.com' not in stack:
                 return
+            # Ad code eval'd into the page (no file in its stack) touching
+            # storage it may not use: WebKit's "The operation is insecure".
+            if str(e).strip() == 'The operation is insecure.' and 'findacrib.com' not in stack and 'localhost' not in stack:
+                return
             # Safari's wording for a request cut off by leaving the page (the
             # city-pages journey hops four pages in a row). Stackless, so it
             # cannot be ours to fix; a request that really failed still fails

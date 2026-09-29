@@ -28,6 +28,7 @@ import subprocess
 import urllib.error
 import urllib.request
 import sys
+import re
 import time
 import traceback
 from pathlib import Path
@@ -152,7 +153,25 @@ def ad_noise(m):
         return True
     generic = ("is not allowed by Access-Control-Allow-Origin", "Preflight response is not successful",
                "no video to play")
-    return any(g in txt for g in generic) and not loc.startswith(("https://findacrib.com", "http://localhost", "http://127.0.0.1"))
+    if any(g in txt for g in generic) and not loc.startswith(OURS):
+        return True
+    return third_party_only(txt + " " + loc)
+
+
+# Ours: anything that names one of these is never ad noise.
+OURS = ("https://findacrib.com", "http://localhost", "http://127.0.0.1", "supabase.co",
+        "cartocdn.com", "apple-mapkit.com", "nyc.gov", "cityofnewyork.us")
+_URL = re.compile(r"https?://([^/\s'\"<>)]+)|(?<![\w.])((?:[a-z0-9-]+\.)+(?:com|net|org|io|xyz|co|me|google|tv|ai|app|gg|ly|us|info|biz))\b", re.I)
+
+
+def third_party_only(text):
+    """True when an error names at least one host and every host it names is
+    someone else's — the ad stack's partners change daily (tracookiepixel.xyz,
+    9/29), so a host list alone cannot keep up."""
+    hosts = [(a or b).lower() for a, b in _URL.findall(text or "")]
+    if not hosts:
+        return False
+    return not any(any(o.split("//")[-1] in h or h in o for o in OURS) for h in hosts)
 
 class Journey:
     def __init__(self, name, device):
@@ -219,7 +238,7 @@ class Runner:
             # Mediavine's ad wrapper (Journey, 2026-09-28) throws from its own
             # file — "mcmNetworkCode is required" until onboarding links the
             # Google account. Third-party, filtered only when the stack is theirs.
-            if any(h in stack or h in str(e) for h in AD_HOSTS):
+            if any(h in stack or h in str(e) for h in AD_HOSTS) or third_party_only(str(e) + " " + stack):
                 return
             # An ad creative in a sandboxed srcdoc frame trying to redirect the
             # whole page — the browser blocking it is the protection working.

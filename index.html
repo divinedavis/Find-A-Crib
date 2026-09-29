@@ -626,7 +626,8 @@
   .pill-popover .actions button { flex: 1; padding: 7px 10px; font-size: 12px; font-weight: 600; border-radius: 6px; cursor: pointer; border: 1px solid var(--line); background: var(--surface); }
   .pill-popover .actions button.primary { background: var(--blue-solid); color: #fff; border-color: var(--blue); }
 
-  main { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); height: calc(100vh - 56px); }
+  /* ends above Mediavine's sticky banner (--ad-h, 0 when there is none) instead of running under it */
+  main { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); height: calc(100vh - 56px - var(--ad-h, 0px)); height: calc(100dvh - var(--header-h, 56px) - var(--ad-h, 0px)); margin-bottom: var(--ad-h, 0px); }
   #map { height: 100%; min-width: 0; }
 
   aside.results { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-left: 1px solid var(--line); background: var(--surface); }
@@ -639,7 +640,7 @@
     border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; background: var(--surface); cursor: pointer;
   }
   /* flexbox wrap (not grid): wrapped flex lines stack and never overlap, even with variable card heights */
-  .results-grid { flex: 1 1 auto; overflow-y: auto; padding: 14px 16px calc(24px + var(--ad-h, 0px)); display: flex; flex-wrap: wrap; gap: 14px; align-content: flex-start; }
+  .results-grid { flex: 1 1 auto; overflow-y: auto; padding: 14px 16px 24px; display: flex; flex-wrap: wrap; gap: 14px; align-content: flex-start; }
   .results-grid.empty-state { display: block; }
   .empty { padding: 60px 20px; text-align: center; color: var(--ink-2); }
   .load-error-title { font-weight: 700; color: var(--ink); margin-bottom: 6px; }
@@ -1015,7 +1016,7 @@
        toward scrollHeight). Only position:fixed removes the map from the
        scrollable area. Measured on the device: scrollHeight - innerHeight = 0,
        map still painting to 836. z-index 0 keeps it under the sticky header. */
-    main { display: block; height: calc(100vh - var(--header-h)); height: calc(100dvh - var(--header-h)); }
+    main { display: block; height: calc(100vh - var(--header-h)); height: calc(100dvh - var(--header-h)); margin-bottom: 0; }
     #map { position: fixed; top: var(--header-h); left: 0; right: 0; z-index: 0;
            height: calc(100vh - var(--header-h)); height: calc(100dvh - var(--header-h));
            height: calc(100lvh - var(--header-h)); width: 100%; }
@@ -1038,7 +1039,7 @@
 
     /* results become a full-screen sheet that slides up over the map; chips stay visible on top */
     aside.results {
-      position: fixed; left: 0; right: 0; bottom: 0; top: var(--header-h);
+      position: fixed; left: 0; right: 0; bottom: var(--ad-h, 0px); top: var(--header-h);
       border-left: none; border-top: none; z-index: 1400;
       transform: translateY(110%); transition: transform .28s ease;
       box-shadow: 0 -8px 24px rgba(0,0,0,0.18);
@@ -1046,7 +1047,7 @@
     body.list-open aside.results { transform: translateY(0); }
     body.list-open #map { visibility: hidden; }
     .card { flex-basis: 100%; }
-    .results-grid { padding-bottom: calc(96px + env(safe-area-inset-bottom) + var(--ad-h, 0px)); }
+    .results-grid { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
 
     /* ---- mobile decluttering ---- */
     /* the long data-attribution/credits footer eats the bottom of the screen */

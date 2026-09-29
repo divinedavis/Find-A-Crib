@@ -371,6 +371,7 @@
   .hpd-research-btn:hover { background: var(--surface-2); }
   #folder-bar { display: flex; gap: 8px; padding: 10px 16px 0; overflow-x: auto; flex: none; }
   #folder-bar[hidden] { display: none; }
+  #pill-noads[hidden] { display: none; }
   /* post-search helper: turns a big undifferentiated result set into next steps */
   #search-helper { flex: none; padding: 10px 16px 0; }
   #search-helper[hidden] { display: none; }
@@ -1565,7 +1566,7 @@
       </div>
     </div>
     <a class="filter-pill desktop-chip desktop-only nyc-only" href="/alerts/?src=chip" title="An email the minute a new lottery or re-rental opens in your borough">🔔 Alerts</a>
-    <a class="filter-pill desktop-chip desktop-only nyc-only" href="/directory/" title="Search every registered owner and managing agent in NYC — a Plus feature">🔍 Landlords</a>
+    <button type="button" id="pill-noads" class="filter-pill desktop-chip desktop-only" title="Find A Crib Plus: no ads anywhere, plus agent phone numbers, saved searches and landlord research">🚫 Remove ads</button>
     <!-- Desktop's counterpart to the mobile #pill-app-m chip: a phone can tap
          straight through to the App Store, a laptop cannot, so this one opens a
          QR code to scan instead. Not nyc-only — the app carries every city. -->
@@ -2646,6 +2647,7 @@ function favActive() {
     // Plus includes no ads: remember it on this device so the <head> loader
     // skips Mediavine from the next page on (only a confirmed answer changes it).
     if (plusKnown) { try { if (plusActive) localStorage.setItem('fac.noads', '1'); else localStorage.removeItem('fac.noads'); } catch (e) {} }
+    { const np = document.getElementById('pill-noads'); if (np) np.hidden = !!plusActive; }
     if (plusUpsellPending) { plusUpsellPending = false; if (plusKnown && !plusActive) openPaywall(null); }
     // Membership is only known once this resolves, and the callers above run
     // updateAuthUI() before awaiting it — so anything that depends on Plus has
@@ -7539,6 +7541,12 @@ function favActive() {
     if (e.target === paywallModal || e.target.closest('[data-paywall="close"]')) closePaywall();
   });
   document.getElementById('paywall-subscribe').addEventListener('click', startCheckout);
+  // "Remove ads" chip (owner, 2026-09-29; it replaced the desktop Landlords
+  // chip — Landlords stays in the ☰ menu and the header's 🔎). Opens the Plus
+  // paywall, which leads with "No ads, anywhere on Find A Crib". Members have
+  // no ads, so it hides once Plus is confirmed (refreshPlus).
+  const noAdsPill = document.getElementById('pill-noads');
+  if (noAdsPill) noAdsPill.addEventListener('click', () => { track('remove_ads_click', null); openPaywall(null); });
 
   // Kick off Stripe Checkout for the $1.99/mo Plus subscription. The create-checkout
   // Edge Function returns a hosted Checkout URL we redirect to; Stripe redirects

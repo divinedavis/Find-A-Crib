@@ -1311,7 +1311,9 @@ class Runner:
         if device == 'desktop':
             # A real click: self.click dispatches a non-cancelable event, which
             # no preventDefault can stop, so the page would navigate anyway.
-            page.click('a.desktop-chip[href="/directory/"]'); time.sleep(0.8)
+            # The desktop chip became "Remove ads" (9/29); Landlords lives in ☰.
+            page.click('#menu-btn'); time.sleep(0.3)
+            page.click('a.nyc-only[href="/directory/"]:visible'); time.sleep(0.8)
             self.ok(not page.evaluate("document.getElementById('auth-modal').hidden"),
                     'signed out on a laptop, Landlords should open the account modal', j)
             sub = (page.evaluate("document.getElementById('auth-submit').textContent") or '').lower()
@@ -1390,6 +1392,19 @@ class Runner:
                 f'the building sheet has no well-formed building-page link: {href!r}', j)
         self.ok(page.evaluate("document.querySelector('a[data-bpage]')?.target === '_blank'"), 'the building-page link should open a new tab', j)
         j.notes.append(href)
+
+    def j_remove_ads_chip(self, page, j, device):
+        """Desktop "Remove ads" chip opens the Plus paywall, which leads with
+        no ads (owner, 2026-09-29). Phones don't show the chip row."""
+        self.boot(page)
+        if device != 'desktop':
+            j.notes.append('chip row is desktop-only'); return
+        self.ok(page.evaluate("!!document.getElementById('pill-noads') && !document.getElementById('pill-noads').hidden"),
+                'the Remove ads chip should show for a signed-out visitor', j)
+        page.click('#pill-noads'); time.sleep(0.5)
+        self.ok(not page.evaluate("document.getElementById('paywall-modal').hidden"), 'Remove ads should open the Plus paywall', j)
+        txt = page.evaluate("document.getElementById('paywall-modal').textContent") or ''
+        self.ok('No ads' in txt, 'the paywall should say Plus has no ads', j)
 
     def j_signin_modal(self, page, j, device):
         self.boot(page)
@@ -1486,7 +1501,7 @@ class Runner:
 
     JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'pin_and_list',
                 'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'signin_modal', 'app_chip', 'app_qr_menu', 'boot_is_usable', 'city_chip',
-                'ad_tiles', 'list_follows_zoom', 'plus_no_ads', 'building_page_link', 'outbound_links', 'status_chips', 'referral_gate',
+                'ad_tiles', 'list_follows_zoom', 'plus_no_ads', 'building_page_link', 'remove_ads_chip', 'outbound_links', 'status_chips', 'referral_gate',
                 'rent_report', 'legal_pages', 'comments_gate', 'landlords_gate', 'consent_mode', 'account_delete']
 
     # ---- run --------------------------------------------------------------

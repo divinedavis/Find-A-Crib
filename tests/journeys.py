@@ -140,7 +140,9 @@ AD_HOSTS = ("scriptwrapper.com", "mediavine.com", "journeymv.com", "optable.co",
             "doubleverify.com", "adsafeprotected.com", "id5-sync.com", "liveramp",
             "uidapi.com", "prebid", "teads", "gumgum.com", "sonobi.com",
             # OpenX's bidder logs under its own tag with no host in the text.
-            "(ox_esp)")
+            "(ox_esp)",
+            # Google's IMA video-ad SDK and its creatives, inside Mediavine's player.
+            "imasdk.googleapis.com", "tpc.googlesyndication.com")
 
 
 def ad_noise(m):

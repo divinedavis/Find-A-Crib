@@ -837,6 +837,22 @@
   .card.ad-card { cursor: default; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 0; }
   .card.ad-card:hover { box-shadow: none; transform: none; border-color: var(--line); }
   .card.ad-card .adsbygoogle { width: 100%; min-height: 288px; }   /* fluid in-feed: Google sets the height */
+  /* Until Google answers, a slot shows nothing of its own: no "Sponsored"
+     flag over an empty box (owner, 2026-09-28 — it popped up, then vanished
+     when Google said unfilled). A slot with a fallback tile shows that tile on
+     top, so an unfilled answer changes nothing on screen. Opacity, not
+     display/visibility/clipping: Google only requests a slot it can see
+     laid out near the viewport. */
+  .card.ad-card:not(.ad-filled) .ad-flag { display: none; }
+  .card.ad-card:not(.ad-filled) .adsbygoogle { opacity: 0; }
+  .card.ad-card .ad-cover { position: absolute; inset: 0; z-index: 4; display: flex; }
+  .card.ad-card .ad-cover > .card { flex: 1; margin: 0; border: 0; border-radius: inherit; }
+  /* The lead slot with no tile to show under it waits OUT of the flow, over
+     the first card, so an unfilled answer leaves no hole to close up. Same
+     footprint as a card (.results-grid padding 14px 16px, gap 14px) so Google
+     sizes the ad for the cell it will drop into. */
+  .results-grid { position: relative; }
+  .card.ad-card.ad-float:not(.ad-filled) { position: absolute; top: 14px; left: 16px; width: calc((100% - 32px) / 2 - 7px); pointer-events: none; }
   .card.ad-card .ad-flag { position: absolute; top: 8px; left: 8px; z-index: 3;
     font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
     color: var(--ink-2); background: rgba(255,255,255,.92); border: 1px solid var(--line);
@@ -862,9 +878,14 @@
     pointer-events: none; }
   .card.hc-card .photo { background: var(--surface-3); }
   .card.hc-card .feat-agent { font-size: 11px; color: var(--ink-2); margin-top: 6px; }
-  .hc-days { display: inline-block; margin-top: 6px; font-size: 12px; font-weight: 700;
+  .hc-days { display: inline; font-size: 12px; font-weight: 700;
     color: var(--ink-2); }
   .hc-days.urgent { color: var(--err-ink); }
+  /* One line each, so the tile stands a building card's height at any width. */
+  .card.hc-card .hc-line, .card.hc-card .alert-link, .card.hc-card .addr-overlay {
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card.hc-card .hc-income { font-size: 12px; font-weight: 600; color: var(--ink-2); }
+  .card.hc-card .alert-link { margin-top: 6px; }
   .card.feat-card .feat-agent b { font-weight: 600; color: var(--ink); }
   /* "email me when the next one opens here" — on lottery and re-rental tiles,
      under the apply button. The tile is the moment someone realises these
@@ -1047,6 +1068,7 @@
     body.list-open aside.results { transform: translateY(0); }
     body.list-open #map { visibility: hidden; }
     .card { flex-basis: 100%; }
+    .card.ad-card.ad-float:not(.ad-filled) { width: calc(100% - 32px); }
     .results-grid { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
 
     /* ---- mobile decluttering ---- */
@@ -5562,7 +5584,14 @@ function favActive() {
   const ADSENSE_SLOT   = '9742308358';        // "Results lead tile" In-feed unit, 2026-09-25
   const ADSENSE_LAYOUT = '-6s+cp+2f-10+5u';   // its data-ad-layout-key
   const AD_EVERY       = 6;             // insert one ad tile after every N building cards
-  const ADS_ON = () => !!(ADSENSE_CLIENT && ADSENSE_SLOT && ADSENSE_LAYOUT);
+  // OFF until AdSense shows findacrib.com as "Ready" (owner, 2026-09-28). The
+  // site has been "Getting ready" since 7/16: Reports show 0 impressions and
+  // $0.00, yet Google's tag marked 124 slots "filled", so visitors could get an
+  // empty Sponsored box that earns nothing. The <head> loader stays — it is
+  // what the review looks for. On approval: set this true, deploy, and set
+  // FAC_ADSENSE_READY=1 in the API's .env so the dashboard counts them.
+  const ADSENSE_READY  = false;
+  const ADS_ON = () => !!(ADSENSE_READY && ADSENSE_CLIENT && ADSENSE_SLOT && ADSENSE_LAYOUT);
 
   // The ad script loads once, from <head> (Google warns against loading it
   // twice). Its onerror sets window.__adsBlocked — an ad blocker, mostly — so
@@ -5586,7 +5615,9 @@ function favActive() {
   let adStamps = [];
   let adHold = null;
   function adCardHtml(fallback, key) {
-    return `<div class="card ad-card" data-ad-key="${key || ''}"><template class="ad-fallback">${fallback || ''}</template>
+    const float = key === 'lead' && !fallback ? ' ad-float' : '';
+    return `<div class="card ad-card${float}" data-ad-key="${key || ''}"><template class="ad-fallback">${fallback || ''}</template>
+      ${fallback ? `<div class="ad-cover">${fallback}</div>` : ''}
       <span class="ad-flag">Sponsored</span>
       <ins class="adsbygoogle" style="display:block;width:100%"
            data-ad-format="fluid" data-ad-layout-key="${ADSENSE_LAYOUT}"
@@ -5608,11 +5639,13 @@ function favActive() {
   // account; the borough the tile is in is preselected there.
   const ALERT_BORO = { 'Manhattan': 'M', 'Brooklyn': 'Bk', 'Queens': 'Q', 'Bronx': 'Bx',
                        'The Bronx': 'Bx', 'Staten Island': 'SI' };
-  function alertLink(borough, kind, src) {
+  function alertLink(borough, kind, src, short) {
     const code = ALERT_BORO[borough] || '';
     const what = kind === 'lottery' ? 'lottery' : 're-rental';
     const where = code ? (code === 'Bx' ? 'the Bronx' : borough) : 'NYC';
-    return `<a class="alert-link" href="/alerts/?boro=${code}&kind=${kind}&src=${src}">🔔 Email me the minute a new ${what} opens in ${esc(where)}</a>`;
+    const text = short ? `🔔 Alert me to new ${what === 'lottery' ? 'lotteries' : 're-rentals'} in ${esc(where)}`
+                       : `🔔 Email me the minute a new ${what} opens in ${esc(where)}`;
+    return `<a class="alert-link" href="/alerts/?boro=${code}&kind=${kind}&src=${src}">${text}</a>`;
   }
 
   // ---------- NYC Housing Connect lotteries ----------
@@ -5778,7 +5811,12 @@ function favActive() {
     // The income band is the thing that decides whether someone is eligible at
     // all, so it sits next to the rent rather than buried — and it is labelled,
     // because an unlabelled five-figure number next to a rent reads as a rent.
+    // Compact ($63k–$238k) so it shares the rent's line; the full band is in
+    // the tooltip and on Housing Connect itself.
+    const k = v => '$' + Math.round(Number(v) / 1000) + 'k';
     const income = (h.income_min && h.income_max)
+      ? `income ${k(h.income_min)}–${k(h.income_max)}` : '';
+    const incomeFull = (h.income_min && h.income_max)
       ? `Household income ${n(h.income_min)}–${n(h.income_max)}` : '';
     const where = [h.neighborhood, h.borough].filter(Boolean).join(' · ');
     const bits = [];
@@ -5789,8 +5827,14 @@ function favActive() {
     // out in red — that is a real "apply this week or you cannot".
     const d = h.days_left;
     const urgent = d != null && d <= 7;
+    // The tile has to stand the same height as a building card beside it
+    // (owner, 2026-09-28: it was ~95px taller and stretched its row-mate's
+    // photo). So the deadline rides on the beds line, the "NYC Housing
+    // Connect — the city's lottery" line is gone (the flag and the button
+    // already say it), and the alert link is one line.
     const left = d == null ? '' :
       `<span class="hc-days${urgent ? ' urgent' : ''}">${d === 1 ? 'Closes tomorrow' : 'Closes in ' + d + ' days'}</span>`;
+    if (left) bits.unshift(left);        // first, so a narrow tile never cuts it off
     return `<div class="card hc-card" data-hc-name="${esc(h.name || h.address || 'Housing Connect lottery')}" data-hc-boro="${esc(h.borough || '')}" data-hc-href="${esc(h.href || '')}">
       <span class="hc-flag">Housing Connect</span>
       <div class="photo${PHOTO_PREVIEW?.provider === 'apple' ? ' apple-photo' : ''}">
@@ -5801,17 +5845,14 @@ function favActive() {
       </div>
       <div class="body">
         ${where ? `<div class="nb">${esc(where)}</div>` : ''}
-        <div class="price">${esc(rent)}</div>
-        ${income ? `<div class="units-line">${esc(income)}</div>` : ''}
-        ${bits.length ? `<div class="units-line">${esc(bits.join(' · '))}</div>` : ''}
-        ${left}
-        <div class="feat-agent">NYC Housing Connect — the city's affordable-housing lottery</div>
+        <div class="price hc-line"${incomeFull ? ` title="${esc(incomeFull)}"` : ''}>${esc(rent)}${income ? `<span class="hc-income"> · ${esc(income)}</span>` : ''}</div>
+        ${bits.length ? `<div class="units-line hc-line">${bits.map(b => b === left ? b : esc(b)).join(' · ')}</div>` : ''}
         <div class="actions">
           <a class="btn-primary" data-action="hc" style="flex:1"
              target="_blank" rel="noopener nofollow"
              href="${esc(h.href)}">Apply on Housing Connect ↗</a>
         </div>
-        ${alertLink(h.borough, 'lottery', 'hc_tile')}
+        ${alertLink(h.borough, 'lottery', 'hc_tile', true)}
       </div>
     </div>`;
   }
@@ -6016,31 +6057,69 @@ function favActive() {
     });
   }
 
+  // Google answers a slot only once it has asked for it, and it asks lazily,
+  // as the slot nears the screen. The 6 s deadline used to start at render,
+  // so the slots below the fold were thrown away before Google ever asked
+  // (2026-09-28: e3–e5 dropped at 6.2 s on every desktop load, unrequested).
+  // It now starts when the slot's iframe appears; a script that never loaded
+  // gets the same 6 s from boot.
   const AD_SETTLE_MS = 6000;
+  const AD_BOOT = Date.now();
+  let adPoll = null, adObs = null, adIO = null;
+  function revealAd(card, ins) {
+    card.classList.add('ad-filled');
+    card.querySelector('.ad-cover')?.remove();
+    // Google served this slot: count it once, beside the tiles, so the
+    // dashboard's served impressions cover every ad on every platform.
+    if (!ins.hasAttribute('data-fac-counted')) {
+      ins.setAttribute('data-fac-counted', '1');
+      track('ad_impression', { mode: 'live', network: 'adsense', slot: 'grid' });
+    }
+  }
+  function giveUpAd(card) {
+    if (card.dataset.adKey) adNodes.set(card.dataset.adKey, 'gone');
+    const fb = card.querySelector('template.ad-fallback')?.innerHTML.trim();
+    if (fb) card.outerHTML = fb; else card.remove();
+  }
   function settleAds() {
-    const started = Date.now();
-    const tick = () => {
-      let pending = 0;
-      grid.querySelectorAll('.card.ad-card').forEach(card => {
-        const ins = card.querySelector('ins.adsbygoogle');
-        const st = ins?.getAttribute('data-ad-status');
-        if (st === 'filled') {
-          // Google served this slot: count it once, beside the tiles, so the
-          // dashboard's served impressions cover every ad on every platform.
-          if (!ins.hasAttribute('data-fac-counted')) {
-            ins.setAttribute('data-fac-counted', '1');
-            track('ad_impression', { mode: 'live', network: 'adsense', slot: 'grid' });
-          }
-          return;
-        }
-        if (st !== 'unfilled' && !adsBlocked() && Date.now() - started < AD_SETTLE_MS) { pending++; return; }
-        if (card.dataset.adKey) adNodes.set(card.dataset.adKey, 'gone');
-        const fb = card.querySelector('template.ad-fallback')?.innerHTML.trim();
-        if (fb) card.outerHTML = fb; else card.remove();
-      });
-      if (pending) setTimeout(tick, 1000); else watchAdTiles();
-    };
-    setTimeout(tick, 1000);
+    if (!adObs && window.MutationObserver) adObs = new MutationObserver(() => settleAds());
+    if (!adIO && window.IntersectionObserver) adIO = new IntersectionObserver(es => {
+      if (es.some(e => e.isIntersecting)) settleAds();
+    });
+    const now = Date.now();
+    let waiting = 0, swapped = false;
+    grid.querySelectorAll('.card.ad-card').forEach(card => {
+      if (card.classList.contains('ad-filled')) return;
+      const ins = card.querySelector('ins.adsbygoogle');
+      const st = ins?.getAttribute('data-ad-status');
+      if (ins && st === 'filled') { revealAd(card, ins); return; }
+      if (!ins || st === 'unfilled' || adsBlocked()) { giveUpAd(card); swapped = true; return; }
+      if (adObs && !ins.hasAttribute('data-fac-obs')) {
+        ins.setAttribute('data-fac-obs', '1');
+        adObs.observe(ins, { attributes: true, attributeFilter: ['data-ad-status'], childList: true, subtree: true });
+        adIO?.observe(card);
+      }
+      if (!window.__adsLoaded) {
+        if (now - AD_BOOT >= AD_SETTLE_MS) { giveUpAd(card); swapped = true; } else waiting++;
+        return;
+      }
+      // Not asked yet: nothing to time out while it is off screen. On screen
+      // for AD_SETTLE_MS and still unasked, Google is not coming (headless
+      // WebKit and Chromium never ask for e3+), and an empty cell would sit in
+      // the list for good.
+      if (!ins.querySelector('iframe')) {
+        const r = card.getBoundingClientRect(), g = grid.getBoundingClientRect();
+        if (!r.width || r.bottom < g.top || r.top > g.bottom) return;
+        const seen = +(ins.dataset.facSeen || (ins.dataset.facSeen = now));
+        if (now - seen >= AD_SETTLE_MS) { giveUpAd(card); swapped = true; } else waiting++;
+        return;
+      }
+      const asked = +(ins.dataset.facAsked || (ins.dataset.facAsked = now));
+      if (now - asked >= AD_SETTLE_MS) { giveUpAd(card); swapped = true; } else waiting++;
+    });
+    clearTimeout(adPoll);
+    if (waiting) adPoll = setTimeout(settleAds, 1000);
+    if (swapped) watchAdTiles();
   }
 
   function refreshGrid() {

@@ -94,6 +94,10 @@ IGNORED = ("script error.", "runtime.sendmessage", "resizeobserver loop",
            "mcmnetworkcode is required")
 
 
+AD_STACK_HOSTS = ("scriptwrapper.com", "journeymv.com", "mediavine.com", "grow.me",
+                  "uidapi.com", "optable.co", "rlcdn.com", "googlesyndication.com")
+
+
 def is_noise(message: str) -> bool:
     m = message.lower()
     return any(n in m for n in IGNORED)
@@ -136,7 +140,15 @@ def js_errors(rows):
         src = p.get("src") or ""
         key = f"{msg} — {src.rsplit('/', 1)[-1]}" if src else msg
         e = out[key]
-        e["noise"] = is_noise(key)
+        # Mediavine's ad stack (live 9/29) throws unhandled promise rejections
+        # from its own files — UID2 from scripts.grow.me, $adManagementConfig
+        # from scriptwrapper.com — and its fetches get cut off stacklessly
+        # ("Load failed", "Fetch is aborted") as visitors pan and leave. The
+        # stack names the ad file when there is one; a stackless rejection of
+        # exactly those two messages started with the ads. Digest only.
+        at = p.get("at") or ""
+        e["noise"] = (is_noise(key) or any(h in at for h in AD_STACK_HOSTS)
+                      or (p.get("kind") == "promise" and not at and msg in ("Load failed", "Fetch is aborted")))
         e["n"] += 1
         e["people"].add(r["visitor_id"])
         e["paths"][r.get("path") or "/"] += 1

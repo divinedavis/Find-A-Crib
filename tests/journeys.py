@@ -243,6 +243,13 @@ class Runner:
             # Google account. Third-party, filtered only when the stack is theirs.
             if any(h in stack or h in str(e) for h in AD_HOSTS) or third_party_only(str(e) + " " + stack):
                 return
+            # "Blocked a frame with origin findacrib.com from accessing a frame
+            # with origin <ad host>": an ad script reaching across frames. It
+            # names us as the blocked side, so the third-party rule can't see
+            # it; the frame it wanted is someone else's (creativecdn.com, 9/29).
+            m = re.search(r'from accessing a frame with origin "https?://([^"/]+)', str(e))
+            if m and not any(o.split("//")[-1] in m.group(1) for o in OURS):
+                return
             # An ad creative in a sandboxed srcdoc frame trying to redirect the
             # whole page — the browser blocking it is the protection working.
             if 'about:srcdoc' in str(e) and 'allow-top-navigation' in str(e):

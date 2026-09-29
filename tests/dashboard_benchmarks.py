@@ -75,21 +75,16 @@ def run(browser, live):
         assert not errors, errors
         print(f'PASS {browser.browser_type.name}: {name}', flush=True)
 
-    # The time tile: website headline, iPhone app median on its own line.
-    for app, want in [
-        ({'sessions': 104, 'engaged': 99, 'median_secs': 151}, 'iPhone app 2m 31s median · 99 sessions'),
-        ({'sessions': 13, 'engaged': 11, 'median_secs': 36}, 'iPhone app 36s median · 11 sessions · small sample'),
-        ({'sessions': 2, 'engaged': 0, 'median_secs': None}, 'iPhone app — no engaged sessions in this range'),
-    ]:
-        payload['dwell'] = {'sessions': 260, 'engaged': 211, 'median_secs': 84, 'mean_all_secs': 235}
-        payload['dwell_app'] = app
-        page.reload(wait_until='networkidle')
-        tile = page.locator('#tiles .tile').filter(
-            has=page.get_by_text('Median time on site · website', exact=True))
-        expect(tile.locator('.t-val')).to_contain_text('1m 24s')
-        expect(tile).to_contain_text(want)
-        assert not errors, errors
-        print(f'PASS {browser.browser_type.name}: app time {want}', flush=True)
+    # Page views (replaced the time-on-site tile, 2026-09-28).
+    payload['page_views'] = {'total': 10735, 'map': 10232, 'other': 503}
+    page.reload(wait_until='networkidle')
+    tile = page.locator('#tiles .tile').filter(
+        has=page.get_by_text('Page views · website', exact=True))
+    expect(tile.locator('.t-val')).to_have_text('10,735')
+    expect(tile).to_contain_text('10,232 on the map · 503 on building, landlord & guide pages')
+    expect(page.locator('#tiles')).not_to_contain_text('Median time on site')
+    assert not errors, errors
+    print(f'PASS {browser.browser_type.name}: page views tile', flush=True)
 
     # The ads-served tile (replaced MRR): total of the three live surfaces;
     # TestFlight test ads are named but never added in.

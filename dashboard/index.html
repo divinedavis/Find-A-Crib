@@ -1805,7 +1805,10 @@
       {ic:'👣',v:comma(T.visitors),l:'Unique visitors'},
       {ic:'🔁',v:comma(T.returning)+' · '+pctS(T.returning,T.visitors),l:'Returning visitors · this range',
        own:retOwn,bench:retBench,title:retTitle},
-      {ic:'⏱️',v:dwellV,l:'Median time on site · website',own:dwellOwn,bench:dwellBench,title:dwellTitle},
+      // Page views replaced the time-on-site tile (owner, 2026-09-28): one per
+      // page load on the website, the unit ad networks are priced and
+      // qualified on. api_server._fac_page_views; the dwell data is unused.
+      pageViewsTile(d.page_views),
       {ic:'✅',v:comma(T.accounts),l:'Sign-ups'},
       {ic:'🎯',v:convRate.toFixed(1)+'%',l:'Sign-up conversion',own:convOwn,bench:convBench,title:convTitle},
       {ic:'🔔',v:alertRate.toFixed(1)+'%',l:'Alert sign-up conversion',own:alertOwn,bench:alertBench,title:alertTitle},
@@ -1816,6 +1819,13 @@
       // ads (TestFlight) are named but never counted.
       adsTile(d.ads_served)
     ];
+    function pageViewsTile(P){
+      if(!P || P.total == null) return {ic:'📄',v:'—',l:'Page views · website',own:'Page views unavailable right now'};
+      var per = n(T.visitors) ? ' · '+(n(P.total)/n(T.visitors)).toFixed(1)+' per visitor' : '';
+      return {ic:'📄',v:comma(P.total),l:'Page views · website',
+              own:comma(P.map)+' on the map · '+comma(P.other)+' on building, landlord &amp; guide pages'+per,
+              title:'One per page load on findacrib.com, this range, your own visits and referrer-less scraper hits on building pages excluded. The iPhone app has no pages and is not in this number.'};
+    }
     function adsTile(A){
       if(!A || A.total == null) return {ic:'📣',v:'—',l:'Ads served · all platforms',own:'Ad counts unavailable right now',accent:true};
       // The app's ads moved from a bottom banner into the feed (build 91), and

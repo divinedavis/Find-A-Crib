@@ -1470,6 +1470,7 @@ def dashboard_metrics():
         # Memoized like the ranged call, so "All time" costs nothing extra.
         "adtiles_all": (_fac_adtiles, None),
         "ads_served": (_fac_ads_served, since),
+        "page_views": (_fac_page_views, since),
         # Inputs for the goals card's audience-INDEPENDENT streams. Deliberately
         # not range-scoped: that card is pinned to all-time for the same reason.
         "ai": (_fac_ai_crawls,),
@@ -1715,6 +1716,33 @@ def _fac_owner_visitors():
             continue
         ids.update(r.get("visitor_id") for r in rows if r.get("visitor_id"))
     return ids
+
+
+@_memo(600)
+def _fac_page_views(since):
+    """Website page views: one public.visits row per page load (index.html's
+    boot insert and build_seo.py's TRACK_SNIPPET on every generated page),
+    cleaned exactly as dashboard_metrics' v_all cleans them — the owner's
+    visitor ids out, and a building/borough/neighborhood hit with no referrer
+    out (a scraper that runs JS, never a person arriving from somewhere).
+    The owner asked for page views in place of time on site, 2026-09-28.
+    `map` is the app page itself ("/" and "/?…"); `other` is every other page
+    (building, landlord, guide and city pages). {} on failure."""
+    conds = ["visitor_id.not.is.null",
+             "or(and(referrer.not.is.null,referrer.neq.),"
+             "and(path.not.like./building/*,path.not.like./borough/*,path.not.like./neighborhood/*))"]
+    mine = sorted(_fac_owner_visitors())
+    if mine:
+        conds.append("visitor_id.not.in.(" + ",".join('"' + v.replace('"', "") + '"' for v in mine) + ")")
+    q = "visits?select=id&and=" + urllib.parse.quote("(" + ",".join(conds) + ")", safe='(),.*/"')
+    if since:
+        q += f"&created_at=gte.{urllib.parse.quote(str(since))}"
+    try:
+        total = _rest_count(q)
+        on_map = _rest_count(q + "&or=" + urllib.parse.quote("(path.eq./,path.like./?*)", safe="(),.*/?"))
+    except Exception:
+        return {}
+    return {"total": total, "map": on_map, "other": total - on_map}
 
 
 # Every ad the owner's platforms have put in front of someone, one number.

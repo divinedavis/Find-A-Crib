@@ -20,6 +20,7 @@ import json
 import os
 import re
 import statistics
+import urllib.error   # urllib.request pulls this in, but t_indexnow names it
 import urllib.request
 
 from . import ledger
@@ -1260,6 +1261,51 @@ def t_sitemap_daily(ctx):
                       + note}
 
 
+def _bulk_indexnow(docroot):
+    """(ok, one-line note) for the IndexNow submission refresh_seo.sh makes.
+
+    Returns (None, "") when the droplet is still running a refresh_seo.sh from
+    before 2026-09-29, which never wrote this field. That is UNKNOWN, not ok:
+    an absent field must never be allowed to read as a healthy channel, which is
+    the whole failure mode this record exists to close.
+    """
+    rec = _seo_pipeline_status(docroot) or {}
+    state = rec.get("indexnow")
+    if not isinstance(state, str):
+        return None, ""
+    n = int(rec.get("indexnow_urls") or 0)
+    http = rec.get("indexnow_http")
+    http_s = f" HTTP {int(http)}" if isinstance(http, (int, float)) else ""
+    if state == "ok":
+        # "sent", NOT "accepted", and the word is load-bearing. IndexNow answers
+        # 200/202 on RECEIPT and verifies the key asynchronously by fetching
+        # https://findacrib.com/<key>.txt afterwards; if that fetch fails — a
+        # host/keyLocation mismatch, the key file moved, a bot-protection rule
+        # that 403s the fetcher — the URLs are dropped with no further signal
+        # and this field still reads ok. So this closes "a REFUSED submission
+        # looked like a clean one" and does NOT close "a 2xx that did nothing".
+        # The only instrument that can is Bing Webmaster Tools → Reports & Data
+        # → IndexNow, which lists submitted URLs and whether they were indexed.
+        # That is a login this loop does not have; it is an owner ask, and it is
+        # the SAME login T064 needs for the AI Performance report. Do not let a
+        # green field here be read as "the URLs landed".
+        return True, f"the SEO pipeline's bulk submission sent {n:,} URLs →{http_s}"
+    if state == "nothing-changed":
+        return True, "the SEO pipeline had nothing changed to submit"
+    if state == "rejected":
+        why = " — the key is bad or revoked" if http == 403 else ""
+        return False, (f"THE BULK SUBMISSION WAS REFUSED ({http_s.strip() or 'no status'}): "
+                       f"{n:,} changed URLs reached no engine{why}")
+    if state == "no-key":
+        return False, "THE BUILDER HAS NO INDEXNOW KEY — the night's changed URLs were never submitted"
+    if state == "failed":
+        return False, (f"THE BULK SUBMISSION GOT NO ANSWER (network/DNS/TLS): "
+                       f"{n:,} changed URLs unconfirmed")
+    if state == "pending":
+        return False, "the SEO pipeline never reached its IndexNow step"
+    return None, f"the SEO pipeline reported an IndexNow state this build does not know: {state[:24]!r}"
+
+
 def t_indexnow(ctx):
     """Submit genuinely new or changed URLs to IndexNow (Bing, Yandex, Seznam, Naver).
 
@@ -1268,9 +1314,30 @@ def t_indexnow(ctx):
     which would cost us the one indexing lever that needs no account at all.
     Google does not consume IndexNow — it re-crawls from sitemap <lastmod>.
     """
+    bulk_ok, bulk_note = _bulk_indexnow(ctx.docroot)
+
+    def out(res):
+        """Fold the BULK channel's verdict into this technique's verdict.
+
+        This function submits the URLs the GROWTH build changed — 6 on
+        2026-09-29. refresh_seo.sh submits the ones the SEO build changed, which
+        was 4,047 the same night, and is 99.9% of the channel. Reporting only
+        this end as "submitted 6 URLs → HTTP 200" was true and badly misleading:
+        the technique is "IndexNow submission of new/changed URLs", and the
+        overwhelming majority of them could have been refused for weeks with
+        this audit staying green. A refused bulk submission is this technique
+        failing, whatever happened to our own six.
+        """
+        if bulk_note:
+            res["detail"] = f"{res.get('detail', '')}; {bulk_note}"
+            res["bulk_indexnow"] = bulk_ok
+        if bulk_ok is False:
+            res["ok"] = False
+        return res
+
     urls = sorted(set(ctx.new_urls) | set(ctx.changed_urls))
     if not urls:
-        return {"ok": True, "submitted": 0, "detail": "nothing new or changed today"}
+        return out({"ok": True, "submitted": 0, "detail": "nothing new or changed today"})
 
     key = None
     for p in (os.path.join(ctx.build_dir, "indexnow.key"),
@@ -1287,7 +1354,7 @@ def t_indexnow(ctx):
                 key = base
                 break
     if not key:
-        return {"ok": False, "detail": "no IndexNow key found"}
+        return out({"ok": False, "detail": "no IndexNow key found"})
 
     # The payload has always been capped at 10,000, but `submitted` and the
     # detail line reported len(urls) — the number we WANTED to send. Those two
@@ -1304,19 +1371,28 @@ def t_indexnow(ctx):
                "keyLocation": f"{SITE}/{key}.txt",
                "urlList": sent}
     if ctx.dry_run:
-        return {"ok": True, "submitted": 0,
-                "detail": f"dry run — would submit {len(sent)} URLs{tail}",
-                "urls": sent[:20]}
+        return out({"ok": True, "submitted": 0,
+                    "detail": f"dry run — would submit {len(sent)} URLs{tail}",
+                    "urls": sent[:20]})
     req = urllib.request.Request(
         INDEXNOW_ENDPOINT, data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json; charset=utf-8"})
     try:
         r = urllib.request.urlopen(req, timeout=30)
-        return {"ok": True, "submitted": len(sent), "http": r.status,
-                "dropped": dropped,
-                "detail": f"submitted {len(sent)} URLs → HTTP {r.status}{tail}"}
+        accepted = 200 <= r.status < 300
+        return out({"ok": accepted, "submitted": len(sent), "http": r.status,
+                    "dropped": dropped,
+                    "detail": f"submitted {len(sent)} URLs → HTTP {r.status}{tail}"})
+    except urllib.error.HTTPError as e:
+        # urlopen RAISES on 4xx/5xx, so this used to read "submit failed: HTTP
+        # Error 403: Forbidden" — the same sentence a DNS outage produced. They
+        # need different owner actions (rotate the key vs. wait), so name it.
+        why = " — the key is bad or revoked" if e.code == 403 else ""
+        return out({"ok": False, "submitted": 0, "http": e.code,
+                    "detail": f"IndexNow REFUSED {len(sent)} URLs → HTTP {e.code}{why}"})
     except Exception as e:
-        return {"ok": False, "submitted": 0, "detail": f"IndexNow submit failed: {e}"}
+        return out({"ok": False, "submitted": 0,
+                    "detail": f"IndexNow submit got no answer: {e}"})
 
 
 # The registry the driver walks. Slug → function.
@@ -1466,7 +1542,16 @@ SEO_STATUS_FIELDS = ("started", "at", "phase", "step", "rc", "head",
                      # age in hours of the s8.json the build actually read, which
                      # is the number VOUCHER_STALE_HOURS is decided on and the one
                      # number t_voucher_reach could never see.
-                     "data", "voucher_feed_h")
+                     "data", "voucher_feed_h",
+                     # The bulk IndexNow submission's own outcome. refresh_seo.sh
+                     # sends the whole night's changed corpus — 4,047 URLs on
+                     # 2026-09-29 against the 6 t_indexnow sends — and reported
+                     # nothing about it until 2026-09-29: its python caught every
+                     # exception and printed to a stdout the cron discards, so a
+                     # revoked key looked exactly like a clean submission. The
+                     # state is one word from a closed set (ok, rejected, failed,
+                     # no-key, nothing-changed, pending); see refresh_seo.sh.
+                     "indexnow", "indexnow_urls", "indexnow_http")
 
 # The corpus has never been near this. A build that completes cleanly and writes
 # a few hundred pages is a catastrophic failure that the docroot's mtime alone
@@ -1558,6 +1643,30 @@ def _seo_pipeline_status(docroot, now=None):
     data = rec.get("data")
     if isinstance(data, str) and data.startswith("synced"):
         state += f" (nightly feeds handed over from the docroot: {data})"
+
+    # The submission half. This step runs AFTER the deploy and deliberately does
+    # not fail the script (a transient timeout must not report a night that
+    # published 49,383 pages as a failed run), so the escalation has to happen
+    # here instead — otherwise the verdict is a field nobody reads. Silent when
+    # it went fine: this line is already long and a healthy channel is the
+    # default. Silent on "pending" too, which can only happen when the script
+    # died before this step and so already leads with FAILED rc=n above; it
+    # still reddens t_indexnow via _bulk_indexnow. Absent means the droplet is
+    # still on a refresh_seo.sh from before
+    # 2026-09-29, which is unknown, not ok, and must not be read as ok.
+    inow, inow_n = rec.get("indexnow"), rec.get("indexnow_urls")
+    if inow == "rejected":
+        http = rec.get("indexnow_http")
+        why = " — a 403 means the key is bad or revoked" if http == 403 else ""
+        state += (f" — but IndexNow REFUSED the bulk submission"
+                  f"{f' (HTTP {int(http)})' if isinstance(http, (int, float)) else ''}, "
+                  f"so {int(inow_n or 0):,} changed URLs reached no engine{why}")
+    elif inow == "no-key":
+        state += (" — but the builder has no IndexNow key, so the night's changed "
+                  "URLs were never submitted at all")
+    elif inow == "failed":
+        state += (f" — but the bulk IndexNow submission got no answer at all "
+                  f"(network/DNS/TLS), so {int(inow_n or 0):,} changed URLs are unconfirmed")
 
     if hours is not None:
         # 04:10 nightly, read by the 05:40 build, so anything past ~26h is a

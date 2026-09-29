@@ -60,13 +60,35 @@ PULL_STATE=pending    # did $BUILD take the night's commits? see STEP=pull
 CODE_STATE=pending    # …and if it did not, did we hand them over anyway?
 DATA_STATE=pending    # …and the nightly feeds: see STEP=data
 VOUCHER_H=null        # age in hours of the s8.json build_seo.py will actually read
+# The IndexNow submission's own outcome. This step ships the BULK of the
+# channel — 4,047 URLs on 2026-09-29 against the 6 growth's t_indexnow sends —
+# and until now it reported nothing at all: its python caught every exception,
+# printed to a stdout the cron discards, and returned success either way. A key
+# Bing had revoked would have looked exactly like a clean submission, for as
+# long as it took somebody to notice by other means, and nobody could have.
+# A word from a closed set, never captured output: see the header's rule.
+#   pending         never reached — the script died before STEP=indexnow
+#   nothing-changed nothing to submit; the honest no-op, not a failure
+#   no-key          $BUILD/indexnow.key missing or empty
+#   ok              the endpoint took it (HTTP 2xx)
+#   rejected        the endpoint refused it (HTTP 4xx — 403 is a bad/revoked key)
+#   failed          no HTTP answer at all (DNS, timeout, TLS, python itself)
+# DELIBERATELY NOT an exit code: this step runs AFTER the deploy, so failing the
+# script here would report a night that published 49,383 pages as a failed run,
+# and a transient timeout would do it. The verdict goes in the field, and
+# growth/techniques.py turns a bad one into a RED audit line the 6am review
+# reads — which reaches a human sooner than an rc in a heartbeat ever did.
+INDEXNOW_STATE=pending
+INDEXNOW_N=0          # URLs actually handed to the endpoint
+INDEXNOW_HTTP=null    # the HTTP status it answered with, when it answered
 
 status() {
   {
-    printf '{"started":"%s","at":"%s","phase":"%s","step":"%s","rc":%s,"head":"%s","changed_urls":%s,"corpus_pages":%s,"pull":"%s","code":"%s","data":"%s","voucher_feed_h":%s}\n' \
+    printf '{"started":"%s","at":"%s","phase":"%s","step":"%s","rc":%s,"head":"%s","changed_urls":%s,"corpus_pages":%s,"pull":"%s","code":"%s","data":"%s","voucher_feed_h":%s,"indexnow":"%s","indexnow_urls":%s,"indexnow_http":%s}\n' \
       "$STARTED" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$1" "$STEP" "${2:-null}" \
       "$(git -C "$BUILD" rev-parse --short HEAD 2>/dev/null || echo unknown)" \
       "$CHANGED_N" "$CORPUS_N" "$PULL_STATE" "$CODE_STATE" "$DATA_STATE" "$VOUCHER_H" \
+      "$INDEXNOW_STATE" "$INDEXNOW_N" "$INDEXNOW_HTTP" \
       > "$STATUS.tmp" && mv -f "$STATUS.tmp" "$STATUS"
   } 2>/dev/null || true
 }
@@ -319,28 +341,100 @@ fi
 status split
 
 STEP=indexnow
-KEY="$(cat "$BUILD/indexnow.key")"
-if [ -s "$CHANGED" ]; then
-  python3 - "$CHANGED" "$KEY" <<'PY'
-import sys, json, urllib.request
+# The key read used to be a bare `KEY="$(cat "$BUILD/indexnow.key")"`, which
+# under `set -e` killed the whole script when the file was missing — AFTER the
+# corpus had already deployed, so a healthy publishing night reported rc=1 and
+# nobody could tell from the record what had actually failed. Guarded now, and
+# reported in a field instead.
+INDEXNOW_KEY=""
+if [ -s "$BUILD/indexnow.key" ]; then
+  INDEXNOW_KEY="$(tr -d '[:space:]' < "$BUILD/indexnow.key")"
+fi
+VERDICT="$BUILD/.indexnow-verdict"
+rm -f "$VERDICT"
+if [ -z "$INDEXNOW_KEY" ]; then
+  INDEXNOW_STATE=no-key
+  echo "refresh_seo: no IndexNow key at $BUILD/indexnow.key — $CHANGED_N changed URLs went unsubmitted"
+elif [ -s "$CHANGED" ]; then
+  python3 - "$CHANGED" "$INDEXNOW_KEY" "$VERDICT" <<'PY' || true
+import sys, json, urllib.request, urllib.error
+
 urls = [l.strip() for l in open(sys.argv[1]) if l.strip()]
-key = sys.argv[2]
+key, verdict = sys.argv[2], sys.argv[3]
+
+def say(state, http="null", n=0):
+    """One line, closed vocabulary, for the shell to fold into the status file."""
+    try:
+        with open(verdict, "w") as f:
+            f.write("%s %s %d\n" % (state, http, n))
+    except OSError:
+        pass  # the shell reads a missing verdict as 'failed', which it would be
+
 if not urls:
-    print("IndexNow: nothing changed"); raise SystemExit
+    print("IndexNow: nothing changed")
+    say("nothing-changed")
+    raise SystemExit
+
+# Report what was SENT, not what was in hand. The same cap used to be applied
+# silently here while the log line printed len(urls); growth/techniques.py's
+# t_indexnow was corrected for exactly this on 2026-08-18 and this copy was not.
+sent = urls[:10000]
+dropped = len(urls) - len(sent)
 payload = {"host": "findacrib.com", "key": key,
            "keyLocation": f"https://findacrib.com/{key}.txt",
-           "urlList": urls[:10000]}
+           "urlList": sent}
 req = urllib.request.Request("https://api.indexnow.org/indexnow",
         data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json; charset=utf-8"})
 try:
     r = urllib.request.urlopen(req, timeout=30)
-    print(f"IndexNow: submitted {len(urls)} urls -> HTTP {r.status}")
+    tail = f" ({dropped} more over the 10,000-URL cap)" if dropped else ""
+    print(f"IndexNow: submitted {len(sent)} urls -> HTTP {r.status}{tail}")
+    # 2xx is the only acceptance. Anything else that still carried a status line
+    # is a refusal we can name, which is the whole point of this record.
+    say("ok" if 200 <= r.status < 300 else "rejected", r.status, len(sent))
+except urllib.error.HTTPError as e:
+    # urlopen RAISES on 4xx/5xx, so the previous `except Exception` swallowed a
+    # revoked-key 403 into the same "submit failed" line as a DNS outage. That
+    # is the defect this block exists to close: they need different owner
+    # actions — rotate the key vs. wait — and looked identical for weeks.
+    print(f"IndexNow REJECTED: HTTP {e.code} (403 means the key is bad or revoked)")
+    say("rejected", e.code, len(sent))
 except Exception as e:
     print("IndexNow submit failed:", e)
+    say("failed", "null", len(sent))
 PY
+  # Parse into scratch names and adopt them only if all three fields are the
+  # shape the printf needs. A half-read verdict (no trailing newline, truncated
+  # write) left INDEXNOW_N and INDEXNOW_HTTP as empty strings in testing, and
+  # printf then emitted `"indexnow_urls":,` — INVALID JSON, which makes
+  # _seo_pipeline_status() return None and blinds every OTHER field in this
+  # record too. A reporting field must never be able to take the report down.
+  V_STATE=""; V_HTTP=""; V_N=""
+  if [ -s "$VERDICT" ]; then
+    read -r V_STATE V_HTTP V_N < "$VERDICT" || true
+  fi
+  case "$V_STATE|$V_HTTP|$V_N" in
+    nothing-changed\|*|ok\|*|rejected\|*|failed\|*|no-key\|*)
+      # state is from the vocabulary; now the two numerics, or null for http
+      if [ "$V_N" -eq "$V_N" ] 2>/dev/null && { [ "$V_HTTP" = null ] || [ "$V_HTTP" -eq "$V_HTTP" ] 2>/dev/null; }; then
+        INDEXNOW_STATE="$V_STATE"; INDEXNOW_HTTP="$V_HTTP"; INDEXNOW_N="$V_N"
+      else
+        INDEXNOW_STATE=failed
+      fi
+      ;;
+    *)
+      # no verdict, or one this script does not recognise — python never got far
+      # enough to answer, which is itself a failed submission
+      INDEXNOW_STATE=failed
+      ;;
+  esac
+  rm -f "$VERDICT"
 else
+  INDEXNOW_STATE=nothing-changed
   echo "IndexNow: no changed pages this run"
 fi
+status indexnow
+
 STEP=done
 echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] refresh complete: $CORPUS_N pages built, $CHANGED_N changed"

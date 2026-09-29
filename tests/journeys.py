@@ -186,6 +186,11 @@ class Runner:
             # module's BigInt fault, stackless.
             if 'apple-mapkit.com' in stack or 'apple-mapkit.com' in str(e) or str(e).strip() == 'int64':
                 return
+            # Mediavine's ad wrapper (Journey, 2026-09-28) throws from its own
+            # file — "mcmNetworkCode is required" until onboarding links the
+            # Google account. Third-party, filtered only when the stack is theirs.
+            if 'scriptwrapper.com' in stack or 'mediavine.com' in stack:
+                return
             # Safari's wording for a request cut off by leaving the page (the
             # city-pages journey hops four pages in a row). Stackless, so it
             # cannot be ours to fix; a request that really failed still fails
@@ -1267,7 +1272,7 @@ class Runner:
         """Google Consent Mode v2 + Global Privacy Control (privacy audit
         2026-09-27). The consent default must reach the dataLayer BEFORE any
         gtag('config'); a browser sending GPC gets ad storage, ad-data sharing
-        and personalized AdSense turned off; a European clock gets the cookie
+        turned off; a European clock gets the cookie
         banner, whose Privacy link goes to /privacy/."""
         self.boot(page)
         dl = page.evaluate("""(() => (window.dataLayer || []).map(a => Array.from(a)).filter(a => a[0] === 'consent' || a[0] === 'config').map(a => [a[0], a[1], a[2] && a[2].region ? 'region' : (a[2] && a[2].ad_storage) || '']))()""")
@@ -1280,18 +1285,13 @@ class Runner:
         gpc = self.page(page.context, j)
         try:
             gpc.add_init_script("Object.defineProperty(Navigator.prototype, 'globalPrivacyControl', { get: () => true })")
-            # AdSense replaces window.adsbygoogle once it loads, so keep it out
-            # and read the flag Google would have picked up from the queue.
-            gpc.route('**/pagead2.googlesyndication.com/**', lambda r: r.abort())
             self.boot(gpc, wait_pins=False)
             r = gpc.evaluate("""(() => ({ gpc: window.__facGPC,
-                npa: (window.adsbygoogle || {}).requestNonPersonalizedAds,
                 d: (window.dataLayer || []).map(a => Array.from(a)).filter(a => a[0] === 'consent' && a[1] === 'default' && !a[2].region).map(a => a[2]) }))()""")
             self.ok(r['gpc'] is True, 'GPC should be detected', j)
             self.ok(any(d.get('ad_storage') == 'denied' and d.get('ad_user_data') == 'denied'
                         and d.get('ad_personalization') == 'denied' for d in r['d']),
                     f'GPC should deny ad storage/data/personalization everywhere: {r["d"]}', j)
-            self.ok(r['npa'] == 1, 'GPC should ask AdSense for non-personalized ads', j)
         finally:
             gpc.close()
         # A European clock sees the banner (a separate context: the timezone is per context).

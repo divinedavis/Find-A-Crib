@@ -1670,6 +1670,11 @@ footer.site{border-top:1px solid var(--line);margin-top:40px;padding:22px 20px;c
 # "user_id = auth.uid()" RLS check (that mapping powers the owner-exclusion
 # in traffic_report.py). Plain string on purpose: page() is an f-string and
 # this JS is full of braces.
+# Journey by Mediavine (approved 2026-09-28): the same tag index.html loads,
+# on every generated page, so building/landlord/guide pages carry ads too.
+MEDIAVINE_TAG = ('<script type="text/javascript" async="async" data-noptimize="1" data-cfasync="false" src="//scripts.scriptwrapper.com/tags/c80d90dc-8d39-4cc8-ae1f-67cf301e7a16.js"></script>')
+
+
 TRACK_SNIPPET = """<script src="/config.js"></script>
 <script>
 (function(){try{
@@ -2011,7 +2016,7 @@ def page(title, desc, canonical, body, jsonld=None, footer=None, robots=None, og
 <meta property="og:title" content="{esc(og_title)}"><meta property="og:description" content="{esc(desc)}">
 <meta property="og:url" content="{canonical}"><meta property="og:image" content="{SITE}/og-image.png">
 <meta name="twitter:card" content="summary_large_image">
-<style>{CSS}</style>{ld}</head><body>
+<style>{CSS}</style>{ld}{MEDIAVINE_TAG}</head><body>
 <header class="site"><a class="brand" href="/">🏠 Find A Crib</a> &nbsp;·&nbsp;
 <a href="/buildings/">All neighborhoods</a> &nbsp;·&nbsp;
 <a href="/guide/">Guides</a>{CITY_NAV}</header>

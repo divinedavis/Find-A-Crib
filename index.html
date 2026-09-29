@@ -27,12 +27,11 @@
     wait_for_update: 500
   });
   // Global Privacy Control: an opt-out of "sharing" for cross-context ads.
-  // Ads cookies, the email match (enhanced conversions) and personalized
-  // AdSense all stay off for this browser, in every region.
+  // Google ads cookies and the email match (enhanced conversions) stay off
+  // for this browser, in every region. (Mediavine's script reads GPC itself.)
   window.__facGPC = navigator.globalPrivacyControl === true;
   if (window.__facGPC) {
     gtag('consent', 'default', { ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied' });
-    (window.adsbygoogle = window.adsbygoogle || []).requestNonPersonalizedAds = 1;
   }
   (function () {
     var KEY = 'consent.v1', saved = null;
@@ -71,7 +70,11 @@
   })();
 </script>
 <!-- Google AdSense — site-ownership verification + ad serving (ca-pub-8077227518694725) -->
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8077227518694725" crossorigin="anonymous" onerror="window.__adsBlocked=true" onload="window.__adsLoaded=true;window.__facInitAds&&window.__facInitAds()"></script>
+<!-- Ads: Journey by Mediavine (approved 2026-09-28). Journey requires
+     exclusive inventory, so the AdSense loader that sat here is gone; the
+     in-grid AdSense slot code stays switched off (ADSENSE_READY = false).
+     Early in <head> on purpose: Mediavine says earlier execution bids better. -->
+<script type="text/javascript" async="async" data-noptimize="1" data-cfasync="false" src="//scripts.scriptwrapper.com/tags/c80d90dc-8d39-4cc8-ae1f-67cf301e7a16.js"></script>
 <!-- Google tag (gtag.js) — Google Ads conversion tracking + GA4 analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=AW-1001356637"></script>
 <script>

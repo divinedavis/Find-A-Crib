@@ -1762,6 +1762,13 @@ def _fac_ads_served(since):
             out[key] = _rest_count("events?select=id&" + flt + base)
     except Exception:
         return {}
+    # AdSense counts nothing until the site is approved ("Ready"), whatever the
+    # page logs: findacrib.com has been "Getting ready" since 7/16, and the
+    # 124 slots Google's tag marked data-ad-status="filled" 9/26-9/28 show as
+    # 0 impressions / $0.00 in AdSense Reports (owner, 2026-09-28). Until
+    # FAC_ADSENSE_READY=1 is set in the API's .env, they are named, not added.
+    if os.environ.get("FAC_ADSENSE_READY") != "1":
+        out["adsense_review"], out["adsense"] = out["adsense"], 0
     out["total"] = out["web_tiles"] + out["app_tiles"] + out["admob"] + out["adsense"]
     return out
 

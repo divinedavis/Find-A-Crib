@@ -102,6 +102,12 @@ def run(browser, live):
     expect(tile).to_contain_text('146,455 web tiles · 884 app tiles · 12 Google ads')
     expect(tile).to_contain_text('40 TestFlight test ads not counted')
     expect(page.locator('#tiles')).not_to_contain_text('· MRR')
+    # A site still in AdSense review: Google's ads are named, never added in.
+    payload['ads_served'] = {'web_tiles': 10, 'app_tiles': 2, 'admob': 0, 'adsense': 0,
+                             'adsense_review': 6, 'total': 12}
+    page.reload(wait_until='networkidle')
+    expect(tile.locator('.t-val')).to_have_text('12')
+    expect(tile).to_contain_text('website Google ads not counted: site still in AdSense review')
     payload.pop('ads_served')
     page.reload(wait_until='networkidle')
     expect(tile.locator('.t-val')).to_have_text('—')

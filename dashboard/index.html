@@ -1822,7 +1822,8 @@
       // the website has Google in-feed ads too: one "Google ads" count.
       var parts=[comma(A.web_tiles)+' web tiles', comma(A.app_tiles)+' app tiles', comma(n(A.admob)+n(A.adsense))+' Google ads'];
       return {ic:'📣',v:comma(A.total),l:'Ads served · all platforms',
-              own:parts.join(' · ')+(n(A.admob_test)?' · '+comma(A.admob_test)+' TestFlight test ads not counted':''),
+              own:parts.join(' · ')+(n(A.admob_test)?' · '+comma(A.admob_test)+' TestFlight test ads not counted':'')
+                 +(A.adsense_review!=null?' · website Google ads not counted: site still in AdSense review':''),
               title:'Counted the way Google counts ads: one each time an ad loads on a page, seen or not. Advertiser tiles loaded on the website and iPhone app + live Google ads (AdSense on the website, AdMob in the app), this range, your own visits excluded. Google ads count once Google approves the site and the app ships to the App Store.',
               accent:true};
     }

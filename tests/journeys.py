@@ -152,7 +152,10 @@ def ad_noise(m):
     if any(h in txt or h in loc for h in AD_HOSTS):
         return True
     generic = ("is not allowed by Access-Control-Allow-Origin", "Preflight response is not successful",
-               "no video to play")
+               "no video to play",
+               # an ad creative's sandboxed about:blank frame refused scripts —
+               # the sandbox working; our pages never create sandboxed frames
+               "Blocked script execution in 'about:blank' because the document's frame is sandboxed")
     if any(g in txt for g in generic) and not loc.startswith(OURS):
         return True
     return third_party_only(txt + " " + loc)

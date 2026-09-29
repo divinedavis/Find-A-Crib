@@ -138,7 +138,9 @@ AD_HOSTS = ("scriptwrapper.com", "mediavine.com", "journeymv.com", "optable.co",
             "amazon-adsystem.com", "criteo", "openx.net", "casalemedia.com",
             "3lift.com", "sharethrough.com", "33across.com", "yieldmo.com",
             "doubleverify.com", "adsafeprotected.com", "id5-sync.com", "liveramp",
-            "uidapi.com", "prebid", "teads", "gumgum.com", "sonobi.com")
+            "uidapi.com", "prebid", "teads", "gumgum.com", "sonobi.com",
+            # OpenX's bidder logs under its own tag with no host in the text.
+            "(ox_esp)")
 
 
 def ad_noise(m):
@@ -216,6 +218,15 @@ class Runner:
             # file — "mcmNetworkCode is required" until onboarding links the
             # Google account. Third-party, filtered only when the stack is theirs.
             if any(h in stack or h in str(e) for h in AD_HOSTS):
+                return
+            # An ad creative in a sandboxed srcdoc frame trying to redirect the
+            # whole page — the browser blocking it is the protection working.
+            if 'about:srcdoc' in str(e) and 'allow-top-navigation' in str(e):
+                return
+            # Stackless, from a third-party image decode: nothing in this repo
+            # calls createImageBitmap, and it first appeared (1 in ~16 iPad
+            # city-page loads) the day Mediavine's creatives went live, 9/29.
+            if 'createImageBitmap' in str(e) and 'findacrib.com' not in stack:
                 return
             # Safari's wording for a request cut off by leaving the page (the
             # city-pages journey hops four pages in a row). Stackless, so it

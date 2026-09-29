@@ -87,7 +87,11 @@ IGNORED = ("script error.", "runtime.sendmessage", "resizeobserver loop",
            # axios and the string appears nowhere in it. The one visitor who
            # produced it (2026-09-22) opened eight buildings and came back an
            # hour later, and no 5xx or API traceback matched the minute.
-           "failed to fetch api data")
+           "failed to fetch api data",
+           # Mediavine's ad wrapper (Journey, 2026-09-28) throws this from its
+           # own file until their onboarding links the Google ad account
+           # (MCM). Nothing breaks for the visitor; no ads load yet either.
+           "mcmnetworkcode is required")
 
 
 def is_noise(message: str) -> bool:

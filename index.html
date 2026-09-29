@@ -5991,7 +5991,7 @@ function favActive() {
     const sig = [gridGen, sortMode, selectedBbl, favMode ? 1 : 0, sharedFolder ? 1 : 0, truncated ? 1 : 0, citywide ? 1 : 0,
                  shown.length, shown.map(r => r.bbl).join(',')].join('|');
     if (sig === lastGridSig && grid.childElementCount) { tr('grid:same'); return; }
-    if (tileHover && grid.childElementCount) { tr('grid:hover-hold'); return; }   // rebuilt on mouseleave
+    if (tileHover && CAN_HOVER && grid.childElementCount) { tr('grid:hover-hold'); return; }   // rebuilt on mouseleave
     lastGridSig = sig;
     tr('grid:build ' + shown.length);
     // pinned is visible[0] at this point, so it survives the cap; take it out
@@ -6335,6 +6335,12 @@ function favActive() {
   // at this zoom; when it is folded into a cluster a green pin is dropped at
   // its spot for the hover so there is always something to see.
   let hoverPinMarker = null, hoverPinEl = null, tileHover = null;
+  // Only a real pointer can hover. iOS Safari turns a TAP on a card into a
+  // mouseover and never sends the mouseout, so tileHover stuck on and every
+  // later refreshGrid() returned 'grid:hover-hold': zoom in on a phone, open
+  // the list, and it still showed the buildings from before (owner,
+  // 2026-09-29; the "X of Y" pill updated because it is set before the hold).
+  const CAN_HOVER = !!(window.matchMedia && matchMedia('(hover: hover) and (pointer: fine)').matches);
   function hoverPin(bbl) {
     if (hoverPinEl) { hoverPinEl.classList.remove('pin-hover'); hoverPinEl = null; }
     if (hoverPinMarker) { pinLayer.removeLayer(hoverPinMarker); hoverPinMarker = null; }
@@ -6353,7 +6359,7 @@ function favActive() {
     pinLayer.addLayer(hoverPinMarker);
     const he = hoverPinMarker.getElement(); if (he) he.classList.add('pin-hover');
   }
-  grid.addEventListener('mouseover', e => { const c = e.target.closest('.card[data-bbl]'); if (c) hoverPin(c.dataset.bbl); });
+  grid.addEventListener('mouseover', e => { if (!CAN_HOVER) return; const c = e.target.closest('.card[data-bbl]'); if (c) hoverPin(c.dataset.bbl); });
   grid.addEventListener('mouseout', e => { const c = e.target.closest('.card[data-bbl]'); if (c && !c.contains(e.relatedTarget)) hoverPin(null); });
   grid.addEventListener('mouseleave', () => { hoverPin(null); refreshGrid(); });
   function hoverCard(bbl) {

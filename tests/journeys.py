@@ -1260,6 +1260,28 @@ class Runner:
             self.ok(modal_hidden, 'on a phone no account modal should open', j)
             j.notes.append('phone goes to /directory/')
 
+    def j_list_follows_zoom(self, page, j, device):
+        """The list follows the map after a tap on a card (owner, 2026-09-29).
+
+        iOS Safari turns a tap on a card into a mouseover and never sends the
+        mouseout, which left the desktop hover-hold on: zoom in, open the list,
+        and it still showed the old buildings. Only a real hovering pointer may
+        hold the list, so a touch device must rebuild after every zoom."""
+        self.boot(page)
+        if page.evaluate("matchMedia('(hover: hover) and (pointer: fine)').matches"):
+            j.notes.append('real pointer: hover-hold is correct here, skipped')
+            return
+        first = "[...document.querySelectorAll('#grid > .card[data-bbl]')].slice(0,3).map(c => c.dataset.bbl).join(',')"
+        page.evaluate("document.querySelector('#grid > .card[data-bbl] .body')?.dispatchEvent(new MouseEvent('mouseover', {bubbles: true}))")
+        before = page.evaluate(first)
+        for _ in range(4):
+            page.evaluate("document.querySelector('.leaflet-control-zoom-in')?.click()"); time.sleep(0.9)
+        after = page.evaluate(first)
+        held = page.evaluate("(JSON.parse(localStorage.getItem(window.facTraceKey) || '{}').s || []).some(x => x[1] === 'grid:hover-hold')")
+        self.ok(not held, 'a tap left the list holding (grid:hover-hold) on a touch device', j)
+        self.ok(after != before, f'the list did not follow a 4-step zoom after a tap: still {after}', j)
+        j.notes.append('list rebuilt after tap + zoom')
+
     def j_signin_modal(self, page, j, device):
         self.boot(page)
         self.click(page, '#auth-btn'); time.sleep(0.6)
@@ -1355,7 +1377,7 @@ class Runner:
 
     JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'pin_and_list',
                 'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'signin_modal', 'app_chip', 'app_qr_menu', 'boot_is_usable', 'city_chip',
-                'ad_tiles', 'outbound_links', 'status_chips', 'referral_gate',
+                'ad_tiles', 'list_follows_zoom', 'outbound_links', 'status_chips', 'referral_gate',
                 'rent_report', 'legal_pages', 'comments_gate', 'landlords_gate', 'consent_mode', 'account_delete']
 
     # ---- run --------------------------------------------------------------

@@ -83,6 +83,10 @@ def run(browser, live):
     expect(tile.locator('.t-val')).to_have_text('10,735')
     expect(tile).to_contain_text('10,232 on the map · 503 on building, landlord & guide pages')
     expect(page.locator('#tiles')).not_to_contain_text('Median time on site')
+    payload['page_views_30d'] = {'total': 10344, 'map': 9961, 'other': 383}
+    page.reload(wait_until='networkidle')
+    expect(page.locator('#page-goal2')).to_contain_text('Page view goal: 25k/month to register for Raptive')
+    expect(page.locator('#page-goal2')).to_contain_text('10,344 in the last 30 days · 41%')
     assert not errors, errors
     print(f'PASS {browser.browser_type.name}: page views tile', flush=True)
 

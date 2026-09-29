@@ -1471,6 +1471,9 @@ def dashboard_metrics():
         "adtiles_all": (_fac_adtiles, None),
         "ads_served": (_fac_ads_served, since),
         "page_views": (_fac_page_views, since),
+        # The header's Raptive goal (25k/month) is always the last 30 days.
+        "page_views_30d": (_fac_page_views, (datetime.datetime.now(datetime.timezone.utc)
+                                              - datetime.timedelta(days=30)).strftime("%Y-%m-%dT%H:00:00Z")),
         # Inputs for the goals card's audience-INDEPENDENT streams. Deliberately
         # not range-scoped: that card is pinned to all-time for the same reason.
         "ai": (_fac_ai_crawls,),

@@ -1364,6 +1364,19 @@ class Runner:
             plus.close()
         j.notes.append('Plus device loads no ad script')
 
+    def j_building_page_link(self, page, j, device):
+        """A New York building's sheet links to its own building page
+        (owner, 2026-09-29): /building/<boro>/<slug>-<bbl>/, opened in a new
+        tab — the comparison content the sheet lacks, and in-content ads."""
+        self.boot(page)
+        page.evaluate("document.querySelector('#grid > .card[data-bbl] .body')?.click()")
+        time.sleep(1.2)
+        href = page.evaluate("document.querySelector('a[data-bpage]')?.getAttribute('href') || ''")
+        self.ok(bool(re.match(r"^/building/(manhattan|brooklyn|queens|bronx|staten-island)/[a-z0-9-]+-\d{10}/$", href)),
+                f'the building sheet has no well-formed building-page link: {href!r}', j)
+        self.ok(page.evaluate("document.querySelector('a[data-bpage]')?.target === '_blank'"), 'the building-page link should open a new tab', j)
+        j.notes.append(href)
+
     def j_signin_modal(self, page, j, device):
         self.boot(page)
         self.click(page, '#auth-btn'); time.sleep(0.6)
@@ -1459,7 +1472,7 @@ class Runner:
 
     JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'pin_and_list',
                 'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'signin_modal', 'app_chip', 'app_qr_menu', 'boot_is_usable', 'city_chip',
-                'ad_tiles', 'list_follows_zoom', 'plus_no_ads', 'outbound_links', 'status_chips', 'referral_gate',
+                'ad_tiles', 'list_follows_zoom', 'plus_no_ads', 'building_page_link', 'outbound_links', 'status_chips', 'referral_gate',
                 'rent_report', 'legal_pages', 'comments_gate', 'landlords_gate', 'consent_mode', 'account_delete']
 
     # ---- run --------------------------------------------------------------

@@ -6664,6 +6664,9 @@ function favActive() {
       <div class="d-actions" style="padding-top:0">
         <button class="d-secondary" data-detail="map">View on map</button>
       </div>
+      ${IS_NYC && buildingPageUrl(rec) ? `<div class="d-actions" style="padding-top:0">
+        <a class="d-secondary" data-bpage target="_blank" rel="noopener" href="${esc(buildingPageUrl(rec))}">How this building compares ↗</a>
+      </div>` : ''}
       <div class="d-actions d-dir-row" style="padding-top:0">
         <button class="d-secondary" data-detail="directions">Driving directions</button>
       </div>
@@ -6851,6 +6854,21 @@ function favActive() {
     }, { root: detailContent, threshold: [0.4, 0.6, 1] });
     detailContent.querySelectorAll('[data-sec]').forEach(el => { if (!secSeen.has(el.dataset.sec)) secObserver.observe(el); });
   }
+  // The building's own page (build_seo.py bld_url): how it compares with the
+  // neighborhood, similar buildings, the landlord's other buildings — things
+  // this sheet doesn't show. Also where Mediavine can place in-content ads,
+  // which the map page can't take (owner, 2026-09-29).
+  const BPAGE_BORO = { M: 'manhattan', Bk: 'brooklyn', Q: 'queens', Bx: 'bronx', SI: 'staten-island' };
+  function buildingPageUrl(rec) {
+    const boro = rec && BPAGE_BORO[rec.b];
+    if (!boro || !rec.bbl) return '';
+    const slug = String(rec.a || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'x';
+    return `/building/${boro}/${slug}-${rec.bbl}/`;
+  }
+  document.addEventListener('click', e => {
+    const a = e.target.closest && e.target.closest('a[data-bpage]');
+    if (a && detailRec) track('building_page_open', { bbl: detailRec.bbl, via: 'detail' });
+  });
   function openDetail(rec, listed) {
     tr('openDetail');
     detailRec = rec; detailListed = listed || 0;

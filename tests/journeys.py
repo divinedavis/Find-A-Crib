@@ -241,7 +241,7 @@ class Runner:
         page.on('pageerror', on_pageerror)
         page.on('crash', lambda: j.errors.append('CRASH: renderer died'))
         page.on('console', lambda m: j.errors.append('console.error: ' + m.text[:200])
-                if m.type == 'error' and not ad_noise(m) and not m.text.startswith('[MapKit]') and 'wasm streaming compile failed' not in m.text and 'fetching of the wasm failed' not in m.text and 'falling back to ArrayBuffer' not in m.text and 'Failed to load resource' not in m.text and 'Content Security Policy' not in m.text and 'Report Only' not in m.text and 'doubleclick.net' not in m.text
+                if m.type == 'error' and not ad_noise(m) and '[MapKit]' not in m.text and 'wasm streaming compile failed' not in m.text and 'fetching of the wasm failed' not in m.text and 'falling back to ArrayBuffer' not in m.text and 'Failed to load resource' not in m.text and 'Content Security Policy' not in m.text and 'Report Only' not in m.text and 'doubleclick.net' not in m.text
                 and not (m.text.startswith('Error: no_div')
                          and 'googlesyndication.com' in (m.text + (m.location or {}).get('url', ''))) else None)  # WebKit words Google's own conversion-ping refusal as 'Refused to execute'
         # 'both async and sync fetching of the wasm failed' (and the Aborted()

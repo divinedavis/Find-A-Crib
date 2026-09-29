@@ -12,6 +12,10 @@ report.
   python3 rerental_daily.py --email me@x.com       # ...and send it
   python3 rerental_daily.py --email me@x.com --quiet-if-same
                                                    # send only when something moved
+  python3 rerental_daily.py --dry-run [--only HDC] # sweep + print; writes and sends nothing
+
+Pages with a "feed" key in rerental_pages.json (NYC HDC) are read from the JSON
+their page is built from (rerental_feeds.py), not rendered.
 
 Two kinds of page live in this list and the report keeps them apart:
   * unit boards   - specific apartments with rents (Affordable for NY, MGNY, ...)
@@ -45,7 +49,11 @@ UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
 # Extracting "rents" from these yields the surrounding marketing copy.
 WAITLIST = {"TF Cornerstone", "The Wavecrest Management Team Ltd.", "Restored Homes",
             "Phipps Houses", "Bronx Pro Group LLC", "Breaking Ground",
-            "Highbridge Community Development Corporation (HCDC)"}
+            "Highbridge Community Development Corporation (HCDC)",
+            # A gallery of three HPD/HDC buildings, each "Coming Soon...", and
+            # "Search listing coming soon" above them: buildings, no units, no
+            # rents (checked 2026-09-29).
+            "INFINITE HORIZONS, LLC"}
 
 # ---------------------------------------------------------------- place names
 # "2754 Creston Avenue" says nothing about where it is unless you already know
@@ -192,6 +200,12 @@ def key_of(label):
     """
     s = label.lower()
     s = re.sub(r',.*$', '', s)                        # drop city/state/zip tail
+    # "1182 Ogden Ave - Highbridge, Bronx" is Sterling23's heading for the same
+    # building its next line spells "1182 Ogden Ave, Bronx, NY 10452". A
+    # spaced dash followed by words only is a neighbourhood, not part of the
+    # address. Anything with a digit after the dash ("... – Unit 1012",
+    # "1740 - 1760 Prospect Place") is kept: that IS the address.
+    s = re.sub(r'\s[-\u2013\u2014]\s[^0-9]*$', '', s)
     s = re.sub(r'\b(apartments?|apt|unit\(?s?\)?|available|floor|fl)\b', ' ', s)
     s = re.sub(r'\b\d{4}\b', ' ', s)                  # posting codes like 0726
     s = STREET.sub(' ', s)                            # street-type is noise once parsed
@@ -252,6 +266,11 @@ def link_index(anchors):
         k = key_of(t)
         if k and k not in exact:
             exact[k] = h
+        m = NAME_AT.match(t)                  # "The Westport at 500 W. 56th ..."
+        if m:
+            k2 = key_of(t[m.end():])
+            if k2 and k2 not in exact:
+                exact[k2] = h
         loose.append((re.sub(r'[^a-z0-9]+', ' ', t.lower()), h))
     return exact, slug, loose
 
@@ -275,13 +294,25 @@ def find_link(key, index):
     return None
 
 
+# "The Westport at 500 W. 56th Street, New York, NY 10019" — Affordable
+# Housing Group names the building first, so the line never opens with a house
+# number and ADDR never sees it. A short name (at most four words) then "at"
+# then something ADDR accepts; the address after "at" is what gets keyed. A
+# long prose sentence that happens to contain "at 12 Main St" is not matched:
+# the name part stops it, and so does anything but a city/state/ZIP tail
+# after the address (see listings_from).
+NAME_AT = re.compile(r"^\s*[A-Za-z0-9][\w'&.\-]*(?:\s+[\w'&.\-]+){0,3}\s+at\s+(?=\d)", re.I)
+
+
 def listings_from(text, waitlist, own_office=None, index=None):
     """(items, stated_count). items are display labels, deduped by key_of.
 
     `own_office` is the agent's own address from the HPD list. Every one of
     these sites puts it in the footer, where it reads exactly like a listing —
     Housing Partnership's '253 West 35th Street' and MHANY's '470 Vanderbilt
-    Avenue' were both being counted as available apartments.
+    Avenue' were both being counted as available apartments. A list is
+    accepted too, for a site whose footer prints a different office than HPD
+    has on file (rerental_pages.json "offices").
     """
     if EMPTY.search(text):
         return [], 0
@@ -293,19 +324,31 @@ def listings_from(text, waitlist, own_office=None, index=None):
     # listings. Two tokens is enough to identify a building.
     def stem(k):
         return " ".join(k.split()[:2])
-    skip = {stem(key_of(own_office))} if own_office else set()
+    offices = own_office if isinstance(own_office, (list, tuple)) else [own_office]
+    skip = {stem(key_of(o)) for o in offices if o}
     items, seen = [], set()
     for line in (l.strip() for l in text.split("\n")):
         if not line or len(line) > 90:
             continue
+        geo = None
         if not ADDR.match(line):
-            continue
-        k = key_of(line)
+            m = NAME_AT.match(line)
+            a = m and ADDR.match(line[m.end():])
+            # ...and nothing after the address but a city/state/ZIP tail, so
+            # "Applications are accepted at 553 W. 30th Street on a first come
+            # basis" stays prose.
+            if not a or not re.fullmatch(r'\s*(?:,.*)?', line[m.end() + a.end():]):
+                continue
+            geo = line[m.end():]               # the address, for key and geocoder
+        k = key_of(geo or line)
         if not k or k in seen or stem(k) in skip:
             continue
         seen.add(k)
-        items.append({"key": k, "label": re.sub(r'\s+', ' ', line)[:64],
-                      "url": find_link(k, index) if index else None})
+        item = {"key": k, "label": re.sub(r'\s+', ' ', line)[:64],
+                "url": find_link(k, index) if index else None}
+        if geo:
+            item["geo"] = geo
+        items.append(item)
     if waitlist:
         # buildings, not units - a stated "N results" would be about something else
         stated = 0
@@ -321,14 +364,33 @@ def offices():
     return {a["name"]: a.get("address", "") for a in agents}
 
 
+def sweep_feeds(pages):
+    """The sources that publish JSON (rerental_feeds.py), in the same record
+    shape the browser pass produces. A feed that fails is an error on that
+    source only — same rule as a page that times out."""
+    import rerental_feeds
+    out = {}
+    for name, meta in pages.items():
+        if not meta.get("feed"):
+            continue
+        recs, err = rerental_feeds.feed_records(name, meta)
+        items = [] if err else rerental_feeds.daily_items(recs)
+        out[name] = {"url": meta["url"], "status": None if err else 200, "error": err,
+                     "items": items, "stated": 0, "waitlist": name in WAITLIST}
+    return out
+
+
 def sweep(pages):
+    out = sweep_feeds(pages)
+    rendered = {n: m for n, m in pages.items() if not m.get("feed")}
+    if not rendered:
+        return out
     from playwright.sync_api import sync_playwright
     own = offices()
-    out = {}
     with sync_playwright() as pw:
         browser = pw.chromium.launch()
         ctx = browser.new_context(viewport={"width": 1280, "height": 1600}, user_agent=UA)
-        for name, meta in pages.items():
+        for name, meta in rendered.items():
             rec = {"url": meta["url"], "status": None, "error": None,
                    "items": [], "stated": 0, "waitlist": name in WAITLIST}
             page = ctx.new_page()
@@ -347,8 +409,9 @@ def sweep(pages):
                 anchors = page.evaluate(
                     "Array.from(document.querySelectorAll('a[href]'))"
                     ".slice(0,600).map(function(a){return {t:a.innerText,h:a.href}})")
+                office = [own.get(name)] + list(meta.get("offices") or [])
                 rec["items"], rec["stated"] = listings_from(
-                    text, rec["waitlist"], own.get(name), link_index(anchors))
+                    text, rec["waitlist"], office, link_index(anchors))
             except Exception as e:
                 rec["error"] = f"{type(e).__name__}: {str(e)[:60]}"
             finally:
@@ -484,12 +547,16 @@ def record_new(deltas, results, today):
         for it in d.get("new") or []:
             if (name, it["key"]) in have:
                 continue
-            pl = place_of(it["label"], places) or {}
+            pl = place_of(it.get("geo") or it["label"], places) or {}
             fm = money.get((name, it["key"])) or {}
+            # A feed item (rerental_feeds) brings its own borough and rent from
+            # the source; those beat both the geocoder and yesterday's tiles.
             items.append({"agent": name, "key": it["key"], "label": it["label"],
                           "url": it.get("url") or results[name]["url"],
-                          "boro": pl.get("boro") or fm.get("boro"), "hood": pl.get("hood"),
-                          "rent_low": fm.get("rent_low"), "income_max": fm.get("income_max"),
+                          "boro": it.get("boro") or pl.get("boro") or fm.get("boro"),
+                          "hood": pl.get("hood"),
+                          "rent_low": it.get("rent_low") or fm.get("rent_low"),
+                          "income_max": it.get("income_max") or fm.get("income_max"),
                           "seen": today, "seen_at": datetime.datetime.now(
                               datetime.timezone.utc).isoformat(timespec="seconds")})
             added += 1
@@ -520,9 +587,10 @@ def diff(prev, results):
             continue
         before = set(prev.get(name, []))
         now = {i["key"] for i in rec["items"]}
-        label = {i["key"]: i["label"] for i in rec["items"]}
-        href = {i["key"]: i.get("url") for i in rec["items"]}
-        d[name] = {"new": [{"key": k, "label": label[k], "url": href.get(k)}
+        # The whole item travels, not just key/label/url: a feed item also
+        # carries its borough, rent and geocoding address (record_new).
+        by_key = {i["key"]: i for i in rec["items"]}
+        d[name] = {"new": [dict(by_key[k], url=by_key[k].get("url"))
                            for k in now - before] if before else [],
                    "gone": sorted(before - now) if before else [],
                    "failed": False,
@@ -571,7 +639,8 @@ def build_report(results, deltas, today, had_history):
             url, board = it.get("url"), results[name]["url"]
             if url and url != board and not link_ok(url):
                 url = None
-            where = place_words(place_of(it["label"], places))
+            where = place_words(place_of(it.get("geo") or it["label"], places)
+                                or ({"boro": it["boro"]} if it.get("boro") else None))
             lines.append({"text": it["label"],
                           "sub": " · ".join(
                               [w for w in (where, name) if w]
@@ -632,9 +701,15 @@ def main():
     ap.add_argument("--update-site", action="store_true",
                     help="also write rerental_pages.json + marketing_agents.json")
     ap.add_argument("--out", help="docroot to copy marketing_agents.json into")
+    ap.add_argument("--dry-run", action="store_true",
+                    help="sweep and print only: no history, no rerental_new.json, no "
+                         "site data, no email")
+    ap.add_argument("--only", help="sweep only the pages whose name contains this")
     args = ap.parse_args()
 
     pages = json.load(open(RERENTALS))["pages"]
+    if args.only:
+        pages = {n: m for n, m in pages.items() if args.only.lower() in n.lower()}
     today = datetime.date.today().isoformat()
     hist = load_history()
     had_history = bool(hist.get("last"))
@@ -644,6 +719,15 @@ def main():
     blocks, new_total, failed = build_report(results, deltas, today, had_history)
     text = to_text(results, deltas, today, new_total, failed)
     print(text)
+
+    if args.dry_run:
+        for name, rec in sorted(results.items()):
+            for it in rec["items"]:
+                extra = " · ".join(str(x) for x in (it.get("boro"),
+                                   it.get("rent_low") and f"${it['rent_low']:,}/mo") if x)
+                print(f"    {name[:28]:28} {it['label'][:60]:60} {extra}")
+        print("\n(dry run — nothing written, nothing sent)")
+        return
 
     # snapshot for tomorrow — only for pages that loaded, so a failed fetch
     # doesn't erase yesterday's listings and re-announce them all as "new"

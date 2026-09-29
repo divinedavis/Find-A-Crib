@@ -19,7 +19,6 @@
   "_comment": "Verified and deliberately left out — recording these so nobody re-adds them.",
   "Places.NYC LLC": "places.nyc/units is market-rate luxury ($6,500 no-fee), not affordable",
   "The Brodsky Organization / Urban Associates LLC": "brodsky.com/rentals is 'NYC Luxury Apartments'",
-  "Related Management Companies, L.P": "relatedrentals.com is market-rate luxury",
   "K&R Realty Management Inc": "gonofee.com is a market-rate no-fee brokerage",
   "Vector New York": "/listings is market-rate luxury",
   "Diamond Mine Real Estate": "soft-404: /about/affordable-re-rentals renders their About page",
@@ -38,7 +37,6 @@
   "Regtime": "B2B software brand; same operator as MGNY (already listed), listings live there",
   "RiseBoro": "program/service pages, no unit board",
   "SCT Compliance, LLC": "B2B compliance consultancy",
-  "Sterling23": "market-rate brokerage",
   "Style & Haus Realty": "market-rate broker/investment site",
   "The Bouklis Group Inc.": "market-rate Astoria brokerage",
   "Transitional Services for New York, Inc.": "referral-based supportive housing, no public listings",
@@ -47,7 +45,8 @@
   "Conformity Habitat LLC": "HPD-listed domain dead - DNS (checked 2026-08-10)",
   "Reside Affordable Inc": "HPD-listed domain dead - DNS; operator's board is Reside New York's Open Market page",
   "Grenadier Realty Management": "HPD-listed domain parked at sedo; grenadierrealty.com also dead (checked 2026-08-10)",
-  "Sycamore Birch Management LLC": "site times out (checked 2026-08-10)"
+  "Sycamore Birch Management LLC": "site times out (checked 2026-08-10)",
+  "Pronto Housing": "Terms of Service s.6 (prontohousing.com/terms-of-service, updated 2024-10-05): 'You may not reproduce, distribute, modify, create derivative works of, publicly display, publicly perform, republish, download, store, or transmit any of the material on our service without prior written consent.' Tiles and alerts republish it. prontohousing.io/api/listings/search has ~25 NYC buildings with per-unit rent + AMI; ask legal@prontohousing.io before adding (checked 2026-09-29)"
  },
  "checked": "2026-09-29",
  "pages": {
@@ -111,11 +110,12 @@
    "unit_count": 6
   },
   "MHANY Management, Inc.": {
-   "url": "https://www.mutualhousingny.org/avaliable-properties",
-   "title": "Available Properties",
+   "url": "https://www.mutualhousingny.org/affordable-re-rental-units",
+   "title": "Affordable Re-Rental Units",
    "units_seen": true,
    "last_ok": "2026-09-29",
-   "unit_count": 3
+   "unit_count": 3,
+   "note": "First-come re-rentals (Stella Heights HDFC SROs; 1921 Cortelyou Road and 700 Manida Street in its submenu, each with a rent table on its own page). HPD links this page; the old /avaliable-properties is lotteries + contact emails (moved 2026-09-29)."
   },
   "Housing Partnership Development Corporation": {
    "url": "https://www.housingpartnership.com/services/current-vacancies",
@@ -310,6 +310,53 @@
    "found": "2026-09-23",
    "source": "owner sweep (2026-09-23)",
    "unit_count": 2,
+   "last_ok": "2026-09-29"
+  },
+  "NYC Housing Development Corporation (HDC)": {
+   "url": "https://www.nychdc.com/find-re-rentals",
+   "title": "Find Re-Rentals",
+   "feed": "hdc",
+   "note": "HDC's own re-rental board: one card per development with the monthly rent range, bedroom sizes and a PDF flyer. Read from the JSON the page is drawn from (rerental_feeds.py), not rendered.",
+   "units_seen": true,
+   "unit_count": 24,
+   "found": "2026-09-29",
+   "source": "owner research (2026-09-29)",
+   "last_ok": "2026-09-29"
+  },
+  "Related Management Companies, L.P": {
+   "url": "https://ahgleasing.com/",
+   "title": "Affordable Housing Group",
+   "note": "Related's affordable leasing arm (its PDF ads take applications at a related.com address). First-come moderate-income vacancies plus an accessibility-unit waiting list; each links to a PDF ad, rents are only in the PDF. relatedrentals.com is the market-rate side.",
+   "units_seen": true,
+   "unit_count": 2,
+   "found": "2026-09-29",
+   "source": "owner research (2026-09-29)",
+   "last_ok": "2026-09-29"
+  },
+  "Sterling23": {
+   "url": "https://www.sterling23.com/?page=affordable",
+   "title": "Affordable Housing Re-Rental Program",
+   "note": "Rent-stabilized 421-a/485-x re-rentals, first-come per HPD guidelines, with rent and income table per unit. The rest of sterling23.com is a market-rate brokerage.",
+   "card_max": 3000,
+   "card_lines": 40,
+   "link": "board",
+   "offices": [
+    "2817 23rd Avenue, Astoria, NY 11105"
+   ],
+   "units_seen": true,
+   "unit_count": 1,
+   "found": "2026-09-29",
+   "source": "owner research (2026-09-29)",
+   "last_ok": "2026-09-29"
+  },
+  "INFINITE HORIZONS, LLC": {
+   "url": "https://ihrerentals.com/photo-gallery",
+   "title": "Housing Gallery",
+   "note": "Markets HPD/HDC re-rentals and resales. Gallery of three buildings (545 E 166th St, 110-01 62nd Dr, Virginia House Senior Residences), each 'Coming Soon'; no units or rents yet.",
+   "units_seen": false,
+   "waitlist": true,
+   "found": "2026-09-29",
+   "source": "owner research (2026-09-29)",
    "last_ok": "2026-09-29"
   }
  }

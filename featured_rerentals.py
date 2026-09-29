@@ -18,6 +18,10 @@ show that the big portals structurally do not have.
   python3 featured_rerentals.py --apply          # write featured.json + photos
   python3 featured_rerentals.py --apply --deploy # ...and push both to the droplet
 
+Pages with a "feed" key (NYC HDC's re-rental board) come from rerental_feeds.py
+as ready-made records and skip the browser; their money still goes through
+classify_money().
+
 THE MONEY IS NOT ALWAYS RENT. MGNY prints "$98,366 - $176,410" against a
 listing; that is the household income you must earn to qualify, not what you
 pay. Printing it as a rent would be the single most misleading thing this
@@ -64,7 +68,10 @@ MONEY = re.compile(r'\$\s?(\d[\d.,]*)')
 # "1 PERSON $135,360.00 - $154.440.00" — the income band for a single-person
 # household, which is the number someone looking at a studio actually needs.
 ONE_PERSON = re.compile(r'\b1\s*(?:person|adult|occupant)\b', re.I)
-UNITS = re.compile(r'\b(\d+)\s+units?\b', re.I)
+# At most three digits: Sterling23's card ends "Bronx, NY 10452" on one line
+# and opens the photo strip with "Unit Photos" on the next, and the ZIP became
+# a count of 10,452 units. No re-rental board posts a thousand of anything.
+UNITS = re.compile(r'\b(\d{1,3})\s+units?\b', re.I)
 BEDS = re.compile(r'\b(studio|\d+)\s*(?:bed|bd|br|bedroom)s?\b', re.I)
 ZIP = re.compile(r'\b(\d{5})\b')
 # "188-11 Hillside Avenue, Queens, NY 11423" / "410 W 126th St, New York, NY"
@@ -131,7 +138,13 @@ BOROS = {"manhattan": "Manhattan", "new york": "Manhattan", "brooklyn": "Brookly
 # month's redesign. The shape they DO share is a repeated block that holds an
 # address, a photo and a link — so that is what this looks for, taking the
 # smallest block that qualifies so a wrapper doesn't swallow the whole grid.
-EXTRACT_JS = r"""() => {
+EXTRACT_JS = r"""(opts) => {
+  // Per-page limits from rerental_pages.json (card_max / card_lines). The
+  // defaults are what every board was tuned on; a board whose one listing is a
+  // long write-up with the rent table at the bottom (Sterling23) raises them
+  // for itself only. resolve_by_click re-runs this with no argument.
+  const CARD_MAX = (opts && opts.cardMax) || 600;
+  const CARD_LINES = (opts && opts.cardLines) || 14;
   // "Apply on their site" has to land on THE apartment. Taking the first <a> in
   // the block sent six agents' tiles to the board they were scraped from and
   // C+C's to the company logo in the header, so every candidate link is scored
@@ -222,7 +235,7 @@ EXTRACT_JS = r"""() => {
   const best = new Map();
   document.querySelectorAll('a, article, li, div, section').forEach(el => {
     const txt = (el.innerText || '').trim();
-    if (!txt || txt.length > 600) return;
+    if (!txt || txt.length > CARD_MAX) return;
     const lines = txt.split('\n').map(s => s.trim()).filter(Boolean);
     const addrs = lines.filter(isAddr);
     if (!addrs.length) return;
@@ -247,7 +260,7 @@ EXTRACT_JS = r"""() => {
       len: txt.length,
       addr: addrs[0],
       heading: h ? (h.innerText || '').trim().replace(/\s+/g, ' ').slice(0, 120) : '',
-      lines: lines.slice(0, 14),
+      lines: lines.slice(0, CARD_LINES),
       href: pickHref(el, addrs[0]),
       img: img ? (img.currentSrc || img.src) : null,
       imgW: img ? img.naturalWidth : 0,
@@ -541,6 +554,8 @@ def sweep(pages, only=None):
                 continue
             if meta.get("waitlist"):
                 continue          # a wait list has no apartment to feature
+            if meta.get("feed"):
+                continue          # JSON sources: rerental_feeds, see feed_sweep()
             page = ctx.new_page()
             try:
                 page.goto(meta["url"], wait_until="domcontentloaded", timeout=45000)
@@ -549,12 +564,21 @@ def sweep(pages, only=None):
                     page.mouse.wheel(0, 1600)
                     page.wait_for_timeout(700)
                 page.wait_for_timeout(1200)
-                cands = page.evaluate(EXTRACT_JS)
+                cands = page.evaluate(EXTRACT_JS, {"cardMax": meta.get("card_max"),
+                                                   "cardLines": meta.get("card_lines")})
                 seen, found = set(), []
                 for c in cands:
                     rec = parse_card(c, name, meta["url"])
                     if not rec:
                         continue
+                    if meta.get("link") == "board":
+                        # The card's own links are known to be wrong for this
+                        # board (Sterling23's "StreetEasy" button opens a
+                        # different building in Astoria): send people to the
+                        # board, scrolled to the apartment, instead.
+                        rec["href"] = board_link(meta["url"], rec["address"])
+                        rec["href_kind"] = "agent_page"
+                        rec["probe"] = None
                     k = re.sub(r'[^a-z0-9]', '', rec["address"].lower())[:24]
                     if not k or k in seen:
                         continue
@@ -572,6 +596,26 @@ def sweep(pages, only=None):
                 except Exception:
                     pass
         browser.close()
+    return out, errors
+
+
+def feed_sweep(pages, only=None):
+    """The sources that publish JSON (rerental_feeds): no browser, same records.
+
+    Kept out of sweep() so a feed never waits on Playwright and a browser that
+    will not launch never costs the feeds. Errors are per source, like sweep().
+    """
+    import rerental_feeds
+    out, errors = [], {}
+    for name, meta in pages.items():
+        if not meta.get("feed") or meta.get("waitlist"):
+            continue
+        if only and only.lower() not in name.lower():
+            continue
+        recs, err = rerental_feeds.feed_records(name, meta)
+        if err:
+            errors[name] = err
+        out.extend(recs)
     return out, errors
 
 
@@ -873,20 +917,27 @@ def main():
         IMGDIR = os.path.join(args.out, "featured", "img")
 
     pages = json.load(open(RERENTALS))["pages"]
-    records, errors = sweep(pages, args.only)
+    fed, feed_errors = feed_sweep(pages, args.only)
+    if any(not m.get("feed") and not m.get("waitlist") and
+           (not args.only or args.only.lower() in n.lower()) for n, m in pages.items()):
+        records, errors = sweep(pages, args.only)
+    else:
+        records, errors = [], {}           # --only picked a feed: no browser needed
+    records += fed
+    errors.update(feed_errors)
     offices = office_addresses()
     records = [r for r in records if is_real_listing(r, offices)]
     records, jev_changes = jev_review(records)
     for r in records:
-        r.pop("_card", None)
-        r.pop("_amounts", None)
+        for k in [k for k in r if k.startswith("_")]:
+            r.pop(k)                       # _card, _amounts, _key: never published
     kept_img = save_images(records, args.apply)
     records = rank(records)[:args.limit]
     dropped_img = prune_images(records, args.apply)
 
     today = datetime.date.today().isoformat()
     data = {"generated": today,
-            "source": "HPD-approved marketing agents' own re-rental pages",
+            "source": "HPD-approved marketing agents' own re-rental pages and NYC HDC's re-rental board",
             "count": len(records), "listings": records}
 
     agents = {}

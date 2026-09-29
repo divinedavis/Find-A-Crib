@@ -1,0 +1,150 @@
+{
+ "_comment": "Trimmed from https://www.nychdc.com/api/re-rentals?current-page=N on 2026-09-29 (public development listings, no personal data). Rows 9001 and the empty nid are synthetic.",
+ "page1": {
+  "json": [
+   {
+    "nid": "8779",
+    "title": "Nehemiah Spring Creek 4B1",
+    "image": {
+     "uri": "public://2026-09/Nehemiah Spring Creek 4B1.jpeg",
+     "url": "/sites/default/files/2026-09/Nehemiah%20Spring%20Creek%204B1.jpeg",
+     "re_rental_card": "https://www.nychdc.com/sites/default/files/styles/re_rental_card/public/2026-09/Nehemiah%20Spring%20Creek%204B1.jpeg?itok=MhVM2L9g",
+     "re_rental_card_2x": "https://www.nychdc.com/sites/default/files/styles/re_rental_card_2x/public/2026-09/Nehemiah%20Spring%20Creek%204B1.jpeg?itok=MPHluNOM"
+    },
+    "borough": "Brooklyn",
+    "address": "500 Vandalia Ave, East New York, NY 11239",
+    "rent_range": "$2,214.04",
+    "age_restriction_copy": "",
+    "bedrooms_copy": "2-Bedroom",
+    "adaptation_copy": "Mobility Adapted",
+    "description": "<p>Amenities: Laundry room<br />\r\nNo application fee</p>\r\n",
+    "pdf": "/sites/default/files/2026-09/Nehemiah%20Spring%20Creek%204B1%20%289.24.26%29%20.pdf",
+    "cta": null,
+    "show_details": false
+   },
+   {
+    "nid": "8777",
+    "title": "ATLANTIC CHESTNUT PHASE I",
+    "image": {
+     "uri": "public://2026-09/Atlantic Chestnut.jpeg",
+     "url": "/sites/default/files/2026-09/Atlantic%20Chestnut.jpeg",
+     "re_rental_card": "https://www.nychdc.com/sites/default/files/styles/re_rental_card/public/2026-09/Atlantic%20Chestnut.jpeg?itok=8xmjV1xM",
+     "re_rental_card_2x": "https://www.nychdc.com/sites/default/files/styles/re_rental_card_2x/public/2026-09/Atlantic%20Chestnut.jpeg?itok=G3SCjGk8"
+    },
+    "borough": "Brooklyn",
+    "address": "250 Euclid Ave, NY 11208",
+    "rent_range": "$1,485 - $2,292",
+    "age_restriction_copy": "",
+    "bedrooms_copy": "1-Bedroom, 2-Bedroom, Studio",
+    "adaptation_copy": "",
+    "description": "<p>Amenities: Laundry room<br />\r\nNo application fee</p>\r\n",
+    "pdf": "/sites/default/files/2026-09/Atlantic%20Chestnut%20Remarketing%209.2026.pdf",
+    "cta": null,
+    "show_details": false
+   },
+   {
+    "nid": "8767",
+    "title": "River Crest Apartments",
+    "image": {
+     "uri": "public://2022-01/river crest apartments bx_0.jpg",
+     "url": "/sites/default/files/2022-01/river%20crest%20apartments%20bx_0.jpg",
+     "re_rental_card": "https://www.nychdc.com/sites/default/files/styles/re_rental_card/public/2022-01/river%20crest%20apartments%20bx_0.jpg?itok=fG9YvcGl",
+     "re_rental_card_2x": "https://www.nychdc.com/sites/default/files/styles/re_rental_card_2x/public/2022-01/river%20crest%20apartments%20bx_0.jpg?itok=PmZDx-q2"
+    },
+    "borough": "The Bronx",
+    "address": "1164 RIVER AVENUE, CONCOURSE, BRONX, 10452",
+    "rent_range": "$1,614.52 - $2,085.19",
+    "age_restriction_copy": "",
+    "bedrooms_copy": "1-Bedroom, Studio",
+    "adaptation_copy": "",
+    "description": "<p>Amenities: Laundry room<br />\r\nNo application fee</p>\r\n",
+    "pdf": "/sites/default/files/2026-07/River%20Crest%20Apartments%20Remarketing%207.2026%20%281%29.pdf",
+    "cta": null,
+    "show_details": false
+   }
+  ],
+  "pagination": {
+   "current-page": 1,
+   "per-page": 3,
+   "page-count": 2,
+   "total-results": 7
+  }
+ },
+ "page2": {
+  "json": [
+   {
+    "nid": "8763",
+    "title": "NEHEMIAH SPRING CREEK 4B-2",
+    "image": {
+     "uri": "public://2026-06/Nehemiah Spring Creek 4B-2.jpeg",
+     "url": "/sites/default/files/2026-06/Nehemiah%20Spring%20Creek%204B-2.jpeg",
+     "re_rental_card": "https://www.nychdc.com/sites/default/files/styles/re_rental_card/public/2026-06/Nehemiah%20Spring%20Creek%204B-2.jpeg?itok=RMalIh6L",
+     "re_rental_card_2x": "https://www.nychdc.com/sites/default/files/styles/re_rental_card_2x/public/2026-06/Nehemiah%20Spring%20Creek%204B-2.jpeg?itok=7RwRGyrN"
+    },
+    "borough": "Brooklyn",
+    "address": "1115, 1117 & 1123 ASHFORD STREET, *516 SCHROEDERS AVE, EAST NEW YORK, NY 11239",
+    "rent_range": "$803 - $2,774",
+    "age_restriction_copy": "62+",
+    "bedrooms_copy": "1-Bedroom, 2-Bedroom",
+    "adaptation_copy": "Mobility Adapted",
+    "description": "<p>Amenities: Laundry room<br />\r\nNo application fee</p>\r\n",
+    "pdf": "/sites/default/files/2026-06/Nehemiah%20Spring%20Creek%204B-2%20Remarketing%20Final%206.2026.pdf",
+    "cta": null,
+    "show_details": false
+   },
+   {
+    "nid": "8619",
+    "title": "5241 Center Blvd. Apartments ",
+    "image": {
+     "uri": "public://2024-10/5241 Center Blvd Waitlist AD 10.jpg",
+     "url": "/sites/default/files/2024-10/5241%20Center%20Blvd%20Waitlist%20AD%2010.jpg",
+     "re_rental_card": "https://www.nychdc.com/sites/default/files/styles/re_rental_card/public/2024-10/5241%20Center%20Blvd%20Waitlist%20AD%2010.jpg?itok=LX4XZXUt",
+     "re_rental_card_2x": "https://www.nychdc.com/sites/default/files/styles/re_rental_card_2x/public/2024-10/5241%20Center%20Blvd%20Waitlist%20AD%2010.jpg?itok=ngL8ozar"
+    },
+    "borough": "Queens",
+    "address": "5241 CENTER BLVD, LONG ISLAND CITY, HUNTER’S POINT SOUTH",
+    "rent_range": "$3,010.81 - $3,384.58",
+    "age_restriction_copy": "",
+    "bedrooms_copy": "1-Bedroom, Studio",
+    "adaptation_copy": "Mobility Adapted",
+    "description": "<p>Amenities: Laundry room<br />\r\nNo application fee</p>\r\n",
+    "pdf": "/sites/default/files/2026-09/5241%20Center%20Blvd%20Waitlist%20AD%209.15.26%20%281%29.pdf",
+    "cta": null,
+    "show_details": false
+   },
+   {
+    "nid": "9001",
+    "title": "SYNTHETIC NO RENT",
+    "image": {
+     "re_rental_card": "https://evil.example/x.jpg"
+    },
+    "borough": "Staten Island",
+    "address": "1 TEST PLACE, STATEN ISLAND, NY 10301",
+    "rent_range": "",
+    "age_restriction_copy": "",
+    "bedrooms_copy": "Studio",
+    "adaptation_copy": "",
+    "description": "",
+    "pdf": null,
+    "cta": null,
+    "show_details": false
+   },
+   {
+    "nid": "",
+    "title": "SYNTHETIC NO ID",
+    "image": null,
+    "borough": "Queens",
+    "address": "2 Test Street, Queens, NY 11101",
+    "rent_range": "$1,000",
+    "bedrooms_copy": "",
+    "show_details": false
+   }
+  ],
+  "pagination": {
+   "current-page": 2,
+   "per-page": 3,
+   "page-count": 2,
+   "total-results": 7
+  }
+ }
+}

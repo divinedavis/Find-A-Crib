@@ -1672,7 +1672,7 @@ footer.site{border-top:1px solid var(--line);margin-top:40px;padding:22px 20px;c
 # this JS is full of braces.
 # Journey by Mediavine (approved 2026-09-28): the same tag index.html loads,
 # on every generated page, so building/landlord/guide pages carry ads too.
-MEDIAVINE_TAG = ('<script type="text/javascript" async="async" data-noptimize="1" data-cfasync="false" src="//scripts.scriptwrapper.com/tags/c80d90dc-8d39-4cc8-ae1f-67cf301e7a16.js"></script>')
+MEDIAVINE_TAG = "<script>/* Mediavine (Journey), skipped for Plus members: Plus includes no ads (owner, 2026-09-29). fac.noads is set by index.html once Plus is confirmed and cleared on sign-out/lapse. */(function(){try{if(localStorage.getItem('fac.noads')==='1')return}catch(e){}var s=document.createElement('script');s.async=true;s.setAttribute('data-noptimize','1');s.setAttribute('data-cfasync','false');s.src='//scripts.scriptwrapper.com/tags/c80d90dc-8d39-4cc8-ae1f-67cf301e7a16.js';document.head.appendChild(s)})();</script>"
 
 
 TRACK_SNIPPET = """<script src="/config.js"></script>

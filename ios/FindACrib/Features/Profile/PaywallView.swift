@@ -29,6 +29,7 @@ struct PaywallView: View {
             }
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
+                    perk("nosign", "No ads", "No ads in the app or on findacrib.com.")
                     perk("phone.fill", "Managing-agent phone numbers", "The number HPD has on file for the company that runs the building — 11,000+ buildings.")
                     perk("bell.fill", "Saved searches & alerts", "Save any search; get an email when a stabilized building in it is advertised.")
                     perk("building.2.fill", "Landlord research", "Everything a landlord or agent owns, with its violation record, on findacrib.com.")

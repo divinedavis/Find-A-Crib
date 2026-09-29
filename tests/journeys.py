@@ -1326,6 +1326,25 @@ class Runner:
         self.ok(after != before, f'the list did not follow a 4-step zoom after a tap: still {after}', j)
         j.notes.append('list rebuilt after tap + zoom')
 
+    def j_plus_no_ads(self, page, j, device):
+        """Plus includes no ads (owner, 2026-09-29): a device that has seen a
+        confirmed Plus membership (fac.noads) must never request Mediavine's
+        script, and a free visitor's page must still carry the loader."""
+        self.boot(page, wait_pins=False)
+        self.ok(page.evaluate("[...document.scripts].some(s => s.textContent.includes('fac.noads') && s.textContent.includes('scriptwrapper.com/tags/'))"),
+                'the Mediavine loader (gated on fac.noads) is missing from <head>', j)
+        plus = self.page(page.context, j)
+        try:
+            seen = []
+            plus.on('request', lambda r: seen.append(r.url) if 'scriptwrapper.com' in r.url else None)
+            plus.add_init_script("try { localStorage.setItem('fac.noads', '1'); } catch (e) {}")
+            self.boot(plus, wait_pins=False)
+            time.sleep(2)
+            self.ok(not seen, f'a Plus device still requested Mediavine: {seen[:1]}', j)
+        finally:
+            plus.close()
+        j.notes.append('Plus device loads no ad script')
+
     def j_signin_modal(self, page, j, device):
         self.boot(page)
         self.click(page, '#auth-btn'); time.sleep(0.6)
@@ -1421,7 +1440,7 @@ class Runner:
 
     JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'pin_and_list',
                 'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'signin_modal', 'app_chip', 'app_qr_menu', 'boot_is_usable', 'city_chip',
-                'ad_tiles', 'list_follows_zoom', 'outbound_links', 'status_chips', 'referral_gate',
+                'ad_tiles', 'list_follows_zoom', 'plus_no_ads', 'outbound_links', 'status_chips', 'referral_gate',
                 'rent_report', 'legal_pages', 'comments_gate', 'landlords_gate', 'consent_mode', 'account_delete']
 
     # ---- run --------------------------------------------------------------

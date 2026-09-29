@@ -73,7 +73,7 @@
      exclusive inventory, so every trace of AdSense (the loader and the
      in-grid slot code) is gone; Mediavine places its own ads. Early in <head>
      on purpose: Mediavine says earlier execution bids better. -->
-<script type="text/javascript" async="async" data-noptimize="1" data-cfasync="false" src="//scripts.scriptwrapper.com/tags/c80d90dc-8d39-4cc8-ae1f-67cf301e7a16.js"></script>
+<script>/* Mediavine (Journey), skipped for Plus members: Plus includes no ads (owner, 2026-09-29). fac.noads is set by index.html once Plus is confirmed and cleared on sign-out/lapse. */(function(){try{if(localStorage.getItem('fac.noads')==='1')return}catch(e){}var s=document.createElement('script');s.async=true;s.setAttribute('data-noptimize','1');s.setAttribute('data-cfasync','false');s.src='//scripts.scriptwrapper.com/tags/c80d90dc-8d39-4cc8-ae1f-67cf301e7a16.js';document.head.appendChild(s)})();</script>
 <!-- Google tag (gtag.js) — Google Ads conversion tracking + GA4 analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=AW-1001356637"></script>
 <script>
@@ -1636,6 +1636,7 @@
     <h2>Everything you need to land your crib</h2>
     <p class="auth-sub">One membership unlocks all of Find A Crib:</p>
     <ul class="paywall-feats">
+      <li>🚫 No ads, anywhere on Find A Crib</li>
       <li>🔖 Save any search — filters, area and all — and reapply it in one tap</li>
       <li>📞 Managing-agent phone numbers — call who actually runs the building</li>
       <li>🔎 Research any landlord: every building they own across NYC, apartment counts by borough, and their violation record</li>
@@ -2604,6 +2605,7 @@ function favActive() {
   let plusKnown = false;   // true once a membership check has actually answered; an error is not "free"
   async function refreshPlus() {
     plusActive = false; plusKnown = false;
+    if (!authUser) { try { localStorage.removeItem('fac.noads'); } catch (e) {} }
     if (!supaClient || !authUser) return;
     try {
       // Ask the server the same question every gated feature asks (has_plus is
@@ -2623,6 +2625,9 @@ function favActive() {
     // An arriving ?plus=1 (a lock chip on /marketing-agents/ or /directory/)
     // waits here rather than firing on load: membership is not known until this
     // resolves, and showing a subscriber the paywall is worse than a beat's delay.
+    // Plus includes no ads: remember it on this device so the <head> loader
+    // skips Mediavine from the next page on (only a confirmed answer changes it).
+    if (plusKnown) { try { if (plusActive) localStorage.setItem('fac.noads', '1'); else localStorage.removeItem('fac.noads'); } catch (e) {} }
     if (plusUpsellPending) { plusUpsellPending = false; if (plusKnown && !plusActive) openPaywall(null); }
     // Membership is only known once this resolves, and the callers above run
     // updateAuthUI() before awaiting it — so anything that depends on Plus has

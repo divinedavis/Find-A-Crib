@@ -1842,7 +1842,10 @@ def _fac_ads_served(since):
     # FAC_ADSENSE_READY=1 is set in the API's .env, they are named, not added.
     if os.environ.get("FAC_ADSENSE_READY") != "1":
         out["adsense_review"], out["adsense"] = out["adsense"], 0
-    out["total"] = out["web_tiles"] + out["app_tiles"] + out["admob"] + out["adsense"]
+    # Mediavine (Journey, live 9/29) belongs in "all platforms": its ads are
+    # counted by the page itself (_fac_mediavine), not a row per ad here.
+    out["mediavine"] = int((_fac_mediavine(since) or {}).get("total") or 0)
+    out["total"] = out["web_tiles"] + out["app_tiles"] + out["admob"] + out["adsense"] + out["mediavine"]
     return out
 
 

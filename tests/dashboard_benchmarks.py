@@ -98,7 +98,7 @@ def run(browser, live):
     tile = page.locator('#tiles .tile').filter(
         has=page.get_by_text('Ads served · all platforms', exact=True))
     expect(tile.locator('.t-val')).to_have_text('147,351')
-    expect(tile).to_contain_text('146,455 web tiles · 884 app tiles · 12 Google ads')
+    expect(tile).to_contain_text('146,455 listing tiles (web) · 884 listing tiles (app) · 0 Mediavine ads · 12 Google ads')
     expect(tile).to_contain_text('40 TestFlight test ads not counted')
     expect(page.locator('#tiles')).not_to_contain_text('· MRR')
     # A site still in AdSense review: Google's ads are named, never added in.

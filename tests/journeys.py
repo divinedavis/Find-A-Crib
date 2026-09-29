@@ -125,6 +125,31 @@ NON_JOURNEY_EVENTS = {
     'home_set', 'home_open', 'home_clear',
 }
 
+
+# Mediavine (Journey, live 2026-09-29) and the partners its wrapper loads.
+# Their identity/targeting calls fail CORS in a test browser (optable.co,
+# rlcdn.com 404/401 until onboarding finishes on their side) and their own
+# scripts throw; none of it is ours and the visitor sees none of it. WebKit
+# words a failed cross-origin fetch without the URL in the text, so the
+# console message's source location decides. Our own requests failing still
+# fail the journey through the data they did not paint.
+AD_HOSTS = ("scriptwrapper.com", "mediavine.com", "journeymv.com", "optable.co",
+            "rlcdn.com", "adthrive", "pubmatic.com", "rubiconproject.com",
+            "amazon-adsystem.com", "criteo", "openx.net", "casalemedia.com",
+            "3lift.com", "sharethrough.com", "33across.com", "yieldmo.com",
+            "doubleverify.com", "adsafeprotected.com", "id5-sync.com", "liveramp",
+            "uidapi.com", "prebid", "teads", "gumgum.com", "sonobi.com")
+
+
+def ad_noise(m):
+    loc = (m.location or {}).get("url", "") or ""
+    txt = m.text or ""
+    if any(h in txt or h in loc for h in AD_HOSTS):
+        return True
+    generic = ("is not allowed by Access-Control-Allow-Origin", "Preflight response is not successful",
+               "no video to play")
+    return any(g in txt for g in generic) and not loc.startswith(("https://findacrib.com", "http://localhost", "http://127.0.0.1"))
+
 class Journey:
     def __init__(self, name, device):
         self.name, self.device = name, device
@@ -176,6 +201,7 @@ class Runner:
         return b, ctx
 
     def page(self, ctx, j):
+        # (see AD_HOSTS / ad_noise at module level)
         page = ctx.new_page()
         def on_pageerror(e):
             stack = getattr(e, 'stack', '') or ''
@@ -189,7 +215,7 @@ class Runner:
             # Mediavine's ad wrapper (Journey, 2026-09-28) throws from its own
             # file — "mcmNetworkCode is required" until onboarding links the
             # Google account. Third-party, filtered only when the stack is theirs.
-            if 'scriptwrapper.com' in stack or 'mediavine.com' in stack:
+            if any(h in stack or h in str(e) for h in AD_HOSTS):
                 return
             # Safari's wording for a request cut off by leaving the page (the
             # city-pages journey hops four pages in a row). Stackless, so it
@@ -202,7 +228,7 @@ class Runner:
         page.on('pageerror', on_pageerror)
         page.on('crash', lambda: j.errors.append('CRASH: renderer died'))
         page.on('console', lambda m: j.errors.append('console.error: ' + m.text[:200])
-                if m.type == 'error' and not m.text.startswith('[MapKit]') and 'wasm streaming compile failed' not in m.text and 'fetching of the wasm failed' not in m.text and 'falling back to ArrayBuffer' not in m.text and 'Failed to load resource' not in m.text and 'Content Security Policy' not in m.text and 'Report Only' not in m.text and 'doubleclick.net' not in m.text
+                if m.type == 'error' and not ad_noise(m) and not m.text.startswith('[MapKit]') and 'wasm streaming compile failed' not in m.text and 'fetching of the wasm failed' not in m.text and 'falling back to ArrayBuffer' not in m.text and 'Failed to load resource' not in m.text and 'Content Security Policy' not in m.text and 'Report Only' not in m.text and 'doubleclick.net' not in m.text
                 and not (m.text.startswith('Error: no_div')
                          and 'googlesyndication.com' in (m.text + (m.location or {}).get('url', ''))) else None)  # WebKit words Google's own conversion-ping refusal as 'Refused to execute'
         # 'both async and sync fetching of the wasm failed' (and the Aborted()

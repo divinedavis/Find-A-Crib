@@ -265,7 +265,7 @@ class Runner:
                 return
             # Stackless media/GL messages from third-party players (Mediavine's
             # video, Apple's Look Around); nothing in this repo uses them.
-            if str(e).strip() in ('Context is stopped',) and 'findacrib.com' not in stack and 'localhost' not in stack:
+            if str(e).strip() in ('Context is stopped', '[object XMLHttpRequest]') and 'findacrib.com' not in stack and 'localhost' not in stack:
                 return
             # Safari's wording for a request cut off by leaving the page (the
             # city-pages journey hops four pages in a row). Stackless, so it

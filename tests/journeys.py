@@ -1265,14 +1265,15 @@ class Runner:
 
         iOS Safari turns a tap on a card into a mouseover and never sends the
         mouseout, which left the desktop hover-hold on: zoom in, open the list,
-        and it still showed the old buildings. Only a real hovering pointer may
-        hold the list, so a touch device must rebuild after every zoom."""
+        and it still showed the old buildings. Only a mouse may hold the list,
+        so after a finger tap every device must rebuild on zoom."""
         self.boot(page)
-        if page.evaluate("matchMedia('(hover: hover) and (pointer: fine)').matches"):
-            j.notes.append('real pointer: hover-hold is correct here, skipped')
-            return
         first = "[...document.querySelectorAll('#grid > .card[data-bbl]')].slice(0,3).map(c => c.dataset.bbl).join(',')"
-        page.evaluate("document.querySelector('#grid > .card[data-bbl] .body')?.dispatchEvent(new MouseEvent('mouseover', {bubbles: true}))")
+        # Exactly what iOS Safari sends for a finger tap on a card: a touch
+        # pointerover, then a mouseover, and never the matching outs.
+        page.evaluate("""(() => { const el = document.querySelector('#grid > .card[data-bbl] .body'); if (!el) return;
+            el.dispatchEvent(new PointerEvent('pointerover', {bubbles: true, pointerType: 'touch'}));
+            el.dispatchEvent(new MouseEvent('mouseover', {bubbles: true})); })()""")
         before = page.evaluate(first)
         for _ in range(4):
             page.evaluate("document.querySelector('.leaflet-control-zoom-in')?.click()"); time.sleep(0.9)

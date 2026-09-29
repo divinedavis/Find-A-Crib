@@ -1471,6 +1471,7 @@ def dashboard_metrics():
         "adtiles_all": (_fac_adtiles, None),
         "ads_served": (_fac_ads_served, since),
         "page_views": (_fac_page_views, since),
+        "mediavine": (_fac_mediavine, since),
         # The header's Raptive goal (25k/month) is always the last 30 days.
         "page_views_30d": (_fac_page_views, (datetime.datetime.now(datetime.timezone.utc)
                                               - datetime.timedelta(days=30)).strftime("%Y-%m-%dT%H:00:00Z")),
@@ -1748,6 +1749,47 @@ def _fac_page_views(since):
     return {"total": total, "map": on_map, "other": total - on_map}
 
 
+@_memo(600)
+def _fac_mediavine(since):
+    """Mediavine ads shown on the website, from the page's own batched count
+    (index.html: ad_impression rows with network=mediavine carrying paid /
+    house / n). Mediavine has no reporting API, so this is the site's view;
+    their dashboard is the money. Owner's visits out. Revenue is estimated only
+    when FAC_MEDIAVINE_PAGE_RPM (Mediavine dashboard, $ per 1,000 page views)
+    is set in the API's .env. {} on failure."""
+    q = ("events?select=props&event=eq.ad_impression&props->>network=eq.mediavine"
+         "&props->>platform=eq.web")
+    if since:
+        q += f"&created_at=gte.{urllib.parse.quote(str(since))}"
+    mine = sorted(_fac_owner_visitors())
+    if mine:
+        ids = ",".join('"' + v.replace('"', "") + '"' for v in mine)
+        q += "&or=" + urllib.parse.quote(f"(visitor_id.is.null,visitor_id.not.in.({ids}))", safe="(),.")
+    paid = house = rows = 0
+    try:
+        start = 0
+        while True:
+            chunk = _rest("GET", q + f"&order=id.asc&offset={start}&limit=1000") or []
+            for r in chunk:
+                pr = r.get("props") or {}
+                paid += int(pr.get("paid") or 0)
+                house += int(pr.get("house") or 0)
+            rows += len(chunk)
+            if len(chunk) < 1000 or start > 200_000:
+                break
+            start += 1000
+    except Exception:
+        return {}
+    out = {"paid": paid, "house": house, "total": paid + house, "rows": rows}
+    try:
+        rpm = float(os.environ.get("FAC_MEDIAVINE_PAGE_RPM") or 0)
+    except ValueError:
+        rpm = 0
+    if rpm > 0:
+        out["page_rpm"] = rpm
+    return out
+
+
 # Every ad the owner's platforms have put in front of someone, one number.
 # Find A Crib is the only product that serves ads (checked 2026-09-25: no
 # other repo logs an ad event), so "all platforms" is its three surfaces:
@@ -1772,7 +1814,7 @@ FAC_AD_SOURCES = (
     ("admob", "event=eq.ad_impression&props->>mode=eq.live&props->>platform=eq.ios"),
     # The website's AdSense in-feed tiles, logged when a slot fills (index.html
     # settleAds, 2026-09-25). Web rows carry platform=web.
-    ("adsense", "event=eq.ad_impression&props->>mode=eq.live&props->>platform=eq.web"),
+    ("adsense", "event=eq.ad_impression&props->>mode=eq.live&props->>platform=eq.web&props->>network=eq.adsense"),
     ("admob_test", "event=eq.ad_impression&props->>mode=eq.test"),
 )
 

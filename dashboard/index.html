@@ -249,6 +249,8 @@
   .tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px;margin-bottom:20px}
   /* Find A Crib's row is eight tiles: two rows of four rather than six and an orphan pair */
   .tiles:has(> .tile:nth-child(8)){grid-template-columns:repeat(4,minmax(0,1fr))}
+  /* nine (Mediavine ads joined 2026-09-29): three rows of three, no orphan */
+  .tiles:has(> .tile:nth-child(9)){grid-template-columns:repeat(3,minmax(0,1fr))}
   @media(max-width:1080px){.tiles,.tiles:has(> .tile:nth-child(8)){grid-template-columns:repeat(3,minmax(0,1fr))}}
   @media(max-width:560px){.tiles,.tiles:has(> .tile:nth-child(8)){grid-template-columns:repeat(2,minmax(0,1fr))}}
   .tile{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:15px 16px}
@@ -1823,8 +1825,23 @@
       // Ads served on every surface (api_server._fac_ads_served). Replaced the
       // MRR tile 2026-09-25 — MRR still shows in the goals card. AdMob test
       // ads (TestFlight) are named but never counted.
-      adsTile(d.ads_served)
+      adsTile(d.ads_served),
+      mediavineTile(d.mediavine, d.page_views)
     ];
+    // Mediavine (Journey, live 2026-09-29): ads the pages counted themselves —
+    // Mediavine has no reporting API. Paid vs Mediavine's own filler ("Grow"
+    // house ads). Revenue only as an estimate from the Page RPM the owner
+    // copies out of Mediavine's dashboard (FAC_MEDIAVINE_PAGE_RPM).
+    function mediavineTile(M, P){
+      if(!M || M.total == null) return {ic:'💰',v:'—',l:'Mediavine ads · website',own:'Mediavine counts unavailable right now'};
+      var pv=n(P&&P.total), bits=[comma(M.paid)+' paid', comma(M.house)+' Mediavine filler'];
+      if(pv) bits.push((n(M.total)/pv).toFixed(1)+' per page view');
+      var own=bits.join(' · ');
+      if(M.page_rpm && pv) own+='<br>≈ <b>$'+(pv/1000*M.page_rpm).toFixed(2)+'</b> at your $'+Number(M.page_rpm).toFixed(2)+' page RPM';
+      else own+='<br>Add your Page RPM from Mediavine for a revenue estimate';
+      return {ic:'💰',v:comma(M.total),l:'Mediavine ads · website',own:own,
+              title:'Ads Mediavine placed on findacrib.com in this range, counted by the page itself (each creative once; a banner refresh is a new ad). Paid = an advertiser\u2019s creative; filler = Mediavine\u2019s own "Grow" house ads. Plus members see none. Mediavine\u2019s dashboard is the source of truth for earnings.'};
+    }
     // Progress toward the Raptive goal: always the last 30 days, whatever
     // range is selected, because Raptive's bar is monthly page views.
     (function(){
@@ -1850,7 +1867,7 @@
       var parts=[comma(A.web_tiles)+' web tiles', comma(A.app_tiles)+' app tiles', comma(n(A.admob)+n(A.adsense))+' Google ads'];
       return {ic:'📣',v:comma(A.total),l:'Ads served · all platforms',
               own:parts.join(' · ')+(n(A.admob_test)?' · '+comma(A.admob_test)+' TestFlight test ads not counted':'')
-                 +(A.adsense_review!=null?' · website Google ads not counted: site still in AdSense review':''),
+                 +(n(A.adsense_review)?' · '+comma(A.adsense_review)+' AdSense ads from review never counted':''),
               title:'Counted the way Google counts ads: one each time an ad loads on a page, seen or not. Advertiser tiles loaded on the website and iPhone app + live Google ads (AdSense on the website, AdMob in the app), this range, your own visits excluded. Google ads count once Google approves the site and the app ships to the App Store.',
               accent:true};
     }

@@ -106,7 +106,18 @@ def run(browser, live):
                              'adsense_review': 6, 'total': 12}
     page.reload(wait_until='networkidle')
     expect(tile.locator('.t-val')).to_have_text('12')
-    expect(tile).to_contain_text('website Google ads not counted: site still in AdSense review')
+    expect(tile).to_contain_text('6 AdSense ads from review never counted')
+    # Mediavine (2026-09-29): the page's own count, paid vs filler, per page view.
+    payload['mediavine'] = {'paid': 40, 'house': 60, 'total': 100, 'rows': 12}
+    payload['page_views'] = {'total': 50, 'map': 45, 'other': 5}
+    page.reload(wait_until='networkidle')
+    mv = page.locator('#tiles .tile').filter(has=page.get_by_text('Mediavine ads · website', exact=True))
+    expect(mv.locator('.t-val')).to_have_text('100')
+    expect(mv).to_contain_text('40 paid · 60 Mediavine filler · 2.0 per page view')
+    expect(mv).to_contain_text('Add your Page RPM from Mediavine')
+    payload['mediavine']['page_rpm'] = 12
+    page.reload(wait_until='networkidle')
+    expect(mv).to_contain_text('$0.60 at your $12.00 page RPM')
     payload.pop('ads_served')
     page.reload(wait_until='networkidle')
     expect(tile.locator('.t-val')).to_have_text('—')

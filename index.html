@@ -2900,6 +2900,51 @@ function favActive() {
     } catch (e) { /* best-effort */ }
   }
 
+  // ---------- Mediavine ads shown (dashboard "Mediavine ads" tile) ----------
+  // Mediavine has no reporting API, so the page counts its own: each creative
+  // placed in an ad unit (.adunit / .mv-ad-box) once — a banner refresh is a
+  // new creative, i.e. a new impression, the way ad networks count. Mediavine's
+  // own filler ("Grow" house ads, a.grow-housead) is kept apart from paid ones,
+  // which arrive as frames. Batched: one row per 20 s of activity, plus a flush
+  // when the tab is hidden, never a row per ad. Mediavine's dashboard stays the
+  // source of truth for money (owner, 2026-09-29).
+  (function () {
+    if (!window.MutationObserver || !window.WeakSet) return;
+    const UNIT = '.adunit, .mv-ad-box', seen = new WeakSet();
+    let paid = 0, house = 0, timer = null;
+    function flush() {
+      clearTimeout(timer); timer = null;
+      if (!paid && !house) return;
+      const p = paid, h = house; paid = house = 0;
+      track('ad_impression', { mode: 'live', network: 'mediavine', paid: p, house: h, n: p + h });
+    }
+    function tally(unit) {
+      for (const c of unit.children) {
+        if (seen.has(c)) continue;
+        if (c.matches('a.grow-housead')) { seen.add(c); house++; }
+        else if (c.tagName === 'IFRAME' || c.querySelector('iframe')) { seen.add(c); paid++; }
+        else continue;
+        if (!timer) timer = setTimeout(flush, 20000);
+      }
+    }
+    new MutationObserver(ms => {
+      for (const m of ms) {
+        const t = m.target;
+        if (t.nodeType === 1 && t.matches(UNIT)) tally(t);
+        for (const a of m.addedNodes) {
+          if (a.nodeType !== 1) continue;
+          if (a.matches(UNIT)) tally(a);
+          else if (a.firstElementChild) a.querySelectorAll(UNIT).forEach(tally);
+          const u = a.parentElement && a.parentElement.closest(UNIT);
+          if (u) tally(u);
+        }
+      }
+    }).observe(document, { childList: true, subtree: true });
+    document.querySelectorAll(UNIT).forEach(tally);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(); });
+    addEventListener('pagehide', flush);
+  })();
+
   // The whole app is gated on buildings.min.json (~1.9 MB gzipped). Unlike the
   // three fetches below it has no fallback value — without it there is nothing
   // to draw — so a stall or a short read used to leave the page sitting on

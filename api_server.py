@@ -2832,6 +2832,24 @@ def dashboard_creator_update(cid):
     return jsonify(creator=row)
 
 
+@app.route("/dashboard-creators/<cid>/send", methods=["POST"])
+def dashboard_creator_send(cid):
+    """The row's Send button: email the creator their PDF brief now."""
+    if rate_limited("creator-send", 60, 3600):
+        return _too_many()
+    denied = _dashboard_denial(_dashboard_auth(), ("ok",))
+    if denied:
+        return denied
+    try:
+        return jsonify(creator=creator_outreach.send_pitch(cid))
+    except KeyError:
+        return jsonify(error="not_found"), 404
+    except ValueError as e:
+        return jsonify(error="cannot_send", message=str(e)), 400
+    except Exception as e:
+        return jsonify(error="send_failed", message=type(e).__name__), 502
+
+
 @app.route("/dashboard-creators/<cid>/brief.<ext>")
 def dashboard_creator_brief(cid, ext):
     denied = _dashboard_denial(_dashboard_auth(), ("ok",))

@@ -16,7 +16,9 @@ Who writes:
 gunicorn runs one worker (deploy/findacrib-api.override.conf), so a process
 lock around read-modify-write is enough.
 """
-import base64, datetime, json, os, pathlib, re, threading
+import base64, datetime, imaplib, json, os, pathlib, re, smtplib, ssl, threading, time
+from email.message import EmailMessage
+from email.utils import formataddr, formatdate, make_msgid
 
 CREATOR_DIR = pathlib.Path(os.environ.get("CREATOR_DIR", "/var/lib/findacrib-api/creators"))
 DB = CREATOR_DIR / "creators.json"
@@ -44,7 +46,10 @@ EDITABLE = {
 
 
 def _today():
-    return datetime.date.today().isoformat()
+    # The owner's calendar day, not the droplet's (UTC): a send at 9 pm in New
+    # York must not read as tomorrow (it did on 2026-09-28).
+    from zoneinfo import ZoneInfo
+    return datetime.datetime.now(ZoneInfo("America/New_York")).date().isoformat()
 
 
 def _now():
@@ -85,6 +90,7 @@ def _public(row):
     r["complete"] = row.get("stage") == "contract_complete"
     r["has_pdf"] = (FILES / f"{row['id']}.pdf").exists()
     r["has_jpg"] = (FILES / f"{row['id']}.jpg").exists()
+    r["can_send"] = bool(row.get("email")) and r["has_pdf"] and mailbox(row.get("product")) is not None
     return r
 
 
@@ -221,3 +227,98 @@ def brief_file(cid, ext):
         return None
     p = FILES / f"{cid}.{ext}"
     return p if p.exists() else None
+
+
+# ---------- sending a pitch from the page ----------
+# Owner, 2026-09-28: "make a button per row for me to send the email with pdf".
+# The wording mirrors CreatorBriefs/mail_draft.py (draft + PITCH); keep the two in step.
+MAILBOXES = CREATOR_DIR / "mail_forward.json"    # [{product, host, user, password, forward_to}], 0600
+OWNER_BCC = "divinejdavis@gmail.com"
+NAMES = {"marracat": "Marracat", "findacrib": "Find A Crib", "haukley": "Haukley"}
+PITCH = {
+    "haukley": ("Haukley is a free streaming service with 74 movies and 7 series and no subscription, "
+                "including the Pioneers of Black Cinema collection, at haukley.com."),
+    "marracat": ("Marracat is a free iPhone app with 1,000+ Black-owned and independent brands and "
+                 "100,000+ products in one place, and you check out with the brand right in the app."),
+    "findacrib": ("Find A Crib is a free app that maps every rent-stabilized building in New York City "
+                  "and shows what's for rent there this week."),
+}
+
+
+def mailbox(product):
+    try:
+        boxes = json.loads(MAILBOXES.read_text())
+    except (FileNotFoundError, PermissionError):
+        return None
+    return next((b for b in boxes if b.get("product") == product), None)
+
+
+def _pitch(product, name, to, cfg):
+    brand = NAMES[product]
+    first = (name or "there").split()[0]
+    m = EmailMessage()
+    m["From"] = formataddr((cfg.get("from_name") or brand, cfg["user"]))
+    m["To"] = to
+    m["Subject"] = f"Paid review: {brand} x {name}"
+    m["Message-ID"] = make_msgid(domain=cfg["user"].split("@")[1])
+    m["Date"] = formatdate(localtime=True)
+    m.set_content(f"""Hi {first},
+
+I'm reaching out from {brand}. We love your content and would like to pay you for a {brand} review video.
+
+{PITCH[product]}
+
+The brief is attached, with what to show in the video, the deliverables and the date. If you're interested, reply with your rate and we'll take it from there.
+
+Thanks,
+{cfg.get("signature") or cfg.get("from_name") or brand}
+""")
+    return m
+
+
+def send_pitch(cid):
+    """Email this creator their PDF brief from the product's mailbox, Bcc the
+    owner, file it in Sent, drop the matching draft, mark "reached out".
+    Returns the updated row. Raises KeyError / ValueError with a reason."""
+    with _LOCK:
+        row = _load()["creators"].get(cid)
+    if row is None:
+        raise KeyError(cid)
+    to, product = row.get("email"), row.get("product")
+    if not to:
+        raise ValueError("no email on file for this creator")
+    cfg = mailbox(product)
+    if cfg is None:
+        raise ValueError(f"no {NAMES.get(product, product)} mailbox is set up to send from")
+    pdf = FILES / f"{cid}.pdf"
+    if not pdf.exists():
+        raise ValueError("no PDF brief on file for this creator")
+    m = _pitch(product, row.get("name") or cid, to, cfg)
+    m.add_attachment(pdf.read_bytes(), maintype="application", subtype="pdf",
+                     filename=f"{NAMES[product]} Creator Brief - {row.get('name') or cid}.pdf")
+    ctx = ssl.create_default_context()
+    host = cfg.get("host", "mail.privateemail.com")
+    with smtplib.SMTP_SSL(host, 465, context=ctx, timeout=60) as s:
+        s.login(cfg["user"], cfg["password"])
+        s.send_message(m, to_addrs=[to, OWNER_BCC])       # Bcc: envelope only
+    try:
+        with imaplib.IMAP4_SSL(host, 993, ssl_context=ctx, timeout=60) as i:
+            i.login(cfg["user"], cfg["password"])
+            i.append("Sent", "\\Seen", imaplib.Time2Internaldate(time.time()), m.as_bytes())
+            i.select("Drafts")
+            typ, data = i.search(None, "TO", to)
+            for n in (data[0].split() if typ == "OK" and data[0] else []):
+                i.store(n, "+FLAGS", "\\Deleted")
+            i.expunge()
+    except Exception:
+        pass            # the email went out; filing it is housekeeping
+    with _LOCK:
+        db = _load()
+        row = db["creators"][cid]
+        if row.get("stage") == "not_reached_out":
+            _set_stage(row, "reached_out")
+        row["sent_at"] = row.get("sent_at") or _today()
+        row.setdefault("sends", []).append(_now())
+        row["updated_at"] = _now()
+        _save(db)
+        return _public(row)

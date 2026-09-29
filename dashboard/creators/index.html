@@ -259,6 +259,7 @@
   .note-cell textarea{width:100%;min-width:170px;min-height:34px;resize:vertical}
   .mail-link{font-size:12.5px;white-space:nowrap}
 
+  .send-btn{margin-top:6px}
   .price{font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
   .price-sub{font-size:11.5px;color:var(--muted);white-space:nowrap;margin-top:2px}
   .budget-card{padding:18px 20px;margin-bottom:16px}
@@ -577,6 +578,14 @@
     var files = '<div class="fbtns"><button class="file-btn" data-open="pdf" '+(r.has_pdf?'':'disabled title="No PDF: this creator had no email, so only a JPG was made"')+'>PDF</button>'+
                 '<button class="file-btn" data-open="jpg" '+(r.has_jpg?'':'disabled')+'>JPG</button></div>';
     var mail = r.email ? '<a class="mail-link" href="mailto:'+esc(r.email)+'">'+esc(r.email)+'</a>' : '<span class="u-muted">DM only</span>';
+    if(r.email){
+      var sentBefore = r.stage!=='not_reached_out' || (r.sends||[]).length;
+      var why = !r.has_pdf ? 'No PDF brief on file for this creator'
+              : !r.can_send ? 'No '+(APP[r.product]||r.product)+' mailbox is set up to send from yet' : '';
+      mail += '<div><button class="file-btn send-btn" data-send '+(why?'disabled title="'+esc(why)+'"':'')+'>'+
+              (sentBefore ? 'Resend email + PDF' : 'Send email + PDF')+'</button>'+
+              (why ? '<div class="price-sub">'+esc(why)+'</div>' : '')+'</div>';
+    }
     var stage = '<select class="inp st-'+esc(r.stage)+'" data-k="stage">'+STAGES.map(function(s){
                   return '<option value="'+s[0]+'"'+(s[0]===r.stage?' selected':'')+'>'+s[1]+'</option>'; }).join('')+'</select>';
     // An empty date input in Safari shows today's date in grey, which read as
@@ -608,6 +617,8 @@
           save(id, body, tr);
         });
       });
+      var sb_ = tr.querySelector('[data-send]');
+      if(sb_) sb_.onclick = function(){ sendPitch(id, sb_); };
       tr.querySelectorAll('[data-open]').forEach(function(b){
         b.onclick = function(){ openBrief(id, b.dataset.open); };
       });
@@ -628,6 +639,29 @@
       if(s){ s.textContent='not saved: '+e.message; s.classList.add('on','err'); }
     }
   }
+  // Send button (owner, 2026-09-28). The server emails the creator their PDF
+  // from the app's mailbox, Bcc's the owner and moves the row to "reached out".
+  async function sendPitch(id, btn){
+    var r = ROWS.find(function(x){ return x.id===id; }); if(!r) return;
+    var brand = APP[r.product]||r.product, again = r.stage!=='not_reached_out' || (r.sends||[]).length;
+    var q = (again ? (r.name||r.handle)+' was already reached out to'+(r.sent_at?' ('+fshort(r.sent_at)+')':'')+'. Send the email again?\n\n' : '')+
+            'Send the '+brand+' pitch with '+(r.name||r.handle)+'’s PDF brief to '+r.email+'?\nYou’ll get a copy at your Gmail.';
+    if(!confirm(q)) return;
+    btn.disabled = true; btn.textContent = 'Sending…';
+    try{
+      var res = await api('dashboard-creators/'+encodeURIComponent(id)+'/send', { method:'POST' });
+      var d = await res.json().catch(function(){ return {}; });
+      if(!res.ok) throw new Error(d.message || d.error || ('HTTP '+res.status));
+      ROWS = ROWS.map(function(x){ return x.id===id ? d.creator : x; });
+      render();
+      var b2 = el('rows').querySelector('tr[data-id="'+CSS.escape(id)+'"] [data-send]');
+      if(b2){ b2.textContent = 'Sent ✓'; setTimeout(function(){ render(); }, 2000); }
+    }catch(e){
+      btn.disabled = false; btn.textContent = 'Send email + PDF';
+      alert('Not sent: '+e.message);
+    }
+  }
+
   // The brief lives behind the owner check, so a plain link can't carry the
   // token. Open the tab first (inside the click, so it isn't blocked as a
   // popup), then point it at the downloaded file.

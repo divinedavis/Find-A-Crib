@@ -26,6 +26,7 @@ HERE = pathlib.Path(__file__).resolve().parent
 HOST = "https://api.appstoreconnect.apple.com"
 API = HOST + "/v1"
 SHOTS = HERE.parent / "marketing" / "asc-screenshots"
+SHOTS_IPAD = HERE.parent / "marketing" / "asc-screenshots-ipad"
 
 SUBTITLE = "NYC, LA, SF & DC rent maps"                       # <= 30 chars
 KEYWORDS = "rent stabilized,rent control,los angeles,san francisco,washington dc,apartments,rso,brooklyn,nyc"  # <=100 — cities carry the search demand; the title already says Find A Crib
@@ -76,43 +77,49 @@ Privacy Policy: https://findacrib.com/privacy/
 Find A Crib is an independent, informational tool. It is not a broker, does not list apartments, and takes no fee. Data: NYS Homes and Community Renewal rent-stabilization register (2024), NYC HPD open data, HUD FY2026 Fair Market Rents, HousingSearch.ny.gov, advertised rents from Zumper, LA County Assessor parcel data under LAHD's RSO criteria, the SF Rent Board Housing Inventory via DataSF, and the DC DHCD RentRegistry.
 """
 
-WHATS_NEW = """Comments: say what a building is really like — the heat, the super, the block — and read what other renters say. Sign in to join; every comment can be reported or blocked.
+WHATS_NEW = """Find A Crib is now an iPad app as well as an iPhone one — the same maps and listings on a bigger screen.
 
-New Lotteries tab: every NYC Housing Connect lottery and income-restricted re-rental open in the boroughs you get alerts for, soonest deadline first, with the rent, sizes and income range — and a "Your income fits" badge when the income you gave matches.
+More cities: Chicago, Miami, Atlanta and Philadelphia income-restricted buildings, plus New Jersey affordable-housing drawings, with Lotteries tabs for Los Angeles, San Francisco and Miami-Dade too.
 
-Building pages now lead with violations and inspections; the About section moved to the bottom.
+New Events tab: the City's own tenant clinics, housing workshops and lottery information sessions in New York.
 
-Tapping an alert opens Find A Crib on every new listing in it, instead of jumping straight to one website.
+Pest violations on every New York building page: the roaches, mice, rats or bedbugs an HPD inspector confirmed this year.
 
-Signed-in users stay signed in from the first screen, and a few small fixes.
+More re-rentals, including NYC HDC's official list, filterable by bedrooms, with photos on lottery cards.
+
+Find A Crib Plus now includes no ads.
 """
 
-REVIEW_NOTES = """VERSION 1.2.2 (build __BUILD__) — Lotteries tab; alert notifications open an in-app list
+REVIEW_NOTES = """VERSION 1.2.5 (build __BUILD__) — iPad, more cities, an Events tab, pest violations, and ads in the results feed
 
-WHAT CHANGED SINCE 1.2.1
-1. A fourth tab, "Lotteries". For a user subscribed to borough alerts it lists the NYC Housing Connect lotteries and the HPD marketing agents' re-rentals open in their alert boroughs, each with a button to the official page (housingconnect.nyc.gov or the agent's own site) in Safari. Without a subscription the tab shows a short explanation and a "Sign up for alerts" button; no sheet opens by itself. To see the list in review: sign in (Sign in with Apple is fine), tap Lotteries > "Sign up for alerts", pick a borough, save.
-2. Tapping a borough-alert notification opens the app on a list of every listing in that alert, each with a button to the agent's own page, instead of opening the first listing's website directly.
-3. Building pages: "Violations & inspections" now comes first and "About" last; the "Open on findacrib.com" menu item was removed.
-4. Comments on a building, for signed-in users only. Guideline 1.2: every comment carries Report (hides it at once for the reporter and files it for us to act on within 24 hours) and Block this person (hides everything they write, everywhere); authors can delete their own; a word filter refuses slurs and threats at post time; the same rules and our contact address are in the Terms linked from Profile. The rows are the same ones findacrib.com shows.
-5. The launch screen waits (at most 3 seconds) for a signed-in user's saved session to be confirmed, so no screen shows as signed out first.
-6. In LA, SF and DC the app no longer offers New York's things (alerts, the Lotteries tab, NY-only filters) and the map opens on the chosen city.
-No new permissions and no new data types.
+WHAT CHANGED SINCE 1.2.3
+1. iPad. The app is now universal (iPhone + iPad) with an iPad layout: two columns of lotteries and re-rentals, quick filters beside the search field, the same tabs. No iPad-only features and no new permissions.
+2. More places: Chicago, Miami-Dade, Atlanta and Philadelphia buildings; Lotteries tabs for LA, SF, Miami-Dade and New Jersey (cards open the official listing in Safari).
+3. A fifth tab, "Events" (New York only): tenant clinics, housing workshops and lottery information sessions from the City's public events calendar (api.nyc.gov), with a link to the City's page in Safari.
+4. Building pages gained "Pest violations" (HPD violations for roaches, mice, rats or bedbugs this year, NYC Open Data). Violations and complaints stay behind a free account, as in 1.2.3.
+5. Lotteries tab: a Beds filter; photos on lottery cards; re-rentals now also come from NYC HDC's official re-rental list.
+6. Comments show the most-liked comment first with one reply under each. Reporting, blocking, author deletion and the word filter are unchanged from 1.2.3.
+7. ADVERTISING (new third-party SDK: Google Mobile Ads / AdMob). A 300x250 ad, labelled "Sponsored", can take the place of a re-rental card in the Search results feed (the 3rd card, then one every 8-15 cards). Ads are requested NON-PERSONALIZED (npa=1); the app does not track, never reads the IDFA and shows no App Tracking Transparency prompt. Live ads run on the US storefront only. Find A Crib Plus subscribers see no ads. The App Privacy label declares the SDK's data (device ID, coarse location, advertising data, product interaction, performance data), none of it used for tracking, and the app ships a privacy manifest.
+No new permissions.
+
+TO SEE THE IPAD LAYOUT
+Open the app on an iPad in either orientation: Search, Lotteries, Events, My Activity and Profile all work, and results lay out in two columns.
+
+TO SEE AN AD
+Open Search, run any search while signed out (or signed in without Plus) and scroll the results; the ad appears in the 3rd card's place when Google has one to serve.
 
 NOTIFICATIONS
 Once, a few seconds after launch, while permission is undetermined, the app shows its own card ("Get alerts on this phone?") explaining the ask; "Turn on" shows the iOS dialog, "Not now" waits a week, a system decline is never re-asked. Only borough alerts the user subscribed to — no marketing. Tapping one opens a list of that alert's listings.
 To see a push in review: sign in, Profile > Alerts, pick a borough, Turn on alerts, allow. The feeds are checked every 10 minutes.
 
 APP STORE RATING
-The app calls StoreKit's requestReview after a building is saved or alerts are turned on (at most once per app version, never within 120 days of the previous such request), on the next app open on the day an account is created, and on the first app open on the 1st of each month for signed-in users; never twice in one day and never on a launch that shows the notifications card. Only the system sheet is used, so iOS's own limit applies. Profile also has a "Rate Find A Crib" link to the App Store review page.
+Only StoreKit's system requestReview is used (7th app open, after saving a building or turning on alerts, on the day an account is created, monthly for signed-in users; never twice a day, iOS's own limit applies). Profile has a "Rate Find A Crib" link.
 
 USAGE ANALYTICS
-The app records what is done in it (screens opened, searches by their filters, taps on listing links), linked to the account when signed in, declared under Product Interaction / Other Usage Data (Analytics) in App Privacy. No advertising identifier, no tracking, no third-party SDK. Profile > "Share anonymous usage" turns it off.
+The app records what is done in it (screens opened, searches by their filters, taps on listing links), linked to the account when signed in, declared under Product Interaction / Other Usage Data (Analytics) in App Privacy. No advertising identifier and no tracking; the only third-party SDK is Google Mobile Ads (see ADVERTISING above). Profile > "Share anonymous usage" turns off our own analytics.
 
 WHERE THE DATA COMES FROM
-Public registers fetched as static JSON from findacrib.com (NYS HCR rent-stabilization register, LA County Assessor RSO parcels, SF Rent Board inventory, DC DHCD registrations); re-rentals from the marketing agents' public pages.
-
-SIGN-IN
-No account is needed to use the app. Signing in is optional; it syncs saved buildings with our website, enables alerts, and reveals the building's registered managing agent (public HPD registration data). Sign in with Apple, Google or email.
+Public registers served as static JSON from findacrib.com (NYS HCR, NYC HPD, LA County Assessor RSO, SF Rent Board, DC DHCD, HUD) and the marketing agents' and HDC's public re-rental pages.
 
 LOCATION
 Never requested. The map is Apple Maps; counts use the visible map region.
@@ -225,23 +232,28 @@ def resolve(asc, app_id, any_version=False):
             "version_loc": asc.get(f"/appStoreVersions/{v['id']}/appStoreVersionLocalizations")["data"][0]["id"]}
 
 
-def upload_screenshots(asc, version_loc):
-    """6.9" set (APP_IPHONE_67 accepts 1320x2868). Replaces whatever is there
-    so the set always mirrors marketing/asc-screenshots/ in filename order."""
-    files = sorted(p for p in SHOTS.glob("*.png"))
+def upload_screenshots(asc, version_loc, folder=None, display_type="APP_IPHONE_67"):
+    """One display type's set, mirroring a folder in filename order.
+
+    6.9" iPhone (APP_IPHONE_67 accepts 1320x2868) by default; the app went
+    universal in 1.2.4, so the iPad 13" set (APP_IPAD_PRO_3GEN_129, 2064x2752)
+    is uploaded too — an iPad-capable app whose page shows only phone shots is
+    a page that lies about the app."""
+    folder = folder or SHOTS
+    files = sorted(p for p in folder.glob("*.png"))
     if not files:
-        print("    no screenshots in", SHOTS); return
+        print("    no screenshots in", folder); return
     sets = asc.get(f"/appStoreVersionLocalizations/{version_loc}/appScreenshotSets")["data"]
-    st = next((s for s in sets if s["attributes"]["screenshotDisplayType"] == "APP_IPHONE_67"), None)
+    st = next((s for s in sets if s["attributes"]["screenshotDisplayType"] == display_type), None)
     if not st:
         st = asc.post("/appScreenshotSets", {"data": {"type": "appScreenshotSets",
-              "attributes": {"screenshotDisplayType": "APP_IPHONE_67"},
+              "attributes": {"screenshotDisplayType": display_type},
               "relationships": {"appStoreVersionLocalization": {"data": {"type": "appStoreVersionLocalizations", "id": version_loc}}}}})["data"]
     existing = asc.get(f"/appScreenshotSets/{st['id']}/appScreenshots")["data"]
     have = {e["attributes"].get("fileName"): e for e in existing}
     if [e["attributes"].get("fileName") for e in existing] == [f.name for f in files] and all(
             (have[f.name]["attributes"].get("sourceFileChecksum") or "") == hashlib.md5(f.read_bytes()).hexdigest() for f in files):
-        print(f"    screenshots already current ({len(files)})"); return
+        print(f"    {display_type} screenshots already current ({len(files)})"); return
     for e in existing:
         asc.delete(f"/appScreenshots/{e['id']}")
     for f in files:
@@ -257,7 +269,7 @@ def upload_screenshots(asc, version_loc):
                 raise SystemExit(f"upload chunk failed {r.status_code}: {r.text[:200]}")
         asc.patch(f"/appScreenshots/{res['id']}", {"data": {"type": "appScreenshots", "id": res["id"],
                   "attributes": {"uploaded": True, "sourceFileChecksum": hashlib.md5(data).hexdigest()}}})
-        print("    uploaded", f.name)
+        print(f"    uploaded {f.name} ({display_type})")
 
 
 def ensure_availability(asc, app_id):
@@ -346,6 +358,7 @@ def apply(asc, cfg):
         print("    price: free (USA base)")
     ensure_availability(asc, app_id)
     upload_screenshots(asc, ids["version_loc"])
+    upload_screenshots(asc, ids["version_loc"], SHOTS_IPAD, "APP_IPAD_PRO_3GEN_129")
 
 
 def show(asc, cfg):

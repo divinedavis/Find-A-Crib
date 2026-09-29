@@ -627,7 +627,19 @@
   .pill-popover .actions button.primary { background: var(--blue-solid); color: #fff; border-color: var(--blue); }
 
   /* ends above Mediavine's sticky banner (--ad-h, 0 when there is none) instead of running under it */
-  main { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); height: calc(100vh - 56px - var(--ad-h, 0px)); height: calc(100dvh - var(--header-h, 56px) - var(--ad-h, 0px)); margin-bottom: var(--ad-h, 0px); }
+  main { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+         grid-template-rows: calc(100vh - 56px - var(--ad-h, 0px));
+         grid-template-rows: calc(100dvh - var(--header-h, 56px) - var(--ad-h, 0px));
+         grid-auto-rows: auto; margin-bottom: var(--ad-h, 0px); }
+  /* The map and the list own row 1, left and right, whatever else lands in
+     <main>. Mediavine sometimes injects a sidebar/in-content ad as a <main>
+     child on the LA/SF/DC pages (owner, 2026-09-29): with auto-placement it
+     took the right-hand cell and pushed the list under the map. Anything that
+     isn't ours now gets its own full-width row below the app, visible on
+     scroll (never hidden — a hidden ad counts as invalid traffic). */
+  main > #map { grid-row: 1; grid-column: 1; }
+  main > aside.results { grid-row: 1; grid-column: 2; }
+  main > :not(#map):not(aside.results):not(h1) { grid-column: 1 / -1; justify-self: center; margin: 16px 0; }
   #map { height: 100%; min-width: 0; }
 
   aside.results { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-left: 1px solid var(--line); background: var(--surface); }

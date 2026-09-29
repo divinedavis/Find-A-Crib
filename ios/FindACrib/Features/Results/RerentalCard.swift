@@ -54,7 +54,7 @@ struct RerentalCard: View {
 
                 if !bits.isEmpty { Text(bits.joined(separator: " · ")).font(.se(18)).foregroundStyle(SE.ink2).lineLimit(1) }
 
-                (Text("Listed by ").font(.se(18)) + Text(f.agent).font(.se(18, .bold)) + Text(" — an HPD-approved marketing agent").font(.se(18)))
+                (Text("Listed by ").font(.se(18)) + Text(f.agent).font(.se(18, .bold)) + Text(f.agent.localizedCaseInsensitiveContains("Housing Development Corporation") ? " — the city's affordable-housing finance agency" : " — an HPD-approved marketing agent").font(.se(18)))
                     .foregroundStyle(SE.ink2)
 
                 HStack(spacing: 14) {

@@ -5656,7 +5656,7 @@ function favActive() {
         ${where ? `<div class="nb">${esc(where)}</div>` : ''}
         ${featMoneyHtml(f)}
         ${bits.length ? `<div class="units-line">${bits.join(' · ')}</div>` : ''}
-        <div class="feat-agent">Listed by <b>${esc(f.agent)}</b> — an HPD-approved marketing agent</div>
+        <div class="feat-agent">Listed by <b>${esc(f.agent)}</b> — ${/Housing Development Corporation/i.test(f.agent || '') ? "the city's affordable-housing finance agency" : 'an HPD-approved marketing agent'}</div>
         <div class="actions">
           <!-- A few agents (Clinton Management) publish a board with no page
                per apartment, so the link can only be that board. Saying "Apply"

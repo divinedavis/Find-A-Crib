@@ -218,7 +218,7 @@
   .site-btn.on{background:var(--purple-soft);color:var(--purple-ink)}
   nav .sub{margin:0 0 6px 18px;padding-left:8px;border-left:1px solid var(--border2);display:flex;flex-direction:column;gap:2px}
   nav .sub .nav-item{font-size:13.5px;padding:7px 10px}
-  .utable{min-width:1180px}
+  .utable{min-width:1300px}
   .utable td{white-space:normal}
   .c-name{font-weight:600;white-space:nowrap}
   .c-sub{color:var(--muted);font-size:12px;white-space:nowrap}
@@ -259,6 +259,8 @@
   .note-cell textarea{width:100%;min-width:170px;min-height:34px;resize:vertical}
   .mail-link{font-size:12.5px;white-space:nowrap}
 
+  .price{font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .price-sub{font-size:11.5px;color:var(--muted);white-space:nowrap;margin-top:2px}
   .budget-card{padding:18px 20px;margin-bottom:16px}
   .budget-card h2{font-size:15px;margin:0 0 2px}
   .budget-sub{font-size:12.5px;color:var(--ink2);margin-bottom:14px}
@@ -362,7 +364,9 @@
         <div class="tbl-wrap">
           <table class="utable">
             <thead><tr>
-              <th>Creator</th><th>App</th><th>Brief</th><th>Email</th><th>Stage</th>
+              <th>Creator</th><th>App</th>
+              <th title="What one post from this creator likely costs, from their followers and 2026 TikTok rates. Once you type their quote in Rate, that shows here instead.">Est. price / post</th>
+              <th>Brief</th><th>Email</th><th>Stage</th>
               <th title="The day you reached out. Set automatically when a row leaves “Not reached out”.">Send date</th>
               <th>Complete</th>
               <th title="When the contract should be complete: the post-by date on the brief, editable.">Contract due</th>
@@ -584,7 +588,11 @@
                           : '<input class="inp date" type="text" data-k="due_date" placeholder="No date" onfocus="this.type=\'date\'">')+daysLeft(r);
     var rate = '<input class="inp rate" type="text" data-k="rate" placeholder="$" value="'+esc(r.rate||'')+'">';
     var notes = '<textarea class="inp" data-k="notes" placeholder="Notes">'+esc(r.notes||'')+'</textarea>';
-    return '<tr data-id="'+esc(r.id)+'"><td>'+who+'</td><td>'+app+'</td><td>'+files+'</td><td>'+mail+'</td>'+
+    var f = followersNum(r.followers), e = estimate(f), q = quoted(r);
+    var est = (e[0]===e[1] ? usd(e[0]) : usd(e[0])+'–'+usd(e[1]));
+    var price = q!=null ? '<div class="price">'+usd(q)+'</div><div class="price-sub">quoted · est. '+est+'</div>'
+                        : '<div class="price">'+est+'</div><div class="price-sub">'+(f==null?'followers unknown':'estimate')+'</div>';
+    return '<tr data-id="'+esc(r.id)+'"><td>'+who+'</td><td>'+app+'</td><td>'+price+'</td><td>'+files+'</td><td>'+mail+'</td>'+
            '<td>'+stage+'<span class="saved">saved</span></td><td>'+sent+'</td><td>'+done+'</td><td>'+due+'</td><td>'+rate+'</td>'+
            '<td class="note-cell">'+notes+'</td></tr>';
   }

@@ -74,6 +74,12 @@ def main():
             assert immediate['hidden'], 'Back should hide detail immediately'
             assert immediate['releases'] == 0, 'Viewer teardown blocked the first paint'
             page.locator('#detail-sheet iframe').wait_for(state='detached', timeout=3000)
+            # The release is deferred (rAF + 80 ms after the sheet hides) and can
+            # land after the iframe detaches; wait for it rather than racing it.
+            try:
+                page.wait_for_function('testReleaseTimes.length >= 1', timeout=3000)
+            except Exception:
+                pass
             assert page.evaluate('testReleaseTimes.length') == 1, 'Deferred cleanup did not release viewer'
             assert not google, 'Browsing requested Google imagery'
             assert not j.errors, j.errors

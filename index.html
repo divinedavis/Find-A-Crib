@@ -493,13 +493,44 @@
   .filters-actions #filters-done { flex: 1.4; margin: 0; }
   .paywall-card .paywall-badge { display: inline-block; font-size: 11px; letter-spacing: .04em; text-transform: uppercase;
     color: var(--blue); background: var(--info-bg); border: 1px solid var(--info-line); border-radius: 999px; padding: 3px 10px; margin-bottom: 10px; }
-  .paywall-card h2 { margin: 0 0 6px; font-size: 20px; }
-  .paywall-feats { list-style: none; padding: 0; margin: 0 0 16px; }
-  .paywall-feats li { font-size: 13px; padding: 6px 0; border-top: 1px solid var(--line); }
-  .paywall-price { margin-bottom: 14px; }
-  .paywall-price .amt { font-size: 28px; font-weight: 800; }
-  .paywall-price .per { font-size: 13px; color: var(--ink-2); }
-  .paywall-fine { text-align: center; font-size: 11px; color: var(--ink-2); margin: 12px 0 0; }
+  /* The Plus paywall is a big, Airbnb-scale modal (owner, 2026-09-30): wide
+     card, large type, two columns of perks on a laptop, one on a phone. */
+  .auth-card.paywall-card { max-width: 880px; padding: 44px 44px 32px; border-radius: 28px; }
+  .paywall-card .auth-close { top: 20px; right: 20px; width: 44px; height: 44px; font-size: 18px; }
+  .paywall-card .paywall-badge { font-size: 13px; padding: 5px 12px; margin-bottom: 14px; }
+  .paywall-card h2 { margin: 0 0 8px; font-size: 40px; line-height: 1.1; letter-spacing: -1px; font-weight: 800; }
+  .paywall-card .paywall-sub { font-size: 20px; margin: 0 0 26px; line-height: 1.35; }
+  .paywall-feats { list-style: none; padding: 0; margin: 0 0 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .paywall-feats li { display: flex; gap: 14px; align-items: flex-start; font-size: 16px; line-height: 1.4; color: var(--ink-2);
+    padding: 16px 18px; border: 1px solid var(--line); border-radius: 16px; }
+  .paywall-feats li b { display: block; font-size: 19px; color: var(--ink); margin-bottom: 3px; letter-spacing: -.2px; }
+  .paywall-feats li .pf-ico { font-size: 26px; line-height: 1; flex: none; }
+  .paywall-feats li.pf-lead { border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue) inset; }
+  .paywall-price { margin-bottom: 16px; }
+  .paywall-price .amt { font-size: 44px; font-weight: 800; letter-spacing: -1px; }
+  .paywall-price .per { font-size: 20px; color: var(--ink-2); }
+  .paywall-card #paywall-subscribe { padding: 19px; font-size: 20px; border-radius: 14px; }
+  .paywall-fine { text-align: center; font-size: 15px; color: var(--ink-2); margin: 14px 0 0; }
+  .paywall-feats li { padding: 14px 18px; }
+  .paywall-card .paywall-sub { margin-bottom: 22px; }
+  /* Price + Subscribe stay in reach while the perks scroll (phones, short
+     laptop windows). */
+  .paywall-cta { position: sticky; bottom: -32px; background: var(--surface); padding: 12px 0 4px; margin: 0 -4px; padding-left: 4px; padding-right: 4px; }
+  .paywall-cta .paywall-price { margin-bottom: 10px; }
+  @media (max-width: 720px) {
+    .paywall-cta { bottom: -22px; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 12px;
+      box-shadow: 0 -10px 16px -12px rgba(0,0,0,.25); }
+    .paywall-cta .paywall-price { margin: 0; }
+    .paywall-cta .auth-error { grid-column: 1 / -1; }
+    .auth-card.paywall-card { padding: 30px 20px 22px; border-radius: 22px; }
+    .paywall-card h2 { font-size: 30px; padding-right: 44px; }
+    .paywall-card .paywall-sub { font-size: 17px; margin-bottom: 18px; }
+    .paywall-feats { grid-template-columns: 1fr; gap: 8px; margin-bottom: 20px; }
+    .paywall-feats li { padding: 12px 14px; font-size: 15px; }
+    .paywall-feats li b { font-size: 17px; }
+    .paywall-price .amt { font-size: 36px; }
+    .paywall-card #paywall-subscribe { padding: 16px; font-size: 18px; }
+  }
   .plus-toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom) + var(--ad-h, 0px)); transform: translate(-50%, 120%);
     max-width: 90vw; background: #102a43; color: #fff; padding: 12px 18px; border-radius: 10px;
     font-size: 13px; font-weight: 600; box-shadow: 0 6px 24px rgba(0,0,0,.3); z-index: 9999;
@@ -1658,20 +1689,26 @@
   <div class="auth-card paywall-card">
     <button class="auth-close" data-paywall="close" aria-label="Close">✕</button>
     <div class="paywall-badge">Find A Crib <b>Plus</b></div>
-    <h2>Everything you need to land your crib</h2>
-    <p class="auth-sub">One membership unlocks all of Find A Crib:</p>
-    <ul class="paywall-feats">
-      <li>🔔 Alerts the minute a lottery or re-rental opens in your borough — email and iPhone</li>
-      <li>🚫 No ads, anywhere on Find A Crib</li>
-      <li>🔖 Save any search — filters, area and all — and reapply it in one tap</li>
-      <li>📞 Managing-agent phone numbers — call who actually runs the building</li>
-      <li>🔎 Research any landlord: every building they own across NYC, apartment counts by borough, and their violation record</li>
-      <li>🏷️ Organize your saved homes into custom categories</li>
+    <h2 id="paywall-title">Everything you need to land your crib</h2>
+    <p class="auth-sub paywall-sub">One membership unlocks all of it, on the website and the iPhone app:</p>
+    <!-- data-perk matches the paywall source: the perk they clicked for moves
+         to the top (openPaywall). Big type on purpose (owner, 2026-09-30:
+         "a prompt this big with large font"). -->
+    <ul class="paywall-feats" id="paywall-feats">
+      <li data-perk="alerts"><span class="pf-ico">🔔</span><span><b>Instant alerts</b>An email and an iPhone notification the minute a lottery or re-rental opens in your borough</span></li>
+      <li data-perk="noads"><span class="pf-ico">🚫</span><span><b>No ads</b>Anywhere on Find A Crib — the map, the list and every building page</span></li>
+      <li data-perk="phone"><span class="pf-ico">📞</span><span><b>Agent phone numbers</b>Call the company that actually runs the building — 11,000+ numbers</span></li>
+      <li data-perk="research"><span class="pf-ico">🔎</span><span><b>Landlord research</b>Every building a landlord owns across NYC, and their violation record</span></li>
+      <li data-perk="saved_search"><span class="pf-ico">🔖</span><span><b>Saved searches</b>Filters, area and all — reapply them in one tap</span></li>
+      <li data-perk="folders"><span class="pf-ico">🏷️</span><span><b>Folders</b>Organize your saved homes into your own categories</span></li>
     </ul>
-    <div class="paywall-price"><span class="amt">$4.99</span> <span class="per">/ month</span></div>
-    <div id="paywall-error" class="auth-error" hidden></div>
-    <button id="paywall-subscribe" type="button" class="auth-submit">Subscribe</button>
+    <div class="paywall-cta">
+      <div class="paywall-price"><span class="amt">$4.99</span> <span class="per">/ month</span></div>
+      <div id="paywall-error" class="auth-error" hidden></div>
+      <button id="paywall-subscribe" type="button" class="auth-submit">Subscribe</button>
+    </div>
     <p class="paywall-fine">Cancel anytime. Billed monthly via Stripe.</p>
+    <p class="paywall-fine" id="paywall-have-alerts" hidden><a href="#" id="paywall-signin">Already get our alerts? Sign in</a></p>
   </div>
 </div>
 <!-- Referral: invite one friend, both get Plus free -->
@@ -7544,6 +7581,24 @@ function favActive() {
   function openPaywall(bbl, source) {
     pendingPhoneBbl = bbl || null;            // remember what they wanted, to reveal after checkout
     paywallSource = source || (bbl ? 'phone' : 'other');
+    // Arriving from Alerts (2026-09-30): lead with what they came for, and let
+    // a signed-out subscriber from before the switch (grandfathered, free)
+    // sign in instead of paying.
+    const TITLES = { alerts: 'Get alerts the minute one opens', noads: 'Find A Crib, with no ads',
+                     phone: 'Call who actually runs the building', research: 'Research any landlord',
+                     saved_search: 'Save your searches', folders: 'Organize your saved homes' };
+    const pt = document.getElementById('paywall-title');
+    if (pt) pt.textContent = TITLES[paywallSource] || 'Everything you need to land your crib';
+    // The perk they clicked for leads the list, outlined.
+    const feats = document.getElementById('paywall-feats');
+    if (feats) {
+      feats.querySelectorAll('li').forEach(li => li.classList.remove('pf-lead'));
+      const lead = feats.querySelector('li[data-perk="' + paywallSource + '"]');
+      if (lead) { feats.prepend(lead); lead.classList.add('pf-lead'); }
+      else { const a = feats.querySelector('li[data-perk="alerts"]'); if (a) feats.prepend(a); }
+    }
+    const ha = document.getElementById('paywall-have-alerts');
+    if (ha) ha.hidden = !(paywallSource === 'alerts' && !authUser);
     const err = document.getElementById('paywall-error');
     if (err) err.hidden = true;
     paywallModal.hidden = false;
@@ -7567,7 +7622,12 @@ function favActive() {
   async function startCheckout() {
     const btn = document.getElementById('paywall-subscribe');
     const err = document.getElementById('paywall-error');
-    if (!authUser) { closePaywall(); openAuthModal('Sign in to subscribe to Find A Crib Plus.'); return; }
+    if (!authUser) {
+      closePaywall();
+      if (paywallSource === 'alerts') alertsResume = alertsNext;   // after sign-in: grandfathered -> page, else paywall again
+      openAuthModal('Sign in to subscribe to Find A Crib Plus.'); return;
+    }
+    if (paywallSource === 'alerts' && alertsNext) { try { sessionStorage.setItem('fac.alertsNext', alertsNext); } catch (e) {} }
     btn.disabled = true; btn.textContent = 'Starting checkout…';
     track('outbound', { kind: 'checkout_start', source: paywallSource });
     try { sessionStorage.setItem('fac.paySource', paywallSource); } catch (e) {}
@@ -7619,14 +7679,40 @@ function favActive() {
   // header, chips and menu opens the sign-up modal when signed out, and the
   // page opens on its own once the session lands.
   const ALERTS_GATE_MSG = 'Create an account to set up alerts — an email the minute a lottery or re-rental opens in your borough, with Find A Crib Plus.';
+  // Since 2026-09-30 alerts are Plus for new sign-ups, so every Alerts link
+  // opens the Plus paywall first (owner: "shouldn't users see this when they
+  // click on Alerts?"). Plus members, and the subscribers from before the
+  // switch (grandfathered — /api/alerts/prefs says plus_required:false), go
+  // straight to the alerts page to manage them. After paying, checkout
+  // returns and continues to the alerts page they asked for.
+  let alertsNext = null, alertsResume = null;
+  function alertsGo(href) {
+    alertsNext = href;
+    if (authUser && plusKnown && plusActive) { location.href = href; return; }
+    const paywall = () => openPaywall(null, 'alerts');
+    if (!authUser || !supaClient) { paywall(); return; }
+    supaClient.auth.getSession().then(r => {
+      const tok = r && r.data && r.data.session && r.data.session.access_token;
+      if (!tok) return paywall();
+      return fetch('/api/alerts/prefs', { headers: { Authorization: 'Bearer ' + tok } })
+        .then(x => x.ok ? x.json() : null)
+        .then(j => { if (j && j.plus_required === false) location.href = href; else paywall(); });
+    }).catch(paywall);
+  }
   document.addEventListener('click', e => {
     const a = e.target.closest('a[href^="/alerts/"]');
-    if (!a || authUser) return;
+    if (!a) return;
+    if (authUser && plusKnown && plusActive) return;   // members manage alerts on the page
     e.preventDefault();
-    authGateNext = a.getAttribute('href');
     try { track('outbound', { kind: 'gate_alerts', src: new URL(a.href, location.href).searchParams.get('src') || null }); } catch (err) {}
-    openAuthModal(ALERTS_GATE_MSG); setAuthMode('signup');
+    alertsGo(a.getAttribute('href'));
   }, true);
+  document.getElementById('paywall-signin').addEventListener('click', e => {
+    e.preventDefault();
+    closePaywall();
+    alertsResume = alertsNext;
+    openAuthModal('Sign in with the email your alerts go to.');
+  });
   // Landlords on a laptop, signed out (owner, 2026-09-21): the sign-up modal
   // instead of the directory page, then on to it once the account exists.
   // Phones keep going straight to the page. 901px is the breakpoint where the
@@ -8123,6 +8209,9 @@ function favActive() {
       let src = 'other';
       try { src = sessionStorage.getItem('fac.paySource') || 'other'; sessionStorage.removeItem('fac.paySource'); } catch (e) {}
       track('plus_purchase', { source: src, provider: 'stripe' });
+      let next = null;
+      try { next = sessionStorage.getItem('fac.alertsNext'); sessionStorage.removeItem('fac.alertsNext'); } catch (e) {}
+      if (next && /^\/alerts\//.test(next)) setTimeout(() => { location.href = next; }, 2500);   // let the toast land first
     }
     // Google Ads purchase conversion for a completed Plus checkout ($4.99).
     // Enhanced conversions: pass the account email (Google hashes it) so the
@@ -8158,6 +8247,7 @@ function favActive() {
       tr('auth ' + _evt);
       authUser = sess?.user || null;
       if (authUser && authGateNext) { const n = authGateNext; authGateNext = null; closeAuthModal(); location.href = n; return; }
+      if (authUser && alertsResume) { const h = alertsResume; alertsResume = null; closeAuthModal(); alertsGo(h); }
       adoptAccountTheme(authUser);   // the account's choice beats this device's
       adoptAccountHome(authUser);
       if (authUser && HOME && !(authUser.user_metadata || {}).home_bbl) saveHome();   // this device set it before signing in

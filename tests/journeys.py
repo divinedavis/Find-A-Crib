@@ -448,12 +448,13 @@ class Runner:
             self.ok(any('Alerts' in c for c in chips) and not any('Lottery agents' in c for c in chips), f'top-bar chips should show Alerts, not Lottery agents: {chips}', j)
             page.keyboard.press('Escape'); time.sleep(0.2)
             self.ok(page.evaluate("document.getElementById('menu-pop').hidden"), 'Escape should close the menu', j)
-            # Signed out, the menu's Alerts link opens the sign-up modal instead of leaving the page.
+            # Signed out, the menu's Alerts link opens the Plus paywall (alerts are
+            # Plus since 2026-09-30), headed for alerts, with a sign-in link for
+            # the grandfathered subscribers — and never leaves the page.
             self.click(page, '#menu-btn'); time.sleep(0.3)
             page.evaluate("document.querySelector('#menu-pop a[href^=\"/alerts/\"]').click()"); time.sleep(0.5)
-            self.ok(not page.evaluate("document.getElementById('auth-modal').hidden") and page.evaluate("document.getElementById('auth-title').textContent") == 'Create account'
-                    and page.evaluate("location.pathname") == '/', 'menu Alerts should open the sign-up modal when signed out', j)
-            page.evaluate("document.querySelector('[data-auth=\"close\"]')?.click()"); time.sleep(0.2)
+            self.ok(self.alerts_paywall_open(page), 'menu Alerts should open the Plus paywall for alerts when signed out', j)
+            page.evaluate("document.querySelector('[data-paywall=\"close\"]')?.click()"); time.sleep(0.2)
         else:
             # Phones: the Alerts chip sits immediately to the right of Saved (asked 2026-09-08).
             pos = page.evaluate("(()=>{const r=s=>document.querySelector(s).getBoundingClientRect(); const f=r('#pill-fav'), a=r('#pill-alerts-m'); return {fr:f.right, al:a.left, fy:f.top+f.height/2, ay:a.top+a.height/2, aw:a.width, href:document.getElementById('pill-alerts-m').getAttribute('href')}})()")
@@ -461,9 +462,13 @@ class Runner:
                     f'Alerts chip should sit right of Saved on phones: {pos}', j)
             self.ok(pos['href'].startswith('/alerts/'), f'Alerts chip should link to /alerts/: {pos}', j)
             page.evaluate("document.getElementById('pill-alerts-m').click()"); time.sleep(0.5)
-            self.ok(not page.evaluate("document.getElementById('auth-modal').hidden") and page.evaluate("document.getElementById('auth-title').textContent") == 'Create account'
-                    and page.evaluate("location.pathname") == '/', 'Alerts chip should open the sign-up modal when signed out', j)
-            page.evaluate("document.querySelector('[data-auth=\"close\"]')?.click()"); time.sleep(0.2)
+            self.ok(self.alerts_paywall_open(page), 'Alerts chip should open the Plus paywall for alerts when signed out', j)
+            page.evaluate("document.querySelector('[data-paywall=\"close\"]')?.click()"); time.sleep(0.2)
+
+    def alerts_paywall_open(self, page):
+        return page.evaluate("""(()=>{const m=document.getElementById('paywall-modal');
+          return !m.hidden && document.getElementById('paywall-title').textContent.includes('alerts')
+            && !document.getElementById('paywall-have-alerts').hidden && location.pathname==='/'})()""")
 
     def j_search_address(self, page, j, device):
         self.boot(page)

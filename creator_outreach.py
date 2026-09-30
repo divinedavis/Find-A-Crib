@@ -13,10 +13,13 @@ Who writes:
 - the owner's laptop app ("Creator Briefs", ~/projects/CreatorBriefs), through
   /creators-ingest with X-Ingest-Key, when it makes a brief or finds a pitch
   in the mailbox's Sent folder.
-gunicorn runs one worker (deploy/findacrib-api.override.conf), so a process
-lock around read-modify-write is enough.
+- the reply reader (creator_mail_reader.py, cron), which fills in a creator's
+  rate from their email reply.
+gunicorn runs one worker (deploy/findacrib-api.override.conf), but the reply
+reader is a second process, so read-modify-write takes a thread lock and a
+file lock (_locked).
 """
-import base64, datetime, imaplib, json, os, pathlib, re, smtplib, ssl, threading, time
+import base64, contextlib, datetime, fcntl, imaplib, json, os, pathlib, re, smtplib, ssl, threading, time
 from email.message import EmailMessage
 from email.utils import formataddr, formatdate, make_msgid
 
@@ -24,6 +27,16 @@ CREATOR_DIR = pathlib.Path(os.environ.get("CREATOR_DIR", "/var/lib/findacrib-api
 DB = CREATOR_DIR / "creators.json"
 FILES = CREATOR_DIR / "files"
 _LOCK = threading.Lock()
+
+
+@contextlib.contextmanager
+def _locked():
+    with _LOCK:
+        CREATOR_DIR.mkdir(parents=True, exist_ok=True)
+        with open(CREATOR_DIR / "creators.lock", "w") as fh:
+            fcntl.flock(fh, fcntl.LOCK_EX)
+            yield
+
 
 STAGES = ["not_reached_out", "reached_out", "contract_in_progress",
           "contract_sent", "contract_confirmed", "contract_complete"]
@@ -95,7 +108,7 @@ def _public(row):
 
 
 def listing():
-    with _LOCK:
+    with _locked():
         rows = list(_load()["creators"].values())
     rows.sort(key=lambda r: r.get("created_at") or "", reverse=True)
     return [_public(r) for r in rows]
@@ -108,7 +121,7 @@ def update(cid, body):
     bad = [k for k in body if k not in EDITABLE or not EDITABLE[k](body[k])]
     if bad:
         raise ValueError("invalid field(s): " + ", ".join(sorted(bad)))
-    with _LOCK:
+    with _locked():
         db = _load()
         row = db["creators"].get(cid)
         if row is None:
@@ -118,6 +131,10 @@ def update(cid, body):
                 _set_stage(row, v)
             else:
                 row[k] = v
+            if k == "rate":
+                # A rate typed on the page is never overwritten by a later
+                # email; clearing it lets the next reply fill it again.
+                row["rate_source"] = "owner" if v else None
         row["updated_at"] = _now()
         _save(db)
         return _public(row)
@@ -175,7 +192,7 @@ def ingest(payload):
             if len(data) > MAX_FILE or not data.startswith(magic):
                 raise ValueError(f"bad {ext}")
             blobs[ext] = data
-    with _LOCK:
+    with _locked():
         db = _load()
         key = find_existing(db["creators"], handle, email, payload.get("name"))
         if key and key != handle:
@@ -233,7 +250,6 @@ def brief_file(cid, ext):
 # Owner, 2026-09-28: "make a button per row for me to send the email with pdf".
 # The wording mirrors CreatorBriefs/mail_draft.py (draft + PITCH); keep the two in step.
 MAILBOXES = CREATOR_DIR / "mail_forward.json"    # [{product, host, user, password, forward_to}], 0600
-OWNER_BCC = "divinejdavis@gmail.com"
 NAMES = {"marracat": "Marracat", "findacrib": "Find A Crib", "haukley": "Haukley"}
 PITCH = {
     "haukley": ("Haukley is a free streaming service with 74 movies and 7 series and no subscription, "
@@ -277,10 +293,9 @@ Thanks,
 
 
 def send_pitch(cid):
-    """Email this creator their PDF brief from the product's mailbox, Bcc the
-    owner, file it in Sent, drop the matching draft, mark "reached out".
+    """Email this creator their PDF brief from the product's mailbox, file it in Sent, drop the matching draft, mark "reached out".
     Returns the updated row. Raises KeyError / ValueError with a reason."""
-    with _LOCK:
+    with _locked():
         row = _load()["creators"].get(cid)
     if row is None:
         raise KeyError(cid)
@@ -300,7 +315,9 @@ def send_pitch(cid):
     host = cfg.get("host", "mail.privateemail.com")
     with smtplib.SMTP_SSL(host, 465, context=ctx, timeout=60) as s:
         s.login(cfg["user"], cfg["password"])
-        s.send_message(m, to_addrs=[to, OWNER_BCC])       # Bcc: envelope only
+        # No Bcc to the owner's Gmail (owner, 2026-09-30: "stop forwarding
+        # emails from marracat to my gmail"); the copy is filed in Sent below.
+        s.send_message(m, to_addrs=[to])
     try:
         with imaplib.IMAP4_SSL(host, 993, ssl_context=ctx, timeout=60) as i:
             i.login(cfg["user"], cfg["password"])
@@ -312,7 +329,7 @@ def send_pitch(cid):
             i.expunge()
     except Exception:
         pass            # the email went out; filing it is housekeeping
-    with _LOCK:
+    with _locked():
         db = _load()
         row = db["creators"][cid]
         if row.get("stage") == "not_reached_out":
@@ -322,3 +339,32 @@ def send_pitch(cid):
         row["updated_at"] = _now()
         _save(db)
         return _public(row)
+
+
+# ---------- replies ----------
+# Owner, 2026-09-30: "read emails that come to marracat and update the
+# dashboard with their rate". creator_mail_reader.py calls this per reply.
+def record_reply(sender, when, subject, rate=None, quote=None):
+    """Note a reply from `sender` on that creator's row and, when the reply
+    quotes a rate, put it in `rate` unless the owner typed one. Returns the
+    row id, or None when the sender isn't a creator on the page."""
+    em = (sender or "").strip().lower()
+    if not em:
+        return None
+    with _locked():
+        db = _load()
+        row = next((r for r in db["creators"].values() if (r.get("email") or "").lower() == em), None)
+        if row is None:
+            return None
+        if when >= (row.get("replied_at") or ""):
+            row["replied_at"] = when
+            row["reply_subject"] = (subject or "")[:200]
+        if rate and row.get("rate_source") != "owner" and (not row.get("rate") or row.get("rate_source") == "email") \
+                and when >= (row.get("rate_at") or ""):
+            row["rate"] = rate[:40]
+            row["rate_source"] = "email"
+            row["rate_at"] = when
+            row["rate_quote"] = (quote or "")[:300] or None
+        row["updated_at"] = _now()
+        _save(db)
+        return row["id"]

@@ -23,7 +23,7 @@ LIVE=/root/findacrib-api
 # Exactly the modules gunicorn imports. Listed rather than globbed: the repo is
 # a website with a hundred scripts in its root, and the API directory should
 # hold the six files it runs.
-FILES=(api_server.py creator_outreach.py creator_mail_forward.py crease_metrics.py nemo_metrics.py trent_metrics.py marracat_metrics.py build_log.py building_report.py issue_api_key.py)
+FILES=(api_server.py creator_outreach.py creator_mail_reader.py crease_metrics.py nemo_metrics.py trent_metrics.py marracat_metrics.py build_log.py building_report.py issue_api_key.py)
 
 ssh "$HOST" "set -e
   cd $REPO && git pull -q --ff-only
@@ -37,9 +37,11 @@ ssh "$HOST" "set -e
   cmp -s $REPO/deploy/findacrib-api.override.conf /etc/systemd/system/findacrib-api.service.d/override.conf || echo '    updating systemd override'
   cp $REPO/deploy/findacrib-api.override.conf /etc/systemd/system/findacrib-api.service.d/override.conf
   systemctl daemon-reload
-  # Creator reply forwarder (hello@marracat.com -> owner's Gmail); cron.d
-  # files must be root-owned 644 or cron ignores them.
-  install -m 644 -o root -g root $REPO/deploy/cron-creator-mail-forward /etc/cron.d/creator-mail-forward
+  # Creator reply reader (hello@marracat.com rates -> the dashboard); cron.d
+  # files must be root-owned 644 or cron ignores them. The Gmail forwarder it
+  # replaced (2026-09-30) is removed so it can't keep running.
+  install -m 644 -o root -g root $REPO/deploy/cron-creator-mail-reader /etc/cron.d/creator-mail-reader
+  rm -f /etc/cron.d/creator-mail-forward $LIVE/creator_mail_forward.py
   # Stale bytecode outlives a file copy when the mtime granularity is coarse.
   rm -rf $LIVE/__pycache__
   # Since 2026-09-26 the API runs as the unprivileged user findacrib (see

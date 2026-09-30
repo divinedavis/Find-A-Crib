@@ -597,11 +597,17 @@
     var done = r.complete ? '<span class="badge b-yes">Y</span>' : '<span class="badge b-no">N</span>';
     var due = (r.due_date ? '<input class="inp date" type="date" data-k="due_date" value="'+esc(r.due_date)+'">'
                           : '<input class="inp date" type="text" data-k="due_date" placeholder="No date" onfocus="this.type=\'date\'">')+daysLeft(r);
-    var rate = '<input class="inp rate" type="text" data-k="rate" placeholder="$" value="'+esc(r.rate||'')+'">';
+    // rate_source "email": creator_mail_reader.py read it from their reply.
+    var fromMail = r.rate && r.rate_source==='email';
+    var rate = '<input class="inp rate" type="text" data-k="rate" placeholder="$" value="'+esc(r.rate||'')+'"'+
+               (fromMail && r.rate_quote ? ' title="From their email: '+esc(r.rate_quote)+'"' : '')+'>'+
+               (fromMail ? '<div class="price-sub">from their email</div>' : '');
     var notes = '<textarea class="inp" data-k="notes" placeholder="Notes">'+esc(r.notes||'')+'</textarea>';
     var f = followersNum(r.followers), e = estimate(f), q = quoted(r);
     var est = (e[0]===e[1] ? usd(e[0]) : usd(e[0])+'–'+usd(e[1]));
-    var price = q!=null ? '<div class="price">'+usd(q)+'</div><div class="price-sub">quoted · est. '+est+'</div>'
+    // A quote in another currency ("$400 CAD") shows as written; the budget adds it at face value.
+    var foreign = /\b(CAD|AUD)\b|£|€/.test(r.rate||'');
+    var price = q!=null ? '<div class="price">'+(foreign?esc(r.rate):usd(q))+'</div><div class="price-sub">quoted'+(r.rate_source==='email'?' by email':'')+' · est. '+est+'</div>'
                         : '<div class="price">'+est+'</div><div class="price-sub">'+(f==null?'followers unknown':'estimate')+'</div>';
     return '<tr data-id="'+esc(r.id)+'"><td>'+who+'</td><td>'+app+'</td><td>'+price+'</td><td>'+files+'</td><td>'+mail+'</td>'+
            '<td>'+stage+'<span class="saved">saved</span></td><td>'+sent+'</td><td>'+done+'</td><td>'+due+'</td><td>'+rate+'</td>'+

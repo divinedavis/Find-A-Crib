@@ -722,6 +722,39 @@ def build_blocks(run_log=None, review_out=None):
                 B.append({"type": "table",
                           "cols": ["Page family", "Fetched", "Kept", "Read"],
                           "rows": ix})
+            # "1 page indexed" and "1 page indexed, 3 thrown back out" are
+            # opposite diagnoses — the first says this corpus has never cleared
+            # the bar, the second says it cleared it and was reversed — and
+            # every number above this line reads identically under both. The
+            # nightly lost/gained counters cannot supply the difference: they
+            # only see a transition that falls between two readings of the same
+            # URL, so they have read 0 since they shipped while the cohort file
+            # carried three evictions the whole time. See summarise() in
+            # indexstatus.py. Only rendered when it is non-zero, like the
+            # canonical note below: a line saying "nothing was evicted" every
+            # night for a year is how the one night it changes gets skipped.
+            _ev = _ixtot.get("evicted")
+            if _ev is None:
+                _ev = _last("index_evicted")
+            _evr = _ixtot.get("ever_indexed") or _last("index_ever_indexed")
+            if _ev:
+                # by_family lives on the summary, not on total — _ixtot is
+                # total. Re-read through the same cached helper the family
+                # table uses rather than reaching for a key that is not there.
+                _fams = sorted(k for k, v in
+                               ((_index_summary() or {}).get("by_family") or {}).items()
+                               if v.get("evicted"))
+                B.append({"type": "note", "text": (
+                    f"At least {_fmt(_ev)} of the {_fmt(_evr)} pages still on "
+                    f"record as having been indexed are not indexed now"
+                    + (f" — in {', '.join('/' + f + '/' for f in _fams)}" if _fams else "")
+                    + ". Those pages cleared Google's bar and were then dropped "
+                      "back to un-indexed, which is a reversal rather than a page "
+                      "that never qualified. Read it as a floor: the sampler saw "
+                      "12 pages indexed on 2026-08-19 and 1 since 2026-08-28, so "
+                      "the real August total was 11, and the cohort file no longer "
+                      "holds the evidence for all of them. The URLs it does hold "
+                      "are named in last_run.json under indexstatus.evicted_urls.")})
             _wrong = _last("index_wrong_canonical")
             if _wrong:
                 B.append({"type": "note", "text":

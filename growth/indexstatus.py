@@ -548,7 +548,8 @@ def summarise(cohort, today=None):
         fam = rec.get("family") or family(url)
         f = fams.setdefault(fam, {"cohort": 0, "read": 0, "indexed": 0,
                                   "fetched": 0, "buckets": {},
-                                  "wrong_canonical": 0})
+                                  "wrong_canonical": 0,
+                                  "ever_indexed": 0, "evicted": 0})
         f["cohort"] += 1
         # `checked` is stamped by inspect() on every successful call and by
         # nothing else, so it — not the presence of a bucket or a state — is
@@ -569,6 +570,48 @@ def summarise(cohort, today=None):
             read_lags.append(lag)
         if b == "indexed":
             f["indexed"] += 1
+        # A STOCK, beside the nightly FLOW that lost_indexed/gained_indexed
+        # already record, and the two answer different questions.
+        #
+        # What actually happened here, because it is the case this exists for.
+        # index_indexed peaked at 12 on 2026-08-19 and has read exactly 1 — the
+        # homepage — on every one of the 34 nights since 2026-08-28. Eleven URLs
+        # were evicted in between. index_lost_indexed caught EIGHT of them
+        # (08-21:1, 08-22:4, 08-23:2, 08-26:1) and missed three, because the
+        # counter's own series does not start until 08-21. index_gained_indexed
+        # has been 0 on all 39 nights: nothing has ever come back.
+        #
+        # So the flow worked, and it still does not answer the question a review
+        # asks. A flow is only legible while it is firing: from 08-27 onward
+        # lost_indexed reads 0 and index_indexed reads 1 every night, and those
+        # two numbers are identical whether this corpus never cleared Google's
+        # bar or cleared it and was thrown back out — which are opposite
+        # diagnoses with opposite fixes. Recovering the second from results.jsonl
+        # means knowing to go back and sum a 39-day series. A stock says it on
+        # any single night, and cannot miss a transition it did not witness,
+        # because it asks the cohort about the present: how many URLs have we
+        # ever believed were indexed, and how many of those are not now.
+        #
+        # IT IS A FLOOR, NOT A COUNT, and nothing downstream may round it up to
+        # one. It can only see URLs that still carry first_indexed, and of the
+        # eleven evicted in August the cohort retains that field for three. The
+        # other eight are unrecoverable — whatever dropped them (see the
+        # left_indexed carry-forward above for the same class of defect) did so
+        # before this was written, and no instrument added later can restore a
+        # field the file no longer holds.
+        #
+        # `unknown` is excluded from the eviction half, and only from that half,
+        # for exactly the reason the flow counter states: it means Google
+        # returned no coverageState at all, which is an instrument condition and
+        # not a verdict, so a night the API answers thinly about a page we have
+        # seen indexed must not read as Google throwing it out. Caught by this
+        # module's own branch test before shipping. ever_indexed keeps counting
+        # it, because that half is a fact about our own history and no answer of
+        # Google's can unmake it.
+        if rec.get("first_indexed"):
+            f["ever_indexed"] += 1
+            if b not in ("indexed", "unknown"):
+                f["evicted"] += 1
         # Has Google ever fetched this URL? lastCrawlTime is the direct
         # evidence and the discriminator the unknown_to_google comment names,
         # so it is used here rather than inferring it from the bucket. On
@@ -625,7 +668,9 @@ def summarise(cohort, today=None):
              "read": sum(f["read"] for f in fams.values()),
              "indexed": sum(f["indexed"] for f in fams.values()),
              "fetched": sum(f["fetched"] for f in fams.values()),
-             "wrong_canonical": sum(f["wrong_canonical"] for f in fams.values())}
+             "wrong_canonical": sum(f["wrong_canonical"] for f in fams.values()),
+             "ever_indexed": sum(f["ever_indexed"] for f in fams.values()),
+             "evicted": sum(f["evicted"] for f in fams.values())}
     total["indexed_pct"] = (round(100.0 * total["indexed"] / total["read"], 1)
                             if total["read"] else None)
     # Discovery and acceptance are independent failures with opposite fixes, and
@@ -915,6 +960,21 @@ def collect(docroot, budget=None):
             rec["first_indexed"] = prev.get("first_indexed") or ledger.today()
         elif prev.get("first_indexed"):
             rec["first_indexed"] = prev["first_indexed"]
+        # ...and the eviction date beside it, for the reason the block below
+        # states and then did not deliver. `rec` is a FRESH dict out of
+        # inspect() — {state, bucket, verdict, crawled, fetch, checked} and
+        # nothing else — and `cohort[url] = rec` replaces the whole entry, so
+        # every durable field has to be copied forward here by name. family,
+        # first_checked, first_bucket and first_indexed are; left_indexed was
+        # not, so the one field that names WHICH URLs Google evicted survived
+        # only until that URL's next inspection — about five nights, at a
+        # 100-URL budget against a 458-URL cohort. Found 2026-09-30: three
+        # interior pages carry first_indexed 2026-08-17..19 and read
+        # crawled_not_indexed today, and not one of them still carries a
+        # left_indexed, so the attribution the 2026-08-20 finding was built on
+        # had already been erased from the file it was found in.
+        if prev.get("left_indexed"):
+            rec["left_indexed"] = prev["left_indexed"]
         # Did this URL change its mind since we last read it? index_status.json
         # keeps only the LATEST state per URL, so until 2026-08-20 the only way
         # to see a page LOSE indexing was to diff the file against git by hand —
@@ -1009,7 +1069,24 @@ def collect(docroot, budget=None):
                               # has to be adjustable with the lag that applied
                               # on the night it was taken, not tonight's.
                               ("index_crawl_read_lag_days",
-                               tot.get("crawl_read_lag_days"))):
+                               tot.get("crawl_read_lag_days")),
+                              # The stock pair. See summarise(): index_indexed
+                              # is a level and lost_indexed is a flow, and
+                              # neither can say "this corpus has been in the
+                              # index and was thrown out of it". These can, on
+                              # any night, without having witnessed the night it
+                              # happened. Recorded unconditionally rather than
+                              # behind `if rechecked` because they are not
+                              # movement — they are a property of the cohort as
+                              # it stands, and a night with nothing re-read
+                              # still knows how many URLs it has ever believed
+                              # were indexed. Both are floored by first_indexed,
+                              # which is OUR first sighting and never Google's
+                              # acceptance date: read them as "pages we have
+                              # seen in the index", which is the most any
+                              # sampler on a 100-URL rotation can claim.
+                              ("index_ever_indexed", tot["ever_indexed"]),
+                              ("index_evicted", tot["evicted"])):
             if value is not None:
                 ledger.record_result(today, "__site__", metric, value)
         # index_status.json holds only the LATEST state per URL, so it can never
@@ -1061,6 +1138,17 @@ def collect(docroot, budget=None):
            # the whole diagnosis in two numbers.
            "fetched_pct": tot["fetched_pct"],
            "accept_pct": tot["accept_pct"],
+           # "1 indexed" and "1 indexed, 3 thrown out" are opposite diagnoses
+           # and last_run.json could not tell them apart. evicted_urls is the
+           # attribution, capped because this record is web-served: the point is
+           # to name the pages, and if the number ever gets large the count is
+           # the finding and the list is noise.
+           "ever_indexed": tot["ever_indexed"],
+           "evicted": tot["evicted"],
+           "evicted_urls": sorted(u for u, r in cohort.items()
+                                  if r.get("first_indexed")
+                                  and bucket(r.get("state"))
+                                  not in ("indexed", "unknown"))[:10],
            # And the same number restricted to crawls old enough to be a
            # verdict, with its denominator and the full age split. This is in
            # last_run.json rather than left in the cohort file because the whole

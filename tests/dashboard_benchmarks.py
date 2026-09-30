@@ -142,6 +142,31 @@ def run(browser, live):
     assert not errors, errors
     print(f'PASS {browser.browser_type.name}: downloads chart, no health card', flush=True)
 
+    # Alert sign-ups before / after the paywall (owner, 2026-09-30): three
+    # lines — before (to 30 Sep), after-tried (dashed) and after-paid (from
+    # 30 Sep) — and a before/after summary.
+    def day(d, **kw):
+        base = {'date': d, 'visitors': 1000, 'signups': 20, 'on': 20, 'gf_signups': 20,
+                'visitors_day': 150, 'signups_day': 3, 'on_day': 3,
+                'post_visitors': None, 'post_signups': None, 'post_on': None}
+        base.update(kw); return base
+    payload['alert_trend'] = [day('2026-09-28'), day('2026-09-29'),
+                              day('2026-09-30', gf_signups=19, post_visitors=200, post_signups=2, post_on=0),
+                              day('2026-10-01', post_visitors=400, post_signups=6, post_on=2)]
+    page.reload(wait_until='networkidle')
+    at = page.locator('#sec-alert-trend')
+    expect(at.locator('#at-legend')).to_contain_text('Before paywall — set up an alert')
+    expect(at.locator('#at-legend')).to_contain_text('After paywall — tried (saved an alert)')
+    expect(at.locator('#at-legend')).to_contain_text('After paywall — paid (alerts on)')
+    expect(at.locator('#at-svg path[stroke-dasharray]')).to_have_count(1)
+    expect(at.locator('#at-sum')).to_contain_text('6 tried · 2 paid')
+    expect(at.locator('#at-sum')).to_contain_text('of 400 visitors since 30 Sep (0.50% paid')
+    # The before line stops at 30 Sep: its path has 3 points, not 4.
+    pre_d = at.locator('#at-svg path').first.get_attribute('d')
+    assert pre_d.count('L') == 2, pre_d
+    assert not errors, errors
+    print(f'PASS {browser.browser_type.name}: alert chart before/after paywall', flush=True)
+
     # A range with nothing cached dims the old numbers and says "Loading…"
     # until its payload lands, instead of sitting there looking frozen.
     # Delay in the page, not the route handler: a sleeping sync handler

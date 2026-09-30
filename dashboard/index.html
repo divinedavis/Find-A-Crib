@@ -350,6 +350,7 @@
   .at-key{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--ink2);margin-top:8px}
   .at-key b{color:var(--ink)}
   .at-table{margin-top:10px;font-size:12px;color:var(--ink2)}
+  .at-table > div{overflow-x:auto;-webkit-overflow-scrolling:touch}
   .at-table table{border-collapse:collapse;width:100%;margin-top:6px}
   .at-table th,.at-table td{text-align:right;padding:3px 8px;border-bottom:1px solid var(--border2);font-variant-numeric:tabular-nums}
   .at-table th:first-child,.at-table td:first-child{text-align:left}
@@ -534,7 +535,7 @@
            to the future". api_server._fac_alert_trend / db/0038. -->
       <div class="card mb18" id="sec-alert-trend">
         <div class="card-head-row">
-          <div><h2>Alert sign-ups over time</h2><div class="card-sub">Share of visitors who set up a borough alert, 7-day rolling. On 30 Sep alerts became part of Plus for new sign-ups; everyone before that keeps them free.</div></div>
+          <div><h2>Alert sign-ups over time</h2><div class="card-sub">Share of visitors who set up a borough alert, 7-day rolling — before the paywall (purple), and after it (green): everyone who tried, and those who paid. On 30 Sep alerts became part of Plus for new sign-ups; everyone before that keeps them free.</div></div>
           <div class="at-range"><label for="at-range">Period</label>
             <select id="at-range" aria-label="Period shown on the alert sign-up chart">
               <option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option>
@@ -1980,7 +1981,11 @@
       if(!rows.length){ host.innerHTML='<div style="color:var(--muted);font-size:13px">'+cfg.empty+'</div>'; return; }
       var pts=cfg.points(rows), S=cfg.series, events=cfg.events||[];
       $('sum').innerHTML=cfg.summary(rows, pts);
-      $('legend').innerHTML=S.map(function(s){ return '<span><i style="background:'+s.color+'"></i>'+s.label+'</span>'; }).join('')+(cfg.legendNote||'');
+      $('legend').innerHTML=S.map(function(s){
+        // A dashed series gets a dashed swatch (a CSS dashed border reads as
+        // solid at 14px on a phone, so the dashes are drawn as a gradient).
+        var sw = s.dash ? 'width:18px;background:repeating-linear-gradient(90deg,'+s.color+' 0 5px,transparent 5px 8px)' : 'background:'+s.color;
+        return '<span><i style="'+sw+'"></i>'+s.label+'</span>'; }).join('')+(cfg.legendNote||'');
       var note=$('range-note');
       if(note){
         var short=pts.length<range;
@@ -1995,7 +2000,8 @@
       // The view is a domain: the (fractional) index of the first visible day,
       // and the y-axis top. Animating is interpolating those two numbers.
       var s1=Math.max(0, pts.length-range);
-      var y1=cfg.nice(Math.max.apply(null, pts.slice(s1).map(function(p){ return Math.max.apply(null, S.map(function(s){ return p[s.k]; })); })));
+      function has(v){ return v!=null && isFinite(v); }
+      var y1=cfg.nice(Math.max.apply(null, [0].concat(pts.slice(s1).map(function(p){ return Math.max.apply(null, [0].concat(S.map(function(s){ return has(p[s.k]) ? p[s.k] : 0; }))); }))));
       var target={s:s1, y:y1.max, step:y1.step};
       var reduce=window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       cancelAnimationFrame(raf);
@@ -2037,7 +2043,19 @@
           if(i===fi && i!==li && daily && (li-i)%every!==0 && X(i+1)-firstX<gap) continue;
           xl+='<text x="'+X(i)+'" y="'+(H-6)+'" text-anchor="'+(i===fi&&li!==fi?'start':i===li?'end':'middle')+'" font-size="10.5" fill="var(--muted)">'+day(pts[i].d)+'</text>';
         }
-        function path(key){ return vis.map(function(p,j){ var i=first+j; return (j?'L':'M')+X(i).toFixed(1)+' '+Y(p[key]).toFixed(1); }).join(' '); }
+        // A series may cover only some days (before / after the paywall):
+        // a missing value breaks the line instead of drawing it to zero.
+        function path(key){ var d='', pen=false;
+          vis.forEach(function(p,j){ var i=first+j, v=p[key];
+            if(!has(v)){ pen=false; return; }
+            d+=(pen?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)+' '; pen=true; });
+          return d.trim(); }
+        // A lone point (a series one day old) has no segment to stroke: dot it.
+        function lone(s){ var out='';
+          vis.forEach(function(p,j){ var i=first+j, v=p[s.k], pv=vis[j-1], nv=vis[j+1];
+            if(has(v) && !(pv && has(pv[s.k])) && !(nv && has(nv[s.k])) && i!==li)
+              out+='<circle cx="'+X(i)+'" cy="'+Y(v)+'" r="3" fill="'+s.color+'"></circle>'; });
+          return out; }
         // Dotted key-date lines in three staggered label rows (numbers plus a
         // key on a phone). Dates outside the period are left out.
         var marker='', nEv=0, keyRows=[];
@@ -2056,11 +2074,17 @@
         var lp=pts[li];
         // End labels, nudged apart when the lines meet.
         var ends='', dots='';
-        if(S.length){
-          var ey=S.map(function(s){ return Y(lp[s.k]); });
-          if(S.length===2 && Math.abs(ey[0]-ey[1])<13){ if(lp[S[0].k]>=lp[S[1].k]){ ey[0]-=7; ey[1]+=7; } else { ey[0]+=7; ey[1]-=7; } }
-          S.forEach(function(s,j){
-            if(!narrow) ends+='<text x="'+(X(li)+8)+'" y="'+(ey[j]+4)+'" font-size="11" font-weight="600" fill="var(--ink)">'+s.end(lp[s.k])+'</text>';
+        var endS=S.filter(function(s){ return has(lp[s.k]); });
+        if(endS.length){
+          // Labels in value order, pushed apart to at least 13px, then the
+          // stack shifted back up if it ran past the baseline.
+          var lab=endS.map(function(s){ return {s:s, y:Y(lp[s.k])}; }).sort(function(a,b){ return a.y-b.y; });
+          for(var q=1;q<lab.length;q++) if(lab[q].y-lab[q-1].y<13) lab[q].y=lab[q-1].y+13;
+          var over=lab[lab.length-1].y-(base+2); if(over>0) lab.forEach(function(o){ o.y-=over; });
+          lab.forEach(function(o){
+            if(!narrow) ends+='<text x="'+(X(li)+8)+'" y="'+(o.y+4)+'" font-size="11" font-weight="600" fill="var(--ink)">'+o.s.end(lp[o.s.k])+'</text>';
+          });
+          endS.forEach(function(s){
             dots+='<circle cx="'+X(li)+'" cy="'+Y(lp[s.k])+'" r="4" fill="'+s.color+'" stroke="var(--card)" stroke-width="2"></circle>';
           });
         }
@@ -2069,7 +2093,7 @@
           '<defs><clipPath id="'+id+'-clip"><rect x="'+(pad.l-1)+'" y="0" width="'+(iw+2)+'" height="'+(base+2)+'"></rect></clipPath></defs>'+
           grid+ticks+xl+marker+
           '<g clip-path="url(#'+id+'-clip)">'+
-          S.map(function(s){ return '<path d="'+path(s.k)+'" fill="none" stroke="'+s.color+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"'+(s.dash?' stroke-dasharray="'+s.dash+'"':'')+'></path>'; }).join('')+
+          S.map(function(s){ return '<path d="'+path(s.k)+'" fill="none" stroke="'+s.color+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"'+(s.dash?' stroke-dasharray="'+s.dash+'"':'')+'></path>'+lone(s); }).join('')+
           '</g>'+
           dots+ends+
           '<line id="'+id+'-x" y1="'+pad.t+'" y2="'+base+'" stroke="var(--border-strong)" stroke-width="1" opacity="0"></line>'+
@@ -2093,7 +2117,7 @@
           tip.style.whiteSpace='normal'; tip.style.maxWidth=Math.min(340, r.width-8)+'px';
           var tw=tip.offsetWidth, cx=X(i)*r.width/W;
           tip.style.left=Math.max(tw/2+4, Math.min(r.width-tw/2-4, cx))+'px';
-          tip.style.top=(Math.min.apply(null, S.map(function(s){ return Y(p[s.k]); }))*r.height/H)+'px'; tip.style.opacity='1';
+          tip.style.top=(Math.min.apply(null, [base].concat(S.filter(function(s){ return has(p[s.k]); }).map(function(s){ return Y(p[s.k]); })))*r.height/H)+'px'; tip.style.opacity='1';
         }
         hit.addEventListener('mousemove',show); hit.addEventListener('touchstart',function(e){ show(e.touches[0]); },{passive:true});
         hit.addEventListener('mouseleave',function(){ tip.style.opacity='0'; xl2.setAttribute('opacity','0'); });
@@ -2106,11 +2130,16 @@
   }
 
   // ---------- alert sign-up trend ----------
-  // Two lines over the same denominator (7-day rolling visitors). "Saved" =
-  // alert sign-ups; "Turned on" = the ones that receive alerts (grandfathered
-  // or Plus). They are one line until 30 Sep, when alerts became Plus; the
-  // gap after it is the paywall. The period picker (owner, 2026-09-30: "7, 30,
-  // 90 day trends") picks the days shown; the rate stays 7-day rolling,
+  // Before and after the paywall (owner, 2026-09-30: "show the trend of the
+  // people who signed up for alerts before paywall and who signed up after
+  // we put alerts behind a paywall"). Three lines on one % axis:
+  //   * before (purple): grandfathered sign-ups ÷ visitors, 7-day rolling,
+  //     up to 30 Sep, where it stops;
+  //   * after, paid (green, solid): new sign-ups whose account has Plus ÷
+  //     visitors, from 30 Sep, in a window that never reaches back before it;
+  //   * after, tried (green, dashed): every new sign-up, paid or not, same
+  //     window — the gap under it is the paywall.
+  // The period picker picks the days shown; rates stay 7-day rolling,
   // because a 1-day rate on ~200 visitors is noise.
   var AT_CHANGE = '2026-09-30';
   // Key dates drawn as dotted lines (owner, 2026-09-30: "show some other key
@@ -2126,38 +2155,48 @@
   ];
   function atRate(a,b){ return n(b) ? 100*n(a)/n(b) : 0; }
   var renderAlertTrend = makeTrend({
-    id:'at', store:'fac.atRange', events:AT_EVENTS,
+    id:'at', store:'fac.atRange', events:AT_EVENTS, padRight:118,
     empty:'Alert trend unavailable right now.',
-    aria:'Alert sign-up conversion, 7-day rolling',
+    aria:'Alert sign-up conversion before and after the paywall, 7-day rolling',
     historyNote:function(k){ return 'Alerts launched 3 Sep — '+k+' day'+(k===1?'':'s')+' of history'; },
-    series:[{k:'saved', color:'var(--at-saved)', label:'Saved an alert', end:function(v){ return v.toFixed(2)+'% saved'; }},
-            {k:'on', color:'var(--at-on)', label:'Alert turned on (grandfathered or Plus)', end:function(v){ return v.toFixed(2)+'% on'; }}],
-    legendNote:'<span style="color:var(--muted)">same line until 30 Sep</span>',
-    points:function(rows){ return rows.map(function(r){ return {d:r.date, saved:atRate(r.signups,r.visitors), on:atRate(r.on,r.visitors), r:r}; }); },
+    series:[{k:'pre', color:'var(--at-saved)', label:'Before paywall — set up an alert', end:function(v){ return v.toFixed(2)+'% before'; }},
+            {k:'tried', color:'var(--at-on)', dash:'5 4', label:'After paywall — tried (saved an alert)', end:function(v){ return v.toFixed(2)+'% tried'; }},
+            {k:'paid', color:'var(--at-on)', label:'After paywall — paid (alerts on)', end:function(v){ return v.toFixed(2)+'% paid'; }}],
+    legendNote:'<span style="color:var(--muted)">the after lines start on 30 Sep; paid starts at 0 and needs a few days</span>',
+    points:function(rows){ return rows.map(function(r){
+      var post=r.post_visitors!=null;
+      return {d:r.date, r:r,
+              pre: r.date<=AT_CHANGE ? atRate(r.gf_signups!=null ? r.gf_signups : r.signups, r.visitors) : null,
+              tried: post ? atRate(r.post_signups, r.post_visitors) : null,
+              paid: post ? atRate(r.post_on, r.post_visitors) : null}; }); },
     nice:function(v){ var step = v<=1 ? 0.25 : v<=2.5 ? 0.5 : 1; return {max: Math.max(step, Math.ceil((v*1.08)/step)*step), step: step}; },
     tick:function(v){ return (+v.toFixed(2))+'%'; },
-    // Summary: the last full pre-change week against what has happened since.
-    // Not period-scoped: it is the before/after of the Plus switch.
+    // Summary: the last full week before the paywall against everything
+    // since. Not period-scoped: it is the before/after of the switch.
     summary:function(rows){
-      var pre=null, post=rows.filter(function(r){ return r.date>=AT_CHANGE; });
+      var pre=null, latest=rows[rows.length-1];
       rows.forEach(function(r){ if(r.date<AT_CHANGE) pre=r; });
-      var postS=post.reduce(function(a,r){ return a+n(r.signups_day); },0), postOn=post.reduce(function(a,r){ return a+n(r.on_day); },0);
-      var latest=rows[rows.length-1], full=post.length>=7, fullFrom='';
-      if(post.length){ var fd=new Date(post[0].date+'T00:00'); fd.setDate(fd.getDate()+6); fullFrom=fd.toLocaleString('en-US',{month:'short',day:'numeric'}); }
       var sum='';
-      if(pre) sum+='<div><b>'+atRate(pre.signups,pre.visitors).toFixed(2)+'%</b>last 7 days before Plus ('+comma(pre.signups)+' of '+comma(pre.visitors)+')</div>';
-      if(post.length){
-        sum+= full
-          ? '<div><b>'+atRate(latest.on,latest.visitors).toFixed(2)+'%</b>turned on, last 7 days · '+atRate(latest.signups,latest.visitors).toFixed(2)+'% saved</div>'
-          : '<div><b>'+comma(postOn)+' of '+comma(postS)+'</b>alert sign-ups since 30 Sep turned on ('+post.length+' day'+(post.length===1?'':'s')+' in; the 7-day rate is all post-change from '+fullFrom+')</div>';
+      if(pre) sum+='<div><b>'+atRate(pre.gf_signups!=null?pre.gf_signups:pre.signups, pre.visitors).toFixed(2)+'%</b>before paywall: last full week ('+
+                   comma(pre.gf_signups!=null?pre.gf_signups:pre.signups)+' of '+comma(pre.visitors)+' visitors)</div>';
+      if(latest && latest.post_visitors!=null){
+        var since=rows.filter(function(r){ return r.date>=AT_CHANGE; }).length;
+        sum+='<div><b>'+comma(latest.post_signups)+' tried · '+comma(latest.post_on)+' paid</b>after paywall: of '+comma(latest.post_visitors)+
+             ' visitors since 30 Sep ('+atRate(latest.post_on, latest.post_visitors).toFixed(2)+'% paid'+
+             (since<7 ? '; '+since+' day'+(since===1?'':'s')+' in' : ', last 7 days')+')</div>';
       }
       return sum;
     },
-    tip:function(p, day){ var R=p.r;
-      return '<b>'+day(p.d,{weekday:'short',month:'short',day:'numeric'})+'</b> · 7 days: '+p.saved.toFixed(2)+'% saved, '+p.on.toFixed(2)+'% on'+
-        '<br>'+comma(R.signups)+' saved / '+comma(R.on)+' on of '+comma(R.visitors)+' visitors · that day '+comma(R.signups_day)+' saved, '+comma(R.visitors_day)+' visitors'; },
-    tableHead:['Day','Visitors (7d)','Saved (7d)','On (7d)','% saved','% on'],
-    tableRow:function(p, day){ var R=p.r; return [day(p.d), comma(R.visitors), comma(R.signups), comma(R.on), p.saved.toFixed(2)+'%', p.on.toFixed(2)+'%']; }
+    tip:function(p, day){ var R=p.r, t='<b>'+day(p.d,{weekday:'short',month:'short',day:'numeric'})+'</b>';
+      if(p.pre!=null) t+='<br>Before paywall: '+p.pre.toFixed(2)+'% · '+comma(R.gf_signups!=null?R.gf_signups:R.signups)+' of '+comma(R.visitors)+' visitors (7 days)';
+      if(p.tried!=null) t+='<br>After paywall: '+comma(R.post_signups)+' tried ('+p.tried.toFixed(2)+'%), '+comma(R.post_on)+' paid ('+p.paid.toFixed(2)+'%) of '+comma(R.post_visitors)+' visitors since 30 Sep';
+      return t+'<br>That day: '+comma(R.signups_day)+' alert sign-up'+(n(R.signups_day)===1?'':'s')+', '+comma(R.visitors_day)+' visitors'; },
+    tableHead:['Day','Visitors (7d)','Before (7d)','% before','After: visitors','Tried','Paid','% tried','% paid'],
+    tableRow:function(p, day){ var R=p.r, dash='—';
+      return [day(p.d), comma(R.visitors),
+              p.pre!=null ? comma(R.gf_signups!=null?R.gf_signups:R.signups) : dash, p.pre!=null ? p.pre.toFixed(2)+'%' : dash,
+              p.tried!=null ? comma(R.post_visitors) : dash, p.tried!=null ? comma(R.post_signups) : dash, p.tried!=null ? comma(R.post_on) : dash,
+              p.tried!=null ? p.tried.toFixed(2)+'%' : dash, p.paid!=null ? p.paid.toFixed(2)+'%' : dash]; }
   });
 
   // ---------- iPhone app downloads (App Store Connect) ----------

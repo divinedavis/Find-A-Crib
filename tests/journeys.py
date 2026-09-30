@@ -1407,6 +1407,25 @@ class Runner:
         txt = page.evaluate("document.getElementById('paywall-modal').textContent") or ''
         self.ok('No ads' in txt, 'the paywall should say Plus has no ads', j)
 
+    def j_overlays_clear_ad(self, page, j, device):
+        """Nothing ends under Mediavine's sticky banner (owner, 2026-09-29: the
+        building popup's bottom was cut off). Fakes a 90px banner through the
+        same --ad-h the page's observer sets, then measures the building sheet
+        and the Plus paywall."""
+        self.boot(page)
+        page.evaluate("document.documentElement.style.setProperty('--ad-h', '90px')")
+        if device == 'phone':
+            page.evaluate("document.getElementById('btn-toggle-view').click()"); time.sleep(0.6)
+        page.evaluate("document.querySelector('#grid > .card[data-bbl] .body')?.click()"); time.sleep(1.2)
+        limit = page.evaluate("innerHeight - 90")
+        b = page.evaluate("Math.round(document.querySelector('#detail-sheet .detail-shell').getBoundingClientRect().bottom)")
+        self.ok(b <= limit + 1, f'the building sheet ends at {b}, under a banner starting at {limit}', j)
+        page.evaluate("document.getElementById('detail-sheet').hidden = true; document.getElementById('paywall-modal').hidden = false")
+        time.sleep(0.3)
+        b2 = page.evaluate("Math.round(document.querySelector('#paywall-modal .auth-card').getBoundingClientRect().bottom)")
+        self.ok(b2 <= limit + 1, f'the Plus paywall ends at {b2}, under a banner starting at {limit}', j)
+        j.notes.append(f'sheet {b} / paywall {b2} <= {limit}')
+
     def j_signin_modal(self, page, j, device):
         self.boot(page)
         self.click(page, '#auth-btn'); time.sleep(0.6)
@@ -1502,7 +1521,7 @@ class Runner:
 
     JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'pin_and_list',
                 'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'signin_modal', 'app_chip', 'app_qr_menu', 'boot_is_usable', 'city_chip',
-                'ad_tiles', 'list_follows_zoom', 'plus_no_ads', 'building_page_link', 'remove_ads_chip', 'outbound_links', 'status_chips', 'referral_gate',
+                'ad_tiles', 'list_follows_zoom', 'plus_no_ads', 'building_page_link', 'remove_ads_chip', 'overlays_clear_ad', 'outbound_links', 'status_chips', 'referral_gate',
                 'rent_report', 'legal_pages', 'comments_gate', 'landlords_gate', 'consent_mode', 'account_delete']
 
     # ---- run --------------------------------------------------------------

@@ -95,7 +95,9 @@ IGNORED = ("script error.", "runtime.sendmessage", "resizeobserver loop",
 
 
 AD_STACK_HOSTS = ("scriptwrapper.com", "journeymv.com", "mediavine.com", "grow.me",
-                  "uidapi.com", "optable.co", "rlcdn.com", "googlesyndication.com")
+                  "uidapi.com", "optable.co", "rlcdn.com", "googlesyndication.com",
+                  # Google's IMA SDK: Mediavine's video ads (2026-09-30, "a.j")
+                  "imasdk.googleapis.com")
 
 
 def is_noise(message: str) -> bool:
@@ -160,7 +162,17 @@ def js_errors(rows):
                                                                                # losing signal mid-load rejects it
                                                                                # stacklessly (first seen 2026-09-30,
                                                                                # 1 visitor, 1 s after landing).
-                                                                               "Importing a module script failed."))
+                                                                               "Importing a module script failed.",
+                                                                               # 2026-09-30: Safari when a storage write
+                                                                               # fails (full disk / private mode). This
+                                                                               # site uses no IndexedDB or Cache API —
+                                                                               # the ad stack's identity/prebid caches do.
+                                                                               "Failed writing data to the file system",
+                                                                               # An AbortError with no stack in the same
+                                                                               # second as IMA video-ad errors. Our one
+                                                                               # abort (the buildings stall timer, 15 s)
+                                                                               # is caught in boot, never unhandled.
+                                                                               "The operation was aborted."))
                       # A rejected XMLHttpRequest object as the reason: this
                       # site never uses XHR (supabase-js and ours are fetch);
                       # Prebid in Mediavine's stack does (9/29).

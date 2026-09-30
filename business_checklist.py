@@ -54,6 +54,7 @@ def _load():
 def _save(db):
     tmp = DB.with_suffix(".tmp")
     tmp.write_text(json.dumps(db, indent=1, sort_keys=True))
+    os.chmod(tmp, 0o600)
     os.replace(tmp, DB)
 
 

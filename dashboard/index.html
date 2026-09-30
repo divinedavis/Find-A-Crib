@@ -327,38 +327,9 @@
   .ads-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
   @media(max-width:700px){.ads-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
   .ads-tile{background:var(--bg);border:1px solid var(--border2);border-radius:12px;padding:14px 15px;min-width:0;overflow-wrap:anywhere}
-  /* product-health tiles: the number leads, a rule, then the measure's name
-     big enough to read from across the room. Everything that used to sit
-     under the number — the counts, the goal, the benchmark, the footnote —
-     lives behind the (i) so the grid reads as eleven numbers, not eleven
-     paragraphs. */
-  .hm-tile{position:relative;padding-top:15px}
-  .hm-i{position:absolute;top:9px;right:9px;width:20px;height:20px;border-radius:50%;border:1px solid var(--border);background:transparent;color:var(--muted);font:600 11px/18px ui-serif,Georgia,"Times New Roman",serif;text-align:center;padding:0;cursor:pointer}
-  .hm-i:hover,.hm-i[aria-expanded="true"]{color:var(--ink);border-color:var(--ink2)}
-  .hm-i:focus-visible{outline:2px solid var(--purple);outline-offset:2px}
-  .hm-val{font-size:26px;font-weight:700;letter-spacing:-.5px;line-height:1.1;padding-right:26px}
-  .hm-rule{border-top:1px solid var(--border);margin:10px 0 8px}
-  /* the goal sits beside the number in grey — same line, a third the size,
-     so the eye reads "51.8 against 50" without a second glance. */
+  /* the goal sits beside the number in grey — same line, a third the size.
+     Used by the investor card. */
   .hm-goal{font-size:12.5px;font-weight:500;letter-spacing:0;color:var(--muted);white-space:nowrap}
-  .hm-name{font-size:15px;font-weight:700;letter-spacing:-.2px;color:var(--ink);line-height:1.25}
-  .hm-pop{position:absolute;top:32px;right:9px;z-index:30;width:min(320px,calc(100vw - 48px));background:var(--card);border:1px solid var(--border2);border-radius:12px;box-shadow:var(--shadow);padding:12px 13px;font-size:12px;color:var(--ink2);line-height:1.5;text-align:left}
-  .hm-pop .hm-h{font-size:12.5px;font-weight:700;color:var(--ink);margin-bottom:6px}
-  .hm-pop .hm-what{margin-bottom:8px}
-  .hm-pop .hm-now{padding-top:8px;border-top:1px solid var(--border)}
-  .hm-pop .hm-now > div + div{margin-top:4px}
-  .hm-pop b{color:var(--ink)}
-  .hm-pop .a-bench-note{display:block;margin-top:4px;color:var(--muted)}
-  /* the verdict outline: green above the standard, yellow inside it, red
-     below. 2px so it survives the card's own border at a glance; no colour
-     at all when the cohort cannot carry a verdict. */
-  .hm-tile.hm-hi{border-color:#1baf7a;box-shadow:0 0 0 1.5px #1baf7a}
-  .hm-tile.hm-mid{border-color:#d9a21b;box-shadow:0 0 0 1.5px #d9a21b}
-  .hm-tile.hm-low{border-color:#d9463d;box-shadow:0 0 0 1.5px #d9463d}
-  html[data-theme="dark"] .hm-tile.hm-hi{border-color:#35c993;box-shadow:0 0 0 1.5px #35c993}
-  html[data-theme="dark"] .hm-tile.hm-mid{border-color:#e5b45c;box-shadow:0 0 0 1.5px #e5b45c}
-  html[data-theme="dark"] .hm-tile.hm-low{border-color:#f38f88;box-shadow:0 0 0 1.5px #f38f88}
-  .hm-nojudge{color:var(--muted)}
   .ads-tile .a-val{font-size:21px;font-weight:700;letter-spacing:-.3px;line-height:1.1}
   .ads-tile .a-lbl{font-size:12.5px;color:var(--ink2);margin-top:4px}
   .ads-tile .a-sub{font-size:11.5px;color:var(--muted);margin-top:2px}
@@ -375,7 +346,7 @@
     color:var(--ink);border:1px solid var(--border-strong);border-radius:9px;padding:7px 30px 7px 11px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
   .at-range select:focus-visible{outline:2px solid var(--purple);outline-offset:2px}
   .at-range-note{flex-basis:100%;text-align:right;font-size:11.5px;color:var(--muted)}
-  @media(max-width:560px){#sec-alert-trend .card-head-row{flex-direction:column;gap:10px}.at-range{margin-left:0;justify-content:flex-start}.at-range-note{text-align:left}}
+  @media(max-width:560px){#sec-alert-trend .card-head-row,#sec-appstore .card-head-row{flex-direction:column;gap:10px}.at-range{margin-left:0;justify-content:flex-start}.at-range-note{text-align:left}}
   .at-key{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--ink2);margin-top:8px}
   .at-key b{color:var(--ink)}
   .at-table{margin-top:10px;font-size:12px;color:var(--ink2)}
@@ -426,7 +397,6 @@
     /* Health tiles: goal under the value on every tile, and the info popover
        opens toward the screen's centre from whichever column it is in. */
     .hm-goal{display:block;margin-top:3px}
-    .ads-tiles>.hm-tile:nth-child(odd) .hm-pop{right:auto;left:9px}
     .content{padding:18px 16px 48px}
     .page-head{flex-direction:column;align-items:flex-start;gap:12px}
     .card{padding:18px 16px}
@@ -584,14 +554,10 @@
            ad revenue. The tile events are still logged (tile_served,
            tile_impression, dashboard_adtiles) if sponsored tiles are sold. -->
 
-      <!-- product health: the numbers that value the business -->
-      <div class="card mb18" id="sec-fac-health">
-        <div class="card-head-row">
-          <div><h2>Product health — the numbers that value the business</h2><div class="card-sub">Visitors and page views say how many people arrived. These say whether the product is worth anything to them once they do. All of it was already being computed; none of it was on this page.</div></div>
-        </div>
-        <div class="ads-tiles" id="fac-health-tiles"></div>
-        <div class="callout" id="fac-health-callout" style="margin-top:16px"></div>
-      </div>
+      <!-- "Product health — the numbers that value the business" was removed
+           at the owner's request (2026-09-30). Its retention/stickiness/
+           activation figures still come back in dashboard_metrics(); the
+           investor card below carries the ones investors ask for. -->
 
       <!-- investor view -->
       <div class="card mb18" id="sec-fac-investor">
@@ -609,10 +575,19 @@
       <!-- iPhone app: App Store downloads, from App Store Connect analytics -->
       <div class="card mb18" id="sec-appstore" hidden>
         <div class="card-head-row">
-          <div><h2>iPhone app — is anyone downloading it?</h2><div class="card-sub" id="appstore-sub">Apple’s own counts, one to two days behind. The number that matters is the conversion: of the people who opened the product page, how many tapped Get.</div></div>
+          <div><h2>iPhone app — is anyone downloading it?</h2><div class="card-sub" id="appstore-sub">First-time downloads per day, from Apple’s own counts (one to two days behind), with the 7-day average as the trend.</div></div>
+          <div class="at-range"><label for="dl-range">Period</label>
+            <select id="dl-range" aria-label="Period shown on the iPhone downloads chart">
+              <option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option>
+            </select>
+            <div class="at-range-note" id="dl-range-note" hidden></div>
+          </div>
         </div>
-        <div class="ref-tiles" id="appstore-tiles"></div>
-        <div class="card-sub" id="appstore-note" style="margin-top:10px"></div>
+        <div class="at-sum" id="dl-sum"></div>
+        <div class="at-legend" id="dl-legend"></div>
+        <div id="dl-chart" style="position:relative"></div>
+        <div class="at-key" id="dl-key" hidden></div>
+        <details class="at-table"><summary>Show the numbers</summary><div id="dl-table"></div></details>
       </div>
 
       </div><!-- /fac-a -->
@@ -818,86 +793,8 @@
   // a hidden per-visit rate for the headline when choosing a badge.
   var SIGNUP_BENCHMARK = { low: 2.0, high: 3.0, label: 'real estate', min_visitors: 500 };
 
-  // Cohort retention curve — the share of a signup cohort still active on the
-  // day, not the share that ever came back. Cross-industry 2025–26 readings
-  // settle near D1 25–26%, D7 11–13%, D30 5–7%:
-  //
-  //   https://vmobify.com/blog/app-retention-benchmarks
-  //   https://uxcam.com/blog/mobile-app-retention-benchmarks/
-  //
-  // TWO CAVEATS, both of which cut the same way and both of which matter more
-  // than the numbers:
-  //
-  // 1. These are MOBILE APP benchmarks. Their cohort installed something —
-  //    a deliberate act with a download behind it — where this cohort is
-  //    anyone who hit a web page. A web cohort is far less selected and reads
-  //    lower for that reason alone, so this is a ceiling to understand the
-  //    gap against, not par to be judged on.
-  // 2. Category matters more than the average: e-commerce sits at 3–6% by D30
-  //    and social at 15–20%. A housing search is a task with an end, closer to
-  //    the low end, and a user who found an apartment and left is a success
-  //    the curve records as churn.
-  //
-  // Held only against retention.dN.rate (survival), never against within_rate
-  // — mixing those two is the mistake RETURN_BENCHMARK's comment warns about.
-  var RETENTION_BENCHMARK = { d1: 25.5, d7: 12.0, d30: 6.0, label: 'all app categories',
-                              tolerance: 0.25, min_cohort: 100 };
 
-  // DAU/MAU for a LISTINGS PORTAL, derived from Zillow's own filings rather
-  // than the "20% is a good consumer app" line that blogs repeat. Nobody
-  // publishes DAU/MAU for Zillow or StreetEasy, but Zillow reports both halves
-  // of the arithmetic every quarter:
-  //
-  //   Q2 2026: 239M average monthly unique users, 2.5B visits in the quarter
-  //   https://zillowgroup.mediaroom.com/2026-08-05-Zillow-Group-Reports-Second-Quarter-2026-Financial-Results
-  //   Q4 2025: 221M uniques, 2.1B visits — same shape
-  //   https://expandedramblings.com/index.php/zillow-statistics/
-  //
-  // 2.5B / 3 months / 239M = ~3.5 visits per user per month. If every visit
-  // fell on a different day that is 3.5 / 30 = 11.6% DAU/MAU — the CEILING,
-  // since visits cluster on the same days in practice; the real figure sits
-  // somewhere in the high single digits. So ~10% is not "half of good", it is
-  // Zillow-level for this category, and the 20% SaaS line is the wrong shape
-  // for a search that runs in bursts and then stops for a year or two.
-  var STICKINESS_REFERENCE = { zillow_ceiling: 11.6, visits_per_user: 3.5,
-                               label: 'Zillow, Q2 2026' };
 
-  // Advertiser-tile click rate. The comparison class is display advertising,
-  // and real estate is the best-performing industry in it:
-  //
-  //   1.08%  real estate display  https://focus-digital.co/average-display-ad-ctr-2025-benchmarks/
-  //   0.46%  cross-industry display (standard banners), same source
-  //   0.08-1.16%  "native" — quoted at 0.08-0.15%, 0.38% and 1.16% by three
-  //          different 2026 roundups, which is a range, not a number, so it is
-  //          shown as a range and never used for the verdict.
-  //
-  // THE CAVEAT THAT MATTERS MORE THAN THE NUMBER. Those benchmarks divide by
-  // SERVED impressions. This tile divides by a viewability-qualified impression
-  // — half the tile on screen for a full second, counted once per apartment per
-  // session — which is a materially smaller denominator for the same delivery.
-  // A smaller denominator inflates the rate, so any multiple against these
-  // figures is an overstatement of the real gap, and a like-for-like number
-  // would be lower. The card already refuses to flatter itself three ways; this
-  // is the fourth, and it belongs on the tile rather than in a footnote,
-  // because the tile is the thing somebody reads over your shoulder in a pitch.
-  // Activation — the share of visitors who reach the moment that predicts
-  // everything else. This site's is already identified and measured: opening a
-  // listing. Openers return at 13% against 2%, and sign up at 7.7% against 0%.
-  //
-  //   30-50%  consumer apps, day-1 activation   https://scilla.studio/insights/activation-rate/
-  //   25-40%  PLG SaaS, within 7 days           (same roundup)
-  //
-  // THE DENOMINATOR IS NOT THEIRS, and it cuts against us. Those figures are
-  // the share of SIGN-UPS that activate — a population that already committed
-  // by creating an account. This one is the share of VISITORS, drive-by
-  // included, because the product needs no account to reach its aha moment. A
-  // less-selected denominator produces a lower rate for the same quality of
-  // product, so clearing their band on this denominator is a stronger result
-  // than matching it on theirs, not a weaker one. Said on the tile.
-  var ACTIVATION_BENCHMARK = { low: 30, high: 50, label: 'consumer apps' };
-
-  var AD_CTR_BENCHMARK = { realestate: 1.08, display: 0.46,
-                           native_low: 0.08, native_high: 1.16 };
 
   // MY targets, not anyone's benchmark. Kept separate from the *_BENCHMARK
   // constants above on purpose: those are sourced outside numbers a reading
@@ -907,7 +804,7 @@
   // things changed, and the counts follow from the ratios, not the reverse:
   //
   //  - DAU/MAU 10% stays, but it is now the CEILING, not the floor: it is
-  //    Zillow's own number (STICKINESS_REFERENCE, ~11.6% at most). Reaching it
+  //    Zillow's own number (~11.6% at most, from its filings). Reaching it
   //    means "as sticky as Zillow", which is as good as this category gets.
   //  - WAU/MAU 45% is the ratio that matters at this size. A housing search is
   //    weekly, not daily: someone hunting comes back several times a week for
@@ -941,8 +838,6 @@
                          // mrr raised 10k -> 20k with the Plus header goal (2026-09-30)
                          signups: 10000, mrr: 20000, share: 90 };
   var PLUS_GOAL_MEMBERS = Math.ceil(20000 / 4.99);   // 4,009
-  // Below this many savers the return rate is a coin toss, not a reading.
-  var SAVER_RETURN_MIN_COHORT = 20;
   // Every goal tile ends with the same verdict in the same place, in the same
   // two words. A tile that just says "19% of the way" makes you do the compare
   // yourself, and a tile that only badges the wins reads as if the others have
@@ -1935,7 +1830,6 @@
         (t.bench?'<div class="t-bench">'+t.bench+'</div>':'')+'</div>';
     }).join('');
 
-    renderFacHealth(d);
     renderFacInvestor(d);
     renderAppStore(d.appstore);
     renderSpark(d.sparkline||[], d.months, d.signups_series);
@@ -1974,285 +1868,6 @@
         '<span class="leg-pct">'+pctS(m.val,total)+'</span></div>';
     }).join('');
     return total;
-  }
-
-  // ---------- product health ----------
-  // The tiles above this card count arrivals. These count whether anyone
-  // stayed, came back, or did the thing the product exists to do. Every field
-  // here already existed in dashboard_metrics(); the page just never asked.
-  // One open (i) at a time; a click on the icon toggles it, a click anywhere
-  // else or Escape closes it. Delegated, so re-rendering the tiles on a range
-  // change does not stack handlers.
-  var healthPopsWired = false;
-  function closeHealthPops(except){
-    document.querySelectorAll('.hm-pop').forEach(function(p){
-      if(p!==except){ p.hidden = true; }
-    });
-    document.querySelectorAll('.hm-i').forEach(function(b){
-      if(!except || b.getAttribute('aria-controls')!==except.id) b.setAttribute('aria-expanded','false');
-    });
-  }
-  function wireHealthPops(host){
-    if(healthPopsWired || !host) return;
-    healthPopsWired = true;
-    host.addEventListener('click', function(e){
-      var btn = e.target.closest('.hm-i');
-      if(btn){
-        var pop = document.getElementById(btn.getAttribute('aria-controls'));
-        var open = pop && pop.hidden;
-        closeHealthPops(open ? pop : null);
-        if(pop){ pop.hidden = !open; btn.setAttribute('aria-expanded', open ? 'true' : 'false'); }
-        e.stopPropagation();
-        return;
-      }
-      // A click inside an open popover keeps it open (text selection, links).
-      if(e.target.closest('.hm-pop')) e.stopPropagation();
-    });
-    document.addEventListener('click', function(){ closeHealthPops(null); });
-    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeHealthPops(null); });
-  }
-
-  function renderFacHealth(d){
-    var R=d.retention||{}, E=d.engagement||{},
-        S=d.subscriptions||{}, T=d.totals||{};
-    var d30=(R.d30||{}), d7=(R.d7||{}), d1=(R.d1||{});
-    var SV = d.saver_return || {};
-    // Every account ever. Older payloads (and the benchmark test's synthetic
-    // ones) carry only the ranged count, which is the same thing on "all".
-    var accountsAll = T.accounts_all != null ? T.accounts_all : T.accounts;
-    function rate(x){ return x==null ? '—' : (100*Number(x)).toFixed(1)+'%'; }
-    // Two different numbers get called "returning", and showing only the
-    // kinder one is how a dashboard flatters its owner. `within_rate` is
-    // "came back at any point inside the window"; `rate` is true cohort
-    // retention — still active at day 30. They differ by 20x here.
-    // Verdict against a cohort-survival benchmark, with the same discipline the
-    // dwell and return tiles use: state the reference number always, pass
-    // judgement only when the cohort can carry one.
-    // Band, not a point, so the verdict is "inside / above / below" rather than a
-  // spurious multiple against a number that was quoted as a range.
-  function activationBench(pct){
-    var B = ACTIVATION_BENCHMARK;
-    var line = B.label + ' target <b>' + B.low + '-' + B.high + '%</b>';
-    if (pct == null) return line + ' · nothing measured in this range';
-    var v, c;
-    if (pct >= B.high)     { v = 'above the band'; c = 'bn-hi';  }
-    else if (pct >= B.low) { v = 'inside it';      c = 'bn-mid'; }
-    else                   { v = 'below it';       c = 'bn-low'; }
-    return line + ' <span class="bn ' + c + '">' + v + '</span>';
-  }
-
-  function survivalBench(mine, bench, cohort){
-      var line = 'All-app-category average <b>'+bench+'%</b>';
-      if (mine == null) return line + ' · not measured here';
-      if (n(cohort) < RETENTION_BENCHMARK.min_cohort)
-        return line + ' · cohort of '+comma(cohort)+' too small to compare';
-      var pctv = 100*Number(mine), tol = bench*RETENTION_BENCHMARK.tolerance, v, c;
-      if (pctv > bench+tol)      { v='above average'; c='bn-hi';  }
-      else if (pctv < bench-tol) { v='below average';  c='bn-low'; }
-      else                       { v='in line';        c='bn-mid'; }
-      return line + ' <span class="bn '+c+'">'+v+'</span>';
-    }
-    // Activation comes out of the hook block rather than a new query: it already
-    // counts, over the selected range, who opened a listing and who did not,
-    // and those two sets together are every visitor in the range.
-    var H = d.hook || {};
-    var actOn = n(H.viewed_visitors), actOff = n(H.noview_visitors);
-    var actAll = actOn + actOff;
-    var actPct = actAll ? (100 * actOn / actAll) : null;
-    var actRate = actPct == null ? '—' : actPct.toFixed(1) + '%';
-
-    var AL = d.alerts || {};
-    var BORO_SHORT = {M:'MN', Bk:'BK', Q:'QN', Bx:'BX', SI:'SI'};
-    var boroSplit = Object.keys(AL.by_borough || {}).sort(function(a,b){
-        return n(AL.by_borough[b]) - n(AL.by_borough[a]); })
-      .map(function(k){ return (BORO_SHORT[k]||k)+' '+comma(AL.by_borough[k]); }).join(' ');
-    var tiles=[
-      {val:actRate,lbl:'Activation · opened a listing',
-       goal:ACTIVATION_BENCHMARK.high+'%',
-       band:{low:ACTIVATION_BENCHMARK.low, high:ACTIVATION_BENCHMARK.high, value:actPct, unit:'%', src:ACTIVATION_BENCHMARK.label+' activation', ok:actAll>0},
-       sub:comma(actOn)+' of '+comma(actAll)+' visitors reached it',
-       bench:activationBench(actPct)},
-      {val:rate(d30.rate),lbl:'D30 retention · true',
-       goal:RETENTION_BENCHMARK.d30+'%',
-       band:{low:RETENTION_BENCHMARK.d30*(1-RETENTION_BENCHMARK.tolerance), high:RETENTION_BENCHMARK.d30*(1+RETENTION_BENCHMARK.tolerance), value:d30.rate==null?null:100*Number(d30.rate), unit:'%', src:RETENTION_BENCHMARK.label+' D30 survival, ±'+Math.round(100*RETENTION_BENCHMARK.tolerance)+'%', ok:n(d30.cohort)>=RETENTION_BENCHMARK.min_cohort, why:'cohort of '+comma(d30.cohort)+' under '+RETENTION_BENCHMARK.min_cohort},
-       sub:comma(d30.retained)+' of '+comma(d30.cohort)+' still active at day 30',
-       bench:survivalBench(d30.rate, RETENTION_BENCHMARK.d30, d30.cohort)},
-      // The one goal here that is NOT made up: it is the sourced cross-industry
-      // return rate from RETURN_BENCHMARK, adopted as the target rather than
-      // just displayed as a reference. Deliberately modest — that constant's
-      // comment argues 13% is a FLOOR for a property site, not par, because a
-      // housing search runs for weeks. Clear it, then raise it.
-      {val:rate(d30.within_rate),lbl:'Returned within 30d',
-       goal:RETURN_BENCHMARK.pct+'%',
-       band:{low:RETURN_BENCHMARK.pct*(1-RETURN_BENCHMARK.tolerance), high:RETURN_BENCHMARK.pct*(1+RETURN_BENCHMARK.tolerance), value:d30.within_rate==null?null:100*Number(d30.within_rate), unit:'%', src:RETURN_BENCHMARK.label+' 30-day return, ±'+Math.round(100*RETURN_BENCHMARK.tolerance)+'%', ok:n(d30.within_cohort)>=RETURN_BENCHMARK.min_cohort, why:'cohort of '+comma(d30.within_cohort)+' under '+RETURN_BENCHMARK.min_cohort},
-       sub:'the softer measure · '+comma(d30.within_returned)+' of '+comma(d30.within_cohort),
-       bench:(n(d30.within_cohort) < RETURN_BENCHMARK.min_cohort
-                ? 'Goal <b>'+RETURN_BENCHMARK.pct+'%</b> · cohort of '+comma(d30.within_cohort)+
-                  ' too small to judge'
-                : pctGoalLine('Goal', d30.within_rate, RETURN_BENCHMARK.pct))+
-             ' <span class="a-bench-note">(the goal IS the '+RETURN_BENCHMARK.label+
-             ' average — 99B sessions, the best-sourced number on this page)</span>'},
-      // The weekly ratio leads: it is the one a housing search is shaped
-      // around (see AUDIENCE_GOALS) and the one that is stable at this size.
-      {val:rate(E.wau_mau),lbl:'Weekly stickiness · WAU/MAU',
-       goal:AUDIENCE_GOALS.wau_mau+'%',
-       band:{low:40, high:50, value:E.wau_mau==null?null:100*Number(E.wau_mau), unit:'%', src:'a search people run weekly for a few weeks', ok:n(E.mau)>0},
-       sub:comma(E.wau)+' weekly of '+comma(E.mau)+' monthly',
-       bench:pctGoalLine('My goal', E.wau_mau, AUDIENCE_GOALS.wau_mau)+
-             ' <span class="a-bench-note">(40–50% is the band for a search people run weekly for a few weeks; the daily ratio below is what Zillow gets)</span>'},
-      // Savers who came back inside 30 days — the return rate a listings
-      // portal actually optimises for, because saved-search alerts are what
-      // bring Zillow's users back ~3.5 times a month. Fixed 30-day window,
-      // cohort = accounts whose first save is at least 30 days old.
-      {val:rate(SV.rate),lbl:'Savers back within 30d',
-       goal:AUDIENCE_GOALS.saver_return+'%',
-       band:{low:40, high:60, value:SV.rate==null?null:100*Number(SV.rate), unit:'%', src:'no outside benchmark — the owner\u2019s band around the 50% bar', ok:n(SV.cohort)>=SAVER_RETURN_MIN_COHORT, why:'cohort of '+comma(SV.cohort)+' under '+SAVER_RETURN_MIN_COHORT},
-       sub:comma(SV.returned)+' of '+comma(SV.cohort)+' who saved a building or search · '+
-           comma(SV.savers)+' savers ever',
-       bench:(n(SV.cohort) < SAVER_RETURN_MIN_COHORT
-                ? 'My goal <b>'+AUDIENCE_GOALS.saver_return+'%</b> · cohort of '+comma(SV.cohort)+
-                  ' too small to judge (need '+SAVER_RETURN_MIN_COHORT+')'
-                : pctGoalLine('My goal', SV.rate, AUDIENCE_GOALS.saver_return))+
-             ' <span class="a-bench-note">(no outside benchmark: the bar is "more likely than not to come back after signalling intent")</span>'},
-      {val:rate(E.stickiness),lbl:'Stickiness · DAU/MAU',
-       goal:AUDIENCE_GOALS.stickiness+'%',
-       band:{low:8, high:STICKINESS_REFERENCE.zillow_ceiling, value:E.stickiness==null?null:100*Number(E.stickiness), unit:'%', src:'listings portals; the top is Zillow\u2019s ceiling, '+STICKINESS_REFERENCE.label, ok:n(E.mau)>0},
-       sub:(E.dau_7avg!=null ? comma(E.dau_7avg)+' a day (7-day mean) of '+comma(E.mau)+' monthly · today so far '+rate(E.stickiness_today)
-                             : comma(E.dau)+' daily of '+comma(E.mau)+' monthly'),
-       // The goal IS the category ceiling: see STICKINESS_REFERENCE. Derived
-       // from Zillow's reported uniques and visits, not a blog rule of thumb.
-       bench:stickinessGoalLine(E.stickiness)+
-             ' <span class="a-bench-note">(10% is Zillow-level: '+STICKINESS_REFERENCE.visits_per_user+
-             ' visits per user per month, '+STICKINESS_REFERENCE.label+', caps DAU/MAU at ~'+
-             STICKINESS_REFERENCE.zillow_ceiling+'% even if every visit were a separate day)</span>'},
-      // DAU had no tile of its own — it existed only as the numerator in the
-      // stickiness subtitle, which is the one place a number you have a goal
-      // for should not live.
-      {val:comma(E.dau),lbl:'Daily active',
-       goal:comma(AUDIENCE_GOALS.dau),
-       band:{low:AUDIENCE_GOALS.dau/2, high:AUDIENCE_GOALS.dau, value:n(E.dau), unit:'n', src:'half the daily goal to the goal', ok:true},
-       sub:'unique visitors · today so far (ET)'+(E.dau_yesterday!=null ? ' · yesterday '+comma(E.dau_yesterday) : ''),
-       bench:goalLine(E.dau, AUDIENCE_GOALS.dau, 'daily')},
-      // Split out of the WAU/MAU ratio, because at this scale the counts are
-      // the actionable half and the percentage was hiding them. 101 and 376
-      // tell you what to do next; 26.9% does not, and it has no sourced
-      // benchmark to be judged against anyway. The ratio survives as the
-      // footnote on the weekly tile rather than as a headline of its own.
-      {val:comma(E.wau),lbl:'Weekly active',
-       goal:comma(AUDIENCE_GOALS.wau),
-       band:{low:AUDIENCE_GOALS.wau/2, high:AUDIENCE_GOALS.wau, value:n(E.wau), unit:'n', src:'half the weekly goal to the goal', ok:true},
-       sub:'unique visitors · last 7 days',
-       bench:goalLine(E.wau, AUDIENCE_GOALS.wau, 'weekly')+
-             ' <span class="a-bench-note">(45% of the monthly goal — the ratio has its own tile above)</span>'},
-      {val:comma(E.mau),lbl:'Monthly active',
-       goal:comma(AUDIENCE_GOALS.mau),
-       band:{low:AUDIENCE_GOALS.mau/2, high:AUDIENCE_GOALS.mau, value:n(E.mau), unit:'n', src:'half the monthly goal to the goal', ok:true},
-       sub:'unique visitors · last 30 days',
-       bench:goalLine(E.mau, AUDIENCE_GOALS.mau, 'monthly')},
-      // Borough-alert sign-ups (/alerts/, shipped 2026-09-03): the first
-      // intent signal on the site that needs no account. Active is all-time;
-      // the sub line follows the range picker. No outside benchmark — the
-      // honest comparison is against accounts, which is what the bench line
-      // shows: an email list that outgrows the account list says the
-      // no-account path was the right one.
-      // Active subscriptions are all-time, so the account count they are
-      // held against must be too; T.accounts follows the range picker and
-      // made this goal move with it (114 on "This month", 159 all time).
-      {val:comma(AL.active),lbl:'Alert sign-ups · lottery & re-rental emails',
-       goal:comma(accountsAll)+' (match accounts)',
-       band:{low:n(accountsAll)/2, high:n(accountsAll), value:n(AL.active), unit:'n', src:'half the account count to the account count — the list should at least match the path it replaces', ok:n(accountsAll)>0},
-       sub:comma(AL.signups)+' in this range · '+comma(AL.unsubscribed)+' unsubscribed · '+
-           comma(AL.emails_sent)+' alerts sent'+
-           (boroSplit ? ' · '+boroSplit : ''),
-       bench:(n(AL.active) ? '<b>'+comma(AL.with_filter)+'</b> set a rent or income filter' : 'none yet')+
-             ' · <b>'+comma(accountsAll)+'</b> accounts for comparison'+
-             (n(AL.lottery_only)||n(AL.rerental_only)
-               ? ' <span class="a-bench-note">('+comma(AL.lottery_only)+' lotteries only, '+
-                 comma(AL.rerental_only)+' re-rentals only)</span>' : '')},
-      {val:'$'+comma(S.mrr),lbl:'MRR',
-       goal:'$'+comma(AUDIENCE_GOALS.mrr),
-       band:{low:2, high:5, value:n(accountsAll)?100*n(S.paying)/n(accountsAll):null, unit:'%', src:'free-to-paid conversion, industry free tier; judged on paying \u00f7 accounts, not on dollars', ok:n(accountsAll)>0},
-       sub:comma(S.paying)+' paying · '+comma(S.comped)+' comped',
-       bench:'<b>0%</b> free-to-paid · industry free tier converts <b>2–5%</b>'}
-    ];
-    // What each measure IS, in one or two sentences, for the (i). Keyed by the
-    // label the tile already carries so the tile list above stays the single
-    // place a metric is defined. A label with no entry still renders — it
-    // just gets no definition, which is a visible gap rather than a crash.
-    var HEALTH_META = {
-      'Activation · opened a listing': {name:'Activation',
-        what:'The share of visitors in this range who opened at least one listing. The first sign the site did its job for them: they arrived, searched, and found something worth a click.'},
-      'D30 retention · true': {name:'D30 retention',
-        what:'True cohort retention. Of the visitors first seen at least 30 days ago, the share still active on day 30 itself. The strict survival number — it is what app-category benchmarks measure, and it is always far lower than “came back at some point.”'},
-      'Returned within 30d': {name:'Returned within 30d',
-        what:'The softer return measure: the share of visitors who came back at any point inside 30 days of their first visit. This is the number the cross-industry return benchmark is built on, so it is the goal here.'},
-      'Weekly stickiness · WAU/MAU': {name:'Weekly stickiness',
-        what:'Weekly actives divided by monthly actives. How much of a month’s audience shows up in any given week. A housing search runs weekly for a few weeks, so this is the ratio the product is shaped around.'},
-      'Savers back within 30d': {name:'Savers back within 30d',
-        what:'Among accounts that saved a building or a search at least 30 days ago, the share that returned within 30 days of saving. Saving is a signal of intent; this asks whether the site honoured it.'},
-      'Stickiness · DAU/MAU': {name:'Stickiness',
-        what:'Daily actives divided by monthly actives, with the daily figure the mean of the last seven full days so a morning reading is not a partial day. Roughly how many days a month a typical user shows up. Listings portals cap out near 10%; nobody checks apartments every day for long.'},
-      'Daily active': {name:'Daily active',
-        what:'Unique visitors today so far, Eastern time. The owner is excluded. This is the number the Goals card turns into revenue.'},
-      'Weekly active': {name:'Weekly active',
-        what:'Unique visitors over the last 7 days. At this size the count is more actionable than the ratio: it says how many people to add, not what percentage.'},
-      'Monthly active': {name:'Monthly active',
-        what:'Unique visitors over the last 30 days — the audience the advertising and subscription streams are priced against.'},
-      'Alert sign-ups · lottery & re-rental emails': {name:'Alert sign-ups',
-        what:'Active email subscriptions to borough lottery and re-rental alerts. No account needed, so this is the first intent signal on the site that costs the visitor nothing. Compared against accounts because that is the path it replaces.'},
-      'MRR': {name:'MRR',
-        what:'Monthly recurring revenue from Plus subscriptions. Paying accounts only; comped accounts are listed so the gap between “using it” and “paying for it” stays visible.'}
-    };
-    // The outline is the verdict against the STANDARD, never against the goal
-    // alone: above the band is green, inside it is yellow, below it is red.
-    // A tile whose cohort is too small to judge, or that has nothing measured,
-    // gets no colour — grey is the honest render for "cannot say yet".
-    function bandVerdict(b){
-      if(!b || b.value==null || !b.ok) return {cls:'', word:b&&b.ok===false&&b.why ? 'not judged — '+b.why : 'not judged — nothing measured'};
-      var v=Number(b.value);
-      if(v > b.high)  return {cls:'hm-hi',  word:'above the standard'};
-      if(v >= b.low)  return {cls:'hm-mid', word:'inside the standard'};
-      return {cls:'hm-low', word:'below the standard'};
-    }
-    function bandLine(b){
-      if(!b) return '';
-      var f = function(x){ return b.unit==='%' ? (Math.round(x*10)/10)+'%' : comma(x); };
-      var vd = bandVerdict(b);
-      var badge = vd.cls ? ' <span class="bn '+(vd.cls==='hm-hi'?'bn-hi':vd.cls==='hm-mid'?'bn-mid':'bn-low')+'">'+vd.word+'</span>'
-                         : ' <span class="hm-nojudge">'+esc(vd.word)+'</span>';
-      return '<div><b>Standard:</b> '+f(b.low)+' to '+f(b.high)+
-             (b.src ? ' <span class="a-bench-note" style="display:inline;margin:0">('+esc(b.src)+')</span>' : '')+
-             badge+'</div>';
-    }
-    el('fac-health-tiles').innerHTML=tiles.map(function(t,i){
-      var m = HEALTH_META[t.lbl] || {name:t.lbl, what:''};
-      var id = 'hm-pop-'+i;
-      var vd = bandVerdict(t.band);
-      return '<div class="ads-tile hm-tile '+vd.cls+'">'+
-        '<button type="button" class="hm-i" aria-label="About '+esc(m.name)+'" aria-expanded="false" aria-controls="'+id+'">i</button>'+
-        '<div class="hm-val">'+t.val+(t.goal ? ' <span class="hm-goal">/ '+esc(t.goal)+' goal</span>' : '')+'</div>'+
-        '<div class="hm-rule"></div>'+
-        '<div class="hm-name">'+esc(m.name)+'</div>'+
-        '<div class="hm-pop" id="'+id+'" role="region" hidden>'+
-          '<div class="hm-h">'+esc(t.lbl)+'</div>'+
-          (m.what ? '<div class="hm-what">'+esc(m.what)+'</div>' : '')+
-          '<div class="hm-now"><div><b>Right now:</b> '+t.sub+'</div>'+
-          bandLine(t.band)+
-          (t.bench ? '<div>'+t.bench+'</div>' : '')+'</div>'+
-        '</div>'+
-      '</div>';
-    }).join('');
-    wireHealthPops(el('fac-health-tiles'));
-
-    // The RETENTION CURVE — TRUE COHORT block (header + D1/D7/D30 meters) was
-    // removed; the retention figures still appear in the tiles and callout.
-    // The GOALS meters block (DAU/WAU/MAU, stickiness, savers, sign-ups,
-    // MRR, search share against the owner's goals) was removed on request.
-    // The "Against my goals…" narrative was removed. The tiles and the goal
-    // meters above carry every number it recited.
-    var healthCallout = el('fac-health-callout');
-    healthCallout.innerHTML = '';
-    healthCallout.style.display = 'none';
   }
 
   // ---------- investor view ----------
@@ -2330,247 +1945,290 @@
       'Record spend per campaign and both fall out of what is already here.';
   }
 
-  // ---------- iPhone app (App Store Connect) ----------
-  // What counts as good, so the tiles judge themselves. Apple's own peer
-  // benchmark lives in App Store Connect (25th/50th/75th percentile by
-  // category); published medians run ~4% (games) to ~32% (music) for product
-  // page view → download, ~25% overall, with impression → download around 3–5%.
-  // Lifestyle/Reference utilities like this one: page-view conversion under
-  // 15% means the page isn't selling it, 25%+ is good.
-  function appstoreVerdict(pv, imp){
-    if(pv==null && imp==null) return '';
-    var v=[];
-    if(pv!=null) v.push(pv>=25?'page → Get '+pv+'%: good (peer median ≈25%)':pv>=15?'page → Get '+pv+'%: middling (peer median ≈25%)':'page → Get '+pv+'%: weak — the page isn’t selling it (peer median ≈25%)');
-    if(imp!=null) v.push(imp>=4?'impression → Get '+imp+'%: good (typical 3–5%)':'impression → Get '+imp+'%: below typical 3–5%');
-    return v.join(' · ');
-  }
-  function renderAppStore(A){
-    var card=el('sec-appstore'); if(!card) return;
-    if(!A || (!A.as_of && !A.note)){ card.hidden=true; return; }
-    card.hidden=false;
-    var S=(A.summary||{}), w7=S.d7||{}, w28=S.d28||{};
-    // The installs/deletions report only started producing rows on 9/19, so
-    // "24 installs · 28 days" was two days of data under a 28-day label.
-    var days=A.days||{}, instFrom=Object.keys(days).sort().filter(function(k){ return days[k].installs!=null || days[k].deletions!=null; })[0];
-    var instSub=comma(w28.installs||0)+' installs · '+comma(w28.deletions||0)+' deletions'+(instFrom ? ' (Apple counts these since '+instFrom.slice(5).replace('-','/')+')' : '');
-    if(!A.as_of){
-      el('appstore-tiles').innerHTML='';
-      el('appstore-note').textContent=A.note||'No App Store data yet.';
-      return;
+  // ---------- trend charts (alert sign-ups, iPhone downloads) ----------
+  // One renderer for the dashboard's day-by-day trend cards. Same look and
+  // behaviour everywhere (owner, 2026-09-30: "give me the same type of chart
+  // we have for alerts"): one y-axis, up to two lines, a Last 7 / 30 / 90
+  // days period picker remembered per chart, an animated zoom when it
+  // changes (prefers-reduced-motion jumps), dotted key-date lines with
+  // staggered labels (numbered with a key on a phone), a crosshair tooltip,
+  // direct end labels and a "Show the numbers" table of the period.
+  // Each chart supplies its data shape through cfg; ids are cfg.id + '-…'.
+  var TREND_RANGES = [7, 30, 90];
+  function makeTrend(cfg){
+    var id=cfg.id, last=null, lastW=0, view=null, raf=0, range=30;
+    try { var saved=+localStorage.getItem(cfg.store); if(TREND_RANGES.indexOf(saved)>=0) range=saved; } catch (e) {}
+    function $(s){ return el(id+'-'+s); }
+    (function(){
+      var sel=$('range');
+      if(sel){
+        sel.value=String(range);
+        sel.addEventListener('change', function(){
+          var v=+sel.value; if(TREND_RANGES.indexOf(v)<0) return;
+          range=v; try { localStorage.setItem(cfg.store, String(v)); } catch (e) {}
+          if(last) render(last, true);
+        });
+      }
+      var t;
+      function refit(){ var h=$('chart'); if(h && last && h.clientWidth && h.clientWidth!==lastW) render(last); }
+      window.addEventListener('resize', function(){ clearTimeout(t); t=setTimeout(refit,80); });
+    })();
+    function day(iso,o){ return new Date(iso+'T00:00').toLocaleString('en-US', o||{month:'short',day:'numeric'}); }
+    function render(rows, animate){
+      var host=$('chart'); if(!host) return;
+      last=rows;
+      if(!rows.length){ host.innerHTML='<div style="color:var(--muted);font-size:13px">'+cfg.empty+'</div>'; return; }
+      var pts=cfg.points(rows), S=cfg.series, events=cfg.events||[];
+      $('sum').innerHTML=cfg.summary(rows, pts);
+      $('legend').innerHTML=S.map(function(s){ return '<span><i style="background:'+s.color+'"></i>'+s.label+'</span>'; }).join('')+(cfg.legendNote||'');
+      var note=$('range-note');
+      if(note){
+        var short=pts.length<range;
+        note.textContent= short ? cfg.historyNote(pts.length) : '';
+        note.hidden=!short;
+      }
+      var sel=$('range'); if(sel && sel.value!==String(range)) sel.value=String(range);
+
+      var W=Math.max(host.clientWidth||900,300); lastW=host.clientWidth;
+      var narrow=W<520, H=narrow?214:262, pad={t:narrow?30:62,r:narrow?44:(cfg.padRight||96),b:24,l:40};
+      var iw=W-pad.l-pad.r, ih=H-pad.t-pad.b, base=pad.t+ih, li=pts.length-1;
+      // The view is a domain: the (fractional) index of the first visible day,
+      // and the y-axis top. Animating is interpolating those two numbers.
+      var s1=Math.max(0, pts.length-range);
+      var y1=cfg.nice(Math.max.apply(null, pts.slice(s1).map(function(p){ return Math.max.apply(null, S.map(function(s){ return p[s.k]; })); })));
+      var target={s:s1, y:y1.max, step:y1.step};
+      var reduce=window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      cancelAnimationFrame(raf);
+      var from=view;
+      view=target;
+      if(!animate || reduce || !from || (from.s===target.s && from.y===target.y)){ draw(target.s, target.y, target.step, true); return; }
+      var t0=performance.now(), DUR=380;
+      (function frame(now){
+        // rAF's timestamp is the frame's start, which can be a hair before t0:
+        // clamp, or the first frame extrapolates past the data (negative index).
+        var k=Math.max(0,Math.min(1,(now-t0)/DUR)), e=1-Math.pow(1-k,3);   // ease-out cubic
+        if(k<1){
+          draw(from.s+(target.s-from.s)*e, from.y+(target.y-from.y)*e, target.step, false);
+          raf=requestAnimationFrame(frame);
+        } else draw(target.s, target.y, target.step, true);
+      })(t0);
+
+      function draw(s0, ymax, step, final){
+        var span=Math.max(1e-6, li-s0);
+        var X=function(i){ return pad.l + (li===0 ? iw/2 : iw*(i-s0)/span); };
+        var Y=function(v){ return base - ih*v/ymax; };
+        var first=Math.max(0, Math.floor(s0));   // one day before the edge, clipped, so the line enters the frame
+        var vis=pts.slice(first);
+        var grid='', ticks='';
+        for(var v=0; v<=ymax+1e-9; v+=step){
+          grid+='<line x1="'+pad.l+'" x2="'+(W-pad.r)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="var(--border2)" stroke-width="1"></line>';
+          ticks+='<text x="'+(pad.l-6)+'" y="'+(Y(v)+3.5)+'" text-anchor="end" font-size="10.5" fill="var(--muted)">'+cfg.tick(v)+'</text>';
+        }
+        // x labels: every day on the 7-day view when there is room, weekly
+        // otherwise; first and last visible always. Daily labels step back
+        // from the last day (every day, or every other day when they would
+        // crowd), so the spacing is even.
+        var perDay=iw/span, minDay=narrow?44:40, daily=span<=10;
+        var every= daily ? (perDay>=minDay ? 1 : 2) : 7, gap= daily ? minDay : (narrow?72:52);
+        var fi=Math.ceil(s0-1e-6), xl='', lastX=X(li), firstX=X(fi);
+        for(var i=fi;i<=li;i++){
+          var isEnd=(i===fi||i===li), onStep= daily ? (li-i)%every===0 : i%every===0;
+          if(!isEnd && (!onStep || lastX-X(i)<gap || X(i)-firstX<gap*0.8)) continue;
+          if(i===fi && i!==li && daily && (li-i)%every!==0 && X(i+1)-firstX<gap) continue;
+          xl+='<text x="'+X(i)+'" y="'+(H-6)+'" text-anchor="'+(i===fi&&li!==fi?'start':i===li?'end':'middle')+'" font-size="10.5" fill="var(--muted)">'+day(pts[i].d)+'</text>';
+        }
+        function path(key){ return vis.map(function(p,j){ var i=first+j; return (j?'L':'M')+X(i).toFixed(1)+' '+Y(p[key]).toFixed(1); }).join(' '); }
+        // Dotted key-date lines in three staggered label rows (numbers plus a
+        // key on a phone). Dates outside the period are left out.
+        var marker='', nEv=0, keyRows=[];
+        events.forEach(function(ev){
+          var i=pts.findIndex(function(p){ return p.d===ev.d; });
+          if(i<0) return;
+          var x=X(i);
+          if(x<pad.l-0.5) return;
+          var n1=++nEv, row=(n1-1)%3, right=x>W-pad.r-140;
+          marker+='<line x1="'+x+'" x2="'+x+'" y1="'+(narrow?pad.t-10:pad.t-50+row*16)+'" y2="'+base+'" stroke="var(--ink2)" stroke-width="1" stroke-dasharray="2 4" opacity=".75"></line>';
+          marker+= narrow
+            ? '<text x="'+x+'" y="'+(pad.t-14)+'" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink2)">'+n1+'</text>'
+            : '<text x="'+(right?x-4:x+4)+'" y="'+(pad.t-52+row*16+9)+'" text-anchor="'+(right?'end':'start')+'" font-size="10.5" font-weight="600" fill="var(--ink2)"><title>'+esc(ev.t)+'</title>'+esc(ev.s)+'</text>';
+          keyRows.push('<span><b>'+n1+'</b> '+esc(day(ev.d))+' · '+esc(ev.s)+'</span>');
+        });
+        var lp=pts[li];
+        // End labels, nudged apart when the lines meet.
+        var ends='', dots='';
+        if(S.length){
+          var ey=S.map(function(s){ return Y(lp[s.k]); });
+          if(S.length===2 && Math.abs(ey[0]-ey[1])<13){ if(lp[S[0].k]>=lp[S[1].k]){ ey[0]-=7; ey[1]+=7; } else { ey[0]+=7; ey[1]-=7; } }
+          S.forEach(function(s,j){
+            if(!narrow) ends+='<text x="'+(X(li)+8)+'" y="'+(ey[j]+4)+'" font-size="11" font-weight="600" fill="var(--ink)">'+s.end(lp[s.k])+'</text>';
+            dots+='<circle cx="'+X(li)+'" cy="'+Y(lp[s.k])+'" r="4" fill="'+s.color+'" stroke="var(--card)" stroke-width="2"></circle>';
+          });
+        }
+        var fs=pts[Math.min(li,fi)];
+        host.innerHTML='<svg id="'+id+'-svg" width="100%" height="'+H+'" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(cfg.aria)+', '+day(fs.d)+' to '+day(lp.d)+'">'+
+          '<defs><clipPath id="'+id+'-clip"><rect x="'+(pad.l-1)+'" y="0" width="'+(iw+2)+'" height="'+(base+2)+'"></rect></clipPath></defs>'+
+          grid+ticks+xl+marker+
+          '<g clip-path="url(#'+id+'-clip)">'+
+          S.map(function(s){ return '<path d="'+path(s.k)+'" fill="none" stroke="'+s.color+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"'+(s.dash?' stroke-dasharray="'+s.dash+'"':'')+'></path>'; }).join('')+
+          '</g>'+
+          dots+ends+
+          '<line id="'+id+'-x" y1="'+pad.t+'" y2="'+base+'" stroke="var(--border-strong)" stroke-width="1" opacity="0"></line>'+
+          '<rect x="'+pad.l+'" y="0" width="'+iw+'" height="'+H+'" fill="transparent" id="'+id+'-hit"></rect>'+
+          '</svg><div class="spark-tip" id="'+id+'-tip"></div>';
+        var key=$('key'); if(key){ key.innerHTML=narrow ? keyRows.join('') : ''; key.hidden=!narrow || !keyRows.length; }
+        if(!final) return;
+        var hit=$('hit'), tip=$('tip'), xl2=$('x'), svg=$('svg');
+        function show(ev){
+          // A pointer event can land on a chart the next animation frame has
+          // already replaced (detached: zero-size rect, NaN index) — ignore it.
+          if(!svg.isConnected) return;
+          var r=svg.getBoundingClientRect(); if(!r.width) return;
+          var sx=(ev.clientX-r.left)*W/r.width;
+          var i=Math.max(fi,Math.min(li,Math.round(s0+(sx-pad.l)*span/iw)));
+          var p=pts[i]; if(!p) return;
+          xl2.setAttribute('x1',X(i)); xl2.setAttribute('x2',X(i)); xl2.setAttribute('opacity','1');
+          var evOn=events.filter(function(e){ return e.d===p.d; }).map(function(e){ return '<br><i>'+esc(e.t)+'</i>'; }).join('');
+          tip.innerHTML=cfg.tip(p, day)+evOn;
+          // Wraps on a phone and stays inside the card.
+          tip.style.whiteSpace='normal'; tip.style.maxWidth=Math.min(340, r.width-8)+'px';
+          var tw=tip.offsetWidth, cx=X(i)*r.width/W;
+          tip.style.left=Math.max(tw/2+4, Math.min(r.width-tw/2-4, cx))+'px';
+          tip.style.top=(Math.min.apply(null, S.map(function(s){ return Y(p[s.k]); }))*r.height/H)+'px'; tip.style.opacity='1';
+        }
+        hit.addEventListener('mousemove',show); hit.addEventListener('touchstart',function(e){ show(e.touches[0]); },{passive:true});
+        hit.addEventListener('mouseleave',function(){ tip.style.opacity='0'; xl2.setAttribute('opacity','0'); });
+        // The table lists the selected period, newest first.
+        $('table').innerHTML='<table><tr>'+cfg.tableHead.map(function(h){ return '<th>'+h+'</th>'; }).join('')+'</tr>'+
+          pts.slice(fi).reverse().map(function(p){ return '<tr>'+cfg.tableRow(p, day).map(function(c){ return '<td>'+c+'</td>'; }).join('')+'</tr>'; }).join('')+'</table>';
+      }
     }
-    var tiles=[
-      {val:comma(w7.downloads||0),lbl:'Downloads · 7 days',sub:comma(w7.downloads_first||0)+' first-time · '+comma(w7.redownloads||0)+' re-downloads'},
-      {val:comma(w28.downloads||0),lbl:'Downloads · 28 days',sub:instSub},
-      {val:comma(w28.page_views||0),lbl:'Product page views · 28 days',sub:comma(w28.impressions||0)+' impressions in search & browse'},
-      {val:(w28.conv_page_view!=null?w28.conv_page_view+'%':'—'),lbl:'Page view → download',sub:(w28.conv_impression!=null?w28.conv_impression+'% from impressions':'impression rate unknown')}
-    ];
-    el('appstore-tiles').innerHTML=tiles.map(function(t){
-      return '<div class="ads-tile"><div class="a-val">'+t.val+'</div><div class="a-lbl">'+t.lbl+'</div><div class="a-sub">'+t.sub+'</div></div>';
-    }).join('');
-    // Apple's impressions cover App Store search and browse only, while page
-    // views include everyone who tapped "Get the app" on findacrib.com — a
-    // page view with no impression behind it. So downloads ÷ impressions
-    // (36.5% on 2026-09-21) is not the 3–5% store-search figure and is never
-    // judged against it; it is shown as a plain number on the tile.
-    var verdict=appstoreVerdict(w28.conv_page_view, null)+
-      ' · impression rate not judged: most page views arrive from findacrib.com links, which carry no store impression';
-    el('appstore-note').textContent=(verdict?verdict+' · ':'')+'Apple data through '+A.as_of+(A.updated?' · pulled '+String(A.updated).slice(0,16).replace('T',' ')+'Z':'');
+    return render;
   }
 
   // ---------- alert sign-up trend ----------
-  // One chart, one axis (%): two lines over the same denominator (7-day
-  // rolling visitors). "Saved" = alert sign-ups; "Turned on" = the ones that
-  // receive alerts (grandfathered or Plus). They are one line until 30 Sep,
-  // when alerts became Plus; the gap after it is the paywall. Crosshair +
-  // tooltip on hover; direct labels at the line ends; a table under it.
-  var AT_CHANGE = '2026-09-30', atLast = null, atW = 0;
+  // Two lines over the same denominator (7-day rolling visitors). "Saved" =
+  // alert sign-ups; "Turned on" = the ones that receive alerts (grandfathered
+  // or Plus). They are one line until 30 Sep, when alerts became Plus; the
+  // gap after it is the paywall. The period picker (owner, 2026-09-30: "7, 30,
+  // 90 day trends") picks the days shown; the rate stays 7-day rolling,
+  // because a 1-day rate on ~200 visitors is noise.
+  var AT_CHANGE = '2026-09-30';
   // Key dates drawn as dotted lines (owner, 2026-09-30: "show some other key
   // dates like moving alerts to the front of the journey"). Each is a real
   // commit/release in dhcr-map; add new ones here as they ship.
   var AT_EVENTS = [
-    {d:'2026-09-05', s:'TikTok comment', t:'Owner\u2019s TikTok comment goes viral: new visitors jump (the denominator), 5\u20137 Sep'},
+    {d:'2026-09-05', s:'TikTok comment', t:'Owner’s TikTok comment goes viral: new visitors jump (the denominator), 5–7 Sep'},
     {d:'2026-09-07', s:'Alerts chip up front', t:'Top bar: the Lottery agents chip becomes Alerts, and Alerts joins the menu (5508f85, f3ea5f3)'},
     {d:'2026-09-08', s:'Account required', t:'Alerts need an account: every Alerts link opens the sign-up modal (af4321d)'},
     {d:'2026-09-13', s:'Apple/Google sign-in', t:'Apple and Google sign-in offered right from alerts; iPhone: Alerts replaces Save search (d31baee, f1cd0b8)'},
     {d:'2026-09-19', s:'iPhone push live', t:'Push-notification alerts and the Lotteries tab reach the iPhone app (1.2.1 approved 19 Sep; 25f1a59, d97ed83)'},
-    {d:'2026-09-30', s:'Alerts \u2192 Plus', t:'Alerts become Plus for new sign-ups (66 grandfathered); every Alerts link opens the Plus paywall (d45d176, 89b9647)'}
+    {d:'2026-09-30', s:'Alerts → Plus', t:'Alerts become Plus for new sign-ups (66 grandfathered); every Alerts link opens the Plus paywall (d45d176, 89b9647)'}
   ];
-  // Period picker (owner, 2026-09-30: "a filter dropdown for this graph to
-  // show 7, 30, 90 day trends and animate the graphs as I change dates").
-  // The choice is the PERIOD shown; the rate stays 7-day rolling, because a
-  // 1-day rate on ~200 visitors is noise. History starts 3 Sep (alerts
-  // launched), so 30/90 clamp to it with a note. Switching animates the
-  // x/y domains (a zoom): lines, markers, gridlines and labels all move
-  // together; prefers-reduced-motion jumps straight to the end state.
-  var AT_RANGES = [7, 30, 90], atRange = 30, atView = null, atRaf = 0;
-  try { var atSaved = +localStorage.getItem('fac.atRange'); if (AT_RANGES.indexOf(atSaved) >= 0) atRange = atSaved; } catch (e) {}
-  (function(){
-    var sel=el('at-range');
-    if(sel){
-      sel.value=String(atRange);
-      sel.addEventListener('change', function(){
-        var v=+sel.value; if(AT_RANGES.indexOf(v)<0) return;
-        atRange=v; try { localStorage.setItem('fac.atRange', String(v)); } catch (e) {}
-        if(atLast) renderAlertTrend(atLast, true);
-      });
-    }
-    var t;
-    function refit(){ var h=el('at-chart'); if(h && atLast && h.clientWidth && h.clientWidth!==atW) renderAlertTrend(atLast); }
-    window.addEventListener('resize', function(){ clearTimeout(t); t=setTimeout(refit,80); });
-  })();
-  function atNiceMax(v){
-    var step = v<=1 ? 0.25 : v<=2.5 ? 0.5 : 1;
-    return {max: Math.max(step, Math.ceil((v*1.08)/step)*step), step: step};
-  }
-  function renderAlertTrend(rows, animate){
-    var host=el('at-chart'); if(!host) return;
-    atLast=rows;
-    if(!rows.length){ host.innerHTML='<div style="color:var(--muted);font-size:13px">Alert trend unavailable right now.</div>'; return; }
-    function rate(a,b){ return n(b) ? 100*n(a)/n(b) : 0; }
-    function day(iso,o){ return new Date(iso+'T00:00').toLocaleString('en-US', o||{month:'short',day:'numeric'}); }
-    var pts=rows.map(function(r){ return {d:r.date, saved:rate(r.signups,r.visitors), on:rate(r.on,r.visitors), r:r}; });
+  function atRate(a,b){ return n(b) ? 100*n(a)/n(b) : 0; }
+  var renderAlertTrend = makeTrend({
+    id:'at', store:'fac.atRange', events:AT_EVENTS,
+    empty:'Alert trend unavailable right now.',
+    aria:'Alert sign-up conversion, 7-day rolling',
+    historyNote:function(k){ return 'Alerts launched 3 Sep — '+k+' day'+(k===1?'':'s')+' of history'; },
+    series:[{k:'saved', color:'var(--at-saved)', label:'Saved an alert', end:function(v){ return v.toFixed(2)+'% saved'; }},
+            {k:'on', color:'var(--at-on)', label:'Alert turned on (grandfathered or Plus)', end:function(v){ return v.toFixed(2)+'% on'; }}],
+    legendNote:'<span style="color:var(--muted)">same line until 30 Sep</span>',
+    points:function(rows){ return rows.map(function(r){ return {d:r.date, saved:atRate(r.signups,r.visitors), on:atRate(r.on,r.visitors), r:r}; }); },
+    nice:function(v){ var step = v<=1 ? 0.25 : v<=2.5 ? 0.5 : 1; return {max: Math.max(step, Math.ceil((v*1.08)/step)*step), step: step}; },
+    tick:function(v){ return (+v.toFixed(2))+'%'; },
     // Summary: the last full pre-change week against what has happened since.
     // Not period-scoped: it is the before/after of the Plus switch.
-    var pre=null, post=rows.filter(function(r){ return r.date>=AT_CHANGE; });
-    rows.forEach(function(r){ if(r.date<AT_CHANGE) pre=r; });
-    var postS=post.reduce(function(a,r){ return a+n(r.signups_day); },0), postOn=post.reduce(function(a,r){ return a+n(r.on_day); },0);
-    var latest=rows[rows.length-1], full=post.length>=7, fullFrom='';
-    if(post.length){ var fd=new Date(post[0].date+'T00:00'); fd.setDate(fd.getDate()+6); fullFrom=fd.toLocaleString('en-US',{month:'short',day:'numeric'}); }
-    var sum='';
-    if(pre) sum+='<div><b>'+rate(pre.signups,pre.visitors).toFixed(2)+'%</b>last 7 days before Plus ('+comma(pre.signups)+' of '+comma(pre.visitors)+')</div>';
-    if(post.length){
-      sum+= full
-        ? '<div><b>'+rate(latest.on,latest.visitors).toFixed(2)+'%</b>turned on, last 7 days · '+rate(latest.signups,latest.visitors).toFixed(2)+'% saved</div>'
-        : '<div><b>'+comma(postOn)+' of '+comma(postS)+'</b>alert sign-ups since 30 Sep turned on ('+post.length+' day'+(post.length===1?'':'s')+' in; the 7-day rate is all post-change from '+fullFrom+')</div>';
-    }
-    el('at-sum').innerHTML=sum;
-    el('at-legend').innerHTML='<span><i style="background:var(--at-saved)"></i>Saved an alert</span>'+
-      '<span><i style="background:var(--at-on)"></i>Alert turned on (grandfathered or Plus)</span>'+
-      '<span style="color:var(--muted)">same line until 30 Sep</span>';
-    var note=el('at-range-note');
-    if(note){
-      var short=pts.length<atRange;
-      note.textContent= short ? 'Alerts launched 3 Sep — '+pts.length+' day'+(pts.length===1?'':'s')+' of history' : '';
-      note.hidden=!short;
-    }
-    var sel=el('at-range'); if(sel && sel.value!==String(atRange)) sel.value=String(atRange);
-
-    var W=Math.max(host.clientWidth||900,300); atW=host.clientWidth;
-    var narrow=W<520, H=narrow?214:262, pad={t:narrow?30:62,r:narrow?44:96,b:24,l:40};
-    var iw=W-pad.l-pad.r, ih=H-pad.t-pad.b, base=pad.t+ih, li=pts.length-1;
-    // The view is a domain: the (fractional) index of the first visible day,
-    // and the y-axis top. Animating is interpolating those two numbers.
-    var s1=Math.max(0, pts.length-atRange);
-    var y1=atNiceMax(Math.max.apply(null, pts.slice(s1).map(function(p){ return Math.max(p.saved,p.on); })));
-    var target={s:s1, y:y1.max, step:y1.step};
-    var reduce=window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    cancelAnimationFrame(atRaf);
-    var from=atView;
-    atView=target;
-    if(!animate || reduce || !from || (from.s===target.s && from.y===target.y)){ draw(target.s, target.y, target.step, true); return; }
-    var t0=performance.now(), DUR=380;
-    (function frame(now){
-      // rAF's timestamp is the frame's start, which can be a hair before t0:
-      // clamp, or the first frame extrapolates past the data (negative index).
-      var k=Math.max(0,Math.min(1,(now-t0)/DUR)), e=1-Math.pow(1-k,3);   // ease-out cubic
-      if(k<1){
-        draw(from.s+(target.s-from.s)*e, from.y+(target.y-from.y)*e, target.step, false);
-        atRaf=requestAnimationFrame(frame);
-      } else draw(target.s, target.y, target.step, true);
-    })(t0);
-
-    function draw(s0, ymax, step, final){
-      var span=Math.max(1e-6, li-s0);
-      var X=function(i){ return pad.l + (li===0 ? iw/2 : iw*(i-s0)/span); };
-      var Y=function(v){ return base - ih*v/ymax; };
-      var first=Math.max(0, Math.floor(s0));   // one day before the edge, clipped, so the line enters the frame
-      var vis=pts.slice(first);
-      var grid='', ticks='';
-      for(var v=0; v<=ymax+1e-9; v+=step){
-        grid+='<line x1="'+pad.l+'" x2="'+(W-pad.r)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="var(--border2)" stroke-width="1"></line>';
-        ticks+='<text x="'+(pad.l-6)+'" y="'+(Y(v)+3.5)+'" text-anchor="end" font-size="10.5" fill="var(--muted)">'+(+v.toFixed(2))+'%</text>';
+    summary:function(rows){
+      var pre=null, post=rows.filter(function(r){ return r.date>=AT_CHANGE; });
+      rows.forEach(function(r){ if(r.date<AT_CHANGE) pre=r; });
+      var postS=post.reduce(function(a,r){ return a+n(r.signups_day); },0), postOn=post.reduce(function(a,r){ return a+n(r.on_day); },0);
+      var latest=rows[rows.length-1], full=post.length>=7, fullFrom='';
+      if(post.length){ var fd=new Date(post[0].date+'T00:00'); fd.setDate(fd.getDate()+6); fullFrom=fd.toLocaleString('en-US',{month:'short',day:'numeric'}); }
+      var sum='';
+      if(pre) sum+='<div><b>'+atRate(pre.signups,pre.visitors).toFixed(2)+'%</b>last 7 days before Plus ('+comma(pre.signups)+' of '+comma(pre.visitors)+')</div>';
+      if(post.length){
+        sum+= full
+          ? '<div><b>'+atRate(latest.on,latest.visitors).toFixed(2)+'%</b>turned on, last 7 days · '+atRate(latest.signups,latest.visitors).toFixed(2)+'% saved</div>'
+          : '<div><b>'+comma(postOn)+' of '+comma(postS)+'</b>alert sign-ups since 30 Sep turned on ('+post.length+' day'+(post.length===1?'':'s')+' in; the 7-day rate is all post-change from '+fullFrom+')</div>';
       }
-      // x labels: every day on the 7-day view when there is room, weekly
-      // (Sep 3, 10, 17, …) otherwise; first and last visible always.
-      // Daily labels step back from today (every day, or every other day when
-      // they would crowd), so the spacing is even; weekly ones keep Sep 3/10/17.
-      var perDay=iw/span, minDay=narrow?44:40, daily=span<=10;
-      var every= daily ? (perDay>=minDay ? 1 : 2) : 7, gap= daily ? minDay : (narrow?72:52);
-      var fi=Math.ceil(s0-1e-6), xl='', lastX=X(li), firstX=X(fi);
-      for(var i=fi;i<=li;i++){
-        var isEnd=(i===fi||i===li), onStep= daily ? (li-i)%every===0 : i%every===0;
-        if(!isEnd && (!onStep || lastX-X(i)<gap || X(i)-firstX<gap*0.8)) continue;
-        if(i===fi && i!==li && daily && (li-i)%every!==0 && X(i+1)-firstX<gap) continue;
-        xl+='<text x="'+X(i)+'" y="'+(H-6)+'" text-anchor="'+(i===fi&&li!==fi?'start':i===li?'end':'middle')+'" font-size="10.5" fill="var(--muted)">'+day(pts[i].d)+'</text>';
-      }
-      function path(key){ return vis.map(function(p,j){ var i=first+j; return (j?'L':'M')+X(i).toFixed(1)+' '+Y(p[key]).toFixed(1); }).join(' '); }
-      // Dotted key-date lines. Labels sit in three staggered rows above the
-      // plot so neighbours (7 and 8 Sep) don't collide; on a phone each line
-      // carries a number and the key below the chart names it. Dates outside
-      // the period are left out (and slide out of frame while animating).
-      var marker='', nEv=0, keyRows=[];
-      AT_EVENTS.forEach(function(ev){
-        var i=pts.findIndex(function(p){ return p.d===ev.d; });
-        if(i<0) return;
-        var x=X(i);
-        if(x<pad.l-0.5) return;
-        var n1=++nEv, row=(n1-1)%3, right=x>W-pad.r-140;
-        marker+='<line x1="'+x+'" x2="'+x+'" y1="'+(narrow?pad.t-10:pad.t-50+row*16)+'" y2="'+base+'" stroke="var(--ink2)" stroke-width="1" stroke-dasharray="2 4" opacity=".75"></line>';
-        marker+= narrow
-          ? '<text x="'+x+'" y="'+(pad.t-14)+'" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink2)">'+n1+'</text>'
-          : '<text x="'+(right?x-4:x+4)+'" y="'+(pad.t-52+row*16+9)+'" text-anchor="'+(right?'end':'start')+'" font-size="10.5" font-weight="600" fill="var(--ink2)"><title>'+esc(ev.t)+'</title>'+esc(ev.s)+'</text>';
-        keyRows.push('<span><b>'+n1+'</b> '+esc(day(ev.d))+' · '+esc(ev.s)+'</span>');
+      return sum;
+    },
+    tip:function(p, day){ var R=p.r;
+      return '<b>'+day(p.d,{weekday:'short',month:'short',day:'numeric'})+'</b> · 7 days: '+p.saved.toFixed(2)+'% saved, '+p.on.toFixed(2)+'% on'+
+        '<br>'+comma(R.signups)+' saved / '+comma(R.on)+' on of '+comma(R.visitors)+' visitors · that day '+comma(R.signups_day)+' saved, '+comma(R.visitors_day)+' visitors'; },
+    tableHead:['Day','Visitors (7d)','Saved (7d)','On (7d)','% saved','% on'],
+    tableRow:function(p, day){ var R=p.r; return [day(p.d), comma(R.visitors), comma(R.signups), comma(R.on), p.saved.toFixed(2)+'%', p.on.toFixed(2)+'%']; }
+  });
+
+  // ---------- iPhone app downloads (App Store Connect) ----------
+  // Owner, 2026-09-30: "for iPhone app downloads, give me the same type of
+  // chart we have for alerts and remove the other tiles in this section".
+  // Apple's own daily counts (ios/scripts/asc_downloads.py -> appstore.json,
+  // one to two days behind), so the line ends on the last day Apple reported.
+  // Two lines, one unit: first-time downloads each day, and their trailing
+  // 7-day average — the day count is noisy at this size, the average is the
+  // trend. Re-downloads and updates are left out: they are not new people.
+  var DL_EVENTS = [
+    {d:'2026-09-09', s:'On the App Store', t:'Find A Crib 1.0 goes live on the App Store'},
+    {d:'2026-09-19', s:'1.2.1: push alerts', t:'1.2.1 approved 19 Sep: alerts as push notifications on the iPhone'},
+    {d:'2026-09-30', s:'1.2.5 live', t:'1.2.5 (build 99) reaches Ready for Sale'}
+  ];
+  var renderDownloadsTrend = makeTrend({
+    id:'dl', store:'fac.dlRange', events:DL_EVENTS, padRight:112,
+    empty:'No App Store data yet.',
+    aria:'iPhone app first-time downloads per day',
+    historyNote:function(k){ return 'On the App Store since 9 Sep — '+k+' day'+(k===1?'':'s')+' of Apple data'; },
+    series:[{k:'first', color:'var(--at-saved)', label:'First-time downloads that day', end:function(v){ return comma(v)+' that day'; }},
+            {k:'avg', color:'var(--at-on)', label:'7-day average', end:function(v){ return v.toFixed(1)+' a day (7d)'; }}],
+    points:function(rows){
+      return rows.map(function(r,i){
+        var win=rows.slice(Math.max(0,i-6), i+1), tot=win.reduce(function(a,x){ return a+n(x.first); },0);
+        return {d:r.date, first:n(r.first), avg:tot/win.length, r:r};
       });
-      var lp=pts[li];
-      // End labels: the two values, nudged apart when the lines meet.
-      var ys=Y(lp.saved), yo=Y(lp.on);
-      if(Math.abs(ys-yo)<13){ if(lp.saved>=lp.on){ ys-=7; yo+=7; } else { ys+=7; yo-=7; } }
-      var ends = narrow ? '' :
-        '<text x="'+(X(li)+8)+'" y="'+(ys+4)+'" font-size="11" font-weight="600" fill="var(--ink)">'+lp.saved.toFixed(2)+'% saved</text>'+
-        '<text x="'+(X(li)+8)+'" y="'+(yo+4)+'" font-size="11" font-weight="600" fill="var(--ink)">'+lp.on.toFixed(2)+'% on</text>';
-      var dots='<circle cx="'+X(li)+'" cy="'+Y(lp.saved)+'" r="4" fill="var(--at-saved)" stroke="var(--card)" stroke-width="2"></circle>'+
-               '<circle cx="'+X(li)+'" cy="'+Y(lp.on)+'" r="4" fill="var(--at-on)" stroke="var(--card)" stroke-width="2"></circle>';
-      var fs=pts[Math.min(li,fi)];
-      host.innerHTML='<svg id="at-svg" width="100%" height="'+H+'" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Alert sign-up conversion, 7-day rolling, '+day(fs.d)+' to '+day(lp.d)+'">'+
-        '<defs><clipPath id="at-clip"><rect x="'+(pad.l-1)+'" y="0" width="'+(iw+2)+'" height="'+(base+2)+'"></rect></clipPath></defs>'+
-        grid+ticks+xl+marker+
-        '<g clip-path="url(#at-clip)">'+
-        '<path d="'+path('saved')+'" fill="none" stroke="var(--at-saved)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>'+
-        '<path d="'+path('on')+'" fill="none" stroke="var(--at-on)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>'+
-        '</g>'+
-        dots+ends+
-        '<line id="at-x" y1="'+pad.t+'" y2="'+base+'" stroke="var(--border-strong)" stroke-width="1" opacity="0"></line>'+
-        '<rect x="'+pad.l+'" y="0" width="'+iw+'" height="'+H+'" fill="transparent" id="at-hit"></rect>'+
-        '</svg><div class="spark-tip" id="at-tip"></div>';
-      var key=el('at-key'); if(key){ key.innerHTML=narrow ? keyRows.join('') : ''; key.hidden=!narrow || !keyRows.length; }
-      if(!final) return;
-      var hit=el('at-hit'), tip=el('at-tip'), xl2=el('at-x'), svg=el('at-svg');
-      function show(ev){
-        // A pointer event can land on a chart the next animation frame has
-        // already replaced (detached: zero-size rect, NaN index) — ignore it.
-        if(!svg.isConnected) return;
-        var r=svg.getBoundingClientRect(); if(!r.width) return;
-        var sx=(ev.clientX-r.left)*W/r.width;
-        var i=Math.max(fi,Math.min(li,Math.round(s0+(sx-pad.l)*span/iw)));
-        var p=pts[i]; if(!p) return;
-        var R=p.r;
-        xl2.setAttribute('x1',X(i)); xl2.setAttribute('x2',X(i)); xl2.setAttribute('opacity','1');
-        var evOn=AT_EVENTS.filter(function(e){ return e.d===p.d; }).map(function(e){ return '<br><i>'+esc(e.t)+'</i>'; }).join('');
-        tip.innerHTML='<b>'+day(p.d,{weekday:'short',month:'short',day:'numeric'})+'</b> · 7 days: '+p.saved.toFixed(2)+'% saved, '+p.on.toFixed(2)+'% on'+
-          '<br>'+comma(R.signups)+' saved / '+comma(R.on)+' on of '+comma(R.visitors)+' visitors · that day '+comma(R.signups_day)+' saved, '+comma(R.visitors_day)+' visitors'+evOn;
-        // Wraps on a phone and stays inside the card: a nowrap tip centred on
-        // the right-hand days ran off the screen and scrolled the page sideways.
-        tip.style.whiteSpace='normal'; tip.style.maxWidth=Math.min(340, r.width-8)+'px';
-        var tw=tip.offsetWidth, cx=X(i)*r.width/W;
-        tip.style.left=Math.max(tw/2+4, Math.min(r.width-tw/2-4, cx))+'px';
-        tip.style.top=(Math.min(Y(p.saved),Y(p.on))*r.height/H)+'px'; tip.style.opacity='1';
+    },
+    nice:function(v){
+      var steps=[1,2,5,10,20,25,50,100,200,250,500,1000], step=steps[steps.length-1];
+      for(var i=0;i<steps.length;i++){ if(v/steps[i]<=5){ step=steps[i]; break; } }
+      return {max: Math.max(step, Math.ceil((v*1.05)/step)*step), step: step};
+    },
+    tick:function(v){ return comma(v); },
+    summary:function(rows){
+      var A=rows.meta||{}, k=rows.length;
+      var last7=rows.slice(-7).reduce(function(a,r){ return a+n(r.first); },0);
+      var prev=rows.slice(Math.max(0,k-14), Math.max(0,k-7)), prev7=prev.reduce(function(a,r){ return a+n(r.first); },0);
+      var sum='<div><b>'+comma(last7)+'</b>first-time downloads, last 7 days'+
+        (prev.length===7 ? ' (vs '+comma(prev7)+' the 7 before'+(prev7 ? ', '+(last7>=prev7?'+':'')+Math.round(100*(last7-prev7)/prev7)+'%' : '')+')' : '')+'</div>';
+      if(A.conv!=null) sum+='<div><b>'+A.conv+'%</b>of product-page views tapped Get, 28 days (peer median ≈25%)</div>';
+      sum+='<div><b>'+esc(A.through ? new Date(A.through+'T00:00').toLocaleString('en-US',{month:'short',day:'numeric'}) : '—')+'</b>Apple data through (one to two days behind)</div>';
+      return sum;
+    },
+    tip:function(p, day){ var R=p.r;
+      return '<b>'+day(p.d,{weekday:'short',month:'short',day:'numeric'})+'</b> · '+comma(p.first)+' first-time download'+(p.first===1?'':'s')+
+        ' · 7-day average '+p.avg.toFixed(1)+
+        '<br>'+comma(R.page_views)+' product-page view'+(n(R.page_views)===1?'':'s')+(R.redownloads ? ' · '+comma(R.redownloads)+' re-download'+(R.redownloads===1?'':'s') : ''); },
+    tableHead:['Day','First-time','7-day avg','Re-downloads','Page views'],
+    tableRow:function(p, day){ var R=p.r; return [day(p.d), comma(p.first), p.avg.toFixed(1), comma(R.redownloads), comma(R.page_views)]; }
+  });
+  // appstore.json's `days` -> one row per day from the first to Apple's last
+  // (a day Apple did not report reads as zero), plus the 28-day conversion.
+  function renderAppStore(A){
+    var card=el('sec-appstore'); if(!card) return;
+    if(!A || (!A.as_of && !A.note)){ card.hidden=true; return; }
+    card.hidden=false;
+    var days=A.days||{}, keys=Object.keys(days).sort();
+    var endKey=A.as_of && A.as_of>=(keys[keys.length-1]||'') ? A.as_of : keys[keys.length-1];
+    var rows=[];
+    if(keys.length && endKey){
+      for(var d=new Date(keys[0]+'T12:00Z'); ; d.setUTCDate(d.getUTCDate()+1)){
+        var k=d.toISOString().slice(0,10); if(k>endKey) break;
+        var x=days[k]||{};
+        rows.push({date:k, first:n(x.downloads_first), redownloads:n(x.redownloads), page_views:n(x.page_views)});
       }
-      hit.addEventListener('mousemove',show); hit.addEventListener('touchstart',function(e){ show(e.touches[0]); },{passive:true});
-      hit.addEventListener('mouseleave',function(){ tip.style.opacity='0'; xl2.setAttribute('opacity','0'); });
-      // The table lists the selected period, newest first.
-      el('at-table').innerHTML='<table><tr><th>Day</th><th>Visitors (7d)</th><th>Saved (7d)</th><th>On (7d)</th><th>% saved</th><th>% on</th></tr>'+
-        pts.slice(fi).reverse().map(function(p){ var R=p.r; return '<tr><td>'+day(p.d)+'</td><td>'+comma(R.visitors)+'</td><td>'+comma(R.signups)+'</td><td>'+comma(R.on)+'</td><td>'+p.saved.toFixed(2)+'%</td><td>'+p.on.toFixed(2)+'%</td></tr>'; }).join('')+'</table>';
     }
+    var w28=((A.summary||{}).d28)||{};
+    rows.meta={conv:w28.conv_page_view!=null ? w28.conv_page_view : null, through:endKey||null};
+    if(!rows.length){ el('dl-chart').innerHTML='<div style="color:var(--muted);font-size:13px">'+esc(A.note||'No App Store data yet.')+'</div>'; return; }
+    renderDownloadsTrend(rows);
   }
 
   // ---------- sparkline ----------

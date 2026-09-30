@@ -119,6 +119,29 @@ def run(browser, live):
     assert not errors, errors
     print(f'PASS {browser.browser_type.name}: ad and pay tiles', flush=True)
 
+    # Product health card removed (owner, 2026-09-30); the iPhone section is
+    # one downloads trend chart now, no tiles (same owner, same day).
+    expect(page.locator('#sec-fac-health')).to_have_count(0)
+    payload['appstore'] = {
+        'as_of': '2026-09-12', 'updated': '2026-09-13T09:00:00Z',
+        'summary': {'d28': {'conv_page_view': 50.0}},
+        'days': {'2026-09-09': {'downloads_first': 4, 'page_views': 10},
+                 '2026-09-10': {'downloads_first': 2, 'page_views': 6, 'redownloads': 1},
+                 '2026-09-12': {'downloads_first': 6, 'page_views': 9}}}
+    page.reload(wait_until='networkidle')
+    card = page.locator('#sec-appstore')
+    expect(card).to_be_visible()
+    expect(card.locator('#dl-svg')).to_have_count(1)
+    expect(card.locator('.ads-tile')).to_have_count(0)
+    expect(card.locator('#dl-sum')).to_contain_text('12')          # 4+2+0+6 first-time downloads
+    expect(card.locator('#dl-sum')).to_contain_text('50%')
+    expect(card.locator('#dl-table tr')).to_have_count(5)           # header + 4 days (9/11 reads as 0)
+    card.locator('#dl-range').select_option('7')
+    page.wait_for_timeout(500)
+    expect(card.locator('#dl-svg')).to_have_count(1)
+    assert not errors, errors
+    print(f'PASS {browser.browser_type.name}: downloads chart, no health card', flush=True)
+
     # A range with nothing cached dims the old numbers and says "Loading…"
     # until its payload lands, instead of sitting there looking frozen.
     # Delay in the page, not the route handler: a sleeping sync handler

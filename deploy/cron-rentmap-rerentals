@@ -12,7 +12,8 @@ CRON_TZ=America/New_York
 # /marketing-agents/ data, rebuild the featured tiles, and mail the digest.
 # 06:45 sits after the 05:00 growth run and the 06:00 report so the three
 # never collide on the git checkout or in the inbox.
-45 6 * * * root /root/Find-A-Crib/rerental_daily.sh >> /var/log/rentmap-rerentals.log 2>&1
+# Browser jobs take turns (fac-browser.lock, 2026-09-30 OOM).
+45 6 * * * root flock -w 3000 /run/lock/fac-browser.lock /root/Find-A-Crib/rerental_daily.sh >> /var/log/rentmap-rerentals.log 2>&1
 
 # INTRADAY (09:00–21:00 ET, every 2 hours): digest pass only — one render per
 # board, no featured/photo pass (RERENTAL_FEATURED=0). What it finds new goes
@@ -20,4 +21,4 @@ CRON_TZ=America/New_York
 # owner gets a digest only when there IS something new (--only-if-new).
 # Seven extra renders a day per board is the politeness ceiling here: these
 # are small offices' websites, not portals.
-0 9-21/2 * * * root RERENTAL_FEATURED=0 /root/Find-A-Crib/rerental_daily.sh --only-if-new >> /var/log/rentmap-rerentals.log 2>&1
+0 9-21/2 * * * root RERENTAL_FEATURED=0 flock -w 3000 /run/lock/fac-browser.lock /root/Find-A-Crib/rerental_daily.sh --only-if-new >> /var/log/rentmap-rerentals.log 2>&1

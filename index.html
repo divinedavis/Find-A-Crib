@@ -1466,7 +1466,7 @@
   <a id="agents-btn" class="agents-btn nyc-only" href="/marketing-agents/" title="Every HPD-approved firm that runs NYC affordable-housing lotteries" aria-label="Lottery agents">🏛️<span class="agents-label"> Lottery agents</span></a>
   <a id="dir-btn" class="agents-btn nyc-only" href="/directory/" title="Search every registered owner and managing agent in NYC by name, borough or neighborhood — a Plus feature" aria-label="Landlord directory">🔎<span class="agents-label"> Landlords</span></a>
   <div class="top-right">
-  <button id="ref-btn" type="button" class="ref-btn" hidden>🎁 <span class="ref-free">Free </span>Plus</button>
+  <button id="ref-btn" type="button" class="ref-btn" hidden>🎁 <span class="ref-free">Get </span>Plus</button>
   <button id="theme-btn" type="button" class="theme-btn" aria-label="Switch to dark mode" title="Switch to dark mode">🌙</button>
   <button id="auth-btn" type="button" class="auth-btn">Sign in</button>
   <button id="menu-btn" type="button" class="menu-btn desktop-only" aria-label="Menu" aria-expanded="false" title="Menu">☰</button>
@@ -1717,7 +1717,7 @@
     <button class="auth-close" data-ref="close" aria-label="Close">✕</button>
     <div class="ref-hero"><span class="ref-hero-label">Find A Crib Plus — on us</span></div>
     <div class="ref-body">
-      <h2>Want Plus for free?</h2>
+      <h2>Want Plus on us?</h2>
       <p class="ref-sub">You’re one friend away. Share your link, and when someone signs up through it you both get Find A Crib Plus — permanently, no card needed.</p>
       <ul class="ref-steps">
         <li>Share your unique link with a friend</li>
@@ -1785,7 +1785,7 @@
     <div class="profile-row profile-toggle-row">
       <div>
         <div class="profile-feat">🔔 Saved-building alerts</div>
-        <div class="profile-feat-sub">An email when a building you saved is advertised, gets a lottery or re-rental, drops its rent, or its violations change. Free. Never more than one email a day; Tuesdays it’s the weekly round-up.</div>
+        <div class="profile-feat-sub">An email when a building you saved is advertised, gets a lottery or re-rental, drops its rent, or its violations change. Never more than one email a day; Tuesdays it’s the weekly round-up.</div>
       </div>
       <label class="switch"><input id="profile-alerts" type="checkbox"><span class="slider"></span></label>
     </div>
@@ -1799,7 +1799,7 @@
     <div class="profile-row profile-toggle-row nyc-only">
       <div>
         <div class="profile-feat">🏛️ Lottery &amp; re-rental alerts</div>
-        <div class="profile-feat-sub">An email the minute a new housing lottery or re-rental opens in your borough. Free.</div>
+        <div class="profile-feat-sub">An email the minute a new housing lottery or re-rental opens in your borough. Part of Find A Crib Plus.</div>
       </div>
       <a class="folder-new" href="/alerts/" style="text-decoration:none;white-space:nowrap">Set up →</a>
     </div>
@@ -1909,7 +1909,7 @@
         <span class="detail-brand" hidden>Find A Crib</span>
       </div>
       <div class="detail-bar-right">
-        <button class="detail-plus-cta" data-detail="getplus" hidden>Get free Plus</button>
+        <button class="detail-plus-cta" data-detail="getplus" hidden>Get Plus on us</button>
         <button class="detail-icon detail-profile" data-detail="profile" hidden aria-label="Profile">👤</button>
         <button class="detail-icon detail-share" data-detail="share" aria-label="Share this building" title="Share"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg></button>
         <button class="detail-icon detail-fav" data-detail="fav" aria-label="Save">♡</button>
@@ -2650,7 +2650,7 @@ function favActive() {
     const statuses = (rec.s || []).length ? `Registered rent-stabilized with DHCR (${esc((rec.s || []).join(', '))}).` : 'Registered rent-stabilized with DHCR.';
     return `<div class="d-home" data-sec="home">
       <div class="d-home-title">🏠 Your apartment <button type="button" class="d-home-change" data-detail="unhome">Change</button></div>
-      <div class="d-home-line">${statuses} A registered building does not guarantee <i>your</i> unit is stabilized — only the rent history settles it, and it is free to request.</div>
+      <div class="d-home-line">${statuses} A registered building does not guarantee <i>your</i> unit is stabilized — only the rent history settles it, and you can request it from DHCR.</div>
       <div class="d-home-line">${since}</div>
       <div class="d-home-line">We email you when this building is advertised, gets a lottery or re-rental, or its violations change.</div>
       <div class="d-home-links">
@@ -2708,7 +2708,7 @@ function favActive() {
   // traffic). Alerts, phones, research, folders, and saved searches stay Plus.
   function gateSave(isUnsave) {
     if (isUnsave) return true;
-    if (!authUser) { openAuthModal('Create a free account to save this building.'); setAuthMode('signup'); return false; }
+    if (!authUser) { openAuthModal('Create an account to save this building.'); setAuthMode('signup'); return false; }
     return true;
   }
   async function persistFav(bbl, on) {
@@ -2928,15 +2928,15 @@ function favActive() {
     // the concrete payoff (a saved shortlist that syncs), not a generic ask
     t.innerHTML = `<button type="button" class="ft-close" aria-label="Dismiss">✕</button>
       <div class="ft-title">🏠 Comparing a few buildings?</div>
-      <div style="font-size:13px;margin-bottom:9px">Save your shortlist to a free account and we’ll email you when any of them is advertised, gets a lottery or re-rental, or its violations change.</div>
-      <div class="ft-opts"><button type="button" data-nudge-cta>Create a free account</button></div>`;
+      <div style="font-size:13px;margin-bottom:9px">Save your shortlist to an account and we’ll email you when any of them is advertised, gets a lottery or re-rental, or its violations change.</div>
+      <div class="ft-opts"><button type="button" data-nudge-cta>Create an account</button></div>`;
     document.body.appendChild(t);
     const timer = setTimeout(() => t.remove(), 15000);
     t.addEventListener('click', e => {
       if (e.target.closest('[data-nudge-cta]')) {
         clearTimeout(timer); t.remove();
         track('outbound', { kind: 'nudge_cta' });
-        openAuthModal('Create a free account to save the buildings you like — it takes ten seconds.');
+        openAuthModal('Create an account to save the buildings you like — it takes ten seconds.');
       } else if (e.target.closest('.ft-close')) { clearTimeout(timer); t.remove(); }
     });
     track('outbound', { kind: 'signup_nudge' });
@@ -4546,7 +4546,7 @@ function favActive() {
   // view's chip bar (renderFolderBar), next to the folders and the saved
   // searches themselves — one place for everything a person has kept.
   async function saveCurrentSearch() {
-    if (!authUser) { openAuthModal('Create a free account or sign in to continue — saved searches are part of Plus.'); return; }
+    if (!authUser) { openAuthModal('Create an account or sign in to continue — saved searches are part of Plus.'); return; }
     if (!plusActive) { openPaywall(null, 'saved_search'); return; }
     const name = (prompt('Name this search (e.g. "BK 2BR, no violations"):') || '').trim();
     if (!name) return;
@@ -5172,7 +5172,7 @@ function favActive() {
       // A name typed by someone signed out never reached the landlord table
       // (orgFetch bails before the request). Say what would make it work.
       const orgHint = (IS_NYC && !authUser && orgNameish(q))
-        ? `<div class="sh-signup">💡 Searching by landlord or managing-agent name needs a free account — <a data-sh="save">sign in</a> and this search will run again.</div>` : '';
+        ? `<div class="sh-signup">💡 Searching by landlord or managing-agent name needs an account — <a data-sh="save">sign in</a> and this search will run again.</div>` : '';
       card(`<div class="sh-head">We couldn’t find “${esc(q)}”. That usually means one of two things: it isn’t a ${reg} building${IS_NYC ? ' (only buildings on the DHCR register are here)' : ''}, or the address is outside ${where}. Showing all <b>${n.toLocaleString()}</b> buildings you can browse.</div>${orgHint}${guesses}${beds}`);
       return;
     }
@@ -5195,7 +5195,7 @@ function favActive() {
     } else if (act === 'beds') {
       openFilters();   // beds live in the filters modal
     } else if (act === 'save') {
-      openAuthModal('Create a free account to save the buildings you like.');
+      openAuthModal('Create an account to save the buildings you like.');
     } else if (act === 'relax') {
       keepFiltersFor = '';
       applyFilters();
@@ -5293,7 +5293,7 @@ function favActive() {
   async function openResearch(btn) {
     const bbl = btn.dataset.bbl;
     if (!supaClient) return;
-    if (!authUser) { openAuthModal('Create a free account or sign in to continue — landlord research is part of Plus.'); return; }
+    if (!authUser) { openAuthModal('Create an account or sign in to continue — landlord research is part of Plus.'); return; }
     if (!plusActive) { openPaywall(null, 'research'); return; }
     const orig = btn.textContent;
     btn.disabled = true; btn.textContent = 'Looking up portfolio…';
@@ -5317,7 +5317,7 @@ function favActive() {
   async function revealAgentPhone(btn) {
     const bbl = btn.dataset.bbl;
     if (!supaClient) return;
-    if (!authUser) { pendingPhoneBbl = bbl; openAuthModal('Create a free account or sign in to continue — phone numbers are part of Plus.'); return; }
+    if (!authUser) { pendingPhoneBbl = bbl; openAuthModal('Create an account or sign in to continue — phone numbers are part of Plus.'); return; }
     const orig = btn.textContent;
     btn.disabled = true; btn.textContent = '…';
     try {
@@ -6839,7 +6839,7 @@ function favActive() {
     detailFavBtn.classList.toggle('faved', !!f);
     detailFavBtn.textContent = f ? '♥' : '♡';
     const cta = detailContent.querySelector('.d-actions [data-detail="fav"]');
-    if (cta) cta.innerHTML = f ? '♥ Saved — watching it for you' : '♡ Save & get alerts — free';
+    if (cta) cta.innerHTML = f ? '♥ Saved — watching it for you' : '♡ Save & get updates';
   }
   // The detail sheet opens via JS, so on its own it adds no browser history —
   // which means the iOS edge-swipe-back gesture (and the browser Back button)
@@ -7245,7 +7245,7 @@ function favActive() {
     const rec = detailRec;
     if (act === 'search') return; // link
     if (act === 'close') { closeDetail(); return; }
-    if (act === 'getplus') { openAuthModal('Create a free account — invite a friend and you both get Find A Crib Plus free.'); return; }
+    if (act === 'getplus') { openAuthModal('Create an account — invite a friend and you both get Find A Crib Plus, on us.'); return; }
     if (act === 'comment-signin') { openAuthModal('Sign in to comment on buildings.'); return; }
     if (act === 'profile') { openProfile(); return; }
     if (act === 'fav') {
@@ -7275,7 +7275,7 @@ function favActive() {
       // the count and the red/green on the button stay visible to everyone.
       if ((act === 'bedbugs' || act === 'rodents') && !authUser) {
         track('outbound', { kind: 'gate_' + act, bbl: rec.bbl });
-        openAuthModal(`Create a free account to see this building’s ${act === 'bedbugs' ? 'bedbug' : 'rodent inspection'} record.`);
+        openAuthModal(`Create an account to see this building’s ${act === 'bedbugs' ? 'bedbug' : 'rodent inspection'} record.`);
         setAuthMode('signup');
         return;
       }
@@ -7562,7 +7562,7 @@ function favActive() {
     if (forgotWrap) forgotWrap.hidden = m === 'signup';
     showAuthError('');
   }
-  const AUTH_SUB_DEFAULT = "Creating an account is free — save buildings you like and pick up where you left off on any device.";
+  const AUTH_SUB_DEFAULT = "Create an account to save buildings you like and pick up where you left off on any device.";
   function openAuthModal(reminder) {
     setAuthMode('signin');
     const sub = document.getElementById('auth-sub');
@@ -7717,7 +7717,7 @@ function favActive() {
   // instead of the directory page, then on to it once the account exists.
   // Phones keep going straight to the page. 901px is the breakpoint where the
   // desktop chip row appears.
-  const LANDLORDS_GATE_MSG = 'Create a free account to search every landlord and managing agent in NYC.';
+  const LANDLORDS_GATE_MSG = 'Create an account to search every landlord and managing agent in NYC.';
   document.addEventListener('click', e => {
     const a = e.target.closest('a[href^="/directory/"]');
     if (!a || authUser || !matchMedia('(min-width: 901px)').matches) return;
@@ -7819,7 +7819,7 @@ function favActive() {
     let b = document.getElementById('founding-banner');
     if (!b) { b = document.createElement('div'); b.id = 'founding-banner'; b.className = 'founding-banner'; document.body.appendChild(b); }
     b.innerHTML = `🏆 <strong>You’re a founding user of Find A Crib.</strong><br>
-      Plus is yours — free, forever. You deserve it.
+      Plus is yours, on us, forever. You deserve it.
       <button type="button" class="fb-open">Open my Plus perks</button>
       <button type="button" class="fb-close" aria-label="Dismiss">✕</button>`;
     const done = () => { try { localStorage.setItem(seenKey, '1'); } catch (e) {} b.remove(); };
@@ -7907,7 +7907,7 @@ function favActive() {
     document.getElementById('profile-delete-box').hidden = true;
     await refreshPlus();
     const plan = document.getElementById('profile-plan');
-    plan.textContent = plusActive ? '★ Plus member' : 'Free';
+    plan.textContent = plusActive ? '★ Plus member' : 'Basic';
     plan.classList.toggle('plus', plusActive);
     document.getElementById('profile-upgrade').hidden = plusActive;
     document.getElementById('profile-dark').checked = themeName() === 'dark';
@@ -8102,7 +8102,7 @@ function favActive() {
         const { data, error } = await supaClient.rpc('redeem_referral', { p_code: code });
         if (error) return;                                   // transient — keep code, retry next load
         try { localStorage.removeItem('fac_ref'); } catch (e) {}
-        if (data && data.ok) { await refreshPlus(); showPlusToast('🎉 You and your friend both unlocked Find A Crib Plus — free!'); }
+        if (data && data.ok) { await refreshPlus(); showPlusToast('🎉 You and your friend both unlocked Find A Crib Plus, on us!'); }
       } catch (e) {}
     }
     const refModal = document.getElementById('referral-modal');
@@ -8112,7 +8112,7 @@ function favActive() {
         // The line says "create a free account", so open the form on sign-up
         // rather than sign-in — the gate on the bedbug and rodent records has
         // done this since 2026-09-07 and this one was left behind.
-        openAuthModal('Create a free account, then invite a friend — you both get Plus free.');
+        openAuthModal('Create an account, then invite a friend — you both get Plus, on us.');
         setAuthMode('signup');
         return;
       }
@@ -8159,7 +8159,7 @@ function favActive() {
       const shareBtn = document.getElementById('ref-share');
       if (navigator.share && shareBtn) {
         shareBtn.hidden = false;
-        shareBtn.addEventListener('click', () => { const v = refLinkInput.value; if (v && v.indexOf('http') === 0) { try { track('referral_share', { method: 'native' }); } catch (e) {} navigator.share({ title: 'Find A Crib', text: 'Join me on Find A Crib — we both get Plus free.', url: v }).catch(() => {}); } });
+        shareBtn.addEventListener('click', () => { const v = refLinkInput.value; if (v && v.indexOf('http') === 0) { try { track('referral_share', { method: 'native' }); } catch (e) {} navigator.share({ title: 'Find A Crib', text: 'Join me on Find A Crib — we both get Plus, on the house.', url: v }).catch(() => {}); } });
       }
     }
     { const rb = document.getElementById('ref-btn'); if (rb) rb.addEventListener('click', openReferralModal); }

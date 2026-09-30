@@ -1147,7 +1147,7 @@ def _email_report(to, bbl, token):
                 "rent-stabilized building in the city.",
                 "Who is registered as the owner and managing agent, and what else "
                 "they run.",
-                "A pre-filled DHCR rent-history request — the free step that "
+                "A pre-filled DHCR rent-history request — the step that "
                 "establishes whether you're being overcharged.",
             ]},
         ],

@@ -1791,14 +1791,14 @@ def dataset_jsonld(name, description, url, spatial, size=None, part_of_catalog=T
         spatialCoverage=spatial,
         variableMeasured=DATA_VARIABLES,
         conditionsOfAccess=(
-            "Free to read on the site. Bulk JSON is public; the REST API requires a free key."),
+            "Open to read on the site. Bulk JSON is public; the REST API requires a key."),
         distribution=[
             {"@type": "DataDownload",
              "name": "Bulk JSON — every registered building",
              "encodingFormat": "application/json",
              "contentUrl": SITE + "/buildings.min.json"},
             {"@type": "DataDownload",
-             "name": "REST API (free key required)",
+             "name": "REST API (key required)",
              "encodingFormat": "application/json",
              "contentUrl": SITE + "/api/v1/buildings"},
         ])
@@ -1875,7 +1875,7 @@ CITY_DATASET = {
     ),
 }
 
-CITY_DATASET_ACCESS = ("Free to read on findacrib.com. No bulk download is "
+CITY_DATASET_ACCESS = ("Open to read on findacrib.com. No bulk download is "
                        "published for this city.")
 
 
@@ -3458,10 +3458,10 @@ def main():
                 # conversion hook: give organic readers a reason to act, not just leave
                 + (f"<div class='hook'><strong>🔔 A unit here was recently advertised.</strong> "
                    f"See it on the map and get an email if another opens up — "
-                   f"<a href='/#d={b['bbl']}'>save {esc(addr)} to a free account</a>.</div>"
+                   f"<a href='/#d={b['bbl']}'>save {esc(addr)} to an account</a>.</div>"
                    if adv else
                    f"<div class='hook'><strong>🔔 Want to know if an apartment opens up here?</strong> "
-                   f"<a href='/#d={b['bbl']}'>Save {esc(addr)} to a free Find A Crib account</a> and get a listing alert. "
+                   f"<a href='/#d={b['bbl']}'>Save {esc(addr)} to a Find A Crib account</a> and get a listing alert. "
                    f"Plus members also see the managing agent's phone number and the owner's full portfolio.</div>")
                 + f"<h2>Building details</h2><table class='facts'>{facts}</table>"
                 # report offer sits after the conditions table on purpose: the

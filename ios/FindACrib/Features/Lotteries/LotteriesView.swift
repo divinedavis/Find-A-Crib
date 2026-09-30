@@ -1,9 +1,10 @@
 import SwiftUI
 
-/// The Lotteries tab: for an alert subscriber, Housing Connect lotteries open in the
-/// boroughs they get alerts for, soonest deadline first, and (owner, same
-/// day) the HPD marketing agents' re-rentals in those boroughs. Everyone
-/// else sees a sign-up screen; only its button opens the sign-up sheet.
+/// The Lotteries tab: Housing Connect lotteries, soonest deadline first, and
+/// the HPD marketing agents' re-rentals — for EVERYONE (owner, 2026-09-30;
+/// it used to be a sign-up wall). A subscriber sees their alert boroughs,
+/// everyone else all five, with a banner to turn on alerts (Find A Crib Plus
+/// for new sign-ups; the alerts sheet opens the paywall).
 /// The NJ pane (owner, 2026-09-24) lists the New Jersey towns holding
 /// affordable-housing drawings, from Affordable Homes New Jersey (CGP&H).
 /// See LotteryFeed.
@@ -40,8 +41,9 @@ struct LotteriesView: View {
 
     private var nycBody: some View {
         Group {
-            // Never show the sign-up until we KNOW they are not subscribed.
-            if feed.subscribed { list } else if feed.checked { signup } else { checking }
+            // Wait for the subscription answer so a subscriber never sees all
+            // five boroughs flash before their own.
+            if feed.checked { list } else { checking }
         }
         .sheet(isPresented: $showAlerts, onDismiss: { Task { await feed.refresh() } }) { AlertsSheet() }
         // Signed out: sign in first, then straight on to the alerts sheet —
@@ -84,29 +86,34 @@ struct LotteriesView: View {
         }
     }
 
-    private var signup: some View {
-        VStack(spacing: 0) {
-            NavyHeader {
-                Text("Lotteries").font(.se(24, .bold)).foregroundStyle(.white)
-                    .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.bottom, 12)
-            }
-            ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
-                    Image(systemName: "ticket").font(.system(size: 40, weight: .semibold)).foregroundStyle(SE.royal)
-                    Text("Lotteries & re-rentals for your boroughs").font(.se(24, .bold)).foregroundStyle(SE.ink)
-                    Text("Sign up for free alerts and this tab lists every NYC Housing Connect lottery and income-restricted re-rental open in the boroughs you pick. We'll also tell you the minute a new one opens.")
-                        .font(.se(17)).foregroundStyle(SE.ink2)
-                    SEPrimaryButton(title: "Sign up for alerts") { promptSignup() }
-                        .accessibilityIdentifier("lotteries-signup")
-                        .padding(.top, 6)
-                    Text("Free. Unsubscribe any time.").font(.se(14)).foregroundStyle(SE.ink3)
+    /// Not subscribed: a banner above the list instead of a wall. Alerts are
+    /// Find A Crib Plus for new sign-ups; the alerts sheet saves the alert and
+    /// opens the paywall, so this only has to say what it is.
+    @ViewBuilder private var alertsBanner: some View {
+        if !feed.subscribed {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 10) {
+                    Image(systemName: "bell.fill").font(.system(size: 18, weight: .bold)).foregroundStyle(SE.royal)
+                    Text("Hear the minute a new one opens").font(.se(18, .bold)).foregroundStyle(SE.ink)
                 }
-                .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white)
-                .padding(.top, 16)
+                Text("An alert on this phone and by email the minute a lottery or re-rental opens in the boroughs you pick. Part of Find A Crib Plus.")
+                    .font(.se(15)).foregroundStyle(SE.ink2)
+                SEPrimaryButton(title: "Turn on alerts", icon: "bell.fill", fill: SE.navy) { promptSignup() }
+                    .accessibilityIdentifier("lotteries-signup")
             }
-            .background(SE.canvas)
+            .padding(14).frame(maxWidth: .infinity, alignment: .leading).background(Color.white)
+            .overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.line))
+            .padding(.horizontal, 16)
+            .accessibilityElement(children: .contain).accessibilityIdentifier("lotteries-alerts-banner")
         }
-        .background(SE.canvas)
+    }
+
+    /// Subscribers edit their boroughs; everyone else is offered alerts.
+    private var boroughsButton: some View {
+        Button(feed.subscribed ? "Edit boroughs" : "Get alerts") {
+            if feed.subscribed { showAlerts = true } else { promptSignup() }
+        }
+        .font(.se(16, .bold)).foregroundStyle(SE.royal)
     }
 
     private var list: some View {
@@ -139,20 +146,19 @@ struct LotteriesView: View {
             .padding(.horizontal, 16).padding(.top, 8).background(Color.white)
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 12) {
+                    if pane != .newJersey { alertsBanner }
                     if pane == .newJersey { njList } else if pane == .rerentals { rerentalList } else {
                     HStack {
                         Text(countLine).font(.se(17, .bold)).foregroundStyle(SE.ink)
                         Spacer()
-                        Button("Edit boroughs") { showAlerts = true }
-                            .font(.se(16, .bold)).foregroundStyle(SE.royal)
-                            .accessibilityIdentifier("lotteries-edit")
+                        boroughsButton.accessibilityIdentifier("lotteries-edit")
                     }
                     .padding(.horizontal, 16)
                     if feed.loadFailed {
                         message("Couldn't load lotteries", "Check your connection and pull down to try again.")
                     } else if feed.mine.isEmpty && !feed.loading {
                         message("Nothing open right now",
-                                "No Housing Connect lotteries are open in \(boroughNames) right now. We'll alert you the minute one opens.")
+                                "No Housing Connect lotteries are open in \(boroughNames) right now." + (feed.subscribed ? " We'll alert you the minute one opens." : ""))
                     } else if lotteries.isEmpty && !feed.loading {
                         message("None with \(bedsWords)",
                                 "\(feed.mine.count) open in \(boroughNames), none with \(bedsWords). Change Beds above to see them.")
@@ -178,7 +184,7 @@ struct LotteriesView: View {
     /// Re-rentals in their boroughs, from the same featured.json the search
     /// feed's tiles use (refreshed with the rest of the app's data).
     private var rerentals: [FeaturedListing] {
-        let codes = Set(feed.boroughs)
+        let codes = Set(feed.viewBoroughs)
         return store.featured.listings.filter {
             ($0.boroughCode.map(codes.contains) ?? false)
                 && LotteryFeed.bedsMatch($0.beds.map { [$0] }, want: beds)
@@ -195,14 +201,14 @@ struct LotteriesView: View {
         HStack {
             Text("\(rerentals.count) available").font(.se(17, .bold)).foregroundStyle(SE.ink)
             Spacer()
-            Button("Edit boroughs") { showAlerts = true }.font(.se(16, .bold)).foregroundStyle(SE.royal)
+            boroughsButton
         }
         .padding(.horizontal, 16)
         if rerentals.isEmpty && !beds.isEmpty {
             message("None with \(bedsWords)", "No re-rental in \(boroughNames) lists \(bedsWords) today. Change Beds above to see them.")
         } else if rerentals.isEmpty {
             message("No re-rentals right now",
-                    "No HPD marketing agent is advertising a re-rental in \(boroughNames) today. We'll alert you when one is posted.")
+                    "No HPD marketing agent is advertising a re-rental in \(boroughNames) today." + (feed.subscribed ? " We'll alert you when one is posted." : ""))
         }
         // slot -1 marks this tab in the re-rental funnel, apart from the
         // search feed's slots 0, 1, 2…
@@ -297,7 +303,7 @@ struct LotteriesView: View {
         if !njSales.isEmpty {
             njSection("Homes for sale", njSales)
         }
-        Text("From Affordable Homes New Jersey (CGP&H), checked daily. To be in a drawing, fill in CGP&H's free pre-application, then join that town's waiting list from your CGP&H profile by the date shown. Units, rents and income limits are shown in your profile.")
+        Text("From Affordable Homes New Jersey (CGP&H), checked daily. To be in a drawing, fill in CGP&H's pre-application, then join that town's waiting list from your CGP&H profile by the date shown. Units, rents and income limits are shown in your profile.")
             .font(.se(14)).foregroundStyle(SE.ink3).padding(.horizontal, 16).padding(.top, 4)
     }
 
@@ -345,11 +351,11 @@ struct LotteriesView: View {
     }
 
     private var boroughNames: String {
-        let n = feed.boroughs.map { Borough.name($0) }
+        let n = feed.viewBoroughs.map { Borough.name($0) }
         if n.count == Borough.all.count { return "all five boroughs" }
         return ListFormatter.localizedString(byJoining: n)
     }
-    private var boroughLine: String { feed.boroughs.count == Borough.all.count ? "All five boroughs" : feed.boroughs.map { Borough.name($0) }.joined(separator: " · ") }
+    private var boroughLine: String { feed.viewBoroughs.count == Borough.all.count ? "All five boroughs" : feed.viewBoroughs.map { Borough.name($0) }.joined(separator: " · ") }
     private var countLine: String {
         if feed.loading && feed.all.isEmpty { return "Loading…" }
         return beds.isEmpty ? "\(feed.mine.count) open" : "\(lotteries.count) of \(feed.mine.count) open"

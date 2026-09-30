@@ -428,10 +428,11 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.buttons["city-field"].exists, "and leaves Search where it was")
     }
 
-    /// The Lotteries tab shows for everyone (owner, 2026-09-19). Not
-    /// subscribed, it shows a sign-up screen and NO sheet opens by itself;
-    /// the button opens sign-in (signed out) then the alerts sheet. --lotteries-demo stands in for a subscriber
-    /// to all five boroughs: the tab lists live lotteries and re-rentals.
+    /// The Lotteries tab LISTS for everyone (owner, 2026-09-30: "people should
+    /// be able to see lotteries and rerentals"). Not subscribed, it shows all
+    /// five boroughs with a "Turn on alerts" banner (alerts are Plus for new
+    /// sign-ups), NO sheet opens by itself, and the banner opens sign-in when
+    /// signed out. --lotteries-demo stands in for a subscriber to all five.
     func testLotteriesTabSignupScreenThenListsForSubscribers() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash"]
@@ -440,9 +441,14 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(tab.waitForExistence(timeout: 20), "the Lotteries tab shows for everyone")
         tab.tap()
         let signup = app.buttons["lotteries-signup"]
-        XCTAssertTrue(signup.waitForExistence(timeout: 10), "not subscribed: the tab shows the sign-up screen")
+        XCTAssertTrue(signup.waitForExistence(timeout: 10), "not subscribed: the alerts banner sits above the list")
         XCTAssertFalse(app.buttons["Cancel"].waitForExistence(timeout: 3), "no sheet may open by itself")
-        XCTAssertFalse(app.descendants(matching: .any)["lottery-card"].firstMatch.exists, "no list without a subscription")
+        let anyCard = app.descendants(matching: .any)["lottery-card"].firstMatch
+        XCTAssertTrue(anyCard.waitForExistence(timeout: 15) || app.descendants(matching: .any)["lotteries-empty"].firstMatch.exists,
+                      "not subscribed: the tab still lists lotteries (or says none are open)")
+        XCTAssertTrue(app.staticTexts["All five boroughs"].exists, "a non-subscriber sees all five boroughs")
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'free'")).firstMatch.exists,
+                       "nothing on the tab may call alerts free (owner, 2026-09-30)")
         signup.tap()
         let cancel = app.buttons["Cancel"]
         XCTAssertTrue(cancel.waitForExistence(timeout: 10), "signed out, the button opens sign-in first")
@@ -461,6 +467,7 @@ final class FindACribUITests: XCTestCase {
         let card = app.descendants(matching: .any)["lottery-card"].firstMatch
         let empty = app.descendants(matching: .any)["lotteries-empty"].firstMatch
         XCTAssertTrue(card.waitForExistence(timeout: 15) || empty.exists, "the tab should list lotteries or say none are open")
+        XCTAssertFalse(app.buttons["lotteries-signup"].exists, "a subscriber sees no alerts banner")
         if card.exists {
             XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label CONTAINS 'Apply on Housing Connect'")).firstMatch.exists)
             // A photo of the building (owner, 2026-09-25: "are we not able to get images for these?")

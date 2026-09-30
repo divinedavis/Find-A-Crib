@@ -1304,7 +1304,7 @@ class Runner:
         # The button only shows once auth has resolved; signed out it is hidden,
         # so drive the same entry point the header button uses.
         hidden = page.evaluate("(()=>{const b=document.getElementById('ref-btn'); return !b || b.hidden})()")
-        self.ok(hidden, 'the Free Plus button should stay hidden until someone is signed in', j)
+        self.ok(hidden, 'the Get Plus referral button should stay hidden until someone is signed in', j)
         page.evaluate("document.getElementById('ref-btn').hidden = false")
         self.click(page, '#ref-btn'); time.sleep(0.8)
         self.ok(page.evaluate("document.getElementById('referral-modal').hidden"),

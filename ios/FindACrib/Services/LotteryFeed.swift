@@ -72,8 +72,13 @@ final class LotteryFeed {
 
     weak var auth: AuthService?
 
-    /// Open lotteries in the subscriber's boroughs, soonest deadline first.
-    var mine: [Lottery] { Self.filter(all, boroughs: boroughs, today: Self.todayKey()) }
+    /// The boroughs the tab shows: a subscriber's own, everyone else all five.
+    /// Lotteries and re-rentals are for everyone (owner, 2026-09-30: "people
+    /// should be able to see lotteries and rerentals"); alerts are the Plus part.
+    var viewBoroughs: [String] { subscribed && !boroughs.isEmpty ? boroughs : Borough.all.map(\.code) }
+
+    /// Open lotteries in those boroughs, soonest deadline first.
+    var mine: [Lottery] { Self.filter(all, boroughs: viewBoroughs, today: Self.todayKey()) }
 
     /// `--lotteries-demo` stands in for a subscriber so the tab can be tested
     /// on a simulator, which is always signed out.
@@ -98,7 +103,7 @@ final class LotteryFeed {
         } else {
             subscribed = false; boroughs = []; income = nil; checked = true
         }
-        if subscribed { await loadLotteries() }
+        await loadLotteries()
     }
 
     func loadLotteries() async {

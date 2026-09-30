@@ -75,7 +75,7 @@ struct CommentsSheet: View {
             Spacer(minLength: 24)
             Image(systemName: "bubble.left.and.bubble.right").font(.system(size: 38, weight: .semibold)).foregroundStyle(SE.royal)
             Text("Comments are for members").font(.se(24, .bold)).foregroundStyle(SE.ink)
-            Text("Sign up free to read what people say about \(building.address) — the cold radiators, the super, the block — and to add your own.")
+            Text("Sign up to read what people say about \(building.address) — the cold radiators, the super, the block — and to add your own.")
                 .font(.se(17)).foregroundStyle(SE.ink2)
             SEPrimaryButton(title: "Sign up to comment") { showSignIn = true }
                 .accessibilityIdentifier("comments-signup")

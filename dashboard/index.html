@@ -370,6 +370,8 @@
   .at-sum b{color:var(--ink);font-size:18px;font-weight:700;letter-spacing:-.3px;display:block}
   .at-legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--ink2);margin-bottom:6px}
   .at-legend i{display:inline-block;width:14px;height:2px;border-radius:1px;vertical-align:middle;margin-right:6px}
+  .at-key{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--ink2);margin-top:8px}
+  .at-key b{color:var(--ink)}
   .at-table{margin-top:10px;font-size:12px;color:var(--ink2)}
   .at-table table{border-collapse:collapse;width:100%;margin-top:6px}
   .at-table th,.at-table td{text-align:right;padding:3px 8px;border-bottom:1px solid var(--border2);font-variant-numeric:tabular-nums}
@@ -561,6 +563,7 @@
         <div class="at-sum" id="at-sum"></div>
         <div class="at-legend" id="at-legend"></div>
         <div id="at-chart" style="position:relative"></div>
+        <div class="at-key" id="at-key" hidden></div>
         <details class="at-table"><summary>Show the numbers</summary><div id="at-table"></div></details>
       </div>
       <!-- advertiser tiles: the only inventory somebody else would pay for -->
@@ -2537,6 +2540,17 @@
   // when alerts became Plus; the gap after it is the paywall. Crosshair +
   // tooltip on hover; direct labels at the line ends; a table under it.
   var AT_CHANGE = '2026-09-30', atLast = null, atW = 0;
+  // Key dates drawn as dotted lines (owner, 2026-09-30: "show some other key
+  // dates like moving alerts to the front of the journey"). Each is a real
+  // commit/release in dhcr-map; add new ones here as they ship.
+  var AT_EVENTS = [
+    {d:'2026-09-05', s:'TikTok comment', t:'Owner\u2019s TikTok comment goes viral: new visitors jump (the denominator), 5\u20137 Sep'},
+    {d:'2026-09-07', s:'Alerts chip up front', t:'Top bar: the Lottery agents chip becomes Alerts, and Alerts joins the menu (5508f85, f3ea5f3)'},
+    {d:'2026-09-08', s:'Account required', t:'Alerts need an account: every Alerts link opens the sign-up modal (af4321d)'},
+    {d:'2026-09-13', s:'Apple/Google sign-in', t:'Apple and Google sign-in offered right from alerts; iPhone: Alerts replaces Save search (d31baee, f1cd0b8)'},
+    {d:'2026-09-19', s:'iPhone push live', t:'Push-notification alerts and the Lotteries tab reach the iPhone app (1.2.1 approved 19 Sep; 25f1a59, d97ed83)'},
+    {d:'2026-09-30', s:'Alerts \u2192 Plus', t:'Alerts become Plus for new sign-ups (66 grandfathered); every Alerts link opens the Plus paywall (d45d176, 89b9647)'}
+  ];
   (function(){
     var t;
     function refit(){ var h=el('at-chart'); if(h && atLast && h.clientWidth && h.clientWidth!==atW) renderAlertTrend(atLast); }
@@ -2568,7 +2582,7 @@
       '<span style="color:var(--muted)">same line until 30 Sep</span>';
 
     var W=Math.max(host.clientWidth||900,300); atW=host.clientWidth;
-    var narrow=W<520, H=narrow?200:220, pad={t:18,r:narrow?44:96,b:24,l:40};
+    var narrow=W<520, H=narrow?214:262, pad={t:narrow?30:62,r:narrow?44:96,b:24,l:40};
     var iw=W-pad.l-pad.r, ih=H-pad.t-pad.b, base=pad.t+ih;
     var ymax=Math.max.apply(null, pts.map(function(p){ return Math.max(p.saved,p.on); }));
     // Round the top up to a clean tick so gridlines land on readable values.
@@ -2589,11 +2603,21 @@
         xl+='<text x="'+X(i)+'" y="'+(H-6)+'" text-anchor="'+(i===0?'start':i===pts.length-1?'end':'middle')+'" font-size="10.5" fill="var(--muted)">'+day(p.d)+'</text>';
     });
     function path(key){ return pts.map(function(p,i){ return (i?'L':'M')+X(i).toFixed(1)+' '+Y(p[key]).toFixed(1); }).join(' '); }
-    var ci=pts.findIndex(function(p){ return p.d>=AT_CHANGE; });
-    var marker = ci>=0
-      ? '<line x1="'+X(ci)+'" x2="'+X(ci)+'" y1="'+(pad.t-8)+'" y2="'+base+'" stroke="var(--ink2)" stroke-width="1" stroke-dasharray="3 4"></line>'+
-        '<text x="'+(X(ci)-4)+'" y="'+(pad.t-8)+'" text-anchor="end" font-size="10.5" font-weight="600" fill="var(--ink2)">Alerts → Plus</text>'
-      : '';
+    // Dotted key-date lines. Labels sit in three staggered rows above the
+    // plot so neighbours (7 and 8 Sep) don't collide; on a phone each line
+    // carries a number and the key below the chart names it.
+    var marker='', evs=[], keyRows=[];
+    AT_EVENTS.forEach(function(ev){
+      var i=pts.findIndex(function(p){ return p.d===ev.d; });
+      if(i<0) return;
+      var n1=evs.length+1, row=evs.length%3, x=X(i), right=x>W-pad.r-140;
+      evs.push({i:i, ev:ev});
+      marker+='<line x1="'+x+'" x2="'+x+'" y1="'+(narrow?pad.t-10:pad.t-50+row*16)+'" y2="'+base+'" stroke="var(--ink2)" stroke-width="1" stroke-dasharray="2 4" opacity=".75"></line>';
+      marker+= narrow
+        ? '<text x="'+x+'" y="'+(pad.t-14)+'" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink2)">'+n1+'</text>'
+        : '<text x="'+(right?x-4:x+4)+'" y="'+(pad.t-52+row*16+9)+'" text-anchor="'+(right?'end':'start')+'" font-size="10.5" font-weight="600" fill="var(--ink2)"><title>'+esc(ev.t)+'</title>'+esc(ev.s)+'</text>';
+      keyRows.push('<span><b>'+n1+'</b> '+esc(day(ev.d))+' · '+esc(ev.s)+'</span>');
+    });
     var li=pts.length-1, lp=pts[li];
     // End labels: the two values, nudged apart when the lines meet.
     var ys=Y(lp.saved), yo=Y(lp.on);
@@ -2611,14 +2635,16 @@
       '<line id="at-x" y1="'+pad.t+'" y2="'+base+'" stroke="var(--border-strong)" stroke-width="1" opacity="0"></line>'+
       '<rect x="'+pad.l+'" y="0" width="'+iw+'" height="'+H+'" fill="transparent" id="at-hit"></rect>'+
       '</svg><div class="spark-tip" id="at-tip"></div>';
+    var key=el('at-key'); if(key){ key.innerHTML=narrow ? keyRows.join('') : ''; key.hidden=!narrow || !keyRows.length; }
     var hit=el('at-hit'), tip=el('at-tip'), xl2=el('at-x'), svg=el('at-svg');
     function show(ev){
       var r=svg.getBoundingClientRect(), sx=(ev.clientX-r.left)*W/r.width;
       var i=Math.max(0,Math.min(pts.length-1,Math.round((sx-pad.l)/(pts.length>1?iw/(pts.length-1):1))));
       var p=pts[i], R=p.r;
       xl2.setAttribute('x1',X(i)); xl2.setAttribute('x2',X(i)); xl2.setAttribute('opacity','1');
+      var evOn=AT_EVENTS.filter(function(e){ return e.d===p.d; }).map(function(e){ return '<br><i>'+esc(e.t)+'</i>'; }).join('');
       tip.innerHTML='<b>'+day(p.d,{weekday:'short',month:'short',day:'numeric'})+'</b> · 7 days: '+p.saved.toFixed(2)+'% saved, '+p.on.toFixed(2)+'% on'+
-        '<br>'+comma(R.signups)+' saved / '+comma(R.on)+' on of '+comma(R.visitors)+' visitors · that day '+comma(R.signups_day)+' saved, '+comma(R.visitors_day)+' visitors';
+        '<br>'+comma(R.signups)+' saved / '+comma(R.on)+' on of '+comma(R.visitors)+' visitors · that day '+comma(R.signups_day)+' saved, '+comma(R.visitors_day)+' visitors'+evOn;
       // Wraps on a phone and stays inside the card: a nowrap tip centred on
       // the right-hand days ran off the screen and scrolled the page sideways.
       tip.style.whiteSpace='normal'; tip.style.maxWidth=Math.min(340, r.width-8)+'px';

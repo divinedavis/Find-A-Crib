@@ -250,6 +250,10 @@ class Runner:
             m = re.search(r'from accessing a frame with origin "https?://([^"/]+)', str(e))
             if m and not any(o.split("//")[-1] in m.group(1) for o in OURS):
                 return
+            # Sandboxed ad frames (origin "null") reaching into each other; our
+            # pages create no sandboxed frames.
+            if 'Blocked a frame at "null" from accessing a frame at "null"' in str(e):
+                return
             # An ad creative in a sandboxed srcdoc frame trying to redirect the
             # whole page — the browser blocking it is the protection working.
             if 'about:srcdoc' in str(e) and 'allow-top-navigation' in str(e):

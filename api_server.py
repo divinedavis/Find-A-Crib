@@ -1479,7 +1479,6 @@ def dashboard_metrics():
         # not in Postgres, because the 05:40 build runs on this droplet and
         # never writes to the database.
         "build": (_fac_build,),
-        "search": (_fac_search,),
         "channels": (_fac_channels, since),
         "page_views": (_fac_page_views, since),
         "mediavine": (_fac_mediavine, since),
@@ -2516,91 +2515,6 @@ def _fac_signage(since):
                                key=lambda r: -r["scans"]),
             "rate_floor": QR_RATE_FLOOR, "call_floor": QR_CALL_FLOOR}
 
-def _fac_search():
-    """Search Console and indexing, for the Find A Crib tab.
-
-    NEMO's tab has had a rankings card since July and this one never did, even
-    though findacrib.com has been a verified property the whole time — the
-    numbers were being collected every morning and read by nobody.
-
-    Read from the growth checkout's own artifacts rather than from Google.
-    This runs on the request path, and the rule this endpoint learned the hard
-    way three separate times is that nothing on the request path may touch the
-    network: an ElevenLabs fetch and a reverse-DNS lookup each turned a
-    dashboard load into a ten-second stall. The 05:40 build already writes both
-    of these files; serving yesterday's honest numbers beats blocking on
-    today's.
-
-    Returns {} when the files are missing, so a dashboard that loses its
-    growth checkout drops the card instead of 500-ing the page.
-    """
-    out = {}
-    try:
-        with open(FAC_GSC_PAGES) as f:
-            g = json.load(f)
-    except Exception:
-        g = {}
-    pages = g.get("pages") or []
-    if pages:
-        # Impressions are summed across serving pages rather than taken from
-        # the tracked-query total. The two differ by an order of magnitude
-        # here, because most of what Google shows this site is a building page
-        # answering a query nobody thought to track.
-        clicks = sum(int(p.get("clicks") or 0) for p in pages)
-        impressions = sum(int(p.get("impressions") or 0) for p in pages)
-        # Impression-weighted, the way Search Console's own summary is. The
-        # plain mean of 14 pages put seven one-impression building pages on the
-        # same footing as the home page and read 2.0 (2026-09-21).
-        ranked = [p for p in pages if p.get("position") is not None and int(p.get("impressions") or 0) > 0]
-        wsum = sum(int(p["impressions"]) for p in ranked)
-        avg_pos = (sum(float(p["position"]) * int(p["impressions"]) for p in ranked) / wsum) if wsum else None
-        out.update({
-            "clicks": clicks,
-            "impressions": impressions,
-            "ctr": (clicks / impressions) if impressions else None,
-            "avg_position": avg_pos,
-            "serving_pages": len(pages),
-            "serving_ever": (g.get("churn") or {}).get("gsc_serving_ever"),
-            "date": g.get("date"),
-            "untracked": (g.get("discovered_untracked") or [])[:8],
-            # top queries over 28 days, with the page each one lands on
-            "queries": [q for q in (g.get("queries_28d") or []) if "query" in q][:20],
-        })
-    try:
-        with open(FAC_INDEX_STATUS) as f:
-            ix = json.load(f)
-    except Exception:
-        ix = {}
-    total = ((ix.get("summary") or {}).get("total") or {})
-    if total:
-        buckets = total.get("buckets") or {}
-        cohort = sum(int(v or 0) for v in buckets.values())
-        # The growth engine's search-share goal (90% of tracked queries ranking
-        # top 10), so the dashboard's GOALS block can carry it. Read from the
-        # engine's own ledger rather than recomputed here.
-        try:
-            with open(FAC_LAST_RUN) as f:
-                sc = (json.load(f).get("searchconsole") or {})
-            out["share_pct"] = sc.get("share_pct")
-            out["tracked_ranking"] = sc.get("tracked_ranking")
-            kw_path = os.path.join(os.path.dirname(FAC_LAST_RUN), "keywords.json")
-            with open(kw_path) as f:
-                kws = json.load(f)
-            out["tracked_queries"] = len(kws) if isinstance(kws, list) else len(kws.get("keywords", []))
-        except Exception:
-            pass
-        out["index"] = {
-            "published": ix.get("published_urls"),
-            "cohort": cohort,
-            "indexed": buckets.get("indexed"),
-            "unknown_to_google": buckets.get("unknown_to_google"),
-            "crawled_not_indexed": buckets.get("crawled_not_indexed"),
-            "discovered_not_indexed": buckets.get("discovered_not_indexed"),
-            "accept_pct": total.get("accept_pct"),
-            "accept_pct_mature": total.get("accept_pct_mature"),
-            "updated": ix.get("updated"),
-        }
-    return out
 
 
 @app.route("/dashboard-nemo")

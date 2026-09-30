@@ -116,14 +116,14 @@
     "accept_pct": 1.1,
     "accept_pct_mature": 0.0,
     "added": 0,
-    "at": "2026-09-29T05:11:25+00:00",
+    "at": "2026-09-30T05:11:24+00:00",
     "by_crawl_age": {
       "0-6d": {
-        "accept_pct": 20.0,
-        "fetched": 5,
+        "accept_pct": 16.7,
+        "fetched": 6,
         "indexed": 1
       },
-      "14-20d": {
+      "21-27d": {
         "accept_pct": 0.0,
         "fetched": 1,
         "indexed": 0
@@ -135,7 +135,7 @@
       },
       "7-13d": {
         "accept_pct": 0.0,
-        "fetched": 2,
+        "fetched": 1,
         "indexed": 0
       }
     },
@@ -149,15 +149,15 @@
       "2026-08-24": 8,
       "2026-08-31": 1,
       "2026-09-07": 1,
-      "2026-09-14": 1,
-      "2026-09-21": 6,
+      "2026-09-14": 0,
+      "2026-09-21": 7,
       "2026-09-28": 0
     },
     "crawls_week_partial": "2026-09-28",
-    "date": "2026-09-29",
+    "date": "2026-09-30",
     "dropped": 0,
     "errors": 0,
-    "fetched_mature": 87,
+    "fetched_mature": 88,
     "fetched_pct": 20.7,
     "gained_indexed": 0,
     "indexed_pct": 0.2,
@@ -179,218 +179,209 @@
       "section8": 6
     },
     "ok": true,
-    "published_urls": 4068,
+    "published_urls": 4076,
     "read": 458,
     "rechecked": 100,
     "states": {
       "crawled_not_indexed": 94,
-      "discovered_not_indexed": 52,
+      "discovered_not_indexed": 84,
       "indexed": 1,
-      "unknown_to_google": 311
+      "unknown_to_google": 279
     }
   },
   "measure": {
-    "at": "2026-09-29T05:11:27+00:00",
+    "at": "2026-09-30T05:11:26+00:00",
     "coverage_pct": 82.0,
-    "date": "2026-09-29",
+    "date": "2026-09-30",
     "days": 1,
     "keywords_covered": 402,
     "keywords_total": 490,
-    "latest_measured_day": "2026-09-28",
+    "latest_measured_day": "2026-09-29",
     "traffic": {
       "arrival_shape": {
         "all": {
-          "busiest_6h_pct": 35.4,
-          "n": 364,
-          "night_pct": 6.6,
-          "peak_hour_utc": 0
+          "busiest_6h_pct": 33.9,
+          "n": 322,
+          "night_pct": 9.9,
+          "peak_hour_utc": 14
         },
         "direct": {
-          "busiest_6h_pct": 35.3,
-          "n": 283,
-          "night_pct": 6.4,
-          "peak_hour_utc": 0
+          "busiest_6h_pct": 36.7,
+          "n": 278,
+          "night_pct": 9.7,
+          "peak_hour_utc": 14
         },
         "organic": {
-          "busiest_6h_pct": 40.8,
-          "n": 71,
-          "night_pct": 8.5,
+          "busiest_6h_pct": 55.3,
+          "n": 38,
+          "night_pct": 10.5,
           "peak_hour_utc": 2
         }
       },
       "by_channel": {
-        "ai": 3,
+        "ai": 1,
         "campaign": 3,
-        "direct": 283,
+        "direct": 278,
         "internal": 2,
-        "organic": 71,
-        "referral": 2
+        "organic": 38
       },
       "by_hour_utc": {
         "all": [
-          28,
-          25,
-          22,
-          13,
-          22,
-          12,
-          6,
-          4,
-          6,
-          5,
-          8,
-          5,
+          16,
+          23,
+          20,
           11,
-          16,
-          23,
-          23,
-          15,
-          23,
-          9,
-          15,
-          22,
-          10,
-          25,
-          16
-        ],
-        "direct": [
-          23,
-          19,
+          17,
+          3,
           12,
-          9,
-          18,
-          7,
-          6,
-          4,
-          5,
-          1,
-          8,
-          4,
-          9,
-          15,
-          17,
-          21,
-          14,
-          16,
-          7,
-          10,
-          17,
-          7,
-          21,
-          13
-        ],
-        "organic": [
-          4,
-          5,
-          9,
-          4,
-          1,
-          5,
-          0,
-          0,
-          1,
-          4,
-          0,
-          1,
-          2,
-          1,
-          5,
-          1,
-          1,
-          6,
-          2,
-          4,
-          5,
           3,
           4,
-          3
+          10,
+          2,
+          16,
+          6,
+          25,
+          29,
+          16,
+          14,
+          14,
+          11,
+          14,
+          15,
+          10,
+          13,
+          18
+        ],
+        "direct": [
+          13,
+          19,
+          9,
+          10,
+          16,
+          2,
+          11,
+          3,
+          4,
+          8,
+          2,
+          13,
+          5,
+          24,
+          29,
+          13,
+          12,
+          13,
+          11,
+          11,
+          14,
+          9,
+          11,
+          16
+        ],
+        "organic": [
+          3,
+          3,
+          10,
+          1,
+          1,
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          2,
+          1,
+          1,
+          0,
+          3,
+          2,
+          1,
+          0,
+          2,
+          1,
+          1,
+          2,
+          2
         ]
       },
       "by_src": {
-        "alert": 3,
-        "chatgpt.com": 2,
-        "gemini": 1
+        "alert": 2,
+        "chatgpt.com": 1,
+        "digest": 1
       },
-      "direct_deep": 1,
-      "new": 286,
+      "direct_deep": 32,
+      "new": 239,
       "new_window_days": 30,
-      "returning": 78,
+      "returning": 83,
       "top_paths": [
         [
           "/",
-          357
+          286
         ],
         [
-          "/available/",
-          1
+          "/building/manhattan/57-kenmare-st-1004800029/",
+          8
         ],
         [
-          "/building/manhattan/211-w-106th-st-1018780021/",
-          1
+          "/dc/",
+          4
         ],
         [
-          "/building/manhattan/73-to-75-sherman-ave-1021740034/",
-          1
+          "/la/",
+          3
         ],
         [
-          "/building/queens/41-06-34th-ave-4006740017/",
-          1
+          "/sf/",
+          3
         ],
         [
-          "/building/queens/513-woodward-ave-4033890002/",
+          "/borough/manhattan/",
           1
         ]
       ],
       "top_referrers": [
         [
           "www.google.com",
-          57
+          32
         ],
         [
           "com.google.android.googlequicksearchbox",
-          4
-        ],
-        [
-          "duckduckgo.com",
-          4
-        ],
-        [
-          "www.bing.com",
-          3
-        ],
-        [
-          "github.com",
           2
         ],
         [
-          "accounts.google.com",
-          1
+          "duckduckgo.com",
+          2
+        ],
+        [
+          "www.bing.com",
+          2
         ]
       ],
-      "visitors": 364
+      "visitors": 322
     }
   },
   "outreach": {
-    "at": "2026-09-29T05:11:30+00:00",
-    "date": "2026-09-29",
+    "at": "2026-09-30T05:11:30+00:00",
+    "date": "2026-09-30",
     "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
     "ok": false
   },
   "scout": {
-    "at": "2026-09-29T05:11:30+00:00",
-    "date": "2026-09-29",
+    "at": "2026-09-30T05:11:30+00:00",
+    "date": "2026-09-30",
     "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
     "ok": false
   },
   "searchconsole": {
-    "at": "2026-09-29T05:00:16+00:00",
-    "clicks": 202,
-    "date": "2026-09-29",
-    "impressions": 245,
+    "at": "2026-09-30T05:00:14+00:00",
+    "clicks": 215,
+    "date": "2026-09-30",
+    "impressions": 265,
     "nonbranded_clicks": 0,
     "nonbranded_impressions": 0,
-    "page_clicks": 240,
-    "page_impressions": 1928,
+    "page_clicks": 247,
+    "page_impressions": 2016,
     "serving_branded_only": 12,
     "serving_ever": 289,
     "serving_nonbranded": 0,
@@ -399,6 +390,6 @@
     "serving_unattributed": 0,
     "share_pct": 0.0,
     "tracked_ranking": 0,
-    "window": "2026-09-20..2026-09-27"
+    "window": "2026-09-21..2026-09-28"
   }
 }

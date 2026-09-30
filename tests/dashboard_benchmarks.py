@@ -90,23 +90,11 @@ def run(browser, live):
     assert not errors, errors
     print(f'PASS {browser.browser_type.name}: page views tile', flush=True)
 
-    # The ads-served tile (replaced MRR): total of the three live surfaces;
-    # TestFlight test ads are named but never added in.
-    payload['ads_served'] = {'web_tiles': 146455, 'app_tiles': 884, 'admob': 12,
-                             'admob_test': 40, 'total': 147351}
+    # "Ads served · all platforms" was removed (owner, 2026-09-30): it was
+    # mostly our own listing tiles. It must not come back by accident.
     page.reload(wait_until='networkidle')
-    tile = page.locator('#tiles .tile').filter(
-        has=page.get_by_text('Ads served · all platforms', exact=True))
-    expect(tile.locator('.t-val')).to_have_text('147,351')
-    expect(tile).to_contain_text('146,455 listing tiles (web) · 884 listing tiles (app) · 0 Mediavine ads · 12 Google ads')
-    expect(tile).to_contain_text('40 TestFlight test ads not counted')
-    expect(page.locator('#tiles')).not_to_contain_text('· MRR')
-    # A site still in AdSense review: Google's ads are named, never added in.
-    payload['ads_served'] = {'web_tiles': 10, 'app_tiles': 2, 'admob': 0, 'adsense': 0,
-                             'adsense_review': 6, 'total': 12}
-    page.reload(wait_until='networkidle')
-    expect(tile.locator('.t-val')).to_have_text('12')
-    expect(tile).to_contain_text('6 AdSense ads from review never counted')
+    expect(page.locator('#tiles')).not_to_contain_text('Ads served · all platforms')
+    expect(page.locator('#tiles')).not_to_contain_text('Pay conversion · visitors who paid')
     # Mediavine (2026-09-29): the page's own count, paid vs filler, per page view.
     payload['mediavine'] = {'paid': 40, 'house': 60, 'total': 100, 'rows': 12}
     payload['page_views'] = {'total': 50, 'map': 45, 'other': 5}
@@ -118,11 +106,18 @@ def run(browser, live):
     payload['mediavine']['page_rpm'] = 12
     page.reload(wait_until='networkidle')
     expect(mv).to_contain_text('$0.60 at your $12.00 page RPM')
-    payload.pop('ads_served')
+    # Free-to-paid (2026-09-30): the industry's one pay-conversion number —
+    # paying Plus ÷ all accounts against the 2–5% freemium band.
+    payload.setdefault('totals', {})['accounts_all'] = 250
+    payload['subscriptions'] = dict(payload.get('subscriptions') or {}, paying=5, mrr=24.95)
     page.reload(wait_until='networkidle')
-    expect(tile.locator('.t-val')).to_have_text('—')
+    ftp = page.locator('#tiles .tile').filter(has=page.get_by_text('Free-to-paid conversion', exact=True))
+    expect(ftp.locator('.t-val')).to_have_text('2.0%')
+    expect(ftp).to_contain_text('5 paying of 250 accounts')
+    expect(ftp).to_contain_text('inside the band')
+    expect(page.locator('#tiles .tile')).to_have_count(9)
     assert not errors, errors
-    print(f'PASS {browser.browser_type.name}: ads served tile', flush=True)
+    print(f'PASS {browser.browser_type.name}: ad and pay tiles', flush=True)
 
     # A range with nothing cached dims the old numbers and says "Loading…"
     # until its payload lands, instead of sitting there looking frozen.

@@ -578,13 +578,11 @@
         <div class="at-key" id="at-key" hidden></div>
         <details class="at-table"><summary>Show the numbers</summary><div id="at-table"></div></details>
       </div>
-      <!-- advertiser tiles: the only inventory somebody else would pay for -->
-      <div class="card mb18" id="sec-tiles">
-        <div class="card-head-row">
-          <div><h2>Advertiser metrics — how our ads are performing</h2><div class="card-sub">Every ad we show, on the website and in the iPhone app: our sponsored tiles and Google’s ads. Served means the ad was put on the page; viewable means at least half of it was on screen for a full second, once per ad per visit; a click is someone tapping through to the advertiser.</div></div>
-        </div>
-        <div class="ads-tiles" id="tile-tiles"></div>
-      </div>
+      <!-- The "Advertiser metrics" card was removed at the owner's request
+           (2026-09-30): its "ads served" were mostly our own listing tiles,
+           which no advertiser pays for. Mediavine's tile and dashboard cover
+           ad revenue. The tile events are still logged (tile_served,
+           tile_impression, dashboard_adtiles) if sponsored tiles are sold. -->
 
       <!-- product health: the numbers that value the business -->
       <div class="card mb18" id="sec-fac-health">
@@ -1133,7 +1131,6 @@
       ranged:true,
       blocks:['fac-a'],
       nav:[['top','▦','Dashboard'],
-           ['sec-tiles','◫','Advertiser metrics'],
            // Keep this list in sync with dashboard/users/index.html.
            ['link:/dashboard/users/','☺','Users']]
     },
@@ -1873,46 +1870,25 @@
       {ic:'🔔',v:alertRate.toFixed(1)+'%',l:'Alert sign-up conversion',own:alertOwn,bench:alertBench,title:alertTitle},
       {ic:'📬',v:comma(reachedPeople)+' · '+pctS(reachedPeople,reachable),l:'Alert opens · people who clicked or tapped',
        own:clickOwn,bench:clickBench,title:clickTitle},
-      // Ads served on every surface (api_server._fac_ads_served). Replaced the
-      // MRR tile 2026-09-25 — MRR still shows in the goals card. AdMob test
-      // ads (TestFlight) are named but never counted.
-      adsTile(d.ads_served),
+      // "Ads served · all platforms" removed (owner, 2026-09-30): most of it
+      // was our own listing tiles. Mediavine's tile is the real ad count.
       mediavineTile(d.mediavine, d.page_views)
-    ].concat(payTiles(d.pay, T.visitors));
-    // Pay conversion (owner, 2026-09-30): the three tiles that say whether
-    // people pay. api_server._fac_pay — distinct people, web + App Store
-    // builds, owner out. Paid ÷ visitors; paid ÷ people who saw a paywall
-    // (by the paywall that showed it); and the alert gate: alert sign-ups
-    // since alerts became Plus, and how many of them now have Plus.
-    function payTiles(P, visitors){
-      if(!P || P.viewed == null){
-        var na={ic:'💳',v:'—',l:'Pay conversion',own:'Pay data unavailable right now'};
-        return [na, {ic:'🧾',v:'—',l:'Paywall → paid'}, {ic:'🔓',v:'—',l:'Alert sign-ups → Plus'}];
-      }
-      var paid=n(P.paid), viewed=n(P.viewed), started=n(P.started);
-      var names={phone:'phone number',alerts:'alerts',noads:'remove ads',research:'landlord research',
-                 saved_search:'saved search',folders:'folders',profile:'profile',other:'other'};
-      var BS=P.by_source||{};
-      var srcs=Object.keys(BS).sort(function(a,b){ return n(BS[b].viewed)-n(BS[a].viewed); });
-      var bySrc=srcs.slice(0,4).map(function(k){
-        return (names[k]||k)+' '+comma(BS[k].paid)+'/'+comma(BS[k].viewed);
-      }).join(' · ');
-      var A=P.alerts||{}, asn=n(A.signups), aun=n(A.unlocked);
-      return [
-        {ic:'💳',v:pctS(paid,n(visitors)),l:'Pay conversion · visitors who paid',
-         own:'<b>'+comma(paid)+'</b> paid of '+comma(visitors)+' visitors',
-         bench:'freemium converts 2–5% of free accounts',
-         title:'People who completed a Find A Crib Plus purchase in this range (Stripe on the web, the App Store in the app) divided by unique visitors. Owner excluded; TestFlight and simulator buys excluded.'},
-        {ic:'🧾',v:pctS(paid,viewed),l:'Paywall → paid',
-         own:comma(viewed)+' saw a paywall · '+comma(started)+' started checkout · <b>'+comma(paid)+'</b> paid',
-         bench:bySrc ? 'paid/saw by paywall: '+bySrc : 'no paywall views in this range',
-         title:'Distinct people who saw a Plus paywall, tapped Subscribe (Stripe checkout started, or an App Store purchase sheet of any outcome), and paid. Each person is credited to the first paywall they saw in the range. Web checkout starts are counted from 2026-09-30.'},
-        {ic:'🔓',v:comma(aun)+' of '+comma(asn),l:'Alert sign-ups → Plus',
-         own:asn ? pctS(aun,asn)+' of new alert sign-ups now have Plus · '+comma(A.emailed)+' sent the unlock email'
-                 : 'No new alert sign-ups since alerts became Plus (30 Sep)',
-         bench:'66 earlier subscribers keep alerts free',
-         title:'Alerts became part of Find A Crib Plus for new sign-ups on 30 Sep 2026; the 66 subscribers before that are grandfathered and not counted here. A new sign-up without Plus is saved but not sent, and gets one "turn on your alerts" email.'}
-      ];
+    ].concat([freeToPaidTile()]);
+    // Pay conversion, the industry's one number (owner, 2026-09-30: "use the
+    // tile the industry uses, not all three"): free-to-paid = paying Plus
+    // members ÷ all accounts, judged against the 2–5% freemium band. Paying
+    // excludes comped/founding/referral Plus, as the MRR tile counts it.
+    // Current state, so every range shows the same number (subscriptions
+    // has no start date to range on).
+    function freeToPaidTile(){
+      var S=d.subscriptions||{}, acc=T.accounts_all != null ? T.accounts_all : T.accounts;
+      if(S.paying == null || !n(acc)) return {ic:'💳',v:'—',l:'Free-to-paid conversion',own:'Unavailable right now'};
+      var r=100*n(S.paying)/n(acc);
+      var verdict = r>=5 ? 'above the band' : r>=2 ? 'inside the band' : 'below the band';
+      return {ic:'💳',v:(r>0 && r<1 ? r.toFixed(2) : r.toFixed(1))+'%',l:'Free-to-paid conversion',
+              own:'<b>'+comma(S.paying)+'</b> paying of '+comma(acc)+' accounts · $'+comma(S.mrr)+'/month',
+              bench:'Freemium reference <b>2–5%</b> of accounts · '+verdict,
+              title:'Paying Find A Crib Plus members (Stripe on the web, the App Store in the app; comped, founding and referral Plus left out) divided by every Find A Crib account. The standard freemium measure; 2–5% is the usual band. Current state, not ranged.'};
     }
     // Mediavine (Journey, live 2026-09-29): ads the pages counted themselves —
     // Mediavine has no reporting API. Paid vs Mediavine's own filler ("Grow"
@@ -1958,18 +1934,6 @@
               own:comma(P.map)+' on the map · '+comma(P.other)+' on building, landlord &amp; guide pages'+per,
               title:'One per page load on findacrib.com, this range, your own visits and referrer-less scraper hits on building pages excluded. The iPhone app has no pages and is not in this number.'};
     }
-    function adsTile(A){
-      if(!A || A.total == null) return {ic:'📣',v:'—',l:'Ads served · all platforms',own:'Ad counts unavailable right now',accent:true};
-      // The app's ads moved from a bottom banner into the feed (build 91), and
-      // the website has Google in-feed ads too: one "Google ads" count.
-      var parts=[comma(A.web_tiles)+' listing tiles (web)', comma(A.app_tiles)+' listing tiles (app)', comma(n(A.mediavine))+' Mediavine ads'];
-      if(n(A.admob)+n(A.adsense)) parts.push(comma(n(A.admob)+n(A.adsense))+' Google ads');
-      return {ic:'📣',v:comma(A.total),l:'Ads served · all platforms',
-              own:parts.join(' · ')+(n(A.admob_test)?' · '+comma(A.admob_test)+' TestFlight test ads not counted':'')
-                 +(n(A.adsense_review)?' · '+comma(A.adsense_review)+' AdSense ads from review never counted':''),
-              title:'Counted the way Google counts ads: one each time an ad loads on a page, seen or not. Your own listing tiles (featured re-rentals + Housing Connect) on the website and iPhone app + Mediavine display ads + live Google ads (AdSense on the website, AdMob in the app), this range, your own visits excluded. Google ads count once Google approves the site and the app ships to the App Store.',
-              accent:true};
-    }
     el('tiles').innerHTML=tiles.map(function(t){
       return '<div class="tile'+(t.accent?' accent':'')+'"'+(t.title?' title="'+esc(t.title)+'"':'')+'>'+
         '<div class="t-ico">'+t.ic+'</div><div class="t-val">'+t.v+'</div><div class="t-lbl">'+t.l+'</div>'+
@@ -1983,7 +1947,6 @@
     renderAppStore(d.appstore);
     renderSpark(d.sparkline||[], d.months, d.signups_series);
     renderAlertTrend(d.alert_trend||[]);
-    renderFacTiles(d.adtiles);
   }
 
   // ---------- donut (return channels) ----------
@@ -2018,96 +1981,6 @@
         '<span class="leg-pct">'+pctS(m.val,total)+'</span></div>';
     }).join('');
     return total;
-  }
-
-  // ---------- advertiser tiles ----------
-  // Written to be read over somebody's shoulder in a pitch, so it refuses to
-  // flatter itself in three specific ways:
-  //   * If impressions started being counted after the clicks did, it says so
-  //     and withholds the CTR rather than dividing by a denominator that did
-  //     not exist for most of the period.
-  //   * Reach sits beside impressions, never instead of it. The same 1,200
-  //     impressions from 40 people and from 400 are different products.
-  //   * An agent with clicks and no impressions yet shows "—", not "0.0%".
-  // States the reference always; passes judgement only with the denominator
-  // caveat attached, because without it the multiple is simply wrong.
-  // `mine` is the served-impression rate, so this is finally a like-for-like
-  // comparison and the verdict can stand without an apology attached. The
-  // viewable rate rides along as context, not as the thing being judged.
-  function adCtrBench(mine, viewable){
-    var B = AD_CTR_BENCHMARK;
-    var line = 'Real-estate display averages <b>' + B.realestate + '%</b>, all display <b>' +
-               B.display + '%</b>';
-    if (mine == null) {
-      return line + ' · <span class="a-bench-note">served impressions are only now ' +
-             'being counted, so there is nothing like-for-like to compare yet' +
-             (viewable != null
-                ? '. On viewable impressions it is ' + viewable.toFixed(1) +
-                  '%, which is a stricter denominator and not comparable to these.'
-                : '.') + '</span>';
-    }
-    var x = mine / B.realestate;
-    return line +
-      ' <span class="bn ' + (mine > B.realestate ? 'bn-hi' : 'bn-low') + '">' +
-      (mine > B.realestate ? x.toFixed(1) + '\u00d7 higher' : 'below') + '</span>' +
-      '<span class="a-bench-note">Same denominator as theirs: an impression is ' +
-      'counted when the ad is rendered, viewed or not' +
-      (viewable != null ? '. On viewable impressions only, it is ' + viewable.toFixed(1) + '%' : '') +
-      '. Native is quoted anywhere from ' + B.native_low + '% to ' + B.native_high +
-      '%, too wide to judge against.</span>';
-  }
-
-  function renderFacTiles(A){
-    A = A || {};
-    // Every tile measures our ads as a whole — sponsored tiles plus Google's,
-    // website plus app (owner, 2026-09-25) — not one kind of listing.
-    var impr=n(A.impressions), reach=n(A.reach_all != null ? A.reach_all : A.reach);
-    var clicks=n(A.clicks_all != null ? A.clicks_all : A.clicks);
-    // The rate comes from the API, which knows two things this function cannot:
-    // which clicks fell inside the measured window, and how many impressions a
-    // slot has to bank before a rate off them is worth printing. A null means
-    // withheld, not zero.
-    // The published rate is now the INDUSTRY one: clicks over SERVED
-    // impressions, the denominator every display/native CTR benchmark uses.
-    // The viewable rate is kept beside it, because it is the honest number for
-    // a buyer — but it is not the comparable one, and quoting it against an
-    // industry average overstated this slot by roughly an order of magnitude.
-    var served=n(A.served);
-    // All-time on every range (owner, 2026-09-25): the API sends the
-    // all-time split as A.alltime; the ranged numbers stay behind the CTR.
-    // If the all-time call did not answer, say so rather than print this
-    // range's count under an all-time label (2026-09-26: "28 · all time").
-    var hasAll = !!(A.alltime && A.alltime.served_all != null);
-    var AT=hasAll ? A.alltime : A, G=AT.google_ads||{};
-    var servedAll = hasAll ? n(AT.served_all) : (A.served_all != null ? n(A.served_all) : served);
-    var servedSub = (hasAll ? 'all time' : 'this range (all-time total unavailable — reload)')
-      +', website + app — website '+comma(AT.served_web != null ? AT.served_web : served)
-      +' · app '+comma(n(AT.served_app))
-      +' · Google ads '+comma(n(G.web)+n(G.app))
-      +(n(G.test) ? ' (+'+comma(G.test)+' TestFlight test ads, not counted)' : '');
-    var hasCtr = A.ctr_served !== null && A.ctr_served !== undefined;
-    var ctr = hasCtr ? A.ctr_served.toFixed(1)+'%' : '—';
-    var hasView = A.ctr !== null && A.ctr !== undefined;
-    var ctrSub = hasCtr
-      ? 'clicks ÷ ads served — the industry denominator'
-      : (served ? comma(served)+' served so far — impressions bank in minutes and '
-                   +'clicks do not, so the rate waits a full day'
-                : 'served impressions are being counted from today');
-
-    el('tile-tiles').innerHTML=[
-      // Every platform (owner, 2026-09-25): website + app advertiser tiles and
-      // Google's own ads. The click rate stays on the tiles (see _fac_adtiles).
-      {v:comma(servedAll), l:'Ads served', sub:servedSub},
-      {v:comma(impr), l:'Viewable impressions', sub:'at least half on screen for one second'},
-      {v:comma(reach), l:'People reached', sub:'distinct people shown an ad'},
-      {v:comma(clicks), l:'Ad clicks', sub:'taps through to an advertiser, website and app'},
-      {v:ctr, l:'Click rate', sub:ctrSub,
-       bench:adCtrBench(hasCtr ? A.ctr_served : null, hasView ? A.ctr : null)}
-    ].map(creaseTile).join('');
-
-    // The per-advertiser rows, the click-source and borough chips and the
-    // counting-status callout were removed at the owner's request
-    // (2026-09-21). The five headline tiles above are the card.
   }
 
   // ---------- product health ----------

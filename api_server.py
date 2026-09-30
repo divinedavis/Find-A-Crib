@@ -1481,15 +1481,8 @@ def dashboard_metrics():
         "build": (_fac_build,),
         "search": (_fac_search,),
         "channels": (_fac_channels, since),
-        "adtiles": (_fac_adtiles, since),
-        # "Served impressions" is ALL-TIME on every range (owner, 2026-09-25):
-        # the card's headline is inventory banked, not this window's traffic.
-        # Memoized like the ranged call, so "All time" costs nothing extra.
-        "adtiles_all": (_fac_adtiles, None),
-        "ads_served": (_fac_ads_served, since),
         "page_views": (_fac_page_views, since),
         "mediavine": (_fac_mediavine, since),
-        "pay": (_fac_pay, since),
         # The header's Raptive goal (25k/month) is always the last 30 days.
         "page_views_30d": (_fac_page_views, (datetime.datetime.now(datetime.timezone.utc)
                                               - datetime.timedelta(days=30)).strftime("%Y-%m-%dT%H:00:00Z")),
@@ -1515,13 +1508,6 @@ def dashboard_metrics():
         futs = {k: pool.submit(*v) for k, v in jobs.items()}
         got = {k: f.result() for k, f in futs.items()}
     data["goalstreams"] = {k: got.pop(k) for k in ("ai", "consult_clicks", "agents")}
-    at_all = got.pop("adtiles_all") or {}
-    # Only when the all-time call answered: an empty "alltime" would let the
-    # card show this range's count under an all-time label.
-    if at_all and isinstance(got.get("adtiles"), dict) and got["adtiles"]:
-        got["adtiles"] = dict(got["adtiles"])   # the memo's dict is shared
-        got["adtiles"]["alltime"] = {k: at_all.get(k) for k in
-                                     ("served_all", "served", "served_web", "served_app", "google_ads")}
     data.update(got)
     # Moving goals for the three audience counts. The check runs against the
     # numbers of the all-time call (the same fixed windows every range shows)
@@ -1825,65 +1811,6 @@ def _fac_mediavine(since):
     return out
 
 
-@_memo(600)
-def _fac_pay(since):
-    """Pay conversion (owner, 2026-09-30): who saw a Plus paywall, who started
-    paying, who paid — distinct people, web + iPhone app, owner out, by the
-    paywall that sent them (phone, alerts, noads, research, profile, …).
-
-    Web: outbound{kind:paywall_view|checkout_start} and plus_purchase (fired
-    on the return from Stripe). App: paywall_view, and purchase{result} — a
-    purchase row of any result means Subscribe was tapped; result=ok is paid.
-    App rows only from builds that reached the App Store (TestFlight buys in
-    Sandbox). Plus the alert gate: non-grandfathered alert sign-ups and how
-    many of them now have Plus (db/0037). {} on failure."""
-    q = ("events?select=visitor_id,event,props"
-         "&or=" + urllib.parse.quote(
-             "(event.in.(paywall_view,purchase,plus_purchase),"
-             "and(event.eq.outbound,props->>kind.in.(paywall_view,checkout_start)))", safe="(),.>-"))
-    if since:
-        q += f"&created_at=gte.{urllib.parse.quote(str(since))}"
-    mine = _fac_owner_visitors()
-    released = {str(b) for b in (_fac_released_builds() or [])}
-    viewed, started, paid = {}, {}, {}
-    try:
-        start = 0
-        while True:
-            chunk = _rest("GET", q + f"&order=id.asc&offset={start}&limit=1000") or []
-            for r in chunk:
-                vid = r.get("visitor_id")
-                if not vid or vid in mine:
-                    continue
-                pr = r.get("props") or {}
-                if pr.get("platform") == "ios" and released and str(pr.get("build") or "") not in released:
-                    continue
-                src = str(pr.get("source") or ("phone" if pr.get("bbl") else "other"))[:24]
-                ev, kind = r.get("event"), pr.get("kind")
-                if ev == "paywall_view" or (ev == "outbound" and kind == "paywall_view"):
-                    viewed.setdefault(vid, src)
-                elif ev == "outbound" and kind == "checkout_start":
-                    started.setdefault(vid, src)
-                elif ev == "purchase":
-                    started.setdefault(vid, src)
-                    if pr.get("result") == "ok":
-                        paid.setdefault(vid, src)
-                elif ev == "plus_purchase":
-                    paid.setdefault(vid, src)
-            if len(chunk) < 1000 or start > 100_000:
-                break
-            start += 1000
-    except Exception:
-        return {}
-    by_source = {}
-    for label, group in (("viewed", viewed), ("started", started), ("paid", paid)):
-        for src in group.values():
-            by_source.setdefault(src, {"viewed": 0, "started": 0, "paid": 0})[label] += 1
-    out = {"viewed": len(viewed), "started": len(started), "paid": len(paid), "by_source": by_source}
-    try:
-        out["alerts"] = rpc("dashboard_alert_plus", {"p_since": str(since) if since else None}) or {}
-    except Exception:
-        out["alerts"] = {}
-    return out
 
 
 # Every ad the owner's platforms have put in front of someone, one number.
@@ -1915,34 +1842,6 @@ FAC_AD_SOURCES = (
 )
 
 
-@_memo(600)
-def _fac_ads_served(since):
-    """Ads served across every surface, counted in Postgres. {} on failure."""
-    base = ""
-    if since:
-        base += f"&created_at=gte.{urllib.parse.quote(str(since))}"
-    mine = sorted(_fac_owner_visitors())
-    if mine:
-        ids = ",".join('"' + v.replace('"', "") + '"' for v in mine)
-        base += "&or=" + urllib.parse.quote(f"(visitor_id.is.null,visitor_id.not.in.({ids}))", safe="(),.")
-    out = {}
-    try:
-        for key, flt in FAC_AD_SOURCES:
-            out[key] = _rest_count("events?select=id&" + flt + base)
-    except Exception:
-        return {}
-    # AdSense counts nothing until the site is approved ("Ready"), whatever the
-    # page logs: findacrib.com has been "Getting ready" since 7/16, and the
-    # 124 slots Google's tag marked data-ad-status="filled" 9/26-9/28 show as
-    # 0 impressions / $0.00 in AdSense Reports (owner, 2026-09-28). Until
-    # FAC_ADSENSE_READY=1 is set in the API's .env, they are named, not added.
-    if os.environ.get("FAC_ADSENSE_READY") != "1":
-        out["adsense_review"], out["adsense"] = out["adsense"], 0
-    # Mediavine (Journey, live 9/29) belongs in "all platforms": its ads are
-    # counted by the page itself (_fac_mediavine), not a row per ad here.
-    out["mediavine"] = int((_fac_mediavine(since) or {}).get("total") or 0)
-    out["total"] = out["web_tiles"] + out["app_tiles"] + out["admob"] + out["adsense"] + out["mediavine"]
-    return out
 
 
 # The three tile events, and which advertiser each one belongs to.
@@ -1962,125 +1861,6 @@ AD_CTR_MIN = 100
 AD_WINDOW_MIN_HOURS = 24
 
 
-@_memo(600)
-def _fac_adtiles(since):
-    """Advertiser-tile inventory: what the re-rental and lottery tiles earned.
-
-    This is the card a marketing agent gets shown when asked to pay for the
-    slot, so the numbers have to survive being read by the buyer. Two rules
-    it does not bend:
-
-    * Impressions are the browser's viewability count (half the tile, one
-      second, once per apartment per session), not renders. The grid rebuilds
-      on every pan, so renders would be an order of magnitude larger and
-      indefensible.
-    * Reach is distinct visitors, and it is reported next to impressions
-      rather than instead of them. "1,200 impressions" from forty people is a
-      different product than from four hundred, and only one of those two
-      numbers says which.
-
-    Impression tracking shipped 2026-08-24; clicks go back to 2026-08-02.
-    `first_impression` is returned so the card can say so instead of showing a
-    CTR built on a denominator that did not exist yet — and the CTR itself is
-    computed only over the window where BOTH sides were measured: clicks from
-    before the first impression are reported, but never divided by it. A rate
-    is withheld entirely until the window has banked AD_CTR_MIN impressions,
-    because below that the margin of error is wider than the number.
-
-    The counting is dashboard_adtiles() in Postgres (migration
-    20260918150000). It used to happen here, over every ad-tile event pulled
-    through PostgREST: 123,000 rows in 123 offset-paged requests by
-    2026-09-18, ~25 MB parsed per call, 5.8 s cold on every range flip. The
-    rules above moved with it, unchanged; the thresholds, the sort and the
-    served-window age rule stay here. The owner's visitor ids are still
-    decided here and passed in, so every card shares one definition of "mine".
-
-    Returns {} on any failure — one card should drop, not the page.
-    """
-    try:
-        agg = rpc("dashboard_adtiles",
-                  {"p_since": since, "p_exclude": sorted(_fac_owner_visitors())}) or {}
-    except Exception:
-        return {}
-    first_impr = agg.get("first_impression")
-    first_served = agg.get("first_served")
-
-    # Age of the served window, in hours. Timestamps are ISO from Postgres.
-    served_window_ready = False
-    if first_served:
-        try:
-            t0 = datetime.datetime.fromisoformat(first_served.replace("Z", "+00:00"))
-            age_h = (datetime.datetime.now(datetime.timezone.utc) - t0).total_seconds() / 3600
-            served_window_ready = age_h >= AD_WINDOW_MIN_HOURS
-        except Exception:
-            served_window_ready = False
-
-    def finish(d):
-        out = dict(d)
-        # CTR is left null rather than 0 when nothing was measured — a "0.0%"
-        # click rate on zero impressions reads as a tile nobody clicks — and
-        # null again while the sample is too small to survive being quoted.
-        # Numerator is only the clicks inside the measured window; dividing
-        # every click since August by two impressions counted this morning is
-        # how a card ends up claiming a 1,450% click rate.
-        out["ctr"] = (100.0 * d["clicks_measured"] / d["impressions"]) \
-            if d["impressions"] >= AD_CTR_MIN else None
-        # The industry rate: clicks over SERVED impressions, which is what every
-        # published display/native CTR benchmark divides by. Same minimum sample
-        # and same measured-window rule as the viewable rate above.
-        out["ctr_served"] = (100.0 * d["clicks_served"] / d["served"]) \
-            if (d["served"] >= AD_CTR_MIN and served_window_ready) else None
-        return out
-
-    agents = sorted((finish(a) for a in agg.get("agents") or []),
-                    key=lambda x: (-x["impressions"], -x["clicks"], x["agent"]))
-    kinds = {k["kind"]: k for k in agg.get("kinds") or []}
-    impressions = sum(a["impressions"] for a in agents)
-    served = sum(a["served"] for a in agents)
-    clicks_measured = sum(a["clicks_measured"] for a in agents)
-    clicks_served = sum(a["clicks_served"] for a in agents)
-    # Every served ad on every platform (owner, 2026-09-25): the advertiser
-    # tiles on the web and in the app, plus Google's own ads (AdSense on the
-    # web, AdMob in the app). The click rates above stay on the tiles alone —
-    # a Google ad's click goes to Google's advertiser, not to an agent.
-    google = agg.get("google_ads") or {}
-    google_live = int(google.get("web") or 0) + int(google.get("app") or 0)
-    return {
-        "agents": agents,
-        "kinds": [finish(kinds[k]) for k in ("rerental", "lottery") if k in kinds],
-        "impressions": impressions,
-        "served": served,
-        "served_web": int(agg.get("served_web") or 0),
-        "served_app": int(agg.get("served_app") or 0),
-        "google_ads": {"web": int(google.get("web") or 0), "app": int(google.get("app") or 0),
-                       "test": int(google.get("test") or 0)},
-        "served_all": served + google_live,
-        "clicks": sum(a["clicks"] for a in agents),
-        "clicks_measured": clicks_measured,
-        "clicks_served": clicks_served,
-        "ctr": (100.0 * clicks_measured / impressions) if impressions >= AD_CTR_MIN else None,
-        "ctr_served": (100.0 * clicks_served / served)
-                      if (served >= AD_CTR_MIN and served_window_ready) else None,
-        "served_window_ready": served_window_ready,
-        "ctr_min": AD_CTR_MIN,
-        "first_served": first_served,
-        # Kept for the card: one aggregate has no page cap, so this can no
-        # longer be True. It was, for the month the paging silently dropped
-        # every click older than the newest 1,000 events.
-        "truncated": False,
-        "reach": agg.get("reach") or 0,
-        # Every ad, not one kind of tile (owner, 2026-09-25): people shown any
-        # ad, and every click on one — our tiles' hand-offs plus Google's taps.
-        "reach_all": agg.get("reach_all") or agg.get("reach") or 0,
-        "clicks_all": sum(a["clicks"] for a in agents) + int(agg.get("google_clicks") or 0),
-        "advertisers": len([a for a in agents if a["agent"] != "NYC Housing Connect"]),
-        "first_impression": first_impr,
-        # Re-rental clicks by client, by where the clicker came from, and by
-        # the tile's borough — the three cuts the owner asked for (2026-09-16).
-        "click_platforms": agg.get("click_platforms") or {},
-        "click_sources": (agg.get("click_sources") or [])[:12],
-        "click_boroughs": agg.get("click_boroughs") or [],
-    }
 
 
 # Consultancies our visitors already hand themselves to. A click here is a
@@ -3086,9 +2866,8 @@ def _fac_keep_warm():
             builds = _fac_released_builds()
             for rng in sorted(DASHBOARD_RANGES):
                 since = _fac_since((_fac_metrics_rpc.refresh(rng, builds) or {}).get("since"))
-                for helper in (_fac_adtiles, _fac_ads_served, _fac_channels, _fac_signage):
+                for helper in (_fac_channels, _fac_signage):
                     helper.refresh(since)
-            _fac_adtiles.refresh(None)
             _fac_months.refresh()
         except Exception:
             pass

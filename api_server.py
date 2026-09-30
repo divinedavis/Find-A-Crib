@@ -1511,8 +1511,10 @@ def dashboard_metrics():
     return jsonify(data)
 
 
-# 8k DAU = $200k/year (owner, 2026-09-27); WAU/MAU derived as in the page.
-FAC_GOAL_DEFAULTS = (("dau", 8000), ("wau", 36000), ("mau", 80000))
+# 80k visitors a day (owner, 2026-09-30; was 8k DAU on 9/27); WAU/MAU derived
+# as in the page. Only seeds a missing row — the live goals are the
+# dashboard_goals table, set to these by hand the same day.
+FAC_GOAL_DEFAULTS = (("dau", 80000), ("wau", 360000), ("mau", 800000))
 
 
 def _fac_goals(engagement, evaluate):

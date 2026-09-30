@@ -898,11 +898,12 @@
   // the last three are the growth engine's (ledger state: 10k sign-ups,
   // $10k/mo revenue, 90% share of the tracked query universe). Mine, not a
   // benchmark — a benchmark says what is normal, a goal says what I want.
-  // 2026-09-27 (owner): 8,000 DAU is the goal — the audience that earns
-  // $200k/year. WAU and MAU follow from it by the same two ratios (MAU =
+  // 2026-09-30 (owner): 80,000 visitors a day is the goal — about $18k/month
+  // from ads at an early Journey rate of $7.50 per 1,000 visits (was 8,000
+  // DAU = $200k/year, 2026-09-27). WAU and MAU follow from it by the same two ratios (MAU =
   // DAU / 10%, WAU = 45% of MAU), so hitting all three still lands both
   // ratios on their goals.
-  var AUDIENCE_GOALS = { dau: 8000, wau: 36000, mau: 80000,
+  var AUDIENCE_GOALS = { dau: 80000, wau: 360000, mau: 800000,
                          stickiness: 10, wau_mau: 45, saver_return: 50,
                          signups: 10000, mrr: 10000, share: 90 };
   // Below this many savers the return rate is a coin toss, not a reading.
@@ -1070,7 +1071,7 @@
   var SITES = {
     fac:{
       mark:'🏙️', name:'Find A Crib', endpoint:'/api/dashboard-metrics',
-      title:'Find A Crib', goal:'Goal: 8k DAU = $200k/year',
+      title:'Find A Crib', goal:'Goal: 80k visitors a day ≈ $18k/month in ads',
       // Raptive's entry bar: 25,000 page views a month (owner, 2026-09-28).
       goal2:'Page view goal: 25k/month to register for Raptive',
       sub:'Traffic, funnel &amp; revenue — everything in one place.',

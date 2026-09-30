@@ -1036,13 +1036,14 @@ class Runner:
         thing keeping the modules dark-on-light when the page goes dark.
         """
         import cv2, numpy as np
-        chip = page.evaluate("(()=>{const a=document.getElementById('pill-app-d'),l=document.querySelector('.chip-row a[href=\\'/directory/\\']');"
+        chip = page.evaluate("(()=>{const a=document.getElementById('pill-app-d'),l=document.getElementById('pill-noads');"
                              "const r=a.getBoundingClientRect(),lr=l.getBoundingClientRect();"
                              "return {shown:r.width>0&&getComputedStyle(a).display!=='none',left:r.left,landlordsRight:lr.right,"
                              "sameRow:Math.abs(r.top-lr.top)<4,overflow:document.documentElement.scrollWidth>innerWidth}})()")
         self.ok(chip['shown'], 'desktop should offer a Get-the-app chip', j)
+        # Its left neighbour was Landlords until 9/29; now it is "Remove ads".
         self.ok(chip['sameRow'] and chip['left'] >= chip['landlordsRight'] - 1,
-                f'the chip should sit right of Landlords: {chip}', j)
+                f'the chip should sit right of Remove ads: {chip}', j)
         self.ok(not chip['overflow'], 'the chip must not push the row sideways', j)
         for theme in ('light', 'dark'):
             page.evaluate("document.documentElement.setAttribute('data-theme', %r)" % theme)

@@ -1431,7 +1431,17 @@ class Runner:
         if device == 'phone':
             page.evaluate("document.getElementById('btn-toggle-view').click()"); time.sleep(0.6)
         page.evaluate("document.querySelector('#grid > .card[data-bbl] .body')?.click()"); time.sleep(1.2)
-        limit = page.evaluate("innerHeight - 90")
+        # A real Mediavine banner may load during the test (2026-09-30: a 50px
+        # adhesion filled on the phone), and the page's observer then sets
+        # --ad-h to ITS height, replacing the fake 90px. Measure against what
+        # is actually reserved, and against the real banner's top if present.
+        limit = page.evaluate("""(()=>{
+          const adh = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ad-h')) || 0;
+          let lim = innerHeight - adh;
+          const w = document.querySelector('.adhesion_wrapper');
+          if (w) { const r = w.getBoundingClientRect(); if (r.height > 0) lim = Math.min(lim, Math.round(r.top)); }
+          return Math.round(lim); })()""")
+        self.ok(limit < page.evaluate("innerHeight"), 'no banner space reserved: --ad-h should be above 0 here', j)
         b = page.evaluate("Math.round(document.querySelector('#detail-sheet .detail-shell').getBoundingClientRect().bottom)")
         self.ok(b <= limit + 1, f'the building sheet ends at {b}, under a banner starting at {limit}', j)
         page.evaluate("document.getElementById('detail-sheet').hidden = true; document.getElementById('paywall-modal').hidden = false")

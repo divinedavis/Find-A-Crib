@@ -106,7 +106,7 @@ struct FeaturedListing: Codable, Hashable, Identifiable, Sendable {
 
     /// The button says where the link goes: "Apply" onto a board of other
     /// people's apartments is a promise the link would not keep.
-    var actionTitle: String { hrefKind == "agent_page" ? "Find it on their listings page ↗" : "Apply on their site ↗" }
+    var actionTitle: String { hrefKind == "agent_page" ? "See their listings ↗" : "Apply on their site ↗" }
 
     /// The hand-off, tagged so the agent can see this traffic in their own
     /// analytics (the same utm the website sets). Never on an internal link,

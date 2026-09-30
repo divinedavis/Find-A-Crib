@@ -1661,6 +1661,7 @@
     <h2>Everything you need to land your crib</h2>
     <p class="auth-sub">One membership unlocks all of Find A Crib:</p>
     <ul class="paywall-feats">
+      <li>🔔 Alerts the minute a lottery or re-rental opens in your borough — email and iPhone</li>
       <li>🚫 No ads, anywhere on Find A Crib</li>
       <li>🔖 Save any search — filters, area and all — and reapply it in one tap</li>
       <li>📞 Managing-agent phone numbers — call who actually runs the building</li>
@@ -2654,7 +2655,7 @@ function favActive() {
     // skips Mediavine from the next page on (only a confirmed answer changes it).
     if (plusKnown) { try { if (plusActive) localStorage.setItem('fac.noads', '1'); else localStorage.removeItem('fac.noads'); } catch (e) {} }
     { const np = document.getElementById('pill-noads'); if (np) np.hidden = !!plusActive; }
-    if (plusUpsellPending) { plusUpsellPending = false; if (plusKnown && !plusActive) openPaywall(null); }
+    if (plusUpsellPending) { plusUpsellPending = false; if (plusKnown && !plusActive) openPaywall(null, paywallSource); }
     // Membership is only known once this resolves, and the callers above run
     // updateAuthUI() before awaiting it — so anything that depends on Plus has
     // to be re-synced here or a member sees the invite button flash in.
@@ -2708,7 +2709,7 @@ function favActive() {
     const { data, error } = await supaClient.from('categories')
       .insert({ user_id: authUser.id, name }).select('id,name,share_token').single();
     if (error) {   // RLS rejects non-Plus inserts
-      if (!plusActive) openPaywall(null);
+      if (!plusActive) openPaywall(null, 'folders');
       else showPlusToast(/duplicate/i.test(error.message) ? 'You already have a folder with that name.' : 'Couldn’t create the folder — try again.');
       return null;
     }
@@ -4509,7 +4510,7 @@ function favActive() {
   // searches themselves — one place for everything a person has kept.
   async function saveCurrentSearch() {
     if (!authUser) { openAuthModal('Create a free account or sign in to continue — saved searches are part of Plus.'); return; }
-    if (!plusActive) { openPaywall(null); return; }
+    if (!plusActive) { openPaywall(null, 'saved_search'); return; }
     const name = (prompt('Name this search (e.g. "BK 2BR, no violations"):') || '').trim();
     if (!name) return;
     const { error } = await supaClient.from('saved_searches')
@@ -5256,14 +5257,14 @@ function favActive() {
     const bbl = btn.dataset.bbl;
     if (!supaClient) return;
     if (!authUser) { openAuthModal('Create a free account or sign in to continue — landlord research is part of Plus.'); return; }
-    if (!plusActive) { openPaywall(null); return; }
+    if (!plusActive) { openPaywall(null, 'research'); return; }
     const orig = btn.textContent;
     btn.disabled = true; btn.textContent = 'Looking up portfolio…';
     try {
       const { data, error } = await supaClient.rpc('get_research', { p_bbl: bbl });
       btn.disabled = false; btn.textContent = orig;
       if (error) return;
-      if (!data || (!data.owner && !data.agent)) { openPaywall(null); return; }
+      if (!data || (!data.owner && !data.agent)) { openPaywall(null, 'research'); return; }
       researchBody.innerHTML =
         `<p class="auth-sub" style="margin-bottom:0">Everything this building's operator has registered with HPD, matched by exact name — treat the numbers as a floor, since owners often split holdings across LLCs.</p>` +
         researchSection('🏢 Owner portfolio', data.owner) +
@@ -5661,7 +5662,8 @@ function favActive() {
   let featCursor = 0;
 
   // "Email me the minute the next one opens in <borough>" — under the apply
-  // button on lottery and re-rental tiles. Free sign-up at /alerts/, no
+  // button on lottery and re-rental tiles. Sign-up at /alerts/ (Plus for new
+  // subscribers since 2026-09-30; earlier ones grandfathered), no
   // account; the borough the tile is in is preselected there.
   const ALERT_BORO = { 'Manhattan': 'M', 'Brooklyn': 'Bk', 'Queens': 'Q', 'Bronx': 'Bx',
                        'The Bronx': 'Bx', 'Staten Island': 'SI' };
@@ -7535,12 +7537,17 @@ function favActive() {
 
   // ---------- Find A Crib Plus paywall ----------
   const paywallModal = document.getElementById('paywall-modal');
-  function openPaywall(bbl) {
+  // `source` names what sent them here (phone, alerts, noads, other). It
+  // rides through checkout in sessionStorage so the dashboard's pay
+  // conversion can say which paywall sells (2026-09-30).
+  let paywallSource = 'other';
+  function openPaywall(bbl, source) {
     pendingPhoneBbl = bbl || null;            // remember what they wanted, to reveal after checkout
+    paywallSource = source || (bbl ? 'phone' : 'other');
     const err = document.getElementById('paywall-error');
     if (err) err.hidden = true;
     paywallModal.hidden = false;
-    track('outbound', { kind: 'paywall_view', bbl: bbl || null });
+    track('outbound', { kind: 'paywall_view', bbl: bbl || null, source: paywallSource });
   }
   function closePaywall() { paywallModal.hidden = true; }
   paywallModal.addEventListener('click', e => {
@@ -7552,7 +7559,7 @@ function favActive() {
   // paywall, which leads with "No ads, anywhere on Find A Crib". Members have
   // no ads, so it hides once Plus is confirmed (refreshPlus).
   const noAdsPill = document.getElementById('pill-noads');
-  if (noAdsPill) noAdsPill.addEventListener('click', () => { track('remove_ads_click', null); openPaywall(null); });
+  if (noAdsPill) noAdsPill.addEventListener('click', () => { track('remove_ads_click', null); openPaywall(null, 'noads'); });
 
   // Kick off Stripe Checkout for the $1.99/mo Plus subscription. The create-checkout
   // Edge Function returns a hosted Checkout URL we redirect to; Stripe redirects
@@ -7562,6 +7569,8 @@ function favActive() {
     const err = document.getElementById('paywall-error');
     if (!authUser) { closePaywall(); openAuthModal('Sign in to subscribe to Find A Crib Plus.'); return; }
     btn.disabled = true; btn.textContent = 'Starting checkout…';
+    track('outbound', { kind: 'checkout_start', source: paywallSource });
+    try { sessionStorage.setItem('fac.paySource', paywallSource); } catch (e) {}
     try {
       const { data, error } = await supaClient.functions.invoke('create-checkout', {
         body: { return_url: location.href }
@@ -7586,12 +7595,14 @@ function favActive() {
   (function () {
     const p = new URLSearchParams(location.search);
     if (p.get('plus') === 'success') {
-      showPlusToast('🎉 You’re now Find A Crib Plus — agent phone numbers are unlocked. Tap “Show number” to view.');
+      showPlusToast('🎉 You’re now Find A Crib Plus — alerts, agent phone numbers and landlord research are unlocked.');
       plusPurchasePending = true;
     }
     // ?plus=1 is the "unlock" link from the gated pages. Signed-out users get
     // the sign-in step first — startCheckout() already routes them there.
     if (p.get('plus') === '1') plusUpsellPending = true;
+    // ?plus=alerts: the /alerts/ page and the "unlock your alerts" email.
+    if (p.get('plus') === 'alerts') { plusUpsellPending = true; paywallSource = 'alerts'; }
     if (p.has('plus')) { p.delete('plus'); history.replaceState({}, '', location.pathname + (p.toString() ? '?' + p : '')); }
     // ?auth=signup&next=/alerts/ — the alerts page sends a signed-out visitor
     // here to create the account, then goes back. `next` is a same-site path
@@ -7607,7 +7618,7 @@ function favActive() {
   // Alerts need an account (asked 2026-09-08): every /alerts/ link in the
   // header, chips and menu opens the sign-up modal when signed out, and the
   // page opens on its own once the session lands.
-  const ALERTS_GATE_MSG = 'Create a free account to get an email the minute a lottery or re-rental opens in your borough.';
+  const ALERTS_GATE_MSG = 'Create an account to set up alerts — an email the minute a lottery or re-rental opens in your borough, with Find A Crib Plus.';
   document.addEventListener('click', e => {
     const a = e.target.closest('a[href^="/alerts/"]');
     if (!a || authUser) return;
@@ -7662,7 +7673,7 @@ function favActive() {
       const { data, error } = await supaClient.rpc('get_research_bbls', { p_kind: kind, p_key: key });
       // null is the RPC saying "not a subscriber" — the same answer it gives a
       // signed-out caller, and deliberately not an error.
-      if (error || !data) { openPaywall(null); return; }
+      if (error || !data) { openPaywall(null, 'research'); return; }
       const bbls = new Set(data.bbls || []);
       if (!bbls.size) return;
       const label = titleName(data.display_name);
@@ -7889,7 +7900,7 @@ function favActive() {
     if (e.target === profileModal || e.target.closest('[data-profile="close"]')) profileModal.hidden = true;
   });
   document.getElementById('profile-upgrade').addEventListener('click', () => {
-    profileModal.hidden = true; openPaywall(null);
+    profileModal.hidden = true; openPaywall(null, 'profile');
   });
   document.getElementById('profile-signout').addEventListener('click', async () => {
     profileModal.hidden = true;
@@ -8105,6 +8116,13 @@ function favActive() {
       authGatePending = false;
       if (authUser && authGateNext) { const n = authGateNext; authGateNext = null; location.href = n; }
       else if (!authUser) { openAuthModal(ALERTS_GATE_MSG); setAuthMode('signup'); }
+    }
+    // Pay conversion (dashboard): one plus_purchase per completed checkout,
+    // credited to the paywall that started it.
+    if (plusPurchasePending && authUser) {
+      let src = 'other';
+      try { src = sessionStorage.getItem('fac.paySource') || 'other'; sessionStorage.removeItem('fac.paySource'); } catch (e) {}
+      track('plus_purchase', { source: src, provider: 'stripe' });
     }
     // Google Ads purchase conversion for a completed Plus checkout ($4.99).
     // Enhanced conversions: pass the account email (Google hashes it) so the

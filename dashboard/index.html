@@ -88,6 +88,8 @@
     --purple:#6d5ce7; --purple-soft:#f1effe; --purple-ink:#5a49d0; --purple-line:#e5e1fb;
     --lime:#c3f53c; --lime-deep:#a8dd1f;
     --c1:#2a78d6; --c2:#eb6834; --c3:#1baf7a; --c4:#eda100; --c5:#e87ba4;
+    /* alert trend: saved vs turned on (validated light: #6d5ce7/#1baf7a on #fff) */
+    --at-saved:#6d5ce7; --at-on:#1baf7a;
     --good:#1baf7a;
     --live-bg:#f1fbe9; --live-ink:#4b7a12; --live-line:#dcecc4;
     --tip-bg:#1c1b22; --tip-ink:#ffffff;
@@ -107,6 +109,8 @@
     --ink:#f1f1f6; --ink2:#a9a8b8; --muted:#7b7a8c;
     --purple:#8b7bff; --purple-soft:#221d40; --purple-ink:#b7abff; --purple-line:#332c5c;
     --c1:#5b9bee; --c2:#ff8a5c; --c3:#35c993; --c4:#f0b93c; --c5:#f294b8;
+    /* dark: #35c993 sits above the OKLCH L band on #16161f; #1fa877 passes */
+    --at-saved:#8b7bff; --at-on:#1fa877;
     --good:#35c993;
     --live-bg:#18240f; --live-ink:#a8dd5c; --live-line:#31461a;
     --tip-bg:#2c2b38; --tip-ink:#ffffff;
@@ -362,6 +366,14 @@
   @media(max-width:700px){.ref-tiles{grid-template-columns:1fr}}
 
   /* sparkline */
+  .at-sum{display:flex;flex-wrap:wrap;gap:8px 28px;margin:4px 0 12px;font-size:13px;color:var(--ink2)}
+  .at-sum b{color:var(--ink);font-size:18px;font-weight:700;letter-spacing:-.3px;display:block}
+  .at-legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--ink2);margin-bottom:6px}
+  .at-legend i{display:inline-block;width:14px;height:2px;border-radius:1px;vertical-align:middle;margin-right:6px}
+  .at-table{margin-top:10px;font-size:12px;color:var(--ink2)}
+  .at-table table{border-collapse:collapse;width:100%;margin-top:6px}
+  .at-table th,.at-table td{text-align:right;padding:3px 8px;border-bottom:1px solid var(--border2);font-variant-numeric:tabular-nums}
+  .at-table th:first-child,.at-table td:first-child{text-align:left}
   .spark-key{display:inline-block;width:9px;height:9px;border-radius:2px;margin:0 5px 0 1px;vertical-align:0}
   .spark-tip{position:absolute;background:var(--tip-bg);color:var(--tip-ink);font-size:11.5px;padding:5px 8px;border-radius:7px;pointer-events:none;transform:translate(-50%,-120%);white-space:nowrap;opacity:0;transition:opacity .1s}
 
@@ -537,6 +549,18 @@
 
       <!-- ===== Find A Crib only ===== -->
       <div id="fac-a">
+      <!-- Alert sign-up conversion over time (owner, 2026-09-30): the day
+           alerts became Plus for new sign-ups, "track our trends from history
+           to the future". api_server._fac_alert_trend / db/0038. -->
+      <div class="card mb18" id="sec-alert-trend">
+        <div class="card-head-row">
+          <div><h2>Alert sign-ups over time</h2><div class="card-sub">Share of visitors who set up a borough alert, 7-day rolling, since alerts launched on 3 Sep. On 30 Sep alerts became part of Plus for new sign-ups; everyone before that keeps them free.</div></div>
+        </div>
+        <div class="at-sum" id="at-sum"></div>
+        <div class="at-legend" id="at-legend"></div>
+        <div id="at-chart" style="position:relative"></div>
+        <details class="at-table"><summary>Show the numbers</summary><div id="at-table"></div></details>
+      </div>
       <!-- advertiser tiles: the only inventory somebody else would pay for -->
       <div class="card mb18" id="sec-tiles">
         <div class="card-head-row">
@@ -1922,6 +1946,7 @@
     renderFacSearch(d.search);
     renderAppStore(d.appstore);
     renderSpark(d.sparkline||[], d.months, d.signups_series);
+    renderAlertTrend(d.alert_trend||[]);
     renderFacTiles(d.adtiles);
   }
 
@@ -2482,6 +2507,108 @@
     var verdict=appstoreVerdict(w28.conv_page_view, null)+
       ' · impression rate not judged: most page views arrive from findacrib.com links, which carry no store impression';
     el('appstore-note').textContent=(verdict?verdict+' · ':'')+'Apple data through '+A.as_of+(A.updated?' · pulled '+String(A.updated).slice(0,16).replace('T',' ')+'Z':'');
+  }
+
+  // ---------- alert sign-up trend ----------
+  // One chart, one axis (%): two lines over the same denominator (7-day
+  // rolling visitors). "Saved" = alert sign-ups; "Turned on" = the ones that
+  // receive alerts (grandfathered or Plus). They are one line until 30 Sep,
+  // when alerts became Plus; the gap after it is the paywall. Crosshair +
+  // tooltip on hover; direct labels at the line ends; a table under it.
+  var AT_CHANGE = '2026-09-30', atLast = null, atW = 0;
+  (function(){
+    var t;
+    function refit(){ var h=el('at-chart'); if(h && atLast && h.clientWidth && h.clientWidth!==atW) renderAlertTrend(atLast); }
+    window.addEventListener('resize', function(){ clearTimeout(t); t=setTimeout(refit,80); });
+  })();
+  function renderAlertTrend(rows){
+    var host=el('at-chart'); if(!host) return;
+    atLast=rows;
+    if(!rows.length){ host.innerHTML='<div style="color:var(--muted);font-size:13px">Alert trend unavailable right now.</div>'; return; }
+    function rate(a,b){ return n(b) ? 100*n(a)/n(b) : 0; }
+    function day(iso,o){ return new Date(iso+'T00:00').toLocaleString('en-US', o||{month:'short',day:'numeric'}); }
+    var pts=rows.map(function(r){ return {d:r.date, saved:rate(r.signups,r.visitors), on:rate(r.on,r.visitors), r:r}; });
+    // Summary: the last full pre-change week against what has happened since.
+    var pre=null, post=rows.filter(function(r){ return r.date>=AT_CHANGE; });
+    rows.forEach(function(r){ if(r.date<AT_CHANGE) pre=r; });
+    var postS=post.reduce(function(a,r){ return a+n(r.signups_day); },0), postOn=post.reduce(function(a,r){ return a+n(r.on_day); },0);
+    var latest=rows[rows.length-1], full=post.length>=7, fullFrom='';
+    if(post.length){ var fd=new Date(post[0].date+'T00:00'); fd.setDate(fd.getDate()+6); fullFrom=fd.toLocaleString('en-US',{month:'short',day:'numeric'}); }
+    var sum='';
+    if(pre) sum+='<div><b>'+rate(pre.signups,pre.visitors).toFixed(2)+'%</b>last 7 days before Plus ('+comma(pre.signups)+' of '+comma(pre.visitors)+')</div>';
+    if(post.length){
+      sum+= full
+        ? '<div><b>'+rate(latest.on,latest.visitors).toFixed(2)+'%</b>turned on, last 7 days · '+rate(latest.signups,latest.visitors).toFixed(2)+'% saved</div>'
+        : '<div><b>'+comma(postOn)+' of '+comma(postS)+'</b>alert sign-ups since 30 Sep turned on ('+post.length+' day'+(post.length===1?'':'s')+' in; the 7-day rate is all post-change from '+fullFrom+')</div>';
+    }
+    el('at-sum').innerHTML=sum;
+    el('at-legend').innerHTML='<span><i style="background:var(--at-saved)"></i>Saved an alert</span>'+
+      '<span><i style="background:var(--at-on)"></i>Alert turned on (grandfathered or Plus)</span>'+
+      '<span style="color:var(--muted)">same line until 30 Sep</span>';
+
+    var W=Math.max(host.clientWidth||900,300); atW=host.clientWidth;
+    var narrow=W<520, H=narrow?200:220, pad={t:18,r:narrow?44:96,b:24,l:40};
+    var iw=W-pad.l-pad.r, ih=H-pad.t-pad.b, base=pad.t+ih;
+    var ymax=Math.max.apply(null, pts.map(function(p){ return Math.max(p.saved,p.on); }));
+    // Round the top up to a clean tick so gridlines land on readable values.
+    var step = ymax<=1 ? 0.25 : ymax<=2.5 ? 0.5 : 1;
+    ymax=Math.max(step, Math.ceil((ymax*1.08)/step)*step);
+    var X=function(i){ return pad.l + (pts.length===1 ? iw/2 : iw*i/(pts.length-1)); };
+    var Y=function(v){ return base - ih*v/ymax; };
+    var grid='', ticks='';
+    for(var v=0; v<=ymax+1e-9; v+=step){
+      grid+='<line x1="'+pad.l+'" x2="'+(W-pad.r)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="var(--border2)" stroke-width="1"></line>';
+      ticks+='<text x="'+(pad.l-6)+'" y="'+(Y(v)+3.5)+'" text-anchor="end" font-size="10.5" fill="var(--muted)">'+(+v.toFixed(2))+'%</text>';
+    }
+    // x labels: first, weekly Mondays-ish every 7 points, last.
+    var xl='';
+    var xlast=X(pts.length-1);
+    pts.forEach(function(p,i){
+      if(i===0 || i===pts.length-1 || (i%7===0 && xlast-X(i)>=(narrow?72:52)))
+        xl+='<text x="'+X(i)+'" y="'+(H-6)+'" text-anchor="'+(i===0?'start':i===pts.length-1?'end':'middle')+'" font-size="10.5" fill="var(--muted)">'+day(p.d)+'</text>';
+    });
+    function path(key){ return pts.map(function(p,i){ return (i?'L':'M')+X(i).toFixed(1)+' '+Y(p[key]).toFixed(1); }).join(' '); }
+    var ci=pts.findIndex(function(p){ return p.d>=AT_CHANGE; });
+    var marker = ci>=0
+      ? '<line x1="'+X(ci)+'" x2="'+X(ci)+'" y1="'+(pad.t-8)+'" y2="'+base+'" stroke="var(--ink2)" stroke-width="1" stroke-dasharray="3 4"></line>'+
+        '<text x="'+(X(ci)-4)+'" y="'+(pad.t-8)+'" text-anchor="end" font-size="10.5" font-weight="600" fill="var(--ink2)">Alerts → Plus</text>'
+      : '';
+    var li=pts.length-1, lp=pts[li];
+    // End labels: the two values, nudged apart when the lines meet.
+    var ys=Y(lp.saved), yo=Y(lp.on);
+    if(Math.abs(ys-yo)<13){ if(lp.saved>=lp.on){ ys-=7; yo+=7; } else { ys+=7; yo-=7; } }
+    var ends = narrow ? '' :
+      '<text x="'+(X(li)+8)+'" y="'+(ys+4)+'" font-size="11" font-weight="600" fill="var(--ink)">'+lp.saved.toFixed(2)+'% saved</text>'+
+      '<text x="'+(X(li)+8)+'" y="'+(yo+4)+'" font-size="11" font-weight="600" fill="var(--ink)">'+lp.on.toFixed(2)+'% on</text>';
+    var dots='<circle cx="'+X(li)+'" cy="'+Y(lp.saved)+'" r="4" fill="var(--at-saved)" stroke="var(--card)" stroke-width="2"></circle>'+
+             '<circle cx="'+X(li)+'" cy="'+Y(lp.on)+'" r="4" fill="var(--at-on)" stroke="var(--card)" stroke-width="2"></circle>';
+    host.innerHTML='<svg id="at-svg" width="100%" height="'+H+'" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Alert sign-up conversion, 7-day rolling, '+day(pts[0].d)+' to '+day(lp.d)+'">'+
+      grid+ticks+xl+marker+
+      '<path d="'+path('saved')+'" fill="none" stroke="var(--at-saved)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>'+
+      '<path d="'+path('on')+'" fill="none" stroke="var(--at-on)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>'+
+      dots+ends+
+      '<line id="at-x" y1="'+pad.t+'" y2="'+base+'" stroke="var(--border-strong)" stroke-width="1" opacity="0"></line>'+
+      '<rect x="'+pad.l+'" y="0" width="'+iw+'" height="'+H+'" fill="transparent" id="at-hit"></rect>'+
+      '</svg><div class="spark-tip" id="at-tip"></div>';
+    var hit=el('at-hit'), tip=el('at-tip'), xl2=el('at-x'), svg=el('at-svg');
+    function show(ev){
+      var r=svg.getBoundingClientRect(), sx=(ev.clientX-r.left)*W/r.width;
+      var i=Math.max(0,Math.min(pts.length-1,Math.round((sx-pad.l)/(pts.length>1?iw/(pts.length-1):1))));
+      var p=pts[i], R=p.r;
+      xl2.setAttribute('x1',X(i)); xl2.setAttribute('x2',X(i)); xl2.setAttribute('opacity','1');
+      tip.innerHTML='<b>'+day(p.d,{weekday:'short',month:'short',day:'numeric'})+'</b> · 7 days: '+p.saved.toFixed(2)+'% saved, '+p.on.toFixed(2)+'% on'+
+        '<br>'+comma(R.signups)+' saved / '+comma(R.on)+' on of '+comma(R.visitors)+' visitors · that day '+comma(R.signups_day)+' saved, '+comma(R.visitors_day)+' visitors';
+      // Wraps on a phone and stays inside the card: a nowrap tip centred on
+      // the right-hand days ran off the screen and scrolled the page sideways.
+      tip.style.whiteSpace='normal'; tip.style.maxWidth=Math.min(340, r.width-8)+'px';
+      var tw=tip.offsetWidth, cx=X(i)*r.width/W;
+      tip.style.left=Math.max(tw/2+4, Math.min(r.width-tw/2-4, cx))+'px';
+      tip.style.top=(Math.min(Y(p.saved),Y(p.on))*r.height/H)+'px'; tip.style.opacity='1';
+    }
+    hit.addEventListener('mousemove',show); hit.addEventListener('touchstart',function(e){ show(e.touches[0]); },{passive:true});
+    hit.addEventListener('mouseleave',function(){ tip.style.opacity='0'; xl2.setAttribute('opacity','0'); });
+    el('at-table').innerHTML='<table><tr><th>Day</th><th>Visitors (7d)</th><th>Saved (7d)</th><th>On (7d)</th><th>% saved</th><th>% on</th></tr>'+
+      pts.slice().reverse().map(function(p){ var R=p.r; return '<tr><td>'+day(p.d)+'</td><td>'+comma(R.visitors)+'</td><td>'+comma(R.signups)+'</td><td>'+comma(R.on)+'</td><td>'+p.saved.toFixed(2)+'%</td><td>'+p.on.toFixed(2)+'%</td></tr>'; }).join('')+'</table>';
   }
 
   // ---------- sparkline ----------

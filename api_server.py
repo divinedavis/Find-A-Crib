@@ -1505,6 +1505,9 @@ def dashboard_metrics():
         # Accounts created per day and per month, for the sign-up bars paired
         # with the visitor bars. Same windows as the chart, not range-scoped.
         "signups_series": (_fac_signups_series,),
+        # Alert sign-up conversion, 7-day rolling per day since alerts
+        # launched (db/0038). Not range-scoped: it is a trend line.
+        "alert_trend": (_fac_alert_trend,),
     }
     with ThreadPoolExecutor(max_workers=len(jobs)) as pool:
         futs = {k: pool.submit(*v) for k, v in jobs.items()}
@@ -1563,6 +1566,18 @@ def _fac_goals_read():
 
 FAC_MONTHS = 7
 FAC_TZ = "America/New_York"
+
+
+@_memo(600)
+def _fac_alert_trend():
+    """[{date, visitors, signups, on, *_day}] — alert sign-up conversion as a
+    7-day rolling rate per New York day since 2026-09-03, with "on" = the
+    sign-ups that actually receive alerts (grandfathered or Plus). Built to
+    watch the 2026-09-30 switch to Plus-only alerts. [] on failure."""
+    try:
+        return rpc("dashboard_alert_trend", {"p_ios_builds": list(_fac_released_builds()) or None}) or []
+    except Exception:
+        return []
 
 
 @_memo(300)

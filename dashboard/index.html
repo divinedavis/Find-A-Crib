@@ -271,7 +271,10 @@
   .ads-tile .a-bench b{color:var(--ink)}
   .ads-tile .a-bench-note{display:block;margin-top:4px;opacity:.72}
   .tile .t-bench b{color:var(--ink)}
-  .bn{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;margin-left:2px;white-space:nowrap}
+  .bn{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;margin-left:2px;white-space:nowrap;max-width:100%}
+  /* Long verdicts ("listings portals cap near 10% — Zillow") wrap on a phone
+     instead of pushing the page sideways (2026-09-30, 390px ran 39px wide). */
+  @media(max-width:560px){.bn{white-space:normal}}
   .bn-low{background:#fdecec;color:#c0342c}
   .bn-mid{background:#fdf4e3;color:#a76a06}
   .bn-hi{background:#e9f7ef;color:#137a4a}
@@ -349,8 +352,11 @@
   @media(max-width:560px){#sec-alert-trend .card-head-row,#sec-appstore .card-head-row{flex-direction:column;gap:10px}.at-range{margin-left:0;justify-content:flex-start}.at-range-note{text-align:left}}
   .at-key{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--ink2);margin-top:8px}
   .at-key b{color:var(--ink)}
-  .at-table{margin-top:10px;font-size:12px;color:var(--ink2)}
-  .at-table > div{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .at-table{margin-top:10px;font-size:12px;color:var(--ink2);min-width:0;max-width:100%}
+  /* The before/after table is wider than a phone: it scrolls in its own box.
+     width:0 + min-width:100% stops the table's width from sizing the card
+     (a nowrap table otherwise widened the whole page by ~40px at 390px). */
+  .at-table > div{overflow-x:auto;-webkit-overflow-scrolling:touch;width:0;min-width:100%}
   .at-table table{border-collapse:collapse;width:100%;margin-top:6px}
   .at-table th,.at-table td{text-align:right;padding:3px 8px;border-bottom:1px solid var(--border2);font-variant-numeric:tabular-nums}
   .at-table th:first-child,.at-table td:first-child{text-align:left}

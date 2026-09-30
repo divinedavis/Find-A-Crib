@@ -927,6 +927,11 @@ class Runner:
         self.ok(r.status in (401, 429), f'/api/alerts/subscribe without a session should be refused, got {r.status}', j)
         page.evaluate("document.getElementById('form').hidden = false")   # the form itself still works once revealed
         self.ok(page.evaluate("document.getElementById('submit').textContent.trim()") == 'Email me when something opens', 'alerts form should offer a fresh sign-up', j)
+        # Alerts are Plus for new sign-ups (2026-09-30): the page says so, and
+        # the "turn it on with Plus" card is there (hidden) with its paywall link.
+        self.ok('Find A Crib Plus' in page.evaluate("document.querySelector('.lede').innerText"), 'alerts page should say alerts are part of Plus', j)
+        self.ok(page.evaluate("(()=>{const l=document.getElementById('locked'), b=document.getElementById('locked-btn'); return !!l && l.hidden && !!b && b.getAttribute('href')==='/?plus=alerts'})()"),
+                'alerts page should carry a hidden locked card linking to /?plus=alerts', j)
         page.click('text=Brooklyn'); time.sleep(0.3)
         self.ok(page.evaluate("document.querySelector('#boros input[value=Bk]').checked"), 'borough chip should toggle on', j)
         self.ok(page.evaluate("getComputedStyle(document.querySelector('#boros input[value=Bk] + span')).backgroundColor") != 'rgba(0, 0, 0, 0)', 'a chosen borough should be filled', j)

@@ -42,6 +42,11 @@ final class PlusStore {
 
     var priceText: String { product?.displayPrice ?? "$4.99" }
 
+    /// Which paywall is on screen (phone, alerts, profile, …), so a purchase
+    /// is credited to the screen that sold it on the dashboard's pay
+    /// conversion (2026-09-30). Set by PaywallView when it appears.
+    var source = "other"
+
     /// Buy. Requires a signed-in account so the entitlement can be bound to it.
     func purchase() async {
         guard let product else { await load(); guard self.product != nil else { return }; return await purchase() }
@@ -55,10 +60,10 @@ final class PlusStore {
                     Analytics.shared.track("purchase", ["result": "unverified"])
                     error = "Apple couldn't verify the purchase."; return
                 }
-                Analytics.shared.track("purchase", ["result": "ok", "product": tx.productID])
+                Analytics.shared.track("purchase", ["result": "ok", "product": tx.productID, "source": source])
                 await handle(tx, jws: verification.jwsRepresentation)
                 await tx.finish()
-            case .userCancelled: Analytics.shared.track("purchase", ["result": "cancelled"])
+            case .userCancelled: Analytics.shared.track("purchase", ["result": "cancelled", "source": source])
             case .pending: Analytics.shared.track("purchase", ["result": "pending"])
             @unknown default: break
             }

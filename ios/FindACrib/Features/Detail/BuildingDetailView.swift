@@ -158,7 +158,7 @@ struct BuildingDetailView: View {
                 .accessibilityIdentifier("detail-menu")
             }
         }
-        .sheet(isPresented: $showPaywall) { PaywallView() }
+        .sheet(isPresented: $showPaywall) { PaywallView(source: "phone") }
         .onAppear { Perf.mark("detail onAppear"); nav.hideTabBar = true; activity.recordView(b.bbl) }
         .task(id: b.bbl) { similar = SearchEngine.similar(to: b, store: store) }
         .onDisappear { Perf.mark("detail onDisappear"); nav.hideTabBar = false }

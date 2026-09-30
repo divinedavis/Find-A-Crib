@@ -1830,7 +1830,42 @@
       // ads (TestFlight) are named but never counted.
       adsTile(d.ads_served),
       mediavineTile(d.mediavine, d.page_views)
-    ];
+    ].concat(payTiles(d.pay, T.visitors));
+    // Pay conversion (owner, 2026-09-30): the three tiles that say whether
+    // people pay. api_server._fac_pay — distinct people, web + App Store
+    // builds, owner out. Paid ÷ visitors; paid ÷ people who saw a paywall
+    // (by the paywall that showed it); and the alert gate: alert sign-ups
+    // since alerts became Plus, and how many of them now have Plus.
+    function payTiles(P, visitors){
+      if(!P || P.viewed == null){
+        var na={ic:'💳',v:'—',l:'Pay conversion',own:'Pay data unavailable right now'};
+        return [na, {ic:'🧾',v:'—',l:'Paywall → paid'}, {ic:'🔓',v:'—',l:'Alert sign-ups → Plus'}];
+      }
+      var paid=n(P.paid), viewed=n(P.viewed), started=n(P.started);
+      var names={phone:'phone number',alerts:'alerts',noads:'remove ads',research:'landlord research',
+                 saved_search:'saved search',folders:'folders',profile:'profile',other:'other'};
+      var BS=P.by_source||{};
+      var srcs=Object.keys(BS).sort(function(a,b){ return n(BS[b].viewed)-n(BS[a].viewed); });
+      var bySrc=srcs.slice(0,4).map(function(k){
+        return (names[k]||k)+' '+comma(BS[k].paid)+'/'+comma(BS[k].viewed);
+      }).join(' · ');
+      var A=P.alerts||{}, asn=n(A.signups), aun=n(A.unlocked);
+      return [
+        {ic:'💳',v:pctS(paid,n(visitors)),l:'Pay conversion · visitors who paid',
+         own:'<b>'+comma(paid)+'</b> paid of '+comma(visitors)+' visitors',
+         bench:'freemium converts 2–5% of free accounts',
+         title:'People who completed a Find A Crib Plus purchase in this range (Stripe on the web, the App Store in the app) divided by unique visitors. Owner excluded; TestFlight and simulator buys excluded.'},
+        {ic:'🧾',v:pctS(paid,viewed),l:'Paywall → paid',
+         own:comma(viewed)+' saw a paywall · '+comma(started)+' started checkout · <b>'+comma(paid)+'</b> paid',
+         bench:bySrc ? 'paid/saw by paywall: '+bySrc : 'no paywall views in this range',
+         title:'Distinct people who saw a Plus paywall, tapped Subscribe (Stripe checkout started, or an App Store purchase sheet of any outcome), and paid. Each person is credited to the first paywall they saw in the range. Web checkout starts are counted from 2026-09-30.'},
+        {ic:'🔓',v:comma(aun)+' of '+comma(asn),l:'Alert sign-ups → Plus',
+         own:asn ? pctS(aun,asn)+' of new alert sign-ups now have Plus · '+comma(A.emailed)+' sent the unlock email'
+                 : 'No new alert sign-ups since alerts became Plus (30 Sep)',
+         bench:'66 earlier subscribers keep alerts free',
+         title:'Alerts became part of Find A Crib Plus for new sign-ups on 30 Sep 2026; the 66 subscribers before that are grandfathered and not counted here. A new sign-up without Plus is saved but not sent, and gets one "turn on your alerts" email.'}
+      ];
+    }
     // Mediavine (Journey, live 2026-09-29): ads the pages counted themselves —
     // Mediavine has no reporting API. Paid vs Mediavine's own filler ("Grow"
     // house ads). Revenue only as an estimate from the Page RPM the owner

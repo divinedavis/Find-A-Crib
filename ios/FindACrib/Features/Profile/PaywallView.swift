@@ -9,8 +9,15 @@ struct PaywallView: View {
     @Environment(AppNav.self) private var nav
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
+    /// What sent them here: "phone", "alerts", "profile", … (dashboard pay conversion).
+    var source = "other"
 
-    var body: some View { content.onAppear { Analytics.shared.track("paywall_view", ["signed_in": auth.isSignedIn]) } }
+    var body: some View {
+        content.onAppear {
+            plus.source = source
+            Analytics.shared.track("paywall_view", ["signed_in": auth.isSignedIn, "source": source])
+        }
+    }
 
     private var content: some View {
         VStack(spacing: 0) {
@@ -29,9 +36,10 @@ struct PaywallView: View {
             }
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
+                    perk("bell.fill", "Alerts the minute one opens", "A notification and an email the minute a lottery or re-rental opens in your boroughs.")
                     perk("nosign", "No ads", "No ads in the app or on findacrib.com.")
                     perk("phone.fill", "Managing-agent phone numbers", "The number HPD has on file for the company that runs the building — 11,000+ buildings.")
-                    perk("bell.fill", "Saved searches & alerts", "Save any search; get an email when a stabilized building in it is advertised.")
+                    perk("bookmark.fill", "Saved searches", "Save any search; get an email when a stabilized building in it is advertised.")
                     perk("building.2.fill", "Landlord research", "Everything a landlord or agent owns, with its violation record, on findacrib.com.")
                     perk("globe", "Works on the website too", "One subscription, findacrib.com and the app.")
 

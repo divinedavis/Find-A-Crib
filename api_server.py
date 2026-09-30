@@ -539,10 +539,24 @@ def alerts_subscribe():
     if not res.get("ok"):
         reason = res.get("reason", "signup_failed")
         return jsonify(error=reason), (429 if reason == "signup_cap" else 400)
+    # Alerts are a Plus feature for new sign-ups (2026-09-30, db/0037); the
+    # 66 subscribers from before are grandfathered. The row is saved either
+    # way — paying later switches it on without a second form — and the
+    # client shows the paywall when plus_required is true. Unknown = locked:
+    # the dispatcher's own check is the gate, this only picks the screen.
+    plus_required = not _alert_unlocked(email)
     # Deliberately no "already subscribed" signal in the reply: that would be
     # an oracle for whether an address is on the list.
     return jsonify(ok=True, boroughs=res.get("boroughs"), kinds=res.get("kinds"),
-                   max_rent=res.get("max_rent"), income=res.get("income"))
+                   max_rent=res.get("max_rent"), income=res.get("income"),
+                   plus_required=plus_required)
+
+
+def _alert_unlocked(email):
+    try:
+        return rpc("alert_sub_unlocked", {"p_email": email}) is True
+    except Exception:
+        return False
 
 
 def _session_user():
@@ -654,6 +668,7 @@ def alerts_prefs():
         return jsonify(error="temporarily_unavailable"), 503
     res["ok"] = True
     res["email"] = email
+    res["plus_required"] = not _alert_unlocked(email)
     return jsonify(res)
 
 
@@ -1472,6 +1487,7 @@ def dashboard_metrics():
         "ads_served": (_fac_ads_served, since),
         "page_views": (_fac_page_views, since),
         "mediavine": (_fac_mediavine, since),
+        "pay": (_fac_pay, since),
         # The header's Raptive goal (25k/month) is always the last 30 days.
         "page_views_30d": (_fac_page_views, (datetime.datetime.now(datetime.timezone.utc)
                                               - datetime.timedelta(days=30)).strftime("%Y-%m-%dT%H:00:00Z")),
@@ -1789,6 +1805,67 @@ def _fac_mediavine(since):
         rpm = 0
     if rpm > 0:
         out["page_rpm"] = rpm
+    return out
+
+
+@_memo(600)
+def _fac_pay(since):
+    """Pay conversion (owner, 2026-09-30): who saw a Plus paywall, who started
+    paying, who paid — distinct people, web + iPhone app, owner out, by the
+    paywall that sent them (phone, alerts, noads, research, profile, …).
+
+    Web: outbound{kind:paywall_view|checkout_start} and plus_purchase (fired
+    on the return from Stripe). App: paywall_view, and purchase{result} — a
+    purchase row of any result means Subscribe was tapped; result=ok is paid.
+    App rows only from builds that reached the App Store (TestFlight buys in
+    Sandbox). Plus the alert gate: non-grandfathered alert sign-ups and how
+    many of them now have Plus (db/0037). {} on failure."""
+    q = ("events?select=visitor_id,event,props"
+         "&or=" + urllib.parse.quote(
+             "(event.in.(paywall_view,purchase,plus_purchase),"
+             "and(event.eq.outbound,props->>kind.in.(paywall_view,checkout_start)))", safe="(),.>-"))
+    if since:
+        q += f"&created_at=gte.{urllib.parse.quote(str(since))}"
+    mine = _fac_owner_visitors()
+    released = {str(b) for b in (_fac_released_builds() or [])}
+    viewed, started, paid = {}, {}, {}
+    try:
+        start = 0
+        while True:
+            chunk = _rest("GET", q + f"&order=id.asc&offset={start}&limit=1000") or []
+            for r in chunk:
+                vid = r.get("visitor_id")
+                if not vid or vid in mine:
+                    continue
+                pr = r.get("props") or {}
+                if pr.get("platform") == "ios" and released and str(pr.get("build") or "") not in released:
+                    continue
+                src = str(pr.get("source") or ("phone" if pr.get("bbl") else "other"))[:24]
+                ev, kind = r.get("event"), pr.get("kind")
+                if ev == "paywall_view" or (ev == "outbound" and kind == "paywall_view"):
+                    viewed.setdefault(vid, src)
+                elif ev == "outbound" and kind == "checkout_start":
+                    started.setdefault(vid, src)
+                elif ev == "purchase":
+                    started.setdefault(vid, src)
+                    if pr.get("result") == "ok":
+                        paid.setdefault(vid, src)
+                elif ev == "plus_purchase":
+                    paid.setdefault(vid, src)
+            if len(chunk) < 1000 or start > 100_000:
+                break
+            start += 1000
+    except Exception:
+        return {}
+    by_source = {}
+    for label, group in (("viewed", viewed), ("started", started), ("paid", paid)):
+        for src in group.values():
+            by_source.setdefault(src, {"viewed": 0, "started": 0, "paid": 0})[label] += 1
+    out = {"viewed": len(viewed), "started": len(started), "paid": len(paid), "by_source": by_source}
+    try:
+        out["alerts"] = rpc("dashboard_alert_plus", {"p_since": str(since) if since else None}) or {}
+    except Exception:
+        out["alerts"] = {}
     return out
 
 

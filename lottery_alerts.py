@@ -510,6 +510,65 @@ def render_welcome(sub, emailkit):
     return f"Find A Crib alerts: {where}", track_links(html, sub, "welcome"), text, post_unsub
 
 
+def render_unlock(sub, emailkit):
+    """The one email a new, non-Plus sign-up gets (2026-09-30, db/0037):
+    the alert is saved, and Plus switches it on. Also how an iPhone on an
+    older build — which only knows "alerts are on" — finds out."""
+    where = boro_phrase(sub["boroughs"])
+    blocks = [
+        {"type": "card", "heading": "Your alert is saved",
+         "body": f"New housing lotteries, waitlists and re-rentals in {where}{filter_words(sub)}. "
+                 "The moment you join Find A Crib Plus it switches on: an email and an "
+                 "iPhone notification the minute one opens, checked every 10 minutes."},
+        {"type": "card", "heading": "Why it's worth it",
+         "body": "Re-rentals are often first-come, first-served and gone in days. Plus also "
+                 "unlocks managing-agent phone numbers, landlord research and no ads. "
+                 "$4.99 a month, cancel anytime."},
+    ]
+    page_unsub, post_unsub = unsub_urls(sub["token"])
+    html, text = emailkit.render(
+        title=f"Turn on your alerts for {where}",
+        intro="Alerts are part of Find A Crib Plus.",
+        blocks=blocks,
+        cta=("Turn on alerts with Plus", f"{SITE}/?plus=alerts&src=alert_unlock"),
+        footer_note=f"Saved for {sub['email']}. Change or remove it any time at {SITE}/alerts/.",
+        unsub_url=page_unsub)
+    # Untracked on purpose: alert_clicks feeds the "Alert opens" tile, and an
+    # upsell click is not an alert being read. ?src=alert_unlock carries it.
+    return f"Turn on your Find A Crib alerts for {where}", html, text, post_unsub
+
+
+def unlock(key, args_dry=False):
+    """One "unlock" email per locked sign-up, under the day's one-email cap."""
+    from growth import emailkit, mailcap
+    subs = rpc("lottery_alerts_locked", {}, key) or []
+    done = []
+    for sub in subs[:50]:
+        sub["boroughs"] = list(sub.get("boroughs") or [])
+        sub["kinds"] = list(sub.get("kinds") or ["lottery", "rerental"])
+        subject, html, text, post_unsub = render_unlock(sub, emailkit)
+        print(f"unlock -> {sub['email']}")
+        if args_dry:
+            continue
+        try:
+            if not mailcap.claim(sub["email"], "unlock"):
+                print("   already emailed today — unlock waits for tomorrow")
+                continue
+        except Exception as e:
+            print(f"   ledger unreachable ({type(e).__name__}) — retry next run")
+            continue
+        try:
+            emailkit.send(sub["email"], subject, html, text, unsub_url=post_unsub)
+            done.append(sub["id"])
+        except Exception as e:
+            print(f"   FAILED {type(e).__name__}: {str(e)[:80]}")
+            mailcap.release(sub["email"])
+    if done:
+        rpc("lottery_alerts_mark_locked", {"p_ids": done}, key)
+    if subs:
+        print(f"unlock emailed {len(done)} of {len(subs)} locked")
+
+
 def digest_off_urls(token):
     return (f"{SITE}/alerts/#digestoff={token}",
             f"{SITE}/api/alerts/digest-off?t={token}")
@@ -976,6 +1035,7 @@ def welcome(args_dry=False):
     if done:
         rpc("lottery_alerts_mark", {"p_sent": [], "p_welcomed": done, "p_nudged": []}, key)
     print(f"welcomed {len(done)}")
+    unlock(key, args_dry)
 
 
 if __name__ == "__main__":

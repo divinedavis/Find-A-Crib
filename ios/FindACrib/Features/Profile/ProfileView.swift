@@ -91,7 +91,7 @@ struct ProfileView: View {
                                 .font(.se(14)).foregroundStyle(SE.ink3)
                         }
                     }.padding(16)
-                    .sheet(isPresented: $showPaywall) { PaywallView() }
+                    .sheet(isPresented: $showPaywall) { PaywallView(source: "profile") }
                     .sheet(isPresented: $showEmail, onDismiss: { emailForAlerts = false }) { EmailSignInView(offersSocialSignIn: emailForAlerts) }
                     .sheet(isPresented: $showAlerts) { AlertsSheet() }
                     .onChange(of: nav.showPaywall) { _, on in if on { showPaywall = true; nav.showPaywall = false } }

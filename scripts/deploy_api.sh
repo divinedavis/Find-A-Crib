@@ -23,7 +23,7 @@ LIVE=/root/findacrib-api
 # Exactly the modules gunicorn imports. Listed rather than globbed: the repo is
 # a website with a hundred scripts in its root, and the API directory should
 # hold the six files it runs.
-FILES=(api_server.py creator_outreach.py creator_mail_reader.py crease_metrics.py nemo_metrics.py trent_metrics.py marracat_metrics.py build_log.py building_report.py issue_api_key.py)
+FILES=(api_server.py creator_outreach.py business_checklist.py creator_mail_reader.py crease_metrics.py nemo_metrics.py trent_metrics.py marracat_metrics.py build_log.py building_report.py issue_api_key.py)
 
 ssh "$HOST" "set -e
   cd $REPO && git pull -q --ff-only

@@ -25,6 +25,7 @@ import trent_metrics         # Trent's Fresh Spaces traffic, same droplet
 import marracat_metrics      # Marracat, fetched from its own droplet
 import claude_usage          # Anthropic API spend, owner-only tab
 import creator_outreach      # owner's creator-review tracker, /dashboard/creators/
+import business_checklist    # owner's business & legal setup checklist, /dashboard/business/
 
 DATA_DIR = os.environ.get("DATA_DIR", ".")
 SUPABASE_URL = "https://dbaifotzwlxjvsxjohjt.supabase.co"
@@ -236,6 +237,7 @@ def gate():
        or request.path.startswith("/reports/") \
        or request.path.startswith("/embed/") \
        or request.path.startswith("/dashboard-creators") \
+       or request.path == "/dashboard-business" \
        or request.path == "/creators-ingest" \
        or request.path in ("/dashboard-metrics", "/dashboard-users",
                            "/dashboard-claude",  # added 2026-09-06: it was answering missing_api_key (401) on every dashboard load
@@ -3033,6 +3035,24 @@ def dashboard_creator_brief(cid, ext):
                      download_name=f"{cid}-brief.{ext}")
     resp.headers["Cache-Control"] = "private, no-store"
     return resp
+
+
+# ---------- business & legal checklist (owner only) ----------
+# /dashboard/business/ on divinedavis.com. The steps live in the page; this
+# stores which are done, notes and the per-app matrix, see business_checklist.py.
+@app.route("/dashboard-business", methods=["GET", "POST"])
+def dashboard_business():
+    if rate_limited("dashboard", 120, 3600):
+        return _too_many()
+    denied = _dashboard_denial(_dashboard_auth(), ("ok",))
+    if denied:
+        return denied
+    if request.method == "GET":
+        return jsonify(business_checklist.listing())
+    try:
+        return jsonify(business_checklist.update(request.get_json(silent=True)))
+    except ValueError as e:
+        return jsonify(error="bad_request", message=str(e)), 400
 
 
 @app.route("/creators-ingest", methods=["POST"])

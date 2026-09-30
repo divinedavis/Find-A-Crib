@@ -152,7 +152,15 @@ def js_errors(rows):
                                                                                # Safari: a response body cut off
                                                                                # mid-read (signal lost / page left);
                                                                                # our streamed download catches its own
-                                                                               "The I/O read operation failed."))
+                                                                               "The I/O read operation failed.",
+                                                                               # Safari's wording for a dynamic import()
+                                                                               # that failed. findacrib.com has no
+                                                                               # module scripts and no import(); the ad
+                                                                               # stack loads modules, and leaving or
+                                                                               # losing signal mid-load rejects it
+                                                                               # stacklessly (first seen 2026-09-30,
+                                                                               # 1 visitor, 1 s after landing).
+                                                                               "Importing a module script failed."))
                       # A rejected XMLHttpRequest object as the reason: this
                       # site never uses XHR (supabase-js and ours are fetch);
                       # Prebid in Mediavine's stack does (9/29).

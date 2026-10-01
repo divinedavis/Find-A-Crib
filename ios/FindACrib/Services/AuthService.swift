@@ -54,7 +54,7 @@ final class AuthService {
     /// Bedbug + rodent records became Find A Crib Plus on 2026-10-01 (owner);
     /// every account created before then keeps them. Same cutoff as the
     /// website's PEST_CUTOFF.
-    static let pestCutoff = ISO8601DateFormatter().date(from: "2026-10-01T18:00:00Z")!
+    static let pestCutoff = ISO8601DateFormatter().date(from: "2026-10-01T16:48:00Z")!   // the gate's commit (was 18:00Z, still in the future)
     var pestAccess: Bool {
         guard let user = session?.user else { return false }
         return hasPlus || user.createdAt < Self.pestCutoff

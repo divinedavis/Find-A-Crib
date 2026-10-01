@@ -175,6 +175,17 @@ def hdc_image(row):
     return src if src.startswith(HDC_HOST + "/") else None
 
 
+def hdc_flyer(row):
+    """Absolute URL of the row's PDF flyer on HDC's own host, or None."""
+    pdf = row.get("pdf")
+    if not pdf or not isinstance(pdf, str):
+        return None
+    url = urllib.parse.urljoin(HDC_HOST + "/", pdf.strip())
+    if not url.startswith(HDC_HOST + "/") or not urllib.parse.urlsplit(url).path.lower().endswith(".pdf"):
+        return None
+    return url
+
+
 def hdc_records(rows, agent, page_url=HDC_PAGE):
     """HDC rows -> featured_rerentals records (same keys, same money rules)."""
     import featured_rerentals as fr
@@ -209,8 +220,14 @@ def hdc_records(rows, agent, page_url=HDC_PAGE):
             "income_1p_max": None,
             "units": None,              # HDC lists developments, not a unit count
             "beds": hdc_beds(beds_copy),
-            "href": page_url,
-            "href_kind": "agent_page",
+            # The development's own flyer, not the board (owner, 2026-10-01:
+            # the button "took me to this generic link, not the actual
+            # listing"). HDC has no page per development, but every row has a
+            # flyer: the unit sizes, rent, income bands and how to apply
+            # (email / phone / mail to the marketing agent). That IS the
+            # listing; the board stays the fallback for a row without one.
+            "href": hdc_flyer(row) or page_url,
+            "href_kind": "flyer" if hdc_flyer(row) else "agent_page",
             "image_src": hdc_image(row),
             "_card": [x for x in (title, address, rent_copy and f"Monthly rent {rent_copy}",
                                   beds_copy, *extras) if x],

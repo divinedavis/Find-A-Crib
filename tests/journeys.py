@@ -532,6 +532,9 @@ class Runner:
         self.ok(page.evaluate("document.getElementById('viol-sheet').hidden"), 'rodent sheet must stay closed when signed out', j)
         sub = page.evaluate("document.getElementById('auth-submit').textContent").lower()
         self.ok('create' in sub or 'sign up' in sub, f'gate should open in sign-up mode, got {sub!r}', j)
+        # Since 2026-10-01 the records are Find A Crib Plus; the gate says so.
+        self.ok('part of Find A Crib Plus' in page.evaluate("document.getElementById('auth-sub').textContent"),
+                'the signed-out rodent gate should say the records are part of Plus', j)
         page.evaluate("document.querySelector('[data-auth=\"close\"]')?.click()"); time.sleep(0.3)
         self.click(page, '#detail-sheet [data-detail="bedbugs"]'); time.sleep(1)
         self.ok(not page.evaluate("document.getElementById('auth-modal').hidden") and page.evaluate("document.getElementById('viol-sheet').hidden"), 'bedbug record should be gated when signed out', j)
@@ -1395,6 +1398,18 @@ class Runner:
             self.ok(not seen, f'a Plus device still requested Mediavine: {seen[:1]}', j)
         finally:
             plus.close()
+        # A Plus member on a fresh browser (no fac.noads yet) gets the ads on
+        # that first load; once Plus is confirmed, html.fac-noads must hide
+        # every unit and free the space they held (owner, 2026-10-01).
+        page.evaluate("""(()=>{const d=document.createElement('div'); d.className='adhesion_wrapper';
+          d.style.cssText='position:fixed;left:0;right:0;bottom:0;height:90px'; d.innerHTML='<div class="adunit" style="height:90px"></div>';
+          document.body.appendChild(d);})()""")
+        time.sleep(0.6)
+        page.evaluate("document.documentElement.classList.add('fac-noads')"); time.sleep(0.8)
+        hidden = page.evaluate("[...document.querySelectorAll('.adhesion_wrapper, .adunit')].every(e=>e.getBoundingClientRect().height===0)")
+        adh = page.evaluate("getComputedStyle(document.documentElement).getPropertyValue('--ad-h').trim()")
+        self.ok(hidden and adh in ('0px', ''), f'confirmed Plus should hide loaded ads and free their space (--ad-h {adh!r})', j)
+        page.evaluate("document.documentElement.classList.remove('fac-noads'); document.querySelectorAll('.adhesion_wrapper').forEach(e=>e.remove())")
         j.notes.append('Plus device loads no ad script')
 
     def j_building_page_link(self, page, j, device):
@@ -1501,6 +1516,71 @@ class Runner:
             ctx.close()
         j.notes.append('default before config; GPC denies ads; EU banner')
 
+    PAYWALL_PERKS = ['Lottery alerts', 'Re-rental alerts', 'Bedbug records', 'Rodent records',
+                     'Agent phone numbers', 'No ads']
+
+    def paywall_state(self, page):
+        return page.evaluate("""(()=>{const m=document.getElementById('paywall-modal');
+          return {open: !m.hidden, title: document.getElementById('paywall-title').textContent,
+                  perks: [...document.querySelectorAll('#paywall-feats li b')].map(b=>b.textContent.trim()),
+                  lead: (document.querySelector('#paywall-feats li.pf-lead')||{}).dataset?.perk || null,
+                  invite: (document.getElementById('paywall-refer')||{}).textContent || ''}})()""")
+
+    def j_plus_gates(self, page, j, device):
+        """What Plus is and what it locks (owner, 2026-09-30 / 10-01):
+        - the paywall lists exactly six perks, in order, and never the four
+          that are Plus but unlisted (folders, saved searches, landlord
+          research) — phone numbers came back as the sixth;
+        - every paywall offers invite-a-friend for 2 months of Plus;
+        - no visible "free" anywhere on the page or the paywall;
+        - a NEW account (not grandfathered) gets the paywall — not the record —
+          from Bedbug filings and Rat inspections, and from Alerts;
+        - HPD pest violations stay open to everyone."""
+        self.boot(page)
+        page.evaluate("document.querySelector('a[href^=\"/alerts/\"]').click()"); time.sleep(0.8)
+        st = self.paywall_state(page)
+        self.ok(st['open'], 'Alerts should open the paywall (signed out)', j)
+        self.ok(st['perks'] == self.PAYWALL_PERKS, f'paywall perks should be exactly {self.PAYWALL_PERKS}, got {st["perks"]}', j)
+        self.ok(not any(x in ' '.join(st['perks']) for x in ('Folders', 'Saved searches', 'Landlord research')),
+                f'unlisted Plus perks must stay off the paywall: {st["perks"]}', j)
+        self.ok('2 months of Plus' in st['invite'], f'the paywall should offer invite-a-friend for 2 months: {st["invite"]!r}', j)
+        free = page.evaluate("""(()=>{const t=document.body.innerText; const m=t.match(/.{0,40}\\bfree\\b.{0,40}/i); return m?m[0]:null})()""")
+        self.ok(free is None, f'no visible "free" on the page or paywall (owner, 2026-09-30): {free!r}', j)
+        page.evaluate("document.querySelector('[data-paywall=\"close\"]')?.click()"); time.sleep(0.3)
+
+        email = f'journey-plus-{secrets.token_hex(6)}@example.com'
+        password = secrets.token_urlsafe(18)
+        st_, u = supabase_admin('POST', 'users', {'email': email, 'password': password, 'email_confirm': True})
+        if st_ not in (200, 201) or not u or not u.get('id'):
+            self.ok(False, f'could not create the throwaway account (HTTP {st_})', j)
+            return
+        uid = u['id']
+        try:
+            self.click(page, '#auth-btn'); time.sleep(0.6)
+            page.fill('#auth-email', email); page.fill('#auth-pass', password)
+            self.click(page, '#auth-submit')
+            if not self.wait_until(page, "document.getElementById('auth-btn').classList.contains('signed-in')", 20000):
+                self.ok(False, 'the throwaway account should sign in', j); return
+            time.sleep(2)   # let the membership check land
+            self.boot(page, f'/#d={BBL}')
+            self.ok(self.detail_open(page), 'the building sheet should open signed in', j)
+            for act, word in (('bedbugs', 'bedbug'), ('rodents', 'rat')):
+                self.click(page, f'#detail-sheet [data-detail="{act}"]'); time.sleep(1)
+                ps = self.paywall_state(page)
+                self.ok(ps['open'] and word in ps['title'].lower() and ps['lead'] == act,
+                        f'a new account tapping {act} should get the {act} paywall, got {ps["title"]!r} lead={ps["lead"]}', j)
+                self.ok(page.evaluate("document.getElementById('viol-sheet').hidden"), f'the {act} records must not open for a new account', j)
+                page.evaluate("document.querySelector('[data-paywall=\"close\"]')?.click()"); time.sleep(0.3)
+            self.click(page, '#detail-sheet [data-detail="pests"]'); self.sheet_loaded(page)
+            self.ok(page.evaluate("!document.getElementById('viol-sheet').hidden") and
+                    page.evaluate("document.getElementById('paywall-modal').hidden"),
+                    'HPD pest violations stay open (not Plus)', j)
+            page.evaluate("document.querySelectorAll('.viol-backdrop .sheet-close').forEach(b=>b.click())"); time.sleep(0.3)
+            j.notes.append('6 perks · invite · no "free" · new account gets bedbug/rodent paywall · pests open')
+        finally:
+            if supabase_admin('GET', f'users/{uid}')[0] == 200:
+                supabase_admin('DELETE', f'users/{uid}')
+
     def j_account_delete(self, page, j, device):
         """Profile → Delete account on the web (privacy audit 2026-09-27: the
         policy promised it; only the app had it). A throwaway account is made
@@ -1545,7 +1625,7 @@ class Runner:
             if supabase_admin('GET', f'users/{uid}')[0] == 200:
                 supabase_admin('DELETE', f'users/{uid}')
 
-    JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'pin_and_list',
+    JOURNEYS = ['plus_gates', 'land', 'search_address', 'search_area', 'search_zip_and_miss', 'pin_and_list',
                 'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'signin_modal', 'app_chip', 'app_qr_menu', 'boot_is_usable', 'city_chip',
                 'ad_tiles', 'list_follows_zoom', 'plus_no_ads', 'building_page_link', 'remove_ads_chip', 'overlays_clear_ad', 'outbound_links', 'status_chips', 'referral_gate',
                 'rent_report', 'legal_pages', 'comments_gate', 'landlords_gate', 'consent_mode', 'account_delete']

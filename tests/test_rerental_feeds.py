@@ -98,11 +98,22 @@ class HdcRecords(unittest.TestCase):
         self.assertIsNone(self.by_key["hdc 8777"]["beds"])       # 1-, 2-bed and studio
         self.assertEqual(self.by_key["hdc 9001"]["beds"], "studio")
 
-    def test_link_is_the_board_and_says_so(self):
+    def test_link_is_the_flyer_or_the_board_and_says_so(self):
+        # 2026-10-01: each development's own flyer is the listing; the board
+        # only when a row has no flyer (9001 is synthetic, without one).
         for r in self.recs:
-            self.assertEqual(r["href"], F.HDC_PAGE)
-            self.assertEqual(r["href_kind"], "agent_page")
             self.assertEqual(r["agent_page"], F.HDC_PAGE)
+            if r["_key"] == "hdc 9001":
+                self.assertEqual((r["href"], r["href_kind"]), (F.HDC_PAGE, "agent_page"))
+            else:
+                self.assertTrue(r["href"].startswith(F.HDC_HOST + "/sites/") and r["href"].endswith(".pdf"), r["href"])
+                self.assertEqual(r["href_kind"], "flyer")
+
+    def test_flyer_only_from_hdc(self):
+        self.assertIsNone(F.hdc_flyer({"pdf": "https://evil.example/x.pdf"}))
+        self.assertIsNone(F.hdc_flyer({"pdf": "/sites/default/files/x.docx"}))
+        self.assertIsNone(F.hdc_flyer({"pdf": None}))
+        self.assertEqual(F.hdc_flyer({"pdf": "/sites/a%20b.pdf"}), F.HDC_HOST + "/sites/a%20b.pdf")
 
     def test_photo_only_from_hdc(self):
         self.assertTrue(self.by_key["hdc 8779"]["image_src"].startswith("https://www.nychdc.com/"))
@@ -139,7 +150,8 @@ class DailyItems(unittest.TestCase):
         self.assertEqual(it["geo"], "1123 Ashford Street")
         self.assertEqual((it["boro"], it["rent_low"]), ("Brooklyn", 803))
         self.assertIsNone(items["hdc 9001"]["rent_low"])
-        self.assertEqual(items["hdc 8779"]["url"], F.HDC_PAGE)
+        self.assertTrue(items["hdc 8779"]["url"].endswith(".pdf"))   # the alert opens the flyer
+        self.assertEqual(items["hdc 9001"]["url"], F.HDC_PAGE)     # no flyer: the board
 
     def test_first_address(self):
         self.assertEqual(F.first_address("500 Vandalia Ave, East New York, NY 11239"),
@@ -228,7 +240,7 @@ class DailyChanges(unittest.TestCase):
                 feed = json.load(f)["items"]
         row = {i["key"]: i for i in feed}["hdc 8767"]
         self.assertEqual((row["boro"], row["hood"], row["rent_low"]), ("Bronx", "Concourse", 1614))
-        self.assertEqual(row["url"], F.HDC_PAGE)
+        self.assertIn("River%20Crest", row["url"])          # the development's flyer, not the board
         # the geocoder was asked about the street, not "River Crest Apartments — ..."
         self.assertIn("1164 River Avenue", [c.args[0] for c in po.call_args_list])
         self.assertEqual(len(feed), 5)          # 8779 was already on the board

@@ -106,7 +106,11 @@ struct FeaturedListing: Codable, Hashable, Identifiable, Sendable {
 
     /// The button says where the link goes: "Apply" onto a board of other
     /// people's apartments is a promise the link would not keep.
-    var actionTitle: String { hrefKind == "agent_page" ? "See their listings ↗" : "Apply on their site ↗" }
+    /// "flyer" (2026-10-01): HDC's developments have no page, only a PDF flyer
+    /// that is the listing (rent, income bands, how to apply).
+    var actionTitle: String {
+        switch hrefKind { case "agent_page": return "See their listings ↗"; case "flyer": return "See the listing ↗"; default: return "Apply on their site ↗" }
+    }
 
     /// The hand-off, tagged so the agent can see this traffic in their own
     /// analytics (the same utm the website sets). Never on an internal link,
@@ -118,7 +122,7 @@ struct FeaturedListing: Codable, Hashable, Identifiable, Sendable {
         if q.contains(where: { $0.name == "utm_source" }) { return comps.url }
         q += [.init(name: "utm_source", value: "findacrib.com"), .init(name: "utm_medium", value: "referral"),
               .init(name: "utm_campaign", value: "rerental_tile"),
-              .init(name: "utm_content", value: hrefKind == "agent_page" ? "agent_board" : "unit_listing")]
+              .init(name: "utm_content", value: hrefKind == "agent_page" ? "agent_board" : hrefKind == "flyer" ? "unit_flyer" : "unit_listing")]
         comps.queryItems = q
         return comps.url
     }

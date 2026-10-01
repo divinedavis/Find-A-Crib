@@ -720,6 +720,16 @@
      with a hairline, and its report/close icons (white, inside a shadow root)
      are inverted so they stay visible. Only the frame changes, never the ad. */
   html:not([data-theme="dark"]) .adhesion_wrapper { background-color: rgba(255,255,255,.97) !important; border-top: 1px solid var(--line); }
+  /* Plus members see no ads (owner, 2026-10-01: "aren't I a paying customer?
+     why am I seeing ads?"). The <head> loader skips Mediavine when the
+     fac.noads flag is already stored, but on a new browser — or after Safari
+     clears an unvisited site's storage — the ads load before membership is
+     known. Once Plus is confirmed, html.fac-noads hides every Mediavine unit
+     on this very load; the --ad-h observer then reads 0 and nothing stays
+     lifted for a banner that is gone. */
+  html.fac-noads .adhesion_wrapper, html.fac-noads .adunit, html.fac-noads .mv-ad-box,
+  html.fac-noads [id^="mediavine"], html.fac-noads [class*="mv-video"], html.fac-noads .grow-me-root,
+  html.fac-noads .mv-sticky-slot { display: none !important; }
   html:not([data-theme="dark"]) .adhesion_wrapper .adhesion_buttons { filter: invert(1); }
   .results-grid { flex: 1 1 auto; overflow-y: auto; padding: 14px 16px 24px; display: flex; flex-wrap: wrap; gap: 14px; align-content: flex-start; }
   .results-grid.empty-state { display: block; }
@@ -1724,7 +1734,7 @@
       <li data-perk="rerental_alerts"><span class="pf-ico">🏃</span><span><b>Re-rental alerts</b>When an HPD marketing agent re-rents an apartment in your boroughs — often first come, first served</span></li>
       <li data-perk="bedbugs"><span class="pf-ico">🛏️</span><span><b>Bedbug records</b>Every bedbug filing a landlord made for the building, year by year</span></li>
       <li data-perk="rodents"><span class="pf-ico">🐀</span><span><b>Rodent records</b>The Health Department's rat inspections, building by building</span></li>
-      <li data-perk="lotteries"><span class="pf-ico">🎟️</span><span><b>Your lotteries &amp; re-rentals</b>Every open one in your alert boroughs, soonest deadline first</span></li>
+      <li data-perk="phone"><span class="pf-ico">📞</span><span><b>Agent phone numbers</b>Call who actually runs the building — 11,000+ managing-agent numbers</span></li>
       <li data-perk="noads"><span class="pf-ico">🚫</span><span><b>No ads</b>Anywhere on Find A Crib — the map, the list and every building page</span></li>
     </ul>
     <div class="paywall-cta">
@@ -2719,6 +2729,7 @@ function favActive() {
     // Plus includes no ads: remember it on this device so the <head> loader
     // skips Mediavine from the next page on (only a confirmed answer changes it).
     if (plusKnown) { try { if (plusActive) localStorage.setItem('fac.noads', '1'); else localStorage.removeItem('fac.noads'); } catch (e) {} }
+    if (plusKnown) document.documentElement.classList.toggle('fac-noads', !!plusActive);
     { const np = document.getElementById('pill-noads'); if (np) np.hidden = !!plusActive; }
     if (plusUpsellPending) { plusUpsellPending = false; if (plusKnown && !plusActive) openPaywall(null, paywallSource); }
     // Membership is only known once this resolves, and the callers above run
@@ -5837,8 +5848,8 @@ function favActive() {
                promise the link doesn't keep — so the button says which it is. -->
           <a class="btn-primary" data-action="featured" style="flex:1"
              target="_blank" rel="noopener nofollow"
-             href="${esc(outbound(f.href, 'rerental_tile', f.href_kind === 'agent_page' ? 'agent_board' : 'unit_listing'))}">${f.href_kind === 'agent_page'
-               ? 'Find it on their listings page ↗' : 'Apply on their site ↗'}</a>
+             href="${esc(outbound(f.href, 'rerental_tile', f.href_kind === 'agent_page' ? 'agent_board' : f.href_kind === 'flyer' ? 'unit_flyer' : 'unit_listing'))}">${f.href_kind === 'agent_page'
+               ? 'Find it on their listings page ↗' : f.href_kind === 'flyer' ? 'See the listing ↗' : 'Apply on their site ↗'}</a>
         </div>
         ${alertLink(f.borough, 'rerental', 'rerental_tile')}
       </div>
@@ -7312,8 +7323,12 @@ function favActive() {
         return;
       }
       if ((act === 'bedbugs' || act === 'rodents') && !pestAccess()) {
-        track('outbound', { kind: 'gate_' + act + '_plus', bbl: rec.bbl });
-        openPaywall(null, act);
+        const decide = () => {
+          if (pestAccess()) { openOpenDataSheet(act, rec); return; }
+          track('outbound', { kind: 'gate_' + act + '_plus', bbl: rec.bbl });
+          openPaywall(null, act);
+        };
+        if (plusKnown) decide(); else refreshPlus().then(decide, decide);
         return;
       }
       openOpenDataSheet(act, rec); return;
@@ -7610,14 +7625,18 @@ function favActive() {
   function closeAuthModal() { authModal.hidden = true; }
 
   // Bedbug + rodent records became Plus on 2026-10-01 (owner); accounts created
-  // before this keep them. Membership not yet known reads as access, so a
-  // grandfathered or paying user is never shown the paywall by a slow check.
-  const PEST_CUTOFF = Date.parse('2026-10-01T18:00:00Z');
+  // before this keep them (decided locally, no wait). Everyone else needs a
+  // KNOWN membership: the caller waits for refreshPlus() when it is not in yet
+  // — "unknown = allowed" let a new account through by tapping before the
+  // check landed (caught by the plus_gates journey, 2026-10-01).
+  const PEST_CUTOFF = Date.parse('2026-10-01T16:48:00Z');   // the gate's commit; was 18:00Z, which was still in the future and let new accounts through
+  function pestGrandfathered() {
+    const born = Date.parse((authUser && authUser.created_at) || '');
+    return !isNaN(born) && born < PEST_CUTOFF;
+  }
   function pestAccess() {
     if (!authUser) return false;
-    if (plusActive || !plusKnown) return true;
-    const born = Date.parse(authUser.created_at || '');
-    return !isNaN(born) && born < PEST_CUTOFF;
+    return pestGrandfathered() || (plusKnown && plusActive);
   }
 
   // ---------- Find A Crib Plus paywall ----------

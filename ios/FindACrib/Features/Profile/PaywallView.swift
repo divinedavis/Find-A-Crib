@@ -36,13 +36,13 @@ struct PaywallView: View {
             }
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    // The six perks (owner, 2026-10-01). Phone numbers, landlord
-                    // research, saved searches and folders stay Plus but unlisted.
+                    // The six perks (owner, 2026-10-01). Landlord research, saved
+                    // searches and folders stay Plus but unlisted.
                     perk("bell.fill", "Lottery alerts", "The minute a Housing Connect or HCR lottery opens in your boroughs — a notification and an email.")
                     perk("figure.run", "Re-rental alerts", "When an HPD marketing agent re-rents an apartment in your boroughs — often first come, first served.")
                     perk("bed.double.fill", "Bedbug records", "Every bedbug filing a landlord made for the building, year by year.")
                     perk("hare.fill", "Rodent records", "The Health Department's rat inspections, building by building.")
-                    perk("ticket.fill", "Your lotteries & re-rentals", "Every open one in your alert boroughs, soonest deadline first.")
+                    perk("phone.fill", "Agent phone numbers", "Call who actually runs the building — 11,000+ managing-agent numbers.")
                     perk("nosign", "No ads", "No ads in the app or on findacrib.com.")
 
                     if auth.hasPlus {
@@ -113,7 +113,7 @@ struct PaywallView: View {
                 .buttonStyle(.plain).disabled(inviteBusy)
                 .accessibilityIdentifier("paywall-refer")
             }
-            if let inviteError { Text(inviteError).font(.se(14)).foregroundStyle(SE.bad) }
+            if let inviteError { Text(inviteError).font(.se(14)).foregroundStyle(SE.bad).accessibilityIdentifier("paywall-refer-error") }
             Text("Your friend gets 2 months when they create their account from your link, and so do you. Invite more friends and the months stack.")
                 .font(.se(13)).foregroundStyle(SE.ink3)
         }

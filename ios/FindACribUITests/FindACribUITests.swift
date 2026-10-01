@@ -436,12 +436,17 @@ final class FindACribUITests: XCTestCase {
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--paywall"]
         app.launch()
         let refer = app.buttons["paywall-refer"]
-        if !refer.waitForExistence(timeout: 15) { app.swipeUp() }
-        XCTAssertTrue(refer.waitForExistence(timeout: 5), "the Plus paywall offers invite-a-friend")
+        XCTAssertTrue(refer.waitForExistence(timeout: 15), "the Plus paywall offers invite-a-friend")
         XCTAssertTrue(refer.label.contains("2 months of Plus"), "it says what the reward is: \(refer.label)")
+        // On iPad the six-perk sheet leaves this button half below the sheet's
+        // edge; a tap there misses and lands outside (build 104). Scroll the
+        // sheet's own scroll view first, then tap.
+        let sheet = app.scrollViews.containing(.button, identifier: "paywall-refer").firstMatch
+        if sheet.exists { sheet.swipeUp(); sheet.swipeUp() }
+        let err = app.staticTexts["paywall-refer-error"]
         refer.tap()
-        XCTAssertTrue(app.staticTexts["Sign in first, then invite a friend."].waitForExistence(timeout: 5),
-                      "signed out, it asks for sign-in")
+        XCTAssertTrue(err.waitForExistence(timeout: 5), "signed out, it asks for sign-in")
+        XCTAssertEqual(err.label, "Sign in first, then invite a friend.")
         XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'free'")).firstMatch.exists,
                        "no 'free' wording on the paywall")
     }

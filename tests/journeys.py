@@ -102,7 +102,7 @@ JOURNEY_EVENTS = {
     'no_chip_row_flash':    [],
     'memory':               [],
     'alerts_page':          [],
-    'signin_modal':         ['signin'],
+    'signin_modal':         ['signin', 'signin_wall'],
     'app_chip':             [],
     'app_qr_menu':          ['app_qr_open'],
     'boot_is_usable':       [],

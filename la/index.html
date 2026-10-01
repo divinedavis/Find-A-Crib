@@ -2747,7 +2747,7 @@ function favActive() {
   // traffic). Alerts, phones, research, folders, and saved searches stay Plus.
   function gateSave(isUnsave) {
     if (isUnsave) return true;
-    if (!authUser) { openAuthModal('Create an account to save this building.'); setAuthMode('signup'); return false; }
+    if (!authUser) { openAuthModal('Create an account to save this building.', 'save'); setAuthMode('signup'); return false; }
     return true;
   }
   async function persistFav(bbl, on) {
@@ -2975,7 +2975,7 @@ function favActive() {
       if (e.target.closest('[data-nudge-cta]')) {
         clearTimeout(timer); t.remove();
         track('outbound', { kind: 'nudge_cta' });
-        openAuthModal('Create an account to save the buildings you like — it takes ten seconds.');
+        openAuthModal('Create an account to save the buildings you like — it takes ten seconds.', 'nudge');
       } else if (e.target.closest('.ft-close')) { clearTimeout(timer); t.remove(); }
     });
     track('outbound', { kind: 'signup_nudge' });
@@ -3722,7 +3722,7 @@ function favActive() {
     const a = e.target.closest && e.target.closest('[data-op-signin]');
     if (!a) return;
     e.preventDefault();
-    openAuthModal('Sign in to see who owns and manages this building.');
+    openAuthModal('Sign in to see who owns and manages this building.', 'owner_info');
   });
 
   async function loadOperator(bbl, attempt = 0) {
@@ -4585,7 +4585,7 @@ function favActive() {
   // view's chip bar (renderFolderBar), next to the folders and the saved
   // searches themselves — one place for everything a person has kept.
   async function saveCurrentSearch() {
-    if (!authUser) { openAuthModal('Create an account or sign in to continue — saved searches are part of Plus.'); return; }
+    if (!authUser) { openAuthModal('Create an account or sign in to continue — saved searches are part of Plus.', 'saved_search'); return; }
     if (!plusActive) { openPaywall(null, 'saved_search'); return; }
     const name = (prompt('Name this search (e.g. "BK 2BR, no violations"):') || '').trim();
     if (!name) return;
@@ -5234,7 +5234,7 @@ function favActive() {
     } else if (act === 'beds') {
       openFilters();   // beds live in the filters modal
     } else if (act === 'save') {
-      openAuthModal('Create an account to save the buildings you like.');
+      openAuthModal('Create an account to save the buildings you like.', 'save');
     } else if (act === 'relax') {
       keepFiltersFor = '';
       applyFilters();
@@ -5332,7 +5332,7 @@ function favActive() {
   async function openResearch(btn) {
     const bbl = btn.dataset.bbl;
     if (!supaClient) return;
-    if (!authUser) { openAuthModal('Create an account or sign in to continue — landlord research is part of Plus.'); return; }
+    if (!authUser) { openAuthModal('Create an account or sign in to continue — landlord research is part of Plus.', 'landlord_research'); return; }
     if (!plusActive) { openPaywall(null, 'research'); return; }
     const orig = btn.textContent;
     btn.disabled = true; btn.textContent = 'Looking up portfolio…';
@@ -5356,7 +5356,7 @@ function favActive() {
   async function revealAgentPhone(btn) {
     const bbl = btn.dataset.bbl;
     if (!supaClient) return;
-    if (!authUser) { pendingPhoneBbl = bbl; openAuthModal('Create an account or sign in to continue — phone numbers are part of Plus.'); return; }
+    if (!authUser) { pendingPhoneBbl = bbl; openAuthModal('Create an account or sign in to continue — phone numbers are part of Plus.', 'phone'); return; }
     const orig = btn.textContent;
     btn.disabled = true; btn.textContent = '…';
     try {
@@ -7284,8 +7284,8 @@ function favActive() {
     const rec = detailRec;
     if (act === 'search') return; // link
     if (act === 'close') { closeDetail(); return; }
-    if (act === 'getplus') { openAuthModal('Create an account — invite a friend and you both get 2 months of Find A Crib Plus, on us.'); return; }
-    if (act === 'comment-signin') { openAuthModal('Sign in to comment on buildings.'); return; }
+    if (act === 'getplus') { openAuthModal('Create an account — invite a friend and you both get 2 months of Find A Crib Plus, on us.', 'referral'); return; }
+    if (act === 'comment-signin') { openAuthModal('Sign in to comment on buildings.', 'comment'); return; }
     if (act === 'profile') { openProfile(); return; }
     if (act === 'fav') {
       if (!gateSave(FAVS.has(rec.bbl))) return;
@@ -7318,7 +7318,7 @@ function favActive() {
       // gate (as the account gate always was).
       if ((act === 'bedbugs' || act === 'rodents') && !authUser) {
         track('outbound', { kind: 'gate_' + act, bbl: rec.bbl });
-        openAuthModal(`${act === 'bedbugs' ? 'Bedbug' : 'Rodent inspection'} records are part of Find A Crib Plus. Create an account to get started.`);
+        openAuthModal(`${act === 'bedbugs' ? 'Bedbug' : 'Rodent inspection'} records are part of Find A Crib Plus. Create an account to get started.`, act);
         setAuthMode('signup');
         return;
       }
@@ -7486,7 +7486,7 @@ function favActive() {
     }
     const like = e.target.closest('[data-clike]');
     if (like) {
-      if (!authUser) { openAuthModal('Sign in to like comments.'); return; }
+      if (!authUser) { openAuthModal('Sign in to like comments.', 'comment_like'); return; }
       like.disabled = true;
       const id = like.dataset.clike;
       try {
@@ -7506,7 +7506,7 @@ function favActive() {
     }
     const rep = e.target.closest('[data-creply]');
     if (rep) {
-      if (!authUser) { openAuthModal('Sign in to reply to comments.'); return; }
+      if (!authUser) { openAuthModal('Sign in to reply to comments.', 'comment_reply'); return; }
       mountReplyForm(rep.dataset.creply);
       return;
     }
@@ -7615,7 +7615,11 @@ function favActive() {
     showAuthError('');
   }
   const AUTH_SUB_DEFAULT = "Create an account to save buildings you like and pick up where you left off on any device.";
-  function openAuthModal(reminder) {
+  // `wall` names the journey that hit the sign-up wall (save, alerts, phone…),
+  // logged as signin_wall{for} so the dashboard can rank walls — before
+  // 2026-10-01 only four of the nineteen callers left any trace.
+  function openAuthModal(reminder, wall) {
+    if (authModal.hidden) track('signin_wall', { for: wall || 'other' });
     setAuthMode('signin');
     const sub = document.getElementById('auth-sub');
     if (sub) sub.textContent = reminder || AUTH_SUB_DEFAULT;
@@ -7693,7 +7697,7 @@ function favActive() {
     if (!authUser) {
       closePaywall();
       if (paywallSource === 'alerts') alertsResume = alertsNext;   // after sign-in: grandfathered -> page, else paywall again
-      openAuthModal('Sign in to subscribe to Find A Crib Plus.'); return;
+      openAuthModal('Sign in to subscribe to Find A Crib Plus.', 'subscribe'); return;
     }
     if (paywallSource === 'alerts' && alertsNext) { try { sessionStorage.setItem('fac.alertsNext', alertsNext); } catch (e) {} }
     btn.disabled = true; btn.textContent = 'Starting checkout…';
@@ -7779,7 +7783,7 @@ function favActive() {
     e.preventDefault();
     closePaywall();
     alertsResume = alertsNext;
-    openAuthModal('Sign in with the email your alerts go to.');
+    openAuthModal('Sign in with the email your alerts go to.', 'paywall_signin');
   });
   // Landlords on a laptop, signed out (owner, 2026-09-21): the sign-up modal
   // instead of the directory page, then on to it once the account exists.
@@ -7792,7 +7796,7 @@ function favActive() {
     e.preventDefault();
     authGateNext = a.getAttribute('href');
     track('outbound', { kind: 'gate_landlords' });
-    openAuthModal(LANDLORDS_GATE_MSG); setAuthMode('signup');
+    openAuthModal(LANDLORDS_GATE_MSG, 'landlords'); setAuthMode('signup');
   }, true);
   // ---------- arriving from /directory/ with a portfolio to open ----------
   // ?portfolio=<kind>:<key> is a click on a name in the landlord directory.
@@ -7820,7 +7824,7 @@ function favActive() {
     p.delete('portfolio');
     history.replaceState({}, '', location.pathname + (p.toString() ? '?' + p : ''));
     if (!authUser) {
-      openAuthModal('Sign in to open a landlord\u2019s portfolio on the map.');
+      openAuthModal('Sign in to open a landlord\u2019s portfolio on the map.', 'portfolio');
       return;
     }
     try {
@@ -8180,7 +8184,7 @@ function favActive() {
         // The line says "create a free account", so open the form on sign-up
         // rather than sign-in — the gate on the bedbug and rodent records has
         // done this since 2026-09-07 and this one was left behind.
-        openAuthModal('Create an account, then invite a friend — you both get 2 months of Plus, on us.');
+        openAuthModal('Create an account, then invite a friend — you both get 2 months of Plus, on us.', 'referral');
         setAuthMode('signup');
         return;
       }
@@ -8283,7 +8287,7 @@ function favActive() {
     if (authGatePending) {
       authGatePending = false;
       if (authUser && authGateNext) { const n = authGateNext; authGateNext = null; location.href = n; }
-      else if (!authUser) { openAuthModal(ALERTS_GATE_MSG); setAuthMode('signup'); }
+      else if (!authUser) { openAuthModal(ALERTS_GATE_MSG, 'alerts'); setAuthMode('signup'); }
     }
     // Pay conversion (dashboard): one plus_purchase per completed checkout,
     // credited to the paywall that started it.
@@ -8378,7 +8382,7 @@ function favActive() {
     });
     authBtn.addEventListener('click', () => {
       if (authUser) openProfile();
-      else openAuthModal();
+      else openAuthModal(undefined, 'header');
     });
     authModal.addEventListener('click', e => {
       if (e.target === authModal || e.target.closest('[data-auth="close"]')) closeAuthModal();

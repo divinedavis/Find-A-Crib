@@ -438,11 +438,15 @@ final class FindACribUITests: XCTestCase {
         for perk in ["Re-rental alerts", "Bedbug records", "Rodent records", "Agent phone numbers", "No ads"] {
             XCTAssertTrue(app.staticTexts[perk].exists, "paywall perk missing: \(perk)")
         }
+        // Scope to the paywall sheet: Profile (behind it) has its own "Saved
+        // searches" row, which is not a paywall perk (build 104).
+        let sheet = app.scrollViews.containing(.staticText, identifier: "Lottery alerts").firstMatch
+        XCTAssertTrue(sheet.exists, "the paywall's scroll view")
         for gone in ["Saved searches", "Landlord research", "Folders", "Your lotteries & re-rentals"] {
-            XCTAssertFalse(app.staticTexts[gone].exists, "unlisted perk on the paywall: \(gone)")
+            XCTAssertFalse(sheet.staticTexts[gone].exists, "unlisted perk on the paywall: \(gone)")
         }
         XCTAssertFalse(app.buttons["paywall-refer"].exists, "no in-app invite-a-friend button (App Review 3.1.1)")
-        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'free'")).firstMatch.exists,
+        XCTAssertFalse(sheet.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'free'")).firstMatch.exists,
                        "no 'free' wording on the paywall")
     }
 

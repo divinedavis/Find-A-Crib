@@ -77,36 +77,31 @@ Privacy Policy: https://findacrib.com/privacy/
 Find A Crib is an independent, informational tool. It is not a broker, does not list apartments, and takes no fee. Data: NYS Homes and Community Renewal rent-stabilization register (2024), NYC HPD open data, HUD FY2026 Fair Market Rents, HousingSearch.ny.gov, advertised rents from Zumper, LA County Assessor parcel data under LAHD's RSO criteria, the SF Rent Board Housing Inventory via DataSF, and the DC DHCD RentRegistry.
 """
 
-WHATS_NEW = """Find A Crib is now an iPad app as well as an iPhone one — the same maps and listings on a bigger screen.
+WHATS_NEW = """The Lotteries tab now lists every open lottery and re-rental in all five boroughs to everyone — no account needed to browse.
 
-More cities: Chicago, Miami, Atlanta and Philadelphia income-restricted buildings, plus New Jersey affordable-housing drawings, with Lotteries tabs for Los Angeles, San Francisco and Miami-Dade too.
+Borough alerts: pick your boroughs and get a notification and an email the minute a lottery or re-rental opens.
 
-New Events tab: the City's own tenant clinics, housing workshops and lottery information sessions in New York.
+Bedbug and rodent records on New York building pages are now part of Find A Crib Plus, alongside managing-agent phone numbers and no ads.
 
-Pest violations on every New York building page: the roaches, mice, rats or bedbugs an HPD inspector confirmed this year.
-
-More re-rentals, including NYC HDC's official list, filterable by bedrooms, with photos on lottery cards.
-
-Find A Crib Plus now includes no ads.
+NYC HDC re-rentals open their official flyer.
 """
 
-REVIEW_NOTES = """VERSION 1.2.5 (build __BUILD__) — iPad, more cities, an Events tab, pest violations, and ads in the results feed
+REVIEW_NOTES = """VERSION 1.2.6 (build __BUILD__) — Lotteries open to everyone, bedbug and rodent records in Plus
 
-WHAT CHANGED SINCE 1.2.3
-1. iPad. The app is now universal (iPhone + iPad) with an iPad layout: two columns of lotteries and re-rentals, quick filters beside the search field, the same tabs. No iPad-only features and no new permissions.
-2. More places: Chicago, Miami-Dade, Atlanta and Philadelphia buildings; Lotteries tabs for LA, SF, Miami-Dade and New Jersey (cards open the official listing in Safari).
-3. A fifth tab, "Events" (New York only): tenant clinics, housing workshops and lottery information sessions from the City's public events calendar (api.nyc.gov), with a link to the City's page in Safari.
-4. Building pages gained "Pest violations" (HPD violations for roaches, mice, rats or bedbugs this year, NYC Open Data). Violations and complaints stay behind a free account, as in 1.2.3.
-5. Lotteries tab: a Beds filter; photos on lottery cards; re-rentals now also come from NYC HDC's official re-rental list.
-6. Comments show the most-liked comment first with one reply under each. Reporting, blocking, author deletion and the word filter are unchanged from 1.2.3.
-7. ADVERTISING (new third-party SDK: Google Mobile Ads / AdMob). A 300x250 ad, labelled "Sponsored", can take the place of a re-rental card in the Search results feed (the 3rd card, then one every 8-15 cards). Ads are requested NON-PERSONALIZED (npa=1); the app does not track, never reads the IDFA and shows no App Tracking Transparency prompt. Live ads run on the US storefront only. Find A Crib Plus subscribers see no ads. The App Privacy label declares the SDK's data (device ID, coarse location, advertising data, product interaction, performance data), none of it used for tracking, and the app ships a privacy manifest.
-No new permissions.
+WHAT CHANGED SINCE 1.2.5
+1. Lotteries tab: lists every borough's open lotteries and re-rentals to everyone, signed in or not (it used to ask for an account first). Turning on borough alerts needs an account (Sign in with Apple, Google or email) and no purchase.
+2. Find A Crib Plus (the existing auto-renewable subscription, $4.99/month, StoreKit only) now lists four perks on its paywall: Bedbug records, Rodent records, Agent phone numbers, No ads. Bedbug and rodent records on New York building pages are Plus for accounts created from 1 Oct 2026; accounts from before keep them. HPD pest violations stay open to everyone.
+3. NYC HDC re-rental cards open HDC's official flyer in Safari.
+No new permissions, no new SDKs, no new data types.
+
+TO SEE THE PLUS PAYWALL
+Sign in (any method), open any New York building from Search, and tap the managing agent's phone number; or Profile > "Get Find A Crib Plus". The paywall shows the price from StoreKit, Subscribe, Restore purchases, and the Terms of Use / Privacy links. There is no invite-a-friend or other non-StoreKit route in the app.
 
 TO SEE THE IPAD LAYOUT
 Open the app on an iPad in either orientation: Search, Lotteries, Events, My Activity and Profile all work, and results lay out in two columns.
 
-TO SEE AN AD
-Open Search, run any search while signed out (or signed in without Plus) and scroll the results; the ad appears in the 3rd card's place when Google has one to serve.
+ADVERTISING
+Unchanged from 1.2.5: Google Mobile Ads, non-personalized (npa=1), no tracking, no ATT prompt, US storefront only; Plus subscribers see no ads. To see one: open Search signed out (or without Plus) and scroll; the ad takes the 3rd card's place when Google has one.
 
 NOTIFICATIONS
 Once, a few seconds after launch, while permission is undetermined, the app shows its own card ("Get alerts on this phone?") explaining the ask; "Turn on" shows the iOS dialog, "Not now" waits a week, a system decline is never re-asked. Only borough alerts the user subscribed to — no marketing. Tapping one opens a list of that alert's listings.

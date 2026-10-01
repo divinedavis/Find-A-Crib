@@ -234,7 +234,13 @@
      the adhesion observer; 0 without a banner). Every overlay and every panel
      sized by the viewport uses this, so nothing ends under the ad (owner,
      2026-09-29: the building popup's bottom was cut off). */
-  :root { --avail-h: calc(100vh - var(--ad-h, 0px)); }
+  /* --ad-clear: what overlays keep clear of Mediavine's sticky banner. --ad-h
+     is the banner box the page can measure; on real Safari and iPhones
+     Mediavine also draws a ~20px close bar (the ✕ strip) ABOVE that box, which
+     covered the paywall's last line (owner, 2026-10-01). So: the banner plus
+     24px whenever one is showing (min() is 0 with no banner). */
+  :root { --ad-clear: calc(var(--ad-h, 0px) + min(var(--ad-h, 0px), 24px));
+          --avail-h: calc(100vh - var(--ad-clear)); }
   html, body { margin: 0; height: 100%; font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: var(--ink); background: var(--surface); }
   a { color: var(--blue); text-decoration: none; }
 
@@ -298,7 +304,7 @@
     display: flex; align-items: center; justify-content: center;
     font-size: 0; background: var(--surface-2); }
   /* sign in / sign up modal */
-  .auth-backdrop { position: fixed; inset: 0 0 var(--ad-h, 0px) 0; z-index: 1900; background: rgba(0,0,0,0.45);
+  .auth-backdrop { position: fixed; inset: 0 0 var(--ad-clear, 0px) 0; z-index: 1900; background: rgba(0,0,0,0.45);
     display: flex; align-items: center; justify-content: center; padding: 16px; }
   .auth-backdrop[hidden] { display: none; }
   .auth-card { background: var(--surface); border-radius: 16px; width: 100%; max-width: 380px; padding: 24px 20px 20px;
@@ -520,6 +526,21 @@
      laptop windows). */
   .paywall-cta { position: sticky; bottom: -32px; background: var(--surface); padding: 12px 0 4px; margin: 0 -4px; padding-left: 4px; padding-right: 4px; }
   .paywall-cta .paywall-price { margin-bottom: 10px; }
+  /* Short laptop windows: tighter type so the perks aren't all hidden behind
+     the pinned price + buttons. */
+  @media (max-height: 800px) and (min-width: 721px) {
+    .auth-card.paywall-card { padding: 26px 36px 24px; }
+    .paywall-card h2 { font-size: 30px; }
+    .paywall-card .paywall-sub { font-size: 17px; margin-bottom: 14px; }
+    .paywall-feats { gap: 8px; margin-bottom: 16px; }
+    .paywall-feats li { padding: 10px 14px; font-size: 14px; }
+    .paywall-feats li b { font-size: 16px; }
+    .paywall-feats li .pf-ico { font-size: 22px; }
+    .paywall-price .amt { font-size: 34px; }
+    .paywall-cta { bottom: -24px; padding-top: 8px; }
+    .paywall-card #paywall-subscribe { padding: 14px; font-size: 18px; }
+    .paywall-refer { padding: 11px; font-size: 15px; margin-top: 8px; }
+  }
   @media (max-width: 720px) {
     .paywall-cta { bottom: -22px; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 12px;
       box-shadow: 0 -10px 16px -12px rgba(0,0,0,.25); }
@@ -567,7 +588,7 @@
   .ref-cta:hover { opacity: .88; }
   .ref-cta svg { width: 17px; height: 17px; flex: 0 0 auto; }
   /* violations popup — centred card on desktop, bottom sheet on phones; sits above the detail sheet */
-  .viol-backdrop { position: fixed; inset: 0 0 var(--ad-h, 0px) 0; z-index: 3600; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .viol-backdrop { position: fixed; inset: 0 0 var(--ad-clear, 0px) 0; z-index: 3600; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; padding: 24px; }
   .viol-backdrop[hidden] { display: none; }
   .viol-panel { position: relative; background: var(--surface); color: var(--ink); width: 100%; max-width: 560px; max-height: min(calc(var(--avail-h) * .8), 720px);
     border-radius: 16px; padding: 18px 18px 16px; display: flex; flex-direction: column; box-shadow: 0 18px 60px rgba(0,0,0,.3); }
@@ -1151,7 +1172,7 @@
     #mobile-fab .fab-ico { font-size: 16px; }
 
     /* sort bottom sheet */
-    .sheet-backdrop { position: fixed; inset: 0 0 var(--ad-h, 0px) 0; z-index: 1700; background: rgba(0,0,0,0.4); display: flex; align-items: flex-end; }
+    .sheet-backdrop { position: fixed; inset: 0 0 var(--ad-clear, 0px) 0; z-index: 1700; background: rgba(0,0,0,0.4); display: flex; align-items: flex-end; }
     .sheet-backdrop[hidden] { display: none; }
     .sheet { position: relative; background: var(--surface); width: 100%; border-radius: 16px 16px 0 0;
       padding: 8px 16px calc(24px + env(safe-area-inset-bottom) + var(--ad-h, 0px)); }
@@ -1227,7 +1248,7 @@
   /* building detail (Zillow-style PDP): full-screen page on mobile,
      centered popup over a dimmed backdrop on desktop (click outside closes) */
   #detail-sheet {
-    position: fixed; inset: 0 0 var(--ad-h, 0px) 0; z-index: 1800;
+    position: fixed; inset: 0 0 var(--ad-clear, 0px) 0; z-index: 1800;
     display: flex;
   }
   #detail-sheet[hidden] { display: none; }

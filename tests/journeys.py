@@ -503,9 +503,18 @@ class Runner:
         # Six Socrata queries; the slow one has taken 3s+, so wait for the
         # counts rather than a fixed pause (flaked on 2026-09-09).
         # every count, and the bedbug/rodent "this year" verdicts, which arrive from their own queries
-        self.wait_until(page, "[...document.querySelectorAll('#detail-sheet [data-oc]')].every(e=>e.textContent.trim().startsWith('\u00b7') && (!/pests|bedbugs|rodents/.test(e.dataset.oc) || /this year|filed period/.test(e.textContent)))")
+        # In the 2x2 grid (2026-10-01) a count sits on its own line with no
+        # leading separator; evictions/housing court keep " · n".
+        self.wait_until(page, "[...document.querySelectorAll('#detail-sheet [data-oc]')].every(e=>/^\u00b7? ?\\d/.test(e.textContent.trim()) && (!/pests|bedbugs|rodents/.test(e.dataset.oc) || /this year|filed period/.test(e.textContent)))")
         counts = page.evaluate("Object.fromEntries([...document.querySelectorAll('#detail-sheet [data-oc]')].map(e=>[e.dataset.oc, e.textContent.trim()]))")
-        self.ok(all(v.startswith('·') for v in counts.values()), f'open-data counts should fill in on the buttons within 20s, got {counts}', j)
+        self.ok(all(re.match(r'^·? ?\d', v) for v in counts.values()), f'open-data counts should fill in on the buttons within 20s, got {counts}', j)
+        grid = page.evaluate("""(()=>{const g=document.querySelector('#detail-sheet .d-grid4'); if(!g) return null;
+          const r=[...g.children].map(b=>b.getBoundingClientRect()); return {n:r.length, cols:getComputedStyle(g).gridTemplateColumns.split(' ').length,
+          row1:Math.abs(r[0].top-r[1].top)<2, row2:Math.abs(r[2].top-r[3].top)<2, stacked:r[2].top>=r[0].bottom-1,
+          keys:[...g.children].map(b=>b.dataset.detail)}})()""")
+        self.ok(grid and grid['n'] == 4 and grid['cols'] == 2 and grid['row1'] and grid['row2'] and grid['stacked']
+                and grid['keys'] == ['violations', 'pests', 'bedbugs', 'rodents'],
+                f'violations, pests, bedbugs and rats should be a 2x2 grid in that order (owner, 2026-10-01): {grid}', j)
         tones = page.evaluate("Object.fromEntries(['pests','bedbugs','rodents'].map(k=>[k, document.querySelector('#detail-sheet [data-detail=\"'+k+'\"]').className]))")
         self.ok(all('d-viol' in v for v in tones.values()), f'pest, bedbug and rodent buttons should carry the violations styling, got {tones}', j)
         for k in ('pests', 'bedbugs', 'rodents'):

@@ -1386,6 +1386,13 @@
   .d-actions .d-viol.red { background: var(--bad-bg); color: var(--bad-ink); border-color: var(--bad-ink); }
   .d-actions .d-viol.yellow { background: var(--warn-bg); color: var(--warn-ink); border-color: var(--warn-ink); }
   .d-actions .d-viol.green { background: var(--ok-bg); color: var(--ok-ink); border-color: var(--ok-ink); }
+  /* The four records as a 2x2 grid of square-ish tiles (owner, 2026-10-01). */
+  .d-actions.d-grid4 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .d-grid4 button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    min-height: 96px; padding: 12px 10px; border-radius: 12px; white-space: normal; line-height: 1.25; }
+  .d-grid4 button b { font-size: 15px; font-weight: 800; }
+  .d-grid4 button small { font-size: 11px; font-weight: 600; opacity: .75; }
+  .d-grid4 button [data-oc], .d-grid4 button .d-tile-sub { display: block; font-size: 12.5px; font-weight: 600; }
   /* report CTA + its explainer stack; they are siblings inside a .d-actions flex row */
   .d-report-row { flex-direction: column; align-items: stretch; }
   .d-report-row button { white-space: normal; }
@@ -6746,12 +6753,14 @@ function favActive() {
            removed 2026-09-05 as a duplicate). The listing link is first: it is
            the single most-clicked thing on the site (60% of all outbound
            clicks) and used to sit several screens down under the HPD record. -->
-      ${IS_NYC ? `<div class="d-actions" data-sec="actions">
-        <button class="d-viol ${viol.tone}" data-detail="violations" title="${esc(viol.title)}">${viol.label}</button>
-      </div>
-      <div class="d-actions" style="padding-top:0"><button class="d-viol" data-detail="pests" title="HPD violations for roaches, mice, rats or bedbugs — what an inspector confirmed in an apartment">Pest violations<span data-oc="pests"></span></button></div>
-      <div class="d-actions" style="padding-top:0"><button class="d-viol" data-detail="bedbugs" title="The landlord's own annual bedbug report to HPD — not an inspection, and about a year behind">Bedbug filings (landlord's)<span data-oc="bedbugs"></span></button></div>
-      <div class="d-actions" style="padding-top:0"><button class="d-viol" data-detail="rodents" title="Health Department rat inspections — only where the city inspected">Rat inspections (Health Dept.)<span data-oc="rodents"></span></button></div>` : ''}
+      ${IS_NYC ? `<!-- Violations, pests, bedbugs and rats: one 2x2 grid of tiles
+           (owner, 2026-10-01), name on top, count and verdict under it. -->
+      <div class="d-actions d-grid4" data-sec="actions">
+        <button class="d-viol ${viol.tone}" data-detail="violations" title="${esc(viol.title)}">${violTile(viol.label)}</button>
+        <button class="d-viol" data-detail="pests" title="HPD violations for roaches, mice, rats or bedbugs — what an inspector confirmed in an apartment"><b>Pest violations</b><span data-oc="pests"></span></button>
+        <button class="d-viol" data-detail="bedbugs" title="The landlord's own annual bedbug report to HPD — not an inspection, and about a year behind"><b>Bedbug filings</b><small>landlord's</small><span data-oc="bedbugs"></span></button>
+        <button class="d-viol" data-detail="rodents" title="Health Department rat inspections — only where the city inspected"><b>Rat inspections</b><small>Health Dept.</small><span data-oc="rodents"></span></button>
+      </div>` : ''}
       <div class="d-actions"${IS_NYC ? ' style="padding-top:0"' : ' data-sec="actions"'}>
         <a class="d-secondary" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.label}</a>
       </div>
@@ -6791,6 +6800,10 @@ function favActive() {
   // to the trailing-12-month count and says so. Before the all-time blob has
   // arrived only the open count is known, so the button stays neutral rather
   // than guessing green.
+  function violTile(label) {
+    const i = label.indexOf(' · ');
+    return i < 0 ? `<b>${label}</b>` : `<b>${label.slice(0, i)}</b><span class="d-tile-sub">${label.slice(i + 3)}</span>`;
+  }
   function violButton(v, total) {
     const yr = new Date().getFullYear();
     // The boot file only carries open counts, and omits the block entirely for
@@ -7194,7 +7207,8 @@ function favActive() {
       if (!el || counts[k] == null) return;
       const yr = counts[k + '_year'];
       const cleanWord = OPEN_DATA[k].cleanWord || 'none this year';
-      el.textContent = ' · ' + counts[k] + (yr ? ` · ${yr} ${OPEN_DATA[k].thisYearWord} this year` : (yr === 0 ? ` · ${cleanWord}` : ''));
+      const txt = counts[k] + (yr ? ` · ${yr} ${OPEN_DATA[k].thisYearWord} this year` : (yr === 0 ? ` · ${cleanWord}` : ''));
+      el.textContent = el.closest('.d-grid4') ? txt : ' · ' + txt;
       // Bedbugs and rodents sit with Violations and take its colours: red for
       // a problem this year, green when this year is clean, and the button
       // says which; neutral only while the year is still unknown.

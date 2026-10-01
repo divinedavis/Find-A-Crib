@@ -36,12 +36,14 @@ struct PaywallView: View {
             }
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    perk("bell.fill", "Alerts the minute one opens", "A notification and an email the minute a lottery or re-rental opens in your boroughs.")
+                    // The six perks (owner, 2026-10-01). Phone numbers, landlord
+                    // research, saved searches and folders stay Plus but unlisted.
+                    perk("bell.fill", "Lottery alerts", "The minute a Housing Connect or HCR lottery opens in your boroughs — a notification and an email.")
+                    perk("figure.run", "Re-rental alerts", "When an HPD marketing agent re-rents an apartment in your boroughs — often first come, first served.")
+                    perk("bed.double.fill", "Bedbug records", "Every bedbug filing a landlord made for the building, year by year.")
+                    perk("hare.fill", "Rodent records", "The Health Department's rat inspections, building by building.")
+                    perk("ticket.fill", "Your lotteries & re-rentals", "Every open one in your alert boroughs, soonest deadline first.")
                     perk("nosign", "No ads", "No ads in the app or on findacrib.com.")
-                    perk("phone.fill", "Managing-agent phone numbers", "The number HPD has on file for the company that runs the building — 11,000+ buildings.")
-                    perk("bookmark.fill", "Saved searches", "Save any search; get an email when a stabilized building in it is advertised.")
-                    perk("building.2.fill", "Landlord research", "Everything a landlord or agent owns, with its violation record, on findacrib.com.")
-                    perk("globe", "Works on the website too", "One subscription, findacrib.com and the app.")
 
                     if auth.hasPlus {
                         SEBadge(text: "You have Plus", icon: "checkmark.seal.fill", fill: SE.paleBlue, ink: SE.royal)

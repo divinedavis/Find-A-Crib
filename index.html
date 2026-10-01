@@ -1699,12 +1699,12 @@
          to the top (openPaywall). Big type on purpose (owner, 2026-09-30:
          "a prompt this big with large font"). -->
     <ul class="paywall-feats" id="paywall-feats">
-      <li data-perk="alerts"><span class="pf-ico">🔔</span><span><b>Instant alerts</b>An email and an iPhone notification the minute a lottery or re-rental opens in your borough</span></li>
+      <li data-perk="alerts"><span class="pf-ico">🔔</span><span><b>Lottery alerts</b>The minute a Housing Connect or HCR lottery opens in your boroughs — email and iPhone</span></li>
+      <li data-perk="rerental_alerts"><span class="pf-ico">🏃</span><span><b>Re-rental alerts</b>When an HPD marketing agent re-rents an apartment in your boroughs — often first come, first served</span></li>
+      <li data-perk="bedbugs"><span class="pf-ico">🛏️</span><span><b>Bedbug records</b>Every bedbug filing a landlord made for the building, year by year</span></li>
+      <li data-perk="rodents"><span class="pf-ico">🐀</span><span><b>Rodent records</b>The Health Department's rat inspections, building by building</span></li>
+      <li data-perk="lotteries"><span class="pf-ico">🎟️</span><span><b>Your lotteries &amp; re-rentals</b>Every open one in your alert boroughs, soonest deadline first</span></li>
       <li data-perk="noads"><span class="pf-ico">🚫</span><span><b>No ads</b>Anywhere on Find A Crib — the map, the list and every building page</span></li>
-      <li data-perk="phone"><span class="pf-ico">📞</span><span><b>Agent phone numbers</b>Call the company that actually runs the building — 11,000+ numbers</span></li>
-      <li data-perk="research"><span class="pf-ico">🔎</span><span><b>Landlord research</b>Every building a landlord owns across NYC, and their violation record</span></li>
-      <li data-perk="saved_search"><span class="pf-ico">🔖</span><span><b>Saved searches</b>Filters, area and all — reapply them in one tap</span></li>
-      <li data-perk="folders"><span class="pf-ico">🏷️</span><span><b>Folders</b>Organize your saved homes into your own categories</span></li>
     </ul>
     <div class="paywall-cta">
       <div class="paywall-price"><span class="amt">$4.99</span> <span class="per">/ month</span></div>
@@ -7278,12 +7278,21 @@ function favActive() {
     if (act === 'violations') { openViolSheet(rec); return; }
     if (act === 'complaints') { openCompSheet(rec); return; }
     if (OPEN_DATA[act]) {
-      // Bedbug and rodent records are behind a free account (2026-09-07);
-      // the count and the red/green on the button stay visible to everyone.
+      // Bedbug and rodent records: behind an account since 2026-09-07, and
+      // Find A Crib Plus since 2026-10-01 — except every account created
+      // before then (grandfathered, PEST_CUTOFF) and anyone with Plus. The
+      // count and the red/green on the button stay visible to everyone. The
+      // records are NYC Open Data, fetched in the browser, so this is a UI
+      // gate (as the account gate always was).
       if ((act === 'bedbugs' || act === 'rodents') && !authUser) {
         track('outbound', { kind: 'gate_' + act, bbl: rec.bbl });
-        openAuthModal(`Create an account to see this building’s ${act === 'bedbugs' ? 'bedbug' : 'rodent inspection'} record.`);
+        openAuthModal(`${act === 'bedbugs' ? 'Bedbug' : 'Rodent inspection'} records are part of Find A Crib Plus. Create an account to get started.`);
         setAuthMode('signup');
+        return;
+      }
+      if ((act === 'bedbugs' || act === 'rodents') && !pestAccess()) {
+        track('outbound', { kind: 'gate_' + act + '_plus', bbl: rec.bbl });
+        openPaywall(null, act);
         return;
       }
       openOpenDataSheet(act, rec); return;
@@ -7579,6 +7588,17 @@ function favActive() {
   }
   function closeAuthModal() { authModal.hidden = true; }
 
+  // Bedbug + rodent records became Plus on 2026-10-01 (owner); accounts created
+  // before this keep them. Membership not yet known reads as access, so a
+  // grandfathered or paying user is never shown the paywall by a slow check.
+  const PEST_CUTOFF = Date.parse('2026-10-01T18:00:00Z');
+  function pestAccess() {
+    if (!authUser) return false;
+    if (plusActive || !plusKnown) return true;
+    const born = Date.parse(authUser.created_at || '');
+    return !isNaN(born) && born < PEST_CUTOFF;
+  }
+
   // ---------- Find A Crib Plus paywall ----------
   const paywallModal = document.getElementById('paywall-modal');
   // `source` names what sent them here (phone, alerts, noads, other). It
@@ -7592,6 +7612,7 @@ function favActive() {
     // a signed-out subscriber from before the switch (grandfathered, free)
     // sign in instead of paying.
     const TITLES = { alerts: 'Get alerts the minute one opens', noads: 'Find A Crib, with no ads',
+                     bedbugs: 'See every building\u2019s bedbug record', rodents: 'See every building\u2019s rat inspections',
                      phone: 'Call who actually runs the building', research: 'Research any landlord',
                      saved_search: 'Save your searches', folders: 'Organize your saved homes' };
     const pt = document.getElementById('paywall-title');

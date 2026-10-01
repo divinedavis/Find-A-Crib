@@ -18,6 +18,7 @@ struct BuildingDetailView: View {
     @State private var rodentSummary: HPDRecords.InspectionSummary?
     @State private var inspectionsFailed = false
     @State private var showPaywall = false
+    @State private var paywallSource = "phone"
     @State private var showComments = false
     @State private var scene: MKLookAroundScene?
     @State private var sceneChecked = false
@@ -158,7 +159,7 @@ struct BuildingDetailView: View {
                 .accessibilityIdentifier("detail-menu")
             }
         }
-        .sheet(isPresented: $showPaywall) { PaywallView(source: "phone") }
+        .sheet(isPresented: $showPaywall) { PaywallView(source: paywallSource) }
         .onAppear { Perf.mark("detail onAppear"); nav.hideTabBar = true; activity.recordView(b.bbl) }
         .task(id: b.bbl) { similar = SearchEngine.similar(to: b, store: store) }
         .onDisappear { Perf.mark("detail onDisappear"); nav.hideTabBar = false }
@@ -207,7 +208,7 @@ struct BuildingDetailView: View {
                     }
                     .accessibilityIdentifier("agent-phone")
                 } else if m.hasPhone {
-                    Button { if !auth.hasPlus { showPaywall = true } } label: {
+                    Button { if !auth.hasPlus { paywallSource = "phone"; showPaywall = true } } label: {
                         HStack(spacing: 10) {
                             Image(systemName: "lock.fill").font(.system(size: 15, weight: .bold)).foregroundStyle(SE.ink3)
                             Text(auth.hasPlus ? "Phone number temporarily unavailable" : "Phone number — unlock with Find A Crib Plus")
@@ -661,7 +662,7 @@ struct BuildingDetailView: View {
     @ViewBuilder private var hpdBlock: some View {
         let v = b.h?.violations; let c = b.h?.complaints
         if !auth.isSignedIn {
-            Text("HPD's open violations and complaints for this building, the roaches, mice and rats an inspector confirmed here this year, and the bedbug and rat records. Sign in to see them.")
+            Text("HPD's open violations and complaints for this building, the roaches, mice and rats an inspector confirmed here this year, and the bedbug and rat records (part of Find A Crib Plus). Sign in to see them.")
                 .font(.se(17)).foregroundStyle(SE.ink2)
             SEOutlineButton(title: "Sign in to see violations & inspections", icon: "person.crop.circle") { nav.tab = .profile }
                 .accessibilityIdentifier("hpd-sign-in")
@@ -691,13 +692,29 @@ struct BuildingDetailView: View {
             // Red when something was found this year, green when the year is
             // clean, grey while loading or with no record on file. Same rule
             // as the site's buttons.
+            // Bedbug + rodent records are Find A Crib Plus since 2026-10-01; accounts
+            // from before then keep them (auth.pestAccess). Locked, the tiles
+            // still show the summary and open the paywall instead of the list.
             HStack(spacing: 12) {
-                NavigationLink(value: Route.hpdRecords(b.bbl, .bedbugs)) {
-                    inspectionTile("Bedbug filings (landlord's)", bedbugSummary, found: "with bedbugs", clean: "none in the filed year")
-                }.buttonStyle(.plain).accessibilityIdentifier("bedbug-inspections")
-                NavigationLink(value: Route.hpdRecords(b.bbl, .rodents)) {
-                    inspectionTile("Rat inspections (Health Dept.)", rodentSummary, found: "failed", clean: "none failed this year")
-                }.buttonStyle(.plain).accessibilityIdentifier("rodent-inspections")
+                if auth.pestAccess {
+                    NavigationLink(value: Route.hpdRecords(b.bbl, .bedbugs)) {
+                        inspectionTile("Bedbug filings (landlord's)", bedbugSummary, found: "with bedbugs", clean: "none in the filed year")
+                    }.buttonStyle(.plain).accessibilityIdentifier("bedbug-inspections")
+                    NavigationLink(value: Route.hpdRecords(b.bbl, .rodents)) {
+                        inspectionTile("Rat inspections (Health Dept.)", rodentSummary, found: "failed", clean: "none failed this year")
+                    }.buttonStyle(.plain).accessibilityIdentifier("rodent-inspections")
+                } else {
+                    Button { Analytics.shared.track("outbound", ["kind": "gate_bedbugs_plus", "bbl": b.bbl]); paywallSource = "bedbugs"; showPaywall = true } label: {
+                        inspectionTile("Bedbug filings (landlord's)", bedbugSummary, found: "with bedbugs", clean: "none in the filed year")
+                    }.buttonStyle(.plain).accessibilityIdentifier("bedbug-inspections-locked")
+                    Button { Analytics.shared.track("outbound", ["kind": "gate_rodents_plus", "bbl": b.bbl]); paywallSource = "rodents"; showPaywall = true } label: {
+                        inspectionTile("Rat inspections (Health Dept.)", rodentSummary, found: "failed", clean: "none failed this year")
+                    }.buttonStyle(.plain).accessibilityIdentifier("rodent-inspections-locked")
+                }
+            }
+            if !auth.pestAccess {
+                Label("Bedbug and rodent records are part of Find A Crib Plus", systemImage: "lock.fill")
+                    .font(.se(14, .semibold)).foregroundStyle(SE.royal)
             }
             Text(inspectionsFailed ? "Couldn't reach NYC Open Data for the inspections just now. Tap a tile to try again." : "Tap a tile to see each one.")
                 .font(.se(14)).foregroundStyle(SE.ink3)

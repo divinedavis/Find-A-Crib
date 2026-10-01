@@ -50,6 +50,15 @@ final class AuthService {
     weak var plus: PlusStore?
 
     var isSignedIn: Bool { session != nil }
+
+    /// Bedbug + rodent records became Find A Crib Plus on 2026-10-01 (owner);
+    /// every account created before then keeps them. Same cutoff as the
+    /// website's PEST_CUTOFF.
+    static let pestCutoff = ISO8601DateFormatter().date(from: "2026-10-01T18:00:00Z")!
+    var pestAccess: Bool {
+        guard let user = session?.user else { return false }
+        return hasPlus || user.createdAt < Self.pestCutoff
+    }
     /// True once the stored session has been confirmed (or refreshed) at
     /// launch. Until then `session` may be an expired token that every API
     /// call rejects — which showed a signed-in owner the Lotteries sign-up

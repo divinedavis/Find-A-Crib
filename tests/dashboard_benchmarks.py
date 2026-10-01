@@ -85,10 +85,35 @@ def run(browser, live):
     expect(page.locator('#tiles')).not_to_contain_text('Median time on site')
     payload['page_views_30d'] = {'total': 10344, 'map': 9961, 'other': 383}
     page.reload(wait_until='networkidle')
-    expect(page.locator('#page-goal2')).to_contain_text('Page view goal: 25k/month to register for Raptive')
-    expect(page.locator('#page-goal2')).to_contain_text('10,344 in the last 30 days · 41%')
+    expect(page.locator('#page-goal2')).to_contain_text('Raptive: 25k Google Analytics page views in 30 days')
+    expect(page.locator('#page-goal2')).to_contain_text('≈10,344 (our count; Raptive reads GA) · 41%')
+    expect(page.locator('#page-goal2-gates')).to_contain_text('≥50% of traffic from US/UK/CA/AU/NZ')
+    expect(page.locator('#page-goal2-gates')).to_contain_text('domain 6+ months old')
+    expect(page.locator('#page-goal2-gates')).to_contain_text('long-form content on most pages')
     assert not errors, errors
     print(f'PASS {browser.browser_type.name}: page views tile', flush=True)
+
+    # Visitors and sign-ups over time (2026-09-30): two linked panels with a
+    # 7/30/90/all picker replace the shared bar card on this tab.
+    payload['daily_series'] = {
+        'days': [{'date': '2026-09-%02d' % d, 'visitors': 100 + d, 'signups': d % 4} for d in range(1, 31)],
+        'periods': {'7': {'visitors': 700, 'prev_visitors': 600, 'signups': 14, 'prev_signups': 10},
+                    '30': {'visitors': 2500, 'prev_visitors': 900, 'signups': 45, 'prev_signups': 5},
+                    '90': {'visitors': 2600, 'prev_visitors': 0, 'signups': 46, 'prev_signups': 0},
+                    'all': {'visitors': 2650, 'signups': 47}}}
+    page.reload(wait_until='networkidle')
+    expect(page.locator('#sec-visitor-trend #vt-svg')).to_be_visible()
+    expect(page.locator('#sec-visitor-trend #vs-svg')).to_be_visible()
+    expect(page.locator('#spark-card')).to_be_hidden()
+    page.select_option('#vt-range', '7')
+    expect(page.locator('#vt-sum')).to_contain_text('700')
+    expect(page.locator('#vt-sum')).to_contain_text('+17%')
+    page.select_option('#vt-range', '0')
+    expect(page.locator('#vt-sum')).to_contain_text('since 24 Jun')
+    page.select_option('#vt-range', '30')
+    expect(page.locator('#fac-investor-callout')).to_have_count(0)
+    assert not errors, errors
+    print(f'PASS {browser.browser_type.name}: visitors chart', flush=True)
 
     # "Ads served · all platforms" was removed (owner, 2026-09-30): it was
     # mostly our own listing tiles. It must not come back by accident.

@@ -1502,6 +1502,9 @@ def dashboard_metrics():
         # Alert sign-up conversion, 7-day rolling per day since alerts
         # launched (db/0038). Not range-scoped: it is a trend line.
         "alert_trend": (_fac_alert_trend,),
+        # Visitors and sign-ups per day since 24 Jun, for the visitors chart's
+        # period picker (db/0040). Not range-scoped.
+        "daily_series": (_fac_daily_series,),
     }
     with ThreadPoolExecutor(max_workers=len(jobs)) as pool:
         futs = {k: pool.submit(*v) for k, v in jobs.items()}
@@ -1553,6 +1556,18 @@ def _fac_goals_read():
 
 FAC_MONTHS = 7
 FAC_TZ = "America/New_York"
+
+
+@_memo(600)
+def _fac_daily_series():
+    """{days: [{date, visitors, signups}], periods: {"7"|"30"|"90": {visitors,
+    prev_visitors, signups, prev_signups}, "all": {visitors, signups}}} —
+    distinct visitors counted as dashboard_metrics' v_all, sign-ups as the
+    Sign-ups tile (db/0040). {} on failure."""
+    try:
+        return rpc("dashboard_daily_series", {"p_ios_builds": list(_fac_released_builds()) or None}) or {}
+    except Exception:
+        return {}
 
 
 @_memo(600)

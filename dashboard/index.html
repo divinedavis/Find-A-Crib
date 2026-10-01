@@ -229,6 +229,7 @@
   .page-head .goal[hidden]{display:none}
   .page-head .goal-2{font-size:18px;letter-spacing:-.2px}
   .page-head .goal-2 .goal-prog{font-size:14px;font-weight:600;color:var(--ink2);margin-left:8px;letter-spacing:0}
+  .page-head .goal-gates{font-size:13px;color:var(--muted);margin:-2px 0 8px;line-height:1.45;overflow-wrap:anywhere}
   .updated{color:var(--muted);font-size:12.5px;margin-top:2px}
   /* Names the window actually on screen. The picker alone could not say
      it: on 1 September "This month" and "Today" are the same day, and
@@ -350,6 +351,8 @@
   .at-range select:focus-visible{outline:2px solid var(--purple);outline-offset:2px}
   .at-range-note{flex-basis:100%;text-align:right;font-size:11.5px;color:var(--muted)}
   @media(max-width:560px){#sec-alert-trend .card-head-row,#sec-appstore .card-head-row{flex-direction:column;gap:10px}.at-range{margin-left:0;justify-content:flex-start}.at-range-note{text-align:left}}
+  .vt-panel-h{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin:10px 0 4px}
+  @media(max-width:560px){#sec-visitor-trend .card-head-row{flex-direction:column;gap:10px}}
   .at-key{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--ink2);margin-top:8px}
   .at-key b{color:var(--ink)}
   .at-table{margin-top:10px;font-size:12px;color:var(--ink2);min-width:0;max-width:100%}
@@ -359,7 +362,7 @@
   .at-table > div{overflow-x:auto;-webkit-overflow-scrolling:touch;width:0;min-width:100%}
   .at-table table{border-collapse:collapse;width:100%;margin-top:6px}
   .at-table th,.at-table td{text-align:right;padding:3px 8px;border-bottom:1px solid var(--border2);font-variant-numeric:tabular-nums}
-  .at-table th:first-child,.at-table td:first-child{text-align:left}
+  .at-table th:first-child,.at-table td:first-child{text-align:left;white-space:nowrap}
   .spark-key{display:inline-block;width:9px;height:9px;border-radius:2px;margin:0 5px 0 1px;vertical-align:0}
   .spark-tip{position:absolute;background:var(--tip-bg);color:var(--tip-ink);font-size:11.5px;padding:5px 8px;border-radius:7px;pointer-events:none;transform:translate(-50%,-120%);white-space:nowrap;opacity:0;transition:opacity .1s}
 
@@ -490,6 +493,7 @@
         <h1 id="page-title">Find A Crib</h1>
         <div class="goal" id="page-goal" hidden></div>
         <div class="goal goal-2" id="page-goal2" hidden></div>
+        <div class="goal-gates" id="page-goal2-gates" hidden></div>
         <div class="goal goal-2" id="page-goal3" hidden></div>
         <div class="sub" id="page-sub">Traffic, funnel &amp; revenue — everything in one place.</div>
         <div class="updated" id="updated">—</div>
@@ -527,7 +531,7 @@
            it would silently remove the chart from three dashboards. Sitting
            here it lands directly above whichever site's first section
            follows. -->
-      <div class="card mb18">
+      <div class="card mb18" id="spark-card" hidden>
         <div class="card-head-row">
           <div><h2 id="spark-title">Last 7 days</h2><div class="card-sub" id="spark-sub">Unique visitors per day</div></div>
         </div>
@@ -536,6 +540,30 @@
 
       <!-- ===== Find A Crib only ===== -->
       <div id="fac-a">
+      <!-- Visitors and sign-ups over time (owner, 2026-09-30: "should have a
+           chart with date filters like Alert sign-ups over time"). Replaces
+           the shared 7-day/7-month bar card on this tab only. Two stacked
+           panels on one shared period, x-axis and crosshair — never one dual
+           axis (visitors run ~40x sign-ups). api_server._fac_daily_series /
+           db/0040. -->
+      <div class="card mb18" id="sec-visitor-trend">
+        <div class="card-head-row">
+          <div><h2>Visitors and sign-ups over time</h2><div class="card-sub">Unique visitors and new accounts per day, since tracking began on 24 Jun. Each panel has its own scale.</div></div>
+          <div class="at-range"><label for="vt-range">Period</label>
+            <select id="vt-range" aria-label="Period shown on the visitors and sign-ups chart">
+              <option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option><option value="0">All time</option>
+            </select>
+          </div>
+        </div>
+        <div class="at-sum" id="vt-sum"></div>
+        <div class="vt-panel-h">Unique visitors per day</div>
+        <div class="at-legend" id="vt-legend"></div>
+        <div id="vt-chart" style="position:relative"></div>
+        <div class="at-key" id="vt-key" hidden></div>
+        <div class="vt-panel-h">Sign-ups per day</div>
+        <div id="vs-chart" style="position:relative"></div>
+        <details class="at-table"><summary>Show the numbers</summary><div id="vt-table"></div></details>
+      </div>
       <!-- Alert sign-up conversion over time (owner, 2026-09-30): the day
            alerts became Plus for new sign-ups, "track our trends from history
            to the future". api_server._fac_alert_trend / db/0038. -->
@@ -572,7 +600,6 @@
           <div><h2>For investors — growth, retention, unit economics</h2><div class="card-sub">The numbers a seed investor asks for first, on fixed 30-day windows (the range picker does not apply). Each tile names the outside benchmark it is judged against. Web and iPhone app together.</div></div>
         </div>
         <div class="ads-tiles" id="fac-investor-tiles"></div>
-        <div class="callout" id="fac-investor-callout" style="margin-top:16px"></div>
       </div>
 
       <!-- The "Search — is Google sending anyone?" card was removed at the
@@ -1009,8 +1036,10 @@
     fac:{
       mark:'🏙️', name:'Find A Crib', endpoint:'/api/dashboard-metrics',
       title:'Find A Crib', goal:'Goal: 80k visitors a day ≈ $18k/month in ads',
-      // Raptive's entry bar: 25,000 page views a month (owner, 2026-09-28).
-      goal2:'Page view goal: 25k/month to register for Raptive',
+      // Raptive's entry bar (help.raptive.com "Who is eligible for Raptive?",
+      // 25k since Oct 2025): 25,000 Google Analytics page views in the last
+      // 30 days, plus the gates listed under it (owner, 2026-09-30).
+      goal2:'Raptive: 25k Google Analytics page views in 30 days',
       // $20k/month from Plus alone (owner, 2026-09-30): $20,000 ÷ $4.99 =
       // 4,009 paying members, before Stripe/Apple fees. Progress is paying
       // (not comped) members, as the MRR tile counts them.
@@ -1100,6 +1129,9 @@
         var b=el(id); if(b) b.classList.toggle('hidden', k!==siteKey);
       });
     });
+    // The shared 7-day/7-month bar card: every tab but Find A Crib, whose
+    // own visitors chart (sec-visitor-trend, in fac-a) replaces it.
+    { var sc=el('spark-card'); if(sc) sc.hidden = siteKey==='fac'; }
     // switcher state, and this app's sections tucked in under its button
     document.querySelectorAll('#site-switch button').forEach(function(b){
       var on = b.getAttribute('data-site')===siteKey;
@@ -1806,10 +1838,24 @@
       var g2=el('page-goal2'), P30=d.page_views_30d||{};
       if(!g2 || g2.hidden) return;
       var old=g2.querySelector('.goal-prog'); if(old) old.remove();
-      if(P30.total == null) return;
-      var s=document.createElement('span'); s.className='goal-prog';
-      s.textContent=comma(P30.total)+' in the last 30 days · '+Math.round(100*n(P30.total)/25000)+'%';
-      g2.appendChild(s);
+      // Raptive counts Google Analytics page views; this is our own
+      // first-party count, so it is labelled as an approximation.
+      if(P30.total != null){
+        var s=document.createElement('span'); s.className='goal-prog';
+        s.textContent='≈'+comma(P30.total)+' (our count; Raptive reads GA) · '+Math.round(100*n(P30.total)/25000)+'%';
+        g2.appendChild(s);
+      }
+      // The other gates, listed — the geo and content ones are not measured
+      // here, so nothing claims they are met. Domain age is computed from the
+      // day the domain went live (24 Jun 2026): 6 months = 24 Dec 2026.
+      var gates=el('page-goal2-gates');
+      if(gates){
+        var ok=new Date('2026-12-24T00:00:00-05:00'), left=Math.ceil((ok-Date.now())/864e5);
+        var age = left>0 ? 'domain 6+ months old — eligible from 24 Dec 2026 ('+left+' day'+(left===1?'':'s')+')'
+                         : 'domain 6+ months old ✓';
+        gates.textContent='Also required: ≥50% of traffic from US/UK/CA/AU/NZ · '+age+' · long-form content on most pages';
+        gates.hidden=false;
+      }
     })();
     // Progress toward the Plus goal: paying members right now (subscriptions
     // is current state, so every range shows the same number).
@@ -1839,7 +1885,7 @@
 
     renderFacInvestor(d);
     renderAppStore(d.appstore);
-    renderSpark(d.sparkline||[], d.months, d.signups_series);
+    renderVisitorTrend(d.daily_series||{});
     renderAlertTrend(d.alert_trend||[]);
   }
 
@@ -1945,11 +1991,6 @@
       return '<div class="ads-tile"><div class="a-val">'+t.val+'</div><div class="a-lbl">'+t.lbl+'</div><div class="a-sub">'+t.sub+'</div>'+
         (t.src ? '<div class="a-bench-note">'+esc(t.src)+'</div>' : '')+'</div>';
     }).join('');
-    var co=el('fac-investor-callout');
-    co.innerHTML='<b>Not on this card, on purpose:</b> CAC, LTV and LTV:CAC. No advertising spend is recorded anywhere in this system '+
-      '(Google Ads and the LinkNYC campaign were bought outside it), so a customer acquisition cost cannot be computed, and with '+comma(S.paying)+
-      ' paying accounts there is no lifetime value to divide. Investors expect LTV:CAC of about 3:1; the honest reading today is "unmeasured", not a number. '+
-      'Record spend per campaign and both fall out of what is already here.';
   }
 
   // ---------- trend charts (alert sign-ups, iPhone downloads) ----------
@@ -1963,15 +2004,19 @@
   // Each chart supplies its data shape through cfg; ids are cfg.id + '-…'.
   var TREND_RANGES = [7, 30, 90];
   function makeTrend(cfg){
-    var id=cfg.id, last=null, lastW=0, view=null, raf=0, range=30;
-    try { var saved=+localStorage.getItem(cfg.store); if(TREND_RANGES.indexOf(saved)>=0) range=saved; } catch (e) {}
+    // cfg.ranges: the picker's values (0 = all time). cfg.rangeId: a select
+    // shared by several panels (each listens and redraws itself).
+    var RANGES=cfg.ranges||TREND_RANGES;
+    var id=cfg.id, last=null, lastW=0, view=null, raf=0, range=cfg.defaultRange||30, crossX=null;
+    try { var saved=localStorage.getItem(cfg.store); if(saved!==null && RANGES.indexOf(+saved)>=0) range=+saved; } catch (e) {}
     function $(s){ return el(id+'-'+s); }
+    function rangeSel(){ return cfg.rangeId ? el(cfg.rangeId) : $('range'); }
     (function(){
-      var sel=$('range');
+      var sel=rangeSel();
       if(sel){
         sel.value=String(range);
         sel.addEventListener('change', function(){
-          var v=+sel.value; if(TREND_RANGES.indexOf(v)<0) return;
+          var v=+sel.value; if(RANGES.indexOf(v)<0) return;
           range=v; try { localStorage.setItem(cfg.store, String(v)); } catch (e) {}
           if(last) render(last, true);
         });
@@ -1986,26 +2031,29 @@
       last=rows;
       if(!rows.length){ host.innerHTML='<div style="color:var(--muted);font-size:13px">'+cfg.empty+'</div>'; return; }
       var pts=cfg.points(rows), S=cfg.series, events=cfg.events||[];
-      $('sum').innerHTML=cfg.summary(rows, pts);
-      $('legend').innerHTML=S.map(function(s){
+      var span0 = range ? range : pts.length;   // 0 = all time
+      if($('sum') && cfg.summary) $('sum').innerHTML=cfg.summary(rows, pts, range);
+      if($('legend')) $('legend').innerHTML=S.map(function(s){
         // A dashed series gets a dashed swatch (a CSS dashed border reads as
         // solid at 14px on a phone, so the dashes are drawn as a gradient).
         var sw = s.dash ? 'width:18px;background:repeating-linear-gradient(90deg,'+s.color+' 0 5px,transparent 5px 8px)' : 'background:'+s.color;
         return '<span><i style="'+sw+'"></i>'+s.label+'</span>'; }).join('')+(cfg.legendNote||'');
       var note=$('range-note');
-      if(note){
-        var short=pts.length<range;
+      if(note && cfg.historyNote){
+        var short=range>0 && pts.length<range;
         note.textContent= short ? cfg.historyNote(pts.length) : '';
         note.hidden=!short;
       }
-      var sel=$('range'); if(sel && sel.value!==String(range)) sel.value=String(range);
+      var sel=rangeSel(); if(sel && sel.value!==String(range)) sel.value=String(range);
 
       var W=Math.max(host.clientWidth||900,300); lastW=host.clientWidth;
-      var narrow=W<520, H=narrow?214:262, pad={t:narrow?30:62,r:narrow?44:(cfg.padRight||96),b:24,l:40};
+      var labels=cfg.eventLabels!==false;
+      var narrow=W<520, H=cfg.height ? cfg.height(narrow) : (narrow?214:262),
+          pad={t:labels ? (narrow?30:62) : 14,r:narrow?44:(cfg.padRight||96),b:24,l:cfg.padLeft||40};
       var iw=W-pad.l-pad.r, ih=H-pad.t-pad.b, base=pad.t+ih, li=pts.length-1;
       // The view is a domain: the (fractional) index of the first visible day,
       // and the y-axis top. Animating is interpolating those two numbers.
-      var s1=Math.max(0, pts.length-range);
+      var s1=Math.max(0, pts.length-span0);
       function has(v){ return v!=null && isFinite(v); }
       var y1=cfg.nice(Math.max.apply(null, [0].concat(pts.slice(s1).map(function(p){ return Math.max.apply(null, [0].concat(S.map(function(s){ return has(p[s.k]) ? p[s.k] : 0; }))); }))));
       var target={s:s1, y:y1.max, step:y1.step};
@@ -2041,7 +2089,9 @@
         // from the last day (every day, or every other day when they would
         // crowd), so the spacing is even.
         var perDay=iw/span, minDay=narrow?44:40, daily=span<=10;
-        var every= daily ? (perDay>=minDay ? 1 : 2) : 7, gap= daily ? minDay : (narrow?72:52);
+        // Weekly labels; on long periods (all time) every 2 or 4 weeks.
+        var wk = span>200 ? 28 : span>60 ? (narrow ? 28 : 14) : 7;
+        var every= daily ? (perDay>=minDay ? 1 : 2) : wk, gap= daily ? minDay : (narrow?72:52);
         var fi=Math.ceil(s0-1e-6), xl='', lastX=X(li), firstX=X(fi);
         for(var i=fi;i<=li;i++){
           var isEnd=(i===fi||i===li), onStep= daily ? (li-i)%every===0 : i%every===0;
@@ -2071,7 +2121,8 @@
           var x=X(i);
           if(x<pad.l-0.5) return;
           var n1=++nEv, row=(n1-1)%3, right=x>W-pad.r-140;
-          marker+='<line x1="'+x+'" x2="'+x+'" y1="'+(narrow?pad.t-10:pad.t-50+row*16)+'" y2="'+base+'" stroke="var(--ink2)" stroke-width="1" stroke-dasharray="2 4" opacity=".75"></line>';
+          marker+='<line x1="'+x+'" x2="'+x+'" y1="'+(!labels?pad.t-4:narrow?pad.t-10:pad.t-50+row*16)+'" y2="'+base+'" stroke="var(--ink2)" stroke-width="1" stroke-dasharray="2 4" opacity=".75"></line>';
+          if(!labels) return;
           marker+= narrow
             ? '<text x="'+x+'" y="'+(pad.t-14)+'" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--ink2)">'+n1+'</text>'
             : '<text x="'+(right?x-4:x+4)+'" y="'+(pad.t-52+row*16+9)+'" text-anchor="'+(right?'end':'start')+'" font-size="10.5" font-weight="600" fill="var(--ink2)"><title>'+esc(ev.t)+'</title>'+esc(ev.s)+'</text>';
@@ -2105,9 +2156,15 @@
           '<line id="'+id+'-x" y1="'+pad.t+'" y2="'+base+'" stroke="var(--border-strong)" stroke-width="1" opacity="0"></line>'+
           '<rect x="'+pad.l+'" y="0" width="'+iw+'" height="'+H+'" fill="transparent" id="'+id+'-hit"></rect>'+
           '</svg><div class="spark-tip" id="'+id+'-tip"></div>';
-        var key=$('key'); if(key){ key.innerHTML=narrow ? keyRows.join('') : ''; key.hidden=!narrow || !keyRows.length; }
+        var key=$('key'); if(key && labels){ key.innerHTML=narrow ? keyRows.join('') : ''; key.hidden=!narrow || !keyRows.length; }
         if(!final) return;
         var hit=$('hit'), tip=$('tip'), xl2=$('x'), svg=$('svg');
+        // A linked panel's crosshair (cfg.onHover on the other panel calls
+        // render.cross with the day index; null hides it).
+        crossX=function(i){
+          if(i==null || i<fi || i>li){ xl2.setAttribute('opacity','0'); return; }
+          xl2.setAttribute('x1',X(i)); xl2.setAttribute('x2',X(i)); xl2.setAttribute('opacity','1');
+        };
         function show(ev){
           // A pointer event can land on a chart the next animation frame has
           // already replaced (detached: zero-size rect, NaN index) — ignore it.
@@ -2117,6 +2174,7 @@
           var i=Math.max(fi,Math.min(li,Math.round(s0+(sx-pad.l)*span/iw)));
           var p=pts[i]; if(!p) return;
           xl2.setAttribute('x1',X(i)); xl2.setAttribute('x2',X(i)); xl2.setAttribute('opacity','1');
+          if(cfg.onHover) cfg.onHover(i);
           var evOn=events.filter(function(e){ return e.d===p.d; }).map(function(e){ return '<br><i>'+esc(e.t)+'</i>'; }).join('');
           tip.innerHTML=cfg.tip(p, day)+evOn;
           // Wraps on a phone and stays inside the card.
@@ -2126,13 +2184,82 @@
           tip.style.top=(Math.min.apply(null, [base].concat(S.filter(function(s){ return has(p[s.k]); }).map(function(s){ return Y(p[s.k]); })))*r.height/H)+'px'; tip.style.opacity='1';
         }
         hit.addEventListener('mousemove',show); hit.addEventListener('touchstart',function(e){ show(e.touches[0]); },{passive:true});
-        hit.addEventListener('mouseleave',function(){ tip.style.opacity='0'; xl2.setAttribute('opacity','0'); });
+        hit.addEventListener('mouseleave',function(){ tip.style.opacity='0'; xl2.setAttribute('opacity','0'); if(cfg.onHover) cfg.onHover(null); });
         // The table lists the selected period, newest first.
-        $('table').innerHTML='<table><tr>'+cfg.tableHead.map(function(h){ return '<th>'+h+'</th>'; }).join('')+'</tr>'+
+        if($('table')) $('table').innerHTML='<table><tr>'+cfg.tableHead.map(function(h){ return '<th>'+h+'</th>'; }).join('')+'</tr>'+
           pts.slice(fi).reverse().map(function(p){ return '<tr>'+cfg.tableRow(p, day).map(function(c){ return '<td>'+c+'</td>'; }).join('')+'</tr>'; }).join('')+'</table>';
       }
     }
+    render.cross=function(i){ if(crossX) crossX(i); };
     return render;
+  }
+
+  // ---------- visitors and sign-ups (Find A Crib) ----------
+  // Two makeTrend panels sharing one select (vt-range: 7 / 30 / 90 / all) and
+  // one crosshair; key dates labelled on the top panel, lines only below.
+  var VT_EVENTS = [
+    {d:'2026-09-05', s:'TikTok comment', t:'Owner\u2019s TikTok comment goes viral: new visitors jump, 5\u20137 Sep'},
+    {d:'2026-09-08', s:'LinkNYC kiosks', t:'LinkNYC kiosk campaign starts (to 5 Oct)'},
+    {d:'2026-09-09', s:'On the App Store', t:'Find A Crib 1.0 goes live on the App Store'},
+    {d:'2026-09-29', s:'Mediavine ads', t:'Journey by Mediavine ads go live on findacrib.com'},
+    {d:'2026-09-30', s:'Alerts \u2192 Plus', t:'Alerts become part of Plus for new sign-ups'}
+  ];
+  function vtNice(v){
+    var steps=[1,2,5,10,20,25,50,100,200,250,500,1000,2000], step=steps[steps.length-1];
+    for(var i=0;i<steps.length;i++){ if(v/steps[i]<=5){ step=steps[i]; break; } }
+    return {max: Math.max(step, Math.ceil((v*1.05)/step)*step), step: step};
+  }
+  function vtPoints(rows){
+    return rows.map(function(r,i){
+      var win=rows.slice(Math.max(0,i-6), i+1), tot=win.reduce(function(a,x){ return a+n(x.visitors); },0);
+      return {d:r.date, v:n(r.visitors), avg:tot/win.length, s:n(r.signups), r:r};
+    });
+  }
+  function vtTip(p, day){
+    return '<b>'+day(p.d,{weekday:'short',month:'short',day:'numeric'})+'</b> · '+comma(p.v)+' visitor'+(p.v===1?'':'s')+
+      ' (7-day average '+comma(p.avg)+') · '+comma(p.s)+' sign-up'+(p.s===1?'':'s')+
+      (p.v ? ' · '+(100*p.s/p.v).toFixed(1)+'% of visitors' : '');
+  }
+  var vtMeta = {};
+  function vtSummary(rows, pts, range){
+    var P=vtMeta.periods||{}, k=range ? String(range) : 'all', X=P[k]||{};
+    var label = range ? 'last '+range+' days' : 'since 24 Jun';
+    function vs(cur, prev){
+      // The window before is only comparable once it is fully inside tracking.
+      var full = range && pts.length >= 2*range;
+      if(!full || prev==null) return '';
+      return ' (vs '+comma(prev)+' the '+range+' before'+(prev ? ', '+(cur>=prev?'+':'')+Math.round(100*(cur-prev)/prev)+'%' : '')+')';
+    }
+    var out='<div><b>'+comma(X.visitors)+'</b>unique visitors, '+label+vs(n(X.visitors), X.prev_visitors)+'</div>'+
+            '<div><b>'+comma(X.signups)+'</b>sign-ups, '+label+vs(n(X.signups), X.prev_signups)+'</div>';
+    if(n(X.visitors)) out+='<div><b>'+(100*n(X.signups)/n(X.visitors)).toFixed(1)+'%</b>sign-up conversion, '+label+'</div>';
+    return out;
+  }
+  var vtVisitors, vtSignups;
+  vtVisitors = makeTrend({
+    id:'vt', store:'fac.vtRange', rangeId:'vt-range', ranges:[7,30,90,0], events:VT_EVENTS, padRight:112, padLeft:44,
+    empty:'No visitor data yet.', aria:'Find A Crib unique visitors per day',
+    series:[{k:'v', color:'var(--at-saved)', label:'Unique visitors that day', end:function(v){ return comma(v)+' that day'; }},
+            {k:'avg', color:'var(--at-saved)', dash:'4 4', label:'7-day average', end:function(v){ return comma(v)+' a day (7d)'; }}],
+    points:vtPoints, nice:vtNice, tick:function(v){ return comma(v); },
+    summary:vtSummary, tip:vtTip,
+    onHover:function(i){ if(vtSignups) vtSignups.cross(i); },
+    tableHead:['Day','Visitors','7-day avg','Sign-ups','% signed up'],
+    tableRow:function(p, day){ return [day(p.d), comma(p.v), comma(p.avg), comma(p.s), p.v ? (100*p.s/p.v).toFixed(1)+'%' : '—']; }
+  });
+  vtSignups = makeTrend({
+    id:'vs', store:'fac.vtRange', rangeId:'vt-range', ranges:[7,30,90,0], events:VT_EVENTS, eventLabels:false, padRight:112, padLeft:44,
+    height:function(narrow){ return narrow ? 130 : 150; },
+    empty:'No sign-up data yet.', aria:'Find A Crib new accounts per day',
+    series:[{k:'s', color:'var(--at-on)', label:'Sign-ups that day', end:function(v){ return comma(v)+' that day'; }}],
+    points:vtPoints, nice:vtNice, tick:function(v){ return comma(v); }, tip:vtTip,
+    onHover:function(i){ if(vtVisitors) vtVisitors.cross(i); },
+    tableHead:[], tableRow:function(){ return []; }
+  });
+  function renderVisitorTrend(D){
+    vtMeta = {periods: (D && D.periods) || {}};
+    var rows=(D && D.days) || [];
+    vtVisitors(rows); vtSignups(rows);
   }
 
   // ---------- alert sign-up trend ----------
@@ -2289,6 +2416,9 @@
     var t;
     function refit(){
       var host=el('spark'); if(!host||!sparkLast) return;
+      // Hidden on the Find A Crib tab (its own chart replaces it): a resize
+      // there must not redraw — and so re-show — another tab's bars.
+      var card=el('spark-card'); if(card && card.hidden) return;   // set per tab in the site switch
       var w=host.clientWidth; if(!w||w===sparkW) return;
       renderSpark(sparkLast[0], sparkLast[1], sparkLast[2]);
     }

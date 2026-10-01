@@ -449,13 +449,12 @@ class Runner:
             self.ok(any('Alerts' in c for c in chips) and not any('Lottery agents' in c for c in chips), f'top-bar chips should show Alerts, not Lottery agents: {chips}', j)
             page.keyboard.press('Escape'); time.sleep(0.2)
             self.ok(page.evaluate("document.getElementById('menu-pop').hidden"), 'Escape should close the menu', j)
-            # Signed out, the menu's Alerts link opens the Plus paywall (alerts are
-            # Plus since 2026-09-30), headed for alerts, with a sign-in link for
-            # the grandfathered subscribers — and never leaves the page.
+            # Signed out, the menu's Alerts link opens the sign-up modal (alerts
+            # need an account, not Plus — owner, 2026-10-01) and never leaves the page.
             self.click(page, '#menu-btn'); time.sleep(0.3)
             page.evaluate("document.querySelector('#menu-pop a[href^=\"/alerts/\"]').click()"); time.sleep(0.5)
-            self.ok(self.alerts_paywall_open(page), 'menu Alerts should open the Plus paywall for alerts when signed out', j)
-            page.evaluate("document.querySelector('[data-paywall=\"close\"]')?.click()"); time.sleep(0.2)
+            self.ok(self.alerts_signup_open(page), 'menu Alerts should open the sign-up modal, not the paywall, when signed out', j)
+            page.evaluate("document.getElementById('auth-modal').hidden = true"); time.sleep(0.2)
         else:
             # Phones: the Alerts chip sits immediately to the right of Saved (asked 2026-09-08).
             pos = page.evaluate("(()=>{const r=s=>document.querySelector(s).getBoundingClientRect(); const f=r('#pill-fav'), a=r('#pill-alerts-m'); return {fr:f.right, al:a.left, fy:f.top+f.height/2, ay:a.top+a.height/2, aw:a.width, href:document.getElementById('pill-alerts-m').getAttribute('href')}})()")
@@ -463,15 +462,14 @@ class Runner:
                     f'Alerts chip should sit right of Saved on phones: {pos}', j)
             self.ok(pos['href'].startswith('/alerts/'), f'Alerts chip should link to /alerts/: {pos}', j)
             page.evaluate("document.getElementById('pill-alerts-m').click()"); time.sleep(0.5)
-            self.ok(self.alerts_paywall_open(page), 'Alerts chip should open the Plus paywall for alerts when signed out', j)
-            page.evaluate("document.querySelector('[data-paywall=\"close\"]')?.click()"); time.sleep(0.2)
+            self.ok(self.alerts_signup_open(page), 'Alerts chip should open the sign-up modal, not the paywall, when signed out', j)
+            page.evaluate("document.getElementById('auth-modal').hidden = true"); time.sleep(0.2)
 
-    def alerts_paywall_open(self, page):
-        return page.evaluate("""(()=>{const m=document.getElementById('paywall-modal');
-          return !m.hidden && document.getElementById('paywall-title').textContent.includes('alerts')
-            && !document.getElementById('paywall-have-alerts').hidden && location.pathname==='/'
-            && /2 months of Plus/.test(document.getElementById('paywall-refer').textContent)
-            && document.getElementById('paywall-refer').getBoundingClientRect().height > 0})()""")
+    def alerts_signup_open(self, page):
+        return page.evaluate("""(()=>{const a=document.getElementById('auth-modal'), m=document.getElementById('paywall-modal');
+          return !a.hidden && m.hidden && location.pathname==='/'
+            && /set up alerts/.test(document.getElementById('auth-sub').textContent)
+            && !/Plus/.test(document.getElementById('auth-sub').textContent)})()""")
 
     def j_search_address(self, page, j, device):
         self.boot(page)
@@ -938,11 +936,9 @@ class Runner:
         self.ok(r.status in (401, 429), f'/api/alerts/subscribe without a session should be refused, got {r.status}', j)
         page.evaluate("document.getElementById('form').hidden = false")   # the form itself still works once revealed
         self.ok(page.evaluate("document.getElementById('submit').textContent.trim()") == 'Email me when something opens', 'alerts form should offer a fresh sign-up', j)
-        # Alerts are Plus for new sign-ups (2026-09-30): the page says so, and
-        # the "turn it on with Plus" card is there (hidden) with its paywall link.
-        self.ok('Find A Crib Plus' in page.evaluate("document.querySelector('.lede').innerText"), 'alerts page should say alerts are part of Plus', j)
-        self.ok(page.evaluate("(()=>{const l=document.getElementById('locked'), b=document.getElementById('locked-btn'); return !!l && l.hidden && !!b && b.getAttribute('href')==='/?plus=alerts'})()"),
-                'alerts page should carry a hidden locked card linking to /?plus=alerts', j)
+        # Alerts left Plus on 2026-10-01: no Plus copy, no locked card.
+        self.ok('Plus' not in page.evaluate("document.querySelector('main').innerText"), 'alerts page should not call alerts a Plus feature', j)
+        self.ok(page.evaluate("!document.getElementById('locked')"), 'alerts page should have no locked (pay-to-turn-on) card', j)
         page.click('text=Brooklyn'); time.sleep(0.3)
         self.ok(page.evaluate("document.querySelector('#boros input[value=Bk]').checked"), 'borough chip should toggle on', j)
         self.ok(page.evaluate("getComputedStyle(document.querySelector('#boros input[value=Bk] + span')).backgroundColor") != 'rgba(0, 0, 0, 0)', 'a chosen borough should be filled', j)
@@ -1517,8 +1513,7 @@ class Runner:
             ctx.close()
         j.notes.append('default before config; GPC denies ads; EU banner')
 
-    PAYWALL_PERKS = ['Lottery alerts', 'Re-rental alerts', 'Bedbug records', 'Rodent records',
-                     'Agent phone numbers', 'No ads']
+    PAYWALL_PERKS = ['Bedbug records', 'Rodent records', 'Agent phone numbers', 'No ads']
 
     def paywall_state(self, page):
         return page.evaluate("""(()=>{const m=document.getElementById('paywall-modal');
@@ -1529,19 +1524,25 @@ class Runner:
 
     def j_plus_gates(self, page, j, device):
         """What Plus is and what it locks (owner, 2026-09-30 / 10-01):
-        - the paywall lists exactly six perks, in order, and never the four
-          that are Plus but unlisted (folders, saved searches, landlord
-          research) — phone numbers came back as the sixth;
+        - the paywall lists exactly four perks, in order — alerts left Plus on
+          10-01 — and never the ones that are Plus but unlisted (folders,
+          saved searches, landlord research);
         - every paywall offers invite-a-friend for 2 months of Plus;
         - no visible "free" anywhere on the page or the paywall;
         - a NEW account (not grandfathered) gets the paywall — not the record —
-          from Bedbug filings and Rat inspections, and from Alerts;
+          from Bedbug filings and Rat inspections; Alerts get the sign-up
+          modal, never the paywall;
         - HPD pest violations stay open to everyone."""
         self.boot(page)
         page.evaluate("document.querySelector('a[href^=\"/alerts/\"]').click()"); time.sleep(0.8)
+        self.ok(self.alerts_signup_open(page), 'Alerts should open the sign-up modal, not the paywall (signed out)', j)
+        page.evaluate("document.getElementById('auth-modal').hidden = true"); time.sleep(0.2)
+        page.evaluate("document.getElementById('pill-noads').click()"); time.sleep(0.5)
         st = self.paywall_state(page)
-        self.ok(st['open'], 'Alerts should open the paywall (signed out)', j)
-        self.ok(st['perks'] == self.PAYWALL_PERKS, f'paywall perks should be exactly {self.PAYWALL_PERKS}, got {st["perks"]}', j)
+        self.ok(st['open'], 'the paywall should open', j)
+        self.ok(not any('alert' in p.lower() for p in st['perks']), f'alerts must not be a paywall perk: {st["perks"]}', j)
+        # Opened from Remove ads, so No ads leads; the set is what matters.
+        self.ok(sorted(st['perks']) == sorted(self.PAYWALL_PERKS), f'paywall perks should be exactly {self.PAYWALL_PERKS}, got {st["perks"]}', j)
         self.ok(not any(x in ' '.join(st['perks']) for x in ('Folders', 'Saved searches', 'Landlord research')),
                 f'unlisted Plus perks must stay off the paywall: {st["perks"]}', j)
         self.ok('2 months of Plus' in st['invite'], f'the paywall should offer invite-a-friend for 2 months: {st["invite"]!r}', j)

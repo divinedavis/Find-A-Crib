@@ -541,24 +541,15 @@ def alerts_subscribe():
     if not res.get("ok"):
         reason = res.get("reason", "signup_failed")
         return jsonify(error=reason), (429 if reason == "signup_cap" else 400)
-    # Alerts are a Plus feature for new sign-ups (2026-09-30, db/0037); the
-    # 66 subscribers from before are grandfathered. The row is saved either
-    # way — paying later switches it on without a second form — and the
-    # client shows the paywall when plus_required is true. Unknown = locked:
-    # the dispatcher's own check is the gate, this only picks the screen.
-    plus_required = not _alert_unlocked(email)
+    # Alerts are open to every account again (owner, 2026-10-01, db/0042).
+    # plus_required stays in the reply, always false, because TestFlight and
+    # App Store builds 101+ read it to decide whether to show the paywall.
+    plus_required = False
     # Deliberately no "already subscribed" signal in the reply: that would be
     # an oracle for whether an address is on the list.
     return jsonify(ok=True, boroughs=res.get("boroughs"), kinds=res.get("kinds"),
                    max_rent=res.get("max_rent"), income=res.get("income"),
                    plus_required=plus_required)
-
-
-def _alert_unlocked(email):
-    try:
-        return rpc("alert_sub_unlocked", {"p_email": email}) is True
-    except Exception:
-        return False
 
 
 def _session_user():
@@ -670,7 +661,7 @@ def alerts_prefs():
         return jsonify(error="temporarily_unavailable"), 503
     res["ok"] = True
     res["email"] = email
-    res["plus_required"] = not _alert_unlocked(email)
+    res["plus_required"] = False   # alerts need no Plus since 2026-10-01; old builds read it
     return jsonify(res)
 
 

@@ -74,7 +74,7 @@ final class LotteryFeed {
 
     /// The boroughs the tab shows: a subscriber's own, everyone else all five.
     /// Lotteries and re-rentals are for everyone (owner, 2026-09-30: "people
-    /// should be able to see lotteries and rerentals"); alerts are the Plus part.
+    /// should be able to see lotteries and rerentals"); alerts need an account.
     var viewBoroughs: [String] { subscribed && !boroughs.isEmpty ? boroughs : Borough.all.map(\.code) }
 
     /// Open lotteries in those boroughs, soonest deadline first.

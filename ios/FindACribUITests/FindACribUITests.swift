@@ -428,21 +428,22 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.buttons["city-field"].exists, "and leaves Search where it was")
     }
 
-    /// The app's Plus paywall (owner, 2026-10-01): the six perks, and NO
-    /// invite-a-friend route — App Review 3.1.1; referrals live on the website.
-    func testPaywallSixPerksNoInvite() throws {
+    /// The app's Plus paywall (owner, 2026-10-01): four perks — alerts left
+    /// Plus the same day — and NO invite-a-friend route (App Review 3.1.1;
+    /// referrals live on the website).
+    func testPaywallFourPerksNoInvite() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--paywall"]
         app.launch()
-        XCTAssertTrue(app.staticTexts["Lottery alerts"].waitForExistence(timeout: 15), "the Plus paywall opens with its perks")
-        for perk in ["Re-rental alerts", "Bedbug records", "Rodent records", "Agent phone numbers", "No ads"] {
+        XCTAssertTrue(app.staticTexts["Bedbug records"].waitForExistence(timeout: 15), "the Plus paywall opens with its perks")
+        for perk in ["Rodent records", "Agent phone numbers", "No ads"] {
             XCTAssertTrue(app.staticTexts[perk].exists, "paywall perk missing: \(perk)")
         }
         // Scope to the paywall sheet: Profile (behind it) has its own "Saved
         // searches" row, which is not a paywall perk (build 104).
-        let sheet = app.scrollViews.containing(.staticText, identifier: "Lottery alerts").firstMatch
+        let sheet = app.scrollViews.containing(.staticText, identifier: "Bedbug records").firstMatch
         XCTAssertTrue(sheet.exists, "the paywall's scroll view")
-        for gone in ["Saved searches", "Landlord research", "Folders", "Your lotteries & re-rentals"] {
+        for gone in ["Lottery alerts", "Re-rental alerts", "Saved searches", "Landlord research", "Folders", "Your lotteries & re-rentals"] {
             XCTAssertFalse(sheet.staticTexts[gone].exists, "unlisted perk on the paywall: \(gone)")
         }
         XCTAssertFalse(app.buttons["paywall-refer"].exists, "no in-app invite-a-friend button (App Review 3.1.1)")
@@ -452,7 +453,7 @@ final class FindACribUITests: XCTestCase {
 
     /// The Lotteries tab LISTS for everyone (owner, 2026-09-30: "people should
     /// be able to see lotteries and rerentals"). Not subscribed, it shows all
-    /// five boroughs with a "Turn on alerts" banner (alerts are Plus for new
+    /// five boroughs with a "Turn on alerts" banner (alerts were Plus for new
     /// sign-ups), NO sheet opens by itself, and the banner opens sign-in when
     /// signed out. --lotteries-demo stands in for a subscriber to all five.
     func testLotteriesTabSignupScreenThenListsForSubscribers() throws {

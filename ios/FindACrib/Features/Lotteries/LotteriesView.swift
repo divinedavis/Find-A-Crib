@@ -3,8 +3,8 @@ import SwiftUI
 /// The Lotteries tab: Housing Connect lotteries, soonest deadline first, and
 /// the HPD marketing agents' re-rentals — for EVERYONE (owner, 2026-09-30;
 /// it used to be a sign-up wall). A subscriber sees their alert boroughs,
-/// everyone else all five, with a banner to turn on alerts (Find A Crib Plus
-/// for new sign-ups; the alerts sheet opens the paywall).
+/// everyone else all five, with a banner to turn on alerts (an account, no
+/// Plus — alerts left Plus on 2026-10-01).
 /// The NJ pane (owner, 2026-09-24) lists the New Jersey towns holding
 /// affordable-housing drawings, from Affordable Homes New Jersey (CGP&H).
 /// See LotteryFeed.
@@ -86,9 +86,8 @@ struct LotteriesView: View {
         }
     }
 
-    /// Not subscribed: a banner above the list instead of a wall. Alerts are
-    /// Find A Crib Plus for new sign-ups; the alerts sheet saves the alert and
-    /// opens the paywall, so this only has to say what it is.
+    /// Not subscribed: a banner above the list instead of a wall; it only has
+    /// to say what alerts are.
     @ViewBuilder private var alertsBanner: some View {
         if !feed.subscribed {
             VStack(alignment: .leading, spacing: 8) {
@@ -96,7 +95,7 @@ struct LotteriesView: View {
                     Image(systemName: "bell.fill").font(.system(size: 18, weight: .bold)).foregroundStyle(SE.royal)
                     Text("Hear the minute a new one opens").font(.se(18, .bold)).foregroundStyle(SE.ink)
                 }
-                Text("An alert on this phone and by email the minute a lottery or re-rental opens in the boroughs you pick. Part of Find A Crib Plus.")
+                Text("An alert on this phone and by email the minute a lottery or re-rental opens in the boroughs you pick.")
                     .font(.se(15)).foregroundStyle(SE.ink2)
                 SEPrimaryButton(title: "Turn on alerts", icon: "bell.fill", fill: SE.navy) { promptSignup() }
                     .accessibilityIdentifier("lotteries-signup")

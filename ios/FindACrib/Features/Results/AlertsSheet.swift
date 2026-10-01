@@ -27,11 +27,6 @@ struct AlertsSheet: View {
     /// the button then reads "Save changes", as on the web.
     @State private var editing = false
     @State private var loadingPrefs = false
-    /// The API said this address needs Plus (new sign-ups since 2026-09-30;
-    /// earlier subscribers are grandfathered). The alert is saved; Plus
-    /// switches it on.
-    @State private var locked = false
-    @State private var showPaywall = false
 
     private static let kindRows: [(key: String, name: String, sub: String)] = [
         ("rerental", "Re-rentals", "A vacated affordable apartment an HPD marketing agent re-rents directly, usually first come, first served"),
@@ -43,17 +38,7 @@ struct AlertsSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    if done && locked && !auth.hasPlus {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("Your alert is saved").font(.se(26, .bold)).foregroundStyle(SE.ink)
-                            Text("Alerts are part of Find A Crib Plus. Join and it switches on right away: a notification on this phone and an email the minute a lottery or re-rental opens in \(boroughPhrase)\(fitPhrase).")
-                                .font(.se(17)).foregroundStyle(SE.ink2)
-                        }
-                        SEPrimaryButton(title: "Turn on alerts with Plus", icon: "bell.fill", fill: SE.navy) { showPaywall = true }
-                            .accessibilityIdentifier("alerts-unlock")
-                        Button { dismiss() } label: { Text("Not now").font(.se(17, .semibold)).foregroundStyle(SE.royal).frame(maxWidth: .infinity) }
-                            .buttonStyle(.plain)
-                    } else if done {
+                    if done {
                         VStack(alignment: .leading, spacing: 10) {
                             Text("You're on the list").font(.se(26, .bold)).foregroundStyle(SE.ink)
                             Text("The minute a lottery or re-rental opens in \(boroughPhrase)\(fitPhrase), you'll get a notification on this phone and an email — not a weekly round-up. Nothing in between. A welcome note is on its way to \(auth.email ?? "your inbox").")
@@ -108,7 +93,7 @@ struct AlertsSheet: View {
                             .opacity((boroughs.isEmpty || kinds.isEmpty) ? 0.5 : 1)
                             .accessibilityIdentifier("alerts-subscribe")
                         Text(editing ? "Stop the emails any time from the link at the bottom of one, or at findacrib.com/alerts/."
-                                     : "Part of Find A Crib Plus. This replaces any borough alert already set up for this email on findacrib.com.")
+                                     : "This replaces any borough alert already set up for this email on findacrib.com.")
                             .font(.se(14)).foregroundStyle(SE.ink3)
                     }
                 }
@@ -121,12 +106,6 @@ struct AlertsSheet: View {
         }
         .onAppear { seed() }
         .task { await loadPrefs() }
-        .sheet(isPresented: $showPaywall) { PaywallView(source: "alerts") }
-        // Bought Plus from the locked card: the saved alert is live now, so
-        // this is the moment to ask for notifications, as for a free sign-up.
-        .onChange(of: auth.hasPlus) { _, has in
-            if has && locked { locked = false; Task { await PushService.shared.requestAfterAlerts(); await PushService.shared.refreshStatus() } }
-        }
         .accessibilityIdentifier("alerts-sheet")
     }
 
@@ -280,9 +259,8 @@ struct AlertsSheet: View {
             let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
             let body = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
             if code == 200, (body?["ok"] as? Bool) == true {
-                locked = (body?["plus_required"] as? Bool) == true && !auth.hasPlus
-                Analytics.shared.track("alerts_saved", ["editing": editing, "kinds": kinds.count, "locked": locked])
-                if locked { done = true; showPaywall = true; return }
+                // Alerts need no Plus since 2026-10-01; the API's plus_required is always false.
+                Analytics.shared.track("alerts_saved", ["editing": editing, "kinds": kinds.count])
                 // Turning alerts on is the other good moment. Not on an edit:
                 // changing a rent cap is housekeeping, not delight.
                 if !editing { ReviewPrompt.shared.record(.alerts) }

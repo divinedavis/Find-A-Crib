@@ -36,10 +36,9 @@ struct PaywallView: View {
             }
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    // The six perks (owner, 2026-10-01). Landlord research, saved
-                    // searches and folders stay Plus but unlisted.
-                    perk("bell.fill", "Lottery alerts", "The minute a Housing Connect or HCR lottery opens in your boroughs — a notification and an email.")
-                    perk("figure.run", "Re-rental alerts", "When an HPD marketing agent re-rents an apartment in your boroughs — often first come, first served.")
+                    // The four perks (owner, 2026-10-01: alerts left Plus the same
+                    // day). Landlord research, saved searches and folders stay
+                    // Plus but unlisted.
                     perk("bed.double.fill", "Bedbug records", "Every bedbug filing a landlord made for the building, year by year.")
                     perk("hare.fill", "Rodent records", "The Health Department's rat inspections, building by building.")
                     perk("phone.fill", "Agent phone numbers", "Call who actually runs the building — 11,000+ managing-agent numbers.")

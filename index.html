@@ -1730,8 +1730,6 @@
          to the top (openPaywall). Big type on purpose (owner, 2026-09-30:
          "a prompt this big with large font"). -->
     <ul class="paywall-feats" id="paywall-feats">
-      <li data-perk="alerts"><span class="pf-ico">🔔</span><span><b>Lottery alerts</b>The minute a Housing Connect or HCR lottery opens in your boroughs — email and iPhone</span></li>
-      <li data-perk="rerental_alerts"><span class="pf-ico">🏃</span><span><b>Re-rental alerts</b>When an HPD marketing agent re-rents an apartment in your boroughs — often first come, first served</span></li>
       <li data-perk="bedbugs"><span class="pf-ico">🛏️</span><span><b>Bedbug records</b>Every bedbug filing a landlord made for the building, year by year</span></li>
       <li data-perk="rodents"><span class="pf-ico">🐀</span><span><b>Rodent records</b>The Health Department's rat inspections, building by building</span></li>
       <li data-perk="phone"><span class="pf-ico">📞</span><span><b>Agent phone numbers</b>Call who actually runs the building — 11,000+ managing-agent numbers</span></li>
@@ -1746,7 +1744,6 @@
       <button id="paywall-refer" type="button" class="paywall-refer">🎁 Or invite a friend — you both get 2 months of Plus</button>
     </div>
     <p class="paywall-fine">Cancel anytime. Billed monthly via Stripe.</p>
-    <p class="paywall-fine" id="paywall-have-alerts" hidden><a href="#" id="paywall-signin">Already get our alerts? Sign in</a></p>
   </div>
 </div>
 <!-- Referral: invite one friend, both get Plus free -->
@@ -1837,7 +1834,7 @@
     <div class="profile-row profile-toggle-row nyc-only">
       <div>
         <div class="profile-feat">🏛️ Lottery &amp; re-rental alerts</div>
-        <div class="profile-feat-sub">An email the minute a new housing lottery or re-rental opens in your borough. Part of Find A Crib Plus.</div>
+        <div class="profile-feat-sub">An email the minute a new housing lottery or re-rental opens in your borough.</div>
       </div>
       <a class="folder-new" href="/alerts/" style="text-decoration:none;white-space:nowrap">Set up →</a>
     </div>
@@ -2744,7 +2741,7 @@ function favActive() {
     if (rb) rb.hidden = !authUser || plusActive;
   }
   // Saving is free — it just requires an account (the signup hook for ad
-  // traffic). Alerts, phones, research, folders, and saved searches stay Plus.
+  // traffic). Phones, research, folders, and saved searches stay Plus.
   function gateSave(isUnsave) {
     if (isUnsave) return true;
     if (!authUser) { openAuthModal('Create an account to save this building.', 'save'); setAuthMode('signup'); return false; }
@@ -5738,9 +5735,8 @@ function favActive() {
   let featCursor = 0;
 
   // "Email me the minute the next one opens in <borough>" — under the apply
-  // button on lottery and re-rental tiles. Sign-up at /alerts/ (Plus for new
-  // subscribers since 2026-09-30; earlier ones grandfathered), no
-  // account; the borough the tile is in is preselected there.
+  // button on lottery and re-rental tiles. Sign-up at /alerts/ (needs an account,
+  // not Plus — alerts were Plus only 2026-09-30 to 10-01); the borough the tile is in is preselected there.
   const ALERT_BORO = { 'Manhattan': 'M', 'Brooklyn': 'Bk', 'Queens': 'Q', 'Bronx': 'Bx',
                        'The Bronx': 'Bx', 'Staten Island': 'SI' };
   function alertLink(borough, kind, src, short) {
@@ -7652,10 +7648,8 @@ function favActive() {
   function openPaywall(bbl, source) {
     pendingPhoneBbl = bbl || null;            // remember what they wanted, to reveal after checkout
     paywallSource = source || (bbl ? 'phone' : 'other');
-    // Arriving from Alerts (2026-09-30): lead with what they came for, and let
-    // a signed-out subscriber from before the switch (grandfathered, free)
-    // sign in instead of paying.
-    const TITLES = { alerts: 'Get alerts the minute one opens', noads: 'Find A Crib, with no ads',
+    // Lead with what they came for.
+    const TITLES = { noads: 'Find A Crib, with no ads',
                      bedbugs: 'See every building\u2019s bedbug record', rodents: 'See every building\u2019s rat inspections',
                      phone: 'Call who actually runs the building', research: 'Research any landlord',
                      saved_search: 'Save your searches', folders: 'Organize your saved homes' };
@@ -7667,10 +7661,8 @@ function favActive() {
       feats.querySelectorAll('li').forEach(li => li.classList.remove('pf-lead'));
       const lead = feats.querySelector('li[data-perk="' + paywallSource + '"]');
       if (lead) { feats.prepend(lead); lead.classList.add('pf-lead'); }
-      else { const a = feats.querySelector('li[data-perk="alerts"]'); if (a) feats.prepend(a); }
+      else { const a = feats.querySelector('li[data-perk="bedbugs"]'); if (a) feats.prepend(a); }
     }
-    const ha = document.getElementById('paywall-have-alerts');
-    if (ha) ha.hidden = !(paywallSource === 'alerts' && !authUser);
     const err = document.getElementById('paywall-error');
     if (err) err.hidden = true;
     paywallModal.hidden = false;
@@ -7696,10 +7688,8 @@ function favActive() {
     const err = document.getElementById('paywall-error');
     if (!authUser) {
       closePaywall();
-      if (paywallSource === 'alerts') alertsResume = alertsNext;   // after sign-in: grandfathered -> page, else paywall again
       openAuthModal('Sign in to subscribe to Find A Crib Plus.', 'subscribe'); return;
     }
-    if (paywallSource === 'alerts' && alertsNext) { try { sessionStorage.setItem('fac.alertsNext', alertsNext); } catch (e) {} }
     btn.disabled = true; btn.textContent = 'Starting checkout…';
     track('outbound', { kind: 'checkout_start', source: paywallSource });
     try { sessionStorage.setItem('fac.paySource', paywallSource); } catch (e) {}
@@ -7727,14 +7717,15 @@ function favActive() {
   (function () {
     const p = new URLSearchParams(location.search);
     if (p.get('plus') === 'success') {
-      showPlusToast('🎉 You’re now Find A Crib Plus — alerts, agent phone numbers and landlord research are unlocked.');
+      showPlusToast('🎉 You’re now Find A Crib Plus — bedbug and rodent records, agent phone numbers and no ads are unlocked.');
       plusPurchasePending = true;
     }
     // ?plus=1 is the "unlock" link from the gated pages. Signed-out users get
     // the sign-in step first — startCheckout() already routes them there.
     if (p.get('plus') === '1') plusUpsellPending = true;
-    // ?plus=alerts: the /alerts/ page and the "unlock your alerts" email.
-    if (p.get('plus') === 'alerts') { plusUpsellPending = true; paywallSource = 'alerts'; }
+    // ?plus=alerts: old "unlock your alerts" emails. Alerts need no Plus since
+    // 2026-10-01, so send them to the alerts page instead of the paywall.
+    if (p.get('plus') === 'alerts') { location.replace('/alerts/'); return; }
     if (p.has('plus')) { p.delete('plus'); history.replaceState({}, '', location.pathname + (p.toString() ? '?' + p : '')); }
     // ?auth=signup&next=/alerts/ — the alerts page sends a signed-out visitor
     // here to create the account, then goes back. `next` is a same-site path
@@ -7750,41 +7741,18 @@ function favActive() {
   // Alerts need an account (asked 2026-09-08): every /alerts/ link in the
   // header, chips and menu opens the sign-up modal when signed out, and the
   // page opens on its own once the session lands.
-  const ALERTS_GATE_MSG = 'Create an account to set up alerts — an email the minute a lottery or re-rental opens in your borough, with Find A Crib Plus.';
-  // Since 2026-09-30 alerts are Plus for new sign-ups, so every Alerts link
-  // opens the Plus paywall first (owner: "shouldn't users see this when they
-  // click on Alerts?"). Plus members, and the subscribers from before the
-  // switch (grandfathered — /api/alerts/prefs says plus_required:false), go
-  // straight to the alerts page to manage them. After paying, checkout
-  // returns and continues to the alerts page they asked for.
-  let alertsNext = null, alertsResume = null;
-  function alertsGo(href) {
-    alertsNext = href;
-    if (authUser && plusKnown && plusActive) { location.href = href; return; }
-    const paywall = () => openPaywall(null, 'alerts');
-    if (!authUser || !supaClient) { paywall(); return; }
-    supaClient.auth.getSession().then(r => {
-      const tok = r && r.data && r.data.session && r.data.session.access_token;
-      if (!tok) return paywall();
-      return fetch('/api/alerts/prefs', { headers: { Authorization: 'Bearer ' + tok } })
-        .then(x => x.ok ? x.json() : null)
-        .then(j => { if (j && j.plus_required === false) location.href = href; else paywall(); });
-    }).catch(paywall);
-  }
+  const ALERTS_GATE_MSG = 'Create an account to set up alerts — an email the minute a lottery or re-rental opens in your borough.';
+  // Alerts are open to every account again (owner, 2026-10-01; they were Plus
+  // 2026-09-30 to 10-01). Signed out: the sign-up modal, then on to the
+  // alerts page they clicked once the session lands. Signed in: straight there.
   document.addEventListener('click', e => {
     const a = e.target.closest('a[href^="/alerts/"]');
-    if (!a) return;
-    if (authUser && plusKnown && plusActive) return;   // members manage alerts on the page
+    if (!a || authUser) return;
     e.preventDefault();
     try { track('outbound', { kind: 'gate_alerts', src: new URL(a.href, location.href).searchParams.get('src') || null }); } catch (err) {}
-    alertsGo(a.getAttribute('href'));
+    authGateNext = a.getAttribute('href');
+    openAuthModal(ALERTS_GATE_MSG, 'alerts'); setAuthMode('signup');
   }, true);
-  document.getElementById('paywall-signin').addEventListener('click', e => {
-    e.preventDefault();
-    closePaywall();
-    alertsResume = alertsNext;
-    openAuthModal('Sign in with the email your alerts go to.', 'paywall_signin');
-  });
   // Landlords on a laptop, signed out (owner, 2026-09-21): the sign-up modal
   // instead of the directory page, then on to it once the account exists.
   // Phones keep going straight to the page. 901px is the breakpoint where the
@@ -8295,9 +8263,6 @@ function favActive() {
       let src = 'other';
       try { src = sessionStorage.getItem('fac.paySource') || 'other'; sessionStorage.removeItem('fac.paySource'); } catch (e) {}
       track('plus_purchase', { source: src, provider: 'stripe' });
-      let next = null;
-      try { next = sessionStorage.getItem('fac.alertsNext'); sessionStorage.removeItem('fac.alertsNext'); } catch (e) {}
-      if (next && /^\/alerts\//.test(next)) setTimeout(() => { location.href = next; }, 2500);   // let the toast land first
     }
     // Google Ads purchase conversion for a completed Plus checkout ($4.99).
     // Enhanced conversions: pass the account email (Google hashes it) so the
@@ -8334,7 +8299,6 @@ function favActive() {
       tr('auth ' + _evt);
       authUser = sess?.user || null;
       if (authUser && authGateNext) { const n = authGateNext; authGateNext = null; closeAuthModal(); location.href = n; return; }
-      if (authUser && alertsResume) { const h = alertsResume; alertsResume = null; closeAuthModal(); alertsGo(h); }
       adoptAccountTheme(authUser);   // the account's choice beats this device's
       adoptAccountHome(authUser);
       if (authUser && HOME && !(authUser.user_metadata || {}).home_bbl) saveHome();   // this device set it before signing in

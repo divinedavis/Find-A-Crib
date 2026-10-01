@@ -454,7 +454,7 @@ class Runner:
             self.click(page, '#menu-btn'); time.sleep(0.3)
             page.evaluate("document.querySelector('#menu-pop a[href^=\"/alerts/\"]').click()"); time.sleep(0.5)
             self.ok(self.alerts_signup_open(page), 'menu Alerts should open the sign-up modal, not the paywall, when signed out', j)
-            page.evaluate("document.getElementById('auth-modal').hidden = true"); time.sleep(0.2)
+            page.evaluate("document.querySelector('#auth-modal [data-auth=\"close\"]').click()"); time.sleep(0.2)
         else:
             # Phones: the Alerts chip sits immediately to the right of Saved (asked 2026-09-08).
             pos = page.evaluate("(()=>{const r=s=>document.querySelector(s).getBoundingClientRect(); const f=r('#pill-fav'), a=r('#pill-alerts-m'); return {fr:f.right, al:a.left, fy:f.top+f.height/2, ay:a.top+a.height/2, aw:a.width, href:document.getElementById('pill-alerts-m').getAttribute('href')}})()")
@@ -463,7 +463,7 @@ class Runner:
             self.ok(pos['href'].startswith('/alerts/'), f'Alerts chip should link to /alerts/: {pos}', j)
             page.evaluate("document.getElementById('pill-alerts-m').click()"); time.sleep(0.5)
             self.ok(self.alerts_signup_open(page), 'Alerts chip should open the sign-up modal, not the paywall, when signed out', j)
-            page.evaluate("document.getElementById('auth-modal').hidden = true"); time.sleep(0.2)
+            page.evaluate("document.querySelector('#auth-modal [data-auth=\"close\"]').click()"); time.sleep(0.2)
 
     def alerts_signup_open(self, page):
         return page.evaluate("""(()=>{const a=document.getElementById('auth-modal'), m=document.getElementById('paywall-modal');
@@ -1536,7 +1536,7 @@ class Runner:
         self.boot(page)
         page.evaluate("document.querySelector('a[href^=\"/alerts/\"]').click()"); time.sleep(0.8)
         self.ok(self.alerts_signup_open(page), 'Alerts should open the sign-up modal, not the paywall (signed out)', j)
-        page.evaluate("document.getElementById('auth-modal').hidden = true"); time.sleep(0.2)
+        page.evaluate("document.querySelector('#auth-modal [data-auth=\"close\"]').click()"); time.sleep(0.2)
         page.evaluate("document.getElementById('pill-noads').click()"); time.sleep(0.5)
         st = self.paywall_state(page)
         self.ok(st['open'], 'the paywall should open', j)

@@ -8349,7 +8349,9 @@ function favActive() {
       else openAuthModal(undefined, 'header');
     });
     authModal.addEventListener('click', e => {
-      if (e.target === authModal || e.target.closest('[data-auth="close"]')) closeAuthModal();
+      // Dismissed, not signed in: forget where a gate (Alerts, Landlords) was
+      // headed, or a later sign-in from the header would jump there.
+      if (e.target === authModal || e.target.closest('[data-auth="close"]')) { authGateNext = null; closeAuthModal(); }
     });
     authSwitch.addEventListener('click', e => { e.preventDefault(); setAuthMode(authMode === 'signin' ? 'signup' : 'signin'); });
     document.getElementById('auth-google').addEventListener('click', async e => {

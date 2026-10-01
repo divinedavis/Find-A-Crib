@@ -428,6 +428,24 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.buttons["city-field"].exists, "and leaves Search where it was")
     }
 
+    /// Every $4.99 prompt offers the referral route (owner, 2026-10-01):
+    /// "invite a friend — you both get 2 months of Plus". Signed out (the
+    /// simulator always is), tapping it asks for sign-in instead of failing.
+    func testPaywallOffersInviteAFriend() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--paywall"]
+        app.launch()
+        let refer = app.buttons["paywall-refer"]
+        if !refer.waitForExistence(timeout: 15) { app.swipeUp() }
+        XCTAssertTrue(refer.waitForExistence(timeout: 5), "the Plus paywall offers invite-a-friend")
+        XCTAssertTrue(refer.label.contains("2 months of Plus"), "it says what the reward is: \(refer.label)")
+        refer.tap()
+        XCTAssertTrue(app.staticTexts["Sign in first, then invite a friend."].waitForExistence(timeout: 5),
+                      "signed out, it asks for sign-in")
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'free'")).firstMatch.exists,
+                       "no 'free' wording on the paywall")
+    }
+
     /// The Lotteries tab LISTS for everyone (owner, 2026-09-30: "people should
     /// be able to see lotteries and rerentals"). Not subscribed, it shows all
     /// five boroughs with a "Turn on alerts" banner (alerts are Plus for new

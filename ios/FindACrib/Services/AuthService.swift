@@ -214,6 +214,18 @@ final class AuthService {
         hasPlus = v ?? false
     }
 
+    /// This account's invite link (owner, 2026-10-01: every $4.99 prompt offers
+    /// "invite a friend — you both get 2 months of Plus"). Same RPC and link
+    /// shape as the website's referral modal; the friend redeems it on
+    /// findacrib.com when they create their account. nil when signed out or
+    /// the call fails.
+    func referralLink() async -> URL? {
+        guard let client, session != nil else { return nil }
+        guard let code: String = try? await client.rpc("get_or_create_referral").execute().value,
+              !code.isEmpty else { return nil }
+        return URL(string: "https://findacrib.com/?ref=\(code)")
+    }
+
     func contacts(for bbl: String) async -> HPDContacts? {
         guard let client, isSignedIn else { return nil }
         if let c = contactsCache[bbl] { return c }

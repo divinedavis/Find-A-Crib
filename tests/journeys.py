@@ -468,7 +468,9 @@ class Runner:
     def alerts_paywall_open(self, page):
         return page.evaluate("""(()=>{const m=document.getElementById('paywall-modal');
           return !m.hidden && document.getElementById('paywall-title').textContent.includes('alerts')
-            && !document.getElementById('paywall-have-alerts').hidden && location.pathname==='/'})()""")
+            && !document.getElementById('paywall-have-alerts').hidden && location.pathname==='/'
+            && /2 months of Plus/.test(document.getElementById('paywall-refer').textContent)
+            && document.getElementById('paywall-refer').getBoundingClientRect().height > 0})()""")
 
     def j_search_address(self, page, j, device):
         self.boot(page)

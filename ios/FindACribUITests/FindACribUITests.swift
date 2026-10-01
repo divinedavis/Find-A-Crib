@@ -428,25 +428,20 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.buttons["city-field"].exists, "and leaves Search where it was")
     }
 
-    /// Every $4.99 prompt offers the referral route (owner, 2026-10-01):
-    /// "invite a friend — you both get 2 months of Plus". Signed out (the
-    /// simulator always is), tapping it asks for sign-in instead of failing.
-    func testPaywallOffersInviteAFriend() throws {
+    /// The app's Plus paywall (owner, 2026-10-01): the six perks, and NO
+    /// invite-a-friend route — App Review 3.1.1; referrals live on the website.
+    func testPaywallSixPerksNoInvite() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--paywall"]
         app.launch()
-        let refer = app.buttons["paywall-refer"]
-        XCTAssertTrue(refer.waitForExistence(timeout: 15), "the Plus paywall offers invite-a-friend")
-        XCTAssertTrue(refer.label.contains("2 months of Plus"), "it says what the reward is: \(refer.label)")
-        // On iPad the six-perk sheet leaves this button half below the sheet's
-        // edge; a tap there misses and lands outside (build 104). Scroll the
-        // sheet's own scroll view first, then tap.
-        let sheet = app.scrollViews.containing(.button, identifier: "paywall-refer").firstMatch
-        if sheet.exists { sheet.swipeUp(); sheet.swipeUp() }
-        let err = app.staticTexts["paywall-refer-error"]
-        refer.tap()
-        XCTAssertTrue(err.waitForExistence(timeout: 5), "signed out, it asks for sign-in")
-        XCTAssertEqual(err.label, "Sign in first, then invite a friend.")
+        XCTAssertTrue(app.staticTexts["Lottery alerts"].waitForExistence(timeout: 15), "the Plus paywall opens with its perks")
+        for perk in ["Re-rental alerts", "Bedbug records", "Rodent records", "Agent phone numbers", "No ads"] {
+            XCTAssertTrue(app.staticTexts[perk].exists, "paywall perk missing: \(perk)")
+        }
+        for gone in ["Saved searches", "Landlord research", "Folders", "Your lotteries & re-rentals"] {
+            XCTAssertFalse(app.staticTexts[gone].exists, "unlisted perk on the paywall: \(gone)")
+        }
+        XCTAssertFalse(app.buttons["paywall-refer"].exists, "no in-app invite-a-friend button (App Review 3.1.1)")
         XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'free'")).firstMatch.exists,
                        "no 'free' wording on the paywall")
     }

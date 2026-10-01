@@ -60,8 +60,6 @@ struct PaywallView: View {
                     }
                     if let e = plus.error { Text(e).font(.se(14)).foregroundStyle(SE.bad) }
 
-                    // The referral route on every $4.99 prompt (owner, 2026-10-01).
-                    if !auth.hasPlus { inviteRow }
 
                     Text("Payment is charged to your Apple Account at confirmation. The subscription renews automatically each month at \(plus.priceText) unless cancelled at least 24 hours before the end of the current period. Manage or cancel in Settings › Apple Account › Subscriptions.")
                         .font(.se(13)).foregroundStyle(SE.ink3)
@@ -77,47 +75,11 @@ struct PaywallView: View {
         .task { await plus.load() }
     }
 
-    @State private var inviteURL: URL?
-    @State private var inviteBusy = false
-    @State private var inviteError: String?
-
-    /// "Invite a friend — you both get 2 months of Plus": fetch the account's
-    /// link, then the share sheet. Signed out, it says to sign in first.
-    @ViewBuilder private var inviteRow: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if let inviteURL {
-                ShareLink(item: inviteURL, message: Text("Join me on Find A Crib — we both get 2 months of Plus, on the house.")) {
-                    Label("Share your invite link", systemImage: "square.and.arrow.up")
-                        .font(.se(17, .bold)).foregroundStyle(SE.royal)
-                        .frame(maxWidth: .infinity).padding(.vertical, 14)
-                        .overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.royal, lineWidth: 1.5))
-                }
-                .accessibilityIdentifier("paywall-refer-share")
-                Text(inviteURL.absoluteString).font(.se(13)).foregroundStyle(SE.ink3).textSelection(.enabled)
-            } else {
-                Button {
-                    guard auth.isSignedIn else { inviteError = "Sign in first, then invite a friend."; return }
-                    inviteBusy = true; inviteError = nil
-                    Task {
-                        let url = await auth.referralLink()
-                        inviteBusy = false
-                        if let url { inviteURL = url; Analytics.shared.track("referral_open", ["via": "app_paywall", "source": source]) }
-                        else { inviteError = "Couldn't make your link right now. Try again shortly." }
-                    }
-                } label: {
-                    Text(inviteBusy ? "…" : "🎁 Or invite a friend — you both get 2 months of Plus")
-                        .font(.se(17, .bold)).foregroundStyle(SE.royal).multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity).padding(.vertical, 14)
-                        .overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.royal, lineWidth: 1.5))
-                }
-                .buttonStyle(.plain).disabled(inviteBusy)
-                .accessibilityIdentifier("paywall-refer")
-            }
-            if let inviteError { Text(inviteError).font(.se(14)).foregroundStyle(SE.bad).accessibilityIdentifier("paywall-refer-error") }
-            Text("Your friend gets 2 months when they create their account from your link, and so do you. Invite more friends and the months stack.")
-                .font(.se(13)).foregroundStyle(SE.ink3)
-        }
-    }
+    // No invite-a-friend button in the app (owner, 2026-10-01: "let's do
+    // whatever makes Apple happy"). App Review 3.1.1 bars unlocking paid
+    // features in-app by anything other than in-app purchase; the referral
+    // (2 months of Plus) lives on findacrib.com, and the app honours Plus
+    // however it was earned, which 3.1.3(b) allows.
 
     private func perk(_ icon: String, _ title: String, _ sub: String) -> some View {
         HStack(alignment: .top, spacing: 14) {

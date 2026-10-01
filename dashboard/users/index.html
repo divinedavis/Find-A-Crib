@@ -291,7 +291,7 @@
         <div class="tbl-wrap">
           <table class="utable">
             <thead><tr id="uhead">
-              <th data-sort="name" tabindex="0" role="button" aria-sort="none">Name<span class="sarr"></span></th><th data-sort="ios_app" tabindex="0" role="button" aria-sort="none" title="The app version last seen from this account's iPhone app, from its build number. — = never signed in from the app.">iOS version<span class="sarr"></span></th><th data-sort="alerts" tabindex="0" role="button" aria-sort="none" title="On borough lottery/re-rental emails, or saved-building emails">Alerts<span class="sarr"></span></th><th data-sort="last_seen" tabindex="0" role="button" aria-sort="none" title="The last time this account did anything signed in — a visit or an app session, not only an explicit login. Click a date in the column to see when they joined.">Last signed in<span class="sarr"></span></th><th data-sort="phone" tabindex="0" role="button" aria-sort="none" title="iPhone or Android, from any signed-in session (web or the iPhone app). — = only seen on a computer/iPad.">Phone<span class="sarr"></span></th><th data-sort="device" tabindex="0" role="button" aria-sort="none" title="Which front end their newest session is on: the app (iPhone, iPad or Mac, once they are on build 96+), a browser on a phone or tablet (mobile web), or a browser on a computer.">Last device<span class="sarr"></span></th>
+              <th data-sort="name" tabindex="0" role="button" aria-sort="none">Name<span class="sarr"></span></th><th data-sort="ios_app" tabindex="0" role="button" aria-sort="none" title="The app version last seen from this account's iPhone app, from its build number. — = never signed in from the app.">iOS version<span class="sarr"></span></th><th data-sort="alerts" tabindex="0" role="button" aria-sort="none" title="On borough lottery/re-rental emails, or saved-building emails">Alerts<span class="sarr"></span></th><th data-sort="plan" tabindex="0" role="button" aria-sort="none" title="Find A Crib Plus: Plus = paying (Stripe or the App Store); Comped / Founding / Referral = has Plus without paying; No = not on Plus. Sorts paying first.">Plus<span class="sarr"></span></th><th data-sort="last_seen" tabindex="0" role="button" aria-sort="none" title="The last time this account did anything signed in — a visit or an app session, not only an explicit login. Click a date in the column to see when they joined.">Last signed in<span class="sarr"></span></th><th data-sort="phone" tabindex="0" role="button" aria-sort="none" title="iPhone or Android, from any signed-in session (web or the iPhone app). — = only seen on a computer/iPad.">Phone<span class="sarr"></span></th><th data-sort="device" tabindex="0" role="button" aria-sort="none" title="Which front end their newest session is on: the app (iPhone, iPad or Mac, once they are on build 96+), a browser on a phone or tablet (mobile web), or a browser on a computer.">Last device<span class="sarr"></span></th>
             </tr></thead>
             <tbody id="urows"></tbody>
           </table>
@@ -504,7 +504,7 @@
     if(p==='comp') return '<span class="badge b-comp">Comped</span>';
     if(p==='founding') return '<span class="badge b-comp">Founding</span>';
     if(p==='referral') return '<span class="badge b-ref">Referral</span>';
-    return '<span class="badge b-free">Free</span>';
+    return '<span class="u-muted">No</span>';
   }
   // A phone or tablet BROWSER. 'mobile'/'tablet' are what dashboard_users()
   // answered before 0034 and can still be sitting in a page loaded earlier.
@@ -545,6 +545,8 @@
     email:      { get:function(u){ return (u.email||'').toLowerCase() || null; }, num:false },
     ios_app:    { get:function(u){ return u.ios_app ? (parseInt(u.ios_build, 10) || 1) : 0; }, num:true },
     alerts:     { get:function(u){ return u.alerts ? 1 : 0; }, num:true },
+    // Ranked (PLAN_RANK above), so a descending sort puts paying users first.
+    plan:       { get:function(u){ return u.plan==='founding' ? PLAN_RANK.comp : (PLAN_RANK[u.plan] || 0); }, num:true },
     created_at: { get:function(u){ return u.created_at ? Date.parse(u.created_at) : null; }, num:true },
     last_seen:  { get:function(u){ return u.last_seen ? Date.parse(u.last_seen) : null; }, num:true },
     phone:      { get:function(u){ return u.phone || null; }, num:false },
@@ -598,6 +600,11 @@
     } else if(key==='alerts'){
       opt('On alerts', function(u){ return !!u.alerts; });
       opt('Not on alerts', function(u){ return !u.alerts; });
+    } else if(key==='plan'){
+      opt('Has Plus (paying or comped)', function(u){ return !!u.plan && u.plan!=='free'; });
+      opt('Paying Plus', function(u){ return u.plan==='plus'; });
+      opt('Comped / founding / referral', function(u){ return u.plan==='comp'||u.plan==='founding'||u.plan==='referral'; });
+      opt('Not on Plus', function(u){ return !u.plan || u.plan==='free'; });
     } else if(key==='phone'){
       opt('iPhone', function(u){ return u.phone==='iphone'; });
       opt('Android', function(u){ return u.phone==='android'; });
@@ -745,6 +752,7 @@
         '<td class="u-name"><button type="button" class="u-namebtn" data-email="'+esc(u.email)+'" title="Click to show the email">'+esc(u.name)+'</button></td>'+
         '<td>'+iosBadge(u)+'</td>'+
         '<td>'+(u.alerts ? '<span style="display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:700;background:rgba(30,123,52,.15);color:#3ccf6a">Y</span>' : '<span class="u-muted">N</span>')+'</td>'+
+        '<td>'+planBadge(u.plan)+'</td>'+
         '<td><button type="button" class="u-namebtn u-joinedbtn" data-joined="'+esc(fdate(u.created_at))+'" data-returned="'+(didReturn(u)?'1':'0')+'" title="Click to show when this user joined">'+fdate(u.last_seen)+(didReturn(u)?' <span class="u-muted">↩</span>':'')+'</button></td>'+
         '<td>'+phoneBadge(u.phone)+'</td>'+
         '<td>'+deviceBadge(u.device, u.app_device)+'</td>'+

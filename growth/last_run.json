@@ -117,7 +117,7 @@
     "accept_pct": 1.1,
     "accept_pct_mature": 0.0,
     "added": 0,
-    "at": "2026-09-30T05:11:24+00:00",
+    "at": "2026-10-01T05:11:27+00:00",
     "by_crawl_age": {
       "0-6d": {
         "accept_pct": 16.7,
@@ -151,19 +151,26 @@
       "2026-08-31": 1,
       "2026-09-07": 1,
       "2026-09-14": 0,
-      "2026-09-21": 7,
-      "2026-09-28": 0
+      "2026-09-21": 6,
+      "2026-09-28": 1
     },
     "crawls_week_partial": "2026-09-28",
-    "date": "2026-09-30",
+    "date": "2026-10-01",
     "dropped": 0,
     "errors": 0,
+    "ever_indexed": 4,
+    "evicted": 3,
+    "evicted_urls": [
+      "https://findacrib.com/building/manhattan/95-allen-st-1004140023/",
+      "https://findacrib.com/neighborhood/queens/long-island-city-hunters-point/",
+      "https://findacrib.com/zip/11356/"
+    ],
     "fetched_mature": 88,
     "fetched_pct": 20.7,
     "gained_indexed": 0,
     "indexed_pct": 0.2,
     "inspected": 100,
-    "last_crawl": "2026-09-27",
+    "last_crawl": "2026-09-28",
     "lost_indexed": 0,
     "never_fetched": {
       "available": 15,
@@ -180,149 +187,146 @@
       "section8": 6
     },
     "ok": true,
-    "published_urls": 4076,
+    "published_urls": 4084,
     "read": 458,
     "rechecked": 100,
     "states": {
       "crawled_not_indexed": 94,
-      "discovered_not_indexed": 84,
+      "discovered_not_indexed": 110,
       "indexed": 1,
-      "unknown_to_google": 279
+      "unknown_to_google": 253
     }
   },
   "measure": {
-    "at": "2026-09-30T05:11:26+00:00",
-    "coverage_pct": 82.0,
-    "date": "2026-09-30",
+    "at": "2026-10-01T05:11:29+00:00",
+    "coverage_pct": 82.4,
+    "date": "2026-10-01",
     "days": 1,
-    "keywords_covered": 402,
+    "keywords_covered": 404,
     "keywords_total": 490,
-    "latest_measured_day": "2026-09-29",
+    "latest_measured_day": "2026-09-30",
     "traffic": {
       "arrival_shape": {
         "all": {
-          "busiest_6h_pct": 33.9,
-          "n": 322,
-          "night_pct": 9.9,
-          "peak_hour_utc": 14
+          "busiest_6h_pct": 40.1,
+          "n": 334,
+          "night_pct": 7.5,
+          "peak_hour_utc": 2
         },
         "direct": {
-          "busiest_6h_pct": 36.7,
-          "n": 278,
-          "night_pct": 9.7,
-          "peak_hour_utc": 14
+          "busiest_6h_pct": 40.5,
+          "n": 264,
+          "night_pct": 7.6,
+          "peak_hour_utc": 2
         },
         "organic": {
-          "busiest_6h_pct": 55.3,
-          "n": 38,
-          "night_pct": 10.5,
+          "busiest_6h_pct": 40.0,
+          "n": 65,
+          "night_pct": 7.7,
           "peak_hour_utc": 2
         }
       },
       "by_channel": {
-        "ai": 1,
-        "campaign": 3,
-        "direct": 278,
-        "internal": 2,
-        "organic": 38
+        "campaign": 4,
+        "direct": 264,
+        "internal": 1,
+        "organic": 65
       },
       "by_hour_utc": {
         "all": [
-          16,
           23,
-          20,
-          11,
+          23,
+          33,
           17,
+          18,
+          20,
+          14,
+          7,
           3,
-          12,
-          3,
-          4,
-          10,
-          2,
-          16,
-          6,
-          25,
-          29,
-          16,
-          14,
-          14,
-          11,
-          14,
-          15,
+          7,
+          7,
+          8,
           10,
           13,
-          18
+          15,
+          8,
+          10,
+          12,
+          11,
+          12,
+          19,
+          16,
+          19,
+          9
         ],
         "direct": [
-          13,
+          20,
           19,
+          23,
+          14,
+          15,
+          16,
+          14,
+          6,
+          2,
+          6,
+          6,
+          6,
+          7,
+          7,
+          12,
+          4,
+          7,
+          10,
           9,
           10,
+          17,
+          11,
           16,
-          2,
-          11,
-          3,
-          4,
-          8,
-          2,
-          13,
-          5,
-          24,
-          29,
-          13,
-          12,
-          13,
-          11,
-          11,
-          14,
-          9,
-          11,
-          16
+          7
         ],
         "organic": [
           3,
           3,
           10,
+          3,
+          1,
+          4,
+          0,
           1,
           1,
-          0,
-          0,
-          0,
-          0,
+          1,
+          1,
           2,
-          0,
-          2,
-          1,
-          1,
-          0,
+          3,
+          5,
+          3,
+          4,
           3,
           2,
-          1,
-          0,
           2,
           1,
-          1,
           2,
+          5,
+          3,
           2
         ]
       },
       "by_src": {
-        "alert": 2,
-        "chatgpt.com": 1,
-        "digest": 1
+        "alert": 4
       },
-      "direct_deep": 32,
-      "new": 239,
+      "direct_deep": 28,
+      "new": 258,
       "new_window_days": 30,
-      "returning": 83,
+      "returning": 76,
       "top_paths": [
         [
           "/",
-          286
+          291
         ],
         [
-          "/building/manhattan/57-kenmare-st-1004800029/",
-          8
+          "/sf/",
+          5
         ],
         [
           "/dc/",
@@ -330,59 +334,63 @@
         ],
         [
           "/la/",
+          4
+        ],
+        [
+          "/westchester/",
           3
         ],
         [
-          "/sf/",
-          3
-        ],
-        [
-          "/borough/manhattan/",
-          1
+          "/landlord/glenwood-management-corp-2/",
+          2
         ]
       ],
       "top_referrers": [
         [
           "www.google.com",
-          32
+          53
+        ],
+        [
+          "www.bing.com",
+          5
+        ],
+        [
+          "duckduckgo.com",
+          4
         ],
         [
           "com.google.android.googlequicksearchbox",
           2
         ],
         [
-          "duckduckgo.com",
-          2
-        ],
-        [
-          "www.bing.com",
-          2
+          "search.yahoo.com",
+          1
         ]
       ],
-      "visitors": 322
+      "visitors": 334
     }
   },
   "outreach": {
-    "at": "2026-09-30T05:11:30+00:00",
-    "date": "2026-09-30",
+    "at": "2026-10-01T05:11:31+00:00",
+    "date": "2026-10-01",
     "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
     "ok": false
   },
   "scout": {
-    "at": "2026-09-30T05:11:30+00:00",
-    "date": "2026-09-30",
+    "at": "2026-10-01T05:11:31+00:00",
+    "date": "2026-10-01",
     "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
     "ok": false
   },
   "searchconsole": {
-    "at": "2026-09-30T05:00:14+00:00",
-    "clicks": 215,
-    "date": "2026-09-30",
-    "impressions": 265,
+    "at": "2026-10-01T05:00:12+00:00",
+    "clicks": 212,
+    "date": "2026-10-01",
+    "impressions": 256,
     "nonbranded_clicks": 0,
     "nonbranded_impressions": 0,
-    "page_clicks": 247,
-    "page_impressions": 2016,
+    "page_clicks": 248,
+    "page_impressions": 1919,
     "serving_branded_only": 12,
     "serving_ever": 289,
     "serving_nonbranded": 0,
@@ -391,6 +399,6 @@
     "serving_unattributed": 0,
     "share_pct": 0.0,
     "tracked_ranking": 0,
-    "window": "2026-09-21..2026-09-28"
+    "window": "2026-09-22..2026-09-29"
   }
 }

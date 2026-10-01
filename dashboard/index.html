@@ -496,7 +496,7 @@
         <div class="goal goal-2" id="page-goal2" hidden></div>
         <div class="goal-gates" id="page-goal2-gates" hidden></div>
         <div class="goal goal-2" id="page-goal3" hidden></div>
-        <div class="sub" id="page-sub">Traffic, funnel &amp; revenue — everything in one place.</div>
+        <div class="sub" id="page-sub" hidden></div>
         <div class="updated" id="updated">—</div>
         <div class="range-note" id="range-note"></div>
       </div>
@@ -1036,16 +1036,16 @@
   var SITES = {
     fac:{
       mark:'🏙️', name:'Find A Crib', endpoint:'/api/dashboard-metrics',
-      title:'Find A Crib', goal:'Goal: 80k visitors a day',
+      title:'Find A Crib', goal:'🎯 80k/day',
       // Raptive's entry bar (help.raptive.com "Who is eligible for Raptive?",
       // 25k since Oct 2025): 25,000 Google Analytics page views in the last
       // 30 days, plus the gates listed under it (owner, 2026-09-30).
-      goal2:'Raptive: 25k Google Analytics page views in 30 days',
+      goal2:'Raptive',
       // $20k/month from Plus alone (owner, 2026-09-30): $20,000 ÷ $4.99 =
       // 4,009 paying members, before Stripe/Apple fees. Progress is paying
       // (not comped) members, as the MRR tile counts them.
-      goal3:'Plus goal: 4,009 paying members = $20k/month',
-      sub:'Traffic, funnel &amp; revenue — everything in one place.',
+      goal3:'Plus',
+      sub:'',
       live:'https://findacrib.com', foot:'Since 24 June 2026',
       // First row in the table. Every window is clamped to it, so the picker
       // can say which of its buttons currently select the same one. The other
@@ -1107,7 +1107,7 @@
     el('brand-mark').textContent=S.mark;
     el('brand-name').textContent=S.name;
     el('page-title').textContent=S.title;
-    el('page-sub').innerHTML=S.sub;
+    el('page-sub').innerHTML=S.sub; el('page-sub').hidden=!S.sub;
     var g=el('page-goal'); g.textContent=S.goal||''; g.hidden=!S.goal;
     var g2=el('page-goal2'); g2.textContent=S.goal2||''; g2.hidden=!S.goal2;
     var g3=el('page-goal3'); g3.textContent=S.goal3||''; g3.hidden=!S.goal3;
@@ -1284,17 +1284,16 @@
     });
     var note = el('range-note');
     if(!note) return;
-    var txt = 'Showing <b>' + esc(RANGE_WORDS[rangeKey] || 'all time') + '</b> \u2014 ' +
-      (isFinite(mine.start)
+    var txt = isFinite(mine.start)
         ? new Date(mine.start).toLocaleDateString('en-US', {day:'numeric', month:'short', year:'numeric'}) +
-          (rangeKey === 'today' ? '.' : ' to now.')
-        : 'everything recorded.');
+          (rangeKey === 'today' ? '' : ' \u2192 now')
+        : '';
     var dups = groups.filter(function(g){ return g.members.length > 1; }).map(function(g){
       return g.members.map(function(b){ return '\u201C' + esc(b.textContent.trim()) + '\u201D'; }).join(', ');
     });
-    if(dups.length)
-      txt += ' Same window today: ' + dups.join('; ') + '. The repeats are dimmed \u2014 ' +
-             'switching between them cannot change a number.';
+    // The "same window" explanation moved to the title; the dimmed buttons
+    // already show it (owner, 2026-10-01: numbers, not text).
+    note.title = dups.length ? 'Same window today: ' + dups.map(function(d){ return d.replace(/&[^;]+;/g,''); }).join('; ') + '. The repeats are dimmed.' : '';
     note.innerHTML = txt;
   }
 
@@ -1639,7 +1638,8 @@
     el('avatar').textContent=(email[0]||'D').toUpperCase();
     // updated
     var ts = d.generated_at ? new Date(d.generated_at) : new Date();
-    el('updated').textContent='Updated '+ts.toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+    el('updated').textContent='↻ '+ts.toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+    el('updated').title='Updated';
 
     var T=d.totals||{}, C=d.conversion||{}, R=d.returns||{}, H=d.hook||{}, TD=d.today||{}, S=d.subscriptions||{};
     var convRate = pct(n(T.accounts), n(T.visitors));
@@ -1847,12 +1847,13 @@
       var days=((d.daily_series||{}).days||[]).slice(-30);
       var vd=days.reduce(function(a,x){ return a+n(x.visitors); },0);
       if(!g || g.hidden) return;
-      g.textContent='Goal: 80k visitors a day';
+      g.textContent='🎯 80k/day';
+      g.title='Goal: 80,000 visitors a day';
       if(!(M.page_rpm && n(P30.total) && vd)) return;
       var perDay=n(P30.total)/vd, mo=80000*30*perDay*M.page_rpm/1000;
       var s=document.createElement('span'); s.className='goal-est';
-      s.textContent=' ≈ $'+(mo>=1000 ? (mo/1000).toFixed(1)+'k' : Math.round(mo))+'/month in ads at today\u2019s rate';
-      s.title=perDay.toFixed(2)+' page views per visitor-day × $'+Number(M.page_rpm).toFixed(2)+' per 1,000 page views (Mediavine, calibrated). Paid bids start ~24 Oct; this updates itself.';
+      s.textContent=' → $'+(mo>=1000 ? (mo/1000).toFixed(1)+'k' : Math.round(mo))+'/mo';
+      s.title='Ads at 80k visitors a day, at today\u2019s rate: '+perDay.toFixed(2)+' page views per visitor-day × $'+Number(M.page_rpm).toFixed(2)+' per 1,000 page views (Mediavine, calibrated). Paid bids start ~24 Oct; this updates itself.';
       g.appendChild(s);
     })();
     // Progress toward the Raptive goal: always the last 30 days, whatever
@@ -1865,7 +1866,8 @@
       // first-party count, so it is labelled as an approximation.
       if(P30.total != null){
         var s=document.createElement('span'); s.className='goal-prog';
-        s.textContent='≈'+comma(P30.total)+' (our count; Raptive reads GA) · '+Math.round(100*n(P30.total)/25000)+'%';
+        s.textContent=' '+comma(P30.total)+' / 25,000 · '+Math.round(100*n(P30.total)/25000)+'%';
+        g2.title='Raptive entry bar: 25,000 Google Analytics page views in 30 days. Ours is our own count (Raptive reads GA). Also required: \u226550% of traffic from US/UK/CA/AU/NZ, domain 6+ months old (24 Dec 2026), long-form content on most pages.';
         g2.appendChild(s);
       }
       // The other gates, listed — the geo and content ones are not measured
@@ -1874,10 +1876,13 @@
       var gates=el('page-goal2-gates');
       if(gates){
         var ok=new Date('2026-12-24T00:00:00-05:00'), left=Math.ceil((ok-Date.now())/864e5);
-        var age = left>0 ? 'domain 6+ months old — eligible from 24 Dec 2026 ('+left+' day'+(left===1?'':'s')+')'
-                         : 'domain 6+ months old ✓';
-        gates.textContent='Also required: ≥50% of traffic from US/UK/CA/AU/NZ · '+age+' · long-form content on most pages';
-        gates.hidden=false;
+        // Just the countdown; the gate list lives in the Raptive line's title.
+        var a=g2.querySelector('.goal-days'); if(a) a.remove();
+        var dd=document.createElement('span'); dd.className='goal-prog goal-days';
+        dd.textContent=left>0 ? ' · '+left+'d' : ' · ✓';
+        dd.title=left>0 ? 'Days until the domain is 6 months old (24 Dec 2026)' : 'Domain is 6+ months old';
+        g2.appendChild(dd);
+        gates.hidden=true;
       }
     })();
     // Progress toward the Plus goal: paying members right now (subscriptions
@@ -1889,7 +1894,8 @@
       if(SB.paying == null) return;
       var s=document.createElement('span'); s.className='goal-prog';
       var pc=100*n(SB.paying)/PLUS_GOAL_MEMBERS;
-      s.textContent=comma(SB.paying)+' paying · $'+comma(SB.mrr)+'/month · '+(pc>0 && pc<1 ? pc.toFixed(2) : Math.round(pc))+'%';
+      s.textContent=' '+comma(SB.paying)+' / 4,009 · $'+comma(SB.mrr)+'/mo · '+(pc>0 && pc<1 ? pc.toFixed(2) : Math.round(pc))+'%';
+      g3.title='Plus goal: 4,009 paying members = $20k/month ($4.99 each, before fees)';
       g3.appendChild(s);
     })();
     function pageViewsTile(P){

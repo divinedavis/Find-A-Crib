@@ -85,11 +85,11 @@ def run(browser, live):
     expect(page.locator('#tiles')).not_to_contain_text('Median time on site')
     payload['page_views_30d'] = {'total': 10344, 'map': 9961, 'other': 383}
     page.reload(wait_until='networkidle')
-    expect(page.locator('#page-goal2')).to_contain_text('Raptive: 25k Google Analytics page views in 30 days')
-    expect(page.locator('#page-goal2')).to_contain_text('≈10,344 (our count; Raptive reads GA) · 41%')
-    expect(page.locator('#page-goal2-gates')).to_contain_text('≥50% of traffic from US/UK/CA/AU/NZ')
-    expect(page.locator('#page-goal2-gates')).to_contain_text('domain 6+ months old')
-    expect(page.locator('#page-goal2-gates')).to_contain_text('long-form content on most pages')
+    # Numbers only in the header (owner, 2026-10-01); the words are in titles.
+    expect(page.locator('#page-goal2')).to_contain_text('Raptive 10,344 / 25,000 · 41%')
+    expect(page.locator('#page-goal2')).to_have_attribute('title', re.compile('US/UK/CA/AU/NZ.*6\\+ months.*long-form'))
+    expect(page.locator('#page-goal2-gates')).to_be_hidden()
+    expect(page.locator('#page-sub')).to_be_hidden()
     assert not errors, errors
     print(f'PASS {browser.browser_type.name}: page views tile', flush=True)
 
@@ -206,7 +206,10 @@ def run(browser, live):
     content = page.locator('#top')
     page.locator('#range-switch button[data-range="today"]').click()
     expect(content).to_have_class(re.compile(r'\bloading\b'))
-    expect(page.locator('#range-note')).to_contain_text('today')
+    # The note is a date now, not words (owner, 2026-10-01); "today" is the
+    # highlighted button, and today's window has no "→ now".
+    expect(page.locator('#range-switch button[data-range="today"]')).to_have_class(re.compile(r'\bon\b'))
+    expect(page.locator('#range-note')).to_have_text(re.compile(r'^[A-Z][a-z]{2} \d{1,2}, \d{4}$'))
     expect(content).not_to_have_class(re.compile(r'\bloading\b'), timeout=15000)
     assert not errors, errors
     print(f'PASS {browser.browser_type.name}: range loading state clears', flush=True)

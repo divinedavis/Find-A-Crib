@@ -113,6 +113,7 @@ JOURNEY_EVENTS = {
     'referral_gate':        ['referral_open', 'referral_share'],
     'consent_mode':         [],
     'account_delete':       [],
+    'plus_gates':           ['outbound'],
     # home_set / home_open / home_clear are pre-2026-09-06 history: the
     # my-apartment pin was retired from the UI that day (no sheet button, no
     # profile row, no pill) and the code left dormant. Nothing to cover.
@@ -1578,6 +1579,14 @@ class Runner:
             page.evaluate("document.querySelectorAll('.viol-backdrop .sheet-close').forEach(b=>b.click())"); time.sleep(0.3)
             j.notes.append('6 perks · invite · no "free" · new account gets bedbug/rodent paywall · pests open')
         finally:
+            # Leave the shared browser context signed out: the session lives in
+            # localStorage, and every journey after this one assumes a signed-
+            # out visitor (2026-10-01: ten journeys failed after this one).
+            try:
+                page.evaluate("(async()=>{ try { await window.supabase?.createClient?.(window.SUPABASE_URL, window.SUPABASE_ANON_KEY)?.auth?.signOut(); } catch(e){} try { localStorage.clear(); sessionStorage.clear(); } catch(e){} })()")
+                page.context.clear_cookies()
+            except Exception:
+                pass
             if supabase_admin('GET', f'users/{uid}')[0] == 200:
                 supabase_admin('DELETE', f'users/{uid}')
 
@@ -1625,10 +1634,10 @@ class Runner:
             if supabase_admin('GET', f'users/{uid}')[0] == 200:
                 supabase_admin('DELETE', f'users/{uid}')
 
-    JOURNEYS = ['plus_gates', 'land', 'search_address', 'search_area', 'search_zip_and_miss', 'pin_and_list',
+    JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'pin_and_list',
                 'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'signin_modal', 'app_chip', 'app_qr_menu', 'boot_is_usable', 'city_chip',
                 'ad_tiles', 'list_follows_zoom', 'plus_no_ads', 'building_page_link', 'remove_ads_chip', 'overlays_clear_ad', 'outbound_links', 'status_chips', 'referral_gate',
-                'rent_report', 'legal_pages', 'comments_gate', 'landlords_gate', 'consent_mode', 'account_delete']
+                'rent_report', 'legal_pages', 'comments_gate', 'landlords_gate', 'consent_mode', 'account_delete', 'plus_gates']
 
     # ---- run --------------------------------------------------------------
     def run(self):

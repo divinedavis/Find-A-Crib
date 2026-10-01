@@ -228,6 +228,7 @@
   .page-head .goal{font-size:26px;font-weight:700;margin:0 0 6px;letter-spacing:-.5px;color:var(--ink)}
   .page-head .goal[hidden]{display:none}
   .page-head .goal-2{font-size:18px;letter-spacing:-.2px}
+  .page-head .goal .goal-est{font-weight:600;color:var(--ink2)}
   .page-head .goal-2 .goal-prog{font-size:14px;font-weight:600;color:var(--ink2);margin-left:8px;letter-spacing:0}
   .page-head .goal-gates{font-size:13px;color:var(--muted);margin:-2px 0 8px;line-height:1.45;overflow-wrap:anywhere}
   .updated{color:var(--muted);font-size:12.5px;margin-top:2px}
@@ -862,9 +863,9 @@
   // the last three are the growth engine's (ledger state: 10k sign-ups,
   // $10k/mo revenue, 90% share of the tracked query universe). Mine, not a
   // benchmark — a benchmark says what is normal, a goal says what I want.
-  // 2026-09-30 (owner): 80,000 visitors a day is the goal — about $18k/month
-  // from ads at an early Journey rate of $7.50 per 1,000 visits (was 8,000
-  // DAU = $200k/year, 2026-09-27). WAU and MAU follow from it by the same two ratios (MAU =
+  // 2026-09-30 (owner): 80,000 visitors a day is the goal (was 8,000 DAU,
+  // 2026-09-27). The $/month it earns in ads is computed live in the header
+  // from the calibrated Mediavine rate (2026-10-01). WAU and MAU follow from it by the same two ratios (MAU =
   // DAU / 10%, WAU = 45% of MAU), so hitting all three still lands both
   // ratios on their goals.
   var AUDIENCE_GOALS = { dau: 80000, wau: 360000, mau: 800000,
@@ -1035,7 +1036,7 @@
   var SITES = {
     fac:{
       mark:'🏙️', name:'Find A Crib', endpoint:'/api/dashboard-metrics',
-      title:'Find A Crib', goal:'Goal: 80k visitors a day ≈ $18k/month in ads',
+      title:'Find A Crib', goal:'Goal: 80k visitors a day',
       // Raptive's entry bar (help.raptive.com "Who is eligible for Raptive?",
       // 25k since Oct 2025): 25,000 Google Analytics page views in the last
       // 30 days, plus the gates listed under it (owner, 2026-09-30).
@@ -1827,11 +1828,33 @@
       var pv=n(P&&P.total), bits=[comma(M.paid)+' paid', comma(M.house)+' Mediavine filler'];
       if(pv) bits.push((n(M.total)/pv).toFixed(1)+' per page view');
       var own=bits.join(' · ');
-      if(M.page_rpm && pv) own+='<br>≈ <b>$'+(pv/1000*M.page_rpm).toFixed(2)+'</b> at your $'+Number(M.page_rpm).toFixed(2)+' page RPM';
+      // FAC_MEDIAVINE_PAGE_RPM is $ per 1,000 of OUR page views, calibrated
+      // against Mediavine's earnings (2026-10-01: $0.44 = $0.48 / 1,097). It
+      // is not the $0.20 "page RPM" Mediavine shows: that divides by its own
+      // page count, about 2.2x ours. Same money either way.
+      if(M.page_rpm && pv) own+='<br>≈ <b>$'+(pv/1000*M.page_rpm).toFixed(2)+'</b> earned · $'+Number(M.page_rpm).toFixed(2)+' per 1,000 of our page views';
       else own+='<br>Add your Page RPM from Mediavine for a revenue estimate';
       return {ic:'💰',v:comma(M.total),l:'Mediavine ads · website',own:own,
               title:'Ads Mediavine placed on findacrib.com in this range, counted by the page itself (each creative once; a banner refresh is a new ad). Paid = an advertiser\u2019s creative; filler = Mediavine\u2019s own "Grow" house ads. Plus members see none. Mediavine\u2019s dashboard is the source of truth for earnings.'};
     }
+    // The headline goal's dollar figure, from the real Mediavine rate instead of
+    // a guess (owner, 2026-10-01; the first version said ≈ $18k/month from an
+    // early-Journey estimate ~9x too high). Ads at 80k visitors a day = 80k ×
+    // 30 × our page views per visitor-day (last 30 days) × $ per 1,000 of our
+    // page views. Recomputed on every load, so it rises when bids do (~10/24).
+    (function(){
+      var g=el('page-goal'), M=d.mediavine||{}, P30=d.page_views_30d||{};
+      var days=((d.daily_series||{}).days||[]).slice(-30);
+      var vd=days.reduce(function(a,x){ return a+n(x.visitors); },0);
+      if(!g || g.hidden) return;
+      g.textContent='Goal: 80k visitors a day';
+      if(!(M.page_rpm && n(P30.total) && vd)) return;
+      var perDay=n(P30.total)/vd, mo=80000*30*perDay*M.page_rpm/1000;
+      var s=document.createElement('span'); s.className='goal-est';
+      s.textContent=' ≈ $'+(mo>=1000 ? (mo/1000).toFixed(1)+'k' : Math.round(mo))+'/month in ads at today\u2019s rate';
+      s.title=perDay.toFixed(2)+' page views per visitor-day × $'+Number(M.page_rpm).toFixed(2)+' per 1,000 page views (Mediavine, calibrated). Paid bids start ~24 Oct; this updates itself.';
+      g.appendChild(s);
+    })();
     // Progress toward the Raptive goal: always the last 30 days, whatever
     // range is selected, because Raptive's bar is monthly page views.
     (function(){

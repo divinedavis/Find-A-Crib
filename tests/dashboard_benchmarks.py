@@ -130,7 +130,7 @@ def run(browser, live):
     expect(mv).to_contain_text('Add your Page RPM from Mediavine')
     payload['mediavine']['page_rpm'] = 12
     page.reload(wait_until='networkidle')
-    expect(mv).to_contain_text('$0.60 at your $12.00 page RPM')
+    expect(mv).to_contain_text('$0.60 earned · $12.00 per 1,000 of our page views')
     # Free-to-paid (2026-09-30): the industry's one pay-conversion number —
     # paying Plus ÷ all accounts against the 2–5% freemium band.
     payload.setdefault('totals', {})['accounts_all'] = 250

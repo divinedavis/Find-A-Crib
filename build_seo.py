@@ -628,9 +628,63 @@ def city_hub_docs(key, guide_ok=True):
            for k, v in groups.items() if len(v) >= MIN_CITY_HUB}
     if not big:
         return []
-    small = len(groups) - len(big)
+
+    # ---- places this tier has already published that no longer qualify.
+    #
+    # THE BUG THIS CLOSES, and it is the /available/ bug of 2026-09-22 in a
+    # second tier. scripts/refresh_seo.sh deploys with "rsync -a" and no
+    # --delete, deliberately and documented. So a place that drops below
+    # MIN_CITY_HUB does not become unpublished — it becomes FROZEN: still live,
+    # dropped from every sitemap, and stuck at whatever counts it carried the
+    # last night it qualified. On 2026-10-01 t_frozen_pages read sf/neighborhood/
+    # as "1 of 37" with the oldest page 19 days behind the tier, against the 36
+    # this renderer writes; the extra page is one of Lincoln Park, Treasure
+    # Island, McLaren Park, Presidio or Golden Gate Park, all now under the line.
+    # A frozen hub asserts a building count for a neighborhood that is no longer
+    # the count, which on this site is an accuracy defect first and an SEO one
+    # second.
+    #
+    # The published set is therefore (qualifying UNION already-published), the
+    # same rule the /available/ tier adopted. The slug map is built over every
+    # place in the dataset rather than over `big`, because a stranded page is BY
+    # DEFINITION one whose place has dropped out of `big`; looking it up there
+    # would find nothing. A slug that resolves to no place at all is left frozen
+    # and counted, not guessed at: it is a rename or a hand-placed file, and this
+    # build will not invent a title for a URL it cannot explain.
+    stranded, unresolved = {}, 0
+    by_slug = {(k if cfg["path"] == "zip" else slugify(k)): k for k in groups}
+    tier_root = os.path.join(DOCROOT, key, cfg["path"])
+    try:
+        live_slugs = sorted(os.listdir(tier_root))
+    except OSError:
+        # No docroot — a bare checkout, which is where the daily growth review
+        # runs. Falling back to exactly the qualifying set is the correct
+        # behaviour there, and is what an empty listing gives.
+        live_slugs = []
+    for slug in live_slugs:
+        if not os.path.isfile(os.path.join(tier_root, slug, "index.html")):
+            continue
+        place = by_slug.get(slug)
+        if place is None:
+            unresolved += 1
+        elif place not in big:
+            stranded[place] = sorted(groups[place], key=lambda x: x.get("a") or "")
+    if stranded or unresolved:
+        print(f"city hubs: {key} {len(big)} {cfg['path']} pages qualify, "
+              f"{len(stranded)} already-published rebuilt below the {MIN_CITY_HUB}-record "
+              f"line, {unresolved} live slug(s) resolve to no place in the data")
+
+    # Places genuinely left off: under the line AND never published. The browse
+    # hub says this number out loud, so it has to stop counting the ones this
+    # run publishes or the page contradicts its own link list — the exact
+    # self-contradiction the /available/ hub carried until 2026-09-22.
+    small = len(groups) - len(big) - len(stranded)
     city, footer = cfg["name"], CITY_FOOTER[key]
     browse_url = f"/{key}/buildings/"
+    # counts and centroids stay scoped to `big` on purpose: a stranded place is
+    # not in the city index, so it must not appear as a sibling or a "nearest
+    # place" on the 36 pages that are. Its own page gets its centroid added to a
+    # private copy below, which is how it measures distance without joining.
     counts = {k: len(v) for k, v in big.items()}
     centroids = {k: c for k, c in ((k, _city_centroid(v)) for k, v in big.items()) if c}
     others = [(o, CITY_HUBS[o]) for o in CITY_HUBS if o != key]
@@ -669,7 +723,8 @@ def city_hub_docs(key, guide_ok=True):
             size=n)
 
     docs = []
-    for place, items in sorted(big.items()):
+    for place, items in sorted({**big, **stranded}.items()):
+        is_stranded = place in stranded
         slug = place if cfg["path"] == "zip" else slugify(place)
         url = f"/{key}/{cfg['path']}/{slug}/"
         canonical = SITE + url
@@ -696,7 +751,17 @@ def city_hub_docs(key, guide_ok=True):
         # _city_neighbors(). Falls back to the old count ordering only when the
         # dataset carries no usable coordinates, and the heading follows the
         # ordering so the page never claims a proximity it did not compute.
-        near = _city_neighbors(place, centroids, counts)
+        # A stranded place is absent from `centroids`, so without this it would
+        # fall through to the count-ordered "Elsewhere in <city>" block. Added to
+        # a PRIVATE copy for this page only: putting it in `centroids` itself
+        # would make a sub-threshold place a "nearest place" on all 36 pages of
+        # the index it is no longer part of.
+        here = centroids
+        if is_stranded:
+            c = _city_centroid(items)
+            if c:
+                here = {**centroids, place: c}
+        near = _city_neighbors(place, here, counts)
         if near:
             sib_h2 = f"Nearest {_place_word(cfg, plural=True)} in {esc(city)}"
             sib_note = (f"Ordered by distance from the mid-point of the mapped "
@@ -717,6 +782,13 @@ def city_hub_docs(key, guide_ok=True):
                 f"<a href='{browse_url}'>All {esc(cfg['things'])}</a></div>"
                 f"<h1>{esc(h1)}</h1>"
                 + answer_block(_city_answer(key, place, st))
+                + (f"<p class='disclaimer'>This page is kept up to date but is no "
+                   f"longer listed in the {esc(city)} index: "
+                   f"{esc(_place_word(cfg, plural=True))} are indexed from "
+                   f"{MIN_CITY_HUB} {esc(cfg['things'])} upward, and "
+                   f"{esc(str(place))} currently has {st['n']:,}. It stays published "
+                   f"because it was published before, and it will be listed again if "
+                   f"the count rises.</p>" if is_stranded else "")
                 + f"<a class='cta' href='/{key}/'>Open the {esc(city)} map →</a>"
                 + _city_stat_table(key, st) + extra
                 + guide_link
@@ -732,7 +804,13 @@ def city_hub_docs(key, guide_ok=True):
                             (h1, canonical)])
         docs.append({
             "kind": "place", "relpath": url.strip("/") + "/index.html",
-            "canonical": canonical, "priority": "0.7",
+            # A sitemap entry is a bid for crawl budget on a domain that got 8
+            # Googlebot fetches in the 28 days to 2026-10-01. A page below the
+            # publishing threshold does not get to make that bid — the same
+            # split the /available/ tier settled on: rebuild it for accuracy,
+            # do not submit it. city_hub_pages() reads this flag.
+            "stranded": is_stranded,
+            "canonical": canonical, "priority": "0.3" if is_stranded else "0.7",
             "html": page(f"{h1} ({st['n']}) | Find A Crib",
                          f"{st['n']} {cfg['things']} in {place}, {city} — counts, unit sizes and "
                          f"what rent regulation there actually means. Check any address on the map.",
@@ -756,6 +834,26 @@ def city_hub_docs(key, guide_ok=True):
     skipped = (f"{small} {_place_word(cfg, plural=small != 1)} with fewer than {MIN_CITY_HUB} "
                f"{cfg['things']} were left off rather than published as near-empty pages. "
                if small else "")
+    # The stranded pages get ONE link from here and no sitemap entry. Kept out of
+    # the index list above and labelled, rather than blended into it: the lead
+    # sentence beside it counts the index, and a sub-threshold place sitting
+    # unannounced among the qualifying ones would make the hub misdescribe its own
+    # list. Nothing is rendered when nothing is stranded, which is the normal case.
+    below = ""
+    if stranded:
+        below_note = (
+            f"These {_place_word(cfg, plural=len(stranded) != 1)} have fewer than "
+            f"{MIN_CITY_HUB} {cfg['things']} and are not part of the index above. "
+            f"Their pages stay published, and up to date, because they were "
+            f"published before.")
+        below = ("<h2>Below the index threshold</h2>"
+                 f"<p class='disclaimer'>{esc(below_note)}</p>"
+                 "<div class='cols'>"
+                 + "".join(f"<a href=\"/{key}/{cfg['path']}/"
+                           f"{p if cfg['path'] == 'zip' else slugify(p)}/\">"
+                           f"{esc(p)} ({len(v):,})</a>"
+                           for p, v in sorted(stranded.items()))
+                 + "</div>")
     # The browse hub is the highest-priority page in this tier (0.9) and the one
     # the guides, the other cities and the voucher cross-link all point at, but
     # until 2026-08-09 it was the only page here with no extractable answer and
@@ -773,6 +871,7 @@ def city_hub_docs(key, guide_ok=True):
             f"<a href='/{key}/'>open the map</a>.</p>"
             + guide_link
             + f"<div class='cols'>{links}</div>"
+            + below
             + "<h2>Other cities on Find A Crib</h2><div class='cols'>"
             + "<a href='/buildings/'>New York City by neighborhood</a>"
             + "".join(f"<a href='/{o}/buildings/'>{esc(oc['browse_h1'])}</a>"
@@ -799,6 +898,7 @@ def city_hub_docs(key, guide_ok=True):
         size=total_recs)
     docs.append({
         "kind": "browse", "relpath": browse_url.strip("/") + "/index.html",
+        "stranded": False,
         "canonical": SITE + browse_url, "priority": "0.9",
         "html": page(f"{cfg['browse_h1']} | Find A Crib",
                      f"Browse {total_recs:,} {cfg['things']} across {total_places} "
@@ -1539,14 +1639,26 @@ def ordinal(n):
 
 
 def city_hub_pages(urls):
-    """Write every city's hub tier into this build. Returns {city: place count}."""
+    """Write every city's hub tier into this build. Returns {city: place count}.
+
+    A doc marked `stranded` is written but NOT appended to `urls`: it is a page
+    this tier already published and has since dropped below MIN_CITY_HUB, kept
+    accurate rather than left frozen, and not submitted for crawl. See the
+    stranded block in city_hub_docs() for why.
+
+    The returned count stays the number of QUALIFYING place pages, so the series
+    t_city_seo_expansion reports (dc 103, la 112, sf 36 on 2026-10-01) does not
+    silently change meaning on the night this starts rebuilding stranded pages.
+    """
     built = {}
     for key in CITY_HUBS:
         docs = city_hub_docs(key)
         for d in docs:
             write(d["relpath"], d["html"])
-            urls.append((d["canonical"], d["priority"], key))
-        built[key] = sum(1 for d in docs if d["kind"] == "place")
+            if not d.get("stranded"):
+                urls.append((d["canonical"], d["priority"], key))
+        built[key] = sum(1 for d in docs
+                         if d["kind"] == "place" and not d.get("stranded"))
     return built
 
 

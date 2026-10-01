@@ -704,7 +704,32 @@ SEEDS = [
                "triage argument instead of kept alive by another restarted clock. If "
                "census_known moves above 0 before then, start the 21-day content clock from "
                "THAT date and judge it on impressions, which is the first time that judgement "
-               "will have been fair."),
+               "will have been fair.\n"
+               "2026-10-01 — THIS TIER HAD THE /available/ FREEZE IN IT, and it is fixed. "
+               "MIN_CITY_HUB=5 drops a place from the build set the night its record count "
+               "falls below five, and refresh_seo.sh rsyncs without --delete, so the page does "
+               "not unpublish: it freezes live, out of every sitemap, still asserting the count "
+               "it carried the last night it qualified. Measured, not inferred: this renderer "
+               "writes 36 SF neighborhood pages and the docroot serves 37 (t_frozen_pages read "
+               "\'1 of 37, oldest 2026-09-12\' for four nights); the stray is one of Lincoln "
+               "Park (2), Treasure Island (3), McLaren Park (3), Presidio (4) or Golden Gate "
+               "Park (4), and from a bare checkout it cannot be narrowed further because the "
+               "docroot is not in git. city_hub_docs() now renders (qualifying UNION "
+               "already-published), the same rule /available/ adopted on 2026-09-22: a stranded "
+               "page is kept ACCURATE, says in one sentence that it is below the index "
+               "threshold and why it stays published, and gets one labelled link from the "
+               "browse hub under \'Below the index threshold\' rather than being blended into "
+               "the index list. It is deliberately NOT SUBMITTED — no sitemap entry and no "
+               "IndexNow ping, via a new write_page(submit=False) — and that half is the "
+               "research bearing on the decision rather than a hedge: this domain took 8 "
+               "Googlebot fetches in the 28 days to 2026-10-01 and carries 110 URLs sitting in "
+               "\'discovered, currently not indexed\' that have never been fetched, so a "
+               "sub-threshold page does not get to bid for crawl budget. The dc/la/sf counts in "
+               "the detail line still mean the INDEXED tier, so the series reported since "
+               "2026-09-14 does not change meaning; stranded pages are reported on a clause of "
+               "their own. A live slug that resolves to no place in the data is left frozen and "
+               "COUNTED, never invented: it is a rename or a hand-placed file, and this build "
+               "will not write a title for a URL it cannot explain."),
     dict(slug="frozen_pages", status="active", kind="indexing",
          name="Audit how old every live page is, so a tier the build has abandoned says so",
          prefixes=[], metric="organic_visitors",
@@ -752,7 +777,22 @@ SEEDS = [
                "Tiers come from the URL, NOT from the ledger's prefix declarations, which is "
                "the one design choice worth defending: the failure this looks for is a page "
                "nobody is tracking, and /landlord/ (1,416 pages) and /council-district/ (51) "
-               "are in no technique's prefixes and appear in no other audit's readings."),
+               "are in no technique's prefixes and appear in no other audit's readings.\n"
+               "2026-10-01 — THE HYPOTHESIS'S OWN PRE-REGISTRATION ('if frozen pages exist "
+               "outside /available/, this is the audit that names the tier and the run that "
+               "follows fixes its build set') CAME TRUE AND WAS CASHED. This audit went red on "
+               "2026-09-28 and read 'sf/neighborhood/ 1 of 37 (oldest 2026-09-12, 19d)' for "
+               "four nights. It was the only instrument on the site that could see that page, "
+               "and it reported a COUNT and not a URL, so the review had to recover which page "
+               "it was by arithmetic across three other audits — t_city_seo_expansion's 36, "
+               "t_page_uniqueness's 'of 37', t_hub_direct_answers's 37/37 — and still could not "
+               "name it, because the docroot is the only record of what that tier published and "
+               "it is not in git. Fixed the same day: PARTIAL tiers' frozen URLs are now named "
+               "oldest-first in the detail line and in frozen_urls in the ledger record, capped "
+               "at FROZEN_NAME=10 because this detail is served in a web-facing report. Wholly "
+               "frozen tiers are still counted and not named — 17 /brief/ URLs nightly would "
+               "bury the one actionable line. Same defect class, same fix, as index_evicted on "
+               "2026-09-30: an instrument that counts a loss without naming it."),
     dict(slug="voucher_reach", status="active", kind="indexing",
          name="Put the nightly voucher feed on the pages Google actually crawls",
          prefixes=[], metric="organic_visitors",

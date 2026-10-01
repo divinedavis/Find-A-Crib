@@ -168,12 +168,21 @@ class Context:
             removed = True
         return removed
 
-    def write_page(self, relpath, html, url=None):
+    def write_page(self, relpath, html, url=None, submit=True):
         """Write a page, tracking whether it is new / changed / identical.
 
         Only genuinely new or changed URLs are handed to IndexNow, and only
         changed pages get their <lastmod> bumped. Re-pinging unchanged URLs is
         how sites get their IndexNow key ignored.
+
+        submit=False writes and hashes the page but keeps its URL out of
+        new_urls / changed_urls, so it is not submitted. For a page this site
+        keeps ACCURATE without asking for it to be crawled: a hub that has
+        dropped below its tier's publishing threshold is live and must not go on
+        asserting a stale count, but on a domain that got 8 Googlebot fetches in
+        the 28 days to 2026-10-01 it does not get to spend crawl budget either.
+        The hash is still tracked, so the page is not re-reported as changed
+        every night.
         """
         url = url or self._url_for(relpath)
         h = hashlib.sha1(html.encode("utf-8")).hexdigest()
@@ -182,10 +191,12 @@ class Context:
         state = "same"
         if prev is None:
             state = "new"
-            self.new_urls.append(url)
+            if submit:
+                self.new_urls.append(url)
         elif prev.get("h") != h:
             state = "changed"
-            self.changed_urls.append(url)
+            if submit:
+                self.changed_urls.append(url)
 
         if state == "same":
             lastmod = prev["m"]
@@ -1892,8 +1903,8 @@ CITY_HUB_DIRS = {
 def _publish_stranded_city_hubs(ctx):
     """Publish any city hub page the SEO pipeline has not deployed.
 
-    Returns {city: {"docs": [(kind, relpath)], "published": n, "seo": n,
-                    "error": str|None}}.
+    Returns {city: {"docs": [(kind, relpath, stranded)], "published": n,
+                    "seo": n, "stranded": n, "error": str|None}}.
 
     The same fallback as _publish_stranded_guides, for the tier underneath it.
     The guides were the three pages a reader lands on; these 255 are the pages
@@ -1913,13 +1924,13 @@ def _publish_stranded_city_hubs(ctx):
     except Exception as e:                        # noqa: BLE001 - never break the build
         err = f"build_seo unavailable ({e.__class__.__name__})"
         return {c: {"docs": [], "published": 0, "refreshed": 0, "seo": 0,
-                    "handed_back": 0, "error": err}
+                    "handed_back": 0, "stranded": 0, "error": err}
                 for c in CITY_HUB_DIRS}
 
     out = {}
     for city in CITY_HUB_DIRS:
         rec = {"docs": [], "published": 0, "refreshed": 0, "seo": 0,
-               "handed_back": 0, "error": None}
+               "handed_back": 0, "stranded": 0, "error": None}
         out[city] = rec
         # These pages are the contextual path into the city guide. Only offer
         # that link when the guide is live (or staged by t_city_guides earlier
@@ -1937,7 +1948,7 @@ def _publish_stranded_city_hubs(ctx):
             rec["error"] = "no page cleared the minimum record count"
             continue
         for d in docs:
-            rec["docs"].append((d["kind"], d["relpath"]))
+            rec["docs"].append((d["kind"], d["relpath"], bool(d.get("stranded"))))
             path = os.path.join(ctx.docroot, d["relpath"])
             try:
                 with open(path, encoding="utf-8", errors="replace") as f:
@@ -1961,8 +1972,11 @@ def _publish_stranded_city_hubs(ctx):
                 # failures of the SEO pipeline and the detail line says which.
                 rec["refreshed"] += 1
             doc = d["html"].replace("</body>", FALLBACK_MARKER + "</body>")
-            ctx.write_page(d["relpath"], doc, url=d["canonical"])
+            ctx.write_page(d["relpath"], doc, url=d["canonical"],
+                           submit=not d.get("stranded"))
             rec["published"] += 1
+            if d.get("stranded"):
+                rec["stranded"] += 1
     return out
 
 
@@ -1986,12 +2000,21 @@ def t_city_seo_expansion(ctx):
     published = _publish_stranded_city_hubs(ctx)
 
     counts, browse, notes = {}, {}, []
+    live_stranded = {}
     for city, rel in CITY_HUB_DIRS.items():
         rec = published[city]
         if rec["docs"]:
-            counts[city] = sum(1 for k, p in rec["docs"]
-                               if k == "place" and ctx.live_or_staged(p))
-            browse[city] = any(k == "browse" and ctx.live_or_staged(p) for k, p in rec["docs"])
+            # counts stays the INDEXED tier — place pages that clear
+            # MIN_CITY_HUB — so the series this detail line has reported since
+            # 2026-09-14 (dc 103, la 112, sf 36) keeps its meaning now that
+            # city_hub_docs() also renders pages below the line. The stranded
+            # ones are counted separately and named in the note.
+            counts[city] = sum(1 for k, p, s in rec["docs"]
+                               if k == "place" and not s and ctx.live_or_staged(p))
+            live_stranded[city] = sum(1 for k, p, s in rec["docs"]
+                                      if k == "place" and s and ctx.live_or_staged(p))
+            browse[city] = any(k == "browse" and ctx.live_or_staged(p)
+                               for k, p, s in rec["docs"])
         else:
             # Nothing rendered (build_seo unimportable, or no data): fall back to
             # reporting what the docroot holds, which is what this check did
@@ -2032,6 +2055,18 @@ def t_city_seo_expansion(ctx):
     total = sum(counts.values())
     detail = "hub pages live: " + ", ".join(
         f"{c} {counts[c]}{'' if browse[c] else ' (no browse hub)'}" for c in sorted(counts))
+    if any(live_stranded.values()):
+        # Not a defect and not ok=False: these pages are live, correct and
+        # deliberately unsubmitted. Named because the ONLY other instrument that
+        # sees them is t_frozen_pages, and on 2026-10-01 it reported
+        # "sf/neighborhood/ 1 of 37" without saying which URL or why, which cost
+        # that run an arithmetic reconstruction across three audits.
+        # The threshold itself is deliberately not restated here: MIN_CITY_HUB
+        # lives in build_seo.py and a copy of its value in this file is a second
+        # source of truth that drifts the day somebody tunes it.
+        detail += (" — plus pages kept current below the index threshold and in "
+                   "no sitemap: "
+                   + ", ".join(f"{c} {n}" for c, n in sorted(live_stranded.items()) if n))
     if total == 0:
         stale = os.path.exists(os.path.join(ctx.docroot, "guide", "index.html"))
         return {"ok": False,
@@ -3321,6 +3356,7 @@ def t_canonical_integrity(ctx):
 # build set", whole means "ask the owner".
 FROZEN_GRACE_DAYS = 2      # a build that skipped one night is not a freeze
 FROZEN_SHOW = 8            # tiers named per class in the detail line
+FROZEN_NAME = 10           # frozen URLs named outright, as indexstatus caps evicted_urls
 # This site publishes nothing deeper than three path segments: /building/<boro>/
 # <slug>/, /sf/neighborhood/<slug>/, /brief/<date>/, /zip/<zip>/. The docroot
 # also holds the app, the scraper and a venv, and anything .html in there is not
@@ -3410,18 +3446,23 @@ def t_frozen_pages(ctx):
         t["n"] += 1
         t["newest"] = max(t["newest"], day)
         if day < cutoff:
-            t["stale"].append(day)
+            t["stale"].append((day, url))
 
     partial, whole = [], []
     for name, t in tiers.items():
         if not t["stale"]:
             continue
-        oldest = min(t["stale"])
+        oldest = min(d for d, _u in t["stale"])
         age = (newest - oldest).days
         row = (len(t["stale"]), name,
                f"{name} {len(t['stale'])} of {t['n']:,} "
                f"(last written {t['newest'].isoformat()}, oldest {oldest.isoformat()}, {age}d)")
         (whole if len(t["stale"]) == t["n"] else partial).append(row)
+    # Only the PARTIAL tiers' URLs. A wholly-frozen tier is a retired section or
+    # an app shell this loop cannot deploy — naming all 17 /brief/ pages every
+    # night would bury the one line that is actionable.
+    partial_urls = [su for _n, name, _row in partial
+                    for su in tiers[name]["stale"]]
     partial.sort(key=lambda r: (-r[0], r[1]))
     whole.sort(key=lambda r: (-r[0], r[1]))
 
@@ -3433,6 +3474,22 @@ def t_frozen_pages(ctx):
                    "months old: " + "; ".join(r[2] for r in partial[:FROZEN_SHOW]))
         if len(partial) > FROZEN_SHOW:
             detail += f", +{len(partial) - FROZEN_SHOW} more"
+        # WHY THE URLS AND NOT JUST THE COUNT. On 2026-10-01 this line read
+        # "sf/neighborhood/ 1 of 37" and that was the whole evidence: the review
+        # had to recover which page it was by arithmetic across three other
+        # audits (t_city_seo_expansion's 36, t_page_uniqueness's "of 37",
+        # t_hub_direct_answers's 37/37) and still could not name it, because the
+        # docroot is the only record of what this tier has published and it is
+        # not in git. A count tells a reader a tier is bleeding; only the URL
+        # tells them where. Same defect class, and same fix, as index_evicted on
+        # 2026-09-30 — which is why this names them in the ledger record too.
+        # Capped: this detail is served in a web-facing report, and the actionable
+        # case is a handful of stranded pages, not a tier of 1,400.
+        named = [u for _d, u in sorted(partial_urls)[:FROZEN_NAME]]
+        if named:
+            detail += (f" — frozen URLs, oldest first: {', '.join(named)}"
+                       + (f", +{len(partial_urls) - len(named)} more"
+                          if len(partial_urls) > len(named) else ""))
     if whole:
         detail += (" — wholly frozen, nothing rebuilds these at all (retired tiers and the "
                    "app shells this loop cannot deploy): "
@@ -3451,7 +3508,11 @@ def t_frozen_pages(ctx):
 
     frozen_n = sum(r[0] for r in partial + whole)
     return {"ok": not partial, "pages": len(seen), "frozen": frozen_n,
-            "abandoned_tiers": len(partial), "detail": detail}
+            "abandoned_tiers": len(partial),
+            # The evidence, not just the count — read by the daily review from
+            # last_run.json. Capped the same way the detail line is.
+            "frozen_urls": [u for _d, u in sorted(partial_urls)[:FROZEN_NAME]],
+            "detail": detail}
 
 
 # The marker build_seo.py stamps on a building page that carries tonight's

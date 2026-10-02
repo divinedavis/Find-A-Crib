@@ -803,11 +803,14 @@ enum Draw {
 /// blink on their own beats — a 2 Hz timeline, which is all a blink needs.
 struct SkylineBand: View {
     let scene: Skyline.Scene
+    /// False once the band has scrolled off screen (2026-10-02): it kept
+    /// redrawing every window twice a second for nobody.
+    var onScreen = true
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
-        let animated = !reduceMotion && scenePhase == .active
+        let animated = onScreen && !reduceMotion && scenePhase == .active
         TimelineView(.periodic(from: .now, by: animated ? 0.5 : 600)) { tl in
             let day = Skyline.isDaytime(scene, at: tl.date)
             Canvas(rendersAsynchronously: true) { ctx, size in
@@ -833,6 +836,9 @@ struct SkylineBand: View {
                 ctx.fill(Path(CGRect(x: 0, y: ground - 2, width: size.width, height: 2)), with: .color(Skyline.ground))
             }
         }
+        // Rasterised by the GPU (Metal) instead of the CPU: hundreds of window
+        // rects and landmark paths per frame.
+        .drawingGroup()
         .frame(height: Skyline.bandHeight)
         .background {
             TimelineView(.periodic(from: .now, by: 600)) { tl in
@@ -924,12 +930,13 @@ struct SkylineScrollView<Content: View>: View {
     let scene: Skyline.Scene
     @ViewBuilder let content: Content
     @State private var revealed = false
+    @State private var bandOnScreen = true
     @State private var restingTop: CGFloat?
 
     var body: some View {
         let scroll = ScrollView {
             VStack(spacing: 0) {
-                SkylineBand(scene: scene)
+                SkylineBand(scene: scene, onScreen: bandOnScreen)
                 content.background(SE.canvas)
             }
             .background(GeometryReader { g in
@@ -947,11 +954,18 @@ struct SkylineScrollView<Content: View>: View {
             } action: { _, pulled in
                 if pulled != revealed { revealed = pulled }
             }
+            .onScrollGeometryChange(for: Bool.self) { g in
+                g.contentOffset.y + g.contentInsets.top < Skyline.bandHeight
+            } action: { _, on in
+                if on != bandOnScreen { bandOnScreen = on }
+            }
         } else {
             scroll.onPreferenceChange(PullKey.self) { top in
                 if restingTop == nil { restingTop = top }
                 let pulled = top - (restingTop ?? 0) > 0.5
                 if pulled != revealed { revealed = pulled }
+                let on = top - (restingTop ?? 0) > -Skyline.bandHeight
+                if on != bandOnScreen { bandOnScreen = on }
             }
         }
     }

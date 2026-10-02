@@ -24,6 +24,11 @@ final class DataStore {
     /// listing site that is not on the register — the pool "HCR" searches run over.
     private(set) var hcrBuildings: [Building] = []
     private(set) var hcrByBBL: [String: [HCRListing]] = [:]
+    /// What searches read, frozen so they can run off the main actor on every
+    /// core (SearchSnapshot). Swapped whole whenever the data underneath changes.
+    private(set) var snapshot = SearchSnapshot.empty
+    /// The whole register bucketed by location, for map-window queries.
+    private(set) var geoGrid = GeoGrid([])
     private(set) var loaded = false
     private(set) var loadError: String? = nil
     private(set) var refreshing = false
@@ -88,6 +93,9 @@ final class DataStore {
         /// Built alongside the decode, off the main actor. Nil only for payloads
         /// the unit tests assemble by hand; applyPayload builds it then.
         var index: Index? = nil
+        /// SearchSnapshot facts for `buildings`, built on the same detached task.
+        var facts: [SearchSnapshot.Facts]? = nil
+        var grid: GeoGrid? = nil
     }
 
     /// The four small New York feeds. They change daily and the building file
@@ -95,6 +103,8 @@ final class DataStore {
     struct Extras: Sendable {
         var listings: ListingsBlob; var s8: S8Blob; var fmr: FMRTable; var hcr: HCRBlob
         var featured: FeaturedBlob = FeaturedBlob()
+        /// Facts rebuilt against the new feeds, off the main actor.
+        var facts: [SearchSnapshot.Facts]? = nil
     }
 
     /// Every lookup table derived from the building array. Building these on
@@ -146,7 +156,8 @@ final class DataStore {
         }
         let raw = try Data(contentsOf: bURL)
         let json = city.cacheName.hasSuffix(".gz") ? try Gunzip.inflate(raw) : raw
-        let buildings = try dec.decode([Building].self, from: json)
+        // Every core at once; same array as JSONDecoder alone (ParallelJSON).
+        let buildings = try Perf.interval("decode.buildings") { try ParallelJSON.decodeArray(Building.self, from: json) }
         // The boot file carries only the counts the list and filters read; the
         // rest of each record arrives in a second blob, exactly as it does on
         // the web. It is kept in its own dictionary and read by the one screen
@@ -161,8 +172,20 @@ final class DataStore {
             records = full
         }
         let e = decodeExtras(city, bundleOnly: bundleOnly)
+        // The lookup index and the search facts are independent passes over
+        // the same rows: build them on two cores at once.
+        var index = Index(), facts: [SearchSnapshot.Facts] = [], grid = GeoGrid([])
+        Perf.interval("index+facts") {
+            DispatchQueue.concurrentPerform(iterations: 3) { k in
+                switch k {
+                case 0: index = buildIndex(buildings, city: city)
+                case 1: facts = SearchSnapshot.facts(for: buildings, listings: e.listings, s8: e.s8, fmr: e.fmr)
+                default: grid = GeoGrid(buildings)
+                }
+            }
+        }
         return Payload(buildings: buildings, records: records, listings: e.listings,
-                       s8: e.s8, fmr: e.fmr, hcr: e.hcr, featured: e.featured, index: buildIndex(buildings, city: city))
+                       s8: e.s8, fmr: e.fmr, hcr: e.hcr, featured: e.featured, index: index, facts: facts, grid: grid)
     }
 
     nonisolated static func decodeExtras(_ city: City, bundleOnly: Bool = false) -> Extras {
@@ -203,6 +226,7 @@ final class DataStore {
         regions = []; neighborhoods = []; zips = []; boroughCounts = [:]
         listings = ListingsBlob(); s8 = S8Blob(); fmr = [:]; hcr = HCRBlob()
         hcrBuildings = []; hcrByBBL = [:]
+        snapshot = .empty; geoGrid = GeoGrid([])
         loaded = false
         await load()
     }
@@ -221,6 +245,10 @@ final class DataStore {
         zips = ix.zips
         regions = ix.regions
         boroughCounts = ix.boroughCounts
+        snapshot.pool = p.buildings
+        geoGrid = p.grid ?? GeoGrid(p.buildings)
+        snapshot.facts = p.facts ?? SearchSnapshot.facts(for: p.buildings, listings: p.listings, s8: p.s8, fmr: p.fmr)
+        indexHCRFacts()
         loaded = true
     }
 
@@ -232,6 +260,14 @@ final class DataStore {
         listings = e.listings; s8 = e.s8; fmr = e.fmr; hcr = e.hcr; featured = e.featured
         dataAsOf = e.listings.updatedDate
         indexHCR()
+        snapshot.facts = e.facts ?? SearchSnapshot.facts(for: buildings, listings: listings, s8: s8, fmr: fmr)
+        indexHCRFacts()
+    }
+
+    /// The HCR pool is ~100 rows; its facts are cheap enough to build here.
+    private func indexHCRFacts() {
+        snapshot.hcrPool = hcrBuildings
+        snapshot.hcrFacts = SearchSnapshot.facts(for: hcrBuildings, listings: listings, s8: s8, fmr: fmr)
     }
 
     /// This building's full record, if its city publishes one and the blob has
@@ -289,7 +325,12 @@ final class DataStore {
                 loadError = nil
             }
         } else if !changed.isEmpty {
-            let e = await Task.detached(priority: .utility) { Self.decodeExtras(c) }.value
+            let rows = buildings
+            let e = await Task.detached(priority: .utility) { () -> Extras in
+                var e = Self.decodeExtras(c)
+                e.facts = SearchSnapshot.facts(for: rows, listings: e.listings, s8: e.s8, fmr: e.fmr)
+                return e
+            }.value
             guard c == city else { return }
             applyExtras(e)
         }

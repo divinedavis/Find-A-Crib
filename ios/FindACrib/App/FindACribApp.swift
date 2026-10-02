@@ -37,6 +37,7 @@ struct FindACribApp: App {
                     Analytics.shared.track("app_open", ["first": Analytics.shared.isFirstLaunch])
                     plus.start()
                     Ads.shared.start()
+                    Metrics.shared.start()
                     activity.remoteToggle = { [weak auth] bbl, on in auth?.remoteToggle(bbl: bbl, saved: on) }
                     await store.load()
                     Perf.startWatchdog()

@@ -55,6 +55,14 @@ actor ImageService {
         return img
     }
 
+    /// Warms the cache for cards about to scroll into view (2026-10-02), at
+    /// utility priority so it never competes with what is on screen. The
+    /// concurrency cap above still applies.
+    nonisolated func prefetch(_ buildings: [Building]) {
+        guard !buildings.isEmpty else { return }
+        Task(priority: .utility) { for b in buildings { _ = await self.image(for: b) } }
+    }
+
     private func acquire() async {
         if running < maxConcurrent { running += 1; return }
         await withCheckedContinuation { waiters.append($0) }

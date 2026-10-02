@@ -22,9 +22,7 @@ struct RerentalCard: View {
                         ZStack {
                             ImagePlaceholder()
                             if let url = f.imageURL {
-                                AsyncImage(url: url) { phase in
-                                    if let img = phase.image { img.resizable().scaledToFill() }
-                                }
+                                RemoteImage(url: url)
                             }
                         }
                     }

@@ -105,9 +105,7 @@ struct EventsView: View {
                     SE.badge
                         .frame(maxWidth: .infinity).frame(height: 200)
                         .overlay(alignment: .top) {
-                            AsyncImage(url: thumb) { phase in
-                                if let img = phase.image { img.resizable().scaledToFill() }
-                            }
+                            RemoteImage(url: thumb)
                         }
                         .clipped()
                 }

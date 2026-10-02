@@ -36,11 +36,17 @@ struct LotteryPhoto: View {
 /// Listing photos from the agencies' buckets, shrunk on the way in: some are
 /// 4 MB originals, and a card needs ~900 px. Decoded off the main thread and
 /// kept in memory for the session.
-actor RemotePhotos {
+///
+/// Not an actor any more (2026-10-02): an actor runs one call at a time, so a
+/// screen of cards decoded its photos one after another on a single core.
+/// NSCache is thread-safe, and each call owns its own data, so the fetches
+/// and the ImageIO decodes now run side by side across the cores.
+final class RemotePhotos: @unchecked Sendable {
     static let shared = RemotePhotos()
     private let cache = NSCache<NSURL, UIImage>()
+    init() { cache.countLimit = 120 }
 
-    func image(_ url: URL) async -> UIImage? {
+    func image(_ url: URL, maxPixels: Int = 900) async -> UIImage? {
         if let hit = cache.object(forKey: url as NSURL) { return hit }
         var req = URLRequest(url: url, timeoutInterval: 20)
         req.cachePolicy = .returnCacheDataElseLoad
@@ -50,10 +56,24 @@ actor RemotePhotos {
         let opts: [CFString: Any] = [kCGImageSourceCreateThumbnailFromImageAlways: true,
                                      kCGImageSourceCreateThumbnailWithTransform: true,
                                      kCGImageSourceShouldCacheImmediately: true,
-                                     kCGImageSourceThumbnailMaxPixelSize: 900]
+                                     kCGImageSourceThumbnailMaxPixelSize: maxPixels]
         guard let cg = CGImageSourceCreateThumbnailAtIndex(src, 0, opts as CFDictionary) else { return nil }
         let img = UIImage(cgImage: cg)
         cache.setObject(img, forKey: url as NSURL)
         return img
+    }
+}
+
+/// A remote photo through RemotePhotos — downsampled, decoded off the main
+/// thread, cached — in place of AsyncImage, which decodes the full-size file
+/// at draw time and keeps no cache (2026-10-02).
+struct RemoteImage: View {
+    let url: URL
+    @State private var image: UIImage?
+    var body: some View {
+        ZStack {
+            if let image { FillImage(image: image) }
+        }
+        .task(id: url) { image = await RemotePhotos.shared.image(url) }
     }
 }

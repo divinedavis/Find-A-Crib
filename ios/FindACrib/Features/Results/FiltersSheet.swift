@@ -6,6 +6,7 @@ struct FiltersSheet: View {
     @Binding var query: SearchQuery
     @State private var draft: SearchQuery = SearchQuery()
     @State private var count = 0
+    @State private var counted = false
 
     var body: some View {
         NavigationStack {
@@ -79,13 +80,15 @@ struct FiltersSheet: View {
             .navigationTitle("Filters")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.foregroundStyle(SE.ink2) } }
-            .onAppear { draft = query.normalized; recount() }
-            // Each count is a scan of the whole city; coalesce quick taps into one.
+            .onAppear { draft = query.normalized }
+            // Each count is a scan of the whole city — now on a background
+            // task across every core; quick taps still coalesce into one.
             .task(id: draft) {
-                try? await Task.sleep(for: .milliseconds(150))
-                if !Task.isCancelled { recount() }
+                if counted { try? await Task.sleep(for: .milliseconds(150)) }
+                guard !Task.isCancelled else { return }
+                let n = await SearchEngine.countAsync(draft, store: store)
+                if !Task.isCancelled { count = n; counted = true }
             }
         }
     }
-    private func recount() { count = SearchEngine.count(draft, store: store) }
 }

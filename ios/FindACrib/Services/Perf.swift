@@ -32,6 +32,25 @@ enum Perf {
         return out
     }
 
+    /// Signposts for Instruments (2026-10-02): always on, near-free when no
+    /// one is recording. Launch decode, every search and every map refresh
+    /// show up as intervals in the "Points of Interest" track, on a real
+    /// iPhone, without the --perf flag.
+    static let signposter = OSSignposter(subsystem: "com.divinedavis.findacrib", category: .pointsOfInterest)
+
+    /// Times `work` as a signpost interval (and a log line under --perf).
+    @inline(__always)
+    static func interval<T>(_ name: StaticString, _ work: () throws -> T) rethrows -> T {
+        let state = signposter.beginInterval(name, id: signposter.makeSignpostID())
+        defer { signposter.endInterval(name, state) }
+        guard on else { return try work() }
+        let t0 = CFAbsoluteTimeGetCurrent()
+        let out = try work()
+        let label = "\(name)"
+        log.notice("\(label, privacy: .public) \((CFAbsoluteTimeGetCurrent() - t0) * 1000, format: .fixed(precision: 1))ms")
+        return out
+    }
+
     /// A bare timestamped mark, for pairing an event with the spans around it.
     @inline(__always)
     static func mark(_ name: @autoclosure () -> String) {

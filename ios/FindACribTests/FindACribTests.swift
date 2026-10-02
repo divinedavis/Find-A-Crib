@@ -1513,3 +1513,125 @@ final class SignInMessageTests: XCTestCase {
         XCTAssertEqual(AuthService.signInMessage(for: e), "Invalid login credentials")
     }
 }
+
+/// Timings for the hardware work (2026-10-02). Prints BENCH lines; asserts
+/// nothing about speed (simulators vary), only that the paths run.
+@MainActor
+final class PerfBenchTests: XCTestCase {
+    private func ms(_ n: Int = 5, _ f: () throws -> Void) rethrows -> Double {
+        var best = Double.infinity
+        for _ in 0..<n { let t = CFAbsoluteTimeGetCurrent(); try f(); best = min(best, (CFAbsoluteTimeGetCurrent() - t) * 1000) }
+        return best
+    }
+
+    func testBench() throws {
+        let decode = try ms(3) { _ = try DataStore.decodeLocal(bundleOnly: true) }
+        let s = DataStore(); s.applyForTesting(try DataStore.decodeLocal(bundleOnly: true))
+        var all = SearchQuery(); all.sort = .cheapest
+        var avail = SearchQuery(); avail.availableOnly = true
+        var bk = SearchQuery(); bk.locations = [.borough("Bk")]; bk.minPrice = 1500; bk.maxPrice = 3000; bk.sort = .cheapest
+        let runAll = ms { _ = SearchEngine.run(all, store: s) }
+        let runAvail = ms { _ = SearchEngine.run(avail, store: s) }
+        let runBk = ms { _ = SearchEngine.run(bk, store: s) }
+        let countAll = ms { _ = SearchEngine.count(all, store: s) }
+        // A map pan: which buildings sit in a ~1.5 km window, 20 pans.
+        let pan = ms(3) {
+            for k in 0..<20 {
+                let lat = 40.68 + Double(k) * 0.004, lng = -73.98
+                _ = MapViewport.visible(in: s, minLat: lat - 0.01, maxLat: lat + 0.01, minLng: lng - 0.012, maxLng: lng + 0.012)
+            }
+        }
+        print(String(format: "BENCH decode=%.1fms runAll=%.1fms runAvail=%.1fms runBk=%.1fms countAll=%.1fms pan20=%.1fms n=%d",
+                     decode, runAll, runAvail, runBk, countAll, pan, s.buildings.count))
+        XCTAssertGreaterThan(s.buildings.count, 40_000)
+    }
+}
+
+/// The hardware work must not change a single answer (2026-10-02).
+@MainActor
+final class ParallelPathTests: XCTestCase {
+    static var store: DataStore!
+    override func setUp() async throws {
+        if Self.store == nil {
+            let s = DataStore(); s.applyForTesting(try DataStore.decodeLocal(bundleOnly: true)); Self.store = s
+        }
+    }
+
+    /// The snapshot search (every core, precomputed facts) returns exactly
+    /// what the store-based reference rules return, for a spread of queries.
+    func testSnapshotSearchMatchesReference() {
+        let s = Self.store!
+        var qs: [SearchQuery] = [SearchQuery()]
+        var q = SearchQuery(); q.availableOnly = true; qs.append(q)
+        q = SearchQuery(); q.locations = [.borough("Bk")]; q.minPrice = 1500; q.maxPrice = 3000; qs.append(q)
+        q = SearchQuery(); q.beds = [1, 2]; q.sort = .priciest; qs.append(q)
+        q = SearchQuery(); q.vouchersOnly = true; qs.append(q)
+        q = SearchQuery(); q.vouchersOnly = true; q.voucherLiveOnly = true; qs.append(q)
+        q = SearchQuery(); q.unitBands = [0, 3]; q.noOpenViolations = true; q.sort = .mostUnits; qs.append(q)
+        q = SearchQuery(); q.locations = [.borough("M"), .borough("Q")]; q.sort = .newest; qs.append(q)
+        q = SearchQuery(); q.sort = .fewestViolations; qs.append(q)
+        q = SearchQuery(); q.hcrOnly = true; qs.append(q)
+        for q in qs {
+            let n = q.normalized
+            let ref = SearchEngine.sort(SearchEngine.pool(n, s).filter { SearchEngine.matchesNormalized($0, n, s) }, n.sort, s)
+            let got = SearchEngine.run(q, store: s)
+            XCTAssertEqual(got.count, ref.count, "count differs for \(q)")
+            XCTAssertEqual(Set(got.map(\.bbl)), Set(ref.map(\.bbl)), "rows differ for \(q)")
+            XCTAssertEqual(SearchEngine.count(q, store: s), ref.count)
+            // Same order up to ties: the sort keys line up position by position.
+            switch n.sort {
+            case .cheapest, .priciest:
+                XCTAssertEqual(got.map { s.priceOf($0) }, ref.map { s.priceOf($0) }, "price order differs for \(q)")
+            case .fewestViolations: XCTAssertEqual(got.map(\.openViolations), ref.map(\.openViolations))
+            case .mostUnits: XCTAssertEqual(got.map { $0.u ?? 0 }, ref.map { $0.u ?? 0 })
+            case .newest: XCTAssertEqual(got.map { $0.yr ?? 0 }, ref.map { $0.yr ?? 0 })
+            }
+        }
+    }
+
+    func testRunAsyncMatchesRun() async {
+        var q = SearchQuery(); q.locations = [.borough("Bx")]; q.sort = .cheapest
+        let a = await SearchEngine.runAsync(q, store: Self.store)
+        XCTAssertEqual(a.map(\.bbl), SearchEngine.run(q, store: Self.store).map(\.bbl))
+        let c = await SearchEngine.countAsync(q, store: Self.store)
+        XCTAssertEqual(c, a.count)
+    }
+
+    /// The parallel decode is the same array as JSONDecoder, including for
+    /// strings holding the characters the splitter keys on.
+    func testParallelJSONMatchesPlainDecode() throws {
+        struct Row: Codable, Equatable { let a: String; let n: Int; let x: [Int]? }
+        var rows: [Row] = []
+        for i in 0..<20_000 {
+            rows.append(Row(a: i % 7 == 0 ? "a, \"quoted\" [b] {c} \\\\ \(i)" : "row \(i)", n: i, x: i % 3 == 0 ? [i, -i] : nil))
+        }
+        let data = try JSONEncoder().encode(rows)
+        let par = try ParallelJSON.decodeArray(Row.self, from: data, parts: 6)
+        XCTAssertEqual(par, rows)
+        let cuts = try XCTUnwrap(ParallelJSON.cutPoints(data, parts: 6))
+        XCTAssertGreaterThan(cuts.count, 1, "should actually split")
+        XCTAssertEqual(try ParallelJSON.decodeArray(Row.self, from: Data("[]".utf8)), [])
+    }
+
+    func testParallelBootDecodeMatchesPlain() throws {
+        let p = try DataStore.decodeLocal(bundleOnly: true)
+        let url = try XCTUnwrap(DataStore.localURL(City.nyc.cacheName, bundleOnly: true))
+        let plain = try JSONDecoder().decode([Building].self, from: try Gunzip.inflate(try Data(contentsOf: url)))
+        XCTAssertEqual(p.buildings.map(\.bbl), plain.map(\.bbl))
+        XCTAssertEqual(p.buildings, plain)
+    }
+
+    /// The tile index finds exactly the rows a full scan finds, at street
+    /// zoom and at a whole-city window (where it falls back to the scan).
+    func testGeoGridMatchesScan() {
+        let all = Self.store.buildings
+        let g = GeoGrid(all)
+        for (lat, lng, d) in [(40.70, -73.95, 0.01), (40.75, -73.98, 0.003), (40.70, -73.90, 0.4)] {
+            let scan = all.filter { $0.lat >= lat - d && $0.lat <= lat + d && $0.lng >= lng - d && $0.lng <= lng + d }
+            let got = g.visible(minLat: lat - d, maxLat: lat + d, minLng: lng - d, maxLng: lng + d)
+            XCTAssertEqual(Set(got.map(\.bbl)), Set(scan.map(\.bbl)))
+            XCTAssertEqual(got.count, scan.count)
+            XCTAssertEqual(g.count(minLat: lat - d, maxLat: lat + d, minLng: lng - d, maxLng: lng + d), scan.count)
+        }
+    }
+}

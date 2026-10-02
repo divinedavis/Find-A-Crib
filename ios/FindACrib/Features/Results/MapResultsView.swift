@@ -6,6 +6,8 @@ struct MapResultsView: View {
     @Environment(AppNav.self) private var nav
     @State var query: SearchQuery
     @State private var results: [Building] = []
+    /// True once the background search has answered (2026-10-02).
+    @State private var searched = false
     /// Set from the city on first appear; the initial value is only what the
     /// first frame draws before .task runs.
     @State private var region: MKCoordinateRegion = MapRegion.nyc
@@ -34,11 +36,14 @@ struct MapResultsView: View {
                 // The count follows the viewport: pan or zoom and it reads what
                 // is on screen, and List opens on exactly that. Until the user
                 // moves the map it is the whole search.
-                Text(moved ? "\((inView ?? results.count).formatted()) \(query.noun) in view"
-                           : "\(results.count.formatted()) \(query.noun)")
+                Text(!searched ? "Searching…"
+                     : moved ? "\((inView ?? results.count).formatted()) \(query.noun) in view"
+                     : "\(results.count.formatted()) \(query.noun)")
                     .font(.se(15, .bold)).foregroundStyle(SE.ink)
                     .padding(.horizontal, 12).padding(.vertical, 6).background(Color.white.opacity(0.95)).clipShape(Capsule())
-                    .accessibilityIdentifier("map-count")
+                    // Tests wait for "map-count" and read its number; it only
+                    // carries that id once there is a number to read.
+                    .accessibilityIdentifier(searched ? "map-count" : "map-count-pending")
                     .padding(.top, 12)
             }
         }
@@ -83,17 +88,20 @@ struct MapResultsView: View {
             // listed.
             var wide = query
             wide.locations.removeAll { if case .mapArea = $0 { return true }; return false }
-            results = SearchEngine.run(wide, store: store)
+            // Search and bubble prices on a background task, every core.
+            let (r, prices) = await SearchEngine.runForMapAsync(wide, store: store)
+            guard !Task.isCancelled else { return }
+            results = r
+            searched = true
             inView = nil
-            var prices: [String: Int] = [:]
-            for b in results { if let p = store.price(b) ?? store.voucherAvail(b)?.p { prices[b.bbl] = p } }
             pricesByBBL = prices
             // A custom map area IS the viewport the user was looking at, so
             // reopening the map lands exactly there instead of on all of NYC.
             if case .mapArea(let box)? = query.locations.first(where: { if case .mapArea = $0 { return true }; return false }) {
                 region = box.region
             } else {
-                region = (results.count > 0 && results.count <= 500) ? MapRegion.fit(results, city: store.city) : MapRegion.forQuery(query, store: store)
+                region = (results.count > 0 && results.count <= 500) ? MapRegion.fit(results, city: store.city)
+                    : await MapRegion.forQueryAsync(query, store: store)
             }
         }
         .swipeBackEnabled()
@@ -149,19 +157,25 @@ struct MapCalloutCard: View {
 
 // MARK: - MKMapView wrapper with clustering and price bubbles
 
-final class BuildingAnnotation: NSObject, MKAnnotation {
+/// Pins carry a stable key so a refresh can keep the ones that did not change
+/// instead of removing and re-adding every pin (2026-10-02).
+protocol KeyedAnnotation: MKAnnotation { var key: String { get } }
+
+final class BuildingAnnotation: NSObject, KeyedAnnotation {
     let building: Building
     let price: Int?
-    init(_ b: Building, price: Int?) { building = b; self.price = price }
+    let key: String
+    init(_ b: Building, price: Int?) { building = b; self.price = price; key = "b:\(b.bbl):\(price ?? -1)" }
     var coordinate: CLLocationCoordinate2D { building.coordinate }
     var title: String? { building.address }
 }
 
 /// Aggregate pin for a grid cell when there are too many buildings to draw.
-final class GridAnnotation: NSObject, MKAnnotation {
+final class GridAnnotation: NSObject, KeyedAnnotation {
     let coordinate: CLLocationCoordinate2D
     let count: Int
-    init(coordinate: CLLocationCoordinate2D, count: Int) { self.coordinate = coordinate; self.count = count }
+    let key: String
+    init(coordinate: CLLocationCoordinate2D, count: Int, key: String) { self.coordinate = coordinate; self.count = count; self.key = key }
 }
 
 struct BuildingMap: UIViewRepresentable {
@@ -260,6 +274,10 @@ struct BuildingMap: UIViewRepresentable {
         private var lastLayoutKey = ""
         private var generation = 0
         private var countGeneration = 0
+        /// Tile index over `parent.buildings`, rebuilt off the main thread
+        /// whenever the search results change (dataKey).
+        private var grid: GeoGrid?
+        private var gridKey = 0
         init(_ p: BuildingMap) { parent = p }
 
         /// Debounced: pinch/pan fire regionDidChange continuously; rebuilding
@@ -277,14 +295,26 @@ struct BuildingMap: UIViewRepresentable {
         private func rebuild(_ m: MKMapView, force: Bool) {
             let region = m.region
             let all = parent.buildings
+            // The tile index belongs to this result set; a new search drops it
+            // and the first background pass rebuilds it.
+            if gridKey != dataKey { grid = nil; gridKey = dataKey }
+            let haveGrid = grid
+            let key0 = dataKey
             // The in-view count is exact and cheap (one bounds check per row,
             // off the main thread), so it follows every settled move even when
             // the pins below decide the view has not moved enough to redraw.
             let report = parent.onVisibleCount
             countGeneration += 1; let cgen = countGeneration
             DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-                let n = BuildingMap.countInView(all, region: region)
-                DispatchQueue.main.async { guard let self, cgen == self.countGeneration else { return }; report(n) }
+                let g = haveGrid ?? GeoGrid(all)
+                let r = region
+                let n = g.count(minLat: r.center.latitude - r.span.latitudeDelta / 2, maxLat: r.center.latitude + r.span.latitudeDelta / 2,
+                                minLng: r.center.longitude - r.span.longitudeDelta / 2, maxLng: r.center.longitude + r.span.longitudeDelta / 2)
+                DispatchQueue.main.async {
+                    guard let self else { return }
+                    if self.grid == nil, self.gridKey == key0 { self.grid = g }
+                    if cgen == self.countGeneration { report(n) }
+                }
             }
             // Only re-aggregate when the view moved a meaningful amount.
             let zoom = Int((log2(360 / max(region.span.longitudeDelta, 1e-6))).rounded())
@@ -297,7 +327,12 @@ struct BuildingMap: UIViewRepresentable {
             // Degrees per cell, from a cell measured in screen points. The map
             // view's own size is the only honest source for this: it differs by
             // device, and by whether the list sheet is up.
-            let (cw, ch) = BuildingMap.cellSize(region: region, viewSize: m.bounds.size)
+            let (rawW, rawH) = BuildingMap.cellSize(region: region, viewSize: m.bounds.size)
+            // Snapped to a ladder of sizes (steps of 2^¼, ~19%): latitudeDelta
+            // drifts as the map pans north/south, and an unsnapped cell height
+            // would shift every cell key and defeat the pin diff below.
+            func snap(_ v: Double) -> Double { pow(2, (log2(max(v, 1e-9)) * 4).rounded() / 4) }
+            let cw = snap(rawW), ch = snap(rawH)
             generation += 1; let gen = generation
             // Padded viewport; the work runs off the main thread.
             let pad = 0.6
@@ -306,9 +341,9 @@ struct BuildingMap: UIViewRepresentable {
             let minLng = region.center.longitude - region.span.longitudeDelta * (0.5 + pad)
             let maxLng = region.center.longitude + region.span.longitudeDelta * (0.5 + pad)
             DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-                var visible: [Building] = []
-                visible.reserveCapacity(2048)
-                for b in all where b.lat >= minLat && b.lat <= maxLat && b.lng >= minLng && b.lng <= maxLng { visible.append(b) }
+                let visible = Perf.interval("map.visible") {
+                    (haveGrid ?? GeoGrid(all)).visible(minLat: minLat, maxLat: maxLat, minLng: minLng, maxLng: maxLng)
+                }
                 var pins: [MKAnnotation] = []
                 if visible.count <= limit {
                     pins = visible.map { BuildingAnnotation($0, price: prices[$0.bbl]) }
@@ -316,33 +351,56 @@ struct BuildingMap: UIViewRepresentable {
                     // A grid over the padded viewport whose cells are square on
                     // screen, so bubbles are spaced the same in both directions
                     // and at every zoom.
+                    // Cells are anchored to the map, not the viewport: a pan at
+                    // the same zoom keeps the same cells, so most bubbles stay
+                    // put and only the edges are added or removed.
                     var cells: [Int: (lat: Double, lng: Double, n: Int)] = [:]
                     for b in visible {
-                        let ci = Int((b.lng - minLng) / cw), cj = Int((b.lat - minLat) / ch)
-                        let k = cj &* 100_000 &+ ci
+                        let ci = Int((b.lng / cw).rounded(.down)), cj = Int((b.lat / ch).rounded(.down))
+                        let k = cj &* 1_000_003 &+ ci
                         var acc = cells[k] ?? (0, 0, 0)
                         acc.lat += b.lat; acc.lng += b.lng; acc.n += 1
                         cells[k] = acc
                     }
                     let clamp = Double(BuildingMap.centroidClamp) / 2
+                    let zoomTag = Int((log2(1 / max(cw, 1e-9)) * 8).rounded())
                     pins = cells.map { k, acc in
-                        let ci = Double(k % 100_000), cj = Double(k / 100_000)
+                        let cjI = Int((Double(k) / 1_000_003).rounded(.down))
+                        let ciI = k &- cjI &* 1_000_003
+                        let ci = Double(ciI), cj = Double(cjI)
                         let lng = acc.lng / Double(acc.n), lat = acc.lat / Double(acc.n)
                         // Pull the average back toward the middle of its cell so
                         // two neighbours cannot end up touching on a shared edge.
-                        let cLng = minLng + (ci + 0.5) * cw, cLat = minLat + (cj + 0.5) * ch
+                        let cLng = (ci + 0.5) * cw, cLat = (cj + 0.5) * ch
                         return GridAnnotation(
                             coordinate: .init(latitude: min(max(lat, cLat - ch * clamp), cLat + ch * clamp),
                                               longitude: min(max(lng, cLng - cw * clamp), cLng + cw * clamp)),
-                            count: acc.n)
+                            count: acc.n, key: "g:\(zoomTag):\(k):\(acc.n)")
                     }
                 }
                 DispatchQueue.main.async {
                     guard let self, gen == self.generation else { return }
-                    let keep = self.parent.selected.map { sel in m.annotations.first { ($0 as? BuildingAnnotation)?.building.bbl == sel.bbl } }
-                    m.removeAnnotations(m.annotations.filter { $0 is BuildingAnnotation || $0 is GridAnnotation })
-                    m.addAnnotations(pins)
-                    if let k = keep, let sel = k { m.addAnnotation(sel); m.selectAnnotation(sel, animated: false) }
+                    Perf.interval("map.diff") {
+                        // Diff instead of replace: keep pins whose key is
+                        // unchanged, remove the rest, add only the new ones.
+                        // The selected pin is never removed out from under
+                        // the user.
+                        let selBBL = self.parent.selected?.bbl
+                        var current: [String: MKAnnotation] = [:]
+                        for a in m.annotations { if let k = (a as? KeyedAnnotation)?.key { current[k] = a } }
+                        var wanted = Set<String>(); wanted.reserveCapacity(pins.count)
+                        var add: [MKAnnotation] = []
+                        for p in pins {
+                            guard let k = (p as? KeyedAnnotation)?.key else { continue }
+                            wanted.insert(k)
+                            if current[k] == nil { add.append(p) }
+                        }
+                        let remove = current.filter { k, a in
+                            !wanted.contains(k) && (a as? BuildingAnnotation)?.building.bbl != selBBL
+                        }.map(\.value)
+                        if !remove.isEmpty { m.removeAnnotations(remove) }
+                        if !add.isEmpty { m.addAnnotations(add) }
+                    }
                 }
             }
         }

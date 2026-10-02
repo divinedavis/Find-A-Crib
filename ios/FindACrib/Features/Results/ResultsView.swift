@@ -153,6 +153,9 @@ struct ResultsView: View {
     private var wide: Bool { sizeClass == .regular }
     @State var query: SearchQuery
     @State private var results: [Building] = []
+    /// True once a background search has answered for this screen; until then
+    /// the header says "Searching…" and no empty state shows (2026-10-02).
+    @State private var searched = false
     @State private var shown = 30
     @State private var showFilters = false
     @State private var showLocation = false
@@ -169,9 +172,13 @@ struct ResultsView: View {
             SkylineScrollView(scene: Skyline.Scene.scene(for: store.city.id)) {
                 LazyVStack(alignment: .leading, spacing: 16) {
                     HStack(alignment: .firstTextBaseline) {
-                        Text(query.resultHeadline(count: results.count, city: store.city))
-                            .font(.se(24, .bold)).foregroundStyle(SE.ink).lineLimit(1).minimumScaleFactor(0.75)
-                            .accessibilityIdentifier("results-count")
+                        if searched {
+                            Text(query.resultHeadline(count: results.count, city: store.city))
+                                .font(.se(24, .bold)).foregroundStyle(SE.ink).lineLimit(1).minimumScaleFactor(0.75)
+                                .accessibilityIdentifier("results-count")
+                        } else {
+                            Text("Searching…").font(.se(24, .bold)).foregroundStyle(SE.ink3).lineLimit(1)
+                        }
                         Spacer()
                         Menu {
                             ForEach(SortOrder.allCases, id: \.self) { s in
@@ -189,7 +196,7 @@ struct ResultsView: View {
                     }
                     .padding(.horizontal, 16).padding(.top, 14)
 
-                    if results.isEmpty && store.loaded {
+                    if searched && results.isEmpty && store.loaded {
                         VStack(alignment: .leading, spacing: 10) {
                             Text("No \(query.noun) match").font(.se(22, .bold))
                             Text(emptyHint).font(.se(17)).foregroundStyle(SE.ink2)
@@ -206,7 +213,13 @@ struct ResultsView: View {
                             switch row {
                             case .building(let b):
                                 BuildingCard(building: b)
-                                    .onAppear { if b.bbl == results[min(shown, results.count) - 1].bbl, shown < results.count { shown += 30 } }
+                                    .onAppear {
+                                        if b.bbl == results[min(shown, results.count) - 1].bbl, shown < results.count { shown += 30 }
+                                        // The next three photos start loading before they scroll in.
+                                        if let i = results.prefix(shown).firstIndex(where: { $0.bbl == b.bbl }) {
+                                            ImageService.shared.prefetch(Array(results.dropFirst(i + 1).prefix(3)))
+                                        }
+                                    }
                             case .rerental(let f, let slot):
                                 // Google's ad when one is ready, else the
                                 // re-rental (Ads.swift, owner 2026-09-25).
@@ -268,8 +281,8 @@ struct ResultsView: View {
         }) { EmailSignInView(offersSocialSignIn: true) }
         .perfFirstMovement("results")
         .onAppear { if CommandLine.arguments.contains("--open-alerts") { showAlerts = true } }
-        .task(id: query) { Ads.shared.beginFeed(query, context: Ads.context(for: query, city: store.city)); run() }
-        .onChange(of: store.loaded) { _, _ in run() }
+        .task(id: query) { Ads.shared.beginFeed(query, context: Ads.context(for: query, city: store.city)); await run() }
+        .onChange(of: store.loaded) { _, _ in Task { await run() } }
         .swipeBackEnabled()
     }
 
@@ -285,9 +298,15 @@ struct ResultsView: View {
         return "Widen the price range or clear a filter."
 
     }
-    private func run() {
+    /// The search runs on a background task across every core; a newer query
+    /// (the .task(id:) restarting) cancels this one before it lands.
+    private func run() async {
         guard store.loaded else { return }
-        results = SearchEngine.run(query, store: store)
+        let q = query
+        let r = await SearchEngine.runAsync(q, store: store)
+        guard !Task.isCancelled, q == query else { return }
+        results = r
+        searched = true
         shown = 30
         rerentalPool = store.city.isNYC ? RerentalFeed.pool(store.featured.listings, for: results) : []
         // The list itself: how many matched, how the search was shaped, and

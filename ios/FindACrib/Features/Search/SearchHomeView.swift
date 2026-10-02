@@ -175,7 +175,22 @@ struct SearchHomeView: View {
         .onChange(of: store.loaded) { _, _ in recount() }
     }
 
-    private func recount() { count = store.loaded ? SearchEngine.count(query, store: store) : 0 }
+    /// Counts on a background task; quick edits cancel the previous count
+    /// (2026-10-02 — this was a scan of every building on the main thread on
+    /// each change to the query).
+    @State private var countTask: Task<Void, Never>?
+    private func recount() {
+        countTask?.cancel()
+        guard store.loaded else { count = 0; return }
+        let q = query
+        countTask = Task {
+            try? await Task.sleep(for: .milliseconds(60))
+            guard !Task.isCancelled else { return }
+            let n = await SearchEngine.countAsync(q, store: store)
+            guard !Task.isCancelled else { return }
+            count = n
+        }
+    }
 
 
     private func runSearch() {
@@ -474,7 +489,7 @@ actor MapThumb {
     private var cache: [SearchQuery: UIImage] = [:]
     func image(for q: SearchQuery, store: DataStore) async -> UIImage? {
         if let c = cache[q] { return c }
-        let region = await MainActor.run { MapRegion.forQuery(q, store: store) }
+        let region = await MapRegion.forQueryAsync(q, store: store)
         let o = MKMapSnapshotter.Options()
         o.region = region; o.size = CGSize(width: 208, height: 280)
         o.pointOfInterestFilter = .excludingAll
@@ -497,14 +512,26 @@ enum MapRegion {
 
     @MainActor
     static func forQuery(_ q: SearchQuery, store: DataStore) -> MKCoordinateRegion {
+        forQuery(q, buildings: store.buildings, city: store.city)
+    }
+
+    /// The same box, worked out on a background task: it is a pass over every
+    /// building, which used to run on the main thread (2026-10-02).
+    @MainActor
+    static func forQueryAsync(_ q: SearchQuery, store: DataStore) async -> MKCoordinateRegion {
+        let rows = store.buildings, city = store.city
+        return await Task.detached(priority: .userInitiated) { forQuery(q, buildings: rows, city: city) }.value
+    }
+
+    nonisolated static func forQuery(_ q: SearchQuery, buildings: [Building], city: City) -> MKCoordinateRegion {
         if case .mapArea(let box)? = q.locations.first { return box.region }
-        guard !q.locations.isEmpty else { return of(store.city) }
+        guard !q.locations.isEmpty else { return of(city) }
         var minLat = 90.0, maxLat = -90.0, minLng = 180.0, maxLng = -180.0, n = 0
-        for b in store.buildings where q.locations.contains(where: { $0.matches(b) }) {
+        for b in buildings where q.locations.contains(where: { $0.matches(b) }) {
             minLat = min(minLat, b.lat); maxLat = max(maxLat, b.lat)
             minLng = min(minLng, b.lng); maxLng = max(maxLng, b.lng); n += 1
         }
-        guard n > 0 else { return of(store.city) }
+        guard n > 0 else { return of(city) }
         return MKCoordinateRegion(center: .init(latitude: (minLat + maxLat) / 2, longitude: (minLng + maxLng) / 2),
                                   span: .init(latitudeDelta: max(0.01, (maxLat - minLat) * 1.2), longitudeDelta: max(0.01, (maxLng - minLng) * 1.2)))
     }

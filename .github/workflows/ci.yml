@@ -1,0 +1,31 @@
+# Every push and PR: secrets scan over the pushed commits + the unit tests.
+# The same two gates run locally in .githooks/pre-push; this catches pushes
+# from anywhere the hook isn't installed (the droplet's growth engine, other
+# worktrees, --no-verify).
+name: ci
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  secrets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - run: pip install -q requests numpy pillow opencv-python-headless shapely PyJWT segno
+      - run: python tests/run_unit.py

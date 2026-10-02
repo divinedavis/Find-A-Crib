@@ -1,0 +1,35 @@
+# The user-journey suite (tests/journeys.py) — phone (WebKit), desktop
+# (Chromium) and iPad (WebKit) — whenever the app shell or the suite changes.
+# Local mode: the page under test is this commit's index.html + generated city
+# pages; data the repo doesn't carry (buildings.slim.json is gitignored) falls
+# through to the live site. deploy_app.sh still runs the suite itself before
+# and after every copy; this is the net for pushes that never get deployed by
+# that script. Public repo, so the minutes are free.
+name: journeys
+on:
+  push:
+    paths:
+      - 'index.html'
+      - 'static/**'
+      - 'build_city_pages.py'
+      - 'tests/journeys.py'
+      - '.github/workflows/journeys.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: journeys
+  cancel-in-progress: true
+jobs:
+  journeys:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - run: pip install -q playwright==1.62.0 requests
+      - run: python -m playwright install --with-deps webkit chromium
+      - run: python build_city_pages.py | tail -1
+      - run: python tests/journeys.py --target local --failed-out failed.txt || { echo "re-running failed journeys once"; s=0; while read -r n; do python tests/journeys.py --target local --only "$n" || s=1; done < failed.txt; exit $s; }

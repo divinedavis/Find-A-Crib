@@ -8,9 +8,12 @@
 # The journeys (tests/journeys.py) drive the real page as an iPhone and as a
 # desktop browser through every visitor path. They run twice: against the
 # local index.html before anything is copied, and against the live site after.
-# A failure on the live pass prints loudly but does not roll back — fix
-# forward and run again. See tests/DEVICE.md for the real-iPhone lane, which
-# this script cannot run on its own.
+# The unit tests (tests/run_unit.py) run first. Before the copy, the files
+# about to be replaced are snapshotted on the box under $BACKUPS; if the live
+# pass fails, the failed journeys get one re-run (live has real network
+# flake), and anything still failing rolls the docroot back to that snapshot
+# and exits 1. scripts/rollback_app.sh restores any snapshot by hand. See
+# tests/DEVICE.md for the real-iPhone lane, which this script cannot run.
 #
 # What this script does NOT deploy, and where those pages go instead:
 # /developers/, /embed/ and /marketing-agents/ are hand-authored HTML that was
@@ -25,6 +28,14 @@ HOST=root@104.236.120.144
 DOC=/var/www/rent-map
 PY=${PY:-$HOME/.venvs/dhcr-map/bin/python}
 SKIP=${1:-}
+BACKUPS=/var/backups/findacrib-app
+# Everything the copy below replaces, relative to $DOC. Keep in step with it.
+SHIPPED="index.html la/index.html sf/index.html dc/index.html westchester/index.html static/supercluster/supercluster.min.js static/mapillary-preview.js static/apple-street-preview.js static/apple-street-frame.html"
+
+if [ "$SKIP" != "--skip-tests" ]; then
+  echo "== unit tests"
+  "$PY" tests/run_unit.py 2>/dev/null
+fi
 
 echo "== regenerating city pages from index.html"
 "$PY" build_city_pages.py | tail -1
@@ -35,6 +46,13 @@ if [ "$SKIP" != "--skip-tests" ]; then
   echo "== journeys against the local build"
   "$PY" tests/journeys.py --target local
 fi
+
+echo "== snapshotting what is live now"
+SNAP=$(date -u +%Y%m%dT%H%M%SZ)
+ssh "$HOST" "set -e; mkdir -p $BACKUPS/$SNAP; cd $DOC
+  for f in $SHIPPED; do [ -f \$f ] && install -D -m 644 \$f $BACKUPS/$SNAP/\$f; done
+  ls -1d $BACKUPS/*/ | head -n -15 | xargs -r rm -rf"
+echo "   $BACKUPS/$SNAP (scripts/rollback_app.sh $SNAP)"
 
 echo "== deploying"
 ssh "$HOST" "mkdir -p $DOC/static/supercluster"
@@ -49,5 +67,18 @@ scripts/check_docroot_leaks.sh
 
 if [ "$SKIP" != "--skip-tests" ]; then
   echo "== journeys against the live site"
-  "$PY" tests/journeys.py --target live
+  FAILED=$(mktemp)
+  if ! "$PY" tests/journeys.py --target live --failed-out "$FAILED"; then
+    echo "== re-running the failed journeys once: $(tr '\n' ' ' <"$FAILED")"
+    STILL=0
+    while read -r name; do
+      "$PY" tests/journeys.py --target live --only "$name" || STILL=1
+    done <"$FAILED"
+    if [ "$STILL" = 1 ]; then
+      echo "!! live journeys still failing — rolling back to $SNAP"
+      scripts/rollback_app.sh "$SNAP"
+      exit 1
+    fi
+  fi
+  rm -f "$FAILED"
 fi

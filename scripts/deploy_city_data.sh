@@ -34,6 +34,7 @@ for c in "${CITIES[@]}"; do
     printf '   %-22s %6.2f MB raw / %5.2f MB gz\n' "$f" \
       "$(echo "scale=2; $(wc -c <"$c/$f") / 1000000" | bc)" \
       "$(echo "scale=2; $(wc -c <"$c/$f.gz") / 1000000" | bc)"
+    python3 scripts/check_data_file.py "$c/$f" "$DOC/$c/$f"
     scp -q "$c/$f" "$c/$f.gz" "$HOST:$DOC/$c/"
   done
 done

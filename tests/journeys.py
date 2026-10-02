@@ -1677,6 +1677,10 @@ class Runner:
                         print(f'       - {e}')
                 b.close()
         failed = [j for j in self.results if j.errors]
+        if getattr(self, 'failed_out', None):
+            # deploy_app.sh re-runs just these once before it rolls back, so a
+            # single flaky journey on live doesn't undo a good deploy.
+            Path(self.failed_out).write_text(''.join(sorted({j.name + '\n' for j in failed})))
         print(f'\n{len(self.results) - len(failed)}/{len(self.results)} journeys passed on {self.target} in {time.time() - t0:.0f}s')
         return len(failed)
 
@@ -1688,8 +1692,11 @@ if __name__ == '__main__':
     ap.add_argument('--headed', action='store_true')
     ap.add_argument('--device', choices=['phone', 'desktop', 'ipad'], default=None,
                     help='run one device only (default: all three)')
+    ap.add_argument('--failed-out', default=None,
+                    help='write the names of failed journeys here, one per line')
     a = ap.parse_args()
     r = Runner(a.target, a.only, a.headed)
+    r.failed_out = a.failed_out
     if a.device:
         r.devices = (a.device,)
     sys.exit(r.run())

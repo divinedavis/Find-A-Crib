@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Runs before every `git push` from this checkout (installed by
+# scripts/install_hooks.sh). Two gates that used to be habits:
+#   1. gitleaks over exactly the commits being pushed — no credential leaves
+#      the Mac (the repo is PUBLIC);
+#   2. the unit tests (tests/run_unit.py, under a second).
+# Emergency bypass: git push --no-verify (say why in the next commit).
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+ZERO=0000000000000000000000000000000000000000
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ "$local_sha" = "$ZERO" ] && continue            # deleting a branch
+  if [ "$remote_sha" = "$ZERO" ]; then range="$local_sha --not --remotes"; else range="$remote_sha..$local_sha"; fi
+  if command -v gitleaks >/dev/null; then
+    gitleaks git --no-banner --redact --log-opts="$range" >/dev/null 2>&1 || {
+      echo "pre-push: gitleaks found a secret in $range — run: gitleaks git --log-opts=\"$range\" -v" >&2; exit 1; }
+  else
+    echo "pre-push: gitleaks not installed (brew install gitleaks) — secrets scan skipped" >&2
+  fi
+done
+PY="$HOME/.venvs/dhcr-map/bin/python"; [ -x "$PY" ] || PY=python3
+"$PY" tests/run_unit.py >/dev/null 2>&1 || { echo "pre-push: unit tests failed — run: $PY tests/run_unit.py" >&2; exit 1; }
+echo "pre-push: secrets scan + unit tests passed"

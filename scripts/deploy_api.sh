@@ -16,6 +16,10 @@
 #
 #   ./scripts/deploy_api.sh                 # pull on the box, sync, restart
 #
+# Gates (2026-10-01): tests/run_unit.py runs locally first; the live modules
+# are snapshotted to $BACKUPS before the copy; and if the post-restart checks
+# fail, the snapshot goes back in, the service restarts on it, and this exits 1.
+#
 set -euo pipefail
 HOST="${FAC_HOST:-root@104.236.120.144}"
 REPO=/root/Find-A-Crib
@@ -23,7 +27,18 @@ LIVE=/root/findacrib-api
 # Exactly the modules gunicorn imports. Listed rather than globbed: the repo is
 # a website with a hundred scripts in its root, and the API directory should
 # hold the six files it runs.
+BACKUPS=/var/backups/findacrib-api
 FILES=(api_server.py creator_outreach.py business_checklist.py creator_mail_reader.py crease_metrics.py nemo_metrics.py trent_metrics.py marracat_metrics.py build_log.py building_report.py issue_api_key.py)
+
+echo "==> unit tests"
+cd "$(dirname "$0")/.."
+"${PY:-$HOME/.venvs/dhcr-map/bin/python}" tests/run_unit.py 2>/dev/null
+
+SNAP=$(date -u +%Y%m%dT%H%M%SZ)
+echo "==> snapshotting live modules to $BACKUPS/$SNAP"
+ssh "$HOST" "set -e; mkdir -p $BACKUPS/$SNAP
+  for f in ${FILES[*]}; do [ -f $LIVE/\$f ] && cp -p $LIVE/\$f $BACKUPS/$SNAP/; done
+  ls -1d $BACKUPS/*/ | head -n -15 | xargs -r rm -rf"
 
 ssh "$HOST" "set -e
   cd $REPO && git pull -q --ff-only
@@ -53,7 +68,7 @@ ssh "$HOST" "set -e
   systemctl restart findacrib-api"
 
 sleep 4
-ssh "$HOST" "set -e
+if ! ssh "$HOST" "set -e
   systemctl is-active findacrib-api
   cd $LIVE && set -a && . ./.env && set +a && ./venv/bin/python -c \"
 import crease_metrics, nemo_metrics, trent_metrics, marracat_metrics
@@ -71,5 +86,15 @@ print('    marracat:', 'ok' if m.get('ok') else m.get('warnings'))
     code=\$(curl -s -o /dev/null -w '%{http_code}' -m 10 https://findacrib.com/api/\$feed)
     echo \"    /api/\$feed -> \$code (expect 401 unauthenticated)\"
     test \"\$code\" = 401
-  done"
+  done
+  code=\$(curl -s -o /tmp/geo.json -w '%{http_code}' -m 10 https://findacrib.com/api/geo)
+  echo \"    /api/geo -> \$code \$(cat /tmp/geo.json)\"
+  test \"\$code\" = 200 && grep -q '\"ok\":true' /tmp/geo.json"; then
+  echo "!! post-deploy checks failed — restoring $SNAP and restarting"
+  ssh "$HOST" "set -e; cp -p $BACKUPS/$SNAP/* $LIVE/; rm -rf $LIVE/__pycache__
+    chown -R root:root $LIVE && chmod -R go-w $LIVE
+    chown root:findacrib $LIVE $LIVE/.env && chmod 0750 $LIVE && chmod 0640 $LIVE/.env
+    systemctl restart findacrib-api; sleep 4; systemctl is-active findacrib-api"
+  exit 1
+fi
 echo "==> done"

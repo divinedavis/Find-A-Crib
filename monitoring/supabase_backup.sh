@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Nightly pg_dump of every Supabase project listed in /etc/supabase-backup/,
+# Weekly pg_dump of every Supabase project listed in /etc/supabase-backup/,
 # run on the divinedavis.com droplet (159.203.110.79) so the copy lives on a
 # different machine from both Supabase and the app droplets.
 #
@@ -8,12 +8,18 @@
 # 2026-10-01). One env file per project (0600):
 #   /etc/supabase-backup/<name>.env   PGHOST= PGUSER= PGPASSWORD= (session pooler, port 5432)
 # Dumps: /var/backups/supabase/<name>/<name>-YYYY-MM-DD.dump (custom format,
-# restore with pg_restore), 14 kept. A failed or suspiciously small dump
+# restore with pg_restore), 8 weeks kept.
+#
+# WEEKLY, not nightly, on purpose (owner: no backups that cost money). Cost
+# is $0 either way — a free-org project is never billed — but each dump
+# pulls ~130 MB through the pooler, which Supabase counts as egress against
+# the free plan's 5 GB/month; nightly was ~3.9 GB, and a free project over
+# quota gets restricted. Weekly is ~0.6 GB. Measured 2026-10-01. A failed or suspiciously small dump
 # emails the owner through uptime-watch's SMTP settings.
 set -uo pipefail
 PG_DUMP=/usr/lib/postgresql/17/bin/pg_dump
 OUT=/var/backups/supabase
-KEEP_DAYS=14
+KEEP_DAYS=60
 fail=()
 for envf in /etc/supabase-backup/*.env; do
   name=$(basename "$envf" .env)

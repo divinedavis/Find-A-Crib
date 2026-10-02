@@ -1,0 +1,9 @@
+[
+ {"day":"day1","slug":"90-sands-dumbo","photo":"img/53.jpg","hook":["From $537/mo","in Dumbo"],"address":"90 SANDS ST","place":"Dumbo, Brooklyn","price":["$537–$2,132","a month"],"sub":"Income limits apply · listed by NYC HDC"},
+ {"day":"day2","slug":"1101-president-crown-heights","photo":"img/07.jpg","hook":["$1,066 studio","in Crown Heights"],"address":"1101 PRESIDENT ST","place":"Crown Heights, Brooklyn","price":["Studio","$1,066 a month"],"sub":"Income limits apply · listed by NYC HDC"},
+ {"day":"day3","slug":"43-12-hunter-lic","photo":"img/03.jpg","hook":["2 bedrooms from","$2,106 in LIC"],"address":"43-12 HUNTER ST","place":"Long Island City, Queens","price":["$2,106–$3,447","a month"],"sub":"2 bedrooms · income limits apply"},
+ {"day":"day4","slug":"1182-ogden-highbridge","photo":"img/06.jpg","hook":["$2,308 1-bed","in Highbridge"],"address":"1182 OGDEN AVE","place":"Highbridge, Bronx","price":["1 bedroom","$2,308 a month"],"sub":"Income up to $154,440 for 1 person"},
+ {"day":"day5","slug":"1164-river-concourse","photo":"img/49.jpg","hook":["From $1,614/mo","on the Concourse"],"address":"1164 RIVER AVE","place":"Concourse, Bronx","price":["$1,614–$2,085","a month"],"sub":"River Crest · listed by NYC HDC"},
+ {"day":"day6","slug":"500-vandalia-east-new-york","photo":"img/19.jpg","hook":["2 bedrooms,","$2,214 in East NY"],"address":"500 VANDALIA AVE","place":"East New York, Brooklyn","price":["2 bedrooms","$2,214 a month"],"sub":"Spring Creek · listed by NYC HDC"},
+ {"day":"day7","slug":"649-hart-bushwick","photo":"img/24.jpg","hook":["$2,950","in Bushwick"],"address":"649 HART ST","place":"Bushwick, Brooklyn","price":["Unit 2B","$2,950 a month"],"sub":"Income limits apply"}
+]

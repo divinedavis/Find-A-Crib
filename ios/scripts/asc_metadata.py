@@ -69,33 +69,37 @@ Open lotteries and waitlists from New York State's HousingSearch portal — inco
 SAVE AND SYNC
 Heart a building and it's in My Activity; sign in with Apple or Google and your saves follow you to findacrib.com.
 
-FIND A CRIB PLUS
-Plus unlocks the registered managing agent's phone number on every building page and the landlord directory. Find A Crib Plus Monthly is an auto-renewable subscription at $4.99 per month, charged to your Apple Account and renewed automatically unless cancelled at least 24 hours before the end of the period. Manage or cancel in Settings › Apple Account › Subscriptions.
+ACCOUNTS
+An account (Sign in with Apple, Google or email) includes every feature: managing-agent phone numbers, bedbug and rodent records, and borough alerts.
+
+FIND A CRIB PLUS (EXISTING SUBSCRIBERS)
+Find A Crib Plus Monthly is no longer offered in the app. Existing subscribers keep it — it removes ads — at $4.99 per month, charged to your Apple Account and renewed automatically unless cancelled at least 24 hours before the end of the period. Manage or cancel in Settings › Apple Account › Subscriptions.
 Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 Privacy Policy: https://findacrib.com/privacy/
 
 Find A Crib is an independent, informational tool. It is not a broker, does not list apartments, and takes no fee. Data: NYS Homes and Community Renewal rent-stabilization register (2024), NYC HPD open data, HUD FY2026 Fair Market Rents, HousingSearch.ny.gov, advertised rents from Zumper, LA County Assessor parcel data under LAHD's RSO criteria, the SF Rent Board Housing Inventory via DataSF, and the DC DHCD RentRegistry.
 """
 
-WHATS_NEW = """The Lotteries tab now lists every open lottery and re-rental in all five boroughs to everyone — no account needed to browse.
+WHATS_NEW = """Everything in Find A Crib now comes with an account: managing-agent phone numbers, bedbug and rodent records on New York building pages, and borough alerts.
+
+The Lotteries tab lists every open lottery and re-rental in all five boroughs to everyone — no account needed to browse.
 
 Borough alerts: pick your boroughs and get a notification and an email the minute a lottery or re-rental opens.
-
-Bedbug and rodent records on New York building pages are now part of Find A Crib Plus, alongside managing-agent phone numbers and no ads.
 
 NYC HDC re-rentals open their official flyer.
 """
 
-REVIEW_NOTES = """VERSION 1.2.6 (build __BUILD__) — Lotteries open to everyone, bedbug and rodent records in Plus
+REVIEW_NOTES = """VERSION 1.2.6 (build __BUILD__) — every feature included with an account; Lotteries open to everyone
 
 WHAT CHANGED SINCE 1.2.5
-1. Lotteries tab: lists every borough's open lotteries and re-rentals to everyone, signed in or not (it used to ask for an account first). Turning on borough alerts needs an account (Sign in with Apple, Google or email) and no purchase.
-2. Find A Crib Plus (the existing auto-renewable subscription, $4.99/month, StoreKit only) now lists four perks on its paywall: Bedbug records, Rodent records, Agent phone numbers, No ads. Bedbug and rodent records on New York building pages are Plus for accounts created from 1 Oct 2026; accounts from before keep them. HPD pest violations stay open to everyone.
-3. NYC HDC re-rental cards open HDC's official flyer in Safari.
+1. Every feature is included with a (no-cost) account: managing-agent phone numbers, bedbug and rodent records on New York building pages, and borough alerts. Sign in with Apple, Google or email.
+2. Find A Crib Plus is not offered anywhere in this version: no paywall, no subscribe buttons. The existing auto-renewable subscription stays in App Store Connect so current subscribers keep it (it removes ads for them); a subscriber sees "Manage subscription" in Profile. No new purchases are possible in the app.
+3. Lotteries tab: lists every borough's open lotteries and re-rentals to everyone, signed in or not.
+4. NYC HDC re-rental cards open HDC's official flyer in Safari.
 No new permissions, no new SDKs, no new data types.
 
-TO SEE THE PLUS PAYWALL
-Sign in (any method), open any New York building from Search, and tap the managing agent's phone number; or Profile > "Get Find A Crib Plus". The paywall shows the price from StoreKit, Subscribe, Restore purchases, and the Terms of Use / Privacy links. There is no invite-a-friend or other non-StoreKit route in the app.
+TO SEE THE FEATURES
+Sign in (Profile > Sign in with Apple, Google, or email), open any New York building from Search: the managing agent's phone number and the Bedbug filings / Rat inspections tiles open directly.
 
 TO SEE THE IPAD LAYOUT
 Open the app on an iPad in either orientation: Search, Lotteries, Events, My Activity and Profile all work, and results lay out in two columns.

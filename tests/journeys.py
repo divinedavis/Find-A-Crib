@@ -23,6 +23,7 @@ a change on that path also wants the device lane — see DEVICE.md.
 """
 import argparse
 import json
+import os
 import secrets
 import subprocess
 import urllib.error
@@ -1660,6 +1661,11 @@ class Runner:
                 layout = 'desktop' if device == 'ipad' else device
                 for name in self.JOURNEYS:
                     if self.only and self.only not in name:
+                        continue
+                    # CI (journeys.yml) has no keychain, so the journeys that
+                    # mint a throwaway user with the service-role key are
+                    # listed in JOURNEYS_SKIP there; deploy_app.sh runs them.
+                    if name in os.environ.get('JOURNEYS_SKIP', '').split(','):
                         continue
                     j = Journey(name, device)
                     page = self.page(ctx, j)

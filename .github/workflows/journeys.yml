@@ -23,13 +23,17 @@ concurrency:
 jobs:
   journeys:
     runs-on: ubuntu-latest
+    env:
+      # These mint a test user with the Supabase service-role key from the
+      # macOS keychain. The key stays off GitHub; deploy_app.sh runs them.
+      JOURNEYS_SKIP: account_delete,plus_gates
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.14'
-      - run: pip install -q playwright==1.62.0 requests
+      - run: pip install -q playwright==1.62.0 requests numpy opencv-python-headless pillow
       - run: python -m playwright install --with-deps webkit chromium
       - run: python build_city_pages.py | tail -1
       - run: python tests/journeys.py --target local --failed-out failed.txt || { echo "re-running failed journeys once"; s=0; while read -r n; do python tests/journeys.py --target local --only "$n" || s=1; done < failed.txt; exit $s; }

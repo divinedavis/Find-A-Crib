@@ -341,7 +341,7 @@
        non-subscriber's browser at all: get_research_directory() returns null,
        not a filtered list, so there is nothing to un-hide in devtools. -->
   <div class="gate" id="gate" hidden>
-    <h2 id="gate-title">Landlord research is part of Find A Crib Plus</h2>
+    <h2 id="gate-title">Sign in to search every NYC landlord</h2>
     <p id="gate-sub">The directory is built from HPD's own registration and violation records, aggregated per owner and per managing agent.</p>
     <ul>
       <li>Search <b id="gate-n">60,000+</b> owners and managing agents by name</li>
@@ -349,7 +349,7 @@
       <li>See buildings, apartments and open violations per portfolio</li>
       <li>Sort by who holds the most &mdash; or by who has the worst record</li>
     </ul>
-    <a class="lock-cta" id="gate-cta" href="/?plus=1">Unlock with Plus</a>
+    <a class="lock-cta" id="gate-cta" href="/?auth=signup&amp;next=%2Fdirectory%2F">Create an account or sign in</a>
   </div>
 
   <div id="dir" hidden>
@@ -445,13 +445,10 @@
 
   function showGate(kind){
     el('gate').hidden = false; el('dir').hidden = true;
-    if (kind === 'signed-in') {
-      el('gate-title').textContent = 'Landlord research is part of Find A Crib Plus';
-      el('gate-cta').textContent = 'Upgrade to Plus';
-    } else {
-      el('gate-title').textContent = 'Sign in to search every NYC landlord';
-      el('gate-cta').textContent = 'Unlock with Plus';
-    }
+    // Everything is free for any account since 2026-10-01; a signed-in
+    // visitor only lands here if the lookup failed.
+    el('gate-title').textContent = kind === 'signed-in' ? 'Couldn\u2019t load the directory \u2014 try again' : 'Sign in to search every NYC landlord';
+    el('gate-cta').textContent = 'Create an account or sign in';
   }
 
   // The gate is the RPC, not this function: a null answer means "not a

@@ -1645,7 +1645,7 @@
       </div>
     </div>
     <a class="filter-pill desktop-chip desktop-only nyc-only" href="/alerts/?src=chip" title="An email the minute a new lottery or re-rental opens in your borough">🔔 Alerts</a>
-    <button type="button" id="pill-noads" class="filter-pill desktop-chip desktop-only" title="Find A Crib Plus: no ads anywhere, plus agent phone numbers, saved searches and landlord research">🚫 Remove ads</button>
+    <button type="button" id="pill-noads" class="filter-pill desktop-chip desktop-only" hidden title="Find A Crib Plus: no ads anywhere, plus agent phone numbers, saved searches and landlord research">🚫 Remove ads</button>
     <!-- Desktop's counterpart to the mobile #pill-app-m chip: a phone can tap
          straight through to the App Store, a laptop cannot, so this one opens a
          QR code to scan instead. Not nyc-only — the app carries every city. -->
@@ -2703,6 +2703,15 @@ function favActive() {
   }
   // when signed in, mirror each heart toggle to the user's Supabase account
   let supaClient = null, authUser = null, pendingPhoneBbl = null, plusActive = false;
+  // Everything free for now (owner, 2026-10-01: "make everything free in the
+  // app and website for now"). Every Plus feature opens to any signed-in
+  // account and nothing offers Plus; ads stay, and paying members keep
+  // no-ads (plusActive still means "pays"). The server switch is
+  // has_features() (db/0043). To restore paid gating: set this false AND
+  // make has_features() call has_plus().
+  const FEATURES_FREE = true;
+  function featureAccess() { return !!authUser && (FEATURES_FREE || (plusKnown && plusActive)); }
+
   // Set by ?plus=1 below; consumed by refreshPlus() once membership is known.
   let plusUpsellPending = false;
   // Is the signed-in user a Plus subscriber? Mirrors has_plus() server-side;
@@ -2734,7 +2743,7 @@ function favActive() {
     // skips Mediavine from the next page on (only a confirmed answer changes it).
     if (plusKnown) { try { if (plusActive) localStorage.setItem('fac.noads', '1'); else localStorage.removeItem('fac.noads'); } catch (e) {} }
     if (plusKnown) document.documentElement.classList.toggle('fac-noads', !!plusActive);
-    { const np = document.getElementById('pill-noads'); if (np) np.hidden = !!plusActive; }
+    { const np = document.getElementById('pill-noads'); if (np) np.hidden = !!plusActive || FEATURES_FREE; }
     if (plusUpsellPending) { plusUpsellPending = false; if (plusKnown && !plusActive) openPaywall(null, paywallSource); }
     // Membership is only known once this resolves, and the callers above run
     // updateAuthUI() before awaiting it — so anything that depends on Plus has
@@ -2745,7 +2754,7 @@ function favActive() {
   // paint (which does not yet know about Plus) and refreshPlus() (which does).
   function syncReferralUI() {
     const rb = document.getElementById('ref-btn');
-    if (rb) rb.hidden = !authUser || plusActive;
+    if (rb) rb.hidden = !authUser || plusActive || FEATURES_FREE;
   }
   // Saving is free — it just requires an account (the signup hook for ad
   // traffic). Phones, research, folders, and saved searches stay Plus.
@@ -2765,7 +2774,7 @@ function favActive() {
       // Saving IS subscribing: every saver, free or Plus, gets an email when
       // the building changes (saved_alerts.py). Say so once per session so the
       // save reads as "we're watching it", then offer Plus members a folder.
-      if (on && plusActive) showFolderToast(bbl);
+      if (on && featureAccess()) showFolderToast(bbl);
       else if (on) confirmWatchToast();
       if (!on) { delete FAVCATS[bbl]; renderFolderBar(); }
     } catch (e) { console.warn('fav sync failed', e); }
@@ -2789,7 +2798,7 @@ function favActive() {
     const { data, error } = await supaClient.from('categories')
       .insert({ user_id: authUser.id, name }).select('id,name,share_token').single();
     if (error) {   // RLS rejects non-Plus inserts
-      if (!plusActive) openPaywall(null, 'folders');
+      if (!featureAccess()) openPaywall(null, 'folders');
       else showPlusToast(/duplicate/i.test(error.message) ? 'You already have a folder with that name.' : 'Couldn’t create the folder — try again.');
       return null;
     }
@@ -2867,7 +2876,7 @@ function favActive() {
     // saved search as a chip that reapplies it. Loaded once per sign-in;
     // the first open renders the action alone and fills in when the list
     // arrives.
-    if (authUser && plusActive && SEARCHES === null) { loadSearches().then(renderFolderBar); }
+    if (featureAccess() && SEARCHES === null) { loadSearches().then(renderFolderBar); }
     const searches = (SEARCHES || []).map(r =>
       `<button type="button" class="folder-chip" data-search="${r.id}" title="Apply this search">🔍 ${escT(r.name)}</button>`).join('');
     bar.innerHTML = folders +
@@ -4589,8 +4598,8 @@ function favActive() {
   // view's chip bar (renderFolderBar), next to the folders and the saved
   // searches themselves — one place for everything a person has kept.
   async function saveCurrentSearch() {
-    if (!authUser) { openAuthModal('Create an account or sign in to continue — saved searches are part of Plus.', 'saved_search'); return; }
-    if (!plusActive) { openPaywall(null, 'saved_search'); return; }
+    if (!authUser) { openAuthModal('Create an account or sign in to save your searches.', 'saved_search'); return; }
+    if (!featureAccess()) { openPaywall(null, 'saved_search'); return; }
     const name = (prompt('Name this search (e.g. "BK 2BR, no violations"):') || '').trim();
     if (!name) return;
     const { error } = await supaClient.from('saved_searches')
@@ -5336,8 +5345,8 @@ function favActive() {
   async function openResearch(btn) {
     const bbl = btn.dataset.bbl;
     if (!supaClient) return;
-    if (!authUser) { openAuthModal('Create an account or sign in to continue — landlord research is part of Plus.', 'landlord_research'); return; }
-    if (!plusActive) { openPaywall(null, 'research'); return; }
+    if (!authUser) { openAuthModal('Create an account or sign in to research this landlord.', 'landlord_research'); return; }
+    if (!featureAccess()) { openPaywall(null, 'research'); return; }
     const orig = btn.textContent;
     btn.disabled = true; btn.textContent = 'Looking up portfolio…';
     try {
@@ -5360,7 +5369,7 @@ function favActive() {
   async function revealAgentPhone(btn) {
     const bbl = btn.dataset.bbl;
     if (!supaClient) return;
-    if (!authUser) { pendingPhoneBbl = bbl; openAuthModal('Create an account or sign in to continue — phone numbers are part of Plus.', 'phone'); return; }
+    if (!authUser) { pendingPhoneBbl = bbl; openAuthModal('Create an account or sign in to see the managing agent\u2019s phone number.', 'phone'); return; }
     const orig = btn.textContent;
     btn.disabled = true; btn.textContent = '…';
     try {
@@ -7328,7 +7337,7 @@ function favActive() {
       // gate (as the account gate always was).
       if ((act === 'bedbugs' || act === 'rodents') && !authUser) {
         track('outbound', { kind: 'gate_' + act, bbl: rec.bbl });
-        openAuthModal(`${act === 'bedbugs' ? 'Bedbug' : 'Rodent inspection'} records are part of Find A Crib Plus. Create an account to get started.`, act);
+        openAuthModal(`Create an account or sign in to see this building\u2019s ${act === 'bedbugs' ? 'bedbug filings' : 'rat inspections'}.`, act);
         setAuthMode('signup');
         return;
       }
@@ -7650,7 +7659,7 @@ function favActive() {
   }
   function pestAccess() {
     if (!authUser) return false;
-    return pestGrandfathered() || (plusKnown && plusActive);
+    return pestGrandfathered() || featureAccess();
   }
 
   // ---------- Find A Crib Plus paywall ----------
@@ -7660,6 +7669,7 @@ function favActive() {
   // conversion can say which paywall sells (2026-09-30).
   let paywallSource = 'other';
   function openPaywall(bbl, source) {
+    if (FEATURES_FREE) return;   // nothing is for sale while everything is free
     pendingPhoneBbl = bbl || null;            // remember what they wanted, to reveal after checkout
     paywallSource = source || (bbl ? 'phone' : 'other');
     // Lead with what they came for.
@@ -7947,7 +7957,7 @@ function favActive() {
     const plus = document.querySelector('.detail-plus-cta');
     if (brand) brand.hidden = !on;
     if (prof) prof.hidden = !on;
-    if (plus) plus.hidden = on;
+    if (plus) plus.hidden = on || FEATURES_FREE;   // no Plus offers while everything is free
   }
 
   // ---------- profile: account, membership, email-alert preference ----------
@@ -7963,7 +7973,7 @@ function favActive() {
     const plan = document.getElementById('profile-plan');
     plan.textContent = plusActive ? '★ Plus member' : 'Basic';
     plan.classList.toggle('plus', plusActive);
-    document.getElementById('profile-upgrade').hidden = plusActive;
+    document.getElementById('profile-upgrade').hidden = plusActive || FEATURES_FREE;
     document.getElementById('profile-dark').checked = themeName() === 'dark';
     syncHomeUI();
     profileAlerts.checked = false;
@@ -7971,9 +7981,9 @@ function favActive() {
       const { data } = await supaClient.rpc('get_alerts_enabled');
       profileAlerts.checked = data !== false;
     } catch (e) { /* leave off */ }
-    document.getElementById('profile-folders').hidden = !plusActive;
-    document.getElementById('profile-searches').hidden = !plusActive;
-    if (plusActive) { await loadFolders(); renderProfileFolders(); renderProfileSearches(); }
+    document.getElementById('profile-folders').hidden = !featureAccess();
+    document.getElementById('profile-searches').hidden = !featureAccess();
+    if (featureAccess()) { await loadFolders(); renderProfileFolders(); renderProfileSearches(); }
     profileModal.hidden = false;
   }
   function renderProfileFolders() {
@@ -8269,7 +8279,12 @@ function favActive() {
     if (authGatePending) {
       authGatePending = false;
       if (authUser && authGateNext) { const n = authGateNext; authGateNext = null; location.href = n; }
-      else if (!authUser) { openAuthModal(ALERTS_GATE_MSG, 'alerts'); setAuthMode('signup'); }
+      else if (!authUser) {
+        // ?auth=signup&next=… now also comes from /directory/ and /marketing-agents/.
+        const toAlerts = !authGateNext || /^\/alerts\//.test(authGateNext);
+        openAuthModal(toAlerts ? ALERTS_GATE_MSG : 'Create an account or sign in to continue.', toAlerts ? 'alerts' : 'deep_link');
+        setAuthMode('signup');
+      }
     }
     // Pay conversion (dashboard): one plus_purchase per completed checkout,
     // credited to the paywall that started it.

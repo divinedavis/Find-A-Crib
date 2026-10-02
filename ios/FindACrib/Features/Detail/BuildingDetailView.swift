@@ -171,7 +171,7 @@ struct BuildingDetailView: View {
         .sheet(isPresented: $showComments, onDismiss: { Task { await comments.refreshCount(bbl: b.bbl) } }) {
             CommentsSheet(building: b)
         }
-        .task(id: "\(auth.isSignedIn)-\(auth.hasPlus)") { await loadContacts() }
+        .task(id: "\(auth.isSignedIn)-\(auth.hasFeatures)") { await loadContacts() }
         .task(id: "\(b.bbl)-\(auth.isSignedIn)") { await loadInspections() }
     }
 
@@ -208,13 +208,13 @@ struct BuildingDetailView: View {
                     }
                     .accessibilityIdentifier("agent-phone")
                 } else if m.hasPhone {
-                    Button { if !auth.hasPlus { paywallSource = "phone"; showPaywall = true } } label: {
+                    Button { if !auth.hasFeatures { paywallSource = "phone"; showPaywall = true } } label: {
                         HStack(spacing: 10) {
                             Image(systemName: "lock.fill").font(.system(size: 15, weight: .bold)).foregroundStyle(SE.ink3)
-                            Text(auth.hasPlus ? "Phone number temporarily unavailable" : "Phone number — unlock with Find A Crib Plus")
+                            Text(auth.hasFeatures ? "Phone number temporarily unavailable" : "Phone number — unlock with Find A Crib Plus")
                                 .font(.se(17, .semibold)).foregroundStyle(SE.ink2)
                             Spacer()
-                            if !auth.hasPlus { Image(systemName: "chevron.right").font(.system(size: 14, weight: .bold)).foregroundStyle(SE.royal) }
+                            if !auth.hasFeatures { Image(systemName: "chevron.right").font(.system(size: 14, weight: .bold)).foregroundStyle(SE.royal) }
                         }
                         .padding(14).frame(maxWidth: .infinity, alignment: .leading).background(SE.canvas)
                         .contentShape(Rectangle())

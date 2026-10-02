@@ -66,7 +66,7 @@ struct ProfileView: View {
                                 Button { Task { await plus.manage() } } label: {
                                     Text("Manage subscription").font(.se(17, .semibold)).foregroundStyle(SE.royal)
                                 }.buttonStyle(.plain)
-                            } else {
+                            } else if !AuthService.featuresFree {   // no Plus offer while everything is free (2026-10-01)
                                 SEPrimaryButton(title: "Get Find A Crib Plus · \(plus.priceText)/mo", icon: "star.fill", fill: SE.navy) { showPaywall = true }
                                     .accessibilityIdentifier("get-plus")
                                 Text("Managing-agent phone numbers, saved searches, listing alerts.")

@@ -301,10 +301,10 @@
   <p class="meta" id="meta">Loading…</p>
   <div class="lock-bar" id="lock-bar" hidden>
     <div>
-      <b id="lock-title">Contact details are part of Find A Crib Plus</b>
+      <b id="lock-title">Sign in to unlock every firm’s contact details</b>
       <p id="lock-sub">Every firm's phone, email and office address, plus the re-rental board each one posts to — the pages that are not listed anywhere else. Anyone can read the directory itself.</p>
     </div>
-    <a class="lock-cta" id="lock-cta" href="/?plus=1">Unlock with Plus</a>
+    <a class="lock-cta" id="lock-cta" href="/?auth=signup&amp;next=%2Fmarketing-agents%2F">Create an account or sign in</a>
   </div>
 
   <div class="banner">
@@ -403,20 +403,17 @@
   // One chip, one job: say what is behind it and send the click somewhere that
   // can actually sell it.
   function lockChip(label){
-    return '<span class="lock" data-lock="1" title="Find A Crib Plus — $4.99/mo">🔒 ' + esc(label) + '</span>';
+    return '<span class="lock" data-lock="1" title="Sign in to see it">🔒 ' + esc(label) + '</span>';
   }
 
   function paintLockBar(state){
     var bar = document.getElementById('lock-bar');
     if (state === 'plus') { bar.hidden = true; return; }
     bar.hidden = false;
-    if (state === 'signed-in') {
-      document.getElementById('lock-title').textContent = 'Contact details are part of Find A Crib Plus';
-      document.getElementById('lock-cta').textContent = 'Upgrade to Plus';
-    } else {
-      document.getElementById('lock-title').textContent = 'Sign in to unlock every firm\u2019s contact details';
-      document.getElementById('lock-cta').textContent = 'Unlock with Plus';
-    }
+    // Free for any account since 2026-10-01: signed in means unlocked, so
+    // this bar only ever asks a signed-out visitor for an account.
+    document.getElementById('lock-title').textContent = 'Sign in to unlock every firm\u2019s contact details';
+    document.getElementById('lock-cta').textContent = 'Create an account or sign in';
   }
 
   // Ask once. A null answer is the RPC saying "not a subscriber" — the same

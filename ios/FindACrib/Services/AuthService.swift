@@ -51,13 +51,22 @@ final class AuthService {
 
     var isSignedIn: Bool { session != nil }
 
+    /// Everything free for now (owner, 2026-10-01: "make everything free in the
+    /// app and website for now"): every Plus feature opens to any signed-in
+    /// account and the app offers no Plus. Ads stay; a paying member keeps
+    /// no ads (`hasPlus` still means "pays"). Server twin: has_features()
+    /// (db/0043). To restore paid gating set this false AND make
+    /// has_features() call has_plus(); the website has FEATURES_FREE.
+    static let featuresFree = true
+    var hasFeatures: Bool { isSignedIn && (Self.featuresFree || hasPlus) }
+
     /// Bedbug + rodent records became Find A Crib Plus on 2026-10-01 (owner);
     /// every account created before then keeps them. Same cutoff as the
     /// website's PEST_CUTOFF.
     static let pestCutoff = ISO8601DateFormatter().date(from: "2026-10-01T16:48:00Z")!   // the gate's commit (was 18:00Z, still in the future)
     var pestAccess: Bool {
         guard let user = session?.user else { return false }
-        return hasPlus || user.createdAt < Self.pestCutoff
+        return hasFeatures || user.createdAt < Self.pestCutoff
     }
     /// True once the stored session has been confirmed (or refreshed) at
     /// launch. Until then `session` may be an expired token that every API
@@ -231,9 +240,9 @@ final class AuthService {
         return nil
     }
 
-    /// Plus only — the RPC returns null for everyone else.
+    /// Signed-in accounts (has_features) — the RPC returns null for everyone else.
     func agentPhone(for bbl: String) async -> String? {
-        guard let client, isSignedIn, hasPlus else { return nil }
+        guard let client, hasFeatures else { return nil }
         if let cached = phoneCache[bbl] { return cached }
         let v: String? = try? await client.rpc("get_agent_phone", params: ["p_bbl": bbl]).execute().value
         phoneCache[bbl] = v

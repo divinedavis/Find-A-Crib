@@ -541,9 +541,10 @@ class Runner:
         self.ok(page.evaluate("document.getElementById('viol-sheet').hidden"), 'rodent sheet must stay closed when signed out', j)
         sub = page.evaluate("document.getElementById('auth-submit').textContent").lower()
         self.ok('create' in sub or 'sign up' in sub, f'gate should open in sign-up mode, got {sub!r}', j)
-        # Since 2026-10-01 the records are Find A Crib Plus; the gate says so.
-        self.ok('part of Find A Crib Plus' in page.evaluate("document.getElementById('auth-sub').textContent"),
-                'the signed-out rodent gate should say the records are part of Plus', j)
+        # Everything is free for any account since 2026-10-01: the gate asks for
+        # an account, never for Plus.
+        self.ok('Plus' not in page.evaluate("document.getElementById('auth-sub').textContent"),
+                'the signed-out rodent gate should ask for an account, not Plus', j)
         page.evaluate("document.querySelector('[data-auth=\"close\"]')?.click()"); time.sleep(0.3)
         self.click(page, '#detail-sheet [data-detail="bedbugs"]'); time.sleep(1)
         self.ok(not page.evaluate("document.getElementById('auth-modal').hidden") and page.evaluate("document.getElementById('viol-sheet').hidden"), 'bedbug record should be gated when signed out', j)
@@ -1062,14 +1063,16 @@ class Runner:
         thing keeping the modules dark-on-light when the page goes dark.
         """
         import cv2, numpy as np
-        chip = page.evaluate("(()=>{const a=document.getElementById('pill-app-d'),l=document.getElementById('pill-noads');"
+        # Left neighbour = the nearest visible chip before it ("Remove ads" is
+        # hidden while everything is free, 2026-10-01).
+        chip = page.evaluate("(()=>{const a=document.getElementById('pill-app-d');let l=a.previousElementSibling;while(l&&(l.hidden||getComputedStyle(l).display==='none'))l=l.previousElementSibling;"
                              "const r=a.getBoundingClientRect(),lr=l.getBoundingClientRect();"
                              "return {shown:r.width>0&&getComputedStyle(a).display!=='none',left:r.left,landlordsRight:lr.right,"
                              "sameRow:Math.abs(r.top-lr.top)<4,overflow:document.documentElement.scrollWidth>innerWidth}})()")
         self.ok(chip['shown'], 'desktop should offer a Get-the-app chip', j)
         # Its left neighbour was Landlords until 9/29; now it is "Remove ads".
         self.ok(chip['sameRow'] and chip['left'] >= chip['landlordsRight'] - 1,
-                f'the chip should sit right of Remove ads: {chip}', j)
+                f'the chip should sit right of its neighbour chip: {chip}', j)
         self.ok(not chip['overflow'], 'the chip must not push the row sideways', j)
         for theme in ('light', 'dark'):
             page.evaluate("document.documentElement.setAttribute('data-theme', %r)" % theme)
@@ -1433,17 +1436,16 @@ class Runner:
         j.notes.append(href)
 
     def j_remove_ads_chip(self, page, j, device):
-        """Desktop "Remove ads" chip opens the Plus paywall, which leads with
-        no ads (owner, 2026-09-29). Phones don't show the chip row."""
+        """While everything is free (owner, 2026-10-01) nothing is for sale: the
+        desktop "Remove ads" chip and the Get Plus header button stay hidden,
+        and the paywall never opens. (It opened the Plus paywall 9/29–10/1.)"""
         self.boot(page)
-        if device != 'desktop':
-            j.notes.append('chip row is desktop-only'); return
-        self.ok(page.evaluate("!!document.getElementById('pill-noads') && !document.getElementById('pill-noads').hidden"),
-                'the Remove ads chip should show for a signed-out visitor', j)
-        page.click('#pill-noads'); time.sleep(0.5)
-        self.ok(not page.evaluate("document.getElementById('paywall-modal').hidden"), 'Remove ads should open the Plus paywall', j)
-        txt = page.evaluate("document.getElementById('paywall-modal').textContent") or ''
-        self.ok('No ads' in txt, 'the paywall should say Plus has no ads', j)
+        self.ok(page.evaluate("(()=>{const b=document.getElementById('pill-noads'); return !b || b.hidden || getComputedStyle(b).display==='none'})()"),
+                'the Remove ads chip should be hidden while everything is free', j)
+        self.ok(page.evaluate("(()=>{const b=document.getElementById('ref-btn'); return !b || b.hidden})()"),
+                'the Get Plus header button should be hidden while everything is free', j)
+        page.evaluate("document.getElementById('pill-noads')?.click()"); time.sleep(0.5)
+        self.ok(page.evaluate("document.getElementById('paywall-modal').hidden"), 'nothing should open the Plus paywall', j)
 
     def j_overlays_clear_ad(self, page, j, device):
         """Nothing ends under Mediavine's sticky banner (owner, 2026-09-29: the
@@ -1523,42 +1525,21 @@ class Runner:
             ctx.close()
         j.notes.append('default before config; GPC denies ads; EU banner')
 
-    PAYWALL_PERKS = ['Bedbug records', 'Rodent records', 'Agent phone numbers', 'No ads']
-
-    def paywall_state(self, page):
-        return page.evaluate("""(()=>{const m=document.getElementById('paywall-modal');
-          return {open: !m.hidden, title: document.getElementById('paywall-title').textContent,
-                  perks: [...document.querySelectorAll('#paywall-feats li b')].map(b=>b.textContent.trim()),
-                  lead: (document.querySelector('#paywall-feats li.pf-lead')||{}).dataset?.perk || null,
-                  invite: (document.getElementById('paywall-refer')||{}).textContent || ''}})()""")
-
     def j_plus_gates(self, page, j, device):
-        """What Plus is and what it locks (owner, 2026-09-30 / 10-01):
-        - the paywall lists exactly four perks, in order — alerts left Plus on
-          10-01 — and never the ones that are Plus but unlisted (folders,
-          saved searches, landlord research);
-        - every paywall offers invite-a-friend for 2 months of Plus;
-        - no visible "free" anywhere on the page or the paywall;
-        - a NEW account (not grandfathered) gets the paywall — not the record —
-          from Bedbug filings and Rat inspections; Alerts get the sign-up
-          modal, never the paywall;
-        - HPD pest violations stay open to everyone."""
+        """Everything free for now (owner, 2026-10-01): any account gets every
+        feature, nothing offers Plus, ads stay.
+        - signed out: Alerts -> sign-up modal; no Remove ads chip, no Get Plus;
+        - a brand-new account opens Bedbug filings and Rat inspections (they
+          were Plus for new accounts on 10/1) and HPD pest violations, and the
+          paywall never opens;
+        - the new account's profile shows Folders and Saved searches and no
+          upgrade button."""
         self.boot(page)
         page.evaluate("document.querySelector('a[href^=\"/alerts/\"]').click()"); time.sleep(0.8)
         self.ok(self.alerts_signup_open(page), 'Alerts should open the sign-up modal, not the paywall (signed out)', j)
         page.evaluate("document.querySelector('#auth-modal [data-auth=\"close\"]').click()"); time.sleep(0.2)
-        page.evaluate("document.getElementById('pill-noads').click()"); time.sleep(0.5)
-        st = self.paywall_state(page)
-        self.ok(st['open'], 'the paywall should open', j)
-        self.ok(not any('alert' in p.lower() for p in st['perks']), f'alerts must not be a paywall perk: {st["perks"]}', j)
-        # Opened from Remove ads, so No ads leads; the set is what matters.
-        self.ok(sorted(st['perks']) == sorted(self.PAYWALL_PERKS), f'paywall perks should be exactly {self.PAYWALL_PERKS}, got {st["perks"]}', j)
-        self.ok(not any(x in ' '.join(st['perks']) for x in ('Folders', 'Saved searches', 'Landlord research')),
-                f'unlisted Plus perks must stay off the paywall: {st["perks"]}', j)
-        self.ok('2 months of Plus' in st['invite'], f'the paywall should offer invite-a-friend for 2 months: {st["invite"]!r}', j)
-        free = page.evaluate("""(()=>{const t=document.body.innerText; const m=t.match(/.{0,40}\\bfree\\b.{0,40}/i); return m?m[0]:null})()""")
-        self.ok(free is None, f'no visible "free" on the page or paywall (owner, 2026-09-30): {free!r}', j)
-        page.evaluate("document.querySelector('[data-paywall=\"close\"]')?.click()"); time.sleep(0.3)
+        self.ok(page.evaluate("(()=>{const b=document.getElementById('pill-noads'); return !b || b.hidden || getComputedStyle(b).display==='none'})()"),
+                'no Remove ads chip while everything is free', j)
 
         email = f'journey-plus-{secrets.token_hex(6)}@example.com'
         password = secrets.token_urlsafe(18)
@@ -1576,19 +1557,27 @@ class Runner:
             time.sleep(2)   # let the membership check land
             self.boot(page, f'/#d={BBL}')
             self.ok(self.detail_open(page), 'the building sheet should open signed in', j)
-            for act, word in (('bedbugs', 'bedbug'), ('rodents', 'rat')):
-                self.click(page, f'#detail-sheet [data-detail="{act}"]'); time.sleep(1)
-                ps = self.paywall_state(page)
-                self.ok(ps['open'] and word in ps['title'].lower() and ps['lead'] == act,
-                        f'a new account tapping {act} should get the {act} paywall, got {ps["title"]!r} lead={ps["lead"]}', j)
-                self.ok(page.evaluate("document.getElementById('viol-sheet').hidden"), f'the {act} records must not open for a new account', j)
-                page.evaluate("document.querySelector('[data-paywall=\"close\"]')?.click()"); time.sleep(0.3)
+            for act in ('bedbugs', 'rodents'):
+                self.click(page, f'#detail-sheet [data-detail="{act}"]'); self.sheet_loaded(page)
+                self.ok(page.evaluate("!document.getElementById('viol-sheet').hidden") and
+                        page.evaluate("document.getElementById('paywall-modal').hidden"),
+                        f'a new account should open the {act} records, not a paywall (everything free)', j)
+                page.evaluate("document.querySelectorAll('.viol-backdrop .sheet-close').forEach(b=>b.click())"); time.sleep(0.3)
             self.click(page, '#detail-sheet [data-detail="pests"]'); self.sheet_loaded(page)
             self.ok(page.evaluate("!document.getElementById('viol-sheet').hidden") and
                     page.evaluate("document.getElementById('paywall-modal').hidden"),
                     'HPD pest violations stay open (not Plus)', j)
             page.evaluate("document.querySelectorAll('.viol-backdrop .sheet-close').forEach(b=>b.click())"); time.sleep(0.3)
-            j.notes.append('6 perks · invite · no "free" · new account gets bedbug/rodent paywall · pests open')
+            # Profile: folders + saved searches for any account, no upgrade.
+            self.click(page, '#auth-btn'); time.sleep(1.5)
+            prof = page.evaluate("""(()=>({open: !document.getElementById('profile-modal').hidden,
+              folders: !document.getElementById('profile-folders').hidden,
+              searches: !document.getElementById('profile-searches').hidden,
+              upgrade: !document.getElementById('profile-upgrade').hidden}))()""")
+            self.ok(prof['open'] and prof['folders'] and prof['searches'] and not prof['upgrade'],
+                    f'a new account\'s profile should show folders and saved searches and no upgrade: {prof}', j)
+            page.evaluate("document.querySelector('#profile-modal [data-profile=\"close\"], #profile-modal .auth-close')?.click()"); time.sleep(0.3)
+            j.notes.append('new account opens bedbug/rodent/pest records · folders + searches · no paywall, no upgrade')
         finally:
             # Leave the shared browser context signed out: the session lives in
             # localStorage, and every journey after this one assumes a signed-

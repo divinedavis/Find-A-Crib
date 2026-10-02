@@ -3574,7 +3574,7 @@ def main():
                    if adv else
                    f"<div class='hook'><strong>🔔 Want to know if an apartment opens up here?</strong> "
                    f"<a href='/#d={b['bbl']}'>Save {esc(addr)} to a Find A Crib account</a> and get a listing alert. "
-                   f"Plus members also see the managing agent's phone number and the owner's full portfolio.</div>")
+                   f"Signed in, you also see the managing agent's phone number and the owner's full portfolio.</div>")
                 + f"<h2>Building details</h2><table class='facts'>{facts}</table>"
                 # report offer sits after the conditions table on purpose: the
                 # reader has just seen the open-violation count and the whole

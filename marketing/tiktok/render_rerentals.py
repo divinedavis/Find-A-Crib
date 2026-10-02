@@ -100,12 +100,16 @@ def end_card():
 
 def render(spec, out):
     photo = Image.open(spec["photo"]).convert("RGB")
+    if photo.width < 1200:
+        raise SystemExit(f"{spec['photo']}: {photo.width}px wide — too small, it will look pixelated")
+    photo.thumbnail((2400, 2400), Image.LANCZOS)   # 6000px originals: same look, 6x faster frames
+    fx = spec.get("fx", 0.5)
     scenes = [
-        lambda t: headline_scene(photo, spec["hook"], NAVY, WHITE, t, (1.00, 1.10, 0.50, 0.50)),
+        lambda t: headline_scene(photo, spec["hook"], NAVY, WHITE, t, (1.00, 1.10, fx, fx)),
         lambda t: title_card(spec["address"], spec["place"], "Re-renting now"),
-        lambda t: headline_scene(photo, ["Affordable", "re-rental"], CREAM, INK, t, (1.12, 1.12, 0.35, 0.65)),
-        lambda t: headline_scene(photo, spec["price"], NAVY, WHITE, t, (1.10, 1.02, 0.60, 0.45), sub=spec.get("sub")),
-        lambda t: headline_scene(photo, ["No lottery.", "Apply direct."], CREAM, INK, t, (1.18, 1.05, 0.45, 0.55)),
+        lambda t: headline_scene(photo, ["Affordable", "re-rental"], CREAM, INK, t, (1.12, 1.12, fx - 0.12, fx + 0.12)),
+        lambda t: headline_scene(photo, spec["price"], NAVY, WHITE, t, (1.10, 1.02, fx + 0.08, fx - 0.06), sub=spec.get("sub")),
+        lambda t: headline_scene(photo, ["Apply directly", "with the agent"], CREAM, INK, t, (1.18, 1.05, fx - 0.05, fx + 0.05)),
         lambda t: end_card(),
     ]
     n = len(scenes)

@@ -1,4 +1,5 @@
 import Foundation
+import AuthenticationServices
 import Observation
 import Supabase
 
@@ -220,8 +221,21 @@ final class AuthService {
                                                   "domain": ns.domain, "code": ns.code,
                                                   "text": String(text.prefix(140))])
             }
-            self.error = text
+            self.error = Self.signInMessage(for: error)
         }
+    }
+
+    /// What the person reads when sign-in fails. Apple's `.unknown` (1000)
+    /// survives our retry when the phone itself can't do Sign in with Apple —
+    /// typically no Apple Account in Settings, or Screen Time limits — and its
+    /// own text ("The operation couldn't be completed…") tells nobody what to
+    /// do. One person hit it six times in three minutes on 2026-10-02 (build
+    /// 105, likely App Review). Everything else keeps Apple's/Supabase's words.
+    nonisolated static func signInMessage(for error: Error) -> String {
+        if let e = error as? ASAuthorizationError, e.code == .unknown || e.code == .notHandled || e.code == .failed {
+            return "Sign in with Apple isn't available on this iPhone right now. Check that you're signed in to an Apple Account in Settings, or use Google or email instead."
+        }
+        return error.localizedDescription
     }
 
     // MARK: Plus + gated reads

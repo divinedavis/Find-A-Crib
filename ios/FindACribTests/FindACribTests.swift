@@ -1494,3 +1494,22 @@ final class PrivacyManifestTests: XCTestCase {
                                "AdvertisingData", "CrashData", "PerformanceData", "SearchHistory"])
     }
 }
+
+import AuthenticationServices
+
+/// Apple's 1000 ("unknown") reached people as "The operation couldn't be
+/// completed…" six times in three minutes on 2026-10-02 (build 105, likely
+/// App Review). It must read as something a person can act on.
+final class SignInMessageTests: XCTestCase {
+    func testAppleUnknownErrorSaysWhatToDo() {
+        let msg = AuthService.signInMessage(for: ASAuthorizationError(.unknown))
+        XCTAssertTrue(msg.contains("Apple Account in Settings"), msg)
+        XCTAssertTrue(msg.contains("Google or email"), msg)
+        XCTAssertFalse(msg.contains("couldn"), msg)
+    }
+
+    func testOtherErrorsKeepTheirOwnWords() {
+        let e = NSError(domain: "x", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid login credentials"])
+        XCTAssertEqual(AuthService.signInMessage(for: e), "Invalid login credentials")
+    }
+}

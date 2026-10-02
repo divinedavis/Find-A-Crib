@@ -89,7 +89,7 @@ Borough alerts: pick your boroughs and get a notification and an email the minut
 NYC HDC re-rentals open their official flyer.
 """
 
-REVIEW_NOTES = """VERSION 1.2.6 (build __BUILD__) — every feature included with an account; Lotteries open to everyone
+REVIEW_NOTES = """VERSION 1.2.6 (build __BUILD__) — every feature included with an account; Lotteries open to everyone; clearer Sign in with Apple error
 
 WHAT CHANGED SINCE 1.2.5
 1. Every feature is included with a (no-cost) account: managing-agent phone numbers, bedbug and rodent records on New York building pages, and borough alerts. Sign in with Apple, Google or email.
@@ -99,7 +99,10 @@ WHAT CHANGED SINCE 1.2.5
 No new permissions, no new SDKs, no new data types.
 
 TO SEE THE FEATURES
-Sign in (Profile > Sign in with Apple, Google, or email), open any New York building from Search: the managing agent's phone number and the Bedbug filings / Rat inspections tiles open directly.
+Sign in with the demo account in App Review Information (Profile > "Continue with email", then the email and password), or with Apple or Google. Open any New York building from Search: the managing agent's phone number and the Bedbug filings / Rat inspections tiles open directly.
+
+SIGN IN WITH APPLE
+If the device has no Apple Account signed in, Apple returns an error; the app now says so in plain words and points to Google or email. The demo account avoids this.
 
 TO SEE THE IPAD LAYOUT
 Open the app on an iPad in either orientation: Search, Lotteries, Events, My Activity and Profile all work, and results lay out in two columns.
@@ -336,6 +339,12 @@ def apply(asc, cfg):
     attrs = {"contactFirstName": cfg["ASC_CONTACT_FIRST_NAME"], "contactLastName": cfg["ASC_CONTACT_LAST_NAME"],
              "contactPhone": cfg["ASC_CONTACT_PHONE"], "contactEmail": cfg["ASC_CONTACT_EMAIL"],
              "demoAccountRequired": False, "notes": notes}
+    # A reviewer email/password account (2026-10-02): App Review's devices may
+    # have no Apple Account, so Sign in with Apple can fail there with 1000.
+    # The credentials live only in the gitignored asc-config.env.
+    if cfg.get("ASC_DEMO_EMAIL") and cfg.get("ASC_DEMO_PASSWORD"):
+        attrs.update({"demoAccountRequired": True, "demoAccountName": cfg["ASC_DEMO_EMAIL"],
+                      "demoAccountPassword": cfg["ASC_DEMO_PASSWORD"]})
     if detail:
         asc.patch(f"/appStoreReviewDetails/{detail['id']}", {"data": {"type": "appStoreReviewDetails", "id": detail["id"], "attributes": attrs}})
     else:

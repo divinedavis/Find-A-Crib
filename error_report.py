@@ -91,7 +91,11 @@ IGNORED = ("script error.", "runtime.sendmessage", "resizeobserver loop",
            # Mediavine's ad wrapper (Journey, 2026-09-28) throws this from its
            # own file until their onboarding links the Google ad account
            # (MCM). Nothing breaks for the visitor; no ads load yet either.
-           "mcmnetworkcode is required")
+           "mcmnetworkcode is required",
+           # Crypto-wallet browsers (MetaMask, Coinbase, Trust) inject a script
+           # that resets window.ethereum; on a page with no wallet it throws at
+           # line 1 of OUR url. This site has no "ethereum" anywhere (2026-10-02).
+           "window.ethereum")
 
 
 AD_STACK_HOSTS = ("scriptwrapper.com", "journeymv.com", "mediavine.com", "grow.me",

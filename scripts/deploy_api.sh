@@ -87,9 +87,11 @@ print('    marracat:', 'ok' if m.get('ok') else m.get('warnings'))
     echo \"    /api/\$feed -> \$code (expect 401 unauthenticated)\"
     test \"\$code\" = 401
   done
+  # ok:false is right from here — the droplet geolocates outside NYC. A
+  # lookup that returns coordinates at all means the GeoIP DB loaded.
   code=\$(curl -s -o /tmp/geo.json -w '%{http_code}' -m 10 https://findacrib.com/api/geo)
   echo \"    /api/geo -> \$code \$(cat /tmp/geo.json)\"
-  test \"\$code\" = 200 && grep -q '\"ok\":true' /tmp/geo.json"; then
+  test \"\$code\" = 200 && grep -q '\"lat\":' /tmp/geo.json"; then
   echo "!! post-deploy checks failed — restoring $SNAP and restarting"
   ssh "$HOST" "set -e; cp -p $BACKUPS/$SNAP/* $LIVE/; rm -rf $LIVE/__pycache__
     chown -R root:root $LIVE && chmod -R go-w $LIVE

@@ -195,6 +195,19 @@ def cmd_measure(args):
                 log(f"  index status unavailable: {ix.get('detail')}")
         except Exception as e:
             log(f"  index status failed: {type(e).__name__}: {e}")
+    # Google's own view of the sitemaps, which is the half the census above
+    # cannot see. indexstatus builds its cohort from the LOCAL sitemap files, so
+    # every "URL is unknown to Google" reading it has ever produced assumes
+    # Google read the shard that URL lives in. Nothing checked that assumption
+    # until 2026-10-02. See growth/sitemapstatus.py for why the two readings
+    # call for opposite work.
+    if os.environ.get("GROWTH_SITEMAP_STATUS", "1") != "0":
+        try:
+            from growth import sitemapstatus
+            sm = sitemapstatus.collect(args.docroot)
+            log(f"  sitemap status: {sm.get('detail')}")
+        except Exception as e:
+            log(f"  sitemap status failed: {type(e).__name__}: {e}")
     rec = {"days": args.days,
            "latest_measured_day": max(data) if data else None}
     # Where yesterday's visitors entered and what sent them. state.json is

@@ -767,6 +767,46 @@ def build_blocks(run_log=None, review_out=None):
                       "heading": "Index sampling did not run",
                       "body": str(ixrun.get("detail") or "unknown error")})
 
+        # ---- did Google READ the sitemaps the census is measured against.
+        # Every "unknown to Google" reading above is taken against the LOCAL
+        # sitemap files, so it silently assumes Google downloaded the shard the
+        # URL sits in. growth/sitemapstatus.py asks Google. Rendered only when
+        # the job has a reading: before it first runs on the droplet, and on any
+        # night the credentials fail, there is nothing honest to put here, and a
+        # row of blanks under a heading about indexing is worse than no heading.
+        from . import sitemapstatus
+        smrun = ledger.read_last_run().get("sitemapstatus") or {}
+        if smrun.get("ok") is False and smrun.get("shards_known"):
+            # A real defect: a shard is unknown to Search Console or failed to
+            # parse. The detail line already names which.
+            B.append({"type": "callout", "tone": "warn",
+                      "heading": "A sitemap Google cannot see",
+                      "body": str(smrun.get("detail") or "unknown error")})
+        elif smrun.get("shards_known"):
+            _read, _loc = smrun.get("urls_read"), smrun.get("urls_local")
+            B.append({"type": "tiles", "items": [
+                {"label": "Sitemap shards Google has opened",
+                 "value": f"{smrun.get('shards_known')} of {smrun.get('shards_live')}"},
+                {"label": "URLs Google read out of them", "value": _fmt(_read),
+                 "delta": f"of {_fmt(_loc)} listed"},
+                {"label": "Stalest shard download",
+                 "value": (f"{smrun['oldest_download_days']}d ago"
+                           if smrun.get("oldest_download_days") is not None
+                           else "never downloaded"),
+                 "tone": ("warn" if (smrun.get("oldest_download_days") or 0)
+                          >= sitemapstatus.STALE_DAYS else "mute")}]})
+            _stale = smrun.get("shards_stale") or []
+            B.append({"type": "note", "text": (
+                f"Google last downloaded the sitemap index on "
+                f"{smrun.get('index_downloaded') or 'no recorded date'}"
+                + (f", and has read {_read:,} of the {_loc:,} URLs the live shards list"
+                   if isinstance(_read, int) and isinstance(_loc, int) else "")
+                + (f". Not re-downloaded in {sitemapstatus.STALE_DAYS}+ days: "
+                   + ", ".join(_stale[:6]) + "." if _stale else ".")
+                + " This is the half the census above cannot see: a URL in a shard "
+                  "Google never opened is \"unknown\" for a reason that has nothing "
+                  "to do with how the page is written.")})
+
         _pc, _pi = _last("gsc_page_clicks"), _last("gsc_page_impressions")
         B.append({"type": "stats", "items": [
             (_fmt(_last("gsc_clicks") if _pc is None else _pc), "clicks, last 7d"),

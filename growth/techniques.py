@@ -2823,6 +2823,30 @@ def _dup_measure(paths):
     return (statistics.median(shares), statistics.median(w for w, _ in pages), len(pages))
 
 
+def _owned_prefixes():
+    """Prefixes an ACTIVE technique declares — the sections a run can actually fix.
+
+    The complement is not "broken": a prefix owned only by a candidate belongs to
+    another pipeline (/available/, /developers/) and one owned only by a retired
+    technique (/brief/) provably cannot change again. Either way nothing this
+    loop ships can move its duplicate share, which is why t_page_uniqueness
+    ranks those separately rather than at the top of one worst-first list.
+    """
+    return {p for t in ledger.load_techniques() if t.get("status") == "active"
+            for p in (t.get("prefixes") or [])}
+
+
+def _dup_metric(prefix):
+    """A results.jsonl metric name for one section's duplicate share.
+
+    One metric per section rather than one metric with the section in `meta`,
+    because record_result() de-duplicates per (date, technique, metric) and
+    sixteen sections sharing a metric name would collapse to whichever was
+    written last.
+    """
+    return "dup_pct_" + (re.sub(r"[^a-z0-9]+", "_", prefix.lower()).strip("_") or "root")
+
+
 def t_page_uniqueness(ctx):
     """Measure how much of each published section's text is the same on every page.
 
@@ -2869,14 +2893,84 @@ def t_page_uniqueness(ctx):
                            f"{'' if len(readings) == 1 else 's'} were readable, below the "
                            f"{DUP_FLOOR}-page floor — this is a bare checkout rather than a "
                            f"deployed docroot")}
-    # Worst first: the section that repeats itself most is the finding.
-    ranked = sorted(readings.items(), key=lambda kv: (-kv[1][0], kv[0]))
-    shown = [f"{p} {share:.0f}% of {words:,.0f} words (n={n} of {total:,})"
-             for p, (share, words, n, total) in ranked[:8]]
+    # ---- the series, which this audit went 30 days without writing. Its
+    # readings have only ever existed inside the detail STRING in last_run.json,
+    # which is overwritten every night, so no run could say whether a section's
+    # share had MOVED — the exact defect indexstatus.py's own docstring names
+    # ("a string cannot be trended, and the trend is the whole point"). Four
+    # separate reviews quoted a level with no history because of it. Recorded
+    # under the technique's own slug, one metric per section, in results.jsonl
+    # rather than ledger.set_state: state.json is gitignored and the cloud
+    # review that reads these numbers cannot see it.
+    today = ledger.today()
+    # ONE read of results.jsonl for every section, not one per section:
+    # read_results() parses the whole 7,800-row file on each call, and sixteen
+    # sections would re-parse it sixteen times every night.
+    hist = ledger.read_results("page_uniqueness")
+    prior = {}
+    for p in readings:
+        metric = _dup_metric(p)
+        # The newest reading from a DAY BEFORE today, so a same-day re-run
+        # compares against yesterday instead of against itself. read_results()
+        # returns rows already sorted by date.
+        past = [r["value"] for r in hist
+                if r["metric"] == metric and r["date"] < today]
+        if past:
+            prior[p] = past[-1]
+    # WRITTEN ON A REAL PASS ONLY. `ctx.readonly` is the wrong test here and
+    # would throw away the reading that matters: it is True in BOTH the dry run
+    # and the post-refresh re-read, and the re-read is the authoritative one —
+    # it is the only pass that sees the corpus the SEO watchdog just rebuilt.
+    # `ctx.reread` separates them exactly. A bare `build --dry-run`, which is
+    # what the cloud review runs to verify a change, must not append a row to a
+    # tracked measurement file; the nightly build writes once and the re-read
+    # writes again, and read_results()' later-line-wins rule means the
+    # post-refresh value is the one every reader sees, with the build's own row
+    # surviving as the fallback on a night the re-read pass crashes.
+    recording = (not ctx.dry_run) or ctx.reread
+    def _rec(metric, value, meta=None):
+        if recording:
+            ledger.record_result(today, "page_uniqueness", metric, value, meta)
+
+    for p, (share, words, n, _total) in readings.items():
+        _rec(_dup_metric(p), round(share, 1), {"words": round(words, 1), "sampled": n})
+    _rec("dup_sections_read", len(readings))
+
+    # ---- actionability, not severity, decides the order. Until today this line
+    # ranked every section worst-first in one list, so its first clause was
+    # permanently /brief/ — retired 2026-08-16, out of cmd_build's ORDER, its
+    # 17 pages priced "never" by t_sitemap_daily — and the one number a run
+    # could act on sat fifth. A finding nothing can fix is not the finding.
+    owned = _owned_prefixes()
+    def _fmt_one(p):
+        share, words, n, total = readings[p]
+        was = prior.get(p)
+        moved = ""
+        if was is not None and abs(share - was) >= 1:
+            moved = f", {'UP' if share > was else 'down'} from {was:.0f}%"
+        return f"{p} {share:.0f}% of {words:,.0f} words (n={n} of {total:,}){moved}"
+    mine = sorted((p for p in readings if p in owned), key=lambda p: -readings[p][0])
+    theirs = sorted((p for p in readings if p not in owned), key=lambda p: -readings[p][0])
+    # A section whose share ROSE is the only thing here that is news, so it is
+    # counted as its own series: a level this audit has never been able to set a
+    # threshold on becomes a signal the moment it has a direction.
+    rising = [p for p in mine if prior.get(p) is not None and readings[p][0] - prior[p] >= 1]
+    _rec("dup_sections_rising", len(rising))
+
     detail = (f"text shared with siblings ({DUP_SHINGLE}-word shingles, "
-              f"{read} pages read across {len(readings)} sections): " + ", ".join(shown))
-    if len(ranked) > len(shown):
-        detail += f", +{len(ranked) - len(shown)} less duplicated"
+              f"{read} pages read across {len(readings)} sections)")
+    if mine:
+        detail += (" — sections an ACTIVE technique owns, worst first: "
+                   + ", ".join(_fmt_one(p) for p in mine[:6]))
+        if len(mine) > 6:
+            detail += f", +{len(mine) - 6} less duplicated"
+    if rising:
+        detail += (f" — ROSE since the last reading: " + ", ".join(rising))
+    if theirs:
+        detail += (" — nothing this loop rebuilds, so these are context and not "
+                   "findings: " + ", ".join(_fmt_one(p) for p in theirs[:4]))
+        if len(theirs) > 4:
+            detail += f", +{len(theirs) - 4} more"
     if small:
         detail += " — too few pages to compare: " + ", ".join(sorted(small))
     if unreadable:

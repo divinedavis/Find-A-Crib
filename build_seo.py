@@ -2088,6 +2088,37 @@ generally treated as covered rather than exempt.""",
 # volume is not the constraint and the next thing to suspect is site-level
 # crawl rationing, which no amount of internal linking fixes.
 #
+# THAT PRE-REGISTRATION RESOLVED NEGATIVE AND IS CASHED HERE, 2026-10-02, six
+# weeks rather than two after it was written. growth/index_status.json: the dc
+# family is 0 of 20 fetched and 0 of 20 known, la 0 of 20 and 0 of 20, sf 1 of
+# 20 — and that one is /sf/ itself, last crawled 2026-07-28, three weeks BEFORE
+# this nav shipped. Not one page of the tier these 47,165 links point at has
+# been fetched. So link volume is not the constraint, exactly as this comment
+# said it would not be, and the conclusion it names is the one to carry forward.
+#
+# THE SAME MORNING CLOSED THE STRONGER VERSION OF THE TEST, WHICH THIS COMMENT
+# DID NOT THINK TO SET. /la/ and /dc/ are not merely linked from 47,165 pages:
+# they are listed in sitemap-main.xml at priority 0.9, they carry a
+# self-referencing canonical and index,follow, and they are plain static <a href>
+# three times over in the root index.html — in the header city nav, in the
+# overflow menu and in the footer prose — checked against the served bytes
+# rather than assumed, all three outside every <script> block. The homepage is
+# the one URL on this domain Google has ever kept indexed and it was crawled on
+# 2026-10-02. Google has reported both as "URL is unknown to Google" on every
+# reading since 2026-08-22, 41 consecutive days. An inbound link from the single
+# trusted node on the domain does not convert either, which also pre-refutes
+# T070 homepage_anchored_crawl_spine: its whole mechanism is "the homepage links
+# to the four city hubs", and that has been shipped and measured for six weeks.
+#
+# DO NOT ADD MORE INTERNAL LINKS TO THIS TIER ON AN INDEXING ARGUMENT. The nav
+# STAYS, on the reader argument in the paragraph above, which was always the
+# first of the two reasons and is unaffected by any of this. What has NOT been
+# eliminated is whether Google ever DOWNLOADED the sitemap shard these URLs live
+# in — every "unknown to Google" reading on this site is taken against the LOCAL
+# sitemap files. That is measured from 2026-10-02 by growth/sitemapstatus.py, and
+# until it reports, the rationing conclusion is an inference and not a
+# measurement.
+#
 # Anchor text is the wording the homepage already uses for these three, which
 # is accurate for each: SF and DC are rent CONTROL registries, LA is the RSO.
 # The coverage caveats — LA derived and "likely RSO", SF anonymized to the

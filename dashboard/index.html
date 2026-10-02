@@ -718,6 +718,15 @@
           <div class="callout" id="mc-orders-callout" style="margin-top:16px"></div>
         </div>
 
+        <!-- brands shoppers say ship late -->
+        <div class="card mb18" id="sec-mc-late">
+          <div class="card-head-row">
+            <div><h2>Late shipments — which brands?</h2><div class="card-sub">Shoppers tap “Late shipment” on an order in the app. One report per order per phone, taken back if they tap again. Your own taps are left out when you’re signed in. Counts only: the order itself is never stored.</div></div>
+          </div>
+          <div id="mc-late"></div>
+          <div class="callout" id="mc-late-callout" style="margin-top:16px"></div>
+        </div>
+
         <!-- the iPhone app -->
         <div class="card mb18" id="sec-mc-app">
           <div class="card-head-row">
@@ -3064,6 +3073,18 @@
       : (!n(S.orders)
           ? '<b>'+comma(n(S.accounts))+' shopper'+(n(S.accounts)===1?' has':'s have')+' signed in, and none has placed an order in this range.</b>'
           : '<b>'+comma(n(S.orders))+' order'+(n(S.orders)===1?'':'s')+' worth '+usd(S.gmv_usd)+'</b> sent to '+comma(n(S.brands))+' brand'+(n(S.brands)===1?'':'s')+'.');
+
+    // ---- late shipments ---------------------------------------------------
+    var L=d.late||{}, lateBrands=L.brands||[];
+    el('mc-late').innerHTML=lateBrands.map(function(b){
+      return '<div class="act-row"><div class="act-l"><div class="act-ico">⏰</div>'+
+        '<div><div class="act-name">'+esc(b.name||b.brand)+'</div><div class="act-desc">'+comma(n(b.shoppers))+' shopper'+(n(b.shoppers)===1?'':'s')+'</div></div></div>'+
+        '<div class="act-val">'+comma(n(b.reports))+'</div></div>';
+    }).join('') || '<div class="disclaim">No late shipments reported in this range.</div>';
+    el('mc-late-callout').innerHTML = !lateBrands.length
+      ? 'Nobody has marked an order late yet. A brand that shows up here again and again is one to talk to, or to stop featuring.'
+      : '<b>'+comma(n(L.reports))+' late shipment'+(n(L.reports)===1?'':'s')+' across '+comma(lateBrands.length)+' brand'+(lateBrands.length===1?'':'s')+'.</b> '+
+        esc(lateBrands[0].name||lateBrands[0].brand)+' has the most.';
 
     // ---- app --------------------------------------------------------------
     el('mc-app').innerHTML=[

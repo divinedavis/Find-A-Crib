@@ -50,6 +50,23 @@ def preflight(asc, ids):
     return ok
 
 
+def ensure_phased_release(asc, ids):
+    """Release updates over Apple's 7-day phased rollout instead of to
+    everyone at once, so a crash reaches a slice of users and the release
+    can be paused (App Store Connect > the version > Phased Release). Created
+    INACTIVE; Apple flips it ACTIVE on release. Not offered for a 1.0."""
+    if ids["version_string"] == "1.0":
+        return
+    have = asc.get(f"/appStoreVersions/{ids['version']}/appStoreVersionPhasedRelease").get("data")
+    if have:
+        print("  phased release:", have["attributes"]["phasedReleaseState"])
+        return
+    asc.post("/appStoreVersionPhasedReleases", {"data": {"type": "appStoreVersionPhasedReleases",
+             "attributes": {"phasedReleaseState": "INACTIVE"},
+             "relationships": {"appStoreVersion": {"data": {"type": "appStoreVersions", "id": ids["version"]}}}}})
+    print("  phased release: on (7-day rollout once approved)")
+
+
 def submit(asc, app_id, ids):
     subs = asc.get("/reviewSubmissions", **{"filter[app]": app_id, "filter[platform]": "IOS", "limit": 10})["data"]
     bad = [s for s in subs if s["attributes"]["state"] == "UNRESOLVED_ISSUES"]
@@ -86,4 +103,5 @@ if __name__ == "__main__":
     if not ok:
         sys.exit("preflight failed; run scripts/asc_metadata.py and fix what is missing")
     print("==> submitting")
+    ensure_phased_release(asc, ids)
     submit(asc, app_id, ids)

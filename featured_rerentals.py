@@ -653,7 +653,41 @@ def is_real_listing(rec, offices):
     return True
 
 
-def fetch_image(url, timeout=20):
+# WordPress (Rockrose, MGNY, most agents) serves resized copies named
+# "photo-768x503.jpg" next to the original "photo.jpg". The tile copy is made
+# from the original when it exists, so it is downscaled instead of an upscaled
+# thumbnail (2026-10-03: the first TikTok videos came out pixelated from
+# exactly these 682-768 px thumbnails).
+WP_SIZE = re.compile(r"-\d{2,4}x\d{2,4}(?=\.(?:jpe?g|png|webp)(?:\?|$))", re.I)
+IMG_LARGE_W = 1600          # kept beside the tile copy for share cards and videos
+IMG_LOWRES_W = 400          # narrower originals are flagged and never lead a banner
+
+
+def fetch_best_image(url):
+    """(tile bytes, ext, original width, large bytes or None), trying the
+    full-size original before the URL as given."""
+    for u in dict.fromkeys([WP_SIZE.sub("", url), url]):
+        raw, ext = fetch_image(u, shrink=False)
+        if raw:
+            w = image_width(raw)
+            small, sext = shrink_image(raw, ext)
+            large = None
+            if w and w > IMG_MAX_W:
+                large, _ = shrink_image(raw, ext, max_w=IMG_LARGE_W)
+            return small, sext, w, large
+    return None, None, None, None
+
+
+def image_width(data):
+    try:
+        from PIL import Image
+        import io
+        return Image.open(io.BytesIO(data)).width
+    except Exception:
+        return None
+
+
+def fetch_image(url, timeout=20, shrink=True):
     """Download the agent's photo. Bytes, not a hotlink.
 
     Hotlinking would spend their bandwidth on every visitor and break the tile
@@ -674,7 +708,7 @@ def fetch_image(url, timeout=20):
            "image/gif": ".gif"}.get(ctype)
     if not ext:
         return None, None
-    return shrink_image(data, ext)
+    return shrink_image(data, ext) if shrink else (data, ext)
 
 
 # The tile shows the photo at ~360 px wide, and the agents publish it at
@@ -685,7 +719,7 @@ IMG_MAX_W = 800
 IMG_QUALITY = 80
 
 
-def shrink_image(data, ext):
+def shrink_image(data, ext, max_w=None):
     """Re-encode a listing photo as a JPEG no wider than IMG_MAX_W.
 
     GIFs and anything Pillow cannot read pass through unchanged (a broken
@@ -698,8 +732,9 @@ def shrink_image(data, ext):
         import io
         im = Image.open(io.BytesIO(data))
         im = ImageOps.exif_transpose(im)
-        if im.width > IMG_MAX_W:
-            im = im.resize((IMG_MAX_W, max(1, round(im.height * IMG_MAX_W / im.width))), Image.LANCZOS)
+        cap = max_w or IMG_MAX_W
+        if im.width > cap:
+            im = im.resize((cap, max(1, round(im.height * cap / im.width))), Image.LANCZOS)
         if im.mode not in ("RGB", "L"):
             im = im.convert("RGB")
         out = io.BytesIO()
@@ -716,13 +751,23 @@ def save_images(records, apply_changes):
     """Re-host each listing photo under featured/img/. Returns how many stuck.
 
     Each photo that lands is also measured for sky (photo_kind), because the
-    app's Search banner may only lead with the outside of a building.
+    app's Search banner may only lead with the outside of a building. Since
+    2026-10-03 the original's width is kept (img/meta.json): a photo under
+    IMG_LOWRES_W is flagged image_lowres and never leads a banner, and a
+    1600 px copy (<name>_l.jpg, image_large) is kept for share cards/videos.
     """
     if apply_changes:
         os.makedirs(IMGDIR, exist_ok=True)
     on_disk = {}
     for f in (os.listdir(IMGDIR) if os.path.isdir(IMGDIR) else []):
+        if f.endswith("_l.jpg") or f == "meta.json":
+            continue
         on_disk.setdefault(f.split(".")[0], f)
+    meta_path = os.path.join(IMGDIR, "meta.json")
+    try:
+        meta = json.load(open(meta_path))
+    except Exception:
+        meta = {}
     kept = 0
     kinds = {}          # file name -> is_exterior, measured once per run
     for rec in records:
@@ -732,24 +777,36 @@ def save_images(records, apply_changes):
         if not src:
             continue
         name = hashlib.sha1(src.encode()).hexdigest()[:16]
-        if name in on_disk:              # already have it, don't refetch daily
-            rec["image"] = "/featured/img/" + on_disk[name]
-            rec["image_exterior"] = exterior(on_disk[name], kinds)
-            kept += 1
-            continue
-        if not apply_changes:
-            rec["image"] = "(would fetch)"
-            kept += 1
-            continue
-        data, ext = fetch_image(src)
-        if not data:
-            continue
-        with open(os.path.join(IMGDIR, name + ext), "wb") as f:
-            f.write(data)
-        on_disk[name] = name + ext
-        rec["image"] = "/featured/img/" + name + ext
-        rec["image_exterior"] = exterior(name + ext, kinds)
+        if name not in on_disk:
+            if not apply_changes:
+                rec["image"] = "(would fetch)"
+                kept += 1
+                continue
+            data, ext, w, large = fetch_best_image(src)
+            if not data:
+                continue
+            with open(os.path.join(IMGDIR, name + ext), "wb") as f:
+                f.write(data)
+            if large:
+                with open(os.path.join(IMGDIR, name + "_l.jpg"), "wb") as f:
+                    f.write(large)
+            on_disk[name] = name + ext
+            meta[name] = {"w": w, "large": bool(large)}
+        m = meta.get(name)
+        if m is None:      # a photo from before 2026-10-03: measure the tile copy
+            m = meta[name] = {"w": image_width(open(os.path.join(IMGDIR, on_disk[name]), "rb").read()) if apply_changes else None,
+                              "large": False}
+        rec["image"] = "/featured/img/" + on_disk[name]
+        rec["image_w"] = m.get("w")
+        rec["image_lowres"] = bool(m.get("w") and m["w"] < IMG_LOWRES_W)
+        if m.get("large"):
+            rec["image_large"] = "/featured/img/" + name + "_l.jpg"
+        rec["image_exterior"] = exterior(on_disk[name], kinds) and not rec["image_lowres"]
         kept += 1
+    if apply_changes:
+        live = {os.path.basename(r["image"]).split(".")[0] for r in records if r.get("image")}
+        with open(meta_path, "w") as f:
+            json.dump({k: v for k, v in meta.items() if k in live}, f)
     return kept
 
 
@@ -774,6 +831,8 @@ def prune_images(records, apply_changes):
     if not apply_changes or not os.path.isdir(IMGDIR):
         return 0
     live = {os.path.basename(r["image"]) for r in records if r.get("image")}
+    live |= {os.path.basename(r["image_large"]) for r in records if r.get("image_large")}
+    live.add("meta.json")
     gone = 0
     for f in os.listdir(IMGDIR):
         if f not in live:

@@ -21,6 +21,11 @@ import json, os, statistics, subprocess, sys
 
 TOLERANCE = 0.5      # fail above baseline * 1.5
 KEEP = 5             # passing ships remembered per metric
+# A relative bar is meaningless on a tiny number: "Memory Physical" during a
+# scroll is the GROWTH in kB, ~300-1,700 kB from run to run on one build
+# (2026-10-03: 852 vs a 344 baseline failed while total memory had dropped
+# 320 MB -> 183 MB). Memory must also be this many kB worse to fail.
+MIN_KB_REGRESSION = 5000
 HERE = os.path.dirname(os.path.abspath(__file__))
 BASELINE = os.path.join(HERE, "perf_baseline.json")
 
@@ -63,6 +68,8 @@ def main():
         else:
             ref = statistics.median(hist)
             over = m["median"] > ref * (1 + TOLERANCE) if m["smaller"] else m["median"] < ref * (1 - TOLERANCE)
+            if over and m["smaller"] and m["unit"] == "kB" and m["median"] - ref < MIN_KB_REGRESSION:
+                over = False
             verdict = f"FAIL (>{int(TOLERANCE * 100)}% worse)" if over else "ok"
             if over:
                 failed.append(key)

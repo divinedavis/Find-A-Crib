@@ -7,6 +7,7 @@
 # to `db dump` them yourself and keep the copies off-site (checked
 # 2026-10-01). One env file per project (0600):
 #   /etc/supabase-backup/<name>.env   PGHOST= PGUSER= PGPASSWORD= (session pooler, port 5432)
+#                                     optional MIN_BYTES= (default 1000000) for small DBs
 # Dumps: /var/backups/supabase/<name>/<name>-YYYY-MM-DD.dump (custom format,
 # restore with pg_restore), 8 weeks kept.
 #
@@ -28,7 +29,10 @@ for envf in /etc/supabase-backup/*.env; do
   if ( set -a; . "$envf"; set +a; export PGPORT=${PGPORT:-5432} PGDATABASE=${PGDATABASE:-postgres} PGSSLMODE=require
        "$PG_DUMP" -Fc --no-owner --no-privileges -f "$file.tmp" ) 2>"$dir/last-error.log"; then
     size=$(stat -c %s "$file.tmp")
-    if [ "$size" -lt 1000000 ]; then
+    # A truncated dump is the failure this catches; a small app (Crease ~0.5 MB)
+    # sets its own floor in its env file.
+    min=$(sed -n 's/^MIN_BYTES=\([0-9]*\)$/\1/p' "$envf"); min=${min:-1000000}
+    if [ "$size" -lt "$min" ]; then
       fail+=("$name: dump is only $size bytes"); mv "$file.tmp" "$file.small"
     else
       mv "$file.tmp" "$file"; chmod 600 "$file"

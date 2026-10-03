@@ -1566,7 +1566,17 @@ class Runner:
               title: document.getElementById('paywall-title').textContent,
               shown: [...document.querySelectorAll('#paywall-feats li')].filter(l => !l.hidden && l.offsetParent).map(l => l.dataset.perk)}))()""")
             self.ok(pw['open'] and 'plain words' in pw['title'].lower(), f'a free account gets the AI paywall: {pw}', j)
-            self.ok(set(pw['shown']) == {'ai_search', 'rent_check', 'noads'}, f'the paywall lists only the live AI perks + no ads: {pw["shown"]}', j)
+            self.ok(set(pw['shown']) == {'ai_search', 'rent_check', 'report_card', 'ask', 'noads'}, f'the paywall lists only the live AI perks + no ads: {pw["shown"]}', j)
+            page.evaluate("document.querySelector('[data-paywall=\"close\"]')?.click()"); time.sleep(0.3)
+            # The building sheet offers the report card and Ask; a free account gets the paywall.
+            self.boot(page, f'/#d={BBL}')
+            self.ok(self.detail_open(page), 'the building sheet should open signed in', j)
+            for act, perk in (('reportcard', 'report_card'), ('ask', 'ask')):
+                self.ok(page.evaluate(f"!!document.querySelector('#detail-sheet [data-detail={act}]')"), f'the building sheet should offer {act}', j)
+                page.evaluate(f"document.querySelector('#detail-sheet [data-detail={act}]').click()")
+                self.wait_until(page, "!document.getElementById('paywall-modal').hidden", 15000)
+                lead = page.evaluate("(document.querySelector('#paywall-feats li.pf-lead')||{}).dataset?.perk || null")
+                self.ok(lead == perk, f'{act} should open the paywall leading with {perk}, got {lead}', j)
             page.evaluate("document.querySelector('[data-paywall=\"close\"]')?.click()"); time.sleep(0.3)
             j.notes.append('AI row on sentences only · auth gate · paywall lists AI perks')
         finally:

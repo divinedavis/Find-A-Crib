@@ -1379,6 +1379,16 @@
   .rentcheck-card .rc-note { color: var(--ink-2); font-size: 12.5px; margin-top: 6px; }
   .ac-item.ac-ai .ac-addr { color: var(--blue); }
   .paywall-feats li[hidden] { display: none; }
+  .ai-box { padding: 4px 18px 14px; }
+  .ai-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+  .ai-btns .d-rentcheck { margin-top: 0; }
+  .rc-points { list-style: none; padding: 0; margin: 8px 0 0; }
+  .rc-points li { padding: 6px 0; border-top: 1px solid var(--line); }
+  .rc-points li:first-child { border-top: 0; }
+  .rc-src { display: inline-block; font-size: 11px; color: var(--ink-2); border: 1px solid var(--line); border-radius: 999px; padding: 0 6px; margin-left: 4px; white-space: nowrap; }
+  .ask-row { display: flex; gap: 8px; margin-top: 10px; }
+  .ask-row input { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; font-size: 15px; background: var(--surface); color: var(--ink); }
+  .ask-row button { border: 0; border-radius: 10px; padding: 0 14px; font-weight: 800; background: var(--blue-solid); color: #fff; cursor: pointer; }
   .d-sub { font-size: 14px; color: var(--ink-2); margin-top: 2px; }
   .d-health { display: inline-block; margin-top: 8px; font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 8px; }
   .d-health.ok { background: var(--ok-bg); color: var(--ok-ink); }
@@ -1750,6 +1760,8 @@
          "a prompt this big with large font"). -->
     <ul class="paywall-feats" id="paywall-feats">
       <li data-perk="ai_search" data-ai><span class="pf-ico">✨</span><span><b>Search in plain words</b>“2 bed under $2,500 near Prospect Park, no violations” — and the map sets every filter</span></li>
+      <li data-perk="report_card" data-ai><span class="pf-ico">🧾</span><span><b>Landlord report card</b>Every building’s city records — violations, pests, evictions, housing court — read for you in plain words</span></li>
+      <li data-perk="ask" data-ai><span class="pf-ico">💬</span><span><b>Ask about this building</b>“Has it had rat problems?” — answers from the city’s records, with the source for each fact</span></li>
       <li data-perk="rent_check" data-ai><span class="pf-ico">💵</span><span><b>Is this rent fair?</b>Every advertised rent checked against the neighborhood and HUD’s fair-market rent</span></li>
       <li data-perk="bedbugs"><span class="pf-ico">🛏️</span><span><b>Bedbug records</b>Every bedbug filing a landlord made for the building, year by year</span></li>
       <li data-perk="rodents"><span class="pf-ico">🐀</span><span><b>Rodent records</b>The Health Department's rat inspections, building by building</span></li>
@@ -5103,6 +5115,59 @@ function favActive() {
     track('rent_check_result', { bbl: rec.bbl, verdict: j.verdict });
   }
 
+  const REC_LABEL = { building: 'Building', hpd_violations: 'HPD violations', hpd_complaints: 'HPD complaints',
+    hpd_last_registration: 'HPD registration', registered_owner_and_manager: 'HPD registration', evictions: 'Evictions',
+    housing_court: 'Housing court', pest_violations: 'Pest violations', bedbug_filings: 'Bedbug filings', rat_inspections: 'Rat inspections' };
+  async function aiToken(source, signupMsg) {
+    if (!authUser) { openAuthModal(signupMsg, source); setAuthMode('signup'); return null; }
+    try { return (await supaClient.auth.getSession()).data.session.access_token; } catch (e) { return null; }
+  }
+  async function runReportCard(rec) {
+    track('report_card_click', { bbl: rec.bbl, signed_in: !!authUser, plus: !!plusActive });
+    const tok = await aiToken('report_card', 'Create an account or sign in to read this building’s report card.');
+    const out = document.getElementById('reportcard-out');
+    if (!tok || !out) return;
+    out.textContent = '🧾 Reading the city’s records for this building…'; out.hidden = false;
+    let r, j = {};
+    try { r = await fetch('/api/ai/report-card?bbl=' + encodeURIComponent(rec.bbl), { headers: { Authorization: 'Bearer ' + tok } }); j = await r.json(); }
+    catch (e) { out.textContent = 'Couldn’t reach Find A Crib just now — try again.'; return; }
+    if (r.status === 402) { out.hidden = true; openPaywall(null, 'report_card'); return; }
+    if (!r.ok || !j.ok) { out.textContent = j.error === 'daily_limit' ? 'That’s a lot of report cards today — more tomorrow.' : 'The report card isn’t available right now — the records above are.'; return; }
+    const c = j.card || {}, icon = { good: '✅', neutral: '•', concern: '⚠️' };
+    out.innerHTML = `<div><b>${esc(c.headline || '')}</b></div>
+      <ul class="rc-points">${(c.points || []).map(p => `<li>${icon[p.tone] || '•'} ${esc(p.text)} <span class="rc-src">${esc(REC_LABEL[p.source] || p.source)}</span></li>`).join('')}</ul>
+      ${(c.ask_the_landlord || []).length ? `<div style="margin-top:8px"><b>Ask the landlord</b><ul class="rc-points">${c.ask_the_landlord.map(q => `<li>${esc(q)}</li>`).join('')}</ul></div>` : ''}
+      <div class="rc-note">Written by AI from the city’s public records as of ${esc(j.as_of || '')}. The records themselves are in the tiles above.</div>`;
+    track('report_card_result', { bbl: rec.bbl, cached: !!j.cached, points: (c.points || []).length });
+  }
+  async function openAsk(rec) {
+    track('ask_open', { bbl: rec.bbl, signed_in: !!authUser, plus: !!plusActive });
+    const tok = await aiToken('ask', 'Create an account or sign in to ask about this building.');
+    if (!tok) return;
+    if (plusKnown && !plusActive) { openPaywall(null, 'ask'); return; }
+    const box = document.getElementById('ask-box'), form = document.getElementById('ask-form'), out = document.getElementById('ask-out');
+    if (!box) return;
+    box.hidden = false;
+    const input = document.getElementById('ask-q'); input.focus();
+    form.onsubmit = async e => {
+      e.preventDefault();
+      const q = input.value.trim();
+      if (q.length < 3) return;
+      const t2 = await aiToken('ask', 'Sign in to ask about this building.');
+      if (!t2) return;
+      out.textContent = '💬 Checking the records…'; out.hidden = false;
+      let r, j = {};
+      try { r = await fetch('/api/ai/ask', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t2 }, body: JSON.stringify({ bbl: rec.bbl, question: q }) }); j = await r.json(); }
+      catch (err) { out.textContent = 'Couldn’t reach Find A Crib just now — try again.'; return; }
+      if (r.status === 402) { out.hidden = true; openPaywall(null, 'ask'); return; }
+      if (!r.ok || !j.ok) { out.textContent = j.error === 'daily_limit' ? 'That’s a lot of questions today — more tomorrow.' : j.error === 'declined' ? 'That one isn’t something I can answer from the records.' : 'Answers aren’t available right now — the records above are.'; return; }
+      // Escape first, then turn [section] citations into small labels.
+      out.innerHTML = esc(j.answer).replace(/\[([a-z_]+)\]/g, (m, k) => REC_LABEL[k] ? `<span class="rc-src">${esc(REC_LABEL[k])}</span>` : m).replace(/\n\n/g, '<br><br>')
+        + `<div class="rc-note">AI answer from the city’s public records as of ${esc(j.as_of || '')}.</div>`;
+      track('ask_result', { bbl: rec.bbl, ok: true, words: q.split(/\s+/).length });
+    };
+  }
+
   function applyAIFilters(f) {
     const fire = el => el && el.dispatchEvent(new Event('change', { bubbles: true }));
     const radio = (name, v) => { const r = document.querySelector('input[name="' + name + '"][value="' + v + '"]'); if (r && !r.checked) { r.checked = true; fire(r); } };
@@ -6981,6 +7046,19 @@ function favActive() {
         <button class="d-viol" data-detail="pests" title="HPD violations for roaches, mice, rats or bedbugs — what an inspector confirmed in an apartment"><b>Pest violations</b><span data-oc="pests"></span></button>
         <button class="d-viol" data-detail="bedbugs" title="The landlord's own annual bedbug report to HPD — not an inspection, and about a year behind"><b>Bedbug filings</b><small>landlord's</small><span data-oc="bedbugs"></span></button>
         <button class="d-viol" data-detail="rodents" title="Health Department rat inspections — only where the city inspected"><b>Rat inspections</b><small>Health Dept.</small><span data-oc="rodents"></span></button>
+      </div>
+      <!-- AI (Plus, 2026-10-03): a plain-words read of the records above, and
+           questions answered from them. -->
+      <div class="ai-box" data-sec="ai">
+        <div class="ai-btns">
+          <button class="d-rentcheck" data-detail="reportcard">🧾 Landlord report card<span class="plus-tag">Plus</span></button>
+          <button class="d-rentcheck" data-detail="ask">💬 Ask about this building<span class="plus-tag">Plus</span></button>
+        </div>
+        <div class="rentcheck-card" id="reportcard-out" hidden></div>
+        <div id="ask-box" hidden>
+          <form class="ask-row" id="ask-form"><input id="ask-q" maxlength="300" autocomplete="off" placeholder="e.g. Has this building had rat problems?"><button type="submit">Ask</button></form>
+          <div class="rentcheck-card" id="ask-out" hidden></div>
+        </div>
       </div>` : ''}
       <div class="d-actions"${IS_NYC ? ' style="padding-top:0"' : ' data-sec="actions"'}>
         <a class="d-secondary" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.label}</a>
@@ -7516,6 +7594,8 @@ function favActive() {
     if (act === 'search') return; // link
     if (act === 'close') { closeDetail(); return; }
     if (act === 'rentcheck') { runRentCheck(rec); return; }
+    if (act === 'reportcard') { runReportCard(rec); return; }
+    if (act === 'ask') { openAsk(rec); return; }
     if (act === 'getplus') { openAuthModal('Create an account — invite a friend and you both get 2 months of Find A Crib Plus, on us.', 'referral'); return; }
     if (act === 'comment-signin') { openAuthModal('Sign in to comment on buildings.', 'comment'); return; }
     if (act === 'profile') { openProfile(); return; }
@@ -7884,7 +7964,7 @@ function favActive() {
   let paywallSource = 'other';
   // While everything else is free, Plus is the AI features (owner,
   // 2026-10-03) — and no ads, which paying members keep.
-  const AI_SOURCES = new Set(['ai_search', 'rent_check', 'profile']);
+  const AI_SOURCES = new Set(['ai_search', 'rent_check', 'report_card', 'ask', 'profile']);
   function openPaywall(bbl, source) {
     if (FEATURES_FREE && !AI_SOURCES.has(source)) return;   // the free features are never sold
     { const feats = document.getElementById('paywall-feats');
@@ -7894,7 +7974,7 @@ function favActive() {
     pendingPhoneBbl = bbl || null;            // remember what they wanted, to reveal after checkout
     paywallSource = source || (bbl ? 'phone' : 'other');
     // Lead with what they came for.
-    const TITLES = { ai_search: 'Search in plain words', rent_check: 'Is this rent fair?', noads: 'Find A Crib, with no ads',
+    const TITLES = { ai_search: 'Search in plain words', rent_check: 'Is this rent fair?', report_card: 'Landlord report card', ask: 'Ask about this building', noads: 'Find A Crib, with no ads',
                      bedbugs: 'See every building\u2019s bedbug record', rodents: 'See every building\u2019s rat inspections',
                      phone: 'Call who actually runs the building', research: 'Research any landlord',
                      saved_search: 'Save your searches', folders: 'Organize your saved homes' };

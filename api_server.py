@@ -24,6 +24,8 @@ import nemo_metrics          # NEMO Seamless Gutter traffic, same droplet
 import trent_metrics         # Trent's Fresh Spaces traffic, same droplet
 import marracat_metrics      # Marracat, fetched from its own droplet
 import claude_usage          # Anthropic API spend, owner-only tab
+import ai_gateway            # Plus check + $20/month cap for every AI call
+import nl_search             # plain-language search -> map filters
 import creator_outreach      # owner's creator-review tracker, /dashboard/creators/
 import business_checklist    # owner's business & legal setup checklist, /dashboard/business/
 
@@ -573,6 +575,52 @@ def _session_user():
     if not EMAIL_RE.match(email) or not re.fullmatch(r"[0-9a-f-]{36}", uid):
         return None
     return {"id": uid, "email": email}
+
+
+# ---- AI features (Find A Crib Plus, owner 2026-10-03) ------------------------
+AI = ai_gateway.Gateway(rpc, SUPABASE_URL, SERVICE_KEY)
+NB_ALIASES = nl_search.aliases(sorted({(b["nb"], b["b"]) for b in BUILDINGS if b.get("nb")}))
+_jev = None
+
+
+def _jev_client():
+    """One TypeSafe client for the process; None without a key or the SDK."""
+    global _jev
+    if _jev is None and os.environ.get("TYPESAFE_API_KEY"):
+        try:
+            from typesafe_sdk import TypeSafeClient
+            _jev = TypeSafeClient()
+        except Exception:
+            _jev = False
+    return _jev or None
+
+
+@app.route("/ai/search", methods=["POST"])
+def ai_search():
+    """Plain-language search -> the map's filters. Plus only; the rules part
+    is free to run, Jev is called only for a place the rules cannot pin."""
+    user = _session_user()
+    err = AI.allow(user, "search")
+    if err:
+        return jsonify(error=err), (401 if err == "sign_in_required" else 402 if err == "plus_required" else 429)
+    q = ((request.get_json(silent=True) or {}).get("q") or "").strip()[:200]
+    if len(q) < 2:
+        return jsonify(error="empty"), 400
+    f, explain, rest = nl_search.parse_rules(q, NB_ALIASES)
+    used_ai, model, tokens = False, "rules", 0
+    client = _jev_client()
+    if client and nl_search.needs_place(rest, f):
+        try:
+            from typesafe_sdk import Choice
+            places, tokens = nl_search.jev_places(client, q, NB_ALIASES, f["boroughs"], Choice)
+            if places:
+                f["nbs"] = places
+                explain += list(dict.fromkeys(re.sub(r"\s*\(.*?\)", "", n) for n in places))
+            used_ai, model = True, "jev-1.13.0"
+        except Exception:
+            pass                      # Jev down: the rules' answer still stands
+    AI.record(user, "search", model, input_tokens=tokens)
+    return jsonify(ok=True, filters=f, explain=explain, used_ai=used_ai)
 
 
 # The iPhone app files its APNs token against the signed-in account

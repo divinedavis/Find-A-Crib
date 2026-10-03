@@ -116,6 +116,7 @@ JOURNEY_EVENTS = {
     'account_delete':       [],
     'plus_gates':           ['outbound'],
     'resume_search':        ['resume_offer', 'resume_apply'],
+    'ai_features':          ['ai_search_click', 'paywall_view'],
     # home_set / home_open / home_clear are pre-2026-09-06 history: the
     # my-apartment pin was retired from the UI that day (no sheet button, no
     # profile row, no pill) and the code left dormant. Nothing to cover.
@@ -1526,6 +1527,52 @@ class Runner:
             ctx.close()
         j.notes.append('default before config; GPC denies ads; EU banner')
 
+    def j_ai_features(self, page, j, device):
+        """AI features are Plus (owner, 2026-10-03). A sentence in the search
+        box offers "✨ Search for …"; signed out it asks for an account; a
+        signed-in account without Plus gets the paywall listing only the live
+        AI perks (and no ads). A building with an advertised rent offers
+        "Is this rent fair?", gated the same way."""
+        self.boot(page)
+        page.fill('#q', '2 bed under $2,500 near prospect park'); time.sleep(0.6)
+        items = page.evaluate("[...document.querySelectorAll('.ac-item')].map(e => e.innerText)")
+        self.ok(any('Search for' in x for x in items), f'a sentence should offer the AI search row: {items}', j)
+        self.ok(not any('Search for' in x for x in items[:-1]), 'the AI row comes last', j)
+        page.evaluate("document.querySelector('.ac-item.ac-ai').click()"); time.sleep(0.8)
+        self.ok(not page.evaluate("document.getElementById('auth-modal').hidden"), 'signed out, AI search asks for an account', j)
+        page.evaluate("document.querySelector('#auth-modal [data-auth=\"close\"]').click()"); time.sleep(0.3)
+        page.fill('#q', '246 10th ave'); time.sleep(0.6)
+        self.ok(not page.evaluate("!!document.querySelector('.ac-item.ac-ai')"), 'an address is not offered AI search', j)
+        page.fill('#q', ''); time.sleep(0.3)
+        # A building with an advertised rent shows the rent check.
+        bbl = page.evaluate("(() => { const k = Object.keys(listingPrices || {}).find(b => byBBL && byBBL[b]); return k || null })()") if False else None
+        email = f'journey-ai-{secrets.token_hex(6)}@example.com'
+        password = secrets.token_urlsafe(18)
+        st_, u = supabase_admin('POST', 'users', {'email': email, 'password': password, 'email_confirm': True})
+        if st_ not in (200, 201) or not u or not u.get('id'):
+            self.ok(False, f'could not create the throwaway account (HTTP {st_})', j); return
+        uid = u['id']
+        try:
+            self.click(page, '#auth-btn'); time.sleep(0.6)
+            page.fill('#auth-email', email); page.fill('#auth-pass', password)
+            self.click(page, '#auth-submit')
+            if not self.wait_until(page, "document.getElementById('auth-btn').classList.contains('signed-in')", 20000):
+                self.ok(False, 'the throwaway account should sign in', j); return
+            time.sleep(1.5)
+            page.fill('#q', 'studio in astoria under 2000'); time.sleep(0.6)
+            page.evaluate("document.querySelector('.ac-item.ac-ai').click()")
+            self.wait_until(page, "!document.getElementById('paywall-modal').hidden", 15000)
+            pw = page.evaluate("""(() => ({open: !document.getElementById('paywall-modal').hidden,
+              title: document.getElementById('paywall-title').textContent,
+              shown: [...document.querySelectorAll('#paywall-feats li')].filter(l => !l.hidden && l.offsetParent).map(l => l.dataset.perk)}))()""")
+            self.ok(pw['open'] and 'plain words' in pw['title'].lower(), f'a free account gets the AI paywall: {pw}', j)
+            self.ok(set(pw['shown']) == {'ai_search', 'rent_check', 'noads'}, f'the paywall lists only the live AI perks + no ads: {pw["shown"]}', j)
+            page.evaluate("document.querySelector('[data-paywall=\"close\"]')?.click()"); time.sleep(0.3)
+            j.notes.append('AI row on sentences only · auth gate · paywall lists AI perks')
+        finally:
+            page.evaluate("(async () => { try { await supaClient.auth.signOut() } catch (e) {} })()"); time.sleep(0.8)
+            supabase_admin('DELETE', f'users/{uid}')
+
     def j_resume_search(self, page, j, device):
         """Remembered search (owner, 2026-10-03): with nothing saved there is
         no chip; with a saved Brooklyn search the chip offers it, and tapping
@@ -1593,16 +1640,18 @@ class Runner:
                     page.evaluate("document.getElementById('paywall-modal').hidden"),
                     'HPD pest violations stay open (not Plus)', j)
             page.evaluate("document.querySelectorAll('.viol-backdrop .sheet-close').forEach(b=>b.click())"); time.sleep(0.3)
-            # Profile: folders + saved searches for any account, no upgrade.
-            self.click(page, '#auth-btn'); time.sleep(1.5)
+            # Profile: folders + saved searches for any account; the upgrade
+            # button is back, because Plus is now the AI features (2026-10-03).
+            self.click(page, '#auth-btn')
+            self.wait_until(page, "!document.getElementById('profile-modal').hidden", 8000)
             prof = page.evaluate("""(()=>({open: !document.getElementById('profile-modal').hidden,
               folders: !document.getElementById('profile-folders').hidden,
               searches: !document.getElementById('profile-searches').hidden,
               upgrade: !document.getElementById('profile-upgrade').hidden}))()""")
-            self.ok(prof['open'] and prof['folders'] and prof['searches'] and not prof['upgrade'],
-                    f'a new account\'s profile should show folders and saved searches and no upgrade: {prof}', j)
+            self.ok(prof['open'] and prof['folders'] and prof['searches'] and prof['upgrade'],
+                    f'a new account\'s profile should show folders, saved searches and the Plus (AI) upgrade: {prof}', j)
             page.evaluate("document.querySelector('#profile-modal [data-profile=\"close\"], #profile-modal .auth-close')?.click()"); time.sleep(0.3)
-            j.notes.append('new account opens bedbug/rodent/pest records · folders + searches · no paywall, no upgrade')
+            j.notes.append('new account opens bedbug/rodent/pest records · folders + searches · upgrade = AI')
         finally:
             # Leave the shared browser context signed out: the session lives in
             # localStorage, and every journey after this one assumes a signed-
@@ -1662,7 +1711,7 @@ class Runner:
     JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'pin_and_list',
                 'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'signin_modal', 'app_chip', 'app_qr_menu', 'boot_is_usable', 'city_chip',
                 'ad_tiles', 'list_follows_zoom', 'plus_no_ads', 'building_page_link', 'remove_ads_chip', 'overlays_clear_ad', 'outbound_links', 'status_chips', 'referral_gate',
-                'rent_report', 'legal_pages', 'comments_gate', 'landlords_gate', 'consent_mode', 'account_delete', 'plus_gates', 'resume_search']
+                'rent_report', 'legal_pages', 'comments_gate', 'landlords_gate', 'consent_mode', 'account_delete', 'plus_gates', 'resume_search', 'ai_features']
 
     # ---- run --------------------------------------------------------------
     def run(self):

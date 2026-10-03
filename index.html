@@ -1369,6 +1369,16 @@
   /* one consistent size for everything in the header except the price */
   .d-key { font-size: 14px; color: var(--ink); font-weight: 600; margin-top: 4px; }
   .d-addr { font-size: 14px; font-weight: 600; margin-top: 8px; }
+  /* AI features (Plus, 2026-10-03) */
+  .plus-tag { display: inline-block; font-size: 10.5px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase;
+    color: #fff; background: linear-gradient(135deg,#6b3df5,#3151c8); border-radius: 999px; padding: 2px 7px; margin-left: 6px; vertical-align: 1px; }
+  .d-rentcheck { margin-top: 10px; background: var(--surface); border: 1px solid var(--line); color: var(--ink); border-radius: 999px;
+    padding: 7px 12px; font-size: 13.5px; font-weight: 700; cursor: pointer; }
+  .rentcheck-card { margin-top: 10px; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; font-size: 14px; line-height: 1.45; }
+  .rentcheck-card b.v-high { color: var(--bad-ink); } .rentcheck-card b.v-low { color: var(--ok-ink); } .rentcheck-card b.v-typical { color: var(--ink); }
+  .rentcheck-card .rc-note { color: var(--ink-2); font-size: 12.5px; margin-top: 6px; }
+  .ac-item.ac-ai .ac-addr { color: var(--blue); }
+  .paywall-feats li[hidden] { display: none; }
   .d-sub { font-size: 14px; color: var(--ink-2); margin-top: 2px; }
   .d-health { display: inline-block; margin-top: 8px; font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 8px; }
   .d-health.ok { background: var(--ok-bg); color: var(--ok-ink); }
@@ -1739,6 +1749,8 @@
          to the top (openPaywall). Big type on purpose (owner, 2026-09-30:
          "a prompt this big with large font"). -->
     <ul class="paywall-feats" id="paywall-feats">
+      <li data-perk="ai_search" data-ai><span class="pf-ico">✨</span><span><b>Search in plain words</b>“2 bed under $2,500 near Prospect Park, no violations” — and the map sets every filter</span></li>
+      <li data-perk="rent_check" data-ai><span class="pf-ico">💵</span><span><b>Is this rent fair?</b>Every advertised rent checked against the neighborhood and HUD’s fair-market rent</span></li>
       <li data-perk="bedbugs"><span class="pf-ico">🛏️</span><span><b>Bedbug records</b>Every bedbug filing a landlord made for the building, year by year</span></li>
       <li data-perk="rodents"><span class="pf-ico">🐀</span><span><b>Rodent records</b>The Health Department's rat inspections, building by building</span></li>
       <li data-perk="phone"><span class="pf-ico">📞</span><span><b>Agent phone numbers</b>Call who actually runs the building — 11,000+ managing-agent numbers</span></li>
@@ -5022,10 +5034,108 @@ function favActive() {
   // suggestion can carry a whole resolved area or landlord rather than
   // whatever fits in a data- attribute.
   let acMatches = [];
+  // Plain-language search (Plus, 2026-10-03): a sentence-like query gets a
+  // "✨ Search for …" row at the end of the suggestions (last, so Enter on
+  // an address still picks the address).
+  const NATURAL_HINT = /\b(under|below|over|between|near|by|close to|around|bed|beds|bedroom|br|studio|cheap|no violations|section 8|voucher|available|with|in)\b|\$/i;
+  function withAISuggestion(matches, raw) {
+    const t = (raw || '').trim();
+    if (!IS_NYC || t.length < 8 || t.split(/\s+/).length < 3 || !NATURAL_HINT.test(t)) return matches;
+    return [...matches.slice(0, 4), { type: 'ai', q: t }];
+  }
+  async function runAISearch(q) {
+    track('ai_search_click', { words: q.split(/\s+/).length, signed_in: !!authUser, plus: !!plusActive });
+    if (!authUser) { openAuthModal('Create an account or sign in to search in plain words.', 'ai_search'); setAuthMode('signup'); return; }
+    let tok = null;
+    try { tok = (await supaClient.auth.getSession()).data.session.access_token; } catch (e) {}
+    if (!tok) { openAuthModal('Sign in to search in plain words.', 'ai_search'); return; }
+    setQueryNote('');
+    let r, j = {};
+    try { r = await fetch('/api/ai/search', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok }, body: JSON.stringify({ q }) }); j = await r.json(); }
+    catch (e) { setQueryNote('Couldn’t reach Find A Crib just now — try again.'); return; }
+    if (r.status === 402) { setQueryNote(''); openPaywall(null, 'ai_search'); return; }
+    if (!r.ok || !j.ok) {
+      setQueryNote(j.error === 'daily_limit' ? 'That’s a lot of searches today — plain-language search resets at midnight.'
+                  : j.error === 'budget' ? 'Plain-language search is resting for now — the filters still work.'
+                  : 'Couldn’t read that one — try the filters.');
+      track('ai_search_result', { ok: false, error: j.error || r.status }); return;
+    }
+    // Nothing matches every word? Loosen the strictest filter first, one at a
+    // time, and say which — an empty map is the worst answer a paid search
+    // can give.
+    const f = Object.assign({}, j.filters || {});
+    applyAIFilters(f);
+    const loosened = [];
+    for (const [key, label] of [['viol', 'the violations filter'], ['listed', '“available now”'], ['beds', 'the bedroom count'], ['pmin', 'the minimum price'], ['pmax', 'the price cap']]) {
+      if (filtered.length) break;
+      const empty = Array.isArray(f[key]) ? !f[key].length : !f[key];
+      if (empty) continue;
+      f[key] = Array.isArray(f[key]) ? [] : null;
+      loosened.push(label);
+      applyAIFilters(f);
+    }
+    // A toast, not the query note: that note styles the box as a no-match.
+    const said = j.explain && j.explain.length ? j.explain.join(' · ') : 'No filters found in that — showing everything';
+    showPlusToast('✨ ' + said + (loosened.length ? ' — no exact match, so without ' + loosened.join(', ') : ''));
+    if (loosened.length) track('ai_search_loosened', { dropped: loosened.join(',') });
+    track('ai_search_result', { ok: true, used_ai: !!j.used_ai, nbs: (j.filters.nbs || []).length, beds: (j.filters.beds || []).length,
+                                price: !!(j.filters.pmin || j.filters.pmax) });
+  }
+  async function runRentCheck(rec) {
+    track('rent_check_click', { bbl: rec.bbl, signed_in: !!authUser, plus: !!plusActive });
+    if (!authUser) { openAuthModal('Create an account or sign in to check this rent.', 'rent_check'); setAuthMode('signup'); return; }
+    let tok = null;
+    try { tok = (await supaClient.auth.getSession()).data.session.access_token; } catch (e) {}
+    const out = document.getElementById('rentcheck-out');
+    if (!tok || !out) return;
+    let r, j = {};
+    try { r = await fetch('/api/ai/rent-check?bbl=' + encodeURIComponent(rec.bbl), { headers: { Authorization: 'Bearer ' + tok } }); j = await r.json(); }
+    catch (e) { return; }
+    if (r.status === 402) { openPaywall(null, 'rent_check'); return; }
+    if (!r.ok || !j.ok) { out.textContent = 'There isn’t a current advertised rent to compare for this building.'; out.hidden = false; return; }
+    const money = n => '$' + Math.round(n).toLocaleString();
+    const word = { high: 'above typical', low: 'below typical', typical: 'typical', unknown: 'hard to judge' }[j.verdict] || j.verdict;
+    let html = `<div><b class="v-${esc(j.verdict)}">${money(j.price)}/mo is ${esc(word)}</b> for this area.</div>`;
+    if (j.nb_median) html += `<div>Similar advertised rent-stabilized buildings nearby: median ${money(j.nb_median)} (${j.comps} buildings) — this one is higher than ${j.percentile}% of them.</div>`;
+    if (j.fmr_low) html += `<div>HUD fair-market rent for this ZIP: ${j.fmr_low === j.fmr_high ? money(j.fmr_low) : money(j.fmr_low) + '–' + money(j.fmr_high)}.</div>`;
+    (j.notes || []).forEach(n => { html += `<div class="rc-note">${esc(n)}</div>`; });
+    out.innerHTML = html; out.hidden = false;
+    track('rent_check_result', { bbl: rec.bbl, verdict: j.verdict });
+  }
+
+  function applyAIFilters(f) {
+    const fire = el => el && el.dispatchEvent(new Event('change', { bubbles: true }));
+    const radio = (name, v) => { const r = document.querySelector('input[name="' + name + '"][value="' + v + '"]'); if (r && !r.checked) { r.checked = true; fire(r); } };
+    radio('listed', f.listed === 'yes' ? 'yes' : 'any');
+    radio('s8', f.s8 ? 'either' : 'any');
+    const beds = new Set((f.beds || []).map(String));
+    document.querySelectorAll('input[name="beds"]').forEach(c => { const on = beds.has(c.value); if (c.checked !== on) { c.checked = on; fire(c); } });
+    // Prices snap to the menus' steps: a max rounds up, a min rounds down.
+    const snap = (id, v, up) => {
+      const el = document.getElementById(id); if (!el) return;
+      const opts = [...el.options].map(o => o.value).filter(Boolean).map(Number).sort((a, b) => a - b);
+      let pick = '';
+      if (v) pick = String(up ? (opts.find(o => o >= v) ?? opts[opts.length - 1]) : ([...opts].reverse().find(o => o <= v) ?? ''));
+      if (el.value !== pick) { el.value = pick; fire(el); }
+    };
+    snap('price-min', f.pmin, false); snap('price-max', f.pmax, true);
+    moreFilters.viol = f.viol === 'none' ? 'none' : 'any'; syncMoreUI();
+    const nbs = new Set(f.nbs || []), boros = new Set(f.boroughs || []);
+    if (nbs.size) for (const r of data) if (nbs.has(r.nb)) boros.add(r.b);
+    qInput.value = ''; qInput.blur();
+    selectArea({ boros, nbs, label: '' });
+  }
+
   function renderAC(matches) {
     acMatches = matches;
     if (!matches.length) { searchAC.hidden = true; return; }
     searchAC.innerHTML = matches.map((m, i) => {
+      if (m.type === 'ai') {
+        return `<button class="ac-item ac-ai" data-i="${i}">
+          <span class="ac-addr">✨ Search for “${esc(m.q.slice(0, 60))}”<span class="plus-tag">Plus</span></span>
+          <span class="ac-sub">Plain-language search — sets the neighborhood, price, beds and filters for you</span>
+        </button>`;
+      }
       if (m.type === 'area') {
         const a = m.area;
         const what = a.nbs.size ? (a.nbs.size === 1 ? 'Neighborhood' : a.nbs.size + ' neighborhoods')
@@ -5076,7 +5186,7 @@ function favActive() {
     // A no-match query scans every building (twice, with street variants), so
     // suggestions wait for a short pause instead of running on each keystroke.
     clearTimeout(qACTimer);
-    qACTimer = setTimeout(() => renderAC(searchMatches(qInput.value)), 80);
+    qACTimer = setTimeout(() => renderAC(withAISuggestion(searchMatches(qInput.value), qInput.value)), 80);
     clearTimeout(qTimer);
     qTimer = setTimeout(() => {
       applyFilters();
@@ -5442,6 +5552,7 @@ function favActive() {
     searchAC.hidden = true;
     const m = acMatches[+item.dataset.i];
     if (!m) return;
+    if (m.type === 'ai') { runAISearch(m.q); return; }
     if (m.type === 'area') {
       qInput.value = ''; qInput.blur();
       selectArea(m.area);
@@ -6855,6 +6966,8 @@ function favActive() {
             ? ` <span class="d-dot">·</span> <span class="d-est" title="${esc(ASKING_TITLE)}">$${asking.toLocaleString()}/mo asking</span>`
             : est ? ` <span class="d-dot">·</span> <span class="d-est" title="${esc(EST_TITLE)}">${est}</span>` : ''}</div>
         <div class="d-addr">${esc(addrLine)}</div>
+        ${IS_NYC && asking ? `<button class="d-rentcheck" data-detail="rentcheck">💵 Is this rent fair?<span class="plus-tag">Plus</span></button>
+        <div class="rentcheck-card" id="rentcheck-out" hidden></div>` : ''}
       </div>
       <div class="agent-card" data-sec="agent" data-agentcard="${esc(rec.bbl)}">${agentCardInner(rec.bbl, !!(rec.h && rec.h.op))}</div>
       <!-- Save lives in the header heart only (the full-width Save row was
@@ -7402,6 +7515,7 @@ function favActive() {
     const rec = detailRec;
     if (act === 'search') return; // link
     if (act === 'close') { closeDetail(); return; }
+    if (act === 'rentcheck') { runRentCheck(rec); return; }
     if (act === 'getplus') { openAuthModal('Create an account — invite a friend and you both get 2 months of Find A Crib Plus, on us.', 'referral'); return; }
     if (act === 'comment-signin') { openAuthModal('Sign in to comment on buildings.', 'comment'); return; }
     if (act === 'profile') { openProfile(); return; }
@@ -7768,12 +7882,19 @@ function favActive() {
   // rides through checkout in sessionStorage so the dashboard's pay
   // conversion can say which paywall sells (2026-09-30).
   let paywallSource = 'other';
+  // While everything else is free, Plus is the AI features (owner,
+  // 2026-10-03) — and no ads, which paying members keep.
+  const AI_SOURCES = new Set(['ai_search', 'rent_check', 'profile']);
   function openPaywall(bbl, source) {
-    if (FEATURES_FREE) return;   // nothing is for sale while everything is free
+    if (FEATURES_FREE && !AI_SOURCES.has(source)) return;   // the free features are never sold
+    { const feats = document.getElementById('paywall-feats');
+      if (feats) feats.querySelectorAll('li').forEach(li => {
+        li.hidden = FEATURES_FREE && !(li.hasAttribute('data-ai') || li.dataset.perk === 'noads');
+      }); }
     pendingPhoneBbl = bbl || null;            // remember what they wanted, to reveal after checkout
     paywallSource = source || (bbl ? 'phone' : 'other');
     // Lead with what they came for.
-    const TITLES = { noads: 'Find A Crib, with no ads',
+    const TITLES = { ai_search: 'Search in plain words', rent_check: 'Is this rent fair?', noads: 'Find A Crib, with no ads',
                      bedbugs: 'See every building\u2019s bedbug record', rodents: 'See every building\u2019s rat inspections',
                      phone: 'Call who actually runs the building', research: 'Research any landlord',
                      saved_search: 'Save your searches', folders: 'Organize your saved homes' };
@@ -8073,7 +8194,7 @@ function favActive() {
     const plan = document.getElementById('profile-plan');
     plan.textContent = plusActive ? '★ Plus member' : 'Basic';
     plan.classList.toggle('plus', plusActive);
-    document.getElementById('profile-upgrade').hidden = plusActive || FEATURES_FREE;
+    document.getElementById('profile-upgrade').hidden = plusActive;   // Plus = the AI features now
     document.getElementById('profile-dark').checked = themeName() === 'dark';
     syncHomeUI();
     profileAlerts.checked = false;

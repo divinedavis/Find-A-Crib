@@ -50,6 +50,6 @@ def check(bbl, buildings_by_bbl, listings, fmr):
         out["verdict"] = "high" if r >= 1.2 else ("low" if r <= 0.85 else "typical")
     else:
         out["verdict"] = "unknown"
-    out["notes"].append("Rent-stabilized? Ask HCR for this apartment's rent history (free): "
+    out["notes"].append("Rent-stabilized? Ask HCR for this apartment's rent history — "
                         "the legal rent can't jump past the registered rent plus allowed increases.")
     return out

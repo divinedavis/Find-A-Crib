@@ -53,6 +53,9 @@ struct BuildingDetailView: View {
                     // page (442 people since 9/5, next is 195).
                     if store.city.isNYC {
                         section("Violations & inspections") { hpdBlock }
+                        // Plus AI (owner, 2026-10-03): a plain-words read of
+                        // the records above, questions about them, and the rent check.
+                        section("Ask AI") { AIBuildingSection(building: b, hasPrice: store.price(b) != nil) }
                     } else if store.city.isIncomeRestricted {
                         // Its own block: units and eligibility, not the
                         // violations/evictions shape cityRecordBlock draws.
@@ -663,7 +666,7 @@ struct BuildingDetailView: View {
     @ViewBuilder private var hpdBlock: some View {
         let v = b.h?.violations; let c = b.h?.complaints
         if !auth.isSignedIn {
-            Text("HPD's open violations and complaints for this building, the roaches, mice and rats an inspector confirmed here this year, and the bedbug and rat records (part of Find A Crib Plus). Sign in to see them.")
+            Text("HPD's open violations and complaints for this building, the roaches, mice and rats an inspector confirmed here this year, and the bedbug and rat records. Sign in to see them.")
                 .font(.se(17)).foregroundStyle(SE.ink2)
             SEOutlineButton(title: "Sign in to see violations & inspections", icon: "person.crop.circle") { nav.tab = .profile }
                 .accessibilityIdentifier("hpd-sign-in")

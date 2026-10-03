@@ -18,6 +18,7 @@ struct LotteriesView: View {
         Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .top), count: sizeClass == .regular ? 2 : 1)
     }
     @State private var showAlerts = false
+    @State private var showQualify = false
     @State private var showSignIn = false
     enum Pane: Hashable { case lotteries, rerentals, newJersey }
     @State private var pane: Pane = .lotteries
@@ -88,6 +89,24 @@ struct LotteriesView: View {
 
     /// Not subscribed: a banner above the list instead of a wall; it only has
     /// to say what alerts are.
+    /// "What do I qualify for?" (free, 2026-10-03): household + income once,
+    /// kept on this phone; every card then says whether it's in range.
+    private var qualifyRow: some View {
+        Button { showQualify = true } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "checkmark.seal").font(.system(size: 16, weight: .bold))
+                Text(Qualify.shared.isSet ? "\(Qualify.shared.household ?? 1) \((Qualify.shared.household ?? 1) == 1 ? "person" : "people") · $\((Qualify.shared.income ?? 0) / 1000)k — change" : "What do I qualify for?")
+                    .font(.se(17, .semibold))
+                Spacer()
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold))
+            }
+            .foregroundStyle(SE.royal).padding(14).background(Color.white)
+        }
+        .buttonStyle(.plain).accessibilityIdentifier("qualify-open")
+        .sheet(isPresented: $showQualify) { QualifySheet() }
+        .task { await Qualify.shared.loadUnits() }
+    }
+
     @ViewBuilder private var alertsBanner: some View {
         if !feed.subscribed {
             VStack(alignment: .leading, spacing: 8) {
@@ -145,7 +164,7 @@ struct LotteriesView: View {
             .padding(.horizontal, 16).padding(.top, 8).background(Color.white)
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 12) {
-                    if pane != .newJersey { alertsBanner }
+                    if pane != .newJersey { alertsBanner; qualifyRow }
                     if pane == .newJersey { njList } else if pane == .rerentals { rerentalList } else {
                     HStack {
                         Text(countLine).font(.se(17, .bold)).foregroundStyle(SE.ink)
@@ -370,7 +389,10 @@ struct LotteriesView: View {
             if let lo = l.income_min, let hi = l.income_max {
                 HStack(spacing: 8) {
                     Text("Income \(k(lo))–\(k(hi))").font(.se(15)).foregroundStyle(SE.ink2)
-                    if LotteryFeed.incomeFits(feed.income, l) {
+                    if let v = Qualify.shared.verdict(incomeMin: l.income_min, incomeMax: l.income_max,
+                                                      householdMin: l.household_min, householdMax: l.household_max) {
+                        QualifyBadge(verdict: v)
+                    } else if LotteryFeed.incomeFits(feed.income, l) {
                         Label("Your income fits", systemImage: "checkmark.circle.fill")
                             .font(.se(14, .bold)).foregroundStyle(SE.good)
                     }

@@ -8,6 +8,7 @@ struct SearchHomeView: View {
     @AppStorage("lastQuery") private var lastQueryData: Data = Data()
     @State private var query = SearchQuery()
     @State private var showLocation = false
+    @State private var showAISearch = false
     @State private var showCity = false
     @State private var count = 0
 
@@ -115,6 +116,18 @@ struct SearchHomeView: View {
                         .padding(.top, 6)
                         .accessibilityIdentifier("search-button")
                         .disabled(!store.loaded)
+                    if store.city.isNYC {
+                        Button { showAISearch = true } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "sparkles")
+                                Text("Or describe it in plain words").font(.se(17, .semibold))
+                                PlusTag()
+                            }.foregroundStyle(SE.royal).frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.plain).padding(.top, 4)
+                        .accessibilityIdentifier("ai-search-open")
+                        .sheet(isPresented: $showAISearch) { AISearchSheet() }
+                    }
                 }
                 .readableColumn()
                 .padding(.horizontal, 16)

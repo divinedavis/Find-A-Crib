@@ -20,6 +20,9 @@ struct AlertsSheet: View {
     @State private var kinds: Set<String> = []
     @State private var maxRent = ""
     @State private var income = ""
+    /// Household size (2026-10-03): lets the sender check a re-rental's flyer
+    /// income limits for the right row. 0 = not given.
+    @State private var household = 0
     @State private var busy = false
     @State private var done = false
     @State private var error: String?
@@ -84,6 +87,9 @@ struct AlertsSheet: View {
                             numField("Max rent, $/month", "e.g. 2000", $maxRent).accessibilityIdentifier("alerts-max-rent")
                             numField("Household income, $/year", "e.g. 65000", $income).accessibilityIdentifier("alerts-income")
                         }
+                        Stepper(household == 0 ? "People in your household (optional)" : "\(household) \(household == 1 ? "person" : "people") in your household",
+                                value: $household, in: 0...8)
+                            .font(.se(16)).accessibilityIdentifier("alerts-household")
                         Text("A lottery or re-rental is sent only when a unit's rent is at or under your cap and your household income falls in one of its income bands. Leave both blank to hear about everything.")
                             .font(.se(14)).foregroundStyle(SE.ink3)
 
@@ -156,6 +162,7 @@ struct AlertsSheet: View {
         if let k = j["kinds"] as? [String], !k.isEmpty { kinds = Set(k) }
         if let r = j["max_rent"] as? Int { maxRent = String(r) }
         if let i = j["income"] as? Int { income = String(i) }
+        if let h = j["household_size"] as? Int { household = h }
         editing = true
     }
 
@@ -254,6 +261,7 @@ struct AlertsSheet: View {
             var payload: [String: Any] = ["email": email, "boroughs": Array(boroughs).sorted(), "kinds": Array(kinds).sorted()]
             if let rent { payload["max_rent"] = rent }
             if let inc { payload["income"] = inc }
+            if household > 0 { payload["household_size"] = household }
             req.httpBody = try JSONSerialization.data(withJSONObject: payload)
             let (data, resp) = try await URLSession.shared.data(for: req)
             let code = (resp as? HTTPURLResponse)?.statusCode ?? 0

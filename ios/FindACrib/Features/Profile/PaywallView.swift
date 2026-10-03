@@ -39,9 +39,13 @@ struct PaywallView: View {
                     // The four perks (owner, 2026-10-01: alerts left Plus the same
                     // day). Landlord research, saved searches and folders stay
                     // Plus but unlisted.
-                    perk("bed.double.fill", "Bedbug records", "Every bedbug filing a landlord made for the building, year by year.")
-                    perk("hare.fill", "Rodent records", "The Health Department's rat inspections, building by building.")
-                    perk("phone.fill", "Agent phone numbers", "Call who actually runs the building — 11,000+ managing-agent numbers.")
+                    // Plus = the AI features while everything else is free
+                    // (owner, 2026-10-03); paying members also keep no ads.
+                    perk("sparkles", "Search in plain words", "“2 bed under $2,500 near Prospect Park, no violations” — and the search sets every filter.")
+                    perk("doc.text.magnifyingglass", "Landlord report card", "Every building's city records — violations, pests, evictions, housing court — read for you in plain words.")
+                    perk("bubble.left.and.text.bubble.right", "Ask about this building", "Answers from the city's records, with the source for each fact.")
+                    perk("doc.text", "Help me apply", "The steps, the documents and a ready-to-send email to the agent, for every re-rental.")
+                    perk("dollarsign.circle", "Is this rent fair?", "Every advertised rent checked against the neighborhood and HUD's fair-market rent.")
                     perk("nosign", "No ads", "No ads in the app or on findacrib.com.")
 
                     if auth.hasPlus {

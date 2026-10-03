@@ -87,6 +87,63 @@ final class FindACribUITests: XCTestCase {
     /// "Rerental" flag and a hand-off button, and it never displaces a building
     /// (the count headline is unchanged). The default route is Brooklyn, and
     /// the bundled featured.json has Brooklyn re-rentals, so this runs offline.
+    /// Plus AI on iPhone (owner, 2026-10-03). The UI runner is signed out:
+    /// the building page has an "Ask AI" section that explains itself and
+    /// offers sign-in (signed in, it shows the report card / Ask / rent check).
+    func testBuildingOffersAIAndSignsInFirst() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "detail"]
+        app.launch()
+        XCTAssertTrue(app.buttons["detail-menu"].waitForExistence(timeout: 30))
+        let gate = app.buttons["ai-sign-in"]
+        for _ in 0..<14 where !gate.isHittable { app.swipeUp() }
+        XCTAssertTrue(gate.exists, "signed out, the building page's AI section should offer sign-in")
+        XCTAssertFalse(app.buttons["ai-report-card"].exists, "AI buttons appear only once signed in")
+    }
+
+    /// Plain-language search opens from Search; signed out it sends you to sign in.
+    func testPlainLanguageSearchSheet() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash"]
+        app.launch()
+        let open = app.buttons["ai-search-open"]
+        for _ in 0..<6 where !open.isHittable { app.swipeUp() }
+        XCTAssertTrue(open.waitForExistence(timeout: 30), "Search should offer 'describe it in plain words'")
+        open.tap()
+        let field = app.textFields["ai-search-field"].exists ? app.textFields["ai-search-field"] : app.textViews["ai-search-field"]
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "the plain-words sheet has a text field")
+    }
+
+    /// Every re-rental card offers Help me apply.
+    func testRerentalOffersHelpMeApply() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "results"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 60))
+        let help = app.buttons["rerental-apply-help"].firstMatch
+        for _ in 0..<10 where !help.isHittable { app.swipeUp() }
+        XCTAssertTrue(help.exists, "a re-rental card should offer Help me apply")
+    }
+
+    /// Qualify-check (free): household + income in Lotteries, then badges.
+    func testQualifyCheckBadgesLotteries() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--tab", "lotteries"]
+        app.launch()
+        let open = app.buttons["qualify-open"]
+        XCTAssertTrue(open.waitForExistence(timeout: 30), "Lotteries should offer 'What do I qualify for?'")
+        open.tap()
+        let income = app.textFields["qualify-income"]
+        XCTAssertTrue(income.waitForExistence(timeout: 5))
+        income.tap(); income.typeText("85000")
+        app.buttons["Show what I qualify for"].tap()
+        let badge = app.descendants(matching: .any)["qualify-badge"].firstMatch
+        XCTAssertTrue(badge.waitForExistence(timeout: 15) || app.descendants(matching: .any)["lotteries-empty"].firstMatch.exists,
+                      "lotteries should show a qualify badge once income is set")
+        // leave the phone as it was for the tests after this one
+        open.tap(); if app.buttons["Clear"].waitForExistence(timeout: 5) { app.buttons["Clear"].tap() }
+    }
+
     func testThirdResultTileIsARerental() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "results"]

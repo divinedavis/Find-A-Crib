@@ -1658,3 +1658,33 @@ final class MapGridTests: XCTestCase {
         }
     }
 }
+
+
+/// Qualify-check and AI search mapping (2026-10-03).
+final class QualifyAndAITests: XCTestCase {
+    func testVerdictUsesTheHouseholdRow() {
+        let rows = [Qualify.Row(beds: 2, rent: 2214, household_size_min: 2, household_size_max: 2, income_min: 80779, income_max: 122130),
+                    Qualify.Row(beds: 2, rent: 2214, household_size_min: 4, household_size_max: 4, income_min: 80779, income_max: 152640)]
+        XCTAssertEqual(Qualify.verdict(rows: rows, household: 2, income: 140_000), .high)
+        XCTAssertEqual(Qualify.verdict(rows: rows, household: 4, income: 140_000), .yes)
+        XCTAssertEqual(Qualify.verdict(rows: rows, household: 2, income: 50_000), .low)
+        XCTAssertEqual(Qualify.verdict(rows: [], household: 2, income: 50_000), .unknown)
+    }
+
+    @MainActor
+    func testAISearchFiltersBecomeAQuery() throws {
+        let json = #"{"filters":{"boroughs":[],"nbs":["Park Slope"],"pmin":null,"pmax":2500,"beds":[2,5],"listed":"yes","s8":null,"viol":"none"},"explain":["x"],"used_ai":true}"#
+        let r = try JSONDecoder().decode(AISearchResult.self, from: Data(json.utf8))
+        let q = AIService.query(from: r.filters)
+        XCTAssertEqual(q.maxPrice, 2500)
+        XCTAssertEqual(q.beds, [2, 4])
+        XCTAssertTrue(q.availableOnly)
+        XCTAssertTrue(q.noOpenViolations)
+        XCTAssertEqual(q.locations, [.neighborhood("Park Slope")])
+    }
+
+    @MainActor
+    func testCitationsReadAsWords() {
+        XCTAssertEqual(AIService.readable("5 open [hpd_violations]."), "5 open (HPD violations).")
+    }
+}

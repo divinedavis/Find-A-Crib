@@ -66,10 +66,10 @@ struct ProfileView: View {
                                 Button { Task { await plus.manage() } } label: {
                                     Text("Manage subscription").font(.se(17, .semibold)).foregroundStyle(SE.royal)
                                 }.buttonStyle(.plain)
-                            } else if !AuthService.featuresFree {   // no Plus offer while everything is free (2026-10-01)
+                            } else {   // Plus = the AI features (2026-10-03)
                                 SEPrimaryButton(title: "Get Find A Crib Plus · \(plus.priceText)/mo", icon: "star.fill", fill: SE.navy) { showPaywall = true }
                                     .accessibilityIdentifier("get-plus")
-                                Text("Managing-agent phone numbers, saved searches, listing alerts.")
+                                Text("Plain-language search, landlord report cards, Ask about a building, Help me apply, no ads.")
                                     .font(.se(15)).foregroundStyle(SE.ink3)
                             }
                         } else if auth.configured {

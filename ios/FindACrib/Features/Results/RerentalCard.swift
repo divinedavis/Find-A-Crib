@@ -9,6 +9,7 @@ struct RerentalCard: View {
     /// Which re-rental slot of the feed this is (0 = the 3rd tile), for the funnel.
     var slot: Int = 0
     @Environment(\.openURL) private var openURL
+    @State private var showApply = false
 
     var body: some View {
         let f = listing
@@ -53,6 +54,14 @@ struct RerentalCard: View {
 
                 if !bits.isEmpty { Text(bits.joined(separator: " · ")).font(.se(18)).foregroundStyle(SE.ink2).lineLimit(1) }
 
+                if let v = Qualify.shared.verdict(for: f) { QualifyBadge(verdict: v) }
+                if let t = Qualify.shared.units[f.href] {
+                    if t.first_come_first_served == true { Text("⏱ First come, first served").font(.se(15, .semibold)).foregroundStyle(SE.ink2) }
+                    if let d = t.deadline { Text("Apply by \(d)").font(.se(15, .semibold)).foregroundStyle(SE.ink2) }
+                    ForEach(t.flags ?? [], id: \.code) { fl in
+                        Label("Check carefully: \(fl.why)", systemImage: "exclamationmark.triangle.fill").font(.se(14, .semibold)).foregroundStyle(SE.warn)
+                    }
+                }
                 (Text("Listed by ").font(.se(18)) + Text(f.agent).font(.se(18, .bold)) + Text(f.agent.localizedCaseInsensitiveContains("Housing Development Corporation") ? " — the city's affordable-housing finance agency" : " — an HPD-approved marketing agent").font(.se(18)))
                     .foregroundStyle(SE.ink2)
 
@@ -87,6 +96,16 @@ struct RerentalCard: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.top, 10)
+                Button { showApply = true } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "doc.text").font(.system(size: 15, weight: .bold))
+                        Text("Help me apply").font(.se(17, .bold))
+                        PlusTag()
+                    }.foregroundStyle(SE.royal).frame(maxWidth: .infinity).frame(height: 44)
+                        .overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.line))
+                }
+                .buttonStyle(.plain).accessibilityIdentifier("rerental-apply-help")
+                .sheet(isPresented: $showApply) { ApplyHelpSheet(listing: f) }
             }
             .padding(18)
         }
@@ -94,6 +113,7 @@ struct RerentalCard: View {
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("rerental-card")
         .onAppear { Analytics.shared.tileSeen(f, slot: slot) }
+        .task { await Qualify.shared.loadUnits() }
     }
 
     /// A building name above the address, when it adds something ("Forten at

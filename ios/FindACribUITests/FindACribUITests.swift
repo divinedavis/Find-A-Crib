@@ -500,22 +500,22 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.buttons["city-field"].exists, "and leaves Search where it was")
     }
 
-    /// The app's Plus paywall (owner, 2026-10-01): four perks — alerts left
-    /// Plus the same day — and NO invite-a-friend route (App Review 3.1.1;
-    /// referrals live on the website).
-    func testPaywallFourPerksNoInvite() throws {
+    /// The app's Plus paywall: since 2026-10-03 Plus is the AI features (plus
+    /// no ads) while everything else is free — and NO invite-a-friend route
+    /// (App Review 3.1.1; referrals live on the website).
+    func testPaywallAIPerksNoInvite() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--paywall"]
         app.launch()
-        XCTAssertTrue(app.staticTexts["Bedbug records"].waitForExistence(timeout: 15), "the Plus paywall opens with its perks")
-        for perk in ["Rodent records", "Agent phone numbers", "No ads"] {
+        XCTAssertTrue(app.staticTexts["Search in plain words"].waitForExistence(timeout: 15), "the Plus paywall opens with its perks")
+        for perk in ["Landlord report card", "Ask about this building", "Help me apply", "Is this rent fair?", "No ads"] {
             XCTAssertTrue(app.staticTexts[perk].exists, "paywall perk missing: \(perk)")
         }
         // Scope to the paywall sheet: Profile (behind it) has its own "Saved
         // searches" row, which is not a paywall perk (build 104).
-        let sheet = app.scrollViews.containing(.staticText, identifier: "Bedbug records").firstMatch
+        let sheet = app.scrollViews.containing(.staticText, identifier: "Search in plain words").firstMatch
         XCTAssertTrue(sheet.exists, "the paywall's scroll view")
-        for gone in ["Lottery alerts", "Re-rental alerts", "Saved searches", "Landlord research", "Folders", "Your lotteries & re-rentals"] {
+        for gone in ["Bedbug records", "Rodent records", "Agent phone numbers", "Lottery alerts", "Re-rental alerts", "Saved searches", "Landlord research", "Folders", "Your lotteries & re-rentals"] {
             XCTAssertFalse(sheet.staticTexts[gone].exists, "unlisted perk on the paywall: \(gone)")
         }
         XCTAssertFalse(app.buttons["paywall-refer"].exists, "no in-app invite-a-friend button (App Review 3.1.1)")

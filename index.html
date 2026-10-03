@@ -5230,6 +5230,26 @@ function favActive() {
   try { QUAL = JSON.parse(localStorage.getItem('fac.qualify') || 'null'); } catch (e) {}
   if (IS_NYC) fetch('/featured_units.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null)
     .then(d => { if (d && d.listings) { UNITS = d.listings; paintQualify(); } }).catch(() => {});
+  // What the flyer reader found on each re-rental's own page: first come,
+  // first served, a deadline, and any scam-rule warning (2026-10-03).
+  function paintFlyerFacts() {
+    document.querySelectorAll('.feat-card').forEach(card => {
+      if (card.querySelector('.feat-facts')) return;
+      const t = UNITS[card.dataset.featHref];
+      if (!t) return;
+      const bits = [];
+      if (t.first_come_first_served) bits.push('⏱ First come, first served');
+      if (t.deadline) bits.push('Apply by ' + esc(t.deadline));
+      const warn = (t.flags || []).map(f => esc(f.why));
+      if (!bits.length && !warn.length) return;
+      const div = document.createElement('div');
+      div.className = 'feat-facts';
+      div.innerHTML = (bits.length ? `<div class="units-line">${bits.join(' · ')}</div>` : '')
+        + (warn.length ? `<div class="units-line" style="color:var(--warn-ink)">⚠️ Check carefully: ${warn.join('; ')}</div>` : '');
+      const anchor = card.querySelector('.feat-agent');
+      if (anchor) anchor.after(div);
+    });
+  }
   const fits = (inc, lo, hi) => (lo == null || inc >= lo) && (hi == null || inc <= hi);
   function verdictRows(rows, hh, inc) {
     const forHh = rows.filter(r => (r.household_size_min == null || hh >= r.household_size_min) && (r.household_size_max == null || hh <= r.household_size_max));
@@ -5250,6 +5270,7 @@ function favActive() {
   }
   const QUAL_WORDS = { yes: '✅ You qualify', high: 'Income above the limit', low: 'Income below the minimum', unknown: 'Check the listing’s income limits' };
   function paintQualify() {
+    paintFlyerFacts();
     // Signed in on a new device: pick up what the account remembers.
     if (!QUAL && authUser && authUser.user_metadata && authUser.user_metadata.qualify) QUAL = authUser.user_metadata.qualify;
     const pill = document.getElementById('pill-qualify-text');
@@ -5272,7 +5293,7 @@ function favActive() {
   // New tiles arrive as the list grows: badge them as they land.
   if (IS_NYC && typeof MutationObserver !== 'undefined') {
     let qT = null;
-    new MutationObserver(() => { if (!QUAL) return; clearTimeout(qT); qT = setTimeout(paintQualify, 120); })
+    new MutationObserver(() => { clearTimeout(qT); qT = setTimeout(paintQualify, 120); })
       .observe(document.getElementById('grid') || document.body, { childList: true, subtree: true });
   }
   {

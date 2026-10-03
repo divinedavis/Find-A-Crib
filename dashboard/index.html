@@ -727,6 +727,14 @@
           <div class="callout" id="mc-late-callout" style="margin-top:16px"></div>
         </div>
 
+        <!-- MetricKit: how the app performs on real iPhones -->
+        <div class="card mb18" id="sec-mc-perf">
+          <div class="card-head-row">
+            <div><h2>iPhone performance — real devices</h2><div class="card-sub">Apple’s own daily report from each iPhone running the app (MetricKit): how long it takes from tap to first screen, how long it freezes, peak memory, and crash and hang reports. By build, the last 90 days; not cut by the date picker. Reports start arriving a day after a build is installed.</div></div>
+          </div>
+          <div id="mc-perf"></div>
+        </div>
+
         <!-- the iPhone app -->
         <div class="card mb18" id="sec-mc-app">
           <div class="card-head-row">
@@ -3073,6 +3081,16 @@
       : (!n(S.orders)
           ? '<b>'+comma(n(S.accounts))+' shopper'+(n(S.accounts)===1?' has':'s have')+' signed in, and none has placed an order in this range.</b>'
           : '<b>'+comma(n(S.orders))+' order'+(n(S.orders)===1?'':'s')+' worth '+usd(S.gmv_usd)+'</b> sent to '+comma(n(S.brands))+' brand'+(n(S.brands)===1?'':'s')+'.');
+
+    // ---- MetricKit -------------------------------------------------------
+    var perf=d.performance||[];
+    var ms=function(v){ return v==null?'—':(v>=1000?(v/1000).toFixed(2)+' s':Math.round(v)+' ms'); };
+    el('mc-perf').innerHTML = perf.length
+      ? '<div class="at-table" style="font-size:13px"><div><table><thead><tr><th>Build</th><th>iPhones</th><th>Tap to first screen</th><th>Typical freeze</th><th>Peak memory</th><th>Crashes</th><th>Hangs</th></tr></thead><tbody>'+
+        perf.map(function(b){
+          return '<tr><td>'+esc(b.build)+'</td><td>'+comma(n(b.devices))+'</td><td>'+ms(b.launch_ms)+(n(b.launches)?' <span class="t-own">('+comma(n(b.launches))+' launches)</span>':'')+'</td><td>'+ms(b.hang_ms)+'</td><td>'+(b.peak_memory_mb==null?'—':comma(n(b.peak_memory_mb))+' MB')+'</td><td>'+comma(n(b.crashes))+'</td><td>'+comma(n(b.hangs))+'</td></tr>';
+        }).join('')+'</tbody></table></div></div>'
+      : '<div class="disclaim">No reports yet. iOS sends the first one about a day after a build with MetricKit (build 94 on) is installed and used.</div>';
 
     // ---- late shipments ---------------------------------------------------
     var L=d.late||{}, lateBrands=L.brands||[];

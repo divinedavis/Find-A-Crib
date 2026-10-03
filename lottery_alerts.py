@@ -253,10 +253,46 @@ def gather():
     hcr = load_json("hcr.json")
     rr = load_json("rerental_new.json")
     s8 = load_json("s8.json")
+    rr_items = rerental_items(rr) if rr is not None else None
+    if rr_items:
+        enrich_rerentals(rr_items, (load_json("featured_units.json") or {}).get("listings") or {})
     return {"hc": hc_items(hc) if hc is not None else None,
             "hcr": hcr_items(hcr) if hcr is not None else None,
-            "rr": rerental_items(rr) if rr is not None else None,
+            "rr": rr_items,
             "s8": voucher_items(s8) if s8 is not None else None}
+
+
+def enrich_rerentals(items, units_by_href):
+    """Smarter alerts (2026-10-03): give each re-rental the unit table the
+    flyer reader pulled off its own page — income limits per household size,
+    first come first served — so the income filter can finally bite on
+    re-rentals (the boards themselves "mostly state nothing")."""
+    for i in items:
+        t = units_by_href.get(i.get("url") or "")
+        if not t:
+            continue
+        rows = [u for u in t.get("units") or [] if u.get("income_min") or u.get("income_max")]
+        if rows:
+            i["units"] = rows
+            lo = [u["income_min"] for u in rows if u.get("income_min")]
+            hi = [u["income_max"] for u in rows if u.get("income_max")]
+            i["income_min"] = min(lo) if lo else i.get("income_min")
+            i["income_max"] = max(hi) if hi else i.get("income_max")
+        if t.get("first_come_first_served"):
+            i["fcfs"] = True
+            i["sub"] = (i.get("sub") or "") + " · first come, first served"
+
+
+def qualifies(sub, item):
+    """True/False when the subscriber's income (and household, if given) can
+    be checked against the listing's own table; None when it can't."""
+    inc, hh = sub.get("income"), sub.get("household_size")
+    rows = item.get("units")
+    if not inc or not rows:
+        return None
+    if hh:
+        rows = [u for u in rows if (u.get("household_size_min") or 1) <= hh <= (u.get("household_size_max") or 99)] or rows
+    return any((not u.get("income_min") or inc >= u["income_min"]) and (not u.get("income_max") or inc <= u["income_max"]) for u in rows)
 
 
 # ------------------------------------------------------------------ state
@@ -576,10 +612,12 @@ def digest_off_urls(token):
 
 def sort_for_reading(items):
     """Lotteries first, soonest deadline first; then re-rentals and voucher
-    listings in feed order. Undated lotteries sink below dated ones."""
+    listings in feed order. Undated lotteries sink below dated ones. Within
+    re-rentals, first-come-first-served ones lead (2026-10-03): those are the
+    ones where hours matter."""
     def key(i):
         rank = {"lottery": 0, "rerental": 1, "voucher": 2}.get(i["kind"], 3)
-        return (rank, i.get("closes") or "9999-99-99")
+        return (rank, 0 if i.get("fcfs") else 1, i.get("closes") or "9999-99-99")
     return sorted(items, key=key)
 
 
@@ -625,7 +663,7 @@ def render_roundup(sub, emailkit, *, eyebrow, title, intro, sections, cta_label,
 
 
 def subscriber_rows(key):
-    subs = rpc("lottery_alerts_recipients", {}, key) or []
+    subs = with_households(rpc("lottery_alerts_recipients", {}, key) or [], key)
     for sub in subs:
         sub["boroughs"] = list(sub.get("boroughs") or [])
         sub["kinds"] = list(sub.get("kinds") or ["lottery", "rerental"])
@@ -789,6 +827,19 @@ def weekly(args_dry=False, test_email=None):
     print(f"weekly sent {sent}")
 
 
+def with_households(subs, key):
+    """Household sizes ride on a separate RPC (db/0047) so the recipients
+    function's shape — read by every sender — stays as it is."""
+    try:
+        hh = {r["email"]: r["household_size"] for r in rpc("lottery_alerts_households", {}, key) or []}
+    except Exception:
+        hh = {}
+    for s_ in subs:
+        if s_.get("email") in hh:
+            s_["household_size"] = hh[s_["email"]]
+    return subs
+
+
 def wants(sub, item):
     if item["kind"] not in sub["kinds"]:
         return False
@@ -809,6 +860,9 @@ def wants(sub, item):
         return False
     inc = sub.get("income")
     if inc:
+        q = qualifies(sub, item)
+        if q is not None:            # the listing's own table, by household size
+            return q
         lo, hi = item.get("income_min"), item.get("income_max")
         if lo and inc < lo:
             return False
@@ -897,7 +951,7 @@ def main():
     if not key:
         sys.exit("SUPABASE_SERVICE_KEY not set (growth.env)")
     try:
-        subs = rpc("lottery_alerts_recipients", {}, key) or []
+        subs = with_households(rpc("lottery_alerts_recipients", {}, key) or [], key)
     except urllib.error.URLError as e:
         # Do NOT save state: the items stay "new" for the next run, which is
         # what "the minute it opens" has to mean when the subscriber list is
@@ -1009,7 +1063,7 @@ def welcome(args_dry=False):
     key = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
     if not key:
         sys.exit("SUPABASE_SERVICE_KEY not set (growth.env)")
-    subs = rpc("lottery_alerts_recipients", {}, key) or []
+    subs = with_households(rpc("lottery_alerts_recipients", {}, key) or [], key)
     todo = [s for s in subs if not s.get("welcomed_at")][:50]
     done = []
     for sub in todo:

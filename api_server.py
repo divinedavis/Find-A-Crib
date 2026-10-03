@@ -544,6 +544,14 @@ def alerts_subscribe():
         res = rpc("lottery_alerts_subscribe",
                   {"p_email": email, "p_boroughs": boros, "p_kinds": kinds,
                    "p_max_rent": max_rent, "p_income": income}) or {}
+        # Household size (2026-10-03, db/0047): optional, 1-12; lets the
+        # sender check a re-rental's flyer income limits for the right row.
+        try:
+            hh = int((request.get_json(silent=True) or {}).get("household_size") or 0)
+        except (TypeError, ValueError):
+            hh = 0
+        if res.get("ok") and 1 <= hh <= 12:
+            rpc("lottery_alerts_set_household", {"p_email": email, "p_household": hh})
     except Exception:
         return jsonify(error="temporarily_unavailable"), 503
     if not res.get("ok"):
@@ -882,6 +890,10 @@ def alerts_prefs():
     res["ok"] = True
     res["email"] = email
     res["plus_required"] = False   # alerts need no Plus since 2026-10-01; old builds read it
+    try:
+        res["household_size"] = rpc("lottery_alerts_household", {"p_email": email})
+    except Exception:
+        res["household_size"] = None
     return jsonify(res)
 
 

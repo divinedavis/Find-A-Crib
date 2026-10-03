@@ -243,6 +243,8 @@
           <input id="max_rent" type="text" inputmode="numeric" placeholder="e.g. 2000" autocomplete="off" /></label>
         <label class="num"><span>Household income, $/year</span>
           <input id="income" type="text" inputmode="numeric" placeholder="e.g. 65000" autocomplete="off" /></label>
+        <label class="num"><span>People in your household</span>
+          <select id="household_size"><option value="">—</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option></select></label>
       </div>
     </div>
 
@@ -340,6 +342,7 @@
               document.querySelectorAll('#kinds input').forEach(function (i) { i.checked = (j.kinds || []).indexOf(i.value) >= 0; });
               if (j.max_rent) $('max_rent').value = j.max_rent;
               if (j.income) $('income').value = j.income;
+              if (j.household_size) $('household_size').value = String(j.household_size);
               $('submit').textContent = 'Save changes';
               $('submit').dataset.editing = '1';
               var note = $('editing-note'); if (note) { note.hidden = false; }
@@ -388,7 +391,8 @@
     var btn = $('submit'); btn.disabled = true; btn.textContent = 'Saving…';
     fetch('/api/alerts/subscribe', {
       method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (sessToken || '') },
-      body: JSON.stringify({ email: email, boroughs: boros, kinds: kinds, max_rent: maxRent, income: income })
+      body: JSON.stringify({ email: email, boroughs: boros, kinds: kinds, max_rent: maxRent, income: income,
+                             household_size: +($('household_size').value || 0) || null })
     }).then(function (r) { return r.json().then(function (j) { return { s: r.status, j: j }; }); })
       .then(function (x) {
         if (x.j && x.j.ok) {

@@ -23,7 +23,7 @@ the run stops at 90% of the cap.
 
   /root/findacrib-api/venv/bin/python flyer_reader.py [--docroot DIR] [--limit N] [--dry-run]
 """
-import argparse, base64, datetime, hashlib, json, os, sys, urllib.request
+import argparse, base64, datetime, hashlib, json, os, re, sys, urllib.request
 
 import claude_features as cf
 import listing_page
@@ -63,6 +63,36 @@ SCHEMA = {
     "required": ["units", "deadline", "first_come_first_served", "how_to_apply"],
     "additionalProperties": False,
 }
+
+
+# Scam spotting (owner's AI/ML list item 9, 2026-10-03). Rules, not a model:
+# the signs NYC's own rental-scam guidance names. A flag is a warning on the
+# tile ("check carefully"), never a hidden listing — these are HPD-approved
+# agents, and a real one can use a Gmail address.
+SCAM_RULES = [
+    ("payment_app", re.compile(r"\b(zelle|cash ?app|venmo|western union|moneygram|wire transfer|gift ?cards?|bitcoin|crypto(currency)?)\b", re.I),
+     "asks for payment by app, wire, gift card or crypto"),
+    ("pay_before_viewing", re.compile(r"\b(deposit|fee|payment)\b[^.]{0,60}\b(before|prior to)\b[^.]{0,30}\b(view|viewing|showing|tour|see(ing)? the)\b", re.I),
+     "asks for money before you see the apartment"),
+    ("personal_email", re.compile(r"[\w.+-]+@(gmail|yahoo|hotmail|outlook|aol|icloud|proton(mail)?)\.(com|me)\b", re.I),
+     "contact is a personal email address, not the agent's"),
+    ("no_lease_cash", re.compile(r"\b(cash only|no lease|no paperwork|no credit check needed)\b", re.I),
+     "cash only, no lease or no paperwork"),
+]
+
+
+def scam_flags(text):
+    return [{"code": code, "why": why} for code, rx, why in SCAM_RULES if rx.search(text or "")]
+
+
+def source_text(listing):
+    href = listing["href"]
+    if href.lower().split("?")[0].endswith(".pdf") or listing.get("href_kind") == "flyer":
+        try:
+            return pdf_source(href)[0]
+        except Exception:
+            return ""
+    return listing_page.text_of(href)
 
 
 def rest(path, method="GET", body=None, prefer=None):
@@ -179,6 +209,27 @@ def main():
              {"feature": "flyer", "key": key, "payload": out, "created_at": datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).isoformat() + "Z"},
              prefer="resolution=merge-duplicates,return=minimal")
         print(f"  read {l.get('address', '')[:40]:40}  {len(out['units'])} unit rows  verified={out['verified']}")
+    # Scam rules over every linked listing (cheap: no model), plus the same
+    # apartment posted by more than one agent.
+    addr_agents = {}
+    for l in listings:
+        k = re.sub(r"[^a-z0-9]", "", (l.get("address") or "").lower())[:24]
+        if k:
+            addr_agents.setdefault(k, set()).add(l.get("agent"))
+    flagged = 0
+    for l in listings:
+        href = l.get("href")
+        if not href or l.get("href_kind") == "agent_page" or a.dry_run:
+            continue
+        flags = scam_flags(source_text(l))
+        k = re.sub(r"[^a-z0-9]", "", (l.get("address") or "").lower())[:24]
+        if k and len(addr_agents.get(k, ())) > 1:
+            flags.append({"code": "multiple_agents", "why": "the same address is listed by more than one agent"})
+        entry = table.setdefault(href, {"units": [], "verified": False, "first_come_first_served": False,
+                                        "deadline": None, "how_to_apply": None})
+        entry["flags"] = flags
+        flagged += bool(flags)
+    print(f"flyer_reader: {flagged} listings flagged by the scam rules")
     if not a.dry_run:
         path = os.path.join(a.docroot, "featured_units.json")
         with open(path + ".tmp", "w") as f:

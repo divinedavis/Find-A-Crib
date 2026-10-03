@@ -1379,6 +1379,12 @@
   .rentcheck-card .rc-note { color: var(--ink-2); font-size: 12.5px; margin-top: 6px; }
   .ac-item.ac-ai .ac-addr { color: var(--blue); }
   .paywall-feats li[hidden] { display: none; }
+  .qual-badge { display: inline-block; margin-top: 6px; font-size: 12.5px; font-weight: 800; border-radius: 999px; padding: 3px 9px; }
+  .qual-badge.q-yes { background: var(--ok-bg); color: var(--ok-ink); }
+  .qual-badge.q-high, .qual-badge.q-low { background: var(--warn-bg); color: var(--warn-ink); }
+  .qual-badge.q-unknown { background: var(--surface); color: var(--ink-2); border: 1px solid var(--line); }
+  #qualify-modal .q-row { display: flex; gap: 10px; margin: 10px 0; }
+  #qualify-modal select, #qualify-modal input { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 10px; padding: 10px; font-size: 16px; background: var(--surface); color: var(--ink); }
   .ai-box { padding: 4px 18px 14px; }
   .ai-btns { display: flex; flex-wrap: wrap; gap: 8px; }
   .ai-btns .d-rentcheck { margin-top: 0; }
@@ -1551,6 +1557,7 @@
     <div class="chip-row">
     <!-- Resume your last search (2026-10-03): a chip, never a popup. -->
     <div class="filter-pill" id="pill-resume" role="button" tabindex="0" hidden title="Pick up the search you had last time">↩ <span id="pill-resume-text">Resume</span></div>
+    <div class="filter-pill nyc-only" id="pill-qualify" role="button" tabindex="0" title="Household size and income: see which lotteries and re-rentals you qualify for">✅ <span id="pill-qualify-text">What do I qualify for?</span></div>
     <div class="filter-pill toggle-pill nyc-only" id="pill-home" role="button" tabindex="0" hidden title="Your own building: status, violations, landlord, and what changed since your last visit">🏠 My apartment</div>
     <div class="filter-pill toggle-pill" id="pill-fav" role="button" tabindex="0">
       <span class="fav-heart">♡</span> Saved <span class="count-badge" id="badge-fav" style="display:none">0</span>
@@ -1746,6 +1753,20 @@
     <div class="auth-toggle"><span id="auth-toggle-text">No account?</span> <a id="auth-switch" href="#">Create one</a>
       <span id="auth-forgot-wrap"> · <a id="auth-forgot" href="#">Forgot password?</a></span></div>
     <div class="auth-legal">By continuing you agree to our <a href="/terms.html" target="_blank" rel="noopener">Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</div>
+  </div>
+</div>
+<!-- Qualify-check (free, 2026-10-03) -->
+<div id="qualify-modal" class="auth-backdrop" hidden>
+  <div class="auth-card">
+    <button class="auth-close" data-qualify="close" aria-label="Close">✕</button>
+    <h2>What do I qualify for?</h2>
+    <p class="auth-sub">Lotteries and re-rentals have income limits by household size. Tell us yours and every listing says whether you’re in range. Kept on this device (and your account, if you’re signed in).</p>
+    <div class="q-row">
+      <select id="q-hh" aria-label="People in your household"><option value="1">1 person</option><option value="2">2 people</option><option value="3">3 people</option><option value="4">4 people</option><option value="5">5 people</option><option value="6">6 people</option><option value="7">7 people</option><option value="8">8 people</option></select>
+      <input id="q-income" inputmode="numeric" placeholder="Yearly household income, $" aria-label="Yearly household income">
+    </div>
+    <button id="q-save" class="auth-submit" type="button">Show what I qualify for</button>
+    <p class="paywall-fine"><a href="#" id="q-clear">Clear</a></p>
   </div>
 </div>
 <!-- Find A Crib Plus paywall -->
@@ -5200,6 +5221,89 @@ function favActive() {
     track('apply_help_result', Object.assign(featProps(card), { cached: !!j.cached, page_read: !!j.page_read, has_email: !!c.email }));
   }
 
+  // ---------- qualify-check (free, owner 2026-10-03) ----------
+  // Household size + yearly income, once; every lottery and re-rental tile
+  // then says whether it's in range. Re-rentals read the unit tables the
+  // flyer reader pulls from each listing (featured_units.json); lotteries
+  // carry their own income band and household sizes.
+  let QUAL = null, UNITS = {};
+  try { QUAL = JSON.parse(localStorage.getItem('fac.qualify') || 'null'); } catch (e) {}
+  if (IS_NYC) fetch('/featured_units.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null)
+    .then(d => { if (d && d.listings) { UNITS = d.listings; paintQualify(); } }).catch(() => {});
+  const fits = (inc, lo, hi) => (lo == null || inc >= lo) && (hi == null || inc <= hi);
+  function verdictRows(rows, hh, inc) {
+    const forHh = rows.filter(r => (r.household_size_min == null || hh >= r.household_size_min) && (r.household_size_max == null || hh <= r.household_size_max));
+    const pool = (forHh.length ? forHh : rows).filter(r => r.income_min != null || r.income_max != null);
+    if (!pool.length) return 'unknown';
+    if (pool.some(r => fits(inc, r.income_min, r.income_max))) return 'yes';
+    if (pool.every(r => r.income_max != null && inc > r.income_max)) return 'high';
+    if (pool.every(r => r.income_min != null && inc < r.income_min)) return 'low';
+    return 'unknown';
+  }
+  function featVerdict(href) {
+    const f = FEATURED.find(x => x.href === href) || {};
+    const t = UNITS[href];
+    if (t && t.units && t.units.length) return verdictRows(t.units, QUAL.hh, QUAL.income);
+    if (f.money_kind === 'income' && (f.money_low || f.money_high)) return fits(QUAL.income, f.money_low, f.money_high) ? 'yes' : (QUAL.income > (f.money_high || Infinity) ? 'high' : 'low');
+    if (f.income_1p_max && QUAL.hh === 1) return QUAL.income <= f.income_1p_max ? 'yes' : 'high';
+    return 'unknown';
+  }
+  const QUAL_WORDS = { yes: '✅ You qualify', high: 'Income above the limit', low: 'Income below the minimum', unknown: 'Check the listing’s income limits' };
+  function paintQualify() {
+    // Signed in on a new device: pick up what the account remembers.
+    if (!QUAL && authUser && authUser.user_metadata && authUser.user_metadata.qualify) QUAL = authUser.user_metadata.qualify;
+    const pill = document.getElementById('pill-qualify-text');
+    if (pill) pill.textContent = QUAL ? `${QUAL.hh} ${QUAL.hh === 1 ? 'person' : 'people'} · $${Math.round(QUAL.income / 1000)}k` : 'What do I qualify for?';
+    document.querySelectorAll('.feat-card, .hc-card').forEach(card => {
+      let b = card.querySelector('.qual-badge');
+      if (!QUAL) { if (b) b.remove(); return; }
+      let v;
+      if (card.classList.contains('feat-card')) v = featVerdict(card.dataset.featHref);
+      else {
+        const lo = +card.dataset.incMin || null, hi = +card.dataset.incMax || null;
+        const hlo = +card.dataset.hhMin || null, hhi = +card.dataset.hhMax || null;
+        if (hlo && QUAL.hh < hlo || hhi && QUAL.hh > hhi) v = 'unknown';
+        else v = (lo || hi) ? (fits(QUAL.income, lo, hi) ? 'yes' : (hi && QUAL.income > hi ? 'high' : 'low')) : 'unknown';
+      }
+      if (!b) { b = document.createElement('div'); (card.querySelector('.body') || card).prepend(b); }
+      b.className = 'qual-badge q-' + v; b.textContent = QUAL_WORDS[v];
+    });
+  }
+  // New tiles arrive as the list grows: badge them as they land.
+  if (IS_NYC && typeof MutationObserver !== 'undefined') {
+    let qT = null;
+    new MutationObserver(() => { if (!QUAL) return; clearTimeout(qT); qT = setTimeout(paintQualify, 120); })
+      .observe(document.getElementById('grid') || document.body, { childList: true, subtree: true });
+  }
+  {
+    const modal = document.getElementById('qualify-modal');
+    const open = () => {
+      if (QUAL) { document.getElementById('q-hh').value = String(QUAL.hh); document.getElementById('q-income').value = String(QUAL.income); }
+      modal.hidden = false; track('qualify_open', { set: !!QUAL });
+    };
+    const pill = document.getElementById('pill-qualify');
+    if (pill) { pill.addEventListener('click', open); pill.addEventListener('keydown', e => { if (e.key === 'Enter') open(); }); }
+    modal.addEventListener('click', e => { if (e.target === modal || e.target.closest('[data-qualify="close"]')) modal.hidden = true; });
+    document.getElementById('q-save').addEventListener('click', () => {
+      const hh = +document.getElementById('q-hh').value || 1;
+      const income = +String(document.getElementById('q-income').value).replace(/[^\d.]/g, '');
+      if (!income || income < 1000) { document.getElementById('q-income').focus(); return; }
+      QUAL = { hh, income: Math.round(income) };
+      try { localStorage.setItem('fac.qualify', JSON.stringify(QUAL)); } catch (e) {}
+      if (authUser && supaClient) supaClient.auth.updateUser({ data: { qualify: QUAL } }).catch(() => {});
+      modal.hidden = true; paintQualify();
+      const counts = { yes: 0, high: 0, low: 0, unknown: 0 };
+      document.querySelectorAll('.qual-badge').forEach(b => { const k = (b.className.match(/q-(\w+)/) || [])[1]; if (k in counts) counts[k]++; });
+      track('qualify_set', Object.assign({ hh }, counts));
+    });
+    document.getElementById('q-clear').addEventListener('click', e => {
+      e.preventDefault(); QUAL = null;
+      try { localStorage.removeItem('fac.qualify'); } catch (err) {}
+      if (authUser && supaClient) supaClient.auth.updateUser({ data: { qualify: null } }).catch(() => {});
+      modal.hidden = true; paintQualify(); track('qualify_clear', null);
+    });
+  }
+
   function applyAIFilters(f) {
     const fire = el => el && el.dispatchEvent(new Event('change', { bubbles: true }));
     const radio = (name, v) => { const r = document.querySelector('input[name="' + name + '"][value="' + v + '"]'); if (r && !r.checked) { r.checked = true; fire(r); } };
@@ -6099,6 +6203,7 @@ function favActive() {
       if (!d || !Array.isArray(d.listings) || !d.listings.length) return;
       FEATURED = d.listings;
       feedArrived();                               // they arrived after the first paint
+      paintQualify();
     })
     .catch(() => { /* no featured feed today: the grid is unchanged */ });
 
@@ -6140,7 +6245,7 @@ function favActive() {
     if (f.beds) bits.push(f.beds === 'studio' ? 'Studio' : f.beds + '-bed');
     if (f.units) bits.push(f.units + (f.units === 1 ? ' unit' : ' units'));
     if (f.zip) bits.push('ZIP ' + esc(f.zip));
-    return `<div class="card feat-card" data-feat-agent="${esc(f.agent)}" data-feat-addr="${esc(f.address)}"
+    return `<div class="card feat-card" data-feat-href="${esc(f.href || '')}" data-feat-agent="${esc(f.agent)}" data-feat-addr="${esc(f.address)}"
          data-feat-boro="${esc(f.borough || '')}" data-feat-kind="${esc(f.href_kind || 'listing')}" data-feat-slot="${slot}">
       <span class="feat-flag">Featured</span>
       <div class="photo">
@@ -6260,7 +6365,8 @@ function favActive() {
     const left = d == null ? '' :
       `<span class="hc-days${urgent ? ' urgent' : ''}">${d === 1 ? 'Closes tomorrow' : 'Closes in ' + d + ' days'}</span>`;
     if (left) bits.unshift(left);        // first, so a narrow tile never cuts it off
-    return `<div class="card hc-card" data-hc-name="${esc(h.name || h.address || 'Housing Connect lottery')}" data-hc-boro="${esc(h.borough || '')}" data-hc-href="${esc(h.href || '')}">
+    return `<div class="card hc-card" data-hc-name="${esc(h.name || h.address || 'Housing Connect lottery')}" data-hc-boro="${esc(h.borough || '')}" data-hc-href="${esc(h.href || '')}"
+         data-inc-min="${esc(String(h.income_min || ''))}" data-inc-max="${esc(String(h.income_max || ''))}" data-hh-min="${esc(String(h.household_min || ''))}" data-hh-max="${esc(String(h.household_max || ''))}">
       <span class="hc-flag">Housing Connect</span>
       <div class="photo${PHOTO_PREVIEW?.provider === 'apple' ? ' apple-photo' : ''}">
         ${PHOTO_PREVIEW?.html(h) || ''}

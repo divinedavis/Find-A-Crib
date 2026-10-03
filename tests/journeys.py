@@ -117,6 +117,7 @@ JOURNEY_EVENTS = {
     'plus_gates':           ['outbound'],
     'resume_search':        ['resume_offer', 'resume_apply'],
     'ai_features':          ['ai_search_click', 'paywall_view'],
+    'qualify':              ['qualify_open', 'qualify_set', 'qualify_clear'],
     # home_set / home_open / home_clear are pre-2026-09-06 history: the
     # my-apartment pin was retired from the UI that day (no sheet button, no
     # profile row, no pill) and the code left dormant. Nothing to cover.
@@ -1583,6 +1584,25 @@ class Runner:
             page.evaluate("(async () => { try { await supaClient.auth.signOut() } catch (e) {} })()"); time.sleep(0.8)
             supabase_admin('DELETE', f'users/{uid}')
 
+    def j_qualify(self, page, j, device):
+        """Qualify-check (free, owner 2026-10-03): household + income once,
+        and lottery/re-rental tiles get an in-range badge; Clear removes them."""
+        page.evaluate("try { localStorage.removeItem('fac.qualify') } catch (e) {}")
+        self.boot(page)
+        self.ok(not page.evaluate("!!document.querySelector('.qual-badge')"), 'no badges before a household is set', j)
+        page.evaluate("document.getElementById('pill-qualify').click()"); time.sleep(0.4)
+        self.ok(not page.evaluate("document.getElementById('qualify-modal').hidden"), 'the chip opens the qualify form', j)
+        page.select_option('#q-hh', '3'); page.fill('#q-income', '95000')
+        page.evaluate("document.getElementById('q-save').click()"); time.sleep(1.2)
+        self.ok('3 people' in page.evaluate("document.getElementById('pill-qualify-text').textContent"), 'the chip shows the household', j)
+        n = page.evaluate("document.querySelectorAll('.feat-card .qual-badge, .hc-card .qual-badge').length")
+        tiles = page.evaluate("document.querySelectorAll('.feat-card, .hc-card').length")
+        self.ok(tiles == 0 or n == tiles, f'every lottery/re-rental tile gets a badge: {n} of {tiles}', j)
+        page.evaluate("document.getElementById('pill-qualify').click()"); time.sleep(0.3)
+        page.evaluate("document.getElementById('q-clear').click()"); time.sleep(0.5)
+        self.ok(not page.evaluate("!!document.querySelector('.qual-badge')"), 'Clear removes the badges', j)
+        j.notes.append(f'{n} tiles badged')
+
     def j_resume_search(self, page, j, device):
         """Remembered search (owner, 2026-10-03): with nothing saved there is
         no chip; with a saved Brooklyn search the chip offers it, and tapping
@@ -1721,7 +1741,7 @@ class Runner:
     JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'pin_and_list',
                 'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'signin_modal', 'app_chip', 'app_qr_menu', 'boot_is_usable', 'city_chip',
                 'ad_tiles', 'list_follows_zoom', 'plus_no_ads', 'building_page_link', 'remove_ads_chip', 'overlays_clear_ad', 'outbound_links', 'status_chips', 'referral_gate',
-                'rent_report', 'legal_pages', 'comments_gate', 'landlords_gate', 'consent_mode', 'account_delete', 'plus_gates', 'resume_search', 'ai_features']
+                'rent_report', 'legal_pages', 'comments_gate', 'landlords_gate', 'consent_mode', 'account_delete', 'plus_gates', 'resume_search', 'ai_features', 'qualify']
 
     # ---- run --------------------------------------------------------------
     def run(self):

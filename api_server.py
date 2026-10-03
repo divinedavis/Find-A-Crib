@@ -235,6 +235,7 @@ def gate():
        or request.path.startswith("/developers/") \
        or request.path.startswith("/alerts/") \
        or request.path.startswith("/push/") \
+       or request.path.startswith("/ai/") \
        or request.path == "/geo" \
        or request.path.startswith("/reports/") \
        or request.path.startswith("/embed/") \

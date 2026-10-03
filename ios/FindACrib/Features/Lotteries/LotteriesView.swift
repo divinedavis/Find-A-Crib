@@ -46,6 +46,10 @@ struct LotteriesView: View {
             // five boroughs flash before their own.
             if feed.checked { list } else { checking }
         }
+        // Here, not on the row: on iPad the row sat in a lazy stack that
+        // presented the sheet twice, and "Show" closed only the top copy.
+        .sheet(isPresented: $showQualify) { QualifySheet() }
+        .task { await Qualify.shared.loadUnits() }
         .sheet(isPresented: $showAlerts, onDismiss: { Task { await feed.refresh() } }) { AlertsSheet() }
         // Signed out: sign in first, then straight on to the alerts sheet —
         // unless the account they signed into already has alerts.
@@ -103,8 +107,6 @@ struct LotteriesView: View {
             .foregroundStyle(SE.royal).padding(14).background(Color.white)
         }
         .buttonStyle(.plain).accessibilityIdentifier("qualify-open")
-        .sheet(isPresented: $showQualify) { QualifySheet() }
-        .task { await Qualify.shared.loadUnits() }
     }
 
     @ViewBuilder private var alertsBanner: some View {

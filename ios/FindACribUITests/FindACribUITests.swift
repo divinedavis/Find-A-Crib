@@ -174,6 +174,11 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(income.waitForExistence(timeout: 5))
         income.tap(); income.typeText("85000")
         app.buttons["Show what I qualify for"].tap()
+        // iPad simulator: it runs as if a hardware keyboard were attached
+        // (the software keyboard sits off-screen, y 1254 on a 1210-pt
+        // screen), and the first tap after typing only ends editing — the
+        // toolbar Save behaves the same. One more tap if the sheet is still up.
+        if app.textFields["qualify-income"].waitForExistence(timeout: 2) { app.buttons["Show what I qualify for"].tap() }
         let badge = app.descendants(matching: .any)["qualify-badge"].firstMatch
         XCTAssertTrue(badge.waitForExistence(timeout: 15) || app.descendants(matching: .any)["lotteries-empty"].firstMatch.exists,
                       "lotteries should show a qualify badge once income is set")

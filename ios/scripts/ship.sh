@@ -58,7 +58,10 @@ d=json.load(sys.stdin)
 print(next(iter([v['udid'] for r in d['devices'].values() for v in r if v.get('name','').startswith(sys.argv[1])]), ''))" "$1"
 }
 IPHONE_SIM="${SIMULATOR_ID:-$(sim_named 'iPhone 17 Pro')}"; [[ -n "$IPHONE_SIM" ]] || IPHONE_SIM=$(sim_named 'iPhone')
-IPAD_SIM="${IPAD_SIMULATOR_ID:-$(sim_named 'iPad Pro 11-inch')}"; [[ -n "$IPAD_SIM" ]] || IPAD_SIM=$(sim_named 'iPad')
+# "FAC iPad" is Find A Crib's own (2026-10-03): on the shared "iPad Pro
+# 11-inch" another session's Hidden Gems tests kept launching their app over
+# ours mid-test, failing six iPad tests that pass alone.
+IPAD_SIM="${IPAD_SIMULATOR_ID:-$(sim_named 'FAC iPad')}"; [[ -n "$IPAD_SIM" ]] || IPAD_SIM=$(sim_named 'iPad Pro 11-inch'); [[ -n "$IPAD_SIM" ]] || IPAD_SIM=$(sim_named 'iPad')
 MINI_SIM="${MINI_SIMULATOR_ID:-$(sim_named 'iPad mini')}"
 if [[ "${SHIP_UNIT_ONLY:-0}" == "1" ]]; then
   echo "==> SHIP_UNIT_ONLY: unit tests only on iPhone (no XCUITest, no iPad)"

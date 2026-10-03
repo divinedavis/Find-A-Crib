@@ -350,12 +350,7 @@ struct QualifySheet: View {
                 TextField("Yearly household income, $", text: $income).keyboardType(.numberPad)
                     .font(.se(18)).padding(12).background(Color.white).overlay(RoundedRectangle(cornerRadius: 10).stroke(SE.line))
                     .accessibilityIdentifier("qualify-income")
-                SEPrimaryButton(title: "Show what I qualify for") {
-                    guard let n = Int(income.filter(\.isNumber)), n >= 1000 else { return }
-                    Qualify.shared.set(household: household, income: n)
-                    Analytics.shared.track("qualify_set", ["hh": household])
-                    dismiss()
-                }
+                SEPrimaryButton(title: "Show what I qualify for") { save() }
                 if Qualify.shared.isSet {
                     Button("Clear") { Qualify.shared.clear(); Analytics.shared.track("qualify_clear"); dismiss() }
                         .font(.se(16, .semibold)).foregroundStyle(SE.royal)
@@ -363,7 +358,18 @@ struct QualifySheet: View {
                 Spacer()
             }
             .padding(18)
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
+            // Save in the bar too, where it's always in reach above the keyboard.
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) { Button("Save") { save() }.accessibilityIdentifier("qualify-save") }
+            }
         }
+    }
+
+    private func save() {
+        guard let n = Int(income.filter(\.isNumber)), n >= 1000 else { return }
+        Qualify.shared.set(household: household, income: n)
+        Analytics.shared.track("qualify_set", ["hh": household])
+        dismiss()
     }
 }

@@ -20,11 +20,19 @@ import json, os, urllib.request
 CAP_MICROS = int(os.environ.get("AI_MONTHLY_CAP_MICROS", 20_000_000))   # $20
 SAFETY = 0.95          # stop new calls at 95% of the cap
 
-# USD per million tokens: (input, output). Jev bills input only.
+# USD per million tokens: (input, output). Jev bills input only. Claude cache
+# writes cost 1.25x input (5-minute TTL) and cache reads 0.1x (claude-api skill,
+# prices cached 2026-09-25). A refusal fallback can answer on another model;
+# an unknown model is priced at FALLBACK_PRICE (the most expensive), never free.
 PRICES = {
     "rules": (0.0, 0.0),           # answered by code, no model: free, but counts toward the daily limit
     "jev-1.13.0": (0.042, 0.0),
+    "claude-haiku-4-5": (1.0, 5.0),
+    "claude-sonnet-5-5": (2.0, 10.0),
+    "claude-opus-5-5": (4.0, 20.0),
+    "claude-opus-4-8": (5.0, 25.0),
 }
+FALLBACK_PRICE = (10.0, 50.0)
 
 # Calls per user per feature per New York day (cached answers are free).
 DAILY_LIMITS = {
@@ -36,9 +44,10 @@ DAILY_LIMITS = {
 }
 
 
-def cost_micros(model, input_tokens, output_tokens):
-    pin, pout = PRICES[model]
-    return int(round(input_tokens * pin + output_tokens * pout))   # $/M tokens == micro$/token
+def cost_micros(model, input_tokens, output_tokens, cache_write_tokens=0, cache_read_tokens=0):
+    pin, pout = PRICES.get(model) or next((v for k, v in PRICES.items() if model and model.startswith(k)), FALLBACK_PRICE)
+    return int(round(input_tokens * pin + output_tokens * pout
+                     + cache_write_tokens * pin * 1.25 + cache_read_tokens * pin * 0.1))   # $/M tokens == micro$/token
 
 
 class Gateway:
@@ -61,10 +70,12 @@ class Gateway:
             return "budget"        # cannot check the ledger: do not spend
         return None
 
-    def record(self, user, feature, model, input_tokens=0, output_tokens=0, cached=False, ok=True):
+    def record(self, user, feature, model, input_tokens=0, output_tokens=0, cached=False, ok=True,
+               cache_write_tokens=0, cache_read_tokens=0):
         row = {"user_id": user["id"] if user else None, "feature": feature, "model": model,
-               "input_tokens": int(input_tokens), "output_tokens": int(output_tokens),
-               "cost_micros": 0 if cached else cost_micros(model, input_tokens, output_tokens),
+               "input_tokens": int(input_tokens + cache_write_tokens + cache_read_tokens), "output_tokens": int(output_tokens),
+               "cost_micros": 0 if cached else cost_micros(model, input_tokens, output_tokens,
+                                                           cache_write_tokens, cache_read_tokens),
                "cached": bool(cached), "ok": bool(ok)}
         try:
             req = urllib.request.Request(

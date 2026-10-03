@@ -27,6 +27,8 @@ import claude_usage          # Anthropic API spend, owner-only tab
 import ai_gateway            # Plus check + $20/month cap for every AI call
 import nl_search             # plain-language search -> map filters
 import rent_check            # "is this rent fair?" — statistics, no model
+import building_records      # one building's public records, for the Claude features
+import claude_features       # landlord report card (Haiku) + Ask about this building (Sonnet)
 import creator_outreach      # owner's creator-review tracker, /dashboard/creators/
 import business_checklist    # owner's business & legal setup checklist, /dashboard/business/
 
@@ -639,6 +641,109 @@ def ai_rent_check():
     out = rent_check.check(bbl, BY_BBL, _listings, FMR)
     AI.record(user, "rent_check", "rules")
     return jsonify(out)
+
+
+def _sb_rest(path, method="GET", body=None, prefer=None):
+    """Service-role PostgREST call; returns parsed JSON or None."""
+    h = {"apikey": SERVICE_KEY, "Authorization": f"Bearer {SERVICE_KEY}", "Content-Type": "application/json"}
+    if prefer:
+        h["Prefer"] = prefer
+    req = urllib.request.Request(f"{SUPABASE_URL}/rest/v1/{path}", method=method, headers=h,
+                                 data=json.dumps(body).encode() if body is not None else None)
+    with urllib.request.urlopen(req, timeout=10) as r:
+        raw = r.read()
+        return json.loads(raw) if raw else None
+
+
+def _ai_cache_get(feature, key, max_age_days=7):
+    try:
+        since = (datetime.datetime.utcnow() - datetime.timedelta(days=max_age_days)).isoformat() + "Z"
+        rows = _sb_rest(f"ai_cache?feature=eq.{feature}&key=eq.{urllib.parse.quote(key)}&created_at=gte.{since}&select=payload")
+        return rows[0]["payload"] if rows else None
+    except Exception:
+        return None
+
+
+def _ai_cache_put(feature, key, payload):
+    try:
+        _sb_rest("ai_cache?on_conflict=feature,key", "POST",
+                 {"feature": feature, "key": key, "payload": payload, "created_at": datetime.datetime.utcnow().isoformat() + "Z"},
+                 prefer="resolution=merge-duplicates,return=minimal")
+    except Exception:
+        pass
+
+
+def _records_for(bbl):
+    b = BY_BBL.get(bbl)
+    if not b:
+        return None
+    contacts = None
+    try:
+        rows = _sb_rest(f"hpd_contacts?bbl=eq.{bbl}&select=owner,manager&limit=1")
+        contacts = rows[0] if rows else None
+    except Exception:
+        pass
+    return building_records.gather(bbl, b, contacts)
+
+
+def _ai_err(err):
+    return jsonify(error=err), (401 if err == "sign_in_required" else 402 if err == "plus_required" else 429)
+
+
+@app.route("/ai/report-card")
+def ai_report_card():
+    """Landlord report card (Plus): Claude Haiku's plain-English read of the
+    building's public records, kept a week per building."""
+    user = _session_user()
+    bbl = re.sub(r"\D", "", request.args.get("bbl", ""))[:10]
+    err = AI.allow(user, "report_card", claude_features.HAIKU)
+    if err:
+        return _ai_err(err)
+    hit = _ai_cache_get("report_card", bbl)
+    if hit:
+        AI.record(user, "report_card", claude_features.HAIKU, cached=True)
+        return jsonify(ok=True, cached=True, **hit)
+    rec = _records_for(bbl)
+    if not rec:
+        return jsonify(error="unknown_building"), 404
+    try:
+        card, u = claude_features.report_card(rec)
+    except Exception as e:
+        app.logger.warning("report_card failed: %s", type(e).__name__)
+        return jsonify(error="unavailable"), 503
+    AI.record(user, "report_card", u["model"] or claude_features.HAIKU, u["input_tokens"], u["output_tokens"],
+              cache_write_tokens=u["cache_write_tokens"], cache_read_tokens=u["cache_read_tokens"])
+    payload = {"card": card, "as_of": rec["as_of"]}
+    _ai_cache_put("report_card", bbl, payload)
+    return jsonify(ok=True, cached=False, **payload)
+
+
+@app.route("/ai/ask", methods=["POST"])
+def ai_ask():
+    """Ask about this building (Plus): Claude Sonnet answers from the
+    building's public records only, citing the record section."""
+    user = _session_user()
+    body = request.get_json(silent=True) or {}
+    bbl = re.sub(r"\D", "", str(body.get("bbl", "")))[:10]
+    question = str(body.get("question") or "").strip()[:300]
+    if len(question) < 3:
+        return jsonify(error="empty"), 400
+    err = AI.allow(user, "ask", claude_features.SONNET)
+    if err:
+        return _ai_err(err)
+    rec = _records_for(bbl)
+    if not rec:
+        return jsonify(error="unknown_building"), 404
+    try:
+        answer, u = claude_features.ask(rec, question)
+    except Exception as e:
+        app.logger.warning("ask failed: %s", type(e).__name__)
+        return jsonify(error="unavailable"), 503
+    AI.record(user, "ask", u["model"] or claude_features.SONNET, u["input_tokens"], u["output_tokens"],
+              ok=answer is not None, cache_write_tokens=u["cache_write_tokens"], cache_read_tokens=u["cache_read_tokens"])
+    if answer is None:
+        return jsonify(ok=False, error="declined"), 200
+    return jsonify(ok=True, answer=answer, as_of=rec["as_of"])
 
 
 # The iPhone app files its APNs token against the signed-in account

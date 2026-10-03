@@ -112,6 +112,30 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Sign in for Plus"].waitForExistence(timeout: 5), "sign-in opens over the Plus page")
     }
 
+    /// Application packet (2026-10-03): Profile -> packet; details typed
+    /// once are saved and shown; the email button waits for documents.
+    func testApplicationPacketSavesDetails() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--tab", "profile"]
+        app.launch()
+        let open = app.buttons["profile-packet"]
+        let h = app.windows.firstMatch.frame.height
+        for _ in 0..<6 where !open.isHittable || open.frame.maxY > h - 140 { app.swipeUp() }
+        XCTAssertTrue(open.waitForExistence(timeout: 20), "Profile should offer the application packet")
+        open.tap()
+        XCTAssertTrue(app.staticTexts["Everything an agent asks for, in one place"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["packet-email"].isEnabled, "nothing to email before documents are added")
+        app.buttons["packet-edit-profile"].tap()
+        let first = app.textFields["packet-first"]
+        XCTAssertTrue(first.waitForExistence(timeout: 5))
+        first.tap(); first.typeText("Testy")
+        app.buttons["packet-save"].tap()
+        XCTAssertTrue(app.staticTexts["Testy"].waitForExistence(timeout: 5), "the saved name shows on the packet")
+        // leave the phone as it was
+        app.buttons["Delete my packet"].tap()
+        app.buttons["Delete everything"].tap()
+    }
+
     /// Plain-language search opens from Search; signed out it sends you to sign in.
     func testPlainLanguageSearchSheet() throws {
         app.terminate()

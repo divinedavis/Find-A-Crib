@@ -194,6 +194,7 @@ struct ApplyHelpSheet: View {
     @State private var error: String?
     @State private var needsPlus = false
     @State private var copied = false
+    @State private var showPacket = false
 
     var body: some View {
         NavigationStack {
@@ -212,6 +213,14 @@ struct ApplyHelpSheet: View {
                             }
                         }
                         if let d = h.deadline { Text("Deadline: \(d)").font(.se(16, .semibold)) }
+                        // The packet: what this listing asks for vs what's on
+                        // the phone, and one email with everything attached.
+                        SEPrimaryButton(title: "Get my documents ready", icon: "folder.badge.plus") { showPacket = true }
+                            .accessibilityIdentifier("apply-open-packet")
+                            .sheet(isPresented: $showPacket) {
+                                PacketView(needs: h.documents.map(\.item), listingAddress: listing.address,
+                                           agentEmail: h.contact.email, emailSubject: h.email_subject, emailBody: h.email_body)
+                            }
                         Text("Email to the agent").font(.se(17, .bold))
                         Text("Subject: \(h.email_subject)\n\n\(h.email_body)").font(.se(15)).foregroundStyle(SE.ink)
                             .padding(10).background(Color.white).overlay(RoundedRectangle(cornerRadius: 10).stroke(SE.lineSoft))

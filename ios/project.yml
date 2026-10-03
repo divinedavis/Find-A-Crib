@@ -73,6 +73,7 @@ targets:
           - SourceSans3-Bold.ttf
           - SourceSans3-Black.ttf
         NSLocationWhenInUseUsageDescription: Find A Crib uses your location to show rent-stabilized buildings near you on the map.
+        NSCameraUsageDescription: Find A Crib uses the camera to scan documents for your application packet, which stays on this phone.
         SUPABASE_HOST: $(SUPABASE_HOST)
         SUPABASE_ANON_KEY: $(SUPABASE_ANON_KEY)
         # Google sign-in runs Supabase's web OAuth flow in an

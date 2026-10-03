@@ -1,3 +1,4 @@
+import PDFKit
 import XCTest
 import GoogleMobileAds
 import MapKit
@@ -1686,5 +1687,55 @@ final class QualifyAndAITests: XCTestCase {
     @MainActor
     func testCitationsReadAsWords() {
         XCTAssertEqual(AIService.readable("5 open [hpd_violations]."), "5 open (HPD violations).")
+    }
+}
+
+
+/// Application packet (2026-10-03): document matching and form filling.
+final class PacketTests: XCTestCase {
+    func testAgentDocumentLinesMatchKinds() {
+        XCTAssertEqual(Packet.kind(for: "Government-issued ID"), .id)
+        XCTAssertEqual(Packet.kind(for: "Proof of income (pay stubs or tax returns)"), .payStubs)
+        XCTAssertEqual(Packet.kind(for: "2025 federal tax return"), .taxReturn)
+        XCTAssertEqual(Packet.kind(for: "Letter from employer"), .employmentLetter)
+        XCTAssertEqual(Packet.kind(for: "Last 3 bank statements"), .bankStatements)
+        XCTAssertNil(Packet.kind(for: "Application form"))
+        XCTAssertNil(Packet.kind(for: "Rent paid on time"), "'paid' must not read as an ID")
+    }
+
+    func testFieldsFillFromProfileButNeverSensitiveOnes() {
+        var p = Packet.Profile()
+        p.firstName = "Ada"; p.lastName = "Lovelace"; p.email = "a@example.com"; p.street = "1 Main St"
+        p.zip = "11201"; p.currentRent = 1800; p.yearlyIncome = 60000
+        p.others = [.init(name: "B", relation: "child", yearlyIncome: nil)]
+        XCTAssertEqual(Packet.value(forField: "Applicant First Name", profile: p), "Ada")
+        XCTAssertEqual(Packet.value(forField: "last_name", profile: p), "Lovelace")
+        XCTAssertEqual(Packet.value(forField: "Applicant Name", profile: p), "Ada Lovelace")
+        XCTAssertEqual(Packet.value(forField: "Current Address", profile: p), "1 Main St", "'current' contains 'rent'")
+        XCTAssertEqual(Packet.value(forField: "Monthly Rent", profile: p), "1800")
+        XCTAssertEqual(Packet.value(forField: "Household Size", profile: p), "2")
+        XCTAssertEqual(Packet.value(forField: "Zip", profile: p), "11201")
+        XCTAssertNil(Packet.value(forField: "SSN", profile: p))
+        XCTAssertNil(Packet.value(forField: "Social Security Number", profile: p))
+        XCTAssertNil(Packet.value(forField: "Date of Birth", profile: p))
+        XCTAssertNil(Packet.value(forField: "Applicant Signature", profile: p))
+        XCTAssertNil(Packet.value(forField: "Member 2 Name", profile: p), "other members' rows are theirs")
+    }
+
+    @MainActor
+    func testFillWritesIntoARealPDFForm() throws {
+        let doc = PDFDocument()
+        let page = PDFPage(); doc.insert(page, at: 0)
+        for (i, name) in ["First Name", "SSN", "Household Size"].enumerated() {
+            let w = PDFAnnotation(bounds: CGRect(x: 50, y: 700 - i * 40, width: 200, height: 20), forType: .widget, withProperties: nil)
+            w.widgetFieldType = .text; w.fieldName = name
+            page.addAnnotation(w)
+        }
+        var p = Packet.Profile(); p.firstName = "Ada"
+        let r = Packet.fill(doc, profile: p)
+        XCTAssertEqual(r.total, 3)
+        XCTAssertEqual(r.filled, 2)
+        let values = page.annotations.map { $0.widgetStringValue ?? "" }
+        XCTAssertEqual(values, ["Ada", "", "1"])
     }
 }

@@ -14,6 +14,7 @@ struct ProfileView: View {
     /// email"): show Apple/Google first and don't raise the keyboard.
     @State private var emailForAlerts = false
     @State private var showAlerts = false
+    @State private var showPacket = false
     @Environment(PlusStore.self) private var plus
     @AppStorage("hereTo") private var hereTo = "Rent"
     @AppStorage("homeBorough") private var homeBorough = "Brooklyn"
@@ -94,6 +95,7 @@ struct ProfileView: View {
                     .sheet(isPresented: $showPaywall) { PaywallView(source: "profile") }
                     .sheet(isPresented: $showEmail, onDismiss: { emailForAlerts = false }) { EmailSignInView(offersSocialSignIn: emailForAlerts) }
                     .sheet(isPresented: $showAlerts) { AlertsSheet() }
+                    .sheet(isPresented: $showPacket) { PacketView() }
                     .onChange(of: nav.showPaywall) { _, on in if on { showPaywall = true; nav.showPaywall = false } }
                     // The notifications card sends people here to set alerts up.
                     // Signed out, the sign-in sheet comes first and the alerts
@@ -136,6 +138,13 @@ struct ProfileView: View {
                         } else {
                             Text("Sign in to set up").font(.se(16)).foregroundStyle(SE.ink3)
                         }
+                    }
+                    // Application packet (2026-10-03): on this phone, open to all.
+                    settingRow("Application packet") {
+                        Button { showPacket = true } label: {
+                            HStack(spacing: 4) { Text(Packet.shared.docs.isEmpty ? "Set up" : "\(Packet.shared.docs.count) document\(Packet.shared.docs.count == 1 ? "" : "s")").font(.se(18, .semibold)); Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)) }
+                                .foregroundStyle(SE.royal)
+                        }.buttonStyle(.plain).accessibilityIdentifier("profile-packet")
                     }
                     // Where alerts land besides email. Denied in Settings can only be
                     // undone in Settings, so that is where the row sends people.

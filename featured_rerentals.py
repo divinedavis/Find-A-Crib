@@ -779,7 +779,7 @@ def save_images(records, apply_changes):
         name = hashlib.sha1(src.encode()).hexdigest()[:16]
         # Photos saved before 2026-10-03 have no meta entry: fetch them once
         # more so the tile copy comes from the original and gets a large copy.
-        if name in on_disk and name not in meta and apply_changes:
+        if name in on_disk and (meta.get(name) or {}).get("v") != 2 and apply_changes:
             try:
                 os.remove(os.path.join(IMGDIR, on_disk.pop(name)))
             except OSError:
@@ -798,7 +798,7 @@ def save_images(records, apply_changes):
                 with open(os.path.join(IMGDIR, name + "_l.jpg"), "wb") as f:
                     f.write(large)
             on_disk[name] = name + ext
-            meta[name] = {"w": w, "large": bool(large)}
+            meta[name] = {"w": w, "large": bool(large), "v": 2}   # v2: fetched original-first
         m = meta.get(name)
         if m is None:      # a photo from before 2026-10-03: measure the tile copy
             m = meta[name] = {"w": image_width(open(os.path.join(IMGDIR, on_disk[name]), "rb").read()) if apply_changes else None,

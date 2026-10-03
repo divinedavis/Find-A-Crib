@@ -27,6 +27,7 @@ struct RerentalCard: View {
                         }
                     }
                     .frame(height: 226).frame(maxWidth: .infinity).clipped()
+                    .accessibilityHidden(true)   // decorative: the address below names the place
                 SEBadge(text: "Rerental", icon: "key.fill", fill: SE.navy, ink: .white)
                     .padding(12)
                     .accessibilityIdentifier("badge-rerental")

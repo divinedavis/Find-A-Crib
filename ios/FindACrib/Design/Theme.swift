@@ -8,7 +8,7 @@ import SwiftUI
 enum SE {
     static let navy      = Color(hex: 0x163C47)
     static let navyDeep  = Color(hex: 0x0F2B33)
-    static let royal     = Color(hex: 0x2F7A8A)
+    static let royal     = Color(hex: 0x266676)   // was 2F7A8A: 4.0:1 as the selected-tab label on badge grey; Apple's contrast audit (2026-10-02)
     static let royalDark = Color(hex: 0x255F6C)
     /// The "Rent stabilized" card label — green reads as a good thing.
     static let green     = Color(hex: 0x1E8E3E)
@@ -16,7 +16,7 @@ enum SE {
     static let paleBand  = Color(hex: 0xE6F3F5)
     static let ink       = Color(hex: 0x1A1A1A)
     static let ink2      = Color(hex: 0x4A4A4A)
-    static let ink3      = Color(hex: 0x6F6F6F)
+    static let ink3      = Color(hex: 0x595959)   // was 6F6F6F; Apple's contrast audit failed it on white and canvas (2026-10-02)
     static let line      = Color(hex: 0xBDBDBD)
     static let lineSoft  = Color(hex: 0xE4E4E4)
     static let canvas    = Color(hex: 0xF2F2F2)

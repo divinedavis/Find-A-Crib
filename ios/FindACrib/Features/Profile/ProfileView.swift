@@ -37,7 +37,7 @@ struct ProfileView: View {
                         HStack(alignment: .top, spacing: 16) {
                             ZStack {
                                 Circle().fill(SE.badge).frame(width: 74, height: 74)
-                                Image(systemName: "person.fill").font(.system(size: 34)).foregroundStyle(SE.ink3)
+                                Image(systemName: "person.fill").font(.system(size: 34)).foregroundStyle(SE.ink3).accessibilityHidden(true)
                             }
                             VStack(alignment: .leading, spacing: 4) {
                                 if auth.isSignedIn {

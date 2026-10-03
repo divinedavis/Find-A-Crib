@@ -174,7 +174,8 @@ struct ResultsView: View {
                     HStack(alignment: .firstTextBaseline) {
                         if searched {
                             Text(query.resultHeadline(count: results.count, city: store.city))
-                                .font(.se(24, .bold)).foregroundStyle(SE.ink).lineLimit(1).minimumScaleFactor(0.75)
+                                .font(.se(24, .bold)).foregroundStyle(SE.ink).lineLimit(2).minimumScaleFactor(0.75)
+                                .fixedSize(horizontal: false, vertical: true)   // wraps rather than clips (accessibility audit)
                                 .accessibilityIdentifier("results-count")
                         } else {
                             Text("Searching…").font(.se(24, .bold)).foregroundStyle(SE.ink3).lineLimit(1)

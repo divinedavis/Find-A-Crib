@@ -33,6 +33,7 @@ struct BuildingCard: View {
         VStack(alignment: .leading, spacing: 0) {
             ZStack(alignment: .bottomTrailing) {
                 BuildingImage(building: b).frame(height: 226).frame(maxWidth: .infinity)
+                    .accessibilityHidden(true)   // the photo repeats the address read just below it
                     .contentShape(Rectangle())
                     .onTapGesture { open() }
                 if let l = store.hcrListings(b).first {
@@ -66,7 +67,9 @@ struct BuildingCard: View {
                             .offset(x: 8).frame(height: 28)
                     }
                     Button(action: open) {
-                        Text(b.address).font(.se(27, .bold)).foregroundStyle(SE.royal).lineLimit(1).minimumScaleFactor(0.8)
+                        // two lines, like the re-rental card: HCR addresses carry the
+                        // neighborhood and ZIP and clipped in an iPad column
+                        Text(b.address).font(.se(27, .bold)).foregroundStyle(SE.royal).lineLimit(2).minimumScaleFactor(0.8)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }.buttonStyle(.plain).accessibilityIdentifier("card-address")
                 }
@@ -151,7 +154,7 @@ struct BuildingCard: View {
                     SEBadge(text: "Listed \(Formatters.mdy.string(from: d))", fill: SE.badge.opacity(0.95))
                 }
                 SEBadge(text: store.record(b)?.leasing == 1 ? "Leasing now" : store.city.badgeLabel,
-                        icon: "checkmark.circle.fill", fill: SE.green, ink: .white)
+                        icon: "checkmark.circle.fill", fill: SE.good, ink: .white)   // SE.green read 4.1:1 under white text
                     .accessibilityIdentifier("badge-stabilized")
             }
         }

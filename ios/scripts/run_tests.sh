@@ -21,6 +21,11 @@ xcrun simctl uninstall "$SIMULATOR_ID" com.divinedavis.findacrib 2>/dev/null || 
 xcrun simctl spawn "$SIMULATOR_ID" defaults write com.apple.keyboard.preferences \
   AutomaticMinimizationEnabled -bool false >/dev/null 2>&1 || true
 ONLY="${1:-}"
+# SKIP="Target/Class ..." skips those tests (ship.sh keeps the performance
+# tests out of the regular passes); RESULT_BUNDLE=path keeps the .xcresult for
+# scripts that read it (perf_gate.py).
+SKIP_FLAGS=(); for s in ${SKIP:-}; do SKIP_FLAGS+=(-skip-testing:"$s"); done
+RESULT_FLAGS=(); [[ -n "${RESULT_BUNDLE:-}" ]] && { rm -rf "$RESULT_BUNDLE"; RESULT_FLAGS=(-resultBundlePath "$RESULT_BUNDLE"); }
 # The whole run goes to a file and only the last 60 lines are printed: a
 # failure earlier than that was invisible twice in one afternoon (2026-09-23),
 # costing a full re-run to find out which test it was. Now every failing line
@@ -30,7 +35,7 @@ mkdir -p build.nosync
 set +e
 xcodebuild -project FindACrib.xcodeproj -scheme FindACrib \
   -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -derivedDataPath build.nosync/tests \
-  ${ONLY:+-only-testing:"$ONLY"} test 2>&1 | grep -E "Test Suite|Test Case|error:|failed|passed|\*\* TEST" > "$LOG"
+  ${ONLY:+-only-testing:"$ONLY"} ${SKIP_FLAGS[@]+"${SKIP_FLAGS[@]}"} ${RESULT_FLAGS[@]+"${RESULT_FLAGS[@]}"} test 2>&1 | grep -E "Test Suite|Test Case|error:|failed|passed|\*\* TEST" > "$LOG"
 status=${PIPESTATUS[0]}
 set -e
 tail -60 "$LOG"

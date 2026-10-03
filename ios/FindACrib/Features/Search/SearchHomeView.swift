@@ -465,7 +465,7 @@ struct RecentSearchCard: View {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(alignment: .top) {
                         Text("\(query.normalized.hcrOnly ? "Lotteries" : (query.normalized.availableOnly ? "Rentals" : (query.normalized.vouchersOnly ? "Voucher homes" : "Stabilized"))) in")
-                            .font(.se(22, .bold)).foregroundStyle(SE.royal).lineLimit(1)
+                            .font(.se(22, .bold)).foregroundStyle(SE.royal).lineLimit(1).minimumScaleFactor(0.7)   // "Voucher homes in" clipped at 176 pt
                         Spacer()
                         Image(systemName: activity.isSearchSaved(query) ? "heart.fill" : "heart")
                             .font(.system(size: 20)).foregroundStyle(SE.royal)
@@ -572,7 +572,9 @@ struct HeroBanner: View {
         GeometryReader { g in
             let w = g.size.width, h = g.size.height
             ZStack {
-                LinearGradient(colors: [Color(hex: 0x3A8FA2), SE.royal, SE.navy],
+                // Starts at 2F7A8A, not the lighter 3A8FA2: the city line in white
+                // read below 4.5:1 on it (accessibility audit, 2026-10-02).
+                LinearGradient(colors: [Color(hex: 0x2F7A8A), SE.royal, SE.navy],
                                startPoint: .topLeading, endPoint: .bottomTrailing)
                 // With the badges gone (owner, 2026-09-23) the mark has no
                 // scatter to sit in, so it stacks with the words: one centred
@@ -591,7 +593,7 @@ struct HeroBanner: View {
                         .lineLimit(1).minimumScaleFactor(0.6)
                     Text(Self.line(for: store.city))
                         .font(.se(15, .semibold))
-                        .foregroundStyle(.white.opacity(0.9))
+                        .foregroundStyle(.white)
                         .lineLimit(1).minimumScaleFactor(0.7)
                     }
                 }

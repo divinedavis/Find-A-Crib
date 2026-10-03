@@ -25,6 +25,26 @@ echo "==> refreshing seed data"
 echo "==> regenerating xcodeproj"
 ./scripts/generate.sh >/dev/null
 
+# Apple's four quality checks run before every TestFlight upload (owner,
+# 2026-10-02), and follow the app as features are added and removed:
+#   1. Swift Testing — the @Test suites in FindACribTests run with the unit
+#      tests; the run must report at least one Swift Testing test.
+#   2. XCUITest + performAccessibilityAudit — AccessibilityAuditTests walks
+#      every tab it finds at run time, plus results and detail, on iPhone + iPad.
+#   3. XCTMetric performance — PerformanceTests on the iPhone, judged by
+#      perf_gate.py against a baseline that moves with the last 5 ships.
+#   4. MetricKit + Xcode Organizer — the subscriber must still be wired, and the
+#      Organizer's field numbers for recent builds are printed (report only).
+# check_test_coverage.py fails a feature folder no UI test touches, or a UI
+# test still waiting for an identifier the app no longer has.
+echo "==> UI test coverage follows the features"
+python3 scripts/check_test_coverage.py
+echo "==> MetricKit still wired (metrics + crash/hang diagnostics)"
+for want in "MXMetricManager.shared.add" "didReceive(_ payloads: \[MXMetricPayload\])" "didReceive(_ payloads: \[MXDiagnosticPayload\])"; do
+  grep -rq "$want" FindACrib/Services/Metrics.swift || { echo "error: Metrics.swift lost: $want" >&2; exit 1; }
+done
+grep -rq "Metrics.shared.start()" FindACrib/App || { echo "error: Metrics.shared.start() is no longer called at launch" >&2; exit 1; }
+
 # Every ship runs the FULL suite — unit tests and every XCUITest journey — on
 # an iPhone AND on an iPad (owner, 2026-09-22: "make sure the ipad goes through
 # a robust set of journeys and xcuitests"). The iPad pass includes
@@ -45,15 +65,27 @@ if [[ "${SHIP_UNIT_ONLY:-0}" == "1" ]]; then
   SIMULATOR_ID="$IPHONE_SIM" ./scripts/run_tests.sh FindACribTests
 else
   echo "==> running every test on iPhone ($IPHONE_SIM)"
-  SIMULATOR_ID="$IPHONE_SIM" ./scripts/run_tests.sh
+  SKIP="FindACribUITests/PerformanceTests" SIMULATOR_ID="$IPHONE_SIM" ./scripts/run_tests.sh
+  grep -qE "Test run with [1-9][0-9]* tests? .*passed" "build.nosync/test-$IPHONE_SIM.log" \
+    || { echo "error: no Swift Testing tests ran (expected the @Test suites in FindACribTests)" >&2; exit 1; }
+  grep -q "AccessibilityAuditTests" "build.nosync/test-$IPHONE_SIM.log" \
+    || { echo "error: the accessibility audit did not run" >&2; exit 1; }
   [[ -n "$IPAD_SIM" ]] || { echo "error: no iPad simulator installed — the iPad gate cannot run" >&2; exit 1; }
   echo "==> running every test on iPad ($IPAD_SIM)"
-  SIMULATOR_ID="$IPAD_SIM" ./scripts/run_tests.sh
+  SKIP="FindACribUITests/PerformanceTests" SIMULATOR_ID="$IPAD_SIM" ./scripts/run_tests.sh
   if [[ -n "$MINI_SIM" ]]; then
     echo "==> iPad tour on iPad mini ($MINI_SIM)"
     SIMULATOR_ID="$MINI_SIM" ./scripts/run_tests.sh FindACribUITests/IPadTourTests
   fi
 fi
+
+if [[ "${SHIP_UNIT_ONLY:-0}" != "1" ]]; then
+  echo "==> performance tests on iPhone ($IPHONE_SIM)"
+  RESULT_BUNDLE=build.nosync/perf.xcresult SIMULATOR_ID="$IPHONE_SIM" ./scripts/run_tests.sh FindACribUITests/PerformanceTests
+  python3 scripts/perf_gate.py build.nosync/perf.xcresult --record
+fi
+echo "==> Xcode Organizer: what real phones reported for recent builds"
+"${PY:-$HOME/.venvs/spendcap/bin/python}" scripts/organizer_report.py || echo "warning: Organizer report unavailable (App Store Connect API)"
 
 if [[ "${SHIP_SKIP_SMOKE:-0}" == "1" ]]; then echo "==> skipping smoke test"; else
   echo "==> smoke-testing a launch on iPhone"; SIMULATOR_ID="$IPHONE_SIM" ./scripts/smoke_test.sh

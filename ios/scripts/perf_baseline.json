@@ -1,0 +1,20 @@
+{
+  "PerformanceTests/testLaunch() :: Duration (ApplicationFirstFramePresentationResponsive)": {
+    "history": [
+      1.2984
+    ],
+    "unit": "s"
+  },
+  "PerformanceTests/testLaunchToSearchReady() :: Clock Monotonic Time": {
+    "history": [
+      5.1896
+    ],
+    "unit": "s"
+  },
+  "PerformanceTests/testResultsScroll() :: Duration (Scroll_Deceleration)": {
+    "history": [
+      2.4344
+    ],
+    "unit": "s"
+  }
+}

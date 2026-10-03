@@ -326,7 +326,8 @@ struct BuildingDetailView: View {
     private func factCell(_ k: String, _ v: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(k).font(.se(15, .semibold)).foregroundStyle(.white.opacity(0.7))
-            Text(v).font(.se(19, .semibold)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
+            // two lines before it clips: "Multiple Dwelling A" overran a third-width cell
+            Text(v).font(.se(19, .semibold)).foregroundStyle(.white).lineLimit(2).minimumScaleFactor(0.7)
         }.frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16)
     }
 

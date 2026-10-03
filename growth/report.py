@@ -776,9 +776,15 @@ def build_blocks(run_log=None, review_out=None):
         # row of blanks under a heading about indexing is worse than no heading.
         from . import sitemapstatus
         smrun = ledger.read_last_run().get("sitemapstatus") or {}
-        if smrun.get("ok") is False and smrun.get("shards_known"):
-            # A real defect: a shard is unknown to Search Console or failed to
-            # parse. The detail line already names which.
+        if smrun.get("ok") is False and smrun.get("detail"):
+            # A real defect: a shard unknown to Search Console, a parse error, or
+            # a call that could not be made. The detail line already names which.
+            # Gated on `detail` and NOT on shards_known, which was the original
+            # gate and was wrong in the one case that matters most: on 2026-10-03
+            # the job read shards_known 0 and neither branch rendered, so the
+            # loudest reading this instrument can produce was silently dropped
+            # from the email that morning. A failing reading always renders —
+            # `detail` is a sentence, never a row of blanks.
             B.append({"type": "callout", "tone": "warn",
                       "heading": "A sitemap Google cannot see",
                       "body": str(smrun.get("detail") or "unknown error")})

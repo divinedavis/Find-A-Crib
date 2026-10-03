@@ -33,6 +33,25 @@ apart. This asks Google directly: the Search Console Sitemaps API reports, per
 sitemap, when it was last submitted, when Google last DOWNLOADED it, how many
 URLs Google read out of it, and whether it parsed with errors or warnings.
 
+It takes TWO calls, and the second one is the one that matters
+-------------------------------------------------------------
+`sitemaps.list` on the property returns only the sitemaps submitted DIRECTLY to
+Search Console. findacrib.com submits exactly one thing — sitemap.xml, the index
+— so that call returns one entry and says nothing whatever about the fourteen
+shards the index carries. The index's children come back only from a second call
+naming it in `sitemapIndex`.
+
+This cost a day. The first version of this module made only the property-level
+call, and on 2026-10-03 it reported "0 of 14 live sitemap shards are known to
+Search Console ... NEVER SUBMITTED OR NEVER PROCESSED" and, in the same record,
+"the index itself was last downloaded 2026-10-02". Both halves were true and the
+conclusion drawn from them would have been false: the shards were missing from an
+answer that was never asked about them. The lesson is 2026-09-26's, for the third
+time on this site — an inference about an instrument is not evidence about the
+world — and the guard against it is `children_enumerated`, which is True only when
+the second call succeeded. When it fails, this job returns ok False and makes NO
+claim about any shard, because it has no standing to.
+
 What it deliberately does NOT report
 ------------------------------------
 `contents[].indexed` is in the API response and is not used anywhere here. That
@@ -73,6 +92,14 @@ from . import ledger
 SITE_URL = "https://findacrib.com/"
 SITEMAPS_API = ("https://searchconsole.googleapis.com/webmasters/v3/sites/"
                 + urllib.parse.quote(SITE_URL, safe="") + "/sitemaps")
+
+# The sitemap index this property advertises. BOTH halves of the question this
+# module asks need it by name. `sitemaps.list` on the property alone returns
+# only the sitemaps submitted DIRECTLY to Search Console, and this property
+# submits exactly one thing — the index; the index's children are returned only
+# when the call names it in `sitemapIndex`. See fetch() and collect().
+INDEX_NAME = "sitemap.xml"
+INDEX_URL = SITE_URL + INDEX_NAME
 
 # Days since Google last downloaded a shard before this names it in the detail
 # line. Not a failure — see the docstring. Two weeks is chosen against this
@@ -157,10 +184,24 @@ def local_shards(docroot):
     return out, True
 
 
-def fetch(token, timeout=30):
-    """sitemaps.list for the property. Returns (list_of_sitemaps, error_string)."""
+def fetch(token, sitemap_index=None, timeout=30):
+    """sitemaps.list, for the property or for one sitemap index's own entries.
+
+    These are two DIFFERENT result sets and the distinction is the whole reason
+    this function takes an argument. The API describes the method as listing
+    "the sitemaps-entries submitted for this site, or included in the sitemap
+    index file (if sitemapIndex is specified in the request)". So without
+    `sitemap_index` it returns only what was submitted directly to the property
+    — for findacrib.com that is the index and nothing else — and the fourteen
+    shards the index carries are absent from it, not unseen by Google.
+
+    Returns (list_of_sitemaps, error_string).
+    """
+    url = SITEMAPS_API
+    if sitemap_index:
+        url += "?" + urllib.parse.urlencode({"sitemapIndex": sitemap_index})
     req = urllib.request.Request(
-        SITEMAPS_API, headers={"Authorization": f"Bearer {token}"})
+        url, headers={"Authorization": f"Bearer {token}"})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             payload = json.loads(r.read())
@@ -221,28 +262,66 @@ def collect(docroot):
         ledger.write_last_run("sitemapstatus", out)
         return out
 
-    # ---- Google's side, keyed by filename so it joins to the local side.
+    # ---- the second call, and it is the one that actually asks the question.
+    # The property-level call above answers "what is submitted to this property",
+    # which here is one thing: the index. It does NOT enumerate the index's
+    # children. On 2026-10-03 this job therefore read "0 of 14 live sitemap
+    # shards are known to Search Console ... NEVER SUBMITTED OR NEVER PROCESSED"
+    # while, in the same record, reporting that Google had downloaded the index
+    # itself the previous day — which is the signature of a question never asked,
+    # not of fourteen unseen shards. An HTTP 404 here is a real finding in its
+    # own right: it means Search Console does not hold this index at all.
+    children, cerr = fetch(token, sitemap_index=INDEX_URL)
+    if cerr:
+        detail = (f"could not enumerate the sitemap index's own entries "
+                  f"({INDEX_URL}): {cerr} — the property-level list sees only what "
+                  f"is submitted DIRECTLY to Search Console, which for this property "
+                  f"is the index alone, so this reading supports NO claim about the "
+                  f"{len(local)} shards it carries. A 404 here means Search Console "
+                  f"does not hold that index; any other code is an API failure.")
+        out = {"ok": False, "detail": detail, "shards_live": len(local),
+               "shards_known": 0, "children_enumerated": False,
+               "children_error": cerr}
+        ledger.write_last_run("sitemapstatus", out)
+        return out
+
+    # ---- Google's side, keyed by filename so it joins to the local side, and
+    # merged across both calls. A shard can legitimately appear in both; `source`
+    # keeps which, because "submitted directly" and "carried by the index" are
+    # different states and conflating them is what produced the 10-03 reading.
     # The index entry (sitemap.xml) is held separately: it is a sitemaps-index
     # rather than a shard, its `contents` counts the whole property, and adding
     # it to the shard totals would double-count every URL on the site.
     seen, index_rec = {}, None
-    for s in sitemaps:
-        name = _shard_name(s.get("path"))
-        rec = {
-            "downloaded": _date(s.get("lastDownloaded")),
-            "submitted_at": _date(s.get("lastSubmitted")),
-            "pending": bool(s.get("isPending")),
-            "errors": _int(s.get("errors")),
-            "warnings": _int(s.get("warnings")),
-            # Sum across content types (web, image, video). `indexed` is
-            # deliberately not read — see the module docstring.
-            "urls_read": sum(_int(c.get("submitted"))
-                             for c in (s.get("contents") or [])),
-        }
-        if s.get("isSitemapsIndex") or name == "sitemap.xml":
-            index_rec = rec
-            continue
-        seen[name] = rec
+    for source, group in (("submitted", sitemaps), ("index", children)):
+        for s in group:
+            name = _shard_name(s.get("path"))
+            rec = {
+                "downloaded": _date(s.get("lastDownloaded")),
+                "submitted_at": _date(s.get("lastSubmitted")),
+                "pending": bool(s.get("isPending")),
+                "errors": _int(s.get("errors")),
+                "warnings": _int(s.get("warnings")),
+                # Sum across content types (web, image, video). `indexed` is
+                # deliberately not read — see the module docstring.
+                "urls_read": sum(_int(c.get("submitted"))
+                                 for c in (s.get("contents") or [])),
+                "source": source,
+            }
+            if s.get("isSitemapsIndex") or name == INDEX_NAME:
+                if index_rec is None:
+                    index_rec = rec
+                continue
+            prev = seen.get(name)
+            if prev is None:
+                seen[name] = rec
+            elif rec.get("downloaded") and not prev.get("downloaded"):
+                # Keep the record that carries a date; a shard with no download
+                # date would otherwise mask one that has been opened.
+                rec["source"] = "submitted+index"
+                seen[name] = rec
+            else:
+                prev["source"] = "submitted+index"
 
     shards = {}
     for name in sorted(local):
@@ -259,13 +338,21 @@ def collect(docroot):
     orphaned = sorted(n for n in seen if n not in local)
 
     known = [n for n, r in shards.items() if r["known"]]
+    direct = [n for n in known
+              if shards[n].get("source") in ("submitted", "submitted+index")]
+    via_index = [n for n in known
+                 if shards[n].get("source") in ("index", "submitted+index")]
     unknown = sorted(n for n, r in shards.items() if not r["known"])
     never = sorted(n for n in known if not shards[n].get("downloaded"))
     errored = sorted(n for n in known if shards[n].get("errors"))
     warned = sorted(n for n in known if shards[n].get("warnings"))
     ages = {n: shards[n]["age_days"] for n in known
             if shards[n].get("age_days") is not None}
-    stale = sorted((a, n) for n, a in ages.items() if a >= STALE_DAYS)
+    # Descending, because the detail line says "oldest first" and NAME_CAP
+    # truncates the tail: ascending order would cap away exactly the shards the
+    # clause exists to name.
+    stale = sorted(((a, n) for n, a in ages.items() if a >= STALE_DAYS),
+                   reverse=True)
     urls_read = sum(shards[n].get("urls_read") or 0 for n in known)
     urls_local = sum(local.values())
 
@@ -275,6 +362,8 @@ def collect(docroot):
     for metric, value in (
             ("sitemap_shards_live", len(local)),
             ("sitemap_shards_known", len(known)),
+            ("sitemap_shards_submitted_direct", len(direct)),
+            ("sitemap_shards_via_index", len(via_index)),
             ("sitemap_shards_unknown", len(unknown)),
             ("sitemap_shards_never_downloaded", len(never)),
             ("sitemap_shards_stale", len(stale)),
@@ -298,9 +387,13 @@ def collect(docroot):
     bits = [f"{len(known)} of {len(local)} live sitemap shards are known to Search "
             f"Console; Google has read {urls_read:,} URLs out of them against "
             f"{urls_local:,} listed locally"]
+    if known:
+        bits.append(f"{len(direct)} submitted directly to the property and "
+                    f"{len(via_index)} carried by the index")
     if unknown:
-        bits.append("in the live sitemap index and NEVER SUBMITTED OR NEVER PROCESSED "
-                    "by Search Console: " + ", ".join(unknown[:NAME_CAP])
+        bits.append("in the live sitemap index and NOT KNOWN to Search Console under "
+                    "EITHER the property's submitted list or the index's own entries: "
+                    + ", ".join(unknown[:NAME_CAP])
                     + (f", +{len(unknown) - NAME_CAP} more" if len(unknown) > NAME_CAP else ""))
     if never:
         bits.append("known but NEVER DOWNLOADED: " + ", ".join(never[:NAME_CAP])
@@ -330,6 +423,11 @@ def collect(docroot):
         "detail": " — ".join(bits),
         "shards_live": len(local),
         "shards_known": len(known),
+        "shards_submitted_direct": direct,
+        "shards_via_index": via_index,
+        # True only when the index's children were actually enumerated, so a
+        # later reader can tell a real "unknown" from a question never asked.
+        "children_enumerated": True,
         "shards_unknown": unknown,
         "shards_never_downloaded": never,
         "shards_errored": errored,

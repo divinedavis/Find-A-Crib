@@ -28,7 +28,7 @@ LIVE=/root/findacrib-api
 # a website with a hundred scripts in its root, and the API directory should
 # hold the six files it runs.
 BACKUPS=/var/backups/findacrib-api
-FILES=(api_server.py ai_gateway.py nl_search.py rent_check.py building_records.py claude_features.py listing_page.py creator_outreach.py business_checklist.py creator_mail_reader.py crease_metrics.py nemo_metrics.py trent_metrics.py marracat_metrics.py build_log.py building_report.py issue_api_key.py)
+FILES=(api_server.py ai_gateway.py nl_search.py rent_check.py building_records.py claude_features.py listing_page.py flyer_reader.py creator_outreach.py business_checklist.py creator_mail_reader.py crease_metrics.py nemo_metrics.py trent_metrics.py marracat_metrics.py build_log.py building_report.py issue_api_key.py)
 
 echo "==> unit tests"
 cd "$(dirname "$0")/.."

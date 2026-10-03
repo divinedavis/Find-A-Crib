@@ -1842,19 +1842,23 @@
     // Mediavine has no reporting API. Paid vs Mediavine's own filler ("Grow"
     // house ads). Revenue only as an estimate from the Page RPM the owner
     // copies out of Mediavine's dashboard (FAC_MEDIAVINE_PAGE_RPM).
+    // Google AdMob in the iPhone app joined it 2026-10-03 (owner: "mediavine
+    // ads and google ads since google ads are shown via the mobile app").
     function mediavineTile(M, P){
-      if(!M || M.total == null) return {ic:'💰',v:'—',l:'Mediavine ads · website',own:'Mediavine counts unavailable right now'};
-      var pv=n(P&&P.total), bits=[comma(M.paid)+' paid', comma(M.house)+' Mediavine filler'];
+      var L='Ads · Mediavine + Google';
+      if(!M || M.total == null) return {ic:'💰',v:'—',l:L,own:'Ad counts unavailable right now'};
+      var pv=n(P&&P.total), am=n(M.admob), bits=[comma(M.paid)+' paid', comma(M.house)+' Mediavine filler'];
       if(pv) bits.push((n(M.total)/pv).toFixed(1)+' per page view');
-      var own=bits.join(' · ');
+      var own='Website (Mediavine): '+bits.join(' · ');
+      own+='<br>iPhone app (Google AdMob): <b>'+comma(am)+'</b> ads'+(M.admob_ecpm ? ' · ≈ <b>$'+(am/1000*M.admob_ecpm).toFixed(2)+'</b> at $'+Number(M.admob_ecpm).toFixed(2)+' per 1,000' : '');
       // FAC_MEDIAVINE_PAGE_RPM is $ per 1,000 of OUR page views, calibrated
       // against Mediavine's earnings (2026-10-01: $0.44 = $0.48 / 1,097). It
       // is not the $0.20 "page RPM" Mediavine shows: that divides by its own
       // page count, about 2.2x ours. Same money either way.
       if(M.page_rpm && pv) own+='<br>≈ <b>$'+(pv/1000*M.page_rpm).toFixed(2)+'</b> earned · $'+Number(M.page_rpm).toFixed(2)+' per 1,000 of our page views';
       else own+='<br>Add your Page RPM from Mediavine for a revenue estimate';
-      return {ic:'💰',v:comma(M.total),l:'Mediavine ads · website',own:own,
-              title:'Ads Mediavine placed on findacrib.com in this range, counted by the page itself (each creative once; a banner refresh is a new ad). Paid = an advertiser\u2019s creative; filler = Mediavine\u2019s own "Grow" house ads. Plus members see none. Mediavine\u2019s dashboard is the source of truth for earnings.'};
+      return {ic:'💰',v:comma(n(M.total)+am),l:L,own:own,
+              title:'Ads shown in this range. Website: what Mediavine placed on findacrib.com, counted by the page itself (each creative once; a banner refresh is a new ad); paid = an advertiser\u2019s creative, filler = Mediavine\u2019s own "Grow" house ads. iPhone app: Google AdMob ads the app showed (TestFlight test ads left out). Plus members see none. Mediavine\u2019s and AdMob\u2019s dashboards are the source of truth for earnings.'};
     }
     // The headline goal's dollar figure, from the real Mediavine rate instead of
     // a guess (owner, 2026-10-01; the first version said ≈ $18k/month from an

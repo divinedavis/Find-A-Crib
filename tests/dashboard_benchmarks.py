@@ -121,12 +121,14 @@ def run(browser, live):
     expect(page.locator('#tiles')).not_to_contain_text('Ads served · all platforms')
     expect(page.locator('#tiles')).not_to_contain_text('Pay conversion · visitors who paid')
     # Mediavine (2026-09-29): the page's own count, paid vs filler, per page view.
-    payload['mediavine'] = {'paid': 40, 'house': 60, 'total': 100, 'rows': 12}
+    # Google AdMob in the app joined the tile (2026-10-03).
+    payload['mediavine'] = {'paid': 40, 'house': 60, 'total': 100, 'rows': 12, 'admob': 25}
     payload['page_views'] = {'total': 50, 'map': 45, 'other': 5}
     page.reload(wait_until='networkidle')
-    mv = page.locator('#tiles .tile').filter(has=page.get_by_text('Mediavine ads · website', exact=True))
-    expect(mv.locator('.t-val')).to_have_text('100')
+    mv = page.locator('#tiles .tile').filter(has=page.get_by_text('Ads · Mediavine + Google', exact=True))
+    expect(mv.locator('.t-val')).to_have_text('125')
     expect(mv).to_contain_text('40 paid · 60 Mediavine filler · 2.0 per page view')
+    expect(mv).to_contain_text('iPhone app (Google AdMob): 25 ads')
     expect(mv).to_contain_text('Add your Page RPM from Mediavine')
     payload['mediavine']['page_rpm'] = 12
     page.reload(wait_until='networkidle')

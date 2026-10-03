@@ -2047,6 +2047,23 @@ def _fac_mediavine(since):
         rpm = 0
     if rpm > 0:
         out["page_rpm"] = rpm
+    # Google's ads in the iPhone app (AdMob), on the same tile (owner,
+    # 2026-10-03): one ad_impression row per live ad the app showed;
+    # TestFlight's test ads (mode=test) are Google's samples and stay out.
+    # AdMob's console has the money; FAC_ADMOB_ECPM ($ per 1,000 ads, copied
+    # from it) gives an estimate when set.
+    try:
+        aq = "events?select=id&event=eq.ad_impression&props->>mode=eq.live&props->>platform=eq.ios"
+        if since:
+            aq += f"&created_at=gte.{urllib.parse.quote(str(since))}"
+        if mine:
+            aq += "&or=" + urllib.parse.quote(f"(visitor_id.is.null,visitor_id.not.in.({ids}))", safe="(),.")
+        out["admob"] = _rest_count(aq)
+        ecpm = float(os.environ.get("FAC_ADMOB_ECPM") or 0)
+        if ecpm > 0:
+            out["admob_ecpm"] = ecpm
+    except Exception:
+        pass
     return out
 
 

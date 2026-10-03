@@ -632,7 +632,10 @@ final class FindACribUITests: XCTestCase {
         app.launch()
         let tab = app.buttons["tab-Events"]
         XCTAssertTrue(tab.waitForExistence(timeout: 20), "New York should have an Events tab")
-        XCTAssertTrue(tab.isHittable, "the Events tab must fit on the bar")
+        // Wait for layout: right after launch the tab can exist a beat before
+        // it is hittable (failed once in the build 111 ship, passed on rerun).
+        let hittable = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == true"), object: tab)
+        XCTAssertEqual(XCTWaiter().wait(for: [hittable], timeout: 5), .completed, "the Events tab must fit on the bar")
         tab.tap()
         let cards = app.descendants(matching: .any).matching(identifier: "event-card")
         XCTAssertTrue(cards.firstMatch.waitForExistence(timeout: 10), "the tab should list events")

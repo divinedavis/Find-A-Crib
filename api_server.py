@@ -26,6 +26,7 @@ import marracat_metrics      # Marracat, fetched from its own droplet
 import claude_usage          # Anthropic API spend, owner-only tab
 import ai_gateway            # Plus check + $20/month cap for every AI call
 import nl_search             # plain-language search -> map filters
+import rent_check            # "is this rent fair?" — statistics, no model
 import creator_outreach      # owner's creator-review tracker, /dashboard/creators/
 import business_checklist    # owner's business & legal setup checklist, /dashboard/business/
 
@@ -98,6 +99,7 @@ BUILDINGS = _load("buildings.min.json", [])
 BY_BBL = {b["bbl"]: b for b in BUILDINGS}
 _listings = _load("listings.json", {})
 LISTED = set(str(k) for k in (_listings.get("counts") or {}).keys())
+FMR = _load("fmr.json", {})
 _s8 = _load("s8.json", {})
 S8_BLDG = _s8.get("bldg") or {}
 S8_AVAIL = {}
@@ -623,6 +625,20 @@ def ai_search():
             app.logger.warning("ai_search jev failed: %s", type(e).__name__)
     AI.record(user, "search", model, input_tokens=tokens)
     return jsonify(ok=True, filters=f, explain=explain, used_ai=used_ai)
+
+
+@app.route("/ai/rent-check")
+def ai_rent_check():
+    """Is this building's advertised rent typical for its neighborhood and
+    ZIP? Plus only; plain statistics (rent_check.py), so it costs nothing."""
+    user = _session_user()
+    err = AI.allow(user, "rent_check")
+    if err:
+        return jsonify(error=err), (401 if err == "sign_in_required" else 402 if err == "plus_required" else 429)
+    bbl = re.sub(r"\D", "", request.args.get("bbl", ""))[:10]
+    out = rent_check.check(bbl, BY_BBL, _listings, FMR)
+    AI.record(user, "rent_check", "rules")
+    return jsonify(out)
 
 
 # The iPhone app files its APNs token against the signed-in account

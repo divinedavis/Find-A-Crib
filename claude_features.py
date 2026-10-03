@@ -40,6 +40,7 @@ Rules:
 - Every point names the section it came from, using the exact section key.
 - HPD violation classes: A non-hazardous, B hazardous, C immediately hazardous; keys starting with "o" are still open.
 - Bedbug filings are the landlord's own annual report, not an inspection. Rat inspections happen on complaint or neighborhood sweeps, so none on record means never inspected, not rat-free.
+- If any HPD violations are open, the first point gives the open counts by class, leading with class C (immediately hazardous) and B (hazardous) — that is the most important fact for a renter.
 - Prefer recent and open over old and closed. Say when something is old.
 - If the records are mostly clean, say so plainly.
 - 3 to 6 points, each one or two short sentences. No markdown."""

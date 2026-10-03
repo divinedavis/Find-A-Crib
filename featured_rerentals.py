@@ -777,6 +777,13 @@ def save_images(records, apply_changes):
         if not src:
             continue
         name = hashlib.sha1(src.encode()).hexdigest()[:16]
+        # Photos saved before 2026-10-03 have no meta entry: fetch them once
+        # more so the tile copy comes from the original and gets a large copy.
+        if name in on_disk and name not in meta and apply_changes:
+            try:
+                os.remove(os.path.join(IMGDIR, on_disk.pop(name)))
+            except OSError:
+                on_disk.pop(name, None)
         if name not in on_disk:
             if not apply_changes:
                 rec["image"] = "(would fetch)"

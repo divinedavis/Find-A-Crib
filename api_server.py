@@ -580,7 +580,8 @@ def _session_user():
 
 # ---- AI features (Find A Crib Plus, owner 2026-10-03) ------------------------
 AI = ai_gateway.Gateway(rpc, SUPABASE_URL, SERVICE_KEY)
-NB_ALIASES = nl_search.aliases(sorted({(b["nb"], b["b"]) for b in BUILDINGS if b.get("nb")}))
+NB_PAIRS = sorted({(b["nb"], b["b"]) for b in BUILDINGS if b.get("nb")})
+NB_ALIASES = nl_search.aliases(NB_PAIRS)
 _jev = None
 
 
@@ -613,13 +614,13 @@ def ai_search():
     if client and nl_search.needs_place(rest, f):
         try:
             from typesafe_sdk import Choice
-            places, tokens = nl_search.jev_places(client, q, NB_ALIASES, f["boroughs"], Choice)
+            places, tokens = nl_search.jev_places(client, q, NB_PAIRS, f["boroughs"], Choice)
             if places:
                 f["nbs"] = places
                 explain += list(dict.fromkeys(re.sub(r"\s*\(.*?\)", "", n) for n in places))
             used_ai, model = True, "jev-1.13.0"
-        except Exception:
-            pass                      # Jev down: the rules' answer still stands
+        except Exception as e:      # Jev down: the rules' answer still stands
+            app.logger.warning("ai_search jev failed: %s", type(e).__name__)
     AI.record(user, "search", model, input_tokens=tokens)
     return jsonify(ok=True, filters=f, explain=explain, used_ai=used_ai)
 

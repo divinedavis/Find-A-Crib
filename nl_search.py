@@ -123,9 +123,10 @@ def needs_place(rest, f):
     return bool(words) and bool(PLACE_HINT.search(" " + rest + " ") or len(words) >= 2)
 
 
-def jev_places(client, text, neighborhoods, boroughs, Choice):
-    """Up to three neighborhoods Jev gives real weight to for `text`."""
-    pool = [(n, b) for n, b in neighborhoods.values() if not boroughs or b in boroughs]
+def jev_places(client, text, pairs, boroughs, Choice):
+    """Up to three neighborhoods Jev gives real weight to for `text`.
+    `pairs` is [(official name, borough code)]."""
+    pool = [(n, b) for n, b in pairs if not boroughs or b in boroughs]
     if not pool:
         return [], 0
     criteria = {f"n{i}": f"{n} ({ {'M': 'Manhattan', 'Bk': 'Brooklyn', 'Q': 'Queens', 'Bx': 'Bronx', 'SI': 'Staten Island'}.get(b, b) })"

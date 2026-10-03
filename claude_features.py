@@ -83,7 +83,10 @@ _NUM = re.compile(r"(?<![\w.])\d[\d,]*(?:\.\d+)?")
 def record_numbers(records):
     """Every number the records contain, including each part of a date
     (2025-09-13 -> 2025, 9, 13) and month names' years."""
-    text = json.dumps(records)
+    # Escaped newlines ("\\n90% AMI") would glue a line-leading number to the
+    # "n" of the escape and hide it from the lookbehind below (2026-10-03:
+    # every row of an HDC flyer dropped for "90"), so read them as spaces.
+    text = json.dumps(records, ensure_ascii=False).replace("\\n", " ").replace("\\t", " ").replace("\\r", " ")
     nums = set()
     for m in _NUM.finditer(text):
         v = m.group(0).replace(",", "")

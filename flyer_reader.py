@@ -142,7 +142,7 @@ def main():
     a = ap.parse_args()
     listings = json.load(open(os.path.join(a.docroot, "featured.json"))).get("listings", [])
     gw = Gateway(rpc, SUPABASE_URL, SERVICE_KEY)
-    since = (datetime.datetime.utcnow() - datetime.timedelta(days=30)).isoformat() + "Z"
+    since = (datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None) - datetime.timedelta(days=30)).isoformat() + "Z"
     table, read, spent, skipped = {}, 0, 0, 0
     for l in listings:
         href = l.get("href")
@@ -176,13 +176,13 @@ def main():
             continue
         table[href] = out
         rest("ai_cache?on_conflict=feature,key", "POST",
-             {"feature": "flyer", "key": key, "payload": out, "created_at": datetime.datetime.utcnow().isoformat() + "Z"},
+             {"feature": "flyer", "key": key, "payload": out, "created_at": datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).isoformat() + "Z"},
              prefer="resolution=merge-duplicates,return=minimal")
         print(f"  read {l.get('address', '')[:40]:40}  {len(out['units'])} unit rows  verified={out['verified']}")
     if not a.dry_run:
         path = os.path.join(a.docroot, "featured_units.json")
         with open(path + ".tmp", "w") as f:
-            json.dump({"generated": datetime.datetime.utcnow().isoformat() + "Z", "listings": table}, f)
+            json.dump({"generated": datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).isoformat() + "Z", "listings": table}, f)
         os.replace(path + ".tmp", path)
         os.chmod(path, 0o644)
     print(f"flyer_reader: {read} read, {len(table)} in the table, {skipped} left for tomorrow, ${spent / 1e6:.4f} spent")

@@ -29,6 +29,7 @@ import nl_search             # plain-language search -> map filters
 import rent_check            # "is this rent fair?" — statistics, no model
 import building_records      # one building's public records, for the Claude features
 import claude_features       # landlord report card (Haiku) + Ask about this building (Sonnet)
+import listing_page          # a re-rental's own page as text, for Help me apply
 import creator_outreach      # owner's creator-review tracker, /dashboard/creators/
 import business_checklist    # owner's business & legal setup checklist, /dashboard/business/
 
@@ -744,6 +745,54 @@ def ai_ask():
     if answer is None:
         return jsonify(ok=False, error="declined"), 200
     return jsonify(ok=True, answer=answer, as_of=rec["as_of"])
+
+
+_featured = {"at": 0, "by_href": {}}
+
+
+def _featured_listing(href):
+    """The re-rental with this link in today's featured.json (re-read every
+    10 minutes). Help me apply only ever fetches these pages."""
+    if time.time() - _featured["at"] > 600:
+        try:
+            with open(os.path.join(DATA_DIR, "featured.json")) as f:
+                _featured["by_href"] = {x.get("href"): x for x in json.load(f).get("listings", []) if x.get("href")}
+            _featured["at"] = time.time()
+        except Exception:
+            pass
+    return _featured["by_href"].get(href)
+
+
+@app.route("/ai/apply-help", methods=["POST"])
+def ai_apply_help():
+    """Help me apply (Plus): steps, documents, deadline, contact and a draft
+    email for one re-rental, from the listing and the agent's own page."""
+    user = _session_user()
+    href = str((request.get_json(silent=True) or {}).get("href") or "")[:500]
+    err = AI.allow(user, "apply_help", claude_features.HAIKU)
+    if err:
+        return _ai_err(err)
+    listing = _featured_listing(href)
+    if not listing:
+        return jsonify(error="unknown_listing"), 404
+    key = hashlib.sha1(href.encode()).hexdigest()
+    hit = _ai_cache_get("apply_help", key, max_age_days=3)
+    if hit:
+        AI.record(user, "apply_help", claude_features.HAIKU, cached=True)
+        return jsonify(ok=True, cached=True, **hit)
+    keep = {k: listing.get(k) for k in ("agent", "title", "address", "borough", "money_kind", "money_low", "money_high",
+                                       "income_1p_max", "units", "beds", "href")}
+    page = listing_page.text_of(href) if listing.get("href_kind") != "pdf" else ""
+    try:
+        help_, u = claude_features.apply_help(keep, page)
+    except Exception as e:
+        app.logger.warning("apply_help failed: %s", type(e).__name__)
+        return jsonify(error="unavailable"), 503
+    AI.record(user, "apply_help", u["model"] or claude_features.HAIKU, u["input_tokens"], u["output_tokens"],
+              cache_write_tokens=u["cache_write_tokens"], cache_read_tokens=u["cache_read_tokens"])
+    payload = {"help": help_, "page_read": bool(page)}
+    _ai_cache_put("apply_help", key, payload)
+    return jsonify(ok=True, cached=False, **payload)
 
 
 # The iPhone app files its APNs token against the signed-in account

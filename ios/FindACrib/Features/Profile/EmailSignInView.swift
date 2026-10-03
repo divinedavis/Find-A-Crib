@@ -6,6 +6,8 @@ import SwiftUI
 /// verification step on sign-up.
 struct EmailSignInView: View {
     var offersSocialSignIn = false
+    /// Overrides the sign-in title (the Plus page says "Sign in for Plus").
+    var heading: String? = nil
     @Environment(AuthService.self) private var auth
     @Environment(\.dismiss) private var dismiss
     @State private var email = ""
@@ -22,7 +24,7 @@ struct EmailSignInView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    Text(creating ? "Create account" : (offersSocialSignIn ? "Sign in for alerts" : "Sign in with email")).font(.se(26, .bold))
+                    Text(creating ? "Create account" : (heading ?? (offersSocialSignIn ? "Sign in for alerts" : "Sign in with email"))).font(.se(26, .bold))
                     Text(creating ? "No verification email — you're in as soon as you tap Create." : "The account you use on findacrib.com works here.")
                         .font(.se(15)).foregroundStyle(SE.ink2)
 

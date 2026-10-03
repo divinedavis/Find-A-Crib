@@ -10,6 +10,8 @@ struct RerentalCard: View {
     var slot: Int = 0
     @Environment(\.openURL) private var openURL
     @State private var showApply = false
+    @State private var showPlus = false
+    @Environment(AuthService.self) private var auth
 
     var body: some View {
         let f = listing
@@ -96,7 +98,9 @@ struct RerentalCard: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.top, 10)
-                Button { showApply = true } label: {
+                // Plus opens the sheet; anyone else sees the Plus page first,
+                // led by Help me apply, and lands in the sheet once they have it.
+                Button { if auth.hasPlus { showApply = true } else { showPlus = true } } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "doc.text").font(.system(size: 15, weight: .bold))
                         Text("Help me apply").font(.se(17, .bold))
@@ -106,6 +110,9 @@ struct RerentalCard: View {
                 }
                 .buttonStyle(.plain).accessibilityIdentifier("rerental-apply-help")
                 .sheet(isPresented: $showApply) { ApplyHelpSheet(listing: f) }
+                .sheet(isPresented: $showPlus, onDismiss: { if auth.hasPlus { showApply = true } }) {
+                    PaywallView(source: "apply_help", context: f.address)
+                }
             }
             .padding(18)
         }

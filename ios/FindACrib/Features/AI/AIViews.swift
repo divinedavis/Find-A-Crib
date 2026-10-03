@@ -49,7 +49,6 @@ struct AIBuildingSection: View {
     let building: Building
     var hasPrice: Bool
     @Environment(AuthService.self) private var auth
-    @Environment(AppNav.self) private var nav
     @State private var card: ReportCard?
     @State private var cardError: String?
     @State private var loadingCard = false
@@ -59,21 +58,14 @@ struct AIBuildingSection: View {
     @State private var asking = false
     @State private var rent: RentCheck?
     @State private var rentError: String?
-    @State private var paywallSource: String?
+    /// Opens the building page's own Plus sheet (a second .sheet down here
+    /// never presented — the page already owns one).
+    var onPlus: (String) -> Void
 
     var body: some View {
-        if !auth.isSignedIn {
-            // Signed out: say what's here and offer sign-in, like the
-            // violations section above does.
-            VStack(alignment: .leading, spacing: 10) {
-                Text("A plain-words report card on this landlord, answers to your questions from the city's records, and a check on the rent — with Find A Crib Plus.")
-                    .font(.se(17)).foregroundStyle(SE.ink2)
-                SEOutlineButton(title: "Sign in to use AI", icon: "person.crop.circle") { nav.tab = .profile }
-                    .accessibilityIdentifier("ai-sign-in")
-            }
-        } else {
-            signedIn
-        }
+        // Signed out or signed in, the buttons show: tapping one without
+        // Plus opens the Plus page with that feature first (owner, 2026-10-03).
+        signedIn
     }
 
     private var signedIn: some View {
@@ -111,24 +103,19 @@ struct AIBuildingSection: View {
                 if let rentError { Text(rentError).font(.se(15)).foregroundStyle(SE.ink3) }
             }
         }
-        .sheet(item: Binding(get: { paywallSource.map { SourceBox(id: $0) } }, set: { paywallSource = $0?.id })) { s in
-            PaywallView(source: s.id)
-        }
     }
-
-    private struct SourceBox: Identifiable { let id: String }
 
     private func gate(_ e: Error, source: String) -> Bool {
         switch e as? AIError {
-        case .signIn: nav.tab = .profile; return true
-        case .plus: paywallSource = source; return true
+        case .signIn: onPlus(source); return true
+        case .plus: onPlus(source); return true
         default: return false
         }
     }
 
     private func loadCard() async {
         Analytics.shared.track("report_card_click", ["bbl": building.bbl, "plus": auth.hasPlus])
-        guard auth.isSignedIn else { nav.tab = .profile; return }
+        guard auth.hasPlus else { onPlus("report_card"); return }
         loadingCard = true; cardError = nil; defer { loadingCard = false }
         do { card = try await AIService.reportCard(bbl: building.bbl, auth: auth) }
         catch { if !gate(error, source: "report_card") { cardError = errorText(error) } }
@@ -136,8 +123,7 @@ struct AIBuildingSection: View {
 
     private func openAsk() {
         Analytics.shared.track("ask_open", ["bbl": building.bbl, "plus": auth.hasPlus])
-        guard auth.isSignedIn else { nav.tab = .profile; return }
-        if !auth.hasPlus { paywallSource = "ask"; return }
+        guard auth.hasPlus else { onPlus("ask"); return }
         showAsk = true
     }
 
@@ -151,7 +137,7 @@ struct AIBuildingSection: View {
 
     private func loadRent() async {
         Analytics.shared.track("rent_check_click", ["bbl": building.bbl, "plus": auth.hasPlus])
-        guard auth.isSignedIn else { nav.tab = .profile; return }
+        guard auth.hasPlus else { onPlus("rent_check"); return }
         rentError = nil
         do { rent = try await AIService.rentCheck(bbl: building.bbl, auth: auth) }
         catch { if !gate(error, source: "rent_check") { rentError = errorText(error) } }
@@ -245,13 +231,18 @@ struct ApplyHelpSheet: View {
                         Text(error).font(.se(16)).foregroundStyle(SE.ink2)
                     } else {
                         ProgressView("Reading the listing…").tint(SE.royal)
+                            .frame(maxWidth: .infinity).padding(.top, 24)
                     }
-                }.padding(18)
+                }
+                // Full width: a short address used to shrink this column and
+                // the sheet centered it, spinner and all (owner, 2026-10-03).
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(18)
             }
             .navigationTitle("Help me apply").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
             .task { await load() }
-            .sheet(isPresented: $needsPlus, onDismiss: { if !auth.hasPlus { dismiss() } else { Task { await load() } } }) { PaywallView(source: "apply_help") }
+            .sheet(isPresented: $needsPlus, onDismiss: { if !auth.hasPlus { dismiss() } else { Task { await load() } } }) { PaywallView(source: "apply_help", context: listing.address) }
         }
     }
 
@@ -261,7 +252,7 @@ struct ApplyHelpSheet: View {
         catch {
             switch error as? AIError {
             case .plus: needsPlus = true
-            case .signIn: self.error = "Sign in under Profile to get help applying."
+            case .signIn: needsPlus = true
             default: self.error = errorText(error)
             }
         }
@@ -302,7 +293,7 @@ struct AISearchSheet: View {
     private func go() async {
         let q = text.trimmingCharacters(in: .whitespacesAndNewlines)
         Analytics.shared.track("ai_search_click", ["words": q.split(separator: " ").count, "plus": auth.hasPlus])
-        guard auth.isSignedIn else { dismiss(); nav.tab = .profile; return }
+        guard auth.hasPlus else { needsPlus = true; return }
         busy = true; error = nil; defer { busy = false }
         do {
             let r = try await AIService.search(q, auth: auth)
@@ -312,7 +303,7 @@ struct AISearchSheet: View {
         } catch {
             switch error as? AIError {
             case .plus: needsPlus = true
-            case .signIn: dismiss(); nav.tab = .profile
+            case .signIn: needsPlus = true
             default: self.error = errorText(error)
             }
         }

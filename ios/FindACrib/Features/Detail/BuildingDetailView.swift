@@ -55,7 +55,7 @@ struct BuildingDetailView: View {
                         section("Violations & inspections") { hpdBlock }
                         // Plus AI (owner, 2026-10-03): a plain-words read of
                         // the records above, questions about them, and the rent check.
-                        section("Ask AI") { AIBuildingSection(building: b, hasPrice: store.price(b) != nil) }
+                        section("Ask AI") { AIBuildingSection(building: b, hasPrice: store.price(b) != nil) { paywallSource = $0; showPaywall = true } }
                     } else if store.city.isIncomeRestricted {
                         // Its own block: units and eligibility, not the
                         // violations/evictions shape cityRecordBlock draws.
@@ -190,7 +190,7 @@ struct BuildingDetailView: View {
     /// get_agent_phone(); everyone else sees that one is on file.
     @ViewBuilder private var agentBlock: some View {
         if !auth.isSignedIn {
-            Text("The managing agent and owner HPD has on file for this building, and — with Find A Crib Plus — the agent's phone number.")
+            Text("The managing agent and owner HPD has on file for this building, and the agent's phone number.")
                 .font(.se(17)).foregroundStyle(SE.ink2)
             SEOutlineButton(title: "Sign in to see who runs this building", icon: "person.crop.circle") { nav.tab = .profile }
                 .accessibilityIdentifier("agent-sign-in")

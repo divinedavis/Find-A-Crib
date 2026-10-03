@@ -88,17 +88,28 @@ final class FindACribUITests: XCTestCase {
     /// (the count headline is unchanged). The default route is Brooklyn, and
     /// the bundled featured.json has Brooklyn re-rentals, so this runs offline.
     /// Plus AI on iPhone (owner, 2026-10-03). The UI runner is signed out:
-    /// the building page has an "Ask AI" section that explains itself and
-    /// offers sign-in (signed in, it shows the report card / Ask / rent check).
-    func testBuildingOffersAIAndSignsInFirst() throws {
+    /// the building page still shows the AI buttons, and tapping one opens
+    /// the Plus page led by that feature, whose one button starts sign-in
+    /// in place (owner: "show users what they get with plus").
+    func testBuildingAIOpensThePlusPage() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "detail"]
         app.launch()
         XCTAssertTrue(app.buttons["detail-menu"].waitForExistence(timeout: 30))
-        let gate = app.buttons["ai-sign-in"]
-        for _ in 0..<14 where !gate.isHittable { app.swipeUp() }
-        XCTAssertTrue(gate.exists, "signed out, the building page's AI section should offer sign-in")
-        XCTAssertFalse(app.buttons["ai-report-card"].exists, "AI buttons appear only once signed in")
+        let card = app.buttons["ai-report-card"]
+        // Clear of the floating Comments/hand-off bar too: "hittable" there
+        // still sends the tap to the bar.
+        let h = app.windows.firstMatch.frame.height
+        for _ in 0..<14 where !card.isHittable || card.frame.maxY > h - 160 { app.swipeUp() }
+        XCTAssertTrue(card.isHittable, "the building page should offer the landlord report card")
+        XCTAssertTrue(app.buttons["ai-ask"].exists, "the building page should offer Ask about this building")
+        card.tap()
+        let signIn = app.buttons["paywall-sign-in"]
+        XCTAssertTrue(signIn.waitForExistence(timeout: 10), "signed out, the Plus page offers sign-in")
+        XCTAssertTrue(app.staticTexts["WHAT YOU TAPPED"].exists, "the tapped feature leads the Plus page")
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "plus-page"; shot.lifetime = .keepAlways; add(shot)
+        signIn.tap()
+        XCTAssertTrue(app.staticTexts["Sign in for Plus"].waitForExistence(timeout: 5), "sign-in opens over the Plus page")
     }
 
     /// Plain-language search opens from Search; signed out it sends you to sign in.
@@ -123,6 +134,8 @@ final class FindACribUITests: XCTestCase {
         let help = app.buttons["rerental-apply-help"].firstMatch
         for _ in 0..<10 where !help.isHittable { app.swipeUp() }
         XCTAssertTrue(help.exists, "a re-rental card should offer Help me apply")
+        help.tap()
+        XCTAssertTrue(app.buttons["paywall-sign-in"].waitForExistence(timeout: 10), "without Plus, Help me apply opens the Plus page")
     }
 
     /// Qualify-check (free): household + income in Lotteries, then badges.

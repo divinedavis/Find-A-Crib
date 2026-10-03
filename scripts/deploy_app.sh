@@ -44,7 +44,18 @@ if [ "$SKIP" != "--skip-tests" ]; then
   "$PY" tests/apple_street_preview.py
   "$PY" tests/street_view.py
   echo "== journeys against the local build"
-  "$PY" tests/journeys.py --target local
+  # One re-run for a journey that fails, as the live pass already does: four
+  # deploys on 2026-10-03 stopped on a different one-off flake each time
+  # (WebKit NotReadableError, a profile modal 1.5 s late, a QR read in dark
+  # mode, the Mac's network dropping), every one passing 3/3 when re-run.
+  # A journey that fails twice still stops the deploy.
+  LFAILED=$(mktemp)
+  if ! "$PY" tests/journeys.py --target local --failed-out "$LFAILED"; then
+    echo "== re-running the failed local journeys once: $(tr '\n' ' ' <"$LFAILED")"
+    while read -r name; do
+      "$PY" tests/journeys.py --target local --only "$name" || { echo "!! $name failed twice on the local build"; exit 1; }
+    done <"$LFAILED"
+  fi
 fi
 
 echo "== snapshotting what is live now"

@@ -780,10 +780,22 @@ def save_images(records, apply_changes):
         # Photos saved before 2026-10-03 have no meta entry: fetch them once
         # more so the tile copy comes from the original and gets a large copy.
         if name in on_disk and (meta.get(name) or {}).get("v") != 2 and apply_changes:
-            try:
-                os.remove(os.path.join(IMGDIR, on_disk.pop(name)))
-            except OSError:
-                on_disk.pop(name, None)
+            data, ext, w, large = fetch_best_image(src)
+            if data:            # only replace the old photo once the new one is in hand
+                old = on_disk.pop(name)
+                try:
+                    os.remove(os.path.join(IMGDIR, old))
+                except OSError:
+                    pass
+                with open(os.path.join(IMGDIR, name + ext), "wb") as f:
+                    f.write(data)
+                if large:
+                    with open(os.path.join(IMGDIR, name + "_l.jpg"), "wb") as f:
+                        f.write(large)
+                on_disk[name] = name + ext
+                meta[name] = {"w": w, "large": bool(large), "v": 2}
+            else:
+                meta.setdefault(name, {})["v"] = 2      # keep the old copy; don't retry daily
         if name not in on_disk:
             if not apply_changes:
                 rec["image"] = "(would fetch)"

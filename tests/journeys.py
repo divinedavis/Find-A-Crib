@@ -1566,7 +1566,7 @@ class Runner:
               title: document.getElementById('paywall-title').textContent,
               shown: [...document.querySelectorAll('#paywall-feats li')].filter(l => !l.hidden && l.offsetParent).map(l => l.dataset.perk)}))()""")
             self.ok(pw['open'] and 'plain words' in pw['title'].lower(), f'a free account gets the AI paywall: {pw}', j)
-            self.ok(set(pw['shown']) == {'ai_search', 'rent_check', 'report_card', 'ask', 'noads'}, f'the paywall lists only the live AI perks + no ads: {pw["shown"]}', j)
+            self.ok(set(pw['shown']) == {'ai_search', 'rent_check', 'report_card', 'ask', 'apply_help', 'noads'}, f'the paywall lists only the live AI perks + no ads: {pw["shown"]}', j)
             page.evaluate("document.querySelector('[data-paywall=\"close\"]')?.click()"); time.sleep(0.3)
             # The building sheet offers the report card and Ask; a free account gets the paywall.
             self.boot(page, f'/#d={BBL}')

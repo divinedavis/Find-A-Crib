@@ -1762,6 +1762,7 @@
       <li data-perk="ai_search" data-ai><span class="pf-ico">✨</span><span><b>Search in plain words</b>“2 bed under $2,500 near Prospect Park, no violations” — and the map sets every filter</span></li>
       <li data-perk="report_card" data-ai><span class="pf-ico">🧾</span><span><b>Landlord report card</b>Every building’s city records — violations, pests, evictions, housing court — read for you in plain words</span></li>
       <li data-perk="ask" data-ai><span class="pf-ico">💬</span><span><b>Ask about this building</b>“Has it had rat problems?” — answers from the city’s records, with the source for each fact</span></li>
+      <li data-perk="apply_help" data-ai><span class="pf-ico">📝</span><span><b>Help me apply</b>The steps, the documents to gather and a ready-to-send email to the agent, for every re-rental</span></li>
       <li data-perk="rent_check" data-ai><span class="pf-ico">💵</span><span><b>Is this rent fair?</b>Every advertised rent checked against the neighborhood and HUD’s fair-market rent</span></li>
       <li data-perk="bedbugs"><span class="pf-ico">🛏️</span><span><b>Bedbug records</b>Every bedbug filing a landlord made for the building, year by year</span></li>
       <li data-perk="rodents"><span class="pf-ico">🐀</span><span><b>Rodent records</b>The Health Department's rat inspections, building by building</span></li>
@@ -5168,6 +5169,37 @@ function favActive() {
     };
   }
 
+  async function runApplyHelp(card, href) {
+    track('apply_help_click', Object.assign(featProps(card), { signed_in: !!authUser, plus: !!plusActive }));
+    const tok = await aiToken('apply_help', 'Create an account or sign in to get help applying.');
+    const out = card.querySelector('.feat-apply-out');
+    if (!tok || !out) return;
+    out.textContent = '📝 Reading the listing…'; out.hidden = false;
+    let r, j = {};
+    try { r = await fetch('/api/ai/apply-help', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok }, body: JSON.stringify({ href }) }); j = await r.json(); }
+    catch (e) { out.textContent = 'Couldn’t reach Find A Crib just now — try again.'; return; }
+    if (r.status === 402) { out.hidden = true; openPaywall(null, 'apply_help'); return; }
+    if (!r.ok || !j.ok) { out.textContent = j.error === 'daily_limit' ? 'That’s a lot of applications today — more tomorrow.' : 'Help isn’t available for this one right now — the agent’s page has the details.'; return; }
+    const h = j.help || {}, c = h.contact || {};
+    const mail = c.email ? `mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent(h.email_subject || '')}&body=${encodeURIComponent(h.email_body || '')}` : null;
+    out.innerHTML = `
+      <div><b>How to apply</b></div>
+      <ol class="rc-points" style="padding-left:18px;list-style:decimal">${(h.steps || []).map(x => `<li>${esc(x)}</li>`).join('')}</ol>
+      ${(h.documents || []).length ? `<div style="margin-top:8px"><b>Gather</b></div><ul class="rc-points">${h.documents.map(d => `<li>• ${esc(d.item)}${d.required_by_listing ? ' <span class="rc-src">required here</span>' : ''}</li>`).join('')}</ul>` : ''}
+      ${h.deadline ? `<div style="margin-top:6px"><b>Deadline:</b> ${esc(h.deadline)}</div>` : ''}
+      ${c.email || c.phone ? `<div style="margin-top:6px"><b>Contact:</b> ${c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : ''}${c.email && c.phone ? ' · ' : ''}${c.phone ? `<a href="tel:${esc(c.phone.replace(/[^\d+]/g, ''))}">${esc(c.phone)}</a>` : ''}</div>` : ''}
+      <div style="margin-top:8px"><b>Email to the agent</b></div>
+      <div style="white-space:pre-wrap;border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:4px;font-size:13.5px">${esc('Subject: ' + (h.email_subject || '') + '\n\n' + (h.email_body || ''))}</div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="d-rentcheck feat-copy" type="button" style="margin-top:0">Copy email</button>
+        ${mail ? `<a class="d-rentcheck" style="margin-top:0;text-decoration:none" href="${esc(mail)}">Open in email ↗</a>` : ''}
+      </div>
+      <div class="rc-note">Written by AI from the agent’s listing${j.page_read ? ' and page' : ''}. Check the agent’s page before you send anything.</div>`;
+    const copy = out.querySelector('.feat-copy');
+    if (copy) copy.onclick = () => { try { navigator.clipboard.writeText('Subject: ' + (h.email_subject || '') + '\n\n' + (h.email_body || '')); copy.textContent = 'Copied ✓'; } catch (e) {} track('apply_help_copy', featProps(card)); };
+    track('apply_help_result', Object.assign(featProps(card), { cached: !!j.cached, page_read: !!j.page_read, has_email: !!c.email }));
+  }
+
   function applyAIFilters(f) {
     const fire = el => el && el.dispatchEvent(new Event('change', { bubbles: true }));
     const radio = (name, v) => { const r = document.querySelector('input[name="' + name + '"][value="' + v + '"]'); if (r && !r.checked) { r.checked = true; fire(r); } };
@@ -6138,6 +6170,8 @@ function favActive() {
              href="${esc(outbound(f.href, 'rerental_tile', f.href_kind === 'agent_page' ? 'agent_board' : f.href_kind === 'flyer' ? 'unit_flyer' : 'unit_listing'))}">${f.href_kind === 'agent_page'
                ? 'Find it on their listings page ↗' : f.href_kind === 'flyer' ? 'See the listing ↗' : 'Apply on their site ↗'}</a>
         </div>
+        <button class="d-rentcheck feat-apply" data-action="applyhelp" data-href="${esc(f.href)}" style="margin-top:8px">📝 Help me apply<span class="plus-tag">Plus</span></button>
+        <div class="rentcheck-card feat-apply-out" hidden></div>
         ${alertLink(f.borough, 'rerental', 'rerental_tile')}
       </div>
     </div>`;
@@ -6614,6 +6648,8 @@ function favActive() {
     // A featured tile is somebody else's listing: it has no BBL and no marker,
     // so there is nothing to fly to. Count the hand-off and let the link go.
     if (card.classList.contains('feat-card')) {
+      const ah = e.target.closest('[data-action="applyhelp"]');
+      if (ah) { runApplyHelp(card, ah.dataset.href); return; }
       if (e.target.closest('a[data-action="featured"]'))
         track('featured_click', Object.assign(featProps(card), { href: e.target.closest('a').getAttribute('href') || '' }));
       return;
@@ -7964,7 +8000,7 @@ function favActive() {
   let paywallSource = 'other';
   // While everything else is free, Plus is the AI features (owner,
   // 2026-10-03) — and no ads, which paying members keep.
-  const AI_SOURCES = new Set(['ai_search', 'rent_check', 'report_card', 'ask', 'profile']);
+  const AI_SOURCES = new Set(['ai_search', 'rent_check', 'report_card', 'ask', 'apply_help', 'profile']);
   function openPaywall(bbl, source) {
     if (FEATURES_FREE && !AI_SOURCES.has(source)) return;   // the free features are never sold
     { const feats = document.getElementById('paywall-feats');
@@ -7974,7 +8010,7 @@ function favActive() {
     pendingPhoneBbl = bbl || null;            // remember what they wanted, to reveal after checkout
     paywallSource = source || (bbl ? 'phone' : 'other');
     // Lead with what they came for.
-    const TITLES = { ai_search: 'Search in plain words', rent_check: 'Is this rent fair?', report_card: 'Landlord report card', ask: 'Ask about this building', noads: 'Find A Crib, with no ads',
+    const TITLES = { ai_search: 'Search in plain words', rent_check: 'Is this rent fair?', report_card: 'Landlord report card', ask: 'Ask about this building', apply_help: 'Help me apply', noads: 'Find A Crib, with no ads',
                      bedbugs: 'See every building\u2019s bedbug record', rodents: 'See every building\u2019s rat inspections',
                      phone: 'Call who actually runs the building', research: 'Research any landlord',
                      saved_search: 'Save your searches', folders: 'Organize your saved homes' };

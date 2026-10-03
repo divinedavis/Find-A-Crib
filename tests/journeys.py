@@ -115,6 +115,7 @@ JOURNEY_EVENTS = {
     'consent_mode':         [],
     'account_delete':       [],
     'plus_gates':           ['outbound'],
+    'resume_search':        ['resume_offer', 'resume_apply'],
     # home_set / home_open / home_clear are pre-2026-09-06 history: the
     # my-apartment pin was retired from the UI that day (no sheet button, no
     # profile row, no pill) and the code left dormant. Nothing to cover.
@@ -1525,6 +1526,30 @@ class Runner:
             ctx.close()
         j.notes.append('default before config; GPC denies ads; EU banner')
 
+    def j_resume_search(self, page, j, device):
+        """Remembered search (owner, 2026-10-03): with nothing saved there is
+        no chip; with a saved Brooklyn search the chip offers it, and tapping
+        it applies Brooklyn and narrows the count. A link (?q=) never offers."""
+        page.evaluate("try { localStorage.removeItem('fac.lastSearch:nyc') } catch (e) {}")
+        self.boot(page)
+        self.ok(page.evaluate("document.getElementById('pill-resume').hidden"), 'no saved search: no resume chip', j)
+        before = page.evaluate(LABEL)
+        st = {"q": "", "boroughs": ["Bk"], "allBoroughs": 5, "nbs": [], "listed": "any", "s8": "any",
+              "beds": [], "pmin": "", "pmax": "", "more": {"viol": "any", "comp": "any", "phone": "any"}, "at": 0}
+        page.evaluate("s => localStorage.setItem('fac.lastSearch:nyc', JSON.stringify(Object.assign(s, {at: Date.now()})))", st)
+        self.boot(page)
+        txt = page.evaluate("document.getElementById('pill-resume').hidden ? null : document.getElementById('pill-resume').textContent")
+        self.ok(txt is not None and 'Brooklyn' in txt, f'saved Brooklyn search should be offered, got {txt!r}', j)
+        page.evaluate("document.getElementById('pill-resume').click()"); time.sleep(1.2)
+        boros = page.evaluate("[...document.querySelectorAll('#borough-list input:checked')].map(c => c.dataset.b)")
+        self.ok(boros == ['Bk'], f'resuming should leave only Brooklyn checked, got {boros}', j)
+        self.ok(page.evaluate(LABEL) != before, f'the count should narrow after resuming: {before!r} -> {page.evaluate(LABEL)!r}', j)
+        self.ok(page.evaluate("document.getElementById('pill-resume').hidden"), 'the chip goes away once used', j)
+        self.boot(page, '/?q=Bronx')
+        self.ok(page.evaluate("document.getElementById('pill-resume').hidden"), 'a ?q= link never offers the old search', j)
+        page.evaluate("try { localStorage.removeItem('fac.lastSearch:nyc') } catch (e) {}")
+        j.notes.append('no chip fresh · offered · applies Brooklyn · not on links')
+
     def j_plus_gates(self, page, j, device):
         """Everything free for now (owner, 2026-10-01): any account gets every
         feature, nothing offers Plus, ads stay.
@@ -1637,7 +1662,7 @@ class Runner:
     JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'pin_and_list',
                 'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'signin_modal', 'app_chip', 'app_qr_menu', 'boot_is_usable', 'city_chip',
                 'ad_tiles', 'list_follows_zoom', 'plus_no_ads', 'building_page_link', 'remove_ads_chip', 'overlays_clear_ad', 'outbound_links', 'status_chips', 'referral_gate',
-                'rent_report', 'legal_pages', 'comments_gate', 'landlords_gate', 'consent_mode', 'account_delete', 'plus_gates']
+                'rent_report', 'legal_pages', 'comments_gate', 'landlords_gate', 'consent_mode', 'account_delete', 'plus_gates', 'resume_search']
 
     # ---- run --------------------------------------------------------------
     def run(self):

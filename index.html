@@ -1529,6 +1529,8 @@
   <div class="filter-bar">
     <input class="search-input" id="q" type="text" placeholder="Search only rent stabilized apartments" />
     <div class="chip-row">
+    <!-- Resume your last search (2026-10-03): a chip, never a popup. -->
+    <div class="filter-pill" id="pill-resume" role="button" tabindex="0" hidden title="Pick up the search you had last time">↩ <span id="pill-resume-text">Resume</span></div>
     <div class="filter-pill toggle-pill nyc-only" id="pill-home" role="button" tabindex="0" hidden title="Your own building: status, violations, landlord, and what changed since your last visit">🏠 My apartment</div>
     <div class="filter-pill toggle-pill" id="pill-fav" role="button" tabindex="0">
       <span class="fav-heart">♡</span> Saved <span class="count-badge" id="badge-fav" style="display:none">0</span>
@@ -5568,8 +5570,105 @@ function favActive() {
     };
   }
 
+  // ---------- remember the last search (owner, 2026-10-03) ----------
+  // Every filter change is saved on this device, per city. On the next bare
+  // visit a chip offers to pick it back up — it never re-applies on its own,
+  // because a visitor arriving from a link or a search wants that, not their
+  // old filters. Signed in, the same search also lands on the account.
+  const RESUME_KEY = 'fac.lastSearch:' + (document.documentElement.dataset.city || 'nyc');
+  let resumeReady = false, resumeTimer = null, resumeApplying = false;
+  function resumeState() {
+    const all = [...document.querySelectorAll('#borough-list input')];
+    return {
+      q: document.getElementById('q').value.trim(),
+      boroughs: all.filter(c => c.checked).map(c => c.dataset.b),
+      allBoroughs: all.length,
+      nbs: [...nbListEl.querySelectorAll('input:checked')].map(c => c.value),
+      listed: (document.querySelector('input[name="listed"]:checked') || {}).value || 'any',
+      s8: (document.querySelector('input[name="s8"]:checked') || {}).value || 'any',
+      beds: [...document.querySelectorAll('input[name="beds"]:checked')].map(c => c.value),
+      pmin: (document.getElementById('price-min') || {}).value || '',
+      pmax: (document.getElementById('price-max') || {}).value || '',
+      more: Object.assign({}, moreFilters),
+    };
+  }
+  function searchSummary(st) {
+    const bits = [];
+    if (st.q) bits.push('“' + st.q.slice(0, 24) + '”');
+    if (st.nbs.length) bits.push(st.nbs.length === 1 ? st.nbs[0] : st.nbs.length + ' neighborhoods');
+    else if (st.boroughs.length && st.boroughs.length < st.allBoroughs) bits.push(st.boroughs.map(b => ({ M: 'Manhattan', Bx: 'Bronx', Bk: 'Brooklyn', Q: 'Queens', SI: 'Staten Island' }[b] || b)).join(', '));
+    if (st.pmin || st.pmax) bits.push((st.pmin ? '$' + (+st.pmin).toLocaleString() : 'Any') + '–' + (st.pmax ? '$' + (+st.pmax).toLocaleString() : 'any'));
+    if (st.beds.length) bits.push(st.beds.map(b => b === '0' ? 'studio' : b + ' bd').join('/'));
+    if (st.listed === 'yes') bits.push('available');
+    if (st.s8 !== 'any') bits.push('vouchers');
+    if (st.more.viol === 'none') bits.push('no violations');
+    return bits.join(' · ');
+  }
+  function rememberSearchSoon() {
+    if (!resumeReady || resumeApplying) return;
+    clearTimeout(resumeTimer);
+    resumeTimer = setTimeout(() => {
+      const st = resumeState();
+      const pill = document.getElementById('pill-resume');
+      if (pill) pill.hidden = true;            // they are searching again; the old one is moot
+      if (!searchSummary(st)) return;           // nothing narrowed: keep the last real search
+      try { localStorage.setItem(RESUME_KEY, JSON.stringify(Object.assign(st, { at: Date.now() }))); } catch (e) {}
+      if (authUser && supaClient) {
+        supaClient.auth.updateUser({ data: { last_search: { [RESUME_KEY]: st } } }).catch(() => {});
+      }
+    }, 800);
+  }
+  function offerResume() {
+    resumeReady = true;
+    if (location.search || location.hash) return;   // a link or a search knows where it wants to be
+    let st = null;
+    try { st = JSON.parse(localStorage.getItem(RESUME_KEY) || 'null'); } catch (e) {}
+    const meta = authUser && authUser.user_metadata && authUser.user_metadata.last_search;
+    if (!st && meta && meta[RESUME_KEY]) st = meta[RESUME_KEY];
+    if (!st || !searchSummary(st) || (st.at && Date.now() - st.at > 60 * 864e5)) return;
+    const pill = document.getElementById('pill-resume');
+    if (!pill) return;
+    document.getElementById('pill-resume-text').textContent = 'Resume: ' + searchSummary(st);
+    pill.hidden = false;
+    track('resume_offer', { at_days: st.at ? Math.round((Date.now() - st.at) / 864e5) : null });
+    const go = () => {
+      pill.hidden = true;
+      track('resume_apply', null);
+      resumeApplying = true;
+      const fire = (el, type) => el && el.dispatchEvent(new Event(type || 'change', { bubbles: true }));
+      document.querySelectorAll('#borough-list input').forEach(c => {
+        const on = st.boroughs.includes(c.dataset.b);
+        if (c.checked !== on) { c.checked = on; fire(c); }
+      });
+      nbListEl.querySelectorAll('input').forEach(c => {
+        const on = st.nbs.includes(c.value);
+        if (c.checked !== on) { c.checked = on; fire(c); }
+      });
+      for (const name of ['listed', 's8']) {
+        const r = document.querySelector('input[name="' + name + '"][value="' + st[name] + '"]');
+        if (r && !r.checked) { r.checked = true; fire(r); }
+      }
+      document.querySelectorAll('input[name="beds"]').forEach(c => {
+        const on = st.beds.includes(c.value);
+        if (c.checked !== on) { c.checked = on; fire(c); }
+      });
+      for (const [id, v] of [['price-min', st.pmin], ['price-max', st.pmax]]) {
+        const el = document.getElementById(id);
+        if (el && el.value !== v) { el.value = v; fire(el); }
+      }
+      Object.assign(moreFilters, st.more || {}); syncMoreUI();
+      const box = document.getElementById('q');
+      if (box.value !== st.q) { box.value = st.q; fire(box, 'input'); }
+      resumeApplying = false;
+      applyFilters();
+    };
+    pill.onclick = go;
+    pill.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } };
+  }
+
   function applyFilters(opts) {
     tr('applyFilters ' + document.getElementById('q').value.slice(0, 20));
+    rememberSearchSoon();
     const keepFilters = !!(opts && opts.keepFilters)
       || keepFiltersFor === document.getElementById('q').value.trim().toUpperCase();
     const boroughs = new Set([...document.querySelectorAll('#borough-list input:checked')].map(c => c.dataset.b));
@@ -7553,6 +7652,7 @@ function favActive() {
   })();
   applyFilters();
   syncHeaderHeight();
+  offerResume();
   // ---------- first view: open on the visitor's own area ----------
   // Only on a bare landing (no hash, no query): a deep link, a search, a
   // shared folder or an email click-through all know where they want to be.

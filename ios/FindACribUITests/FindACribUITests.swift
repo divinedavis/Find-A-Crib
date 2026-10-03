@@ -114,6 +114,21 @@ final class FindACribUITests: XCTestCase {
     /// is in view; "List" then opens on that area — no "Search this area" tap
     /// (removed 2026-09-16 at the owner's request, from a recording of the
     /// count sitting at 47,165 through a whole zoom into Clinton Hill).
+    /// Zoomed out over the whole city the map must draw cluster bubbles.
+    /// Build 108 drew none (bad cell coordinates) and every other map test
+    /// still passed, because they only read the count pill (owner, 2026-10-03).
+    func testZoomedOutMapShowsClusterBubbles() throws {
+        app.terminate()
+        // mapall: the unfiltered city, ~47k buildings — the grid path, not
+        // the few-pins path a Brooklyn "available" search takes.
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "mapall"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["map-count"].waitForExistence(timeout: 30))
+        let bubble = app.descendants(matching: .any)["cluster-bubble"].firstMatch
+        XCTAssertTrue(bubble.waitForExistence(timeout: 15), "no cluster bubbles on the zoomed-out map")
+        XCTAssertGreaterThan(app.descendants(matching: .any).matching(identifier: "cluster-bubble").count, 3)
+    }
+
     func testMapViewportCarriesToList() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "map"]

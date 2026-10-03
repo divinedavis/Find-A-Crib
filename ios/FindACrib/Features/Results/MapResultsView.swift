@@ -230,6 +230,33 @@ struct BuildingMap: UIViewRepresentable {
          lat: region.span.latitudeDelta * Double(cellPoints / max(viewSize.height, 1)))
     }
 
+    /// Cluster bubbles for the buildings in view: one per map-anchored cell,
+    /// at the average position of its buildings pulled toward the cell's
+    /// middle. Each cell keeps its own column and row — build 108 packed them
+    /// into one Int and unpacked it with a floor that is wrong for negative
+    /// longitudes, which put every New York bubble at an impossible
+    /// coordinate, so MapKit drew none (owner, 2026-10-03).
+    nonisolated static func gridAnnotations(_ visible: [Building], cw: Double, ch: Double) -> [GridAnnotation] {
+        struct Cell: Hashable { let i: Int; let j: Int }
+        var cells: [Cell: (lat: Double, lng: Double, n: Int)] = [:]
+        for b in visible {
+            let c = Cell(i: Int((b.lng / cw).rounded(.down)), j: Int((b.lat / ch).rounded(.down)))
+            var acc = cells[c] ?? (0, 0, 0)
+            acc.lat += b.lat; acc.lng += b.lng; acc.n += 1
+            cells[c] = acc
+        }
+        let clamp = Double(centroidClamp) / 2
+        let zoomTag = Int((log2(1 / max(cw, 1e-9)) * 8).rounded())
+        return cells.map { c, acc in
+            let lng = acc.lng / Double(acc.n), lat = acc.lat / Double(acc.n)
+            let cLng = (Double(c.i) + 0.5) * cw, cLat = (Double(c.j) + 0.5) * ch
+            return GridAnnotation(
+                coordinate: .init(latitude: min(max(lat, cLat - ch * clamp), cLat + ch * clamp),
+                                  longitude: min(max(lng, cLng - cw * clamp), cLng + cw * clamp)),
+                count: acc.n, key: "g:\(zoomTag):\(c.i):\(c.j):\(acc.n)")
+        }
+    }
+
     func makeUIView(context: Context) -> MKMapView {
         let m = MKMapView()
         m.delegate = context.coordinator
@@ -354,29 +381,7 @@ struct BuildingMap: UIViewRepresentable {
                     // Cells are anchored to the map, not the viewport: a pan at
                     // the same zoom keeps the same cells, so most bubbles stay
                     // put and only the edges are added or removed.
-                    var cells: [Int: (lat: Double, lng: Double, n: Int)] = [:]
-                    for b in visible {
-                        let ci = Int((b.lng / cw).rounded(.down)), cj = Int((b.lat / ch).rounded(.down))
-                        let k = cj &* 1_000_003 &+ ci
-                        var acc = cells[k] ?? (0, 0, 0)
-                        acc.lat += b.lat; acc.lng += b.lng; acc.n += 1
-                        cells[k] = acc
-                    }
-                    let clamp = Double(BuildingMap.centroidClamp) / 2
-                    let zoomTag = Int((log2(1 / max(cw, 1e-9)) * 8).rounded())
-                    pins = cells.map { k, acc in
-                        let cjI = Int((Double(k) / 1_000_003).rounded(.down))
-                        let ciI = k &- cjI &* 1_000_003
-                        let ci = Double(ciI), cj = Double(cjI)
-                        let lng = acc.lng / Double(acc.n), lat = acc.lat / Double(acc.n)
-                        // Pull the average back toward the middle of its cell so
-                        // two neighbours cannot end up touching on a shared edge.
-                        let cLng = (ci + 0.5) * cw, cLat = (cj + 0.5) * ch
-                        return GridAnnotation(
-                            coordinate: .init(latitude: min(max(lat, cLat - ch * clamp), cLat + ch * clamp),
-                                              longitude: min(max(lng, cLng - cw * clamp), cLng + cw * clamp)),
-                            count: acc.n, key: "g:\(zoomTag):\(k):\(acc.n)")
-                    }
+                    pins = BuildingMap.gridAnnotations(visible, cw: cw, ch: ch)
                 }
                 DispatchQueue.main.async {
                     guard let self, gen == self.generation else { return }
@@ -533,6 +538,9 @@ final class ClusterBubbleView: MKAnnotationView {
         else if let g = annotation as? GridAnnotation { n = g.count }
         else { return }
         label.text = n >= 1000 ? "\(n / 1000)k" : "\(n)"
+        isAccessibilityElement = true
+        accessibilityIdentifier = "cluster-bubble"
+        accessibilityLabel = "\(n) buildings"
         let d: CGFloat = n >= 100 ? 44 : (n >= 10 ? 38 : 32)
         bounds = CGRect(x: 0, y: 0, width: d, height: d)
         label.frame = bounds

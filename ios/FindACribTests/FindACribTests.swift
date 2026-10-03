@@ -1635,3 +1635,26 @@ final class ParallelPathTests: XCTestCase {
         }
     }
 }
+
+/// Build 108 put every New York cluster bubble at an impossible longitude
+/// (a packed cell key unpacked wrongly for negative longitudes), so the
+/// zoomed-out map showed none (owner, 2026-10-03). Every bubble must sit
+/// inside its buildings' box and the counts must add up.
+@MainActor
+final class MapGridTests: XCTestCase {
+    func testClusterBubblesLandOnTheirBuildings() throws {
+        let s = DataStore(); s.applyForTesting(try DataStore.decodeLocal(bundleOnly: true))
+        let all = s.buildings
+        for (cw, ch) in [(0.05, 0.04), (0.012, 0.009), (0.003, 0.0024)] {
+            let pins = BuildingMap.gridAnnotations(all, cw: cw, ch: ch)
+            XCTAssertFalse(pins.isEmpty)
+            XCTAssertEqual(pins.reduce(0) { $0 + $1.count }, all.count, "every building in exactly one bubble")
+            for p in pins {
+                XCTAssert(CLLocationCoordinate2DIsValid(p.coordinate), "invalid bubble \(p.coordinate)")
+                XCTAssert(p.coordinate.latitude > 40.4 && p.coordinate.latitude < 41.0, "lat \(p.coordinate.latitude)")
+                XCTAssert(p.coordinate.longitude > -74.3 && p.coordinate.longitude < -73.6, "lng \(p.coordinate.longitude)")
+            }
+            XCTAssertEqual(Set(pins.map(\.key)).count, pins.count, "keys unique")
+        }
+    }
+}

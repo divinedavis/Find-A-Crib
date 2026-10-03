@@ -93,6 +93,8 @@ def record_numbers(records):
             pass
     for d in re.findall(r"(\d{4})-(\d{2})-(\d{2})", text):
         nums.update(float(x) for x in d)
+    # "$2,214.04" in a flyer is "$2,214" in an answer: whole-dollar forms count.
+    nums.update({float(int(n)) for n in list(nums)} | {float(round(n)) for n in list(nums)})
     return nums
 
 

@@ -73,15 +73,18 @@ struct SEChip: View {
     let text: String
     let onRemove: () -> Void
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 0) {
             Text(text).font(.se(17)).foregroundStyle(SE.ink).lineLimit(1)
+            // A 44-pt target around the 13-pt x (Apple's minimum; the
+            // accessibility audit flagged 11x11 on iPad, 2026-10-03).
             Button(action: onRemove) {
                 Image(systemName: "xmark").font(.system(size: 13, weight: .bold)).foregroundStyle(SE.ink2)
+                    .frame(width: 44, height: 44).contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Remove \(text)")
         }
-        .padding(.horizontal, 14).padding(.vertical, 8)
+        .padding(.leading, 14).padding(.trailing, 2)
         .background(SE.paleBlue)
         .clipShape(Capsule())
     }

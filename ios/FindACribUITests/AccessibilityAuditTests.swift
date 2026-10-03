@@ -45,7 +45,13 @@ final class AccessibilityAuditTests: XCTestCase {
         let tabs = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'tab-'"))
         let bar = (0..<tabs.count).reduce(CGRect.null) { $0.union(tabs.element(boundBy: $1).frame) }
         let pills = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'pill-'"))
-        return ([bar] + (0..<pills.count).map { pills.element(boundBy: $0).frame })
+        // The building page's bottom action bar (Comments + the hand-off
+        // button) also floats over the scroll view, full width (iPad, 2026-10-03:
+        // the HUD rent note scrolled under it and was measured against the bar's pixels).
+        let comments = app.buttons["detail-comments"]
+        let window = app.windows.firstMatch.frame
+        let actionBar = comments.exists ? CGRect(x: window.minX, y: comments.frame.minY, width: window.width, height: comments.frame.height) : .null
+        return ([bar, actionBar] + (0..<pills.count).map { pills.element(boundBy: $0).frame })
             .filter { !$0.isNull && !$0.isEmpty }.map { $0.insetBy(dx: -20, dy: -20) }
     }
 

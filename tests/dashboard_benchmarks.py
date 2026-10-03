@@ -140,6 +140,7 @@ def run(browser, live):
     expect(ftp.locator('.t-val')).to_have_text('2.0%')
     expect(ftp).to_contain_text('5 paying of 250 accounts')
     expect(ftp).to_contain_text('inside the band')
+    expect(ftp).to_contain_text('$24.95/month')    # cents kept: $4.99 used to print as "$5"
     expect(page.locator('#tiles .tile')).to_have_count(9)
     assert not errors, errors
     print(f'PASS {browser.browser_type.name}: ad and pay tiles', flush=True)
@@ -167,30 +168,38 @@ def run(browser, live):
     assert not errors, errors
     print(f'PASS {browser.browser_type.name}: downloads chart, no health card', flush=True)
 
-    # Alert sign-ups before / after the paywall (owner, 2026-09-30): three
-    # lines — before (to 30 Sep), after-tried (dashed) and after-paid (from
-    # 30 Sep) — and a before/after summary.
+    # Alert sign-ups around the paywall (owner, 2026-09-30; reversed 10/1):
+    # free (purple) to 30 Sep, the paywall's tried (dashed) / paid lines on
+    # 30 Sep - 1 Oct only, and free again from 2 Oct (db/0046).
     def day(d, **kw):
         base = {'date': d, 'visitors': 1000, 'signups': 20, 'on': 20, 'gf_signups': 20,
                 'visitors_day': 150, 'signups_day': 3, 'on_day': 3,
-                'post_visitors': None, 'post_signups': None, 'post_on': None}
+                'post_visitors': None, 'post_signups': None, 'post_on': None,
+                'free_visitors': None, 'free_signups': None}
         base.update(kw); return base
     payload['alert_trend'] = [day('2026-09-28'), day('2026-09-29'),
                               day('2026-09-30', gf_signups=19, post_visitors=200, post_signups=2, post_on=0),
-                              day('2026-10-01', post_visitors=400, post_signups=6, post_on=2)]
+                              day('2026-10-01', post_visitors=400, post_signups=6, post_on=2),
+                              day('2026-10-02', free_visitors=200, free_signups=4),
+                              day('2026-10-03', free_visitors=300, free_signups=6)]
     page.reload(wait_until='networkidle')
     at = page.locator('#sec-alert-trend')
-    expect(at.locator('#at-legend')).to_contain_text('Before paywall — set up an alert')
-    expect(at.locator('#at-legend')).to_contain_text('After paywall — tried (saved an alert)')
-    expect(at.locator('#at-legend')).to_contain_text('After paywall — paid (alerts on)')
+    expect(at.locator('#at-legend')).to_contain_text('Free — set up an alert')
+    expect(at.locator('#at-legend')).to_contain_text('Paywall — tried (saved an alert)')
+    expect(at.locator('#at-legend')).to_contain_text('Paywall — paid (alerts on)')
     expect(at.locator('#at-svg path[stroke-dasharray]')).to_have_count(1)
     expect(at.locator('#at-sum')).to_contain_text('6 tried · 2 paid')
-    expect(at.locator('#at-sum')).to_contain_text('of 400 visitors since 30 Sep (0.50% paid')
-    # The before line stops at 30 Sep: its path has 3 points, not 4.
+    expect(at.locator('#at-sum')).to_contain_text('during the paywall, 30 Sep – 1 Oct: of 400 visitors (0.50% paid)')
+    expect(at.locator('#at-sum')).to_contain_text('2.00%free again since 2 Oct (6 of 300 visitors; 2 days in)')
+    expect(at).not_to_contain_text('alerts became part of Plus for new sign-ups; everyone before')
+    # The free line breaks over the paywall: 3 points to 30 Sep, then 2 from 2 Oct.
     pre_d = at.locator('#at-svg path').first.get_attribute('d')
-    assert pre_d.count('L') == 2, pre_d
+    assert pre_d.count('M') == 2 and pre_d.count('L') == 3, pre_d
+    # The paywall lines stop on 1 Oct.
+    tried_d = at.locator('#at-svg path[stroke-dasharray]').get_attribute('d')
+    assert tried_d.count('L') == 1, tried_d
     assert not errors, errors
-    print(f'PASS {browser.browser_type.name}: alert chart before/after paywall', flush=True)
+    print(f'PASS {browser.browser_type.name}: alert chart around the paywall', flush=True)
 
     # A range with nothing cached dims the old numbers and says "Loading…"
     # until its payload lands, instead of sitting there looking frozen.

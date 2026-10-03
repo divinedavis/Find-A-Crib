@@ -570,7 +570,7 @@
            to the future". api_server._fac_alert_trend / db/0038. -->
       <div class="card mb18" id="sec-alert-trend">
         <div class="card-head-row">
-          <div><h2>Alert sign-ups over time</h2><div class="card-sub">Share of visitors who set up a borough alert, 7-day rolling — before the paywall (purple), and after it (green): everyone who tried, and those who paid. On 30 Sep alerts became part of Plus for new sign-ups; everyone before that keeps them free.</div></div>
+          <div><h2>Alert sign-ups over time</h2><div class="card-sub">Share of visitors who set up a borough alert, 7-day rolling. Purple: alerts free with an account. Green: the paywall, 30 Sep – 1 Oct, when alerts were part of Plus for new sign-ups — everyone who tried, and those who paid. Alerts have been free again since 1 Oct.</div></div>
           <div class="at-range"><label for="at-range">Period</label>
             <select id="at-range" aria-label="Period shown on the alert sign-up chart">
               <option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option>
@@ -786,6 +786,8 @@
   // ---------- helpers ----------
   function n(x){ return (x==null?0:x); }
   function comma(x){ return Math.round(n(x)).toLocaleString('en-US'); }
+  // Dollars with cents when there are any: comma() rounded the $4.99 MRR to "$5".
+  function dollars(x){ var v=n(x); return v%1 ? v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : comma(v); }
   function pct(a,b){ return b>0 ? (100*a/b) : 0; }
   function pctS(a,b,d){ return (pct(a,b)).toFixed(d==null?0:d)+'%'; }
   function money(x){ return '$'+Math.round(x).toLocaleString('en-US'); }
@@ -1832,7 +1834,7 @@
       var r=100*n(S.paying)/n(acc);
       var verdict = r>=5 ? 'above the band' : r>=2 ? 'inside the band' : 'below the band';
       return {ic:'💳',v:(r>0 && r<1 ? r.toFixed(2) : r.toFixed(1))+'%',l:'Free-to-paid conversion',
-              own:'<b>'+comma(S.paying)+'</b> paying of '+comma(acc)+' accounts · $'+comma(S.mrr)+'/month',
+              own:'<b>'+comma(S.paying)+'</b> paying of '+comma(acc)+' accounts · $'+dollars(S.mrr)+'/month',
               bench:'Freemium reference <b>2–5%</b> of accounts · '+verdict,
               title:'Paying Find A Crib Plus members (Stripe on the web, the App Store in the app; comped, founding and referral Plus left out) divided by every Find A Crib account. The standard freemium measure; 2–5% is the usual band. Current state, not ranged.'};
     }
@@ -1911,7 +1913,7 @@
       if(SB.paying == null) return;
       var s=document.createElement('span'); s.className='goal-prog';
       var pc=100*n(SB.paying)/PLUS_GOAL_MEMBERS;
-      s.textContent=' '+comma(SB.paying)+' / 4,009 · $'+comma(SB.mrr)+'/mo · '+(pc>0 && pc<1 ? pc.toFixed(2) : Math.round(pc))+'%';
+      s.textContent=' '+comma(SB.paying)+' / 4,009 · $'+dollars(SB.mrr)+'/mo · '+(pc>0 && pc<1 ? pc.toFixed(2) : Math.round(pc))+'%';
       g3.title='Plus goal: 4,009 paying members = $20k/month ($4.99 each, before fees)';
       g3.appendChild(s);
     })();
@@ -2025,12 +2027,12 @@
       {val:(G.k_factor==null ? '—' : Number(G.k_factor).toFixed(2)), lbl:'Viral coefficient · K-factor, 30 days',
        sub:comma(G.referrals_30)+' friends signed up through a referral link per '+comma(G.accounts_30)+' new accounts'+(G.k_factor!=null ? (Number(G.k_factor)>=1 ? badge('self-sustaining','bn-hi') : badge('below 1 — paid or organic still needed','bn-mid')) : ''),
        src:'K ≥ 1 means each user brings more than one more; most consumer apps sit well under 0.5'},
-      {val:(freeToPaid==null ? '—' : freeToPaid.toFixed(1)+'%')+' <span class="hm-goal">'+(arpu==null ? '' : '$'+arpu.toFixed(2)+' ARPU')+'</span>', lbl:'Free-to-paid · and revenue per monthly active',
-       sub:comma(S.paying)+' paying of '+comma(accountsAll)+' accounts · $'+comma(S.mrr)+' MRR over '+comma(E.mau)+' monthly actives'+
+      {val:(freeToPaid==null ? '—' : (freeToPaid>0 && freeToPaid<1 ? freeToPaid.toFixed(2) : freeToPaid.toFixed(1))+'%')+' <span class="hm-goal">'+(arpu==null ? '' : (arpu>0 && arpu<0.01 ? 'under $0.01' : '$'+arpu.toFixed(2))+' ARPU')+'</span>', lbl:'Free-to-paid · and revenue per monthly active',
+       sub:comma(S.paying)+' paying of '+comma(accountsAll)+' accounts · $'+dollars(S.mrr)+' MRR over '+comma(E.mau)+' monthly actives'+
            (freeToPaid==null ? '' : freeToPaid>=INVESTOR_BENCH.free_to_paid_low ? badge('inside the 2–5% freemium band','bn-mid') : badge('below the 2–5% freemium band','bn-low')),
        src:'freemium converts 2–5% of free accounts; ARPU is MRR ÷ MAU'},
       {val:comma(G.app_actives_30)+' <span class="hm-goal">'+pctS(G.app_actives_30, E.mau)+' of actives</span>', lbl:'iPhone app · actives, 30 days',
-       sub:comma(G.app_actives_prev30)+' in the prior window · App Store builds only, simulators and TestFlight excluded',
+       sub:(n(G.app_actives_prev30) ? comma(G.app_actives_prev30)+' in the prior window' : 'no prior window — the app has sent analytics only since 17 Sep')+' · App Store builds only, simulators and TestFlight excluded',
        src:'platform mix; the app is where alerts and retention live'}
     ];
     host.innerHTML=tiles.map(function(t){
@@ -2248,7 +2250,8 @@
     {d:'2026-09-08', s:'LinkNYC kiosks', t:'LinkNYC kiosk campaign starts (to 5 Oct)'},
     {d:'2026-09-09', s:'On the App Store', t:'Find A Crib 1.0 goes live on the App Store'},
     {d:'2026-09-29', s:'Mediavine ads', t:'Journey by Mediavine ads go live on findacrib.com'},
-    {d:'2026-09-30', s:'Alerts \u2192 Plus', t:'Alerts become part of Plus for new sign-ups'}
+    {d:'2026-09-30', s:'Alerts \u2192 Plus', t:'Alerts become part of Plus for new sign-ups'},
+    {d:'2026-10-01', s:'Everything free', t:'Alerts open to every account again, then every Plus feature free for any account (f0247a3, 5a5d097)'}
   ];
   function vtNice(v){
     var steps=[1,2,5,10,20,25,50,100,200,250,500,1000,2000], step=steps[steps.length-1];
@@ -2320,7 +2323,11 @@
   //     window — the gap under it is the paywall.
   // The period picker picks the days shown; rates stay 7-day rolling,
   // because a 1-day rate on ~200 visitors is noise.
-  var AT_CHANGE = '2026-09-30';
+  // The paywall was reversed on 1 Oct (owner: "keep alerts free"), so the
+  // green lines cover 30 Sep - 1 Oct only and the purple line resumes on
+  // 2 Oct from free_signups / free_visitors, a window that never reaches
+  // back into the paywall days (db/0046).
+  var AT_CHANGE = '2026-09-30', AT_FREE_AGAIN = '2026-10-02';
   // Key dates drawn as dotted lines (owner, 2026-09-30: "show some other key
   // dates like moving alerts to the front of the journey"). Each is a real
   // commit/release in dhcr-map; add new ones here as they ship.
@@ -2330,7 +2337,8 @@
     {d:'2026-09-08', s:'Account required', t:'Alerts need an account: every Alerts link opens the sign-up modal (af4321d)'},
     {d:'2026-09-13', s:'Apple/Google sign-in', t:'Apple and Google sign-in offered right from alerts; iPhone: Alerts replaces Save search (d31baee, f1cd0b8)'},
     {d:'2026-09-19', s:'iPhone push live', t:'Push-notification alerts and the Lotteries tab reach the iPhone app (1.2.1 approved 19 Sep; 25f1a59, d97ed83)'},
-    {d:'2026-09-30', s:'Alerts → Plus', t:'Alerts become Plus for new sign-ups (66 grandfathered); every Alerts link opens the Plus paywall (d45d176, 89b9647)'}
+    {d:'2026-09-30', s:'Alerts → Plus', t:'Alerts become Plus for new sign-ups (66 grandfathered); every Alerts link opens the Plus paywall (d45d176, 89b9647)'},
+    {d:'2026-10-01', s:'Alerts free again', t:'Owner reverses the paywall: alerts open to every account again, web and iPhone (f0247a3, db/0042)'}
   ];
   function atRate(a,b){ return n(b) ? 100*n(a)/n(b) : 0; }
   var renderAlertTrend = makeTrend({
@@ -2338,14 +2346,15 @@
     empty:'Alert trend unavailable right now.',
     aria:'Alert sign-up conversion before and after the paywall, 7-day rolling',
     historyNote:function(k){ return 'Alerts launched 3 Sep — '+k+' day'+(k===1?'':'s')+' of history'; },
-    series:[{k:'pre', color:'var(--at-saved)', label:'Before paywall — set up an alert', end:function(v){ return v.toFixed(2)+'% before'; }},
-            {k:'tried', color:'var(--at-on)', dash:'5 4', label:'After paywall — tried (saved an alert)', end:function(v){ return v.toFixed(2)+'% tried'; }},
-            {k:'paid', color:'var(--at-on)', label:'After paywall — paid (alerts on)', end:function(v){ return v.toFixed(2)+'% paid'; }}],
-    legendNote:'<span style="color:var(--muted)">the after lines start on 30 Sep; paid starts at 0 and needs a few days</span>',
+    series:[{k:'pre', color:'var(--at-saved)', label:'Free — set up an alert', end:function(v){ return v.toFixed(2)+'% free'; }},
+            {k:'tried', color:'var(--at-on)', dash:'5 4', label:'Paywall — tried (saved an alert)', end:function(v){ return v.toFixed(2)+'% tried'; }},
+            {k:'paid', color:'var(--at-on)', label:'Paywall — paid (alerts on)', end:function(v){ return v.toFixed(2)+'% paid'; }}],
+    legendNote:'<span style="color:var(--muted)">the paywall ran 30 Sep – 1 Oct; free again from 2 Oct</span>',
     points:function(rows){ return rows.map(function(r){
       var post=r.post_visitors!=null;
       return {d:r.date, r:r,
-              pre: r.date<=AT_CHANGE ? atRate(r.gf_signups!=null ? r.gf_signups : r.signups, r.visitors) : null,
+              pre: r.date<=AT_CHANGE ? atRate(r.gf_signups!=null ? r.gf_signups : r.signups, r.visitors)
+                 : r.free_visitors!=null ? atRate(r.free_signups, r.free_visitors) : null,
               tried: post ? atRate(r.post_signups, r.post_visitors) : null,
               paid: post ? atRate(r.post_on, r.post_visitors) : null}; }); },
     nice:function(v){ var step = v<=1 ? 0.25 : v<=2.5 ? 0.5 : 1; return {max: Math.max(step, Math.ceil((v*1.08)/step)*step), step: step}; },
@@ -2358,22 +2367,27 @@
       var sum='';
       if(pre) sum+='<div><b>'+atRate(pre.gf_signups!=null?pre.gf_signups:pre.signups, pre.visitors).toFixed(2)+'%</b>before paywall: last full week ('+
                    comma(pre.gf_signups!=null?pre.gf_signups:pre.signups)+' of '+comma(pre.visitors)+' visitors)</div>';
-      if(latest && latest.post_visitors!=null){
-        var since=rows.filter(function(r){ return r.date>=AT_CHANGE; }).length;
-        sum+='<div><b>'+comma(latest.post_signups)+' tried · '+comma(latest.post_on)+' paid</b>after paywall: of '+comma(latest.post_visitors)+
-             ' visitors since 30 Sep ('+atRate(latest.post_on, latest.post_visitors).toFixed(2)+'% paid'+
-             (since<7 ? '; '+since+' day'+(since===1?'':'s')+' in' : ', last 7 days')+')</div>';
+      var pw=null; rows.forEach(function(r){ if(r.post_visitors!=null) pw=r; });
+      if(pw){
+        sum+='<div><b>'+comma(pw.post_signups)+' tried · '+comma(pw.post_on)+' paid</b>during the paywall, 30 Sep – 1 Oct: of '+comma(pw.post_visitors)+
+             ' visitors ('+atRate(pw.post_on, pw.post_visitors).toFixed(2)+'% paid)</div>';
+      }
+      if(latest && latest.free_visitors!=null){
+        var since=rows.filter(function(r){ return r.date>=AT_FREE_AGAIN; }).length;
+        sum+='<div><b>'+atRate(latest.free_signups, latest.free_visitors).toFixed(2)+'%</b>free again since 2 Oct ('+comma(latest.free_signups)+' of '+comma(latest.free_visitors)+
+             ' visitors'+(since<7 ? '; '+since+' day'+(since===1?'':'s')+' in' : ', last 7 days')+')</div>';
       }
       return sum;
     },
     tip:function(p, day){ var R=p.r, t='<b>'+day(p.d,{weekday:'short',month:'short',day:'numeric'})+'</b>';
-      if(p.pre!=null) t+='<br>Before paywall: '+p.pre.toFixed(2)+'% · '+comma(R.gf_signups!=null?R.gf_signups:R.signups)+' of '+comma(R.visitors)+' visitors (7 days)';
-      if(p.tried!=null) t+='<br>After paywall: '+comma(R.post_signups)+' tried ('+p.tried.toFixed(2)+'%), '+comma(R.post_on)+' paid ('+p.paid.toFixed(2)+'%) of '+comma(R.post_visitors)+' visitors since 30 Sep';
+      if(p.pre!=null && R.free_visitors!=null) t+='<br>Free again: '+p.pre.toFixed(2)+'% · '+comma(R.free_signups)+' of '+comma(R.free_visitors)+' visitors since 2 Oct (up to 7 days)';
+      else if(p.pre!=null) t+='<br>Before paywall: '+p.pre.toFixed(2)+'% · '+comma(R.gf_signups!=null?R.gf_signups:R.signups)+' of '+comma(R.visitors)+' visitors (7 days)';
+      if(p.tried!=null) t+='<br>Paywall: '+comma(R.post_signups)+' tried ('+p.tried.toFixed(2)+'%), '+comma(R.post_on)+' paid ('+p.paid.toFixed(2)+'%) of '+comma(R.post_visitors)+' visitors since 30 Sep';
       return t+'<br>That day: '+comma(R.signups_day)+' alert sign-up'+(n(R.signups_day)===1?'':'s')+', '+comma(R.visitors_day)+' visitors'; },
-    tableHead:['Day','Visitors (7d)','Before (7d)','% before','After: visitors','Tried','Paid','% tried','% paid'],
-    tableRow:function(p, day){ var R=p.r, dash='—';
-      return [day(p.d), comma(R.visitors),
-              p.pre!=null ? comma(R.gf_signups!=null?R.gf_signups:R.signups) : dash, p.pre!=null ? p.pre.toFixed(2)+'%' : dash,
+    tableHead:['Day','Visitors (7d)','Free (7d)','% free','Paywall: visitors','Tried','Paid','% tried','% paid'],
+    tableRow:function(p, day){ var R=p.r, dash='—', free=R.free_visitors!=null;
+      return [day(p.d), comma(free ? R.free_visitors : R.visitors),
+              p.pre!=null ? comma(free ? R.free_signups : (R.gf_signups!=null?R.gf_signups:R.signups)) : dash, p.pre!=null ? p.pre.toFixed(2)+'%' : dash,
               p.tried!=null ? comma(R.post_visitors) : dash, p.tried!=null ? comma(R.post_signups) : dash, p.tried!=null ? comma(R.post_on) : dash,
               p.tried!=null ? p.tried.toFixed(2)+'%' : dash, p.paid!=null ? p.paid.toFixed(2)+'%' : dash]; }
   });

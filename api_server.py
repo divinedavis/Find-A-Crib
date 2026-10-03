@@ -1615,7 +1615,9 @@ FAC_MONTHS = 7
 FAC_TZ = "America/New_York"
 
 
-@_memo(600)
+# 60 s like the metrics RPC (~0.5 s of SQL): at 600 s the chart's "last 30
+# days" lagged the investor tiles under it (5,470 vs 5,473 visitors).
+@_memo(60)
 def _fac_daily_series():
     """{days: [{date, visitors, signups}], periods: {"7"|"30"|"90": {visitors,
     prev_visitors, signups, prev_signups}, "all": {visitors, signups}}} —

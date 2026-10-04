@@ -144,7 +144,10 @@ final class FindACribUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 60))
         let help = app.buttons["rerental-apply-help"].firstMatch
-        for _ in 0..<10 where !help.isHittable { app.swipeUp() }
+        // Clear of the floating tab bar: "hittable" under it still sends the
+        // tap to the bar (failed once in the build 114 ship, passed on rerun).
+        let h = app.windows.firstMatch.frame.height
+        for _ in 0..<10 where !help.isHittable || help.frame.maxY > h - 140 { app.swipeUp() }
         XCTAssertTrue(help.exists, "a re-rental card should offer Help me apply")
         help.tap()
         XCTAssertTrue(app.buttons["paywall-sign-in"].waitForExistence(timeout: 10), "without Plus, Help me apply opens the Plus page")

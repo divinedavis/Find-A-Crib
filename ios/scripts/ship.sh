@@ -57,7 +57,9 @@ sim_named() {   # first available simulator whose name contains $1
 d=json.load(sys.stdin)
 print(next(iter([v['udid'] for r in d['devices'].values() for v in r if v.get('name','').startswith(sys.argv[1])]), ''))" "$1"
 }
-IPHONE_SIM="${SIMULATOR_ID:-$(sim_named 'iPhone 17 Pro')}"; [[ -n "$IPHONE_SIM" ]] || IPHONE_SIM=$(sim_named 'iPhone')
+# "FAC iPhone" is Find A Crib's own (2026-10-04), like "FAC iPad": a shared
+# "iPhone 17 Pro" can have another session's app launched over ours mid-test.
+IPHONE_SIM="${SIMULATOR_ID:-$(sim_named 'FAC iPhone')}"; [[ -n "$IPHONE_SIM" ]] || IPHONE_SIM=$(sim_named 'iPhone 17 Pro'); [[ -n "$IPHONE_SIM" ]] || IPHONE_SIM=$(sim_named 'iPhone')
 # "FAC iPad" is Find A Crib's own (2026-10-03): on the shared "iPad Pro
 # 11-inch" another session's Hidden Gems tests kept launching their app over
 # ours mid-test, failing six iPad tests that pass alone.

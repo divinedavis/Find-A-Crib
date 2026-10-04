@@ -103,6 +103,14 @@ final class Qualify {
         return out
     }
 
+    /// Out of range for the household/income on file: above the limit or
+    /// below the minimum. Those leave the lists (owner, 2026-10-04: "if my
+    /// income is above the limit … i shouldnt see the listing").
+    func outOfRange(_ f: FeaturedListing) -> Bool {
+        guard let v = verdict(for: f) else { return false }
+        return v == .high || v == .low
+    }
+
     static func words(_ v: Verdict) -> String {
         switch v {
         case .yes: "You qualify"

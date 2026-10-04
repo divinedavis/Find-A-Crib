@@ -22,6 +22,8 @@ struct LotteriesView: View {
     /// Re-rentals that state no bedroom sizes, shown under a Beds filter
     /// only when asked (owner, 2026-10-04: 1 bed means only 1-beds).
     @State private var showUnsized = false
+    /// Listings outside the income range on file, shown only when asked.
+    @State private var showOutOfRange = false
     @State private var showSignIn = false
     enum Pane: Hashable { case lotteries, rerentals, newJersey }
     @State private var pane: Pane = .lotteries
@@ -35,7 +37,14 @@ struct LotteriesView: View {
             Analytics.shared.track("lotteries_beds", ["beds": bedsRaw.isEmpty ? "any" : bedsRaw])
         })
     }
-    private var lotteries: [LotteryFeed.Lottery] { feed.mine.filter { LotteryFeed.bedsMatch($0.beds, want: beds) } }
+    private var bedLotteries: [LotteryFeed.Lottery] { feed.mine.filter { LotteryFeed.bedsMatch($0.beds, want: beds) } }
+    private func lotteryOut(_ l: LotteryFeed.Lottery) -> Bool {
+        guard let v = Qualify.shared.verdict(incomeMin: l.income_min, incomeMax: l.income_max,
+                                             householdMin: l.household_min, householdMax: l.household_max) else { return false }
+        return v == .high || v == .low
+    }
+    private var lotteries: [LotteryFeed.Lottery] { showOutOfRange ? bedLotteries : bedLotteries.filter { !lotteryOut($0) } }
+    private var lotteriesOutCount: Int { bedLotteries.filter(lotteryOut).count }
     private var feed: LotteryFeed { LotteryFeed.shared }
 
     var body: some View {
@@ -102,7 +111,8 @@ struct LotteriesView: View {
         Button { showQualify = true } label: {
             HStack(spacing: 8) {
                 Image(systemName: "checkmark.seal").font(.system(size: 16, weight: .bold))
-                Text(Qualify.shared.isSet ? "\(Qualify.shared.household ?? 1) \((Qualify.shared.household ?? 1) == 1 ? "person" : "people") · $\((Qualify.shared.income ?? 0) / 1000)k — change" : "What do I qualify for?")
+                // Never the income itself on this screen (owner, 2026-10-04).
+                Text(Qualify.shared.isSet ? "Showing what you qualify for — change" : "What do I qualify for?")
                     .font(.se(17, .semibold))
                 Spacer()
                 Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold))
@@ -182,10 +192,14 @@ struct LotteriesView: View {
                     } else if feed.mine.isEmpty && !feed.loading {
                         message("Nothing open right now",
                                 "No Housing Connect lotteries are open in \(boroughNames) right now." + (feed.subscribed ? " We'll alert you the minute one opens." : ""))
+                    } else if lotteries.isEmpty && !bedLotteries.isEmpty && !feed.loading {
+                        message("None in your income range",
+                                "\(bedLotteries.count) open\(beds.isEmpty ? "" : " with \(bedsWords)"), all outside the income range you entered. Tap above to see them anyway.")
                     } else if lotteries.isEmpty && !feed.loading {
                         message("None with \(bedsWords)",
                                 "\(feed.mine.count) open in \(boroughNames), none with \(bedsWords). Change Beds above to see them.")
                     }
+                    if lotteriesOutCount > 0 { outOfRangeButton(lotteriesOutCount) }
                     LazyVGrid(columns: columns, alignment: .leading, spacing: 12) {
                         ForEach(lotteries) { card($0) }
                     }
@@ -214,12 +228,27 @@ struct LotteriesView: View {
     /// Sizes come from the feed and from each listing's own unit table (the
     /// flyer reader). With Beds set, a listing shows only if one of its
     /// sizes matches; one that states no size waits behind a button.
-    private var rerentals: [FeaturedListing] {
+    private var bedRerentals: [FeaturedListing] {
         guard !beds.isEmpty else { return inBoroughs }
         return inBoroughs.filter {
             let have = Qualify.shared.bedrooms($0)
             return have.isEmpty ? showUnsized : !have.isDisjoint(with: beds)
         }
+    }
+    private var rerentals: [FeaturedListing] {
+        showOutOfRange ? bedRerentals : bedRerentals.filter { !Qualify.shared.outOfRange($0) }
+    }
+    private var rerentalsOutCount: Int { bedRerentals.filter { Qualify.shared.outOfRange($0) }.count }
+
+    private func outOfRangeButton(_ n: Int) -> some View {
+        Button { showOutOfRange.toggle(); Analytics.shared.track("qualify_out_of_range", ["show": showOutOfRange, "n": n]) } label: {
+            Text(showOutOfRange ? "Hide the \(n) outside your income range"
+                                : "\(n) more are outside your income range — show them")
+                .font(.se(16, .semibold)).foregroundStyle(SE.royal)
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).padding(.horizontal, 16)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain).accessibilityIdentifier("qualify-out-of-range")
     }
 
     private var unsizedCount: Int {
@@ -239,6 +268,7 @@ struct LotteriesView: View {
             boroughsButton
         }
         .padding(.horizontal, 16)
+        if rerentalsOutCount > 0 { outOfRangeButton(rerentalsOutCount) }
         if unsizedCount > 0 {
             Button { showUnsized.toggle(); Analytics.shared.track("rerentals_unsized", ["show": showUnsized]) } label: {
                 Text(showUnsized ? "Hide the \(unsizedCount) that don't list bedroom sizes"
@@ -249,7 +279,9 @@ struct LotteriesView: View {
             }
             .buttonStyle(.plain).accessibilityIdentifier("rerentals-unsized")
         }
-        if rerentals.isEmpty && !beds.isEmpty {
+        if rerentals.isEmpty && !bedRerentals.isEmpty {
+            message("None in your income range", "\(bedRerentals.count) re-rental\(bedRerentals.count == 1 ? "" : "s") here, all outside the income range you entered. Tap above to see them anyway.")
+        } else if rerentals.isEmpty && !beds.isEmpty {
             message("None with \(bedsWords)", "No re-rental in \(boroughNames) lists \(bedsWords) today. Change Beds above to see them.")
         } else if rerentals.isEmpty {
             message("No re-rentals right now",
@@ -402,7 +434,7 @@ struct LotteriesView: View {
     private var boroughLine: String { feed.viewBoroughs.count == Borough.all.count ? "All five boroughs" : feed.viewBoroughs.map { Borough.name($0) }.joined(separator: " · ") }
     private var countLine: String {
         if feed.loading && feed.all.isEmpty { return "Loading…" }
-        return beds.isEmpty ? "\(feed.mine.count) open" : "\(lotteries.count) of \(feed.mine.count) open"
+        return lotteries.count == feed.mine.count ? "\(feed.mine.count) open" : "\(lotteries.count) of \(feed.mine.count) open"
     }
 
     private func card(_ l: LotteryFeed.Lottery) -> some View {

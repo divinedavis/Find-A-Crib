@@ -515,6 +515,7 @@
   .paywall-price { margin-bottom: 16px; }
   .paywall-price .amt { font-size: 44px; font-weight: 800; letter-spacing: -1px; }
   .paywall-price .per { font-size: 20px; color: var(--ink-2); }
+  .feat-card.q-out, .hc-card.q-out { display: none !important; }
   .paywall-trial { margin: -8px 0 14px; font-size: 15px; font-weight: 600; color: var(--ink-2); }
   .paywall-card #paywall-subscribe { padding: 19px; font-size: 20px; border-radius: 14px; }
   .paywall-fine { text-align: center; font-size: 15px; color: var(--ink-2); margin: 14px 0 0; }
@@ -5232,10 +5233,11 @@ function favActive() {
     // Signed in on a new device: pick up what the account remembers.
     if (!QUAL && authUser && authUser.user_metadata && authUser.user_metadata.qualify) QUAL = authUser.user_metadata.qualify;
     const pill = document.getElementById('pill-qualify-text');
-    if (pill) pill.textContent = QUAL ? `${QUAL.hh} ${QUAL.hh === 1 ? 'person' : 'people'} · $${Math.round(QUAL.income / 1000)}k` : 'What do I qualify for?';
+    // Never the income itself on screen (owner, 2026-10-04).
+    if (pill) pill.textContent = QUAL ? 'Showing what I qualify for' : 'What do I qualify for?';
     document.querySelectorAll('.feat-card, .hc-card').forEach(card => {
       let b = card.querySelector('.qual-badge');
-      if (!QUAL) { if (b) b.remove(); return; }
+      if (!QUAL) { if (b) b.remove(); card.classList.remove('q-out'); return; }
       let v;
       if (card.classList.contains('feat-card')) v = featVerdict(card.dataset.featHref);
       else {
@@ -5246,6 +5248,8 @@ function favActive() {
       }
       if (!b) { b = document.createElement('div'); (card.querySelector('.body') || card).prepend(b); }
       b.className = 'qual-badge q-' + v; b.textContent = QUAL_WORDS[v];
+      // Above the limit or below the minimum: off the list (owner, 2026-10-04).
+      card.classList.toggle('q-out', v === 'high' || v === 'low');
     });
   }
   // New tiles arrive as the list grows: badge them as they land.

@@ -313,10 +313,12 @@ struct ResultsView: View {
         // With Beds set, a re-rental tile only when its own unit table has a
         // matching size (owner, 2026-10-04); unstated sizes stay out of a
         // filtered feed.
+        if !q.beds.isEmpty || Qualify.shared.isSet { await Qualify.shared.loadUnits() }
         if !q.beds.isEmpty {
-            await Qualify.shared.loadUnits()
             rerentalPool = rerentalPool.filter { !Qualify.shared.bedrooms($0).isDisjoint(with: q.beds) }
         }
+        // Outside the income range on file: not in the feed (2026-10-04).
+        rerentalPool = rerentalPool.filter { !Qualify.shared.outOfRange($0) }
         // The list itself: how many matched, how the search was shaped, and
         // whether re-rentals were in the mix — the denominator for the funnel.
         var p = Analytics.shape(query); p["results"] = results.count; p["rerental_pool"] = rerentalPool.count

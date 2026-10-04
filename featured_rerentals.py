@@ -450,7 +450,12 @@ def parse_card(c, agent, page_url):
     bm = BEDS.search(blob)
     zm = ZIP.search(address) or ZIP.search(blob)
     zipcode = zm.group(1) if zm else None
-    boro = borough_of(address, blob, zipcode)
+    # The listing's own link often names the borough when the card only says
+    # "New York" (MNS: /details/240428/rental/morris+heights/bronx was filed
+    # under Manhattan, 2026-10-04) — read it before the Manhattan fallback.
+    from urllib.parse import unquote
+    url_words = re.sub(r"[+\-/_]", " ", unquote(c.get("href") or ""))
+    boro = borough_of(address, blob + " \n" + url_words, zipcode)
     return {
         "agent": agent,
         "agent_page": page_url,

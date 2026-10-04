@@ -183,6 +183,13 @@ final class FindACribUITests: XCTestCase {
         let badge = app.descendants(matching: .any)["qualify-badge"].firstMatch
         XCTAssertTrue(badge.waitForExistence(timeout: 15) || app.descendants(matching: .any)["lotteries-empty"].firstMatch.exists,
                       "lotteries should show a qualify badge once income is set")
+        // Out-of-range listings leave the list, and the income is never on
+        // screen (owner, 2026-10-04).
+        XCTAssertTrue(open.label.contains("Showing what you qualify for"), "the row says the filter is on: \(open.label)")
+        XCTAssertFalse(open.label.contains("$") || open.label.contains("85"), "the row must not show the income")
+        let out = NSPredicate(format: "label CONTAINS 'above the limit' OR label CONTAINS 'below the minimum'")
+        XCTAssertEqual(app.descendants(matching: .any).matching(identifier: "qualify-badge").matching(out).count, 0,
+                       "no out-of-range listing until asked")
         // leave the phone as it was for the tests after this one
         open.tap(); if app.buttons["Clear"].waitForExistence(timeout: 5) { app.buttons["Clear"].tap() }
     }

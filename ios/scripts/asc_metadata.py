@@ -98,7 +98,7 @@ REVIEW_NOTES = """VERSION 1.2.6 (build __BUILD__) — Find A Crib Plus offered a
 WHAT CHANGED SINCE 1.2.5
 1. Find A Crib Plus (the existing auto-renewable subscription, $4.99/month, with a 1-month introductory trial for new subscribers) is offered again. It unlocks: Search in plain words, Help me apply (re-rentals), Is this rent fair? (building pages with an asking rent) and no ads. Every other feature comes with a (no-cost) account: managing-agent phone numbers, bedbug and rodent records, borough alerts.
 2. AI: the text typed into "Search in plain words" and the public web page of a re-rental listing are sent to our server, which uses AI providers (TypeSafe and Anthropic) to read them. No account details, contact details, household or income figures, or documents are sent to any AI provider.
-3. "What do I qualify for?" (Lotteries tab): household size and income, stored on this device only (UserDefaults) and never sent anywhere.
+3. "What do I qualify for?" (Lotteries tab): household size and income, stored on this device only and never sent anywhere or shown on screen; listings outside that income range are hidden ("show them" brings them back).
 4. Application packet (Profile > Application packet, or "Get my documents ready" in Help me apply): the camera opens Apple's VisionKit document scanner ONLY when the user taps Add on a document; scans are stored on the device with complete file protection and sent only by the user, from their own Mail. Nothing is uploaded to us. NEW PERMISSION: camera (NSCameraUsageDescription), asked on the first scan.
 5. The Beds filter on the Lotteries > Re-rentals tab now shows only listings that state that size.
 No new SDKs.
@@ -121,9 +121,6 @@ To see a push in review: sign in, Profile > Alerts, pick a borough, Turn on aler
 
 USAGE ANALYTICS
 The app records what is done in it (screens opened, searches by their filters, taps on listing links), linked to the account when signed in, declared under Product Interaction / Other Usage Data (Analytics) in App Privacy. No advertising identifier and no tracking; the only third-party SDK is Google Mobile Ads (see ADVERTISING above). Profile > "Share anonymous usage" turns off our own analytics.
-
-WHERE THE DATA COMES FROM
-Public registers served as static JSON from findacrib.com (NYS HCR, NYC HPD, LA County Assessor RSO, SF Rent Board, DC DHCD, HUD) and the marketing agents' and HDC's public re-rental pages.
 
 LOCATION
 Never requested. The map is Apple Maps; counts use the visible map region.

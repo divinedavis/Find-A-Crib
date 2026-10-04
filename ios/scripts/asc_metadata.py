@@ -140,7 +140,8 @@ AGE_RATING = {
     "sexualContentGraphicAndNudity": "NONE", "sexualContentOrNudity": "NONE",
     "violenceCartoonOrFantasy": "NONE", "violenceRealistic": "NONE",
     "violenceRealisticProlongedGraphicOrSadistic": "NONE",
-    "advertising": False, "ageAssurance": False, "gambling": False, "healthOrWellnessTopics": False,
+    # Advertising: Google AdMob banners (App Review 2.3.6, 2026-10-03).
+    "advertising": True, "ageAssurance": False, "gambling": False, "healthOrWellnessTopics": False,
     "lootBox": False, "messagingAndChat": False, "parentalControls": False,
     # Comments on a building are user-generated (1.2.3, build 65): reportable,
     # blockable, filtered, and removable by their author.

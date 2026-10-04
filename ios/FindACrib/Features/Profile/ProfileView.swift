@@ -70,7 +70,7 @@ struct ProfileView: View {
                             } else {   // Plus = the AI features (2026-10-03)
                                 SEPrimaryButton(title: "Get Find A Crib Plus · \(plus.priceText)/mo", icon: "star.fill", fill: SE.navy) { showPaywall = true }
                                     .accessibilityIdentifier("get-plus")
-                                Text("Plain-language search, Help me apply, Is this rent fair?, no ads.")
+                                Text("Plain-language search, Help me apply, Is this rent fair?, no ads." + (plus.trial.map { " Your first \($0) is on us." } ?? ""))
                                     .font(.se(15)).foregroundStyle(SE.ink3)
                             }
                         } else if auth.configured {

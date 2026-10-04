@@ -30,8 +30,8 @@ SHOTS_IPAD = HERE.parent / "marketing" / "asc-screenshots-ipad"
 
 SUBTITLE = "NYC, LA, SF & DC rent maps"                       # <= 30 chars
 KEYWORDS = "rent stabilized,rent control,los angeles,san francisco,washington dc,apartments,rso,brooklyn,nyc"  # <=100 — cities carry the search demand; the title already says Find A Crib
-PROMO = ("Rent-stabilized and rent-controlled buildings on one map — New York, Los Angeles, "
-         "San Francisco and Washington DC, from each city's own public register.")
+PROMO = ("New: Find A Crib Plus — search in plain words, get help applying, check if a rent is fair. "
+         "First month on us. Every rent-stabilized building on one map.")
 SITE = "https://findacrib.com/"
 SUPPORT = "https://findacrib.com/support/"
 PRIVACY = "https://findacrib.com/privacy/"
@@ -72,8 +72,8 @@ Heart a building and it's in My Activity; sign in with Apple or Google and your 
 ACCOUNTS
 An account (Sign in with Apple, Google or email) includes every feature: managing-agent phone numbers, bedbug and rodent records, and borough alerts.
 
-FIND A CRIB PLUS (EXISTING SUBSCRIBERS)
-Find A Crib Plus Monthly is no longer offered in the app. Existing subscribers keep it — it removes ads — at $4.99 per month, charged to your Apple Account and renewed automatically unless cancelled at least 24 hours before the end of the period. Manage or cancel in Settings › Apple Account › Subscriptions.
+FIND A CRIB PLUS
+Plus adds AI tools — Search in plain words, Help me apply for re-rentals, and Is this rent fair? — and removes ads. New subscribers get their first month on us (a 1-month introductory trial); after it, Find A Crib Plus Monthly is $4.99 per month, charged to your Apple Account and renewed automatically unless cancelled at least 24 hours before the end of the period. Manage or cancel in Settings › Apple Account › Subscriptions.
 Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 Privacy Policy: https://findacrib.com/privacy/
 
@@ -84,6 +84,7 @@ WHATS_NEW = """Find A Crib Plus is back, with new tools:
 • Search in plain words — type “2 bed under $2,500 near Prospect Park, no violations” and every filter sets itself.
 • Help me apply — each re-rental's steps, the documents to gather and a ready-to-send email to the agent.
 • Is this rent fair? — an asking rent checked against the neighborhood and HUD's fair-market rent.
+New subscribers get their first month on us.
 
 For every account:
 • What do I qualify for? — enter your household size and income once; lotteries and re-rentals show whether you're in range.
@@ -95,7 +96,7 @@ For every account:
 REVIEW_NOTES = """VERSION 1.2.6 (build __BUILD__) — Find A Crib Plus offered again (AI tools); qualify-check; application packet; Beds filter on re-rentals
 
 WHAT CHANGED SINCE 1.2.5
-1. Find A Crib Plus (the existing auto-renewable subscription, $4.99/month) is offered again. It unlocks: Search in plain words, Help me apply (re-rentals), Is this rent fair? (building pages with an asking rent) and no ads. Every other feature comes with a (no-cost) account: managing-agent phone numbers, bedbug and rodent records, borough alerts.
+1. Find A Crib Plus (the existing auto-renewable subscription, $4.99/month, with a 1-month introductory trial for new subscribers) is offered again. It unlocks: Search in plain words, Help me apply (re-rentals), Is this rent fair? (building pages with an asking rent) and no ads. Every other feature comes with a (no-cost) account: managing-agent phone numbers, bedbug and rodent records, borough alerts.
 2. AI: the text typed into "Search in plain words" and the public web page of a re-rental listing are sent to our server, which uses AI providers (TypeSafe and Anthropic) to read them. No account details, contact details, household or income figures, or documents are sent to any AI provider.
 3. "What do I qualify for?" (Lotteries tab): household size and income, stored on this device only (UserDefaults) and never sent anywhere.
 4. Application packet (Profile > Application packet, or "Get my documents ready" in Help me apply): the camera opens Apple's VisionKit document scanner ONLY when the user taps Add on a document; scans are stored on the device with complete file protection and sent only by the user, from their own Mail. Nothing is uploaded to us. NEW PERMISSION: camera (NSCameraUsageDescription), asked on the first scan.

@@ -38,9 +38,33 @@ final class PlusStore {
     func load() async {
         do { product = try await Product.products(for: [Self.productID]).first }
         catch { self.error = "Couldn't load the subscription: \(error.localizedDescription)" }
+        // The first-month trial (App Store Connect introductory offer,
+        // owner 2026-10-04). Apple decides who's eligible: one per person.
+        if let sub = product?.subscription, let offer = sub.introductoryOffer, offer.paymentMode == .freeTrial {
+            trialEligible = await sub.isEligibleForIntroOffer
+            trialText = Self.periodWords(offer.period)
+        } else {
+            trialEligible = false; trialText = nil
+        }
     }
 
     var priceText: String { product?.displayPrice ?? "$4.99" }
+    /// "1 month" while this person can start the trial, else nil.
+    private(set) var trialText: String?
+    private(set) var trialEligible = false
+    var trial: String? { trialEligible ? trialText : nil }
+
+    nonisolated static func periodWords(_ p: Product.SubscriptionPeriod) -> String {
+        let unit: String
+        switch p.unit {
+        case .day: unit = "day"
+        case .week: unit = "week"
+        case .month: unit = "month"
+        case .year: unit = "year"
+        @unknown default: unit = "period"
+        }
+        return "\(p.value) \(unit)\(p.value == 1 ? "" : "s")"
+    }
 
     /// Which paywall is on screen (phone, alerts, profile, …), so a purchase
     /// is credited to the screen that sold it on the dashboard's pay

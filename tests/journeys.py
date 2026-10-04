@@ -1588,6 +1588,14 @@ class Runner:
               shown: [...document.querySelectorAll('#paywall-feats li')].filter(l => !l.hidden && l.offsetParent).map(l => l.dataset.perk)}))()""")
             self.ok(pw['open'] and 'plain words' in pw['title'].lower(), f'a free account gets the AI paywall: {pw}', j)
             self.ok(set(pw['shown']) == {'ai_search', 'rent_check', 'apply_help', 'noads'}, f'the paywall lists only the live AI perks + no ads: {pw["shown"]}', j)
+            # First month on us (2026-10-04): the trial line sits under the
+            # price, and $4.99 stays the big number (Apple/FTC: billed amount
+            # most prominent).
+            tr = page.evaluate("""(() => ({trial: (document.querySelector('#paywall-modal .paywall-trial')||{}).textContent || '',
+              amt: (document.querySelector('#paywall-modal .paywall-price .amt')||{}).textContent || '',
+              btn: document.getElementById('paywall-subscribe').textContent}))()""")
+            self.ok('first month is on us' in tr['trial'].lower() and tr['amt'] == '$4.99' and 'month on us' in tr['btn'].lower(),
+                    f'the paywall should offer the first month on us under $4.99: {tr}', j)
             page.evaluate("document.querySelector('[data-paywall=\"close\"]')?.click()"); time.sleep(0.3)
             # The landlord report card and Ask about this building were removed
             # (owner, 2026-10-03: too slow) — not on the building sheet.

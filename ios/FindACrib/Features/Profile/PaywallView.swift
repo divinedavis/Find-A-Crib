@@ -90,10 +90,17 @@ struct PaywallView: View {
                 .font(.se(30, .black)).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
             Text("Listings, rents and applications — read for you, in plain words.")
                 .font(.se(17)).foregroundStyle(.white.opacity(0.88))
+            // Apple 3.1.2: the billed amount stays the most prominent price;
+            // the trial line is smaller, under it.
             Text("\(plus.priceText) / month · cancel anytime")
                 .font(.se(15, .bold)).foregroundStyle(SE.navy)
                 .padding(.horizontal, 12).padding(.vertical, 6).background(.white).clipShape(Capsule())
                 .padding(.top, 4)
+            if let t = plus.trial {
+                Text("Your first \(t) is on us — then \(plus.priceText)/month.")
+                    .font(.se(14, .semibold)).foregroundStyle(.white.opacity(0.9))
+                    .accessibilityIdentifier("paywall-trial")
+            }
         }
         .padding(.horizontal, 20).padding(.top, 56).padding(.bottom, 26)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -142,7 +149,7 @@ struct PaywallView: View {
                 Text("Step 1 of 2 — then choose Plus. Your account works on findacrib.com too.")
                     .font(.se(13)).foregroundStyle(SE.ink3).multilineTextAlignment(.center)
             } else {
-                SEPrimaryButton(title: plus.busy ? "…" : "Get Plus — \(plus.priceText)/month", icon: "sparkles") {
+                SEPrimaryButton(title: plus.busy ? "…" : (plus.trial.map { "Start your \($0) — then \(plus.priceText)/mo" } ?? "Get Plus — \(plus.priceText)/month"), icon: "sparkles") {
                     Task { await plus.purchase(); if auth.hasPlus { dismiss() } }
                 }
                 .disabled(plus.busy)
@@ -159,7 +166,8 @@ struct PaywallView: View {
 
     private var disclosures: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Payment is charged to your Apple Account at confirmation. The subscription renews automatically each month at \(plus.priceText) unless cancelled at least 24 hours before the end of the current period. Manage or cancel in Settings › Apple Account › Subscriptions.")
+            Text((plus.trial.map { "The first \($0) costs nothing; \(plus.priceText) is charged to your Apple Account when it ends unless you cancel at least 24 hours before. " } ?? "Payment is charged to your Apple Account at confirmation. ")
+                 + "The subscription renews automatically each month at \(plus.priceText) unless cancelled at least 24 hours before the end of the current period. Manage or cancel in Settings › Apple Account › Subscriptions.")
                 .font(.se(13)).foregroundStyle(SE.ink3)
             HStack(spacing: 18) {
                 Button("Terms of Use") { openURL(PlusStore.termsURL) }

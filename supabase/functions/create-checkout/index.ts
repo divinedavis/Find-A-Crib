@@ -57,6 +57,12 @@ Deno.serve(async (req) => {
     if (!user) return new Response(JSON.stringify({ error: "not signed in" }), { status: 401, headers: { ...cors, "Content-Type": "application/json" } });
 
     const { return_url } = await req.json().catch(() => ({}));
+    // First month on us (owner, 2026-10-04): a 30-day trial on an account's
+    // first Plus subscription only — any earlier row (Stripe, App Store,
+    // comp, referral) means no trial, the same one-per-person rule Apple
+    // applies to the app's introductory offer.
+    const { data: prior, error: priorErr } = await supabase.from("subscriptions").select("user_id").eq("user_id", user.id).limit(1);
+    const trial = !priorErr && (prior ?? []).length === 0;   // unsure = no trial
     const base = safeReturn(return_url);
     const sep = base.includes("?") ? "&" : "?";
 
@@ -77,6 +83,7 @@ Deno.serve(async (req) => {
         success_url: `${base}${sep}plus=success`,
         cancel_url: `${base}${sep}plus=cancel`,
         allow_promotion_codes: "true",
+        ...(trial ? { "subscription_data[trial_period_days]": "30" } : {}),
       }),
     });
     const session = await res.json();

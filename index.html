@@ -515,6 +515,7 @@
   .paywall-price { margin-bottom: 16px; }
   .paywall-price .amt { font-size: 44px; font-weight: 800; letter-spacing: -1px; }
   .paywall-price .per { font-size: 20px; color: var(--ink-2); }
+  .paywall-trial { margin: -8px 0 14px; font-size: 15px; font-weight: 600; color: var(--ink-2); }
   .paywall-card #paywall-subscribe { padding: 19px; font-size: 20px; border-radius: 14px; }
   .paywall-fine { text-align: center; font-size: 15px; color: var(--ink-2); margin: 14px 0 0; }
   .paywall-refer { display: block; width: 100%; margin-top: 10px; padding: 15px; font-size: 17px; font-weight: 700;
@@ -1787,13 +1788,16 @@
     </ul>
     <div class="paywall-cta">
       <div class="paywall-price"><span class="amt">$4.99</span> <span class="per">/ month</span></div>
+      <!-- First month on us (owner, 2026-10-04): a 30-day Stripe trial for an
+           account's first subscription; the billed price stays the big one. -->
+      <div class="paywall-trial">Your first month is on us — then $4.99/month.</div>
       <div id="paywall-error" class="auth-error" hidden></div>
-      <button id="paywall-subscribe" type="button" class="auth-submit">Subscribe</button>
+      <button id="paywall-subscribe" type="button" class="auth-submit">Start your month on us</button>
       <!-- Every $4.99 prompt also offers the referral route (owner, 2026-10-01):
            invite one friend and you both get 2 months of Plus. -->
       <button id="paywall-refer" type="button" class="paywall-refer">🎁 Or invite a friend — you both get 2 months of Plus</button>
     </div>
-    <p class="paywall-fine">Cancel anytime. Billed monthly via Stripe.</p>
+    <p class="paywall-fine">New members: the first month costs nothing; $4.99 is billed via Stripe when it ends, then monthly. Cancel anytime before it ends and you won’t be charged.</p>
   </div>
 </div>
 <!-- Referral: invite one friend, both get Plus free -->
@@ -1866,7 +1870,7 @@
       <span class="label">City</span>
       <div id="profile-cities" class="profile-cities"></div>
     </div>
-    <button id="profile-upgrade" type="button" class="auth-submit" hidden>Get Plus — $4.99/mo</button>
+    <button id="profile-upgrade" type="button" class="auth-submit" hidden>Get Plus — first month on us</button>
     <div class="profile-row profile-toggle-row">
       <div>
         <div class="profile-feat">🔔 Saved-building alerts</div>
@@ -8141,7 +8145,7 @@ function favActive() {
       if (error || !data?.url) throw (error || new Error('no checkout url'));
       window.location.href = data.url;   // -> Stripe Checkout
     } catch (e) {
-      btn.disabled = false; btn.textContent = 'Subscribe';
+      btn.disabled = false; btn.textContent = 'Start your month on us';
       if (err) { err.textContent = 'Checkout is not available yet. Please try again shortly.'; err.hidden = false; }
     }
   }
@@ -8158,7 +8162,7 @@ function favActive() {
   (function () {
     const p = new URLSearchParams(location.search);
     if (p.get('plus') === 'success') {
-      showPlusToast('🎉 You’re now Find A Crib Plus — bedbug and rodent records, agent phone numbers and no ads are unlocked.');
+      showPlusToast('🎉 You’re now Find A Crib Plus — search in plain words, Help me apply, Is this rent fair? and no ads are unlocked.');
       plusPurchasePending = true;
     }
     // ?plus=1 is the "unlock" link from the gated pages. Signed-out users get

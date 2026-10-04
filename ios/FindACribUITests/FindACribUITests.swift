@@ -146,8 +146,15 @@ final class FindACribUITests: XCTestCase {
         let help = app.buttons["rerental-apply-help"].firstMatch
         // Clear of the floating tab bar: "hittable" under it still sends the
         // tap to the bar (failed once in the build 114 ship, passed on rerun).
+        // Small drags until it sits mid-screen (a full swipe could carry it
+        // past the top, then the loop swiped on forever).
         let h = app.windows.firstMatch.frame.height
-        for _ in 0..<10 where !help.isHittable || help.frame.maxY > h - 140 { app.swipeUp() }
+        let mid = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.6))
+        for _ in 0..<30 {
+            if help.exists && help.isHittable && help.frame.minY > 150 && help.frame.maxY < h - 140 { break }
+            let up = !(help.exists && help.frame.minY <= 150)
+            mid.press(forDuration: 0.05, thenDragTo: mid.withOffset(CGVector(dx: 0, dy: up ? -320 : 220)))
+        }
         XCTAssertTrue(help.exists, "a re-rental card should offer Help me apply")
         help.tap()
         XCTAssertTrue(app.buttons["paywall-sign-in"].waitForExistence(timeout: 10), "without Plus, Help me apply opens the Plus page")

@@ -15,6 +15,7 @@ TEAL = (47, 122, 138)
 WHITE, INK = (255, 255, 255), (16, 34, 40)
 MARGIN = 64
 RIGHT_SAFE = 150                            # TikTok's like/comment column
+SAFE_BOTTOM = 1500                          # below this: TikTok's caption, username and sound
 AV = "/System/Library/Fonts/Avenir Next.ttc"
 DEMI, BOLD, MED = 2, 0, 5                   # face indexes in the .ttc (checked below)
 LOGO = os.path.expanduser("~/projects/dhcr-map/ios/FindACrib/Resources/Assets.xcassets/AppIcon.appiconset/icon-1024.png")
@@ -39,8 +40,9 @@ def cover(img, w, h, zoom=1.0, fx=0.5, fy=0.5):
     iw, ih = img.size
     scale = max(w / iw, h / ih) * zoom
     cw, ch = w / scale, h / scale
-    x0 = min(max(fx * iw - cw / 2, 0), iw - cw)
-    y0 = min(max(fy * ih - ch / 2, 0), ih - ch)
+    # max(0, …) last: when the photo fits exactly, iw - cw can be -1e-13.
+    x0 = max(0.0, min(fx * iw - cw / 2, iw - cw))
+    y0 = max(0.0, min(fy * ih - ch / 2, ih - ch))
     return img.resize((w, h), Image.LANCZOS, box=(x0, y0, x0 + cw, y0 + ch))
 
 
@@ -52,14 +54,19 @@ def headline_scene(photo, lines, bg, fg, t, motion, sub=None):
     for l in lines:
         d.text((MARGIN, y), l, font=f, fill=fg)
         y += int(f.size * 1.12)
-    ph_y, ph_h = max(y + 40, 560), 1000
+    # The small note sits under the headline, not under the photo: the
+    # bottom ~22% of a TikTok is the caption, username and sound line
+    # (owner, 2026-10-04: "there is text being overlapped by our caption").
+    if sub:
+        sf = font(40, MED)
+        d.text((MARGIN, y + 6), sub, font=sf, fill=fg)
+        y += 6 + int(sf.size * 1.3)
+    ph_y = max(y + 40, 560)
+    ph_h = min(1000, SAFE_BOTTOM - ph_y)     # the photo ends where the caption starts
     z0, z1, fx0, fx1 = motion
     z = z0 + (z1 - z0) * t
     fx = fx0 + (fx1 - fx0) * t
     im.paste(cover(photo, W, ph_h, z, fx, 0.5), (0, ph_y))
-    if sub:
-        sf = font(40, MED)
-        d.text((MARGIN, ph_y + ph_h + 36), sub, font=sf, fill=fg)
     return im
 
 

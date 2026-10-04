@@ -710,6 +710,26 @@
 
       <!-- ===== Marracat only ===== -->
       <div id="marracat-a" class="hidden">
+        <!-- Find A Crib's daily trend and investor card, for Marracat -->
+        <div class="card mb18" id="sec-mc-trend">
+          <div class="card-head-row">
+            <div><h2>Visitors and sign-ups over time</h2><div class="card-sub">Unique visitors per day (website and App Store app, from the visits table; your own devices and test builds left out) and new accounts per day. History starts 4 Oct 2026, when visits began to be recorded.</div></div>
+          </div>
+          <div id="mc-trend"></div>
+        </div>
+        <div class="card mb18" id="sec-mc-investor">
+          <div class="card-head-row">
+            <div><h2>For investors — growth, retention</h2><div class="card-sub">Fixed 30-day windows (the range picker does not apply), web and App Store app together, as on Find A Crib. Retention and month-over-month growth fill in as the visits history grows.</div></div>
+          </div>
+          <div class="ads-tiles" id="mc-investor"></div>
+        </div>
+        <div class="card mb18" id="sec-mc-downloads">
+          <div class="card-head-row">
+            <div><h2>iPhone app — is anyone downloading it?</h2><div class="card-sub">First-time downloads per day from Apple’s App Store analytics reports, one to two days behind.</div></div>
+          </div>
+          <div id="mc-downloads"></div>
+        </div>
+
         <!-- orders: the only number that means money for the brands -->
         <div class="card mb18" id="sec-mc-orders">
           <div class="card-head-row">
@@ -2879,6 +2899,46 @@
 
   // The same tile markup the ads and leads rows use, so a Crease tile and a
   // NEMO tile are the same object with different numbers in it.
+  // Marracat's Find A Crib-style trend, investor tiles and downloads.
+  function renderMarracatFac(F, S){
+    var E=F.engagement||{}, Rt=F.retention||{}, Src=F.sources||{}, G=F.growth||{}, days=F.daily_series||[];
+    var pct=function(r){ return r==null ? '—' : (100*r).toFixed(1)+'%'; };
+    var change=function(now, prior){ return prior ? ((now>=prior?'+':'')+Math.round(100*(now-prior)/prior)+'%') : 'no prior window yet'; };
+    // Daily bars: visitors (blue) and sign-ups (gold), each on its own scale.
+    if(!days.length){ el('mc-trend').innerHTML='<div class="callout">No visits recorded yet.</div>'; }
+    else {
+      var maxV=Math.max(1,Math.max.apply(null,days.map(function(x){return n(x.visitors);}))),
+          maxS=Math.max(1,Math.max.apply(null,days.map(function(x){return n(x.signups);})));
+      var w=Math.max(6,Math.floor(600/days.length));
+      var bars=function(key,max,hex){ return '<svg viewBox="0 0 '+(w*days.length)+' 80" preserveAspectRatio="none" style="width:100%;height:80px">'+
+        days.map(function(x,i){ var h=Math.round(76*n(x[key])/max); return '<rect x="'+(i*w+1)+'" y="'+(80-h)+'" width="'+(w-2)+'" height="'+h+'" fill="'+hex+'"><title>'+esc(x.date)+': '+n(x[key])+'</title></rect>'; }).join('')+'</svg>'; };
+      var tv=days.reduce(function(a,x){return a+n(x.visitors);},0), ts=days.reduce(function(a,x){return a+n(x.signups);},0);
+      el('mc-trend').innerHTML='<div class="card-sub" style="margin:4px 0">UNIQUE VISITORS PER DAY · '+comma(tv)+' visitor-days</div>'+bars('visitors',maxV,'#4C7DF0')+
+        '<div class="card-sub" style="margin:12px 0 4px">SIGN-UPS PER DAY · '+comma(ts)+' total</div>'+bars('signups',maxS,'#F0B429')+
+        '<div class="card-sub" style="margin-top:6px">'+esc(days[0].date)+' → '+esc(days[days.length-1].date)+'</div>';
+    }
+    var d1=Rt.d1||{}, d7=Rt.d7||{}, d30=Rt.d30||{};
+    el('mc-investor').innerHTML=[
+      {v:comma(n(E.mau))+' <small>'+change(n(E.mau),n(E.mau_prior))+'</small>',l:'Monthly actives · 30 days, vs the 30 before',
+       sub:comma(n(E.mau_prior))+' in the prior window',bench:'a16z: 20–30% month-over-month is the early-stage consumer band'},
+      {v:comma(n(E.wau))+' <small>'+change(n(E.wau),n(E.wau_prior))+'</small>',l:'Weekly actives · 7 days, vs the 7 before',sub:comma(n(E.wau_prior))+' in the prior week'},
+      {v:comma(n(G.new_30d))+' <small>'+change(n(G.new_30d),n(G.new_prior_30d))+'</small>',l:'New accounts · 30 days, vs the 30 before',
+       sub:comma(n(G.new_prior_30d))+' in the prior window · '+comma(n(G.all_time))+' all time'},
+      {v:pct(E.stickiness),l:'Stickiness · DAU/MAU (7-day mean)',sub:n(E.dau_7d_mean).toFixed(1)+' daily actives on average',bench:'DAU/MAU ≥20% reads as habit for consumer apps'},
+      {v:pct(d1.rate)+' · '+pct(d7.rate)+' · '+pct(d30.rate),l:'Retention · came back within 1 / 7 / 30 days',
+       sub:'cohorts of '+comma(n(d1.cohort))+' / '+comma(n(d7.cohort))+' / '+comma(n(d30.cohort))+' visitors old enough to judge',bench:'consumer-app D30 target 40%; top quartile 25–30%'},
+      {v:pct(Src.organic_share)+' organic',l:'Where new visitors come from · 30 days',
+       sub:comma(n(Src['new']))+' new: '+comma(n(Src.direct))+' direct · '+comma(n(Src.search))+' search · '+comma(n(Src.social))+' social · '+comma(n(Src.referral))+' referral · '+comma(n(Src.tagged))+' tagged links · '+comma(n(Src.app))+' app'},
+      {v:comma(n(S.buyers))+' · '+(n(S.accounts)?(100*n(S.buyers)/n(S.accounts)).toFixed(1):'0')+'%',l:'Buyers · accounts with an order',
+       sub:'$'+n(S.gmv_usd).toFixed(2)+' sent to brands · Marracat takes no cut of orders'},
+      {v:comma(n(E.app_actives_30d)),l:'iPhone app · actives, 30 days',sub:'App Store builds only, simulators and TestFlight excluded'}
+    ].map(creaseTile).join('');
+    var AS=F.appstore;
+    el('mc-downloads').innerHTML = AS && (AS.days||[]).length
+      ? '<div class="callout"><b>'+comma(n(AS.last7))+'</b> first-time downloads in the last 7 days · Apple data through '+esc(AS.through||'')+'</div>'
+      : '<div class="callout">Apple’s analytics reports for Marracat were requested on 4 Oct 2026; the first daily report arrives in one to two days.</div>';
+  }
+
   function creaseTile(t){
     return '<div class="ads-tile"><div class="a-val">'+t.v+'</div><div class="a-lbl">'+t.l+'</div>'+
       (t.sub?'<div class="a-sub">'+t.sub+'</div>':'')+
@@ -3066,19 +3126,32 @@
     el('spark-sub').textContent='App devices plus web visitors per day, owner excluded';
 
     var usd=function(v){ return '$'+n(v).toLocaleString('en-US',{minimumFractionDigits:n(v)%1?2:0,maximumFractionDigits:2}); };
+    // Find A Crib's tile set (owner, 2026-10-04: "should have the same tiles
+    // and metrics that findacrib has"), with Marracat's stand-ins: restock
+    // alerts for borough alerts, sales to brands for ads, buyers for paid.
+    // Visitors are the server log's (web browsers + app devices); returning
+    // visitors come from the visits table, which began 4 Oct 2026.
+    var V=d.visits||{}, R=d.restock||{}, F=d.fac||{};
+    var visitors=n(W.visitors)+n(A.devices);
+    var since=F.visits_since?(' · tracked since '+fmtDay(F.visits_since)):' · tracking began 4 Oct';
+    var pctOf=function(a,b){ return b ? (100*a/b) : 0; };
+    var fmtPct=function(r){ return (r>0 && r<1 ? r.toFixed(2) : r.toFixed(1))+'%'; };
     var tiles=[
-      {ic:'📱',v:comma(n(A.devices)),l:'App devices',
-       own:comma(n(A.launches))+' launches',
-       bench:n(A.apple_review_devices)?(comma(n(A.apple_review_devices))+' more were Apple App Review'):''},
-      {ic:'🌐',v:comma(n(W.visitors)),l:'Web visitors',
-       own:comma(n(W.product_views))+' product pages opened'},
-      {ic:'👤',v:comma(n(S.accounts)),l:'Shopper accounts',
-       own:comma(n(S['new']))+' new in this range',
-       bench:n(S.owner_excluded)?'your own account not counted':''},
-      {ic:'🧾',v:comma(n(S.orders)),l:'Orders placed',
-       own:comma(n(S.items))+' items · '+comma(n(S.brands))+' brands'},
+      {ic:'👣',v:comma(visitors),l:'Unique visitors',
+       own:comma(n(W.visitors))+' web · '+comma(n(A.devices))+' iPhone app'},
+      {ic:'🔁',v:comma(n(V.returning))+' · '+pctS(n(V.returning),n(V.visitors)),l:'Returning visitors · this range',
+       own:'of '+comma(n(V.visitors))+' visitors with an id'+since},
+      {ic:'📄',v:comma(n(W.product_views)),l:'Product page views · website',
+       own:(visitors?(n(W.product_views)/Math.max(1,n(W.visitors))).toFixed(1):'0')+' per web visitor'},
+      {ic:'✅',v:comma(n(S['new'])),l:'Sign-ups',own:comma(n(S.accounts))+' shopper accounts in all'},
+      {ic:'🎯',v:fmtPct(pctOf(n(S['new']),visitors)),l:'Sign-up conversion',own:comma(n(S['new']))+' of '+comma(visitors)+' visitors'},
+      {ic:'🔔',v:fmtPct(pctOf(n(R.signups),visitors)),l:'Restock alert sign-up conversion',
+       own:comma(n(R.signups))+' shoppers set a restock alert'},
+      {ic:'📬',v:comma(n(R.alerts_sent)),l:'Restock alerts sent',own:'push + email when a watched item came back'},
       {ic:'💵',v:usd(S.gmv_usd),l:'Sales sent to brands',accent:true,
-       own:'order totals, USD, paid to the brands directly'}
+       own:comma(n(S.orders))+' orders · '+comma(n(S.items))+' items · paid to the brands directly'},
+      {ic:'💳',v:fmtPct(pctOf(n(S.buyers),n(S.accounts))),l:'Buyer conversion',
+       own:comma(n(S.buyers))+' of '+comma(n(S.accounts))+' accounts placed an order'}
     ];
     el('tiles').innerHTML=tiles.map(function(t){
       return '<div class="tile'+(t.accent?' accent':'')+'">'+
@@ -3097,6 +3170,8 @@
             'Your own phone, Mac and work network are left out'+(n(A.owner_devices_excluded)?' ('+comma(n(A.owner_devices_excluded))+' of your devices this range)':'')+
             ' — but a phone on cellular that never signed in can still slip through, so read small numbers as an upper bound.'
           : '<b>No shoppers outside your own devices in this range.</b>');
+
+    renderMarracatFac(F, S);
 
     // ---- orders -----------------------------------------------------------
     var prov=S.providers||{};

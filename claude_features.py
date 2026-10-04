@@ -207,6 +207,12 @@ APPLY_SCHEMA = {
 }
 
 
+# The listing fields Help me apply sees (the endpoint and the nightly
+# prewarm in flyer_reader.py must agree, or the cache answers differ).
+APPLY_KEEP = ("agent", "title", "address", "borough", "money_kind", "money_low", "money_high",
+              "income_1p_max", "units", "beds", "href")
+
+
 def apply_help(listing, page_text):
     src = {"listing": listing, "page": page_text or ""}
     resp = client().messages.create(

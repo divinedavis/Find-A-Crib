@@ -5196,9 +5196,17 @@ function favActive() {
     const out = card.querySelector('.feat-apply-out');
     if (!tok || !out) return;
     out.textContent = '📝 Reading the listing…'; out.hidden = false;
+    // Most listings are read ahead overnight and come back at once; one nobody
+    // has opened this week is read live (5-60 s on a long page) — after 10 s
+    // say so and offer the page itself (2026-10-03).
+    const slow = setTimeout(() => {
+      if (!out.textContent.startsWith('📝')) return;
+      out.innerHTML = '📝 Still reading — some agents’ pages are long. You can wait or <a href="' + esc(href) + '" target="_blank" rel="noopener">open the agent’s page</a>.';
+    }, 10000);
     let r, j = {};
     try { r = await fetch('/api/ai/apply-help', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok }, body: JSON.stringify({ href }) }); j = await r.json(); }
-    catch (e) { out.textContent = 'Couldn’t reach Find A Crib just now — try again.'; return; }
+    catch (e) { clearTimeout(slow); out.textContent = 'Couldn’t reach Find A Crib just now — try again.'; return; }
+    clearTimeout(slow);
     if (r.status === 402) { out.hidden = true; openPaywall(null, 'apply_help'); return; }
     if (!r.ok || !j.ok) { out.textContent = j.error === 'daily_limit' ? 'That’s a lot of applications today — more tomorrow.' : 'Help isn’t available for this one right now — the agent’s page has the details.'; return; }
     const h = j.help || {}, c = h.contact || {};

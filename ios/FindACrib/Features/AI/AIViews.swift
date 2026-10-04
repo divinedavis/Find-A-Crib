@@ -195,6 +195,7 @@ struct ApplyHelpSheet: View {
     @State private var needsPlus = false
     @State private var copied = false
     @State private var showPacket = false
+    @State private var slow = false
 
     var body: some View {
         NavigationStack {
@@ -241,6 +242,20 @@ struct ApplyHelpSheet: View {
                     } else {
                         ProgressView("Reading the listing…").tint(SE.royal)
                             .frame(maxWidth: .infinity).padding(.top, 24)
+                        // A listing nobody has opened this week is read live
+                        // (5-60 s on a long agent page); most are read ahead
+                        // overnight and come back at once (2026-10-03).
+                        if slow {
+                            VStack(spacing: 10) {
+                                Text("Still reading — some agents' pages are long. You can wait or go straight to the listing.")
+                                    .font(.se(15)).foregroundStyle(SE.ink2).multilineTextAlignment(.center)
+                                if let u = listing.outboundURL {
+                                    SEOutlineButton(title: "Open the agent's page", icon: "arrow.up.right") { openURL(u) }
+                                        .accessibilityIdentifier("apply-open-listing")
+                                }
+                            }
+                            .frame(maxWidth: .infinity).padding(.top, 8)
+                        }
                     }
                 }
                 // Full width: a short address used to shrink this column and
@@ -251,6 +266,7 @@ struct ApplyHelpSheet: View {
             .navigationTitle("Help me apply").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
             .task { await load() }
+            .task { try? await Task.sleep(for: .seconds(10)); if help == nil && error == nil { slow = true } }
             .sheet(isPresented: $needsPlus, onDismiss: { if !auth.hasPlus { dismiss() } else { Task { await load() } } }) { PaywallView(source: "apply_help", context: listing.address) }
         }
     }

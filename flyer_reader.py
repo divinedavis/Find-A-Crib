@@ -237,6 +237,42 @@ def main():
         os.replace(path + ".tmp", path)
         os.chmod(path, 0o644)
     print(f"flyer_reader: {read} read, {len(table)} in the table, {skipped} left for tomorrow, ${spent / 1e6:.4f} spent")
+    if not a.dry_run:
+        prewarm_apply_help(listings, gw, a.limit)
+
+
+def prewarm_apply_help(listings, gw, limit):
+    """Help me apply, read ahead for every linked listing (2026-10-03): the
+    endpoint's 7-day ai_cache entry is written here, so a renter's tap is
+    instant instead of a page fetch + model call. Same inputs as the
+    endpoint (claude_features.APPLY_KEEP). ~$0.004 a listing, only when the
+    cached copy is missing or 6+ days old; stops at 90% of the month's cap."""
+    since = (datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None) - datetime.timedelta(days=6)).isoformat() + "Z"
+    done = spent = 0
+    for l in listings:
+        href = l.get("href")
+        if not href or l.get("href_kind") == "agent_page":
+            continue
+        key = hashlib.sha1(href.encode()).hexdigest()
+        if rest(f"ai_cache?feature=eq.apply_help&key=eq.{key}&created_at=gte.{since}&select=key"):
+            continue
+        if done >= limit or (rpc("ai_spend_month", {}) or 0) >= CAP_MICROS * STOP_AT:
+            break
+        keep = {k: l.get(k) for k in cf.APPLY_KEEP}
+        try:
+            page = listing_page.text_of(href) if l.get("href_kind") != "pdf" else ""
+            help_, u = cf.apply_help(keep, page)
+        except Exception as e:
+            print(f"  ! apply help {l.get('address', '')[:40]}: {type(e).__name__}")
+            continue
+        done += 1
+        spent += gw.record(None, "apply_help", u["model"] or cf.HAIKU, u["input_tokens"], u["output_tokens"],
+                           cache_write_tokens=u["cache_write_tokens"], cache_read_tokens=u["cache_read_tokens"])
+        rest("ai_cache?on_conflict=feature,key", "POST",
+             {"feature": "apply_help", "key": key, "payload": {"help": help_, "page_read": bool(page)},
+              "created_at": datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).isoformat() + "Z"},
+             prefer="resolution=merge-duplicates,return=minimal")
+    print(f"flyer_reader: Help me apply read ahead for {done} listing(s), ${spent / 1e6:.4f} spent")
 
 
 if __name__ == "__main__":

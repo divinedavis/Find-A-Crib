@@ -784,12 +784,14 @@ def ai_apply_help():
     if not listing:
         return jsonify(error="unknown_listing"), 404
     key = hashlib.sha1(href.encode()).hexdigest()
-    hit = _ai_cache_get("apply_help", key, max_age_days=3)
+    # 7 days: flyer_reader.py reads every listing ahead each night, so a tap
+    # is a cache hit, not a 5-60 s page read (owner, 2026-10-03: "this is
+    # taking too long for some listings").
+    hit = _ai_cache_get("apply_help", key, max_age_days=7)
     if hit:
         AI.record(user, "apply_help", claude_features.HAIKU, cached=True)
         return jsonify(ok=True, cached=True, **hit)
-    keep = {k: listing.get(k) for k in ("agent", "title", "address", "borough", "money_kind", "money_low", "money_high",
-                                       "income_1p_max", "units", "beds", "href")}
+    keep = {k: listing.get(k) for k in claude_features.APPLY_KEEP}
     page = listing_page.text_of(href) if listing.get("href_kind") != "pdf" else ""
     try:
         help_, u = claude_features.apply_help(keep, page)

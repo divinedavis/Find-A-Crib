@@ -28,3 +28,10 @@ def test_opaque_names_kept_but_noise_dropped():
 def test_wordpress_sizes_of_one_photo_count_once():
     cands = [c("https://x.com/a/photo-768x512.jpg"), c("https://x.com/a/photo.jpg")]
     assert len(F.gallery_pick(cands, "")) == 1
+
+
+def test_one_named_thumbnail_does_not_drop_the_real_photos():
+    # iAfford, 2026-10-04: one "1420-stebbins..." hero beside opaque photo ids.
+    cands = [c("https://ik.io/1420-stebbins-avenue-the-bronx.jpg", 840),
+             c("https://ik.io/1adc6e14-45fb.jpeg", 3264), c("https://ik.io/3b2a4d76-6b10.jpeg", 3264)]
+    assert len(F.gallery_pick(cands, "1420 Stebbins avenue apartments")) == 3

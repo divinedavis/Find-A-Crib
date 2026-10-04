@@ -873,8 +873,8 @@ def gallery_pick(cands, address):
 
     Pages also carry the agent's logo, badges, rent-table images and photos
     of *other* listings (MGNY's 111 Willoughby page shows 1025 Willoughby).
-    When some filenames carry the building's house number, only those are
-    kept; opaque names (CDN ids) are kept as found, in page order.
+    When two or more filenames carry the building's house number, only those
+    are kept; opaque names (CDN ids) are kept as found, in page order.
     """
     num = (re.match(r"\s*(\d+(?:-\d+)?)", address or "") or [None, None])[1]
     keep = []
@@ -890,7 +890,7 @@ def gallery_pick(cands, address):
     if num:
         mine = [u for u in keep if re.search(r"(?<!\d)" + re.escape(num.split("-")[0]) + r"(?!\d)",
                                               urllib.parse.unquote(u.rsplit("/", 1)[-1]))]
-        if mine:
+        if len(mine) >= 2:      # one match is a thumbnail/hero, not a naming scheme (iAfford)
             keep = mine
     seen, out = set(), []
     for u in keep:

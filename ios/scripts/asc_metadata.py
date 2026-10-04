@@ -80,29 +80,33 @@ Privacy Policy: https://findacrib.com/privacy/
 Find A Crib is an independent, informational tool. It is not a broker, does not list apartments, and takes no fee. Data: NYS Homes and Community Renewal rent-stabilization register (2024), NYC HPD open data, HUD FY2026 Fair Market Rents, HousingSearch.ny.gov, advertised rents from Zumper, LA County Assessor parcel data under LAHD's RSO criteria, the SF Rent Board Housing Inventory via DataSF, and the DC DHCD RentRegistry.
 """
 
-WHATS_NEW = """Everything in Find A Crib now comes with an account: managing-agent phone numbers, bedbug and rodent records on New York building pages, and borough alerts.
+WHATS_NEW = """Find A Crib Plus is back, with new tools:
+• Search in plain words — type “2 bed under $2,500 near Prospect Park, no violations” and every filter sets itself.
+• Help me apply — each re-rental's steps, the documents to gather and a ready-to-send email to the agent.
+• Is this rent fair? — an asking rent checked against the neighborhood and HUD's fair-market rent.
 
-The Lotteries tab lists every open lottery and re-rental in all five boroughs to everyone — no account needed to browse.
-
-Borough alerts: pick your boroughs and get a notification and an email the minute a lottery or re-rental opens.
-
-NYC HDC re-rentals open their official flyer.
+For every account:
+• What do I qualify for? — enter your household size and income once; lotteries and re-rentals show whether you're in range.
+• Application packet — scan your documents with the camera, keep them on this phone, and email them to an agent in one go.
+• The Beds filter now shows only re-rentals that have that size.
+• Managing-agent phone numbers, bedbug and rodent records, and borough alerts come with an account.
 """
 
-REVIEW_NOTES = """VERSION 1.2.6 (build __BUILD__) — every feature included with an account; Lotteries open to everyone; clearer Sign in with Apple error
+REVIEW_NOTES = """VERSION 1.2.6 (build __BUILD__) — Find A Crib Plus offered again (AI tools); qualify-check; application packet; Beds filter on re-rentals
 
 WHAT CHANGED SINCE 1.2.5
-1. Every feature is included with a (no-cost) account: managing-agent phone numbers, bedbug and rodent records on New York building pages, and borough alerts. Sign in with Apple, Google or email.
-2. Find A Crib Plus is not offered anywhere in this version: no paywall, no subscribe buttons. The existing auto-renewable subscription stays in App Store Connect so current subscribers keep it (it removes ads for them); a subscriber sees "Manage subscription" in Profile. No new purchases are possible in the app.
-3. Lotteries tab: lists every borough's open lotteries and re-rentals to everyone, signed in or not.
-4. NYC HDC re-rental cards open HDC's official flyer in Safari.
-No new permissions, no new SDKs, no new data types.
+1. Find A Crib Plus (the existing auto-renewable subscription, $4.99/month) is offered again. It unlocks: Search in plain words, Help me apply (re-rentals), Is this rent fair? (building pages with an asking rent) and no ads. Every other feature comes with a (no-cost) account: managing-agent phone numbers, bedbug and rodent records, borough alerts.
+2. AI: the text typed into "Search in plain words" and the public web page of a re-rental listing are sent to our server, which uses AI providers (TypeSafe and Anthropic) to read them. No account details, contact details, household or income figures, or documents are sent to any AI provider.
+3. "What do I qualify for?" (Lotteries tab): household size and income, stored on this device only (UserDefaults) and never sent anywhere.
+4. Application packet (Profile > Application packet, or "Get my documents ready" in Help me apply): the camera opens Apple's VisionKit document scanner ONLY when the user taps Add on a document; scans are stored on the device with complete file protection and sent only by the user, from their own Mail. Nothing is uploaded to us. NEW PERMISSION: camera (NSCameraUsageDescription), asked on the first scan.
+5. The Beds filter on the Lotteries > Re-rentals tab now shows only listings that state that size.
+No new SDKs.
 
 TO SEE THE FEATURES
-Sign in with the demo account in App Review Information (Profile > "Continue with email", then the email and password), or with Apple or Google. Open any New York building from Search: the managing agent's phone number and the Bedbug filings / Rat inspections tiles open directly.
+Sign in with the demo account in App Review Information (Profile > "Continue with email", then the email and password). The demo account has NO subscription, so: tap any PLUS button (e.g. Search > "Or describe it in plain words", or Lotteries > Re-rentals > a card's "Help me apply") — the Plus page opens and "Get Plus — $4.99/month" starts the sandbox purchase. Profile > "Get Find A Crib Plus" opens the same page. After subscribing, the same buttons work. The packet and qualify-check need no subscription.
 
 SIGN IN WITH APPLE
-If the device has no Apple Account signed in, Apple returns an error; the app now says so in plain words and points to Google or email. The demo account avoids this.
+If the device has no Apple Account signed in, Apple returns an error; the app says so in plain words and points to Google or email. The demo account avoids this.
 
 TO SEE THE IPAD LAYOUT
 Open the app on an iPad in either orientation: Search, Lotteries, Events, My Activity and Profile all work, and results lay out in two columns.
@@ -114,9 +118,6 @@ NOTIFICATIONS
 Once, a few seconds after launch, while permission is undetermined, the app shows its own card ("Get alerts on this phone?") explaining the ask; "Turn on" shows the iOS dialog, "Not now" waits a week, a system decline is never re-asked. Only borough alerts the user subscribed to — no marketing. Tapping one opens a list of that alert's listings.
 To see a push in review: sign in, Profile > Alerts, pick a borough, Turn on alerts, allow. The feeds are checked every 10 minutes.
 
-APP STORE RATING
-Only StoreKit's system requestReview is used (7th app open, after saving a building or turning on alerts, on the day an account is created, monthly for signed-in users; never twice a day, iOS's own limit applies). Profile has a "Rate Find A Crib" link.
-
 USAGE ANALYTICS
 The app records what is done in it (screens opened, searches by their filters, taps on listing links), linked to the account when signed in, declared under Product Interaction / Other Usage Data (Analytics) in App Privacy. No advertising identifier and no tracking; the only third-party SDK is Google Mobile Ads (see ADVERTISING above). Profile > "Share anonymous usage" turns off our own analytics.
 
@@ -125,9 +126,6 @@ Public registers served as static JSON from findacrib.com (NYS HCR, NYC HPD, LA 
 
 LOCATION
 Never requested. The map is Apple Maps; counts use the visible map region.
-
-DATA REFRESH
-Offline, the app uses the New York copy bundled in it; other cities download on first selection.
 
 CONTACT
 Any question at all: the email and phone above.

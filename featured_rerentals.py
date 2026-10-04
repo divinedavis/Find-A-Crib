@@ -902,7 +902,14 @@ def gallery_pick(cands, address):
 
 def gallery_sweep(records):
     """Open each listing's own page once and note its photos (gallery_src)."""
-    todo = [r for r in records if r.get("href_kind") == "listing" and r.get("href")]
+    # A page shared by several listings (Tax Solute's one Google Sites page
+    # for all nine) holds every building's photos: no gallery from it.
+    pages = {}
+    for r in records:
+        if r.get("href"):
+            pages.setdefault(r["href"].split("#")[0], []).append(r)
+    todo = [r for r in records if r.get("href_kind") == "listing" and r.get("href")
+            and len(pages[r["href"].split("#")[0]]) == 1]
     if not todo:
         return 0
     try:
@@ -916,7 +923,13 @@ def gallery_sweep(records):
         for rec in todo:
             try:
                 page.goto(rec["href"], wait_until="domcontentloaded", timeout=40000)
-                page.wait_for_timeout(3500)
+                # JavaScript galleries (iAfford, C+C) fill in seconds after
+                # the page: wait for two big photos, up to 15 s.
+                try:
+                    page.wait_for_function("[...document.images].filter(i => i.naturalWidth >= 600).length >= 2", timeout=15000)
+                except Exception:
+                    pass
+                page.wait_for_timeout(1500)
                 for _ in range(3):                 # lazy galleries load on scroll
                     page.mouse.wheel(0, 1500); page.wait_for_timeout(400)
                 rec["gallery_src"] = gallery_pick(page.evaluate(GALLERY_JS), rec.get("address"))

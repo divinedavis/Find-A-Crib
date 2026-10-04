@@ -32,6 +32,8 @@ struct FeaturedListing: Codable, Hashable, Identifiable, Sendable {
     var hrefKind: String?
     /// Site-relative, e.g. "/featured/img/abc.png".
     var image: String?
+    /// The listing's photos, lead first; nil when it has only the one.
+    var images: [String]?
     /// The photo is the OUTSIDE of the building, measured by photo_kind.py in
     /// the sweep — the agents also post empty living rooms and their own logos.
     /// Nothing reads it since the photo banner came back out (2026-09-23); it
@@ -42,7 +44,7 @@ struct FeaturedListing: Codable, Hashable, Identifiable, Sendable {
     var id: String { href + "|" + address }
 
     enum CodingKeys: String, CodingKey {
-        case agent, title, address, borough, zip, units, beds, href, image
+        case agent, title, address, borough, zip, units, beds, href, image, images
         case imageExterior = "image_exterior"
         case agentPage = "agent_page", moneyKind = "money_kind", moneyLow = "money_low", moneyHigh = "money_high"
         case income1pMax = "income_1p_max", hrefKind = "href_kind"
@@ -66,6 +68,7 @@ struct FeaturedListing: Codable, Hashable, Identifiable, Sendable {
         href = try c.decodeIfPresent(String.self, forKey: .href) ?? ""
         hrefKind = try c.decodeIfPresent(String.self, forKey: .hrefKind)
         image = try c.decodeIfPresent(String.self, forKey: .image)
+        images = try? c.decodeIfPresent([String].self, forKey: .images)
         imageExterior = try c.decodeIfPresent(Bool.self, forKey: .imageExterior) ?? false
     }
 
@@ -90,6 +93,11 @@ struct FeaturedListing: Codable, Hashable, Identifiable, Sendable {
     }
 
     var imageURL: URL? { image.flatMap { URL(string: $0, relativeTo: DataStore.host)?.absoluteURL } }
+    /// Every photo of the listing, lead first (the nightly gallery sweep,
+    /// 2026-10-04); just the lead when there's no gallery.
+    var imageURLs: [URL] {
+        (images ?? [image].compactMap { $0 }).compactMap { URL(string: $0, relativeTo: DataStore.host)?.absoluteURL }
+    }
 
     /// The money line, with what it IS: "$3,423–$4,376/mo", or the income
     /// ceiling when no rent is published — that answers "can I even apply?".

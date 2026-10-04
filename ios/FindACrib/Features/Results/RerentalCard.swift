@@ -11,6 +11,7 @@ struct RerentalCard: View {
     @Environment(\.openURL) private var openURL
     @State private var showApply = false
     @State private var showPlus = false
+    @State private var photo = 0
     @Environment(AuthService.self) private var auth
 
     var body: some View {
@@ -24,13 +25,33 @@ struct RerentalCard: View {
                     .overlay {
                         ZStack {
                             ImagePlaceholder()
-                            if let url = f.imageURL {
+                            let urls = f.imageURLs
+                            if urls.count > 1 {
+                                // Swipe through the building's photos (owner,
+                                // 2026-10-04); page dots show where you are.
+                                TabView(selection: $photo) {
+                                    ForEach(Array(urls.enumerated()), id: \.offset) { i, url in
+                                        RemoteImage(url: url).tag(i)
+                                    }
+                                }
+                                .tabViewStyle(.page(indexDisplayMode: .always))
+                                .onChange(of: photo) { _, i in
+                                    if i == 1 { Analytics.shared.track("rerental_photos_swipe", ["agent": f.agent, "photos": urls.count]) }
+                                }
+                            } else if let url = urls.first {
                                 RemoteImage(url: url)
                             }
                         }
                     }
                     .frame(height: 226).frame(maxWidth: .infinity).clipped()
-                    .accessibilityHidden(true)   // decorative: the address below names the place
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(f.imageURLs.count > 1 ? "Photo \(photo + 1) of \(f.imageURLs.count)" : "Photo of the building")
+                    .accessibilityAdjustableAction { dir in
+                        let n = f.imageURLs.count
+                        guard n > 1 else { return }
+                        photo = dir == .increment ? min(photo + 1, n - 1) : max(photo - 1, 0)
+                    }
+                    .accessibilityIdentifier("rerental-photos")
                 SEBadge(text: "Rerental", icon: "key.fill", fill: SE.navy, ink: .white)
                     .padding(12)
                     .accessibilityIdentifier("badge-rerental")

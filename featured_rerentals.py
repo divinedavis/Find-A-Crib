@@ -777,6 +777,7 @@ def save_images(records, apply_changes):
     kinds = {}          # file name -> is_exterior, measured once per run
     for rec in records:
         src = rec.pop("image_src", None)
+        rec["_lead_src"] = WP_SIZE.sub("", src.split("?")[0]) if src else None
         rec["image"] = None
         rec["image_exterior"] = False
         if not src:
@@ -827,11 +828,149 @@ def save_images(records, apply_changes):
             rec["image_large"] = "/featured/img/" + name + "_l.jpg"
         rec["image_exterior"] = exterior(on_disk[name], kinds) and not rec["image_lowres"]
         kept += 1
+    for rec in records:
+        save_gallery(rec, on_disk, meta, apply_changes)
     if apply_changes:
         live = {os.path.basename(r["image"]).split(".")[0] for r in records if r.get("image")}
+        live |= {os.path.basename(u).split(".")[0] for r in records for u in (r.get("images") or [])}
         with open(meta_path, "w") as f:
             json.dump({k: v for k, v in meta.items() if k in live}, f)
     return kept
+
+
+# ---------------------------------------------------------------- gallery
+# Swipeable photos on a re-rental (owner, 2026-10-04: "are we able to have
+# users swipe left and right through the pictures of the building?"). Each
+# listing that has its own page is opened once a run and its large photos
+# collected; save_images re-hosts up to GALLERY_MAX of them beside the lead
+# photo as rec["images"].
+GALLERY_MAX = 8
+GALLERY_MIN_W = 600          # narrower than this is a thumbnail, icon or badge
+GALLERY_SKIP = ("logo", "icon", "sprite", "avatar", "favicon", ".svg", "badge", "equal-housing",
+                "ehol", "wheelchair", "og-default", "rent", "income", "chart", "table", "map")
+GALLERY_JS = r"""() => {
+  const out = [], seen = new Set();
+  const add = (u, w) => { if (!u || u.startsWith('data:')) return;
+    try { u = new URL(u, location.href).href } catch (e) { return }
+    if (seen.has(u)) return; seen.add(u); out.push({u, w: w || 0}); };
+  for (const i of document.images) {
+    let best = i.currentSrc || i.src;
+    const ss = i.getAttribute('srcset') || i.getAttribute('data-srcset') || '';
+    if (ss) { const c = ss.split(',').map(s => s.trim().split(/\s+/)).filter(p => p[0])
+                .map(p => [p[0], parseInt(p[1]) || 0]).sort((a, b) => b[1] - a[1]);
+              if (c.length) best = c[0][0]; }
+    add(i.getAttribute('data-src') || i.getAttribute('data-lazy-src') || best, i.naturalWidth);
+  }
+  for (const el of document.querySelectorAll('[style*="background-image"]')) {
+    const m = /url\(["']?([^"')]+)/.exec(el.getAttribute('style') || ''); if (m) add(m[1], el.clientWidth);
+  }
+  return out;
+}"""
+
+
+def gallery_pick(cands, address):
+    """The listing's own photos from everything on its page.
+
+    Pages also carry the agent's logo, badges, rent-table images and photos
+    of *other* listings (MGNY's 111 Willoughby page shows 1025 Willoughby).
+    When some filenames carry the building's house number, only those are
+    kept; opaque names (CDN ids) are kept as found, in page order.
+    """
+    num = (re.match(r"\s*(\d+(?:-\d+)?)", address or "") or [None, None])[1]
+    keep = []
+    for c in cands:
+        u = c["u"]; name = urllib.parse.unquote(u.split("?")[0].rsplit("/", 1)[-1]).lower()
+        if not re.search(r"\.(jpe?g|png|webp)$", name) and "googleusercontent" not in u and "/image" not in u.lower():
+            continue
+        if any(k in name for k in GALLERY_SKIP):
+            continue
+        if c.get("w") and c["w"] < GALLERY_MIN_W:
+            continue
+        keep.append(u)
+    if num:
+        mine = [u for u in keep if re.search(r"(?<!\d)" + re.escape(num.split("-")[0]) + r"(?!\d)",
+                                              urllib.parse.unquote(u.rsplit("/", 1)[-1]))]
+        if mine:
+            keep = mine
+    seen, out = set(), []
+    for u in keep:
+        k = WP_SIZE.sub("", u.split("?")[0])
+        if k not in seen:
+            seen.add(k); out.append(u)
+    return out[:GALLERY_MAX + 1]
+
+
+def gallery_sweep(records):
+    """Open each listing's own page once and note its photos (gallery_src)."""
+    todo = [r for r in records if r.get("href_kind") == "listing" and r.get("href")]
+    if not todo:
+        return 0
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        return 0
+    found = 0
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch()
+        page = browser.new_context(viewport={"width": 1280, "height": 1600}, user_agent=UA).new_page()
+        for rec in todo:
+            try:
+                page.goto(rec["href"], wait_until="domcontentloaded", timeout=40000)
+                page.wait_for_timeout(3500)
+                for _ in range(3):                 # lazy galleries load on scroll
+                    page.mouse.wheel(0, 1500); page.wait_for_timeout(400)
+                rec["gallery_src"] = gallery_pick(page.evaluate(GALLERY_JS), rec.get("address"))
+                found += bool(rec["gallery_src"])
+            except Exception:
+                continue
+        browser.close()
+    return found
+
+
+def ahash(path):
+    """8x8 average hash, to catch one photo served at two addresses."""
+    try:
+        from PIL import Image
+        im = Image.open(path).convert("L").resize((8, 8))
+        px = list(im.getdata()); avg = sum(px) / 64
+        return sum(1 << i for i, v in enumerate(px) if v > avg)
+    except Exception:
+        return None
+
+
+def same_photo(h, hashes):
+    return h is not None and any(o is not None and bin(h ^ o).count("1") <= 6 for o in hashes)
+
+
+def save_gallery(rec, on_disk, meta, apply_changes):
+    """Re-host the extra photos; rec["images"] = lead photo first, then these."""
+    srcs = rec.pop("gallery_src", None) or []
+    lead_src = rec.pop("_lead_src", None)
+    images = [rec["image"]] if rec.get("image") else []
+    hashes = [ahash(os.path.join(IMGDIR, os.path.basename(rec["image"])))] if rec.get("image") and apply_changes else []
+    for src in srcs:
+        if len(images) >= GALLERY_MAX:
+            break
+        key = WP_SIZE.sub("", src.split("?")[0])
+        if key == lead_src:
+            continue                               # the lead photo, already first
+        name = "g" + hashlib.sha1(key.encode()).hexdigest()[:15]
+        if name not in on_disk:
+            if not apply_changes:
+                continue
+            data, ext, w, _large = fetch_best_image(src)
+            if not data or (w and w < GALLERY_MIN_W):
+                continue
+            with open(os.path.join(IMGDIR, name + ext), "wb") as f:
+                f.write(data)
+            on_disk[name] = name + ext
+            meta[name] = {"w": w, "large": False, "v": 2}
+        url = "/featured/img/" + on_disk[name]
+        h = ahash(os.path.join(IMGDIR, on_disk[name])) if apply_changes else None
+        if url not in images and not same_photo(h, hashes):
+            images.append(url); hashes.append(h)
+    if len(images) > 1:
+        rec["images"] = images
 
 
 def exterior(filename, cache):
@@ -856,6 +995,7 @@ def prune_images(records, apply_changes):
         return 0
     live = {os.path.basename(r["image"]) for r in records if r.get("image")}
     live |= {os.path.basename(r["image_large"]) for r in records if r.get("image_large")}
+    live |= {os.path.basename(u) for r in records for u in (r.get("images") or [])}
     live.add("meta.json")
     gone = 0
     for f in os.listdir(IMGDIR):
@@ -1014,6 +1154,7 @@ def main():
     for r in records:
         for k in [k for k in r if k.startswith("_")]:
             r.pop(k)                       # _card, _amounts, _key: never published
+    gallery_sweep(records)
     kept_img = save_images(records, args.apply)
     records = rank(records)[:args.limit]
     dropped_img = prune_images(records, args.apply)

@@ -1227,6 +1227,15 @@ class Runner:
             return {name: c.dataset.hcName || '', boro: c.dataset.hcBoro || '', flag: !!c.querySelector('.hc-flag')};
         })()""")
         self.ok(feat is not None or hc is not None, 'no sponsored or lottery tile rendered in the list at all', j)
+        # Photo galleries (2026-10-04): a tile with several photos scrolls
+        # sideways and its dots follow.
+        gal = page.evaluate("""(async () => {
+            const g = document.querySelector('#grid .feat-card .feat-gallery'); if (!g) return null;
+            g.scrollIntoView({block: 'center'}); g.scrollLeft = g.clientWidth; await new Promise(r => setTimeout(r, 400));
+            const dots = [...g.parentElement.querySelectorAll('.feat-dots i')];
+            return {imgs: g.querySelectorAll('img').length, on: dots.findIndex(d => d.classList.contains('on'))}; })()""")
+        if gal is not None:
+            self.ok(gal['imgs'] > 1 and gal['on'] == 1, f'a gallery tile should swipe to photo 2 and move its dot: {gal}', j)
         # Beds = 1 (owner, 2026-10-04): every re-rental tile left must name a
         # 1-bed in its feed entry or its own unit table (featured_units.json).
         page.evaluate("""(() => { const cb = document.querySelector('input[name="beds"][value="1"]');

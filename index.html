@@ -777,6 +777,19 @@
     position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;
     transition: opacity .25s ease;
   }
+  .feat-gallery { position: absolute; inset: 0; z-index: 0; display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
+    scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+  .feat-gallery::-webkit-scrollbar { display: none; }
+  .card .photo .feat-gallery img.listing-photo { position: relative; flex: 0 0 100%; scroll-snap-align: start; }
+  .feat-dots { position: absolute; z-index: 3; left: 0; right: 0; bottom: 8px; display: flex; justify-content: center; gap: 5px; pointer-events: none; }
+  .feat-dots i { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.55); }
+  .feat-dots i.on { background: #fff; }
+  .feat-gal-btn { position: absolute; z-index: 3; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border-radius: 50%;
+    border: 0; background: rgba(0,0,0,.45); color: #fff; font-size: 22px; line-height: 30px; cursor: pointer; opacity: 0; transition: opacity .15s; }
+  .feat-gal-btn.prev { left: 8px; } .feat-gal-btn.next { right: 8px; }
+  .card .photo:hover .feat-gal-btn, .feat-gal-btn:focus-visible { opacity: 1; }
+  @media (hover: none) { .feat-gal-btn { display: none; } }
+  .card .photo .photo-shade { pointer-events: none; }
   .card .photo .photo-shade {
     position: absolute; inset: 0; z-index: 1;
     background: linear-gradient(180deg, rgba(0,0,0,0.45) 0%, transparent 35%, transparent 55%, rgba(0,0,0,0.7) 100%);
@@ -6217,6 +6230,31 @@ function favActive() {
     return '<div class="price est">Income-restricted · see agent for rent</div>';
   }
 
+  // Swipe through a re-rental's photos (owner, 2026-10-04): a scroll-snap
+  // strip, dots, and ‹ › buttons for a mouse. featured_rerentals.py writes
+  // f.images (lead first) from each listing's own page.
+  function featGalleryHtml(imgs) {
+    const n = Math.min(imgs.length, 8);
+    return `<div class="feat-gallery" aria-label="Photos of the building">${imgs.slice(0, n).map((u, i) =>
+        `<img class="listing-photo" loading="lazy" src="${esc(u)}" alt="Photo ${i + 1} of ${n}" onerror="this.remove()">`).join('')}</div>
+      <button type="button" class="feat-gal-btn prev" data-gal="-1" aria-label="Previous photo">‹</button>
+      <button type="button" class="feat-gal-btn next" data-gal="1" aria-label="Next photo">›</button>
+      <div class="feat-dots">${Array.from({ length: n }, (_, i) => `<i${i ? '' : ' class="on"'}></i>`).join('')}</div>`;
+  }
+  document.addEventListener('scroll', e => {
+    const g = e.target;
+    if (!(g instanceof Element) || !g.classList.contains('feat-gallery')) return;
+    const i = Math.round(g.scrollLeft / g.clientWidth);
+    g.parentElement.querySelectorAll('.feat-dots i').forEach((d, k) => d.classList.toggle('on', k === i));
+    if (i === 1 && !g.dataset.swiped) { g.dataset.swiped = '1'; const c = g.closest('.feat-card'); if (c) track('rerental_photos_swipe', { agent: c.dataset.featAgent || '' }); }
+  }, true);
+  document.addEventListener('click', e => {
+    const b = e.target.closest('.feat-gal-btn'); if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    const g = b.parentElement.querySelector('.feat-gallery');
+    if (g) g.scrollBy({ left: +b.dataset.gal * g.clientWidth, behavior: 'smooth' });
+  }, true);
+
   function featuredCardHtml(f, slot) {
     // Several agents print the building name above the postal address, so the
     // two are often the same words twice ("188-11 Hillside Avenue" over
@@ -6232,7 +6270,7 @@ function favActive() {
          data-feat-boro="${esc(f.borough || '')}" data-feat-kind="${esc(f.href_kind || 'listing')}" data-feat-slot="${slot}">
       <span class="feat-flag">Featured</span>
       <div class="photo">
-        ${f.image ? `<img class="listing-photo" loading="lazy" src="${esc(f.image)}" alt=""
+        ${(f.images && f.images.length > 1) ? featGalleryHtml(f.images) : f.image ? `<img class="listing-photo" loading="lazy" src="${esc(f.image)}" alt=""
              onerror="this.style.display='none'">` : ''}
         <div class="photo-shade"></div>
         <div class="badge-row">

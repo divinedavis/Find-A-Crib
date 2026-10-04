@@ -111,6 +111,13 @@ def run(browser, live):
     page.select_option('#vt-range', '0')
     expect(page.locator('#vt-sum')).to_contain_text('since 24 Jun')
     page.select_option('#vt-range', '30')
+    # Sign-up conversion rides the sign-ups panel, dotted, on its own %
+    # scale (2026-10-03): last day 30 % 4 = 2 sign-ups of 130 visitors.
+    expect(page.locator('#vs-legend')).to_contain_text('Sign-up conversion')
+    expect(page.locator('#vs-svg path[stroke-dasharray]')).to_have_count(1)
+    expect(page.locator('#vs-svg')).to_contain_text('1.5% converted')
+    expect(page.locator('#vs-svg')).to_contain_text('%')
+    page.locator('#sec-visitor-trend').screenshot(path='/private/tmp/claude-501/-Users-divinedavis/05a0ff90-8c30-4fdc-b4cb-b8380243c4c1/scratchpad/vt.png')
     expect(page.locator('#fac-investor-callout')).to_have_count(0)
     assert not errors, errors
     print(f'PASS {browser.browser_type.name}: visitors chart', flush=True)

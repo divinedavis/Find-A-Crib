@@ -561,7 +561,8 @@
         <div class="at-legend" id="vt-legend"></div>
         <div id="vt-chart" style="position:relative"></div>
         <div class="at-key" id="vt-key" hidden></div>
-        <div class="vt-panel-h">Sign-ups per day</div>
+        <div class="vt-panel-h">Sign-ups per day and conversion</div>
+        <div class="at-legend" id="vs-legend"></div>
         <div id="vs-chart" style="position:relative"></div>
         <details class="at-table"><summary>Show the numbers</summary><div id="vt-table"></div></details>
       </div>
@@ -2108,6 +2109,10 @@
       var s1=Math.max(0, pts.length-span0);
       function has(v){ return v!=null && isFinite(v); }
       var y1=cfg.nice(Math.max.apply(null, [0].concat(pts.slice(s1).map(function(p){ return Math.max.apply(null, [0].concat(S.map(function(s){ return has(p[s.k]) ? p[s.k] : 0; }))); }))));
+      // A series with right:true has its own scale (cfg.niceR / cfg.tickR),
+      // ticked on the right edge (sign-up conversion, 2026-10-03).
+      var SR=S.filter(function(s){ return s.right; });
+      var r1=SR.length ? cfg.niceR(Math.max.apply(null, [0].concat(pts.slice(s1).map(function(p){ return Math.max.apply(null, [0].concat(SR.map(function(s){ return has(p[s.k]) ? p[s.k] : 0; }))); })))) : null;
       var target={s:s1, y:y1.max, step:y1.step};
       var reduce=window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       cancelAnimationFrame(raf);
@@ -2129,6 +2134,8 @@
         var span=Math.max(1e-6, li-s0);
         var X=function(i){ return pad.l + (li===0 ? iw/2 : iw*(i-s0)/span); };
         var Y=function(v){ return base - ih*v/ymax; };
+        var YR=function(v){ return base - ih*v/(r1 ? r1.max : 1); };
+        var Ys=function(s, v){ return s.right ? YR(v) : Y(v); };
         var first=Math.max(0, Math.floor(s0));   // one day before the edge, clipped, so the line enters the frame
         var vis=pts.slice(first);
         var grid='', ticks='';
@@ -2136,6 +2143,8 @@
           grid+='<line x1="'+pad.l+'" x2="'+(W-pad.r)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="var(--border2)" stroke-width="1"></line>';
           ticks+='<text x="'+(pad.l-6)+'" y="'+(Y(v)+3.5)+'" text-anchor="end" font-size="10.5" fill="var(--muted)">'+cfg.tick(v)+'</text>';
         }
+        if(r1 && !narrow) for(var rv=0; rv<=r1.max+1e-9; rv+=r1.step)
+          ticks+='<text x="'+(W-4)+'" y="'+(YR(rv)+3.5)+'" text-anchor="end" font-size="10.5" fill="var(--muted)">'+cfg.tickR(rv)+'</text>';
         // x labels: every day on the 7-day view when there is room, weekly
         // otherwise; first and last visible always. Daily labels step back
         // from the last day (every day, or every other day when they would
@@ -2153,16 +2162,16 @@
         }
         // A series may cover only some days (before / after the paywall):
         // a missing value breaks the line instead of drawing it to zero.
-        function path(key){ var d='', pen=false;
-          vis.forEach(function(p,j){ var i=first+j, v=p[key];
+        function path(s){ var d='', pen=false;
+          vis.forEach(function(p,j){ var i=first+j, v=p[s.k];
             if(!has(v)){ pen=false; return; }
-            d+=(pen?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)+' '; pen=true; });
+            d+=(pen?'L':'M')+X(i).toFixed(1)+' '+Ys(s, v).toFixed(1)+' '; pen=true; });
           return d.trim(); }
         // A lone point (a series one day old) has no segment to stroke: dot it.
         function lone(s){ var out='';
           vis.forEach(function(p,j){ var i=first+j, v=p[s.k], pv=vis[j-1], nv=vis[j+1];
             if(has(v) && !(pv && has(pv[s.k])) && !(nv && has(nv[s.k])) && i!==li)
-              out+='<circle cx="'+X(i)+'" cy="'+Y(v)+'" r="3" fill="'+s.color+'"></circle>'; });
+              out+='<circle cx="'+X(i)+'" cy="'+Ys(s, v)+'" r="3" fill="'+s.color+'"></circle>'; });
           return out; }
         // Dotted key-date lines in three staggered label rows (numbers plus a
         // key on a phone). Dates outside the period are left out.
@@ -2187,14 +2196,14 @@
         if(endS.length){
           // Labels in value order, pushed apart to at least 13px, then the
           // stack shifted back up if it ran past the baseline.
-          var lab=endS.map(function(s){ return {s:s, y:Y(lp[s.k])}; }).sort(function(a,b){ return a.y-b.y; });
+          var lab=endS.map(function(s){ return {s:s, y:Ys(s, lp[s.k])}; }).sort(function(a,b){ return a.y-b.y; });
           for(var q=1;q<lab.length;q++) if(lab[q].y-lab[q-1].y<13) lab[q].y=lab[q-1].y+13;
           var over=lab[lab.length-1].y-(base+2); if(over>0) lab.forEach(function(o){ o.y-=over; });
           lab.forEach(function(o){
             if(!narrow) ends+='<text x="'+(X(li)+8)+'" y="'+(o.y+4)+'" font-size="11" font-weight="600" fill="var(--ink)">'+o.s.end(lp[o.s.k])+'</text>';
           });
           endS.forEach(function(s){
-            dots+='<circle cx="'+X(li)+'" cy="'+Y(lp[s.k])+'" r="4" fill="'+s.color+'" stroke="var(--card)" stroke-width="2"></circle>';
+            dots+='<circle cx="'+X(li)+'" cy="'+Ys(s, lp[s.k])+'" r="4" fill="'+s.color+'" stroke="var(--card)" stroke-width="2"></circle>';
           });
         }
         var fs=pts[Math.min(li,fi)];
@@ -2202,7 +2211,7 @@
           '<defs><clipPath id="'+id+'-clip"><rect x="'+(pad.l-1)+'" y="0" width="'+(iw+2)+'" height="'+(base+2)+'"></rect></clipPath></defs>'+
           grid+ticks+xl+marker+
           '<g clip-path="url(#'+id+'-clip)">'+
-          S.map(function(s){ return '<path d="'+path(s.k)+'" fill="none" stroke="'+s.color+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"'+(s.dash?' stroke-dasharray="'+s.dash+'"':'')+'></path>'+lone(s); }).join('')+
+          S.map(function(s){ return '<path d="'+path(s)+'" fill="none" stroke="'+s.color+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"'+(s.dash?' stroke-dasharray="'+s.dash+'"':'')+'></path>'+lone(s); }).join('')+
           '</g>'+
           dots+ends+
           '<line id="'+id+'-x" y1="'+pad.t+'" y2="'+base+'" stroke="var(--border-strong)" stroke-width="1" opacity="0"></line>'+
@@ -2233,7 +2242,7 @@
           tip.style.whiteSpace='normal'; tip.style.maxWidth=Math.min(340, r.width-8)+'px';
           var tw=tip.offsetWidth, cx=X(i)*r.width/W;
           tip.style.left=Math.max(tw/2+4, Math.min(r.width-tw/2-4, cx))+'px';
-          tip.style.top=(Math.min.apply(null, [base].concat(S.filter(function(s){ return has(p[s.k]); }).map(function(s){ return Y(p[s.k]); })))*r.height/H)+'px'; tip.style.opacity='1';
+          tip.style.top=(Math.min.apply(null, [base].concat(S.filter(function(s){ return has(p[s.k]); }).map(function(s){ return Ys(s, p[s.k]); })))*r.height/H)+'px'; tip.style.opacity='1';
         }
         hit.addEventListener('mousemove',show); hit.addEventListener('touchstart',function(e){ show(e.touches[0]); },{passive:true});
         hit.addEventListener('mouseleave',function(){ tip.style.opacity='0'; xl2.setAttribute('opacity','0'); if(cfg.onHover) cfg.onHover(null); });
@@ -2265,7 +2274,8 @@
   function vtPoints(rows){
     return rows.map(function(r,i){
       var win=rows.slice(Math.max(0,i-6), i+1), tot=win.reduce(function(a,x){ return a+n(x.visitors); },0);
-      return {d:r.date, v:n(r.visitors), avg:tot/win.length, s:n(r.signups), r:r};
+      var v=n(r.visitors), s=n(r.signups);
+      return {d:r.date, v:v, avg:tot/win.length, s:s, conv: v ? 100*s/v : null, r:r};
     });
   }
   function vtTip(p, day){
@@ -2304,8 +2314,12 @@
     id:'vs', store:'fac.vtRange', rangeId:'vt-range', ranges:[7,30,90,0], events:VT_EVENTS, eventLabels:false, padRight:112, padLeft:44,
     height:function(narrow){ return narrow ? 130 : 150; },
     empty:'No sign-up data yet.', aria:'Find A Crib new accounts per day',
-    series:[{k:'s', color:'var(--at-on)', label:'Sign-ups that day', end:function(v){ return comma(v)+' that day'; }}],
+    // Sign-up conversion, dotted, on its own % scale (owner, 2026-10-03).
+    series:[{k:'s', color:'var(--at-on)', label:'Sign-ups that day', end:function(v){ return comma(v)+' that day'; }},
+            {k:'conv', right:true, color:'var(--at-on)', dash:'4 4', label:'Sign-up conversion (% of visitors, right scale)', end:function(v){ return v.toFixed(1)+'% converted'; }}],
     points:vtPoints, nice:vtNice, tick:function(v){ return comma(v); }, tip:vtTip,
+    niceR:function(v){ var st=[0.5,1,2,2.5,5,10,20,25,50], step=50; for(var i=0;i<st.length;i++){ if(v/st[i]<=4){ step=st[i]; break; } } return {max:Math.max(step, Math.ceil((v*1.05)/step)*step), step:step}; },
+    tickR:function(v){ return (v%1 ? v.toFixed(1) : v)+'%'; },
     onHover:function(i){ if(vtVisitors) vtVisitors.cross(i); },
     tableHead:[], tableRow:function(){ return []; }
   });

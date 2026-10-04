@@ -117,6 +117,9 @@ SEEDS = [
     dict(slug="crawl_paths", status="active", kind="indexing",
          name="Every published section must have an inbound internal link",
          prefixes=[], metric="organic_visitors",
+         # Reads the docroot and publishes nothing, so no traffic series can
+         # measure it and none is consulted. See review._judge_audit.
+         judge="audit",
          hypothesis="A section reachable only from a sitemap does not get indexed. On "
                     "2026-08-05, /section8/ had been live 10 days, rebuilt nightly, listed in "
                     "sitemap-daily.xml and submitted to IndexNow every night, and had never "
@@ -154,10 +157,41 @@ SEEDS = [
                "ACTIVE technique' readings are what the duplication work is steering by. "
                "Its own next improvement is to become a pure docroot reader — drop the "
                "ctx.out staging check and the ledger.set_state first-sighting write — so it "
-               "can join techniques.DOCROOT_VERIFIERS and stop reporting a day late."),
+               "can join techniques.DOCROOT_VERIFIERS and stop reporting a day late. "
+               "THAT IMPROVEMENT SHIPPED 2026-09-16 — it is in DOCROOT_VERIFIERS and "
+               "_staged_since tests ctx.readonly. REVISIT 2026-10-04 — CHANGED, not "
+               "kept and not retired, and the defect was not in what the audit does "
+               "but in how it was JUDGED. It declared metric organic_visitors with no "
+               "prefixes, so review.py handed it the site's own traffic as its "
+               "verdict. It publishes no URL, so it cannot move that series in either "
+               "direction and a verdict drawn from it is unfalsifiable rather than "
+               "weak — which is why the 2026-09-04 note above had to warn about the "
+               "verdict by hand instead of the loop declining to write it. Worse, "
+               "_co_claimants counted it against the techniques that DO act: five of "
+               "the nine active techniques declaring organic_visitors are read-only "
+               "audits (T037, T072, T089, T090, T091), and they demoted T004 "
+               "sitemap_daily, T005 indexnow, T010 gsc_integration and T015 "
+               "dataset_schema_ai_citation every night on arithmetic rather than "
+               "evidence. Shipped: judge=\"audit\" (review._judge_audit) — an audit "
+               "reports its own nightly pass/fail, consults no traffic series, is "
+               "never retired by the loop, and is not a co-claimant on anyone "
+               "else's metric; report.py renders its row as dashes with its own "
+               "reading rather than a traffic column it was never judged on. The "
+               "organic_visitors co-claimant list fell from 8 to 3 and every "
+               "remaining claimant acts on the world. The INDEXING CLAIM STAYS "
+               "WITHDRAWN as 2026-09-04 left it (17 of 17 sections linked and within "
+               "3 clicks while /la/ and /dc/ have read unknown to Google for 42 days) "
+               "and it is KEPT ON ITS GUARD VALUE: it is what stops the next section "
+               "shipping into an orphan hole. Still NOT instrumented, and the honest "
+               "reason works stays None: nothing counts the defects this audit has "
+               "caught, so no number could ever earn it a WORKS. Retiring it is a "
+               "judgement for the journal, never for a traffic series."),
     dict(slug="page_uniqueness", status="active", kind="indexing",
          name="Measure how much of each section's text is identical across its own pages",
          prefixes=[], metric="organic_visitors",
+         # Reads the docroot and publishes nothing, so no traffic series can
+         # measure it and none is consulted. See review._judge_audit.
+         judge="audit",
          hypothesis="Google is not refusing to find these pages, it is refusing to keep them. "
                     "On 2026-09-02 every published section sits within 3 clicks of the "
                     "homepage, /dc/ and /la/ are still 0-of-20 ever fetched a fortnight after "
@@ -254,6 +288,9 @@ SEEDS = [
     dict(slug="canonical_integrity", status="active", kind="indexing",
          name="Audit canonical and robots tags on the pages the docroot actually serves",
          prefixes=[], metric="organic_visitors",
+         # Reads the docroot and publishes nothing, so no traffic series can
+         # measure it and none is consulted. See review._judge_audit.
+         judge="audit",
          hypothesis="The working diagnosis since 2026-09-06 is that Google refuses this "
                     "corpus on quality/duplication grounds, and it may well be right — but "
                     "it has never been tested against the one rival explanation that "
@@ -769,6 +806,9 @@ SEEDS = [
     dict(slug="frozen_pages", status="active", kind="indexing",
          name="Audit how old every live page is, so a tier the build has abandoned says so",
          prefixes=[], metric="organic_visitors",
+         # Reads the docroot and publishes nothing, so no traffic series can
+         # measure it and none is consulted. See review._judge_audit.
+         judge="audit",
          hypothesis="Both deploy paths on this droplet rsync WITHOUT --delete, on purpose, "
                     "because the docroot also holds the app. So a page a build stops writing "
                     "is not unpublished — it is frozen: still served, out of every sitemap the "
@@ -832,6 +872,9 @@ SEEDS = [
     dict(slug="voucher_reach", status="active", kind="indexing",
          name="Put the nightly voucher feed on the pages Google actually crawls",
          prefixes=[], metric="organic_visitors",
+         # Reads the docroot and publishes nothing, so no traffic series can
+         # measure it and none is consulted. See review._judge_audit.
+         judge="audit",
          hypothesis="The AffordableHousing.com voucher feed is the only dataset on this site "
                     "that genuinely changes every night, and until 2026-09-24 it was published "
                     "onto exactly six URLs — /section8/ and five borough pages — which the URL "

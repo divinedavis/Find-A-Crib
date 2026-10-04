@@ -100,7 +100,14 @@ def add(slug, name, hypothesis, kind, prefixes=None, metric="owned_visitors",
     the declared site-wide `metric`, not from traffic to those URLs. For a
     technique whose hypothesis is about the site rather than about its own
     pages, owned-visitor counting answers the wrong question. See the note in
-    review.evaluate(). Absent, prefixes decide as they always have."""
+    review.evaluate(). Absent, prefixes decide as they always have.
+
+    `judge="audit"` means: this technique PUBLISHES NOTHING — it reads the live
+    docroot and reports a pass/fail — so no traffic series can measure it and
+    none is consulted. Its verdict is its own nightly reading, it is never
+    retired by the loop, and it is not counted as a co-claimant on anybody
+    else's site-wide metric. See review._judge_audit for the five techniques
+    this covers and the two ways the old site-wide path got them wrong."""
     with _LOCK:
         techs = load_techniques()
         for t in techs:

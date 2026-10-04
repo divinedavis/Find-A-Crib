@@ -717,6 +717,38 @@ def build_blocks(run_log=None, review_out=None):
             chips = _index_states()
             if chips:
                 B.append({"type": "chips", "items": chips})
+                # The two chips above that read "discovered, never crawled" and
+                # "unknown to Google" are one number wearing two labels, and
+                # three entries have read the boundary between them as
+                # progress. The pool is what can actually move. Rendered
+                # directly under the chips because that is where the misreading
+                # happens — see the comment at the end of
+                # indexstatus.summarise().
+                _pool = _ixtot.get("unfetched_pool")
+                if _pool is None:
+                    _pool = _last("index_unfetched_pool")
+                if _pool:
+                    _oth = _ixtot.get("unfetched_other")
+                    if _oth is None:
+                        _oth = _last("index_unfetched_other")
+                    # The two labels are NAMED rather than pointed at by
+                    # position ("the last two chips"): empty buckets are
+                    # dropped and an exclusion bucket sorts after them, so a
+                    # positional reference is one quiet night from pointing at
+                    # the wrong pair.
+                    _line = (f"{_fmt(_pool)} of the {_fmt(_read)} inspected pages "
+                             f"have never been fetched at all. “discovered, never "
+                             f"crawled” and “unknown to Google” above are that one "
+                             f"number split by a label Google moves nightly — the "
+                             f"split has sawtoothed three times since 2026-09-05 "
+                             f"with nothing downstream moving — so read the total "
+                             f"and not either direction. It falls only when a page "
+                             f"is genuinely crawled or drops out of the sitemaps.")
+                    if _oth:
+                        _line += (f" {_fmt(_oth)} further pages are excluded rather "
+                                  f"than un-fetched, so this total is no longer "
+                                  f"simply inspected minus fetched.")
+                    B.append({"type": "note", "text": _line})
             ix = _index_families()
             if ix:
                 B.append({"type": "table",
@@ -992,7 +1024,23 @@ def build_blocks(run_log=None, review_out=None):
         # declares judge="site". If the two ever disagree the report shows a
         # column the verdict was never drawn from, which is how a reader comes
         # to believe a technique was judged on a number nobody judged it on.
-        if t.get("prefixes") and t.get("judge") != "site":
+        #
+        # judge="audit" is that failure in its purest form, which is why it is
+        # tested first: a read-only audit publishes no URL, so the Total and
+        # Recent/day columns can only ever hold a site-wide number it cannot
+        # have caused. Dashes and its own pass/fail line are the whole honest
+        # content of the row. See review._judge_audit.
+        if t.get("judge") == "audit":
+            rd = ((ledger.read_last_run() or {}).get("build") or {})
+            rd = (rd.get("techniques") or {}).get(t["slug"]) or {}
+            ok = rd.get("ok")
+            state = ("green" if ok else
+                     ("FAILING" if ok is False else "no reading last night"))
+            rows.append([{"text": f"{t['id']} {t['name']}",
+                          "sub": f"audits only, publishes nothing · {state} · "
+                                 f"not judged on traffic"},
+                         _fmt(None), _fmt(None)])
+        elif t.get("prefixes") and t.get("judge") != "site":
             pairs = ledger.series(t["slug"], "owned_visitors", since=t.get("activated"))
             total = sum(v for _, v in pairs)
             recent = statistics.median([v for _, v in pairs[-7:]]) if pairs else None

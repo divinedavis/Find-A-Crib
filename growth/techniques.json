@@ -914,9 +914,9 @@
     "evidence": "/sf/ /la/ /dc/ are the test case already in the data: they are the only non-building URLs besides the homepage, six ZIP hubs and one neighborhood hub to serve at all, and they are the ones the homepage nav links to. 2026 indexing guidance is consistent that Google treats a URL with no internal link as unimportant regardless of sitemap inclusion.",
     "added": "2026-08-05",
     "activated": "2026-08-05",
-    "revisit_on": "2026-10-04",
+    "revisit_on": "2026-11-03",
     "retired": null,
-    "notes": "Audits, never publishes. Reads the ledger's own prefix declarations against the live docroot, so a technique added later is covered without being listed here. Self-links inside a prefix do not count \u2014 a family whose pages only link to each other is exactly the orphan case. REVISIT 2026-09-04, AND THE HYPOTHESIS IS FALSIFIED AS A CAUSAL CLAIM. The linking half of it was fully delivered: 15 of 15 published sections now carry an inbound internal link and every one sits within 3 clicks of the homepage. Indexing did not follow it \u2014 it moved the other way, monotonically, over the 30 days since. gsc_serving_pages 63 (08-20) \u2192 39 (08-24) \u2192 13 (08-30) \u2192 5 (09-03, 09-04); index_state_indexed 10 \u2192 1 across the same window; index_accept_pct_mature 50% (08-20) \u2192 0.0% every day from 08-26 to 09-04. An inbound link is therefore necessary but nowhere near sufficient, and on this site it was not the binding constraint. DISTRUST ITS 'WORKS' VERDICT: review.py credits it with organic_visitors 9.5/day vs 2.5/day, but gsc_nonbranded_clicks has been 0 for seven straight days against 67 branded clicks, so the traffic it is being credited with is jayshomefinder and findacrib residue that this technique cannot have caused. The metric is mis-attributed; the audit is not. KEPT, as a guard and an instrument rather than a growth lever: it is read-only, it is what stops the next section shipping into an orphan hole, and its click-depth and 'published under no ACTIVE technique' readings are what the duplication work is steering by. Its own next improvement is to become a pure docroot reader \u2014 drop the ctx.out staging check and the ledger.set_state first-sighting write \u2014 so it can join techniques.DOCROOT_VERIFIERS and stop reporting a day late.",
+    "notes": "Audits, never publishes. Reads the ledger's own prefix declarations against the live docroot, so a technique added later is covered without being listed here. Self-links inside a prefix do not count \u2014 a family whose pages only link to each other is exactly the orphan case. REVISIT 2026-09-04, AND THE HYPOTHESIS IS FALSIFIED AS A CAUSAL CLAIM. The linking half of it was fully delivered: 15 of 15 published sections now carry an inbound internal link and every one sits within 3 clicks of the homepage. Indexing did not follow it \u2014 it moved the other way, monotonically, over the 30 days since. gsc_serving_pages 63 (08-20) \u2192 39 (08-24) \u2192 13 (08-30) \u2192 5 (09-03, 09-04); index_state_indexed 10 \u2192 1 across the same window; index_accept_pct_mature 50% (08-20) \u2192 0.0% every day from 08-26 to 09-04. An inbound link is therefore necessary but nowhere near sufficient, and on this site it was not the binding constraint. DISTRUST ITS 'WORKS' VERDICT: review.py credits it with organic_visitors 9.5/day vs 2.5/day, but gsc_nonbranded_clicks has been 0 for seven straight days against 67 branded clicks, so the traffic it is being credited with is jayshomefinder and findacrib residue that this technique cannot have caused. The metric is mis-attributed; the audit is not. KEPT, as a guard and an instrument rather than a growth lever: it is read-only, it is what stops the next section shipping into an orphan hole, and its click-depth and 'published under no ACTIVE technique' readings are what the duplication work is steering by. Its own next improvement is to become a pure docroot reader \u2014 drop the ctx.out staging check and the ledger.set_state first-sighting write \u2014 so it can join techniques.DOCROOT_VERIFIERS and stop reporting a day late. THAT IMPROVEMENT SHIPPED 2026-09-16 \u2014 it is in DOCROOT_VERIFIERS and _staged_since tests ctx.readonly. REVISIT 2026-10-04 \u2014 CHANGED, not kept and not retired, and the defect was not in what the audit does but in how it was JUDGED. It declared metric organic_visitors with no prefixes, so review.py handed it the site's own traffic as its verdict. It publishes no URL, so it cannot move that series in either direction and a verdict drawn from it is unfalsifiable rather than weak \u2014 which is why the 2026-09-04 note above had to warn about the verdict by hand instead of the loop declining to write it. Worse, _co_claimants counted it against the techniques that DO act: five of the nine active techniques declaring organic_visitors are read-only audits (T037, T072, T089, T090, T091), and they demoted T004 sitemap_daily, T005 indexnow, T010 gsc_integration and T015 dataset_schema_ai_citation every night on arithmetic rather than evidence. Shipped: judge=\"audit\" (review._judge_audit) \u2014 an audit reports its own nightly pass/fail, consults no traffic series, is never retired by the loop, and is not a co-claimant on anyone else's metric; report.py renders its row as dashes with its own reading rather than a traffic column it was never judged on. The organic_visitors co-claimant list fell from 8 to 3 and every remaining claimant acts on the world. The INDEXING CLAIM STAYS WITHDRAWN as 2026-09-04 left it (17 of 17 sections linked and within 3 clicks while /la/ and /dc/ have read unknown to Google for 42 days) and it is KEPT ON ITS GUARD VALUE: it is what stops the next section shipping into an orphan hole. Still NOT instrumented, and the honest reason works stays None: nothing counts the defects this audit has caught, so no number could ever earn it a WORKS. Retiring it is a judgement for the journal, never for a traffic series.",
     "verdict": {
       "decided": "2026-10-04",
       "works": null,
@@ -940,7 +940,8 @@
           "T091 voucher_reach"
         ]
       }
-    }
+    },
+    "judge": "audit"
   },
   {
     "id": "T038",
@@ -1611,7 +1612,8 @@
           "T091 voucher_reach"
         ]
       }
-    }
+    },
+    "judge": "audit"
   },
   {
     "id": "T073",
@@ -1933,7 +1935,8 @@
     "revisit_on": "2026-10-14",
     "retired": null,
     "notes": "Audits, never publishes; adds no URL. Unlike page_uniqueness it DOES fail, because every class it reports has a known mechanism rather than being a number with no distribution yet: no canonical, more than one, one pointing off-host, one pointing at a URL with no page, one pointing at a noindexed page, and a URL the sitemaps advertise that is noindexed or canonicalized away on arrival (noindex does not save the fetch \u2014 Google requests the page and then drops it). A cross-URL canonical onto a live indexable page is counted and named but NOT failed: that is what canonicals are for. Pages whose </head> sits past the read cap are UNDETERMINED, never 'missing' \u2014 the one way this audit could invent a defect. Member of techniques.DOCROOT_VERIFIERS, so it is re-read after the SEO watchdog rebuilds the corpus instead of reporting a day late.",
-    "verdict": null
+    "verdict": null,
+    "judge": "audit"
   },
   {
     "id": "T090",
@@ -1951,7 +1954,8 @@
     "revisit_on": "2026-10-23",
     "retired": null,
     "notes": "Audits, never publishes, adds no URL, and opens no page \u2014 os.stat only, so it is the cheapest member of DOCROOT_VERIFIERS despite walking the whole corpus. The mtime is not a proxy for 'last written': rsync -a preserves the source mtime and build_seo.py's write() rewrites every page in its set every night, so it is the record. t_sitemap_daily already dates its rescued pages from the same clock.\nIT FAILS ONLY ON A PARTIALLY FROZEN TIER \u2014 some pages written tonight, others months old \u2014 because that combination can only mean a live build is abandoning URLs, and that is fixable from this loop by making the page set the published set. A WHOLLY frozen tier is named just as loudly and does not fail: every one on this site today is either retired (/brief/, 2026-08-16) or has no deploy path from here (the app shells, which only scripts/deploy_app.sh reaches). Failing on those would make the audit permanently red, and a permanently red audit carries no information.\nTiers come from the URL, NOT from the ledger's prefix declarations, which is the one design choice worth defending: the failure this looks for is a page nobody is tracking, and /landlord/ (1,416 pages) and /council-district/ (51) are in no technique's prefixes and appear in no other audit's readings.\n2026-10-01 \u2014 THE HYPOTHESIS'S OWN PRE-REGISTRATION ('if frozen pages exist outside /available/, this is the audit that names the tier and the run that follows fixes its build set') CAME TRUE AND WAS CASHED. This audit went red on 2026-09-28 and read 'sf/neighborhood/ 1 of 37 (oldest 2026-09-12, 19d)' for four nights. It was the only instrument on the site that could see that page, and it reported a COUNT and not a URL, so the review had to recover which page it was by arithmetic across three other audits \u2014 t_city_seo_expansion's 36, t_page_uniqueness's 'of 37', t_hub_direct_answers's 37/37 \u2014 and still could not name it, because the docroot is the only record of what that tier published and it is not in git. Fixed the same day: PARTIAL tiers' frozen URLs are now named oldest-first in the detail line and in frozen_urls in the ledger record, capped at FROZEN_NAME=10 because this detail is served in a web-facing report. Wholly frozen tiers are still counted and not named \u2014 17 /brief/ URLs nightly would bury the one actionable line. Same defect class, same fix, as index_evicted on 2026-09-30: an instrument that counts a loss without naming it.",
-    "verdict": null
+    "verdict": null,
+    "judge": "audit"
   },
   {
     "id": "T091",
@@ -1969,7 +1973,8 @@
     "revisit_on": "2026-10-24",
     "retired": null,
     "notes": "Audits only \u2014 it writes no page and adds no URL; build_seo.py writes the block, this reads it back out of the docroot. It is a CENSUS, not a sample: the feed names a few hundred BBLs and their page paths are computable, so it opens exactly those pages. ok is False only when the feed is fresh and not one page carries the marker, which is the integration being broken. A stale or undated feed is reported and passes, because build_seo.py suppresses every voucher claim at that age (48h, the same limit error_report.py already applies to s8.json) and silence is then the correct behaviour rather than a fault.\nTHE ACCURACY RULE THAT GOVERNS THE COPY IT CHECKS FOR: source-of-income discrimination is illegal in New York City, so no wording may imply that a building without a listing refuses vouchers. Every sentence build_seo.py writes is a claim about a listing on AffordableHousing.com, never about a landlord's policy, and both the building block and the hub block say so outright.",
-    "verdict": null
+    "verdict": null,
+    "judge": "audit"
   },
   {
     "id": "T092",

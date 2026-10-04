@@ -51,6 +51,23 @@ Each run inspects the DAILY_BUDGET cohort URLs whose reading is oldest, so the
 cohort is fully refreshed every few days and every URL carries the date its
 state was last read.
 
+The two never-fetched labels are ONE number, not a trend
+------------------------------------------------------
+`unknown_to_google` and `discovered_not_indexed` both mean "Google has never
+fetched this URL", and their sum is fixed by arithmetic: on every fully-read
+night in the record it equals cohort - fetched exactly. So the sum moves only
+when the cohort grows or a page is actually fetched, while the boundary BETWEEN
+the two labels moves every night and has sawtoothed three times since
+2026-09-05 — discovered climbing for six to eight nights and then collapsing,
+with `fetched` pinned at 95 throughout.
+
+Each climb was read as Google's discovery queue filling; the 2026-10-01 entry
+made it its headline ("discovery is no longer the constraint") and the 2026-10-03
+entry had to withdraw it. `index_unfetched_pool` is recorded so the question is
+asked of the number that can answer it: read the POOL, which falls only when a
+URL is fetched or leaves the sitemaps, and do not quote either label's
+direction. See the comment at the end of summarise().
+
 Output is public URLs and Google's public opinion of them — no PII — so
 index_status.json is tracked in git and the cloud review agent can read it.
 
@@ -758,6 +775,44 @@ def summarise(cohort, today=None):
         for b, n in (f.get("buckets") or {}).items():
             states[b] = states.get(b, 0) + n
     total["buckets"] = states
+    # THE POOL, because the SPLIT ABOVE IS NOT A TREND AND HAS BEEN READ AS ONE
+    # THREE TIMES. `unknown_to_google` and `discovered_not_indexed` are the two
+    # labels Google puts on a URL it has never fetched, and they sum to a number
+    # that is pinned by arithmetic: on every fully-read night in the record,
+    # unknown + discovered == cohort - fetched exactly (363 = 458 - 95 from
+    # 2026-09-21 to 2026-10-04; 362 = 457 - 95; 361 = 456 - 95; 360 = 455 - 95).
+    # The sum has therefore only ever moved when the COHORT grew (sitemap
+    # top-ups on 09-08, 09-14 and 09-21) or when `fetched` moved, which it last
+    # did on 2026-09-02.
+    #
+    # The split inside it moves every night, and it SAWTOOTHS: discovered went
+    # 0 (09-05) -> 39 (09-08) -> 1 (09-13), then 2 (09-14) -> 100 (09-21) -> 2
+    # (09-26), then 27 (09-28) -> 124 (10-02) -> 89 (10-04). Each climb was read
+    # forward as Google's discovery queue filling — it was the 2026-10-01
+    # entry's headline, "discovery is no longer the constraint" — and each
+    # collapse falsified it, because nothing downstream moved at any point: the
+    # same 95 URLs stayed fetched throughout. The honest reading is that the
+    # boundary between the two labels is unstable across re-inspections of the
+    # same cohort, and the pool is the only part of it that carries information.
+    #
+    # So the pool is recorded as a series of its own. It can fall for exactly
+    # two reasons — a URL was actually fetched, or it left the sitemaps — and
+    # BOTH of those are real news, which is what the two labels' directions are
+    # not. Quote this instead of either of them.
+    total["unfetched_pool"] = (states.get("unknown_to_google", 0)
+                               + states.get("discovered_not_indexed", 0))
+    # The residue: read URLs that are neither fetched nor in the pool. `fetched`
+    # is "has a crawl time", so an excluded page Google DID crawl lands in
+    # fetched and never here; what lands here is a page with no crawl time whose
+    # state is neither never-fetched label — a 404 or an exclusion Google reports
+    # without having crawled, or a row this module could not classify (`other`,
+    # `unknown`). It has been 0 on every night so far, which is why the identity
+    # above holds as cohort - fetched. The first night it is not 0, a reader
+    # checking the pool against a remembered "cohort minus fetched" would read
+    # the gap as a crawl that did not happen, so it is recorded rather than left
+    # to be inferred.
+    total["unfetched_other"] = (total["read"] - total["fetched"]
+                                - total["unfetched_pool"])
     return {"total": total, "by_family": fams}
 
 
@@ -1086,7 +1141,18 @@ def collect(docroot, budget=None):
                               # seen in the index", which is the most any
                               # sampler on a 100-URL rotation can claim.
                               ("index_ever_indexed", tot["ever_indexed"]),
-                              ("index_evicted", tot["evicted"])):
+                              ("index_evicted", tot["evicted"]),
+                              # The never-fetched POOL, and the reason it has to
+                              # be a series rather than a sum a reader does in
+                              # their head: the two labels inside it oscillate
+                              # nightly while the pool is pinned by arithmetic,
+                              # and three entries read the oscillation as
+                              # progress. See the comment in summarise(). The
+                              # residue is recorded beside it so a pool that
+                              # falls because a page was EXCLUDED cannot be read
+                              # as a page that was crawled.
+                              ("index_unfetched_pool", tot.get("unfetched_pool")),
+                              ("index_unfetched_other", tot.get("unfetched_other"))):
             if value is not None:
                 ledger.record_result(today, "__site__", metric, value)
         # index_status.json holds only the LATEST state per URL, so it can never

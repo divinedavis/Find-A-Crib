@@ -42,6 +42,13 @@ attribution: a technique with no prefixes of its own is judged on a __site__
 series, and on 2026-09-05 seven active techniques were being judged on the same
 `organic_visitors` numbers. Four of them carried a WORKS quoting the identical
 "median 11.0/day vs 6.0/day" lift. See _co_claimants and _guard_shared_metric.
+
+The third way is worse than either, because the technique cannot possibly be
+the cause: five of the nine techniques declaring `organic_visitors` publish no
+URL at all. They are read-only audits of the live docroot, so a site-wide
+traffic series is not weak evidence about them, it is no evidence about them —
+and until 2026-10-04 it was their whole verdict, and they were also counted
+against the four techniques that do act. See _judge_audit.
 """
 import datetime
 import statistics
@@ -262,6 +269,14 @@ def _co_claimants(t, metric, techs):
             continue
         if other.get("status") != "active" or other.get("prefixes"):
             continue
+        # A read-only audit is not a claimant on anything. It publishes no URL
+        # and cannot move a traffic series, so listing it here does not warn a
+        # reader about a rival explanation — it manufactures one. Five of the
+        # nine techniques declaring `organic_visitors` are audits (see
+        # _judge_audit), and counting them demoted the four that actually act
+        # every night on evidence that was arithmetic rather than measurement.
+        if other.get("judge") == "audit":
+            continue
         if (other.get("metric") or "organic_visitors") != metric:
             continue
         out.append(f"{other.get('id')} {other.get('slug')}")
@@ -296,6 +311,99 @@ def _guard_shared_metric(res, metric, co):
     return res
 
 
+# How much of an audit's own `detail` line goes into its verdict. The verdicts
+# are read in techniques.json and in the morning email, and t_frozen_pages'
+# detail runs past 1,500 characters — long enough to bury every other
+# technique's row. The full sentence always survives in last_run.json, which is
+# where a reader who wants it goes.
+AUDIT_DETAIL_CAP = 240
+
+
+def _audit_reading(slug):
+    """Last night's pass/fail reading for a read-only audit technique.
+
+    Written by cmd_build into last_run.json under build.techniques.<slug> —
+    {ok, detail, same_since, unchanged} — which is the only place an audit's
+    own result is recorded. Audits write no per-technique series: t_crawl_paths
+    has recorded exactly zero rows in results.jsonl since 2026-08-05, which is
+    the whole reason this helper has to read last_run instead of the ledger.
+
+    Returns None when there is no reading, and that is a distinct answer from a
+    failing one: an audit that did not run cannot be reported green.
+    """
+    try:
+        rec = ((ledger.read_last_run() or {}).get("build") or {})
+        return (rec.get("techniques") or {}).get(slug) or None
+    except Exception:
+        return None
+
+
+def _judge_audit(res, t):
+    """Verdict for a technique that only MEASURES — it publishes nothing.
+
+    Five active techniques are in this class: T037 crawl_paths, T072
+    page_uniqueness, T089 canonical_integrity, T090 frozen_pages and T091
+    voucher_reach. Every one of them reads the live docroot, writes nothing,
+    and ships no URL (they are exactly techniques.DOCROOT_VERIFIERS minus
+    derived_building_facts, which owns /building/ and is judged on it).
+
+    All five declared `metric: "organic_visitors"` with no prefixes, so they
+    fell through to the site-wide path and were handed the site's own traffic
+    as their verdict. That is wrong twice over.
+
+      * It is unfalsifiable in the wrong direction. An audit cannot move
+        organic_visitors; it has no pages for anyone to visit. So a rising
+        site-wide series credits it with a lift it cannot have caused, and a
+        falling one convicts it of a failure that is not its own. T037 was
+        recorded WORKS on 2026-09-04 on "organic_visitors 9.5/day vs 2.5/day"
+        on a week when gsc_nonbranded_clicks was 0 and every indexing series
+        it claims to influence was moving the other way — the 2026-09-04 entry
+        had to write "DISTRUST ITS WORKS VERDICT" into the ledger by hand.
+      * It poisoned the four techniques that DO act. _co_claimants counts
+        every active prefix-less technique on the same metric, so these five
+        audits sat in the co-claimant list of T004 sitemap_daily, T005
+        indexnow, T010 gsc_integration and T015 dataset_schema_ai_citation,
+        inflating it to eight and demoting those four every single night. Of
+        the nine claimants on organic_visitors, five could never have been
+        candidates for causing anything.
+
+    So `judge: "audit"` says: report this technique's own nightly reading and
+    nothing else. No traffic series is consulted, `action` is always "keep",
+    and _co_claimants skips it so it stops diluting the techniques it was
+    never competing with.
+
+    `works` stays None on every path, deliberately. A green audit is a
+    statement about the CORPUS ("no canonical defects tonight"), not evidence
+    that the audit earns its place; the thing that would earn it is a count of
+    defects it has caught and nothing records that. Writing True off a green
+    read would be the same false-positive-that-breeds this module's docstring
+    exists to prevent. If an audit should ever be retired, that is a judgement
+    a person makes in the journal, which is the honest place for it.
+    """
+    rd = _audit_reading(t["slug"])
+    res["action"] = "keep"
+    res["measured"] = {"judged_on": "its own nightly audit reading",
+                       "publishes_urls": False}
+    if not rd:
+        res["why"] = ("audits only and publishes nothing, so no traffic series can "
+                      "measure it — and last_run.json carries no reading for it, so "
+                      "there is nothing to report tonight either")
+        return res
+    detail = str(rd.get("detail") or "").strip()
+    if len(detail) > AUDIT_DETAIL_CAP:
+        detail = detail[:AUDIT_DETAIL_CAP].rstrip() + "… (full line in last_run.json)"
+    ok = rd.get("ok")
+    res["measured"]["audit_ok"] = ok
+    res["measured"]["audit_detail"] = detail
+    if rd.get("same_since"):
+        res["measured"]["audit_same_reading_since"] = rd["same_since"]
+    state = "GREEN" if ok else ("FAILING" if ok is False else "no pass/fail recorded")
+    res["why"] = (f"audits only and publishes nothing, so it is judged on its own "
+                  f"nightly reading rather than on traffic it cannot cause — "
+                  f"{state}: {detail or 'no detail recorded'}")
+    return res
+
+
 def _num(v):
     if v is None:
         return "?"
@@ -327,6 +435,15 @@ def evaluate(t, techs=None):
         res["action"] = "skip"
         res["why"] = f"status is {t.get('status')}"
         return res
+
+    # Ahead of the grace check on purpose. GRACE_DAYS exists so a slow-moving
+    # traffic series is not read too early; an audit has no traffic series at
+    # all, so "under the 21d grace period" would promise a traffic verdict that
+    # is never coming. Its own reading is meaningful on night one. See
+    # _judge_audit for the five techniques in this class and why they were
+    # being judged on numbers they cannot move.
+    if t.get("judge") == "audit":
+        return _judge_audit(res, t)
 
     if days < GRACE_DAYS:
         res["action"] = "keep"

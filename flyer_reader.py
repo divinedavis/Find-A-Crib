@@ -92,7 +92,7 @@ def source_text(listing):
             return pdf_source(href)[0]
         except Exception:
             return ""
-    return listing_page.text_of(href)
+    return listing_page.text_of(href, render=True)
 
 
 def rest(path, method="GET", body=None, prefer=None):
@@ -130,7 +130,7 @@ def read_one(listing):
     if href.lower().split("?")[0].endswith(".pdf") or listing.get("href_kind") == "flyer":
         text, pdf = pdf_source(href)
     else:
-        text = listing_page.text_of(href)
+        text = listing_page.text_of(href, render=True)
     if len(text) >= 200:
         content = f"<listing>\n{json.dumps(meta, sort_keys=True)}\n</listing>\n<source>\n{text}\n</source>"
         verified = True
@@ -260,7 +260,7 @@ def prewarm_apply_help(listings, gw, limit):
             break
         keep = {k: l.get(k) for k in cf.APPLY_KEEP}
         try:
-            page = listing_page.text_of(href) if l.get("href_kind") != "pdf" else ""
+            page = listing_page.text_of(href, render=True) if l.get("href_kind") != "pdf" else ""
             help_, u = cf.apply_help(keep, page)
         except Exception as e:
             print(f"  ! apply help {l.get('address', '')[:40]}: {type(e).__name__}")

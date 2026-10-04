@@ -561,6 +561,34 @@ final class FindACribUITests: XCTestCase {
     /// five boroughs with a "Turn on alerts" banner (alerts were Plus for new
     /// sign-ups), NO sheet opens by itself, and the banner opens sign-in when
     /// signed out. --lotteries-demo stands in for a subscriber to all five.
+    /// Re-rentals under a Beds filter (owner, 2026-10-04: "only buildings
+    /// that have a 1br available should be shown"): listings that state no
+    /// size leave the list and wait behind a "show them" button.
+    func testRerentalsBedsFilterHidesUnsized() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--tab", "lotteries", "--lotteries-demo"]
+        app.launch()
+        let pane = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Re-rentals'")).firstMatch
+        XCTAssertTrue(pane.waitForExistence(timeout: 30))
+        pane.tap()
+        let cards = app.descendants(matching: .any).matching(identifier: "rerental-card")
+        XCTAssertTrue(cards.firstMatch.waitForExistence(timeout: 10))
+        // Beds is remembered between launches: start from none picked.
+        for label in ["Studio", "1", "2", "3", "4+"] {
+            let seg = app.buttons["segment-\(label)"]
+            if seg.exists && seg.isSelected { seg.tap() }
+        }
+        XCTAssertFalse(app.buttons["rerentals-unsized"].exists, "no Beds filter, nothing held back")
+        app.buttons["segment-1"].tap()
+        let unsized = app.buttons["rerentals-unsized"]
+        XCTAssertTrue(unsized.waitForExistence(timeout: 5), "with Beds = 1, listings without sizes wait behind a button, under the count")
+        XCTAssertTrue(unsized.label.contains("show them"))
+        unsized.tap()
+        let hide = app.buttons.matching(NSPredicate(format: "identifier == 'rerentals-unsized' AND label BEGINSWITH 'Hide'")).firstMatch
+        XCTAssertTrue(hide.waitForExistence(timeout: 5), "the button shows them, then offers to hide")
+        app.buttons["segment-1"].tap()   // leave Beds as it was
+    }
+
     func testLotteriesTabSignupScreenThenListsForSubscribers() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash"]

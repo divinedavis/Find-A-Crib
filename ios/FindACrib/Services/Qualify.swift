@@ -92,6 +92,17 @@ final class Qualify {
         return .yes
     }
 
+    /// Bedroom sizes a re-rental offers: the feed's own, plus every row of
+    /// its flyer / listing table (featured_units.json). Empty = not stated.
+    func bedrooms(_ f: FeaturedListing) -> Set<Int> { Self.bedrooms(f, rows: units[f.href]?.units ?? []) }
+
+    nonisolated static func bedrooms(_ f: FeaturedListing, rows: [Row]) -> Set<Int> {
+        var out = Set<Int>()
+        if let b = f.beds, let n = LotteryFeed.bedCount(b) { out.insert(min(n, 4)) }
+        for r in rows { if let n = r.beds { out.insert(min(n, 4)) } }
+        return out
+    }
+
     static func words(_ v: Verdict) -> String {
         switch v {
         case .yes: "You qualify"

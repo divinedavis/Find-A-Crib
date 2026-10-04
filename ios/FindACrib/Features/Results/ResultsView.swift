@@ -310,6 +310,13 @@ struct ResultsView: View {
         searched = true
         shown = 30
         rerentalPool = store.city.isNYC ? RerentalFeed.pool(store.featured.listings, for: results) : []
+        // With Beds set, a re-rental tile only when its own unit table has a
+        // matching size (owner, 2026-10-04); unstated sizes stay out of a
+        // filtered feed.
+        if !q.beds.isEmpty {
+            await Qualify.shared.loadUnits()
+            rerentalPool = rerentalPool.filter { !Qualify.shared.bedrooms($0).isDisjoint(with: q.beds) }
+        }
         // The list itself: how many matched, how the search was shaped, and
         // whether re-rentals were in the mix — the denominator for the funnel.
         var p = Analytics.shape(query); p["results"] = results.count; p["rerental_pool"] = rerentalPool.count

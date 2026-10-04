@@ -1663,6 +1663,18 @@ final class MapGridTests: XCTestCase {
 
 /// Qualify-check and AI search mapping (2026-10-03).
 final class QualifyAndAITests: XCTestCase {
+    /// Re-rental bedroom sizes (2026-10-04): the feed's own plus the unit
+    /// table's rows; none stated = empty, which a Beds filter leaves out.
+    func testRerentalBedroomsComeFromFeedAndUnitTable() {
+        let none = FeaturedListing(agent: "MGNY", address: "146-61 105 Ave", borough: "Queens", href: "x")
+        let row = { (b: Int?) in Qualify.Row(beds: b, rent: nil, household_size_min: nil, household_size_max: nil, income_min: nil, income_max: nil) }
+        XCTAssertEqual(Qualify.bedrooms(none, rows: []), [])
+        XCTAssertEqual(Qualify.bedrooms(none, rows: [row(1)]), [1])
+        XCTAssertEqual(Qualify.bedrooms(none, rows: [row(0), row(2), row(6), row(nil)]), [0, 2, 4])
+        var studio = none; studio.beds = "studio"
+        XCTAssertEqual(Qualify.bedrooms(studio, rows: [row(1)]), [0, 1])
+    }
+
     func testVerdictUsesTheHouseholdRow() {
         let rows = [Qualify.Row(beds: 2, rent: 2214, household_size_min: 2, household_size_max: 2, income_min: 80779, income_max: 122130),
                     Qualify.Row(beds: 2, rent: 2214, household_size_min: 4, household_size_max: 4, income_min: 80779, income_max: 152640)]

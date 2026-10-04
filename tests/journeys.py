@@ -1224,6 +1224,23 @@ class Runner:
             return {name: c.dataset.hcName || '', boro: c.dataset.hcBoro || '', flag: !!c.querySelector('.hc-flag')};
         })()""")
         self.ok(feat is not None or hc is not None, 'no sponsored or lottery tile rendered in the list at all', j)
+        # Beds = 1 (owner, 2026-10-04): every re-rental tile left must name a
+        # 1-bed in its feed entry or its own unit table (featured_units.json).
+        page.evaluate("""(() => { const cb = document.querySelector('input[name="beds"][value="1"]');
+            cb.checked = true; cb.dispatchEvent(new Event('change', { bubbles: true })); })()""")
+        time.sleep(2.5)
+        bad = page.evaluate("""(async () => {
+            const F = (await (await fetch('/featured.json')).json()).listings || [];
+            const U = ((await (await fetch('/featured_units.json')).json()).listings) || {};
+            const sizes = href => { const f = F.find(x => x.href === href) || {}, out = new Set();
+              const own = f.beds === 'studio' ? 0 : parseInt(f.beds, 10); if (!isNaN(own)) out.add(Math.min(own, 4));
+              for (const r of ((U[href] || {}).units || [])) if (r.beds != null) out.add(Math.min(+r.beds, 4)); return out; };
+            return [...document.querySelectorAll('#grid .card.feat-card')].map(c => c.dataset.featHref)
+              .filter(h => h && !sizes(h).has(1)); })()""")
+        self.ok(not bad, f'with Beds = 1, re-rental tiles without a 1-bed: {bad[:3]}', j)
+        page.evaluate("""(() => { const cb = document.querySelector('input[name="beds"][value="1"]');
+            cb.checked = false; cb.dispatchEvent(new Event('change', { bubbles: true })); })()""")
+        time.sleep(1)
         if feat:
             self.ok(feat['agent'] and feat['addr'],
                     f"a re-rental tile must carry the agent and address the advertiser report counts, got {feat}", j)

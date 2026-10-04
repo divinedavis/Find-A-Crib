@@ -6294,6 +6294,19 @@ function favActive() {
       if (boros.size >= N_REGIONS) break;      // every borough is on screen
     }
     featPool = FEATURED.filter(f => f.borough && boros.has(f.borough));
+    // With bedrooms picked, a re-rental tile only when the listing's own unit
+    // table (featured_units.json) or feed names a matching size; ones that
+    // state no size stay out (owner, 2026-10-04: "only buildings that have a
+    // 1br available should be shown").
+    const want = new Set([...document.querySelectorAll('input[name="beds"]:checked')].map(c => +c.value));
+    if (want.size) featPool = featPool.filter(f => [...featBedrooms(f)].some(b => want.has(b)));
+  }
+  function featBedrooms(f) {
+    const out = new Set();
+    const own = f.beds === 'studio' ? 0 : parseInt(f.beds, 10);
+    if (!isNaN(own)) out.add(Math.min(own, 4));
+    for (const r of ((UNITS[f.href] || {}).units || [])) if (r.beds != null) out.add(Math.min(+r.beds, 4));
+    return out;
   }
 
   // Which featured listing goes in the next slot. Walks the pool so one grid

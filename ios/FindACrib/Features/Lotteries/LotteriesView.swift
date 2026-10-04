@@ -19,6 +19,9 @@ struct LotteriesView: View {
     }
     @State private var showAlerts = false
     @State private var showQualify = false
+    /// Re-rentals that state no bedroom sizes, shown under a Beds filter
+    /// only when asked (owner, 2026-10-04: 1 bed means only 1-beds).
+    @State private var showUnsized = false
     @State private var showSignIn = false
     enum Pane: Hashable { case lotteries, rerentals, newJersey }
     @State private var pane: Pane = .lotteries
@@ -203,12 +206,24 @@ struct LotteriesView: View {
 
     /// Re-rentals in their boroughs, from the same featured.json the search
     /// feed's tiles use (refreshed with the rest of the app's data).
-    private var rerentals: [FeaturedListing] {
+    private var inBoroughs: [FeaturedListing] {
         let codes = Set(feed.viewBoroughs)
-        return store.featured.listings.filter {
-            ($0.boroughCode.map(codes.contains) ?? false)
-                && LotteryFeed.bedsMatch($0.beds.map { [$0] }, want: beds)
+        return store.featured.listings.filter { $0.boroughCode.map(codes.contains) ?? false }
+    }
+
+    /// Sizes come from the feed and from each listing's own unit table (the
+    /// flyer reader). With Beds set, a listing shows only if one of its
+    /// sizes matches; one that states no size waits behind a button.
+    private var rerentals: [FeaturedListing] {
+        guard !beds.isEmpty else { return inBoroughs }
+        return inBoroughs.filter {
+            let have = Qualify.shared.bedrooms($0)
+            return have.isEmpty ? showUnsized : !have.isDisjoint(with: beds)
         }
+    }
+
+    private var unsizedCount: Int {
+        beds.isEmpty ? 0 : inBoroughs.filter { Qualify.shared.bedrooms($0).isEmpty }.count
     }
 
     /// "a 1-bed", "a studio or 1-bed", "3+ beds" — for the empty message.
@@ -224,6 +239,16 @@ struct LotteriesView: View {
             boroughsButton
         }
         .padding(.horizontal, 16)
+        if unsizedCount > 0 {
+            Button { showUnsized.toggle(); Analytics.shared.track("rerentals_unsized", ["show": showUnsized]) } label: {
+                Text(showUnsized ? "Hide the \(unsizedCount) that don't list bedroom sizes"
+                                 : "\(unsizedCount) more don't list bedroom sizes — show them")
+                    .font(.se(16, .semibold)).foregroundStyle(SE.royal)
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).padding(.horizontal, 16)
+                    .contentShape(Rectangle())   // the whole row, not just the words
+            }
+            .buttonStyle(.plain).accessibilityIdentifier("rerentals-unsized")
+        }
         if rerentals.isEmpty && !beds.isEmpty {
             message("None with \(bedsWords)", "No re-rental in \(boroughNames) lists \(bedsWords) today. Change Beds above to see them.")
         } else if rerentals.isEmpty {
@@ -236,8 +261,7 @@ struct LotteriesView: View {
             ForEach(rerentals) { RerentalCard(listing: $0, slot: -1) }
         }
         .padding(.horizontal, 16)
-        Text("Income-restricted apartments that HPD-approved marketing agents are re-renting, from their own websites. Apply through the agent."
-             + (beds.isEmpty ? "" : " Most agents don't list bedrooms, so those stay in the list whatever Beds is set to."))
+        Text("Income-restricted apartments that HPD-approved marketing agents are re-renting, from their own websites. Apply through the agent. Bedroom sizes come from each listing's own unit table.")
             .font(.se(14)).foregroundStyle(SE.ink3).padding(.horizontal, 16).padding(.top, 4)
     }
 

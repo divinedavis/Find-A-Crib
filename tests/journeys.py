@@ -148,7 +148,10 @@ AD_HOSTS = ("scriptwrapper.com", "mediavine.com", "journeymv.com", "optable.co",
             # OpenX's bidder logs under its own tag with no host in the text.
             "(ox_esp)",
             # Google's IMA video-ad SDK and its creatives, inside Mediavine's player.
-            "imasdk.googleapis.com", "tpc.googlesyndication.com")
+            "imasdk.googleapis.com", "tpc.googlesyndication.com",
+            # An ad-tech targeting call in Mediavine's stack, blocked by CORS
+            # in a test browser (seen 2026-10-04 on the live site only).
+            "alocdn.com")
 
 
 def ad_noise(m):

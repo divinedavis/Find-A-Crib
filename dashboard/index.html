@@ -1910,8 +1910,12 @@
       // first-party count, so it is labelled as an approximation.
       if(P30.total != null){
         var s=document.createElement('span'); s.className='goal-prog';
-        s.textContent=' '+comma(P30.total)+' / 25,000 · '+Math.round(100*n(P30.total)/25000)+'%';
-        g2.title='Raptive entry bar: 25,000 Google Analytics page views in 30 days. Ours is our own count (Raptive reads GA). Also required: \u226550% of traffic from US/UK/CA/AU/NZ, domain 6+ months old (24 Dec 2026), long-form content on most pages.';
+        // Raptive's bar in its own unit (owner, 2026-10-04: "update the goal
+        // with the correct measure"): page views in the last 30 days, and the
+        // daily pace that gets there (25,000 / 30 = 834 a day).
+        var pv=n(P30.total), perDay=Math.round(pv/30);
+        s.textContent=' '+comma(pv)+' / 25,000 · '+Math.round(100*pv/25000)+'% · '+comma(perDay)+' of 834/day';
+        g2.title='Raptive entry bar: 25,000 page views in the last 30 days, as Google Analytics counts them (ours is our own count of real page loads, bots excluded; GA is the number Raptive reads). Pace: page views a day over the last 30 days vs the 834 a day that makes 25,000. Also required: \u226550% of traffic from US/UK/CA/AU/NZ, domain 6+ months old (24 Dec 2026), long-form content on most pages.';
         g2.appendChild(s);
       }
       // The other gates, listed — the geo and content ones are not measured

@@ -86,8 +86,8 @@ def run(browser, live):
     payload['page_views_30d'] = {'total': 10344, 'map': 9961, 'other': 383}
     page.reload(wait_until='networkidle')
     # Numbers only in the header (owner, 2026-10-01); the words are in titles.
-    expect(page.locator('#page-goal2')).to_contain_text('Raptive 10,344 / 25,000 · 41%')
-    expect(page.locator('#page-goal2')).to_have_attribute('title', re.compile('US/UK/CA/AU/NZ.*6\\+ months.*long-form'))
+    expect(page.locator('#page-goal2')).to_contain_text('Raptive 10,344 / 25,000 · 41% · 345 of 834/day')
+    expect(page.locator('#page-goal2')).to_have_attribute('title', re.compile('Google Analytics.*834.*US/UK/CA/AU/NZ.*6\\+ months.*long-form'))
     expect(page.locator('#page-goal2-gates')).to_be_hidden()
     expect(page.locator('#page-sub')).to_be_hidden()
     assert not errors, errors

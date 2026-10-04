@@ -53,9 +53,6 @@ struct BuildingDetailView: View {
                     // page (442 people since 9/5, next is 195).
                     if store.city.isNYC {
                         section("Violations & inspections") { hpdBlock }
-                        // Plus AI (owner, 2026-10-03): a plain-words read of
-                        // the records above, questions about them, and the rent check.
-                        section("Ask AI") { AIBuildingSection(building: b, hasPrice: store.price(b) != nil) { paywallSource = $0; showPaywall = true } }
                     } else if store.city.isIncomeRestricted {
                         // Its own block: units and eligibility, not the
                         // violations/evictions shape cityRecordBlock draws.
@@ -64,7 +61,15 @@ struct BuildingDetailView: View {
                         section(r.heading) { cityRecordBlock(r) }
                     }
 
-                    if store.city.isNYC || b.mr != nil { section("Rent") { rentBlock } }
+                    if store.city.isNYC || b.mr != nil {
+                        section("Rent") {
+                            rentBlock
+                            // Plus: the asking rent against the area (2026-10-03).
+                            if store.city.isNYC && store.price(b) != nil {
+                                AIBuildingSection(building: b) { paywallSource = $0; showPaywall = true }
+                            }
+                        }
+                    }
 
                     if store.city.isNYC { section("Managing agent") { agentBlock } }
 

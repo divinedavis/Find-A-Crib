@@ -26,12 +26,6 @@ struct PaywallView: View {
         Perk(id: "apply_help", icon: "doc.text", title: "Help me apply",
              sub: "The agent's steps, the documents to gather and a ready-to-send email — for every re-rental.",
              example: "“1. Download the application… 2. Gather pay stubs… Email: Hi, I'm interested in unit 4B…”"),
-        Perk(id: "report_card", icon: "doc.text.magnifyingglass", title: "Landlord report card",
-             sub: "Every building's city records — violations, pests, evictions, housing court — read for you in plain words.",
-             example: "“3 open HPD violations, none hazardous. No evictions since 2022. Ask the landlord about the 2025 bedbug filing.”"),
-        Perk(id: "ask", icon: "bubble.left.and.text.bubble.right", title: "Ask about this building",
-             sub: "Answers from the city's records, with the source for each fact.",
-             example: "“Has it had rat problems?” — “One rat inspection in 2024 passed (Rat inspections).”"),
         Perk(id: "ai_search", icon: "sparkles", title: "Search in plain words",
              sub: "Type what you want and the search sets every filter.",
              example: "“2 bed under $2,500 near Prospect Park, no violations”"),
@@ -94,7 +88,7 @@ struct PaywallView: View {
             .foregroundStyle(.white.opacity(0.9))
             Text("Your apartment hunt, with an AI that reads the fine print")
                 .font(.se(30, .black)).foregroundStyle(.white).fixedSize(horizontal: false, vertical: true)
-            Text("City records, rents and applications — read for you, in plain words.")
+            Text("Listings, rents and applications — read for you, in plain words.")
                 .font(.se(17)).foregroundStyle(.white.opacity(0.88))
             Text("\(plus.priceText) / month · cancel anytime")
                 .font(.se(15, .bold)).foregroundStyle(SE.navy)
@@ -120,7 +114,7 @@ struct PaywallView: View {
                     Text(p.sub).font(.se(15)).foregroundStyle(SE.ink2).fixedSize(horizontal: false, vertical: true)
                 }
             }
-            if let ex = p.example, lead || p.id == "report_card" {
+            if let ex = p.example, lead || p.id == "apply_help" {
                 Text(ex).font(.se(14).italic()).foregroundStyle(SE.ink2)
                     .padding(10).frame(maxWidth: .infinity, alignment: .leading)
                     .background(SE.canvas).clipShape(RoundedRectangle(cornerRadius: 8))

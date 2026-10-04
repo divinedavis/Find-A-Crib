@@ -44,95 +44,23 @@ private func errorText(_ e: Error) -> String {
 }
 
 /// Report card, Ask and (with an asking rent) Is this rent fair? on a NYC
-/// building page.
+/// "Is this rent fair?" in a NYC building's Rent section, when it has an
+/// asking rent. The landlord report card and Ask about this building were
+/// taken out of the app (owner, 2026-10-03: too slow).
 struct AIBuildingSection: View {
     let building: Building
-    var hasPrice: Bool
     @Environment(AuthService.self) private var auth
-    @State private var card: ReportCard?
-    @State private var cardError: String?
-    @State private var loadingCard = false
-    @State private var showAsk = false
-    @State private var question = ""
-    @State private var answer: String?
-    @State private var asking = false
+    /// Opens the building page's own Plus sheet.
+    var onPlus: (String) -> Void
     @State private var rent: RentCheck?
     @State private var rentError: String?
-    /// Opens the building page's own Plus sheet (a second .sheet down here
-    /// never presented — the page already owns one).
-    var onPlus: (String) -> Void
 
     var body: some View {
-        // Signed out or signed in, the buttons show: tapping one without
-        // Plus opens the Plus page with that feature first (owner, 2026-10-03).
-        signedIn
-    }
-
-    private var signedIn: some View {
         VStack(alignment: .leading, spacing: 10) {
-            AIButton(title: "Landlord report card", icon: "doc.text.magnifyingglass", id: "ai-report-card") { Task { await loadCard() } }
-            if loadingCard { ProgressView().tint(SE.royal) }
-            if let card { reportCard(card) }
-            if let cardError { Text(cardError).font(.se(15)).foregroundStyle(SE.ink3) }
-
-            AIButton(title: "Ask about this building", icon: "bubble.left.and.text.bubble.right", id: "ai-ask") { openAsk() }
-            if showAsk {
-                HStack(spacing: 8) {
-                    TextField("e.g. Has it had rat problems?", text: $question)
-                        .font(.se(17)).padding(10).background(Color.white)
-                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(SE.line))
-                        .submitLabel(.send).onSubmit { Task { await send() } }
-                        .accessibilityIdentifier("ai-ask-field")
-                    Button { Task { await send() } } label: {
-                        Text("Ask").font(.se(17, .bold)).foregroundStyle(.white).padding(.horizontal, 14).frame(height: 44).background(SE.royal).clipShape(RoundedRectangle(cornerRadius: 10))
-                    }.buttonStyle(.plain).disabled(asking || question.trimmingCharacters(in: .whitespaces).count < 3)
-                }
-                if asking { ProgressView().tint(SE.royal) }
-                if let answer {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(AIService.readable(answer)).font(.se(16)).foregroundStyle(SE.ink)
-                        Text("AI answer from the city's public records.").font(.se(13)).foregroundStyle(SE.ink3)
-                    }.padding(12).background(Color.white).overlay(RoundedRectangle(cornerRadius: 10).stroke(SE.lineSoft))
-                        .accessibilityIdentifier("ai-ask-answer")
-                }
-            }
-
-            if hasPrice {
-                AIButton(title: "Is this rent fair?", icon: "dollarsign.circle", id: "ai-rent-check") { Task { await loadRent() } }
-                if let rent { rentCard(rent) }
-                if let rentError { Text(rentError).font(.se(15)).foregroundStyle(SE.ink3) }
-            }
+            AIButton(title: "Is this rent fair?", icon: "dollarsign.circle", id: "ai-rent-check") { Task { await loadRent() } }
+            if let rent { rentCard(rent) }
+            if let rentError { Text(rentError).font(.se(15)).foregroundStyle(SE.ink3) }
         }
-    }
-
-    private func gate(_ e: Error, source: String) -> Bool {
-        switch e as? AIError {
-        case .signIn: onPlus(source); return true
-        case .plus: onPlus(source); return true
-        default: return false
-        }
-    }
-
-    private func loadCard() async {
-        Analytics.shared.track("report_card_click", ["bbl": building.bbl, "plus": auth.hasPlus])
-        guard auth.hasPlus else { onPlus("report_card"); return }
-        loadingCard = true; cardError = nil; defer { loadingCard = false }
-        do { card = try await AIService.reportCard(bbl: building.bbl, auth: auth) }
-        catch { if !gate(error, source: "report_card") { cardError = errorText(error) } }
-    }
-
-    private func openAsk() {
-        Analytics.shared.track("ask_open", ["bbl": building.bbl, "plus": auth.hasPlus])
-        guard auth.hasPlus else { onPlus("ask"); return }
-        showAsk = true
-    }
-
-    private func send() async {
-        let q = question.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard q.count >= 3 else { return }
-        asking = true; defer { asking = false }
-        do { answer = try await AIService.ask(bbl: building.bbl, question: q, auth: auth); Analytics.shared.track("ask_result", ["bbl": building.bbl, "ok": true]) }
-        catch { if !gate(error, source: "ask") { answer = errorText(error) } }
     }
 
     private func loadRent() async {
@@ -140,31 +68,12 @@ struct AIBuildingSection: View {
         guard auth.hasPlus else { onPlus("rent_check"); return }
         rentError = nil
         do { rent = try await AIService.rentCheck(bbl: building.bbl, auth: auth) }
-        catch { if !gate(error, source: "rent_check") { rentError = errorText(error) } }
-    }
-
-    private func reportCard(_ c: ReportCard) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(c.headline).font(.se(17, .bold)).foregroundStyle(SE.ink)
-            ForEach(c.points, id: \.self) { p in
-                HStack(alignment: .top, spacing: 8) {
-                    Image(systemName: p.tone == "good" ? "checkmark.circle.fill" : p.tone == "concern" ? "exclamationmark.triangle.fill" : "circle.fill")
-                        .font(.system(size: p.tone == "neutral" ? 7 : 15)).foregroundStyle(p.tone == "good" ? SE.good : p.tone == "concern" ? SE.warn : SE.ink3)
-                        .frame(width: 18).padding(.top, 3)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(p.text).font(.se(16)).foregroundStyle(SE.ink)
-                        Text(AIRecordLabel[p.source] ?? p.source).font(.se(12, .semibold)).foregroundStyle(SE.ink3)
-                    }
-                }
+        catch {
+            switch error as? AIError {
+            case .signIn, .plus: onPlus("rent_check")
+            default: rentError = errorText(error)
             }
-            if !c.ask_the_landlord.isEmpty {
-                Text("Ask the landlord").font(.se(15, .bold)).foregroundStyle(SE.ink2).padding(.top, 4)
-                ForEach(c.ask_the_landlord, id: \.self) { Text("• " + $0).font(.se(15)).foregroundStyle(SE.ink2) }
-            }
-            Text("Written by AI from the city's public records.").font(.se(13)).foregroundStyle(SE.ink3)
         }
-        .padding(12).background(Color.white).overlay(RoundedRectangle(cornerRadius: 10).stroke(SE.lineSoft))
-        .accessibilityIdentifier("ai-report-card-result")
     }
 
     private func rentCard(_ r: RentCheck) -> some View {

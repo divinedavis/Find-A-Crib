@@ -1683,11 +1683,6 @@ final class QualifyAndAITests: XCTestCase {
         XCTAssertTrue(q.noOpenViolations)
         XCTAssertEqual(q.locations, [.neighborhood("Park Slope")])
     }
-
-    @MainActor
-    func testCitationsReadAsWords() {
-        XCTAssertEqual(AIService.readable("5 open [hpd_violations]."), "5 open (HPD violations).")
-    }
 }
 
 

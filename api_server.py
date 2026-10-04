@@ -702,7 +702,10 @@ def _ai_err(err):
 @app.route("/ai/report-card")
 def ai_report_card():
     """Landlord report card (Plus): Claude Haiku's plain-English read of the
-    building's public records, kept a week per building."""
+    building's public records, kept a week per building.
+    RETIRED 2026-10-03 (owner: too slow; removed from the app, the site and
+    Plus) — answers 410 so older TestFlight builds stop spending on it."""
+    return jsonify(error="retired"), 410
     user = _session_user()
     bbl = re.sub(r"\D", "", request.args.get("bbl", ""))[:10]
     err = AI.allow(user, "report_card", claude_features.HAIKU)
@@ -730,7 +733,9 @@ def ai_report_card():
 @app.route("/ai/ask", methods=["POST"])
 def ai_ask():
     """Ask about this building (Plus): Claude Sonnet answers from the
-    building's public records only, citing the record section."""
+    building's public records only, citing the record section.
+    RETIRED 2026-10-03 with the report card — 410."""
+    return jsonify(error="retired"), 410
     user = _session_user()
     body = request.get_json(silent=True) or {}
     bbl = re.sub(r"\D", "", str(body.get("bbl", "")))[:10]

@@ -87,29 +87,17 @@ final class FindACribUITests: XCTestCase {
     /// "Rerental" flag and a hand-off button, and it never displaces a building
     /// (the count headline is unchanged). The default route is Brooklyn, and
     /// the bundled featured.json has Brooklyn re-rentals, so this runs offline.
-    /// Plus AI on iPhone (owner, 2026-10-03). The UI runner is signed out:
-    /// the building page still shows the AI buttons, and tapping one opens
-    /// the Plus page led by that feature, whose one button starts sign-in
-    /// in place (owner: "show users what they get with plus").
-    func testBuildingAIOpensThePlusPage() throws {
+    /// The landlord report card and Ask about this building left the app
+    /// (owner, 2026-10-03: too slow); the building page has neither.
+    func testBuildingHasNoReportCardOrAsk() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "detail"]
         app.launch()
         XCTAssertTrue(app.buttons["detail-menu"].waitForExistence(timeout: 30))
-        let card = app.buttons["ai-report-card"]
-        // Clear of the floating Comments/hand-off bar too: "hittable" there
-        // still sends the tap to the bar.
-        let h = app.windows.firstMatch.frame.height
-        for _ in 0..<14 where !card.isHittable || card.frame.maxY > h - 160 { app.swipeUp() }
-        XCTAssertTrue(card.isHittable, "the building page should offer the landlord report card")
-        XCTAssertTrue(app.buttons["ai-ask"].exists, "the building page should offer Ask about this building")
-        card.tap()
-        let signIn = app.buttons["paywall-sign-in"]
-        XCTAssertTrue(signIn.waitForExistence(timeout: 10), "signed out, the Plus page offers sign-in")
-        XCTAssertTrue(app.staticTexts["WHAT YOU TAPPED"].exists, "the tapped feature leads the Plus page")
-        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "plus-page"; shot.lifetime = .keepAlways; add(shot)
-        signIn.tap()
-        XCTAssertTrue(app.staticTexts["Sign in for Plus"].waitForExistence(timeout: 5), "sign-in opens over the Plus page")
+        for _ in 0..<10 { app.swipeUp() }
+        XCTAssertFalse(app.buttons["ai-report-card"].exists, "no landlord report card")
+        XCTAssertFalse(app.buttons["ai-ask"].exists, "no Ask about this building")
+        XCTAssertFalse(app.staticTexts["Ask AI"].exists, "no Ask AI section")
     }
 
     /// Application packet (2026-10-03): Profile -> packet; details typed
@@ -160,6 +148,9 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(help.exists, "a re-rental card should offer Help me apply")
         help.tap()
         XCTAssertTrue(app.buttons["paywall-sign-in"].waitForExistence(timeout: 10), "without Plus, Help me apply opens the Plus page")
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'WHAT YOU TAPPED'")).firstMatch.exists, "the tapped feature leads the Plus page")
+        app.buttons["paywall-sign-in"].tap()
+        XCTAssertTrue(app.staticTexts["Sign in for Plus"].waitForExistence(timeout: 5), "sign-in opens over the Plus page")
     }
 
     /// Qualify-check (free): household + income in Lotteries, then badges.
@@ -550,14 +541,14 @@ final class FindACribUITests: XCTestCase {
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--paywall"]
         app.launch()
         XCTAssertTrue(app.staticTexts["Search in plain words"].waitForExistence(timeout: 15), "the Plus paywall opens with its perks")
-        for perk in ["Landlord report card", "Ask about this building", "Help me apply", "Is this rent fair?", "No ads"] {
+        for perk in ["Help me apply", "Is this rent fair?", "No ads"] {
             XCTAssertTrue(app.staticTexts[perk].exists, "paywall perk missing: \(perk)")
         }
         // Scope to the paywall sheet: Profile (behind it) has its own "Saved
         // searches" row, which is not a paywall perk (build 104).
         let sheet = app.scrollViews.containing(.staticText, identifier: "Search in plain words").firstMatch
         XCTAssertTrue(sheet.exists, "the paywall's scroll view")
-        for gone in ["Bedbug records", "Rodent records", "Agent phone numbers", "Lottery alerts", "Re-rental alerts", "Saved searches", "Landlord research", "Folders", "Your lotteries & re-rentals"] {
+        for gone in ["Landlord report card", "Ask about this building", "Bedbug records", "Rodent records", "Agent phone numbers", "Lottery alerts", "Re-rental alerts", "Saved searches", "Landlord research", "Folders", "Your lotteries & re-rentals"] {
             XCTAssertFalse(sheet.staticTexts[gone].exists, "unlisted perk on the paywall: \(gone)")
         }
         XCTAssertFalse(app.buttons["paywall-refer"].exists, "no in-app invite-a-friend button (App Review 3.1.1)")

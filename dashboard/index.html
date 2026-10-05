@@ -1849,15 +1849,21 @@
     // excludes comped/founding/referral Plus, as the MRR tile counts it.
     // Current state, so every range shows the same number (subscriptions
     // has no start date to range on).
+    // Ranged since 2026-10-05 (owner: "this tile should also update based on
+    // the time filter"): of the accounts created in the range, how many pay
+    // now (db/0048 — subscriptions has no start date). Trials aren't paying.
     function freeToPaidTile(){
-      var S=d.subscriptions||{}, acc=T.accounts_all != null ? T.accounts_all : T.accounts;
-      if(S.paying == null || !n(acc)) return {ic:'💳',v:'—',l:'Free-to-paid conversion',own:'Unavailable right now'};
-      var r=100*n(S.paying)/n(acc);
+      var C=d.plus_cohort||{}, S=d.subscriptions||{};
+      var acc = C.accounts != null ? C.accounts : (T.accounts_all != null ? T.accounts_all : T.accounts);
+      var paying = C.paying != null ? C.paying : S.paying;
+      if(paying == null || !n(acc)) return {ic:'💳',v:'—',l:'Free-to-paid conversion',own:'Unavailable right now'};
+      var r=100*n(paying)/n(acc);
       var verdict = r>=5 ? 'above the band' : r>=2 ? 'inside the band' : 'below the band';
+      var trial = n(C.trialing) ? ' · '+comma(C.trialing)+' in their first month' : '';
       return {ic:'💳',v:(r>0 && r<1 ? r.toFixed(2) : r.toFixed(1))+'%',l:'Free-to-paid conversion',
-              own:'<b>'+comma(S.paying)+'</b> paying of '+comma(acc)+' accounts · $'+dollars(S.mrr)+'/month',
+              own:'<b>'+comma(paying)+'</b> paying of '+comma(acc)+' accounts'+(canonicalRange(rangeKey)!=='all' ? ' created in this range' : '')+trial+' · $'+dollars(S.mrr)+'/month',
               bench:'Freemium reference <b>2–5%</b> of accounts · '+verdict,
-              title:'Paying Find A Crib Plus members (Stripe on the web, the App Store in the app; comped, founding and referral Plus left out) divided by every Find A Crib account. The standard freemium measure; 2–5% is the usual band. Current state, not ranged.'};
+              title:'Of the Find A Crib accounts created in the selected range (all of them on All time), how many pay for Plus now (Stripe on the web, the App Store in the app; comped, founding and referral Plus and first-month trials left out). The standard freemium measure; 2–5% is the usual band.'};
     }
     // Mediavine (Journey, live 2026-09-29): ads the pages counted themselves —
     // Mediavine has no reporting API. Paid vs Mediavine's own filler ("Grow"

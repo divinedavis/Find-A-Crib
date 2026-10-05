@@ -150,6 +150,14 @@ def run(browser, live):
     expect(ftp).to_contain_text('5 paying of 250 accounts')
     expect(ftp).to_contain_text('inside the band')
     expect(ftp).to_contain_text('$24.95/month')    # cents kept: $4.99 used to print as "$5"
+    # Ranged (2026-10-05): the cohort of accounts created in the range, when
+    # the API sends it; first-month trials are listed, not counted as paying.
+    payload['plus_cohort'] = {'accounts': 40, 'paying': 2, 'trialing': 3}
+    page.reload(wait_until='networkidle')
+    expect(ftp.locator('.t-val')).to_have_text('5.0%')
+    expect(ftp).to_contain_text('2 paying of 40 accounts')
+    expect(ftp).to_contain_text('3 in their first month')
+    payload.pop('plus_cohort')
     expect(page.locator('#tiles .tile')).to_have_count(9)
     assert not errors, errors
     print(f'PASS {browser.browser_type.name}: ad and pay tiles', flush=True)

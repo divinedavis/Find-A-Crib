@@ -176,7 +176,14 @@ def js_errors(rows):
                                                                                # second as IMA video-ad errors. Our one
                                                                                # abort (the buildings stall timer, 15 s)
                                                                                # is caught in boot, never unhandled.
-                                                                               "The operation was aborted."))
+                                                                               "The operation was aborted.",
+                                                                               # 2026-10-05: one visitor, first minute, no
+                                                                               # stack — a TimeoutError and a DOMException
+                                                                               # named UnavailableError. Neither string is
+                                                                               # in our code (no AbortSignal.timeout, no
+                                                                               # "Unavailable"); the ad stack's identity
+                                                                               # scripts (UID2 failing the same minutes) are.
+                                                                               "operation timed out", "UnavailableError"))
                       # A rejected XMLHttpRequest object as the reason: this
                       # site never uses XHR (supabase-js and ours are fetch);
                       # Prebid in Mediavine's stack does (9/29).
@@ -534,10 +541,19 @@ def build(window_label, js, crash, app, five, tracebacks, stale, new_msgs, crons
     # thing that went wrong that hour — it is every following number in this
     # email being measured by something that is no longer running.
     parts.append(table("Engine", ["Job", "State"], [[esc(k), esc(v)] for k, v in crons.items()]))
+    # Browser noise stays out of the email (owner, 2026-10-05: "should i get
+    # emails on browser noise?"): it never triggers one, and when something
+    # real does, the noise is one line under the table, not rows in it.
+    real = {k: v for k, v in js.items() if not v["noise"]}
+    noisy = [v for v in js.values() if v["noise"]]
     parts.append(table("JavaScript errors (web)", ["Message", "Times", "People", "Where", "New?"], [
         [esc(k), v["n"], len(v["people"]), esc(v["paths"].most_common(1)[0][0] if v["paths"] else "—"),
-         "<b style='color:#b3261e'>new</b>" if k in new_msgs else ("browser noise" if v["noise"] else "")]
-        for k, v in sorted(js.items(), key=lambda kv: -kv[1]["n"])[:12]]))
+         "<b style='color:#b3261e'>new</b>" if k in new_msgs else ""]
+        for k, v in sorted(real.items(), key=lambda kv: -kv[1]["n"])[:12]]))
+    if noisy:
+        parts.append(f"<p style='font:13px system-ui;color:#666;margin:6px 0 0'>Plus {sum(v['n'] for v in noisy)} "
+                     f"browser-noise error{'s' if sum(v['n'] for v in noisy) != 1 else ''} (ad scripts, extensions, "
+                     f"dropped connections) — not shown, nothing to fix.</p>")
     parts.append(table("Pages that died mid-work", ["Last thing it did", "Times", "People", "Device"], [
         [esc(k), v["n"], len(v["people"]), esc(v["uas"].most_common(1)[0][0] if v["uas"] else "—")]
         for k, v in sorted(crash.items(), key=lambda kv: -kv[1]["n"])[:10]]))

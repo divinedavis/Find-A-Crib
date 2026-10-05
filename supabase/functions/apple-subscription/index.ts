@@ -70,7 +70,11 @@ Deno.serve(async (req) => {
     user_id: user.id,
     provider: "apple",
     plan: "plus",
-    status: revoked ? "canceled" : active ? "active" : "inactive",
+    // A first-month trial (introductory offer, 2026-10-04) is Plus but not
+    // paying yet — "trialing", as Stripe reports its trials. The renewal
+    // transaction after it carries no offer and flips the row to "active".
+    status: revoked ? "canceled" : !active ? "inactive"
+      : (tx.offerType === 1 && (tx.offerDiscountType === "FREE_TRIAL" || tx.price === 0)) ? "trialing" : "active",
     current_period_end: expires ? expires.toISOString() : null,
     apple_original_transaction_id: String(tx.originalTransactionId),
     apple_product_id: tx.productId,

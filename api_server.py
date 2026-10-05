@@ -1712,6 +1712,9 @@ def dashboard_metrics():
         "channels": (_fac_channels, since),
         "page_views": (_fac_page_views, since),
         "mediavine": (_fac_mediavine, since),
+        # Free-to-paid for the accounts created in this range (db/0048).
+        "plus_cohort": (_fac_plus_cohort, since),
+        "plus_all": (_fac_plus_cohort, None),
         # The header's Raptive goal (25k/month) is always the last 30 days.
         "page_views_30d": (_fac_page_views, (datetime.datetime.now(datetime.timezone.utc)
                                               - datetime.timedelta(days=30)).strftime("%Y-%m-%dT%H:00:00Z")),
@@ -1740,6 +1743,15 @@ def dashboard_metrics():
         futs = {k: pool.submit(*v) for k, v in jobs.items()}
         got = {k: f.result() for k, f in futs.items()}
     data["goalstreams"] = {k: got.pop(k) for k in ("ai", "consult_clicks", "agents")}
+    # Paying excludes first-month trials since the trial launched (2026-10-04):
+    # the RPC behind data["subscriptions"] counts 'trialing' as paying, which
+    # would book every trial as $4.99 of MRR.
+    plus_all = got.pop("plus_all") or {}
+    subs = data.get("subscriptions")
+    if isinstance(subs, dict) and plus_all.get("paying") is not None:
+        subs["paying"] = plus_all["paying"]
+        subs["trialing"] = plus_all.get("trialing", 0)
+        subs["mrr"] = round(plus_all["paying"] * 4.99, 2)
     data.update(got)
     # Moving goals for the three audience counts. The check runs against the
     # numbers of the all-time call (the same fixed windows every range shows)
@@ -2014,6 +2026,16 @@ def _fac_page_views(since):
     except Exception:
         return {}
     return {"total": total, "map": on_map, "other": total - on_map}
+
+
+@_memo(600)
+def _fac_plus_cohort(since):
+    """{accounts, paying, trialing} for accounts created since `since` (None =
+    all). {} on failure."""
+    try:
+        return rpc("dashboard_plus_cohort", {"since": str(since) if since else None}) or {}
+    except Exception:
+        return {}
 
 
 @_memo(600)

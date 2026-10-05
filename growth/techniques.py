@@ -843,6 +843,28 @@ def t_llms_txt(ctx):
         "registered owner and managing agent, open and closed HPD violations by severity",
         "class, HPD complaint history, and whether the building was recently advertised.",
         "",
+        # ADDED 2026-10-05, as the other half of the build_seo.py change that
+        # stopped addressing the index-triage noindex to every crawler on earth
+        # (see TRIAGE_ROBOTS_UA there). Until this morning this file described
+        # the four city datasets, the guides and the voucher feed, and never
+        # once said that the thing at the centre of the site — a page per
+        # address — exists. An engine answering "is 164 Sherman Ave rent
+        # stabilized" has to be told there is a page that answers it.
+        # Every clause here is checkable against the docroot: the URL form is
+        # build_seo.py:3392, the inbound link is what t_crawl_paths measures
+        # (/building/ at click depth 2 from the homepage, every night), and the
+        # sitemap subset is index_triage()'s promoted set.
+        f"Every one of those {nyc:,} New York buildings has its own page, at",
+        "/building/<borough>/<street-address>-<BBL>/ — linked from the neighborhood and",
+        "ZIP hubs, and open to read. The XML sitemaps advertise only a subset of them by",
+        "design; the rest are published and linked rather than submitted.",
+        "",
+        "## Bulk data",
+        "",
+        "- Every registered New York building in one public JSON file, no key and no",
+        f"  account required: {SITE}/buildings.min.json",
+        f"- Per-city REST API, metered, with a free tier: {SITE}/developers/",
+        "",
         "## Live listings",
         "",
         f"- Voucher-friendly listings, refreshed nightly: {len(rows):,} rent-stabilized NYC "

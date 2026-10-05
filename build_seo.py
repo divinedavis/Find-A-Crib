@@ -1171,6 +1171,82 @@ PROMOTE_UNITS = 300
 GSC_HISTORY_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 "growth", "gsc_pages.json")
 
+# ---- WHO THE noindex IS ADDRESSED TO, and it was everybody until 2026-10-05.
+#
+# The triage above is a decision about GOOGLE, taken on Google evidence and
+# nothing else: 455 URLs inspected, 82 fetched, 1 kept, and accept_pct_mature
+# flat at 0.0% across 88 mature crawls for 33 nights. Every number in the four
+# rules comes from Search Console. It was implemented by writing
+# `<meta name="robots" content="noindex,follow">` onto the 46,221 building
+# pages it declines to promote — and `robots` is the generic name, so that
+# directive is addressed to EVERY crawler that reads the page, not to the one
+# the evidence is about.
+#
+# What that costs is specific and measured, on the other side of the ledger.
+# T003 llms_txt is the ONLY technique in growth/techniques.json carrying a
+# WORKS verdict: ai_visitors went from a 0.0/day median to 1.0/day after it
+# shipped (25 in the trailing 14d against 6 in the 14d before). The AI answer
+# engines are the one channel on this domain with a positive reading, and they
+# are the one distribution surface that does not route through Google's index
+# verdict. OpenAI's own publisher documentation states the mechanism plainly:
+# a robots.txt allow is what lets OAI-SearchBot crawl, and a `noindex` META
+# TAG — not a robots.txt disallow — is what keeps a page out of ChatGPT's
+# search results altogether. So since 2026-08-28 this site has been telling
+# ChatGPT, Perplexity, Claude, Applebot and Bing to drop 98% of its address
+# corpus, in the name of a crawl-budget argument about Googlebot.
+#
+# THE FIX IS TO SAY WHO WE ARE TALKING TO. `<meta name="googlebot">` is a
+# documented user-agent-scoped form of the same directive and Google obeys the
+# most specific one it is given, so Googlebot reads exactly the same
+# noindex,follow it has read since August and the rationing is untouched. Every
+# other crawler falls back to the generic `robots` name, which is now absent —
+# which is the posture the whole corpus had before the triage shipped, and the
+# posture the hubs, guides and city pages have never left.
+#
+# WHAT IS NOT CLAIMED, because this is a mechanism argument and not a
+# measurement: nothing here predicts that any AI engine will cite these pages.
+# The claim is only that it is incoherent to spend the one working channel to
+# buy nothing on a channel measured shut, and the instruments are already
+# running — ai_visitors (growth/results.jsonl, __site__) for the upside, and
+# index_fetched / accept_pct_mature (growth/index_status.json) for the
+# downside, which must NOT move: if Google's fetch or acceptance behaviour
+# changes after this, the scoping was wrong and the generic name comes back.
+#
+# ONE EXPECTED NUMBER, pre-registered so the next reader does not misread it.
+# The robots meta sits inside the region _lastmod_body() hashes, so narrowing
+# the name rewrites the content hash of all 46,221 non-promoted building pages
+# and the next build logs "~46,000 pages changed". That is a one-night
+# step, not a corpus rewrite, and nothing is announced for it: the IndexNow
+# payload is `set(LM_CHANGED) & submitted` and not one of these URLs is in a
+# sitemap, so the ping stays in its usual few-hundred band. Their <lastmod>
+# appears in no sitemap either, so no crawler is told anything changed.
+TRIAGE_ROBOTS_UA = "googlebot"
+
+# ---- the one promotion rule that has never been measured, measured.
+# 2026-10-05, and NOT acted on today, deliberately — recorded here so the next
+# run decides it on the number rather than re-deriving it. Scored exactly the
+# way the violations rule was scored before it was removed on 2026-08-29:
+# P(the page has ever earned a Search Console impression | the rule promotes
+# it), against a corpus base rate of 272/47,165 = 0.577%.
+#
+#   ever advertised   promotes   312 URLs,  2 ever served,  0.64%  →  1.11x
+#   300+ apartments   promotes   409 URLs, 11 ever served,  2.69%  →  4.66x
+#   (200+ would be 828 URLs at 3.35x, 100+ would be 2,516 at 2.14x — unchanged
+#    from the 2026-08-29 reading, so the threshold still earns its place.)
+#
+# 1.11x is the null. 312 × 0.577% = 1.8 expected, 2 observed. The rule puts 274
+# URLs into the sitemap that no other rule promotes — 29% of the building tier —
+# on a rationale ("a unit here has been advertised, so it is a live rental
+# address") rather than a record. Two cautions against ripping it out on this
+# alone, and both belong in the decision: n=312 with 2 hits cannot EXCLUDE an
+# effect the size of the unit-count rule's, and no page that has ever served
+# would lose its place anyway, because the fourth rule overrides. What makes it
+# worth asking at all is that listings.json — the file the rule reads — is a
+# sticky master whose own asof is 2026-05-09, five months stale, and
+# recently_advertised_bbls() currently returns ZERO, so not one of these pages
+# even prints a present-tense advertising claim any more.
+PROMOTE_AD_RULE_LIFT = 1.11      # measured 2026-10-05; see above before changing
+
 
 def _ever_served_bbls():
     """BBLs of building pages that have ever earned a Search Console impression.
@@ -2135,7 +2211,8 @@ CITY_NAV = (
 METHODOLOGY_URL = "/methodology/"
 
 
-def page(title, desc, canonical, body, jsonld=None, footer=None, robots=None, og_title=None):
+def page(title, desc, canonical, body, jsonld=None, footer=None, robots=None, og_title=None,
+         robots_name="robots"):
     # og_title: what a shared link shows in iMessage / Slack / social cards.
     # Defaults to the <title>; the building tier passes a plain address so a
     # share reads "164 Sherman Ave — Inwood, Manhattan" while the <title> keeps
@@ -2148,7 +2225,12 @@ def page(title, desc, canonical, body, jsonld=None, footer=None, robots=None, og
     # that index_triage() declines to promote — see the note there. follow, not
     # nofollow, because the page still passes a reader and a crawler onward to
     # the neighbourhood and borough hubs, which is the tier we want crawled.
-    rb = f'<meta name="robots" content="{robots}">' if robots else ""
+    #
+    # `robots_name` is WHICH CRAWLERS that directive is addressed to, and the
+    # default is every one of them. The building tier passes TRIAGE_ROBOTS_UA
+    # instead — see the comment there for why a directive aimed at Google must
+    # not be served to the only channel on this site with a positive verdict.
+    rb = f'<meta name="{robots_name}" content="{robots}">' if robots else ""
     return f"""<!doctype html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{esc(title)}</title>
@@ -3619,6 +3701,11 @@ def main():
                                       voucher=bool(vch)),
                    canonical, body, jsonld,
                    robots=None if promoted else "noindex,follow",
+                   # Addressed to Googlebot alone. See TRIAGE_ROBOTS_UA: the
+                   # triage is a Search Console decision and must not also
+                   # un-publish the corpus to the AI answer engines, which are
+                   # the one channel here with a measured positive verdict.
+                   robots_name=TRIAGE_ROBOTS_UA,
                    og_title=f"{addr} — {nb}, {boro}"))
         if promoted:
             urls.append((canonical, "0.6", b["b"]))

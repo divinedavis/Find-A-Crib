@@ -183,7 +183,13 @@ def js_errors(rows):
                                                                                # in our code (no AbortSignal.timeout, no
                                                                                # "Unavailable"); the ad stack's identity
                                                                                # scripts (UID2 failing the same minutes) are.
-                                                                               "operation timed out", "UnavailableError"))
+                                                                               "operation timed out", "UnavailableError",
+                                                                               # 2026-10-06 04:21 UTC: a signed-out visitor,
+                                                                               # stackless, in the same second as Mediavine's
+                                                                               # scriptwrapper threw "$adManagementConfig.web.init
+                                                                               # is not a function" and three "Script error."s.
+                                                                               # Our awaited supabase calls never resolve to null.
+                                                                               "Cannot destructure property 'data' from null or undefined value"))
                       # A rejected XMLHttpRequest object as the reason: this
                       # site never uses XHR (supabase-js and ours are fetch);
                       # Prebid in Mediavine's stack does (9/29).

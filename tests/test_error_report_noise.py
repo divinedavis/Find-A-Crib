@@ -8,7 +8,8 @@ def row(msg, kind="promise", at=""):
 
 
 def test_stackless_timeout_and_unavailable_are_noise():
-    js = E.js_errors([row("operation timed out"), row("UnavailableError")])
+    js = E.js_errors([row("operation timed out"), row("UnavailableError"),
+                      row("Cannot destructure property 'data' from null or undefined value")])
     assert all(v["noise"] for v in js.values())
 
 

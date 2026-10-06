@@ -558,7 +558,7 @@ final class FindACribUITests: XCTestCase {
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--paywall"]
         app.launch()
         XCTAssertTrue(app.staticTexts["Search in plain words"].waitForExistence(timeout: 15), "the Plus paywall opens with its perks")
-        for perk in ["Help me apply", "Is this rent fair?", "No ads"] {
+        for perk in ["Real-time alerts", "Help me apply", "Is this rent fair?", "No ads"] {
             XCTAssertTrue(app.staticTexts[perk].exists, "paywall perk missing: \(perk)")
         }
         // Scope to the paywall sheet: Profile (behind it) has its own "Saved
@@ -604,6 +604,30 @@ final class FindACribUITests: XCTestCase {
         let hide = app.buttons.matching(NSPredicate(format: "identifier == 'rerentals-unsized' AND label BEGINSWITH 'Hide'")).firstMatch
         XCTAssertTrue(hide.waitForExistence(timeout: 5), "the button shows them, then offers to hide")
         app.buttons["segment-1"].tap()   // leave Beds as it was
+    }
+
+    /// Real-time alerts are Plus (owner, 2026-10-06). A subscriber without Plus
+    /// (--lotteries-demo) sees "Re-rentals go first come, first served" instead
+    /// of the alerts prompt; it opens the Plus page on real-time alerts, and
+    /// its ✕ hides it for good.
+    func testSubscriberSeesRealtimeUpsellAndCanDismissIt() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--tab", "lotteries", "--lotteries-demo", "--reset-rt-dismissed"]
+        app.launch()
+        let upsell = app.buttons["realtime-upsell"]
+        XCTAssertTrue(upsell.waitForExistence(timeout: 30), "a subscriber without Plus should be offered real-time alerts")
+        XCTAssertFalse(app.buttons["lotteries-signup"].exists, "not the sign-up prompt — they already get alerts")
+        upsell.tap()
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'WHAT YOU TAPPED'")).firstMatch.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["Real-time alerts"].exists, "the Plus page leads with real-time alerts")
+        app.buttons["paywall-close"].tap()
+        app.buttons["realtime-upsell-dismiss"].tap()
+        XCTAssertFalse(app.buttons["realtime-upsell"].waitForExistence(timeout: 2), "dismissed, it goes away")
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--tab", "lotteries", "--lotteries-demo"]
+        app.launch()
+        XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Re-rentals'")).firstMatch.waitForExistence(timeout: 30))
+        XCTAssertFalse(app.buttons["realtime-upsell"].exists, "and it stays gone after a relaunch")
     }
 
     func testLotteriesTabSignupScreenThenListsForSubscribers() throws {

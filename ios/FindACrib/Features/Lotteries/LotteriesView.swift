@@ -24,6 +24,13 @@ struct LotteriesView: View {
     @State private var showUnsized = false
     /// Listings outside the income range on file, shown only when asked.
     @State private var showOutOfRange = false
+    /// The real-time-alerts offer, hidden for good once dismissed (2026-10-06).
+    @AppStorage("fac.rtDismissed") private var rtDismissed = false
+    init() {
+        // UI tests start from a clean slate for the real-time offer.
+        if CommandLine.arguments.contains("--reset-rt-dismissed") { UserDefaults.standard.removeObject(forKey: "fac.rtDismissed") }
+    }
+    @State private var showRealtimePlus = false
     @State private var showSignIn = false
     enum Pane: Hashable { case lotteries, rerentals, newJersey }
     @State private var pane: Pane = .lotteries
@@ -123,13 +130,18 @@ struct LotteriesView: View {
     }
 
     @ViewBuilder private var alertsBanner: some View {
-        if !feed.subscribed {
+        if feed.subscribed && !auth.hasPlus && !rtDismissed {
+            // Subscribed without Plus: alerts come at 8 AM — offer real-time.
+            RealtimeUpsell(source: "lotteries", onDismiss: { rtDismissed = true }) { showRealtimePlus = true }
+                .padding(.horizontal, 16)
+                .sheet(isPresented: $showRealtimePlus) { PaywallView(source: "realtime") }
+        } else if !feed.subscribed {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 10) {
                     Image(systemName: "bell.fill").font(.system(size: 18, weight: .bold)).foregroundStyle(SE.royal)
-                    Text("Hear the minute a new one opens").font(.se(18, .bold)).foregroundStyle(SE.ink)
+                    Text("Get alerts when a new one opens").font(.se(18, .bold)).foregroundStyle(SE.ink)
                 }
-                Text("An alert on this phone and by email the minute a lottery or re-rental opens in the boroughs you pick.")
+                Text("An alert on this phone and by email every morning at 8 AM with the lotteries and re-rentals that opened in the boroughs you pick — the minute they open with Find A Crib Plus.")
                     .font(.se(15)).foregroundStyle(SE.ink2)
                 SEPrimaryButton(title: "Turn on alerts", icon: "bell.fill", fill: SE.navy) { promptSignup() }
                     .accessibilityIdentifier("lotteries-signup")
@@ -191,7 +203,7 @@ struct LotteriesView: View {
                         message("Couldn't load lotteries", "Check your connection and pull down to try again.")
                     } else if feed.mine.isEmpty && !feed.loading {
                         message("Nothing open right now",
-                                "No Housing Connect lotteries are open in \(boroughNames) right now." + (feed.subscribed ? " We'll alert you the minute one opens." : ""))
+                                "No Housing Connect lotteries are open in \(boroughNames) right now." + (feed.subscribed ? " We'll alert you when one opens." : ""))
                     } else if lotteries.isEmpty && !bedLotteries.isEmpty && !feed.loading {
                         message("None in your income range",
                                 "\(bedLotteries.count) open\(beds.isEmpty ? "" : " with \(bedsWords)"), all outside the income range you entered. Tap above to see them anyway.")

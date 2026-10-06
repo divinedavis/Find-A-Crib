@@ -23,6 +23,7 @@ struct AlertsSheet: View {
     /// Household size (2026-10-03): lets the sender check a re-rental's flyer
     /// income limits for the right row. 0 = not given.
     @State private var household = 0
+    @State private var showPlus = false
     @State private var busy = false
     @State private var done = false
     @State private var error: String?
@@ -44,15 +45,20 @@ struct AlertsSheet: View {
                     if done {
                         VStack(alignment: .leading, spacing: 10) {
                             Text("You're on the list").font(.se(26, .bold)).foregroundStyle(SE.ink)
-                            Text("The minute a lottery or re-rental opens in \(boroughPhrase)\(fitPhrase), you'll get a notification on this phone and an email — not a weekly round-up. Nothing in between. A welcome note is on its way to \(auth.email ?? "your inbox").")
+                            Text(auth.hasPlus
+                                 ? "The minute a lottery or re-rental opens in \(boroughPhrase)\(fitPhrase), you'll get a notification on this phone and an email. A welcome note is on its way to \(auth.email ?? "your inbox")."
+                                 : "Every morning at 8 AM you'll get a notification on this phone and an email with what opened in \(boroughPhrase)\(fitPhrase). A welcome note is on its way to \(auth.email ?? "your inbox").")
                                 .font(.se(17)).foregroundStyle(SE.ink2)
                             pushStateLine
+                            if !auth.hasPlus { RealtimeUpsell(source: "alerts_done") { showPlus = true } }
                             Text("Change boroughs or stop the alerts any time here or at findacrib.com/alerts/.").font(.se(15)).foregroundStyle(SE.ink3)
                         }
                         SEPrimaryButton(title: "Done") { dismiss() }
                     } else {
-                        Text(editing ? "Your alerts" : "Tell me the minute one opens").font(.se(26, .bold)).foregroundStyle(SE.ink)
-                        Text("A notification on this phone and an email to \(auth.email ?? "your account email") the minute a lottery or re-rental opens — not a weekly digest. The feeds are checked every 10 minutes.")
+                        Text(editing ? "Your alerts" : "Get alerts when one opens").font(.se(26, .bold)).foregroundStyle(SE.ink)
+                        Text(auth.hasPlus
+                             ? "A notification on this phone and an email to \(auth.email ?? "your account email") the minute a lottery or re-rental opens. The feeds are checked every 10 minutes."
+                             : "A notification on this phone and an email to \(auth.email ?? "your account email") every morning at 8 AM with what opened. Re-rentals go first come, first served — with Find A Crib Plus they arrive the minute they open.")
                             .font(.se(16)).foregroundStyle(SE.ink2)
                         if editing { pushStateLine }
                         if loadingPrefs {
@@ -109,6 +115,7 @@ struct AlertsSheet: View {
             .navigationTitle("Alerts").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
             .task { await PushService.shared.refreshStatus() }
+            .sheet(isPresented: $showPlus) { PaywallView(source: "realtime") }
         }
         .onAppear { seed() }
         .task { await loadPrefs() }

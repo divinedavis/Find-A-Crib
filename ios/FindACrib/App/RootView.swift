@@ -48,8 +48,8 @@ struct RootView: View {
             Button("Not now", role: .cancel) { PushService.shared.snoozeLaunchPrompt() }
         } message: {
             Text(PushService.shared.promptForSubscriber
-                 ? "You're signed up for borough alerts. Allow notifications and each lottery or re-rental lands here the minute it opens — not just in your email."
-                 : "Be told the minute a rent-stabilized lottery or re-rental opens in your borough. Allow notifications, then pick your boroughs — ten seconds.")
+                 ? "You're signed up for borough alerts. Allow notifications and your lotteries and re-rentals land here too — not just in your email."
+                 : "Hear about new rent-stabilized lotteries and re-rentals in your borough. Allow notifications, then pick your boroughs — ten seconds.")
         }
         // TestFlight never shows Apple's rating sheet, so a beta build shows
         // a look-alike at the same moment instead, inside the app

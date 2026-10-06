@@ -23,6 +23,9 @@ struct PaywallView: View {
     }
 
     static let perks: [Perk] = [
+        Perk(id: "realtime", icon: "bolt.fill", title: "Real-time alerts",
+             sub: "Re-rentals go first come, first served. Hear the minute one opens in your boroughs — without Plus, alerts come once a day at 8 AM.",
+             example: "“New re-rental in Brooklyn: 75 Dupont St, 1 bedroom $3,661” — at 2:14 PM, not tomorrow at 8."),
         Perk(id: "apply_help", icon: "doc.text", title: "Help me apply",
              sub: "The agent's steps, the documents to gather and a ready-to-send email — for every re-rental.",
              example: "“1. Download the application… 2. Gather pay stubs… Email: Hi, I'm interested in unit 4B…”"),

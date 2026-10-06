@@ -1746,3 +1746,13 @@ final class PacketTests: XCTestCase {
         XCTAssertEqual(values, ["Ada", "", "1"])
     }
 }
+
+
+/// The 8 AM digest push (2026-10-06) is marked so the sheet can offer real time.
+final class DigestPushTests: XCTestCase {
+    func testDigestFlagRidesThePayload() {
+        let info: [AnyHashable: Any] = ["items": [["k": "rerental", "t": "75 Dupont St", "s": "1 bedroom", "u": "https://x.y", "b": "Bk"]], "digest": true]
+        XCTAssertEqual(AlertPush.from(userInfo: info, title: "New re-rental", body: "")?.digest, true)
+        XCTAssertEqual(AlertPush.from(userInfo: ["items": info["items"]!], title: "New", body: "")?.digest, false)
+    }
+}

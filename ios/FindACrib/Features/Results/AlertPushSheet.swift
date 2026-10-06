@@ -16,6 +16,9 @@ struct AlertPush: Identifiable, Equatable {
     let id = UUID()
     let title: String
     let items: [Item]
+    /// The 8 AM digest for someone without Plus (lottery_alerts.py --digest,
+    /// 2026-10-06): the sheet offers real-time alerts.
+    var digest = false
 
     /// From a notification's payload. A payload with no `items` (build-51
     /// era sends, a test push) still becomes one item from the notification's
@@ -38,7 +41,9 @@ struct AlertPush: Identifiable, Equatable {
             guard url != nil || !body.isEmpty else { return nil }
             items = [Item(kind: "alert", text: body.isEmpty ? title : body, detail: "", url: url, borough: "")]
         }
-        return AlertPush(title: title.isEmpty ? "New alerts" : title, items: items)
+        var push = AlertPush(title: title.isEmpty ? "New alerts" : title, items: items)
+        push.digest = (userInfo["digest"] as? Bool) ?? false
+        return push
     }
 
     static func == (a: AlertPush, b: AlertPush) -> Bool { a.id == b.id }
@@ -54,6 +59,8 @@ struct AlertPushSheet: View {
     let push: AlertPush
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
+    @Environment(AuthService.self) private var auth
+    @State private var showPlus = false
 
     var body: some View {
         NavigationStack {
@@ -61,9 +68,16 @@ struct AlertPushSheet: View {
                 VStack(alignment: .leading, spacing: 14) {
                     Text(push.title).font(.se(26, .bold)).foregroundStyle(SE.ink)
                         .accessibilityIdentifier("push-sheet-title")
-                    Text(push.items.count == 1 ? "Opened the minute it was posted. Tap through to apply on the agent's site."
-                                               : "\(push.items.count) opened the minute they were posted. Tap one to see it on the agent's site.")
-                        .font(.se(16)).foregroundStyle(SE.ink2)
+                    if push.digest {
+                        Text(push.items.count == 1 ? "From your 8 AM round-up. Tap through to apply on the agent's site."
+                                                   : "\(push.items.count) from your 8 AM round-up. Tap one to see it on the agent's site.")
+                            .font(.se(16)).foregroundStyle(SE.ink2)
+                        if !auth.hasPlus { RealtimeUpsell(source: "digest_push") { showPlus = true } }
+                    } else {
+                        Text(push.items.count == 1 ? "Opened the minute it was posted. Tap through to apply on the agent's site."
+                                                   : "\(push.items.count) opened the minute they were posted. Tap one to see it on the agent's site.")
+                            .font(.se(16)).foregroundStyle(SE.ink2)
+                    }
                     ForEach(push.items) { item in row(item) }
                     Text("Change which boroughs you hear about under Profile → Alerts.")
                         .font(.se(14)).foregroundStyle(SE.ink3).padding(.top, 4)
@@ -73,7 +87,8 @@ struct AlertPushSheet: View {
             .background(SE.canvas)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
         }
-        .onAppear { Analytics.shared.track("push_open", ["items": push.items.count]) }
+        .onAppear { Analytics.shared.track("push_open", ["items": push.items.count, "digest": push.digest]) }
+        .sheet(isPresented: $showPlus) { PaywallView(source: "realtime") }
     }
 
     private func row(_ item: AlertPush.Item) -> some View {

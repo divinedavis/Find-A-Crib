@@ -5,6 +5,43 @@ import UIKit
 /// findacrib.com, through AIService. Not signed in: Profile to sign in.
 /// No Plus: the existing paywall, opened with the feature as its source.
 
+/// "Re-rentals go first come, first served — get real-time alerts" (owner,
+/// 2026-10-06). Without Plus, alerts arrive in one 8 AM digest; this opens the
+/// Plus page. An optional ✕ hides it for good (`onDismiss`).
+struct RealtimeUpsell: View {
+    var source: String
+    var onDismiss: (() -> Void)? = nil
+    let open: () -> Void
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "bolt.fill").font(.system(size: 18, weight: .bold)).foregroundStyle(Color(hex: 0x5B21B6))
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 6) {
+                    Text("Re-rentals go first come, first served").font(.se(17, .bold)).foregroundStyle(SE.ink)
+                    PlusTag()
+                }
+                Text("The first eligible applicant usually gets the apartment. Get alerts the minute one opens — not at 8 AM. First month on us.")
+                    .font(.se(15)).foregroundStyle(SE.ink2)
+                Button { Analytics.shared.track("realtime_upsell_click", ["src": source]); open() } label: {
+                    Text("Get real-time alerts").font(.se(16, .bold)).foregroundStyle(.white)
+                        .padding(.horizontal, 14).frame(height: 40).background(Color(hex: 0x5B21B6)).clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+                .buttonStyle(.plain).accessibilityIdentifier("realtime-upsell")
+            }
+            Spacer(minLength: 0)
+            if let onDismiss {
+                Button { Analytics.shared.track("realtime_upsell_dismiss", ["src": source]); onDismiss() } label: {
+                    Image(systemName: "xmark").font(.system(size: 13, weight: .bold)).foregroundStyle(SE.ink3).frame(width: 44, height: 44)
+                }
+                .buttonStyle(.plain).accessibilityLabel("Don't show this again").accessibilityIdentifier("realtime-upsell-dismiss")
+            }
+        }
+        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(hex: 0xF3EEFF)).clipShape(RoundedRectangle(cornerRadius: 12))
+        .accessibilityElement(children: .contain)
+    }
+}
+
 struct PlusTag: View {
     var body: some View {
         Text("PLUS").font(.se(11, .black)).foregroundStyle(.white)

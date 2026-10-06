@@ -11,12 +11,11 @@ ones publish their own availability pages.
 This reuses two things that already work:
   * featured_rerentals.sweep() — a headless pass over a page that pulls a
     record per apartment card (address, money, beds, link, photo).
-  * scrape_listings.normalize_addr/build_index — the address -> BBL matcher
-    the Zumper feed uses, so a vacancy lands on the same building the map
-    already knows.
+  * addr_match.normalize_addr/build_index — the shared address -> BBL
+    matcher, so a vacancy lands on the same building the map already knows.
 
-Output (docroot vacancies.json), shaped like listings.json so the map can
-treat it as one more "advertised now" source:
+Output (docroot vacancies.json), a per-BBL map of what each
+manager advertises on its own site:
 
   {"generated": …, "sources": <n companies scanned>, "matched": <n listings
    matched to a BBL>, "counts": {bbl: n}, "prices": {bbl: lowest},

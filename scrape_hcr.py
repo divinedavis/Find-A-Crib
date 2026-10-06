@@ -38,7 +38,7 @@ Usage:  python3 scrape_hcr.py [--out hcr.json]
 import json, re, ssl, sys, time, urllib.parse, urllib.request
 from pathlib import Path
 
-from parse_apify import build_index, normalize_addr
+from addr_match import build_index, normalize_addr
 
 HERE = Path(__file__).parent
 SITE = "https://housingsearch.hcr.ny.gov"

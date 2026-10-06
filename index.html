@@ -474,7 +474,7 @@
   /* consolidated Filters modal: relocated pill popovers render as inline sections */
   /* until the script moves them into the modal, the filter pills stay hidden in
      the header (they'd otherwise flash there while the building data loads) */
-  .filter-bar #pill-borough, .filter-bar #pill-nb, .filter-bar #pill-listed,
+  .filter-bar #pill-borough, .filter-bar #pill-nb,
   .filter-bar #pill-s8, .filter-bar #pill-beds, .filter-bar #pill-price,
   .filter-bar #pill-viol { display: none; }
   /* price section (Filters modal): two min/max dropdowns */
@@ -503,7 +503,7 @@
      Hiding them WHILE THEY ARE STILL IN THE CHIP ROW costs nothing: the
      selector stops matching the moment appendChild moves them, so the modal
      copies are unaffected and nothing has to be un-hidden. */
-  .chip-row > #pill-borough, .chip-row > #pill-nb, .chip-row > #pill-listed,
+  .chip-row > #pill-borough, .chip-row > #pill-nb,
   .chip-row > #pill-s8, .chip-row > #pill-beds, .chip-row > #pill-price,
   .chip-row > #pill-viol, .chip-row > #pill-agent { display: none; }
   .filters-card .pill-popover { position: static !important; display: block !important;
@@ -702,7 +702,7 @@
   }
   .filter-pill.open .pill-popover { display: block; }
   /* Rightmost pill: anchor its popover to the right edge so it opens leftward and stays in the viewport */
-  #pill-listed .pill-popover, #pill-beds .pill-popover, #pill-viol .pill-popover { left: auto; right: 0; }
+  #pill-beds .pill-popover, #pill-viol .pill-popover { left: auto; right: 0; }
   .pill-popover .sheet-group-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--ink-2); margin: 2px 2px 4px; }
   .pill-popover label.row { display: flex; align-items: center; gap: 8px; padding: 4px 2px; font-size: 13px; font-weight: 500; cursor: pointer; }
   .pill-popover label.row[hidden] { display: none; }   /* [hidden] loses to display:flex without this */
@@ -1643,14 +1643,6 @@
         </div>
       </div>
     </div>
-    <div class="filter-pill nyc-only" id="pill-listed">
-      Recently available<span class="caret">▾</span>
-      <div class="pill-popover">
-        <label class="row"><input type="radio" name="listed" value="any" checked> Any</label>
-        <label class="row"><input type="radio" name="listed" value="yes"> Recently available on Zumper</label>
-        <label class="row"><input type="radio" name="listed" value="no"> Not recently available</label>
-      </div>
-    </div>
     <div class="filter-pill nyc-only" id="pill-s8">
       Section 8<span class="caret">▾</span>
       <div class="pill-popover">
@@ -1669,7 +1661,7 @@
         <label class="row"><input type="checkbox" name="beds" value="2"> 2 beds</label>
         <label class="row"><input type="checkbox" name="beds" value="3"> 3 beds</label>
         <label class="row"><input type="checkbox" name="beds" value="4"> 4+ beds</label>
-        <div style="font-size:11px;color:var(--ink-2);margin-top:8px;padding-top:8px;border-top:1px solid var(--line)">Bedroom data comes from recent listings — this also limits results to advertised buildings.</div>
+        <div style="font-size:11px;color:var(--ink-2);margin-top:8px;padding-top:8px;border-top:1px solid var(--line)">Filters the re-rental and lottery listings. Building records don’t carry bedroom counts.</div>
       </div>
     </div>
     <div class="filter-pill nyc-only" id="pill-price">
@@ -1694,7 +1686,7 @@
             <option value="6000">$6,000</option><option value="8000">$8,000</option>
           </select>
         </div>
-        <div style="font-size:11px;color:var(--ink-2);margin-top:10px">Uses the asking rent when a building was recently advertised; otherwise the ZIP's typical rent (HUD Small-Area FMR, studio–2BR midpoint) — not the building's actual rent.</div>
+        <div style="font-size:11px;color:var(--ink-2);margin-top:10px">Uses the ZIP's typical rent (HUD Small-Area FMR, studio–2BR midpoint), or the rent the city publishes for the building where there is one — not an asking rent.</div>
       </div>
     </div>
     <div class="filter-pill nyc-only" id="pill-viol">
@@ -1760,7 +1752,7 @@
     <div id="folder-bar" hidden></div>
     <div id="search-helper" hidden></div>
     <div class="results-grid empty-state" id="grid"><div class="empty">Loading 30k buildings…</div></div>
-    <div class="footer-credit" id="credit">Source: NYC Rent Guidelines Board / DHCR 2024 · Coordinates from <a href="https://www.nyc.gov/site/planning/data-maps/open-data.page" target="_blank" rel="noopener">NYC PLUTO</a> · Listings via <a href="https://streeteasy.com" target="_blank" rel="noopener">StreetEasy</a> &amp; Zumper · Owner/violation/complaint data from <a href="https://data.cityofnewyork.us/" target="_blank" rel="noopener">NYC Open Data — HPD</a> · Voucher listings via <a href="https://www.affordablehousing.com" target="_blank" rel="noopener">AffordableHousing.com</a> · Subsidized-building data from HPD &amp; HUD · Rent estimates: <a href="https://www.huduser.gov/portal/datasets/fmr/smallarea/index.html" target="_blank" rel="noopener">HUD FY2026 Small-Area Fair Market Rents</a> by ZIP (not building-specific) · Created by <a href="https://divinedavis.com" target="_blank" rel="noopener">Divine Davis</a> · <a href="/developers/">API for developers</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></div>
+    <div class="footer-credit" id="credit">Source: NYC Rent Guidelines Board / DHCR 2024 · Coordinates from <a href="https://www.nyc.gov/site/planning/data-maps/open-data.page" target="_blank" rel="noopener">NYC PLUTO</a> · Owner/violation/complaint data from <a href="https://data.cityofnewyork.us/" target="_blank" rel="noopener">NYC Open Data — HPD</a> · Voucher listings via <a href="https://www.affordablehousing.com" target="_blank" rel="noopener">AffordableHousing.com</a> · Subsidized-building data from HPD &amp; HUD · Rent estimates: <a href="https://www.huduser.gov/portal/datasets/fmr/smallarea/index.html" target="_blank" rel="noopener">HUD FY2026 Small-Area Fair Market Rents</a> by ZIP (not building-specific) · Created by <a href="https://divinedavis.com" target="_blank" rel="noopener">Divine Davis</a> · <a href="/developers/">API for developers</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></div>
   </aside>
 </main>
 
@@ -1830,7 +1822,6 @@
       <li data-perk="realtime" data-ai><span class="pf-ico">⚡</span><span><b>Real-time alerts</b>Re-rentals go first come, first served. Hear the minute one opens in your boroughs — without Plus, alerts come once a day at 8 AM.</span></li>
       <li data-perk="ai_search" data-ai><span class="pf-ico">✨</span><span><b>Search in plain words</b>“2 bed under $2,500 near Prospect Park, no violations” — and the map sets every filter</span></li>
       <li data-perk="apply_help" data-ai><span class="pf-ico">📝</span><span><b>Help me apply</b>The steps, the documents to gather and a ready-to-send email to the agent, for every re-rental</span></li>
-      <li data-perk="rent_check" data-ai><span class="pf-ico">💵</span><span><b>Is this rent fair?</b>Every advertised rent checked against the neighborhood and HUD’s fair-market rent</span></li>
       <li data-perk="bedbugs"><span class="pf-ico">🛏️</span><span><b>Bedbug records</b>Every bedbug filing a landlord made for the building, year by year</span></li>
       <li data-perk="rodents"><span class="pf-ico">🐀</span><span><b>Rodent records</b>The Health Department's rat inspections, building by building</span></li>
       <li data-perk="phone"><span class="pf-ico">📞</span><span><b>Agent phone numbers</b>Call who actually runs the building — 11,000+ managing-agent numbers</span></li>
@@ -1924,7 +1915,7 @@
     <div class="profile-row profile-toggle-row">
       <div>
         <div class="profile-feat">🔔 Saved-building alerts</div>
-        <div class="profile-feat-sub">An email when a building you saved is advertised, gets a lottery or re-rental, drops its rent, or its violations change. Never more than one email a day; Tuesdays it’s the weekly round-up.</div>
+        <div class="profile-feat-sub">An email when a building you saved gets a voucher listing, a lottery or re-rental, or its violations change. Never more than one email a day; Tuesdays it’s the weekly round-up.</div>
       </div>
       <label class="switch"><input id="profile-alerts" type="checkbox"><span class="slider"></span></label>
     </div>
@@ -2573,13 +2564,13 @@ function favActive() {
 
   // ---------- data ----------
   // Maps Embed API key from config.js; no Static Street View requests are made.
-  // short region code -> display name / Zumper city slug (from the city config)
+  // short region code -> display name / city slug (from the city config)
   const BORO_NAME = CITY.regions;
   const BORO_SLUG = CITY.slugs;
   const N_REGIONS = Object.keys(CITY.regions).length;
 
-  // Non-NYC pages: rebuild the region list, hide NYC-only chrome (Zumper
-  // listings, Section 8, beds, HPD filters — their data files don't exist
+  // Non-NYC pages: rebuild the region list, hide NYC-only chrome (Section 8,
+  // beds, HPD filters — their data files don't exist
   // here), and relabel the header. The static markup stays NYC-first so the
   // root page needs no work at all.
   if (!IS_NYC) {
@@ -2706,13 +2697,12 @@ function favActive() {
   // so the alert engine watches it. Stored in localStorage and, when signed
   // in, on user_metadata.home_bbl (same pattern as the theme — no table).
   const HOME_KEY = 'fac_home';
-  let HOME = null;   // {bbl, set_at, snap:{vo,co,listed,s8,at}}
+  let HOME = null;   // {bbl, set_at, snap:{vo,co,s8,at}}
   try { HOME = JSON.parse(localStorage.getItem(HOME_KEY) || 'null'); } catch (e) { HOME = null; }
   if (HOME && !/^\d{10}$/.test(String(HOME.bbl || ''))) HOME = null;
   function homeSnap(rec) {
     const h = rec.h || {};
     return { vo: (h.violations || {}).open || 0, co: (h.complaints || {}).open || 0,
-             listed: (typeof listingCounts !== 'undefined' && listingCounts[rec.bbl]) ? 1 : 0,
              s8: (typeof s8Avail !== 'undefined' && s8Avail[rec.bbl]) ? 1 : 0, at: Date.now() };
   }
   function saveHome() {
@@ -2756,7 +2746,7 @@ function favActive() {
     }
     track('home_open', { bbl: rec.bbl });
     setListOpen(false);
-    openDetail(rec, listingCounts[rec.bbl] || 0);
+    openDetail(rec);
   }
   function adoptAccountHome(user) {
     tr('adoptHome');
@@ -2776,7 +2766,6 @@ function favActive() {
     else if (cur.vo < prev.vo) out.push(`<b class="down">${prev.vo - cur.vo} violation${prev.vo - cur.vo === 1 ? '' : 's'} cleared</b> (${cur.vo} open)`);
     if (cur.co > prev.co) out.push(`<b class="up">+${cur.co - prev.co} open complaint${cur.co - prev.co === 1 ? '' : 's'}</b>`);
     else if (cur.co < prev.co) out.push(`<b class="down">${prev.co - cur.co} complaint${prev.co - cur.co === 1 ? '' : 's'} closed</b>`);
-    if (cur.listed && !prev.listed) out.push('<b class="up">advertised for rent</b>');
     if (cur.s8 && !prev.s8) out.push('<b class="up">listed for voucher holders</b>');
     return { out, prev };
   }
@@ -2791,7 +2780,7 @@ function favActive() {
       <div class="d-home-title">🏠 Your apartment <button type="button" class="d-home-change" data-detail="unhome">Change</button></div>
       <div class="d-home-line">${statuses} A registered building does not guarantee <i>your</i> unit is stabilized — only the rent history settles it, and you can request it from DHCR.</div>
       <div class="d-home-line">${since}</div>
-      <div class="d-home-line">We email you when this building is advertised, gets a lottery or re-rental, or its violations change.</div>
+      <div class="d-home-line">We email you when this building gets a voucher listing, a lottery or re-rental, or its violations change.</div>
       <div class="d-home-links">
         <a href="https://hcr.ny.gov/records-access" target="_blank" rel="noopener">Request your rent history (HCR) ↗</a>
         <a href="https://www.nyc.gov/site/cchr/about/report-discrimination.page" target="_blank" rel="noopener">Tenant rights ↗</a>
@@ -2947,7 +2936,7 @@ function favActive() {
     t.className = 'folder-toast'; t.id = 'folder-toast';
     t.innerHTML = `<button type="button" class="ft-close" aria-label="Dismiss">✕</button>
       <div class="ft-title">♥ Saved — we’ll watch it for you</div>
-      <div style="font-size:13px;margin-bottom:9px">You’ll get an email when it’s advertised for rent, a lottery or re-rental opens here, its rent drops, or its HPD violations change. Never more than one email a day.</div>
+      <div style="font-size:13px;margin-bottom:9px">You’ll get an email when a voucher listing, lottery or re-rental opens here, or its HPD violations change. Never more than one email a day.</div>
       <div class="ft-opts"><button type="button" data-watch-settings>Alert settings</button></div>`;
     document.body.appendChild(t);
     const timer = setTimeout(dismissFolderToast, 12000);
@@ -3078,7 +3067,7 @@ function favActive() {
     // the concrete payoff (a saved shortlist that syncs), not a generic ask
     t.innerHTML = `<button type="button" class="ft-close" aria-label="Dismiss">✕</button>
       <div class="ft-title">🏠 Comparing a few buildings?</div>
-      <div style="font-size:13px;margin-bottom:9px">Save your shortlist to an account and we’ll email you when any of them is advertised, gets a lottery or re-rental, or its violations change.</div>
+      <div style="font-size:13px;margin-bottom:9px">Save your shortlist to an account and we’ll email you when any of them gets a voucher listing, a lottery or re-rental, or its violations change.</div>
       <div class="ft-opts"><button type="button" data-nudge-cta>Create an account</button></div>`;
     document.body.appendChild(t);
     const timer = setTimeout(() => t.remove(), 15000);
@@ -3271,18 +3260,13 @@ function favActive() {
   const geoPromise = (IS_NYC && !location.hash && !location.search && !isBot())
     ? fetch('/api/geo', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null)
     : Promise.resolve(null);
-  let data, listingsBlob, s8Blob, FMR, vacancyBlob;
+  let data, s8Blob, FMR;
   try {
-    [data, listingsBlob, s8Blob, FMR, vacancyBlob] = await Promise.all([
+    [data, s8Blob, FMR] = await Promise.all([
       fetchBuildings(),
-      fetch('listings.json').then(r => r.ok ? r.json() : { counts: {} }).catch(() => ({ counts: {} })),
       fetch('s8.json').then(r => r.ok ? r.json() : { bldg: {}, avail: {} }).catch(() => ({ bldg: {}, avail: {} })),
       // HUD FY2026 Small-Area Fair Market Rents by ZIP: [studio, 1BR, 2BR, 3BR]
       fetch('fmr.json').then(r => r.ok ? r.json() : {}).catch(() => ({})),
-      // What the companies managing these buildings are advertising on their
-      // own sites (build_vacancies.py, twice a day). A second source for the
-      // same question the Zumper feed answers: is anything free here right now.
-      fetch('vacancies.json').then(r => r.ok ? r.json() : { counts: {} }).catch(() => ({ counts: {} })),
     ]);
   } catch (e) {
     showLoadError();
@@ -3294,30 +3278,15 @@ function favActive() {
     return f ? `Est. $${f[0].toLocaleString()}–$${f[2].toLocaleString()}/mo` : '';
   }
   const EST_TITLE = 'Typical rent for this ZIP, studio–2BR (HUD FY2026 Small-Area Fair Market Rents) — not this building’s actual rent';
-  const ASKING_TITLE = 'The lowest rent advertised for this building right now — on Zumper, or on the managing agent’s own site';
-  // "Recently advertised" means posted on Zumper within the last 5 days (owner
-  // rule, 2026-09-01). listings.json is a sticky master that keeps every price
-  // it ever banked, so the counts are narrowed here by the per-building posting
-  // date the scraper records. A blob from before the scraper wrote `posted`
-  // has no dates at all — keep the old behaviour rather than blanking the site.
-  const RECENT_DAYS = 5;
-  const listingPosted = listingsBlob.posted || {};
-  const isRecent = bbl => (Date.now() / 1000 - (listingPosted[bbl] || 0)) < RECENT_DAYS * 86400;
-  const zumperCounts = Object.keys(listingPosted).length
-    ? Object.fromEntries(Object.entries(listingsBlob.counts || {}).filter(([bbl]) => isRecent(bbl)))
-    : (listingsBlob.counts || {});
-  // A manager's own page is swept twice a day, so everything on it is current
-  // by construction — no posting date to age it against.
-  const vacancyCounts = vacancyBlob.counts || {};
-  const listingCounts = Object.assign({}, zumperCounts);
-  for (const [bbl, n] of Object.entries(vacancyCounts))
-    listingCounts[bbl] = Math.max(listingCounts[bbl] || 0, n);
+  // No listing data (2026-10-06): the portal listing feeds were dropped
+  // (the owner's decision; a portal's terms forbid scraping). There are no asking
+  // rents, "recently available" flags or listing counts any more; every
+  // building gets one outbound address search instead — see listingLink().
   // What this city actually HAS, measured from the payload rather than assumed
-  // from its name. listings.json / s8.json / fmr.json are fetched RELATIVE to
+  // from its name. s8.json / fmr.json are fetched RELATIVE to
   // the page, so they resolve only on the NYC root and 404 into empty objects
   // everywhere else; violations ride on each record's `h` (HPD) field, which no
   // non-NYC builder writes. Anything keyed off these asks instead of guessing.
-  const HAS_LISTINGS = Object.keys(listingCounts).length > 0;
   const HAS_VIOLATIONS = data.some(r => r.h);
   // A city with no ZIP on any record cannot be told anything about a ZIP. SF is
   // exactly that: 12,297 block-level records, not one with a `z`, because the
@@ -3325,24 +3294,12 @@ function favActive() {
   // answered "no rent-controlled buildings on file for ZIP 94110" — stated as
   // fact, about a ZIP that is squarely inside its coverage.
   const HAS_ZIPS = data.some(r => r.z);
-  // The cheaper of the two sources, so a manager's own rent can undercut the
-  // portal's — never the other way round by accident.
-  const listingPrices = Object.assign({}, listingsBlob.prices || {});
-  for (const [bbl, p] of Object.entries(vacancyBlob.prices || {}))
-    if (listingPrices[bbl] == null || p < listingPrices[bbl]) listingPrices[bbl] = p;
-  const listingBeds = listingsBlob.beds || {};
   // one price per building, shared by the price sort and the price filter:
-  // real asking rent when advertised, else the ZIP's HUD estimate midpoint
-  // An advertised rent first, then HUD's ZIP estimate (NYC), then the rent the
-  // city itself publishes on the record — SF's block median and DC's registered
-  // legal rent. Without that last fallback the price sort had nothing to read
-  // outside New York and silently ranked every building equal.
-  const priceOf = r => listingPrices[r.bbl] ?? (FMR[r.z] ? (FMR[r.z][0] + FMR[r.z][2]) / 2 : (r.mr ?? null));
-  // when the listing/price data was last collected by the nightly scrape
-  const listingsAsOf = listingsBlob.updated
-    ? new Date(listingsBlob.updated * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    : null;
-  const asOf = listingsAsOf ? ` · as of ${listingsAsOf}` : '';
+  // HUD's ZIP estimate midpoint (NYC), then the rent the city itself publishes
+  // on the record — SF's block median and DC's registered legal rent. Without
+  // that fallback the price sort had nothing to read outside New York and
+  // silently ranked every building equal.
+  const priceOf = r => (FMR[r.z] ? (FMR[r.z][0] + FMR[r.z][2]) / 2 : (r.mr ?? null));
   // Section 8 / voucher signals, keyed by BBL (s8.json):
   //   bldg  — subsidized building (flags: 1 = HPD city-financed, 2 = HUD project-based Section 8)
   //   avail — live listings on AffordableHousing.com (landlords soliciting voucher tenants)
@@ -3479,7 +3436,7 @@ function favActive() {
   // Crossing RENT_ZOOM relabels the white pills already on screen.
   map.on('zoomend', () => {
     const mode = rentMode();
-    for (const m of shown.values()) if (m._rec && !m._listed && m._rentMode !== mode && !m._sel) m.setIcon(markerIcon(m));
+    for (const m of shown.values()) if (m._rec && m._rentMode !== mode && !m._sel) m.setIcon(markerIcon(m));
   });
   // Is this building hidden inside a cluster at zoom z?
   function pinClusteredAt(rec, z) {
@@ -3508,8 +3465,7 @@ function favActive() {
   }
 
   // Zillow-style pills for EVERY building — uniform height, easy to tap.
-  // Listed buildings: blue pill with the asking rent (or "N listed");
-  // everything else: white pill with the apartment count. The transparent
+  // A white pill with the apartment count (the rent, close in). The transparent
   // hit wrapper pads the tap target to 44px on touch devices.
   const DOT = window.matchMedia('(pointer: coarse)').matches ? 44 : 28;
   function pillIcon(html, textLen) {
@@ -3519,11 +3475,6 @@ function favActive() {
       html: `<div class="building-dot-hit">${html}</div>`,
       iconSize: [w, DOT], iconAnchor: [w / 2, DOT / 2],
     });
-  }
-  function listedIcon(n, bbl) {
-    const price = listingPrices[bbl];
-    const text = price ? fmtRent(price) : `${n} listed`;
-    return pillIcon(`<div class="price-pill">${text}</div>`, text.length);
   }
   // Close enough to read a block, the white pill carries the rent rather than
   // the unit count (asked 2026-09-08): the building's reported median where
@@ -3546,7 +3497,7 @@ function favActive() {
   }
   function markerIcon(m) {
     m._rentMode = rentMode();
-    return m._listed > 0 ? listedIcon(m._listed, m._rec.bbl) : unitIcon(m._rec);
+    return unitIcon(m._rec);
   }
 
   const isMobile = window.matchMedia('(max-width: 900px)').matches;
@@ -3557,15 +3508,13 @@ function favActive() {
   const recByBbl = new Map();
   for (const rec of data) recByBbl.set(rec.bbl, rec);
   function buildMarker(rec) {
-    const listed = listingCounts[rec.bbl] || 0;
     const m = L.marker([rec.lat, rec.lng], { icon: null });
     m._rec = rec;
-    m._listed = listed;
     m.setIcon(markerIcon(m));
     // mobile: tapping a pin slides up a listing card (StreetEasy-style) instead of a popup
     if (isMobile) m.on('click', () => openCard(m));
     else {
-      m.bindPopup(() => buildPopup(rec, listed), {
+      m.bindPopup(() => buildPopup(rec), {
         // auto-pan clear of the sticky header so the popup top is never cut off
         autoPanPaddingTopLeft: L.point(12, 72),
         autoPanPaddingBottomRight: L.point(12, 12),
@@ -3574,7 +3523,7 @@ function favActive() {
       // click rather than the map's popupopen so it does not depend on the
       // popup lifecycle — and deliberately NOT selectMarker(), because that
       // swaps the icon, and re-anchoring an icon mid-open can drop the popup.
-      m.on('click', () => { highlightCard(rec.bbl, true); openDetail(rec, m._listed || 0); });
+      m.on('click', () => { highlightCard(rec.bbl, true); openDetail(rec); });
       // Pointer on the pin -> its tile in the results pane lights up green,
       // scrolled into view only if it is off-screen (sweeping the cursor across
       // a dense block must not yank the list around).
@@ -3601,16 +3550,14 @@ function favActive() {
   }
   function mapHoverShow(m) {
     if (!mapHoverEl || !m._rec) return;
-    const rec = m._rec, listed = m._listed || 0, price = listingPrices[rec.bbl];
+    const rec = m._rec;
     const rent = orbRent(rec);
-    const priceLine = listed > 0
-      ? (price ? '$' + price.toLocaleString() + '/mo' : 'Recently available')
-      : rec.mr ? `${RENT.short} $${rec.mr.toLocaleString()}/mo`
+    const priceLine = rec.mr ? `${RENT.short} $${rec.mr.toLocaleString()}/mo`
       : (estRent(rec) || (rec.u != null ? rec.u + ' residential units' : CITY.label + ' building'));
     const sub = [rec.u != null ? `${rec.u} unit${rec.u === 1 ? '' : 's'}` : null, rec.yr ? 'built ' + rec.yr : null].filter(Boolean).join(' · ');
     mapHoverEl.innerHTML = `
       <div class="mh-body">
-        <div class="mh-price${(!listed && !rec.mr && rent) ? ' est' : ''}">${priceLine}</div>
+        <div class="mh-price${(!rec.mr && rent) ? ' est' : ''}">${priceLine}</div>
         <div class="mh-addr">${esc(rec.a)}</div>
         <div class="mh-meta">${rec.nb ? esc(rec.nb) + ' · ' : ''}${esc(BORO_NAME[rec.b] || '')}${sub ? ' · ' + esc(sub) : ''}</div>
         ${cardHpdLine(rec)}
@@ -3629,7 +3576,7 @@ function favActive() {
   function markerFor(bbl) {
     let m = markerByBbl.get(bbl);
     // A cached pin made at another zoom may carry the wrong label kind.
-    if (m) { if (!m._listed && m._rentMode !== rentMode() && !m._sel) m.setIcon(markerIcon(m)); return m; }
+    if (m) { if (m._rentMode !== rentMode() && !m._sel) m.setIcon(markerIcon(m)); return m; }
     const rec = recByBbl.get(bbl);
     if (!rec) return null;
     m = buildMarker(rec); markerByBbl.set(bbl, m);
@@ -3689,58 +3636,36 @@ function favActive() {
   // display id: NYC shows the raw BBL; other cities strip the "SF-"/"LA-" namespace
   function idShort(rec) { return IS_NYC ? rec.bbl : rec.bbl.replace(/^[A-Z]+-/, ''); }
 
-  // Where to send a user for current listings. NYC forwards to StreetEasy (the
-  // market it covers): the scraped direct listing page when we captured one,
-  // otherwise a StreetEasy address search so every building has a live link
-  // without us scraping it. SF/LA keep Zumper/Google since StreetEasy doesn't
-  // serve them. Returns {href, label}.
-  // Two different things wearing one label. About 1,800 of the 47,165 buildings
-  // have a real listing URL banked from the StreetEasy feed; the other 96% get
-  // an address search. Both used to render as "Listings ↗", so on a building
-  // with nothing for rent the button promised listings and delivered a search
-  // page that found none — 257 Adelphi St, 0 current, "32 past rentals".
-  //
-  // The search fallback is still worth keeping: it lands on StreetEasy's page
-  // for the address, which carries the building and its rental history, and
-  // that is genuinely useful when researching a stabilized building. It just
-  // must not call itself a listing. `direct` is returned so callers can style
-  // the real thing differently from the lookup.
+  // The one outbound button on every building (2026-10-06). The site carries
+  // no listing data of its own any more — the portal listing feeds were
+  // dropped — so the button is an address search
+  // on the portal that covers the city: StreetEasy in New York, Zillow
+  // everywhere else. Plain https on purpose: on an iPhone, streeteasy.com and
+  // zillow.com links open the portal's app through universal links. The
+  // outbound listener files the click as kind 'streeteasy' / 'zillow'.
+  // Returns {href, label, short}.
   function listingLink(rec, borough) {
-    // The company managing the building beats a portal: it is the landlord's
-    // own page, and it is where an application actually goes.
-    const fromManager = (vacancyBlob.urls && vacancyBlob.urls[rec.bbl]) || null;
-    if (safeHttpUrl(fromManager)) {
-      let host = '';
-      try { host = new URL(fromManager).hostname.replace(/^www\./, ''); } catch (e) {}
-      return { href: fromManager, label: `${host || 'Managing agent'} ↗`,
-               short: `${host || 'Agent'} ↗`, direct: true };
-    }
-    const direct = (listingsBlob.urls && listingsBlob.urls[rec.bbl]) || null;
     if (IS_NYC) {
-      if (safeHttpUrl(direct)) {
-        // The banked URL is whichever source advertised it — StreetEasy for the
-        // Apify feed, Zumper for the weekly scrape. Name the site we're actually
-        // sending them to; a third of NYC's direct links are Zumper's.
-        const src = /(?:^|\.)zumper\.com$/.test(new URL(direct).hostname) ? 'Zumper' : 'StreetEasy';
-        return { href: direct, label: `${src} ↗`, short: `${src} ↗`, direct: true };
-      }
       const q = encodeURIComponent(`${rec.a}, ${borough}, NY ${rec.z || ''}`.trim());
       return { href: `https://streeteasy.com/search?search=${q}`,
-               label: 'View on StreetEasy ↗', short: 'View on StreetEasy ↗', direct: false };
+               label: 'View on StreetEasy ↗', short: 'View on StreetEasy ↗' };
     }
-    if (safeHttpUrl(direct))
-      return { href: direct, label: 'Zumper ↗', short: 'Zumper ↗', direct: true };
-    const zq = encodeURIComponent(`site:zumper.com "${rec.a}" ${borough} ${CITY.state}`);
-    return { href: `https://www.google.com/search?q=${zq}`,
-             label: 'Search Zumper ↗', short: 'Search ↗', direct: false };
+    // Westchester's catch-all region is not a place Zillow knows, and DC's
+    // label already carries the state. Same strings as the iPhone app.
+    const place = rec.b === 'Westchester' ? 'Westchester County'
+      : rec.b === 'DC' ? 'Washington' : (BORO_NAME[rec.b] || CITY.name);
+    const zq = encodeURIComponent(`${rec.a}, ${place}, ${CITY.state} ${rec.z || ''}`.trim())
+      .replace(/%20/g, '-').replace(/%2C/g, ',');
+    return { href: `https://www.zillow.com/homes/${zq}_rb/`,
+             label: 'View on Zillow ↗', short: 'View on Zillow ↗' };
   }
 
   // The desktop pin popup is a PREVIEW: address, the one-line facts, badges,
   // and a Details button. The full HPD record (operator, violation classes,
   // complaints) lives in the detail sheet, which a pin click also opens — the
   // popup used to carry all of it and ran to 600px on a bad building.
-  function buildPopup(rec, listed) {
-    track('building_view', { bbl: rec.bbl, addr: rec.a, boro: rec.b, listed, via: 'popup' });
+  function buildPopup(rec) {
+    track('building_view', { bbl: rec.bbl, addr: rec.a, boro: rec.b, via: 'popup' });
     const borough = BORO_NAME[rec.b] || '';
     const boroughSlug = BORO_SLUG[rec.b] || '';
     const meta = [];
@@ -3750,8 +3675,6 @@ function favActive() {
     if (rec.yr) meta.push(`built ${rec.yr}`);
     if (rec.u != null) meta.push(`${rec.u} residential units`);
     const statusHtml = (rec.s || []).map(s => `<span class="popup-status">${esc(s)}</span>`).join('');
-    const advSrc = IS_NYC ? '' : ' on Zumper';
-    const listedHtml = listed ? `<div style="margin-top:8px;color:#6b3df5;font-weight:700">Recently available${advSrc} (${listed} listing${listed===1?'':'s'})<span style="font-weight:500;color:#8a8aa0">${asOf}</span></div>` : '';
     // SF blocks and DC registrations carry a median reported/registered rent (mr)
     const rentHtml = rec.mr ? `<div style="margin-top:8px;color:var(--ok-ink);font-weight:700">${RENT.label} $${rec.mr.toLocaleString()}/mo <span style="font-weight:500;color:var(--ink-2)">${esc(RENT.note)}</span></div>` : '';
     const vacHtml = rec.vac ? `<div style="margin-top:6px;color:#b26a00;font-weight:700">${rec.vac} vacant unit${rec.vac === 1 ? '' : 's'} <span style="font-weight:500;color:#8a8aa0">(reported at last registration)</span></div>` : '';
@@ -3760,7 +3683,6 @@ function favActive() {
     return `
       <div class="popup-addr">${esc(rec.a)}</div>
       <div class="popup-meta">${meta.join(' · ')}</div>
-      ${listedHtml}
       ${rentHtml}
       ${vacHtml}
       ${s8Html(rec)}
@@ -4402,7 +4324,7 @@ function favActive() {
     const m = e.popup._source;
     el.querySelector('[data-popup-details]')?.addEventListener('click', ev => {
       ev.preventDefault();
-      if (m && m._rec) openDetail(m._rec, m._listed || 0);
+      if (m && m._rec) openDetail(m._rec);
     });
   });
 
@@ -4541,13 +4463,6 @@ function favActive() {
     updateNbBadge(); applyFilters();
   });
 
-  // listed radio
-  document.querySelectorAll('input[name="listed"]').forEach(r => r.addEventListener('change', () => {
-    const v = document.querySelector('input[name="listed"]:checked').value;
-    document.getElementById('pill-listed').classList.toggle('active', v !== 'any');
-    applyFilters();
-  }));
-
   // section 8 radio
   document.querySelectorAll('input[name="s8"]').forEach(r => r.addEventListener('change', () => {
     const v = document.querySelector('input[name="s8"]:checked').value;
@@ -4613,14 +4528,13 @@ function favActive() {
   // ids/names and live-apply listeners, so no filter logic changes.
   const filtersModal = document.getElementById('filters-modal');
   const filtersBody = document.getElementById('filters-body');
-  ['pill-borough', 'pill-nb', 'pill-listed', 'pill-s8', 'pill-beds', 'pill-price', 'pill-viol', 'pill-agent']
+  ['pill-borough', 'pill-nb', 'pill-s8', 'pill-beds', 'pill-price', 'pill-viol', 'pill-agent']
     .forEach(id => { const el = document.getElementById(id); if (el) filtersBody.appendChild(el); });
   function openFilters() { closeAllPills(); filtersModal.hidden = false; }
   function activeFilterCount() {
     let n = 0;
     if (document.querySelectorAll('#borough-list input:checked').length < N_REGIONS) n++;
     if (nbListEl.querySelectorAll('input:checked').length) n++;
-    if (document.querySelector('input[name="listed"]:checked').value !== 'any') n++;
     if (document.querySelector('input[name="s8"]:checked').value !== 'any') n++;
     if (document.querySelectorAll('input[name="beds"]:checked').length) n++;
     if (document.getElementById('price-min').value || document.getElementById('price-max').value) n++;
@@ -4651,8 +4565,6 @@ function favActive() {
     document.querySelectorAll('#borough-list input').forEach(c => { c.checked = true; });
     document.querySelector('#borough-list input').dispatchEvent(new Event('change', { bubbles: true }));
     document.getElementById('nb-clear').click();
-    const l = document.querySelector('input[name="listed"][value="any"]');
-    l.checked = true; l.dispatchEvent(new Event('change', { bubbles: true }));
     const s = document.querySelector('input[name="s8"][value="any"]');
     s.checked = true; s.dispatchEvent(new Event('change', { bubbles: true }));
     document.querySelectorAll('input[name="beds"]:checked').forEach(c => { c.checked = false; });
@@ -4675,7 +4587,6 @@ function favActive() {
       q: document.getElementById('q').value.trim(),
       boroughs: [...document.querySelectorAll('#borough-list input:checked')].map(c => c.dataset.b),
       nbs: [...nbListEl.querySelectorAll('input:checked')].map(c => c.value),
-      listed: document.querySelector('input[name="listed"]:checked').value,
       s8: document.querySelector('input[name="s8"]:checked').value,
       beds: [...document.querySelectorAll('input[name="beds"]:checked')].map(c => +c.value),
       pmin: document.getElementById('price-min').value,
@@ -4690,8 +4601,6 @@ function favActive() {
     document.querySelector('#borough-list input').dispatchEvent(new Event('change', { bubbles: true }));
     nbListEl.querySelectorAll('input').forEach(c => { c.checked = (p.nbs || []).includes(c.value); });
     nbListEl.dispatchEvent(new Event('change', { bubbles: true }));
-    const l = document.querySelector(`input[name="listed"][value="${p.listed || 'any'}"]`);
-    if (l) { l.checked = true; l.dispatchEvent(new Event('change', { bubbles: true })); }
     const s = document.querySelector(`input[name="s8"][value="${p.s8 || 'any'}"]`);
     if (s) { s.checked = true; s.dispatchEvent(new Event('change', { bubbles: true })); }
     document.querySelectorAll('input[name="beds"]').forEach(c => { c.checked = (p.beds || []).includes(+c.value); });
@@ -5161,7 +5070,7 @@ function favActive() {
     const f = Object.assign({}, j.filters || {});
     applyAIFilters(f);
     const loosened = [];
-    for (const [key, label] of [['viol', 'the violations filter'], ['listed', '“available now”'], ['beds', 'the bedroom count'], ['pmin', 'the minimum price'], ['pmax', 'the price cap']]) {
+    for (const [key, label] of [['viol', 'the violations filter'], ['beds', 'the bedroom count'], ['pmin', 'the minimum price'], ['pmax', 'the price cap']]) {
       if (filtered.length) break;
       const empty = Array.isArray(f[key]) ? !f[key].length : !f[key];
       if (empty) continue;
@@ -5175,27 +5084,6 @@ function favActive() {
     if (loosened.length) track('ai_search_loosened', { dropped: loosened.join(',') });
     track('ai_search_result', { ok: true, used_ai: !!j.used_ai, nbs: (j.filters.nbs || []).length, beds: (j.filters.beds || []).length,
                                 price: !!(j.filters.pmin || j.filters.pmax) });
-  }
-  async function runRentCheck(rec) {
-    track('rent_check_click', { bbl: rec.bbl, signed_in: !!authUser, plus: !!plusActive });
-    if (!authUser) { openAuthModal('Create an account or sign in to check this rent.', 'rent_check'); setAuthMode('signup'); return; }
-    let tok = null;
-    try { tok = (await supaClient.auth.getSession()).data.session.access_token; } catch (e) {}
-    const out = document.getElementById('rentcheck-out');
-    if (!tok || !out) return;
-    let r, j = {};
-    try { r = await fetch('/api/ai/rent-check?bbl=' + encodeURIComponent(rec.bbl), { headers: { Authorization: 'Bearer ' + tok } }); j = await r.json(); }
-    catch (e) { return; }
-    if (r.status === 402) { openPaywall(null, 'rent_check'); return; }
-    if (!r.ok || !j.ok) { out.textContent = 'There isn’t a current advertised rent to compare for this building.'; out.hidden = false; return; }
-    const money = n => '$' + Math.round(n).toLocaleString();
-    const word = { high: 'above typical', low: 'below typical', typical: 'typical', unknown: 'hard to judge' }[j.verdict] || j.verdict;
-    let html = `<div><b class="v-${esc(j.verdict)}">${money(j.price)}/mo is ${esc(word)}</b> for this area.</div>`;
-    if (j.nb_median) html += `<div>Similar advertised rent-stabilized buildings nearby: median ${money(j.nb_median)} (${j.comps} buildings) — this one is higher than ${j.percentile}% of them.</div>`;
-    if (j.fmr_low) html += `<div>HUD fair-market rent for this ZIP: ${j.fmr_low === j.fmr_high ? money(j.fmr_low) : money(j.fmr_low) + '–' + money(j.fmr_high)}.</div>`;
-    (j.notes || []).forEach(n => { html += `<div class="rc-note">${esc(n)}</div>`; });
-    out.innerHTML = html; out.hidden = false;
-    track('rent_check_result', { bbl: rec.bbl, verdict: j.verdict });
   }
 
   async function aiToken(source, signupMsg) {
@@ -5351,7 +5239,6 @@ function favActive() {
   function applyAIFilters(f) {
     const fire = el => el && el.dispatchEvent(new Event('change', { bubbles: true }));
     const radio = (name, v) => { const r = document.querySelector('input[name="' + name + '"][value="' + v + '"]'); if (r && !r.checked) { r.checked = true; fire(r); } };
-    radio('listed', f.listed === 'yes' ? 'yes' : 'any');
     radio('s8', f.s8 ? 'either' : 'any');
     const beds = new Set((f.beds || []).map(String));
     document.querySelectorAll('input[name="beds"]').forEach(c => { const on = beds.has(c.value); if (c.checked !== on) { c.checked = on; fire(c); } });
@@ -5483,8 +5370,8 @@ function favActive() {
     } else setQueryNote('');
     const card = html => { searchHelper.innerHTML = `<div class="sh-card">${html}</div>`; searchHelper.hidden = false; };
     // These chips drive the filter pills, and outside NYC those pills are
-    // hidden by .nyc-only because their data files (listings.json, s8.json,
-    // fmr.json) only exist for the root site — they 404 per city and fail soft
+    // hidden by .nyc-only because their data files (s8.json, fmr.json) only
+    // exist for the root site — they 404 per city and fail soft
     // to empty. The chips were rendered anyway, so LA, DC and Westchester all
     // offered "Available now", "No open violations" and "Bedrooms" over data
     // that is uniformly empty: every one of them filtered to nothing and
@@ -5494,18 +5381,9 @@ function favActive() {
     // listings feed picks its chips up without another edit here.
     const narrowChips = () => {
       const chips = [];
-      if (HAS_LISTINGS) {
-        const advertised = filtered.filter(r => (listingCounts[r.bbl] || 0) > 0).length;
-        const listedOn = document.querySelector('input[name="listed"]:checked').value === 'yes';
-        chips.push(`<button data-sh="listed" class="${listedOn ? 'on' : ''}">🏠 Available now${advertised ? ` (${advertised})` : ''}</button>`);
-      }
       if (HAS_VIOLATIONS) {
         const violOn = moreFilters.viol === 'none';
         chips.push(`<button data-sh="noviol" class="${violOn ? 'on' : ''}">✅ No open violations</button>`);
-      }
-      if (HAS_LISTINGS) {
-        const bedsOn = document.querySelectorAll('input[name="beds"]:checked').length > 0;
-        chips.push(`<button data-sh="beds" class="${bedsOn ? 'on' : ''}">🛏 Bedrooms</button>`);
       }
       return chips.length ? `<div class="sh-chips">${chips.join('')}</div>` : '';
     };
@@ -5568,8 +5446,7 @@ function favActive() {
       const guesses = st.suggest.length
         ? `<div class="sh-chips">${st.suggest.map(g => `<button data-sh="try" data-q="${esc(g)}">Did you mean ${esc(g)}?</button>`).join('')}</div>`
         : '';
-      const beds = /\b(\d\s*(br|bd|bed)|bedroom|studio)\b/i.test(q)
-        ? `<div class="sh-chips"><button data-sh="beds">🛏 Filter by bedrooms instead</button></div>` : '';
+      const beds = '';
       // "rent stabilized" typed into the box is the biggest no-match query:
       // people echo the placeholder back as a keyword. Answer the question.
       if (/^(only\s+)?rent[\s-]*stab/i.test(q)) {
@@ -5595,11 +5472,7 @@ function favActive() {
   searchHelper.addEventListener('click', e => {
     const act = e.target.closest('[data-sh]')?.dataset.sh;
     if (!act) return;
-    if (act === 'listed') {
-      const cur = document.querySelector('input[name="listed"]:checked').value;
-      const r = document.querySelector(`input[name="listed"][value="${cur === 'yes' ? 'any' : 'yes'}"]`);
-      r.checked = true; r.dispatchEvent(new Event('change', { bubbles: true }));
-    } else if (act === 'noviol') {
+    if (act === 'noviol') {
       moreFilters.viol = moreFilters.viol === 'none' ? 'any' : 'none'; syncMoreUI(); applyFilters();
     } else if (act === 'beds') {
       openFilters();   // beds live in the filters modal
@@ -5626,7 +5499,7 @@ function favActive() {
     updateFiltersCount();
   });
 
-  // outbound link clicks (Zumper / Google / HPD etc.) — one delegated listener
+  // outbound link clicks (StreetEasy / Zillow / Google / HPD etc.) — one delegated listener
   // catches every external link so we can see which off-site actions people take.
   document.addEventListener('click', e => {
     const a = e.target.closest && e.target.closest('a[target="_blank"]');
@@ -5634,8 +5507,8 @@ function favActive() {
     const href = a.getAttribute('href') || '';
     if (!/^https?:/i.test(href)) return;
     let kind = 'other';
-    if (/zumper\.com/i.test(href)) kind = 'zumper';
-    else if (/streeteasy\.com/i.test(href)) kind = 'streeteasy';
+    if (/streeteasy\.com/i.test(href)) kind = 'streeteasy';
+    else if (/zillow\.com/i.test(href)) kind = 'zillow';
     else if (/google\.[^/]+\/maps|maps\.google/i.test(href)) kind = 'google_maps';
     else if (/google\.[^/]+\/search/i.test(href)) kind = 'google_search';
     // Housing Connect first: it is on nyc.gov but it is the lottery portal,
@@ -5644,9 +5517,7 @@ function favActive() {
     else if (/housingconnect\.nyc\.gov/i.test(href)) kind = 'housing_connect';
     else if (/hpdonline\.nyc\.gov/i.test(href)) kind = 'hpd';
     else if (/nyc\.gov|cityofnewyork/i.test(href)) kind = 'nyc_data';
-    // Which building, from which surface, and whether a live listing existed —
-    // the StreetEasy button is on every building, so without `listed` the
-    // click count cannot say how many land on an empty search page.
+    // Which building, and from which surface.
     let bbl = a.closest('[data-bbl]')?.dataset.bbl || null;
     let src = 'page';
     try {
@@ -5655,8 +5526,7 @@ function favActive() {
       else if (a.closest('#grid')) src = 'card';
       else if (a.closest('.leaflet-popup')) src = 'popup';
     } catch (_) {}
-    const listed = bbl ? (listingCounts[bbl] || 0) > 0 : null;
-    track('outbound', { kind, href, bbl, src, listed });
+    track('outbound', { kind, href, bbl, src });
   }, true);
 
   // managing-agent phone: "Show number" (paid) reveal flow + click-to-call tracking
@@ -5837,7 +5707,7 @@ function favActive() {
     qInput.value = m.rec.a;
     qInput.blur();
     map.setView([m.rec.lat, m.rec.lng], Math.max(map.getZoom(), 16), { animate: false });
-    openDetail(m.rec, mk._listed || 0);
+    openDetail(m.rec);
   });
 
   // ---------- filter / refresh ----------
@@ -5863,7 +5733,6 @@ function favActive() {
   function filtersActive() {
     return document.querySelectorAll('#borough-list input:checked').length < N_REGIONS
       || nbListEl.querySelectorAll('input:checked').length > 0
-      || document.querySelector('input[name="listed"]:checked').value !== 'any'
       || document.querySelector('input[name="s8"]:checked').value !== 'any'
       || document.querySelectorAll('input[name="beds"]:checked').length > 0
       || !!document.getElementById('price-min').value
@@ -5940,7 +5809,6 @@ function favActive() {
       boroughs: all.filter(c => c.checked).map(c => c.dataset.b),
       allBoroughs: all.length,
       nbs: [...nbListEl.querySelectorAll('input:checked')].map(c => c.value),
-      listed: (document.querySelector('input[name="listed"]:checked') || {}).value || 'any',
       s8: (document.querySelector('input[name="s8"]:checked') || {}).value || 'any',
       beds: [...document.querySelectorAll('input[name="beds"]:checked')].map(c => c.value),
       pmin: (document.getElementById('price-min') || {}).value || '',
@@ -5955,7 +5823,6 @@ function favActive() {
     else if (st.boroughs.length && st.boroughs.length < st.allBoroughs) bits.push(st.boroughs.map(b => ({ M: 'Manhattan', Bx: 'Bronx', Bk: 'Brooklyn', Q: 'Queens', SI: 'Staten Island' }[b] || b)).join(', '));
     if (st.pmin || st.pmax) bits.push((st.pmin ? '$' + (+st.pmin).toLocaleString() : 'Any') + '–' + (st.pmax ? '$' + (+st.pmax).toLocaleString() : 'any'));
     if (st.beds.length) bits.push(st.beds.map(b => b === '0' ? 'studio' : b + ' bd').join('/'));
-    if (st.listed === 'yes') bits.push('available');
     if (st.s8 !== 'any') bits.push('vouchers');
     if (st.more.viol === 'none') bits.push('no violations');
     return bits.join(' · ');
@@ -6000,7 +5867,7 @@ function favActive() {
         const on = st.nbs.includes(c.value);
         if (c.checked !== on) { c.checked = on; fire(c); }
       });
-      for (const name of ['listed', 's8']) {
+      for (const name of ['s8']) {
         const r = document.querySelector('input[name="' + name + '"][value="' + st[name] + '"]');
         if (r && !r.checked) { r.checked = true; fire(r); }
       }
@@ -6029,9 +5896,7 @@ function favActive() {
       || keepFiltersFor === document.getElementById('q').value.trim().toUpperCase();
     const boroughs = new Set([...document.querySelectorAll('#borough-list input:checked')].map(c => c.dataset.b));
     const selectedNbs = new Set([...nbListEl.querySelectorAll('input:checked')].map(c => c.value));
-    const listedMode = document.querySelector('input[name="listed"]:checked').value;
     const s8Mode = document.querySelector('input[name="s8"]:checked').value;
-    const selectedBeds = new Set([...document.querySelectorAll('input[name="beds"]:checked')].map(c => +c.value));
     const priceMin = +document.getElementById('price-min').value || 0;
     const priceMax = +document.getElementById('price-max').value || Infinity;
     const priceSet = priceMin > 0 || priceMax < Infinity;
@@ -6051,19 +5916,12 @@ function favActive() {
         if (!ignoreFilters) {
           if (!boroughs.has(rec.b)) continue;
           if (selectedNbs.size && !selectedNbs.has(rec.nb)) continue;
-          const listed = listingCounts[rec.bbl] || 0;
-          if (listedMode === 'yes' && !listed) continue;
-          if (listedMode === 'no' && listed) continue;
           if (s8Mode !== 'any') {
             const hasAvail = !!s8Avail[rec.bbl];
             const hasBldg = !!s8Bldg[rec.bbl];
             if (s8Mode === 'avail' && !hasAvail) continue;
             if (s8Mode === 'bldg' && !hasBldg) continue;
             if (s8Mode === 'either' && !hasAvail && !hasBldg) continue;
-          }
-          if (selectedBeds.size) {
-            const bb = listingBeds[rec.bbl];
-            if (!bb || !bb.some(n => selectedBeds.has(n))) continue;
           }
           if (priceSet) {
             const p = priceOf(rec);
@@ -6199,7 +6057,7 @@ function favActive() {
   // ---------- featured re-rentals ----------
   // Income-restricted apartments the HPD-approved marketing agents are
   // advertising on their own sites today, refreshed by featured_rerentals.py.
-  // They are not on StreetEasy or Zumper and they go in days, which is the
+  // They are not on the big listing portals and they go in days, which is the
   // whole reason they earn a slot in the grid rather than a page nobody visits.
   const FEAT_EVERY = 8;                 // one featured tile after every N cards
   let FEATURED = [];
@@ -6698,11 +6556,10 @@ function favActive() {
       const i = visible.findIndex(r => r.bbl === selectedBbl);
       if (i >= 0) pinned = visible.splice(i, 1)[0];
     }
-    const totalListings = visible.reduce((s, r) => s + (listingCounts[r.bbl]||0), 0) + (pinned ? (listingCounts[pinned.bbl]||0) : 0);
     if (pinned) visible.unshift(pinned);
     if (resultsSub) resultsSub.textContent = citywide
-      ? `${visible.length.toLocaleString()} building${visible.length === 1 ? ' matches' : 's match'} across NYC · ${totalListings.toLocaleString()} recently available on Zumper`
-      : `${visible.length.toLocaleString()} buildings in view · ${filtered.length.toLocaleString()} match filters · ${totalListings.toLocaleString()} recently available on Zumper`;
+      ? `${visible.length.toLocaleString()} building${visible.length === 1 ? ' matches' : 's match'} across NYC`
+      : `${visible.length.toLocaleString()} buildings in view · ${filtered.length.toLocaleString()} match filters`;
     // Zillow-style "X of Y" pill over the map on mobile
     document.getElementById('map-count').textContent = `${visible.length.toLocaleString()} of ${filtered.length.toLocaleString()}`;
     document.getElementById('fab-label').textContent = document.body.classList.contains('list-open') ? 'Map' : 'List';
@@ -6793,10 +6650,6 @@ function favActive() {
     gridMore.observe(sentinel);
   }
 
-  function bedsLabel(arr) {
-    return arr.map(n => n === 0 ? 'Studio' : (n >= 4 ? '4+' : n) + ' BR').join(' · ');
-  }
-
   function cardHpdLine(rec) {
     const h = rec.h;
     if (!h) return '';
@@ -6830,10 +6683,7 @@ function favActive() {
 
   function cardHtml(rec) {
     const borough = (BORO_NAME[rec.b] || '').toUpperCase();
-    const listed = listingCounts[rec.bbl] || 0;
-    const price = listingPrices[rec.bbl];
-    const beds = listingBeds[rec.bbl];
-    const listedHtml = listed > 0 ? `<span class="listed-pill">Recently available</span>` : `<span></span>`;
+    const listedHtml = `<span></span>`;
     const stats = [];
     if (rec.u != null) stats.push(`${rec.u} units`);
     if (rec.yr) stats.push(`built ${rec.yr}`);
@@ -6854,16 +6704,14 @@ function favActive() {
       </div>
       <div class="body">
         ${rec.nb ? `<div class="nb">${esc(rec.nb)}</div>` : ''}
-        ${listed > 0 ? `<div class="price">${price ? '$' + price.toLocaleString() + '/mo' : `Recently available${IS_NYC ? '' : ' on Zumper'} · ${listed} listing${listed===1?'':'s'}${asOf}`}</div>`
-                     : rec.mr ? `<div class="price est" title="${esc(RENT.title)}">${RENT.short} $${rec.mr.toLocaleString()}/mo</div>`
+        ${rec.mr ? `<div class="price est" title="${esc(RENT.title)}">${RENT.short} $${rec.mr.toLocaleString()}/mo</div>`
                      : (estRent(rec) ? `<div class="price est" title="${EST_TITLE}">${estRent(rec)}</div>` : '')}
-        ${beds && beds.length ? `<div class="beds-line">${bedsLabel(beds)} available</div>` : ''}
         ${s8Avail[rec.bbl] ? `<div class="s8-mini">✓ Section 8 listing${s8Avail[rec.bbl].n === 1 ? '' : 's'} on AffordableHousing.com${s8Avail[rec.bbl].p ? ' · from $' + s8Avail[rec.bbl].p.toLocaleString() + '/mo' : ''}</div>` : ''}
         <div class="units-line">${stats.join(' · ')}</div>
         ${cardHpdLine(rec)}
         <div class="actions">
           <button class="btn-secondary" data-action="map">View on map</button>
-          <a class="btn-primary" data-action="search" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.short}</a>
+          <a class="btn-primary" data-action="search" data-outbound="card" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.short}</a>
         </div>
       </div>
     </div>`;
@@ -6909,7 +6757,6 @@ function favActive() {
     }
     // Search button: let the link do its thing
     if (action === 'search') return;
-    const listed = m._listed || 0;
     const flyTo = () => {
       const ll = (m.getLatLng ? m.getLatLng() : L.latLng(rec.lat, rec.lng));
       if (map.getZoom() < 16) map.setView(ll, 17, { animate: false });
@@ -6926,7 +6773,7 @@ function favActive() {
     // popup on desktop; the map recenters behind it for when it closes)
     e.preventDefault();
     if (!isMobile) flyTo();
-    openDetail(rec, listed);
+    openDetail(rec);
   });
 
   map.on('moveend', refreshGrid);
@@ -7145,28 +6992,20 @@ function favActive() {
   }
   function selectMarker(m) {
     clearSelected();
-    const rec = m._rec, listed = m._listed || 0;
-    const price = listingPrices[rec.bbl];
-    const txt = price ? fmtRent(price)
-      : (listed > 0 ? listed + ' listed'
-      : (rec.u != null ? `${rec.u} unit${rec.u === 1 ? '' : 's'}` : 'bldg'));
+    const rec = m._rec;
+    const txt = rec.u != null ? `${rec.u} unit${rec.u === 1 ? '' : 's'}` : 'bldg';
     m.setIcon(pillIcon(`<div class="price-pill selected">${esc(txt)}</div>`, txt.length));
     m._sel = true;
     selectedMarker = m;
     highlightCard(rec.bbl, true);
   }
 
-  function renderCard(rec, listed) {
-    const price = listingPrices[rec.bbl];
-    const beds = listingBeds[rec.bbl];
+  function renderCard(rec) {
     const borough = BORO_NAME[rec.b] || '';
     const faved = FAVS.has(rec.bbl);
-    const priceLine = listed > 0
-      ? (price ? '$' + price.toLocaleString() + '/mo' : 'Recently available')
-      : rec.mr ? `${RENT.short} $${rec.mr.toLocaleString()}/mo`
+    const priceLine = rec.mr ? `${RENT.short} $${rec.mr.toLocaleString()}/mo`
       : (estRent(rec) || (rec.u != null ? rec.u + ' residential units' : CITY.label + ' building'));
     const sub = [
-      beds && beds.length ? bedsLabel(beds) : null,
       rec.yr ? 'built ' + rec.yr : null,
       CITY.label,
     ].filter(Boolean).join(' · ');
@@ -7175,7 +7014,6 @@ function favActive() {
       <button class="card-close" data-card="close" aria-label="Close">✕</button>
       ${PHOTO_PREVIEW?.enabled ? `<div class="card-photo street-photo-card">${PHOTO_PREVIEW.html(rec)}</div>` : '<div class="card-photo card-street"><button type="button" class="street-view-button" data-card="street">View street</button></div>'}
       <button class="card-fav ${faved ? 'faved' : ''}" data-card="fav" aria-label="${faved ? 'Saved' : 'Save'}" aria-pressed="${faved}">${faved ? '♥' : '♡'}</button>
-      ${listed > 0 ? `<span class="card-badge">Recently available${IS_NYC ? '' : ' on Zumper'}</span>` : ''}
       <div class="card-body">
         <div class="card-price">${priceLine}</div>
         <div class="card-sub">${esc(sub)}</div>
@@ -7185,7 +7023,7 @@ function favActive() {
         ${cardHpdLine(rec)}
         <div class="card-actions">
           <button class="cbtn cbtn-2" data-card="details">Details</button>
-          <a class="cbtn cbtn-1" data-card="search" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.short}</a>
+          <a class="cbtn cbtn-1" data-card="search" data-outbound="pin" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.short}</a>
         </div>
       </div>`;
   }
@@ -7194,10 +7032,10 @@ function favActive() {
     tr('openCard');
     setListOpen(false);
     cardMarker = m;
-    const rec = m._rec, listed = m._listed || 0;
-    track('building_view', { bbl: rec.bbl, addr: rec.a, boro: rec.b, listed, via: 'card' });
+    const rec = m._rec;
+    track('building_view', { bbl: rec.bbl, addr: rec.a, boro: rec.b, via: 'card' });
     selectMarker(m);
-    cardEl.innerHTML = renderCard(rec, listed);
+    cardEl.innerHTML = renderCard(rec);
     PHOTO_PREVIEW?.watch(cardEl);
     cardEl.hidden = false;
     document.body.classList.add('card-open');
@@ -7222,7 +7060,7 @@ function favActive() {
   const detailContent = document.getElementById('detail-content');
   wireHpdLegend(detailContent);
   const detailFavBtn = detailSheet.querySelector('.detail-fav');
-  let detailRec = null, detailListed = 0;
+  let detailRec = null;
 
   // #5 instant trust signal in the detail header, so people don't leave to
   // Google "is this building/landlord bad" — we already have the answer.
@@ -7235,17 +7073,12 @@ function favActive() {
     return `<div class="d-health ${cls}">${open} open HPD violation${open === 1 ? '' : 's'}`
       + (v.c ? ` · ${v.c} hazardous (Class C)` : '') + ` — see details below</div>`;
   }
-  function renderDetail(rec, listed) {
-    const price = listingPrices[rec.bbl];
-    const beds = listingBeds[rec.bbl];
+  function renderDetail(rec) {
     const borough = BORO_NAME[rec.b] || '';
-    const priceLine = listed > 0
-      ? (price ? '$' + price.toLocaleString() + '/mo' : 'Recently available on Zumper')
-      : rec.mr ? `${RENT.label} $${rec.mr.toLocaleString()}/mo`
+    const priceLine = rec.mr ? `${RENT.label} $${rec.mr.toLocaleString()}/mo`
       : CITY.label + ' building';
     const keyBits = [];
     if (rec.u != null) keyBits.push(rec.u + ' units');
-    if (beds && beds.length) keyBits.push(bedsLabel(beds) + ' available');
     if (rec.yr) keyBits.push('built ' + rec.yr);
     const facts = [
       ['Units', rec.u != null ? rec.u : '—'],
@@ -7273,10 +7106,6 @@ function favActive() {
       ? (rec.h.violations.total != null ? rec.h.violations.total : rec.h.violations.open)
       : null;
     const est = estRent(rec);
-    // An advertised rent beats the ZIP estimate: printing "Est. $3,800–$4,370"
-    // on a building whose managing agent is asking $7,995 today is the sheet
-    // telling the visitor something we know to be wrong (2026-09-23).
-    const asking = listingPrices[rec.bbl];
     const viol = violButton(rec.h && rec.h.violations, violTotal);
     const compTotal = rec.h && rec.h.complaints
       ? (rec.h.complaints.total != null ? rec.h.complaints.total : rec.h.complaints.open)
@@ -7312,12 +7141,8 @@ function favActive() {
       </div>
       <div class="d-head" data-sec="header">
         <h2 class="d-title">${esc(title)}</h2>
-        <div class="d-tagline"><span class="d-tag">${esc(CITY.label)}</span>${asking
-            ? ` <span class="d-dot">·</span> <span class="d-est" title="${esc(ASKING_TITLE)}">$${asking.toLocaleString()}/mo asking</span>`
-            : est ? ` <span class="d-dot">·</span> <span class="d-est" title="${esc(EST_TITLE)}">${est}</span>` : ''}</div>
+        <div class="d-tagline"><span class="d-tag">${esc(CITY.label)}</span>${est ? ` <span class="d-dot">·</span> <span class="d-est" title="${esc(EST_TITLE)}">${est}</span>` : ''}</div>
         <div class="d-addr">${esc(addrLine)}</div>
-        ${IS_NYC && asking ? `<button class="d-rentcheck" data-detail="rentcheck">💵 Is this rent fair?<span class="plus-tag">Plus</span></button>
-        <div class="rentcheck-card" id="rentcheck-out" hidden></div>` : ''}
       </div>
       <div class="agent-card" data-sec="agent" data-agentcard="${esc(rec.bbl)}">${agentCardInner(rec.bbl, !!(rec.h && rec.h.op))}</div>
       <!-- Save lives in the header heart only (the full-width Save row was
@@ -7334,7 +7159,7 @@ function favActive() {
       </div>
       </div>` : ''}
       <div class="d-actions"${IS_NYC ? ' style="padding-top:0"' : ' data-sec="actions"'}>
-        <a class="d-secondary" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.label}</a>
+        <a class="d-secondary" data-outbound="sheet" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.label}</a>
       </div>
       <div class="d-actions" style="padding-top:0">
         <button class="d-secondary" data-detail="map">View on map</button>
@@ -7548,12 +7373,12 @@ function favActive() {
     const a = e.target.closest && e.target.closest('a[data-bpage]');
     if (a && detailRec) track('building_page_open', { bbl: detailRec.bbl, via: 'detail' });
   });
-  function openDetail(rec, listed) {
+  function openDetail(rec) {
     tr('openDetail');
-    detailRec = rec; detailListed = listed || 0;
-    track('building_view', { bbl: rec.bbl, addr: rec.a, boro: rec.b, listed: detailListed, via: 'detail' });
+    detailRec = rec;
+    track('building_view', { bbl: rec.bbl, addr: rec.a, boro: rec.b, via: 'detail' });
     secSeen = new Set();
-    detailContent.innerHTML = renderDetail(rec, detailListed);
+    detailContent.innerHTML = renderDetail(rec);
     // The "since your last visit" line was just rendered from the old
     // snapshot; now this visit becomes the baseline for the next one.
     if (HOME && HOME.bbl === rec.bbl) { HOME.snap = homeSnap(rec); try { localStorage.setItem(HOME_KEY, JSON.stringify(HOME)); } catch (e) {} }
@@ -7573,13 +7398,13 @@ function favActive() {
         const hero = detailContent.querySelector('.d-hero');
         if (hero?.querySelector('iframe')) {
           const fresh = document.createElement('template');
-          fresh.innerHTML = renderDetail(rec, detailListed);
+          fresh.innerHTML = renderDetail(rec);
           hero.querySelector('.d-spec').replaceWith(fresh.content.querySelector('.d-spec'));
           fresh.content.querySelector('.d-hero').remove();
           [...detailContent.childNodes].forEach(node => { if (node !== hero) node.remove(); });
           detailContent.appendChild(fresh.content);
         } else {
-          detailContent.innerHTML = renderDetail(rec, detailListed);
+          detailContent.innerHTML = renderDetail(rec);
         }
         PHOTO_PREVIEW?.watch(detailContent);
         watchDetailSections(rec);   // the repaint replaced every observed node
@@ -7866,7 +7691,6 @@ function favActive() {
     const rec = detailRec;
     if (act === 'search') return; // link
     if (act === 'close') { closeDetail(); return; }
-    if (act === 'rentcheck') { runRentCheck(rec); return; }
     if (act === 'getplus') { openAuthModal('Create an account — invite a friend and you both get 2 months of Find A Crib Plus, on us.', 'referral'); return; }
     if (act === 'comment-signin') { openAuthModal('Sign in to comment on buildings.', 'comment'); return; }
     if (act === 'profile') { openProfile(); return; }
@@ -7878,14 +7702,14 @@ function favActive() {
     }
     if (act === 'home') {
       setHome(rec);
-      detailContent.innerHTML = renderDetail(rec, detailListed); watchDetailSections(rec); syncDetailFav(); loadComments(rec.bbl); loadOpenDataCounts(rec);
+      detailContent.innerHTML = renderDetail(rec); watchDetailSections(rec); syncDetailFav(); loadComments(rec.bbl); loadOpenDataCounts(rec);
       detailContent.scrollTop = 0;
       showPlusToast('Pinned as your apartment — saved and watched. Find it any time under “My apartment”.');
       return;
     }
     if (act === 'unhome') {
       clearHome();
-      detailContent.innerHTML = renderDetail(rec, detailListed); watchDetailSections(rec); syncDetailFav(); loadComments(rec.bbl); loadOpenDataCounts(rec);
+      detailContent.innerHTML = renderDetail(rec); watchDetailSections(rec); syncDetailFav(); loadComments(rec.bbl); loadOpenDataCounts(rec);
       return;
     }
     if (act === 'directions') { openDirections(rec); return; }
@@ -7929,7 +7753,7 @@ function favActive() {
     if (e.target.closest('.mly-credit a')) return;
     const act = e.target.closest('[data-card]')?.dataset.card;
     if (!cardMarker) return;
-    const rec = cardMarker._rec, listed = cardMarker._listed || 0;
+    const rec = cardMarker._rec;
     if (act === 'close') { closeCard(); return; }
     if (act === 'search') return; // let the link open
     if (act === 'fav') {
@@ -7940,13 +7764,13 @@ function favActive() {
       saveFavs(); updateFavBadge(); persistFav(rec.bbl, FAVS.has(rec.bbl));
       return;
     }
-    if (act === 'street') { openDetail(rec, listed); return; }
-    if (act === 'details') { openDetail(rec, listed); return; }
+    if (act === 'street') { openDetail(rec); return; }
+    if (act === 'details') { openDetail(rec); return; }
     // The whole card is the tap target, not just the Details button — on a phone
     // the photo and the address are the biggest things on screen and the button
     // is the smallest. Anything that is already a control (close, save, the
     // StreetEasy link) is handled above and excluded here.
-    if (!e.target.closest('a,button')) { openDetail(rec, listed); return; }
+    if (!e.target.closest('a,button')) { openDetail(rec); return; }
   });
   // click on the dimmed backdrop (outside the popup) -> back to the previous screen
   detailSheet.addEventListener('click', e => { if (e.target === detailSheet) closeDetail(); });
@@ -8150,7 +7974,7 @@ function favActive() {
   }
   if (location.hash.startsWith('#d=')) {
     const m = markerFor(location.hash.slice(3));
-    if (m) openDetail(m._rec, m._listed || 0);
+    if (m) openDetail(m._rec);
   }
   // ---------- my apartment: entry points ----------
   syncHomeUI();
@@ -8235,7 +8059,7 @@ function favActive() {
   let paywallSource = 'other';
   // While everything else is free, Plus is the AI features (owner,
   // 2026-10-03) — and no ads, which paying members keep.
-  const AI_SOURCES = new Set(['realtime', 'ai_search', 'rent_check', 'apply_help', 'profile']);
+  const AI_SOURCES = new Set(['realtime', 'ai_search', 'apply_help', 'profile']);
   function openPaywall(bbl, source) {
     if (FEATURES_FREE && !AI_SOURCES.has(source)) return;   // the free features are never sold
     { const feats = document.getElementById('paywall-feats');
@@ -8245,7 +8069,7 @@ function favActive() {
     pendingPhoneBbl = bbl || null;            // remember what they wanted, to reveal after checkout
     paywallSource = source || (bbl ? 'phone' : 'other');
     // Lead with what they came for.
-    const TITLES = { realtime: 'Get alerts the minute they open', ai_search: 'Search in plain words', rent_check: 'Is this rent fair?', apply_help: 'Help me apply', noads: 'Find A Crib, with no ads',
+    const TITLES = { realtime: 'Get alerts the minute they open', ai_search: 'Search in plain words', apply_help: 'Help me apply', noads: 'Find A Crib, with no ads',
                      bedbugs: 'See every building\u2019s bedbug record', rodents: 'See every building\u2019s rat inspections',
                      phone: 'Call who actually runs the building', research: 'Research any landlord',
                      saved_search: 'Save your searches', folders: 'Organize your saved homes' };

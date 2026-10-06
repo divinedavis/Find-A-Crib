@@ -213,7 +213,7 @@ def _stat(v, label):
     return f"<div class='stat'><b>{v}</b><span>{esc(label)}</span></div>"
 
 
-def render(bbl, corpus, contacts, s8=None, listed=False):
+def render(bbl, corpus, contacts, s8=None):
     b = corpus.by_bbl.get(str(bbl))
     if not b:
         raise KeyError(f"BBL {bbl} is not in the rent-stabilized dataset")
@@ -333,9 +333,6 @@ def render(bbl, corpus, contacts, s8=None, listed=False):
     if s8:
         extras.append("This building appears in HPD or HUD subsidized-housing records, so some "
                       "units may be income-restricted.")
-    if listed:
-        extras.append("An apartment here was advertised recently, so the landlord is actively "
-                      "renting.")
     if extras:
         out.append("<h2>3. Other signals</h2><ul>"
                    + "".join(f"<li>{esc(e)}</li>" for e in extras) + "</ul>")

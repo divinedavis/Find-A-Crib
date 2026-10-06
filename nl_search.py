@@ -3,7 +3,7 @@
 
 Two layers, cheapest first:
   1. Rules read everything definite — prices, bedrooms, boroughs, exact
-     neighborhood names, "no violations", "section 8", "available now". Free.
+     neighborhood names, "no violations", "section 8". No model call.
   2. Jev (TypeSafe) is asked only when the text points somewhere the rules
      cannot place ("near prospect park", "by the water in queens"): one
      Choice over the city's neighborhoods, keeping up to three it gives real
@@ -57,7 +57,7 @@ def parse_rules(text, neighborhoods):
     to a set of official neighborhood names (see `aliases`). Returns
     (filters, explain, rest)."""
     t = " " + text.lower().strip() + " "
-    f = {"boroughs": [], "nbs": [], "pmin": None, "pmax": None, "beds": [], "listed": None, "s8": None, "viol": None}
+    f = {"boroughs": [], "nbs": [], "pmin": None, "pmax": None, "beds": [], "s8": None, "viol": None}
     explain = []
     amt = r"\$?\s?\d[\d,]*(?:\.\d+)?\s?k?"
     m = re.search(rf"(?:between|from)\s+({amt})\s+(?:and|to|-)\s+({amt})", t) or re.search(rf"({amt})\s*(?:-|–|to)\s*({amt})", t)
@@ -83,8 +83,6 @@ def parse_rules(text, neighborhoods):
         f["viol"] = "none"; t = re.sub(r"\b(no|zero|without|clean of)\s+(open\s+)?violations?\b|\bclean building\b", " ", t)
     if re.search(r"\bsection\s*8\b|\bvouchers?\b|\bcityfheps\b|\bhasa\b", t):
         f["s8"] = "either"; t = re.sub(r"\bsection\s*8\b|\bvouchers?\b|\bcityfheps\b|\bhasa\b", " ", t)
-    if re.search(r"\b(available|for rent|listed|open now|right now|move in)\b", t):
-        f["listed"] = "yes"
     tt = t.replace("-", " ")
     for name in sorted(neighborhoods, key=len, reverse=True):
         if re.search(rf"\b{re.escape(name)}\b", tt):
@@ -107,8 +105,6 @@ def parse_rules(text, neighborhoods):
         explain.append("no open violations")
     if f["s8"]:
         explain.append("vouchers")
-    if f["listed"]:
-        explain.append("available now")
     rest = re.sub(r"\s+", " ", re.sub(r"[^a-z' ]", " ", t)).strip()
     return f, explain, rest
 

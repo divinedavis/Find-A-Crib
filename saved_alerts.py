@@ -4,9 +4,8 @@
 Saving a building is subscribing to it (owner decision, 2026-09-05). Every
 signed-in saver — free or Plus — hears when a saved building:
 
-  zumper       is advertised for rent (Zumper/StreetEasy feed, listings.json)
   s8           gets a listing for voucher holders (AffordableHousing.com, s8.json)
-  price        has its asking rent drop (either feed, vs. the last figure we saw)
+  price        has its voucher-listing rent drop (vs. the last figure we saw)
   lottery      hosts a housing lottery (Housing Connect / HCR, matched by
                house number + distance to the lot)
   rerental     has a unit on an HPD marketing agent's re-rental board
@@ -15,13 +14,17 @@ signed-in saver — free or Plus — hears when a saved building:
   cleared      goes from open violations to none
   status       has its DHCR registration change (codes or unit count; annual)
 
+The "zumper" kind (advertised for rent, from the Zumper/StreetEasy listing
+feed) was REMOVED 2026-10-06 with that feed; leftover pending items of that
+kind are dropped on load (purge_listing_items).
+
 Runs every morning on the web droplet from the checkout (saved_alerts.sh,
 deploy/cron-rentmap-saved), where every feed already lives, replacing the
 nightly notify_saved_listings.py that ran on the other droplet and only
 watched the two listing feeds for Plus members.
 
 Semantics kept from the old job: only a CHANGE alerts — saving a building
-that is already advertised says nothing; the first run seeds a snapshot and
+that already has a voucher listing says nothing; the first run seeds a snapshot and
 sends nothing; one announcement per (user, building, kind) per cooldown.
 
 New: one email a day per person, across every job (growth/mailcap.py). A
@@ -52,7 +55,7 @@ SITE = la.SITE
 DATA_DIR = la.DATA_DIR
 STATE = os.path.join(HERE, "saved_alerts_state.json")
 DIGEST_WEEKDAY = int(os.environ.get("FAC_DIGEST_WEEKDAY", "1"))   # Monday=0 → Tuesday
-COOLDOWN = {"zumper": 60, "s8": 60, "lottery": 90, "rerental": 60,
+COOLDOWN = {"s8": 60, "lottery": 90, "rerental": 60,
             "price": 14, "violations": 14, "cleared": 30, "status": 120}
 PENDING_MAX = 20
 MAX_CARDS = 8
@@ -149,14 +152,29 @@ def load_buildings():
     return {r["bbl"]: r for r in d if r.get("bbl")}
 
 
-def snapshot_of(rec, listings, s8):
+LISTING_HOSTS = ("zumper.com", "streeteasy.com")
+
+
+def purge_listing_items(st):
+    """Drop anything left from the retired Zumper/StreetEasy listing feed
+    (2026-10-06): pending "zumper" changes, price drops that pointed at a
+    portal listing, and the zc/zp/zt fields in each building snapshot."""
+    for uid, items in list((st.get("pending") or {}).items()):
+        st["pending"][uid] = [
+            i for i in items
+            if i.get("kind") != "zumper"
+            and not any(h in str(i.get("url") or "") for h in LISTING_HOSTS)]
+    for snap in (st.get("snap") or {}).values():
+        if isinstance(snap, dict):
+            for k in ("zc", "zp", "zt"):
+                snap.pop(k, None)
+
+
+def snapshot_of(rec, s8):
     bbl = rec["bbl"]
     h = rec.get("h") or {}
     v = h.get("violations") or {}
     c = h.get("complaints") or {}
-    counts = listings.get("counts") or {}
-    prices = listings.get("prices") or {}
-    posted = listings.get("posted") or {}
     av = (s8.get("avail") or {}).get(bbl) or {}
     if isinstance(av, str):
         try:
@@ -166,28 +184,17 @@ def snapshot_of(rec, listings, s8):
     return {
         "vo": v.get("open"), "co": c.get("open"),
         "s": "|".join(sorted(rec.get("s") or [])), "u": rec.get("u"),
-        "zc": counts.get(bbl) or 0, "zp": prices.get(bbl), "zt": posted.get(bbl) or 0,
         "s8n": av.get("n") or 0, "s8p": av.get("p"),
     }
 
 
-def diff_building(rec, prev, cur, listings, s8):
+def diff_building(rec, prev, cur, s8):
     """Change items for one building: [{kind, text, url, price}]. `prev` None
     = never seen (seed, no items)."""
     if prev is None:
         return []
     out = []
     bbl = rec["bbl"]
-    urls = listings.get("urls") or {}
-    if cur["zc"] and (not prev.get("zc") or (cur["zt"] and cur["zt"] > (prev.get("zt") or 0))):
-        p = f" — {money(cur['zp'])}/mo" if cur.get("zp") else ""
-        out.append({"kind": "zumper", "price": cur.get("zp"),
-                    "text": f"Advertised for rent{p}. Rent-stabilized units move fast — reach out early.",
-                    "url": urls.get(bbl)})
-    elif cur.get("zp") and prev.get("zp") and cur["zp"] < prev["zp"]:
-        out.append({"kind": "price", "price": cur["zp"],
-                    "text": f"Asking rent dropped: {money(prev['zp'])} → {money(cur['zp'])}/mo.",
-                    "url": urls.get(bbl)})
     av = (s8.get("avail") or {}).get(bbl) or {}
     if isinstance(av, str):
         try:
@@ -313,8 +320,7 @@ def subject_for(items, buildings, home_bbl=None):
     addr = titlecase_addr(first.get("a"))
     if len(bbls) == 1 and home_bbl and home_bbl in bbls:
         k = items[0]["kind"]
-        return {"zumper": "Your building was just advertised for rent",
-                "s8": "Your building has a listing for voucher holders",
+        return {"s8": "Your building has a listing for voucher holders",
                 "price": "Rent dropped in your building",
                 "lottery": "A housing lottery opened in your building",
                 "rerental": "A re-rental opened in your building",
@@ -323,16 +329,15 @@ def subject_for(items, buildings, home_bbl=None):
                 "status": "Your building's DHCR registration changed"}.get(k, "Your building changed")
     if len(bbls) == 1:
         k = items[0]["kind"]
-        return {"zumper": f"{addr} was just advertised for rent",
-                "s8": f"{addr} has a listing for voucher holders",
+        return {"s8": f"{addr} has a listing for voucher holders",
                 "price": f"Rent dropped at {addr}",
                 "lottery": f"A housing lottery opened at {addr}",
                 "rerental": f"A re-rental opened at {addr}",
                 "violations": f"New HPD violations at {addr}",
                 "cleared": f"Violations cleared at {addr}",
                 "status": f"DHCR registration changed at {addr}"}.get(k, f"{addr} changed")
-    if kinds <= {"zumper", "s8", "price"}:
-        return f"{len(bbls)} buildings you saved were just advertised"
+    if kinds <= {"s8", "price"}:
+        return f"{len(bbls)} buildings you saved have voucher listings"
     return f"{len(bbls)} buildings you saved changed"
 
 
@@ -383,44 +388,33 @@ def boros_for(user, buildings):
     return out[:3]
 
 
-def status_blocks(user, buildings, listings, s8):
+def status_blocks(user, buildings, s8):
     """'Your saved buildings' summary for the digest and the day-3 status."""
     bbls = [b for b in (user.get("bbls") or []) if b in buildings]
     if not bbls:
         return []
-    counts = listings.get("counts") or {}
-    posted = listings.get("posted") or {}
-    prices = listings.get("prices") or {}
     avail = s8.get("avail") or {}
-    recent = 5 * 86400
-    now = datetime.datetime.now(datetime.timezone.utc).timestamp()
-    advertised, voucher, viol_total = [], [], 0
+    voucher, viol_total = [], 0
     for bbl in bbls:
         rec = buildings[bbl]
-        if counts.get(bbl) and (not posted or now - (posted.get(bbl) or 0) < recent):
-            advertised.append((rec, prices.get(bbl)))
         if bbl in avail:
             voucher.append(rec)
         viol_total += ((rec.get("h") or {}).get("violations") or {}).get("open") or 0
     items = []
-    for rec, p in advertised[:5]:
-        items.append({"text": titlecase_addr(rec.get("a")),
-                      "sub": (f"advertised now · {money(p)}/mo" if p else "advertised now"),
-                      "url": building_url(rec)})
     for rec in voucher[:3]:
         items.append({"text": titlecase_addr(rec.get("a")), "sub": "listed for voucher holders now",
                       "url": building_url(rec)})
     blocks = [{"type": "stats", "items": [
         (f"{len(bbls)}", "saved"),
-        (f"{len(advertised)}", "advertised now"),
+        (f"{len(voucher)}", "voucher listings now"),
         (f"{viol_total:,}", "open HPD violations")]}]
     if items:
         blocks.append({"type": "callout", "tone": "good", "heading": "Available right now",
                        "items": items})
     else:
         blocks.append({"type": "note",
-                       "text": "Nothing you saved is advertised at the moment. The morning this "
-                               "changes, you'll hear about it."})
+                       "text": "Nothing you saved is listed for voucher holders at the moment. "
+                               "The morning anything you saved changes, you'll hear about it."})
     return blocks
 
 
@@ -445,7 +439,7 @@ def borough_sections(user, buildings, feeds, seen, now):
                    (f"Closing in the next seven days in {where}", "warn", closing)]
 
 
-def render_digest(user, pending, buildings, listings, s8, feeds, seen, emailkit, now,
+def render_digest(user, pending, buildings, s8, feeds, seen, emailkit, now,
                   *, eyebrow="Tuesday round-up", day3=False):
     blocks = []
     if pending:
@@ -460,7 +454,7 @@ def render_digest(user, pending, buildings, listings, s8, feeds, seen, emailkit,
                 merged = {"text": " ".join(g["text"] for g in group),
                           "url": next((g["url"] for g in group if g.get("url")), None)}
                 blocks.append(card_for(rec, merged, home=(bbl == home)))
-    st_blocks = status_blocks(user, buildings, listings, s8)
+    st_blocks = status_blocks(user, buildings, s8)
     if st_blocks:
         blocks.append({"type": "section", "label": "Your saved buildings"})
         blocks.extend(st_blocks)
@@ -532,7 +526,6 @@ def main():
     digest_day = args.weekly or (ny_now.weekday() == DIGEST_WEEKDAY and not args.no_weekly)
 
     buildings = load_buildings()
-    listings = la.load_json("listings.json") or {}
     s8 = la.load_json("s8.json") or {}
     feeds = gather_feeds()
     lot_state = la.load_state() or {"seen": {}}
@@ -542,17 +535,17 @@ def main():
 
     # ---- test: one sample, no state ----
     if args.test_email:
-        bbl = args.force_bbl or next((b for b in (listings.get("counts") or {}) if b in buildings), None)
+        bbl = args.force_bbl or next((b for b in (s8.get("avail") or {}) if b in buildings), None)
         rec = buildings.get(bbl)
         if not rec:
             sys.exit(f"bbl {bbl} not in buildings")
         user = {"email": args.test_email, "token": "00000000-0000-0000-0000-000000000000",
                 "bbls": [bbl], "viewed_boros": []}
-        p = (listings.get("prices") or {}).get(bbl)
-        items = [{"bbl": bbl, "kind": "zumper", "price": p, "url": (listings.get("urls") or {}).get(bbl),
-                  "text": f"Advertised for rent{(' — ' + money(p) + '/mo') if p else ''}."}]
+        items = [{"bbl": bbl, "kind": "violations", "price": None, "url": None,
+                  "text": "2 new open HPD violations (5 open now). Worth asking the landlord "
+                          "about before you sign."}]
         if digest_day:
-            built = render_digest(user, items, buildings, listings, s8, feeds, seen, emailkit, now)
+            built = render_digest(user, items, buildings, s8, feeds, seen, emailkit, now)
         else:
             built = render_changes(user, items, buildings, emailkit)
         subject, html, text, unsub = built
@@ -585,13 +578,14 @@ def main():
         st = {"snap": {}, "lot_seen": {}, "rr_seen": {}, "pending": {}}
     for k in ("snap", "lot_seen", "rr_seen", "pending"):
         st.setdefault(k, {})
+    purge_listing_items(st)
 
     # ---- diff every watched building ----
     changes = {}          # bbl -> [change]
     for bbl, rec in watched.items():
-        cur = snapshot_of(rec, listings, s8)
+        cur = snapshot_of(rec, s8)
         prev = st["snap"].get(bbl)
-        for c in diff_building(rec, prev, cur, listings, s8):
+        for c in diff_building(rec, prev, cur, s8):
             changes.setdefault(bbl, []).append(c)
         st["snap"][bbl] = cur
     for bbl, its in lottery_hits(watched, feeds).items():
@@ -677,13 +671,13 @@ def main():
                 and u["bbls"] and not u.get("lifecycle_off") and not pending)
         built, kind, step = None, None, None
         if digest_day and not u.get("digest_off") and (u["bbls"] or u.get("viewed_boros")):
-            built = render_digest(u, pending, buildings, listings, s8, feeds, seen, emailkit, now)
+            built = render_digest(u, pending, buildings, s8, feeds, seen, emailkit, now)
             kind = "weekly"
         elif pending:
             built = render_changes(u, pending, buildings, emailkit)
             kind = "saved"
         elif day3:
-            built = render_digest(u, [], buildings, listings, s8, feeds, seen, emailkit, now,
+            built = render_digest(u, [], buildings, s8, feeds, seen, emailkit, now,
                                   eyebrow="A few days in", day3=True)
             kind, step = "nudge", "status"
         if not built:

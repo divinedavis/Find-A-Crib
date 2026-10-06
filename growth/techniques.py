@@ -842,7 +842,7 @@ def t_llms_txt(ctx):
         "",
         "Address, BBL/parcel id, coordinates, neighborhood, ZIP, year built, unit count,",
         "registered owner and managing agent, open and closed HPD violations by severity",
-        "class, HPD complaint history, and whether the building was recently advertised.",
+        "class, and HPD complaint history.",
         "",
         # ADDED 2026-10-05, as the other half of the build_seo.py change that
         # stopped addressing the index-triage noindex to every crawler on earth
@@ -1201,7 +1201,7 @@ def t_sitemap_daily(ctx):
         globs = ["section8/index.html", "section8/*/index.html",
                  "brief/index.html", "brief/*/index.html",
                  "guide/index.html", "guide/*/index.html",
-                 "rent-report/index.html"]
+                 ]
         for _city, _rel in CITY_HUB_DIRS.items():
             globs += [f"{_city}/buildings/index.html", f"{_rel}/*/index.html"]
         for pattern in globs:

@@ -67,7 +67,7 @@ SEED = [
     ("nyc", "cityfheps apartments nyc", "list", "/section8/"),
     ("nyc", "hpd violations lookup", "check", "/"),
     ("nyc", "who owns my building nyc", "check", "/"),
-    ("nyc", "rent stabilized apartments for rent", "list", "/available/"),
+    ("nyc", "rent stabilized apartments for rent", "list", "/"),
     ("nyc", "section 8 apartments queens", "list", "/section8/queens/"),
     ("nyc", "section 8 apartments bronx", "list", "/section8/bronx/"),
     ("nyc", "voucher friendly apartments nyc", "list", "/section8/"),

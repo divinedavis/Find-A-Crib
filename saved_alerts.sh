@@ -5,7 +5,7 @@
 # New York weekday). Installed by /etc/cron.d/rentmap-saved.
 #
 # Reads the feeds the site already serves from the docroot (buildings.min.json,
-# listings.json, s8.json, housing_connect.json, hcr.json) and rerental_new.json
+# s8.json, housing_connect.json, hcr.json) and rerental_new.json
 # from the checkout. No git pull here — the 05:00 growth run pulls daily.
 set -uo pipefail
 cd /root/Find-A-Crib || exit 1

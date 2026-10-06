@@ -1,9 +1,10 @@
 # Find A Crib — Rent-Stabilized Buildings Explorer (NYC · SF · LA · DC)
 
 An interactive map of every DHCR rent-stabilized building in **Manhattan**,
-**the Bronx**, **Brooklyn**, **Queens**, and **Staten Island**, with a nightly
-signal for which buildings were **recently advertised** for rent, plus the
-building's HPD owner / managing agent and open violation & complaint counts.
+**the Bronx**, **Brooklyn**, **Queens**, and **Staten Island**, with the
+building's HPD owner / managing agent and open violation & complaint counts,
+and a one-tap **View on StreetEasy ↗** (NYC) / **View on Zillow ↗** (other
+cities) address search for current listings.
 
 Three more cities ride the same frontend (see **Other cities** below):
 **San Francisco** at [/sf/](https://findacrib.com/sf/) (SF Rent Board Housing
@@ -22,17 +23,18 @@ rent-controlled units, with median *registered* rents).
 Search by address, neighborhood, ZIP, or BBL, or just pan the map. Every pin is
 a rent-stabilized building; clusters show how many sit in an area. Open a
 building to see its operator, violation/complaint history, and a link to its
-full HPD Online record. Filter by borough, neighborhood, bedroom count, whether
-it was recently advertised, and violation/complaint status. Sign in to save
-buildings across devices.
+full HPD Online record. Filter by borough, neighborhood, and violation/complaint
+status. Sign in to save buildings across devices.
 
-## What "recently advertised" means
+## No listing data (since 2026-10-06)
 
-The map does **not** have real vacancy data. A building is flagged as *recently
-advertised* if, in the most recent nightly scrape, a public rental listing had an
-address that normalized to that building's BBL. It is a proxy for rental
-activity — not a guarantee a unit is available, and not specific to the
-rent-stabilized units in the building.
+The map carries **no** rental-listing data. The Zumper scrape and the
+StreetEasy (Apify) feed — asking rents, "recently advertised" flags, listing
+counts and links — were removed on 2026-10-06 (Zumper's Terms forbid scraping;
+the owner dropped all portal-derived data). Every building card and detail
+sheet instead has one outbound button: NYC → `https://streeteasy.com/search?search=<address, borough>`,
+other cities → `https://www.zillow.com/homes/<address, city, state>_rb/`.
+Do not reinstate a portal scrape.
 
 ## Data pipeline
 
@@ -43,12 +45,12 @@ rent-stabilized units in the building.
 | 3. Assign neighborhood (NTA 2020) | `assign_nta.py` | `buildings_geo_nta.json` |
 | 4. Pull HPD owner / manager / violations / complaints | `fetch_hpd.py` | `buildings_hpd.json` |
 | 5. Slim + merge HPD into a browser-ready blob | `slim.py` | `buildings.min.json` |
-| 6. Nightly listings refresh | `scripts/refresh_listings.sh` (`fetch_apify.py` → `parse_apify.py` → `combine_listings.py`) | `listings.json` |
 | 7. Section 8 building signals (monthly) | `fetch_section8.py` — HPD Affordable Housing Production (BBL join) + HUD project-based Section 8 contracts (address→BBL) | `s8.json` (`bldg` half) |
 | 8. Live voucher listings (nightly) | `scrape_affordablehousing.py` — AffordableHousing.com search API, address→BBL | `s8.json` (`avail` half) |
 
-Steps 1–5 produce regenerable intermediates (gitignored); `buildings.min.json`,
-`listings.json`, and `s8.json` are the three files the front end actually fetches.
+Steps 1–5 produce regenerable intermediates (gitignored); `buildings.min.json`
+(split into `buildings.slim.json` + `buildings.hpd.json` by `split_hpd.py`),
+`s8.json` and `fmr.json` are the files the front end fetches.
 
 ### Section 8 / housing vouchers
 
@@ -71,8 +73,8 @@ links to the NYC Commission on Human Rights complaint page.
 
 Saving a building is subscribing to it. `saved_alerts.py` (06:20 ET daily on
 the web droplet, `saved_alerts.sh`, `/etc/cron.d/rentmap-saved`) emails every
-signed-in saver — free or Plus — when a saved building is newly advertised
-(`listings.json`), gets a voucher listing (`s8.json`), drops its asking rent,
+signed-in saver when a saved building gets a voucher listing (`s8.json`) or
+its voucher-listing rent drops,
 hosts a Housing Connect / HCR lottery or a marketing-agent re-rental (matched by
 house number + lot distance / street), gains or clears open HPD violations, or
 has its DHCR registration change. Only a *change* alerts: the first run seeds a
@@ -207,8 +209,8 @@ morning. This is not obvious from the checkout and has already cost one review
 cycle: on 2026-08-05 the review fixed two orphaned sections by adding links to
 `index.html`, and the 2026-08-06 audit correctly still reported them orphaned.
 
-Those two paths are not equally reliable, either. `refresh_seo.sh` is chained
-after the listings scrape and stops when anything ahead of it fails — it wrote
+Those two paths are not equally reliable, either. `refresh_seo.sh` (historically chained
+after the listings scrape, which no longer exists) stops when anything ahead of it fails — it wrote
 nothing between 2026-08-01 and 08-08, so a `build_seo.py` change is only live
 once that pipeline recovers. The growth build's own rsync is the path that can
 be observed working every morning (`growth/last_run.json` → `build.deployed`,
@@ -602,7 +604,6 @@ environment. A weekly cron on the caprecruiting droplet (167.71.170.219,
 
 - NYC Rent Guidelines Board / DHCR 2024 building files
 - Coordinates from NYC PLUTO
-- Recent-listing signal via a nightly Apify (StreetEasy) refresh
 - Owner / managing agent / violations / complaints from NYC Open Data (HPD)
 - SF Rent Board Housing Inventory via DataSF (`gdc7-dmcn`)
 - LA County Assessor parcel rolls, filtered by LAHD's RSO criteria

@@ -7,7 +7,7 @@ holders to; landlords list there specifically to reach voucher tenants. The
 site's search runs through a JSON endpoint (v4/AjaxHandler?message=
 SearchListings) that pages 32 results at a time per county, no auth or
 cookies required. We page through the five borough counties, address-match
-each listing to a DHCR BBL (same normalizer as the listings pipeline), and
+each listing to a DHCR BBL (addr_match, the normalizer every feed shares), and
 record per building: listing count, lowest advertised rent, the cheapest
 listing's detail URL, and whether any listing carries the site's explicit
 "accepts Section 8" badge.
@@ -23,7 +23,7 @@ import time
 import urllib.request
 from pathlib import Path
 
-from parse_apify import build_index, normalize_addr
+from addr_match import build_index, normalize_addr
 
 HERE = Path(__file__).parent
 BUILDINGS = HERE / "buildings.min.json"

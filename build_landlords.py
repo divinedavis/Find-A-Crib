@@ -116,16 +116,6 @@ def main():
     print(f"hpd_contacts rows: {len(rows):,}")
 
     blds = {b["bbl"]: b for b in json.load(open(os.path.join(HERE, "buildings.min.json")))}
-    # "advertised" here means advertised in the last RECENT_DAYS days, which is
-    # the only reading build_seo.py's landlord badge can print. Until
-    # 2026-09-19 this counted membership of listings.json's `counts` map, which
-    # combine_listings.py keeps as a sticky master that is never pruned — so it
-    # was a count of buildings ever matched, rendered as "advertised for rent
-    # now". One definition, imported rather than restated: build_seo's
-    # recently_advertised_bbls().
-    from build_seo import load_listings, recently_advertised_bbls
-    listed = recently_advertised_bbls(load_listings(os.path.join(HERE, "listings.json")))
-
     by_name = collections.defaultdict(lambda: {"bbls": set(), "roles": set()})
     for r in rows:
         nm = (r["nm"] or "").strip()
@@ -145,23 +135,20 @@ def main():
         if n < (ORG_MIN if org else PERSON_MIN):
             continue
         items, boros = [], collections.Counter()
-        units = viol = classc = adv = 0
+        units = viol = classc = 0
         for bbl in e["bbls"]:
             b = blds[bbl]
             v = (b.get("h") or {}).get("violations") or {}
             units += b.get("u") or 0
             viol += v.get("open") or 0
             classc += v.get("oc") or 0
-            if bbl in listed:
-                adv += 1
             boros[b["b"]] += 1
             items.append({"bbl": bbl, "a": b.get("a"), "b": b["b"], "nb": b.get("nb"),
-                          "u": b.get("u"), "ov": v.get("open") or 0, "oc": v.get("oc") or 0,
-                          "adv": bbl in listed})
+                          "u": b.get("u"), "ov": v.get("open") or 0, "oc": v.get("oc") or 0})
         items.sort(key=lambda x: (-(x["ov"] or 0), x["a"] or ""))
         out.append({"name": display(up), "slug": slugify(up), "org": org,
                     "roles": sorted(e["roles"]), "buildings": n, "units": units,
-                    "open_violations": viol, "open_class_c": classc, "advertised": adv,
+                    "open_violations": viol, "open_class_c": classc,
                     "boroughs": dict(boros), "items": items})
 
     # Two landlords can slug the same ("ABC Realty LLC" / "ABC Realty, L.L.C.").

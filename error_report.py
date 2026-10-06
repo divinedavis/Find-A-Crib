@@ -405,7 +405,7 @@ def stale_feeds():
     """A feed whose file stopped refreshing is an error users see as old data."""
     out = {}
     docroot = os.environ.get("GROWTH_DOCROOT", "/var/www/rent-map")
-    checks = {"listings_zumper.json": 36, "hcr.json": 6, "featured.json": 36, "s8.json": 48}
+    checks = {"hcr.json": 6, "featured.json": 36, "s8.json": 48}
     # The Events tab (build_events.py, twice a day). Only checked once the
     # feed has existed: before the NYC_API_KEY is in place there is no file,
     # and "missing" would mail every hour about a feature not yet switched on.

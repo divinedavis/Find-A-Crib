@@ -16,6 +16,10 @@ PATHS=(
   buildings_geo_nta.json config.js.bak index.html.bak README.md
   changed_urls.txt scripts/refresh_listings.sh venv/pyvenv.cfg hcr_chain.pem
   api_server.py scrape.log alert_snapshot.json buildings_cache.json .env
+  # The Zumper / StreetEasy (Apify) listing feed, dropped 2026-10-06 — Zumper's
+  # Terms forbid scraping. None of it may be served again.
+  listings.json listings_zumper.json listings_apify.json apify_export.json
+  listings_archive/ rent-report/ rent-report/rent-report.csv
 )
 bad=0
 for p in "${PATHS[@]}"; do

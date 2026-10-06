@@ -40,7 +40,6 @@ DAILY_LIMITS = {
     "report_card": 30,
     "apply_help": 10,
     "ask": 20,
-    "rent_check": 100,
 }
 
 

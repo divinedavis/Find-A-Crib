@@ -146,10 +146,9 @@ def day14_followup(row, b, unsub):
               "might still be useful.",
         blocks=[
             {"type": "paragraph",
-             "text": "If you make a free account and save that building, we'll email you "
-                     "when an apartment there is advertised again, including listings that "
-                     "explicitly accept housing vouchers. It's the same nightly feed your "
-                     "report was built from, and it costs nothing."},
+             "text": "If you make an account and save that building, we'll email you "
+                     "when it changes — an apartment there listed for housing-voucher "
+                     "holders, a lottery or re-rental at the address, or new HPD violations."},
             {"type": "paragraph",
              "text": "And if the rent history came back looking off, the overcharge route "
                      "is still open — DHCR form RA-89. Reply to this email if you want a "

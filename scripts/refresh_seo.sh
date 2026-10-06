@@ -1,7 +1,7 @@
 #!/bin/bash
 # Nightly SEO refresh: rebuild static pages from the latest data, deploy only
 # changed/new files, and ping IndexNow with the URLs that actually changed.
-# Runs after the Zumper scrape (which refreshes listings.json). Honest lastmod:
+# Runs from cron on the 1st of the month. Honest lastmod:
 # build_seo.py only bumps a page's <lastmod> when its HTML really changed.
 set -euo pipefail
 # Same variable growth_run.sh's watchdog reads, and the same default, so the two

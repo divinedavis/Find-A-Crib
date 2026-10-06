@@ -49,7 +49,7 @@ CITY_RECORD_CASES = {
     'sf': ('SF-1237-200BLOCKOFDIVISA', ['Eviction notices', 'Rent Board petitions', 'Buyout agreements']),
     'dc': ('DC-69000755_1', ['Owner of record']),
 }
-BBL = '2023190002'          # 2401 3RD AVE, Bronx — has violations, listings nearby
+BBL = '2023190002'          # 2401 3RD AVE, Bronx — has violations
 ADDR = '2401 3RD AVE'
 PINS = "document.querySelectorAll('#map .leaflet-marker-icon').length"
 BPINS = "document.querySelectorAll('#map .building-dot-hit').length"
@@ -110,6 +110,7 @@ JOURNEY_EVENTS = {
     'city_chip':            [],
     'ad_tiles':             ['tile_served', 'tile_impression', 'featured_click', 'hc_click'],
     'outbound_links':       ['outbound'],
+    'portal_button':        ['outbound'],
     'status_chips':         ['status_open'],
     'referral_gate':        ['referral_open', 'referral_share'],
     'consent_mode':         [],
@@ -644,10 +645,9 @@ class Runner:
         self.ok(0 < si < total, f'Staten Island filter should shrink the match count, {total} -> {si}', j)
         self.ok(in_view >= 0.9 * si, f'the map should frame the filtered borough, but only {lab} are in view', j)
         page.evaluate("document.querySelectorAll('#borough-list input').forEach(c=>{c.checked=true}); document.querySelector('#borough-list input').dispatchEvent(new Event('change',{bubbles:true}))"); time.sleep(1)
-        page.evaluate("const r=document.querySelector('input[name=\"listed\"][value=\"yes\"]'); r.checked=true; r.dispatchEvent(new Event('change',{bubbles:true}))"); time.sleep(1)
-        listed = int(page.evaluate(LABEL).split(' of ')[1].replace(',', ''))
-        self.ok(0 < listed < 2000, f'"recently advertised" filter should leave a few hundred, got {listed}', j)
-        page.evaluate("const r=document.querySelector('input[name=\"listed\"][value=\"any\"]'); r.checked=true; r.dispatchEvent(new Event('change',{bubbles:true}))"); time.sleep(0.8)
+        # The "recently available" (Zumper) filter was removed 2026-10-06.
+        self.ok(page.evaluate("!document.querySelector('input[name=\"listed\"]') && !document.getElementById('pill-listed')"),
+                'the retired "recently available" filter is back', j)
         if device == 'desktop':
             # filters modal: footer visible without scrolling, Save present, five-row neighborhood box, wording
             page.evaluate("document.getElementById('pill-filters').click()"); time.sleep(0.8)
@@ -657,7 +657,8 @@ class Runner:
             self.ok(page.evaluate("!!document.getElementById('filters-save')"), 'filters modal lacks Save this search', j)
             self.ok(page.evaluate("document.getElementById('nb-list').getBoundingClientRect().height") <= 170, 'neighborhood list should show about five rows', j)
             body = page.evaluate("document.getElementById('filters-modal').innerText")
-            self.ok('Recently available' in body and 'Recently advertised' not in body and 'HPD · HUD' not in body, 'filters wording not updated', j)
+            self.ok('Recently available' not in body and 'Recently advertised' not in body and 'Zumper' not in body
+                    and 'HPD · HUD' not in body, 'filters wording not updated', j)
             page.evaluate("document.querySelector('[data-filters=\"close\"]').click()"); time.sleep(0.3)
             first = page.evaluate("document.querySelector('#grid .card[data-bbl]').dataset.bbl")
             centre = page.evaluate("(()=>{const c=__facMap.getCenter(); return [c.lat, c.lng]})()")
@@ -869,7 +870,7 @@ class Runner:
         early = page.evaluate("""() => [...document.querySelectorAll('.chip-row > [id^=pill-]')]
             .filter(e => e.getBoundingClientRect().width > 0)
             .map(e => e.id + ' ' + Math.round(e.getBoundingClientRect().width) + 'px')""")
-        moved = ['pill-borough', 'pill-nb', 'pill-listed', 'pill-s8',
+        moved = ['pill-borough', 'pill-nb', 'pill-s8',
                  'pill-beds', 'pill-price', 'pill-viol', 'pill-agent']
         leaked = [e for e in early if e.split()[0] in moved]
         self.ok(not leaked, f"filter pills painted in the chip row before being moved: {leaked}", j)
@@ -979,34 +980,17 @@ class Runner:
         self.ok(r.status in (401, 429), f'/api/alerts/prefs without a session should be refused, got {r.status}', j)
         j.notes.append('prefs endpoint gated')
 
-    def j_rent_report(self, page, j, device):
-        """/rent-report/ (2026-09-19): the daily asking-rent report and the
-        index built from the archived scrapes. It is a static page a cron
-        rewrites, so the journey checks the page a reader gets — numbers
-        present, the CSV actually downloadable, the promise about visitor
-        counts still printed — rather than the builder's own arithmetic."""
-        page.goto(LIVE + '/rent-report/', wait_until='domcontentloaded', timeout=90000)
-        title = page.evaluate("document.querySelector('h1')?.textContent || ''")
-        self.ok('Rent-Stabilized Rent Report' in title, f'rent report should lead with its title: {title!r}', j)
-        tiles = page.evaluate("[...document.querySelectorAll('.tile b')].map(e=>e.textContent.trim())")
-        self.ok(len(tiles) >= 4, f'the four headline tiles should be there, saw {tiles}', j)
-        self.ok(any(t.startswith('$') for t in tiles), f'a median rent should be one of them: {tiles}', j)
-        heads = page.evaluate("[...document.querySelectorAll('h2')].map(e=>e.textContent.trim())")
-        for need in ('Rent index', 'Asking rents by borough', 'How this is measured'):
-            self.ok(need in heads, f'"{need}" section missing: {heads}', j)
-        # The privacy policy promises no row under ten people; the page has to say so.
-        body = page.evaluate("document.body.innerText")
-        self.ok('at least 10' in body or 'least 10 people' in body, 'the ten-visitor floor should be stated', j)
-        csv = page.request.get(LIVE + '/rent-report/rent-report.csv')
-        self.ok(csv.status == 200, f'the CSV should download, got {csv.status}', j)
-        first = csv.text().splitlines()[0] if csv.text() else ''
-        self.ok(first.startswith('date,section,label'), f'CSV header looks wrong: {first!r}', j)
-        rows = len(csv.text().strip().splitlines())
-        self.ok(rows > 5, f'CSV should carry the numbers, saw {rows} lines', j)
-        if device == 'phone':
-            wide = page.evaluate("document.documentElement.scrollWidth > innerWidth + 1")
-            self.ok(not wide, 'the report must not scroll sideways on a phone', j)
-        j.notes.append(f'{len(tiles)} tiles, {rows}-line CSV')
+    def j_retired_pages(self, page, j, device):
+        """/rent-report/ and /available/ were built from the Zumper/StreetEasy
+        listing feed and were REMOVED 2026-10-06 with it. They must stay gone:
+        a page that comes back would be publishing that data again."""
+        if device != 'desktop':
+            return
+        for path in ('/rent-report/', '/rent-report/rent-report.csv', '/available/', '/listings.json',
+                     '/listings_zumper.json', '/listings_apify.json'):
+            r = page.request.get(LIVE + path, max_redirects=0)
+            self.ok(r.status in (301, 302, 404, 410), f'{path} should be gone, got {r.status}', j)
+        j.notes.append('rent report, /available/ and listings files gone')
 
     def j_legal_pages(self, page, j, device):
         """Privacy and Terms, which the App Store listing and the app both
@@ -1319,6 +1303,71 @@ class Runner:
         j.notes.append('re-rental ' + ('ok' if feat else 'none') + ', lottery ' + ('ok' if hc else 'none')
                        + f", ads filled {ads.count('filled')}/{len(ads)}, waiting below the fold {ads.count('waiting')}")
 
+    def j_portal_button(self, page, j, device):
+        """One outbound button on every building (2026-10-06).
+
+        The Zumper scrape and the StreetEasy/Apify feed were dropped, so there
+        are no asking rents or "recently available" flags; every building card
+        and sheet instead carries exactly one portal link — a StreetEasy address
+        search in New York, a Zillow address search elsewhere — and the page
+        must not fetch the retired listing files or name Zumper anywhere.
+        """
+        reqs = []
+        page.on('request', lambda r: reqs.append(r.url))
+        self.boot(page)
+        self.typeq(page, ADDR)
+        self.pick_first(page)
+        self.ok(self.detail_open(page), 'the building sheet should be open', j)
+        portal_js = """(sel) => [...document.querySelectorAll(sel)]
+            .filter(a => /streeteasy\\.com|zillow\\.com|zumper\\.com/.test(a.getAttribute('href') || ''))
+            .map(a => ({href: a.getAttribute('href'), text: a.textContent.trim(),
+                        target: a.getAttribute('target') || '', rel: a.getAttribute('rel') || ''}))"""
+        sheet = page.evaluate(portal_js, '#detail-sheet a')
+        self.ok(len(sheet) == 1, f'the sheet should carry exactly one portal link, got {sheet}', j)
+        if sheet:
+            a = sheet[0]
+            self.ok(a['href'].startswith('https://streeteasy.com/search?search='),
+                    f'NYC portal link should be a StreetEasy search: {a["href"]}', j)
+            self.ok('2401%203RD%20AVE' in a['href'] and 'Bronx' in a['href'],
+                    f'the search should carry the address and borough: {a["href"]}', j)
+            self.ok(a['text'] == 'View on StreetEasy ↗', f'button label: {a["text"]!r}', j)
+            self.ok(a['target'] == '_blank' and 'noopener' in a['rel'], f'portal link must open off-site safely: {a}', j)
+        txt = page.evaluate("document.getElementById('detail-sheet').innerText")
+        for bad in ('Zumper', '/mo asking', 'Recently available', 'Is this rent fair'):
+            self.ok(bad not in txt, f'the sheet still says "{bad}"', j)
+        self.close_detail(page)
+        cards = page.evaluate(portal_js, '#grid .card[data-bbl] a')
+        n_cards = page.evaluate("document.querySelectorAll('#grid .card[data-bbl]').length")
+        if n_cards:
+            self.ok(len(cards) == n_cards, f'{n_cards} list cards but {len(cards)} portal links', j)
+            off = [c['href'][:60] for c in cards if not c['href'].startswith('https://streeteasy.com/search?search=')]
+            self.ok(not off, f'every NYC card links a StreetEasy search, not {off[:3]}', j)
+        body = page.evaluate("document.body.innerText")
+        self.ok('Zumper' not in body and 'recently available' not in body.lower(),
+                'the page still mentions Zumper or "recently available"', j)
+        hit = [u for u in reqs if re.search(r'/(listings|listings_zumper|listings_apify|vacancies)\.json', u)]
+        self.ok(not hit, f'the page fetched retired listing data: {hit[:2]}', j)
+        notes = [f'{n_cards} NYC cards']
+        # Every other city: a Zillow address search.
+        if device == 'desktop':
+            for city in ('la', 'dc'):
+                bid = CITY_RECORD_CASES[city][0]
+                page.goto('about:blank')
+                page.goto(f'{LIVE}/{city}/#d={bid}', wait_until='domcontentloaded', timeout=90000)
+                try:
+                    self.wait_until(page, "!document.getElementById('detail-sheet').hidden", timeout=60000)
+                except Exception:
+                    j.errors.append(f'/{city}/#d={bid} never opened the building'); continue
+                links = page.evaluate(portal_js, '#detail-sheet a')
+                self.ok(len(links) == 1, f'{city}: exactly one portal link, got {links}', j)
+                if links:
+                    h = links[0]['href']
+                    self.ok(h.startswith('https://www.zillow.com/homes/') and h.endswith('_rb/'),
+                            f'{city}: portal link should be a Zillow search: {h}', j)
+                    self.ok(links[0]['text'] == 'View on Zillow ↗', f'{city}: button label {links[0]["text"]!r}', j)
+                notes.append(f'{city} zillow')
+        j.notes.append(', '.join(notes))
+
     def j_outbound_links(self, page, j, device):
         """Every hand-off off the site: 695 people did one last month.
 
@@ -1626,7 +1675,7 @@ class Runner:
               title: document.getElementById('paywall-title').textContent,
               shown: [...document.querySelectorAll('#paywall-feats li')].filter(l => !l.hidden && l.offsetParent).map(l => l.dataset.perk)}))()""")
             self.ok(pw['open'] and 'plain words' in pw['title'].lower(), f'a free account gets the AI paywall: {pw}', j)
-            self.ok(set(pw['shown']) == {'realtime', 'ai_search', 'rent_check', 'apply_help', 'noads'}, f'the paywall lists real-time alerts, the AI perks and no ads: {pw["shown"]}', j)
+            self.ok(set(pw['shown']) == {'realtime', 'ai_search', 'apply_help', 'noads'}, f'the paywall lists real-time alerts, the AI perks and no ads: {pw["shown"]}', j)
             # First month on us (2026-10-04): the trial line sits under the
             # price, and $4.99 stays the big number (Apple/FTC: billed amount
             # most prominent).
@@ -1685,7 +1734,7 @@ class Runner:
         self.boot(page)
         self.ok(page.evaluate("document.getElementById('pill-resume').hidden"), 'no saved search: no resume chip', j)
         before = page.evaluate(LABEL)
-        st = {"q": "", "boroughs": ["Bk"], "allBoroughs": 5, "nbs": [], "listed": "any", "s8": "any",
+        st = {"q": "", "boroughs": ["Bk"], "allBoroughs": 5, "nbs": [], "s8": "any",
               "beds": [], "pmin": "", "pmax": "", "more": {"viol": "any", "comp": "any", "phone": "any"}, "at": 0}
         page.evaluate("s => localStorage.setItem('fac.lastSearch:nyc', JSON.stringify(Object.assign(s, {at: Date.now()})))", st)
         self.boot(page)
@@ -1814,8 +1863,8 @@ class Runner:
 
     JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'pin_and_list',
                 'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'signin_modal', 'app_chip', 'app_qr_menu', 'boot_is_usable', 'city_chip',
-                'ad_tiles', 'list_follows_zoom', 'plus_no_ads', 'building_page_link', 'remove_ads_chip', 'overlays_clear_ad', 'outbound_links', 'status_chips', 'referral_gate',
-                'rent_report', 'legal_pages', 'comments_gate', 'landlords_gate', 'consent_mode', 'account_delete', 'plus_gates', 'resume_search', 'ai_features', 'qualify']
+                'ad_tiles', 'list_follows_zoom', 'plus_no_ads', 'building_page_link', 'remove_ads_chip', 'overlays_clear_ad', 'portal_button', 'outbound_links', 'status_chips', 'referral_gate',
+                'retired_pages', 'legal_pages', 'comments_gate', 'landlords_gate', 'consent_mode', 'account_delete', 'plus_gates', 'resume_search', 'ai_features', 'qualify']
 
     # ---- run --------------------------------------------------------------
     def run(self):

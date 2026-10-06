@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<!-- Safari's Smart App Banner: the App Store banner at the top on iPhone (owner, 2026-10-05: "mobile web should have this announcement like marracat does"). -->
+<meta name="apple-itunes-app" content="app-id=6807549249" />
   <script>if(/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1))document.documentElement.classList.add("ios")</script>
 <title>Rent-Stabilized Yonkers & Westchester — 1,700+ ETPA-Registered Buildings | Find A Crib</title>
 <meta name="application-name" content="Find A Crib" />
@@ -244,6 +246,21 @@
   html, body { margin: 0; height: 100%; font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: var(--ink); background: var(--surface); }
   a { color: var(--blue); text-decoration: none; }
 
+  .app-banner { position: relative; background: #f4f2ee; border-bottom: 1px solid var(--line); padding: 12px 56px; }
+  .app-banner[hidden] { display: none; }
+  .ab-inner { display: flex; align-items: center; justify-content: center; gap: 18px; }
+  .ab-icon { width: 56px; height: 56px; border-radius: 13px; box-shadow: 0 1px 4px rgba(0,0,0,.18); }
+  .ab-text { display: flex; flex-direction: column; color: #1a1a1a; }
+  .ab-text b { font-size: 17px; } .ab-text span { font-size: 15px; color: #555; }
+  .ab-qr { display: block; background: #fff; border: 1px solid #e3e0da; border-radius: 10px; padding: 6px; margin-left: 12px; }
+  .ab-qr svg { display: block; width: 72px; height: 72px; shape-rendering: crispEdges; }
+  .ab-scan { font-size: 14px; color: #666; line-height: 1.35; }
+  .ab-close { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border: 0;
+    border-radius: 50%; background: transparent; color: #444; font-size: 18px; cursor: pointer; }
+  .ab-close:hover { background: rgba(0,0,0,.06); }
+  html[data-theme="dark"] .app-banner { background: #1d2126; }
+  html[data-theme="dark"] .ab-text { color: #eee; } html[data-theme="dark"] .ab-text span,
+  html[data-theme="dark"] .ab-scan { color: #aaa; } html[data-theme="dark"] .ab-close { color: #ccc; }
   header.topbar {
     position: sticky; top: 0; z-index: 1000;
     background: var(--surface); border-bottom: 1px solid var(--line);
@@ -457,7 +474,7 @@
   /* consolidated Filters modal: relocated pill popovers render as inline sections */
   /* until the script moves them into the modal, the filter pills stay hidden in
      the header (they'd otherwise flash there while the building data loads) */
-  .filter-bar #pill-borough, .filter-bar #pill-nb, .filter-bar #pill-listed,
+  .filter-bar #pill-borough, .filter-bar #pill-nb,
   .filter-bar #pill-s8, .filter-bar #pill-beds, .filter-bar #pill-price,
   .filter-bar #pill-viol { display: none; }
   /* price section (Filters modal): two min/max dropdowns */
@@ -486,7 +503,7 @@
      Hiding them WHILE THEY ARE STILL IN THE CHIP ROW costs nothing: the
      selector stops matching the moment appendChild moves them, so the modal
      copies are unaffected and nothing has to be un-hidden. */
-  .chip-row > #pill-borough, .chip-row > #pill-nb, .chip-row > #pill-listed,
+  .chip-row > #pill-borough, .chip-row > #pill-nb,
   .chip-row > #pill-s8, .chip-row > #pill-beds, .chip-row > #pill-price,
   .chip-row > #pill-viol, .chip-row > #pill-agent { display: none; }
   .filters-card .pill-popover { position: static !important; display: block !important;
@@ -515,6 +532,13 @@
   .paywall-price { margin-bottom: 16px; }
   .paywall-price .amt { font-size: 44px; font-weight: 800; letter-spacing: -1px; }
   .paywall-price .per { font-size: 20px; color: var(--ink-2); }
+  .feat-card.q-out, .hc-card.q-out { display: none !important; }
+  .alert-rt { display: flex; align-items: flex-start; gap: 6px; }
+  .alert-rt a { font-weight: 700; color: #5b21b6; }
+  html[data-theme="dark"] .alert-rt a { color: #c4b5fd; }
+  .alert-rt .rt-x { border: 0; background: transparent; color: var(--ink-2); font-size: 14px; cursor: pointer; padding: 0 4px; line-height: 1.4; }
+  .alert-on { color: var(--ink-2); }
+  .paywall-trial { margin: -8px 0 14px; font-size: 15px; font-weight: 600; color: var(--ink-2); }
   .paywall-card #paywall-subscribe { padding: 19px; font-size: 20px; border-radius: 14px; }
   .paywall-fine { text-align: center; font-size: 15px; color: var(--ink-2); margin: 14px 0 0; }
   .paywall-refer { display: block; width: 100%; margin-top: 10px; padding: 15px; font-size: 17px; font-weight: 700;
@@ -678,7 +702,7 @@
   }
   .filter-pill.open .pill-popover { display: block; }
   /* Rightmost pill: anchor its popover to the right edge so it opens leftward and stays in the viewport */
-  #pill-listed .pill-popover, #pill-beds .pill-popover, #pill-viol .pill-popover { left: auto; right: 0; }
+  #pill-beds .pill-popover, #pill-viol .pill-popover { left: auto; right: 0; }
   .pill-popover .sheet-group-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--ink-2); margin: 2px 2px 4px; }
   .pill-popover label.row { display: flex; align-items: center; gap: 8px; padding: 4px 2px; font-size: 13px; font-weight: 500; cursor: pointer; }
   .pill-popover label.row[hidden] { display: none; }   /* [hidden] loses to display:flex without this */
@@ -775,6 +799,19 @@
     position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;
     transition: opacity .25s ease;
   }
+  .feat-gallery { position: absolute; inset: 0; z-index: 0; display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
+    scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+  .feat-gallery::-webkit-scrollbar { display: none; }
+  .card .photo .feat-gallery img.listing-photo { position: relative; flex: 0 0 100%; scroll-snap-align: start; }
+  .feat-dots { position: absolute; z-index: 3; left: 0; right: 0; bottom: 8px; display: flex; justify-content: center; gap: 5px; pointer-events: none; }
+  .feat-dots i { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.55); }
+  .feat-dots i.on { background: #fff; }
+  .feat-gal-btn { position: absolute; z-index: 3; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border-radius: 50%;
+    border: 0; background: rgba(0,0,0,.45); color: #fff; font-size: 22px; line-height: 30px; cursor: pointer; opacity: 0; transition: opacity .15s; }
+  .feat-gal-btn.prev { left: 8px; } .feat-gal-btn.next { right: 8px; }
+  .card .photo:hover .feat-gal-btn, .feat-gal-btn:focus-visible { opacity: 1; }
+  @media (hover: none) { .feat-gal-btn { display: none; } }
+  .card .photo .photo-shade { pointer-events: none; }
   .card .photo .photo-shade {
     position: absolute; inset: 0; z-index: 1;
     background: linear-gradient(180deg, rgba(0,0,0,0.45) 0%, transparent 35%, transparent 55%, rgba(0,0,0,0.7) 100%);
@@ -1369,6 +1406,29 @@
   /* one consistent size for everything in the header except the price */
   .d-key { font-size: 14px; color: var(--ink); font-weight: 600; margin-top: 4px; }
   .d-addr { font-size: 14px; font-weight: 600; margin-top: 8px; }
+  /* AI features (Plus, 2026-10-03) */
+  .plus-tag { display: inline-block; font-size: 10.5px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase;
+    color: #fff; background: linear-gradient(135deg,#6b3df5,#3151c8); border-radius: 999px; padding: 2px 7px; margin-left: 6px; vertical-align: 1px; }
+  .d-rentcheck { margin-top: 10px; background: var(--surface); border: 1px solid var(--line); color: var(--ink); border-radius: 999px;
+    padding: 7px 12px; font-size: 13.5px; font-weight: 700; cursor: pointer; }
+  .rentcheck-card { margin-top: 10px; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; font-size: 14px; line-height: 1.45; }
+  .rentcheck-card b.v-high { color: var(--bad-ink); } .rentcheck-card b.v-low { color: var(--ok-ink); } .rentcheck-card b.v-typical { color: var(--ink); }
+  .rentcheck-card .rc-note { color: var(--ink-2); font-size: 12.5px; margin-top: 6px; }
+  .ac-item.ac-ai .ac-addr { color: var(--blue); }
+  .paywall-feats li[hidden] { display: none; }
+  .qual-badge { display: inline-block; margin-top: 6px; font-size: 12.5px; font-weight: 800; border-radius: 999px; padding: 3px 9px; }
+  .qual-badge.q-yes { background: var(--ok-bg); color: var(--ok-ink); }
+  .qual-badge.q-high, .qual-badge.q-low { background: var(--warn-bg); color: var(--warn-ink); }
+  .qual-badge.q-unknown { background: var(--surface); color: var(--ink-2); border: 1px solid var(--line); }
+  #qualify-modal .q-row { display: flex; gap: 10px; margin: 10px 0; }
+  #qualify-modal select, #qualify-modal input { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 10px; padding: 10px; font-size: 16px; background: var(--surface); color: var(--ink); }
+  .rc-points { list-style: none; padding: 0; margin: 8px 0 0; }
+  .rc-points li { padding: 6px 0; border-top: 1px solid var(--line); }
+  .rc-points li:first-child { border-top: 0; }
+  .rc-src { display: inline-block; font-size: 11px; color: var(--ink-2); border: 1px solid var(--line); border-radius: 999px; padding: 0 6px; margin-left: 4px; white-space: nowrap; }
+  .ask-row { display: flex; gap: 8px; margin-top: 10px; }
+  .ask-row input { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; font-size: 15px; background: var(--surface); color: var(--ink); }
+  .ask-row button { border: 0; border-radius: 10px; padding: 0 14px; font-weight: 800; background: var(--blue-solid); color: #fff; cursor: pointer; }
   .d-sub { font-size: 14px; color: var(--ink-2); margin-top: 2px; }
   .d-health { display: inline-block; margin-top: 8px; font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 8px; }
   .d-health.ok { background: var(--ok-bg); color: var(--ok-ink); }
@@ -1498,6 +1558,19 @@
 </style>
 </head>
 <body>
+<!-- Desktop "get the app" banner (owner, 2026-10-05: "we need this iphone/ipad
+     banner for the findacrib desktop web", like marracat.com's). iPhones and
+     iPads get Safari's own Smart App Banner (the apple-itunes-app tag) instead.
+     The QR is the App Store one from the app modal, cloned in at runtime. -->
+<div id="app-banner" class="app-banner" hidden>
+  <div class="ab-inner">
+    <img class="ab-icon" src="/apple-touch-icon.png?v=2" alt="" width="56" height="56">
+    <div class="ab-text"><b>Find A Crib on your iPhone and iPad</b><span>Every rent-stabilized building and re-rental, in your pocket.</span></div>
+    <a class="ab-qr" href="https://apps.apple.com/us/app/find-a-crib/id6807549249?ct=desktop-banner" target="_blank" rel="noopener" aria-label="Find A Crib on the App Store"></a>
+    <div class="ab-scan">Scan with your<br>iPhone or iPad camera</div>
+  </div>
+  <button type="button" class="ab-close" aria-label="Hide the app banner">✕</button>
+</div>
 <header class="topbar">
   <div class="brand"><img class="brand-dot" src="/brand/mark.svg?v=2" alt="" width="22" height="22" decoding="async"><span class="brand-text">Find A Crib<span class="brand-sub">(Yonkers Rent Stabilized Homes)</span></span></div>
   <nav class="city-nav" id="city-nav" aria-label="City">
@@ -1529,13 +1602,16 @@
   <div class="filter-bar">
     <input class="search-input" id="q" type="text" placeholder="Search only rent stabilized apartments" />
     <div class="chip-row">
+    <!-- Resume your last search (2026-10-03): a chip, never a popup. -->
+    <div class="filter-pill" id="pill-resume" role="button" tabindex="0" hidden title="Pick up the search you had last time">↩ <span id="pill-resume-text">Resume</span></div>
+    <div class="filter-pill nyc-only" id="pill-qualify" role="button" tabindex="0" title="Household size and income: see which lotteries and re-rentals you qualify for">✅ <span id="pill-qualify-text">What do I qualify for?</span></div>
     <div class="filter-pill toggle-pill nyc-only" id="pill-home" role="button" tabindex="0" hidden title="Your own building: status, violations, landlord, and what changed since your last visit">🏠 My apartment</div>
     <div class="filter-pill toggle-pill" id="pill-fav" role="button" tabindex="0">
       <span class="fav-heart">♡</span> Saved <span class="count-badge" id="badge-fav" style="display:none">0</span>
     </div>
     <!-- Phones: Alerts sits right of Saved (asked 2026-09-08). Desktop has its
          own Alerts chip at the end of the row, so this one is mobile-only. -->
-    <a class="filter-pill desktop-chip mobile-only nyc-only" id="pill-alerts-m" href="/alerts/?src=chip-m" title="An email the minute a new lottery or re-rental opens in your borough">🔔 Alerts</a>
+    <a class="filter-pill desktop-chip mobile-only nyc-only" id="pill-alerts-m" href="/alerts/?src=chip-m" title="A daily 8 AM email when a new lottery or re-rental opens in your borough (real-time with Plus)">🔔 Alerts</a>
     <!-- iPhones only (asked 2026-09-09): the App Store link right of Alerts.
          html.ios is set by the head script; Android and desktop never see it. -->
     <a class="filter-pill desktop-chip mobile-only nyc-only ios-only" id="pill-app-m" href="https://apps.apple.com/us/app/find-a-crib/id6807549249" rel="noopener" title="Find A Crib for iPhone — the same map and filters, on the App Store">📲 iPhone app</a>
@@ -1567,14 +1643,6 @@
         </div>
       </div>
     </div>
-    <div class="filter-pill nyc-only" id="pill-listed">
-      Recently available<span class="caret">▾</span>
-      <div class="pill-popover">
-        <label class="row"><input type="radio" name="listed" value="any" checked> Any</label>
-        <label class="row"><input type="radio" name="listed" value="yes"> Recently available on Zumper</label>
-        <label class="row"><input type="radio" name="listed" value="no"> Not recently available</label>
-      </div>
-    </div>
     <div class="filter-pill nyc-only" id="pill-s8">
       Section 8<span class="caret">▾</span>
       <div class="pill-popover">
@@ -1593,7 +1661,7 @@
         <label class="row"><input type="checkbox" name="beds" value="2"> 2 beds</label>
         <label class="row"><input type="checkbox" name="beds" value="3"> 3 beds</label>
         <label class="row"><input type="checkbox" name="beds" value="4"> 4+ beds</label>
-        <div style="font-size:11px;color:var(--ink-2);margin-top:8px;padding-top:8px;border-top:1px solid var(--line)">Bedroom data comes from recent listings — this also limits results to advertised buildings.</div>
+        <div style="font-size:11px;color:var(--ink-2);margin-top:8px;padding-top:8px;border-top:1px solid var(--line)">Filters the re-rental and lottery listings. Building records don’t carry bedroom counts.</div>
       </div>
     </div>
     <div class="filter-pill nyc-only" id="pill-price">
@@ -1618,7 +1686,7 @@
             <option value="6000">$6,000</option><option value="8000">$8,000</option>
           </select>
         </div>
-        <div style="font-size:11px;color:var(--ink-2);margin-top:10px">Uses the asking rent when a building was recently advertised; otherwise the ZIP's typical rent (HUD Small-Area FMR, studio–2BR midpoint) — not the building's actual rent.</div>
+        <div style="font-size:11px;color:var(--ink-2);margin-top:10px">Uses the ZIP's typical rent (HUD Small-Area FMR, studio–2BR midpoint), or the rent the city publishes for the building where there is one — not an asking rent.</div>
       </div>
     </div>
     <div class="filter-pill nyc-only" id="pill-viol">
@@ -1644,8 +1712,8 @@
         <div style="font-size:11px;color:var(--ink-2);margin-top:8px">HPD registers a managing agent for most buildings but a contact number for far fewer. This narrows the map to the ones you can actually call.</div>
       </div>
     </div>
-    <a class="filter-pill desktop-chip desktop-only nyc-only" href="/alerts/?src=chip" title="An email the minute a new lottery or re-rental opens in your borough">🔔 Alerts</a>
-    <button type="button" id="pill-noads" class="filter-pill desktop-chip desktop-only" title="Find A Crib Plus: no ads anywhere, plus agent phone numbers, saved searches and landlord research">🚫 Remove ads</button>
+    <a class="filter-pill desktop-chip desktop-only nyc-only" href="/alerts/?src=chip" title="A daily 8 AM email when a new lottery or re-rental opens in your borough (real-time with Plus)">🔔 Alerts</a>
+    <button type="button" id="pill-noads" class="filter-pill desktop-chip desktop-only" hidden title="Find A Crib Plus: no ads anywhere, plus agent phone numbers, saved searches and landlord research">🚫 Remove ads</button>
     <!-- Desktop's counterpart to the mobile #pill-app-m chip: a phone can tap
          straight through to the App Store, a laptop cannot, so this one opens a
          QR code to scan instead. Not nyc-only — the app carries every city. -->
@@ -1684,7 +1752,7 @@
     <div id="folder-bar" hidden></div>
     <div id="search-helper" hidden></div>
     <div class="results-grid empty-state" id="grid"><div class="empty">Loading 30k buildings…</div></div>
-    <div class="footer-credit" id="credit">Source: NYC Rent Guidelines Board / DHCR 2024 · Coordinates from <a href="https://www.nyc.gov/site/planning/data-maps/open-data.page" target="_blank" rel="noopener">NYC PLUTO</a> · Listings via <a href="https://streeteasy.com" target="_blank" rel="noopener">StreetEasy</a> &amp; Zumper · Owner/violation/complaint data from <a href="https://data.cityofnewyork.us/" target="_blank" rel="noopener">NYC Open Data — HPD</a> · Voucher listings via <a href="https://www.affordablehousing.com" target="_blank" rel="noopener">AffordableHousing.com</a> · Subsidized-building data from HPD &amp; HUD · Rent estimates: <a href="https://www.huduser.gov/portal/datasets/fmr/smallarea/index.html" target="_blank" rel="noopener">HUD FY2026 Small-Area Fair Market Rents</a> by ZIP (not building-specific) · Created by <a href="https://divinedavis.com" target="_blank" rel="noopener">Divine Davis</a> · <a href="/developers/">API for developers</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></div>
+    <div class="footer-credit" id="credit">Source: NYC Rent Guidelines Board / DHCR 2024 · Coordinates from <a href="https://www.nyc.gov/site/planning/data-maps/open-data.page" target="_blank" rel="noopener">NYC PLUTO</a> · Owner/violation/complaint data from <a href="https://data.cityofnewyork.us/" target="_blank" rel="noopener">NYC Open Data — HPD</a> · Voucher listings via <a href="https://www.affordablehousing.com" target="_blank" rel="noopener">AffordableHousing.com</a> · Subsidized-building data from HPD &amp; HUD · Rent estimates: <a href="https://www.huduser.gov/portal/datasets/fmr/smallarea/index.html" target="_blank" rel="noopener">HUD FY2026 Small-Area Fair Market Rents</a> by ZIP (not building-specific) · Created by <a href="https://divinedavis.com" target="_blank" rel="noopener">Divine Davis</a> · <a href="/developers/">API for developers</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a></div>
   </aside>
 </main>
 
@@ -1726,6 +1794,20 @@
     <div class="auth-legal">By continuing you agree to our <a href="/terms.html" target="_blank" rel="noopener">Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</div>
   </div>
 </div>
+<!-- Qualify-check (free, 2026-10-03) -->
+<div id="qualify-modal" class="auth-backdrop" hidden>
+  <div class="auth-card">
+    <button class="auth-close" data-qualify="close" aria-label="Close">✕</button>
+    <h2>What do I qualify for?</h2>
+    <p class="auth-sub">Lotteries and re-rentals have income limits by household size. Tell us yours and every listing says whether you’re in range. Kept on this device (and your account, if you’re signed in).</p>
+    <div class="q-row">
+      <select id="q-hh" aria-label="People in your household"><option value="1">1 person</option><option value="2">2 people</option><option value="3">3 people</option><option value="4">4 people</option><option value="5">5 people</option><option value="6">6 people</option><option value="7">7 people</option><option value="8">8 people</option></select>
+      <input id="q-income" inputmode="numeric" placeholder="Yearly household income, $" aria-label="Yearly household income">
+    </div>
+    <button id="q-save" class="auth-submit" type="button">Show what I qualify for</button>
+    <p class="paywall-fine"><a href="#" id="q-clear">Clear</a></p>
+  </div>
+</div>
 <!-- Find A Crib Plus paywall -->
 <div id="paywall-modal" class="auth-backdrop" hidden>
   <div class="auth-card paywall-card">
@@ -1737,6 +1819,9 @@
          to the top (openPaywall). Big type on purpose (owner, 2026-09-30:
          "a prompt this big with large font"). -->
     <ul class="paywall-feats" id="paywall-feats">
+      <li data-perk="realtime" data-ai><span class="pf-ico">⚡</span><span><b>Real-time alerts</b>Re-rentals go first come, first served. Hear the minute one opens in your boroughs — without Plus, alerts come once a day at 8 AM.</span></li>
+      <li data-perk="ai_search" data-ai><span class="pf-ico">✨</span><span><b>Search in plain words</b>“2 bed under $2,500 near Prospect Park, no violations” — and the map sets every filter</span></li>
+      <li data-perk="apply_help" data-ai><span class="pf-ico">📝</span><span><b>Help me apply</b>The steps, the documents to gather and a ready-to-send email to the agent, for every re-rental</span></li>
       <li data-perk="bedbugs"><span class="pf-ico">🛏️</span><span><b>Bedbug records</b>Every bedbug filing a landlord made for the building, year by year</span></li>
       <li data-perk="rodents"><span class="pf-ico">🐀</span><span><b>Rodent records</b>The Health Department's rat inspections, building by building</span></li>
       <li data-perk="phone"><span class="pf-ico">📞</span><span><b>Agent phone numbers</b>Call who actually runs the building — 11,000+ managing-agent numbers</span></li>
@@ -1744,13 +1829,16 @@
     </ul>
     <div class="paywall-cta">
       <div class="paywall-price"><span class="amt">$4.99</span> <span class="per">/ month</span></div>
+      <!-- First month on us (owner, 2026-10-04): a 30-day Stripe trial for an
+           account's first subscription; the billed price stays the big one. -->
+      <div class="paywall-trial">Your first month is on us — then $4.99/month.</div>
       <div id="paywall-error" class="auth-error" hidden></div>
-      <button id="paywall-subscribe" type="button" class="auth-submit">Subscribe</button>
+      <button id="paywall-subscribe" type="button" class="auth-submit">Start your month on us</button>
       <!-- Every $4.99 prompt also offers the referral route (owner, 2026-10-01):
            invite one friend and you both get 2 months of Plus. -->
       <button id="paywall-refer" type="button" class="paywall-refer">🎁 Or invite a friend — you both get 2 months of Plus</button>
     </div>
-    <p class="paywall-fine">Cancel anytime. Billed monthly via Stripe.</p>
+    <p class="paywall-fine">New members: the first month costs nothing; $4.99 is billed via Stripe when it ends, then monthly. Cancel anytime before it ends and you won’t be charged.</p>
   </div>
 </div>
 <!-- Referral: invite one friend, both get Plus free -->
@@ -1823,11 +1911,11 @@
       <span class="label">City</span>
       <div id="profile-cities" class="profile-cities"></div>
     </div>
-    <button id="profile-upgrade" type="button" class="auth-submit" hidden>Get Plus — $4.99/mo</button>
+    <button id="profile-upgrade" type="button" class="auth-submit" hidden>⚡ Get Plus — real-time alerts, first month on us</button>
     <div class="profile-row profile-toggle-row">
       <div>
         <div class="profile-feat">🔔 Saved-building alerts</div>
-        <div class="profile-feat-sub">An email when a building you saved is advertised, gets a lottery or re-rental, drops its rent, or its violations change. Never more than one email a day; Tuesdays it’s the weekly round-up.</div>
+        <div class="profile-feat-sub">An email when a building you saved gets a voucher listing, a lottery or re-rental, or its violations change. Never more than one email a day; Tuesdays it’s the weekly round-up.</div>
       </div>
       <label class="switch"><input id="profile-alerts" type="checkbox"><span class="slider"></span></label>
     </div>
@@ -1841,7 +1929,7 @@
     <div class="profile-row profile-toggle-row nyc-only">
       <div>
         <div class="profile-feat">🏛️ Lottery &amp; re-rental alerts</div>
-        <div class="profile-feat-sub">An email the minute a new housing lottery or re-rental opens in your borough.</div>
+        <div class="profile-feat-sub">A daily 8 AM email when a new housing lottery or re-rental opens in your borough — the minute it opens with Plus.</div>
       </div>
       <a class="folder-new" href="/alerts/" style="text-decoration:none;white-space:nowrap">Set up →</a>
     </div>
@@ -2476,13 +2564,13 @@ function favActive() {
 
   // ---------- data ----------
   // Maps Embed API key from config.js; no Static Street View requests are made.
-  // short region code -> display name / Zumper city slug (from the city config)
+  // short region code -> display name / city slug (from the city config)
   const BORO_NAME = CITY.regions;
   const BORO_SLUG = CITY.slugs;
   const N_REGIONS = Object.keys(CITY.regions).length;
 
-  // Non-NYC pages: rebuild the region list, hide NYC-only chrome (Zumper
-  // listings, Section 8, beds, HPD filters — their data files don't exist
+  // Non-NYC pages: rebuild the region list, hide NYC-only chrome (Section 8,
+  // beds, HPD filters — their data files don't exist
   // here), and relabel the header. The static markup stays NYC-first so the
   // root page needs no work at all.
   if (!IS_NYC) {
@@ -2609,13 +2697,12 @@ function favActive() {
   // so the alert engine watches it. Stored in localStorage and, when signed
   // in, on user_metadata.home_bbl (same pattern as the theme — no table).
   const HOME_KEY = 'fac_home';
-  let HOME = null;   // {bbl, set_at, snap:{vo,co,listed,s8,at}}
+  let HOME = null;   // {bbl, set_at, snap:{vo,co,s8,at}}
   try { HOME = JSON.parse(localStorage.getItem(HOME_KEY) || 'null'); } catch (e) { HOME = null; }
   if (HOME && !/^\d{10}$/.test(String(HOME.bbl || ''))) HOME = null;
   function homeSnap(rec) {
     const h = rec.h || {};
     return { vo: (h.violations || {}).open || 0, co: (h.complaints || {}).open || 0,
-             listed: (typeof listingCounts !== 'undefined' && listingCounts[rec.bbl]) ? 1 : 0,
              s8: (typeof s8Avail !== 'undefined' && s8Avail[rec.bbl]) ? 1 : 0, at: Date.now() };
   }
   function saveHome() {
@@ -2659,7 +2746,7 @@ function favActive() {
     }
     track('home_open', { bbl: rec.bbl });
     setListOpen(false);
-    openDetail(rec, listingCounts[rec.bbl] || 0);
+    openDetail(rec);
   }
   function adoptAccountHome(user) {
     tr('adoptHome');
@@ -2679,7 +2766,6 @@ function favActive() {
     else if (cur.vo < prev.vo) out.push(`<b class="down">${prev.vo - cur.vo} violation${prev.vo - cur.vo === 1 ? '' : 's'} cleared</b> (${cur.vo} open)`);
     if (cur.co > prev.co) out.push(`<b class="up">+${cur.co - prev.co} open complaint${cur.co - prev.co === 1 ? '' : 's'}</b>`);
     else if (cur.co < prev.co) out.push(`<b class="down">${prev.co - cur.co} complaint${prev.co - cur.co === 1 ? '' : 's'} closed</b>`);
-    if (cur.listed && !prev.listed) out.push('<b class="up">advertised for rent</b>');
     if (cur.s8 && !prev.s8) out.push('<b class="up">listed for voucher holders</b>');
     return { out, prev };
   }
@@ -2694,7 +2780,7 @@ function favActive() {
       <div class="d-home-title">🏠 Your apartment <button type="button" class="d-home-change" data-detail="unhome">Change</button></div>
       <div class="d-home-line">${statuses} A registered building does not guarantee <i>your</i> unit is stabilized — only the rent history settles it, and you can request it from DHCR.</div>
       <div class="d-home-line">${since}</div>
-      <div class="d-home-line">We email you when this building is advertised, gets a lottery or re-rental, or its violations change.</div>
+      <div class="d-home-line">We email you when this building gets a voucher listing, a lottery or re-rental, or its violations change.</div>
       <div class="d-home-links">
         <a href="https://hcr.ny.gov/records-access" target="_blank" rel="noopener">Request your rent history (HCR) ↗</a>
         <a href="https://www.nyc.gov/site/cchr/about/report-discrimination.page" target="_blank" rel="noopener">Tenant rights ↗</a>
@@ -2703,6 +2789,15 @@ function favActive() {
   }
   // when signed in, mirror each heart toggle to the user's Supabase account
   let supaClient = null, authUser = null, pendingPhoneBbl = null, plusActive = false;
+  // Everything free for now (owner, 2026-10-01: "make everything free in the
+  // app and website for now"). Every Plus feature opens to any signed-in
+  // account and nothing offers Plus; ads stay, and paying members keep
+  // no-ads (plusActive still means "pays"). The server switch is
+  // has_features() (db/0043). To restore paid gating: set this false AND
+  // make has_features() call has_plus().
+  const FEATURES_FREE = true;
+  function featureAccess() { return !!authUser && (FEATURES_FREE || (plusKnown && plusActive)); }
+
   // Set by ?plus=1 below; consumed by refreshPlus() once membership is known.
   let plusUpsellPending = false;
   // Is the signed-in user a Plus subscriber? Mirrors has_plus() server-side;
@@ -2711,7 +2806,7 @@ function favActive() {
   async function refreshPlus() {
     plusActive = false; plusKnown = false;
     if (!authUser) { try { localStorage.removeItem('fac.noads'); } catch (e) {} }
-    if (!supaClient || !authUser) return;
+    if (!supaClient || !authUser) { if (typeof loadAlertSub === 'function') loadAlertSub(); return; }
     try {
       // Ask the server the same question every gated feature asks (has_plus is
       // SECURITY DEFINER, so RLS and a second subscription row cannot turn a
@@ -2734,7 +2829,8 @@ function favActive() {
     // skips Mediavine from the next page on (only a confirmed answer changes it).
     if (plusKnown) { try { if (plusActive) localStorage.setItem('fac.noads', '1'); else localStorage.removeItem('fac.noads'); } catch (e) {} }
     if (plusKnown) document.documentElement.classList.toggle('fac-noads', !!plusActive);
-    { const np = document.getElementById('pill-noads'); if (np) np.hidden = !!plusActive; }
+    loadAlertSub();   // alert prompts depend on Plus and on being subscribed (2026-10-06)
+    { const np = document.getElementById('pill-noads'); if (np) np.hidden = !!plusActive || FEATURES_FREE; }
     if (plusUpsellPending) { plusUpsellPending = false; if (plusKnown && !plusActive) openPaywall(null, paywallSource); }
     // Membership is only known once this resolves, and the callers above run
     // updateAuthUI() before awaiting it — so anything that depends on Plus has
@@ -2745,7 +2841,7 @@ function favActive() {
   // paint (which does not yet know about Plus) and refreshPlus() (which does).
   function syncReferralUI() {
     const rb = document.getElementById('ref-btn');
-    if (rb) rb.hidden = !authUser || plusActive;
+    if (rb) rb.hidden = !authUser || plusActive || FEATURES_FREE;
   }
   // Saving is free — it just requires an account (the signup hook for ad
   // traffic). Phones, research, folders, and saved searches stay Plus.
@@ -2765,7 +2861,7 @@ function favActive() {
       // Saving IS subscribing: every saver, free or Plus, gets an email when
       // the building changes (saved_alerts.py). Say so once per session so the
       // save reads as "we're watching it", then offer Plus members a folder.
-      if (on && plusActive) showFolderToast(bbl);
+      if (on && featureAccess()) showFolderToast(bbl);
       else if (on) confirmWatchToast();
       if (!on) { delete FAVCATS[bbl]; renderFolderBar(); }
     } catch (e) { console.warn('fav sync failed', e); }
@@ -2789,7 +2885,7 @@ function favActive() {
     const { data, error } = await supaClient.from('categories')
       .insert({ user_id: authUser.id, name }).select('id,name,share_token').single();
     if (error) {   // RLS rejects non-Plus inserts
-      if (!plusActive) openPaywall(null, 'folders');
+      if (!featureAccess()) openPaywall(null, 'folders');
       else showPlusToast(/duplicate/i.test(error.message) ? 'You already have a folder with that name.' : 'Couldn’t create the folder — try again.');
       return null;
     }
@@ -2840,7 +2936,7 @@ function favActive() {
     t.className = 'folder-toast'; t.id = 'folder-toast';
     t.innerHTML = `<button type="button" class="ft-close" aria-label="Dismiss">✕</button>
       <div class="ft-title">♥ Saved — we’ll watch it for you</div>
-      <div style="font-size:13px;margin-bottom:9px">You’ll get an email when it’s advertised for rent, a lottery or re-rental opens here, its rent drops, or its HPD violations change. Never more than one email a day.</div>
+      <div style="font-size:13px;margin-bottom:9px">You’ll get an email when a voucher listing, lottery or re-rental opens here, or its HPD violations change. Never more than one email a day.</div>
       <div class="ft-opts"><button type="button" data-watch-settings>Alert settings</button></div>`;
     document.body.appendChild(t);
     const timer = setTimeout(dismissFolderToast, 12000);
@@ -2867,7 +2963,7 @@ function favActive() {
     // saved search as a chip that reapplies it. Loaded once per sign-in;
     // the first open renders the action alone and fills in when the list
     // arrives.
-    if (authUser && plusActive && SEARCHES === null) { loadSearches().then(renderFolderBar); }
+    if (featureAccess() && SEARCHES === null) { loadSearches().then(renderFolderBar); }
     const searches = (SEARCHES || []).map(r =>
       `<button type="button" class="folder-chip" data-search="${r.id}" title="Apply this search">🔍 ${escT(r.name)}</button>`).join('');
     bar.innerHTML = folders +
@@ -2971,7 +3067,7 @@ function favActive() {
     // the concrete payoff (a saved shortlist that syncs), not a generic ask
     t.innerHTML = `<button type="button" class="ft-close" aria-label="Dismiss">✕</button>
       <div class="ft-title">🏠 Comparing a few buildings?</div>
-      <div style="font-size:13px;margin-bottom:9px">Save your shortlist to an account and we’ll email you when any of them is advertised, gets a lottery or re-rental, or its violations change.</div>
+      <div style="font-size:13px;margin-bottom:9px">Save your shortlist to an account and we’ll email you when any of them gets a voucher listing, a lottery or re-rental, or its violations change.</div>
       <div class="ft-opts"><button type="button" data-nudge-cta>Create an account</button></div>`;
     document.body.appendChild(t);
     const timer = setTimeout(() => t.remove(), 15000);
@@ -2983,6 +3079,15 @@ function favActive() {
       } else if (e.target.closest('.ft-close')) { clearTimeout(timer); t.remove(); }
     });
     track('outbound', { kind: 'signup_nudge' });
+  }
+  // A function, not a const: track() can run before this line is reached.
+  function devKind() {
+    const ua = navigator.userAgent || '';
+    if (/iPad/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return 'ipad';
+    if (/iPhone|iPod/.test(ua)) return 'iphone';
+    if (/Android/.test(ua)) return 'android';
+    if (/Mobi/.test(ua)) return 'mobile';
+    return 'desktop';
   }
   function track(event, props) {
     try {
@@ -3000,7 +3105,9 @@ function favActive() {
         // Every row says which client, which sitting, and where the visitor
         // came from (this session and the first time ever). `touch`/`first`
         // are reserved names: a caller's props must not reuse them.
-        props: Object.assign({ platform: 'web', city: document.documentElement.dataset.city || 'nyc',
+        // dev: the kind of device (2026-10-06), so the Visitors page can show
+        // Phone and Last device for people who never signed in.
+        props: Object.assign({ platform: 'web', dev: devKind(), city: document.documentElement.dataset.city || 'nyc',
                                sid: sessionId(), touch: A.touch, first: A.first }, props || {}),
         path: location.pathname + location.search,
       }).then(() => {}, () => {});
@@ -3153,18 +3260,13 @@ function favActive() {
   const geoPromise = (IS_NYC && !location.hash && !location.search && !isBot())
     ? fetch('/api/geo', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null)
     : Promise.resolve(null);
-  let data, listingsBlob, s8Blob, FMR, vacancyBlob;
+  let data, s8Blob, FMR;
   try {
-    [data, listingsBlob, s8Blob, FMR, vacancyBlob] = await Promise.all([
+    [data, s8Blob, FMR] = await Promise.all([
       fetchBuildings(),
-      fetch('listings.json').then(r => r.ok ? r.json() : { counts: {} }).catch(() => ({ counts: {} })),
       fetch('s8.json').then(r => r.ok ? r.json() : { bldg: {}, avail: {} }).catch(() => ({ bldg: {}, avail: {} })),
       // HUD FY2026 Small-Area Fair Market Rents by ZIP: [studio, 1BR, 2BR, 3BR]
       fetch('fmr.json').then(r => r.ok ? r.json() : {}).catch(() => ({})),
-      // What the companies managing these buildings are advertising on their
-      // own sites (build_vacancies.py, twice a day). A second source for the
-      // same question the Zumper feed answers: is anything free here right now.
-      fetch('vacancies.json').then(r => r.ok ? r.json() : { counts: {} }).catch(() => ({ counts: {} })),
     ]);
   } catch (e) {
     showLoadError();
@@ -3176,30 +3278,15 @@ function favActive() {
     return f ? `Est. $${f[0].toLocaleString()}–$${f[2].toLocaleString()}/mo` : '';
   }
   const EST_TITLE = 'Typical rent for this ZIP, studio–2BR (HUD FY2026 Small-Area Fair Market Rents) — not this building’s actual rent';
-  const ASKING_TITLE = 'The lowest rent advertised for this building right now — on Zumper, or on the managing agent’s own site';
-  // "Recently advertised" means posted on Zumper within the last 5 days (owner
-  // rule, 2026-09-01). listings.json is a sticky master that keeps every price
-  // it ever banked, so the counts are narrowed here by the per-building posting
-  // date the scraper records. A blob from before the scraper wrote `posted`
-  // has no dates at all — keep the old behaviour rather than blanking the site.
-  const RECENT_DAYS = 5;
-  const listingPosted = listingsBlob.posted || {};
-  const isRecent = bbl => (Date.now() / 1000 - (listingPosted[bbl] || 0)) < RECENT_DAYS * 86400;
-  const zumperCounts = Object.keys(listingPosted).length
-    ? Object.fromEntries(Object.entries(listingsBlob.counts || {}).filter(([bbl]) => isRecent(bbl)))
-    : (listingsBlob.counts || {});
-  // A manager's own page is swept twice a day, so everything on it is current
-  // by construction — no posting date to age it against.
-  const vacancyCounts = vacancyBlob.counts || {};
-  const listingCounts = Object.assign({}, zumperCounts);
-  for (const [bbl, n] of Object.entries(vacancyCounts))
-    listingCounts[bbl] = Math.max(listingCounts[bbl] || 0, n);
+  // No listing data (2026-10-06): the portal listing feeds were dropped
+  // (the owner's decision; a portal's terms forbid scraping). There are no asking
+  // rents, "recently available" flags or listing counts any more; every
+  // building gets one outbound address search instead — see listingLink().
   // What this city actually HAS, measured from the payload rather than assumed
-  // from its name. listings.json / s8.json / fmr.json are fetched RELATIVE to
+  // from its name. s8.json / fmr.json are fetched RELATIVE to
   // the page, so they resolve only on the NYC root and 404 into empty objects
   // everywhere else; violations ride on each record's `h` (HPD) field, which no
   // non-NYC builder writes. Anything keyed off these asks instead of guessing.
-  const HAS_LISTINGS = Object.keys(listingCounts).length > 0;
   const HAS_VIOLATIONS = data.some(r => r.h);
   // A city with no ZIP on any record cannot be told anything about a ZIP. SF is
   // exactly that: 12,297 block-level records, not one with a `z`, because the
@@ -3207,24 +3294,12 @@ function favActive() {
   // answered "no rent-controlled buildings on file for ZIP 94110" — stated as
   // fact, about a ZIP that is squarely inside its coverage.
   const HAS_ZIPS = data.some(r => r.z);
-  // The cheaper of the two sources, so a manager's own rent can undercut the
-  // portal's — never the other way round by accident.
-  const listingPrices = Object.assign({}, listingsBlob.prices || {});
-  for (const [bbl, p] of Object.entries(vacancyBlob.prices || {}))
-    if (listingPrices[bbl] == null || p < listingPrices[bbl]) listingPrices[bbl] = p;
-  const listingBeds = listingsBlob.beds || {};
   // one price per building, shared by the price sort and the price filter:
-  // real asking rent when advertised, else the ZIP's HUD estimate midpoint
-  // An advertised rent first, then HUD's ZIP estimate (NYC), then the rent the
-  // city itself publishes on the record — SF's block median and DC's registered
-  // legal rent. Without that last fallback the price sort had nothing to read
-  // outside New York and silently ranked every building equal.
-  const priceOf = r => listingPrices[r.bbl] ?? (FMR[r.z] ? (FMR[r.z][0] + FMR[r.z][2]) / 2 : (r.mr ?? null));
-  // when the listing/price data was last collected by the nightly scrape
-  const listingsAsOf = listingsBlob.updated
-    ? new Date(listingsBlob.updated * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    : null;
-  const asOf = listingsAsOf ? ` · as of ${listingsAsOf}` : '';
+  // HUD's ZIP estimate midpoint (NYC), then the rent the city itself publishes
+  // on the record — SF's block median and DC's registered legal rent. Without
+  // that fallback the price sort had nothing to read outside New York and
+  // silently ranked every building equal.
+  const priceOf = r => (FMR[r.z] ? (FMR[r.z][0] + FMR[r.z][2]) / 2 : (r.mr ?? null));
   // Section 8 / voucher signals, keyed by BBL (s8.json):
   //   bldg  — subsidized building (flags: 1 = HPD city-financed, 2 = HUD project-based Section 8)
   //   avail — live listings on AffordableHousing.com (landlords soliciting voucher tenants)
@@ -3361,7 +3436,7 @@ function favActive() {
   // Crossing RENT_ZOOM relabels the white pills already on screen.
   map.on('zoomend', () => {
     const mode = rentMode();
-    for (const m of shown.values()) if (m._rec && !m._listed && m._rentMode !== mode && !m._sel) m.setIcon(markerIcon(m));
+    for (const m of shown.values()) if (m._rec && m._rentMode !== mode && !m._sel) m.setIcon(markerIcon(m));
   });
   // Is this building hidden inside a cluster at zoom z?
   function pinClusteredAt(rec, z) {
@@ -3390,8 +3465,7 @@ function favActive() {
   }
 
   // Zillow-style pills for EVERY building — uniform height, easy to tap.
-  // Listed buildings: blue pill with the asking rent (or "N listed");
-  // everything else: white pill with the apartment count. The transparent
+  // A white pill with the apartment count (the rent, close in). The transparent
   // hit wrapper pads the tap target to 44px on touch devices.
   const DOT = window.matchMedia('(pointer: coarse)').matches ? 44 : 28;
   function pillIcon(html, textLen) {
@@ -3401,11 +3475,6 @@ function favActive() {
       html: `<div class="building-dot-hit">${html}</div>`,
       iconSize: [w, DOT], iconAnchor: [w / 2, DOT / 2],
     });
-  }
-  function listedIcon(n, bbl) {
-    const price = listingPrices[bbl];
-    const text = price ? fmtRent(price) : `${n} listed`;
-    return pillIcon(`<div class="price-pill">${text}</div>`, text.length);
   }
   // Close enough to read a block, the white pill carries the rent rather than
   // the unit count (asked 2026-09-08): the building's reported median where
@@ -3428,7 +3497,7 @@ function favActive() {
   }
   function markerIcon(m) {
     m._rentMode = rentMode();
-    return m._listed > 0 ? listedIcon(m._listed, m._rec.bbl) : unitIcon(m._rec);
+    return unitIcon(m._rec);
   }
 
   const isMobile = window.matchMedia('(max-width: 900px)').matches;
@@ -3439,15 +3508,13 @@ function favActive() {
   const recByBbl = new Map();
   for (const rec of data) recByBbl.set(rec.bbl, rec);
   function buildMarker(rec) {
-    const listed = listingCounts[rec.bbl] || 0;
     const m = L.marker([rec.lat, rec.lng], { icon: null });
     m._rec = rec;
-    m._listed = listed;
     m.setIcon(markerIcon(m));
     // mobile: tapping a pin slides up a listing card (StreetEasy-style) instead of a popup
     if (isMobile) m.on('click', () => openCard(m));
     else {
-      m.bindPopup(() => buildPopup(rec, listed), {
+      m.bindPopup(() => buildPopup(rec), {
         // auto-pan clear of the sticky header so the popup top is never cut off
         autoPanPaddingTopLeft: L.point(12, 72),
         autoPanPaddingBottomRight: L.point(12, 12),
@@ -3456,7 +3523,7 @@ function favActive() {
       // click rather than the map's popupopen so it does not depend on the
       // popup lifecycle — and deliberately NOT selectMarker(), because that
       // swaps the icon, and re-anchoring an icon mid-open can drop the popup.
-      m.on('click', () => { highlightCard(rec.bbl, true); openDetail(rec, m._listed || 0); });
+      m.on('click', () => { highlightCard(rec.bbl, true); openDetail(rec); });
       // Pointer on the pin -> its tile in the results pane lights up green,
       // scrolled into view only if it is off-screen (sweeping the cursor across
       // a dense block must not yank the list around).
@@ -3483,16 +3550,14 @@ function favActive() {
   }
   function mapHoverShow(m) {
     if (!mapHoverEl || !m._rec) return;
-    const rec = m._rec, listed = m._listed || 0, price = listingPrices[rec.bbl];
+    const rec = m._rec;
     const rent = orbRent(rec);
-    const priceLine = listed > 0
-      ? (price ? '$' + price.toLocaleString() + '/mo' : 'Recently available')
-      : rec.mr ? `${RENT.short} $${rec.mr.toLocaleString()}/mo`
+    const priceLine = rec.mr ? `${RENT.short} $${rec.mr.toLocaleString()}/mo`
       : (estRent(rec) || (rec.u != null ? rec.u + ' residential units' : CITY.label + ' building'));
     const sub = [rec.u != null ? `${rec.u} unit${rec.u === 1 ? '' : 's'}` : null, rec.yr ? 'built ' + rec.yr : null].filter(Boolean).join(' · ');
     mapHoverEl.innerHTML = `
       <div class="mh-body">
-        <div class="mh-price${(!listed && !rec.mr && rent) ? ' est' : ''}">${priceLine}</div>
+        <div class="mh-price${(!rec.mr && rent) ? ' est' : ''}">${priceLine}</div>
         <div class="mh-addr">${esc(rec.a)}</div>
         <div class="mh-meta">${rec.nb ? esc(rec.nb) + ' · ' : ''}${esc(BORO_NAME[rec.b] || '')}${sub ? ' · ' + esc(sub) : ''}</div>
         ${cardHpdLine(rec)}
@@ -3511,7 +3576,7 @@ function favActive() {
   function markerFor(bbl) {
     let m = markerByBbl.get(bbl);
     // A cached pin made at another zoom may carry the wrong label kind.
-    if (m) { if (!m._listed && m._rentMode !== rentMode() && !m._sel) m.setIcon(markerIcon(m)); return m; }
+    if (m) { if (m._rentMode !== rentMode() && !m._sel) m.setIcon(markerIcon(m)); return m; }
     const rec = recByBbl.get(bbl);
     if (!rec) return null;
     m = buildMarker(rec); markerByBbl.set(bbl, m);
@@ -3571,58 +3636,36 @@ function favActive() {
   // display id: NYC shows the raw BBL; other cities strip the "SF-"/"LA-" namespace
   function idShort(rec) { return IS_NYC ? rec.bbl : rec.bbl.replace(/^[A-Z]+-/, ''); }
 
-  // Where to send a user for current listings. NYC forwards to StreetEasy (the
-  // market it covers): the scraped direct listing page when we captured one,
-  // otherwise a StreetEasy address search so every building has a live link
-  // without us scraping it. SF/LA keep Zumper/Google since StreetEasy doesn't
-  // serve them. Returns {href, label}.
-  // Two different things wearing one label. About 1,800 of the 47,165 buildings
-  // have a real listing URL banked from the StreetEasy feed; the other 96% get
-  // an address search. Both used to render as "Listings ↗", so on a building
-  // with nothing for rent the button promised listings and delivered a search
-  // page that found none — 257 Adelphi St, 0 current, "32 past rentals".
-  //
-  // The search fallback is still worth keeping: it lands on StreetEasy's page
-  // for the address, which carries the building and its rental history, and
-  // that is genuinely useful when researching a stabilized building. It just
-  // must not call itself a listing. `direct` is returned so callers can style
-  // the real thing differently from the lookup.
+  // The one outbound button on every building (2026-10-06). The site carries
+  // no listing data of its own any more — the portal listing feeds were
+  // dropped — so the button is an address search
+  // on the portal that covers the city: StreetEasy in New York, Zillow
+  // everywhere else. Plain https on purpose: on an iPhone, streeteasy.com and
+  // zillow.com links open the portal's app through universal links. The
+  // outbound listener files the click as kind 'streeteasy' / 'zillow'.
+  // Returns {href, label, short}.
   function listingLink(rec, borough) {
-    // The company managing the building beats a portal: it is the landlord's
-    // own page, and it is where an application actually goes.
-    const fromManager = (vacancyBlob.urls && vacancyBlob.urls[rec.bbl]) || null;
-    if (safeHttpUrl(fromManager)) {
-      let host = '';
-      try { host = new URL(fromManager).hostname.replace(/^www\./, ''); } catch (e) {}
-      return { href: fromManager, label: `${host || 'Managing agent'} ↗`,
-               short: `${host || 'Agent'} ↗`, direct: true };
-    }
-    const direct = (listingsBlob.urls && listingsBlob.urls[rec.bbl]) || null;
     if (IS_NYC) {
-      if (safeHttpUrl(direct)) {
-        // The banked URL is whichever source advertised it — StreetEasy for the
-        // Apify feed, Zumper for the weekly scrape. Name the site we're actually
-        // sending them to; a third of NYC's direct links are Zumper's.
-        const src = /(?:^|\.)zumper\.com$/.test(new URL(direct).hostname) ? 'Zumper' : 'StreetEasy';
-        return { href: direct, label: `${src} ↗`, short: `${src} ↗`, direct: true };
-      }
       const q = encodeURIComponent(`${rec.a}, ${borough}, NY ${rec.z || ''}`.trim());
       return { href: `https://streeteasy.com/search?search=${q}`,
-               label: 'View on StreetEasy ↗', short: 'View on StreetEasy ↗', direct: false };
+               label: 'View on StreetEasy ↗', short: 'View on StreetEasy ↗' };
     }
-    if (safeHttpUrl(direct))
-      return { href: direct, label: 'Zumper ↗', short: 'Zumper ↗', direct: true };
-    const zq = encodeURIComponent(`site:zumper.com "${rec.a}" ${borough} ${CITY.state}`);
-    return { href: `https://www.google.com/search?q=${zq}`,
-             label: 'Search Zumper ↗', short: 'Search ↗', direct: false };
+    // Westchester's catch-all region is not a place Zillow knows, and DC's
+    // label already carries the state. Same strings as the iPhone app.
+    const place = rec.b === 'Westchester' ? 'Westchester County'
+      : rec.b === 'DC' ? 'Washington' : (BORO_NAME[rec.b] || CITY.name);
+    const zq = encodeURIComponent(`${rec.a}, ${place}, ${CITY.state} ${rec.z || ''}`.trim())
+      .replace(/%20/g, '-').replace(/%2C/g, ',');
+    return { href: `https://www.zillow.com/homes/${zq}_rb/`,
+             label: 'View on Zillow ↗', short: 'View on Zillow ↗' };
   }
 
   // The desktop pin popup is a PREVIEW: address, the one-line facts, badges,
   // and a Details button. The full HPD record (operator, violation classes,
   // complaints) lives in the detail sheet, which a pin click also opens — the
   // popup used to carry all of it and ran to 600px on a bad building.
-  function buildPopup(rec, listed) {
-    track('building_view', { bbl: rec.bbl, addr: rec.a, boro: rec.b, listed, via: 'popup' });
+  function buildPopup(rec) {
+    track('building_view', { bbl: rec.bbl, addr: rec.a, boro: rec.b, via: 'popup' });
     const borough = BORO_NAME[rec.b] || '';
     const boroughSlug = BORO_SLUG[rec.b] || '';
     const meta = [];
@@ -3632,8 +3675,6 @@ function favActive() {
     if (rec.yr) meta.push(`built ${rec.yr}`);
     if (rec.u != null) meta.push(`${rec.u} residential units`);
     const statusHtml = (rec.s || []).map(s => `<span class="popup-status">${esc(s)}</span>`).join('');
-    const advSrc = IS_NYC ? '' : ' on Zumper';
-    const listedHtml = listed ? `<div style="margin-top:8px;color:#6b3df5;font-weight:700">Recently available${advSrc} (${listed} listing${listed===1?'':'s'})<span style="font-weight:500;color:#8a8aa0">${asOf}</span></div>` : '';
     // SF blocks and DC registrations carry a median reported/registered rent (mr)
     const rentHtml = rec.mr ? `<div style="margin-top:8px;color:var(--ok-ink);font-weight:700">${RENT.label} $${rec.mr.toLocaleString()}/mo <span style="font-weight:500;color:var(--ink-2)">${esc(RENT.note)}</span></div>` : '';
     const vacHtml = rec.vac ? `<div style="margin-top:6px;color:#b26a00;font-weight:700">${rec.vac} vacant unit${rec.vac === 1 ? '' : 's'} <span style="font-weight:500;color:#8a8aa0">(reported at last registration)</span></div>` : '';
@@ -3642,7 +3683,6 @@ function favActive() {
     return `
       <div class="popup-addr">${esc(rec.a)}</div>
       <div class="popup-meta">${meta.join(' · ')}</div>
-      ${listedHtml}
       ${rentHtml}
       ${vacHtml}
       ${s8Html(rec)}
@@ -4284,7 +4324,7 @@ function favActive() {
     const m = e.popup._source;
     el.querySelector('[data-popup-details]')?.addEventListener('click', ev => {
       ev.preventDefault();
-      if (m && m._rec) openDetail(m._rec, m._listed || 0);
+      if (m && m._rec) openDetail(m._rec);
     });
   });
 
@@ -4423,13 +4463,6 @@ function favActive() {
     updateNbBadge(); applyFilters();
   });
 
-  // listed radio
-  document.querySelectorAll('input[name="listed"]').forEach(r => r.addEventListener('change', () => {
-    const v = document.querySelector('input[name="listed"]:checked').value;
-    document.getElementById('pill-listed').classList.toggle('active', v !== 'any');
-    applyFilters();
-  }));
-
   // section 8 radio
   document.querySelectorAll('input[name="s8"]').forEach(r => r.addEventListener('change', () => {
     const v = document.querySelector('input[name="s8"]:checked').value;
@@ -4495,14 +4528,13 @@ function favActive() {
   // ids/names and live-apply listeners, so no filter logic changes.
   const filtersModal = document.getElementById('filters-modal');
   const filtersBody = document.getElementById('filters-body');
-  ['pill-borough', 'pill-nb', 'pill-listed', 'pill-s8', 'pill-beds', 'pill-price', 'pill-viol', 'pill-agent']
+  ['pill-borough', 'pill-nb', 'pill-s8', 'pill-beds', 'pill-price', 'pill-viol', 'pill-agent']
     .forEach(id => { const el = document.getElementById(id); if (el) filtersBody.appendChild(el); });
   function openFilters() { closeAllPills(); filtersModal.hidden = false; }
   function activeFilterCount() {
     let n = 0;
     if (document.querySelectorAll('#borough-list input:checked').length < N_REGIONS) n++;
     if (nbListEl.querySelectorAll('input:checked').length) n++;
-    if (document.querySelector('input[name="listed"]:checked').value !== 'any') n++;
     if (document.querySelector('input[name="s8"]:checked').value !== 'any') n++;
     if (document.querySelectorAll('input[name="beds"]:checked').length) n++;
     if (document.getElementById('price-min').value || document.getElementById('price-max').value) n++;
@@ -4533,8 +4565,6 @@ function favActive() {
     document.querySelectorAll('#borough-list input').forEach(c => { c.checked = true; });
     document.querySelector('#borough-list input').dispatchEvent(new Event('change', { bubbles: true }));
     document.getElementById('nb-clear').click();
-    const l = document.querySelector('input[name="listed"][value="any"]');
-    l.checked = true; l.dispatchEvent(new Event('change', { bubbles: true }));
     const s = document.querySelector('input[name="s8"][value="any"]');
     s.checked = true; s.dispatchEvent(new Event('change', { bubbles: true }));
     document.querySelectorAll('input[name="beds"]:checked').forEach(c => { c.checked = false; });
@@ -4557,7 +4587,6 @@ function favActive() {
       q: document.getElementById('q').value.trim(),
       boroughs: [...document.querySelectorAll('#borough-list input:checked')].map(c => c.dataset.b),
       nbs: [...nbListEl.querySelectorAll('input:checked')].map(c => c.value),
-      listed: document.querySelector('input[name="listed"]:checked').value,
       s8: document.querySelector('input[name="s8"]:checked').value,
       beds: [...document.querySelectorAll('input[name="beds"]:checked')].map(c => +c.value),
       pmin: document.getElementById('price-min').value,
@@ -4572,8 +4601,6 @@ function favActive() {
     document.querySelector('#borough-list input').dispatchEvent(new Event('change', { bubbles: true }));
     nbListEl.querySelectorAll('input').forEach(c => { c.checked = (p.nbs || []).includes(c.value); });
     nbListEl.dispatchEvent(new Event('change', { bubbles: true }));
-    const l = document.querySelector(`input[name="listed"][value="${p.listed || 'any'}"]`);
-    if (l) { l.checked = true; l.dispatchEvent(new Event('change', { bubbles: true })); }
     const s = document.querySelector(`input[name="s8"][value="${p.s8 || 'any'}"]`);
     if (s) { s.checked = true; s.dispatchEvent(new Event('change', { bubbles: true })); }
     document.querySelectorAll('input[name="beds"]').forEach(c => { c.checked = (p.beds || []).includes(+c.value); });
@@ -4589,8 +4616,8 @@ function favActive() {
   // view's chip bar (renderFolderBar), next to the folders and the saved
   // searches themselves — one place for everything a person has kept.
   async function saveCurrentSearch() {
-    if (!authUser) { openAuthModal('Create an account or sign in to continue — saved searches are part of Plus.', 'saved_search'); return; }
-    if (!plusActive) { openPaywall(null, 'saved_search'); return; }
+    if (!authUser) { openAuthModal('Create an account or sign in to save your searches.', 'saved_search'); return; }
+    if (!featureAccess()) { openPaywall(null, 'saved_search'); return; }
     const name = (prompt('Name this search (e.g. "BK 2BR, no violations"):') || '').trim();
     if (!name) return;
     const { error } = await supaClient.from('saved_searches')
@@ -5011,10 +5038,236 @@ function favActive() {
   // suggestion can carry a whole resolved area or landlord rather than
   // whatever fits in a data- attribute.
   let acMatches = [];
+  // Plain-language search (Plus, 2026-10-03): a sentence-like query gets a
+  // "✨ Search for …" row at the end of the suggestions (last, so Enter on
+  // an address still picks the address).
+  const NATURAL_HINT = /\b(under|below|over|between|near|by|close to|around|bed|beds|bedroom|br|studio|cheap|no violations|section 8|voucher|available|with|in)\b|\$/i;
+  function withAISuggestion(matches, raw) {
+    const t = (raw || '').trim();
+    if (!IS_NYC || t.length < 8 || t.split(/\s+/).length < 3 || !NATURAL_HINT.test(t)) return matches;
+    return [...matches.slice(0, 4), { type: 'ai', q: t }];
+  }
+  async function runAISearch(q) {
+    track('ai_search_click', { words: q.split(/\s+/).length, signed_in: !!authUser, plus: !!plusActive });
+    if (!authUser) { openAuthModal('Create an account or sign in to search in plain words.', 'ai_search'); setAuthMode('signup'); return; }
+    let tok = null;
+    try { tok = (await supaClient.auth.getSession()).data.session.access_token; } catch (e) {}
+    if (!tok) { openAuthModal('Sign in to search in plain words.', 'ai_search'); return; }
+    setQueryNote('');
+    let r, j = {};
+    try { r = await fetch('/api/ai/search', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok }, body: JSON.stringify({ q }) }); j = await r.json(); }
+    catch (e) { setQueryNote('Couldn’t reach Find A Crib just now — try again.'); return; }
+    if (r.status === 402) { setQueryNote(''); openPaywall(null, 'ai_search'); return; }
+    if (!r.ok || !j.ok) {
+      setQueryNote(j.error === 'daily_limit' ? 'That’s a lot of searches today — plain-language search resets at midnight.'
+                  : j.error === 'budget' ? 'Plain-language search is resting for now — the filters still work.'
+                  : 'Couldn’t read that one — try the filters.');
+      track('ai_search_result', { ok: false, error: j.error || r.status }); return;
+    }
+    // Nothing matches every word? Loosen the strictest filter first, one at a
+    // time, and say which — an empty map is the worst answer a paid search
+    // can give.
+    const f = Object.assign({}, j.filters || {});
+    applyAIFilters(f);
+    const loosened = [];
+    for (const [key, label] of [['viol', 'the violations filter'], ['beds', 'the bedroom count'], ['pmin', 'the minimum price'], ['pmax', 'the price cap']]) {
+      if (filtered.length) break;
+      const empty = Array.isArray(f[key]) ? !f[key].length : !f[key];
+      if (empty) continue;
+      f[key] = Array.isArray(f[key]) ? [] : null;
+      loosened.push(label);
+      applyAIFilters(f);
+    }
+    // A toast, not the query note: that note styles the box as a no-match.
+    const said = j.explain && j.explain.length ? j.explain.join(' · ') : 'No filters found in that — showing everything';
+    showPlusToast('✨ ' + said + (loosened.length ? ' — no exact match, so without ' + loosened.join(', ') : ''));
+    if (loosened.length) track('ai_search_loosened', { dropped: loosened.join(',') });
+    track('ai_search_result', { ok: true, used_ai: !!j.used_ai, nbs: (j.filters.nbs || []).length, beds: (j.filters.beds || []).length,
+                                price: !!(j.filters.pmin || j.filters.pmax) });
+  }
+
+  async function aiToken(source, signupMsg) {
+    if (!authUser) { openAuthModal(signupMsg, source); setAuthMode('signup'); return null; }
+    try { return (await supaClient.auth.getSession()).data.session.access_token; } catch (e) { return null; }
+  }
+  async function runApplyHelp(card, href) {
+    track('apply_help_click', Object.assign(featProps(card), { signed_in: !!authUser, plus: !!plusActive }));
+    const tok = await aiToken('apply_help', 'Create an account or sign in to get help applying.');
+    const out = card.querySelector('.feat-apply-out');
+    if (!tok || !out) return;
+    out.textContent = '📝 Reading the listing…'; out.hidden = false;
+    // Most listings are read ahead overnight and come back at once; one nobody
+    // has opened this week is read live (5-60 s on a long page) — after 10 s
+    // say so and offer the page itself (2026-10-03).
+    const slow = setTimeout(() => {
+      if (!out.textContent.startsWith('📝')) return;
+      out.innerHTML = '📝 Still reading — some agents’ pages are long. You can wait or <a href="' + esc(href) + '" target="_blank" rel="noopener">open the agent’s page</a>.';
+    }, 10000);
+    let r, j = {};
+    try { r = await fetch('/api/ai/apply-help', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok }, body: JSON.stringify({ href }) }); j = await r.json(); }
+    catch (e) { clearTimeout(slow); out.textContent = 'Couldn’t reach Find A Crib just now — try again.'; return; }
+    clearTimeout(slow);
+    if (r.status === 402) { out.hidden = true; openPaywall(null, 'apply_help'); return; }
+    if (!r.ok || !j.ok) { out.textContent = j.error === 'daily_limit' ? 'That’s a lot of applications today — more tomorrow.' : 'Help isn’t available for this one right now — the agent’s page has the details.'; return; }
+    const h = j.help || {}, c = h.contact || {};
+    const mail = c.email ? `mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent(h.email_subject || '')}&body=${encodeURIComponent(h.email_body || '')}` : null;
+    out.innerHTML = `
+      <div><b>How to apply</b></div>
+      <ol class="rc-points" style="padding-left:18px;list-style:decimal">${(h.steps || []).map(x => `<li>${esc(x)}</li>`).join('')}</ol>
+      ${(h.documents || []).length ? `<div style="margin-top:8px"><b>Gather</b></div><ul class="rc-points">${h.documents.map(d => `<li>• ${esc(d.item)}${d.required_by_listing ? ' <span class="rc-src">required here</span>' : ''}</li>`).join('')}</ul>` : ''}
+      ${h.deadline ? `<div style="margin-top:6px"><b>Deadline:</b> ${esc(h.deadline)}</div>` : ''}
+      ${c.email || c.phone ? `<div style="margin-top:6px"><b>Contact:</b> ${c.email ? `<a href="mailto:${esc(c.email)}">${esc(c.email)}</a>` : ''}${c.email && c.phone ? ' · ' : ''}${c.phone ? `<a href="tel:${esc(c.phone.replace(/[^\d+]/g, ''))}">${esc(c.phone)}</a>` : ''}</div>` : ''}
+      <div style="margin-top:8px"><b>Email to the agent</b></div>
+      <div style="white-space:pre-wrap;border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:4px;font-size:13.5px">${esc('Subject: ' + (h.email_subject || '') + '\n\n' + (h.email_body || ''))}</div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="d-rentcheck feat-copy" type="button" style="margin-top:0">Copy email</button>
+        ${mail ? `<a class="d-rentcheck" style="margin-top:0;text-decoration:none" href="${esc(mail)}">Open in email ↗</a>` : ''}
+      </div>
+      <div class="rc-note">Written by AI from the agent’s listing${j.page_read ? ' and page' : ''}. Check the agent’s page before you send anything.</div>`;
+    const copy = out.querySelector('.feat-copy');
+    if (copy) copy.onclick = () => { try { navigator.clipboard.writeText('Subject: ' + (h.email_subject || '') + '\n\n' + (h.email_body || '')); copy.textContent = 'Copied ✓'; } catch (e) {} track('apply_help_copy', featProps(card)); };
+    track('apply_help_result', Object.assign(featProps(card), { cached: !!j.cached, page_read: !!j.page_read, has_email: !!c.email }));
+  }
+
+  // ---------- qualify-check (free, owner 2026-10-03) ----------
+  // Household size + yearly income, once; every lottery and re-rental tile
+  // then says whether it's in range. Re-rentals read the unit tables the
+  // flyer reader pulls from each listing (featured_units.json); lotteries
+  // carry their own income band and household sizes.
+  let QUAL = null, UNITS = {};
+  try { QUAL = JSON.parse(localStorage.getItem('fac.qualify') || 'null'); } catch (e) {}
+  if (IS_NYC) fetch('/featured_units.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null)
+    .then(d => { if (d && d.listings) { UNITS = d.listings; paintQualify(); } }).catch(() => {});
+  // What the flyer reader found on each re-rental's own page: first come,
+  // first served, a deadline, and any scam-rule warning (2026-10-03).
+  function paintFlyerFacts() {
+    document.querySelectorAll('.feat-card').forEach(card => {
+      if (card.querySelector('.feat-facts')) return;
+      const t = UNITS[card.dataset.featHref];
+      if (!t) return;
+      const bits = [];
+      if (t.first_come_first_served) bits.push('⏱ First come, first served');
+      if (t.deadline) bits.push('Apply by ' + esc(t.deadline));
+      const warn = (t.flags || []).map(f => esc(f.why));
+      if (!bits.length && !warn.length) return;
+      const div = document.createElement('div');
+      div.className = 'feat-facts';
+      div.innerHTML = (bits.length ? `<div class="units-line">${bits.join(' · ')}</div>` : '')
+        + (warn.length ? `<div class="units-line" style="color:var(--warn-ink)">⚠️ Check carefully: ${warn.join('; ')}</div>` : '');
+      const anchor = card.querySelector('.feat-agent');
+      if (anchor) anchor.after(div);
+    });
+  }
+  const fits = (inc, lo, hi) => (lo == null || inc >= lo) && (hi == null || inc <= hi);
+  function verdictRows(rows, hh, inc) {
+    const forHh = rows.filter(r => (r.household_size_min == null || hh >= r.household_size_min) && (r.household_size_max == null || hh <= r.household_size_max));
+    const pool = (forHh.length ? forHh : rows).filter(r => r.income_min != null || r.income_max != null);
+    if (!pool.length) return 'unknown';
+    if (pool.some(r => fits(inc, r.income_min, r.income_max))) return 'yes';
+    if (pool.every(r => r.income_max != null && inc > r.income_max)) return 'high';
+    if (pool.every(r => r.income_min != null && inc < r.income_min)) return 'low';
+    return 'unknown';
+  }
+  function featVerdict(href) {
+    const f = FEATURED.find(x => x.href === href) || {};
+    const t = UNITS[href];
+    if (t && t.units && t.units.length) return verdictRows(t.units, QUAL.hh, QUAL.income);
+    if (f.money_kind === 'income' && (f.money_low || f.money_high)) return fits(QUAL.income, f.money_low, f.money_high) ? 'yes' : (QUAL.income > (f.money_high || Infinity) ? 'high' : 'low');
+    if (f.income_1p_max && QUAL.hh === 1) return QUAL.income <= f.income_1p_max ? 'yes' : 'high';
+    return 'unknown';
+  }
+  const QUAL_WORDS = { yes: '✅ You qualify', high: 'Income above the limit', low: 'Income below the minimum', unknown: 'Check the listing’s income limits' };
+  function paintQualify() {
+    paintFlyerFacts();
+    // Signed in on a new device: pick up what the account remembers.
+    if (!QUAL && authUser && authUser.user_metadata && authUser.user_metadata.qualify) QUAL = authUser.user_metadata.qualify;
+    const pill = document.getElementById('pill-qualify-text');
+    // Never the income itself on screen (owner, 2026-10-04).
+    if (pill) pill.textContent = QUAL ? 'Showing what I qualify for' : 'What do I qualify for?';
+    document.querySelectorAll('.feat-card, .hc-card').forEach(card => {
+      let b = card.querySelector('.qual-badge');
+      if (!QUAL) { if (b) b.remove(); card.classList.remove('q-out'); return; }
+      let v;
+      if (card.classList.contains('feat-card')) v = featVerdict(card.dataset.featHref);
+      else {
+        const lo = +card.dataset.incMin || null, hi = +card.dataset.incMax || null;
+        const hlo = +card.dataset.hhMin || null, hhi = +card.dataset.hhMax || null;
+        if (hlo && QUAL.hh < hlo || hhi && QUAL.hh > hhi) v = 'unknown';
+        else v = (lo || hi) ? (fits(QUAL.income, lo, hi) ? 'yes' : (hi && QUAL.income > hi ? 'high' : 'low')) : 'unknown';
+      }
+      if (!b) { b = document.createElement('div'); (card.querySelector('.body') || card).prepend(b); }
+      b.className = 'qual-badge q-' + v; b.textContent = QUAL_WORDS[v];
+      // Above the limit or below the minimum: off the list (owner, 2026-10-04).
+      card.classList.toggle('q-out', v === 'high' || v === 'low');
+    });
+  }
+  // New tiles arrive as the list grows: badge them as they land.
+  if (IS_NYC && typeof MutationObserver !== 'undefined') {
+    let qT = null;
+    new MutationObserver(() => { clearTimeout(qT); qT = setTimeout(paintQualify, 120); })
+      .observe(document.getElementById('grid') || document.body, { childList: true, subtree: true });
+  }
+  {
+    const modal = document.getElementById('qualify-modal');
+    const open = () => {
+      if (QUAL) { document.getElementById('q-hh').value = String(QUAL.hh); document.getElementById('q-income').value = String(QUAL.income); }
+      modal.hidden = false; track('qualify_open', { set: !!QUAL });
+    };
+    const pill = document.getElementById('pill-qualify');
+    if (pill) { pill.addEventListener('click', open); pill.addEventListener('keydown', e => { if (e.key === 'Enter') open(); }); }
+    modal.addEventListener('click', e => { if (e.target === modal || e.target.closest('[data-qualify="close"]')) modal.hidden = true; });
+    document.getElementById('q-save').addEventListener('click', () => {
+      const hh = +document.getElementById('q-hh').value || 1;
+      const income = +String(document.getElementById('q-income').value).replace(/[^\d.]/g, '');
+      if (!income || income < 1000) { document.getElementById('q-income').focus(); return; }
+      QUAL = { hh, income: Math.round(income) };
+      try { localStorage.setItem('fac.qualify', JSON.stringify(QUAL)); } catch (e) {}
+      if (authUser && supaClient) supaClient.auth.updateUser({ data: { qualify: QUAL } }).catch(() => {});
+      modal.hidden = true; paintQualify();
+      const counts = { yes: 0, high: 0, low: 0, unknown: 0 };
+      document.querySelectorAll('.qual-badge').forEach(b => { const k = (b.className.match(/q-(\w+)/) || [])[1]; if (k in counts) counts[k]++; });
+      track('qualify_set', Object.assign({ hh }, counts));
+    });
+    document.getElementById('q-clear').addEventListener('click', e => {
+      e.preventDefault(); QUAL = null;
+      try { localStorage.removeItem('fac.qualify'); } catch (err) {}
+      if (authUser && supaClient) supaClient.auth.updateUser({ data: { qualify: null } }).catch(() => {});
+      modal.hidden = true; paintQualify(); track('qualify_clear', null);
+    });
+  }
+
+  function applyAIFilters(f) {
+    const fire = el => el && el.dispatchEvent(new Event('change', { bubbles: true }));
+    const radio = (name, v) => { const r = document.querySelector('input[name="' + name + '"][value="' + v + '"]'); if (r && !r.checked) { r.checked = true; fire(r); } };
+    radio('s8', f.s8 ? 'either' : 'any');
+    const beds = new Set((f.beds || []).map(String));
+    document.querySelectorAll('input[name="beds"]').forEach(c => { const on = beds.has(c.value); if (c.checked !== on) { c.checked = on; fire(c); } });
+    // Prices snap to the menus' steps: a max rounds up, a min rounds down.
+    const snap = (id, v, up) => {
+      const el = document.getElementById(id); if (!el) return;
+      const opts = [...el.options].map(o => o.value).filter(Boolean).map(Number).sort((a, b) => a - b);
+      let pick = '';
+      if (v) pick = String(up ? (opts.find(o => o >= v) ?? opts[opts.length - 1]) : ([...opts].reverse().find(o => o <= v) ?? ''));
+      if (el.value !== pick) { el.value = pick; fire(el); }
+    };
+    snap('price-min', f.pmin, false); snap('price-max', f.pmax, true);
+    moreFilters.viol = f.viol === 'none' ? 'none' : 'any'; syncMoreUI();
+    const nbs = new Set(f.nbs || []), boros = new Set(f.boroughs || []);
+    if (nbs.size) for (const r of data) if (nbs.has(r.nb)) boros.add(r.b);
+    qInput.value = ''; qInput.blur();
+    selectArea({ boros, nbs, label: '' });
+  }
+
   function renderAC(matches) {
     acMatches = matches;
     if (!matches.length) { searchAC.hidden = true; return; }
     searchAC.innerHTML = matches.map((m, i) => {
+      if (m.type === 'ai') {
+        return `<button class="ac-item ac-ai" data-i="${i}">
+          <span class="ac-addr">✨ Search for “${esc(m.q.slice(0, 60))}”<span class="plus-tag">Plus</span></span>
+          <span class="ac-sub">Plain-language search — sets the neighborhood, price, beds and filters for you</span>
+        </button>`;
+      }
       if (m.type === 'area') {
         const a = m.area;
         const what = a.nbs.size ? (a.nbs.size === 1 ? 'Neighborhood' : a.nbs.size + ' neighborhoods')
@@ -5065,7 +5318,7 @@ function favActive() {
     // A no-match query scans every building (twice, with street variants), so
     // suggestions wait for a short pause instead of running on each keystroke.
     clearTimeout(qACTimer);
-    qACTimer = setTimeout(() => renderAC(searchMatches(qInput.value)), 80);
+    qACTimer = setTimeout(() => renderAC(withAISuggestion(searchMatches(qInput.value), qInput.value)), 80);
     clearTimeout(qTimer);
     qTimer = setTimeout(() => {
       applyFilters();
@@ -5117,8 +5370,8 @@ function favActive() {
     } else setQueryNote('');
     const card = html => { searchHelper.innerHTML = `<div class="sh-card">${html}</div>`; searchHelper.hidden = false; };
     // These chips drive the filter pills, and outside NYC those pills are
-    // hidden by .nyc-only because their data files (listings.json, s8.json,
-    // fmr.json) only exist for the root site — they 404 per city and fail soft
+    // hidden by .nyc-only because their data files (s8.json, fmr.json) only
+    // exist for the root site — they 404 per city and fail soft
     // to empty. The chips were rendered anyway, so LA, DC and Westchester all
     // offered "Available now", "No open violations" and "Bedrooms" over data
     // that is uniformly empty: every one of them filtered to nothing and
@@ -5128,18 +5381,9 @@ function favActive() {
     // listings feed picks its chips up without another edit here.
     const narrowChips = () => {
       const chips = [];
-      if (HAS_LISTINGS) {
-        const advertised = filtered.filter(r => (listingCounts[r.bbl] || 0) > 0).length;
-        const listedOn = document.querySelector('input[name="listed"]:checked').value === 'yes';
-        chips.push(`<button data-sh="listed" class="${listedOn ? 'on' : ''}">🏠 Available now${advertised ? ` (${advertised})` : ''}</button>`);
-      }
       if (HAS_VIOLATIONS) {
         const violOn = moreFilters.viol === 'none';
         chips.push(`<button data-sh="noviol" class="${violOn ? 'on' : ''}">✅ No open violations</button>`);
-      }
-      if (HAS_LISTINGS) {
-        const bedsOn = document.querySelectorAll('input[name="beds"]:checked').length > 0;
-        chips.push(`<button data-sh="beds" class="${bedsOn ? 'on' : ''}">🛏 Bedrooms</button>`);
       }
       return chips.length ? `<div class="sh-chips">${chips.join('')}</div>` : '';
     };
@@ -5202,8 +5446,7 @@ function favActive() {
       const guesses = st.suggest.length
         ? `<div class="sh-chips">${st.suggest.map(g => `<button data-sh="try" data-q="${esc(g)}">Did you mean ${esc(g)}?</button>`).join('')}</div>`
         : '';
-      const beds = /\b(\d\s*(br|bd|bed)|bedroom|studio)\b/i.test(q)
-        ? `<div class="sh-chips"><button data-sh="beds">🛏 Filter by bedrooms instead</button></div>` : '';
+      const beds = '';
       // "rent stabilized" typed into the box is the biggest no-match query:
       // people echo the placeholder back as a keyword. Answer the question.
       if (/^(only\s+)?rent[\s-]*stab/i.test(q)) {
@@ -5229,11 +5472,7 @@ function favActive() {
   searchHelper.addEventListener('click', e => {
     const act = e.target.closest('[data-sh]')?.dataset.sh;
     if (!act) return;
-    if (act === 'listed') {
-      const cur = document.querySelector('input[name="listed"]:checked').value;
-      const r = document.querySelector(`input[name="listed"][value="${cur === 'yes' ? 'any' : 'yes'}"]`);
-      r.checked = true; r.dispatchEvent(new Event('change', { bubbles: true }));
-    } else if (act === 'noviol') {
+    if (act === 'noviol') {
       moreFilters.viol = moreFilters.viol === 'none' ? 'any' : 'none'; syncMoreUI(); applyFilters();
     } else if (act === 'beds') {
       openFilters();   // beds live in the filters modal
@@ -5260,7 +5499,7 @@ function favActive() {
     updateFiltersCount();
   });
 
-  // outbound link clicks (Zumper / Google / HPD etc.) — one delegated listener
+  // outbound link clicks (StreetEasy / Zillow / Google / HPD etc.) — one delegated listener
   // catches every external link so we can see which off-site actions people take.
   document.addEventListener('click', e => {
     const a = e.target.closest && e.target.closest('a[target="_blank"]');
@@ -5268,8 +5507,8 @@ function favActive() {
     const href = a.getAttribute('href') || '';
     if (!/^https?:/i.test(href)) return;
     let kind = 'other';
-    if (/zumper\.com/i.test(href)) kind = 'zumper';
-    else if (/streeteasy\.com/i.test(href)) kind = 'streeteasy';
+    if (/streeteasy\.com/i.test(href)) kind = 'streeteasy';
+    else if (/zillow\.com/i.test(href)) kind = 'zillow';
     else if (/google\.[^/]+\/maps|maps\.google/i.test(href)) kind = 'google_maps';
     else if (/google\.[^/]+\/search/i.test(href)) kind = 'google_search';
     // Housing Connect first: it is on nyc.gov but it is the lottery portal,
@@ -5278,9 +5517,7 @@ function favActive() {
     else if (/housingconnect\.nyc\.gov/i.test(href)) kind = 'housing_connect';
     else if (/hpdonline\.nyc\.gov/i.test(href)) kind = 'hpd';
     else if (/nyc\.gov|cityofnewyork/i.test(href)) kind = 'nyc_data';
-    // Which building, from which surface, and whether a live listing existed —
-    // the StreetEasy button is on every building, so without `listed` the
-    // click count cannot say how many land on an empty search page.
+    // Which building, and from which surface.
     let bbl = a.closest('[data-bbl]')?.dataset.bbl || null;
     let src = 'page';
     try {
@@ -5289,8 +5526,7 @@ function favActive() {
       else if (a.closest('#grid')) src = 'card';
       else if (a.closest('.leaflet-popup')) src = 'popup';
     } catch (_) {}
-    const listed = bbl ? (listingCounts[bbl] || 0) > 0 : null;
-    track('outbound', { kind, href, bbl, src, listed });
+    track('outbound', { kind, href, bbl, src });
   }, true);
 
   // managing-agent phone: "Show number" (paid) reveal flow + click-to-call tracking
@@ -5336,8 +5572,8 @@ function favActive() {
   async function openResearch(btn) {
     const bbl = btn.dataset.bbl;
     if (!supaClient) return;
-    if (!authUser) { openAuthModal('Create an account or sign in to continue — landlord research is part of Plus.', 'landlord_research'); return; }
-    if (!plusActive) { openPaywall(null, 'research'); return; }
+    if (!authUser) { openAuthModal('Create an account or sign in to research this landlord.', 'landlord_research'); return; }
+    if (!featureAccess()) { openPaywall(null, 'research'); return; }
     const orig = btn.textContent;
     btn.disabled = true; btn.textContent = 'Looking up portfolio…';
     try {
@@ -5360,7 +5596,7 @@ function favActive() {
   async function revealAgentPhone(btn) {
     const bbl = btn.dataset.bbl;
     if (!supaClient) return;
-    if (!authUser) { pendingPhoneBbl = bbl; openAuthModal('Create an account or sign in to continue — phone numbers are part of Plus.', 'phone'); return; }
+    if (!authUser) { pendingPhoneBbl = bbl; openAuthModal('Create an account or sign in to see the managing agent\u2019s phone number.', 'phone'); return; }
     const orig = btn.textContent;
     btn.disabled = true; btn.textContent = '…';
     try {
@@ -5431,6 +5667,7 @@ function favActive() {
     searchAC.hidden = true;
     const m = acMatches[+item.dataset.i];
     if (!m) return;
+    if (m.type === 'ai') { runAISearch(m.q); return; }
     if (m.type === 'area') {
       qInput.value = ''; qInput.blur();
       selectArea(m.area);
@@ -5470,7 +5707,7 @@ function favActive() {
     qInput.value = m.rec.a;
     qInput.blur();
     map.setView([m.rec.lat, m.rec.lng], Math.max(map.getZoom(), 16), { animate: false });
-    openDetail(m.rec, mk._listed || 0);
+    openDetail(m.rec);
   });
 
   // ---------- filter / refresh ----------
@@ -5496,7 +5733,6 @@ function favActive() {
   function filtersActive() {
     return document.querySelectorAll('#borough-list input:checked').length < N_REGIONS
       || nbListEl.querySelectorAll('input:checked').length > 0
-      || document.querySelector('input[name="listed"]:checked').value !== 'any'
       || document.querySelector('input[name="s8"]:checked').value !== 'any'
       || document.querySelectorAll('input[name="beds"]:checked').length > 0
       || !!document.getElementById('price-min').value
@@ -5559,15 +5795,108 @@ function favActive() {
     };
   }
 
+  // ---------- remember the last search (owner, 2026-10-03) ----------
+  // Every filter change is saved on this device, per city. On the next bare
+  // visit a chip offers to pick it back up — it never re-applies on its own,
+  // because a visitor arriving from a link or a search wants that, not their
+  // old filters. Signed in, the same search also lands on the account.
+  const RESUME_KEY = 'fac.lastSearch:' + (document.documentElement.dataset.city || 'nyc');
+  let resumeReady = false, resumeTimer = null, resumeApplying = false;
+  function resumeState() {
+    const all = [...document.querySelectorAll('#borough-list input')];
+    return {
+      q: document.getElementById('q').value.trim(),
+      boroughs: all.filter(c => c.checked).map(c => c.dataset.b),
+      allBoroughs: all.length,
+      nbs: [...nbListEl.querySelectorAll('input:checked')].map(c => c.value),
+      s8: (document.querySelector('input[name="s8"]:checked') || {}).value || 'any',
+      beds: [...document.querySelectorAll('input[name="beds"]:checked')].map(c => c.value),
+      pmin: (document.getElementById('price-min') || {}).value || '',
+      pmax: (document.getElementById('price-max') || {}).value || '',
+      more: Object.assign({}, moreFilters),
+    };
+  }
+  function searchSummary(st) {
+    const bits = [];
+    if (st.q) bits.push('“' + st.q.slice(0, 24) + '”');
+    if (st.nbs.length) bits.push(st.nbs.length === 1 ? st.nbs[0] : st.nbs.length + ' neighborhoods');
+    else if (st.boroughs.length && st.boroughs.length < st.allBoroughs) bits.push(st.boroughs.map(b => ({ M: 'Manhattan', Bx: 'Bronx', Bk: 'Brooklyn', Q: 'Queens', SI: 'Staten Island' }[b] || b)).join(', '));
+    if (st.pmin || st.pmax) bits.push((st.pmin ? '$' + (+st.pmin).toLocaleString() : 'Any') + '–' + (st.pmax ? '$' + (+st.pmax).toLocaleString() : 'any'));
+    if (st.beds.length) bits.push(st.beds.map(b => b === '0' ? 'studio' : b + ' bd').join('/'));
+    if (st.s8 !== 'any') bits.push('vouchers');
+    if (st.more.viol === 'none') bits.push('no violations');
+    return bits.join(' · ');
+  }
+  function rememberSearchSoon() {
+    if (!resumeReady || resumeApplying) return;
+    clearTimeout(resumeTimer);
+    resumeTimer = setTimeout(() => {
+      const st = resumeState();
+      const pill = document.getElementById('pill-resume');
+      if (pill) pill.hidden = true;            // they are searching again; the old one is moot
+      if (!searchSummary(st)) return;           // nothing narrowed: keep the last real search
+      try { localStorage.setItem(RESUME_KEY, JSON.stringify(Object.assign(st, { at: Date.now() }))); } catch (e) {}
+      if (authUser && supaClient) {
+        supaClient.auth.updateUser({ data: { last_search: { [RESUME_KEY]: st } } }).catch(() => {});
+      }
+    }, 800);
+  }
+  function offerResume() {
+    resumeReady = true;
+    if (location.search || location.hash) return;   // a link or a search knows where it wants to be
+    let st = null;
+    try { st = JSON.parse(localStorage.getItem(RESUME_KEY) || 'null'); } catch (e) {}
+    const meta = authUser && authUser.user_metadata && authUser.user_metadata.last_search;
+    if (!st && meta && meta[RESUME_KEY]) st = meta[RESUME_KEY];
+    if (!st || !searchSummary(st) || (st.at && Date.now() - st.at > 60 * 864e5)) return;
+    const pill = document.getElementById('pill-resume');
+    if (!pill) return;
+    document.getElementById('pill-resume-text').textContent = 'Resume: ' + searchSummary(st);
+    pill.hidden = false;
+    track('resume_offer', { at_days: st.at ? Math.round((Date.now() - st.at) / 864e5) : null });
+    const go = () => {
+      pill.hidden = true;
+      track('resume_apply', null);
+      resumeApplying = true;
+      const fire = (el, type) => el && el.dispatchEvent(new Event(type || 'change', { bubbles: true }));
+      document.querySelectorAll('#borough-list input').forEach(c => {
+        const on = st.boroughs.includes(c.dataset.b);
+        if (c.checked !== on) { c.checked = on; fire(c); }
+      });
+      nbListEl.querySelectorAll('input').forEach(c => {
+        const on = st.nbs.includes(c.value);
+        if (c.checked !== on) { c.checked = on; fire(c); }
+      });
+      for (const name of ['s8']) {
+        const r = document.querySelector('input[name="' + name + '"][value="' + st[name] + '"]');
+        if (r && !r.checked) { r.checked = true; fire(r); }
+      }
+      document.querySelectorAll('input[name="beds"]').forEach(c => {
+        const on = st.beds.includes(c.value);
+        if (c.checked !== on) { c.checked = on; fire(c); }
+      });
+      for (const [id, v] of [['price-min', st.pmin], ['price-max', st.pmax]]) {
+        const el = document.getElementById(id);
+        if (el && el.value !== v) { el.value = v; fire(el); }
+      }
+      Object.assign(moreFilters, st.more || {}); syncMoreUI();
+      const box = document.getElementById('q');
+      if (box.value !== st.q) { box.value = st.q; fire(box, 'input'); }
+      resumeApplying = false;
+      applyFilters();
+    };
+    pill.onclick = go;
+    pill.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } };
+  }
+
   function applyFilters(opts) {
     tr('applyFilters ' + document.getElementById('q').value.slice(0, 20));
+    rememberSearchSoon();
     const keepFilters = !!(opts && opts.keepFilters)
       || keepFiltersFor === document.getElementById('q').value.trim().toUpperCase();
     const boroughs = new Set([...document.querySelectorAll('#borough-list input:checked')].map(c => c.dataset.b));
     const selectedNbs = new Set([...nbListEl.querySelectorAll('input:checked')].map(c => c.value));
-    const listedMode = document.querySelector('input[name="listed"]:checked').value;
     const s8Mode = document.querySelector('input[name="s8"]:checked').value;
-    const selectedBeds = new Set([...document.querySelectorAll('input[name="beds"]:checked')].map(c => +c.value));
     const priceMin = +document.getElementById('price-min').value || 0;
     const priceMax = +document.getElementById('price-max').value || Infinity;
     const priceSet = priceMin > 0 || priceMax < Infinity;
@@ -5587,19 +5916,12 @@ function favActive() {
         if (!ignoreFilters) {
           if (!boroughs.has(rec.b)) continue;
           if (selectedNbs.size && !selectedNbs.has(rec.nb)) continue;
-          const listed = listingCounts[rec.bbl] || 0;
-          if (listedMode === 'yes' && !listed) continue;
-          if (listedMode === 'no' && listed) continue;
           if (s8Mode !== 'any') {
             const hasAvail = !!s8Avail[rec.bbl];
             const hasBldg = !!s8Bldg[rec.bbl];
             if (s8Mode === 'avail' && !hasAvail) continue;
             if (s8Mode === 'bldg' && !hasBldg) continue;
             if (s8Mode === 'either' && !hasAvail && !hasBldg) continue;
-          }
-          if (selectedBeds.size) {
-            const bb = listingBeds[rec.bbl];
-            if (!bb || !bb.some(n => selectedBeds.has(n))) continue;
           }
           if (priceSet) {
             const p = priceOf(rec);
@@ -5735,7 +6057,7 @@ function favActive() {
   // ---------- featured re-rentals ----------
   // Income-restricted apartments the HPD-approved marketing agents are
   // advertising on their own sites today, refreshed by featured_rerentals.py.
-  // They are not on StreetEasy or Zumper and they go in days, which is the
+  // They are not on the big listing portals and they go in days, which is the
   // whole reason they earn a slot in the grid rather than a page nobody visits.
   const FEAT_EVERY = 8;                 // one featured tile after every N cards
   let FEATURED = [];
@@ -5746,14 +6068,54 @@ function favActive() {
   // not Plus — alerts were Plus only 2026-09-30 to 10-01); the borough the tile is in is preselected there.
   const ALERT_BORO = { 'Manhattan': 'M', 'Brooklyn': 'Bk', 'Queens': 'Q', 'Bronx': 'Bx',
                        'The Bronx': 'Bx', 'Staten Island': 'SI' };
-  function alertLink(borough, kind, src, short) {
+  // Since 2026-10-06 alerts arrive in a daily 8 AM digest; real-time is Plus.
+  // Someone already subscribed (and without Plus) sees the real-time offer
+  // instead — "re-rentals go first come, first served" — until they dismiss it,
+  // which is for good. ALERT_SUB: null until known, then {subscribed}.
+  let ALERT_SUB = null;
+  function rtDismissed() {
+    try { if (localStorage.getItem('fac.rtDismissed')) return true; } catch (e) {}
+    return !!(authUser && authUser.user_metadata && authUser.user_metadata.rt_dismissed);
+  }
+  function alertLinkHtml(borough, kind, src, short) {
     const code = ALERT_BORO[borough] || '';
     const what = kind === 'lottery' ? 'lottery' : 're-rental';
     const where = code ? (code === 'Bx' ? 'the Bronx' : borough) : 'NYC';
-    const text = short ? `🔔 Alert me to new ${what === 'lottery' ? 'lotteries' : 're-rentals'} in ${esc(where)}`
-                       : `🔔 Email me the minute a new ${what} opens in ${esc(where)}`;
-    return `<a class="alert-link" href="/alerts/?boro=${code}&kind=${kind}&src=${src}">${text}</a>`;
+    const data = `data-al-boro="${esc(borough || '')}" data-al-kind="${kind}" data-al-src="${src}" data-al-short="${short ? 1 : ''}"`;
+    if (ALERT_SUB && ALERT_SUB.subscribed) {
+      if (plusActive || rtDismissed()) return `<span class="alert-link alert-on" ${data}>🔔 Your ${plusActive ? 'real-time' : 'daily 8 AM'} alerts are on</span>`;
+      return `<span class="alert-link alert-rt" ${data}><a href="#" data-rt="open">⚡ Re-rentals go first come, first served — get real-time alerts, not 8 AM</a>`
+           + `<button type="button" class="rt-x" data-rt="dismiss" aria-label="Don't show this again">✕</button></span>`;
+    }
+    const text = short ? `🔔 Daily 8 AM alerts for new ${what === 'lottery' ? 'lotteries' : 're-rentals'} in ${esc(where)}`
+                       : `🔔 Get a daily 8 AM email when a new ${what} opens in ${esc(where)}`;
+    return `<a class="alert-link" ${data} href="/alerts/?boro=${code}&kind=${kind}&src=${src}">${text}</a>`;
   }
+  function alertLink(borough, kind, src, short) { return alertLinkHtml(borough, kind, src, short); }
+  function repaintAlertLinks() {
+    document.querySelectorAll('[data-al-kind]').forEach(el => {
+      el.outerHTML = alertLinkHtml(el.dataset.alBoro, el.dataset.alKind, el.dataset.alSrc, !!el.dataset.alShort);
+    });
+  }
+  async function loadAlertSub() {
+    if (!authUser || !supaClient) { ALERT_SUB = null; repaintAlertLinks(); return; }
+    try {
+      const tok = (await supaClient.auth.getSession()).data.session.access_token;
+      const r = await fetch('/api/alerts/prefs', { headers: { Authorization: 'Bearer ' + tok } });
+      const j = r.ok ? await r.json() : null;
+      ALERT_SUB = j ? { subscribed: !!(j.exists && !j.unsubscribed) } : null;
+    } catch (e) { ALERT_SUB = null; }
+    repaintAlertLinks();
+  }
+  document.addEventListener('click', e => {
+    const t = e.target.closest('[data-rt]'); if (!t) return;
+    e.preventDefault(); e.stopPropagation();
+    if (t.dataset.rt === 'open') { track('realtime_upsell_click', { src: 'tile' }); openPaywall(null, 'realtime'); return; }
+    try { localStorage.setItem('fac.rtDismissed', '1'); } catch (err) {}
+    if (supaClient && authUser) supaClient.auth.updateUser({ data: { rt_dismissed: true } }).catch(() => {});
+    track('realtime_upsell_dismiss', {});
+    repaintAlertLinks();
+  }, true);
 
   // ---------- NYC Housing Connect lotteries ----------
   // A separate feed and a separate badge from the re-rental tiles above, on
@@ -5783,6 +6145,7 @@ function favActive() {
       if (!d || !Array.isArray(d.listings) || !d.listings.length) return;
       FEATURED = d.listings;
       feedArrived();                               // they arrived after the first paint
+      paintQualify();
     })
     .catch(() => { /* no featured feed today: the grid is unchanged */ });
 
@@ -5813,6 +6176,31 @@ function favActive() {
     return '<div class="price est">Income-restricted · see agent for rent</div>';
   }
 
+  // Swipe through a re-rental's photos (owner, 2026-10-04): a scroll-snap
+  // strip, dots, and ‹ › buttons for a mouse. featured_rerentals.py writes
+  // f.images (lead first) from each listing's own page.
+  function featGalleryHtml(imgs) {
+    const n = Math.min(imgs.length, 8);
+    return `<div class="feat-gallery" aria-label="Photos of the building">${imgs.slice(0, n).map((u, i) =>
+        `<img class="listing-photo" loading="lazy" src="${esc(u)}" alt="Photo ${i + 1} of ${n}" onerror="this.remove()">`).join('')}</div>
+      <button type="button" class="feat-gal-btn prev" data-gal="-1" aria-label="Previous photo">‹</button>
+      <button type="button" class="feat-gal-btn next" data-gal="1" aria-label="Next photo">›</button>
+      <div class="feat-dots">${Array.from({ length: n }, (_, i) => `<i${i ? '' : ' class="on"'}></i>`).join('')}</div>`;
+  }
+  document.addEventListener('scroll', e => {
+    const g = e.target;
+    if (!(g instanceof Element) || !g.classList.contains('feat-gallery')) return;
+    const i = Math.round(g.scrollLeft / g.clientWidth);
+    g.parentElement.querySelectorAll('.feat-dots i').forEach((d, k) => d.classList.toggle('on', k === i));
+    if (i === 1 && !g.dataset.swiped) { g.dataset.swiped = '1'; const c = g.closest('.feat-card'); if (c) track('rerental_photos_swipe', { agent: c.dataset.featAgent || '' }); }
+  }, true);
+  document.addEventListener('click', e => {
+    const b = e.target.closest('.feat-gal-btn'); if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    const g = b.parentElement.querySelector('.feat-gallery');
+    if (g) g.scrollBy({ left: +b.dataset.gal * g.clientWidth, behavior: 'smooth' });
+  }, true);
+
   function featuredCardHtml(f, slot) {
     // Several agents print the building name above the postal address, so the
     // two are often the same words twice ("188-11 Hillside Avenue" over
@@ -5824,11 +6212,11 @@ function favActive() {
     if (f.beds) bits.push(f.beds === 'studio' ? 'Studio' : f.beds + '-bed');
     if (f.units) bits.push(f.units + (f.units === 1 ? ' unit' : ' units'));
     if (f.zip) bits.push('ZIP ' + esc(f.zip));
-    return `<div class="card feat-card" data-feat-agent="${esc(f.agent)}" data-feat-addr="${esc(f.address)}"
+    return `<div class="card feat-card" data-feat-href="${esc(f.href || '')}" data-feat-agent="${esc(f.agent)}" data-feat-addr="${esc(f.address)}"
          data-feat-boro="${esc(f.borough || '')}" data-feat-kind="${esc(f.href_kind || 'listing')}" data-feat-slot="${slot}">
       <span class="feat-flag">Featured</span>
       <div class="photo">
-        ${f.image ? `<img class="listing-photo" loading="lazy" src="${esc(f.image)}" alt=""
+        ${(f.images && f.images.length > 1) ? featGalleryHtml(f.images) : f.image ? `<img class="listing-photo" loading="lazy" src="${esc(f.image)}" alt=""
              onerror="this.style.display='none'">` : ''}
         <div class="photo-shade"></div>
         <div class="badge-row">
@@ -5854,6 +6242,8 @@ function favActive() {
              href="${esc(outbound(f.href, 'rerental_tile', f.href_kind === 'agent_page' ? 'agent_board' : f.href_kind === 'flyer' ? 'unit_flyer' : 'unit_listing'))}">${f.href_kind === 'agent_page'
                ? 'Find it on their listings page ↗' : f.href_kind === 'flyer' ? 'See the listing ↗' : 'Apply on their site ↗'}</a>
         </div>
+        <button class="d-rentcheck feat-apply" data-action="applyhelp" data-href="${esc(f.href)}" style="margin-top:8px">📝 Help me apply<span class="plus-tag">Plus</span></button>
+        <div class="rentcheck-card feat-apply-out" hidden></div>
         ${alertLink(f.borough, 'rerental', 'rerental_tile')}
       </div>
     </div>`;
@@ -5896,6 +6286,19 @@ function favActive() {
       if (boros.size >= N_REGIONS) break;      // every borough is on screen
     }
     featPool = FEATURED.filter(f => f.borough && boros.has(f.borough));
+    // With bedrooms picked, a re-rental tile only when the listing's own unit
+    // table (featured_units.json) or feed names a matching size; ones that
+    // state no size stay out (owner, 2026-10-04: "only buildings that have a
+    // 1br available should be shown").
+    const want = new Set([...document.querySelectorAll('input[name="beds"]:checked')].map(c => +c.value));
+    if (want.size) featPool = featPool.filter(f => [...featBedrooms(f)].some(b => want.has(b)));
+  }
+  function featBedrooms(f) {
+    const out = new Set();
+    const own = f.beds === 'studio' ? 0 : parseInt(f.beds, 10);
+    if (!isNaN(own)) out.add(Math.min(own, 4));
+    for (const r of ((UNITS[f.href] || {}).units || [])) if (r.beds != null) out.add(Math.min(+r.beds, 4));
+    return out;
   }
 
   // Which featured listing goes in the next slot. Walks the pool so one grid
@@ -5942,7 +6345,8 @@ function favActive() {
     const left = d == null ? '' :
       `<span class="hc-days${urgent ? ' urgent' : ''}">${d === 1 ? 'Closes tomorrow' : 'Closes in ' + d + ' days'}</span>`;
     if (left) bits.unshift(left);        // first, so a narrow tile never cuts it off
-    return `<div class="card hc-card" data-hc-name="${esc(h.name || h.address || 'Housing Connect lottery')}" data-hc-boro="${esc(h.borough || '')}" data-hc-href="${esc(h.href || '')}">
+    return `<div class="card hc-card" data-hc-name="${esc(h.name || h.address || 'Housing Connect lottery')}" data-hc-boro="${esc(h.borough || '')}" data-hc-href="${esc(h.href || '')}"
+         data-inc-min="${esc(String(h.income_min || ''))}" data-inc-max="${esc(String(h.income_max || ''))}" data-hh-min="${esc(String(h.household_min || ''))}" data-hh-max="${esc(String(h.household_max || ''))}">
       <span class="hc-flag">Housing Connect</span>
       <div class="photo${PHOTO_PREVIEW?.provider === 'apple' ? ' apple-photo' : ''}">
         ${PHOTO_PREVIEW?.html(h) || ''}
@@ -6152,11 +6556,10 @@ function favActive() {
       const i = visible.findIndex(r => r.bbl === selectedBbl);
       if (i >= 0) pinned = visible.splice(i, 1)[0];
     }
-    const totalListings = visible.reduce((s, r) => s + (listingCounts[r.bbl]||0), 0) + (pinned ? (listingCounts[pinned.bbl]||0) : 0);
     if (pinned) visible.unshift(pinned);
     if (resultsSub) resultsSub.textContent = citywide
-      ? `${visible.length.toLocaleString()} building${visible.length === 1 ? ' matches' : 's match'} across NYC · ${totalListings.toLocaleString()} recently available on Zumper`
-      : `${visible.length.toLocaleString()} buildings in view · ${filtered.length.toLocaleString()} match filters · ${totalListings.toLocaleString()} recently available on Zumper`;
+      ? `${visible.length.toLocaleString()} building${visible.length === 1 ? ' matches' : 's match'} across NYC`
+      : `${visible.length.toLocaleString()} buildings in view · ${filtered.length.toLocaleString()} match filters`;
     // Zillow-style "X of Y" pill over the map on mobile
     document.getElementById('map-count').textContent = `${visible.length.toLocaleString()} of ${filtered.length.toLocaleString()}`;
     document.getElementById('fab-label').textContent = document.body.classList.contains('list-open') ? 'Map' : 'List';
@@ -6247,10 +6650,6 @@ function favActive() {
     gridMore.observe(sentinel);
   }
 
-  function bedsLabel(arr) {
-    return arr.map(n => n === 0 ? 'Studio' : (n >= 4 ? '4+' : n) + ' BR').join(' · ');
-  }
-
   function cardHpdLine(rec) {
     const h = rec.h;
     if (!h) return '';
@@ -6284,10 +6683,7 @@ function favActive() {
 
   function cardHtml(rec) {
     const borough = (BORO_NAME[rec.b] || '').toUpperCase();
-    const listed = listingCounts[rec.bbl] || 0;
-    const price = listingPrices[rec.bbl];
-    const beds = listingBeds[rec.bbl];
-    const listedHtml = listed > 0 ? `<span class="listed-pill">Recently available</span>` : `<span></span>`;
+    const listedHtml = `<span></span>`;
     const stats = [];
     if (rec.u != null) stats.push(`${rec.u} units`);
     if (rec.yr) stats.push(`built ${rec.yr}`);
@@ -6308,16 +6704,14 @@ function favActive() {
       </div>
       <div class="body">
         ${rec.nb ? `<div class="nb">${esc(rec.nb)}</div>` : ''}
-        ${listed > 0 ? `<div class="price">${price ? '$' + price.toLocaleString() + '/mo' : `Recently available${IS_NYC ? '' : ' on Zumper'} · ${listed} listing${listed===1?'':'s'}${asOf}`}</div>`
-                     : rec.mr ? `<div class="price est" title="${esc(RENT.title)}">${RENT.short} $${rec.mr.toLocaleString()}/mo</div>`
+        ${rec.mr ? `<div class="price est" title="${esc(RENT.title)}">${RENT.short} $${rec.mr.toLocaleString()}/mo</div>`
                      : (estRent(rec) ? `<div class="price est" title="${EST_TITLE}">${estRent(rec)}</div>` : '')}
-        ${beds && beds.length ? `<div class="beds-line">${bedsLabel(beds)} available</div>` : ''}
         ${s8Avail[rec.bbl] ? `<div class="s8-mini">✓ Section 8 listing${s8Avail[rec.bbl].n === 1 ? '' : 's'} on AffordableHousing.com${s8Avail[rec.bbl].p ? ' · from $' + s8Avail[rec.bbl].p.toLocaleString() + '/mo' : ''}</div>` : ''}
         <div class="units-line">${stats.join(' · ')}</div>
         ${cardHpdLine(rec)}
         <div class="actions">
           <button class="btn-secondary" data-action="map">View on map</button>
-          <a class="btn-primary" data-action="search" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.short}</a>
+          <a class="btn-primary" data-action="search" data-outbound="card" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.short}</a>
         </div>
       </div>
     </div>`;
@@ -6330,6 +6724,8 @@ function favActive() {
     // A featured tile is somebody else's listing: it has no BBL and no marker,
     // so there is nothing to fly to. Count the hand-off and let the link go.
     if (card.classList.contains('feat-card')) {
+      const ah = e.target.closest('[data-action="applyhelp"]');
+      if (ah) { runApplyHelp(card, ah.dataset.href); return; }
       if (e.target.closest('a[data-action="featured"]'))
         track('featured_click', Object.assign(featProps(card), { href: e.target.closest('a').getAttribute('href') || '' }));
       return;
@@ -6361,7 +6757,6 @@ function favActive() {
     }
     // Search button: let the link do its thing
     if (action === 'search') return;
-    const listed = m._listed || 0;
     const flyTo = () => {
       const ll = (m.getLatLng ? m.getLatLng() : L.latLng(rec.lat, rec.lng));
       if (map.getZoom() < 16) map.setView(ll, 17, { animate: false });
@@ -6378,7 +6773,7 @@ function favActive() {
     // popup on desktop; the map recenters behind it for when it closes)
     e.preventDefault();
     if (!isMobile) flyTo();
-    openDetail(rec, listed);
+    openDetail(rec);
   });
 
   map.on('moveend', refreshGrid);
@@ -6420,7 +6815,9 @@ function favActive() {
   const headerEl = document.querySelector('header.topbar');
   let headerH = 0;
   function syncHeaderHeight() {
-    const h = headerEl.offsetHeight;
+    // The desktop app banner sits above the header and takes room from the map.
+    const ab = document.getElementById('app-banner');
+    const h = headerEl.offsetHeight + (ab && !ab.hidden ? ab.offsetHeight : 0);
     if (h === headerH) return;
     DIAG.hdr++; DIAG.hdrH.push(h); tr('hdr ' + h); if (DIAG.hdrH.length > 10) DIAG.hdrH.shift();   // ResizeObserver → invalidateSize → resize would otherwise loop
     headerH = h;
@@ -6428,6 +6825,25 @@ function favActive() {
     map.invalidateSize();
   }
   window.addEventListener('resize', syncHeaderHeight);
+  // Desktop app banner: wide screens, not iOS/iPadOS (Safari shows its own),
+  // hidden for 30 days after the X.
+  (function () {
+    const ab = document.getElementById('app-banner'); if (!ab) return;
+    let until = 0; try { until = +localStorage.getItem('fac.appBannerHidden') || 0; } catch (e) {}
+    const ios = document.documentElement.classList.contains('ios') || /iPad|iPhone|iPod/.test(navigator.userAgent)
+      || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (ios || !matchMedia('(min-width: 901px)').matches || Date.now() < until) return;
+    const qr = document.querySelector('.qr-code');
+    if (qr) ab.querySelector('.ab-qr').appendChild(qr.cloneNode(true));
+    ab.hidden = false; syncHeaderHeight();
+    track('app_banner_view', {});
+    ab.querySelector('.ab-qr').addEventListener('click', () => track('app_banner_click', {}));
+    ab.querySelector('.ab-close').addEventListener('click', () => {
+      ab.hidden = true; syncHeaderHeight();
+      try { localStorage.setItem('fac.appBannerHidden', String(Date.now() + 30 * 864e5)); } catch (e) {}
+      track('app_banner_close', {});
+    });
+  })();
   // The header is not a fixed height: the chip row empties out in list view, and
   // pills appear/disappear with sign-in and with the city. Measuring it only on
   // resize left --header-h holding the map view's taller number, and the list
@@ -6576,28 +6992,20 @@ function favActive() {
   }
   function selectMarker(m) {
     clearSelected();
-    const rec = m._rec, listed = m._listed || 0;
-    const price = listingPrices[rec.bbl];
-    const txt = price ? fmtRent(price)
-      : (listed > 0 ? listed + ' listed'
-      : (rec.u != null ? `${rec.u} unit${rec.u === 1 ? '' : 's'}` : 'bldg'));
+    const rec = m._rec;
+    const txt = rec.u != null ? `${rec.u} unit${rec.u === 1 ? '' : 's'}` : 'bldg';
     m.setIcon(pillIcon(`<div class="price-pill selected">${esc(txt)}</div>`, txt.length));
     m._sel = true;
     selectedMarker = m;
     highlightCard(rec.bbl, true);
   }
 
-  function renderCard(rec, listed) {
-    const price = listingPrices[rec.bbl];
-    const beds = listingBeds[rec.bbl];
+  function renderCard(rec) {
     const borough = BORO_NAME[rec.b] || '';
     const faved = FAVS.has(rec.bbl);
-    const priceLine = listed > 0
-      ? (price ? '$' + price.toLocaleString() + '/mo' : 'Recently available')
-      : rec.mr ? `${RENT.short} $${rec.mr.toLocaleString()}/mo`
+    const priceLine = rec.mr ? `${RENT.short} $${rec.mr.toLocaleString()}/mo`
       : (estRent(rec) || (rec.u != null ? rec.u + ' residential units' : CITY.label + ' building'));
     const sub = [
-      beds && beds.length ? bedsLabel(beds) : null,
       rec.yr ? 'built ' + rec.yr : null,
       CITY.label,
     ].filter(Boolean).join(' · ');
@@ -6606,7 +7014,6 @@ function favActive() {
       <button class="card-close" data-card="close" aria-label="Close">✕</button>
       ${PHOTO_PREVIEW?.enabled ? `<div class="card-photo street-photo-card">${PHOTO_PREVIEW.html(rec)}</div>` : '<div class="card-photo card-street"><button type="button" class="street-view-button" data-card="street">View street</button></div>'}
       <button class="card-fav ${faved ? 'faved' : ''}" data-card="fav" aria-label="${faved ? 'Saved' : 'Save'}" aria-pressed="${faved}">${faved ? '♥' : '♡'}</button>
-      ${listed > 0 ? `<span class="card-badge">Recently available${IS_NYC ? '' : ' on Zumper'}</span>` : ''}
       <div class="card-body">
         <div class="card-price">${priceLine}</div>
         <div class="card-sub">${esc(sub)}</div>
@@ -6616,7 +7023,7 @@ function favActive() {
         ${cardHpdLine(rec)}
         <div class="card-actions">
           <button class="cbtn cbtn-2" data-card="details">Details</button>
-          <a class="cbtn cbtn-1" data-card="search" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.short}</a>
+          <a class="cbtn cbtn-1" data-card="search" data-outbound="pin" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.short}</a>
         </div>
       </div>`;
   }
@@ -6625,10 +7032,10 @@ function favActive() {
     tr('openCard');
     setListOpen(false);
     cardMarker = m;
-    const rec = m._rec, listed = m._listed || 0;
-    track('building_view', { bbl: rec.bbl, addr: rec.a, boro: rec.b, listed, via: 'card' });
+    const rec = m._rec;
+    track('building_view', { bbl: rec.bbl, addr: rec.a, boro: rec.b, via: 'card' });
     selectMarker(m);
-    cardEl.innerHTML = renderCard(rec, listed);
+    cardEl.innerHTML = renderCard(rec);
     PHOTO_PREVIEW?.watch(cardEl);
     cardEl.hidden = false;
     document.body.classList.add('card-open');
@@ -6653,7 +7060,7 @@ function favActive() {
   const detailContent = document.getElementById('detail-content');
   wireHpdLegend(detailContent);
   const detailFavBtn = detailSheet.querySelector('.detail-fav');
-  let detailRec = null, detailListed = 0;
+  let detailRec = null;
 
   // #5 instant trust signal in the detail header, so people don't leave to
   // Google "is this building/landlord bad" — we already have the answer.
@@ -6666,17 +7073,12 @@ function favActive() {
     return `<div class="d-health ${cls}">${open} open HPD violation${open === 1 ? '' : 's'}`
       + (v.c ? ` · ${v.c} hazardous (Class C)` : '') + ` — see details below</div>`;
   }
-  function renderDetail(rec, listed) {
-    const price = listingPrices[rec.bbl];
-    const beds = listingBeds[rec.bbl];
+  function renderDetail(rec) {
     const borough = BORO_NAME[rec.b] || '';
-    const priceLine = listed > 0
-      ? (price ? '$' + price.toLocaleString() + '/mo' : 'Recently available on Zumper')
-      : rec.mr ? `${RENT.label} $${rec.mr.toLocaleString()}/mo`
+    const priceLine = rec.mr ? `${RENT.label} $${rec.mr.toLocaleString()}/mo`
       : CITY.label + ' building';
     const keyBits = [];
     if (rec.u != null) keyBits.push(rec.u + ' units');
-    if (beds && beds.length) keyBits.push(bedsLabel(beds) + ' available');
     if (rec.yr) keyBits.push('built ' + rec.yr);
     const facts = [
       ['Units', rec.u != null ? rec.u : '—'],
@@ -6704,10 +7106,6 @@ function favActive() {
       ? (rec.h.violations.total != null ? rec.h.violations.total : rec.h.violations.open)
       : null;
     const est = estRent(rec);
-    // An advertised rent beats the ZIP estimate: printing "Est. $3,800–$4,370"
-    // on a building whose managing agent is asking $7,995 today is the sheet
-    // telling the visitor something we know to be wrong (2026-09-23).
-    const asking = listingPrices[rec.bbl];
     const viol = violButton(rec.h && rec.h.violations, violTotal);
     const compTotal = rec.h && rec.h.complaints
       ? (rec.h.complaints.total != null ? rec.h.complaints.total : rec.h.complaints.open)
@@ -6743,9 +7141,7 @@ function favActive() {
       </div>
       <div class="d-head" data-sec="header">
         <h2 class="d-title">${esc(title)}</h2>
-        <div class="d-tagline"><span class="d-tag">${esc(CITY.label)}</span>${asking
-            ? ` <span class="d-dot">·</span> <span class="d-est" title="${esc(ASKING_TITLE)}">$${asking.toLocaleString()}/mo asking</span>`
-            : est ? ` <span class="d-dot">·</span> <span class="d-est" title="${esc(EST_TITLE)}">${est}</span>` : ''}</div>
+        <div class="d-tagline"><span class="d-tag">${esc(CITY.label)}</span>${est ? ` <span class="d-dot">·</span> <span class="d-est" title="${esc(EST_TITLE)}">${est}</span>` : ''}</div>
         <div class="d-addr">${esc(addrLine)}</div>
       </div>
       <div class="agent-card" data-sec="agent" data-agentcard="${esc(rec.bbl)}">${agentCardInner(rec.bbl, !!(rec.h && rec.h.op))}</div>
@@ -6760,9 +7156,10 @@ function favActive() {
         <button class="d-viol" data-detail="pests" title="HPD violations for roaches, mice, rats or bedbugs — what an inspector confirmed in an apartment"><b>Pest violations</b><span data-oc="pests"></span></button>
         <button class="d-viol" data-detail="bedbugs" title="The landlord's own annual bedbug report to HPD — not an inspection, and about a year behind"><b>Bedbug filings</b><small>landlord's</small><span data-oc="bedbugs"></span></button>
         <button class="d-viol" data-detail="rodents" title="Health Department rat inspections — only where the city inspected"><b>Rat inspections</b><small>Health Dept.</small><span data-oc="rodents"></span></button>
+      </div>
       </div>` : ''}
       <div class="d-actions"${IS_NYC ? ' style="padding-top:0"' : ' data-sec="actions"'}>
-        <a class="d-secondary" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.label}</a>
+        <a class="d-secondary" data-outbound="sheet" target="_blank" rel="noopener" href="${esc(listing.href)}">${listing.label}</a>
       </div>
       <div class="d-actions" style="padding-top:0">
         <button class="d-secondary" data-detail="map">View on map</button>
@@ -6976,12 +7373,12 @@ function favActive() {
     const a = e.target.closest && e.target.closest('a[data-bpage]');
     if (a && detailRec) track('building_page_open', { bbl: detailRec.bbl, via: 'detail' });
   });
-  function openDetail(rec, listed) {
+  function openDetail(rec) {
     tr('openDetail');
-    detailRec = rec; detailListed = listed || 0;
-    track('building_view', { bbl: rec.bbl, addr: rec.a, boro: rec.b, listed: detailListed, via: 'detail' });
+    detailRec = rec;
+    track('building_view', { bbl: rec.bbl, addr: rec.a, boro: rec.b, via: 'detail' });
     secSeen = new Set();
-    detailContent.innerHTML = renderDetail(rec, detailListed);
+    detailContent.innerHTML = renderDetail(rec);
     // The "since your last visit" line was just rendered from the old
     // snapshot; now this visit becomes the baseline for the next one.
     if (HOME && HOME.bbl === rec.bbl) { HOME.snap = homeSnap(rec); try { localStorage.setItem(HOME_KEY, JSON.stringify(HOME)); } catch (e) {} }
@@ -7001,13 +7398,13 @@ function favActive() {
         const hero = detailContent.querySelector('.d-hero');
         if (hero?.querySelector('iframe')) {
           const fresh = document.createElement('template');
-          fresh.innerHTML = renderDetail(rec, detailListed);
+          fresh.innerHTML = renderDetail(rec);
           hero.querySelector('.d-spec').replaceWith(fresh.content.querySelector('.d-spec'));
           fresh.content.querySelector('.d-hero').remove();
           [...detailContent.childNodes].forEach(node => { if (node !== hero) node.remove(); });
           detailContent.appendChild(fresh.content);
         } else {
-          detailContent.innerHTML = renderDetail(rec, detailListed);
+          detailContent.innerHTML = renderDetail(rec);
         }
         PHOTO_PREVIEW?.watch(detailContent);
         watchDetailSections(rec);   // the repaint replaced every observed node
@@ -7305,14 +7702,14 @@ function favActive() {
     }
     if (act === 'home') {
       setHome(rec);
-      detailContent.innerHTML = renderDetail(rec, detailListed); watchDetailSections(rec); syncDetailFav(); loadComments(rec.bbl); loadOpenDataCounts(rec);
+      detailContent.innerHTML = renderDetail(rec); watchDetailSections(rec); syncDetailFav(); loadComments(rec.bbl); loadOpenDataCounts(rec);
       detailContent.scrollTop = 0;
       showPlusToast('Pinned as your apartment — saved and watched. Find it any time under “My apartment”.');
       return;
     }
     if (act === 'unhome') {
       clearHome();
-      detailContent.innerHTML = renderDetail(rec, detailListed); watchDetailSections(rec); syncDetailFav(); loadComments(rec.bbl); loadOpenDataCounts(rec);
+      detailContent.innerHTML = renderDetail(rec); watchDetailSections(rec); syncDetailFav(); loadComments(rec.bbl); loadOpenDataCounts(rec);
       return;
     }
     if (act === 'directions') { openDirections(rec); return; }
@@ -7328,7 +7725,7 @@ function favActive() {
       // gate (as the account gate always was).
       if ((act === 'bedbugs' || act === 'rodents') && !authUser) {
         track('outbound', { kind: 'gate_' + act, bbl: rec.bbl });
-        openAuthModal(`${act === 'bedbugs' ? 'Bedbug' : 'Rodent inspection'} records are part of Find A Crib Plus. Create an account to get started.`, act);
+        openAuthModal(`Create an account or sign in to see this building\u2019s ${act === 'bedbugs' ? 'bedbug filings' : 'rat inspections'}.`, act);
         setAuthMode('signup');
         return;
       }
@@ -7356,7 +7753,7 @@ function favActive() {
     if (e.target.closest('.mly-credit a')) return;
     const act = e.target.closest('[data-card]')?.dataset.card;
     if (!cardMarker) return;
-    const rec = cardMarker._rec, listed = cardMarker._listed || 0;
+    const rec = cardMarker._rec;
     if (act === 'close') { closeCard(); return; }
     if (act === 'search') return; // let the link open
     if (act === 'fav') {
@@ -7367,13 +7764,13 @@ function favActive() {
       saveFavs(); updateFavBadge(); persistFav(rec.bbl, FAVS.has(rec.bbl));
       return;
     }
-    if (act === 'street') { openDetail(rec, listed); return; }
-    if (act === 'details') { openDetail(rec, listed); return; }
+    if (act === 'street') { openDetail(rec); return; }
+    if (act === 'details') { openDetail(rec); return; }
     // The whole card is the tap target, not just the Details button — on a phone
     // the photo and the address are the biggest things on screen and the button
     // is the smallest. Anything that is already a control (close, save, the
     // StreetEasy link) is handled above and excluded here.
-    if (!e.target.closest('a,button')) { openDetail(rec, listed); return; }
+    if (!e.target.closest('a,button')) { openDetail(rec); return; }
   });
   // click on the dimmed backdrop (outside the popup) -> back to the previous screen
   detailSheet.addEventListener('click', e => { if (e.target === detailSheet) closeDetail(); });
@@ -7544,6 +7941,7 @@ function favActive() {
   })();
   applyFilters();
   syncHeaderHeight();
+  offerResume();
   // ---------- first view: open on the visitor's own area ----------
   // Only on a bare landing (no hash, no query): a deep link, a search, a
   // shared folder or an email click-through all know where they want to be.
@@ -7576,7 +7974,7 @@ function favActive() {
   }
   if (location.hash.startsWith('#d=')) {
     const m = markerFor(location.hash.slice(3));
-    if (m) openDetail(m._rec, m._listed || 0);
+    if (m) openDetail(m._rec);
   }
   // ---------- my apartment: entry points ----------
   syncHomeUI();
@@ -7650,7 +8048,7 @@ function favActive() {
   }
   function pestAccess() {
     if (!authUser) return false;
-    return pestGrandfathered() || (plusKnown && plusActive);
+    return pestGrandfathered() || featureAccess();
   }
 
   // ---------- Find A Crib Plus paywall ----------
@@ -7659,11 +8057,19 @@ function favActive() {
   // rides through checkout in sessionStorage so the dashboard's pay
   // conversion can say which paywall sells (2026-09-30).
   let paywallSource = 'other';
+  // While everything else is free, Plus is the AI features (owner,
+  // 2026-10-03) — and no ads, which paying members keep.
+  const AI_SOURCES = new Set(['realtime', 'ai_search', 'apply_help', 'profile']);
   function openPaywall(bbl, source) {
+    if (FEATURES_FREE && !AI_SOURCES.has(source)) return;   // the free features are never sold
+    { const feats = document.getElementById('paywall-feats');
+      if (feats) feats.querySelectorAll('li').forEach(li => {
+        li.hidden = FEATURES_FREE && !(li.hasAttribute('data-ai') || li.dataset.perk === 'noads');
+      }); }
     pendingPhoneBbl = bbl || null;            // remember what they wanted, to reveal after checkout
     paywallSource = source || (bbl ? 'phone' : 'other');
     // Lead with what they came for.
-    const TITLES = { noads: 'Find A Crib, with no ads',
+    const TITLES = { realtime: 'Get alerts the minute they open', ai_search: 'Search in plain words', apply_help: 'Help me apply', noads: 'Find A Crib, with no ads',
                      bedbugs: 'See every building\u2019s bedbug record', rodents: 'See every building\u2019s rat inspections',
                      phone: 'Call who actually runs the building', research: 'Research any landlord',
                      saved_search: 'Save your searches', folders: 'Organize your saved homes' };
@@ -7714,7 +8120,7 @@ function favActive() {
       if (error || !data?.url) throw (error || new Error('no checkout url'));
       window.location.href = data.url;   // -> Stripe Checkout
     } catch (e) {
-      btn.disabled = false; btn.textContent = 'Subscribe';
+      btn.disabled = false; btn.textContent = 'Start your month on us';
       if (err) { err.textContent = 'Checkout is not available yet. Please try again shortly.'; err.hidden = false; }
     }
   }
@@ -7731,12 +8137,14 @@ function favActive() {
   (function () {
     const p = new URLSearchParams(location.search);
     if (p.get('plus') === 'success') {
-      showPlusToast('🎉 You’re now Find A Crib Plus — bedbug and rodent records, agent phone numbers and no ads are unlocked.');
+      showPlusToast('🎉 You’re now Find A Crib Plus — search in plain words, Help me apply, Is this rent fair? and no ads are unlocked.');
       plusPurchasePending = true;
     }
     // ?plus=1 is the "unlock" link from the gated pages. Signed-out users get
     // the sign-in step first — startCheckout() already routes them there.
     if (p.get('plus') === '1') plusUpsellPending = true;
+    // ?plus=realtime: the 8 AM digest's "Get real-time alerts" button (2026-10-06).
+    if (p.get('plus') === 'realtime') { plusUpsellPending = true; paywallSource = 'realtime'; track('realtime_upsell_click', { src: p.get('src') || 'link' }); }
     // ?plus=alerts: old "unlock your alerts" emails. Alerts need no Plus since
     // 2026-10-01, so send them to the alerts page instead of the paywall.
     if (p.get('plus') === 'alerts') { location.replace('/alerts/'); return; }
@@ -7755,7 +8163,7 @@ function favActive() {
   // Alerts need an account (asked 2026-09-08): every /alerts/ link in the
   // header, chips and menu opens the sign-up modal when signed out, and the
   // page opens on its own once the session lands.
-  const ALERTS_GATE_MSG = 'Create an account to set up alerts — an email the minute a lottery or re-rental opens in your borough.';
+  const ALERTS_GATE_MSG = 'Create an account to set up alerts — a daily 8 AM email when a lottery or re-rental opens in your borough.';
   // Alerts are open to every account again (owner, 2026-10-01; they were Plus
   // 2026-09-30 to 10-01). Signed out: the sign-up modal, then on to the
   // alerts page they clicked once the session lands. Signed in: straight there.
@@ -7947,7 +8355,7 @@ function favActive() {
     const plus = document.querySelector('.detail-plus-cta');
     if (brand) brand.hidden = !on;
     if (prof) prof.hidden = !on;
-    if (plus) plus.hidden = on;
+    if (plus) plus.hidden = on || FEATURES_FREE;   // no Plus offers while everything is free
   }
 
   // ---------- profile: account, membership, email-alert preference ----------
@@ -7963,7 +8371,7 @@ function favActive() {
     const plan = document.getElementById('profile-plan');
     plan.textContent = plusActive ? '★ Plus member' : 'Basic';
     plan.classList.toggle('plus', plusActive);
-    document.getElementById('profile-upgrade').hidden = plusActive;
+    document.getElementById('profile-upgrade').hidden = plusActive;   // Plus = the AI features now
     document.getElementById('profile-dark').checked = themeName() === 'dark';
     syncHomeUI();
     profileAlerts.checked = false;
@@ -7971,9 +8379,9 @@ function favActive() {
       const { data } = await supaClient.rpc('get_alerts_enabled');
       profileAlerts.checked = data !== false;
     } catch (e) { /* leave off */ }
-    document.getElementById('profile-folders').hidden = !plusActive;
-    document.getElementById('profile-searches').hidden = !plusActive;
-    if (plusActive) { await loadFolders(); renderProfileFolders(); renderProfileSearches(); }
+    document.getElementById('profile-folders').hidden = !featureAccess();
+    document.getElementById('profile-searches').hidden = !featureAccess();
+    if (featureAccess()) { await loadFolders(); renderProfileFolders(); renderProfileSearches(); }
     profileModal.hidden = false;
   }
   function renderProfileFolders() {
@@ -8269,7 +8677,12 @@ function favActive() {
     if (authGatePending) {
       authGatePending = false;
       if (authUser && authGateNext) { const n = authGateNext; authGateNext = null; location.href = n; }
-      else if (!authUser) { openAuthModal(ALERTS_GATE_MSG, 'alerts'); setAuthMode('signup'); }
+      else if (!authUser) {
+        // ?auth=signup&next=… now also comes from /directory/ and /marketing-agents/.
+        const toAlerts = !authGateNext || /^\/alerts\//.test(authGateNext);
+        openAuthModal(toAlerts ? ALERTS_GATE_MSG : 'Create an account or sign in to continue.', toAlerts ? 'alerts' : 'deep_link');
+        setAuthMode('signup');
+      }
     }
     // Pay conversion (dashboard): one plus_purchase per completed checkout,
     // credited to the paywall that started it.

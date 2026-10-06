@@ -700,7 +700,7 @@ SEEDS = [
                "modules and must be edited together; corrected here rather than by importing "
                "build_seo.py into the email path, which would pull a whole build script into "
                "a mailer to share six lines of prose."),
-    dict(slug="listings_freshness", status="candidate", kind="content",
+    dict(slug="listings_freshness", status="retired", kind="content",   # owner dropped the Zumper/StreetEasy feed 2026-10-06
          name="Refresh the 'recently advertised' feed more than monthly",
          prefixes=["/available/"], metric="owned_visitors",
          hypothesis="The rental-activity signal is the site's most commercial content, and it "

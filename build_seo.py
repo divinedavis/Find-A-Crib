@@ -1114,9 +1114,6 @@ def council_district_pages(urls):
 #
 # So the building tier stops being submitted wholesale. A page is promoted only
 # if it can say something no template can generate:
-#   * a unit in it has ever been advertised    — a live rental address
-#     (EVER, not "right now": promoted_building() explains why a sitemap
-#      entry must not flip off when a listing feed refreshes)
 #   * 300+ apartments                           — among the largest in the city
 # Everything else stays live, stays linked and stays useful to a person who
 # lands on it, but carries noindex,follow and is left out of the sitemap.
@@ -1222,30 +1219,11 @@ GSC_HISTORY_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 # appears in no sitemap either, so no crawler is told anything changed.
 TRIAGE_ROBOTS_UA = "googlebot"
 
-# ---- the one promotion rule that has never been measured, measured.
-# 2026-10-05, and NOT acted on today, deliberately — recorded here so the next
-# run decides it on the number rather than re-deriving it. Scored exactly the
-# way the violations rule was scored before it was removed on 2026-08-29:
-# P(the page has ever earned a Search Console impression | the rule promotes
-# it), against a corpus base rate of 272/47,165 = 0.577%.
-#
-#   ever advertised   promotes   312 URLs,  2 ever served,  0.64%  →  1.11x
-#   300+ apartments   promotes   409 URLs, 11 ever served,  2.69%  →  4.66x
-#   (200+ would be 828 URLs at 3.35x, 100+ would be 2,516 at 2.14x — unchanged
-#    from the 2026-08-29 reading, so the threshold still earns its place.)
-#
-# 1.11x is the null. 312 × 0.577% = 1.8 expected, 2 observed. The rule puts 274
-# URLs into the sitemap that no other rule promotes — 29% of the building tier —
-# on a rationale ("a unit here has been advertised, so it is a live rental
-# address") rather than a record. Two cautions against ripping it out on this
-# alone, and both belong in the decision: n=312 with 2 hits cannot EXCLUDE an
-# effect the size of the unit-count rule's, and no page that has ever served
-# would lose its place anyway, because the fourth rule overrides. What makes it
-# worth asking at all is that listings.json — the file the rule reads — is a
-# sticky master whose own asof is 2026-05-09, five months stale, and
-# recently_advertised_bbls() currently returns ZERO, so not one of these pages
-# even prints a present-tense advertising claim any more.
-PROMOTE_AD_RULE_LIFT = 1.11      # measured 2026-10-05; see above before changing
+# ---- the "ever advertised" promotion rule was REMOVED 2026-10-06.
+# It read listings.json, a Zumper/StreetEasy-derived feed the owner dropped on
+# 2026-10-06 (Zumper's Terms forbid scraping). Measured on 2026-10-05 at 1.11x,
+# the null, so the sitemap loses nothing it had earned; pages that have ever
+# earned an impression stay promoted through the ever-served rule.
 
 
 def _ever_served_bbls():
@@ -1276,113 +1254,17 @@ def _ever_served_bbls():
 EVER_SERVED_BBLS = _ever_served_bbls()
 
 
-def promoted_building(b, ever_advertised):
+def promoted_building(b):
     """True if this building page earns a place in the sitemap.
 
-    The advertising rule here is EVER advertised, deliberately, and it is not
-    the same set as the "recently advertised" CLAIM the page prints — see
-    recently_advertised_bbls() for why the two were split on 2026-09-19.
-
     Promotion is a decision about crawl-worthiness, and a URL must never be
-    un-announced by a flag that flips on a feed refresh. This domain is being
-    crawled 4 to 16 distinct URLs a fortnight (growth/index_status.json), so a
-    page dropped from the sitemap and switched to noindex today is one Google
-    will meet, weeks later, carrying a noindex it was invited to crawl. A
-    building whose unit has ever been advertised is a live rental address, and
-    that fact does not expire; whether it is advertised RIGHT NOW is a claim
-    with a date on it, and belongs to the page text, not to the sitemap.
+    un-announced by a flag that flips on a feed refresh, so both rules read
+    facts that do not expire: the page has earned a search impression, or the
+    building is among the largest in the city.
     """
-    if ever_advertised:
-        return True
     if str(b.get("bbl")) in EVER_SERVED_BBLS:
         return True
     return (b.get("u") or 0) >= PROMOTE_UNITS
-
-
-# ---- "recently advertised": ONE definition, the owner's --------------------
-# FIXED 2026-09-19. Until this morning the static corpus decided "recently
-# advertised" from listings.json's `counts` map, and that map is the wrong
-# instrument for the word "recently". combine_listings.py calls it a STICKY
-# MASTER in its own docstring — "prices don't refresh and sold/delisted
-# buildings aren't pruned — that's the intended sticky behavior" — so
-# membership of `counts` means "a unit here was advertised at SOME point since
-# the scrape began", and nothing at all about when.
-#
-# Every other surface on this site already knew that. index.html (and the sf/
-# la/dc/westchester shells) carry `const RECENT_DAYS = 5` with the comment
-# "'Recently advertised' means posted on Zumper within the last 5 days (owner
-# rule)"; scrape_listings.py records a per-listing `posted` timestamp for
-# exactly that purpose; combine_listings.py keeps `posted` deliberately
-# NON-sticky "so a building missing from the latest scrape keeps its old date
-# and simply ages out of 'recent'"; saved_alerts.py reads `posted`. Only the
-# SEO build ignored it, and the SEO build is the surface that says it in a
-# <title>, an <h1> lead, a badge and the meta description Google prints under
-# the result — to a tenant deciding where to live, on the strength of a feed
-# refresh_listings.sh runs one borough at a time, roughly monthly.
-#
-# So: `posted` + 5 days decides every present-tense claim. `counts` keeps its
-# one remaining job, promotion (above), where "ever" is the honest reading and
-# the stable one. Where a building is in `counts` with no `posted` date — the
-# sticky master's legacy rows — it is NOT recent. That is the whole point: an
-# undated listing cannot support a dated claim, and the page simply says
-# nothing about advertising rather than guessing.
-RECENT_DAYS = 5
-
-
-def load_listings(path=None):
-    """listings.json as a dict, or {} — never fatal, like every other feed here."""
-    path = path or os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                "listings.json")
-    try:
-        with open(path) as f:
-            d = json.load(f)
-        return d if isinstance(d, dict) else {}
-    except Exception as e:
-        print(f"listings.json: unavailable ({e}) — no advertising claims will be made")
-        return {}
-
-
-def recently_advertised_bbls(listings, now=None):
-    """BBLs with a listing posted in the last RECENT_DAYS days.
-
-    Mirrors index.html's isRecent() exactly: `now - posted[bbl] < RECENT_DAYS
-    * 86400`, on the same unix seconds the scrapers write. A feed with no
-    `posted` map yields the empty set, which is the correct answer rather than
-    a fallback — see the block comment above.
-    """
-    posted = listings.get("posted") or {}
-    if not posted:
-        return set()
-    now = time.time() if now is None else now
-    cutoff = now - RECENT_DAYS * 86400
-    out = set()
-    for bbl, ts in posted.items():
-        try:
-            if float(ts) >= cutoff:
-                out.add(str(bbl))
-        except (TypeError, ValueError):
-            continue      # an unparseable date is not a recent one
-    return out
-
-
-def ever_advertised_bbls(listings):
-    """BBLs the sticky master has ever seen a listing for. Promotion only."""
-    return {str(k) for k in (listings.get("counts") or {})}
-
-
-def listings_asof(listings):
-    """The feed's own refresh date as YYYY-MM-DD, or None if it does not say.
-
-    Printed beside the counts on /available/ so a reader can price the claim
-    themselves. None is rendered as no date rather than as today's.
-    """
-    iso = listings.get("updated_iso")
-    if isinstance(iso, str) and len(iso) >= 10 and iso[4] == "-":
-        return iso[:10]
-    try:
-        return time.strftime("%Y-%m-%d", time.gmtime(float(listings["updated"])))
-    except Exception:
-        return None
 
 
 # ---- the voucher feed, on the pages Google actually crawls -----------------
@@ -1618,16 +1500,6 @@ def landlord_pages(urls):
                  f"That is the {ordinal(rank)}-largest rent-stabilized portfolio of the ")
                 + f"{n_all:,} landlords tracked here. Boroughs: {boros}.",
             ])
-            # This count is STORED in landlords.json, which build_landlords.py
-            # writes on its own schedule against Supabase — so on any given
-            # night it may have been computed under either definition of
-            # "advertised" (the sticky ever-matched set before 2026-09-19, the
-            # RECENT_DAYS window after). The badge therefore claims only what
-            # is true of both, and drops "now", which was true of neither.
-            + (f"<p><span class='badge'>{e['advertised']} building"
-               f"{'' if e['advertised'] == 1 else 's'} with a rental listing on "
-               f"record</span></p>"
-               if e.get("advertised") else "")
             + f"<a class='cta' href='/'>Look any of these up on the map →</a>"
             + f"<h2>The buildings</h2><table class='facts'>"
             f"<tr><th>Address</th><th>Borough</th><th>Apartments</th>"
@@ -2676,9 +2548,6 @@ def guide_stats():
                                            "buildings.min.json")))
     except Exception:
         return {}
-    listings = load_listings()
-    adv_recent = recently_advertised_bbls(listings)
-    adv_ever = ever_advertised_bbls(listings)
     yrs = sorted(b["yr"] for b in blds if b.get("yr"))
     viol = sum(((b.get("h") or {}).get("violations") or {}).get("open") or 0 for b in blds)
     cc = sum(((b.get("h") or {}).get("violations") or {}).get("oc") or 0 for b in blds)
@@ -2692,10 +2561,6 @@ def guide_stats():
         "units": sum(b.get("u") or 0 for b in blds),
         "median_year": yrs[len(yrs) // 2] if yrs else None,
         "open_violations": viol, "class_c": cc, "clean": clean,
-        # Two counts, because they answer two different questions and only one
-        # of them can be written in the present tense. See recently_advertised_bbls().
-        "advertised_recent": sum(1 for b in blds if b["bbl"] in adv_recent),
-        "advertised_ever": sum(1 for b in blds if b["bbl"] in adv_ever),
         "landlords": n_ll,
     })
     return _GUIDE_STATS
@@ -2712,13 +2577,6 @@ def guide_numbers_html(slug):
             ("Open HPD violations against them", f"{st['open_violations']:,}"),
             ("…of those, class C (immediately hazardous)", f"{st['class_c']:,}"),
             ("Buildings with no open violation", f"{st['clean']:,}")]
-    # "advertised right now" was printed from the sticky, never-pruned counts
-    # map until 2026-09-19. Only the RECENT_DAYS set can carry "right now", and
-    # when it is empty the link says what the tier actually holds rather than
-    # advertising a zero. See recently_advertised_bbls().
-    avail_label = (f"{st['advertised_recent']:,} stabilized buildings advertised "
-                   f"in the last {RECENT_DAYS} days" if st.get("advertised_recent")
-                   else "Stabilized buildings that have been advertised for rent")
     NEXT = {
         "is-my-apartment-rent-stabilized": [
             ("/buildings/", "Find your building by neighborhood"),
@@ -2730,7 +2588,7 @@ def guide_numbers_html(slug):
             ("/buildings/", "Browse the stabilized register"),
             ("/sf/", "Rent control in San Francisco"), ("/dc/", "Rent control in Washington DC")],
         "how-to-find-a-rent-stabilized-apartment": [
-            ("/available/", avail_label),
+            ("/", "Search every stabilized building on the map"),
             ("/section8/", "Buildings taking Section 8 and other vouchers")],
         "rent-stabilized-tenant-rights": [
             ("/landlord/", f"All {st['landlords']:,} landlords, ranked by open violations"),
@@ -3098,7 +2956,7 @@ def hpd_registration_line(h):
 DESC_LIMIT = 158
 
 
-def building_meta_desc(addr, nb, units, yr, open_viol, advertised, voucher=False,
+def building_meta_desc(addr, nb, units, yr, open_viol, voucher=False,
                        limit=DESC_LIMIT):
     """The <meta name="description"> for one building page.
 
@@ -3124,8 +2982,6 @@ def building_meta_desc(addr, nb, units, yr, open_viol, advertised, voucher=False
         from PLUTO and the body says "about". A meta description is not the
         place to quietly upgrade an approximation into a fact.
       * the DHCR registration is the claim the page exists to make.
-      * a recently-advertised unit is the highest-intent thing we know about a
-        building, so it wins the leftover budget when both extras fit.
       * open HPD violations are shown in the body's "Building conditions" table
         and are the other reason someone searches an address.
 
@@ -3157,14 +3013,12 @@ def building_meta_desc(addr, nb, units, yr, open_viol, advertised, voucher=False
     # FIRST of the three, on the ~250 pages a night that get it, and the order
     # is the whole of the decision: DESC_LIMIT is 158 and a typical lead already
     # spends 104 of it, so exactly one extra survives on most pages. Of the
-    # three this is the rarest (0.5% of the corpus against 0.7% advertised and
-    # most of the rest carrying a violation count) and the only one that matches
+    # two this is the rarest (0.5% of the corpus against most of the rest
+    # carrying a violation count) and the only one that matches
     # a query a voucher holder actually types. It is a claim about a listing on
     # AffordableHousing.com, never about the landlord — see load_voucher_listings.
     if voucher:
         extras.append("An apartment here is listed to voucher holders.")
-    if advertised:
-        extras.append("A unit here was recently advertised for rent.")
     if open_viol:
         extras.append(f"{open_viol} open HPD violation{'' if open_viol == 1 else 's'} on file.")
 
@@ -3264,16 +3118,8 @@ def methodology_page():
         row("Washington, DC", f"{n_dc:,} properties on the DC Rent Registry"),
     ]) + "</table>"
 
-    # The rental-listing row is the one a reader is most likely to misread, so
-    # it states the cadence AND the accumulation, which is what makes an old
-    # match survive on the page. Added 2026-09-19 with the tense fix.
-    listings_row = ("Refreshed one borough at a time rather than nightly, and the file "
-                    "accumulates — a building stays matched after the unit rents"
-                    + (f". Last refreshed {esc(listings_asof(load_listings()))}"
-                       if listings_asof(load_listings()) else ""))
     cadence = "<table class='facts'>" + "".join([
         row("Housing-voucher listings (/section8/)", "Rebuilt nightly"),
-        row("Rental listings (the “advertised for rent” flag and /available/)", listings_row),
         row("HPD violations, complaints, owner and agent", "Refreshed from NYC Open Data on the "
             "data build, not on every page build"),
         row("DC Rent Registry", "The source publishes nightly export files"),
@@ -3316,13 +3162,6 @@ complaints</strong> come from NYC Open Data — HPD's registrations
 (<a href="https://data.cityofnewyork.us/d/wvxf-dwi5">wvxf-dwi5</a>) and complaints
 (<a href="https://data.cityofnewyork.us/d/ygpa-z7cr">ygpa-z7cr</a>) — matched on BBL and linked
 back to the building's own record on HPD Online.</li>
-<li><strong>Units advertised for rent</strong> come from StreetEasy rental listings, pulled through
-Apify and matched to DHCR-registered buildings by address (earlier rows came from a Zumper and
-RentHop scrape). The listing file accumulates: a building stays on it once matched and is not
-removed when the unit rents, so "has been advertised" is all the list itself supports. Where a
-listing carries a posting date, a building is called recently advertised only within 5 days of
-it, which is the same rule the map uses. New York City only; there is no equivalent feed for the
-other three cities. Housing-voucher listings are a different feed, described separately here.</li>
 </ul>
 <p class='disclaimer'>{NYC_FOOTER}</p>
 </div>
@@ -3450,24 +3289,8 @@ def main():
     except Exception as e:
         print(f"hpd_contacts.json: unavailable ({e}) — owner blocks will be empty")
         contacts = {}
-    # Two sets, never one: `adv_recent` backs every claim the pages make and
-    # `adv_ever` backs sitemap promotion only. See recently_advertised_bbls().
-    listings = load_listings("listings.json")
-    adv_recent = recently_advertised_bbls(listings)
-    adv_ever = ever_advertised_bbls(listings)
-    # The per-BBL listing tally behind `adv_ever`. It is the ONE fact this tier
-    # holds that no other page on the site publishes, so the /available/ tables
-    # print it — under the header "Listings on record", never "listings now",
-    # because combine_listings.py's own docstring calls this map a sticky master
-    # that is never pruned when a unit rents.
-    adv_counts = listings.get("counts") or {}
-    feed_date = listings_asof(listings)
-    print(f"listings: {len(adv_ever):,} buildings ever advertised, "
-          f"{len(adv_recent):,} in the last {RECENT_DAYS} days"
-          + (f" (feed as of {feed_date})" if feed_date else " (feed carries no date)"))
     # A separate feed and a separate claim: these are apartments listed to
-    # housing-voucher holders on AffordableHousing.com tonight, not units
-    # advertised on Zumper. See load_voucher_listings for why this build reads
+    # housing-voucher holders on AffordableHousing.com tonight. See load_voucher_listings for why this build reads
     # it at all and why an old feed yields nothing rather than a hedge.
     voucher_avail, voucher_asof = load_voucher_listings()
 
@@ -3517,9 +3340,6 @@ def main():
     def boro_list_url(boro, kind):  # kind = "largest" | "oldest"
         return f"/borough/{BORO_SLUG.get(boro,'nyc')}/{kind}/"
 
-    def avail_url(boro, nb):
-        return f"/available/{BORO_SLUG.get(boro,'nyc')}/{slugify(nb)}/"
-
     urls = []  # (loc, priority) for sitemaps
     promoted_bbls = set()   # building pages that earned a sitemap entry
 
@@ -3533,9 +3353,8 @@ def main():
         h = b.get("h") or {}
         units = b.get("u")
         yr = b.get("yr")
-        adv = b["bbl"] in adv_recent
         vch = voucher_avail.get(b["bbl"])
-        promoted = promoted_building(b, b["bbl"] in adv_ever)
+        promoted = promoted_building(b)
 
         # unique, data-driven lead sentence (avoids thin/duplicate content)
         bits = [f"<strong>{esc(addr)}</strong> is a registered NYC rent-stabilized building in "
@@ -3546,8 +3365,6 @@ def main():
         if units:
             bits.append(f"It has about {esc(units)} apartment{'s' if units != 1 else ''}"
                         + (f", built in {esc(yr)}." if yr else "."))
-        if adv:
-            bits.append("A unit here was <strong>recently advertised for rent</strong>.")
         if vch:
             bits.append("An apartment here is <strong>listed to housing-voucher "
                         "holders</strong> on AffordableHousing.com.")
@@ -3778,17 +3595,12 @@ def main():
                 f"<h1>Is {esc(addr)} rent stabilized?</h1>"
                 f"<p class='lead'>{lead}</p>"
                 + aka_html
-                + (f"<p><span class='badge'>Recently advertised for rent</span></p>" if adv else "")
                 + (f"<p><span class='badge'>Listed to voucher holders</span></p>" if vch else "")
                 + voucher_html
                 + compare_html
                 + f"<a class='cta' href='/#d={b['bbl']}'>View {esc(addr)} on the map →</a>"
                 # conversion hook: give organic readers a reason to act, not just leave
-                + (f"<div class='hook'><strong>🔔 A unit here was recently advertised.</strong> "
-                   f"See it on the map and get an email if another opens up — "
-                   f"<a href='/#d={b['bbl']}'>save {esc(addr)} to an account</a>.</div>"
-                   if adv else
-                   f"<div class='hook'><strong>🔔 Want to know if an apartment opens up here?</strong> "
+                + (f"<div class='hook'><strong>🔔 Want to know if an apartment opens up here?</strong> "
                    f"<a href='/#d={b['bbl']}'>Save {esc(addr)} to a Find A Crib account</a> and get a listing alert. "
                    f"Signed in, you also see the managing agent's phone number and the owner's full portfolio.</div>")
                 + f"<h2>Building details</h2><table class='facts'>{facts}</table>"
@@ -3800,7 +3612,7 @@ def main():
         write(url.strip("/") + "/index.html",
               page(f"Is {addr} rent stabilized? — {nb}, {boro} | Find A Crib",
                    building_meta_desc(addr, nb, units, yr,
-                                      (h.get("violations") or {}).get("open"), adv,
+                                      (h.get("violations") or {}).get("open"),
                                       voucher=bool(vch)),
                    canonical, body, jsonld,
                    robots=None if promoted else "noindex,follow",
@@ -3884,8 +3696,7 @@ def main():
         links = "".join(f"<a href=\"{bld_url(x)}\">{esc(titlecase_addr(x.get('a')))}</a>" for x in items)
         # A flat list of 1,197 identical links spreads this page's weight across
         # 1,197 pages, and the handful that can actually rank are buried in it
-        # alphabetically. The promoted buildings — ever advertised, among the
-        # largest, or already earning search impressions — get their own block
+        # alphabetically. The promoted buildings — among the largest, or already earning search impressions — get their own block
         # above it, with the reason they are there written next to them.
         # ZIP codes this neighborhood's own buildings actually sit in. No count:
         # see zip_links_html for why this page is not entitled to print one.
@@ -3898,12 +3709,7 @@ def main():
                 # Mirrors promoted_building() in the same order. The last
                 # branch is the ever-served rule, which has no fact of its own
                 # to quote, so it says what is true of every building here.
-                # The advertising branch splits in two because promotion is on
-                # "ever" while only the last RECENT_DAYS days support "now".
-                why = (f"advertised for rent in the last {RECENT_DAYS} days"
-                       if x["bbl"] in adv_recent
-                       else "has been advertised for rent" if x["bbl"] in adv_ever
-                       else f"{x.get('u'):,} apartments"
+                why = (f"{x.get('u'):,} apartments"
                        if (x.get("u") or 0) >= PROMOTE_UNITS
                        else "frequently searched")
                 rows.append(f"<tr><td><a href=\"{bld_url(x)}\">"
@@ -4032,8 +3838,7 @@ def main():
                SITE + "/buildings/",
                f"<h1>NYC rent-stabilized buildings</h1><p class='lead'>Browse all "
                f"{len(blds):,} DHCR rent-stabilized buildings by borough and neighborhood, "
-               f"or <a href='/'>open the interactive map</a>. See which buildings have "
-               f"<a href='/available/'>advertised a unit for rent →</a></p>"
+               f"or <a href='/'>open the interactive map</a>.</p>"
                # The citywide count, with no address list: naming twelve of a few
                # hundred on the page that covers all five boroughs would be an
                # arbitrary sample, and the hub link already leads to all of them.
@@ -4177,281 +3982,10 @@ def main():
                    canonical, body, crumb))
         urls.append((canonical, "0.6", boro))
 
-    # ---- buildings that have been advertised for rent (high commercial intent) ----
-    #
-    # REWORDED 2026-09-19, and the page set is deliberately UNCHANGED. This
-    # tier is built from `adv_ever` — every building the listing feed has ever
-    # matched — because that is what it has always been built from, and
-    # rebuilding it from `adv_recent` would empty 93 live pages on a feed that
-    # refreshes one borough at a time, roughly monthly. What was wrong here was
-    # never the inventory, it was the tense: an accumulating set that never
-    # prunes sold or delisted buildings cannot support "recently", and the old
-    # copy said "recently" in the h1, the lead, the title, the breadcrumb and
-    # the meta description, and credited a nightly Zumper match that has not
-    # been the source since refresh_listings.sh moved to Apify/StreetEasy.
-    # A building that IS inside the RECENT_DAYS window is marked as such,
-    # per building, where that is a claim the `posted` date supports.
-    adv_by_nb = defaultdict(list)
-    for b in blds:
-        if b["bbl"] in adv_ever and b.get("nb"):
-            adv_by_nb[(b["b"], b["nb"])].append(b)
-    # The one sentence that prices this whole tier for a reader. It names the
-    # source, says the set accumulates, and dates the feed when the feed dates
-    # itself — no date rather than an invented one.
-    AVAIL_SOURCE = (
-        "These are rent-stabilized buildings matched to a rental listing on "
-        "StreetEasy at some point since tracking began — not a live vacancy "
-        "list. The list accumulates and is not pruned when a unit rents, so a "
-        "building here may have nothing available today."
-        + (f" Listing feed last refreshed {esc(feed_date)}." if feed_date else ""))
-
-    # THE PAGE SET IS THE PUBLISHED SET, NOT THE QUALIFYING SET — 2026-09-22.
-    #
-    # Until today this loop wrote a page only where the CURRENT feed matched
-    # AVAIL_MIN buildings, and every URL that fell below that line was simply
-    # abandoned. Abandoned is not unpublished: scripts/refresh_seo.sh deploys
-    # with `rsync -a` and NO --delete (see its STEP=deploy comment), on purpose,
-    # so nothing this build stops writing ever leaves the docroot. The page just
-    # freezes, with whatever text it had the last night it qualified.
-    #
-    # Measured, 2026-09-22. growth/techniques.py t_page_uniqueness read 93 pages
-    # under /available/ in the live docroot; this build writes 41 (40 + the hub).
-    # So 52 live pages — 56% of the section — had not been rebuilt for an unknown
-    # number of nights, and they were last written BEFORE the 2026-09-19 rewording
-    # directly above: they still say "recently advertised for rent" in the h1, the
-    # lead, the title, the breadcrumb and the meta description, from a feed whose
-    # own refresh date is 2026-05-09. The fix that went in on 09-19 reached the
-    # 40 pages that still qualified and could not reach the other 52.
-    #
-    # Confirmed against growth/index_status.json rather than assumed: of the 15
-    # /available/ URLs in the index census cohort (sampled 2026-08-20..24, when
-    # they were still in the sitemap), 6 are not in today's build set, and
-    # /available/bronx/concourse-concourse-village/ is "Discovered - currently
-    # not indexed" — Google has that URL queued and would fetch a frozen page.
-    #
-    # So the rule changes from "publish where the data qualifies" to "a URL this
-    # build has published stays rebuilt and stays true". AVAIL_MIN still gates
-    # what gets published NEW, and still gates the sitemap; it no longer decides
-    # whether an already-live page gets told the truth.
-    AVAIL_MIN = 3
-
-    def published_available_keys():
-        """(boro, nb) for every /available/ page already live in the docroot.
-
-        The docroot is the only record of what this tier has published — OUT is
-        the same story one rsync earlier, and neither is in git. Read defensively
-        and never fatally: on a bare checkout (the daily review's container) there
-        is no docroot at all, and the correct behaviour there is to fall back to
-        the qualifying set, which is exactly what an empty result does.
-
-        The slug → neighborhood map is built from `by_nb`, every neighborhood in
-        the dataset, not from `adv_by_nb` — a stranded page is by definition one
-        whose neighborhood has dropped out of the advertised set, so looking it up
-        in the advertised set would find nothing. A slug that resolves to no
-        neighborhood at all is skipped: it is a rename or a hand-placed file, and
-        this build will not invent a page title for a URL it cannot explain.
-        """
-        out = set()
-        by_slug = {(BORO_SLUG.get(bo, "nyc"), slugify(nb)): (bo, nb) for (bo, nb) in by_nb}
-        root = os.path.join(DOCROOT, "available")
-        try:
-            boro_dirs = sorted(os.listdir(root))
-        except OSError:
-            return out
-        for bs in boro_dirs:
-            try:
-                nb_dirs = sorted(os.listdir(os.path.join(root, bs)))
-            except OSError:
-                continue
-            for ns in nb_dirs:
-                if not os.path.isfile(os.path.join(root, bs, ns, "index.html")):
-                    continue
-                key = by_slug.get((bs, ns))
-                if key:
-                    out.add(key)
-        return out
-
-    avail_fresh = {k for k, v in adv_by_nb.items() if len(v) >= AVAIL_MIN}
-    avail_stranded = published_available_keys() - avail_fresh
-    avail_keys = sorted(avail_fresh | avail_stranded,
-                        key=lambda k: (-len(adv_by_nb.get(k, [])), k[1]))
-    if avail_stranded:
-        print(f"available: {len(avail_fresh)} neighborhoods qualify, "
-              f"{len(avail_stranded)} already-published pages rebuilt below the "
-              f"{AVAIL_MIN}-building line")
-
-    if adv_by_nb:
-        total_adv = sum(len(v) for v in adv_by_nb.values())
-        n_recent = sum(1 for v in adv_by_nb.values() for x in v if x["bbl"] in adv_recent)
-        # Every page that exists AND has at least one building to show, not just
-        # the ones over AVAIL_MIN. The hub's own lead counts all 59 neighborhoods
-        # in `adv_by_nb`, so listing only the 40 largest made the page disagree
-        # with itself; and the stranded pages reach a reader from nowhere else —
-        # they are in no sitemap and nothing else links them. A page with nothing
-        # on it is NOT listed here: a link that resolves to "no listings on
-        # record" is not worth a reader's click from a hub.
-        nb_rows = "".join(
-            f"<a href=\"{avail_url(bo, nb)}\">{esc(nb)}, {esc(BORO_NAME.get(bo,''))} "
-            f"({len(adv_by_nb.get((bo, nb), []))})</a>"
-            for (bo, nb) in avail_keys if adv_by_nb.get((bo, nb)))
-        body = (f"<div class='crumbs'><a href='/'>Home</a></div>"
-                f"<h1>Rent-stabilized buildings advertised for rent in NYC</h1>"
-                f"<p class='lead'><strong>{total_adv:,}</strong> rent-stabilized buildings across "
-                f"{len(adv_by_nb)} neighborhoods have had a unit advertised for rent. "
-                + (f"<strong>{n_recent:,}</strong> of them were advertised in the last "
-                   f"{RECENT_DAYS} days. " if n_recent else "")
-                + f"{AVAIL_SOURCE} Browse by neighborhood:</p>"
-                f"<a class='cta' href='/'>Open the map →</a>"
-                f"<h2>Neighborhoods with listings on record</h2><div class='cols'>{nb_rows}</div>")
-        write("available/index.html",
-              page("Rent-stabilized buildings advertised for rent in NYC | Find A Crib",
-                   f"{total_adv} rent-stabilized buildings across NYC have had a unit advertised "
-                   f"for rent, by neighborhood. Not a live vacancy list.",
-                   SITE + "/available/", body,
-                   breadcrumb([("Home", SITE + "/"), ("Advertised for rent", SITE + "/available/")])))
-        urls.append((SITE + "/available/", "0.8", "hub"))
-    # A LINK LIST BECAME A TABLE ON 2026-09-22, and the reason is measured.
-    # t_page_uniqueness has ranked /available/ the most repetitive section on the
-    # site every night it has run — 50% of 294 words shared verbatim with its own
-    # siblings on 2026-09-22 — and the arithmetic says why: about 150 of those 294
-    # words are AVAIL_SOURCE plus the lead template, identical on all of them, and
-    # the rest was a bare list of <a> tags carrying no facts at all. That also left
-    # the tier a strict SUBSET of /neighborhood/<same nb>/, which lists the same
-    # buildings with more text around them, so the page had no reason to exist that
-    # its own parent did not already serve better.
-    #
-    # The table gives it one. Apartments, year built and open HPD violations all
-    # come from the same building records the map is drawn from, and "listings on
-    # record" is the one column no other page on this site publishes — it is what
-    # this tier is FOR. Every cell is a different number on every page, which is
-    # the only kind of text that moves a shared-shingle share down.
-    #
-    # NOTHING HERE IS ESTIMATED. A field the city has no record of prints "—" and
-    # says so under the table; it never prints 0, because "0 open violations" and
-    # "no HPD record" are different facts and a tenant may act on the difference.
-    # ZERO IS NOT THE SAME WORD IN EVERY COLUMN, and the rest of this file
-    # already knows it. An apartment count of 0 means PLUTO has no count on
-    # file — every other reader of `u` here gates it on truthiness
-    # (`if x.get("u")`, `x.get('u') or '—'`), because no registered building
-    # actually contains zero apartments, and printing "0 apartments" would be a
-    # fact this dataset does not hold. A year below PLUTO_MIN_YEAR is the same
-    # kind of placeholder, and line 2522 already drops it on the building page.
-    # Open violations are the opposite case: the borough "no open violations"
-    # pages exist precisely because a 0 there is a real, checkable zero for any
-    # building with an HPD record, so 0 prints as 0 and only a missing record
-    # prints "—".
-    def _units(v):
-        return f"{v:,}" if isinstance(v, int) and v > 0 else "—"
-
-    def _viol(v):
-        return f"{v:,}" if isinstance(v, int) else "—"
-
-    def _year(v):
-        return str(v) if isinstance(v, int) and v >= PLUTO_MIN_YEAR else "—"  # 1910, never "1,910"
-
-    def _listings(v):
-        return f"{v:,}" if isinstance(v, int) and v > 0 else "—"
-
-    for (boro, nb) in avail_keys:
-        items = adv_by_nb.get((boro, nb), [])
-        boroname = BORO_NAME.get(boro, "New York")
-        url = avail_url(boro, nb)
-        canonical = SITE + url
-        n = len(items)
-        nb_total = len(by_nb.get((boro, nb), []))
-        n_recent = sum(1 for x in items if x["bbl"] in adv_recent)
-        # Most listing activity first, then the biggest buildings. Alphabetical
-        # ordering put the page's best rows wherever the alphabet happened to
-        # leave them; this ordering is the page's own claim about itself.
-        ranked = sorted(items, key=lambda x: (-(adv_counts.get(str(x["bbl"])) or 0),
-                                              -(x.get("u") or 0), x.get("a") or ""))
-        # A building inside the RECENT_DAYS window is marked in the table, so
-        # the page distinguishes the dated claim from the undated one instead
-        # of flattening both into "recently".
-        # EVERY REPEATED SENTENCE HERE IS CONDITIONAL, and that is not a style
-        # choice — it is what the first draft of this table got wrong. Measured
-        # on 2026-09-22 against the 40 pages HEAD builds: adding a fixed header
-        # row plus a fixed 45-word footnote moved the shared-shingle share the
-        # WRONG way, 67% → 70%, because a median page has 6 rows and 6 rows of
-        # numbers do not outweigh 55 words repeated on all 40 siblings. So a
-        # column that would print the same value in every row is not printed,
-        # and a footnote is written only for the cases the page actually
-        # contains. Nothing is hidden: a column disappears only when it carries
-        # no information, and the reader is never told less than the data says.
-        show_counts = any((adv_counts.get(str(x["bbl"])) or 0) > 1 for x in items)
-        has_gap = any("—" in (_units(x.get("u")), _year(x.get("yr")),
-                              _viol(((x.get("h") or {}).get("violations") or {}).get("open")))
-                      for x in items)
-        rows = "".join(
-            f"<tr><td><a href=\"{bld_url(x)}\">{esc(titlecase_addr(x.get('a')))}</a>"
-            + (" ★" if x["bbl"] in adv_recent else "")
-            + f"</td><td>{_units(x.get('u'))}</td>"
-            f"<td>{_year(x.get('yr'))}</td>"
-            f"<td>{_viol(((x.get('h') or {}).get('violations') or {}).get('open'))}</td>"
-            + (f"<td>{_listings(adv_counts.get(str(x['bbl'])))}</td>" if show_counts else "")
-            + "</tr>"
-            for x in ranked)
-        notes = []
-        if has_gap:
-            notes.append("“—” means the city has no record of that field for the building, "
-                         "which is not the same as a zero.")
-        if show_counts:
-            notes.append("“Listings on record” is how many times the feed has matched a "
-                         "listing to that building since tracking began.")
-        table = (f"<h2>Buildings with a listing on record</h2>"
-                 f"<table class='facts'><thead><tr><th>Building</th><th>Apartments</th>"
-                 f"<th>Built</th><th>Open HPD violations</th>"
-                 + ("<th>Listings on record</th>" if show_counts else "")
-                 + f"</tr></thead><tbody>{rows}</tbody></table>"
-                 + (f"<p class='sub'>{' '.join(notes)}</p>" if notes else ""))
-        if n:
-            lead = (f"<p class='lead'>{n} rent-stabilized building{'s' if n != 1 else ''} "
-                    f"in {esc(nb)} {'has' if n == 1 else 'have'} had a unit advertised for rent. "
-                    + (f"{n_recent} of them in the last {RECENT_DAYS} days, marked ★ below. "
-                       if n_recent else "")
-                    + f"Rent-stabilized units come with regulated rent increases — check each "
-                      f"building's status, owner, and HPD record.</p>")
-            meta = (f"{n} rent-stabilized buildings in {nb}, {boroname} have had a unit "
-                    f"advertised for rent, with apartment count, year built and open HPD "
-                    f"violations. Not a live vacancy list.")
-        else:
-            # The page exists because it was published, and the honest thing a
-            # published page with no rows can do is say so and send the reader
-            # one click to the page that does have something for them.
-            lead = (f"<p class='lead'>No rent-stabilized building in {esc(nb)}, {esc(boroname)} "
-                    f"has a listing on record in the current feed. This page stays published "
-                    f"because it was published before, and it fills in again the night the feed "
-                    f"matches a building here."
-                    + (f" {nb_total:,} rent-stabilized buildings are registered in {esc(nb)} — "
-                       f"<a href=\"{nb_url(boro, nb)}\">see all of them</a>." if nb_total else "")
-                    + "</p>")
-            meta = (f"No rent-stabilized building in {nb}, {boroname} currently has a rental "
-                    f"listing on record"
-                    + (f" — browse all {nb_total} rent-stabilized buildings in {nb} instead."
-                       if nb_total else "."))
-        body = (f"<div class='crumbs'><a href='/'>Home</a> › "
-                f"<a href='/available/'>Advertised for rent</a> › "
-                f"<a href='{nb_url(boro, nb)}'>{esc(nb)}</a></div>"
-                f"<h1>Rent-stabilized buildings advertised for rent in {esc(nb)}, {esc(boroname)}</h1>"
-                + lead
-                + f"<p class='sub'>{AVAIL_SOURCE}</p>"
-                f"<a class='cta' href='/'>See {esc(nb)} on the map →</a>"
-                + (table if n else "")
-                + f"<p><a href=\"{nb_url(boro, nb)}\">See all rent-stabilized buildings "
-                  f"in {esc(nb)} →</a></p>")
-        crumb = breadcrumb([("Home", SITE + "/"), ("Advertised for rent", SITE + "/available/"), (nb, canonical)])
-        write(url.strip("/") + "/index.html",
-              page(f"Rent-stabilized buildings advertised for rent in {nb}, {boroname} | Find A Crib",
-                   meta, canonical, body, crumb))
-        # SITEMAP ENTRY ONLY FOR THE QUALIFYING SET, and this is the deliberate
-        # half of today's change. Google fetched this domain 11 times in the last
-        # 28 days against 4,027 sitemapped URLs; a sitemap entry is a request for
-        # some of that, and a page that has fallen below the publishing threshold
-        # has not earned one. The stranded pages get the two things they actually
-        # need — text that is true, and one inbound link from their own hub — and
-        # they do not get to bid for crawl budget against the tier that qualifies.
-        if (boro, nb) in avail_fresh:
-            urls.append((canonical, "0.7", boro))
+    # ---- /available/ (buildings advertised for rent) was REMOVED 2026-10-06:
+    # it was built entirely from the Zumper/StreetEasy listing feed the owner
+    # dropped. refresh_seo.sh deploys without --delete, so the live pages were
+    # removed from the docroot by hand the same day.
 
     # ---- cornerstone guide pages (/guide/ hub + one page per guide) ----
     for g in GUIDES:

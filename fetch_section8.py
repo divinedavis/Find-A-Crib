@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Build the building half of s8.json — Section 8 / voucher signals per BBL
-(stdlib only, same zero-dep style as fetch_apify.py so the droplet cron can
+(stdlib only, zero-dep so the droplet cron can
 run it without a venv).
 
 Two building-level sources, joined onto the DHCR rent-stabilized universe:
@@ -12,7 +12,7 @@ Two building-level sources, joined onto the DHCR rent-stabilized universe:
 2. HUD "Multifamily Properties - Assisted" (HUD ArcGIS open data,
    IS_SEC8_IND='Y' in the five boroughs) -> buildings with a project-based
    Section 8 contract, address-matched to BBL with the same normalizer the
-   listings pipeline uses (parse_apify.normalize_addr / build_index).
+   other feeds use (addr_match.normalize_addr / build_index).
 
 Output: s8.json — {"updated", "bldg": {bbl: {"f": flags, "u": units, "n": name?}}}
   flags: 1 = HPD city-financed affordable, 2 = HUD project-based Section 8
@@ -30,7 +30,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-from parse_apify import build_index, normalize_addr
+from addr_match import build_index, normalize_addr
 
 HERE = Path(__file__).parent
 BUILDINGS = HERE / "buildings.min.json"

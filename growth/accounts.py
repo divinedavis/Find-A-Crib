@@ -259,10 +259,10 @@ def welcome(row, ctx):
                      "is about 47,000 buildings across the five boroughs."},
             {"type": "card",
              "heading": "Save a building, and we'll watch it for you",
-             "body": "When an apartment in a building you saved gets advertised — "
-                     "including listings that explicitly accept housing vouchers — you "
-                     "get an email that night. It's the single most useful thing an "
-                     "account does.",
+             "body": "When a building you saved changes — an apartment listed for "
+                     "housing-voucher holders, a lottery or re-rental at the address, new "
+                     "HPD violations — you get an email the next morning. It's the single "
+                     "most useful thing an account does.",
              "link": ("Open the map", f"{SITE}/")},
             _coverage_block(),
             {"type": "paragraph",
@@ -294,7 +294,7 @@ def activate(row, ctx):
                 "Search the address on the map.",
                 "Open the building for its owner, managing agent and open HPD violations "
                 "— New York City, where that building-level record exists.",
-                "Save it — you'll get an email the night anything there is advertised.",
+                "Save it — you'll get an email the morning anything there changes.",
             ]},
             {"type": "card",
              "heading": "Apartments listed for voucher holders right now",
@@ -391,9 +391,9 @@ def saved(row, ctx):
                 _coverage_block(),
                 {"type": "card",
                  "heading": "Meanwhile, we'll watch the buildings you saved",
-                 "body": "When an apartment in one of them is advertised — including "
-                         "listings that explicitly accept housing vouchers — you get an "
-                         "email that night.",
+                 "body": "When one of them changes — an apartment listed for "
+                         "housing-voucher holders, a lottery or re-rental at the address, "
+                         "new HPD violations — you get an email the next morning.",
                  "link": ("Open the map", f"{SITE}/")},
             ],
             footer_note=FOOTER_NOTE, unsub_url=_unsub(row["token"]),

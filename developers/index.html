@@ -137,11 +137,11 @@ curl -H "X-API-Key: KEY" https://findacrib.com/api/v1/buildings/1007220003</pre>
     <p class="muted">Returns rent-stabilized status, address, borough, ZIP, neighborhood, units, year built, HPD violation/complaint summary, and Section 8 info. (BBL = NYC Borough-Block-Lot id.)</p>
 
     <h3>List / filter buildings</h3>
-    <pre>GET /v1/buildings?borough=&zip=&neighborhood=&advertised=&section8=&page=&limit=
+    <pre>GET /v1/buildings?borough=&zip=&neighborhood=&section8=&page=&limit=
 
 curl -H "X-API-Key: KEY" \
   "https://findacrib.com/api/v1/buildings?borough=brooklyn&section8=true&limit=20"</pre>
-    <p class="muted"><code>borough</code>: manhattan · brooklyn · queens · bronx · staten_island. <code>advertised=true</code> = recently listed for rent. <code>section8=true</code> = subsidized/voucher-friendly. Paginated (<code>limit</code> ≤ 100).</p>
+    <p class="muted"><code>borough</code>: manhattan · brooklyn · queens · bronx · staten_island. <code>section8=true</code> = subsidized/voucher-friendly. Paginated (<code>limit</code> ≤ 100).</p>
 
     <h3>Section 8 / vouchers</h3>
     <pre>GET /v1/section8?bbl={bbl}

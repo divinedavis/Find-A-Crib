@@ -28,7 +28,6 @@ import marracat_metrics      # Marracat, fetched from its own droplet
 import claude_usage          # Anthropic API spend, owner-only tab
 import ai_gateway            # Plus check + $20/month cap for every AI call
 import nl_search             # plain-language search -> map filters
-import rent_check            # "is this rent fair?" — statistics, no model
 import building_records      # one building's public records, for the Claude features
 import claude_features       # landlord report card (Haiku) + Ask about this building (Sonnet)
 import listing_page          # a re-rental's own page as text, for Help me apply
@@ -102,8 +101,6 @@ def _load(name, default):
 
 BUILDINGS = _load("buildings.min.json", [])
 BY_BBL = {b["bbl"]: b for b in BUILDINGS}
-_listings = _load("listings.json", {})
-LISTED = set(str(k) for k in (_listings.get("counts") or {}).keys())
 FMR = _load("fmr.json", {})
 _s8 = _load("s8.json", {})
 S8_BLDG = _s8.get("bldg") or {}
@@ -153,7 +150,6 @@ def public_building(b):
         "units": b.get("u"),
         "year_built": b.get("yr"),
         "stabilization_codes": b.get("s") or [],
-        "recently_advertised": b["bbl"] in LISTED,
         "hpd": hpd,
         "section8": s8_for(b["bbl"]),
     }
@@ -309,7 +305,7 @@ def info():
                  "voucher_listings": len(S8_AVAIL)},
         endpoints=[
             "GET /v1/buildings/{bbl}",
-            "GET /v1/buildings?borough=&zip=&neighborhood=&advertised=&section8=&page=&limit=",
+            "GET /v1/buildings?borough=&zip=&neighborhood=&section8=&page=&limit=",
             "GET /v1/section8?bbl=&zip=",
             "GET /v1/search?q=",
         ],
@@ -334,7 +330,6 @@ def buildings():
     boro = request.args.get("borough", "").lower().strip()
     zip_ = request.args.get("zip", "").strip()
     nb = request.args.get("neighborhood", "").lower().strip()
-    adv = request.args.get("advertised", "").lower() in ("1", "true", "yes")
     s8 = request.args.get("section8", "").lower() in ("1", "true", "yes")
     tier = _tier()
     max_limit = TIER_MAX_LIMIT.get(tier, TIER_MAX_LIMIT["free"])
@@ -354,8 +349,6 @@ def buildings():
         if zip_ and str(b.get("z") or "") != zip_:
             continue
         if nb and nb not in (b.get("nb") or "").lower():
-            continue
-        if adv and b["bbl"] not in LISTED:
             continue
         if s8 and b["bbl"] not in S8_BLDG and b["bbl"] not in S8_AVAIL:
             continue
@@ -645,18 +638,9 @@ def ai_search():
     return jsonify(ok=True, filters=f, explain=explain, used_ai=used_ai)
 
 
-@app.route("/ai/rent-check")
-def ai_rent_check():
-    """Is this building's advertised rent typical for its neighborhood and
-    ZIP? Plus only; plain statistics (rent_check.py), so it costs nothing."""
-    user = _session_user()
-    err = AI.allow(user, "rent_check")
-    if err:
-        return jsonify(error=err), (401 if err == "sign_in_required" else 402 if err == "plus_required" else 429)
-    bbl = re.sub(r"\D", "", request.args.get("bbl", ""))[:10]
-    out = rent_check.check(bbl, BY_BBL, _listings, FMR)
-    AI.record(user, "rent_check", "rules")
-    return jsonify(out)
+# /ai/rent-check ("is this rent fair?") was REMOVED 2026-10-06: it compared a
+# building's Zumper/StreetEasy asking rent with its neighbours', and that
+# listing data was dropped. No route means a plain 404 for old clients.
 
 
 def _sb_rest(path, method="GET", body=None, prefer=None):
@@ -1309,8 +1293,7 @@ def report_view(token):
         corpus, contacts = _report_corpus()
         html = building_report.render(
             row["bbl"], corpus, contacts,
-            s8=bool(S8_BLDG.get(row["bbl"])),
-            listed=bool(LISTED and row["bbl"] in LISTED))
+            s8=bool(S8_BLDG.get(row["bbl"])))
     except KeyError:
         return "Not found", 404
     except Exception:

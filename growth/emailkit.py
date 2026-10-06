@@ -26,7 +26,7 @@ Why the constraints are what they are:
 Callers describe content as blocks and never write markup:
 
     html, text = render(
-        title="A building you saved was just advertised",
+        title="A building you saved changed",
         intro="Rent-stabilized units move fast.",
         blocks=[{"type": "card", "heading": "816 Ocean Ave", "meta": "Flatbush",
                  "body": "...", "link": ("View building", url)}],

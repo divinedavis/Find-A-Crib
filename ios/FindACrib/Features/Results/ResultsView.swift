@@ -83,15 +83,14 @@ struct ResultsHeader: View {
         .accessibilityIdentifier("quick-beds")
         Button(action: onFilter) { chipLabel(priceLabel(v), on: v.minPrice != nil || v.maxPrice != nil, chevron: true) }
             .buttonStyle(.plain).accessibilityIdentifier("quick-price")
-        toggle("Available now", q, \.availableOnly, "available")
+        // "Available now" sat here until 2026-10-06 (it read portal listing
+        // data the app no longer carries); Vouchers takes its slot.
+        toggle("Vouchers", q, \.vouchersOnly, "vouchers")
         // How many more fit depends on the bar: an iPad mini upright has room
         // for three, an 11-inch for four, a 13-inch or any iPad sideways for
-        // all six. The rest stay one tap away in the Filter sheet.
-        if barWidth >= 740 { toggle("Vouchers", q, \.vouchersOnly, "vouchers") }
-        if barWidth >= 920 {
-            toggle("Lotteries", q, \.hcrOnly, "lotteries")
-            toggle("No violations", q, \.noOpenViolations, "no_violations")
-        }
+        // all five. The rest stay one tap away in the Filter sheet.
+        if barWidth >= 740 { toggle("Lotteries", q, \.hcrOnly, "lotteries") }
+        if barWidth >= 920 { toggle("No violations", q, \.noOpenViolations, "no_violations") }
     }
 
     private var barWidth: CGFloat { UIScreen.main.bounds.width - 92 }
@@ -294,7 +293,7 @@ struct ResultsView: View {
     private var emptyHint: String {
         let n = query.normalized
         if n.hcrOnly { return "HousingSearch.ny.gov lists about 50 open lotteries and waitlists in the city at a time. Clear the other Show boxes and the price range to see them all." }
-        if n.availableOnly { return "Only about 2,000 of the 47,000 rent-stabilized buildings have a recent advertised rent. Untick Available now to see every building here." }
+
         if n.vouchersOnly { return "Voucher-friendly buildings are sparse outside upper Manhattan, the Bronx and central Brooklyn. Try clearing the price range." }
         return "Widen the price range or clear a filter."
 

@@ -83,10 +83,14 @@ struct BuildingCard: View {
                 // Spread across the card: beds flush left, year flush right,
                 // dividers centred in the gaps, so the row uses the whole width.
                 HStack(spacing: 0) {
-                    fact("bed.double", bedsText)
-                    Spacer(minLength: 6)
-                    Rectangle().fill(SE.line).frame(width: 1, height: 22)
-                    Spacer(minLength: 6)
+                    // Bedrooms only where the city's record publishes a mix;
+                    // elsewhere the slot would read "– bed" on every card.
+                    if store.city.isIncomeRestricted {
+                        fact("bed.double", bedsText)
+                        Spacer(minLength: 6)
+                        Rectangle().fill(SE.line).frame(width: 1, height: 22)
+                        Spacer(minLength: 6)
+                    }
                     fact("building.2", "\(b.u.map { "\($0) unit\($0 == 1 ? "" : "s")" } ?? "– units")")
                     Spacer(minLength: 6)
                     Rectangle().fill(SE.line).frame(width: 1, height: 22)
@@ -112,13 +116,20 @@ struct BuildingCard: View {
                             Text("Apply").font(.se(18, .bold)).foregroundStyle(.white)
                                 .frame(maxWidth: .infinity).frame(height: 50).background(SE.royal)
                         }.frame(maxWidth: 1000)
-                    } else if let url = store.listingURL(b) {
-                        Link(destination: url) {
-                            Text(store.listingSite(b)).font(.se(18, .bold)).foregroundStyle(.white)
-                                .frame(maxWidth: .infinity).frame(height: 50).background(SE.royal)
-                        }.frame(maxWidth: 1000)
                     } else {
-                        SEPrimaryButton(title: "Details") { open() }
+                        // The one outbound button (2026-10-06): StreetEasy in
+                        // New York, Zillow elsewhere — an address search, never
+                        // a listing we carry.
+                        let out = store.outbound(b)
+                        Link(destination: out.url) {
+                            Text(out.label).font(.se(18, .bold)).foregroundStyle(.white).lineLimit(1).minimumScaleFactor(0.7)
+                                .frame(maxWidth: .infinity).frame(height: 50).background(SE.royal)
+                        }
+                        .frame(maxWidth: 1000)
+                        .simultaneousGesture(TapGesture().onEnded {
+                            Analytics.shared.track("outbound", ["kind": out.kind, "bbl": b.bbl, "href": out.url.absoluteString, "via": "card"])
+                        })
+                        .accessibilityIdentifier("card-outbound")
                     }
                 }
                 .frame(maxWidth: .infinity)
@@ -142,17 +153,13 @@ struct BuildingCard: View {
         }
     }
 
-    /// Every building on the register gets the green "Rent stabilized" label;
-    /// the listed date, when there is one, sits beside it rather than
-    /// replacing it. HCR sites are not on the register and keep their own.
+    /// Every building on the register gets the green "Rent stabilized" label.
+    /// HCR sites are not on the register and keep their own.
     @ViewBuilder private var statusBadge: some View {
         if store.isSyntheticHCR(b) {
             SEBadge(text: "HousingSearch.ny.gov", fill: SE.badge.opacity(0.95))
         } else {
             HStack(spacing: 6) {
-                if store.price(b) != nil, let d = store.postedDate(b) ?? store.listings.updatedDate {
-                    SEBadge(text: "Listed \(Formatters.mdy.string(from: d))", fill: SE.badge.opacity(0.95))
-                }
                 SEBadge(text: store.record(b)?.leasing == 1 ? "Leasing now" : store.city.badgeLabel,
                         icon: "checkmark.circle.fill", fill: SE.good, ink: .white)   // SE.green read 4.1:1 under white text
                     .accessibilityIdentifier("badge-stabilized")
@@ -161,7 +168,7 @@ struct BuildingCard: View {
     }
 
     @ViewBuilder private var priceLines: some View {
-        if let l = store.hcrListings(b).first, store.isSyntheticHCR(b) || store.price(b) == nil {
+        if let l = store.hcrListings(b).first {
             VStack(alignment: .leading, spacing: 4) {
                 Text(l.name ?? "HCR listing").font(.se(22, .bold)).foregroundStyle(SE.ink).lineLimit(1)
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -170,23 +177,6 @@ struct BuildingCard: View {
                 Text([l.ptype, l.due.map { "apply by \($0)" }, l.approx == true ? "location approximate" : nil].compactMap { $0 }.joined(separator: " · "))
                     .font(.se(16)).foregroundStyle(SE.ink3)
             }
-        } else if let p = store.price(b) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(Formatters.dollars(p)).font(.se(34, .bold)).foregroundStyle(SE.ink).lineLimit(1).layoutPriority(3)
-                Text("asking rent").font(.se(20)).foregroundStyle(SE.ink2).lineLimit(1).layoutPriority(2)
-                InfoDot(title: "Asking rent", text: "The rent this building was last advertised at on StreetEasy or Zumper. It is one apartment's listing — stabilized rents differ unit by unit.").layoutPriority(2)
-                Text("Advertised").font(.se(18)).foregroundStyle(SE.ink2).lineLimit(1).minimumScaleFactor(0.7)
-            }
-            let n = store.listingCount(b)
-            if let est = store.estimate(b), est.count >= 3 {
-                HStack(spacing: 4) {
-                    Text("\(Formatters.dollars(est[0]))–\(Formatters.dollars(est[2]))").font(.se(18, .bold)).lineLimit(1).layoutPriority(2)
-                    Text("estimation · ZIP \(b.z ?? "")").font(.se(15)).foregroundStyle(SE.ink2).lineLimit(1).minimumScaleFactor(0.8)
-                    InfoDot(title: "Estimation", text: estimateNote)
-                }
-            }
-            Text("\(n) listing\(n == 1 ? "" : "s") · \(b.statusLine.isEmpty ? "Rent stabilized" : b.statusLine)")
-                .font(.se(17)).foregroundStyle(SE.ink2).lineLimit(1)
         } else if let avail = store.voucherAvail(b), let p = avail.p {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text("from \(Formatters.dollars(p))").font(.se(32, .bold)).foregroundStyle(SE.ink).lineLimit(1).layoutPriority(2)
@@ -204,16 +194,17 @@ struct BuildingCard: View {
             let r = store.record(b)
             Text(r?.name ?? "Income-restricted building").font(.se(22, .bold)).foregroundStyle(SE.ink).lineLimit(2)
         } else {
-            Text("No recent listing").font(.se(22, .bold)).foregroundStyle(SE.ink2)
+            Text(b.statusLine.isEmpty ? store.city.statusLabel : b.statusLine).font(.se(20, .bold)).foregroundStyle(SE.ink2).lineLimit(2)
         }
     }
 
     private var bedsText: String {
-        // The income-restricted cities publish a building's bedroom mix, not listings.
+        // Only the income-restricted cities publish a building's bedroom mix.
         let bd = store.city.isIncomeRestricted
             ? (store.record(b)?.mix ?? [:]).keys.compactMap { Int($0) }.sorted()
-            : store.beds(b)
-        if bd.isEmpty { return "– bed" }
+            : []
+        if bd.isEmpty
+ { return "– bed" }
         let s = bd.sorted().map { $0 == 0 ? "Studio" : "\($0)" }
         return s.count == 1 ? (bd[0] == 0 ? "Studio" : "\(bd[0]) bed") : "\(s.first!)–\(s.last!) bed"
     }

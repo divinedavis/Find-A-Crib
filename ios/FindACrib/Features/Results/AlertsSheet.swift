@@ -188,7 +188,6 @@ struct AlertsSheet: View {
         boroughs = b
         let n = query.normalized
         var k: Set<String> = []
-        if n.availableOnly { k.insert("rerental") }
         if n.vouchersOnly { k.insert("voucher") }
         if n.hcrOnly { k.insert("lottery") }
         if k.isEmpty { k = ["rerental"] }

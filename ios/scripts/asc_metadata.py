@@ -52,10 +52,10 @@ Pick a city, then narrow it the way that city is actually divided: by borough in
 Each city says plainly where its data comes from and what it does not prove.
 
 IN NEW YORK, THERE IS MORE
-The New York map adds what only that city publishes: what's for rent this week, the building's HPD record, who runs it, and the lotteries you can apply for today.
+The New York map adds what only that city publishes: the building's HPD record, who runs it, re-rentals from HPD-approved marketing agents, and the lotteries you can apply for today.
 
-WHAT'S FOR RENT RIGHT NOW
-Tick "Available now" and the map narrows to buildings with an apartment advertised in the last five days, with the asking rent on the pin. Filter by price and bedrooms, draw your own map area, and save the search.
+SEARCH YOUR WAY
+Filter by the ZIP's typical rent, building size and open violations, draw your own map area, and save the search. Every building has a button that opens its address on StreetEasy (New York) or Zillow (other cities) to check what's for rent there.
 
 KNOW THE BUILDING FIRST
 Every building page shows its HPD record — open violations by class, complaints, the last registration — alongside the typical rent for the ZIP from HUD, a street-level Look Around view, and the nearest stabilized buildings on the same blocks.
@@ -73,17 +73,17 @@ ACCOUNTS
 An account (Sign in with Apple, Google or email) includes every feature: managing-agent phone numbers, bedbug and rodent records, and borough alerts.
 
 FIND A CRIB PLUS
-Plus adds AI tools — Search in plain words, Help me apply for re-rentals, and Is this rent fair? — and removes ads. New subscribers get their first month on us (a 1-month introductory trial); after it, Find A Crib Plus Monthly is $4.99 per month, charged to your Apple Account and renewed automatically unless cancelled at least 24 hours before the end of the period. Manage or cancel in Settings › Apple Account › Subscriptions.
+Plus adds AI tools — Search in plain words and Help me apply for re-rentals — and removes ads. New subscribers get their first month on us (a 1-month introductory trial); after it, Find A Crib Plus Monthly is $4.99 per month, charged to your Apple Account and renewed automatically unless cancelled at least 24 hours before the end of the period. Manage or cancel in Settings › Apple Account › Subscriptions.
 Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 Privacy Policy: https://findacrib.com/privacy/
 
-Find A Crib is an independent, informational tool. It is not a broker, does not list apartments, and takes no fee. Data: NYS Homes and Community Renewal rent-stabilization register (2024), NYC HPD open data, HUD FY2026 Fair Market Rents, HousingSearch.ny.gov, advertised rents from Zumper, LA County Assessor parcel data under LAHD's RSO criteria, the SF Rent Board Housing Inventory via DataSF, and the DC DHCD RentRegistry.
+Find A Crib is an independent, informational tool. It is not a broker, does not list apartments, and takes no fee. Data: NYS Homes and Community Renewal rent-stabilization register (2024), NYC HPD open data, HUD FY2026 Fair Market Rents, HousingSearch.ny.gov, LA County Assessor parcel data under LAHD's RSO criteria, the SF Rent Board Housing Inventory via DataSF, and the DC DHCD RentRegistry.
 """
 
 WHATS_NEW = """Find A Crib Plus is back, with new tools:
 • Search in plain words — type “2 bed under $2,500 near Prospect Park, no violations” and every filter sets itself.
 • Help me apply — each re-rental's steps, the documents to gather and a ready-to-send email to the agent.
-• Is this rent fair? — an asking rent checked against the neighborhood and HUD's fair-market rent.
+• Every building now has one button that opens its address on StreetEasy (New York) or Zillow (other cities).
 New subscribers get their first month on us.
 
 For every account:
@@ -96,7 +96,7 @@ For every account:
 REVIEW_NOTES = """VERSION 1.2.6 (build __BUILD__) — Find A Crib Plus offered again (AI tools); qualify-check; application packet; Beds filter on re-rentals
 
 WHAT CHANGED SINCE 1.2.5
-1. Find A Crib Plus (the existing auto-renewable subscription, $4.99/month, with a 1-month introductory trial for new subscribers) is offered again. It unlocks: Search in plain words, Help me apply (re-rentals), Is this rent fair? (building pages with an asking rent) and no ads. Every other feature comes with a (no-cost) account: managing-agent phone numbers, bedbug and rodent records, borough alerts.
+1. Find A Crib Plus (the existing auto-renewable subscription, $4.99/month, with a 1-month introductory trial for new subscribers) is offered again. It unlocks: Search in plain words, Help me apply (re-rentals) and no ads. Every other feature comes with a (no-cost) account: managing-agent phone numbers, bedbug and rodent records, borough alerts.
 2. AI: the text typed into "Search in plain words" and the public web page of a re-rental listing are sent to our server, which uses AI providers (TypeSafe and Anthropic) to read them. No account details, contact details, household or income figures, or documents are sent to any AI provider.
 3. "What do I qualify for?" (Lotteries tab): household size and income, stored on this device only and never sent anywhere or shown on screen; listings outside that income range are hidden ("show them" brings them back).
 4. Application packet (Profile > Application packet, or "Get my documents ready" in Help me apply): the camera opens Apple's VisionKit document scanner ONLY when the user taps Add on a document; scans are stored on the device with complete file protection and sent only by the user, from their own Mail. Nothing is uploaded to us. NEW PERMISSION: camera (NSCameraUsageDescription), asked on the first scan.

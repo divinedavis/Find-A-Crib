@@ -32,9 +32,6 @@ struct PaywallView: View {
         Perk(id: "ai_search", icon: "sparkles", title: "Search in plain words",
              sub: "Type what you want and the search sets every filter.",
              example: "“2 bed under $2,500 near Prospect Park, no violations”"),
-        Perk(id: "rent_check", icon: "dollarsign.circle", title: "Is this rent fair?",
-             sub: "Every advertised rent checked against the neighborhood and HUD's fair-market rent.",
-             example: nil),
         Perk(id: "noads", icon: "nosign", title: "No ads", sub: "No ads in the app or on findacrib.com.", example: nil),
     ]
 

@@ -38,6 +38,31 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(search.waitForExistence(timeout: 10))
     }
 
+    /// The one outbound button (2026-10-06): every NYC card and detail sheet
+    /// opens a StreetEasy address search, every Los Angeles one Zillow's. No
+    /// asking rent, listing count or "Available now" filter survives.
+    func testOutboundButtonPerCity() throws {
+        for (city, label) in [("nyc", "View on StreetEasy ↗"), ("la", "View on Zillow ↗")] {
+            app.terminate()
+            app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--city", city, "--route", "results"]
+            app.launch()
+            let addr = app.buttons["card-address"].firstMatch
+            XCTAssertTrue(addr.waitForExistence(timeout: 90), "\(city): results should list buildings")
+            XCTAssertFalse(app.buttons["quick-available"].exists, "\(city): Available now is gone")
+            XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] 'asking rent' OR label CONTAINS[c] 'Zumper'")).firstMatch.exists,
+                           "\(city): no asking rents or Zumper copy")
+            let cardOut = app.descendants(matching: .any)["card-outbound"].firstMatch
+            for _ in 0..<3 where !cardOut.exists { app.swipeUp() }
+            XCTAssertTrue(cardOut.waitForExistence(timeout: 10), "\(city): the card carries the outbound button")
+            XCTAssertEqual(cardOut.label, label)
+            app.buttons["card-address"].firstMatch.tap()
+            let out = app.buttons["detail-outbound"]
+            XCTAssertTrue(out.waitForExistence(timeout: 20), "\(city): the detail sheet carries the outbound button")
+            XCTAssertEqual(out.label, label)
+            XCTAssertTrue(out.isHittable, "\(city): it sits in the bottom bar")
+        }
+    }
+
     /// App Review 4.8: a third-party login must come with an equivalent that
     /// can hide the user's email. Signed out, the profile offers Sign in with
     /// Apple first, then Google, then email. Build 14 shipped without the
@@ -558,14 +583,14 @@ final class FindACribUITests: XCTestCase {
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--paywall"]
         app.launch()
         XCTAssertTrue(app.staticTexts["Search in plain words"].waitForExistence(timeout: 15), "the Plus paywall opens with its perks")
-        for perk in ["Real-time alerts", "Help me apply", "Is this rent fair?", "No ads"] {
+        for perk in ["Real-time alerts", "Help me apply", "No ads"] {
             XCTAssertTrue(app.staticTexts[perk].exists, "paywall perk missing: \(perk)")
         }
         // Scope to the paywall sheet: Profile (behind it) has its own "Saved
         // searches" row, which is not a paywall perk (build 104).
         let sheet = app.scrollViews.containing(.staticText, identifier: "Search in plain words").firstMatch
         XCTAssertTrue(sheet.exists, "the paywall's scroll view")
-        for gone in ["Landlord report card", "Ask about this building", "Bedbug records", "Rodent records", "Agent phone numbers", "Lottery alerts", "Re-rental alerts", "Saved searches", "Landlord research", "Folders", "Your lotteries & re-rentals"] {
+        for gone in ["Is this rent fair?", "Landlord report card", "Ask about this building", "Bedbug records", "Rodent records", "Agent phone numbers", "Lottery alerts", "Re-rental alerts", "Saved searches", "Landlord research", "Folders", "Your lotteries & re-rentals"] {
             XCTAssertFalse(sheet.staticTexts[gone].exists, "unlisted perk on the paywall: \(gone)")
         }
         XCTAssertFalse(app.buttons["paywall-refer"].exists, "no in-app invite-a-friend button (App Review 3.1.1)")

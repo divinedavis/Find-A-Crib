@@ -178,35 +178,38 @@ enum AddressCase {
     }
 }
 
-/// listings.json — recently advertised rentals matched to DHCR buildings.
-struct ListingsBlob: Codable {
-    var counts: [String: Int] = [:]
-    var urls: [String: String] = [:]
-    var prices: [String: Int] = [:]
-    var beds: [String: [Int]] = [:]
-    /// Epoch of the most recent Zumper posting per building. "Recently
-    /// advertised" / Available now means posted within the last 5 days.
-    var posted: [String: Double] = [:]
-    var updated: Double? = nil
-    var updatedDate: Date? { updated.map { Date(timeIntervalSince1970: $0) } }
-    static let recentDays: Double = 5
+/// The one outbound button on every building card and detail sheet
+/// (2026-10-06). Find A Crib no longer carries any portal's listing data —
+/// no prices, counts or links collected from anyone — so the button is a
+/// plain address search on the site that covers the city: StreetEasy in New
+/// York, Zillow everywhere else. Both are https links, which iOS hands to the
+/// StreetEasy / Zillow app through universal links when it is installed.
+struct OutboundLink: Equatable {
+    /// "streeteasy" or "zillow" — the analytics `kind` of the outbound event.
+    let kind: String
+    let label: String
+    let url: URL
 
-    init() {}
-    // Every map is optional on the wire: a file written before a field existed
-    // (posted, 2026-09-01) must still load rather than emptying every price.
-    init(from d: Decoder) throws {
-        let c = try d.container(keyedBy: CodingKeys.self)
-        counts = (try? c.decodeIfPresent([String: Int].self, forKey: .counts)) ?? [:]
-        urls = (try? c.decodeIfPresent([String: String].self, forKey: .urls)) ?? [:]
-        prices = (try? c.decodeIfPresent([String: Int].self, forKey: .prices)) ?? [:]
-        beds = (try? c.decodeIfPresent([String: [Int]].self, forKey: .beds)) ?? [:]
-        posted = (try? c.decodeIfPresent([String: Double].self, forKey: .posted)) ?? [:]
-        updated = try? c.decodeIfPresent(Double.self, forKey: .updated)
+    /// encodeURIComponent's unreserved set, so the query matches the web's.
+    private static let unreserved = CharacterSet(charactersIn:
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.!~*'()")
+    static func encode(_ s: String) -> String { s.addingPercentEncoding(withAllowedCharacters: unreserved) ?? s }
+
+    /// The place name Zillow understands for a city: "Washington", not
+    /// "Washington DC" with the state repeated after it.
+    static func zillowPlace(_ city: City) -> String {
+        city.id == "dc" ? "Washington" : city.name
     }
-    func postedDate(_ bbl: String) -> Date? { posted[bbl].map { Date(timeIntervalSince1970: $0) } }
-    func isRecent(_ bbl: String, now: Date = Date()) -> Bool {
-        guard let t = posted[bbl] else { return false }
-        return now.timeIntervalSince1970 - t < Self.recentDays * 86400
+
+    static func make(_ b: Building, in city: City) -> OutboundLink {
+        if city.isNYC {
+            let q = "\(b.address), \(b.borough), NY \(b.z ?? "")".trimmingCharacters(in: .whitespaces)
+            return OutboundLink(kind: "streeteasy", label: "View on StreetEasy ↗",
+                                url: URL(string: "https://streeteasy.com/search?search=\(encode(q))")!)
+        }
+        let q = "\(b.address), \(zillowPlace(city)), \(city.state)"
+        return OutboundLink(kind: "zillow", label: "View on Zillow ↗",
+                            url: URL(string: "https://www.zillow.com/homes/\(encode(q))_rb/")!)
     }
 }
 

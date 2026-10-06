@@ -55,7 +55,7 @@ final class IPadTourTests: XCTestCase {
         XCTAssertTrue(addr.waitForExistence(timeout: 15), "\(tag): results should list buildings")
         sleep(2); shot("\(tag)-2-results")
         // One-tap filters beside the shorter location field (owner, 2026-09-22).
-        let avail = app.buttons["quick-available"]
+        let avail = app.buttons["quick-vouchers"]   // "quick-available" retired 2026-10-06
         XCTAssertTrue(avail.waitForExistence(timeout: 5), "\(tag): the quick filters should sit in the top row")
         // The core three always; more as the bar gets wider (all six on a
         // 13-inch or sideways). Whatever shows must fit beside a readable field.
@@ -70,7 +70,7 @@ final class IPadTourTests: XCTestCase {
         let before = count.label
         avail.tap()
         expectation(for: NSPredicate(format: "label != %@", before), evaluatedWith: count); waitForExpectations(timeout: 10)
-        sleep(1); shot("\(tag)-2b-available-now")
+        sleep(1); shot("\(tag)-2b-vouchers")
         avail.tap()
         expectation(for: NSPredicate(format: "label == %@", before), evaluatedWith: count); waitForExpectations(timeout: 10)
         // Toggling a filter rebuilds the list, so the card captured before it

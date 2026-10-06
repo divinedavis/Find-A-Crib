@@ -85,12 +85,16 @@ struct SearchHomeView: View {
                             if !store.city.isNYC {
                                 Text("\(store.city.priceLabel) — what the register has on file, not an asking rent. Buildings with no rent on file are not shown when you set a price.")
                                     .font(.se(14)).foregroundStyle(SE.ink3)
+                            } else {
+                                Text("Matches the ZIP's typical rent (HUD Small-Area Fair Market Rent, studio–2BR), not a building's actual rent.")
+                                    .font(.se(14)).foregroundStyle(SE.ink3)
                             }
+
                         }
                     }
 
-                    // Show and Bedrooms both read New York feeds — advertised
-                    // rents, vouchers and lotteries. The other cities publish a
+                    // Show and Bedrooms both read New York feeds — vouchers,
+                    // lotteries and re-rentals. The other cities publish a
                     // register and nothing else, so offering those filters there
                     // would be offering a way to get zero results.
                     if store.city.hasNYCExtras {
@@ -104,7 +108,7 @@ struct SearchHomeView: View {
                             SEFieldLabel(text: "Bedrooms")
                             SESegmentRow(options: [(0, "Studio"), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: $query.beds)
                                 .accessibilityIdentifier("beds-row")
-                            Text("From recent listings — picking a size narrows to buildings with an advertised apartment.")
+                            Text("Narrows the re-rentals to the sizes you pick. Building records don't say what sizes their apartments are.")
                                 .font(.se(14)).foregroundStyle(SE.ink3)
                         }
                     } else {
@@ -477,7 +481,7 @@ struct RecentSearchCard: View {
                 .frame(width: 104, height: 140).clipped()
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(alignment: .top) {
-                        Text("\(query.normalized.hcrOnly ? "Lotteries" : (query.normalized.availableOnly ? "Rentals" : (query.normalized.vouchersOnly ? "Voucher homes" : "Stabilized"))) in")
+                        Text("\(query.normalized.hcrOnly ? "Lotteries" : (query.normalized.vouchersOnly ? "Voucher homes" : "Stabilized")) in")
                             .font(.se(22, .bold)).foregroundStyle(SE.royal).lineLimit(1).minimumScaleFactor(0.7)   // "Voucher homes in" clipped at 176 pt
                         Spacer()
                         Image(systemName: activity.isSearchSaved(query) ? "heart.fill" : "heart")
@@ -657,14 +661,14 @@ struct BrandMark: View {
 
 
 /// The Show checklist. Rent stabilized is fixed on (it is the dataset);
-/// Available now and Accepting vouchers narrow it and can be combined.
+/// Accepting vouchers and HCR lotteries narrow it and can be combined.
 struct ShowChecklist: View {
     @Binding var query: SearchQuery
     @Environment(DataStore.self) private var store
     var body: some View {
-        // Every row below the first is fed by a New York source — Zumper's
-        // postings, the AffordableHousing.com voucher scrape and
-        // HousingSearch.ny.gov — and SearchQuery.sanitized already switches
+        // Every row below the first is fed by a New York source — the
+        // AffordableHousing.com voucher feed and HousingSearch.ny.gov —
+        // and SearchQuery.sanitized already switches
         // them off in another city. Offering a filter that can only ever
         // return nothing is worse than not offering it (owner, 2026-09-19).
         var rows: [SECheckList.Row] = [
@@ -672,7 +676,7 @@ struct ShowChecklist: View {
         ]
         if store.city.hasNYCExtras {
             rows += [
-                .init(title: "Available now", subtitle: "Posted on Zumper in the last 5 days", isOn: $query.availableOnly),
+
                 .init(title: "Accepting vouchers", subtitle: "Section 8 / voucher-friendly buildings", isOn: $query.vouchersOnly),
                 .init(title: "HCR lotteries & waitlists", subtitle: "Apply online at HousingSearch.ny.gov", isOn: $query.hcrOnly),
             ]

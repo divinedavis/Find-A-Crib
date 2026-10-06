@@ -14,7 +14,6 @@ final class DataStore {
     /// Buildings grouped by neighborhood, so "nearby in this neighborhood" is a
     /// dictionary hit instead of a scan of the whole city on every render.
     private(set) var byNeighborhood: [String: [Building]] = [:]
-    private(set) var listings = ListingsBlob()
     private(set) var s8 = S8Blob()
     private(set) var fmr: FMRTable = [:]
     private(set) var hcr = HCRBlob()
@@ -50,9 +49,9 @@ final class DataStore {
     private(set) var boroughCounts: [String: Int] = [:]
 
     static let host = URL(string: "https://findacrib.com/")!
-    /// Advertised rents, vouchers and lotteries are New York feeds; the other
+    /// Vouchers, HUD rent estimates and lotteries are New York feeds; the other
     /// cities have buildings only, so nothing else is even requested for them.
-    static let nycExtras = ["listings.json", "s8.json", "fmr.json", "hcr.json", "featured.json"]
+    static let nycExtras = ["s8.json", "fmr.json", "hcr.json", "featured.json"]
     nonisolated static func files(for city: City) -> [String] {
         var f = [city.dataPath]
         // The per-building record blob, where the city has one. NYC's detail is
@@ -88,7 +87,7 @@ final class DataStore {
 
     struct Payload: Sendable {
         var buildings: [Building]; var records: [String: BuildingRecord] = [:]
-        var listings: ListingsBlob; var s8: S8Blob; var fmr: FMRTable; var hcr: HCRBlob
+        var s8: S8Blob; var fmr: FMRTable; var hcr: HCRBlob
         var featured: FeaturedBlob = FeaturedBlob()
         /// Built alongside the decode, off the main actor. Nil only for payloads
         /// the unit tests assemble by hand; applyPayload builds it then.
@@ -101,7 +100,7 @@ final class DataStore {
     /// The four small New York feeds. They change daily and the building file
     /// does not, so a refresh that only touched these re-decodes only these.
     struct Extras: Sendable {
-        var listings: ListingsBlob; var s8: S8Blob; var fmr: FMRTable; var hcr: HCRBlob
+        var s8: S8Blob; var fmr: FMRTable; var hcr: HCRBlob
         var featured: FeaturedBlob = FeaturedBlob()
         /// Facts rebuilt against the new feeds, off the main actor.
         var facts: [SearchSnapshot.Facts]? = nil
@@ -179,12 +178,12 @@ final class DataStore {
             DispatchQueue.concurrentPerform(iterations: 3) { k in
                 switch k {
                 case 0: index = buildIndex(buildings, city: city)
-                case 1: facts = SearchSnapshot.facts(for: buildings, listings: e.listings, s8: e.s8, fmr: e.fmr)
+                case 1: facts = SearchSnapshot.facts(for: buildings, s8: e.s8, fmr: e.fmr)
                 default: grid = GeoGrid(buildings)
                 }
             }
         }
-        return Payload(buildings: buildings, records: records, listings: e.listings,
+        return Payload(buildings: buildings, records: records,
                        s8: e.s8, fmr: e.fmr, hcr: e.hcr, featured: e.featured, index: index, facts: facts, grid: grid)
     }
 
@@ -195,7 +194,7 @@ final class DataStore {
             do { return try dec.decode(T.self, from: d) }
             catch { NSLog("FindACrib: %@ failed to decode: %@", name, String(describing: error)); return empty }
         }
-        return Extras(listings: opt("listings.json", ListingsBlob()), s8: opt("s8.json", S8Blob()),
+        return Extras(s8: opt("s8.json", S8Blob()),
                       fmr: opt("fmr.json", [:]), hcr: opt("hcr.json", HCRBlob()), featured: opt("featured.json", FeaturedBlob()))
     }
 
@@ -224,7 +223,7 @@ final class DataStore {
         loadError = nil
         buildings = []; byBBL = [:]; records = [:]; byNeighborhood = [:]
         regions = []; neighborhoods = []; zips = []; boroughCounts = [:]
-        listings = ListingsBlob(); s8 = S8Blob(); fmr = [:]; hcr = HCRBlob()
+        s8 = S8Blob(); fmr = [:]; hcr = HCRBlob()
         hcrBuildings = []; hcrByBBL = [:]
         snapshot = .empty; geoGrid = GeoGrid([])
         loaded = false
@@ -237,8 +236,8 @@ final class DataStore {
         records = p.records
         byBBL = ix.byBBL
         byNeighborhood = ix.byNeighborhood
-        listings = p.listings; s8 = p.s8; fmr = p.fmr; hcr = p.hcr; featured = p.featured
-        dataAsOf = p.listings.updatedDate
+        s8 = p.s8; fmr = p.fmr; hcr = p.hcr; featured = p.featured
+        dataAsOf = p.s8.updated.map { Date(timeIntervalSince1970: $0) }
         indexHCR()
         neighborhoods = ix.neighborhoods
         boroughOfNeighborhood = ix.boroughOfNeighborhood
@@ -247,7 +246,7 @@ final class DataStore {
         boroughCounts = ix.boroughCounts
         snapshot.pool = p.buildings
         geoGrid = p.grid ?? GeoGrid(p.buildings)
-        snapshot.facts = p.facts ?? SearchSnapshot.facts(for: p.buildings, listings: p.listings, s8: p.s8, fmr: p.fmr)
+        snapshot.facts = p.facts ?? SearchSnapshot.facts(for: p.buildings, s8: p.s8, fmr: p.fmr)
         indexHCRFacts()
         loaded = true
     }
@@ -257,17 +256,17 @@ final class DataStore {
         // indexHCR mints synthetic rows into byBBL; drop the old ones first so
         // a lottery that closed does not linger as a stray pin.
         for b in hcrBuildings where HCRListing.isSynthetic(b.bbl) { byBBL[b.bbl] = nil }
-        listings = e.listings; s8 = e.s8; fmr = e.fmr; hcr = e.hcr; featured = e.featured
-        dataAsOf = e.listings.updatedDate
+        s8 = e.s8; fmr = e.fmr; hcr = e.hcr; featured = e.featured
+        dataAsOf = e.s8.updated.map { Date(timeIntervalSince1970: $0) }
         indexHCR()
-        snapshot.facts = e.facts ?? SearchSnapshot.facts(for: buildings, listings: listings, s8: s8, fmr: fmr)
+        snapshot.facts = e.facts ?? SearchSnapshot.facts(for: buildings, s8: s8, fmr: fmr)
         indexHCRFacts()
     }
 
     /// The HCR pool is ~100 rows; its facts are cheap enough to build here.
     private func indexHCRFacts() {
         snapshot.hcrPool = hcrBuildings
-        snapshot.hcrFacts = SearchSnapshot.facts(for: hcrBuildings, listings: listings, s8: s8, fmr: fmr)
+        snapshot.hcrFacts = SearchSnapshot.facts(for: hcrBuildings, s8: s8, fmr: fmr)
     }
 
     /// This building's full record, if its city publishes one and the blob has
@@ -316,7 +315,7 @@ final class DataStore {
         // A city fetched for the first time has no payload yet, so decode even
         // when nothing "changed" — otherwise its first launch stays empty.
         // Only the building file or the record blob needs the 11 MB decode;
-        // listings.json changes daily and used to trigger it on most launches.
+        // the small daily feeds used to trigger it on most launches.
         let core = Set([c.dataPath] + (c.recordsPath.map { [$0] } ?? []))
         if !loaded || !changed.isDisjoint(with: core) {
             if let p = try? await Task.detached(priority: .utility, operation: { try Self.decodeLocal(c) }).value {
@@ -328,7 +327,7 @@ final class DataStore {
             let rows = buildings
             let e = await Task.detached(priority: .utility) { () -> Extras in
                 var e = Self.decodeExtras(c)
-                e.facts = SearchSnapshot.facts(for: rows, listings: e.listings, s8: e.s8, fmr: e.fmr)
+                e.facts = SearchSnapshot.facts(for: rows, s8: e.s8, fmr: e.fmr)
                 return e
             }.value
             guard c == city else { return }
@@ -400,33 +399,17 @@ final class DataStore {
 
     // MARK: derived per-building facts
 
-    /// The asking rent, but only while the listing counts as recent (posted
-    /// on Zumper within the last 5 days). Older banked prices are history,
-    /// exposed separately as `lastPrice`.
-    func price(_ b: Building) -> Int? { listings.isRecent(b.bbl) ? listings.prices[b.bbl] : nil }
-    /// A price we once saw for the building, however old — with when.
-    func lastPrice(_ b: Building) -> (Int, Date?)? { listings.prices[b.bbl].map { ($0, listings.postedDate(b.bbl)) } }
-    func postedDate(_ b: Building) -> Date? { listings.postedDate(b.bbl) }
-    func beds(_ b: Building) -> [Int] { listings.beds[b.bbl] ?? [] }
-    func listingURL(_ b: Building) -> URL? { listings.urls[b.bbl].flatMap(URL.init) }
-    /// The button that opens a listing says where it goes — "StreetEasy" or
-    /// "Zumper" — not "View listing". Anything else falls back to the generic.
-    func listingSite(_ b: Building) -> String {
-        let host = (listingURL(b)?.host ?? "").lowercased()
-        if host.hasSuffix("streeteasy.com") { return "StreetEasy" }
-        if host.hasSuffix("zumper.com") { return "Zumper" }
-        return "View listing"
-    }
-    func listingCount(_ b: Building) -> Int { listings.counts[b.bbl] ?? 0 }
-    func isAdvertised(_ b: Building) -> Bool { listings.isRecent(b.bbl) }
+    /// The one outbound button for a building: a StreetEasy address search in
+    /// New York, a Zillow one elsewhere (2026-10-06 — no portal data is kept).
+    func outbound(_ b: Building) -> OutboundLink { OutboundLink.make(b, in: city) }
     /// HUD estimate for the ZIP: [studio, 1BR, 2BR, 3BR]
     func estimate(_ b: Building) -> [Int]? { b.z.flatMap { fmr[$0] } }
-    /// One price per building, shared by the price sort and filter: the real
-    /// asking rent when advertised, else the ZIP's HUD studio–2BR midpoint.
+    /// One price per building, shared by the price sort and filter: the ZIP's
+    /// HUD studio–2BR midpoint in New York.
     func priceOf(_ b: Building) -> Int? {
-        if let p = listings.prices[b.bbl] { return p }
         if let f = estimate(b), f.count >= 3 { return (f[0] + f[2]) / 2 }
-        // Outside New York there are no listings and no HUD table; SF reports a
+        // Outside New York there is no HUD table; SF reports a
+
         // block median and DC a registered legal rent, and that is the only
         // rent those cities have. Without this a price filter set in New York
         // rejected every building in every other city (2026-09-09).

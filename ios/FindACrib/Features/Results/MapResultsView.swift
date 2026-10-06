@@ -135,9 +135,7 @@ struct MapCalloutCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(building.neighborhood).font(.se(15, .semibold)).foregroundStyle(SE.ink2).lineLimit(1)
                     Text(building.address).font(.se(20, .bold)).foregroundStyle(SE.royal).lineLimit(1)
-                    if let p = store.price(building) {
-                        Text("\(Formatters.dollars(p)) asking rent").font(.se(17, .bold))
-                    } else if let e = store.estimate(building), e.count >= 3 {
+                    if let e = store.estimate(building), e.count >= 3 {
                         Text("\(Formatters.dollars(e[0]))–\(Formatters.dollars(e[2])) typical").font(.se(15)).foregroundStyle(SE.ink2)
                     }
                     Text("\(building.u.map { "\($0) units" } ?? "") · \(building.yr.map { (store.city.isIncomeRestricted ? "since " : "built ") + "\($0)" } ?? "")").font(.se(14)).foregroundStyle(SE.ink3)
@@ -445,8 +443,9 @@ struct BuildingMap: UIViewRepresentable {
     }
 }
 
-/// White capsule with the asking rent, royal border; a royal pin with a
-/// building glyph when the building has no advertised price. Navy when
+/// White capsule with a live voucher listing's rent, royal border; a royal
+/// pin with a building glyph when the building has no price. Navy when
+
 /// selected.
 ///
 /// The unpriced pin used to be a 12pt dot — on a street map at block zoom it

@@ -37,7 +37,7 @@ enum SearchEngine {
     }
 
     /// The map's search: the matching buildings and, for each, the price its
-    /// bubble shows (asking rent while recent, else a live voucher listing's).
+    /// bubble shows (a live voucher listing's rent, where there is one).
     @MainActor
     static func runForMapAsync(_ q: SearchQuery, store: DataStore) async -> (buildings: [Building], prices: [String: Int]) {
         let snap = store.snapshot
@@ -49,8 +49,7 @@ enum SearchEngine {
             prices.reserveCapacity(idx.count / 8)
             for i in idx {
                 let f = facts[i]
-                let p = f.recent >= 0 ? f.recent : f.voucherP
-                if p >= 0 { prices[pool[i].bbl] = Int(p) }
+                if f.voucherP >= 0 { prices[pool[i].bbl] = Int(f.voucherP) }
             }
             return (idx.map { pool[$0] }, prices)
         }.value
@@ -77,11 +76,11 @@ enum SearchEngine {
     /// up) and scanned at the same time.
     nonisolated static func matching(_ q: SearchQuery, _ pool: [Building], _ facts: [SearchSnapshot.Facts]) -> [Int] {
         let n = min(pool.count, facts.count)
-        let bedsMask = q.beds.reduce(UInt8(0)) { $0 | (UInt8(1) << UInt8(min(max($1, 0), 4))) }
+
         let chunks = n < 4096 ? 1 : min(ProcessInfo.processInfo.activeProcessorCount * 2, n / 2048)
         if chunks <= 1 {
             var out: [Int] = []
-            for i in 0..<n where matches(pool[i], facts[i], q, bedsMask) { out.append(i) }
+            for i in 0..<n where matches(pool[i], facts[i], q) { out.append(i) }
             return out
         }
         var parts = [[Int]](repeating: [], count: chunks)
@@ -90,7 +89,7 @@ enum SearchEngine {
                 let lo = n * c / chunks, hi = n * (c + 1) / chunks
                 var out: [Int] = []
                 out.reserveCapacity((hi - lo) / 2)
-                for i in lo..<hi where matches(pool[i], facts[i], q, bedsMask) { out.append(i) }
+                for i in lo..<hi where matches(pool[i], facts[i], q) { out.append(i) }
                 buf[c] = out
             }
         }
@@ -100,19 +99,15 @@ enum SearchEngine {
     /// The snapshot twin of `matchesNormalized`: the same rules, reading the
     /// precomputed facts instead of the store's dictionaries.
     @inline(__always)
-    nonisolated static func matches(_ b: Building, _ f: SearchSnapshot.Facts, _ q: SearchQuery, _ bedsMask: UInt8) -> Bool {
+    nonisolated static func matches(_ b: Building, _ f: SearchSnapshot.Facts, _ q: SearchQuery) -> Bool {
         if !q.locations.isEmpty, !q.locations.contains(where: { $0.matches(b) }) { return false }
-        if q.availableOnly {
-            guard f.recent >= 0 else { return false }
-            if let lo = q.minPrice, Int(f.recent) < lo { return false }
-            if let hi = q.maxPrice, Int(f.recent) > hi { return false }
-        } else if q.minPrice != nil || q.maxPrice != nil {
+        if q.minPrice != nil || q.maxPrice != nil {
             let p = f.voucherP >= 0 ? f.voucherP : f.priceOf
             guard p >= 0 else { return false }
             if let lo = q.minPrice, Int(p) < lo { return false }
             if let hi = q.maxPrice, Int(p) > hi { return false }
         }
-        if bedsMask != 0, f.bedsMask & bedsMask == 0 { return false }
+
         if q.vouchersOnly {
             if q.voucherLiveOnly { if !f.voucherLive { return false } }
             else if !f.voucherFriendly { return false }
@@ -160,8 +155,8 @@ enum SearchEngine {
     }
 
     /// Every building in the dataset is rent-stabilized; the Show flags narrow
-    /// it (AND). Price filters use the real asking rent when the search is
-    /// available-only, otherwise the building's price-or-ZIP-estimate.
+    /// it (AND). Price filters read a live voucher listing's rent, else the
+    /// building's ZIP estimate (or the rent its city publishes).
     @MainActor
     static func matches(_ b: Building, _ raw: SearchQuery, _ store: DataStore) -> Bool {
         matchesNormalized(b, raw.normalized, store)
@@ -172,23 +167,15 @@ enum SearchEngine {
     @MainActor
     static func matchesNormalized(_ b: Building, _ q: SearchQuery, _ store: DataStore) -> Bool {
         if !q.locations.isEmpty, !q.locations.contains(where: { $0.matches(b) }) { return false }
-        if q.availableOnly {
-            guard let p = store.price(b) else { return false }
-            if let lo = q.minPrice, p < lo { return false }
-            if let hi = q.maxPrice, p > hi { return false }
-        } else if q.minPrice != nil || q.maxPrice != nil {
+        if q.minPrice != nil || q.maxPrice != nil {
             guard let p = store.voucherAvail(b)?.p ?? store.priceOf(b) else { return false }
             if let lo = q.minPrice, p < lo { return false }
             if let hi = q.maxPrice, p > hi { return false }
         }
-        // Bedrooms come from recent listings, so a bedroom filter narrows to
-        // advertised buildings on its own — it no longer needs Available now
-        // ticked first (2026-09-08: the control was hidden behind that box and
-        // read as missing).
-        if !q.beds.isEmpty {
-            let bd = store.beds(b)
-            if bd.isEmpty || !bd.contains(where: { n in q.beds.contains(n >= 4 ? 4 : n) }) { return false }
-        }
+        // No building record says what sizes its apartments are: bedrooms
+        // came only from portal listings, dropped 2026-10-06. The bedroom
+        // choice still narrows the re-rentals (ResultsView), never buildings.
+
         if q.vouchersOnly {
             if q.voucherLiveOnly { if store.voucherAvail(b) == nil { return false } }
             else if !store.isVoucherFriendly(b) { return false }

@@ -2,9 +2,10 @@ import Foundation
 import MapKit
 
 enum SearchMode: String, CaseIterable, Codable, Hashable {
-    /// Retired tab (2026-09-01): "advertised now" is the `availableOnly` radio
-    /// under Stabilized instead. The case stays so saved/recent searches that
-    /// persisted "Rent" still decode; `normalized` maps them across.
+    /// Retired tab (2026-09-01), then retired filter (2026-10-06: the app no
+    /// longer carries advertised rents). The case stays so saved/recent
+    /// searches that persisted "Rent" still decode; `normalized` maps them to
+    /// a plain stabilized search.
     case rent = "Rent"
     case stabilized = "Stabilized"     // every rent-stabilized building on file
     case vouchers = "Vouchers"         // Section 8 / voucher-friendly
@@ -73,16 +74,15 @@ struct SearchQuery: Codable, Hashable {
     var unitBands: Set<Int> = []     // 0: 1–5, 1: 6–19, 2: 20–49, 3: 50+
     var noOpenViolations = false
     var voucherLiveOnly = false      // vouchers mode: only live AffordableHousing.com listings
-    var availableOnly = false        // Show: only buildings advertised now, with an asking rent
+
     var vouchersOnly = false         // Show: only Section 8 / voucher-friendly buildings
     var hcrOnly = false              // Show: only HCR lotteries / waitlists (HousingSearch.ny.gov)
     var sort: SortOrder = .cheapest
 
     /// The tabs are gone (2026-09-01): "Show" is a multi-select and the old
-    /// modes fold into its flags. Rent → available-only; Vouchers → vouchers-only.
+    /// modes fold into its flags. Rent → plain stabilized; Vouchers → vouchers-only.
     var normalized: SearchQuery {
         var q = self
-        if mode == .rent { q.availableOnly = true }
         if mode == .vouchers { q.vouchersOnly = true }
         q.mode = .stabilized
         return q
@@ -96,7 +96,7 @@ struct SearchQuery: Codable, Hashable {
         var q = self
         if !city.hasPrices { q.minPrice = nil; q.maxPrice = nil }
         if !city.hasNYCExtras {
-            q.availableOnly = false; q.vouchersOnly = false
+            q.vouchersOnly = false
             q.hcrOnly = false; q.voucherLiveOnly = false
             q.beds = []
         }
@@ -107,7 +107,7 @@ struct SearchQuery: Codable, Hashable {
     var noun: String {
         let n = normalized
         if n.hcrOnly { return "lotteries & waitlists" }
-        if n.availableOnly { return "rentals" }
+
         if n.vouchersOnly { return "voucher-friendly buildings" }
         return "buildings"
     }
@@ -118,7 +118,7 @@ struct SearchQuery: Codable, Hashable {
     /// "rent-stabilized" everywhere until 2026-09-24.
     func resultHeadline(count: Int, city: City = .nyc) -> String {
         let n = normalized
-        if !n.hcrOnly && !n.availableOnly && !n.vouchersOnly {
+        if !n.hcrOnly && !n.vouchersOnly {
             return "\(count.formatted()) \(count == 1 ? "is" : "are") \(city.registerWord)"
         }
         return "\(count.formatted()) \(resultNoun)\(count == 1 ? "" : "s")"
@@ -126,7 +126,7 @@ struct SearchQuery: Codable, Hashable {
     var resultNoun: String {
         let n = normalized
         if n.hcrOnly { return "lottery & waitlist site" }
-        if n.availableOnly { return "rental listing" }
+
         if n.vouchersOnly { return "voucher-friendly building" }
         return "rent-stabilized building"
     }
@@ -148,7 +148,7 @@ struct SearchQuery: Codable, Hashable {
         if noOpenViolations { parts.append("No violations") }
         if hcrOnly { parts.insert("HCR", at: 0) }
         if vouchersOnly { parts.insert("Vouchers", at: 0) }
-        if availableOnly { parts.insert("Available", at: 0) }
+
         return parts.isEmpty ? "Any price" : parts.joined(separator: ", ")
     }
 
@@ -191,7 +191,7 @@ struct SearchQuery: Codable, Hashable {
         if !unitBands.isEmpty { n += 1 }
         if noOpenViolations { n += 1 }
         if voucherLiveOnly { n += 1 }
-        if availableOnly { n += 1 }
+
         if vouchersOnly { n += 1 }
         if hcrOnly { n += 1 }
         return n

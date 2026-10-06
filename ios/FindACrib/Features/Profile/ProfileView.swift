@@ -179,10 +179,9 @@ struct ProfileView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Data").font(.se(22, .bold))
                         dataRow("Rent-stabilized buildings", store.buildings.count.formatted())
-                        dataRow("With a recent asking rent", store.listings.prices.count.formatted())
                         dataRow("Voucher-friendly buildings", (store.s8.bldg.count + store.s8.avail.count).formatted())
                         dataRow("HCR lotteries & waitlists", store.hcr.listings.count.formatted())
-                        dataRow("Listings as of", store.dataAsOf.map(Formatters.long.string) ?? "–")
+                        dataRow("Data as of", store.dataAsOf.map(Formatters.long.string) ?? "–")
                         Button {
                             refreshing = true
                             Task { await store.refresh(); refreshing = false }

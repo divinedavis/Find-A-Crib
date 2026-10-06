@@ -1,11 +1,11 @@
 import Foundation
 
 /// The Plus AI features (owner, 2026-10-03), the same endpoints the website
-/// calls: plain-language search, Is this rent fair? and Help me apply. Each request carries the
+/// calls: plain-language search and Help me apply. Each request carries the
 /// Supabase session; the server checks Plus and the $20/month cap, so a
 /// 402 here means "show the paywall", never "feature broken".
 enum AIError: Error, Equatable {
-    case signIn, plus, dailyLimit, unavailable, declined, noPrice
+    case signIn, plus, dailyLimit, unavailable, declined
 }
 
 struct AISearchResult: Decodable {
@@ -15,25 +15,12 @@ struct AISearchResult: Decodable {
         var pmin: Int?
         var pmax: Int?
         var beds: [Int] = []
-        var listed: String?
         var s8: String?
         var viol: String?
     }
     let filters: Filters
     let explain: [String]
     let used_ai: Bool?
-}
-
-struct RentCheck: Decodable {
-    let ok: Bool
-    let price: Int?
-    let verdict: String?
-    let nb_median: Int?
-    let comps: Int?
-    let percentile: Int?
-    let fmr_low: Int?
-    let fmr_high: Int?
-    let notes: [String]?
 }
 
 struct ApplyHelp: Decodable {
@@ -74,12 +61,6 @@ enum AIService {
         try JSONDecoder().decode(AISearchResult.self, from: try await request("search", auth: auth, body: ["q": q]))
     }
 
-    static func rentCheck(bbl: String, auth: AuthService) async throws -> RentCheck {
-        let r = try JSONDecoder().decode(RentCheck.self, from: try await request("rent-check?bbl=\(bbl)", auth: auth))
-        guard r.ok else { throw AIError.noPrice }
-        return r
-    }
-
     static func applyHelp(href: String, auth: AuthService) async throws -> ApplyHelp {
         struct R: Decodable { let help: ApplyHelp }
         return try JSONDecoder().decode(R.self, from: try await request("apply-help", auth: auth, body: ["href": href])).help
@@ -93,7 +74,6 @@ enum AIService {
         q.minPrice = f.pmin
         q.maxPrice = f.pmax
         q.beds = Set(f.beds.map { min($0, 4) })
-        q.availableOnly = f.listed == "yes"
         q.vouchersOnly = f.s8 != nil
         q.noOpenViolations = f.viol == "none"
         return q

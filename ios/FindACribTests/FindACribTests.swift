@@ -45,13 +45,12 @@ final class DataTests: XCTestCase {
     func testBundledDataDecodes() throws {
         let p = try DataStore.decodeLocal(bundleOnly: true)
         XCTAssertGreaterThan(p.buildings.count, 40_000, "bundled buildings.slim.json.gz should hold the full NYC file")
-        XCTAssertGreaterThan(p.listings.prices.count, 500)
         XCTAssertFalse(p.fmr.isEmpty)
         XCTAssertFalse(p.s8.bldg.isEmpty)
-        // every priced BBL should exist in the building file
-        let bbls = Set(p.buildings.map(\.bbl))
-        let orphan = p.listings.prices.keys.filter { !bbls.contains($0) }.count
-        XCTAssertLessThan(Double(orphan) / Double(p.listings.prices.count), 0.05)
+        // No portal listing data ships or is fetched (2026-10-06).
+        XCTAssertNil(Bundle.main.url(forResource: "listings", withExtension: "json", subdirectory: "Data"))
+        XCTAssertNil(Bundle.main.url(forResource: "listings", withExtension: "json"))
+        XCTAssertFalse(DataStore.nycExtras.contains("listings.json"))
     }
 
     func testHCRDecodesFloatIncomesAndNulls() throws {
@@ -94,8 +93,8 @@ final class DataTests: XCTestCase {
         var q = SearchQuery(); q.minPrice = 1000; q.maxPrice = 3000; q.beds = [1]
         XCTAssertEqual(q.summary, "$1k - $3k, 1 bd")
         XCTAssertEqual(q.activeFilterCount, 3)
-        q.availableOnly = true
-        XCTAssertEqual(q.summary, "Available, $1k - $3k, 1 bd")
+        q.vouchersOnly = true
+        XCTAssertEqual(q.summary, "Vouchers, $1k - $3k, 1 bd")
         XCTAssertEqual(SearchQuery().summary, "Any price")
     }
 }
@@ -114,10 +113,13 @@ final class SearchEngineTests: XCTestCase {
         }
     }
 
-    func testLegacyRentDecodesToAvailableOnly() {
+    /// The retired Rent tab (then the retired Available-now filter) decodes
+    /// to a plain stabilized search.
+    func testLegacyRentDecodesToStabilized() {
         var q = SearchQuery(); q.mode = .rent
         let n = q.normalized
-        XCTAssertEqual(n.mode, .stabilized); XCTAssertTrue(n.availableOnly)
+        XCTAssertEqual(n.mode, .stabilized); XCTAssertFalse(n.vouchersOnly); XCTAssertFalse(n.hcrOnly)
+        XCTAssertEqual(SearchEngine.count(n, store: Self.store), Self.store.buildings.count)
         XCTAssertEqual(SearchEngine.count(q, store: Self.store), SearchEngine.count(n, store: Self.store))
     }
 
@@ -146,27 +148,15 @@ final class SearchEngineTests: XCTestCase {
         XCTAssertEqual(SearchEngine.sort(xs, .priciest, s).map(\.bbl), naiveHi.map(\.bbl))
     }
 
-    func testRecencyRule() {
-        var blob = ListingsBlob()
-        blob.prices = ["a": 1000, "b": 2000]
-        blob.posted = ["a": Date().timeIntervalSince1970 - 2 * 86400, "b": Date().timeIntervalSince1970 - 9 * 86400]
-        XCTAssertTrue(blob.isRecent("a")); XCTAssertFalse(blob.isRecent("b")); XCTAssertFalse(blob.isRecent("zzz"))
-    }
-
-    /// The listing button names the site it opens. Every banked URL is
-    /// StreetEasy's or Zumper's; a building with no URL gets the generic label.
-    func testListingButtonNamesTheSite() {
-        let urls = Self.store.listings.urls
-        XCTAssertFalse(urls.isEmpty, "bundled listings.json has no URLs")
-        for b in Self.store.buildings where urls[b.bbl] != nil {
-            let site = Self.store.listingSite(b)
-            let host = (Self.store.listingURL(b)?.host ?? "").lowercased()
-            if host.hasSuffix("streeteasy.com") { XCTAssertEqual(site, "StreetEasy") }
-            else if host.hasSuffix("zumper.com") { XCTAssertEqual(site, "Zumper") }
-            else { XCTAssertEqual(site, "View listing") }
-        }
-        if let plain = Self.store.buildings.first(where: { urls[$0.bbl] == nil }) {
-            XCTAssertEqual(Self.store.listingSite(plain), "View listing")
+    /// Every NYC building gets the StreetEasy address search, and nothing
+    /// else — no stored listing URL can win over it any more.
+    func testEveryNYCBuildingOutboundIsStreetEasy() {
+        for b in Self.store.buildings.prefix(2000) {
+            let o = Self.store.outbound(b)
+            XCTAssertEqual(o.kind, "streeteasy")
+            XCTAssertEqual(o.label, "View on StreetEasy ↗")
+            XCTAssertEqual(o.url.host, "streeteasy.com")
+            XCTAssertEqual(o.url.path, "/search")
         }
     }
 
@@ -190,39 +180,26 @@ final class SearchEngineTests: XCTestCase {
         XCTAssertEqual(q.shortLocationLabel(boroughOf: nbOf), "Map area")
     }
 
-    func testAvailableOnlyIsPriced() {
-        var q = SearchQuery(); q.mode = .stabilized; q.availableOnly = true
+    /// The price filter reads the ZIP estimate (or a live voucher rent) now
+    /// that there are no advertised rents; results stay cheapest-first.
+    func testPriceFilterUsesEstimate() {
+        var q = SearchQuery(); q.mode = .stabilized; q.minPrice = 1000; q.maxPrice = 3000
         let r = SearchEngine.run(q, store: Self.store)
-        // only buildings posted on Zumper in the last 5 days count as available
-        XCTAssertEqual(r.count, Self.store.listings.prices.keys.filter { Self.store.listings.isRecent($0) }.count)
-        XCTAssertTrue(r.allSatisfy { Self.store.price($0) != nil })
-        // cheapest-first
-        let prices = r.compactMap { Self.store.price($0) }
+        XCTAssertFalse(r.isEmpty)
+        for b in r.prefix(500) {
+            let p = Self.store.voucherAvail(b)?.p ?? Self.store.priceOf(b)!
+            XCTAssert(p >= 1000 && p <= 3000)
+        }
+        let prices = r.compactMap { Self.store.priceOf($0) }
         XCTAssertEqual(prices, prices.sorted())
     }
 
-    func testPriceAndBedsFilter() throws {
-        try XCTSkipIf(Self.store.listings.posted.isEmpty, "seed predates posting dates; nothing is 'recent'")
-        var q = SearchQuery(); q.mode = .stabilized; q.availableOnly = true; q.minPrice = 1000; q.maxPrice = 3000; q.beds = [1]
-        let r = SearchEngine.run(q, store: Self.store)
-        XCTAssertFalse(r.isEmpty)
-        for b in r {
-            let p = Self.store.price(b)!
-            XCTAssert(p >= 1000 && p <= 3000)
-            XCTAssert(Self.store.beds(b).contains(1))
-        }
-    }
-
-    /// A bedroom count without Available now: every hit must carry that
-    /// bedroom in its recent listings — the filter narrows to advertised
-    /// buildings by itself.
-    func testBedsFilterWithoutAvailableOnly() {
+    /// Building records carry no unit sizes, so a bedroom choice (which still
+    /// narrows the re-rentals) must not empty the building results.
+    func testBedsDoNotFilterBuildings() {
         var q = SearchQuery(); q.mode = .stabilized; q.beds = [2]
-        let r = SearchEngine.run(q, store: Self.store)
-        XCTAssertFalse(r.isEmpty)
-        XCTAssertTrue(r.allSatisfy { Self.store.beds($0).contains(2) })
         var all = SearchQuery(); all.mode = .stabilized
-        XCTAssertLessThan(r.count, SearchEngine.run(all, store: Self.store).count)
+        XCTAssertEqual(SearchEngine.count(q, store: Self.store), SearchEngine.count(all, store: Self.store))
     }
 
     func testBoroughScope() {
@@ -245,11 +222,12 @@ final class SearchEngineTests: XCTestCase {
         // legacy Vouchers tab decodes to the same flag
         var legacy = SearchQuery(); legacy.mode = .vouchers
         XCTAssertEqual(SearchEngine.count(legacy, store: Self.store), all.count)
-        // Show flags combine (AND): available + vouchers ⊆ each alone
-        var both = q; both.availableOnly = true
+        // Filters combine (AND): no-violations + vouchers ⊆ vouchers alone
+        var both = q; both.noOpenViolations = true
         let b = SearchEngine.run(both, store: Self.store)
         XCTAssertLessThanOrEqual(b.count, all.count)
-        XCTAssertTrue(b.allSatisfy { Self.store.price($0) != nil && Self.store.isVoucherFriendly($0) })
+        XCTAssertTrue(b.allSatisfy { $0.openViolations == 0 && Self.store.isVoucherFriendly($0) })
+
         q.voucherLiveOnly = true
         let live = SearchEngine.run(q, store: Self.store)
         XCTAssertGreaterThan(all.count, live.count)
@@ -532,11 +510,13 @@ final class CityTests: XCTestCase {
     }
 
     /// The New York feeds are New York's; nothing else should ask for them.
-    /// Advertised rents, vouchers and lotteries stay New York feeds. What every
-    /// city now fetches is two files, not one: the boot payload and the record
-    /// blob behind it, the same split the website boots from.
+    /// Vouchers, HUD estimates and lotteries stay New York feeds; listings.json
+    /// is gone (2026-10-06). What every city now fetches is two files, not one:
+    /// the boot payload and the record blob behind it, the same split the
+    /// website boots from.
     func testOnlyNYCFetchesTheExtraFeeds() {
-        XCTAssertEqual(DataStore.files(for: .nyc).count, 6, "buildings + listings, s8, fmr, hcr, featured")
+        XCTAssertEqual(DataStore.files(for: .nyc).count, 5, "buildings + s8, fmr, hcr, featured")
+        XCTAssertFalse(DataStore.files(for: .nyc).contains("listings.json"), "no portal listing data is fetched")
         XCTAssertTrue(DataStore.files(for: .nyc).contains("featured.json"), "the re-rental feed is a New York extra")
         XCTAssertEqual(DataStore.files(for: .la), ["la/buildings.slim.json.gz", "la/buildings.hpd.json.gz"])
         XCTAssertEqual(DataStore.files(for: .sf), ["sf/buildings.slim.json.gz", "sf/buildings.hpd.json.gz"])
@@ -590,7 +570,7 @@ final class CitySearchTests: XCTestCase {
         let store = DataStore()
         let la = [Building(bbl: "LA-1", b: "LA", a: "A", z: "90001", lat: 34, lng: -118, u: 4),
                   Building(bbl: "LA-2", b: "LA", a: "B", z: "90002", lat: 34, lng: -118, u: 9)]
-        store.applyForTesting(.init(buildings: la, listings: ListingsBlob(), s8: S8Blob(), fmr: [:], hcr: HCRBlob()))
+        store.applyForTesting(.init(buildings: la, s8: S8Blob(), fmr: [:], hcr: HCRBlob()))
         var q = SearchQuery()
         XCTAssertEqual(SearchEngine.count(q, store: store), 2, "no filter: every building")
         q.maxPrice = 3500
@@ -609,7 +589,7 @@ final class CitySearchTests: XCTestCase {
         let dc = [Building(bbl: "DC-1", b: "DC", a: "A", z: "20002", lat: 38.9, lng: -77, u: 4, mr: 2800),
                   Building(bbl: "DC-2", b: "DC", a: "B", z: "20011", lat: 38.9, lng: -77, u: 6, mr: 4200),
                   Building(bbl: "DC-3", b: "DC", a: "C", z: "20009", lat: 38.9, lng: -77, u: 2)]
-        store.applyForTesting(.init(buildings: dc, listings: ListingsBlob(), s8: S8Blob(), fmr: [:], hcr: HCRBlob()))
+        store.applyForTesting(.init(buildings: dc, s8: S8Blob(), fmr: [:], hcr: HCRBlob()))
         XCTAssertEqual(store.priceOf(dc[0]), 2800, "the registered rent is the price DC has")
         XCTAssertNil(store.priceOf(dc[2]), "no rent on file stays unknown")
         var q = SearchQuery()
@@ -620,15 +600,15 @@ final class CitySearchTests: XCTestCase {
     /// A query restored from disk in a different city must not filter it empty.
     func testSanitizeDropsWhatACityCannotAnswer() {
         var q = SearchQuery()
-        q.maxPrice = 3500; q.minPrice = 1000; q.availableOnly = true; q.beds = [1, 2]; q.hcrOnly = true
+        q.maxPrice = 3500; q.minPrice = 1000; q.vouchersOnly = true; q.beds = [1, 2]; q.hcrOnly = true
         let inLA = q.sanitized(for: .la)
         XCTAssertNil(inLA.maxPrice); XCTAssertNil(inLA.minPrice)
-        XCTAssertFalse(inLA.availableOnly); XCTAssertFalse(inLA.hcrOnly); XCTAssertTrue(inLA.beds.isEmpty)
+        XCTAssertFalse(inLA.vouchersOnly); XCTAssertFalse(inLA.hcrOnly); XCTAssertTrue(inLA.beds.isEmpty)
         let inDC = q.sanitized(for: .dc)
         XCTAssertEqual(inDC.maxPrice, 3500, "DC has registered rents, so a price still means something")
-        XCTAssertFalse(inDC.availableOnly, "but advertised-now is a New York feed")
+        XCTAssertFalse(inDC.vouchersOnly, "but vouchers are a New York feed")
         let inNYC = q.sanitized(for: .nyc)
-        XCTAssertEqual(inNYC.maxPrice, 3500); XCTAssertTrue(inNYC.availableOnly)
+        XCTAssertEqual(inNYC.maxPrice, 3500); XCTAssertTrue(inNYC.vouchersOnly)
     }
 }
 
@@ -837,11 +817,12 @@ final class AnalyticsEventShapeTests: XCTestCase {
     }
 
     func testSearchShapeCarriesNoText() {
-        var q = SearchQuery(); q.locations = [.borough("Bk"), .neighborhood("Bushwick")]; q.maxPrice = 3000; q.availableOnly = true
+        var q = SearchQuery(); q.locations = [.borough("Bk"), .neighborhood("Bushwick")]; q.maxPrice = 3000; q.vouchersOnly = true
         let p = Analytics.shape(q)
         XCTAssertEqual(p["locations"] as? Int, 2)
         XCTAssertEqual(p["priced"] as? Bool, true)
-        XCTAssertEqual(p["available_only"] as? Bool, true)
+        XCTAssertEqual(p["vouchers_only"] as? Bool, true)
+        XCTAssertNil(p["available_only"], "the Available-now filter is gone (2026-10-06)")
         XCTAssertNil(p["q"]); XCTAssertNil(p["text"])
         XCTAssertFalse(p.values.contains { ($0 as? String)?.contains("Bushwick") == true }, "a neighborhood name is text, not shape")
     }
@@ -1533,7 +1514,7 @@ final class PerfBenchTests: XCTestCase {
         let decode = try ms(3) { _ = try DataStore.decodeLocal(bundleOnly: true) }
         let s = DataStore(); s.applyForTesting(try DataStore.decodeLocal(bundleOnly: true))
         var all = SearchQuery(); all.sort = .cheapest
-        var avail = SearchQuery(); avail.availableOnly = true
+        var avail = SearchQuery(); avail.vouchersOnly = true
         var bk = SearchQuery(); bk.locations = [.borough("Bk")]; bk.minPrice = 1500; bk.maxPrice = 3000; bk.sort = .cheapest
         let runAll = ms { _ = SearchEngine.run(all, store: s) }
         let runAvail = ms { _ = SearchEngine.run(avail, store: s) }
@@ -1567,7 +1548,7 @@ final class ParallelPathTests: XCTestCase {
     func testSnapshotSearchMatchesReference() {
         let s = Self.store!
         var qs: [SearchQuery] = [SearchQuery()]
-        var q = SearchQuery(); q.availableOnly = true; qs.append(q)
+        var q = SearchQuery(); q.hcrOnly = true; qs.append(q)
         q = SearchQuery(); q.locations = [.borough("Bk")]; q.minPrice = 1500; q.maxPrice = 3000; qs.append(q)
         q = SearchQuery(); q.beds = [1, 2]; q.sort = .priciest; qs.append(q)
         q = SearchQuery(); q.vouchersOnly = true; qs.append(q)
@@ -1695,8 +1676,8 @@ final class QualifyAndAITests: XCTestCase {
         let q = AIService.query(from: r.filters)
         XCTAssertEqual(q.maxPrice, 2500)
         XCTAssertEqual(q.beds, [2, 4])
-        XCTAssertTrue(q.availableOnly)
         XCTAssertTrue(q.noOpenViolations)
+
         XCTAssertEqual(q.locations, [.neighborhood("Park Slope")])
     }
 }

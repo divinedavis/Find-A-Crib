@@ -110,7 +110,7 @@ final class Analytics {
     /// The shape of a search, never its text: which filters were used.
     nonisolated static func shape(_ q: SearchQuery) -> [String: Any] {
         ["locations": q.locations.count, "priced": q.minPrice != nil || q.maxPrice != nil,
-         "beds": q.beds.count, "available_only": q.availableOnly, "vouchers_only": q.vouchersOnly,
+         "beds": q.beds.count, "vouchers_only": q.vouchersOnly,
          "hcr_only": q.hcrOnly, "filters": q.activeFilterCount]
     }
 

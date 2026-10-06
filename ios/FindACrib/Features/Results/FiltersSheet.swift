@@ -17,13 +17,14 @@ struct FiltersSheet: View {
                         SEFieldLabel(text: "Show")
                         ShowChecklist(query: $draft)
                     }
-                    // Bedrooms come from the listing feeds, which are New York's,
+                    // Bedrooms narrow the re-rentals, which are New York's,
                     // so outside NYC every size matches nothing.
                     if store.city.hasNYCExtras {
                         VStack(alignment: .leading, spacing: 10) {
                             SEFieldLabel(text: "Bedrooms")
                             SESegmentRow(options: [(0, "Studio"), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: $draft.beds)
-                            Text("From recent listings — narrows to buildings with an advertised apartment.")
+                            Text("Narrows the re-rentals to the sizes you pick. Building records don't say what sizes their apartments are.")
+
                                 .font(.se(14)).foregroundStyle(SE.ink3)
                         }
                     }

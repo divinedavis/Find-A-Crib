@@ -62,13 +62,7 @@ struct BuildingDetailView: View {
                     }
 
                     if store.city.isNYC || b.mr != nil {
-                        section("Rent") {
-                            rentBlock
-                            // Plus: the asking rent against the area (2026-10-03).
-                            if store.city.isNYC && store.price(b) != nil {
-                                AIBuildingSection(building: b) { paywallSource = $0; showPaywall = true }
-                            }
-                        }
+                        section("Rent") { rentBlock }
                     }
 
                     if store.city.isNYC { section("Managing agent") { agentBlock } }
@@ -123,19 +117,15 @@ struct BuildingDetailView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("detail-comments")
-                if let apply = store.hcrListings(b).first(where: { $0.isOpen })?.applyURL ?? store.hcrListings(b).first?.applyURL {
-                    SEPrimaryButton(title: "Apply on HousingSearch.ny.gov") {
-                        Analytics.shared.track("outbound", ["kind": "hcr_apply", "bbl": b.bbl, "href": apply.absoluteString]); openURL(apply)
-                    }
-                } else if let url = store.listingURL(b) {
-                    SEPrimaryButton(title: store.listingSite(b)) {
-                        Analytics.shared.track("outbound", ["kind": "listing", "site": store.listingSite(b), "bbl": b.bbl, "href": url.absoluteString]); openURL(url)
-                    }
-                } else if let url = store.voucherAvail(b)?.url.flatMap(URL.init) {
-                    SEPrimaryButton(title: "Voucher listing") {
-                        Analytics.shared.track("outbound", ["kind": "voucher", "bbl": b.bbl, "href": url.absoluteString]); openURL(url)
-                    }
+                // The one outbound button, on every building (2026-10-06): a
+                // StreetEasy address search in New York, Zillow elsewhere. The
+                // HCR application stays in its own section above, and the
+                // voucher listing in the voucher card.
+                let out = store.outbound(b)
+                SEPrimaryButton(title: out.label) {
+                    Analytics.shared.track("outbound", ["kind": out.kind, "bbl": b.bbl, "href": out.url.absoluteString]); openURL(out.url)
                 }
+                .accessibilityIdentifier("detail-outbound")
             }
             .padding(16)
             .background(Color.white.shadow(.drop(color: .black.opacity(0.08), radius: 6, y: -2)))
@@ -372,22 +362,10 @@ struct BuildingDetailView: View {
     @ViewBuilder private var rentBlock: some View {
         if !store.city.isNYC {
             cityRentBlock
-        } else if let p = store.price(b) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(Formatters.dollars(p)).font(.se(38, .bold))
-                Text("asking rent").font(.se(20)).foregroundStyle(SE.ink2)
-            }
-            let n = store.listingCount(b); let bd = store.beds(b)
-            Text("\(n) recent listing\(n == 1 ? "" : "s")" + (bd.isEmpty ? "" : " · " + bd.sorted().map { $0 == 0 ? "studio" : "\($0) bed" }.joined(separator: ", ")) +
-                 (store.postedDate(b).map { " · posted \(Formatters.long.string(from: $0))" } ?? ""))
-                .font(.se(17)).foregroundStyle(SE.ink2)
-        } else if let (p, d) = store.lastPrice(b) {
-            Text("Last advertised at \(Formatters.dollars(p))" + (d.map { " on \(Formatters.long.string(from: $0))" } ?? "") + " — no listing in the last 5 days.")
-                .font(.se(17)).foregroundStyle(SE.ink2)
         }
         if let e = store.estimate(b), e.count >= 4 {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Typical rent in ZIP \(b.z ?? "")").font(.se(18, .bold)).foregroundStyle(SE.ink2).padding(.top, store.price(b) == nil ? 0 : 8)
+                Text("Typical rent in ZIP \(b.z ?? "")").font(.se(18, .bold)).foregroundStyle(SE.ink2)
                 HStack(spacing: 0) {
                     estCell("Studio", e[0]); estCell("1 bed", e[1]); estCell("2 bed", e[2]); estCell("3 bed", e[3])
                 }
@@ -395,8 +373,8 @@ struct BuildingDetailView: View {
                     .font(.se(15)).foregroundStyle(SE.ink3)
             }
         }
-        if store.price(b) == nil && store.estimate(b) == nil {
-            Text("No recent listing and no ZIP estimate on file.").font(.se(18)).foregroundStyle(SE.ink2)
+        if store.city.isNYC && store.estimate(b) == nil {
+            Text("No ZIP rent estimate on file.").font(.se(18)).foregroundStyle(SE.ink2)
         }
     }
     /// SF and DC publish a rent on the record itself — never an asking rent.
@@ -657,9 +635,17 @@ struct BuildingDetailView: View {
             } else {
                 Text("Searching with a housing voucher, like Section 8?").font(.se(19))
             }
+            if let url = store.voucherAvail(b)?.url.flatMap(URL.init) {
+                Button {
+                    Analytics.shared.track("outbound", ["kind": "voucher", "bbl": b.bbl, "href": url.absoluteString]); openURL(url)
+                } label: {
+                    Text("See the voucher listing ↗").font(.se(19, .bold)).foregroundStyle(SE.royal)
+                }.buttonStyle(.plain).accessibilityIdentifier("voucher-listing")
+            }
             Button { openURL(URL(string: "https://findacrib.com/guide/rent-stabilized-tenant-rights/")!) } label: {
                 Text("See tips").font(.se(19, .bold)).foregroundStyle(SE.royal)
             }.buttonStyle(.plain)
+
         }
         .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white).padding(.bottom, 10)
     }
@@ -818,8 +804,7 @@ struct BuildingDetailView: View {
                                     BuildingImage(building: s, size: CGSize(width: 600, height: 400)).frame(width: 250, height: 150)
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text(s.address).font(.se(19, .bold)).foregroundStyle(SE.royal).lineLimit(1)
-                                        if let p = store.price(s) { Text("\(Formatters.dollars(p)) asking rent").font(.se(16, .bold)) }
-                                        else if let e = store.estimate(s), e.count >= 3 { Text("\(Formatters.dollars(e[0]))–\(Formatters.dollars(e[2])) typical").font(.se(15)).foregroundStyle(SE.ink2) }
+                                        if let e = store.estimate(s), e.count >= 3 { Text("\(Formatters.dollars(e[0]))–\(Formatters.dollars(e[2])) typical").font(.se(15)).foregroundStyle(SE.ink2) }
                                         Text("\(s.u.map { "\($0) units" } ?? "") · \(s.openViolations) open violations").font(.se(14)).foregroundStyle(SE.ink3)
                                     }.padding(10)
                                 }

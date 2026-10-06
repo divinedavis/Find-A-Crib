@@ -83,7 +83,8 @@ struct MyActivityView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(b.neighborhood).font(.se(15, .semibold)).foregroundStyle(SE.ink2).lineLimit(1)
                             Text(b.address).font(.se(20, .bold)).foregroundStyle(SE.royal).lineLimit(1)
-                            if let p = store.price(b) { Text("\(Formatters.dollars(p)) asking rent").font(.se(16, .bold)) }
+                            if let e = store.estimate(b), e.count >= 3 { Text("\(Formatters.dollars(e[0]))–\(Formatters.dollars(e[2])) typical").font(.se(15)).foregroundStyle(SE.ink2) }
+
                             Text("\(b.u.map { "\($0) units" } ?? "") · \(b.openViolations) open violations").font(.se(14)).foregroundStyle(SE.ink3)
                         }
                         Spacer()

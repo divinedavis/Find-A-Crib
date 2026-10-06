@@ -76,58 +76,7 @@ private func errorText(_ e: Error) -> String {
     switch e as? AIError {
     case .dailyLimit: "That's a lot for one day — more tomorrow."
     case .declined: "That isn't something the records can answer."
-    case .noPrice: "There isn't a current advertised rent to compare."
     default: "Not available right now — the records above are."
-    }
-}
-
-/// Report card, Ask and (with an asking rent) Is this rent fair? on a NYC
-/// "Is this rent fair?" in a NYC building's Rent section, when it has an
-/// asking rent. The landlord report card and Ask about this building were
-/// taken out of the app (owner, 2026-10-03: too slow).
-struct AIBuildingSection: View {
-    let building: Building
-    @Environment(AuthService.self) private var auth
-    /// Opens the building page's own Plus sheet.
-    var onPlus: (String) -> Void
-    @State private var rent: RentCheck?
-    @State private var rentError: String?
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            AIButton(title: "Is this rent fair?", icon: "dollarsign.circle", id: "ai-rent-check") { Task { await loadRent() } }
-            if let rent { rentCard(rent) }
-            if let rentError { Text(rentError).font(.se(15)).foregroundStyle(SE.ink3) }
-        }
-    }
-
-    private func loadRent() async {
-        Analytics.shared.track("rent_check_click", ["bbl": building.bbl, "plus": auth.hasPlus])
-        guard auth.hasPlus else { onPlus("rent_check"); return }
-        rentError = nil
-        do { rent = try await AIService.rentCheck(bbl: building.bbl, auth: auth) }
-        catch {
-            switch error as? AIError {
-            case .signIn, .plus: onPlus("rent_check")
-            default: rentError = errorText(error)
-            }
-        }
-    }
-
-    private func rentCard(_ r: RentCheck) -> some View {
-        let word = ["high": "above typical", "low": "below typical", "typical": "typical"][r.verdict ?? ""] ?? "hard to judge"
-        return VStack(alignment: .leading, spacing: 6) {
-            Text("\(Formatters.dollars(r.price ?? 0))/mo is \(word) for this area")
-                .font(.se(17, .bold)).foregroundStyle(r.verdict == "high" ? SE.bad : r.verdict == "low" ? SE.good : SE.ink)
-            if let m = r.nb_median, let n = r.comps, let pct = r.percentile {
-                Text("Similar advertised rent-stabilized buildings nearby: median \(Formatters.dollars(m)) (\(n) buildings) — higher than \(pct)% of them.").font(.se(15)).foregroundStyle(SE.ink2)
-            }
-            if let lo = r.fmr_low, let hi = r.fmr_high {
-                Text("HUD fair-market rent for this ZIP: \(lo == hi ? Formatters.dollars(lo) : Formatters.dollars(lo) + "–" + Formatters.dollars(hi)).").font(.se(15)).foregroundStyle(SE.ink2)
-            }
-            ForEach(r.notes ?? [], id: \.self) { Text($0).font(.se(13)).foregroundStyle(SE.ink3) }
-        }
-        .padding(12).background(Color.white).overlay(RoundedRectangle(cornerRadius: 10).stroke(SE.lineSoft))
     }
 }
 

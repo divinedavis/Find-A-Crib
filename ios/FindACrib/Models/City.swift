@@ -8,7 +8,7 @@ import MapKit
 /// Each city's register is a different thing, and the app says which: NYC is the
 /// DHCR rent-stabilization register, LA is parcels meeting the RSO criteria, SF
 /// is owner reports anonymised to the block, DC is units registered with DHCD.
-/// Only NYC has the extra feeds (advertised rents, vouchers, HPD records,
+/// Only NYC has the extra feeds (HUD rent estimates, vouchers, HPD records,
 /// lotteries), so `hasNYCExtras` gates every one of those surfaces rather than
 /// each view guessing.
 struct City: Identifiable, Hashable, Codable, Sendable {
@@ -38,8 +38,8 @@ struct City: Identifiable, Hashable, Codable, Sendable {
     /// The caveat that belongs with every result from this source.
     let sourceNote: String
     let searchPlaceholder: String
-    /// Whether ANY building in this city carries a rent. New York has
-    /// advertised rents and HUD estimates; SF and DC publish a reported or
+    /// Whether ANY building in this city carries a rent. New York has HUD's
+    /// ZIP estimates; SF and DC publish a reported or
     /// registered rent on some rows; LA's assessor roll has no rent at all, so
     /// a price filter there can only ever return nothing.
     let hasPrices: Bool
@@ -104,7 +104,7 @@ struct City: Identifiable, Hashable, Codable, Sendable {
     /// A city whose map is its income-restricted buildings rather than a
     /// rent-regulation register (Chicago, Miami-Dade, Atlanta, Philadelphia).
     var isIncomeRestricted: Bool { ["chi", "mia", "atl", "phl"].contains(id) }
-    /// Advertised rents, vouchers, HPD violations/complaints and HCR lotteries
+    /// HUD rent estimates, vouchers, HPD violations/complaints and HCR lotteries
     /// exist only for New York; everywhere else those files 404 by design.
     var hasNYCExtras: Bool { isNYC }
 
@@ -132,10 +132,11 @@ struct City: Identifiable, Hashable, Codable, Sendable {
         statusLabel: "Rent-stabilized", idLabel: "BBL",
         sourceNote: "Registered with NYS Homes and Community Renewal under rent stabilization.",
         searchPlaceholder: "Neighborhood, borough or ZIP",
-        hasPrices: true, priceLabel: "Asking rent",
+        hasPrices: true, priceLabel: "Typical rent for the ZIP",
         recordsPath: nil, records: nil,
         aboutNote: "Registered with NYS Homes and Community Renewal as rent stabilized (2024 building file). Rents in stabilized units rise only by the Rent Guidelines Board's annual percentage, and tenants have a right to renew.",
-        sourcesNote: "Sources: NYS HCR 2024 rent-stabilized building file · NYC HPD violations, complaints and bedbug filings · NYC DOHMH rodent inspections · HUD FY2026 Small-Area Fair Market Rents · Recently advertised rents via Zumper.")
+        sourcesNote: "Sources: NYS HCR 2024 rent-stabilized building file · NYC HPD violations, complaints and bedbug filings · NYC DOHMH rodent inspections · HUD FY2026 Small-Area Fair Market Rents.")
+
 
     static let la = City(
         id: "la", name: "Los Angeles", short: "LA", state: "CA",

@@ -156,8 +156,8 @@ enum LaunchArgs {
 
     @MainActor private static func route(_ r: String?, nav: AppNav, store: DataStore) {
         guard let r else { return }
-        var q = SearchQuery(); q.mode = .stabilized; q.availableOnly = true; q.locations = [.borough("Bk")]
-        // Brooklyn and "available only" are New York's defaults and match
+        var q = SearchQuery(); q.mode = .stabilized; q.locations = [.borough("Bk")]
+        // Brooklyn is New York's default and matches
         // nothing anywhere else; outside NYC start from the unfiltered city.
         if !store.city.isNYC { q = SearchQuery() }
         if r == "results" { nav.searchPath = [.results(q)] }

@@ -27,7 +27,7 @@ struct CityInvariantTests {
     @Test("sanitizing a query is idempotent", arguments: City.all)
     func sanitizeIsIdempotent(_ city: City) {
         var q = SearchQuery()
-        q.maxPrice = 3500; q.minPrice = 1000; q.availableOnly = true; q.beds = [0, 2]; q.hcrOnly = true
+        q.maxPrice = 3500; q.minPrice = 1000; q.vouchersOnly = true; q.beds = [0, 2]; q.hcrOnly = true
         let once = q.sanitized(for: city)
         #expect(once.sanitized(for: city) == once)
         if !city.hasPrices { #expect(once.maxPrice == nil && once.minPrice == nil) }
@@ -64,5 +64,45 @@ struct FormattingTests {
         let slug = Slug.make(raw)
         #expect(slug == expected)
         #expect(slug.allSatisfy { $0.isLowercase || $0.isNumber || $0 == "-" })
+    }
+}
+
+/// The one outbound button on every building (2026-10-06): StreetEasy's
+/// address search in New York, Zillow's everywhere else. No listing data
+/// feeds it, so the URL is a pure function of the address and the city.
+@Suite("Outbound button")
+struct OutboundLinkTests {
+    private func building(_ a: String, boro: String, zip: String?) -> Building {
+        Building(bbl: "X", b: boro, a: a, z: zip, lat: 0, lng: 0, s: nil, yr: nil, u: nil, nb: nil, h: nil)
+    }
+
+    @Test("NYC buildings open a StreetEasy address search", arguments: [
+        ("246 10TH AVE", "M", "10001", "246%2010th%20Ave%2C%20Manhattan%2C%20NY%2010001"),
+        ("75 DUPONT ST", "Bk", "11222", "75%20Dupont%20St%2C%20Brooklyn%2C%20NY%2011222"),
+        ("1 MAIN ST", "SI", nil, "1%20Main%20St%2C%20Staten%20Island%2C%20NY"),
+    ] as [(String, String, String?, String)])
+    func nyc(_ c: (String, String, String?, String)) {
+        let o = OutboundLink.make(building(c.0, boro: c.1, zip: c.2), in: .nyc)
+        #expect(o.kind == "streeteasy")
+        #expect(o.label == "View on StreetEasy ↗")
+        #expect(o.url.absoluteString == "https://streeteasy.com/search?search=\(c.3)")
+    }
+
+    @Test("every other city opens a Zillow address search",
+          arguments: City.all.filter { !$0.isNYC })
+    func zillow(_ city: City) {
+        let o = OutboundLink.make(building("100 MAIN ST", boro: city.short, zip: "00000"), in: city)
+        #expect(o.kind == "zillow")
+        #expect(o.label == "View on Zillow ↗")
+        #expect(o.url.scheme == "https")
+        #expect(o.url.host == "www.zillow.com")
+        let place = city.id == "dc" ? "Washington" : city.name
+        #expect(o.url.absoluteString == "https://www.zillow.com/homes/\(OutboundLink.encode("100 Main St, \(place), \(city.state)"))_rb/")
+    }
+
+    @Test("Los Angeles goes to Zillow with the city and state")
+    func la() {
+        let o = OutboundLink.make(building("1200 W 7TH ST", boro: "LA", zip: "90017"), in: .la)
+        #expect(o.url.absoluteString == "https://www.zillow.com/homes/1200%20W%207th%20St%2C%20Los%20Angeles%2C%20CA_rb/")
     }
 }

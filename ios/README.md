@@ -11,7 +11,7 @@ Profile, floating pill tab bar.
 - `FindACrib/Data` — `DataStore` (bundled seed + ETag refresh from findacrib.com), `Gunzip`, `SearchEngine`.
 - `FindACrib/Services` — `Activity` (saves/searches/recents on disk), `ImageService` (Look Around snapshots, cached).
 - `FindACrib/Features` — Search, Results (list + map + filters), Detail, Activity, Profile.
-- `FindACrib/Resources/Data` — seed copies of `buildings.slim.json.gz`, `listings.json`, `s8.json`, `fmr.json`. Refresh with `scripts/refresh_data.sh` before a ship.
+- `FindACrib/Resources/Data` — seed copies of `buildings.slim.json.gz`, `s8.json`, `fmr.json`, `hcr.json`, `featured.json` (no listing data — removed 2026-10-06). Refresh with `scripts/refresh_data.sh` before a ship.
 
 ## Data
 No API key anywhere in the app. It reads the four JSON files nginx already

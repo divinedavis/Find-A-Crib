@@ -41,6 +41,8 @@
 	<true/>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSCameraUsageDescription</key>
+	<string>Find A Crib uses the camera to scan documents for your application packet, which stays on this phone.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Find A Crib uses your location to show rent-stabilized buildings near you on the map.</string>
 	<key>SKAdNetworkItems</key>

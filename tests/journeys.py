@@ -151,7 +151,11 @@ AD_HOSTS = ("scriptwrapper.com", "mediavine.com", "journeymv.com", "optable.co",
             "imasdk.googleapis.com", "tpc.googlesyndication.com",
             # An ad-tech targeting call in Mediavine's stack, blocked by CORS
             # in a test browser (seen 2026-10-04 on the live site only).
-            "alocdn.com")
+            "alocdn.com",
+            # More of Mediavine's demand partners, live site only (2026-10-05):
+            # a b2c.com creative calling enumerateDevices, smartadserver's
+            # challenge pixel blocked by the CSP.
+            "b2c.com", "smartadserver.com")
 
 
 def ad_noise(m):

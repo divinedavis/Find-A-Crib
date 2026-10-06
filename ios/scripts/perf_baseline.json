@@ -3,7 +3,8 @@
     "history": [
       1.2984,
       0.9518,
-      1.5197
+      1.5197,
+      0.8886
     ],
     "unit": "s"
   },
@@ -11,14 +12,16 @@
     "history": [
       5.1896,
       5.0593,
-      5.2042
+      5.2042,
+      5.1751
     ],
     "unit": "s"
   },
   "PerformanceTests/testResultsScroll() :: Absolute Memory Physical (findacrib)": {
     "history": [
       319671.488,
-      183503.272
+      183503.272,
+      312822.376
     ],
     "unit": "kB"
   },
@@ -26,21 +29,24 @@
     "history": [
       2.4344,
       2.4172,
-      2.4169
+      2.4169,
+      2.4173
     ],
     "unit": "s"
   },
   "PerformanceTests/testResultsScroll() :: Memory Peak Physical (findacrib)": {
     "history": [
       326388.928,
-      196184.488
+      196184.488,
+      315492.968
     ],
     "unit": "kB"
   },
   "PerformanceTests/testResultsScroll() :: Memory Physical (findacrib)": {
     "history": [
       344.064,
-      851.968
+      851.968,
+      344.064
     ],
     "unit": "kB"
   }

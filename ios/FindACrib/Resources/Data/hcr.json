@@ -1,35 +1,35 @@
 {
-"updated": 1790186706,
-"updated_iso": "2026-09-23T18:05:06+00:00",
-"count": 53,
+"updated": 1791327906,
+"updated_iso": "2026-10-06T23:05:06+00:00",
+"count": 54,
 "listings": [
 {
-"id": "a0Ycs00001saIQFEA2",
-"name": "Vital Brooklyn BDC Phase B1",
+"id": "a0Ycs000028W6CjEAK",
+"name": "Luna Green",
 "kind": "Lottery",
 "status": "Open",
 "ptype": "Rental",
 "boro": "Bk",
 "county": "Kings (Brooklyn)",
-"min_income": 32263,
-"max_income": 137760,
-"due": "9/25/2026",
+"min_income": null,
+"max_income": 67850,
+"due": "11/6/2026",
 "fee": null,
-"phone": "2123483248",
-"url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs00001saIQFEA2/detail",
-"info": "https://www.alafiabrooklyn.com",
-"desc": "Alafia is conceived as a pedestrian-friendly neighborhood contained within a 15-minute walking radius, promoting a healthy lifestyle. Although primarily residential, the neighborhood offers a robust mixed-use program that will support local community needs. Healthcare, community resources, recreation, healthy food, shopping, work, education, and cultural events are all available within this zone. ",
-"image": "https://nyshcr.my.site.com/housing/file-asset/069cs00002GgR3BAAV?oid=00D8y0000008f2FEAQ",
-"senior": false,
+"phone": "7183874448",
+"url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs000028W6CjEAK/detail",
+"info": "https://residenewyork.com/property/luna-green/   Luna Green is a senior housing development. To qualify, the head of household or co-head of household must be 62 years of age or older.\r\n\r\nIf you or another member of your household meets the age requirement, we invite you to apply for the opportunity to enjoy spacious living, valuable amenities, and a welcoming community near the beach at Luna Green.\r\nResidents are responsible for paying electricity and electric stove\" \"tenant rent portion is based on 30% of the adjusted gross income and min income doesn't apply\" Asset limits may apply",
+"desc": "Apply for Senior Housing at Luna Green. Applicants applying receive a NYCHA Section 8 project based voucher. Discover comfortable seaside living at Luna Green, a thoughtfully designed senior housing development located at 3027 West 21st Street, just steps from the beach. With beautiful views, spacious apartment layouts, welcoming common areas, and a variety of convenient on-site amenities, Luna Gr",
+"image": "https://nyshcr.my.site.com/housing/file-asset/069cs00002HcLdQAAV?oid=00D8y0000008f2FEAQ",
+"senior": true,
 "accessible": false,
-"approx": false,
+"approx": true,
 "buildings": [
 {
-"street": "882 Fountain Avenue",
-"zip": "11208",
+"street": "For more information or to request a paper application: Luna Green c/o Reside New York 349 Keap Street Brooklyn NY 11211",
+"zip": null,
 "bbl": null,
-"lat": 40.679168,
-"lng": -73.876591
+"lat": 40.716831,
+"lng": -74.001432
 }
 ]
 },
@@ -48,18 +48,40 @@
 "phone": "3473414693",
 "url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs00002BceQ6EAJ/detail",
 "info": "Income Guidelines and permitted household size are subject to change. Household size includes everyone who will live with you, including parents and children. Subject to occupancy criteria. Household earnings include salary, hourly wages, tips, Social Security Benefits, Pension and other income. Minimum income listed may not apply to applicants with Section 8 or other qualifying rental subsidies. Asset limits also apply.",
-"desc": "Baez Place is accepting applications for current and future vacancies. There are currently Senior specific units available - 7 studio units at 60% AMI, and 3 studio units at 80% AMI. Baez Place provides affordable, supportive, and senior housing options featuring studio spaces and 1-, 2- and 3-bedroom apartments. The apartments are split into two distinct wings. The building's lobby feeds into the",
+"desc": "Baez Place is accepting applications for current and future vacancies. There are currently Senior specific units available - 7 studio units at 60% AMI, and 3 studio units at 80% AMI. There are 4 units at 80% AMI that are not senior specific units. Please be sure to detail on your application submission if you are a senior. Baez Place provides affordable, supportive, and senior housing options feat",
 "image": "https://housingsearch.hcr.ny.gov/housing/file-asset/069cs00001B5zgmAAB?oid=00D8y0000008f2F",
 "senior": true,
 "accessible": false,
 "approx": false,
+"buildings": []
+},
+{
+"id": "a0Ycs00002GAArtEAH",
+"name": "44th Drive",
+"kind": "Waitlist",
+"status": "Open",
+"ptype": "Rental",
+"boro": "Q",
+"county": "Queens",
+"min_income": 32246,
+"max_income": 54280,
+"due": "10/14/2026",
+"fee": null,
+"phone": "7183874448",
+"url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs00002GAArtEAH/detail",
+"info": "https://www.edgre.com/creative-agency/existing-developments/rental-propertise/44-72-11th-street-long-island-city-ny/",
+"desc": "This property is accepting applications for current and future vacancies. There is currently one studio unit available. Long Island City’s newest luxury rental, 44-72 Eleventh St, places you right in the center of one of NYC’s most exciting and dynamic neighborhoods. Located less than 2 blocks from the 7, G, E & M trains at Court Square, 44-72 Eleventh makes commuting to the Manhattan, Brooklyn or",
+"image": "https://nyshcr.my.site.com/housing/file-asset/069cs00002RunqOAAR?oid=00D8y0000008f2FEAQ",
+"senior": false,
+"accessible": false,
+"approx": true,
 "buildings": [
 {
-"street": "334 East 176th Street",
-"zip": "10457",
+"street": "Reside New York 349 Keap Street Brooklyn, NY, 11211",
+"zip": null,
 "bbl": null,
-"lat": 40.84745,
-"lng": -73.90231
+"lat": 40.709251,
+"lng": -73.954773
 }
 ]
 },
@@ -82,44 +104,44 @@
 "image": "https://nyshcr.my.site.com/housing/file-asset/069cs00002RunqOAAR?oid=00D8y0000008f2FEAQ",
 "senior": false,
 "accessible": false,
-"approx": false,
+"approx": true,
 "buildings": [
 {
-"street": "44-72 11th Street",
-"zip": "11101",
-"bbl": "4000510020",
-"lat": 40.748091,
-"lng": -73.950164
+"street": "349 Keap Street, Brooklyn, NY, 11211",
+"zip": null,
+"bbl": null,
+"lat": 40.709251,
+"lng": -73.954773
 }
 ]
 },
 {
-"id": "a0Ycs00002GAArtEAH",
-"name": "44th Drive",
+"id": "a0Ycs00002Lif0lEAB",
+"name": "Webster",
 "kind": "Waitlist",
 "status": "Open",
 "ptype": "Rental",
-"boro": "Q",
-"county": "Queens",
-"min_income": 32246,
-"max_income": 54280,
-"due": "10/14/2026",
+"boro": "Bx",
+"county": "Bronx",
+"min_income": 26092,
+"max_income": 81420,
+"due": "11/20/2026",
 "fee": null,
-"phone": "7183874448",
-"url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs00002GAArtEAH/detail",
-"info": "https://www.edgre.com/creative-agency/existing-developments/rental-propertise/44-72-11th-street-long-island-city-ny/",
-"desc": "This property is accepting applications for current and future vacancies. There is currently one studio unit available. Long Island City’s newest luxury rental, 44-72 Eleventh St, places you right in the center of one of NYC’s most exciting and dynamic neighborhoods. Located less than 2 blocks from the 7, G, E & M trains at Court Square, 44-72 Eleventh makes commuting to the Manhattan, Brooklyn or",
-"image": "https://nyshcr.my.site.com/housing/file-asset/069cs00002RunqOAAR?oid=00D8y0000008f2FEAQ",
+"phone": "646-870-8340",
+"url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs00002Lif0lEAB/detail",
+"info": "Breaking Ground’s mission is to strengthen individuals, families and communities by developing and sustaining exceptional supportive and affordable housing as well as programs for homeless and other vulnerable New Yorkers. \r\n\r\nFor more information and to download a pdf application, please go to https://www.breakingground.org/our-housing/webster-avenue",
+"desc": "Webster Avenue residence is accepting applications for current and future vacancies. Webster Avenue residence provides 80 studio apartments for low-income working adults in the Tremont section of the Bronx. The ground floor houses building common areas, offices for supportive services, and a medical suite. The building also features recreational space including an exercise room, computer lab, and ",
+"image": "https://nyshcr.my.site.com/housing/file-asset/069cs00002UZAAHAA5?oid=00D8y0000008f2FEAQ",
 "senior": false,
 "accessible": false,
-"approx": false,
+"approx": true,
 "buildings": [
 {
-"street": "44-72 11th Street",
-"zip": "11101",
-"bbl": "4000510020",
-"lat": 40.748091,
-"lng": -73.950164
+"street": "Central Intake Unit, Breaking Ground, 520 8th Avenue, New York, NY 10018",
+"zip": null,
+"bbl": null,
+"lat": 40.753625,
+"lng": -73.991907
 }
 ]
 },
@@ -142,14 +164,14 @@
 "image": "https://housingsearch.hcr.ny.gov/housing/file-asset/069cs00001u5XU4AAM?oid=00D8y0000008f2F",
 "senior": false,
 "accessible": false,
-"approx": false,
+"approx": true,
 "buildings": [
 {
-"street": "1182 Woodycrest Avenue",
-"zip": "10452",
-"bbl": null,
-"lat": 40.83646,
-"lng": -73.9248
+"street": "NHE Management Assoc., LLC Leasing Department 90-11 160th Street Jamaica, NY 11432",
+"zip": null,
+"bbl": "4097577501",
+"lat": 40.704968,
+"lng": -73.799529
 }
 ]
 },
@@ -173,15 +195,7 @@
 "senior": false,
 "accessible": false,
 "approx": false,
-"buildings": [
-{
-"street": "4519 White Plains Road",
-"zip": "10470",
-"bbl": null,
-"lat": 40.90062,
-"lng": -73.85296
-}
-]
+"buildings": []
 },
 {
 "id": "a0Ycs00001nyK17EAE",
@@ -263,15 +277,7 @@
 "senior": true,
 "accessible": false,
 "approx": false,
-"buildings": [
-{
-"street": "1559 Boone Avenue",
-"zip": "10460",
-"bbl": null,
-"lat": 40.83359,
-"lng": -73.88508
-}
-]
+"buildings": []
 },
 {
 "id": "a0Ycs00001nyK1CEAU",
@@ -552,35 +558,14 @@
 "image": "https://housingsearch.hcr.ny.gov/housing/file-asset/069cs00001kAxdNAAS?oid=00D8y0000008f2F",
 "senior": false,
 "accessible": false,
-"approx": false,
+"approx": true,
 "buildings": [
 {
-"street": "220 Front Street",
-"zip": "10038",
-"bbl": "1000977503",
-"lat": 40.707613,
-"lng": -74.002348
-},
-{
-"street": "217 Front Street",
-"zip": "10038",
-"bbl": "1000970018",
-"lat": 40.707237,
-"lng": -74.00232
-},
-{
-"street": "225 Front Street",
-"zip": "10038",
-"bbl": "1000970024",
-"lat": 40.70737,
-"lng": -74.002055
-},
-{
-"street": "229 Front Street",
-"zip": "10038",
-"bbl": "1000970026",
-"lat": 40.707455,
-"lng": -74.001891
+"street": "Historic Front Street, 601 West 57th Street, 5th, New York, NY 10019",
+"zip": null,
+"bbl": null,
+"lat": 40.63642,
+"lng": -74.07181
 }
 ]
 },
@@ -604,22 +589,7 @@
 "senior": false,
 "accessible": false,
 "approx": false,
-"buildings": [
-{
-"street": "407 West 206th Street",
-"zip": "10034",
-"bbl": null,
-"lat": 40.86371,
-"lng": -73.91824
-},
-{
-"street": "405 West 206th Street",
-"zip": "10034",
-"bbl": null,
-"lat": 40.86345,
-"lng": -73.9176
-}
-]
+"buildings": []
 },
 {
 "id": "a0Ycs00001nyK10EAE",
@@ -835,15 +805,7 @@
 "senior": false,
 "accessible": false,
 "approx": false,
-"buildings": [
-{
-"street": "101 Myrtle Avenue",
-"zip": "10310",
-"bbl": null,
-"lat": 40.630275,
-"lng": -74.115164
-}
-]
+"buildings": []
 },
 {
 "id": "a0Ycs00001nyK14EAE",
@@ -1007,15 +969,7 @@
 "senior": false,
 "accessible": false,
 "approx": false,
-"buildings": [
-{
-"street": "50 Nevins Street",
-"zip": "11217",
-"bbl": "3001727501",
-"lat": 40.687077,
-"lng": -73.982179
-}
-]
+"buildings": []
 },
 {
 "id": "a0Ycs00001nyK1nEAE",
@@ -1231,15 +1185,7 @@
 "senior": false,
 "accessible": false,
 "approx": false,
-"buildings": [
-{
-"street": "2520 Jerome Avenue",
-"zip": "10468",
-"bbl": null,
-"lat": 40.86426,
-"lng": -73.89939
-}
-]
+"buildings": []
 },
 {
 "id": "a0Ycs00001nyK1HEAU",
@@ -1291,22 +1237,7 @@
 "senior": false,
 "accessible": false,
 "approx": false,
-"buildings": [
-{
-"street": "45-25 Kissena Boulevard",
-"zip": "11355",
-"bbl": null,
-"lat": 40.751938,
-"lng": -73.820068
-},
-{
-"street": "137-47 45th Avenue",
-"zip": "11355",
-"bbl": null,
-"lat": 40.751972,
-"lng": -73.822184
-}
-]
+"buildings": []
 },
 {
 "id": "a0Ycs00001nyK1XEAU",
@@ -1387,14 +1318,14 @@
 "image": "https://housingsearch.hcr.ny.gov/housing/file-asset/069cs00000lO1hWAAS?oid=00D8y0000008f2F",
 "senior": false,
 "accessible": true,
-"approx": false,
+"approx": true,
 "buildings": [
 {
-"street": "1366 East New York Avenue",
-"zip": "11212",
+"street": "1675 Broadway – 29th, New York, NY 10019",
+"zip": null,
 "bbl": null,
-"lat": 40.66943,
-"lng": -73.91683
+"lat": 40.763123,
+"lng": -73.983568
 }
 ]
 },
@@ -1448,15 +1379,7 @@
 "senior": false,
 "accessible": false,
 "approx": false,
-"buildings": [
-{
-"street": "548 Utica Avenue",
-"zip": "11203",
-"bbl": null,
-"lat": 40.65984,
-"lng": -73.93184
-}
-]
+"buildings": []
 },
 {
 "id": "a0Ycs00000iE3RfEAK",
@@ -1478,15 +1401,7 @@
 "senior": false,
 "accessible": false,
 "approx": false,
-"buildings": [
-{
-"street": "523 East 98th Street",
-"zip": "11212",
-"bbl": "3036200005",
-"lat": 40.65615,
-"lng": -73.91259
-}
-]
+"buildings": []
 },
 {
 "id": "a0Ycs00001nyK1oEAE",

@@ -14,6 +14,10 @@
 # 144 times a day would only add churn.
 set -uo pipefail
 cd /root/Find-A-Crib || exit 1
+# One alert job at a time (2026-10-06): the 8 AM --digest and the every-10-
+# minutes run start in the same minute and share alerts state.
+exec 9>/run/lock/fac-alerts.lock
+flock -w 900 9 || { echo "alerts: another run held the lock 15 min — skipping"; exit 1; }
 export GROWTH_DOCROOT=${GROWTH_DOCROOT:-/var/www/rent-map}
 if [ -f ./growth.env ]; then set -a; . ./growth.env; set +a; fi
 

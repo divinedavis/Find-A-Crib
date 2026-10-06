@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Email subscribers the minute a new housing lottery or re-rental opens in
+"""Email subscribers when a new housing lottery or re-rental opens in
 their borough.
 
 Sign-ups come from /alerts/ (findacrib-api writes lottery_alert_subs). This
@@ -29,6 +29,11 @@ the day goes out the minute it appears; anything after that is HELD per
 subscriber (state["held"]) and rides the next day's first email, so nothing
 is dropped and nothing arrives twice.
 
+Since 2026-10-06 that minute-it-appears send is Find A Crib Plus only (owner:
+"users who pay 4.99 can get real time alerts ... otherwise once a day at
+8AM"). Without Plus every match is held and goes out in the 8 AM digest
+(`--digest`), whose email and push both carry a "get real-time alerts" call.
+
 Two more entry points share the list, the sender and the opt-out:
 
   --nudge    first-week round-up. A subscriber who signed up 2–8 days ago and
@@ -55,6 +60,7 @@ import sys
 import urllib.error
 import urllib.request
 
+from zoneinfo import ZoneInfo
 import apns   # the phone side of an alert (APNs); no-op until growth.env names the key
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -62,6 +68,7 @@ sys.path.insert(0, HERE)
 DATA_DIR = os.environ.get("GROWTH_DOCROOT") or os.environ.get("DATA_DIR") or HERE
 STATE = os.path.join(HERE, "lottery_alerts_state.json")
 SITE = "https://findacrib.com"
+NY = ZoneInfo("America/New_York")
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://dbaifotzwlxjvsxjohjt.supabase.co")
 
 MAX_ITEMS_PER_EMAIL = 12
@@ -69,6 +76,11 @@ MAX_SENDS_PER_RUN = 300
 HOURLY_CAP = 400          # Namecheap Private Email: 500/hour per domain (Starter)
 SEEN_TTL_DAYS = 240
 HELD_MAX = 30             # per subscriber; older held items fall off the front
+# Real-time is Plus (owner, 2026-10-06). Everyone else hears once a day, in the
+# 8 AM digest (`--digest`, cron 0 8 * * * New York). A Plus subscriber is
+# pushed the moment an item appears; their email goes with it while the day's
+# one email slot is free (else tomorrow's first email carries it).
+UPSELL_URL = SITE + "/?plus=realtime&src=digest"
 NUDGE_MIN_DAYS, NUDGE_MAX_DAYS = 2, 8
 WEEK_DAYS = 7
 
@@ -419,7 +431,7 @@ def filter_words(sub):
     return (", " + ", ".join(bits)) if bits else ""
 
 
-def render_alert(items, sub, emailkit):
+def render_alert(items, sub, emailkit, upsell=False):
     lot = [i for i in items if i["kind"] == "lottery"]
     rr = [i for i in items if i["kind"] == "rerental"]
     vo = [i for i in items if i["kind"] == "voucher"]
@@ -445,6 +457,13 @@ def render_alert(items, sub, emailkit):
         subject = ", ".join(parts[:-1]) + (" and " if len(parts) > 1 else "") + parts[-1] + f" in {where}"
 
     blocks = []
+    if upsell:
+        # The 8 AM digest (owner, 2026-10-06): say what Plus changes, first.
+        blocks.append({"type": "callout", "tone": "good",
+                       "heading": "Re-rentals go first come, first served — don't wait until 8 AM",
+                       "items": ["The first eligible applicant usually gets the apartment, and some of these opened "
+                                 "yesterday. With Find A Crib Plus, alerts arrive the minute a re-rental or lottery "
+                                 "opens. Your first month is on us."]})
 
     def rows(group):
         return [{"text": i["text"], "sub": i["sub"], "url": i["url"]} for i in group]
@@ -475,11 +494,14 @@ def render_alert(items, sub, emailkit):
     page_unsub, post_unsub = unsub_urls(sub["token"])
     html, text = emailkit.render(
         title=subject, eyebrow="Borough alert",
-        intro=f"You asked to hear the minute something opens in {where}.",
+        intro=(f"Your daily 8 AM round-up of what opened in {where}." if upsell
+               else f"You asked to hear the minute something opens in {where}."),
         blocks=blocks,
-        cta=("See every open lottery and re-rental", f"{SITE}/?src=alert"),
+        cta=(("Get real-time alerts with Plus", UPSELL_URL) if upsell
+             else ("See every open lottery and re-rental", f"{SITE}/?src=alert")),
         footer_note=f"You are subscribed at {sub['email']} for {where}{filter_words(sub)}. "
-                    f"Change boroughs or filters at {SITE}/alerts/. Never more than one email a day.",
+                    f"Change boroughs or filters at {SITE}/alerts/. "
+                    + ("One email a day, at 8 AM." if upsell else "Real-time with Find A Crib Plus."),
         unsub_url=page_unsub)
     return subject, track_links(html, sub, "alert"), text, post_unsub
 
@@ -521,10 +543,10 @@ def render_welcome(sub, emailkit):
     what = ", ".join(names[:-1]) + (" or " if len(names) > 1 else "") + names[-1]
     blocks = [
         {"type": "card", "heading": "What you'll get",
-         "body": f"One email the minute a new {what} "
-                 f"opens in {where}"
+         "body": f"One email a day, at 8 AM, when a new {what} "
+                 f"has opened in {where}"
                  + (" that fits your rent cap or income" if (sub.get("max_rent") or sub.get("income")) else "")
-                 + ". The feeds are checked every 10 minutes: NYC Housing "
+                 + " (with Find A Crib Plus: the minute it opens). The feeds are checked every 10 minutes: NYC Housing "
                  "Connect, HCR's HousingSearch (lotteries and Mitchell-Lama waitlists) and the "
                  "re-rental boards of the HPD-approved marketing agents."},
         {"type": "card", "heading": "Why re-rentals matter",
@@ -779,7 +801,7 @@ def weekly(args_dry=False, test_email=None):
         html, text, post_unsub = render_roundup(
             sub, emailkit, eyebrow="Tuesday round-up", title=subject,
             intro=f"Everything that opened in {where} in the last seven days, and the "
-                  "deadlines coming up. The minute-it-opens alerts continue as usual.",
+                  "deadlines coming up. Your daily alerts continue as usual.",
             sections=[("Opened this week", "good", mine_new),
                       ("Closing in the next seven days", "warn", mine_close)],
             cta_label="See everything open on the map", digest=True)
@@ -884,6 +906,8 @@ def main():
                     help="first-week round-up for sign-ups that have heard nothing yet")
     ap.add_argument("--weekly", action="store_true",
                     help="the fixed-day digest: new this week + closing this week")
+    ap.add_argument("--digest", action="store_true",
+                    help="the 8 AM send for subscribers without Plus (everything held since yesterday)")
     args = ap.parse_args()
     if args.welcome:
         return welcome(args.dry_run)
@@ -938,7 +962,7 @@ def main():
         if not args.dry_run:
             save_state(st)
         return
-    if not new and not st["held"]:
+    if not new and not (args.digest and st["held"]):
         print("nothing new")
         if not args.dry_run:
             save_state(st)
@@ -958,6 +982,12 @@ def main():
         # briefly unreachable.
         sys.exit(f"could not load subscribers: {e}")
     print(f"{len(subs)} active subscribers")
+    # Who has Plus: real-time for them, the 8 AM digest for everyone else.
+    try:
+        plus = {e.lower() for e in (rpc("plus_emails", {"p_emails": [s["email"] for s in subs]}, key) or [])}
+    except Exception as e:
+        plus = set()
+        print(f"plus lookup failed ({type(e).__name__}) — everyone waits for the digest this run")
 
     # Devices behind these addresses — the iPhone app registered against the
     # same account the alert subscription came from. One lookup per run.
@@ -992,6 +1022,12 @@ def main():
             st["held"][sid] = mine[-HELD_MAX:]
             print(f"  hold {sub['email']} ({len(mine)}): {reason}")
 
+        is_plus = sub["email"].lower() in plus
+        if not is_plus and not args.digest:
+            hold("daily digest at 8 AM (no Plus)")
+            continue
+        phones = devices.get(sub["email"].lower(), [])
+
         if sent >= MAX_SENDS_PER_RUN or len(st["sends"]) >= HOURLY_CAP:
             hold("send budget exhausted — next run")
             continue
@@ -1003,36 +1039,49 @@ def main():
         except Exception as e:
             hold(f"ledger unreachable ({type(e).__name__})")
             continue
+        # One Find A Crib email a day, from any job (owner rule, 2026-09-05).
+        # The 8 AM digest runs before the other morning mails (moved after it),
+        # so it normally holds the day's slot. A Plus subscriber whose slot is
+        # used still gets the real-time push; the email waits for tomorrow.
+        email_it = True
         if not ok:
-            hold("already emailed today")
-            continue
-        subject, html, text, post_unsub = render_alert(mine, sub, emailkit)
-        print(f"  -> {sub['email']}: {subject}")
+            if is_plus and phones:
+                email_it = False
+                st["held"][sid] = mine[-HELD_MAX:]    # tomorrow's first email carries them
+            else:
+                hold("already emailed today")
+                continue
+        digest = args.digest and not is_plus
+        subject, html, text, post_unsub = render_alert(mine, sub, emailkit, upsell=digest)
+        print(f"  -> {sub['email']}{' [plus]' if is_plus else ' [digest]'}: {subject}{'' if email_it else ' (push only)'}")
         if args.dry_run:
             continue
-        try:
-            emailkit.send(sub["email"], subject, html, text, unsub_url=post_unsub)
-        except Exception as e:
-            print(f"     FAILED {type(e).__name__}: {str(e)[:80]}")
-            mailcap.release(sub["email"])
-            hold("send failed")
-            continue
-        sent += 1
-        st["sends"].append(now.isoformat())
-        st["held"].pop(sid, None)
+        if email_it:
+            try:
+                emailkit.send(sub["email"], subject, html, text, unsub_url=post_unsub)
+            except Exception as e:
+                print(f"     FAILED {type(e).__name__}: {str(e)[:80]}")
+                mailcap.release(sub["email"])
+                hold("send failed")
+                continue
+            sent += 1
+            st["sends"].append(now.isoformat())
+            st["held"].pop(sid, None)
         sent_ids.append(sub["id"])
         # The same alert on the phone, to every device on the account. Rides
         # with the email deliberately: one moment, both channels, and the
         # email's one-a-day cap already decided this was the moment.
         title, text_body = push_text(mine)
-        for dev in devices.get(sub["email"].lower(), []):
+        if digest:
+            text_body = (text_body + " · Re-rentals go first come, first served: get them the minute they open with Plus")[:178]
+        for dev in phones:
             # Every item rides in the payload so a tap opens the app on the
             # whole alert — not one agent's website for the first item, which
             # left the rest unreachable and was a blank page when the site did
             # not load (owner, 2026-09-19). `url` stays for build 51.
             r = apns.send(dev["token"], dev.get("env") or "production", title, text_body,
                           url=mine[0].get("url"), collapse=f"alert-{sid}",
-                          extra={"items": push_items(mine)})
+                          extra={"items": push_items(mine), "digest": digest})
             print(f"     push {dev['token'][:8]}… {r['status']} {r['reason'] or 'ok'}" + (f" (refiled as {r['refile']})" if r["refile"] else ""))
             if r["ok"]:
                 pushed += 1

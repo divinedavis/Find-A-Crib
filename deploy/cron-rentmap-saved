@@ -1,7 +1,8 @@
 # Saved-building alerts. Installed at /etc/cron.d/rentmap-saved (scp this
 # file; never hand-edit on the box — see deploy/cron-rentmap-growth).
 #
-# 06:20 America/New_York, daily: saved_alerts.sh diffs every saved building
+# 08:20 America/New_York, daily (06:20 until 2026-10-06, moved after the
+# 8 AM alert digest so the digest holds the day's one email): saved_alerts.sh diffs every saved building
 # against yesterday's snapshot (advertised, voucher listing, price drop,
 # lottery or re-rental at the address, HPD violations, DHCR registration) and
 # mails each watcher ONE email. Tuesdays it is the weekly round-up instead.
@@ -17,4 +18,5 @@
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 CRON_TZ=America/New_York
-20 6 * * * root /root/Find-A-Crib/saved_alerts.sh >> /var/log/rentmap-saved.log 2>&1
+# 8:20, after the 8 AM alert digest takes the day's one email (2026-10-06).
+20 8 * * * root /root/Find-A-Crib/saved_alerts.sh >> /var/log/rentmap-saved.log 2>&1

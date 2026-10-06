@@ -163,11 +163,14 @@ def run_users_table(browser, live):
     context.close()
 
 
+import datetime as _dt
+
 VISITOR_ROWS = [
     {'visitor_id': 'aaaaaa111', 'name': 'Visitor aaaaaa', 'signed_up': False, 'created_at': '2026-10-06T00:00:00Z',
-     'last_seen': '2026-10-06T01:00:00Z', 'device': 'mobile_web', 'phone': 'iphone', 'alerts': False},
+     'last_seen': _dt.datetime.now(_dt.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
+     'device': 'mobile_web', 'phone': 'iphone', 'alerts': False},
     {'visitor_id': 'bbbbbb222', 'name': 'App user', 'email': 'a@example.com', 'signed_up': True,
-     'created_at': '2026-09-01T00:00:00Z', 'last_seen': '2026-10-06T02:00:00Z', 'device': 'app',
+     'created_at': '2026-09-01T00:00:00Z', 'last_seen': '2026-08-01T02:00:00Z', 'device': 'app',
      'phone': 'iphone', 'alerts': True, 'plan': 'plus', 'ios_app': True, 'ios_build': '115'},
 ]
 
@@ -195,6 +198,12 @@ def run_visitors_table(browser, live):
     expect(page.locator('#chips')).to_contain_text('signed up')
     expect(page.locator('#urows tr', has_text='Visitor aaaaaa').locator('td').last).to_contain_text('Mobile web')
     expect(page.locator('nav')).to_contain_text('Signed Up Users')
+    # 7 / 30 / 90 days (2026-10-06): the row last seen in August drops out
+    # of the 7-day view.
+    page.locator('#ranges button[data-days="7"]').click()
+    expect(page.locator('#urows tr')).to_have_count(1)
+    expect(page.locator('#ranges button.on')).to_have_text('7 days')
+    page.locator('#ranges button[data-days="0"]').click()
     assert not errors, errors
     context.close()
 

@@ -217,6 +217,10 @@
   .u-namebtn{background:none;border:0;padding:0;font:inherit;font-weight:inherit;color:inherit;cursor:pointer;text-align:left}
   .u-namebtn:hover{text-decoration:underline}
   .u-email-reveal{font-size:12px;color:var(--muted);margin-top:3px;user-select:all}
+  .ranges { display: inline-flex; gap: 0; margin: 4px 0 12px; border: 1px solid var(--border, #ddd); border-radius: 10px; overflow: hidden; }
+  .ranges button { background: transparent; border: 0; padding: 8px 14px; font: inherit; font-size: 14px; color: inherit; cursor: pointer; }
+  .ranges button + button { border-left: 1px solid var(--border, #ddd); }
+  .ranges button.on { background: var(--accent-soft, rgba(99,102,241,.18)); font-weight: 700; }
 </style>
 </head>
 <body>
@@ -286,6 +290,11 @@
         <input class="usearch" id="usearch" type="text" placeholder="Search name, email, device, iphone, ipad, android, or 1.2…">
       </div>
 
+      <!-- 7 / 30 / 90 days (owner, 2026-10-06): everything below — the numbers
+           and the table — counts only people seen in that window. -->
+      <div class="ranges" id="ranges" role="group" aria-label="Seen in">
+        <button type="button" data-days="0">All time</button><button type="button" data-days="7">7 days</button><button type="button" data-days="30">30 days</button><button type="button" data-days="90">90 days</button>
+      </div>
       <div class="chips" id="chips"></div>
 
       <div class="card">
@@ -327,6 +336,10 @@
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function fdate(s){ if(!s) return '—'; try{ return new Date(s).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }catch(e){ return '—'; } }
   function sameDay(a,b){ if(!a||!b) return true; try{ return new Date(a).toDateString()===new Date(b).toDateString(); }catch(e){ return true; } }
+  var RANGE_DAYS = 0;
+  try { RANGE_DAYS = +localStorage.getItem('fac.visitorsRange') || 0; } catch (e) {}
+  function inRange(u){ return !RANGE_DAYS || (u.last_seen && new Date(u.last_seen).getTime() >= Date.now() - RANGE_DAYS*864e5); }
+  function pool(){ return USERS.filter(inRange); }
   function didReturn(u){ return u.last_seen && u.created_at && !sameDay(u.last_seen,u.created_at) && new Date(u.last_seen)>new Date(u.created_at); }
 
   // ---------- theme ----------
@@ -447,26 +460,37 @@
   sb.auth.onAuthStateChange(function(_e, s){ route(s); });
   sb.auth.getSession().then(function(r){ route(r.data.session); });
 
+  function paintRanges(){
+    document.querySelectorAll('#ranges button').forEach(function(b){
+      var on = +b.dataset.days === RANGE_DAYS; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+  }
+  document.addEventListener('click', function(e){
+    var b = e.target.closest('#ranges button'); if(!b) return;
+    RANGE_DAYS = +b.dataset.days || 0;
+    try { localStorage.setItem('fac.visitorsRange', String(RANGE_DAYS)); } catch (err) {}
+    paintRanges(); renderChips(); renderRows(el('usearch').value);
+  });
   function renderChips(){
-    var total=USERS.length,
-        signedup=USERS.filter(function(u){return !!u.signed_up;}).length,
-        paying=USERS.filter(function(u){return u.plan==='plus';}).length,
+    paintRanges();
+    var P=pool();
+    var total=P.length,
+        signedup=P.filter(function(u){return !!u.signed_up;}).length,
+        paying=P.filter(function(u){return u.plan==='plus';}).length,
         // Same definition as the owner dashboard's "comped": a comp, a
         // founding grant or a referral reward — Plus without paying.
-        comped=USERS.filter(function(u){return u.plan==='comp'||u.plan==='founding'||u.plan==='referral';}).length,
-        savers=USERS.filter(function(u){return (u.saves||0)>0;}).length,
-        mobile=USERS.filter(function(u){return u.device==='app'||isMobileWeb(u);}).length,
-        iosapp=USERS.filter(function(u){return !!u.ios_app;}).length,
-        iphone=USERS.filter(function(u){return u.phone==='iphone';}).length,
-        android=USERS.filter(function(u){return u.phone==='android';}).length,
-        returned=USERS.filter(didReturn).length;
+        comped=P.filter(function(u){return u.plan==='comp'||u.plan==='founding'||u.plan==='referral';}).length,
+        savers=P.filter(function(u){return (u.saves||0)>0;}).length,
+        mobile=P.filter(function(u){return u.device==='app'||isMobileWeb(u);}).length,
+        iosapp=P.filter(function(u){return !!u.ios_app;}).length,
+        iphone=P.filter(function(u){return u.phone==='iphone';}).length,
+        android=P.filter(function(u){return u.phone==='android';}).length,
+        returned=P.filter(didReturn).length;
     el('chips').innerHTML =
       chip('', total, 'total visitors')+
       chip('signedup', signedup, 'signed up')+
       chip('plus', paying, 'paying Plus')+
       chip('comp', comped, 'comped')+
-      chip('returned', returned, 'came back after signup')+
-      chip('savers', savers, 'have saved a building')+
+      chip('returned', returned, 'came back another day')+
       chip('mobile', mobile, 'last on mobile')+
       chip('iosapp', iosapp, 'have the iPhone app')+
       chip('iphone', iphone, 'on iPhone')+
@@ -568,7 +592,7 @@
     signedup: { label:'signed up',                  test:function(u){ return !!u.signed_up; } },
     plus:     { label:'paying for Plus',            test:function(u){ return u.plan==='plus'; } },
     comp:     { label:'comped',                     test:function(u){ return u.plan==='comp'||u.plan==='founding'||u.plan==='referral'; } },
-    returned: { label:'came back after signing up', test:didReturn },
+    returned: { label:'came back another day',     test:didReturn },
     savers:   { label:'have saved a building',      test:function(u){ return (u.saves||0)>0; } },
     mobile:   { label:'last seen on mobile',        test:function(u){ return u.device==='app'||isMobileWeb(u); } },
     iosapp:   { label:'have the iPhone app',        test:function(u){ return !!u.ios_app; } },
@@ -732,6 +756,7 @@
   function renderRows(q){
     q = (q||'').trim().toLowerCase();
     var rows = USERS.filter(function(u){
+      if(!inRange(u)) return false;
       if(!passesFilters(u)) return false;
       if(!q) return true;
       return (u.name||'').toLowerCase().indexOf(q)>=0

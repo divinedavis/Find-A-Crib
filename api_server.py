@@ -14,6 +14,8 @@ reads are fast and need no DB round-trip. The DB is used only for auth/metering.
 Run:  DATA_DIR=/var/www/rent-map gunicorn -w 2 -b 127.0.0.1:8010 api_server:app
 """
 import base64, datetime, glob, gzip, hashlib, hmac, json, os, re, secrets, threading, time, urllib.request, urllib.error, urllib.parse
+import zoneinfo
+
 from collections import defaultdict, deque
 from concurrent.futures import ThreadPoolExecutor
 from flask import Flask, jsonify, request, g, redirect
@@ -2954,9 +2956,20 @@ def dashboard_users():
     return jsonify(users=data or [], versions=_fac_appstore().get("versions") or [])
 
 
+VISITOR_WINDOWS = ("today", "7", "30", "90", "all")
+
+
 @_memo(300)
-def _fac_visitors():
-    rows = rpc("dashboard_visitors", {}) or []
+def _fac_visitors(window="today"):
+    """Visitors seen in a window (2026-10-06: load one window at a time, not
+    every visitor ever). today = since midnight in New York."""
+    since = None
+    if window == "today":
+        ny = datetime.datetime.now(zoneinfo.ZoneInfo("America/New_York"))
+        since = ny.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(datetime.timezone.utc).isoformat()
+    elif window in ("7", "30", "90"):
+        since = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=int(window))).isoformat()
+    rows = rpc("dashboard_visitors", {"since": since}) or []
     mine = set(_fac_owner_visitors())
     return [r for r in rows if r.get("visitor_id") not in mine]
 
@@ -2970,8 +2983,11 @@ def dashboard_visitors():
     denied = _dashboard_denial(_dashboard_auth(), ("ok",))
     if denied:
         return denied
+    window = request.args.get("days", "today")
+    if window not in VISITOR_WINDOWS:
+        window = "today"
     try:
-        rows = _fac_visitors()
+        rows = _fac_visitors(window)
     except Exception:
         return jsonify(error="temporarily_unavailable"), 503
     return jsonify(users=rows, versions=_fac_appstore().get("versions") or [])

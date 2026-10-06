@@ -190,20 +190,27 @@ def run_visitors_table(browser, live):
                 path=str(ROOT / path), content_type='application/javascript'))
     page.route('**/auth/v1/**', lambda route: route.fulfill(json=USER)
                if '/user' in route.request.url else route.fulfill(status=204))
-    page.route('**/api/dashboard-visitors', lambda route: route.fulfill(json={'users': VISITOR_ROWS}))
+    asked = []
+    def visitors(route):
+        asked.append(route.request.url.split('days=')[-1])
+        rows = VISITOR_ROWS if 'days=all' in route.request.url else VISITOR_ROWS[:1]
+        route.fulfill(json={'users': rows})
+    page.route('**/api/dashboard-visitors*', visitors)
     page.goto(BASE + '/dashboard/visitors/' + callback(), wait_until='networkidle')
+    # Opens on Today, fetched from the server one window at a time.
+    expect(page.locator('#urows tr')).to_have_count(1)
+    expect(page.locator('#ranges button.on')).to_have_text('Today')
+    assert asked and asked[0] == 'today', asked
+    page.locator('#ranges button[data-days="all"]').click()
     expect(page.locator('#urows tr')).to_have_count(2)
     expect(page.locator('.page-head h1')).to_have_text('Visitors')
     expect(page.locator('#chips')).to_contain_text('total visitors')
     expect(page.locator('#chips')).to_contain_text('signed up')
     expect(page.locator('#urows tr', has_text='Visitor aaaaaa').locator('td').last).to_contain_text('Mobile web')
     expect(page.locator('nav')).to_contain_text('Signed Up Users')
-    # 7 / 30 / 90 days (2026-10-06): the row last seen in August drops out
-    # of the 7-day view.
     page.locator('#ranges button[data-days="7"]').click()
-    expect(page.locator('#urows tr')).to_have_count(1)
     expect(page.locator('#ranges button.on')).to_have_text('7 days')
-    page.locator('#ranges button[data-days="0"]').click()
+    assert asked[-1] == '7', asked
     assert not errors, errors
     context.close()
 

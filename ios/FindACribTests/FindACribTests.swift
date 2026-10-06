@@ -909,13 +909,14 @@ final class ReviewPromptTests: XCTestCase {
     /// Opens are counted on every appOpened, and the 7th spends the ask.
     @MainActor func testSeventhOpenCountsAndFiresOnce() {
         let d = UserDefaults(suiteName: "review.test.\(UUID())")!
+        d.set(3, forKey: "review.visitDays")   // signed in, 3 visit days: eligible
         let rp = ReviewPrompt(defaults: d)
-        for _ in 1...6 { rp.appOpened(signedIn: false, pushCardShowing: false) }
+        for _ in 1...6 { rp.appOpened(signedIn: true, pushCardShowing: false) }
         XCTAssertEqual(d.integer(forKey: "review.opens"), 6)
         XCTAssertFalse(d.bool(forKey: "review.seventhDone"))
-        rp.appOpened(signedIn: false, pushCardShowing: true)          // 7th, card up: deferred
+        rp.appOpened(signedIn: true, pushCardShowing: true)           // 7th, card up: deferred
         XCTAssertFalse(d.bool(forKey: "review.seventhDone"))
-        rp.appOpened(signedIn: false, pushCardShowing: false)         // 8th: asks
+        rp.appOpened(signedIn: true, pushCardShowing: false)          // 8th: asks
         XCTAssertTrue(d.bool(forKey: "review.seventhDone"))
         XCTAssertEqual(d.integer(forKey: "review.opens"), 8)
     }
@@ -944,6 +945,7 @@ final class ReviewPromptTests: XCTestCase {
     @MainActor
     func testScheduledAskIsSpentAndBlocksTheSameDay() {
         let d = UserDefaults(suiteName: "review-sched-\(UUID().uuidString)")!
+        d.set(3, forKey: "review.visitDays")
         let p = ReviewPrompt(defaults: d)
         let now = Date()
         p.noteSignup(now: now)
@@ -963,7 +965,9 @@ final class ReviewPromptTests: XCTestCase {
     @MainActor
     func testRecordingAMomentIsGatedThroughTheSameRule() {
         let d = UserDefaults(suiteName: "review-tests-\(UUID().uuidString)")!
+        d.set(3, forKey: "review.visitDays")
         let p = ReviewPrompt(defaults: d)
+        p.signedIn = true
         XCTAssertNil(d.string(forKey: "review.lastVersion"))
         p.record(.save)
         XCTAssertNotNil(d.string(forKey: "review.lastVersion"), "the first save asks, and the ask is recorded before the sheet")
@@ -1760,6 +1764,18 @@ final class DigestPushTests: XCTestCase {
 
 /// Rating prompt gate (owner, 2026-10-06): signed up AND 3+ visit days.
 final class ReviewGateTests: XCTestCase {
+    /// Signed out, or signed in on a 1st/2nd visit day: no open or save asks.
+    @MainActor func testIneligiblePeopleAreNeverAsked() {
+        let d = UserDefaults(suiteName: "review-gate-\(UUID().uuidString)")!
+        let p = ReviewPrompt(defaults: d)
+        for _ in 1...10 { p.appOpened(signedIn: false, pushCardShowing: false) }
+        XCTAssertFalse(d.bool(forKey: "review.seventhDone"), "signed out: never asked")
+        XCTAssertEqual(d.integer(forKey: "review.visitDays"), 1, "ten opens in one day are one visit")
+        p.signedIn = true
+        p.record(.save)
+        XCTAssertNil(d.string(forKey: "review.lastVersion"), "signed in on day 1: not asked yet")
+    }
+
     func testOnlySignedInPeopleWithThreeVisitDaysAreAsked() {
         XCTAssertFalse(ReviewPrompt.eligible(signedIn: false, visitDays: 10))
         XCTAssertFalse(ReviewPrompt.eligible(signedIn: true, visitDays: 2))

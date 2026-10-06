@@ -32,6 +32,7 @@ struct RealtimeUpsell: View {
             if let onDismiss {
                 Button { Analytics.shared.track("realtime_upsell_dismiss", ["src": source]); onDismiss() } label: {
                     Image(systemName: "xmark").font(.system(size: 13, weight: .bold)).foregroundStyle(SE.ink3).frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain).accessibilityLabel("Don't show this again").accessibilityIdentifier("realtime-upsell-dismiss")
             }

@@ -1038,6 +1038,9 @@ class Runner:
         self.boot(page)
         info = page.evaluate("(()=>{const a=document.getElementById('pill-app-m'), al=document.getElementById('pill-alerts-m'); const r=a.getBoundingClientRect(), ar=al.getBoundingClientRect(); return {shown:r.width>0&&getComputedStyle(a).display!=='none', href:a.getAttribute('href'), left:r.left, alertsRight:ar.right, sameRow:Math.abs(r.top-ar.top)<4, overflow:document.documentElement.scrollWidth>innerWidth, ios:document.documentElement.classList.contains('ios')}})()")
         self.ok(info['href'].startswith('https://apps.apple.com/us/app/find-a-crib/id6807549249'), f"chip should link to the App Store listing: {info['href']}", j)
+        # Safari's Smart App Banner (owner, 2026-10-05) needs this tag in <head>.
+        sab = page.evaluate("document.querySelector('meta[name=\"apple-itunes-app\"]')?.content || ''")
+        self.ok(sab == 'app-id=6807549249', f'the Smart App Banner tag should name the app: {sab!r}', j)
         self.ok(not info['overflow'], 'page must not scroll sideways with the chip in the row', j)
         if device == 'phone':
             self.ok(info['ios'], 'an iPhone should be detected as iOS', j)

@@ -2232,7 +2232,7 @@ def page(title, desc, canonical, body, jsonld=None, footer=None, robots=None, og
     # not be served to the only channel on this site with a positive verdict.
     rb = f'<meta name="{robots_name}" content="{robots}">' if robots else ""
     return f"""<!doctype html><html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="apple-itunes-app" content="app-id=6807549249">
 <title>{esc(title)}</title>
 <meta name="description" content="{esc(desc)}">{rb}
 <link rel="canonical" href="{canonical}">

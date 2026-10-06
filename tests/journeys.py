@@ -958,7 +958,12 @@ class Runner:
         page.evaluate("document.getElementById('form').hidden = false")   # the form itself still works once revealed
         self.ok(page.evaluate("document.getElementById('submit').textContent.trim()") == 'Email me when something opens', 'alerts form should offer a fresh sign-up', j)
         # Alerts left Plus on 2026-10-01: no Plus copy, no locked card.
-        self.ok('Plus' not in page.evaluate("document.querySelector('main').innerText"), 'alerts page should not call alerts a Plus feature', j)
+        # Alerts come with any account, as a daily 8 AM email; Plus is only the
+        # real-time upgrade (2026-10-06), pitched on "first come, first served".
+        main = page.evaluate("document.querySelector('main').innerText")
+        self.ok('8 AM' in main and 'first come, first served' in main, 'alerts page should explain the 8 AM digest and the first-come pitch', j)
+        self.ok('Plus' not in main.replace('Find A Crib Plus you hear the minute', '').replace('Find A Crib Plus sends them the minute', ''),
+                'alerts page should mention Plus only as the real-time upgrade', j)
         self.ok(page.evaluate("!document.getElementById('locked')"), 'alerts page should have no locked (pay-to-turn-on) card', j)
         page.click('text=Brooklyn'); time.sleep(0.3)
         self.ok(page.evaluate("document.querySelector('#boros input[value=Bk]').checked"), 'borough chip should toggle on', j)
@@ -1245,6 +1250,11 @@ class Runner:
             return {name: c.dataset.hcName || '', boro: c.dataset.hcBoro || '', flag: !!c.querySelector('.hc-flag')};
         })()""")
         self.ok(feat is not None or hc is not None, 'no sponsored or lottery tile rendered in the list at all', j)
+        # Alerts are a daily 8 AM digest without Plus (2026-10-06): the tile
+        # prompt says so, and never promises "the minute" to a signed-out visitor.
+        al = page.evaluate("[...document.querySelectorAll('#grid .alert-link')].map(a => a.textContent)")
+        if al:
+            self.ok(all('8 AM' in t for t in al) and not any('the minute' in t for t in al), f'tile alert prompts should offer the 8 AM digest: {al[:2]}', j)
         # Photo galleries (2026-10-04): a tile with several photos scrolls
         # sideways and its dots follow.
         gal = page.evaluate("""(async () => {
@@ -1614,7 +1624,7 @@ class Runner:
               title: document.getElementById('paywall-title').textContent,
               shown: [...document.querySelectorAll('#paywall-feats li')].filter(l => !l.hidden && l.offsetParent).map(l => l.dataset.perk)}))()""")
             self.ok(pw['open'] and 'plain words' in pw['title'].lower(), f'a free account gets the AI paywall: {pw}', j)
-            self.ok(set(pw['shown']) == {'ai_search', 'rent_check', 'apply_help', 'noads'}, f'the paywall lists only the live AI perks + no ads: {pw["shown"]}', j)
+            self.ok(set(pw['shown']) == {'realtime', 'ai_search', 'rent_check', 'apply_help', 'noads'}, f'the paywall lists real-time alerts, the AI perks and no ads: {pw["shown"]}', j)
             # First month on us (2026-10-04): the trial line sits under the
             # price, and $4.99 stays the big number (Apple/FTC: billed amount
             # most prominent).
@@ -1623,6 +1633,13 @@ class Runner:
               btn: document.getElementById('paywall-subscribe').textContent}))()""")
             self.ok('first month is on us' in tr['trial'].lower() and tr['amt'] == '$4.99' and 'month on us' in tr['btn'].lower(),
                     f'the paywall should offer the first month on us under $4.99: {tr}', j)
+            # The 8 AM digest's button lands on /?plus=realtime: the paywall
+            # opens leading with real-time alerts (2026-10-06).
+            page.evaluate("document.querySelector('[data-paywall=\"close\"]')?.click()"); time.sleep(0.3)
+            self.boot(page, '/?plus=realtime&src=digest')
+            self.wait_until(page, "!document.getElementById('paywall-modal').hidden", 15000)
+            lead = page.evaluate("(document.querySelector('#paywall-feats li.pf-lead')||{}).dataset?.perk || null")
+            self.ok(lead == 'realtime', f'?plus=realtime should open the paywall on real-time alerts, led by {lead}', j)
             page.evaluate("document.querySelector('[data-paywall=\"close\"]')?.click()"); time.sleep(0.3)
             # The landlord report card and Ask about this building were removed
             # (owner, 2026-10-03: too slow) — not on the building sheet.

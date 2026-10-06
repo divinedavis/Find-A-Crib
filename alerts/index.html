@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <meta name="apple-itunes-app" content="app-id=6807549249" />
 <title>Housing lottery &amp; re-rental alerts by borough — Find A Crib</title>
-<meta name="description" content="Get an email the minute a new NYC affordable-housing lottery, Mitchell-Lama waitlist or re-rental opens in the borough you choose. Housing Connect, HCR and the HPD marketing agents' own boards, checked every 10 minutes." />
+<meta name="description" content="Get an email when a new NYC affordable-housing lottery, Mitchell-Lama waitlist or re-rental opens in the borough you choose. Housing Connect, HCR and the HPD marketing agents' own boards, checked every 10 minutes." />
 <link rel="canonical" href="https://findacrib.com/alerts/" />
 <meta name="robots" content="index,follow" />
 <meta name="theme-color" content="#2b39c8" />
@@ -15,14 +15,14 @@
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="Find A Crib" />
 <meta property="og:title" content="Housing lottery &amp; re-rental alerts by borough — Find A Crib" />
-<meta property="og:description" content="An email the minute a new housing lottery or re-rental opens in your borough." />
+<meta property="og:description" content="An email when a new housing lottery or re-rental opens in your borough." />
 <meta property="og:url" content="https://findacrib.com/alerts/" />
 <meta property="og:image" content="https://findacrib.com/og-image.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Housing lottery &amp; re-rental alerts by borough — Find A Crib" />
-<meta name="twitter:description" content="An email the minute a new housing lottery or re-rental opens in your borough." />
+<meta name="twitter:description" content="An email when a new housing lottery or re-rental opens in your borough." />
 <meta name="twitter:image" content="https://findacrib.com/og-image.png" />
 <script src="/static/supabase/supabase.js"></script>
 <script src="/config.js?v=2"></script>
@@ -196,12 +196,14 @@
 </header>
 
 <main>
-  <h1>An email the minute a new housing lottery or re-rental opens in your borough</h1>
+  <h1>Alerts when a new housing lottery or re-rental opens in your borough</h1>
   <p class="lede">
     Affordable apartments in New York go to whoever applies first, or to whoever applies at all before the
     deadline. We watch <strong>NYC Housing Connect</strong>, <strong>HCR's HousingSearch</strong> (state lotteries
     and Mitchell-Lama waitlists) and the re-rental boards of every <strong>HPD-approved marketing agent</strong>,
-    every 10 minutes, and email you the moment something new appears where you want to live.
+    every 10 minutes. Every morning at <strong>8 AM</strong> you get one email with what opened where you want
+    to live. <strong>Re-rentals go first come, first served</strong> — with <a href="/?plus=realtime&amp;src=alerts-page">Find A Crib Plus</a>
+    you hear the minute each one opens instead (first month on us).
   </p>
 
   <!-- Alerts need an account (2026-09-08). The form stays hidden until the
@@ -274,7 +276,7 @@
 
   <div class="card" id="digestoff" hidden>
     <b>Stop the Tuesday round-up?</b>
-    <p class="hint" style="font-size:14px">You'll keep getting an email the minute a lottery or re-rental opens in your boroughs — only the weekly round-up stops.</p>
+    <p class="hint" style="font-size:14px">You'll keep getting your alerts for new lotteries and re-rentals in your boroughs — only the weekly round-up stops.</p>
     <button class="submit" id="digestoff-btn" type="button">Stop the round-up</button>
     <div class="err" id="digestoff-err" hidden></div>
   </div>
@@ -404,9 +406,10 @@
           var fit = [];
           if (x.j.max_rent) fit.push('rent up to $' + Number(x.j.max_rent).toLocaleString() + '/mo');
           if (x.j.income) fit.push('an income band that includes $' + Number(x.j.income).toLocaleString() + '/yr');
-          var line = 'the minute a new ' + what + ' opens in ' + phrase(x.j.boroughs || boros)
+          var line = 'at 8 AM each day when a new ' + what + ' has opened in ' + phrase(x.j.boroughs || boros)
             + (fit.length ? ' with ' + fit.join(' and ') : '') + '.';
-          $('ok-text').textContent = (btn.dataset.editing ? 'Saved. ' : '') + 'We’ll email ' + email + ' ' + line;
+          $('ok-text').textContent = (btn.dataset.editing ? 'Saved. ' : '') + 'We’ll email ' + email + ' ' + line
+            + ' Re-rentals go first come, first served — Find A Crib Plus sends them the minute they open.';
           $('ok').hidden = false;
           try { gtag('event', 'alert_signup', { boroughs: boros.join(','), kinds: kinds.join(',') }); } catch (e) {}
           return;

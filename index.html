@@ -533,6 +533,11 @@
   .paywall-price .amt { font-size: 44px; font-weight: 800; letter-spacing: -1px; }
   .paywall-price .per { font-size: 20px; color: var(--ink-2); }
   .feat-card.q-out, .hc-card.q-out { display: none !important; }
+  .alert-rt { display: flex; align-items: flex-start; gap: 6px; }
+  .alert-rt a { font-weight: 700; color: #5b21b6; }
+  html[data-theme="dark"] .alert-rt a { color: #c4b5fd; }
+  .alert-rt .rt-x { border: 0; background: transparent; color: var(--ink-2); font-size: 14px; cursor: pointer; padding: 0 4px; line-height: 1.4; }
+  .alert-on { color: var(--ink-2); }
   .paywall-trial { margin: -8px 0 14px; font-size: 15px; font-weight: 600; color: var(--ink-2); }
   .paywall-card #paywall-subscribe { padding: 19px; font-size: 20px; border-radius: 14px; }
   .paywall-fine { text-align: center; font-size: 15px; color: var(--ink-2); margin: 14px 0 0; }
@@ -1606,7 +1611,7 @@
     </div>
     <!-- Phones: Alerts sits right of Saved (asked 2026-09-08). Desktop has its
          own Alerts chip at the end of the row, so this one is mobile-only. -->
-    <a class="filter-pill desktop-chip mobile-only nyc-only" id="pill-alerts-m" href="/alerts/?src=chip-m" title="An email the minute a new lottery or re-rental opens in your borough">🔔 Alerts</a>
+    <a class="filter-pill desktop-chip mobile-only nyc-only" id="pill-alerts-m" href="/alerts/?src=chip-m" title="A daily 8 AM email when a new lottery or re-rental opens in your borough (real-time with Plus)">🔔 Alerts</a>
     <!-- iPhones only (asked 2026-09-09): the App Store link right of Alerts.
          html.ios is set by the head script; Android and desktop never see it. -->
     <a class="filter-pill desktop-chip mobile-only nyc-only ios-only" id="pill-app-m" href="https://apps.apple.com/us/app/find-a-crib/id6807549249" rel="noopener" title="Find A Crib for iPhone — the same map and filters, on the App Store">📲 iPhone app</a>
@@ -1715,7 +1720,7 @@
         <div style="font-size:11px;color:var(--ink-2);margin-top:8px">HPD registers a managing agent for most buildings but a contact number for far fewer. This narrows the map to the ones you can actually call.</div>
       </div>
     </div>
-    <a class="filter-pill desktop-chip desktop-only nyc-only" href="/alerts/?src=chip" title="An email the minute a new lottery or re-rental opens in your borough">🔔 Alerts</a>
+    <a class="filter-pill desktop-chip desktop-only nyc-only" href="/alerts/?src=chip" title="A daily 8 AM email when a new lottery or re-rental opens in your borough (real-time with Plus)">🔔 Alerts</a>
     <button type="button" id="pill-noads" class="filter-pill desktop-chip desktop-only" hidden title="Find A Crib Plus: no ads anywhere, plus agent phone numbers, saved searches and landlord research">🚫 Remove ads</button>
     <!-- Desktop's counterpart to the mobile #pill-app-m chip: a phone can tap
          straight through to the App Store, a laptop cannot, so this one opens a
@@ -1822,6 +1827,7 @@
          to the top (openPaywall). Big type on purpose (owner, 2026-09-30:
          "a prompt this big with large font"). -->
     <ul class="paywall-feats" id="paywall-feats">
+      <li data-perk="realtime" data-ai><span class="pf-ico">⚡</span><span><b>Real-time alerts</b>Re-rentals go first come, first served. Hear the minute one opens in your boroughs — without Plus, alerts come once a day at 8 AM.</span></li>
       <li data-perk="ai_search" data-ai><span class="pf-ico">✨</span><span><b>Search in plain words</b>“2 bed under $2,500 near Prospect Park, no violations” — and the map sets every filter</span></li>
       <li data-perk="apply_help" data-ai><span class="pf-ico">📝</span><span><b>Help me apply</b>The steps, the documents to gather and a ready-to-send email to the agent, for every re-rental</span></li>
       <li data-perk="rent_check" data-ai><span class="pf-ico">💵</span><span><b>Is this rent fair?</b>Every advertised rent checked against the neighborhood and HUD’s fair-market rent</span></li>
@@ -1914,7 +1920,7 @@
       <span class="label">City</span>
       <div id="profile-cities" class="profile-cities"></div>
     </div>
-    <button id="profile-upgrade" type="button" class="auth-submit" hidden>Get Plus — first month on us</button>
+    <button id="profile-upgrade" type="button" class="auth-submit" hidden>⚡ Get Plus — real-time alerts, first month on us</button>
     <div class="profile-row profile-toggle-row">
       <div>
         <div class="profile-feat">🔔 Saved-building alerts</div>
@@ -1932,7 +1938,7 @@
     <div class="profile-row profile-toggle-row nyc-only">
       <div>
         <div class="profile-feat">🏛️ Lottery &amp; re-rental alerts</div>
-        <div class="profile-feat-sub">An email the minute a new housing lottery or re-rental opens in your borough.</div>
+        <div class="profile-feat-sub">A daily 8 AM email when a new housing lottery or re-rental opens in your borough — the minute it opens with Plus.</div>
       </div>
       <a class="folder-new" href="/alerts/" style="text-decoration:none;white-space:nowrap">Set up →</a>
     </div>
@@ -2811,7 +2817,7 @@ function favActive() {
   async function refreshPlus() {
     plusActive = false; plusKnown = false;
     if (!authUser) { try { localStorage.removeItem('fac.noads'); } catch (e) {} }
-    if (!supaClient || !authUser) return;
+    if (!supaClient || !authUser) { if (typeof loadAlertSub === 'function') loadAlertSub(); return; }
     try {
       // Ask the server the same question every gated feature asks (has_plus is
       // SECURITY DEFINER, so RLS and a second subscription row cannot turn a
@@ -2834,6 +2840,7 @@ function favActive() {
     // skips Mediavine from the next page on (only a confirmed answer changes it).
     if (plusKnown) { try { if (plusActive) localStorage.setItem('fac.noads', '1'); else localStorage.removeItem('fac.noads'); } catch (e) {} }
     if (plusKnown) document.documentElement.classList.toggle('fac-noads', !!plusActive);
+    loadAlertSub();   // alert prompts depend on Plus and on being subscribed (2026-10-06)
     { const np = document.getElementById('pill-noads'); if (np) np.hidden = !!plusActive || FEATURES_FREE; }
     if (plusUpsellPending) { plusUpsellPending = false; if (plusKnown && !plusActive) openPaywall(null, paywallSource); }
     // Membership is only known once this resolves, and the callers above run
@@ -6203,14 +6210,54 @@ function favActive() {
   // not Plus — alerts were Plus only 2026-09-30 to 10-01); the borough the tile is in is preselected there.
   const ALERT_BORO = { 'Manhattan': 'M', 'Brooklyn': 'Bk', 'Queens': 'Q', 'Bronx': 'Bx',
                        'The Bronx': 'Bx', 'Staten Island': 'SI' };
-  function alertLink(borough, kind, src, short) {
+  // Since 2026-10-06 alerts arrive in a daily 8 AM digest; real-time is Plus.
+  // Someone already subscribed (and without Plus) sees the real-time offer
+  // instead — "re-rentals go first come, first served" — until they dismiss it,
+  // which is for good. ALERT_SUB: null until known, then {subscribed}.
+  let ALERT_SUB = null;
+  function rtDismissed() {
+    try { if (localStorage.getItem('fac.rtDismissed')) return true; } catch (e) {}
+    return !!(authUser && authUser.user_metadata && authUser.user_metadata.rt_dismissed);
+  }
+  function alertLinkHtml(borough, kind, src, short) {
     const code = ALERT_BORO[borough] || '';
     const what = kind === 'lottery' ? 'lottery' : 're-rental';
     const where = code ? (code === 'Bx' ? 'the Bronx' : borough) : 'NYC';
-    const text = short ? `🔔 Alert me to new ${what === 'lottery' ? 'lotteries' : 're-rentals'} in ${esc(where)}`
-                       : `🔔 Email me the minute a new ${what} opens in ${esc(where)}`;
-    return `<a class="alert-link" href="/alerts/?boro=${code}&kind=${kind}&src=${src}">${text}</a>`;
+    const data = `data-al-boro="${esc(borough || '')}" data-al-kind="${kind}" data-al-src="${src}" data-al-short="${short ? 1 : ''}"`;
+    if (ALERT_SUB && ALERT_SUB.subscribed) {
+      if (plusActive || rtDismissed()) return `<span class="alert-link alert-on" ${data}>🔔 Your ${plusActive ? 'real-time' : 'daily 8 AM'} alerts are on</span>`;
+      return `<span class="alert-link alert-rt" ${data}><a href="#" data-rt="open">⚡ Re-rentals go first come, first served — get real-time alerts, not 8 AM</a>`
+           + `<button type="button" class="rt-x" data-rt="dismiss" aria-label="Don't show this again">✕</button></span>`;
+    }
+    const text = short ? `🔔 Daily 8 AM alerts for new ${what === 'lottery' ? 'lotteries' : 're-rentals'} in ${esc(where)}`
+                       : `🔔 Get a daily 8 AM email when a new ${what} opens in ${esc(where)}`;
+    return `<a class="alert-link" ${data} href="/alerts/?boro=${code}&kind=${kind}&src=${src}">${text}</a>`;
   }
+  function alertLink(borough, kind, src, short) { return alertLinkHtml(borough, kind, src, short); }
+  function repaintAlertLinks() {
+    document.querySelectorAll('[data-al-kind]').forEach(el => {
+      el.outerHTML = alertLinkHtml(el.dataset.alBoro, el.dataset.alKind, el.dataset.alSrc, !!el.dataset.alShort);
+    });
+  }
+  async function loadAlertSub() {
+    if (!authUser || !supaClient) { ALERT_SUB = null; repaintAlertLinks(); return; }
+    try {
+      const tok = (await supaClient.auth.getSession()).data.session.access_token;
+      const r = await fetch('/api/alerts/prefs', { headers: { Authorization: 'Bearer ' + tok } });
+      const j = r.ok ? await r.json() : null;
+      ALERT_SUB = j ? { subscribed: !!(j.exists && !j.unsubscribed) } : null;
+    } catch (e) { ALERT_SUB = null; }
+    repaintAlertLinks();
+  }
+  document.addEventListener('click', e => {
+    const t = e.target.closest('[data-rt]'); if (!t) return;
+    e.preventDefault(); e.stopPropagation();
+    if (t.dataset.rt === 'open') { track('realtime_upsell_click', { src: 'tile' }); openPaywall(null, 'realtime'); return; }
+    try { localStorage.setItem('fac.rtDismissed', '1'); } catch (err) {}
+    if (supaClient && authUser) supaClient.auth.updateUser({ data: { rt_dismissed: true } }).catch(() => {});
+    track('realtime_upsell_dismiss', {});
+    repaintAlertLinks();
+  }, true);
 
   // ---------- NYC Housing Connect lotteries ----------
   // A separate feed and a separate badge from the re-rental tiles above, on
@@ -8188,7 +8235,7 @@ function favActive() {
   let paywallSource = 'other';
   // While everything else is free, Plus is the AI features (owner,
   // 2026-10-03) — and no ads, which paying members keep.
-  const AI_SOURCES = new Set(['ai_search', 'rent_check', 'apply_help', 'profile']);
+  const AI_SOURCES = new Set(['realtime', 'ai_search', 'rent_check', 'apply_help', 'profile']);
   function openPaywall(bbl, source) {
     if (FEATURES_FREE && !AI_SOURCES.has(source)) return;   // the free features are never sold
     { const feats = document.getElementById('paywall-feats');
@@ -8198,7 +8245,7 @@ function favActive() {
     pendingPhoneBbl = bbl || null;            // remember what they wanted, to reveal after checkout
     paywallSource = source || (bbl ? 'phone' : 'other');
     // Lead with what they came for.
-    const TITLES = { ai_search: 'Search in plain words', rent_check: 'Is this rent fair?', apply_help: 'Help me apply', noads: 'Find A Crib, with no ads',
+    const TITLES = { realtime: 'Get alerts the minute they open', ai_search: 'Search in plain words', rent_check: 'Is this rent fair?', apply_help: 'Help me apply', noads: 'Find A Crib, with no ads',
                      bedbugs: 'See every building\u2019s bedbug record', rodents: 'See every building\u2019s rat inspections',
                      phone: 'Call who actually runs the building', research: 'Research any landlord',
                      saved_search: 'Save your searches', folders: 'Organize your saved homes' };
@@ -8272,6 +8319,8 @@ function favActive() {
     // ?plus=1 is the "unlock" link from the gated pages. Signed-out users get
     // the sign-in step first — startCheckout() already routes them there.
     if (p.get('plus') === '1') plusUpsellPending = true;
+    // ?plus=realtime: the 8 AM digest's "Get real-time alerts" button (2026-10-06).
+    if (p.get('plus') === 'realtime') { plusUpsellPending = true; paywallSource = 'realtime'; track('realtime_upsell_click', { src: p.get('src') || 'link' }); }
     // ?plus=alerts: old "unlock your alerts" emails. Alerts need no Plus since
     // 2026-10-01, so send them to the alerts page instead of the paywall.
     if (p.get('plus') === 'alerts') { location.replace('/alerts/'); return; }
@@ -8290,7 +8339,7 @@ function favActive() {
   // Alerts need an account (asked 2026-09-08): every /alerts/ link in the
   // header, chips and menu opens the sign-up modal when signed out, and the
   // page opens on its own once the session lands.
-  const ALERTS_GATE_MSG = 'Create an account to set up alerts — an email the minute a lottery or re-rental opens in your borough.';
+  const ALERTS_GATE_MSG = 'Create an account to set up alerts — a daily 8 AM email when a lottery or re-rental opens in your borough.';
   // Alerts are open to every account again (owner, 2026-10-01; they were Plus
   // 2026-09-30 to 10-01). Signed out: the sign-up modal, then on to the
   // alerts page they clicked once the session lands. Signed in: straight there.

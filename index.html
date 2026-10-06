@@ -246,6 +246,21 @@
   html, body { margin: 0; height: 100%; font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: var(--ink); background: var(--surface); }
   a { color: var(--blue); text-decoration: none; }
 
+  .app-banner { position: relative; background: #f4f2ee; border-bottom: 1px solid var(--line); padding: 12px 56px; }
+  .app-banner[hidden] { display: none; }
+  .ab-inner { display: flex; align-items: center; justify-content: center; gap: 18px; }
+  .ab-icon { width: 56px; height: 56px; border-radius: 13px; box-shadow: 0 1px 4px rgba(0,0,0,.18); }
+  .ab-text { display: flex; flex-direction: column; color: #1a1a1a; }
+  .ab-text b { font-size: 17px; } .ab-text span { font-size: 15px; color: #555; }
+  .ab-qr { display: block; background: #fff; border: 1px solid #e3e0da; border-radius: 10px; padding: 6px; margin-left: 12px; }
+  .ab-qr svg { display: block; width: 72px; height: 72px; shape-rendering: crispEdges; }
+  .ab-scan { font-size: 14px; color: #666; line-height: 1.35; }
+  .ab-close { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border: 0;
+    border-radius: 50%; background: transparent; color: #444; font-size: 18px; cursor: pointer; }
+  .ab-close:hover { background: rgba(0,0,0,.06); }
+  html[data-theme="dark"] .app-banner { background: #1d2126; }
+  html[data-theme="dark"] .ab-text { color: #eee; } html[data-theme="dark"] .ab-text span,
+  html[data-theme="dark"] .ab-scan { color: #aaa; } html[data-theme="dark"] .ab-close { color: #ccc; }
   header.topbar {
     position: sticky; top: 0; z-index: 1000;
     background: var(--surface); border-bottom: 1px solid var(--line);
@@ -1538,6 +1553,19 @@
 </style>
 </head>
 <body>
+<!-- Desktop "get the app" banner (owner, 2026-10-05: "we need this iphone/ipad
+     banner for the findacrib desktop web", like marracat.com's). iPhones and
+     iPads get Safari's own Smart App Banner (the apple-itunes-app tag) instead.
+     The QR is the App Store one from the app modal, cloned in at runtime. -->
+<div id="app-banner" class="app-banner" hidden>
+  <div class="ab-inner">
+    <img class="ab-icon" src="/apple-touch-icon.png?v=2" alt="" width="56" height="56">
+    <div class="ab-text"><b>Find A Crib for iPhone and iPad</b><span>Every rent-stabilized building and re-rental, in your pocket.</span></div>
+    <a class="ab-qr" href="https://apps.apple.com/us/app/find-a-crib/id6807549249?ct=desktop-banner" target="_blank" rel="noopener" aria-label="Find A Crib on the App Store"></a>
+    <div class="ab-scan">Scan with your<br>iPhone or iPad camera</div>
+  </div>
+  <button type="button" class="ab-close" aria-label="Hide the app banner">✕</button>
+</div>
 <header class="topbar">
   <div class="brand"><img class="brand-dot" src="/brand/mark.svg?v=2" alt="" width="22" height="22" decoding="async"><span class="brand-text">Find A Crib<span class="brand-sub">(NYC Rent Stabilized Homes)</span></span></div>
   <nav class="city-nav" id="city-nav" aria-label="City">
@@ -6882,7 +6910,9 @@ function favActive() {
   const headerEl = document.querySelector('header.topbar');
   let headerH = 0;
   function syncHeaderHeight() {
-    const h = headerEl.offsetHeight;
+    // The desktop app banner sits above the header and takes room from the map.
+    const ab = document.getElementById('app-banner');
+    const h = headerEl.offsetHeight + (ab && !ab.hidden ? ab.offsetHeight : 0);
     if (h === headerH) return;
     DIAG.hdr++; DIAG.hdrH.push(h); tr('hdr ' + h); if (DIAG.hdrH.length > 10) DIAG.hdrH.shift();   // ResizeObserver → invalidateSize → resize would otherwise loop
     headerH = h;
@@ -6890,6 +6920,25 @@ function favActive() {
     map.invalidateSize();
   }
   window.addEventListener('resize', syncHeaderHeight);
+  // Desktop app banner: wide screens, not iOS/iPadOS (Safari shows its own),
+  // hidden for 30 days after the X.
+  (function () {
+    const ab = document.getElementById('app-banner'); if (!ab) return;
+    let until = 0; try { until = +localStorage.getItem('fac.appBannerHidden') || 0; } catch (e) {}
+    const ios = document.documentElement.classList.contains('ios') || /iPad|iPhone|iPod/.test(navigator.userAgent)
+      || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (ios || !matchMedia('(min-width: 901px)').matches || Date.now() < until) return;
+    const qr = document.querySelector('.qr-code');
+    if (qr) ab.querySelector('.ab-qr').appendChild(qr.cloneNode(true));
+    ab.hidden = false; syncHeaderHeight();
+    track('app_banner_view', {});
+    ab.querySelector('.ab-qr').addEventListener('click', () => track('app_banner_click', {}));
+    ab.querySelector('.ab-close').addEventListener('click', () => {
+      ab.hidden = true; syncHeaderHeight();
+      try { localStorage.setItem('fac.appBannerHidden', String(Date.now() + 30 * 864e5)); } catch (e) {}
+      track('app_banner_close', {});
+    });
+  })();
   // The header is not a fixed height: the chip row empties out in list view, and
   // pills appear/disappear with sign-in and with the city. Measuring it only on
   // resize left --header-h holding the map view's taller number, and the list

@@ -1045,6 +1045,17 @@ class Runner:
         # Safari's Smart App Banner (owner, 2026-10-05) needs this tag in <head>.
         sab = page.evaluate("document.querySelector('meta[name=\"apple-itunes-app\"]')?.content || ''")
         self.ok(sab == 'app-id=6807549249', f'the Smart App Banner tag should name the app: {sab!r}', j)
+        # Desktop "get the app" banner (2026-10-05): desktop only, with the QR,
+        # and the X hides it (remembered).
+        ab = page.evaluate("(()=>{const a=document.getElementById('app-banner'); return {shown: !!a && !a.hidden, qr: !!(a && a.querySelector('.ab-qr svg'))}})()")
+        if device == 'desktop':
+            self.ok(ab['shown'] and ab['qr'], f'desktop should show the app banner with its QR: {ab}', j)
+            page.evaluate("document.querySelector('#app-banner .ab-close').click()")
+            self.ok(page.evaluate("document.getElementById('app-banner').hidden && !!localStorage.getItem('fac.appBannerHidden')"),
+                    'the X should hide the banner and remember it', j)
+            page.evaluate("localStorage.removeItem('fac.appBannerHidden')")
+        elif device == 'phone':
+            self.ok(not ab['shown'], 'iPhones get Safari\'s banner, not ours', j)
         self.ok(not info['overflow'], 'page must not scroll sideways with the chip in the row', j)
         if device == 'phone':
             self.ok(info['ios'], 'an iPhone should be detected as iOS', j)

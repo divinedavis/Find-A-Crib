@@ -1756,3 +1756,13 @@ final class DigestPushTests: XCTestCase {
         XCTAssertEqual(AlertPush.from(userInfo: ["items": info["items"]!], title: "New", body: "")?.digest, false)
     }
 }
+
+
+/// Rating prompt gate (owner, 2026-10-06): signed up AND 3+ visit days.
+final class ReviewGateTests: XCTestCase {
+    func testOnlySignedInPeopleWithThreeVisitDaysAreAsked() {
+        XCTAssertFalse(ReviewPrompt.eligible(signedIn: false, visitDays: 10))
+        XCTAssertFalse(ReviewPrompt.eligible(signedIn: true, visitDays: 2))
+        XCTAssertTrue(ReviewPrompt.eligible(signedIn: true, visitDays: 3))
+    }
+}

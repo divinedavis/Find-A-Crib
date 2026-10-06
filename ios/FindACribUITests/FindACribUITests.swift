@@ -1175,6 +1175,14 @@ final class ReviewPromptUITests: XCTestCase {
             XCTAssertTrue(app.staticTexts[t].exists, "\(t) is missing from the alert screen")
         }
         XCTAssertEqual(app.buttons.matching(identifier: "push-item-open").count, 3, "every item gets its own link")
+        // Without Plus (the UI runner never has it): the 8 AM wording, and the
+        // real-time card as the second card (owner, 2026-10-06).
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS '8 AM round-up'")).firstMatch.exists, "a non-Plus alert screen should say it's the 8 AM round-up")
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'the minute they were posted'")).firstMatch.exists)
+        let card = app.buttons["push-realtime-upsell"]
+        XCTAssertTrue(card.exists, "the real-time card should be on the alert screen")
+        let first = app.staticTexts["2067 Anthony Avenue, Unit 305"].frame.minY, second = app.staticTexts["1952 Anthony Avenue. Unit 2F"].frame.minY
+        XCTAssertTrue(card.frame.minY > first && card.frame.minY < second, "the real-time card should sit between the first and second listing")
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "push-sheet"; shot.lifetime = .keepAlways; add(shot)
         XCTAssertFalse(app.alerts["Get alerts on this phone?"].exists, "the launch card must not stack on a tapped alert")
     }

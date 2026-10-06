@@ -114,6 +114,7 @@ final class AuthService {
             case .initialSession, .signedIn, .tokenRefreshed, .userUpdated:
                 let wasSignedIn = session != nil
                 session = s
+                ReviewPrompt.shared.signedIn = s != nil
                 if s != nil {
                     // A brand-new account: the rating ask comes on the next open today.
                     if event == .signedIn, let u = s?.user, Date().timeIntervalSince(u.createdAt) < 600 { ReviewPrompt.shared.noteSignup() }
@@ -121,6 +122,7 @@ final class AuthService {
                     if !wasSignedIn || event == .signedIn { await syncSaves(); await plus?.sync() }
                 }
             case .signedOut, .userDeleted:
+                ReviewPrompt.shared.signedIn = false
                 session = nil; hasPlus = false; contactsCache = [:]; phoneCache = [:]
             default: break
             }

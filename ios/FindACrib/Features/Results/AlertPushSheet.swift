@@ -68,17 +68,23 @@ struct AlertPushSheet: View {
                 VStack(alignment: .leading, spacing: 14) {
                     Text(push.title).font(.se(26, .bold)).foregroundStyle(SE.ink)
                         .accessibilityIdentifier("push-sheet-title")
-                    if push.digest {
+                    // Without Plus every alert is the 8 AM round-up (2026-10-06),
+                    // whatever the payload says (a pre-digest send has no flag).
+                    if push.digest || !auth.hasPlus {
                         Text(push.items.count == 1 ? "From your 8 AM round-up. Tap through to apply on the agent's site."
                                                    : "\(push.items.count) from your 8 AM round-up. Tap one to see it on the agent's site.")
                             .font(.se(16)).foregroundStyle(SE.ink2)
-                        if !auth.hasPlus { RealtimeUpsell(source: "digest_push") { showPlus = true } }
                     } else {
                         Text(push.items.count == 1 ? "Opened the minute it was posted. Tap through to apply on the agent's site."
                                                    : "\(push.items.count) opened the minute they were posted. Tap one to see it on the agent's site.")
                             .font(.se(16)).foregroundStyle(SE.ink2)
                     }
-                    ForEach(push.items) { item in row(item) }
+                    // The real-time offer is the SECOND card, the same size as a
+                    // listing's (owner, 2026-10-06), right after the first item.
+                    ForEach(Array(push.items.enumerated()), id: \.element.id) { i, item in
+                        row(item)
+                        if i == 0 && !auth.hasPlus { realtimeCard }
+                    }
                     Text("Change which boroughs you hear about under Profile → Alerts.")
                         .font(.se(14)).foregroundStyle(SE.ink3).padding(.top, 4)
                 }
@@ -89,6 +95,30 @@ struct AlertPushSheet: View {
         }
         .onAppear { Analytics.shared.track("push_open", ["items": push.items.count, "digest": push.digest]) }
         .sheet(isPresented: $showPlus) { PaywallView(source: "realtime") }
+    }
+
+    private var realtimeCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                SEBadge(text: "Plus", icon: "bolt.fill", fill: Color(hex: 0x5B21B6), ink: .white)
+                Text("Real-time alerts").font(.se(15, .semibold)).foregroundStyle(SE.ink2)
+            }
+            Text("Re-rentals go first come, first served").font(.se(20, .bold)).foregroundStyle(SE.ink)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("The first eligible applicant usually gets the apartment. With Plus you hear the minute one opens, not at 8 AM the next day. First month on us.")
+                .font(.se(15)).foregroundStyle(SE.ink2).fixedSize(horizontal: false, vertical: true)
+            Button {
+                Analytics.shared.track("realtime_upsell_click", ["src": "push_sheet"])
+                showPlus = true
+            } label: {
+                Text("Get real-time alerts").font(.se(18, .bold)).foregroundStyle(.white)
+                    .frame(maxWidth: .infinity).frame(height: 46).background(Color(hex: 0x5B21B6))
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("push-realtime-upsell")
+        }
+        .padding(16)
+        .seCard()
     }
 
     private func row(_ item: AlertPush.Item) -> some View {

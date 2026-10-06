@@ -39,6 +39,20 @@ final class ReviewPrompt {
     /// is up, or there was already an ask today) passes it to the next open.
     nonisolated static let askOnOpen = 7
 
+    /// Nobody is asked to rate until they have an account AND have come back
+    /// on at least this many different days (owner, 2026-10-06: "only users who
+    /// have signed up and have visited the site 3 times should see this rating
+    /// prompt"). Days, not opens: switching back from another app counts as an
+    /// open, and three of those in a minute is not three visits.
+    nonisolated static let minVisitDays = 3
+    nonisolated static func eligible(signedIn: Bool, visitDays: Int) -> Bool {
+        signedIn && visitDays >= minVisitDays
+    }
+    /// Kept current by AuthService.
+    var signedIn = false
+    private var visitDays: Int { defaults.integer(forKey: "review.visitDays") }
+    private var isEligible: Bool { Self.eligible(signedIn: signedIn, visitDays: visitDays) }
+
     nonisolated static func seventhOpenDue(opens: Int, done: Bool, lastAskDay: String?, today: String) -> Bool {
         !done && opens >= askOnOpen && lastAskDay != today
     }
@@ -115,7 +129,13 @@ final class ReviewPrompt {
         if CommandLine.arguments.contains("--no-launch-prompt") { return }
         let opens = defaults.integer(forKey: "review.opens") + 1
         defaults.set(opens, forKey: "review.opens")
-        if pushCardShowing { return }
+        let today = Self.dayKey(now)
+        if defaults.string(forKey: "review.lastOpenDay") != today {
+            defaults.set(today, forKey: "review.lastOpenDay")
+            defaults.set(visitDays + 1, forKey: "review.visitDays")
+        }
+        self.signedIn = signedIn
+        if pushCardShowing || !isEligible { return }
         if Self.seventhOpenDue(opens: opens, done: defaults.bool(forKey: "review.seventhDone"),
                                lastAskDay: defaults.string(forKey: "review.lastAskDay"),
                                today: Self.dayKey(now)) {
@@ -140,7 +160,7 @@ final class ReviewPrompt {
     /// save — the gate decides, and a declined ask is never retried inside the
     /// quiet window.
     func record(_ moment: Moment) {
-        guard Self.shouldAsk(version: version,
+        guard isEligible, Self.shouldAsk(version: version,
                              lastVersion: defaults.string(forKey: "review.lastVersion"),
                              lastAsked: defaults.object(forKey: "review.lastAsked") as? Date) else { return }
         ask(moment, forced: false)

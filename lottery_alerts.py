@@ -459,11 +459,10 @@ def render_alert(items, sub, emailkit, upsell=False):
     blocks = []
     if upsell:
         # The 8 AM digest (owner, 2026-10-06): say what Plus changes, first.
-        blocks.append({"type": "callout", "tone": "good",
-                       "heading": "Re-rentals go first come, first served — don't wait until 8 AM",
-                       "items": ["The first eligible applicant usually gets the apartment, and some of these opened "
-                                 "yesterday. With Find A Crib Plus, alerts arrive the minute a re-rental or lottery "
-                                 "opens. Your first month is on us."]})
+        blocks.append({"type": "upsell",
+                       "heading": "Re-rentals go first come, first served",
+                       "text": "Get alerts the minute one opens — not the next morning at 8. First month on us.",
+                       "button": ("Get real-time alerts", UPSELL_URL)})
 
     def rows(group):
         return [{"text": i["text"], "sub": i["sub"], "url": i["url"]} for i in group]
@@ -497,8 +496,7 @@ def render_alert(items, sub, emailkit, upsell=False):
         intro=(f"Your daily 8 AM round-up of what opened in {where}." if upsell
                else f"You asked to hear the minute something opens in {where}."),
         blocks=blocks,
-        cta=(("Get real-time alerts with Plus", UPSELL_URL) if upsell
-             else ("See every open lottery and re-rental", f"{SITE}/?src=alert")),
+        cta=("See every open lottery and re-rental", f"{SITE}/?src=alert"),
         footer_note=f"You are subscribed at {sub['email']} for {where}{filter_words(sub)}. "
                     f"Change boroughs or filters at {SITE}/alerts/. "
                     + ("One email a day, at 8 AM." if upsell else "Real-time with Find A Crib Plus."),

@@ -406,10 +406,25 @@ def _note(b):
             f'background:{PAPER}">{esc(b["text"])}</p>', f"  {b['text']}")
 
 
+def _upsell(b):
+    """A short pitch with its own button inside the box (2026-10-06, the
+    8 AM alert digest's "get real-time alerts"): heading, one line, and a
+    rectangular button. {"heading", "text", "button": (label, url)}."""
+    label, url = b["button"]
+    html = (f'<div style="margin:0 0 18px;padding:16px 18px;border:1px solid #c4b5fd;border-radius:10px;'
+            f'background:#f5f3ff">'
+            f'<div style="font-weight:700;font-size:16px;color:#3b0764;line-height:1.35;margin:0 0 6px">{esc(b["heading"])}</div>'
+            f'<div style="font-size:14px;color:#4c1d95;line-height:1.5;margin:0 0 12px">{esc(b["text"])}</div>'
+            f'<a href="{esc(safe_url(url))}" style="display:block;text-align:center;background:#5b21b6;color:#ffffff;'
+            f'text-decoration:none;font-weight:700;font-size:15px;padding:12px 16px;border-radius:4px">{esc(label)}</a>'
+            f'</div>')
+    return html, f"{b['heading']}\n  {b['text']}\n  {label}: {url}"
+
+
 RENDERERS = {"paragraph": _paragraph, "card": _card, "steps": _steps,
              "quote": _quote, "stats": _stats, "section": _section, "tiles": _tiles,
              "progress": _progress, "table": _table, "status": _status,
-             "callout": _callout, "chips": _chips, "note": _note}
+             "callout": _callout, "chips": _chips, "note": _note, "upsell": _upsell}
 
 
 # ------------------------------------------------------------------- render

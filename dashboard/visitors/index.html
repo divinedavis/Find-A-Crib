@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
-<title>Owner Dashboard — Signed Up Users</title>
+<title>Owner Dashboard — Visitors</title>
 <!-- Paint the saved theme before the first frame — see /dashboard/. -->
 <script>
 (function(){
@@ -249,8 +249,8 @@
       <div class="side-head">Apps</div>
       <a class="nav-item site-btn on" href="/dashboard/?site=fac"><span class="nav-ico">🏙️</span> Find A Crib</a>
       <div class="sub">
-        <a class="nav-item active"><span class="nav-ico">☺</span> Signed Up Users</a>
-        <a class="nav-item" href="/dashboard/visitors/"><span class="nav-ico">👣</span> Visitors</a>
+        <a class="nav-item" href="/dashboard/users/"><span class="nav-ico">☺</span> Signed Up Users</a>
+        <a class="nav-item active"><span class="nav-ico">👣</span> Visitors</a>
       </div>
       <a class="nav-item site-btn" href="/dashboard/?site=nemo"><span class="nav-ico">🏠</span> NEMO Gutter</a>
       <a class="nav-item site-btn" href="/dashboard/?site=crease"><span class="nav-ico">👔</span> Crease</a>
@@ -280,8 +280,8 @@
     <div class="content">
       <div class="page-head">
         <div>
-          <h1>Signed Up Users</h1>
-          <div class="sub">Everyone who created an account. Click a column to sort, the ▾ beside it to filter, or a number above to filter by it.</div>
+          <h1>Visitors</h1>
+          <div class="sub">Everyone who visited the website or opened the iPhone app, signed up or not (your own visits left out). Click a column to sort, the ▾ beside it to filter, or a number above to filter by it. Phone and Last device for website visitors start 6 Oct 2026.</div>
         </div>
         <input class="usearch" id="usearch" type="text" placeholder="Search name, email, device, iphone, ipad, android, or 1.2…">
       </div>
@@ -292,12 +292,12 @@
         <div class="tbl-wrap">
           <table class="utable">
             <thead><tr id="uhead">
-              <th data-sort="name" tabindex="0" role="button" aria-sort="none">Name<span class="sarr"></span></th><th data-sort="ios_app" tabindex="0" role="button" aria-sort="none" title="The app version last seen from this account's iPhone app, from its build number. — = never signed in from the app.">iOS version<span class="sarr"></span></th><th data-sort="alerts" tabindex="0" role="button" aria-sort="none" title="On borough lottery/re-rental emails, or saved-building emails">Alerts<span class="sarr"></span></th><th data-sort="plan" tabindex="0" role="button" aria-sort="none" title="Find A Crib Plus: Plus = paying (Stripe or the App Store); Comped / Founding / Referral = has Plus without paying; No = not on Plus. Sorts paying first.">Plus<span class="sarr"></span></th><th data-sort="last_seen" tabindex="0" role="button" aria-sort="none" title="The last time this account did anything signed in — a visit or an app session, not only an explicit login. Click a date in the column to see when they joined.">Last signed in<span class="sarr"></span></th><th data-sort="phone" tabindex="0" role="button" aria-sort="none" title="iPhone or Android, from any signed-in session (web or the iPhone app). — = only seen on a computer/iPad.">Phone<span class="sarr"></span></th><th data-sort="device" tabindex="0" role="button" aria-sort="none" title="Which front end their newest session is on: the app (iPhone, iPad or Mac, once they are on build 96+), a browser on a phone or tablet (mobile web), or a browser on a computer.">Last device<span class="sarr"></span></th>
+              <th data-sort="name" tabindex="0" role="button" aria-sort="none">Name<span class="sarr"></span></th><th data-sort="ios_app" tabindex="0" role="button" aria-sort="none" title="The newest app version this visitor used, from its build number. — = never opened the iPhone app.">iOS version<span class="sarr"></span></th><th data-sort="alerts" tabindex="0" role="button" aria-sort="none" title="Signed up and on borough lottery/re-rental emails or saved-building emails. Visitors without an account can't be.">Alerts<span class="sarr"></span></th><th data-sort="plan" tabindex="0" role="button" aria-sort="none" title="Find A Crib Plus: Plus = paying (Stripe or the App Store); Comped / Founding / Referral = has Plus without paying; No = not on Plus. Sorts paying first.">Plus<span class="sarr"></span></th><th data-sort="last_seen" tabindex="0" role="button" aria-sort="none" title="The last time this visitor did anything on the website or in the app. Click a date in the column to see when they first came.">Last seen<span class="sarr"></span></th><th data-sort="phone" tabindex="0" role="button" aria-sort="none" title="iPhone or Android, from the app or (from 6 Oct 2026) the website. — = a computer/iPad, or a website visit before 6 Oct.">Phone<span class="sarr"></span></th><th data-sort="device" tabindex="0" role="button" aria-sort="none" title="Which front end their newest session is on: the app (iPhone, iPad or Mac, once they are on build 96+), a browser on a phone or tablet (mobile web), or a browser on a computer.">Last device<span class="sarr"></span></th>
             </tr></thead>
             <tbody id="urows"></tbody>
           </table>
         </div>
-        <div class="empty hidden" id="empty">No users match your search.</div>
+        <div class="empty hidden" id="empty">No visitors match your search.</div>
       </div>
 
       <div class="foot">🔒 Private — only you can see this. Live data, refreshed on load.</div>
@@ -367,7 +367,7 @@
     app.classList.add('hidden'); gate.classList.remove('hidden');
     var t=el('gate-title'), m=el('gate-msg'), btn=el('google-btn');
     if(kind==='forbidden'){ t.textContent='Not your dashboard'; m.textContent='You are signed in as '+(email||'another account')+', which can’t view this page.'; btn.textContent='Sign out'; btn.onclick=function(){ sb.auth.signOut(); }; }
-    else if(kind==='error'){ t.textContent='Something went wrong'; m.textContent='Couldn’t load users. Try again in a moment.'; }
+    else if(kind==='error'){ t.textContent='Something went wrong'; m.textContent='Couldn’t load visitors. Try again in a moment.'; }
     else { t.textContent='Private dashboard'; m.textContent='This is the Find A Crib owner dashboard. Sign in to continue.'; }
   }
   // An access token is only good for an hour. The captured session can be
@@ -415,7 +415,7 @@
     adoptProfileTheme(s);
     if(!session){ shown = false; showGate('signin'); return; }
     var res;
-    try{ res = await fetch('/api/dashboard-users', { headers:{ Authorization:'Bearer '+(await token()) } }); }
+    try{ res = await fetch('/api/dashboard-visitors', { headers:{ Authorization:'Bearer '+(await token()) } }); }
     catch(e){ if(mine===routeSeq) showGate('error'); return; }
     // A 401 means this token is dead, not that the visitor is signed out.
     // Force one refresh and retry before ever showing the sign-in card.
@@ -424,7 +424,7 @@
       try{ var rr = await sb.auth.refreshSession(); fresh = rr.data && rr.data.session; }catch(e){}
       if(fresh){
         session = fresh;
-        try{ res = await fetch('/api/dashboard-users', { headers:{ Authorization:'Bearer '+fresh.access_token } }); }
+        try{ res = await fetch('/api/dashboard-visitors', { headers:{ Authorization:'Bearer '+fresh.access_token } }); }
         catch(e){ if(mine===routeSeq) showGate('error'); return; }
       }
     }
@@ -442,15 +442,14 @@
     shown = true;
     gate.classList.add('hidden'); app.classList.remove('hidden');
   }
-  el('google-btn').onclick = function(){ sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: location.origin + '/dashboard/users/' } }); };
+  el('google-btn').onclick = function(){ sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: location.origin + '/dashboard/visitors/' } }); };
   el('signout').onclick = function(){ sb.auth.signOut(); };
   sb.auth.onAuthStateChange(function(_e, s){ route(s); });
   sb.auth.getSession().then(function(r){ route(r.data.session); });
 
   function renderChips(){
     var total=USERS.length,
-        google=USERS.filter(function(u){return u.provider==='google';}).length,
-        apple=USERS.filter(function(u){return u.provider==='apple';}).length,
+        signedup=USERS.filter(function(u){return !!u.signed_up;}).length,
         paying=USERS.filter(function(u){return u.plan==='plus';}).length,
         // Same definition as the owner dashboard's "comped": a comp, a
         // founding grant or a referral reward — Plus without paying.
@@ -462,9 +461,8 @@
         android=USERS.filter(function(u){return u.phone==='android';}).length,
         returned=USERS.filter(didReturn).length;
     el('chips').innerHTML =
-      chip('', total, 'total users')+
-      chip('google', google, 'via Google')+
-      chip('apple', apple, 'via Apple')+
+      chip('', total, 'total visitors')+
+      chip('signedup', signedup, 'signed up')+
       chip('plus', paying, 'paying Plus')+
       chip('comp', comped, 'comped')+
       chip('returned', returned, 'came back after signup')+
@@ -567,8 +565,7 @@
   // clears it. They read as headline numbers first, so the whole chip is the
   // button and the active one is outlined rather than restyled.
   var CHIPS = {
-    google:   { label:'signed in with Google',      test:function(u){ return u.provider==='google'; } },
-    apple:    { label:'signed in with Apple',       test:function(u){ return u.provider==='apple'; } },
+    signedup: { label:'signed up',                  test:function(u){ return !!u.signed_up; } },
     plus:     { label:'paying for Plus',            test:function(u){ return u.plan==='plus'; } },
     comp:     { label:'comped',                     test:function(u){ return u.plan==='comp'||u.plan==='founding'||u.plan==='referral'; } },
     returned: { label:'came back after signing up', test:didReturn },
@@ -583,7 +580,7 @@
     var on = key && chipKey===key;
     return '<button type="button" class="chip'+(on?' chip-on':'')+'" data-chip="'+esc(key)+'"'
       + ' aria-pressed="'+(on?'true':'false')+'"'
-      + ' title="'+(key ? 'Show only users who '+esc(CHIPS[key].label) : 'Show every user')+'">'
+      + ' title="'+(key ? 'Show only visitors who '+esc(CHIPS[key].label) : 'Show every visitor')+'">'
       + '<b>'+n+'</b><span>'+esc(label)+'</span></button>';
   }
   function daysAgo(n){ return Date.now() - n*86400000; }

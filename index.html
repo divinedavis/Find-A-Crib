@@ -3084,6 +3084,15 @@ function favActive() {
     });
     track('outbound', { kind: 'signup_nudge' });
   }
+  // A function, not a const: track() can run before this line is reached.
+  function devKind() {
+    const ua = navigator.userAgent || '';
+    if (/iPad/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return 'ipad';
+    if (/iPhone|iPod/.test(ua)) return 'iphone';
+    if (/Android/.test(ua)) return 'android';
+    if (/Mobi/.test(ua)) return 'mobile';
+    return 'desktop';
+  }
   function track(event, props) {
     try {
       if (event === 'building_view') maybeSignupNudge();
@@ -3100,7 +3109,9 @@ function favActive() {
         // Every row says which client, which sitting, and where the visitor
         // came from (this session and the first time ever). `touch`/`first`
         // are reserved names: a caller's props must not reuse them.
-        props: Object.assign({ platform: 'web', city: document.documentElement.dataset.city || 'nyc',
+        // dev: the kind of device (2026-10-06), so the Visitors page can show
+        // Phone and Last device for people who never signed in.
+        props: Object.assign({ platform: 'web', dev: devKind(), city: document.documentElement.dataset.city || 'nyc',
                                sid: sessionId(), touch: A.touch, first: A.first }, props || {}),
         path: location.pathname + location.search,
       }).then(() => {}, () => {});

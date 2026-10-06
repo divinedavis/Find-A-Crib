@@ -16,17 +16,18 @@ cd "$(dirname "$0")/.."
 HOST="${DD_HOST:-root@159.203.110.79}"
 DEST=/var/www/divinedavis/dashboard
 
-ssh "$HOST" "mkdir -p $DEST/users $DEST/creators $DEST/marracat-users $DEST/business"
+ssh "$HOST" "mkdir -p $DEST/users $DEST/visitors $DEST/creators $DEST/marracat-users $DEST/business"
 scp -q dashboard/index.html dashboard/og-dashboard.png dashboard/supabase-config.js "$HOST:$DEST/"
 scp -q static/supabase/supabase.js "$HOST:$DEST/supabase.js"
 scp -q dashboard/users/index.html "$HOST:$DEST/users/index.html"
+scp -q dashboard/visitors/index.html "$HOST:$DEST/visitors/index.html"
 scp -q dashboard/creators/index.html "$HOST:$DEST/creators/index.html"
 scp -q dashboard/marracat-users/index.html "$HOST:$DEST/marracat-users/index.html"
 scp -q dashboard/business/index.html "$HOST:$DEST/business/index.html"
 ssh "$HOST" "chown -R www-data:www-data $DEST"
 
 # md5, not a 200: a stale copy answers 200 too.
-for pair in index.html:dashboard/index.html users/index.html:dashboard/users/index.html creators/index.html:dashboard/creators/index.html marracat-users/index.html:dashboard/marracat-users/index.html business/index.html:dashboard/business/index.html \
+for pair in index.html:dashboard/index.html users/index.html:dashboard/users/index.html visitors/index.html:dashboard/visitors/index.html creators/index.html:dashboard/creators/index.html marracat-users/index.html:dashboard/marracat-users/index.html business/index.html:dashboard/business/index.html \
             supabase-config.js:dashboard/supabase-config.js supabase.js:static/supabase/supabase.js; do
   remote=${pair%%:*}; local=${pair#*:}
   live=$(curl -fsS "https://divinedavis.com/dashboard/$remote" | md5)

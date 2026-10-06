@@ -163,6 +163,42 @@ def run_users_table(browser, live):
     context.close()
 
 
+VISITOR_ROWS = [
+    {'visitor_id': 'aaaaaa111', 'name': 'Visitor aaaaaa', 'signed_up': False, 'created_at': '2026-10-06T00:00:00Z',
+     'last_seen': '2026-10-06T01:00:00Z', 'device': 'mobile_web', 'phone': 'iphone', 'alerts': False},
+    {'visitor_id': 'bbbbbb222', 'name': 'App user', 'email': 'a@example.com', 'signed_up': True,
+     'created_at': '2026-09-01T00:00:00Z', 'last_seen': '2026-10-06T02:00:00Z', 'device': 'app',
+     'phone': 'iphone', 'alerts': True, 'plan': 'plus', 'ios_app': True, 'ios_build': '115'},
+]
+
+
+def run_visitors_table(browser, live):
+    """Visitors page (2026-10-06): the Signed Up Users table for every visitor."""
+    context = browser.new_context()
+    page = context.new_page()
+    errors = []
+    page.on('pageerror', lambda error: errors.append(str(error)))
+    if not live:
+        page.route(BASE + '/dashboard/visitors/', lambda route: route.fulfill(
+            path=str(ROOT / 'dashboard/visitors/index.html'), content_type='text/html'))
+        for served, path in (('dashboard/supabase-config.js', 'dashboard/supabase-config.js'),
+                             ('dashboard/supabase.js', 'static/supabase/supabase.js')):
+            page.route(BASE + '/' + served + '*', lambda route, request, path=path: route.fulfill(
+                path=str(ROOT / path), content_type='application/javascript'))
+    page.route('**/auth/v1/**', lambda route: route.fulfill(json=USER)
+               if '/user' in route.request.url else route.fulfill(status=204))
+    page.route('**/api/dashboard-visitors', lambda route: route.fulfill(json={'users': VISITOR_ROWS}))
+    page.goto(BASE + '/dashboard/visitors/' + callback(), wait_until='networkidle')
+    expect(page.locator('#urows tr')).to_have_count(2)
+    expect(page.locator('.page-head h1')).to_have_text('Visitors')
+    expect(page.locator('#chips')).to_contain_text('total visitors')
+    expect(page.locator('#chips')).to_contain_text('signed up')
+    expect(page.locator('#urows tr', has_text='Visitor aaaaaa').locator('td').last).to_contain_text('Mobile web')
+    expect(page.locator('nav')).to_contain_text('Signed Up Users')
+    assert not errors, errors
+    context.close()
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--live', action='store_true')
@@ -176,4 +212,6 @@ if __name__ == '__main__':
                 print(f'PASS {engine.name}: {scenario}', flush=True)
             run_users_table(browser, args.live)
             print(f'PASS {engine.name}: users_table', flush=True)
+            run_visitors_table(browser, args.live)
+            print(f'PASS {engine.name}: visitors_table', flush=True)
             browser.close()

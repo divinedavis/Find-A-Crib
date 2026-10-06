@@ -247,7 +247,7 @@ def gate():
        or request.path.startswith("/dashboard-creators") \
        or request.path == "/dashboard-business" \
        or request.path == "/creators-ingest" \
-       or request.path in ("/dashboard-metrics", "/dashboard-users",
+       or request.path in ("/dashboard-metrics", "/dashboard-users", "/dashboard-visitors",
                            "/dashboard-claude",  # added 2026-09-06: it was answering missing_api_key (401) on every dashboard load
                            "/dashboard-nemo",    # own Supabase-token owner gate
                            "/dashboard-crease",
@@ -2952,6 +2952,29 @@ def dashboard_users():
     # [[build, version]] from App Store Connect (asc_downloads.py writes it
     # into appstore.json), so the page never hand-maintains that map again.
     return jsonify(users=data or [], versions=_fac_appstore().get("versions") or [])
+
+
+@_memo(300)
+def _fac_visitors():
+    rows = rpc("dashboard_visitors", {}) or []
+    mine = set(_fac_owner_visitors())
+    return [r for r in rows if r.get("visitor_id") not in mine]
+
+
+@app.route("/dashboard-visitors")
+def dashboard_visitors():
+    """Every visitor of the site and the app (owner, 2026-10-06), in the
+    Signed Up Users page's shape (db/0049); the owner's own visits left out."""
+    if rate_limited("dashboard", 120, 3600):
+        return _too_many()
+    denied = _dashboard_denial(_dashboard_auth(), ("ok",))
+    if denied:
+        return denied
+    try:
+        rows = _fac_visitors()
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
+    return jsonify(users=rows, versions=_fac_appstore().get("versions") or [])
 
 
 # ---------- creator outreach (owner only) ----------

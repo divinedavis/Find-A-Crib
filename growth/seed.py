@@ -469,7 +469,33 @@ SEEDS = [
                "metric, so the 2026-09-05 co-claimant guard has nothing to demote. If acceptance "
                "is still 0.0% at 2026-09-27, this hypothesis is wrong too and the next honest "
                "suspects are domain history (this domain published jayshomefinder.com before) and "
-               "corpus size — not another page.")
+               "corpus size — not another page.\n"
+               "2026-10-06 — REVISIT DUE, AND THE PRE-REGISTRATION ABOVE IS CASHED AGAINST "
+               "ITSELF: THE HYPOTHESIS IS WRONG. index_accept_pct_mature has been 0.0% on every "
+               "one of the 31 days measured since activation, index_fetched_mature sits at 88 of "
+               "a 458-URL cohort, index_indexed is still 1 (the homepage), and three of the four "
+               "pages that had ever been indexed were EVICTED on 2026-10-01. Publishing the "
+               "provenance did not move the site-level judgement, and nothing in the ledger "
+               "suggests a second trust page would.\n"
+               "KEPT ACTIVE ANYWAY, which is a decision and not an oversight. The claim is dead; "
+               "the PAGE is not. /methodology/ is linked from the footer of all ~49,000 pages "
+               "this pipeline writes, it is the page build_seo.py points citations at, and it is "
+               "the only page on the site that states each city's limits in one place — LA "
+               "derived and 'likely RSO', SF anonymized to the block. Retiring the record would "
+               "make t_crawl_paths and t_frozen_pages start reporting /methodology/ as a section "
+               "'published under no ACTIVE technique, so nothing rebuilds them', which is false "
+               "(build_seo.methodology_page() rewrites it nightly) and would invite a future run "
+               "to unpublish a page tenants are told to read. Unpublishing a provenance page to "
+               "tidy a ledger would trade the thing this site sells for nothing.\n"
+               "WHAT REPLACES THE BET, because a dead claim must hand off rather than linger: "
+               "the suspects named above were domain history and corpus size, and neither is "
+               "reachable from this loop. A third one is, and it was measured on the morning this "
+               "revisit came due — the site repeatedly tells Google that its whole advertised "
+               "corpus changed on one day (47,596 lastmods on 2026-08-18; 4,082 of 4,105 on "
+               "2026-10-06, both from one line of shared page chrome). That is a trust signal "
+               "this loop owns outright, unlike the two it was left with. It is now "
+               "lastmod_integrity, and build_seo._lastmod_body v3 is the fix for the cause this "
+               "one had.")
     ,
     # ------------------------------------------------------------- CANDIDATE
     dict(slug="adsense_activation", status="candidate", kind="conversion",
@@ -803,6 +829,63 @@ SEEDS = [
                "their own. A live slug that resolves to no place in the data is left frozen and "
                "COUNTED, never invented: it is a rename or a hand-placed file, and this build "
                "will not write a title for a URL it cannot explain."),
+    dict(slug="lastmod_integrity", status="active", kind="indexing",
+         name="Audit how much of the advertised corpus claims it changed today",
+         prefixes=[], metric="organic_visitors",
+         # Reads the docroot and publishes nothing, so no traffic series can
+         # measure it and none is consulted. See review._judge_audit.
+         judge="audit",
+         hypothesis="On a domain Google fetches about half a page a day from, <lastmod> is the "
+                    "only crawl signal left that this site controls and the only promise it "
+                    "makes that a crawler can check for itself. Google's sitemap guidance is "
+                    "that it uses the value while it can verify it against the page and treats "
+                    "dates that come back identical across unrelated URLs as wrong — per "
+                    "sitemap, not per URL — after which it stops reading them at all. This site "
+                    "has restamped its entire advertised corpus to a single date twice, both "
+                    "times from one line of chrome shared by every page, and both times nothing "
+                    "in this loop noticed: 47,596 lastmods on 2026-08-18 (CITY_NAV gained three "
+                    "links; 10,000 URLs went to IndexNow in one payload and gsc_serving_pages "
+                    "began the 63 -> 4 slide two days later) and 4,082 of 4,105 on 2026-10-06 "
+                    "(a Smart App Banner meta tag, against 318 and 327 announced on the two "
+                    "nights before). If the first of those spent this domain's lastmod "
+                    "credibility, the loop cannot afford a third and currently cannot see one "
+                    "happen. This audit makes the event visible the morning it occurs.",
+         evidence="Measured from the repo on 2026-10-06, not inferred: growth/last_run.json is "
+                  "tracked, so its history gives the nightly IndexNow payload — 327, 318, 1,671, "
+                  "4,082 on 2026-10-03/04/05/06 — and the 4,082 night is the first build after "
+                  "commit 2ac0b35 (2026-10-06 01:18 UTC) added one meta tag to build_seo.page()'s "
+                  "shared <head>. build_seo._lastmod_body's own docstring had already drawn the "
+                  "lesson from 2026-08-18 and declared that 'a chrome edit must never again be "
+                  "able to claim 47,596 pages changed', while excluding only <style>, "
+                  "header.site and footer.site — leaving the whole <head> and the visit beacon "
+                  "inside the hash. The second occurrence is what proves the gap was real rather "
+                  "than theoretical.",
+         notes="Audits, never publishes, adds no URL, opens no page — it reads the sitemaps only, "
+               "so it is cheap enough to be a member of techniques.DOCROOT_VERIFIERS and is "
+               "re-read after the SEO watchdog rebuilds the corpus. Reading before that rebuild "
+               "would audit yesterday's sitemaps, which on the morning after a build_seo.py "
+               "change is the difference between seeing a restamp and missing it.\n"
+               "IT FAILS ON 'DATED TODAY', NOT ON 'ONE DATE HOLDS MOST OF THE CORPUS', and the "
+               "distinction is the whole design. A restamp leaves a scar: after 2026-10-06 "
+               "virtually the whole advertised set carries that one date and will keep carrying "
+               "it until each page genuinely changes, so failing on the widest date would make "
+               "this permanently red, and a permanently red audit carries no information — the "
+               "argument t_frozen_pages already makes for not failing on a wholly frozen tier. "
+               "Keyed on today, it is green the next morning and red only while the event is "
+               "happening, which is the only moment it can be acted on. The widest date and its "
+               "share are still reported every night, stated neutrally, because a majority on an "
+               "old date has two readings this audit cannot separate — most pages last genuinely "
+               "changed then, or that night restamped them — and only that date's own build log "
+               "settles it.\n"
+               "THE ONE BENIGN CAUSE OF A RED is a genuinely new section large enough to move "
+               "the share, where today's date is honest because the pages are new. A sitemap "
+               "cannot tell new from changed, so the failure text sends the reader to the build "
+               "log's new/changed split before treating a red as a restamp.\n"
+               "THE FIX FOR THE CAUSE IT KNOWS ABOUT shipped the same morning: "
+               "build_seo._lastmod_body v3 strips PAGE_CHROME — the invariant head and body "
+               "chrome page() emits on every page — before hashing, so a site-wide tag changes "
+               "the bytes of every page and the lastmod of none. This audit is the half that "
+               "does not depend on having guessed the cause right."),
     dict(slug="frozen_pages", status="active", kind="indexing",
          name="Audit how old every live page is, so a tier the build has abandoned says so",
          prefixes=[], metric="organic_visitors",

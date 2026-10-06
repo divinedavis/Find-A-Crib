@@ -13,6 +13,7 @@ A technique must be:
   * attributable — it declares URL prefixes so metrics.py can tell whether it
     actually earned traffic
 """
+import collections
 import datetime
 import glob
 import hashlib
@@ -982,6 +983,11 @@ GROWTH_OWNED_SITEMAPS = {"sitemap.xml", "sitemap-daily.xml"}
 
 _SITEMAP_SHARD = re.compile(r"sitemap-[A-Za-z0-9_-]+\.xml")
 _SITEMAP_LOC = re.compile(r"<loc>\s*([^<\s]+)\s*</loc>")
+# <url> blocks, for the audit that needs each URL's own <lastmod> rather than
+# the flat set of locs. Non-greedy and DOTALL: a shard is one line today, but a
+# pretty-printed one must read the same.
+_SITEMAP_URL = re.compile(r"<url>(.*?)</url>", re.S)
+_SITEMAP_LASTMOD = re.compile(r"<lastmod>\s*([^<\s]+)\s*</lastmod>")
 
 
 def _sitemap_covered(docroot):
@@ -3515,6 +3521,158 @@ def _frozen_tier(url):
     return parts[0] + "/"
 
 
+# ── lastmod integrity ───────────────────────────────────────────────────────
+# A <lastmod> is the one promise this site makes to a crawler that it can check
+# for itself, and the only crawl signal left on a domain Google fetches about
+# half a page a day from. Google's own sitemap guidance is that it uses the
+# value only while it can verify it against the page, and that dates which come
+# back identical across unrelated URLs are treated as wrong and then ignored —
+# per sitemap, not per URL. So a night that stamps most of the advertised corpus
+# with one date does not ask for a crawl; it spends the credibility of every
+# future date on the site.
+#
+# This has happened twice, both times from one line of shared chrome, and both
+# times nothing here noticed until a human read a build count days later:
+#   2026-08-18  CITY_NAV gained three links -> all 47,596 lastmods restamped,
+#               10,000 URLs to IndexNow in one payload. gsc_serving_pages began
+#               the 63 -> 4 slide two days later and has not recovered.
+#   2026-10-06  <meta name="apple-itunes-app"> was added for Safari's Smart App
+#               Banner -> 4,082 of 4,105 submitted URLs restamped and announced,
+#               against 318 and 327 on the two nights before.
+# build_seo.py's _lastmod_body (v3) now excludes the invariant chrome so a tag
+# cannot do it again. This audit is the other half: the fix closes the cause it
+# knows about, and this names the EVENT, whatever causes the next one.
+LASTMOD_FLOOR = 200            # advertised URLs needed before a share means anything
+LASTMOD_RESTAMP_PCT = 50.0     # share claiming "changed today" that can only be a restamp
+LASTMOD_TOP_DATES = 4          # dates named in the detail line
+
+
+def _sitemap_entries(docroot):
+    """Every (loc, lastmod) pair this site's own sitemaps advertise.
+
+    Returns None when the index cannot be read, so a bare checkout reports
+    "could not tell" rather than "nothing is advertised" — the same contract as
+    _canon_sitemap_urls, and the same shard rule: a <loc> in the index whose
+    filename is not sitemap-*.xml is a page a flat sitemap lists directly, never
+    a file to open.
+    """
+    try:
+        with open(os.path.join(docroot, "sitemap.xml")) as f:
+            index = f.read()
+    except OSError:
+        return None
+    out, shards = [], []
+
+    def collect(xml):
+        for block in _SITEMAP_URL.findall(xml):
+            loc = _SITEMAP_LOC.search(block)
+            if not loc:
+                continue
+            got = _SITEMAP_LASTMOD.search(block)
+            # A sitemap lastmod may carry a full timestamp; the date is the part
+            # a restamp shows up in, and the part this audit compares.
+            out.append((loc.group(1), got.group(1)[:10] if got else None))
+
+    collect(index)
+    for loc in _SITEMAP_LOC.findall(index):
+        name = loc.rsplit("/", 1)[-1]
+        if _SITEMAP_SHARD.fullmatch(name):
+            shards.append(name)
+    for name in shards:
+        try:
+            with open(os.path.join(docroot, name)) as f:
+                collect(f.read())
+        except OSError:
+            continue
+    return out
+
+
+def t_lastmod_integrity(ctx):
+    """Audit how much of the advertised corpus claims it changed TODAY.
+
+    REPORT-AND-FAIL, like t_canonical_integrity and for the same reason: the
+    class it reports has one mechanism and one remedy. Over half the advertised
+    set cannot genuinely have changed on one night on this site — the feeds that
+    move daily touch a few hundred pages at most — so a share above
+    LASTMOD_RESTAMP_PCT means some shared string got edited and every page
+    carrying it was called changed. The remedy is always the same: find the edit
+    and put it where build_seo._lastmod_body cannot see it (PAGE_CHROME), rather
+    than reverting the product change.
+
+    KEYED ON TODAY'S DATE, NOT ON THE WIDEST DATE, which is the one design
+    choice worth defending. A restamp leaves a scar: after 2026-10-06 nearly the
+    whole corpus carries that one date and will keep carrying it until each page
+    genuinely changes, so an audit that failed on "one date holds most of the
+    corpus" would be red for months and a permanently red audit carries no
+    information (the argument t_frozen_pages already makes for not failing on a
+    wholly frozen tier). "Claimed changed tonight" is green the next morning and
+    red only while the event is happening, which is when it can be acted on.
+    The scar is still reported — the widest date and its share are in the detail
+    every night — because it is the thing that explains a low crawl rate to a
+    reader who arrives in six months.
+
+    THE ONE BENIGN CAUSE, named so a future run does not chase a ghost: a
+    genuinely new section large enough to move the share, where today's date is
+    honest because the pages are new. A sitemap cannot distinguish new from
+    changed, so the detail says what it measured and the reader checks the build
+    log's new/changed split before treating a red as a restamp.
+
+    Pure docroot reader — no ctx.write_*, no ledger writes, no network — so it is
+    a member of DOCROOT_VERIFIERS and is re-read after the watchdog rebuilds the
+    corpus. Reading before that rebuild would audit yesterday's sitemaps, which
+    on the morning after a build_seo.py change is the difference between seeing
+    the restamp and missing it entirely.
+    """
+    entries = _sitemap_entries(ctx.docroot)
+    if entries is None:
+        return {"ok": True, "advertised": 0,
+                "detail": "lastmod NOT AUDITED: no sitemap.xml in the docroot — this is a bare "
+                          "checkout rather than a deployed docroot"}
+    seen = {}
+    for loc, lm in entries:
+        seen.setdefault(loc, lm)       # first listing wins; a URL in two shards is one URL
+    n = len(seen)
+    if n < LASTMOD_FLOOR:
+        return {"ok": True, "advertised": n,
+                "detail": (f"lastmod NOT AUDITED: the sitemaps advertise {n} URL"
+                           f"{'' if n == 1 else 's'}, below the {LASTMOD_FLOOR}-URL floor — "
+                           f"a share of a set this small says nothing")}
+    undated = sum(1 for lm in seen.values() if not lm)
+    by_date = collections.Counter(lm for lm in seen.values() if lm)
+    today = ledger.today()
+    n_today = by_date.get(today, 0)
+    pct_today = n_today * 100.0 / n
+    widest, widest_n = (by_date.most_common(1) or [(None, 0)])[0]
+    spread = ", ".join(f"{d} {c:,}" for d, c in by_date.most_common(LASTMOD_TOP_DATES))
+
+    detail = (f"{n_today:,} of {n:,} advertised URLs ({pct_today:.1f}%) are dated today "
+              f"({today}) — {len(by_date)} distinct date"
+              f"{'' if len(by_date) == 1 else 's'} across the advertised set, widest first: "
+              f"{spread}")
+    if widest and widest != today:
+        # Stated neutrally ON PURPOSE. A majority of the corpus on one OLD date
+        # has two readings this audit genuinely cannot separate: most pages last
+        # changed then, which is the healthy steady state on a corpus that is
+        # rewritten nightly but changes rarely, or that night restamped them.
+        # The build log for that date is what decides, and a reader who is
+        # handed "scar" for both learns nothing.
+        detail += (f" — the widest is {widest}, held by {widest_n * 100.0 / n:.1f}% of the set: "
+                   f"either most pages last genuinely changed then or that night restamped "
+                   f"them, which only {widest}'s own build log can settle")
+    if undated:
+        detail += f" — {undated:,} advertised with no <lastmod> at all"
+    if pct_today > LASTMOD_RESTAMP_PCT:
+        return {"ok": False, "advertised": n, "dated_today": n_today, "pct_today": pct_today,
+                "detail": (detail + f" — RESTAMP: above {LASTMOD_RESTAMP_PCT:.0f}% this is a "
+                           f"shared string that got edited, not {n_today:,} pages that changed. "
+                           f"Find today's edit to something page() puts on every page and move "
+                           f"it into build_seo.PAGE_CHROME, which _lastmod_body excludes from "
+                           f"the hash; check the build log's new/changed split first, in case a "
+                           f"large new section is the honest explanation")}
+    return {"ok": True, "advertised": n, "dated_today": n_today, "pct_today": pct_today,
+            "detail": detail}
+
+
 def t_frozen_pages(ctx):
     """Report every live page the nightly builds no longer write, by tier and age.
 
@@ -3784,6 +3942,7 @@ REGISTRY = {
     "crawl_paths": t_crawl_paths,
     "page_uniqueness": t_page_uniqueness,
     "canonical_integrity": t_canonical_integrity,
+    "lastmod_integrity": t_lastmod_integrity,
     "frozen_pages": t_frozen_pages,
     "voucher_reach": t_voucher_reach,
     "indexnow": t_indexnow,
@@ -3834,7 +3993,8 @@ REGISTRY = {
 ORDER =["fresh_section8", "daily_brief", "city_guides", "city_seo_expansion",
          "hub_direct_answers", "derived_building_facts", "llms_txt",
          "sitemap_daily", "crawl_paths", "page_uniqueness",
-         "canonical_integrity", "frozen_pages", "voucher_reach", "indexnow"]
+         "canonical_integrity", "lastmod_integrity", "frozen_pages",
+         "voucher_reach", "indexnow"]
 
 # Techniques whose result is a PURE FUNCTION OF THE LIVE DOCROOT, so re-running
 # one is free of side effects and the only thing that can change its answer is
@@ -3927,5 +4087,5 @@ ORDER =["fresh_section8", "daily_brief", "city_guides", "city_seo_expansion",
 # the corpus has just been rebuilt — after the watchdog, "written tonight" and
 # "not written tonight" are two clean dates instead of one fuzzy one.
 DOCROOT_VERIFIERS = ("derived_building_facts", "page_uniqueness",
-                     "canonical_integrity", "crawl_paths", "frozen_pages",
-                     "voucher_reach")
+                     "canonical_integrity", "lastmod_integrity", "crawl_paths",
+                     "frozen_pages", "voucher_reach")

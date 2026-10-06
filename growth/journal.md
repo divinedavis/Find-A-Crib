@@ -1716,3 +1716,276 @@ VERIFIED: py_compile clean on growth/*.py, growth_daily.py and build_seo.py. `bu
 (10) OWNER ASKS, reordered by what today changed. FIRST, and newly more valuable: Bing Webmaster Tools (Reports & Data -> IndexNow, AI Performance). Today's change opens 46,221 pages to Bingbot and nothing on this box can see what Bing does with them — that is both the upside and the risk of this run, and it is unmeasurable from here. Second: an accurate four-city answer block in index.html's static HTML, shipped through deploy_app.sh — the homepage is the only URL Google indexes and the only page ~150 people a day actually see. Still open: AdSense has no slot id so no ads render at all; api@findacrib.com may not be a live forwarding alias. RETIRED AS AN ASK: the Anthropic API cap — scout and outreach both ran clean this morning with ok=true.
 
 (11) STANDING RULES, unchanged: subtract findacrib and jayshomefinder from every raw click count; exclude the 2026-07-17/18 ad flight; treat every serving_pages figure as a floor AND as branded until queries_by_page says otherwise; never run keywords.check_coverage() outside a built docroot; never run build without --dry-run here, and remember it writes last_run.json wherever --build-dir points; per-technique series live under the technique slug in results.jsonl; check a seeded technique's own seed dict for a `notes=` key before using ledger.note(); check `git diff growth/results.jsonl` before every commit; write journal entries from a FILE, not from a shell argument; and push with `git push origin HEAD:main` because this container is a shallow detached clone whose local main ref is stale.
+
+
+## 2026-10-06 — The whole advertised corpus told Google it changed last night, for an app banner — chrome can no longer restamp a lastmod, and the event is now instrumented
+*6am review*
+
+**Observed.** THE CRONS RAN. growth/last_run.json is dated 2026-10-06: daily finished 05:19:36 rc=0, build --deploy
+finished 05:40:36 rc=0, the SEO watchdog ran refresh_seo.sh to completion at 05:42:02 rc=0 (49,383
+pages built), scout ok=true (3 techniques, 25 keywords), outreach ok=true (press, 0 drafted). The
+Anthropic usage cap that was expected until 2026-08-01 is long gone and both research jobs are
+clean — nothing to report there, and no stale complaint to repeat.
+
+THE NUMBER THAT GATES EVERYTHING. gsc_serving_pages 10 of ~49,400 published (0.02%), third day at
+10, down from 16 on 09-22 and 12 for most of late September. gsc_serving_nonbranded 0, as it has
+been every single day; gsc_nonbranded_impressions 0; search_share_pct 0.0; tracked_ranking 0 of 540
+tracked queries. gsc_serving_ever frozen at 289. Impressions 250 on the 09-27..10-04 window, all
+branded, so the series still carries no information about rent-stabilization visibility.
+
+INDEX CENSUS, flat to the decimal. index_fetched_mature 88, index_accept_pct_mature 0.0%,
+index_indexed 1 (the homepage), index_ever_indexed 4 with 3 of those evicted on 2026-10-01,
+index_crawls_14d 7 and crawls_28d 8 — about half a Googlebot fetch a day against 4,105 submitted
+URLs. States across the 100 rechecked: 94 crawled-not-indexed, 94 discovered-not-indexed, 1 indexed,
+269 unknown to Google.
+
+THE RESTAMP, which is this run's finding. growth/last_run.json is tracked, so its own git history is
+a series. The nightly IndexNow payload (seo_pipeline.indexnow_urls) went 327 → 318 → 1,671 → 4,082
+on 2026-10-03/04/05/06. 4,082 of the 4,105 URLs the sitemaps advertise — 99.4% — were stamped
+<lastmod>2026-10-06</lastmod> and announced in one payload. The build before last announced 318.
+
+ITS CAUSE, which is not this loop's change from yesterday. Commit 2ac0b35, 2026-10-06 01:18 UTC,
+owner: "Show Safari's Smart App Banner on findacrib.com". One line of build_seo.py page():
+<meta name="apple-itunes-app" content="app-id=6807549249"> added to the shared <head>, three hours
+before the 05:40 build. Every page page() writes carries that tag, the tag sits inside the region
+_lastmod_body() hashes, so every page's content hash moved and every lastmod bumped. Yesterday's
+googlebot-scoped noindex cannot produce this: the ping list is LM_CHANGED ∩ submitted and the 46,221
+non-promoted building pages are in no sitemap, while promoted pages render byte-identical under it
+(re-verified: page() output, unchanged bytes).
+
+THE PRECEDENT IN THE CODE'S OWN DOCSTRING. _lastmod_body already records 2026-08-18, when CITY_NAV
+gained three links and restamped all 47,596 lastmods, 10,000 URLs to IndexNow in one payload. The
+series since: gsc_serving_pages 60 on 08-18, then 63, 47, 46, 37, 39, 31, 28, 26, 15, 11, bottoming
+at 4 on 09-05. That docstring states the rule — "a chrome edit must never again be able to claim
+47,596 pages changed" — and excluded <style>, header.site and footer.site only, leaving the entire
+<head> and the visit beacon inside the hash. Seven weeks later a head tag did it again.
+
+TRAFFIC AND MONEY, unchanged in shape. 249 visitors on 10-05: 199 direct, 41 organic, 5 campaign, 3
+internal, 1 referral; 224 of 249 landed on "/". Trailing 14d: 3,530 visitors, 652 organic, 23
+ai_visitors (vs 15 in the 14d before that; chatgpt.com is still the only AI source ever recorded).
+accounts_with_saves 42 → 45 today, the only growing number in the system. mrr_usd 4.99, paying_subs
+1, reports_sold 0 on day ~71 of the $9 ask, api_keys 4 (all internal).
+
+HOUSEKEEPING READINGS. Keyword coverage 442 of 540 = 81.9%, down from 425 of 515 = 82.5% yesterday:
+covered grew by 17 and the denominator by 25, so the scout's additions diluted slightly this time —
+the opposite of yesterday's reading and a smaller effect than yesterday's failed prediction.
+4 sitemap shards not re-downloaded in 14+ days (Bk 33d, la 17d, council 16d, dc 14d).
+page_uniqueness flat: /dc/neighborhood/ 38% of 543 words, /building/ 33% of 496.
+
+YESTERDAY'S CLAIMS, CHECKED AGAINST THE REPO, since a past entry once claimed a fix its diff never
+made. All three shipped: TRIAGE_ROBOTS_UA = "googlebot" at build_seo.py:1223 and passed at :3708;
+llms.txt's building-page family and "## Bulk data" section are in t_llms_txt (70 lines in a bare
+checkout, 80 in the docroot); PROMOTE_AD_RULE_LIFT = 1.11 at build_seo.py:1248 with both cautions.
+
+**Concluded.** (1) THE SITE SPENT THE ONE CRAWL SIGNAL IT STILL CONTROLS, AND NOBODY WOULD HAVE NOTICED. On a
+domain Google fetches ~0.5 pages a day from, <lastmod> is the only promise this site makes that a
+crawler can verify for itself. Google's sitemap guidance is that it uses the value while it can
+verify it against the page, and that dates which come back identical across unrelated URLs are
+treated as wrong and then ignored — per sitemap, not per URL. Last night 99.4% of the advertised set
+claimed one date because of an app-store banner. The product change is correct and stays; the
+hashing rule that let one tag speak for 4,082 URLs was wrong, and it was wrong in exactly the way
+its own docstring said must never happen again. Two occurrences from two unrelated one-line edits is
+not bad luck, it is an unguarded invariant, and the next candidate is already queued: the AdSense
+slot id the owner still has to add would be the third.
+
+(2) CORRECTING YESTERDAY'S PRE-REGISTRATION, which could not be cashed as written. It predicted the
+build log would say "~46,000 pages changed" with "a few hundred announced", and named "announced is
+ALSO ~46,000" as a same-night revert condition. Those are not two fields: refresh_seo.sh sets
+CHANGED_N to `wc -l < changed_urls.txt`, and that file holds the PING list (LM_CHANGED ∩ submitted),
+so seo_pipeline.changed_urls (4,081) and indexnow_urls (4,082) are two counts of the same number,
+differing by the file's missing trailing newline. The corpus-wide changed count is printed to
+build_seo.py's stdout and recorded in no tracked file, so it is invisible from this container. Any
+future entry that wants to watch "pages changed" has to ask for a new field, not read this one.
+The googlebot change's actual downside instrument is unmoved — index_fetched_mature 88,
+index_accept_pct_mature 0.0% — so no revert is owed on it.
+
+(3) T085 provenance_page IS DUE FOR REVISIT AND ITS HYPOTHESIS IS FALSIFIED, by the test it wrote
+for itself. Its notes said: "If acceptance is still 0.0% at 2026-09-27, this hypothesis is wrong too."
+It is 2026-10-06, index_accept_pct_mature has been 0.0% on all 31 measured days since activation,
+index_indexed is still 1, and 3 of the 4 pages ever indexed were evicted five days ago. Publishing
+the provenance did not move the site-level judgement.
+    DECISION: CHANGE, not retire, and the reasoning is recorded in seed.py where it survives
+seed.run(). The claim is dead; the page is not. /methodology/ is footer-linked from all ~49,000
+pages, it is where build_seo.py points citations, and it is the only page stating all four cities'
+limits in one place. Retiring the record would make t_crawl_paths and t_frozen_pages start reporting
+/methodology/ as "published under no ACTIVE technique, so nothing rebuilds them" — false, because
+build_seo.methodology_page() rewrites it nightly — and would invite a future run to unpublish a page
+tenants are told to read. Unpublishing a provenance page to tidy a ledger would trade the thing this
+site sells for nothing.
+    THE BET IT HANDS OFF TO. T085's own suspect list was domain history and corpus size, and neither
+is reachable from this loop. A third suspect is, and it was measured this morning: the site tells
+Google its whole advertised corpus changed on one day, repeatedly. That is a trust signal this loop
+owns outright. It is now T101 lastmod_integrity.
+
+(4) WHY AN AUDIT AND NOT JUST THE FIX. The fix closes the cause I can see. It cannot close a cause I
+have not thought of — a data join that touches every page, a template refactor, a failed hashing-rule
+migration. Both restamps were found by a human reading a build count days late; nothing in this loop
+looks at a lastmod at all. The audit keys on "dated today", not on "one date holds most of the
+corpus", because a restamp leaves a scar: virtually the whole advertised set now carries 2026-10-06
+and will until each page genuinely changes, so failing on the widest date would make the audit red
+for months, and a permanently red audit carries no information. Keyed on today it is red only while
+the event is happening.
+
+(5) THE THRESHOLD IS A GUESS AND IS LABELLED ONE. 50% fails; last night was 99.4% and would have
+failed loudly. But 2026-10-05's 1,671 URLs is 40.7% of the advertised set and would NOT have failed,
+and I cannot explain that night from this container — no build_seo.py commit precedes it, so it is
+plausibly a real data refresh and plausibly something else. A 25% line would have caught it and
+would also fire on any legitimate monthly feed refresh, which is how an audit becomes noise. So: 50%
+now, with pct_today recorded in last_run.json every night, which is the series needed to tighten it
+on evidence instead of on today's instinct.
+
+(6) WHAT TODAY'S CHANGE DOES NOT CLAIM. It does not predict a crawl-rate recovery. The 2026-08-18
+→ serving-slide sequence is correlation and nothing on this box can prove what Google did with it.
+The honest claim is narrower and still worth shipping: this site should not be making a promise to a
+crawler that is false 99.4% of the time, the fix costs nothing in served bytes, and it removes a
+recurring own-goal from a loop whose only remaining lever is credibility.
+
+(7) RESEARCH, and what it did and did not add. The lastmod guidance above is the one input that
+changed a decision today, and it corroborates rather than originates the fix. Second useful input,
+from the 2026 AI-citation material: bumping a date with no editorial change now hurts in answer
+engines too, which widens the cost of a restamp from Google to the one channel on this site with a
+positive verdict (T003, ai_visitors 23 in 14d). CAVEAT, stated not buried: both are search-result
+syntheses. This container's egress proxy blocks developers.google.com and lumar.io, so I could not
+read a primary page; the identical-dates guidance appears in multiple independent syntheses and in
+build_seo.py's own 2026-09-06 docstring, which is agreement, not a primary source. The rest of what
+came back — crawl-budget discipline, sitemap hygiene, kill thin templated content, build topical
+authority — is T027/T057/T060 read back to me and two of those are already shipped here.
+
+(8) FOUND, NOT FIXED, so the next run does not re-derive it: /methodology/'s JSON-LD sets
+"dateModified": BUILD_DATE unconditionally (build_seo.py:3313), which claims the page was edited
+every night. It is the only dateModified in the build. The obvious fix — read the tracked lastmod —
+is circular, because dateModified is inside the bytes being hashed: feeding the previous lastmod in
+makes the page change every night forever, oscillating rather than converging. The honest fix is a
+hand-maintained "last edited" constant, and I am not asserting a date for that page's last real edit
+that I cannot substantiate. One page, left alone, written down.
+
+(9) STILL TRUE AND STILL NOT MINE: AdSense has no slot id so no ads render; api@findacrib.com may not
+be a live forwarding alias; the backlog is now at 25 candidates (T098-T100 landed this morning) and
+four weeks unactivated. I did not activate one. Today's change came out of the measurements rather
+than the queue, which is the better reason to ship something, but the backlog question the last two
+entries asked is still unanswered and this is now the fourth week.
+
+**Changed.** ONE change in two halves — the hole and the alarm — plus the T085 revisit and a CI guard.
+4 files, 1 new test file.
+
+(a) build_seo.py: SITE-INVARIANT CHROME CAN NO LONGER RESTAMP A LASTMOD. The invariant runs page()
+emits are hoisted into named constants — HEAD_CHROME (charset, viewport, the Smart App Banner meta),
+HEAD_ICON, OG_CHROME, OG_IMAGE_CARD — collected with MEDIAVINE_TAG and TRACK_SNIPPET into
+PAGE_CHROME, and page() interpolates them instead of spelling them out. _lastmod_body is now v3: it
+runs the old rule (renamed _lastmod_body_v2, docstring kept) and then removes every PAGE_CHROME
+fragment by exact match before hashing. str.replace, not a regex: these are literal template
+constants and a pattern loose enough to match them would be loose enough to eat a page-specific tag.
+The constants carry the comment that matters — ADD SITE-WIDE HEAD TAGS TO HEAD_CHROME, not to the
+template — with both dates and both counts, because the next reader to add a tag is the person this
+has to reach.
+    WHAT STAYS IN THE HASH, deliberately: <title>, the meta description, the robots tag, the
+canonical, the three og: fields carrying the page's own title/description/url, the JSON-LD and the
+body. The fix is "chrome is not content", not "nothing is a change".
+    THE MIGRATION IS NOT OPTIONAL AND IS THE RISKIEST PART. Every state entry on the droplet is
+stamped v:2 and its hash was computed under the v2 rule, so without a migration the first v3 build
+would restamp all ~49,000 lastmods and ping the whole submitted set — the exact event this change
+exists to prevent, committed once on the way to preventing it. _LM_RULES = {1: v1, 2: v2} and
+LM_VERSION = 3 generalise the one-off v1 branch that was already there: an entry stamped below
+LM_VERSION is re-checked against the rule that wrote it, and only the answer "the old hash still
+matches, so nothing but the hashing rule moved" is accepted.
+    VERIFIED BY ASSERTION, not by reading the diff: page() renders byte-identical output for a
+plain page, a noindexed building page and a page with jsonld/footer/og_title (sha1-compared against
+output captured before the edit); no PAGE_CHROME fragment survives into the hashed body; every
+page-specific field still changes it; a NEW site-wide head tag added to HEAD_CHROME changes the
+served bytes and no hash at all, while one added outside the constants still counts; a v2 entry and
+a v1 entry both migrate with no date bump and no IndexNow ping and come out stamped v3; a genuine
+content change still bumps and still pings.
+
+(b) growth/techniques.py + growth/seed.py: T101 lastmod_integrity, a nightly audit of how much of
+the advertised corpus claims it changed today. t_lastmod_integrity reads the sitemap index and its
+shards, dedupes by loc, and reports: how many advertised URLs carry today's date and as what
+percentage, how many distinct dates exist, the widest four with counts, the widest date's share, and
+how many are advertised with no <lastmod> at all. It FAILS above LASTMOD_RESTAMP_PCT = 50%, with
+failure text naming the remedy (find today's edit to something page() puts on every page and move it
+into PAGE_CHROME) and the one benign cause (a large genuinely-new section — a sitemap cannot tell new
+from changed, so it sends the reader to the build log's new/changed split first). The widest OLD date
+is reported neutrally on purpose: a majority on an old date means either most pages last genuinely
+changed then or that night restamped them, and only that date's build log settles it — a reader
+handed "scar" for both learns nothing. Floors: no sitemap.xml, or fewer than 200 advertised URLs,
+reports NOT AUDITED rather than a share of nothing. Pure docroot reader, so it is in ORDER, REGISTRY
+and DOCROOT_VERIFIERS — re-read after the watchdog rebuilds the corpus, because reading before it
+would audit yesterday's sitemaps, which on the morning after a build_seo.py change is the difference
+between seeing a restamp and missing it. Two new regexes (_SITEMAP_URL, _SITEMAP_LASTMOD) beside the
+ones it reuses; `import collections` added.
+    TESTED against six synthetic docroots: last night's exact shape (4,082 of 4,105 today) fails
+with the full detail line; a normal night (318 today, the rest spread over three older dates) passes;
+the morning after a restamp (0 today, 4,082 on one old date) passes and reports the old date
+neutrally; undated URLs are counted; a 50-URL sitemap and a bare checkout both report NOT AUDITED.
+
+(c) T085 provenance_page: the falsification and the keep-the-page decision appended to its notes in
+growth/seed.py (seed.run() owns that field and would overwrite a ledger-side note), and
+ledger.set_revisit('provenance_page') pushed the date 2026-10-06 → 2026-11-05. Status left active,
+for the reasons in conclusion (3). T101 was created by seed.run() during the verification dry-run:
+techniques.json goes 100 → 101 records, and the only other field that moved in it is
+provenance_page's notes.
+
+(d) tests/test_lastmod_chrome.py, new, 6 tests, because a docstring cannot fail a build and this
+rule has now been broken twice by people who had not read it. It asserts that no PAGE_CHROME fragment
+reaches the hash, that every fragment is actually present in the rendered page (a constant that has
+drifted from the template silently stops stripping anything), that a new site-wide head tag changes
+the bytes and no lastmod, that all seven page-specific inputs still change the hash, and that an
+entry from every superseded hashing rule migrates without a bump or a ping. run_unit.py is what
+deploy_app.sh, deploy_api.sh and CI call, so this now gates deploys. PROVED TO BE ABLE TO FAIL:
+pointing _lastmod_body back at v2 turns 2 of the 6 red.
+
+NOT SHIPPED, said plainly: no tracked keyword (the standing rule holds — index_indexed is still 1);
+nothing retired; no candidate activated for the fourth week running; nothing done about the four
+stale sitemap shards, the duplication readings, the ever-advertised promotion rule, or
+/methodology/'s dateModified; and no email copy touched.
+
+VERIFIED: py_compile clean on growth/*.py, growth_daily.py and build_seo.py. `build --dry-run
+--docroot . --build-dir .` exits 0 with the same bare-checkout FAILs as recent runs and
+lastmod_integrity reporting NOT AUDITED. tests/run_unit.py 95/95 (was 89/89). report.build() renders
+both parts, 108,710 HTML bytes and 445 text lines. growth/results.jsonl, growth/last_run.json and
+growth/keywords.json md5-identical before and after the dry run; techniques.json changed only as
+described in (c).
+
+**Watching.** (1) THE MIGRATION, AND IT IS TOMORROW'S FIRST QUESTION. seo_pipeline.indexnow_urls must come back to
+its normal band — roughly 300-400, the 10-03/10-04 figures — on the 2026-10-07 build. If it reads
+anywhere near 4,000 again, the v2 → v3 migration did not fire and this change restamped the corpus a
+second night; revert build_seo.py's _lastmod_body to v2 (keep PAGE_CHROME, it is inert without the
+strip) and say so. This is the one thing today's change can break and it is checkable in one field.
+
+(2) T101 lastmod_integrity's FIRST READING, in last_run.json's build.techniques. Expect ok=true with
+pct_today near 0% and a detail line saying the widest date is 2026-10-06 holding ~99% of the set —
+that is the scar from last night, not a new event. An ok=false on 10-07 means (1) has already
+happened. Record pct_today each morning: a week of it decides whether 50% should become 25%.
+
+(3) gsc_serving_pages 10, and the 2026-08-18 comparison is now a real test rather than a story. If
+the restamp hypothesis has any force, the 4,082-URL event of 2026-10-06 should be followed within
+2-4 days by the same thing that followed 2026-08-18 — serving pages falling. 10 is already near the
+floor, so watch gsc_serving_ever (289, frozen since 09-28) and index_crawls_14d (7) as well: this is
+the one chance to see that sequence repeat on a corpus where the cause is known and dated. If
+nothing falls, say so — that is evidence AGAINST the diagnosis in build_seo.py's docstring and worth
+as much as a confirmation.
+
+(4) index_fetched_mature 88 AND index_accept_pct_mature 0.0% remain the downside instrument for
+yesterday's googlebot-scoped noindex, unchanged today, 14 and 28 days still to run.
+
+(5) T085 IS NOT COMING BACK, and the next run should not re-litigate it. Its hypothesis is
+falsified and recorded as such; /methodology/ stays published. The question that replaces it belongs
+to T101 and to (3).
+
+(6) THE OWNER ASK THAT MATTERS MOST, reordered by what today changed. FIRST: Bing Webmaster Tools
+(Reports & Data → IndexNow, AI Performance). Last night's 4,082-URL payload went to IndexNow, which
+is Bing's and ChatGPT's substrate, and nothing on this box can see what Bing did with it — the
+restamp's cost on that channel is entirely unmeasured from here. Second, unchanged: an accurate
+four-city answer block in index.html's static HTML through deploy_app.sh, because "/" is the only
+URL Google indexes and where 224 of 249 visitors land. Third: how many accounts reach step `saved`
+with a resolvable NYC BBL, which is the only way to tell whether the $9 ask (reports_sold 0, day
+~71) has a volume problem or a copy problem.
+
+(7) STANDING RULES, unchanged: subtract findacrib and jayshomefinder from every raw click count;
+exclude the 2026-07-17/18 ad flight; treat every serving_pages figure as a floor AND as branded until
+queries_by_page says otherwise; never run keywords.check_coverage() outside a built docroot; never run
+build without --dry-run here, and remember it writes last_run.json wherever --build-dir points;
+per-technique series live under the technique slug in results.jsonl; check a seeded technique's own
+seed dict for a `notes=` key before using ledger.note(); check `git diff growth/results.jsonl` before
+every commit; write journal entries from a FILE, not from a shell argument; and push with
+`git push origin HEAD:main` because this container is a shallow detached clone whose local main ref
+is stale.

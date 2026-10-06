@@ -2211,6 +2211,39 @@ CITY_NAV = (
 METHODOLOGY_URL = "/methodology/"
 
 
+# ── SITE-INVARIANT CHROME ───────────────────────────────────────────────────
+# Every run of bytes page() emits that is byte-identical on all ~49,000 pages.
+# It lives in named constants for ONE reason: _lastmod_body() strips exactly
+# these strings before it hashes a page, so a tag added HERE can never again
+# claim that the whole corpus changed — and a tag added to page()'s f-string
+# below, outside them, can. See _lastmod_body's docstring for the two times
+# that has already happened (CITY_NAV on 2026-08-18, the Smart App Banner meta
+# on 2026-10-06, which restamped 4,082 of the 4,105 submitted URLs in one
+# night). ADD SITE-WIDE HEAD TAGS TO HEAD_CHROME, not to the template.
+#
+# The test is mechanical, not a matter of judgement: a fragment belongs here if
+# and only if it contains no page-specific value. <title>, the description, the
+# robots tag, the canonical and the three og: fields that interpolate the page's
+# own title/description/url are NOT chrome and stay in the hash, because a
+# change to any of them is a change to the page.
+HEAD_CHROME = ('<meta charset="utf-8">'
+               '<meta name="viewport" content="width=device-width,initial-scale=1">'
+               '<meta name="apple-itunes-app" content="app-id=6807549249">')
+HEAD_ICON = '<link rel="icon" href="/favicon.ico?v=2" sizes="any">'
+OG_CHROME = ('<meta property="og:type" content="website">'
+             '<meta property="og:site_name" content="Find A Crib">')
+# og:image and twitter:card are one fragment because they are adjacent in the
+# rendered page (the newline between them is part of the run that gets stripped).
+OG_IMAGE_CARD = (f'<meta property="og:image" content="{SITE}/og-image.png">\n'
+                 f'<meta name="twitter:card" content="summary_large_image">')
+
+# Everything _lastmod_body() removes by exact match. <style>, header.site and
+# footer.site are removed by pattern instead, because CSS and the city nav are
+# edited in place rather than added, and the footer carries a per-tier caveat.
+PAGE_CHROME = (HEAD_CHROME, HEAD_ICON, OG_CHROME, OG_IMAGE_CARD,
+               MEDIAVINE_TAG, TRACK_SNIPPET)
+
+
 def page(title, desc, canonical, body, jsonld=None, footer=None, robots=None, og_title=None,
          robots_name="robots"):
     # og_title: what a shared link shows in iMessage / Slack / social cards.
@@ -2232,15 +2265,14 @@ def page(title, desc, canonical, body, jsonld=None, footer=None, robots=None, og
     # not be served to the only channel on this site with a positive verdict.
     rb = f'<meta name="{robots_name}" content="{robots}">' if robots else ""
     return f"""<!doctype html><html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="apple-itunes-app" content="app-id=6807549249">
+{HEAD_CHROME}
 <title>{esc(title)}</title>
 <meta name="description" content="{esc(desc)}">{rb}
 <link rel="canonical" href="{canonical}">
-<link rel="icon" href="/favicon.ico?v=2" sizes="any">
-<meta property="og:type" content="website"><meta property="og:site_name" content="Find A Crib">
+{HEAD_ICON}
+{OG_CHROME}
 <meta property="og:title" content="{esc(og_title)}"><meta property="og:description" content="{esc(desc)}">
-<meta property="og:url" content="{canonical}"><meta property="og:image" content="{SITE}/og-image.png">
-<meta name="twitter:card" content="summary_large_image">
+<meta property="og:url" content="{canonical}">{OG_IMAGE_CARD}
 <style>{CSS}</style>{ld}{MEDIAVINE_TAG}</head><body>
 <header class="site"><a class="brand" href="/">🏠 Find A Crib</a> &nbsp;·&nbsp;
 <a href="/buildings/">All neighborhoods</a> &nbsp;·&nbsp;
@@ -2255,6 +2287,66 @@ def page(title, desc, canonical, body, jsonld=None, footer=None, robots=None, og
 
 def _lastmod_body(contents):
     """The part of a page whose change means the page changed.
+
+    v3, 2026-10-06. The rule below (v2) excluded <style>, header.site and
+    footer.site, and its own docstring states the principle it was written to
+    enforce: "A chrome edit must never again be able to claim 47,596 pages
+    changed." It did not enforce it. Everything in the <head> stayed inside the
+    hash, and the <head> is mostly chrome: charset, viewport, the favicon link,
+    og:type, og:site_name, og:image, twitter:card, the Mediavine loader — plus
+    the visit beacon at the end of <body>. Every one of those is byte-identical
+    on all ~49,000 pages, so editing any of them restamps all ~49,000 lastmods.
+
+    That is not hypothetical. On 2026-10-06 at 01:18 UTC one line was added to
+    page()'s head — <meta name="apple-itunes-app"> for Safari's Smart App Banner
+    (2ac0b35, a correct product change that must stay) — and the 05:40 build
+    pushed 4,082 of the 4,105 submitted URLs into LM_CHANGED and out to IndexNow
+    in a single payload, against 318 and 327 on the two preceding nights. The
+    whole advertised corpus told Google it changed on one day, for a banner.
+    That is the second occurrence of the exact event v2 was written to prevent,
+    which is the argument for fixing the rule rather than the one tag: the next
+    site-wide head tag (an AdSense slot id is already an open owner ask) would
+    do it a third time.
+
+    So v3 removes PAGE_CHROME — the invariant runs page() emits, held in named
+    constants above for exactly this purpose — by exact match, before hashing.
+    After this, a chrome edit changes the bytes of every page (it has to: they
+    all carry the tag) and the lastmod of none of them, which is the honest
+    answer to both questions.
+
+    WHAT THIS DELIBERATELY DOES NOT DO: it does not make lastmod unfalsifiable.
+    <title>, the meta description, the robots tag, the canonical and the three
+    og: fields that carry the page's own title, description and URL all stay in
+    the hash, because a change to any of them IS a change to the page. Nor does
+    it touch the bytes served: page() renders the same document as before to the
+    byte — only what gets hashed moved.
+
+    The v2 rule is kept below, reachable through _LM_RULES, so the first build
+    after this change can tell "this page's content moved" from "the hashing
+    rule moved" — see the migration branch in _track_lastmod. Without that, this
+    change would itself restamp every lastmod on the site and ping the whole
+    submitted set, which is the event it exists to prevent, committed once on
+    the way to preventing it. v1 made that mistake's twin and the comment it
+    left is why this one is guarded.
+    """
+    body = _lastmod_body_v2(contents)
+    # str.replace, not a regex: these are literal constants the template emits,
+    # and a pattern loose enough to match them would be loose enough to eat a
+    # page-specific tag by accident. A fragment that is "" (MEDIAVINE_TAG when
+    # ads are off) is skipped — replacing the empty string is a no-op today but
+    # relies on a CPython detail nobody should have to look up.
+    for frag in PAGE_CHROME:
+        if frag:
+            body = body.replace(frag, "")
+    return body
+
+
+def _lastmod_body_v2(contents):
+    """The 2026-09-06 rule: strip the stylesheet, the site header and the footer.
+
+    Superseded by v3 above, which strips the invariant head chrome too. Kept
+    because a state entry stamped v:2 has to be re-checked against the rule it
+    was written under before the first v3 build calls its page changed.
 
     lastmod is a promise to a crawler that the *content* moved. The stylesheet
     is inlined into all 47,596 pages, so adding one CSS rule rewrites every
@@ -2285,7 +2377,8 @@ def _lastmod_body(contents):
     announce a footer edit; if one ever needs announcing, announce those URLs
     deliberately rather than by hashing the boilerplate into every page.
 
-    So the hash covers everything except <style>, header.site and footer.site.
+    So THIS rule covers everything except <style>, header.site and footer.site —
+    which is what it claimed, and not enough; v3 above is why.
     """
     body = _lastmod_body_v1(contents)
     body = re.sub(r'<header class="site">.*?</header>', "", body, flags=re.S)
@@ -2304,6 +2397,13 @@ def _lastmod_body_v1(contents):
     return re.sub(r"<style>.*?</style>", "", contents, flags=re.S)
 
 
+# Superseded hashing rules, by the "v" a state entry was stamped with, so the
+# migration branch in _track_lastmod can re-check an entry against the rule that
+# wrote it. An entry with no "v" at all predates stamping and is v1.
+_LM_RULES = {1: _lastmod_body_v1, 2: _lastmod_body_v2}
+LM_VERSION = 3
+
+
 def _track_lastmod(loc, contents):
     """Record loc's <lastmod> from the page's own bytes, and return it.
 
@@ -2314,14 +2414,17 @@ def _track_lastmod(loc, contents):
     """
     h = hashlib.sha1(_lastmod_body(contents).encode("utf-8")).hexdigest()
     prev = LM_STATE.get(loc)
-    # One-time migration: a state entry written under the old rule (no "v")
-    # is re-checked against the old rule before it is called a change. Only
-    # the answer "the v1 hash still matches, so nothing but the rule moved"
-    # is accepted; a page that genuinely changed falls through and bumps as
-    # normal. Entries are stamped v:2 below, so this branch stops firing
-    # after the first build and can be deleted once no v1 entry survives.
-    if prev is not None and prev.get("v") != 2 and prev.get("h") != h:
-        if hashlib.sha1(_lastmod_body_v1(contents).encode("utf-8")).hexdigest() == prev["h"]:
+    # One-time migration, now per version: a state entry written under an
+    # EARLIER rule is re-checked against that rule before it is called a
+    # change. Only the answer "the old hash still matches, so nothing but the
+    # hashing rule moved" is accepted; a page that genuinely changed falls
+    # through and bumps as normal. Entries are stamped with LM_VERSION below,
+    # so this branch stops firing after the first build on a new rule. It is
+    # not optional: without it, narrowing the hash restamps every lastmod in
+    # the corpus on the night the narrowing ships.
+    if prev is not None and prev.get("v") != LM_VERSION and prev.get("h") != h:
+        old = _LM_RULES.get(prev.get("v") or 1)
+        if old is not None and hashlib.sha1(old(contents).encode("utf-8")).hexdigest() == prev["h"]:
             prev = dict(prev, h=h)
     if prev and prev.get("h") == h:
         lastmod = prev["m"]                 # unchanged -> keep old date (honest)
@@ -2329,7 +2432,7 @@ def _track_lastmod(loc, contents):
         lastmod = BUILD_DATE                # new or changed -> bump
         if prev is not None:
             LM_CHANGED.append(loc)          # changed (not brand-new) -> ping IndexNow
-    LM_NEW[loc] = {"h": h, "m": lastmod, "v": 2}
+    LM_NEW[loc] = {"h": h, "m": lastmod, "v": LM_VERSION}
     LASTMOD[loc] = lastmod
     return lastmod
 

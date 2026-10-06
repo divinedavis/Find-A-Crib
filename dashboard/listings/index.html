@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
-<title>Owner Dashboard — Signed Up Users</title>
+<title>Owner Dashboard — Listings &amp; alerts</title>
 <!-- Paint the saved theme before the first frame — see /dashboard/. -->
 <script>
 (function(){
@@ -221,6 +221,9 @@
   .ranges button { background: transparent; border: 0; padding: 8px 14px; font: inherit; font-size: 14px; color: inherit; cursor: pointer; }
   .ranges button + button { border-left: 1px solid var(--border, #ddd); }
   .ranges button.on { background: var(--accent-soft, rgba(99,102,241,.18)); font-weight: 700; }
+  h2.lh { font-size: 18px; margin: 26px 0 10px; }
+  .muted { color: var(--muted, #888); font-size: 13px; }
+  .chips div.chip { cursor: default; }
 </style>
 </head>
 <body>
@@ -253,9 +256,9 @@
       <div class="side-head">Apps</div>
       <a class="nav-item site-btn on" href="/dashboard/?site=fac"><span class="nav-ico">🏙️</span> Find A Crib</a>
       <div class="sub">
-        <a class="nav-item active"><span class="nav-ico">☺</span> Signed Up Users</a>
+        <a class="nav-item" href="/dashboard/users/"><span class="nav-ico">☺</span> Signed Up Users</a>
         <a class="nav-item" href="/dashboard/visitors/"><span class="nav-ico">👣</span> Visitors</a>
-        <a class="nav-item" href="/dashboard/listings/"><span class="nav-ico">🏷️</span> Listings &amp; alerts</a>
+        <a class="nav-item active"><span class="nav-ico">🏷️</span> Listings &amp; alerts</a>
       </div>
       <a class="nav-item site-btn" href="/dashboard/?site=nemo"><span class="nav-ico">🏠</span> NEMO Gutter</a>
       <a class="nav-item site-btn" href="/dashboard/?site=crease"><span class="nav-ico">👔</span> Crease</a>
@@ -285,32 +288,31 @@
     <div class="content">
       <div class="page-head">
         <div>
-          <h1>Signed Up Users</h1>
-          <div class="sub">Everyone who created an account. Click a column to sort, the ▾ beside it to filter, or a number above to filter by it.</div>
+          <h1>Listings &amp; alerts</h1>
+          <div class="sub">Who saw and opened each re-rental and lottery, which alert notifications people opened, and who gets alerts for which borough. Website and iPhone app together; people are counted once per listing.</div>
         </div>
-        <input class="usearch" id="usearch" type="text" placeholder="Search name, email, device, iphone, ipad, android, or 1.2…">
       </div>
-
-      <!-- 7 / 30 / 90 days (owner, 2026-10-06): everything below — the numbers
-           and the table — counts only people seen in that window. -->
       <div class="ranges" id="ranges" role="group" aria-label="Seen in">
-        <button type="button" data-days="0">All time</button><button type="button" data-days="1">Today</button><button type="button" data-days="7">7 days</button><button type="button" data-days="30">30 days</button><button type="button" data-days="90">90 days</button>
+        <button type="button" data-days="today">Today</button><button type="button" data-days="7">7 days</button><button type="button" data-days="30">30 days</button><button type="button" data-days="90">90 days</button>
       </div>
-      <div class="chips" id="chips"></div>
-
-      <div class="card">
-        <div class="tbl-wrap">
-          <table class="utable">
-            <thead><tr id="uhead">
-              <th data-sort="name" tabindex="0" role="button" aria-sort="none">Name<span class="sarr"></span></th><th data-sort="ios_app" tabindex="0" role="button" aria-sort="none" title="The app version last seen from this account's iPhone app, from its build number. — = never signed in from the app.">iOS version<span class="sarr"></span></th><th data-sort="alerts" tabindex="0" role="button" aria-sort="none" title="On borough lottery/re-rental emails, or saved-building emails">Alerts<span class="sarr"></span></th><th data-sort="plan" tabindex="0" role="button" aria-sort="none" title="Find A Crib Plus: Plus = paying (Stripe or the App Store); Comped / Founding / Referral = has Plus without paying; No = not on Plus. Sorts paying first.">Plus<span class="sarr"></span></th><th data-sort="last_seen" tabindex="0" role="button" aria-sort="none" title="The last time this account did anything signed in — a visit or an app session, not only an explicit login. Click a date in the column to see when they joined.">Last signed in<span class="sarr"></span></th><th data-sort="phone" tabindex="0" role="button" aria-sort="none" title="iPhone or Android, from any signed-in session (web or the iPhone app). — = only seen on a computer/iPad.">Phone<span class="sarr"></span></th><th data-sort="device" tabindex="0" role="button" aria-sort="none" title="Which front end their newest session is on: the app (iPhone, iPad or Mac, once they are on build 96+), a browser on a phone or tablet (mobile web), or a browser on a computer.">Last device<span class="sarr"></span></th>
-            </tr></thead>
-            <tbody id="urows"></tbody>
-          </table>
-        </div>
-        <div class="empty hidden" id="empty">No users match your search.</div>
-      </div>
-
-      <div class="foot">🔒 Private — only you can see this. Live data, refreshed on load.</div>
+      <h2 class="lh">Listings</h2>
+      <div class="card"><div class="tbl-wrap"><table class="utable"><thead><tr>
+        <th>Listing</th><th>Kind</th><th>Agent</th><th>Borough</th>
+        <th title="People whose screen showed this listing's tile">Saw it</th>
+        <th title="People who tapped through to the agent or Housing Connect">Opened it</th>
+        <th title="Opened ÷ saw">Open rate</th>
+      </tr></thead><tbody id="lrows"></tbody></table></div>
+      <div class="empty hidden" id="lempty">No listing was seen in this window.</div></div>
+      <h2 class="lh">Opened from an alert</h2>
+      <div class="card"><div class="tbl-wrap"><table class="utable"><thead><tr>
+        <th>Listing the alert pointed to</th><th>Kind</th><th title="People who tapped this listing in an alert notification">People</th>
+      </tr></thead><tbody id="arows"></tbody></table></div>
+      <div class="empty hidden" id="aempty">Nobody opened a listing from an alert in this window.</div></div>
+      <h2 class="lh">Who gets alerts</h2>
+      <div class="chips" id="bchips"></div>
+      <div class="card"><div class="tbl-wrap"><table class="utable"><thead><tr>
+        <th>Subscriber</th><th>Boroughs</th><th>Alerts for</th><th>Household</th><th>Since</th><th title="Alert emails/pushes sent to this subscription">Sent</th><th>Last sent</th>
+      </tr></thead><tbody id="srows"></tbody></table></div></div>
     </div>
   </main>
 </div>
@@ -337,13 +339,12 @@
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function fdate(s){ if(!s) return '—'; try{ return new Date(s).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }catch(e){ return '—'; } }
   function sameDay(a,b){ if(!a||!b) return true; try{ return new Date(a).toDateString()===new Date(b).toDateString(); }catch(e){ return true; } }
-  var RANGE_DAYS = 0;
-  try { RANGE_DAYS = +localStorage.getItem('fac.usersRange') || 0; } catch (e) {}
-  function since(){        // "Today" = since midnight here; the rest are rolling days
-    if(RANGE_DAYS === 1){ var d = new Date(); d.setHours(0,0,0,0); return d.getTime(); }
-    return Date.now() - RANGE_DAYS*864e5;
-  }
-  function inRange(u){ return !RANGE_DAYS || (u.last_seen && new Date(u.last_seen).getTime() >= since()); }
+  // The server sends one window at a time (2026-10-06: "we dont need to load
+  // all records at once ... start with the 'today' filter"). Always opens on
+  // Today; the buttons fetch their window.
+  var RANGE = 'today';
+  function inRange(u){ return true; }
+  function visitorsURL(){ return '/api/dashboard-listings?days=' + encodeURIComponent(RANGE); }
   function pool(){ return USERS.filter(inRange); }
   function didReturn(u){ return u.last_seen && u.created_at && !sameDay(u.last_seen,u.created_at) && new Date(u.last_seen)>new Date(u.created_at); }
 
@@ -385,7 +386,7 @@
     app.classList.add('hidden'); gate.classList.remove('hidden');
     var t=el('gate-title'), m=el('gate-msg'), btn=el('google-btn');
     if(kind==='forbidden'){ t.textContent='Not your dashboard'; m.textContent='You are signed in as '+(email||'another account')+', which can’t view this page.'; btn.textContent='Sign out'; btn.onclick=function(){ sb.auth.signOut(); }; }
-    else if(kind==='error'){ t.textContent='Something went wrong'; m.textContent='Couldn’t load users. Try again in a moment.'; }
+    else if(kind==='error'){ t.textContent='Something went wrong'; m.textContent='Couldn’t load visitors. Try again in a moment.'; }
     else { t.textContent='Private dashboard'; m.textContent='This is the Find A Crib owner dashboard. Sign in to continue.'; }
   }
   // An access token is only good for an hour. The captured session can be
@@ -433,7 +434,7 @@
     adoptProfileTheme(s);
     if(!session){ shown = false; showGate('signin'); return; }
     var res;
-    try{ res = await fetch('/api/dashboard-users', { headers:{ Authorization:'Bearer '+(await token()) } }); }
+    try{ res = await fetch(visitorsURL(), { headers:{ Authorization:'Bearer '+(await token()) } }); }
     catch(e){ if(mine===routeSeq) showGate('error'); return; }
     // A 401 means this token is dead, not that the visitor is signed out.
     // Force one refresh and retry before ever showing the sign-in card.
@@ -442,7 +443,7 @@
       try{ var rr = await sb.auth.refreshSession(); fresh = rr.data && rr.data.session; }catch(e){}
       if(fresh){
         session = fresh;
-        try{ res = await fetch('/api/dashboard-users', { headers:{ Authorization:'Bearer '+fresh.access_token } }); }
+        try{ res = await fetch(visitorsURL(), { headers:{ Authorization:'Bearer '+fresh.access_token } }); }
         catch(e){ if(mine===routeSeq) showGate('error'); return; }
       }
     }
@@ -452,363 +453,51 @@
     if(!res.ok){ showGate('error'); return; }
     var d = await res.json();
     if(mine!==routeSeq) return;
-    USERS = d.users || [];
-    if (Array.isArray(d.versions) && d.versions.length) IOS_VERSIONS = d.versions;
     el('avatar').textContent = ((session.user&&session.user.email)||'D')[0].toUpperCase();
-    renderChips(); paintHead(); renderRows('');
+    renderListings(d);
     settle();
     shown = true;
     gate.classList.add('hidden'); app.classList.remove('hidden');
   }
-  el('google-btn').onclick = function(){ sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: location.origin + '/dashboard/users/' } }); };
+  el('google-btn').onclick = function(){ sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: location.origin + '/dashboard/listings/' } }); };
   el('signout').onclick = function(){ sb.auth.signOut(); };
   sb.auth.onAuthStateChange(function(_e, s){ route(s); });
   sb.auth.getSession().then(function(r){ route(r.data.session); });
 
   function paintRanges(){
     document.querySelectorAll('#ranges button').forEach(function(b){
-      var on = +b.dataset.days === RANGE_DAYS; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+      var on = b.dataset.days === RANGE; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
   }
   document.addEventListener('click', function(e){
     var b = e.target.closest('#ranges button'); if(!b) return;
-    RANGE_DAYS = +b.dataset.days || 0;
-    try { localStorage.setItem('fac.usersRange', String(RANGE_DAYS)); } catch (err) {}
-    paintRanges(); renderChips(); renderRows(el('usearch').value);
+    if(b.dataset.days === RANGE) return;
+    RANGE = b.dataset.days; paintRanges();
+    document.querySelector('.content').style.opacity = '.55';
+    _route(session).then(function(){ document.querySelector('.content').style.opacity = ''; });
   });
-  function renderChips(){
+  var BORO = { M:'Manhattan', Bk:'Brooklyn', Q:'Queens', Bx:'Bronx', SI:'Staten Island' };
+  function n(x){ return Number(x||0).toLocaleString('en-US'); }
+  function renderListings(d){
     paintRanges();
-    var P=pool();
-    var total=P.length,
-        google=P.filter(function(u){return u.provider==='google';}).length,
-        apple=P.filter(function(u){return u.provider==='apple';}).length,
-        paying=P.filter(function(u){return u.plan==='plus';}).length,
-        // Same definition as the owner dashboard's "comped": a comp, a
-        // founding grant or a referral reward — Plus without paying.
-        comped=P.filter(function(u){return u.plan==='comp'||u.plan==='founding'||u.plan==='referral';}).length,
-        savers=P.filter(function(u){return (u.saves||0)>0;}).length,
-        mobile=P.filter(function(u){return u.device==='app'||isMobileWeb(u);}).length,
-        iosapp=P.filter(function(u){return !!u.ios_app;}).length,
-        iphone=P.filter(function(u){return u.phone==='iphone';}).length,
-        android=P.filter(function(u){return u.phone==='android';}).length,
-        returned=P.filter(didReturn).length;
-    el('chips').innerHTML =
-      chip('', total, 'total users')+
-      chip('google', google, 'via Google')+
-      chip('apple', apple, 'via Apple')+
-      chip('plus', paying, 'paying Plus')+
-      chip('comp', comped, 'comped')+
-      chip('returned', returned, 'came back after signup')+
-      chip('savers', savers, 'have saved a building')+
-      chip('mobile', mobile, 'last on mobile')+
-      chip('iosapp', iosapp, 'have the iPhone app')+
-      chip('iphone', iphone, 'on iPhone')+
-      chip('android', android, 'on Android');
-  }
-
-  // Which app version an account last used. The app reports its BUILD number
-  // (ios_app_users.last_build); these are the builds each marketing version
-  // started at, from ios/project.yml's history. Add a row when a version ships.
-  // Build -> App Store version, sent by /api/dashboard-users from App Store
-  // Connect itself (appstore.json). The list used to be typed here, stopped at
-  // 1.2.2 and had the wrong build for four of its seven versions, so everyone
-  // on 1.2.3 was labelled 1.2.2 (owner, 2026-09-23). The fallback below is
-  // only for a payload from before this shipped.
-  var IOS_VERSIONS = [[71,'1.2.3'],[60,'1.2.2'],[51,'1.2.1'],[37,'1.2.0'],[30,'1.1.1'],[29,'1.1'],[21,'1.0']];
-  function iosVersion(build){
-    var b = parseInt(build, 10);
-    if(!b) return null;
-    // Above every released build: a TestFlight build, not a version anyone
-    // downloaded from the App Store.
-    if(IOS_VERSIONS.length && b > IOS_VERSIONS[0][0]) return 'TestFlight ' + b;
-    for(var i=0;i<IOS_VERSIONS.length;i++){ if(b >= IOS_VERSIONS[i][0]) return IOS_VERSIONS[i][1]; }
-    return null;
-  }
-  // iOS app: the version (and build) last seen, — when they never used the app.
-  function iosBadge(u){
-    if(!u.ios_app) return '<span class="u-muted">—</span>';
-    var v = iosVersion(u.ios_build), label = v ? v : (u.ios_build ? 'build '+esc(u.ios_build) : 'yes');
-    var t='Signed in from the iPhone app'+(u.ios_build?' (build '+esc(u.ios_build)+')':'')+(u.ios_first_seen?' since '+fdate(u.ios_first_seen):'');
-    return '<span title="'+t+'" style="display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:700;background:rgba(47,122,138,.18);color:#6cc0d0">📲 '+esc(label)+'</span>';
-  }
-  function planBadge(p){
-    if(p==='plus') return '<span class="badge b-plus">Plus</span>';
-    if(p==='comp') return '<span class="badge b-comp">Comped</span>';
-    if(p==='founding') return '<span class="badge b-comp">Founding</span>';
-    if(p==='referral') return '<span class="badge b-ref">Referral</span>';
-    return '<span class="u-muted">No</span>';
-  }
-  // A phone or tablet BROWSER. 'mobile'/'tablet' are what dashboard_users()
-  // answered before 0034 and can still be sitting in a page loaded earlier.
-  function isMobileWeb(u){ return u.device==='mobile_web' || u.device==='mobile' || u.device==='tablet'; }
-  // Device of the newest auth session, not of the last visit — see the
-  // dashboard_users() migration. A user with no live session reads "—" rather
-  // than being guessed at.
-  // Phone OS from ANY session, not just the newest (see the
-  // 20260918170000_dashboard_users_phone migration).
-  function phoneBadge(p){
-    if(p==='iphone')  return '<span class="badge b-iphone">🍎 iPhone</span>';
-    if(p==='android') return '<span class="badge b-android">🤖 Android</span>';
-    return '<span class="u-muted">—</span>';
-  }
-  // Three answers, because they are three different products to fix (owner,
-  // 2026-09-23): the app, the site on a phone, the site on a computer.
-  // 'tablet' is gone — an iPad in Safari is mobile web, an iPad running the
-  // app sends the app's user agent and reads as the app.
-  // The app now says which device it runs on (app_device, from build 96,
-  // owner 2026-09-27); older builds leave it empty and read "Mobile app".
-  var APP_DEVICE = { iphone:'📱 iPhone app', ipad:'📱 iPad app', mac:'💻 Mac app' };
-  function deviceBadge(d, ad){
-    if(d==='app')        return '<span class="badge b-iphone">'+(APP_DEVICE[ad] || '📱 Mobile app')+'</span>';
-    if(d==='mobile_web') return '<span class="badge b-mobile">🌐 Mobile web</span>';
-    if(d==='mobile' || d==='tablet') return '<span class="badge b-mobile">🌐 Mobile web</span>';
-    if(d==='desktop')    return '<span class="badge b-desktop">🖥 Desktop</span>';
-    return '<span class="u-muted">—</span>';
-  }
-
-  // ---- sorting -------------------------------------------------------------
-  // Plan is ranked, not alphabetised. Sorting the plan column A-Z gives
-  // comp, free, plus, referral, which is an ordering of spellings and not of
-  // anything about the business; ranked, the paying users come to the top,
-  // which is the only reason to click that header.
-  var PLAN_RANK = { plus:3, comp:2, referral:1, free:0 };
-  var COLS = {
-    name:       { get:function(u){ return (u.name||'').toLowerCase() || null; }, num:false },
-    email:      { get:function(u){ return (u.email||'').toLowerCase() || null; }, num:false },
-    ios_app:    { get:function(u){ return u.ios_app ? (parseInt(u.ios_build, 10) || 1) : 0; }, num:true },
-    alerts:     { get:function(u){ return u.alerts ? 1 : 0; }, num:true },
-    // Ranked (PLAN_RANK above), so a descending sort puts paying users first.
-    plan:       { get:function(u){ return u.plan==='founding' ? PLAN_RANK.comp : (PLAN_RANK[u.plan] || 0); }, num:true },
-    created_at: { get:function(u){ return u.created_at ? Date.parse(u.created_at) : null; }, num:true },
-    last_seen:  { get:function(u){ return u.last_seen ? Date.parse(u.last_seen) : null; }, num:true },
-    phone:      { get:function(u){ return u.phone || null; }, num:false },
-    device:     { get:function(u){ return u.device || null; }, num:false }
-  };
-  // Newest activity first: the table is read as "who is here now".
-  var sortKey='last_seen', sortDir=-1;       // 1 ascending, -1 descending
-
-  // ---- column filters ------------------------------------------------------
-  // One value per column at a time, picked from that column's own header menu.
-  // Options are built from the data that actually loaded, so a version nobody
-  // is on never appears.
-  var FILTERS = {};                          // column key -> chosen label
-
-  // ---- the chips above the table are filters too (owner, 2026-09-19) -------
-  // Clicking one shows only those users; clicking it again (or "total users")
-  // clears it. They read as headline numbers first, so the whole chip is the
-  // button and the active one is outlined rather than restyled.
-  var CHIPS = {
-    google:   { label:'signed in with Google',      test:function(u){ return u.provider==='google'; } },
-    apple:    { label:'signed in with Apple',       test:function(u){ return u.provider==='apple'; } },
-    plus:     { label:'paying for Plus',            test:function(u){ return u.plan==='plus'; } },
-    comp:     { label:'comped',                     test:function(u){ return u.plan==='comp'||u.plan==='founding'||u.plan==='referral'; } },
-    returned: { label:'came back after signing up', test:didReturn },
-    savers:   { label:'have saved a building',      test:function(u){ return (u.saves||0)>0; } },
-    mobile:   { label:'last seen on mobile',        test:function(u){ return u.device==='app'||isMobileWeb(u); } },
-    iosapp:   { label:'have the iPhone app',        test:function(u){ return !!u.ios_app; } },
-    iphone:   { label:'on iPhone',                  test:function(u){ return u.phone==='iphone'; } },
-    android:  { label:'on Android',                 test:function(u){ return u.phone==='android'; } }
-  };
-  var chipKey = '';
-  function chip(key, n, label){
-    var on = key && chipKey===key;
-    return '<button type="button" class="chip'+(on?' chip-on':'')+'" data-chip="'+esc(key)+'"'
-      + ' aria-pressed="'+(on?'true':'false')+'"'
-      + ' title="'+(key ? 'Show only users who '+esc(CHIPS[key].label) : 'Show every user')+'">'
-      + '<b>'+n+'</b><span>'+esc(label)+'</span></button>';
-  }
-  function daysAgo(n){ return Date.now() - n*86400000; }
-  function filterOptions(key){
-    var seen, out = [];
-    function opt(label, test){ out.push({label:label, test:test}); }
-    if(key==='ios_app'){
-      opt('Has the iPhone app', function(u){ return !!u.ios_app; });
-      opt('No app', function(u){ return !u.ios_app; });
-      seen = {};
-      USERS.forEach(function(u){ if(u.ios_app){ var v=iosVersion(u.ios_build); if(v) seen[v]=1; } });
-      Object.keys(seen).sort().reverse().forEach(function(v){
-        opt('On '+v, function(u){ return !!u.ios_app && iosVersion(u.ios_build)===v; });
-      });
-    } else if(key==='alerts'){
-      opt('On alerts', function(u){ return !!u.alerts; });
-      opt('Not on alerts', function(u){ return !u.alerts; });
-    } else if(key==='plan'){
-      opt('Has Plus (paying or comped)', function(u){ return !!u.plan && u.plan!=='free'; });
-      opt('Paying Plus', function(u){ return u.plan==='plus'; });
-      opt('Comped / founding / referral', function(u){ return u.plan==='comp'||u.plan==='founding'||u.plan==='referral'; });
-      opt('Not on Plus', function(u){ return !u.plan || u.plan==='free'; });
-    } else if(key==='phone'){
-      opt('iPhone', function(u){ return u.phone==='iphone'; });
-      opt('Android', function(u){ return u.phone==='android'; });
-      opt('No phone seen', function(u){ return !u.phone; });
-    } else if(key==='device'){
-      opt('Mobile app', function(u){ return u.device==='app'; });
-      opt('iPhone app', function(u){ return u.device==='app' && u.app_device==='iphone'; });
-      opt('iPad app', function(u){ return u.device==='app' && u.app_device==='ipad'; });
-      opt('Mac app', function(u){ return u.device==='app' && u.app_device==='mac'; });
-      opt('Mobile web', function(u){ return isMobileWeb(u); });
-      opt('Desktop', function(u){ return u.device==='desktop'; });
-      opt('Never seen', function(u){ return !u.device; });
-    } else if(key==='last_seen'){
-      opt('Today', function(u){ return !!u.last_seen && sameDay(u.last_seen, new Date().toISOString()); });
-      opt('Last 7 days', function(u){ return !!u.last_seen && Date.parse(u.last_seen) >= daysAgo(7); });
-      opt('Last 30 days', function(u){ return !!u.last_seen && Date.parse(u.last_seen) >= daysAgo(30); });
-      opt('Over 30 days ago', function(u){ return !!u.last_seen && Date.parse(u.last_seen) < daysAgo(30); });
-      opt('Came back after signing up', function(u){ return didReturn(u); });
-    }
-    return out;
-  }
-  function passesFilters(u){
-    if(chipKey && CHIPS[chipKey] && !CHIPS[chipKey].test(u)) return false;
-    for(var key in FILTERS){
-      var label = FILTERS[key];
-      if(!label) continue;
-      var opts = filterOptions(key), hit = null;
-      for(var i=0;i<opts.length;i++){ if(opts[i].label===label) hit = opts[i]; }
-      if(hit && !hit.test(u)) return false;
-    }
-    return true;
-  }
-  function closeMenus(){
-    [].forEach.call(document.querySelectorAll('.fmenu'), function(m){ m.remove(); });
-    [].forEach.call(document.querySelectorAll('.fbtn'), function(b){ b.setAttribute('aria-expanded','false'); });
-  }
-  function openMenu(th){
-    var key = th.dataset.sort, already = th.querySelector('.fmenu');
-    closeMenus();
-    if(already) return;
-    var m = document.createElement('div');
-    m.className = 'fmenu'; m.setAttribute('role','menu');
-    var num = COLS[key] && COLS[key].num;
-    var html = '<div class="fhead">Sort</div>'
-      + '<button type="button" data-act="asc"' + (sortKey===key && sortDir===1 ? ' class="sel"' : '') + '>' + (num ? 'Lowest first' : 'A to Z') + '</button>'
-      + '<button type="button" data-act="desc"' + (sortKey===key && sortDir===-1 ? ' class="sel"' : '') + '>' + (num ? 'Highest first' : 'Z to A') + '</button>';
-    var opts = filterOptions(key);
-    if(opts.length){
-      html += '<div class="fsep"></div><div class="fhead">Show</div>'
-        + '<button type="button" data-filter=""' + (FILTERS[key] ? '' : ' class="sel"') + '>All</button>';
-      opts.forEach(function(o){
-        html += '<button type="button" data-filter="' + esc(o.label) + '"' + (FILTERS[key]===o.label ? ' class="sel"' : '') + '>' + esc(o.label) + '</button>';
-      });
-    }
-    m.innerHTML = html;
-    th.appendChild(m);
-    th.querySelector('.fbtn').setAttribute('aria-expanded','true');
-    m.addEventListener('click', function(e){
-      var b = e.target.closest('button'); if(!b) return;
-      e.stopPropagation();
-      if(b.dataset.act){ sortKey = key; sortDir = b.dataset.act==='asc' ? 1 : -1; }
-      else { FILTERS[key] = b.getAttribute('data-filter') || ''; }
-      closeMenus();
-      paintHead();
-      renderRows(el('usearch').value);
-    });
-  }
-
-  function cmp(a,b){
-    var c=COLS[sortKey], x=c.get(a), y=c.get(b);
-    // Missing values sort last in BOTH directions. A user with no device
-    // recorded is not the smallest device, and letting those rows head an
-    // ascending sort buries the ones the column was clicked to find.
-    var xn = x===null || x===undefined, yn = y===null || y===undefined;
-    if(xn || yn) return xn && yn ? 0 : (xn ? 1 : -1);
-    if(x<y) return -sortDir;
-    if(x>y) return sortDir;
-    // Email is unique, so equal cells still land in a stable, repeatable
-    // order rather than shuffling on every re-render.
-    return (a.email||'') < (b.email||'') ? -1 : 1;
-  }
-
-  function setSort(key){
-    if(!COLS[key]) return;
-    // Same column flips. A new column opens the way that column is actually
-    // read: counts and dates biggest/newest first, names A-Z.
-    if(key===sortKey) sortDir = -sortDir;
-    else { sortKey = key; sortDir = COLS[key].num ? -1 : 1; }
-    paintHead();
-    renderRows(el('usearch').value);
-  }
-
-  function paintHead(){
-    [].forEach.call(document.querySelectorAll('#uhead th[data-sort]'), function(th){
-      var fkey = th.dataset.sort;
-      var fb = th.querySelector('.fbtn');
-      if(!fb){
-        fb = document.createElement('button');
-        fb.type = 'button'; fb.className = 'fbtn';
-        fb.setAttribute('aria-haspopup','menu'); fb.setAttribute('aria-expanded','false');
-        th.appendChild(fb);
-      }
-      fb.textContent = FILTERS[fkey] ? '\u25BE\u00A0' + FILTERS[fkey] : '\u25BE';
-      fb.title = 'Sort or filter this column';
-      fb.classList.toggle('on', !!FILTERS[fkey]);
-      var on = th.dataset.sort===sortKey;
-      th.setAttribute('aria-sort', on ? (sortDir===1?'ascending':'descending') : 'none');
-      th.querySelector('.sarr').textContent = on ? (sortDir===1?'\u2191':'\u2193') : '';
-    });
-  }
-
-  el('uhead').addEventListener('click', function(e){
-    var th = e.target.closest('th[data-sort]'); if(!th) return;
-    if(e.target.closest('.fmenu')) return;
-    if(e.target.closest('.fbtn')){ e.stopPropagation(); openMenu(th); return; }
-    setSort(th.dataset.sort);
-  });
-  document.addEventListener('click', function(e){ if(!e.target.closest('#uhead')) closeMenus(); });
-  document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeMenus(); });
-  // The headers are reachable by keyboard, so they have to act on a key too.
-  el('uhead').addEventListener('keydown', function(e){
-    if(e.key!=='Enter' && e.key!==' ') return;
-    var th = e.target.closest('th[data-sort]');
-    if(th){ e.preventDefault(); setSort(th.dataset.sort); }
-  });
-
-  function renderRows(q){
-    q = (q||'').trim().toLowerCase();
-    var rows = USERS.filter(function(u){
-      if(!inRange(u)) return false;
-      if(!passesFilters(u)) return false;
-      if(!q) return true;
-      return (u.name||'').toLowerCase().indexOf(q)>=0
-          || (u.email||'').toLowerCase().indexOf(q)>=0
-          || (u.device||'').indexOf(q)>=0
-          || (u.app_device||'').indexOf(q)>=0
-          || (u.phone||'').indexOf(q)>=0
-          || (q==='ios' && !!u.ios_app)
-          || (!!u.ios_app && (iosVersion(u.ios_build)||'').indexOf(q)===0);
-    }).sort(cmp);
-    el('empty').textContent = (chipKey || Object.keys(FILTERS).some(function(k){ return FILTERS[k]; }) || q)
-      ? 'No users match this filter.' : 'No users yet.';
-    el('empty').classList.toggle('hidden', rows.length>0);
-    el('urows').innerHTML = rows.map(function(u){
-      return '<tr>'+
-        '<td class="u-name"><button type="button" class="u-namebtn" data-email="'+esc(u.email)+'" title="Click to show the email">'+esc(u.name)+'</button></td>'+
-        '<td>'+iosBadge(u)+'</td>'+
-        '<td>'+(u.alerts ? '<span style="display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:700;background:rgba(30,123,52,.15);color:#3ccf6a">Y</span>' : '<span class="u-muted">N</span>')+'</td>'+
-        '<td>'+planBadge(u.plan)+'</td>'+
-        '<td><button type="button" class="u-namebtn u-joinedbtn" data-joined="'+esc(fdate(u.created_at))+'" data-returned="'+(didReturn(u)?'1':'0')+'" title="Click to show when this user joined">'+fdate(u.last_seen)+(didReturn(u)?' <span class="u-muted">↩</span>':'')+'</button></td>'+
-        '<td>'+phoneBadge(u.phone)+'</td>'+
-        '<td>'+deviceBadge(u.device, u.app_device)+'</td>'+
-      '</tr>';
+    var tiles = d.tiles || [];
+    el('lrows').innerHTML = tiles.map(function(t){
+      var rate = t.saw ? Math.round(100*t.opened/t.saw)+'%' : '—';
+      return '<tr><td><b>'+esc(t.addr)+'</b></td><td>'+esc(t.kind==='lottery'?'Lottery':'Re-rental')+'</td><td>'+esc(t.agent||'—')+'</td><td>'+esc(t.boro||'—')+'</td><td>'+n(t.saw)+'</td><td>'+n(t.opened)+'</td><td>'+rate+'</td></tr>';
+    }).join('');
+    el('lempty').classList.toggle('hidden', tiles.length>0);
+    var pushes = d.pushes || [];
+    el('arows').innerHTML = pushes.map(function(p){
+      return '<tr><td><a href="'+esc(p.url)+'" target="_blank" rel="noopener">'+esc(p.label||p.url)+'</a></td><td>'+esc(p.kind==='lottery'?'Lottery':'Re-rental')+'</td><td>'+n(p.alert_opens)+'</td></tr>';
+    }).join('');
+    el('aempty').classList.toggle('hidden', pushes.length>0);
+    var by = d.by_borough || {}, subs = d.subs || [];
+    el('bchips').innerHTML = '<div class="chip"><b>'+n(subs.length)+'</b><span>subscribed</span></div>' +
+      ['M','Bk','Q','Bx','SI'].map(function(k){ return '<div class="chip"><b>'+n(by[k])+'</b><span>'+BORO[k]+'</span></div>'; }).join('');
+    el('srows').innerHTML = subs.map(function(x){
+      var who = x.name ? '<b>'+esc(x.name)+'</b><br><span class="muted">'+esc(x.email)+'</span>' : esc(x.email);
+      return '<tr><td>'+who+'</td><td>'+esc((x.boroughs||[]).map(function(b){return BORO[b]||b;}).join(', '))+'</td><td>'+esc((x.kinds||[]).map(function(k){return k==='lottery'?'Lotteries':k==='rerental'?'Re-rentals':k;}).join(', '))+'</td><td>'+(x.household_size?n(x.household_size):'—')+'</td><td>'+fdate(x.created_at)+'</td><td>'+n(x.sent_count)+'</td><td>'+fdate(x.last_sent_at)+'</td></tr>';
     }).join('');
   }
-  el('chips').addEventListener('click', function(e){
-    var b = e.target.closest('.chip'); if(!b) return;
-    var key = b.getAttribute('data-chip') || '';
-    chipKey = (key && key !== chipKey) ? key : '';
-    renderChips(); renderRows(el('usearch').value);
-  });
-  el('usearch').addEventListener('input', function(e){ renderRows(e.target.value); });
-  // Emails are off the table by default (2026-09-07); the name is the button.
-  el('urows').addEventListener('click', function(e){
-    var b = e.target.closest('.u-namebtn'); if(!b) return;
-    var td = b.parentNode, shown = td.querySelector('.u-email-reveal');
-    if(shown){ shown.remove(); return; }
-    var d = document.createElement('div'); d.className = 'u-email-reveal';
-    // the same reveal serves the Joined cell, which shows "Last seen" on click
-    if(b.classList.contains('u-joinedbtn')){ d.textContent = 'Joined ' + (b.getAttribute('data-joined') || '—'); if(b.getAttribute('data-returned')==='1') d.classList.add('u-returned'); }
-    else d.textContent = b.getAttribute('data-email') || '—';
-    td.appendChild(d);
-  });
 })();
 </script>
 </body>

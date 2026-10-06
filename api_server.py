@@ -249,7 +249,7 @@ def gate():
        or request.path.startswith("/dashboard-creators") \
        or request.path == "/dashboard-business" \
        or request.path == "/creators-ingest" \
-       or request.path in ("/dashboard-metrics", "/dashboard-users", "/dashboard-visitors",
+       or request.path in ("/dashboard-metrics", "/dashboard-users", "/dashboard-visitors", "/dashboard-listings",
                            "/dashboard-claude",  # added 2026-09-06: it was answering missing_api_key (401) on every dashboard load
                            "/dashboard-nemo",    # own Supabase-token owner gate
                            "/dashboard-crease",
@@ -2991,6 +2991,55 @@ def dashboard_visitors():
     except Exception:
         return jsonify(error="temporarily_unavailable"), 503
     return jsonify(users=rows, versions=_fac_appstore().get("versions") or [])
+
+
+def _window_since(window):
+    """today (since midnight New York) / 7 / 30 / 90 days, as an ISO time."""
+    if window in ("7", "30", "90"):
+        return (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=int(window))).isoformat()
+    ny = datetime.datetime.now(zoneinfo.ZoneInfo("America/New_York"))
+    return ny.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(datetime.timezone.utc).isoformat()
+
+
+def _alert_label(url):
+    """An alert link as the listing it points at: the text fragment the push
+    carries (#:~:text=1515%20Park) names it on an agent's board page."""
+    base, _, frag = (url or "").partition("#")
+    m = re.search(r":~:text=([^&]+)", frag)
+    host = urllib.parse.urlparse(base).netloc.replace("www.", "")
+    return (urllib.parse.unquote(m.group(1)) + " · " + host) if m else (host + urllib.parse.urlparse(base).path)
+
+
+@_memo(300)
+def _fac_listings(window):
+    d = rpc("dashboard_listings", {"since": _window_since(window)}) or {}
+    for p in d.get("pushes") or []:
+        p["label"] = _alert_label(p.get("url"))
+    subs = rpc("dashboard_alert_subs", {}) or []
+    by_boro = {}
+    for sub in subs:
+        for b in sub.get("boroughs") or []:
+            by_boro[b] = by_boro.get(b, 0) + 1
+    d["subs"], d["by_borough"] = subs, by_boro
+    return d
+
+
+@app.route("/dashboard-listings")
+def dashboard_listings():
+    """Listings & alerts (owner, 2026-10-06): who saw/opened each listing,
+    which alerts were opened, and who gets alerts for which borough."""
+    if rate_limited("dashboard", 120, 3600):
+        return _too_many()
+    denied = _dashboard_denial(_dashboard_auth(), ("ok",))
+    if denied:
+        return denied
+    window = request.args.get("days", "today")
+    if window not in ("today", "7", "30", "90"):
+        window = "today"
+    try:
+        return jsonify(_fac_listings(window))
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
 
 
 # ---------- creator outreach (owner only) ----------

@@ -215,6 +215,47 @@ def run_visitors_table(browser, live):
     context.close()
 
 
+LISTINGS = {
+    'tiles': [{'addr': '75 Dupont Street Unit 421', 'kind': 'rerental', 'agent': 'Affordable for NY', 'boro': 'Brooklyn', 'saw': 40, 'opened': 4},
+              {'addr': 'The Lirio', 'kind': 'lottery', 'agent': 'NYC Housing Connect', 'boro': 'Manhattan', 'saw': 20, 'opened': 5}],
+    'pushes': [{'url': 'https://iaffordny.com/re-rentals#:~:text=1515%20Park', 'label': '1515 Park · iaffordny.com', 'kind': 'rerental', 'alert_opens': 3}],
+    'subs': [{'email': 'a@example.com', 'name': 'Ann', 'boroughs': ['Bk', 'M'], 'kinds': ['lottery', 'rerental'],
+              'created_at': '2026-09-01T00:00:00Z', 'sent_count': 7, 'last_sent_at': '2026-10-05T00:00:00Z'}],
+    'by_borough': {'Bk': 1, 'M': 1},
+}
+
+
+def run_listings_page(browser, live):
+    """Listings & alerts (2026-10-06): listings, alert opens, subscribers."""
+    context = browser.new_context()
+    page = context.new_page()
+    errors = []
+    page.on('pageerror', lambda error: errors.append(str(error)))
+    if not live:
+        page.route(BASE + '/dashboard/listings/', lambda route: route.fulfill(
+            path=str(ROOT / 'dashboard/listings/index.html'), content_type='text/html'))
+        for served, path in (('dashboard/supabase-config.js', 'dashboard/supabase-config.js'),
+                             ('dashboard/supabase.js', 'static/supabase/supabase.js')):
+            page.route(BASE + '/' + served + '*', lambda route, request, path=path: route.fulfill(
+                path=str(ROOT / path), content_type='application/javascript'))
+    page.route('**/auth/v1/**', lambda route: route.fulfill(json=USER)
+               if '/user' in route.request.url else route.fulfill(status=204))
+    asked = []
+    page.route('**/api/dashboard-listings*', lambda route: (asked.append(route.request.url.split('days=')[-1]), route.fulfill(json=LISTINGS)))
+    page.goto(BASE + '/dashboard/listings/' + callback(), wait_until='networkidle')
+    expect(page.locator('#lrows tr')).to_have_count(2)
+    expect(page.locator('#lrows tr').first).to_contain_text('10%')
+    expect(page.locator('#arows')).to_contain_text('1515 Park')
+    expect(page.locator('#bchips')).to_contain_text('Brooklyn')
+    expect(page.locator('#srows')).to_contain_text('Brooklyn, Manhattan')
+    assert asked and asked[0] == 'today', asked
+    page.locator('#ranges button[data-days="30"]').click()
+    expect(page.locator('#ranges button.on')).to_have_text('30 days')
+    assert asked[-1] == '30', asked
+    assert not errors, errors
+    context.close()
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--live', action='store_true')
@@ -230,4 +271,6 @@ if __name__ == '__main__':
             print(f'PASS {engine.name}: users_table', flush=True)
             run_visitors_table(browser, args.live)
             print(f'PASS {engine.name}: visitors_table', flush=True)
+            run_listings_page(browser, args.live)
+            print(f'PASS {engine.name}: listings_page', flush=True)
             browser.close()

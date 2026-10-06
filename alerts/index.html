@@ -157,6 +157,9 @@
   .editing-note { font-size: 13px; color: var(--ink-2); margin: 0 0 10px; }
   .editing-note[hidden] { display: none; }
   .hint { font-size: 12.5px; color: var(--ink-2); margin: 8px 0 0; line-height: 1.5; }
+  .senior { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 12px 0 0; font-size: 14.5px; color: var(--ink); }
+  .senior input { width: 18px; height: 18px; }
+  .senior span { color: var(--ink-2); font-size: 13px; }
   .nums { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .num span { display: block; font-size: 12.5px; color: var(--ink-2); font-weight: 600; margin: 0 0 5px; }
   .num input { width: 100%; padding: 11px 12px; font-size: 16px; border: 1px solid var(--line-strong);
@@ -249,6 +252,7 @@
         <label class="num"><span>People in your household</span>
           <select id="household_size"><option value="">—</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option></select></label>
       </div>
+      <label class="senior"><input id="seniors" type="checkbox" /> Someone in my household is 62 or older <span>(also send senior-only housing)</span></label>
     </div>
 
     <p class="editing-note" id="editing-note" hidden>These are the alerts this address gets today. Change anything and tap <b>Save changes</b>.</p>
@@ -346,6 +350,7 @@
               if (j.max_rent) $('max_rent').value = j.max_rent;
               if (j.income) $('income').value = j.income;
               if (j.household_size) $('household_size').value = String(j.household_size);
+              $('seniors').checked = !!j.seniors;
               $('submit').textContent = 'Save changes';
               $('submit').dataset.editing = '1';
               var note = $('editing-note'); if (note) { note.hidden = false; }
@@ -395,7 +400,8 @@
     fetch('/api/alerts/subscribe', {
       method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (sessToken || '') },
       body: JSON.stringify({ email: email, boroughs: boros, kinds: kinds, max_rent: maxRent, income: income,
-                             household_size: +($('household_size').value || 0) || null })
+                             household_size: +($('household_size').value || 0) || null,
+                             seniors: $('seniors').checked })
     }).then(function (r) { return r.json().then(function (j) { return { s: r.status, j: j }; }); })
       .then(function (x) {
         if (x.j && x.j.ok) {

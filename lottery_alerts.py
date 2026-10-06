@@ -53,6 +53,7 @@ Two more entry points share the list, the sender and the opt-out:
     python3 lottery_alerts.py --weekly [--dry-run] [--test-email you@x.com]
 """
 import argparse
+import re
 import datetime
 import json
 import os
@@ -165,6 +166,19 @@ def hc_items(d):
     return out
 
 
+_MIXED = re.compile(r"not senior|non-senior|general population|all ages", re.I)
+
+
+def senior_only(l):
+    """HCR flags senior developments (`senior`). Some flagged ones also have
+    units for anyone ("4 units at 80% AMI that are not senior specific"), so
+    those still go to everybody (owner, 2026-10-06: alerted about Luna Green,
+    62+ only)."""
+    if not l.get("senior"):
+        return False
+    return not _MIXED.search(f"{l.get('desc') or ''} {l.get('info') or ''}")
+
+
 def hcr_items(d):
     out = []
     for l in (d or {}).get("listings") or []:
@@ -182,6 +196,7 @@ def hcr_items(d):
             kind if kind.lower() != "lottery" else None, inc,
             (f"due {l['due']}" if l.get("due") else None)) if b]
         out.append({"id": f"hcr:{l['id']}", "kind": "lottery", "boro": l.get("boro"),
+                    "senior_only": senior_only(l),
                     "label": ("Mitchell-Lama waitlist" if "mitchell" in kind.lower()
                               else "waitlist" if "wait" in kind.lower()
                               else "HCR lottery"),
@@ -857,11 +872,22 @@ def with_households(subs, key):
     for s_ in subs:
         if s_.get("email") in hh:
             s_["household_size"] = hh[s_["email"]]
+    # 62+ households (db/0053). On failure nobody is treated as a senior:
+    # missing a senior lottery beats alerting everyone about one.
+    try:
+        seniors = set(rpc("lottery_alerts_seniors", {}, key) or [])
+    except Exception:
+        seniors = set()
+    for s_ in subs:
+        s_["seniors"] = s_.get("email") in seniors
     return subs
 
 
 def wants(sub, item):
     if item["kind"] not in sub["kinds"]:
+        return False
+    # Senior-only housing (62+) only for people who said so (db/0053).
+    if item.get("senior_only") and not sub.get("seniors"):
         return False
     if item["boro"] is None:
         # Unplaced listing: only someone watching the whole city should hear

@@ -554,6 +554,11 @@ def alerts_subscribe():
             hh = 0
         if res.get("ok") and 1 <= hh <= 12:
             rpc("lottery_alerts_set_household", {"p_email": email, "p_household": hh})
+        # 62+ in the household (2026-10-06, db/0053): senior-only lotteries.
+        # Only a client that sends the field changes it.
+        sen = (request.get_json(silent=True) or {}).get("seniors")
+        if res.get("ok") and isinstance(sen, bool):
+            rpc("lottery_alerts_set_seniors", {"p_email": email, "p_seniors": sen})
     except Exception:
         return jsonify(error="temporarily_unavailable"), 503
     if not res.get("ok"):
@@ -903,6 +908,10 @@ def alerts_prefs():
         res["household_size"] = rpc("lottery_alerts_household", {"p_email": email})
     except Exception:
         res["household_size"] = None
+    try:
+        res["seniors"] = bool(rpc("lottery_alerts_senior", {"p_email": email}))
+    except Exception:
+        res["seniors"] = False
     return jsonify(res)
 
 

@@ -965,6 +965,8 @@ class Runner:
         self.ok('Plus' not in main.replace('Find A Crib Plus you hear the minute', '').replace('Find A Crib Plus sends them the minute', ''),
                 'alerts page should mention Plus only as the real-time upgrade', j)
         self.ok(page.evaluate("!document.getElementById('locked')"), 'alerts page should have no locked (pay-to-turn-on) card', j)
+        # 62+ opt-in for senior-only lotteries (2026-10-06), off by default.
+        self.ok(page.evaluate("!!document.getElementById('seniors') && !document.getElementById('seniors').checked"), 'alerts page should offer an unticked 62-or-older box', j)
         page.click('text=Brooklyn'); time.sleep(0.3)
         self.ok(page.evaluate("document.querySelector('#boros input[value=Bk]').checked"), 'borough chip should toggle on', j)
         self.ok(page.evaluate("getComputedStyle(document.querySelector('#boros input[value=Bk] + span')).backgroundColor") != 'rgba(0, 0, 0, 0)', 'a chosen borough should be filled', j)

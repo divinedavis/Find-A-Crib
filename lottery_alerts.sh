@@ -19,7 +19,9 @@ cd /root/Find-A-Crib || exit 1
 exec 9>/run/lock/fac-alerts.lock
 flock -w 900 9 || { echo "alerts: another run held the lock 15 min — skipping"; exit 1; }
 export GROWTH_DOCROOT=${GROWTH_DOCROOT:-/var/www/rent-map}
-if [ -f ./growth.env ]; then set -a; . ./growth.env; set +a; fi
+# Under cron, fac-run has already loaded exactly the env sets the cron line
+# names (FAC_ENV_LOADED=1); ./growth.env is only a hand-run fallback.
+if [ -z "${FAC_ENV_LOADED:-}" ] && [ -f ./growth.env ]; then set -a; . ./growth.env; set +a; fi
 
 out=$(/usr/bin/python3 housing_connect.py --apply --out "$GROWTH_DOCROOT" 2>&1) \
   || echo "alerts: housing_connect refresh failed: $(printf '%s' "$out" | tail -1)"

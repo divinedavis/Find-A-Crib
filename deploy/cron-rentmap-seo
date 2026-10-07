@@ -1,0 +1,7 @@
+# /etc/cron.d/rentmap-seo — mirrored from deploy/cron-rentmap-seo.
+# Monthly SEO corpus rebuild from /root/dhcr-build (growth_run.sh's watchdog
+# runs the same refresh nightly when this is stale). Runs as `scraper`
+# (2026-10-07; was root) — /root/dhcr-build and the docroot are scraper-owned.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+10 4 1 * * scraper fac-run none -- /root/dhcr-build/refresh_seo.sh >> /var/log/rentmap-seo.log 2>&1

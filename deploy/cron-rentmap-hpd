@@ -1,0 +1,8 @@
+# /etc/cron.d/rentmap-hpd — mirrored from deploy/cron-rentmap-hpd.
+# Weekly HPD violation/complaint refresh (scripts/refresh_hpd.sh). Runs as
+# `scraper` (2026-10-07; was root); the one privileged step, restarting
+# findacrib-api so it drops its cached blob, is a single sudoers rule
+# (deploy/sudoers-fac-jobs).
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+10 8 * * 0 scraper fac-run none -- /root/Find-A-Crib/scripts/refresh_hpd.sh >> /var/log/rentmap-hpd.log 2>&1

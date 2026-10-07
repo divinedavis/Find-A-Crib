@@ -1,0 +1,7 @@
+# /etc/cron.d/rentmap-dhcr — mirrored from deploy/cron-rentmap-dhcr.
+# Monthly check for a new DHCR building list. Mails ERROR_REPORT_EMAIL (from
+# /etc/findacrib/env/owner.env — this file is in a PUBLIC repo, no addresses).
+# Runs as `scraper` with only SMTP + the owner address (2026-10-07; was root).
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+20 9 12 * * scraper cd /root/Find-A-Crib && fac-run smtp,owner -- python3 check_dhcr_list.py >> /var/log/rentmap-dhcr.log 2>&1

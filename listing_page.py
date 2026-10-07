@@ -11,7 +11,7 @@ MAX_CHARS = 12000
 # as ~55 characters). render=True opens these in Chromium, using the
 # re-rental scraper's venv, which has Playwright (the API's venv doesn't).
 JS_SITES = ("afny.org", "iaffordny.com")
-BROWSER_PY = os.environ.get("FAC_BROWSER_PY", "/var/www/rent-map/venv/bin/python")
+BROWSER_PY = os.environ.get("FAC_BROWSER_PY", "/opt/findacrib/venv/bin/python")
 _RENDER = r"""
 import sys
 from playwright.sync_api import sync_playwright

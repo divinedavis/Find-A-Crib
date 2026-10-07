@@ -27,14 +27,19 @@ Usage:  python3 fetch_section8.py
 import json
 import time
 import urllib.parse
+import os
 import urllib.request
 from pathlib import Path
 
 from addr_match import build_index, normalize_addr
 
 HERE = Path(__file__).parent
-BUILDINGS = HERE / "buildings.min.json"
-OUT = HERE / "s8.json"
+# The docroot these feeds are served from. Until 2026-10-07 this script lived
+# IN the docroot and wrote beside itself; now it runs from the checkout as the
+# unprivileged `scraper` user and is pointed at the docroot (FAC_DOCROOT).
+DATA = Path(os.environ.get("FAC_DOCROOT") or HERE)
+BUILDINGS = DATA / "buildings.min.json"
+OUT = DATA / "s8.json"
 
 HPD_URL = "https://data.cityofnewyork.us/resource/hg8x-zxpr.json"
 HUD_URL = ("https://services.arcgis.com/VTyQ9soqVukalItT/arcgis/rest/services/"

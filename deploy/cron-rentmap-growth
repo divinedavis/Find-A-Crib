@@ -14,12 +14,14 @@
 #
 # Deliberately above the CRON_TZ line: this one is pinned to the voucher feed's
 # UTC clock, not to the business day, so it must NOT pick up America/New_York.
-40 5 * * * root /root/Find-A-Crib/growth_run.sh build --deploy >> /var/log/rentmap-growth.log 2>&1
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+40 5 * * * scraper fac-run supabase,smtp,gsc -- /root/Find-A-Crib/growth_run.sh build --deploy >> /var/log/rentmap-growth.log 2>&1
 
 # 05:00 America/New_York — measure, judge, prune, scout, draft outreach. Deliberately
 # an hour before the 6am review agent, so the agent always reads fresh numbers.
 CRON_TZ=America/New_York
-0 5 * * * root /root/Find-A-Crib/growth_run.sh daily >> /var/log/rentmap-growth.log 2>&1
+0 5 * * * scraper fac-run supabase,smtp,gsc -- /root/Find-A-Crib/growth_run.sh daily >> /var/log/rentmap-growth.log 2>&1
 
 # 06:00 America/New_York, FRIDAYS ONLY — mail the internal report.
 #
@@ -39,4 +41,4 @@ CRON_TZ=America/New_York
 # recipient lives in growth.env as GROWTH_REPORT_EMAIL and growth_run.sh appends
 # it. If the report stops arriving, check that variable first — an unset one is
 # silent by design, because the alternative was publishing the address.
-0 6 * * 5 root /root/Find-A-Crib/growth_run.sh report >> /var/log/rentmap-growth.log 2>&1
+0 6 * * 5 scraper fac-run supabase,smtp,gsc -- /root/Find-A-Crib/growth_run.sh report >> /var/log/rentmap-growth.log 2>&1

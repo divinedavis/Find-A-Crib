@@ -1,0 +1,4 @@
+# /etc/sudoers.d/fac-jobs — installed by deploy/install_jobs.sh (visudo -c'd).
+# The only root action any Find A Crib cron job needs: the weekly HPD refresh
+# restarts the API so it drops its cached copy of the blob it just rewrote.
+scraper ALL=(root) NOPASSWD: /usr/bin/systemctl restart findacrib-api

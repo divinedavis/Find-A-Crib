@@ -4,7 +4,9 @@
 # reinstate a portal scrape here.
 # MONTHLY (1st, 04:40 UTC): Section 8 building signals (HPD affordable production
 # + HUD project-based Section 8 contracts) -> the "bldg" half of s8.json.
-40 4 1 * * root cd /var/www/rent-map && python3 fetch_section8.py >> /var/log/rentmap-s8.log 2>&1
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+40 4 1 * * scraper cd /root/Find-A-Crib && FAC_DOCROOT=/var/www/rent-map fac-run none -- python3 fetch_section8.py >> /var/log/rentmap-s8.log 2>&1
 # NIGHTLY (04:15 UTC): live voucher listings from AffordableHousing.com
 # -> the "avail" half of s8.json. Plain JSON POSTs, ~85 requests, 1s apart.
-15 4 * * * root cd /var/www/rent-map && python3 scrape_affordablehousing.py >> /var/log/rentmap-s8.log 2>&1
+15 4 * * * scraper cd /root/Find-A-Crib && FAC_DOCROOT=/var/www/rent-map fac-run none -- python3 scrape_affordablehousing.py >> /var/log/rentmap-s8.log 2>&1

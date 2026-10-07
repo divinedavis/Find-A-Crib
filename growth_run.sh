@@ -19,7 +19,9 @@
 set -uo pipefail
 cd /root/Find-A-Crib || exit 1
 export GROWTH_DOCROOT=/var/www/rent-map
-set -a; . ./growth.env; set +a
+# Under cron, fac-run has already loaded exactly the env sets the cron line
+# names (FAC_ENV_LOADED=1); ./growth.env is only a hand-run fallback.
+if [ -z "${FAC_ENV_LOADED:-}" ] && [ -f ./growth.env ]; then set -a; . ./growth.env; set +a; fi
 
 BEAT=growth/cron_heartbeat.jsonl
 BEAT_KEEP=200          # ~50 days at two crons a day

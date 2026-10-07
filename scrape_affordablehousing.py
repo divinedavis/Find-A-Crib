@@ -20,14 +20,19 @@ Usage:  python3 scrape_affordablehousing.py
 """
 import json
 import time
+import os
 import urllib.request
 from pathlib import Path
 
 from addr_match import build_index, normalize_addr
 
 HERE = Path(__file__).parent
-BUILDINGS = HERE / "buildings.min.json"
-OUT = HERE / "s8.json"
+# The docroot these feeds are served from. Until 2026-10-07 this script lived
+# IN the docroot and wrote beside itself; now it runs from the checkout as the
+# unprivileged `scraper` user and is pointed at the docroot (FAC_DOCROOT).
+DATA = Path(os.environ.get("FAC_DOCROOT") or HERE)
+BUILDINGS = DATA / "buildings.min.json"
+OUT = DATA / "s8.json"
 
 API = "https://www.affordablehousing.com/v4/AjaxHandler?message=SearchListings"
 SITE = "https://www.affordablehousing.com"

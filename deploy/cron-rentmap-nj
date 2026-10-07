@@ -6,4 +6,4 @@
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 CRON_TZ=America/New_York
-40 6 * * * root cd /root/Find-A-Crib && python3 scrape_nj_lotteries.py --out /var/www/rent-map/nj_lotteries.json >> /var/log/rentmap-nj.log 2>&1
+40 6 * * * scraper cd /root/Find-A-Crib && fac-run none -- python3 scrape_nj_lotteries.py --out /var/www/rent-map/nj_lotteries.json >> /var/log/rentmap-nj.log 2>&1

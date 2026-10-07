@@ -10,5 +10,7 @@
 set -uo pipefail
 cd /root/Find-A-Crib || exit 1
 export GROWTH_DOCROOT=${GROWTH_DOCROOT:-/var/www/rent-map}
-if [ -f ./growth.env ]; then set -a; . ./growth.env; set +a; fi
+# Under cron, fac-run has already loaded exactly the env sets the cron line
+# names (FAC_ENV_LOADED=1); ./growth.env is only a hand-run fallback.
+if [ -z "${FAC_ENV_LOADED:-}" ] && [ -f ./growth.env ]; then set -a; . ./growth.env; set +a; fi
 /usr/bin/python3 saved_alerts.py "$@"

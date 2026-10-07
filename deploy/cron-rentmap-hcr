@@ -9,5 +9,5 @@
 # borough alerts (lottery_alerts.sh, every 10 min) within the hour.
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-35 4 * * * root cd /root/Find-A-Crib && python3 scrape_hcr.py --out /var/www/rent-map/hcr.json >> /var/log/rentmap-hcr.log 2>&1
-5 0-3,5-23 * * * root cd /root/Find-A-Crib && python3 scrape_hcr.py --incremental --out /var/www/rent-map/hcr.json >> /var/log/rentmap-hcr.log 2>&1
+35 4 * * * scraper cd /root/Find-A-Crib && fac-run none -- python3 scrape_hcr.py --out /var/www/rent-map/hcr.json >> /var/log/rentmap-hcr.log 2>&1
+5 0-3,5-23 * * * scraper cd /root/Find-A-Crib && fac-run none -- python3 scrape_hcr.py --incremental --out /var/www/rent-map/hcr.json >> /var/log/rentmap-hcr.log 2>&1

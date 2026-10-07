@@ -14,7 +14,7 @@
 # in deploy/ sets User=, the state dir and the cache paths, and this script
 # re-applies the code dir's ownership after every copy.
 #
-#   ./scripts/deploy_api.sh                 # pull on the box, sync, restart
+#   ./scripts/deploy_api.sh                 # copy this tree's modules, restart
 #
 # Gates (2026-10-01): tests/run_unit.py runs locally first; the live modules
 # are snapshotted to $BACKUPS before the copy; and if the post-restart checks
@@ -22,7 +22,7 @@
 #
 set -euo pipefail
 HOST="${FAC_HOST:-root@142.93.183.172}"
-REPO=/root/Find-A-Crib
+REPO=/root/Find-A-Crib   # the cron checkout; never read from here as root
 LIVE=/root/findacrib-api
 # Exactly the modules gunicorn imports. Listed rather than globbed: the repo is
 # a website with a hundred scripts in its root, and the API directory should
@@ -43,17 +43,25 @@ ssh "$HOST" "set -e; mkdir -p $BACKUPS/$SNAP
   for f in ${FILES[*]} ${RETIRED[*]}; do [ -f $LIVE/\$f ] && cp -p $LIVE/\$f $BACKUPS/$SNAP/; done
   ls -1d $BACKUPS/*/ | head -n -15 | xargs -r rm -rf"
 
+# Ship THIS tree's files (the ones the unit tests just ran on), not a pull on
+# the box. Since 2026-10-07 the droplet checkout $REPO belongs to the cron
+# user `scraper`; copying API code or the systemd drop-in out of it as root
+# would let anything that compromises a scraper job rewrite the API — or the
+# unit's User= line — on the next deploy.
+STAGE=/root/findacrib-api-stage
+ssh "$HOST" "rm -rf $STAGE && install -d -m 0700 $STAGE"
+scp -q "${FILES[@]}" deploy/findacrib-api.override.conf "$HOST:$STAGE/"
 ssh "$HOST" "set -e
-  cd $REPO && git pull -q --ff-only
   for f in ${FILES[*]}; do
-    cmp -s $REPO/\$f $LIVE/\$f || echo \"    updating \$f\"
-    cp $REPO/\$f $LIVE/\$f
+    cmp -s $STAGE/\$f $LIVE/\$f || echo \"    updating \$f\"
+    cp $STAGE/\$f $LIVE/\$f
   done
   # The unit's drop-in lives in the repo (deploy/), so a worker-count change
   # ships like any other and the box has nothing hand-edited to drift.
   mkdir -p /etc/systemd/system/findacrib-api.service.d
-  cmp -s $REPO/deploy/findacrib-api.override.conf /etc/systemd/system/findacrib-api.service.d/override.conf || echo '    updating systemd override'
-  cp $REPO/deploy/findacrib-api.override.conf /etc/systemd/system/findacrib-api.service.d/override.conf
+  cmp -s $STAGE/findacrib-api.override.conf /etc/systemd/system/findacrib-api.service.d/override.conf || echo '    updating systemd override'
+  cp $STAGE/findacrib-api.override.conf /etc/systemd/system/findacrib-api.service.d/override.conf
+  rm -rf $STAGE
   systemctl daemon-reload
   for f in ${RETIRED[*]}; do rm -f $LIVE/\$f; done
   rm -f /etc/cron.d/creator-mail-reader /etc/cron.d/creator-mail-forward $LIVE/creator_mail_forward.py

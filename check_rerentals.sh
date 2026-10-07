@@ -12,14 +12,16 @@ set -uo pipefail
 cd /root/Find-A-Crib || exit 1
 export GROWTH_DOCROOT=${GROWTH_DOCROOT:-/var/www/rent-map}
 # SMTP_* for the change email. Same file the growth engine sources.
-if [ -f ./growth.env ]; then set -a; . ./growth.env; set +a; fi
+# Under cron, fac-run has already loaded exactly the env sets the cron line
+# names (FAC_ENV_LOADED=1); ./growth.env is only a hand-run fallback.
+if [ -z "${FAC_ENV_LOADED:-}" ] && [ -f ./growth.env ]; then set -a; . ./growth.env; set +a; fi
 
 git pull --rebase --autostash -q origin main \
   || echo "check_rerentals: git pull failed, running on the local copy"
 
 # Playwright lives in the scraper's venv, not in the system python. Prefer it,
 # and say so loudly rather than dying with a bare ModuleNotFoundError in a log.
-PY=/var/www/rent-map/venv/bin/python
+PY=${FAC_PY:-/opt/findacrib/venv/bin/python}
 [ -x "$PY" ] || PY=python3
 "$PY" -c 'import playwright' 2>/dev/null || {
   echo "check_rerentals: no playwright in $PY — install it or point PY at the venv"; exit 1; }

@@ -1,0 +1,27 @@
+# /etc/logrotate.d/rentmap — installed by deploy/install_jobs.sh (2026-10-07).
+# The rentmap-* cron logs had no rotation at all and were world-readable;
+# rentmap-alerts.log held ~23k subscriber email addresses at 0644. Now 0640
+# (job user : adm) and rotated weekly, 8 kept.
+/var/log/rentmap-errors.log {
+    weekly
+    rotate 8
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 facops adm
+}
+/var/log/rentmap-alerts.log /var/log/rentmap-saved.log /var/log/rentmap-growth.log
+/var/log/rentmap-rerentals.log /var/log/rentmap-hcr.log /var/log/rentmap-scrape.log
+/var/log/rentmap-s8.log /var/log/rentmap-openings.log /var/log/rentmap-events.log
+/var/log/rentmap-flyers.log /var/log/rentmap-nj.log /var/log/rentmap-cities.log
+/var/log/rentmap-hpd.log /var/log/rentmap-seo.log /var/log/rentmap-dhcr.log
+/var/log/rentmap-vacancies.log {
+    weekly
+    rotate 8
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 scraper adm
+}

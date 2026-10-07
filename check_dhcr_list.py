@@ -75,7 +75,9 @@ def send(to, subject, body):
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--email", help="address to notify when a newer list is published")
+    ap.add_argument("--email", default=os.environ.get("ERROR_REPORT_EMAIL") or None,
+                    help="address to notify when a newer list is published "
+                         "(default: $ERROR_REPORT_EMAIL, so the cron line carries no address)")
     ap.add_argument("--have", type=int, help="override the newest year detected on disk")
     args = ap.parse_args()
 

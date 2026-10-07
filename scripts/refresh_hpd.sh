@@ -31,7 +31,13 @@ main() {
   # until it is restarted. Non-fatal: a stale API is worse than a failed refresh,
   # but neither should abort a run that already published correct data.
   if [ "${1:-}" != "--dry-run" ]; then
-    systemctl restart findacrib-api 2>/dev/null || echo "  ! findacrib-api restart failed"
+    # Cron runs this as `scraper` since 2026-10-07; deploy/sudoers-fac-jobs
+    # allows exactly this one command and nothing else.
+    if [ "$(id -u)" = 0 ]; then
+      systemctl restart findacrib-api 2>/dev/null || echo "  ! findacrib-api restart failed"
+    else
+      sudo -n /usr/bin/systemctl restart findacrib-api 2>/dev/null || echo "  ! findacrib-api restart failed"
+    fi
   fi
 
   echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] HPD refresh complete"

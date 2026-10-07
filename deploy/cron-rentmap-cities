@@ -7,4 +7,4 @@
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 CRON_TZ=America/New_York
-10 5 * * 1 root cd /root/Find-A-Crib && python3 build_affordable_cities.py --out /var/www/rent-map >> /var/log/rentmap-cities.log 2>&1
+10 5 * * 1 scraper cd /root/Find-A-Crib && fac-run none -- python3 build_affordable_cities.py --out /var/www/rent-map >> /var/log/rentmap-cities.log 2>&1

@@ -19,4 +19,4 @@ SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 CRON_TZ=America/New_York
 # 8:20, after the 8 AM alert digest takes the day's one email (2026-10-06).
-20 8 * * * root /root/Find-A-Crib/saved_alerts.sh >> /var/log/rentmap-saved.log 2>&1
+20 8 * * * scraper fac-run supabase,smtp,apns -- /root/Find-A-Crib/saved_alerts.sh >> /var/log/rentmap-saved.log 2>&1

@@ -8,13 +8,16 @@
 set -uo pipefail
 cd /root/Find-A-Crib || exit 1
 export GROWTH_DOCROOT=${GROWTH_DOCROOT:-/var/www/rent-map}
-if [ -f ./growth.env ]; then set -a; . ./growth.env; set +a; fi
+# Under cron, fac-run has already loaded exactly the env sets the cron line
+# names (FAC_ENV_LOADED=1); ./growth.env is only a hand-run fallback.
+if [ -z "${FAC_ENV_LOADED:-}" ] && [ -f ./growth.env ]; then set -a; . ./growth.env; set +a; fi
 
 git pull --rebase --autostash -q origin main \
   || echo "rerental_daily: git pull failed, running on the local copy"
 
-# Playwright lives in the scraper's venv, not the system python.
-PY=/var/www/rent-map/venv/bin/python
+# Playwright lives in the shared job venv (/opt/findacrib/venv since
+# 2026-10-07; it used to sit in the web docroot), not the system python.
+PY=${FAC_PY:-/opt/findacrib/venv/bin/python}
 [ -x "$PY" ] || PY=python3
 "$PY" -c 'import playwright' 2>/dev/null || {
   echo "rerental_daily: no playwright in $PY"; exit 1; }

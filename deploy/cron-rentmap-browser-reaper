@@ -7,4 +7,4 @@
 # orphan: kill it.
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-*/15 * * * * root ps -eo pid=,etimes=,comm= | awk '$3 ~ /chrome/ && $2 > 5400 {print $1}' | xargs -r kill -9
+*/15 * * * * scraper ps -u scraper -o pid=,etimes=,comm= | awk '$3 ~ /chrome/ && $2 > 5400 {print $1}' | xargs -r kill -9

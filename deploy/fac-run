@@ -1,0 +1,41 @@
+#!/bin/bash
+# fac-run — start one Find A Crib cron job with only the secrets it needs.
+# Installed as /usr/local/bin/fac-run by deploy/install_jobs.sh.
+#
+#   fac-run <env>[,<env>...] -- <command> [args...]
+#   fac-run none -- <command>          # a job that needs no secrets at all
+#
+# Each <env> is /etc/findacrib/env/<env>.env (root:<job user> 0640), written by
+# install_jobs.sh from the single root-only source file. Until 2026-10-07 every
+# job ran as root and sourced growth.env and/or the API's .env — so a PDF
+# parser or a headless Chrome pointed at third-party sites held the Stripe
+# secret, the service-role key, the APNs key and SSH push access all at once.
+# Now each line in /etc/cron.d/rentmap-* names the job user and the env sets.
+#
+# FAC_ENV_LOADED tells the job scripts not to fall back to ./growth.env, so a
+# job can never quietly pick up more than its cron line granted.
+set -euo pipefail
+ENV_DIR=${FAC_ENV_DIR:-/etc/findacrib/env}
+[ $# -ge 3 ] && [ "$2" = "--" ] || { echo "usage: fac-run <env,...|none> -- <cmd> [args]" >&2; exit 64; }
+sets=$1; shift 2
+if [ "$(id -u)" = 0 ] && [ -z "${FAC_RUN_ALLOW_ROOT:-}" ]; then
+  echo "fac-run: refusing to run a job as root (cron lines name the job user)" >&2
+  exit 77
+fi
+set -a
+for e in ${sets//,/ }; do
+  [ "$e" = none ] && continue
+  case "$e" in *[!a-z0-9_-]*) echo "fac-run: bad env name '$e'" >&2; exit 64 ;; esac
+  f="$ENV_DIR/$e.env"
+  [ -r "$f" ] || { echo "fac-run: cannot read $f" >&2; exit 66; }
+  # shellcheck disable=SC1090
+  . "$f"
+done
+set +a
+export FAC_ENV_LOADED=1
+# One shared venv + browser cache outside the docroot and outside /root.
+export FAC_PY=${FAC_PY:-/opt/findacrib/venv/bin/python}
+export FAC_BROWSER_PY=${FAC_BROWSER_PY:-$FAC_PY}
+export PLAYWRIGHT_BROWSERS_PATH=${PLAYWRIGHT_BROWSERS_PATH:-/opt/findacrib/ms-playwright}
+umask 022
+exec "$@"

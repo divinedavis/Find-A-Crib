@@ -15,7 +15,7 @@
 # writes the same housing_connect.json, so that file is removed on install.
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-*/10 * * * * root /root/Find-A-Crib/lottery_alerts.sh >> /var/log/rentmap-alerts.log 2>&1
+*/10 * * * * scraper fac-run supabase,smtp,apns -- /root/Find-A-Crib/lottery_alerts.sh >> /var/log/rentmap-alerts.log 2>&1
 
 # Below here the clock is New York's. The 8 AM digest comes first so it holds
 # the day's one email; the nudge, the weekly round-up and the 08:20
@@ -24,9 +24,9 @@ CRON_TZ=America/New_York
 
 # 8 AM: the daily digest for subscribers without Plus (2026-10-06). It runs
 # first so it holds the day's one email; the nudge and weekly moved after it.
-0 8 * * * root /root/Find-A-Crib/lottery_alerts.sh --digest >> /var/log/rentmap-alerts.log 2>&1
+0 8 * * * scraper fac-run supabase,smtp,apns -- /root/Find-A-Crib/lottery_alerts.sh --digest >> /var/log/rentmap-alerts.log 2>&1
 # 08:35 daily: first-week round-up for sign-ups that have had only the welcome.
-35 8 * * * root /root/Find-A-Crib/lottery_alerts.sh --nudge >> /var/log/rentmap-alerts.log 2>&1
+35 8 * * * scraper fac-run supabase,smtp,apns -- /root/Find-A-Crib/lottery_alerts.sh --nudge >> /var/log/rentmap-alerts.log 2>&1
 
 # 08:40 Tuesdays: the weekly round-up — opened this week, closing this week.
-40 8 * * 2 root /root/Find-A-Crib/lottery_alerts.sh --weekly >> /var/log/rentmap-alerts.log 2>&1
+40 8 * * 2 scraper fac-run supabase,smtp,apns -- /root/Find-A-Crib/lottery_alerts.sh --weekly >> /var/log/rentmap-alerts.log 2>&1

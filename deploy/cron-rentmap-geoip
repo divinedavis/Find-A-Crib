@@ -7,4 +7,4 @@
 # the previous file when the new one is not there yet.
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-15 6 3,10 * * root /root/Find-A-Crib/scripts/refresh_geoip.sh >> /var/log/rentmap-geoip.log 2>&1
+15 6 3,10 * * root /usr/local/sbin/fac-refresh-geoip >> /var/log/rentmap-geoip.log 2>&1

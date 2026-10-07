@@ -1,8 +1,10 @@
 # Find A Crib — read re-rental flyers/pages into unit tables (flyer_reader.py),
 # after the 06:45 re-rental run has written featured.json. Claude Haiku, through
 # the AI ledger (stops at 90% of the $20/month cap); ~$0.002 a listing, only
-# new listings (30-day cache). Root, like the other rentmap crons, because it
-# writes featured_units.json into the docroot.
+# new listings (30-day cache). Runs as `scraper` (since 2026-10-07; was root
+# with the whole API .env) with only the Anthropic + Supabase keys: it parses
+# third-party PDFs, the riskiest input on the box.
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 SHELL=/bin/bash
 CRON_TZ=America/New_York
-40 7 * * * root cd /root/findacrib-api && set -a && . ./.env && set +a && ./venv/bin/python flyer_reader.py --docroot /var/www/rent-map --limit 40 >> /var/log/rentmap-flyers.log 2>&1
+40 7 * * * scraper cd /root/Find-A-Crib && fac-run anthropic,supabase -- /opt/findacrib/venv/bin/python flyer_reader.py --docroot /var/www/rent-map --limit 40 >> /var/log/rentmap-flyers.log 2>&1

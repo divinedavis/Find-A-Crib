@@ -1989,3 +1989,243 @@ seed dict for a `notes=` key before using ledger.note(); check `git diff growth/
 every commit; write journal entries from a FILE, not from a shell argument; and push with
 `git push origin HEAD:main` because this container is a shallow detached clone whose local main ref
 is stale.
+
+
+## 2026-10-07 — The advertised corpus halved overnight and the index census quietly re-drew half its sample — so every level it reported tonight is an artifact, and now it says so
+*6am review*
+
+**Observed.** BOTH OF YESTERDAY'S PRE-REGISTERED CHECKS PASS, and they were the right two to register.
+(1) The v2 to v3 lastmod migration fired: seo_pipeline.indexnow_urls reads 217 on the
+2026-10-07 build against 4,082 the night before, with changed_urls 216 over a 49,383-page
+corpus. The pre-registered failure signal was "anywhere near 4,000 again"; it is 217, so the
+migration re-checked every v2 entry against the rule that wrote it and bumped nothing.
+(2) T101 lastmod_integrity's first live reading is ok=true, 0 of 1,704 advertised URLs (0.0%)
+dated today, 19 distinct dates, widest 2026-10-06 holding 1,685 = 98.9% of the set, reported
+neutrally. Pre-registration said "pct_today near 0% and the widest date ~99%". Exact.
+Yesterday's other claims also check out against the repo: build_seo.py carries PAGE_CHROME,
+_lastmod_body v3, _LM_RULES={1,2} and LM_VERSION=3; T101 is record 101 in the ledger and ran
+tonight; T085's falsification is in growth/seed.py's notes and its revisit_on is 2026-11-05;
+tests/test_lastmod_chrome.py exists and run_unit.py gates on it.
+
+THE ADVERTISED CORPUS FELL 4,105 to 1,704 URLs OVERNIGHT, -58.5%, and nothing said so.
+Entirely in the building shards: sitemap-M 1,783 to 403, sitemap-Bk 1,106 to 273, Bx 235 to
+142, Q 291 to 203, SI 37 to 32 — 3,452 to 1,053 building URLs, -2,399 — plus daily 25 to 24
+and hub 2 to 1. Cause found, and it is not this loop: the owner's commit ce1889b
+(2026-10-06 18:52 ET, "Drop all Zumper and StreetEasy/Apify listing data") deleted
+listings.json for Terms reasons and removed the "ever advertised" sitemap promotion rule that
+read it. build_seo.py's promoted set is now exactly its two measured rules — EVER_SERVED_BBLS
+or units >= 300 — and 1,053 is what those two alone promote. Google still holds the larger
+set: sitemapstatus reads urls_read 4,099 against urls_local 1,704.
+
+THAT EVENT RE-DREW THE INDEX CENSUS AND EVERY LEVEL IT REPORTS TONIGHT IS AN ARTIFACT.
+reconcile() dropped 224 cohort URLs that are no longer in any sitemap and drew 208 new ones.
+Last night to tonight: index_cohort 458 to 442, index_read 458 to 334 (-124, in a series whose
+own 2026-09-18 entry established that it is a level and a level cannot fall),
+index_fetched 95 to 119, index_fetched_pct 20.7% to 35.6% after sixteen flat days,
+index_fetched_mature 88 to 113, index_state_unknown_to_google 272 to 175,
+index_state_discovered_not_indexed 94 to 40, index_state_crawled_not_indexed 94 to 118,
+index_ever_indexed 4 to 3, index_evicted 3 to 2. The one number here that is a RATE and not a
+level went the other way: index_crawls_14d 7 to 6, index_crawls_28d 8 to 6.
+index_accept_pct_mature is still 0.0% on 113 mature crawls. 2 URLs evicted and named:
+/neighborhood/queens/long-island-city-hunters-point/ and /zip/11356/.
+
+SEARCH, unmoved. gsc_serving_pages 10 to 9; gsc_serving_ever 289, frozen since 2026-09-28;
+search_share_pct 0.0 and tracked_ranking 0 of 565 tracked queries (464 covered, 82.1%).
+gsc_serving_nonbranded went 0 to 1 — the first non-branded serving page in 25 readings — and
+it is NOT a crack in the wall: the one non-branded impression is the homepage at position 94
+for "cribs apartment", 1 impression, 0 clicks. The GSC window is 2026-09-28..2026-10-05, so
+it does not yet contain 2026-10-06 at all.
+
+TRAFFIC AND MONEY. 2026-10-06: 200 visitors, 151 direct, 48 organic, 4 AI (all chatgpt.com),
+175 of 200 landing on "/". paying_subs 1, mrr_usd 4.99, reports_sold 0 on day ~72 of the $9
+report, accounts_with_saves 46, api_keys 4 with 0 Pro and 0 Business. Engine health: cron
+heartbeat clean, scout ok with 3 techniques and 25 keywords proposed (T102-T104), outreach ok
+with 0 drafted. No API usage cap in sight tonight — both jobs ran.
+
+NOTHING DUE FOR REVISIT. The earliest revisit_on in the ledger is 2026-10-12
+(T015 dataset_schema_ai_citation, T016 embeddable_building_lookup_widget), then T089 on
+10-14 and T046 on 10-20. No revisit was handled tonight and none was due.
+
+**Concluded.** (1) THE HEADLINE IS NOT THE NUMBER THAT MOVED, IT IS THAT NOTHING COULD TELL. A +14.9pp jump
+in the site's headline fetch rate, after sixteen flat days, with index_read falling 124 in the
+same breath, is not Googlebot. It is 100 inspections spent mostly on URLs the cohort had never
+asked about before, which came back already carrying a crawl date. The honest reading of
+tonight's crawl behaviour is index_crawls_14d 7 to 6 and index_crawls_28d 8 to 6 — slightly
+worse, not better. A review opening results.jsonl in six months would have seen the jump with
+nothing beside it to say the sample was half replaced that morning, and this is the third time
+this journal has been bitten by the same class of confusion (2026-09-18 on a level that cannot
+fall, 2026-09-30 on evidence the file had already lost). index_ever_indexed 4 to 3 is that
+loss happening again tonight: a URL this sampler had once seen indexed left the sitemaps, and
+first_indexed lives only on the cohort row, so the fact that it was ever accepted is gone.
+
+(2) THE SHRINKAGE ITSELF WAS GOOD AND SHOULD NOT BE REVERTED. The rule that went away was
+measured at 1.11x — the null — in build_seo.py's own comment, so the sitemap lost no URL that
+had earned its place, and pages that have ever served stay promoted through the ever-served
+rule. The submitted-to-indexed ratio went from 1 in 4,105 to 1 in 1,704. Today's research is
+consistent that a wide gap between submitted and indexed is itself read as a site-level
+quality signal, which makes the direction right. This is the largest single reduction in
+crawl waste the site has made since the triage shipped, it was free, and it came from an
+owner commit made for an unrelated and correct reason (Zumper's Terms forbid scraping). The
+same commit also quietly closed the 2026-09-22 finding: /available/ is gone from the docroot,
+so the 52 frozen pages that still said "recently advertised" are no longer served.
+
+(3) WHAT IS NOT CLAIMED, because the temptation is obvious. Nothing here predicts a crawl or
+acceptance recovery from a smaller sitemap, and tonight's numbers cannot be used as evidence
+either way — they are about a different set of pages. index_accept_pct_mature is 0.0% across
+113 mature crawls and has never read anything else since 2026-09-06. Google fetches and
+refuses; that is still the binding constraint and nothing shipped today touches it.
+
+(4) THE RATCHET, found and written down rather than acted on. The promoted building set is now
+exactly (ever served) OR (units >= 300). A page the triage declines carries
+googlebot:noindex,follow and sits in no sitemap, so it can never earn an impression, so it can
+never enter EVER_SERVED_BBLS. The 300-unit rule is static. The promoted set therefore has no
+growth path left and can only shrink — and the ledger build_seo.py names as the gate to widen
+it, accept_pct_mature, is computed over a cohort drawn from sitemap_urls(docroot), which is to
+say over promoted pages only. The gate is unreachable by construction. I considered shipping
+the obvious answer tonight (T066's randomised cohort: keep ~200 deterministically-chosen
+non-promoted pages indexable and advertised, in their own shard, as a control stratum) and
+did NOT, for one reason that survives: promoted pages are refused at 0.0%, the control pages
+are thinner than the promoted ones, so the expected readout is 0% and the experiment would
+buy a number that cannot change a decision. It becomes worth running the moment
+accept_pct_mature is non-zero for anything. Written here so the next run does not re-derive
+it, and so the ratchet is on the record either way.
+
+(5) THE NON-BRANDED SERVING PAGE IS NOISE AND MUST NOT BE REPORTED AS PROGRESS. 0 to 1 looks
+like the first crack in a 74-night zero. It is the homepage at position 94 for "cribs
+apartment" — brand-adjacent, no rent-regulation intent, 1 impression, 0 clicks. The 90% goal
+is still at 0.0% on 565 tracked queries with 0 of them ranking.
+
+(6) YESTERDAY'S WATCHING ITEM (3) CANNOT REPORT YET, and I nearly misread it. The restamp
+hypothesis predicted serving pages falling 2-4 days after 2026-10-06. gsc_serving_pages did
+fall, 10 to 9 — but the Search Console window is 2026-09-28..2026-10-05 and does not contain
+2026-10-06 at all, so tonight's reading is blind to the event by construction. The earliest
+window that can see it closes around 2026-10-09. The 10 to 9 is noise in a series that has run
+17 to 9 over three weeks.
+
+(7) STILL NOT MINE, unchanged: AdSense has no slot id so no ads render; api@findacrib.com may
+not be a live forwarding alias. And still unanswered: the ledger holds 80
+candidate records against 22 active, and no pre-existing candidate has been promoted in five
+weeks — every technique activated in that time (T089, T090, T091, T101) was written to answer
+that night's measurement. Tonight is the fifth week of making that trade and saying so.
+
+**Changed.** ONE CHANGE: THE INDEX CENSUS NOW DECLARES ITS OWN DISCONTINUITIES. 2 files edited, 1 new test
+file. No technique added, no page template touched, no keyword added.
+
+(a) growth/indexstatus.py — reconcile() MEASURES WHAT THE DROP TAKES WITH IT. It now returns a
+fourth value, `took` = {fetched, indexed, ever_indexed}, counted over the departing rows
+BEFORE they are popped, because afterwards the evidence is gone. The counting mirrors
+summarise() increment for increment, read gate included (a row this sampler never inspected
+contributes to no level, so its departure removes nothing from one) — asserted in the tests
+rather than left to a comment, since the whole value of the number is that yesterday's level
+minus `took` plus tonight's findings equals tonight's level.
+
+(b) growth/indexstatus.py — churn_report() AND THE VERDICT IT CARRIES. New pure function: takes
+the cohort, added, dropped, took, published and last night's published count, and returns the
+record persisted as index_status.json["churn"], recorded into results.jsonl and read by the
+report. It carries `comparable` — one judgement made once, rather than a threshold three
+readers each re-apply — which is False above COHORT_CHURN_PCT = 10.0% turnover, and a `note`
+that spells out the arithmetic in words: how many came and went, what the departures removed
+from the levels, how the advertised set moved upstream, and which metric to read instead
+(index_crawls_14d, a rate over the cohort rather than a level in it). On a quiet night it says
+the levels DO compare, deliberately: "no note" and "nothing moved" must not look the same.
+`pct` is turnover over the post-reconcile cohort, documented as such, with its denominator
+recorded beside it; it can exceed 100% on a night the sample is wholly replaced, which is the
+correct description of that night.
+
+(c) growth/indexstatus.py — SEVEN NEW NIGHTLY SERIES, recorded UNCONDITIONALLY and
+deliberately outside the tot["read"] gate. index_published (the advertised set the cohort is
+drawn from — sitemapstatus has recorded urls_local since 2026-10-03 and 4,105 to 1,704 passed
+through it without comment), index_added, index_dropped, index_churn_pct,
+index_dropped_fetched, index_dropped_indexed and index_dropped_ever_indexed. The read gate
+exists because a 0 from a denied API would read as "nothing is indexed", a claim the run never
+made; none of these seven depends on the API, all are facts about our own sitemaps and our own
+file, and they are true on a night the quota was spent before the first call.
+index_dropped_ever_indexed is the one that matters most: index_ever_indexed went 4 to 3
+tonight and nothing recorded which URL took its first_indexed with it, which is precisely the
+loss the 2026-09-30 entry could not reconstruct for eight August URLs. PUBLISHED_SHIFT_PCT =
+25.0 is the share above which the detail line names the upstream move in words. Also in
+last_run.json under indexstatus.churn, and printed to the build log.
+
+(d) growth/report.py — THE QUALIFIER SITS WHERE THE NUMBER IS READ. New _index_churn(), and a
+warn callout rendered immediately beneath the "Ever fetched / Kept, of fetched" tiles, only
+when churn_report says the night is not comparable. Under the tiles and not in a footnote
+because those two tiles are exactly the numbers made meaningless by a re-draw — tonight they
+would have printed 35.6% and 0.8% with nothing to say the sample had moved. It is an emailkit
+`callout` block, so the HTML and the plain-text part come from the same block list; verified
+both render, with the real 2026-10-07 figures injected.
+
+(e) tests/test_index_cohort_churn.py — NEW, 9 tests, because a docstring cannot fail a build
+and this is the third time the journal has tripped on level-vs-cohort. It asserts: the drop is
+measured before the pop; those counts equal summarise()'s own counts on the same rows; an
+unread row is not counted as indexed; a half-replaced cohort is incomparable and says so with
+the arithmetic in the words; a quiet night says the levels DO compare; a 3-URL refill stays
+comparable and does not print a scare note; COHORT_CHURN_PCT actually drives the verdict
+(move the constant, the verdict moves — otherwise it is decoration); an empty cohort does not
+divide by zero; and the report renders the callout exactly once when incomparable and not at
+all when comparable. PROVED ABLE TO FAIL: stubbing reconcile's fetched counter to 0 turns 2 of
+the 9 red.
+
+NOT SHIPPED, said plainly: T066's control cohort, for the reason in conclusion (4) — the
+expected readout is 0% and would change no decision; no tracked keyword, because the standing
+rule holds and index_indexed is still 1; nothing retired; no pre-existing candidate activated;
+no email copy touched; nothing done about the four stale sitemap shards (la 18d, council 17d,
+dc 15d), the duplication readings, /methodology/'s unconditional dateModified, or the two
+voucher-listed buildings whose pages lack the block.
+
+VERIFIED: py_compile clean on growth/*.py and growth_daily.py. tests/run_unit.py 108/108.
+`build --dry-run --docroot . --build-dir .` exits 0 with the same bare-checkout FAILs as
+recent runs. report.build() renders both parts, 107,541 HTML bytes / 450 text lines, and
+107,772 / 450 with a churn record injected. growth/results.jsonl, last_run.json,
+keywords.json, techniques.json and index_status.json all md5-identical before and after the
+dry run.
+
+**Watching.** (1) THE CHURN RECORD'S FIRST LIVE READING, in last_run.json under indexstatus.churn, and in
+results.jsonl as index_published / index_added / index_dropped / index_churn_pct /
+index_dropped_fetched / index_dropped_indexed / index_dropped_ever_indexed. Expect a QUIET
+one: the advertised set should hold near 1,704, so added and dropped should be small, pct well
+under 10%, comparable=true, and the note should read "the cohort moved by N% tonight" or
+"cohort unchanged". If pct comes back large again on 2026-10-08, the sitemap is still moving
+and that — not the index levels — is the finding. index_published is now the series that says
+so on any single night.
+
+(2) AND THE LEVELS, WHICH SHOULD SIT STILL NOW. index_read fell 458 to 334 tonight on a
+re-draw; with the cohort stable it should climb back toward 442 as the rotation re-reads the
+208 new members over ~4-5 nights, and index_fetched / index_fetched_pct will drift up with it
+for the same reason. DO NOT READ THAT AS A CRAWL RECOVERY. The number to read for that is
+index_crawls_14d, which went 7 to 6 tonight. A genuine recovery is that series rising.
+
+(3) index_accept_pct_mature, still 0.0% on 113 mature crawls, and now on a re-based
+denominator. This is the binding constraint and the only metric whose movement would change
+what gets built. If it ever reads non-zero for any family, T066's control cohort (conclusion 4)
+becomes worth running the same night — the ratchet argument is already written, only the
+expected readout is missing.
+
+(4) YESTERDAY'S RESTAMP TEST, now datable. The 2026-10-06 event enters the Search Console
+window around 2026-10-09. Read gsc_serving_pages, gsc_serving_ever (289, frozen since 09-28)
+and index_crawls_14d on 10-09 and 10-10, and say which way it went. If nothing falls, that is
+evidence AGAINST the diagnosis in build_seo.py's docstring and worth as much as a
+confirmation. Tonight's 10 to 9 is NOT that test firing — the window cannot see 10-06 yet.
+
+(5) gsc_serving_nonbranded. It is 1 tonight and it is the homepage at position 94 for "cribs
+apartment". If it stays at 1 or returns to 0, say so and move on. It only becomes news if a
+query with actual rent-regulation intent appears in gsc_pages.json's queries_by_page, which is
+the file to check before celebrating the counter.
+
+(6) THE OWNER ASKS, reordered by what tonight changed. FIRST, unchanged and now more pointed:
+Bing Webmaster Tools (Reports & Data → IndexNow, AI Performance). AI is still the only channel
+on this site with a positive verdict (4 visitors tonight, all chatgpt.com, whose substrate is
+Bing), 217 URLs went to IndexNow last night, and nothing on this box can see what Bing did
+with any of it. SECOND: an accurate four-city answer block in index.html's static HTML through
+deploy_app.sh — "/" is the only URL Google indexes and 175 of 200 visitors land there. THIRD:
+how many accounts reach step `saved` with a resolvable NYC BBL, which is the only way to tell
+whether reports_sold 0 on day ~72 is a volume problem or a copy problem.
+
+(7) STANDING RULES, unchanged: subtract findacrib and jayshomefinder from every raw click
+count; exclude the 2026-07-17/18 ad flight; treat every serving_pages figure as a floor AND as
+branded until queries_by_page says otherwise; never run keywords.check_coverage() outside a
+built docroot; never run build without --dry-run here, and remember it writes last_run.json
+wherever --build-dir points; per-technique series live under the technique slug in
+results.jsonl; check a seeded technique's own seed dict for a `notes=` key before using
+ledger.note(); check `git diff growth/results.jsonl` before every commit; write journal
+entries from a FILE, not from a shell argument; and push with `git push origin HEAD:main`
+because this container is a shallow detached clone whose local main ref is stale.

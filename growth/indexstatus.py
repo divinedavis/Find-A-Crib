@@ -224,6 +224,59 @@ CRAWL_WEEKS = 8
 DAILY_BUDGET = int(os.environ.get("GROWTH_INDEX_BUDGET", "100"))
 PACE_SECONDS = 0.4        # ~150/min against a 600/min ceiling
 
+# ---- WHEN A LEVEL IS NOT A TREND, and the night that forced this to exist.
+#
+# Every rate above the crawl windows is a LEVEL over the cohort: index_fetched
+# counts how many cohort URLs we have ever seen a crawl date for, so on a FIXED
+# cohort it can only rise when Google fetches something new. That property is
+# what the whole module leans on, and it holds exactly as long as the cohort
+# holds still. reconcile() is allowed to move it, and nothing recorded the move.
+#
+# 2026-10-07 is what that costs. The owner's 2026-10-06 commit removed the
+# "ever advertised" sitemap promotion rule (it read a Zumper-derived feed that
+# was dropped for Terms reasons; the rule had been measured at 1.11x, the null),
+# and the advertised corpus fell 4,105 → 1,704 URLs in one night. reconcile()
+# did the only correct thing with that — a de-published URL cannot be inspected
+# — and dropped 224 cohort members, topping the families back up with 208 new
+# ones. The night's readings then went out as:
+#
+#     index_fetched      95 → 119   (+24)
+#     index_fetched_pct  20.8% → 35.6%   (+14.8pp, after sixteen flat days)
+#     index_fetched_mature  88 → 113
+#
+# Not one of those is Googlebot doing anything. They are 100 inspections spent
+# mostly on URLs the cohort had never asked about before, which came back
+# already carrying a crawl date. index_crawls_14d — the one number here that is
+# a rate and not a level — went 7 → 6 over the same night, which is the honest
+# reading. A review opening results.jsonl six months from now sees a 14.8-point
+# jump in the site's headline fetch rate with nothing beside it to say the
+# sample was half replaced that morning, and the journal already records two
+# earlier entries bitten by exactly this class of confusion (2026-09-18, on a
+# level that could not fall; 2026-09-30, on evidence the file had lost).
+#
+# So the cohort now declares its own discontinuities: how many URLs came and
+# went, and — the part that actually closes the arithmetic — what the departures
+# took with them. yesterday's level, minus dropped_fetched, plus what tonight's
+# inspections found, is today's level. With those three numbers on the same
+# night, a jump is attributable; without them it is a story.
+COHORT_CHURN_PCT = 10.0
+
+# The same question one level up: the cohort is drawn from the sitemaps, so a
+# large move in the ADVERTISED set is the upstream cause of a large move in the
+# cohort. Nothing on this box audited that number either — sitemapstatus has
+# recorded urls_local since 2026-10-03 and 4,105 → 1,704 passed through it
+# without comment. Above this share, the detail line says so in words.
+#
+# NOT A FAILURE AND NOT RED. Last night's shrinkage was, on its own terms, the
+# largest single reduction in crawl waste this site has made since the triage
+# shipped: 2,399 URLs that had been promoted by a rule measured at the null left
+# the sitemap, and the submitted:indexed ratio went from 1 in 4,105 to 1 in
+# 1,704. 2026 guidance on large-site indexing is consistent that a wide gap
+# between submitted and indexed is itself read as a site-level quality signal,
+# which makes the direction right. The finding is only that an event of this
+# size must not be silent — not that it should be reverted.
+PUBLISHED_SHIFT_PCT = 25.0
+
 # Google's coverageState strings are prose and have changed wording before, so
 # match on the substring that carries the meaning rather than on equality.
 _STATE_BUCKETS = (
@@ -359,15 +412,36 @@ def _rank(url):
 
 def reconcile(cohort, published):
     """Drop cohort URLs that are no longer published, then top each family back
-    up to its quota. Returns (cohort, dropped, added).
+    up to its quota. Returns (cohort, dropped, added, took).
 
     Existing members are never evicted to make room for a lower-hashing
     newcomer: the point of the cohort is that today's rate and last week's rate
     describe the same pages. It only ever shrinks by de-publication.
+
+    `took` is what the drop removed from tonight's levels, measured BEFORE the
+    entries are popped and the evidence is gone: {"fetched", "indexed",
+    "ever_indexed"}. See COHORT_CHURN_PCT — without it, a level that fell
+    because 224 URLs left the sitemap and a level that fell because Google threw
+    pages out are the same number, and the second is the only one that is news.
+    Counted through bucket() and `crawled` on exactly the rules summarise()
+    uses, so the two agree by construction rather than by coincidence.
     """
     live = set(published)
     dropped = [u for u in cohort if u not in live]
+    took = {"fetched": 0, "indexed": 0, "ever_indexed": 0}
     for u in dropped:
+        rec = cohort.get(u) or {}
+        # The read gate first, exactly as summarise() applies it: a row this
+        # sampler has never inspected contributes to no level, so its departure
+        # removes nothing from one. Everything inside the gate then mirrors
+        # summarise()'s own increments one for one.
+        if rec.get("checked") or rec.get("bucket"):
+            if rec.get("crawled"):
+                took["fetched"] += 1
+            if bucket(rec.get("state")) == "indexed":
+                took["indexed"] += 1
+            if rec.get("first_indexed"):
+                took["ever_indexed"] += 1
         cohort.pop(u, None)
 
     have = {}
@@ -390,7 +464,88 @@ def reconcile(cohort, published):
                 cohort[u] = {"family": fam}
                 added.append(u)
                 need -= 1
-    return cohort, dropped, added
+    return cohort, dropped, added, took
+
+
+def churn_report(cohort, added, dropped, took, published, prev_published=None):
+    """What moved in our own sample tonight, and whether the levels still compare.
+
+    Pure arithmetic over values the caller already has, so it is testable
+    without a cohort file, an API token or a docroot. Returns the dict that is
+    persisted as index_status.json["churn"], recorded into results.jsonl and
+    read by the daily report.
+
+    `pct` is (added + dropped) as a share of the cohort AFTER reconcile, and
+    that denominator is recorded beside it as `cohort` so a later reader can
+    re-base it. It is turnover and not a proportion of anything, so on a night
+    the sample is wholly replaced it reads above 100% — which is the correct
+    description of that night and is why the threshold is a floor, not a scale.
+
+    `comparable` is the field everything else hangs off, and it is deliberately
+    a judgement this module makes once rather than a threshold three readers
+    each re-apply. False means: do not read tonight's index_fetched,
+    index_indexed, index_fetched_pct or index_accept_pct* against last night's.
+    The rates are still correct about tonight's cohort — they are simply about a
+    different set of pages, and `note` carries the arithmetic that bridges them.
+    """
+    n = len(cohort)
+    moved = len(added) + len(dropped)
+    pct = round(moved * 100.0 / n, 1) if n else 0.0
+    out = {"added": len(added), "dropped": len(dropped), "pct": pct,
+           "cohort": n, "published": len(published),
+           "dropped_fetched": took.get("fetched", 0),
+           "dropped_indexed": took.get("indexed", 0),
+           "dropped_ever_indexed": took.get("ever_indexed", 0),
+           "comparable": pct < COHORT_CHURN_PCT}
+    # The advertised set, and its own move. prev_published comes from
+    # results.jsonl rather than from this file, because index_status.json holds
+    # only the latest state and the question is explicitly about last night.
+    if prev_published:
+        shift = len(published) - prev_published
+        out["published_prev"] = prev_published
+        out["published_shift"] = shift
+        out["published_shift_pct"] = round(shift * 100.0 / prev_published, 1)
+
+    if not moved:
+        out["note"] = (f"cohort unchanged at {n:,} URLs — tonight's levels compare "
+                       f"directly with last night's")
+        return out
+
+    bits = [f"the cohort moved by {pct:.1f}% tonight: {len(dropped):,} URL"
+            f"{'' if len(dropped) == 1 else 's'} dropped (no longer in any sitemap) "
+            f"and {len(added):,} added to refill the family quotas, over a cohort of "
+            f"{n:,}"]
+    if dropped:
+        bits.append(f"the departures took {took.get('fetched', 0):,} ever-fetched and "
+                    f"{took.get('indexed', 0):,} indexed reading(s) out of the levels "
+                    f"with them")
+    if out.get("published_shift"):
+        bits.append(f"upstream, the advertised set went {prev_published:,} → "
+                    f"{len(published):,} ({out['published_shift_pct']:+.1f}%)")
+    if not out["comparable"]:
+        bits.append("so index_fetched, index_indexed and every rate built on them are "
+                    "NOT comparable with last night: subtract the departures from "
+                    "yesterday's level before reading tonight's as movement, and use "
+                    "index_crawls_14d, which is a rate over the cohort rather than a "
+                    "level in it, for what Googlebot actually did")
+    out["note"] = " — ".join(bits)
+    return out
+
+
+def _prev_published(today):
+    """The last index_published reading from a night before `today`, or None.
+
+    Strictly before today on purpose: collect() can be re-run on the same day
+    (the 05:00 job and a manual re-run both record), and comparing tonight's
+    advertised count against a value this same run wrote would always report
+    "no change".
+    """
+    try:
+        rows = [(d, v) for d, v in ledger.series("__site__", "index_published")
+                if d < today and isinstance(v, (int, float)) and v]
+    except Exception:
+        return None
+    return int(rows[-1][1]) if rows else None
 
 
 def _due(cohort, budget):
@@ -958,7 +1113,10 @@ def collect(docroot, budget=None):
                                               "inspected": 0})
         return {"ok": False, "detail": detail, "inspected": 0}
 
-    cohort, dropped, added = reconcile(cohort, published)
+    cohort, dropped, added, took = reconcile(cohort, published)
+    churn = churn_report(cohort, added, dropped, took, published,
+                         _prev_published(ledger.today()))
+    print(f"  cohort: {churn['note']}")
 
     try:
         import seo_search_console as sc
@@ -1070,10 +1228,44 @@ def collect(docroot, budget=None):
     doc["summary"] = summary
     doc["updated"] = ledger.today()
     doc["published_urls"] = len(published)
+    # Persisted beside the summary, not only in last_run.json, because the
+    # report reads its index blocks out of this file and the churn has to be
+    # available to the same reader that renders the levels it qualifies.
+    doc["churn"] = churn
     _save(doc)
 
     today = ledger.today()
     tot = summary["total"]
+    # ---- the sample's own movement, recorded UNCONDITIONALLY and deliberately
+    # outside the tot["read"] gate below. That gate exists because a 0 from a
+    # denied API would read as "nothing is indexed", a claim the run never
+    # observed. Nothing here depends on the API: these six numbers are facts
+    # about our own sitemaps and our own file, they are true on a night the
+    # inspection quota was spent before the first call, and they are exactly
+    # the numbers that are missing when a later review tries to tell a crawl
+    # recovery from a re-drawn sample. See COHORT_CHURN_PCT.
+    for metric, value in (("index_published", churn["published"]),
+                          ("index_added", churn["added"]),
+                          ("index_dropped", churn["dropped"]),
+                          ("index_churn_pct", churn["pct"]),
+                          # What the departures took out of the levels. A 0 here
+                          # is an observation and not a missing value — it says
+                          # the URLs that left had no crawl evidence to remove —
+                          # so unlike lost_indexed/gained_indexed these are not
+                          # gated on movement having happened.
+                          ("index_dropped_fetched", churn["dropped_fetched"]),
+                          ("index_dropped_indexed", churn["dropped_indexed"]),
+                          # The irrecoverable one, and the reason it is a series
+                          # rather than a line in last_run.json. index_ever_indexed
+                          # went 4 → 3 on 2026-10-07: a URL this sampler had once
+                          # seen in Google's index left the sitemaps, and with it
+                          # went the only record that it had ever been accepted —
+                          # first_indexed lives on the cohort row and nothing
+                          # outside the cohort keeps it. The 2026-09-30 entry
+                          # could not reconstruct eight such losses from August.
+                          # This is the number that makes the next one legible.
+                          ("index_dropped_ever_indexed", churn["dropped_ever_indexed"])):
+        ledger.record_result(today, "__site__", metric, value)
     # Only record when the cohort actually holds readings. A denied or dead API
     # leaves read=0, and writing that into the series would put a hard zero on
     # the day — a measurement failure rendered as "nothing is indexed", which is
@@ -1261,6 +1453,12 @@ def collect(docroot, budget=None):
            "gained_indexed": gained_indexed,
            "published_urls": len(published),
            "added": len(added), "dropped": len(dropped),
+           # …and what that turnover means for every level above it. `added`
+           # and `dropped` have been in this record since the sampler shipped
+           # and were not enough: on 2026-10-07 they read 208 and 224 beside a
+           # +14.8pp jump in fetched_pct and nothing said the two were the same
+           # event. See COHORT_CHURN_PCT.
+           "churn": churn,
            # last_run.json is committed nightly and is the first thing a review
            # reads. Carrying the split here means the diagnosis is legible from
            # `growth_daily.py status` alone, without opening the cohort file.

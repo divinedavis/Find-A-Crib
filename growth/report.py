@@ -197,6 +197,24 @@ def _index_summary():
         return None
 
 
+def _index_churn():
+    """index_status.json's churn record, or None.
+
+    Separate from _index_summary() because it answers a different question:
+    summarise() describes the cohort as it stands, and this says whether that
+    cohort is the same one last night's numbers described. See
+    COHORT_CHURN_PCT in growth/indexstatus.py — on 2026-10-07 the sample was
+    half replaced overnight and the report rendered a +14.8pp jump in "Ever
+    fetched" with nothing to say so.
+    """
+    try:
+        from . import indexstatus
+        with open(indexstatus.STATUS_PATH) as f:
+            return json.load(f).get("churn") or None
+    except Exception:
+        return None
+
+
 def _index_families(limit=8):
     """Rows for the sampled index-coverage table: one page family per row.
 
@@ -649,6 +667,20 @@ def build_blocks(run_log=None, review_out=None):
                     {"label": "Kept, of fetched", "value": f"{_acc}%",
                      "delta": "and did not drop it again",
                      "tone": "bad" if _acc < 50 else "info"}]})
+            # ---- and whether those two tiles describe the same pages they did
+            # last night. Both are levels over the cohort, and reconcile() is
+            # allowed to replace cohort members whenever the sitemaps change: on
+            # 2026-10-07 the advertised set fell 4,105 → 1,704 URLs, 224 of 442
+            # cohort rows were dropped and 208 drawn in, and "Ever fetched"
+            # printed 35.6% against sixteen previous days of 20.8% purely
+            # because the sample moved. Rendered immediately under the tiles and
+            # only when the churn is material, so the qualifier sits where the
+            # number is read rather than in a footnote further down.
+            _ch = _index_churn()
+            if _ch and not _ch.get("comparable", True):
+                B.append({"type": "callout", "tone": "warn",
+                          "heading": "The sample moved — these two are not a trend",
+                          "body": str(_ch.get("note") or "")})
             # ---- is Googlebot still coming? Every rate above is a level over
             # a fixed cohort and cannot fall, so all of them read "flat" on
             # 2026-09-18 — index_fetched_pct had been 20.8% for sixteen days —

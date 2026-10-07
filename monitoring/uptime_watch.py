@@ -31,7 +31,11 @@ from pathlib import Path
 SITES = [
     ("https://findacrib.com/", "Find A Crib"),
     ("https://findacrib.com/api/geo", '"lat"'),
-    ("https://creasenyc.com/", None),
+    ("https://creasenyc.com/", "Crease: Laundry"),
+    ("https://portal.creasenyc.com/login", "cleaner portal"),
+    ("https://api.creasenyc.com/healthz", '"ok":true'),
+    # The alias shipped iOS builds and the Stripe webhook still call.
+    ("https://crease.divinedavis.com/healthz", '"ok":true'),
     ("https://nemoseamlessgutter.com/", None),
     ("https://haukley.com/", None),
     ("https://rawchella.com/", None),

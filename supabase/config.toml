@@ -12,3 +12,9 @@ verify_jwt = false
 # for the calling user. Pinned explicitly so a redeploy can't drop it.
 [functions.create-checkout]
 verify_jwt = true
+
+# App Store Server Notifications V2 (2026-10-07): Apple sends no Supabase JWT;
+# the function verifies Apple's JWS chain instead. Must stay false or every
+# renewal/expiry notification 401s.
+[functions.apple-notifications]
+verify_jwt = false

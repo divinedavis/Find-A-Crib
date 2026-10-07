@@ -1,0 +1,11 @@
+# gitleaks: default rules, plus one allowlisted path.
+# apple_test_notification.json is a real App Store Server Notification of type
+# TEST (Sandbox) that Apple signed for another of the owner's apps: a JWS made
+# of Apple's PUBLIC certificate chain and a public payload — no secret. The
+# Deno tests verify it against the pinned Apple root.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Apple-signed public test notification fixture"
+paths = ['''supabase/functions/apple-notifications/fixtures/apple_test_notification\.json''']

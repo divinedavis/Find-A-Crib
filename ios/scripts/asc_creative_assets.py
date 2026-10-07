@@ -9,10 +9,14 @@ several apps are under an App Store freeze (see memory).
 
     ~/.venvs/dhcr-map/bin/python scripts/asc_creative_assets.py list APP_ID
     ~/.venvs/dhcr-map/bin/python scripts/asc_creative_assets.py upload APP_ID DIR [--prefix NAME]
+    ~/.venvs/dhcr-map/bin/python scripts/asc_creative_assets.py retire APP_ID --prefix NAME
 
 `upload` sends every *.png under DIR (recursively). The reference name is
 `<prefix>/<relative path>`, so a rerun skips files already in the library
-instead of uploading duplicates.
+instead of uploading duplicates. `retire` removes every live asset whose
+reference name starts with `<prefix>/` (archives approved ones, deletes
+drafts, since Apple only archives approved assets), so a redesigned set can
+be uploaded under the same names.
 """
 import argparse
 import os
@@ -90,7 +94,7 @@ def upload_one(app_id, f, ref):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["list", "upload"])
+    ap.add_argument("cmd", choices=["list", "upload", "retire"])
     ap.add_argument("app_id")
     ap.add_argument("dir", nargs="?")
     ap.add_argument("--prefix", default="")
@@ -101,6 +105,20 @@ def main():
         for i in existing:
             at = i["attributes"]
             print(f"{i['id']}  {at.get('state'):<22} {at.get('referenceName')}")
+        return
+    if a.cmd == "retire":
+        if not a.prefix:
+            sys.exit("retire needs --prefix")
+        for i in existing:
+            at = i["attributes"]
+            if at.get("state") != "ARCHIVED" and (at.get("referenceName") or "").startswith(a.prefix + "/"):
+                if at.get("state") == "APPROVED":
+                    call("PATCH", f"/v1/appAssetLibraryImages/{i['id']}", {"data": {
+                        "type": "appAssetLibraryImages", "id": i["id"], "attributes": {"archived": True}}})
+                    print(f"archived {at.get('referenceName')}")
+                else:
+                    call("DELETE", f"/v1/appAssetLibraryImages/{i['id']}")
+                    print(f"deleted  {at.get('referenceName')} ({at.get('state')})")
         return
     have = {i["attributes"].get("referenceName") for i in existing if i["attributes"].get("state") != "ARCHIVED"}
     root = Path(a.dir).expanduser()

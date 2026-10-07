@@ -203,7 +203,7 @@ def preview(banner):
     img.paste(icon, (int(50 * s), banner.height + int(60 * s)), m)
     d = ImageDraw.Draw(img)
     d.text((int(290 * s), banner.height + int(70 * s)), "Find A Crib", font=font("Bold", 54 * s), fill=WHITE)
-    d.text((int(290 * s), banner.height + int(140 * s)), "Every rent-stabilized building in NYC", font=font("Regular", 34 * s), fill=(150, 150, 155))
+    d.text((int(290 * s), banner.height + int(140 * s)), "NYC, LA, SF & DC rent maps", font=font("Regular", 34 * s), fill=(150, 150, 155))
     return img
 
 

@@ -1069,10 +1069,17 @@ def main():
         # so it normally holds the day's slot. A Plus subscriber whose slot is
         # used still gets the real-time push; the email waits for tomorrow.
         email_it = True
+        # Held items a push-only run already put on the phone. They still ride
+        # tomorrow's email but never buzz the phone again: the 2026-10-07 bug
+        # re-pushed one held re-rental on every later run that found anything
+        # new for anyone (owner got 570 Nostrand Ave. three times).
+        to_push = [i for i in mine if not i.get("pushed")]
         if not ok:
-            if is_plus and phones:
+            if is_plus and phones and to_push:
                 email_it = False
-                st["held"][sid] = mine[-HELD_MAX:]    # tomorrow's first email carries them
+                # tomorrow's first email carries them; copies, because `new`
+                # items are shared by every subscriber in this run
+                st["held"][sid] = [dict(i, pushed=True) for i in mine][-HELD_MAX:]
             else:
                 hold("already emailed today")
                 continue
@@ -1096,7 +1103,9 @@ def main():
         # The same alert on the phone, to every device on the account. Rides
         # with the email deliberately: one moment, both channels, and the
         # email's one-a-day cap already decided this was the moment.
-        title, text_body = push_text(mine)
+        if not to_push:
+            continue
+        title, text_body = push_text(to_push)
         if digest:
             text_body = (text_body + " · Re-rentals go first come, first served: get them the minute they open with Plus")[:178]
         for dev in phones:
@@ -1105,8 +1114,8 @@ def main():
             # left the rest unreachable and was a blank page when the site did
             # not load (owner, 2026-09-19). `url` stays for build 51.
             r = apns.send(dev["token"], dev.get("env") or "production", title, text_body,
-                          url=mine[0].get("url"), collapse=f"alert-{sid}",
-                          extra={"items": push_items(mine), "digest": digest})
+                          url=to_push[0].get("url"), collapse=f"alert-{sid}",
+                          extra={"items": push_items(to_push), "digest": digest})
             print(f"     push {dev['token'][:8]}… {r['status']} {r['reason'] or 'ok'}" + (f" (refiled as {r['refile']})" if r["refile"] else ""))
             if r["ok"]:
                 pushed += 1

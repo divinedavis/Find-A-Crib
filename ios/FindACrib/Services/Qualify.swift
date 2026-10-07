@@ -2,7 +2,8 @@ import Foundation
 import Observation
 
 /// "What do I qualify for?" (free, owner 2026-10-03). Household size and
-/// yearly income, kept ON THIS PHONE only (UserDefaults) — not sent anywhere,
+/// yearly income, kept ON THIS PHONE only (Keychain, this-device-only since
+/// 2026-10-07; was UserDefaults, migrated on first launch) — not sent anywhere,
 /// so it adds nothing to the App Privacy label. Re-rentals are checked
 /// against the unit tables the flyer reader pulls from each listing
 /// (findacrib.com/featured_units.json); lotteries against their own band.
@@ -32,24 +33,58 @@ final class Qualify {
 
     enum Verdict: String { case yes, high, low, unknown }
 
-    init() {
-        let d = UserDefaults.standard
-        household = d.object(forKey: "qualify.household") as? Int
-        income = d.object(forKey: "qualify.income") as? Int
+    /// Keychain account holding `{"household":N,"income":N}`.
+    nonisolated static let account = "qualify"
+    /// Pre-2026-10-07 UserDefaults keys, read once to migrate and then deleted.
+    nonisolated static let legacyKeys = (household: "qualify.household", income: "qualify.income")
+
+    nonisolated static let installMarker = "qualify.keychainInstalled"
+
+    private struct Stored: Codable { var household: Int; var income: Int }
+
+    private let store: SecureStore
+
+    init(store: SecureStore = SecureStore(service: "com.findacrib.qualify"),
+         defaults: UserDefaults = .standard) {
+        self.store = store
+        // Keychain items outlive an uninstall; UserDefaults does not. With no
+        // install marker this is a fresh install, so a leftover item from a
+        // previous install is dropped (keeps the old "delete app = forget it").
+        if !defaults.bool(forKey: Self.installMarker) {
+            if defaults.object(forKey: Self.legacyKeys.household) == nil { store.remove(Self.account) }
+            defaults.set(true, forKey: Self.installMarker)
+        }
+        if let d = store.data(Self.account), let s = try? JSONDecoder().decode(Stored.self, from: d) {
+            household = s.household; income = s.income
+        } else if let hh = defaults.object(forKey: Self.legacyKeys.household) as? Int,
+                  let inc = defaults.object(forKey: Self.legacyKeys.income) as? Int {
+            household = hh; income = inc
+            // Keep the plaintext copy if the Keychain write failed, so a
+            // locked-keychain launch retries next time instead of losing it.
+            guard persist() else { return }
+        }
+        // Drop the plaintext copies (also a half-set pair).
+        defaults.removeObject(forKey: Self.legacyKeys.household)
+        defaults.removeObject(forKey: Self.legacyKeys.income)
     }
 
     var isSet: Bool { household != nil && income != nil }
 
     func set(household: Int, income: Int) {
         self.household = household; self.income = income
-        UserDefaults.standard.set(household, forKey: "qualify.household")
-        UserDefaults.standard.set(income, forKey: "qualify.income")
+        persist()
     }
 
     func clear() {
         household = nil; income = nil
-        UserDefaults.standard.removeObject(forKey: "qualify.household")
-        UserDefaults.standard.removeObject(forKey: "qualify.income")
+        store.remove(Self.account)
+    }
+
+    @discardableResult
+    private func persist() -> Bool {
+        guard let household, let income,
+              let d = try? JSONEncoder().encode(Stored(household: household, income: income)) else { return false }
+        return store.set(d, for: Self.account)
     }
 
     func loadUnits() async {

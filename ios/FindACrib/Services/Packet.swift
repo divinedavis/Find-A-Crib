@@ -110,11 +110,26 @@ final class Packet {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         return base.appendingPathComponent("Packet", isDirectory: true)
     }
+    /// Creates the packet folder and locks it down: Complete data protection
+    /// (unreadable while the phone is locked) and excluded from iCloud/Finder
+    /// backups — the packet holds pay stubs, IDs and tax forms, and a backup
+    /// would copy them off the device. Re-applied on every launch because the
+    /// `attributes:` passed to createDirectory only apply to a NEW folder, and
+    /// installs before 2026-10-07 never set the backup exclusion.
+    nonisolated static func prepareFolder(_ folder: URL) {
+        let fm = FileManager.default
+        try? fm.createDirectory(at: folder, withIntermediateDirectories: true,
+                                attributes: [.protectionKey: FileProtectionType.complete])
+        try? fm.setAttributes([.protectionKey: FileProtectionType.complete], ofItemAtPath: folder.path)
+        var dir = folder
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        try? dir.setResourceValues(values)
+    }
     private static var index: URL { folder.appendingPathComponent("packet.json") }
 
     init() {
-        try? FileManager.default.createDirectory(at: Self.folder, withIntermediateDirectories: true,
-                                                 attributes: [.protectionKey: FileProtectionType.complete])
+        Self.prepareFolder(Self.folder)
         if let d = try? Data(contentsOf: Self.index), let s = try? JSONDecoder().decode(Saved.self, from: d) {
             profile = s.profile; docs = s.docs
         }

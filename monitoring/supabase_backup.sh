@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Weekly pg_dump of every Supabase project listed in /etc/supabase-backup/,
-# run on the divinedavis.com droplet (159.203.110.79) so the copy lives on a
+# run on the divinedavis.com droplet (104.236.120.144 since 2026-10-07; was 159.203.110.79) so the copy lives on a
 # different machine from both Supabase and the app droplets.
 #
 # Why: free-plan Supabase projects get NO backups — Supabase's own docs say

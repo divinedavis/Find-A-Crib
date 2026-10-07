@@ -4,8 +4,9 @@
 error_report.py runs ON the findacrib droplet, so the one failure it can
 never report is that droplet going down. This runs on the OTHER droplets:
 each box checks every site that is NOT hosted on itself (by comparing the
-site's DNS answer with the box's own addresses), so 104 watches 159's sites
-and 159 watches everyone else's.
+site's DNS answer with the box's own addresses). Since 2026-10-07 (159 merged
+into 104.236) it runs on 104.236 and 167.71: 167 watches what 104.236 hosts,
+104.236 watches everything else.
 
 Two failures in a row (~10 min) send one "DOWN" email; the first success
 after that sends "back up". State: /var/lib/uptime-watch/state.json.
@@ -36,8 +37,9 @@ SITES = [
     ("https://rawchella.com/", None),
     ("https://marracat.com/", None),
     ("https://caprecruiting.com/", None),
-    ("https://sputterbets.com/", None),
     ("https://divinedavis.com/", None),
+    ("https://jordansjobfinder.com/", None),
+    ("https://workcompapp.com/", None),
 ]
 STATE = Path("/var/lib/uptime-watch/state.json")
 FAILS_TO_ALERT = 2

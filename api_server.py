@@ -13,7 +13,7 @@ reads are fast and need no DB round-trip. The DB is used only for auth/metering.
 
 Run:  DATA_DIR=/var/www/rent-map gunicorn -w 2 -b 127.0.0.1:8010 api_server:app
 """
-import base64, datetime, glob, gzip, hashlib, hmac, json, os, re, secrets, threading, time, urllib.request, urllib.error, urllib.parse
+import datetime, glob, gzip, hashlib, hmac, json, os, re, secrets, threading, time, urllib.request, urllib.error, urllib.parse
 import zoneinfo
 
 from collections import defaultdict, deque
@@ -21,18 +21,11 @@ from concurrent.futures import ThreadPoolExecutor
 from flask import Flask, jsonify, request, g, redirect
 
 import build_log             # which run-log lines are work that shipped
-import crease_metrics
-import nemo_metrics          # NEMO Seamless Gutter traffic, same droplet
-import trent_metrics         # Trent's Fresh Spaces traffic, same droplet
-import marracat_metrics      # Marracat, fetched from its own droplet
-import claude_usage          # Anthropic API spend, owner-only tab
 import ai_gateway            # Plus check + $20/month cap for every AI call
 import nl_search             # plain-language search -> map filters
 import building_records      # one building's public records, for the Claude features
 import claude_features       # landlord report card (Haiku) + Ask about this building (Sonnet)
 import listing_page          # a re-rental's own page as text, for Help me apply
-import creator_outreach      # owner's creator-review tracker, /dashboard/creators/
-import business_checklist    # owner's business & legal setup checklist, /dashboard/business/
 
 DATA_DIR = os.environ.get("DATA_DIR", ".")
 SUPABASE_URL = "https://dbaifotzwlxjvsxjohjt.supabase.co"
@@ -41,30 +34,9 @@ STRIPE_SECRET = os.environ.get("STRIPE_SECRET_KEY", "")
 STRIPE_WH_SECRET = os.environ.get("STRIPE_API_WEBHOOK_SECRET", "")
 PRICES = {"pro": os.environ.get("STRIPE_PRICE_PRO", ""),
           "business": os.environ.get("STRIPE_PRICE_BUSINESS", "")}
-# Owner-only analytics dashboard (divinedavis.com/dashboard/, proxied here). The anon key is the
-# public browser key (safe in source); it's only used server-side here to ask
-# Supabase Auth "who is this access token?" — the real gate is the email check.
+# Public browser key (safe in source), used server-side to ask Supabase Auth
+# "who is this access token?" for the signed-in user routes.
 ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRiYWlmb3R6d2x4anZzeGpvaGp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzI2MTQsImV4cCI6MjA5Njk0ODYxNH0.5hoLfoKkNnEnFuu7jsfCTq_rUQqn8gf32BEI9qiyCI4"
-OWNER_EMAIL = "divinejdavis@gmail.com"
-# Eric owns NEMO Seamless Gutter and gets the NEMO tab of this dashboard, but
-# not Find A Crib's traffic, subscriptions or MRR — that is a different
-# business. `_dashboard_auth()` returns a scope, and only the full owner scope
-# reaches /dashboard-metrics and /dashboard-users.
-#
-# Gated by Supabase auth.users UUID, NOT email. Sign-up is auto-confirmed
-# (mailer_autoconfirm=true, no email verification), so an email allowlist lets
-# anyone register an unclaimed address and walk in — which is exactly what the
-# old NEMO_EMAILS set allowed: neither enemo@ nor eric@nemoseamlessgutter.com
-# had an account (security audit 2026-09-25).
-#
-# To grant Eric the NEMO tab: have him sign in once (Google, as
-# enemo@nemoseamlessgutter.com — eric@ is only a Workspace alias and cannot
-# authenticate), confirm the row is really his (provider = google in
-# auth.identities), then add its id here and redeploy with deploy_api.sh:
-#   select u.id, u.email, i.provider from auth.users u
-#     join auth.identities i on i.user_id = u.id
-#    where u.email = 'enemo@nemoseamlessgutter.com';
-NEMO_USER_IDS = frozenset()   # lowercase UUID strings
 BORO = {"M": "manhattan", "Bk": "brooklyn", "Q": "queens", "Bx": "bronx", "SI": "staten_island"}
 BORO_REV = {v: k for k, v in BORO.items()}
 MAX_LIMIT = 100
@@ -244,16 +216,7 @@ def gate():
        or request.path == "/geo" \
        or request.path.startswith("/reports/") \
        or request.path.startswith("/embed/") \
-       or request.path.startswith("/dashboard-creators") \
-       or request.path == "/dashboard-business" \
-       or request.path == "/creators-ingest" \
-       or request.path in ("/dashboard-metrics", "/dashboard-users", "/dashboard-visitors", "/dashboard-listings",
-                           "/dashboard-claude",  # added 2026-09-06: it was answering missing_api_key (401) on every dashboard load
-                           "/dashboard-nemo",    # own Supabase-token owner gate
-                           "/dashboard-crease",
-                           "/dashboard-trent",
-                           "/dashboard-marracat",
-                           "/dashboard-marracat-users"):
+       or request.path in DASHBOARD_READ_PATHS:   # own key gate, see _dashboard_auth
         return
     # Header only — never accept the key in the query string, where it would be
     # captured in nginx access logs, browser history, and Referer headers.
@@ -1424,18 +1387,7 @@ def stripe_webhook():
     return "", 200
 
 
-# ---- owner-only analytics dashboard -----------------------------------------
-# Verdicts are cached per token for a minute. Every dashboard click paid a
-# round trip to Supabase Auth before its own data query could start, on a page
-# whose sidebar and site switcher fire several requests in a row. Caching only
-# the answer for a token we already checked doesn't loosen the gate: the token
-# is a signed JWT that stays valid until it expires regardless of what we do
-# here, so a minute of memory cannot admit anyone the live check would refuse.
-_AUTH_CACHE = {}
-_AUTH_CACHE_LOCK = threading.Lock()
-_AUTH_CACHE_TTL = 60
-
-
+# ---- owner dashboard read path -----------------------------------------------
 # A short memo for the helpers that /dashboard-metrics bolts onto the RPC.
 # Profiled 2026-09-03 on the droplet, all-time window: the RPC itself is
 # 0.56 s, _fac_adtiles 1.02 s (20 concurrent REST pages of ad-tile events,
@@ -1528,92 +1480,22 @@ def _memo(ttl):
 
 
 def _dashboard_auth():
-    """Classify the caller by their Supabase access token.
+    """'ok' for the owner dashboard's server-held read key, else 'unauth'/'forbidden'.
 
-    Returns 'ok' only for the verified owner email; 'forbidden' for any other
-    signed-in user, 'unauth' for a missing/invalid token, 'error' if Supabase
-    Auth can't be reached. The token is verified server-side against Supabase
-    (GET /auth/v1/user) — we never trust claims decoded on the client.
+    The owner dashboard (divinedavis.com, repo divinedavis/owner-dashboard)
+    is not part of Find A Crib since 2026-10-06. Its API reads Find A Crib's
+    own numbers with OWNER_DASHBOARD_READ_KEY in X-Owner-Dashboard-Key: GET
+    only, only DASHBOARD_READ_PATHS, constant-time compare, 32+ chars. No
+    user token reaches these routes any more.
     """
-    # The owner dashboard's own API (divinedavis.com, repo owner-dashboard)
-    # reads Find A Crib's numbers with a server-held key: GET only, and only
-    # the four Find A Crib metric routes. Anything else with the header is
-    # refused outright rather than falling through to the token check.
     k = request.headers.get("X-Owner-Dashboard-Key", "")
-    if k:
-        want = os.environ.get("OWNER_DASHBOARD_READ_KEY", "")
-        if (request.method == "GET" and request.path in DASHBOARD_READ_PATHS and len(want) >= 32
-                and hmac.compare_digest(k.encode(), want.encode())):
-            return "ok"
-        return "forbidden"
-    auth = request.headers.get("Authorization", "")
-    if not auth.startswith("Bearer "):
+    if not k:
         return "unauth"
-    token = auth[7:].strip()
-    if not token:
-        return "unauth"
-    key = hashlib.sha256(token.encode()).hexdigest()
-    now = time.time()
-    with _AUTH_CACHE_LOCK:
-        hit = _AUTH_CACHE.get(key)
-        if hit and now < hit[0]:
-            return hit[1]
-    try:
-        req = urllib.request.Request(
-            f"{SUPABASE_URL}/auth/v1/user",
-            headers={"apikey": ANON_KEY, "Authorization": f"Bearer {token}"})
-        with urllib.request.urlopen(req, timeout=8) as r:
-            u = json.loads(r.read())
-    except urllib.error.HTTPError:
-        return _auth_cached(key, "unauth", token)   # 401/403 = bad/expired token
-    except Exception:
-        return "error"     # never cached: a Supabase blip is not a verdict
-    email = (u.get("email") or "").strip().lower()
-    uid = (u.get("id") or "").strip().lower()
-    # email_confirmed_at only. user_metadata is writable by the user themself
-    # (supabase.auth.updateUser({data: …})), so user_metadata.email_verified
-    # proves nothing and must never be a fallback.
-    if not u.get("email_confirmed_at"):
-        return _auth_cached(key, "forbidden", token)
-    if email == OWNER_EMAIL:
-        return _auth_cached(key, "ok", token)
-    if uid and uid in NEMO_USER_IDS:
-        return _auth_cached(key, "nemo", token)   # NEMO tab only, see NEMO_USER_IDS
-    return _auth_cached(key, "forbidden", token)
-
-
-def _jwt_exp(token):
-    """The `exp` claim, or None. Read, not trusted.
-
-    Supabase already told us whether the token is good; this only shortens how
-    long that answer is reused, so a forged claim can shorten its own cache
-    entry and nothing else.
-    """
-    try:
-        body = token.split(".")[1]
-        body += "=" * (-len(body) % 4)
-        exp = json.loads(base64.urlsafe_b64decode(body)).get("exp")
-        return float(exp) if exp else None
-    except Exception:
-        return None
-
-
-def _auth_cached(key, verdict, token):
-    """Remember `verdict` for this token and return it.
-
-    The entry never outlives the token: an access token that expires in 10s is
-    cached for 10s, so a minute of memory can't keep answering 'ok' for a token
-    Supabase would now reject.
-    """
-    until = time.time() + _AUTH_CACHE_TTL
-    exp = _jwt_exp(token)
-    if exp:
-        until = min(until, exp)
-    with _AUTH_CACHE_LOCK:
-        if len(_AUTH_CACHE) > 64:          # a handful of people, not a crowd
-            _AUTH_CACHE.clear()
-        _AUTH_CACHE[key] = (until, verdict)
-    return verdict
+    want = os.environ.get("OWNER_DASHBOARD_READ_KEY", "")
+    if (request.method == "GET" and request.path in DASHBOARD_READ_PATHS and len(want) >= 32
+            and hmac.compare_digest(k.encode(), want.encode())):
+        return "ok"
+    return "forbidden"
 
 
 def _dashboard_denial(verdict, allowed):
@@ -1760,47 +1642,9 @@ def dashboard_metrics():
         subs["trialing"] = plus_all.get("trialing", 0)
         subs["mrr"] = round(plus_all["paying"] * 4.99, 2)
     data.update(got)
-    # Moving goals for the three audience counts. The check runs against the
-    # numbers of the all-time call (the same fixed windows every range shows)
-    # and only reads on the others, so switching the range picker cannot
-    # record an achievement twice.
-    data["goals"] = (_fac_goals(data.get("engagement") or {}, True) if rng == "all"
-                     else _fac_goals_read())
+    # The moving DAU/WAU/MAU goals are the owner dashboard's own state since
+    # 2026-10-06 (owner-dashboard api/goals.py), added there.
     return jsonify(data)
-
-
-# 80k visitors a day (owner, 2026-09-30; was 8k DAU on 9/27); WAU/MAU derived
-# as in the page. Only seeds a missing row — the live goals are the
-# dashboard_goals table, set to these by hand the same day.
-FAC_GOAL_DEFAULTS = (("dau", 80000), ("wau", 360000), ("mau", 800000))
-
-
-def _fac_goals(engagement, evaluate):
-    """Current goal and the record of goals reached, per audience count.
-
-    dashboard_goal_check (db/0027) raises a reached goal by 30%, rounded up to
-    a ten, and appends {goal, value, achieved_at}. With evaluate=False it only
-    reads."""
-    out = {}
-    for key, default in FAC_GOAL_DEFAULTS:
-        val = engagement.get(key) if evaluate else None
-        try:
-            val = float(val) if val is not None else None
-        except (TypeError, ValueError):
-            val = None
-        try:
-            out[key] = rpc("dashboard_goal_check",
-                           {"p_metric": key, "p_value": val, "p_default": default}) or {}
-        except Exception:
-            out[key] = {}
-    return out
-
-
-# The read-only copy the non-all-time ranges show: three RPCs whose answer
-# only changes when an all-time call records a goal.
-@_memo(120)
-def _fac_goals_read():
-    return _fac_goals({}, False)
 
 
 FAC_MONTHS = 7
@@ -2810,141 +2654,6 @@ def _fac_signage(since):
 
 
 
-@app.route("/dashboard-nemo")
-def dashboard_nemo():
-    """NEMO Seamless Gutter traffic — the dashboard's second site tab.
-
-    Same owner gate as the Find A Crib metrics: NEMO has no analytics database
-    and no dashboard of its own, and both sites sit on this droplet, so the
-    numbers are read from NEMO's growth ledger and nginx log here rather than
-    duplicating the whole dashboard app under the other domain.
-    """
-    if rate_limited("dashboard", 120, 3600):
-        return _too_many()
-    # Eric's NEMO scope reaches this feed and nothing else.
-    denied = _dashboard_denial(_dashboard_auth(), ("ok", "nemo"))
-    if denied:
-        return denied
-    rng = (request.args.get("range") or "all").lower()
-    if rng not in DASHBOARD_RANGES:
-        rng = "all"
-    try:
-        return jsonify(nemo_metrics.build_cached(rng=rng))
-    except Exception:
-        return jsonify(error="temporarily_unavailable"), 503
-
-
-@app.route("/dashboard-crease")
-def dashboard_crease():
-    """Crease traffic and demand — the dashboard's third site tab.
-
-    Same owner gate as the Find A Crib metrics, and deliberately not Eric's
-    scope: this is a different business of the same owner's, not a client's
-    site. Traffic comes from this box's own nginx log; everything about orders
-    and demand is read over loopback from the Crease dispatcher, which owns
-    that schema. Counts only — no customer rows cross this endpoint.
-    """
-    if rate_limited("dashboard", 120, 3600):
-        return _too_many()
-    denied = _dashboard_denial(_dashboard_auth(), ("ok",))
-    if denied:
-        return denied
-    rng = (request.args.get("range") or "all").lower()
-    if rng not in DASHBOARD_RANGES:
-        rng = "all"
-    try:
-        return jsonify(crease_metrics.build_cached(rng=rng))
-    except Exception:
-        return jsonify(error="temporarily_unavailable"), 503
-
-
-@app.route("/dashboard-trent")
-def dashboard_trent():
-    """Trent's Fresh Spaces — the dashboard's fourth site tab.
-
-    Owner-only, like Crease and unlike NEMO: Trent has no login here, and the
-    payload mixes his booking counts with market-size figures that are the
-    owner's working notes rather than a client report. Everything comes off
-    this box — the site's own nginx log, the Node app's SQLite, and Search
-    Console via the estate service account. Counts only: no customer row, name
-    or phone crosses this endpoint.
-    """
-    if rate_limited("dashboard", 120, 3600):
-        return _too_many()
-    denied = _dashboard_denial(_dashboard_auth(), ("ok",))
-    if denied:
-        return denied
-    rng = (request.args.get("range") or "all").lower()
-    if rng not in DASHBOARD_RANGES:
-        rng = "all"
-    try:
-        return jsonify(trent_metrics.build_cached(rng=rng))
-    except Exception:
-        return jsonify(error="temporarily_unavailable"), 503
-
-
-@app.route("/dashboard-marracat")
-def dashboard_marracat():
-    """Marracat — the dashboard's fifth site tab.
-
-    Owner scope only: another of the owner's businesses, not Eric's. The
-    numbers are computed on Marracat's own droplet and fetched with a shared
-    key (see marracat_metrics.py). Counts only: no shopper's name, email or
-    order crosses this endpoint.
-    """
-    if rate_limited("dashboard", 120, 3600):
-        return _too_many()
-    denied = _dashboard_denial(_dashboard_auth(), ("ok",))
-    if denied:
-        return denied
-    rng = (request.args.get("range") or "all").lower()
-    if rng not in DASHBOARD_RANGES:
-        rng = "all"
-    try:
-        return jsonify(marracat_metrics.build_cached(rng=rng))
-    except Exception:
-        return jsonify(error="temporarily_unavailable"), 503
-
-
-@app.route("/dashboard-marracat-users")
-def dashboard_marracat_users():
-    """Marracat's shopper roster (names, emails, orders) for the owner's
-    /dashboard/marracat-users/ page. Owner scope only, like /dashboard-users."""
-    if rate_limited("dashboard", 120, 3600):
-        return _too_many()
-    denied = _dashboard_denial(_dashboard_auth(), ("ok",))
-    if denied:
-        return denied
-    data = marracat_metrics.users()
-    if not data.get("ok"):
-        return jsonify(error="temporarily_unavailable", warnings=data.get("warnings")), 503
-    return jsonify(data)
-
-
-@app.route("/dashboard-claude")
-def dashboard_claude():
-    """Anthropic API spend — owner only.
-
-    Owner scope and nothing else: this is the bill, and it is the one payload
-    here that describes the operator rather than any site's visitors. Eric's
-    NEMO scope must never reach it.
-
-    Degrades rather than fails. With no ANTHROPIC_ADMIN_KEY set the module
-    returns ok=False with a reason, which the tab renders as a setup card — a
-    500 here would look like the dashboard is broken when the only thing
-    missing is a key that has to be created by hand in the Console.
-    """
-    if rate_limited("dashboard", 120, 3600):
-        return _too_many()
-    denied = _dashboard_denial(_dashboard_auth(), ("ok",))
-    if denied:
-        return denied
-    try:
-        return jsonify(claude_usage.build_cached())
-    except Exception:
-        return jsonify(error="temporarily_unavailable"), 503
-
-
 @app.route("/dashboard-users")
 def dashboard_users():
     if rate_limited("dashboard", 120, 3600):
@@ -3045,106 +2754,6 @@ def dashboard_listings():
         return jsonify(_fac_listings(window))
     except Exception:
         return jsonify(error="temporarily_unavailable"), 503
-
-
-# ---------- creator outreach (owner only) ----------
-# The page is /dashboard/creators/ on divinedavis.com, whose nginx proxies
-# /api/dashboard-* here. Rows and brief files live outside git, see
-# creator_outreach.py.
-@app.route("/dashboard-creators")
-def dashboard_creators():
-    if rate_limited("dashboard", 120, 3600):
-        return _too_many()
-    denied = _dashboard_denial(_dashboard_auth(), ("ok",))
-    if denied:
-        return denied
-    return jsonify(creators=creator_outreach.listing(), stages=creator_outreach.STAGES)
-
-
-@app.route("/dashboard-creators/<cid>", methods=["POST"])
-def dashboard_creator_update(cid):
-    if rate_limited("dashboard", 120, 3600):
-        return _too_many()
-    denied = _dashboard_denial(_dashboard_auth(), ("ok",))
-    if denied:
-        return denied
-    try:
-        row = creator_outreach.update(cid, request.get_json(silent=True))
-    except KeyError:
-        return jsonify(error="not_found"), 404
-    except ValueError as e:
-        return jsonify(error="bad_request", message=str(e)), 400
-    return jsonify(creator=row)
-
-
-@app.route("/dashboard-creators/<cid>/send", methods=["POST"])
-def dashboard_creator_send(cid):
-    """The row's Send button: email the creator their PDF brief now."""
-    if rate_limited("creator-send", 60, 3600):
-        return _too_many()
-    denied = _dashboard_denial(_dashboard_auth(), ("ok",))
-    if denied:
-        return denied
-    try:
-        return jsonify(creator=creator_outreach.send_pitch(cid))
-    except KeyError:
-        return jsonify(error="not_found"), 404
-    except ValueError as e:
-        return jsonify(error="cannot_send", message=str(e)), 400
-    except Exception as e:
-        return jsonify(error="send_failed", message=type(e).__name__), 502
-
-
-@app.route("/dashboard-creators/<cid>/brief.<ext>")
-def dashboard_creator_brief(cid, ext):
-    denied = _dashboard_denial(_dashboard_auth(), ("ok",))
-    if denied:
-        return denied
-    p = creator_outreach.brief_file(cid, ext)
-    if p is None:
-        return jsonify(error="not_found"), 404
-    from flask import send_file
-    resp = send_file(p, mimetype="application/pdf" if ext == "pdf" else "image/jpeg",
-                     download_name=f"{cid}-brief.{ext}")
-    resp.headers["Cache-Control"] = "private, no-store"
-    return resp
-
-
-# ---------- business & legal checklist (owner only) ----------
-# /dashboard/business/ on divinedavis.com. The steps live in the page; this
-# stores which are done, notes and the per-app matrix, see business_checklist.py.
-@app.route("/dashboard-business", methods=["GET", "POST"])
-def dashboard_business():
-    if rate_limited("dashboard", 120, 3600):
-        return _too_many()
-    denied = _dashboard_denial(_dashboard_auth(), ("ok",))
-    if denied:
-        return denied
-    if request.method == "GET":
-        return jsonify(business_checklist.listing())
-    try:
-        return jsonify(business_checklist.update(request.get_json(silent=True)))
-    except ValueError as e:
-        return jsonify(error="bad_request", message=str(e)), 400
-
-
-@app.route("/creators-ingest", methods=["POST"])
-def creators_ingest():
-    """The owner's laptop app pushes briefs and sent-pitch stages here.
-    Shared secret, compared in constant time; unset key = endpoint off."""
-    if rate_limited("creators-ingest", 300, 3600):
-        return _too_many()
-    want = os.environ.get("CREATOR_INGEST_KEY", "")
-    got = request.headers.get("X-Ingest-Key", "")
-    if not want or not hmac.compare_digest(want.encode(), got.encode()):
-        return jsonify(error="forbidden"), 403
-    # The app-wide 16 KB body cap stays for every other route; a brief JPG +
-    # PDF as base64 is ~350 KB, so this one route (key-checked above) gets more.
-    request.max_content_length = 1_500_000
-    try:
-        return jsonify(creator_outreach.ingest(request.get_json(silent=True)))
-    except ValueError as e:
-        return jsonify(error="bad_request", message=str(e)), 400
 
 
 # Keep every range's expensive parts fresh so no page load pays them cold —

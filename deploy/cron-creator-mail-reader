@@ -1,7 +1,0 @@
-# Read creator replies in hello@marracat.com every 5 min and put the rate they
-# quote on their row in /dashboard/creators/. Nothing is forwarded (owner,
-# 2026-09-30: "stop forwarding emails from marracat to my gmail").
-# Installed to /etc/cron.d/creator-mail-reader by scripts/deploy_api.sh.
-# Credentials live in /var/lib/findacrib-api/creators/mail_forward.json (0600),
-# never here: this repo is public. See creator_mail_reader.py.
-*/5 * * * * findacrib cd /root/findacrib-api && ./venv/bin/python creator_mail_reader.py >> /var/lib/findacrib-api/creators/mail_reader.log 2>&1

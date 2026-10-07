@@ -28,7 +28,10 @@ LIVE=/root/findacrib-api
 # a website with a hundred scripts in its root, and the API directory should
 # hold the six files it runs.
 BACKUPS=/var/backups/findacrib-api
-FILES=(api_server.py ai_gateway.py nl_search.py building_records.py claude_features.py listing_page.py flyer_reader.py creator_outreach.py business_checklist.py creator_mail_reader.py crease_metrics.py nemo_metrics.py trent_metrics.py marracat_metrics.py build_log.py building_report.py issue_api_key.py)
+FILES=(api_server.py ai_gateway.py nl_search.py building_records.py claude_features.py listing_page.py flyer_reader.py build_log.py building_report.py issue_api_key.py)
+# Modules that moved to the owner dashboard (repo divinedavis/owner-dashboard)
+# on 2026-10-06; removed from the live dir so a stale copy can't be imported.
+RETIRED=(creator_outreach.py business_checklist.py creator_mail_reader.py crease_metrics.py nemo_metrics.py trent_metrics.py marracat_metrics.py claude_usage.py nemo_payload_cache.json nemo_payload_cache.3m.json nemo_payload_cache.month.json nemo_payload_cache.today.json)
 
 echo "==> unit tests"
 cd "$(dirname "$0")/.."
@@ -37,7 +40,7 @@ cd "$(dirname "$0")/.."
 SNAP=$(date -u +%Y%m%dT%H%M%SZ)
 echo "==> snapshotting live modules to $BACKUPS/$SNAP"
 ssh "$HOST" "set -e; mkdir -p $BACKUPS/$SNAP
-  for f in ${FILES[*]}; do [ -f $LIVE/\$f ] && cp -p $LIVE/\$f $BACKUPS/$SNAP/; done
+  for f in ${FILES[*]} ${RETIRED[*]}; do [ -f $LIVE/\$f ] && cp -p $LIVE/\$f $BACKUPS/$SNAP/; done
   ls -1d $BACKUPS/*/ | head -n -15 | xargs -r rm -rf"
 
 ssh "$HOST" "set -e
@@ -52,11 +55,8 @@ ssh "$HOST" "set -e
   cmp -s $REPO/deploy/findacrib-api.override.conf /etc/systemd/system/findacrib-api.service.d/override.conf || echo '    updating systemd override'
   cp $REPO/deploy/findacrib-api.override.conf /etc/systemd/system/findacrib-api.service.d/override.conf
   systemctl daemon-reload
-  # Creator reply reader (hello@marracat.com rates -> the dashboard); cron.d
-  # files must be root-owned 644 or cron ignores them. The Gmail forwarder it
-  # replaced (2026-09-30) is removed so it can't keep running.
-  install -m 644 -o root -g root $REPO/deploy/cron-creator-mail-reader /etc/cron.d/creator-mail-reader
-  rm -f /etc/cron.d/creator-mail-forward $LIVE/creator_mail_forward.py
+  for f in ${RETIRED[*]}; do rm -f $LIVE/\$f; done
+  rm -f /etc/cron.d/creator-mail-reader /etc/cron.d/creator-mail-forward $LIVE/creator_mail_forward.py
   # Stale bytecode outlives a file copy when the mtime granularity is coarse.
   rm -rf $LIVE/__pycache__
   # Since 2026-09-26 the API runs as the unprivileged user findacrib (see
@@ -70,21 +70,11 @@ ssh "$HOST" "set -e
 sleep 4
 if ! ssh "$HOST" "set -e
   systemctl is-active findacrib-api
-  cd $LIVE && set -a && . ./.env && set +a && ./venv/bin/python -c \"
-import crease_metrics, nemo_metrics, trent_metrics, marracat_metrics
-t = crease_metrics.traffic('all')
-print('    crease traffic:', {k: t[k] for k in ('visitors', 'visits', 'visitors_today')})
-tt = trent_metrics.traffic('all')
-print('    trent traffic:', {k: tt[k] for k in ('visitors', 'visits', 'visitors_today')})
-m = marracat_metrics.build('all')
-print('    marracat:', 'ok' if m.get('ok') else m.get('warnings'))
-\"
-  # The gate is the point: a 401 here is the owner check working, and anything
-  # else — a 500, a 502 — is a module that imported on the command line and
-  # broke inside the worker.
-  for feed in dashboard-crease dashboard-trent dashboard-marracat; do
+  # The owner-dashboard read routes answer 401 without the key and 403 with a
+  # wrong one; anything else (500, 502) is a module that broke in the worker.
+  for feed in dashboard-metrics dashboard-users; do
     code=\$(curl -s -o /dev/null -w '%{http_code}' -m 10 https://findacrib.com/api/\$feed)
-    echo \"    /api/\$feed -> \$code (expect 401 unauthenticated)\"
+    echo \"    /api/\$feed -> \$code (expect 401 without the key)\"
     test \"\$code\" = 401
   done
   # ok:false is right from here — the droplet geolocates outside NYC. A

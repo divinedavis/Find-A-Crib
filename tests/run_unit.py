@@ -6,7 +6,7 @@ call before anything is copied anywhere.
 
 The repo mixes two styles and there is no pytest in the venv: unittest
 TestCase classes, and bare pytest-style `def test_*()` functions
-(test_creator_mail_reader, test_error_report_shadow). `unittest discover`
+(e.g. test_error_report_shadow). `unittest discover`
 silently runs zero of the second kind, so this loads both.
 """
 from __future__ import annotations

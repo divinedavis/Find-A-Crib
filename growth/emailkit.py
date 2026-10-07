@@ -40,6 +40,20 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formataddr
 
+
+def mask_email(addr):
+    """'jane.doe@gmail.com' -> 'j***@gmail.com', for cron logs.
+
+    The alert jobs print one line per send. Until 2026-10-07 that put every
+    subscriber's full address into /var/log/rentmap-alerts.log (~23k lines,
+    world-readable). The domain stays: it is what tells a deliverability
+    problem (all the aol.com sends bounced) apart from a code problem."""
+    a = str(addr or "")
+    local, at, domain = a.partition("@")
+    if not at:
+        return "***" if a else ""
+    return (local[:1] or "") + "***@" + domain
+
 SITE = "https://findacrib.com"
 BRAND = "Find A Crib"
 

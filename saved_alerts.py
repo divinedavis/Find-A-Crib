@@ -550,7 +550,7 @@ def main():
             built = render_changes(user, items, buildings, emailkit)
         subject, html, text, unsub = built
         emailkit.send(args.test_email, "[TEST] " + subject, html, text, unsub_url=unsub)
-        print(f"sent sample to {args.test_email}: {subject}")
+        print(f"sent sample to {la.mask_email(args.test_email)}: {subject}")
         return
 
     key = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
@@ -683,7 +683,7 @@ def main():
         if not built:
             continue
         subject, html, text, unsub = built
-        print(f"  {kind:6s} -> {u['email']}: {subject}")
+        print(f"  {kind:6s} -> {la.mask_email(u['email'])}: {subject}")
         if args.dry_run:
             continue
         if sent >= MAX_SENDS_PER_RUN:

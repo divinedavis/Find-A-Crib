@@ -62,6 +62,7 @@ import urllib.error
 import urllib.request
 
 from zoneinfo import ZoneInfo
+from growth.emailkit import mask_email   # addresses never reach the cron log in full
 import apns   # the phone side of an alert (APNs); no-op until growth.env names the key
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -618,7 +619,7 @@ def unlock(key, args_dry=False):
         sub["boroughs"] = list(sub.get("boroughs") or [])
         sub["kinds"] = list(sub.get("kinds") or ["lottery", "rerental"])
         subject, html, text, post_unsub = render_unlock(sub, emailkit)
-        print(f"unlock -> {sub['email']}")
+        print(f"unlock -> {mask_email(sub['email'])}")
         if args_dry:
             continue
         try:
@@ -742,7 +743,7 @@ def nudge(args_dry=False):
         mine = sort_for_reading([i for i in everything if wants(sub, i)])
         if not mine:
             nudged_ids.append(sub["id"])       # nothing to say; don't keep looking
-            print(f"nudge -> {sub['email']}: nothing open that fits — marked, no email")
+            print(f"nudge -> {mask_email(sub['email'])}: nothing open that fits — marked, no email")
             continue
         lot = [i for i in mine if i["kind"] == "lottery"]
         rr = [i for i in mine if i["kind"] == "rerental"]
@@ -760,7 +761,7 @@ def nudge(args_dry=False):
                       ("Re-rentals listed now — usually first-come, first-served", "info", rr),
                       ("Landlords accepting vouchers now", "info", vo)],
             cta_label="See all of it on the map")
-        print(f"nudge -> {sub['email']}: {subject}")
+        print(f"nudge -> {mask_email(sub['email'])}: {subject}")
         if args_dry:
             continue
         try:
@@ -829,7 +830,7 @@ def weekly(args_dry=False, test_email=None):
             sys.exit("nothing new or closing this week to build a sample from")
         subject, html, text, post_unsub = built
         emailkit.send(test_email, "[TEST] " + subject, html, text, unsub_url=post_unsub)
-        print(f"sent weekly sample to {test_email}")
+        print(f"sent weekly sample to {mask_email(test_email)}")
         return
 
     sent_ids, sent = [], 0
@@ -840,7 +841,7 @@ def weekly(args_dry=False, test_email=None):
         if not built:
             continue
         subject, html, text, post_unsub = built
-        print(f"weekly -> {sub['email']}: {subject}")
+        print(f"weekly -> {mask_email(sub['email'])}: {subject}")
         if args_dry:
             continue
         if sent >= MAX_SENDS_PER_RUN:
@@ -955,7 +956,7 @@ def main():
                "kinds": ["lottery", "rerental", "voucher"], "token": "00000000-0000-0000-0000-000000000000"}
         subject, html, text, post_unsub = render_alert(items, sub, emailkit)
         emailkit.send(args.test_email, "[TEST] " + subject, html, text, unsub_url=post_unsub)
-        print(f"sent sample ({len(items)} items) to {args.test_email}")
+        print(f"sent sample ({len(items)} items) to {mask_email(args.test_email)}")
         return
 
     st = load_state()
@@ -1044,7 +1045,7 @@ def main():
 
         def hold(reason):
             st["held"][sid] = mine[-HELD_MAX:]
-            print(f"  hold {sub['email']} ({len(mine)}): {reason}")
+            print(f"  hold {mask_email(sub['email'])} ({len(mine)}): {reason}")
 
         is_plus = sub["email"].lower() in plus
         if not is_plus and not args.digest:
@@ -1077,7 +1078,7 @@ def main():
                 continue
         digest = args.digest and not is_plus
         subject, html, text, post_unsub = render_alert(mine, sub, emailkit, upsell=digest)
-        print(f"  -> {sub['email']}{' [plus]' if is_plus else ' [digest]'}: {subject}{'' if email_it else ' (push only)'}")
+        print(f"  -> {mask_email(sub['email'])}{' [plus]' if is_plus else ' [digest]'}: {subject}{'' if email_it else ' (push only)'}")
         if args.dry_run:
             continue
         if email_it:
@@ -1143,7 +1144,7 @@ def welcome(args_dry=False):
         sub["boroughs"] = list(sub.get("boroughs") or [])
         sub["kinds"] = list(sub.get("kinds") or ["lottery", "rerental"])
         subject, html, text, post_unsub = render_welcome(sub, emailkit)
-        print(f"welcome -> {sub['email']}")
+        print(f"welcome -> {mask_email(sub['email'])}")
         if args_dry:
             continue
         try:

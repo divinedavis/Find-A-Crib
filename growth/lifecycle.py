@@ -221,21 +221,21 @@ def run(buildings_by_bbl=None, dry_run=False, now=None):
         unsub = f"{SITE}/api/reports/unsubscribe?t={row.get('unsub_token') or ''}"
         subject, html, text = BUILDERS[step](row, b, unsub)
         if dry_run:
-            print(f"  [dry-run] {step} -> {row['email']} ({age}d) — {subject}")
+            print(f"  [dry-run] {step} -> {emailkit.mask_email(row['email'])} ({age}d) — {subject}")
             sent.append(step)
             continue
         try:
             if not mailcap.claim(row["email"], "report"):
-                print(f"  {step} -> {row['email']}: already emailed today, still due")
+                print(f"  {step} -> {emailkit.mask_email(row['email'])}: already emailed today, still due")
                 continue
         except Exception as e:
-            failed.append(f"{step}->{row['email']}: ledger {e}")
+            failed.append(f"{step}->{emailkit.mask_email(row['email'])}: ledger {e}")
             continue
         try:
             emailkit.send(row["email"], subject, html, text, unsub_url=unsub)
         except Exception as e:
             mailcap.release(row["email"])
-            failed.append(f"{step}->{row['email']}: {e}")
+            failed.append(f"{step}->{emailkit.mask_email(row['email'])}: {e}")
             continue
         # Record immediately after a successful send. If this write fails the
         # buyer could see a duplicate tomorrow — annoying but recoverable —
@@ -245,9 +245,9 @@ def run(buildings_by_bbl=None, dry_run=False, now=None):
             _rest("PATCH", f"building_reports?id=eq.{urllib.parse.quote(str(row['id']))}",
                   {"sent_steps": steps}, prefer="return=minimal")
         except Exception as e:
-            failed.append(f"{step} sent but not recorded for {row['email']}: {e}")
+            failed.append(f"{step} sent but not recorded for {emailkit.mask_email(row['email'])}: {e}")
         sent.append(step)
-        print(f"  sent {step} -> {row['email']} ({age}d after purchase)")
+        print(f"  sent {step} -> {emailkit.mask_email(row['email'])} ({age}d after purchase)")
 
     detail = f"{len(sent)} sent" + (f", {len(failed)} failed" if failed else "")
     ledger.set_state("lifecycle_last", {"date": ledger.today(), "ok": not failed,

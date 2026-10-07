@@ -540,7 +540,7 @@ def run(dry_run=False, now=None, voucher_buildings=None, buildings_by_bbl=None):
         subject, html, text = BUILDERS[step](row, ctx)
         asked = bool(step == "saved" and report_target(row, ctx.get("buildings"))[0])
         if dry_run:
-            print(f"  [dry-run] {step} -> {row['email']} "
+            print(f"  [dry-run] {step} -> {emailkit.mask_email(row['email'])} "
                   f"({row.get('days_old')}d old, {row.get('save_count')} saves"
                   f"{', $9 ask' if asked else ''}) — {subject}")
             sent.append(step)
@@ -550,7 +550,7 @@ def run(dry_run=False, now=None, voucher_buildings=None, buildings_by_bbl=None):
         # A step that loses today's slot is simply still due tomorrow.
         try:
             if not mailcap.claim(row["email"], "lifecycle"):
-                print(f"  {step} -> {row['email']}: already emailed today, still due")
+                print(f"  {step} -> {emailkit.mask_email(row['email'])}: already emailed today, still due")
                 continue
         except Exception as e:
             failed.append(f"{step}->{row['email']}: ledger {e}")
@@ -567,7 +567,7 @@ def run(dry_run=False, now=None, voucher_buildings=None, buildings_by_bbl=None):
             failed.append(f"{step} sent but not recorded for {row['email']}: {e}")
         sent.append(step)
         asks += asked
-        print(f"  sent {step} -> {row['email']} ({row.get('days_old')}d old"
+        print(f"  sent {step} -> {emailkit.mask_email(row['email'])} ({row.get('days_old')}d old"
               f"{', $9 ask' if asked else ''})")
 
     by_step = {s: sent.count(s) for s in set(sent)}

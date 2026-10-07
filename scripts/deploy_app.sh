@@ -24,7 +24,7 @@
 # per file, and the nightly one is the one that runs without a human.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-HOST=root@104.236.120.144
+HOST=root@142.93.183.172
 DOC=/var/www/rent-map
 PY=${PY:-$HOME/.venvs/dhcr-map/bin/python}
 SKIP=${1:-}

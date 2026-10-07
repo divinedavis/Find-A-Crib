@@ -17,7 +17,7 @@
 # file is sent with its .gz or not at all.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-HOST=root@104.236.120.144
+HOST=root@142.93.183.172
 DOC=/var/www/rent-map
 CITIES=("$@")
 if [ ${#CITIES[@]} -eq 0 ]; then CITIES=(la sf dc westchester); fi

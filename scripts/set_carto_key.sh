@@ -17,7 +17,7 @@ KEY="${1:-}"
 [ -n "$KEY" ] || { echo "usage: $0 <carto-api-key>"; exit 1; }
 case "$KEY" in *[![:alnum:]_.-]*) echo "refusing: key has characters a URL query would mangle"; exit 1;; esac
 
-HOST=root@104.236.120.144
+HOST=root@142.93.183.172
 REMOTE=/var/www/rent-map/config.js
 LOCAL="$(cd "$(dirname "$0")/.." && pwd)/config.js"
 

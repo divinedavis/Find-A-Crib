@@ -44,7 +44,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 RERENTALS = os.path.join(HERE, "rerental_pages.json")
 OUT = os.path.join(HERE, "featured.json")
 IMGDIR = os.path.join(HERE, "featured", "img")
-DROPLET = "root@104.236.120.144:/var/www/rent-map/"
+DROPLET = "root@142.93.183.172:/var/www/rent-map/"
 
 # Identifies the crawler and points at the page that explains it. These sites
 # are small offices, not portals — someone reading their logs should be able to

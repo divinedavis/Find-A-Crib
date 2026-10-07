@@ -32,7 +32,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 RERENTALS = os.path.join(HERE, "rerental_pages.json")
 AGENTS = os.path.join(HERE, "marketing_agents.json")
-DROPLET = "root@104.236.120.144:/var/www/rent-map/"
+DROPLET = "root@142.93.183.172:/var/www/rent-map/"
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/126.0 Safari/537.36")
 

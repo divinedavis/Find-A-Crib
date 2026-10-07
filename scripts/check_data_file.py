@@ -18,7 +18,7 @@ import shlex
 import subprocess
 import sys
 
-HOST = os.environ.get("FAC_HOST", "root@104.236.120.144")
+HOST = os.environ.get("FAC_HOST", "root@142.93.183.172")
 MAX_DROP = 0.10
 
 

@@ -35,7 +35,7 @@ import sys
 
 HERE = pathlib.Path(__file__).resolve().parent.parent
 STORE = HERE / "marketing" / "signage" / "placements.json"
-HOST = "root@104.236.120.144"
+HOST = "root@142.93.183.172"
 REMOTE = "/root/Find-A-Crib/growth/placements.json"
 
 # Kept in step with SIGNAGE_ARMS in api_server.py. Duplicated rather than

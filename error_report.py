@@ -573,7 +573,7 @@ def build(window_label, js, crash, app, five, tracebacks, stale, new_msgs, crons
             f"<h2 style='font-size:20px;margin:0 0 4px'>Find A Crib — errors, {esc(window_label)}</h2>"
             f"<p style='color:#666;font-size:13px;margin:0 0 6px'>What users hit on findacrib.com, mobile web and the iPhone app. "
             f"Nothing worth reporting means no email.</p>{''.join(parts)}"
-            f"<p style='color:#888;font-size:12px;margin-top:22px'>error_report.py on 104.236.120.144 · "
+            f"<p style='color:#888;font-size:12px;margin-top:22px'>error_report.py on 142.93.183.172 · "
             f"dashboard: https://divinedavis.com/dashboard/</p></div>")
 
     lines = [f"Find A Crib errors — {window_label}", ""]

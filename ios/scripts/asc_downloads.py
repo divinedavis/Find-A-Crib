@@ -33,7 +33,7 @@ REPORTS = {
     "installs":   "App Store Installation and Deletion Standard",
 }
 OUT = Path(__file__).resolve().parent / "appstore.json"
-DEPLOY = "root@104.236.120.144:/root/findacrib-api/appstore.json"
+DEPLOY = "root@142.93.183.172:/root/findacrib-api/appstore.json"
 DAYS = 60
 
 

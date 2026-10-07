@@ -34,7 +34,7 @@ import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "housing_connect.json")
-DROPLET = "root@104.236.120.144:/var/www/rent-map/"
+DROPLET = "root@142.93.183.172:/var/www/rent-map/"
 API = ("https://a806-housingconnectapi.nyc.gov/HPDPublicAPI/api/Lottery/SearchLotteries")
 DETAILS = "https://housingconnect.nyc.gov/PublicWeb/details/"
 

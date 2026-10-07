@@ -8,7 +8,7 @@
 # its own when the live journeys fail twice. Only the files deploy_app.sh
 # ships are in a snapshot; data JSON and SEO pages have their own paths.
 set -euo pipefail
-HOST=root@104.236.120.144
+HOST=root@142.93.183.172
 DOC=/var/www/rent-map
 BACKUPS=/var/backups/findacrib-app
 SNAP=${1:-}

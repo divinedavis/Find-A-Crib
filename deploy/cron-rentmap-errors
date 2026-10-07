@@ -4,8 +4,11 @@
 # Hourly run mails only on something new or broken; the 08:10 ET run always
 # sends the day's digest if anything is open. Recipient: ERROR_REPORT_EMAIL
 # in growth.env (this file is mirrored into a PUBLIC repo — no addresses here).
+# growth.env is sourced LAST so its SMTP (the findacrib.com mailbox, same as
+# every other Find A Crib job) wins over the API .env's Gmail login, which
+# Google refuses from the 142.93.183.172 droplet (535 on 2026-10-06).
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 CRON_TZ=America/New_York
-25 * * * * root cd /root/Find-A-Crib && set -a && . ./growth.env && . /root/findacrib-api/.env && set +a && python3 error_report.py --hours 1 >> /var/log/rentmap-errors.log 2>&1
-10 8 * * * root cd /root/Find-A-Crib && set -a && . ./growth.env && . /root/findacrib-api/.env && set +a && python3 error_report.py --hours 24 --digest >> /var/log/rentmap-errors.log 2>&1
+25 * * * * root cd /root/Find-A-Crib && set -a && . /root/findacrib-api/.env && . ./growth.env && set +a && python3 error_report.py --hours 1 >> /var/log/rentmap-errors.log 2>&1
+10 8 * * * root cd /root/Find-A-Crib && set -a && . /root/findacrib-api/.env && . ./growth.env && set +a && python3 error_report.py --hours 24 --digest >> /var/log/rentmap-errors.log 2>&1

@@ -21,7 +21,7 @@
 # fail, the snapshot goes back in, the service restarts on it, and this exits 1.
 #
 set -euo pipefail
-HOST="${FAC_HOST:-root@104.236.120.144}"
+HOST="${FAC_HOST:-root@142.93.183.172}"
 REPO=/root/Find-A-Crib
 LIVE=/root/findacrib-api
 # Exactly the modules gunicorn imports. Listed rather than globbed: the repo is

@@ -16,4 +16,5 @@ CRON_TZ=America/New_York
 # 2026-09-30: one headless browser job at a time (fac-browser.lock) and a
 # 45-minute ceiling — this job's Chrome, left over from the 19:30 run, plus
 # the next run's, ran the 2 GB droplet out of memory for most of an hour.
-30 7,19 * * * root cd /root/Find-A-Crib && flock -w 3000 /run/lock/fac-browser.lock timeout 45m /var/www/rent-map/venv/bin/python build_vacancies.py --apply --out /var/www/rent-map >> /var/log/rentmap-vacancies.log 2>&1
+# PAUSED 2026-10-06 (owner): most manager sites' terms forbid scraping; re-enable per company only with written permission
+# 30 7,19 * * * root cd /root/Find-A-Crib && flock -w 3000 /run/lock/fac-browser.lock timeout 45m /var/www/rent-map/venv/bin/python build_vacancies.py --apply --out /var/www/rent-map >> /var/log/rentmap-vacancies.log 2>&1

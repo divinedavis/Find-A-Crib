@@ -1,6 +1,6 @@
 # Find A Crib growth engine. Installed at /etc/cron.d/rentmap-growth.
 #
-# This droplet (104.236.120.144) keeps per-project crons in /etc/cron.d/, NOT in
+# This droplet (142.93.183.172, Find A Crib only since 2026-10-06) keeps per-project crons in /etc/cron.d/, NOT in
 # root's user crontab — never pipe to `crontab -` here, it clobbers the other
 # sites' jobs. Edit this tracked copy and scp it into place; do not hand-edit
 # the file on the box, or the repo and the droplet drift apart silently.

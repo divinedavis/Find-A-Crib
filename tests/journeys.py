@@ -235,7 +235,12 @@ class Runner:
                                '(KHTML, like Gecko) Version/26.0 Safari/605.1.15')
             ctx = b.new_context(**d)
         else:
-            b = p.chromium.launch(headless=not self.headed)
+            # FAC_RESOLVE_IP=<ip> pins findacrib.com to one droplet before DNS
+            # points there (a migration's dark run). Chromium only: WebKit has
+            # no host-resolver switch, so the phone/iPad lanes need real DNS.
+            pin = os.environ.get('FAC_RESOLVE_IP', '').strip()
+            args = [f'--host-resolver-rules=MAP findacrib.com {pin}'] if pin else []
+            b = p.chromium.launch(headless=not self.headed, args=args)
             ctx = b.new_context(viewport={'width': 1300, 'height': 900})
         return b, ctx
 

@@ -16,7 +16,7 @@
 set -euo pipefail
 
 REPO="$HOME/projects/dhcr-map"
-HOST="${FAC_HOST:-root@104.236.120.144}"
+HOST="${FAC_HOST:-root@142.93.183.172}"
 
 main() {
   cd "$REPO"

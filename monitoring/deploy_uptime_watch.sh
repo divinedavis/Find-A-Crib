@@ -6,7 +6,7 @@
 #   monitoring/deploy_uptime_watch.sh
 set -euo pipefail
 cd "$(dirname "$0")"
-SRC=root@104.236.120.144
+SRC=root@142.93.183.172   # Find A Crib droplet (holds growth.env) since 2026-10-06
 for H in root@104.236.120.144 root@159.203.110.79; do
   echo "== $H"
   scp -q uptime_watch.py "$H:/usr/local/bin/uptime-watch"

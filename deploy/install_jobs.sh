@@ -78,7 +78,7 @@ mkenv() {
     # The scripts read either spelling of the service key.
     [ -n "${SUPABASE_SERVICE_KEY:-}" ] && SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_KEY
     for k in "$@"; do
-      [ -n "${!k:-}" ] && printf '%s=%q\n' "$k" "${!k}"
+      if [ -n "${!k:-}" ]; then printf '%s=%q\n' "$k" "${!k}"; fi
     done ) > "$tmp"
   install -o root -g "$group" -m 0640 "$tmp" "$ENVDIR/$name.env"
   rm -f "$tmp"

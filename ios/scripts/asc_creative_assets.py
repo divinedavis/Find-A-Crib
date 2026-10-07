@@ -10,6 +10,7 @@ several apps are under an App Store freeze (see memory).
     ~/.venvs/dhcr-map/bin/python scripts/asc_creative_assets.py list APP_ID
     ~/.venvs/dhcr-map/bin/python scripts/asc_creative_assets.py upload APP_ID DIR [--prefix NAME]
     ~/.venvs/dhcr-map/bin/python scripts/asc_creative_assets.py retire APP_ID --prefix NAME
+    ~/.venvs/dhcr-map/bin/python scripts/asc_creative_assets.py submit APP_ID --prefix NAME --yes
 
 `upload` sends every *.png under DIR (recursively). The reference name is
 `<prefix>/<relative path>`, so a rerun skips files already in the library
@@ -17,6 +18,11 @@ instead of uploading duplicates. `retire` removes every live asset whose
 reference name starts with `<prefix>/` (archives approved ones, deletes
 drafts, since Apple only archives approved assets), so a redesigned set can
 be uploaded under the same names.
+
+`submit` sends the prefix's draft assets to App Review in a review
+submission of their own (no app version in it). It is outward-facing, so it
+needs --yes and the owner's go for that app; it refuses if the app already
+has an open submission, so assets never ride along with a version.
 """
 import argparse
 import os
@@ -94,10 +100,11 @@ def upload_one(app_id, f, ref):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["list", "upload", "retire"])
+    ap.add_argument("cmd", choices=["list", "upload", "retire", "submit"])
     ap.add_argument("app_id")
     ap.add_argument("dir", nargs="?")
     ap.add_argument("--prefix", default="")
+    ap.add_argument("--yes", action="store_true")
     a = ap.parse_args()
 
     existing = images(a.app_id)
@@ -119,6 +126,31 @@ def main():
                 else:
                     call("DELETE", f"/v1/appAssetLibraryImages/{i['id']}")
                     print(f"deleted  {at.get('referenceName')} ({at.get('state')})")
+        return
+    if a.cmd == "submit":
+        if not (a.prefix and a.yes):
+            sys.exit("submit needs --prefix and --yes (owner's go for this app)")
+        drafts = [i for i in existing if i["attributes"].get("state") == "PREPARE_FOR_SUBMISSION"
+                  and (i["attributes"].get("referenceName") or "").startswith(a.prefix + "/")]
+        if not drafts:
+            sys.exit("no draft assets under that prefix")
+        open_subs = [s for s in call("GET", f"/v1/reviewSubmissions?filter[app]={a.app_id}"
+                                            "&filter[state]=READY_FOR_REVIEW,WAITING_FOR_REVIEW,IN_REVIEW,UNRESOLVED_ISSUES")["data"]]
+        if open_subs:
+            sys.exit(f"app has an open review submission ({open_subs[0]['id']}, "
+                     f"{open_subs[0]['attributes'].get('state')}); not mixing assets into it")
+        sub = call("POST", "/v1/reviewSubmissions", {"data": {
+            "type": "reviewSubmissions", "attributes": {"platform": "IOS"},
+            "relationships": {"app": {"data": {"type": "apps", "id": a.app_id}}}}})["data"]
+        for i in drafts:
+            call("POST", "/v1/reviewSubmissionItems", {"data": {
+                "type": "reviewSubmissionItems", "relationships": {
+                    "reviewSubmission": {"data": {"type": "reviewSubmissions", "id": sub["id"]}},
+                    "appAssetLibraryImage": {"data": {"type": "appAssetLibraryImages", "id": i["id"]}}}}})
+            print(f"added    {i['attributes'].get('referenceName')}")
+        done = call("PATCH", f"/v1/reviewSubmissions/{sub['id']}", {"data": {
+            "type": "reviewSubmissions", "id": sub["id"], "attributes": {"submitted": True}}})["data"]
+        print(f"submission {sub['id']} -> {done['attributes'].get('state')}")
         return
     have = {i["attributes"].get("referenceName") for i in existing if i["attributes"].get("state") != "ARCHIVED"}
     root = Path(a.dir).expanduser()

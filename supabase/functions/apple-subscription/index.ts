@@ -12,6 +12,7 @@
 // Deploy: supabase functions deploy apple-subscription --project-ref dbaifotzwlxjvsxjohjt
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { SignedDataVerifier, Environment } from "npm:@apple/app-store-server-library@1";
+import { mayGrant, parseAllowlist } from "./sandbox.ts";
 
 const BUNDLE_ID = "com.divinedavis.findacrib";
 // The App Store's numeric id for the app (App Store Connect, ASC_APP_ID).
@@ -26,6 +27,9 @@ const PRODUCT_IDS = new Set(["com.divinedavis.findacrib.plus.monthly"]);
 // cannot be talked into trusting anything else.
 const APPLE_ROOT_G3_B64 = "MIICQzCCAcmgAwIBAgIILcX8iNLFS5UwCgYIKoZIzj0EAwMwZzEbMBkGA1UEAwwSQXBwbGUgUm9vdCBDQSAtIEczMSYwJAYDVQQLDB1BcHBsZSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTETMBEGA1UECgwKQXBwbGUgSW5jLjELMAkGA1UEBhMCVVMwHhcNMTQwNDMwMTgxOTA2WhcNMzkwNDMwMTgxOTA2WjBnMRswGQYDVQQDDBJBcHBsZSBSb290IENBIC0gRzMxJjAkBgNVBAsMHUFwcGxlIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MRMwEQYDVQQKDApBcHBsZSBJbmMuMQswCQYDVQQGEwJVUzB2MBAGByqGSM49AgEGBSuBBAAiA2IABJjpLz1AcqTtkyJygRMc3RCV8cWjTnHcFBbZDuWmBSp3ZHtfTjjTuxxEtX/1H7YyYl3J6YRbTzBPEVoA/VhYDKX1DyxNB0cTddqXl5dvMVztK517IDvYuVTZXpmkOlEKMaNCMEAwHQYDVR0OBBYEFLuw3qFYM4iapIqZ3r6966/ayySrMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMAoGCCqGSM49BAMDA2gAMGUCMQCD6cHEFl4aXTQY2e3v9GwOAEZLuN+yRhHFD/3meoyhpmvOwgPUnPWTxnS4at+qIxUCMG1mihDK1A3UT82NQz60imOlM27jbdoXt2QfyFMm+YhidDkLF1vLUagM6BgD56KyKA==";
 const ROOTS = [Uint8Array.from(atob(APPLE_ROOT_G3_B64), (c) => c.charCodeAt(0))];
+
+// Sandbox receipts grant Plus only to these accounts (see sandbox.ts).
+const SANDBOX_ALLOW = parseAllowlist(Deno.env.get("APPLE_SANDBOX_USER_IDS"));
 
 const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
@@ -62,6 +66,12 @@ Deno.serve(async (req) => {
   const { tx, env } = verified;
   if (tx.bundleId !== BUNDLE_ID || !tx.productId || !PRODUCT_IDS.has(tx.productId)) {
     return new Response("not a Find A Crib Plus transaction", { status: 400 });
+  }
+  // A free Sandbox purchase is not a subscription unless the account is an
+  // allowlisted reviewer/tester: answer normally, write nothing.
+  if (!mayGrant(env, user.id, SANDBOX_ALLOW)) {
+    console.warn("apple-subscription sandbox receipt from a non-allowlisted account; not granted");
+    return Response.json({ has_plus: false, provider: "apple", environment: env, granted: false });
   }
   const expires = tx.expiresDate ? new Date(tx.expiresDate) : null;
   const revoked = !!tx.revocationDate;

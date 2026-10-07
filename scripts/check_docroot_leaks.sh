@@ -20,6 +20,11 @@ PATHS=(
   # Terms forbid scraping. None of it may be served again.
   listings.json listings_zumper.json listings_apify.json apify_export.json
   listings_archive/ rent-report/ rent-report/rent-report.csv
+  # 2026-10-07: the paused vacancy sweep's output (owner paused it 10/6 —
+  # manager sites' terms forbid scraping) and the code/cert/caches the crons
+  # used to run from inside the docroot (moved to /opt/findacrib + checkout).
+  vacancies.json fetch_section8.py scrape_affordablehousing.py scrape_hcr.py
+  check_rerentals.py addr_match.py __pycache__/addr_match.cpython-312.pyc
 )
 bad=0
 for p in "${PATHS[@]}"; do

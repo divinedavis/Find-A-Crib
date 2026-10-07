@@ -40,6 +40,8 @@ SITES = [
     ("https://divinedavis.com/", None),
     ("https://jordansjobfinder.com/", None),
     ("https://workcompapp.com/", None),
+    ("https://hoophouse.104.236.120.144.sslip.io/", "Hoop House"),
+    ("https://divinedavis.com/hoophouse/", "Hoop House"),
 ]
 STATE = Path("/var/lib/uptime-watch/state.json")
 FAILS_TO_ALERT = 2

@@ -80,6 +80,8 @@ DOCS = "https://findacrib.com/developers/"
 # Ranges the dashboard picker may ask for. Kept here, not in the SQL, so an
 # unknown value never reaches the database at all.
 DASHBOARD_RANGES = {"all", "6m", "3m", "month", "today"}
+# The Find A Crib metric routes the owner dashboard may read with its key.
+DASHBOARD_READ_PATHS = frozenset({"/dashboard-metrics", "/dashboard-users", "/dashboard-visitors", "/dashboard-listings"})
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 app = Flask(__name__)
@@ -1533,6 +1535,17 @@ def _dashboard_auth():
     Auth can't be reached. The token is verified server-side against Supabase
     (GET /auth/v1/user) — we never trust claims decoded on the client.
     """
+    # The owner dashboard's own API (divinedavis.com, repo owner-dashboard)
+    # reads Find A Crib's numbers with a server-held key: GET only, and only
+    # the four Find A Crib metric routes. Anything else with the header is
+    # refused outright rather than falling through to the token check.
+    k = request.headers.get("X-Owner-Dashboard-Key", "")
+    if k:
+        want = os.environ.get("OWNER_DASHBOARD_READ_KEY", "")
+        if (request.method == "GET" and request.path in DASHBOARD_READ_PATHS and len(want) >= 32
+                and hmac.compare_digest(k.encode(), want.encode())):
+            return "ok"
+        return "forbidden"
     auth = request.headers.get("Authorization", "")
     if not auth.startswith("Bearer "):
         return "unauth"

@@ -1029,6 +1029,37 @@ final class AlertPushTests: XCTestCase {
         XCTAssertEqual(p?.items.first?.url?.host, "findacrib.com")
         XCTAssertNil(AlertPush.from(userInfo: [:], title: "", body: ""), "nothing to show: no sheet")
     }
+
+    /// A paying member tapping an alert saw the Plus card flash, then vanish
+    /// (2026-10-08): the sheet drew before has_plus() answered.
+    func testRealtimeUpsellOnlyOnceTheyAreKnownNotToPay() {
+        XCTAssertFalse(AlertPushSheet.offersRealtime(plusKnown: false, hasPlus: false, storeEntitled: false), "status not loaded yet: no flash")
+        XCTAssertTrue(AlertPushSheet.offersRealtime(plusKnown: true, hasPlus: false, storeEntitled: false))
+        XCTAssertFalse(AlertPushSheet.offersRealtime(plusKnown: true, hasPlus: true, storeEntitled: false))
+        XCTAssertFalse(AlertPushSheet.offersRealtime(plusKnown: false, hasPlus: false, storeEntitled: true), "StoreKit subscriber")
+    }
+
+    /// The "what you qualify for" row moved into Edit boroughs (2026-10-08):
+    /// saving the alerts sets, or clears, the on-phone qualify filter.
+    @MainActor func testAlertsIncomeDrivesTheQualifyFilter() {
+        let q = Qualify()
+        AlertsSheet.syncQualify(income: 85000, household: 0, into: q)
+        XCTAssertEqual(q.income, 85000); XCTAssertEqual(q.household, 1, "no household given = 1 person")
+        AlertsSheet.syncQualify(income: 60000, household: 3, into: q)
+        XCTAssertEqual(q.household, 3)
+        AlertsSheet.syncQualify(income: nil, household: 3, into: q)
+        XCTAssertFalse(q.isSet, "blank income turns the filter off")
+    }
+
+    @MainActor func testPlusStatusIsRememberedPerAccount() {
+        let d = UserDefaults(suiteName: "plus-cache-test")!
+        defer { d.removePersistentDomain(forName: "plus-cache-test") }
+        let a = UUID(), b = UUID()
+        XCTAssertNil(AuthService.cachedPlus(uid: a, defaults: d), "never checked: unknown, not false")
+        AuthService.cachePlus(true, uid: a, defaults: d)
+        XCTAssertEqual(AuthService.cachedPlus(uid: a, defaults: d), true)
+        XCTAssertNil(AuthService.cachedPlus(uid: b, defaults: d), "another account doesn't inherit it")
+    }
 }
 
 final class LotteryFeedTests: XCTestCase {

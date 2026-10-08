@@ -41,6 +41,11 @@ final class AuthService {
     let client: SupabaseClient?
     private(set) var session: Session?
     private(set) var hasPlus = false
+    /// True once this account's Plus status is known: confirmed by has_plus()
+    /// this launch, or remembered from the last one. Until then `hasPlus` is
+    /// only a default false — a paying member opening the app from an alert
+    /// saw the Plus upsell flash in the alert sheet and vanish (2026-10-08).
+    private(set) var plusKnown = false
     private(set) var busy = false
     var error: String?
     private var contactsCache: [String: HPDContacts] = [:]
@@ -84,6 +89,9 @@ final class AuthService {
            let url = URL(string: "https://\(host)") {
             client = SupabaseClient(supabaseURL: url, supabaseKey: key)
             session = client?.auth.currentSession
+            if let uid = session?.user.id, let cached = Self.cachedPlus(uid: uid) {
+                hasPlus = cached; plusKnown = true
+            }
         } else {
             client = nil   // a build without Secrets.xcconfig: the app still works, signed out
         }
@@ -123,7 +131,7 @@ final class AuthService {
                 }
             case .signedOut, .userDeleted:
                 ReviewPrompt.shared.signedIn = false
-                session = nil; hasPlus = false; contactsCache = [:]; phoneCache = [:]
+                session = nil; hasPlus = false; plusKnown = false; contactsCache = [:]; phoneCache = [:]
             default: break
             }
         }
@@ -183,7 +191,7 @@ final class AuthService {
     func signOut() async {
         guard let client else { return }
         try? await client.auth.signOut()
-        session = nil; hasPlus = false
+        session = nil; hasPlus = false; plusKnown = false
     }
 
     /// App Store 5.1.1(v). delete_account() cascades every user-owned table.
@@ -191,7 +199,7 @@ final class AuthService {
         await run {
             try await self.client!.rpc("delete_account").execute()
             try? await self.client!.auth.signOut()
-            self.session = nil; self.hasPlus = false
+            self.session = nil; self.hasPlus = false; self.plusKnown = false
         }
     }
 
@@ -243,9 +251,21 @@ final class AuthService {
     // MARK: Plus + gated reads
 
     func refreshPlus() async {
-        guard let client, let uid = session?.user.id else { hasPlus = false; return }
-        let v: Bool? = try? await client.rpc("has_plus", params: ["uid": uid.uuidString]).execute().value
-        hasPlus = v ?? false
+        guard let client, let uid = session?.user.id else { hasPlus = false; plusKnown = false; return }
+        if !plusKnown, let cached = Self.cachedPlus(uid: uid) { hasPlus = cached; plusKnown = true }
+        // A failed check keeps what we knew rather than downgrading a member.
+        guard let v: Bool = try? await client.rpc("has_plus", params: ["uid": uid.uuidString]).execute().value else { return }
+        hasPlus = v; plusKnown = true
+        Self.cachePlus(v, uid: uid)
+    }
+
+    /// Last confirmed has_plus() per account, so a cold launch (e.g. from a
+    /// tapped alert) knows a member before the network answers.
+    nonisolated static func cachedPlus(uid: UUID, defaults: UserDefaults = .standard) -> Bool? {
+        defaults.object(forKey: "plus.\(uid.uuidString)") as? Bool
+    }
+    nonisolated static func cachePlus(_ v: Bool, uid: UUID, defaults: UserDefaults = .standard) {
+        defaults.set(v, forKey: "plus.\(uid.uuidString)")
     }
 
     func contacts(for bbl: String) async -> HPDContacts? {

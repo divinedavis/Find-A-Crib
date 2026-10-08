@@ -18,7 +18,6 @@ struct LotteriesView: View {
         Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .top), count: sizeClass == .regular ? 2 : 1)
     }
     @State private var showAlerts = false
-    @State private var showQualify = false
     /// Re-rentals that state no bedroom sizes, shown under a Beds filter
     /// only when asked (owner, 2026-10-04: 1 bed means only 1-beds).
     @State private var showUnsized = false
@@ -65,9 +64,6 @@ struct LotteriesView: View {
             // five boroughs flash before their own.
             if feed.checked { list } else { checking }
         }
-        // Here, not on the row: on iPad the row sat in a lazy stack that
-        // presented the sheet twice, and "Show" closed only the top copy.
-        .sheet(isPresented: $showQualify) { QualifySheet() }
         .task { await Qualify.shared.loadUnits() }
         .sheet(isPresented: $showAlerts, onDismiss: { Task { await feed.refresh() } }) { AlertsSheet() }
         // Signed out: sign in first, then straight on to the alerts sheet —
@@ -111,24 +107,8 @@ struct LotteriesView: View {
     }
 
     /// Not subscribed: a banner above the list instead of a wall; it only has
-    /// to say what alerts are.
-    /// "What do I qualify for?" (free, 2026-10-03): household + income once,
-    /// kept on this phone; every card then says whether it's in range.
-    private var qualifyRow: some View {
-        Button { showQualify = true } label: {
-            HStack(spacing: 8) {
-                Image(systemName: "checkmark.seal").font(.system(size: 16, weight: .bold))
-                // Never the income itself on this screen (owner, 2026-10-04).
-                Text(Qualify.shared.isSet ? "Showing what you qualify for — change" : "What do I qualify for?")
-                    .font(.se(17, .semibold))
-                Spacer()
-                Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold))
-            }
-            .foregroundStyle(SE.royal).padding(14).background(Color.white)
-        }
-        .buttonStyle(.plain).accessibilityIdentifier("qualify-open")
-    }
-
+    /// to say what alerts are. (The "what you qualify for" row is gone, owner
+    /// 2026-10-08: income + household are set under Edit boroughs.)
     @ViewBuilder private var alertsBanner: some View {
         if feed.subscribed && !auth.hasPlus && !rtDismissed {
             // Subscribed without Plus: alerts come at 8 AM — offer real-time.
@@ -191,7 +171,7 @@ struct LotteriesView: View {
             .padding(.horizontal, 16).padding(.top, 8).background(Color.white)
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 12) {
-                    if pane != .newJersey { alertsBanner; qualifyRow }
+                    if pane != .newJersey { alertsBanner }
                     if pane == .newJersey { njList } else if pane == .rerentals { rerentalList } else {
                     HStack {
                         Text(countLine).font(.se(17, .bold)).foregroundStyle(SE.ink)

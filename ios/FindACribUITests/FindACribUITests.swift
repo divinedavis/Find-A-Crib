@@ -188,37 +188,6 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Sign in for Plus"].waitForExistence(timeout: 5), "sign-in opens over the Plus page")
     }
 
-    /// Qualify-check (free): household + income in Lotteries, then badges.
-    func testQualifyCheckBadgesLotteries() throws {
-        app.terminate()
-        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--tab", "lotteries"]
-        app.launch()
-        let open = app.buttons["qualify-open"]
-        XCTAssertTrue(open.waitForExistence(timeout: 30), "Lotteries should offer 'What do I qualify for?'")
-        open.tap()
-        let income = app.textFields["qualify-income"]
-        XCTAssertTrue(income.waitForExistence(timeout: 5))
-        income.tap(); income.typeText("85000")
-        app.buttons["Show what I qualify for"].tap()
-        // iPad simulator: it runs as if a hardware keyboard were attached
-        // (the software keyboard sits off-screen, y 1254 on a 1210-pt
-        // screen), and the first tap after typing only ends editing — the
-        // toolbar Save behaves the same. One more tap if the sheet is still up.
-        if app.textFields["qualify-income"].waitForExistence(timeout: 2) { app.buttons["Show what I qualify for"].tap() }
-        let badge = app.descendants(matching: .any)["qualify-badge"].firstMatch
-        XCTAssertTrue(badge.waitForExistence(timeout: 15) || app.descendants(matching: .any)["lotteries-empty"].firstMatch.exists,
-                      "lotteries should show a qualify badge once income is set")
-        // Out-of-range listings leave the list, and the income is never on
-        // screen (owner, 2026-10-04).
-        XCTAssertTrue(open.label.contains("Showing what you qualify for"), "the row says the filter is on: \(open.label)")
-        XCTAssertFalse(open.label.contains("$") || open.label.contains("85"), "the row must not show the income")
-        let out = NSPredicate(format: "label CONTAINS 'above the limit' OR label CONTAINS 'below the minimum'")
-        XCTAssertEqual(app.descendants(matching: .any).matching(identifier: "qualify-badge").matching(out).count, 0,
-                       "no out-of-range listing until asked")
-        // leave the phone as it was for the tests after this one
-        open.tap(); if app.buttons["Clear"].waitForExistence(timeout: 5) { app.buttons["Clear"].tap() }
-    }
-
     func testThirdResultTileIsARerental() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "results"]

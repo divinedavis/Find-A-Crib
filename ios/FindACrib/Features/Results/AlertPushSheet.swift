@@ -60,7 +60,17 @@ struct AlertPushSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
     @Environment(AuthService.self) private var auth
+    @Environment(PlusStore.self) private var plus
     @State private var showPlus = false
+
+    /// The real-time upsell only once we KNOW they don't pay: never on the
+    /// default false before has_plus() answers, never to a StoreKit subscriber.
+    static func offersRealtime(plusKnown: Bool, hasPlus: Bool, storeEntitled: Bool) -> Bool {
+        plusKnown && !hasPlus && !storeEntitled
+    }
+    private var offersRealtime: Bool {
+        Self.offersRealtime(plusKnown: auth.plusKnown, hasPlus: auth.hasPlus, storeEntitled: plus.entitled)
+    }
 
     var body: some View {
         NavigationStack {
@@ -70,7 +80,7 @@ struct AlertPushSheet: View {
                         .accessibilityIdentifier("push-sheet-title")
                     // Without Plus every alert is the 8 AM round-up (2026-10-06),
                     // whatever the payload says (a pre-digest send has no flag).
-                    if push.digest || !auth.hasPlus {
+                    if push.digest || offersRealtime {
                         Text(push.items.count == 1 ? "From your 8 AM round-up. Tap through to apply on the agent's site."
                                                    : "\(push.items.count) from your 8 AM round-up. Tap one to see it on the agent's site.")
                             .font(.se(16)).foregroundStyle(SE.ink2)
@@ -83,7 +93,7 @@ struct AlertPushSheet: View {
                     // listing's (owner, 2026-10-06), right after the first item.
                     ForEach(Array(push.items.enumerated()), id: \.element.id) { i, item in
                         row(item)
-                        if i == 0 && !auth.hasPlus { realtimeCard }
+                        if i == 0 && offersRealtime { realtimeCard }
                     }
                     Text("Change which boroughs you hear about under Profile → Alerts.")
                         .font(.se(14)).foregroundStyle(SE.ink3).padding(.top, 4)

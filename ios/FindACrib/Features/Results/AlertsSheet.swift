@@ -96,7 +96,7 @@ struct AlertsSheet: View {
                         Stepper(household == 0 ? "People in your household (optional)" : "\(household) \(household == 1 ? "person" : "people") in your household",
                                 value: $household, in: 0...8)
                             .font(.se(16)).accessibilityIdentifier("alerts-household")
-                        Text("A lottery or re-rental is sent only when a unit's rent is at or under your cap and your household income falls in one of its income bands. Leave both blank to hear about everything.")
+                        Text("A lottery or re-rental is sent only when a unit's rent is at or under your cap and your household income falls in one of its income bands. Leave both blank to hear about everything. Your income and household also mark which lotteries and re-rentals you qualify for in the Lotteries tab.")
                             .font(.se(14)).foregroundStyle(SE.ink3)
 
                         if let error { Text(error).font(.se(15)).foregroundStyle(SE.bad) }
@@ -129,6 +129,13 @@ struct AlertsSheet: View {
                 TextField(placeholder, text: text).keyboardType(.numberPad).font(.se(18)).padding(.horizontal, 12)
             }
         }
+    }
+
+    /// The income here also filters the Lotteries list to what they qualify
+    /// for (owner, 2026-10-08: the separate "what you qualify for" row went
+    /// into Edit boroughs). Blank income clears it; no household = 1.
+    static func syncQualify(income: Int?, household: Int, into q: Qualify = .shared) {
+        if let income { q.set(household: max(household, 1), income: income) } else { q.clear() }
     }
 
     /// Digits of a typed dollar figure, or nil when blank; -1 when it is not
@@ -176,6 +183,10 @@ struct AlertsSheet: View {
     /// Prefill from the search: its boroughs (neighborhood picks collapse to
     /// their borough) and the kind that matches the view it came from.
     private func seed() {
+        // The income on this phone (the Lotteries list's qualify filter) is
+        // edited here since 2026-10-08 — prefs from the server override it.
+        if let i = Qualify.shared.income { income = String(i) }
+        if let h = Qualify.shared.household { household = h }
         guard let query else { kinds = ["lottery", "rerental"]; return }
         var b: Set<String> = []
         for l in query.locations {
@@ -278,6 +289,7 @@ struct AlertsSheet: View {
                 // Turning alerts on is the other good moment. Not on an edit:
                 // changing a rent cap is housekeeping, not delight.
                 if !editing { ReviewPrompt.shared.record(.alerts) }
+                Self.syncQualify(income: inc, household: household)
                 done = true
                 Task { await LotteryFeed.shared.refresh() }
                 // The one moment we ask for notification permission: alerts

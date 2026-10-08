@@ -9465,3 +9465,25 @@
 {"date": "2026-10-08", "technique": "account_lifecycle", "metric": "sent_lapsed", "value": 5, "meta": {}, "written": "2026-10-08T05:20:40+00:00"}
 {"date": "2026-10-08", "technique": "account_lifecycle", "metric": "sent_saved", "value": 1, "meta": {}, "written": "2026-10-08T05:20:40+00:00"}
 {"date": "2026-10-08", "technique": "account_lifecycle", "metric": "sent_saved_paid_ask", "value": 1, "meta": {}, "written": "2026-10-08T05:20:40+00:00"}
+{"date": "2026-10-08", "technique": "page_uniqueness", "metric": "dup_pct_borough", "value": 11.9, "meta": {"words": 585.5, "sampled": 20}, "written": "2026-10-08T05:40:17+00:00"}
+{"date": "2026-10-08", "technique": "page_uniqueness", "metric": "dup_pct_brief", "value": 49.5, "meta": {"words": 182, "sampled": 17}, "written": "2026-10-08T05:40:17+00:00"}
+{"date": "2026-10-08", "technique": "page_uniqueness", "metric": "dup_pct_building", "value": 33.1, "meta": {"words": 496.5, "sampled": 24}, "written": "2026-10-08T05:40:17+00:00"}
+{"date": "2026-10-08", "technique": "page_uniqueness", "metric": "dup_pct_dc_neighborhood", "value": 37.6, "meta": {"words": 543.0, "sampled": 24}, "written": "2026-10-08T05:40:17+00:00"}
+{"date": "2026-10-08", "technique": "page_uniqueness", "metric": "dup_pct_la_zip", "value": 20.5, "meta": {"words": 1414.5, "sampled": 24}, "written": "2026-10-08T05:40:17+00:00"}
+{"date": "2026-10-08", "technique": "page_uniqueness", "metric": "dup_pct_neighborhood", "value": 18.0, "meta": {"words": 999.0, "sampled": 24}, "written": "2026-10-08T05:40:17+00:00"}
+{"date": "2026-10-08", "technique": "page_uniqueness", "metric": "dup_pct_section8", "value": 21.9, "meta": {"words": 850.0, "sampled": 6}, "written": "2026-10-08T05:40:17+00:00"}
+{"date": "2026-10-08", "technique": "page_uniqueness", "metric": "dup_pct_sf_neighborhood", "value": 15.3, "meta": {"words": 1522.5, "sampled": 24}, "written": "2026-10-08T05:40:17+00:00"}
+{"date": "2026-10-08", "technique": "page_uniqueness", "metric": "dup_pct_zip", "value": 14.1, "meta": {"words": 1278.0, "sampled": 24}, "written": "2026-10-08T05:40:17+00:00"}
+{"date": "2026-10-08", "technique": "page_uniqueness", "metric": "dup_sections_read", "value": 9, "meta": {}, "written": "2026-10-08T05:40:17+00:00"}
+{"date": "2026-10-08", "technique": "page_uniqueness", "metric": "dup_sections_rising", "value": 0, "meta": {}, "written": "2026-10-08T05:40:17+00:00"}
+{"date": "2026-10-08", "technique": "page_uniqueness", "metric": "dup_pct_borough", "value": 11.9, "meta": {"words": 585.5, "sampled": 20}, "written": "2026-10-08T05:41:50+00:00"}
+{"date": "2026-10-08", "technique": "page_uniqueness", "metric": "dup_pct_brief", "value": 49.5, "meta": {"words": 182, "sampled": 17}, "written": "2026-10-08T05:41:50+00:00"}
+{"date": "2026-10-08", "technique": "page_uniqueness", "metric": "dup_pct_building", "value": 33.1, "meta": {"words": 496.5, "sampled": 24}, "written": "2026-10-08T05:41:50+00:00"}
+{"date": "2026-10-08", "technique": "page_uniqueness", "metric": "dup_pct_dc_neighborhood", "value": 37.6, "meta": {"words": 543.0, "sampled": 24}, "written": "2026-10-08T05:41:50+00:00"}
+{"date": "2026-10-08", "technique": "page_uniqueness", "metric": "dup_pct_la_zip", "value": 20.5, "meta": {"words": 1414.5, "sampled": 24}, "written": "2026-10-08T05:41:50+00:00"}
+{"date": "2026-10-08", "technique": "page_uniqueness", "metric": "dup_pct_neighborhood", "value": 18.0, "meta": {"words": 999.0, "sampled": 24}, "written": "2026-10-08T05:41:50+00:00"}
+{"date": "2026-10-08", "technique": "page_uniqueness", "metric": "dup_pct_section8", "value": 22.4, "meta": {"words": 836.5, "sampled": 6}, "written": "2026-10-08T05:41:50+00:00"}
+{"date": "2026-10-08", "technique": "page_uniqueness", "metric": "dup_pct_sf_neighborhood", "value": 15.3, "meta": {"words": 1522.5, "sampled": 24}, "written": "2026-10-08T05:41:50+00:00"}
+{"date": "2026-10-08", "technique": "page_uniqueness", "metric": "dup_pct_zip", "value": 14.1, "meta": {"words": 1275.0, "sampled": 24}, "written": "2026-10-08T05:41:50+00:00"}
+{"date": "2026-10-08", "technique": "page_uniqueness", "metric": "dup_sections_read", "value": 9, "meta": {}, "written": "2026-10-08T05:41:50+00:00"}
+{"date": "2026-10-08", "technique": "page_uniqueness", "metric": "dup_sections_rising", "value": 0, "meta": {}, "written": "2026-10-08T05:41:50+00:00"}

@@ -69,7 +69,8 @@ struct AlertPushSheet: View {
         plusKnown && !hasPlus && !storeEntitled
     }
     private var offersRealtime: Bool {
-        Self.offersRealtime(plusKnown: auth.plusKnown, hasPlus: auth.hasPlus, storeEntitled: plus.entitled)
+        // Signed out = known not to pay; signed in waits for has_plus().
+        Self.offersRealtime(plusKnown: auth.plusKnown || !auth.isSignedIn, hasPlus: auth.hasPlus, storeEntitled: plus.entitled)
     }
 
     var body: some View {

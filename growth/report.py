@@ -215,6 +215,24 @@ def _index_churn():
         return None
 
 
+def _index_crawl_rate():
+    """index_status.json's crawl_rate record, or None.
+
+    The companion to _index_churn(): churn says whether tonight's cohort is the
+    one last night's numbers described, and this says whether tonight's reading
+    covers the same share of it. See CRAWL_WINDOWS caveat 4 in
+    growth/indexstatus.py — the crawl-window counts are levels over the rows
+    inspected, and on 2026-10-07 the same date measured twice returned 6 and
+    then 10 with Googlebot held fixed.
+    """
+    try:
+        from . import indexstatus
+        with open(indexstatus.STATUS_PATH) as f:
+            return json.load(f).get("crawl_rate") or None
+    except Exception:
+        return None
+
+
 def _index_families(limit=8):
     """Rows for the sampled index-coverage table: one page family per row.
 
@@ -692,13 +710,32 @@ def build_blocks(run_log=None, review_out=None):
             if _c14 is None:
                 _c14, _c28 = _last("index_crawls_14d"), _last("index_crawls_28d")
             if _c14 is not None and _c28 is not None:
+                # The 14d tile's delta carries the RATE and not just the
+                # denominator. It used to read "of 442 sampled", which names the
+                # denominator without dividing by it, and dividing is the whole
+                # difference between a reading taken mid-rotation and a finished
+                # one — see _index_crawl_rate().
+                _cr = _index_crawl_rate()
+                _r14 = (_ixtot.get("crawl_rate_14d")
+                        if _ixtot.get("crawl_rate_14d") is not None
+                        else (_cr or {}).get("rate_pct"))
                 B.append({"type": "tiles", "items": [
                     {"label": "Pages crawled, 14d", "value": _fmt(_c14),
-                     "delta": f"of {_fmt(_read)} sampled",
+                     "delta": (f"{_r14}% of {_fmt(_read)} inspected"
+                               if _r14 is not None else f"of {_fmt(_read)} sampled"),
                      "tone": "bad" if not _c14 else "info"},
                     {"label": "Pages crawled, 28d", "value": _fmt(_c28),
                      "delta": "distinct URLs Googlebot fetched",
                      "tone": "bad" if not _c28 else "info"}]})
+                # ...and whether that count compares with the last one at all.
+                # Same placement rule as the churn callout above: directly under
+                # the tile, because a qualifier in a footnote is a qualifier
+                # nobody applies. Only when the read depth actually moved —
+                # comparable None (no baseline) is not a warning.
+                if _cr and _cr.get("comparable") is False:
+                    B.append({"type": "callout", "tone": "warn",
+                              "heading": "Read depth moved — this count is not a trend",
+                              "body": str(_cr.get("note") or "")})
                 _wk = _ixtot.get("crawls_by_week") or {}
                 if _wk:
                     # Chips and not a table: it is one number per week and the

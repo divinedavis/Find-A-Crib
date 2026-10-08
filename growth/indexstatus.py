@@ -207,11 +207,61 @@ _AGE_BANDS = (("0-6d", 7), ("7-13d", 14), ("14-20d", 21), ("21-27d", 28),
 #     days, which biases a window LOW by roughly lag/window — about 8% at 28
 #     days and 16% at 14. crawl_read_lag_days is recorded alongside so the
 #     correction is arithmetic rather than a guess.
+#  4. AND IT IS NOT A RATE. This one was asserted to BE a rate, in this file and
+#     in the 2026-10-07 journal entry, and it is the correction that matters
+#     most because the claim was load-bearing: the entry told the next reader to
+#     disregard a jump in index_fetched and read index_crawls_14d instead,
+#     "which is a rate over the cohort rather than a level in it". It is not.
+#     summarise() skips every row this sampler has not yet inspected (the read
+#     gate, a few lines into the loop), so these counts are levels over `read`
+#     — and `read` is not a constant. It is how much of the cohort has been
+#     inspected so far, it collapses the night reconcile() swaps members in,
+#     and it climbs back over the following nights as the rotation catches up.
+#     A count that rises purely because more of the sample has been read is
+#     exactly the artifact reason 2 above was written to guard against, one
+#     level down.
+#
+#     THE DEMONSTRATION, and it is clean because Googlebot is held fixed:
+#     2026-10-07 was measured TWICE, by the 05:00 cron and by a second run that
+#     afternoon, both against the same cohort of 442 on the same date. The two
+#     readings in results.jsonl are
+#
+#         05:11Z   read 334   crawls_14d  6
+#         17:57Z   read 434   crawls_14d 10
+#
+#     Nothing Google did changed between them; 100 more rows were read. So the
+#     "7 → 6" the 10-07 entry published as "the honest reading" of a night when
+#     the levels could not be trusted was itself depressed by the re-draw it was
+#     reporting — a re-drawn cohort is an UNREAD cohort — and the 7 → 10 the
+#     next morning's series shows is the rotation finishing, not a recovery.
+#     Divide by `read` before comparing two nights, which is what crawl_rate_*
+#     and crawl_rate_report() below now do once, so three readers do not each
+#     have to remember to.
 #
 # No 7-day window for exactly reason 3: at a ~2.3-day lag a weekly count would
 # run a third short and would read as a crash that was the instrument. 14 is
 # the shortest window this sampling rate can honestly support.
 CRAWL_WINDOWS = (14, 28)
+
+# How far `read` may move between two nights before the crawl-window counts
+# stop comparing, in percent of the earlier night's `read`.
+#
+# 5% is not a statistical threshold and is not presented as one. It is the band
+# inside which the nightly rotation's own ragged edge lives on a settled cohort
+# — DAILY_BUDGET=100 re-reads rows that were already read, so `read` holds flat
+# at the cohort size and moves only by the handful reconcile() adds or drops.
+# Outside it, something structural happened: the 2026-10-07 re-draw moved it
+# -27.1% (458 → 334) and the recovery over the next two nights moved it +30.0%
+# and +1.8%. Those are the nights whose counts must not be read as movement,
+# and all three are on the correct side of 5%.
+#
+# Deliberately a different question from COHORT_CHURN_PCT and both are needed.
+# Churn asks WHICH pages are in the sample; this asks HOW MANY of them have
+# been looked at. A cohort can turn over with no change in read depth (swap 20
+# unread rows for 20 unread rows) and read depth can collapse with no turnover
+# (raise DAILY_BUDGET, or lose a night to a quota denial). Each confound hides
+# the other if only one is declared.
+READ_SHIFT_PCT = 5.0
 
 # How many trailing ISO weeks of crawl counts to carry. Eight spans the whole
 # of the 2026-08 → 2026-09 decline with a month of pre-decline baseline either
@@ -246,9 +296,13 @@ PACE_SECONDS = 0.4        # ~150/min against a 600/min ceiling
 #
 # Not one of those is Googlebot doing anything. They are 100 inspections spent
 # mostly on URLs the cohort had never asked about before, which came back
-# already carrying a crawl date. index_crawls_14d — the one number here that is
-# a rate and not a level — went 7 → 6 over the same night, which is the honest
-# reading. A review opening results.jsonl six months from now sees a 14.8-point
+# already carrying a crawl date. index_crawls_14d went 7 → 6 over the same
+# night, and THIS COMMENT ORIGINALLY CALLED THAT "the honest reading" on the
+# grounds that it was "the one number here that is a rate and not a level".
+# That was wrong on both halves and is corrected in CRAWL_WINDOWS caveat 4
+# above: the window counts are levels over `read`, the re-draw had left 108 of
+# the 442 rows unread, and the same date re-measured that afternoon at read 434
+# returned 10. A review opening results.jsonl six months from now sees a 14.8-point
 # jump in the site's headline fetch rate with nothing beside it to say the
 # sample was half replaced that morning, and the journal already records two
 # earlier entries bitten by exactly this class of confusion (2026-09-18, on a
@@ -525,11 +579,106 @@ def churn_report(cohort, added, dropped, took, published, prev_published=None):
     if not out["comparable"]:
         bits.append("so index_fetched, index_indexed and every rate built on them are "
                     "NOT comparable with last night: subtract the departures from "
-                    "yesterday's level before reading tonight's as movement, and use "
-                    "index_crawls_14d, which is a rate over the cohort rather than a "
-                    "level in it, for what Googlebot actually did")
+                    "yesterday's level before reading tonight's as movement, and read "
+                    "what Googlebot actually did off index_crawl_rate_14d, which divides "
+                    "index_crawls_14d by the rows actually inspected — the raw count is a "
+                    "level over `read` and a re-drawn cohort is an unread one, so on a "
+                    "night like this it falls for the same reason (see READ_SHIFT_PCT)")
     out["note"] = " — ".join(bits)
     return out
+
+
+def crawl_rate_report(crawls, read, prev_crawls=None, prev_read=None,
+                      window=CRAWL_WINDOWS[0]):
+    """Tonight's crawl window over its own denominator, and whether it compares.
+
+    Pure arithmetic over four numbers the caller already has, so it is testable
+    without a cohort file, an API token or a docroot — the same shape as
+    churn_report() above, and for the same reason: the judgement is made once
+    here rather than re-derived by the series reader, the report and whoever
+    writes the journal.
+
+    `rate_pct` is crawls as a share of the rows actually INSPECTED, not of the
+    cohort. See CRAWL_WINDOWS caveat 4: the raw count is a level over `read`,
+    `read` collapses on a re-draw and climbs back over the following nights, and
+    the only published demonstration of this cost a journal entry its headline
+    reading. The rate is the comparable form; the count is kept beside it
+    because it is what a human can check against index_status.json by hand.
+
+    `comparable` is False when `read` moved more than READ_SHIFT_PCT against
+    the night being compared with. False does NOT mean tonight's rate is wrong
+    — it is exactly right about the rows that were read. It means the two raw
+    COUNTS are not a trend, and that the rate, not the count, is the series to
+    read across that boundary.
+
+    prev_crawls/prev_read are last night's pair, or None on the first night a
+    comparison is possible at all; with either missing there is nothing to
+    compare and `comparable` is None rather than True, because "no baseline"
+    and "a baseline that agrees" must not render the same.
+    """
+    out = {"window_days": window, "crawls": crawls, "read": read,
+           "rate_pct": round(100.0 * crawls / read, 2) if read else None}
+    # Nothing inspected at all — a denied quota or a dead API, which collect()
+    # reaches here because this record is built before its read gate. There is
+    # no rate and no comparison to refuse: say that, rather than reporting a
+    # 0% crawl rate the run never observed. Same rule as the read gate itself.
+    if not read:
+        out["comparable"] = None
+        out["note"] = (f"no cohort row was inspected tonight, so there is no "
+                       f"{window}-day crawl reading to compare — this is an "
+                       f"instrument condition and not a crawl rate of 0%")
+        return out
+    if not prev_read or prev_crawls is None:
+        out["comparable"] = None
+        out["note"] = (f"{crawls:,} of {read:,} inspected rows were crawled in the last "
+                       f"{window} days"
+                       + (f" ({out['rate_pct']:.2f}%)" if out["rate_pct"] is not None else "")
+                       + " — no earlier reading to compare with, so this is a level and "
+                         "not yet a direction")
+        return out
+
+    prev_rate = round(100.0 * prev_crawls / prev_read, 2)
+    shift = round((read - prev_read) * 100.0 / prev_read, 1)
+    out["read_prev"] = prev_read
+    out["crawls_prev"] = prev_crawls
+    out["rate_pct_prev"] = prev_rate
+    out["read_shift_pct"] = shift
+    out["comparable"] = abs(shift) < READ_SHIFT_PCT
+
+    if out["comparable"]:
+        out["note"] = (f"{crawls:,} of {read:,} inspected rows crawled in {window} days "
+                       f"({out['rate_pct']:.2f}%), against {prev_crawls:,} of "
+                       f"{prev_read:,} ({prev_rate:.2f}%) — the reading covers the same "
+                       f"share of the sample ({shift:+.1f}%), so the two counts compare "
+                       f"directly")
+        return out
+    out["note"] = (
+        f"the sampler read {abs(shift):.1f}% {'fewer' if shift < 0 else 'more'} rows "
+        f"tonight than last time ({prev_read:,} → {read:,}), so "
+        f"{prev_crawls:,} → {crawls:,} crawled in "
+        f"{window} days is NOT a trend: the count only exists over rows that have "
+        f"been read, and that denominator moved. Over it the rate went "
+        f"{prev_rate:.2f}% → {out['rate_pct']:.2f}%, which is the comparison to make. "
+        f"A fall here on the night of a cohort re-draw is the rotation starting over, "
+        f"not Googlebot leaving")
+    return out
+
+
+def _prev_series(metric, today):
+    """The last reading of a site-wide series from a night strictly before today.
+
+    Strictly before for the reason _prev_published() gives and 2026-10-07
+    proved: collect() ran twice that day, the two runs recorded read 334 and
+    then 434 for the same date, and a comparison against a value this same run
+    wrote would report "nothing moved" on exactly the night most worth
+    reporting.
+    """
+    try:
+        rows = [(d, v) for d, v in ledger.series("__site__", metric)
+                if d < today and isinstance(v, (int, float))]
+    except Exception:
+        return None
+    return rows[-1][1] if rows else None
 
 
 def _prev_published(today):
@@ -896,6 +1045,22 @@ def summarise(cohort, today=None):
     # counts once.
     for w in CRAWL_WINDOWS:
         total[f"crawls_{w}d"] = windows[w]
+        # ...and the same number over its own denominator, which is the form
+        # that survives a night the rotation has not finished. The denominator
+        # is `read` and not `cohort` because the loop above skips an uninspected
+        # row entirely: a cohort of 442 with 334 rows read can only ever report
+        # crawls out of 334. See CRAWL_WINDOWS caveat 4 — the raw count read 6
+        # and 10 for the same date and the same 442 URLs, two readings apart,
+        # and 1.80% / 2.30% over `read` is the pair that says that was the
+        # sampler. None, not 0, when nothing has been read: a crawl rate off an
+        # empty sample is not 0% of anything.
+        total[f"crawl_rate_{w}d"] = (round(100.0 * windows[w] / total["read"], 2)
+                                     if total.get("read") else None)
+    # How much of the cohort tonight's reading actually covers. Recorded in its
+    # own right because it is the denominator of everything above and the one
+    # number that says whether a window count is finished or mid-rotation.
+    total["read_pct"] = (round(100.0 * total["read"] / total["cohort"], 1)
+                         if total.get("cohort") else None)
     # Trailing weeks, oldest first, INCLUDING the zeroes. A dict built only
     # from weeks that saw a crawl would silently drop a dead week, and a dead
     # week is the single most informative entry this series can hold.
@@ -1232,6 +1397,18 @@ def collect(docroot, budget=None):
     # report reads its index blocks out of this file and the churn has to be
     # available to the same reader that renders the levels it qualifies.
     doc["churn"] = churn
+    # The crawl window's own denominator, computed here rather than in the
+    # report because it needs last night's reading out of results.jsonl and the
+    # report must not be the thing that decides whether a number compares. Both
+    # halves of the pair come from the same night by construction: _prev_series
+    # takes the latest row strictly before today for each, so a night the cron
+    # ran twice cannot pair tonight's crawls with this morning's read.
+    doc["crawl_rate"] = crawl_rate_report(
+        summary["total"].get(f"crawls_{CRAWL_WINDOWS[0]}d"),
+        summary["total"].get("read"),
+        _prev_series(f"index_crawls_{CRAWL_WINDOWS[0]}d", ledger.today()),
+        _prev_series("index_read", ledger.today()),
+        CRAWL_WINDOWS[0])
     _save(doc)
 
     today = ledger.today()
@@ -1310,6 +1487,21 @@ def collect(docroot, budget=None):
                               # for the three ways to over-read them.
                               ("index_crawls_14d", tot.get("crawls_14d")),
                               ("index_crawls_28d", tot.get("crawls_28d")),
+                              # ...and each over the rows that were actually
+                              # inspected, which is the only form of this number
+                              # that compares across a night the rotation
+                              # restarted. See CRAWL_WINDOWS caveat 4 and
+                              # READ_SHIFT_PCT: the two raw counts above read 6
+                              # and 10 for the same date and the same 442 URLs,
+                              # a hundred inspections apart, and the series as
+                              # it stands cannot tell a reader which of those
+                              # was Googlebot. index_read_pct is recorded beside
+                              # them because a count taken at 75% read depth and
+                              # one taken at 100% are different measurements and
+                              # nothing else in the file says which is which.
+                              ("index_crawl_rate_14d", tot.get("crawl_rate_14d")),
+                              ("index_crawl_rate_28d", tot.get("crawl_rate_28d")),
+                              ("index_read_pct", tot.get("read_pct")),
                               # Recorded as a series, not just in last_run,
                               # because it is the correction factor for the two
                               # above and a reading taken six weeks from now
@@ -1429,6 +1621,17 @@ def collect(docroot, budget=None):
            "crawls_by_week": tot.get("crawls_by_week"),
            "crawls_week_partial": tot.get("crawls_week_partial"),
            "crawl_read_lag_days": tot.get("crawl_read_lag_days"),
+           # The two counts above over the rows actually inspected, and the
+           # verdict on whether they compare with the last reading. Here and not
+           # only in results.jsonl because last_run.json is what the 6am review
+           # reads FIRST, and on 2026-10-08 it read "crawls_14d 7 → 10" out of
+           # this file with nothing beside it to say that 97.7% of the sample had
+           # turned over and the rotation had spent two nights catching back up.
+           # See CRAWL_WINDOWS caveat 4.
+           "read_pct": tot.get("read_pct"),
+           "crawl_rate_14d": tot.get("crawl_rate_14d"),
+           "crawl_rate_28d": tot.get("crawl_rate_28d"),
+           "crawl_rate": doc.get("crawl_rate"),
            # Families this sampler has read and Google has never once fetched.
            # Named here because "0% fetched" is invisible in a site-wide rate
            # and decides whether a technique's zero measured its pages or the

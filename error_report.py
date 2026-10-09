@@ -281,6 +281,12 @@ def crashes(rows, key=None, kept_going=visitor_kept_going):
         booted = _ts(p.get("booted"))
         if booted and _ts(r["created_at"]) - booted > STALE_TRACE:
             continue
+        # No boot stamp = the dead page ran code from before a68ba9a
+        # (2026-09-24), which is long past STALE_TRACE: a phone that kept an
+        # old tab open reported it on its next visit. Two of 2026-10-09's five
+        # "page deaths" were these (visitors first seen 9/17 and earlier).
+        if not booted:
+            continue
         if booted and "tick" not in labels and lookups < SHADOW_LOOKUPS:
             lookups += 1
             if kept_going(key, r.get("visitor_id"), booted):

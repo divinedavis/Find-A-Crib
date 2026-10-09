@@ -43,3 +43,9 @@ if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_"):
             fn(); print("ok", name)
+
+
+def test_trace_without_boot_stamp_is_history():
+    # Pages from before 2026-09-24 carry no "booted"; their report is old news.
+    out = er.crashes([trace("v1", ["boot", "grid:done"], booted=None)], key="k", kept_going=lambda *a: False)
+    assert not out

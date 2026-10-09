@@ -124,11 +124,11 @@
     "accept_pct": 0.5,
     "accept_pct_mature": 0.0,
     "added": 0,
-    "at": "2026-10-08T05:11:22+00:00",
+    "at": "2026-10-09T05:11:20+00:00",
     "by_crawl_age": {
       "0-6d": {
-        "accept_pct": 20.0,
-        "fetched": 5,
+        "accept_pct": 14.3,
+        "fetched": 7,
         "indexed": 1
       },
       "14-20d": {
@@ -148,7 +148,7 @@
       },
       "7-13d": {
         "accept_pct": 0.0,
-        "fetched": 5,
+        "fetched": 3,
         "indexed": 0
       }
     },
@@ -168,6 +168,20 @@
       "published_shift_pct": 0.0
     },
     "cohort": 442,
+    "crawl_rate": {
+      "comparable": true,
+      "crawls": 10,
+      "crawls_prev": 10,
+      "note": "10 of 442 inspected rows crawled in 14 days (2.26%), against 10 of 442 (2.26%) \u2014 the reading covers the same share of the sample (+0.0%), so the two counts compare directly",
+      "rate_pct": 2.26,
+      "rate_pct_prev": 2.26,
+      "read": 442,
+      "read_prev": 442,
+      "read_shift_pct": 0.0,
+      "window_days": 14
+    },
+    "crawl_rate_14d": 2.26,
+    "crawl_rate_28d": 2.71,
     "crawl_read_lag_days": 1.4,
     "crawls_14d": 10,
     "crawls_28d": 12,
@@ -177,12 +191,12 @@
       "2026-08-31": 0,
       "2026-09-07": 0,
       "2026-09-14": 1,
-      "2026-09-21": 2,
-      "2026-09-28": 6,
-      "2026-10-05": 3
+      "2026-09-21": 1,
+      "2026-09-28": 5,
+      "2026-10-05": 5
     },
     "crawls_week_partial": "2026-10-05",
-    "date": "2026-10-08",
+    "date": "2026-10-09",
     "dropped": 0,
     "errors": 0,
     "ever_indexed": 3,
@@ -196,7 +210,7 @@
     "gained_indexed": 0,
     "indexed_pct": 0.2,
     "inspected": 100,
-    "last_crawl": "2026-10-05",
+    "last_crawl": "2026-10-08",
     "lost_indexed": 0,
     "never_fetched": {
       "brief": 10,
@@ -213,152 +227,151 @@
     "ok": true,
     "published_urls": 1704,
     "read": 442,
-    "rechecked": 92,
+    "read_pct": 100.0,
+    "rechecked": 100,
     "states": {
       "crawled_not_indexed": 185,
-      "discovered_not_indexed": 63,
+      "discovered_not_indexed": 60,
       "indexed": 1,
-      "unknown_to_google": 193
+      "unknown_to_google": 196
     }
   },
   "measure": {
-    "at": "2026-10-08T05:11:24+00:00",
-    "coverage_pct": 82.7,
-    "date": "2026-10-08",
+    "at": "2026-10-09T05:11:22+00:00",
+    "coverage_pct": 82.6,
+    "date": "2026-10-09",
     "days": 1,
-    "keywords_covered": 488,
-    "keywords_total": 590,
-    "latest_measured_day": "2026-10-07",
+    "keywords_covered": 508,
+    "keywords_total": 615,
+    "latest_measured_day": "2026-10-08",
     "traffic": {
       "arrival_shape": {
         "all": {
-          "busiest_6h_pct": 43.6,
-          "n": 165,
-          "night_pct": 7.3,
-          "peak_hour_utc": 0
+          "busiest_6h_pct": 40.9,
+          "n": 176,
+          "night_pct": 7.4,
+          "peak_hour_utc": 3
         },
         "direct": {
-          "busiest_6h_pct": 47.7,
-          "n": 128,
-          "night_pct": 7.0,
-          "peak_hour_utc": 0
+          "busiest_6h_pct": 39.9,
+          "n": 138,
+          "night_pct": 5.8,
+          "peak_hour_utc": 3
         },
         "organic": {
-          "busiest_6h_pct": 42.9,
-          "n": 35,
-          "night_pct": 8.6,
-          "peak_hour_utc": 19
+          "busiest_6h_pct": 50.0,
+          "n": 26,
+          "night_pct": 11.5,
+          "peak_hour_utc": 1
         }
       },
       "by_channel": {
-        "ai": 1,
+        "ai": 3,
         "campaign": 1,
-        "direct": 128,
-        "organic": 35
+        "direct": 138,
+        "internal": 7,
+        "organic": 26,
+        "referral": 1
       },
       "by_hour_utc": {
         "all": [
-          18,
           14,
+          12,
+          10,
+          17,
           11,
-          6,
-          7,
-          7,
-          2,
-          1,
-          1,
-          4,
-          2,
-          5,
-          4,
           8,
+          3,
+          1,
+          2,
+          3,
+          4,
+          4,
           4,
           6,
-          3,
-          7,
-          6,
-          11,
           9,
-          6,
+          4,
           14,
-          9
+          6,
+          6,
+          5,
+          8,
+          11,
+          10,
+          4
         ],
         "direct": [
-          15,
-          11,
+          10,
           8,
-          4,
-          4,
-          6,
-          1,
-          1,
-          1,
-          4,
-          0,
-          4,
-          2,
+          9,
+          15,
           7,
+          6,
           3,
-          5,
-          2,
-          6,
+          1,
+          1,
+          1,
+          3,
+          3,
+          4,
           4,
           6,
+          4,
+          12,
+          5,
+          5,
+          5,
           7,
-          6,
-          13,
-          8
+          8,
+          7,
+          4
         ],
         "organic": [
-          3,
-          3,
-          3,
           2,
           3,
           1,
+          2,
+          3,
+          2,
+          0,
+          0,
+          1,
+          1,
           1,
           0,
           0,
+          1,
+          1,
           0,
           2,
           1,
-          2,
-          1,
           1,
           0,
           1,
           1,
           2,
-          4,
-          2,
-          0,
-          1,
-          1
+          0
         ]
       },
       "by_src": {
-        "chatgpt.com": 1,
-        "digest": 1
+        "alert": 1,
+        "chatgpt.com": 3
       },
-      "direct_deep": 7,
-      "new": 111,
+      "direct_deep": 13,
+      "new": 113,
       "new_window_days": 30,
-      "returning": 54,
+      "returning": 63,
       "top_paths": [
         [
           "/",
-          145
+          157
         ],
         [
-          "/building/manhattan/12-e-86th-st-1014970009/",
+          "/borough/manhattan/",
           2
         ],
         [
-          "/building/manhattan/316-w-104th-st-1018900069/",
-          2
-        ],
-        [
-          "/landlord/werber-management/",
+          "/building/bronx/2600-netherland-ave-2057220475/",
           2
         ],
         [
@@ -366,18 +379,18 @@
           1
         ],
         [
-          "/building/bronx/1082-woodycrest-ave-2025090010/",
+          "/building/bronx/1944-unionport-rd-2042560003/",
+          1
+        ],
+        [
+          "/building/bronx/733-to-739-arnow-ave-2045470001/",
           1
         ]
       ],
       "top_referrers": [
         [
           "www.google.com",
-          26
-        ],
-        [
-          "www.bing.com",
-          5
+          21
         ],
         [
           "com.google.android.googlequicksearchbox",
@@ -388,57 +401,59 @@
           2
         ],
         [
-          "com.google.android.gm",
+          "accounts.google.com",
+          1
+        ],
+        [
+          "divinedavis.com",
           1
         ]
       ],
-      "visitors": 165
+      "visitors": 176
     }
   },
   "outreach": {
-    "at": "2026-10-08T05:20:09+00:00",
-    "date": "2026-10-08",
-    "drafted": 0,
-    "ok": true,
-    "segment": "proptech"
+    "at": "2026-10-09T05:12:46+00:00",
+    "date": "2026-10-09",
+    "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
+    "ok": false
   },
   "scout": {
-    "at": "2026-10-08T05:17:04+00:00",
-    "date": "2026-10-08",
-    "keywords_added": 25,
-    "ok": true,
-    "techniques_added": 3
+    "at": "2026-10-09T05:12:46+00:00",
+    "date": "2026-10-09",
+    "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
+    "ok": false
   },
   "searchconsole": {
-    "at": "2026-10-08T05:00:05+00:00",
-    "clicks": 181,
-    "date": "2026-10-08",
-    "impressions": 222,
+    "at": "2026-10-09T05:00:05+00:00",
+    "clicks": 174,
+    "date": "2026-10-09",
+    "impressions": 215,
     "nonbranded_clicks": 0,
     "nonbranded_impressions": 1,
-    "page_clicks": 194,
-    "page_impressions": 1386,
+    "page_clicks": 189,
+    "page_impressions": 1335,
     "serving_branded_only": 8,
     "serving_ever": 289,
     "serving_nonbranded": 1,
     "serving_pages": 11,
-    "serving_stable": 9,
+    "serving_stable": 11,
     "serving_unattributed": 2,
     "share_pct": 0.0,
     "tracked_ranking": 0,
-    "window": "2026-09-29..2026-10-06"
+    "window": "2026-09-30..2026-10-07"
   },
   "sitemapstatus": {
-    "at": "2026-10-08T05:11:22+00:00",
+    "at": "2026-10-09T05:11:21+00:00",
     "children_enumerated": true,
-    "date": "2026-10-08",
-    "detail": "14 of 14 live sitemap shards are known to Search Console; Google has read 4,088 URLs out of them against 1,704 listed locally \u2014 0 submitted directly to the property and 14 carried by the index \u2014 not re-downloaded in 14+ days, oldest first: sitemap-la.xml (19d), sitemap-council.xml (18d), sitemap-dc.xml (16d), sitemap-sf.xml (14d) \u2014 the index itself was last downloaded 2026-10-08 \u2014 every live shard has been downloaded at least once",
+    "date": "2026-10-09",
+    "detail": "14 of 14 live sitemap shards are known to Search Console; Google has read 4,088 URLs out of them against 1,704 listed locally \u2014 0 submitted directly to the property and 14 carried by the index \u2014 not re-downloaded in 14+ days, oldest first: sitemap-la.xml (20d), sitemap-council.xml (19d), sitemap-dc.xml (17d), sitemap-sf.xml (15d) \u2014 the index itself was last downloaded 2026-10-08 \u2014 every live shard has been downloaded at least once",
     "index_downloaded": "2026-10-08",
     "ok": true,
-    "oldest_download_days": 19,
+    "oldest_download_days": 20,
     "shards": {
       "sitemap-Bk.xml": {
-        "age_days": 3,
+        "age_days": 4,
         "downloaded": "2026-10-05",
         "errors": 0,
         "known": true,
@@ -450,7 +465,7 @@
         "warnings": 0
       },
       "sitemap-Bx.xml": {
-        "age_days": 2,
+        "age_days": 3,
         "downloaded": "2026-10-06",
         "errors": 0,
         "known": true,
@@ -462,7 +477,7 @@
         "warnings": 0
       },
       "sitemap-M.xml": {
-        "age_days": 4,
+        "age_days": 5,
         "downloaded": "2026-10-04",
         "errors": 0,
         "known": true,
@@ -474,7 +489,7 @@
         "warnings": 0
       },
       "sitemap-Q.xml": {
-        "age_days": 5,
+        "age_days": 6,
         "downloaded": "2026-10-03",
         "errors": 0,
         "known": true,
@@ -486,7 +501,7 @@
         "warnings": 0
       },
       "sitemap-SI.xml": {
-        "age_days": 4,
+        "age_days": 5,
         "downloaded": "2026-10-04",
         "errors": 0,
         "known": true,
@@ -498,7 +513,7 @@
         "warnings": 0
       },
       "sitemap-council.xml": {
-        "age_days": 18,
+        "age_days": 19,
         "downloaded": "2026-09-20",
         "errors": 0,
         "known": true,
@@ -510,7 +525,7 @@
         "warnings": 0
       },
       "sitemap-daily.xml": {
-        "age_days": 9,
+        "age_days": 10,
         "downloaded": "2026-09-29",
         "errors": 0,
         "known": true,
@@ -522,7 +537,7 @@
         "warnings": 0
       },
       "sitemap-dc.xml": {
-        "age_days": 16,
+        "age_days": 17,
         "downloaded": "2026-09-22",
         "errors": 0,
         "known": true,
@@ -534,7 +549,7 @@
         "warnings": 0
       },
       "sitemap-guide.xml": {
-        "age_days": 5,
+        "age_days": 6,
         "downloaded": "2026-10-03",
         "errors": 0,
         "known": true,
@@ -546,7 +561,7 @@
         "warnings": 0
       },
       "sitemap-hub.xml": {
-        "age_days": 7,
+        "age_days": 8,
         "downloaded": "2026-10-01",
         "errors": 0,
         "known": true,
@@ -558,7 +573,7 @@
         "warnings": 0
       },
       "sitemap-la.xml": {
-        "age_days": 19,
+        "age_days": 20,
         "downloaded": "2026-09-19",
         "errors": 0,
         "known": true,
@@ -570,7 +585,7 @@
         "warnings": 0
       },
       "sitemap-landlord.xml": {
-        "age_days": 6,
+        "age_days": 7,
         "downloaded": "2026-10-02",
         "errors": 0,
         "known": true,
@@ -582,7 +597,7 @@
         "warnings": 0
       },
       "sitemap-main.xml": {
-        "age_days": 5,
+        "age_days": 6,
         "downloaded": "2026-10-03",
         "errors": 0,
         "known": true,
@@ -594,7 +609,7 @@
         "warnings": 0
       },
       "sitemap-sf.xml": {
-        "age_days": 14,
+        "age_days": 15,
         "downloaded": "2026-09-24",
         "errors": 0,
         "known": true,

@@ -1,7 +1,3 @@
-{"at":"2026-09-07T05:00:01Z","job":"daily","phase":"start","rc":null,"pull":"pending","head":"4f4e885","note":""}
-{"at":"2026-09-07T05:22:07Z","job":"daily","phase":"finish","rc":0,"pull":"ok","head":"3c14fe9","note":""}
-{"at":"2026-09-07T05:40:01Z","job":"build --deploy","phase":"start","rc":null,"pull":"pending","head":"16af55b","note":""}
-{"at":"2026-09-07T05:40:31Z","job":"build --deploy","phase":"finish","rc":0,"pull":"ok","head":"16af55b","note":""}
 {"at":"2026-09-07T05:40:31Z","job":"build --deploy","phase":"seo_watchdog_start","rc":null,"pull":"ok","head":"16af55b","note":"corpus older than 1320min, running scripts/refresh_seo.sh"}
 {"at":"2026-09-07T05:42:02Z","job":"build --deploy","phase":"seo_watchdog_finish","rc":0,"pull":"ok","head":"16af55b","note":"ran refresh_seo.sh to completion"}
 {"at":"2026-09-08T05:00:01Z","job":"daily","phase":"start","rc":null,"pull":"pending","head":"4752e8e","note":""}
@@ -198,3 +194,7 @@
 {"at":"2026-10-08T05:41:47Z","job":"build --deploy","phase":"seo_watchdog_finish","rc":0,"pull":"ok","head":"8b3d20c","note":"ran refresh_seo.sh to completion"}
 {"at":"2026-10-09T05:00:01Z","job":"daily","phase":"start","rc":null,"pull":"pending","head":"bdd7935","note":""}
 {"at":"2026-10-09T05:13:17Z","job":"daily","phase":"finish","rc":0,"pull":"ok","head":"80ab960","note":""}
+{"at":"2026-10-09T05:40:01Z","job":"build --deploy","phase":"start","rc":null,"pull":"pending","head":"3760f54","note":""}
+{"at":"2026-10-09T05:40:22Z","job":"build --deploy","phase":"finish","rc":0,"pull":"ok","head":"3760f54","note":""}
+{"at":"2026-10-09T05:40:22Z","job":"build --deploy","phase":"seo_watchdog_start","rc":null,"pull":"ok","head":"3760f54","note":"corpus older than 1320min, running scripts/refresh_seo.sh"}
+{"at":"2026-10-09T05:41:41Z","job":"build --deploy","phase":"seo_watchdog_finish","rc":0,"pull":"ok","head":"3760f54","note":"ran refresh_seo.sh to completion"}

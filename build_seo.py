@@ -2797,9 +2797,22 @@ def neighborhood_norms(items):
     # neighborhood, not about the subset that happens to have a denominator.
     clean = sum(1 for x in items
                 if not (((x.get("h") or {}).get("violations") or {}).get("open") or 0))
+    # `clean` above is the right base for a sentence ABOUT ONE BUILDING ("no open
+    # violations at this address — one of N such buildings"), because the reader
+    # is standing on a page that already shows whether this address has an HPD
+    # record at all. It is the wrong base for an AGGREGATE claim: it folds the
+    # buildings HPD holds no violation record for in with the ones it holds a
+    # clean record for, and "HPD lists no open violation at 1,200 buildings"
+    # would then be counting silence as a clean bill of health. So the hub block
+    # gets its own pair — how many buildings have a violation record at all, and
+    # how many of THOSE are clean — and says both numbers out loud.
+    with_rec = [x for x in items if ((x.get("h") or {}).get("violations"))]
     return {"n": len(items), "units": units, "unit_med": _med(units),
             "year_med": _med(years), "rate_med": _med(rates), "rate_n": len(rates),
-            "clean": clean}
+            "clean": clean,
+            "rec_n": len(with_rec),
+            "clean_rec": sum(1 for x in with_rec
+                             if not ((x["h"]["violations"]).get("open") or 0))}
 
 
 def _rate_phrase(rate):
@@ -2936,6 +2949,161 @@ def building_facts(b, nb, norms):
                    f"address, {tail}.")
 
     return _name_place(out[:FACTS_MAX_SENTENCES], nb)
+
+
+# A hub block needs two sentences to be worth a heading. One number under an
+# <h2> is a caption, and a caption that sometimes appears and sometimes does not
+# reads as a broken template; the caller omits the block instead of padding it.
+HUB_FACTS_MIN_SENTENCES = 2
+
+# Below this many buildings a hub reports TOTALS and no median. 26 of the 198
+# NYC neighborhoods hold fewer than 20 buildings and three hold exactly one, and
+# "a median of 180 apartments per building" over a sample of one is not a
+# statistic — it is one building's unit count wearing the authority of one. The
+# totals stay, because a total over three buildings is an exact fact about three
+# buildings; it is only the median that needs a base. Same judgement as
+# FACTS_MIN_BASE and the same number, kept separate because that one guards a
+# percentile inside building_facts() and this one guards a median on a hub, and
+# a later run should be able to move one without silently moving the other.
+HUB_MEDIAN_MIN_BASE = 20
+
+
+def _hpd_record_sentence(n, rec_n, clean_rec):
+    """'HPD holds a violation record for N of the M buildings tracked here…'
+
+    One sentence, four shapes, because this is the claim most likely to be read
+    out of context and it has to be grammatical and exact at n=1 as well as at
+    n=500. Shared with the FAQ answer so the two can never disagree about a
+    number or hedge it differently. Returns None when HPD holds no record at
+    all for this place, which is a true thing the sentence cannot say — "HPD
+    holds a violation record for 0 buildings" invites the reader to conclude
+    something about the buildings rather than about the record.
+    """
+    if not rec_n:
+        return None
+    if n == rec_n:
+        whole = {1: "the one building", 2: "both buildings"}.get(n, f"all {n:,} buildings")
+        head = f"HPD holds a violation record for {whole} tracked here"
+    else:
+        head = (f"HPD holds a violation record for {rec_n:,} of the {n:,} buildings "
+                f"tracked here")
+    if clean_rec == rec_n:
+        tail = (" and lists no open violation against it"
+                if rec_n == 1 else " and lists no open violation at any of them")
+    elif not clean_rec:
+        tail = (", and it has at least one open violation"
+                if rec_n == 1 else
+                ", and every one of them has at least one open violation")
+    else:
+        tail = f", and lists no open violation at {clean_rec:,} of those"
+    return head + tail + "."
+
+
+def hub_condition_facts(place, norms):
+    """Sentences about the buildings ONE hub page lists, from the same norms dict.
+
+    Why this exists (2026-10-09). The index census stopped being a story about
+    whether Google crawls this site and became a story about WHICH TIER it still
+    comes back to. Of 158 building pages Google has ever fetched, 6 were
+    re-crawled in the last 28 days (3.8%); of 15 neighborhood hubs, 3 (20%); of
+    5 borough hubs, 2 (40%). 174 of the 186 ever-fetched URLs carry a crawl date
+    before 2026-08-28. So the "0% acceptance on /building/" every recent journal
+    entry has quoted is a July/August verdict on a tier Google has since
+    abandoned, and a content change to that tier would not be LOOKED AT for
+    months. The hub tiers are the only ones with a crawl loop still running, and
+    a neighborhood hub stated exactly two facts about its own place — the
+    building count and the median year built.
+
+    neighborhood_norms() has computed the rest since the comparison block
+    shipped: one pass per group, already in memory, read only by the building
+    pages. This reads it at the hub level, where the page is the aggregate.
+
+    Rules it holds to, all of them the same ones building_facts() holds to:
+
+      * every number is an aggregate of records THIS PAGE already lists, so the
+        block cannot say something the page contradicts;
+      * every sentence carries its own denominator, because "no open violations
+        at 1,200 buildings" is a different claim depending on whether the base
+        is 1,300 or 13,000;
+      * the apartment count keeps PLUTO's own hedge. The hub is not the place to
+        quietly promote an estimate into a census;
+      * silence is not a clean record — see neighborhood_norms' rec_n comment;
+      * nothing is padded. Fewer than HUB_FACTS_MIN_SENTENCES true things to say
+        and the caller drops the heading too.
+
+    `place` is already named in the <h1> and the answer block immediately above,
+    so these sentences say "here" rather than repeating a four-hyphen
+    neighborhood name twice more — the same reason _name_place() exists.
+    """
+    out = []
+    n = norms.get("n") or 0
+    if not n:
+        return out
+
+    units, unit_med = norms.get("units") or [], norms.get("unit_med")
+    if len(units) == 1:
+        u = units[0]
+        out.append(f"{'The one building here has' if n == 1 else 'The one of them with a recorded apartment count has'} "
+                   f"about {u:,} apartment{'' if u == 1 else 's'} on file, from the NYC "
+                   f"PLUTO count the city publishes as an estimate.")
+    elif units:
+        base = ((("Both of them" if len(units) == 2 else f"All {len(units):,} of them")
+                 if len(units) == n
+                 else f"The {len(units):,} of them with a recorded apartment count"))
+        med = (f" — a median of {unit_med:,} per building"
+               if unit_med and n >= HUB_MEDIAN_MIN_BASE else "")
+        out.append(f"{base} hold about {sum(units):,} apartments between them{med}, from "
+                   f"the NYC PLUTO counts the city publishes as estimates.")
+
+    rec = _hpd_record_sentence(n, norms.get("rec_n") or 0, norms.get("clean_rec") or 0)
+    if rec:
+        out.append(rec)
+
+    # The median rate is taken over every building with an apartment count, clean
+    # ones included at zero — which is what makes it a statement about the place
+    # and not about its worst addresses. Said out loud, because a median that
+    # silently dropped the zeroes would read identically and mean something far
+    # worse. Skipped when it is 0 (_rate_phrase promises its caller a positive
+    # rate, and "zero per apartment" is already the sentence above) and skipped
+    # below HUB_MEDIAN_MIN_BASE for the reason written at that constant.
+    rate_med, rate_n = norms.get("rate_med"), norms.get("rate_n") or 0
+    if rate_med and rate_n and n >= HUB_MEDIAN_MIN_BASE:
+        out.append(f"Counting the buildings with no open violation as zero, the median "
+                   f"across the {rate_n:,} with an apartment count is "
+                   f"{_rate_phrase(rate_med)}.")
+
+    return out
+
+
+def hub_conditions_html(place, norms):
+    """hub_condition_facts() as a block, plus the FAQ pair it entitles the page to.
+
+    Returns (html, faq_pairs). Both empty when the records cannot carry the
+    block — and the FAQ pair is returned ONLY alongside the html, never without
+    it: faq_jsonld() marks up a FAQPage, and a question answered in structured
+    data but not in the rendered text is markup describing content that is not
+    on the page. faq_html()'s docstring makes that rule; this keeps it.
+    """
+    facts = hub_condition_facts(place, norms)
+    if len(facts) < HUB_FACTS_MIN_SENTENCES:
+        return "", []
+    html = (f"<h2>What the records say about {esc(place)}</h2>"
+            f"<div class='compare'><p>{esc(' '.join(facts))}</p></div>")
+    faq = []
+    n = norms.get("n") or 0
+    rec_n, clean_rec = norms.get("rec_n") or 0, norms.get("clean_rec") or 0
+    # Only where there is a real split to report. With every record clean, or
+    # none of them, the block's own sentence already says so in plain words and
+    # an FAQ pair would be the same fact asked as a question.
+    if rec_n and 0 < clean_rec < rec_n:
+        faq.append((
+            f"How many rent-stabilized buildings in {place} have open HPD violations?",
+            f"HPD holds a violation record for {rec_n:,} of the {n:,} DHCR-registered "
+            f"rent-stabilized buildings Find A Crib tracks in {place}. "
+            f"{rec_n - clean_rec:,} of those have at least one open violation on file; "
+            f"{clean_rec:,} have none. A building with no HPD violation record is not "
+            f"counted either way."))
+    return html, faq
 
 
 def hpd_registration_line(h):
@@ -3718,6 +3886,8 @@ def main():
             notable_html = (f"<h2>Notable buildings in {esc(nb)}</h2>"
                             f"<table class='facts'><tr><th>Building</th><th>Why</th></tr>"
                             + "".join(rows) + "</table>")
+        nb_cond_html, nb_cond_faq = hub_conditions_html(
+            f"{nb}, {boroname}", norms.get((boro, nb)) or {})
         body = (f"<div class='crumbs'><a href='/'>Home</a> › "
                 f"<a href='/borough/{BORO_SLUG.get(boro,'nyc')}/'>{esc(boroname)}</a></div>"
                 f"<h1>Rent-stabilized buildings in {esc(nb)}, {esc(boroname)}</h1>"
@@ -3730,6 +3900,12 @@ def main():
                     "deregulated — check the address below and ask the landlord for its "
                     "rent history.",
                 ])
+                # Before the CTA and after the answer block, the same placement
+                # the building pages give their comparison block: it is the
+                # substance of the answer, not an appendix to it. `norms` is the
+                # dict the building pages already compare against — see
+                # hub_condition_facts() for why this tier and not /building/.
+                + nb_cond_html
                 + f"<a class='cta' href='/'>Explore {esc(nb)} on the map →</a>"
                 + vblock(items, f"{nb}, {boroname}")
                 + notable_html
@@ -3748,6 +3924,7 @@ def main():
             nb_faq.append((f"What year were most rent-stabilized buildings in {nb} built?",
                            f"Most rent-stabilized buildings in {nb}, {boroname} were built around {med}, "
                            f"based on NYC PLUTO records for the {n:,} DHCR-registered buildings tracked here."))
+        nb_faq += nb_cond_faq
         body += faq_html(nb_faq)
         nb_crumb = breadcrumb([
             ("Home", SITE + "/"),
@@ -3786,6 +3963,13 @@ def main():
                         for nb, c in sorted(nbs))
         boro_zip_pairs = dict(zips_by_boro.get(boro, []))
         boro_zips = zip_links_html(boro_zip_pairs, counts=boro_zip_pairs)
+        # The borough's own buildings, flattened once and used twice — the
+        # voucher block below already walks exactly this list. neighborhood_norms
+        # over it is five extra passes for the whole build, against 198 it
+        # already does per neighborhood.
+        boro_items = [x for nb, _c in nbs for x in by_nb[(boro, nb)]]
+        boro_cond_html, boro_cond_faq = hub_conditions_html(
+            boroname, neighborhood_norms(boro_items))
         body = (f"<div class='crumbs'><a href='/'>Home</a></div>"
                 f"<h1>Rent-stabilized buildings in {esc(boroname)}</h1>"
                 + answer_block([
@@ -3796,10 +3980,11 @@ def main():
                     "deregulated — find the address here and ask the landlord for its "
                     "rent history.",
                 ])
+                + boro_cond_html
                 + f"<a class='cta' href='/'>Open the map →</a>"
                 f"<p><a href='{boro_list_url(boro,'largest')}'>Largest buildings in {esc(boroname)}</a> "
                 f"&nbsp;·&nbsp; <a href='{boro_list_url(boro,'oldest')}'>Oldest buildings</a></p>"
-                + vblock([x for nb, _c in nbs for x in by_nb[(boro, nb)]], boroname)
+                + vblock(boro_items, boroname)
                 + f"<h2>Neighborhoods</h2><div class='cols'>{links}</div>"
                 # The second way into the same buildings, and the one crawl path
                 # into /zip/ that does not run through the noindexed building
@@ -3811,6 +3996,7 @@ def main():
         boro_faq = [(f"How many rent-stabilized buildings are in {boroname}?",
                      f"There are {total:,} registered rent-stabilized buildings across {len(nbs)} "
                      f"neighborhoods in {boroname}, according to NY State DHCR registration data.")]
+        boro_faq += boro_cond_faq
         body += faq_html(boro_faq)
         boro_crumb = breadcrumb([("Home", SITE + "/"), (boroname, canonical)])
         write(url.strip("/") + "/index.html",

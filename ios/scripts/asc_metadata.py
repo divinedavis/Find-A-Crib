@@ -80,28 +80,22 @@ Privacy Policy: https://findacrib.com/privacy/
 Find A Crib is an independent, informational tool. It is not a broker, does not list apartments, and takes no fee. Data: NYS Homes and Community Renewal rent-stabilization register (2024), NYC HPD open data, HUD FY2026 Fair Market Rents, HousingSearch.ny.gov, LA County Assessor parcel data under LAHD's RSO criteria, the SF Rent Board Housing Inventory via DataSF, and the DC DHCD RentRegistry.
 """
 
-WHATS_NEW = """Find A Crib Plus is back, with new tools:
-• Search in plain words — type “2 bed under $2,500 near Prospect Park, no violations” and every filter sets itself.
-• Help me apply — each re-rental's steps, the documents to gather and a ready-to-send email to the agent.
-• Every building now has one button that opens its address on StreetEasy (New York) or Zillow (other cities).
-New subscribers get their first month on us.
-
-For every account:
-• What do I qualify for? — enter your household size and income once; lotteries and re-rentals show whether you're in range.
-• Application packet — scan your documents with the camera, keep them on this phone, and email them to an agent in one go.
-• The Beds filter now shows only re-rentals that have that size.
-• Managing-agent phone numbers, bedbug and rodent records, and borough alerts come with an account.
+WHATS_NEW = """• Real-time alerts with Find A Crib Plus — re-rentals go first come, first served, so Plus alerts you the minute one opens. Every other account gets a round-up at 8 AM.
+• Swipe through a re-rental's photos.
+• Every building has one button that opens its address on StreetEasy (New York) or Zillow (other cities).
+• Your household income now lives in Edit boroughs and sets the "what you qualify for" filter.
+• Your income and application packet are stored more securely on this phone.
 """
 
-REVIEW_NOTES = """VERSION 1.2.6 (build __BUILD__) — Find A Crib Plus offered again (AI tools); qualify-check; application packet; Beds filter on re-rentals
+REVIEW_NOTES = """VERSION 1.2.7 (build __BUILD__) — real-time alerts as a Plus perk; re-rental photo galleries; StreetEasy/Zillow button
 
-WHAT CHANGED SINCE 1.2.5
-1. Find A Crib Plus (the existing auto-renewable subscription, $4.99/month, with a 1-month introductory trial for new subscribers) is offered again. It unlocks: Search in plain words, Help me apply (re-rentals) and no ads. Every other feature comes with a (no-cost) account: managing-agent phone numbers, bedbug and rodent records, borough alerts.
-2. AI: the text typed into "Search in plain words" and the public web page of a re-rental listing are sent to our server, which uses AI providers (TypeSafe and Anthropic) to read them. No account details, contact details, household or income figures, or documents are sent to any AI provider.
-3. "What do I qualify for?" (Lotteries tab): household size and income, stored on this device only and never sent anywhere or shown on screen; listings outside that income range are hidden ("show them" brings them back).
-4. Application packet (Profile > Application packet, or "Get my documents ready" in Help me apply): the camera opens Apple's VisionKit document scanner ONLY when the user taps Add on a document; scans are stored on the device with complete file protection and sent only by the user, from their own Mail. Nothing is uploaded to us. NEW PERMISSION: camera (NSCameraUsageDescription), asked on the first scan.
-5. The Beds filter on the Lotteries > Re-rentals tab now shows only listings that state that size.
-No new SDKs.
+WHAT CHANGED SINCE 1.2.6
+1. Alerts: every account with borough alerts gets one round-up at 8 AM; Find A Crib Plus (the existing $4.99/month auto-renewable subscription, 1-month introductory trial) now also includes real-time alerts. Without Plus, the Lotteries tab and a tapped alert show a "Re-rentals go first come, first served" card with a "Get real-time alerts" button to the Plus page; its X hides it.
+2. Re-rental cards: swipe left/right through the listing's photos (VoiceOver: "Photo 2 of 8").
+3. Third-party listing data removed: no asking rents, listing counts or "Available now" filter, and "Is this rent fair?" is gone. Each building instead has "View on StreetEasy" (New York) or "View on Zillow" (other cities), which opens that site's public search for the address.
+4. Household income and size are entered in Lotteries > Edit boroughs (the alerts sheet) and drive the on-device qualify filter; stored in the Keychain (this device only). The application packet folder is excluded from backups.
+5. The rating ask appears only for signed-in accounts that have opened the app on 3+ different days.
+No new SDKs and no new permissions.
 
 TO SEE THE FEATURES
 Sign in with the demo account in App Review Information (Profile > "Continue with email", then the email and password). The demo account has NO subscription, so: tap any PLUS button (e.g. Search > "Or describe it in plain words", or Lotteries > Re-rentals > a card's "Help me apply") — the Plus page opens and "Get Plus — $4.99/month" starts the sandbox purchase. Profile > "Get Find A Crib Plus" opens the same page. After subscribing, the same buttons work. The packet and qualify-check need no subscription.
@@ -113,7 +107,7 @@ TO SEE THE IPAD LAYOUT
 Open the app on an iPad in either orientation: Search, Lotteries, Events, My Activity and Profile all work, and results lay out in two columns.
 
 ADVERTISING
-Unchanged from 1.2.5: Google Mobile Ads, non-personalized (npa=1), no tracking, no ATT prompt, US storefront only; Plus subscribers see no ads. To see one: open Search signed out (or without Plus) and scroll; the ad takes the 3rd card's place when Google has one.
+Unchanged from 1.2.6: Google Mobile Ads, non-personalized (npa=1), no tracking, no ATT prompt, US storefront only; Plus subscribers see no ads. To see one: open Search signed out (or without Plus) and scroll; the ad takes the 3rd card's place when Google has one.
 
 NOTIFICATIONS
 Once, a few seconds after launch, while permission is undetermined, the app shows its own card ("Get alerts on this phone?") explaining the ask; "Turn on" shows the iOS dialog, "Not now" waits a week, a system decline is never re-asked. Only borough alerts the user subscribed to — no marketing. Tapping one opens a list of that alert's listings.

@@ -599,6 +599,35 @@ def build_blocks(run_log=None, review_out=None):
                           f"navigation only.{_tail} This count climbs on its own as brand "
                           f"search grows, because Google hangs sitelinks off the brand "
                           f"result — the non-branded half is the one the 90% goal is about."})
+            # ...and the half of that argument that does not depend on queries
+            # at all. The brand split says "every query this page served was
+            # our own name", which a page genuinely ranking #1 for the brand
+            # would also say. The index census says Google has never fetched
+            # the URL — and a URL Google has never fetched cannot hold a
+            # ranking, so the impressions credited to it are the homepage's
+            # result wearing nine sitelinks. First shipped 2026-10-10, when
+            # five of ten serving pages were contradicted this way and carried
+            # 588 of the window's 1,061 page impressions between them.
+            _cx = searchconsole.saved_serving_census_check()
+            if _cx and _cx[searchconsole.CENSUS_CONTRADICTED]:
+                _n = _cx[searchconsole.CENSUS_CONTRADICTED]
+                _named = ", ".join(searchconsole._path(u["url"])
+                                   for u in _cx["contradicted_urls"][:5])
+                _imp = sum(u.get("impressions") or 0 for u in _cx["contradicted_urls"])
+                B.append({"type": "callout", "tone": "bad",
+                          "heading": f"{_fmt(_n)} of those {_fmt(serving)} pages are not "
+                                     f"indexed at all",
+                          "body": f"Search Console credits {_named} with "
+                                  f"{_fmt(_imp)} impressions in this window, but the URL "
+                                  f"Inspection API — asked after the window closed — says "
+                                  f"Google has either never fetched them or has looked and "
+                                  f"declined. A URL Google has not indexed cannot hold a "
+                                  f"ranking, so those impressions are the homepage's one "
+                                  f"result with its sitelinks counted separately. "
+                                  f"{_fmt(_cx[searchconsole.CENSUS_INDEXED])} of the "
+                                  f"{_fmt(serving)} is confirmed indexed by the census; "
+                                  f"{_fmt(_cx[searchconsole.CENSUS_UNSAMPLED])} are outside "
+                                  f"its sample, which is no evidence either way."})
             # That count on its own reads as a plateau when it is really a
             # rotation: on 2026-08-04 it held at 89 while nine URLs entered the
             # set and nine left it. Say which it is, or the number misleads.

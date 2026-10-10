@@ -250,6 +250,139 @@ def saved_serving_brand_split():
     return serving_brand_split(pages, qbp) if pages and qbp else None
 
 
+# The brand-sitelink argument above is made from query data, and query data can
+# only ever make it inferentially: "zero clicks at position 1.1 on the site's
+# own name" is the SIGNATURE of a sitelink, but it is also what a page genuinely
+# ranking first for the brand would look like. The cross-check below settles it
+# from the other side, with evidence that has nothing to do with queries.
+CENSUS_INDEXED = "indexed"            # the census says Google has it indexed
+CENSUS_CONTRADICTED = "contradicted"  # …says it is NOT, on or after the window
+CENSUS_STALE = "stale"                # …said so, but before the window closed
+CENSUS_UNSAMPLED = "unsampled"        # not in the census sample at all
+
+
+def _bare_url(url):
+    """The URL without its query string or fragment.
+
+    The serving set carries URLs exactly as Search Console reports them, which
+    includes the tracking parameters the site's own navigation adds
+    (/alerts/?src=menu). The census cohort is built from the sitemaps, which
+    carry none. Matching on the bare URL as a fallback is what lets the two
+    sets be joined at all; it is a fallback and never the first try, because
+    ?src=menu and the bare path are different URLs to Google and only the
+    second one is ever in a sitemap.
+    """
+    return (url or "").split("#", 1)[0].split("?", 1)[0]
+
+
+def serving_census_check(rows, cohort=None, window_end=None):
+    """Join the serving page set to the index census and find the contradictions.
+
+    Why this exists. serving_brand_split() established on 2026-09-12 that most
+    of gsc_serving_pages is Google's sitelinks under the brand result, and it
+    argued the case from queries: zero clicks, position 1.1, the site's own name
+    and nothing else. That argument is sound but it is inference, and a reader
+    who wanted to believe the number could answer it — a page really ranking #1
+    for "findacrib" produces the same three readings.
+
+    This closes it with Google's OWN index verdict on the same URL, which knows
+    nothing about queries. On 2026-10-10 the Search Console window
+    2026-10-01..2026-10-08 credited /dc/, /la/ and /marketing-agents/ with
+    106-135 impressions each at position 1.0-1.1 and zero clicks, while the URL
+    Inspection API — asked about those three URLs on 2026-10-09 and 2026-10-10,
+    i.e. AFTER that window closed — answered "URL is unknown to Google", with no
+    lastCrawlTime at all. A URL Google has never fetched cannot hold a ranking
+    for anything. /sf/ and /developers/ say the same thing one step weaker:
+    crawled in July, still "Crawled - currently not indexed" this week.
+
+    So five of the ten pages in today's serving set are not pages that served.
+    They are one page's result, with its sitelinks counted as nine more. Current
+    practice outside this repo reads the same way round: a sitelink appearance
+    is logged at position 1, it is almost never clicked, and sitelink
+    destinations are not required to be indexed — so impressions and index state
+    are independent, and an impression count is not a floor on anything.
+
+    The consequence for this loop, which is the point of writing it down: the
+    metric every review since 2026-07-27 has been told "gates everything else"
+    can be positive for a page Google has never fetched. It is therefore not a
+    floor on pages indexed, not a floor on pages crawled, and not a measure of
+    the corpus at all while brand search is the only search this site wins.
+
+    Four counts, summing to len(rows) so the split cannot quietly lose a page:
+
+      indexed       the census says this URL is indexed. The impression can
+                    honestly belong to it. Today: 1, the homepage.
+      contradicted  the census inspected it ON OR AFTER `window_end` and says
+                    it is not indexed. The impressions cannot be this page
+                    ranking. This is the only class that makes a claim, which
+                    is why it is the only one that demands a fresh inspection.
+      stale         the census says not indexed, but last looked before the
+                    window closed — so the page could have been indexed during
+                    the window and dropped since. Unknown, not evidence.
+      unsampled     not in the cohort. The census is a stratified sample of the
+                    advertised corpus (442 of 1,704 URLs on 2026-10-10), so
+                    most serving URLs will land here, including every one
+                    carrying a query string. No evidence either way.
+
+    An `indexed` verdict is accepted whatever its date, because a URL the census
+    has ever found indexed could legitimately have served during the window;
+    only the contradiction needs its inspection to post-date the window, since
+    only the contradiction is being used to say an impression is not real.
+
+    Returns None when there is no cohort to join against — a zero here must mean
+    "no serving page is contradicted", never "index_status.json was unreadable".
+    """
+    if not rows:
+        return None
+    if cohort is None:
+        try:
+            from . import indexstatus
+            cohort = indexstatus._load()["cohort"]
+        except Exception:
+            return None
+    if not isinstance(cohort, dict) or not cohort:
+        return None
+    out = {CENSUS_INDEXED: 0, CENSUS_CONTRADICTED: 0,
+           CENSUS_STALE: 0, CENSUS_UNSAMPLED: 0, "contradicted_urls": []}
+    for r in rows:
+        url = r.get("url") if isinstance(r, dict) else r
+        rec = cohort.get(url) or cohort.get(_bare_url(url))
+        checked = (rec or {}).get("checked")
+        if not rec or not (checked or (rec or {}).get("bucket")):
+            out[CENSUS_UNSAMPLED] += 1
+        elif (rec.get("bucket") or "") == CENSUS_INDEXED:
+            out[CENSUS_INDEXED] += 1
+        elif window_end and (not checked or checked < window_end):
+            out[CENSUS_STALE] += 1
+        else:
+            out[CENSUS_CONTRADICTED] += 1
+            out["contradicted_urls"].append(
+                {"url": url, "state": rec.get("state"), "checked": checked,
+                 "impressions": (r.get("impressions") if isinstance(r, dict) else None),
+                 "clicks": (r.get("clicks") if isinstance(r, dict) else None),
+                 "position": (r.get("position") if isinstance(r, dict) else None)})
+    out["contradicted_urls"].sort(key=lambda x: -(x.get("impressions") or 0))
+    return out
+
+
+def saved_serving_census_check():
+    """serving_census_check() over the two files this repo commits every night.
+
+    growth/gsc_pages.json carries the serving set and growth/index_status.json
+    carries the census, so the 6am review and the daily report can both read
+    this without a Search Console token — the same reason
+    saved_serving_brand_split() exists. `window` in the snapshot is
+    "YYYY-MM-DD..YYYY-MM-DD"; its second half is the window end the
+    contradiction test needs.
+    """
+    snap = load_pages() or {}
+    pages = snap.get("pages") or []
+    window = (snap.get("window") or "")
+    end = window.split("..")[-1] if ".." in window else None
+    return serving_census_check(pages, window_end=end) if pages else None
+
+
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
@@ -377,6 +510,21 @@ def collect(days=7):
         if brand.get(key) is not None:
             ledger.record_result(today, "__site__", metric, brand[key])
 
+    # ---- and how many of those pages Google's own index verdict CONTRADICTS.
+    # The brand split above is argued from queries; this is argued from the URL
+    # Inspection census, which knows nothing about queries, and it is the harder
+    # evidence: on 2026-10-10 five of the ten serving pages were credited with
+    # 588 of the window's 1,061 page impressions while the census, asked after
+    # the window closed, said three of them were unknown to Google and two had
+    # been rejected since July. See serving_census_check().
+    census = serving_census_check(page_rows, window_end=end)
+    if census:
+        for metric, key in (("gsc_serving_census_indexed", CENSUS_INDEXED),
+                            ("gsc_serving_census_contradicted", CENSUS_CONTRADICTED),
+                            ("gsc_serving_census_stale", CENSUS_STALE),
+                            ("gsc_serving_census_unsampled", CENSUS_UNSAMPLED)):
+            ledger.record_result(today, "__site__", metric, census[key])
+
     # ---- and which tier those pages are. Only the daily count goes into the
     # series: `ever`, the medians and the never-served tiers are all
     # recomputable from the history in gsc_pages.json, which is committed every
@@ -403,7 +551,12 @@ def collect(days=7):
         "serving_branded_only": brand.get("branded_only"),
         "serving_unattributed": brand.get("unattributed"),
         "serving_stable": ch.get("gsc_serving_stable"),
-        "serving_ever": ch.get("gsc_serving_ever")})
+        "serving_ever": ch.get("gsc_serving_ever"),
+        # Same reason as serving_nonbranded one field up: the review agent is
+        # told to read serving_pages every run out of THIS file, so the count
+        # that says how much of it cannot be real belongs in it.
+        "serving_census_contradicted": (census or {}).get(CENSUS_CONTRADICTED),
+        "serving_census_indexed": (census or {}).get(CENSUS_INDEXED)})
 
     return {"clicks": clicks, "impressions": impressions,
             "page_clicks": page_clicks, "page_impressions": page_impressions,

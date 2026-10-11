@@ -208,7 +208,7 @@ struct OutboundLink: Equatable {
                                 url: URL(string: "https://streeteasy.com/search?search=\(encode(q))")!)
         }
         let q = "\(b.address), \(zillowPlace(city)), \(city.state)"
-        return OutboundLink(kind: "zillow", label: "Zillow ↗",
+        return OutboundLink(kind: "zillow", label: "View on Zillow ↗",
                             url: URL(string: "https://www.zillow.com/homes/\(encode(q))_rb/")!)
     }
 }

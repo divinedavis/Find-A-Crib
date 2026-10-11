@@ -43,7 +43,7 @@ final class FindACribUITests: XCTestCase {
     /// opens a StreetEasy address search, every Los Angeles one Zillow's. No
     /// asking rent, listing count or "Available now" filter survives.
     func testOutboundButtonPerCity() throws {
-        for (city, label) in [("nyc", "StreetEasy ↗"), ("la", "Zillow ↗")] {
+        for (city, label) in [("nyc", "StreetEasy ↗"), ("la", "View on Zillow ↗")] {
             app.terminate()
             app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--city", city, "--route", "results"]
             app.launch()

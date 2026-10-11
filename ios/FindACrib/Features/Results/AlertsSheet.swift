@@ -57,8 +57,8 @@ struct AlertsSheet: View {
                     } else {
                         Text(editing ? "Your alerts" : "Get alerts when one opens").font(.se(26, .bold)).foregroundStyle(SE.ink)
                         Text(auth.hasPlus
-                             ? "Push and email to \(auth.email ?? "your account email") the minute a lottery or re-rental opens."
-                             : "Push and email to \(auth.email ?? "your account email") at 8 AM daily. Instantly with Find A Crib Plus.")
+                             ? "In-app notifications and emails to \(auth.email ?? "your account email") the minute a lottery or re-rental opens."
+                             : "In-app notifications and emails to \(auth.email ?? "your account email") at 8 AM daily. Upgrade to Plus for instant notifications and emails.")
                             .font(.se(16)).foregroundStyle(SE.ink2)
                         if editing { pushStateLine }
                         if loadingPrefs {

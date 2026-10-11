@@ -38,11 +38,12 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(search.waitForExistence(timeout: 10))
     }
 
-    /// The one outbound button (2026-10-06): every NYC card and detail sheet
+    /// The one outbound button (2026-10-06; label is just the site + arrow,
+    /// owner 2026-10-11): every NYC card and detail sheet
     /// opens a StreetEasy address search, every Los Angeles one Zillow's. No
     /// asking rent, listing count or "Available now" filter survives.
     func testOutboundButtonPerCity() throws {
-        for (city, label) in [("nyc", "View on StreetEasy ↗"), ("la", "View on Zillow ↗")] {
+        for (city, label) in [("nyc", "StreetEasy ↗"), ("la", "Zillow ↗")] {
             app.terminate()
             app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--city", city, "--route", "results"]
             app.launch()
@@ -665,6 +666,24 @@ final class FindACribUITests: XCTestCase {
         XCTAssertLessThan(promise.frame.minY, app.buttons["sign-in-apple"].frame.minY, "the box goes above Apple")
         XCTAssertTrue(app.buttons["create-account-toggle"].isHittable, "No account? Create one is on screen")
         XCTAssertTrue(app.buttons["forgot-password"].isHittable, "Forgot password? is on screen")
+        XCTAssertTrue(app.staticTexts["In-app notifications and emails at 8 AM daily"].exists, "not \"push\" (owner, 2026-10-11)")
+        // The Plus row's small button opens the Plus page over sign-in, and
+        // closing it comes back to sign-in.
+        let getPlus = app.buttons["alerts-promise-plus"]
+        XCTAssertTrue(getPlus.isHittable, "Get Plus sits on the Plus row")
+        getPlus.tap()
+        XCTAssertTrue(app.buttons["paywall-sign-in"].waitForExistence(timeout: 10), "Get Plus opens the Plus page")
+        app.buttons["paywall-close"].tap()
+        XCTAssertTrue(getPlus.waitForExistence(timeout: 5), "closing Plus returns to sign-in")
+        // Tapping Email scrolls Password and Sign in up above the keyboard,
+        // so either is one tap away (owner, 2026-10-11).
+        app.textFields["email-field"].tap()
+        let keyboard = app.keyboards.firstMatch
+        XCTAssertTrue(keyboard.waitForExistence(timeout: 5))
+        let password = app.secureTextFields["password-field"], submit = app.buttons["email-submit"]
+        let above = NSPredicate { _, _ in password.isHittable && submit.frame.maxY <= keyboard.frame.minY + 1 }
+        XCTAssertEqual(XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: above, object: nil)], timeout: 5), .completed,
+                       "Password and Sign in sit above the keyboard")
         cancel.tap()
         XCTAssertTrue(signup.waitForExistence(timeout: 5))
         app.terminate()

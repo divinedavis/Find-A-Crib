@@ -19,6 +19,7 @@ struct EmailSignInView: View {
     @State private var confirm = ""
     @State private var creating = false
     @State private var notice: String?
+    @State private var showPlus = false
     @FocusState private var focus: Field?
     enum Field { case email, password, confirm }
 
@@ -26,11 +27,12 @@ struct EmailSignInView: View {
 
     private var content: some View {
         NavigationStack {
+          ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     Text(creating ? "Create account" : (heading ?? (offersSocialSignIn ? "Sign in for alerts" : "Sign in with email"))).font(.se(26, .bold))
                     if forAlerts && !creating {
-                        AlertsPromiseBox()
+                        AlertsPromiseBox { showPlus = true }
                     } else {
                         Text(creating ? "No verification email — you're in as soon as you tap Create." : "The account you use on findacrib.com works here.")
                             .font(.se(15)).foregroundStyle(SE.ink2)
@@ -67,7 +69,7 @@ struct EmailSignInView: View {
                     if let n = notice { Text(n).font(.se(15, .semibold)).foregroundStyle(SE.good) }
 
                     SEPrimaryButton(title: auth.busy ? "…" : (creating ? "Create account" : "Sign in")) { Task { await submit() } }
-                        .disabled(auth.busy).accessibilityIdentifier("email-submit")
+                        .disabled(auth.busy).accessibilityIdentifier("email-submit").id(Self.submitID)
 
                     // Side by side when they fit; stacked at large text sizes
                     // or narrow widths rather than truncated off the edge.
@@ -86,13 +88,29 @@ struct EmailSignInView: View {
                 .padding(16)
             }
             .scrollDismissesKeyboard(.interactively)
+            // Tapping Email used to leave Password under the keyboard (owner,
+            // 2026-10-11). On focus, scroll so the fields and Sign in sit just
+            // above it; the delay lets the keyboard finish rising first.
+            .onChange(of: focus) { _, f in
+                guard f != nil else { return }
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(350))
+                    withAnimation(.easeOut(duration: 0.25)) { proxy.scrollTo(Self.submitID, anchor: .bottom) }
+                }
+            }
             .background(Color.white)
             .navigationTitle("").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.foregroundStyle(SE.ink2) } }
             .onAppear { auth.error = nil; focus = offersSocialSignIn ? nil : .email }
-            .onChange(of: auth.isSignedIn) { _, on in if on { dismiss() } }
+            // Signing in from the Plus sheet must not close this one under it;
+            // it closes when the Plus sheet does.
+            .onChange(of: auth.isSignedIn) { _, on in if on && !showPlus { dismiss() } }
+            .sheet(isPresented: $showPlus, onDismiss: { if auth.isSignedIn { dismiss() } }) { PaywallView(source: "signin_alerts") }
+          }
         }
     }
+
+    private static let submitID = "email-submit-anchor"
 
     private var createToggle: some View {
         Button(creating ? "Have an account? Sign in" : "No account? Create one") { creating.toggle(); auth.error = nil; notice = nil }
@@ -131,33 +149,47 @@ struct EmailSignInView: View {
 }
 
 /// What signing in for alerts gets you, above the Apple/Google buttons.
+/// The Plus row carries a small "Get Plus" button (owner, 2026-10-11);
+/// PaywallView signs them in first if they aren't yet.
 struct AlertsPromiseBox: View {
-    private let rows: [(icon: String, text: String)] = [
-        ("building.2.fill", "New lotteries and re-rentals in the boroughs you pick"),
-        ("bell.badge.fill", "Push and email at 8 AM daily"),
-        ("bolt.fill", "Instantly with Find A Crib Plus"),
-    ]
+    let openPlus: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            ForEach(rows, id: \.text) { row in
-                HStack(alignment: .center, spacing: 12) {
-                    Image(systemName: row.icon)
-                        .font(.system(size: 13, weight: .bold)).foregroundStyle(.white)
-                        .frame(width: 28, height: 28)
-                        .background(Circle().fill(SE.royal))
-                        .accessibilityHidden(true)
-                    Text(row.text).font(.se(15, .semibold)).foregroundStyle(SE.ink)
-                        .fixedSize(horizontal: false, vertical: true)
+            row("building.2.fill", "New lotteries and re-rentals in the boroughs you pick")
+            row("bell.badge.fill", "In-app notifications and emails at 8 AM daily")
+            HStack(alignment: .center, spacing: 12) {
+                row("bolt.fill", "Upgrade to Plus for instant notifications and emails")
+                Button {
+                    Analytics.shared.track("realtime_upsell_click", ["src": "signin_alerts"]); openPlus()
+                } label: {
+                    Text("Get Plus").font(.se(14, .bold)).foregroundStyle(.white).fixedSize()
+                        .padding(.horizontal, 12).frame(minHeight: 32)
+                        .background(Capsule().fill(Color(hex: 0x5B21B6)))
+                        .frame(minHeight: 44).contentShape(Rectangle())
                 }
+                .buttonStyle(.plain).accessibilityIdentifier("alerts-promise-plus")
             }
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: 12).fill(SE.royal.opacity(0.08)))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(SE.royal.opacity(0.25)))
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("alerts-promise-box")
+    }
+
+    private func row(_ icon: String, _ text: String) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 13, weight: .bold)).foregroundStyle(.white)
+                .frame(width: 28, height: 28)
+                .background(Circle().fill(SE.royal))
+                .accessibilityHidden(true)
+            Text(text).font(.se(15, .semibold)).foregroundStyle(SE.ink)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

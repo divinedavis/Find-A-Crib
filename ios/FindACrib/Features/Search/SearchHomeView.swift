@@ -76,21 +76,22 @@ struct SearchHomeView: View {
                         .accessibilityLabel(query.locations.isEmpty ? "Location" : "Location: \(query.locationLabel(city: store.city.short))")
                     }
 
-                    // Price. Los Angeles publishes no rent at all — its source is
-                    // an assessor roll — so the fields are not offered there
-                    // rather than offered and filtering everything away.
-                    if store.city.hasPrices {
-                        VStack(alignment: .leading, spacing: 8) {
-                            PriceRangeFields(minPrice: $query.minPrice, maxPrice: $query.maxPrice)
-                            if !store.city.isNYC {
-                                Text("\(store.city.priceLabel) — what the register has on file, not an asking rent. Buildings with no rent on file are not shown when you set a price.")
-                                    .font(.se(14)).foregroundStyle(SE.ink3)
-                            } else {
-                                Text("Matches the ZIP's typical rent (HUD Small-Area Fair Market Rent, studio–2BR), not a building's actual rent.")
-                                    .font(.se(14)).foregroundStyle(SE.ink3)
-                            }
-
+                    SEPrimaryButton(title: "Search \(count.formatted()) \(query.noun)") { runSearch() }
+                        .padding(.horizontal, 34)
+                        .padding(.top, 6)
+                        .accessibilityIdentifier("search-button")
+                        .disabled(!store.loaded)
+                    if store.city.isNYC {
+                        Button { showAISearch = true } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "sparkles")
+                                Text("Or describe it in plain words").font(.se(17, .semibold))
+                                PlusTag()
+                            }.foregroundStyle(SE.royal).frame(maxWidth: .infinity)
                         }
+                        .buttonStyle(.plain).padding(.top, 4)
+                        .accessibilityIdentifier("ai-search-open")
+                        .sheet(isPresented: $showAISearch) { AISearchSheet() }
                     }
 
                     // Show and Bedrooms both read New York feeds — vouchers,
@@ -115,22 +116,20 @@ struct SearchHomeView: View {
                         Text(store.city.sourceNote).font(.se(14)).foregroundStyle(SE.ink3)
                     }
 
-                    SEPrimaryButton(title: "Search \(count.formatted()) \(query.noun)") { runSearch() }
-                        .padding(.horizontal, 34)
-                        .padding(.top, 6)
-                        .accessibilityIdentifier("search-button")
-                        .disabled(!store.loaded)
-                    if store.city.isNYC {
-                        Button { showAISearch = true } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: "sparkles")
-                                Text("Or describe it in plain words").font(.se(17, .semibold))
-                                PlusTag()
-                            }.foregroundStyle(SE.royal).frame(maxWidth: .infinity)
+                    // Price. Los Angeles publishes no rent at all — its source is
+                    // an assessor roll — so the fields are not offered there
+                    // rather than offered and filtering everything away.
+                    if store.city.hasPrices {
+                        VStack(alignment: .leading, spacing: 8) {
+                            PriceRangeFields(minPrice: $query.minPrice, maxPrice: $query.maxPrice)
+                            if !store.city.isNYC {
+                                Text("\(store.city.priceLabel) — what the register has on file, not an asking rent. Buildings with no rent on file are not shown when you set a price.")
+                                    .font(.se(14)).foregroundStyle(SE.ink3)
+                            } else {
+                                Text("Matches the ZIP's typical rent (HUD Small-Area Fair Market Rent, studio–2BR), not a building's actual rent.")
+                                    .font(.se(14)).foregroundStyle(SE.ink3)
+                            }
                         }
-                        .buttonStyle(.plain).padding(.top, 4)
-                        .accessibilityIdentifier("ai-search-open")
-                        .sheet(isPresented: $showAISearch) { AISearchSheet() }
                     }
                 }
                 .readableColumn()

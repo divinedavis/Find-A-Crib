@@ -87,6 +87,18 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.buttons["search-button"].waitForExistence(timeout: 5))
     }
 
+    /// The Search button sits right under Location and the price boxes come
+    /// last (owner, 2026-10-11) — pinned by position so a reshuffle of the
+    /// form cannot quietly put them back.
+    func testSearchButtonSitsAbovePrice() throws {
+        let search = app.buttons["search-button"]
+        let minBox = app.buttons["price-Minimum price"]
+        XCTAssertTrue(search.waitForExistence(timeout: 20))
+        XCTAssertTrue(minBox.waitForExistence(timeout: 10))
+        XCTAssertLessThan(search.frame.minY, minBox.frame.minY,
+                          "search button must come before the price row")
+    }
+
     func testLocationPickerFiltersResults() throws {
         let field = app.descendants(matching: .any)["location-field"].firstMatch
         XCTAssertTrue(field.waitForExistence(timeout: 20))

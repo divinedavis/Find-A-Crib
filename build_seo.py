@@ -3214,6 +3214,104 @@ def building_meta_desc(addr, nb, units, yr, open_viol, voucher=False,
     return out
 
 
+def building_faq(addr, nb, boro, units=None, yr=None, bbl=None,
+                 voucher=None, voucher_asof=None):
+    """The Q&A pairs for one building page, for faq_html AND faq_jsonld.
+
+    WHY THIS EXISTS, 2026-10-11, and it is two defects in one string.
+
+    The building tier built its FAQPage node by hand, inline, with exactly one
+    question — "Is <addr> rent stabilized?", the page's own <h1> — and this
+    answer:
+
+        "Yes. 164 Sherman Ave in Inwood, Manhattan is a DHCR-registered
+         rent-stabilized building with about 48 apartments."
+
+    FIRST DEFECT: NOTHING ON THE PAGE RENDERED IT. faq_html's docstring states
+    the rule the rest of the site follows — "structured data with no visible
+    counterpart describes content that isn't there, and AI answer engines
+    extract from rendered text, not hidden JSON-LD" — and every other tier
+    pairs faq_jsonld with faq_html over one list of pairs. The building tier,
+    which is 47,165 of ~49,300 published pages and the only tier that has ever
+    earned a Search Console impression at any scale (260 of the 273 URLs that
+    have ever served one), paired it with nothing. 185 of the 442 URLs in the
+    index census read "Crawled - currently not indexed".
+
+    SECOND DEFECT, and the one that decided this change: THAT SENTENCE IS THE
+    ONE SENTENCE ON THIS SITE MOST LIKELY TO BE REPEATED TO A TENANT AS FACT,
+    AND IT CARRIED NO CAVEAT. An acceptedAnswer.text is the canonical
+    extraction unit — a retrieved passage is scored, ranked and handed to a
+    model on its own, stripped of the page it came from — which is the same
+    argument place_dataset() makes for carrying the city caveat inside Dataset
+    `description`, and the same one that moved the retired /brief/ line in
+    llms.txt on 2026-09-21. The page is honest to a human: NYC_FOOTER says
+    "it is not a guarantee that a specific unit is available or currently
+    stabilized". But the footer is site chrome, it is the first thing a
+    passage-level retriever drops, and "Yes." is not what the footer says.
+    Asked "is my apartment at 164 Sherman Ave rent stabilized?", the old
+    answer said yes. The registration is about the BUILDING. A unit in a
+    registered building can have been deregulated, and a tenant acting on
+    "Yes." has been told something this data cannot support.
+
+    So: no "Yes.", the source named in the answer rather than left to the
+    footer, and the per-building limit in the same passage as the claim it
+    limits. Every clause is a fact already on the page — the DHCR registration
+    is the facts table's "Rent-stabilized: Yes — DHCR registered", units and
+    year are its "Apartments" and "Year built" rows (PLUTO, which is why the
+    body says "about" and so does this), and the voucher answer is the wording
+    of voucher_html, narrowed the same way: a listing is the landlord's own
+    statement and silence is not a refusal.
+
+    A question is asked ONLY where this record answers it. A page with no unit
+    count gets no apartments question rather than an empty slot, for the same
+    reason building_meta_desc degrades instead of emitting one: 0.4% of the
+    corpus has no unit count and those pages must still read as written, not
+    as a template with the filling missing.
+
+    Returns [(question, plain-text answer)]. PLAIN TEXT, not HTML: faq_html
+    escapes it and faq_jsonld hands it to json.dumps, so an escaped string
+    would be double-escaped into the rendered page and the markup both.
+    """
+    faq = [(f"Is {addr} rent stabilized?",
+            f"{addr} in {nb}, {boro} is registered as rent stabilized in the New York "
+            f"State DHCR 2024 rent-stabilized building files. Registration is recorded "
+            f"for the building, not for each apartment in it, so an individual unit "
+            f"here can still have been deregulated — ask the landlord or DHCR for that "
+            f"apartment's rent history before relying on it.")]
+    bbl_txt = f" (BBL {bbl})" if bbl else ""
+    if units:
+        built = f" and was built in {yr}" if yr else ""
+        faq.append((f"How many apartments are at {addr}?",
+                    f"{addr}{bbl_txt} has about {units} residential "
+                    f"apartment{'' if units == 1 else 's'}{built}, from NYC PLUTO. "
+                    f"PLUTO counts the building's units; it does not say how many of "
+                    f"them are rent stabilized, and the DHCR files this site is built "
+                    f"on register the building rather than its individual apartments."))
+    elif yr:
+        # No unit count, so the year cannot ride along in the answer above. It
+        # is still the second-most-asked fact about an address and it is on the
+        # page, so it gets its own pair rather than being dropped with the
+        # count it would have been attached to.
+        faq.append((f"When was {addr} built?",
+                    f"{addr}{bbl_txt} was built in {yr}, according to NYC PLUTO. "
+                    f"A build year is not what puts a New York building under rent "
+                    f"stabilization — DHCR registration is — so treat it as a "
+                    f"description of the building and not as a test of its status."))
+    if voucher:
+        n = voucher.get("n") or 1
+        price = f", from ${voucher['p']:,} a month" if voucher.get("p") else ""
+        asof = f", in the feed as of {voucher_asof}" if voucher_asof else ""
+        faq.append((f"Is an apartment at {addr} listed to housing-voucher holders?",
+                    f"{'An apartment' if n == 1 else f'{n:,} apartments'} at {addr} "
+                    f"{'is' if n == 1 else 'are'} listed to housing-voucher holders on "
+                    f"AffordableHousing.com{price}{asof}. That listing is the landlord's "
+                    f"own statement about {'that apartment' if n == 1 else 'those apartments'}. "
+                    f"A building with no listing "
+                    f"here has refused nobody, and refusing a voucher is illegal in "
+                    f"New York City."))
+    return faq
+
+
 # ---- /methodology/ — where every number on this site comes from ------------
 # WHY THIS PAGE EXISTS, and why it is one page rather than a tier.
 #
@@ -3696,11 +3794,15 @@ def main():
             more.insert(0, f"<a href=\"{zip_url(b['z'])}\">All rent-stabilized in ZIP {esc(b['z'])}</a>")
         area_html = "<h2>Explore more</h2><div class='cols'>" + "".join(more) + "</div>"
 
-        faq = {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{
-            "@type": "Question", "name": f"Is {addr} rent stabilized?",
-            "acceptedAnswer": {"@type": "Answer",
-                "text": f"Yes. {addr} in {nb}, {boro} is a DHCR-registered rent-stabilized building"
-                        + (f" with about {units} apartments." if units else ".")}}]}
+        # Visible AND marked up, from one list of pairs — see building_faq for
+        # what the single hand-built node here used to say and why "Yes." was
+        # the problem. faq_html renders the same pairs faq_jsonld marks up, so
+        # the two cannot drift, which is the arrangement every other tier on
+        # this site already had.
+        faq_pairs = building_faq(addr, nb, boro, units=units, yr=yr,
+                                 bbl=b["bbl"], voucher=vch,
+                                 voucher_asof=voucher_asof)
+        faq = faq_jsonld(faq_pairs)
         crumb = breadcrumb([
             ("Home", SITE + "/"),
             (boro, SITE + f"/borough/{BORO_SLUG.get(b['b'],'nyc')}/"),
@@ -3775,7 +3877,13 @@ def main():
                 # report offer sits after the conditions table on purpose: the
                 # reader has just seen the open-violation count and the whole
                 # question the report answers is what that number means here.
-                + owner_html + cond_html + report_html + near_html + area_html)
+                + owner_html + cond_html + report_html
+                # Last block of content, first block before navigation. The
+                # <h1> asks "Is <addr> rent stabilized?" and until today the
+                # only answer that named its source or its limit was in a
+                # <script> tag; near_html and area_html below are link lists.
+                + faq_html(faq_pairs)
+                + near_html + area_html)
 
         write(url.strip("/") + "/index.html",
               page(f"Is {addr} rent stabilized? — {nb}, {boro} | Find A Crib",

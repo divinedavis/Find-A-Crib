@@ -463,7 +463,11 @@ class Runner:
             self.ok(page.evaluate("[...document.querySelectorAll('#menu-pop a, #menu-pop button')].length") >= 8, 'menu should list the header actions', j)
             self.ok(page.evaluate("!!document.querySelector('#menu-pop a[href^=\"/alerts/\"]')") and 'Alerts' in page.evaluate("document.getElementById('menu-pop').innerText"), 'menu should offer Alerts', j)
             chips = page.evaluate("[...document.querySelectorAll('.chip-row .filter-pill:not([hidden])')].filter(e=>getComputedStyle(e).display!=='none').map(e=>e.textContent.trim())")
-            self.ok(any('Alerts' in c for c in chips) and not any('Lottery agents' in c for c in chips), f'top-bar chips should show Alerts, not Lottery agents: {chips}', j)
+            # Owner, 2026-10-11: Lottery agents and Landlords back as chips;
+            # Saved and Get the app only in ☰; Alerts reads "Get Alerts on Lotteries".
+            self.ok(any('Get Alerts on Lotteries' in c for c in chips), f'chips should offer Get Alerts on Lotteries: {chips}', j)
+            self.ok(any('Lottery agents' in c for c in chips) and any('Landlords' in c for c in chips), f'chips should show Lottery agents and Landlords: {chips}', j)
+            self.ok(not any('Saved' in c or 'Get the app' in c for c in chips), f'Saved and Get the app belong in ☰, not the chips: {chips}', j)
             page.keyboard.press('Escape'); time.sleep(0.2)
             self.ok(page.evaluate("document.getElementById('menu-pop').hidden"), 'Escape should close the menu', j)
             # Signed out, the menu's Alerts link opens the sign-up modal (alerts
@@ -473,11 +477,20 @@ class Runner:
             self.ok(self.alerts_signup_open(page), 'menu Alerts should open the sign-up modal, not the paywall, when signed out', j)
             page.evaluate("document.querySelector('#auth-modal [data-auth=\"close\"]').click()"); time.sleep(0.2)
         else:
-            # Phones: the Alerts chip sits immediately to the right of Saved (asked 2026-09-08).
-            pos = page.evaluate("(()=>{const r=s=>document.querySelector(s).getBoundingClientRect(); const f=r('#pill-fav'), a=r('#pill-alerts-m'); return {fr:f.right, al:a.left, fy:f.top+f.height/2, ay:a.top+a.height/2, aw:a.width, href:document.getElementById('pill-alerts-m').getAttribute('href')}})()")
-            self.ok(pos['aw'] > 0 and pos['al'] >= pos['fr'] and pos['al'] - pos['fr'] < 24 and abs(pos['ay'] - pos['fy']) < 4,
-                    f'Alerts chip should sit right of Saved on phones: {pos}', j)
-            self.ok(pos['href'].startswith('/alerts/'), f'Alerts chip should link to /alerts/: {pos}', j)
+            # Phones (owner, 2026-10-11): Get Alerts on Lotteries is the FIRST chip,
+            # Lottery agents and Landlords are chips, Saved and the iPhone app are ☰ rows.
+            chips = page.evaluate("[...document.querySelectorAll('.chip-row .filter-pill:not([hidden])')].filter(e=>getComputedStyle(e).display!=='none').map(e=>e.textContent.trim())")
+            self.ok(chips and chips[0] == '🔔 Get Alerts on Lotteries', f'Get Alerts on Lotteries should be the first chip on phones: {chips}', j)
+            self.ok('🏛️ Lottery agents' in chips and '🔎 Landlords' in chips, f'Lottery agents and Landlords should be chips: {chips}', j)
+            self.ok(not any('Saved' in c or 'iPhone app' in c for c in chips), f'Saved and the iPhone app belong in ☰: {chips}', j)
+            self.ok(page.evaluate("document.getElementById('pill-alerts-m').getAttribute('href')").startswith('/alerts/'), 'Alerts chip should link to /alerts/', j)
+            self.ok(not page.evaluate("document.documentElement.scrollWidth > innerWidth"), 'the header must not push the page sideways', j)
+            self.click(page, '#menu-btn'); time.sleep(0.3)
+            menu = page.evaluate("(()=>{const m=document.getElementById('menu-pop'), r=m.getBoundingClientRect(); const v=[...m.querySelectorAll('[data-menu]')].filter(e=>e.offsetParent).map(e=>e.dataset.menu); return {open:!m.hidden, v, top:r.top, bottom:r.bottom, right:r.right, W:innerWidth, H:innerHeight}})()")
+            self.ok(menu['open'], 'the ☰ should open the menu on phones', j)
+            self.ok('saved' in menu['v'] and 'app' in menu['v'] and 'filters' not in menu['v'], f'phone menu should carry Saved and Get the app (iPhone), not Filters: {menu}', j)
+            self.ok(menu['right'] <= menu['W'] and menu['top'] >= 0 and menu['bottom'] <= menu['H'], f'the menu must fit on screen: {menu}', j)
+            page.keyboard.press('Escape'); time.sleep(0.2)
             page.evaluate("document.getElementById('pill-alerts-m').click()"); time.sleep(0.5)
             self.ok(self.alerts_signup_open(page), 'Alerts chip should open the sign-up modal, not the paywall, when signed out', j)
             page.evaluate("document.querySelector('#auth-modal [data-auth=\"close\"]').click()"); time.sleep(0.2)
@@ -712,8 +725,13 @@ class Runner:
         j.notes.append('save asks for sign-in' if gated else f'{len(after)} saved locally')
         if BBL in after:
             self.close_detail(page)
-            self.click(page, '#pill-fav'); time.sleep(1)
-            self.ok(page.evaluate(LABEL).endswith(f' of {len(after)}'), f'Saved filter should show the saved buildings, got {page.evaluate(LABEL)}', j)
+            self.ok(not page.evaluate("document.getElementById('pill-fav').offsetParent"), 'the Saved chip is hidden until Saved is on', j)
+            self.click(page, '#menu-btn'); time.sleep(0.3)
+            self.click(page, '#menu-pop [data-menu="saved"]'); time.sleep(1)
+            self.ok(page.evaluate(LABEL).endswith(f' of {len(after)}'), f'Saved (from ☰) should show the saved buildings, got {page.evaluate(LABEL)}', j)
+            self.ok(page.evaluate("!!document.getElementById('pill-fav').offsetParent"), 'while Saved is on its chip shows, so it can be tapped off', j)
+            self.click(page, '#pill-fav'); time.sleep(0.5)
+            self.ok(not page.evaluate("document.getElementById('pill-fav').offsetParent"), 'tapping the Saved chip turns it off and hides it', j)
 
     def j_deep_links_and_view(self, page, j, device):
         self.boot(page, '/?q=Bronx')
@@ -1034,10 +1052,11 @@ class Runner:
         j.notes.append('comments gated to an account')
 
     def j_app_chip(self, page, j, device):
-        # iPhone app chip right of Alerts (asked 2026-09-09): iPhones see it, desktop never does.
+        # The iPhone app is a ☰ row, not a chip (owner, 2026-10-11): an iPhone's
+        # row goes straight to the App Store, a laptop's opens the QR.
         self.boot(page)
-        info = page.evaluate("(()=>{const a=document.getElementById('pill-app-m'), al=document.getElementById('pill-alerts-m'); const r=a.getBoundingClientRect(), ar=al.getBoundingClientRect(); return {shown:r.width>0&&getComputedStyle(a).display!=='none', href:a.getAttribute('href'), left:r.left, alertsRight:ar.right, sameRow:Math.abs(r.top-ar.top)<4, overflow:document.documentElement.scrollWidth>innerWidth, ios:document.documentElement.classList.contains('ios')}})()")
-        self.ok(info['href'].startswith('https://apps.apple.com/us/app/find-a-crib/id6807549249'), f"chip should link to the App Store listing: {info['href']}", j)
+        info = page.evaluate("(()=>{return {chip:!!document.getElementById('pill-app-m'), d:!!document.getElementById('pill-app-d')?.offsetParent, overflow:document.documentElement.scrollWidth>innerWidth, ios:document.documentElement.classList.contains('ios')}})()")
+        self.ok(not info['chip'] and not info['d'], f'no Get-the-app chip in the row: {info}', j)
         # Safari's Smart App Banner (owner, 2026-10-05) needs this tag in <head>.
         sab = page.evaluate("document.querySelector('meta[name=\"apple-itunes-app\"]')?.content || ''")
         self.ok(sab == 'app-id=6807549249', f'the Smart App Banner tag should name the app: {sab!r}', j)
@@ -1052,18 +1071,26 @@ class Runner:
             page.evaluate("localStorage.removeItem('fac.appBannerHidden')")
         elif device == 'phone':
             self.ok(not ab['shown'], 'iPhones get Safari\'s banner, not ours', j)
-        self.ok(not info['overflow'], 'page must not scroll sideways with the chip in the row', j)
+        self.ok(not info['overflow'], 'page must not scroll sideways', j)
         if device == 'phone':
             self.ok(info['ios'], 'an iPhone should be detected as iOS', j)
-            self.ok(info['shown'], 'iPhone app chip should be visible on an iPhone', j)
-            self.ok(info['sameRow'] and info['left'] >= info['alertsRight'] - 1, f"chip should sit right of Alerts: {info}", j)
-            j.notes.append('chip right of Alerts')
+            # The row is a real App Store link; Playwright's WebKit swallows
+            # any apps.apple.com navigation, so check the link and that no
+            # handler cancels it, instead of following it.
+            self.click(page, '#menu-btn'); time.sleep(0.3)
+            row = page.evaluate("""(()=>{const a=document.querySelector('#menu-pop [data-menu="app"]'); let prevented=null;
+                a.addEventListener('click', e => { prevented = e.defaultPrevented; e.preventDefault(); }, { once: true });
+                const shown = !!a.offsetParent; a.click();
+                return {tag:a.tagName, href:a.getAttribute('href'), target:a.getAttribute('target'), rel:a.getAttribute('rel')||'', shown, prevented, qr:!document.getElementById('app-modal').hidden}})()""")
+            self.ok(row['shown'] and row['tag'] == 'A' and row['href'] == APP_STORE_URL, f'the iPhone ☰ row should link to the App Store: {row}', j)
+            self.ok(row['target'] == '_blank' and 'noopener' in row['rel'], f'off-site: target=_blank rel=noopener: {row}', j)
+            self.ok(row['prevented'] is False and not row['qr'], f'on a phone the row must go to the App Store, not the QR: {row}', j)
+            j.notes.append('☰ -> App Store link')
         else:
-            self.ok(not info['shown'], 'iPhone app chip must not show on desktop', j)
             self.app_qr(page, j)
 
     def app_qr(self, page, j):
-        """Desktop's Get-the-app chip, and the QR behind it, actually decoded.
+        """Desktop's Get-the-app QR (opened from ☰ since 2026-10-11), actually decoded.
 
         A laptop cannot follow an App Store link to the device the app installs
         on, so desktop gets a QR instead of #pill-app-m (asked 2026-09-16).
@@ -1083,20 +1110,10 @@ class Runner:
         thing keeping the modules dark-on-light when the page goes dark.
         """
         import cv2, numpy as np
-        # Left neighbour = the nearest visible chip before it ("Remove ads" is
-        # hidden while everything is free, 2026-10-01).
-        chip = page.evaluate("(()=>{const a=document.getElementById('pill-app-d');let l=a.previousElementSibling;while(l&&(l.hidden||getComputedStyle(l).display==='none'))l=l.previousElementSibling;"
-                             "const r=a.getBoundingClientRect(),lr=l.getBoundingClientRect();"
-                             "return {shown:r.width>0&&getComputedStyle(a).display!=='none',left:r.left,landlordsRight:lr.right,"
-                             "sameRow:Math.abs(r.top-lr.top)<4,overflow:document.documentElement.scrollWidth>innerWidth}})()")
-        self.ok(chip['shown'], 'desktop should offer a Get-the-app chip', j)
-        # Its left neighbour was Landlords until 9/29; now it is "Remove ads".
-        self.ok(chip['sameRow'] and chip['left'] >= chip['landlordsRight'] - 1,
-                f'the chip should sit right of its neighbour chip: {chip}', j)
-        self.ok(not chip['overflow'], 'the chip must not push the row sideways', j)
         for theme in ('light', 'dark'):
             page.evaluate("document.documentElement.setAttribute('data-theme', %r)" % theme)
-            self.click(page, '#pill-app-d')
+            self.click(page, '#menu-btn'); time.sleep(0.3)
+            self.click(page, '#menu-pop [data-menu="app"]')
             self.wait_until(page, "!document.getElementById('app-modal').hidden", 5000)
             panel = page.query_selector('#app-modal .qr-panel')
             img = cv2.imdecode(np.frombuffer(panel.screenshot(), np.uint8), cv2.IMREAD_COLOR)
@@ -1115,15 +1132,14 @@ class Runner:
         """The other way into the Get-the-app modal: the desktop ☰ menu.
 
         The chip and the menu row are separate entry points — the menu row
-        works by clicking the chip it mirrors, so a rename of #pill-app-d would
-        break the menu silently while the chip kept working. Desktop only; the
-        phone has no ☰ and reaches the App Store through #pill-app-m.
+        works by clicking the hidden #pill-app-d, so a rename of it would break
+        the menu silently. Desktop here; the phone's row is in j_app_chip.
         """
         self.boot(page)
         if device == 'phone':
-            self.ok(not page.evaluate("!!document.getElementById('menu-btn')?.offsetParent"),
-                    'phones should not show the desktop menu button', j)
-            j.notes.append('n/a on phone')
+            self.ok(page.evaluate("!!document.getElementById('menu-btn')?.offsetParent"),
+                    'phones show the ☰ too (owner, 2026-10-11)', j)
+            j.notes.append('phone row: see app_chip')
             return
         self.click(page, '#menu-btn')
         self.wait_until(page, "!document.getElementById('menu-pop').hidden", 5000)
@@ -1457,9 +1473,8 @@ class Runner:
         if device == 'desktop':
             # A real click: self.click dispatches a non-cancelable event, which
             # no preventDefault can stop, so the page would navigate anyway.
-            # The desktop chip became "Remove ads" (9/29); Landlords lives in ☰.
-            page.click('#menu-btn'); time.sleep(0.3)
-            page.click('a.nyc-only[href="/directory/"]:visible'); time.sleep(0.8)
+            # Landlords is a chip again (owner, 2026-10-11).
+            page.click('#pill-dir'); time.sleep(0.8)
             self.ok(not page.evaluate("document.getElementById('auth-modal').hidden"),
                     'signed out on a laptop, Landlords should open the account modal', j)
             sub = (page.evaluate("document.getElementById('auth-submit').textContent") or '').lower()
@@ -1474,10 +1489,12 @@ class Runner:
             # Click it, but stop the navigation in the bubble phase: the gate
             # runs in the capture phase, so if it had fired the event would
             # already be defaultPrevented here and the modal open.
+            # Listen on the chip itself: the chip row stops clicks bubbling to
+            # document. The gate runs in document's capture phase, before this.
             gated, modal_hidden = page.evaluate("""(() => {
-                let prevented = null;
-                document.addEventListener('click', e => { prevented = e.defaultPrevented; e.preventDefault(); }, { once: true });
-                document.getElementById('dir-btn').click();
+                let prevented = null; const a = document.getElementById('pill-dir');
+                a.addEventListener('click', e => { prevented = e.defaultPrevented; e.preventDefault(); }, { once: true });
+                a.click();
                 return [prevented, document.getElementById('auth-modal').hidden];
             })()""")
             self.ok(gated is False, 'on a phone the Landlords link must not be intercepted', j)

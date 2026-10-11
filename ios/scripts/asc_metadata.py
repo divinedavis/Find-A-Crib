@@ -80,22 +80,23 @@ Privacy Policy: https://findacrib.com/privacy/
 Find A Crib is an independent, informational tool. It is not a broker, does not list apartments, and takes no fee. Data: NYS Homes and Community Renewal rent-stabilization register (2024), NYC HPD open data, HUD FY2026 Fair Market Rents, HousingSearch.ny.gov, LA County Assessor parcel data under LAHD's RSO criteria, the SF Rent Board Housing Inventory via DataSF, and the DC DHCD RentRegistry.
 """
 
-WHATS_NEW = """• Real-time alerts with Find A Crib Plus — re-rentals go first come, first served, so Plus alerts you the minute one opens. Every other account gets a round-up at 8 AM.
-• Swipe through a re-rental's photos.
-• Every building has one button that opens its address on StreetEasy (New York) or Zillow (other cities).
-• Your household income now lives in Edit boroughs and sets the "what you qualify for" filter.
-• Your income and application packet are stored more securely on this phone.
+WHATS_NEW = """• Signing in for alerts now explains what you get: lottery and re-rental alerts for the boroughs you pick, in-app notifications and emails at 8 AM daily, and a Get Plus button for instant ones.
+• Typing your email lifts the email and password fields above the keyboard.
+• The Search button sits above the price row.
+• Shorter alert wording on Lotteries and Re-rentals.
+• New York buildings show a "StreetEasy ↗" button.
+• On iPad, the sign-in sheet is taller so every link fits.
 """
 
-REVIEW_NOTES = """VERSION 1.2.7 (build __BUILD__) — real-time alerts as a Plus perk; re-rental photo galleries; StreetEasy/Zillow button
+REVIEW_NOTES = """VERSION 1.2.8 (build __BUILD__) — clearer alerts sign-in, keyboard-friendly email form, layout polish
 
-WHAT CHANGED SINCE 1.2.6
-1. Alerts: every account with borough alerts gets one round-up at 8 AM; Find A Crib Plus (the existing $4.99/month auto-renewable subscription, 1-month introductory trial) now also includes real-time alerts. Without Plus, the Lotteries tab and a tapped alert show a "Re-rentals go first come, first served" card with a "Get real-time alerts" button to the Plus page; its X hides it.
-2. Re-rental cards: swipe left/right through the listing's photos (VoiceOver: "Photo 2 of 8").
-3. Third-party listing data removed: no asking rents, listing counts or "Available now" filter, and "Is this rent fair?" is gone. Each building instead has "View on StreetEasy" (New York) or "View on Zillow" (other cities), which opens that site's public search for the address.
-4. Household income and size are entered in Lotteries > Edit boroughs (the alerts sheet) and drive the on-device qualify filter; stored in the Keychain (this device only). The application packet folder is excluded from backups.
-5. The rating ask appears only for signed-in accounts that have opened the app on 3+ different days.
-No new SDKs and no new permissions.
+WHAT CHANGED SINCE 1.2.7
+1. Sign-in for alerts (Lotteries tab, or Profile > Alerts, while signed out): a box above the Apple/Google buttons lists what alerts include — in-app notifications and emails at 8 AM daily — with a small "Get Plus" button that opens the existing Find A Crib Plus page ($4.99/month auto-renewable subscription, 1-month introductory trial) for instant alerts.
+2. Email sign-in: focusing the email field scrolls the email, password and Sign in button above the keyboard.
+3. Search: the Search button now sits above the price row. Alert copy on Lotteries/Re-rentals is shorter.
+4. New York buildings' outbound button reads "StreetEasy ↗" (other cities keep "View on Zillow ↗"); it still opens that site's public search for the address.
+5. iPad: the sign-in sheet uses the page size so all links are visible.
+No new SDKs, no new permissions, no new data collected.
 
 TO SEE THE FEATURES
 Sign in with the demo account in App Review Information (Profile > "Continue with email", then the email and password). The demo account has NO subscription, so: tap any PLUS button (e.g. Search > "Or describe it in plain words", or Lotteries > Re-rentals > a card's "Help me apply") — the Plus page opens and "Get Plus — $4.99/month" starts the sandbox purchase. Profile > "Get Find A Crib Plus" opens the same page. After subscribing, the same buttons work. The packet and qualify-check need no subscription.

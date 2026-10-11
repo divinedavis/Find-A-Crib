@@ -93,7 +93,10 @@ def pull(asc):
                         elif "auto" in kind or "update" in kind: daily_row["updates"] += n
                     elif key == "discovery":
                         ev = (row.get("Event") or "").lower(); n = int(float(row.get("Counts") or 0))
-                        if "impression" in ev: daily_row["impressions"] += n
+                        if "impression" in ev:
+                            daily_row["impressions"] += n
+                            # Unique devices, Apple's conversion-rate denominator.
+                            daily_row["impressions_unique"] += int(float(row.get("Unique Counts") or 0))
                         elif "page view" in ev: daily_row["page_views"] += n
                         elif "tap" in ev or "download" in ev: daily_row["taps"] += n
                     elif key == "installs":
@@ -128,7 +131,12 @@ def summarise(daily, latest):
         dl = s.get("downloads_first", 0)
         s["downloads"] = dl
         s["conv_page_view"] = round(100.0 * dl / pv, 1) if pv else None
-        s["conv_impression"] = round(100.0 * dl / imp, 1) if imp else None
+        # Apple's Conversion Rate: first-time downloads + redownloads over
+        # unique impressions. conv_page_view above can pass 100%: most
+        # downloads come straight from search results ("No page") and never
+        # open the product page (9 downloads, 6 page views on 2026-10-09).
+        imp_u = s.get("impressions_unique", 0)
+        s["conv_impression"] = round(100.0 * (dl + s.get("redownloads", 0)) / imp_u, 1) if imp_u else None
         return s
     return {"d7": window(7), "d28": window(28), "all": window(DAYS)}
 

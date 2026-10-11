@@ -658,6 +658,13 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.buttons["sign-in-apple"].exists, "sign-in for alerts must offer Apple")
         XCTAssertTrue(app.buttons.matching(NSPredicate(format: "identifier CONTAINS 'google'")).firstMatch.exists, "…and Google")
         XCTAssertFalse(app.keyboards.firstMatch.exists, "no keyboard until they choose email")
+        // The alerts box sits above Apple/Google, and adding it must not push
+        // the email links off the first screen (owner, 2026-10-11).
+        let promise = app.descendants(matching: .any)["alerts-promise-box"].firstMatch
+        XCTAssertTrue(promise.exists, "sign-in for alerts explains what the alerts are")
+        XCTAssertLessThan(promise.frame.minY, app.buttons["sign-in-apple"].frame.minY, "the box goes above Apple")
+        XCTAssertTrue(app.buttons["create-account-toggle"].isHittable, "No account? Create one is on screen")
+        XCTAssertTrue(app.buttons["forgot-password"].isHittable, "Forgot password? is on screen")
         cancel.tap()
         XCTAssertTrue(signup.waitForExistence(timeout: 5))
         app.terminate()

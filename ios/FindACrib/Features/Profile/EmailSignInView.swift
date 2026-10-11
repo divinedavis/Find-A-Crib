@@ -8,6 +8,10 @@ struct EmailSignInView: View {
     var offersSocialSignIn = false
     /// Overrides the sign-in title (the Plus page says "Sign in for Plus").
     var heading: String? = nil
+    /// Opened from an alerts button: a box above Apple/Google says what the
+    /// alerts are, and stands in for the findacrib.com line, which drops to a
+    /// footnote so the email links still fit on the first screen.
+    var forAlerts = false
     @Environment(AuthService.self) private var auth
     @Environment(\.dismiss) private var dismiss
     @State private var email = ""
@@ -25,8 +29,12 @@ struct EmailSignInView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     Text(creating ? "Create account" : (heading ?? (offersSocialSignIn ? "Sign in for alerts" : "Sign in with email"))).font(.se(26, .bold))
-                    Text(creating ? "No verification email — you're in as soon as you tap Create." : "The account you use on findacrib.com works here.")
-                        .font(.se(15)).foregroundStyle(SE.ink2)
+                    if forAlerts && !creating {
+                        AlertsPromiseBox()
+                    } else {
+                        Text(creating ? "No verification email — you're in as soon as you tap Create." : "The account you use on findacrib.com works here.")
+                            .font(.se(15)).foregroundStyle(SE.ink2)
+                    }
 
                     if offersSocialSignIn, auth.configured {
                         SocialSignInButtons { focus = nil; notice = nil }
@@ -61,16 +69,18 @@ struct EmailSignInView: View {
                     SEPrimaryButton(title: auth.busy ? "…" : (creating ? "Create account" : "Sign in")) { Task { await submit() } }
                         .disabled(auth.busy).accessibilityIdentifier("email-submit")
 
-                    HStack {
-                        Button(creating ? "Have an account? Sign in" : "No account? Create one") { creating.toggle(); auth.error = nil; notice = nil }
-                            .font(.se(15, .semibold)).foregroundStyle(SE.royal)
-                        Spacer()
-                        if !creating {
-                            Button("Forgot password?") { Task { await forgot() } }
-                                .font(.se(15, .semibold)).foregroundStyle(SE.royal).accessibilityIdentifier("forgot-password")
-                        }
+                    // Side by side when they fit; stacked at large text sizes
+                    // or narrow widths rather than truncated off the edge.
+                    ViewThatFits(in: .horizontal) {
+                        HStack { createToggle; Spacer(minLength: 12); forgotButton }
+                        VStack(alignment: .leading, spacing: 12) { createToggle; forgotButton }
                     }
                     .buttonStyle(.plain)
+
+                    if forAlerts && !creating {
+                        Text("The account you use on findacrib.com works here.")
+                            .font(.se(14)).foregroundStyle(SE.ink3)
+                    }
                 }
                 .disabled(auth.busy)
                 .padding(16)
@@ -81,6 +91,20 @@ struct EmailSignInView: View {
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() }.foregroundStyle(SE.ink2) } }
             .onAppear { auth.error = nil; focus = offersSocialSignIn ? nil : .email }
             .onChange(of: auth.isSignedIn) { _, on in if on { dismiss() } }
+        }
+    }
+
+    private var createToggle: some View {
+        Button(creating ? "Have an account? Sign in" : "No account? Create one") { creating.toggle(); auth.error = nil; notice = nil }
+            .font(.se(15, .semibold)).foregroundStyle(SE.royal).fixedSize()
+            .accessibilityIdentifier("create-account-toggle")
+    }
+
+    @ViewBuilder private var forgotButton: some View {
+        if !creating {
+            Button("Forgot password?") { Task { await forgot() } }
+                .font(.se(15, .semibold)).foregroundStyle(SE.royal).fixedSize()
+                .accessibilityIdentifier("forgot-password")
         }
     }
 
@@ -103,6 +127,37 @@ struct EmailSignInView: View {
         if await auth.sendPasswordReset(email: e) {
             notice = "Check \(e) for a link to choose a new password, then come back and sign in."
         }
+    }
+}
+
+/// What signing in for alerts gets you, above the Apple/Google buttons.
+struct AlertsPromiseBox: View {
+    private let rows: [(icon: String, text: String)] = [
+        ("building.2.fill", "New lotteries and re-rentals in the boroughs you pick"),
+        ("bell.badge.fill", "Push and email at 8 AM daily"),
+        ("bolt.fill", "Instantly with Find A Crib Plus"),
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(rows, id: \.text) { row in
+                HStack(alignment: .center, spacing: 12) {
+                    Image(systemName: row.icon)
+                        .font(.system(size: 13, weight: .bold)).foregroundStyle(.white)
+                        .frame(width: 28, height: 28)
+                        .background(Circle().fill(SE.royal))
+                        .accessibilityHidden(true)
+                    Text(row.text).font(.se(15, .semibold)).foregroundStyle(SE.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 12).fill(SE.royal.opacity(0.08)))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(SE.royal.opacity(0.25)))
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("alerts-promise-box")
     }
 }
 

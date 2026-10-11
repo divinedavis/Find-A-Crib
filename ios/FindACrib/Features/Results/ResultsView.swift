@@ -278,7 +278,7 @@ struct ResultsView: View {
         .sheet(isPresented: $showAlerts) { AlertsSheet(query: query) }
         .sheet(isPresented: $showSignIn, onDismiss: {
             if auth.isSignedIn { showAlerts = true }
-        }) { EmailSignInView(offersSocialSignIn: true) }
+        }) { EmailSignInView(offersSocialSignIn: true, forAlerts: true) }
         .perfFirstMovement("results")
         .onAppear { if CommandLine.arguments.contains("--open-alerts") { showAlerts = true } }
         .task(id: query) { Ads.shared.beginFeed(query, context: Ads.context(for: query, city: store.city)); await run() }

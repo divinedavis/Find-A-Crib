@@ -93,7 +93,7 @@ struct ProfileView: View {
                         }
                     }.padding(16)
                     .sheet(isPresented: $showPaywall) { PaywallView(source: "profile") }
-                    .sheet(isPresented: $showEmail, onDismiss: { emailForAlerts = false }) { EmailSignInView(offersSocialSignIn: emailForAlerts) }
+                    .sheet(isPresented: $showEmail, onDismiss: { emailForAlerts = false }) { EmailSignInView(offersSocialSignIn: emailForAlerts, forAlerts: emailForAlerts) }
                     .sheet(isPresented: $showAlerts) { AlertsSheet() }
                     .sheet(isPresented: $showPacket) { PacketView() }
                     .onChange(of: nav.showPaywall) { _, on in if on { showPaywall = true; nav.showPaywall = false } }

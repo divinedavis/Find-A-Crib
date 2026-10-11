@@ -72,7 +72,7 @@ struct LotteriesView: View {
             guard auth.isSignedIn else { return }
             Task { await feed.refresh(); if !feed.subscribed { showAlerts = true } }
         // Apple and Google first, no keyboard until they pick email (owner, 2026-09-19).
-        }) { EmailSignInView(offersSocialSignIn: true) }
+        }) { EmailSignInView(offersSocialSignIn: true, forAlerts: true) }
         // No sheet opens by itself (owner, 2026-09-19): the tab shows the
         // sign-up screen, and only its button opens the sign-up.
     }

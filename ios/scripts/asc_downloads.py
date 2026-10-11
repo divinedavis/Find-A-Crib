@@ -169,12 +169,21 @@ def live_build(asc, app_id):
 def main():
     cfg = m.load_config(); asc = m.ASC(cfg)
     try:
+        prev = json.loads(OUT.read_text())
+    except (OSError, ValueError):
+        prev = {}
+    try:
         daily, latest, used = pull(asc)
         payload = {"as_of": latest, "days": {d: dict(v) for d, v in sorted(daily.items())}, "summary": summarise(daily, latest),
                    "reports_used": used, "updated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
                    "note": None if latest else "Apple has not produced the first daily report yet (new request 2026-09-09; usually 1–2 days)."}
     except Exception as e:
-        payload = {"as_of": None, "days": {}, "summary": {}, "updated": datetime.now(timezone.utc).isoformat(timespec="seconds"), "note": f"pull failed: {e}"[:300]}
+        # Keep the last good pull. One dropped connection (2026-10-11 01:34)
+        # used to write empty days and scp them over the dashboard's copy, so
+        # the iPhone lines vanished until the next good run.
+        payload = {k: prev[k] for k in ("as_of", "days", "summary", "reports_used") if k in prev}
+        payload.setdefault("as_of", None); payload.setdefault("days", {}); payload.setdefault("summary", {})
+        payload.update(updated=datetime.now(timezone.utc).isoformat(timespec="seconds"), note=f"pull failed, kept the last good data: {e}"[:300])
     try:
         # live_build: the newest. released_builds: every build any App Store
         # version ever shipped — dashboard_metrics counts app users from these
@@ -182,7 +191,9 @@ def main():
         payload["live_build"], payload["released_builds"] = live_build(asc, cfg["ASC_APP_ID"])
         payload["versions"] = released_versions(asc, cfg["ASC_APP_ID"])
     except Exception as e:
-        payload["live_build"], payload["released_builds"], payload["versions"] = None, [], []
+        # Same: an empty released_builds would read as no app users at all.
+        for k in ("live_build", "released_builds", "versions"):
+            payload[k] = prev.get(k, None if k == "live_build" else [])
         print("live_build lookup failed:", str(e)[:200])
     OUT.write_text(json.dumps(payload, indent=1) + "\n")
     print("wrote", OUT, "as_of", payload["as_of"], payload.get("note") or "")

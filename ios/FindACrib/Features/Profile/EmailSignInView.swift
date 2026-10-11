@@ -23,7 +23,10 @@ struct EmailSignInView: View {
     @FocusState private var focus: Field?
     enum Field { case email, password, confirm }
 
-    var body: some View { content.onAppear { Analytics.shared.track("signin_view", ["for": offersSocialSignIn ? "alerts" : "profile"]) } }
+    var body: some View {
+        content.onAppear { Analytics.shared.track("signin_view", ["for": offersSocialSignIn ? "alerts" : "profile"]) }
+            .modifier(TallSheetOnIPad())
+    }
 
     private var content: some View {
         NavigationStack {
@@ -145,6 +148,15 @@ struct EmailSignInView: View {
         if await auth.sendPasswordReset(email: e) {
             notice = "Check \(e) for a link to choose a new password, then come back and sign in."
         }
+    }
+}
+
+/// iPad shows a sheet as a fixed-height form, and the alerts box pushed
+/// "No account? Create one" and "Forgot password?" below its bottom edge
+/// (2026-10-11). The page size is tall enough; iPhone sheets are unaffected.
+private struct TallSheetOnIPad: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 18.0, *) { content.presentationSizing(.page) } else { content }
     }
 }
 

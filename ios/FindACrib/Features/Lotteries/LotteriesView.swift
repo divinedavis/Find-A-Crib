@@ -121,7 +121,7 @@ struct LotteriesView: View {
                     Image(systemName: "bell.fill").font(.system(size: 18, weight: .bold)).foregroundStyle(SE.royal)
                     Text("Get alerts when a new one opens").font(.se(18, .bold)).foregroundStyle(SE.ink)
                 }
-                Text("An alert on this phone and by email every morning at 8 AM with the lotteries and re-rentals that opened in the boroughs you pick — the minute they open with Find A Crib Plus.")
+                Text("New lotteries and re-rentals in your boroughs, by push and email at 8 AM daily. Instantly with Find A Crib Plus.")
                     .font(.se(15)).foregroundStyle(SE.ink2)
                 SEPrimaryButton(title: "Turn on alerts", icon: "bell.fill", fill: SE.navy) { promptSignup() }
                     .accessibilityIdentifier("lotteries-signup")

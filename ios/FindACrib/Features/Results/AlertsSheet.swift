@@ -57,8 +57,8 @@ struct AlertsSheet: View {
                     } else {
                         Text(editing ? "Your alerts" : "Get alerts when one opens").font(.se(26, .bold)).foregroundStyle(SE.ink)
                         Text(auth.hasPlus
-                             ? "A notification on this phone and an email to \(auth.email ?? "your account email") the minute a lottery or re-rental opens. The feeds are checked every 10 minutes."
-                             : "A notification on this phone and an email to \(auth.email ?? "your account email") every morning at 8 AM with what opened. Re-rentals go first come, first served — with Find A Crib Plus they arrive the minute they open.")
+                             ? "Push and email to \(auth.email ?? "your account email") the minute a lottery or re-rental opens."
+                             : "Push and email to \(auth.email ?? "your account email") at 8 AM daily. Instantly with Find A Crib Plus.")
                             .font(.se(16)).foregroundStyle(SE.ink2)
                         if editing { pushStateLine }
                         if loadingPrefs {

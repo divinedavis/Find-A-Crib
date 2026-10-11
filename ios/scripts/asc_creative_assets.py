@@ -3,14 +3,14 @@
 to an app's Asset Library through the ASC API (spec 4.5.1, fall 2026).
 
 Works for any app on the team: the API key in asc-config.env is team-wide.
-Upload only. It never submits an asset for review or places it on a
-version, custom product page or experiment, because those go public and
-several apps are under an App Store freeze (see memory).
+`upload` and `retire` stay private; `submit` and `place` are
+outward-facing and need --yes.
 
     ~/.venvs/dhcr-map/bin/python scripts/asc_creative_assets.py list APP_ID
     ~/.venvs/dhcr-map/bin/python scripts/asc_creative_assets.py upload APP_ID DIR [--prefix NAME]
     ~/.venvs/dhcr-map/bin/python scripts/asc_creative_assets.py retire APP_ID --prefix NAME
     ~/.venvs/dhcr-map/bin/python scripts/asc_creative_assets.py submit APP_ID --prefix NAME --yes
+    ~/.venvs/dhcr-map/bin/python scripts/asc_creative_assets.py place APP_ID --prefix NAME --yes
 
 `upload` sends every *.png under DIR (recursively). The reference name is
 `<prefix>/<relative path>`, so a rerun skips files already in the library
@@ -23,6 +23,12 @@ be uploaded under the same names.
 submission of their own (no app version in it). It is outward-facing, so it
 needs --yes and the owner's go for that app; it refuses if the app already
 has an open submission, so assets never ride along with a version.
+
+`place` puts the APPROVED `<prefix>/default/header-*` and `default/search-*`
+images on every localization of the app's live iOS version (the newest
+READY_FOR_SALE one). That needs no new app version; Apple only requires the
+assets to be approved first (409 otherwise). An existing header or search
+placement on a localization is left alone, so a rerun is a no-op.
 """
 import argparse
 import os
@@ -100,7 +106,7 @@ def upload_one(app_id, f, ref):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["list", "upload", "retire", "submit"])
+    ap.add_argument("cmd", choices=["list", "upload", "retire", "submit", "place"])
     ap.add_argument("app_id")
     ap.add_argument("dir", nargs="?")
     ap.add_argument("--prefix", default="")
@@ -151,6 +157,40 @@ def main():
         done = call("PATCH", f"/v1/reviewSubmissions/{sub['id']}", {"data": {
             "type": "reviewSubmissions", "id": sub["id"], "attributes": {"submitted": True}}})["data"]
         print(f"submission {sub['id']} -> {done['attributes'].get('state')}")
+        return
+    if a.cmd == "place":
+        if not (a.prefix and a.yes):
+            sys.exit("place needs --prefix and --yes (owner's go for this app)")
+        want = {}
+        for i in existing:
+            at = i["attributes"]
+            ref = at.get("referenceName") or ""
+            for kind, ptype in (("header", "PRODUCT_PAGE_HEADER_ASSET"), ("search", "APP_STORE_SEARCH_RESULTS_ASSET")):
+                if ref.startswith(f"{a.prefix}/default/{kind}-"):
+                    if at.get("state") != "APPROVED":
+                        sys.exit(f"{ref} is {at.get('state')}; Apple only places approved assets on a live version")
+                    want[ptype] = i["id"]
+        if not want:
+            sys.exit("no default/header or default/search assets under that prefix")
+        live = call("GET", f"/v1/apps/{a.app_id}/appStoreVersions?filter[platform]=IOS"
+                           "&filter[appStoreState]=READY_FOR_SALE&limit=1")["data"]
+        if not live:
+            sys.exit("app has no live iOS version")
+        for loc in call("GET", f"/v1/appStoreVersions/{live[0]['id']}/appStoreVersionLocalizations")["data"]:
+            placed = {p["attributes"].get("placementType")
+                      for p in call("GET", f"/v1/appStoreVersionLocalizations/{loc['id']}/placements")["data"]}
+            for ptype, iid in want.items():
+                tag = f"{live[0]['attributes'].get('versionString')} {loc['attributes'].get('locale')} {ptype}"
+                if ptype in placed:
+                    print(f"skip     {tag} (already placed)")
+                    continue
+                p = call("POST", "/v1/appAssetLibraryPlacements", {"data": {
+                    "type": "appAssetLibraryPlacements",
+                    "attributes": {"placementType": ptype, "placementGroup": "DEFAULT_PROFILE"},
+                    "relationships": {
+                        "image": {"data": {"type": "appAssetLibraryImages", "id": iid}},
+                        "appStoreVersionLocalization": {"data": {"type": "appStoreVersionLocalizations", "id": loc["id"]}}}}})["data"]
+                print(f"placed   {tag} -> {p['attributes'].get('state')}")
         return
     have = {i["attributes"].get("referenceName") for i in existing if i["attributes"].get("state") != "ARCHIVED"}
     root = Path(a.dir).expanduser()

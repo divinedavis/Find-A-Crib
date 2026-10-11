@@ -204,11 +204,11 @@ struct OutboundLink: Equatable {
     static func make(_ b: Building, in city: City) -> OutboundLink {
         if city.isNYC {
             let q = "\(b.address), \(b.borough), NY \(b.z ?? "")".trimmingCharacters(in: .whitespaces)
-            return OutboundLink(kind: "streeteasy", label: "View on StreetEasy ↗",
+            return OutboundLink(kind: "streeteasy", label: "StreetEasy ↗",
                                 url: URL(string: "https://streeteasy.com/search?search=\(encode(q))")!)
         }
         let q = "\(b.address), \(zillowPlace(city)), \(city.state)"
-        return OutboundLink(kind: "zillow", label: "View on Zillow ↗",
+        return OutboundLink(kind: "zillow", label: "Zillow ↗",
                             url: URL(string: "https://www.zillow.com/homes/\(encode(q))_rb/")!)
     }
 }

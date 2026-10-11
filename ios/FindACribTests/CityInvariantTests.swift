@@ -84,7 +84,7 @@ struct OutboundLinkTests {
     func nyc(_ c: (String, String, String?, String)) {
         let o = OutboundLink.make(building(c.0, boro: c.1, zip: c.2), in: .nyc)
         #expect(o.kind == "streeteasy")
-        #expect(o.label == "View on StreetEasy ↗")
+        #expect(o.label == "StreetEasy ↗")
         #expect(o.url.absoluteString == "https://streeteasy.com/search?search=\(c.3)")
     }
 
@@ -93,7 +93,7 @@ struct OutboundLinkTests {
     func zillow(_ city: City) {
         let o = OutboundLink.make(building("100 MAIN ST", boro: city.short, zip: "00000"), in: city)
         #expect(o.kind == "zillow")
-        #expect(o.label == "View on Zillow ↗")
+        #expect(o.label == "Zillow ↗")
         #expect(o.url.scheme == "https")
         #expect(o.url.host == "www.zillow.com")
         let place = city.id == "dc" ? "Washington" : city.name

@@ -154,7 +154,7 @@ final class SearchEngineTests: XCTestCase {
         for b in Self.store.buildings.prefix(2000) {
             let o = Self.store.outbound(b)
             XCTAssertEqual(o.kind, "streeteasy")
-            XCTAssertEqual(o.label, "View on StreetEasy ↗")
+            XCTAssertEqual(o.label, "StreetEasy ↗")
             XCTAssertEqual(o.url.host, "streeteasy.com")
             XCTAssertEqual(o.url.path, "/search")
         }

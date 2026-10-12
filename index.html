@@ -5148,7 +5148,8 @@ function favActive() {
     catch (e) { setQueryNote('Couldn’t reach Find A Crib just now — try again.'); return; }
     if (r.status === 402) { setQueryNote(''); openPaywall(null, 'ai_search'); return; }
     if (!r.ok || !j.ok) {
-      setQueryNote(j.error === 'daily_limit' ? 'That’s a lot of searches today — plain-language search resets at midnight.'
+      setQueryNote(j.error === 'monthly_limit' ? 'You’ve used this month’s AI — plain-language search is back on the 1st.'
+        : j.error === 'daily_limit' ? 'That’s a lot of searches today — plain-language search resets at midnight.'
                   : j.error === 'budget' ? 'Plain-language search is resting for now — the filters still work.'
                   : 'Couldn’t read that one — try the filters.');
       track('ai_search_result', { ok: false, error: j.error || r.status }); return;
@@ -5197,7 +5198,7 @@ function favActive() {
     catch (e) { clearTimeout(slow); out.textContent = 'Couldn’t reach Find A Crib just now — try again.'; return; }
     clearTimeout(slow);
     if (r.status === 402) { out.hidden = true; openPaywall(null, 'apply_help'); return; }
-    if (!r.ok || !j.ok) { out.textContent = j.error === 'daily_limit' ? 'That’s a lot of applications today — more tomorrow.' : 'Help isn’t available for this one right now — the agent’s page has the details.'; return; }
+    if (!r.ok || !j.ok) { out.textContent = j.error === 'monthly_limit' ? 'You’ve used this month’s AI — more on the 1st.' : j.error === 'daily_limit' ? 'That’s a lot of applications today — more tomorrow.' : 'Help isn’t available for this one right now — the agent’s page has the details.'; return; }
     const h = j.help || {}, c = h.contact || {};
     const mail = c.email ? `mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent(h.email_subject || '')}&body=${encodeURIComponent(h.email_body || '')}` : null;
     out.innerHTML = `
@@ -8175,7 +8176,7 @@ function favActive() {
   });
   if (location.hash === '#broker-fee') openTool('brokerfee', 'hash');
   if (location.hash === '#lease-review') openTool('lease', 'hash');
-  const TOOL_ERR = { daily_limit: 'That’s a lot for one day — try again tomorrow.', budget: 'This is resting for now — try again later.',
+  const TOOL_ERR = { daily_limit: 'That’s a lot for one day — try again tomorrow.', monthly_limit: 'You’ve used this month’s AI — more on the 1st.', budget: 'This is resting for now — try again later.',
     scanned: 'That PDF is a scan with no text in it. Paste the lease text instead.', too_long: 'That lease is too long to review in one go (60 pages or 200,000 characters).',
     empty: 'Add your lease — upload the PDF or paste the text.', bad_pdf: 'Couldn’t open that PDF (it may be password-protected). Paste the text instead.',
     declined: 'Couldn’t review this one. Paste just the lease text and try again.',

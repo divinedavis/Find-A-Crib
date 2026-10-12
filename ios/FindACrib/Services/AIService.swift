@@ -5,7 +5,7 @@ import Foundation
 /// Supabase session; the server checks Plus and the $20/month cap, so a
 /// 402 here means "show the paywall", never "feature broken".
 enum AIError: Error, Equatable {
-    case signIn, plus, dailyLimit, unavailable, declined
+    case signIn, plus, dailyLimit, monthlyLimit, unavailable, declined
 }
 
 struct AISearchResult: Decodable {
@@ -52,9 +52,15 @@ enum AIService {
         case 200: return data
         case 401: throw AIError.signIn
         case 402: throw AIError.plus
-        case 429: throw AIError.dailyLimit
+        // 429 is a daily cap or this member's $1 a month (2026-10-12).
+        case 429: throw Self.limitError(data)
         default: throw AIError.unavailable
         }
+    }
+
+    nonisolated static func limitError(_ data: Data) -> AIError {
+        let code = ((try? JSONSerialization.jsonObject(with: data)) as? [String: Any])?["error"] as? String
+        return code == "monthly_limit" ? .monthlyLimit : .dailyLimit
     }
 
     /// A JSON POST for the renter tools (RenterTools.swift).

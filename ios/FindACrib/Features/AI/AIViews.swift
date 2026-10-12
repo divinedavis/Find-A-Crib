@@ -75,6 +75,7 @@ private struct AIButton: View {
 private func errorText(_ e: Error) -> String {
     switch e as? AIError {
     case .dailyLimit: "That's a lot for one day — more tomorrow."
+    case .monthlyLimit: "You've used this month's AI — more on the 1st."
     case .declined: "That isn't something the records can answer."
     default: "Not available right now. Try again in a little while."
     }

@@ -8,6 +8,7 @@ together stays under $20 a month. So before a feature calls a model it asks
       "sign_in_required"  no verified session
       "plus_required"     the account does not pay (has_plus)
       "daily_limit"       this user hit the feature's per-day ceiling
+      "monthly_limit"     this user's own AI spend this month reached USER_CAP_MICROS
       "budget"            the month's spend is within SAFETY of the cap
   record(...)           one ai_usage row: tokens and the cost in micro-dollars
 
@@ -19,6 +20,10 @@ import json, os, urllib.request
 
 CAP_MICROS = int(os.environ.get("AI_MONTHLY_CAP_MICROS", 20_000_000))   # $20
 SAFETY = 0.95          # stop new calls at 95% of the cap
+# Per person, per New York month (owner, 2026-10-12: "lets do a per person
+# budget of $1"). A real renter spends a few cents; this stops one heavy
+# member from using up everyone's $20. Free (rules-only) features never count.
+USER_CAP_MICROS = int(os.environ.get("AI_USER_MONTHLY_MICROS", 1_000_000))   # $1
 
 # USD per million tokens: (input, output). Jev bills input only. Claude cache
 # writes cost 1.25x input (5-minute TTL) and cache reads 0.1x (claude-api skill,
@@ -66,6 +71,8 @@ class Gateway:
                 return "plus_required"
             if self.rpc("ai_user_calls_today", {"p_user": user["id"], "p_feature": feature}) >= DAILY_LIMITS.get(feature, 20):
                 return "daily_limit"
+            if model != "rules" and (self.rpc("ai_user_spend_month", {"p_user": user["id"]}) or 0) >= USER_CAP_MICROS:
+                return "monthly_limit"
             if (self.rpc("ai_spend_month", {}) or 0) >= CAP_MICROS * SAFETY:
                 return "budget"
         except Exception:

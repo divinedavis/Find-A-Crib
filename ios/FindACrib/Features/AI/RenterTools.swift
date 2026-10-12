@@ -66,7 +66,7 @@ extension AIService {
         case 401: throw AIError.signIn
         case 402: throw AIError.plus
         case 413: throw LeaseUploadError.code("too_long")
-        case 429: throw AIError.dailyLimit
+        case 429: throw AIService.limitError(data)
         default: throw AIError.unavailable
         }
     }
@@ -321,6 +321,7 @@ struct LeaseReviewView: View {
             switch error as? AIError {
             case .plus, .signIn: needsPlus = true
             case .dailyLimit: self.error = "That's five leases today — more tomorrow."
+            case .monthlyLimit: self.error = "You've used this month's AI — more on the 1st."
             case .declined: self.error = "This doesn't read like a lease. Check the file and try again."
             default: self.error = "Couldn't review it right now. Try again in a little while."
             }

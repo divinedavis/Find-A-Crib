@@ -724,7 +724,7 @@ def ai_broker_fee():
     and NY law likely forbid. Rules only (broker_fee.py), so it costs nothing,
     but it is a Plus feature: the gateway checks has_plus like the AI ones."""
     user = _session_user()
-    err = AI.allow(user, "broker_fee")
+    err = AI.allow(user, "broker_fee", "rules")   # free: never counts against the $1 a month
     if err:
         return _ai_err(err)
     body = request.get_json(silent=True) or {}

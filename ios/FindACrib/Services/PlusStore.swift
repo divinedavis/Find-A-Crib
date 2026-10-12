@@ -80,7 +80,9 @@ final class PlusStore {
             // The account id rides along as appAccountToken, so Apple's server
             // notifications (renewals, refunds, expiries) can name the account
             // even if the app never syncs again (apple-notifications tokenUserId).
-            let result = try await product.purchase(options: auth?.session?.user.id.map { [.appAccountToken($0)] } ?? [])
+            var options: Set<Product.PurchaseOption> = []
+            if let uid = auth?.session?.user.id { options.insert(.appAccountToken(uid)) }
+            let result = try await product.purchase(options: options)
             switch result {
             case .success(let verification):
                 guard case .verified(let tx) = verification else {

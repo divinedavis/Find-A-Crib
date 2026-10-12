@@ -326,6 +326,13 @@
     border: none; background: var(--bg); font-size: 14px; cursor: pointer; }
   .auth-card h2 { margin: 0 0 6px; font-size: 22px; letter-spacing: -.4px; }
   .auth-sub { margin: 0 0 18px; font-size: 13px; color: var(--ink-2); }
+  /* What the account gets, above the form (owner, 2026-10-12) — the app's sign-in sheets, on the web. */
+  .auth-promise { margin: -6px 0 16px; padding: 12px 12px 10px; border-radius: 12px; background: rgba(47,93,110,.08); border: 1px solid rgba(47,93,110,.25); }
+  .auth-promise .ap-row { display: flex; gap: 10px; align-items: center; font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 8px; }
+  .auth-promise .ap-ico { flex: 0 0 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: #2f5d6e; color: #fff; font-size: 13px; }
+  .auth-promise .ap-plus { justify-content: space-between; margin-bottom: 0; }
+  .auth-promise .ap-plus span.t { flex: 1; }
+  .auth-promise .ap-get { flex: 0 0 auto; border: 0; border-radius: 999px; padding: 6px 12px; background: #5B21B6; color: #fff; font-weight: 700; font-size: 12px; cursor: pointer; min-height: 32px; }
   .auth-card input { width: 100%; padding: 12px 14px; font-size: 16px; border: 1px solid var(--line);
     border-radius: 8px; margin-bottom: 10px; }
   .auth-card input:focus { outline: none; border-color: var(--blue); }
@@ -1801,6 +1808,7 @@
     <button class="auth-close" data-auth="close" aria-label="Close">✕</button>
     <h2 id="auth-title">Sign in</h2>
     <p class="auth-sub" id="auth-sub">Save buildings to your account so they're on every device.</p>
+    <div id="auth-promise" class="auth-promise" hidden></div>
     <form id="auth-form" autocomplete="on">
       <input id="auth-email" type="email" placeholder="Email" autocomplete="email" required>
       <input id="auth-pass" type="password" placeholder="Password (8+ characters)" autocomplete="current-password" minlength="8" required>
@@ -8108,8 +8116,43 @@ function favActive() {
   // `wall` names the journey that hit the sign-up wall (save, alerts, phone…),
   // logged as signin_wall{for} so the dashboard can rank walls — before
   // 2026-10-01 only four of the nineteen callers left any trace.
+  // What an account gets at each wall, and the one Plus part (owner,
+  // 2026-10-12: show them what signing in gets them, like the app's sheets).
+  const RECORDS_PROMISE = { rows: [['⚠️', 'Open HPD violations and complaints, building by building'],
+                                   ['🛏️', 'Bedbug filings the landlord made, year by year'],
+                                   ['🐀', 'Rat inspections from the Health Department']],
+                            plus: ['🧾', 'Plus: check if a broker fee breaks NYC\u2019s FARE Act', 'broker_fee'] };
+  const AUTH_PROMISES = {
+    bedbugs: RECORDS_PROMISE, rodents: RECORDS_PROMISE,
+    alerts: { rows: [['🏢', 'New lotteries and re-rentals in the boroughs you pick'],
+                     ['✉️', 'An email at 8 AM every day with what opened']],
+              plus: ['⚡', 'Plus: alerts the minute they open \u2014 first month free', 'realtime'] },
+    phone: { rows: [['👤', 'The managing agent HPD has on file, and their office'],
+                    ['🏛️', 'Who owns the building, and its head officer']],
+             plus: ['📞', 'Plus: the agent\u2019s phone number \u2014 call who actually runs it', 'phone'] },
+  };
+  // Which wall a sign-in came from, so the dashboard can say which converts.
+  let authWall = null;
+  function renderAuthPromise(wall) {
+    const box = document.getElementById('auth-promise');
+    if (!box) return;
+    const p = AUTH_PROMISES[wall];
+    if (!p) { box.hidden = true; box.innerHTML = ''; return; }
+    box.innerHTML = p.rows.map(([i, t]) => `<div class="ap-row"><span class="ap-ico" aria-hidden="true">${i}</span><span>${esc(t)}</span></div>`).join('')
+      + `<div class="ap-row ap-plus"><span class="ap-ico" aria-hidden="true" style="background:#5B21B6">${p.plus[0]}</span><span class="t">${esc(p.plus[1])}</span>`
+      + `<button type="button" class="ap-get" data-plus-src="${esc(p.plus[2])}">Get Plus</button></div>`;
+    box.hidden = false;
+  }
+  document.getElementById('auth-promise')?.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-plus-src]');
+    if (!b) return;
+    track('outbound', { kind: 'auth_promise_plus', wall: authWall, source: b.dataset.plusSrc });
+    closeAuthModal(); openPaywall(null, b.dataset.plusSrc);
+  });
   function openAuthModal(reminder, wall) {
     if (authModal.hidden) track('signin_wall', { for: wall || 'other' });
+    authWall = wall || 'other';
+    renderAuthPromise(wall);
     setAuthMode('signin');
     const sub = document.getElementById('auth-sub');
     if (sub) sub.textContent = reminder || AUTH_SUB_DEFAULT;
@@ -8899,7 +8942,7 @@ function favActive() {
       if (authUser) {
         // ties this browser's fac_vid to the account, which is what lets
         // traffic_report.py retroactively exclude the owner's anonymous visits
-        if (_evt === 'SIGNED_IN') { track('signin', null); maybeFoundingWelcome(); }
+        if (_evt === 'SIGNED_IN') { track('signin', authWall ? { wall: authWall } : null); authWall = null; maybeFoundingWelcome(); }
         // OAuth signups never hit the email-form path, so fire the Google Ads
         // signup conversion here for accounts created moments ago via a provider.
         if (_evt === 'SIGNED_IN' && window.gtag && GADS_SIGNUP_LABEL &&

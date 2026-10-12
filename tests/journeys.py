@@ -1824,6 +1824,12 @@ class Runner:
         self.boot(page)
         page.evaluate("document.querySelector('a[href^=\"/alerts/\"]').click()"); time.sleep(0.8)
         self.ok(self.alerts_signup_open(page), 'Alerts should open the sign-up modal, not the paywall (signed out)', j)
+        # What an account gets (2026-10-12): the alerts wall previews it, with
+        # the Plus row and its Get Plus button.
+        prom = page.evaluate("""(()=>{const b=document.getElementById('auth-promise');
+          return {shown: !!b && !b.hidden, text: b ? b.textContent : '', plus: !!(b && b.querySelector('[data-plus-src="realtime"]'))}})()""")
+        self.ok(prom['shown'] and '8 AM' in prom['text'] and prom['plus'],
+                f'the alerts sign-in should preview what alerts get, with Get Plus: {prom}', j)
         page.evaluate("document.querySelector('#auth-modal [data-auth=\"close\"]').click()"); time.sleep(0.2)
         self.ok(page.evaluate("(()=>{const b=document.getElementById('pill-noads'); return !b || b.hidden || getComputedStyle(b).display==='none'})()"),
                 'no Remove ads chip while everything is free', j)

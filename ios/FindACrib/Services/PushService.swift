@@ -178,6 +178,22 @@ final class PushService {
         Analytics.shared.track("push_register_failed", ["error": ns.domain, "code": ns.code, "text": String(ns.localizedDescription.prefix(120))])
     }
 
+    /// Sign-out (owner, 2026-10-12: an 8 AM round-up landed on a phone that had
+    /// signed out). Removes this phone's token from the account while the
+    /// session is still valid; the next sign-in files it again.
+    func unregister() async {
+        pendingToken = nil
+        guard let token = registeredToken, let session = auth?.session else { return }
+        var req = URLRequest(url: URL(string: "https://findacrib.com/api/push/unregister")!, timeoutInterval: 10)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue("Bearer \(session.accessToken)", forHTTPHeaderField: "Authorization")
+        req.httpBody = try? JSONSerialization.data(withJSONObject: ["token": token])
+        let code = (try? await URLSession.shared.data(for: req)).flatMap { ($0.1 as? HTTPURLResponse)?.statusCode } ?? 0
+        registration = .none
+        Analytics.shared.track("push_unregistered", ["status": code])
+    }
+
     private func upload(_ token: String) async {
         guard let session = auth?.session else { pendingToken = token; return }
         var req = URLRequest(url: URL(string: "https://findacrib.com/api/push/register")!, timeoutInterval: 15)

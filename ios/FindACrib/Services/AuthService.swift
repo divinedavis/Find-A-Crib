@@ -186,6 +186,8 @@ final class AuthService {
 
     func signOut() async {
         guard let client else { return }
+        // Before the session goes: stop this phone getting the account's alerts.
+        await PushService.shared.unregister()
         try? await client.auth.signOut()
         session = nil; hasPlus = false; plusKnown = false
     }

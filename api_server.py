@@ -858,13 +858,15 @@ def push_unregister():
         return _too_many()
     if not request.is_json:
         return jsonify(error="json_required"), 415
-    if not _session_user():
+    u = _session_user()
+    if not u:
         return jsonify(error="sign_in_required"), 401
     token = str((request.get_json(silent=True) or {}).get("token") or "").strip().lower()
     if not PUSH_TOKEN_RE.match(token):
         return jsonify(error="bad_token"), 400
     try:
-        rpc("device_token_remove", {"p_token": token})
+        # Only the caller's own row (2026-10-12): the app calls this on sign-out.
+        rpc("device_token_remove_own", {"p_token": token, "p_user_id": u["id"]})
     except Exception:
         return jsonify(error="temporarily_unavailable"), 503
     return jsonify(ok=True)

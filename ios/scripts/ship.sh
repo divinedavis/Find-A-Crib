@@ -116,7 +116,11 @@ xcodebuild -project "$PROJECT" -scheme "$SCHEME" -configuration Release \
 [[ -d "$ARCHIVE" ]] || { echo "error: archive missing" >&2; tail -30 build.nosync/archive.log >&2; exit 1; }
 
 echo "==> exporting IPA"
-xcodebuild -exportArchive -archivePath "$ARCHIVE" -exportPath "$EXPORT_DIR" \
+# Apple's tools first (2026-10-12): Xcode's IPA step runs /usr/bin/rsync, which
+# starts the rsync it finds on PATH for the receiving side. A Homebrew rsync
+# 3.x there rejects Apple's --extended-attributes and the export dies with
+# just "Copy failed".
+PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH" xcodebuild -exportArchive -archivePath "$ARCHIVE" -exportPath "$EXPORT_DIR" \
   -exportOptionsPlist ExportOptions.plist -allowProvisioningUpdates "${ASC_AUTH_FLAGS[@]}" > build.nosync/export.log 2>&1 \
   || { echo "error: export failed" >&2; grep -iE "error" build.nosync/export.log | tail -20 >&2; exit 1; }
 # The export names the IPA after CFBundleName ("Find A Crib.ipa"), not the

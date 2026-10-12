@@ -11,43 +11,35 @@
 //
 // Deploy: supabase functions deploy apple-subscription --project-ref dbaifotzwlxjvsxjohjt
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { SignedDataVerifier, Environment } from "npm:@apple/app-store-server-library@1";
+import { JWSVerificationError, verifyAppleJWS } from "../apple-notifications/appleJWS.ts";
 import { mayGrant, parseAllowlist } from "./sandbox.ts";
 
 const BUNDLE_ID = "com.divinedavis.findacrib";
-// The App Store's numeric id for the app (App Store Connect, ASC_APP_ID).
-// Apple's verifier REQUIRES it for Production and throws without it — which
-// this function swallowed and fell through to Sandbox, so every real
-// customer's receipt read "transaction did not verify" while App Review and
-// TestFlight (Sandbox) passed. Two paid subscribers on 2026-09-09/10 were
-// never recorded (found 2026-09-20).
-const APP_APPLE_ID = 6807549249;
 const PRODUCT_IDS = new Set(["com.divinedavis.findacrib.plus.monthly"]);
-// Apple Root CA - G3 (DER, base64). Public certificate; pinned so a verifier
-// cannot be talked into trusting anything else.
-const APPLE_ROOT_G3_B64 = "MIICQzCCAcmgAwIBAgIILcX8iNLFS5UwCgYIKoZIzj0EAwMwZzEbMBkGA1UEAwwSQXBwbGUgUm9vdCBDQSAtIEczMSYwJAYDVQQLDB1BcHBsZSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTETMBEGA1UECgwKQXBwbGUgSW5jLjELMAkGA1UEBhMCVVMwHhcNMTQwNDMwMTgxOTA2WhcNMzkwNDMwMTgxOTA2WjBnMRswGQYDVQQDDBJBcHBsZSBSb290IENBIC0gRzMxJjAkBgNVBAsMHUFwcGxlIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MRMwEQYDVQQKDApBcHBsZSBJbmMuMQswCQYDVQQGEwJVUzB2MBAGByqGSM49AgEGBSuBBAAiA2IABJjpLz1AcqTtkyJygRMc3RCV8cWjTnHcFBbZDuWmBSp3ZHtfTjjTuxxEtX/1H7YyYl3J6YRbTzBPEVoA/VhYDKX1DyxNB0cTddqXl5dvMVztK517IDvYuVTZXpmkOlEKMaNCMEAwHQYDVR0OBBYEFLuw3qFYM4iapIqZ3r6966/ayySrMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMAoGCCqGSM49BAMDA2gAMGUCMQCD6cHEFl4aXTQY2e3v9GwOAEZLuN+yRhHFD/3meoyhpmvOwgPUnPWTxnS4at+qIxUCMG1mihDK1A3UT82NQz60imOlM27jbdoXt2QfyFMm+YhidDkLF1vLUagM6BgD56KyKA==";
-const ROOTS = [Uint8Array.from(atob(APPLE_ROOT_G3_B64), (c) => c.charCodeAt(0))];
+// Verified with the same pinned-root, App Store OID-checked verifier the
+// notifications endpoint uses (appleJWS.ts). Apple's npm library verified
+// nothing in the edge runtime: every real receipt threw an empty error in
+// both environments, so no App Store subscriber was ever recorded by the app
+// sync (found 2026-10-12 from a 10/12 INITIAL_BUY left "unmatched").
+
+type Tx = { bundleId?: string; productId?: string; environment?: string; expiresDate?: number;
+  revocationDate?: number; originalTransactionId?: string | number; offerType?: number;
+  offerDiscountType?: string; price?: number };
+
+async function verify(jws: string): Promise<{ tx: Tx; env: "Production" | "Sandbox" } | null> {
+  try {
+    const tx = await verifyAppleJWS<Tx>(jws);
+    return { tx, env: tx.environment === "Production" ? "Production" : "Sandbox" };
+  } catch (e) {
+    console.error("apple-subscription verify failed:", e instanceof JWSVerificationError ? e.message : String(e).slice(0, 200));
+    return null;
+  }
+}
 
 // Sandbox receipts grant Plus only to these accounts (see sandbox.ts).
 const SANDBOX_ALLOW = parseAllowlist(Deno.env.get("APPLE_SANDBOX_USER_IDS"));
 
 const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-
-async function verifyEither(jws: string) {
-  // App Review and TestFlight run in the Sandbox; customers in Production.
-  // Try Production first, fall back to Sandbox; report which one signed it.
-  for (const env of [Environment.PRODUCTION, Environment.SANDBOX]) {
-    try {
-      const v = new SignedDataVerifier(ROOTS, true, env, BUNDLE_ID, APP_APPLE_ID);
-      const tx = await v.verifyAndDecodeTransaction(jws);
-      return { tx, env: env === Environment.PRODUCTION ? "Production" : "Sandbox" };
-    } catch (e) {
-      // Logged, so the next silent failure is visible in the function logs.
-      console.error("apple-subscription verify failed", env === Environment.PRODUCTION ? "Production" : "Sandbox", String((e as Error)?.message ?? e).slice(0, 200));
-    }
-  }
-  return null;
-}
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("method", { status: 405 });
@@ -61,7 +53,7 @@ Deno.serve(async (req) => {
   try { body = await req.json(); } catch { return new Response("bad json", { status: 400 }); }
   if (!body.jws || typeof body.jws !== "string" || body.jws.length > 20000) return new Response("missing jws", { status: 400 });
 
-  const verified = await verifyEither(body.jws);
+  const verified = await verify(body.jws);
   if (!verified) return new Response("transaction did not verify", { status: 400 });
   const { tx, env } = verified;
   if (tx.bundleId !== BUNDLE_ID || !tx.productId || !PRODUCT_IDS.has(tx.productId)) {

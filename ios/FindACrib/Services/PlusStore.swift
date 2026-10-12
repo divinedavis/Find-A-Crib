@@ -77,7 +77,10 @@ final class PlusStore {
         guard auth?.isSignedIn == true else { error = "Sign in first so Plus is tied to your account."; return }
         busy = true; error = nil; defer { busy = false }
         do {
-            let result = try await product.purchase()
+            // The account id rides along as appAccountToken, so Apple's server
+            // notifications (renewals, refunds, expiries) can name the account
+            // even if the app never syncs again (apple-notifications tokenUserId).
+            let result = try await product.purchase(options: auth?.session?.user.id.map { [.appAccountToken($0)] } ?? [])
             switch result {
             case .success(let verification):
                 guard case .verified(let tx) = verification else {

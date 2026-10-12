@@ -32,10 +32,17 @@ class AppleSandboxGate(unittest.TestCase):
             with open(os.path.join(FN, name)) as f:
                 self.assertIsNone(uuid.search(f.read()), f"{name} hardcodes an account id")
 
-    def test_production_needs_the_app_apple_id(self):
-        # The 2026-09-20 bug: without it every real customer failed to verify.
-        self.assertIn("APP_APPLE_ID = 6807549249", self.src)
-        self.assertIn("BUNDLE_ID, APP_APPLE_ID)", self.src)
+    def test_uses_the_verifier_that_works_on_the_edge(self):
+        # 2026-10-12: Apple's npm library threw an empty error for every real
+        # receipt in the edge runtime, so no app sync ever recorded a
+        # subscriber. The notifications endpoint's appleJWS.ts verifies them.
+        self.assertIn('from "../apple-notifications/appleJWS.ts"', self.src)
+        self.assertNotIn("app-store-server-library", self.src)
+        self.assertLess(self.src.find("verifyAppleJWS"), self.src.find(".upsert("))
+
+    def test_purchase_carries_the_account_token(self):
+        with open(os.path.join(ROOT, "ios", "FindACrib", "Services", "PlusStore.swift")) as f:
+            self.assertIn(".appAccountToken(", f.read())
 
     @unittest.skipUnless(shutil.which("deno"), "deno not installed")
     def test_deno_unit_tests(self):

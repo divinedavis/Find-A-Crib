@@ -123,31 +123,26 @@
     "accept_pct": 0.5,
     "accept_pct_mature": 0.0,
     "added": 0,
-    "at": "2026-10-11T05:11:24+00:00",
+    "at": "2026-10-12T05:11:20+00:00",
     "by_crawl_age": {
       "0-6d": {
-        "accept_pct": 20.0,
-        "fetched": 5,
+        "accept_pct": 33.3,
+        "fetched": 3,
         "indexed": 1
       },
       "14-20d": {
         "accept_pct": 0.0,
-        "fetched": 1,
-        "indexed": 0
-      },
-      "21-27d": {
-        "accept_pct": 0.0,
-        "fetched": 1,
+        "fetched": 2,
         "indexed": 0
       },
       "28d+": {
         "accept_pct": 0.0,
-        "fetched": 174,
+        "fetched": 175,
         "indexed": 0
       },
       "7-13d": {
         "accept_pct": 0.0,
-        "fetched": 5,
+        "fetched": 6,
         "indexed": 0
       }
     },
@@ -169,35 +164,36 @@
     "cohort": 442,
     "crawl_rate": {
       "comparable": true,
-      "crawls": 10,
+      "crawls": 9,
       "crawls_prev": 10,
-      "note": "10 of 442 inspected rows crawled in 14 days (2.26%), against 10 of 442 (2.26%) \u2014 the reading covers the same share of the sample (+0.0%), so the two counts compare directly",
-      "rate_pct": 2.26,
+      "note": "9 of 442 inspected rows crawled in 14 days (2.04%), against 10 of 442 (2.26%) \u2014 the reading covers the same share of the sample (+0.0%), so the two counts compare directly",
+      "rate_pct": 2.04,
       "rate_pct_prev": 2.26,
       "read": 442,
       "read_prev": 442,
       "read_shift_pct": 0.0,
       "window_days": 14
     },
-    "crawl_rate_14d": 2.26,
-    "crawl_rate_28d": 2.71,
+    "crawl_rate_14d": 2.04,
+    "crawl_rate_28d": 2.49,
     "crawl_read_lag_days": 1.7,
-    "crawls_14d": 10,
-    "crawls_28d": 12,
+    "crawls_14d": 9,
+    "crawls_28d": 11,
     "crawls_by_week": {
-      "2026-08-17": 47,
       "2026-08-24": 7,
       "2026-08-31": 0,
       "2026-09-07": 0,
       "2026-09-14": 1,
       "2026-09-21": 1,
       "2026-09-28": 5,
-      "2026-10-05": 5
+      "2026-10-05": 5,
+      "2026-10-12": 0
     },
-    "crawls_week_partial": "2026-10-05",
-    "date": "2026-10-11",
+    "crawls_week_partial": "2026-10-12",
+    "date": "2026-10-12",
+    "detail": "1 inspection(s) failed, first: https://findacrib.com/borough/bronx/largest/: HTTP 500: {\n  \"error\": {\n    \"code\": 500,\n    \"message\": \"Internal error encountered.\",\n    \"status\": \"INTERNAL\"\n  }\n}\n",
     "dropped": 0,
-    "errors": 0,
+    "errors": 1,
     "ever_indexed": 3,
     "evicted": 2,
     "evicted_urls": [
@@ -208,7 +204,7 @@
     "fetched_pct": 42.1,
     "gained_indexed": 0,
     "indexed_pct": 0.2,
-    "inspected": 100,
+    "inspected": 99,
     "last_crawl": "2026-10-08",
     "lost_indexed": 0,
     "never_fetched": {
@@ -227,174 +223,182 @@
     "published_urls": 1704,
     "read": 442,
     "read_pct": 100.0,
-    "rechecked": 100,
+    "rechecked": 99,
     "states": {
       "crawled_not_indexed": 185,
-      "discovered_not_indexed": 57,
+      "discovered_not_indexed": 43,
       "indexed": 1,
-      "unknown_to_google": 199
+      "unknown_to_google": 213
     }
   },
   "measure": {
-    "at": "2026-10-11T05:11:26+00:00",
-    "coverage_pct": 82.6,
-    "date": "2026-10-11",
+    "at": "2026-10-12T05:11:22+00:00",
+    "coverage_pct": 82.9,
+    "date": "2026-10-12",
     "days": 1,
-    "keywords_covered": 508,
+    "keywords_covered": 510,
     "keywords_total": 615,
-    "latest_measured_day": "2026-10-10",
+    "latest_measured_day": "2026-10-11",
     "traffic": {
       "arrival_shape": {
         "all": {
-          "busiest_6h_pct": 39.4,
-          "n": 175,
-          "night_pct": 10.3,
-          "peak_hour_utc": 1
+          "busiest_6h_pct": 34.9,
+          "n": 192,
+          "night_pct": 8.3,
+          "peak_hour_utc": 0
         },
         "direct": {
-          "busiest_6h_pct": 38.9,
-          "n": 149,
-          "night_pct": 10.1,
-          "peak_hour_utc": 1
+          "busiest_6h_pct": 36.3,
+          "n": 146,
+          "night_pct": 5.5,
+          "peak_hour_utc": 0
         },
         "organic": {
-          "busiest_6h_pct": 43.5,
-          "n": 23,
-          "night_pct": 8.7,
-          "peak_hour_utc": 20
+          "busiest_6h_pct": 30.8,
+          "n": 39,
+          "night_pct": 20.5,
+          "peak_hour_utc": 0
         }
       },
       "by_channel": {
-        "ai": 1,
-        "direct": 149,
-        "internal": 1,
-        "organic": 23,
+        "ai": 3,
+        "direct": 146,
+        "internal": 3,
+        "organic": 39,
         "referral": 1
       },
       "by_hour_utc": {
         "all": [
-          10,
           17,
-          9,
-          8,
-          8,
-          5,
-          3,
-          2,
-          6,
-          2,
-          2,
-          8,
-          2,
-          10,
-          5,
-          6,
-          3,
           11,
+          4,
+          10,
           7,
-          9,
-          13,
-          12,
+          7,
+          4,
+          4,
+          5,
+          3,
+          1,
+          7,
+          7,
           8,
-          9
+          7,
+          14,
+          7,
+          8,
+          11,
+          12,
+          10,
+          7,
+          10,
+          11
         ],
         "direct": [
-          10,
-          14,
-          9,
-          6,
-          6,
-          5,
-          3,
-          1,
-          5,
-          2,
-          1,
-          7,
-          2,
-          9,
+          12,
+          8,
           4,
-          5,
+          7,
+          4,
+          6,
           2,
+          4,
+          1,
+          0,
+          1,
+          6,
+          5,
+          7,
+          6,
+          9,
+          6,
+          7,
           10,
+          9,
+          8,
           6,
           8,
-          9,
-          10,
-          6,
-          9
+          10
         ],
         "organic": [
-          0,
-          3,
-          0,
-          2,
-          2,
-          0,
-          0,
-          1,
-          1,
-          0,
-          0,
-          1,
-          0,
-          1,
-          1,
-          1,
-          1,
-          1,
-          1,
-          0,
           4,
           2,
+          0,
+          3,
+          2,
           1,
-          0
+          2,
+          0,
+          4,
+          3,
+          0,
+          1,
+          1,
+          1,
+          1,
+          4,
+          0,
+          1,
+          1,
+          3,
+          2,
+          0,
+          2,
+          1
         ]
       },
       "by_src": {
-        "chatgpt.com": 1
+        "chatgpt.com": 3
       },
-      "direct_deep": 5,
-      "new": 124,
+      "direct_deep": 10,
+      "new": 133,
       "new_window_days": 30,
-      "returning": 51,
+      "returning": 59,
       "top_paths": [
         [
           "/",
-          162
+          174
+        ],
+        [
+          "/section8/bronx/",
+          5
+        ],
+        [
+          "/dc/",
+          4
+        ],
+        [
+          "/building/queens/140-60-beech-ave-4051860029/",
+          2
         ],
         [
           "/borough/manhattan/",
-          2
-        ],
-        [
-          "/building/bronx/637-e-176th-st-2029470052/",
-          2
-        ],
-        [
-          "/westchester/",
-          2
-        ],
-        [
-          "/building/brooklyn/26-to-28-locust-st-3031350016/",
           1
         ],
         [
-          "/building/brooklyn/3291-to-3323-nostrand-ave-3073090040/",
+          "/building/brooklyn/1474-to-1480-eastern-pkwy-3014740009/",
           1
         ]
       ],
       "top_referrers": [
         [
           "www.google.com",
-          20
+          35
+        ],
+        [
+          "accounts.google.com",
+          1
+        ],
+        [
+          "com.google.android.googlequicksearchbox",
+          1
         ],
         [
           "duckduckgo.com",
-          2
+          1
         ],
         [
-          "divinedavis.com",
+          "instagram.com",
           1
         ],
         [
@@ -402,32 +406,32 @@
           1
         ]
       ],
-      "visitors": 175
+      "visitors": 192
     }
   },
   "outreach": {
-    "at": "2026-10-11T05:11:29+00:00",
-    "date": "2026-10-11",
+    "at": "2026-10-12T05:11:25+00:00",
+    "date": "2026-10-12",
     "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
     "ok": false
   },
   "scout": {
-    "at": "2026-10-11T05:11:29+00:00",
-    "date": "2026-10-11",
+    "at": "2026-10-12T05:11:25+00:00",
+    "date": "2026-10-12",
     "detail": "invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.",
     "ok": false
   },
   "searchconsole": {
-    "at": "2026-10-11T05:00:05+00:00",
-    "clicks": 148,
-    "date": "2026-10-11",
-    "impressions": 181,
+    "at": "2026-10-12T05:00:06+00:00",
+    "clicks": 150,
+    "date": "2026-10-12",
+    "impressions": 180,
     "nonbranded_clicks": 0,
     "nonbranded_impressions": 1,
-    "page_clicks": 161,
-    "page_impressions": 1145,
+    "page_clicks": 166,
+    "page_impressions": 1165,
     "serving_branded_only": 7,
-    "serving_census_contradicted": 5,
+    "serving_census_contradicted": 3,
     "serving_census_indexed": 1,
     "serving_ever": 289,
     "serving_nonbranded": 1,
@@ -436,19 +440,19 @@
     "serving_unattributed": 2,
     "share_pct": 0.0,
     "tracked_ranking": 0,
-    "window": "2026-10-02..2026-10-09"
+    "window": "2026-10-03..2026-10-10"
   },
   "sitemapstatus": {
-    "at": "2026-10-11T05:11:25+00:00",
+    "at": "2026-10-12T05:11:20+00:00",
     "children_enumerated": true,
-    "date": "2026-10-11",
-    "detail": "14 of 14 live sitemap shards are known to Search Console; Google has read 2,631 URLs out of them against 1,704 listed locally \u2014 0 submitted directly to the property and 14 carried by the index \u2014 not re-downloaded in 14+ days, oldest first: sitemap-la.xml (22d), sitemap-council.xml (21d), sitemap-dc.xml (19d), sitemap-sf.xml (17d) \u2014 the index itself was last downloaded 2026-10-10 \u2014 every live shard has been downloaded at least once",
-    "index_downloaded": "2026-10-10",
+    "date": "2026-10-12",
+    "detail": "14 of 14 live sitemap shards are known to Search Console; Google has read 2,631 URLs out of them against 1,704 listed locally \u2014 0 submitted directly to the property and 14 carried by the index \u2014 not re-downloaded in 14+ days, oldest first: sitemap-la.xml (23d), sitemap-council.xml (22d), sitemap-dc.xml (20d), sitemap-sf.xml (18d) \u2014 the index itself was last downloaded 2026-10-12 \u2014 every live shard has been downloaded at least once",
+    "index_downloaded": "2026-10-12",
     "ok": true,
-    "oldest_download_days": 22,
+    "oldest_download_days": 23,
     "shards": {
       "sitemap-Bk.xml": {
-        "age_days": 6,
+        "age_days": 7,
         "downloaded": "2026-10-05",
         "errors": 0,
         "known": true,
@@ -460,7 +464,7 @@
         "warnings": 0
       },
       "sitemap-Bx.xml": {
-        "age_days": 2,
+        "age_days": 3,
         "downloaded": "2026-10-09",
         "errors": 0,
         "known": true,
@@ -472,7 +476,7 @@
         "warnings": 0
       },
       "sitemap-M.xml": {
-        "age_days": 1,
+        "age_days": 2,
         "downloaded": "2026-10-10",
         "errors": 0,
         "known": true,
@@ -484,7 +488,7 @@
         "warnings": 0
       },
       "sitemap-Q.xml": {
-        "age_days": 8,
+        "age_days": 9,
         "downloaded": "2026-10-03",
         "errors": 0,
         "known": true,
@@ -496,7 +500,7 @@
         "warnings": 0
       },
       "sitemap-SI.xml": {
-        "age_days": 7,
+        "age_days": 8,
         "downloaded": "2026-10-04",
         "errors": 0,
         "known": true,
@@ -508,7 +512,7 @@
         "warnings": 0
       },
       "sitemap-council.xml": {
-        "age_days": 21,
+        "age_days": 22,
         "downloaded": "2026-09-20",
         "errors": 0,
         "known": true,
@@ -520,7 +524,7 @@
         "warnings": 0
       },
       "sitemap-daily.xml": {
-        "age_days": 12,
+        "age_days": 13,
         "downloaded": "2026-09-29",
         "errors": 0,
         "known": true,
@@ -532,7 +536,7 @@
         "warnings": 0
       },
       "sitemap-dc.xml": {
-        "age_days": 19,
+        "age_days": 20,
         "downloaded": "2026-09-22",
         "errors": 0,
         "known": true,
@@ -544,7 +548,7 @@
         "warnings": 0
       },
       "sitemap-guide.xml": {
-        "age_days": 8,
+        "age_days": 9,
         "downloaded": "2026-10-03",
         "errors": 0,
         "known": true,
@@ -556,7 +560,7 @@
         "warnings": 0
       },
       "sitemap-hub.xml": {
-        "age_days": 10,
+        "age_days": 11,
         "downloaded": "2026-10-01",
         "errors": 0,
         "known": true,
@@ -568,7 +572,7 @@
         "warnings": 0
       },
       "sitemap-la.xml": {
-        "age_days": 22,
+        "age_days": 23,
         "downloaded": "2026-09-19",
         "errors": 0,
         "known": true,
@@ -580,7 +584,7 @@
         "warnings": 0
       },
       "sitemap-landlord.xml": {
-        "age_days": 9,
+        "age_days": 10,
         "downloaded": "2026-10-02",
         "errors": 0,
         "known": true,
@@ -592,7 +596,7 @@
         "warnings": 0
       },
       "sitemap-main.xml": {
-        "age_days": 8,
+        "age_days": 9,
         "downloaded": "2026-10-03",
         "errors": 0,
         "known": true,
@@ -604,7 +608,7 @@
         "warnings": 0
       },
       "sitemap-sf.xml": {
-        "age_days": 17,
+        "age_days": 18,
         "downloaded": "2026-09-24",
         "errors": 0,
         "known": true,

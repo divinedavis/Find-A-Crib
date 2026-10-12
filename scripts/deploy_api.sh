@@ -28,7 +28,7 @@ LIVE=/root/findacrib-api
 # a website with a hundred scripts in its root, and the API directory should
 # hold the six files it runs.
 BACKUPS=/var/backups/findacrib-api
-FILES=(api_server.py ai_gateway.py nl_search.py building_records.py claude_features.py listing_page.py flyer_reader.py build_log.py building_report.py issue_api_key.py)
+FILES=(api_server.py ai_gateway.py broker_fee.py lease_review.py nl_search.py building_records.py claude_features.py listing_page.py flyer_reader.py build_log.py building_report.py issue_api_key.py)
 # Modules that moved to the owner dashboard (repo divinedavis/owner-dashboard)
 # on 2026-10-06; removed from the live dir so a stale copy can't be imported.
 RETIRED=(creator_outreach.py business_checklist.py creator_mail_reader.py crease_metrics.py nemo_metrics.py trent_metrics.py marracat_metrics.py claude_usage.py nemo_payload_cache.json nemo_payload_cache.3m.json nemo_payload_cache.month.json nemo_payload_cache.today.json)
@@ -83,6 +83,12 @@ if ! ssh "$HOST" "set -e
   for feed in dashboard-metrics dashboard-users; do
     code=\$(curl -s -o /dev/null -w '%{http_code}' -m 10 https://findacrib.com/api/\$feed)
     echo \"    /api/\$feed -> \$code (expect 401 without the key)\"
+    test \"\$code\" = 401
+  done
+  # Broker fee check + Lease review (2026-10-11): signed out = 401, never 404/500.
+  for path in ai/broker-fee ai/lease-review; do
+    code=\$(curl -s -o /dev/null -w '%{http_code}' -m 10 -X POST https://findacrib.com/api/\$path)
+    echo \"    POST /api/\$path -> \$code (expect 401 signed out)\"
     test \"\$code\" = 401
   done
   # ok:false is right from here — the droplet geolocates outside NYC. A

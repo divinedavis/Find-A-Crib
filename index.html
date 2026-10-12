@@ -514,6 +514,21 @@
   /* The Plus paywall is a big, Airbnb-scale modal (owner, 2026-09-30): wide
      card, large type, two columns of perks on a laptop, one on a phone. */
   .auth-card.paywall-card { max-width: 880px; padding: 44px 44px 32px; border-radius: 28px; }
+  /* Broker fee check + Lease review (Plus, 2026-10-11) */
+  .auth-card.tool-card { max-width: 520px; }
+  .tool-card label { display: block; font-size: 13px; font-weight: 600; margin: 4px 0 4px; }
+  .tool-card select, .tool-card textarea { width: 100%; padding: 11px 12px; font-size: 16px; border: 1px solid var(--line);
+    border-radius: 8px; margin-bottom: 10px; background: var(--surface); color: var(--ink); font-family: inherit; }
+  .tool-card textarea { min-height: 90px; resize: vertical; }
+  .tool-card .tool-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; }
+  .tool-out { margin-top: 14px; font-size: 14px; line-height: 1.45; }
+  .tool-out[hidden] { display: none; }
+  .tool-verdict { font-weight: 800; font-size: 16px; margin-bottom: 8px; }
+  .tool-find { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+  .tool-find.lv-illegal, .tool-find.sv-high { border-color: var(--bad-ink); }
+  .tool-find .tf-law { color: var(--ink-2); font-size: 12.5px; margin-top: 4px; }
+  .tool-find blockquote { margin: 6px 0; padding: 6px 10px; border-left: 3px solid var(--line); color: var(--ink-2); font-size: 13px; }
+  .tool-note { color: var(--ink-2); font-size: 12.5px; margin-top: 8px; }
   .paywall-card .auth-close { top: 20px; right: 20px; width: 44px; height: 44px; font-size: 18px; }
   .paywall-card .paywall-badge { font-size: 13px; padding: 5px 12px; margin-bottom: 14px; }
   .paywall-card h2 { margin: 0 0 8px; font-size: 40px; line-height: 1.1; letter-spacing: -1px; font-weight: 800; }
@@ -1600,6 +1615,8 @@
     <a href="/alerts/?src=menu" class="nyc-only">🔔 Get Alerts on Lotteries</a>
     <a href="/marketing-agents/" class="nyc-only">🏛️ Lottery agents</a>
     <a href="/directory/" class="nyc-only">🔍 Landlords</a>
+    <button type="button" data-menu="brokerfee" class="nyc-only">🧾 Broker fee check</button>
+    <button type="button" data-menu="lease" class="nyc-only">📄 Lease review</button>
     <a href="https://apps.apple.com/us/app/find-a-crib/id6807549249" target="_blank" rel="noopener" data-menu="app">📲 Get the app</a>
     <div class="menu-sep"></div>
     <a href="/">NYC</a><a href="/sf/">San Francisco</a><a href="/la/">Los Angeles</a><a href="/dc/">Washington DC</a>
@@ -1821,6 +1838,59 @@
   </div>
 </div>
 <!-- Find A Crib Plus paywall -->
+<!-- Broker fee check + Lease review (Find A Crib Plus, owner 2026-10-11).
+     The rules and the review both run on the server (/api/ai/broker-fee,
+     /api/ai/lease-review), which checks Plus; the page only collects answers. -->
+<div id="brokerfee-modal" class="auth-backdrop" hidden>
+  <div class="auth-card tool-card">
+    <button class="auth-close" data-tool="close" aria-label="Close">✕</button>
+    <h2>Is this broker fee legal?</h2>
+    <p class="auth-sub">Since June 11, 2025, NYC’s FARE Act says the landlord’s broker can’t charge you. Answer a few questions and we’ll check every fee against NYC and New York State law.</p>
+    <form id="bf-form">
+      <label for="bf-found">How did you find the apartment?</label>
+      <select id="bf-found">
+        <option value="listing_agent">A listing posted by a broker or agent (StreetEasy, Zillow, etc.)</option>
+        <option value="own_broker">I hired my own broker to search for me</option>
+        <option value="landlord_direct">From the landlord or management company</option>
+        <option value="unsure">Not sure</option>
+      </select>
+      <label for="bf-hired">Did you sign an agreement hiring the broker before they showed you apartments?</label>
+      <select id="bf-hired"><option value="no">No</option><option value="yes">Yes</option></select>
+      <label for="bf-required">Were you told you must use or pay a broker to see or rent it?</label>
+      <select id="bf-required"><option value="no">No</option><option value="yes">Yes</option></select>
+      <label for="bf-disclosed">Were all fees in the listing and on a written list before the lease?</label>
+      <select id="bf-disclosed"><option value="yes">Yes</option><option value="no">No</option><option value="unsure">Not sure</option></select>
+      <div class="tool-row">
+        <div><label for="bf-rent">Monthly rent ($)</label><input id="bf-rent" inputmode="decimal" placeholder="2,500"></div>
+        <div><label for="bf-fee">Broker fee asked ($)</label><input id="bf-fee" inputmode="decimal" placeholder="0"></div>
+        <div><label for="bf-app">Application fee ($)</label><input id="bf-app" inputmode="decimal" placeholder="0"></div>
+        <div><label for="bf-dep">Security deposit ($)</label><input id="bf-dep" inputmode="decimal" placeholder="0"></div>
+      </div>
+      <label for="bf-text">Paste the listing (optional)</label>
+      <textarea id="bf-text" maxlength="4000" placeholder="Paste the listing text and we’ll look for fee wording"></textarea>
+      <button type="submit" class="auth-submit">Check my fees</button>
+    </form>
+    <div id="bf-out" class="tool-out" hidden></div>
+  </div>
+</div>
+<div id="lease-modal" class="auth-backdrop" hidden>
+  <div class="auth-card tool-card">
+    <button class="auth-close" data-tool="close" aria-label="Close">✕</button>
+    <h2>Lease review</h2>
+    <p class="auth-sub">Upload your lease before you sign. AI flags clauses New York law limits or voids — fees, deposits, repairs, late charges — and quotes each one from your lease.</p>
+    <form id="lease-form">
+      <label for="lease-file">Lease PDF</label>
+      <input id="lease-file" type="file" accept="application/pdf,.pdf">
+      <label for="lease-text">…or paste the lease text</label>
+      <textarea id="lease-text" maxlength="200000" placeholder="Paste the full lease"></textarea>
+      <label for="lease-stab">Is the apartment rent stabilized?</label>
+      <select id="lease-stab"><option value="unsure">Not sure</option><option value="yes">Yes</option><option value="no">No</option></select>
+      <button type="submit" class="auth-submit">Review my lease</button>
+      <div class="tool-note">Your lease is read once to write the review and is never saved.</div>
+    </form>
+    <div id="lease-out" class="tool-out" hidden></div>
+  </div>
+</div>
 <div id="paywall-modal" class="auth-backdrop" hidden>
   <div class="auth-card paywall-card">
     <button class="auth-close" data-paywall="close" aria-label="Close">✕</button>
@@ -1833,6 +1903,8 @@
     <ul class="paywall-feats" id="paywall-feats">
       <li data-perk="realtime" data-ai><span class="pf-ico">⚡</span><span><b>Real-time alerts</b>Re-rentals go first come, first served. Hear the minute one opens in your boroughs — without Plus, alerts come once a day at 8 AM.</span></li>
       <li data-perk="ai_search" data-ai><span class="pf-ico">✨</span><span><b>Search in plain words</b>“2 bed under $2,500 near Prospect Park, no violations” — and the map sets every filter</span></li>
+      <li data-perk="broker_fee" data-ai><span class="pf-ico">🧾</span><span><b>Broker fee check</b>Find out if a broker fee, application fee or deposit breaks NYC’s FARE Act or New York law — and how to get it back</span></li>
+      <li data-perk="lease_review" data-ai><span class="pf-ico">📄</span><span><b>Lease review</b>Upload your lease and AI flags the clauses New York law limits or voids, quoting each one</span></li>
       <li data-perk="apply_help" data-ai><span class="pf-ico">📝</span><span><b>Help me apply</b>The steps, the documents to gather and a ready-to-send email to the agent, for every re-rental</span></li>
       <li data-perk="bedbugs"><span class="pf-ico">🛏️</span><span><b>Bedbug records</b>Every bedbug filing a landlord made for the building, year by year</span></li>
       <li data-perk="rodents"><span class="pf-ico">🐀</span><span><b>Rodent records</b>The Health Department's rat inspections, building by building</span></li>
@@ -2269,6 +2341,7 @@ function favActive() {
       // gets the QR modal instead.
       if (b.dataset.menu === 'app' && !matchMedia('(min-width: 901px)').matches) return;
       if (b.tagName === 'A') e.preventDefault();
+      if (b.dataset.menu === 'brokerfee' || b.dataset.menu === 'lease') { openTool(b.dataset.menu, 'menu'); return; }
       const target = { auth: 'auth-btn', saved: 'pill-fav', filters: 'pill-filters', app: 'pill-app-d' }[b.dataset.menu];
       const el = target && document.getElementById(target); if (el) el.click();
     });
@@ -8079,7 +8152,7 @@ function favActive() {
   let paywallSource = 'other';
   // While everything else is free, Plus is the AI features (owner,
   // 2026-10-03) — and no ads, which paying members keep.
-  const AI_SOURCES = new Set(['realtime', 'ai_search', 'apply_help', 'profile']);
+  const AI_SOURCES = new Set(['realtime', 'ai_search', 'apply_help', 'broker_fee', 'lease_review', 'profile']);
   function openPaywall(bbl, source) {
     if (FEATURES_FREE && !AI_SOURCES.has(source)) return;   // the free features are never sold
     { const feats = document.getElementById('paywall-feats');
@@ -8089,7 +8162,7 @@ function favActive() {
     pendingPhoneBbl = bbl || null;            // remember what they wanted, to reveal after checkout
     paywallSource = source || (bbl ? 'phone' : 'other');
     // Lead with what they came for.
-    const TITLES = { realtime: 'Get alerts the minute they open', ai_search: 'Search in plain words', apply_help: 'Help me apply', noads: 'Find A Crib, with no ads',
+    const TITLES = { realtime: 'Get alerts the minute they open', ai_search: 'Search in plain words', apply_help: 'Help me apply', broker_fee: 'Check any broker fee', lease_review: 'Review your lease before you sign', noads: 'Find A Crib, with no ads',
                      bedbugs: 'See every building\u2019s bedbug record', rodents: 'See every building\u2019s rat inspections',
                      phone: 'Call who actually runs the building', research: 'Research any landlord',
                      saved_search: 'Save your searches', folders: 'Organize your saved homes' };
@@ -8113,6 +8186,81 @@ function favActive() {
     if (e.target === paywallModal || e.target.closest('[data-paywall="close"]')) closePaywall();
   });
   document.getElementById('paywall-subscribe').addEventListener('click', startCheckout);
+
+  // ---------- Broker fee check + Lease review (Plus, owner 2026-10-11) ----------
+  // Anyone can open the form; sending it asks for an account, and the server
+  // answers 402 without Plus, which opens the paywall on that perk. The law
+  // lives server-side (broker_fee.py, lease_review.py), not in this page.
+  const TOOLS = { brokerfee: 'brokerfee-modal', lease: 'lease-modal' };
+  function openTool(kind, src) {
+    Object.values(TOOLS).forEach(id => { document.getElementById(id).hidden = true; });
+    const m = document.getElementById(TOOLS[kind]); if (!m) return;
+    m.hidden = false;
+    track('tool_open', { tool: kind, src: src || 'link', signed_in: !!authUser, plus: !!plusActive });
+  }
+  Object.values(TOOLS).forEach(id => {
+    const m = document.getElementById(id);
+    m.addEventListener('click', e => { if (e.target === m || e.target.closest('[data-tool="close"]')) m.hidden = true; });
+  });
+  if (location.hash === '#broker-fee') openTool('brokerfee', 'hash');
+  if (location.hash === '#lease-review') openTool('lease', 'hash');
+  const TOOL_ERR = { daily_limit: 'That’s a lot for one day — try again tomorrow.', budget: 'This is resting for now — try again later.',
+    scanned: 'That PDF is a scan with no text in it. Paste the lease text instead.', too_long: 'That lease is too long to review in one go (60 pages or 200,000 characters).',
+    empty: 'Add your lease — upload the PDF or paste the text.', bad_pdf: 'Couldn’t open that PDF (it may be password-protected). Paste the text instead.',
+    declined: 'Couldn’t review this one. Paste just the lease text and try again.',
+    unavailable: 'Lease review is down for a moment — try again in a little while.' };
+  async function toolFetch(source, url, init, out) {
+    const tok = await aiToken(source, source === 'broker_fee' ? 'Create an account or sign in to check a broker fee.' : 'Create an account or sign in to review your lease.');
+    if (!tok) return null;
+    init.headers = Object.assign(init.headers || {}, { Authorization: 'Bearer ' + tok });
+    let r, j = {};
+    try { r = await fetch(url, init); j = await r.json().catch(() => ({})); }
+    catch (e) { out.textContent = 'Couldn’t reach Find A Crib just now — try again.'; return null; }
+    if (r.status === 402) { out.hidden = true; openPaywall(null, source); return null; }
+    if (r.status === 413) { out.textContent = 'That file is over 8 MB. Paste the lease text instead.'; return null; }
+    if (!r.ok || !j.ok) { out.textContent = TOOL_ERR[j.error] || 'Something went wrong — try again.'; track('tool_result', { tool: source, ok: false, error: j.error || r.status }); return null; }
+    return j;
+  }
+  document.getElementById('bf-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const out = document.getElementById('bf-out'), v = id => document.getElementById(id).value;
+    out.hidden = false; out.textContent = 'Checking…';
+    const body = { found: v('bf-found'), hired_in_writing: v('bf-hired'), required_broker: v('bf-required'),
+      fees_disclosed: v('bf-disclosed'), rent: v('bf-rent'), broker_fee: v('bf-fee'), app_fee: v('bf-app'),
+      deposit: v('bf-dep'), listing_text: v('bf-text') };
+    const j = await toolFetch('broker_fee', '/api/ai/broker-fee', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }, out);
+    if (!j) return;
+    const head = { likely_illegal: '⚠️ Something here is likely illegal', check: '🔎 Worth a closer look', looks_ok: '✅ These fees look allowed', nothing_to_check: 'Add a fee amount to check it' }[j.verdict] || '';
+    const ico = { illegal: '⚠️', warn: '🔎', ok: '✅' };
+    out.innerHTML = `<div class="tool-verdict">${esc(head)}</div>`
+      + (j.findings || []).map(f => `<div class="tool-find lv-${esc(f.level)}"><b>${ico[f.level] || ''} ${esc(f.title)}</b><div>${esc(f.why)}</div>${f.law ? `<div class="tf-law">${esc(f.law)}</div>` : ''}</div>`).join('')
+      + ((j.next_steps || []).length ? `<div style="margin-top:8px"><b>What you can do</b></div><ol style="padding-left:18px;margin:4px 0">${j.next_steps.map(x => `<li>${esc(x)}</li>`).join('')}</ol>
+         <a class="d-rentcheck" style="text-decoration:none;display:inline-block" href="${esc(j.complaint_url)}" target="_blank" rel="noopener">File a complaint with DCWP ↗</a>` : '')
+      + '<div class="tool-note">General information about NYC and New York State rules, not legal advice.</div>';
+    track('tool_result', { tool: 'broker_fee', ok: true, verdict: j.verdict });
+  });
+  document.getElementById('lease-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const out = document.getElementById('lease-out');
+    const file = document.getElementById('lease-file').files[0], text = document.getElementById('lease-text').value.trim();
+    if (!file && !text) { out.hidden = false; out.textContent = TOOL_ERR.empty; return; }
+    if (file && file.size > 8 * 1024 * 1024) { out.hidden = false; out.textContent = 'That file is over 8 MB. Paste the lease text instead.'; return; }
+    const fd = new FormData();
+    if (file) fd.append('file', file); else fd.append('text', text);
+    fd.append('stabilized', document.getElementById('lease-stab').value);
+    out.hidden = false; out.textContent = '📄 Reading your lease… this takes about 20 seconds.';
+    const j = await toolFetch('lease_review', '/api/ai/lease-review', { method: 'POST', body: fd }, out);
+    if (!j) return;
+    const r = j.review || {}, s = r.summary || {};
+    const facts = [['Rent', s.monthly_rent], ['Term', s.term], ['Starts', s.start_date], ['Deposit', s.security_deposit]].filter(x => x[1]);
+    const sev = { high: '⚠️', medium: '🔎', low: 'ℹ️' };
+    out.innerHTML = (facts.length ? `<div style="margin-bottom:8px">${facts.map(([k, x]) => `<b>${k}:</b> ${esc(x)}`).join(' · ')}</div>` : '')
+      + `<div class="tool-verdict">${(r.flags || []).length ? (r.flags.length + ' thing' + (r.flags.length === 1 ? '' : 's') + ' to check') : 'Nothing stood out'}</div>`
+      + (r.flags || []).map(f => `<div class="tool-find sv-${esc(f.severity)}"><b>${sev[f.severity] || ''} ${esc(f.title)}</b><blockquote>“${esc(f.quote)}”</blockquote><div>${esc(f.why)}</div>${f.law_text ? `<div class="tf-law">${esc(f.law_text)}</div>` : ''}</div>`).join('')
+      + ((r.ask_before_signing || []).length ? `<div style="margin-top:8px"><b>Ask before you sign</b></div><ul style="padding-left:18px;margin:4px 0">${r.ask_before_signing.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '')
+      + '<div class="tool-note">Written by AI from your lease. Every quote is checked against your lease, but AI can miss things — this is not legal advice. For help, call 311 or a tenant attorney.</div>';
+    track('tool_result', { tool: 'lease_review', ok: true, flags: (r.flags || []).length, pdf: !!file });
+  });
   // "Remove ads" chip (owner, 2026-09-29; it replaced the desktop Landlords
   // chip — Landlords stays in the ☰ menu and the header's 🔎). Opens the Plus
   // paywall, which leads with "No ads, anywhere on Find A Crib". Members have

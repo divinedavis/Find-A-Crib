@@ -26,6 +26,8 @@ import nl_search             # plain-language search -> map filters
 import building_records      # one building's public records, for the Claude features
 import claude_features       # landlord report card (Haiku) + Ask about this building (Sonnet)
 import listing_page          # a re-rental's own page as text, for Help me apply
+import broker_fee            # broker fee checker: FARE Act + RPL 238-a rules, no model
+import lease_review          # lease review: Claude Haiku 5.5, quotes checked against the lease
 
 DATA_DIR = os.environ.get("DATA_DIR", ".")
 SUPABASE_URL = "https://dbaifotzwlxjvsxjohjt.supabase.co"
@@ -714,6 +716,61 @@ def ai_ask():
     if answer is None:
         return jsonify(ok=False, error="declined"), 200
     return jsonify(ok=True, answer=answer, as_of=rec["as_of"])
+
+
+@app.route("/ai/broker-fee", methods=["POST"])
+def ai_broker_fee():
+    """Broker fee checker (Plus, owner 2026-10-11): which fees NYC's FARE Act
+    and NY law likely forbid. Rules only (broker_fee.py), so it costs nothing,
+    but it is a Plus feature: the gateway checks has_plus like the AI ones."""
+    user = _session_user()
+    err = AI.allow(user, "broker_fee")
+    if err:
+        return _ai_err(err)
+    body = request.get_json(silent=True) or {}
+    answers = {k: body.get(k) for k in ("found", "hired_in_writing", "required_broker", "broker_fee", "rent", "app_fee",
+                                        "deposit", "late_fee", "fees_disclosed", "lease_before_fare")}
+    answers["listing_text"] = str(body.get("listing_text") or "")[:4000]
+    out = broker_fee.check(answers)
+    AI.record(user, "broker_fee", "rules")
+    return jsonify(ok=True, **out)
+
+
+LEASE_MAX_BYTES = 8 * 1024 * 1024    # nginx allows this one path 8m; every other route keeps the 16 KB cap
+
+
+@app.route("/ai/lease-review", methods=["POST"])
+def ai_lease_review():
+    """Lease review (Plus, owner 2026-10-11): a PDF upload (multipart 'file')
+    or pasted text (form 'text'), plus 'stabilized' yes/no/unsure. The lease
+    is read in memory and never stored or logged."""
+    user = _session_user()
+    err = AI.allow(user, "lease_review", lease_review.MODEL)
+    if err:
+        return _ai_err(err)
+    # Raised only once the caller is a verified Plus member (Flask 3.1 reads
+    # the body lazily, so nothing has been parsed yet).
+    request.max_content_length = LEASE_MAX_BYTES
+    request.max_form_memory_size = 1024 * 1024        # pasted text: 200k chars of UTF-8 fits
+    try:
+        f = request.files.get("file")
+        if f:
+            text = lease_review.pdf_text(f.read(LEASE_MAX_BYTES + 1))
+        else:
+            text = request.form.get("text") or ""
+        text = lease_review.clean(text)
+    except lease_review.LeaseError as e:
+        return jsonify(error=e.code), 400
+    try:
+        out, u = lease_review.review(text, request.form.get("stabilized", "unsure"))
+    except Exception as e:
+        app.logger.warning("lease_review failed: %s", type(e).__name__)
+        return jsonify(error="unavailable"), 503
+    AI.record(user, "lease_review", u["model"] or lease_review.MODEL, u["input_tokens"], u["output_tokens"],
+              ok=out is not None, cache_write_tokens=u["cache_write_tokens"], cache_read_tokens=u["cache_read_tokens"])
+    if out is None:
+        return jsonify(ok=False, error="declined"), 200
+    return jsonify(ok=True, review=out)
 
 
 _featured = {"at": 0, "by_href": {}}

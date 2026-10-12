@@ -118,6 +118,7 @@ JOURNEY_EVENTS = {
     'plus_gates':           ['outbound'],
     'resume_search':        ['resume_offer', 'resume_apply'],
     'ai_features':          ['ai_search_click', 'paywall_view'],
+    'tools':                ['tool_open'],
     'qualify':              ['qualify_open', 'qualify_set', 'qualify_clear'],
     # home_set / home_open / home_clear are pre-2026-09-06 history: the
     # my-apartment pin was retired from the UI that day (no sheet button, no
@@ -1658,6 +1659,35 @@ class Runner:
             ctx.close()
         j.notes.append('default before config; GPC denies ads; EU banner')
 
+    def j_tools(self, page, j, device):
+        """Broker fee check + Lease review (Plus, 2026-10-11) open from ☰ and
+        from /#broker-fee and /#lease-review; sending either signed out asks
+        for an account (the signed-in paywall is in ai_features)."""
+        self.boot(page)
+        self.click(page, '#menu-btn'); time.sleep(0.3)
+        rows = page.evaluate("[...document.querySelectorAll('#menu-pop [data-menu]')].filter(b => b.offsetParent).map(b => b.dataset.menu)")
+        self.ok('brokerfee' in rows and 'lease' in rows, f'☰ lists both tools on NYC: {rows}', j)
+        page.evaluate("document.querySelector('#menu-pop [data-menu=\"brokerfee\"]').click()"); time.sleep(0.3)
+        self.ok(page.evaluate("!document.getElementById('brokerfee-modal').hidden"), '☰ Broker fee check opens its form', j)
+        page.evaluate("document.querySelector('#bf-form button[type=submit]').click()"); time.sleep(0.8)
+        self.ok(not page.evaluate("document.getElementById('auth-modal').hidden"), 'signed out, checking a fee asks for an account', j)
+        page.evaluate("document.querySelector('#auth-modal [data-auth=\"close\"]').click()"); time.sleep(0.2)
+        page.evaluate("document.querySelector('#brokerfee-modal [data-tool=\"close\"]').click()"); time.sleep(0.2)
+        self.ok(page.evaluate("document.getElementById('brokerfee-modal').hidden"), '✕ closes the broker fee check', j)
+        self.boot(page, '/#lease-review')
+        self.ok(self.wait_until(page, "!document.getElementById('lease-modal').hidden", 8000), '/#lease-review opens the lease review', j)
+        page.evaluate("document.querySelector('#lease-form button[type=submit]').click()"); time.sleep(0.4)
+        self.ok('Add your lease' in page.evaluate("document.getElementById('lease-out').textContent"), 'an empty lease form says what to add', j)
+        page.fill('#lease-text', 'x' * 500)
+        page.evaluate("document.querySelector('#lease-form button[type=submit]').click()"); time.sleep(0.8)
+        self.ok(not page.evaluate("document.getElementById('auth-modal').hidden"), 'signed out, reviewing a lease asks for an account', j)
+        w = page.evaluate("document.querySelector('#lease-modal .auth-card').getBoundingClientRect().width")
+        self.ok(w <= page.viewport_size['width'], f'the lease card fits the screen ({w}px)', j)
+        self.boot(page, '/sf/')
+        self.click(page, '#menu-btn'); time.sleep(0.3)
+        rows = page.evaluate("[...document.querySelectorAll('#menu-pop [data-menu]')].filter(b => b.offsetParent).map(b => b.dataset.menu)")
+        self.ok('brokerfee' not in rows and 'lease' not in rows, f'the NYC-law tools stay off other cities: {rows}', j)
+
     def j_ai_features(self, page, j, device):
         """AI features are Plus (owner, 2026-10-03). A sentence in the search
         box offers "✨ Search for …"; signed out it asks for an account; a
@@ -1697,7 +1727,7 @@ class Runner:
               title: document.getElementById('paywall-title').textContent,
               shown: [...document.querySelectorAll('#paywall-feats li')].filter(l => !l.hidden && l.offsetParent).map(l => l.dataset.perk)}))()""")
             self.ok(pw['open'] and 'plain words' in pw['title'].lower(), f'a free account gets the AI paywall: {pw}', j)
-            self.ok(set(pw['shown']) == {'realtime', 'ai_search', 'apply_help', 'noads'}, f'the paywall lists real-time alerts, the AI perks and no ads: {pw["shown"]}', j)
+            self.ok(set(pw['shown']) == {'realtime', 'ai_search', 'broker_fee', 'lease_review', 'apply_help', 'noads'}, f'the paywall lists real-time alerts, the AI perks and no ads: {pw["shown"]}', j)
             # First month on us (2026-10-04): the trial line sits under the
             # price, and $4.99 stays the big number (Apple/FTC: billed amount
             # most prominent).
@@ -1713,6 +1743,16 @@ class Runner:
             self.wait_until(page, "!document.getElementById('paywall-modal').hidden", 15000)
             lead = page.evaluate("(document.querySelector('#paywall-feats li.pf-lead')||{}).dataset?.perk || null")
             self.ok(lead == 'realtime', f'?plus=realtime should open the paywall on real-time alerts, led by {lead}', j)
+            page.evaluate("document.querySelector('[data-paywall=\"close\"]')?.click()"); time.sleep(0.3)
+            # Broker fee check (Plus, 2026-10-11): a signed-in account without
+            # Plus fills the form and the server's 402 opens the paywall on it.
+            self.boot(page, '/#broker-fee')
+            self.ok(self.wait_until(page, "!document.getElementById('brokerfee-modal').hidden", 8000), '/#broker-fee opens the broker fee check', j)
+            page.fill('#bf-fee', '3000'); page.fill('#bf-rent', '2500')
+            page.evaluate("document.querySelector('#bf-form button[type=submit]').click()")
+            self.wait_until(page, "!document.getElementById('paywall-modal').hidden", 15000)
+            lead = page.evaluate("(document.querySelector('#paywall-feats li.pf-lead')||{}).dataset?.perk || null")
+            self.ok(lead == 'broker_fee', f'a free account checking a broker fee gets the paywall led by it, led by {lead}', j)
             page.evaluate("document.querySelector('[data-paywall=\"close\"]')?.click()"); time.sleep(0.3)
             # The landlord report card and Ask about this building were removed
             # (owner, 2026-10-03: too slow) — not on the building sheet.
@@ -1886,7 +1926,7 @@ class Runner:
     JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'pin_and_list',
                 'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'signin_modal', 'app_chip', 'app_qr_menu', 'boot_is_usable', 'city_chip',
                 'ad_tiles', 'list_follows_zoom', 'plus_no_ads', 'building_page_link', 'remove_ads_chip', 'overlays_clear_ad', 'portal_button', 'outbound_links', 'status_chips', 'referral_gate',
-                'retired_pages', 'legal_pages', 'comments_gate', 'landlords_gate', 'consent_mode', 'account_delete', 'plus_gates', 'resume_search', 'ai_features', 'qualify']
+                'retired_pages', 'legal_pages', 'comments_gate', 'landlords_gate', 'consent_mode', 'account_delete', 'plus_gates', 'resume_search', 'ai_features', 'qualify', 'tools']
 
     # ---- run --------------------------------------------------------------
     def run(self):

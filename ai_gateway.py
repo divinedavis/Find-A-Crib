@@ -28,6 +28,7 @@ PRICES = {
     "rules": (0.0, 0.0),           # answered by code, no model: free, but counts toward the daily limit
     "jev-1.13.0": (0.042, 0.0),
     "claude-haiku-4-5": (1.0, 5.0),
+    "claude-haiku-5-5": (0.10, 0.50),   # prompts <=100k tokens; lease_review caps input well under that
     "claude-sonnet-5-5": (2.0, 10.0),
     "claude-opus-5-5": (4.0, 20.0),
     "claude-opus-4-8": (5.0, 25.0),
@@ -40,6 +41,8 @@ DAILY_LIMITS = {
     "report_card": 30,
     "apply_help": 10,
     "ask": 20,
+    "broker_fee": 50,      # rules only, no model (2026-10-11)
+    "lease_review": 5,     # Haiku 5.5, about a cent a lease at most
 }
 
 

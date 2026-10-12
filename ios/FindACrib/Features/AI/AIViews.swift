@@ -16,12 +16,14 @@ struct RealtimeUpsell: View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: "bolt.fill").font(.system(size: 18, weight: .bold)).foregroundStyle(Color(hex: 0x5B21B6))
             VStack(alignment: .leading, spacing: 6) {
+                // Concise (owner, 2026-10-12): real-time vs once a day, and the
+                // free first month, highlighted.
                 HStack(spacing: 6) {
-                    Text("Re-rentals go first come, first served").font(.se(17, .bold)).foregroundStyle(SE.ink)
+                    Text("Get alerts the minute they open, not once a day").font(.se(17, .bold)).foregroundStyle(SE.ink)
+                        .fixedSize(horizontal: false, vertical: true)
                     PlusTag()
                 }
-                Text("The first eligible applicant usually gets the apartment. Get alerts the minute one opens — not at 8 AM. First month on us.")
-                    .font(.se(15)).foregroundStyle(SE.ink2)
+                FreeMonthTag()
                 Button { Analytics.shared.track("realtime_upsell_click", ["src": source]); open() } label: {
                     Text("Get real-time alerts").font(.se(16, .bold)).foregroundStyle(.white)
                         .padding(.horizontal, 14).frame(height: 40).background(Color(hex: 0x5B21B6)).clipShape(RoundedRectangle(cornerRadius: 10))
@@ -40,6 +42,18 @@ struct RealtimeUpsell: View {
         .padding(14).frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(hex: 0xF3EEFF)).clipShape(RoundedRectangle(cornerRadius: 12))
         .accessibilityElement(children: .contain)
+    }
+}
+
+/// "First month free" — the Plus intro offer, highlighted (owner, 2026-10-12:
+/// "highlight they will get one month free").
+struct FreeMonthTag: View {
+    var body: some View {
+        Label("First month free", systemImage: "gift.fill")
+            .font(.se(14, .bold)).foregroundStyle(Color(hex: 0x14532D))
+            .padding(.horizontal, 10).padding(.vertical, 4)
+            .background(Capsule().fill(Color(hex: 0xDCFCE7)))
+            .accessibilityIdentifier("free-month-tag")
     }
 }
 

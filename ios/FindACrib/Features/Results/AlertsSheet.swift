@@ -46,8 +46,8 @@ struct AlertsSheet: View {
                         VStack(alignment: .leading, spacing: 10) {
                             Text("You're on the list").font(.se(26, .bold)).foregroundStyle(SE.ink)
                             Text(auth.hasPlus
-                                 ? "The minute a lottery or re-rental opens in \(boroughPhrase)\(fitPhrase), you'll get a notification on this phone and an email. A welcome note is on its way to \(auth.email ?? "your inbox")."
-                                 : "Every morning at 8 AM you'll get a notification on this phone and an email with what opened in \(boroughPhrase)\(fitPhrase). A welcome note is on its way to \(auth.email ?? "your inbox").")
+                                 ? "The minute something opens, you'll get a notification on this phone and an email."
+                                 : "Every morning at 8 AM you'll get a notification on this phone and an email.")
                                 .font(.se(17)).foregroundStyle(SE.ink2)
                             pushStateLine
                             if !auth.hasPlus { RealtimeUpsell(source: "alerts_done") { showPlus = true } }

@@ -114,10 +114,9 @@ struct AlertPushSheet: View {
                 SEBadge(text: "Plus", icon: "bolt.fill", fill: Color(hex: 0x5B21B6), ink: .white)
                 Text("Real-time alerts").font(.se(15, .semibold)).foregroundStyle(SE.ink2)
             }
-            Text("Re-rentals go first come, first served").font(.se(20, .bold)).foregroundStyle(SE.ink)
+            Text("Get alerts the minute they open, not once a day").font(.se(20, .bold)).foregroundStyle(SE.ink)
                 .fixedSize(horizontal: false, vertical: true)
-            Text("The first eligible applicant usually gets the apartment. With Plus you hear the minute one opens, not at 8 AM the next day. First month on us.")
-                .font(.se(15)).foregroundStyle(SE.ink2).fixedSize(horizontal: false, vertical: true)
+            FreeMonthTag()
             Button {
                 Analytics.shared.track("realtime_upsell_click", ["src": "push_sheet"])
                 showPlus = true

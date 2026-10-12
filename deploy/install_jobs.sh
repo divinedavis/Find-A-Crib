@@ -73,6 +73,10 @@ P8=$(ls $SECRETS/AuthKey_*.p8 2>/dev/null | head -n 1 || true)
 # apple_subs_check.py, which runs as facsubs — not by the scraper jobs.
 IAP=$(ls $SECRETS/SubscriptionKey_*.p8 2>/dev/null | head -n 1 || true)
 [ -n "$IAP" ] && chown root:facsubs "$IAP"
+# The "Sales and Reports" App Store Connect key for asc_downloads.py
+# (2026-10-12). Not named AuthKey_*.p8: P8 above picks the APNs key by that.
+REPORTS=$(ls $SECRETS/ReportsKey_*.p8 2>/dev/null | head -n 1 || true)
+[ -n "$REPORTS" ] && chown root:facsubs "$REPORTS"
 
 # mkenv <name> <group> KEY... — write $ENVDIR/<name>.env with just those keys.
 mkenv() {
@@ -83,6 +87,8 @@ mkenv() {
     [ -n "$P8" ] && APNS_KEY_PATH=$P8
     [ -f $SECRETS/gsc_key.json ] && SC_KEY_FILE=$SECRETS/gsc_key.json
     [ -n "$IAP" ] && ASC_IAP_KEY_PATH=$IAP
+    [ -n "$REPORTS" ] && ASC_KEY_PATH=$REPORTS && ASC_KEY_ID=${ASC_REPORTS_KEY_ID:-}
+    ASC_DOWNLOADS_OUT=/var/lib/findacrib-appstore/appstore.json
     # The scripts read either spelling of the service key.
     [ -n "${SUPABASE_SERVICE_KEY:-}" ] && SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_KEY
     for k in "$@"; do
@@ -100,6 +106,7 @@ mkenv nyc       scraper NYC_API_KEY
 mkenv anthropic scraper ANTHROPIC_API_KEY AI_MONTHLY_CAP_MICROS
 mkenv owner     scraper ERROR_REPORT_EMAIL GROWTH_REPORT_EMAIL
 mkenv subs      facsubs SUPABASE_URL SUPABASE_SERVICE_KEY SUPABASE_SERVICE_ROLE_KEY SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASSWORD ERROR_REPORT_EMAIL ASC_IAP_KEY_ID ASC_ISSUER_ID ASC_IAP_KEY_PATH
+mkenv ascreports facsubs ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_PATH ASC_APP_ID ASC_DOWNLOADS_OUT
 mkenv errors    facops  SUPABASE_URL SUPABASE_SERVICE_KEY SUPABASE_SERVICE_ROLE_KEY SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASSWORD ERROR_REPORT_EMAIL GROWTH_REPORT_EMAIL
 # The old all-in-one file leaves the checkout; kept root-only for rollback.
 [ -f $REPO/growth.env ] && mv -f $REPO/growth.env $ETC/growth.env.pre-20261007 && chmod 0600 $ETC/growth.env.pre-20261007
@@ -166,12 +173,22 @@ for k in user.name user.email; do
 done
 
 # ---------------------------------------------------------------- logs
+# appstore.json: written by facsubs, read by the API (findacrib) and by
+# error_report.py (facops). Download counts and version numbers, no secrets.
+install -d -o facsubs -g facsubs -m 0755 /var/lib/findacrib-appstore
+if [ ! -L $API/appstore.json ]; then
+  [ -f $API/appstore.json ] && [ ! -f /var/lib/findacrib-appstore/appstore.json ] && \
+    install -o facsubs -g facsubs -m 0644 $API/appstore.json /var/lib/findacrib-appstore/appstore.json
+  ln -sfn /var/lib/findacrib-appstore/appstore.json $API/appstore.json
+fi
+
 say "logs 0640"
+[ -e /var/log/rentmap-appstore.log ] || install -o facsubs -g adm -m 0640 /dev/null /var/log/rentmap-appstore.log
 [ -e /var/log/rentmap-applesubs.log ] || install -o facsubs -g adm -m 0640 /dev/null /var/log/rentmap-applesubs.log
 for f in /var/log/rentmap-*.log; do
   case "$f" in
     */rentmap-errors.log) chown facops:adm "$f" ;;
-    */rentmap-applesubs.log) chown facsubs:adm "$f" ;;
+    */rentmap-applesubs.log|*/rentmap-appstore.log) chown facsubs:adm "$f" ;;
     */rentmap-geoip.log)  chown root:adm "$f" ;;
     *)                    chown scraper:adm "$f" ;;
   esac

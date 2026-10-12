@@ -79,10 +79,11 @@ def test_only_error_report_gets_the_log_reading_user():
         assert (user == "facops") == (name == "cron-rentmap-errors"), name
 
 
-def test_only_the_subscription_check_gets_the_iap_key_user():
-    # The In-App Purchase key is root:facsubs; facsubs runs this one job.
+def test_only_the_app_store_jobs_get_the_facsubs_user():
+    # The In-App Purchase and Sales-and-Reports keys are root:facsubs;
+    # facsubs runs only the two App Store jobs.
     for name, user, _ in job_lines():
-        assert (user == "facsubs") == (name == "cron-rentmap-applesubs"), name
+        assert (user == "facsubs") == (name in ("cron-rentmap-applesubs", "cron-rentmap-appstore")), name
 
 
 def _fac_run(env_dir, *args, extra=None):

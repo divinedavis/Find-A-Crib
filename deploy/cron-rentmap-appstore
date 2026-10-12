@@ -1,0 +1,12 @@
+# /etc/cron.d/rentmap-appstore — mirrored from deploy/cron-rentmap-appstore.
+# App Store downloads, impressions and the live version list for the owner
+# dashboard (ios/scripts/asc_downloads.py), moved off the Mac 2026-10-12 so
+# a sleeping Mac no longer leaves the dashboard stale. Uses a "Sales and
+# Reports" API key (reads reports and versions, changes nothing); the team
+# key that ships the app never comes here. Runs as `facsubs` with
+# ascreports.env; writes /var/lib/findacrib-appstore/appstore.json, which
+# /root/findacrib-api/appstore.json links to.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+CRON_TZ=America/New_York
+20 1,5,9,13,17,21 * * * facsubs cd /root/Find-A-Crib/ios/scripts && fac-run ascreports -- sh -c '"$FAC_PY" asc_downloads.py' >> /var/log/rentmap-appstore.log 2>&1

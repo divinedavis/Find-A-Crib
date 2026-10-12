@@ -13,8 +13,12 @@ writes an empty file with the reason rather than failing.
     ~/.venvs/dhcr-map/bin/python scripts/asc_downloads.py            # writes appstore.json next to this script
     ~/.venvs/dhcr-map/bin/python scripts/asc_downloads.py --deploy   # …and scp's it to the dashboard API
 
-Runs from the Mac (the ASC key lives here, not on a public droplet) — see
-launchd plist com.findacrib.asc-downloads.
+Runs on the droplet since 2026-10-12 (/etc/cron.d/rentmap-appstore, user
+facsubs) with its own "Sales and Reports" API key — it reads the reports and
+the version list and can change nothing. The team key that ships the app
+stays on the Mac. On the droplet the config comes from the environment
+(fac-run ascreports) and the file is written to $ASC_DOWNLOADS_OUT, which the
+API's appstore.json links to. On the Mac it still reads asc-config.env.
 """
 from __future__ import annotations
 import csv, gzip, io, json, os, subprocess, sys, time
@@ -32,7 +36,7 @@ REPORTS = {
     "discovery":  "App Store Discovery and Engagement Standard",
     "installs":   "App Store Installation and Deletion Standard",
 }
-OUT = Path(__file__).resolve().parent / "appstore.json"
+OUT = Path(os.environ.get("ASC_DOWNLOADS_OUT") or Path(__file__).resolve().parent / "appstore.json")
 DEPLOY = "root@142.93.183.172:/root/findacrib-api/appstore.json"
 DAYS = 60
 
@@ -174,8 +178,17 @@ def live_build(asc, app_id):
     return (max(live) if live else None), live
 
 
+def config():
+    """The droplet's env (fac-run ascreports) when it is there, else the Mac's
+    asc-config.env."""
+    keys = ("ASC_KEY_ID", "ASC_ISSUER_ID", "ASC_KEY_PATH", "ASC_APP_ID")
+    if os.environ.get("FAC_ENV_LOADED") and all(os.environ.get(k) for k in keys):
+        return {k: os.environ[k] for k in keys}
+    return m.load_config()
+
+
 def main():
-    cfg = m.load_config(); asc = m.ASC(cfg)
+    cfg = config(); asc = m.ASC(cfg)
     try:
         prev = json.loads(OUT.read_text())
     except (OSError, ValueError):
@@ -203,7 +216,10 @@ def main():
         for k in ("live_build", "released_builds", "versions"):
             payload[k] = prev.get(k, None if k == "live_build" else [])
         print("live_build lookup failed:", str(e)[:200])
-    OUT.write_text(json.dumps(payload, indent=1) + "\n")
+    # Atomic: the API reads this file on every dashboard load.
+    tmp = OUT.with_suffix(".tmp")
+    tmp.write_text(json.dumps(payload, indent=1) + "\n")
+    os.replace(tmp, OUT)
     print("wrote", OUT, "as_of", payload["as_of"], payload.get("note") or "")
     if "--deploy" in sys.argv:
         p = subprocess.run(["scp", "-q", "-o", "BatchMode=yes", str(OUT), DEPLOY], capture_output=True, text=True)

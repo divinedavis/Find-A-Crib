@@ -25,7 +25,7 @@
     notifempty
     create 0640 scraper adm
 }
-/var/log/rentmap-applesubs.log {
+/var/log/rentmap-applesubs.log /var/log/rentmap-appstore.log {
     weekly
     rotate 8
     compress

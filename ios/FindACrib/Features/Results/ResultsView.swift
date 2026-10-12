@@ -255,7 +255,9 @@ struct ResultsView: View {
                 // Gone once alerts are set up (owner, 2026-10-12), and Map then
                 // sits alone in the middle — the HStack centres what is left.
                 if store.city.isNYC && !LotteryFeed.shared.subscribed {
-                    FloatingPill(title: "Alerts", icon: "bell.badge.fill", fill: SE.navy, ink: .white) {
+                    // "Lottery Alerts" (owner, 2026-10-12); signed out it opens the
+                    // alerts sign-in sheet, which lists what alerts get them.
+                    FloatingPill(title: "Lottery Alerts", icon: "bell.badge.fill", fill: SE.navy, ink: .white) {
                         Analytics.shared.track("alerts_open", ["signed_in": auth.isSignedIn, "src": "results"])
                         if auth.isSignedIn { showAlerts = true } else { showSignIn = true }
                     }

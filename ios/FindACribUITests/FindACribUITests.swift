@@ -986,7 +986,7 @@ final class FindACribUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 60))
         app.descendants(matching: .any)["pill-Alerts"].firstMatch.tap()
-        XCTAssertTrue(app.staticTexts["Sign in for alerts"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["Sign in for lottery alerts"].waitForExistence(timeout: 10))
         let apple = app.buttons["sign-in-apple"]
         let google = app.buttons["sign-in-google"]
         XCTAssertTrue(apple.isHittable)
@@ -997,7 +997,7 @@ final class FindACribUITests: XCTestCase {
         XCTAssertFalse(app.keyboards.firstMatch.exists)
         app.buttons["Cancel"].tap()
         XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.staticTexts["Sign in for alerts"].exists)
+        XCTAssertFalse(app.staticTexts["Sign in for lottery alerts"].exists)
         XCTAssertFalse(app.buttons["alerts-subscribe"].exists)
     }
 
@@ -1031,6 +1031,9 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 60))
         let alerts = app.descendants(matching: .any)["pill-Alerts"].firstMatch
         XCTAssertTrue(alerts.waitForExistence(timeout: 10), "Alerts should be offered on every search")
+        XCTAssertTrue(alerts.label.contains("Lottery Alerts"), "the pill says Lottery Alerts (owner, 2026-10-12): \(alerts.label)")
+        // Fits beside Map on the screen.
+        XCTAssertLessThanOrEqual(alerts.frame.maxX, app.windows.firstMatch.frame.maxX)
         // Only the pill's own titles — a bare "Save" is the card heart's
         // accessibility label and has nothing to do with this bar.
         for gone in ["Save search", "Search saved"] {

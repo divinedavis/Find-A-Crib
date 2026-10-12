@@ -41,7 +41,7 @@ struct EmailSignInView: View {
           ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    Text(creating ? "Create account" : (heading ?? (agentPreview ? "Sign in to see who runs this building" : records != nil ? "Sign in to see this building's records" : (offersSocialSignIn ? "Sign in for alerts" : "Sign in with email")))).font(.se(26, .bold))
+                    Text(creating ? "Create account" : (heading ?? (agentPreview ? "Sign in to see who runs this building" : records != nil ? "Sign in to see this building's records" : (offersSocialSignIn ? "Sign in for lottery alerts" : "Sign in with email")))).font(.se(26, .bold))
                     if agentPreview && !creating {
                         AgentPromiseBox { showPlus = true }
                     } else if let r = records, !creating {

@@ -15,6 +15,8 @@ struct ProfileView: View {
     @State private var emailForAlerts = false
     @State private var showAlerts = false
     @State private var showPacket = false
+    @State private var showBrokerFee = false
+    @State private var showLeaseReview = false
     @Environment(PlusStore.self) private var plus
     @AppStorage("hereTo") private var hereTo = "Rent"
     @AppStorage("homeBorough") private var homeBorough = "Brooklyn"
@@ -96,6 +98,8 @@ struct ProfileView: View {
                     .sheet(isPresented: $showEmail, onDismiss: { emailForAlerts = false }) { EmailSignInView(offersSocialSignIn: emailForAlerts, forAlerts: emailForAlerts) }
                     .sheet(isPresented: $showAlerts) { AlertsSheet() }
                     .sheet(isPresented: $showPacket) { PacketView() }
+                    .sheet(isPresented: $showBrokerFee) { BrokerFeeView() }
+                    .sheet(isPresented: $showLeaseReview) { LeaseReviewView() }
                     .onChange(of: nav.showPaywall) { _, on in if on { showPaywall = true; nav.showPaywall = false } }
                     // The notifications card sends people here to set alerts up.
                     // Signed out, the sign-in sheet comes first and the alerts
@@ -138,6 +142,20 @@ struct ProfileView: View {
                         } else {
                             Text("Sign in to set up").font(.se(16)).foregroundStyle(SE.ink3)
                         }
+                    }
+                    // Renter tools (owner, 2026-10-12): the website's Broker fee
+                    // check and Lease review, here too. Plus; the sheets ask.
+                    settingRow("Broker fee check") {
+                        Button { showBrokerFee = true } label: {
+                            HStack(spacing: 4) { Text("Check a fee").font(.se(18, .semibold)); Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)) }
+                                .foregroundStyle(SE.royal)
+                        }.buttonStyle(.plain).accessibilityIdentifier("profile-broker-fee")
+                    }
+                    settingRow("Lease review") {
+                        Button { showLeaseReview = true } label: {
+                            HStack(spacing: 4) { Text("Review a lease").font(.se(18, .semibold)); Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)) }
+                                .foregroundStyle(SE.royal)
+                        }.buttonStyle(.plain).accessibilityIdentifier("profile-lease-review")
                     }
                     // Application packet (2026-10-03): on this phone, open to all.
                     settingRow("Application packet") {

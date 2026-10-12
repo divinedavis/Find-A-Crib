@@ -76,7 +76,7 @@ private func errorText(_ e: Error) -> String {
     switch e as? AIError {
     case .dailyLimit: "That's a lot for one day — more tomorrow."
     case .declined: "That isn't something the records can answer."
-    default: "Not available right now — the records above are."
+    default: "Not available right now. Try again in a little while."
     }
 }
 

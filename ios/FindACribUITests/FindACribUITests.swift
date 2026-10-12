@@ -627,6 +627,35 @@ final class FindACribUITests: XCTestCase {
         app.buttons["segment-1"].tap()   // leave Beds as it was
     }
 
+    /// Broker fee check and Lease review on the iPhone (owner, 2026-10-12: "we
+    /// need broker fee check and lease review on mobile"): both open from
+    /// Profile with their forms; the Lease review button waits for a lease.
+    func testRenterToolsOpenFromProfile() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--tab", "profile"]
+        app.launch()
+        let broker = app.buttons["profile-broker-fee"]
+        let h = app.windows.firstMatch.frame.height
+        // Clear of the floating tab bar before tapping (as the packet test does).
+        for _ in 0..<6 where !broker.isHittable || broker.frame.maxY > h - 140 { app.swipeUp() }
+        XCTAssertTrue(broker.waitForExistence(timeout: 20), "Profile lists Broker fee check")
+        broker.tap()
+        // The form is a lazy list: check what is on its first screen.
+        XCTAssertTrue(app.navigationBars["Broker fee check"].waitForExistence(timeout: 10), "the broker fee form opens")
+        XCTAssertTrue(app.textFields["broker-rent"].waitForExistence(timeout: 5), "with the amounts to check")
+        app.buttons["Close"].tap()
+        let lease = app.buttons["profile-lease-review"]
+        for _ in 0..<4 where !lease.isHittable || lease.frame.maxY > h - 140 { app.swipeUp() }
+        XCTAssertTrue(lease.waitForExistence(timeout: 10), "Profile lists Lease review")
+        lease.tap()
+        XCTAssertTrue(app.navigationBars["Lease review"].waitForExistence(timeout: 10), "the lease review form opens")
+        XCTAssertTrue(app.buttons["lease-pick"].exists, "with a PDF picker")
+        let run = app.buttons["lease-run"]
+        for _ in 0..<3 where !run.exists { app.swipeUp() }
+        XCTAssertTrue(run.exists && !run.isEnabled, "no review until there is a lease to read")
+        app.buttons["Close"].tap()
+    }
+
     /// A paying member with alerts on (owner, 2026-10-12: "if i already am a
     /// paying customer i should just see a button to change alerts or turn off
     /// alerts"): --plus-demo + --lotteries-demo. No "Turn on alerts", no

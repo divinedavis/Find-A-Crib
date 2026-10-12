@@ -57,6 +57,11 @@ enum AIService {
         }
     }
 
+    /// A JSON POST for the renter tools (RenterTools.swift).
+    static func post(_ path: String, auth: AuthService, json: [String: Any]) async throws -> Data {
+        try await request(path, auth: auth, body: json)
+    }
+
     static func search(_ q: String, auth: AuthService) async throws -> AISearchResult {
         try JSONDecoder().decode(AISearchResult.self, from: try await request("search", auth: auth, body: ["q": q]))
     }

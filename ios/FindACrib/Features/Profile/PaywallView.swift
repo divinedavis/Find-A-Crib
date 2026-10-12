@@ -26,15 +26,14 @@ struct PaywallView: View {
         Perk(id: "realtime", icon: "bolt.fill", title: "Real-time alerts",
              sub: "Re-rentals go first come, first served. Hear the minute one opens in your boroughs — without Plus, alerts come once a day at 8 AM.",
              example: "“New re-rental in Brooklyn: 75 Dupont St, 1 bedroom $3,661” — at 2:14 PM, not tomorrow at 8."),
-        // Promoted (owner, 2026-10-12). Broker fee check and Lease review run
-        // on findacrib.com (NYC) for now — same account, so the copy says so.
+        // Promoted (owner, 2026-10-12). Both open from Profile in the app too.
         Perk(id: "broker_fee", icon: "dollarsign.circle", title: "Broker fee check",
-             sub: "Find out if a broker fee, application fee or deposit breaks NYC's FARE Act or New York law — and how to get it back. On findacrib.com.",
+             sub: "Find out if a broker fee, application fee or deposit breaks NYC's FARE Act or New York law — and how to get it back.",
              example: "“$4,200 broker fee — the landlord hired the broker, so under the FARE Act you shouldn't pay it.”"),
         Perk(id: "phone", icon: "phone.fill", title: "Agent phone numbers",
              sub: "Call who actually runs the building — 11,000+ managing-agent numbers.", example: nil),
         Perk(id: "lease_review", icon: "doc.text.magnifyingglass", title: "Lease review",
-             sub: "Upload your lease and AI flags the clauses New York law limits or voids, quoting each one. On findacrib.com.",
+             sub: "Upload your lease and AI flags the clauses New York law limits or voids, quoting each one.",
              example: nil),
         Perk(id: "apply_help", icon: "doc.text", title: "Help me apply",
              sub: "The agent's steps, the documents to gather and a ready-to-send email — for every re-rental.",

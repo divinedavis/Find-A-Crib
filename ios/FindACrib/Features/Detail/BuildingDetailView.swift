@@ -663,7 +663,8 @@ struct BuildingDetailView: View {
     @ViewBuilder private var hpdBlock: some View {
         let v = b.h?.violations; let c = b.h?.complaints
         if !auth.isSignedIn {
-            Text("HPD's open violations and complaints for this building, the roaches, mice and rats an inspector confirmed here this year, and the bedbug and rat records. Sign in to see them.")
+            // Bold pests (owner, 2026-10-12); a literal is a LocalizedStringKey, so ** renders.
+            Text("HPD's open violations and complaints for this building, the **roaches**, **mice** and **rats** an inspector confirmed here this year, and the bedbug and rat records. Sign in to see them.")
                 .font(.se(17)).foregroundStyle(SE.ink2)
             SEOutlineButton(title: "Sign in to see violations & inspections", icon: "person.crop.circle") { showRecordsSignIn = true }
                 .accessibilityIdentifier("hpd-sign-in")

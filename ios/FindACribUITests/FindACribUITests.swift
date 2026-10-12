@@ -575,14 +575,18 @@ final class FindACribUITests: XCTestCase {
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--paywall"]
         app.launch()
         XCTAssertTrue(app.staticTexts["Search in plain words"].waitForExistence(timeout: 15), "the Plus paywall opens with its perks")
-        for perk in ["Real-time alerts", "Help me apply", "No ads"] {
+        // Broker fee check, Agent phone numbers and Lease review promoted
+        // (owner, 2026-10-12), under the header "Your apartment hunt, with AI".
+        XCTAssertTrue(app.staticTexts["Your apartment hunt, with AI"].exists, "the paywall header")
+        for perk in ["Real-time alerts", "Broker fee check", "Agent phone numbers", "Lease review", "Help me apply", "No ads"] {
             XCTAssertTrue(app.staticTexts[perk].exists, "paywall perk missing: \(perk)")
         }
         // Scope to the paywall sheet: Profile (behind it) has its own "Saved
         // searches" row, which is not a paywall perk (build 104).
         let sheet = app.scrollViews.containing(.staticText, identifier: "Search in plain words").firstMatch
         XCTAssertTrue(sheet.exists, "the paywall's scroll view")
-        for gone in ["Is this rent fair?", "Landlord report card", "Ask about this building", "Bedbug records", "Rodent records", "Agent phone numbers", "Lottery alerts", "Re-rental alerts", "Saved searches", "Landlord research", "Folders", "Your lotteries & re-rentals"] {
+        for gone in ["Is this rent fair?", "Landlord report card", "Ask about this building", "Bedbug records", "Rodent records", "Lottery alerts", "Re-rental alerts", "Saved searches", "Landlord research", "Folders", "Your lotteries & re-rentals",
+                     "Listings, rents and applications — read for you, in plain words."] {
             XCTAssertFalse(sheet.staticTexts[gone].exists, "unlisted perk on the paywall: \(gone)")
         }
         XCTAssertFalse(app.buttons["paywall-refer"].exists, "no in-app invite-a-friend button (App Review 3.1.1)")

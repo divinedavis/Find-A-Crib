@@ -1,0 +1,11 @@
+# /etc/cron.d/rentmap-applesubs — mirrored from deploy/cron-rentmap-applesubs.
+# Daily App Store subscription check (apple_subs_check.py, 2026-10-12): Apple's
+# status and expiry win over public.subscriptions, token-carrying purchases get
+# linked to their account, and a paying subscriber with no account is mailed
+# to ERROR_REPORT_EMAIL. Silent when everything matches. Runs as `facsubs`,
+# its own user, with subs.env (service key, SMTP, recipient, and the In-App
+# Purchase key id/issuer/path — that key reads transactions and nothing else).
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+CRON_TZ=America/New_York
+50 7 * * * facsubs cd /root/Find-A-Crib && fac-run subs -- sh -c '"$FAC_PY" apple_subs_check.py' >> /var/log/rentmap-applesubs.log 2>&1

@@ -40,8 +40,11 @@ say "users"
 id scraper >/dev/null 2>&1 || useradd --system --home-dir /var/lib/scraper --create-home --shell /usr/sbin/nologin scraper
 id facops  >/dev/null 2>&1 || useradd --system --home-dir /var/lib/facops  --create-home --shell /usr/sbin/nologin facops
 usermod -aG adm,systemd-journal facops
+# apple_subs_check.py (2026-10-12): its own user, so the In-App Purchase key is
+# readable by that one job — not the scrapers, not the log-reading facops.
+id facsubs >/dev/null 2>&1 || useradd --system --home-dir /var/lib/facsubs --create-home --shell /usr/sbin/nologin facsubs
 # Both need to traverse /root to reach the checkout (no read, no listing).
-setfacl -m u:scraper:x,u:facops:x /root
+setfacl -m u:scraper:x,u:facops:x,u:facsubs:x /root
 # error_report.py reads appstore.json (scp'd there by the Mac's launchd job).
 setfacl -m u:facops:x $API
 
@@ -66,6 +69,10 @@ done
 [ -f $REPO/growth/.gsc_key.json ] && mv -f $REPO/growth/.gsc_key.json $SECRETS/gsc_key.json
 for f in $SECRETS/*; do [ -f "$f" ] && { setfacl -b "$f"; chown root:scraper "$f"; chmod 0440 "$f"; }; done
 P8=$(ls $SECRETS/AuthKey_*.p8 2>/dev/null | head -n 1 || true)
+# The App Store In-App Purchase key (2026-10-12) is read only by
+# apple_subs_check.py, which runs as facsubs — not by the scraper jobs.
+IAP=$(ls $SECRETS/SubscriptionKey_*.p8 2>/dev/null | head -n 1 || true)
+[ -n "$IAP" ] && chown root:facsubs "$IAP"
 
 # mkenv <name> <group> KEY... — write $ENVDIR/<name>.env with just those keys.
 mkenv() {
@@ -75,6 +82,7 @@ mkenv() {
     # Overrides for paths that moved out of the checkout.
     [ -n "$P8" ] && APNS_KEY_PATH=$P8
     [ -f $SECRETS/gsc_key.json ] && SC_KEY_FILE=$SECRETS/gsc_key.json
+    [ -n "$IAP" ] && ASC_IAP_KEY_PATH=$IAP
     # The scripts read either spelling of the service key.
     [ -n "${SUPABASE_SERVICE_KEY:-}" ] && SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_KEY
     for k in "$@"; do
@@ -91,6 +99,7 @@ mkenv typesafe  scraper TYPESAFE_API_KEY
 mkenv nyc       scraper NYC_API_KEY
 mkenv anthropic scraper ANTHROPIC_API_KEY AI_MONTHLY_CAP_MICROS
 mkenv owner     scraper ERROR_REPORT_EMAIL GROWTH_REPORT_EMAIL
+mkenv subs      facsubs SUPABASE_URL SUPABASE_SERVICE_KEY SUPABASE_SERVICE_ROLE_KEY SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASSWORD ERROR_REPORT_EMAIL ASC_IAP_KEY_ID ASC_ISSUER_ID ASC_IAP_KEY_PATH
 mkenv errors    facops  SUPABASE_URL SUPABASE_SERVICE_KEY SUPABASE_SERVICE_ROLE_KEY SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASSWORD ERROR_REPORT_EMAIL GROWTH_REPORT_EMAIL
 # The old all-in-one file leaves the checkout; kept root-only for rollback.
 [ -f $REPO/growth.env ] && mv -f $REPO/growth.env $ETC/growth.env.pre-20261007 && chmod 0600 $ETC/growth.env.pre-20261007
@@ -108,6 +117,8 @@ say "venv + browsers -> $OPT"
 install -d -o root -g root -m 0755 $OPT
 if [ -d $DOC/venv ] && [ ! -d $OPT/venv ]; then mv $DOC/venv $OPT/venv; fi
 if [ -d /root/.cache/ms-playwright ] && [ ! -d $OPT/ms-playwright ]; then mv /root/.cache/ms-playwright $OPT/ms-playwright; fi
+# apple_subs_check.py signs App Store Server API tokens (ES256).
+$OPT/venv/bin/python -c 'import jwt, cryptography' 2>/dev/null || $OPT/venv/bin/python -m pip install -q "PyJWT[crypto]==2.10.1"
 # flyer_reader.py used the API venv for these two; the job venv now has them.
 $OPT/venv/bin/python -c 'import anthropic, pypdf' 2>/dev/null || \
   $OPT/venv/bin/python -m pip install -q "anthropic==$($API/venv/bin/python -c 'import anthropic;print(anthropic.__version__)')" \
@@ -156,9 +167,11 @@ done
 
 # ---------------------------------------------------------------- logs
 say "logs 0640"
+[ -e /var/log/rentmap-applesubs.log ] || install -o facsubs -g adm -m 0640 /dev/null /var/log/rentmap-applesubs.log
 for f in /var/log/rentmap-*.log; do
   case "$f" in
     */rentmap-errors.log) chown facops:adm "$f" ;;
+    */rentmap-applesubs.log) chown facsubs:adm "$f" ;;
     */rentmap-geoip.log)  chown root:adm "$f" ;;
     *)                    chown scraper:adm "$f" ;;
   esac

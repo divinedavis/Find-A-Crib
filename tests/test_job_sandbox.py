@@ -49,7 +49,7 @@ def test_no_job_runs_as_root_except_geoip():
         if user == "root":
             assert name == "cron-rentmap-geoip" and cmd.startswith("/usr/local/sbin/fac-refresh-geoip"), name
         else:
-            assert user in ("scraper", "facops"), (name, user)
+            assert user in ("scraper", "facops", "facsubs"), (name, user)
 
 
 def test_jobs_go_through_fac_run_with_known_env_sets():
@@ -77,6 +77,12 @@ def test_cron_files_carry_no_secrets_addresses_or_docroot_code():
 def test_only_error_report_gets_the_log_reading_user():
     for name, user, _ in job_lines():
         assert (user == "facops") == (name == "cron-rentmap-errors"), name
+
+
+def test_only_the_subscription_check_gets_the_iap_key_user():
+    # The In-App Purchase key is root:facsubs; facsubs runs this one job.
+    for name, user, _ in job_lines():
+        assert (user == "facsubs") == (name == "cron-rentmap-applesubs"), name
 
 
 def _fac_run(env_dir, *args, extra=None):

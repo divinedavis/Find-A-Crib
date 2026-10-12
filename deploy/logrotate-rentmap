@@ -25,3 +25,12 @@
     notifempty
     create 0640 scraper adm
 }
+/var/log/rentmap-applesubs.log {
+    weekly
+    rotate 8
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 facsubs adm
+}

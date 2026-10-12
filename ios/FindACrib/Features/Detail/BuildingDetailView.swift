@@ -92,6 +92,15 @@ struct BuildingDetailView: View {
                     }
                     }
 
+                    // What the violation and pest numbers mean, at the bottom of
+                    // every New York building (owner, 2026-10-12) instead of
+                    // inside the violations section.
+                    if store.city.isNYC && !store.isSyntheticHCR(b) {
+                        Text("From NYC HPD's open data. Class C means the city considers the condition immediately hazardous — heat, hot water, lead, pests. Pest violations are what an HPD inspector confirmed inside an apartment. Bedbug filings are the landlord's own annual report, covering the year to the previous 31 October, so they run about a year behind; rat inspections are the Health Department's, and only exist where the city inspected.")
+                            .font(.se(15)).foregroundStyle(SE.ink3)
+                            .padding(.horizontal, 16).padding(.top, 16)
+                            .accessibilityIdentifier("hpd-footnote")
+                    }
                     Text(store.city.sourcesNote + " Find A Crib is not a broker and does not list apartments.")
                         .font(.se(14)).foregroundStyle(SE.ink3).padding(16)
                     Color.clear.frame(height: 100)
@@ -720,8 +729,6 @@ struct BuildingDetailView: View {
                     if let n = c?.total { nrow("Complaints, all time", n) }
                 }.padding(.top, 6)
             }
-            Text("From NYC HPD's open data. Class C means the city considers the condition immediately hazardous — heat, hot water, lead, pests. Pest violations are what an HPD inspector confirmed inside an apartment. Bedbug filings are the landlord's own annual report, covering the year to the previous 31 October, so they run about a year behind; rat inspections are the Health Department's, and only exist where the city inspected.")
-                .font(.se(15)).foregroundStyle(SE.ink3)
         }
     }
 

@@ -900,11 +900,17 @@ def alerts_prefs():
 
     Keyed on the verified session email only — there is no email parameter,
     so it cannot say whether anyone else is subscribed."""
-    if rate_limited("alerts_prefs", 60, 3600):
+    # Per ACCOUNT, not per IP (2026-10-12): the journey suite runs from the
+    # owner's home connection and used up a shared 60/hour, so the owner's own
+    # phone got 429s and the Lotteries tab spun forever. A wide per-IP cap
+    # still bounds anonymous hammering.
+    if rate_limited("alerts_prefs_ip", 600, 3600):
         return _too_many()
     email = _session_email()
     if not email:
         return jsonify(error="sign_in_required"), 401
+    if rate_limited("alerts_prefs:" + hashlib.sha256(email.encode()).hexdigest()[:16], 60, 3600):
+        return _too_many()
     try:
         res = rpc("lottery_alerts_prefs", {"p_email": email}) or {}
     except Exception:
@@ -938,6 +944,25 @@ def alerts_digest_off():
         return _too_many()
     try:
         ok = rpc("lottery_alerts_digest_off", {"p_token": token})
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
+    return jsonify(ok=bool(ok))
+
+
+@app.route("/alerts/unsubscribe-me", methods=["POST"])
+def alerts_unsubscribe_me():
+    """In-app "Turn off alerts" (2026-10-12): the signed-in caller's own
+    alerts, by their verified session email — there is no email or token
+    parameter, so nobody else's can be turned off."""
+    if rate_limited("alerts_unsub_me", 30, 3600):
+        return _too_many()
+    if not request.is_json:
+        return jsonify(error="json_required"), 415
+    email = _session_email()
+    if not email:
+        return jsonify(error="sign_in_required"), 401
+    try:
+        ok = rpc("lottery_alerts_unsubscribe_email", {"p_email": email})
     except Exception:
         return jsonify(error="temporarily_unavailable"), 503
     return jsonify(ok=bool(ok))

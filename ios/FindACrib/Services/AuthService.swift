@@ -88,6 +88,8 @@ final class AuthService {
             if let uid = session?.user.id, let cached = Self.cachedPlus(uid: uid) {
                 hasPlus = cached; plusKnown = true
             }
+            // UI tests: stand in for a Plus member (the simulator is signed out).
+            if CommandLine.arguments.contains("--plus-demo") { hasPlus = true; plusKnown = true }
         } else {
             client = nil   // a build without Secrets.xcconfig: the app still works, signed out
         }
@@ -249,6 +251,7 @@ final class AuthService {
     // MARK: Plus + gated reads
 
     func refreshPlus() async {
+        if CommandLine.arguments.contains("--plus-demo") { return }
         guard let client, let uid = session?.user.id else { hasPlus = false; plusKnown = false; return }
         if !plusKnown, let cached = Self.cachedPlus(uid: uid) { hasPlus = cached; plusKnown = true }
         // A failed check keeps what we knew rather than downgrading a member.

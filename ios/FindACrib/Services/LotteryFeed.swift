@@ -60,6 +60,11 @@ final class LotteryFeed {
     /// True once we actually know whether they are subscribed (prefs read, or
     /// signed out). A tap before that must not prompt a real subscriber.
     private(set) var checked = false
+    /// The server could not say (429, offline) and there is no remembered
+    /// answer: show the list without any alerts box rather than a spinner
+    /// (owner, 2026-10-12: the tab spun forever after a 429) or a wrong
+    /// "Turn on alerts".
+    private(set) var statusUnknown = false
     /// Borough codes from the signup: M, Bk, Q, Bx, SI.
     private(set) var boroughs: [String] = []
     private(set) var income: Int?
@@ -93,15 +98,26 @@ final class LotteryFeed {
         if demo {
             subscribed = true; boroughs = ["Bx", "Bk", "M", "Q", "SI"]; income = 70_000; checked = true
         } else if let token = auth?.session?.accessToken {
+            let uid = auth?.session?.user.id.uuidString ?? ""
             let j = await Self.prefs(token: token)
             if let j {
                 subscribed = PushService.isSubscribed(prefs: j)
                 boroughs = (j["boroughs"] as? [String]) ?? []
                 income = j["income"] as? Int
+                checked = true; statusUnknown = false
+                Self.remember(uid: uid, subscribed: subscribed, boroughs: boroughs)
+            } else if !checked {
+                // A failed read: the last answer this phone had for this
+                // account, else no alerts box at all — never a spinner.
+                if let c = Self.remembered(uid: uid) {
+                    subscribed = c.subscribed; boroughs = c.boroughs; statusUnknown = false
+                } else {
+                    statusUnknown = true
+                }
                 checked = true
-            }   // a failed read keeps what we had: a flaky network should not hide the tab
+            }   // checked already: keep what we had, a flaky network should not hide the tab
         } else {
-            subscribed = false; boroughs = []; income = nil; checked = true
+            subscribed = false; boroughs = []; income = nil; checked = true; statusUnknown = false
         }
         await loadLotteries()
     }
@@ -137,6 +153,34 @@ final class LotteryFeed {
         guard let (data, resp) = try? await URLSession.shared.data(for: req),
               (resp as? HTTPURLResponse)?.statusCode == 200 else { return nil }
         return (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+    }
+
+    /// In-app "Turn off alerts" for the signed-in account (2026-10-12).
+    func turnOff() async -> Bool {
+        guard let token = auth?.session?.accessToken else { return false }
+        var req = URLRequest(url: URL(string: "https://findacrib.com/api/alerts/unsubscribe-me")!, timeoutInterval: 15)
+        req.httpMethod = "POST"
+        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = Data("{}".utf8)
+        let code = (try? await URLSession.shared.data(for: req)).flatMap { ($0.1 as? HTTPURLResponse)?.statusCode } ?? 0
+        Analytics.shared.track("alerts_turn_off", ["status": code, "src": "lotteries"])
+        guard code == 200 else { return false }
+        await refresh()
+        return true
+    }
+
+    // MARK: - Last known answer, per account
+
+    nonisolated static func remember(uid: String, subscribed: Bool, boroughs: [String]) {
+        guard !uid.isEmpty else { return }
+        UserDefaults.standard.set(["subscribed": subscribed, "boroughs": boroughs], forKey: "lotteries.alerts." + uid)
+    }
+
+    nonisolated static func remembered(uid: String) -> (subscribed: Bool, boroughs: [String])? {
+        guard !uid.isEmpty, let d = UserDefaults.standard.dictionary(forKey: "lotteries.alerts." + uid),
+              let s = d["subscribed"] as? Bool else { return nil }
+        return (s, (d["boroughs"] as? [String]) ?? [])
     }
 
     // MARK: - Pure pieces (unit-tested)

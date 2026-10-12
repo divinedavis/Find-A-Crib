@@ -31,6 +31,8 @@ struct LotteriesView: View {
     }
     @State private var showRealtimePlus = false
     @State private var showSignIn = false
+    @State private var confirmTurnOff = false
+    @State private var turnOffFailed = false
     enum Pane: Hashable { case lotteries, rerentals, newJersey }
     @State private var pane: Pane = .lotteries
     /// Bedrooms they need, kept across launches: "0,1" = studio or 1-bed.
@@ -66,6 +68,15 @@ struct LotteriesView: View {
         }
         .task { await Qualify.shared.loadUnits() }
         .sheet(isPresented: $showAlerts, onDismiss: { Task { await feed.refresh() } }) { AlertsSheet() }
+        // Here, not on the card: presented from inside the list it never showed.
+        .alert("Turn off alerts?", isPresented: $confirmTurnOff) {
+            Button("Turn off alerts", role: .destructive) {
+                Task { turnOffFailed = !(await feed.turnOff()) }
+            }
+            Button("Keep them", role: .cancel) {}
+        } message: {
+            Text("You'll stop getting notifications and emails about new lotteries and re-rentals.")
+        }
         // Signed out: sign in first, then straight on to the alerts sheet —
         // unless the account they signed into already has alerts.
         .sheet(isPresented: $showSignIn, onDismiss: {
@@ -110,7 +121,14 @@ struct LotteriesView: View {
     /// to say what alerts are. (The "what you qualify for" row is gone, owner
     /// 2026-10-08: income + household are set under Edit boroughs.)
     @ViewBuilder private var alertsBanner: some View {
-        if feed.subscribed && !auth.hasPlus && !rtDismissed {
+        if feed.statusUnknown {
+            // Couldn't tell (429, offline): no box beats a wrong one.
+            EmptyView()
+        } else if feed.subscribed && auth.hasPlus {
+            // A paying member with alerts on: manage them, nothing to sell
+            // (owner, 2026-10-12).
+            plusAlertsCard
+        } else if feed.subscribed && !auth.hasPlus && !rtDismissed {
             // Subscribed without Plus: alerts come at 8 AM — offer real-time.
             RealtimeUpsell(source: "lotteries", onDismiss: { rtDismissed = true }) { showRealtimePlus = true }
                 .padding(.horizontal, 16)
@@ -121,7 +139,9 @@ struct LotteriesView: View {
                     Image(systemName: "bell.fill").font(.system(size: 18, weight: .bold)).foregroundStyle(SE.royal)
                     Text("Get alerts when a new one opens").font(.se(18, .bold)).foregroundStyle(SE.ink)
                 }
-                Text("New lotteries and re-rentals in your boroughs, by in-app notifications and emails at 8 AM daily. Upgrade to Plus for instant notifications and emails.")
+                Text(auth.hasPlus
+                     ? "New lotteries and re-rentals in your boroughs, by in-app notification and email the minute they open."
+                     : "New lotteries and re-rentals in your boroughs, by in-app notifications and emails at 8 AM daily. Upgrade to Plus for instant notifications and emails.")
                     .font(.se(15)).foregroundStyle(SE.ink2)
                 SEPrimaryButton(title: "Turn on alerts", icon: "bell.fill", fill: SE.navy) { promptSignup() }
                     .accessibilityIdentifier("lotteries-signup")
@@ -131,6 +151,31 @@ struct LotteriesView: View {
             .padding(.horizontal, 16)
             .accessibilityElement(children: .contain).accessibilityIdentifier("lotteries-alerts-banner")
         }
+    }
+
+    /// Plus + subscribed: what they get, and the two things they can do.
+    private var plusAlertsCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                Image(systemName: "bell.badge.fill").font(.system(size: 18, weight: .bold)).foregroundStyle(SE.royal)
+                Text("Your alerts are on").font(.se(18, .bold)).foregroundStyle(SE.ink)
+            }
+            Text("The minute a lottery or re-rental opens in \(feed.boroughs.map { Borough.name($0) }.joined(separator: ", ")), by in-app notification and email.")
+                .font(.se(15)).foregroundStyle(SE.ink2).fixedSize(horizontal: false, vertical: true)
+            VStack(spacing: 8) {
+                SEPrimaryButton(title: "Change alerts", icon: "slider.horizontal.3", fill: SE.navy) { showAlerts = true }
+                    .accessibilityIdentifier("alerts-change")
+                SEOutlineButton(title: "Turn off alerts", icon: "bell.slash") { confirmTurnOff = true }
+                    .accessibilityIdentifier("alerts-turn-off")
+            }
+            if turnOffFailed {
+                Text("Couldn't turn them off just now. Try again in a minute.").font(.se(14)).foregroundStyle(SE.bad)
+            }
+        }
+        .padding(14).frame(maxWidth: .infinity, alignment: .leading).background(Color.white)
+        .overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.line))
+        .padding(.horizontal, 16)
+        .accessibilityElement(children: .contain).accessibilityIdentifier("lotteries-plus-alerts")
     }
 
     /// Subscribers edit their boroughs; everyone else is offered alerts.

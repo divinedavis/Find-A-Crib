@@ -118,7 +118,7 @@ install -d -o root -g root -m 0755 $OPT
 if [ -d $DOC/venv ] && [ ! -d $OPT/venv ]; then mv $DOC/venv $OPT/venv; fi
 if [ -d /root/.cache/ms-playwright ] && [ ! -d $OPT/ms-playwright ]; then mv /root/.cache/ms-playwright $OPT/ms-playwright; fi
 # apple_subs_check.py signs App Store Server API tokens (ES256).
-$OPT/venv/bin/python -c 'import jwt, cryptography' 2>/dev/null || $OPT/venv/bin/python -m pip install -q "PyJWT[crypto]==2.10.1"
+$OPT/venv/bin/python -c 'import jwt, cryptography, requests' 2>/dev/null || $OPT/venv/bin/python -m pip install -q "PyJWT[crypto]==2.10.1" "requests==2.32.3"
 # flyer_reader.py used the API venv for these two; the job venv now has them.
 $OPT/venv/bin/python -c 'import anthropic, pypdf' 2>/dev/null || \
   $OPT/venv/bin/python -m pip install -q "anthropic==$($API/venv/bin/python -c 'import anthropic;print(anthropic.__version__)')" \

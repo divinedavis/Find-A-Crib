@@ -1906,8 +1906,6 @@
       <li data-perk="broker_fee" data-ai><span class="pf-ico">🧾</span><span><b>Broker fee check</b>Find out if a broker fee, application fee or deposit breaks NYC’s FARE Act or New York law — and how to get it back</span></li>
       <li data-perk="lease_review" data-ai><span class="pf-ico">📄</span><span><b>Lease review</b>Upload your lease and AI flags the clauses New York law limits or voids, quoting each one</span></li>
       <li data-perk="apply_help" data-ai><span class="pf-ico">📝</span><span><b>Help me apply</b>The steps, the documents to gather and a ready-to-send email to the agent, for every re-rental</span></li>
-      <li data-perk="bedbugs"><span class="pf-ico">🛏️</span><span><b>Bedbug records</b>Every bedbug filing a landlord made for the building, year by year</span></li>
-      <li data-perk="rodents"><span class="pf-ico">🐀</span><span><b>Rodent records</b>The Health Department's rat inspections, building by building</span></li>
       <li data-perk="phone"><span class="pf-ico">📞</span><span><b>Agent phone numbers</b>Call who actually runs the building — 11,000+ managing-agent numbers</span></li>
       <li data-perk="noads"><span class="pf-ico">🚫</span><span><b>No ads</b>Anywhere on Find A Crib — the map, the list and every building page</span></li>
     </ul>
@@ -7810,25 +7808,15 @@ function favActive() {
     if (act === 'violations') { openViolSheet(rec); return; }
     if (act === 'complaints') { openCompSheet(rec); return; }
     if (OPEN_DATA[act]) {
-      // Bedbug and rodent records: behind an account since 2026-09-07, and
-      // Find A Crib Plus since 2026-10-01 — except every account created
-      // before then (grandfathered, PEST_CUTOFF) and anyone with Plus. The
-      // count and the red/green on the button stay visible to everyone. The
-      // records are NYC Open Data, fetched in the browser, so this is a UI
-      // gate (as the account gate always was).
+      // Bedbug and rodent records: behind a free account since 2026-09-07,
+      // and free for every account for good (owner, 2026-10-12: "bedbug and
+      // rodent records should be free on web and iphone") — never Plus, even
+      // if paid gating returns. The count and the red/green on the button stay
+      // visible to everyone; the records are NYC Open Data.
       if ((act === 'bedbugs' || act === 'rodents') && !authUser) {
         track('outbound', { kind: 'gate_' + act, bbl: rec.bbl });
         openAuthModal(`Create an account or sign in to see this building\u2019s ${act === 'bedbugs' ? 'bedbug filings' : 'rat inspections'}.`, act);
         setAuthMode('signup');
-        return;
-      }
-      if ((act === 'bedbugs' || act === 'rodents') && !pestAccess()) {
-        const decide = () => {
-          if (pestAccess()) { openOpenDataSheet(act, rec); return; }
-          track('outbound', { kind: 'gate_' + act + '_plus', bbl: rec.bbl });
-          openPaywall(null, act);
-        };
-        if (plusKnown) decide(); else refreshPlus().then(decide, decide);
         return;
       }
       openOpenDataSheet(act, rec); return;
@@ -8129,21 +8117,6 @@ function favActive() {
   }
   function closeAuthModal() { authModal.hidden = true; }
 
-  // Bedbug + rodent records became Plus on 2026-10-01 (owner); accounts created
-  // before this keep them (decided locally, no wait). Everyone else needs a
-  // KNOWN membership: the caller waits for refreshPlus() when it is not in yet
-  // — "unknown = allowed" let a new account through by tapping before the
-  // check landed (caught by the plus_gates journey, 2026-10-01).
-  const PEST_CUTOFF = Date.parse('2026-10-01T16:48:00Z');   // the gate's commit; was 18:00Z, which was still in the future and let new accounts through
-  function pestGrandfathered() {
-    const born = Date.parse((authUser && authUser.created_at) || '');
-    return !isNaN(born) && born < PEST_CUTOFF;
-  }
-  function pestAccess() {
-    if (!authUser) return false;
-    return pestGrandfathered() || featureAccess();
-  }
-
   // ---------- Find A Crib Plus paywall ----------
   const paywallModal = document.getElementById('paywall-modal');
   // `source` names what sent them here (phone, alerts, noads, other). It
@@ -8163,7 +8136,6 @@ function favActive() {
     paywallSource = source || (bbl ? 'phone' : 'other');
     // Lead with what they came for.
     const TITLES = { realtime: 'Get alerts the minute they open', ai_search: 'Search in plain words', apply_help: 'Help me apply', broker_fee: 'Check any broker fee', lease_review: 'Review your lease before you sign', noads: 'Find A Crib, with no ads',
-                     bedbugs: 'See every building\u2019s bedbug record', rodents: 'See every building\u2019s rat inspections',
                      phone: 'Call who actually runs the building', research: 'Research any landlord',
                      saved_search: 'Save your searches', folders: 'Organize your saved homes' };
     const pt = document.getElementById('paywall-title');
@@ -8174,7 +8146,6 @@ function favActive() {
       feats.querySelectorAll('li').forEach(li => li.classList.remove('pf-lead'));
       const lead = feats.querySelector('li[data-perk="' + paywallSource + '"]');
       if (lead) { feats.prepend(lead); lead.classList.add('pf-lead'); }
-      else { const a = feats.querySelector('li[data-perk="bedbugs"]'); if (a) feats.prepend(a); }
     }
     const err = document.getElementById('paywall-error');
     if (err) err.hidden = true;

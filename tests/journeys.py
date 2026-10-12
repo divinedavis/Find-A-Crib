@@ -1816,9 +1816,9 @@ class Runner:
         """Everything free for now (owner, 2026-10-01): any account gets every
         feature, nothing offers Plus, ads stay.
         - signed out: Alerts -> sign-up modal; no Remove ads chip, no Get Plus;
-        - a brand-new account opens Bedbug filings and Rat inspections (they
-          were Plus for new accounts on 10/1) and HPD pest violations, and the
-          paywall never opens;
+        - a brand-new account opens Bedbug filings and Rat inspections (free
+          for good since 2026-10-12, never Plus) and HPD pest violations, and
+          the paywall never opens or lists them;
         - the new account's profile shows Folders and Saved searches and no
           upgrade button."""
         self.boot(page)
@@ -1848,8 +1848,10 @@ class Runner:
                 self.click(page, f'#detail-sheet [data-detail="{act}"]'); self.sheet_loaded(page)
                 self.ok(page.evaluate("!document.getElementById('viol-sheet').hidden") and
                         page.evaluate("document.getElementById('paywall-modal').hidden"),
-                        f'a new account should open the {act} records, not a paywall (everything free)', j)
+                        f'a new account should open the {act} records, not a paywall (free for good)', j)
                 page.evaluate("document.querySelectorAll('.viol-backdrop .sheet-close').forEach(b=>b.click())"); time.sleep(0.3)
+            self.ok(page.evaluate("!document.querySelector('#paywall-feats li[data-perk=\"bedbugs\"], #paywall-feats li[data-perk=\"rodents\"]')"),
+                    'the Plus page must not list bedbug or rodent records (free)', j)
             self.click(page, '#detail-sheet [data-detail="pests"]'); self.sheet_loaded(page)
             self.ok(page.evaluate("!document.getElementById('viol-sheet').hidden") and
                     page.evaluate("document.getElementById('paywall-modal').hidden"),

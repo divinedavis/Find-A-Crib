@@ -66,14 +66,10 @@ final class AuthService {
     static let featuresFree = true
     var hasFeatures: Bool { isSignedIn && (Self.featuresFree || hasPlus) }
 
-    /// Bedbug + rodent records became Find A Crib Plus on 2026-10-01 (owner);
-    /// every account created before then keeps them. Same cutoff as the
-    /// website's PEST_CUTOFF.
-    static let pestCutoff = ISO8601DateFormatter().date(from: "2026-10-01T16:48:00Z")!   // the gate's commit (was 18:00Z, still in the future)
-    var pestAccess: Bool {
-        guard let user = session?.user else { return false }
-        return hasFeatures || user.createdAt < Self.pestCutoff
-    }
+    /// Bedbug + rodent records are free for every account, for good (owner,
+    /// 2026-10-12: "should be free on web and iphone") — never Plus, even if
+    /// paid gating returns. Same rule as the website.
+    var pestAccess: Bool { isSignedIn }
     /// True once the stored session has been confirmed (or refreshed) at
     /// launch. Until then `session` may be an expired token that every API
     /// call rejects — which showed a signed-in owner the Lotteries sign-up

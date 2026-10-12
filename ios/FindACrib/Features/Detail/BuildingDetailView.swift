@@ -18,6 +18,7 @@ struct BuildingDetailView: View {
     @State private var rodentSummary: HPDRecords.InspectionSummary?
     @State private var inspectionsFailed = false
     @State private var showPaywall = false
+    @State private var showRecordsSignIn = false
     @State private var paywallSource = "phone"
     @State private var showComments = false
     @State private var scene: MKLookAroundScene?
@@ -158,6 +159,10 @@ struct BuildingDetailView: View {
             }
         }
         .sheet(isPresented: $showPaywall) { PaywallView(source: paywallSource) }
+        .sheet(isPresented: $showRecordsSignIn) {
+            EmailSignInView(offersSocialSignIn: true,
+                            records: RecordsPreview(openViolations: b.h?.violations?.open, openComplaints: b.h?.complaints?.open))
+        }
         .onAppear { Perf.mark("detail onAppear"); nav.hideTabBar = true; activity.recordView(b.bbl) }
         .task(id: b.bbl) { similar = SearchEngine.similar(to: b, store: store) }
         .onDisappear { Perf.mark("detail onDisappear"); nav.hideTabBar = false }
@@ -653,13 +658,14 @@ struct BuildingDetailView: View {
     /// Signed-in only, like the website since 2026-09-08: the open violations
     /// and complaints, this year's pest violations, and the two inspection
     /// records from NYC Open Data. Signed out, the section says what is behind
-    /// the account and sends the person to Profile to sign in.
+    /// the account and opens a sign-in sheet that previews it (owner,
+    /// 2026-10-12: not the Profile tab).
     @ViewBuilder private var hpdBlock: some View {
         let v = b.h?.violations; let c = b.h?.complaints
         if !auth.isSignedIn {
             Text("HPD's open violations and complaints for this building, the roaches, mice and rats an inspector confirmed here this year, and the bedbug and rat records. Sign in to see them.")
                 .font(.se(17)).foregroundStyle(SE.ink2)
-            SEOutlineButton(title: "Sign in to see violations & inspections", icon: "person.crop.circle") { nav.tab = .profile }
+            SEOutlineButton(title: "Sign in to see violations & inspections", icon: "person.crop.circle") { showRecordsSignIn = true }
                 .accessibilityIdentifier("hpd-sign-in")
         } else {
             if v == nil && c == nil {

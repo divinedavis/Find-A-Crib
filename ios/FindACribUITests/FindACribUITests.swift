@@ -351,7 +351,8 @@ final class FindACribUITests: XCTestCase {
     /// edge swipe; this pins that swiping from the left edge still pops.
     /// Violations, complaints and the bedbug/rodent inspections are behind an
     /// account (2026-09-08, same as the site): signed out — which the
-    /// simulator always is — the section offers sign-in and shows no tiles.
+    /// simulator always is — the section offers sign-in and shows no tiles,
+    /// and the button opens a sheet that previews them.
     func testViolationsGatedWhenSignedOut() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "detail"]
@@ -363,8 +364,17 @@ final class FindACribUITests: XCTestCase {
         XCTAssertFalse(app.buttons["open-violations"].exists, "violations tile leaked past the gate")
         XCTAssertFalse(app.buttons["bedbug-inspections"].exists, "bedbug tile leaked past the gate")
         XCTAssertFalse(app.buttons["rodent-inspections"].exists, "rodent tile leaked past the gate")
+        // The gate opens its own sign-in sheet previewing the records and one
+        // Plus feature, not the Profile tab (owner, 2026-10-12).
         gate.tap()
-        XCTAssertTrue(app.buttons["sign-in-apple"].waitForExistence(timeout: 10), "the gate should land on the Profile sign-in")
+        let box = app.descendants(matching: .any)["records-promise-box"]
+        XCTAssertTrue(box.waitForExistence(timeout: 10), "the gate should open the records sign-in sheet")
+        XCTAssertTrue(app.staticTexts["Bedbug filings the landlord made, year by year"].exists)
+        XCTAssertTrue(app.staticTexts["Rat inspections from the Health Department"].exists)
+        XCTAssertTrue(app.buttons["sign-in-apple"].exists, "Apple sign-in should be on the sheet")
+        XCTAssertLessThan(box.frame.minY, app.buttons["sign-in-apple"].frame.minY, "the preview sits above Apple/Google")
+        XCTAssertTrue(app.buttons["records-promise-plus"].exists, "one Plus feature with a Get Plus button")
+        XCTAssertTrue(app.buttons["create-account-toggle"].isHittable, "No account? Create one must stay on screen")
     }
 
     /// Google's ads live in the feed, in the re-rental slots (Ads.swift,

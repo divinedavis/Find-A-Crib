@@ -12,6 +12,11 @@ struct EmailSignInView: View {
     /// alerts are, and stands in for the findacrib.com line, which drops to a
     /// footnote so the email links still fit on the first screen.
     var forAlerts = false
+    /// Opened from a building's "Sign in to see violations & inspections"
+    /// (owner, 2026-10-12): the same box, listing this building's records and
+    /// one Plus feature, instead of sending them to Profile.
+    var records: RecordsPreview? = nil
+    private var promo: Bool { forAlerts || records != nil }
     @Environment(AuthService.self) private var auth
     @Environment(\.dismiss) private var dismiss
     @State private var email = ""
@@ -24,7 +29,7 @@ struct EmailSignInView: View {
     enum Field { case email, password, confirm }
 
     var body: some View {
-        content.onAppear { Analytics.shared.track("signin_view", ["for": offersSocialSignIn ? "alerts" : "profile"]) }
+        content.onAppear { Analytics.shared.track("signin_view", ["for": records != nil ? "records" : (offersSocialSignIn ? "alerts" : "profile")]) }
             .modifier(TallSheetOnIPad())
     }
 
@@ -33,8 +38,10 @@ struct EmailSignInView: View {
           ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    Text(creating ? "Create account" : (heading ?? (offersSocialSignIn ? "Sign in for alerts" : "Sign in with email"))).font(.se(26, .bold))
-                    if forAlerts && !creating {
+                    Text(creating ? "Create account" : (heading ?? (records != nil ? "Sign in to see this building's records" : (offersSocialSignIn ? "Sign in for alerts" : "Sign in with email")))).font(.se(26, .bold))
+                    if let r = records, !creating {
+                        RecordsPromiseBox(preview: r) { showPlus = true }
+                    } else if forAlerts && !creating {
                         AlertsPromiseBox { showPlus = true }
                     } else {
                         Text(creating ? "No verification email — you're in as soon as you tap Create." : "The account you use on findacrib.com works here.")
@@ -82,7 +89,7 @@ struct EmailSignInView: View {
                     }
                     .buttonStyle(.plain)
 
-                    if forAlerts && !creating {
+                    if promo && !creating {
                         Text("The account you use on findacrib.com works here.")
                             .font(.se(14)).foregroundStyle(SE.ink3)
                     }
@@ -108,7 +115,7 @@ struct EmailSignInView: View {
             // Signing in from the Plus sheet must not close this one under it;
             // it closes when the Plus sheet does.
             .onChange(of: auth.isSignedIn) { _, on in if on && !showPlus { dismiss() } }
-            .sheet(isPresented: $showPlus, onDismiss: { if auth.isSignedIn { dismiss() } }) { PaywallView(source: "signin_alerts") }
+            .sheet(isPresented: $showPlus, onDismiss: { if auth.isSignedIn { dismiss() } }) { PaywallView(source: records != nil ? "broker_fee" : "signin_alerts") }
           }
         }
     }
@@ -192,6 +199,71 @@ struct AlertsPromiseBox: View {
     }
 
     private func row(_ icon: String, _ text: String) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 13, weight: .bold)).foregroundStyle(.white)
+                .frame(width: 28, height: 28)
+                .background(Circle().fill(SE.royal))
+                .accessibilityHidden(true)
+            Text(text).font(.se(15, .semibold)).foregroundStyle(SE.ink)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// What a building's sign-in unlocks, from the counts the app already has.
+struct RecordsPreview: Equatable {
+    var openViolations: Int?
+    var openComplaints: Int?
+}
+
+/// Same look as AlertsPromiseBox: the building's records behind the account
+/// (with this building's counts when we have them), then one Plus feature
+/// with a small Get Plus button.
+struct RecordsPromiseBox: View {
+    let preview: RecordsPreview
+    let openPlus: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            PromiseRow(icon: "exclamationmark.triangle.fill", text: violationsLine)
+            PromiseRow(icon: "ladybug.fill", text: "Bedbug filings the landlord made, year by year")
+            PromiseRow(icon: "pawprint.fill", text: "Rat inspections from the Health Department")
+            HStack(alignment: .center, spacing: 12) {
+                PromiseRow(icon: "dollarsign.circle.fill", text: "Plus: check if a broker fee breaks NYC's FARE Act")
+                Button {
+                    Analytics.shared.track("records_upsell_click", ["src": "signin_records"]); openPlus()
+                } label: {
+                    Text("Get Plus").font(.se(14, .bold)).foregroundStyle(.white).fixedSize()
+                        .padding(.horizontal, 12).frame(minHeight: 32)
+                        .background(Capsule().fill(Color(hex: 0x5B21B6)))
+                        .frame(minHeight: 44).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).accessibilityIdentifier("records-promise-plus")
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 12).fill(SE.royal.opacity(0.08)))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(SE.royal.opacity(0.25)))
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("records-promise-box")
+    }
+
+    private var violationsLine: String {
+        let v = preview.openViolations, c = preview.openComplaints
+        if v == nil && c == nil { return "HPD violations and complaints for this building" }
+        func n(_ x: Int?, _ one: String, _ many: String) -> String { let k = x ?? 0; return "\(k) open \(k == 1 ? one : many)" }
+        return n(v, "HPD violation", "HPD violations") + " and " + n(c, "complaint", "complaints") + " here — see each one"
+    }
+}
+
+/// One icon + line row, shared by the sign-in promise boxes.
+struct PromiseRow: View {
+    let icon: String
+    let text: String
+    var body: some View {
         HStack(alignment: .center, spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 13, weight: .bold)).foregroundStyle(.white)

@@ -1661,6 +1661,7 @@ def dashboard_metrics():
         # Free-to-paid for the accounts created in this range (db/0048).
         "plus_cohort": (_fac_plus_cohort, since),
         "plus_all": (_fac_plus_cohort, None),
+        "paying_range": (_fac_paying, since),
         # The header's Raptive goal (25k/month) is always the last 30 days.
         "page_views_30d": (_fac_page_views, (datetime.datetime.now(datetime.timezone.utc)
                                               - datetime.timedelta(days=30)).strftime("%Y-%m-%dT%H:00:00Z")),
@@ -1942,6 +1943,17 @@ def _fac_plus_cohort(since):
     all). {} on failure."""
     try:
         return rpc("dashboard_plus_cohort", {"since": str(since) if since else None}) or {}
+    except Exception:
+        return {}
+
+
+@_memo(120)
+def _fac_paying(since):
+    """{paying, new, ended, trialing, web, app, paying_now}: customers who paid
+    for Plus at any point since `since` (None = all time), from
+    subscriptions.started_at (db 20261012160000). {} on failure."""
+    try:
+        return rpc("dashboard_paying", {"since": str(since) if since else None}) or {}
     except Exception:
         return {}
 

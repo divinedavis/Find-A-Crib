@@ -8217,6 +8217,9 @@ function favActive() {
     try { r = await fetch(url, init); j = await r.json().catch(() => ({})); }
     catch (e) { out.textContent = 'Couldn’t reach Find A Crib just now — try again.'; return null; }
     if (r.status === 402) { out.hidden = true; openPaywall(null, source); return null; }
+    // A session the server no longer accepts (expired, or the account is
+    // gone): ask them to sign in again rather than "something went wrong".
+    if (r.status === 401) { out.hidden = true; openAuthModal('Sign in again to continue.', source); return null; }
     if (r.status === 413) { out.textContent = 'That file is over 8 MB. Paste the lease text instead.'; return null; }
     if (!r.ok || !j.ok) { out.textContent = TOOL_ERR[j.error] || 'Something went wrong — try again.'; track('tool_result', { tool: source, ok: false, error: j.error || r.status }); return null; }
     return j;

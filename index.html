@@ -1906,7 +1906,7 @@
       <li data-perk="broker_fee" data-ai><span class="pf-ico">🧾</span><span><b>Broker fee check</b>Find out if a broker fee, application fee or deposit breaks NYC’s FARE Act or New York law — and how to get it back</span></li>
       <li data-perk="lease_review" data-ai><span class="pf-ico">📄</span><span><b>Lease review</b>Upload your lease and AI flags the clauses New York law limits or voids, quoting each one</span></li>
       <li data-perk="apply_help" data-ai><span class="pf-ico">📝</span><span><b>Help me apply</b>The steps, the documents to gather and a ready-to-send email to the agent, for every re-rental</span></li>
-      <li data-perk="phone"><span class="pf-ico">📞</span><span><b>Agent phone numbers</b>Call who actually runs the building — 11,000+ managing-agent numbers</span></li>
+      <li data-perk="phone" data-ai><span class="pf-ico">📞</span><span><b>Agent phone numbers</b>Call who actually runs the building — 11,000+ managing-agent numbers</span></li>
       <li data-perk="noads"><span class="pf-ico">🚫</span><span><b>No ads</b>Anywhere on Find A Crib — the map, the list and every building page</span></li>
     </ul>
     <div class="paywall-cta">
@@ -8126,8 +8126,12 @@ function favActive() {
   let paywallSource = 'other';
   // While everything else is free, Plus is the AI features (owner,
   // 2026-10-03) — and no ads, which paying members keep.
-  const AI_SOURCES = new Set(['realtime', 'ai_search', 'apply_help', 'broker_fee', 'lease_review', 'profile']);
+  // …and agent phone numbers (owner, 2026-10-12: "make agents phone number a
+  // paid feature"; get_agent_phone() answers Plus only).
+  const AI_SOURCES = new Set(['realtime', 'ai_search', 'apply_help', 'broker_fee', 'lease_review', 'profile', 'phone']);
   function openPaywall(bbl, source) {
+    // A phone reveal passes only the bbl: name its source before the check.
+    source = source || (bbl ? 'phone' : undefined);
     if (FEATURES_FREE && !AI_SOURCES.has(source)) return;   // the free features are never sold
     { const feats = document.getElementById('paywall-feats');
       if (feats) feats.querySelectorAll('li').forEach(li => {

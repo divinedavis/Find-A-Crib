@@ -16,7 +16,10 @@ struct EmailSignInView: View {
     /// (owner, 2026-10-12): the same box, listing this building's records and
     /// one Plus feature, instead of sending them to Profile.
     var records: RecordsPreview? = nil
-    private var promo: Bool { forAlerts || records != nil }
+    /// Opened from a building's "Sign in to see who runs this building"
+    /// (owner, 2026-10-12): what an account shows, and the Plus phone row.
+    var agentPreview = false
+    private var promo: Bool { forAlerts || records != nil || agentPreview }
     @Environment(AuthService.self) private var auth
     @Environment(\.dismiss) private var dismiss
     @State private var email = ""
@@ -29,7 +32,7 @@ struct EmailSignInView: View {
     enum Field { case email, password, confirm }
 
     var body: some View {
-        content.onAppear { Analytics.shared.track("signin_view", ["for": records != nil ? "records" : (offersSocialSignIn ? "alerts" : "profile")]) }
+        content.onAppear { Analytics.shared.track("signin_view", ["for": agentPreview ? "agent" : records != nil ? "records" : (offersSocialSignIn ? "alerts" : "profile")]) }
             .modifier(TallSheetOnIPad())
     }
 
@@ -38,8 +41,10 @@ struct EmailSignInView: View {
           ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    Text(creating ? "Create account" : (heading ?? (records != nil ? "Sign in to see this building's records" : (offersSocialSignIn ? "Sign in for alerts" : "Sign in with email")))).font(.se(26, .bold))
-                    if let r = records, !creating {
+                    Text(creating ? "Create account" : (heading ?? (agentPreview ? "Sign in to see who runs this building" : records != nil ? "Sign in to see this building's records" : (offersSocialSignIn ? "Sign in for alerts" : "Sign in with email")))).font(.se(26, .bold))
+                    if agentPreview && !creating {
+                        AgentPromiseBox { showPlus = true }
+                    } else if let r = records, !creating {
                         RecordsPromiseBox(preview: r) { showPlus = true }
                     } else if forAlerts && !creating {
                         AlertsPromiseBox { showPlus = true }
@@ -115,7 +120,7 @@ struct EmailSignInView: View {
             // Signing in from the Plus sheet must not close this one under it;
             // it closes when the Plus sheet does.
             .onChange(of: auth.isSignedIn) { _, on in if on && !showPlus { dismiss() } }
-            .sheet(isPresented: $showPlus, onDismiss: { if auth.isSignedIn { dismiss() } }) { PaywallView(source: records != nil ? "broker_fee" : "signin_alerts") }
+            .sheet(isPresented: $showPlus, onDismiss: { if auth.isSignedIn { dismiss() } }) { PaywallView(source: agentPreview ? "phone" : records != nil ? "broker_fee" : "signin_alerts") }
           }
         }
     }
@@ -256,6 +261,36 @@ struct RecordsPromiseBox: View {
         if v == nil && c == nil { return "HPD violations and complaints for this building" }
         func n(_ x: Int?, _ one: String, _ many: String) -> String { let k = x ?? 0; return "\(k) open \(k == 1 ? one : many)" }
         return n(v, "HPD violation", "HPD violations") + " and " + n(c, "complaint", "complaints") + " here — see each one"
+    }
+}
+
+/// What signing in shows about who runs a building, and the one Plus part.
+struct AgentPromiseBox: View {
+    let openPlus: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            PromiseRow(icon: "person.text.rectangle.fill", text: "The managing agent HPD has on file, and their office address")
+            PromiseRow(icon: "building.2.fill", text: "Who owns the building, and its head officer")
+            HStack(alignment: .center, spacing: 12) {
+                PromiseRow(icon: "phone.fill", text: "Plus: the agent's phone number — call who actually runs it")
+                Button {
+                    Analytics.shared.track("phone_upsell_click", ["src": "signin_agent"]); openPlus()
+                } label: {
+                    Text("Get Plus").font(.se(14, .bold)).foregroundStyle(.white).fixedSize()
+                        .padding(.horizontal, 12).frame(minHeight: 32)
+                        .background(Capsule().fill(Color(hex: 0x5B21B6)))
+                        .frame(minHeight: 44).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).accessibilityIdentifier("agent-promise-plus")
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 12).fill(SE.royal.opacity(0.08)))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(SE.royal.opacity(0.25)))
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("agent-promise-box")
     }
 }
 

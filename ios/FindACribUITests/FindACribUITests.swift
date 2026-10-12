@@ -377,6 +377,27 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.buttons["create-account-toggle"].isHittable, "No account? Create one must stay on screen")
     }
 
+    /// "Sign in to see who runs this building" (owner, 2026-10-12) opens a
+    /// sheet previewing the agent and owner, with the agent's phone number as
+    /// the Plus row — not the Profile tab.
+    func testAgentSignInPreviewsWhoRunsTheBuilding() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "detail"]
+        app.launch()
+        XCTAssertTrue(app.buttons["detail-menu"].waitForExistence(timeout: 30))
+        let gate = app.buttons["agent-sign-in"]
+        let h = app.windows.firstMatch.frame.height
+        for _ in 0..<14 where !gate.isHittable || gate.frame.maxY > h - 140 { app.swipeUp() }
+        XCTAssertTrue(gate.waitForExistence(timeout: 5), "signed out, Managing agent offers sign-in")
+        gate.tap()
+        let box = app.descendants(matching: .any)["agent-promise-box"]
+        XCTAssertTrue(box.waitForExistence(timeout: 10), "the sign-in sheet previews who runs the building")
+        XCTAssertTrue(app.staticTexts["Who owns the building, and its head officer"].exists)
+        XCTAssertTrue(app.buttons["agent-promise-plus"].exists, "the phone number is the Plus row, with Get Plus")
+        XCTAssertTrue(app.buttons["sign-in-apple"].exists)
+        XCTAssertLessThan(box.frame.minY, app.buttons["sign-in-apple"].frame.minY, "the preview sits above Apple/Google")
+    }
+
     /// Google's ads live in the feed, in the re-rental slots (Ads.swift,
     /// owner 2026-09-25): no banner under the app, and the 3rd tile is an ad
     /// or — when none was loaded in time — the re-rental, never a blank.

@@ -277,9 +277,11 @@ final class AuthService {
         return nil
     }
 
-    /// Signed-in accounts (has_features) — the RPC returns null for everyone else.
+    /// Find A Crib Plus only (owner, 2026-10-12: "make agents phone number a
+    /// paid feature") — get_agent_phone() returns null for everyone else,
+    /// whatever everything-free mode says.
     func agentPhone(for bbl: String) async -> String? {
-        guard let client, hasFeatures else { return nil }
+        guard let client, hasPlus else { return nil }
         if let cached = phoneCache[bbl] { return cached }
         let v: String? = try? await client.rpc("get_agent_phone", params: ["p_bbl": bbl]).execute().value
         phoneCache[bbl] = v

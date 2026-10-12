@@ -1857,6 +1857,16 @@ class Runner:
                     page.evaluate("document.getElementById('paywall-modal').hidden"),
                     'HPD pest violations stay open (not Plus)', j)
             page.evaluate("document.querySelectorAll('.viol-backdrop .sheet-close').forEach(b=>b.click())"); time.sleep(0.3)
+            # Agent phone numbers are Plus (2026-10-12): a free account tapping
+            # "Show number" gets the Plus page led by the phone perk, no number.
+            if page.evaluate("!!document.querySelector('#detail-sheet button.hpd-phone-btn[data-show-phone]')"):
+                self.click(page, '#detail-sheet button.hpd-phone-btn[data-show-phone]')
+                self.wait_until(page, "!document.getElementById('paywall-modal').hidden", 8000)
+                self.ok(page.evaluate("!document.getElementById('paywall-modal').hidden")
+                        and page.evaluate("!document.querySelector('#detail-sheet a.hpd-phone')")
+                        and 'Call who actually runs' in page.evaluate("document.getElementById('paywall-title').textContent"),
+                        'a free account should get the Plus page for an agent phone number, not the number', j)
+                page.evaluate("document.querySelector('#paywall-modal [data-paywall=\"close\"], #paywall-modal .auth-close, #paywall-close')?.click()"); time.sleep(0.3)
             # Profile: folders + saved searches for any account; the upgrade
             # button is back, because Plus is now the AI features (2026-10-03).
             self.click(page, '#auth-btn')

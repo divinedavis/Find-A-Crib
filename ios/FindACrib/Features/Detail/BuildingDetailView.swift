@@ -19,6 +19,7 @@ struct BuildingDetailView: View {
     @State private var inspectionsFailed = false
     @State private var showPaywall = false
     @State private var showRecordsSignIn = false
+    @State private var showAgentSignIn = false
     @State private var paywallSource = "phone"
     @State private var showComments = false
     @State private var scene: MKLookAroundScene?
@@ -168,6 +169,7 @@ struct BuildingDetailView: View {
             }
         }
         .sheet(isPresented: $showPaywall) { PaywallView(source: paywallSource) }
+        .sheet(isPresented: $showAgentSignIn) { EmailSignInView(offersSocialSignIn: true, agentPreview: true) }
         .sheet(isPresented: $showRecordsSignIn) {
             EmailSignInView(offersSocialSignIn: true,
                             records: RecordsPreview(openViolations: b.h?.violations?.open, openComplaints: b.h?.complaints?.open))
@@ -183,7 +185,8 @@ struct BuildingDetailView: View {
         .sheet(isPresented: $showComments, onDismiss: { Task { await comments.refreshCount(bbl: b.bbl) } }) {
             CommentsSheet(building: b)
         }
-        .task(id: "\(auth.isSignedIn)-\(auth.hasFeatures)") { await loadContacts() }
+        // Re-read when Plus arrives, so a new member sees the number at once.
+        .task(id: "\(auth.isSignedIn)-\(auth.hasPlus)") { await loadContacts() }
         .task(id: "\(b.bbl)-\(auth.isSignedIn)") { await loadInspections() }
     }
 
@@ -201,7 +204,7 @@ struct BuildingDetailView: View {
         if !auth.isSignedIn {
             Text("The managing agent and owner HPD has on file for this building, and the agent's phone number.")
                 .font(.se(17)).foregroundStyle(SE.ink2)
-            SEOutlineButton(title: "Sign in to see who runs this building", icon: "person.crop.circle") { nav.tab = .profile }
+            SEOutlineButton(title: "Sign in to see who runs this building", icon: "person.crop.circle") { showAgentSignIn = true }
                 .accessibilityIdentifier("agent-sign-in")
         } else if contactsLoading && contacts == nil {
             HStack(spacing: 10) { ProgressView().tint(SE.royal); Text("Looking up HPD registration…").font(.se(17)).foregroundStyle(SE.ink2) }
@@ -220,13 +223,13 @@ struct BuildingDetailView: View {
                     }
                     .accessibilityIdentifier("agent-phone")
                 } else if m.hasPhone {
-                    Button { if !auth.hasFeatures { paywallSource = "phone"; showPaywall = true } } label: {
+                    Button { if !auth.hasPlus { paywallSource = "phone"; showPaywall = true } } label: {
                         HStack(spacing: 10) {
                             Image(systemName: "lock.fill").font(.system(size: 15, weight: .bold)).foregroundStyle(SE.ink3)
-                            Text(auth.hasFeatures ? "Phone number temporarily unavailable" : "Phone number — unlock with Find A Crib Plus")
+                            Text(auth.hasPlus ? "Phone number temporarily unavailable" : "Phone number — unlock with Find A Crib Plus")
                                 .font(.se(17, .semibold)).foregroundStyle(SE.ink2)
                             Spacer()
-                            if !auth.hasFeatures { Image(systemName: "chevron.right").font(.system(size: 14, weight: .bold)).foregroundStyle(SE.royal) }
+                            if !auth.hasPlus { Image(systemName: "chevron.right").font(.system(size: 14, weight: .bold)).foregroundStyle(SE.royal) }
                         }
                         .padding(14).frame(maxWidth: .infinity, alignment: .leading).background(SE.canvas)
                         .contentShape(Rectangle())

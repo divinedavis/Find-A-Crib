@@ -1727,7 +1727,8 @@ class Runner:
               title: document.getElementById('paywall-title').textContent,
               shown: [...document.querySelectorAll('#paywall-feats li')].filter(l => !l.hidden && l.offsetParent).map(l => l.dataset.perk)}))()""")
             self.ok(pw['open'] and 'plain words' in pw['title'].lower(), f'a free account gets the AI paywall: {pw}', j)
-            self.ok(set(pw['shown']) == {'realtime', 'ai_search', 'broker_fee', 'lease_review', 'apply_help', 'noads'}, f'the paywall lists real-time alerts, the AI perks and no ads: {pw["shown"]}', j)
+            # Agent phone numbers are Plus again (owner, 2026-10-12).
+            self.ok(set(pw['shown']) == {'realtime', 'ai_search', 'broker_fee', 'lease_review', 'apply_help', 'phone', 'noads'}, f'the paywall lists real-time alerts, the AI perks, agent phone numbers and no ads: {pw["shown"]}', j)
             # First month on us (2026-10-04): the trial line sits under the
             # price, and $4.99 stays the big number (Apple/FTC: billed amount
             # most prominent).

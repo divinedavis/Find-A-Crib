@@ -3499,6 +3499,21 @@ FROZEN_MAX_DEPTH = 3
 FROZEN_FLOOR = 1_000
 
 
+def _loc_path(loc):
+    """The path part of a sitemap <loc>, for the audits that group URLs by tier.
+
+    A <loc> is absolute and a tier is derived from path segments, so the scheme
+    and host have to come off first or every URL lands in one tier called
+    "https:". Tolerant on purpose: a protocol-relative or already-relative loc
+    is passed through rather than rejected, because this feeds an audit whose
+    job is to report on whatever the sitemaps actually say.
+    """
+    if "//" in loc:
+        rest = loc.split("//", 1)[1]
+        return rest[rest.index("/"):] if "/" in rest else "/"
+    return loc if loc.startswith("/") else "/" + loc
+
+
 def _frozen_tier(url):
     """The tier a published URL belongs to, derived from the URL and nothing else.
 
@@ -3543,8 +3558,13 @@ def _frozen_tier(url):
 # cannot do it again. This audit is the other half: the fix closes the cause it
 # knows about, and this names the EVENT, whatever causes the next one.
 LASTMOD_FLOOR = 200            # advertised URLs needed before a share means anything
-LASTMOD_RESTAMP_PCT = 50.0     # share claiming "changed today" that can only be a restamp
+LASTMOD_RESTAMP_PCT = 50.0     # share claiming "changed today" that is too wide to be ordinary
 LASTMOD_TOP_DATES = 4          # dates named in the detail line
+# THE SHAPE TEST, added 2026-10-12 after the share test alone called a
+# pre-registered, legitimate change a restamp. See t_lastmod_integrity.
+LASTMOD_TIER_FLOOR = 20        # advertised URLs a tier needs before ITS share means anything
+LASTMOD_TIER_LIT_PCT = 50.0    # share of one tier dated today that counts as "the tier moved"
+LASTMOD_TIERS_SHOWN = 6        # tiers named in the detail line
 
 
 def _sitemap_entries(docroot):
@@ -3592,12 +3612,49 @@ def t_lastmod_integrity(ctx):
 
     REPORT-AND-FAIL, like t_canonical_integrity and for the same reason: the
     class it reports has one mechanism and one remedy. Over half the advertised
-    set cannot genuinely have changed on one night on this site — the feeds that
-    move daily touch a few hundred pages at most — so a share above
-    LASTMOD_RESTAMP_PCT means some shared string got edited and every page
-    carrying it was called changed. The remedy is always the same: find the edit
-    and put it where build_seo._lastmod_body cannot see it (PAGE_CHROME), rather
-    than reverting the product change.
+    set cannot genuinely have changed on one ORDINARY night on this site — the
+    feeds that move daily touch a few hundred pages at most — so a share above
+    LASTMOD_RESTAMP_PCT says the night was not ordinary. What it does NOT say,
+    on its own, is which kind of unordinary, and that distinction is the whole
+    difference between a defect and a product change:
+
+      * ONE SHARED STRING, edited once, carried by every page. The defect. The
+        remedy is always the same: find the edit and put it where
+        build_seo._lastmod_body cannot see it (PAGE_CHROME), rather than
+        reverting the product change.
+      * ONE TIER'S OWN CONTENT, deliberately rewritten. Not a defect. The pages
+        really did change, the date is true, and the remedy for a true date is
+        nothing at all.
+
+    THE SHAPE TEST SEPARATES THEM, and it is why this audit stopped deciding on
+    the share alone (2026-10-12). Both recorded restamps lit the WHOLE corpus
+    across every tier at once — 47,596 of 47,596 on 2026-08-18, 4,082 of 4,105
+    on 2026-10-06 — because a string in page() reaches every tier by
+    construction. A tier rewrite cannot do that: on 2026-10-11 a new per-building
+    FAQ block restamped 670 advertised URLs and every one of them was a building
+    page, with zero hub, borough, ZIP, guide, city, council, landlord or main
+    URLs touched. So the audit groups today's dates by tier and asks how BROAD
+    the restamp is, not just how big: lit in most of the measurable tiers is the
+    shared-string signature and stays red; concentrated in one or two tiers is a
+    tier rewrite and is reported loudly but green, because a true date has no
+    remedy and a red with no remedy is noise a future run has to re-litigate.
+
+    WHY THIS CHANGE WAS WORTH MAKING, from the night it was made: the 2026-10-12
+    reading was 866 of 1,704 (50.8%) dated today, 0.8 points over the threshold,
+    against a pre-registered prediction of ~670 from the previous night's
+    building-tier change plus an ordinary nightly 147-277. The audit announced
+    "RESTAMP: above 50% this is a shared string that got edited, not 866 pages
+    that changed" — an assertion that was simply false, about a change this loop
+    had pre-registered in the journal the night before, and whose stated remedy
+    (move it into PAGE_CHROME) would have hidden a real content change from
+    every crawler. A tripwire that fires on the thing the loop is deliberately
+    doing trains its readers to ignore it.
+
+    THE REMAINING BENIGN CAUSE, named so a future run does not chase a ghost: a
+    genuinely new section large enough to move the share, where today's date is
+    honest because the pages are new. A sitemap cannot distinguish new from
+    changed, so the detail says what it measured and the reader checks the build
+    log's new/changed split before treating a red as a restamp.
 
     KEYED ON TODAY'S DATE, NOT ON THE WIDEST DATE, which is the one design
     choice worth defending. A restamp leaves a scar: after 2026-10-06 nearly the
@@ -3610,12 +3667,6 @@ def t_lastmod_integrity(ctx):
     The scar is still reported — the widest date and its share are in the detail
     every night — because it is the thing that explains a low crawl rate to a
     reader who arrives in six months.
-
-    THE ONE BENIGN CAUSE, named so a future run does not chase a ghost: a
-    genuinely new section large enough to move the share, where today's date is
-    honest because the pages are new. A sitemap cannot distinguish new from
-    changed, so the detail says what it measured and the reader checks the build
-    log's new/changed split before treating a red as a restamp.
 
     Pure docroot reader — no ctx.write_*, no ledger writes, no network — so it is
     a member of DOCROOT_VERIFIERS and is re-read after the watchdog rebuilds the
@@ -3645,6 +3696,32 @@ def t_lastmod_integrity(ctx):
     widest, widest_n = (by_date.most_common(1) or [(None, 0)])[0]
     spread = ", ".join(f"{d} {c:,}" for d, c in by_date.most_common(LASTMOD_TOP_DATES))
 
+    # THE SHAPE OF TONIGHT'S RESTAMP, by tier. Computed from `seen` and nothing
+    # else, so this stays a pure docroot reader with no new input to fail on.
+    # _frozen_tier is reused deliberately: it derives the tier from the URL
+    # rather than from the ledger's prefix declarations, so /landlord/ and
+    # /council-district/ — in no technique's prefixes, and 353 advertised URLs
+    # between them — are counted here like every other tier. A shared string
+    # reaches those two as surely as it reaches /building/, so an audit that
+    # could not see them could not see the shape.
+    tier_all, tier_today = collections.Counter(), collections.Counter()
+    for loc, lm in seen.items():
+        tier = _frozen_tier(_loc_path(loc))
+        tier_all[tier] += 1
+        if lm == today:
+            tier_today[tier] += 1
+    # Only tiers big enough for a share to mean anything, the same argument
+    # LASTMOD_FLOOR makes for the corpus: 3 of 3 city-browse hubs dated today is
+    # every one of them and still says nothing about a site-wide string.
+    measurable = [t for t, c in tier_all.items() if c >= LASTMOD_TIER_FLOOR]
+    lit = sorted((t for t in measurable
+                  if tier_today[t] * 100.0 / tier_all[t] > LASTMOD_TIER_LIT_PCT),
+                 key=lambda t: -tier_today[t])
+    # "Most of the measurable tiers" rather than "all": a shared string reaches
+    # every tier, but a tier whose pages happen not to have been rebuilt tonight
+    # would drag an all-tiers test to green on the one night it matters.
+    broad = measurable and len(lit) * 2 > len(measurable)
+
     detail = (f"{n_today:,} of {n:,} advertised URLs ({pct_today:.1f}%) are dated today "
               f"({today}) — {len(by_date)} distinct date"
               f"{'' if len(by_date) == 1 else 's'} across the advertised set, widest first: "
@@ -3661,16 +3738,49 @@ def t_lastmod_integrity(ctx):
                    f"them, which only {widest}'s own build log can settle")
     if undated:
         detail += f" — {undated:,} advertised with no <lastmod> at all"
-    if pct_today > LASTMOD_RESTAMP_PCT:
-        return {"ok": False, "advertised": n, "dated_today": n_today, "pct_today": pct_today,
-                "detail": (detail + f" — RESTAMP: above {LASTMOD_RESTAMP_PCT:.0f}% this is a "
-                           f"shared string that got edited, not {n_today:,} pages that changed. "
-                           f"Find today's edit to something page() puts on every page and move "
-                           f"it into build_seo.PAGE_CHROME, which _lastmod_body excludes from "
-                           f"the hash; check the build log's new/changed split first, in case a "
-                           f"large new section is the honest explanation")}
-    return {"ok": True, "advertised": n, "dated_today": n_today, "pct_today": pct_today,
-            "detail": detail}
+    record = {"advertised": n, "dated_today": n_today, "pct_today": pct_today,
+              "tiers_measurable": len(measurable), "tiers_lit": len(lit),
+              "lit_tiers": list(lit[:LASTMOD_TIERS_SHOWN])}
+    if pct_today <= LASTMOD_RESTAMP_PCT:
+        # Below the threshold the shape is not interesting and is not reported:
+        # on an ordinary night /section8/ is 6 of 6 dated today, every night,
+        # and a line saying so would be noise in all 364 of them.
+        return dict(record, ok=True, detail=detail)
+
+    # Over the threshold. The tier shares are the evidence for whichever of the
+    # two readings follows, so they are stated before the verdict either way.
+    shown = ", ".join(f"{t} {tier_today[t]:,} of {tier_all[t]:,} "
+                      f"({tier_today[t] * 100.0 / tier_all[t]:.0f}%)"
+                      for t in lit[:LASTMOD_TIERS_SHOWN])
+    detail += (f" — tonight's dates by tier: {len(lit)} of {len(measurable)} tiers above "
+               f"{LASTMOD_TIER_FLOOR} advertised URLs are more than "
+               f"{LASTMOD_TIER_LIT_PCT:.0f}% dated today"
+               + (f", widest first: {shown}" if shown else "")
+               + (f", +{len(lit) - LASTMOD_TIERS_SHOWN} more" if len(lit) > LASTMOD_TIERS_SHOWN
+                  else ""))
+    if broad:
+        return dict(record, ok=False,
+                    detail=(detail + f" — RESTAMP: a share this wide spread across most of the "
+                            f"tiers is one shared string that got edited, not {n_today:,} pages "
+                            f"that changed — no per-tier content change can reach "
+                            f"{len(lit)} unrelated tiers in one night. Find today's edit to "
+                            f"something page() puts on every page and move it into "
+                            f"build_seo.PAGE_CHROME, which _lastmod_body excludes from the hash; "
+                            f"check the build log's new/changed split first, in case a large new "
+                            f"section is the honest explanation"))
+    # Concentrated: green, because a true date has no remedy. Still reported in
+    # full, because 2026-10-06's whole lesson was that a restamp of this size
+    # went unnoticed for days, and because the journal's standing rule is that a
+    # tier-wide change must have its radius measured before it is pushed — this
+    # line is where the next morning checks the radius against the prediction.
+    return dict(record, ok=True, tier_wide=True,
+                detail=(detail + f" — TIER-WIDE CHANGE, not a restamp: the share is over "
+                        f"{LASTMOD_RESTAMP_PCT:.0f}% but it is concentrated in "
+                        f"{'this tier' if len(lit) == 1 else 'these tiers'} rather than spread "
+                        f"across the corpus, which is the signature of that tier's own content "
+                        f"being rewritten and not of a shared string. The dates are true and "
+                        f"there is nothing to fix; confirm against the build log's new/changed "
+                        f"split and against the restamp radius the change pre-registered"))
 
 
 def t_frozen_pages(ctx):

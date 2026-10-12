@@ -1038,6 +1038,20 @@ final class FindACribUITests: XCTestCase {
         }
     }
 
+    /// Once alerts are set up the Alerts pill goes and Map sits alone in the
+    /// middle (owner, 2026-10-12). --lotteries-demo stands in for a subscriber.
+    func testSubscriberSeesOnlyACentredMapPill() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "results", "--lotteries-demo"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["results-count"].waitForExistence(timeout: 60))
+        let map = app.descendants(matching: .any)["pill-Map"].firstMatch
+        XCTAssertTrue(map.waitForExistence(timeout: 10))
+        XCTAssertFalse(app.descendants(matching: .any)["pill-Alerts"].firstMatch.exists, "a subscriber is not offered alerts again")
+        let w = app.windows.firstMatch.frame
+        XCTAssertLessThan(abs(map.frame.midX - w.midX), 12, "Map is centred when it is alone")
+    }
+
     /// The Alerts sheet carries the web form's filters: rent cap and
     /// household income beside boroughs and kinds.
     func testAlertsSheetOffersRentAndIncome() throws {

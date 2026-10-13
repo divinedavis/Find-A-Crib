@@ -100,6 +100,19 @@ final class FindACribUITests: XCTestCase {
                           "search button must come before the price row")
     }
 
+    /// Bedrooms sits directly under Location, above the Search button
+    /// (owner, 2026-10-13).
+    func testBedroomsSitsUnderLocation() throws {
+        let location = app.descendants(matching: .any)["location-field"].firstMatch
+        let beds = app.descendants(matching: .any)["beds-row"].firstMatch
+        let search = app.buttons["search-button"]
+        XCTAssertTrue(location.waitForExistence(timeout: 20))
+        XCTAssertTrue(beds.waitForExistence(timeout: 10))
+        XCTAssertTrue(search.waitForExistence(timeout: 10))
+        XCTAssertLessThan(location.frame.minY, beds.frame.minY, "Bedrooms must come after Location")
+        XCTAssertLessThan(beds.frame.minY, search.frame.minY, "Bedrooms must come before the Search button")
+    }
+
     func testLocationPickerFiltersResults() throws {
         let field = app.descendants(matching: .any)["location-field"].firstMatch
         XCTAssertTrue(field.waitForExistence(timeout: 20))

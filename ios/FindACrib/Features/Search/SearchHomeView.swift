@@ -80,6 +80,19 @@ struct SearchHomeView: View {
                         .accessibilityLabel(query.locations.isEmpty ? "Location" : "Location: \(query.locationLabel(city: store.city.short))")
                     }
 
+                    // Bedrooms sits right under Location (owner, 2026-10-13): the
+                    // two filters people set most before searching (58% / 55%).
+                    // New York only, like Show — the size comes from its re-rental feed.
+                    if store.city.hasNYCExtras {
+                        VStack(alignment: .leading, spacing: 10) {
+                            SEFieldLabel(text: "Bedrooms")
+                            SESegmentRow(options: [(0, "Studio"), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: $query.beds)
+                                .accessibilityIdentifier("beds-row")
+                            Text("Narrows the re-rentals to the sizes you pick. Building records don't say what sizes their apartments are.")
+                                .font(.se(14)).foregroundStyle(SE.ink3)
+                        }
+                    }
+
                     SEPrimaryButton(title: "Search \(count.formatted()) \(query.noun)") { runSearch() }
                         .padding(.horizontal, 34)
                         .padding(.top, 6)
@@ -115,13 +128,6 @@ struct SearchHomeView: View {
                         VStack(alignment: .leading, spacing: 10) {
                             SEFieldLabel(text: "Show")
                             ShowChecklist(query: $query)
-                        }
-                        VStack(alignment: .leading, spacing: 10) {
-                            SEFieldLabel(text: "Bedrooms")
-                            SESegmentRow(options: [(0, "Studio"), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: $query.beds)
-                                .accessibilityIdentifier("beds-row")
-                            Text("Narrows the re-rentals to the sizes you pick. Building records don't say what sizes their apartments are.")
-                                .font(.se(14)).foregroundStyle(SE.ink3)
                         }
                     } else {
                         Text(store.city.sourceNote).font(.se(14)).foregroundStyle(SE.ink3)

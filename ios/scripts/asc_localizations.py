@@ -153,9 +153,39 @@ def check():
 
 
 def apply():
+    """Create or update each locale on the editable version and app info."""
     import asc_metadata as M
-    asc, cfg = M.session() if hasattr(M, "session") else (None, None)
-    raise SystemExit("apply runs with the next App Store version (asc_metadata.resolve needs an editable version)")
+    M.refuse_if_frozen()
+    cfg = M.load_config(); asc = M.ASC(cfg)
+    ids = M.resolve(asc, cfg["ASC_APP_ID"])
+    vlocs = {r["attributes"]["locale"]: r["id"] for r in asc.get(f"/appStoreVersions/{ids['version']}/appStoreVersionLocalizations")["data"]}
+    ilocs = {r["attributes"]["locale"]: r["id"] for r in asc.get(f"/appInfos/{ids['info']}/appInfoLocalizations")["data"]}
+    for loc, f in LOCALES.items():
+        va = {"description": f["description"], "keywords": f["keywords"], "promotionalText": f["promo"],
+              "marketingUrl": M.SITE, "supportUrl": M.SUPPORT}
+        if ids["version_string"] != "1.0":
+            va["whatsNew"] = f.get("whats_new") or WHATS_NEW[loc]
+        if loc in vlocs:
+            asc.patch(f"/appStoreVersionLocalizations/{vlocs[loc]}", {"data": {"type": "appStoreVersionLocalizations", "id": vlocs[loc], "attributes": va}})
+        else:
+            asc.post("/appStoreVersionLocalizations", {"data": {"type": "appStoreVersionLocalizations", "attributes": dict(va, locale=loc),
+                     "relationships": {"appStoreVersion": {"data": {"type": "appStoreVersions", "id": ids["version"]}}}}})
+        ia = {"name": "Find A Crib", "subtitle": f["subtitle"], "privacyPolicyUrl": M.PRIVACY}
+        if loc in ilocs:
+            asc.patch(f"/appInfoLocalizations/{ilocs[loc]}", {"data": {"type": "appInfoLocalizations", "id": ilocs[loc], "attributes": ia}})
+        else:
+            asc.post("/appInfoLocalizations", {"data": {"type": "appInfoLocalizations", "attributes": dict(ia, locale=loc),
+                     "relationships": {"appInfo": {"data": {"type": "appInfos", "id": ids["info"]}}}}})
+        print(f"    {loc}: listing + subtitle")
+
+
+WHATS_NEW = {
+    "es-MX": "• Nuevas herramientas para inquilinos: pide una reparación con una carta lista, revisa si un aumento de renta es legal y conoce tus derechos.\n• Renewal coach (Plus) para negociar tu renovación.\n• Widget de loterías que cierran pronto, Siri y Calendario.\n• Handoff a tu Mac o iPad y muchas mejoras.",
+    "zh-Hans": "• 新的租户工具：一键生成报修信、检查涨租是否合法、了解你的权利。\n• 续租助手 (Plus)，帮你协商续租。\n• 即将截止的住房抽签小组件、Siri 和日历。\n• 支持接力 (Handoff) 到 Mac 或 iPad，以及多项改进。",
+    "zh-Hant": "• 新的租戶工具：一鍵產生報修信、檢查漲租是否合法、了解你的權利。\n• 續租助手 (Plus)，幫你協商續租。\n• 即將截止的住房抽籤小工具、Siri 和行事曆。\n• 支援接力 (Handoff) 到 Mac 或 iPad，以及多項改進。",
+    "ru": "• Новые инструменты для жильцов: письмо о ремонте, проверка законности повышения аренды и ваши права.\n• Renewal coach (Plus) для переговоров о продлении.\n• Виджет лотерей, Siri и Календарь.\n• Handoff на Mac или iPad и множество улучшений.",
+    "ko": "• 새로운 세입자 도구: 바로 보낼 수 있는 수리 요청 편지, 렌트 인상 합법 여부 확인, 세입자 권리.\n• 재계약 협상을 돕는 Renewal coach (Plus).\n• 마감 임박 로터리 위젯, Siri, 캘린더.\n• Mac 또는 iPad로 Handoff, 그 밖의 다양한 개선.",
+}
 
 
 if __name__ == "__main__":

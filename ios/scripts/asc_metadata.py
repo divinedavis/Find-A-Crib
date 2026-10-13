@@ -30,8 +30,8 @@ SHOTS_IPAD = HERE.parent / "marketing" / "asc-screenshots-ipad"
 
 SUBTITLE = "NYC, LA, SF & DC rent maps"                       # <= 30 chars
 KEYWORDS = "rent stabilized,rent control,los angeles,san francisco,washington dc,apartments,rso,brooklyn,nyc"  # <=100 — cities carry the search demand; the title already says Find A Crib
-PROMO = ("New: Find A Crib Plus — search in plain words, get help applying, check if a rent is fair. "
-         "First month on us. Every rent-stabilized building on one map.")
+PROMO = ("New: tools for renters — get a repair made, check if a rent increase is legal, know your rights. "
+         "A lotteries widget and Siri, too.")
 SITE = "https://findacrib.com/"
 SUPPORT = "https://findacrib.com/support/"
 PRIVACY = "https://findacrib.com/privacy/"
@@ -48,8 +48,6 @@ Pick a city, then narrow it the way that city is actually divided: by borough in
 - Los Angeles: parcels meeting the city's RSO criteria (2+ units, built on or before Oct 1, 1978)
 - San Francisco: rent-controlled units reported to the SF Rent Board, at block level
 - Washington DC: units registered with DHCD under the Rental Housing Act
-
-Each city says plainly where its data comes from and what it does not prove.
 
 IN NEW YORK, THERE IS MORE
 The New York map adds what only that city publishes: the building's HPD record, who runs it, re-rentals from HPD-approved marketing agents, and the lotteries you can apply for today.
@@ -69,43 +67,56 @@ Open lotteries and waitlists from New York State's HousingSearch portal — inco
 SAVE AND SYNC
 Heart a building and it's in My Activity; sign in with Apple or Google and your saves follow you to findacrib.com.
 
+ALREADY HAVE A PLACE?
+- Get a repair made: what NYC's Housing Maintenance Code requires for heat, hot water, leaks, mold, pests and more, a ready-to-send letter to your landlord, and the steps from 311 to HPD
+- Is my rent increase legal? Checks a renewal against the Rent Guidelines Board orders for rent-stabilized leases and Good Cause Eviction's limit for most other apartments
+- Know your rights: plain-language cards on repairs, retaliation, lockouts, deposits, roommates and more, each with its law
+- Add lottery deadlines, repair dates and your lease end to your calendar
+
+WIDGETS AND SIRI
+A Home and Lock Screen widget shows the lotteries closing soonest in the borough you pick. Ask Siri "Lotteries closing soon in Find A Crib".
+
 ACCOUNTS
-An account (Sign in with Apple, Google or email) includes every feature: managing-agent phone numbers, bedbug and rodent records, and borough alerts.
+An account (Sign in with Apple, Google or email) includes bedbug and rodent records, the repair and rent-increase tools, and borough alerts.
 
 FIND A CRIB PLUS
-Plus adds AI tools — Search in plain words and Help me apply for re-rentals — and removes ads. New subscribers get their first month on us (a 1-month introductory trial); after it, Find A Crib Plus Monthly is $4.99 per month, charged to your Apple Account and renewed automatically unless cancelled at least 24 hours before the end of the period. Manage or cancel in Settings › Apple Account › Subscriptions.
+Plus adds real-time lottery alerts, managing-agent phone numbers, the Broker fee check, AI tools — Search in plain words, Help me apply, Lease review, the Renewal coach, AI repair letters and rights answers — and removes ads. New subscribers get their first month on us (a 1-month introductory trial); after it, Find A Crib Plus Monthly is $4.99 per month, charged to your Apple Account and renewed automatically unless cancelled at least 24 hours before the end of the period. Manage or cancel in Settings › Apple Account › Subscriptions.
 Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
 Privacy Policy: https://findacrib.com/privacy/
 
 Find A Crib is an independent, informational tool. It is not a broker, does not list apartments, and takes no fee. Data: NYS Homes and Community Renewal rent-stabilization register (2024), NYC HPD open data, HUD FY2026 Fair Market Rents, HousingSearch.ny.gov, LA County Assessor parcel data under LAHD's RSO criteria, the SF Rent Board Housing Inventory via DataSF, and the DC DHCD RentRegistry.
 """
 
-WHATS_NEW = """• Signing in for alerts now explains what you get: lottery and re-rental alerts for the boroughs you pick, in-app notifications and emails at 8 AM daily, and a Get Plus button for instant ones.
-• Typing your email lifts the email and password fields above the keyboard.
-• The Search button sits above the price row.
-• Shorter alert wording on Lotteries and Re-rentals.
-• New York buildings show a "StreetEasy ↗" button.
-• On iPad, the sign-in sheet is taller so every link fits.
+WHATS_NEW = """• New tools for renters who already have a place: get a repair made (with a ready-to-send letter), check whether a rent increase is legal, and know your rights.
+• Renewal coach (Plus): your key dates, the legal limit on your increase and an email to negotiate.
+• A Home and Lock Screen widget with the lotteries closing soonest.
+• Siri: "Lotteries closing soon in Find A Crib".
+• Add lottery deadlines, repair dates and your lease end to your calendar.
+• Pick up a building on your Mac or iPad with Handoff.
+• New York building cards show bedbug and rat counts, or the owner's phone.
+• Broker fee check and Lease review are in the app.
+• Bedrooms sits right under Location, and many smaller fixes.
 """
 
-REVIEW_NOTES = """VERSION 1.2.8 (build __BUILD__) — clearer alerts sign-in, keyboard-friendly email form, layout polish
+REVIEW_NOTES = """VERSION 1.2.9 (build __BUILD__) — renter tools, widget, Siri, calendar, Handoff
 
-WHAT CHANGED SINCE 1.2.7
-1. Sign-in for alerts (Lotteries tab, or Profile > Alerts, while signed out): a box above the Apple/Google buttons lists what alerts include — in-app notifications and emails at 8 AM daily — with a small "Get Plus" button that opens the existing Find A Crib Plus page ($4.99/month auto-renewable subscription, 1-month introductory trial) for instant alerts.
-2. Email sign-in: focusing the email field scrolls the email, password and Sign in button above the keyboard.
-3. Search: the Search button now sits above the price row. Alert copy on Lotteries/Re-rentals is shorter.
-4. New York buildings' outbound button reads "StreetEasy ↗" (other cities keep "View on Zillow ↗"); it still opens that site's public search for the address.
-5. iPad: the sign-in sheet uses the page size so all links are visible.
-No new SDKs, no new permissions, no new data collected.
+WHAT CHANGED SINCE 1.2.8
+1. Profile > "Already have a place?": Repairs, Rent increase, Your rights, Renewal coach. Repairs and Rent increase need a free account (the demo account works); Your rights is readable signed out; Renewal coach and the "✨" AI drafts are Find A Crib Plus. All show "General information, not legal advice" and link to NYC's free tenant help.
+2. Widget "Lotteries closing soon" (Home Screen small/medium/large, Lock Screen). It reads our public lottery feed; tapping it opens the Lotteries tab.
+3. Siri / Shortcuts: "Lotteries closing soon in Find A Crib" speaks the next deadlines; "Show lotteries in Find A Crib" and "Open Renewal coach in Find A Crib" open the app.
+4. "Add to Calendar" (lottery cards, Repairs, Renewal coach) opens Apple's own event editor; the app never reads the calendar and asks for no calendar permission.
+5. "Remind me on <date>" (Repairs, Renewal coach) schedules a local notification; if notification permission is undetermined, iOS asks at that tap.
+6. Handoff/Spotlight: building pages and Lotteries advertise an NSUserActivity with the matching findacrib.com page.
+7. New York result cards: the Share button became a rotating "Bedbugs (2)"-style count from HPD records, or "Owner Phone" when there are none (signed out, each opens sign-in; owner phone is Plus).
+8. Broker fee check and Lease review (Profile) — Plus, as on findacrib.com. AI drafts run on Apple's on-device model (Foundation Models) when the device has Apple Intelligence, otherwise on Anthropic's Claude via our server; the renter's name is never sent to a model.
+9. Deep links: findacrib://lotteries, findacrib://building/<id>, findacrib://tool/<name> (used by the widget, Siri and our In-App Event).
+No new third-party SDKs and no new data collected.
 
 TO SEE THE FEATURES
 Sign in with the demo account in App Review Information (Profile > "Continue with email", then the email and password). The demo account has NO subscription, so: tap any PLUS button (e.g. Search > "Or describe it in plain words", or Lotteries > Re-rentals > a card's "Help me apply") — the Plus page opens and "Get Plus — $4.99/month" starts the sandbox purchase. Profile > "Get Find A Crib Plus" opens the same page. After subscribing, the same buttons work. The packet and qualify-check need no subscription.
 
 SIGN IN WITH APPLE
 If the device has no Apple Account signed in, Apple returns an error; the app says so in plain words and points to Google or email. The demo account avoids this.
-
-TO SEE THE IPAD LAYOUT
-Open the app on an iPad in either orientation: Search, Lotteries, Events, My Activity and Profile all work, and results lay out in two columns.
 
 ADVERTISING
 Unchanged from 1.2.6: Google Mobile Ads, non-personalized (npa=1), no tracking, no ATT prompt, US storefront only; Plus subscribers see no ads. To see one: open Search signed out (or without Plus) and scroll; the ad takes the 3rd card's place when Google has one.
@@ -221,9 +232,15 @@ def resolve(asc, app_id, any_version=False):
         raise SystemExit("no editable App Store version")
     v = editable[0]
     return {"info": info["id"],
-            "info_loc": asc.get(f"/appInfos/{info['id']}/appInfoLocalizations")["data"][0]["id"],
+            # English, by locale: once the listing is translated
+            # (asc_localizations.py) the first row may be another language.
+            "info_loc": _en(asc.get(f"/appInfos/{info['id']}/appInfoLocalizations")["data"]),
             "version": v["id"], "version_string": v["attributes"]["versionString"],
-            "version_loc": asc.get(f"/appStoreVersions/{v['id']}/appStoreVersionLocalizations")["data"][0]["id"]}
+            "version_loc": _en(asc.get(f"/appStoreVersions/{v['id']}/appStoreVersionLocalizations")["data"])}
+
+
+def _en(rows):
+    return next((r for r in rows if r["attributes"].get("locale") == "en-US"), rows[0])["id"]
 
 
 def upload_screenshots(asc, version_loc, folder=None, display_type="APP_IPHONE_67"):

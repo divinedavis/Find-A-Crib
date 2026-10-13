@@ -1,6 +1,10 @@
 import XCTest
 
 final class LaunchAnimationTests: XCTestCase {
+    /// Portrait first: a simulator left in landscape by an earlier run
+    /// (2026-10-13: iPhone buttons reported at x=709) fails every portrait
+    /// tap in the suite.
+    override func setUp() { super.setUp(); XCUIDevice.shared.orientation = .portrait }
     override func setUpWithError() throws { continueAfterFailure = false }
 
     func testLaunchRevealsInteractiveHome() {

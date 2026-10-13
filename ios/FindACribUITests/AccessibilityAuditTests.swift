@@ -8,6 +8,10 @@ import XCTest
 /// What is excused, and why, lives in `excused(_:)` — never excuse an issue on
 /// one of our own controls to make the gate pass; fix the view instead.
 final class AccessibilityAuditTests: XCTestCase {
+    /// Portrait first: a simulator left in landscape by an earlier run
+    /// (2026-10-13: iPhone buttons reported at x=709) fails every portrait
+    /// tap in the suite.
+    override func setUp() { super.setUp(); XCUIDevice.shared.orientation = .portrait }
     var app: XCUIApplication!
 
     override func setUpWithError() throws {

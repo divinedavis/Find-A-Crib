@@ -3,6 +3,10 @@ import XCTest
 /// Smoke path through the StreetEasy-shaped flow: home → results → detail →
 /// back, plus the tab bar. Runs against the bundled data only.
 final class FindACribUITests: XCTestCase {
+    /// Portrait first: a simulator left in landscape by an earlier run
+    /// (2026-10-13: iPhone buttons reported at x=709) fails every portrait
+    /// tap in the suite.
+    override func setUp() { super.setUp(); XCUIDevice.shared.orientation = .portrait }
     var app: XCUIApplication!
 
     override func setUpWithError() throws {
@@ -1229,6 +1233,10 @@ final class FindACribUITests: XCTestCase {
 /// the screen. Set TEST_RUNNER_SKYLINE_SHOT_DIR to also save a screenshot of
 /// the pulled state per city for eyeballing.
 final class SkylineUITests: XCTestCase {
+    /// Portrait first: a simulator left in landscape by an earlier run
+    /// (2026-10-13: iPhone buttons reported at x=709) fails every portrait
+    /// tap in the suite.
+    override func setUp() { super.setUp(); XCUIDevice.shared.orientation = .portrait }
     func testPullingPastTheTopKeepsTheListWorkingInEveryCity() throws {
         let app = XCUIApplication()
         let shotDir = ProcessInfo.processInfo.environment["SKYLINE_SHOT_DIR"]
@@ -1297,6 +1305,10 @@ private final class MidGestureFrames {
 /// screen — it belongs to SpringBoard, not the app. TestFlight shows the
 /// stand-in alert instead; that path is not reachable from a simulator.
 final class ReviewPromptUITests: XCTestCase {
+    /// Portrait first: a simulator left in landscape by an earlier run
+    /// (2026-10-13: iPhone buttons reported at x=709) fails every portrait
+    /// tap in the suite.
+    override func setUp() { super.setUp(); XCUIDevice.shared.orientation = .portrait }
     func testReviewNowShowsTheSystemRatingSheet() throws {
         let app = XCUIApplication()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--review-now"]

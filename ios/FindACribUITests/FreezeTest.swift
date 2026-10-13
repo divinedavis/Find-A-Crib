@@ -20,6 +20,10 @@ import XCTest
 /// It asserts nothing about timing on purpose: a threshold met on a Mac is
 /// missed by a phone. It exists so the marks stay wired up.
 final class FreezeTest: XCTestCase {
+    /// Portrait first: a simulator left in landscape by an earlier run
+    /// (2026-10-13: iPhone buttons reported at x=709) fails every portrait
+    /// tap in the suite.
+    override func setUp() { super.setUp(); XCUIDevice.shared.orientation = .portrait }
     func testBack() throws {
         continueAfterFailure = false
         let route = ProcessInfo.processInfo.environment["ROUTE"] ?? "detail"

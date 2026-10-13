@@ -10,6 +10,10 @@ import XCTest
 /// Run on the iPhone only (ship.sh): skipped in the regular suite so the iPad
 /// and the per-change test runs stay as fast as they were.
 final class PerformanceTests: XCTestCase {
+    /// Portrait first: a simulator left in landscape by an earlier run
+    /// (2026-10-13: iPhone buttons reported at x=709) fails every portrait
+    /// tap in the suite.
+    override func setUp() { super.setUp(); XCUIDevice.shared.orientation = .portrait }
     private let args = ["--no-launch-prompt", "--no-launch-splash"]
 
     override func setUpWithError() throws {

@@ -1794,3 +1794,20 @@ final class ReviewGateTests: XCTestCase {
         XCTAssertTrue(ReviewPrompt.eligible(signedIn: true, visitDays: 3))
     }
 }
+
+/// Search's Plus row: one feature per cold start, in turn (2026-10-12).
+final class PlusPromoTests: XCTestCase {
+    func testCyclesEveryFeatureForNonMembers() {
+        let ids = (0..<PlusPromo.all.count).compactMap { PlusPromo.pick(index: $0, hasPlus: false, alertsOn: false)?.id }
+        XCTAssertEqual(ids, PlusPromo.all.map(\.id), "each launch shows the next feature, all of them in turn")
+        XCTAssertEqual(PlusPromo.pick(index: PlusPromo.all.count, hasPlus: false, alertsOn: false)?.id, PlusPromo.all[0].id, "and wraps")
+    }
+
+    func testMembersAreNotSoldWhatTheyHave() {
+        let ids = Set((0..<12).compactMap { PlusPromo.pick(index: $0, hasPlus: true, alertsOn: true)?.id })
+        XCTAssertFalse(ids.contains("phone"))
+        XCTAssertFalse(ids.contains("apply_help"))
+        XCTAssertFalse(ids.contains("realtime"), "instant alerts drop once a member's are on")
+        XCTAssertTrue(ids.contains("broker_fee") && ids.contains("lease_review"))
+    }
+}

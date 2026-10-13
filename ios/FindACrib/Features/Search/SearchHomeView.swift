@@ -5,10 +5,13 @@ struct SearchHomeView: View {
     @Environment(DataStore.self) private var store
     @Environment(Activity.self) private var activity
     @Environment(AppNav.self) private var nav
+    @Environment(AuthService.self) private var auth
     @AppStorage("lastQuery") private var lastQueryData: Data = Data()
     @State private var query = SearchQuery()
     @State private var showLocation = false
-    @State private var showAISearch = false
+    @State private var showAlerts = false
+    @State private var paywallFor: String?
+    @State private var promoSheet: PlusPromo.Sheet?
     @State private var showCity = false
     @State private var count = 0
 
@@ -81,17 +84,24 @@ struct SearchHomeView: View {
                         .padding(.top, 6)
                         .accessibilityIdentifier("search-button")
                         .disabled(!store.loaded)
-                    if store.city.isNYC {
-                        Button { showAISearch = true } label: {
+                    // One Plus feature per cold start, in turn (owner, 2026-10-12:
+                    // "cycle that … with all our plus features so we see which
+                    // ones users like the most"). plus_promo_view / _click carry
+                    // the feature id, so the dashboard can rank them.
+                    if store.city.isNYC, let promo = PlusPromo.current(hasPlus: auth.hasPlus, alertsOn: LotteryFeed.shared.subscribed) {
+                        Button {
+                            Analytics.shared.track("plus_promo_click", ["feature": promo.id, "plus": auth.hasPlus])
+                            openPromo(promo)
+                        } label: {
                             HStack(spacing: 6) {
-                                Image(systemName: "sparkles")
-                                Text("Or describe it in plain words").font(.se(17, .semibold))
+                                Image(systemName: promo.icon)
+                                Text(promo.title).font(.se(17, .semibold))
                                 PlusTag()
                             }.foregroundStyle(SE.royal).frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.plain).padding(.top, 4)
-                        .accessibilityIdentifier("ai-search-open")
-                        .sheet(isPresented: $showAISearch) { AISearchSheet() }
+                        .accessibilityIdentifier("plus-promo-\(promo.id)")
+                        .onAppear { PlusPromo.markSeen(promo) }
                     }
 
                     // Show and Bedrooms both read New York feeds — vouchers,
@@ -156,6 +166,15 @@ struct SearchHomeView: View {
         }
         .background(Color.white)
         .scrollDismissesKeyboard(.interactively)
+        .sheet(isPresented: $showAlerts) { AlertsSheet() }
+        .sheet(item: Binding(get: { paywallFor.map(PaywallSource.init) }, set: { paywallFor = $0?.id })) { PaywallView(source: $0.id) }
+        .sheet(item: $promoSheet) { sheet in
+            switch sheet {
+            case .brokerFee: BrokerFeeView()
+            case .leaseReview: LeaseReviewView()
+            case .aiSearch: AISearchSheet()
+            }
+        }
         .sheet(isPresented: $showLocation) {
             LocationPickerView(selected: $query.locations)
         }
@@ -208,6 +227,19 @@ struct SearchHomeView: View {
         }
     }
 
+
+    /// Members get the tool; everyone else the tool when it explains itself
+    /// (broker fee, lease review, plain words — they ask for Plus on use) or
+    /// the Plus page led by that perk.
+    private func openPromo(_ p: PlusPromo) {
+        switch p.id {
+        case "realtime": if auth.hasPlus { showAlerts = true } else { paywallFor = "realtime" }
+        case "broker_fee": promoSheet = .brokerFee
+        case "lease_review": promoSheet = .leaseReview
+        case "ai_search": promoSheet = .aiSearch
+        default: paywallFor = p.id
+        }
+    }
 
     private func runSearch() {
         activity.recordSearch(query)
@@ -681,5 +713,61 @@ struct ShowChecklist: View {
             ]
         }
         return SECheckList(rows: rows)
+    }
+}
+
+private struct PaywallSource: Identifiable { let id: String }
+
+/// The Plus features the Search row cycles through, one per cold start.
+struct PlusPromo: Equatable {
+    enum Sheet: String, Identifiable { case brokerFee, leaseReview, aiSearch; var id: String { rawValue } }
+    let id: String
+    let title: String
+    let icon: String
+
+    static let all: [PlusPromo] = [
+        PlusPromo(id: "realtime", title: "Get instant lottery alerts", icon: "bolt.fill"),
+        PlusPromo(id: "phone", title: "See the agent's phone number", icon: "phone.fill"),
+        PlusPromo(id: "broker_fee", title: "Check if a broker fee is legal", icon: "dollarsign.circle"),
+        PlusPromo(id: "lease_review", title: "Have AI review your lease", icon: "doc.text.magnifyingglass"),
+        PlusPromo(id: "apply_help", title: "Get help applying for re-rentals", icon: "doc.text"),
+        PlusPromo(id: "ai_search", title: "Describe it in plain words", icon: "sparkles"),
+    ]
+
+    /// This launch's slot: advanced once per process, so every cold start
+    /// shows the next feature.
+    nonisolated(unsafe) static var launchIndex: Int = {
+        if let forced = CommandLine.arguments.firstIndex(of: "--plus-promo"),
+           forced + 1 < CommandLine.arguments.count,
+           let i = all.firstIndex(where: { $0.id == CommandLine.arguments[forced + 1] }) { return i }
+        let d = UserDefaults.standard
+        let i = d.integer(forKey: "plusPromo.next")
+        d.set(i + 1, forKey: "plusPromo.next")
+        return i
+    }()
+
+    /// The feature to show, or nil. A member is never sold what they have:
+    /// phone numbers and apply help aren't tools here, and instant alerts
+    /// drop once theirs are on — the rotation skips to the next one.
+    static func current(hasPlus: Bool, alertsOn: Bool) -> PlusPromo? {
+        pick(index: launchIndex, hasPlus: hasPlus, alertsOn: alertsOn)
+    }
+
+    nonisolated static func pick(index: Int, hasPlus: Bool, alertsOn: Bool) -> PlusPromo? {
+        let usable = all.filter { p in
+            guard hasPlus else { return true }
+            if p.id == "phone" || p.id == "apply_help" { return false }
+            if p.id == "realtime" && alertsOn { return false }
+            return true
+        }
+        guard !usable.isEmpty else { return nil }
+        return usable[((index % usable.count) + usable.count) % usable.count]
+    }
+
+    nonisolated(unsafe) private static var seen: Set<String> = []
+    @MainActor static func markSeen(_ p: PlusPromo) {
+        guard !seen.contains(p.id) else { return }
+        seen.insert(p.id)
+        Analytics.shared.track("plus_promo_view", ["feature": p.id])
     }
 }

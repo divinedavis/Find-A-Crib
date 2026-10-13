@@ -162,17 +162,22 @@ final class FindACribUITests: XCTestCase {
         app.buttons["Delete everything"].tap()
     }
 
-    /// Plain-language search opens from Search; signed out it sends you to sign in.
-    func testPlainLanguageSearchSheet() throws {
-        app.terminate()
-        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash"]
-        app.launch()
-        let open = app.buttons["ai-search-open"]
-        for _ in 0..<6 where !open.isHittable { app.swipeUp() }
-        XCTAssertTrue(open.waitForExistence(timeout: 30), "Search should offer 'describe it in plain words'")
-        open.tap()
-        let field = app.textFields["ai-search-field"].exists ? app.textFields["ai-search-field"] : app.textViews["ai-search-field"]
-        XCTAssertTrue(field.waitForExistence(timeout: 5), "the plain-words sheet has a text field")
+    /// Search's Plus row cycles through every Plus feature, one per cold
+    /// start (owner, 2026-10-12). --plus-promo pins the slot: instant alerts
+    /// opens the Plus page led by real-time alerts; broker fee opens its form.
+    func testSearchPlusRowCyclesPlusFeatures() throws {
+        for (id, expect) in [("realtime", "Real-time alerts"), ("broker_fee", "Broker fee check")] {
+            app.terminate()
+            app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--plus-promo", id]
+            app.launch()
+            let row = app.buttons["plus-promo-\(id)"]
+            for _ in 0..<6 where !row.isHittable { app.swipeUp() }
+            XCTAssertTrue(row.waitForExistence(timeout: 30), "Search shows the \(id) Plus row")
+            XCTAssertFalse(app.buttons["ai-search-open"].exists, "the old fixed plain-words row is gone")
+            row.tap()
+            let opened = app.staticTexts[expect].waitForExistence(timeout: 10) || app.navigationBars[expect].waitForExistence(timeout: 2)
+            XCTAssertTrue(opened, "\(id) opens \(expect)")
+        }
     }
 
     /// Every re-rental card offers Help me apply.

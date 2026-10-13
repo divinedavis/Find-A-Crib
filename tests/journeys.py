@@ -55,6 +55,10 @@ PHONE_BBL = '1002990024'    # 30 ALLEN ST — its managing agent has a phone in 
 # The page's Supabase client is a closure variable, not a global: journeys
 # read the session from localStorage and call PostgREST/the API directly.
 SESSION_JS = "(()=>{const k=Object.keys(localStorage).find(k=>/^sb-.*-auth-token$/.test(k)); return k ? JSON.parse(localStorage.getItem(k)).access_token : null})()"
+# supaClient is a closure in the page, not a global: signing out from a
+# journey means dropping the stored session, or the next journey starts
+# signed in (the tools journeys' "signed out" checks failed that way).
+SIGN_OUT_JS = "(()=>{Object.keys(localStorage).filter(k=>/^sb-.*-auth-token$/.test(k)).forEach(k=>localStorage.removeItem(k))})()"
 PINS = "document.querySelectorAll('#map .leaflet-marker-icon').length"
 BPINS = "document.querySelectorAll('#map .building-dot-hit').length"
 LABEL = "document.getElementById('map-count').textContent"
@@ -1677,6 +1681,7 @@ class Runner:
         """Broker fee check + Lease review (Plus, 2026-10-11) open from ☰ and
         from /#broker-fee and /#lease-review; sending either signed out asks
         for an account (the signed-in paywall is in ai_features)."""
+        self.boot(page); page.evaluate(SIGN_OUT_JS)
         self.boot(page)
         self.click(page, '#menu-btn'); time.sleep(0.3)
         rows = page.evaluate("[...document.querySelectorAll('#menu-pop [data-menu]')].filter(b => b.offsetParent).map(b => b.dataset.menu)")
@@ -1710,6 +1715,7 @@ class Runner:
         renter_tools.py), and the Renewal coach and the AI rights answer open
         the paywall on their own perks."""
         kinds = ('repair', 'rentup', 'rights', 'renewal')
+        self.boot(page); page.evaluate(SIGN_OUT_JS)
         self.boot(page)
         self.click(page, '#menu-btn'); time.sleep(0.3)
         rows = page.evaluate("[...document.querySelectorAll('#menu-pop [data-menu]')].filter(b => b.offsetParent).map(b => b.dataset.menu)")
@@ -1772,7 +1778,7 @@ class Runner:
             self.ok(not any(k in rows for k in kinds), f'the NYC renter tools stay off other cities: {rows}', j)
             j.notes.append('rights public · repair + rent check free · renewal + AI paywalled')
         finally:
-            page.evaluate("(async () => { try { await supaClient.auth.signOut() } catch (e) {} })()"); time.sleep(0.8)
+            page.evaluate(SIGN_OUT_JS); time.sleep(0.3)
             supabase_admin('DELETE', f'users/{uid}')
 
     def j_ai_features(self, page, j, device):
@@ -1850,7 +1856,7 @@ class Runner:
                 self.ok(not page.evaluate(f"!!document.querySelector('#detail-sheet [data-detail={act}]')"), f'the building sheet should not offer {act}', j)
             j.notes.append('AI row on sentences only · auth gate · paywall lists AI perks')
         finally:
-            page.evaluate("(async () => { try { await supaClient.auth.signOut() } catch (e) {} })()"); time.sleep(0.8)
+            page.evaluate(SIGN_OUT_JS); time.sleep(0.3)
             supabase_admin('DELETE', f'users/{uid}')
 
     def j_qualify(self, page, j, device):

@@ -156,11 +156,12 @@ struct ProfileView: View {
                     // Turn off moved here from the Lotteries card, which is gone
                     // once alerts are on (owner, 2026-10-13).
                     if LotteryFeed.shared.subscribed {   // only ever true signed in (or --lotteries-demo)
-                        // Short key and a fixed-size value: "Turn off alerts" beside
-                        // "Turn off" clipped the button text (accessibility audit).
+                        // Flexible text with layout priority: a fixed-size
+                        // "Turn off" at 18 pt was reported as clipped text by the
+                        // accessibility audit on iPhone and iPad.
                         settingRow("Alerts are on") {
                             Button { confirmTurnOff = true } label: {
-                                HStack(spacing: 4) { Text(turnOffFailed ? "Try again" : "Turn off").font(.se(18, .semibold)).fixedSize(); Image(systemName: "bell.slash").font(.system(size: 13, weight: .bold)) }
+                                HStack(spacing: 4) { Text(turnOffFailed ? "Try again" : "Turn off alerts").font(.se(17, .semibold)).layoutPriority(1); Image(systemName: "bell.slash").font(.system(size: 13, weight: .bold)) }
                                     .foregroundStyle(turnOffFailed ? SE.bad : SE.royal)
                             }.buttonStyle(.plain).accessibilityIdentifier("profile-alerts-off")
                         }

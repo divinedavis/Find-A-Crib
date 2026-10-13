@@ -60,13 +60,17 @@ def main():
     ap.add_argument("app_id")
     ap.add_argument("plan")
     ap.add_argument("--prefix", required=True)
+    # A header still in draft can be placed on a page that hasn't been
+    # submitted; it is then reviewed with the page (one review, not two).
+    ap.add_argument("--allow-draft", action="store_true")
     a = ap.parse_args()
 
     plan = json.load(open(a.plan))
     headers = {}
     for i in images(a.app_id):
         ref = i["attributes"].get("referenceName") or ""
-        if ref.startswith(f"{a.prefix}/cpp-") and "/header-" in ref and i["attributes"].get("state") == "APPROVED":
+        if ref.startswith(f"{a.prefix}/cpp-") and "/header-" in ref and (i["attributes"].get("state") == "APPROVED"
+                                                                       or (a.allow_draft and i["attributes"].get("state") == "PREPARE_FOR_SUBMISSION")):
             headers[ref.split("/")[1][4:]] = i["id"]
     existing = {p["attributes"]["name"]: p for p in
                 call("GET", f"/v1/apps/{a.app_id}/appCustomProductPages?limit=50")["data"]}

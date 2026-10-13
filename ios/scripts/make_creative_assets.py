@@ -40,6 +40,29 @@ PAGES = {
         "tagline": "All 47,000 NYC rent-stabilized buildings",
         "bubbles": [("For rent this week", YELLOW, NAVY), ("Rent-stabilized", WHITE, NAVY, GREEN)],
     },
+    # Round two (owner, 2026-10-13: "add more custom product pages").
+    "cpp-vouchers": {
+        "tagline": "NYC buildings that take Section 8 & CityFHEPS",
+        "bubbles": [("Vouchers welcome", YELLOW, NAVY), ("Section 8", WHITE, NAVY, GREEN)],
+    },
+    "cpp-building-check": {
+        "tagline": "Check any NYC building before you sign",
+        "bubbles": [("Bedbugs on file?", YELLOW, NAVY), ("No open violations", WHITE, NAVY, GREEN)],
+    },
+    "cpp-brooklyn": {
+        "tagline": "Rent-stabilized buildings across Brooklyn",
+        "bubbles": [("Bed-Stuy · Flatbush", YELLOW, NAVY), ("Rent-stabilized", WHITE, NAVY, GREEN)],
+    },
+    # Staged until the renter tools ship in an App Store version (a CPP may
+    # only show what the live app does).
+    "cpp-renter-tools": {
+        "tagline": "Repairs, rent increases & your rights as a renter",
+        "bubbles": [("Is my increase legal?", YELLOW, NAVY), ("Repair letter ready", WHITE, NAVY, GREEN)],
+    },
+    "cpp-broker-fee": {
+        "tagline": "Check broker fees and your lease before you sign",
+        "bubbles": [("FARE Act check", YELLOW, NAVY), ("Lease reviewed", WHITE, NAVY, GREEN)],
+    },
     "cpp-cities": {
         "tagline": "Rent-limited homes in LA, SF, DC & more",
         "bubbles": [("Los Angeles RSO", YELLOW, NAVY), ("Rent-controlled", WHITE, NAVY, GREEN)],

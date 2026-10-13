@@ -120,7 +120,7 @@ struct EmailSignInView: View {
             // Signing in from the Plus sheet must not close this one under it;
             // it closes when the Plus sheet does.
             .onChange(of: auth.isSignedIn) { _, on in if on && !showPlus { dismiss() } }
-            .sheet(isPresented: $showPlus, onDismiss: { if auth.isSignedIn { dismiss() } }) { PaywallView(source: agentPreview ? "phone" : records != nil ? "broker_fee" : "signin_alerts") }
+            .sheet(isPresented: $showPlus, onDismiss: { if auth.isSignedIn { dismiss() } }) { PaywallView(source: agentPreview ? "phone" : records != nil ? "realtime" : "signin_alerts") }
           }
         }
     }
@@ -236,7 +236,7 @@ struct RecordsPromiseBox: View {
             PromiseRow(icon: "ladybug.fill", text: "Bedbug filings the landlord made, year by year")
             PromiseRow(icon: "pawprint.fill", text: "Rat inspections from the Health Department")
             HStack(alignment: .center, spacing: 12) {
-                PromiseRow(icon: "dollarsign.circle.fill", text: "Plus: check if a broker fee breaks NYC's FARE Act")
+                PromiseRow(icon: "bolt.fill", text: "Plus: real-time lottery alerts, the minute one opens")
                 Button {
                     Analytics.shared.track("records_upsell_click", ["src": "signin_records"]); openPlus()
                 } label: {

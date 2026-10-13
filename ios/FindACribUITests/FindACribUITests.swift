@@ -393,6 +393,7 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.buttons["sign-in-apple"].exists, "Apple sign-in should be on the sheet")
         XCTAssertLessThan(box.frame.minY, app.buttons["sign-in-apple"].frame.minY, "the preview sits above Apple/Google")
         XCTAssertTrue(app.buttons["records-promise-plus"].exists, "one Plus feature with a Get Plus button")
+        XCTAssertTrue(app.staticTexts["Plus: real-time lottery alerts, the minute one opens"].exists, "the Plus row sells real-time alerts")
         XCTAssertTrue(app.buttons["create-account-toggle"].isHittable, "No account? Create one must stay on screen")
     }
 

@@ -446,7 +446,7 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["card-address"].firstMatch.waitForExistence(timeout: 90))
         XCTAssertTrue(app.buttons["Share"].firstMatch.exists, "LA cards keep Share")
         XCTAssertFalse(app.buttons["card-pests"].exists, "no pests button outside New York")
-        XCTAssertFalse(app.buttons["card-owner-phone"].exists, "no Owner Phone # outside New York")
+        XCTAssertFalse(app.buttons["card-owner-phone"].exists, "no Owner Phone outside New York")
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--city", "la"]
         app.launch()
@@ -464,7 +464,7 @@ final class FindACribUITests: XCTestCase {
         XCTAssertFalse(app.buttons["profile-alerts-off"].exists, "nothing to turn off without alerts")
     }
 
-    /// A building with no pests cited shows "Owner Phone #"; signed out, a
+    /// A building with no pests cited shows "Owner Phone"; signed out, a
     /// tap previews the agent sign-in (owner, 2026-10-13).
     func testCardOwnerPhoneButtonPreviewsAgentSignIn() throws {
         app.terminate()
@@ -472,12 +472,12 @@ final class FindACribUITests: XCTestCase {
         app.launch()
         let phone = app.buttons["card-owner-phone"].firstMatch
         XCTAssertTrue(phone.waitForExistence(timeout: 60))
-        XCTAssertEqual(phone.label, "Owner Phone #")
+        XCTAssertEqual(phone.label, "Owner Phone")
         let h = app.windows.firstMatch.frame.height
         for _ in 0..<6 where !phone.isHittable || phone.frame.maxY > h - 140 { app.swipeUp() }
         phone.tap()
         XCTAssertTrue(app.descendants(matching: .any)["agent-promise-box"].waitForExistence(timeout: 10),
-                      "signed out, Owner Phone # opens the agent sign-in sheet")
+                      "signed out, Owner Phone opens the agent sign-in sheet")
     }
 
     /// Google's ads live in the feed, in the re-rental slots (Ads.swift,

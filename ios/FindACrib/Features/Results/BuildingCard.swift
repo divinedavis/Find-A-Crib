@@ -257,7 +257,7 @@ struct BuildingCard: View {
 
 /// The card's left button in New York. Shows the pest kinds HPD cited at
 /// the building this year, one at a time ("Bedbugs (2)", then "Rats (1)"),
-/// or "Owner Phone #" when the year is clean. Signed out, a tap opens the
+/// or "Owner Phone" when the year is clean. Signed out, a tap opens the
 /// matching sign-in preview; signed in, it opens the pest records, or the
 /// building (where the phone is) for Plus, or the Plus sheet for the phone.
 struct CardRecordsButton: View {
@@ -273,7 +273,7 @@ struct CardRecordsButton: View {
         Group {
             if let kinds {
                 if kinds.isEmpty {
-                    button(id: "card-owner-phone", icon: "phone.fill", text: "Owner Phone #") { tapPhone() }
+                    button(id: "card-owner-phone", icon: "phone.fill", text: "Owner Phone") { tapPhone() }
                 } else {
                     // Rotates every 2.5 s through the kinds found.
                     TimelineView(.periodic(from: .now, by: 2.5)) { ctx in

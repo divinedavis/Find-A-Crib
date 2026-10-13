@@ -28,6 +28,7 @@ import claude_features       # landlord report card (Haiku) + Ask about this bui
 import listing_page          # a re-rental's own page as text, for Help me apply
 import broker_fee            # broker fee checker: FARE Act + RPL 238-a rules, no model
 import lease_review          # lease review: Claude Haiku 5.5, quotes checked against the lease
+import renter_tools          # repairs, rent increases, rights, renewal coach (2026-10-13)
 
 DATA_DIR = os.environ.get("DATA_DIR", ".")
 SUPABASE_URL = "https://dbaifotzwlxjvsxjohjt.supabase.co"
@@ -771,6 +772,102 @@ def ai_lease_review():
     if out is None:
         return jsonify(ok=False, error="declined"), 200
     return jsonify(ok=True, review=out)
+
+
+# ---- Renter tools: for people who already have a place (owner, 2026-10-13).
+# The rules ones (repair, rent increase) are free with an account; the rights
+# cards are public; the renewal coach and every Claude draft are Plus.
+_REPAIR_KEYS = ("issue", "since", "address", "unit", "name", "details")
+_RENT_KEYS = ("stabilized", "current_rent", "new_rent", "term", "lease_start", "years", "notice_days")
+_RENEWAL_KEYS = ("lease_end", "current_rent", "offered_rent", "stabilized", "zip", "beds", "years", "term", "notice_days")
+
+
+def _pick(keys):
+    body = request.get_json(silent=True) or {}
+    return {k: (str(body.get(k))[:600] if body.get(k) is not None else None) for k in keys}, body
+
+
+def _rules_tool(feature, fn, keys, plus=False):
+    user = _session_user()
+    err = AI.allow(user, feature, "rules", plus=plus)
+    if err:
+        return _ai_err(err)
+    a, _ = _pick(keys)
+    out = fn(a)
+    AI.record(user, feature, "rules")
+    return jsonify(ok=True, **out)
+
+
+@app.route("/ai/repair", methods=["POST"])
+def ai_repair():
+    return _rules_tool("repair", renter_tools.repair, _REPAIR_KEYS)
+
+
+@app.route("/ai/rent-increase", methods=["POST"])
+def ai_rent_increase():
+    return _rules_tool("rent_increase", renter_tools.rent_increase, _RENT_KEYS)
+
+
+@app.route("/ai/rights")
+def ai_rights():
+    return jsonify(ok=True, **renter_tools.rights())
+
+
+@app.route("/ai/renewal", methods=["POST"])
+def ai_renewal():
+    return _rules_tool("renewal", lambda a: renter_tools.renewal(a, FMR), _RENEWAL_KEYS, plus=True)
+
+
+def _draft(feature, facts, text):
+    user = _session_user()
+    err = AI.allow(user, feature, renter_tools.MODEL)
+    if err:
+        return _ai_err(err)
+    try:
+        out, u = renter_tools.draft(feature, facts, text)
+    except renter_tools.Ungrounded:
+        return jsonify(ok=False, error="declined"), 200
+    except Exception as e:
+        app.logger.warning("%s failed: %s", feature, type(e).__name__)
+        return jsonify(error="unavailable"), 503
+    AI.record(user, feature, u["model"] or renter_tools.MODEL, u["input_tokens"], u["output_tokens"],
+              ok=out is not None, cache_write_tokens=u["cache_write_tokens"], cache_read_tokens=u["cache_read_tokens"])
+    if out is None:
+        return jsonify(ok=False, error="declined"), 200
+    return jsonify(ok=True, **out)
+
+
+@app.route("/ai/repair-letter", methods=["POST"])
+def ai_repair_letter():
+    a, _ = _pick(_REPAIR_KEYS)
+    r = renter_tools.repair(a)
+    nice = lambda iso: (lambda d: f"{d:%B} {d.day}, {d.year}")(datetime.date.fromisoformat(iso))
+    facts = {k: r[k] for k in ("label", "rule", "law")}
+    facts.update({"fix_by": nice(r["ask_by"]), "today": nice(datetime.date.today().isoformat()),
+                  "habitability": "NY Real Property Law § 235-b also requires the apartment to be fit to live in"})
+    facts.update({k: a[k] for k in ("address", "unit") if a.get(k)})   # never the name: the page fills [Your name] in
+    if renter_tools._date(a.get("since")):
+        facts["problem_since"] = nice(renter_tools._date(a.get("since")).isoformat())
+    return _draft("repair_letter", facts, (a.get("details") or "")[:600])
+
+
+@app.route("/ai/rights-ask", methods=["POST"])
+def ai_rights_ask():
+    q = str((request.get_json(silent=True) or {}).get("question") or "").strip()[:400]
+    if len(q) < 3:
+        return jsonify(error="empty"), 400
+    return _draft("rights_answer", None, q)
+
+
+@app.route("/ai/renewal-script", methods=["POST"])
+def ai_renewal_script():
+    a, _ = _pick(_RENEWAL_KEYS)
+    r = renter_tools.renewal(a, FMR)
+    facts = {"current_rent": a.get("current_rent"), "offered_rent": a.get("offered_rent"),
+             "stabilized": a.get("stabilized"), "dates": r["dates"], "hud_typical_rent": r["compare"],
+             "legal_check": [{"title": f["title"], "rule": f["law"]} for f in ((r["check"] or {}).get("findings") or [])],
+             "allowed_rent": (r["check"] or {}).get("allowed_rent")}
+    return _draft("renewal_script", facts, "")
 
 
 _featured = {"at": 0, "by_href": {}}

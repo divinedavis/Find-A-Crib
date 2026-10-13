@@ -536,6 +536,21 @@
   .tool-find .tf-law { color: var(--ink-2); font-size: 12.5px; margin-top: 4px; }
   .tool-find blockquote { margin: 6px 0; padding: 6px 10px; border-left: 3px solid var(--line); color: var(--ink-2); font-size: 13px; }
   .tool-note { color: var(--ink-2); font-size: 12.5px; margin-top: 8px; }
+  /* Renter tools (2026-10-13): for people who already have a place */
+  .menu-label { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--ink-2); padding: 10px 14px 2px; }
+  .tool-card input:not([type=file]) { width: 100%; box-sizing: border-box; padding: 11px 12px; font-size: 16px; border: 1px solid var(--line);
+    border-radius: 8px; margin-bottom: 10px; background: var(--surface); color: var(--ink); font-family: inherit; }
+  .tool-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tool-btns .auth-submit { flex: 1 1 200px; }
+  .tool-alt { background: var(--surface); color: var(--blue); border: 1.5px solid var(--blue); }
+  .tool-letter { width: 100%; min-height: 260px; font: 14px/1.45 inherit; white-space: pre-wrap; }
+  .tool-link { display: inline-block; margin: 6px 8px 0 0; font-weight: 700; }
+  .rights-card { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+  .rights-card b { display: block; margin-bottom: 2px; }
+  .rights-list { max-height: 46vh; overflow-y: auto; margin: 10px 0; }
+  .tool-dates { list-style: none; padding: 0; margin: 6px 0 10px; }
+  .tool-dates li { padding: 6px 0; border-bottom: 1px solid var(--line); }
+  .tool-dates li.past { color: var(--ink-2); text-decoration: line-through; }
   .paywall-card .auth-close { top: 20px; right: 20px; width: 44px; height: 44px; font-size: 18px; }
   .paywall-card .paywall-badge { font-size: 13px; padding: 5px 12px; margin-bottom: 14px; }
   .paywall-card h2 { margin: 0 0 8px; font-size: 40px; line-height: 1.1; letter-spacing: -1px; font-weight: 800; }
@@ -1624,6 +1639,11 @@
     <a href="/directory/" class="nyc-only">🔍 Landlords</a>
     <button type="button" data-menu="brokerfee" class="nyc-only">🧾 Broker fee check</button>
     <button type="button" data-menu="lease" class="nyc-only">📄 Lease review</button>
+    <div class="menu-label nyc-only">Already have a place?</div>
+    <button type="button" data-menu="repair" class="nyc-only">🔧 Get a repair made</button>
+    <button type="button" data-menu="rentup" class="nyc-only">📈 Is my rent increase legal?</button>
+    <button type="button" data-menu="rights" class="nyc-only">⚖️ Know your rights</button>
+    <button type="button" data-menu="renewal" class="nyc-only">🔁 Renewal coach</button>
     <a href="https://apps.apple.com/us/app/find-a-crib/id6807549249" target="_blank" rel="noopener" data-menu="app">📲 Get the app</a>
     <div class="menu-sep"></div>
     <a href="/">NYC</a><a href="/sf/">San Francisco</a><a href="/la/">Los Angeles</a><a href="/dc/">Washington DC</a>
@@ -1899,6 +1919,101 @@
     <div id="lease-out" class="tool-out" hidden></div>
   </div>
 </div>
+<!-- Renter tools (owner, 2026-10-13): for people who already have a place.
+     Repairs and rent increases are free with an account; the rights cards are
+     public; the Renewal coach and every "✨" AI draft are Plus. The law lives
+     server-side (renter_tools.py); the page only collects answers. -->
+<div id="repair-modal" class="auth-backdrop" hidden>
+  <div class="auth-card tool-card">
+    <button class="auth-close" data-tool="close" aria-label="Close">✕</button>
+    <h2>Get a repair made</h2>
+    <p class="auth-sub">Tell us what’s broken. We’ll show what NYC law requires, write the letter to your landlord, and walk you through 311 if it isn’t fixed.</p>
+    <form id="repair-form">
+      <label for="rp-issue">What’s wrong?</label>
+      <select id="rp-issue">
+        <option value="heat">No heat or not enough heat</option>
+        <option value="hot_water">No hot water</option>
+        <option value="leak">Leak, water damage or plumbing</option>
+        <option value="mold">Mold</option>
+        <option value="pests">Roaches, mice, rats or bedbugs</option>
+        <option value="lead">Peeling paint with a child under 6</option>
+        <option value="window_guards">Missing window guards (child 10 or under)</option>
+        <option value="gas_electric">No gas, electricity or cooking gas</option>
+        <option value="other">Something else broken</option>
+      </select>
+      <div class="tool-row">
+        <div><label for="rp-since">Since</label><input id="rp-since" type="date"></div>
+        <div><label for="rp-unit">Apartment</label><input id="rp-unit" maxlength="20" placeholder="4B"></div>
+      </div>
+      <label for="rp-addr">Building address</label>
+      <input id="rp-addr" maxlength="120" placeholder="123 Main St, Brooklyn" autocomplete="street-address">
+      <label for="rp-name">Your name (for the letter)</label>
+      <input id="rp-name" maxlength="80" autocomplete="name">
+      <label for="rp-details">Describe it (optional)</label>
+      <textarea id="rp-details" maxlength="600" placeholder="The bedroom radiator has been cold for 3 days and the super isn’t answering."></textarea>
+      <div class="tool-btns">
+        <button type="submit" class="auth-submit">Write my letter</button>
+        <button type="button" class="auth-submit tool-alt" id="rp-ai">✨ Write it in my words</button>
+      </div>
+    </form>
+    <div id="repair-out" class="tool-out" hidden></div>
+  </div>
+</div>
+<div id="rentup-modal" class="auth-backdrop" hidden>
+  <div class="auth-card tool-card">
+    <button class="auth-close" data-tool="close" aria-label="Close">✕</button>
+    <h2>Is my rent increase legal?</h2>
+    <p class="auth-sub">Rent stabilized renewals follow the Rent Guidelines Board — 0% for leases starting October 1, 2026 to September 30, 2027. Most other NYC apartments are covered by Good Cause Eviction. We’ll check yours.</p>
+    <form id="rentup-form">
+      <label for="ru-stab">Is the apartment rent stabilized?</label>
+      <select id="ru-stab"><option value="unsure">Not sure</option><option value="yes">Yes</option><option value="no">No</option></select>
+      <div class="tool-row">
+        <div><label for="ru-cur">Rent now ($)</label><input id="ru-cur" inputmode="decimal" placeholder="2,000" required></div>
+        <div><label for="ru-new">New rent ($)</label><input id="ru-new" inputmode="decimal" placeholder="2,100" required></div>
+        <div><label for="ru-start">New lease starts</label><input id="ru-start" type="date"></div>
+        <div><label for="ru-term">Lease length</label><select id="ru-term"><option value="1">1 year</option><option value="2">2 years</option></select></div>
+        <div><label for="ru-years">Years you’ve lived there</label><input id="ru-years" inputmode="decimal" placeholder="2"></div>
+        <div><label for="ru-notice">Days’ notice you got</label><input id="ru-notice" inputmode="numeric" placeholder="60"></div>
+      </div>
+      <button type="submit" class="auth-submit">Check my increase</button>
+    </form>
+    <div id="rentup-out" class="tool-out" hidden></div>
+  </div>
+</div>
+<div id="rights-modal" class="auth-backdrop" hidden>
+  <div class="auth-card tool-card">
+    <button class="auth-close" data-tool="close" aria-label="Close">✕</button>
+    <h2>Know your rights</h2>
+    <p class="auth-sub">What your landlord can and can’t do in New York City, in plain words.</p>
+    <div id="rights-list" class="rights-list">Loading…</div>
+    <form id="rights-form">
+      <label for="rights-q">✨ Ask a question</label>
+      <textarea id="rights-q" maxlength="400" placeholder="Can my landlord stop my partner from moving in?"></textarea>
+      <button type="submit" class="auth-submit">Ask</button>
+    </form>
+    <div id="rights-out" class="tool-out" hidden></div>
+  </div>
+</div>
+<div id="renewal-modal" class="auth-backdrop" hidden>
+  <div class="auth-card tool-card">
+    <button class="auth-close" data-tool="close" aria-label="Close">✕</button>
+    <h2>Renewal coach</h2>
+    <p class="auth-sub">Your key dates, the most your rent can legally go up, how it compares with the typical rent in your ZIP, and an email to negotiate.</p>
+    <form id="renewal-form">
+      <div class="tool-row">
+        <div><label for="rn-end">Lease ends</label><input id="rn-end" type="date" required></div>
+        <div><label for="rn-stab">Rent stabilized?</label><select id="rn-stab"><option value="unsure">Not sure</option><option value="yes">Yes</option><option value="no">No</option></select></div>
+        <div><label for="rn-cur">Rent now ($)</label><input id="rn-cur" inputmode="decimal" placeholder="2,400" required></div>
+        <div><label for="rn-off">Offered rent ($, if any)</label><input id="rn-off" inputmode="decimal" placeholder="2,500"></div>
+        <div><label for="rn-zip">ZIP</label><input id="rn-zip" inputmode="numeric" maxlength="5" placeholder="11216"></div>
+        <div><label for="rn-beds">Bedrooms</label><select id="rn-beds"><option value="0">Studio</option><option value="1" selected>1</option><option value="2">2</option><option value="3">3+</option></select></div>
+        <div><label for="rn-years">Years you’ve lived there</label><input id="rn-years" inputmode="decimal" placeholder="2"></div>
+      </div>
+      <button type="submit" class="auth-submit">Plan my renewal</button>
+    </form>
+    <div id="renewal-out" class="tool-out" hidden></div>
+  </div>
+</div>
 <div id="paywall-modal" class="auth-backdrop" hidden>
   <div class="auth-card paywall-card">
     <button class="auth-close" data-paywall="close" aria-label="Close">✕</button>
@@ -1913,6 +2028,8 @@
       <li data-perk="ai_search" data-ai><span class="pf-ico">✨</span><span><b>Search in plain words</b>“2 bed under $2,500 near Prospect Park, no violations” — and the map sets every filter</span></li>
       <li data-perk="broker_fee" data-ai><span class="pf-ico">🧾</span><span><b>Broker fee check</b>Find out if a broker fee, application fee or deposit breaks NYC’s FARE Act or New York law — and how to get it back</span></li>
       <li data-perk="lease_review" data-ai><span class="pf-ico">📄</span><span><b>Lease review</b>Upload your lease and AI flags the clauses New York law limits or voids, quoting each one</span></li>
+      <li data-perk="renewal" data-ai><span class="pf-ico">🔁</span><span><b>Renewal coach</b>Your key dates, the legal cap on your increase, and an AI-written email to negotiate your renewal</span></li>
+      <li data-perk="renter_ai" data-ai><span class="pf-ico">✨</span><span><b>AI repair letters &amp; rights answers</b>A repair letter in your own words, and answers to your questions about your rights as a renter</span></li>
       <li data-perk="apply_help" data-ai><span class="pf-ico">📝</span><span><b>Help me apply</b>The steps, the documents to gather and a ready-to-send email to the agent, for every re-rental</span></li>
       <li data-perk="phone" data-ai><span class="pf-ico">📞</span><span><b>Agent phone numbers</b>Call who actually runs the building — 11,000+ managing-agent numbers</span></li>
       <li data-perk="noads"><span class="pf-ico">🚫</span><span><b>No ads</b>Anywhere on Find A Crib — the map, the list and every building page</span></li>
@@ -2347,7 +2464,7 @@ function favActive() {
       // gets the QR modal instead.
       if (b.dataset.menu === 'app' && !matchMedia('(min-width: 901px)').matches) return;
       if (b.tagName === 'A') e.preventDefault();
-      if (b.dataset.menu === 'brokerfee' || b.dataset.menu === 'lease') { openTool(b.dataset.menu, 'menu'); return; }
+      if (b.dataset.menu in TOOLS) { openTool(b.dataset.menu, 'menu'); return; }
       const target = { auth: 'auth-btn', saved: 'pill-fav', filters: 'pill-filters', app: 'pill-app-d' }[b.dataset.menu];
       const el = target && document.getElementById(target); if (el) el.click();
     });
@@ -8175,7 +8292,7 @@ function favActive() {
   // 2026-10-03) — and no ads, which paying members keep.
   // …and agent phone numbers (owner, 2026-10-12: "make agents phone number a
   // paid feature"; get_agent_phone() answers Plus only).
-  const AI_SOURCES = new Set(['realtime', 'ai_search', 'apply_help', 'broker_fee', 'lease_review', 'profile', 'phone']);
+  const AI_SOURCES = new Set(['realtime', 'ai_search', 'apply_help', 'broker_fee', 'lease_review', 'renewal', 'renter_ai', 'profile', 'phone']);
   function openPaywall(bbl, source) {
     // A phone reveal passes only the bbl: name its source before the check.
     source = source || (bbl ? 'phone' : undefined);
@@ -8187,7 +8304,7 @@ function favActive() {
     pendingPhoneBbl = bbl || null;            // remember what they wanted, to reveal after checkout
     paywallSource = source || (bbl ? 'phone' : 'other');
     // Lead with what they came for.
-    const TITLES = { realtime: 'Get alerts the minute they open', ai_search: 'Search in plain words', apply_help: 'Help me apply', broker_fee: 'Check any broker fee', lease_review: 'Review your lease before you sign', noads: 'Find A Crib, with no ads',
+    const TITLES = { realtime: 'Get alerts the minute they open', ai_search: 'Search in plain words', apply_help: 'Help me apply', broker_fee: 'Check any broker fee', lease_review: 'Review your lease before you sign', renewal: 'Plan your renewal', renter_ai: 'Let AI write it for you', noads: 'Find A Crib, with no ads',
                      phone: 'Call who actually runs the building', research: 'Research any landlord',
                      saved_search: 'Save your searches', folders: 'Organize your saved homes' };
     const pt = document.getElementById('paywall-title');
@@ -8214,11 +8331,12 @@ function favActive() {
   // Anyone can open the form; sending it asks for an account, and the server
   // answers 402 without Plus, which opens the paywall on that perk. The law
   // lives server-side (broker_fee.py, lease_review.py), not in this page.
-  const TOOLS = { brokerfee: 'brokerfee-modal', lease: 'lease-modal' };
+  const TOOLS = { brokerfee: 'brokerfee-modal', lease: 'lease-modal', repair: 'repair-modal', rentup: 'rentup-modal', rights: 'rights-modal', renewal: 'renewal-modal' };
   function openTool(kind, src) {
     Object.values(TOOLS).forEach(id => { document.getElementById(id).hidden = true; });
     const m = document.getElementById(TOOLS[kind]); if (!m) return;
     m.hidden = false;
+    if (kind === 'rights') loadRights();
     track('tool_open', { tool: kind, src: src || 'link', signed_in: !!authUser, plus: !!plusActive });
   }
   Object.values(TOOLS).forEach(id => {
@@ -8227,13 +8345,17 @@ function favActive() {
   });
   if (location.hash === '#broker-fee') openTool('brokerfee', 'hash');
   if (location.hash === '#lease-review') openTool('lease', 'hash');
+  { const H = { '#repair': 'repair', '#rent-increase': 'rentup', '#rights': 'rights', '#renewal': 'renewal' }; if (H[location.hash]) openTool(H[location.hash], 'hash'); }
   const TOOL_ERR = { daily_limit: 'That’s a lot for one day — try again tomorrow.', monthly_limit: 'You’ve used this month’s AI — more on the 1st.', budget: 'This is resting for now — try again later.',
     scanned: 'That PDF is a scan with no text in it. Paste the lease text instead.', too_long: 'That lease is too long to review in one go (60 pages or 200,000 characters).',
     empty: 'Add your lease — upload the PDF or paste the text.', bad_pdf: 'Couldn’t open that PDF (it may be password-protected). Paste the text instead.',
     declined: 'Couldn’t review this one. Paste just the lease text and try again.',
     unavailable: 'Lease review is down for a moment — try again in a little while.' };
+  const TOOL_SIGNUP = { broker_fee: 'Create an account or sign in to check a broker fee.', repair: 'Create a free account to write your repair letter.',
+    rent_increase: 'Create a free account to check your rent increase.', renewal: 'Create an account or sign in to plan your renewal.',
+    renter_ai: 'Create an account or sign in to use AI.' };
   async function toolFetch(source, url, init, out) {
-    const tok = await aiToken(source, source === 'broker_fee' ? 'Create an account or sign in to check a broker fee.' : 'Create an account or sign in to review your lease.');
+    const tok = await aiToken(source, TOOL_SIGNUP[source] || 'Create an account or sign in to review your lease.');
     if (!tok) return null;
     init.headers = Object.assign(init.headers || {}, { Authorization: 'Bearer ' + tok });
     let r, j = {};
@@ -8244,7 +8366,9 @@ function favActive() {
     // gone): ask them to sign in again rather than "something went wrong".
     if (r.status === 401) { out.hidden = true; openAuthModal('Sign in again to continue.', source); return null; }
     if (r.status === 413) { out.textContent = 'That file is over 8 MB. Paste the lease text instead.'; return null; }
-    if (!r.ok || !j.ok) { out.textContent = TOOL_ERR[j.error] || 'Something went wrong — try again.'; track('tool_result', { tool: source, ok: false, error: j.error || r.status }); return null; }
+    const aiDraft = source === 'renter_ai' || source === 'renewal';
+    if (!r.ok || !j.ok) { out.textContent = (aiDraft && j.error === 'declined' ? 'AI couldn’t write this one — try rewording it.'
+        : aiDraft && j.error === 'unavailable' ? 'AI is down for a moment — try again in a little while.' : TOOL_ERR[j.error]) || 'Something went wrong — try again.'; track('tool_result', { tool: source, ok: false, error: j.error || r.status }); return null; }
     return j;
   }
   document.getElementById('bf-form').addEventListener('submit', async e => {
@@ -8286,6 +8410,128 @@ function favActive() {
       + ((r.ask_before_signing || []).length ? `<div style="margin-top:8px"><b>Ask before you sign</b></div><ul style="padding-left:18px;margin:4px 0">${r.ask_before_signing.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '')
       + '<div class="tool-note">Written by AI from your lease. Every quote is checked against your lease, but AI can miss things — this is not legal advice. For help, call 311 or a tenant attorney.</div>';
     track('tool_result', { tool: 'lease_review', ok: true, flags: (r.flags || []).length, pdf: !!file });
+  });
+  // ---------- Renter tools: for people who already have a place (2026-10-13) ----------
+  // Repairs and rent increases: free with an account. Rights cards: public.
+  // Renewal coach + the ✨ AI drafts: Plus (402 opens the paywall). The law
+  // is in renter_tools.py on the server.
+  const jpost = body => ({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const val = id => document.getElementById(id).value.trim();
+  const findHtml = fs => (fs || []).map(f => `<div class="tool-find lv-${esc(f.level)}"><b>${({ illegal: '⚠️', warn: '🔎', ok: '✅' })[f.level] || ''} ${esc(f.title)}</b><div>${esc(f.why)}</div>${f.law ? `<div class="tf-law">${esc(f.law)}</div>` : ''}</div>`).join('');
+  const NOT_ADVICE = '<div class="tool-note">General information about NYC and New York State rules, not legal advice. Free help: call 311 and ask for the Tenant Helpline.</div>';
+  const niceDate = iso => new Date(iso + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  // A calendar reminder, made in the page: nothing about the renter is stored.
+  function icsLink(events, name, label) {
+    const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
+    const txt = s => String(s || '').replace(/[\;,]/g, m => '\\' + m).replace(/\n/g, ' ');
+    const body = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Find A Crib//Renter tools//EN'].concat(...events.map((e, i) => [
+      'BEGIN:VEVENT', `UID:fac-${name}-${i}-${e.date}@findacrib.com`, `DTSTAMP:${stamp}`, `DTSTART;VALUE=DATE:${e.date.replace(/-/g, '')}`,
+      `SUMMARY:${txt(e.title)}`, `DESCRIPTION:${txt(e.body)}`, 'END:VEVENT']), ['END:VCALENDAR']).join('\r\n');
+    return `<a class="tool-link" download="${esc(name)}.ics" href="data:text/calendar;charset=utf-8,${encodeURIComponent(body)}">📅 ${esc(label)}</a>`;
+  }
+  function letterBox(text, id) {
+    return `<textarea class="tool-letter" id="${id}" readonly>${esc(text)}</textarea>
+      <div class="tool-btns"><button type="button" class="auth-submit" data-copy="${id}">Copy letter</button></div>`;
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-copy]'); if (!b) return;
+    const t = document.getElementById(b.dataset.copy); if (!t) return;
+    (navigator.clipboard ? navigator.clipboard.writeText(t.value) : Promise.reject()).then(
+      () => { b.textContent = 'Copied ✓'; }, () => { t.select(); document.execCommand('copy'); b.textContent = 'Copied ✓'; });
+    track('tool_copy', { what: b.dataset.copy });
+  });
+
+  function repairBody() {
+    return { issue: val('rp-issue'), since: val('rp-since'), address: val('rp-addr'), unit: val('rp-unit'), name: val('rp-name'), details: val('rp-details') };
+  }
+  function repairStepsHtml(j) {
+    return `<div style="margin-top:10px"><b>What to do next</b></div><ol style="padding-left:18px;margin:4px 0">${(j.steps || []).map(x => `<li>${esc(x)}</li>`).join('')}</ol>
+      <a class="tool-link" href="${esc(j.links.file_311)}" target="_blank" rel="noopener">File with 311 ↗</a>
+      <a class="tool-link" href="${esc(j.links.legal_help)}" target="_blank" rel="noopener">Free legal help ↗</a>
+      ${icsLink([{ date: j.ask_by, title: 'Check on my repair: ' + j.label, body: 'Not fixed? File a complaint with 311.' }], 'repair-reminder', 'Remind me on ' + niceDate(j.ask_by))}`;
+  }
+  document.getElementById('repair-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const out = document.getElementById('repair-out'); out.hidden = false; out.textContent = 'Writing your letter…';
+    const j = await toolFetch('repair', '/api/ai/repair', jpost(repairBody()), out);
+    if (!j) return;
+    out.innerHTML = `<div class="tool-find${j.urgent ? ' lv-illegal' : ''}"><b>${j.urgent ? '🚨 ' : ''}What the law requires</b><div>${esc(j.rule)}</div><div class="tf-law">${esc(j.law)}</div></div>`
+      + letterBox(j.letter, 'rp-letter') + repairStepsHtml(j) + NOT_ADVICE;
+    track('tool_result', { tool: 'repair', ok: true, issue: j.issue });
+  });
+  document.getElementById('rp-ai').addEventListener('click', async () => {
+    const out = document.getElementById('repair-out'); out.hidden = false;
+    if (!val('rp-details')) { out.textContent = 'Describe the problem first, and AI will write the letter in your words.'; return; }
+    out.textContent = '✨ Writing your letter… about 5 seconds.';
+    const j = await toolFetch('renter_ai', '/api/ai/repair-letter', jpost(repairBody()), out);
+    if (!j) return;
+    const nm = val('rp-name');
+    out.innerHTML = letterBox(nm ? j.letter.split('[Your name]').join(nm) : j.letter, 'rp-letter') + '<div class="tool-note">Written by AI from your description and the law for this problem — read it before you send it.</div>' + NOT_ADVICE;
+    track('tool_result', { tool: 'repair_letter', ok: true });
+  });
+
+  document.getElementById('rentup-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const out = document.getElementById('rentup-out'); out.hidden = false; out.textContent = 'Checking…';
+    const j = await toolFetch('rent_increase', '/api/ai/rent-increase', jpost({ stabilized: val('ru-stab'), current_rent: val('ru-cur'), new_rent: val('ru-new'),
+      lease_start: val('ru-start'), term: val('ru-term'), years: val('ru-years'), notice_days: val('ru-notice') }), out);
+    if (!j) return;
+    if (j.verdict === 'need_rents') { out.textContent = 'Add your rent now and the new rent.'; return; }
+    const head = { likely_illegal: '⚠️ This increase looks too high', check: '🔎 Worth a closer look', looks_ok: '✅ This increase looks allowed' }[j.verdict] || '';
+    out.innerHTML = `<div class="tool-verdict">${esc(head)} <span style="font-weight:600">(${esc(String(j.increase_pct))}%)</span></div>` + findHtml(j.findings)
+      + ((j.next_steps || []).length ? `<div style="margin-top:8px"><b>What you can do</b></div><ol style="padding-left:18px;margin:4px 0">${j.next_steps.map(x => `<li>${esc(x)}</li>`).join('')}</ol>` : '')
+      + `<a class="tool-link" href="${esc(j.links.rent_history)}" target="_blank" rel="noopener">Request your rent history ↗</a>`
+      + `<a class="tool-link" href="${esc(j.links.legal_help)}" target="_blank" rel="noopener">Free legal help ↗</a>` + NOT_ADVICE;
+    track('tool_result', { tool: 'rent_increase', ok: true, verdict: j.verdict });
+  });
+
+  let rightsLoaded = false;
+  async function loadRights() {
+    if (rightsLoaded) return;
+    const list = document.getElementById('rights-list');
+    try {
+      const j = await (await fetch('/api/ai/rights')).json();
+      list.innerHTML = j.cards.map(c => `<div class="rights-card" data-right="${esc(c.id)}"><b>${esc(c.title)}</b><div>${esc(c.text)}</div><div class="tf-law">${esc(c.law)}</div></div>`).join('')
+        + `<a class="tool-link" href="${esc(j.links.legal_help)}" target="_blank" rel="noopener">Free legal help ↗</a>`;
+      rightsLoaded = true;
+    } catch (e) { list.textContent = 'Couldn’t load your rights just now — try again.'; }
+  }
+  document.getElementById('rights-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const out = document.getElementById('rights-out'), q = val('rights-q'); out.hidden = false;
+    if (q.length < 3) { out.textContent = 'Type your question first.'; return; }
+    out.textContent = '✨ Looking it up…';
+    const j = await toolFetch('renter_ai', '/api/ai/rights-ask', jpost({ question: q }), out);
+    if (!j) return;
+    out.innerHTML = `<div class="tool-find"><div>${esc(j.answer)}</div>${(j.sources || []).map(x => `<div class="tf-law">${esc(x.title)} — ${esc(x.law)}</div>`).join('')}</div>`
+      + '<div class="tool-note">Written by AI using only the rights above. It can be wrong and isn’t legal advice — for your situation, call 311 and ask for the Tenant Helpline.</div>';
+    track('tool_result', { tool: 'rights_answer', ok: true, covered: !!j.covered });
+  });
+
+  function renewalBody() {
+    return { lease_end: val('rn-end'), stabilized: val('rn-stab'), current_rent: val('rn-cur'), offered_rent: val('rn-off'), zip: val('rn-zip'), beds: val('rn-beds'), years: val('rn-years') };
+  }
+  document.getElementById('renewal-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const out = document.getElementById('renewal-out'); out.hidden = false; out.textContent = 'Planning…';
+    const j = await toolFetch('renewal', '/api/ai/renewal', jpost(renewalBody()), out);
+    if (!j) return;
+    const c = j.compare;
+    out.innerHTML = `<div class="tool-verdict">Your key dates</div><ul class="tool-dates">${(j.dates || []).map(d => `<li class="${d.past ? 'past' : ''}"><b>${esc(niceDate(d.date))}</b> — ${esc(d.label)}</li>`).join('')}</ul>`
+      + ((j.reminders || []).length ? icsLink(j.reminders, 'lease-renewal', 'Add a reminder to my calendar') : '')
+      + (c ? `<div class="tool-find" style="margin-top:10px"><b>How your rent compares</b><div>$${Number(c.current_rent).toLocaleString()} is ${Math.abs(c.diff_pct)}% ${c.diff_pct >= 0 ? 'above' : 'below'} HUD’s typical rent of $${Number(c.fmr).toLocaleString()} for a ${c.beds ? c.beds + '-bedroom' : 'studio'} in ${esc(c.zip)}.</div><div class="tf-law">${esc(c.source)}</div></div>` : '')
+      + (j.check ? `<div class="tool-verdict" style="margin-top:10px">The offer</div>` + findHtml(j.check.findings) : '')
+      + `<div class="tool-btns" style="margin-top:8px"><button type="button" class="auth-submit tool-alt" id="rn-ai">✨ Write my negotiation email</button></div><div id="rn-script"></div>` + NOT_ADVICE;
+    document.getElementById('rn-ai').addEventListener('click', async () => {
+      const box = document.getElementById('rn-script'); box.textContent = '✨ Writing… about 7 seconds.';
+      const s = await toolFetch('renewal', '/api/ai/renewal-script', jpost(renewalBody()), box);
+      if (!s) return;
+      box.innerHTML = `<div style="margin-top:10px"><b>Points to make</b></div><ul style="padding-left:18px;margin:4px 0">${(s.talking_points || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul>`
+        + `<div><b>Subject:</b> ${esc(s.email_subject)}</div>` + letterBox(s.email_body, 'rn-email')
+        + '<div class="tool-note">Written by AI from the numbers above — fill in the [brackets] and read it before you send it.</div>';
+      track('tool_result', { tool: 'renewal_script', ok: true });
+    });
+    track('tool_result', { tool: 'renewal', ok: true, has_offer: !!j.check });
   });
   // "Remove ads" chip (owner, 2026-09-29; it replaced the desktop Landlords
   // chip — Landlords stays in the ☰ menu and the header's 🔎). Opens the Plus

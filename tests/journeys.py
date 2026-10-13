@@ -123,6 +123,7 @@ JOURNEY_EVENTS = {
     'resume_search':        ['resume_offer', 'resume_apply'],
     'ai_features':          ['ai_search_click', 'paywall_view'],
     'tools':                ['tool_open'],
+    'renter_tools':         ['tool_open', 'tool_result'],
     'qualify':              ['qualify_open', 'qualify_set', 'qualify_clear'],
     # home_set / home_open / home_clear are pre-2026-09-06 history: the
     # my-apartment pin was retired from the UI that day (no sheet button, no
@@ -1701,6 +1702,79 @@ class Runner:
         rows = page.evaluate("[...document.querySelectorAll('#menu-pop [data-menu]')].filter(b => b.offsetParent).map(b => b.dataset.menu)")
         self.ok('brokerfee' not in rows and 'lease' not in rows, f'the NYC-law tools stay off other cities: {rows}', j)
 
+    def j_renter_tools(self, page, j, device):
+        """For renters who already have a place (owner, 2026-10-13): ☰ lists
+        repairs, rent increase, rights and the renewal coach on NYC only. The
+        rights cards are public; a repair letter or rent check asks signed-out
+        visitors for an account; a free account gets both answers (rules,
+        renter_tools.py), and the Renewal coach and the AI rights answer open
+        the paywall on their own perks."""
+        kinds = ('repair', 'rentup', 'rights', 'renewal')
+        self.boot(page)
+        self.click(page, '#menu-btn'); time.sleep(0.3)
+        rows = page.evaluate("[...document.querySelectorAll('#menu-pop [data-menu]')].filter(b => b.offsetParent).map(b => b.dataset.menu)")
+        self.ok(all(k in rows for k in kinds), f'☰ lists the four renter tools on NYC: {rows}', j)
+        self.click(page, '#menu-btn'); time.sleep(0.2)
+        self.boot(page, '/#rights')
+        self.ok(self.wait_until(page, "document.querySelectorAll('#rights-list .rights-card').length >= 10", 10000),
+                'signed out, /#rights opens the rights cards', j)
+        txt = page.evaluate("document.getElementById('rights-list').textContent")
+        self.ok('§ 223-b' in txt and '8.38%' in txt, 'the rights cards name the retaliation law and the Good Cause standard', j)
+        self.boot(page, '/#repair')
+        self.ok(self.wait_until(page, "!document.getElementById('repair-modal').hidden", 8000), '/#repair opens Get a repair made', j)
+        page.evaluate("document.querySelector('#repair-form button[type=submit]').click()"); time.sleep(0.8)
+        self.ok(not page.evaluate("document.getElementById('auth-modal').hidden"), 'signed out, writing a repair letter asks for an account', j)
+        w = page.evaluate("document.querySelector('#repair-modal .auth-card').getBoundingClientRect().width")
+        self.ok(w <= page.viewport_size['width'], f'the repair card fits the screen ({w}px)', j)
+        email = f'journey-rt-{secrets.token_hex(6)}@example.com'
+        password = secrets.token_urlsafe(18)
+        st_, u = supabase_admin('POST', 'users', {'email': email, 'password': password, 'email_confirm': True})
+        if st_ not in (200, 201) or not u or not u.get('id'):
+            self.ok(False, f'could not create the throwaway account (HTTP {st_})', j); return
+        uid = u['id']
+        try:
+            self.boot(page)
+            self.click(page, '#auth-btn'); time.sleep(0.6)
+            page.fill('#auth-email', email); page.fill('#auth-pass', password)
+            self.click(page, '#auth-submit')
+            if not self.wait_until(page, "document.getElementById('auth-btn').classList.contains('signed-in')", 20000):
+                self.ok(False, 'the throwaway account should sign in', j); return
+            time.sleep(1.0)
+            page.evaluate("openTool('repair', 'journey')") if page.evaluate("typeof openTool === 'function'") else self.boot(page, '/#repair')
+            self.wait_until(page, "!document.getElementById('repair-modal').hidden", 8000)
+            page.select_option('#rp-issue', 'heat'); page.fill('#rp-addr', '30 Allen St'); page.fill('#rp-unit', '4B')
+            page.evaluate("document.querySelector('#repair-form button[type=submit]').click()")
+            ok = self.wait_until(page, "!!document.getElementById('rp-letter')", 15000)
+            letter = page.evaluate("(document.getElementById('rp-letter')||{}).value || ''")
+            self.ok(ok and '27-2029' in letter and '30 Allen St, Apt 4B' in letter, f'a free account gets a heat letter citing § 27-2029: {letter[:120]!r}', j)
+            self.ok(page.evaluate("!!document.querySelector('#repair-out a[download$=\".ics\"]')"), 'the repair answer offers a calendar reminder', j)
+            self.boot(page, '/#rent-increase')
+            self.wait_until(page, "!document.getElementById('rentup-modal').hidden", 8000)
+            page.select_option('#ru-stab', 'yes'); page.fill('#ru-cur', '2000'); page.fill('#ru-new', '2060'); page.fill('#ru-start', '2026-11-01')
+            page.evaluate("document.querySelector('#rentup-form button[type=submit]').click()")
+            self.wait_until(page, "/looks|too high|closer/.test(document.getElementById('rentup-out').textContent)", 15000)
+            out = page.evaluate("document.getElementById('rentup-out').textContent")
+            self.ok('too high' in out and '#58' in out, f'a 3% stabilized renewal under the 2026 freeze is flagged: {out[:140]!r}', j)
+            for hash_, form, perk, fill in (('#renewal', '#renewal-form', 'renewal', [('#rn-end', '2027-01-31'), ('#rn-cur', '2400')]),
+                                            ('#rights', '#rights-form', 'renter_ai', [('#rights-q', 'Can my landlord keep my whole deposit?')])):
+                self.boot(page, '/' + hash_)
+                self.wait_until(page, f"!document.querySelector('{form}').closest('.auth-backdrop').hidden", 8000)
+                for sel, v in fill:
+                    page.fill(sel, v)
+                page.evaluate(f"document.querySelector('{form} button[type=submit]').click()")
+                self.wait_until(page, "!document.getElementById('paywall-modal').hidden", 15000)
+                lead = page.evaluate("(document.querySelector('#paywall-feats li.pf-lead')||{}).dataset?.perk || null")
+                self.ok(lead == perk, f'a free account using {hash_} gets the paywall led by {perk}, led by {lead}', j)
+                page.evaluate("document.querySelector('[data-paywall=\"close\"]')?.click()"); time.sleep(0.3)
+            self.boot(page, '/sf/')
+            self.click(page, '#menu-btn'); time.sleep(0.3)
+            rows = page.evaluate("[...document.querySelectorAll('#menu-pop [data-menu]')].filter(b => b.offsetParent).map(b => b.dataset.menu)")
+            self.ok(not any(k in rows for k in kinds), f'the NYC renter tools stay off other cities: {rows}', j)
+            j.notes.append('rights public · repair + rent check free · renewal + AI paywalled')
+        finally:
+            page.evaluate("(async () => { try { await supaClient.auth.signOut() } catch (e) {} })()"); time.sleep(0.8)
+            supabase_admin('DELETE', f'users/{uid}')
+
     def j_ai_features(self, page, j, device):
         """AI features are Plus (owner, 2026-10-03). A sentence in the search
         box offers "✨ Search for …"; signed out it asks for an account; a
@@ -1741,7 +1815,7 @@ class Runner:
               shown: [...document.querySelectorAll('#paywall-feats li')].filter(l => !l.hidden && l.offsetParent).map(l => l.dataset.perk)}))()""")
             self.ok(pw['open'] and 'plain words' in pw['title'].lower(), f'a free account gets the AI paywall: {pw}', j)
             # Agent phone numbers are Plus again (owner, 2026-10-12).
-            self.ok(set(pw['shown']) == {'realtime', 'ai_search', 'broker_fee', 'lease_review', 'apply_help', 'phone', 'noads'}, f'the paywall lists real-time alerts, the AI perks, agent phone numbers and no ads: {pw["shown"]}', j)
+            self.ok(set(pw['shown']) == {'realtime', 'ai_search', 'broker_fee', 'lease_review', 'renewal', 'renter_ai', 'apply_help', 'phone', 'noads'}, f'the paywall lists real-time alerts, the AI perks, agent phone numbers and no ads: {pw["shown"]}', j)
             # First month on us (2026-10-04): the trial line sits under the
             # price, and $4.99 stays the big number (Apple/FTC: billed amount
             # most prominent).
@@ -1999,7 +2073,7 @@ class Runner:
     JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'pin_and_list',
                 'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'signin_modal', 'app_chip', 'app_qr_menu', 'boot_is_usable', 'city_chip',
                 'ad_tiles', 'list_follows_zoom', 'plus_no_ads', 'building_page_link', 'remove_ads_chip', 'overlays_clear_ad', 'portal_button', 'outbound_links', 'status_chips', 'referral_gate',
-                'retired_pages', 'legal_pages', 'comments_gate', 'landlords_gate', 'consent_mode', 'account_delete', 'plus_gates', 'resume_search', 'ai_features', 'qualify', 'tools']
+                'retired_pages', 'legal_pages', 'comments_gate', 'landlords_gate', 'consent_mode', 'account_delete', 'plus_gates', 'resume_search', 'ai_features', 'qualify', 'tools', 'renter_tools']
 
     # ---- run --------------------------------------------------------------
     def run(self):

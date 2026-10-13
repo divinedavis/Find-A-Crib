@@ -48,6 +48,10 @@ DAILY_LIMITS = {
     "ask": 20,
     "broker_fee": 50,      # rules only, no model (2026-10-11)
     "lease_review": 5,     # Haiku 5.5, about a cent a lease at most
+    # Renter tools (2026-10-13): the rules ones are free with an account
+    # (plus=False below); the drafts and the renewal coach are Plus.
+    "repair": 50, "rent_increase": 50, "renewal": 30,
+    "repair_letter": 10, "rights_answer": 20, "renewal_script": 10,
 }
 
 
@@ -61,13 +65,16 @@ class Gateway:
     def __init__(self, rpc, supabase_url, service_key):
         self.rpc, self.url, self.key = rpc, supabase_url, service_key
 
-    def allow(self, user, feature, model=None):
+    def allow(self, user, feature, model=None, plus=True):
+        """plus=False: a free rules tool — an account and the daily limit only."""
         if not user:
             return "sign_in_required"
         if model and model not in PRICES:
             return "budget"
+        if not plus and model != "rules":
+            return "budget"        # only code-answered tools may skip the Plus check
         try:
-            if not self.rpc("has_plus", {"uid": user["id"]}):
+            if plus and not self.rpc("has_plus", {"uid": user["id"]}):
                 return "plus_required"
             if self.rpc("ai_user_calls_today", {"p_user": user["id"], "p_feature": feature}) >= DAILY_LIMITS.get(feature, 20):
                 return "daily_limit"

@@ -23,9 +23,6 @@ struct FiltersSheet: View {
                         VStack(alignment: .leading, spacing: 10) {
                             SEFieldLabel(text: "Bedrooms")
                             SESegmentRow(options: [(0, "Studio"), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: $draft.beds)
-                            Text("Narrows the re-rentals to the sizes you pick. Building records don't say what sizes their apartments are.")
-
-                                .font(.se(14)).foregroundStyle(SE.ink3)
                         }
                     }
                     if draft.vouchersOnly {

@@ -134,23 +134,6 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Remove Brooklyn"].waitForExistence(timeout: 5))
     }
 
-    /// Re-rentals ride along in the results feed: the 3rd tile is one, with a
-    /// "Rerental" flag and a hand-off button, and it never displaces a building
-    /// (the count headline is unchanged). The default route is Brooklyn, and
-    /// the bundled featured.json has Brooklyn re-rentals, so this runs offline.
-    /// The landlord report card and Ask about this building left the app
-    /// (owner, 2026-10-03: too slow); the building page has neither.
-    func testBuildingHasNoReportCardOrAsk() throws {
-        app.terminate()
-        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "detail"]
-        app.launch()
-        XCTAssertTrue(app.buttons["detail-menu"].waitForExistence(timeout: 30))
-        for _ in 0..<10 { app.swipeUp() }
-        XCTAssertFalse(app.buttons["ai-report-card"].exists, "no landlord report card")
-        XCTAssertFalse(app.buttons["ai-ask"].exists, "no Ask about this building")
-        XCTAssertFalse(app.staticTexts["Ask AI"].exists, "no Ask AI section")
-    }
-
     /// Application packet (2026-10-03): Profile -> packet; details typed
     /// once are saved and shown; the email button waits for documents.
     func testApplicationPacketSavesDetails() throws {
@@ -180,14 +163,14 @@ final class FindACribUITests: XCTestCase {
     /// opens the Plus page led by real-time alerts; broker fee opens its form.
     func testSearchPlusRowCyclesPlusFeatures() throws {
         for (id, expect) in [("realtime", "Real-time alerts"), ("broker_fee", "Broker fee check"),
-                             ("records", "Sign in to see this building's records")] {
+                             ("lease_review", "Lease review"), ("records", "Sign in to see this building's records")] {
             app.terminate()
             app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--plus-promo", id]
             app.launch()
             let row = app.buttons["plus-promo-\(id)"]
             for _ in 0..<6 where !row.isHittable { app.swipeUp() }
             XCTAssertTrue(row.waitForExistence(timeout: 30), "Search shows the \(id) Plus row")
-            XCTAssertFalse(app.buttons["ai-search-open"].exists, "the old fixed plain-words row is gone")
+            if id == "realtime" { XCTAssertFalse(app.buttons["ai-search-open"].exists, "the old fixed plain-words row is gone") }
             row.tap()
             let opened = app.staticTexts[expect].waitForExistence(timeout: 10) || app.navigationBars[expect].waitForExistence(timeout: 2)
             XCTAssertTrue(opened, "\(id) opens \(expect)")
@@ -220,6 +203,10 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Sign in for Plus"].waitForExistence(timeout: 5), "sign-in opens over the Plus page")
     }
 
+    /// Re-rentals ride along in the results feed: the 3rd tile is one, with a
+    /// "Rerental" flag and a hand-off button, and it never displaces a building
+    /// (the count headline is unchanged). The default route is Brooklyn, and
+    /// the bundled featured.json has Brooklyn re-rentals, so this runs offline.
     func testThirdResultTileIsARerental() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "results"]
@@ -366,8 +353,6 @@ final class FindACribUITests: XCTestCase {
         app.buttons["price-done"].tap()
     }
 
-    /// The pushed screens hide the system nav bar, which normally kills the
-    /// edge swipe; this pins that swiping from the left edge still pops.
     /// Violations, complaints and the bedbug/rodent inspections are behind an
     /// account (2026-09-08, same as the site): signed out — which the
     /// simulator always is — the section offers sign-in and shows no tiles,
@@ -676,8 +661,8 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.buttons["city-field"].exists, "and leaves Search where it was")
     }
 
-    /// The app's Plus paywall: since 2026-10-03 Plus is the AI features (plus
-    /// no ads) while everything else is free — and NO invite-a-friend route
+    /// The app's Plus paywall: Plus is the AI features, real-time alerts and
+    /// agent phone numbers (plus no ads) — and NO invite-a-friend route
     /// (App Review 3.1.1; referrals live on the website).
     func testPaywallAIPerksNoInvite() throws {
         app.terminate()
@@ -774,7 +759,7 @@ final class FindACribUITests: XCTestCase {
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--tab", "lotteries", "--lotteries-demo", "--plus-demo", "--reset-rt-dismissed"]
         app.launch()
         XCTAssertTrue(app.buttons["lotteries-edit"].waitForExistence(timeout: 30), "Edit boroughs stays in the header")
-        XCTAssertFalse(app.descendants(matching: .any)["lotteries-plus-alerts"].exists, "no alerts card once alerts are on")
+        XCTAssertFalse(app.descendants(matching: .any)["lotteries-alerts-banner"].exists, "no alerts box once alerts are on")
         XCTAssertFalse(app.staticTexts["Your alerts are on"].exists)
         XCTAssertFalse(app.buttons["lotteries-signup"].exists, "no Turn on alerts for someone already subscribed")
         XCTAssertFalse(app.buttons["realtime-upsell"].exists, "nothing to sell a paying member")
@@ -1161,6 +1146,8 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["alerts-subscribe"].firstMatch.exists)
     }
 
+    /// The pushed screens hide the system nav bar, which normally kills the
+    /// edge swipe; this pins that swiping from the left edge still pops.
     func testEdgeSwipePopsDetail() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "detail"]

@@ -1820,3 +1820,16 @@ final class PlusPromoTests: XCTestCase {
         XCTAssertFalse(PlusPromo.all.first { $0.id == "records" }!.plus, "records carry no Plus tag")
     }
 }
+
+/// A 429 from the AI gateway is either the daily cap or this member's $1 a
+/// month (ai_gateway.py, 2026-10-12); only "monthly_limit" means the month.
+final class AILimitErrorTests: XCTestCase {
+    func testMonthlyLimitIsTold() {
+        XCTAssertEqual(AIService.limitError(Data(#"{"error":"monthly_limit"}"#.utf8)), .monthlyLimit)
+    }
+    func testAnythingElseIsTheDailyCap() {
+        XCTAssertEqual(AIService.limitError(Data(#"{"error":"daily_limit"}"#.utf8)), .dailyLimit)
+        XCTAssertEqual(AIService.limitError(Data("{}".utf8)), .dailyLimit)
+        XCTAssertEqual(AIService.limitError(Data("not json".utf8)), .dailyLimit)
+    }
+}

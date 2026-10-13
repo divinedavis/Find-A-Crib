@@ -1578,9 +1578,10 @@ class Runner:
         j.notes.append(href)
 
     def j_remove_ads_chip(self, page, j, device):
-        """While everything is free (owner, 2026-10-01) nothing is for sale: the
-        desktop "Remove ads" chip and the Get Plus header button stay hidden,
-        and the paywall never opens. (It opened the Plus paywall 9/29–10/1.)"""
+        """While FEATURES_FREE is on, the desktop "Remove ads" chip and the Get
+        Plus header button stay hidden, and clicking where the chip was opens
+        no paywall. (Plus itself is sold from the AI tools, real-time alerts
+        and agent phones; see j_plus_gates.)"""
         self.boot(page)
         self.ok(page.evaluate("(()=>{const b=document.getElementById('pill-noads'); return !b || b.hidden || getComputedStyle(b).display==='none'})()"),
                 'the Remove ads chip should be hidden while everything is free', j)
@@ -1822,9 +1823,10 @@ class Runner:
         j.notes.append('no chip fresh · offered · applies Brooklyn · not on links')
 
     def j_plus_gates(self, page, j, device):
-        """Everything free for now (owner, 2026-10-01): any account gets every
-        feature, nothing offers Plus, ads stay.
-        - signed out: Alerts -> sign-up modal; no Remove ads chip, no Get Plus;
+        """What an account gets, and what is Plus (2026-10-12).
+        - signed out: Alerts -> sign-up modal previewing alerts, with a Get Plus
+          row for real-time; the agent phone wall previews who runs the
+          building, and its Get Plus opens the Plus page led by the phone;
         - a brand-new account opens Bedbug filings and Rat inspections (free
           for good since 2026-10-12, never Plus) and HPD pest violations, and
           the paywall never opens or lists them;
@@ -1840,8 +1842,24 @@ class Runner:
         self.ok(prom['shown'] and '8 AM' in prom['text'] and prom['plus'],
                 f'the alerts sign-in should preview what alerts get, with Get Plus: {prom}', j)
         page.evaluate("document.querySelector('#auth-modal [data-auth=\"close\"]').click()"); time.sleep(0.2)
-        self.ok(page.evaluate("(()=>{const b=document.getElementById('pill-noads'); return !b || b.hidden || getComputedStyle(b).display==='none'})()"),
-                'no Remove ads chip while everything is free', j)
+        # The phone wall (signed out): previews who runs the building, and its
+        # Get Plus swaps the sign-in for the Plus page led by the phone.
+        self.boot(page, f'/#d={BBL}')
+        if self.detail_open(page) and page.evaluate("!!document.querySelector('#detail-sheet button.hpd-phone-btn[data-show-phone]')"):
+            self.click(page, '#detail-sheet button.hpd-phone-btn[data-show-phone]'); time.sleep(0.8)
+            ph = page.evaluate("""(()=>{const b=document.getElementById('auth-promise');
+              return {shown: !!b && !b.hidden, text: b ? b.textContent : '', src: (b && b.querySelector('[data-plus-src]') || {}).dataset?.plusSrc || null}})()""")
+            self.ok(ph['shown'] and 'Who owns the building' in ph['text'] and ph['src'] == 'phone',
+                    f'the signed-out phone wall should preview who runs the building, with a phone Get Plus: {ph}', j)
+            self.click(page, '#auth-promise [data-plus-src]')
+            self.wait_until(page, "!document.getElementById('paywall-modal').hidden", 8000)
+            self.ok(page.evaluate("document.getElementById('auth-modal').hidden")
+                    and page.evaluate("!document.getElementById('paywall-modal').hidden")
+                    and 'Call who actually runs' in page.evaluate("document.getElementById('paywall-title').textContent"),
+                    'Get Plus on the phone wall should open the Plus page led by the phone', j)
+            page.evaluate("document.querySelector('#paywall-modal [data-paywall=\"close\"], #paywall-modal .auth-close')?.click()"); time.sleep(0.3)
+        else:
+            j.notes.append(f'{BBL} has no agent phone on file: phone wall not exercised')
 
         # In-app "Turn off alerts" (2026-10-12) turns off only the caller's own
         # alerts, by their verified session: no session, no unsubscribe.
@@ -1885,7 +1903,7 @@ class Runner:
                         and page.evaluate("!document.querySelector('#detail-sheet a.hpd-phone')")
                         and 'Call who actually runs' in page.evaluate("document.getElementById('paywall-title').textContent"),
                         'a free account should get the Plus page for an agent phone number, not the number', j)
-                page.evaluate("document.querySelector('#paywall-modal [data-paywall=\"close\"], #paywall-modal .auth-close, #paywall-close')?.click()"); time.sleep(0.3)
+                page.evaluate("document.querySelector('#paywall-modal [data-paywall=\"close\"], #paywall-modal .auth-close')?.click()"); time.sleep(0.3)
             # The database agrees with the page: a free account's get_agent_phone
             # is null even when a number is on file (has_plus check, 2026-10-12).
             ph = page.evaluate(f"supaClient.rpc('get_agent_phone', {{p_bbl: '{BBL}'}}).then(r => ({{data: r.data, err: r.error && r.error.message}}))")

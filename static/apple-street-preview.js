@@ -18,6 +18,13 @@
   const MAX_LOADING = TOUCH ? 2 : 5;
   const MAX_MOUNTED = TOUCH ? 3 : 12;
   let loading = 0;
+  // Circuit breaker (2026-10-13). An iPhone page died after one photo mounted
+  // 19 times in 12 s: mount, torn down ~100 ms later as it flapped in and out
+  // of view, mount again, each one a fresh MapKit + WebGL document. Four such
+  // loops in three weeks of crash traces, phones and Macs. A photo that
+  // mounts MAX_REMOUNTS times inside REMOUNT_WINDOW sits out PARK_MS, then
+  // gets a fresh try.
+  const MAX_REMOUNTS = 4, REMOUNT_WINDOW = 10000, PARK_MS = 15000;
   const observers = new Map();
   // Steps for index.html's crash trace: how many previews were live when a
   // page died. Absent (tests, other pages) it is a no-op.
@@ -151,6 +158,19 @@
       if (prefetch && (record.needsVisible
           || [...records.values()].filter(r => r.loading && !onScreen(r)).length >= 2)) break;
       queue.shift(); record.queued = false;
+      const now = Date.now();
+      record.mounts = (record.mounts || []).filter(t => now - t < REMOUNT_WINDOW);
+      if (record.mounts.length >= MAX_REMOUNTS) {
+        record.parked = true;
+        trace('la:park ' + live());
+        setTimeout(() => {
+          record.parked = false; record.mounts = [];
+          if (record.visible && record.el.isConnected) enqueue(record);
+          drain();
+        }, PARK_MS);
+        continue;
+      }
+      record.mounts.push(now);
       loading++;
       // Safari does not run an iframe that is off screen: a preview started
       // below the fold never reports back, held its slot until the 45 s
@@ -173,7 +193,7 @@
     }
   }
   function enqueue(record) {
-    if (record.queued || record.loading || record.view || record.failed) return;
+    if (record.queued || record.loading || record.view || record.failed || record.parked) return;
     record.queued = true; queue.push(record);
   }
   function observerFor(root) {

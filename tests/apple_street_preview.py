@@ -95,6 +95,20 @@ def main():
    page.evaluate("document.getElementById('grid').scrollTop=1600")
    page.wait_for_function("!document.querySelector('[data-apple-lat=\"41\"] iframe')")
    page.wait_for_function('window.testCoordinates.some(lat=>lat>=42.09)')
+   # A photo flapping in and out of view mid-load is parked after four mounts
+   # in 10 s instead of remounting forever (2026-10-13: an iPhone died after
+   # 19 mounts of one photo in 12 s). lat 41 loads slowly, so every hide
+   # lands mid-load and tears the preview down.
+   page.reload()
+   page.evaluate("""()=>{window.steps=[];window.facTrace=s=>steps.push(s);const host=document.getElementById('tiles');
+    host.innerHTML='<div class="tile" id="flap">'+AppleStreetPreview.html({lat:41,lng:-73})+'</div>';AppleStreetPreview.watch(host);}""")
+   for _ in range(10):
+    page.wait_for_timeout(150);page.evaluate("document.getElementById('flap').style.display='none'")
+    page.wait_for_timeout(150);page.evaluate("document.getElementById('flap').style.display=''")
+   page.wait_for_timeout(300)
+   mounts=page.evaluate("steps.filter(s=>s.startsWith('la:mount')).length")
+   assert mounts<=4, f'a flapping photo should stop at 4 mounts, got {mounts}: {page.evaluate("steps")}'
+   assert page.evaluate("steps.some(s=>s.startsWith('la:park'))"), page.evaluate('steps')
    # Default local and production pages use Apple; Mapillary stays opt-in locally.
    page.goto('http://localhost/')
    assert page.evaluate('AppleStreetPreview.enabled')

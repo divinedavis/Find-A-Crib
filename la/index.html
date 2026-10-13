@@ -8345,7 +8345,6 @@ function favActive() {
   });
   if (location.hash === '#broker-fee') openTool('brokerfee', 'hash');
   if (location.hash === '#lease-review') openTool('lease', 'hash');
-  { const H = { '#repair': 'repair', '#rent-increase': 'rentup', '#rights': 'rights', '#renewal': 'renewal' }; if (H[location.hash]) openTool(H[location.hash], 'hash'); }
   const TOOL_ERR = { daily_limit: 'That’s a lot for one day — try again tomorrow.', monthly_limit: 'You’ve used this month’s AI — more on the 1st.', budget: 'This is resting for now — try again later.',
     scanned: 'That PDF is a scan with no text in it. Paste the lease text instead.', too_long: 'That lease is too long to review in one go (60 pages or 200,000 characters).',
     empty: 'Add your lease — upload the PDF or paste the text.', bad_pdf: 'Couldn’t open that PDF (it may be password-protected). Paste the text instead.',
@@ -8485,15 +8484,14 @@ function favActive() {
     track('tool_result', { tool: 'rent_increase', ok: true, verdict: j.verdict });
   });
 
-  let rightsLoaded = false;
   async function loadRights() {
-    if (rightsLoaded) return;
     const list = document.getElementById('rights-list');
+    if (list.dataset.loaded) return;
     try {
       const j = await (await fetch('/api/ai/rights')).json();
       list.innerHTML = j.cards.map(c => `<div class="rights-card" data-right="${esc(c.id)}"><b>${esc(c.title)}</b><div>${esc(c.text)}</div><div class="tf-law">${esc(c.law)}</div></div>`).join('')
         + `<a class="tool-link" href="${esc(j.links.legal_help)}" target="_blank" rel="noopener">Free legal help ↗</a>`;
-      rightsLoaded = true;
+      list.dataset.loaded = '1';
     } catch (e) { list.textContent = 'Couldn’t load your rights just now — try again.'; }
   }
   document.getElementById('rights-form').addEventListener('submit', async e => {
@@ -8533,6 +8531,8 @@ function favActive() {
     });
     track('tool_result', { tool: 'renewal', ok: true, has_offer: !!j.check });
   });
+  // Deep links, once every tool above is wired.
+  { const H = { '#repair': 'repair', '#rent-increase': 'rentup', '#rights': 'rights', '#renewal': 'renewal' }; if (H[location.hash]) openTool(H[location.hash], 'hash'); }
   // "Remove ads" chip (owner, 2026-09-29; it replaced the desktop Landlords
   // chip — Landlords stays in the ☰ menu and the header's 🔎). Opens the Plus
   // paywall, which leads with "No ads, anywhere on Find A Crib". Members have

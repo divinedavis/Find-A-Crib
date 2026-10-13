@@ -12,6 +12,12 @@ struct FindACribApp: App {
     @Environment(\.scenePhase) private var scenePhase
     @State private var wasBackgrounded = false
 
+    /// Opens a deep link now, or once the buildings have loaded.
+    private func route(_ link: DeepLink) {
+        Analytics.shared.track("deep_link", ["to": "\(link)"])
+        if store.buildings.isEmpty { nav.pending = link } else { link.open(nav: nav, store: store) }
+    }
+
     var body: some Scene {
         WindowGroup {
             // --splash-preview: the letter splash on a loop, nothing else, so
@@ -42,6 +48,9 @@ struct FindACribApp: App {
                     await store.load()
                     Perf.startWatchdog()
                     LaunchArgs.apply(to: nav, store: store)
+                    AppNav.current = nav
+                    if let l = AppNav.launchLink { AppNav.launchLink = nil; nav.pending = nav.pending ?? l }
+                    if let p = nav.pending { nav.pending = nil; p.open(nav: nav, store: store) }
                     ReviewPrompt.shared.applyLaunchArguments()
                     PushService.shared.applyLaunchArguments()
                     // Keep the push token current when permission already
@@ -80,6 +89,16 @@ struct FindACribApp: App {
                 .onOpenURL { url in
                     Analytics.shared.launchSource = Analytics.source(for: url)
                     Analytics.shared.track("open_url", ["src": Analytics.shared.launchSource])
+                    // Auth callbacks share the scheme; only known paths route.
+                    if let link = DeepLink(url) { route(link) }
+                }
+                // Handoff from findacrib.com or another device, and Spotlight.
+                .onContinueUserActivity(ActivityType.building) { a in
+                    if let u = a.webpageURL, let link = DeepLink(u) { route(link) }
+                }
+                .onContinueUserActivity(ActivityType.lotteries) { _ in route(.lotteries) }
+                .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { a in
+                    if let u = a.webpageURL, let link = DeepLink(u) { route(link) }
                 }
                 .preferredColorScheme(.light)   // StreetEasy ships light-only; the palette is tuned for it
             }
@@ -124,6 +143,14 @@ final class AppNav {
     /// Opened by the Profile screen (after sign-in if needed); set by the
     /// notifications card for someone who has no alerts yet.
     var showAlerts = false
+    /// A renter tool to open on Profile (deep link, Siri, widget).
+    var openTool: HomeTool?
+    /// The live navigator, for App Intents (Siri) that open the app.
+    static weak var current: AppNav?
+    /// A link that arrived before the buildings loaded: opened after.
+    var pending: DeepLink?
+    /// Set by a Siri intent that launched the app before AppNav existed.
+    static var launchLink: DeepLink?
 }
 
 /// `--tab activity|profile`, `--route results|map|detail[:bbl]` — used by the

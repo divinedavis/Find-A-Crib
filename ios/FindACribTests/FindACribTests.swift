@@ -1846,3 +1846,40 @@ final class LockedCacheTests: XCTestCase {
         for i in 0..<50 { XCTAssertNotNil(cache["k\(i)"]) }
     }
 }
+
+/// One parser for links, widgets, Siri and Handoff (DeepLink.swift, 2026-10-13).
+final class DeepLinkTests: XCTestCase {
+    func testAppAndWebLinksParse() {
+        XCTAssertEqual(DeepLink(URL(string: "findacrib://lotteries")!), .lotteries)
+        XCTAssertEqual(DeepLink(URL(string: "findacrib://building/1002990024")!), .building("1002990024"))
+        XCTAssertEqual(DeepLink(URL(string: "findacrib://tool/rent-increase")!), .tool(.rentIncrease))
+        XCTAssertEqual(DeepLink(URL(string: "https://findacrib.com/#d=1002990024")!), .building("1002990024"))
+        XCTAssertEqual(DeepLink(URL(string: "https://findacrib.com/#rights")!), .tool(.rights))
+        XCTAssertEqual(DeepLink(URL(string: "https://findacrib.com/alerts/")!), .lotteries)
+    }
+
+    func testAuthCallbacksAndJunkDoNotRoute() {
+        XCTAssertNil(DeepLink(URL(string: "findacrib://auth-callback#access_token=x")!))
+        XCTAssertNil(DeepLink(URL(string: "findacrib://building/12")!))
+        XCTAssertNil(DeepLink(URL(string: "findacrib://tool/hack")!))
+        XCTAssertNil(DeepLink(URL(string: "https://evil.example/#d=1002990024")!))
+    }
+
+    func testRoundTripToTheWebsite() {
+        for l in [DeepLink.lotteries, .building("3012340056"), .tool(.renewal)] {
+            XCTAssertEqual(DeepLink(l.url), l)
+            XCTAssertEqual(DeepLink(l.webURL), l)
+        }
+    }
+}
+
+/// The on-device drafts get the server's number check (OnDeviceAI.swift).
+final class OnDeviceGroundingTests: XCTestCase {
+    func testInventedNumbersAreCaught() {
+        let src = "rent $2,400, offer $2,700, Good Cause 8.38%, lease ends 2027-01-31"
+        XCTAssertTrue(OnDeviceAI.ungrounded("Your rent is $2,400 and the offer is $2,700.", source: src).isEmpty)
+        XCTAssertTrue(OnDeviceAI.ungrounded("The cap is 8.38% and it ends January 31, 2027.", source: src).isEmpty)
+        XCTAssertEqual(OnDeviceAI.ungrounded("A fair rent would be $2,550.", source: src), [2550])
+        XCTAssertTrue(OnDeviceAI.ungrounded("Call 311 within 2 days.", source: src).isEmpty)
+    }
+}

@@ -225,6 +225,8 @@ struct RepairView: View {
                             Task { reminded = await ToolReminder.schedule(id: "repair", date: r.ask_by, title: "Check on your repair",
                                                                          body: "\(r.label) — not fixed? File a complaint with 311.") }
                         }.font(.se(16, .semibold)).accessibilityIdentifier("repair-remind")
+                        AddToCalendarButton(item: CalendarItem(title: "Check on my repair: \(r.label)", day: r.ask_by,
+                                                               notes: "Not fixed? File a complaint with 311."))
                     }
                 }
                 Section { Text(notAdvice).font(.se(13)).foregroundStyle(SE.ink3) }
@@ -247,9 +249,14 @@ struct RepairView: View {
             let r = try await AIService.repair(answers, auth: auth)
             result = r; aiLetter = nil
             if ai {
-                // The name never goes to the AI: the server leaves [Your name] and the phone fills it in.
+                guard auth.hasPlus else { paywall = "renter_ai"; return }
+                // On the phone when Apple's model is here; Claude on the server otherwise.
+                // The name never goes to either: the phone fills [Your name] in.
                 var a = answers; a["name"] = ""
-                let l = try await AIService.repairLetter(a, auth: auth)
+                let local = OnDeviceAI.available ? try? await OnDeviceAI.repairLetter(r, address: address, unit: unit, details: String(details.prefix(600))) : nil
+                let l: String
+                if let local { l = local } else { l = try await AIService.repairLetter(a, auth: auth) }
+                Analytics.shared.track("ai_engine", ["tool": "repair_letter", "on_device": local != nil])
                 aiLetter = name.isEmpty ? l : l.replacingOccurrences(of: "[Your name]", with: name)
             }
             Analytics.shared.track("tool_result", ["tool": ai ? "repair_letter" : "repair", "issue": issue, "src": "app"])
@@ -423,7 +430,11 @@ struct RightsView: View {
         guard auth.isSignedIn else { signIn = true; return }
         busy = true; error = nil; defer { busy = false }
         do {
-            answer = try await AIService.rightsAsk(String(question.prefix(400)), auth: auth)
+            guard auth.hasPlus else { paywall = "renter_ai"; return }
+            let q = String(question.prefix(400))
+            let local = (OnDeviceAI.available && !cards.isEmpty) ? try? await OnDeviceAI.rightsAnswer(cards: cards, question: q) : nil
+            if let local { answer = local } else { answer = try await AIService.rightsAsk(q, auth: auth) }
+            Analytics.shared.track("ai_engine", ["tool": "rights_answer", "on_device": local != nil])
             Analytics.shared.track("tool_result", ["tool": "rights_answer", "src": "app"])
         } catch {
             switch error as? AIError {
@@ -492,6 +503,11 @@ struct RenewalView: View {
                                 Task { reminded = await ToolReminder.schedule(id: "renewal", date: r.date, title: r.title, body: r.body) }
                             }.font(.se(16, .semibold)).accessibilityIdentifier("renewal-remind")
                         }
+                        if let end = p.dates.first(where: { $0.label == "Your lease ends" }) {
+                            AddToCalendarButton(item: CalendarItem(title: "Lease ends", day: end.date,
+                                                                   notes: "Open Find A Crib's Renewal coach to check the offer."),
+                                                label: "Add lease end to Calendar")
+                        }
                     }.accessibilityIdentifier("renewal-dates")
                     if let c = p.compare {
                         Section("How your rent compares") {
@@ -548,7 +564,10 @@ struct RenewalView: View {
 
     private func writeScript() async {
         busy = true; error = nil; defer { busy = false }
-        do { script = try await AIService.renewalScript(answers, auth: auth)
+        do {
+            let local = (OnDeviceAI.available && plan != nil) ? try? await OnDeviceAI.renewalScript(plan!, current: current, offered: offered, stabilized: stabilized) : nil
+            if let local { script = local } else { script = try await AIService.renewalScript(answers, auth: auth) }
+            Analytics.shared.track("ai_engine", ["tool": "renewal_script", "on_device": local != nil])
             Analytics.shared.track("tool_result", ["tool": "renewal_script", "src": "app"])
         } catch { handle(error) }
     }

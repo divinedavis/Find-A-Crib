@@ -798,6 +798,26 @@ final class FindACribUITests: XCTestCase {
         app.buttons["Close"].tap()
     }
 
+    /// Deep links (2026-10-13) — what In-App Events, the widget and Siri use:
+    /// findacrib://tool/rights opens Know your rights on Profile, and
+    /// findacrib://lotteries lands on the Lotteries tab, whose cards offer
+    /// "Add deadline to Calendar".
+    func testDeepLinksOpenToolsAndLotteries() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash"]
+        app.launch()
+        XCTAssertTrue(app.buttons["tab-Search"].waitForExistence(timeout: 30) || app.wait(for: .runningForeground, timeout: 5))
+        app.open(URL(string: "findacrib://tool/rights")!)
+        XCTAssertTrue(app.navigationBars["Know your rights"].waitForExistence(timeout: 20), "findacrib://tool/rights opens Know your rights")
+        app.buttons["Close"].tap()
+        app.open(URL(string: "findacrib://lotteries")!)
+        let card = app.otherElements["lottery-card"].firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 30), "findacrib://lotteries lands on the Lotteries tab")
+        let cal = app.buttons["lottery-calendar"].firstMatch
+        for _ in 0..<3 where !cal.exists { app.swipeUp() }
+        XCTAssertTrue(cal.exists, "a lottery card offers Add deadline to Calendar")
+    }
+
     /// A paying member with alerts on (--plus-demo + --lotteries-demo): the
     /// Lotteries tab shows no alerts box at all (owner, 2026-10-13) — no
     /// Turn on, no upsell, no manage card. Edit boroughs stays in the header,

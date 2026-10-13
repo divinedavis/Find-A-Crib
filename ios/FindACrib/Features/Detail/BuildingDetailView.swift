@@ -177,6 +177,14 @@ struct BuildingDetailView: View {
         .onAppear { Perf.mark("detail onAppear"); nav.hideTabBar = true; activity.recordView(b.bbl) }
         .task(id: b.bbl) { similar = SearchEngine.similar(to: b, store: store) }
         .onDisappear { Perf.mark("detail onDisappear"); nav.hideTabBar = false }
+        // Handoff (owner, 2026-10-13): pick this building up on a Mac or iPad
+        // at findacrib.com, and find it again in Spotlight.
+        .userActivity(ActivityType.building) { a in
+            a.title = b.address
+            a.webpageURL = DeepLink.building(b.bbl).webURL
+            a.isEligibleForHandoff = true
+            a.isEligibleForSearch = true
+        }
         .task {
             scene = try? await MKLookAroundSceneRequest(coordinate: b.coordinate).scene
             sceneChecked = true

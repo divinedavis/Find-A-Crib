@@ -55,7 +55,13 @@ struct LotteriesView: View {
 
     var body: some View {
         // Outside New York: the place's own openings, no sign-up (2026-09-24).
-        if !store.city.isNYC { OpeningsView() } else { nycBody }
+        if !store.city.isNYC { OpeningsView() } else {
+            nycBody.userActivity(ActivityType.lotteries) { a in
+                a.title = "NYC housing lotteries"
+                a.webpageURL = DeepLink.lotteries.webURL
+                a.isEligibleForHandoff = true
+            }
+        }
     }
 
     private var nycBody: some View {
@@ -463,6 +469,12 @@ struct LotteriesView: View {
                     openURL(url)
                 }
                 .padding(.top, 6)
+            }
+            if let c = l.closes {
+                AddToCalendarButton(item: CalendarItem(title: "Lottery deadline: \(l.name)", day: c,
+                                                       notes: "Apply on Housing Connect before the deadline.", url: l.href.flatMap(URL.init(string:))),
+                                    label: "Add deadline to Calendar")
+                    .foregroundStyle(SE.royal).padding(.top, 4).accessibilityIdentifier("lottery-calendar")
             }
         }
         .padding(16).frame(maxWidth: .infinity, alignment: .leading)

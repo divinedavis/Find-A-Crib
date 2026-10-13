@@ -41,10 +41,17 @@
 	<true/>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
+	<string>Find A Crib adds lottery deadlines and lease dates you choose to your calendar.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Find A Crib uses the camera to scan documents for your application packet, which stays on this phone.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Find A Crib uses your location to show rent-stabilized buildings near you on the map.</string>
+	<key>NSUserActivityTypes</key>
+	<array>
+		<string>com.divinedavis.findacrib.building</string>
+		<string>com.divinedavis.findacrib.lotteries</string>
+	</array>
 	<key>SKAdNetworkItems</key>
 	<array>
 		<dict>

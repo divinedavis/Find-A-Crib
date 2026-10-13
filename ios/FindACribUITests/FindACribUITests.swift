@@ -188,10 +188,15 @@ final class FindACribUITests: XCTestCase {
         // tap to the bar (failed once in the build 114 ship, passed on rerun).
         // Small drags until it sits mid-screen (a full swipe could carry it
         // past the top, then the loop swiped on forever).
+        // …and clear of the floating Map / Lottery Alerts pills above it
+        // (2026-10-13: the tap landed on Lottery Alerts and opened alerts).
         let h = app.windows.firstMatch.frame.height
+        let pills = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'pill-'"))
+        let pillTop = (0..<pills.count).map { pills.element(boundBy: $0).frame.minY }.filter { $0 > h / 2 }.min() ?? (h - 140)
+        let floor = min(h - 140, pillTop - 12)
         let mid = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.6))
         for _ in 0..<30 {
-            if help.exists && help.isHittable && help.frame.minY > 150 && help.frame.maxY < h - 140 { break }
+            if help.exists && help.isHittable && help.frame.minY > 150 && help.frame.maxY < floor { break }
             let up = !(help.exists && help.frame.minY <= 150)
             mid.press(forDuration: 0.05, thenDragTo: mid.withOffset(CGVector(dx: 0, dy: up ? -320 : 220)))
         }

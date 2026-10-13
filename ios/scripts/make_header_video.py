@@ -19,13 +19,15 @@ from PIL import Image, ImageDraw, ImageFilter
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import make_header as H  # noqa: E402  (fonts, colours, the app mark)
 
-W, HT, FPS, SECONDS = 3840, 1646, 30, 12
-RAW = os.path.join(H.ROOT, "marketing/raw")
+W, HT, FPS, SECONDS = 3840, 1646, 30, 15
+# Fresh simulator shots (status bar 9:41); override with HEADER_SHOTS=dir.
+RAW = os.environ.get("HEADER_SHOTS") or os.path.join(H.ROOT, "marketing/raw")
 OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(H.OUT, "header-3840x1646.mp4")
 
 # (screen, caption) — what the phone shows and the line beside it.
 SCENES = [
     ("home.png", "Every rent-stabilized building in NYC"),
+    ("map.png", "47,000 buildings on one map"),
     ("lotteries.png", "Housing lotteries, the minute they open"),
     ("detail.png", "Violations, pests and who owns the building"),
 ]

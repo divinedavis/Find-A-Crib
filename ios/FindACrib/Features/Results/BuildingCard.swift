@@ -18,7 +18,7 @@ struct BuildingImage: View {
 
 /// The results card, laid out like StreetEasy's listing card: photo with a
 /// status badge, grey kicker, royal-blue address, price line, facts row,
-/// attribution, Share + primary action.
+/// attribution, Share (or pests / owner phone in New York) + primary action.
 struct BuildingCard: View {
     @Environment(DataStore.self) private var store
     @Environment(Activity.self) private var activity
@@ -102,15 +102,24 @@ struct BuildingCard: View {
                 Text(store.isSyntheticHCR(b) ? "Listed on HousingSearch.ny.gov" : attribution).font(.se(18)).foregroundStyle(SE.ink2)
 
                 HStack(spacing: 14) {
-                    ShareLink(item: b.webURL(in: store.city)) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "square.and.arrow.up").font(.system(size: 15, weight: .semibold))
-                            Text("Share").font(.se(18, .bold))
+                    // New York's register cards lead with the building's pests
+                    // ("Bedbugs (2)", rotating through what HPD found) or, when
+                    // there are none, the owner's phone (owner, 2026-10-13).
+                    // Both open a sign-in preview for signed-out people.
+                    // Everywhere else, and for HousingSearch sites, Share stays.
+                    if store.city.isNYC && !store.isSyntheticHCR(b) {
+                        CardRecordsButton(building: b, onOpen: push)
+                    } else {
+                        ShareLink(item: b.webURL(in: store.city)) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "square.and.arrow.up").font(.system(size: 15, weight: .semibold))
+                                Text("Share").font(.se(18, .bold))
+                            }
+                            .foregroundStyle(SE.royal).frame(maxWidth: .infinity).frame(height: 50)
+                            .background(Color.white).overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.line))
                         }
-                        .foregroundStyle(SE.royal).frame(maxWidth: .infinity).frame(height: 50)
-                        .background(Color.white).overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.line))
+                        .frame(maxWidth: .infinity)
                     }
-                    .frame(maxWidth: .infinity)
                     if let apply = store.hcrListings(b).first(where: { $0.isOpen })?.applyURL ?? store.hcrListings(b).first?.applyURL {
                         Link(destination: apply) {
                             Text("Apply").font(.se(18, .bold)).foregroundStyle(.white)
@@ -145,7 +154,7 @@ struct BuildingCard: View {
     private func open() {
         if let onOpen { onOpen() } else { push(.building(b.bbl)) }
     }
-    private func push(_ r: Route) {
+    fileprivate func push(_ r: Route) {
         switch nav.tab {
         case .search, .lotteries, .events: nav.searchPath.append(r)
         case .activity: nav.activityPath.append(r)
@@ -244,6 +253,95 @@ struct BuildingCard: View {
             Text(text).font(.se(19)).foregroundStyle(SE.ink).lineLimit(1).minimumScaleFactor(0.7)
         }
     }
+}
+
+/// The card's left button in New York. Shows the pest kinds HPD cited at
+/// the building this year, one at a time ("Bedbugs (2)", then "Rats (1)"),
+/// or "Owner Phone #" when the year is clean. Signed out, a tap opens the
+/// matching sign-in preview; signed in, it opens the pest records, or the
+/// building (where the phone is) for Plus, or the Plus sheet for the phone.
+struct CardRecordsButton: View {
+    @Environment(AuthService.self) private var auth
+    let building: Building
+    let onOpen: (Route) -> Void
+    @State private var kinds: [(word: String, count: Int)]? = nil
+    @State private var showRecordsSignIn = false
+    @State private var showAgentSignIn = false
+    @State private var showPaywall = false
+
+    var body: some View {
+        Group {
+            if let kinds {
+                if kinds.isEmpty {
+                    button(id: "card-owner-phone", icon: "phone.fill", text: "Owner Phone #") { tapPhone() }
+                } else {
+                    // Rotates every 2.5 s through the kinds found.
+                    TimelineView(.periodic(from: .now, by: 2.5)) { ctx in
+                        let k = kinds[Int(ctx.date.timeIntervalSinceReferenceDate / 2.5) % kinds.count]
+                        button(id: "card-pests", icon: "ladybug.fill", text: "\(k.word.prefix(1).uppercased() + k.word.dropFirst()) (\(k.count))") { tapPests() }
+                    }
+                }
+            } else {
+                frame { ProgressView().tint(SE.royal) }.accessibilityIdentifier("card-records-loading")
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .task(id: building.bbl) {
+            if let stub = Self.stub { kinds = stub; return }
+            do { kinds = try await HPDRecords.pests(bbl: building.bbl).kinds }
+            catch { kinds = [] }
+        }
+        .sheet(isPresented: $showRecordsSignIn) {
+            EmailSignInView(offersSocialSignIn: true,
+                            records: RecordsPreview(openViolations: building.h?.violations?.open, openComplaints: building.h?.complaints?.open))
+        }
+        .sheet(isPresented: $showAgentSignIn) { EmailSignInView(offersSocialSignIn: true, agentPreview: true) }
+        .sheet(isPresented: $showPaywall) { PaywallView(source: "phone") }
+    }
+
+    private func tapPests() {
+        Analytics.shared.track("card_pests_click", ["bbl": building.bbl, "signed_in": auth.isSignedIn])
+        if auth.isSignedIn { onOpen(.hpdRecords(building.bbl, .pests)) } else { showRecordsSignIn = true }
+    }
+
+    private func tapPhone() {
+        Analytics.shared.track("card_phone_click", ["bbl": building.bbl, "signed_in": auth.isSignedIn, "plus": auth.hasPlus])
+        if !auth.isSignedIn { showAgentSignIn = true }
+        else if !auth.hasPlus { showPaywall = true }
+        else { onOpen(.building(building.bbl)) }
+    }
+
+    private func button(id: String, icon: String, text: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            frame {
+                HStack(spacing: 8) {
+                    Image(systemName: icon).font(.system(size: 15, weight: .semibold))
+                    Text(text).font(.se(18, .bold)).lineLimit(1).minimumScaleFactor(0.7)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(id)
+    }
+
+    private func frame<C: View>(@ViewBuilder _ c: () -> C) -> some View {
+        c().foregroundStyle(SE.royal).frame(maxWidth: .infinity).frame(height: 50)
+            .background(Color.white).overlay(RoundedRectangle(cornerRadius: 2).stroke(SE.line))
+            .contentShape(Rectangle())
+    }
+
+    /// UI tests: `--card-pests bedbugs:2,rats:1` or `--card-pests none`
+    /// stands in for NYC Open Data so the card is deterministic offline.
+    static let stub: [(word: String, count: Int)]? = {
+        let a = CommandLine.arguments
+        guard let i = a.firstIndex(of: "--card-pests"), i + 1 < a.count else { return nil }
+        if a[i + 1] == "none" { return [] }
+        return a[i + 1].split(separator: ",").compactMap { pair in
+            let p = pair.split(separator: ":")
+            guard p.count == 2, let n = Int(p[1]) else { return nil }
+            return (word: String(p[0]), count: n)
+        }
+    }()
 }
 
 extension ISO8601DateFormatter {

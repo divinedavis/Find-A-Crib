@@ -417,6 +417,43 @@ final class FindACribUITests: XCTestCase {
         XCTAssertLessThan(box.frame.minY, app.buttons["sign-in-apple"].frame.minY, "the preview sits above Apple/Google")
     }
 
+    /// New York cards swap Share for the building's pests, rotating
+    /// ("Bedbugs (2)" / "Rats (1)"); signed out, a tap previews the records
+    /// sign-in (owner, 2026-10-13).
+    func testCardPestsButtonRotatesAndPreviewsRecordsSignIn() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "results", "--card-pests", "bedbugs:2,rats:1"]
+        app.launch()
+        let pests = app.buttons["card-pests"].firstMatch
+        XCTAssertTrue(pests.waitForExistence(timeout: 60))
+        XCTAssertFalse(app.buttons["Share"].exists, "Share is gone from New York cards")
+        var seen = Set<String>()
+        let end = Date().addingTimeInterval(8)
+        while Date() < end && seen.count < 2 { seen.insert(pests.label); Thread.sleep(forTimeInterval: 0.5) }
+        XCTAssertEqual(seen, ["Bedbugs (2)", "Rats (1)"], "the button rotates through the kinds found")
+        let h = app.windows.firstMatch.frame.height
+        for _ in 0..<6 where !pests.isHittable || pests.frame.maxY > h - 140 { app.swipeUp() }
+        pests.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["records-promise-box"].waitForExistence(timeout: 10),
+                      "signed out, the pests button opens the violations sign-in sheet")
+    }
+
+    /// A building with no pests cited shows "Owner Phone #"; signed out, a
+    /// tap previews the agent sign-in (owner, 2026-10-13).
+    func testCardOwnerPhoneButtonPreviewsAgentSignIn() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "results", "--card-pests", "none"]
+        app.launch()
+        let phone = app.buttons["card-owner-phone"].firstMatch
+        XCTAssertTrue(phone.waitForExistence(timeout: 60))
+        XCTAssertEqual(phone.label, "Owner Phone #")
+        let h = app.windows.firstMatch.frame.height
+        for _ in 0..<6 where !phone.isHittable || phone.frame.maxY > h - 140 { app.swipeUp() }
+        phone.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["agent-promise-box"].waitForExistence(timeout: 10),
+                      "signed out, Owner Phone # opens the agent sign-in sheet")
+    }
+
     /// Google's ads live in the feed, in the re-rental slots (Ads.swift,
     /// owner 2026-09-25): no banner under the app, and the 3rd tile is an ad
     /// or — when none was loaded in time — the re-rental, never a blank.

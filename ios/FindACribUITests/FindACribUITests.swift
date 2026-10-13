@@ -733,27 +733,30 @@ final class FindACribUITests: XCTestCase {
         app.buttons["Close"].tap()
     }
 
-    /// A paying member with alerts on (owner, 2026-10-12: "if i already am a
-    /// paying customer i should just see a button to change alerts or turn off
-    /// alerts"): --plus-demo + --lotteries-demo. No "Turn on alerts", no
-    /// upsell — just Change alerts and Turn off alerts, and Turn off asks first.
+    /// A paying member with alerts on (--plus-demo + --lotteries-demo): the
+    /// Lotteries tab shows no alerts box at all (owner, 2026-10-13) — no
+    /// Turn on, no upsell, no manage card. Edit boroughs stays in the header,
+    /// and Turn off lives in Profile, asking first.
     func testPlusSubscriberManagesAlertsWithNoUpsell() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--tab", "lotteries", "--lotteries-demo", "--plus-demo", "--reset-rt-dismissed"]
         app.launch()
-        let card = app.descendants(matching: .any)["lotteries-plus-alerts"]
-        XCTAssertTrue(card.waitForExistence(timeout: 30), "a Plus subscriber gets the manage-alerts card")
-        XCTAssertTrue(app.staticTexts["Your alerts are on"].exists)
-        XCTAssertTrue(app.buttons["alerts-change"].exists, "Change alerts")
-        XCTAssertTrue(app.buttons["alerts-turn-off"].exists, "Turn off alerts")
+        XCTAssertTrue(app.buttons["lotteries-edit"].waitForExistence(timeout: 30), "Edit boroughs stays in the header")
+        XCTAssertFalse(app.descendants(matching: .any)["lotteries-plus-alerts"].exists, "no alerts card once alerts are on")
+        XCTAssertFalse(app.staticTexts["Your alerts are on"].exists)
         XCTAssertFalse(app.buttons["lotteries-signup"].exists, "no Turn on alerts for someone already subscribed")
         XCTAssertFalse(app.buttons["realtime-upsell"].exists, "nothing to sell a paying member")
         XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Upgrade to Plus'")).firstMatch.exists)
-        app.buttons["alerts-turn-off"].tap()
+        app.buttons["tab-Profile"].tap()
+        let off = app.buttons["profile-alerts-off"]
+        let h = app.windows.firstMatch.frame.height
+        for _ in 0..<6 where !off.isHittable || off.frame.maxY > h - 140 { app.swipeUp() }
+        XCTAssertTrue(off.waitForExistence(timeout: 10), "Turn off alerts lives in Profile")
+        off.tap()
         let keep = app.buttons["Keep them"]
         XCTAssertTrue(keep.waitForExistence(timeout: 5), "turning off asks first")
         keep.tap()
-        XCTAssertTrue(card.exists, "and Keep them leaves alerts on")
+        XCTAssertTrue(off.exists, "and Keep them leaves alerts on")
     }
 
     /// Real-time alerts are Plus (owner, 2026-10-06). A subscriber without Plus

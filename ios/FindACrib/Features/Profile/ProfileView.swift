@@ -14,6 +14,8 @@ struct ProfileView: View {
     /// email"): show Apple/Google first and don't raise the keyboard.
     @State private var emailForAlerts = false
     @State private var showAlerts = false
+    @State private var confirmTurnOff = false
+    @State private var turnOffFailed = false
     @State private var showPacket = false
     @State private var showBrokerFee = false
     @State private var showLeaseReview = false
@@ -97,6 +99,14 @@ struct ProfileView: View {
                     .sheet(isPresented: $showPaywall) { PaywallView(source: "profile") }
                     .sheet(isPresented: $showEmail, onDismiss: { emailForAlerts = false }) { EmailSignInView(offersSocialSignIn: emailForAlerts, forAlerts: emailForAlerts) }
                     .sheet(isPresented: $showAlerts) { AlertsSheet() }
+                    .alert("Turn off alerts?", isPresented: $confirmTurnOff) {
+                        Button("Turn off alerts", role: .destructive) {
+                            Task { turnOffFailed = !(await LotteryFeed.shared.turnOff()) }
+                        }
+                        Button("Keep them", role: .cancel) {}
+                    } message: {
+                        Text("You'll stop getting notifications and emails about new lotteries and re-rentals.")
+                    }
                     .sheet(isPresented: $showPacket) { PacketView() }
                     .sheet(isPresented: $showBrokerFee) { BrokerFeeView() }
                     .sheet(isPresented: $showLeaseReview) { LeaseReviewView() }
@@ -141,6 +151,16 @@ struct ProfileView: View {
                             }.buttonStyle(.plain).accessibilityIdentifier("profile-alerts")
                         } else {
                             Text("Sign in to set up").font(.se(16)).foregroundStyle(SE.ink3)
+                        }
+                    }
+                    // Turn off moved here from the Lotteries card, which is gone
+                    // once alerts are on (owner, 2026-10-13).
+                    if LotteryFeed.shared.subscribed {   // only ever true signed in (or --lotteries-demo)
+                        settingRow("Turn off alerts") {
+                            Button { confirmTurnOff = true } label: {
+                                HStack(spacing: 4) { Text(turnOffFailed ? "Try again" : "Turn off").font(.se(18, .semibold)); Image(systemName: "bell.slash").font(.system(size: 13, weight: .bold)) }
+                                    .foregroundStyle(turnOffFailed ? SE.bad : SE.royal)
+                            }.buttonStyle(.plain).accessibilityIdentifier("profile-alerts-off")
                         }
                     }
                     // Renter tools (owner, 2026-10-12): the website's Broker fee

@@ -202,12 +202,17 @@ enum HPDRecords {
         return rows
     }
 
-    private static var pestCache: [String: PestSummary] = [:]
-    private static var pestListCache: [String: [Violation]] = [:]
-    private static var violationCache: [String: [Violation]] = [:]
-    private static var complaintCache: [String: [Complaint]] = [:]
-    private static var bedbugCache: [String: [BedbugFiling]] = [:]
-    private static var rodentCache: [String: [RodentInspection]] = [:]
+    // Locked, because these fetches run off the main actor and, since the
+    // results cards show pests (2026-10-13), a dozen cards call pests() at
+    // once. Plain static dictionaries written from several tasks at the same
+    // time corrupted and crashed the app in build 128's UI tests
+    // (Dictionary._Variant.setValue in HPDRecords.pests).
+    private static let pestCache = LockedCache<PestSummary>()
+    private static let pestListCache = LockedCache<[Violation]>()
+    private static let violationCache = LockedCache<[Violation]>()
+    private static let complaintCache = LockedCache<[Complaint]>()
+    private static let bedbugCache = LockedCache<[BedbugFiling]>()
+    private static let rodentCache = LockedCache<[RodentInspection]>()
 
     /// Open violations only, newest first — HPD's own Open/Close flag, not the
     /// free-text status that counts "VIOLATION DISMISSED" as open.
@@ -350,4 +355,15 @@ enum HPDRecords {
 
 private extension Array {
     subscript(safe i: Int) -> Element? { indices.contains(i) ? self[i] : nil }
+}
+
+
+/// A String-keyed cache safe to read and write from any task.
+final class LockedCache<Value>: @unchecked Sendable {
+    private var store: [String: Value] = [:]
+    private let lock = NSLock()
+    subscript(key: String) -> Value? {
+        get { lock.lock(); defer { lock.unlock() }; return store[key] }
+        set { lock.lock(); defer { lock.unlock() }; store[key] = newValue }
+    }
 }

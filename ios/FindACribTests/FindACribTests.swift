@@ -1833,3 +1833,16 @@ final class AILimitErrorTests: XCTestCase {
         XCTAssertEqual(AIService.limitError(Data("not json".utf8)), .dailyLimit)
     }
 }
+
+/// HPDRecords' caches are written by many cards' tasks at once (2026-10-13:
+/// unlocked dictionaries crashed the app in Dictionary._Variant.setValue).
+final class LockedCacheTests: XCTestCase {
+    func testConcurrentWritesAndReadsDoNotCrash() {
+        let cache = LockedCache<Int>()
+        DispatchQueue.concurrentPerform(iterations: 2_000) { i in
+            cache["k\(i % 50)"] = i
+            _ = cache["k\((i + 7) % 50)"]
+        }
+        for i in 0..<50 { XCTAssertNotNil(cache["k\(i)"]) }
+    }
+}

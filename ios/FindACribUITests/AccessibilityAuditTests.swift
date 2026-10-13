@@ -31,7 +31,10 @@ final class AccessibilityAuditTests: XCTestCase {
         // scrolled under one (or under its drop shadow) is measured against
         // the overlay's pixels, not its own background. Scrolled into the
         // clear, the same row passes; the overlays themselves are still audited.
-        if issue.auditType.contains(.contrast), !id.hasPrefix("tab-"), !id.hasPrefix("pill-"), overlapsFloating(e.frame) { return true }
+        // Same for clipping: text under the tab bar reads as cut off by it
+        // (2026-10-13, Profile's "Turn off" row sitting at the screen bottom).
+        if issue.auditType.contains(.contrast) || issue.auditType.contains(.textClipped),
+           !id.hasPrefix("tab-"), !id.hasPrefix("pill-"), overlapsFloating(e.frame) { return true }
         // Anything inside a Google ad slot is drawn by the Google SDK.
         let ads = app.descendants(matching: .any).matching(identifier: "feed-ad")
         if (0..<ads.count).contains(where: { ads.element(boundBy: $0).frame.insetBy(dx: -1, dy: -1).contains(e.frame) }) { return true }

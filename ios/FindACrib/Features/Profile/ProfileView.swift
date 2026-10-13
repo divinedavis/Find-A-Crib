@@ -19,6 +19,7 @@ struct ProfileView: View {
     @State private var showPacket = false
     @State private var showBrokerFee = false
     @State private var showLeaseReview = false
+    @State private var homeTool: HomeTool?
     @Environment(PlusStore.self) private var plus
     @AppStorage("hereTo") private var hereTo = "Rent"
     @AppStorage("homeBorough") private var homeBorough = "Brooklyn"
@@ -110,6 +111,14 @@ struct ProfileView: View {
                     .sheet(isPresented: $showPacket) { PacketView() }
                     .sheet(isPresented: $showBrokerFee) { BrokerFeeView() }
                     .sheet(isPresented: $showLeaseReview) { LeaseReviewView() }
+                    .sheet(item: $homeTool) { t in
+                        switch t {
+                        case .repair: RepairView()
+                        case .rentIncrease: RentIncreaseView()
+                        case .rights: RightsView()
+                        case .renewal: RenewalView()
+                        }
+                    }
                     .onChange(of: nav.showPaywall) { _, on in if on { showPaywall = true; nav.showPaywall = false } }
                     // The notifications card sends people here to set alerts up.
                     // Signed out, the sign-in sheet comes first and the alerts
@@ -179,6 +188,19 @@ struct ProfileView: View {
                             HStack(spacing: 4) { Text("Review a lease").font(.se(18, .semibold)); Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)) }
                                 .foregroundStyle(SE.royal)
                         }.buttonStyle(.plain).accessibilityIdentifier("profile-lease-review")
+                    }
+                    // Already have a place? (owner, 2026-10-13): repairs and rent
+                    // checks are free with an account, rights are public, the
+                    // Renewal coach and the ✨ drafts are Plus — the sheets ask.
+                    Text("Already have a place?").font(.se(13, .bold)).foregroundStyle(SE.ink3).textCase(.uppercase)
+                        .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.top, 8)
+                    ForEach(HomeTool.allCases) { t in
+                        settingRow(t.title) {
+                            Button { homeTool = t } label: {
+                                HStack(spacing: 4) { Text(t.action).font(.se(18, .semibold)).layoutPriority(1); Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)) }
+                                    .foregroundStyle(SE.royal)
+                            }.buttonStyle(.plain).accessibilityIdentifier("profile-\(t.rawValue)")
+                        }
                     }
                     // Application packet (2026-10-03): on this phone, open to all.
                     settingRow("Application packet") {
@@ -306,5 +328,17 @@ struct GoogleG: View {
             Rectangle().fill(Color(hex: 0x4285F4)).frame(width: 9, height: 4).offset(x: 4.5)
         }
         .padding(2)
+    }
+}
+
+/// Profile's "Already have a place?" rows (HomeTools.swift).
+enum HomeTool: String, CaseIterable, Identifiable {
+    case repair, rentIncrease = "rent-increase", rights, renewal
+    var id: String { rawValue }
+    var title: String {
+        switch self { case .repair: "Repairs"; case .rentIncrease: "Rent increase"; case .rights: "Your rights"; case .renewal: "Renewal coach" }
+    }
+    var action: String {
+        switch self { case .repair: "Get one made"; case .rentIncrease: "Is it legal?"; case .rights: "Know them"; case .renewal: "Plan it" }
     }
 }

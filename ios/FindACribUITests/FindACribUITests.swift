@@ -759,6 +759,45 @@ final class FindACribUITests: XCTestCase {
         app.buttons["Close"].tap()
     }
 
+    /// Already have a place? (owner, 2026-10-13): Profile lists the four
+    /// renter tools. Signed out, the rights cards load (they're public) and
+    /// writing a repair letter asks for an account first; the rent check
+    /// waits for both rents; the Renewal coach opens its form.
+    func testHomeToolsOpenFromProfileSignedOut() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--tab", "profile"]
+        app.launch()
+        let h = app.windows.firstMatch.frame.height
+        func open(_ id: String) {
+            let b = app.buttons[id]
+            for _ in 0..<8 where !b.isHittable || b.frame.maxY > h - 140 { app.swipeUp() }
+            XCTAssertTrue(b.waitForExistence(timeout: 20), "Profile lists \(id)")
+            b.tap()
+        }
+        open("profile-rights")
+        XCTAssertTrue(app.navigationBars["Know your rights"].waitForExistence(timeout: 10), "Know your rights opens")
+        let card = app.descendants(matching: .any)["rights-card-repairs"]
+        for _ in 0..<3 where !card.exists { app.swipeUp() }
+        XCTAssertTrue(card.waitForExistence(timeout: 20), "signed out, the rights cards load")
+        app.buttons["Close"].tap()
+        open("profile-repair")
+        XCTAssertTrue(app.navigationBars["Get a repair made"].waitForExistence(timeout: 10), "Get a repair made opens")
+        let run = app.buttons["repair-run"]
+        for _ in 0..<3 where !run.isHittable { app.swipeUp() }
+        run.tap()
+        XCTAssertTrue(app.textFields["email-field"].waitForExistence(timeout: 10), "signed out, writing a letter asks for an account")
+        app.terminate(); app.launch()
+        open("profile-rent-increase")
+        XCTAssertTrue(app.navigationBars["Rent increase check"].waitForExistence(timeout: 10), "the rent increase check opens")
+        let check = app.buttons["rentup-run"]
+        for _ in 0..<3 where !check.exists { app.swipeUp() }
+        XCTAssertTrue(check.exists && !check.isEnabled, "no check until both rents are in")
+        app.buttons["Close"].tap()
+        open("profile-renewal")
+        XCTAssertTrue(app.navigationBars["Renewal coach"].waitForExistence(timeout: 10), "the Renewal coach opens")
+        app.buttons["Close"].tap()
+    }
+
     /// A paying member with alerts on (--plus-demo + --lotteries-demo): the
     /// Lotteries tab shows no alerts box at all (owner, 2026-10-13) — no
     /// Turn on, no upsell, no manage card. Edit boroughs stays in the header,

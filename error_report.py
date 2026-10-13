@@ -464,6 +464,14 @@ def dead_crons():
     # the same reason stale_feeds() checks events.json only once it exists.
     if not (HERE / "growth_run.sh").exists():
         return out
+    # Paused on purpose (owner, 2026-10-12: "pause seo for FAC"): a cron file
+    # with no live growth_run line is not a dead engine.
+    try:
+        cron = Path("/etc/cron.d/rentmap-growth").read_text()
+        if not any(l.strip() and not l.lstrip().startswith("#") and "growth_run.sh" in l for l in cron.splitlines()):
+            return out
+    except OSError:
+        pass
     try:
         last, lines = "", []
         with open(HEARTBEAT) as fh:

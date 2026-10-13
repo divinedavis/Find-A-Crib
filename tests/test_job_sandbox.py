@@ -31,12 +31,23 @@ def env_sets_installed():
     return set(re.findall(r"^mkenv (\S+)", (DEPLOY / "install_jobs.sh").read_text(), re.M))
 
 
-def test_every_cron_file_has_jobs_or_is_the_paused_one():
+# Paused on purpose: vacancies (2026-10-06, scraping terms), growth + seo
+# (2026-10-12, owner: "pause seo for FAC").
+PAUSED = {"cron-rentmap-vacancies", "cron-rentmap-growth", "cron-rentmap-seo"}
+
+
+def test_every_cron_file_has_jobs_or_is_a_paused_one():
     names = {f.name for f in CRONS}
-    assert "cron-rentmap-vacancies" in names
+    assert PAUSED <= names
     for f in CRONS:
-        if f.name != "cron-rentmap-vacancies":
+        if f.name not in PAUSED:
             assert any(n == f.name for n, _, _ in job_lines()), f.name
+
+
+def test_seo_and_growth_stay_paused():
+    for name in ("cron-rentmap-growth", "cron-rentmap-seo"):
+        assert not [l for n, _, l in job_lines() if n == name], name
+        assert "#PAUSED-20261012" in (DEPLOY / name).read_text(), name
 
 
 def test_vacancy_sweep_stays_paused():

@@ -12,6 +12,7 @@ struct SearchHomeView: View {
     @State private var showAlerts = false
     @State private var paywallFor: String?
     @State private var promoSheet: PlusPromo.Sheet?
+    @State private var showRecordsSignIn = false
     @State private var showCity = false
     @State private var count = 0
 
@@ -88,7 +89,7 @@ struct SearchHomeView: View {
                     // "cycle that … with all our plus features so we see which
                     // ones users like the most"). plus_promo_view / _click carry
                     // the feature id, so the dashboard can rank them.
-                    if store.city.isNYC, let promo = PlusPromo.current(hasPlus: auth.hasPlus, alertsOn: LotteryFeed.shared.subscribed) {
+                    if store.city.isNYC, let promo = PlusPromo.current(hasPlus: auth.hasPlus, alertsOn: LotteryFeed.shared.subscribed, signedIn: auth.isSignedIn) {
                         Button {
                             Analytics.shared.track("plus_promo_click", ["feature": promo.id, "plus": auth.hasPlus])
                             openPromo(promo)
@@ -96,7 +97,7 @@ struct SearchHomeView: View {
                             HStack(spacing: 6) {
                                 Image(systemName: promo.icon)
                                 Text(promo.title).font(.se(17, .semibold))
-                                PlusTag()
+                                if promo.plus { PlusTag() }
                             }.foregroundStyle(SE.royal).frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.plain).padding(.top, 4)
@@ -168,6 +169,9 @@ struct SearchHomeView: View {
         .scrollDismissesKeyboard(.interactively)
         .sheet(isPresented: $showAlerts) { AlertsSheet() }
         .sheet(item: Binding(get: { paywallFor.map(PaywallSource.init) }, set: { paywallFor = $0?.id })) { PaywallView(source: $0.id) }
+        .sheet(isPresented: $showRecordsSignIn) {
+            EmailSignInView(offersSocialSignIn: true, records: RecordsPreview(openViolations: nil, openComplaints: nil))
+        }
         .sheet(item: $promoSheet) { sheet in
             switch sheet {
             case .brokerFee: BrokerFeeView()
@@ -237,6 +241,7 @@ struct SearchHomeView: View {
         case "broker_fee": promoSheet = .brokerFee
         case "lease_review": promoSheet = .leaseReview
         case "ai_search": promoSheet = .aiSearch
+        case "records": showRecordsSignIn = true
         default: paywallFor = p.id
         }
     }
@@ -724,6 +729,8 @@ struct PlusPromo: Equatable {
     let id: String
     let title: String
     let icon: String
+    /// False for what an account gets (bedbug + rat records): no Plus tag.
+    var plus = true
 
     static let all: [PlusPromo] = [
         PlusPromo(id: "realtime", title: "Get instant lottery alerts", icon: "bolt.fill"),
@@ -732,6 +739,9 @@ struct PlusPromo: Equatable {
         PlusPromo(id: "lease_review", title: "Have AI review your lease", icon: "doc.text.magnifyingglass"),
         PlusPromo(id: "apply_help", title: "Get help applying for re-rentals", icon: "doc.text"),
         PlusPromo(id: "ai_search", title: "Describe it in plain words", icon: "sparkles"),
+        // Not Plus — an account's records (owner, 2026-10-12: add bedbugs and
+        // rodents to the cycle). Signed-in people already have them.
+        PlusPromo(id: "records", title: "See bedbug and rat records", icon: "ladybug.fill", plus: false),
     ]
 
     /// This launch's slot: advanced once per process, so every cold start
@@ -749,12 +759,13 @@ struct PlusPromo: Equatable {
     /// The feature to show, or nil. A member is never sold what they have:
     /// phone numbers and apply help aren't tools here, and instant alerts
     /// drop once theirs are on — the rotation skips to the next one.
-    static func current(hasPlus: Bool, alertsOn: Bool) -> PlusPromo? {
-        pick(index: launchIndex, hasPlus: hasPlus, alertsOn: alertsOn)
+    static func current(hasPlus: Bool, alertsOn: Bool, signedIn: Bool) -> PlusPromo? {
+        pick(index: launchIndex, hasPlus: hasPlus, alertsOn: alertsOn, signedIn: signedIn)
     }
 
-    nonisolated static func pick(index: Int, hasPlus: Bool, alertsOn: Bool) -> PlusPromo? {
+    nonisolated static func pick(index: Int, hasPlus: Bool, alertsOn: Bool, signedIn: Bool = false) -> PlusPromo? {
         let usable = all.filter { p in
+            if p.id == "records" && (signedIn || hasPlus) { return false }
             guard hasPlus else { return true }
             if p.id == "phone" || p.id == "apply_help" { return false }
             if p.id == "realtime" && alertsOn { return false }

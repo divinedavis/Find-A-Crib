@@ -1809,5 +1809,14 @@ final class PlusPromoTests: XCTestCase {
         XCTAssertFalse(ids.contains("apply_help"))
         XCTAssertFalse(ids.contains("realtime"), "instant alerts drop once a member's are on")
         XCTAssertTrue(ids.contains("broker_fee") && ids.contains("lease_review"))
+        XCTAssertFalse(ids.contains("records"), "members already see the records")
+    }
+
+    func testRecordsOnlyForSignedOut() {
+        let signedOut = (0..<14).compactMap { PlusPromo.pick(index: $0, hasPlus: false, alertsOn: false, signedIn: false)?.id }
+        let signedIn = (0..<14).compactMap { PlusPromo.pick(index: $0, hasPlus: false, alertsOn: false, signedIn: true)?.id }
+        XCTAssertTrue(signedOut.contains("records"))
+        XCTAssertFalse(signedIn.contains("records"))
+        XCTAssertFalse(PlusPromo.all.first { $0.id == "records" }!.plus, "records carry no Plus tag")
     }
 }

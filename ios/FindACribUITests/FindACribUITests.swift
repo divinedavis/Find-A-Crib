@@ -166,7 +166,8 @@ final class FindACribUITests: XCTestCase {
     /// start (owner, 2026-10-12). --plus-promo pins the slot: instant alerts
     /// opens the Plus page led by real-time alerts; broker fee opens its form.
     func testSearchPlusRowCyclesPlusFeatures() throws {
-        for (id, expect) in [("realtime", "Real-time alerts"), ("broker_fee", "Broker fee check")] {
+        for (id, expect) in [("realtime", "Real-time alerts"), ("broker_fee", "Broker fee check"),
+                             ("records", "Sign in to see this building's records")] {
             app.terminate()
             app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--plus-promo", id]
             app.launch()

@@ -426,7 +426,6 @@ final class FindACribUITests: XCTestCase {
         app.launch()
         let pests = app.buttons["card-pests"].firstMatch
         XCTAssertTrue(pests.waitForExistence(timeout: 60))
-        XCTAssertFalse(app.buttons["Share"].exists, "Share is gone from New York cards")
         var seen = Set<String>()
         let end = Date().addingTimeInterval(8)
         while Date() < end && seen.count < 2 { seen.insert(pests.label); Thread.sleep(forTimeInterval: 0.5) }

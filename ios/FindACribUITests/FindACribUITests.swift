@@ -395,6 +395,11 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.buttons["records-promise-plus"].exists, "one Plus feature with a Get Plus button")
         XCTAssertTrue(app.staticTexts["Plus: real-time lottery alerts, the minute one opens"].exists, "the Plus row sells real-time alerts")
         XCTAssertTrue(app.buttons["create-account-toggle"].isHittable, "No account? Create one must stay on screen")
+        // Get Plus opens the Plus page led by real-time alerts.
+        app.buttons["records-promise-plus"].tap()
+        XCTAssertTrue(app.buttons["paywall-close"].waitForExistence(timeout: 10), "Get Plus opens the Plus page")
+        XCTAssertTrue(app.staticTexts["WHAT YOU TAPPED"].exists, "the tapped feature leads the page")
+        XCTAssertTrue(app.staticTexts["Real-time alerts"].exists)
     }
 
     /// "Sign in to see who runs this building" (owner, 2026-10-12) opens a
@@ -436,6 +441,33 @@ final class FindACribUITests: XCTestCase {
         pests.tap()
         XCTAssertTrue(app.descendants(matching: .any)["records-promise-box"].waitForExistence(timeout: 10),
                       "signed out, the pests button opens the violations sign-in sheet")
+    }
+
+    /// Outside New York there are no HPD pests, owner phones or re-rental
+    /// sizes: cards keep Share and the form has no Bedrooms (2026-10-13).
+    func testOtherCitiesKeepShareAndHaveNoBedrooms() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--city", "la", "--route", "results", "--card-pests", "bedbugs:2"]
+        app.launch()
+        XCTAssertTrue(app.descendants(matching: .any)["card-address"].firstMatch.waitForExistence(timeout: 90))
+        XCTAssertTrue(app.buttons["Share"].firstMatch.exists, "LA cards keep Share")
+        XCTAssertFalse(app.buttons["card-pests"].exists, "no pests button outside New York")
+        XCTAssertFalse(app.buttons["card-owner-phone"].exists, "no Owner Phone # outside New York")
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--city", "la"]
+        app.launch()
+        XCTAssertTrue(app.buttons["search-button"].waitForExistence(timeout: 90))
+        XCTAssertFalse(app.descendants(matching: .any)["beds-row"].exists, "no Bedrooms outside New York")
+    }
+
+    /// Turn off alerts sits in Profile only while alerts are on (2026-10-13).
+    func testProfileHasNoTurnOffWithoutAlerts() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--tab", "profile"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["Profile"].waitForExistence(timeout: 20))
+        for _ in 0..<4 { app.swipeUp() }
+        XCTAssertFalse(app.buttons["profile-alerts-off"].exists, "nothing to turn off without alerts")
     }
 
     /// A building with no pests cited shows "Owner Phone #"; signed out, a

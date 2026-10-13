@@ -8121,7 +8121,8 @@ function favActive() {
   const RECORDS_PROMISE = { rows: [['⚠️', 'Open HPD violations and complaints, building by building'],
                                    ['🛏️', 'Bedbug filings the landlord made, year by year'],
                                    ['🐀', 'Rat inspections from the Health Department']],
-                            plus: ['🧾', 'Plus: check if a broker fee breaks NYC\u2019s FARE Act', 'broker_fee'] };
+                            // Real-time alerts, not the broker fee check (owner, 2026-10-13).
+                            plus: ['⚡', 'Plus: real-time lottery alerts, the minute one opens', 'realtime'] };
   const AUTH_PROMISES = {
     bedbugs: RECORDS_PROMISE, rodents: RECORDS_PROMISE,
     alerts: { rows: [['🏢', 'New lotteries and re-rentals in the boroughs you pick'],

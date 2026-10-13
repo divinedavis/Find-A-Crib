@@ -575,6 +575,14 @@ class Runner:
         # an account, never for Plus.
         self.ok('Plus' not in page.evaluate("document.getElementById('auth-sub').textContent"),
                 'the signed-out rodent gate should ask for an account, not Plus', j)
+        # …and previews what the account gets, with real-time alerts as the
+        # one Plus row (owner, 2026-10-13: it was the broker fee check).
+        prom = page.evaluate("""(()=>{const b=document.getElementById('auth-promise');
+          return {shown: !!b && !b.hidden, text: b ? b.textContent : '',
+                  src: (b && b.querySelector('[data-plus-src]') || {}).dataset?.plusSrc || null}})()""")
+        self.ok(prom['shown'] and 'Rat inspections' in prom['text'] and 'real-time lottery alerts' in prom['text']
+                and prom['src'] == 'realtime' and 'broker fee' not in prom['text'],
+                f'the rodent sign-in should preview the records with a real-time alerts Plus row: {prom}', j)
         page.evaluate("document.querySelector('[data-auth=\"close\"]')?.click()"); time.sleep(0.3)
         self.click(page, '#detail-sheet [data-detail="bedbugs"]'); time.sleep(1)
         self.ok(not page.evaluate("document.getElementById('auth-modal').hidden") and page.evaluate("document.getElementById('viol-sheet').hidden"), 'bedbug record should be gated when signed out', j)
@@ -1835,6 +1843,10 @@ class Runner:
         self.ok(page.evaluate("(()=>{const b=document.getElementById('pill-noads'); return !b || b.hidden || getComputedStyle(b).display==='none'})()"),
                 'no Remove ads chip while everything is free', j)
 
+        # In-app "Turn off alerts" (2026-10-12) turns off only the caller's own
+        # alerts, by their verified session: no session, no unsubscribe.
+        st = page.evaluate("fetch('/api/alerts/unsubscribe-me', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'}).then(r => r.status)")
+        self.ok(st == 401, f'unsubscribe-me without a session should be 401, got {st}', j)
         email = f'journey-plus-{secrets.token_hex(6)}@example.com'
         password = secrets.token_urlsafe(18)
         st_, u = supabase_admin('POST', 'users', {'email': email, 'password': password, 'email_confirm': True})
@@ -1874,6 +1886,16 @@ class Runner:
                         and 'Call who actually runs' in page.evaluate("document.getElementById('paywall-title').textContent"),
                         'a free account should get the Plus page for an agent phone number, not the number', j)
                 page.evaluate("document.querySelector('#paywall-modal [data-paywall=\"close\"], #paywall-modal .auth-close, #paywall-close')?.click()"); time.sleep(0.3)
+            # The database agrees with the page: a free account's get_agent_phone
+            # is null even when a number is on file (has_plus check, 2026-10-12).
+            ph = page.evaluate(f"supaClient.rpc('get_agent_phone', {{p_bbl: '{BBL}'}}).then(r => ({{data: r.data, err: r.error && r.error.message}}))")
+            self.ok(ph['data'] is None and not ph['err'], f'get_agent_phone should answer null for a free account: {ph}', j)
+            # With a session, Turn off alerts answers (ok:false — nothing to
+            # turn off for a new account), never 401.
+            un = page.evaluate("""(async()=>{const t=(await supaClient.auth.getSession()).data.session.access_token;
+              const r=await fetch('/api/alerts/unsubscribe-me',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},body:'{}'});
+              return {st: r.status, j: await r.json().catch(()=>null)}})()""")
+            self.ok(un['st'] == 200 and un['j'] is not None and 'ok' in un['j'], f'unsubscribe-me with a session should answer 200: {un}', j)
             # Profile: folders + saved searches for any account; the upgrade
             # button is back, because Plus is now the AI features (2026-10-03).
             self.click(page, '#auth-btn')

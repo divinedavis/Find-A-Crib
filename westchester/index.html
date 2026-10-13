@@ -8130,8 +8130,11 @@ function favActive() {
               plus: ['⚡', 'Plus: alerts the minute they open \u2014 first month free', 'realtime'] },
     phone: { rows: [['👤', 'The managing agent HPD has on file, and their office'],
                     ['🏛️', 'Who owns the building, and its head officer']],
-             plus: ['📞', 'Plus: the agent\u2019s phone number \u2014 call who actually runs it', 'phone'] },
-  };
+             plus: ['📞', 'Plus: the agent\u2019s phone number \u2014 call who actually runs it', 'phone'] },  };
+  // "Sign in to see who owns and manages this building" is the wall a signed-
+  // out visitor actually meets (the Show number button needs an account to
+  // render); it previews the same thing, like the app's sheet (2026-10-13).
+  AUTH_PROMISES.owner_info = AUTH_PROMISES.phone;
   // Which wall a sign-in came from, so the dashboard can say which converts.
   let authWall = null;
   function renderAuthPromise(wall) {

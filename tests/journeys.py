@@ -51,6 +51,10 @@ CITY_RECORD_CASES = {
 }
 BBL = '2023190002'          # 2401 3RD AVE, Bronx — has violations
 ADDR = '2401 3RD AVE'
+PHONE_BBL = '1002990024'    # 30 ALLEN ST — its managing agent has a phone in agent_phones
+# The page's Supabase client is a closure variable, not a global: journeys
+# read the session from localStorage and call PostgREST/the API directly.
+SESSION_JS = "(()=>{const k=Object.keys(localStorage).find(k=>/^sb-.*-auth-token$/.test(k)); return k ? JSON.parse(localStorage.getItem(k)).access_token : null})()"
 PINS = "document.querySelectorAll('#map .leaflet-marker-icon').length"
 BPINS = "document.querySelectorAll('#map .building-dot-hit').length"
 LABEL = "document.getElementById('map-count').textContent"
@@ -1842,11 +1846,13 @@ class Runner:
         self.ok(prom['shown'] and '8 AM' in prom['text'] and prom['plus'],
                 f'the alerts sign-in should preview what alerts get, with Get Plus: {prom}', j)
         page.evaluate("document.querySelector('#auth-modal [data-auth=\"close\"]').click()"); time.sleep(0.2)
-        # The phone wall (signed out): previews who runs the building, and its
-        # Get Plus swaps the sign-in for the Plus page led by the phone.
-        self.boot(page, f'/#d={BBL}')
-        if self.detail_open(page) and page.evaluate("!!document.querySelector('#detail-sheet button.hpd-phone-btn[data-show-phone]')"):
-            self.click(page, '#detail-sheet button.hpd-phone-btn[data-show-phone]'); time.sleep(0.8)
+        # The who-runs-it wall (signed out): previews who runs the building
+        # with the agent's phone as the Plus row, and its Get Plus swaps the
+        # sign-in for the Plus page led by the phone.
+        self.boot(page, f'/#d={PHONE_BBL}')
+        self.wait_until(page, "!!document.querySelector('#detail-sheet [data-op-signin]')", 15000)
+        if self.detail_open(page) and page.evaluate("!!document.querySelector('#detail-sheet [data-op-signin]')"):
+            self.click(page, '#detail-sheet [data-op-signin]'); time.sleep(0.8)
             ph = page.evaluate("""(()=>{const b=document.getElementById('auth-promise');
               return {shown: !!b && !b.hidden, text: b ? b.textContent : '', src: (b && b.querySelector('[data-plus-src]') || {}).dataset?.plusSrc || null}})()""")
             self.ok(ph['shown'] and 'Who owns the building' in ph['text'] and ph['src'] == 'phone',
@@ -1859,7 +1865,7 @@ class Runner:
                     'Get Plus on the phone wall should open the Plus page led by the phone', j)
             page.evaluate("document.querySelector('#paywall-modal [data-paywall=\"close\"], #paywall-modal .auth-close')?.click()"); time.sleep(0.3)
         else:
-            j.notes.append(f'{BBL} has no agent phone on file: phone wall not exercised')
+            self.ok(False, 'signed out, the building sheet should offer sign-in for who runs it', j)
 
         # In-app "Turn off alerts" (2026-10-12) turns off only the caller's own
         # alerts, by their verified session: no session, no unsubscribe.
@@ -1896,6 +1902,10 @@ class Runner:
             page.evaluate("document.querySelectorAll('.viol-backdrop .sheet-close').forEach(b=>b.click())"); time.sleep(0.3)
             # Agent phone numbers are Plus (2026-10-12): a free account tapping
             # "Show number" gets the Plus page led by the phone perk, no number.
+            self.boot(page, f'/#d={PHONE_BBL}')
+            self.wait_until(page, "!!document.querySelector('#detail-sheet button.hpd-phone-btn[data-show-phone]')", 15000)
+            self.ok(page.evaluate("!!document.querySelector('#detail-sheet button.hpd-phone-btn[data-show-phone]')"),
+                    f'signed in, {PHONE_BBL} should offer Show number (its agent has a phone on file)', j)
             if page.evaluate("!!document.querySelector('#detail-sheet button.hpd-phone-btn[data-show-phone]')"):
                 self.click(page, '#detail-sheet button.hpd-phone-btn[data-show-phone]')
                 self.wait_until(page, "!document.getElementById('paywall-modal').hidden", 8000)
@@ -1906,13 +1916,17 @@ class Runner:
                 page.evaluate("document.querySelector('#paywall-modal [data-paywall=\"close\"], #paywall-modal .auth-close')?.click()"); time.sleep(0.3)
             # The database agrees with the page: a free account's get_agent_phone
             # is null even when a number is on file (has_plus check, 2026-10-12).
-            ph = page.evaluate(f"supaClient.rpc('get_agent_phone', {{p_bbl: '{BBL}'}}).then(r => ({{data: r.data, err: r.error && r.error.message}}))")
-            self.ok(ph['data'] is None and not ph['err'], f'get_agent_phone should answer null for a free account: {ph}', j)
+            ph = page.evaluate("""async (bbl) => { const t = %s;
+              const r = await fetch(window.SUPABASE_URL + '/rest/v1/rpc/get_agent_phone', {method: 'POST',
+                headers: {apikey: window.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + t, 'Content-Type': 'application/json'},
+                body: JSON.stringify({p_bbl: bbl})});
+              return {st: r.status, data: await r.json().catch(() => 'unparsed')}; }""" % SESSION_JS, PHONE_BBL)
+            self.ok(ph['st'] == 200 and ph['data'] is None, f'get_agent_phone should answer null for a free account, even where a number exists: {ph}', j)
             # With a session, Turn off alerts answers (ok:false — nothing to
             # turn off for a new account), never 401.
-            un = page.evaluate("""(async()=>{const t=(await supaClient.auth.getSession()).data.session.access_token;
+            un = page.evaluate("""(async()=>{const t=%s;
               const r=await fetch('/api/alerts/unsubscribe-me',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},body:'{}'});
-              return {st: r.status, j: await r.json().catch(()=>null)}})()""")
+              return {st: r.status, j: await r.json().catch(()=>null)}})()""" % SESSION_JS)
             self.ok(un['st'] == 200 and un['j'] is not None and 'ok' in un['j'], f'unsubscribe-me with a session should answer 200: {un}', j)
             # Profile: folders + saved searches for any account; the upgrade
             # button is back, because Plus is now the AI features (2026-10-03).

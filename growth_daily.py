@@ -295,6 +295,60 @@ def cmd_journal(args):
 
 HEARTBEAT_PATH = os.path.join(DEFAULT_BUILD, "growth", "cron_heartbeat.jsonl")
 
+# The tracked copy of the droplet's growth cron. scripts/deploy_jobs.sh scp's it
+# into /etc/cron.d/rentmap-growth, and the file's own header forbids hand-editing
+# the box ("do not hand-edit the file on the box, or the repo and the droplet
+# drift apart silently"), so this copy is the intent of record — and the only
+# copy a review running on a bare checkout can read at all.
+GROWTH_CRON_PATH = os.path.join(DEFAULT_BUILD, "deploy", "cron-rentmap-growth")
+
+
+def growth_paused(path=None):
+    """Is the growth engine commented out on purpose? Returns (paused, marker).
+
+    Why this exists, 2026-10-13. The owner paused the whole engine on 2026-10-12
+    (commit 7182da1, "pause seo for FAC"): all three growth_run.sh cron lines
+    carry a #PAUSED-20261012 prefix and tests/test_job_sandbox.py pins them that
+    way. The next morning cron_liveness() led with "NO RUN FOR 1.2 DAYS — cron,
+    the host or the checkout" — failure-shaped, and naming three causes that are
+    all wrong. A deliberate pause is not a dead cron, and the standing
+    instruction to this review is to raise a cron-failure concern only when the
+    engine is GENUINELY stale, so the one file that can tell the two apart has to
+    be read before the age is interpreted.
+
+    error_report.dead_crons() already stands down on exactly this condition, but
+    it reads /etc/cron.d/rentmap-growth, which exists only on the droplet. This
+    reads the tracked copy, so it works where the review actually runs.
+
+    Three states, not two, and the difference matters:
+      * a live growth_run line        -> (False, "")  the engine is meant to run
+      * no growth_run line whatsoever -> (False, "")  UNKNOWN, not a pause. An
+        empty or truncated cron file must not be able to silence the staleness
+        alarm; that would turn the one honest failure signal into a no-op.
+      * every growth_run line commented out -> (True, marker)
+
+    Reports the TRACKED file and claims nothing about the box: the two can drift
+    until deploy_jobs.sh runs, so the caller says "the tracked cron" and leaves
+    the heartbeat's own age standing beside it as corroboration.
+    """
+    try:
+        with open(path or GROWTH_CRON_PATH) as f:
+            lines = f.read().splitlines()
+    except OSError:
+        return False, ""
+    if not any("growth_run.sh" in l for l in lines):
+        return False, ""
+    if any(l.strip() and not l.lstrip().startswith("#") and "growth_run.sh" in l
+           for l in lines):
+        return False, ""
+    marker = ""
+    for l in lines:
+        i = l.find("#PAUSED-")
+        if i != -1:
+            marker = l[i:].split()[0]
+            break
+    return True, marker
+
 
 def cron_liveness(path=HEARTBEAT_PATH, now=None):
     """Has the droplet's cron actually been running?
@@ -337,7 +391,19 @@ def cron_liveness(path=HEARTBEAT_PATH, now=None):
     if last.get("pull") == "recovered":
         state += " — but the pull hit a conflict and was reset to origin/main"
     if hours is not None and hours > 26:
-        state = f"NO RUN FOR {hours / 24:.1f} DAYS — cron, the host or the checkout. " + state
+        paused, marker = growth_paused()
+        if paused:
+            # Switched off, not broken. Still lead with the pause AND the age:
+            # a pause nobody meant to leave running looks exactly like a healthy
+            # one, so the number of quiet days stays in the headline.
+            state = (f"PAUSED ON PURPOSE — no live growth_run line in the tracked "
+                     f"deploy/cron-rentmap-growth"
+                     f"{f' ({marker})' if marker else ''}, so no measurement has "
+                     f"landed for {hours / 24:.1f} days and nothing pushed here "
+                     f"reaches production. Resume: drop the prefix and run "
+                     f"scripts/deploy_jobs.sh. " + state)
+        else:
+            state = f"NO RUN FOR {hours / 24:.1f} DAYS — cron, the host or the checkout. " + state
     return f"{state}; last record {age}", rows
 
 

@@ -162,23 +162,21 @@ final class FindACribUITests: XCTestCase {
         app.buttons["Delete everything"].tap()
     }
 
-    /// Search's Plus row cycles through every Plus feature, one per cold
-    /// start (owner, 2026-10-12). --plus-promo pins the slot: instant alerts
-    /// opens the Plus page led by real-time alerts; broker fee opens its form.
-    func testSearchPlusRowCyclesPlusFeatures() throws {
-        for (id, expect) in [("realtime", "Real-time alerts"), ("broker_fee", "Broker fee check"),
-                             ("lease_review", "Lease review"), ("records", "Sign in to see this building's records")] {
-            app.terminate()
-            app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--plus-promo", id]
-            app.launch()
-            let row = app.buttons["plus-promo-\(id)"]
-            for _ in 0..<6 where !row.isHittable { app.swipeUp() }
-            XCTAssertTrue(row.waitForExistence(timeout: 30), "Search shows the \(id) Plus row")
-            if id == "realtime" { XCTAssertFalse(app.buttons["ai-search-open"].exists, "the old fixed plain-words row is gone") }
-            row.tap()
-            let opened = app.staticTexts[expect].waitForExistence(timeout: 10) || app.navigationBars[expect].waitForExistence(timeout: 2)
-            XCTAssertTrue(opened, "\(id) opens \(expect)")
-        }
+    /// Under Search: one fixed "Sign up for lottery alerts" link, no rotating
+    /// Plus row (owner, 2026-10-14). Signed out it opens the alerts sign-in.
+    func testSearchShowsLotteryAlertsLink() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash"]
+        app.launch()
+        let link = app.buttons["search-lottery-alerts"]
+        for _ in 0..<6 where !link.isHittable { app.swipeUp() }
+        XCTAssertTrue(link.waitForExistence(timeout: 30), "Search shows the lottery alerts link")
+        XCTAssertTrue(link.label.contains("Sign up for lottery alerts"))
+        XCTAssertFalse(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'plus-promo-'")).firstMatch.exists, "the rotating Plus row is gone")
+        XCTAssertFalse(app.staticTexts["Have AI review your lease"].exists)
+        link.tap()
+        XCTAssertTrue(app.staticTexts["Sign in for lottery alerts"].waitForExistence(timeout: 10), "the link opens the alerts sign-in")
+        app.buttons["Cancel"].tap()
     }
 
     /// Every re-rental card offers Help me apply.

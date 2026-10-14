@@ -24,6 +24,7 @@
 		1B0A6E98D9106FCDFD97D973 /* fmr.json in Resources */ = {isa = PBXBuildFile; fileRef = BE5021FFFE6C939F06530FD2 /* fmr.json */; };
 		1D2C0E5ACC26EC55A19AD0F3 /* City.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EDD14746F84061336060AD5 /* City.swift */; };
 		1D4842B47A65A9237090D64D /* PlusStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82AEFA1B93D2073218086C5 /* PlusStore.swift */; };
+		1D6EE845362854774E246142 /* NearbyPlacesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E2FF0F6AD4785CDBCA33D8F /* NearbyPlacesTests.swift */; };
 		20B66B92F929BB687315AB48 /* ReviewPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11B11FD29257010BBAE21E0A /* ReviewPrompt.swift */; };
 		216D8003A64546DC1DED920D /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96A59BAA0D560AEC7D0E1BF8 /* Theme.swift */; };
 		239814C37ED0E60FC84485B9 /* FindACribUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01F62B1CE3CCF2DAD07279F9 /* FindACribUITests.swift */; };
@@ -74,6 +75,7 @@
 		998ACE221DD3F1BF469FAB69 /* SiriIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DBD5A6961C02830CE2C6A00 /* SiriIntents.swift */; };
 		A200EEBA4BB5BBA64BBDA05A /* CityPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F98DDB6CAE27151A26A25D9 /* CityPickerView.swift */; };
 		A2CBF624BC11E59F25C5E1A7 /* RatingPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC8BF6EEBF41CB993CC7DFDA /* RatingPreview.swift */; };
+		A49D6330B08643FCC13E0DFF /* NearbyPlaces.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A29BE8CFBC547D6DB0491DA /* NearbyPlaces.swift */; };
 		A7BC7233A9EE3F6D66EA20D7 /* AlertPushSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC6E06825A92B3E0685DA9A4 /* AlertPushSheet.swift */; };
 		A9D531537DD9B5581365FBFB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CCFBDF3CE45EAFE74FADE6C4 /* Assets.xcassets */; };
 		AA818F2CAF355C2D26CEDCEE /* LaunchPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3EEF5834FCD3DDE360290CF /* LaunchPresentation.swift */; };
@@ -156,6 +158,7 @@
 		29346FF1C5BB5747E8F6660B /* SourceSans3-Semibold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "SourceSans3-Semibold.ttf"; sourceTree = "<group>"; };
 		295157FB248292C1429E1C15 /* LaunchAnimationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAnimationTests.swift; sourceTree = "<group>"; };
 		29E00E8B958A850F1443D5FC /* SecureStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureStore.swift; sourceTree = "<group>"; };
+		2A29BE8CFBC547D6DB0491DA /* NearbyPlaces.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NearbyPlaces.swift; sourceTree = "<group>"; };
 		2BF31F5CBC53724752881713 /* ResultsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultsView.swift; sourceTree = "<group>"; };
 		2CA2ED5910C5835CD844BB01 /* CommentsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommentsStore.swift; sourceTree = "<group>"; };
 		3C345F6E17169EEB81A7265B /* LocationPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationPickerView.swift; sourceTree = "<group>"; };
@@ -189,6 +192,7 @@
 		855488736B82051BFCB10DF5 /* SwipeBack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeBack.swift; sourceTree = "<group>"; };
 		861B0FD916FC3EBCD2667F13 /* AIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIService.swift; sourceTree = "<group>"; };
 		8DBD5A6961C02830CE2C6A00 /* SiriIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SiriIntents.swift; sourceTree = "<group>"; };
+		8E2FF0F6AD4785CDBCA33D8F /* NearbyPlacesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NearbyPlacesTests.swift; sourceTree = "<group>"; };
 		91590C5C68756FD6803793E5 /* hcr.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = hcr.json; sourceTree = "<group>"; };
 		931CABD212D720368F3692CE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		951051D711DA793228F1970A /* OpeningsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpeningsView.swift; sourceTree = "<group>"; };
@@ -243,7 +247,7 @@
 		EFD73F478D420E114F0C82CB /* FiltersSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FiltersSheet.swift; sourceTree = "<group>"; };
 		F4EAE491E6B0AE7EF404FA62 /* HPDRecords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HPDRecords.swift; sourceTree = "<group>"; };
 		FAA77791FAD208C445611DEA /* Packet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Packet.swift; sourceTree = "<group>"; };
-		"TEMP_2E12DFB7-D04B-4C0F-BB7D-D10C6ADB9A67" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_9E32473F-A68D-464A-9F50-8B8B08091FEA" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -320,6 +324,7 @@
 			children = (
 				9527CB2C3CF29F8B662E6848 /* CityInvariantTests.swift */,
 				98EA9658998D86C1B18B3B70 /* FindACribTests.swift */,
+				8E2FF0F6AD4785CDBCA33D8F /* NearbyPlacesTests.swift */,
 				BEB75D955C24F7FCD5B5B08E /* PrivateStorageTests.swift */,
 			);
 			path = FindACribTests;
@@ -515,6 +520,7 @@
 				BA7425E377576FE3E5C2B47B /* BuildingDetailView.swift */,
 				C91588FC06CD9178FC91CD59 /* CommentsSheet.swift */,
 				79122B1DAE5687F075A32A34 /* HPDRecordsView.swift */,
+				2A29BE8CFBC547D6DB0491DA /* NearbyPlaces.swift */,
 			);
 			path = Detail;
 			sourceTree = "<group>";
@@ -556,10 +562,10 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
-		"TEMP_A5D81757-7824-4A6C-9413-B843424BA929" /* ios */ = {
+		"TEMP_AF44949D-0ED8-4041-A297-C7C9B086D11D" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_2E12DFB7-D04B-4C0F-BB7D-D10C6ADB9A67" /* Secrets.xcconfig */,
+				"TEMP_9E32473F-A68D-464A-9F50-8B8B08091FEA" /* Secrets.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -770,6 +776,7 @@
 				096AA3C84ABC927F554C81BB /* Metrics.swift in Sources */,
 				77119B1CD94A4E7C0C3B77D4 /* MyActivityView.swift in Sources */,
 				BFD55023CCE4271FFCE20550 /* NJPhotos.swift in Sources */,
+				A49D6330B08643FCC13E0DFF /* NearbyPlaces.swift in Sources */,
 				1206CAEFCF1B4E5A3F09657C /* OnDeviceAI.swift in Sources */,
 				5287C49C7E3C8498B42534F8 /* OpeningsFeed.swift in Sources */,
 				B1FC0A4E1574A530A13E9C17 /* OpeningsView.swift in Sources */,
@@ -806,6 +813,7 @@
 			files = (
 				7750C7A7FD848D79C41E04CE /* CityInvariantTests.swift in Sources */,
 				B9832014BFBAE12D564BE84D /* FindACribTests.swift in Sources */,
+				1D6EE845362854774E246142 /* NearbyPlacesTests.swift in Sources */,
 				404538B4A51B8B7155229E4E /* PrivateStorageTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -912,7 +920,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 129;
+				CURRENT_PROJECT_VERSION = 131;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -946,7 +954,7 @@
 		};
 		4A043B04EA1D2F1BD0250C61 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_2E12DFB7-D04B-4C0F-BB7D-D10C6ADB9A67" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_9E32473F-A68D-464A-9F50-8B8B08091FEA" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -987,7 +995,7 @@
 		};
 		7B4EAA1664EF270AD8C579E8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_2E12DFB7-D04B-4C0F-BB7D-D10C6ADB9A67" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_9E32473F-A68D-464A-9F50-8B8B08091FEA" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -1060,7 +1068,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 129;
+				CURRENT_PROJECT_VERSION = 131;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;

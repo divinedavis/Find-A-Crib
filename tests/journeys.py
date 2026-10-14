@@ -1055,6 +1055,29 @@ class Runner:
         self.ok('@gmail' not in terms, 'a personal address must not be published', j)
         j.notes.append('privacy + terms carry the rules')
 
+    def j_nearby_places(self, page, j, device):
+        """Legal services and cafés at the bottom of a building (owner,
+        2026-10-14), live from Apple Maps once the bottom scrolls near the
+        screen. The legal row must say we don't vet the offices."""
+        self.boot(page, f'/#d={BBL}')
+        self.ok(self.detail_open(page), 'the building should open', j)
+        self.ok(not page.evaluate("[...document.scripts].some(s => /apple-mapkit.com\\/mk\\/.*mapkit.js/.test(s.src))"),
+                'MapKit search must not load before the bottom of the building is reached', j)
+        page.evaluate("document.getElementById('d-nearby')?.scrollIntoView()")
+        try:
+            self.wait_until(page, "document.querySelectorAll('#d-nearby .np-card').length > 0", 30000)
+        except Exception:
+            pass
+        cafes = page.evaluate("document.querySelectorAll('[data-np=cafes] .np-card').length")
+        legal = page.evaluate("document.querySelectorAll('[data-np=legal] .np-card').length")
+        self.ok(cafes > 0, f'the cafés row should list places near the building, got {cafes}', j)
+        if legal:
+            note = page.evaluate("document.querySelector('[data-np=legal] .np-note').textContent")
+            self.ok('qualified' in note and 'legal advice' in note, f'the legal row must say we do not vet it: {note!r}', j)
+            href = page.evaluate("document.querySelector('[data-np=legal] .np-card').href")
+            self.ok(href.startswith('https://maps.apple.com/'), f'a place opens in Apple Maps: {href}', j)
+        j.notes.append(f'{legal} legal, {cafes} cafés')
+
     def j_comments_gate(self, page, j, device):
         """Comments on a building are the same rows the iPhone app writes.
         Signed out, the web offers sign-in and no way to type (2026-09-20)."""
@@ -2098,7 +2121,7 @@ class Runner:
     JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'pin_and_list',
                 'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'signin_modal', 'app_chip', 'app_qr_menu', 'boot_is_usable', 'city_chip',
                 'ad_tiles', 'list_follows_zoom', 'plus_no_ads', 'building_page_link', 'remove_ads_chip', 'overlays_clear_ad', 'portal_button', 'outbound_links', 'status_chips', 'referral_gate',
-                'retired_pages', 'legal_pages', 'comments_gate', 'landlords_gate', 'consent_mode', 'account_delete', 'plus_gates', 'resume_search', 'ai_features', 'qualify', 'tools', 'renter_tools']
+                'retired_pages', 'legal_pages', 'comments_gate', 'nearby_places', 'landlords_gate', 'consent_mode', 'account_delete', 'plus_gates', 'resume_search', 'ai_features', 'qualify', 'tools', 'renter_tools']
 
     # ---- run --------------------------------------------------------------
     def run(self):

@@ -28,6 +28,8 @@ struct BuildingDetailView: View {
     /// seven times on a single visit — every observable the screen reads
     /// invalidates it — and this used to be recomputed on every one of them.
     @State private var similar: [Building] = []
+    @State private var legalNearby: [NearbyPlace] = []
+    @State private var cafesNearby: [NearbyPlace] = []
     @State private var comments = CommentsStore()
 
     private var b: Building { building }
@@ -92,6 +94,15 @@ struct BuildingDetailView: View {
                         }
                     }
                     }
+
+                    // Legal services and cafés near the building, live from
+                    // Apple Maps (owner, 2026-10-14). We vet neither row.
+                    NearbyPlacesRail(title: "Legal services nearby", icon: "building.columns",
+                                     note: "Law offices near this building, from Apple Maps. We haven't checked them and don't know whether they're qualified, licensed or take tenant cases — look them up before you hire anyone. This isn't legal advice." + (store.city.isNYC ? " Free help: call 311 and ask for the Tenant Helpline." : ""),
+                                     places: legalNearby, testID: "nearby-legal")
+                    NearbyPlacesRail(title: "Cafés nearby", icon: "cup.and.saucer",
+                                     note: "Cafés within about half a mile, from Apple Maps.",
+                                     places: cafesNearby, testID: "nearby-cafes")
 
                     // What the violation and pest numbers mean, at the bottom of
                     // every New York building (owner, 2026-10-12) instead of
@@ -176,6 +187,12 @@ struct BuildingDetailView: View {
         }
         .onAppear { Perf.mark("detail onAppear"); nav.hideTabBar = true; activity.recordView(b.bbl) }
         .task(id: b.bbl) { similar = SearchEngine.similar(to: b, store: store) }
+        .task(id: b.bbl) {
+            legalNearby = []; cafesNearby = []
+            async let l = NearbyPlaces.legal(near: b.coordinate)
+            async let c = NearbyPlaces.cafes(near: b.coordinate)
+            (legalNearby, cafesNearby) = await (l, c)
+        }
         .onDisappear { Perf.mark("detail onDisappear"); nav.hideTabBar = false }
         // Handoff (owner, 2026-10-13): pick this building up on a Mac or iPad
         // at findacrib.com, and find it again in Spotlight.

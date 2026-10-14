@@ -2397,7 +2397,19 @@ function favActive() {
   })();
   window.addEventListener('pagehide', () => tr('pagehide'));
   window.addEventListener('resize', () => tr('win-resize ' + innerWidth + 'x' + innerHeight));
-  if (window.visualViewport) visualViewport.addEventListener('resize', () => tr('vv-resize ' + Math.round(visualViewport.height)));
+  // What was on the page when the viewport resized (2026-10-14): vv-resize is
+  // the steady tail of iPhone page deaths, and those pages die with this
+  // script idle — no hdr, map-resize or grid step after it — so it is WebKit
+  // re-laying-out whatever is mounted. la = Look Around frames, ad = every
+  // other iframe (Mediavine), img = images, v = videos.
+  function census() {
+    try {
+      const f = document.getElementsByTagName('iframe'); let la = 0;
+      for (let i = 0; i < f.length; i++) if ((f[i].src || '').indexOf('apple-street-frame') >= 0) la++;
+      return ' la' + la + ' ad' + (f.length - la) + ' img' + document.images.length + ' v' + document.getElementsByTagName('video').length;
+    } catch (_) { return ''; }
+  }
+  if (window.visualViewport) visualViewport.addEventListener('resize', () => tr('vv-resize ' + Math.round(visualViewport.height) + census()));
   document.addEventListener('visibilitychange', () => tr('vis ' + document.visibilityState));
   tr('boot');
   // stops early in the trace = the main thread hung before the kill. Once a

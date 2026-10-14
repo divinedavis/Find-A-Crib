@@ -1215,6 +1215,17 @@ class Runner:
                 peak = max(peak, page.evaluate("document.querySelectorAll('.apple-street-canvas iframe').length"))
             self.ok(peak <= 3, f'a phone should keep at most 3 street photos mounted, peaked at {peak}', j)
             j.notes.append(f'peak {peak} street photos while scrolling')
+            # A viewport resize (the keyboard, Safari's toolbar) writes what
+            # was mounted into the crash trace: pages that die there die with
+            # the script idle, so the census is the only clue (2026-10-14).
+            vp = page.viewport_size
+            page.set_viewport_size({'width': vp['width'], 'height': vp['height'] - 120}); time.sleep(0.5)
+            page.set_viewport_size(vp); time.sleep(0.5)
+            step = page.evaluate("""(() => { try { return ((JSON.parse(localStorage.getItem(window.facTraceKey)) || {}).s || [])
+                .map(s => String(s[1])).filter(s => s.startsWith('vv-resize')).pop() || ''; } catch (e) { return ''; } })()""")
+            self.ok(bool(re.match(r'vv-resize \d+ la\d+ ad\d+ img\d+ v\d+$', step)),
+                    f'a viewport resize should log a page census in the trace, got {step!r}', j)
+            j.notes.append(step)
 
     def j_city_chip(self, page, j, device):
         """The header must not flash four city chips before JS collapses them.

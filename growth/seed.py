@@ -325,7 +325,28 @@ SEEDS = [
                "whose </head> sits past the read cap are UNDETERMINED, never 'missing' — the "
                "one way this audit could invent a defect. Member of "
                "techniques.DOCROOT_VERIFIERS, so it is re-read after the SEO watchdog "
-               "rebuilds the corpus instead of reporting a day late."),
+               "rebuilds the corpus instead of reporting a day late. "
+               "REVISIT 2026-10-14, kept and CHANGED rather than kept as-is. Its "
+               "hypothesis is answered — 30 nights green, so canonicalization is ruled "
+               "out as the rival explanation for crawled-not-indexed and the duplication "
+               "diagnosis does stand on firmer ground. But the green was narrower than "
+               "every entry that cited it believed: the sitemap population was sampled "
+               "with a `[::step][:cap]` stride that degenerates to `[:cap]` whenever "
+               "cap <= n < 2*cap, and 1,704 advertised URLs against CANON_SITEMAP_CAP=1500 "
+               "sat in that band, so from activation to 2026-10-14 the audit read the "
+               "alphabetically-FIRST 1,500 and never once looked at the last 204 (12.0%), "
+               "while its detail line said '1500 of 1,704 listed'. Fixed by "
+               "techniques._even_sample, which spans the listing and anchors both ends; "
+               "the detail line now distinguishes a full read from a capped spread. Second "
+               "fix the same day: the 'advertised in a sitemap but NOINDEXED' class was "
+               "evaluated inside the self-canonical branch, so a page whose </head> ran "
+               "past CANON_HEAD_BYTES was counted UNDETERMINED and carried its advertised "
+               "noindex away unreported — that class depends on the robots tag alone and is "
+               "now judged before the canonical is classified. Both are pinned by "
+               "tests/test_even_sample.py. It is kept because it remains the only "
+               "instrument that would see a silent withdrawal: index_triage leaves ~46,000 "
+               "building pages on noindex,follow, and a triage bug that leaks one of them "
+               "into a sitemap is the live failure mode, not a hypothetical one."),
     dict(slug="hub_direct_answers", status="active", kind="content",
          prefixes=["/neighborhood/", "/borough/", "/zip/"], metric="owned_visitors",
          name="Direct-answer blocks on hub pages",

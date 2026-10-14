@@ -2687,6 +2687,50 @@ def t_crawl_paths(ctx):
     return {"ok": True, "detail": detail + tail, "pages": read}
 
 
+# ---------------------------------------------------- sampling a sorted set
+#
+# Why this exists, 2026-10-14. Four audits here sample a sorted population with
+# `seq[::step][:cap]` where `step = max(1, len(seq) // cap)`, and three of them
+# document that sample as spanning the whole set — _dup_measure says "STRIDED
+# through the sorted path list, not taken from one stretch of it, so it spans
+# every borough", t_derived_building_facts says "evenly spaced through the
+# sorted path list". That idiom delivers it only when len(seq) is a large
+# multiple of cap. Whenever cap <= len(seq) < 2*cap the integer division floors
+# to step=1 and the expression degenerates to `seq[:cap]` — the FIRST cap items
+# in sorted order, one stretch of the set, with the whole tail never looked at
+# on any night.
+#
+# t_canonical_integrity sat squarely in that band and had since 2026-09-14: its
+# sitemap population is 1,704 advertised URLs against CANON_SITEMAP_CAP=1500, so
+# step=1 and the alphabetically-last 204 URLs (12.0%) were never read, while the
+# detail line reported "1500 of 1,704 listed" — which reads as an 88% sample and
+# was in fact an 88% prefix. The band is worst just under 2*cap: at 2,999
+# advertised URLs the same code would read the first 1,500 and silently skip
+# half the site.
+#
+# So the sample is taken by position instead. First and last elements are always
+# included, the rest spread evenly between them, and the result is deterministic
+# — the audits compare night to night and a sample that moved on its own would
+# be indistinguishable from a corpus that changed.
+def _even_sample(seq, cap):
+    """At most `cap` items spread across the whole of `seq`, ends included.
+
+    Returns every item when len(seq) <= cap, so a population smaller than its
+    cap is read in full rather than sampled. Above the cap the indices are
+    i*(n-1)//(cap-1), which anchors both ends and is strictly increasing (the
+    gap n-1 over cap-1 exceeds 1 once n > cap), so no item is picked twice.
+    """
+    seq = list(seq)
+    n = len(seq)
+    if cap <= 0:
+        return []
+    if n <= cap:
+        return seq
+    if cap == 1:
+        return [seq[0]]
+    return [seq[(i * (n - 1)) // (cap - 1)] for i in range(cap)]
+
+
 # ------------------------------------------------- how much of a page is its own
 #
 # Why this exists, 2026-09-02. Two pre-registered hypotheses about why this site
@@ -2817,15 +2861,19 @@ def _dup_measure(paths):
     cross-link, while one shared with the majority of the section is the
     template talking. Returns None when there is not enough to compare.
 
-    The sample is STRIDED through the sorted path list, not taken from one
-    stretch of it, so it spans every borough and is identical between runs
-    unless the corpus changes — the same sampling t_derived_building_facts uses.
-    That makes the reading tier-wide template share and a floor on any given
-    pair: two adjacent buildings also share their neighbourhood, ZIP and
+    The sample is SPREAD across the sorted path list by _even_sample, not taken
+    from one stretch of it, so it spans every borough and is identical between
+    runs unless the corpus changes — the same sampling t_derived_building_facts
+    uses. That makes the reading tier-wide template share and a floor on any
+    given pair: two adjacent buildings also share their neighbourhood, ZIP and
     sibling-link ring, none of which survives a stride.
+
+    Before 2026-10-14 this was a `[::step][:cap]` stride, which delivered that
+    span only while a section held far more pages than DUP_SAMPLE. A section of
+    24 to 47 pages got its first 24 and nothing after them, so any such
+    section's duplicate share was measured on one stretch of it.
     """
-    step = max(1, len(paths) // DUP_SAMPLE)
-    sample = paths[::step][:DUP_SAMPLE]
+    sample = _even_sample(paths, DUP_SAMPLE)
     pages = []
     for p in sample:
         try:
@@ -3031,9 +3079,12 @@ def t_derived_building_facts(ctx):
     every metric until the next index sample weeks later.
 
     Two differences from the hub audit. It samples rather than reading all
-    47,165 pages, evenly spaced through the sorted path list so the sample
-    spans every borough and is identical between runs unless the corpus itself
-    changes. And it has no staging fallback: these pages come from the SEO
+    47,165 pages, evenly spaced through the sorted path list by _even_sample so
+    the sample spans every borough and is identical between runs unless the
+    corpus itself changes — at 47,165 pages against COMPARE_SAMPLE=400 the
+    pre-2026-10-14 stride already spanned the tier, so moving to the helper
+    changes which 400 pages are read but not how widely. And it has no staging
+    fallback: these pages come from the SEO
     pipeline, which this build cannot stage — growth_run.sh runs the watchdog
     that rebuilds the corpus AFTER the techniques run, so this audit always
     reads yesterday's corpus. On the morning after a build_seo change ships it
@@ -3047,8 +3098,7 @@ def t_derived_building_facts(ctx):
     if not paths:
         return {"ok": False, "detail": "no building pages found in the docroot — "
                                        "has the SEO build ever run?"}
-    step = max(1, len(paths) // COMPARE_SAMPLE)
-    sample = paths[::step][:COMPARE_SAMPLE]
+    sample = _even_sample(paths, COMPARE_SAMPLE)
     have, missing = 0, []
     for p in sample:
         try:
@@ -3127,8 +3177,12 @@ def t_derived_building_facts(ctx):
 # NOT A FAILURE: consolidating duplicates onto one URL is what canonicals are
 # for, and this site may legitimately want it later. Those are counted and named
 # so a future review can see them appear, never flagged.
-CANON_SECTION_SAMPLE = 40      # pages per declared section, strided like _dup_measure's
-CANON_SITEMAP_CAP = 1500       # sitemap URLs read per night, strided across the sorted set
+CANON_SECTION_SAMPLE = 40      # pages per declared section, spread like _dup_measure's
+# Sitemap URLs read per night, spread across the sorted set by _even_sample. Read
+# that helper's block comment before raising this: the old stride silently turned
+# this cap into "the first 1,500 alphabetically" for every population between
+# 1,500 and 2,999 URLs, which is the band this site's 1,704 sat in.
+CANON_SITEMAP_CAP = 1500
 # Canonical and robots live in the first bytes of <head> — build_seo.page() puts
 # both above the inlined stylesheet — so this reads a head, not a document. The
 # app shells are ~342KB and would otherwise dominate the night's IO for two tags.
@@ -3290,9 +3344,12 @@ def t_canonical_integrity(ctx):
         owning technique's status — a retired section is still in the docroot
         and still part of what Google prices this domain on, the same rule
         t_crawl_paths and t_page_uniqueness follow;
-      * the URLs the sitemaps advertise, strided to CANON_SITEMAP_CAP. This is
-        the population that matters most: these are the fetches this domain has
-        asked for by name.
+      * the URLs the sitemaps advertise, spread to CANON_SITEMAP_CAP by
+        _even_sample. This is the population that matters most: these are the
+        fetches this domain has asked for by name. Until 2026-10-14 the spread
+        was a stride that degenerated at this site's size and read the first
+        1,500 of 1,704 in sorted order, so the alphabetically-last 204
+        advertised URLs had never been audited on any night.
 
     Pure docroot reader — no ctx.write_*, no ledger writes, no network — so it
     is a member of DOCROOT_VERIFIERS and cmd_seo_status re-reads it after the
@@ -3306,8 +3363,7 @@ def t_canonical_integrity(ctx):
                        for p in (t.get("prefixes") or [])})
     for pref in prefixes:
         paths = [(url, fp) for url, fp in pages if url.startswith(pref)]
-        step = max(1, len(paths) // CANON_SECTION_SAMPLE)
-        for url, fp in paths[::step][:CANON_SECTION_SAMPLE]:
+        for url, fp in _even_sample(paths, CANON_SECTION_SAMPLE):
             by_file[fp] = url
             sources.setdefault(fp, set()).add("section")
 
@@ -3320,8 +3376,7 @@ def t_canonical_integrity(ctx):
                 continue                 # a sitemap entry on another host is not ours to audit
             sitemap_paths.add(path)
         listed = sorted(sitemap_paths)
-        step = max(1, len(listed) // CANON_SITEMAP_CAP)
-        for path in listed[::step][:CANON_SITEMAP_CAP]:
+        for path in _even_sample(listed, CANON_SITEMAP_CAP):
             fp = _canon_docroot_file(ctx.docroot, path)
             if fp is None:
                 # Reported, never failed: this site serves four app shells and
@@ -3357,6 +3412,16 @@ def t_canonical_integrity(ctx):
         noindex_cache[fp] = any("noindex" in r for r in robots)
         read += 1
         in_sitemap = "sitemap" in sources.get(fp, ())
+        # Judged BEFORE the canonical, and never inside one of its branches: a
+        # sitemap advertising a page that arrives noindexed is a property of the
+        # robots tag alone, and noindex does not save the fetch — Google spends
+        # the crawl and then drops the page. Nested under the self-canonical
+        # branch (as it was until 2026-10-14) it went unreported whenever the
+        # canonical could not be classified, and the silent case was the worst
+        # one: a page whose </head> sits past CANON_HEAD_BYTES counts as
+        # UNDETERMINED and used to carry its advertised noindex away with it.
+        if in_sitemap and noindex_cache[fp]:
+            _name(url, advertised_noindex)
         if len(hrefs) > 1:
             _name(url, multiple)
             continue
@@ -3371,9 +3436,7 @@ def t_canonical_integrity(ctx):
             _name(f"{url} → {hrefs[0]}", offsite)
             continue
         if _canon_same(target, url):
-            if in_sitemap and noindex_cache[fp]:
-                _name(url, advertised_noindex)
-            continue
+            continue                     # self-canonical; any advertised noindex is already named
         tf = _canon_docroot_file(ctx.docroot, target)
         if tf is None:
             _name(f"{url} → {target}", dangling)
@@ -3392,10 +3455,19 @@ def t_canonical_integrity(ctx):
                            f"deployed docroot")}
 
     n_sitemap = sum(1 for fp in by_file if "sitemap" in sources.get(fp, ()))
+    # Whether the cap bit is part of the reading, not a footnote: "1,500 of
+    # 1,704" is a different claim depending on whether the 1,500 span the
+    # listing or stop partway through it, and this audit reported the ambiguous
+    # version for its first four weeks.
+    if not advertised:
+        covered = ", sitemaps unreadable"
+    elif len(sitemap_paths) > CANON_SITEMAP_CAP:
+        covered = (f" of {len(sitemap_paths):,} listed — capped at "
+                   f"{CANON_SITEMAP_CAP:,} spread evenly across the whole listing")
+    else:
+        covered = f", which is every one of the {len(sitemap_paths):,} listed"
     detail = (f"canonical tags read on {read} pages "
-              f"({n_sitemap} of them advertised in a sitemap"
-              + (f" of {len(sitemap_paths):,} listed" if advertised else ", sitemaps unreadable")
-              + ")")
+              f"({n_sitemap} of them advertised in a sitemap{covered})")
     faults = []
     for label, bucket in (("NO canonical", missing),
                           ("MORE THAN ONE canonical", multiple),

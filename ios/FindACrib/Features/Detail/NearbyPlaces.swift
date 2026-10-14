@@ -14,20 +14,26 @@ struct NearbyPlace: Identifiable, Hashable {
 }
 
 enum NearbyPlaces {
-    /// Apple Maps has no "lawyer" category, so legal services come from three
-    /// text searches, kept only when the name reads as a legal office. A plain
-    /// "legal services" search near 1 Audubon Ave returned notaries, a tax
-    /// preparer and a check casher ahead of any lawyer (2026-10-14).
-    static let legalQueries = ["lawyer", "tenant lawyer", "legal aid"]
-    static func isLegal(_ name: String) -> Bool {
-        let n = name.lowercased()
-        let yes = ["law", "legal", "attorney", "esq", "counsel", "advocate"]
-        let no = ["notary", "tax", "check cash", "realty", "court", "criminal justice", "insurance", "immigration consultant"]
-        return yes.contains { n.contains($0) } && !no.contains { n.contains($0) }
+    /// Home and apartment law only (owner, 2026-10-14). Apple Maps has no
+    /// lawyer category and doesn't say what a firm practices, so five housing
+    /// searches are merged and a place stays only when its NAME says housing
+    /// law: a legal-aid / legal-services group, or tenant/housing/eviction
+    /// next to a legal word. Generic "Law Office of …" results can't be told
+    /// apart and are left out. Same rule as index.html's isLegalName.
+    static let legalQueries = ["tenant legal services", "tenant lawyer", "landlord tenant attorney", "housing lawyer", "eviction lawyer"]
+    private static func has(_ n: String, _ pattern: String) -> Bool {
+        n.range(of: pattern, options: [.regularExpression, .caseInsensitive]) != nil
+    }
+    static func isLegal(_ n: String) -> Bool {
+        let legalWord = #"\blaw\b|legal|attorney|lawyer|esq|counsel"#
+        let org = #"legal aid|legal assistance|legal services (corp|nyc|of|for)|(bronx|brooklyn|harlem|queens|manhattan|staten island|bay area|los angeles|neighborhood|community) legal services|mobilization for justice|takeroot|housing rights|tenant rights|tenants? union"#
+        let no = #"criminal|injury|accident|immigra|district attorney|defender|court|commercial|notary|tax|realty|brokerage|consult|multiservice|insurance"#
+        if has(n, no) || (has(n, "landlord") && !has(n, "tenant")) { return false }
+        return has(n, org) || (has(n, "tenant|housing|eviction") && has(n, legalWord))
     }
 
     static func legal(near c: CLLocationCoordinate2D, limit: Int = 8) async -> [NearbyPlace] {
-        let region = MKCoordinateRegion(center: c, latitudinalMeters: 3000, longitudinalMeters: 3000)
+        let region = MKCoordinateRegion(center: c, latitudinalMeters: 5000, longitudinalMeters: 5000)
         var seen = Set<String>(), out: [NearbyPlace] = []
         for q in legalQueries {
             let req = MKLocalSearch.Request()
@@ -36,7 +42,7 @@ enum NearbyPlaces {
             req.resultTypes = .pointOfInterest
             guard let items = try? await MKLocalSearch(request: req).start().mapItems else { continue }
             for it in items {
-                guard let p = place(it, from: c), isLegal(p.name), p.meters <= 3500, seen.insert(p.id).inserted else { continue }
+                guard let p = place(it, from: c), isLegal(p.name), p.meters <= 5000, seen.insert(p.id).inserted else { continue }
                 out.append(p)
             }
         }

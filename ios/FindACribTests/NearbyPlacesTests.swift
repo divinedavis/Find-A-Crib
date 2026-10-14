@@ -1,19 +1,24 @@
 import Testing
 @testable import FindACrib
 
-/// The legal-services row keeps only names that read as legal offices. These
-/// are real Apple Maps results near 1 Audubon Ave (2026-10-14).
-@Suite("Nearby legal services filter")
+/// The legal row is home and apartment law only (owner, 2026-10-14). These are
+/// real Apple Maps results for housing searches near three NYC buildings; the
+/// same names are checked against index.html's isLegalName in tests/test_nearby_legal.py.
+@Suite("Nearby housing legal help filter")
 struct NearbyPlacesTests {
-    @Test("keeps law offices", arguments: [
-        "The Portela Law Firm, P.C.", "Law Office of Patricia M Machado", "The Legal Aid Society",
-        "Hecht & Hecht Attorneys", "Robert Gardner, Esq.",
+    @Test("keeps housing legal help", arguments: [
+        "The Legal Aid Society", "Harlem Legal Services", "Bronx Legal Services", "Legal Services NYC",
+        "Legal Services for New York", "Brooklyn Legal Services Corporation A", "Mobilization for Justice",
+        "Tenant Rights Law Group", "Eviction Defense Attorneys", "Landlord Tenant Law Office of J. Doe",
     ])
     func keeps(_ name: String) { #expect(NearbyPlaces.isLegal(name)) }
 
-    @Test("drops what a legal search drags in", arguments: [
-        "Notary Public", "William Tax Solutions", "PLS Check Cashers", "Bronx Housing Court Office",
-        "Criminal Justice Agency", "Nextage C E Realty Corporation", "Starbucks Coffee Company",
+    @Test("drops anything not clearly housing law", arguments: [
+        "The Portela Law Firm, P.C.", "Law Office of Patricia M Machado", "Personal Injury Lawyer Brooklyn",
+        "Peter J. Schaffer Bronx Criminal Lawyer", "Commercial Tenant Landlord Lawyer", "Jersey Landlord Lawyer",
+        "Landlord & Tenant Consultation Services", "Bronx Housing Court Office", "Neighborhood Defender Service",
+        "The Brooklyn District Attorney’s Office", "Tato Legal Services", "Notary Public", "William Tax Solutions",
+        "2125 Tenant Association", "Real Estate", "Starbucks Coffee Company",
     ])
     func drops(_ name: String) { #expect(!NearbyPlaces.isLegal(name)) }
 

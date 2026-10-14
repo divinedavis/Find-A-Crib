@@ -7625,13 +7625,21 @@ function favActive() {
   // results). MapKit JS — the full build; mapkit.core.js never fetched its
   // services library on Marracat — loads only when the bottom of a building
   // first scrolls near the screen, so boot and phone memory don't pay for it.
-  // Apple Maps has no lawyer category: three text searches, kept only when
-  // the name reads as a legal office (a plain "legal services" search near
-  // 1 Audubon Ave led with notaries, a tax preparer and a check casher).
-  const LEGAL_QUERIES = ['lawyer', 'tenant lawyer', 'legal aid'];
-  const LEGAL_YES = /law|legal|attorney|esq|counsel|advocate/i;
-  const LEGAL_NO = /notary|tax|check cash|realty|court|criminal justice|insurance|immigration consultant/i;
-  const isLegalName = n => LEGAL_YES.test(n) && !LEGAL_NO.test(n);
+  // Home and apartment law only (owner, 2026-10-14). Apple Maps has no
+  // lawyer category and doesn't say what a firm practices, so five housing
+  // searches are merged and a place stays only when its NAME says housing
+  // law: a legal-aid / legal-services group, or tenant/housing/eviction next
+  // to a legal word. Generic "Law Office of …" results (Apple ranks plenty for
+  // "tenant lawyer") can't be told apart and are left out; landlord-only,
+  // commercial, criminal, injury, immigration, notary and "consultation"
+  // names are dropped.
+  const LEGAL_QUERIES = ['tenant legal services', 'tenant lawyer', 'landlord tenant attorney', 'housing lawyer', 'eviction lawyer'];
+  const LEGAL_WORD = /\blaw\b|legal|attorney|lawyer|esq|counsel/i;
+  const LEGAL_ORG = /legal aid|legal assistance|legal services (corp|nyc|of|for)|(bronx|brooklyn|harlem|queens|manhattan|staten island|bay area|los angeles|neighborhood|community) legal services|mobilization for justice|takeroot|housing rights|tenant rights|tenants? union/i;
+  const HOUSING_WORD = /tenant|housing|eviction/i;
+  const LEGAL_NO = /criminal|injury|accident|immigra|district attorney|defender|court|commercial|notary|tax|realty|brokerage|consult|multiservice|insurance/i;
+  const isLegalName = n => !LEGAL_NO.test(n) && !(/landlord/i.test(n) && !/tenant/i.test(n))
+    && (LEGAL_ORG.test(n) || (HOUSING_WORD.test(n) && LEGAL_WORD.test(n)));
   let mapkitP = null;
   function mapkitServices() {
     const tok = String(window.APPLE_MAPS_TOKEN || '').trim();
@@ -7661,14 +7669,14 @@ function favActive() {
       lat: c.latitude, lng: c.longitude, m: metersBetween(rec.lat, rec.lng, c.latitude, c.longitude) };
   }
   function searchLegal(mk, rec) {
-    const region = new mk.CoordinateRegion(new mk.Coordinate(rec.lat, rec.lng), new mk.CoordinateSpan(0.027, 0.035));
+    const region = new mk.CoordinateRegion(new mk.Coordinate(rec.lat, rec.lng), new mk.CoordinateSpan(0.045, 0.06));
     return Promise.all(LEGAL_QUERIES.map(q => new Promise(res => {
       try { new mk.Search({ region, includeAddresses: false, includeQueries: false }).search(q, (e, d) => res(e || !d ? [] : d.places)); }
       catch (_) { res([]); }
     }))).then(lists => {
       const seen = new Set();
       return lists.flat().map(p => nearbyPlace(p, rec))
-        .filter(p => p.name && isLegalName(p.name) && p.m <= 3500 && !seen.has(p.name + '|' + p.street) && seen.add(p.name + '|' + p.street))
+        .filter(p => p.name && isLegalName(p.name) && p.m <= 5000 && !seen.has(p.name + '|' + p.street) && seen.add(p.name + '|' + p.street))
         .sort((a, b) => a.m - b.m).slice(0, 8);
     });
   }
@@ -7703,9 +7711,9 @@ function favActive() {
       mapkitServices().then(mk => Promise.all([searchLegal(mk, rec), searchCafes(mk, rec)])).then(([legal, cafes]) => {
         const cur = document.getElementById('d-nearby');
         if (!cur || cur.dataset.bbl !== rec.bbl) return;      // another building opened meanwhile
-        const legalNote = 'Law offices near this building, from Apple Maps. We haven’t checked them and don’t know whether they’re qualified, licensed or take tenant cases — look them up before you hire anyone. This isn’t legal advice.'
+        const legalNote = 'Tenant and housing legal help near this building, from Apple Maps. We haven’t checked them and don’t know whether they’re qualified or licensed — look them up before you rely on anyone. This isn’t legal advice.'
           + (IS_NYC ? ' Free help: call 311 and ask for the Tenant Helpline.' : '');
-        cur.innerHTML = nearbyRow('legal', 'Legal services nearby', '⚖️', legalNote, legal)
+        cur.innerHTML = nearbyRow('legal', 'Housing legal help nearby', '⚖️', legalNote, legal)
           + nearbyRow('cafes', 'Cafés nearby', '☕', 'Cafés within about half a mile, from Apple Maps.', cafes);
         cur.classList.toggle('np-on', !!(legal.length || cafes.length));
       }, () => {});

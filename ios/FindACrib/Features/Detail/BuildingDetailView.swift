@@ -97,8 +97,8 @@ struct BuildingDetailView: View {
 
                     // Legal services and cafés near the building, live from
                     // Apple Maps (owner, 2026-10-14). We vet neither row.
-                    NearbyPlacesRail(title: "Legal services nearby", icon: "building.columns",
-                                     note: "Law offices near this building, from Apple Maps. We haven't checked them and don't know whether they're qualified, licensed or take tenant cases — look them up before you hire anyone. This isn't legal advice." + (store.city.isNYC ? " Free help: call 311 and ask for the Tenant Helpline." : ""),
+                    NearbyPlacesRail(title: "Housing legal help nearby", icon: "building.columns",
+                                     note: "Tenant and housing legal help near this building, from Apple Maps. We haven't checked them and don't know whether they're qualified or licensed — look them up before you rely on anyone. This isn't legal advice." + (store.city.isNYC ? " Free help: call 311 and ask for the Tenant Helpline." : ""),
                                      places: legalNearby, testID: "nearby-legal")
                     NearbyPlacesRail(title: "Cafés nearby", icon: "cup.and.saucer",
                                      note: "Cafés within about half a mile, from Apple Maps.",

@@ -1508,6 +1508,15 @@
   @media (min-width: 901px) { .d-dir-row { display: none; } }   /* driving directions: mobile only */
   .d-section { padding: 16px 18px; border-top: 8px solid var(--bg); }
   .d-section h3 { margin: 0 0 12px; font-size: 18px; letter-spacing: -.3px; }
+  .d-nearby:not(.np-on) { padding: 0; border: 0; height: 1px; overflow: hidden; }
+  .np-block + .np-block { margin-top: 18px; }
+  .np-rail { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; scroll-snap-type: x proximity; }
+  .np-card { flex: 0 0 180px; scroll-snap-align: start; display: flex; flex-direction: column; gap: 3px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: inherit; text-decoration: none; }
+  .np-card b { color: var(--blue); font-size: 15px; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .np-card span:not(.np-icon) { color: var(--ink-2); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .np-card small { color: var(--ink-2); font-size: 12.5px; }
+  .np-icon { font-size: 18px; }
+  .np-note { color: var(--ink-2); font-size: 12.5px; margin-top: 8px; }
   .d-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
   .d-fact { font-size: 13px; }
   .d-fact .l { color: var(--ink-2); display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .4px; }
@@ -7425,7 +7434,8 @@ function favActive() {
       <div class="d-section" id="d-comments" data-sec="comments"><h3>Comments</h3>
         <div id="d-comments-list"><div class="d-sub" style="margin:0">Loading comments…</div></div>
         <div id="d-comments-composer"></div>
-      </div>`;
+      </div>
+      <div class="d-section d-nearby" id="d-nearby" data-bbl="${esc(rec.bbl)}"></div>`;
   }
 
   // Colour and wording for the Violations button. `ytd` (this calendar year)
@@ -7609,6 +7619,111 @@ function favActive() {
     const a = e.target.closest && e.target.closest('a[data-bpage]');
     if (a && detailRec) track('building_page_open', { bbl: detailRec.bbl, via: 'detail' });
   });
+  // ---------- legal services + cafés near the building ----------
+  // Owner 2026-10-14: two rows at the bottom of every building, searched live
+  // on Apple Maps. Nothing is stored (Apple's terms forbid caching Maps
+  // results). MapKit JS — the full build; mapkit.core.js never fetched its
+  // services library on Marracat — loads only when the bottom of a building
+  // first scrolls near the screen, so boot and phone memory don't pay for it.
+  // Home and apartment law only (owner, 2026-10-14). Apple Maps has no
+  // lawyer category and doesn't say what a firm practices, so five housing
+  // searches are merged and a place stays only when its NAME says housing
+  // law: a legal-aid / legal-services group, or tenant/housing/eviction next
+  // to a legal word. Generic "Law Office of …" results (Apple ranks plenty for
+  // "tenant lawyer") can't be told apart and are left out; landlord-only,
+  // commercial, criminal, injury, immigration, notary and "consultation"
+  // names are dropped.
+  const LEGAL_QUERIES = ['tenant legal services', 'tenant lawyer', 'landlord tenant attorney', 'housing lawyer', 'eviction lawyer'];
+  const LEGAL_WORD = /\blaw\b|legal|attorney|lawyer|esq|counsel/i;
+  const LEGAL_ORG = /legal aid|legal assistance|legal services (corp|nyc|of|for)|(bronx|brooklyn|harlem|queens|manhattan|staten island|bay area|los angeles|neighborhood|community) legal services|mobilization for justice|takeroot|housing rights|tenant rights|tenants? union/i;
+  const HOUSING_WORD = /tenant|housing|eviction/i;
+  const LEGAL_NO = /criminal|injury|accident|immigra|district attorney|defender|court|commercial|notary|tax|realty|brokerage|consult|multiservice|insurance/i;
+  const isLegalName = n => !LEGAL_NO.test(n) && !(/landlord/i.test(n) && !/tenant/i.test(n))
+    && (LEGAL_ORG.test(n) || (HOUSING_WORD.test(n) && LEGAL_WORD.test(n)));
+  let mapkitP = null;
+  function mapkitServices() {
+    const tok = String(window.APPLE_MAPS_TOKEN || '').trim();
+    if (!tok) return Promise.reject(new Error('no token'));
+    if (window.mapkit && mapkit.Search) return Promise.resolve(window.mapkit);
+    if (mapkitP) return mapkitP;
+    mapkitP = new Promise((ok, no) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.apple-mapkit.com/mk/5.x.x/mapkit.js';
+      s.crossOrigin = 'anonymous';
+      s.dataset.libraries = 'services';
+      s.onload = () => { try { mapkit.init({ authorizationCallback: done => done(tok) }); ok(window.mapkit); } catch (e) { no(e); } };
+      s.onerror = () => no(new Error('mapkit load'));
+      document.head.appendChild(s);
+    });
+    mapkitP.catch(() => { mapkitP = null; });
+    return mapkitP;
+  }
+  function metersBetween(a, b, c, d) {
+    const R = 6371000, r = x => x * Math.PI / 180, dl = r(c - a), dn = r(d - b);
+    const h = Math.sin(dl / 2) ** 2 + Math.cos(r(a)) * Math.cos(r(c)) * Math.sin(dn / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(h));
+  }
+  function nearbyPlace(p, rec) {
+    const c = p.coordinate || {};
+    return { name: p.name || '', street: String(p.formattedAddress || '').split(',')[0],
+      lat: c.latitude, lng: c.longitude, m: metersBetween(rec.lat, rec.lng, c.latitude, c.longitude) };
+  }
+  function searchLegal(mk, rec) {
+    const region = new mk.CoordinateRegion(new mk.Coordinate(rec.lat, rec.lng), new mk.CoordinateSpan(0.045, 0.06));
+    return Promise.all(LEGAL_QUERIES.map(q => new Promise(res => {
+      try { new mk.Search({ region, includeAddresses: false, includeQueries: false }).search(q, (e, d) => res(e || !d ? [] : d.places)); }
+      catch (_) { res([]); }
+    }))).then(lists => {
+      const seen = new Set();
+      return lists.flat().map(p => nearbyPlace(p, rec))
+        .filter(p => p.name && isLegalName(p.name) && p.m <= 5000 && !seen.has(p.name + '|' + p.street) && seen.add(p.name + '|' + p.street))
+        .sort((a, b) => a.m - b.m).slice(0, 8);
+    });
+  }
+  function searchCafes(mk, rec) {
+    return new Promise(res => {
+      try {
+        new mk.PointsOfInterestSearch({ center: new mk.Coordinate(rec.lat, rec.lng), radius: 800,
+          pointOfInterestFilter: mk.PointOfInterestFilter.including([mk.PointOfInterestCategory.Cafe]) })
+          .search((e, d) => res(e || !d ? [] : d.places));
+      } catch (_) { res([]); }
+    }).then(list => {
+      const seen = new Set();
+      return list.map(p => nearbyPlace(p, rec)).filter(p => p.name && !seen.has(p.name + '|' + p.street) && seen.add(p.name + '|' + p.street))
+        .sort((a, b) => a.m - b.m).slice(0, 8);
+    });
+  }
+  function nearbyRow(kind, title, icon, note, places) {
+    if (!places.length) return '';
+    const mi = m => { const x = m / 1609.34; return x < 0.1 ? 'Under 0.1 mi' : x.toFixed(1) + ' mi'; };
+    return `<div class="np-block" data-np="${kind}"><h3>${title}</h3><div class="np-rail">${places.map(p =>
+      `<a class="np-card" data-np-kind="${kind}" target="_blank" rel="noopener" href="https://maps.apple.com/?q=${encodeURIComponent(p.name)}&amp;ll=${p.lat},${p.lng}">
+        <span class="np-icon" aria-hidden="true">${icon}</span><b>${esc(p.name)}</b>${p.street ? `<span>${esc(p.street)}</span>` : ''}<small>${mi(p.m)}</small></a>`).join('')}</div>
+      <div class="np-note">${note}</div></div>`;
+  }
+  function watchNearby(rec) {
+    const box = document.getElementById('d-nearby');
+    if (!box || !Number.isFinite(rec.lat) || !Number.isFinite(rec.lng) || !window.IntersectionObserver) return;
+    const io = new IntersectionObserver(ents => {
+      if (!ents.some(e => e.isIntersecting)) return;
+      io.disconnect();
+      tr('nearby');
+      mapkitServices().then(mk => Promise.all([searchLegal(mk, rec), searchCafes(mk, rec)])).then(([legal, cafes]) => {
+        const cur = document.getElementById('d-nearby');
+        if (!cur || cur.dataset.bbl !== rec.bbl) return;      // another building opened meanwhile
+        const legalNote = 'Tenant and housing legal help near this building, from Apple Maps. We haven’t checked them and don’t know whether they’re qualified or licensed — look them up before you rely on anyone. This isn’t legal advice.'
+          + (IS_NYC ? ' Free help: call 311 and ask for the Tenant Helpline.' : '');
+        cur.innerHTML = nearbyRow('legal', 'Housing legal help nearby', '⚖️', legalNote, legal)
+          + nearbyRow('cafes', 'Cafés nearby', '☕', 'Cafés within about half a mile, from Apple Maps.', cafes);
+        cur.classList.toggle('np-on', !!(legal.length || cafes.length));
+      }, () => {});
+    }, { rootMargin: '400px' });
+    io.observe(box);
+  }
+  document.addEventListener('click', e => {
+    const a = e.target.closest && e.target.closest('a[data-np-kind]');
+    if (a && detailRec) track('nearby_place_click', { bbl: detailRec.bbl, kind: a.dataset.npKind });
+  });
   function openDetail(rec) {
     tr('openDetail');
     detailRec = rec;
@@ -7622,7 +7737,7 @@ function favActive() {
     PHOTO_PREVIEW?.watch(detailContent);
     watchDetailSections(rec);
     syncDetailFav();
-    loadComments(rec.bbl); loadOpenDataCounts(rec);
+    loadComments(rec.bbl); watchNearby(rec); loadOpenDataCounts(rec);
     detailSheet.hidden = false;
     // The panel renders immediately from what boot already had, then fills in
     // the all-time and class-breakdown numbers when the rest arrives. Guarded
@@ -7653,7 +7768,7 @@ function favActive() {
         // open after it, which is exactly what made it look intermittent.
         // The operator block survives because renderDetail reads it from the
         // CONTACTS cache; comments have no cache to read.
-        loadComments(rec.bbl);
+        loadComments(rec.bbl); watchNearby(rec);
         // Same for the four NYC Open Data counts: any that had already landed
         // were just wiped off the buttons, and nothing else would ever put
         // them back. OD_COUNTS makes the re-ask free once the queries have
@@ -7938,14 +8053,14 @@ function favActive() {
     }
     if (act === 'home') {
       setHome(rec);
-      detailContent.innerHTML = renderDetail(rec); watchDetailSections(rec); syncDetailFav(); loadComments(rec.bbl); loadOpenDataCounts(rec);
+      detailContent.innerHTML = renderDetail(rec); watchDetailSections(rec); syncDetailFav(); loadComments(rec.bbl); watchNearby(rec); loadOpenDataCounts(rec);
       detailContent.scrollTop = 0;
       showPlusToast('Pinned as your apartment — saved and watched. Find it any time under “My apartment”.');
       return;
     }
     if (act === 'unhome') {
       clearHome();
-      detailContent.innerHTML = renderDetail(rec); watchDetailSections(rec); syncDetailFav(); loadComments(rec.bbl); loadOpenDataCounts(rec);
+      detailContent.innerHTML = renderDetail(rec); watchDetailSections(rec); syncDetailFav(); loadComments(rec.bbl); watchNearby(rec); loadOpenDataCounts(rec);
       return;
     }
     if (act === 'directions') { openDirections(rec); return; }

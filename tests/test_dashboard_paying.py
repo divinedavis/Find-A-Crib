@@ -22,6 +22,14 @@ class DashboardPaying(unittest.TestCase):
         self.assertIn("grant execute on function public.dashboard_paying(timestamptz) to service_role;", sql)
         self.assertIn("before insert or update on public.subscriptions", sql)
 
+    def test_plus_customers_by_range(self):
+        with open(os.path.join(ROOT, "supabase", "migrations", "20261013210000_dashboard_plus_customers.sql")) as f:
+            sql = f.read()
+        for key in ("'plus'", "'plus_new'", "'plus_web'", "'plus_app'", "'paying'"):
+            self.assertIn(key, sql)
+        self.assertIn("revoke all on function public.dashboard_paying(timestamptz) from public, anon, authenticated;", sql)
+        self.assertIn("grant execute on function public.dashboard_paying(timestamptz) to service_role;", sql)
+
 
 if __name__ == "__main__":
     unittest.main()

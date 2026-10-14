@@ -170,6 +170,9 @@ def apply():
         else:
             asc.post("/appStoreVersionLocalizations", {"data": {"type": "appStoreVersionLocalizations", "attributes": dict(va, locale=loc),
                      "relationships": {"appStoreVersion": {"data": {"type": "appStoreVersions", "id": ids["version"]}}}}})
+        # Adding a version language makes Apple create the app-info row for
+        # it too, so look again before deciding to create one.
+        ilocs = {r["attributes"]["locale"]: r["id"] for r in asc.get(f"/appInfos/{ids['info']}/appInfoLocalizations")["data"]}
         ia = {"name": "Find A Crib", "subtitle": f["subtitle"], "privacyPolicyUrl": M.PRIVACY}
         if loc in ilocs:
             asc.patch(f"/appInfoLocalizations/{ilocs[loc]}", {"data": {"type": "appInfoLocalizations", "id": ilocs[loc], "attributes": ia}})

@@ -27,6 +27,7 @@ HOST = "https://api.appstoreconnect.apple.com"
 API = HOST + "/v1"
 SHOTS = HERE.parent / "marketing" / "asc-screenshots"
 SHOTS_IPAD = HERE.parent / "marketing" / "asc-screenshots-ipad"
+SHOTS_DUO = HERE.parent / "marketing" / "asc-screenshots-duo"      # iPhone Duo outer display, 1398x2034 (required from April 2027)
 
 SUBTITLE = "NYC, LA, SF & DC rent maps"                       # <= 30 chars
 KEYWORDS = "rent stabilized,rent control,los angeles,san francisco,washington dc,apartments,rso,brooklyn,nyc"  # <=100 — cities carry the search demand; the title already says Find A Crib
@@ -376,6 +377,7 @@ def apply(asc, cfg):
     ensure_availability(asc, app_id)
     upload_screenshots(asc, ids["version_loc"])
     upload_screenshots(asc, ids["version_loc"], SHOTS_IPAD, "APP_IPAD_PRO_3GEN_129")
+    upload_screenshots(asc, ids["version_loc"], SHOTS_DUO, "APP_IPHONE_DUO")
 
 
 def show(asc, cfg):

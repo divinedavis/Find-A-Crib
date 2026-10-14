@@ -474,7 +474,8 @@ struct LotteriesView: View {
                 AddToCalendarButton(item: CalendarItem(title: "Lottery deadline: \(l.name)", day: c,
                                                        notes: "Apply on Housing Connect before the deadline.", url: l.href.flatMap(URL.init(string:))),
                                     label: "Add deadline to Calendar")
-                    .foregroundStyle(SE.royal).padding(.top, 4).accessibilityIdentifier("lottery-calendar")
+                    // Centred under Apply (owner, 2026-10-14).
+                    .foregroundStyle(SE.royal).frame(maxWidth: .infinity).padding(.top, 4).accessibilityIdentifier("lottery-calendar")
             }
         }
         .padding(16).frame(maxWidth: .infinity, alignment: .leading)

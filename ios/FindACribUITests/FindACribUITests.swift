@@ -814,6 +814,9 @@ final class FindACribUITests: XCTestCase {
         let cal = app.buttons["lottery-calendar"].firstMatch
         for _ in 0..<3 where !cal.exists { app.swipeUp() }
         XCTAssertTrue(cal.exists, "a lottery card offers Add deadline to Calendar")
+        // Centred under Apply (owner, 2026-10-14).
+        let text = cal.staticTexts["Add deadline to Calendar"].exists ? cal.staticTexts["Add deadline to Calendar"].frame : cal.frame
+        XCTAssertEqual(text.midX, app.windows.firstMatch.frame.midX, accuracy: 30, "the calendar button sits centred")
     }
 
     /// A paying member with alerts on (--plus-demo + --lotteries-demo): the

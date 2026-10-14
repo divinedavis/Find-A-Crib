@@ -1049,6 +1049,8 @@ class Runner:
         page.goto(LIVE + '/terms.html', wait_until='domcontentloaded', timeout=90000)
         terms = page.evaluate("document.body.innerText")
         self.ok('zero tolerance' in terms.lower(), 'terms must keep the zero-tolerance clause (App Review 1.2)', j)
+        self.ok('not a law firm' in terms.lower() and 'attorney-client' in terms.lower(),
+                'terms must say the renter tools and AI are not legal advice', j)
         self.ok('report' in terms.lower() and 'block' in terms.lower(), 'terms should explain reporting and blocking', j)
         self.ok('@gmail' not in terms, 'a personal address must not be published', j)
         j.notes.append('privacy + terms carry the rules')
@@ -1697,6 +1699,12 @@ class Runner:
         self.click(page, '#menu-btn'); time.sleep(0.3)
         rows = page.evaluate("[...document.querySelectorAll('#menu-pop [data-menu]')].filter(b => b.offsetParent).map(b => b.dataset.menu)")
         self.ok('brokerfee' in rows and 'lease' in rows, f'☰ lists both tools on NYC: {rows}', j)
+        # Every legal tool says up front that it isn't legal advice, before
+        # any result (owner, 2026-10-14).
+        bare = page.evaluate("""['brokerfee','lease','repair','rentup','rights','renewal'].filter(m => {
+            const n = document.querySelector('#' + m + '-modal .legal-note');
+            return !n || !/legal advice/i.test(n.textContent) || !/law firm/i.test(n.textContent); })""")
+        self.ok(not bare, f'these tools lack the not-legal-advice line: {bare}', j)
         page.evaluate("document.querySelector('#menu-pop [data-menu=\"brokerfee\"]').click()"); time.sleep(0.3)
         self.ok(page.evaluate("!document.getElementById('brokerfee-modal').hidden"), '☰ Broker fee check opens its form', j)
         page.evaluate("document.querySelector('#bf-form button[type=submit]').click()"); time.sleep(0.8)

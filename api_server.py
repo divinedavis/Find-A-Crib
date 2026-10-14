@@ -1806,6 +1806,9 @@ def dashboard_metrics():
         # Alert sign-up conversion, 7-day rolling per day since alerts
         # launched (db/0038). Not range-scoped: it is a trend line.
         "alert_trend": (_fac_alert_trend,),
+        # D30 return rate and free-to-paid per day, for the metrics chart's
+        # picks (db/0062). Not range-scoped: trend lines.
+        "conversion_trend": (_fac_conversion_trend,),
         # Visitors and sign-ups per day since 24 Jun, for the visitors chart's
         # period picker (db/0040). Not range-scoped.
         "daily_series": (_fac_daily_series,),
@@ -1855,6 +1858,17 @@ def _fac_alert_trend():
     watch the 2026-09-30 switch to Plus-only alerts. [] on failure."""
     try:
         return rpc("dashboard_alert_trend", {"p_ios_builds": list(_fac_released_builds()) or None}) or []
+    except Exception:
+        return []
+
+
+@_memo(300)   # ~2 s of SQL; the chart only needs it every few minutes
+def _fac_conversion_trend():
+    """[{date, d30, d30_cohort, f2p, accounts, paying}] — D30 return rate on a
+    rolling 30-day cohort and free-to-paid by paid_since, per New York day
+    (db/0062, owner 2026-10-13). [] on failure."""
+    try:
+        return rpc("dashboard_conversion_trend", {"p_ios_builds": list(_fac_released_builds()) or None}) or []
     except Exception:
         return []
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Your Casa (owner, 2026-10-15): 311 calls on a building, crime nearby, and
+"""Your Crib (owner, 2026-10-15): 311 calls on a building, crime nearby, and
 a Plus watch with alerts.
 
 The watch is written only through /casa/watch, keyed on the verified session

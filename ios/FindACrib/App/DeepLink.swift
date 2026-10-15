@@ -7,8 +7,8 @@ import Foundation
 ///   findacrib://building/<bbl>             a building's page
 ///   findacrib://tool/<repair|rent-increase|rights|renewal>
 ///   findacrib://search                     the Search home
-///   findacrib://casa                       the Your Casa tab (NYC); its alerts link
-///   https://findacrib.com/casa/            the same page on the website (Your Casa alerts link here)
+///   findacrib://casa                       the Your Crib tab (NYC); its alerts link
+///   https://findacrib.com/casa/            the same page on the website (Your Crib alerts link here)
 ///   https://findacrib.com/#d=<bbl>         the website's building link (Handoff, shared links)
 ///   https://findacrib.com/#repair …        the website's tool deep links
 ///

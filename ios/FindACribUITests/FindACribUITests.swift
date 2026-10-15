@@ -552,7 +552,7 @@ final class FindACribUITests: XCTestCase {
         // LA has its own openings since 2026-09-24 (Access Housing LA), so the
         // tab is back — listing LA's, never New York's.
         XCTAssertTrue(app.buttons["tab-Lotteries"].exists, "LA lists Access Housing LA's openings")
-        XCTAssertFalse(app.buttons["tab-Your Casa"].exists, "Your Casa reads New York's 311 and NYPD data; it must not show in LA")
+        XCTAssertFalse(app.buttons["tab-Your Crib"].exists, "Your Crib reads New York's 311 and NYPD data; it must not show in LA")
         // The count pill is the map's own: it says how many of THIS city's
         // buildings the map is showing, so 67,5xx means LA's data on LA's map.
         // (The Search screen underneath still holds its own tiles, so the whole
@@ -623,7 +623,7 @@ final class FindACribUITests: XCTestCase {
         expectation(for: NSPredicate(format: "label CONTAINS 'Search' AND NOT (label CONTAINS 'Search 0 ')"), evaluatedWith: go)
         waitForExpectations(timeout: 90)
         XCTAssertFalse(app.buttons["tab-Lotteries"].exists, "Chicago has no lottery feed, so no Lotteries tab")
-        XCTAssertFalse(app.buttons["tab-Your Casa"].exists, "Your Casa is New York only")
+        XCTAssertFalse(app.buttons["tab-Your Crib"].exists, "Your Crib is New York only")
         let bar = app.buttons["tab-Search"]
         for _ in 0..<4 where !go.isHittable || (bar.exists && go.frame.maxY > bar.frame.minY - 8) { app.swipeUp() }
         go.tap()
@@ -959,7 +959,7 @@ final class FindACribUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(tab.waitForExistence(timeout: 20))
         XCTAssertTrue(app.buttons["tab-My Activity"].isHittable && app.buttons["tab-Profile"].isHittable
-                      && app.buttons["tab-Your Casa"].isHittable, "all five tabs must fit")
+                      && app.buttons["tab-Your Crib"].isHittable, "all five tabs must fit")
         tab.tap()
         let card = app.descendants(matching: .any)["lottery-card"].firstMatch
         let empty = app.descendants(matching: .any)["lotteries-empty"].firstMatch
@@ -1025,17 +1025,17 @@ final class FindACribUITests: XCTestCase {
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "lotteries-nj"; shot.lifetime = .keepAlways; add(shot)
     }
 
-    /// Your Casa (owner, 2026-10-15; replaced Events): an address shows its
+    /// Your Crib (owner, 2026-10-15; replaced Events): an address shows its
     /// 311 calls with pests first, the six-month crime line, and the Plus
     /// gates. --casa-demo opens a sample building with no network.
     func testYourCasaShowsPestsCallsAndCrime() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--casa-demo"]
         app.launch()
-        let tab = app.buttons["tab-Your Casa"]
-        XCTAssertTrue(tab.waitForExistence(timeout: 20), "New York should have a Your Casa tab")
+        let tab = app.buttons["tab-Your Crib"]
+        XCTAssertTrue(tab.waitForExistence(timeout: 20), "New York should have a Your Crib tab")
         let hittable = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isHittable == true"), object: tab)
-        XCTAssertEqual(XCTWaiter().wait(for: [hittable], timeout: 5), .completed, "Your Casa must fit on the bar")
+        XCTAssertEqual(XCTWaiter().wait(for: [hittable], timeout: 5), .completed, "Your Crib must fit on the bar")
         tab.tap()
         XCTAssertTrue(app.descendants(matching: .any)["casa-address"].waitForExistence(timeout: 10), "the address field leads the tab")
         let pests = app.descendants(matching: .any)["casa-pests"]
@@ -1049,7 +1049,23 @@ final class FindACribUITests: XCTestCase {
         let history = app.buttons["casa-history"]
         for _ in 0..<3 where !history.isHittable { app.swipeUp() }
         XCTAssertTrue(history.exists, "older calls are offered")
+        // Signed out, the history button's sheet leads with the history.
+        history.tap()
+        XCTAssertTrue(app.staticTexts["Sign in to see the full history"].waitForExistence(timeout: 5), "the history sheet names its feature")
+        XCTAssertTrue(app.descendants(matching: .any)["casa-promise-box"].exists, "and lists what Plus adds")
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(history.waitForExistence(timeout: 5))
         let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "your-casa"; shot.lifetime = .keepAlways; add(shot)
+        // Not signed in: "Alert me" opens the sign-in sheet with what the
+        // alerts are, like the other sign-in sheets (owner, 2026-10-15).
+        let alert = app.buttons["casa-alert"]
+        for _ in 0..<4 where !alert.isHittable { app.swipeDown() }
+        XCTAssertTrue(alert.isHittable, "Alert me about new calls shows")
+        alert.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["casa-promise-box"].waitForExistence(timeout: 5),
+                      "the sign-in sheet lists what Your Crib alerts include")
+        XCTAssertTrue(app.buttons["casa-promise-plus"].exists, "with a Get Plus button")
+        let sheet = XCTAttachment(screenshot: app.screenshot()); sheet.name = "your-crib-signin"; sheet.lifetime = .keepAlways; add(sheet)
     }
 
     /// Violations & inspections leads and About is the last section (owner,

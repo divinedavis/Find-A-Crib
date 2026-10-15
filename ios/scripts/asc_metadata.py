@@ -88,7 +88,7 @@ Privacy Policy: https://findacrib.com/privacy/
 Find A Crib is an independent, informational tool. It is not a broker, does not list apartments, and takes no fee. Data: NYS Homes and Community Renewal rent-stabilization register (2024), NYC HPD open data, HUD FY2026 Fair Market Rents, HousingSearch.ny.gov, LA County Assessor parcel data under LAHD's RSO criteria, the SF Rent Board Housing Inventory via DataSF, and the DC DHCD RentRegistry.
 """
 
-WHATS_NEW = """• New: Your Casa. Type your address to see every 311 call on your building in the past year — roaches, mice, rats, heat, leaks — and reported crime within half a mile. With Plus, get alerts on new calls and on the kinds of crime you choose.
+WHATS_NEW = """• New: Your Crib. Type your address to see every 311 call on your building in the past year — roaches, mice, rats, heat, leaks — and reported crime within half a mile. With Plus, get alerts on new calls and on the kinds of crime you choose.
 • Each New York building now lists housing law firms in its borough, right under nearby cafés.
 • Sign in is easier: the Sign in button stays above the keyboard, and tapping outside a field closes the keyboard.
 • Lottery alerts are a tap away under Search.

@@ -333,7 +333,7 @@ class Runner:
                 elif city:
                     r.fulfill(status=200, content_type='text/html; charset=utf-8', body=self.city_html[city])
                 elif u.split('?')[0] in (LIVE + '/casa/', LIVE + '/casa/index.html'):
-                    # Your Casa (2026-10-15), shipped by deploy_app.sh.
+                    # Your Crib (2026-10-15), shipped by deploy_app.sh.
                     r.fulfill(status=200, content_type='text/html; charset=utf-8',
                               body=(ROOT / 'casa' / 'index.html').read_text())
                 elif u.split('?')[0] == LIVE + '/housing_law_firms.json':
@@ -1045,7 +1045,7 @@ class Runner:
         j.notes.append('prefs endpoint gated')
 
     def j_casa_page(self, page, j, device):
-        # Your Casa (owner, 2026-10-15): an address -> its 311 calls (pests
+        # Your Crib (owner, 2026-10-15): an address -> its 311 calls (pests
         # first), six months of NYPD reports within half a mile, and the Plus
         # gates for older calls and alerts. Reads NYC Open Data live.
         page.goto(LIVE + '/casa/', wait_until='domcontentloaded', timeout=90000)
@@ -1073,7 +1073,7 @@ class Runner:
         # The map strips its query once it has read it, so check the request, not the final URL.
         with page.expect_request(lambda q: '/?auth=signup' in q.url, timeout=30000) as req:
             page.click('#a-on')
-        self.ok('next=%2Fcasa%2F' in req.value.url, f'signing up should come back to Your Casa: {req.value.url}', j)
+        self.ok('next=%2Fcasa%2F' in req.value.url, f'signing up should come back to Your Crib: {req.value.url}', j)
         j.notes.append('casa lookup + chart + gates')
 
     def j_retired_pages(self, page, j, device):

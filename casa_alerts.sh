@@ -1,5 +1,5 @@
 #!/bin/bash
-# Your Casa alerts, every 30 minutes: new 311 calls on each Plus member's
+# Your Crib alerts, every 30 minutes: new 311 calls on each Plus member's
 # watched building, and crime kinds they picked when the NYPD's quarterly
 # release lands. Installed by /etc/cron.d/rentmap-casa. See casa_alerts.py.
 set -uo pipefail

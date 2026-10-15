@@ -970,7 +970,7 @@ def push_unregister():
     return jsonify(ok=True)
 
 
-# ---- Your Casa (owner, 2026-10-15) --------------------------------------------
+# ---- Your Crib (owner, 2026-10-15) --------------------------------------------
 # Anyone can look up a building's 311 calls (the app and site read NYC Open
 # Data directly). Plus members can also watch ONE building and hear about each
 # new 311 call on it — casa_alerts.py does the sending. The account comes from

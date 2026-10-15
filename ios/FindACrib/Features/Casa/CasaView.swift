@@ -1,7 +1,7 @@
 import SwiftUI
 import Charts
 
-/// The Your Casa tab (owner, 2026-10-15; replaces Events): type your address,
+/// The Your Crib tab (owner, 2026-10-15; replaces Events): type your address,
 /// see every 311 call on your building in the past year — pests first — and
 /// reported crime within half a mile, month by month. Plus: calls older than
 /// a year, and an alert for each new call on one building. See Casa.
@@ -21,8 +21,12 @@ struct CasaView: View {
     @State private var crime: [Casa.CrimeMonth] = []
     @State private var crimeThrough: Date?
     @State private var crimeFailed = false
+    /// When the shown calls/crime came from the phone because NYC's data
+    /// couldn't be reached: the time they were saved.
+    @State private var offlineSince: Date?
     @State private var showPlus = false
     @State private var showSignIn = false
+    @State private var signInForHistory = false
     @State private var olderLoading = false
     @State private var showAllCalls = false
     @FocusState private var typing: Bool
@@ -33,7 +37,7 @@ struct CasaView: View {
             NavyHeader {
                 VStack(alignment: .leading, spacing: 10) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Your Casa").font(.se(24, .bold)).foregroundStyle(.white)
+                        Text("Your Crib").font(.se(24, .bold)).foregroundStyle(.white)
                         Text("311 calls on your building, and crime nearby").font(.se(15, .semibold)).foregroundStyle(.white.opacity(0.85))
                     }
                     searchField
@@ -54,6 +58,7 @@ struct CasaView: View {
                 .padding(.top, 12)
             }
             .scrollDismissesKeyboard(.immediately)
+            .refreshable { if let p = place, !CommandLine.arguments.contains("--casa-demo") { await open(p) } }
             .background(SE.canvas)
         }
         .background(SE.canvas)
@@ -69,7 +74,7 @@ struct CasaView: View {
             suggestions = await Casa.suggest(query)
         }
         .sheet(isPresented: $showPlus) { PaywallView(source: "casa") }
-        .sheet(isPresented: $showSignIn) { EmailSignInView(offersSocialSignIn: true) }
+        .sheet(isPresented: $showSignIn) { EmailSignInView(offersSocialSignIn: true, casaPreview: true, casaHistory: signInForHistory) }
     }
 
     // MARK: - Search
@@ -137,6 +142,15 @@ struct CasaView: View {
         }
         .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white)
 
+        if let since = offlineSince {
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: "wifi.slash").foregroundStyle(SE.ink3)
+                Text("Offline. Showing what you saw \(since.formatted(.relative(presentation: .named))). Pull down to refresh.")
+                    .font(.se(14)).foregroundStyle(SE.ink3)
+            }
+            .padding(.horizontal, 16).padding(.vertical, 10).frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityIdentifier("casa-offline")
+        }
         if loading {
             ProgressView().tint(SE.royal).frame(maxWidth: .infinity).padding(.top, 30)
         } else if failed {
@@ -205,7 +219,7 @@ struct CasaView: View {
                      ?? "Hear about every new 311 call on this building — pests, heat, leaks, noise. Part of Find A Crib Plus.")
                     .font(.se(15)).foregroundStyle(SE.ink2)
                 SEPrimaryButton(title: watch.watch == nil ? "Alert me about new calls" : "Watch this building instead", icon: "bell.fill") {
-                    guard let token = auth.session?.accessToken else { showSignIn = true; return }
+                    guard let token = auth.session?.accessToken else { signInForHistory = false; showSignIn = true; return }
                     guard auth.hasPlus else { Analytics.shared.track("casa_plus_gate", ["what": "alerts"]); showPlus = true; return }
                     Task {
                         await watch.start(p, crimeKinds: watch.watch?.crime_kinds ?? [], token: token)
@@ -318,7 +332,7 @@ struct CasaView: View {
             } else {
                 Text("Every 311 call on this building back to 2010. Part of Find A Crib Plus.").font(.se(15)).foregroundStyle(SE.ink2)
                 Button {
-                    guard auth.isSignedIn else { showSignIn = true; return }
+                    guard auth.isSignedIn else { signInForHistory = true; showSignIn = true; return }
                     guard auth.hasPlus else { Analytics.shared.track("casa_plus_gate", ["what": "history"]); showPlus = true; return }
                     Task { await loadOlder() }
                 } label: {
@@ -349,17 +363,33 @@ struct CasaView: View {
         place = p
         older = nil
         showAllCalls = false
-        crime = []; crimeThrough = nil; crimeFailed = false
+        crime = []; crimeThrough = nil; crimeFailed = false; offlineSince = nil
         savedPlace = (try? JSONEncoder().encode(p)) ?? Data()
         Analytics.shared.track("casa_lookup", ["bbl": p.bbl])
-        loading = true; failed = false
-        do { calls = try await Casa.calls(bbl: p.bbl, since: yearAgo, before: nil) }
-        catch { failed = true; calls = [] }
+        failed = false
+        // What this phone saw last time shows at once; the fresh lookup
+        // replaces it, and a failed one leaves it up, marked offline.
+        let saved = Casa.Saved.get(p.bbl)
+        if let c = saved?.calls { calls = c } else { calls = [] }
+        if let m = saved?.crime, !m.isEmpty { crime = m; crimeThrough = saved?.crimeThrough }
+        loading = saved?.calls == nil
+        var fresh = Casa.Snapshot(bbl: p.bbl, savedAt: Date())
+        do {
+            let c = try await Casa.calls(bbl: p.bbl, since: yearAgo, before: nil)
+            calls = c; fresh.calls = c
+        } catch {
+            if let s = saved, s.calls != nil { offlineSince = s.savedAt } else { failed = true; calls = [] }
+        }
         loading = false
         do {
             let r = try await Casa.crime(lat: p.lat, lng: p.lng)
             crime = r.months; crimeThrough = r.through
-        } catch { crimeFailed = true }
+            fresh.crime = r.months; fresh.crimeThrough = r.through
+        } catch {
+            // NYPD data changes once a quarter, so a saved chart stays up quietly.
+            if crime.isEmpty { crimeFailed = true }
+        }
+        if fresh.calls != nil || fresh.crime != nil { Casa.Saved.put(fresh) }
     }
 
     private func loadOlder() async {

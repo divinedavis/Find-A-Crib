@@ -1,4 +1,4 @@
-# Your Casa alerts (owner, 2026-10-15). Installed at /etc/cron.d/rentmap-casa
+# Your Crib alerts (owner, 2026-10-15). Installed at /etc/cron.d/rentmap-casa
 # (scp this file; never hand-edit on the box — see deploy/cron-rentmap-growth).
 #
 # Every 30 minutes: casa_alerts.sh tells each Plus member about new 311 calls

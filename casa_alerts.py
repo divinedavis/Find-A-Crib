@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Your Casa alerts: tell a Plus member about each new 311 call on the one
+"""Your Crib alerts: tell a Plus member about each new 311 call on the one
 building they watch (owner, 2026-10-15).
 
 Every 30 minutes (deploy/cron-rentmap-casa) this reads casa_watches, asks NYC
@@ -183,10 +183,10 @@ def email_parts(emailkit, watch, calls):
     link = f"{SITE}/casa/?bbl={watch['bbl']}&src=casa_alert"
     html, text = emailkit.render(
         title=f"{n} new 311 call{'s' if n != 1 else ''} at {address}",
-        intro="New calls the City published for the building you watch in Your Casa.",
+        intro="New calls the City published for the building you watch in Your Crib.",
         blocks=rows,
         cta=("See every call on your building", link),
-        footer_note=f"You're watching {address} with Find A Crib Plus. Stop any time in Your Casa: {SITE}/casa/")
+        footer_note=f"You're watching {address} with Find A Crib Plus. Stop any time in Your Crib: {SITE}/casa/")
     return f"New 311 call{'s' if n != 1 else ''} at {address}", html, text
 
 
@@ -256,20 +256,53 @@ def run_crime(w, key, newest, dry):
             html, text = emailkit.render(
                 title=title, intro=body + ". From the NYPD's newest quarterly release.",
                 cta=("See the chart for your building", f"{SITE}/casa/?bbl={w['bbl']}&src=casa_crime"),
-                footer_note=f"You picked these crime alerts in Your Casa with Find A Crib Plus. Change them any time: {SITE}/casa/")
+                footer_note=f"You picked these crime alerts in Your Crib with Find A Crib Plus. Change them any time: {SITE}/casa/")
             sent = send(w, title, body, key, f"casa-crime-{w['bbl']}", title, html, text, dry)
     if not dry:
         rest(f"casa_watches?user_id=eq.{w['user_id']}", key, "PATCH", {"crime_seen": newest}, prefer="return=minimal")
     return sent
 
 
+def send_test(key, email, bbl, lat, lng, address=""):
+    """The owner's preview (2026-10-15): what a watcher's phone shows."""
+    if not (len(bbl) == 10 and bbl.isdigit()):
+        sys.exit("bad BBL")
+    w = {"email": email, "bbl": bbl, "address": address or None}
+    since = (datetime.datetime.now(NY) - datetime.timedelta(days=30)).isoformat()
+    calls = new_calls(bbl, since)[-3:]
+    if calls:
+        from growth import emailkit
+        title, body = push_text(w["address"], calls)
+        subject, html, text = email_parts(emailkit, w, calls)
+        print("311:", title, "/", body, "->", send(w, title, body, key, f"casa-{bbl}", subject, html, text, False))
+    else:
+        print("311: no calls on this building in the past 30 days to sample")
+    newest = nypd_newest()
+    after = (datetime.date.fromisoformat(newest) - datetime.timedelta(days=91)).isoformat()
+    counts = crime_counts(float(lat), float(lng), ["shootings", "robbery", "burglary", "car_theft"], after, newest)
+    if any(counts.values()):
+        title, body = crime_text(w["address"], counts, after, newest)
+        from growth import emailkit
+        html, text = emailkit.render(
+            title=title, intro=body + ". From the NYPD's newest quarterly release.",
+            cta=("See the chart for your building", f"{SITE}/casa/?bbl={bbl}&src=casa_crime"),
+            footer_note=f"You picked these crime alerts in Your Crib with Find A Crib Plus. Change them any time: {SITE}/casa/")
+        print("crime:", title, "/", body, "->", send(w, title, body, key, f"casa-crime-{bbl}", title, html, text, False))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--test", nargs=4, metavar=("EMAIL", "BBL", "LAT", "LNG"),
+                    help="send one sample 311 alert and one crime alert, built from the building's real recent "
+                         "data, to this account's phones and email; touches no watch")
+    ap.add_argument("--address", default="")
     args = ap.parse_args()
     key = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
     if not key:
         sys.exit("SUPABASE_SERVICE_KEY not set (growth.env)")
+    if args.test:
+        return send_test(key, *args.test, address=args.address)
     watches = rest("casa_watches?select=user_id,email,bbl,address,last_seen,last_sent,created_at,lat,lng,crime_kinds,crime_seen", key) or []
     now = datetime.datetime.now(datetime.timezone.utc)
     newest = ""

@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-/// Your Casa (owner, 2026-10-15): type an address, see the 311 calls on that
+/// Your Crib (owner, 2026-10-15): type an address, see the 311 calls on that
 /// building in the past year — pests first — and a line of reported crime
 /// within half a mile. Plus adds calls older than a year and an alert for
 /// each new call on one watched building (casa_alerts.py on the server).
@@ -36,7 +36,7 @@ enum Casa {
         }
     }
 
-    struct Call: Decodable, Identifiable, Hashable {
+    struct Call: Codable, Identifiable, Hashable {
         let unique_key: String?
         let created_date: String?
         let complaint_type: String?
@@ -51,8 +51,47 @@ enum Casa {
         var detail: String? { descriptor.map(Casa.tidy).flatMap { $0.isEmpty ? nil : $0 } }
     }
 
+    /// The last lookup of a building, kept on the phone so Your Crib opens
+    /// with it on the subway or with no signal (owner, 2026-10-15: "i think
+    /// it needs an internet connection"). A fresh lookup replaces it.
+    struct Snapshot: Codable, Equatable {
+        let bbl: String
+        var calls: [Call]?
+        var crime: [CrimeMonth]?
+        var crimeThrough: Date?
+        var savedAt: Date
+    }
+
+    /// The five most recent buildings, newest first, in Application Support
+    /// (Caches can be emptied under storage pressure, right when it's needed).
+    enum Saved {
+        static let keep = 5
+        static var url: URL {
+            let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            return dir.appendingPathComponent("casa-saved.json")
+        }
+        static func all(at url: URL = url) -> [Snapshot] {
+            (try? Data(contentsOf: url)).flatMap { try? JSONDecoder().decode([Snapshot].self, from: $0) } ?? []
+        }
+        static func get(_ bbl: String, at url: URL = url) -> Snapshot? { all(at: url).first { $0.bbl == bbl } }
+        /// Merges what loaded into the building's snapshot: a part that
+        /// failed this time keeps its last good copy.
+        static func put(_ s: Snapshot, at url: URL = url) {
+            var list = all(at: url)
+            var merged = s
+            if let i = list.firstIndex(where: { $0.bbl == s.bbl }) {
+                let old = list.remove(at: i)
+                merged.calls = s.calls ?? old.calls
+                if s.crime == nil { merged.crime = old.crime; merged.crimeThrough = old.crimeThrough }
+            }
+            list.insert(merged, at: 0)
+            if let d = try? JSONEncoder().encode(Array(list.prefix(keep))) { try? d.write(to: url, options: .atomic) }
+        }
+    }
+
     /// One month of reported crime near the building.
-    struct CrimeMonth: Hashable, Identifiable {
+    struct CrimeMonth: Codable, Hashable, Identifiable {
         let month: Date
         let felonies: Int
         let total: Int

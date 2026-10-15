@@ -108,14 +108,14 @@ struct FindACribApp: App {
     }
 }
 
-enum Tab: String, CaseIterable { case search = "Search", lotteries = "Lotteries", casa = "Your Casa", activity = "My Activity", profile = "Profile"
+enum Tab: String, CaseIterable { case search = "Search", lotteries = "Lotteries", casa = "Your Crib", activity = "My Activity", profile = "Profile"
     var icon: String { switch self { case .search: "magnifyingglass"; case .lotteries: "ticket"; case .casa: "house"; case .activity: "heart"; case .profile: "person" } }
     /// Lotteries began as New York's feeds (Housing Connect, the HPD marketing
-    /// agents); Your Casa reads New York's 311 and NYPD data. Elsewhere they
+    /// agents); Your Crib reads New York's 311 and NYPD data. Elsewhere they
     /// would be empty, so those cities do not get the tabs.
     var nycOnly: Bool { self == .lotteries || self == .casa }
     /// Lotteries also shows where a place has openings of its own — LA, SF,
-    /// California, New Jersey (OpeningsFeed, owner 2026-09-24). Your Casa
+    /// California, New Jersey (OpeningsFeed, owner 2026-09-24). Your Crib
     /// (owner, 2026-10-15) replaced the Events tab and is New York only.
     func available(in city: City) -> Bool {
         switch self {

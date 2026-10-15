@@ -19,7 +19,13 @@ struct EmailSignInView: View {
     /// Opened from a building's "Sign in to see who runs this building"
     /// (owner, 2026-10-12): what an account shows, and the Plus phone row.
     var agentPreview = false
-    private var promo: Bool { forAlerts || records != nil || agentPreview }
+    /// Opened from Your Crib's "Alert me about new calls" (owner, 2026-10-15:
+    /// "a sheet showing them the features they'll get, like our other sheets").
+    var casaPreview = false
+    /// Opened from "See the full history" instead: the same box, history first
+    /// (owner, 2026-10-15: show what they get for that feature).
+    var casaHistory = false
+    private var promo: Bool { forAlerts || records != nil || agentPreview || casaPreview }
     @Environment(AuthService.self) private var auth
     @Environment(\.dismiss) private var dismiss
     @State private var email = ""
@@ -32,7 +38,7 @@ struct EmailSignInView: View {
     enum Field { case email, password, confirm }
 
     var body: some View {
-        content.onAppear { Analytics.shared.track("signin_view", ["for": agentPreview ? "agent" : records != nil ? "records" : (offersSocialSignIn ? "alerts" : "profile")]) }
+        content.onAppear { Analytics.shared.track("signin_view", ["for": casaPreview ? (casaHistory ? "casa_history" : "casa") : agentPreview ? "agent" : records != nil ? "records" : (offersSocialSignIn ? "alerts" : "profile")]) }
             .modifier(TallSheetOnIPad())
     }
 
@@ -41,8 +47,10 @@ struct EmailSignInView: View {
           ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    Text(creating ? "Create account" : (heading ?? (agentPreview ? "Sign in to see who runs this building" : records != nil ? "Sign in to see this building's records" : (offersSocialSignIn ? "Sign in for lottery alerts" : "Sign in with email")))).font(.se(26, .bold))
-                    if agentPreview && !creating {
+                    Text(creating ? "Create account" : (heading ?? (casaPreview ? (casaHistory ? "Sign in to see the full history" : "Sign in to watch your building") : agentPreview ? "Sign in to see who runs this building" : records != nil ? "Sign in to see this building's records" : (offersSocialSignIn ? "Sign in for lottery alerts" : "Sign in with email")))).font(.se(26, .bold))
+                    if casaPreview && !creating {
+                        CasaPromiseBox(history: casaHistory) { showPlus = true }
+                    } else if agentPreview && !creating {
                         AgentPromiseBox { showPlus = true }
                     } else if let r = records, !creating {
                         RecordsPromiseBox(preview: r) { showPlus = true }
@@ -138,7 +146,7 @@ struct EmailSignInView: View {
             // Signing in from the Plus sheet must not close this one under it;
             // it closes when the Plus sheet does.
             .onChange(of: auth.isSignedIn) { _, on in if on && !showPlus { dismiss() } }
-            .sheet(isPresented: $showPlus, onDismiss: { if auth.isSignedIn { dismiss() } }) { PaywallView(source: agentPreview ? "phone" : records != nil ? "realtime" : "signin_alerts") }
+            .sheet(isPresented: $showPlus, onDismiss: { if auth.isSignedIn { dismiss() } }) { PaywallView(source: casaPreview ? "casa" : agentPreview ? "phone" : records != nil ? "realtime" : "signin_alerts") }
           }
         }
     }
@@ -312,6 +320,47 @@ struct AgentPromiseBox: View {
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(SE.royal.opacity(0.25)))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("agent-promise-box")
+    }
+}
+
+/// What Your Crib's alerts are, before the account: every row is Plus, so
+/// the Get Plus button sits on the last one like the other boxes.
+struct CasaPromiseBox: View {
+    /// From "See the full history": that feature leads, alerts follow.
+    var history = false
+    let openPlus: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if history {
+                PromiseRow(icon: "clock.arrow.circlepath", text: "Every 311 call on your building back to 2010, not just the past year")
+                PromiseRow(icon: "ant.fill", text: "See whether roaches, mice or rats are a pattern, or a one-off")
+                PromiseRow(icon: "bell.badge.fill", text: "A notification and an email for every new 311 call")
+            } else {
+                PromiseRow(icon: "bell.badge.fill", text: "A notification and an email for every new 311 call on your building")
+                PromiseRow(icon: "ant.fill", text: "Pests first: roaches, mice and rats called in on your building")
+            }
+            HStack(alignment: .center, spacing: 12) {
+                PromiseRow(icon: history ? "exclamationmark.shield.fill" : "clock.arrow.circlepath",
+                           text: history ? "Crime alerts within half a mile. All part of Plus"
+                                         : "Every 311 call back to 2010, plus crime alerts within half a mile. All part of Plus")
+                Button {
+                    Analytics.shared.track("casa_upsell_click", ["src": "signin_casa"]); openPlus()
+                } label: {
+                    Text("Get Plus").font(.se(14, .bold)).foregroundStyle(.white).fixedSize()
+                        .padding(.horizontal, 12).frame(minHeight: 32)
+                        .background(Capsule().fill(Color(hex: 0x5B21B6)))
+                        .frame(minHeight: 44).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain).accessibilityIdentifier("casa-promise-plus")
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 12).fill(SE.royal.opacity(0.08)))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(SE.royal.opacity(0.25)))
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("casa-promise-box")
     }
 }
 

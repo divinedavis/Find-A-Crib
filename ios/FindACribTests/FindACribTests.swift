@@ -1298,7 +1298,7 @@ final class CommentsStoreTests: XCTestCase {
 }
 
 
-/// Your Casa (owner, 2026-10-15): 311 calls on a building, pests first, and
+/// Your Crib (owner, 2026-10-15): 311 calls on a building, pests first, and
 /// six months of NYPD reports within half a mile.
 final class CasaTests: XCTestCase {
     private func call(_ type: String, _ d: String? = nil, status: String = "Closed") -> Casa.Call {
@@ -1314,6 +1314,25 @@ final class CasaTests: XCTestCase {
         XCTAssertFalse(Casa.isPest(type: "HEAT/HOT WATER", descriptor: "APARTMENT ONLY"),
                        "'APARTMENT' contains no pest word; 'RAT' must not match inside other words")
         XCTAssertFalse(Casa.isPest(type: "Street Light Condition", descriptor: "Street Light Out"))
+    }
+
+    func testSavedLookupsWorkOfflineAndKeepTheLastGoodPart() throws {
+        // Owner 10/15: Your Crib shouldn't need a connection to show what you saw.
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("casa-\(UUID().uuidString).json")
+        defer { try? FileManager.default.removeItem(at: url) }
+        let m = Casa.CrimeMonth(month: Date(timeIntervalSince1970: 1_780_000_000), felonies: 3, total: 9)
+        Casa.Saved.put(Casa.Snapshot(bbl: "3019150068", calls: [call("Rodent", "Rat Sighting")], crime: [m],
+                                     crimeThrough: Date(timeIntervalSince1970: 1_782_000_000), savedAt: Date()), at: url)
+        // The next lookup reached 311 but not the NYPD: the chart stays.
+        Casa.Saved.put(Casa.Snapshot(bbl: "3019150068", calls: [], savedAt: Date()), at: url)
+        let s = try XCTUnwrap(Casa.Saved.get("3019150068", at: url))
+        XCTAssertEqual(s.calls, [])
+        XCTAssertEqual(s.crime, [m])
+        XCTAssertNotNil(s.crimeThrough)
+        for i in 0..<7 { Casa.Saved.put(Casa.Snapshot(bbl: "100000000\(i)", calls: [], savedAt: Date()), at: url) }
+        XCTAssertEqual(Casa.Saved.all(at: url).count, Casa.Saved.keep, "only the newest buildings are kept")
+        XCTAssertEqual(Casa.Saved.all(at: url).first?.bbl, "1000000006")
+        XCTAssertNil(Casa.Saved.get("3019150068", at: url), "the oldest drops off")
     }
 
     func testBusyDataServiceIsRetriedButABadQueryIsNot() {

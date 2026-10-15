@@ -1,0 +1,11 @@
+# Your Casa alerts (owner, 2026-10-15). Installed at /etc/cron.d/rentmap-casa
+# (scp this file; never hand-edit on the box — see deploy/cron-rentmap-growth).
+#
+# Every 30 minutes: casa_alerts.sh tells each Plus member about new 311 calls
+# on the one building they watch, and about the crime kinds they picked when
+# the NYPD publishes a new quarter. The 311 dataset refreshes about once a day,
+# so most runs find nothing and exit in a second; one Socrata query per watch.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+CRON_TZ=America/New_York
+7,37 * * * * scraper fac-run supabase,smtp,apns -- /root/Find-A-Crib/casa_alerts.sh >> /var/log/rentmap-casa.log 2>&1

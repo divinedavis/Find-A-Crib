@@ -20,8 +20,10 @@ struct RootView: View {
                     }
                 case .lotteries:
                     NavigationStack { LotteriesView() }
-                case .events:
-                    NavigationStack { EventsView() }
+                case .casa:
+                    NavigationStack(path: $nav.casaPath) {
+                        CasaView().navigationDestination(for: Route.self) { RouteView(route: $0) }
+                    }
                 case .profile:
                     NavigationStack(path: $nav.profilePath) {
                         ProfileView().navigationDestination(for: Route.self) { RouteView(route: $0) }
@@ -106,9 +108,9 @@ struct PillTabBar: View {
     /// re-rentals, matched to boroughs. In LA, SF or DC it would list another
     /// city's openings, so it is not offered there (owner, 2026-09-19).
     private var tabs: [Tab] { Tab.allCases.filter { $0.available(in: store.city) } }
-    /// Five tabs at 86 pt is 438 pt — wider than any iPhone. With the Events
-    /// tab (2026-09-22) the items narrow to fit a 375 pt screen; four keep
-    /// their old width.
+    /// Five tabs at 86 pt is 438 pt — wider than any iPhone. With a fifth tab
+    /// (Events 2026-09-22, Your Casa since 2026-10-15) the items narrow to fit
+    /// a 375 pt screen; four keep their old width.
     private var itemWidth: CGFloat { tabs.count >= 5 ? 72 : 86 }
     var body: some View {
         HStack(spacing: 0) {

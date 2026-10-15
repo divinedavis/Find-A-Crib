@@ -108,19 +108,19 @@ struct FindACribApp: App {
     }
 }
 
-enum Tab: String, CaseIterable { case search = "Search", lotteries = "Lotteries", events = "Events", activity = "My Activity", profile = "Profile"
-    var icon: String { switch self { case .search: "magnifyingglass"; case .lotteries: "ticket"; case .events: "calendar"; case .activity: "heart"; case .profile: "person" } }
-    /// Lotteries and Events began as New York's feeds (Housing Connect, the HPD
-    /// marketing agents, the City's events calendar); elsewhere they would list
-    /// another city's openings, so those cities do not get the tabs.
-    var nycOnly: Bool { self == .lotteries || self == .events }
+enum Tab: String, CaseIterable { case search = "Search", lotteries = "Lotteries", casa = "Your Casa", activity = "My Activity", profile = "Profile"
+    var icon: String { switch self { case .search: "magnifyingglass"; case .lotteries: "ticket"; case .casa: "house"; case .activity: "heart"; case .profile: "person" } }
+    /// Lotteries began as New York's feeds (Housing Connect, the HPD marketing
+    /// agents); Your Casa reads New York's 311 and NYPD data. Elsewhere they
+    /// would be empty, so those cities do not get the tabs.
+    var nycOnly: Bool { self == .lotteries || self == .casa }
     /// Lotteries also shows where a place has openings of its own — LA, SF,
-    /// California, New Jersey (OpeningsFeed, owner 2026-09-24). Events stays
-    /// New York's calendar.
+    /// California, New Jersey (OpeningsFeed, owner 2026-09-24). Your Casa
+    /// (owner, 2026-10-15) replaced the Events tab and is New York only.
     func available(in city: City) -> Bool {
         switch self {
         case .lotteries: city.hasLotteries
-        case .events: city.isNYC
+        case .casa: city.isNYC
         default: true
         }
     }
@@ -140,6 +140,7 @@ final class AppNav {
     var searchPath: [Route] = []
     var activityPath: [Route] = []
     var profilePath: [Route] = []
+    var casaPath: [Route] = []
     /// Opened by the Profile screen; set by the --paywall launch argument.
     var showPaywall = false
     /// Opened by the Profile screen (after sign-in if needed); set by the
@@ -161,7 +162,7 @@ enum LaunchArgs {
     @MainActor static func apply(to nav: AppNav, store: DataStore) {
         let a = CommandLine.arguments
         func val(_ flag: String) -> String? { a.firstIndex(of: flag).flatMap { $0 + 1 < a.count ? a[$0 + 1] : nil } }
-        if let t = val("--tab") { nav.tab = t == "activity" ? .activity : (t == "profile" ? .profile : (t == "events" ? .events : .search)) }
+        if let t = val("--tab") { nav.tab = t == "activity" ? .activity : (t == "profile" ? .profile : (t == "casa" ? .casa : .search)) }
         // `--city la|sf|dc` — land in another city, for the screenshot script
         // and the UI tests. Only NYC ships a seed in the bundle, so the others
         // have to download first; the route has to wait for that, or it

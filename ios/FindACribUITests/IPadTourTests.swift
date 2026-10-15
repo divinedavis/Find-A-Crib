@@ -92,7 +92,7 @@ final class IPadTourTests: XCTestCase {
     }
 
     private func tabs(_ tag: String) {
-        for (tab, check) in [("Events", "tab-Events"), ("My Activity", "tab-My Activity"), ("Profile", "tab-Profile"), ("Lotteries", "tab-Lotteries")] {
+        for (tab, check) in [("Your Casa", "tab-Your Casa"), ("My Activity", "tab-My Activity"), ("Profile", "tab-Profile"), ("Lotteries", "tab-Lotteries")] {
             let b = app.buttons[check]
             XCTAssertTrue(b.waitForExistence(timeout: 15), "\(tag): the \(tab) tab should show")
             XCTAssertTrue(b.isHittable, "\(tag): the \(tab) tab should be tappable")

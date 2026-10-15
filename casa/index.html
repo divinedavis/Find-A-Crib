@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="apple-itunes-app" content="app-id=6807549249" />
+<title>Your Casa: 311 calls and crime near your NYC building — Find A Crib</title>
+<meta name="description" content="Type your New York City address and see every 311 call on your building in the past year — roaches, mice, rats, bed bugs, heat, leaks — and NYPD-reported crime within half a mile." />
+<link rel="canonical" href="https://findacrib.com/casa/" />
+<meta name="robots" content="index,follow" />
+<link rel="icon" href="/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" href="/favicon-32.png" sizes="32x32" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Find A Crib" />
+<meta property="og:title" content="Your Casa: does your building have pests?" />
+<meta property="og:description" content="Every 311 call on your NYC building in the past year, and crime within half a mile." />
+<meta property="og:url" content="https://findacrib.com/casa/" />
+<meta property="og:image" content="https://findacrib.com/og-image.png" />
+<script src="/static/supabase/supabase.js"></script>
+<script src="/config.js?v=2"></script>
+<script>
+(function(){
+  var t;
+  try{ t = localStorage.getItem('fac.theme'); }catch(e){}
+  if(t!=='light' && t!=='dark')
+    t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
+<style>
+  :root {
+    --blue: #2a6f7e; --blue-dark: #1f5866; --blue-soft: #e3f1f3; --blue-solid: #2a6f7e;
+    --ink: #0a0a23; --ink-2: #4a4a68; --line: #e2e6ea; --line-strong: #b8c3d0;
+    --bg: #f7f8fa; --surface: #ffffff; --surface-2: #f6f6f6;
+    --good: #10683a; --bad: #b42318; --chart-all: #2a6f7e; --chart-fel: #b42318;
+  }
+  html[data-theme="dark"] {
+    --blue: #6cc0d0; --blue-dark: #8fd3e0; --blue-soft: #14333a; --blue-solid: #2f7a8a;
+    --ink: #eef0f6; --ink-2: #a3a7bb; --line: #2b2f3c; --line-strong: #414658;
+    --bg: #0c0c12; --surface: #16161f; --surface-2: #1f1f2b;
+    --good: #7fe0a8; --bad: #ff8a80; --chart-all: #6cc0d0; --chart-fel: #ff8a80;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink); background: var(--bg); }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  header.topbar { display: flex; align-items: center; gap: 10px; padding: 10px 16px;
+    background: var(--surface); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 30; }
+  @font-face { font-family:'Oxanium'; font-style:normal; font-weight:800; font-display:swap; src:url('/fonts/oxanium-800.woff2') format('woff2'); }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 800; color: var(--blue); font-size: 22px;
+    font-family: 'Oxanium', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  .brand:hover { text-decoration: none; }
+  .brand-dot { width: 22px; height: 22px; border-radius: 5px; flex: none; }
+  .spacer { flex: 1 1 auto; }
+  .top-link { font-size: 13px; font-weight: 700; color: var(--ink-2); border: 1px solid var(--line);
+    background: var(--surface); border-radius: 999px; padding: 7px 13px; white-space: nowrap; }
+  .theme-btn { width: 34px; height: 34px; border-radius: 50%; background: var(--surface); color: var(--ink);
+    border: 1px solid var(--line); font-size: 15px; cursor: pointer; flex: none; }
+  main { max-width: 720px; margin: 0 auto; padding: 26px 16px 70px; }
+  h1 { font-size: 30px; letter-spacing: -0.6px; margin: 0 0 8px; line-height: 1.15; }
+  .lede { color: var(--ink-2); font-size: 15.5px; line-height: 1.6; margin: 0 0 18px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin: 0 0 12px; }
+  .card h2 { font-size: 18px; margin: 0 0 8px; }
+  .search { position: relative; }
+  .search input { width: 100%; padding: 14px 14px; font-size: 17px; border: 1px solid var(--line-strong);
+    border-radius: 12px; background: var(--surface); color: var(--ink); }
+  .search input:focus { outline: none; border-color: var(--blue); }
+  .sugg { position: absolute; left: 0; right: 0; top: 100%; margin-top: 4px; background: var(--surface);
+    border: 1px solid var(--line); border-radius: 12px; overflow: hidden; z-index: 20; box-shadow: 0 8px 24px rgba(0,0,0,.12); }
+  .sugg button { display: block; width: 100%; text-align: left; padding: 12px 14px; font-size: 15.5px; background: none;
+    border: 0; border-bottom: 1px solid var(--line); color: var(--ink); cursor: pointer; }
+  .sugg button:last-child { border-bottom: 0; }
+  .sugg button:hover, .sugg button.on { background: var(--blue-soft); }
+  .place { font-size: 21px; font-weight: 800; margin: 18px 0 10px; }
+  .verdict { display: flex; gap: 12px; align-items: center; }
+  .verdict .icon { font-size: 30px; }
+  .verdict b { font-size: 19px; display: block; }
+  .muted { color: var(--ink-2); font-size: 14.5px; line-height: 1.5; }
+  .tally { font-weight: 700; color: var(--ink-2); font-size: 14.5px; margin: 0 0 8px; }
+  .call { display: flex; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
+  .call:first-of-type { border-top: 0; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--line-strong); margin-top: 7px; flex: none; }
+  .dot.pest { background: var(--bad); }
+  .call b { display: block; font-size: 15.5px; }
+  .btn { display: inline-block; background: var(--blue-solid); color: #fff; font-weight: 700; font-size: 15.5px; border: 0;
+    border-radius: 10px; padding: 12px 16px; cursor: pointer; }
+  .btn:hover { text-decoration: none; filter: brightness(1.05); }
+  .btn[disabled] { opacity: .6; cursor: default; }
+  .link-btn { background: none; border: 0; color: var(--blue); font-weight: 700; font-size: 15.5px; padding: 0; cursor: pointer; }
+  .stop { color: var(--bad); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 0; }
+  .chips button { font-size: 14px; font-weight: 700; color: var(--ink-2); background: var(--surface); border: 1px solid var(--line-strong);
+    border-radius: 999px; padding: 8px 13px; cursor: pointer; }
+  .chips button[aria-pressed="true"] { background: var(--blue-solid); border-color: var(--blue-solid); color: #fff; }
+  svg.chart { width: 100%; height: auto; display: block; }
+  svg.chart text { fill: var(--ink-2); font-size: 13px; }
+  .legend { display: flex; gap: 14px; font-size: 13px; color: var(--ink-2); margin: 6px 0 8px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+  .err { color: var(--bad); font-size: 14px; margin: 8px 0 0; }
+  [hidden] { display: none !important; }
+  @media (max-width: 480px) { h1 { font-size: 25px; } .top-link.hide-sm { display: none; } }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="/"><img class="brand-dot" src="/brand/mark.svg?v=2" alt="" width="22" height="22" decoding="async">Find A Crib</a>
+  <span class="spacer"></span>
+  <a class="top-link hide-sm" href="/alerts/">Lottery alerts</a>
+  <a class="top-link" href="/">← Map</a>
+  <button id="theme-btn" type="button" class="theme-btn" aria-label="Switch theme" title="Switch theme">🌙</button>
+</header>
+
+<main>
+  <h1>Your Casa</h1>
+  <p class="lede">Does your building have pests? Type your New York City address to see every 311 call on it in the past year
+    — roaches, mice, rats, bed bugs, heat, leaks, noise — and reported crime within half a mile.</p>
+
+  <div class="search">
+    <input id="addr" type="text" placeholder="Your address, e.g. 350 W 42nd St" autocomplete="street-address"
+           aria-label="Your address" aria-autocomplete="list" aria-controls="sugg" />
+    <div class="sugg" id="sugg" role="listbox" hidden></div>
+  </div>
+
+  <div id="out" hidden>
+    <div class="place" id="place"></div>
+    <div id="loading" class="card muted">Loading 311 calls…</div>
+    <div id="failed" class="card" hidden><b>Couldn't load 311 calls.</b><p class="muted">Check your connection and try again.</p></div>
+    <div id="results" hidden>
+      <div class="card"><div class="verdict"><span class="icon" id="v-icon"></span><div><b id="v-title"></b><span class="muted" id="v-sub"></span></div></div>
+        <div id="v-kinds" class="muted" style="margin-top:8px"></div></div>
+
+      <div class="card" id="alerts">
+        <h2>Alerts on new 311 calls</h2>
+        <p class="muted" id="a-text"></p>
+        <button class="btn" id="a-on" type="button">🔔 Alert me about new calls</button>
+        <div id="a-crime" hidden>
+          <h2 style="font-size:16px;margin-top:14px">Crime alerts within half a mile</h2>
+          <p class="muted">Pick what you want to hear about. The NYPD publishes every three months, so these come when each new release is out.</p>
+          <div class="chips" id="kinds"></div>
+          <p style="margin:14px 0 0"><button class="link-btn stop" id="a-off" type="button">Stop alerts</button></p>
+        </div>
+        <p class="err" id="a-err" hidden></p>
+      </div>
+
+      <div class="card"><h2>Reported crime within half a mile</h2>
+        <div id="crime-loading" class="muted">Loading NYPD data…</div>
+        <div id="crime" hidden>
+          <div class="legend"><span><i style="background:var(--chart-all)"></i>All crime</span><span><i style="background:var(--chart-fel)"></i>Felonies</span></div>
+          <div id="chart"></div>
+          <p class="muted" id="crime-note"></p>
+        </div>
+      </div>
+
+      <div class="card"><h2>311 calls, past 12 months</h2><div class="tally" id="tally"></div><div id="calls"></div></div>
+
+      <div class="card"><h2>Older than a year</h2>
+        <div id="older"><p class="muted">Every 311 call on this building back to 2010. Part of Find A Crib Plus.</p>
+          <button class="link-btn" id="older-btn" type="button">🔒 See the full history</button></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="muted" style="margin-top:22px">From NYC Open Data: 311 Service Requests and NYPD complaint and shooting data. Addresses from NYC Planning's GeoSearch.
+    Crime locations are rounded to the block by the NYPD. Find A Crib is not affiliated with the City of New York.</p>
+</main>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var GEO = 'https://geosearch.planninglabs.nyc/v2/autocomplete?text=';
+  var C311 = 'https://data.cityofnewyork.us/resource/erm2-nwe9.json';
+  var CRIME = 'https://data.cityofnewyork.us/resource/5uac-w243.json';
+  var CRIME_OLD = 'https://data.cityofnewyork.us/resource/qgea-i56i.json';
+  var KINDS = [['shootings','Shootings'],['robbery','Robbery'],['burglary','Burglary'],['assault','Assault'],['theft','Theft'],
+               ['car_theft','Car theft'],['weapons','Weapons'],['drugs','Drugs'],['vandalism','Vandalism'],['harassment','Harassment']];
+  var PEST = ['PEST','RODENT','RAT ','RATS','MICE','MOUSE','ROACH','BED BUG','BEDBUG','VERMIN'];
+  var place = null, token = null, plus = false, watch = null, places = [], active = -1;
+
+  $('theme-btn').addEventListener('click', function () {
+    var cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', cur);
+    try { localStorage.setItem('fac.theme', cur); } catch (e) {}
+    if (lastCrime) drawChart(lastCrime);
+  });
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function tidy(s) { s = (s || '').trim(); return (s && s === s.toUpperCase() && /[A-Z]/.test(s)) ? s.charAt(0) + s.slice(1).toLowerCase() : s; }
+  function isPest(c) { var t = (' ' + (c.complaint_type || '') + ' ' + (c.descriptor || '') + ' ').toUpperCase(); return PEST.some(function (w) { return t.indexOf(w) >= 0; }); }
+  function track(ev, props) { try { if (window.facTrack) window.facTrack(ev, props); } catch (e) {} }
+  function soql(d) { // New York local, no zone
+    var p = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).formatToParts(d);
+    var g = function (t) { return (p.find(function (x) { return x.type === t; }) || {}).value; };
+    return g('year') + '-' + g('month') + '-' + g('day') + 'T' + (g('hour') === '24' ? '00' : g('hour')) + ':' + g('minute') + ':' + g('second');
+  }
+  function q(base, params) {
+    return fetch(base + '?' + new URLSearchParams(params).toString(), { headers: { Accept: 'application/json' } })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); });
+  }
+  function short(label) { var p = label.split(', '); var s = p[0].toLowerCase().replace(/\b\w/g, function (c) { return c.toUpperCase(); }); return p.length > 1 ? s + ', ' + p[1] : s; }
+  function day(s) { var d = new Date((s || '').slice(0, 10) + 'T12:00:00'); return isNaN(d) ? s : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
+
+  // ---- address search
+  var timer = null;
+  $('addr').addEventListener('input', function () {
+    clearTimeout(timer);
+    var v = this.value.trim();
+    if (v.length < 3) { $('sugg').hidden = true; return; }
+    timer = setTimeout(function () {
+      fetch(GEO + encodeURIComponent(v)).then(function (r) { return r.json(); }).then(function (j) {
+        var seen = {};
+        places = (j.features || []).map(function (f) {
+          var bbl = f.properties && f.properties.addendum && f.properties.addendum.pad && f.properties.addendum.pad.bbl;
+          if (!bbl || bbl.length !== 10 || seen[bbl]) return null; seen[bbl] = 1;
+          return { label: f.properties.label, bbl: bbl, lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0] };
+        }).filter(Boolean);
+        active = -1;
+        $('sugg').innerHTML = places.length ? places.map(function (p, i) { return '<button type="button" role="option" data-i="' + i + '">📍 ' + esc(short(p.label)) + '</button>'; }).join('')
+          : '<div class="muted" style="padding:12px 14px">Keep typing your street address in New York City.</div>';
+        $('sugg').hidden = false;
+      }).catch(function () {});
+    }, 250);
+  });
+  $('addr').addEventListener('keydown', function (e) {
+    var bs = $('sugg').querySelectorAll('button');
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault(); if (!bs.length) return;
+      active = (active + (e.key === 'ArrowDown' ? 1 : -1) + bs.length) % bs.length;
+      bs.forEach(function (b, i) { b.classList.toggle('on', i === active); });
+    } else if (e.key === 'Enter' && places.length) { e.preventDefault(); open(places[active >= 0 ? active : 0]); }
+  });
+  $('sugg').addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) open(places[+b.dataset.i]); });
+  document.addEventListener('click', function (e) { if (!e.target.closest('.search')) $('sugg').hidden = true; });
+
+  // ---- one building
+  var yearAgo = new Date(Date.now() - 365 * 864e5);
+  function open(p) {
+    place = p; $('sugg').hidden = true; $('addr').value = ''; $('addr').blur();
+    try { localStorage.setItem('fac.casa', JSON.stringify(p)); } catch (e) {}
+    history.replaceState(null, '', '/casa/?bbl=' + p.bbl);
+    track('casa_lookup', { bbl: p.bbl, web: true });
+    $('out').hidden = false; $('place').textContent = short(p.label);
+    $('loading').hidden = false; $('failed').hidden = true; $('results').hidden = true;
+    resetOlder(); renderAlerts();
+    q(C311, { $select: 'unique_key,created_date,complaint_type,descriptor,status', $where: "bbl='" + p.bbl + "' AND created_date >= '" + soql(yearAgo) + "'",
+              $order: 'created_date DESC', $limit: '200' })
+      .then(function (calls) { $('loading').hidden = true; $('results').hidden = false; renderCalls(calls); })
+      .catch(function () { $('loading').hidden = true; $('failed').hidden = false; });
+    loadCrime(p);
+  }
+
+  function tally(calls) {
+    var t = {}; calls.forEach(function (c) { var k = isPest(c) ? 'Pests' : tidy(c.complaint_type || '311 call'); t[k] = (t[k] || 0) + 1; });
+    return Object.keys(t).sort(function (a, b) { return t[b] - t[a] || (a < b ? -1 : 1); }).map(function (k) { return k + ' ' + t[k]; });
+  }
+  function rows(calls) {
+    return calls.map(function (c) {
+      var d = c.descriptor ? tidy(c.descriptor) : '';
+      return '<div class="call"><span class="dot' + (isPest(c) ? ' pest' : '') + '"></span><div><b>' + esc(tidy(c.complaint_type || '311 call') + (d ? ' — ' + d : '')) +
+        '</b><span class="muted">' + esc(day(c.created_date)) + ' · ' + esc((c.status || '').toLowerCase() === 'closed' ? 'Closed' : 'Open') + '</span></div></div>';
+    }).join('');
+  }
+  function renderCalls(calls) {
+    var pests = calls.filter(isPest), n = pests.length;
+    $('v-icon').textContent = n ? '🐜' : '✅';
+    $('v-title').textContent = n ? n + ' pest call' + (n === 1 ? '' : 's') + ' in the past year' : 'No pest calls in the past year';
+    $('v-title').style.color = n ? 'var(--bad)' : 'var(--good)';
+    $('v-sub').textContent = calls.length + ' 311 call' + (calls.length === 1 ? '' : 's') + ' on this building in all';
+    var kinds = {}; pests.forEach(function (c) { var k = tidy(c.descriptor || c.complaint_type); kinds[k] = (kinds[k] || 0) + 1; });
+    $('v-kinds').textContent = Object.keys(kinds).map(function (k) { return kinds[k] + ' × ' + k; }).join(' · ');
+    $('tally').textContent = tally(calls).slice(0, 4).join(' · ');
+    // Ten, then the rest on a tap: a busy building has 50+ and buried the chart.
+    var show = function (n) {
+      $('calls').innerHTML = rows(calls.slice(0, n)) + (calls.length > n ? '<p style="margin:10px 0 0"><button class="link-btn" id="calls-more" type="button">Show all ' + calls.length + ' calls</button></p>' : '');
+      var m = $('calls-more'); if (m) m.addEventListener('click', function () { show(calls.length); });
+    };
+    if (calls.length) show(10); else $('calls').innerHTML = '<p class="muted">No 311 calls on this building in the past year.</p>';
+  }
+
+  // ---- crime: the six newest months the NYPD has published
+  var lastCrime = null;
+  function loadCrime(p) {
+    $('crime-loading').hidden = false; $('crime-loading').textContent = 'Loading NYPD data…'; $('crime').hidden = true;
+    q(CRIME, { $select: 'max(cmplnt_fr_dt) as newest' }).then(function (r) {
+      var newest = (r[0] && r[0].newest) || ''; if (!newest) throw new Error('none');
+      var y = +newest.slice(0, 4), m = +newest.slice(5, 7), months = [];
+      for (var i = 5; i >= 0; i--) { var mm = m - i, yy = y; while (mm < 1) { mm += 12; yy--; } months.push(yy + '-' + (mm < 10 ? '0' : '') + mm); }
+      var where = 'within_circle(lat_lon, ' + p.lat + ', ' + p.lng + ', 800) AND cmplnt_fr_dt >= \'' + months[0] + '-01T00:00:00\'';
+      var params = { $select: 'date_trunc_ym(cmplnt_fr_dt) as m, law_cat_cd, count(*) as n', $where: where, $group: 'm, law_cat_cd' };
+      var jobs = [q(CRIME, params)];
+      if (+months[0].slice(0, 4) < y) jobs.push(q(CRIME_OLD, params).catch(function () { return []; }));
+      return Promise.all(jobs).then(function (parts) {
+        var rowsAll = [].concat.apply([], parts);
+        var data = months.map(function (k) {
+          var here = rowsAll.filter(function (r) { return (r.m || '').slice(0, 7) === k; });
+          return { m: k, total: here.reduce(function (s, r) { return s + (+r.n || 0); }, 0),
+                   fel: here.filter(function (r) { return r.law_cat_cd === 'FELONY'; }).reduce(function (s, r) { return s + (+r.n || 0); }, 0) };
+        });
+        if (place !== p) return;
+        lastCrime = data; drawChart(data);
+        var mon = function (k) { return new Date(k + '-15T12:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' }); };
+        $('crime-note').textContent = 'NYPD complaint reports, ' + mon(months[0]) + ' – ' + mon(months[5]) + '. The NYPD publishes these every three months; the newest are through ' +
+          new Date(newest.slice(0, 10) + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) + '.';
+        $('crime-loading').hidden = true; $('crime').hidden = false;
+      });
+    }).catch(function () { $('crime-loading').textContent = "Couldn't load NYPD data right now."; });
+  }
+  function drawChart(data) {
+    var W = 420, H = 210, L = 38, R = 10, T = 12, B = 30;
+    var max = Math.max(10, Math.max.apply(null, data.map(function (d) { return d.total; })));
+    // Four round steps (50, 100, 200, 250…) so the axis reads 0/200/400/600/800, not 175/525.
+    var raw = max / 4, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    var nice = [1, 2, 2.5, 5, 10].map(function (m) { return m * mag; }).find(function (v) { return v >= raw; });
+    var top = nice * 4;
+    var x = function (i) { return L + i * (W - L - R) / (data.length - 1); }, y = function (v) { return T + (H - T - B) * (1 - v / top); };
+    var s = '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Reported crime by month">';
+    for (var g = 0; g <= 4; g++) { var v = top * g / 4; s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="var(--line)"/><text x="' + (L - 6) + '" y="' + (y(v) + 4) + '" text-anchor="end">' + Math.round(v) + '</text>'; }
+    data.forEach(function (d, i) { s += '<text x="' + x(i) + '" y="' + (H - 8) + '" text-anchor="middle">' + new Date(d.m + '-15T12:00:00').toLocaleDateString('en-US', { month: 'short' }) + '</text>'; });
+    [['total', 'var(--chart-all)'], ['fel', 'var(--chart-fel)']].forEach(function (k) {
+      s += '<polyline fill="none" stroke="' + k[1] + '" stroke-width="2.5" points="' + data.map(function (d, i) { return x(i) + ',' + y(d[k[0]]); }).join(' ') + '"/>';
+      data.forEach(function (d, i) { s += '<circle cx="' + x(i) + '" cy="' + y(d[k[0]]) + '" r="4" fill="var(--surface)" stroke="' + k[1] + '" stroke-width="2"><title>' + d[k[0]] + '</title></circle>'; });
+    });
+    $('chart').innerHTML = s + '</svg>';
+  }
+
+  // ---- Plus: older calls and the watch
+  function resetOlder() {
+    $('older').innerHTML = '<p class="muted">Every 311 call on this building back to 2010. Part of Find A Crib Plus.</p><button class="link-btn" id="older-btn" type="button">' + (plus ? '🕘' : '🔒') + ' See the full history</button>';
+    $('older-btn').addEventListener('click', loadOlder);
+  }
+  function needAccount() { location.href = '/?auth=signup&next=' + encodeURIComponent('/casa/?bbl=' + (place ? place.bbl : '')); }
+  function needPlus(what) { track('casa_plus_gate', { what: what, web: true }); location.href = '/?plus=1&src=casa_' + what; }
+  function loadOlder() {
+    if (!token) return needAccount();
+    if (!plus) return needPlus('history');
+    $('older').innerHTML = '<p class="muted">Loading…</p>';
+    q(C311, { $select: 'unique_key,created_date,complaint_type,descriptor,status', $where: "bbl='" + place.bbl + "' AND created_date < '" + soql(yearAgo) + "'",
+              $order: 'created_date DESC', $limit: '200' }).then(function (calls) {
+      $('older').innerHTML = calls.length ? '<div class="tally">' + esc(tally(calls).slice(0, 4).join(' · ')) + '</div>' + rows(calls.slice(0, 100)) +
+        (calls.length >= 200 ? '<p class="muted">Showing the newest 200.</p>' : '') : '<p class="muted">No 311 calls on file before the past year.</p>';
+      track('casa_history', { bbl: place.bbl, n: calls.length, web: true });
+    }).catch(function () { $('older').innerHTML = '<p class="err">Couldn\'t load the history. Try again.</p>'; });
+  }
+
+  function renderAlerts() {
+    if (!place) return;
+    var here = watch && watch.bbl === place.bbl;
+    $('a-err').hidden = true;
+    $('a-crime').hidden = !here;
+    $('a-on').hidden = here;
+    $('a-text').textContent = here ? "You'll get a notification and an email when a new 311 call on this building is published — usually the morning after it's made."
+      : watch ? 'Plus watches one building. Switching moves your alerts from ' + (watch.address || 'your other building') + ' to here.'
+      : 'Hear about every new 311 call on this building — pests, heat, leaks, noise. Part of Find A Crib Plus.';
+    $('a-on').textContent = watch && !here ? '🔔 Watch this building instead' : '🔔 Alert me about new calls';
+    var on = (here && watch.crime_kinds) || [];
+    $('kinds').innerHTML = KINDS.map(function (k) { return '<button type="button" data-k="' + k[0] + '" aria-pressed="' + (on.indexOf(k[0]) >= 0) + '">' + (on.indexOf(k[0]) >= 0 ? '✓ ' : '') + k[1] + '</button>'; }).join('');
+  }
+  function api(method, body) {
+    return fetch('/api/casa/watch', { method: method, headers: Object.assign({ Authorization: 'Bearer ' + token, Accept: 'application/json' },
+      body ? { 'Content-Type': 'application/json' } : {}), body: body ? JSON.stringify(body) : undefined })
+      .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw j; return j; }); });
+  }
+  function save(kinds) {
+    $('a-on').disabled = true;
+    return api('POST', { bbl: place.bbl, address: short(place.label), lat: place.lat, lng: place.lng, crime_kinds: kinds })
+      .then(function (j) { watch = j.watch; renderAlerts(); })
+      .catch(function (e) { $('a-err').textContent = e && e.error === 'plus_required' ? 'Alerts are part of Find A Crib Plus.' : "Couldn't save. Try again in a minute."; $('a-err').hidden = false; })
+      .then(function () { $('a-on').disabled = false; });
+  }
+  $('a-on').addEventListener('click', function () {
+    if (!token) return needAccount();
+    if (!plus) return needPlus('alerts');
+    track('casa_watch_on', { bbl: place.bbl, web: true });
+    save((watch && watch.bbl === place.bbl && watch.crime_kinds) || []);
+  });
+  $('kinds').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    var on = (watch.crime_kinds || []).slice(), k = b.dataset.k, i = on.indexOf(k);
+    if (i >= 0) on.splice(i, 1); else on.push(k);
+    track('casa_crime_kind', { kind: k, on: i < 0, web: true });
+    save(KINDS.map(function (x) { return x[0]; }).filter(function (x) { return on.indexOf(x) >= 0; }));
+  });
+  $('a-off').addEventListener('click', function () {
+    api('DELETE').then(function () { watch = null; renderAlerts(); track('casa_watch_off', { web: true }); })
+      .catch(function () { $('a-err').textContent = "Couldn't turn off alerts. Try again in a minute."; $('a-err').hidden = false; });
+  });
+
+  // ---- session (the map's, same origin) and the starting building
+  try {
+    if (window.supabase && window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
+      window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY).auth.getSession().then(function (r) {
+        var sess = r && r.data && r.data.session; if (!sess || !sess.access_token) return;
+        token = sess.access_token;
+        return api('GET').then(function (j) { plus = !!j.plus; watch = j.watch; renderAlerts(); resetOlder(); });
+      }).catch(function () {});
+    }
+  } catch (e) {}
+
+  var want = new URLSearchParams(location.search).get('bbl'), saved = null;
+  try { saved = JSON.parse(localStorage.getItem('fac.casa') || 'null'); } catch (e) {}
+  if (saved && saved.bbl && (!want || want === saved.bbl)) open(saved);
+  else if (want && /^[1-5]\d{9}$/.test(want)) {
+    // From an alert on another device: find the lot's address and point.
+    q(C311, { $select: 'incident_address,latitude,longitude', $where: "bbl='" + want + "' AND latitude IS NOT NULL", $limit: '1' }).then(function (r) {
+      var c = r[0]; if (c) open({ label: (c.incident_address || 'Your building') + ', New York', bbl: want, lat: +c.latitude, lng: +c.longitude });
+    }).catch(function () {});
+  }
+})();
+</script>
+</body>
+</html>

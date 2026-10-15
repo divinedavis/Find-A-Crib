@@ -1128,7 +1128,7 @@ final class LotteryFeedTests: XCTestCase {
         XCTAssertTrue(OpeningsFeed.filter(all, for: .dc, today: t).isEmpty)
         XCTAssertTrue(Tab.lotteries.available(in: .la)); XCTAssertTrue(Tab.lotteries.available(in: .mia))
         XCTAssertFalse(Tab.lotteries.available(in: .dc)); XCTAssertFalse(Tab.lotteries.available(in: .chi))
-        XCTAssertFalse(Tab.events.available(in: .la)); XCTAssertTrue(Tab.events.available(in: .nyc))
+        XCTAssertFalse(Tab.casa.available(in: .la)); XCTAssertTrue(Tab.casa.available(in: .nyc))
     }
 
     /// The Lotteries tab's filters outside New York (owner, 2026-09-24):
@@ -1298,53 +1298,63 @@ final class CommentsStoreTests: XCTestCase {
 }
 
 
-final class EventsFeedTests: XCTestCase {
-    private func e(_ id: String, _ start: String, end: String? = nil, boro: String? = "Brooklyn", allDay: Bool = false,
-                   hosts: [String]? = nil) -> EventsFeed.Event {
-        EventsFeed.Event(id: id, title: "T\(id)", start: start, end: end, all_day: allDay, online: false, address: "1 Main St",
-                         borough: boro, hosts: hosts, categories: nil, description: nil, url: "https://www.nyc.gov/x")
-    }
-    private let now = EventsFeed.parse("2026-09-22T09:00:00")!
-
-    func testTheSameEventTwiceShowsOnce() {
-        let all = [e("a", "2026-09-23T10:00:00"), e("a", "2026-09-23T10:00:00"), e("b", "2026-09-24T10:00:00")]
-        XCTAssertEqual(EventsFeed.dedupe(all, now: now).map(\.id), ["a", "b"])
+/// Your Casa (owner, 2026-10-15): 311 calls on a building, pests first, and
+/// six months of NYPD reports within half a mile.
+final class CasaTests: XCTestCase {
+    private func call(_ type: String, _ d: String? = nil, status: String = "Closed") -> Casa.Call {
+        Casa.Call(unique_key: UUID().uuidString, created_date: "2026-10-12T14:00:33.000", complaint_type: type,
+                  descriptor: d, status: status, agency: "HPD")
     }
 
-    func testPastDaysGoAndTodayStays() {
-        let all = [e("old", "2026-09-21T10:00:00"), e("today", "2026-09-22T08:00:00"), e("next", "2026-09-30T10:00:00")]
-        XCTAssertEqual(EventsFeed.dedupe(all, now: now).map(\.id), ["today", "next"], "an event earlier today still shows")
+    func testPestsCoverApartmentAndStreetCalls() {
+        XCTAssertTrue(Casa.isPest(type: "UNSANITARY CONDITION", descriptor: "PESTS"))
+        XCTAssertTrue(Casa.isPest(type: "Rodent", descriptor: "Rat Sighting"))
+        XCTAssertTrue(Casa.isPest(type: "Rodent", descriptor: "Mouse Sighting"))
+        XCTAssertFalse(Casa.isPest(type: "Noise - Residential", descriptor: "Loud Music/Party"))
+        XCTAssertFalse(Casa.isPest(type: "HEAT/HOT WATER", descriptor: "APARTMENT ONLY"),
+                       "'APARTMENT' contains no pest word; 'RAT' must not match inside other words")
+        XCTAssertFalse(Casa.isPest(type: "Street Light Condition", descriptor: "Street Light Out"))
     }
 
-    func testSoonestFirstAndGroupedByDay() {
-        let all = EventsFeed.dedupe([e("c", "2026-09-24T09:00:00"), e("a", "2026-09-23T15:00:00"), e("b", "2026-09-23T10:00:00")], now: now)
-        let days = EventsFeed.byDay(all)
-        XCTAssertEqual(days.map(\.day), ["2026-09-23", "2026-09-24"])
-        XCTAssertEqual(days[0].events.map(\.id), ["b", "a"])
+    func testTypesReadInSentenceCase() {
+        XCTAssertEqual(Casa.tidy("UNSANITARY CONDITION"), "Unsanitary condition")
+        XCTAssertEqual(Casa.tidy("Noise - Residential"), "Noise - Residential", "mixed case stays as the City wrote it")
+        XCTAssertEqual(call("HEAT/HOT WATER", "ENTIRE BUILDING").detail, "Entire building")
+        XCTAssertFalse(call("Noise", status: "Closed").isOpen)
+        XCTAssertTrue(call("Noise", status: "In Progress").isOpen)
     }
 
-    func testBoroughFilter() {
-        let all = [e("bk", "2026-09-23T10:00:00"), e("bx", "2026-09-23T10:00:00", boro: "Bronx"), e("none", "2026-09-23T10:00:00", boro: nil)]
-        XCTAssertEqual(EventsFeed.filter(all, borough: "Bronx").map(\.id), ["bx"])
-        XCTAssertEqual(EventsFeed.filter(all, borough: nil).count, 3, "All shows every event, placed or not")
+    func testTallyGroupsPestsAndSortsMostFirst() {
+        let t = Casa.tally([call("UNSANITARY CONDITION", "PESTS"), call("Rodent", "Rat Sighting"),
+                            call("Noise - Residential"), call("Noise - Residential"), call("Noise - Residential"),
+                            call("HEAT/HOT WATER")])
+        XCTAssertEqual(t.map(\.title), ["Noise - Residential", "Pests", "Heat/hot water"])
+        XCTAssertEqual(t.map(\.count), [3, 2, 1])
     }
 
-    func testLabels() {
-        XCTAssertEqual(EventsFeed.dayTitle("2026-09-22", now: now), "Today")
-        XCTAssertEqual(EventsFeed.dayTitle("2026-09-23", now: now), "Tomorrow")
-        XCTAssertEqual(EventsFeed.dayTitle("2026-09-25", now: now), "Friday, Sep 25")
-        XCTAssertEqual(EventsFeed.timeLine(e("t", "2026-09-23T10:00:00", end: "2026-09-23T16:00:00")), "10:00 AM – 4:00 PM")
-        XCTAssertEqual(EventsFeed.timeLine(e("t", "2026-09-23T00:00:00", allDay: true)), "All day")
-        XCTAssertEqual(EventsFeed.hostLine(e("h", "2026-09-23T10:00:00", hosts: ["Mayor's Public Engagement Unit", "NYC Housing Preservation & Development"])),
-                       "Mayor's Public Engagement Unit · HPD")
+    func testPlaceShortensGeoSearchLabel() {
+        let p = Casa.Place(label: "1919 MADISON AVENUE, New York, NY, USA", bbl: "1017480035", lat: 40.805, lng: -73.939)
+        XCTAssertEqual(p.short, "1919 Madison Avenue, New York")
     }
 
-    func testDecodesTheServerShape() throws {
-        let json = #"{"generated":"2026-09-22T10:00:00Z","source":"x","fetched":3,"events":[{"id":"ab12","title":"Tenant Clinic","start":"2026-09-23T10:00:00","end":"2026-09-23T16:00:00","all_day":false,"address":"6206 6th Ave, Brooklyn, NY 11220","borough":"Brooklyn","lat":null,"lng":null,"hosts":["NYC Housing Preservation & Development"],"categories":["Tenant Resource Fair"],"description":"d","url":"https://www.nyc.gov/e","links":["https://www.nyc.gov/e"]}]}"#
-        struct P: Decodable { let events: [EventsFeed.Event] }
-        let p = try JSONDecoder().decode(P.self, from: Data(json.utf8))
-        XCTAssertEqual(p.events.first?.borough, "Brooklyn")
-        XCTAssertNotNil(p.events.first?.startDate)
+    func testCrimeWindowIsSixMonthsWithZeros() throws {
+        let newest = try XCTUnwrap(Casa.parseMonth("2026-06-30"))
+        let window = Casa.lastSixMonths(endingWith: newest)
+        XCTAssertEqual(window.map { String(Casa.soql($0).prefix(7)) },
+                       ["2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06"])
+        let m = Casa.months([("2026-02-01T00:00:00.000", "FELONY", 5), ("2026-02-01T00:00:00.000", "MISDEMEANOR", 7),
+                             ("2025-12-01T00:00:00.000", "FELONY", 99)], endingWith: newest)
+        XCTAssertEqual(m.map(\.total), [0, 12, 0, 0, 0, 0], "a quiet month is a zero; a month outside the window is dropped")
+        XCTAssertEqual(m.map(\.felonies), [0, 5, 0, 0, 0, 0])
+        let jan = try XCTUnwrap(Casa.parseMonth("2026-03-31"))
+        XCTAssertEqual(String(Casa.soql(Casa.lastSixMonths(endingWith: jan)[0]).prefix(7)), "2025-10",
+                       "a window that crosses New Year reaches into last year (the historic file)")
+    }
+
+    func testCrimeKindsMatchTheServer() {
+        XCTAssertEqual(CasaWatch.crimeKinds.map(\.key),
+                       ["shootings", "robbery", "burglary", "assault", "theft", "car_theft", "weapons", "drugs", "vandalism", "harassment"],
+                       "api_server.CASA_CRIME_KINDS and casa_alerts.CRIME_KINDS use these keys")
     }
 }
 

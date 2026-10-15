@@ -111,6 +111,7 @@ JOURNEY_EVENTS = {
     'no_chip_row_flash':    [],
     'memory':               [],
     'alerts_page':          [],
+    'casa_page':            [],
     'signin_modal':         ['signin', 'signin_wall'],
     'app_chip':             [],
     'app_qr_menu':          ['app_qr_open'],
@@ -331,6 +332,10 @@ class Runner:
                     r.fulfill(status=200, content_type='text/html; charset=utf-8', body=self.html)
                 elif city:
                     r.fulfill(status=200, content_type='text/html; charset=utf-8', body=self.city_html[city])
+                elif u.split('?')[0] in (LIVE + '/casa/', LIVE + '/casa/index.html'):
+                    # Your Casa (2026-10-15), shipped by deploy_app.sh.
+                    r.fulfill(status=200, content_type='text/html; charset=utf-8',
+                              body=(ROOT / 'casa' / 'index.html').read_text())
                 elif u.split('?')[0] == LIVE + '/housing_law_firms.json':
                     # Shipped beside index.html by deploy_app.sh; the local page
                     # must read the local list, not whatever is live.
@@ -1038,6 +1043,38 @@ class Runner:
         # codes mean the same thing here — an anonymous caller got nothing.
         self.ok(r.status in (401, 429), f'/api/alerts/prefs without a session should be refused, got {r.status}', j)
         j.notes.append('prefs endpoint gated')
+
+    def j_casa_page(self, page, j, device):
+        # Your Casa (owner, 2026-10-15): an address -> its 311 calls (pests
+        # first), six months of NYPD reports within half a mile, and the Plus
+        # gates for older calls and alerts. Reads NYC Open Data live.
+        page.goto(LIVE + '/casa/', wait_until='domcontentloaded', timeout=90000)
+        page.evaluate("try{localStorage.removeItem('fac.casa')}catch(e){}")
+        page.fill('#addr', '1919 Madison Ave')
+        self.wait_until(page, "document.querySelectorAll('#sugg button').length > 0", 30000)
+        page.click('#sugg button >> nth=0')
+        self.wait_until(page, "!document.getElementById('results').hidden || !document.getElementById('failed').hidden", 60000)
+        self.ok(page.evaluate("document.getElementById('failed').hidden"), 'the 311 lookup should load', j)
+        title = page.evaluate("document.getElementById('v-title').textContent")
+        self.ok('pest call' in title, f'the verdict should lead with pests: {title!r}', j)
+        self.ok(page.evaluate("document.querySelectorAll('#calls .call').length") > 0, '1919 Madison has 311 calls in the past year', j)
+        self.ok('/casa/?bbl=1017480035' in page.url, f'the page should keep the building in its URL: {page.url}', j)
+        self.wait_until(page, "!document.getElementById('crime').hidden || /Couldn/.test(document.getElementById('crime-loading').textContent)", 60000)
+        self.ok(page.evaluate("document.querySelectorAll('#chart polyline').length") == 2, 'the crime chart should draw all crime and felonies', j)
+        self.ok(page.evaluate("document.querySelectorAll('#chart circle').length") == 12, 'six months, two lines', j)
+        self.ok('every three months' in page.evaluate("document.getElementById('crime-note').textContent"), 'the chart should say the NYPD publishes quarterly', j)
+        self.ok('🔒' in page.evaluate("document.getElementById('older-btn').textContent"), 'older calls are locked for a signed-out visitor', j)
+        self.ok(page.evaluate("!document.getElementById('a-on').hidden"), 'the alert button should show', j)
+        self.ok(page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1"), 'no sideways scroll', j)
+        r = page.request.get(LIVE + '/api/casa/watch')
+        self.ok(r.status in (401, 429), f'/api/casa/watch without a session should be refused, got {r.status}', j)
+        r = page.request.post(LIVE + '/api/casa/watch', data=json.dumps({'bbl': '1017480035'}), headers={'Content-Type': 'application/json'})
+        self.ok(r.status in (401, 429), f'watching without a session should be refused, got {r.status}', j)
+        # The map strips its query once it has read it, so check the request, not the final URL.
+        with page.expect_request(lambda q: '/?auth=signup' in q.url, timeout=30000) as req:
+            page.click('#a-on')
+        self.ok('next=%2Fcasa%2F' in req.value.url, f'signing up should come back to Your Casa: {req.value.url}', j)
+        j.notes.append('casa lookup + chart + gates')
 
     def j_retired_pages(self, page, j, device):
         """/rent-report/ and /available/ were built from the Zumper/StreetEasy
@@ -2153,7 +2190,7 @@ class Runner:
                 supabase_admin('DELETE', f'users/{uid}')
 
     JOURNEYS = ['land', 'search_address', 'search_area', 'search_zip_and_miss', 'pin_and_list',
-                'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'signin_modal', 'app_chip', 'app_qr_menu', 'boot_is_usable', 'city_chip',
+                'filters_and_save', 'deep_links_and_view', 'city_pages', 'city_records', 'no_signed_out_flash', 'no_chip_row_flash', 'memory', 'alerts_page', 'casa_page', 'signin_modal', 'app_chip', 'app_qr_menu', 'boot_is_usable', 'city_chip',
                 'ad_tiles', 'list_follows_zoom', 'plus_no_ads', 'building_page_link', 'remove_ads_chip', 'overlays_clear_ad', 'portal_button', 'outbound_links', 'status_chips', 'referral_gate',
                 'retired_pages', 'legal_pages', 'comments_gate', 'nearby_places', 'landlords_gate', 'consent_mode', 'account_delete', 'plus_gates', 'resume_search', 'ai_features', 'qualify', 'tools', 'renter_tools']
 

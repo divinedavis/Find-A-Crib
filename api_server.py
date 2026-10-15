@@ -215,6 +215,7 @@ def gate():
        or request.path.startswith("/developers/") \
        or request.path.startswith("/alerts/") \
        or request.path.startswith("/push/") \
+       or request.path.startswith("/casa/") \
        or request.path.startswith("/ai/") \
        or request.path == "/geo" \
        or request.path.startswith("/reports/") \
@@ -967,6 +968,69 @@ def push_unregister():
     except Exception:
         return jsonify(error="temporarily_unavailable"), 503
     return jsonify(ok=True)
+
+
+# ---- Your Casa (owner, 2026-10-15) --------------------------------------------
+# Anyone can look up a building's 311 calls (the app and site read NYC Open
+# Data directly). Plus members can also watch ONE building and hear about each
+# new 311 call on it — casa_alerts.py does the sending. The account comes from
+# the verified session; the Plus check is has_plus(), never the client's word.
+BBL_RE = re.compile(r"^[1-5][0-9]{9}$")
+# Crime kinds a watch can pick; casa_alerts.CRIME_KINDS maps each to NYPD offenses.
+CASA_CRIME_KINDS = {"shootings", "robbery", "burglary", "assault", "theft", "car_theft",
+                    "weapons", "drugs", "vandalism", "harassment"}
+
+
+@app.route("/casa/watch", methods=["GET", "POST", "DELETE"])
+def casa_watch():
+    if rate_limited("casa_watch", 60, 3600):
+        return _too_many()
+    u = _session_user()
+    if not u:
+        return jsonify(error="sign_in_required"), 401
+    try:
+        plus = bool(rpc("has_plus", {"uid": u["id"]}))
+        if request.method == "GET":
+            rows = _sb_rest(f"casa_watches?user_id=eq.{u['id']}&select=bbl,address,created_at,crime_kinds") or []
+            return jsonify(ok=True, plus=plus, watch=rows[0] if rows else None)
+        if request.method == "DELETE":
+            _sb_rest(f"casa_watches?user_id=eq.{u['id']}", "DELETE", prefer="return=minimal")
+            return jsonify(ok=True, watch=None)
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
+    if not request.is_json:
+        return jsonify(error="json_required"), 415
+    if not plus:
+        return jsonify(error="plus_required"), 402
+    body = request.get_json(silent=True) or {}
+    bbl = str(body.get("bbl") or "").strip()
+    if not BBL_RE.match(bbl):
+        return jsonify(error="bad_bbl"), 400
+    address = re.sub(r"[\x00-\x1f<>]", "", str(body.get("address") or ""))[:120].strip()
+    kinds = sorted({k for k in (body.get("crime_kinds") or []) if isinstance(k, str) and k in CASA_CRIME_KINDS})
+    try:
+        lat, lng = float(body.get("lat")), float(body.get("lng"))
+        if not (40.4 <= lat <= 41.0 and -74.3 <= lng <= -73.6):
+            raise ValueError
+    except (TypeError, ValueError):
+        lat = lng = None
+    if kinds and lat is None:
+        return jsonify(error="bad_location"), 400
+    now = datetime.datetime.utcnow().isoformat() + "Z"
+    row = {"user_id": u["id"], "email": u["email"], "bbl": bbl, "address": address,
+           "lat": lat, "lng": lng, "crime_kinds": kinds}
+    try:
+        old = (_sb_rest(f"casa_watches?user_id=eq.{u['id']}&select=bbl,created_at") or [None])[0]
+        if not old or old["bbl"] != bbl:
+            # A new building: only calls filed from now on alert (the lookup
+            # already showed the past), and crime from the next NYPD release.
+            row.update(created_at=now, last_seen=now, last_sent=None, crime_seen=None)
+        _sb_rest("casa_watches?on_conflict=user_id", "POST", row,
+                 prefer="resolution=merge-duplicates,return=minimal")
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
+    return jsonify(ok=True, watch={"bbl": bbl, "address": address, "crime_kinds": kinds,
+                                   "created_at": (old or {}).get("created_at") if old and old["bbl"] == bbl else now})
 
 
 def _session_email():

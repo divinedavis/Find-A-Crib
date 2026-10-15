@@ -309,6 +309,13 @@ final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
                                 withCompletionHandler completionHandler: @escaping () -> Void) {
         let content = response.notification.request.content
+        // A Your Casa alert opens the tab, where its building's calls are.
+        if content.userInfo["casa"] is String {
+            Task { @MainActor in
+                if let nav = AppNav.current { nav.tab = .casa } else { AppNav.launchLink = .casa }
+            }
+            completionHandler(); return
+        }
         // Never hand the tap straight to a third-party site: open the app on
         // the alert's items (AlertPushSheet), every one of them reachable.
         if let push = AlertPush.from(userInfo: content.userInfo, title: content.title, body: content.body) {

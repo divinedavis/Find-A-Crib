@@ -14,6 +14,7 @@ Usage:
     python3 scripts/attach_build.py             # attach newest VALID build
     python3 scripts/attach_build.py --dry-run   # report only
     python3 scripts/attach_build.py --build 23  # attach a specific build
+    python3 scripts/attach_build.py --any-version  # newest build of any version
 """
 from __future__ import annotations
 
@@ -63,6 +64,8 @@ def token(cfg: dict) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--any-version", action="store_true",
+                        help="allow a build of an older marketing version (ship without a rebuild)")
     parser.add_argument("--build", help="build number to attach (default: newest VALID)")
     args = parser.parse_args()
 
@@ -98,9 +101,13 @@ def main() -> int:
         f"{API_BASE}/builds",
         headers=headers,
         params={"filter[app]": app_id, "limit": 20, "sort": "-version",
+                **({} if args.any_version else {"filter[preReleaseVersion.version]": version_string}),
                 "fields[builds]": "version,processingState,expired"},
     )
     builds.raise_for_status()
+    # Only builds of this marketing version unless --any-version: Apple
+    # accepted build 132 (1.2.9) on version 1.3.0 while build 133 (1.3.0,
+    # the one with the new features) was still processing.
     usable = [
         b for b in builds.json()["data"]
         if b["attributes"]["processingState"] == "VALID" and not b["attributes"]["expired"]
@@ -111,7 +118,7 @@ def main() -> int:
             print(f"build {args.build} is not a processed, unexpired build")
             return 1
     if not usable:
-        print("no VALID unexpired build to attach — is one still processing?")
+        print(f"no VALID unexpired {version_string} build to attach — is one still processing?")
         return 1
 
     target = usable[0]

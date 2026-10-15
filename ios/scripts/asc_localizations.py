@@ -183,11 +183,11 @@ def apply():
 
 
 WHATS_NEW = {
-    "es-MX": "• Nuevas herramientas para inquilinos: pide una reparación con una carta lista, revisa si un aumento de renta es legal y conoce tus derechos.\n• Renewal coach (Plus) para negociar tu renovación.\n• Widget de loterías que cierran pronto, Siri y Calendario.\n• Handoff a tu Mac o iPad y muchas mejoras.",
-    "zh-Hans": "• 新的租户工具：一键生成报修信、检查涨租是否合法、了解你的权利。\n• 续租助手 (Plus)，帮你协商续租。\n• 即将截止的住房抽签小组件、Siri 和日历。\n• 支持接力 (Handoff) 到 Mac 或 iPad，以及多项改进。",
-    "zh-Hant": "• 新的租戶工具：一鍵產生報修信、檢查漲租是否合法、了解你的權利。\n• 續租助手 (Plus)，幫你協商續租。\n• 即將截止的住房抽籤小工具、Siri 和行事曆。\n• 支援接力 (Handoff) 到 Mac 或 iPad，以及多項改進。",
-    "ru": "• Новые инструменты для жильцов: письмо о ремонте, проверка законности повышения аренды и ваши права.\n• Renewal coach (Plus) для переговоров о продлении.\n• Виджет лотерей, Siri и Календарь.\n• Handoff на Mac или iPad и множество улучшений.",
-    "ko": "• 새로운 세입자 도구: 바로 보낼 수 있는 수리 요청 편지, 렌트 인상 합법 여부 확인, 세입자 권리.\n• 재계약 협상을 돕는 Renewal coach (Plus).\n• 마감 임박 로터리 위젯, Siri, 캘린더.\n• Mac 또는 iPad로 Handoff, 그 밖의 다양한 개선.",
+    "es-MX": "• Cada edificio de Nueva York ahora muestra bufetes de abogados de vivienda de su distrito, justo debajo de los cafés cercanos.\n• Iniciar sesión es más fácil: el botón queda sobre el teclado y al tocar fuera se cierra el teclado.\n• Las alertas de loterías, a un toque en Buscar.\n• Muchas mejoras.",
+    "zh-Hans": "• 纽约每栋楼现在都会列出所在区的住房律师事务所，就在附近咖啡馆下方。\n• 登录更方便：登录按钮停在键盘上方，点按空白处即可收起键盘。\n• 在“搜索”下一点即可开启住房抽签提醒。\n• 多项改进。",
+    "zh-Hant": "• 紐約每棟大樓現在都會列出所在區的住房律師事務所，就在附近咖啡館下方。\n• 登入更方便：登入按鈕停在鍵盤上方，點按空白處即可收起鍵盤。\n• 在「搜尋」下一點即可開啟住房抽籤提醒。\n• 多項改進。",
+    "ru": "• Для каждого дома в Нью-Йорке теперь указаны юридические фирмы по жилищным вопросам в его районе — сразу под ближайшими кафе.\n• Вход стал проще: кнопка остаётся над клавиатурой, а касание вне поля скрывает клавиатуру.\n• Уведомления о лотереях — в одно касание в Поиске.\n• Множество улучшений.",
+    "ko": "• 뉴욕의 각 건물에 해당 자치구의 주택 전문 법률사무소가 주변 카페 바로 아래에 표시됩니다.\n• 더 쉬워진 로그인: 로그인 버튼이 키보드 위에 머물고, 바깥을 탭하면 키보드가 닫힙니다.\n• 검색 아래에서 바로 로터리 알림을 켤 수 있습니다.\n• 그 밖의 다양한 개선.",
 }
 
 

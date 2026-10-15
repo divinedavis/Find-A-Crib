@@ -88,15 +88,11 @@ Privacy Policy: https://findacrib.com/privacy/
 Find A Crib is an independent, informational tool. It is not a broker, does not list apartments, and takes no fee. Data: NYS Homes and Community Renewal rent-stabilization register (2024), NYC HPD open data, HUD FY2026 Fair Market Rents, HousingSearch.ny.gov, LA County Assessor parcel data under LAHD's RSO criteria, the SF Rent Board Housing Inventory via DataSF, and the DC DHCD RentRegistry.
 """
 
-WHATS_NEW = """• New tools for renters who already have a place: get a repair made (with a ready-to-send letter), check whether a rent increase is legal, and know your rights.
-• Renewal coach (Plus): your key dates, the legal limit on your increase and an email to negotiate.
-• A Home and Lock Screen widget with the lotteries closing soonest.
-• Siri: "Lotteries closing soon in Find A Crib".
-• Add lottery deadlines, repair dates and your lease end to your calendar.
-• Pick up a building on your Mac or iPad with Handoff.
-• New York building cards show bedbug and rat counts, or the owner's phone.
-• Broker fee check and Lease review are in the app.
-• Bedrooms sits right under Location, and many smaller fixes.
+WHATS_NEW = """• Each New York building now lists housing law firms in its borough, right under nearby cafés.
+• Sign in is easier: the Sign in button stays above the keyboard, and tapping outside a field closes the keyboard.
+• Lottery alerts are a tap away under Search.
+• "Add deadline to Calendar" sits neatly on each lottery card.
+• Many smaller fixes.
 """
 
 REVIEW_NOTES = """VERSION 1.2.9 (build __BUILD__) — renter tools, widget, Siri, calendar, Handoff

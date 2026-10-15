@@ -70,44 +70,101 @@ PAGES = {
 }
 
 
-def render(w, h, page):
+# Apple's ART SAFE AREA per canvas, (x, y, w, h), from its
+# creative_assets-templates.sketch (measured 2026-10-12). An iPhone 17 Pro
+# shows only x 1006-2833 of the header, with the back button and the
+# mute/share pill over y 490-725 at its edges. The first sets let the
+# wordmark run to 50% of the width and the tagline to 62%, so on an iPhone
+# both were cut at the sides (owner's screenshot, 2026-10-14). All type now
+# goes on its own layer and render() refuses an image whose type leaves
+# SAFE or touches BUTTONS. The photos are decoration and may be cropped.
+SAFE = {"header": (1097, 493, 1646, 661), "search": (836, 765, 2168, 1030), "universal": (1921, 660, 1402, 962)}
+BUTTONS = {"header": [(1006, 490, 1290, 725), (2240, 490, 2833, 725)]}
+# Fractions of the safe area: wordmark centre and widest extent, tagline
+# centre, widest extent and size; bubbles' row centre (None = no bubbles,
+# the header has no room for them under the buttons).
+LAYOUT = {
+    "header": {"name_cy": 0.50, "name_w": 0.62, "tag_cy": 0.835, "tag_w": 0.92, "tag_size": 0.10, "bub_cy": None},
+    "search": {"name_cy": 0.22, "name_w": 0.62, "tag_cy": 0.53, "tag_w": 0.92, "tag_size": 0.075, "bub_cy": 0.84},
+    "universal": {"name_cy": 0.22, "name_w": 0.80, "tag_cy": 0.53, "tag_w": 0.94, "tag_size": 0.07, "bub_cy": 0.84, "bub_scale": 0.62},
+}
+
+
+def lines_for(d, text, f, width):
+    """The tagline on one line if it fits, else split into two balanced lines."""
+    if d.textlength(text, font=f) <= width:
+        return [text]
+    words = text.split()
+    best = min(range(1, len(words)), key=lambda i: max(d.textlength(" ".join(words[:i]), font=f),
+                                                       d.textlength(" ".join(words[i:]), font=f)))
+    return [" ".join(words[:best]), " ".join(words[best:])]
+
+
+def check_type(layer, kind):
+    box = layer.split()[3].getbbox()
+    if not box:
+        return
+    x0, y0, x1, y1 = box
+    sx, sy, sw, sh = SAFE[kind]
+    if not (sx <= x0 and x1 <= sx + sw and sy <= y0 and y1 <= sy + sh):
+        sys.exit(f"{kind}: type {box} leaves the safe area {SAFE[kind]}")
+    for b in BUTTONS.get(kind, []):
+        if not (x1 <= b[0] or x0 >= b[2] or y1 <= b[1] or y0 >= b[3]):
+            sys.exit(f"{kind}: type {box} sits under an App Store button {b}")
+
+
+def render(w, h, page, kind):
     s = min(h / 720.0, w / 1280.0)
     base = gradient(w, h).convert("RGBA")
+    sx, sy, sw, sh = SAFE[kind]
+    L = LAYOUT[kind]
+    cx = sx + sw / 2
     d = ImageDraw.Draw(base)
 
-    text = "Find A Crib"
-    size = 200 * s
-    f = font("Black", size)
-    while d.textlength(text, font=f) > w * 0.50:
-        size -= 4; f = font("Black", size)
-    tw = d.textlength(text, font=f)
-    asc, desc = f.getmetrics()
-    tx, ty = (w - tw) / 2, h * 0.5 - (asc - desc * 0.4) / 2 - 20 * s
-    glow = Image.new("RGBA", base.size, (0, 0, 0, 0))
-    ImageDraw.Draw(glow).text((tx, ty), text, font=f, fill=(0, 40, 160, 120))
-    base.alpha_composite(glow.filter(ImageFilter.GaussianBlur(int(22 * s))))
-    ImageDraw.Draw(base).text((tx, ty), text, font=f, fill=WHITE)
-
-    tag = page["tagline"]
-    ts = 34 * s
-    tf = font("Semibold", ts)
-    while d.textlength(tag, font=tf) > w * 0.62:
-        ts -= 2; tf = font("Semibold", ts)
-    tw2 = d.textlength(tag, font=tf)
-    ImageDraw.Draw(base).text(((w - tw2) / 2, ty + asc + 14 * s), tag, font=tf, fill=(225, 234, 255))
-
-    # Floating pieces in canvas fractions; the outer ones may be cropped on
-    # some devices, which is fine — nothing that must be read sits there.
+    # Floating pieces in canvas fractions, all outside the safe area.
     P = lambda fx, fy: (fx * w, fy * h)
     rounded_tile(base, P(0.20, 0.21), 120 * s, -10, s)
     circle_photo(base, PHOTOS["brownstone"], P(0.11, 0.72), 170 * s, 6 * s, s)
     badge_pin(base, (0.11 * w + 65 * s, 0.72 * h + 65 * s), s)
     circle_photo(base, PHOTOS["brick"], P(0.89, 0.65), 190 * s, 6 * s, s)
     circle_photo(base, PHOTOS["corner"], P(0.79, 0.19), 84 * s, 4 * s, s)
-    b1, b2 = page["bubbles"]
-    bubble(base, b1[0], P(0.80, 0.42), s, fill=b1[1], ink=b1[2], tail="left", size=28)
-    bubble(base, b2[0], P(0.50, 0.87), s, fill=b2[1], ink=b2[2], tail=None, size=24,
-           dot=b2[3] if len(b2) > 3 else None)
+
+    type_layer = Image.new("RGBA", base.size, (0, 0, 0, 0))
+    td = ImageDraw.Draw(type_layer)
+
+    text = "Find A Crib"
+    size = sh * 0.40
+    f = font("Black", size)
+    while d.textlength(text, font=f) > sw * L["name_w"]:
+        size -= 2; f = font("Black", size)
+    tw = d.textlength(text, font=f)
+    x0, y0, x1, y1 = td.textbbox((0, 0), text, font=f)
+    tx, ty = cx - tw / 2, sy + sh * L["name_cy"] - (y0 + y1) / 2
+    glow = Image.new("RGBA", base.size, (0, 0, 0, 0))
+    ImageDraw.Draw(glow).text((tx, ty), text, font=f, fill=(0, 40, 160, 120))
+    base.alpha_composite(glow.filter(ImageFilter.GaussianBlur(int(22 * s))))
+    td.text((tx, ty), text, font=f, fill=WHITE)
+
+    ts = sh * L["tag_size"]
+    tf = font("Semibold", ts)
+    lines = lines_for(d, page["tagline"], tf, sw * L["tag_w"])
+    while max(d.textlength(l, font=tf) for l in lines) > sw * L["tag_w"]:
+        ts -= 2; tf = font("Semibold", ts)
+    step = ts * 1.22
+    top = sy + sh * L["tag_cy"] - step * len(lines) / 2
+    for i, line in enumerate(lines):
+        td.text((cx - d.textlength(line, font=tf) / 2, top + i * step), line, font=tf, fill=(225, 234, 255))
+
+    if L["bub_cy"] is not None:
+        b1, b2 = page["bubbles"]
+        by = sy + sh * L["bub_cy"]
+        bs = s * L.get("bub_scale", 1.0)
+        bubble(type_layer, b1[0], (cx - sw * 0.24, by), bs, fill=b1[1], ink=b1[2], tail=None, size=24)
+        bubble(type_layer, b2[0], (cx + sw * 0.24, by), bs, fill=b2[1], ink=b2[2], tail=None, size=24,
+               dot=b2[3] if len(b2) > 3 else None)
+
+    check_type(type_layer, kind)
+    base.alpha_composite(type_layer)
     return base.convert("RGB")
 
 
@@ -116,7 +173,7 @@ def main():
     for name, page in PAGES.items():
         canvases = CANVASES if name == "default" else {"header": CANVASES["header"]}
         for kind, (w, h) in canvases.items():
-            img = render(w, h, page)
+            img = render(w, h, page, kind)
             p = os.path.join(out, name, f"{kind}-{w}x{h}.png")
             os.makedirs(os.path.dirname(p), exist_ok=True)
             img.save(p, optimize=True)

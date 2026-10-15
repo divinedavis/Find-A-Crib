@@ -9,7 +9,7 @@ on the account plus one email. last_seen then moves to the newest call
 announced, so nothing is sent twice.
 
 "Real time" means as soon as the City publishes: the 311 dataset refreshes
-about once a day, so a call usually shows up the morning after it is made.
+about once a day (around 10:30 PM), and alerts go out from 8 AM (SEND_HOURS).
 
 Crime alerts (owner, 2026-10-15): a watch can also pick kinds of crime
 (CRIME_KINDS). The NYPD publishes complaints and shootings every three
@@ -43,6 +43,11 @@ SITE = la.SITE
 NY = ZoneInfo("America/New_York")
 DATASET = "https://data.cityofnewyork.us/resource/erm2-nwe9.json"
 MIN_GAP = datetime.timedelta(hours=3)            # at most one alert per watch per 3 h
+# Alerts go out from 8 AM, like the lottery alerts (owner, 2026-10-15: "when
+# will we alert users? 8AM?"). The City publishes 311 around 10:30 PM, so a
+# night's new calls wait for the 8:07 run; anything later in the day goes on
+# the next half-hour run until 9 PM.
+SEND_HOURS = range(8, 21)
 MAX_PER_ALERT = 20
 COMPLAINTS = "https://data.cityofnewyork.us/resource/5uac-w243.json"
 SHOOTINGS = "https://data.cityofnewyork.us/resource/5ucz-vwe8.json"
@@ -303,6 +308,8 @@ def main():
         sys.exit("SUPABASE_SERVICE_KEY not set (growth.env)")
     if args.test:
         return send_test(key, *args.test, address=args.address)
+    if datetime.datetime.now(NY).hour not in SEND_HOURS and not args.dry_run:
+        return print("casa: quiet hours, nothing sent until 8 AM")
     watches = rest("casa_watches?select=user_id,email,bbl,address,last_seen,last_sent,created_at,lat,lng,crime_kinds,crime_seen", key) or []
     now = datetime.datetime.now(datetime.timezone.utc)
     newest = ""

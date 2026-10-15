@@ -207,7 +207,7 @@ struct CasaView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Alerts on new 311 calls").font(.se(17, .bold)).foregroundStyle(SE.ink)
             if watching {
-                Text("You'll get a notification and an email when a new 311 call on this building is published — usually the morning after it's made.")
+                Text("Each morning at 8 you'll get a notification and an email if the City published new 311 calls on this building.")
                     .font(.se(15)).foregroundStyle(SE.ink2)
                 crimeChips(p)
                 Button(role: .destructive) {

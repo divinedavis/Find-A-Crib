@@ -98,6 +98,11 @@ class CasaAlertText(unittest.TestCase):
         self.assertIn("Rodent — Rat Sighting\n  Oct 12, 2026 · In Progress · pests", text)
         self.assertIn("/casa/?bbl=1017480035", html)
 
+    def test_alerts_wait_for_8_am(self):
+        self.assertEqual(self.c.SEND_HOURS, range(8, 21))
+        src = read("casa_alerts.py")
+        self.assertLess(src.index("SEND_HOURS and not args.dry_run"), src.index("watches = rest("), "quiet hours stop the run before any send")
+
     def test_distance(self):
         self.assertAlmostEqual(self.c.metres(40.7585, -73.9925, 40.7585 + 800 / 111_000, -73.9925), 800, delta=10)
 

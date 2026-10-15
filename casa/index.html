@@ -361,7 +361,7 @@
     $('a-err').hidden = true;
     $('a-crime').hidden = !here;
     $('a-on').hidden = here;
-    $('a-text').textContent = here ? "You'll get a notification and an email when a new 311 call on this building is published — usually the morning after it's made."
+    $('a-text').textContent = here ? "Each morning at 8 you'll get a notification and an email if the City published new 311 calls on this building."
       : watch ? 'Plus watches one building. Switching moves your alerts from ' + (watch.address || 'your other building') + ' to here.'
       : 'Hear about every new 311 call on this building — pests, heat, leaks, noise. Part of Find A Crib Plus.';
     $('a-on').textContent = watch && !here ? '🔔 Watch this building instead' : '🔔 Alert me about new calls';

@@ -140,7 +140,12 @@ struct CasaView: View {
         if loading {
             ProgressView().tint(SE.royal).frame(maxWidth: .infinity).padding(.top, 30)
         } else if failed {
-            note("Couldn't load 311 calls", "Check your connection and try again.")
+            note("Couldn't load 311 calls", "NYC's data service didn't answer. Check your connection and try again.")
+            Button { Task { await open(p) } } label: {
+                Text("Try again").font(.se(16, .semibold)).foregroundStyle(.white)
+                    .padding(.vertical, 12).frame(maxWidth: .infinity).background(SE.royal, in: RoundedRectangle(cornerRadius: 12))
+            }
+            .accessibilityIdentifier("casa-retry").padding(.horizontal, 16)
         } else {
             pestCard
             alertCard(p)

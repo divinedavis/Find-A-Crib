@@ -135,10 +135,22 @@ enum Casa {
         c.queryItems = query.map { URLQueryItem(name: $0.key, value: $0.value) }
         var req = URLRequest(url: c.url!, timeoutInterval: 30)
         req.setValue("application/json", forHTTPHeaderField: "Accept")
-        let (data, resp) = try await URLSession.shared.data(for: req)
-        guard (resp as? HTTPURLResponse)?.statusCode == 200 else { throw URLError(.badServerResponse) }
-        return try JSONDecoder().decode(T.self, from: data)
+        // NYC Open Data answers a stray 503 about one request in fifteen
+        // (measured 2026-10-15), so a busy moment gets two more tries.
+        for attempt in 0..<3 {
+            if attempt > 0 { try await Task.sleep(nanoseconds: UInt64(attempt) * 700_000_000) }
+            let data: Data, resp: URLResponse
+            do { (data, resp) = try await URLSession.shared.data(for: req) }
+            catch let e as URLError where e.code != .cancelled && attempt < 2 { continue }
+            let status = (resp as? HTTPURLResponse)?.statusCode ?? 0
+            if status == 200 { return try JSONDecoder().decode(T.self, from: data) }
+            if !retryable(status) || attempt == 2 { break }
+        }
+        throw URLError(.badServerResponse)
     }
+
+    /// Busy or briefly down: worth another try. A bad query is not.
+    static func retryable(_ status: Int) -> Bool { status == 429 || (500...599).contains(status) }
 
     /// Address suggestions as the person types. New York City only.
     static func suggest(_ text: String) async -> [Place] {

@@ -195,9 +195,20 @@
     var g = function (t) { return (p.find(function (x) { return x.type === t; }) || {}).value; };
     return g('year') + '-' + g('month') + '-' + g('day') + 'T' + (g('hour') === '24' ? '00' : g('hour')) + ':' + g('minute') + ':' + g('second');
   }
-  function q(base, params) {
+  // NYC Open Data answers a stray 503 about one request in fifteen, so a
+  // busy moment (429/5xx or a dropped connection) gets two more tries.
+  function q(base, params, attempt) {
+    attempt = attempt || 0;
+    var again = function (e) {
+      if (attempt >= 2) throw e;
+      return new Promise(function (ok) { setTimeout(ok, 700 * (attempt + 1)); }).then(function () { return q(base, params, attempt + 1); });
+    };
     return fetch(base + '?' + new URLSearchParams(params).toString(), { headers: { Accept: 'application/json' } })
-      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); });
+      .then(function (r) {
+        if (r.ok) return r.json();
+        var e = new Error(r.status);
+        return r.status === 429 || r.status >= 500 ? again(e) : Promise.reject(e);
+      }, again);
   }
   function short(label) { var p = label.split(', '); var s = p[0].toLowerCase().replace(/\b\w/g, function (c) { return c.toUpperCase(); }); return p.length > 1 ? s + ', ' + p[1] : s; }
   function day(s) { var d = new Date((s || '').slice(0, 10) + 'T12:00:00'); return isNaN(d) ? s : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }

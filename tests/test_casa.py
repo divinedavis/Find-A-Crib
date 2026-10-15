@@ -48,6 +48,17 @@ class CasaWatchRoute(unittest.TestCase):
         self.assertEqual(set(chips), set(casa_alerts.CRIME_KINDS))
 
 
+class CasaRetries(unittest.TestCase):
+    def test_app_and_web_retry_a_busy_data_service(self):
+        # NYC Open Data answers a stray 503 about 1 in 15 (owner screenshot, 10/15).
+        swift = read("ios", "FindACrib", "Services", "CasaService.swift")
+        self.assertIn("for attempt in 0..<3", swift)
+        self.assertIn("status == 429 || (500...599).contains(status)", swift)
+        web = read("casa", "index.html")
+        self.assertIn("r.status === 429 || r.status >= 500 ? again(e)", web)
+        self.assertIn('accessibilityIdentifier("casa-retry")', read("ios", "FindACrib", "Features", "Casa", "CasaView.swift"))
+
+
 class CasaTable(unittest.TestCase):
     def test_clients_cannot_write_or_truncate(self):
         sql = read("supabase", "migrations", "20261015120000_casa_watches.sql")

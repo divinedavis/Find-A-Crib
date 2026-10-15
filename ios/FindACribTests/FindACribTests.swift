@@ -1316,6 +1316,12 @@ final class CasaTests: XCTestCase {
         XCTAssertFalse(Casa.isPest(type: "Street Light Condition", descriptor: "Street Light Out"))
     }
 
+    func testBusyDataServiceIsRetriedButABadQueryIsNot() {
+        // A stray 503 from NYC Open Data showed "Couldn't load 311 calls" (owner, 10/15).
+        for s in [429, 500, 502, 503, 504] { XCTAssertTrue(Casa.retryable(s), "\(s)") }
+        for s in [200, 400, 403, 404] { XCTAssertFalse(Casa.retryable(s), "\(s)") }
+    }
+
     func testTypesReadInSentenceCase() {
         XCTAssertEqual(Casa.tidy("UNSANITARY CONDITION"), "Unsanitary condition")
         XCTAssertEqual(Casa.tidy("Noise - Residential"), "Noise - Residential", "mixed case stays as the City wrote it")

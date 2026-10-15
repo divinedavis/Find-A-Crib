@@ -46,3 +46,26 @@ def test_js_filter_matches_this_model():
     # The page's own expression must be the one modelled above.
     assert "!LEGAL_NO.test(n) && !(/landlord/i.test(n) && !/tenant/i.test(n))" in HTML
     assert "(LEGAL_ORG.test(n) || (HOUSING_WORD.test(n) && LEGAL_WORD.test(n)))" in HTML
+
+
+# "Housing law firms for <borough>" (owner, 2026-10-14): the site serves
+# housing_law_firms.json and the app bundles a copy; at least three per borough.
+import json
+
+ROOT = Path(__file__).resolve().parent.parent
+FIRMS = ROOT / "housing_law_firms.json"
+APP_FIRMS = ROOT / "ios/FindACrib/Resources/Data/housing_law_firms.json"
+BOROUGHS = ["Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island"]
+
+
+def test_app_bundles_the_same_firm_list():
+    assert FIRMS.read_bytes() == APP_FIRMS.read_bytes(), "copy housing_law_firms.json into the app's Resources/Data"
+
+
+def test_three_firms_per_borough_with_a_source():
+    firms = json.loads(FIRMS.read_text())["firms"]
+    for b in BOROUGHS:
+        assert len([f for f in firms if f["borough"] == b]) >= 3, b
+    for f in firms:
+        assert f["website"].startswith("http") and f["source"].startswith("http"), f["name"]
+        assert f["side"] in ("tenant", "both") and f["office_borough"] in BOROUGHS, f["name"]

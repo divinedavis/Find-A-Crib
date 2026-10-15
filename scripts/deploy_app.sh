@@ -30,7 +30,7 @@ PY=${PY:-$HOME/.venvs/dhcr-map/bin/python}
 SKIP=${1:-}
 BACKUPS=/var/backups/findacrib-app
 # Everything the copy below replaces, relative to $DOC. Keep in step with it.
-SHIPPED="index.html la/index.html sf/index.html dc/index.html westchester/index.html static/supercluster/supercluster.min.js static/mapillary-preview.js static/apple-street-preview.js static/apple-street-frame.html"
+SHIPPED="index.html housing_law_firms.json la/index.html sf/index.html dc/index.html westchester/index.html static/supercluster/supercluster.min.js static/mapillary-preview.js static/apple-street-preview.js static/apple-street-frame.html"
 
 if [ "$SKIP" != "--skip-tests" ]; then
   echo "== unit tests"
@@ -70,8 +70,11 @@ ssh "$HOST" "mkdir -p $DOC/static/supercluster"
 scp -q static/supercluster/supercluster.min.js "$HOST:$DOC/static/supercluster/supercluster.min.js"
 scp -q static/mapillary-preview.js static/apple-street-preview.js static/apple-street-frame.html "$HOST:$DOC/static/"
 scp -q index.html "$HOST:$DOC/index.html"
+# The borough housing-law-firm list the building sheet reads (2026-10-14);
+# the app bundles the same file (tests/test_nearby_legal.py keeps them equal).
+scp -q housing_law_firms.json "$HOST:$DOC/housing_law_firms.json"
 for c in la sf dc westchester; do scp -q "$c/index.html" "$HOST:$DOC/$c/index.html"; done
-for u in / /la/ /sf/ /dc/ /westchester/ /static/supercluster/supercluster.min.js; do
+for u in / /housing_law_firms.json /la/ /sf/ /dc/ /westchester/ /static/supercluster/supercluster.min.js; do
   printf '%-45s %s\n' "$u" "$(curl -s -o /dev/null -w '%{http_code}' "https://findacrib.com$u")"
 done
 scripts/check_docroot_leaks.sh

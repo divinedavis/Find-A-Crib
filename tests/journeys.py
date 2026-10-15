@@ -331,6 +331,11 @@ class Runner:
                     r.fulfill(status=200, content_type='text/html; charset=utf-8', body=self.html)
                 elif city:
                     r.fulfill(status=200, content_type='text/html; charset=utf-8', body=self.city_html[city])
+                elif u.split('?')[0] == LIVE + '/housing_law_firms.json':
+                    # Shipped beside index.html by deploy_app.sh; the local page
+                    # must read the local list, not whatever is live.
+                    r.fulfill(status=200, content_type='application/json',
+                              body=(ROOT / 'housing_law_firms.json').read_text())
                 elif self.local_data_path(u):
                     r.fulfill(status=200, content_type='application/json',
                               body=self.local_data_path(u).read_text())
@@ -1056,27 +1061,35 @@ class Runner:
         j.notes.append('privacy + terms carry the rules')
 
     def j_nearby_places(self, page, j, device):
-        """Legal services and cafés at the bottom of a building (owner,
-        2026-10-14), live from Apple Maps once the bottom scrolls near the
-        screen. The legal row must say we don't vet the offices."""
+        """Cafés (live from Apple Maps once the bottom scrolls near the screen)
+        and, right under them, the borough's housing law firms (owner,
+        2026-10-14). The firms row must say we don't vet them."""
         self.boot(page, f'/#d={BBL}')
         self.ok(self.detail_open(page), 'the building should open', j)
         self.ok(not page.evaluate("[...document.scripts].some(s => /apple-mapkit.com\\/mk\\/.*mapkit.js/.test(s.src))"),
                 'MapKit search must not load before the bottom of the building is reached', j)
         page.evaluate("document.getElementById('d-nearby')?.scrollIntoView()")
         try:
-            self.wait_until(page, "document.querySelectorAll('#d-nearby .np-card').length > 0", 30000)
+            self.wait_until(page, "document.querySelectorAll('[data-np=cafes] .np-card').length > 0", 30000)   # the firms row lands first, without MapKit
         except Exception:
             pass
         cafes = page.evaluate("document.querySelectorAll('[data-np=cafes] .np-card').length")
-        legal = page.evaluate("document.querySelectorAll('[data-np=legal] .np-card').length")
         self.ok(cafes > 0, f'the cafés row should list places near the building, got {cafes}', j)
-        if legal:
-            note = page.evaluate("document.querySelector('[data-np=legal] .np-note').textContent")
-            self.ok('qualified' in note and 'legal advice' in note, f'the legal row must say we do not vet it: {note!r}', j)
-            href = page.evaluate("document.querySelector('[data-np=legal] .np-card').href")
-            self.ok(href.startswith('https://maps.apple.com/'), f'a place opens in Apple Maps: {href}', j)
-        j.notes.append(f'{legal} legal, {cafes} cafés')
+        # New York: the borough's housing law firms right under cafés (owner,
+        # 2026-10-14), at least three, each opening the firm's own site.
+        firms = page.evaluate("(()=>{const b=document.querySelector('[data-np=firms]');if(!b)return null;"
+                              "const c=document.querySelector('[data-np=cafes]');"
+                              "return {n:b.querySelectorAll('.np-card').length,title:b.querySelector('h3').textContent,"
+                              "note:b.querySelector('.np-note').textContent,href:b.querySelector('.np-card').href,"
+                              "after:!c||!!(c.compareDocumentPosition(b)&Node.DOCUMENT_POSITION_FOLLOWING)}})()")
+        self.ok(firms and firms['n'] >= 3, f'at least three housing law firms for the borough: {firms}', j)
+        if firms:
+            self.ok(firms['title'].startswith('Housing law firms for '), f"row title: {firms['title']!r}", j)
+            self.ok("don’t endorse" in firms['note'] and 'legal advice' in firms['note'], f"the firms row must say we do not vet them: {firms['note']!r}", j)
+            self.ok(firms['href'].startswith('http') and 'maps.apple.com' not in firms['href'], f"a firm opens its own site: {firms['href']}", j)
+            self.ok(firms['after'], 'cafés come first, the firms right under', j)
+        self.ok(not page.evaluate("!!document.querySelector('[data-np=legal]')"), 'New York shows the firm list, not the Apple Maps legal search', j)
+        j.notes.append(f"{firms and firms['n']} firms, {cafes} cafés")
 
     def j_comments_gate(self, page, j, device):
         """Comments on a building are the same rows the iPhone app writes.

@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-14",
+ "generated": "2026-10-15",
  "source": "HPD-approved marketing agents' own re-rental pages and NYC HDC's re-rental board",
  "count": 60,
  "listings": [
@@ -82,6 +82,27 @@
     "/featured/img/g619e37cfe40ac01.jpg",
     "/featured/img/g77da8a837f3cfbf.jpg"
    ]
+  },
+  {
+   "agent": "Tax Solute Consulting",
+   "agent_page": "https://sites.google.com/affordablelivingnyc.com/hpd/home",
+   "title": "Unit on Hold",
+   "address": "584 4th Ave.",
+   "borough": "Brooklyn",
+   "zip": null,
+   "money_kind": "rent",
+   "money_low": 3191,
+   "money_high": 3191,
+   "income_1p_max": 154440,
+   "units": null,
+   "beds": "1",
+   "href": "https://sites.google.com/affordablelivingnyc.com/hpd/home#h.i7r3ha5dlhyp",
+   "href_kind": "listing",
+   "image": "/featured/img/112be0351e1d7ed4.jpg",
+   "image_exterior": true,
+   "image_w": 1280,
+   "image_lowres": false,
+   "image_large": "/featured/img/112be0351e1d7ed4_l.jpg"
   },
   {
    "agent": "Rockrose Development (affordable)",
@@ -192,24 +213,6 @@
    "image_lowres": false
   },
   {
-   "agent": "Tax Solute Consulting",
-   "agent_page": "https://sites.google.com/affordablelivingnyc.com/hpd/home",
-   "title": "Unit on Hold",
-   "address": "114 Jefferson St.",
-   "borough": "Brooklyn",
-   "zip": null,
-   "money_kind": "rent",
-   "money_low": 2267,
-   "money_high": 2267,
-   "income_1p_max": 154440,
-   "units": null,
-   "beds": null,
-   "href": "https://sites.google.com/affordablelivingnyc.com/hpd/home#h.9i24asovqy3x",
-   "href_kind": "listing",
-   "image": null,
-   "image_exterior": false
-  },
-  {
    "agent": "MNS",
    "agent_page": "https://www.mns.com/affordable_units",
    "title": "",
@@ -250,15 +253,7 @@
    "href": "https://ccmanagers.com/properties/55-south-essex-avenue/507",
    "href_kind": "listing",
    "image": null,
-   "image_exterior": false,
-   "images": [
-    "/featured/img/g4ccf08b2059b873.jpg",
-    "/featured/img/g3c7910715cbac95.jpg",
-    "/featured/img/gef42005f6e9c93e.jpg",
-    "/featured/img/g2709291799a684e.jpg",
-    "/featured/img/g90a95d4e25b0633.jpg",
-    "/featured/img/g676a1a47dd7f418.jpg"
-   ]
+   "image_exterior": false
   },
   {
    "agent": "Taxace NY LLC",
@@ -383,6 +378,26 @@
    ]
   },
   {
+   "agent": "Tax Solute Consulting",
+   "agent_page": "https://sites.google.com/affordablelivingnyc.com/hpd/home",
+   "title": "Unit on Hold",
+   "address": "228 East 135th St.",
+   "borough": "Bronx",
+   "zip": null,
+   "money_kind": "rent",
+   "money_low": 2419,
+   "money_high": 2419,
+   "income_1p_max": 154440,
+   "units": null,
+   "beds": null,
+   "href": "https://sites.google.com/affordablelivingnyc.com/hpd/home#h.z2xagnbypkt3",
+   "href_kind": "listing",
+   "image": "/featured/img/6fccad0450ae7114.jpg",
+   "image_exterior": true,
+   "image_w": 411,
+   "image_lowres": false
+  },
+  {
    "agent": "Rockrose Development (affordable)",
    "agent_page": "https://rockrose.com/affordable-availabilities/",
    "title": "",
@@ -478,24 +493,6 @@
    "image_lowres": false
   },
   {
-   "agent": "Tax Solute Consulting",
-   "agent_page": "https://sites.google.com/affordablelivingnyc.com/hpd/home",
-   "title": "Unit on Hold",
-   "address": "584 4th Ave.",
-   "borough": "Brooklyn",
-   "zip": null,
-   "money_kind": "rent",
-   "money_low": 3191,
-   "money_high": 3191,
-   "income_1p_max": 154440,
-   "units": null,
-   "beds": "1",
-   "href": "https://sites.google.com/affordablelivingnyc.com/hpd/home#h.i7r3ha5dlhyp",
-   "href_kind": "listing",
-   "image": null,
-   "image_exterior": false
-  },
-  {
    "agent": "Taxace NY LLC",
    "agent_page": "https://www.taxaceny.com/projects-8",
    "title": "",
@@ -565,6 +562,26 @@
    ]
   },
   {
+   "agent": "Tax Solute Consulting",
+   "agent_page": "https://sites.google.com/affordablelivingnyc.com/hpd/home",
+   "title": "Unit on Hold",
+   "address": "570 Nostrand Ave.",
+   "borough": "Brooklyn",
+   "zip": null,
+   "money_kind": "rent",
+   "money_low": 2935,
+   "money_high": 2935,
+   "income_1p_max": null,
+   "units": null,
+   "beds": null,
+   "href": "https://sites.google.com/affordablelivingnyc.com/hpd/home#h.lu2yhjpbpg87",
+   "href_kind": "listing",
+   "image": "/featured/img/9fb4b38caedf3d47.jpg",
+   "image_exterior": true,
+   "image_w": 764,
+   "image_lowres": false
+  },
+  {
    "agent": "MGNY Consulting Corp.",
    "agent_page": "https://mgnyconsulting.com/listings/",
    "title": "",
@@ -612,24 +629,6 @@
    "image_exterior": false,
    "image_w": 682,
    "image_lowres": false
-  },
-  {
-   "agent": "Tax Solute Consulting",
-   "agent_page": "https://sites.google.com/affordablelivingnyc.com/hpd/home",
-   "title": "Unit on Hold",
-   "address": "1412 College Ave.",
-   "borough": "Bronx",
-   "zip": null,
-   "money_kind": "rent",
-   "money_low": 2808,
-   "money_high": 2808,
-   "income_1p_max": 154440,
-   "units": null,
-   "beds": null,
-   "href": "https://sites.google.com/affordablelivingnyc.com/hpd/home#h.rw6j0vp89i6x",
-   "href_kind": "listing",
-   "image": null,
-   "image_exterior": false
   },
   {
    "agent": "Taxace NY LLC",
@@ -701,6 +700,26 @@
    ]
   },
   {
+   "agent": "Tax Solute Consulting",
+   "agent_page": "https://sites.google.com/affordablelivingnyc.com/hpd/home",
+   "title": "",
+   "address": "156 Erasmus St.",
+   "borough": "Brooklyn",
+   "zip": null,
+   "money_kind": "rent",
+   "money_low": 2937,
+   "money_high": 2937,
+   "income_1p_max": null,
+   "units": null,
+   "beds": null,
+   "href": "https://sites.google.com/affordablelivingnyc.com/hpd/home#h.r9z1ddmbdase",
+   "href_kind": "listing",
+   "image": "/featured/img/82f374d9dffd7396.jpg",
+   "image_exterior": false,
+   "image_w": 579,
+   "image_lowres": false
+  },
+  {
    "agent": "MGNY Consulting Corp.",
    "agent_page": "https://mgnyconsulting.com/listings/",
    "title": "Lumen LIC Apartments",
@@ -752,28 +771,10 @@
    "image_lowres": false
   },
   {
-   "agent": "Tax Solute Consulting",
-   "agent_page": "https://sites.google.com/affordablelivingnyc.com/hpd/home",
-   "title": "Unit on Hold",
-   "address": "1670 Townsend Ave.",
-   "borough": "Bronx",
-   "zip": null,
-   "money_kind": "rent",
-   "money_low": 3153,
-   "money_high": 3153,
-   "income_1p_max": 154440,
-   "units": null,
-   "beds": null,
-   "href": "https://sites.google.com/affordablelivingnyc.com/hpd/home#h.6cpcbei83qdb",
-   "href_kind": "listing",
-   "image": null,
-   "image_exterior": false
-  },
-  {
    "agent": "Taxace NY LLC",
    "agent_page": "https://www.taxaceny.com/projects-8",
    "title": "",
-   "address": "1464 Watson Ave. Unit 609",
+   "address": "1464 Watson Ave. Unit 413",
    "borough": "Bronx",
    "zip": null,
    "money_kind": "rent",
@@ -840,6 +841,26 @@
    ]
   },
   {
+   "agent": "Tax Solute Consulting",
+   "agent_page": "https://sites.google.com/affordablelivingnyc.com/hpd/home",
+   "title": "",
+   "address": "50 Clarkson Ave.",
+   "borough": "Brooklyn",
+   "zip": null,
+   "money_kind": "rent",
+   "money_low": 2418,
+   "money_high": 2418,
+   "income_1p_max": 154440,
+   "units": null,
+   "beds": null,
+   "href": "https://sites.google.com/affordablelivingnyc.com/hpd/home#h.wq0o819nwj5m",
+   "href_kind": "listing",
+   "image": "/featured/img/557e187ddc604304.jpg",
+   "image_exterior": false,
+   "image_w": 271,
+   "image_lowres": true
+  },
+  {
    "agent": "MGNY Consulting Corp.",
    "agent_page": "https://mgnyconsulting.com/listings/",
    "title": "Lighthouse Point",
@@ -889,24 +910,6 @@
    "image_exterior": true,
    "image_w": 682,
    "image_lowres": false
-  },
-  {
-   "agent": "Tax Solute Consulting",
-   "agent_page": "https://sites.google.com/affordablelivingnyc.com/hpd/home",
-   "title": "Unit on Hold",
-   "address": "228 East 135th St.",
-   "borough": "Bronx",
-   "zip": null,
-   "money_kind": "rent",
-   "money_low": 2419,
-   "money_high": 2419,
-   "income_1p_max": 154440,
-   "units": null,
-   "beds": null,
-   "href": "https://sites.google.com/affordablelivingnyc.com/hpd/home#h.z2xagnbypkt3",
-   "href_kind": "listing",
-   "image": null,
-   "image_exterior": false
   },
   {
    "agent": "Taxace NY LLC",
@@ -968,6 +971,24 @@
    "image_large": "/featured/img/5339bec5410ad1e2_l.jpg"
   },
   {
+   "agent": "Tax Solute Consulting",
+   "agent_page": "https://sites.google.com/affordablelivingnyc.com/hpd/home",
+   "title": "Unit on Hold",
+   "address": "114 Jefferson St.",
+   "borough": "Brooklyn",
+   "zip": null,
+   "money_kind": "rent",
+   "money_low": 2267,
+   "money_high": 2267,
+   "income_1p_max": 154440,
+   "units": null,
+   "beds": null,
+   "href": "https://sites.google.com/affordablelivingnyc.com/hpd/home#h.9i24asovqy3x",
+   "href_kind": "listing",
+   "image": null,
+   "image_exterior": false
+  },
+  {
    "agent": "MGNY Consulting Corp.",
    "agent_page": "https://mgnyconsulting.com/listings/",
    "title": "",
@@ -1017,24 +1038,6 @@
    "image_lowres": false
   },
   {
-   "agent": "Tax Solute Consulting",
-   "agent_page": "https://sites.google.com/affordablelivingnyc.com/hpd/home",
-   "title": "Unit on Hold",
-   "address": "570 Nostrand Ave.",
-   "borough": "Brooklyn",
-   "zip": null,
-   "money_kind": "rent",
-   "money_low": 2935,
-   "money_high": 2935,
-   "income_1p_max": null,
-   "units": null,
-   "beds": null,
-   "href": "https://sites.google.com/affordablelivingnyc.com/hpd/home#h.lu2yhjpbpg87",
-   "href_kind": "listing",
-   "image": null,
-   "image_exterior": false
-  },
-  {
    "agent": "Taxace NY LLC",
    "agent_page": "https://www.taxaceny.com/projects-8",
    "title": "",
@@ -1080,6 +1083,24 @@
     "/featured/img/g55c438e1c6b1163.jpg",
     "/featured/img/gbb221640e9b7af4.jpg"
    ]
+  },
+  {
+   "agent": "Tax Solute Consulting",
+   "agent_page": "https://sites.google.com/affordablelivingnyc.com/hpd/home",
+   "title": "Unit on Hold",
+   "address": "1412 College Ave.",
+   "borough": "Bronx",
+   "zip": null,
+   "money_kind": "rent",
+   "money_low": 2808,
+   "money_high": 2808,
+   "income_1p_max": 154440,
+   "units": null,
+   "beds": null,
+   "href": "https://sites.google.com/affordablelivingnyc.com/hpd/home#h.rw6j0vp89i6x",
+   "href_kind": "listing",
+   "image": null,
+   "image_exterior": false
   },
   {
    "agent": "MGNY Consulting Corp.",
@@ -1131,24 +1152,6 @@
    "image_lowres": false
   },
   {
-   "agent": "Tax Solute Consulting",
-   "agent_page": "https://sites.google.com/affordablelivingnyc.com/hpd/home",
-   "title": "Unit on Hold",
-   "address": "351 East 10th St.",
-   "borough": "Manhattan",
-   "zip": null,
-   "money_kind": "rent",
-   "money_low": 2900,
-   "money_high": 2900,
-   "income_1p_max": 154440,
-   "units": null,
-   "beds": null,
-   "href": "https://sites.google.com/affordablelivingnyc.com/hpd/home#h.synkkmfl4x1w",
-   "href_kind": "listing",
-   "image": null,
-   "image_exterior": false
-  },
-  {
    "agent": "Taxace NY LLC",
    "agent_page": "https://www.taxaceny.com/projects-8",
    "title": "",
@@ -1188,6 +1191,24 @@
    "image_large": "/featured/img/5339bec5410ad1e2_l.jpg"
   },
   {
+   "agent": "Tax Solute Consulting",
+   "agent_page": "https://sites.google.com/affordablelivingnyc.com/hpd/home",
+   "title": "Unit on Hold",
+   "address": "1670 Townsend Ave.",
+   "borough": "Bronx",
+   "zip": null,
+   "money_kind": "rent",
+   "money_low": 3153,
+   "money_high": 3153,
+   "income_1p_max": 154440,
+   "units": null,
+   "beds": null,
+   "href": "https://sites.google.com/affordablelivingnyc.com/hpd/home#h.6cpcbei83qdb",
+   "href_kind": "listing",
+   "image": null,
+   "image_exterior": false
+  },
+  {
    "agent": "NYC Housing Development Corporation (HDC)",
    "agent_page": "https://www.nychdc.com/find-re-rentals",
    "title": "Nehemiah Spring Creek 4B-2",
@@ -1206,24 +1227,6 @@
    "image_exterior": true,
    "image_w": 682,
    "image_lowres": false
-  },
-  {
-   "agent": "Tax Solute Consulting",
-   "agent_page": "https://sites.google.com/affordablelivingnyc.com/hpd/home",
-   "title": "",
-   "address": "156 Erasmus St.",
-   "borough": "Brooklyn",
-   "zip": null,
-   "money_kind": "rent",
-   "money_low": 2937,
-   "money_high": 2937,
-   "income_1p_max": null,
-   "units": null,
-   "beds": null,
-   "href": "https://sites.google.com/affordablelivingnyc.com/hpd/home#h.r9z1ddmbdase",
-   "href_kind": "listing",
-   "image": null,
-   "image_exterior": false
   },
   {
    "agent": "Taxace NY LLC",
@@ -1265,6 +1268,24 @@
    "image_large": "/featured/img/5339bec5410ad1e2_l.jpg"
   },
   {
+   "agent": "Tax Solute Consulting",
+   "agent_page": "https://sites.google.com/affordablelivingnyc.com/hpd/home",
+   "title": "Unit on Hold",
+   "address": "351 East 10th St.",
+   "borough": "Manhattan",
+   "zip": null,
+   "money_kind": "rent",
+   "money_low": 2900,
+   "money_high": 2900,
+   "income_1p_max": 154440,
+   "units": null,
+   "beds": null,
+   "href": "https://sites.google.com/affordablelivingnyc.com/hpd/home#h.synkkmfl4x1w",
+   "href_kind": "listing",
+   "image": null,
+   "image_exterior": false
+  },
+  {
    "agent": "NYC Housing Development Corporation (HDC)",
    "agent_page": "https://www.nychdc.com/find-re-rentals",
    "title": "Oceanhill II",
@@ -1283,24 +1304,6 @@
    "image_exterior": true,
    "image_w": 682,
    "image_lowres": false
-  },
-  {
-   "agent": "Tax Solute Consulting",
-   "agent_page": "https://sites.google.com/affordablelivingnyc.com/hpd/home",
-   "title": "",
-   "address": "50 Clarkson Ave.",
-   "borough": "Brooklyn",
-   "zip": null,
-   "money_kind": "rent",
-   "money_low": 2418,
-   "money_high": 2418,
-   "income_1p_max": 154440,
-   "units": null,
-   "beds": null,
-   "href": "https://sites.google.com/affordablelivingnyc.com/hpd/home#h.wq0o819nwj5m",
-   "href_kind": "listing",
-   "image": null,
-   "image_exterior": false
   },
   {
    "agent": "Taxace NY LLC",

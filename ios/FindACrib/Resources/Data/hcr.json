@@ -1,7 +1,7 @@
 {
-"updated": 1792033503,
-"updated_iso": "2026-10-15T03:05:03+00:00",
-"count": 53,
+"updated": 1792065902,
+"updated_iso": "2026-10-15T12:05:02+00:00",
+"count": 51,
 "listings": [
 {
 "id": "a0Ycs000028W6CjEAK",
@@ -30,66 +30,6 @@
 "bbl": null,
 "lat": 40.716831,
 "lng": -74.001432
-}
-]
-},
-{
-"id": "a0Ycs00002GAArtEAH",
-"name": "44th Drive",
-"kind": "Waitlist",
-"status": "Open",
-"ptype": "Rental",
-"boro": "Q",
-"county": "Queens",
-"min_income": 32246,
-"max_income": 54280,
-"due": "10/14/2026",
-"fee": null,
-"phone": "7183874448",
-"url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs00002GAArtEAH/detail",
-"info": "https://www.edgre.com/creative-agency/existing-developments/rental-propertise/44-72-11th-street-long-island-city-ny/",
-"desc": "This property is accepting applications for current and future vacancies. There is currently one studio unit available. Long Island City’s newest luxury rental, 44-72 Eleventh St, places you right in the center of one of NYC’s most exciting and dynamic neighborhoods. Located less than 2 blocks from the 7, G, E & M trains at Court Square, 44-72 Eleventh makes commuting to the Manhattan, Brooklyn or",
-"image": "https://nyshcr.my.site.com/housing/file-asset/069cs00002RunqOAAR?oid=00D8y0000008f2FEAQ",
-"senior": false,
-"accessible": false,
-"approx": true,
-"buildings": [
-{
-"street": "Reside New York 349 Keap Street Brooklyn, NY, 11211",
-"zip": null,
-"bbl": null,
-"lat": 40.709251,
-"lng": -73.954773
-}
-]
-},
-{
-"id": "a0Ycs00002G8JOLEA3",
-"name": "44th Drive",
-"kind": "Waitlist",
-"status": "Open",
-"ptype": "Rental",
-"boro": "Q",
-"county": "Queens",
-"min_income": 31755,
-"max_income": 54280,
-"due": "10/14/2026",
-"fee": null,
-"phone": "7183874448",
-"url": "https://housingsearch.hcr.ny.gov/housing/s/waitlist/a0Ycs00002G8JOLEA3/detail",
-"info": "https://www.edgre.com/creative-agency/existing-developments/rental-propertise/44-72-11th-street-long-island-city-ny/",
-"desc": "44Th Drive is accepting applications for current and future vacancies. There is currently one studio apartment available. Long Island City’s newest luxury rental, 44-72 Eleventh St, places you right in the center of one of NYC’s most exciting and dynamic neighborhoods. Located less than 2 blocks from the 7, G, E & M trains at Court Square, 44-72 Eleventh makes commuting to the Manhattan, Brooklyn ",
-"image": "https://nyshcr.my.site.com/housing/file-asset/069cs00002RunqOAAR?oid=00D8y0000008f2FEAQ",
-"senior": false,
-"accessible": false,
-"approx": true,
-"buildings": [
-{
-"street": "349 Keap Street, Brooklyn, NY, 11211",
-"zip": null,
-"bbl": null,
-"lat": 40.709251,
-"lng": -73.954773
 }
 ]
 },

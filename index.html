@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <!-- Safari's Smart App Banner: the App Store banner at the top on iPhone (owner, 2026-10-05: "mobile web should have this announcement like marracat does"). -->
 <meta name="apple-itunes-app" content="app-id=6807549249" />
+<!-- The page is a full-screen map, so the window itself should never sit
+     scrolled. Safari restored the old scroll on reload, which tucked the Smart
+     App Banner under the status bar (owner, 2026-10-14: "i refreshed the
+     screen and now i cant see the download the app ... banner"). Start every
+     load, and every return from the back/forward cache, at the top. -->
+<script>(function(){try{history.scrollRestoration='manual'}catch(e){}function top(){var a=document.activeElement;if((window.scrollY||0)>0&&!(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)))window.scrollTo(0,0)}addEventListener('load',top);addEventListener('pageshow',top)})();</script>
   <script>if(/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1))document.documentElement.classList.add("ios")</script>
 <title>Find A Crib — Rent-Stabilized NYC: Manhattan, Bronx, Brooklyn, Queens + Staten Island</title>
 <meta name="application-name" content="Find A Crib" />
@@ -243,6 +249,10 @@
      24px whenever one is showing (min() is 0 with no banner). */
   :root { --ad-clear: calc(var(--ad-h, 0px) + min(var(--ad-h, 0px), 24px));
           --avail-h: calc(100vh - var(--ad-clear)); }
+  /* The visible height on iPhone (Safari's toolbars and the Smart App Banner
+     come off it); 100vh is the tallest the page can get, so a centred sheet
+     ran under both ends (2026-10-14). */
+  @supports (height: 100dvh) { :root { --avail-h: calc(100dvh - var(--ad-clear)); } }
   html, body { margin: 0; height: 100%; font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: var(--ink); background: var(--surface); }
   a { color: var(--blue); text-decoration: none; }
 
@@ -602,7 +612,11 @@
     .paywall-cta { bottom: -22px; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 12px;
       box-shadow: 0 -10px 16px -12px rgba(0,0,0,.25); }
     .paywall-cta .paywall-price { margin: 0; }
-    .paywall-cta .auth-error, .paywall-cta .paywall-refer { grid-column: 1 / -1; }
+    .paywall-cta .auth-error, .paywall-cta .paywall-refer, .paywall-cta #paywall-subscribe { grid-column: 1 / -1; }
+    /* The first-month line sits beside the price, small, and the button gets
+       the full width below: the line used to take the second column, so the
+       button was squeezed to half and wrapped (owner, 2026-10-14). */
+    .paywall-cta .paywall-trial { margin: 0; font-size: 13.5px; line-height: 1.3; }
     .paywall-cta .paywall-refer { margin-top: 0; padding: 12px; font-size: 15px; }
     .auth-card.paywall-card { padding: 30px 20px 22px; border-radius: 22px; }
     .paywall-card h2 { font-size: 30px; padding-right: 44px; }
@@ -1841,14 +1855,8 @@
     <h2 id="auth-title">Sign in</h2>
     <p class="auth-sub" id="auth-sub">Save buildings to your account so they're on every device.</p>
     <div id="auth-promise" class="auth-promise" hidden></div>
-    <form id="auth-form" autocomplete="on">
-      <input id="auth-email" type="email" placeholder="Email" autocomplete="email" required>
-      <input id="auth-pass" type="password" placeholder="Password (8+ characters)" autocomplete="current-password" minlength="8" required>
-      <input id="auth-pass2" type="password" placeholder="Confirm password" autocomplete="new-password" minlength="8" hidden>
-      <div id="auth-error" class="auth-error" hidden></div>
-      <button id="auth-submit" type="submit" class="auth-submit">Sign in</button>
-    </form>
-    <div class="auth-or"><span>or</span></div>
+    <!-- Google first, then email, like the app's sign-in (owner, 2026-10-14: the
+         alerts sign-up on a phone led with three fields and pushed Google under the ads). -->
     <button id="auth-google" type="button" class="auth-google">
       <svg viewBox="0 0 18 18" aria-hidden="true">
         <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/>
@@ -1858,6 +1866,14 @@
       </svg>
       Continue with Google
     </button>
+    <div class="auth-or"><span>or use email</span></div>
+    <form id="auth-form" autocomplete="on">
+      <input id="auth-email" type="email" placeholder="Email" autocomplete="email" required>
+      <input id="auth-pass" type="password" placeholder="Password (8+ characters)" autocomplete="current-password" minlength="8" required>
+      <input id="auth-pass2" type="password" placeholder="Confirm password" autocomplete="new-password" minlength="8" hidden>
+      <div id="auth-error" class="auth-error" hidden></div>
+      <button id="auth-submit" type="submit" class="auth-submit">Sign in</button>
+    </form>
     <div class="auth-toggle"><span id="auth-toggle-text">No account?</span> <a id="auth-switch" href="#">Create one</a>
       <span id="auth-forgot-wrap"> · <a id="auth-forgot" href="#">Forgot password?</a></span></div>
     <div class="auth-legal">By continuing you agree to our <a href="/terms.html" target="_blank" rel="noopener">Terms</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</div>
@@ -8440,9 +8456,13 @@ function favActive() {
     renderAuthPromise(wall);
     setAuthMode('signin');
     const sub = document.getElementById('auth-sub');
-    if (sub) sub.textContent = reminder || AUTH_SUB_DEFAULT;
+    // The promise box already says what the account gets; the sentence
+    // repeated it and pushed the form down (2026-10-14).
+    if (sub) { sub.textContent = reminder || AUTH_SUB_DEFAULT; sub.hidden = !!AUTH_PROMISES[wall]; }
     authModal.hidden = false;
-    setTimeout(() => authEmail.focus(), 50);
+    // Desktop only: on a phone the focus scrolled the page under Safari's
+    // Smart App Banner and armed the keyboard before anyone chose email.
+    if (!matchMedia('(pointer: coarse)').matches) setTimeout(() => authEmail.focus(), 50);
   }
   function closeAuthModal() { authModal.hidden = true; }
 

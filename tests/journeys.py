@@ -451,6 +451,10 @@ class Runner:
         self.ok(20 <= n <= 400, f'city view should show a readable number of pills, got {n}', j)
         self.ok('of' in page.evaluate(LABEL), 'count pill missing', j)
         self.ok(page.evaluate("document.getElementById('search-helper').hidden"), 'helper card shown with no search', j)
+        # Every load starts at the top, so Safari's Smart App Banner isn't
+        # tucked under the status bar by a restored scroll (owner, 2026-10-14).
+        top = page.evaluate("({restore: history.scrollRestoration, y: Math.round(scrollY)})")
+        self.ok(top['restore'] == 'manual' and top['y'] == 0, f'the page should load at the top with no scroll restoration: {top}', j)
         # The boot payload's fetch() is started from <head>, so it goes out once
         # — the boot script awaits that same response — and it starts before the
         # blocking scripts rather than ~1 s into the page. Pinned at 1 request
@@ -508,6 +512,15 @@ class Runner:
             page.keyboard.press('Escape'); time.sleep(0.2)
             page.evaluate("document.getElementById('pill-alerts-m').click()"); time.sleep(0.5)
             self.ok(self.alerts_signup_open(page), 'Alerts chip should open the sign-up modal, not the paywall, when signed out', j)
+            # On a phone it leads with Google, drops the sentence the promise
+            # box repeats, fits the screen, and doesn't grab focus (owner,
+            # 2026-10-14: "this is terrible").
+            lay = page.evaluate("""(()=>{const c=document.querySelector('#auth-modal .auth-card').getBoundingClientRect();
+              const g=document.getElementById('auth-google').getBoundingClientRect(), e=document.getElementById('auth-email').getBoundingClientRect();
+              return {googleFirst:g.top<e.top, subHidden:document.getElementById('auth-sub').hidden, top:Math.round(c.top), bottom:Math.round(c.bottom),
+                H:innerHeight, focused:document.activeElement===document.getElementById('auth-email')}})()""")
+            self.ok(lay['googleFirst'] and lay['subHidden'] and not lay['focused'] and lay['top'] >= 0 and lay['bottom'] <= lay['H'],
+                    f'the alerts sign-up should lead with Google, fit the screen and not focus Email: {lay}', j)
             page.evaluate("document.querySelector('#auth-modal [data-auth=\"close\"]').click()"); time.sleep(0.2)
 
     def alerts_signup_open(self, page):
@@ -1885,6 +1898,14 @@ class Runner:
               btn: document.getElementById('paywall-subscribe').textContent}))()""")
             self.ok('first month is on us' in tr['trial'].lower() and tr['amt'] == '$4.99' and 'month on us' in tr['btn'].lower(),
                     f'the paywall should offer the first month on us under $4.99: {tr}', j)
+            # On a phone the button is full width and on one line (owner,
+            # 2026-10-14: it was squeezed to half and wrapped).
+            if device == 'phone':
+                b = page.evaluate("""(()=>{const b=document.getElementById('paywall-subscribe').getBoundingClientRect(),
+                  c=document.querySelector('#paywall-modal .paywall-cta').getBoundingClientRect(),
+                  lh=parseFloat(getComputedStyle(document.getElementById('paywall-subscribe')).lineHeight)||22;
+                  return {w:Math.round(b.width), cw:Math.round(c.width), h:Math.round(b.height), lh}})()""")
+                self.ok(b['w'] >= b['cw'] - 16 and b['h'] < 2 * b['lh'] + 40, f'the subscribe button should span the price area on one line: {b}', j)
             # The 8 AM digest's button lands on /?plus=realtime: the paywall
             # opens leading with real-time alerts (2026-10-06).
             page.evaluate("document.querySelector('[data-paywall=\"close\"]')?.click()"); time.sleep(0.3)

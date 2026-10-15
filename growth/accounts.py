@@ -8,7 +8,7 @@ retention is 6%. This is the smallest sequence that plausibly changes that.
 
 Four steps, each gated on behaviour so most accounts get one or two:
 
-  welcome   day 0-1   the account exists and here is what saving does
+  welcome   day 0-7   the account exists and here is what saving does
   activate  day 3     skipped if they have already saved a building
   lapsed    day 21    skipped if they have visited in the last 14 days
   saved     day 5+    only for an ACTIVE account that has saved a building
@@ -37,6 +37,14 @@ What keeps it honest rather than merely promotional:
   * it goes only to accounts that have been on the site in the last 14 days,
     which also makes it mutually exclusive with `lapsed` — nobody can be due
     both, so the sequence still cannot burst.
+
+`welcome` ran day 0-1 until 2026-10-15, when it became day 0-7 with a rail that
+drops an account which has had nothing and is past that window. The old gate
+was the only closed window in a sequence of floors, and a single nightly cron
+is the only thing that drives it, so every night the job missed cost that
+night's signups their welcome permanently and then offered them `activate` as a
+first contact instead. See WELCOME_GRACE_DAYS and aged_out() for the full
+argument and the two outages it has already cost.
 
 CUTOVER is the important safety rail. The owner chose "new signups only", and
 gating just the welcome on age would still have fired `activate` and `lapsed`
@@ -68,6 +76,37 @@ STEPS = ("welcome", "activate", "lapsed", "saved")
 MAX_PER_RUN = 50
 LAPSED_QUIET_DAYS = 14
 SAVED_MIN_DAYS = 5          # long enough that `welcome` is not still in the inbox
+
+# How long after signup the welcome can still be sent.
+#
+# This was `days <= 1` from activation until 2026-10-15 — a CLOSED WINDOW where
+# every other step in this sequence uses a FLOOR (>= 3, >= 21, >= 5). The
+# sequence runs from one nightly cron line and nothing else, so any night the
+# job did not run carried that night's signups past the window permanently:
+# they never received a welcome, no later run could send it, and NOTHING
+# RECORDED THAT THEY HAD NOT — the ledger counts sends, so a missed account and
+# an account that was never due looked identical. It has already happened
+# twice. The dead-cron nights of 2026-09-25..27 read sent_welcome 5, 2, then 11
+# against 4-15 on ordinary days; and #PAUSED-20261012 has now held three nights
+# at a trailing ~9 welcomes/day, so roughly 25-30 accounts created since
+# 2026-10-13 would have aged out silently on the first resumed night.
+#
+# Seven days, not unbounded. The failure this replaces is silence, but the
+# failure on the other side is worse: a "welcome" reaching somebody who signed
+# up a month ago, moved on, and does not remember us is the backfill blast
+# CUTOVER exists to prevent. Seven covers a realistic outage and nothing more.
+# Current practice argues both halves of that — the recurring advice is to fire
+# an onboarding step on the EVENT ("this account has never been welcomed")
+# rather than on a clock, while signup-day interest is also the strongest it
+# will ever be and fades fast. A bounded catch-up is the shape that respects
+# both.
+#
+# Volume, checked rather than assumed: at ~9 welcomes/day a seven-day backlog
+# is ~63 accounts against MAX_PER_RUN=50, inside the 34/day this sequence has
+# already sent on 2026-09-28 and 2026-10-07, and the cap holds the remainder to
+# the next run instead of bursting. Raising this constant raises that backlog
+# linearly — read this block before changing it.
+WELCOME_GRACE_DAYS = 7
 
 FOOTER_NOTE = "You're getting this because you made a free Find A Crib account."
 
@@ -439,6 +478,41 @@ BUILDERS = {"welcome": welcome, "activate": activate, "lapsed": lapsed, "saved":
 
 # --------------------------------------------------------------------- due
 
+def aged_out(row):
+    """True for an account that has had NOTHING and can no longer be welcomed.
+
+    Such an account leaves the sequence entirely — the same shape as CUTOVER,
+    and for the same reason. The alternative is worse than silence: `activate`
+    is written for somebody who has already read the welcome, and `lapsed` and
+    the $9 `saved` ask are both nags. Any of the three arriving as the FIRST
+    thing Find A Crib ever sends reads as spam, which is exactly what this
+    module's docstring names as "a backfill blast arriving by the back door".
+    Before WELCOME_GRACE_DAYS existed, that was the live behaviour for every
+    account the job missed: welcome expired at day 1, `activate` fired at day 3.
+
+    Deliberately scoped to accounts with nothing sent AT ALL. An account that
+    was already contacted stays in the sequence even if it holds no `welcome`
+    (which the old closed window could produce): it has had contact, so no
+    later step can be its first, and excluding it would silently drop an
+    engaged saver's ask for no safety gain.
+    """
+    return not set(row.get("sent_steps") or []) and (row.get("days_old") or 0) > WELCOME_GRACE_DAYS
+
+
+def _record_aged_out(missed):
+    """Write the aged-out count, from every path run() can return on.
+
+    A helper rather than one call at the end because the "nothing due" path
+    returns early, and that is precisely the path a long outage produces: after
+    a pause long enough to age everyone out, `pending` is empty and the old
+    early return wrote only "nothing due" — the run that had the most to report
+    was the one that reported least. Recorded even when zero, the same
+    convention as the sent_* series above and for the same reason: a day with
+    no misses and a day whose instrument is broken must not read identically.
+    """
+    ledger.record_result(ledger.today(), "account_lifecycle", "welcome_aged_out", missed)
+
+
 def _step_for(row, now):
     """Which step, if any, this account is due. One per run, never a burst."""
     sent = set(row.get("sent_steps") or [])
@@ -448,8 +522,12 @@ def _step_for(row, now):
 
     quiet = last_seen is None or (now - last_seen).days >= LAPSED_QUIET_DAYS
 
-    if "welcome" not in sent and days <= 1:
+    if "welcome" not in sent and days <= WELCOME_GRACE_DAYS:
         return "welcome"
+    # Checked before any later step, because its whole purpose is to stop one
+    # of them becoming a first contact.
+    if aged_out(row):
+        return None
     if "activate" not in sent and days >= 3 and saves == 0:
         return "activate"
     if "lapsed" not in sent and days >= 21 and quiet:
@@ -457,6 +535,16 @@ def _step_for(row, now):
     # `saved` requires the opposite of `lapsed`'s quiet test, so no account can
     # ever be due both, and the ordering between them cannot matter. An account
     # with no last_seen at all reads as quiet and is never asked for money.
+    #
+    # SAVED_MIN_DAYS' promise ("long enough that `welcome` is not still in the
+    # inbox") is weaker under a catch-up welcome and that is stated rather than
+    # papered over: an account welcomed late, on day 5 or 6, can reach the paid
+    # ask the following day. It cannot be tightened from here — `sent_steps` is
+    # a set and carries no send dates, so this function cannot tell a day-0
+    # welcome from a day-6 one. What still holds is that the ask can never
+    # PRECEDE the welcome (one step per run, and `welcome` is tested first) and
+    # can never be a first contact (aged_out above), so the floor the ordering
+    # actually protects is intact; only the gap can narrow to a day.
     if "saved" not in sent and days >= SAVED_MIN_DAYS and saves >= 1 and not quiet:
         return "saved"
     return None
@@ -470,15 +558,29 @@ def due(now=None):
         pass                    # a missing prefs row just means nobody is due yet
     rows = _rpc("lifecycle_accounts_due") or []
     out = []
+    # Accounts the grace window could not save: in the sequence, never
+    # contacted, now too old to welcome. Counted and returned so run() can
+    # record it, because the absence of this number is why a closed welcome
+    # window survived two months and two outages unnoticed — every series this
+    # job writes counts SENDS, and a send that never happened leaves no trace
+    # in one. A non-zero reading means the job did not run when it should have,
+    # and names the cost in accounts rather than in days.
+    missed = 0
     for r in rows:
         if str(r.get("user_id")) == OWNER_USER_ID:
             continue
         created = _parse_ts(r.get("created_at"))
         if created is None or created.date() < CUTOVER:
             continue            # pre-existing account: never enters the sequence
+        if aged_out(r):
+            missed += 1
+            continue            # and no later step may reach them — see aged_out
         step = _step_for(r, now)
         if step:
             out.append((r, step))
+        # NOTE: the cap breaks out of the loop, so `missed` is a floor once it
+        # is hit — the rows after the break are never examined. It is reported
+        # as "at least" for that reason.
         if len(out) >= MAX_PER_RUN:
             break
 
@@ -505,23 +607,33 @@ def due(now=None):
                     continue
                 kept.append((r, s))
             out = kept
-    return out
+    return out, missed
 
 
 def run(dry_run=False, now=None, voucher_buildings=None, buildings_by_bbl=None):
     try:
-        pending = due(now=now)
+        pending, missed = due(now=now)
     except Exception as e:
         detail = f"could not read accounts: {e}"
         ledger.set_state("accounts_last", {"date": ledger.today(), "ok": False, "detail": detail})
         print(f"  {detail}")
         return {"ok": False, "detail": detail}
 
+    if missed:
+        # Said out loud on the run that discovers it, not left for a reviewer to
+        # notice in a series: these accounts are past saving and the only thing
+        # that produces them is the job not running.
+        print(f"  at least {missed} account(s) signed up, were never contacted, and are now "
+              f"older than WELCOME_GRACE_DAYS={WELCOME_GRACE_DAYS} — they get nothing, ever. "
+              f"This count is only ever non-zero because the job did not run.")
+
     if not pending:
         ledger.set_state("accounts_last", {"date": ledger.today(), "ok": True, "sent": 0,
+                                           "welcome_aged_out": missed,
                                            "detail": "nothing due"})
         print("  nothing due")
-        return {"ok": True, "sent": 0, "detail": "nothing due"}
+        _record_aged_out(missed)
+        return {"ok": True, "sent": 0, "welcome_aged_out": missed, "detail": "nothing due"}
 
     ctx = {"voucher_buildings": voucher_buildings,
            "buildings": buildings_by_bbl or {}}
@@ -574,7 +686,7 @@ def run(dry_run=False, now=None, voucher_buildings=None, buildings_by_bbl=None):
     detail = f"{len(sent)} sent {by_step}" + (f", {len(failed)} failed" if failed else "")
     ledger.set_state("accounts_last", {"date": ledger.today(), "ok": not failed,
                                        "sent": len(sent), "by_step": by_step,
-                                       "paid_asks": asks,
+                                       "paid_asks": asks, "welcome_aged_out": missed,
                                        "failed": failed[:5], "detail": detail})
     ledger.record_result(ledger.today(), "account_lifecycle", "emails_sent", len(sent))
     # Per-step series, so a later review can ask "how many times was the paid
@@ -589,5 +701,6 @@ def run(dry_run=False, now=None, voucher_buildings=None, buildings_by_bbl=None):
     # nobody was due and a step whose paid branch never fires look identical
     # otherwise, and those are opposite findings.
     ledger.record_result(ledger.today(), "account_lifecycle", "sent_saved_paid_ask", asks)
+    _record_aged_out(missed)
     return {"ok": not failed, "sent": len(sent), "by_step": by_step, "paid_asks": asks,
-            "failed": failed, "detail": detail}
+            "welcome_aged_out": missed, "failed": failed, "detail": detail}

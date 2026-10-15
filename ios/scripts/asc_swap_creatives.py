@@ -114,6 +114,11 @@ def submit(prefix):
     log("submission", sub["id"], done["attributes"].get("state"))
 
 
+def live_version():
+    vs = call("GET", f"/v1/apps/{APP}/appStoreVersions?filter[appStoreState]=READY_FOR_SALE&filter[platform]=IOS")["data"]
+    return vs[0]["attributes"]["versionString"] if vs else None
+
+
 def parents():
     """(label, relationship, type, id) for the live version's and each approved CPP's localizations."""
     vs = call("GET", f"/v1/apps/{APP}/appStoreVersions?filter[appStoreState]=READY_FOR_SALE&filter[platform]=IOS")["data"]
@@ -189,7 +194,10 @@ def main():
     ap.add_argument("--prefix", required=True)
     ap.add_argument("--yes", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
-    ap.add_argument("--wait", action="store_true", help="swap: poll every 15 min for up to 4 days")
+    ap.add_argument("--wait", action="store_true", help="swap: poll every 15 min for up to --days days")
+    ap.add_argument("--days", type=float, default=4)
+    ap.add_argument("--until-version", help="swap --wait: keep going until this version is live and swapped "
+                    "(a version created before the swap still carries the old placements)")
     a = ap.parse_args()
     if a.cmd == "upload-video":
         return upload_video(a.file, f"{a.prefix}/{VIDEO_REF}")
@@ -197,7 +205,7 @@ def main():
         sys.exit(f"{a.cmd} is outward-facing; pass --yes")
     if a.cmd == "submit":
         return submit(a.prefix)
-    deadline = time.time() + 4 * 86400
+    deadline = time.time() + a.days * 86400
     while True:
         try:
             rc = swap(a.prefix, a.dry_run)
@@ -206,6 +214,16 @@ def main():
                 raise
             log("poll failed:", e)
             rc = None
+        if rc == 0 and a.wait and a.until_version and not a.dry_run:
+            try:
+                live = live_version()
+            except SystemExit as e:
+                live = None
+                log("poll failed:", e)
+            if live != a.until_version and time.time() <= deadline:
+                log(f"swapped on v{live}; waiting for v{a.until_version} to go live")
+                time.sleep(900)
+                continue
         if rc is not None or not a.wait or time.time() > deadline:
             return rc if rc is not None else 2
         time.sleep(900)

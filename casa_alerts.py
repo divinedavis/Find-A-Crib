@@ -173,9 +173,12 @@ def email_parts(emailkit, watch, calls):
     address = watch.get("address") or "your building"
     rows = []
     for c in calls[-MAX_PER_ALERT:][::-1]:
-        day = (c.get("created_date") or "")[:10]
-        rows.append({"type": "card", "title": label(c),
-                     "body": f"{day} · {(c.get('status') or '').title()}" + (" · pests" if is_pest(c) else "")})
+        try:
+            day = datetime.date.fromisoformat((c.get("created_date") or "")[:10]).strftime("%b %-d, %Y")
+        except ValueError:
+            day = (c.get("created_date") or "")[:10]
+        rows.append({"type": "card", "heading": label(c),
+                     "meta": f"{day} · {(c.get('status') or '').title()}" + (" · pests" if is_pest(c) else "")})
     n = len(calls)
     link = f"{SITE}/casa/?bbl={watch['bbl']}&src=casa_alert"
     html, text = emailkit.render(

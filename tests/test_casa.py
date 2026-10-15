@@ -77,6 +77,16 @@ class CasaAlertText(unittest.TestCase):
         self.assertEqual(title, "New NYPD reports near 350 W 42nd Street")
         self.assertEqual(body, "Apr 1 – Jun 30, within half a mile: 2 shootings, 1 robbery")
 
+    def test_email_renders(self):
+        # emailkit cards need "heading" (a dry run on the droplet caught "title").
+        from growth import emailkit
+        w = {"bbl": "1017480035", "address": "1919 Madison Avenue"}
+        calls = [{"complaint_type": "Rodent", "descriptor": "Rat Sighting", "created_date": "2026-10-12T14:00:33.000", "status": "In Progress"}]
+        subject, html, text = self.c.email_parts(emailkit, w, calls)
+        self.assertEqual(subject, "New 311 call at 1919 Madison Avenue")
+        self.assertIn("Rodent — Rat Sighting\n  Oct 12, 2026 · In Progress · pests", text)
+        self.assertIn("/casa/?bbl=1017480035", html)
+
     def test_distance(self):
         self.assertAlmostEqual(self.c.metres(40.7585, -73.9925, 40.7585 + 800 / 111_000, -73.9925), 800, delta=10)
 

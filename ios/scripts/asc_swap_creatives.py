@@ -145,7 +145,7 @@ def place(ptype, kind, asset_id, rel, typ, pid):
 
 
 def swap(prefix, dry):
-    """None while waiting on review, 0 when done, 1 if Apple rejected something."""
+    """None while waiting (on review or a placement-locking A/B test), 0 when done, 1 if Apple rejected something."""
     lib = library()
     mine = {r: v for r, v in lib.items() if r.startswith(prefix + "/")}
     states = {r: v[2] for r, v in mine.items()}
@@ -156,6 +156,7 @@ def swap(prefix, dry):
         log("waiting:", sorted(set(states.values())))
         return None
     by_id = {v[1]: r for r, v in lib.items()}
+    blocked = 0
     for label, rel, typ, pid in parents():
         for p in call("GET", f"/v1/{typ}/{pid}/placements?limit=200&include=image,video")["data"]:
             ptype = p["attributes"]["placementType"]
@@ -176,7 +177,16 @@ def swap(prefix, dry):
             log("would swap" if dry else "swap", label, ptype, old_ref, "->", new_ref)
             if dry:
                 continue
-            call("DELETE", f"/v1/appAssetLibraryPlacements/{p['id']}")
+            try:
+                call("DELETE", f"/v1/appAssetLibraryPlacements/{p['id']}")
+            except SystemExit as e:
+                # A running product page optimization test locks the version's
+                # placements (409 EXPERIMENT_IN_PROGRESS); do the rest, retry later.
+                if "EXPERIMENT_IN_PROGRESS" not in str(e):
+                    raise
+                log("  locked by a running A/B test, will retry:", label, ptype)
+                blocked += 1
+                continue
             try:
                 n = place(ptype, kind, new_id, rel, typ, pid)
                 log("  placed", n["id"], n["attributes"].get("state"))
@@ -184,7 +194,7 @@ def swap(prefix, dry):
                 log("  create failed, restoring", old_ref)
                 place(ptype, old_kind, old_id, rel, typ, pid)
                 raise
-    return 0
+    return None if blocked and not dry else 0
 
 
 def main():

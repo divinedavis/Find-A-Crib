@@ -75,6 +75,10 @@ struct BuildingDetailView: View {
 
                     similarRail
 
+                    // Cafés, then housing lawyers, sit just above About (owner,
+                    // 2026-10-14).
+                    nearbyRails
+
                     // About goes last (owner, 2026-09-19): the register status
                     // and borough line are reference, not what people came for.
                     section("About") {
@@ -95,14 +99,7 @@ struct BuildingDetailView: View {
                     }
                     }
 
-                    // Legal services and cafés near the building, live from
-                    // Apple Maps (owner, 2026-10-14). We vet neither row.
-                    NearbyPlacesRail(title: "Housing legal help nearby", icon: "building.columns",
-                                     note: "Tenant and housing legal help near this building, from Apple Maps. We haven't checked them and don't know whether they're qualified or licensed — look them up before you rely on anyone. This isn't legal advice." + (store.city.isNYC ? " Free help: call 311 and ask for the Tenant Helpline." : ""),
-                                     places: legalNearby, testID: "nearby-legal")
-                    NearbyPlacesRail(title: "Cafés nearby", icon: "cup.and.saucer",
-                                     note: "Cafés within about half a mile, from Apple Maps.",
-                                     places: cafesNearby, testID: "nearby-cafes")
+                    if store.isSyntheticHCR(b) { nearbyRails }
 
                     // What the violation and pest numbers mean, at the bottom of
                     // every New York building (owner, 2026-10-12) instead of
@@ -189,7 +186,11 @@ struct BuildingDetailView: View {
         .task(id: b.bbl) { similar = SearchEngine.similar(to: b, store: store) }
         .task(id: b.bbl) {
             legalNearby = []; cafesNearby = []
-            async let l = NearbyPlaces.legal(near: b.coordinate)
+            // New York uses the researched firm list; Apple Maps can't say
+            // what a firm practises, so its legal search is only the fallback
+            // for the other cities.
+            let nyc = store.city.isNYC
+            async let l = nyc ? [] : NearbyPlaces.legal(near: b.coordinate)
             async let c = NearbyPlaces.cafes(near: b.coordinate)
             (legalNearby, cafesNearby) = await (l, c)
         }
@@ -817,6 +818,22 @@ struct BuildingDetailView: View {
     }
     private func nrow(_ k: String, _ n: Int) -> some View {
         HStack { Text(k).font(.se(17)).foregroundStyle(SE.ink2); Spacer(); Text("\(n)").font(.se(17, .bold)) }
+    }
+
+    /// Cafés near the building, then housing lawyers: the researched firms in
+    /// its borough in New York, Apple Maps' legal search elsewhere. Live
+    /// Maps results are never stored (Apple's terms).
+    @ViewBuilder private var nearbyRails: some View {
+        NearbyPlacesRail(title: "Cafés nearby", icon: "cup.and.saucer",
+                         note: "Cafés within about half a mile, from Apple Maps.",
+                         places: cafesNearby, testID: "nearby-cafes")
+        if store.city.isNYC {
+            HousingLawFirmsRail(borough: b.borough, firms: HousingLawFirm.inBorough(b.borough, near: b.coordinate))
+        } else {
+            NearbyPlacesRail(title: "Housing legal help nearby", icon: "building.columns",
+                             note: "Tenant and housing legal help near this building, from Apple Maps. We haven't checked them and don't know whether they're qualified or licensed — look them up before you rely on anyone. This isn't legal advice.",
+                             places: legalNearby, testID: "nearby-legal")
+        }
     }
 
     @ViewBuilder private var similarRail: some View {

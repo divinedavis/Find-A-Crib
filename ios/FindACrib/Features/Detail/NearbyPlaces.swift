@@ -107,3 +107,97 @@ struct NearbyPlacesRail: View {
         }
     }
 }
+
+/// Private firms that practise residential landlord-tenant law, by NYC
+/// borough (owner, 2026-10-14: "at least 3 law firms that specialize in home
+/// law in the borough that building is in"). Apple Maps can't say what a firm
+/// practises, so this is a researched list in Data/housing_law_firms.json:
+/// each firm's own site says it takes tenant / Housing Court cases, with the
+/// page that says so kept as `source`. Re-check it a few times a year.
+struct HousingLawFirm: Decodable, Identifiable, Hashable {
+    let name: String
+    let borough: String
+    let street: String
+    let phone: String?
+    let website: String
+    let handles: String
+    /// "tenant" (tenants only) or "both" (tenants and landlords).
+    let side: String
+    /// Where the office is. Few firms outside Manhattan both practise this and
+    /// have an office in their own borough (none in the Bronx, 2026-10-14), so
+    /// a borough's list also holds firms elsewhere in NYC that say they take
+    /// its Housing Court cases.
+    let officeBorough: String
+    let source: String
+    let lat: Double?
+    let lng: Double?
+    var id: String { name + "|" + street }
+    var sideLabel: String { side == "tenant" ? "Represents tenants only" : "Represents tenants and landlords" }
+
+    private enum CodingKeys: String, CodingKey {
+        case name, borough, street, phone, website, handles, side, source, lat, lng
+        case officeBorough = "office_borough"
+    }
+
+    private struct File: Decodable { let firms: [HousingLawFirm] }
+
+    static let all: [HousingLawFirm] = {
+        guard let url = Bundle.main.url(forResource: "housing_law_firms", withExtension: "json", subdirectory: "Data")
+                ?? Bundle.main.url(forResource: "housing_law_firms", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let file = try? JSONDecoder().decode(File.self, from: data) else { return [] }
+        return file.firms
+    }()
+
+    /// The borough's firms: those with an office there first, then nearest to
+    /// the building.
+    static func inBorough(_ borough: String, near c: CLLocationCoordinate2D) -> [HousingLawFirm] {
+        let here = CLLocation(latitude: c.latitude, longitude: c.longitude)
+        func d(_ f: HousingLawFirm) -> Double {
+            guard let lat = f.lat, let lng = f.lng else { return .greatestFiniteMagnitude }
+            return here.distance(from: CLLocation(latitude: lat, longitude: lng))
+        }
+        return all.filter { $0.borough == borough }.sorted {
+            ($0.officeBorough == borough ? 0 : 1, d($0)) < ($1.officeBorough == borough ? 0 : 1, d($1))
+        }
+    }
+}
+
+/// The firms row under "Cafés nearby": a card per firm that opens its site.
+struct HousingLawFirmsRail: View {
+    let borough: String
+    let firms: [HousingLawFirm]
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        if !firms.isEmpty {
+            VStack(alignment: .leading, spacing: 14) {
+                Text("Housing law firms for \(borough)").font(.se(30, .black)).padding(.horizontal, 16)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(firms) { f in
+                            Button {
+                                Analytics.shared.track("law_firm_open", ["borough": borough])
+                                if let u = URL(string: f.website) { openURL(u) }
+                            } label: {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Image(systemName: "building.columns").font(.system(size: 20, weight: .semibold)).foregroundStyle(SE.royal)
+                                    Text(f.name).font(.se(17, .bold)).foregroundStyle(SE.royal).lineLimit(2).multilineTextAlignment(.leading)
+                                    Text(f.handles).font(.se(14)).foregroundStyle(SE.ink2).lineLimit(2).multilineTextAlignment(.leading)
+                                    Text(f.sideLabel).font(.se(14, .semibold)).foregroundStyle(SE.ink2).lineLimit(1)
+                                    Text(f.officeBorough == borough ? f.street : "Office in \(f.officeBorough)")
+                                        .font(.se(14)).foregroundStyle(SE.ink3).lineLimit(1)
+                                }
+                                .padding(12).frame(width: 230, height: 182, alignment: .topLeading).seCard()
+                            }.buttonStyle(.plain).accessibilityIdentifier("law-firm-card")
+                        }
+                    }.padding(.horizontal, 16)
+                }
+                Text("Private firms whose own websites say they take tenant and Housing Court cases in \(borough)" + (firms.contains { $0.officeBorough != borough } ? "; some have their office elsewhere in the city" : "") + ". We don't endorse them and haven't checked their record, licence or fees, so look into anyone before you hire them. This isn't legal advice. Free help: call 311 and ask for the Tenant Helpline.")
+                    .font(.se(15)).foregroundStyle(SE.ink3).padding(.horizontal, 16)
+            }
+            .padding(.vertical, 16).background(Color.white).padding(.bottom, 10)
+            .accessibilityIdentifier("housing-law-firms")
+        }
+    }
+}

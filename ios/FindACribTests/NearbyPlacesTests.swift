@@ -27,3 +27,22 @@ struct NearbyPlacesTests {
         #expect(NearbyPlaces.distance(1609.34) == "1.0 mi")
     }
 }
+
+/// The researched firm list behind "Housing law firms in <borough>" (owner,
+/// 2026-10-14: at least three per borough).
+@Suite("Housing law firms by borough")
+struct HousingLawFirmTests {
+    @Test("at least three firms in every borough", arguments: Borough.all.map(\.name))
+    func threePerBorough(_ borough: String) {
+        #expect(HousingLawFirm.all.filter { $0.borough == borough }.count >= 3)
+    }
+
+    @Test func everyFirmHasASiteAndASource() {
+        #expect(!HousingLawFirm.all.isEmpty)
+        for f in HousingLawFirm.all {
+            #expect(f.website.hasPrefix("https://") || f.website.hasPrefix("http://"), "\(f.name)")
+            #expect(f.source.hasPrefix("http"), "\(f.name)")
+            #expect(Borough.all.contains { $0.name == f.borough }, "\(f.name): \(f.borough)")
+        }
+    }
+}

@@ -68,23 +68,29 @@ struct EmailSignInView: View {
                         TextField("Email", text: $email).font(.se(18)).textContentType(.emailAddress).keyboardType(.emailAddress)
                             .textInputAutocapitalization(.never).autocorrectionDisabled().focused($focus, equals: .email)
                             .padding(.horizontal, 12).accessibilityIdentifier("email-field")
+                            .submitLabel(.next).onSubmit { focus = .password }
                     }
                     SEFieldBox {
                         SecureField(creating ? "Password (8+ characters)" : "Password", text: $password).font(.se(18))
                             .textContentType(creating ? .newPassword : .password).focused($focus, equals: .password)
                             .padding(.horizontal, 12).accessibilityIdentifier("password-field")
+                            .submitLabel(creating ? .next : .go).onSubmit { if creating { focus = .confirm } else { Task { await submit() } } }
                     }
+                    .id(Field.password)
                     if creating {
                         SEFieldBox {
                             SecureField("Confirm password", text: $confirm).font(.se(18)).textContentType(.newPassword)
                                 .focused($focus, equals: .confirm).padding(.horizontal, 12)
+                                .submitLabel(.go).onSubmit { Task { await submit() } }
                         }
+                        .id(Field.confirm)
                     }
                     if let e = auth.error { Text(e).font(.se(14)).foregroundStyle(SE.bad) }
                     if let n = notice { Text(n).font(.se(15, .semibold)).foregroundStyle(SE.good) }
 
-                    SEPrimaryButton(title: auth.busy ? "…" : (creating ? "Create account" : "Sign in")) { Task { await submit() } }
-                        .disabled(auth.busy).accessibilityIdentifier("email-submit").id(Self.submitID)
+                    // While a field is focused, Sign in rides on the keyboard
+                    // (the bar below) instead of sitting here under it.
+                    if focus == nil { submitButton }
 
                     // Side by side when they fit; stacked at large text sizes
                     // or narrow widths rather than truncated off the edge.
@@ -103,14 +109,26 @@ struct EmailSignInView: View {
                 .padding(16)
             }
             .scrollDismissesKeyboard(.interactively)
-            // Tapping Email used to leave Password under the keyboard (owner,
-            // 2026-10-11). On focus, scroll so the fields and Sign in sit just
-            // above it; the delay lets the keyboard finish rising first.
+            // Sign in stays in sight whenever Email or Password is focused
+            // (owner, 2026-10-14): it moves into a bar on top of the keyboard.
+            // The 10/11 fix scrolled Sign in to the bottom of the scroll view,
+            // but in a sheet the keyboard lifted the sheet instead and the
+            // button still landed under the keys.
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if focus != nil {
+                    submitButton.padding(.horizontal, 16).padding(.vertical, 10)
+                        .background(Color.white.shadow(.drop(color: .black.opacity(0.08), radius: 6, y: -2)))
+                }
+            }
+            // And the field after the focused one comes into view: tapping
+            // Email showed Password under the keyboard. The delay lets the
+            // keyboard and the bar settle first.
             .onChange(of: focus) { _, f in
-                guard f != nil else { return }
+                guard let f else { return }
+                let next: Field = f == .email ? .password : (creating ? .confirm : .password)
                 Task { @MainActor in
                     try? await Task.sleep(for: .milliseconds(350))
-                    withAnimation(.easeOut(duration: 0.25)) { proxy.scrollTo(Self.submitID, anchor: .bottom) }
+                    withAnimation(.easeOut(duration: 0.25)) { proxy.scrollTo(next, anchor: .bottom) }
                 }
             }
             .background(Color.white)
@@ -125,7 +143,10 @@ struct EmailSignInView: View {
         }
     }
 
-    private static let submitID = "email-submit-anchor"
+    private var submitButton: some View {
+        SEPrimaryButton(title: auth.busy ? "…" : (creating ? "Create account" : "Sign in")) { Task { await submit() } }
+            .disabled(auth.busy).accessibilityIdentifier("email-submit")
+    }
 
     private var createToggle: some View {
         Button(creating ? "Have an account? Sign in" : "No account? Create one") { creating.toggle(); auth.error = nil; notice = nil }

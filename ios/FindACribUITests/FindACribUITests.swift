@@ -415,6 +415,27 @@ final class FindACribUITests: XCTestCase {
         XCTAssertLessThan(box.frame.minY, app.buttons["sign-in-apple"].frame.minY, "the preview sits above Apple/Google")
     }
 
+    /// Under "Cafés nearby", at least three housing law firms from the
+    /// building's own borough (owner, 2026-10-14); both rows sit above About.
+    func testDetailListsBoroughHousingLawFirmsAboveAbout() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "detail"]
+        app.launch()
+        XCTAssertTrue(app.buttons["detail-menu"].waitForExistence(timeout: 30))
+        let firms = app.descendants(matching: .any)["housing-law-firms"].firstMatch
+        for _ in 0..<20 where !firms.exists { app.swipeUp() }
+        XCTAssertTrue(firms.waitForExistence(timeout: 5), "a New York building lists housing law firms")
+        let title = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Housing law firms for '")).firstMatch
+        XCTAssertTrue(title.exists)
+        XCTAssertGreaterThanOrEqual(app.buttons.matching(identifier: "law-firm-card").count, 3, "at least three firms")
+        let about = app.staticTexts["About"]
+        for _ in 0..<6 where !about.exists { app.swipeUp() }
+        XCTAssertTrue(about.exists)
+        XCTAssertLessThan(title.frame.minY, about.frame.minY, "the firms come before About")
+        let cafes = app.descendants(matching: .any)["nearby-cafes"].firstMatch
+        if cafes.exists { XCTAssertLessThan(cafes.frame.minY, firms.frame.minY, "cafés come first, firms right under") }
+    }
+
     /// New York cards swap Share for the building's pests, rotating
     /// ("Bedbugs (2)" / "Rats (1)"); signed out, a tap previews the records
     /// sign-in (owner, 2026-10-13).
@@ -816,7 +837,12 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(cal.exists, "a lottery card offers Add deadline to Calendar")
         // Centred under Apply (owner, 2026-10-14).
         let text = cal.staticTexts["Add deadline to Calendar"].exists ? cal.staticTexts["Add deadline to Calendar"].frame : cal.frame
-        XCTAssertEqual(text.midX, app.windows.firstMatch.frame.midX, accuracy: 30, "the calendar button sits centred")
+        // Against its own card's full-width Apply button, not the screen: on
+        // iPad the cards sit in columns (ship 133 failed comparing 213 to 417).
+        let applies = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Apply on Housing Connect'")).allElementsBoundByIndex
+            .map(\.frame).filter { $0.maxY <= cal.frame.minY + 4 && $0.minX - 1 <= text.midX && text.midX <= $0.maxX + 1 }
+        let apply = try XCTUnwrap(applies.max { $0.maxY < $1.maxY }, "Apply sits above the calendar button")
+        XCTAssertEqual(text.midX, apply.midX, accuracy: 12, "the calendar button sits centred under Apply")
     }
 
     /// A paying member with alerts on (--plus-demo + --lotteries-demo): the
@@ -907,15 +933,25 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.buttons["paywall-sign-in"].waitForExistence(timeout: 10), "Get Plus opens the Plus page")
         app.buttons["paywall-close"].tap()
         XCTAssertTrue(getPlus.waitForExistence(timeout: 5), "closing Plus returns to sign-in")
-        // Tapping Email scrolls Password and Sign in up above the keyboard,
-        // so either is one tap away (owner, 2026-10-11).
+        // Tapping Email brings Password into view and Sign in rides on the
+        // keyboard; tapping Password keeps Sign in there (owner, 2026-10-11,
+        // again 2026-10-14 with the Passwords bar making the keyboard taller).
         app.textFields["email-field"].tap()
         let keyboard = app.keyboards.firstMatch
         XCTAssertTrue(keyboard.waitForExistence(timeout: 5))
         let password = app.secureTextFields["password-field"], submit = app.buttons["email-submit"]
-        let above = NSPredicate { _, _ in password.isHittable && submit.frame.maxY <= keyboard.frame.minY + 1 }
+        let above = NSPredicate { _, _ in password.isHittable && submit.isHittable && submit.frame.maxY <= keyboard.frame.minY + 1 }
         XCTAssertEqual(XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: above, object: nil)], timeout: 5), .completed,
                        "Password and Sign in sit above the keyboard")
+        password.tap()
+        XCTAssertEqual(XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: above, object: nil)], timeout: 5), .completed,
+                       "with Password focused, Sign in still sits above the keyboard")
+        XCTAssertEqual(app.buttons.matching(identifier: "email-submit").count, 1, "one Sign in button, not two")
+        // A tap outside any field closes the keyboard (owner, 2026-10-14).
+        app.staticTexts["or continue with email"].tap()
+        XCTAssertEqual(XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: keyboard)], timeout: 5),
+                       .completed, "tapping outside the fields closes the keyboard")
+        XCTAssertTrue(submit.waitForExistence(timeout: 3), "Sign in is back in the form")
         cancel.tap()
         XCTAssertTrue(signup.waitForExistence(timeout: 5))
         app.terminate()

@@ -152,7 +152,16 @@ struct CasaView: View {
             .accessibilityIdentifier("casa-offline")
         }
         if loading {
-            ProgressView().tint(SE.royal).frame(maxWidth: .infinity).padding(.top, 30)
+            // Only the 311 part waits; the alert and crime cards don't (owner,
+            // 2026-10-15: "this screen takes too long to load").
+            HStack(spacing: 10) {
+                ProgressView().tint(SE.royal)
+                Text("Loading 311 calls from NYC…").font(.se(15)).foregroundStyle(SE.ink3)
+            }
+            .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white)
+            .accessibilityIdentifier("casa-loading")
+            alertCard(p)
+            crimeCard
         } else if failed {
             note("Couldn't load 311 calls", "NYC's data service didn't answer. Check your connection and try again.")
             Button { Task { await open(p) } } label: {
@@ -373,23 +382,33 @@ struct CasaView: View {
         if let c = saved?.calls { calls = c } else { calls = [] }
         if let m = saved?.crime, !m.isEmpty { crime = m; crimeThrough = saved?.crimeThrough }
         loading = saved?.calls == nil
-        var fresh = Casa.Snapshot(bbl: p.bbl, savedAt: Date())
+        // The NYPD chart loads alongside the 311 calls and shows as soon as
+        // it's in, whichever finishes first. A reply for a building the person
+        // has since left is dropped.
+        async let crimeDone: Void = loadCrime(p)
         do {
             let c = try await Casa.calls(bbl: p.bbl, since: yearAgo, before: nil)
-            calls = c; fresh.calls = c
+            if place?.bbl == p.bbl { calls = c }
+            Casa.Saved.put(Casa.Snapshot(bbl: p.bbl, calls: c, savedAt: Date()))
         } catch {
-            if let s = saved, s.calls != nil { offlineSince = s.savedAt } else { failed = true; calls = [] }
+            if place?.bbl == p.bbl {
+                if let s = saved, s.calls != nil { offlineSince = s.savedAt } else { failed = true; calls = [] }
+            }
         }
-        loading = false
+        if place?.bbl == p.bbl { loading = false }
+        await crimeDone
+    }
+
+    private func loadCrime(_ p: Casa.Place) async {
         do {
             let r = try await Casa.crime(lat: p.lat, lng: p.lng)
+            Casa.Saved.put(Casa.Snapshot(bbl: p.bbl, crime: r.months, crimeThrough: r.through, savedAt: Date()))
+            guard place?.bbl == p.bbl else { return }
             crime = r.months; crimeThrough = r.through
-            fresh.crime = r.months; fresh.crimeThrough = r.through
         } catch {
             // NYPD data changes once a quarter, so a saved chart stays up quietly.
-            if crime.isEmpty { crimeFailed = true }
+            if place?.bbl == p.bbl, crime.isEmpty { crimeFailed = true }
         }
-        if fresh.calls != nil || fresh.crime != nil { Casa.Saved.put(fresh) }
     }
 
     private func loadOlder() async {

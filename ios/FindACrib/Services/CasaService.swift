@@ -131,6 +131,12 @@ enum Casa {
             .map { Tally(title: $0.key, count: $0.value) }
     }
 
+    static func startOfDay(_ d: Date) -> Date {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "America/New_York")!
+        return cal.startOfDay(for: d)
+    }
+
     /// Socrata's floating timestamp, New York time.
     static func soql(_ d: Date) -> String {
         let f = DateFormatter()
@@ -219,9 +225,13 @@ enum Casa {
     /// 311 calls on the lot, newest first. `before` nil = the past year;
     /// set, it is the older history (Plus).
     static func calls(bbl: String, since: Date?, before: Date?) async throws -> [Call] {
+        // Whole days: the same building asks the same question all day, so
+        // Socrata answers from its cache (~0.2 s) instead of running it again
+        // (3-14 s cold, measured 2026-10-15; the old to-the-second time made
+        // every lookup a new query).
         var w = ["bbl='\(bbl)'"]
-        if let since { w.append("created_date >= '\(soql(since))'") }
-        if let before { w.append("created_date < '\(soql(before))'") }
+        if let since { w.append("created_date >= '\(soql(startOfDay(since)))'") }
+        if let before { w.append("created_date < '\(soql(startOfDay(before)))'") }
         return try await get(calls311URL, [
             "$select": "unique_key,created_date,complaint_type,descriptor,status,agency",
             "$where": w.joined(separator: " AND "),

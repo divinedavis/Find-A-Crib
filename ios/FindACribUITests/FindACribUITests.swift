@@ -481,6 +481,12 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Profile"].waitForExistence(timeout: 20))
         for _ in 0..<4 { app.swipeUp() }
         XCTAssertFalse(app.buttons["profile-alerts-off"].exists, "nothing to turn off without alerts")
+        // Signed out, "Sign in to set up" is a link to the alerts sign-in (owner, 2026-10-15).
+        let signIn = app.buttons["profile-alerts-signin"]
+        for _ in 0..<4 where !signIn.isHittable { app.swipeDown() }
+        XCTAssertTrue(signIn.isHittable, "Alerts offers a sign-in link")
+        signIn.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["alerts-promise-box"].waitForExistence(timeout: 5), "it opens the alerts sign-in")
     }
 
     /// A building with no pests cited shows "Owner Phone"; signed out, a

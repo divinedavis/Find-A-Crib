@@ -161,7 +161,12 @@ struct ProfileView: View {
                                     .foregroundStyle(SE.royal)
                             }.buttonStyle(.plain).accessibilityIdentifier("profile-alerts")
                         } else {
-                            Text("Sign in to set up").font(.se(16)).foregroundStyle(SE.ink3)
+                            // A link like its neighbours, not grey text (owner, 2026-10-15:
+                            // "alerts sign in to set up is grey"): opens the alerts sign-in.
+                            Button { emailForAlerts = true; showEmail = true } label: {
+                                HStack(spacing: 4) { Text("Sign in to set up").font(.se(18, .semibold)); Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)) }
+                                    .foregroundStyle(SE.royal)
+                            }.buttonStyle(.plain).accessibilityIdentifier("profile-alerts-signin")
                         }
                     }
                     // Turn off moved here from the Lotteries card, which is gone

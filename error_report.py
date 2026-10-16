@@ -593,11 +593,15 @@ def build(window_label, js, crash, app, five, tracebacks, stale, new_msgs, crons
     lines = [f"Find A Crib errors — {window_label}", ""]
     if crons:
         lines += ["Engine:"] + [f"  {k}: {v}" for k, v in crons.items()] + [""]
-    for title, d in (("JavaScript errors", js), ("Pages that died mid-work", crash), ("iPhone app failures", app)):
+    # The plain-text part hides browser noise like the HTML does (2026-10-16:
+    # Gmail's text view listed 62 ad-script "Load failed" rows as errors).
+    for title, d in (("JavaScript errors", real), ("Pages that died mid-work", crash), ("iPhone app failures", app)):
         if d:
             lines.append(title + ":")
             for k, v in sorted(d.items(), key=lambda kv: -kv[1]["n"])[:10]:
                 lines.append(f"  {v['n']:>4}x  {len(v['people'])} people  {k}")
+        if title == "JavaScript errors" and noisy:
+            lines.append(f"  (plus {sum(v['n'] for v in noisy)} browser-noise errors: ad scripts, extensions, dropped connections)")
             lines.append("")
     if five:
         lines += ["Server 5xx:"] + [f"  {n:>4}x  {k}" for k, n in five.most_common(10)] + [""]

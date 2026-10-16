@@ -1058,6 +1058,13 @@ class Runner:
         title = page.evaluate("document.getElementById('v-title').textContent")
         self.ok('pest call' in title, f'the verdict should lead with pests: {title!r}', j)
         self.ok(page.evaluate("document.querySelectorAll('#calls .call').length") > 0, '1919 Madison has 311 calls in the past year', j)
+        # Show all folds back with Show fewer (owner, 2026-10-16).
+        if page.evaluate("!!document.getElementById('calls-more')"):
+            page.click('#calls-more')
+            self.ok(page.evaluate("document.querySelectorAll('#calls .call').length") > 10, 'Show all should list every call', j)
+            self.ok(page.evaluate("!!document.getElementById('calls-less')"), 'an expanded list should offer Show fewer', j)
+            page.click('#calls-less')
+            self.ok(page.evaluate("document.querySelectorAll('#calls .call').length") == 10, 'Show fewer should fold back to ten', j)
         self.ok('/casa/?bbl=1017480035' in page.url, f'the page should keep the building in its URL: {page.url}', j)
         self.wait_until(page, "!document.getElementById('crime').hidden || /Couldn/.test(document.getElementById('crime-loading').textContent)", 60000)
         self.ok(page.evaluate("document.querySelectorAll('#chart polyline').length") == 2, 'the crime chart should draw all crime and felonies', j)

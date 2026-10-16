@@ -49,3 +49,17 @@ def test_trace_without_boot_stamp_is_history():
     # Pages from before 2026-09-24 carry no "booted"; their report is old news.
     out = er.crashes([trace("v1", ["boot", "grid:done"], booted=None)], key="k", kept_going=lambda *a: False)
     assert not out
+
+
+def test_plain_text_hides_browser_noise():
+    """2026-10-16: the text part listed 62 ad-script "Load failed" rows that
+    the HTML part correctly folded into one noise line."""
+    import error_report as R
+    from collections import Counter
+    js = {"Load failed": {"n": 62, "people": {"a"}, "paths": Counter(), "last": "", "noise": True},
+          "Real bug": {"n": 2, "people": {"b"}, "paths": Counter(), "last": "", "noise": False}}
+    out = R.build("last 24 hours", js, {}, {}, Counter(), Counter(), {}, set())
+    text = next(p for p in (out if isinstance(out, (tuple, list)) else [out]) if isinstance(p, str) and "Find A Crib errors —" in p)
+    assert "Real bug" in text
+    assert "Load failed" not in text
+    assert "62 browser-noise" in text

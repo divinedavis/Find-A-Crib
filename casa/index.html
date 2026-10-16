@@ -283,9 +283,17 @@
     $('v-kinds').textContent = Object.keys(kinds).map(function (k) { return kinds[k] + ' × ' + k; }).join(' · ');
     $('tally').textContent = tally(calls).slice(0, 4).join(' · ');
     // Ten, then the rest on a tap: a busy building has 50+ and buried the chart.
+    // Expanded, it folds back (owner, 2026-10-16): "Show fewer" at the end of
+    // the list, and the list's heading scrolled back into view.
     var show = function (n) {
-      $('calls').innerHTML = rows(calls.slice(0, n)) + (calls.length > n ? '<p style="margin:10px 0 0"><button class="link-btn" id="calls-more" type="button">Show all ' + calls.length + ' calls</button></p>' : '');
+      var btn = calls.length > n ? '<button class="link-btn" id="calls-more" type="button">Show all ' + calls.length + ' calls</button>'
+        : calls.length > 10 ? '<button class="link-btn" id="calls-less" type="button">Show fewer</button>' : '';
+      $('calls').innerHTML = rows(calls.slice(0, n)) + (btn ? '<p style="margin:10px 0 0">' + btn + '</p>' : '');
       var m = $('calls-more'); if (m) m.addEventListener('click', function () { show(calls.length); });
+      var l = $('calls-less'); if (l) l.addEventListener('click', function () {
+        show(10);
+        var t = $('tally'); if (t && t.getBoundingClientRect().top < 0) t.scrollIntoView({ block: 'start' });
+      });
     };
     if (calls.length) show(10); else $('calls').innerHTML = '<p class="muted">No 311 calls on this building in the past year.</p>';
   }

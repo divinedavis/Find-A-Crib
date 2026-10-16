@@ -277,6 +277,10 @@ struct CasaView: View {
                 if calls.count > 10 && !showAllCalls {
                     Button("Show all \(calls.count) calls") { showAllCalls = true }
                         .font(.se(16, .semibold)).foregroundStyle(SE.royal).accessibilityIdentifier("casa-calls-more")
+                } else if calls.count > 10 {
+                    // Expanded, it folds back (owner, 2026-10-16).
+                    Button("Show fewer") { withAnimation { showAllCalls = false } }
+                        .font(.se(16, .semibold)).foregroundStyle(SE.royal).accessibilityIdentifier("casa-calls-less")
                 }
             }
         }

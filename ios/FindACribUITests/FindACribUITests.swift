@@ -946,7 +946,11 @@ final class FindACribUITests: XCTestCase {
         let keyboard = app.keyboards.firstMatch
         XCTAssertTrue(keyboard.waitForExistence(timeout: 5))
         let password = app.secureTextFields["password-field"], submit = app.buttons["email-submit"]
-        let above = NSPredicate { _, _ in password.isHittable && submit.isHittable && submit.frame.maxY <= keyboard.frame.minY + 1 }
+        // Email and Password both show, wholly above the Sign in bar: the bar
+        // covered Password on the records sheet (owner, 2026-10-15).
+        let email = app.textFields["email-field"]
+        let above = NSPredicate { _, _ in password.isHittable && submit.isHittable && submit.frame.maxY <= keyboard.frame.minY + 1
+            && password.frame.maxY <= submit.frame.minY + 1 && email.frame.minY >= 0 && email.isHittable }
         XCTAssertEqual(XCTWaiter().wait(for: [XCTNSPredicateExpectation(predicate: above, object: nil)], timeout: 5), .completed,
                        "Password and Sign in sit above the keyboard")
         password.tap()

@@ -48,7 +48,14 @@ struct EmailSignInView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     Text(creating ? "Create account" : (heading ?? (casaPreview ? (casaHistory ? "Sign in to see the full history" : "Sign in to watch your building") : agentPreview ? "Sign in to see who runs this building" : records != nil ? "Sign in to see this building's records" : (offersSocialSignIn ? "Sign in for lottery alerts" : "Sign in with email")))).font(.se(26, .bold))
-                    if casaPreview && !creating {
+                    // While typing, the promise box steps aside so Email and
+                    // Password both sit above the keyboard and its Sign in bar
+                    // (owner, 2026-10-15: "i can't see the password field when
+                    // i click on the email field"). It's back when the keyboard
+                    // goes.
+                    if focus != nil && promo && !creating {
+                        EmptyView()
+                    } else if casaPreview && !creating {
                         CasaPromiseBox(history: casaHistory) { showPlus = true }
                     } else if agentPreview && !creating {
                         AgentPromiseBox { showPlus = true }
@@ -135,8 +142,12 @@ struct EmailSignInView: View {
                 guard let f else { return }
                 let next: Field = f == .email ? .password : (creating ? .confirm : .password)
                 Task { @MainActor in
-                    try? await Task.sleep(for: .milliseconds(350))
-                    withAnimation(.easeOut(duration: 0.25)) { proxy.scrollTo(next, anchor: .bottom) }
+                    // Twice: the sheet itself moves as the keyboard rises, so
+                    // the first scroll can land short.
+                    for wait in [350, 400] {
+                        try? await Task.sleep(for: .milliseconds(wait))
+                        withAnimation(.easeOut(duration: 0.25)) { proxy.scrollTo(next, anchor: .bottom) }
+                    }
                 }
             }
             .background(Color.white)

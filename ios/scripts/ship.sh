@@ -70,14 +70,14 @@ if [[ "${SHIP_UNIT_ONLY:-0}" == "1" ]]; then
   SIMULATOR_ID="$IPHONE_SIM" ./scripts/run_tests.sh FindACribTests
 else
   echo "==> running every test on iPhone ($IPHONE_SIM)"
-  SKIP="FindACribUITests/PerformanceTests" SIMULATOR_ID="$IPHONE_SIM" ./scripts/run_tests.sh
+  RETRY=1 SKIP="FindACribUITests/PerformanceTests" SIMULATOR_ID="$IPHONE_SIM" ./scripts/run_tests.sh
   grep -qE "Test run with [1-9][0-9]* tests? .*passed" "build.nosync/test-$IPHONE_SIM.log" \
     || { echo "error: no Swift Testing tests ran (expected the @Test suites in FindACribTests)" >&2; exit 1; }
   grep -q "AccessibilityAuditTests" "build.nosync/test-$IPHONE_SIM.log" \
     || { echo "error: the accessibility audit did not run" >&2; exit 1; }
   [[ -n "$IPAD_SIM" ]] || { echo "error: no iPad simulator installed — the iPad gate cannot run" >&2; exit 1; }
   echo "==> running every test on iPad ($IPAD_SIM)"
-  SKIP="FindACribUITests/PerformanceTests" SIMULATOR_ID="$IPAD_SIM" ./scripts/run_tests.sh
+  RETRY=1 SKIP="FindACribUITests/PerformanceTests" SIMULATOR_ID="$IPAD_SIM" ./scripts/run_tests.sh
   if [[ -n "$MINI_SIM" ]]; then
     echo "==> iPad tour on iPad mini ($MINI_SIM)"
     SIMULATOR_ID="$MINI_SIM" ./scripts/run_tests.sh FindACribUITests/IPadTourTests

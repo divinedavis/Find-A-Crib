@@ -60,6 +60,7 @@ WINDOW = 14              # trailing window for "is it working now"
 MIN_TOTAL_VISITORS = 20  # cumulative owned visitors needed to call it alive
 MIN_RECENT_MEDIAN = 1    # median daily owned visitors in the trailing window
 REDUNDANCY_RATIO = 0.10  # <10% of an overlapping technique's traffic = redundant
+TREND_MIN_COVERAGE_PCT = 60.0  # share of a window's days that must hold a reading
 
 # Search impressions on a technique's own URLs, below which it is invisible
 # rather than merely un-clicked. Deliberately low: the whole site earns ~20
@@ -173,15 +174,137 @@ def _global(metric, since=None):
             if d not in PAID_FLIGHT_DAYS]
 
 
-def _trend(pairs, window=WINDOW):
-    """(recent_median, prior_median) over two adjacent windows."""
-    vals = [v for _, v in pairs]
-    if len(vals) < 2:
-        return (None, None)
-    recent = vals[-window:]
-    prior = vals[-2 * window:-window] or []
-    return (statistics.median(recent) if recent else None,
-            statistics.median(prior) if prior else None)
+def _day(d):
+    """A reading's date, or None if it is not a date this module can read."""
+    try:
+        return datetime.date.fromisoformat(d)
+    except Exception:
+        return None
+
+
+def _in_window(pairs, end, window):
+    """The values whose date falls in the `window` calendar days ending at `end`.
+
+    Selection is by DATE, never by position. See _trend for why that distinction
+    is the whole point of this helper.
+    """
+    start = end - datetime.timedelta(days=window - 1)
+    out = []
+    for d, v in pairs:
+        day = _day(d)
+        if day is not None and start <= day <= end:
+            out.append(v)
+    return out
+
+
+def _latest(pairs):
+    """The newest date in a series, or today for a series with no usable date."""
+    days = [d for d in (_day(x) for x, _v in pairs) if d is not None]
+    return max(days) if days else datetime.date.today()
+
+
+def _covered(vals, window):
+    """Does this window hold enough readings for its median to describe it?
+
+    A median is a statement about a period, and it can only be read as one
+    where most of that period is actually present. The threshold is a judgement
+    call rather than a derivation: at TREND_MIN_COVERAGE_PCT=60 a 14-day window
+    survives an outage of up to five nights and refuses the sixth, which is the
+    length at which this site's own pauses start to reach back into a
+    materially different traffic regime.
+    """
+    return len(vals) * 100.0 >= TREND_MIN_COVERAGE_PCT * window
+
+
+def _trend(pairs, window=WINDOW, anchor=None):
+    """(recent_median, prior_median, cmp) over two adjacent CALENDAR windows.
+
+    WHY THIS IS DATE-WINDOWED AND NOT `vals[-window:]`, which is what it was
+    until 2026-10-16. The old form took the last `window` READINGS and every
+    caller then described the result as "the trailing 14d median". Those are
+    the same number only while the series has a reading for every day. The
+    moment a night is missed the positional window silently stretches: fourteen
+    readings ending 2026-10-12 cover fourteen days today, but the same slice
+    taken on the first night after #PAUSED-20261012 would reach back to
+    2026-09-30 and still be published as "the trailing 14d". The series already
+    carries two such holes (2026-07-16 -> 07-19, 2026-07-26 -> 07-28), and the
+    pause guarantees a third of at least four days.
+
+    That mislabel is not cosmetic, because two of the three things this pair
+    drives are COMPARISONS between the windows — `falling` (recent < prior) and
+    the site-wide "no measurable lift" flag. Comparing a median over 14 days
+    with a median over 21 days is not a direction, and the same reasoning is
+    already settled elsewhere in this engine: indexstatus.crawl_rate_report
+    refuses a crawl-count comparison outright when its denominator moved, and
+    the journal's standing rule is never to quote those counts without
+    `crawl_rate.comparable`. This is that rule, applied to the window that
+    retires techniques.
+
+    So both windows are now cut by date from `anchor`, and the third return
+    value says whether they hold enough days to be read as periods at all.
+    `comparable` is None when there is no prior window to compare with, exactly
+    as crawl_rate_report does it, because "no baseline" and "a baseline that
+    agrees" must not render the same.
+
+    THE ANCHOR IS THE LAST READING'S DATE, NOT TODAY, and that is the one
+    choice here worth defending. Anchoring on today reads as the more honest
+    "trailing fourteen days from now", and it was the first thing tried — but
+    it makes a verdict move when no evidence has. Run against the frozen
+    2026-10-12 ledger it flipped T001 fresh_section8 from "0.5/day, below the
+    1/day that counts as alive" to "1/day and rising", purely because the four
+    unmeasured nights of the pause had pushed four older days out of the
+    window. That is the instrument reporting its own clock, which is the exact
+    defect the 2026-10-08 entry recorded against the crawl-rate sampler when
+    the same date read twice returned 6 and 10. Anchoring on the last reading
+    keeps a verdict still until a measurement moves it, and loses nothing: a
+    hole INSIDE the window still cuts the coverage, which is the case this
+    function exists for, and how stale the whole series is belongs to
+    cron_liveness, which already says it in days on every status line.
+
+    The medians themselves are still returned when a window is thin. They are
+    not wrong — they are exactly right about the days that were measured — and
+    callers that only want a level (is anything arriving at all) can use them.
+    What `comparable` withholds is the right to call the pair a TREND, and what
+    `recent_covered` withholds is the right to retire on a hollow window.
+    """
+    anchor = anchor or _latest(pairs)
+    cmp_ = {"window_days": window, "anchor": anchor.isoformat()}
+    if len(pairs) < 2:
+        cmp_.update({"comparable": None, "recent_covered": False,
+                     "note": "fewer than two readings — no window to cut"})
+        return (None, None, cmp_)
+
+    recent = _in_window(pairs, anchor, window)
+    prior = _in_window(pairs, anchor - datetime.timedelta(days=window), window)
+    r_cov, p_cov = _covered(recent, window), _covered(prior, window)
+    cmp_.update({"recent_readings": len(recent), "prior_readings": len(prior),
+                 "recent_covered": r_cov, "prior_covered": p_cov})
+
+    r_med = statistics.median(recent) if recent else None
+    p_med = statistics.median(prior) if prior else None
+    if not prior:
+        cmp_["comparable"] = None
+        cmp_["note"] = (f"{len(recent)} reading{'' if len(recent) == 1 else 's'} in the "
+                        f"{window} days to {anchor} and none in the {window} before — "
+                        f"a level, not yet a direction")
+        return (r_med, p_med, cmp_)
+
+    cmp_["comparable"] = bool(r_cov and p_cov)
+    if cmp_["comparable"]:
+        cmp_["note"] = (f"{len(recent)} and {len(prior)} readings in the two {window}-day "
+                        f"windows to {anchor} — both windows are substantially complete, "
+                        f"so the two medians compare directly")
+    else:
+        thin = []
+        if not r_cov:
+            thin.append(f"the trailing window holds {len(recent)} of {window} days")
+        if not p_cov:
+            thin.append(f"the window before it holds {len(prior)} of {window} days")
+        cmp_["note"] = (f"NOT comparable: {' and '.join(thin)}, so the two medians "
+                        f"describe periods of different length and their difference is "
+                        f"not a trend — nights the engine did not run are missing days, "
+                        f"not days with no traffic")
+    return (r_med, p_med, cmp_)
 
 
 def _judge_stock(res, metric, after, before, days):
@@ -473,10 +596,19 @@ def evaluate(t, techs=None):
     if t.get("prefixes") and t.get("judge") != "site":
         pairs = _owned(t)
         total = sum(v for _, v in pairs)
-        recent, prior = _trend(pairs)
+        recent, prior, trend = _trend(pairs)
         vis = searchconsole.recent_visibility(slug, since=t.get("activated"))
         res["measured"] = {"total_owned_visitors": total,
                            "recent_median": recent, "prior_median": prior,
+                           # The medians are a pair of levels; these say whether
+                           # the pair is also a direction. Recorded beside them
+                           # and never instead of them, the same way
+                           # indexstatus.crawl_rate_report keeps the raw counts
+                           # beside `comparable`.
+                           "trend_comparable": trend["comparable"],
+                           "trend_recent_readings": trend.get("recent_readings"),
+                           "trend_prior_readings": trend.get("prior_readings"),
+                           "trend_note": trend["note"],
                            "days_measured": len(pairs),
                            "owned_serving_pages": vis["pages"],
                            "owned_impressions": vis["impressions"],
@@ -493,9 +625,26 @@ def evaluate(t, techs=None):
             res["why"] = f"only {len(pairs)} days of measurement — not enough to judge"
             return res
         if total < MIN_TOTAL_VISITORS and (recent or 0) < MIN_RECENT_MEDIAN:
-            # The visitor series says dead. Check the leading indicator before
-            # acting on it — a technique whose pages Google serves is early,
-            # not dead, and the two look identical in a visitor count of zero.
+            # The visitor series says dead. Before acting on it, check that the
+            # series was actually TAKEN — a median of 0 over a window the engine
+            # spent mostly not running is a fact about the engine, not about the
+            # technique, and the two are indistinguishable in the number itself.
+            # This is the same shape as the census guard below: positive
+            # evidence of no traffic, not merely an absent measurement. It is
+            # placed first because it is the cheaper check and because a window
+            # this thin makes every branch under it unsafe, not just the
+            # retirement.
+            if not trend["recent_covered"]:
+                res["why"] = (f"{total} owned visitors in {days}d and a trailing median of "
+                              f"{recent}/day, but that window holds only "
+                              f"{trend.get('recent_readings', 0)} of its {WINDOW} days — "
+                              f"the engine did not run for most of it, so the median "
+                              f"measures the gap and not the technique. Nothing to retire "
+                              f"on until the window refills")
+                return res
+            # Check the leading indicator too — a technique whose pages Google
+            # serves is early, not dead, and the two look identical in a
+            # visitor count of zero.
             if not vis["measured"]:
                 res["why"] = (f"{total} owned visitors in {days}d, but its pages' search "
                               f"visibility has never been measured — not retiring on a "
@@ -568,8 +717,12 @@ def evaluate(t, techs=None):
                           f"{vis['impressions']} search impressions across "
                           f"{vis['pages']} URLs — invisible in search, not merely un-clicked")
             return res
+        # A direction is a claim ABOUT TWO WINDOWS, so it needs both of them to
+        # be windows. Where `trend["comparable"]` is False the medians still
+        # stand as levels but their difference is an artifact of which nights
+        # the engine ran, so no direction is asserted at all.
         direction = ""
-        if recent is not None and prior is not None:
+        if recent is not None and prior is not None and trend["comparable"]:
             direction = " and rising" if recent > prior else (
                 " but falling" if recent < prior else " and flat")
         # The corroborating clause on every verdict string below. It used to
@@ -610,7 +763,8 @@ def evaluate(t, techs=None):
         # Anything else is unproven (works=None) — not failed, which would be
         # its own false claim: these are all above the retirement floor.
         alive_now = (recent or 0) >= MIN_RECENT_MEDIAN
-        falling = recent is not None and prior is not None and recent < prior
+        falling = (recent is not None and prior is not None
+                   and trend["comparable"] and recent < prior)
 
         # And being alive is still not enough to call it WORKING. Every
         # technique in this ledger exists to earn search or answer-engine
@@ -667,11 +821,14 @@ def evaluate(t, techs=None):
                           f"declining" + served)
         else:
             res["works"] = None
+            thin = ("" if trend["recent_covered"] else
+                    f", though that window holds only {trend.get('recent_readings', 0)} "
+                    f"of its {WINDOW} days, so some of this is nights the engine missed")
             res["why"] = (f"{total} owned visitors in {days}d clears the "
                           f"{MIN_TOTAL_VISITORS}-visitor floor, but the trailing "
                           f"{WINDOW}d median is {recent}/day — below the "
                           f"{MIN_RECENT_MEDIAN}/day that counts as alive, so the "
-                          f"total is carried by days outside the window" + served)
+                          f"total is carried by days outside the window" + thin + served)
         return res
 
     # Site-wide technique: judged on its declared global metric, comparing the
@@ -680,27 +837,41 @@ def evaluate(t, techs=None):
     co = _co_claimants(t, metric, techs)
     pairs = _global(metric)
     after = [(d, v) for d, v in pairs if d >= (t.get("activated") or "")]
-    before = [(d, v) for d, v in pairs if d < (t.get("activated") or "")][-WINDOW:]
+    pre = [(d, v) for d, v in pairs if d < (t.get("activated") or "")]
     if metric in STOCK_METRICS:
-        return _guard_shared_metric(
-            _judge_stock(res, metric, after,
-                         [(d, v) for d, v in pairs if d < (t.get("activated") or "")],
-                         days),
-            metric, co)
-    a_med = statistics.median([v for _, v in after[-WINDOW:]]) if after else None
-    b_med = statistics.median([v for _, v in before]) if before else None
+        return _guard_shared_metric(_judge_stock(res, metric, after, pre, days), metric, co)
+
+    # Both windows cut by DATE, for the reason _trend gives at length: a slice
+    # of the last WINDOW READINGS is only the last WINDOW DAYS while the engine
+    # ran every night, and this path publishes the result as "in the last 14d".
+    # The trailing window ends at the last reading (see _trend on why not
+    # today); the baseline window ends the day before activation, which is the
+    # comparison this path has always meant to make.
+    _activated = _day(t.get("activated") or "")
+    a_vals = _in_window(after, _latest(after), WINDOW)
+    b_vals = (_in_window(pre, _activated - datetime.timedelta(days=1), WINDOW)
+              if _activated else [v for _, v in pre[-WINDOW:]])
+    a_med = statistics.median(a_vals) if a_vals else None
+    b_med = statistics.median(b_vals) if b_vals else None
     # Totals alongside the medians, because at this traffic level the median is
     # frequently the wrong statistic and silently says "0.0" about a series that
     # is plainly moving: ai_visitors ran 0,1,0,0,0,1,1,0,0,2,2,1 over the twelve
     # days to 2026-08-24 — a median of 0.0 and a total of 8. Reporting both is
     # what stops "median 0.0/day" being read as "nothing happened".
-    a_sum = sum(v for _, v in after[-WINDOW:]) if after else None
-    b_sum = sum(v for _, v in before) if before else None
+    a_sum = sum(a_vals) if a_vals else None
+    b_sum = sum(b_vals) if b_vals else None
+    # Same contract as the owned-prefix path: the medians are levels, and this
+    # says whether their difference is also a direction.
+    a_cov, b_cov = _covered(a_vals, WINDOW), _covered(b_vals, WINDOW)
+    comparable = None if not b_vals else bool(a_cov and b_cov)
     res["measured"] = {"metric": metric, "median_after": a_med, "median_before": b_med,
                        "total_after": a_sum, "total_before": b_sum,
-                       "window_days": WINDOW, "days_measured": len(after)}
-    totals = (f" [{a_sum} in the last {min(WINDOW, len(after))}d"
-              + (f" vs {b_sum} in the {len(before)}d before]" if before else "]")) if after else ""
+                       "window_days": WINDOW, "days_measured": len(after),
+                       "window_readings_after": len(a_vals),
+                       "window_readings_before": len(b_vals),
+                       "trend_comparable": comparable}
+    totals = (f" [{a_sum} in the last {len(a_vals)}d"
+              + (f" vs {b_sum} in the {len(b_vals)}d before]" if b_vals else "]")) if a_vals else ""
     if len(after) < GRACE_DAYS // 2:
         res["why"] = f"only {len(after)} days of {metric} since activation"
         return res
@@ -715,6 +886,20 @@ def evaluate(t, techs=None):
         else:
             res["why"] = (f"{metric} median {a_med}/day since activation{totals}, but no "
                           f"pre-activation baseline to attribute it to")
+        return res
+    if not comparable:
+        # Neither "no lift" nor "works" can be asserted across windows of
+        # different real length. Flag rather than keep, because an unreadable
+        # comparison is a thing to fix and not a thing to pass over, and
+        # works=None rather than True so scout.py's ALREADY MEASURED AS WORKING
+        # list never learns from a window that was half missing.
+        res["action"] = "flag"
+        res["works"] = None
+        res["why"] = (f"{metric} median {a_med}/day vs {b_med}/day before "
+                      f"activation{totals} — but the trailing window holds "
+                      f"{len(a_vals)} of {WINDOW} days and the baseline {len(b_vals)} of "
+                      f"{WINDOW}, so the two are not the same length of time and the "
+                      f"difference between them is not a lift either way")
         return res
     if a_med is not None and a_med <= b_med:
         res["action"] = "flag"

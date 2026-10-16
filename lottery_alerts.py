@@ -77,6 +77,12 @@ MAX_ITEMS_PER_EMAIL = 12
 MAX_SENDS_PER_RUN = 300
 HOURLY_CAP = 400          # Namecheap Private Email: 500/hour per domain (Starter)
 SEEN_TTL_DAYS = 240
+# A record must be missing this long before it is forgotten (and a return
+# alerts again). 2026-10-16: Housing Connect's API drops a still-open lottery
+# from some answers and flips a closing-day one between endIn 0 and 1, so
+# 1 Gouverneur Lane and 664-672 Beck Street each re-alerted every other run
+# overnight (the owner's phone got Gouverneur ~13 times).
+GONE_GRACE_DAYS = 3
 HELD_MAX = 30             # per subscriber; older held items fall off the front
 # Real-time is Plus (owner, 2026-10-06). Everyone else hears once a day, in the
 # 8 AM digest (`--digest`, cron 0 8 * * * New York). A Plus subscriber is
@@ -163,7 +169,8 @@ def hc_items(d):
                     "sub": " · ".join(bits), "url": l.get("href"),
                     "closes": iso_date(l.get("closes")),
                     "rent_low": l.get("rent_low"),
-                    "income_min": l.get("income_min"), "income_max": l.get("income_max")})
+                    "income_min": l.get("income_min"), "income_max": l.get("income_max"),
+                    "household_min": l.get("household_min"), "household_max": l.get("household_max")})
     return out
 
 
@@ -341,6 +348,7 @@ def save_state(st):
 def prune(st, now):
     cutoff = (now - datetime.timedelta(days=SEEN_TTL_DAYS)).isoformat()
     st["seen"] = {k: v for k, v in st["seen"].items() if v >= cutoff}
+    st["gone"] = {k: v for k, v in st.get("gone", {}).items() if k in st["seen"]}
     hour_ago = (now - datetime.timedelta(hours=1)).isoformat()
     st["sends"] = [t for t in st.get("sends", []) if t >= hour_ago]
     st.pop("per_sub", None)          # pre-ledger daily counter, superseded
@@ -698,11 +706,12 @@ def render_roundup(sub, emailkit, *, eyebrow, title, intro, sections, cta_label,
     return track_links(html, sub, "weekly" if digest else "nudge"), text, post_unsub
 
 
-def subscriber_rows(key):
+def subscriber_rows(key, items=()):
     subs = with_households(rpc("lottery_alerts_recipients", {}, key) or [], key)
     for sub in subs:
         sub["boroughs"] = list(sub.get("boroughs") or [])
         sub["kinds"] = list(sub.get("kinds") or ["lottery", "rerental"])
+    hc_qualified(subs, list(items))
     return subs
 
 
@@ -731,7 +740,7 @@ def nudge(args_dry=False):
     feeds = gather()
     everything = [i for src in ("hc", "hcr", "rr", "s8") for i in (feeds[src] or [])]
     sent_ids, nudged_ids = [], []
-    for sub in subscriber_rows(key):
+    for sub in subscriber_rows(key, everything):
         if sub.get("nudged_at") or not sub.get("welcomed_at") or (sub.get("sent_count") or 0) > 0:
             continue
         created = parse_ts(sub.get("created_at"))
@@ -834,7 +843,7 @@ def weekly(args_dry=False, test_email=None):
         return
 
     sent_ids, sent = [], 0
-    for sub in subscriber_rows(key):
+    for sub in subscriber_rows(key, everything):
         if sub.get("digest_off") or not sub.get("welcomed_at"):
             continue
         built = build(sub)
@@ -884,6 +893,52 @@ def with_households(subs, key):
     return subs
 
 
+def hc_qualified(subs, items, search=None):
+    """Housing Connect does the real eligibility check itself: its search takes
+    a household size and income and returns only the lotteries that household
+    can apply to, by the lottery's own per-size income table. The band on the
+    item (lowest minimum to highest maximum across ALL sizes) is far looser —
+    one person on $150k passes 1 Gouverneur Lane's $40,526–$152,700 band but
+    is over its one-person limit (owner, 2026-10-16: no alerts for buildings
+    people don't qualify for).
+
+    Sets sub["hc_ok"] = {lottery ids} for every subscriber with BOTH an income
+    and a household size, one city call per distinct pair. The API sometimes
+    leaves a lottery out of an answer, so each pair is asked twice and the
+    answers are unioned; a pair whose calls fail keeps the band check."""
+    if not any(i["id"].startswith("hc:") for i in items):
+        return
+    search = search or _hc_search
+    cache = {}
+    for sub in subs:
+        inc, hh = sub.get("income"), sub.get("household_size")
+        if not inc or not hh:
+            continue
+        pair = (int(hh), int(inc))
+        if pair not in cache:
+            got = None
+            for _ in range(2):
+                try:
+                    got = (got or set()) | set(search(*pair))
+                except Exception as e:
+                    print(f"housing connect eligibility lookup failed ({type(e).__name__})")
+            cache[pair] = got
+        if cache[pair] is not None:
+            sub["hc_ok"] = {f"hc:{i}" for i in cache[pair]}
+
+
+def _hc_search(household, income):
+    import housing_connect
+    body = dict(housing_connect.SEARCH_BODY, HouseholdSize=household, Income=str(income))
+    req = urllib.request.Request(
+        housing_connect.API, data=json.dumps(body).encode(),
+        headers={"Content-Type": "application/json", "User-Agent": housing_connect.UA,
+                 "Origin": "https://housingconnect.nyc.gov",
+                 "Referer": "https://housingconnect.nyc.gov/"})
+    with urllib.request.urlopen(req, timeout=45) as r:
+        return [x.get("lotteryId") for x in json.loads(r.read()).get("rentals") or []]
+
+
 def wants(sub, item):
     if item["kind"] not in sub["kinds"]:
         return False
@@ -905,6 +960,12 @@ def wants(sub, item):
     cap = sub.get("max_rent")
     if cap and item.get("rent_low") and item["rent_low"] > cap:
         return False
+    hh = sub.get("household_size")
+    if hh and ((item.get("household_min") and hh < item["household_min"])
+               or (item.get("household_max") and hh > item["household_max"])):
+        return False
+    if item["id"].startswith("hc:") and sub.get("hc_ok") is not None:
+        return item["id"] in sub["hc_ok"]
     inc = sub.get("income")
     if inc:
         q = qualifies(sub, item)
@@ -962,21 +1023,29 @@ def main():
     st = load_state()
     first = st is None
     if first:
-        st = {"seen": {}, "sends": [], "held": {}}
+        st = {"seen": {}, "sends": [], "held": {}, "gone": {}}
     st.setdefault("seen", {}); st.setdefault("sends", []); st.setdefault("held", {})
+    st.setdefault("gone", {})
     prune(st, now)
     prune_held(st, feeds)
 
     new = []
     stamp = now.isoformat()
+    gone_cutoff = (now - datetime.timedelta(days=GONE_GRACE_DAYS)).isoformat()
     for src, items in feeds.items():
         if items is None:
             continue
         ids = {i["id"] for i in items}
         # Items that left a feed (a lottery closed, an HCR waitlist closed) are
-        # forgotten, so a re-opening of the same record alerts again.
+        # forgotten once they have stayed gone GONE_GRACE_DAYS, so a real
+        # re-opening alerts again but a feed blip does not.
         for k in [k for k in st["seen"] if k.startswith(src + ":") and k not in ids]:
-            st["seen"].pop(k)
+            went = st["gone"].setdefault(k, stamp)
+            if went < gone_cutoff:
+                st["seen"].pop(k)
+                st["gone"].pop(k)
+        for k in [k for k in st["gone"] if k.startswith(src + ":") and k in ids]:
+            st["gone"].pop(k)
         for i in items:
             if i["id"] not in st["seen"]:
                 st["seen"][i["id"]] = stamp
@@ -1007,6 +1076,7 @@ def main():
         # briefly unreachable.
         sys.exit(f"could not load subscribers: {e}")
     print(f"{len(subs)} active subscribers")
+    hc_qualified(subs, new + [h for v in st["held"].values() for h in v])
     # Who has Plus: real-time for them, the 8 AM digest for everyone else.
     try:
         plus = {e.lower() for e in (rpc("plus_emails", {"p_emails": [s["email"] for s in subs]}, key) or [])}

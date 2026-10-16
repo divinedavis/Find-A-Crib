@@ -25,8 +25,10 @@ struct CasaView: View {
     /// couldn't be reached: the time they were saved.
     @State private var offlineSince: Date?
     @State private var showPlus = false
-    @State private var showSignIn = false
-    @State private var signInForHistory = false
+    /// Which sign-in is open, as one value: two flags set together opened
+    /// the alerts sheet from "See the full history" (2026-10-15 UI test).
+    @State private var signIn: SignInFor?
+    enum SignInFor: Identifiable { case alerts, history; var id: Self { self } }
     @State private var olderLoading = false
     @State private var showAllCalls = false
     @FocusState private var typing: Bool
@@ -74,7 +76,7 @@ struct CasaView: View {
             suggestions = await Casa.suggest(query)
         }
         .sheet(isPresented: $showPlus) { PaywallView(source: "casa") }
-        .sheet(isPresented: $showSignIn) { EmailSignInView(offersSocialSignIn: true, casaPreview: true, casaHistory: signInForHistory) }
+        .sheet(item: $signIn) { EmailSignInView(offersSocialSignIn: true, casaPreview: true, casaHistory: $0 == .history) }
     }
 
     // MARK: - Search
@@ -228,7 +230,7 @@ struct CasaView: View {
                      ?? "Hear about every new 311 call on this building — pests, heat, leaks, noise. Part of Find A Crib Plus.")
                     .font(.se(15)).foregroundStyle(SE.ink2)
                 SEPrimaryButton(title: watch.watch == nil ? "Alert me about new calls" : "Watch this building instead", icon: "bell.fill") {
-                    guard let token = auth.session?.accessToken else { signInForHistory = false; showSignIn = true; return }
+                    guard let token = auth.session?.accessToken else { signIn = .alerts; return }
                     guard auth.hasPlus else { Analytics.shared.track("casa_plus_gate", ["what": "alerts"]); showPlus = true; return }
                     Task {
                         await watch.start(p, crimeKinds: watch.watch?.crime_kinds ?? [], token: token)
@@ -341,7 +343,7 @@ struct CasaView: View {
             } else {
                 Text("Every 311 call on this building back to 2010. Part of Find A Crib Plus.").font(.se(15)).foregroundStyle(SE.ink2)
                 Button {
-                    guard auth.isSignedIn else { signInForHistory = true; showSignIn = true; return }
+                    guard auth.isSignedIn else { signIn = .history; return }
                     guard auth.hasPlus else { Analytics.shared.track("casa_plus_gate", ["what": "history"]); showPlus = true; return }
                     Task { await loadOlder() }
                 } label: {

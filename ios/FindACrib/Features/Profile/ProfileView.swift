@@ -9,10 +9,13 @@ struct ProfileView: View {
     @Environment(\.openURL) private var openURL
     @State private var confirmDelete = false
     @State private var showPaywall = false
-    @State private var showEmail = false
+    /// Which email sign-in is open. One value, so the sheet can't open with
+    /// a stale mode: two flags set together opened the plain sheet first,
+    /// which focused Email (2026-10-15, caught by the Profile UI test).
+    @State private var emailSheet: EmailSheet?
+    enum EmailSheet: Identifiable { case plain, alerts; var id: Self { self } }
     /// The sign-in sheet was opened to set up alerts (not by "Continue with
     /// email"): show Apple/Google first and don't raise the keyboard.
-    @State private var emailForAlerts = false
     @State private var showAlerts = false
     @State private var confirmTurnOff = false
     @State private var turnOffFailed = false
@@ -81,7 +84,7 @@ struct ProfileView: View {
                         } else if auth.configured {
                             VStack(spacing: 10) {
                                 SocialSignInButtons()
-                                Button { showEmail = true } label: {
+                                Button { emailSheet = .plain } label: {
                                     HStack(spacing: 10) {
                                         Image(systemName: "envelope.fill").font(.system(size: 16, weight: .bold)).foregroundStyle(SE.royal)
                                         Text("Continue with email").font(.se(18, .semibold)).foregroundStyle(SE.ink)
@@ -98,7 +101,7 @@ struct ProfileView: View {
                         }
                     }.padding(16)
                     .sheet(isPresented: $showPaywall) { PaywallView(source: "profile") }
-                    .sheet(isPresented: $showEmail, onDismiss: { emailForAlerts = false }) { EmailSignInView(offersSocialSignIn: emailForAlerts, forAlerts: emailForAlerts) }
+                    .sheet(item: $emailSheet) { EmailSignInView(offersSocialSignIn: $0 == .alerts, forAlerts: $0 == .alerts) }
                     .sheet(isPresented: $showAlerts) { AlertsSheet() }
                     .alert("Turn off alerts?", isPresented: $confirmTurnOff) {
                         Button("Turn off alerts", role: .destructive) {
@@ -125,7 +128,7 @@ struct ProfileView: View {
                     // Signed out, the sign-in sheet comes first and the alerts
                     // sheet follows once there is an account.
                     .onChange(of: nav.showAlerts) { _, on in
-                        if on { if auth.isSignedIn { showAlerts = true; nav.showAlerts = false } else { emailForAlerts = true; showEmail = true } }
+                        if on { if auth.isSignedIn { showAlerts = true; nav.showAlerts = false } else { emailSheet = .alerts } }
                     }
                     .onChange(of: auth.isSignedIn) { _, on in
                         if on, nav.showAlerts { showAlerts = true; nav.showAlerts = false }
@@ -133,7 +136,7 @@ struct ProfileView: View {
                     .onAppear {
                         if nav.showPaywall { showPaywall = true; nav.showPaywall = false }
                         if let t = nav.openTool { homeTool = t; nav.openTool = nil }
-                        if nav.showAlerts { if auth.isSignedIn { showAlerts = true; nav.showAlerts = false } else { emailForAlerts = true; showEmail = true } }
+                        if nav.showAlerts { if auth.isSignedIn { showAlerts = true; nav.showAlerts = false } else { emailSheet = .alerts } }
                     }
                     .alert("Delete your account?", isPresented: $confirmDelete) {
                         Button("Delete", role: .destructive) { Task { await auth.deleteAccount() } }
@@ -163,7 +166,7 @@ struct ProfileView: View {
                         } else {
                             // A link like its neighbours, not grey text (owner, 2026-10-15:
                             // "alerts sign in to set up is grey"): opens the alerts sign-in.
-                            Button { emailForAlerts = true; showEmail = true } label: {
+                            Button { emailSheet = .alerts } label: {
                                 HStack(spacing: 4) { Text("Sign in to set up").font(.se(18, .semibold)); Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)) }
                                     .foregroundStyle(SE.royal)
                             }.buttonStyle(.plain).accessibilityIdentifier("profile-alerts-signin")

@@ -486,6 +486,7 @@ final class FindACribUITests: XCTestCase {
         for _ in 0..<4 where !signIn.isHittable { app.swipeDown() }
         XCTAssertTrue(signIn.isHittable, "Alerts offers a sign-in link")
         signIn.tap()
+        add(XCTAttachment(screenshot: app.screenshot()))
         XCTAssertTrue(app.descendants(matching: .any)["alerts-promise-box"].waitForExistence(timeout: 5), "it opens the alerts sign-in")
     }
 
@@ -1061,6 +1062,7 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(history.exists, "older calls are offered")
         // Signed out, the history button's sheet leads with the history.
         history.tap()
+        add(XCTAttachment(screenshot: app.screenshot()))
         XCTAssertTrue(app.staticTexts["Sign in to see the full history"].waitForExistence(timeout: 5), "the history sheet names its feature")
         XCTAssertTrue(app.descendants(matching: .any)["casa-promise-box"].exists, "and lists what Plus adds")
         app.buttons["Cancel"].tap()

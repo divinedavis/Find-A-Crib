@@ -31,8 +31,13 @@ def main():
     ap.add_argument("app_id")
     ap.add_argument("spec")
     a = ap.parse_args()
+    create(a.app_id, json.load(open(a.spec)))
 
-    e = json.load(open(a.spec))
+
+def create(app_id, e):
+    """Create one draft event from a spec dict; returns its id, or None if
+    an event with that referenceName already exists. asc_events_auto.py
+    calls this for the scheduled events."""
     for k in ("deepLink", "purchaseRequirement"):
         if not e.get(k):
             sys.exit(f"{k} is required: App Review refuses an event without it")
@@ -40,11 +45,11 @@ def main():
         if len(e[k]) > n:
             sys.exit(f"{k} is {len(e[k])} characters; Apple allows {n}")
     if any(e["referenceName"] == x["attributes"].get("referenceName") for x in
-           call("GET", f"/v1/apps/{a.app_id}/appEvents?limit=200")["data"]):
+           call("GET", f"/v1/apps/{app_id}/appEvents?limit=200")["data"]):
         print(f"skip     {e['referenceName']} (exists)")
-        return
+        return None
     art = {}
-    for i in images(a.app_id):
+    for i in images(app_id):
         ref = i["attributes"].get("referenceName")
         if ref in (e["card"], e["details"]) and i["attributes"].get("state") != "ARCHIVED":
             art[ref] = i["id"]
@@ -58,7 +63,7 @@ def main():
              "territorySchedules": [{"territories": e["territories"], "publishStart": e["publishStart"],
                                      "eventStart": e["eventStart"], "eventEnd": e["eventEnd"]}]}
     ev = call("POST", "/v1/appEvents", {"data": {"type": "appEvents", "attributes": attrs,
-              "relationships": {"app": {"data": {"type": "apps", "id": a.app_id}}}}})["data"]
+              "relationships": {"app": {"data": {"type": "apps", "id": app_id}}}}})["data"]
     loc = call("POST", "/v1/appEventLocalizations", {"data": {"type": "appEventLocalizations",
                "attributes": {"locale": "en-US", "name": e["name"], "shortDescription": e["shortDescription"],
                               "longDescription": e["longDescription"]},
@@ -71,6 +76,7 @@ def main():
                 "image": {"data": {"type": "appAssetLibraryImages", "id": art[ref]}},
                 "appEventLocalization": {"data": {"type": "appEventLocalizations", "id": loc["id"]}}}}})
     print(f"created  {e['referenceName']}  event {ev['id']}  ({ev['attributes'].get('eventState')})")
+    return ev["id"]
 
 
 if __name__ == "__main__":

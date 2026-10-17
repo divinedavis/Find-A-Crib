@@ -28,6 +28,23 @@ final class MarketingCapture: XCTestCase {
         try? png.write(to: URL(fileURLWithPath: dir).appendingPathComponent("\(name).png"))
     }
 
+    /// Where the head officer's name and address sit on the last shot, in
+    /// pixels, for make_screenshots.py to blur: HPD lists a person as head
+    /// officer on nearly every building, and the ads name no real person
+    /// (owner, 2026-10-17). The officer is the last party in the agent block.
+    private func redactOfficer(_ name: String) {
+        let texts = app.staticTexts.allElementsBoundByIndex
+        guard let i = texts.firstIndex(where: { $0.label.hasPrefix("Head officer") }) else { return }
+        let img = XCUIScreen.main.screenshot().image
+        let scale = img.size.width * img.scale / app.frame.width   // points -> PNG pixels
+        let rects = texts[(i + 1)...].prefix(2).map { e -> [Int] in
+            let f = e.frame
+            return [f.minX, f.minY, f.width, f.height].map { Int(($0 * scale).rounded()) }
+        }
+        let json = try? JSONSerialization.data(withJSONObject: rects)
+        try? json?.write(to: URL(fileURLWithPath: dir).appendingPathComponent("\(name).redact.json"))
+    }
+
     private func signIn() {
         let env = ProcessInfo.processInfo.environment
         guard let email = env["DEMO_EMAIL"], let pw = env["DEMO_PASSWORD"] else { return }
@@ -48,28 +65,36 @@ final class MarketingCapture: XCTestCase {
 
     func testCaptureScreens() {
         signIn()
-        let union = "3003430015"   // 172 Union St, Brooklyn
-        launch([]);                                        shot("home", wait: 8)
-        launch(["--route", "map"]);                        shot("map", wait: 8)
-        launch(["--route", "detail:\(union)"]);            shot("detail", wait: 8)
-        launch(["--route", "detail-agent:\(union)"]);      shot("agent", wait: 8)
-        launch(["--route", "hpd:\(union)"]);               shot("violations", wait: 8)
-        launch(["--route", "results"]);                    shot("results", wait: 8)
-        launch(["--lotteries-demo", "--tab", "lotteries"])
-        // The panel is the lotteries themselves, not the Plus banner over them.
-        let upsell = app.buttons["realtime-upsell-dismiss"]
-        if upsell.waitForExistence(timeout: 8) { upsell.tap() }
-        shot("lotteries", wait: 4)
-        launch(["--casa-demo", "--tab", "casa"]);          shot("casa", wait: 8)
-        for tool in ["rights", "renewal", "rent-increase", "repair"] {
+        // 90 Atlantic Ave, Cobble Hill: its managing agent and owner are
+        // companies, so only the head officer needs blurring.
+        let atlantic = "3002840015"
+        let only = ProcessInfo.processInfo.environment["MARKETING_ONLY"].flatMap { $0.isEmpty ? nil : Set($0.split(separator: ",").map(String.init)) }
+        func want(_ n: String) -> Bool { only?.contains(n) ?? true }
+        if want("home") { launch([]); shot("home", wait: 8) }
+        if want("map") { launch(["--route", "map"]); shot("map", wait: 8) }
+        if want("detail") { launch(["--route", "detail:\(atlantic)"]); shot("detail", wait: 8) }
+        if want("agent") { launch(["--route", "detail-agent:\(atlantic)"]); shot("agent", wait: 8); redactOfficer("agent") }
+        if want("violations") { launch(["--route", "hpd:\(atlantic)"]); shot("violations", wait: 8) }
+        if want("results") { launch(["--route", "results"]); shot("results", wait: 8) }
+        if want("lotteries") {
+            launch(["--lotteries-demo", "--tab", "lotteries"])
+            // The panel is the lotteries themselves, not the Plus banner over them.
+            let upsell = app.buttons["realtime-upsell-dismiss"]
+            if upsell.waitForExistence(timeout: 8) { upsell.tap() }
+            shot("lotteries", wait: 4)
+        }
+        if want("casa") { launch(["--casa-demo", "--tab", "casa"]); shot("casa", wait: 8) }
+        for tool in ["rights", "renewal", "rent-increase", "repair"] where want(tool) {
             launch(["--tab", "profile"])
             Thread.sleep(forTimeInterval: 3)
             app.open(URL(string: "findacrib://tool/\(tool)")!)
             shot(tool, wait: 4)
         }
-        launch(["--tab", "profile"])
-        let packet = app.buttons["profile-packet"]
-        for _ in 0..<8 where !packet.isHittable { app.swipeUp() }
-        if packet.isHittable { packet.tap(); shot("packet") }
+        if want("packet") {
+            launch(["--tab", "profile"])
+            let packet = app.buttons["profile-packet"]
+            for _ in 0..<8 where !packet.isHittable { app.swipeUp() }
+            if packet.isHittable { packet.tap(); shot("packet") }
+        }
     }
 }

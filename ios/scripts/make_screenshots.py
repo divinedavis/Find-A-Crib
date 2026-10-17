@@ -48,8 +48,23 @@ def rounded_mask(size, r):
     return m
 
 
+def redact(shot, path):
+    """Blur the boxes MarketingCapture saved next to the shot (<name>.redact.json,
+    pixel [x, y, w, h]): no real person's name in an ad (owner, 2026-10-17)."""
+    side = os.path.splitext(path)[0] + ".redact.json"
+    if not os.path.exists(side):
+        return shot
+    import json
+    for x, y, w, h in json.load(open(side)):
+        box = (max(0, x - 12), max(0, y - 6), min(shot.width, x + w + 12), min(shot.height, y + h + 6))
+        region = shot.crop(box)
+        small = region.resize((max(1, region.width // 60), max(1, region.height // 60)), Image.BILINEAR)
+        shot.paste(small.resize(region.size, Image.BILINEAR).filter(ImageFilter.GaussianBlur(24)), box[:2])
+    return shot
+
+
 def device(path, target_w):
-    shot = Image.open(path).convert("RGB")
+    shot = redact(Image.open(path).convert("RGB"), path)
     sh = int(target_w * shot.height / shot.width)
     shot = shot.resize((target_w, sh), Image.LANCZOS)
     r = int(target_w * 0.11)

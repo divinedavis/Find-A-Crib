@@ -53,6 +53,7 @@
 		55415570A82F92F6EDCC19C8 /* BuildingDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA7425E377576FE3E5C2B47B /* BuildingDetailView.swift */; };
 		57861D606FFBA7F23A414A91 /* BuildingCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C86217F159AB095139ABEE8D /* BuildingCard.swift */; };
 		58CAB38824EAA30FEBA746A7 /* FindACribWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 58AD482B77F78BE6A10E4BC9 /* FindACribWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		5A7A1667675127A9949CA796 /* MarketingCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 406F8902B7D2F575042D1011 /* MarketingCapture.swift */; };
 		5AADE69C9E3977379357BD03 /* SecureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29E00E8B958A850F1443D5FC /* SecureStore.swift */; };
 		5E621D6EDC2702EE2F87CED2 /* PerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 785068564CE6917829662E1D /* PerformanceTests.swift */; };
 		64498DC63C55C20134BBB5DE /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44FBB961CA3E35950616322D /* ProfileView.swift */; };
@@ -173,6 +174,7 @@
 		3C5230FE7E960A89326516B1 /* SearchQuery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchQuery.swift; sourceTree = "<group>"; };
 		3ED34FDA9213D6B7F0195FB7 /* DataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataStore.swift; sourceTree = "<group>"; };
 		3F5A7E85CC424973A76E4813 /* LotteriesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LotteriesView.swift; sourceTree = "<group>"; };
+		406F8902B7D2F575042D1011 /* MarketingCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketingCapture.swift; sourceTree = "<group>"; };
 		41043E1D2462CF0BA147F621 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
 		44FBB961CA3E35950616322D /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		4A3782BAD6C82F022320EEB5 /* MapViewport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapViewport.swift; sourceTree = "<group>"; };
@@ -258,7 +260,7 @@
 		F4EAE491E6B0AE7EF404FA62 /* HPDRecords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HPDRecords.swift; sourceTree = "<group>"; };
 		F77E8A7AB3C846D7A728B148 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		FAA77791FAD208C445611DEA /* Packet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Packet.swift; sourceTree = "<group>"; };
-		"TEMP_39A91643-417E-4B2B-B443-974C0F09788F" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_7DD62157-735B-4539-9A1B-6B97409724C0" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -361,6 +363,7 @@
 				B2D6C468CBF1CC17D6480192 /* FreezeTest.swift */,
 				ADAF8126C715DA20B673D7A1 /* IPadTourTests.swift */,
 				295157FB248292C1429E1C15 /* LaunchAnimationTests.swift */,
+				406F8902B7D2F575042D1011 /* MarketingCapture.swift */,
 				785068564CE6917829662E1D /* PerformanceTests.swift */,
 			);
 			path = FindACribUITests;
@@ -578,10 +581,10 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
-		"TEMP_168DE116-0C5A-41E2-83B0-C51E007BA95C" /* ios */ = {
+		"TEMP_BBB2572E-07B6-4E18-A047-CBA8C021B8D8" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_39A91643-417E-4B2B-B443-974C0F09788F" /* Secrets.xcconfig */,
+				"TEMP_7DD62157-735B-4539-9A1B-6B97409724C0" /* Secrets.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -861,6 +864,7 @@
 				FAB92101828BCF949523AF8B /* FreezeTest.swift in Sources */,
 				8B98F514F5EF153C04251715 /* IPadTourTests.swift in Sources */,
 				4EA64C3DB786713310EB705F /* LaunchAnimationTests.swift in Sources */,
+				5A7A1667675127A9949CA796 /* MarketingCapture.swift in Sources */,
 				5E621D6EDC2702EE2F87CED2 /* PerformanceTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -988,7 +992,7 @@
 		};
 		4A043B04EA1D2F1BD0250C61 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_39A91643-417E-4B2B-B443-974C0F09788F" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_7DD62157-735B-4539-9A1B-6B97409724C0" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -1029,7 +1033,7 @@
 		};
 		7B4EAA1664EF270AD8C579E8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_39A91643-417E-4B2B-B443-974C0F09788F" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_7DD62157-735B-4539-9A1B-6B97409724C0" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;

@@ -109,7 +109,10 @@ def headline(draw, lines, y, ink, size=150):
 
 
 def sub(draw, text, y, ink):
-    draw.text((int(72 * S), y), text, font=font(int(50 * S), medium=True), fill=ink)
+    size = int(50 * S)
+    while size > 30 and draw.textbbox((0, 0), text, font=font(size, medium=True))[2] > W - int(144 * S):
+        size -= 2
+    draw.text((int(72 * S), y), text, font=font(size, medium=True), fill=ink)
     return y + int(70 * S)
 
 
@@ -140,19 +143,17 @@ def panel(n, name, bg, lines, subline, shot, cue_text=None, dev_w=980):
     print("wrote", path)
 
 
-IPAD = [
-    (1, "home",      "YELLOW", ["every rent-stabilized", "building in New York"],
-     "…and Los Angeles, San Francisco and DC", "what's available? →"),
-    (2, "results",   "WHITE",  ["what's for rent", "right now"],
-     "asking rents posted in the last 5 days", "see it on the map →"),
-    (3, "map",       "YELLOW", ["search the block", "you want"],
-     "prices on pins · drag, then tap search this area", "who runs it? →"),
-    (4, "detail",    "WHITE",  ["know the building", "first"],
-     "violations, pests, the managing agent, typical rent", "lotteries next →"),
-    (5, "lotteries", "YELLOW", ["lotteries in your", "boroughs"],
-     "Housing Connect lotteries & re-rentals, by bedrooms", "and what's on →"),
-    (6, "events",    "WHITE",  ["tenant clinics", "and housing help"],
-     "the City's own events calendar", None),
+PHONE = [
+    ("home",      ["every rent-", "stabilized", "building"], "47,165 in NYC · plus LA, SF & DC",            "find your block →"),
+    ("map",       ["search the", "block you", "want"],       "drag the map, then search this area",         "what does it cost? →"),
+    ("results",   ["know the", "rent before", "you call"],   "estimated rents, units and open violations",  "look inside →"),
+    ("detail",    ["know the", "building", "first"],         "open violations, complaints and pests",       "who runs it? →"),
+    ("agent",     ["find who", "runs it"],                   "the managing agent and owner, from HPD",      "apply for a lottery →"),
+    ("lotteries", ["lotteries in", "your", "boroughs"],      "Housing Connect lotteries, re-rentals & NJ",  "already have a place? →"),
+    ("casa",      ["watch your", "block"],                   "311 calls on your building and crime nearby", "know your rights →"),
+    ("rights",    ["know your", "rights"],                   "NYC tenant law in plain words",               "lease ending? →"),
+    ("renewal",   ["plan your", "renewal"],                  "your legal increase + an email to negotiate", "something broken? →"),
+    ("repair",    ["get repairs", "made"],                   "a letter to your landlord, then 311",         None),
 ]
 
 
@@ -163,14 +164,26 @@ def make_ipad():
     g["S"] = 2064 / 1320
     g["RAW"] = os.path.join(HERE, "marketing", "raw-ipad")
     g["OUT"] = os.path.join(HERE, "marketing", "asc-screenshots-ipad")
-    for n, name, bg, lines, subline, cue_text in IPAD:
+    old = [f for f in os.listdir(OUT) if f.endswith(".png")] if os.path.isdir(OUT) else []
+    for f in old:
+        os.remove(os.path.join(OUT, f))
+    for n, (name, lines, subline, cue_text) in enumerate(PHONE, 1):
         # Panel 1 shows the iPhone app: iMessage's App Store link card uses the
         # first iPad panel (its 3:4 shape fits the bubble), and the owner wants
-        # that card to show the phone (2026-10-09). Panels 2-6 stay iPad.
-        phone = n == 1
+        # that card to show the phone (2026-10-09). The renter tools open as a
+        # small form sheet on iPad, over Profile and its signed-in name, so
+        # they show the phone too (2026-10-17). The rest stay iPad.
+        phone = n == 1 or name in ("rights", "renewal", "repair")
         shot = os.path.join(HERE, "marketing", "raw", f"{name}.png") if phone else os.path.join(RAW, f"{name}.png")
-        panel(n, name, YELLOW if bg == "YELLOW" else WHITE, lines, subline,
+        panel(n, name, YELLOW if n % 2 else WHITE, two_lines(lines), subline,
               shot, cue_text, dev_w=int(W * (0.44 if phone else 0.60)))
+
+
+def two_lines(lines):
+    """The phone's three-line headline as two: the iPad canvas is squarer."""
+    words = " ".join(lines).replace("- ", "-").split(" ")
+    best = min(range(1, len(words)), key=lambda i: (abs(len(" ".join(words[:i])) - len(" ".join(words[i:]))), -i))
+    return [" ".join(words[:best]), " ".join(words[best:])]
 
 
 if __name__ == "__main__":
@@ -178,13 +191,10 @@ if __name__ == "__main__":
     if "--ipad" in sys.argv:
         make_ipad()
         raise SystemExit
-    panel(1, "home", YELLOW, ["every rent-", "stabilized", "building"],
-          "131,000 of them · NYC, LA, SF & DC", os.path.join(RAW, "home.png"), "what's available? →")
-    panel(2, "results", WHITE, ["what's for", "rent right", "now"],
-          "asking rents posted in the last 5 days", os.path.join(RAW, "results.png"), "see it on the map →")
-    panel(3, "map", YELLOW, ["search the", "block you", "want"],
-          "prices on pins · drag, then tap search this area", os.path.join(RAW, "map.png"), "who runs it? →")
-    panel(4, "detail", WHITE, ["know the", "building", "first"],
-          "violations, the managing agent, typical rent", os.path.join(RAW, "detail.png"), "apply for a lottery →")
-    panel(5, "lotteries", YELLOW, ["lotteries in", "your", "boroughs"],
-          "Housing Connect lotteries & re-rentals", os.path.join(RAW, "lotteries.png"))
+    # Ten panels, one feature each (owner, 2026-10-17: "highlight 10 of our
+    # best features"); raw screens from scripts/capture_marketing.sh.
+    old = [f for f in os.listdir(OUT) if f.endswith(".png")] if os.path.isdir(OUT) else []
+    for f in old:
+        os.remove(os.path.join(OUT, f))
+    for n, (name, lines, subline, cue_text) in enumerate(PHONE, 1):
+        panel(n, name, YELLOW if n % 2 else WHITE, lines, subline, os.path.join(RAW, f"{name}.png"), cue_text)

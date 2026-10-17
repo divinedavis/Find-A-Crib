@@ -50,10 +50,10 @@ struct ProfileView: View {
                             }
                             VStack(alignment: .leading, spacing: 4) {
                                 if auth.isSignedIn {
-                                    Text(auth.email?.components(separatedBy: "@").first?.capitalized ?? "Signed in").font(.se(30, .bold)).lineLimit(1).minimumScaleFactor(0.7)
+                                    Text(auth.email?.components(separatedBy: "@").first?.capitalized ?? String(localized: "Signed in")).font(.se(30, .bold)).lineLimit(1).minimumScaleFactor(0.7)
                                     Text(auth.email ?? "").font(.se(16)).foregroundStyle(SE.ink2).lineLimit(1)
                                     if auth.hasPlus {
-                                        SEBadge(text: "Find A Crib Plus", icon: "star.fill", fill: SE.paleBlue, ink: SE.royal)
+                                        SEBadge(text: String(localized: "Find A Crib Plus"), icon: "star.fill", fill: SE.paleBlue, ink: SE.royal)
                                     }
                                 } else {
                                     Text("Guest").font(.se(30, .bold))
@@ -76,9 +76,9 @@ struct ProfileView: View {
                                     Text("Manage subscription").font(.se(17, .semibold)).foregroundStyle(SE.royal)
                                 }.buttonStyle(.plain)
                             } else {   // Plus = the AI features (2026-10-03)
-                                SEPrimaryButton(title: "Get Find A Crib Plus · \(plus.priceText)/mo", icon: "star.fill", fill: SE.navy) { showPaywall = true }
+                                SEPrimaryButton(title: String(localized: "Get Find A Crib Plus · \(plus.priceText)/mo"), icon: "star.fill", fill: SE.navy) { showPaywall = true }
                                     .accessibilityIdentifier("get-plus")
-                                Text("Real-time alerts (re-rentals go first come, first served), plain-language search, Help me apply, Is this rent fair?, no ads." + (plus.trial.map { " Your first \($0) is on us." } ?? ""))
+                                Text("Real-time alerts (re-rentals go first come, first served), plain-language search, Help me apply, Is this rent fair?, no ads." + (plus.trial.map { String(localized: " Your first \($0) is on us.") } ?? ""))
                                     .font(.se(15)).foregroundStyle(SE.ink3)
                             }
                         } else if auth.configured {
@@ -103,7 +103,7 @@ struct ProfileView: View {
                     .sheet(isPresented: $showPaywall) { PaywallView(source: "profile") }
                     .sheet(item: $emailSheet) { EmailSignInView(offersSocialSignIn: $0 == .alerts, forAlerts: $0 == .alerts) }
                     .sheet(isPresented: $showAlerts) { AlertsSheet() }
-                    .alert("Turn off alerts?", isPresented: $confirmTurnOff) {
+                    .alert(String(localized: "Turn off alerts?"), isPresented: $confirmTurnOff) {
                         Button("Turn off alerts", role: .destructive) {
                             Task { turnOffFailed = !(await LotteryFeed.shared.turnOff()) }
                         }
@@ -138,26 +138,26 @@ struct ProfileView: View {
                         if let t = nav.openTool { homeTool = t; nav.openTool = nil }
                         if nav.showAlerts { if auth.isSignedIn { showAlerts = true; nav.showAlerts = false } else { emailSheet = .alerts } }
                     }
-                    .alert("Delete your account?", isPresented: $confirmDelete) {
+                    .alert(String(localized: "Delete your account?"), isPresented: $confirmDelete) {
                         Button("Delete", role: .destructive) { Task { await auth.deleteAccount() } }
                         Button("Cancel", role: .cancel) {}
                     } message: { Text("Removes your account and its saved buildings on findacrib.com. This can't be undone.") }
 
                     Divider()
-                    settingRow("I'm here to") {
+                    settingRow(String(localized: "I'm here to")) {
                         Picker("", selection: $hereTo) { ForEach(["Rent", "Research a building", "Organize tenants"], id: \.self) { Text($0) } }
                             .pickerStyle(.menu).tint(SE.ink).font(.se(18))
                     }
-                    settingRow("Home borough") {
+                    settingRow(String(localized: "Home borough")) {
                         Picker("", selection: $homeBorough) { ForEach(Borough.all.map(\.name), id: \.self) { Text($0) } }
                             .pickerStyle(.menu).tint(SE.royal).font(.se(18))
                     }
-                    settingRow("Saved buildings") { Text("\(activity.saved.count)" + (auth.isSignedIn ? " · synced" : "")).font(.se(18, .bold)) }
-                    settingRow("Saved searches") { Text("\(activity.savedSearches.count)").font(.se(18, .bold)) }
+                    settingRow(String(localized: "Saved buildings")) { Text("\(activity.saved.count)" + (auth.isSignedIn ? String(localized: " · synced") : "")).font(.se(18, .bold)) }
+                    settingRow(String(localized: "Saved searches")) { Text("\(activity.savedSearches.count)").font(.se(18, .bold)) }
                     // The site's borough alerts — lotteries, re-rentals and
                     // voucher listings by borough, rent cap and income — set
                     // up or changed from here, not only from a results list.
-                    settingRow("Alerts") {
+                    settingRow(String(localized: "Alerts")) {
                         if auth.isSignedIn {
                             Button { showAlerts = true } label: {
                                 HStack(spacing: 4) { Text("Set up or change").font(.se(18, .semibold)); Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)) }
@@ -178,22 +178,22 @@ struct ProfileView: View {
                         // Flexible text with layout priority: a fixed-size
                         // "Turn off" at 18 pt was reported as clipped text by the
                         // accessibility audit on iPhone and iPad.
-                        settingRow("Alerts are on") {
+                        settingRow(String(localized: "Alerts are on")) {
                             Button { confirmTurnOff = true } label: {
-                                HStack(spacing: 4) { Text(turnOffFailed ? "Try again" : "Turn off alerts").font(.se(17, .semibold)).layoutPriority(1); Image(systemName: "bell.slash").font(.system(size: 13, weight: .bold)) }
+                                HStack(spacing: 4) { Text(turnOffFailed ? String(localized: "Try again") : String(localized: "Turn off alerts")).font(.se(17, .semibold)).layoutPriority(1); Image(systemName: "bell.slash").font(.system(size: 13, weight: .bold)) }
                                     .foregroundStyle(turnOffFailed ? SE.bad : SE.royal)
                             }.buttonStyle(.plain).accessibilityIdentifier("profile-alerts-off")
                         }
                     }
                     // Renter tools (owner, 2026-10-12): the website's Broker fee
                     // check and Lease review, here too. Plus; the sheets ask.
-                    settingRow("Broker fee check") {
+                    settingRow(String(localized: "Broker fee check")) {
                         Button { showBrokerFee = true } label: {
                             HStack(spacing: 4) { Text("Check a fee").font(.se(18, .semibold)); Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)) }
                                 .foregroundStyle(SE.royal)
                         }.buttonStyle(.plain).accessibilityIdentifier("profile-broker-fee")
                     }
-                    settingRow("Lease review") {
+                    settingRow(String(localized: "Lease review")) {
                         Button { showLeaseReview = true } label: {
                             HStack(spacing: 4) { Text("Review a lease").font(.se(18, .semibold)); Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)) }
                                 .foregroundStyle(SE.royal)
@@ -213,26 +213,26 @@ struct ProfileView: View {
                         }
                     }
                     // Application packet (2026-10-03): on this phone, open to all.
-                    settingRow("Application packet") {
+                    settingRow(String(localized: "Application packet")) {
                         Button { showPacket = true } label: {
-                            HStack(spacing: 4) { Text(Packet.shared.docs.isEmpty ? "Set up" : "\(Packet.shared.docs.count) document\(Packet.shared.docs.count == 1 ? "" : "s")").font(.se(18, .semibold)); Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)) }
+                            HStack(spacing: 4) { Text(Packet.shared.docs.isEmpty ? String(localized: "Set up") : String(localized: "\(Packet.shared.docs.count) documents")).font(.se(18, .semibold)); Image(systemName: "chevron.right").font(.system(size: 13, weight: .bold)) }
                                 .foregroundStyle(SE.royal)
                         }.buttonStyle(.plain).accessibilityIdentifier("profile-packet")
                     }
                     // Where alerts land besides email. Denied in Settings can only be
                     // undone in Settings, so that is where the row sends people.
-                    settingRow("Push alerts") {
+                    settingRow(String(localized: "Push alerts")) {
                         switch PushService.shared.status {
                         case .authorized, .provisional, .ephemeral:
                             let ok = PushService.stateLine(status: PushService.shared.status, registration: PushService.shared.registration).ok
-                            Text(ok ? "On" : "Allowed · not connected").font(.se(18, .bold)).foregroundStyle(ok ? SE.good : SE.warn)
+                            Text(ok ? String(localized: "On") : String(localized: "Allowed · not connected")).font(.se(18, .bold)).foregroundStyle(ok ? SE.good : SE.warn)
                         case .denied:
                             Button { UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!) } label: {
                                 HStack(spacing: 4) { Text("Off · turn on in Settings").font(.se(16, .semibold)); Image(systemName: "arrow.up.right").font(.system(size: 12, weight: .bold)) }
                                     .foregroundStyle(SE.royal)
                             }.buttonStyle(.plain)
                         default:
-                            Text(auth.isSignedIn ? "Asked when you turn on alerts" : "Sign in and turn on alerts").font(.se(16)).foregroundStyle(SE.ink3)
+                            Text(auth.isSignedIn ? String(localized: "Asked when you turn on alerts") : String(localized: "Sign in and turn on alerts")).font(.se(16)).foregroundStyle(SE.ink3)
                         }
                     }
                     .accessibilityIdentifier("profile-push")
@@ -241,7 +241,16 @@ struct ProfileView: View {
                     // that the in-app rating SHEET may not hang off a button; a
                     // link to the store page is fine, and is the only way to rate
                     // on demand once the sheet has had its three asks a year.
-                    settingRow("Rate Find A Crib") {
+                    // iOS keeps each app's language in Settings › Find A Crib ›
+                    // Language (shown once the app ships more than one); an app
+                    // can't switch it itself, so this opens that page.
+                    settingRow(String(localized: "Language")) {
+                        Button { openURL(URL(string: UIApplication.openSettingsURLString)!) } label: {
+                            HStack(spacing: 4) { Text(Self.appLanguageName).font(.se(18, .semibold)); Image(systemName: "arrow.up.right").font(.system(size: 13, weight: .bold)) }
+                                .foregroundStyle(SE.royal)
+                        }.buttonStyle(.plain).accessibilityIdentifier("profile-language")
+                    }
+                    settingRow(String(localized: "Rate Find A Crib")) {
                         Button { ReviewPrompt.shared.openWriteReview() } label: {
                             HStack(spacing: 4) { Text("On the App Store").font(.se(18, .semibold)); Image(systemName: "arrow.up.right").font(.system(size: 13, weight: .bold)) }
                                 .foregroundStyle(SE.royal)
@@ -251,17 +260,17 @@ struct ProfileView: View {
                     // data
                     VStack(alignment: .leading, spacing: 12) {
                         Text("Data").font(.se(22, .bold))
-                        dataRow("Rent-stabilized buildings", store.buildings.count.formatted())
-                        dataRow("Voucher-friendly buildings", (store.s8.bldg.count + store.s8.avail.count).formatted())
-                        dataRow("HCR lotteries & waitlists", store.hcr.listings.count.formatted())
-                        dataRow("Data as of", store.dataAsOf.map(Formatters.long.string) ?? "–")
+                        dataRow(String(localized: "Rent-stabilized buildings"), store.buildings.count.formatted())
+                        dataRow(String(localized: "Voucher-friendly buildings"), (store.s8.bldg.count + store.s8.avail.count).formatted())
+                        dataRow(String(localized: "HCR lotteries & waitlists"), store.hcr.listings.count.formatted())
+                        dataRow(String(localized: "Data as of"), store.dataAsOf.map(Formatters.long.string) ?? "–")
                         Button {
                             refreshing = true
                             Task { await store.refresh(); refreshing = false }
                         } label: {
                             HStack(spacing: 8) {
                                 if refreshing { ProgressView().tint(SE.royal) }
-                                Text(refreshing ? "Checking findacrib.com…" : "Refresh data").font(.se(18, .bold)).foregroundStyle(SE.royal)
+                                Text(refreshing ? String(localized: "Checking findacrib.com…") : String(localized: "Refresh data")).font(.se(18, .bold)).foregroundStyle(SE.royal)
                             }
                         }.buttonStyle(.plain).disabled(refreshing)
                     }
@@ -291,11 +300,11 @@ struct ProfileView: View {
                     VStack(alignment: .leading, spacing: 0) {
                         Text("About").font(.se(22, .bold)).padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 6)
                         linkRow("findacrib.com", "https://findacrib.com/")
-                        linkRow("What is rent stabilization?", "https://findacrib.com/guide/what-is-rent-stabilization/")
-                        linkRow("Is my apartment rent stabilized?", "https://findacrib.com/guide/is-my-apartment-rent-stabilized/")
-                        linkRow("Tenant rights", "https://findacrib.com/guide/rent-stabilized-tenant-rights/")
-                        linkRow("Deed theft: warning signs and how to report it", "https://findacrib.com/guide/deed-theft-nyc/")
-                        linkRow("Developer API", "https://findacrib.com/developers")
+                        linkRow(String(localized: "What is rent stabilization?"), "https://findacrib.com/guide/what-is-rent-stabilization/")
+                        linkRow(String(localized: "Is my apartment rent stabilized?"), "https://findacrib.com/guide/is-my-apartment-rent-stabilized/")
+                        linkRow(String(localized: "Tenant rights"), "https://findacrib.com/guide/rent-stabilized-tenant-rights/")
+                        linkRow(String(localized: "Deed theft: warning signs and how to report it"), "https://findacrib.com/guide/deed-theft-nyc/")
+                        linkRow(String(localized: "Developer API"), "https://findacrib.com/developers")
                     }
                     Text("Find A Crib \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "") (\(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "")) · Not a broker. Building data from NYS HCR and NYC HPD open data.")
                         .font(.se(13)).foregroundStyle(SE.ink3).padding(16)
@@ -308,6 +317,11 @@ struct ProfileView: View {
         .background(Color.white)
     }
 
+    /// The language the app is showing, in that language ("Español").
+    static var appLanguageName: String {
+        let code = Bundle.main.preferredLocalizations.first ?? "en"
+        return Locale(identifier: code).localizedString(forIdentifier: code)?.capitalized(with: Locale(identifier: code)) ?? code
+    }
     private func settingRow<C: View>(_ k: String, @ViewBuilder _ v: () -> C) -> some View {
         VStack(spacing: 0) {
             HStack { Text(k).font(.se(19, .semibold)).foregroundStyle(SE.ink2); Spacer(); v() }
@@ -346,9 +360,9 @@ enum HomeTool: String, CaseIterable, Identifiable {
     case repair, rentIncrease = "rent-increase", rights, renewal
     var id: String { rawValue }
     var title: String {
-        switch self { case .repair: "Repairs"; case .rentIncrease: "Rent increase"; case .rights: "Your rights"; case .renewal: "Renewal coach" }
+        switch self { case .repair: String(localized: "Repairs"); case .rentIncrease: String(localized: "Rent increase"); case .rights: String(localized: "Your rights"); case .renewal: String(localized: "Renewal coach") }
     }
     var action: String {
-        switch self { case .repair: "Get one made"; case .rentIncrease: "Is it legal?"; case .rights: "Know them"; case .renewal: "Plan it" }
+        switch self { case .repair: String(localized: "Get one made"); case .rentIncrease: String(localized: "Is it legal?"); case .rights: String(localized: "Know them"); case .renewal: String(localized: "Plan it") }
     }
 }

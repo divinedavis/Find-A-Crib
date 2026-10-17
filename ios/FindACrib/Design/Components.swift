@@ -194,7 +194,7 @@ struct HeartButton: View {
                 .frame(width: 44, height: 44)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(on ? "Unsave" : "Save")
+        .accessibilityLabel(on ? String(localized: "Unsave") : String(localized: "Save"))
         .accessibilityIdentifier("heart")
     }
 }
@@ -202,7 +202,7 @@ struct HeartButton: View {
 /// The ⓘ beside a number. It used to be a bare image that did nothing when
 /// tapped; now it is a button that pops the explanation up in place.
 struct InfoDot: View {
-    var title: String = "About this number"
+    var title: String = String(localized: "About this number")
     var text: String = ""
     @State private var showing = false
     var body: some View {

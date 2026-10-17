@@ -78,10 +78,10 @@ extension AIService {
 
     nonisolated static func toolErrorText(_ e: Error) -> String {
         switch e as? AIError {
-        case .dailyLimit: "That's a lot for one day — more tomorrow."
-        case .monthlyLimit: "You've used this month's AI — more on the 1st."
-        case .declined: "AI couldn't write this one — try rewording it."
-        default: "Couldn't reach Find A Crib just now. Try again in a minute."
+        case .dailyLimit: String(localized: "That's a lot for one day — more tomorrow.")
+        case .monthlyLimit: String(localized: "You've used this month's AI — more on the 1st.")
+        case .declined: String(localized: "AI couldn't write this one — try rewording it.")
+        default: String(localized: "Couldn't reach Find A Crib just now. Try again in a minute.")
         }
     }
 }
@@ -134,14 +134,14 @@ private struct LetterSection: View {
     var body: some View {
         Section(title) {
             Text(text).font(.se(15)).textSelection(.enabled).accessibilityIdentifier(id)
-            Button(copied ? "Copied ✓" : "Copy") { UIPasteboard.general.string = text; copied = true }
+            Button(copied ? String(localized: "Copied ✓") : String(localized: "Copy")) { UIPasteboard.general.string = text; copied = true }
                 .font(.se(16, .semibold)).accessibilityIdentifier(id + "-copy")
             ShareLink(item: text) { Label("Send…", systemImage: "square.and.arrow.up").font(.se(16, .semibold)) }
         }
     }
 }
 
-private let notAdvice = "General information about NYC and New York State rules, not legal advice. Free help: call 311 and ask for the Tenant Helpline."
+private let notAdvice = String(localized: "General information about NYC and New York State rules, not legal advice. Free help: call 311 and ask for the Tenant Helpline.")
 
 /// Signed out, a tool's first tap opens sign-in; without Plus, the paywall.
 private struct ToolGate: ViewModifier {
@@ -177,10 +177,10 @@ struct RepairView: View {
     @State private var reminded = false
 
     static let issues: [(String, String)] = [
-        ("heat", "No heat or not enough heat"), ("hot_water", "No hot water"), ("leak", "Leak, water damage or plumbing"),
-        ("mold", "Mold"), ("pests", "Roaches, mice, rats or bedbugs"), ("lead", "Peeling paint with a child under 6"),
-        ("window_guards", "Missing window guards (child 10 or under)"), ("gas_electric", "No gas, electricity or cooking gas"),
-        ("other", "Something else broken")]
+        ("heat", String(localized: "No heat or not enough heat")), ("hot_water", String(localized: "No hot water")), ("leak", String(localized: "Leak, water damage or plumbing")),
+        ("mold", String(localized: "Mold")), ("pests", String(localized: "Roaches, mice, rats or bedbugs")), ("lead", String(localized: "Peeling paint with a child under 6")),
+        ("window_guards", String(localized: "Missing window guards (child 10 or under)")), ("gas_electric", String(localized: "No gas, electricity or cooking gas")),
+        ("other", String(localized: "Something else broken"))]
 
     var body: some View {
         NavigationStack {
@@ -193,7 +193,7 @@ struct RepairView: View {
                     Picker("Problem", selection: $issue) { ForEach(Self.issues, id: \.0) { Text($0.1).tag($0.0) } }
                         .accessibilityIdentifier("repair-issue")
                     Toggle("I know when it started", isOn: $hasSince)
-                    if hasSince { DatePicker("Since", selection: $since, in: ...Date(), displayedComponents: .date) }
+                    if hasSince { DatePicker(String(localized: "Since"), selection: $since, in: ...Date(), displayedComponents: .date) }
                 }
                 Section("For the letter") {
                     TextField("Building address", text: $address).textContentType(.fullStreetAddress).accessibilityIdentifier("repair-address")
@@ -212,21 +212,21 @@ struct RepairView: View {
                 }
                 if let error { Section { Text(error).font(.se(15)).foregroundStyle(SE.bad) } }
                 if let r = result {
-                    Section(r.urgent ? "🚨 What the law requires" : "What the law requires") {
+                    Section(r.urgent ? String(localized: "🚨 What the law requires") : String(localized: "What the law requires")) {
                         Text(r.rule).font(.se(15))
                         Text(r.law).font(.se(13)).foregroundStyle(SE.ink3)
                     }.accessibilityIdentifier("repair-rule")
-                    LetterSection(title: aiLetter == nil ? "Your letter" : "Your letter, in your words", text: aiLetter ?? r.letter, id: "repair-letter")
+                    LetterSection(title: aiLetter == nil ? String(localized: "Your letter") : String(localized: "Your letter, in your words"), text: aiLetter ?? r.letter, id: "repair-letter")
                     Section("What to do next") {
                         ForEach(Array(r.steps.enumerated()), id: \.offset) { i, s in Text("\(i + 1). \(s)").font(.se(15)) }
                         if let u = URL(string: r.links.file_311) { Button("File with 311") { openURL(u) }.font(.se(16, .semibold)) }
                         if let u = URL(string: r.links.legal_help) { Button("Free legal help") { openURL(u) }.font(.se(16, .semibold)) }
-                        Button(reminded ? "Reminder set for \(niceDate(r.ask_by)) ✓" : "Remind me on \(niceDate(r.ask_by))") {
-                            Task { reminded = await ToolReminder.schedule(id: "repair", date: r.ask_by, title: "Check on your repair",
-                                                                         body: "\(r.label) — not fixed? File a complaint with 311.") }
+                        Button(reminded ? String(localized: "Reminder set for \(niceDate(r.ask_by)) ✓") : String(localized: "Remind me on \(niceDate(r.ask_by))")) {
+                            Task { reminded = await ToolReminder.schedule(id: "repair", date: r.ask_by, title: String(localized: "Check on your repair"),
+                                                                         body: String(localized: "\(r.label) — not fixed? File a complaint with 311.")) }
                         }.font(.se(16, .semibold)).accessibilityIdentifier("repair-remind")
-                        AddToCalendarButton(item: CalendarItem(title: "Check on my repair: \(r.label)", day: r.ask_by,
-                                                               notes: "Not fixed? File a complaint with 311."))
+                        AddToCalendarButton(item: CalendarItem(title: String(localized: "Check on my repair: \(r.label)"), day: r.ask_by,
+                                                               notes: String(localized: "Not fixed? File a complaint with 311.")))
                     }
                 }
                 Section { Text(notAdvice).font(.se(13)).foregroundStyle(SE.ink3) }
@@ -302,12 +302,12 @@ struct RentIncreaseView: View {
                     }.pickerStyle(.segmented).accessibilityIdentifier("rentup-stabilized")
                 }
                 Section("The increase") {
-                    money("Rent now", $current, id: "rentup-current")
-                    money("New rent", $new, id: "rentup-new")
-                    DatePicker("New lease starts", selection: $start, displayedComponents: .date)
+                    money(String(localized: "Rent now"), $current, id: "rentup-current")
+                    money(String(localized: "New rent"), $new, id: "rentup-new")
+                    DatePicker(String(localized: "New lease starts"), selection: $start, displayedComponents: .date)
                     Picker("Lease length", selection: $term) { Text("1 year").tag("1"); Text("2 years").tag("2") }
-                    number("Years you've lived there", $years)
-                    number("Days' notice you got", $notice)
+                    number(String(localized: "Years you've lived there"), $years)
+                    number(String(localized: "Days' notice you got"), $notice)
                 }
                 Section {
                     Button { Task { await run() } } label: {
@@ -340,10 +340,10 @@ struct RentIncreaseView: View {
 
     nonisolated static func verdictText(_ v: String) -> String {
         switch v {
-        case "likely_illegal": "This increase looks too high"
-        case "check": "Worth a closer look"
-        case "need_rents": "Add your rent now and the new rent"
-        default: "This increase looks allowed"
+        case "likely_illegal": String(localized: "This increase looks too high")
+        case "check": String(localized: "Worth a closer look")
+        case "need_rents": String(localized: "Add your rent now and the new rent")
+        default: String(localized: "This increase looks allowed")
         }
     }
 
@@ -474,15 +474,15 @@ struct RenewalView: View {
                         .font(.se(15)).foregroundStyle(SE.ink2)
                 }
                 Section("Your lease") {
-                    DatePicker("Lease ends", selection: $leaseEnd, displayedComponents: .date)
+                    DatePicker(String(localized: "Lease ends"), selection: $leaseEnd, displayedComponents: .date)
                     Picker("Rent-stabilized", selection: $stabilized) {
                         Text("Yes").tag("yes"); Text("No").tag("no"); Text("Not sure").tag("unsure")
                     }.pickerStyle(.segmented)
-                    field("Rent now", $current, "$0", id: "renewal-current")
-                    field("Offered rent (if any)", $offered, "$0", id: "renewal-offered")
+                    field(String(localized: "Rent now"), $current, "$0", id: "renewal-current")
+                    field(String(localized: "Offered rent (if any)"), $offered, "$0", id: "renewal-offered")
                     field("ZIP", $zip, "11216", id: "renewal-zip", pad: .numberPad)
                     Picker("Bedrooms", selection: $beds) { Text("Studio").tag(0); Text("1").tag(1); Text("2").tag(2); Text("3+").tag(3) }
-                    field("Years you've lived there", $years, "—", id: "renewal-years")
+                    field(String(localized: "Years you've lived there"), $years, "—", id: "renewal-years")
                 }
                 Section {
                     Button { Task { await run() } } label: {
@@ -499,14 +499,14 @@ struct RenewalView: View {
                             }
                         }
                         if let r = p.reminders.first {
-                            Button(reminded ? "Reminder set for \(niceDate(r.date)) ✓" : "Remind me on \(niceDate(r.date))") {
+                            Button(reminded ? String(localized: "Reminder set for \(niceDate(r.date)) ✓") : String(localized: "Remind me on \(niceDate(r.date))")) {
                                 Task { reminded = await ToolReminder.schedule(id: "renewal", date: r.date, title: r.title, body: r.body) }
                             }.font(.se(16, .semibold)).accessibilityIdentifier("renewal-remind")
                         }
                         if let end = p.dates.first(where: { $0.label == "Your lease ends" }) {
-                            AddToCalendarButton(item: CalendarItem(title: "Lease ends", day: end.date,
-                                                                   notes: "Open Find A Crib's Renewal coach to check the offer."),
-                                                label: "Add lease end to Calendar")
+                            AddToCalendarButton(item: CalendarItem(title: String(localized: "Lease ends"), day: end.date,
+                                                                   notes: String(localized: "Open Find A Crib's Renewal coach to check the offer.")),
+                                                label: String(localized: "Add lease end to Calendar"))
                         }
                     }.accessibilityIdentifier("renewal-dates")
                     if let c = p.compare {
@@ -524,7 +524,7 @@ struct RenewalView: View {
                     }
                     if let s = script {
                         Section("Points to make") { ForEach(s.talking_points, id: \.self) { Text("• \($0)").font(.se(15)) } }
-                        LetterSection(title: s.email_subject.isEmpty ? "Your email" : "Email: \(s.email_subject)", text: s.email_body, id: "renewal-email")
+                        LetterSection(title: s.email_subject.isEmpty ? String(localized: "Your email") : String(localized: "Email: \(s.email_subject)"), text: s.email_body, id: "renewal-email")
                     }
                 }
                 Section { Text(notAdvice).font(.se(13)).foregroundStyle(SE.ink3) }

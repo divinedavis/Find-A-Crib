@@ -14,15 +14,15 @@ struct FiltersSheet: View {
                 VStack(alignment: .leading, spacing: 24) {
                     PriceRangeFields(minPrice: $draft.minPrice, maxPrice: $draft.maxPrice)
                     VStack(alignment: .leading, spacing: 10) {
-                        SEFieldLabel(text: "Show")
+                        SEFieldLabel(text: String(localized: "Show"))
                         ShowChecklist(query: $draft)
                     }
                     // Bedrooms narrow the re-rentals, which are New York's,
                     // so outside NYC every size matches nothing.
                     if store.city.hasNYCExtras {
                         VStack(alignment: .leading, spacing: 10) {
-                            SEFieldLabel(text: "Bedrooms")
-                            SESegmentRow(options: [(0, "Studio"), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: $draft.beds)
+                            SEFieldLabel(text: String(localized: "Bedrooms"))
+                            SESegmentRow(options: [(0, String(localized: "Studio")), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: $draft.beds)
                         }
                     }
                     if draft.vouchersOnly {
@@ -37,7 +37,7 @@ struct FiltersSheet: View {
                     // the other cities publish their own records, not these.
                     if store.city.isNYC {
                         VStack(alignment: .leading, spacing: 10) {
-                            SEFieldLabel(text: "Building condition")
+                            SEFieldLabel(text: String(localized: "Building condition"))
                             Toggle(isOn: $draft.noOpenViolations) {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("No open HPD violations").font(.se(18, .semibold))
@@ -47,9 +47,9 @@ struct FiltersSheet: View {
                         }
                     }
                     VStack(alignment: .leading, spacing: 10) {
-                        SEFieldLabel(text: "Sort")
+                        SEFieldLabel(text: String(localized: "Sort"))
                         Picker("Sort", selection: $draft.sort) {
-                            ForEach(SortOrder.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                            ForEach(SortOrder.allCases, id: \.self) { Text($0.title).tag($0) }
                         }.pickerStyle(.menu).tint(SE.royal).font(.se(18))
                     }
                     Color.clear.frame(height: 80)
@@ -61,12 +61,12 @@ struct FiltersSheet: View {
             .safeAreaInset(edge: .bottom) {
                 HStack(spacing: 12) {
                     // Reset takes only the width it needs; the Show button gets the rest.
-                    SEOutlineButton(title: "Reset") {
+                    SEOutlineButton(title: String(localized: "Reset")) {
                         let l = draft.locations
                         draft = SearchQuery(); draft.locations = l
                     }
                     .fixedSize(horizontal: true, vertical: false)
-                    SEPrimaryButton(title: "Show \(count.formatted()) \(draft.noun)") {
+                    SEPrimaryButton(title: String(localized: "Show \(count.formatted()) \(draft.noun)")) {
                         var p = Analytics.shape(draft); p["results"] = count
                         Analytics.shared.track("filters_apply", p)
                         query = draft; dismiss()

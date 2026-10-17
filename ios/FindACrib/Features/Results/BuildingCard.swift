@@ -37,13 +37,13 @@ struct BuildingCard: View {
                     .contentShape(Rectangle())
                     .onTapGesture { open() }
                 if let l = store.hcrListings(b).first {
-                    SEBadge(text: l.isOpen ? "\(l.kindLabel) · open" : l.kindLabel, icon: "doc.text.fill", fill: SE.navy, ink: .white)
+                    SEBadge(text: l.isOpen ? String(localized: "\(l.kindLabel) · open") : l.kindLabel, icon: "doc.text.fill", fill: SE.navy, ink: .white)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                         .padding(12)
                         .allowsHitTesting(false)
                 }
                 if store.voucherAvail(b) != nil {
-                    SEBadge(text: "Section 8", icon: "checkmark.seal.fill", fill: .white, ink: SE.ink)
+                    SEBadge(text: String(localized: "Section 8"), icon: "checkmark.seal.fill", fill: .white, ink: SE.ink)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
                         .padding(12)
                         .allowsHitTesting(false)
@@ -91,15 +91,15 @@ struct BuildingCard: View {
                         Rectangle().fill(SE.line).frame(width: 1, height: 22)
                         Spacer(minLength: 6)
                     }
-                    fact("building.2", "\(b.u.map { "\($0) unit\($0 == 1 ? "" : "s")" } ?? "– units")")
+                    fact("building.2", b.u.map { String(localized: "\($0) units") } ?? String(localized: "– units"))
                     Spacer(minLength: 6)
                     Rectangle().fill(SE.line).frame(width: 1, height: 22)
                     Spacer(minLength: 6)
-                    fact("calendar", store.city.isIncomeRestricted ? (b.yr.map { "Since \($0)" } ?? "Since –") : (b.yr.map { "Built \($0)" } ?? "Built –"))
+                    fact("calendar", store.city.isIncomeRestricted ? (b.yr.map { String(localized: "Since \($0)") } ?? String(localized: "Since –")) : (b.yr.map { String(localized: "Built \($0)") } ?? String(localized: "Built –")))
                 }
                 }
 
-                Text(store.isSyntheticHCR(b) ? "Listed on HousingSearch.ny.gov" : attribution).font(.se(18)).foregroundStyle(SE.ink2)
+                Text(store.isSyntheticHCR(b) ? String(localized: "Listed on HousingSearch.ny.gov") : attribution).font(.se(18)).foregroundStyle(SE.ink2)
 
                 HStack(spacing: 14) {
                     // New York's register cards lead with the building's pests
@@ -167,10 +167,10 @@ struct BuildingCard: View {
     /// HCR sites are not on the register and keep their own.
     @ViewBuilder private var statusBadge: some View {
         if store.isSyntheticHCR(b) {
-            SEBadge(text: "HousingSearch.ny.gov", fill: SE.badge.opacity(0.95))
+            SEBadge(text: String(localized: "HousingSearch.ny.gov"), fill: SE.badge.opacity(0.95))
         } else {
             HStack(spacing: 6) {
-                SEBadge(text: store.record(b)?.leasing == 1 ? "Leasing now" : store.city.badgeLabel,
+                SEBadge(text: store.record(b)?.leasing == 1 ? String(localized: "Leasing now") : store.city.badgeLabel,
                         icon: "checkmark.circle.fill", fill: SE.good, ink: .white)   // SE.green read 4.1:1 under white text
                     .accessibilityIdentifier("badge-stabilized")
             }
@@ -180,11 +180,11 @@ struct BuildingCard: View {
     @ViewBuilder private var priceLines: some View {
         if let l = store.hcrListings(b).first {
             VStack(alignment: .leading, spacing: 4) {
-                Text(l.name ?? "HCR listing").font(.se(22, .bold)).foregroundStyle(SE.ink).lineLimit(1)
+                Text(l.name ?? String(localized: "HCR listing")).font(.se(22, .bold)).foregroundStyle(SE.ink).lineLimit(1)
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     if let inc = l.incomeRange { Text(inc).font(.se(20, .bold)); Text("household income").font(.se(17)).foregroundStyle(SE.ink2) }
                 }
-                Text([l.ptype, l.due.map { "apply by \($0)" }, l.approx == true ? "location approximate" : nil].compactMap { $0 }.joined(separator: " · "))
+                Text([l.ptype, l.due.map { String(localized: "apply by \($0)") }, l.approx == true ? String(localized: "location approximate") : nil].compactMap { $0 }.joined(separator: " · "))
                     .font(.se(16)).foregroundStyle(SE.ink3)
             }
         } else if let avail = store.voucherAvail(b), let p = avail.p {
@@ -197,12 +197,12 @@ struct BuildingCard: View {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text("\(Formatters.dollars(est[0]))–\(Formatters.dollars(est[2]))").font(.se(28, .bold)).foregroundStyle(SE.ink).lineLimit(1).minimumScaleFactor(0.8).layoutPriority(2)
                 Text("estimation").font(.se(16)).foregroundStyle(SE.ink2).lineLimit(1).fixedSize().layoutPriority(3)
-                InfoDot(title: "Estimation", text: estimateNote).layoutPriority(3)
+                InfoDot(title: String(localized: "Estimation"), text: estimateNote).layoutPriority(3)
             }
         } else if store.city.isIncomeRestricted {
             // No rents here: lead with the development and its restricted units.
             let r = store.record(b)
-            Text(r?.name ?? "Income-restricted building").font(.se(22, .bold)).foregroundStyle(SE.ink).lineLimit(2)
+            Text(r?.name ?? String(localized: "Income-restricted building")).font(.se(22, .bold)).foregroundStyle(SE.ink).lineLimit(2)
         } else {
             Text(b.statusLine.isEmpty ? store.city.statusLabel : b.statusLine).font(.se(20, .bold)).foregroundStyle(SE.ink2).lineLimit(2)
         }
@@ -214,20 +214,20 @@ struct BuildingCard: View {
             ? (store.record(b)?.mix ?? [:]).keys.compactMap { Int($0) }.sorted()
             : []
         if bd.isEmpty
- { return "– bed" }
-        let s = bd.sorted().map { $0 == 0 ? "Studio" : "\($0)" }
-        return s.count == 1 ? (bd[0] == 0 ? "Studio" : "\(bd[0]) bed") : "\(s.first!)–\(s.last!) bed"
+ { return String(localized: "– bed") }
+        let s = bd.sorted().map { $0 == 0 ? String(localized: "Studio") : "\($0)" }
+        return s.count == 1 ? (bd[0] == 0 ? String(localized: "Studio") : String(localized: "\(bd[0]) bed")) : String(localized: "\(s.first!)–\(s.last!) bed")
     }
 
     private var estimateNote: String {
-        "HUD FY2026 Small-Area Fair Market Rent for ZIP \(b.z ?? ""), studio to 2-bedroom. A neighborhood-level estimate of what apartments go for — not this building's rent."
+        String(localized: "HUD FY2026 Small-Area Fair Market Rent for ZIP \(b.z ?? ""), studio to 2-bedroom. A neighborhood-level estimate of what apartments go for — not this building's rent.")
     }
 
     private var attribution: String {
         if !store.city.isNYC { return cityAttribution }
         let v = b.openViolations
-        if v == 0 { return "No open HPD violations" }
-        return "\(v) open HPD violation\(v == 1 ? "" : "s")" + ((b.h?.violations?.oc ?? 0) > 0 ? " · \(b.h!.violations!.oc!) class C" : "")
+        if v == 0 { return String(localized: "No open HPD violations") }
+        return String(localized: "\(v) open HPD violations") + ((b.h?.violations?.oc ?? 0) > 0 ? String(localized: " · \(b.h!.violations!.oc!) class C") : "")
     }
 
     /// The line under the facts outside New York — never HPD's, which is
@@ -237,13 +237,13 @@ struct BuildingCard: View {
         let r = store.record(b)
         if store.city.isIncomeRestricted {
             var bits: [String] = []
-            if let li = r?.li { bits.append("\(li) income-restricted unit\(li == 1 ? "" : "s")") }
+            if let li = r?.li { bits.append(String(localized: "\(li) income-restricted units")) }
             if let p = r?.prog?.first { bits.append(p) }
-            return bits.isEmpty ? "Income-restricted building" : bits.joined(separator: " · ")
+            return bits.isEmpty ? String(localized: "Income-restricted building") : bits.joined(separator: " · ")
         }
         if let rec = store.city.records, rec.violationsLabel != nil, let v = r?.violations {
             let open = v.open ?? 0
-            return open == 0 ? "No open \(rec.agency) violations" : "\(open) open \(rec.agency) violation\(open == 1 ? "" : "s")"
+            return open == 0 ? String(localized: "No open \(rec.agency) violations") : String(localized: "\(open) open \(rec.agency) violations")
         }
         return store.city.registerNote
     }
@@ -274,7 +274,7 @@ struct CardRecordsButton: View {
         Group {
             if let kinds {
                 if kinds.isEmpty {
-                    button(id: "card-owner-phone", icon: "phone.fill", text: "Owner Phone") { tapPhone() }
+                    button(id: "card-owner-phone", icon: "phone.fill", text: String(localized: "Owner Phone")) { tapPhone() }
                 } else {
                     // Rotates every 2.5 s through the kinds found.
                     TimelineView(.periodic(from: .now, by: 2.5)) { ctx in

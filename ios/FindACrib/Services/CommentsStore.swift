@@ -77,7 +77,7 @@ final class CommentsStore {
             blocked = await loadBlocks()
             comments = rows.map {
                 Comment(id: $0.id, userID: $0.user_id,
-                        author: ($0.author?.trimmingCharacters(in: .whitespaces)).flatMap { $0.isEmpty ? nil : $0 } ?? "Member",
+                        author: ($0.author?.trimmingCharacters(in: .whitespaces)).flatMap { $0.isEmpty ? nil : $0 } ?? String(localized: "Member"),
                         body: $0.body ?? "",
                         createdAt: Self.date($0.created_at),
                         parentID: $0.parent_id,
@@ -143,14 +143,14 @@ final class CommentsStore {
 
     @discardableResult
     func post(bbl: String, body: String, replyingTo parent: Comment? = nil) async -> Bool {
-        guard let client, let uid = auth?.session?.user.id else { error = "Sign in to comment."; return false }
+        guard let client, let uid = auth?.session?.user.id else { error = String(localized: "Sign in to comment."); return false }
         let text = String(body.trimmingCharacters(in: .whitespacesAndNewlines).prefix(Self.maxLength))
         guard !text.isEmpty else { return false }
         // Guideline 1.2 wants a filter, not just a report button. This is the
         // floor — slurs and the obvious — and the report/block path handles
         // what a word list never can.
         if Self.isObjectionable(text) {
-            error = "That comment breaks the rules. Keep it about the building."
+            error = String(localized: "That comment breaks the rules. Keep it about the building.")
             Analytics.shared.track("comment_blocked_text", ["bbl": bbl])
             return false
         }
@@ -163,7 +163,7 @@ final class CommentsStore {
             await load(bbl: bbl)
             return true
         } catch {
-            self.error = "Couldn't post that just now. Try again."
+            self.error = String(localized: "Couldn't post that just now. Try again.")
             return false
         }
     }
@@ -211,7 +211,7 @@ final class CommentsStore {
         }
         let email = auth?.email ?? ""
         let local = email.split(separator: "@").first.map(String.init) ?? ""
-        return String((local.isEmpty ? "Member" : local).prefix(60))
+        return String((local.isEmpty ? String(localized: "Member") : local).prefix(60))
     }
 
     /// A deliberately small list: slurs and threats, matched on word
@@ -250,10 +250,10 @@ final class CommentsStore {
     /// wording the website uses.
     nonisolated static func ago(_ d: Date, now: Date = Date()) -> String {
         let s = now.timeIntervalSince(d)
-        if s < 3600 { return "just now" }
+        if s < 3600 { return String(localized: "just now") }
         if s < 86_400 { return "\(Int(s / 3600))h" }
         if s < 30 * 86_400 { return "\(Int(s / 86_400))d" }
-        let f = DateFormatter(); f.dateFormat = "MMM d"
+        let f = DateFormatter(); f.setLocalizedDateFormatFromTemplate("MMMd")
         return f.string(from: d)
     }
 

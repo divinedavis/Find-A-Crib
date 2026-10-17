@@ -41,7 +41,7 @@ struct AlertPush: Identifiable, Equatable {
             guard url != nil || !body.isEmpty else { return nil }
             items = [Item(kind: "alert", text: body.isEmpty ? title : body, detail: "", url: url, borough: "")]
         }
-        var push = AlertPush(title: title.isEmpty ? "New alerts" : title, items: items)
+        var push = AlertPush(title: title.isEmpty ? String(localized: "New alerts") : title, items: items)
         push.digest = (userInfo["digest"] as? Bool) ?? false
         return push
     }
@@ -82,12 +82,12 @@ struct AlertPushSheet: View {
                     // Without Plus every alert is the 8 AM round-up (2026-10-06),
                     // whatever the payload says (a pre-digest send has no flag).
                     if push.digest || offersRealtime {
-                        Text(push.items.count == 1 ? "From your 8 AM round-up. Tap through to apply on the agent's site."
-                                                   : "\(push.items.count) from your 8 AM round-up. Tap one to see it on the agent's site.")
+                        Text(push.items.count == 1 ? String(localized: "From your 8 AM round-up. Tap through to apply on the agent's site.")
+                                                   : String(localized: "\(push.items.count) from your 8 AM round-up. Tap one to see it on the agent's site."))
                             .font(.se(16)).foregroundStyle(SE.ink2)
                     } else {
-                        Text(push.items.count == 1 ? "Opened the minute it was posted. Tap through to apply on the agent's site."
-                                                   : "\(push.items.count) opened the minute they were posted. Tap one to see it on the agent's site.")
+                        Text(push.items.count == 1 ? String(localized: "Opened the minute it was posted. Tap through to apply on the agent's site.")
+                                                   : String(localized: "\(push.items.count) opened the minute they were posted. Tap one to see it on the agent's site."))
                             .font(.se(16)).foregroundStyle(SE.ink2)
                     }
                     // The real-time offer is the SECOND card, the same size as a
@@ -111,7 +111,7 @@ struct AlertPushSheet: View {
     private var realtimeCard: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
-                SEBadge(text: "Plus", icon: "bolt.fill", fill: Color(hex: 0x5B21B6), ink: .white)
+                SEBadge(text: String(localized: "Plus"), icon: "bolt.fill", fill: Color(hex: 0x5B21B6), ink: .white)
                 Text("Real-time alerts").font(.se(15, .semibold)).foregroundStyle(SE.ink2)
             }
             Text("Get alerts the minute they open, not once a day").font(.se(20, .bold)).foregroundStyle(SE.ink)
@@ -152,7 +152,7 @@ struct AlertPushSheet: View {
                         openURL(url)
                     }
                 } label: {
-                    Text(PushService.buildingBBL(in: url) != nil ? "Open the building" : "See it on their site ↗")
+                    Text(PushService.buildingBBL(in: url) != nil ? String(localized: "Open the building") : String(localized: "See it on their site ↗"))
                         .font(.se(17, .bold)).foregroundStyle(.white)
                         .frame(maxWidth: .infinity).frame(height: 46).background(SE.royal)
                 }
@@ -167,7 +167,7 @@ struct AlertPushSheet: View {
     }
 
     static func kindLabel(_ k: String) -> String {
-        switch k { case "lottery": "Lottery"; case "voucher": "Voucher listing"; case "rerental": "Rerental"; default: "Alert" }
+        switch k { case "lottery": String(localized: "Lottery"); case "voucher": String(localized: "Voucher listing"); case "rerental": String(localized: "Rerental"); default: String(localized: "Alert") }
     }
     static func boroughName(_ code: String) -> String? {
         ["M": "Manhattan", "Bk": "Brooklyn", "Q": "Queens", "Bx": "Bronx", "SI": "Staten Island"][code]

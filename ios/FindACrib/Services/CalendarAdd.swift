@@ -55,7 +55,7 @@ struct CalendarAddSheet: UIViewControllerRepresentable {
 /// A small "Add to Calendar" button that opens the editor.
 struct AddToCalendarButton: View {
     let item: CalendarItem
-    var label = "Add to Calendar"
+    var label = String(localized: "Add to Calendar")
     @State private var showing: CalendarItem?
     var body: some View {
         Button { showing = item } label: { Label(label, systemImage: "calendar.badge.plus").font(.se(16, .semibold)) }

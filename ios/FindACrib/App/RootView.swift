@@ -119,7 +119,7 @@ struct PillTabBar: View {
                 Button { if selected != tab { Analytics.shared.track("tab", ["to": tab.rawValue]) }; selected = tab } label: {
                     VStack(spacing: 4) {
                         Image(systemName: tab.icon).font(.system(size: 22, weight: on ? .semibold : .regular))
-                        Text(tab.rawValue).font(.se(tabs.count >= 5 ? 13 : 14, .semibold)).lineLimit(1).minimumScaleFactor(0.7)
+                        Text(tab.title).font(.se(tabs.count >= 5 ? 13 : 14, .semibold)).lineLimit(1).minimumScaleFactor(0.7)
                     }
                     .foregroundStyle(on ? SE.royal : SE.ink)
                     .frame(width: itemWidth, height: 66)

@@ -56,16 +56,16 @@ struct LocationPickerView: View {
                 List {
                     if store.city.isNYC {
                         if !boroughs.isEmpty {
-                            Section(header: header("Boroughs")) {
-                                ForEach(boroughs, id: \.code) { b in row(.borough(b.code), title: b.name, sub: "\((store.boroughCounts[b.code] ?? 0).formatted()) buildings") }
+                            Section(header: header(String(localized: "Boroughs"))) {
+                                ForEach(boroughs, id: \.code) { b in row(.borough(b.code), title: b.name, sub: String(localized: "\((store.boroughCounts[b.code] ?? 0).formatted()) buildings")) }
                             }
                         }
                         if !zips.isEmpty {
-                            Section(header: header("ZIP codes")) {
+                            Section(header: header(String(localized: "ZIP codes"))) {
                                 ForEach(zips.prefix(20), id: \.self) { z in row(.zip(z), title: z, sub: nil) }
                             }
                         }
-                        Section(header: header("Neighborhoods")) {
+                        Section(header: header(String(localized: "Neighborhoods"))) {
                             ForEach(neighborhoods.prefix(q.isEmpty ? 400 : 60), id: \.name) { n in
                                 row(.neighborhood(n.name), title: n.name, sub: "\(n.borough) · \(n.count.formatted())")
                             }
@@ -73,19 +73,19 @@ struct LocationPickerView: View {
                     } else {
                         // Typing digits in a neighborhood city also finds ZIPs.
                         if scopeKind != .zip, !zips.isEmpty {
-                            Section(header: header("ZIP codes")) {
-                                ForEach(zips.prefix(20), id: \.self) { z in row(.zip(z), title: "ZIP \(z)", sub: nil) }
+                            Section(header: header(String(localized: "ZIP codes"))) {
+                                ForEach(zips.prefix(20), id: \.self) { z in row(.zip(z), title: String(localized: "ZIP \(z)"), sub: nil) }
                             }
                         }
                         Section(header: header(store.city.regionLabel + "s")) {
                             if regions.isEmpty {
-                                Text(store.loaded ? "Nothing matches that." : "Loading \(store.city.name)…")
+                                Text(store.loaded ? String(localized: "Nothing matches that.") : String(localized: "Loading \(store.city.name)…"))
                                     .font(.se(16)).foregroundStyle(SE.ink3)
                             }
                             ForEach(regions.prefix(q.isEmpty ? 400 : 60), id: \.name) { r in
                                 row(scope(r.name),
-                                    title: scopeKind == .zip ? "ZIP \(r.name)" : r.name,
-                                    sub: "\(r.count.formatted()) buildings")
+                                    title: scopeKind == .zip ? String(localized: "ZIP \(r.name)") : r.name,
+                                    sub: String(localized: "\(r.count.formatted()) buildings"))
                             }
                         }
                     }
@@ -93,7 +93,7 @@ struct LocationPickerView: View {
                 .listStyle(.plain)
             }
             .background(Color.white)
-            .navigationTitle(store.city.isNYC ? "Location" : store.city.name)
+            .navigationTitle(store.city.isNYC ? String(localized: "Location") : store.city.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {

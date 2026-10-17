@@ -95,10 +95,10 @@ struct City: Identifiable, Hashable, Codable, Sendable {
     /// said "Rent stabilized"). New York's wording stays New York's.
     var badgeLabel: String {
         switch id {
-        case "nyc": return "Rent stabilized"
-        case "la": return "Likely RSO"
-        case "sf", "dc": return "Rent controlled"
-        default: return isIncomeRestricted ? "Income-restricted" : statusLabel
+        case "nyc": return String(localized: "Rent stabilized")
+        case "la": return String(localized: "Likely RSO")
+        case "sf", "dc": return String(localized: "Rent controlled")
+        default: return isIncomeRestricted ? String(localized: "Income-restricted") : statusLabel
         }
     }
     /// A city whose map is its income-restricted buildings rather than a
@@ -112,11 +112,11 @@ struct City: Identifiable, Hashable, Codable, Sendable {
     /// terms — the filter sheet shows it above the options.
     var registerNote: String {
         switch id {
-        case "la": return "Parcels meeting LAHD's RSO criteria"
-        case "sf": return "Units reported to the SF Rent Board"
-        case "dc": return "Units registered with DC DHCD"
-        case _ where isIncomeRestricted: return "Income-restricted buildings"
-        default:   return "Every building on the DHCR register"
+        case "la": return String(localized: "Parcels meeting LAHD's RSO criteria")
+        case "sf": return String(localized: "Units reported to the SF Rent Board")
+        case "dc": return String(localized: "Units registered with DC DHCD")
+        case _ where isIncomeRestricted: return String(localized: "Income-restricted buildings")
+        default:   return String(localized: "Every building on the DHCR register")
         }
     }
     var region: MKCoordinateRegion {
@@ -128,14 +128,14 @@ struct City: Identifiable, Hashable, Codable, Sendable {
         id: "nyc", name: "New York City", short: "NYC", state: "NY",
         lat: 40.72, lng: -73.97, span: 0.42,
         dataPath: "buildings.slim.json.gz", cacheName: "buildings.slim.json.gz",
-        regionKind: .borough, regionLabel: "Borough",
-        statusLabel: "Rent-stabilized", idLabel: "BBL",
-        sourceNote: "Registered with NYS Homes and Community Renewal under rent stabilization.",
-        searchPlaceholder: "Neighborhood, borough or ZIP",
-        hasPrices: true, priceLabel: "Typical rent for the ZIP",
+        regionKind: .borough, regionLabel: String(localized: "Borough"),
+        statusLabel: String(localized: "Rent-stabilized"), idLabel: "BBL",
+        sourceNote: String(localized: "Registered with NYS Homes and Community Renewal under rent stabilization."),
+        searchPlaceholder: String(localized: "Neighborhood, borough or ZIP"),
+        hasPrices: true, priceLabel: String(localized: "Typical rent for the ZIP"),
         recordsPath: nil, records: nil,
-        aboutNote: "Registered with NYS Homes and Community Renewal as rent stabilized (2024 building file). Rents in stabilized units rise only by the Rent Guidelines Board's annual percentage, and tenants have a right to renew.",
-        sourcesNote: "Sources: NYS HCR 2024 rent-stabilized building file · NYC HPD violations, complaints and bedbug filings · NYC DOHMH rodent inspections · HUD FY2026 Small-Area Fair Market Rents.")
+        aboutNote: String(localized: "Registered with NYS Homes and Community Renewal as rent stabilized (2024 building file). Rents in stabilized units rise only by the Rent Guidelines Board's annual percentage, and tenants have a right to renew."),
+        sourcesNote: String(localized: "Sources: NYS HCR 2024 rent-stabilized building file · NYC HPD violations, complaints and bedbug filings · NYC DOHMH rodent inspections · HUD FY2026 Small-Area Fair Market Rents."))
 
 
     static let la = City(
@@ -145,63 +145,63 @@ struct City: Identifiable, Hashable, Codable, Sendable {
         // LA parcels carried no neighborhood at all until the LA Times
         // boundaries were joined on 2026-09-12, which is why this used to offer
         // ZIP areas — the only thing an LA record knew about where it was.
-        regionKind: .neighborhood, regionLabel: "Neighborhood",
-        statusLabel: "Likely rent-stabilized (RSO)", idLabel: "APN",
-        sourceNote: "Meets LA's RSO criteria — 2+ units, built on or before Oct 1, 1978 (LA County assessor rolls). A few exemptions can't be derived from tax data, so verify the address on ZIMAS.",
-        searchPlaceholder: "Neighborhood, address or ZIP",
+        regionKind: .neighborhood, regionLabel: String(localized: "Neighborhood"),
+        statusLabel: String(localized: "Likely rent-stabilized (RSO)"), idLabel: "APN",
+        sourceNote: String(localized: "Meets LA's RSO criteria — 2+ units, built on or before Oct 1, 1978 (LA County assessor rolls). A few exemptions can't be derived from tax data, so verify the address on ZIMAS."),
+        searchPlaceholder: String(localized: "Neighborhood, address or ZIP"),
         hasPrices: false, priceLabel: "",
         recordsPath: "la/buildings.hpd.json.gz", records: Records(
-            heading: "LAHD record", agency: "LAHD", scope: "this property",
-            violationsLabel: "Housing code violations",
-            complaintsLabel: "Complaints to LAHD",
-            evictionsLabel: "Eviction notices filed",
+            heading: String(localized: "LAHD record"), agency: "LAHD", scope: String(localized: "this property"),
+            violationsLabel: String(localized: "Housing code violations"),
+            complaintsLabel: String(localized: "Complaints to LAHD"),
+            evictionsLabel: String(localized: "Eviction notices filed"),
             petitionsLabel: nil,
-            buyoutsLabel: "Tenant buyouts",
-            casesLabel: "Enforcement cases",
+            buyoutsLabel: String(localized: "Tenant buyouts"),
+            casesLabel: String(localized: "Enforcement cases"),
             showsOwner: false,
             noViolationsNote: nil, noViolationsLink: nil, noViolationsLinkLabel: nil,
-            emptyNote: "LAHD has no enforcement record for this parcel.",
-            note: "From the Los Angeles Housing Department's property look-up. LA does not grade violations by hazard class the way New York does."),
-        aboutNote: "Meets the City of LA's Rent Stabilization Ordinance criteria — two or more units, built on or before Oct 1, 1978. A few exemptions can't be derived from tax data, so verify the address on ZIMAS.",
-        sourcesNote: "Sources: LA County Assessor parcel roll · Los Angeles Housing Department property look-up (violations, complaints, evictions, buyouts) · LA Times Mapping L.A. neighborhood boundaries.")
+            emptyNote: String(localized: "LAHD has no enforcement record for this parcel."),
+            note: String(localized: "From the Los Angeles Housing Department's property look-up. LA does not grade violations by hazard class the way New York does.")),
+        aboutNote: String(localized: "Meets the City of LA's Rent Stabilization Ordinance criteria — two or more units, built on or before Oct 1, 1978. A few exemptions can't be derived from tax data, so verify the address on ZIMAS."),
+        sourcesNote: String(localized: "Sources: LA County Assessor parcel roll · Los Angeles Housing Department property look-up (violations, complaints, evictions, buyouts) · LA Times Mapping L.A. neighborhood boundaries."))
 
     static let sf = City(
         id: "sf", name: "San Francisco", short: "SF", state: "CA",
         lat: 37.7749, lng: -122.4194, span: 0.16,
         dataPath: "sf/buildings.slim.json.gz", cacheName: "sf-buildings.slim.json.gz",
-        regionKind: .neighborhood, regionLabel: "Neighborhood",
-        statusLabel: "Rent-controlled (reported)", idLabel: "",
-        sourceNote: "Block-level data: the SF Rent Board anonymises owner reports to the block, so a pin is a block-side of rent-controlled units, not one specific building.",
-        searchPlaceholder: "Neighborhood, address or block",
-        hasPrices: true, priceLabel: "Median reported rent",
+        regionKind: .neighborhood, regionLabel: String(localized: "Neighborhood"),
+        statusLabel: String(localized: "Rent-controlled (reported)"), idLabel: "",
+        sourceNote: String(localized: "Block-level data: the SF Rent Board anonymises owner reports to the block, so a pin is a block-side of rent-controlled units, not one specific building."),
+        searchPlaceholder: String(localized: "Neighborhood, address or block"),
+        hasPrices: true, priceLabel: String(localized: "Median reported rent"),
         recordsPath: "sf/buildings.hpd.json.gz", records: Records(
-            heading: "Rent Board record", agency: "the SF Rent Board", scope: "this block",
+            heading: String(localized: "Rent Board record"), agency: String(localized: "the SF Rent Board"), scope: String(localized: "this block"),
             violationsLabel: nil,
             complaintsLabel: nil,
-            evictionsLabel: "Eviction notices",
-            petitionsLabel: "Rent Board petitions",
-            buyoutsLabel: "Buyout agreements",
+            evictionsLabel: String(localized: "Eviction notices"),
+            petitionsLabel: String(localized: "Rent Board petitions"),
+            buyoutsLabel: String(localized: "Buyout agreements"),
             casesLabel: nil,
             showsOwner: false,
-            noViolationsNote: "San Francisco publishes housing-code violations by street address, and the Rent Board anonymises this map to the block — so there is no honest way to show them here. Look an address up directly with SF DBI.",
+            noViolationsNote: String(localized: "San Francisco publishes housing-code violations by street address, and the Rent Board anonymises this map to the block — so there is no honest way to show them here. Look an address up directly with SF DBI."),
             noViolationsLink: "https://dbiweb02.sfgov.org/dbipts/",
-            noViolationsLinkLabel: "Look up an address at SF DBI",
-            emptyNote: "No Rent Board eviction, petition or buyout on file for this block.",
-            note: "Filed with the SF Rent Board. Like the rent figures, these are anonymised to the block, so they cover every building on this block-side rather than one address."),
-        aboutNote: "Covered by the San Francisco Rent Ordinance and reported to the Rent Board by the owner. Reports are anonymised to the block, so this pin is a block-side of rent-controlled units rather than one address.",
-        sourcesNote: "Sources: SF Rent Board Housing Inventory via DataSF (owner-reported, block-anonymised) · SF Rent Board eviction notices, petitions and buyout agreements.")
+            noViolationsLinkLabel: String(localized: "Look up an address at SF DBI"),
+            emptyNote: String(localized: "No Rent Board eviction, petition or buyout on file for this block."),
+            note: String(localized: "Filed with the SF Rent Board. Like the rent figures, these are anonymised to the block, so they cover every building on this block-side rather than one address.")),
+        aboutNote: String(localized: "Covered by the San Francisco Rent Ordinance and reported to the Rent Board by the owner. Reports are anonymised to the block, so this pin is a block-side of rent-controlled units rather than one address."),
+        sourcesNote: String(localized: "Sources: SF Rent Board Housing Inventory via DataSF (owner-reported, block-anonymised) · SF Rent Board eviction notices, petitions and buyout agreements."))
 
     static let dc = City(
         id: "dc", name: "Washington DC", short: "DC", state: "DC",
         lat: 38.905, lng: -77.02, span: 0.18,
         dataPath: "dc/buildings.slim.json.gz", cacheName: "dc-buildings.slim.json.gz",
-        regionKind: .neighborhood, regionLabel: "Neighborhood",
-        statusLabel: "Rent-controlled (registered)", idLabel: "Reg. #",
-        sourceNote: "Registered with DHCD under the Rental Housing Act. Coverage is per unit, so a property can hold both controlled and exempt units — the count here is the controlled ones.",
-        searchPlaceholder: "Neighborhood, address or ZIP",
-        hasPrices: true, priceLabel: "Median registered rent",
+        regionKind: .neighborhood, regionLabel: String(localized: "Neighborhood"),
+        statusLabel: String(localized: "Rent-controlled (registered)"), idLabel: String(localized: "Reg. #"),
+        sourceNote: String(localized: "Registered with DHCD under the Rental Housing Act. Coverage is per unit, so a property can hold both controlled and exempt units — the count here is the controlled ones."),
+        searchPlaceholder: String(localized: "Neighborhood, address or ZIP"),
+        hasPrices: true, priceLabel: String(localized: "Median registered rent"),
         recordsPath: "dc/buildings.hpd.json.gz", records: Records(
-            heading: "Owner & assessor record", agency: "the DC assessor", scope: "this property",
+            heading: String(localized: "Owner & assessor record"), agency: String(localized: "the DC assessor"), scope: String(localized: "this property"),
             violationsLabel: nil,
             complaintsLabel: nil,
             evictionsLabel: nil,
@@ -209,13 +209,13 @@ struct City: Identifiable, Hashable, Codable, Sendable {
             buyoutsLabel: nil,
             casesLabel: nil,
             showsOwner: true,
-            noViolationsNote: "Washington DC publishes no housing-code violation data — the Department of Buildings releases none, so no map can show it. File or check a complaint with DOB directly.",
+            noViolationsNote: String(localized: "Washington DC publishes no housing-code violation data — the Department of Buildings releases none, so no map can show it. File or check a complaint with DOB directly."),
             noViolationsLink: "https://dob.dc.gov/",
-            noViolationsLinkLabel: "DC Department of Buildings",
-            emptyNote: "No assessor record matched this registration.",
-            note: "From the DC Office of Tax and Revenue — the owner on the tax roll and the assessor's record of the building, matched to this registration through its address."),
-        aboutNote: "Registered with DC DHCD under the Rental Housing Act. Coverage is decided per unit, so a property can hold both controlled and exempt units — the count here is the controlled ones.",
-        sourcesNote: "Sources: DC DHCD RentRegistry public exports · DC Office of Tax and Revenue (CAMA assessor roll, Integrated Tax System) · DCGIS address-to-lot cross reference.")
+            noViolationsLinkLabel: String(localized: "DC Department of Buildings"),
+            emptyNote: String(localized: "No assessor record matched this registration."),
+            note: String(localized: "From the DC Office of Tax and Revenue — the owner on the tax roll and the assessor's record of the building, matched to this registration through its address.")),
+        aboutNote: String(localized: "Registered with DC DHCD under the Rental Housing Act. Coverage is decided per unit, so a property can hold both controlled and exempt units — the count here is the controlled ones."),
+        sourcesNote: String(localized: "Sources: DC DHCD RentRegistry public exports · DC Office of Tax and Revenue (CAMA assessor roll, Integrated Tax System) · DCGIS address-to-lot cross reference."))
 
     /// The rent-regulated cities, each with its own register, then the four
     /// whose map is their income-restricted buildings (owner, 2026-09-24:
@@ -223,13 +223,13 @@ struct City: Identifiable, Hashable, Codable, Sendable {
     static let all: [City] = [.nyc, .la, .sf, .dc, .chi, .mia, .atl, .phl]
 
     static let chi = affordable(id: "chi", name: "Chicago", short: "CHI", state: "IL", lat: 41.84, lng: -87.69, span: 0.42,
-        sources: "Chicago Department of Housing (Affordable Requirements Ordinance buildings; affordable rental developments) · HUD Low-Income Housing Tax Credit database · HUD public housing (Chicago Housing Authority).")
+        sources: String(localized: "Chicago Department of Housing (Affordable Requirements Ordinance buildings; affordable rental developments) · HUD Low-Income Housing Tax Credit database · HUD public housing (Chicago Housing Authority)."))
     static let mia = affordable(id: "mia", name: "Miami-Dade", short: "MIA", state: "FL", lat: 25.70, lng: -80.30, span: 0.6,
-        sources: "Florida Housing Finance Corporation rental properties and HUD/USDA assisted properties (via UF Shimberg Center) · HUD Low-Income Housing Tax Credit database · HUD public housing (Miami-Dade PHCD).")
+        sources: String(localized: "Florida Housing Finance Corporation rental properties and HUD/USDA assisted properties (via UF Shimberg Center) · HUD Low-Income Housing Tax Credit database · HUD public housing (Miami-Dade PHCD)."))
     static let atl = affordable(id: "atl", name: "Atlanta", short: "ATL", state: "GA", lat: 33.76, lng: -84.42, span: 0.26,
-        sources: "City of Atlanta Office of Housing Housing Tracker · Atlanta Beltline affordable housing developments · HUD Low-Income Housing Tax Credit database · HUD public housing (Atlanta Housing).")
+        sources: String(localized: "City of Atlanta Office of Housing Housing Tracker · Atlanta Beltline affordable housing developments · HUD Low-Income Housing Tax Credit database · HUD public housing (Atlanta Housing)."))
     static let phl = affordable(id: "phl", name: "Philadelphia", short: "PHL", state: "PA", lat: 39.99, lng: -75.14, span: 0.26,
-        sources: "Philadelphia DHCD Affordable Housing Production · HUD Low-Income Housing Tax Credit database · HUD public housing (Philadelphia Housing Authority).")
+        sources: String(localized: "Philadelphia DHCD Affordable Housing Production · HUD Low-Income Housing Tax Credit database · HUD public housing (Philadelphia Housing Authority)."))
 
     /// A city whose map is its income-restricted buildings: none of these
     /// has a rent-stabilization register, and none runs a lottery portal —
@@ -243,20 +243,20 @@ struct City: Identifiable, Hashable, Codable, Sendable {
             // Neighborhoods from each city's official boundaries
             // (build_affordable_cities.py, owner 2026-09-26); ZIPs still
             // search from the picker when digits are typed.
-            regionKind: .neighborhood, regionLabel: "Neighborhood",
-            statusLabel: "Income-restricted", idLabel: "",
-            sourceNote: "An income-restricted building: some or all of its units are for households under an income limit, at capped rents. Apply through the building's leasing office or waiting list.",
-            searchPlaceholder: "Neighborhood, address or ZIP",
+            regionKind: .neighborhood, regionLabel: String(localized: "Neighborhood"),
+            statusLabel: String(localized: "Income-restricted"), idLabel: "",
+            sourceNote: String(localized: "An income-restricted building: some or all of its units are for households under an income limit, at capped rents. Apply through the building's leasing office or waiting list."),
+            searchPlaceholder: String(localized: "Neighborhood, address or ZIP"),
             hasPrices: false, priceLabel: "",
             recordsPath: "\(id)/buildings.hpd.json.gz", records: Records(
-                heading: "Income-restricted units", agency: "the city and HUD", scope: "this building",
+                heading: String(localized: "Income-restricted units"), agency: String(localized: "the city and HUD"), scope: String(localized: "this building"),
                 violationsLabel: nil, complaintsLabel: nil, evictionsLabel: nil, petitionsLabel: nil,
                 buyoutsLabel: nil, casesLabel: nil, showsOwner: false,
                 noViolationsNote: nil, noViolationsLink: nil, noViolationsLinkLabel: nil,
-                emptyNote: "No unit detail on file for this building.",
+                emptyNote: String(localized: "No unit detail on file for this building."),
                 note: nil),
-            aboutNote: "Income-restricted housing: built or kept affordable with public money — tax credits, city programs, inclusionary zoning or public housing — so some or all of its units are for households under an income limit, at capped rents. There is no citywide lottery here; each building keeps its own waiting list, so call or apply through the leasing office.",
-            sourcesNote: "Sources: " + sources)
+            aboutNote: String(localized: "Income-restricted housing: built or kept affordable with public money — tax credits, city programs, inclusionary zoning or public housing — so some or all of its units are for households under an income limit, at capped rents. There is no citywide lottery here; each building keeps its own waiting list, so call or apply through the leasing office."),
+            sourcesNote: String(localized: "Sources: ") + sources)
     }
 
     static func find(_ id: String?) -> City { all.first { $0.id == id } ?? .nyc }

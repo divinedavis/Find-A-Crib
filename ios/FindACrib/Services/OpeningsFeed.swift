@@ -102,8 +102,8 @@ final class OpeningsFeed {
     nonisolated static var places: Set<String> { Set(sources.keys) }
 
     nonisolated static func kindLabel(_ k: String) -> String {
-        switch k { case "lottery": "Lottery"; case "waitlist": "Waitlist"; case "first_come": "First come, first served"
-        case "leasing": "Leasing now"; default: k.capitalized }
+        switch k { case "lottery": String(localized: "Lottery"); case "waitlist": String(localized: "Waitlist"); case "first_come": String(localized: "First come, first served")
+        case "leasing": String(localized: "Leasing now"); default: k.capitalized }
     }
 }
 

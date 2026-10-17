@@ -23,14 +23,14 @@ struct SearchHomeView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     // City first: it decides what the Location field can offer.
                     VStack(alignment: .leading, spacing: 10) {
-                        SEFieldLabel(text: "City")
+                        SEFieldLabel(text: String(localized: "City"))
                         SEFieldBox {
                             HStack(spacing: 10) {
                                 Image(systemName: "building.2").font(.system(size: 18, weight: .bold)).foregroundStyle(SE.royal).accessibilityHidden(true)
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(store.city.name).font(.se(19)).foregroundStyle(SE.ink)
-                                    Text(store.loaded ? "\(store.buildings.count.formatted()) \(store.city.statusLabel.lowercased()) buildings"
-                                                      : "Loading \(store.city.name)…")
+                                    Text(store.loaded ? String(localized: "\(store.buildings.count.formatted()) \(store.city.statusLabel.lowercased()) buildings")
+                                                      : String(localized: "Loading \(store.city.name)…"))
                                         .font(.se(13)).foregroundStyle(SE.ink3)
                                 }
                                 Spacer(minLength: 0)
@@ -48,7 +48,7 @@ struct SearchHomeView: View {
 
                     // Location
                     VStack(alignment: .leading, spacing: 10) {
-                        SEFieldLabel(text: store.city.isNYC ? "Location" : store.city.regionLabel)
+                        SEFieldLabel(text: store.city.isNYC ? String(localized: "Location") : store.city.regionLabel)
                         // Not a Button: chips inside a Button label get flattened into
                         // one accessibility element, so their remove buttons vanish
                         // for VoiceOver and XCUITest. The box takes the tap instead.
@@ -75,7 +75,7 @@ struct SearchHomeView: View {
                         .accessibilityElement(children: .contain)
                         .accessibilityIdentifier("location-field")
                         .accessibilityAddTraits(.isButton)
-                        .accessibilityLabel(query.locations.isEmpty ? "Location" : "Location: \(query.locationLabel(city: store.city.short))")
+                        .accessibilityLabel(query.locations.isEmpty ? String(localized: "Location") : String(localized: "Location: \(query.locationLabel(city: store.city.short))"))
                     }
 
                     // Bedrooms sits right under Location (owner, 2026-10-13): the
@@ -83,13 +83,13 @@ struct SearchHomeView: View {
                     // New York only, like Show — the size comes from its re-rental feed.
                     if store.city.hasNYCExtras {
                         VStack(alignment: .leading, spacing: 10) {
-                            SEFieldLabel(text: "Bedrooms")
-                            SESegmentRow(options: [(0, "Studio"), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: $query.beds)
+                            SEFieldLabel(text: String(localized: "Bedrooms"))
+                            SESegmentRow(options: [(0, String(localized: "Studio")), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: $query.beds)
                                 .accessibilityIdentifier("beds-row")
                         }
                     }
 
-                    SEPrimaryButton(title: "Search \(count.formatted()) \(query.noun)") { runSearch() }
+                    SEPrimaryButton(title: String(localized: "Search \(count.formatted()) \(query.noun)")) { runSearch() }
                         .padding(.horizontal, 34)
                         .padding(.top, 6)
                         .accessibilityIdentifier("search-button")
@@ -121,7 +121,7 @@ struct SearchHomeView: View {
                         // Show: multi-select. Every building here is rent-stabilized, so
                         // that box is the always-on baseline; the others narrow it.
                         VStack(alignment: .leading, spacing: 10) {
-                            SEFieldLabel(text: "Show")
+                            SEFieldLabel(text: String(localized: "Show"))
                             ShowChecklist(query: $query)
                         }
                     } else {
@@ -274,8 +274,8 @@ struct PriceRangeFields: View {
 
     var body: some View {
         HStack(spacing: 16) {
-            PriceField(label: "Minimum price", value: minPrice, placeholder: "No min") { editing = .low }
-            PriceField(label: "Maximum price", value: maxPrice, placeholder: "No max") { editing = .high }
+            PriceField(label: String(localized: "Minimum price"), value: minPrice, placeholder: String(localized: "No min")) { editing = .low }
+            PriceField(label: String(localized: "Maximum price"), value: maxPrice, placeholder: String(localized: "No max")) { editing = .high }
         }
         .sheet(item: $editing) { bound in
             PricePickerSheet(minPrice: $minPrice, maxPrice: $maxPrice, focus: bound)
@@ -401,13 +401,13 @@ struct PricePickerSheet: View {
     private var wheels: some View {
         HStack(spacing: 0) {
             Picker("Minimum price", selection: $low) {
-                ForEach(lowRungs, id: \.self) { Text(PriceLadder.label($0, openEnd: "Any")).tag($0) }
+                ForEach(lowRungs, id: \.self) { Text(PriceLadder.label($0, openEnd: String(localized: "Any"))).tag($0) }
             }
             .pickerStyle(.wheel)
             .accessibilityIdentifier("price-wheel-min")
             Text("to").font(.se(18)).foregroundStyle(SE.ink2).accessibilityHidden(true)
             Picker("Maximum price", selection: $high) {
-                ForEach(highRungs, id: \.self) { Text(PriceLadder.label($0, openEnd: "No max")).tag($0) }
+                ForEach(highRungs, id: \.self) { Text(PriceLadder.label($0, openEnd: String(localized: "No max"))).tag($0) }
             }
             .pickerStyle(.wheel)
             .accessibilityIdentifier("price-wheel-max")
@@ -418,8 +418,8 @@ struct PricePickerSheet: View {
     private var customEntry: some View {
         VStack(spacing: 16) {
             HStack(spacing: 16) {
-                typedField("Minimum price", text: $lowText, placeholder: "No min", bound: .low)
-                typedField("Maximum price", text: $highText, placeholder: "No max", bound: .high)
+                typedField(String(localized: "Minimum price"), text: $lowText, placeholder: String(localized: "No min"), bound: .low)
+                typedField(String(localized: "Maximum price"), text: $highText, placeholder: String(localized: "No max"), bound: .high)
             }
             // iPad floats the number pad OVER the top of this sheet: it covers
             // the Increments tab, and the way back to the wheel was gone for
@@ -597,7 +597,7 @@ struct HeroBanner: View {
     /// what a building IS, without the qualifier the line has no room for
     /// ("Likely rent-stabilized (RSO)" -> "rent-stabilized").
     static func line(for city: City) -> String {
-        "Every \(city.registerWord) building in \(city.short)"
+        String(localized: "Every \(city.registerWord) building in \(city.short)")
     }
 
     var body: some View {
@@ -692,8 +692,8 @@ struct ShowChecklist: View {
         if store.city.hasNYCExtras {
             rows += [
 
-                .init(title: "Accepting vouchers", subtitle: "Section 8 / voucher-friendly buildings", isOn: $query.vouchersOnly),
-                .init(title: "HCR lotteries & waitlists", subtitle: "Apply online at HousingSearch.ny.gov", isOn: $query.hcrOnly),
+                .init(title: String(localized: "Accepting vouchers"), subtitle: String(localized: "Section 8 / voucher-friendly buildings"), isOn: $query.vouchersOnly),
+                .init(title: String(localized: "HCR lotteries & waitlists"), subtitle: String(localized: "Apply online at HousingSearch.ny.gov"), isOn: $query.hcrOnly),
             ]
         }
         return SECheckList(rows: rows)

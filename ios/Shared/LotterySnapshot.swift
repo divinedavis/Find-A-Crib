@@ -41,7 +41,7 @@ enum LotterySnapshot {
         let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; f.locale = Locale(identifier: "en_US_POSIX")
         f.timeZone = TimeZone(identifier: "America/New_York")
         guard let c = closes, let d = f.date(from: c) else { return "soon" }
-        let out = DateFormatter(); out.dateFormat = "EEEE, MMMM d"; out.timeZone = f.timeZone
+        let out = DateFormatter(); out.setLocalizedDateFormatFromTemplate("EEEEMMMMd"); out.timeZone = f.timeZone
         return out.string(from: d)
     }
 }

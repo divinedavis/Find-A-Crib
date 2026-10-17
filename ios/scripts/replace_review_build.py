@@ -78,6 +78,10 @@ def main():
     asc.patch(f"/appStoreVersions/{ver['id']}/relationships/build", {"data": {"type": "builds", "id": build["id"]}})
     print("  attached build", a.build)
     m.apply(asc, cfg)
+    # The other languages' listings (What's New included): Apple refuses the
+    # submission when any version language lacks What's New (2026-10-16).
+    import asc_localizations
+    asc_localizations.apply()
     ids = m.resolve(asc, app_id)
     if not sfr.preflight(asc, ids):
         raise SystemExit("preflight failed after the swap")

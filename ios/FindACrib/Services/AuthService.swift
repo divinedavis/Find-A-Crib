@@ -171,7 +171,7 @@ final class AuthService {
     func signUp(email: String, password: String) async {
         await run {
             let r = try await self.client!.auth.signUp(email: email, password: password)
-            if r.session == nil { self.error = "Account created — sign in to continue." }
+            if r.session == nil { self.error = String(localized: "Account created — sign in to continue.") }
         }
     }
 
@@ -206,7 +206,7 @@ final class AuthService {
     /// `provider` names a sign-in attempt so its outcome is recorded —
     /// succeeded, cancelled or failed — never the credentials.
     private func run(provider: String? = nil, _ block: @escaping () async throws -> Void) async {
-        guard client != nil else { error = "Sign-in isn't configured in this build."; return }
+        guard client != nil else { error = String(localized: "Sign-in isn't configured in this build."); return }
         busy = true; error = nil; defer { busy = false }
         do {
             try await block()
@@ -243,7 +243,7 @@ final class AuthService {
     /// 105, likely App Review). Everything else keeps Apple's/Supabase's words.
     nonisolated static func signInMessage(for error: Error) -> String {
         if let e = error as? ASAuthorizationError, e.code == .unknown || e.code == .notHandled || e.code == .failed {
-            return "Sign in with Apple isn't available on this iPhone right now. Check that you're signed in to an Apple Account in Settings, or use Google or email instead."
+            return String(localized: "Sign in with Apple isn't available on this iPhone right now. Check that you're signed in to an Apple Account in Settings, or use Google or email instead.")
         }
         return error.localizedDescription
     }

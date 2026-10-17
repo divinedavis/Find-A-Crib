@@ -214,15 +214,15 @@ final class PushService {
     nonisolated static func stateLine(status: UNAuthorizationStatus, registration: Registration) -> (text: String, ok: Bool) {
         switch (status, registration) {
         case (.authorized, .registered), (.provisional, .registered), (.ephemeral, .registered):
-            return ("Phone alerts are on.", true)
+            return (String(localized: "Phone alerts are on."), true)
         case (.authorized, .failed), (.provisional, .failed), (.ephemeral, .failed):
-            return ("Allowed, but this phone couldn't register — update the app and reopen this sheet.", false)
+            return (String(localized: "Allowed, but this phone couldn't register — update the app and reopen this sheet."), false)
         case (.authorized, .none), (.provisional, .none), (.ephemeral, .none):
-            return ("Phone alerts allowed — connecting…", false)
+            return (String(localized: "Phone alerts allowed — connecting…"), false)
         case (.denied, _):
-            return ("Phone alerts are off — turn them on in Settings", false)
+            return (String(localized: "Phone alerts are off — turn them on in Settings"), false)
         default:
-            return ("Turn on phone alerts", false)
+            return (String(localized: "Turn on phone alerts"), false)
         }
     }
 

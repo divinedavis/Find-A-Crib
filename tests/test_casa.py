@@ -44,7 +44,8 @@ class CasaWatchRoute(unittest.TestCase):
         api_kinds = set(re.findall(r'"(\w+)"', self.api[self.api.index("CASA_CRIME_KINDS = {"):][:300].split("}")[0]))
         self.assertEqual(api_kinds, set(casa_alerts.CRIME_KINDS))
         swift = read("ios", "FindACrib", "Services", "CasaService.swift")
-        chips = re.findall(r'\("(\w+)", "[^"]+"\)', swift[swift.index("static let crimeKinds"):][:600])
+        # labels are String(localized: "…") since the app was translated (2026-10-16)
+        chips = re.findall(r'\("(\w+)", (?:String\(localized: )?"[^"]+"\)?\)', swift[swift.index("static let crimeKinds"):][:1200])
         self.assertEqual(set(chips), set(casa_alerts.CRIME_KINDS))
 
 

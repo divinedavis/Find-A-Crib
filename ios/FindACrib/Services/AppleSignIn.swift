@@ -45,8 +45,8 @@ final class AppleSignInService: NSObject {
         case cancelled, missingIdentityToken
         var errorDescription: String? {
             switch self {
-            case .cancelled: "Sign in with Apple was cancelled."
-            case .missingIdentityToken: "Apple did not return an identity token. Try again."
+            case .cancelled: String(localized: "Sign in with Apple was cancelled.")
+            case .missingIdentityToken: String(localized: "Apple did not return an identity token. Try again.")
             }
         }
     }

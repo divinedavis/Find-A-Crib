@@ -45,17 +45,17 @@ struct RerentalCard: View {
                     }
                     .frame(height: 226).frame(maxWidth: .infinity).clipped()
                     .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(f.imageURLs.count > 1 ? "Photo \(photo + 1) of \(f.imageURLs.count)" : "Photo of the building")
+                    .accessibilityLabel(f.imageURLs.count > 1 ? String(localized: "Photo \(photo + 1) of \(f.imageURLs.count)") : String(localized: "Photo of the building"))
                     .accessibilityAdjustableAction { dir in
                         let n = f.imageURLs.count
                         guard n > 1 else { return }
                         photo = dir == .increment ? min(photo + 1, n - 1) : max(photo - 1, 0)
                     }
                     .accessibilityIdentifier("rerental-photos")
-                SEBadge(text: "Rerental", icon: "key.fill", fill: SE.navy, ink: .white)
+                SEBadge(text: String(localized: "Rerental"), icon: "key.fill", fill: SE.navy, ink: .white)
                     .padding(12)
                     .accessibilityIdentifier("badge-rerental")
-                SEBadge(text: "Income-restricted", fill: .white, ink: SE.ink)
+                SEBadge(text: String(localized: "Income-restricted"), fill: .white, ink: SE.ink)
                     .frame(maxWidth: .infinity, alignment: .topTrailing)
                     .padding(12)
             }
@@ -85,7 +85,7 @@ struct RerentalCard: View {
                         Label("Check carefully: \(fl.why)", systemImage: "exclamationmark.triangle.fill").font(.se(14, .semibold)).foregroundStyle(SE.warn)
                     }
                 }
-                (Text("Listed by ").font(.se(18)) + Text(f.agent).font(.se(18, .bold)) + Text(f.agent.localizedCaseInsensitiveContains("Housing Development Corporation") ? " — the city's affordable-housing finance agency" : " — an HPD-approved marketing agent").font(.se(18)))
+                (Text("Listed by ").font(.se(18)) + Text(f.agent).font(.se(18, .bold)) + Text(f.agent.localizedCaseInsensitiveContains("Housing Development Corporation") ? String(localized: " — the city's affordable-housing finance agency") : String(localized: " — an HPD-approved marketing agent")).font(.se(18)))
                     .foregroundStyle(SE.ink2)
 
                 HStack(spacing: 14) {
@@ -156,9 +156,9 @@ struct RerentalCard: View {
     private var bits: [String] {
         let f = listing
         var out: [String] = []
-        if let b = f.beds { out.append(b == "studio" ? "Studio" : "\(b)-bed") }
-        if let u = f.units { out.append("\(u) unit\(u == 1 ? "" : "s")") }
-        if let z = f.zip { out.append("ZIP \(z)") }
+        if let b = f.beds { out.append(b == "studio" ? String(localized: "Studio") : "\(b)-bed") }
+        if let u = f.units { out.append(String(localized: "\(u) units")) }
+        if let z = f.zip { out.append(String(localized: "ZIP \(z)")) }
         return out
     }
 }

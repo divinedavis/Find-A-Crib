@@ -165,7 +165,7 @@ struct CasaView: View {
             alertCard(p)
             crimeCard
         } else if failed {
-            note("Couldn't load 311 calls", "NYC's data service didn't answer. Check your connection and try again.")
+            note(String(localized: "Couldn't load 311 calls"), String(localized: "NYC's data service didn't answer. Check your connection and try again."))
             Button { Task { await open(p) } } label: {
                 Text("Try again").font(.se(16, .semibold)).foregroundStyle(.white)
                     .padding(.vertical, 12).frame(maxWidth: .infinity).background(SE.royal, in: RoundedRectangle(cornerRadius: 12))
@@ -189,9 +189,9 @@ struct CasaView: View {
                 Image(systemName: n == 0 ? "checkmark.seal.fill" : "ant.fill")
                     .font(.system(size: 26)).foregroundStyle(n == 0 ? SE.good : SE.bad)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(n == 0 ? "No pest calls in the past year" : "\(n) pest call\(n == 1 ? "" : "s") in the past year")
+                    Text(n == 0 ? String(localized: "No pest calls in the past year") : String(localized: "\(n) pest calls in the past year"))
                         .font(.se(19, .bold)).foregroundStyle(SE.ink)
-                    Text("\(calls.count) 311 call\(calls.count == 1 ? "" : "s") on this building in all").font(.se(15)).foregroundStyle(SE.ink3)
+                    Text(String(localized: "\(calls.count) 311 calls on this building in all")).font(.se(15)).foregroundStyle(SE.ink3)
                 }
             }
             if n > 0 {
@@ -226,10 +226,10 @@ struct CasaView: View {
                 } label: { Text("Stop alerts").font(.se(16, .semibold)) }
                     .disabled(watch.busy).accessibilityIdentifier("casa-stop")
             } else {
-                Text(watch.watch.map { "Plus watches one building. Switching moves your alerts from \($0.address ?? "your other building") to here." }
-                     ?? "Hear about every new 311 call on this building — pests, heat, leaks, noise. Part of Find A Crib Plus.")
+                Text(watch.watch.map { String(localized: "Plus watches one building. Switching moves your alerts from \($0.address ?? String(localized: "your other building")) to here.") }
+                     ?? String(localized: "Hear about every new 311 call on this building — pests, heat, leaks, noise. Part of Find A Crib Plus."))
                     .font(.se(15)).foregroundStyle(SE.ink2)
-                SEPrimaryButton(title: watch.watch == nil ? "Alert me about new calls" : "Watch this building instead", icon: "bell.fill") {
+                SEPrimaryButton(title: watch.watch == nil ? String(localized: "Alert me about new calls") : String(localized: "Watch this building instead"), icon: "bell.fill") {
                     guard let token = auth.session?.accessToken else { signIn = .alerts; return }
                     guard auth.hasPlus else { Analytics.shared.track("casa_plus_gate", ["what": "alerts"]); showPlus = true; return }
                     Task {
@@ -309,12 +309,12 @@ struct CasaView: View {
             } else {
                 Chart {
                     ForEach(crime) { m in
-                        LineMark(x: .value("Month", m.month, unit: .month), y: .value("Reports", m.total))
-                            .foregroundStyle(by: .value("Kind", "All crime"))
-                            .symbol(by: .value("Kind", "All crime"))
-                        LineMark(x: .value("Month", m.month, unit: .month), y: .value("Reports", m.felonies))
-                            .foregroundStyle(by: .value("Kind", "Felonies"))
-                            .symbol(by: .value("Kind", "Felonies"))
+                        LineMark(x: .value(String(localized: "Month"), m.month, unit: .month), y: .value(String(localized: "Reports"), m.total))
+                            .foregroundStyle(by: .value(String(localized: "Kind"), String(localized: "All crime")))
+                            .symbol(by: .value(String(localized: "Kind"), String(localized: "All crime")))
+                        LineMark(x: .value(String(localized: "Month"), m.month, unit: .month), y: .value(String(localized: "Reports"), m.felonies))
+                            .foregroundStyle(by: .value(String(localized: "Kind"), String(localized: "Felonies")))
+                            .symbol(by: .value(String(localized: "Kind"), String(localized: "Felonies")))
                     }
                 }
                 .chartForegroundStyleScale(["All crime": SE.royal, "Felonies": SE.bad])

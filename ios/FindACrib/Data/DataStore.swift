@@ -150,7 +150,7 @@ final class DataStore {
             // Only NYC ships a seed in the bundle; the other cities are fetched
             // on first use, so "no local copy" there means "not downloaded yet".
             throw NSError(domain: "FindACrib", code: 1,
-                          userInfo: [NSLocalizedDescriptionKey: city.isNYC ? "Building data missing from bundle"
+                          userInfo: [NSLocalizedDescriptionKey: city.isNYC ? String(localized: "Building data missing from bundle")
                                                                            : "\(city.name) hasn't been downloaded yet"])
         }
         let raw = try Data(contentsOf: bURL)

@@ -148,10 +148,10 @@ final class Qualify {
 
     static func words(_ v: Verdict) -> String {
         switch v {
-        case .yes: "You qualify"
-        case .high: "Income above the limit"
-        case .low: "Income below the minimum"
-        case .unknown: "Check the listing's income limits"
+        case .yes: String(localized: "You qualify")
+        case .high: String(localized: "Income above the limit")
+        case .low: String(localized: "Income below the minimum")
+        case .unknown: String(localized: "Check the listing's income limits")
         }
     }
 }

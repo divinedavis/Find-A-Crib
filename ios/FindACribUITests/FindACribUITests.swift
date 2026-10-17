@@ -490,6 +490,40 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["alerts-promise-box"].waitForExistence(timeout: 5), "it opens the alerts sign-in")
     }
 
+    /// Profile has a Language row that names the app's language and opens
+    /// Settings, where iOS keeps the per-app language (owner, 2026-10-16).
+    func testProfileHasLanguageRow() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--tab", "profile"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["Profile"].waitForExistence(timeout: 20))
+        let row = app.buttons["profile-language"]
+        for _ in 0..<8 where !row.isHittable { app.swipeUp() }
+        XCTAssertTrue(row.isHittable, "Profile shows a Language row")
+        XCTAssertTrue(row.label.contains("English"), "it names the app's language: \(row.label)")
+    }
+
+    /// With the phone (or Settings › Find A Crib › Language) set to Spanish,
+    /// the tabs and a building page come up in Spanish — and the page's
+    /// translated counts and plurals don't crash it.
+    func testAppRunsInSpanish() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "detail", "-AppleLanguages", "(es)", "-AppleLocale", "es_US"]
+        app.launch()
+        XCTAssertTrue(app.buttons["detail-menu"].waitForExistence(timeout: 30))
+        for _ in 0..<6 { app.swipeUp() }
+        add(XCTAttachment(screenshot: app.screenshot()))
+        XCTAssertTrue(app.buttons["detail-menu"].exists || app.staticTexts.count > 0, "the building page stayed up")
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "-AppleLanguages", "(es)", "-AppleLocale", "es_US"]
+        app.launch()
+        let search = app.buttons["tab-Search"]
+        XCTAssertTrue(search.waitForExistence(timeout: 30))
+        XCTAssertNotEqual(search.label, "Search", "the Search tab is translated")
+        XCTAssertFalse(app.buttons["tab-Lotteries"].label == "Lotteries", "the Lotteries tab is translated")
+        add(XCTAttachment(screenshot: app.screenshot()))
+    }
+
     /// A building with no pests cited shows "Owner Phone"; signed out, a
     /// tap previews the agent sign-in (owner, 2026-10-13).
     func testCardOwnerPhoneButtonPreviewsAgentSignIn() throws {

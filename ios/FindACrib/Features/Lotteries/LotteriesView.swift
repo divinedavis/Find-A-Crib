@@ -57,7 +57,7 @@ struct LotteriesView: View {
         // Outside New York: the place's own openings, no sign-up (2026-09-24).
         if !store.city.isNYC { OpeningsView() } else {
             nycBody.userActivity(ActivityType.lotteries) { a in
-                a.title = "NYC housing lotteries"
+                a.title = String(localized: "NYC housing lotteries")
                 a.webpageURL = DeepLink.lotteries.webURL
                 a.isEligibleForHandoff = true
             }
@@ -135,10 +135,10 @@ struct LotteriesView: View {
                     Text("Get alerts when a new one opens").font(.se(18, .bold)).foregroundStyle(SE.ink)
                 }
                 Text(auth.hasPlus
-                     ? "New lotteries and re-rentals in your boroughs, by in-app notification and email the minute they open."
-                     : "New lotteries and re-rentals in your boroughs, by in-app notifications and emails at 8 AM daily. Upgrade to Plus for instant notifications and emails.")
+                     ? String(localized: "New lotteries and re-rentals in your boroughs, by in-app notification and email the minute they open.")
+                     : String(localized: "New lotteries and re-rentals in your boroughs, by in-app notifications and emails at 8 AM daily. Upgrade to Plus for instant notifications and emails."))
                     .font(.se(15)).foregroundStyle(SE.ink2)
-                SEPrimaryButton(title: "Turn on alerts", icon: "bell.fill", fill: SE.navy) { promptSignup() }
+                SEPrimaryButton(title: String(localized: "Turn on alerts"), icon: "bell.fill", fill: SE.navy) { promptSignup() }
                     .accessibilityIdentifier("lotteries-signup")
             }
             .padding(14).frame(maxWidth: .infinity, alignment: .leading).background(Color.white)
@@ -150,7 +150,7 @@ struct LotteriesView: View {
 
     /// Subscribers edit their boroughs; everyone else is offered alerts.
     private var boroughsButton: some View {
-        Button(feed.subscribed ? "Edit boroughs" : "Get alerts") {
+        Button(feed.subscribed ? String(localized: "Edit boroughs") : String(localized: "Get alerts")) {
             if feed.subscribed { showAlerts = true } else { promptSignup() }
         }
         .font(.se(16, .bold)).foregroundStyle(SE.royal)
@@ -168,8 +168,8 @@ struct LotteriesView: View {
             VStack(alignment: .leading, spacing: 10) {
                 // Three panes: "Lotteries (n)" no longer fits beside the other
                 // two on a 375 pt phone, and the header already says Lotteries.
-                SEUnderlineTabs(options: [(Pane.lotteries, "NYC (\(lotteries.count))"), (.rerentals, "Re-rentals (\(rerentals.count))"),
-                                          (.newJersey, "NJ (\(feed.njOpen.count))")], selection: $pane)
+                SEUnderlineTabs(options: [(Pane.lotteries, String(localized: "NYC (\(lotteries.count))")), (.rerentals, String(localized: "Re-rentals (\(rerentals.count))")),
+                                          (.newJersey, String(localized: "NJ (\(feed.njOpen.count))"))], selection: $pane)
                     .padding(.bottom, pane == .newJersey ? 10 : 0)
                 // NJ's source publishes no bedroom sizes, so no Beds strip there.
                 if pane != .newJersey {
@@ -177,7 +177,7 @@ struct LotteriesView: View {
                     Text("Beds").font(.se(15, .bold)).foregroundStyle(SE.ink2)
                     // fixedSize: the strip's divider lines are flexible and
                     // would otherwise stretch it to fill the header.
-                    SESegmentRow(options: [(0, "Studio"), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: bedsBinding)
+                    SESegmentRow(options: [(0, String(localized: "Studio")), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: bedsBinding)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(.bottom, 10)
@@ -195,16 +195,17 @@ struct LotteriesView: View {
                     }
                     .padding(.horizontal, 16)
                     if feed.loadFailed {
-                        message("Couldn't load lotteries", "Check your connection and pull down to try again.")
+                        message(String(localized: "Couldn't load lotteries"), String(localized: "Check your connection and pull down to try again."))
                     } else if feed.mine.isEmpty && !feed.loading {
-                        message("Nothing open right now",
-                                "No Housing Connect lotteries are open in \(boroughNames) right now." + (feed.subscribed ? " We'll alert you when one opens." : ""))
+                        message(String(localized: "Nothing open right now"),
+                                String(localized: "No Housing Connect lotteries are open in \(boroughNames) right now.") + (feed.subscribed ? String(localized: " We'll alert you when one opens.") : ""))
                     } else if lotteries.isEmpty && !bedLotteries.isEmpty && !feed.loading {
-                        message("None in your income range",
-                                "\(bedLotteries.count) open\(beds.isEmpty ? "" : " with \(bedsWords)"), all outside the income range you entered. Tap above to see them anyway.")
+                        message(String(localized: "None in your income range"),
+                                (beds.isEmpty ? String(localized: "\(bedLotteries.count) open, all outside the income range you entered. Tap above to see them anyway.")
+                                              : String(localized: "\(bedLotteries.count) open with \(bedsWords), all outside the income range you entered. Tap above to see them anyway.")))
                     } else if lotteries.isEmpty && !feed.loading {
-                        message("None with \(bedsWords)",
-                                "\(feed.mine.count) open in \(boroughNames), none with \(bedsWords). Change Beds above to see them.")
+                        message(String(localized: "None with \(bedsWords)"),
+                                String(localized: "\(feed.mine.count) open in \(boroughNames), none with \(bedsWords). Change Beds above to see them."))
                     }
                     if lotteriesOutCount > 0 { outOfRangeButton(lotteriesOutCount) }
                     LazyVGrid(columns: columns, alignment: .leading, spacing: 12) {
@@ -249,8 +250,8 @@ struct LotteriesView: View {
 
     private func outOfRangeButton(_ n: Int) -> some View {
         Button { showOutOfRange.toggle(); Analytics.shared.track("qualify_out_of_range", ["show": showOutOfRange, "n": n]) } label: {
-            Text(showOutOfRange ? "Hide the \(n) outside your income range"
-                                : "\(n) more are outside your income range — show them")
+            Text(showOutOfRange ? String(localized: "Hide the \(n) outside your income range")
+                                : String(localized: "\(n) more are outside your income range — show them"))
                 .font(.se(16, .semibold)).foregroundStyle(SE.royal)
                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).padding(.horizontal, 16)
                 .contentShape(Rectangle())
@@ -264,8 +265,8 @@ struct LotteriesView: View {
 
     /// "a 1-bed", "a studio or 1-bed", "3+ beds" — for the empty message.
     private var bedsWords: String {
-        let names = beds.sorted().map { $0 == 0 ? "studio" : $0 == 4 ? "4+ bed" : "\($0)-bed" }
-        return names.isEmpty ? "any size" : "a " + ListFormatter.localizedString(byJoining: names).replacingOccurrences(of: " and ", with: " or ")
+        let names = beds.sorted().map { $0 == 0 ? String(localized: "studio") : $0 == 4 ? String(localized: "4+ bed") : "\($0)-bed" }
+        return names.isEmpty ? String(localized: "any size") : "a " + ListFormatter.localizedString(byJoining: names).replacingOccurrences(of: " and ", with: " or ")
     }
 
     @ViewBuilder private var rerentalList: some View {
@@ -278,8 +279,8 @@ struct LotteriesView: View {
         if rerentalsOutCount > 0 { outOfRangeButton(rerentalsOutCount) }
         if unsizedCount > 0 {
             Button { showUnsized.toggle(); Analytics.shared.track("rerentals_unsized", ["show": showUnsized]) } label: {
-                Text(showUnsized ? "Hide the \(unsizedCount) that don't list bedroom sizes"
-                                 : "\(unsizedCount) more don't list bedroom sizes — show them")
+                Text(showUnsized ? String(localized: "Hide the \(unsizedCount) that don't list bedroom sizes")
+                                 : String(localized: "\(unsizedCount) more don't list bedroom sizes — show them"))
                     .font(.se(16, .semibold)).foregroundStyle(SE.royal)
                     .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).padding(.horizontal, 16)
                     .contentShape(Rectangle())   // the whole row, not just the words
@@ -287,12 +288,12 @@ struct LotteriesView: View {
             .buttonStyle(.plain).accessibilityIdentifier("rerentals-unsized")
         }
         if rerentals.isEmpty && !bedRerentals.isEmpty {
-            message("None in your income range", "\(bedRerentals.count) re-rental\(bedRerentals.count == 1 ? "" : "s") here, all outside the income range you entered. Tap above to see them anyway.")
+            message(String(localized: "None in your income range"), String(localized: "\(bedRerentals.count) re-rentals here, all outside the income range you entered. Tap above to see them anyway."))
         } else if rerentals.isEmpty && !beds.isEmpty {
-            message("None with \(bedsWords)", "No re-rental in \(boroughNames) lists \(bedsWords) today. Change Beds above to see them.")
+            message(String(localized: "None with \(bedsWords)"), String(localized: "No re-rental in \(boroughNames) lists \(bedsWords) today. Change Beds above to see them."))
         } else if rerentals.isEmpty {
-            message("No re-rentals right now",
-                    "No HPD marketing agent is advertising a re-rental in \(boroughNames) today." + (feed.subscribed ? " We'll alert you when one is posted." : ""))
+            message(String(localized: "No re-rentals right now"),
+                    String(localized: "No HPD marketing agent is advertising a re-rental in \(boroughNames) today.") + (feed.subscribed ? String(localized: " We'll alert you when one is posted.") : ""))
         }
         // slot -1 marks this tab in the re-rental funnel, apart from the
         // search feed's slots 0, 1, 2…
@@ -330,10 +331,10 @@ struct LotteriesView: View {
                         }
                     }
                 } label: {
-                    njChip(njCounty.isEmpty ? "County" : "\(njCounty) County", on: !njCounty.isEmpty, chevron: true)
+                    njChip(njCounty.isEmpty ? String(localized: "County") : String(localized: "\(njCounty) County"), on: !njCounty.isEmpty, chevron: true)
                 }
                 .accessibilityIdentifier("nj-county")
-                ForEach([("rent", "Rentals"), ("buy", "For sale")], id: \.0) { t in
+                ForEach([("rent", String(localized: "Rentals")), ("buy", String(localized: "For sale"))], id: \.0) { t in
                     Button {
                         njTenure = njTenure == t.0 ? nil : t.0
                         Analytics.shared.track("nj_filter", ["tenure": njTenure ?? "any"])
@@ -361,8 +362,8 @@ struct LotteriesView: View {
     @ViewBuilder private var njList: some View {
         njFilterBar.padding(.horizontal, 16)
         HStack {
-            Text(feed.loading && feed.nj.isEmpty ? "Loading…"
-                 : njFiltering ? "\(njShown.count) of \(feed.njOpen.count) open in New Jersey" : "\(feed.njOpen.count) open in New Jersey")
+            Text(feed.loading && feed.nj.isEmpty ? String(localized: "Loading…")
+                 : njFiltering ? String(localized: "\(njShown.count) of \(feed.njOpen.count) open in New Jersey") : String(localized: "\(feed.njOpen.count) open in New Jersey"))
                 .font(.se(17, .bold)).foregroundStyle(SE.ink)
                 .accessibilityIdentifier("nj-count")
             Spacer()
@@ -374,17 +375,17 @@ struct LotteriesView: View {
         }
         .padding(.horizontal, 16)
         if feed.njOpen.isEmpty && !feed.loading {
-            message("No New Jersey drawings right now",
-                    "Affordable Homes New Jersey isn't listing an open drawing today. Pull down to check again.")
+            message(String(localized: "No New Jersey drawings right now"),
+                    String(localized: "Affordable Homes New Jersey isn't listing an open drawing today. Pull down to check again."))
         } else if njShown.isEmpty && !feed.loading {
-            message("None in \(njCounty.isEmpty ? "this selection" : "\(njCounty) County")",
-                    "\(feed.njOpen.count) drawings are open elsewhere in New Jersey. Pick another county or tap Clear.")
+            message(njCounty.isEmpty ? String(localized: "None in this selection") : String(localized: "None in \(njCounty) County"),
+                    String(localized: "\(feed.njOpen.count) drawings are open elsewhere in New Jersey. Pick another county or tap Clear."))
         }
         if !njRentals.isEmpty {
-            njSection("Rentals", njRentals)
+            njSection(String(localized: "Rentals"), njRentals)
         }
         if !njSales.isEmpty {
-            njSection("Homes for sale", njSales)
+            njSection(String(localized: "Homes for sale"), njSales)
         }
         Text("From Affordable Homes New Jersey (CGP&H), checked daily. To be in a drawing, fill in CGP&H's pre-application, then join that town's waiting list from your CGP&H profile by the date shown. Units, rents and income limits are shown in your profile.")
             .font(.se(14)).foregroundStyle(SE.ink3).padding(.horizontal, 16).padding(.top, 4)
@@ -404,14 +405,14 @@ struct LotteriesView: View {
         return VStack(alignment: .leading, spacing: 6) {
             NJPhoto(lottery: l)
             Text(l.development ?? l.town).font(.se(19, .bold)).foregroundStyle(SE.ink)
-            Text([l.development == nil ? nil : l.town, l.county.map { "\($0) County, NJ" } ?? "New Jersey", l.isRental ? "Rental" : "For sale"]
+            Text([l.development == nil ? nil : l.town, l.county.map { String(localized: "\($0) County, NJ") } ?? String(localized: "New Jersey"), l.isRental ? String(localized: "Rental") : "For sale"]
                     .compactMap { $0 }.joined(separator: " · "))
                 .font(.se(15, .semibold)).foregroundStyle(SE.ink2)
             Text(njWhen(l, days)).font(.se(16)).foregroundStyle((days ?? 99) <= 3 ? SE.warn : SE.ink)
             if let href = l.href, let url = URL(string: href) {
                 // Opens the listing itself on CGP&H (owner, 2026-09-24: the home
                 // page "is a generic website - i dont see the actual listing").
-                SEPrimaryButton(title: "View the listing", icon: "arrow.up.right") {
+                SEPrimaryButton(title: String(localized: "View the listing"), icon: "arrow.up.right") {
                     Analytics.shared.track("outbound", ["kind": "nj_cgph", "href": href, "town": l.town, "from": "lotteries_tab"])
                     openURL(url)
                 }
@@ -426,22 +427,22 @@ struct LotteriesView: View {
     }
 
     private func njWhen(_ l: LotteryFeed.NJLottery, _ days: Int?) -> String {
-        guard let c = l.closes, let d = days else { return "Waiting list opening soon" }
+        guard let c = l.closes, let d = days else { return String(localized: "Waiting list opening soon") }
         let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; f.timeZone = TimeZone(identifier: "America/New_York")
-        let out = DateFormatter(); out.dateFormat = "EEE MMM d"; out.timeZone = f.timeZone
+        let out = DateFormatter(); out.setLocalizedDateFormatFromTemplate("EEEMMMd"); out.timeZone = f.timeZone
         let when = f.date(from: c).map { out.string(from: $0) } ?? c
-        return "Join the waiting list by \(when)" + (d == 0 ? " (today)" : d == 1 ? " (tomorrow)" : " (\(d)d)")
+        return String(localized: "Join the waiting list by \(when)") + (d == 0 ? String(localized: " (today)") : d == 1 ? String(localized: " (tomorrow)") : " (\(d)d)")
     }
 
     private var boroughNames: String {
         let n = feed.viewBoroughs.map { Borough.name($0) }
-        if n.count == Borough.all.count { return "all five boroughs" }
+        if n.count == Borough.all.count { return String(localized: "all five boroughs") }
         return ListFormatter.localizedString(byJoining: n)
     }
-    private var boroughLine: String { feed.viewBoroughs.count == Borough.all.count ? "All five boroughs" : feed.viewBoroughs.map { Borough.name($0) }.joined(separator: " · ") }
+    private var boroughLine: String { feed.viewBoroughs.count == Borough.all.count ? String(localized: "All five boroughs") : feed.viewBoroughs.map { Borough.name($0) }.joined(separator: " · ") }
     private var countLine: String {
-        if feed.loading && feed.all.isEmpty { return "Loading…" }
-        return lotteries.count == feed.mine.count ? "\(feed.mine.count) open" : "\(lotteries.count) of \(feed.mine.count) open"
+        if feed.loading && feed.all.isEmpty { return String(localized: "Loading…") }
+        return lotteries.count == feed.mine.count ? String(localized: "\(feed.mine.count) open") : String(localized: "\(lotteries.count) of \(feed.mine.count) open")
     }
 
     private func card(_ l: LotteryFeed.Lottery) -> some View {
@@ -464,16 +465,16 @@ struct LotteriesView: View {
                 }
             }
             if let href = l.href, let url = URL(string: href) {
-                SEPrimaryButton(title: "Apply on Housing Connect", icon: "arrow.up.right") {
+                SEPrimaryButton(title: String(localized: "Apply on Housing Connect"), icon: "arrow.up.right") {
                     Analytics.shared.track("outbound", ["kind": "housing_connect", "href": href, "from": "lotteries_tab"])
                     openURL(url)
                 }
                 .padding(.top, 6)
             }
             if let c = l.closes {
-                AddToCalendarButton(item: CalendarItem(title: "Lottery deadline: \(l.name)", day: c,
-                                                       notes: "Apply on Housing Connect before the deadline.", url: l.href.flatMap(URL.init(string:))),
-                                    label: "Add deadline to Calendar")
+                AddToCalendarButton(item: CalendarItem(title: String(localized: "Lottery deadline: \(l.name)"), day: c,
+                                                       notes: String(localized: "Apply on Housing Connect before the deadline."), url: l.href.flatMap(URL.init(string:))),
+                                    label: String(localized: "Add deadline to Calendar"))
                     // Centred under Apply (owner, 2026-10-14).
                     .foregroundStyle(SE.royal).frame(maxWidth: .infinity).padding(.top, 4).accessibilityIdentifier("lottery-calendar")
             }
@@ -500,9 +501,9 @@ struct LotteriesView: View {
         var s = [l.neighborhood, l.borough].compactMap { $0 }.joined(separator: ", ")
         if let c = l.closes, let d = LotteryFeed.daysLeft(c) {
             let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; f.timeZone = TimeZone(identifier: "America/New_York")
-            let out = DateFormatter(); out.dateFormat = "EEE MMM d"; out.timeZone = f.timeZone
+            let out = DateFormatter(); out.setLocalizedDateFormatFromTemplate("EEEMMMd"); out.timeZone = f.timeZone
             let when = f.date(from: c).map { out.string(from: $0) } ?? c
-            s += " · Closes \(when)" + (d == 0 ? " (today)" : d == 1 ? " (tomorrow)" : " (\(d)d)")
+            s += String(localized: " · Closes \(when)") + (d == 0 ? String(localized: " (today)") : d == 1 ? String(localized: " (tomorrow)") : " (\(d)d)")
         }
         return s
     }

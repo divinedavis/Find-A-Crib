@@ -44,10 +44,10 @@ struct BuildingDetailView: View {
                     hero
                     if !store.isSyntheticHCR(b) { factsStrip }
 
-                    if !store.hcrListings(b).isEmpty { section(store.hcrListings(b).count == 1 ? "Lottery / waitlist" : "Lotteries & waitlists") { hcrBlock } }
+                    if !store.hcrListings(b).isEmpty { section(store.hcrListings(b).count == 1 ? String(localized: "Lottery / waitlist") : String(localized: "Lotteries & waitlists")) { hcrBlock } }
 
                     if store.isSyntheticHCR(b) {
-                        section("About") {
+                        section(String(localized: "About")) {
                             Text("An income-restricted development with a New York State HCR regulatory agreement, listed on HousingSearch.ny.gov. It is not on the rent-stabilization register, so there is no DHCR or HPD record here — the listing above is the whole story.")
                                 .font(.se(17)).foregroundStyle(SE.ink2)
                         }
@@ -56,20 +56,20 @@ struct BuildingDetailView: View {
                     // violations tile is the most-tapped thing on a building
                     // page (442 people since 9/5, next is 195).
                     if store.city.isNYC {
-                        section("Violations & inspections") { hpdBlock }
+                        section(String(localized: "Violations & inspections")) { hpdBlock }
                     } else if store.city.isIncomeRestricted {
                         // Its own block: units and eligibility, not the
                         // violations/evictions shape cityRecordBlock draws.
-                        section(store.city.records?.heading ?? "Income-restricted units") { incomeRestrictedBlock }
+                        section(store.city.records?.heading ?? String(localized: "Income-restricted units")) { incomeRestrictedBlock }
                     } else if let r = store.city.records {
                         section(r.heading) { cityRecordBlock(r) }
                     }
 
                     if store.city.isNYC || b.mr != nil {
-                        section("Rent") { rentBlock }
+                        section(String(localized: "Rent")) { rentBlock }
                     }
 
-                    if store.city.isNYC { section("Managing agent") { agentBlock } }
+                    if store.city.isNYC { section(String(localized: "Managing agent")) { agentBlock } }
 
                     if store.city.isNYC { voucherCard }
 
@@ -81,7 +81,7 @@ struct BuildingDetailView: View {
 
                     // About goes last (owner, 2026-09-19): the register status
                     // and borough line are reference, not what people came for.
-                    section("About") {
+                    section(String(localized: "About")) {
                         VStack(alignment: .leading, spacing: 10) {
                             ForEach(aboutLines, id: \.self) { Text($0).font(.se(19)).foregroundStyle(SE.ink) }
                         }
@@ -110,7 +110,7 @@ struct BuildingDetailView: View {
                             .padding(.horizontal, 16).padding(.top, 16)
                             .accessibilityIdentifier("hpd-footnote")
                     }
-                    Text(store.city.sourcesNote + " Find A Crib is not a broker and does not list apartments.")
+                    Text(store.city.sourcesNote + String(localized: " Find A Crib is not a broker and does not list apartments."))
                         .font(.se(14)).foregroundStyle(SE.ink3).padding(16)
                     Color.clear.frame(height: 100)
                 }
@@ -127,7 +127,7 @@ struct BuildingDetailView: View {
                 Button { Analytics.shared.track("comments_open", ["bbl": b.bbl, "signed_in": auth.isSignedIn]); showComments = true } label: {
                     HStack(spacing: 7) {
                         Image(systemName: "bubble.left").font(.system(size: 16, weight: .bold))
-                        Text(comments.count(for: b.bbl) > 0 ? "Comments \(comments.count(for: b.bbl))" : "Comments")
+                        Text(comments.count(for: b.bbl) > 0 ? String(localized: "Comments \(comments.count(for: b.bbl))") : String(localized: "Comments"))
                             .font(.se(18, .bold)).lineLimit(1).minimumScaleFactor(0.7)
                     }
                     .foregroundStyle(SE.royal)
@@ -168,7 +168,7 @@ struct BuildingDetailView: View {
                         item.openInMaps(launchOptions: [MKLaunchOptionsDirectionsModeKey: MKLaunchOptionsDirectionsModeDefault])
                     } label: { Label("Directions", systemImage: "arrow.triangle.turn.up.right.diamond") }
                     Button { activity.toggleSaved(b.bbl) } label: {
-                        Label(activity.isSaved(b.bbl) ? "Unsave" : "Save", systemImage: activity.isSaved(b.bbl) ? "heart.fill" : "heart")
+                        Label(activity.isSaved(b.bbl) ? String(localized: "Unsave") : String(localized: "Save"), systemImage: activity.isSaved(b.bbl) ? "heart.fill" : "heart")
                     }
                 } label: {
                     Image(systemName: "ellipsis").font(.system(size: 20, weight: .bold)).foregroundStyle(.white).frame(width: 36, height: 36)
@@ -230,13 +230,13 @@ struct BuildingDetailView: View {
         if !auth.isSignedIn {
             Text("The managing agent and owner HPD has on file for this building, and the agent's phone number.")
                 .font(.se(17)).foregroundStyle(SE.ink2)
-            SEOutlineButton(title: "Sign in to see who runs this building", icon: "person.crop.circle") { showAgentSignIn = true }
+            SEOutlineButton(title: String(localized: "Sign in to see who runs this building"), icon: "person.crop.circle") { showAgentSignIn = true }
                 .accessibilityIdentifier("agent-sign-in")
         } else if contactsLoading && contacts == nil {
             HStack(spacing: 10) { ProgressView().tint(SE.royal); Text("Looking up HPD registration…").font(.se(17)).foregroundStyle(SE.ink2) }
         } else if let c = contacts {
             if let m = c.manager, let name = m.name {
-                party("Managing agent", name, m.type, m.address)
+                party(String(localized: "Managing agent"), name, m.type, m.address)
                 if let phone {
                     Link(destination: URL(string: "tel:" + phone.filter { $0.isNumber || $0 == "+" })!) {
                         HStack(spacing: 10) {
@@ -252,7 +252,7 @@ struct BuildingDetailView: View {
                     Button { if !auth.hasPlus { paywallSource = "phone"; showPaywall = true } } label: {
                         HStack(spacing: 10) {
                             Image(systemName: "lock.fill").font(.system(size: 15, weight: .bold)).foregroundStyle(SE.ink3)
-                            Text(auth.hasPlus ? "Phone number temporarily unavailable" : "Phone number — unlock with Find A Crib Plus")
+                            Text(auth.hasPlus ? String(localized: "Phone number temporarily unavailable") : String(localized: "Phone number — unlock with Find A Crib Plus"))
                                 .font(.se(17, .semibold)).foregroundStyle(SE.ink2)
                             Spacer()
                             if !auth.hasPlus { Image(systemName: "chevron.right").font(.system(size: 14, weight: .bold)).foregroundStyle(SE.royal) }
@@ -268,8 +268,8 @@ struct BuildingDetailView: View {
             } else {
                 Text("No managing agent in this building's HPD registration.").font(.se(17)).foregroundStyle(SE.ink2)
             }
-            if let o = c.owner, let name = o.name { party("Owner", name, o.type, o.address).padding(.top, 6) }
-            if let h = c.officer, let name = h.name, h.name != c.owner?.name { party("Head officer", name, h.type, h.address).padding(.top, 6) }
+            if let o = c.owner, let name = o.name { party(String(localized: "Owner"), name, o.type, o.address).padding(.top, 6) }
+            if let h = c.officer, let name = h.name, h.name != c.owner?.name { party(String(localized: "Head officer"), name, h.type, h.address).padding(.top, 6) }
             Text("From the building's HPD property registration. Numbers come from public business listings and are for tenant inquiries.")
                 .font(.se(14)).foregroundStyle(SE.ink3).padding(.top, 4)
         } else {
@@ -291,18 +291,18 @@ struct BuildingDetailView: View {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 8) {
                     SEBadge(text: l.kindLabel, icon: "doc.text.fill", fill: SE.navy, ink: .white)
-                    SEBadge(text: l.isOpen ? "Open" : "Closed", fill: l.isOpen ? Color(hex: 0xDCFCE7) : SE.badge, ink: l.isOpen ? SE.good : SE.ink2)
-                    if l.senior == true { SEBadge(text: "Seniors", fill: SE.badge) }
+                    SEBadge(text: l.isOpen ? String(localized: "Open") : String(localized: "Closed"), fill: l.isOpen ? Color(hex: 0xDCFCE7) : SE.badge, ink: l.isOpen ? SE.good : SE.ink2)
+                    if l.senior == true { SEBadge(text: String(localized: "Seniors"), fill: SE.badge) }
                 }
                 Text(l.name ?? "").font(.se(24, .bold))
                 if let inc = l.incomeRange {
                     HStack(alignment: .firstTextBaseline, spacing: 8) { Text(inc).font(.se(22, .bold)); Text("household income").font(.se(17)).foregroundStyle(SE.ink2) }
                 }
                 VStack(alignment: .leading, spacing: 4) {
-                    if let p = l.ptype { row("Type", p) }
-                    if let d = l.due { row(l.kind == "Lottery" ? "Application deadline" : "Apply by", d) }
-                    if let f = l.fee { row("Application fee", Formatters.dollars(f)) }
-                    if let ph = l.phone { row("Phone", ph) }
+                    if let p = l.ptype { row(String(localized: "Type"), p) }
+                    if let d = l.due { row(l.kind == "Lottery" ? String(localized: "Application deadline") : String(localized: "Apply by"), d) }
+                    if let f = l.fee { row(String(localized: "Application fee"), Formatters.dollars(f)) }
+                    if let ph = l.phone { row(String(localized: "Phone"), ph) }
                 }
                 if let d = l.desc { Text(d).font(.se(16)).foregroundStyle(SE.ink2).lineLimit(8) }
                 if l.approx == true {
@@ -310,7 +310,7 @@ struct BuildingDetailView: View {
                         .font(.se(14)).foregroundStyle(SE.ink3)
                 }
                 if let u = l.applyURL {
-                    SEPrimaryButton(title: l.isOpen ? "Apply on HousingSearch.ny.gov" : "See listing on HousingSearch.ny.gov") { openURL(u) }
+                    SEPrimaryButton(title: l.isOpen ? String(localized: "Apply on HousingSearch.ny.gov") : String(localized: "See listing on HousingSearch.ny.gov")) { openURL(u) }
                 }
                 Text("Source: HousingSearch.ny.gov — New York State Homes and Community Renewal. Income limits and deadlines are the listing's; confirm on the portal before applying.")
                     .font(.se(14)).foregroundStyle(SE.ink3)
@@ -344,7 +344,7 @@ struct BuildingDetailView: View {
             // Save lives in the ··· menu; a heart over the photo covered the
             // Look Around imagery and the owner asked for it gone.
             if store.voucherAvail(b) != nil {
-                SEBadge(text: "Section 8", icon: "checkmark.seal.fill", fill: .white).padding(12)
+                SEBadge(text: String(localized: "Section 8"), icon: "checkmark.seal.fill", fill: .white).padding(12)
             }
         }
         .accessibilityIdentifier("detail-hero")
@@ -352,13 +352,13 @@ struct BuildingDetailView: View {
 
     private var factsStrip: some View {
         HStack(spacing: 0) {
-            factCell("Building type", store.city.isIncomeRestricted ? "Income-restricted" : (b.s?.first.map { AddressCase.pretty($0) } ?? "Multiple dwelling"))
+            factCell(String(localized: "Building type"), store.city.isIncomeRestricted ? String(localized: "Income-restricted") : (b.s?.first.map { AddressCase.pretty($0) } ?? String(localized: "Multiple dwelling")))
             Rectangle().fill(Color.white.opacity(0.25)).frame(width: 1, height: 44)
             // The year is built, rehabbed or entered a program depending on
             // the source, so it is only "since".
-            factCell(store.city.isIncomeRestricted ? "Since" : "Year built", b.yr.map(String.init) ?? "–")
+            factCell(store.city.isIncomeRestricted ? String(localized: "Since") : String(localized: "Year built"), b.yr.map(String.init) ?? "–")
             Rectangle().fill(Color.white.opacity(0.25)).frame(width: 1, height: 44)
-            factCell("Units", b.u.map { $0.formatted() } ?? "–")
+            factCell(String(localized: "Units"), b.u.map { $0.formatted() } ?? "–")
         }
         .padding(.vertical, 14)
         .frame(maxWidth: .infinity)
@@ -394,10 +394,10 @@ struct BuildingDetailView: View {
         if l.isEmpty { l = [store.city.statusLabel.uppercased()] }
         if let z = b.z, !z.isEmpty {
             let place = store.city.isNYC ? b.borough : (b.nb ?? store.city.name)
-            l.append("\(place.uppercased()) · ZIP \(z)")
+            l.append(String(localized: "\(place.uppercased()) · ZIP \(z)"))
         }
-        if store.city.isNYC, store.voucherBuilding(b) != nil { l.append("SUBSIDIZED / VOUCHER-FRIENDLY BUILDING") }
-        if let r = b.h?.lastregistration { l.append("HPD REGISTRATION \(r)") }
+        if store.city.isNYC, store.voucherBuilding(b) != nil { l.append(String(localized: "SUBSIDIZED / VOUCHER-FRIENDLY BUILDING")) }
+        if let r = b.h?.lastregistration { l.append(String(localized: "HPD REGISTRATION \(r)")) }
         if let t = store.record(b)?.ptype { l.append(t.uppercased()) }
         return l
     }
@@ -410,7 +410,7 @@ struct BuildingDetailView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Typical rent in ZIP \(b.z ?? "")").font(.se(18, .bold)).foregroundStyle(SE.ink2)
                 HStack(spacing: 0) {
-                    estCell("Studio", e[0]); estCell("1 bed", e[1]); estCell("2 bed", e[2]); estCell("3 bed", e[3])
+                    estCell(String(localized: "Studio"), e[0]); estCell(String(localized: "1 bed"), e[1]); estCell(String(localized: "2 bed"), e[2]); estCell(String(localized: "3 bed"), e[3])
                 }
                 Text("HUD FY2026 Small-Area Fair Market Rents — the neighborhood's going rate, not this building's regulated rent. Stabilized rents are often well below it.")
                     .font(.se(15)).foregroundStyle(SE.ink3)
@@ -440,8 +440,8 @@ struct BuildingDetailView: View {
                 Text(rentExtras).font(.se(17)).foregroundStyle(SE.ink2)
             }
             Text(store.city.id == "sf"
-                 ? "Reported to the SF Rent Board by owners on this block — not an asking rent, and not one address."
-                 : "The legal rent on file with DC DHCD for this property's rent-controlled units — not an asking rent.")
+                 ? String(localized: "Reported to the SF Rent Board by owners on this block — not an asking rent, and not one address.")
+                 : String(localized: "The legal rent on file with DC DHCD for this property's rent-controlled units — not an asking rent."))
                 .font(.se(15)).foregroundStyle(SE.ink3)
         } else {
             Text("No rent on file for this \(store.city.records?.scope ?? "property").")
@@ -475,9 +475,9 @@ struct BuildingDetailView: View {
                 }
             }
             if let label = r.violationsLabel, let v = h?.violations {
-                recStat(label, [("\(v.open ?? 0)", "open", (v.open ?? 0) > 5 ? SE.bad : ((v.open ?? 0) > 0 ? SE.warn : SE.good)),
-                                (v.total.map(String.init) ?? "—", "cited", SE.ink),
-                                (v.last_12mo.map(String.init) ?? "—", "last 12mo", SE.ink)])
+                recStat(label, [("\(v.open ?? 0)", String(localized: "open"), (v.open ?? 0) > 5 ? SE.bad : ((v.open ?? 0) > 0 ? SE.warn : SE.good)),
+                                (v.total.map(String.init) ?? "—", String(localized: "cited"), SE.ink),
+                                (v.last_12mo.map(String.init) ?? "—", String(localized: "last 12mo"), SE.ink)])
                 let named = v.named
                 if !named.isEmpty {
                     Text("Cited for: " + named.map { $0.1 > 1 ? "\($0.0) (\($0.1))" : $0.0 }.joined(separator: " · "))
@@ -491,14 +491,14 @@ struct BuildingDetailView: View {
                 }
             }
             if let label = r.complaintsLabel, let c = h?.complaints {
-                recStat(label, [("\(c.open ?? 0)", "open", (c.open ?? 0) > 10 ? SE.bad : ((c.open ?? 0) > 0 ? SE.warn : SE.good)),
-                                (c.total.map(String.init) ?? "—", "all time", SE.ink),
-                                ((h?.insp).map(String.init) ?? "—", "inspections", SE.ink)])
+                recStat(label, [("\(c.open ?? 0)", String(localized: "open"), (c.open ?? 0) > 10 ? SE.bad : ((c.open ?? 0) > 0 ? SE.warn : SE.good)),
+                                (c.total.map(String.init) ?? "—", String(localized: "all time"), SE.ink),
+                                ((h?.insp).map(String.init) ?? "—", String(localized: "inspections"), SE.ink)])
             }
             if let label = r.evictionsLabel, let e = h?.ev {
-                recStat(label, [("\(e.total ?? 0)", "filed", SE.ink),
+                recStat(label, [("\(e.total ?? 0)", String(localized: "filed"), SE.ink),
                                 ("\(e.nofault ?? 0)", "no-fault", (e.nofault ?? 0) > 0 ? SE.warn : SE.ink),
-                                ("\(e.recent ?? e.last_12mo ?? 0)", "last 5 yrs", SE.ink)])
+                                ("\(e.recent ?? e.last_12mo ?? 0)", String(localized: "last 5 yrs"), SE.ink)])
                 let named = e.named
                 if !named.isEmpty {
                     Text("Grounds cited: " + named.map { $0.1 > 1 ? "\($0.0) (\($0.1))" : $0.0 }.joined(separator: " · "))
@@ -508,20 +508,22 @@ struct BuildingDetailView: View {
                     .font(.se(15)).foregroundStyle(SE.ink3)
             }
             if let label = r.petitionsLabel, let pt = h?.pet {
-                recStat(label, [("\(pt.total ?? 0)", "filed", SE.ink),
-                                ("\(pt.landlord ?? 0)", "by landlord", SE.ink),
-                                ("\(pt.tenant ?? 0)", "by tenant", SE.ink)])
+                recStat(label, [("\(pt.total ?? 0)", String(localized: "filed"), SE.ink),
+                                ("\(pt.landlord ?? 0)", String(localized: "by landlord"), SE.ink),
+                                ("\(pt.tenant ?? 0)", String(localized: "by tenant"), SE.ink)])
             }
             if let label = r.buyoutsLabel, let by = h?.by, (by.n ?? 0) > 0 {
-                recStat(label, [("\(by.n ?? 0)", "agreed", SE.ink),
-                                (by.med.map { Formatters.dollars($0) } ?? "—", "median", SE.ink),
-                                ("\(by.recent ?? 0)", "last 5 yrs", SE.ink)])
-                Text("A buyout is a landlord paying a tenant to leave a rent-controlled unit. It has to be disclosed, so a run of them on one \(r.scope == "this block" ? "block" : "address") is a signal.")
+                recStat(label, [("\(by.n ?? 0)", String(localized: "agreed"), SE.ink),
+                                (by.med.map { Formatters.dollars($0) } ?? "—", String(localized: "median"), SE.ink),
+                                ("\(by.recent ?? 0)", String(localized: "last 5 yrs"), SE.ink)])
+                Text(r.scope == String(localized: "this block")
+                     ? String(localized: "A buyout is a landlord paying a tenant to leave a rent-controlled unit. It has to be disclosed, so a run of them on one block is a signal.")
+                     : String(localized: "A buyout is a landlord paying a tenant to leave a rent-controlled unit. It has to be disclosed, so a run of them on one address is a signal."))
                     .font(.se(15)).foregroundStyle(SE.ink3)
             }
             if let label = r.casesLabel, let cs = h?.cases, (cs.total ?? 0) > 0 {
-                recStat(label, [("\(cs.open ?? 0)", "open", (cs.open ?? 0) > 0 ? SE.warn : SE.good),
-                                ("\(cs.total ?? 0)", "all time", SE.ink),
+                recStat(label, [("\(cs.open ?? 0)", String(localized: "open"), (cs.open ?? 0) > 0 ? SE.warn : SE.good),
+                                ("\(cs.total ?? 0)", String(localized: "all time"), SE.ink),
                                 ("", "", SE.ink)])
             }
             if let note = r.note { Text(note).font(.se(15)).foregroundStyle(SE.ink3) }
@@ -534,7 +536,7 @@ struct BuildingDetailView: View {
                 Text(note).font(.se(16)).foregroundStyle(SE.ink2)
                 if let link = r.noViolationsLink, let url = URL(string: link) {
                     Button { openURL(url) } label: {
-                        Text(r.noViolationsLinkLabel ?? "Look it up").font(.se(18, .bold)).foregroundStyle(SE.royal)
+                        Text(r.noViolationsLinkLabel ?? String(localized: "Look it up")).font(.se(18, .bold)).foregroundStyle(SE.royal)
                     }.buttonStyle(.plain)
                 }
             }.padding(.top, 6)
@@ -557,8 +559,8 @@ struct BuildingDetailView: View {
             }
             if let li = h?.li {
                 let total = h?.units_total ?? b.u
-                Text(total.map { $0 > li ? "\(li) of \($0) units are income-restricted" : "All \($0) units are income-restricted" }
-                     ?? "\(li) income-restricted units")
+                Text(total.map { $0 > li ? String(localized: "\(li) of \($0) units are income-restricted") : String(localized: "All \($0) units are income-restricted") }
+                     ?? String(localized: "\(li) income-restricted units"))
                     .font(.se(18, .semibold)).foregroundStyle(SE.ink)
             } else if let u = b.u {
                 Text("\(u) units in the building").font(.se(18, .semibold)).foregroundStyle(SE.ink)
@@ -574,7 +576,7 @@ struct BuildingDetailView: View {
                 Text("Set aside for " + ListFormatter.localizedString(byJoining: who)).font(.se(17)).foregroundStyle(SE.ink2)
             }
             if let v = h?.vacant, v > 0 {
-                Text("\(v) vacant unit\(v == 1 ? "" : "s") at the housing authority's last report — apply through its waiting list")
+                Text(String(localized: "\(v) vacant units at the housing authority's last report — apply through its waiting list"))
                     .font(.se(16)).foregroundStyle(SE.ink2)
             }
             if let w = h?.wait_mo {
@@ -584,7 +586,7 @@ struct BuildingDetailView: View {
             if let p = h?.prog, !p.isEmpty {
                 Text("Funded through " + ListFormatter.localizedString(byJoining: p)).font(.se(15)).foregroundStyle(SE.ink3)
             }
-            let bits = [h?.pis.map { "Opened \($0)" }, h?.np == 1 ? "nonprofit sponsor" : nil].compactMap { $0 }
+            let bits = [h?.pis.map { String(localized: "Opened \($0)") }, h?.np == 1 ? String(localized: "nonprofit sponsor") : nil].compactMap { $0 }
             if !bits.isEmpty { Text(bits.joined(separator: " · ")).font(.se(15)).foregroundStyle(SE.ink3) }
             if h?.mgr != nil || h?.tel != nil || h?.web != nil {
                 VStack(alignment: .leading, spacing: 6) {
@@ -618,9 +620,10 @@ struct BuildingDetailView: View {
     /// things SF reports about a unit beyond its rent.
     private var rentExtras: String {
         var bits: [String] = []
-        if let sq = b.sq { bits.append("typically \(sq.formatted()) sq ft") }
+        if let sq = b.sq { bits.append(String(localized: "typically \(sq.formatted()) sq ft")) }
         if let ui = b.ui, !ui.isEmpty {
-            bits.append("\(ui.map(Building.utilityLabel).joined(separator: ", ")) included in the rent")
+            let utilities = ui.map(Building.utilityLabel).joined(separator: ", ")
+            bits.append(String(localized: "\(utilities) included in the rent"))
         }
         let line = bits.joined(separator: " · ")
         return line.isEmpty ? "" : line.prefix(1).uppercased() + line.dropFirst()
@@ -628,13 +631,13 @@ struct BuildingDetailView: View {
 
     private func ownerSpec(_ h: BuildingRecord) -> String {
         var bits: [String] = []
-        if let t = h.units_total { bits.append("\(t) unit\(t == 1 ? "" : "s") in the building") }
-        if let n = h.beds { bits.append("\(n) bedroom\(n == 1 ? "" : "s")") }
-        if let n = h.baths { bits.append("\(n) bathroom\(n == 1 ? "" : "s")") }
-        if let n = h.rooms { bits.append("\(n) room\(n == 1 ? "" : "s")") }
-        if let c = h.cond { bits.append("condition: \(c)") }
-        if let y = h.renov { bits.append("brought up to date ~\(y)") }
-        if let a = h.assessed { bits.append("assessed at \(Formatters.dollars(a))") }
+        if let t = h.units_total { bits.append(String(localized: "\(t) units in the building")) }
+        if let n = h.beds { bits.append(String(localized: "\(n) bedrooms")) }
+        if let n = h.baths { bits.append(String(localized: "\(n) bathrooms")) }
+        if let n = h.rooms { bits.append(String(localized: "\(n) rooms")) }
+        if let c = h.cond { bits.append(String(localized: "condition: \(c)")) }
+        if let y = h.renov { bits.append(String(localized: "brought up to date ~\(y)")) }
+        if let a = h.assessed { bits.append(String(localized: "assessed at \(Formatters.dollars(a))")) }
         return bits.joined(separator: " · ")
     }
 
@@ -673,7 +676,7 @@ struct BuildingDetailView: View {
     private var voucherCard: some View {
         VStack(alignment: .leading, spacing: 8) {
             if let a = store.voucherAvail(b) {
-                Text("Accepting Section 8 — \(a.n ?? 1) listing\((a.n ?? 1) == 1 ? "" : "s") on AffordableHousing.com" + (a.p.map { ", from \(Formatters.dollars($0))/mo" } ?? ""))
+                Text(String(localized: "Accepting Section 8 — \(a.n ?? 1) listings on AffordableHousing.com") + (a.p.map { String(localized: ", from \(Formatters.dollars($0))/mo") } ?? ""))
                     .font(.se(19, .semibold))
             } else {
                 Text("Searching with a housing voucher, like Section 8?").font(.se(19))
@@ -704,7 +707,7 @@ struct BuildingDetailView: View {
             // Bold pests (owner, 2026-10-12); a literal is a LocalizedStringKey, so ** renders.
             Text("HPD's open violations and complaints for this building, the **roaches**, **mice** and **rats** an inspector confirmed here this year, and the bedbug and rat records. Sign in to see them.")
                 .font(.se(17)).foregroundStyle(SE.ink2)
-            SEOutlineButton(title: "Sign in to see violations & inspections", icon: "person.crop.circle") { showRecordsSignIn = true }
+            SEOutlineButton(title: String(localized: "Sign in to see violations & inspections"), icon: "person.crop.circle") { showRecordsSignIn = true }
                 .accessibilityIdentifier("hpd-sign-in")
         } else {
             if v == nil && c == nil {
@@ -713,10 +716,10 @@ struct BuildingDetailView: View {
                 // Each tile opens the full list on its own screen.
                 HStack(spacing: 12) {
                     NavigationLink(value: Route.hpdRecords(b.bbl, .violations)) {
-                        stat("Open violations", v?.open ?? 0, tone: (v?.open ?? 0) == 0 ? SE.good : ((v?.oc ?? 0) > 0 ? SE.bad : SE.warn))
+                        stat(String(localized: "Open violations"), v?.open ?? 0, tone: (v?.open ?? 0) == 0 ? SE.good : ((v?.oc ?? 0) > 0 ? SE.bad : SE.warn))
                     }.buttonStyle(.plain).accessibilityIdentifier("open-violations")
                     NavigationLink(value: Route.hpdRecords(b.bbl, .complaints)) {
-                        stat("Open complaints", c?.open ?? 0, tone: (c?.open ?? 0) == 0 ? SE.good : SE.warn)
+                        stat(String(localized: "Open complaints"), c?.open ?? 0, tone: (c?.open ?? 0) == 0 ? SE.good : SE.warn)
                     }.buttonStyle(.plain).accessibilityIdentifier("open-complaints")
                 }
             }
@@ -736,13 +739,13 @@ struct BuildingDetailView: View {
             // The whole section is already behind sign-in (hpd-sign-in).
             HStack(spacing: 12) {
                 NavigationLink(value: Route.hpdRecords(b.bbl, .bedbugs)) {
-                    inspectionTile("Bedbug filings (landlord's)", bedbugSummary, found: "with bedbugs", clean: "none in the filed year")
+                    inspectionTile(String(localized: "Bedbug filings (landlord's)"), bedbugSummary, found: String(localized: "with bedbugs"), clean: String(localized: "none in the filed year"))
                 }.buttonStyle(.plain).accessibilityIdentifier("bedbug-inspections")
                 NavigationLink(value: Route.hpdRecords(b.bbl, .rodents)) {
-                    inspectionTile("Rat inspections (Health Dept.)", rodentSummary, found: "failed", clean: "none failed this year")
+                    inspectionTile(String(localized: "Rat inspections (Health Dept.)"), rodentSummary, found: String(localized: "failed"), clean: String(localized: "none failed this year"))
                 }.buttonStyle(.plain).accessibilityIdentifier("rodent-inspections")
             }
-            Text(inspectionsFailed ? "Couldn't reach NYC Open Data for the inspections just now. Tap a tile to try again." : "Tap a tile to see each one.")
+            Text(inspectionsFailed ? String(localized: "Couldn't reach NYC Open Data for the inspections just now. Tap a tile to try again.") : String(localized: "Tap a tile to see each one."))
                 .font(.se(14)).foregroundStyle(SE.ink3)
             // The app boots from the slim building file, which carries only
             // the open counts; the class split, 12-month and all-time figures
@@ -750,12 +753,12 @@ struct BuildingDetailView: View {
             // six "0" rows under "20 open" were a contradiction.
             if let v {
                 VStack(alignment: .leading, spacing: 6) {
-                    if let n = v.oa { nrow("Class A (non-hazardous) open", n) }
-                    if let n = v.ob { nrow("Class B (hazardous) open", n) }
-                    if let n = v.oc { nrow("Class C (immediately hazardous) open", n) }
-                    if let n = v.last_12mo { nrow("Violations issued, last 12 months", n) }
-                    if let n = v.total { nrow("Violations on record, all time", n) }
-                    if let n = c?.total { nrow("Complaints, all time", n) }
+                    if let n = v.oa { nrow(String(localized: "Class A (non-hazardous) open"), n) }
+                    if let n = v.ob { nrow(String(localized: "Class B (hazardous) open"), n) }
+                    if let n = v.oc { nrow(String(localized: "Class C (immediately hazardous) open"), n) }
+                    if let n = v.last_12mo { nrow(String(localized: "Violations issued, last 12 months"), n) }
+                    if let n = v.total { nrow(String(localized: "Violations on record, all time"), n) }
+                    if let n = c?.total { nrow(String(localized: "Complaints, all time"), n) }
                 }.padding(.top, 6)
             }
         }
@@ -779,11 +782,11 @@ struct BuildingDetailView: View {
         let s = pestSummary
         let tone: Color = s == nil ? SE.ink3 : (s!.clean ? SE.good : SE.bad)
         let head: String = s == nil ? (inspectionsFailed ? "—" : "…")
-            : (s!.clean ? "None cited this year"
-                        : "\(s!.thisYear) cited this year" + (s!.openThisYear > 0 ? " · \(s!.openThisYear) still open" : ""))
+            : (s!.clean ? String(localized: "None cited this year")
+                        : String(localized: "\(s!.thisYear) cited this year") + (s!.openThisYear > 0 ? String(localized: " · \(s!.openThisYear) still open") : ""))
         let sub: String = s == nil ? ""
             : (s!.thisYear > 0 ? s!.kindLine
-               : (s!.total == 0 ? "no pest violation on record" : "\(s!.total) on record, none this year"))
+               : (s!.total == 0 ? String(localized: "no pest violation on record") : String(localized: "\(s!.total) on record, none this year")))
         return VStack(alignment: .leading, spacing: 2) {
             Text("Pest violations").font(.se(15, .semibold)).foregroundStyle(SE.ink2)
             Text(head).font(.se(17, .bold)).foregroundStyle(tone).lineLimit(2).minimumScaleFactor(0.85)
@@ -799,7 +802,7 @@ struct BuildingDetailView: View {
     private func inspectionTile(_ k: String, _ s: HPDRecords.InspectionSummary?, found: String, clean: String) -> some View {
         let tone: Color = s == nil ? SE.ink3 : (s!.clean ? SE.good : SE.bad)
         let head: String = s == nil ? (inspectionsFailed ? "—" : "…") : (s!.clean ? clean : "\(s!.problemsThisYear) \(found)")
-        let sub: String = s == nil ? "" : (s!.total == 0 ? "no record on file" : "\(s!.total)\(s!.total >= HPDRecords.limit ? "+" : "") on file")
+        let sub: String = s == nil ? "" : (s!.total == 0 ? String(localized: "no record on file") : (s!.total >= HPDRecords.limit ? String(localized: "\(s!.total)+ on file") : String(localized: "\(s!.total) on file")))
         return VStack(alignment: .leading, spacing: 2) {
             Text(k).font(.se(15, .semibold)).foregroundStyle(SE.ink2)
             Text(head).font(.se(17, .bold)).foregroundStyle(tone).lineLimit(2).minimumScaleFactor(0.85)
@@ -824,14 +827,14 @@ struct BuildingDetailView: View {
     /// its borough in New York, Apple Maps' legal search elsewhere. Live
     /// Maps results are never stored (Apple's terms).
     @ViewBuilder private var nearbyRails: some View {
-        NearbyPlacesRail(title: "Cafés nearby", icon: "cup.and.saucer",
-                         note: "Cafés within about half a mile, from Apple Maps.",
+        NearbyPlacesRail(title: String(localized: "Cafés nearby"), icon: "cup.and.saucer",
+                         note: String(localized: "Cafés within about half a mile, from Apple Maps."),
                          places: cafesNearby, testID: "nearby-cafes")
         if store.city.isNYC {
             HousingLawFirmsRail(borough: b.borough, firms: HousingLawFirm.inBorough(b.borough, near: b.coordinate))
         } else {
-            NearbyPlacesRail(title: "Housing legal help nearby", icon: "building.columns",
-                             note: "Tenant and housing legal help near this building, from Apple Maps. We haven't checked them and don't know whether they're qualified or licensed — look them up before you rely on anyone. This isn't legal advice.",
+            NearbyPlacesRail(title: String(localized: "Housing legal help nearby"), icon: "building.columns",
+                             note: String(localized: "Tenant and housing legal help near this building, from Apple Maps. We haven't checked them and don't know whether they're qualified or licensed — look them up before you rely on anyone. This isn't legal advice."),
                              places: legalNearby, testID: "nearby-legal")
         }
     }
@@ -850,7 +853,7 @@ struct BuildingDetailView: View {
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text(s.address).font(.se(19, .bold)).foregroundStyle(SE.royal).lineLimit(1)
                                         if let e = store.estimate(s), e.count >= 3 { Text("\(Formatters.dollars(e[0]))–\(Formatters.dollars(e[2])) typical").font(.se(15)).foregroundStyle(SE.ink2) }
-                                        Text("\(s.u.map { "\($0) units" } ?? "") · \(s.openViolations) open violations").font(.se(14)).foregroundStyle(SE.ink3)
+                                        Text((s.u.map { String(localized: "\($0) units") + " · " } ?? "") + String(localized: "\(s.openViolations) open violations")).font(.se(14)).foregroundStyle(SE.ink3)
                                     }.padding(10)
                                 }
                                 .frame(width: 250).seCard()

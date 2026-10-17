@@ -89,7 +89,7 @@ struct Building: Identifiable, Codable, Hashable {
     /// "Studio", "1 bed" … "4+ bed" — the keys `br` uses, in reading order.
     static let bedOrder = ["0", "1", "2", "3", "4"]
     static func bedLabel(_ key: String) -> String {
-        switch key { case "0": "Studio"; case "4": "4+ bed"; default: "\(key) bed" }
+        switch key { case "0": String(localized: "Studio"); case "4": String(localized: "4+ bed"); default: String(localized: "\(key) bed") }
     }
     static func utilityLabel(_ key: String) -> String {
         switch key { case "water": "water"; case "gas": "gas"; case "electric": "electricity"
@@ -125,7 +125,7 @@ struct Building: Identifiable, Codable, Hashable {
         switch city.regionKind {
         case .borough: return nb ?? borough
         case .neighborhood: return nb ?? city.name
-        case .zip: return z.map { "ZIP \($0)" } ?? city.name
+        case .zip: return z.map { String(localized: "ZIP \($0)") } ?? city.name
         }
     }
 }
@@ -204,11 +204,11 @@ struct OutboundLink: Equatable {
     static func make(_ b: Building, in city: City) -> OutboundLink {
         if city.isNYC {
             let q = "\(b.address), \(b.borough), NY \(b.z ?? "")".trimmingCharacters(in: .whitespaces)
-            return OutboundLink(kind: "streeteasy", label: "StreetEasy ↗",
+            return OutboundLink(kind: "streeteasy", label: String(localized: "StreetEasy ↗"),
                                 url: URL(string: "https://streeteasy.com/search?search=\(encode(q))")!)
         }
         let q = "\(b.address), \(zillowPlace(city)), \(city.state)"
-        return OutboundLink(kind: "zillow", label: "View on Zillow ↗",
+        return OutboundLink(kind: "zillow", label: String(localized: "View on Zillow ↗"),
                             url: URL(string: "https://www.zillow.com/homes/\(encode(q))_rb/")!)
     }
 }
@@ -290,14 +290,14 @@ struct HCRListing: Codable, Hashable, Identifiable {
 
     var isOpen: Bool { status == "Open" }
     var kindLabel: String {
-        switch kind { case "Lottery": "HCR lottery"; case "Mitchell-Lama Waitlist": "Mitchell-Lama waitlist"; default: "HCR waitlist" }
+        switch kind { case "Lottery": String(localized: "HCR lottery"); case "Mitchell-Lama Waitlist": String(localized: "Mitchell-Lama waitlist"); default: String(localized: "HCR waitlist") }
     }
     var applyURL: URL? { url.flatMap(URL.init) }
     var incomeRange: String? {
         switch (min_income, max_income) {
         case let (lo?, hi?): "\(Formatters.dollars(lo))–\(Formatters.dollars(hi))"
-        case let (lo?, nil): "from \(Formatters.dollars(lo))"
-        case let (nil, hi?): "up to \(Formatters.dollars(hi))"
+        case let (lo?, nil): String(localized: "from \(Formatters.dollars(lo))")
+        case let (nil, hi?): String(localized: "up to \(Formatters.dollars(hi))")
         default: nil
         }
     }

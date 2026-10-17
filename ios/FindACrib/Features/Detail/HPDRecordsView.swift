@@ -19,11 +19,11 @@ struct HPDRecordsView: View {
     private var b: Building { building }
     private var title: String {
         switch kind {
-        case .violations: "Violations"
-        case .complaints: "Complaints"
-        case .pests: "Pest violations"
-        case .bedbugs: "Bedbug filings"
-        case .rodents: "Rat inspections"
+        case .violations: String(localized: "Violations")
+        case .complaints: String(localized: "Complaints")
+        case .pests: String(localized: "Pest violations")
+        case .bedbugs: String(localized: "Bedbug filings")
+        case .rodents: String(localized: "Rat inspections")
         }
     }
 
@@ -96,7 +96,7 @@ struct HPDRecordsView: View {
                     .font(.se(15)).foregroundStyle(SE.ink2)
             case .pests:
                 if !loading, let p = pests {
-                    Text(p.clean ? "None cited this year" : "\(p.thisYear) cited this year")
+                    Text(p.clean ? String(localized: "None cited this year") : String(localized: "\(p.thisYear) cited this year"))
                         .font(.se(30, .black)).foregroundStyle(p.clean ? SE.good : SE.bad)
                     if !p.kindLine.isEmpty { Text(p.kindLine).font(.se(17, .bold)).foregroundStyle(SE.ink2) }
                 }
@@ -105,7 +105,7 @@ struct HPDRecordsView: View {
             case .bedbugs:
                 let s = HPDRecords.summary(bedbugs: bedbugs)
                 if !loading {
-                    Text(s.clean ? "None found this year" : "\(s.problemsThisYear) filing\(s.problemsThisYear == 1 ? "" : "s") with bedbugs this year")
+                    Text(s.clean ? String(localized: "None found this year") : String(localized: "\(s.problemsThisYear) filings with bedbugs this year"))
                         .font(.se(30, .black)).foregroundStyle(s.clean ? SE.good : SE.bad)
                 }
                 Text("Every multiple dwelling must report its bedbug history to HPD once a year — how many units had bedbugs, how many were re-infested, how many were treated. Newest filing first.")
@@ -113,7 +113,7 @@ struct HPDRecordsView: View {
             case .rodents:
                 let s = HPDRecords.summary(rodents: rodents)
                 if !loading {
-                    Text(s.clean ? "None failed this year" : "\(s.problemsThisYear) failed this year")
+                    Text(s.clean ? String(localized: "None failed this year") : String(localized: "\(s.problemsThisYear) failed this year"))
                         .font(.se(30, .black)).foregroundStyle(s.clean ? SE.good : SE.bad)
                 }
                 Text("Health Department rodent inspections, newest first. \"Rat activity\" or \"failed\" means the inspector found signs of rats; a passed compliance visit means the problem was fixed.")
@@ -129,47 +129,47 @@ struct HPDRecordsView: View {
         switch kind {
         case .violations:
             if violations.isEmpty {
-                note("Nothing open right now — everything HPD cited at this building has been closed out or dismissed.")
+                note(String(localized: "Nothing open right now — everything HPD cited at this building has been closed out or dismissed."))
             } else {
                 if violations.count >= HPDRecords.limit {
-                    note("The \(HPDRecords.limit) most recent violations HPD still has open here — most serious first.")
+                    note(String(localized: "The \(HPDRecords.limit) most recent violations HPD still has open here — most serious first."))
                 }
                 LazyVStack(spacing: 0) { ForEach(violations) { violationRow($0) } }
                     .background(Color.white)
             }
         case .pests:
             if violations.isEmpty {
-                note("No pest violation on record for this building — HPD has never cited roaches, mice, rats or bedbugs here.")
+                note(String(localized: "No pest violation on record for this building — HPD has never cited roaches, mice, rats or bedbugs here."))
             } else {
                 if violations.count >= HPDRecords.limit {
-                    note("The \(HPDRecords.limit) most recent pest violations, newest first.")
+                    note(String(localized: "The \(HPDRecords.limit) most recent pest violations, newest first."))
                 }
                 LazyVStack(spacing: 0) { ForEach(violations) { violationRow($0) } }
                     .background(Color.white)
             }
         case .complaints:
             if complaints.isEmpty {
-                note("No complaints on file — nobody has reported this building to 311 / HPD.")
+                note(String(localized: "No complaints on file — nobody has reported this building to 311 / HPD."))
             } else {
                 if complaints.count >= HPDRecords.limit {
-                    note("The \(HPDRecords.limit) most recent problems reported, newest first.")
+                    note(String(localized: "The \(HPDRecords.limit) most recent problems reported, newest first."))
                 }
                 LazyVStack(spacing: 0) { ForEach(complaints) { complaintRow($0) } }
                     .background(Color.white)
             }
         case .bedbugs:
             if bedbugs.isEmpty {
-                note("No bedbug filings on record for this building.")
+                note(String(localized: "No bedbug filings on record for this building."))
             } else {
-                if bedbugs.count >= HPDRecords.limit { note("The \(HPDRecords.limit) most recent annual filings, newest first.") }
+                if bedbugs.count >= HPDRecords.limit { note(String(localized: "The \(HPDRecords.limit) most recent annual filings, newest first.")) }
                 LazyVStack(spacing: 0) { ForEach(bedbugs) { bedbugRow($0) } }
                     .background(Color.white)
             }
         case .rodents:
             if rodents.isEmpty {
-                note("No rodent inspections on record for this building.")
+                note(String(localized: "No rodent inspections on record for this building."))
             } else {
-                if rodents.count >= HPDRecords.limit { note("The \(HPDRecords.limit) most recent inspections, newest first.") }
+                if rodents.count >= HPDRecords.limit { note(String(localized: "The \(HPDRecords.limit) most recent inspections, newest first.")) }
                 LazyVStack(spacing: 0) { ForEach(rodents) { rodentRow($0) } }
                     .background(Color.white)
             }
@@ -178,11 +178,11 @@ struct HPDRecordsView: View {
 
     private func bedbugRow(_ r: HPDRecords.BedbugFiling) -> some View {
         let tone: Color = r.hadBedbugs ? SE.bad : SE.good
-        let extras = [r.reinfested > 0 ? "\(r.reinfested) re-infested" : "", r.treated > 0 ? "\(r.treated) treated" : ""].filter { !$0.isEmpty }
+        let extras = [r.reinfested > 0 ? String(localized: "\(r.reinfested) re-infested") : "", r.treated > 0 ? String(localized: "\(r.treated) treated") : ""].filter { !$0.isEmpty }
         return VStack(alignment: .leading, spacing: 5) {
-            Text(r.hadBedbugs ? "Bedbugs reported" : "None reported").font(.se(13, .bold)).foregroundStyle(tone)
+            Text(r.hadBedbugs ? String(localized: "Bedbugs reported") : String(localized: "None reported")).font(.se(13, .bold)).foregroundStyle(tone)
                 .padding(.horizontal, 8).padding(.vertical, 3).background(tone.opacity(0.1))
-            Text("\(r.infested) of \(r.units) unit\(r.units == 1 ? "" : "s") infested" + (extras.isEmpty ? "" : " · " + extras.joined(separator: " · ")))
+            Text(String(localized: "\(r.infested) of \(r.units) units infested") + (extras.isEmpty ? "" : " · " + extras.joined(separator: " · ")))
                 .font(.se(17)).foregroundStyle(SE.ink)
             Text(["Filed \(r.filed)", r.periodStart.isEmpty ? "" : "covers \(r.periodStart) – \(r.periodEnd)"].filter { !$0.isEmpty }.joined(separator: " · "))
                 .font(.se(14)).foregroundStyle(SE.ink2)
@@ -194,9 +194,9 @@ struct HPDRecordsView: View {
     private func rodentRow(_ r: HPDRecords.RodentInspection) -> some View {
         let tone: Color = r.failed ? SE.bad : SE.good
         return VStack(alignment: .leading, spacing: 5) {
-            Text(r.result ?? "Inspection").font(.se(13, .bold)).foregroundStyle(tone)
+            Text(r.result ?? String(localized: "Inspection")).font(.se(13, .bold)).foregroundStyle(tone)
                 .padding(.horizontal, 8).padding(.vertical, 3).background(tone.opacity(0.1))
-            Text(r.inspection_type ?? "Inspection").font(.se(17)).foregroundStyle(SE.ink)
+            Text(r.inspection_type ?? String(localized: "Inspection")).font(.se(17)).foregroundStyle(SE.ink)
             if !r.date.isEmpty { Text("Inspected \(r.date)").font(.se(14)).foregroundStyle(SE.ink2) }
         }
         .padding(16).frame(maxWidth: .infinity, alignment: .leading)
@@ -210,8 +210,8 @@ struct HPDRecordsView: View {
     private func violationRow(_ r: HPDRecords.Violation) -> some View {
         let (cite, body) = HPDRecords.trimNotice(r.novdescription)
         let tone: Color = r.cls == "C" ? SE.bad : (r.cls == "B" ? SE.warn : SE.ink2)
-        let meta = [r.issued.isEmpty ? "" : "Issued \(r.issued)",
-                    (r.apartment ?? "").isEmpty ? "" : "Apt \(r.apartment!)",
+        let meta = [r.issued.isEmpty ? "" : String(localized: "Issued \(r.issued)"),
+                    (r.apartment ?? "").isEmpty ? "" : String(localized: "Apt \(r.apartment!)"),
                     HPDRecords.floorLabel(r.story), cite].filter { !$0.isEmpty }.joined(separator: " · ")
         let raw = (r.currentstatus ?? "").replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression).trimmingCharacters(in: .whitespaces)
         let word = HPDRecords.statusWord[raw] ?? raw.capitalized
@@ -223,7 +223,7 @@ struct HPDRecordsView: View {
                     .font(.se(13, .bold)).foregroundStyle(tone)
                     .padding(.horizontal, 8).padding(.vertical, 3).background(tone.opacity(0.1))
             }
-            Text(body.isEmpty ? "No description on file." : body).font(.se(17)).foregroundStyle(SE.ink)
+            Text(body.isEmpty ? String(localized: "No description on file.") : body).font(.se(17)).foregroundStyle(SE.ink)
             if !meta.isEmpty { Text(meta).font(.se(14)).foregroundStyle(SE.ink2) }
             if !raw.isEmpty {
                 if stale, let years {
@@ -242,16 +242,16 @@ struct HPDRecordsView: View {
         let what = [HPDRecords.titleCase(r.major_category), HPDRecords.titleCase(r.minor_category)].filter { !$0.isEmpty }.joined(separator: " — ")
         let code = HPDRecords.titleCase(r.problem_code)
         let apt = r.apartment ?? ""
-        let whereTxt = (!apt.isEmpty && apt != "BLDG") ? "Apt \(apt)" : HPDRecords.titleCase(r.unit_type)
-        let meta = [r.received.isEmpty ? "" : "Reported \(r.received)", whereTxt,
-                    (r.type ?? "").uppercased() == "EMERGENCY" ? "Emergency" : ""].filter { !$0.isEmpty }.joined(separator: " · ")
+        let whereTxt = (!apt.isEmpty && apt != "BLDG") ? String(localized: "Apt \(apt)") : HPDRecords.titleCase(r.unit_type)
+        let meta = [r.received.isEmpty ? "" : String(localized: "Reported \(r.received)"), whereTxt,
+                    (r.type ?? "").uppercased() == "EMERGENCY" ? String(localized: "Emergency") : ""].filter { !$0.isEmpty }.joined(separator: " · ")
         let note = (r.status_description ?? "").replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
             .trimmingCharacters(in: .whitespaces)
             .components(separatedBy: ". ").first ?? ""
         return VStack(alignment: .leading, spacing: 5) {
-            Text(r.isOpen ? "Open" : "Closed").font(.se(13, .bold)).foregroundStyle(r.isOpen ? SE.warn : SE.ink2)
+            Text(r.isOpen ? String(localized: "Open") : String(localized: "Closed")).font(.se(13, .bold)).foregroundStyle(r.isOpen ? SE.warn : SE.ink2)
                 .padding(.horizontal, 8).padding(.vertical, 3).background((r.isOpen ? SE.warn : SE.ink2).opacity(0.1))
-            Text((what.isEmpty ? "Complaint" : what) + (code.isEmpty || code == what ? "" : " · \(code)")).font(.se(17)).foregroundStyle(SE.ink)
+            Text((what.isEmpty ? String(localized: "Complaint") : what) + (code.isEmpty || code == what ? "" : " · \(code)")).font(.se(17)).foregroundStyle(SE.ink)
             if !meta.isEmpty { Text(meta).font(.se(14)).foregroundStyle(SE.ink2) }
             if !note.isEmpty {
                 Text(note + (note.hasSuffix(".") ? "" : ".") + (r.statusDate.isEmpty ? "" : " (\(r.statusDate))")).font(.se(14)).foregroundStyle(SE.ink2)

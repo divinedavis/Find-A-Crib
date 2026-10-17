@@ -58,13 +58,13 @@ final class Packet {
         var id: String { rawValue }
         var title: String {
             switch self {
-            case .id: "Photo ID"
-            case .payStubs: "Recent pay stubs"
-            case .taxReturn: "Last year's tax return"
-            case .employmentLetter: "Employment letter"
-            case .bankStatements: "Bank statements"
-            case .benefits: "Benefits or child-support letters"
-            case .other: "Other document"
+            case .id: String(localized: "Photo ID")
+            case .payStubs: String(localized: "Recent pay stubs")
+            case .taxReturn: String(localized: "Last year's tax return")
+            case .employmentLetter: String(localized: "Employment letter")
+            case .bankStatements: String(localized: "Bank statements")
+            case .benefits: String(localized: "Benefits or child-support letters")
+            case .other: String(localized: "Other document")
             }
         }
         var icon: String {

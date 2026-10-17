@@ -36,8 +36,8 @@ struct MapResultsView: View {
                 // The count follows the viewport: pan or zoom and it reads what
                 // is on screen, and List opens on exactly that. Until the user
                 // moves the map it is the whole search.
-                Text(!searched ? "Searching…"
-                     : moved ? "\((inView ?? results.count).formatted()) \(query.noun) in view"
+                Text(!searched ? String(localized: "Searching…")
+                     : moved ? String(localized: "\((inView ?? results.count).formatted()) \(query.noun) in view")
                      : "\(results.count.formatted()) \(query.noun)")
                     .font(.se(15, .bold)).foregroundStyle(SE.ink)
                     .padding(.horizontal, 12).padding(.vertical, 6).background(Color.white.opacity(0.95)).clipShape(Capsule())
@@ -70,7 +70,7 @@ struct MapResultsView: View {
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                         .accessibilityAction(named: "Dismiss") { selected = nil }
                 }
-                FloatingPill(title: "List", icon: "list.bullet") { backToList() }
+                FloatingPill(title: String(localized: "List"), icon: "list.bullet") { backToList() }
             }
             .padding(.bottom, 92)
             .animation(.easeInOut(duration: 0.2), value: selected?.bbl)
@@ -539,7 +539,7 @@ final class ClusterBubbleView: MKAnnotationView {
         label.text = n >= 1000 ? "\(n / 1000)k" : "\(n)"
         isAccessibilityElement = true
         accessibilityIdentifier = "cluster-bubble"
-        accessibilityLabel = "\(n) buildings"
+        accessibilityLabel = String(localized: "\(n) buildings")
         let d: CGFloat = n >= 100 ? 44 : (n >= 10 ? 38 : 32)
         bounds = CGRect(x: 0, y: 0, width: d, height: d)
         label.frame = bounds

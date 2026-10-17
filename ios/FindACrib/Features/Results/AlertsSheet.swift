@@ -33,9 +33,9 @@ struct AlertsSheet: View {
     @State private var loadingPrefs = false
 
     private static let kindRows: [(key: String, name: String, sub: String)] = [
-        ("rerental", "Re-rentals", "A vacated affordable apartment an HPD marketing agent re-rents directly, usually first come, first served"),
-        ("voucher", "Voucher listings", "A landlord newly accepting Section 8 / vouchers on AffordableHousing.com"),
-        ("lottery", "Lotteries & waitlists", "Housing Connect and HCR lotteries, Mitchell-Lama waitlists"),
+        ("rerental", String(localized: "Re-rentals"), String(localized: "A vacated affordable apartment an HPD marketing agent re-rents directly, usually first come, first served")),
+        ("voucher", String(localized: "Voucher listings"), String(localized: "A landlord newly accepting Section 8 / vouchers on AffordableHousing.com")),
+        ("lottery", String(localized: "Lotteries & waitlists"), String(localized: "Housing Connect and HCR lotteries, Mitchell-Lama waitlists")),
     ]
 
     var body: some View {
@@ -46,19 +46,19 @@ struct AlertsSheet: View {
                         VStack(alignment: .leading, spacing: 10) {
                             Text("You're on the list").font(.se(26, .bold)).foregroundStyle(SE.ink)
                             Text(auth.hasPlus
-                                 ? "The minute something opens, you'll get a notification on this phone and an email."
-                                 : "Every morning at 8 AM you'll get a notification on this phone and an email.")
+                                 ? String(localized: "The minute something opens, you'll get a notification on this phone and an email.")
+                                 : String(localized: "Every morning at 8 AM you'll get a notification on this phone and an email."))
                                 .font(.se(17)).foregroundStyle(SE.ink2)
                             pushStateLine
                             if !auth.hasPlus { RealtimeUpsell(source: "alerts_done") { showPlus = true } }
                             Text("Change boroughs or stop the alerts any time here or at findacrib.com/alerts/.").font(.se(15)).foregroundStyle(SE.ink3)
                         }
-                        SEPrimaryButton(title: "Done") { dismiss() }
+                        SEPrimaryButton(title: String(localized: "Done")) { dismiss() }
                     } else {
-                        Text(editing ? "Your alerts" : "Get alerts when one opens").font(.se(26, .bold)).foregroundStyle(SE.ink)
+                        Text(editing ? String(localized: "Your alerts") : String(localized: "Get alerts when one opens")).font(.se(26, .bold)).foregroundStyle(SE.ink)
                         Text(auth.hasPlus
-                             ? "In-app notifications and emails to \(auth.email ?? "your account email") the minute a lottery or re-rental opens."
-                             : "In-app notifications and emails to \(auth.email ?? "your account email") at 8 AM daily. Upgrade to Plus for instant notifications and emails.")
+                             ? String(localized: "In-app notifications and emails to \(auth.email ?? String(localized: "your account email")) the minute a lottery or re-rental opens.")
+                             : String(localized: "In-app notifications and emails to \(auth.email ?? String(localized: "your account email")) at 8 AM daily. Upgrade to Plus for instant notifications and emails."))
                             .font(.se(16)).foregroundStyle(SE.ink2)
                         if editing { pushStateLine }
                         if loadingPrefs {
@@ -90,22 +90,22 @@ struct AlertsSheet: View {
 
                         Text("Only if it fits (optional)").font(.se(15, .bold)).foregroundStyle(SE.ink2).textCase(.uppercase)
                         HStack(spacing: 12) {
-                            numField("Max rent, $/month", "e.g. 2000", $maxRent).accessibilityIdentifier("alerts-max-rent")
-                            numField("Household income, $/year", "e.g. 65000", $income).accessibilityIdentifier("alerts-income")
+                            numField(String(localized: "Max rent, $/month"), "e.g. 2000", $maxRent).accessibilityIdentifier("alerts-max-rent")
+                            numField(String(localized: "Household income, $/year"), "e.g. 65000", $income).accessibilityIdentifier("alerts-income")
                         }
-                        Stepper(household == 0 ? "People in your household (optional)" : "\(household) \(household == 1 ? "person" : "people") in your household",
+                        Stepper(household == 0 ? String(localized: "People in your household (optional)") : String(localized: "\(household) people in your household"),
                                 value: $household, in: 0...8)
                             .font(.se(16)).accessibilityIdentifier("alerts-household")
                         Text("A lottery or re-rental is sent only when a unit's rent is at or under your cap and your household income falls in one of its income bands. Leave both blank to hear about everything. Your income and household also mark which lotteries and re-rentals you qualify for in the Lotteries tab.")
                             .font(.se(14)).foregroundStyle(SE.ink3)
 
                         if let error { Text(error).font(.se(15)).foregroundStyle(SE.bad) }
-                        SEPrimaryButton(title: busy ? "…" : (editing ? "Save changes" : "Turn on alerts")) { Task { await subscribe() } }
+                        SEPrimaryButton(title: busy ? "…" : (editing ? String(localized: "Save changes") : String(localized: "Turn on alerts"))) { Task { await subscribe() } }
                             .disabled(busy || boroughs.isEmpty || kinds.isEmpty)
                             .opacity((boroughs.isEmpty || kinds.isEmpty) ? 0.5 : 1)
                             .accessibilityIdentifier("alerts-subscribe")
-                        Text(editing ? "Stop the emails any time from the link at the bottom of one, or at findacrib.com/alerts/."
-                                     : "This replaces any borough alert already set up for this email on findacrib.com.")
+                        Text(editing ? String(localized: "Stop the emails any time from the link at the bottom of one, or at findacrib.com/alerts/.")
+                                     : String(localized: "This replaces any borough alert already set up for this email on findacrib.com."))
                             .font(.se(14)).foregroundStyle(SE.ink3)
                     }
                 }
@@ -148,15 +148,15 @@ struct AlertsSheet: View {
 
     private var fitPhrase: String {
         var fit: [String] = []
-        if let r = Self.dollars(maxRent), r > 0 { fit.append("rent up to $\(r.formatted())") }
-        if let i = Self.dollars(income), i > 0 { fit.append("an income band that includes $\(i.formatted())/yr") }
-        return fit.isEmpty ? "" : " with " + fit.joined(separator: " and ")
+        if let r = Self.dollars(maxRent), r > 0 { fit.append(String(localized: "rent up to $\(r.formatted())")) }
+        if let i = Self.dollars(income), i > 0 { fit.append(String(localized: "an income band that includes $\(i.formatted())/yr")) }
+        return fit.isEmpty ? "" : String(localized: " with ") + fit.joined(separator: String(localized: " and "))
     }
 
     private var boroughPhrase: String {
         let names = Borough.all.filter { boroughs.contains($0.code) }.map(\.name)
-        if names.count == Borough.all.count { return "all five boroughs" }
-        return names.count <= 1 ? (names.first ?? "your borough") : names.dropLast().joined(separator: ", ") + " and " + names.last!
+        if names.count == Borough.all.count { return String(localized: "all five boroughs") }
+        return names.count <= 1 ? (names.first ?? String(localized: "your borough")) : names.dropLast().joined(separator: ", ") + String(localized: " and ") + names.last!
     }
 
     /// What this email already gets, from the site, so the sheet edits the
@@ -262,10 +262,10 @@ struct AlertsSheet: View {
     }
 
     private func subscribe() async {
-        guard let email = auth.email else { error = "Sign in first."; return }
+        guard let email = auth.email else { error = String(localized: "Sign in first."); return }
         let rent = Self.dollars(maxRent), inc = Self.dollars(income)
-        if let rent, !(100...20000).contains(rent) { error = "Max rent should be a number of dollars per month, between 100 and 20,000."; return }
-        if let inc, !(1000...2_000_000).contains(inc) { error = "Income should be a number of dollars per year, between 1,000 and 2,000,000."; return }
+        if let rent, !(100...20000).contains(rent) { error = String(localized: "Max rent should be a number of dollars per month, between 100 and 20,000."); return }
+        if let inc, !(1000...2_000_000).contains(inc) { error = String(localized: "Income should be a number of dollars per year, between 1,000 and 2,000,000."); return }
         busy = true; error = nil
         defer { busy = false }
         do {
@@ -301,14 +301,14 @@ struct AlertsSheet: View {
                 return
             }
             switch body?["error"] as? String {
-            case "signup_cap": error = "Sign-ups are paused for today — try again tomorrow."
-            case "invalid_email": error = "Your account email doesn't look valid. Update it under Profile."
-            case "no_borough": error = "Pick at least one borough."
-            case "sign_in_required": error = "Your session expired — sign in again under Profile."
-            case "bad_rent": error = "Max rent should be a number of dollars per month, between 100 and 20,000."
-            case "bad_income": error = "Income should be a number of dollars per year, between 1,000 and 2,000,000."
-            default: error = code == 429 ? "Too many tries — give it an hour." : "Couldn't reach findacrib.com just now. Try again."
+            case "signup_cap": error = String(localized: "Sign-ups are paused for today — try again tomorrow.")
+            case "invalid_email": error = String(localized: "Your account email doesn't look valid. Update it under Profile.")
+            case "no_borough": error = String(localized: "Pick at least one borough.")
+            case "sign_in_required": error = String(localized: "Your session expired — sign in again under Profile.")
+            case "bad_rent": error = String(localized: "Max rent should be a number of dollars per month, between 100 and 20,000.")
+            case "bad_income": error = String(localized: "Income should be a number of dollars per year, between 1,000 and 2,000,000.")
+            default: error = code == 429 ? String(localized: "Too many tries — give it an hour.") : String(localized: "Couldn't reach findacrib.com just now. Try again.")
             }
-        } catch { self.error = "Couldn't reach findacrib.com just now. Try again." }
+        } catch { self.error = String(localized: "Couldn't reach findacrib.com just now. Try again.") }
     }
 }

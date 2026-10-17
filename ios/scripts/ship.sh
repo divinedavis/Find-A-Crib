@@ -39,6 +39,12 @@ echo "==> regenerating xcodeproj"
 # test still waiting for an identifier the app no longer has.
 echo "==> UI test coverage follows the features"
 python3 scripts/check_test_coverage.py
+# Every translation consumes the same format arguments as its English
+# (a mismatch crashes String(format:) at run time), plurals have "other",
+# and "Find A Crib" is never translated away (2026-10-16, Spanish, Chinese,
+# Korean; see scripts/l10n/).
+echo "==> translations safe in every language"
+python3 -c "import sys; sys.path.insert(0, 'scripts'); import test_localizable_catalog as t; [getattr(t, n)() for n in dir(t) if n.startswith('test_')]"
 echo "==> MetricKit still wired (metrics + crash/hang diagnostics)"
 for want in "MXMetricManager.shared.add" "didReceive(_ payloads: \[MXMetricPayload\])" "didReceive(_ payloads: \[MXDiagnosticPayload\])"; do
   grep -rq "$want" FindACrib/Services/Metrics.swift || { echo "error: Metrics.swift lost: $want" >&2; exit 1; }

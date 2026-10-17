@@ -5,3 +5,5 @@ DerivedData/
 .DS_Store
 scripts/asc-config.env
 Secrets.xcconfig
+# translate.sh binary and review queues (scripts/l10n)
+build/

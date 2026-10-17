@@ -23,31 +23,31 @@ struct PaywallView: View {
     }
 
     static let perks: [Perk] = [
-        Perk(id: "realtime", icon: "bolt.fill", title: "Real-time alerts",
-             sub: "Re-rentals go first come, first served. Hear the minute one opens in your boroughs — without Plus, alerts come once a day at 8 AM.",
-             example: "“New re-rental in Brooklyn: 75 Dupont St, 1 bedroom $3,661” — at 2:14 PM, not tomorrow at 8."),
+        Perk(id: "realtime", icon: "bolt.fill", title: String(localized: "Real-time alerts"),
+             sub: String(localized: "Re-rentals go first come, first served. Hear the minute one opens in your boroughs — without Plus, alerts come once a day at 8 AM."),
+             example: String(localized: "“New re-rental in Brooklyn: 75 Dupont St, 1 bedroom $3,661” — at 2:14 PM, not tomorrow at 8.")),
         // Promoted (owner, 2026-10-12). Both open from Profile in the app too.
-        Perk(id: "broker_fee", icon: "dollarsign.circle", title: "Broker fee check",
-             sub: "Find out if a broker fee, application fee or deposit breaks NYC's FARE Act or New York law — and how to get it back.",
-             example: "“$4,200 broker fee — the landlord hired the broker, so under the FARE Act you shouldn't pay it.”"),
-        Perk(id: "phone", icon: "phone.fill", title: "Agent phone numbers",
-             sub: "Call who actually runs the building — 11,000+ managing-agent numbers.", example: nil),
-        Perk(id: "lease_review", icon: "doc.text.magnifyingglass", title: "Lease review",
-             sub: "Upload your lease and AI flags the clauses New York law limits or voids, quoting each one.",
+        Perk(id: "broker_fee", icon: "dollarsign.circle", title: String(localized: "Broker fee check"),
+             sub: String(localized: "Find out if a broker fee, application fee or deposit breaks NYC's FARE Act or New York law — and how to get it back."),
+             example: String(localized: "“$4,200 broker fee — the landlord hired the broker, so under the FARE Act you shouldn't pay it.”")),
+        Perk(id: "phone", icon: "phone.fill", title: String(localized: "Agent phone numbers"),
+             sub: String(localized: "Call who actually runs the building — 11,000+ managing-agent numbers."), example: nil),
+        Perk(id: "lease_review", icon: "doc.text.magnifyingglass", title: String(localized: "Lease review"),
+             sub: String(localized: "Upload your lease and AI flags the clauses New York law limits or voids, quoting each one."),
              example: nil),
-        Perk(id: "renewal", icon: "arrow.triangle.2.circlepath", title: "Renewal coach",
-             sub: "Your key dates, the legal cap on your increase, and an AI-written email to negotiate your renewal.",
-             example: "“$2,700 is 12.5% over $2,400 — above Good Cause's 8.38%. Could we renew within that?”"),
-        Perk(id: "renter_ai", icon: "sparkles", title: "AI repair letters & rights answers",
-             sub: "A repair letter in your own words, and answers to your questions about your rights as a renter.",
+        Perk(id: "renewal", icon: "arrow.triangle.2.circlepath", title: String(localized: "Renewal coach"),
+             sub: String(localized: "Your key dates, the legal cap on your increase, and an AI-written email to negotiate your renewal."),
+             example: String(localized: "“$2,700 is 12.5% over $2,400 — above Good Cause's 8.38%. Could we renew within that?”")),
+        Perk(id: "renter_ai", icon: "sparkles", title: String(localized: "AI repair letters & rights answers"),
+             sub: String(localized: "A repair letter in your own words, and answers to your questions about your rights as a renter."),
              example: nil),
-        Perk(id: "apply_help", icon: "doc.text", title: "Help me apply",
-             sub: "The agent's steps, the documents to gather and a ready-to-send email — for every re-rental.",
-             example: "“1. Download the application… 2. Gather pay stubs… Email: Hi, I'm interested in unit 4B…”"),
-        Perk(id: "ai_search", icon: "sparkles", title: "Search in plain words",
-             sub: "Type what you want and the search sets every filter.",
-             example: "“2 bed under $2,500 near Prospect Park, no violations”"),
-        Perk(id: "noads", icon: "nosign", title: "No ads", sub: "No ads in the app or on findacrib.com.", example: nil),
+        Perk(id: "apply_help", icon: "doc.text", title: String(localized: "Help me apply"),
+             sub: String(localized: "The agent's steps, the documents to gather and a ready-to-send email — for every re-rental."),
+             example: String(localized: "“1. Download the application… 2. Gather pay stubs… Email: Hi, I'm interested in unit 4B…”")),
+        Perk(id: "ai_search", icon: "sparkles", title: String(localized: "Search in plain words"),
+             sub: String(localized: "Type what you want and the search sets every filter."),
+             example: String(localized: "“2 bed under $2,500 near Prospect Park, no violations”")),
+        Perk(id: "noads", icon: "nosign", title: String(localized: "No ads"), sub: String(localized: "No ads in the app or on findacrib.com."), example: nil),
     ]
 
     private var ordered: [Perk] {
@@ -83,7 +83,7 @@ struct PaywallView: View {
             }
             .buttonStyle(.plain).padding(14).accessibilityIdentifier("paywall-close").accessibilityLabel("Close")
         }
-        .sheet(isPresented: $showSignIn) { EmailSignInView(offersSocialSignIn: true, heading: "Sign in for Plus") }
+        .sheet(isPresented: $showSignIn) { EmailSignInView(offersSocialSignIn: true, heading: String(localized: "Sign in for Plus")) }
         .onChange(of: auth.isSignedIn) { _, on in
             if on { Analytics.shared.track("paywall_signed_in", ["source": source]) }
         }
@@ -123,7 +123,7 @@ struct PaywallView: View {
     private func perkCard(_ p: Perk, lead: Bool) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             if lead {
-                Text(context.map { "WHAT YOU TAPPED · \($0.uppercased())" } ?? "WHAT YOU TAPPED")
+                Text(context.map { String(localized: "WHAT YOU TAPPED · \($0.uppercased())") } ?? String(localized: "WHAT YOU TAPPED"))
                     .font(.se(12, .black)).tracking(0.8).foregroundStyle(SE.royal).lineLimit(1)
             }
             HStack(alignment: .top, spacing: 14) {
@@ -151,10 +151,10 @@ struct PaywallView: View {
     private var cta: some View {
         VStack(spacing: 8) {
             if auth.hasPlus {
-                SEBadge(text: "You have Plus", icon: "checkmark.seal.fill", fill: SE.paleBlue, ink: SE.royal)
-                SEPrimaryButton(title: "Done") { dismiss() }
+                SEBadge(text: String(localized: "You have Plus"), icon: "checkmark.seal.fill", fill: SE.paleBlue, ink: SE.royal)
+                SEPrimaryButton(title: String(localized: "Done")) { dismiss() }
             } else if !auth.isSignedIn {
-                SEPrimaryButton(title: "Sign in or create an account", icon: "person.crop.circle") {
+                SEPrimaryButton(title: String(localized: "Sign in or create an account"), icon: "person.crop.circle") {
                     Analytics.shared.track("paywall_signin_click", ["source": source])
                     showSignIn = true
                 }
@@ -162,7 +162,7 @@ struct PaywallView: View {
                 Text("Step 1 of 2 — then choose Plus. Your account works on findacrib.com too.")
                     .font(.se(13)).foregroundStyle(SE.ink3).multilineTextAlignment(.center)
             } else {
-                SEPrimaryButton(title: plus.busy ? "…" : (plus.trial.map { "Start your \($0) — then \(plus.priceText)/mo" } ?? "Get Plus — \(plus.priceText)/month"), icon: "sparkles") {
+                SEPrimaryButton(title: plus.busy ? "…" : (plus.trial.map { String(localized: "Start your \($0) — then \(plus.priceText)/mo") } ?? String(localized: "Get Plus — \(plus.priceText)/month")), icon: "sparkles") {
                     Task { await plus.purchase(); if auth.hasPlus { dismiss() } }
                 }
                 .disabled(plus.busy)
@@ -179,8 +179,8 @@ struct PaywallView: View {
 
     private var disclosures: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text((plus.trial.map { "The first \($0) costs nothing; \(plus.priceText) is charged to your Apple Account when it ends unless you cancel at least 24 hours before. " } ?? "Payment is charged to your Apple Account at confirmation. ")
-                 + "The subscription renews automatically each month at \(plus.priceText) unless cancelled at least 24 hours before the end of the current period. Manage or cancel in Settings › Apple Account › Subscriptions.")
+            Text((plus.trial.map { String(localized: "The first \($0) costs nothing; \(plus.priceText) is charged to your Apple Account when it ends unless you cancel at least 24 hours before. ") } ?? String(localized: "Payment is charged to your Apple Account at confirmation. "))
+                 + String(localized: "The subscription renews automatically each month at \(plus.priceText) unless cancelled at least 24 hours before the end of the current period. Manage or cancel in Settings › Apple Account › Subscriptions."))
                 .font(.se(13)).foregroundStyle(SE.ink3)
             HStack(spacing: 18) {
                 Button("Terms of Use") { openURL(PlusStore.termsURL) }

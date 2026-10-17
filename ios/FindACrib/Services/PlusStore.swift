@@ -37,7 +37,7 @@ final class PlusStore {
 
     func load() async {
         do { product = try await Product.products(for: [Self.productID]).first }
-        catch { self.error = "Couldn't load the subscription: \(error.localizedDescription)" }
+        catch { self.error = String(localized: "Couldn't load the subscription: \(error.localizedDescription)") }
         // The first-month trial (App Store Connect introductory offer,
         // owner 2026-10-04). Apple decides who's eligible: one per person.
         if let sub = product?.subscription, let offer = sub.introductoryOffer, offer.paymentMode == .freeTrial {
@@ -55,15 +55,13 @@ final class PlusStore {
     var trial: String? { trialEligible ? trialText : nil }
 
     nonisolated static func periodWords(_ p: Product.SubscriptionPeriod) -> String {
-        let unit: String
         switch p.unit {
-        case .day: unit = "day"
-        case .week: unit = "week"
-        case .month: unit = "month"
-        case .year: unit = "year"
-        @unknown default: unit = "period"
+        case .day: String(localized: "\(p.value) days")
+        case .week: String(localized: "\(p.value) weeks")
+        case .month: String(localized: "\(p.value) months")
+        case .year: String(localized: "\(p.value) years")
+        @unknown default: String(localized: "\(p.value) periods")
         }
-        return "\(p.value) \(unit)\(p.value == 1 ? "" : "s")"
     }
 
     /// Which paywall is on screen (phone, alerts, profile, …), so a purchase
@@ -74,7 +72,7 @@ final class PlusStore {
     /// Buy. Requires a signed-in account so the entitlement can be bound to it.
     func purchase() async {
         guard let product else { await load(); guard self.product != nil else { return }; return await purchase() }
-        guard auth?.isSignedIn == true else { error = "Sign in first so Plus is tied to your account."; return }
+        guard auth?.isSignedIn == true else { error = String(localized: "Sign in first so Plus is tied to your account."); return }
         busy = true; error = nil; defer { busy = false }
         do {
             // The account id rides along as appAccountToken, so Apple's server
@@ -87,7 +85,7 @@ final class PlusStore {
             case .success(let verification):
                 guard case .verified(let tx) = verification else {
                     Analytics.shared.track("purchase", ["result": "unverified"])
-                    error = "Apple couldn't verify the purchase."; return
+                    error = String(localized: "Apple couldn't verify the purchase."); return
                 }
                 Analytics.shared.track("purchase", ["result": "ok", "product": tx.productID, "source": source])
                 await handle(tx, jws: verification.jwsRepresentation)
@@ -103,7 +101,7 @@ final class PlusStore {
         busy = true; error = nil; defer { busy = false }
         try? await AppStore.sync()
         await refreshEntitlement()
-        if !entitled { error = "No active Find A Crib Plus subscription on this Apple ID." }
+        if !entitled { error = String(localized: "No active Find A Crib Plus subscription on this Apple ID.") }
     }
 
     /// Current entitlement from StoreKit, pushed to the server when signed in.

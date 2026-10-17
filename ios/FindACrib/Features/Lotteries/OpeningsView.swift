@@ -65,14 +65,14 @@ struct OpeningsView: View {
                 .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.bottom, 12)
             }
             VStack(alignment: .leading, spacing: 10) {
-                SEUnderlineTabs(options: [(Tenure.rent, "Rent"), (.buy, "Buy")], selection: $tenure)
+                SEUnderlineTabs(options: [(Tenure.rent, String(localized: "Rent")), (.buy, String(localized: "Buy"))], selection: $tenure)
                 filterBar
             }
             .padding(.horizontal, 16).padding(.top, 8).padding(.bottom, 10).background(Color.white)
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 12) {
                     HStack {
-                        Text(loading && pool.isEmpty ? "Loading…" : filtering ? "\(count) of \(pool.count) open" : "\(count) open")
+                        Text(loading && pool.isEmpty ? String(localized: "Loading…") : filtering ? String(localized: "\(count) of \(pool.count) open") : String(localized: "\(count) open"))
                             .font(.se(17, .bold)).foregroundStyle(SE.ink)
                             .accessibilityIdentifier("openings-count")
                         Spacer()
@@ -114,7 +114,7 @@ struct OpeningsView: View {
             if showsBeds {
                 HStack(spacing: 10) {
                     Text("Beds").font(.se(15, .bold)).foregroundStyle(SE.ink2)
-                    SESegmentRow(options: [(0, "Studio"), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: bedsBinding)
+                    SESegmentRow(options: [(0, String(localized: "Studio")), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: bedsBinding)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -132,20 +132,20 @@ struct OpeningsView: View {
                                 }
                             }
                         } label: {
-                            chipLabel(area ?? "Area", on: area != nil, chevron: true)
+                            chipLabel(area ?? String(localized: "Area"), on: area != nil, chevron: true)
                         }
                         .accessibilityIdentifier("openings-area")
                     }
                     if kindOptions.count > 1 {
                         ForEach(kindOptions, id: \.self) { k in
-                            chip(k == "first_come" ? "First come" : OpeningsFeed.kindLabel(k), on: kinds.contains(k), id: "openings-kind-\(k)") {
+                            chip(k == "first_come" ? String(localized: "First come") : OpeningsFeed.kindLabel(k), on: kinds.contains(k), id: "openings-kind-\(k)") {
                                 if kinds.contains(k) { kinds.remove(k) } else { kinds.insert(k) }
                                 Analytics.shared.track("openings_filter", ["city": city.id, "kind": k])
                             }
                         }
                     }
                     if pool.contains(where: { ($0.units ?? 0) > 0 }) && pool.contains(where: { ($0.units ?? 0) == 0 }) {
-                        chip("Units open now", on: unitsNow, id: "openings-units-now") {
+                        chip(String(localized: "Units open now"), on: unitsNow, id: "openings-units-now") {
                             unitsNow.toggle()
                             Analytics.shared.track("openings_filter", ["city": city.id, "units_now": unitsNow])
                         }
@@ -181,19 +181,20 @@ struct OpeningsView: View {
     private var footnote: String {
         let srcs = Set(OpeningsFeed.filter(feed.all, for: city, today: LotteryFeed.todayKey()).map(\.src)).sorted()
         if city.id == "mia" {
-            return "Buildings Florida Housing lists as in lease-up — taking their first tenants now. Miami-Dade has no lottery portal: contact each building's leasing office to apply. Income limits and household size decide eligibility."
+            return String(localized: "Buildings Florida Housing lists as in lease-up — taking their first tenants now. Miami-Dade has no lottery portal: contact each building's leasing office to apply. Income limits and household size decide eligibility.")
         }
-        return "From " + (srcs.isEmpty ? "the agencies' own listings" : ListFormatter.localizedString(byJoining: srcs))
-            + ", updated every few hours. Income limits and household size decide eligibility — check each listing before you apply."
+        return String(localized: "From ") + (srcs.isEmpty ? String(localized: "the agencies' own listings") : ListFormatter.localizedString(byJoining: srcs))
+            + String(localized: ", updated every few hours. Income limits and household size decide eligibility — check each listing before you apply.")
     }
 
     @ViewBuilder private var empty: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(feed.loadFailed ? "Couldn't load openings" : filtering && !pool.isEmpty ? "None match these filters" : "Nothing open right now")
+            Text(feed.loadFailed ? String(localized: "Couldn't load openings") : filtering && !pool.isEmpty ? String(localized: "None match these filters") : String(localized: "Nothing open right now"))
                 .font(.se(19, .bold)).foregroundStyle(SE.ink)
-            Text(feed.loadFailed ? "Check your connection and pull down to try again."
-                 : filtering && !pool.isEmpty ? "\(pool.count) open in \(city.name), none with these filters. Tap Clear filters to see them all."
-                 : "No \(tenure == .rent ? "rentals" : "homes for sale") are taking applications in \(city.name) today. Pull down to check again.")
+            Text(feed.loadFailed ? String(localized: "Check your connection and pull down to try again.")
+                 : filtering && !pool.isEmpty ? String(localized: "\(pool.count) open in \(city.name), none with these filters. Tap Clear filters to see them all.")
+                 : (tenure == .rent ? String(localized: "No rentals are taking applications in \(city.name) today. Pull down to check again.")
+                                    : String(localized: "No homes for sale are taking applications in \(city.name) today. Pull down to check again.")))
                 .font(.se(16)).foregroundStyle(SE.ink2)
         }
         .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white)
@@ -205,13 +206,13 @@ struct OpeningsView: View {
         return VStack(alignment: .leading, spacing: 0) {
         LotteryPhoto(key: o.id, url: o.image.flatMap(URL.init(string:)), lat: o.lat, lng: o.lng)
         VStack(alignment: .leading, spacing: 6) {
-            Text(o.name ?? o.address ?? "Listing").font(.se(19, .bold)).foregroundStyle(SE.ink)
+            Text(o.name ?? o.address ?? String(localized: "Listing")).font(.se(19, .bold)).foregroundStyle(SE.ink)
             Text([o.neighborhood ?? o.city, OpeningsFeed.kindLabel(o.kind)].compactMap { $0 }.joined(separator: " · "))
                 .font(.se(15, .semibold)).foregroundStyle(SE.ink2)
             // Lease-ups have no listing page, so the address is how to find them.
             if o.kind == "leasing", let addr = o.address { Text(addr).font(.se(15)).foregroundStyle(SE.ink2) }
             if let c = o.closes, let d = days {
-                Text("Apply by \(Self.date(c))" + (d == 0 ? " (today)" : d == 1 ? " (tomorrow)" : " (\(d)d)"))
+                Text("Apply by \(Self.date(c))" + (d == 0 ? String(localized: " (today)") : d == 1 ? String(localized: " (tomorrow)") : " (\(d)d)"))
                     .font(.se(15, .semibold)).foregroundStyle(d <= 3 ? SE.warn : SE.ink2)
             }
             if let line = rentLine(o) { Text(line).font(.se(16)).foregroundStyle(SE.ink) }
@@ -228,8 +229,8 @@ struct OpeningsView: View {
             if let href = o.href, let url = URL(string: href) {
                 // Lease-ups link to the building's own leasing site (a search
                 // only if none was found).
-                SEPrimaryButton(title: o.kind != "leasing" ? "Apply on \(o.src)"
-                                : href.contains("google.com/search") ? "Find the leasing office" : "View availability",
+                SEPrimaryButton(title: o.kind != "leasing" ? String(localized: "Apply on \(o.src)")
+                                : href.contains("google.com/search") ? String(localized: "Find the leasing office") : String(localized: "View availability"),
                                 icon: "arrow.up.right") {
                     Analytics.shared.track("outbound", ["kind": "opening", "src": o.src, "href": href, "from": "lotteries_tab"])
                     openURL(url)
@@ -250,21 +251,21 @@ struct OpeningsView: View {
             parts.append(lo == hi ? "$\(lo.formatted())/mo" : "$\(lo.formatted())–$\(hi.formatted())/mo")
         }
         if let b = o.beds, !b.isEmpty { parts.append(b.count == 1 ? b[0] : "\(b.first!)–\(b.last!)") }
-        if let u = o.units, u > 0 { parts.append("\(u) unit\(u == 1 ? "" : "s")") }
+        if let u = o.units, u > 0 { parts.append(String(localized: "\(u) units")) }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
     private func incomeLine(_ o: OpeningsFeed.Opening) -> String? {
         var parts: [String] = []
-        if let a = o.ami { parts.append("Up to \(a)% of area median income") }
-        if let m = o.income_min_mo, m > 0 { parts.append("min. income $\(m.formatted())/mo") }
-        else if let y = o.income_min, y > 0 { parts.append("min. income $\(y.formatted())/yr") }
+        if let a = o.ami { parts.append(String(localized: "Up to \(a)% of area median income")) }
+        if let m = o.income_min_mo, m > 0 { parts.append(String(localized: "min. income $\(m.formatted())/mo")) }
+        else if let y = o.income_min, y > 0 { parts.append(String(localized: "min. income $\(y.formatted())/yr")) }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
     private static func date(_ c: String) -> String {
         let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; f.timeZone = TimeZone(identifier: "America/New_York")
-        let out = DateFormatter(); out.dateFormat = "EEE MMM d"; out.timeZone = f.timeZone
+        let out = DateFormatter(); out.setLocalizedDateFormatFromTemplate("EEEMMMd"); out.timeZone = f.timeZone
         return f.date(from: c).map { out.string(from: $0) } ?? c
     }
 }

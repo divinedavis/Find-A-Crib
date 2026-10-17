@@ -41,7 +41,7 @@ struct RatingPreview: View {
                                 .font(.system(size: 22)).foregroundStyle(Color.accentColor)
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel("\(i) star\(i == 1 ? "" : "s")")
+                        .accessibilityLabel(String(localized: "\(i) stars"))
                         .accessibilityIdentifier("rating-star-\(i)")
                     }
                 }

@@ -12,7 +12,7 @@ enum SearchMode: String, CaseIterable, Codable, Hashable {
     static let tabs: [SearchMode] = [.stabilized, .vouchers]
     /// Tab label. Kept apart from rawValue, which is persisted and must not change.
     var title: String {
-        switch self { case .rent: "Stabilized"; case .stabilized: "Stabilized"; case .vouchers: "Vouchers" }
+        switch self { case .rent: String(localized: "Stabilized"); case .stabilized: String(localized: "Stabilized"); case .vouchers: String(localized: "Vouchers") }
     }
 }
 
@@ -43,8 +43,8 @@ enum LocationScope: Codable, Hashable {
         switch self {
         case .borough(let c): Borough.name(c)
         case .neighborhood(let n): n
-        case .zip(let z): "ZIP \(z)"
-        case .mapArea: "Custom map area"
+        case .zip(let z): String(localized: "ZIP \(z)")
+        case .mapArea: String(localized: "Custom map area")
         }
     }
     func matches(_ b: Building) -> Bool {
@@ -63,6 +63,17 @@ enum SortOrder: String, CaseIterable, Codable {
     case fewestViolations = "Fewest violations"
     case mostUnits = "Most units"
     case newest = "Newest buildings"
+    /// The raw values are saved with each search, so they stay English; this
+    /// is what the menu shows.
+    var title: String {
+        switch self {
+        case .cheapest: String(localized: "Least expensive")
+        case .priciest: String(localized: "Most expensive")
+        case .fewestViolations: String(localized: "Fewest violations")
+        case .mostUnits: String(localized: "Most units")
+        case .newest: String(localized: "Newest buildings")
+        }
+    }
 }
 
 struct SearchQuery: Codable, Hashable {
@@ -106,10 +117,10 @@ struct SearchQuery: Codable, Hashable {
     /// What the results screen counts.
     var noun: String {
         let n = normalized
-        if n.hcrOnly { return "lotteries & waitlists" }
+        if n.hcrOnly { return String(localized: "lotteries & waitlists") }
 
-        if n.vouchersOnly { return "voucher-friendly buildings" }
-        return "buildings"
+        if n.vouchersOnly { return String(localized: "voucher-friendly buildings") }
+        return String(localized: "buildings")
     }
     /// The results headline. Plain stabilized search reads "205 are
     /// rent-stabilized" — the old "205 rent-stabilized buildings" truncated to
@@ -119,16 +130,17 @@ struct SearchQuery: Codable, Hashable {
     func resultHeadline(count: Int, city: City = .nyc) -> String {
         let n = normalized
         if !n.hcrOnly && !n.vouchersOnly {
-            return "\(count.formatted()) \(count == 1 ? "is" : "are") \(city.registerWord)"
+            return count == 1 ? String(localized: "1 is \(city.registerWord)") : String(localized: "\(count.formatted()) are \(city.registerWord)")
         }
-        return "\(count.formatted()) \(resultNoun)\(count == 1 ? "" : "s")"
+        let many = n.hcrOnly ? String(localized: "lottery & waitlist sites") : String(localized: "voucher-friendly buildings")
+        return count == 1 ? String(localized: "1 \(resultNoun)") : String(localized: "\(count.formatted()) \(many)")
     }
     var resultNoun: String {
         let n = normalized
-        if n.hcrOnly { return "lottery & waitlist site" }
+        if n.hcrOnly { return String(localized: "lottery & waitlist site") }
 
-        if n.vouchersOnly { return "voucher-friendly building" }
-        return "rent-stabilized building"
+        if n.vouchersOnly { return String(localized: "voucher-friendly building") }
+        return String(localized: "rent-stabilized building")
     }
 
     /// "$1k - $3k, 1 bd" — the compressed summary in the results header.
@@ -137,26 +149,26 @@ struct SearchQuery: Codable, Hashable {
         switch (minPrice, maxPrice) {
         case let (lo?, hi?): parts.append("\(Formatters.short(lo)) - \(Formatters.short(hi))")
         case let (lo?, nil): parts.append("\(Formatters.short(lo))+")
-        case let (nil, hi?): parts.append("Up to \(Formatters.short(hi))")
+        case let (nil, hi?): parts.append(String(localized: "Up to \(Formatters.short(hi))"))
         default: break
         }
         if !beds.isEmpty {
-            let s = beds.sorted().map { $0 == 0 ? "Studio" : ($0 == 4 ? "4+" : "\($0)") }.joined(separator: ", ")
-            parts.append("\(s) bd")
+            let s = beds.sorted().map { $0 == 0 ? String(localized: "Studio") : ($0 == 4 ? "4+" : "\($0)") }.joined(separator: ", ")
+            parts.append(String(localized: "\(s) bd"))
         }
-        if !unitBands.isEmpty { parts.append("\(unitBands.count) size\(unitBands.count == 1 ? "" : "s")") }
-        if noOpenViolations { parts.append("No violations") }
+        if !unitBands.isEmpty { parts.append(String(localized: "\(unitBands.count) sizes")) }
+        if noOpenViolations { parts.append(String(localized: "No violations")) }
         if hcrOnly { parts.insert("HCR", at: 0) }
-        if vouchersOnly { parts.insert("Vouchers", at: 0) }
+        if vouchersOnly { parts.insert(String(localized: "Vouchers"), at: 0) }
 
-        return parts.isEmpty ? "Any price" : parts.joined(separator: ", ")
+        return parts.isEmpty ? String(localized: "Any price") : parts.joined(separator: ", ")
     }
 
     /// "All of NYC" / "All of LA" with nothing chosen — `city` is the short
     /// name of the city the search is in (it read "NYC" in every city until
     /// 2026-09-16).
     func locationLabel(city: String = "NYC") -> String {
-        locations.isEmpty ? "All of \(city)" : locations.map(\.label).joined(separator: ", ")
+        locations.isEmpty ? String(localized: "All of \(city)") : locations.map(\.label).joined(separator: ", ")
     }
 
     /// The results header's short form: one borough abbreviation per borough
@@ -174,7 +186,7 @@ struct SearchQuery: Codable, Hashable {
                 if let c = boroughOf[n] { if !codes.contains(c) { codes.append(c) } }
                 else { extras.append(n) }
             case .zip(let z): extras.append(z)
-            case .mapArea: extras.append("Map area")
+            case .mapArea: extras.append(String(localized: "Map area"))
             }
         }
         let order = Borough.all.map(\.code)

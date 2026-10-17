@@ -68,7 +68,7 @@ enum NearbyPlaces {
 
     static func distance(_ m: Double) -> String {
         let mi = m / 1609.34
-        return mi < 0.1 ? "Under 0.1 mi" : String(format: "%.1f mi", mi)
+        return mi < 0.1 ? String(localized: "Under 0.1 mi") : String(format: "%.1f mi", mi)
     }
 }
 
@@ -132,7 +132,7 @@ struct HousingLawFirm: Decodable, Identifiable, Hashable {
     let lat: Double?
     let lng: Double?
     var id: String { name + "|" + street }
-    var sideLabel: String { side == "tenant" ? "Represents tenants only" : "Represents tenants and landlords" }
+    var sideLabel: String { side == "tenant" ? String(localized: "Represents tenants only") : String(localized: "Represents tenants and landlords") }
 
     private enum CodingKeys: String, CodingKey {
         case name, borough, street, phone, website, handles, side, source, lat, lng
@@ -185,7 +185,7 @@ struct HousingLawFirmsRail: View {
                                     Text(f.name).font(.se(17, .bold)).foregroundStyle(SE.royal).lineLimit(2).multilineTextAlignment(.leading)
                                     Text(f.handles).font(.se(14)).foregroundStyle(SE.ink2).lineLimit(2).multilineTextAlignment(.leading)
                                     Text(f.sideLabel).font(.se(14, .semibold)).foregroundStyle(SE.ink2).lineLimit(1)
-                                    Text(f.officeBorough == borough ? f.street : "Office in \(f.officeBorough)")
+                                    Text(f.officeBorough == borough ? f.street : String(localized: "Office in \(f.officeBorough)"))
                                         .font(.se(14)).foregroundStyle(SE.ink3).lineLimit(1)
                                 }
                                 .padding(12).frame(width: 230, height: 182, alignment: .topLeading).seCard()
@@ -193,7 +193,7 @@ struct HousingLawFirmsRail: View {
                         }
                     }.padding(.horizontal, 16)
                 }
-                Text("Private firms whose own websites say they take tenant and Housing Court cases in \(borough)" + (firms.contains { $0.officeBorough != borough } ? "; some have their office elsewhere in the city" : "") + ". We don't endorse them and haven't checked their record, licence or fees, so look into anyone before you hire them. This isn't legal advice. Free help: call 311 and ask for the Tenant Helpline.")
+                Text("Private firms whose own websites say they take tenant and Housing Court cases in \(borough)" + (firms.contains { $0.officeBorough != borough } ? String(localized: "; some have their office elsewhere in the city") : "") + String(localized: ". We don't endorse them and haven't checked their record, licence or fees, so look into anyone before you hire them. This isn't legal advice. Free help: call 311 and ask for the Tenant Helpline."))
                     .font(.se(15)).foregroundStyle(SE.ink3).padding(.horizontal, 16)
             }
             .padding(.vertical, 16).background(Color.white).padding(.bottom, 10)

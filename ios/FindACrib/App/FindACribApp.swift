@@ -109,6 +109,16 @@ struct FindACribApp: App {
 }
 
 enum Tab: String, CaseIterable { case search = "Search", lotteries = "Lotteries", casa = "Your Crib", activity = "My Activity", profile = "Profile"
+    /// The raw value is the analytics and accessibility id; this is the label.
+    var title: String {
+        switch self {
+        case .search: String(localized: "Search")
+        case .lotteries: String(localized: "Lotteries")
+        case .casa: String(localized: "Your Crib")
+        case .activity: String(localized: "My Activity")
+        case .profile: String(localized: "Profile")
+        }
+    }
     var icon: String { switch self { case .search: "magnifyingglass"; case .lotteries: "ticket"; case .casa: "house"; case .activity: "heart"; case .profile: "person" } }
     /// Lotteries began as New York's feeds (Housing Connect, the HPD marketing
     /// agents); Your Crib reads New York's 311 and NYPD data. Elsewhere they

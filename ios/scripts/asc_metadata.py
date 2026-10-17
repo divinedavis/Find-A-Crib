@@ -88,7 +88,8 @@ Privacy Policy: https://findacrib.com/privacy/
 Find A Crib is an independent, informational tool. It is not a broker, does not list apartments, and takes no fee. Data: NYS Homes and Community Renewal rent-stabilization register (2024), NYC HPD open data, HUD FY2026 Fair Market Rents, HousingSearch.ny.gov, LA County Assessor parcel data under LAHD's RSO criteria, the SF Rent Board Housing Inventory via DataSF, and the DC DHCD RentRegistry.
 """
 
-WHATS_NEW = """• Your Crib: after Show all, a Show fewer button folds the list of 311 calls back up.
+WHATS_NEW = """• Find A Crib now comes in Spanish, Chinese (Simplified and Traditional) and Korean. It follows your iPhone's language, or pick one under Profile › Language.
+• Your Crib: after Show all, a Show fewer button folds the list of 311 calls back up.
 • Lottery alerts now only cover lotteries your household size and income qualify for, and no longer repeat when a listing briefly drops off the city's site.
 • Smaller fixes.
 """

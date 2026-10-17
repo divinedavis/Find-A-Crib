@@ -88,10 +88,10 @@ private struct AIButton: View {
 
 private func errorText(_ e: Error) -> String {
     switch e as? AIError {
-    case .dailyLimit: "That's a lot for one day — more tomorrow."
-    case .monthlyLimit: "You've used this month's AI — more on the 1st."
-    case .declined: "That isn't something the records can answer."
-    default: "Not available right now. Try again in a little while."
+    case .dailyLimit: String(localized: "That's a lot for one day — more tomorrow.")
+    case .monthlyLimit: String(localized: "You've used this month's AI — more on the 1st.")
+    case .declined: String(localized: "That isn't something the records can answer.")
+    default: String(localized: "Not available right now. Try again in a little while.")
     }
 }
 
@@ -121,13 +121,13 @@ struct ApplyHelpSheet: View {
                         if !h.documents.isEmpty {
                             Text("Gather").font(.se(17, .bold))
                             ForEach(h.documents, id: \.self) { d in
-                                Text("• \(d.item)" + (d.required_by_listing ? "  (required here)" : "")).font(.se(16)).foregroundStyle(SE.ink2)
+                                Text("• \(d.item)" + (d.required_by_listing ? String(localized: "  (required here)") : "")).font(.se(16)).foregroundStyle(SE.ink2)
                             }
                         }
                         if let d = h.deadline { Text("Deadline: \(d)").font(.se(16, .semibold)) }
                         // The packet: what this listing asks for vs what's on
                         // the phone, and one email with everything attached.
-                        SEPrimaryButton(title: "Get my documents ready", icon: "folder.badge.plus") { showPacket = true }
+                        SEPrimaryButton(title: String(localized: "Get my documents ready"), icon: "folder.badge.plus") { showPacket = true }
                             .accessibilityIdentifier("apply-open-packet")
                             .sheet(isPresented: $showPacket) {
                                 PacketView(needs: h.documents.map(\.item), listingAddress: listing.address,
@@ -138,20 +138,20 @@ struct ApplyHelpSheet: View {
                             .padding(10).background(Color.white).overlay(RoundedRectangle(cornerRadius: 10).stroke(SE.lineSoft))
                             .accessibilityIdentifier("apply-email")
                         HStack(spacing: 10) {
-                            SEOutlineButton(title: copied ? "Copied" : "Copy email") {
+                            SEOutlineButton(title: copied ? String(localized: "Copied") : String(localized: "Copy email")) {
                                 UIPasteboard.general.string = "Subject: \(h.email_subject)\n\n\(h.email_body)"; copied = true
                                 Analytics.shared.track("apply_help_copy", ["agent": listing.agent])
                             }
                             if let e = h.contact.email,
                                let url = URL(string: "mailto:\(e)?subject=\(h.email_subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&body=\(h.email_body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")") {
-                                SEPrimaryButton(title: "Open in Mail") { openURL(url) }
+                                SEPrimaryButton(title: String(localized: "Open in Mail")) { openURL(url) }
                             }
                         }
                         Text("Written by AI from the agent's listing. Check their page before you send anything.").font(.se(13)).foregroundStyle(SE.ink3)
                     } else if let error {
                         Text(error).font(.se(16)).foregroundStyle(SE.ink2)
                     } else {
-                        ProgressView("Reading the listing…").tint(SE.royal)
+                        ProgressView(String(localized: "Reading the listing…")).tint(SE.royal)
                             .frame(maxWidth: .infinity).padding(.top, 24)
                         // A listing nobody has opened this week is read live
                         // (5-60 s on a long agent page); most are read ahead
@@ -161,7 +161,7 @@ struct ApplyHelpSheet: View {
                                 Text("Still reading — some agents' pages are long. You can wait or go straight to the listing.")
                                     .font(.se(15)).foregroundStyle(SE.ink2).multilineTextAlignment(.center)
                                 if let u = listing.outboundURL {
-                                    SEOutlineButton(title: "Open the agent's page", icon: "arrow.up.right") { openURL(u) }
+                                    SEOutlineButton(title: String(localized: "Open the agent's page"), icon: "arrow.up.right") { openURL(u) }
                                         .accessibilityIdentifier("apply-open-listing")
                                 }
                             }
@@ -215,7 +215,7 @@ struct AISearchSheet: View {
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(SE.line))
                     .accessibilityIdentifier("ai-search-field")
                 if let error { Text(error).font(.se(15)).foregroundStyle(SE.bad) }
-                SEPrimaryButton(title: busy ? "Reading…" : "Search", icon: "sparkles") { Task { await go() } }
+                SEPrimaryButton(title: busy ? String(localized: "Reading…") : String(localized: "Search"), icon: "sparkles") { Task { await go() } }
                     .disabled(busy || text.trimmingCharacters(in: .whitespaces).count < 4)
                 Spacer()
             }

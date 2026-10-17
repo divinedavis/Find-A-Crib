@@ -73,10 +73,10 @@ extension AIService {
 
     nonisolated static func leaseErrorText(_ code: String) -> String {
         switch code {
-        case "scanned": "This PDF is a scan with no text in it. Paste the lease's text instead, or ask for a digital copy."
-        case "too_long": "That lease is too long to review here (over 60 pages or 200,000 characters)."
-        case "empty": "There's no lease text in that. Pick the PDF again or paste the text."
-        default: "That file couldn't be read as a PDF. Paste the lease's text instead."
+        case "scanned": String(localized: "This PDF is a scan with no text in it. Paste the lease's text instead, or ask for a digital copy.")
+        case "too_long": String(localized: "That lease is too long to review here (over 60 pages or 200,000 characters).")
+        case "empty": String(localized: "There's no lease text in that. Pick the PDF again or paste the text.")
+        default: String(localized: "That file couldn't be read as a PDF. Paste the lease's text instead.")
         }
     }
 }
@@ -104,8 +104,8 @@ struct BrokerFeeView: View {
     @State private var needsPlus = false
 
     private static let foundOptions: [(String, String)] = [
-        ("listing_agent", "Through the listing's agent"), ("own_broker", "Through a broker I hired"),
-        ("landlord_direct", "From the landlord directly"), ("unsure", "Not sure")]
+        ("listing_agent", String(localized: "Through the listing's agent")), ("own_broker", String(localized: "Through a broker I hired")),
+        ("landlord_direct", String(localized: "From the landlord directly")), ("unsure", String(localized: "Not sure"))]
 
     var body: some View {
         NavigationStack {
@@ -124,11 +124,11 @@ struct BrokerFeeView: View {
                     Toggle("I signed the lease before June 11, 2025", isOn: $leaseBeforeFare)
                 }
                 Section("What you were asked to pay") {
-                    money("Monthly rent", $rent, id: "broker-rent")
-                    money("Broker fee", $brokerFee, id: "broker-fee-amount")
-                    money("Application fee", $appFee, id: "broker-app-fee")
-                    money("Security deposit", $deposit, id: "broker-deposit")
-                    money("Late fee", $lateFee, id: "broker-late-fee")
+                    money(String(localized: "Monthly rent"), $rent, id: "broker-rent")
+                    money(String(localized: "Broker fee"), $brokerFee, id: "broker-fee-amount")
+                    money(String(localized: "Application fee"), $appFee, id: "broker-app-fee")
+                    money(String(localized: "Security deposit"), $deposit, id: "broker-deposit")
+                    money(String(localized: "Late fee"), $lateFee, id: "broker-late-fee")
                 }
                 Section("The listing (optional)") {
                     TextField("Paste the listing's text", text: $listingText, axis: .vertical)
@@ -187,10 +187,10 @@ struct BrokerFeeView: View {
 
     nonisolated static func verdictText(_ v: String) -> String {
         switch v {
-        case "likely_illegal": "Some of these charges are likely illegal"
-        case "check": "Worth checking"
-        case "looks_ok": "Nothing here looks illegal"
-        default: "Add what you were charged to check it"
+        case "likely_illegal": String(localized: "Some of these charges are likely illegal")
+        case "check": String(localized: "Worth checking")
+        case "looks_ok": String(localized: "Nothing here looks illegal")
+        default: String(localized: "Add what you were charged to check it")
         }
     }
 
@@ -207,8 +207,8 @@ struct BrokerFeeView: View {
         } catch {
             switch error as? AIError {
             case .plus, .signIn: needsPlus = true
-            case .dailyLimit: self.error = "That's a lot for one day — more tomorrow."
-            default: self.error = "Couldn't check right now. Try again in a minute."
+            case .dailyLimit: self.error = String(localized: "That's a lot for one day — more tomorrow.")
+            default: self.error = String(localized: "Couldn't check right now. Try again in a minute.")
             }
         }
     }
@@ -238,7 +238,7 @@ struct LeaseReviewView: View {
                 }
                 Section("Your lease") {
                     Button { picking = true } label: {
-                        Label(pdfName ?? "Choose a PDF", systemImage: "doc.richtext").font(.se(16, .semibold))
+                        Label(pdfName ?? String(localized: "Choose a PDF"), systemImage: "doc.richtext").font(.se(16, .semibold))
                     }.accessibilityIdentifier("lease-pick")
                     if pdf != nil {
                         Button("Remove the PDF", role: .destructive) { pdf = nil; pdfName = nil }
@@ -254,7 +254,7 @@ struct LeaseReviewView: View {
                 }
                 Section {
                     Button { Task { await run() } } label: {
-                        HStack { Spacer(); if busy { ProgressView("Reading your lease…") } else { Text("Review my lease").font(.se(17, .bold)) }; Spacer() }
+                        HStack { Spacer(); if busy { ProgressView(String(localized: "Reading your lease…")) } else { Text("Review my lease").font(.se(17, .bold)) }; Spacer() }
                     }
                     .disabled(busy || (pdf == nil && text.trimmingCharacters(in: .whitespacesAndNewlines).count < 200))
                     .accessibilityIdentifier("lease-run")
@@ -283,10 +283,10 @@ struct LeaseReviewView: View {
 
     @ViewBuilder private func results(_ r: LeaseReview) -> some View {
         Section("The basics") {
-            row("Monthly rent", r.summary.monthly_rent); row("Term", r.summary.term)
-            row("Starts", r.summary.start_date); row("Security deposit", r.summary.security_deposit)
+            row(String(localized: "Monthly rent"), r.summary.monthly_rent); row(String(localized: "Term"), r.summary.term)
+            row(String(localized: "Starts"), r.summary.start_date); row(String(localized: "Security deposit"), r.summary.security_deposit)
         }
-        Section(r.flags.isEmpty ? "Nothing flagged" : "Clauses to look at (\(r.flags.count))") {
+        Section(r.flags.isEmpty ? String(localized: "Nothing flagged") : String(localized: "Clauses to look at (\(r.flags.count))")) {
             if r.flags.isEmpty {
                 Text("Nothing in this lease looks limited or void under New York law.").font(.se(15))
             }
@@ -320,10 +320,10 @@ struct LeaseReviewView: View {
         } catch {
             switch error as? AIError {
             case .plus, .signIn: needsPlus = true
-            case .dailyLimit: self.error = "That's five leases today — more tomorrow."
-            case .monthlyLimit: self.error = "You've used this month's AI — more on the 1st."
-            case .declined: self.error = "This doesn't read like a lease. Check the file and try again."
-            default: self.error = "Couldn't review it right now. Try again in a little while."
+            case .dailyLimit: self.error = String(localized: "That's five leases today — more tomorrow.")
+            case .monthlyLimit: self.error = String(localized: "You've used this month's AI — more on the 1st.")
+            case .declined: self.error = String(localized: "This doesn't read like a lease. Check the file and try again.")
+            default: self.error = String(localized: "Couldn't review it right now. Try again in a little while.")
             }
         }
     }

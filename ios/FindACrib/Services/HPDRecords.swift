@@ -298,17 +298,17 @@ enum HPDRecords {
 
     // MARK: - Plain words for HPD's shorthand
 
-    static let classWord = ["A": "Non-hazardous", "B": "Hazardous", "C": "Immediately hazardous"]
+    static let classWord = ["A": String(localized: "Non-hazardous"), "B": String(localized: "Hazardous"), "C": String(localized: "Immediately hazardous")]
 
     static let statusWord: [String: String] = [
-        "NOV SENT OUT": "Notice sent to the owner",
-        "NOV CERTIFIED LATE": "Owner certified the fix late",
-        "NOT COMPLIED WITH": "Owner did not certify a fix",
-        "DEFECT LETTER ISSUED": "Owner's certification rejected",
-        "FIRST NO ACCESS TO RE- INSPECT VIOLATION": "Inspector could not get in to verify",
-        "SECOND NO ACCESS TO RE-INSPECT VIOLATION": "Inspector could not get in to verify (2nd try)",
-        "INFO NOV SENT OUT": "Informational notice sent",
-        "CIV14 MAILED": "Civil-penalty notice mailed",
+        "NOV SENT OUT": String(localized: "Notice sent to the owner"),
+        "NOV CERTIFIED LATE": String(localized: "Owner certified the fix late"),
+        "NOT COMPLIED WITH": String(localized: "Owner did not certify a fix"),
+        "DEFECT LETTER ISSUED": String(localized: "Owner's certification rejected"),
+        "FIRST NO ACCESS TO RE- INSPECT VIOLATION": String(localized: "Inspector could not get in to verify"),
+        "SECOND NO ACCESS TO RE-INSPECT VIOLATION": String(localized: "Inspector could not get in to verify (2nd try)"),
+        "INFO NOV SENT OUT": String(localized: "Informational notice sent"),
+        "CIV14 MAILED": String(localized: "Civil-penalty notice mailed"),
     ]
 
     /// HPD's notice text is written for inspectors: it repeats the address,

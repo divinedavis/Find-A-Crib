@@ -47,7 +47,7 @@ struct EmailSignInView: View {
           ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    Text(creating ? "Create account" : (heading ?? (casaPreview ? (casaHistory ? "Sign in to see the full history" : "Sign in to watch your building") : agentPreview ? "Sign in to see who runs this building" : records != nil ? "Sign in to see this building's records" : (offersSocialSignIn ? "Sign in for lottery alerts" : "Sign in with email")))).font(.se(26, .bold))
+                    Text(creating ? String(localized: "Create account") : (heading ?? (casaPreview ? (casaHistory ? String(localized: "Sign in to see the full history") : String(localized: "Sign in to watch your building")) : agentPreview ? String(localized: "Sign in to see who runs this building") : records != nil ? String(localized: "Sign in to see this building's records") : (offersSocialSignIn ? String(localized: "Sign in for lottery alerts") : String(localized: "Sign in with email"))))).font(.se(26, .bold))
                     // While typing, the promise box steps aside so Email and
                     // Password both sit above the keyboard and its Sign in bar
                     // (owner, 2026-10-15: "i can't see the password field when
@@ -64,7 +64,7 @@ struct EmailSignInView: View {
                     } else if forAlerts && !creating {
                         AlertsPromiseBox { showPlus = true }
                     } else {
-                        Text(creating ? "No verification email — you're in as soon as you tap Create." : "The account you use on findacrib.com works here.")
+                        Text(creating ? String(localized: "No verification email — you're in as soon as you tap Create.") : String(localized: "The account you use on findacrib.com works here."))
                             .font(.se(15)).foregroundStyle(SE.ink2)
                     }
 
@@ -86,7 +86,7 @@ struct EmailSignInView: View {
                             .submitLabel(.next).onSubmit { focus = .password }
                     }
                     SEFieldBox {
-                        SecureField(creating ? "Password (8+ characters)" : "Password", text: $password).font(.se(18))
+                        SecureField(creating ? String(localized: "Password (8+ characters)") : String(localized: "Password"), text: $password).font(.se(18))
                             .textContentType(creating ? .newPassword : .password).focused($focus, equals: .password)
                             .padding(.horizontal, 12).accessibilityIdentifier("password-field")
                             .submitLabel(creating ? .next : .go).onSubmit { if creating { focus = .confirm } else { Task { await submit() } } }
@@ -163,12 +163,12 @@ struct EmailSignInView: View {
     }
 
     private var submitButton: some View {
-        SEPrimaryButton(title: auth.busy ? "…" : (creating ? "Create account" : "Sign in")) { Task { await submit() } }
+        SEPrimaryButton(title: auth.busy ? "…" : (creating ? String(localized: "Create account") : String(localized: "Sign in"))) { Task { await submit() } }
             .disabled(auth.busy).accessibilityIdentifier("email-submit")
     }
 
     private var createToggle: some View {
-        Button(creating ? "Have an account? Sign in" : "No account? Create one") { creating.toggle(); auth.error = nil; notice = nil }
+        Button(creating ? String(localized: "Have an account? Sign in") : String(localized: "No account? Create one")) { creating.toggle(); auth.error = nil; notice = nil }
             .font(.se(15, .semibold)).foregroundStyle(SE.royal).fixedSize()
             .accessibilityIdentifier("create-account-toggle")
     }
@@ -183,10 +183,10 @@ struct EmailSignInView: View {
 
     private func submit() async {
         let e = email.trimmingCharacters(in: .whitespaces)
-        guard e.contains("@") else { auth.error = "Enter your email."; return }
-        guard password.count >= 8 else { auth.error = "Use a password of at least 8 characters."; return }
+        guard e.contains("@") else { auth.error = String(localized: "Enter your email."); return }
+        guard password.count >= 8 else { auth.error = String(localized: "Use a password of at least 8 characters."); return }
         if creating {
-            guard password == confirm else { auth.error = "Passwords do not match."; return }
+            guard password == confirm else { auth.error = String(localized: "Passwords do not match."); return }
             await auth.signUp(email: e, password: password)
         } else {
             await auth.signIn(email: e, password: password)
@@ -195,10 +195,10 @@ struct EmailSignInView: View {
 
     private func forgot() async {
         let e = email.trimmingCharacters(in: .whitespaces)
-        guard e.contains("@") else { auth.error = "Enter your email above first, then tap Forgot password."; focus = .email; return }
+        guard e.contains("@") else { auth.error = String(localized: "Enter your email above first, then tap Forgot password."); focus = .email; return }
         notice = nil
         if await auth.sendPasswordReset(email: e) {
-            notice = "Check \(e) for a link to choose a new password, then come back and sign in."
+            notice = String(localized: "Check \(e) for a link to choose a new password, then come back and sign in.")
         }
     }
 }
@@ -220,10 +220,10 @@ struct AlertsPromiseBox: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            row("building.2.fill", "New lotteries and re-rentals in the boroughs you pick")
-            row("bell.badge.fill", "In-app notifications and emails at 8 AM daily")
+            row("building.2.fill", String(localized: "New lotteries and re-rentals in the boroughs you pick"))
+            row("bell.badge.fill", String(localized: "In-app notifications and emails at 8 AM daily"))
             HStack(alignment: .center, spacing: 12) {
-                row("bolt.fill", "Upgrade to Plus for instant notifications and emails")
+                row("bolt.fill", String(localized: "Upgrade to Plus for instant notifications and emails"))
                 Button {
                     Analytics.shared.track("realtime_upsell_click", ["src": "signin_alerts"]); openPlus()
                 } label: {
@@ -273,10 +273,10 @@ struct RecordsPromiseBox: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             PromiseRow(icon: "exclamationmark.triangle.fill", text: violationsLine)
-            PromiseRow(icon: "ladybug.fill", text: "Bedbug filings the landlord made, year by year")
-            PromiseRow(icon: "pawprint.fill", text: "Rat inspections from the Health Department")
+            PromiseRow(icon: "ladybug.fill", text: String(localized: "Bedbug filings the landlord made, year by year"))
+            PromiseRow(icon: "pawprint.fill", text: String(localized: "Rat inspections from the Health Department"))
             HStack(alignment: .center, spacing: 12) {
-                PromiseRow(icon: "bolt.fill", text: "Plus: real-time lottery alerts, the minute one opens")
+                PromiseRow(icon: "bolt.fill", text: String(localized: "Plus: real-time lottery alerts, the minute one opens"))
                 Button {
                     Analytics.shared.track("records_upsell_click", ["src": "signin_records"]); openPlus()
                 } label: {
@@ -298,9 +298,9 @@ struct RecordsPromiseBox: View {
 
     private var violationsLine: String {
         let v = preview.openViolations, c = preview.openComplaints
-        if v == nil && c == nil { return "HPD violations and complaints for this building" }
-        func n(_ x: Int?, _ one: String, _ many: String) -> String { let k = x ?? 0; return "\(k) open \(k == 1 ? one : many)" }
-        return n(v, "HPD violation", "HPD violations") + " and " + n(c, "complaint", "complaints") + " here — see each one"
+        if v == nil && c == nil { return String(localized: "HPD violations and complaints for this building") }
+        let violations = String(localized: "\(v ?? 0) open HPD violations"), complaints = String(localized: "\(c ?? 0) open complaints")
+        return String(localized: "\(violations) and \(complaints) here — see each one")
     }
 }
 
@@ -310,10 +310,10 @@ struct AgentPromiseBox: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            PromiseRow(icon: "person.text.rectangle.fill", text: "The managing agent HPD has on file, and their office address")
-            PromiseRow(icon: "building.2.fill", text: "Who owns the building, and its head officer")
+            PromiseRow(icon: "person.text.rectangle.fill", text: String(localized: "The managing agent HPD has on file, and their office address"))
+            PromiseRow(icon: "building.2.fill", text: String(localized: "Who owns the building, and its head officer"))
             HStack(alignment: .center, spacing: 12) {
-                PromiseRow(icon: "phone.fill", text: "Plus: the agent's phone number — call who actually runs it")
+                PromiseRow(icon: "phone.fill", text: String(localized: "Plus: the agent's phone number — call who actually runs it"))
                 Button {
                     Analytics.shared.track("phone_upsell_click", ["src": "signin_agent"]); openPlus()
                 } label: {
@@ -344,17 +344,17 @@ struct CasaPromiseBox: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             if history {
-                PromiseRow(icon: "clock.arrow.circlepath", text: "Every 311 call on your building back to 2010, not just the past year")
-                PromiseRow(icon: "ant.fill", text: "See whether roaches, mice or rats are a pattern, or a one-off")
-                PromiseRow(icon: "bell.badge.fill", text: "A notification and an email for every new 311 call")
+                PromiseRow(icon: "clock.arrow.circlepath", text: String(localized: "Every 311 call on your building back to 2010, not just the past year"))
+                PromiseRow(icon: "ant.fill", text: String(localized: "See whether roaches, mice or rats are a pattern, or a one-off"))
+                PromiseRow(icon: "bell.badge.fill", text: String(localized: "A notification and an email for every new 311 call"))
             } else {
-                PromiseRow(icon: "bell.badge.fill", text: "A notification and an email for every new 311 call on your building")
-                PromiseRow(icon: "ant.fill", text: "Pests first: roaches, mice and rats called in on your building")
+                PromiseRow(icon: "bell.badge.fill", text: String(localized: "A notification and an email for every new 311 call on your building"))
+                PromiseRow(icon: "ant.fill", text: String(localized: "Pests first: roaches, mice and rats called in on your building"))
             }
             HStack(alignment: .center, spacing: 12) {
                 PromiseRow(icon: history ? "exclamationmark.shield.fill" : "clock.arrow.circlepath",
-                           text: history ? "Crime alerts within half a mile. All part of Plus"
-                                         : "Every 311 call back to 2010, plus crime alerts within half a mile. All part of Plus")
+                           text: history ? String(localized: "Crime alerts within half a mile. All part of Plus")
+                                         : String(localized: "Every 311 call back to 2010, plus crime alerts within half a mile. All part of Plus"))
                 Button {
                     Analytics.shared.track("casa_upsell_click", ["src": "signin_casa"]); openPlus()
                 } label: {

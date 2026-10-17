@@ -60,7 +60,7 @@ struct PacketView: View {
             .sheet(isPresented: $showForm) { FormFillView() }
             .sheet(item: $mail) { m in MailComposer(draft: m).ignoresSafeArea() }
             .quickLookPreview($preview)
-            .confirmationDialog("Delete your profile and every document in the packet from this phone?", isPresented: $confirmErase, titleVisibility: .visible) {
+            .confirmationDialog(String(localized: "Delete your profile and every document in the packet from this phone?"), isPresented: $confirmErase, titleVisibility: .visible) {
                 Button("Delete everything", role: .destructive) { packet.eraseAll() }
             }
             .onAppear { Analytics.shared.track("packet_open", ["for_listing": listingAddress != nil, "docs": packet.docs.count]) }
@@ -78,7 +78,7 @@ struct PacketView: View {
     }
 
     private var needsCard: some View {
-        card("What this listing asks for") {
+        card(String(localized: "What this listing asks for")) {
             if let a = listingAddress { Text(a).font(.se(15, .semibold)).foregroundStyle(SE.ink3) }
             ForEach(packet.needs(needs)) { n in
                 HStack(alignment: .top, spacing: 10) {
@@ -100,7 +100,7 @@ struct PacketView: View {
     }
 
     private var profileCard: some View {
-        card("About you") {
+        card(String(localized: "About you")) {
             let p = packet.profile
             if p.fullName.isEmpty {
                 Text("Your name, contact, address, job and household — typed once, used in every email and form.")
@@ -108,16 +108,16 @@ struct PacketView: View {
             } else {
                 Text(p.fullName).font(.se(18, .bold))
                 Text([p.email, p.phone].filter { !$0.isEmpty }.joined(separator: " · ")).font(.se(15)).foregroundStyle(SE.ink2)
-                Text("Household of \(p.householdSize)" + (p.householdIncome.map { " · \(Formatters.dollars($0))/yr" } ?? ""))
+                Text("Household of \(p.householdSize)" + (p.householdIncome.map { String(localized: " · \(Formatters.dollars($0))/yr") } ?? ""))
                     .font(.se(15)).foregroundStyle(SE.ink2)
             }
-            SEOutlineButton(title: p.fullName.isEmpty ? "Fill in your details" : "Edit details", icon: "person.text.rectangle") { editing = true }
+            SEOutlineButton(title: p.fullName.isEmpty ? String(localized: "Fill in your details") : String(localized: "Edit details"), icon: "person.text.rectangle") { editing = true }
                 .accessibilityIdentifier("packet-edit-profile")
         }
     }
 
     private var documentsCard: some View {
-        card("Documents") {
+        card(String(localized: "Documents")) {
             ForEach(Packet.Kind.allCases.filter { $0 != .other }) { k in
                 let mine = packet.docs.filter { $0.kind == k }
                 HStack(spacing: 12) {
@@ -143,7 +143,7 @@ struct PacketView: View {
     private func docRow(_ d: Packet.Doc) -> some View {
         HStack {
             Button { preview = packet.url(d) } label: {
-                Label("\(d.title) · \(d.pages) page\(d.pages == 1 ? "" : "s")", systemImage: "doc.richtext")
+                Label(String(localized: "\(d.title) · \(d.pages) pages"), systemImage: "doc.richtext")
                     .font(.se(15)).foregroundStyle(SE.ink)
             }.buttonStyle(.plain)
             Spacer()
@@ -154,20 +154,20 @@ struct PacketView: View {
     }
 
     private var formCard: some View {
-        card("Fill in an application form") {
+        card(String(localized: "Fill in an application form")) {
             Text("Got a PDF application from the agent? Open it here and your details go into the matching boxes. You check it, add anything left blank (like your Social Security number) and sign it yourself.")
                 .font(.se(15)).foregroundStyle(SE.ink2)
-            SEOutlineButton(title: "Open a PDF form", icon: "square.and.pencil") { showForm = true }
+            SEOutlineButton(title: String(localized: "Open a PDF form"), icon: "square.and.pencil") { showForm = true }
                 .accessibilityIdentifier("packet-fill-form")
         }
     }
 
     private var sendCard: some View {
-        card("Send to the agent") {
-            Text(packet.docs.isEmpty ? "Add documents above, then email them in one go from your own Mail." :
-                    "Emails your \(packet.docs.count) document\(packet.docs.count == 1 ? "" : "s") from your own Mail. Only send what the agent asked for.")
+        card(String(localized: "Send to the agent")) {
+            Text(packet.docs.isEmpty ? String(localized: "Add documents above, then email them in one go from your own Mail.") :
+                    String(localized: "Emails your \(packet.docs.count) documents from your own Mail. Only send what the agent asked for."))
                 .font(.se(15)).foregroundStyle(SE.ink2)
-            SEPrimaryButton(title: "Email my packet", icon: "paperplane") { compose() }
+            SEPrimaryButton(title: String(localized: "Email my packet"), icon: "paperplane") { compose() }
                 .disabled(packet.docs.isEmpty)
                 .accessibilityIdentifier("packet-email")
             Text("Applying is free. Never pay anyone to apply — report fee requests to HPD's Inspector General, (212) 825-3502.")
@@ -233,20 +233,20 @@ struct PacketProfileForm: View {
                     TextField("City", text: $p.city).textContentType(.addressCity)
                     TextField("State", text: $p.state).textContentType(.addressState)
                     TextField("ZIP", text: $p.zip).textContentType(.postalCode).keyboardType(.numberPad)
-                    money("Current rent, $/month", $p.currentRent)
+                    money(String(localized: "Current rent, $/month"), $p.currentRent)
                     TextField("Current landlord or management", text: $p.landlord)
                 }
                 Section("Work") {
                     TextField("Employer", text: $p.employer).textContentType(.organizationName)
                     TextField("Job title", text: $p.jobTitle).textContentType(.jobTitle)
-                    money("Your yearly income, $", $p.yearlyIncome)
+                    money(String(localized: "Your yearly income, $"), $p.yearlyIncome)
                 }
                 Section {
                     ForEach($p.others) { $m in
                         VStack(alignment: .leading) {
                             TextField("Name", text: $m.name)
                             TextField("Relationship (e.g. spouse, child)", text: $m.relation)
-                            money("Their yearly income, $ (if any)", $m.yearlyIncome)
+                            money(String(localized: "Their yearly income, $ (if any)"), $m.yearlyIncome)
                         }
                     }
                     .onDelete { p.others.remove(atOffsets: $0) }
@@ -287,15 +287,15 @@ struct FormFillView: View {
             VStack(spacing: 0) {
                 if let doc, let result {
                     Text(result.total == 0
-                         ? "This PDF has no fillable boxes — print it, or fill it in with Markup."
-                         : "Filled \(result.filled) of \(result.total) boxes from your details. Tap any box to change it; add what's blank and sign it yourself.")
+                         ? String(localized: "This PDF has no fillable boxes — print it, or fill it in with Markup.")
+                         : String(localized: "Filled \(result.filled) of \(result.total) boxes from your details. Tap any box to change it; add what's blank and sign it yourself."))
                         .font(.se(15)).foregroundStyle(SE.ink2).padding(12).frame(maxWidth: .infinity, alignment: .leading)
                         .background(SE.paleBlue)
                         .accessibilityIdentifier("form-fill-result")
                     PDFKitView(document: doc)
                 } else {
                     Spacer()
-                    SEOutlineButton(title: "Choose a PDF", icon: "doc") { picking = true }.padding()
+                    SEOutlineButton(title: String(localized: "Choose a PDF"), icon: "doc") { picking = true }.padding()
                     Spacer()
                 }
             }
@@ -305,7 +305,7 @@ struct FormFillView: View {
                 if doc != nil {
                     ToolbarItem(placement: .confirmationAction) {
                         Button("Add to packet") {
-                            if let d = doc?.dataRepresentation() { Packet.shared.add(kind: .other, pdf: d, title: "Application form") }
+                            if let d = doc?.dataRepresentation() { Packet.shared.add(kind: .other, pdf: d, title: String(localized: "Application form")) }
                             dismiss()
                         }
                     }

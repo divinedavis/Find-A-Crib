@@ -107,9 +107,9 @@ struct FeaturedListing: Codable, Hashable, Identifiable, Sendable {
             if let hi = moneyHigh, hi != lo { return (nil, "\(n(lo))–\(n(hi))/mo") }
             return (nil, "\(n(lo))/mo")
         }
-        if let cap = income1pMax { return ("Income limit · 1 person", "up to \(n(cap))/yr") }
-        if moneyKind == "income", let lo = moneyLow, let hi = moneyHigh { return ("Household income", "\(n(lo))–\(n(hi))/yr") }
-        return (nil, "Income-restricted · see agent for rent")
+        if let cap = income1pMax { return (String(localized: "Income limit · 1 person"), String(localized: "up to \(n(cap))/yr")) }
+        if moneyKind == "income", let lo = moneyLow, let hi = moneyHigh { return (String(localized: "Household income"), "\(n(lo))–\(n(hi))/yr") }
+        return (nil, String(localized: "Income-restricted · see agent for rent"))
     }
 
     /// The button says where the link goes: "Apply" onto a board of other
@@ -117,7 +117,7 @@ struct FeaturedListing: Codable, Hashable, Identifiable, Sendable {
     /// "flyer" (2026-10-01): HDC's developments have no page, only a PDF flyer
     /// that is the listing (rent, income bands, how to apply).
     var actionTitle: String {
-        switch hrefKind { case "agent_page": return "See their listings ↗"; case "flyer": return "See the listing ↗"; default: return "Apply on their site ↗" }
+        switch hrefKind { case "agent_page": return String(localized: "See their listings ↗"); case "flyer": return String(localized: "See the listing ↗"); default: return String(localized: "Apply on their site ↗") }
     }
 
     /// The hand-off, tagged so the agent can see this traffic in their own

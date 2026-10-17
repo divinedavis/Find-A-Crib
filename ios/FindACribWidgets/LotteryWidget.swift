@@ -62,8 +62,8 @@ private func daysLeft(_ closes: String?) -> Int? {
 }
 
 private func whenText(_ closes: String?) -> String {
-    guard let d = daysLeft(closes) else { return "Open" }
-    return d == 0 ? "Closes today" : d == 1 ? "Closes tomorrow" : "Closes in \(d) days"
+    guard let d = daysLeft(closes) else { return String(localized: "Open") }
+    return d == 0 ? String(localized: "Closes today") : d == 1 ? String(localized: "Closes tomorrow") : String(localized: "Closes in \(d) days")
 }
 
 struct LotteryWidgetView: View {
@@ -73,14 +73,14 @@ struct LotteryWidgetView: View {
     var body: some View {
         switch family {
         case .accessoryInline:
-            Text(entry.items.first.map { "🏠 \($0.name) · \(whenText($0.closes))" } ?? "🏠 No open lotteries")
+            Text(entry.items.first.map { "🏠 \($0.name) · \(whenText($0.closes))" } ?? String(localized: "🏠 No open lotteries"))
         case .accessoryRectangular:
             VStack(alignment: .leading, spacing: 1) {
                 Text("Lotteries").font(.headline).widgetAccentable()
                 if let f = entry.items.first {
                     Text(f.name).font(.caption).lineLimit(1)
                     Text(whenText(f.closes)).font(.caption2)
-                } else { Text(entry.failed ? "Can't load right now" : "None open right now").font(.caption) }
+                } else { Text(entry.failed ? String(localized: "Can't load right now") : String(localized: "None open right now")).font(.caption) }
             }
         case .accessoryCircular:
             VStack(spacing: 0) {
@@ -97,11 +97,11 @@ struct LotteryWidgetView: View {
         return VStack(alignment: .leading, spacing: family == .systemSmall ? 6 : 8) {
             HStack(spacing: 6) {
                 Image(systemName: "ticket.fill").foregroundStyle(teal)
-                Text(entry.borough == .any ? "NYC lotteries" : "Lotteries · \(entry.borough.feedName ?? "")")
+                Text(entry.borough == .any ? String(localized: "NYC lotteries") : String(localized: "Lotteries · \(entry.borough.feedName ?? "")"))
                     .font(.system(size: 13, weight: .bold)).foregroundStyle(teal).lineLimit(1)
             }
             if shown.isEmpty {
-                Text(entry.failed ? "Can't load lotteries right now." : "No lotteries open right now. Alerts tell you when one opens.")
+                Text(entry.failed ? String(localized: "Can't load lotteries right now.") : String(localized: "No lotteries open right now. Alerts tell you when one opens."))
                     .font(.system(size: 13)).foregroundStyle(.secondary)
                 Spacer(minLength: 0)
             } else {

@@ -47,7 +47,7 @@ enum Casa {
         var day: String { String((created_date ?? "").prefix(10)) }
         var isPest: Bool { Casa.isPest(type: complaint_type, descriptor: descriptor) }
         var isOpen: Bool { (status ?? "").lowercased() != "closed" }
-        var title: String { Casa.tidy(complaint_type ?? "311 call") }
+        var title: String { Casa.tidy(complaint_type ?? String(localized: "311 call")) }
         var detail: String? { descriptor.map(Casa.tidy).flatMap { $0.isEmpty ? nil : $0 } }
     }
 
@@ -126,7 +126,7 @@ enum Casa {
     /// Calls grouped by type, most first: "Pests 4 · Noise 3 · …".
     static func tally(_ calls: [Call]) -> [Tally] {
         var counts: [String: Int] = [:]
-        for c in calls { counts[c.isPest ? "Pests" : c.title, default: 0] += 1 }
+        for c in calls { counts[c.isPest ? String(localized: "Pests") : c.title, default: 0] += 1 }
         return counts.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }
             .map { Tally(title: $0.key, count: $0.value) }
     }
@@ -287,9 +287,9 @@ final class CasaWatch {
     /// The crime kinds a watch can pick, in chip order. casa_alerts.CRIME_KINDS
     /// and api_server.CASA_CRIME_KINDS use the same keys.
     static let crimeKinds: [(key: String, label: String)] = [
-        ("shootings", "Shootings"), ("robbery", "Robbery"), ("burglary", "Burglary"),
-        ("assault", "Assault"), ("theft", "Theft"), ("car_theft", "Car theft"),
-        ("weapons", "Weapons"), ("drugs", "Drugs"), ("vandalism", "Vandalism"), ("harassment", "Harassment")]
+        ("shootings", String(localized: "Shootings")), ("robbery", String(localized: "Robbery")), ("burglary", String(localized: "Burglary")),
+        ("assault", String(localized: "Assault")), ("theft", String(localized: "Theft")), ("car_theft", String(localized: "Car theft")),
+        ("weapons", String(localized: "Weapons")), ("drugs", String(localized: "Drugs")), ("vandalism", String(localized: "Vandalism")), ("harassment", String(localized: "Harassment"))]
     private(set) var watch: Watch?
     private(set) var busy = false
     var error: String?
@@ -325,7 +325,7 @@ final class CasaWatch {
             watch = r.watch; error = nil
             Analytics.shared.track("casa_watch_on", ["bbl": place.bbl])
         } else {
-            error = code == 402 ? "Alerts are part of Find A Crib Plus." : "Couldn't turn on alerts. Try again in a minute."
+            error = code == 402 ? String(localized: "Alerts are part of Find A Crib Plus.") : String(localized: "Couldn't turn on alerts. Try again in a minute.")
         }
     }
 
@@ -333,6 +333,6 @@ final class CasaWatch {
         busy = true; defer { busy = false }
         let (code, _) = await request("DELETE", token: token)
         if code == 200 { watch = nil; error = nil; Analytics.shared.track("casa_watch_off") }
-        else { error = "Couldn't turn off alerts. Try again in a minute." }
+        else { error = String(localized: "Couldn't turn off alerts. Try again in a minute.") }
     }
 }

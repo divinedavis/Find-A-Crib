@@ -65,7 +65,7 @@ struct ResultsHeader: View {
     @ViewBuilder private func quickFilters(_ q: Binding<SearchQuery>) -> some View {
         let v = q.wrappedValue
         Menu {
-            ForEach([(0, "Studio"), (1, "1 bed"), (2, "2 beds"), (3, "3 beds"), (4, "4+ beds")], id: \.0) { n, label in
+            ForEach([(0, String(localized: "Studio")), (1, String(localized: "1 bed")), (2, String(localized: "2 beds")), (3, String(localized: "3 beds")), (4, String(localized: "4+ beds"))], id: \.0) { n, label in
                 Button {
                     if q.wrappedValue.beds.contains(n) { q.wrappedValue.beds.remove(n) } else { q.wrappedValue.beds.insert(n) }
                     Analytics.shared.track("quick_filter", ["f": "beds", "beds": q.wrappedValue.beds.sorted().map(String.init).joined(separator: ",")])
@@ -85,12 +85,12 @@ struct ResultsHeader: View {
             .buttonStyle(.plain).accessibilityIdentifier("quick-price")
         // "Available now" sat here until 2026-10-06 (it read portal listing
         // data the app no longer carries); Vouchers takes its slot.
-        toggle("Vouchers", q, \.vouchersOnly, "vouchers")
+        toggle(String(localized: "Vouchers"), q, \.vouchersOnly, "vouchers")
         // How many more fit depends on the bar: an iPad mini upright has room
         // for three, an 11-inch for four, a 13-inch or any iPad sideways for
         // all five. The rest stay one tap away in the Filter sheet.
-        if barWidth >= 740 { toggle("Lotteries", q, \.hcrOnly, "lotteries") }
-        if barWidth >= 920 { toggle("No violations", q, \.noOpenViolations, "no_violations") }
+        if barWidth >= 740 { toggle(String(localized: "Lotteries"), q, \.hcrOnly, "lotteries") }
+        if barWidth >= 920 { toggle(String(localized: "No violations"), q, \.noOpenViolations, "no_violations") }
     }
 
     private var barWidth: CGFloat { UIScreen.main.bounds.width - 92 }
@@ -120,8 +120,8 @@ struct ResultsHeader: View {
     }
 
     private func bedsLabel(_ beds: Set<Int>) -> String {
-        guard !beds.isEmpty else { return "Beds" }
-        return beds.sorted().map { $0 == 0 ? "Studio" : $0 == 4 ? "4+" : "\($0)" }.joined(separator: ", ") + (beds == [0] ? "" : " bd")
+        guard !beds.isEmpty else { return String(localized: "Beds") }
+        return beds.sorted().map { $0 == 0 ? String(localized: "Studio") : $0 == 4 ? "4+" : "\($0)" }.joined(separator: ", ") + (beds == [0] ? "" : String(localized: " bd"))
     }
 
     private func priceLabel(_ v: SearchQuery) -> String {
@@ -129,8 +129,8 @@ struct ResultsHeader: View {
         switch (v.minPrice, v.maxPrice) {
         case let (lo?, hi?): return "\(k(lo))–\(k(hi))"
         case let (lo?, nil): return "\(k(lo))+"
-        case let (nil, hi?): return "Up to \(k(hi))"
-        default: return "Price"
+        case let (nil, hi?): return String(localized: "Up to \(k(hi))")
+        default: return String(localized: "Price")
         }
     }
 }
@@ -183,12 +183,12 @@ struct ResultsView: View {
                         Menu {
                             ForEach(SortOrder.allCases, id: \.self) { s in
                                 Button { Analytics.shared.track("sort", ["to": s.rawValue]); query.sort = s } label: {
-                                    if s == query.sort { Label(s.rawValue, systemImage: "checkmark") } else { Text(s.rawValue) }
+                                    if s == query.sort { Label(s.title, systemImage: "checkmark") } else { Text(s.title) }
                                 }
                             }
                         } label: {
                             HStack(spacing: 6) {
-                                Text(query.sort.rawValue).font(.se(18, .semibold)).lineLimit(1)
+                                Text(query.sort.title).font(.se(18, .semibold)).lineLimit(1)
                                 Image(systemName: "chevron.down").font(.system(size: 13, weight: .bold))
                             }.foregroundStyle(SE.ink2)
                         }
@@ -200,7 +200,7 @@ struct ResultsView: View {
                         VStack(alignment: .leading, spacing: 10) {
                             Text("No \(query.noun) match").font(.se(22, .bold))
                             Text(emptyHint).font(.se(17)).foregroundStyle(SE.ink2)
-                            SEOutlineButton(title: "Adjust filters") { showFilters = true }
+                            SEOutlineButton(title: String(localized: "Adjust filters")) { showFilters = true }
                         }
                         .padding(18).seCard().padding(.horizontal, 16)
                     }
@@ -237,7 +237,7 @@ struct ResultsView: View {
         .background(SE.canvas)
         .overlay(alignment: .bottom) {
             HStack(spacing: 14) {
-                FloatingPill(title: "Map", icon: "map.fill") {
+                FloatingPill(title: String(localized: "Map"), icon: "map.fill") {
                     Analytics.shared.track("map_open", Analytics.shape(query))
                     nav.searchPath.append(.map(query))
                 }
@@ -257,7 +257,7 @@ struct ResultsView: View {
                 if store.city.isNYC && !LotteryFeed.shared.subscribed {
                     // "Lottery Alerts" (owner, 2026-10-12); signed out it opens the
                     // alerts sign-in sheet, which lists what alerts get them.
-                    FloatingPill(title: "Lottery Alerts", icon: "bell.badge.fill", fill: SE.navy, ink: .white) {
+                    FloatingPill(title: String(localized: "Lottery Alerts"), icon: "bell.badge.fill", fill: SE.navy, ink: .white) {
                         Analytics.shared.track("alerts_open", ["signed_in": auth.isSignedIn, "src": "results"])
                         if auth.isSignedIn { showAlerts = true } else { showSignIn = true }
                     }
@@ -296,10 +296,10 @@ struct ResultsView: View {
 
     private var emptyHint: String {
         let n = query.normalized
-        if n.hcrOnly { return "HousingSearch.ny.gov lists about 50 open lotteries and waitlists in the city at a time. Clear the other Show boxes and the price range to see them all." }
+        if n.hcrOnly { return String(localized: "HousingSearch.ny.gov lists about 50 open lotteries and waitlists in the city at a time. Clear the other Show boxes and the price range to see them all.") }
 
-        if n.vouchersOnly { return "Voucher-friendly buildings are sparse outside upper Manhattan, the Bronx and central Brooklyn. Try clearing the price range." }
-        return "Widen the price range or clear a filter."
+        if n.vouchersOnly { return String(localized: "Voucher-friendly buildings are sparse outside upper Manhattan, the Bronx and central Brooklyn. Try clearing the price range.") }
+        return String(localized: "Widen the price range or clear a filter.")
 
     }
     /// The search runs on a background task across every core; a newer query

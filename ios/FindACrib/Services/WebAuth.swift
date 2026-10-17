@@ -13,7 +13,7 @@ final class WebAuth: NSObject, ASWebAuthenticationPresentationContextProviding {
     enum Failure: LocalizedError {
         case cancelled, noCallback
         var errorDescription: String? {
-            switch self { case .cancelled: "Sign-in was cancelled."; case .noCallback: "Sign-in did not complete. Try again." }
+            switch self { case .cancelled: String(localized: "Sign-in was cancelled."); case .noCallback: String(localized: "Sign-in did not complete. Try again.") }
         }
     }
     private static var active: WebAuth?

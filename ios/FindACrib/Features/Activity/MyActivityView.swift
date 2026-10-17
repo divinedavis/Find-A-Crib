@@ -13,7 +13,7 @@ struct MyActivityView: View {
                 Text("My Activity").font(.se(24, .bold)).foregroundStyle(.white)
                     .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 16).padding(.bottom, 12)
             }
-            SEUnderlineTabs(options: [(Pane.saved, "Saved"), (.searches, "Searches"), (.recent, "Recent")], selection: $pane)
+            SEUnderlineTabs(options: [(Pane.saved, String(localized: "Saved")), (.searches, String(localized: "Searches")), (.recent, String(localized: "Recent"))], selection: $pane)
                 .padding(.horizontal, 16).padding(.top, 8).background(Color.white)
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 16) {
@@ -36,7 +36,7 @@ struct MyActivityView: View {
 
     @ViewBuilder private var savedList: some View {
         if savedBuildings.isEmpty {
-            empty("No saved buildings yet", "Tap the heart on any building to keep it here.", cta: "Start searching")
+            empty(String(localized: "No saved buildings yet"), String(localized: "Tap the heart on any building to keep it here."), cta: String(localized: "Start searching"))
         } else {
             Text("\(savedBuildings.count) saved").font(.se(22, .bold)).padding(.horizontal, 16)
             ForEach(savedBuildings) { BuildingCard(building: $0).padding(.horizontal, 16) }
@@ -45,7 +45,7 @@ struct MyActivityView: View {
 
     @ViewBuilder private var searchesList: some View {
         if activity.savedSearches.isEmpty {
-            empty("No saved searches", "Save a search from the results screen and it lands here.", cta: "Start searching")
+            empty(String(localized: "No saved searches"), String(localized: "Save a search from the results screen and it lands here."), cta: String(localized: "Start searching"))
         } else {
             ForEach(activity.savedSearches) { s in
                 Button { nav.activityPath.append(.results(s.query)) } label: {
@@ -69,7 +69,7 @@ struct MyActivityView: View {
 
     @ViewBuilder private var recentList: some View {
         if recentBuildings.isEmpty {
-            empty("Nothing viewed yet", "Buildings you open show up here.", cta: "Start searching")
+            empty(String(localized: "Nothing viewed yet"), String(localized: "Buildings you open show up here."), cta: String(localized: "Start searching"))
         } else {
             HStack {
                 Text("Recently viewed").font(.se(22, .bold))

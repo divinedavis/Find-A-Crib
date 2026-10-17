@@ -37,6 +37,7 @@ struct CasaView: View {
     enum SignInFor: Identifiable { case alerts, history; var id: Self { self } }
     @State private var olderLoading = false
     @State private var showAllCalls = false
+    @State private var editAlerts = false
     @FocusState private var typing: Bool
     private var watch: CasaWatch { CasaWatch.shared }
 
@@ -85,6 +86,15 @@ struct CasaView: View {
             suggestions = await Casa.suggest(query)
         }
         .sheet(isPresented: $showPlus) { PaywallView(source: "casa") }
+        .sheet(isPresented: $editAlerts) {
+            NavigationStack {
+                ScrollView { if let p = place { alertCard(p) } }
+                    .background(Color.white)
+                    .navigationTitle("Alerts").navigationBarTitleDisplayMode(.inline)
+                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { editAlerts = false } } }
+            }
+            .accessibilityIdentifier("casa-alerts-sheet")
+        }
         .sheet(item: $signIn) { EmailSignInView(offersSocialSignIn: true, casaPreview: true, casaHistory: $0 == .history) }
     }
 
@@ -144,7 +154,16 @@ struct CasaView: View {
 
     @ViewBuilder private func results(_ p: Casa.Place) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(p.short).font(.se(20, .bold)).foregroundStyle(SE.ink).accessibilityIdentifier("casa-place")
+            HStack(alignment: .firstTextBaseline) {
+                Text(p.short).font(.se(20, .bold)).foregroundStyle(SE.ink).accessibilityIdentifier("casa-place")
+                Spacer(minLength: 8)
+                // With alerts on, their settings sit behind this (owner,
+                // 2026-10-17) instead of a card in the middle of the page.
+                if watch.watch?.bbl == p.bbl {
+                    Button("Edit alerts") { editAlerts = true }
+                        .font(.se(16, .bold)).foregroundStyle(SE.royal).accessibilityIdentifier("casa-edit-alerts")
+                }
+            }
             if let b = store.byBBL[p.bbl] {
                 Button { nav.casaPath.append(.building(b.bbl)) } label: {
                     Label("Rent stabilized · open the building page", systemImage: "building.2").font(.se(15, .semibold)).foregroundStyle(SE.royal)
@@ -173,7 +192,7 @@ struct CasaView: View {
             }
             .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white)
             .accessibilityIdentifier("casa-loading")
-            alertCard(p)
+            if watch.watch?.bbl != p.bbl { alertCard(p) }
             crimeCard
         } else if failed {
             note(String(localized: "Couldn't load 311 calls"), String(localized: "NYC's data service didn't answer. Check your connection and try again."))
@@ -184,7 +203,7 @@ struct CasaView: View {
             .accessibilityIdentifier("casa-retry").padding(.horizontal, 16)
         } else {
             pestCard
-            alertCard(p)
+            if watch.watch?.bbl != p.bbl { alertCard(p) }
             crimeCard
             callsCard
             olderCard
@@ -283,12 +302,13 @@ struct CasaView: View {
             } else {
                 Text(Casa.tally(calls).prefix(4).map { "\($0.title) \($0.count)" }.joined(separator: " · "))
                     .font(.se(15, .semibold)).foregroundStyle(SE.ink2)
-                // Ten, then the rest on a tap: a busy building has 50+ calls.
-                ForEach(calls.prefix(showAllCalls ? calls.count : 10)) { callRow($0) }
-                if calls.count > 10 && !showAllCalls {
+                // Five, then the rest on a tap (owner, 2026-10-17; was ten):
+                // a busy building has 50+ calls.
+                ForEach(calls.prefix(showAllCalls ? calls.count : 5)) { callRow($0) }
+                if calls.count > 5 && !showAllCalls {
                     Button("Show all \(calls.count) calls") { showAllCalls = true }
                         .font(.se(16, .semibold)).foregroundStyle(SE.royal).accessibilityIdentifier("casa-calls-more")
-                } else if calls.count > 10 {
+                } else if calls.count > 5 {
                     // Expanded, it folds back (owner, 2026-10-16).
                     Button("Show fewer") { withAnimation { showAllCalls = false } }
                         .font(.se(16, .semibold)).foregroundStyle(SE.royal).accessibilityIdentifier("casa-calls-less")
@@ -332,8 +352,10 @@ struct CasaView: View {
                 .chartXAxis { AxisMarks(values: .stride(by: .month)) { _ in AxisGridLine(); AxisValueLabel(format: .dateTime.month(.abbreviated)) } }
                 .frame(height: 200)
                 .accessibilityIdentifier("casa-crime-chart")
-                if let through = crimeThrough {
-                    Text("NYPD complaint reports, \(Self.monthRange(crime)). The NYPD publishes these every three months; the newest are through \(through.formatted(.dateTime.month(.wide).day().year())). Locations are rounded to the block.")
+                // Just the range (owner, 2026-10-17): the release schedule and
+                // rounding notes went.
+                if crimeThrough != nil {
+                    Text("NYPD complaint reports, \(Self.monthRange(crime)).")
                         .font(.se(14)).foregroundStyle(SE.ink3)
                 }
             }

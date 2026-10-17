@@ -88,34 +88,6 @@
         }
       }
     },
-    " Find A Crib is not a broker and does not list apartments." : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : " Find A Crib no es un corredor inmobiliario y no lista apartamentos."
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : " Find A Crib는 중개인이 아니며 아파트를 나열하지 않습니다."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : " Find A Crib不是经纪人，也不列出公寓。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : " Find A Crib不是經紀人，也不列出公寓。"
-          }
-        }
-      }
-    },
     " We'll alert you when one is posted." : {
       "localizations" : {
         "es" : {
@@ -789,40 +761,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "這裡是%1$@和%2$@——看看每個"
-          }
-        }
-      }
-    },
-    "%@ are %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@ are %2$@"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$@ son %2$@"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@개가 %2$@"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ 栋是%2$@"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ 棟是%2$@"
           }
         }
       }
@@ -2296,62 +2234,6 @@
         }
       }
     },
-    "%lld more are outside your income range — show them" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%lld más están fuera de tu rango de ingresos, muéstrales"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%lld개는 당신의 소득 범위를 벗어나 있습니다 - 그들을 보여주세요"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%lld 更多超出了你的收入范围——展示它们"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%lld 更多超出了您的收入範圍——展示給他們看"
-          }
-        }
-      }
-    },
-    "%lld more don't list bedroom sizes — show them" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%lld más, no enumeres los tamaños de las habitaciones, muéstralas"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%lld 더 이상 침실 크기를 나열하지 마세요 - 보여주세요"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%lld 不要再列出卧室尺寸了——展示它们"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%lld 不要再列出臥室尺寸了——展示它們吧"
-          }
-        }
-      }
-    },
     "%lld of %lld open" : {
       "localizations" : {
         "en" : {
@@ -2996,64 +2878,64 @@
         }
       }
     },
-    "%lld open with %@, all outside the income range you entered. Tap above to see them anyway." : {
+    "%lld open with %@, all outside the income range you entered. Change it under Filter." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "%1$lld open with %2$@, all outside the income range you entered. Tap above to see them anyway."
+            "value" : "%1$lld open with %2$@, all outside the income range you entered. Change it under Filter."
           }
         },
         "es" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$lld abrir con %2$@, todo fuera del rango de ingresos que ingresaste. Toca arriba para verlos de todos modos."
+            "state" : "translated",
+            "value" : "%1$lld abiertos con %2$@, todos fuera del rango de ingresos que indicaste. Cámbialo en Filtrar."
           }
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$lld는 %2$@과 함께 열리고, 입력한 소득 범위 밖의 모든 항목이 표시됩니다. 위를 탭하여 어쨌든 확인하세요."
+            "state" : "translated",
+            "value" : "%2$@ %1$lld건 진행 중, 모두 입력한 소득 범위 밖입니다. 필터에서 바꾸세요."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$lld与%2$@一起打开，所有收入范围之外的都属于您输入的范围。无论如何，请轻点上方查看它们。"
+            "state" : "translated",
+            "value" : "%1$lld 个含%2$@的开放中，均不在你填写的收入范围内。可在“筛选”中修改。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%1$lld與%2$@一起開啟，所有收入範圍都超出了您輸入的範圍。無論如何，請點選上方檢視它們。"
+            "state" : "translated",
+            "value" : "%1$lld 個含%2$@的開放中，均不在你填寫的收入範圍內。可在「篩選」中修改。"
           }
         }
       }
     },
-    "%lld open, all outside the income range you entered. Tap above to see them anyway." : {
+    "%lld open, all outside the income range you entered. Change it under Filter." : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%lld abierto, todo fuera del rango de ingresos que ingresaste. Toca arriba para verlos de todos modos."
+            "state" : "translated",
+            "value" : "%lld abiertos, todos fuera del rango de ingresos que indicaste. Cámbialo en Filtrar."
           }
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%lld 열기, 입력한 소득 범위 밖의 모든 항목. 어쨌든 위를 탭하여 확인하세요."
+            "state" : "translated",
+            "value" : "%lld건 진행 중, 모두 입력한 소득 범위 밖입니다. 필터에서 바꾸세요."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%lld打开，所有收入范围之外的都打开。无论如何，点击上方查看它们。"
+            "state" : "translated",
+            "value" : "%lld 个开放中，均不在你填写的收入范围内。可在“筛选”中修改。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%lld開啟，所有收入範圍都超出了您輸入的範圍。無論如何，請點選上方檢視它們。"
+            "state" : "translated",
+            "value" : "%lld 個開放中，均不在你填寫的收入範圍內。可在「篩選」中修改。"
           }
         }
       }
@@ -3348,7 +3230,7 @@
         }
       }
     },
-    "%lld re-rentals here, all outside the income range you entered. Tap above to see them anyway." : {
+    "%lld re-rentals here, all outside the income range you entered. Change it under Filter." : {
       "localizations" : {
         "en" : {
           "variations" : {
@@ -3356,13 +3238,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "%lld re-rental here, outside the income range you entered. Tap above to see it anyway."
+                  "value" : "%lld re-rental here, outside the income range you entered. Change it under Filter."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "%lld re-rentals here, all outside the income range you entered. Tap above to see them anyway."
+                  "value" : "%lld re-rentals here, all outside the income range you entered. Change it under Filter."
                 }
               }
             }
@@ -3371,22 +3253,16 @@
         "es" : {
           "variations" : {
             "plural" : {
-              "many" : {
-                "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "%lld re-alquileres aquí, todos fuera del rango de ingresos que ingresaste. Toca arriba para verlos de todos modos."
-                }
-              },
               "one" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "%lld re-alquileres aquí, fuera del rango de ingresos que ingresaste. Toca arriba para verlo de todos modos."
+                  "state" : "translated",
+                  "value" : "%lld re-alquiler aquí, fuera del rango de ingresos que indicaste. Cámbialo en Filtrar."
                 }
               },
               "other" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "%lld re-alquileres aquí, todos fuera del rango de ingresos que ingresaste. Toca arriba para verlos de todos modos."
+                  "state" : "translated",
+                  "value" : "%lld re-alquileres aquí, todos fuera del rango de ingresos que indicaste. Cámbialo en Filtrar."
                 }
               }
             }
@@ -3397,8 +3273,8 @@
             "plural" : {
               "other" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "여기 %lld 재임대, 모두 당신이 입력한 소득 범위 밖입니다. 어쨌든 위를 탭하여 확인하세요."
+                  "state" : "translated",
+                  "value" : "재임대 %lld건, 모두 입력한 소득 범위 밖입니다. 필터에서 바꾸세요."
                 }
               }
             }
@@ -3409,8 +3285,8 @@
             "plural" : {
               "other" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "这里有%lld重新出租，全部超出了您输入的收入范围。无论如何，请点击上方查看。"
+                  "state" : "translated",
+                  "value" : "这里有 %lld 个转租房源，均不在你填写的收入范围内。可在“筛选”中修改。"
                 }
               }
             }
@@ -3421,8 +3297,8 @@
             "plural" : {
               "other" : {
                 "stringUnit" : {
-                  "state" : "needs_review",
-                  "value" : "這裡的%lld重新出租，全部不在您輸入的收入範圍內。無論如何，請點選上方檢視它們。"
+                  "state" : "translated",
+                  "value" : "這裡有 %lld 個轉租房源，均不在你填寫的收入範圍內。可在「篩選」中修改。"
                 }
               }
             }
@@ -4258,34 +4134,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "1 臥"
-          }
-        }
-      }
-    },
-    "1 is %@" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "1 es %@"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "1개가 %@"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "1 栋是%@"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "1 棟是%@"
           }
         }
       }
@@ -10716,30 +10564,30 @@
         }
       }
     },
-    "Edit boroughs" : {
+    "Edit alerts" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Editar condados"
+            "value" : "Editar alertas"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "자치구 편집"
+            "value" : "알림 편집"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "编辑行政区"
+            "value" : "编辑提醒"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "編輯行政區"
+            "value" : "編輯提醒"
           }
         }
       }
@@ -11762,6 +11610,62 @@
         }
       }
     },
+    "Filter" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filtrar"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "필터"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "筛选"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "篩選"
+          }
+        }
+      }
+    },
+    "Filter (%lld)" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filtrar (%lld)"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "필터 (%lld)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "筛选 (%lld)"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "篩選 (%lld)"
+          }
+        }
+      }
+    },
     "Filters" : {
       "localizations" : {
         "es" : {
@@ -12225,34 +12129,6 @@
         }
       }
     },
-    "From NYC HPD's open data. Class C means the city considers the condition immediately hazardous — heat, hot water, lead, pests. Pest violations are what an HPD inspector confirmed inside an apartment. Bedbug filings are the landlord's own annual report, covering the year to the previous 31 October, so they run about a year behind; rat inspections are the Health Department's, and only exist where the city inspected." : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "De los datos abiertos de NYC HPD. Clase C significa que la ciudad considera la condición inmediatamente peligrosa: calor, agua caliente, plomo, plagas. Las violaciones de plagas son lo que un inspector HPD confirmó dentro de un apartamento. Los informes de plagas de chinches son el propio informe anual del propietario, que cubre el año hasta el 31 de octubre anterior, por lo que están unos 1 año por detrás; las inspecciones de ratas son del Departamento de Salud y solo existen donde la ciudad las ha inspeccionado."
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "NYC HPD의 공개 데이터에서. C 등급은 도시가 상황을 즉시 위험하다고 간주한다는 것을 의미합니다. 즉, 열, 뜨거운 물, 납, 해충입니다. 해충 위반은 HPD 검사관이 아파트 안에서 확인한 것입니다. 침구충 신고서는 이전 10월 31일까지의 연도별 내용을 담고 있어, 임대인의 자체 연간 보고서로, 약 1년 뒤의 내용을 담고 있습니다. 쥐 검사서는 보건국의 보고서이며, 해당 도시에서 검사를 실시한 곳에만 존재합니다."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "来自NYC HPD的公开数据。C类意味着该市认为条件立即具有危害性——热量、热水、铅、害虫。HPD检查员在公寓内确认了害虫违规行为。臭虫报告是房东自己的年度报告，涵盖到前31月10日的年度，因此它们滞后大约一年；老鼠检查是卫生部门的，仅在城市进行检查的地方才有。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "來自NYC HPD的開放資料。C類意味著該市認為情況立即危險——熱量、熱水、鉛、害蟲。HPD檢查員在公寓內確認了害蟲違規行為。臭蟲報告是房東自己的年度報告，涵蓋到前31月31日的那一年，所以它們大約落後一年；老鼠檢查是衛生部門的，只存在於該市檢查的地方。"
-          }
-        }
-      }
-    },
     "From NYC Housing Connect, updated every 10 minutes. Eligibility also depends on household size — check each listing." : {
       "localizations" : {
         "es" : {
@@ -12697,34 +12573,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "進行維修，檢查租金上漲情況，閱讀您的權利，或計劃續租。"
-          }
-        }
-      }
-    },
-    "Get alerts" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Obtener alertas"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "알림 받기"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "接收提醒"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "接收提醒"
           }
         }
       }
@@ -13565,62 +13413,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "隱藏回覆"
-          }
-        }
-      }
-    },
-    "Hide the %lld outside your income range" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Ocultar el %lld fuera de tu rango de ingresos"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "%lld를 소득 범위 밖에서 숨기세요."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "将%lld隐藏在你的收入范围内之外"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "將%lld隱藏在收入範圍之外"
-          }
-        }
-      }
-    },
-    "Hide the %lld that don't list bedroom sizes" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Ocultar el %lld que no enumere los tamaños de las habitaciones"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "침실 크기가 나열되지 않는 %lld를 숨기세요."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "隐藏不列出卧室尺寸的%lld"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "隱藏不列出臥室尺寸的%lld"
           }
         }
       }
@@ -16255,6 +16047,34 @@
         }
       }
     },
+    "Lotteries and re-rentals with any of these sizes. Leave all off for every size." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sorteos y re-alquileres con cualquiera de estos tamaños. Déjalos todos sin marcar para ver todos."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 크기 중 하나라도 있는 추첨과 재임대. 모두 끄면 모든 크기를 봅니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "含以上任一户型的抽签和转租房源。全部不选则显示所有户型。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "含以上任一戶型的抽籤和轉租房源。全部不選則顯示所有戶型。"
+          }
+        }
+      }
+    },
     "Lotteries closing soon" : {
       "localizations" : {
         "es" : {
@@ -17297,36 +17117,30 @@
         }
       }
     },
-    "NYPD complaint reports, %@. The NYPD publishes these every three months; the newest are through %@. Locations are rounded to the block." : {
+    "NYPD complaint reports, %@." : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "NYPD complaint reports, %1$@. The NYPD publishes these every three months; the newest are through %2$@. Locations are rounded to the block."
-          }
-        },
         "es" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "NYPD informes de quejas, %1$@. El NYPD los publica cada tres meses; los más recientes son hasta el %2$@. Las ubicaciones se redondean al bloque."
+            "state" : "translated",
+            "value" : "Denuncias del NYPD, %@."
           }
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "NYPD 불만 사항 보고, %1$@. NYPD는 이를 3개월마다 게시합니다. 최신 보고서는 %2$@까지입니다. 위치는 블록으로 반올림됩니다."
+            "state" : "translated",
+            "value" : "NYPD 신고 기록, %@."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "NYPD投诉报告，%1$@。NYPD每三个月发布一次这些报告；最新的报告到%2$@为止。地点四舍五入到街区。"
+            "state" : "translated",
+            "value" : "纽约市警察局报案记录，%@。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "NYPD投訴報告，%1$@。NYPD每三個月釋出一次這些報告；最新的報告到%2$@。地點四捨五入到街區。"
+            "state" : "translated",
+            "value" : "紐約市警察局報案記錄，%@。"
           }
         }
       }

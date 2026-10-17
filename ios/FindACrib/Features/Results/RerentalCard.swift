@@ -43,7 +43,7 @@ struct RerentalCard: View {
                             }
                         }
                     }
-                    .frame(height: 226).frame(maxWidth: .infinity).clipped()
+                    .frame(height: 226).frame(maxWidth: .infinity).clipped().contentShape(Rectangle())
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(f.imageURLs.count > 1 ? String(localized: "Photo \(photo + 1) of \(f.imageURLs.count)") : String(localized: "Photo of the building"))
                     .accessibilityAdjustableAction { dir in

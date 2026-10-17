@@ -17,12 +17,13 @@ struct LotteriesView: View {
     private var columns: [GridItem] {
         Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .top), count: sizeClass == .regular ? 2 : 1)
     }
-    @State private var showAlerts = false
-    /// Re-rentals that state no bedroom sizes, shown under a Beds filter
-    /// only when asked (owner, 2026-10-04: 1 bed means only 1-beds).
-    @State private var showUnsized = false
-    /// Listings outside the income range on file, shown only when asked.
-    @State private var showOutOfRange = false
+    /// One sheet, three uses. Separate .sheet modifiers stacked on one view
+    /// left only the last (sign-in) working: Edit boroughs and Filter did
+    /// nothing when tapped (found 2026-10-17 by the Filter UI test).
+    enum Sheet: Identifiable { case alerts, beds, signIn; var id: Self { self } }
+    @State private var sheet: Sheet?
+    /// The sheet that just closed, for what happens after (onDismiss gets no argument).
+    @State private var lastSheet: Sheet?
     /// The real-time-alerts offer, hidden for good once dismissed (2026-10-06).
     @AppStorage("fac.rtDismissed") private var rtDismissed = false
     init() {
@@ -30,27 +31,21 @@ struct LotteriesView: View {
         if CommandLine.arguments.contains("--reset-rt-dismissed") { UserDefaults.standard.removeObject(forKey: "fac.rtDismissed") }
     }
     @State private var showRealtimePlus = false
-    @State private var showSignIn = false
     enum Pane: Hashable { case lotteries, rerentals, newJersey }
     @State private var pane: Pane = .lotteries
     /// Bedrooms they need, kept across launches: "0,1" = studio or 1-bed.
     /// Empty = any size.
     @AppStorage("lotteries.beds") private var bedsRaw = ""
     private var beds: Set<Int> { Set(bedsRaw.split(separator: ",").compactMap { Int($0) }) }
-    private var bedsBinding: Binding<Set<Int>> {
-        Binding(get: { beds }, set: { new in
-            bedsRaw = new.sorted().map(String.init).joined(separator: ",")
-            Analytics.shared.track("lotteries_beds", ["beds": bedsRaw.isEmpty ? "any" : bedsRaw])
-        })
-    }
     private var bedLotteries: [LotteryFeed.Lottery] { feed.mine.filter { LotteryFeed.bedsMatch($0.beds, want: beds) } }
     private func lotteryOut(_ l: LotteryFeed.Lottery) -> Bool {
         guard let v = Qualify.shared.verdict(incomeMin: l.income_min, incomeMax: l.income_max,
                                              householdMin: l.household_min, householdMax: l.household_max) else { return false }
         return v == .high || v == .low
     }
-    private var lotteries: [LotteryFeed.Lottery] { showOutOfRange ? bedLotteries : bedLotteries.filter { !lotteryOut($0) } }
-    private var lotteriesOutCount: Int { bedLotteries.filter(lotteryOut).count }
+    /// Outside the income range on file: left out, with no "show them" row
+    /// since 2026-10-17 (owner); the count line still says "5 of 8 open".
+    private var lotteries: [LotteryFeed.Lottery] { bedLotteries.filter { !lotteryOut($0) } }
     private var feed: LotteryFeed { LotteryFeed.shared }
 
     var body: some View {
@@ -71,21 +66,31 @@ struct LotteriesView: View {
             if feed.checked { list } else { checking }
         }
         .task { await Qualify.shared.loadUnits() }
-        .sheet(isPresented: $showAlerts, onDismiss: { Task { await feed.refresh() } }) { AlertsSheet() }
-        // Signed out: sign in first, then straight on to the alerts sheet —
-        // unless the account they signed into already has alerts.
-        .sheet(isPresented: $showSignIn, onDismiss: {
-            guard auth.isSignedIn else { return }
-            Task { await feed.refresh(); if !feed.subscribed { showAlerts = true } }
-        // Apple and Google first, no keyboard until they pick email (owner, 2026-09-19).
-        }) { EmailSignInView(offersSocialSignIn: true, forAlerts: true) }
+        .sheet(item: $sheet, onDismiss: {
+            switch lastSheet {
+            case .alerts: Task { await feed.refresh() }
+            // Signed out: sign in first, then straight on to the alerts sheet —
+            // unless the account they signed into already has alerts.
+            case .signIn:
+                guard auth.isSignedIn else { return }
+                Task { await feed.refresh(); if !feed.subscribed { sheet = .alerts } }
+            default: break
+            }
+        }) { which in
+            switch which {
+            case .alerts: AlertsSheet(showsBeds: true).onAppear { lastSheet = .alerts }
+            case .beds: LotteryBedsSheet().presentationDetents([.height(260)]).onAppear { lastSheet = .beds }
+            // Apple and Google first, no keyboard until they pick email (owner, 2026-09-19).
+            case .signIn: EmailSignInView(offersSocialSignIn: true, forAlerts: true).onAppear { lastSheet = .signIn }
+            }
+        }
         // No sheet opens by itself (owner, 2026-09-19): the tab shows the
         // sign-up screen, and only its button opens the sign-up.
     }
 
     private func promptSignup() {
         Analytics.shared.track("lotteries_signup_prompt", ["signed_in": auth.isSignedIn])
-        if auth.isSignedIn { showAlerts = true } else { showSignIn = true }
+        sheet = auth.isSignedIn ? .alerts : .signIn
     }
 
     private var checking: some View {
@@ -148,12 +153,16 @@ struct LotteriesView: View {
         }
     }
 
-    /// Subscribers edit their boroughs; everyone else is offered alerts.
-    private var boroughsButton: some View {
-        Button(feed.subscribed ? String(localized: "Edit boroughs") : String(localized: "Get alerts")) {
-            if feed.subscribed { showAlerts = true } else { promptSignup() }
+    /// Filter (owner, 2026-10-17: Beds moved off the tab, "Edit boroughs"
+    /// renamed): a subscriber gets the alerts sheet with Beds on top, everyone
+    /// else just Beds, no sign-in needed to narrow the list.
+    private var filterButton: some View {
+        Button(beds.isEmpty ? String(localized: "Filter") : String(localized: "Filter (\(beds.count))")) {
+            Analytics.shared.track("lotteries_filter", ["subscribed": feed.subscribed])
+            sheet = feed.subscribed ? .alerts : .beds
         }
         .font(.se(16, .bold)).foregroundStyle(SE.royal)
+        .buttonStyle(.plain)
     }
 
     private var list: some View {
@@ -170,18 +179,7 @@ struct LotteriesView: View {
                 // two on a 375 pt phone, and the header already says Lotteries.
                 SEUnderlineTabs(options: [(Pane.lotteries, String(localized: "NYC (\(lotteries.count))")), (.rerentals, String(localized: "Re-rentals (\(rerentals.count))")),
                                           (.newJersey, String(localized: "NJ (\(feed.njOpen.count))"))], selection: $pane)
-                    .padding(.bottom, pane == .newJersey ? 10 : 0)
-                // NJ's source publishes no bedroom sizes, so no Beds strip there.
-                if pane != .newJersey {
-                HStack(spacing: 10) {
-                    Text("Beds").font(.se(15, .bold)).foregroundStyle(SE.ink2)
-                    // fixedSize: the strip's divider lines are flexible and
-                    // would otherwise stretch it to fill the header.
-                    SESegmentRow(options: [(0, String(localized: "Studio")), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: bedsBinding)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .padding(.bottom, 10)
-                }
+                    .padding(.bottom, 10)
             }
             .padding(.horizontal, 16).padding(.top, 8).background(Color.white)
             ScrollView {
@@ -191,7 +189,7 @@ struct LotteriesView: View {
                     HStack {
                         Text(countLine).font(.se(17, .bold)).foregroundStyle(SE.ink)
                         Spacer()
-                        boroughsButton.accessibilityIdentifier("lotteries-edit")
+                        filterButton.accessibilityIdentifier("lotteries-edit")
                     }
                     .padding(.horizontal, 16)
                     if feed.loadFailed {
@@ -201,13 +199,12 @@ struct LotteriesView: View {
                                 String(localized: "No Housing Connect lotteries are open in \(boroughNames) right now.") + (feed.subscribed ? String(localized: " We'll alert you when one opens.") : ""))
                     } else if lotteries.isEmpty && !bedLotteries.isEmpty && !feed.loading {
                         message(String(localized: "None in your income range"),
-                                (beds.isEmpty ? String(localized: "\(bedLotteries.count) open, all outside the income range you entered. Tap above to see them anyway.")
-                                              : String(localized: "\(bedLotteries.count) open with \(bedsWords), all outside the income range you entered. Tap above to see them anyway.")))
+                                (beds.isEmpty ? String(localized: "\(bedLotteries.count) open, all outside the income range you entered. Change it under Filter.")
+                                              : String(localized: "\(bedLotteries.count) open with \(bedsWords), all outside the income range you entered. Change it under Filter.")))
                     } else if lotteries.isEmpty && !feed.loading {
                         message(String(localized: "None with \(bedsWords)"),
                                 String(localized: "\(feed.mine.count) open in \(boroughNames), none with \(bedsWords). Change Beds above to see them."))
                     }
-                    if lotteriesOutCount > 0 { outOfRangeButton(lotteriesOutCount) }
                     LazyVGrid(columns: columns, alignment: .leading, spacing: 12) {
                         ForEach(lotteries) { card($0) }
                     }
@@ -240,27 +237,13 @@ struct LotteriesView: View {
         guard !beds.isEmpty else { return inBoroughs }
         return inBoroughs.filter {
             let have = Qualify.shared.bedrooms($0)
-            return have.isEmpty ? showUnsized : !have.isDisjoint(with: beds)
+            // One that states no size is left out (owner, 2026-10-04: 1 bed
+            // means only 1-beds); its "show them" row went 2026-10-17.
+            return !have.isEmpty && !have.isDisjoint(with: beds)
         }
     }
     private var rerentals: [FeaturedListing] {
-        showOutOfRange ? bedRerentals : bedRerentals.filter { !Qualify.shared.outOfRange($0) }
-    }
-    private var rerentalsOutCount: Int { bedRerentals.filter { Qualify.shared.outOfRange($0) }.count }
-
-    private func outOfRangeButton(_ n: Int) -> some View {
-        Button { showOutOfRange.toggle(); Analytics.shared.track("qualify_out_of_range", ["show": showOutOfRange, "n": n]) } label: {
-            Text(showOutOfRange ? String(localized: "Hide the \(n) outside your income range")
-                                : String(localized: "\(n) more are outside your income range — show them"))
-                .font(.se(16, .semibold)).foregroundStyle(SE.royal)
-                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).padding(.horizontal, 16)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain).accessibilityIdentifier("qualify-out-of-range")
-    }
-
-    private var unsizedCount: Int {
-        beds.isEmpty ? 0 : inBoroughs.filter { Qualify.shared.bedrooms($0).isEmpty }.count
+        bedRerentals.filter { !Qualify.shared.outOfRange($0) }
     }
 
     /// "a 1-bed", "a studio or 1-bed", "3+ beds" — for the empty message.
@@ -273,22 +256,11 @@ struct LotteriesView: View {
         HStack {
             Text("\(rerentals.count) available").font(.se(17, .bold)).foregroundStyle(SE.ink)
             Spacer()
-            boroughsButton
+            filterButton.accessibilityIdentifier("rerentals-filter")
         }
         .padding(.horizontal, 16)
-        if rerentalsOutCount > 0 { outOfRangeButton(rerentalsOutCount) }
-        if unsizedCount > 0 {
-            Button { showUnsized.toggle(); Analytics.shared.track("rerentals_unsized", ["show": showUnsized]) } label: {
-                Text(showUnsized ? String(localized: "Hide the \(unsizedCount) that don't list bedroom sizes")
-                                 : String(localized: "\(unsizedCount) more don't list bedroom sizes — show them"))
-                    .font(.se(16, .semibold)).foregroundStyle(SE.royal)
-                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading).padding(.horizontal, 16)
-                    .contentShape(Rectangle())   // the whole row, not just the words
-            }
-            .buttonStyle(.plain).accessibilityIdentifier("rerentals-unsized")
-        }
         if rerentals.isEmpty && !bedRerentals.isEmpty {
-            message(String(localized: "None in your income range"), String(localized: "\(bedRerentals.count) re-rentals here, all outside the income range you entered. Tap above to see them anyway."))
+            message(String(localized: "None in your income range"), String(localized: "\(bedRerentals.count) re-rentals here, all outside the income range you entered. Change it under Filter."))
         } else if rerentals.isEmpty && !beds.isEmpty {
             message(String(localized: "None with \(bedsWords)"), String(localized: "No re-rental in \(boroughNames) lists \(bedsWords) today. Change Beds above to see them."))
         } else if rerentals.isEmpty {
@@ -517,4 +489,42 @@ struct LotteriesView: View {
     }
 
     private func k(_ n: Int) -> String { n >= 1000 ? "$\(n / 1000)k" : "$\(n)" }
+}
+
+
+/// Bedrooms wanted in the Lotteries tab, kept across launches ("0,1" =
+/// studio or 1-bed; empty = any size). Lives in the Filter sheet since
+/// 2026-10-17 (owner: off the tab, into "Edit boroughs", renamed Filter).
+struct LotteryBedsPicker: View {
+    @AppStorage("lotteries.beds") private var bedsRaw = ""
+    private var binding: Binding<Set<Int>> {
+        Binding(get: { Set(bedsRaw.split(separator: ",").compactMap { Int($0) }) }, set: { new in
+            bedsRaw = new.sorted().map(String.init).joined(separator: ",")
+            Analytics.shared.track("lotteries_beds", ["beds": bedsRaw.isEmpty ? "any" : bedsRaw])
+        })
+    }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Beds").font(.se(15, .bold)).foregroundStyle(SE.ink2).textCase(.uppercase)
+            // fixedSize: the strip's divider lines are flexible and would
+            // otherwise stretch it to fill the sheet.
+            SESegmentRow(options: [(0, String(localized: "Studio")), (1, "1"), (2, "2"), (3, "3"), (4, "4+")], selection: binding)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("Lotteries and re-rentals with any of these sizes. Leave all off for every size.")
+                .font(.se(14)).foregroundStyle(SE.ink3)
+        }
+    }
+}
+
+/// Filter for someone without alerts: just Beds, no account needed.
+struct LotteryBedsSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    var body: some View {
+        NavigationStack {
+            LotteryBedsPicker().padding(16).frame(maxHeight: .infinity, alignment: .top)
+                .navigationTitle("Filter").navigationBarTitleDisplayMode(.inline)
+                .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+        }
+        .accessibilityIdentifier("lotteries-filter-sheet")
+    }
 }

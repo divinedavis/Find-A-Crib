@@ -12,7 +12,7 @@
   "%lld open violations": {"one": "%lld open violation", "other": "%lld open violations"},
   "%lld people in your household": {"one": "%lld person in your household", "other": "%lld people in your household"},
   "%lld pest calls in the past year": {"one": "%lld pest call in the past year", "other": "%lld pest calls in the past year"},
-  "%lld re-rentals here, all outside the income range you entered. Tap above to see them anyway.": {"one": "%lld re-rental here, outside the income range you entered. Tap above to see it anyway.", "other": "%lld re-rentals here, all outside the income range you entered. Tap above to see them anyway."},
+  "%lld re-rentals here, all outside the income range you entered. Change it under Filter.": {"one": "%lld re-rental here, outside the income range you entered. Change it under Filter.", "other": "%lld re-rentals here, all outside the income range you entered. Change it under Filter."},
   "%lld rooms": {"one": "%lld room", "other": "%lld rooms"},
   "%lld sizes": {"one": "%lld size", "other": "%lld sizes"},
   "%lld stars": {"one": "%lld star", "other": "%lld stars"},

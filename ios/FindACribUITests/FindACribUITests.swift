@@ -795,32 +795,37 @@ final class FindACribUITests: XCTestCase {
     /// five boroughs with a "Turn on alerts" banner (alerts were Plus for new
     /// sign-ups), NO sheet opens by itself, and the banner opens sign-in when
     /// signed out. --lotteries-demo stands in for a subscriber to all five.
-    /// Re-rentals under a Beds filter (owner, 2026-10-04: "only buildings
-    /// that have a 1br available should be shown"): listings that state no
-    /// size leave the list and wait behind a "show them" button.
-    func testRerentalsBedsFilterHidesUnsized() throws {
+    /// Beds lives in the Filter sheet (owner, 2026-10-17: off the tab, and
+    /// "Edit boroughs" renamed Filter). Picking 1 bed narrows Re-rentals —
+    /// listings with no size leave with no "show them" row — and the button
+    /// counts it: "Filter (1)".
+    func testLotteriesFilterHoldsBeds() throws {
         app.terminate()
-        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--tab", "lotteries", "--lotteries-demo"]
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--tab", "lotteries", "--lotteries-demo", "--plus-demo"]
         app.launch()
         let pane = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Re-rentals'")).firstMatch
         XCTAssertTrue(pane.waitForExistence(timeout: 30))
         pane.tap()
-        let cards = app.descendants(matching: .any).matching(identifier: "rerental-card")
-        XCTAssertTrue(cards.firstMatch.waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["segment-1"].exists, "no Beds strip on the tab")
+        let filter = app.buttons["rerentals-filter"]
+        XCTAssertTrue(filter.waitForExistence(timeout: 10), "the Filter button sits by the count")
+        filter.tap()
+        let one = app.buttons["segment-1"]
+        XCTAssertTrue(one.waitForExistence(timeout: 5), "Beds is in the Filter sheet")
         // Beds is remembered between launches: start from none picked.
         for label in ["Studio", "1", "2", "3", "4+"] {
             let seg = app.buttons["segment-\(label)"]
             if seg.exists && seg.isSelected { seg.tap() }
         }
-        XCTAssertFalse(app.buttons["rerentals-unsized"].exists, "no Beds filter, nothing held back")
-        app.buttons["segment-1"].tap()
-        let unsized = app.buttons["rerentals-unsized"]
-        XCTAssertTrue(unsized.waitForExistence(timeout: 5), "with Beds = 1, listings without sizes wait behind a button, under the count")
-        XCTAssertTrue(unsized.label.contains("show them"))
-        unsized.tap()
-        let hide = app.buttons.matching(NSPredicate(format: "identifier == 'rerentals-unsized' AND label BEGINSWITH 'Hide'")).firstMatch
-        XCTAssertTrue(hide.waitForExistence(timeout: 5), "the button shows them, then offers to hide")
+        one.tap()
+        app.buttons["Close"].tap()
+        XCTAssertTrue(app.buttons["Filter (1)"].waitForExistence(timeout: 5), "the button counts the filter")
+        XCTAssertFalse(app.buttons["rerentals-unsized"].exists, "no show-them row")
+        XCTAssertFalse(app.buttons["qualify-out-of-range"].exists, "no show-them row")
+        app.buttons["rerentals-filter"].tap()
+        XCTAssertTrue(app.buttons["segment-1"].waitForExistence(timeout: 5))
         app.buttons["segment-1"].tap()   // leave Beds as it was
+        app.buttons["Close"].tap()
     }
 
     /// Broker fee check and Lease review on the iPhone (owner, 2026-10-12: "we
@@ -927,7 +932,7 @@ final class FindACribUITests: XCTestCase {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--tab", "lotteries", "--lotteries-demo", "--plus-demo", "--reset-rt-dismissed"]
         app.launch()
-        XCTAssertTrue(app.buttons["lotteries-edit"].waitForExistence(timeout: 30), "Edit boroughs stays in the header")
+        XCTAssertTrue(app.buttons["lotteries-edit"].waitForExistence(timeout: 30), "Filter stays in the header")
         XCTAssertFalse(app.descendants(matching: .any)["lotteries-alerts-banner"].exists, "no alerts box once alerts are on")
         XCTAssertFalse(app.staticTexts["Your alerts are on"].exists)
         XCTAssertFalse(app.buttons["lotteries-signup"].exists, "no Turn on alerts for someone already subscribed")
@@ -1049,23 +1054,31 @@ final class FindACribUITests: XCTestCase {
             XCTAssertTrue(app.descendants(matching: .any)["lottery-photo"].firstMatch.waitForExistence(timeout: 5),
                           "Housing Connect cards show the street at the address")
         }
-        // Beds filter (owner, 2026-09-21): a size no open lottery has leaves the
-        // pane saying so, and clearing it brings the list back.
-        let fourPlus = app.buttons["segment-4+"]
-        XCTAssertTrue(fourPlus.waitForExistence(timeout: 5), "the Beds strip should sit under the tabs")
-        // Beds is remembered across launches (@AppStorage): a simulator that
-        // last had "1" picked would make 4+ mean "1 or 4+" and hide nothing.
-        for label in ["Studio", "1", "2", "3", "4+"] {
-            let seg = app.buttons["segment-\(label)"]
-            if seg.exists && seg.isSelected { seg.tap() }
+        // Beds filter (owner, 2026-09-21; in the Filter sheet since 2026-10-17):
+        // a size no open lottery has leaves the pane saying so, and clearing
+        // it brings the list back.
+        func setBeds(_ pick: String?) {
+            app.buttons["lotteries-edit"].tap()
+            let fourPlus = app.buttons["segment-4+"]
+            XCTAssertTrue(fourPlus.waitForExistence(timeout: 5), "Beds sits in the Filter sheet")
+            // Beds is remembered across launches (@AppStorage): a simulator that
+            // last had "1" picked would make 4+ mean "1 or 4+" and hide nothing.
+            for label in ["Studio", "1", "2", "3", "4+"] {
+                let seg = app.buttons["segment-\(label)"]
+                if seg.exists && seg.isSelected { seg.tap() }
+            }
+            if let pick { app.buttons["segment-\(pick)"].tap() }
+            app.buttons["Close"].tap()
         }
         if card.exists {
+            setBeds(nil)
+            XCTAssertTrue(card.waitForExistence(timeout: 5))
             let before = app.descendants(matching: .any).matching(identifier: "lottery-card").count
-            fourPlus.tap()
+            setBeds("4+")
             let shown = app.descendants(matching: .any).matching(identifier: "lottery-card").count
             XCTAssertTrue(shown < before || app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'None with'")).firstMatch.waitForExistence(timeout: 3),
                           "4+ beds should hide lotteries without a 4-bed")
-            fourPlus.tap()
+            setBeds(nil)
             XCTAssertTrue(card.waitForExistence(timeout: 5), "clearing Beds brings the lotteries back")
         }
         // The Re-rentals pane: the agents' re-rentals in the same boroughs.

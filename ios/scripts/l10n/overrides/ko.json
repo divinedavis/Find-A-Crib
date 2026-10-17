@@ -7,7 +7,6 @@
  " · Closes %@": " · %@ 마감",
  "%@ %@ buildings": "%1$@개 %2$@ 건물",
  "%@ %@ in view": "화면 안 %1$@개 %2$@",
- "%@ are %@": "%1$@개가 %2$@",
  "%@ bd": "침실 %@개",
  "%@ bed": "침실 %@개",
  "%@ buildings": "건물 %@개",
@@ -51,10 +50,15 @@
  "%lld open violations": {
   "other": "미해결 위반 %lld건"
  },
+ "%lld open with %@, all outside the income range you entered. Change it under Filter.": "%2$@ %1$lld건 진행 중, 모두 입력한 소득 범위 밖입니다. 필터에서 바꾸세요.",
+ "%lld open, all outside the income range you entered. Change it under Filter.": "%lld건 진행 중, 모두 입력한 소득 범위 밖입니다. 필터에서 바꾸세요.",
  "%lld periods": {
   "other": "%lld개 기간"
  },
  "%lld re-infested": "%lld세대 재발",
+ "%lld re-rentals here, all outside the income range you entered. Change it under Filter.": {
+  "other": "재임대 %lld건, 모두 입력한 소득 범위 밖입니다. 필터에서 바꾸세요."
+ },
  "%lld rooms": {
   "other": "방 %lld개"
  },
@@ -69,7 +73,6 @@
  },
  "%lld+ on file": "기록 %lld건 이상",
  "1 bed": "침실 1개",
- "1 is %@": "1개가 %@",
  "2 bed": "침실 2개",
  "2 beds": "침실 2개",
  "3 bed": "침실 3개",
@@ -159,7 +162,7 @@
  "Documents": "서류",
  "Don't show this again": "다시 보지 않기",
  "Done": "완료",
- "Edit boroughs": "자치구 편집",
+ "Edit alerts": "알림 편집",
  "Email my packet": "내 서류 묶음 이메일로 보내기",
  "Email to the agent": "대리인에게 보낼 이메일",
  "Emergency": "긴급",
@@ -173,6 +176,8 @@
  "Fewest violations": "위반 적은 순",
  "File with 311": "311에 신고",
  "Fill in your details": "정보 입력",
+ "Filter": "필터",
+ "Filter (%lld)": "필터 (%lld)",
  "Find the leasing office": "임대 사무소 찾기",
  "First come": "선착순",
  "First come, first served": "선착순",
@@ -184,7 +189,6 @@
  "Get Plus": "Plus 받기",
  "Get Plus — %@/month": "Plus 받기 — 월 %@",
  "Get a repair made": "수리 요청하기",
- "Get alerts": "알림 받기",
  "Get alerts when one opens": "새 추첨이 열리면 알림 받기",
  "Get my documents ready": "서류 준비하기",
  "Get one made": "편지 만들기",
@@ -233,6 +237,7 @@
  "Loading…": "불러오는 중…",
  "Look it up": "찾아보기",
  "Looking up HPD registration…": "HPD 등록 조회 중…",
+ "Lotteries and re-rentals with any of these sizes. Leave all off for every size.": "이 크기 중 하나라도 있는 추첨과 재임대. 모두 끄면 모든 크기를 봅니다.",
  "Lotteries closing soon": "곧 마감되는 추첨",
  "Managing agent": "관리 대리인",
  "Max rent, $/month": "최대 임대료(월, $)",
@@ -243,6 +248,7 @@
  "Multiple dwelling": "다세대 주택",
  "My Activity": "내 활동",
  "NYC's 311 data didn't answer. Showing what you saw %@. Pull down to try again.": "NYC 311 데이터가 응답하지 않았습니다. %@에 본 내용을 보여 드립니다. 아래로 당겨 다시 시도하세요.",
+ "NYPD complaint reports, %@.": "NYPD 신고 기록, %@.",
  "Neighborhood": "동네",
  "Neighborhoods": "동네",
  "New lease starts": "새 계약 시작일",

@@ -12,6 +12,8 @@ import SwiftUI
 struct AlertsSheet: View {
     /// The search that opened the sheet, to prefill from; nil from Profile.
     var query: SearchQuery? = nil
+    /// Opened from the Lotteries tab's Filter: Beds sits on top (2026-10-17).
+    var showsBeds = false
     @Environment(DataStore.self) private var store
     @Environment(AuthService.self) private var auth
     @Environment(\.dismiss) private var dismiss
@@ -68,6 +70,7 @@ struct AlertsSheet: View {
                                 .font(.se(14)).foregroundStyle(SE.ink3).accessibilityIdentifier("alerts-editing-note")
                         }
 
+                        if showsBeds { LotteryBedsPicker() }
                         Text("Boroughs").font(.se(15, .bold)).foregroundStyle(SE.ink2).textCase(.uppercase)
                         VStack(spacing: 0) {
                             ForEach(Borough.all, id: \.code) { b in
@@ -112,7 +115,7 @@ struct AlertsSheet: View {
                 .padding(16)
             }
             .background(Color.white)
-            .navigationTitle("Alerts").navigationBarTitleDisplayMode(.inline)
+            .navigationTitle(showsBeds ? String(localized: "Filter") : String(localized: "Alerts")).navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
             .task { await PushService.shared.refreshStatus() }
             .sheet(isPresented: $showPlus) { PaywallView(source: "realtime") }

@@ -65,12 +65,18 @@
   "one": "%lld queja abierta",
   "other": "%lld quejas abiertas"
  },
+ "%lld open with %@, all outside the income range you entered. Change it under Filter.": "%1$lld abiertos con %2$@, todos fuera del rango de ingresos que indicaste. Cámbialo en Filtrar.",
+ "%lld open, all outside the income range you entered. Change it under Filter.": "%lld abiertos, todos fuera del rango de ingresos que indicaste. Cámbialo en Filtrar.",
  "%lld periods": {
   "many": "%lld períodos",
   "one": "%lld período",
   "other": "%lld períodos"
  },
  "%lld re-infested": "%lld con reinfestación",
+ "%lld re-rentals here, all outside the income range you entered. Change it under Filter.": {
+  "one": "%lld re-alquiler aquí, fuera del rango de ingresos que indicaste. Cámbialo en Filtrar.",
+  "other": "%lld re-alquileres aquí, todos fuera del rango de ingresos que indicaste. Cámbialo en Filtrar."
+ },
  "%lld rooms": {
   "many": "%lld habitaciones",
   "one": "%lld habitación",
@@ -182,7 +188,7 @@
  "Directions": "Cómo llegar",
  "Dismiss": "Cerrar",
  "Done": "Listo",
- "Edit boroughs": "Editar condados",
+ "Edit alerts": "Editar alertas",
  "Email my packet": "Enviar mi paquete por correo",
  "Enforcement cases": "Casos de cumplimiento",
  "Enter your email.": "Escribe tu correo electrónico.",
@@ -191,6 +197,8 @@
  "FIND A CRIB PLUS": "FIND A CRIB PLUS",
  "Fewest violations": "Menos violaciones",
  "File with 311": "Reportar al 311",
+ "Filter": "Filtrar",
+ "Filter (%lld)": "Filtrar (%lld)",
  "Find the leasing office": "Busca la oficina de alquiler",
  "First come": "Por orden de llegada",
  "First come, first served": "Por orden de llegada",
@@ -251,6 +259,7 @@
  "Location": "Ubicación",
  "Look it up": "Búscalo",
  "Looking up HPD registration…": "Buscando el registro de HPD…",
+ "Lotteries and re-rentals with any of these sizes. Leave all off for every size.": "Sorteos y re-alquileres con cualquiera de estos tamaños. Déjalos todos sin marcar para ver todos.",
  "Lotteries closing soon": "Loterías que cierran pronto",
  "Managing agent": "Agente administrador",
  "Median registered rent": "Renta mediana registrada",
@@ -261,6 +270,7 @@
  "NYC housing lotteries": "Loterías de vivienda de NYC",
  "NYC lotteries": "Loterías de NYC",
  "NYC's 311 data didn't answer. Showing what you saw %@. Pull down to try again.": "Los datos del 311 de NYC no respondieron. Mostrando lo que viste %@. Desliza hacia abajo para intentarlo de nuevo.",
+ "NYPD complaint reports, %@.": "Denuncias del NYPD, %@.",
  "Nearby in %@": "Cerca, en %@",
  "Neighborhood, borough or ZIP": "Barrio, condado o código postal",
  "New alerts": "Nuevas alertas",

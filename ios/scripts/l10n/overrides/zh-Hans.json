@@ -8,7 +8,6 @@
  "%@ %@ buildings": "%1$@ 栋%2$@建筑",
  "%@ %@ in view": "视图中 %1$@ %2$@",
  "%@ County": "%@县",
- "%@ are %@": "%1$@ 栋是%2$@",
  "%@ bd": "%@ 卧",
  "%@ bed": "%@ 卧",
  "%@ buildings": "%@ 栋建筑",
@@ -43,10 +42,15 @@
  "%lld open violations": {
   "other": "%lld 项未结违规"
  },
+ "%lld open with %@, all outside the income range you entered. Change it under Filter.": "%1$lld 个含%2$@的开放中，均不在你填写的收入范围内。可在“筛选”中修改。",
+ "%lld open, all outside the income range you entered. Change it under Filter.": "%lld 个开放中，均不在你填写的收入范围内。可在“筛选”中修改。",
  "%lld periods": {
   "other": "%lld 个周期"
  },
  "%lld re-infested": "%lld 户再次出现",
+ "%lld re-rentals here, all outside the income range you entered. Change it under Filter.": {
+  "other": "这里有 %lld 个转租房源，均不在你填写的收入范围内。可在“筛选”中修改。"
+ },
  "%lld saved": "已保存 %lld 个",
  "%lld sizes": {
   "other": "%lld 种户型"
@@ -58,7 +62,6 @@
  "%lld+ on file": "存档 %lld+ 条",
  ", from %@/mo": "，%@/月起",
  "1 bed": "1 卧",
- "1 is %@": "1 栋是%@",
  "2 bed": "2 卧",
  "2 beds": "2 卧",
  "3 bed": "3 卧",
@@ -119,7 +122,7 @@
  "Directions": "路线",
  "Dismiss": "关闭",
  "Drugs": "毒品",
- "Edit boroughs": "编辑行政区",
+ "Edit alerts": "编辑提醒",
  "Email my packet": "邮件发送我的申请材料",
  "Email to the agent": "发给代理的邮件",
  "Emergency": "紧急",
@@ -129,6 +132,8 @@
  "FIND A CRIB PLUS": "FIND A CRIB PLUS",
  "Fewest violations": "违规最少",
  "File with 311": "向 311 投诉",
+ "Filter": "筛选",
+ "Filter (%lld)": "筛选 (%lld)",
  "Filters": "筛选",
  "Find the leasing office": "查找租赁办公室",
  "First come": "先到先得",
@@ -138,7 +143,6 @@
  "Gather": "准备",
  "Get Plus — %@/month": "获取 Plus — %@/月",
  "Get a repair made": "申请维修",
- "Get alerts": "接收提醒",
  "Get alerts when one opens": "有新抽签开放时提醒我",
  "Get one made": "让房东维修",
  "Get real-time alerts": "接收实时提醒",
@@ -176,6 +180,7 @@
  "Looking up HPD registration…": "正在查询 HPD 登记…",
  "Lotteries": "住房抽签",
  "Lotteries & waitlists": "抽签与候补名单",
+ "Lotteries and re-rentals with any of these sizes. Leave all off for every size.": "含以上任一户型的抽签和转租房源。全部不选则显示所有户型。",
  "Lotteries closing soon": "即将截止的抽签",
  "Lotteries · %@": "住房抽签 · %@",
  "Lottery": "抽签",
@@ -189,6 +194,7 @@
  "NYC housing lotteries": "纽约市住房抽签",
  "NYC lotteries": "纽约市抽签",
  "NYC's 311 data didn't answer. Showing what you saw %@. Pull down to try again.": "纽约市 311 数据没有响应。显示的是你%@看到的内容。下拉可重试。",
+ "NYPD complaint reports, %@.": "纽约市警察局报案记录，%@。",
  "Name": "姓名",
  "Neighborhood": "社区",
  "New alerts": "新提醒",

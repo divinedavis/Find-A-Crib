@@ -281,7 +281,10 @@ struct FillImage: View {
     var body: some View {
         Color.clear
             .overlay(Image(uiImage: image).resizable().scaledToFill())
-            .clipped()
+            // clipped() crops the drawing, not the touches: the filled image
+            // still caught taps beyond its box, over the Lotteries tab's
+            // Filter button (2026-10-17). contentShape keeps them inside.
+            .clipped().contentShape(Rectangle())
     }
 }
 

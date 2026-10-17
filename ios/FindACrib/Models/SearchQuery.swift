@@ -122,16 +122,13 @@ struct SearchQuery: Codable, Hashable {
         if n.vouchersOnly { return String(localized: "voucher-friendly buildings") }
         return String(localized: "buildings")
     }
-    /// The results headline. Plain stabilized search reads "205 are
-    /// rent-stabilized" — the old "205 rent-stabilized buildings" truncated to
-    /// "205 rent-stabilized bu…" on a phone (2026-09-08).
-    /// "656 are income-restricted" — in the city's own word; it said
-    /// "rent-stabilized" everywhere until 2026-09-24.
+    /// The results headline. A plain search shows just the count, "47,165"
+    /// (owner, 2026-10-17): every building listed is on the city's register,
+    /// which each card's badge already says. It read "47,165 are
+    /// rent-stabilized" before. Voucher and lottery searches keep their noun.
     func resultHeadline(count: Int, city: City = .nyc) -> String {
         let n = normalized
-        if !n.hcrOnly && !n.vouchersOnly {
-            return count == 1 ? String(localized: "1 is \(city.registerWord)") : String(localized: "\(count.formatted()) are \(city.registerWord)")
-        }
+        if !n.hcrOnly && !n.vouchersOnly { return count.formatted() }
         let many = n.hcrOnly ? String(localized: "lottery & waitlist sites") : String(localized: "voucher-friendly buildings")
         return count == 1 ? String(localized: "1 \(resultNoun)") : String(localized: "\(count.formatted()) \(many)")
     }

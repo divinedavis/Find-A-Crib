@@ -11,7 +11,7 @@ struct BuildingImage: View {
             ImagePlaceholder()
             if let image { FillImage(image: image) }
         }
-        .clipped()
+        .clipped().contentShape(Rectangle())
         .task(id: building.bbl) { image = await ImageService.shared.image(for: building, size: size) }
     }
 }

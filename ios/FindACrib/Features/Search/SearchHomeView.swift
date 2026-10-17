@@ -493,7 +493,7 @@ struct RecentSearchCard: View {
                     if let snapshot { FillImage(image: snapshot) }
                     else { SE.canvas }
                 }
-                .frame(width: 104, height: 140).clipped()
+                .frame(width: 104, height: 140).clipped().contentShape(Rectangle())
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(alignment: .top) {
                         Text("\(query.normalized.hcrOnly ? "Lotteries" : (query.normalized.vouchersOnly ? "Voucher homes" : "Stabilized")) in")

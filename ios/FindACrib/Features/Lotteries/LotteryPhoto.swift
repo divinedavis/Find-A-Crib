@@ -20,13 +20,13 @@ struct LotteryPhoto: View {
                 ImagePlaceholder()
                 if let image { FillImage(image: image) }
             }
-            .frame(height: 190).frame(maxWidth: .infinity).clipped()
+            .frame(height: 190).frame(maxWidth: .infinity).clipped().contentShape(Rectangle())
             .task(id: url) { image = await RemotePhotos.shared.image(url) }
             .accessibilityElement(children: .ignore).accessibilityLabel("Photo of the building")
             .accessibilityIdentifier("lottery-photo")
         } else if let lat, let lng {
             BuildingImage(building: Building(bbl: "lot-\(key)", b: "", a: "", z: nil, lat: lat, lng: lng))
-                .frame(height: 190).frame(maxWidth: .infinity).clipped()
+                .frame(height: 190).frame(maxWidth: .infinity).clipped().contentShape(Rectangle())
                 .accessibilityElement(children: .ignore).accessibilityLabel("Photo of the building")
             .accessibilityIdentifier("lottery-photo")
         }

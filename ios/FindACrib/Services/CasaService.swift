@@ -31,7 +31,8 @@ enum Casa {
         /// "1919 MADISON AVENUE, New York, NY, USA" → "1919 Madison Avenue, New York"
         var short: String {
             let parts = label.components(separatedBy: ", ")
-            let street = parts.first.map { $0.capitalized } ?? label
+            // AddressCase, not .capitalized: that gave "W 42Nd Street" (2026-10-17).
+            let street = parts.first.map { AddressCase.pretty($0) } ?? label
             return parts.count > 1 ? "\(street), \(parts[1])" : street
         }
     }

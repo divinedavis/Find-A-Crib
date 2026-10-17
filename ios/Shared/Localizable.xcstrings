@@ -7464,30 +7464,30 @@
         }
       }
     },
-    "Built %lld" : {
+    "Built %@" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Construido en %lld"
+            "value" : "Construido en %@"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld년 건축"
+            "value" : "%@년 건축"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld 年建"
+            "value" : "%@ 年建"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld 年建"
+            "value" : "%@ 年建"
           }
         }
       }
@@ -25431,30 +25431,30 @@
         }
       }
     },
-    "Since %lld" : {
+    "Since %@" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Desde %lld"
+            "state" : "translated",
+            "value" : "Desde %@"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld년부터"
+            "value" : "%@년부터"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld 年起"
+            "value" : "%@ 年起"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld 年起"
+            "value" : "%@ 年起"
           }
         }
       }

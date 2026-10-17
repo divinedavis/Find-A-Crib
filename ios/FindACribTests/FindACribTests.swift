@@ -1306,6 +1306,18 @@ final class CasaTests: XCTestCase {
                   descriptor: d, status: status, agency: "HPD")
     }
 
+    /// "W 42Nd Street" was .capitalized's doing (2026-10-17 screenshots).
+    func testPlaceShortKeepsOrdinalsLowercase() {
+        let p = Casa.Place(label: "350 WEST 42ND STREET, New York, NY, USA", bbl: "1", lat: 0, lng: 0)
+        XCTAssertEqual(p.short, "350 West 42nd Street, New York")
+        XCTAssertEqual(Casa.Place(label: "1 E 1ST ST", bbl: "1", lat: 0, lng: 0).short, "1 E 1st St")
+    }
+
+    /// A year is not a quantity: "Built 1,964" came from formatting the Int.
+    func testBuiltYearHasNoGroupingSeparator() {
+        XCTAssertEqual(String(localized: "Built \(String(1964))"), "Built 1964")
+    }
+
     func testPestsCoverApartmentAndStreetCalls() {
         XCTAssertTrue(Casa.isPest(type: "UNSANITARY CONDITION", descriptor: "PESTS"))
         XCTAssertTrue(Casa.isPest(type: "Rodent", descriptor: "Rat Sighting"))

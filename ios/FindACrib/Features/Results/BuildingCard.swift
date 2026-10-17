@@ -95,7 +95,7 @@ struct BuildingCard: View {
                     Spacer(minLength: 6)
                     Rectangle().fill(SE.line).frame(width: 1, height: 22)
                     Spacer(minLength: 6)
-                    fact("calendar", store.city.isIncomeRestricted ? (b.yr.map { String(localized: "Since \($0)") } ?? String(localized: "Since –")) : (b.yr.map { String(localized: "Built \($0)") } ?? String(localized: "Built –")))
+                    fact("calendar", store.city.isIncomeRestricted ? (b.yr.map { String(localized: "Since \(String($0))") } ?? String(localized: "Since –")) : (b.yr.map { String(localized: "Built \(String($0))") } ?? String(localized: "Built –")))
                 }
                 }
 

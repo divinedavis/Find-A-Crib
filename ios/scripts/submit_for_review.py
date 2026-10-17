@@ -50,22 +50,21 @@ def preflight(asc, ids):
     return ok
 
 
-def ensure_phased_release(asc, ids):
-    """Release updates over Apple's 7-day phased rollout instead of to
-    everyone at once, so a crash reaches a slice of users and the release
-    can be paused (App Store Connect > the version > Phased Release). Created
-    INACTIVE; Apple flips it ACTIVE on release. Not offered for a 1.0."""
-    if ids["version_string"] == "1.0":
-        return
+def ensure_no_phased_release(asc, ids):
+    """Release to everyone at once — never Apple's 7-day phased rollout, on
+    any of our apps (owner, 2026-10-17). A phased release left on the version
+    (dashboard, or an older run of this script) is deleted; one already
+    rolling out is completed, which releases it to everyone."""
     have = asc.get(f"/appStoreVersions/{ids['version']}/appStoreVersionPhasedRelease").get("data")
-    if have:
-        print("  phased release:", have["attributes"]["phasedReleaseState"])
-        return
-    asc.post("/appStoreVersionPhasedReleases", {"data": {"type": "appStoreVersionPhasedReleases",
-             "attributes": {"phasedReleaseState": "INACTIVE"},
-             "relationships": {"appStoreVersion": {"data": {"type": "appStoreVersions", "id": ids["version"]}}}}})
-    print("  phased release: on (7-day rollout once approved)")
-
+    if not have:
+        print("  phased release: off (releases to everyone at once)")
+    elif have["attributes"]["phasedReleaseState"] in ("ACTIVE", "PAUSED"):
+        asc.patch(f"/appStoreVersionPhasedReleases/{have['id']}", {"data": {"type": "appStoreVersionPhasedReleases",
+                  "id": have["id"], "attributes": {"phasedReleaseState": "COMPLETE"}}})
+        print("  phased release: completed (now released to everyone)")
+    else:
+        asc.delete(f"/appStoreVersionPhasedReleases/{have['id']}")
+        print("  phased release: removed (releases to everyone at once)")
 
 def submit(asc, app_id, ids):
     subs = asc.get("/reviewSubmissions", **{"filter[app]": app_id, "filter[platform]": "IOS", "limit": 10})["data"]
@@ -115,5 +114,5 @@ if __name__ == "__main__":
     if not ok:
         sys.exit("preflight failed; run scripts/asc_metadata.py and fix what is missing")
     print("==> submitting")
-    ensure_phased_release(asc, ids)
+    ensure_no_phased_release(asc, ids)
     submit(asc, app_id, ids)

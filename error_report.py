@@ -335,6 +335,10 @@ def unreleased_rows(rows, live):
     return {b for b, v in people.items() if len(v) < RELEASE_FLOOR}
 
 
+# Supabase auth answer for a wrong email/password pair. Not app failures.
+USER_SIGNIN_MISTAKES = re.compile(r"invalid login credentials", re.I)
+
+
 def app_failures(rows, skip_builds=frozenset()):
     """iPhone app rows that record a failure the user saw."""
     out = defaultdict(lambda: {"n": 0, "people": set(), "last": ""})
@@ -348,6 +352,11 @@ def app_failures(rows, skip_builds=frozenset()):
         if ev == "push_register_failed":
             label = f"Push registration failed ({p.get('text') or p.get('error') or '?'})"
         elif ev == "signin" and p.get("result") in ("error",):
+            # A mistyped password is the person, not the app: the sheet says
+            # so and offers "Forgot password?" (EmailSignInView). The 10/17
+            # digest's only "app failure" was one of these.
+            if USER_SIGNIN_MISTAKES.search(p.get("text") or ""):
+                continue
             label = f"Sign-in failed ({p.get('provider') or '?'})"
         elif ev == "purchase" and p.get("result") in ("error", "unverified"):
             label = f"Purchase {p.get('result')}"

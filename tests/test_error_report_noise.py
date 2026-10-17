@@ -22,3 +22,16 @@ def test_a_real_error_is_not_noise():
     js = E.js_errors([row("TypeError: undefined is not an object (evaluating 'b.price')", kind="error",
                           at="https://findacrib.com/:4410")])
     assert not any(v["noise"] for v in js.values())
+
+
+def signin(text, result="error"):
+    return {"event": "signin", "visitor_id": "v1", "created_at": "2026-10-17T01:57:43Z",
+            "props": {"platform": "ios", "provider": "email", "result": result, "text": text}}
+
+
+def test_a_wrong_password_is_not_an_app_failure():
+    assert not E.app_failures([signin("Invalid login credentials")])
+
+
+def test_other_signin_errors_still_count():
+    assert "Sign-in failed (email)" in E.app_failures([signin("The network connection was lost.")])

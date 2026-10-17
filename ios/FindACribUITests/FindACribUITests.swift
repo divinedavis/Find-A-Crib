@@ -725,8 +725,8 @@ final class FindACribUITests: XCTestCase {
     }
 
     /// Each income-restricted city's results (owner, 2026-09-24, with a
-    /// Philadelphia screenshot): its own landmarks over the list, and none of
-    /// New York's words — not "rent-stabilized", not "Rent stabilized", not HPD.
+    /// Philadelphia screenshot): its own landmarks over the list, its own badge,
+    /// and none of New York's words — not "Rent stabilized", not HPD.
     func testNewCitiesResultsUseTheirOwnWordsAndLandmarks() throws {
         for id in ["chi", "mia", "atl", "phl"] {
             app.terminate()
@@ -734,9 +734,13 @@ final class FindACribUITests: XCTestCase {
             app.launch()
             let count = app.staticTexts["results-count"]
             XCTAssertTrue(count.waitForExistence(timeout: 90), "\(id): results should open")
-            expectation(for: NSPredicate(format: "label CONTAINS 'income-restricted'"), evaluatedWith: count)
+            // The headline is just the count since 2026-10-17 (owner); the
+            // city's own word is on each card's badge.
+            expectation(for: NSPredicate(format: "label MATCHES '^[0-9][0-9,]*$'"), evaluatedWith: count)
             waitForExpectations(timeout: 60)
             XCTAssertTrue(app.buttons["card-address"].firstMatch.waitForExistence(timeout: 20), "\(id): cards should load")
+            XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label == 'Income-restricted' OR label == 'Leasing now'")).firstMatch.waitForExistence(timeout: 10),
+                          "\(id): cards carry the city's own badge")
             XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'HPD'")).firstMatch.exists, "\(id): no HPD wording")
             XCTAssertFalse(app.staticTexts["Rent stabilized"].exists, "\(id): no New York badge")
             let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "results-\(id)"; shot.lifetime = .keepAlways; add(shot)

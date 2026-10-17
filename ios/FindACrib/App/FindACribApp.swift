@@ -9,6 +9,8 @@ struct FindACribApp: App {
     @State private var nav = AppNav()
     @State private var auth = AuthService()
     @State private var plus = PlusStore()
+    @State private var language = AppLanguage.shared
+    init() { AppLanguage.install() }
     @Environment(\.scenePhase) private var scenePhase
     @State private var wasBackgrounded = false
 
@@ -27,7 +29,11 @@ struct FindACribApp: App {
             } else {
             // The splash holds until a signed-in user's session is confirmed,
             // so no screen ever renders as signed out first.
-            LaunchPresentation(isReady: { [auth] in auth.restored }) { RootView() }
+            LaunchPresentation(isReady: { [auth] in auth.restored }) {
+                RootView()
+                    .id(language.revision)
+                    .environment(\.locale, language.locale)
+            }
                 .environment(store)
                 .environment(activity)
                 .environment(nav)

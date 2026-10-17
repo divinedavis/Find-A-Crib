@@ -490,17 +490,32 @@ final class FindACribUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["alerts-promise-box"].waitForExistence(timeout: 5), "it opens the alerts sign-in")
     }
 
-    /// Profile has a Language row that names the app's language and opens
-    /// Settings, where iOS keeps the per-app language (owner, 2026-10-16).
-    func testProfileHasLanguageRow() throws {
+    /// Profile › Language switches the app's language in place, no trip to
+    /// Settings (owner, 2026-10-17), and "iPhone setting" switches it back.
+    func testProfileLanguageSwitchesInApp() throws {
         app.terminate()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--tab", "profile"]
         app.launch()
         XCTAssertTrue(app.staticTexts["Profile"].waitForExistence(timeout: 20))
-        let row = app.buttons["profile-language"]
+        var row = app.buttons["profile-language"]
         for _ in 0..<8 where !row.isHittable { app.swipeUp() }
         XCTAssertTrue(row.isHittable, "Profile shows a Language row")
         XCTAssertTrue(row.label.contains("English"), "it names the app's language: \(row.label)")
+        row.tap()
+        XCTAssertTrue(app.buttons["Español"].waitForExistence(timeout: 5), "the menu lists Spanish")
+        app.buttons["Español"].tap()
+        XCTAssertTrue(app.staticTexts["Perfil"].waitForExistence(timeout: 10), "the app is in Spanish without a relaunch")
+        add(XCTAttachment(screenshot: app.screenshot()))
+        // Kept across launches.
+        app.terminate()
+        app.launch()
+        XCTAssertTrue(app.staticTexts["Perfil"].waitForExistence(timeout: 20), "Spanish sticks after a relaunch")
+        row = app.buttons["profile-language"]
+        for _ in 0..<8 where !row.isHittable { app.swipeUp() }
+        row.tap()
+        XCTAssertTrue(app.buttons["Ajuste del iPhone"].waitForExistence(timeout: 5))
+        app.buttons["Ajuste del iPhone"].tap()
+        XCTAssertTrue(app.staticTexts["Profile"].waitForExistence(timeout: 10), "back to the phone's English")
     }
 
     /// With the phone (or Settings › Find A Crib › Language) set to Spanish,

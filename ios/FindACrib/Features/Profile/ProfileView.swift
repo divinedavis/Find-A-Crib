@@ -241,14 +241,19 @@ struct ProfileView: View {
                     // that the in-app rating SHEET may not hang off a button; a
                     // link to the store page is fine, and is the only way to rate
                     // on demand once the sheet has had its three asks a year.
-                    // iOS keeps each app's language in Settings › Find A Crib ›
-                    // Language (shown once the app ships more than one); an app
-                    // can't switch it itself, so this opens that page.
+                    // Picked here, not in Settings: openSettingsURLString reopens
+                    // Settings wherever it was left, so it often missed Find A
+                    // Crib › Language (owner, 2026-10-17). See AppLanguage.
                     settingRow(String(localized: "Language")) {
-                        Button { openURL(URL(string: UIApplication.openSettingsURLString)!) } label: {
-                            HStack(spacing: 4) { Text(Self.appLanguageName).font(.se(18, .semibold)); Image(systemName: "arrow.up.right").font(.system(size: 13, weight: .bold)) }
+                        Menu {
+                            Picker(String(localized: "Language"), selection: Binding(get: { AppLanguage.shared.chosen ?? "" }, set: { AppLanguage.shared.choose($0.isEmpty ? nil : $0) })) {
+                                Text("iPhone setting").tag("")
+                                ForEach(AppLanguage.supported, id: \.self) { Text(AppLanguage.name($0)).tag($0) }
+                            }
+                        } label: {
+                            HStack(spacing: 4) { Text(AppLanguage.name(AppLanguage.shared.current)).font(.se(18, .semibold)); Image(systemName: "chevron.up.chevron.down").font(.system(size: 13, weight: .bold)) }
                                 .foregroundStyle(SE.royal)
-                        }.buttonStyle(.plain).accessibilityIdentifier("profile-language")
+                        }.accessibilityIdentifier("profile-language")
                     }
                     settingRow(String(localized: "Rate Find A Crib")) {
                         Button { ReviewPrompt.shared.openWriteReview() } label: {
@@ -317,11 +322,6 @@ struct ProfileView: View {
         .background(Color.white)
     }
 
-    /// The language the app is showing, in that language ("Español").
-    static var appLanguageName: String {
-        let code = Bundle.main.preferredLocalizations.first ?? "en"
-        return Locale(identifier: code).localizedString(forIdentifier: code)?.capitalized(with: Locale(identifier: code)) ?? code
-    }
     private func settingRow<C: View>(_ k: String, @ViewBuilder _ v: () -> C) -> some View {
         VStack(spacing: 0) {
             HStack { Text(k).font(.se(19, .semibold)).foregroundStyle(SE.ink2); Spacer(); v() }

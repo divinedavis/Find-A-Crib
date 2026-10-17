@@ -30467,8 +30467,8 @@
       "localizations" : {
         "es" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Sus ahorros en este teléfono se fusionan en la cuenta."
+            "state" : "translated",
+            "value" : "Lo que guardaste en este teléfono se une a tu cuenta."
           }
         },
         "ko" : {
@@ -31131,6 +31131,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "家庭收入"
+          }
+        }
+      }
+    },
+    "iPhone setting" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajuste del iPhone"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone 설정"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone 设置"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone 設定"
           }
         }
       }

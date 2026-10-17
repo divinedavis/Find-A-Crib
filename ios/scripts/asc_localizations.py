@@ -183,11 +183,11 @@ def apply():
 
 
 WHATS_NEW = {
-    "es-MX": "• Nuevo: Your Crib. Escribe tu dirección y mira cada llamada al 311 sobre tu edificio en el último año (cucarachas, ratones, ratas, calefacción, goteras) y los delitos reportados a media milla. Con Plus, recibe alertas.\n• Cada edificio de Nueva York ahora muestra bufetes de abogados de vivienda de su distrito, justo debajo de los cafés cercanos.\n• Iniciar sesión es más fácil: el botón queda sobre el teclado y al tocar fuera se cierra el teclado.\n• Las alertas de loterías, a un toque en Buscar.\n• Muchas mejoras.",
-    "zh-Hans": "• 新功能 Your Crib：输入地址，查看过去一年你所在楼的所有 311 投诉（蟑螂、老鼠、暖气、漏水）以及半英里内的报案犯罪。Plus 会员可接收提醒。\n• 纽约每栋楼现在都会列出所在区的住房律师事务所，就在附近咖啡馆下方。\n• 登录更方便：登录按钮停在键盘上方，点按空白处即可收起键盘。\n• 在“搜索”下一点即可开启住房抽签提醒。\n• 多项改进。",
-    "zh-Hant": "• 新功能 Your Crib：輸入地址，查看過去一年你所在大樓的所有 311 投訴（蟑螂、老鼠、暖氣、漏水）以及半英里內的報案犯罪。Plus 會員可接收提醒。\n• 紐約每棟大樓現在都會列出所在區的住房律師事務所，就在附近咖啡館下方。\n• 登入更方便：登入按鈕停在鍵盤上方，點按空白處即可收起鍵盤。\n• 在「搜尋」下一點即可開啟住房抽籤提醒。\n• 多項改進。",
-    "ru": "• Новое: Your Crib. Введите адрес и посмотрите все звонки в 311 о вашем доме за год (тараканы, мыши, крысы, отопление, протечки) и преступления в радиусе полумили. С Plus — уведомления.\n• Для каждого дома в Нью-Йорке теперь указаны юридические фирмы по жилищным вопросам в его районе — сразу под ближайшими кафе.\n• Вход стал проще: кнопка остаётся над клавиатурой, а касание вне поля скрывает клавиатуру.\n• Уведомления о лотереях — в одно касание в Поиске.\n• Множество улучшений.",
-    "ko": "• 새 기능 Your Crib: 주소를 입력하면 지난 1년간 건물에 접수된 모든 311 신고(바퀴벌레, 쥐, 난방, 누수)와 반경 0.5마일 내 범죄 신고를 볼 수 있습니다. Plus는 알림 제공.\n• 뉴욕의 각 건물에 해당 자치구의 주택 전문 법률사무소가 주변 카페 바로 아래에 표시됩니다.\n• 더 쉬워진 로그인: 로그인 버튼이 키보드 위에 머물고, 바깥을 탭하면 키보드가 닫힙니다.\n• 검색 아래에서 바로 로터리 알림을 켤 수 있습니다.\n• 그 밖의 다양한 개선.",
+    "es-MX": "• Your Crib: después de Mostrar todo, el botón Mostrar menos vuelve a plegar la lista de llamadas al 311.\n• Las alertas de loterías ahora solo incluyen loterías para las que califican el tamaño y los ingresos de tu hogar, y ya no se repiten cuando un anuncio desaparece un momento del sitio de la ciudad.\n• Otras mejoras.",
+    "zh-Hans": "• Your Crib：点“显示全部”后，可用“收起”按钮把 311 投诉列表收回。\n• 住房抽签提醒现在只推送你的家庭人数和收入符合条件的抽签；房源在市政府网站上短暂消失后也不会再重复提醒。\n• 其他改进。",
+    "zh-Hant": "• Your Crib：點「顯示全部」後，可用「收起」按鈕把 311 投訴列表收回。\n• 住房抽籤提醒現在只推送你的家庭人數和收入符合資格的抽籤；房源在市政府網站上短暫消失後也不會再重複提醒。\n• 其他改進。",
+    "ru": "• Your Crib: после «Показать все» кнопка «Свернуть» снова сворачивает список звонков в 311.\n• Уведомления о лотереях теперь приходят только о тех, куда ваша семья проходит по размеру и доходу, и больше не повторяются, если объявление ненадолго пропадает с сайта города.\n• Прочие улучшения.",
+    "ko": "• Your Crib: 모두 보기 후 간단히 보기 버튼으로 311 신고 목록을 다시 접을 수 있습니다.\n• 로터리 알림은 이제 가구원 수와 소득 기준에 맞는 로터리만 알려 드리며, 시 웹사이트에서 공고가 잠시 사라졌다 나타나도 다시 알리지 않습니다.\n• 그 밖의 개선.",
 }
 
 

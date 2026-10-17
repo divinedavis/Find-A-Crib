@@ -429,6 +429,121 @@ def stale_feeds():
     return out
 
 
+# ---------------------------------------------------------------- stale claims
+# The wording growth/techniques.py t_fresh_section8 emits ONLY on its fresh
+# path, i.e. only when _feed_freshness() found the voucher feed current. A live
+# page carrying one of these is a page that promised the reader a nightly
+# refresh. The stale path says "listings as of <date>" and "had at least one
+# apartment listed" instead, which stays true however old it gets, and must
+# never be reported here.
+#
+# Pinned by tests/test_stale_claims.py against growth/techniques.py: reword the
+# template and the test fails rather than this list silently matching nothing.
+CADENCE_PHRASES = (
+    "Updated daily.",
+    "refreshed nightly",
+    "Rebuilt daily from the overnight feed",
+    "rent-stabilized buildings with live listings",
+)
+# The same 48h the page itself uses (growth/techniques.py FEED_STALE_HOURS) to
+# decide whether it may say "right now" about the feed at all, and the same
+# allowance stale_feeds() gives s8.json. A page refuses to make a present-tense
+# claim about a feed older than this; a page whose own build is this far behind
+# has no better standing to make one about itself.
+CADENCE_CLAIM_HOURS = 48
+
+
+def stale_claims(docroot=None, now=None):
+    """A live page still promising a nightly refresh that has stopped.
+
+    THE GAP THIS EXISTS TO COVER. Three instruments watch this engine and all
+    three are blind to it at once:
+
+      * dead_crons() stands down on a deliberate pause (owner, 2026-10-12),
+        correctly — a pause is not a failure.
+      * stale_feeds() is green, because the feed really does keep refreshing:
+        the scrape runs from cron-rentmap-scrape, which is NOT paused. It
+        watches the inputs, not what was published from them.
+      * growth/techniques.py t_frozen_pages measures a page's age against the
+        NEWEST page in the docroot, deliberately, "so a night the whole
+        pipeline failed reports no freezes rather than 49,000 of them". A
+        uniform freeze is invisible to it by design — and it runs under the
+        paused cron anyway.
+
+    So the engine can stop on purpose, the feed can stay fresh, and the pages
+    built from it can sit for days telling tenants they were "Updated daily"
+    with nothing on the box noticing. That is not an engine-liveness fact, it
+    is a wrong sentence on a page someone is reading to decide where to live,
+    and it is why this does NOT stand down on the pause the way dead_crons()
+    does: a deliberate pause is a fine reason for the engine to be off and no
+    reason at all for the site to keep making a promise it is not keeping.
+
+    This runs from cron-rentmap-errors, which is independent of the growth
+    cron, so it reports while the engine is paused — the one channel that can.
+
+    IT REPORTS THE CONDITION AND NOT THE CAUSE. It reads page mtimes and the
+    feed's, not the crontab, so it says what is old and what is not and leaves
+    the diagnosis to the reader. Asserting a cause from one aggregate is how
+    this codebase has been wrong before.
+
+    Age is taken from the FRESHEST claiming page: if even the newest one is
+    past the allowance then every one of them is, so the finding cannot be an
+    artifact of one forgotten corner of the tier.
+    """
+    out = {}
+    if docroot is None:
+        docroot = os.environ.get("GROWTH_DOCROOT", "/var/www/rent-map")
+    # Only speak for a box that actually publishes these pages — the same
+    # reason stale_feeds() checks events.json only once it exists.
+    section = os.path.join(docroot, "section8")
+    if not os.path.isdir(section):
+        return out
+    if now is None:
+        now = datetime.datetime.now().timestamp()
+
+    claiming = []
+    for dirpath, _dirnames, filenames in os.walk(section):
+        if "index.html" not in filenames:
+            continue
+        page = os.path.join(dirpath, "index.html")
+        try:
+            mtime = os.path.getmtime(page)
+            with open(page, encoding="utf-8", errors="replace") as f:
+                text = f.read()
+        except OSError:
+            continue
+        found = [p for p in CADENCE_PHRASES if p in text]
+        if found:
+            claiming.append((mtime, found[0]))
+    if not claiming:
+        return out
+
+    newest, phrase = max(claiming)
+    hours = (now - newest) / 3600.0
+    if hours <= CADENCE_CLAIM_HOURS:
+        return out
+
+    # The feed's own age, for contrast rather than for the verdict. A fresh
+    # feed behind a frozen page is the informative pair: it says the scrape is
+    # doing its job and whatever publishes from it is not.
+    try:
+        feed_h = (now - os.path.getmtime(os.path.join(docroot, "s8.json"))) / 3600.0
+    except OSError:
+        feed_h = None
+
+    n = len(claiming)
+    detail = (f'{n} page{"" if n == 1 else "s"} still say{"s" if n == 1 else ""} '
+              f'"{phrase.rstrip(".")}" but {"was" if n == 1 else "the freshest was"} '
+              f'built {hours / 24:.1f} days ago')
+    if feed_h is not None and feed_h <= CADENCE_CLAIM_HOURS:
+        detail += (f" — while s8.json, the feed they cite, refreshed {feed_h:.0f}h ago. "
+                   f"The scrape is running and the pages built from it are not")
+    elif feed_h is not None:
+        detail += f" — s8.json is {feed_h / 24:.1f} days old too (see Feeds)"
+    out["/section8/"] = detail
+    return out
+
+
 def dead_crons():
     """The growth engine stopped and nothing on this box noticed for 72 hours.
 
@@ -544,7 +659,8 @@ def esc(s):
     return (str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"))
 
 
-def build(window_label, js, crash, app, five, tracebacks, stale, new_msgs, crons=None):
+def build(window_label, js, crash, app, five, tracebacks, stale, new_msgs, crons=None,
+          claims=None):
     def table(title, headers, rows):
         if not rows:
             return ""
@@ -556,11 +672,17 @@ def build(window_label, js, crash, app, five, tracebacks, stale, new_msgs, crons
                 f"<tr>{th}</tr>{body}</table>")
 
     crons = crons or {}
+    claims = claims or {}
     parts = []
     # First, above the user-facing errors. A stopped engine is not one more
     # thing that went wrong that hour — it is every following number in this
     # email being measured by something that is no longer running.
     parts.append(table("Engine", ["Job", "State"], [[esc(k), esc(v)] for k, v in crons.items()]))
+    # Directly under the engine and above the error tables, because this is not
+    # something that went wrong for one visitor: it is a sentence every visitor
+    # to the section reads, and it is currently false. See stale_claims().
+    parts.append(table("Pages promising a refresh that stopped", ["Section", "State"],
+                       [[esc(k), esc(v)] for k, v in (claims or {}).items()]))
     # Browser noise stays out of the email (owner, 2026-10-05: "should i get
     # emails on browser noise?"): it never triggers one, and when something
     # real does, the noise is one line under the table, not rows in it.
@@ -593,6 +715,9 @@ def build(window_label, js, crash, app, five, tracebacks, stale, new_msgs, crons
     lines = [f"Find A Crib errors — {window_label}", ""]
     if crons:
         lines += ["Engine:"] + [f"  {k}: {v}" for k, v in crons.items()] + [""]
+    if claims:
+        lines += ["Pages promising a refresh that stopped:"] \
+            + [f"  {k}: {v}" for k, v in claims.items()] + [""]
     # The plain-text part hides browser noise like the HTML does (2026-10-16:
     # Gmail's text view listed 62 ad-script "Load failed" rows as errors).
     for title, d in (("JavaScript errors", real), ("Pages that died mid-work", crash), ("iPhone app failures", app)):
@@ -627,6 +752,7 @@ def main():
     js, crash, app = js_errors(rows), crashes(rows, service_key()), app_failures(rows, skip)
     five, tracebacks, stale = nginx_5xx(minutes), api_tracebacks(minutes), stale_feeds()
     crons = dead_crons()
+    claims = stale_claims()
 
     try:
         state = json.loads(STATE.read_text())
@@ -650,16 +776,23 @@ def main():
     worth_it = bool(new_msgs) or bool(tracebacks) or bool(stale) or sum(five.values()) >= 5 \
         or sum(v["n"] for v in crash.values()) >= 10 or sum(v["n"] for v in app.values()) >= 3
     if a.digest:
-        worth_it = bool(js or crash or app or five or tracebacks or stale or crons)
+        worth_it = bool(js or crash or app or five or tracebacks or stale or crons or claims)
     else:
         crons = {}
+        # Digest-only for the same reason as a dead cron: a page that has been
+        # frozen for days is a fact with a daily cadence, and the hourly path
+        # would mail the identical sentence 24 times a day for as long as it
+        # lasted, which is how an alert gets filtered into a folder.
+        claims = {}
 
     label = f"last {a.hours:g}h" if a.hours != 24 else "last 24 hours"
-    html, text = build(label, js, crash, app, five, tracebacks, stale, new_msgs, crons)
+    html, text = build(label, js, crash, app, five, tracebacks, stale, new_msgs, crons,
+                       claims)
     counts = (f"js {sum(v['n'] for v in js.values())} ({len(new_msgs)} new), crashes "
               f"{sum(v['n'] for v in crash.values())}, app {sum(v['n'] for v in app.values())}, "
               f"5xx {sum(five.values())}, tracebacks {sum(tracebacks.values())}, stale {len(stale)}"
               + (f", dead crons {len(crons)}" if crons else "")
+              + (f", stale page promises {len(claims)}" if claims else "")
               + (f", ignored unreleased builds {','.join(sorted(skip))}" if skip else ""))
 
     if not worth_it:
@@ -678,6 +811,10 @@ def main():
     # opening the mail.
     if crons:
         bits.append("GROWTH ENGINE NOT RUNNING")
+    # Second only to a dead engine: unlike everything below it, this one is
+    # wrong content on a live page rather than a failure a visitor hit.
+    if claims:
+        bits.append("stale refresh promise on the site")
     if new_msgs:
         bits.append(f"{len(new_msgs)} new JS error{'s' if len(new_msgs) > 1 else ''}")
     if five:

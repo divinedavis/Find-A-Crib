@@ -44,7 +44,6 @@
 		4392AB92BF2A7ADBE5E3A2B9 /* s8.json in Resources */ = {isa = PBXBuildFile; fileRef = C2015DADE5A5CCF0E92E6795 /* s8.json */; };
 		450DC06AD2CF3E94D61F2252 /* PacketView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AFD7E8CAEB3FACB26CA9C38 /* PacketView.swift */; };
 		485DA3E559D8568E0A9F380A /* LotteryFeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDC2C16DFF4D97DB0D222348 /* LotteryFeed.swift */; };
-		4BF1266D9ABC8EA01C9F26AC /* listings.json in Resources */ = {isa = PBXBuildFile; fileRef = E42AA07F206334B8F58225F1 /* listings.json */; };
 		4C60CA570B0FD87DBCAB3270 /* HPDRecords.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4EAE491E6B0AE7EF404FA62 /* HPDRecords.swift */; };
 		4E4AAB3E52DFA41900C2AF65 /* RenterTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5158A8229A91965E3E09A79 /* RenterTools.swift */; };
 		4EA64C3DB786713310EB705F /* LaunchAnimationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 295157FB248292C1429E1C15 /* LaunchAnimationTests.swift */; };
@@ -252,7 +251,6 @@
 		E1D26A69E307FE608B06AA79 /* BuildingRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildingRecord.swift; sourceTree = "<group>"; };
 		E2A5DE06714F5E44D5AA829E /* WebAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebAuth.swift; sourceTree = "<group>"; };
 		E2F8F4D03975F98CA24C386C /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
-		E42AA07F206334B8F58225F1 /* listings.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = listings.json; sourceTree = "<group>"; };
 		E55968482894AE0E8AE7AF6C /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		EA50D389BB3AB7B341BD720D /* ImageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageService.swift; sourceTree = "<group>"; };
 		EA7AFFC523326A9F3DC79EFA /* LotterySnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LotterySnapshot.swift; sourceTree = "<group>"; };
@@ -260,7 +258,7 @@
 		F4EAE491E6B0AE7EF404FA62 /* HPDRecords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HPDRecords.swift; sourceTree = "<group>"; };
 		F77E8A7AB3C846D7A728B148 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		FAA77791FAD208C445611DEA /* Packet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Packet.swift; sourceTree = "<group>"; };
-		"TEMP_3A07DB00-B2AB-43AC-9FE9-BD3B99BC18C0" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_39A91643-417E-4B2B-B443-974C0F09788F" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -463,7 +461,6 @@
 				BE5021FFFE6C939F06530FD2 /* fmr.json */,
 				91590C5C68756FD6803793E5 /* hcr.json */,
 				28EAAE7AF323924F72ADE632 /* housing_law_firms.json */,
-				E42AA07F206334B8F58225F1 /* listings.json */,
 				C2015DADE5A5CCF0E92E6795 /* s8.json */,
 			);
 			path = Data;
@@ -581,10 +578,10 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
-		"TEMP_33AE5020-A595-4D44-819A-D25E09C07B45" /* ios */ = {
+		"TEMP_168DE116-0C5A-41E2-83B0-C51E007BA95C" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_3A07DB00-B2AB-43AC-9FE9-BD3B99BC18C0" /* Secrets.xcconfig */,
+				"TEMP_39A91643-417E-4B2B-B443-974C0F09788F" /* Secrets.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -746,7 +743,6 @@
 				1B0A6E98D9106FCDFD97D973 /* fmr.json in Resources */,
 				6CE136038F9CEFACA5F58F6C /* hcr.json in Resources */,
 				D46AC71D59D616C8FD7A7341 /* housing_law_firms.json in Resources */,
-				4BF1266D9ABC8EA01C9F26AC /* listings.json in Resources */,
 				4392AB92BF2A7ADBE5E3A2B9 /* s8.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -958,7 +954,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 141;
+				CURRENT_PROJECT_VERSION = 142;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -992,7 +988,7 @@
 		};
 		4A043B04EA1D2F1BD0250C61 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_3A07DB00-B2AB-43AC-9FE9-BD3B99BC18C0" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_39A91643-417E-4B2B-B443-974C0F09788F" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -1033,7 +1029,7 @@
 		};
 		7B4EAA1664EF270AD8C579E8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_3A07DB00-B2AB-43AC-9FE9-BD3B99BC18C0" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_39A91643-417E-4B2B-B443-974C0F09788F" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -1106,7 +1102,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 141;
+				CURRENT_PROJECT_VERSION = 142;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;

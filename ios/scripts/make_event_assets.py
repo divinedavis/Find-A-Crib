@@ -6,8 +6,12 @@ The event's name and description sit on top of this art in the App Store,
 so the art carries no headline: the header's teal field, the app tile,
 the street photos and a yellow calendar for the deadline theme.
 
-    ~/.venvs/dhcr-map/bin/python scripts/make_event_assets.py [OUT_DIR]
+    ~/.venvs/dhcr-map/bin/python scripts/make_event_assets.py [OUT_DIR] [--theme heat]
+
+--theme heat (2026-10-16, "Heat season" event): a white radiator with red
+heat waves in place of the calendar.
 """
+import math
 import os
 import sys
 from PIL import Image, ImageDraw
@@ -15,8 +19,11 @@ from PIL import Image, ImageDraw
 from make_header import (gradient, circle_photo, rounded_tile, badge_pin, shadow,
                          PHOTOS, WHITE, YELLOW, NAVY)
 
-OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser(
-    "~/Downloads/ASC-creative-assets/findacrib/event-lotteries")
+ARGS = [a for a in sys.argv[1:] if not a.startswith("--")]
+THEME = sys.argv[sys.argv.index("--theme") + 1] if "--theme" in sys.argv else "lotteries"
+ARGS = [a for a in ARGS if a != THEME]
+OUT = ARGS[0] if ARGS else os.path.expanduser(
+    "~/Downloads/ASC-creative-assets/findacrib/event-" + THEME)
 SIZES = {"card": (3840, 2160), "details": (2160, 3840)}
 
 
@@ -50,18 +57,45 @@ def calendar(base, center, size, s):
     base.alpha_composite(layer, (x, y))
 
 
+def radiator(base, center, size, s):
+    """A white radiator, navy fins, three red heat waves rising off it."""
+    w, h = int(size), int(size * 0.9)
+    layer = Image.new("RGBA", (w + int(40 * s), h + int(40 * s)), (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
+    o = int(20 * s)
+    top = o + int(h * 0.34)
+    d.rounded_rectangle([o, top, o + w, o + h], radius=int(w * 0.08), fill=WHITE + (255,))
+    fins = 6
+    fw = w * 0.84 / fins
+    for i in range(fins):
+        x0 = o + w * 0.08 + i * fw + fw * 0.2
+        d.rounded_rectangle([x0, top + h * 0.1, x0 + fw * 0.6, o + h - h * 0.1], radius=int(fw * 0.3), fill=NAVY + (255,))
+    red = (230, 60, 60, 255)
+    lw = max(4, int(w * 0.035))
+    for i in (0.25, 0.5, 0.75):
+        cx = o + w * i
+        pts = []
+        for k in range(21):
+            t = k / 20
+            pts.append((cx + math.sin(t * math.pi * 3) * w * 0.05, top - h * 0.04 - t * h * 0.26))
+        d.line(pts, fill=red, width=lw, joint="curve")
+    x, y = int(center[0] - layer.width / 2), int(center[1] - layer.height / 2)
+    shadow(base, layer.split()[3], (x, y), int(24 * s), dy=12 * s)
+    base.alpha_composite(layer, (x, y))
+
+
 def render(w, h):
     s = min(w, h) / 720.0
     base = gradient(w, h).convert("RGBA")
     if w > h:
-        calendar(base, (w * 0.5, h * 0.5), h * 0.5, s)
+        (radiator if THEME == "heat" else calendar)(base, (w * 0.5, h * 0.5), h * 0.5, s)
         circle_photo(base, PHOTOS["brownstone"], (w * 0.18, h * 0.62), h * 0.3, 6 * s, s)
         badge_pin(base, (w * 0.18 + h * 0.11, h * 0.62 + h * 0.11), s, diam=70)
         circle_photo(base, PHOTOS["brick"], (w * 0.83, h * 0.42), h * 0.34, 6 * s, s)
         circle_photo(base, PHOTOS["corner"], (w * 0.72, h * 0.16), h * 0.13, 5 * s, s)
         rounded_tile(base, (w * 0.12, h * 0.2), h * 0.17, 8, s)
     else:
-        calendar(base, (w * 0.5, h * 0.42), w * 0.6, s)
+        (radiator if THEME == "heat" else calendar)(base, (w * 0.5, h * 0.42), w * 0.6, s)
         circle_photo(base, PHOTOS["brownstone"], (w * 0.27, h * 0.75), w * 0.36, 6 * s, s)
         badge_pin(base, (w * 0.27 + w * 0.13, h * 0.75 + w * 0.13), s, diam=70)
         circle_photo(base, PHOTOS["brick"], (w * 0.76, h * 0.68), w * 0.3, 6 * s, s)

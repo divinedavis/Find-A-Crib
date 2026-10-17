@@ -86,6 +86,18 @@ def submit(asc, app_id, ids):
             "reviewSubmission": {"data": {"type": "reviewSubmissions", "id": draft["id"]}},
             "appStoreVersion": {"data": {"type": "appStoreVersions", "id": ids["version"]}}}}})
         print("  added version", ids["version_string"], "to the submission")
+    # Draft In-App Events ride along (2026-10-16): Apple allows one open
+    # submission per app, so an event made between versions would otherwise
+    # wait for a submission of its own. One that fails to add is reported and
+    # left in draft; it never blocks the version.
+    for ev in asc.get(f"/apps/{app_id}/appEvents")["data"]:
+        if ev["attributes"].get("eventState") != "DRAFT":
+            continue
+        r = asc._send("POST", m.API + "/reviewSubmissionItems", json={"data": {"type": "reviewSubmissionItems", "relationships": {
+            "reviewSubmission": {"data": {"type": "reviewSubmissions", "id": draft["id"]}},
+            "appEvent": {"data": {"type": "appEvents", "id": ev["id"]}}}}})
+        print("  added event", ev["attributes"]["referenceName"] if r.status_code in (200, 201)
+              else f"NOT added: {ev['attributes']['referenceName']} ({r.status_code} {r.text[:200]})")
     d = asc.patch(f"/reviewSubmissions/{draft['id']}", {"data": {"type": "reviewSubmissions", "id": draft["id"], "attributes": {"submitted": True}}})
     print("  submission state:", d["data"]["attributes"]["state"])
     v = asc.get(f"/appStoreVersions/{ids['version']}")["data"]["attributes"]

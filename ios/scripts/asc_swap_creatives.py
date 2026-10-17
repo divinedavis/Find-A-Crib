@@ -219,7 +219,9 @@ def main():
     while True:
         try:
             rc = swap(a.prefix, a.dry_run)
-        except SystemExit as e:
+        # A dropped connection (Wi-Fi off, DNS down) killed the 10/15 poller;
+        # in --wait mode it is one missed poll, not the end of the watch.
+        except (SystemExit, requests.RequestException) as e:
             if not a.wait:
                 raise
             log("poll failed:", e)
@@ -227,7 +229,7 @@ def main():
         if rc == 0 and a.wait and a.until_version and not a.dry_run:
             try:
                 live = live_version()
-            except SystemExit as e:
+            except (SystemExit, requests.RequestException) as e:
                 live = None
                 log("poll failed:", e)
             if live != a.until_version and time.time() <= deadline:

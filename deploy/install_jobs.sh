@@ -188,6 +188,7 @@ say "logs 0640"
 # A new job's log has to exist before cron's >> runs as scraper, who can't create files in /var/log.
 [ -e /var/log/rentmap-casa.log ] || install -o scraper -g adm -m 0640 /dev/null /var/log/rentmap-casa.log
 [ -e /var/log/rentmap-mail.log ] || install -o scraper -g adm -m 0640 /dev/null /var/log/rentmap-mail.log
+[ -e /var/log/rentmap-chat-reports.log ] || install -o scraper -g adm -m 0640 /dev/null /var/log/rentmap-chat-reports.log
 for f in /var/log/rentmap-*.log; do
   case "$f" in
     */rentmap-errors.log) chown facops:adm "$f" ;;

@@ -1,0 +1,8 @@
+# /etc/cron.d/rentmap-chat-reports — mirrored from deploy/cron-rentmap-chat-reports.
+# Building chat reports (db/0063): each new one is mailed to ERROR_REPORT_EMAIL
+# within 15 minutes; Apple's guideline 1.2 expects action within 24 hours.
+# Runs as scraper with just the Supabase, SMTP and owner-address sets.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+CRON_TZ=America/New_York
+*/15 * * * * scraper cd /root/Find-A-Crib && fac-run supabase,smtp,owner -- python3 chat_reports.py >> /var/log/rentmap-chat-reports.log 2>&1

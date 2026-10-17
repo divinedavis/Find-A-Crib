@@ -1,0 +1,8 @@
+# /etc/cron.d/rentmap-mail — mirrored from deploy/cron-rentmap-mail.
+# Files "Mail Delivery Subsystem" / MAILER-DAEMON bounce notices from the
+# findacrib.com mailbox INBOX into its "Bounces" folder (mail_bounce_sort.py).
+# Private Email's ManageSieve never answers, so this stands in for a filter.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+CRON_TZ=America/New_York
+*/10 * * * * scraper cd /root/Find-A-Crib && fac-run smtp -- python3 mail_bounce_sort.py >> /var/log/rentmap-mail.log 2>&1

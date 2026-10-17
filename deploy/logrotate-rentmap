@@ -11,7 +11,7 @@
     notifempty
     create 0640 facops adm
 }
-/var/log/rentmap-alerts.log /var/log/rentmap-saved.log /var/log/rentmap-casa.log /var/log/rentmap-growth.log
+/var/log/rentmap-alerts.log /var/log/rentmap-saved.log /var/log/rentmap-casa.log /var/log/rentmap-mail.log /var/log/rentmap-growth.log
 /var/log/rentmap-rerentals.log /var/log/rentmap-hcr.log /var/log/rentmap-scrape.log
 /var/log/rentmap-s8.log /var/log/rentmap-openings.log /var/log/rentmap-events.log
 /var/log/rentmap-flyers.log /var/log/rentmap-nj.log /var/log/rentmap-cities.log

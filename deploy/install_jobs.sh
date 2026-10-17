@@ -187,6 +187,7 @@ say "logs 0640"
 [ -e /var/log/rentmap-applesubs.log ] || install -o facsubs -g adm -m 0640 /dev/null /var/log/rentmap-applesubs.log
 # A new job's log has to exist before cron's >> runs as scraper, who can't create files in /var/log.
 [ -e /var/log/rentmap-casa.log ] || install -o scraper -g adm -m 0640 /dev/null /var/log/rentmap-casa.log
+[ -e /var/log/rentmap-mail.log ] || install -o scraper -g adm -m 0640 /dev/null /var/log/rentmap-mail.log
 for f in /var/log/rentmap-*.log; do
   case "$f" in
     */rentmap-errors.log) chown facops:adm "$f" ;;

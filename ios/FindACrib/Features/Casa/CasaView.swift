@@ -24,6 +24,12 @@ struct CasaView: View {
     /// When the shown calls/crime came from the phone because NYC's data
     /// couldn't be reached: the time they were saved.
     @State private var offlineSince: Date?
+    /// The saved copy is up because NYC's servers failed, not the phone's
+    /// connection: the banner says so instead of "Offline".
+    @State private var serverFailed = false
+    /// The last lookup was cancelled (tab switch mid-load): run it again the
+    /// next time the screen appears.
+    @State private var interrupted = false
     @State private var showPlus = false
     /// Which sign-in is open, as one value: two flags set together opened
     /// the alerts sheet from "See the full history" (2026-10-15 UI test).
@@ -60,13 +66,16 @@ struct CasaView: View {
                 .padding(.top, 12)
             }
             .scrollDismissesKeyboard(.immediately)
-            .refreshable { if let p = place, !CommandLine.arguments.contains("--casa-demo") { await open(p) } }
+            // Unstructured, so SwiftUI ending the refresh gesture can't cancel
+            // the lookup it started (a cancelled lookup read as "Offline").
+            .refreshable { if let p = place, !CommandLine.arguments.contains("--casa-demo") { await Task { await open(p) }.value } }
             .background(SE.canvas)
         }
         .background(SE.canvas)
         .task {
             if CommandLine.arguments.contains("--casa-demo") { showDemo(); return }
             if place == nil, let p = try? JSONDecoder().decode(Casa.Place.self, from: savedPlace) { await open(p) }
+            else if interrupted, let p = place { await open(p) }
             await watch.load(token: auth.session?.accessToken)
         }
         .task(id: query) {
@@ -146,8 +155,10 @@ struct CasaView: View {
 
         if let since = offlineSince {
             HStack(alignment: .top, spacing: 8) {
-                Image(systemName: "wifi.slash").foregroundStyle(SE.ink3)
-                Text("Offline. Showing what you saw \(since.formatted(.relative(presentation: .named))). Pull down to refresh.")
+                let ago = since.formatted(.relative(presentation: .named))
+                Image(systemName: serverFailed ? "exclamationmark.icloud" : "wifi.slash").foregroundStyle(SE.ink3)
+                Text(serverFailed ? String(localized: "NYC's 311 data didn't answer. Showing what you saw \(ago). Pull down to try again.")
+                                  : String(localized: "Offline. Showing what you saw \(ago). Pull down to refresh."))
                     .font(.se(14)).foregroundStyle(SE.ink3)
             }
             .padding(.horizontal, 16).padding(.vertical, 10).frame(maxWidth: .infinity, alignment: .leading)
@@ -378,7 +389,7 @@ struct CasaView: View {
         place = p
         older = nil
         showAllCalls = false
-        crime = []; crimeThrough = nil; crimeFailed = false; offlineSince = nil
+        crime = []; crimeThrough = nil; crimeFailed = false; offlineSince = nil; serverFailed = false; interrupted = false
         savedPlace = (try? JSONEncoder().encode(p)) ?? Data()
         Analytics.shared.track("casa_lookup", ["bbl": p.bbl])
         failed = false
@@ -397,9 +408,13 @@ struct CasaView: View {
             if place?.bbl == p.bbl { calls = c }
             Casa.Saved.put(Casa.Snapshot(bbl: p.bbl, calls: c, savedAt: Date()))
         } catch {
+            let why = Casa.failure(error)
             if place?.bbl == p.bbl {
-                if let s = saved, s.calls != nil { offlineSince = s.savedAt } else { failed = true; calls = [] }
+                if why == .cancelled { interrupted = true }
+                else if let s = saved, s.calls != nil { offlineSince = s.savedAt; serverFailed = why == .server }
+                else { failed = true; calls = [] }
             }
+            if why == .server { Analytics.shared.track("app_error", ["where": "casa-311", "text": String(describing: error).prefix(80).description]) }
         }
         if place?.bbl == p.bbl { loading = false }
         await crimeDone

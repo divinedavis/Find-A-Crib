@@ -17241,6 +17241,34 @@
         }
       }
     },
+    "NYC's 311 data didn't answer. Showing what you saw %@. Pull down to try again." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los datos del 311 de NYC no respondieron. Mostrando lo que viste %@. Desliza hacia abajo para intentarlo de nuevo."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "NYC 311 데이터가 응답하지 않았습니다. %@에 본 내용을 보여 드립니다. 아래로 당겨 다시 시도하세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "纽约市 311 数据没有响应。显示的是你%@看到的内容。下拉可重试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "紐約市 311 資料沒有回應。顯示的是你%@看到的內容。下拉可重試。"
+          }
+        }
+      }
+    },
     "NYC's data service didn't answer. Check your connection and try again." : {
       "localizations" : {
         "es" : {
@@ -19752,26 +19780,26 @@
       "localizations" : {
         "es" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Desconectado. Mostrando lo que has visto %@. Baja para actualizar."
+            "state" : "translated",
+            "value" : "Sin conexión. Mostrando lo que viste %@. Desliza hacia abajo para actualizar."
           }
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "오프라인. 당신이 본 것을 표시합니다 %@. 아래로 당겨 새로 고침하세요."
+            "state" : "translated",
+            "value" : "오프라인입니다. %@에 본 내용을 보여 드립니다. 아래로 당겨 새로 고치세요."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "离线。显示您所看到的内容%@。向下拉取以刷新。"
+            "state" : "translated",
+            "value" : "离线。显示的是你%@看到的内容。下拉可刷新。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "離線。顯示您所看到的內容%@。向下拉取以重新整理。"
+            "state" : "translated",
+            "value" : "離線。顯示的是你%@看到的內容。下拉可重新整理。"
           }
         }
       }

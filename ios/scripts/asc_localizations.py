@@ -183,11 +183,11 @@ def apply():
 
 
 WHATS_NEW = {
-    "es-MX": "• Teléfono del dueño en una tarjeta ahora abre el edificio directamente en el agente administrador y su número.\n• Otras mejoras.",
-    "zh-Hans": "• 点楼盘卡片上的“业主电话”，现在会直接打开该楼的管理代理和电话号码。\n• 其他改进。",
-    "zh-Hant": "• 點樓盤卡片上的「業主電話」，現在會直接打開該樓的管理代理和電話號碼。\n• 其他改進。",
-    "ru": "• Кнопка «Телефон владельца» на карточке теперь открывает дом сразу на управляющем агенте и его номере.\n• Небольшие исправления.",
-    "ko": "• 건물 카드의 소유주 전화를 누르면 이제 건물의 관리 대리인과 전화번호로 바로 이동합니다.\n• 기타 개선.",
+    "es-MX": "• Teléfono del dueño en una tarjeta ahora abre el edificio directamente en el agente administrador y su número.\n• Your Crib ya no dice que estás sin conexión cuando sí tienes conexión; si los datos del 311 de NYC fallan, lo dice.\n• Otras mejoras.",
+    "zh-Hans": "• 点楼盘卡片上的“业主电话”，现在会直接打开该楼的管理代理和电话号码。\n• Your Crib 联网时不再误显示“离线”；纽约市 311 数据无响应时会如实说明。\n• 其他改进。",
+    "zh-Hant": "• 點樓盤卡片上的「業主電話」，現在會直接打開該樓的管理代理和電話號碼。\n• Your Crib 連網時不再誤顯示「離線」；紐約市 311 資料無回應時會如實說明。\n• 其他改進。",
+    "ru": "• Кнопка «Телефон владельца» на карточке теперь открывает дом сразу на управляющем агенте и его номере.\n• Your Crib больше не пишет «Нет сети», когда интернет есть; если данные 311 Нью-Йорка недоступны, так и говорит.\n• Небольшие исправления.",
+    "ko": "• 건물 카드의 소유주 전화를 누르면 이제 건물의 관리 대리인과 전화번호로 바로 이동합니다.\n• Your Crib이 인터넷에 연결되어 있을 때 더 이상 오프라인이라고 표시하지 않으며, NYC 311 데이터가 응답하지 않으면 그렇게 알려 줍니다.\n• 기타 개선.",
 }
 
 

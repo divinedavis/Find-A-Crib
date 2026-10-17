@@ -194,6 +194,23 @@ enum Casa {
         throw URLError(.badServerResponse)
     }
 
+    /// Why a lookup failed. Every failure used to read "Offline", including a
+    /// lookup the app cancelled itself — pull to refresh redraws the list and
+    /// SwiftUI cancels the refresh, so a phone on Wi-Fi said "Offline.
+    /// Showing what you saw 3 seconds ago" (owner, 2026-10-17).
+    enum Failure: Equatable { case cancelled, offline, server }
+
+    static func failure(_ e: Error) -> Failure {
+        if e is CancellationError { return .cancelled }
+        guard let u = e as? URLError else { return .server }
+        switch u.code {
+        case .cancelled: return .cancelled
+        case .notConnectedToInternet, .networkConnectionLost, .dataNotAllowed,
+             .internationalRoamingOff, .cannotFindHost, .dnsLookupFailed: return .offline
+        default: return .server
+        }
+    }
+
     /// Busy or briefly down: worth another try. A bad query is not.
     static func retryable(_ status: Int) -> Bool { status == 429 || (500...599).contains(status) }
 

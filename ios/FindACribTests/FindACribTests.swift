@@ -1341,6 +1341,19 @@ final class CasaTests: XCTestCase {
         for s in [200, 400, 403, 404] { XCTAssertFalse(Casa.retryable(s), "\(s)") }
     }
 
+    func testOnlyARealConnectionProblemReadsAsOffline() {
+        // A cancelled refresh said "Offline" on Wi-Fi (owner, 10/17).
+        XCTAssertEqual(Casa.failure(CancellationError()), .cancelled)
+        XCTAssertEqual(Casa.failure(URLError(.cancelled)), .cancelled)
+        for c in [URLError.Code.notConnectedToInternet, .networkConnectionLost, .dataNotAllowed] {
+            XCTAssertEqual(Casa.failure(URLError(c)), .offline, "\(c)")
+        }
+        for c in [URLError.Code.badServerResponse, .timedOut, .cannotParseResponse] {
+            XCTAssertEqual(Casa.failure(URLError(c)), .server, "\(c)")
+        }
+        XCTAssertEqual(Casa.failure(DecodingError.dataCorrupted(.init(codingPath: [], debugDescription: ""))), .server)
+    }
+
     func testTypesReadInSentenceCase() {
         XCTAssertEqual(Casa.tidy("UNSANITARY CONDITION"), "Unsanitary condition")
         XCTAssertEqual(Casa.tidy("Noise - Residential"), "Noise - Residential", "mixed case stays as the City wrote it")

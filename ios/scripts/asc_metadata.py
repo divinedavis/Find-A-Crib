@@ -89,6 +89,7 @@ Find A Crib is an independent, informational tool. It is not a broker, does not 
 """
 
 WHATS_NEW = """• Owner Phone on a building card now opens the building right at its managing agent and phone number.
+• Your Crib no longer says you're offline when you're connected; if NYC's 311 data is down, it says that instead.
 • Smaller fixes.
 """
 

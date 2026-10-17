@@ -162,11 +162,14 @@ final class AppNav {
     static weak var current: AppNav?
     /// A link that arrived before the buildings loaded: opened after.
     var pending: DeepLink?
+    /// The building whose page should open on its Managing agent section:
+    /// the card's Owner Phone button (owner, 2026-10-17). Cleared once used.
+    var scrollToAgent: String?
     /// Set by a Siri intent that launched the app before AppNav existed.
     static var launchLink: DeepLink?
 }
 
-/// `--tab activity|profile`, `--route results|map|detail[:bbl]` — used by the
+/// `--tab activity|profile`, `--route results|map|detail[:bbl]|detail-agent[:bbl]` — used by the
 /// screenshot script and UI tests to land on a screen directly.
 enum LaunchArgs {
     @MainActor static func apply(to nav: AppNav, store: DataStore) {
@@ -226,6 +229,8 @@ enum LaunchArgs {
                 ?? store.buildings.first?.bbl ?? ""
             let bbl: String = asked ?? withRecord ?? fallback
             nav.searchPath = [.results(q), .building(bbl)]
+            // detail-agent[:bbl] — as if Owner Phone was tapped.
+            if r.hasPrefix("detail-agent") { nav.scrollToAgent = bbl }
         }
     }
 }

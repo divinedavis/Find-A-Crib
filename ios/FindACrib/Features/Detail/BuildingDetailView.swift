@@ -39,6 +39,7 @@ struct BuildingDetailView: View {
         return VStack(spacing: 0) {
             NavyBarBackdrop()
 
+            ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     hero
@@ -69,7 +70,7 @@ struct BuildingDetailView: View {
                         section(String(localized: "Rent")) { rentBlock }
                     }
 
-                    if store.city.isNYC { section(String(localized: "Managing agent")) { agentBlock } }
+                    if store.city.isNYC { section(String(localized: "Managing agent")) { agentBlock }.id(Self.agentAnchor) }
 
                     if store.city.isNYC { voucherCard }
 
@@ -117,6 +118,8 @@ struct BuildingDetailView: View {
                 .readableColumn(760)
             }
             .background(SE.canvas)
+            .task(id: b.bbl) { await scrollToAgentIfAsked(proxy) }
+            }
         }
         .background(SE.canvas)
         .safeAreaInset(edge: .bottom) {
@@ -214,6 +217,24 @@ struct BuildingDetailView: View {
         // Re-read when Plus arrives, so a new member sees the number at once.
         .task(id: "\(auth.isSignedIn)-\(auth.hasPlus)") { await loadContacts() }
         .task(id: "\(b.bbl)-\(auth.isSignedIn)") { await loadInspections() }
+    }
+
+    static let agentAnchor = "agent-section"
+
+    /// Owner Phone on a card opens the page on Managing agent (owner,
+    /// 2026-10-17). Scrolls once the page has laid out, and again when the
+    /// agent and the sections above it (inspections) have loaded, since they
+    /// change the height above the anchor.
+    private func scrollToAgentIfAsked(_ proxy: ScrollViewProxy) async {
+        guard store.city.isNYC, nav.scrollToAgent == b.bbl else { return }
+        nav.scrollToAgent = nil
+        try? await Task.sleep(for: .milliseconds(350))
+        proxy.scrollTo(Self.agentAnchor, anchor: .top)
+        for _ in 0..<12 {
+            try? await Task.sleep(for: .milliseconds(250))
+            if !contactsLoading { break }
+        }
+        withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo(Self.agentAnchor, anchor: .top) }
     }
 
     private func loadContacts() async {

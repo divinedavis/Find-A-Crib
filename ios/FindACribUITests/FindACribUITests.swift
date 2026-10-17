@@ -540,6 +540,24 @@ final class FindACribUITests: XCTestCase {
                       "signed out, Owner Phone opens the agent sign-in sheet")
     }
 
+    /// A Plus member's Owner Phone tap opens the building on its Managing
+    /// agent section, phone number in view (owner, 2026-10-17).
+    /// `--route detail-agent` lands exactly where that tap does; the tap
+    /// itself needs a real Plus session, which UI tests don't have.
+    func testOwnerPhoneOpensBuildingAtManagingAgent() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--route", "detail-agent"]
+        app.launch()
+        XCTAssertTrue(app.buttons["detail-menu"].waitForExistence(timeout: 30))
+        let agent = app.staticTexts["Managing agent"].firstMatch
+        XCTAssertTrue(agent.waitForExistence(timeout: 10))
+        let h = app.windows.firstMatch.frame.height
+        let onTop = NSPredicate { _, _ in agent.isHittable && agent.frame.minY < h * 0.35 }
+        wait(for: [XCTNSPredicateExpectation(predicate: onTop, object: nil)], timeout: 10)
+        XCTAssertFalse(app.staticTexts["Violations & inspections"].isHittable, "the page scrolled past the sections above")
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "owner-phone-agent"; shot.lifetime = .keepAlways; add(shot)
+    }
+
     /// Google's ads live in the feed, in the re-rental slots (Ads.swift,
     /// owner 2026-09-25): no banner under the app, and the 3rd tile is an ad
     /// or — when none was loaded in time — the re-rental, never a blank.

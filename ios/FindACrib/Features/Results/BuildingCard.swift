@@ -260,9 +260,11 @@ struct BuildingCard: View {
 /// the building this year, one at a time ("Bedbugs (2)", then "Rats (1)"),
 /// or "Owner Phone" when the year is clean. Signed out, a tap opens the
 /// matching sign-in preview; signed in, it opens the pest records, or the
-/// building (where the phone is) for Plus, or the Plus sheet for the phone.
+/// building scrolled to its Managing agent section (where the phone is)
+/// for Plus, or the Plus sheet for the phone.
 struct CardRecordsButton: View {
     @Environment(AuthService.self) private var auth
+    @Environment(AppNav.self) private var nav
     let building: Building
     let onOpen: (Route) -> Void
     @State private var kinds: [(word: String, count: Int)]? = nil
@@ -309,7 +311,7 @@ struct CardRecordsButton: View {
         Analytics.shared.track("card_phone_click", ["bbl": building.bbl, "signed_in": auth.isSignedIn, "plus": auth.hasPlus])
         if !auth.isSignedIn { showAgentSignIn = true }
         else if !auth.hasPlus { showPaywall = true }
-        else { onOpen(.building(building.bbl)) }
+        else { nav.scrollToAgent = building.bbl; onOpen(.building(building.bbl)) }
     }
 
     private func button(id: String, icon: String, text: String, action: @escaping () -> Void) -> some View {

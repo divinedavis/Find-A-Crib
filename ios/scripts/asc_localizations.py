@@ -183,11 +183,11 @@ def apply():
 
 
 WHATS_NEW = {
-    "es-MX": "• Find A Crib ahora está en español. Sigue el idioma de tu iPhone, o elígelo en Perfil › Idioma.\n• Your Crib: después de Mostrar todo, el botón Mostrar menos vuelve a plegar la lista de llamadas al 311.\n• Las alertas de loterías ahora solo incluyen loterías para las que califican el tamaño y los ingresos de tu hogar, y ya no se repiten cuando un anuncio desaparece un momento del sitio de la ciudad.\n• Otras mejoras.",
-    "zh-Hans": "• Find A Crib 现已支持简体中文。默认跟随 iPhone 的语言，也可在“个人资料 › 语言”中选择。\n• Your Crib：点“显示全部”后，可用“收起”按钮把 311 投诉列表收回。\n• 住房抽签提醒现在只推送你的家庭人数和收入符合条件的抽签；房源在市政府网站上短暂消失后也不会再重复提醒。\n• 其他改进。",
-    "zh-Hant": "• Find A Crib 現已支援繁體中文。預設跟隨 iPhone 的語言，也可在「個人資料 › 語言」中選擇。\n• Your Crib：點「顯示全部」後，可用「收起」按鈕把 311 投訴列表收回。\n• 住房抽籤提醒現在只推送你的家庭人數和收入符合資格的抽籤；房源在市政府網站上短暫消失後也不會再重複提醒。\n• 其他改進。",
-    "ru": "• Your Crib: после «Показать все» кнопка «Свернуть» снова сворачивает список звонков в 311.\n• Уведомления о лотереях теперь приходят только о тех, куда ваша семья проходит по размеру и доходу, и больше не повторяются, если объявление ненадолго пропадает с сайта города.\n• Прочие улучшения.",
-    "ko": "• Find A Crib이 이제 한국어를 지원합니다. iPhone 언어를 따르며, 프로필 › 언어에서 선택할 수도 있습니다.\n• Your Crib: 모두 보기 후 간단히 보기 버튼으로 311 신고 목록을 다시 접을 수 있습니다.\n• 로터리 알림은 이제 가구원 수와 소득 기준에 맞는 로터리만 알려 드리며, 시 웹사이트에서 공고가 잠시 사라졌다 나타나도 다시 알리지 않습니다.\n• 그 밖의 개선.",
+    "es-MX": "• Teléfono del dueño en una tarjeta ahora abre el edificio directamente en el agente administrador y su número.\n• Otras mejoras.",
+    "zh-Hans": "• 点楼盘卡片上的“业主电话”，现在会直接打开该楼的管理代理和电话号码。\n• 其他改进。",
+    "zh-Hant": "• 點樓盤卡片上的「業主電話」，現在會直接打開該樓的管理代理和電話號碼。\n• 其他改進。",
+    "ru": "• Кнопка «Телефон владельца» на карточке теперь открывает дом сразу на управляющем агенте и его номере.\n• Небольшие исправления.",
+    "ko": "• 건물 카드의 소유주 전화를 누르면 이제 건물의 관리 대리인과 전화번호로 바로 이동합니다.\n• 기타 개선.",
 }
 
 

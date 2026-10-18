@@ -13,10 +13,16 @@ final class FindACribUITests: XCTestCase {
         continueAfterFailure = false
         app = XCUIApplication()
         app.launchArguments = ["--no-launch-prompt", "--no-launch-splash"]   // the notifications card would sit on every tap
-        app.launch()
+        // Animations 100x (FastAnimations.swift). The environment survives
+        // the tests' own launchArguments, so every relaunch keeps it.
+        app.launchEnvironment["FAC_FAST_ANIMATIONS"] = "1"
+        // No launch here (2026-10-18): 45 of these tests relaunch with their
+        // own arguments first thing, so a launch in setUp was thrown away
+        // each time. A test that wants the default app calls app.launch().
     }
 
     func testSearchToDetailAndBack() throws {
+        app.launch()
         let search = app.buttons["search-button"]
         XCTAssertTrue(search.waitForExistence(timeout: 20))
         // wait for the dataset: the button label carries the live count
@@ -73,6 +79,7 @@ final class FindACribUITests: XCTestCase {
     /// Apple first, then Google, then email. Build 14 shipped without the
     /// Apple button and was rejected for exactly this.
     func testSignInOffersAppleFirst() throws {
+        app.launch()
         XCTAssertTrue(app.buttons["tab-Profile"].waitForExistence(timeout: 20))
         app.buttons["tab-Profile"].tap()
         let apple = app.buttons["sign-in-apple"], google = app.buttons["sign-in-google"], email = app.buttons["sign-in-email"]
@@ -83,6 +90,7 @@ final class FindACribUITests: XCTestCase {
     }
 
     func testTabsSwitch() throws {
+        app.launch()
         XCTAssertTrue(app.buttons["tab-My Activity"].waitForExistence(timeout: 20))
         app.buttons["tab-My Activity"].tap()
         XCTAssertTrue(app.staticTexts["My Activity"].waitForExistence(timeout: 5))
@@ -96,6 +104,7 @@ final class FindACribUITests: XCTestCase {
     /// last (owner, 2026-10-11) — pinned by position so a reshuffle of the
     /// form cannot quietly put them back.
     func testSearchButtonSitsAbovePrice() throws {
+        app.launch()
         let search = app.buttons["search-button"]
         let minBox = app.buttons["price-Minimum price"]
         XCTAssertTrue(search.waitForExistence(timeout: 20))
@@ -107,6 +116,7 @@ final class FindACribUITests: XCTestCase {
     /// Bedrooms sits directly under Location, above the Search button
     /// (owner, 2026-10-13).
     func testBedroomsSitsUnderLocation() throws {
+        app.launch()
         let location = app.descendants(matching: .any)["location-field"].firstMatch
         let beds = app.descendants(matching: .any)["beds-row"].firstMatch
         let search = app.buttons["search-button"]
@@ -118,6 +128,7 @@ final class FindACribUITests: XCTestCase {
     }
 
     func testLocationPickerFiltersResults() throws {
+        app.launch()
         let field = app.descendants(matching: .any)["location-field"].firstMatch
         XCTAssertTrue(field.waitForExistence(timeout: 20))
         field.tap()
@@ -337,6 +348,7 @@ final class FindACribUITests: XCTestCase {
     /// flaky part of this suite, and the wheel path above already proves the
     /// sheet commits.
     func testPriceCustomTabOffersTypedEntry() throws {
+        app.launch()
         let minBox = app.buttons["price-Minimum price"]
         XCTAssertTrue(minBox.waitForExistence(timeout: 20))
         minBox.tap()

@@ -86,6 +86,7 @@
 		A7BC7233A9EE3F6D66EA20D7 /* AlertPushSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC6E06825A92B3E0685DA9A4 /* AlertPushSheet.swift */; };
 		A9D531537DD9B5581365FBFB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CCFBDF3CE45EAFE74FADE6C4 /* Assets.xcassets */; };
 		AA818F2CAF355C2D26CEDCEE /* LaunchPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3EEF5834FCD3DDE360290CF /* LaunchPresentation.swift */; };
+		AD0D5520554F07ECEE39F3C0 /* FastAnimations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 734C7CC668EBF4DFC68A2444 /* FastAnimations.swift */; };
 		B111E02FFA19C4DE7A92BCBB /* Gunzip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F650FE59DC17EC3E4DC6591 /* Gunzip.swift */; };
 		B1FC0A4E1574A530A13E9C17 /* OpeningsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 951051D711DA793228F1970A /* OpeningsView.swift */; };
 		B74A881505A7B66143A88F58 /* KeyboardDismiss.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84CCDA718B608CCC14A7215A /* KeyboardDismiss.swift */; };
@@ -194,6 +195,7 @@
 		67EAA0737B2B2E5474B5BE9D /* MyActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyActivityView.swift; sourceTree = "<group>"; };
 		704D4F6DFB370ACF11ACF60E /* FindACribApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FindACribApp.swift; sourceTree = "<group>"; };
 		71591CE242BD5799D49A3AFC /* FindACribTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FindACribTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		734C7CC668EBF4DFC68A2444 /* FastAnimations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FastAnimations.swift; sourceTree = "<group>"; };
 		74C65B96332BA9B081E02255 /* Metrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Metrics.swift; sourceTree = "<group>"; };
 		785068564CE6917829662E1D /* PerformanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceTests.swift; sourceTree = "<group>"; };
 		79122B1DAE5687F075A32A34 /* HPDRecordsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HPDRecordsView.swift; sourceTree = "<group>"; };
@@ -264,7 +266,7 @@
 		F4EAE491E6B0AE7EF404FA62 /* HPDRecords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HPDRecords.swift; sourceTree = "<group>"; };
 		F77E8A7AB3C846D7A728B148 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		FAA77791FAD208C445611DEA /* Packet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Packet.swift; sourceTree = "<group>"; };
-		"TEMP_6F44DCA7-5220-4719-AA98-50A418305764" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_919CB761-A3AC-4C10-8B98-447123DC8B44" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -429,6 +431,7 @@
 			isa = PBXGroup;
 			children = (
 				95CEDD0F9F7AC3FC9847FD11 /* DeepLink.swift */,
+				734C7CC668EBF4DFC68A2444 /* FastAnimations.swift */,
 				704D4F6DFB370ACF11ACF60E /* FindACribApp.swift */,
 				DB6A940EC2510A1E63699B6A /* RootView.swift */,
 				8DBD5A6961C02830CE2C6A00 /* SiriIntents.swift */,
@@ -587,10 +590,10 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
-		"TEMP_E94CE23F-A7CF-443F-9893-EEFBD6620F35" /* ios */ = {
+		"TEMP_B30E9E79-231E-40FA-8C11-4B109F59C846" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_6F44DCA7-5220-4719-AA98-50A418305764" /* Secrets.xcconfig */,
+				"TEMP_919CB761-A3AC-4C10-8B98-447123DC8B44" /* Secrets.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -800,6 +803,7 @@
 				FF9A0CEB29AD7474B6983303 /* DataStore.swift in Sources */,
 				7DCDD03815DAEFAB4EE4257E /* DeepLink.swift in Sources */,
 				372BCD3B0D02BF530AEFDD93 /* EmailSignInView.swift in Sources */,
+				AD0D5520554F07ECEE39F3C0 /* FastAnimations.swift in Sources */,
 				F01F8CC2D35CFD12A1556DFC /* Featured.swift in Sources */,
 				71EC779912AE74BE0D6EA8D8 /* FiltersSheet.swift in Sources */,
 				2EF088CAB2039D21D89C7A35 /* FindACribApp.swift in Sources */,
@@ -1000,7 +1004,7 @@
 		};
 		4A043B04EA1D2F1BD0250C61 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_6F44DCA7-5220-4719-AA98-50A418305764" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_919CB761-A3AC-4C10-8B98-447123DC8B44" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -1041,7 +1045,7 @@
 		};
 		7B4EAA1664EF270AD8C579E8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_6F44DCA7-5220-4719-AA98-50A418305764" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_919CB761-A3AC-4C10-8B98-447123DC8B44" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;

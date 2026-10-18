@@ -10,7 +10,10 @@ struct FindACribApp: App {
     @State private var auth = AuthService()
     @State private var plus = PlusStore()
     @State private var language = AppLanguage.shared
-    init() { AppLanguage.install() }
+    init() {
+        AppLanguage.install()
+        FastAnimations.installIfTesting()
+    }
     @Environment(\.scenePhase) private var scenePhase
     @State private var wasBackgrounded = false
 

@@ -18,6 +18,12 @@ def test_the_same_words_with_our_stack_are_not():
     assert not any(v["noise"] for v in js.values())
 
 
+def test_a_safari_extension_error_is_noise():
+    js = E.js_errors([row("_0x43b06e is not an Object. (evaluating '_0x1617de in _0x43b06e')",
+                          at="IhDtT@webkit-masked-url://hidden/:14816:55")])
+    assert all(v["noise"] for v in js.values())
+
+
 def test_a_real_error_is_not_noise():
     js = E.js_errors([row("TypeError: undefined is not an object (evaluating 'b.price')", kind="error",
                           at="https://findacrib.com/:4410")])

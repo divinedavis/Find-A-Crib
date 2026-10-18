@@ -153,7 +153,11 @@ def js_errors(rows):
         # stack names the ad file when there is one; a stackless rejection of
         # exactly those two messages started with the ads. Digest only.
         at = p.get("at") or ""
+        # Safari hides a Safari extension's script behind webkit-masked-url://
+        # (2026-10-18: "_0x43b06e is not an Object", obfuscated names, one
+        # iPhone visitor). Our scripts always report a findacrib.com URL.
         e["noise"] = (is_noise(key) or any(h in at for h in AD_STACK_HOSTS)
+                      or "webkit-masked-url://" in at
                       or (p.get("kind") == "promise" and not at and msg in ("Load failed", "Fetch is aborted",
                                                                                # Safari: a response body cut off
                                                                                # mid-read (signal lost / page left);

@@ -2234,6 +2234,34 @@
         }
       }
     },
+    "%lld neighbors" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld vecinos"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이웃 %lld명"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 位邻居"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 位鄰居"
+          }
+        }
+      }
+    },
     "%lld of %lld open" : {
       "localizations" : {
         "en" : {
@@ -6917,6 +6945,34 @@
         }
       }
     },
+    "Block %@" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bloquear a %@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 차단"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "屏蔽 %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "封鎖 %@"
+          }
+        }
+      }
+    },
     "Block this person" : {
       "localizations" : {
         "es" : {
@@ -7112,6 +7168,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "建築地址"
+          }
+        }
+      }
+    },
+    "Building chat" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chat del edificio"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "건물 채팅"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "楼内聊天"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "樓內聊天"
           }
         }
       }
@@ -7588,6 +7672,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "我的房東能阻止我的伴侶搬進來嗎？"
+          }
+        }
+      }
+    },
+    "Can't be read on this phone" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se puede leer en este teléfono"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 휴대폰에서는 읽을 수 없음"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法在这部手机上读取"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法在這支手機上讀取"
           }
         }
       }
@@ -9000,7 +9112,7 @@
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
+            "state" : "translated",
             "value" : "복사"
           }
         },
@@ -9070,6 +9182,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "現在無法檢查。請一分鐘後再試。"
+          }
+        }
+      }
+    },
+    "Couldn't join the chat. Try again." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo unir al chat. Inténtalo de nuevo."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "채팅에 참여하지 못했어요. 다시 시도하세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法加入聊天，请重试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法加入聊天，請重試。"
           }
         }
       }
@@ -9210,6 +9350,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "無法加載住房抽籤"
+          }
+        }
+      }
+    },
+    "Couldn't load messages. Pull down to try again." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudieron cargar los mensajes. Desliza hacia abajo para reintentar."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "메시지를 불러오지 못했어요. 아래로 당겨 다시 시도하세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法加载消息。下拉重试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法載入訊息。下拉重試。"
           }
         }
       }
@@ -9438,6 +9606,34 @@
         }
       }
     },
+    "Couldn't reach the chat. Pull down to try again." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo conectar con el chat. Desliza hacia abajo para reintentar."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "채팅에 연결하지 못했어요. 아래로 당겨 다시 시도하세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法连接聊天。下拉重试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法連接聊天。下拉重試。"
+          }
+        }
+      }
+    },
     "Couldn't review it right now. Try again in a little while." : {
       "localizations" : {
         "es" : {
@@ -9462,6 +9658,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "現在無法評論它。稍後再試。"
+          }
+        }
+      }
+    },
+    "Couldn't send. Check your connection and try again." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo enviar. Revisa tu conexión e inténtalo de nuevo."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "보내지 못했어요. 연결을 확인하고 다시 시도하세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "发送失败。请检查网络后重试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "傳送失敗。請檢查網路後重試。"
           }
         }
       }
@@ -10894,6 +11118,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "在職證明"
+          }
+        }
+      }
+    },
+    "End-to-end encrypted" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cifrado de extremo a extremo"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "종단 간 암호화"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "端到端加密"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "端對端加密"
           }
         }
       }
@@ -13137,6 +13389,34 @@
         }
       }
     },
+    "Harassment or hate" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acoso u odio"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "괴롭힘 또는 혐오"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "骚扰或仇恨言论"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "騷擾或仇恨言論"
+          }
+        }
+      }
+    },
     "Have an account? Sign in" : {
       "localizations" : {
         "es" : {
@@ -13945,6 +14225,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "有人告訴我，我必須用經紀人才能看或者租它。"
+          }
+        }
+      }
+    },
+    "I'll be respectful. No harassment, hate, threats, spam or sharing people's private details. Find A Crib removes anyone who breaks these rules." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seré respetuoso. Nada de acoso, odio, amenazas, spam ni compartir datos privados de otros. Find A Crib expulsa a quien rompa estas reglas."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "예의를 지키겠습니다. 괴롭힘, 혐오, 협박, 스팸, 다른 사람의 개인정보 공유는 금지입니다. 규칙을 어기면 Find A Crib이 내보냅니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "我会互相尊重。不骚扰、不发表仇恨言论、不威胁、不发垃圾信息、不泄露他人隐私。违反规则者会被 Find A Crib 移出。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "我會互相尊重。不騷擾、不發表仇恨言論、不威脅、不發垃圾訊息、不洩露他人隱私。違反規則者會被 Find A Crib 移出。"
           }
         }
       }
@@ -14823,6 +15131,34 @@
         }
       }
     },
+    "Join the chat" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unirme al chat"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "채팅 참여하기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加入聊天"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加入聊天"
+          }
+        }
+      }
+    },
     "Join the waiting list by %@" : {
       "localizations" : {
         "ko" : {
@@ -14841,6 +15177,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "在%@之前加入候選名單"
+          }
+        }
+      }
+    },
+    "Just you so far" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Por ahora solo tú"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "아직 나 혼자예요"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目前只有你"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目前只有你"
           }
         }
       }
@@ -15401,6 +15765,90 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "最便宜的"
+          }
+        }
+      }
+    },
+    "Leave" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salir"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "나가기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "退出"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "退出"
+          }
+        }
+      }
+    },
+    "Leave the chat for %@?" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Salir del chat de %@?"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 채팅에서 나갈까요?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "退出 %@ 的聊天？"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "退出 %@ 的聊天？"
+          }
+        }
+      }
+    },
+    "Leave this chat" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salir de este chat"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 채팅 나가기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "退出此聊天"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "退出此聊天"
           }
         }
       }
@@ -16638,6 +17086,62 @@
         }
       }
     },
+    "Message your building" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escribe a tu edificio"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "건물에 메시지 보내기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "给楼里的人发消息"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "給樓裡的人傳訊息"
+          }
+        }
+      }
+    },
+    "Messages are end-to-end encrypted: only the people in this chat can read them — not Find A Crib, not your landlord. You'll see messages sent after you join." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los mensajes tienen cifrado de extremo a extremo: solo las personas de este chat pueden leerlos, ni Find A Crib ni tu casero. Verás los mensajes enviados después de unirte."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "메시지는 종단 간 암호화되어 이 채팅 참여자만 읽을 수 있습니다. Find A Crib도, 집주인도 읽을 수 없습니다. 참여한 후에 보낸 메시지가 보입니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "消息端到端加密：只有这个聊天里的人能读，Find A Crib 和房东都读不到。你会看到加入之后发送的消息。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "訊息端對端加密：只有這個聊天裡的人能讀，Find A Crib 和房東都讀不到。你會看到加入之後傳送的訊息。"
+          }
+        }
+      }
+    },
     "Minimum price" : {
       "localizations" : {
         "es" : {
@@ -17225,6 +17729,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "同一街區最近的租金穩定建築。"
+          }
+        }
+      }
+    },
+    "Neighbor" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vecino"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이웃"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "邻居"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "鄰居"
           }
         }
       }
@@ -18348,6 +18880,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "不設上限"
+          }
+        }
+      }
+    },
+    "No messages yet. Say hello to your neighbors." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aún no hay mensajes. Saluda a tus vecinos."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "아직 메시지가 없어요. 이웃에게 인사해 보세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "还没有消息。跟邻居打个招呼吧。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "還沒有訊息。跟鄰居打個招呼吧。"
           }
         }
       }
@@ -19506,6 +20066,7 @@
         }
       }
     },
+    "OK" : {},
     "Off · turn on in Settings" : {
       "localizations" : {
         "es" : {
@@ -22844,14 +23405,14 @@
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "报告"
+            "state" : "translated",
+            "value" : "举报"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "報告"
+            "state" : "translated",
+            "value" : "檢舉"
           }
         }
       }
@@ -22908,6 +23469,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "報告此評論？"
+          }
+        }
+      }
+    },
+    "Report this message?" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Denunciar este mensaje?"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 메시지를 신고할까요?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "举报这条消息？"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "檢舉這則訊息？"
           }
         }
       }
@@ -24041,6 +24630,34 @@
         }
       }
     },
+    "Send" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enviar"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "보내기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "发送"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "傳送"
+          }
+        }
+      }
+    },
     "Send to the agent" : {
       "localizations" : {
         "es" : {
@@ -24663,6 +25280,34 @@
         }
       }
     },
+    "Sign in to chat" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inicia sesión para chatear"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "로그인하고 채팅하기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登录后聊天"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登入後聊天"
+          }
+        }
+      }
+    },
     "Sign in to comment." : {
       "localizations" : {
         "es" : {
@@ -24687,6 +25332,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "登入以發表評論。"
+          }
+        }
+      }
+    },
+    "Sign in to join your building's chat. Messages are end-to-end encrypted: only the people in the chat can read them." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inicia sesión para unirte al chat de tu edificio. Los mensajes tienen cifrado de extremo a extremo: solo las personas del chat pueden leerlos."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "로그인하고 건물 채팅에 참여하세요. 메시지는 종단 간 암호화되어 채팅 참여자만 읽을 수 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登录即可加入你所在楼的聊天。消息端到端加密：只有聊天里的人能读。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登入即可加入你所在大樓的聊天。訊息端對端加密：只有聊天裡的人能讀。"
           }
         }
       }
@@ -25329,6 +26002,34 @@
         }
       }
     },
+    "Something else" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Otra cosa"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "기타"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "其他"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "其他"
+          }
+        }
+      }
+    },
     "Something else broken" : {
       "localizations" : {
         "es" : {
@@ -25549,6 +26250,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "來源：透過DataSF的SF租金委員會住房庫存（業主報告，街區匿名化）·SF租金委員會驅逐通知、請願書和收購協議。"
+          }
+        }
+      }
+    },
+    "Spam or scam" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spam o estafa"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "스팸 또는 사기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "垃圾信息或诈骗"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "垃圾訊息或詐騙"
           }
         }
       }
@@ -25988,6 +26717,34 @@
         }
       }
     },
+    "Talk with the people in %@" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Habla con la gente de %@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 이웃과 대화하세요"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "和 %@ 的邻居聊天"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "和 %@ 的鄰居聊天"
+          }
+        }
+      }
+    },
     "Tap a star to rate it on the App Store." : {
       "localizations" : {
         "es" : {
@@ -26296,6 +27053,34 @@
         }
       }
     },
+    "Thanks — we'll review it within 24 hours." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gracias. Lo revisaremos en 24 horas."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "감사합니다. 24시간 안에 검토하겠습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "谢谢，我们会在 24 小时内审核。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "謝謝，我們會在 24 小時內審核。"
+          }
+        }
+      }
+    },
     "That comment breaks the rules. Keep it about the building." : {
       "localizations" : {
         "es" : {
@@ -26404,6 +27189,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "該租約太長了，無法在這裡進行審查（超過60頁或20萬個字元）。"
+          }
+        }
+      }
+    },
+    "That message breaks the chat rules and wasn't sent." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ese mensaje rompe las reglas del chat y no se envió."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 메시지는 채팅 규칙에 어긋나 전송되지 않았어요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这条消息违反聊天规则，未发送。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "這則訊息違反聊天規則，未傳送。"
           }
         }
       }
@@ -27300,6 +28113,62 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "這取代了findacrib.com上為此電子郵件已設定的任何區警報。"
+          }
+        }
+      }
+    },
+    "This sends the message's text to Find A Crib to review. Messages are otherwise unreadable to us." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esto envía el texto del mensaje a Find A Crib para revisarlo. De lo contrario, no podemos leer los mensajes."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 메시지의 내용이 검토를 위해 Find A Crib에 전송됩니다. 그 외에는 저희가 메시지를 읽을 수 없습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这会把这条消息的文字发送给 Find A Crib 审核。除此之外，我们无法读取消息。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "這會把這則訊息的文字傳送給 Find A Crib 審核。除此之外，我們無法讀取訊息。"
+          }
+        }
+      }
+    },
+    "Threat or violence" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Amenaza o violencia"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "협박 또는 폭력"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "威胁或暴力"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "威脅或暴力"
           }
         }
       }
@@ -30221,6 +31090,34 @@
         }
       }
     },
+    "Your name in the chat" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu nombre en el chat"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "채팅에서 쓸 이름"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你在聊天中的名字"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你在聊天中的名字"
+          }
+        }
+      }
+    },
     "Your name, contact, address, job and household — typed once, used in every email and form." : {
       "localizations" : {
         "es" : {
@@ -30805,6 +31702,34 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "狀況：%@"
+          }
+        }
+      }
+    },
+    "e.g. Maria, 4B" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "p. ej. María, 4B"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "예: 마리아, 4B"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "例如：Maria，4B"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "例如：Maria，4B"
           }
         }
       }

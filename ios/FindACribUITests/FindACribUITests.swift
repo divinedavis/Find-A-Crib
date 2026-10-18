@@ -1164,6 +1164,26 @@ final class FindACribUITests: XCTestCase {
         let sheet = XCTAttachment(screenshot: app.screenshot()); sheet.name = "your-crib-signin"; sheet.lifetime = .keepAlways; add(sheet)
     }
 
+    /// Building chat (owner, 2026-10-17): a button right under the address
+    /// in Your Crib opens the building's chat; signed out, it asks to sign in
+    /// and says the chat is end-to-end encrypted.
+    func testYourCribOpensBuildingChat() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--casa-demo", "--tab", "casa"]
+        app.launch()
+        let place = app.staticTexts["casa-place"]
+        XCTAssertTrue(place.waitForExistence(timeout: 20))
+        let chat = app.buttons["casa-chat"]
+        XCTAssertTrue(chat.waitForExistence(timeout: 5), "Building chat sits under the address")
+        XCTAssertLessThan(place.frame.maxY, chat.frame.minY, "below the address")
+        XCTAssertLessThan(chat.frame.minY - place.frame.maxY, 80, "directly below it")
+        chat.tap()
+        XCTAssertTrue(app.buttons["chat-signin"].waitForExistence(timeout: 5), "signed out, the chat asks to sign in")
+        XCTAssertTrue(app.staticTexts["End-to-end encrypted"].exists)
+        add(XCTAttachment(screenshot: app.screenshot()))
+        app.buttons["Close"].tap()
+    }
+
     /// Violations & inspections leads and About is the last section (owner,
     /// 2026-09-19): violations are what people tap most on a building page.
     func testViolationsFirstAndAboutLast() throws {

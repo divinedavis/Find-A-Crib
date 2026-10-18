@@ -30,6 +30,7 @@
 		1D6EE845362854774E246142 /* NearbyPlacesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E2FF0F6AD4785CDBCA33D8F /* NearbyPlacesTests.swift */; };
 		20B66B92F929BB687315AB48 /* ReviewPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11B11FD29257010BBAE21E0A /* ReviewPrompt.swift */; };
 		216D8003A64546DC1DED920D /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96A59BAA0D560AEC7D0E1BF8 /* Theme.swift */; };
+		23135BA411FD52F203104834 /* BuildingChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5858273C0672A3EECAE36874 /* BuildingChatView.swift */; };
 		239814C37ED0E60FC84485B9 /* FindACribUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01F62B1CE3CCF2DAD07279F9 /* FindACribUITests.swift */; };
 		2585F491140B42102014866A /* CitySkyline.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBDF25AF911F10445D3687A0 /* CitySkyline.swift */; };
 		2B4DF01382763EDD8546E20A /* Building.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A8CDE81BD0E7DDBEBBC1042 /* Building.swift */; };
@@ -75,7 +76,7 @@
 		8B98F514F5EF153C04251715 /* IPadTourTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADAF8126C715DA20B673D7A1 /* IPadTourTests.swift */; };
 		912D4908F1D4876F89FA2785 /* RerentalCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65301E425C2A38F09A1C9C87 /* RerentalCard.swift */; };
 		9134BE67A61C675A32B53598 /* Analytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFF3D4B68CACA452540E0DEC /* Analytics.swift */; };
-		975FC0D78B115A6A80887B03 /* buildings.slim.json.gz in Resources */ = {isa = PBXBuildFile; fileRef = 7AB083E634E08974E9E2C973 /* buildings.slim.json.gz */; };
+		965912BBF4F07EC4E8AF3B8D /* BuildingChat.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B12B27E8762ACFA6987913 /* BuildingChat.swift */; };
 		998ACE221DD3F1BF469FAB69 /* SiriIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DBD5A6961C02830CE2C6A00 /* SiriIntents.swift */; };
 		A200EEBA4BB5BBA64BBDA05A /* CityPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F98DDB6CAE27151A26A25D9 /* CityPickerView.swift */; };
 		A2C93C30FFA457FCA158A67A /* CasaService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0229DF38132D7138DC5A2182 /* CasaService.swift */; };
@@ -181,6 +182,7 @@
 		4F98DDB6CAE27151A26A25D9 /* CityPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CityPickerView.swift; sourceTree = "<group>"; };
 		508922D1F6D18ABB933C31FB /* LotteryWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LotteryWidget.swift; sourceTree = "<group>"; };
 		5595BBBCAE0CDD15F07661D8 /* LotteryPhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LotteryPhoto.swift; sourceTree = "<group>"; };
+		5858273C0672A3EECAE36874 /* BuildingChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildingChatView.swift; sourceTree = "<group>"; };
 		58AD482B77F78BE6A10E4BC9 /* FindACribWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = FindACribWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		5A8CDE81BD0E7DDBEBBC1042 /* Building.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Building.swift; sourceTree = "<group>"; };
 		5EDD14746F84061336060AD5 /* City.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = City.swift; sourceTree = "<group>"; };
@@ -194,7 +196,6 @@
 		74C65B96332BA9B081E02255 /* Metrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Metrics.swift; sourceTree = "<group>"; };
 		785068564CE6917829662E1D /* PerformanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceTests.swift; sourceTree = "<group>"; };
 		79122B1DAE5687F075A32A34 /* HPDRecordsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HPDRecordsView.swift; sourceTree = "<group>"; };
-		7AB083E634E08974E9E2C973 /* buildings.slim.json.gz */ = {isa = PBXFileReference; lastKnownFileType = archive.gzip; path = buildings.slim.json.gz; sourceTree = "<group>"; };
 		7AFD7E8CAEB3FACB26CA9C38 /* PacketView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PacketView.swift; sourceTree = "<group>"; };
 		7B5512A8263FE3576D115CC8 /* LetterSplash.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LetterSplash.swift; sourceTree = "<group>"; };
 		7E81DF56B127517559D83AFC /* SearchHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchHomeView.swift; sourceTree = "<group>"; };
@@ -219,6 +220,7 @@
 		A21FCC5CDF8F7A2BF87F77DE /* AIViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIViews.swift; sourceTree = "<group>"; };
 		A2F76E2A008291EED5C29273 /* ParallelJSON.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParallelJSON.swift; sourceTree = "<group>"; };
 		A3EEF5834FCD3DDE360290CF /* LaunchPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchPresentation.swift; sourceTree = "<group>"; };
+		A7B12B27E8762ACFA6987913 /* BuildingChat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuildingChat.swift; sourceTree = "<group>"; };
 		A8B4C6BAFBAB36BCC61E8C51 /* AppleSignIn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleSignIn.swift; sourceTree = "<group>"; };
 		AC6E06825A92B3E0685DA9A4 /* AlertPushSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertPushSheet.swift; sourceTree = "<group>"; };
 		ACFF6FF6AFF4A2D1729699C2 /* MapResultsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapResultsView.swift; sourceTree = "<group>"; };
@@ -260,7 +262,7 @@
 		F4EAE491E6B0AE7EF404FA62 /* HPDRecords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HPDRecords.swift; sourceTree = "<group>"; };
 		F77E8A7AB3C846D7A728B148 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		FAA77791FAD208C445611DEA /* Packet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Packet.swift; sourceTree = "<group>"; };
-		"TEMP_A95AC535-ACE8-4BF9-81D9-21BF93E026F6" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_47CD29C2-B1AF-4E6D-B7DB-FA9A8F196CAD" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -286,6 +288,7 @@
 				118C4F327BDEB1A8BC45B965 /* AppLanguage.swift */,
 				A8B4C6BAFBAB36BCC61E8C51 /* AppleSignIn.swift */,
 				E2F8F4D03975F98CA24C386C /* AuthService.swift */,
+				A7B12B27E8762ACFA6987913 /* BuildingChat.swift */,
 				97DEDB29D81EC5396A910E90 /* CalendarAdd.swift */,
 				0229DF38132D7138DC5A2182 /* CasaService.swift */,
 				2CA2ED5910C5835CD844BB01 /* CommentsStore.swift */,
@@ -434,6 +437,7 @@
 		856D98B1ACA562AE75596E6A /* Casa */ = {
 			isa = PBXGroup;
 			children = (
+				5858273C0672A3EECAE36874 /* BuildingChatView.swift */,
 				826B941891EB22955EF5CC51 /* CasaView.swift */,
 			);
 			path = Casa;
@@ -459,7 +463,6 @@
 		A5648B362033743BB02C0471 /* Data */ = {
 			isa = PBXGroup;
 			children = (
-				7AB083E634E08974E9E2C973 /* buildings.slim.json.gz */,
 				607D7C368FDC8ECF23075BAF /* featured.json */,
 				BE5021FFFE6C939F06530FD2 /* fmr.json */,
 				91590C5C68756FD6803793E5 /* hcr.json */,
@@ -581,10 +584,10 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
-		"TEMP_7C8A4CE7-E4DE-429A-9DB0-D48103F9AE73" /* ios */ = {
+		"TEMP_646651A9-D0A4-4BAE-A099-DEC87E3B62BE" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_A95AC535-ACE8-4BF9-81D9-21BF93E026F6" /* Secrets.xcconfig */,
+				"TEMP_47CD29C2-B1AF-4E6D-B7DB-FA9A8F196CAD" /* Secrets.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -741,7 +744,6 @@
 				B8568A5D36520E6A5FCCC98A /* SourceSans3-Bold.ttf in Resources */,
 				B9A374F440D085EA1D5F9E4D /* SourceSans3-Regular.ttf in Resources */,
 				68768EA92CC0D2364159A378 /* SourceSans3-Semibold.ttf in Resources */,
-				975FC0D78B115A6A80887B03 /* buildings.slim.json.gz in Resources */,
 				E57C95D3DBA91F4B5E4486CC /* featured.json in Resources */,
 				1B0A6E98D9106FCDFD97D973 /* fmr.json in Resources */,
 				6CE136038F9CEFACA5F58F6C /* hcr.json in Resources */,
@@ -778,6 +780,8 @@
 				0136804FC89E8B93A538DC65 /* AuthService.swift in Sources */,
 				2B4DF01382763EDD8546E20A /* Building.swift in Sources */,
 				57861D606FFBA7F23A414A91 /* BuildingCard.swift in Sources */,
+				965912BBF4F07EC4E8AF3B8D /* BuildingChat.swift in Sources */,
+				23135BA411FD52F203104834 /* BuildingChatView.swift in Sources */,
 				55415570A82F92F6EDCC19C8 /* BuildingDetailView.swift in Sources */,
 				D6E61BCA921CC1B2F547DF15 /* BuildingRecord.swift in Sources */,
 				0875EEF497410CCDCADF7630 /* CalendarAdd.swift in Sources */,
@@ -992,7 +996,7 @@
 		};
 		4A043B04EA1D2F1BD0250C61 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_A95AC535-ACE8-4BF9-81D9-21BF93E026F6" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_47CD29C2-B1AF-4E6D-B7DB-FA9A8F196CAD" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -1033,7 +1037,7 @@
 		};
 		7B4EAA1664EF270AD8C579E8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_A95AC535-ACE8-4BF9-81D9-21BF93E026F6" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_47CD29C2-B1AF-4E6D-B7DB-FA9A8F196CAD" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;

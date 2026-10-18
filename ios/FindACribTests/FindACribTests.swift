@@ -1,3 +1,4 @@
+import CryptoKit
 import PDFKit
 import XCTest
 import GoogleMobileAds
@@ -1915,5 +1916,44 @@ final class OnDeviceGroundingTests: XCTestCase {
         XCTAssertTrue(OnDeviceAI.ungrounded("The cap is 8.38% and it ends January 31, 2027.", source: src).isEmpty)
         XCTAssertEqual(OnDeviceAI.ungrounded("A fair rent would be $2,550.", source: src), [2550])
         XCTAssertTrue(OnDeviceAI.ungrounded("Call 311 within 2 days.", source: src).isEmpty)
+    }
+}
+
+/// Building chat's end-to-end encryption (owner, 2026-10-17).
+final class ChatCryptoTests: XCTestCase {
+    typealias Identity = Curve25519.KeyAgreement.PrivateKey
+
+    func testMembersOpenAndOutsidersCannot() throws {
+        let alice = Identity(), bob = Identity(), eve = Identity()
+        let bbl = "3002840015"
+        let s = try ChatCrypto.seal(Data("heat is out on 4".utf8), bbl: bbl, from: alice,
+                                    to: ["a": alice.publicKey, "b": bob.publicKey])
+        XCTAssertEqual(Set(s.keys.keys), ["a", "b"], "one wrapped key per member, the sender included")
+        XCTAssertEqual(try ChatCrypto.open(s, bbl: bbl, myID: "b", mine: bob, senderKey: alice.publicKey), Data("heat is out on 4".utf8))
+        XCTAssertEqual(try ChatCrypto.open(s, bbl: bbl, myID: "a", mine: alice, senderKey: alice.publicKey), Data("heat is out on 4".utf8))
+        XCTAssertThrowsError(try ChatCrypto.open(s, bbl: bbl, myID: "e", mine: eve, senderKey: alice.publicKey), "not wrapped for a non-member")
+        // Eve copies Bob's wrapped key: it still needs Bob's private key.
+        var stolen = s.keys; stolen["e"] = s.keys["b"]
+        XCTAssertThrowsError(try ChatCrypto.open(.init(salt: s.salt, ciphertext: s.ciphertext, keys: stolen), bbl: bbl, myID: "e", mine: eve, senderKey: alice.publicKey))
+        XCTAssertThrowsError(try ChatCrypto.open(s, bbl: "1000010001", myID: "b", mine: bob, senderKey: alice.publicKey),
+                             "a message is bound to its building")
+        XCTAssertThrowsError(try ChatCrypto.open(s, bbl: bbl, myID: "b", mine: bob, senderKey: eve.publicKey),
+                             "a forged sender key fails")
+    }
+
+    func testCiphertextHidesTheText() throws {
+        let a = Identity()
+        let s = try ChatCrypto.seal(Data("the super is never here".utf8), bbl: "3002840015", from: a, to: ["a": a.publicKey])
+        let blob = Data(base64Encoded: s.ciphertext)!
+        XCTAssertNil(String(data: blob, encoding: .utf8).flatMap { $0.contains("super") ? $0 : nil })
+        let t = try ChatCrypto.seal(Data("the super is never here".utf8), bbl: "3002840015", from: a, to: ["a": a.publicKey])
+        XCTAssertNotEqual(s.ciphertext, t.ciphertext, "a fresh key per message")
+    }
+
+    func testFilterRefusesSlursAndThreatsOnly() {
+        XCTAssertTrue(ChatFilter.blocks("I'll kill you"))
+        XCTAssertTrue(ChatFilter.blocks("you're a f-a-g? no: faggot"))
+        XCTAssertFalse(ChatFilter.blocks("The boiler is broken again, call 311"))
+        XCTAssertFalse(ChatFilter.blocks("Is the laundry room open on Sunday?"))
     }
 }

@@ -38,6 +38,7 @@ struct CasaView: View {
     @State private var olderLoading = false
     @State private var showAllCalls = false
     @State private var editAlerts = false
+    @State private var chatFor: Casa.Place?
     @FocusState private var typing: Bool
     private var watch: CasaWatch { CasaWatch.shared }
 
@@ -86,6 +87,7 @@ struct CasaView: View {
             suggestions = await Casa.suggest(query)
         }
         .sheet(isPresented: $showPlus) { PaywallView(source: "casa") }
+        .sheet(item: $chatFor) { p in BuildingChatView(bbl: p.bbl, address: p.short) }
         .sheet(isPresented: $editAlerts) {
             NavigationStack {
                 ScrollView { if let p = place { alertCard(p) } }
@@ -168,6 +170,16 @@ struct CasaView: View {
                 Button { nav.casaPath.append(.building(b.bbl)) } label: {
                     Label("Rent stabilized · open the building page", systemImage: "building.2").font(.se(15, .semibold)).foregroundStyle(SE.royal)
                 }
+            }
+            // Directly under the address (owner, 2026-10-17): the building's
+            // own chat, end-to-end encrypted. See BuildingChatView.
+            if p.bbl.count == 10 {
+                SEOutlineButton(title: String(localized: "Building chat"), icon: "bubble.left.and.bubble.right") {
+                    Analytics.shared.track("chat_open", ["bbl": p.bbl, "signed_in": auth.isSignedIn])
+                    chatFor = p
+                }
+                .padding(.top, 6)
+                .accessibilityIdentifier("casa-chat")
             }
         }
         .padding(16).frame(maxWidth: .infinity, alignment: .leading).background(Color.white)

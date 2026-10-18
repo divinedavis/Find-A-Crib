@@ -88,12 +88,24 @@ Privacy Policy: https://findacrib.com/privacy/
 Find A Crib is an independent, informational tool. It is not a broker, does not list apartments, and takes no fee. Data: NYS Homes and Community Renewal rent-stabilization register (2024), NYC HPD open data, HUD FY2026 Fair Market Rents, HousingSearch.ny.gov, LA County Assessor parcel data under LAHD's RSO criteria, the SF Rent Board Housing Inventory via DataSF, and the DC DHCD RentRegistry.
 """
 
-WHATS_NEW = """• Owner Phone on a building card now opens the building right at its managing agent and phone number.
+WHATS_NEW = """• Building chat: in Your Crib, talk with neighbors in your building in real time. Messages are end-to-end encrypted.
+• Lotteries: a single Filter button holds boroughs and bedroom sizes.
+• Owner Phone on a building card now opens the building right at its managing agent and phone number.
 • Your Crib no longer says you're offline when you're connected; if NYC's 311 data is down, it says that instead.
 • Smaller fixes.
 """
 
-REVIEW_NOTES = """VERSION 1.2.9 (build __BUILD__) — renter tools, widget, Siri, calendar, Handoff
+REVIEW_NOTES = """VERSION 1.3.3 (build __BUILD__) — NEW: BUILDING CHAT (user-generated content, guideline 1.2)
+
+Where: Your Crib tab > set an address (e.g. 90 Atlantic Ave, Brooklyn) > "Building chat" under the address. Signed in (the demo account works), it asks for a display name and agreement to the conduct rules before joining.
+- Terms: no harassment, hate, threats, spam or personal information about others; zero tolerance, violators are removed.
+- Filter: slurs and threats are refused on the phone before sending (messages are end-to-end encrypted, so the server cannot read them).
+- Report: long-press any message > Report. The reporter's phone sends that one message's text to us; reports are emailed to the developer within 15 minutes and acted on within 24 hours (message removed, sender banned from every chat).
+- Block: long-press > Block hides that person's messages for you.
+- Leave: the menu in the chat.
+Members see only messages sent after they joined. No new third-party SDKs and no new data collected beyond the encrypted messages.
+
+EARLIER, VERSION 1.2.9 — renter tools, widget, Siri, calendar, Handoff
 
 WHAT CHANGED SINCE 1.2.8
 1. Profile > "Already have a place?": Repairs, Rent increase, Your rights, Renewal coach. Repairs and Rent increase need a free account (the demo account works); Your rights is readable signed out; Renewal coach and the "✨" AI drafts are Find A Crib Plus. All show "General information, not legal advice" and link to NYC's free tenant help.

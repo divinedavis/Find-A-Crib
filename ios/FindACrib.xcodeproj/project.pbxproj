@@ -77,6 +77,7 @@
 		912D4908F1D4876F89FA2785 /* RerentalCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65301E425C2A38F09A1C9C87 /* RerentalCard.swift */; };
 		9134BE67A61C675A32B53598 /* Analytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFF3D4B68CACA452540E0DEC /* Analytics.swift */; };
 		965912BBF4F07EC4E8AF3B8D /* BuildingChat.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B12B27E8762ACFA6987913 /* BuildingChat.swift */; };
+		975FC0D78B115A6A80887B03 /* buildings.slim.json.gz in Resources */ = {isa = PBXBuildFile; fileRef = 7AB083E634E08974E9E2C973 /* buildings.slim.json.gz */; };
 		998ACE221DD3F1BF469FAB69 /* SiriIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DBD5A6961C02830CE2C6A00 /* SiriIntents.swift */; };
 		A200EEBA4BB5BBA64BBDA05A /* CityPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F98DDB6CAE27151A26A25D9 /* CityPickerView.swift */; };
 		A2C93C30FFA457FCA158A67A /* CasaService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0229DF38132D7138DC5A2182 /* CasaService.swift */; };
@@ -196,6 +197,7 @@
 		74C65B96332BA9B081E02255 /* Metrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Metrics.swift; sourceTree = "<group>"; };
 		785068564CE6917829662E1D /* PerformanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceTests.swift; sourceTree = "<group>"; };
 		79122B1DAE5687F075A32A34 /* HPDRecordsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HPDRecordsView.swift; sourceTree = "<group>"; };
+		7AB083E634E08974E9E2C973 /* buildings.slim.json.gz */ = {isa = PBXFileReference; lastKnownFileType = archive.gzip; path = buildings.slim.json.gz; sourceTree = "<group>"; };
 		7AFD7E8CAEB3FACB26CA9C38 /* PacketView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PacketView.swift; sourceTree = "<group>"; };
 		7B5512A8263FE3576D115CC8 /* LetterSplash.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LetterSplash.swift; sourceTree = "<group>"; };
 		7E81DF56B127517559D83AFC /* SearchHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchHomeView.swift; sourceTree = "<group>"; };
@@ -262,7 +264,7 @@
 		F4EAE491E6B0AE7EF404FA62 /* HPDRecords.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HPDRecords.swift; sourceTree = "<group>"; };
 		F77E8A7AB3C846D7A728B148 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		FAA77791FAD208C445611DEA /* Packet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Packet.swift; sourceTree = "<group>"; };
-		"TEMP_47CD29C2-B1AF-4E6D-B7DB-FA9A8F196CAD" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
+		"TEMP_6F44DCA7-5220-4719-AA98-50A418305764" /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -463,6 +465,7 @@
 		A5648B362033743BB02C0471 /* Data */ = {
 			isa = PBXGroup;
 			children = (
+				7AB083E634E08974E9E2C973 /* buildings.slim.json.gz */,
 				607D7C368FDC8ECF23075BAF /* featured.json */,
 				BE5021FFFE6C939F06530FD2 /* fmr.json */,
 				91590C5C68756FD6803793E5 /* hcr.json */,
@@ -584,10 +587,10 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
-		"TEMP_646651A9-D0A4-4BAE-A099-DEC87E3B62BE" /* ios */ = {
+		"TEMP_E94CE23F-A7CF-443F-9893-EEFBD6620F35" /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_47CD29C2-B1AF-4E6D-B7DB-FA9A8F196CAD" /* Secrets.xcconfig */,
+				"TEMP_6F44DCA7-5220-4719-AA98-50A418305764" /* Secrets.xcconfig */,
 			);
 			path = ios;
 			sourceTree = "<group>";
@@ -744,6 +747,7 @@
 				B8568A5D36520E6A5FCCC98A /* SourceSans3-Bold.ttf in Resources */,
 				B9A374F440D085EA1D5F9E4D /* SourceSans3-Regular.ttf in Resources */,
 				68768EA92CC0D2364159A378 /* SourceSans3-Semibold.ttf in Resources */,
+				975FC0D78B115A6A80887B03 /* buildings.slim.json.gz in Resources */,
 				E57C95D3DBA91F4B5E4486CC /* featured.json in Resources */,
 				1B0A6E98D9106FCDFD97D973 /* fmr.json in Resources */,
 				6CE136038F9CEFACA5F58F6C /* hcr.json in Resources */,
@@ -962,7 +966,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 143;
+				CURRENT_PROJECT_VERSION = 144;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -996,7 +1000,7 @@
 		};
 		4A043B04EA1D2F1BD0250C61 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_47CD29C2-B1AF-4E6D-B7DB-FA9A8F196CAD" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_6F44DCA7-5220-4719-AA98-50A418305764" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -1037,7 +1041,7 @@
 		};
 		7B4EAA1664EF270AD8C579E8 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_47CD29C2-B1AF-4E6D-B7DB-FA9A8F196CAD" /* Secrets.xcconfig */;
+			baseConfigurationReference = "TEMP_6F44DCA7-5220-4719-AA98-50A418305764" /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -1110,7 +1114,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 143;
+				CURRENT_PROJECT_VERSION = 144;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;

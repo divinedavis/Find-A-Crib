@@ -52,6 +52,17 @@ def unhandled():
     return rest("GET", f"chat_reports?{q}")
 
 
+def true_senders(rows):
+    """message id -> (sender, bbl) as the database stored them. A report's own
+    sender field comes from the reporter's phone, so the ban command must never
+    trust it: a reporter could name anyone."""
+    ids = sorted({int(r["message_id"]) for r in rows if r.get("message_id")})
+    if not ids:
+        return {}
+    q = urllib.parse.urlencode({"select": "id,sender,bbl", "id": f"in.({','.join(map(str, ids))})"})
+    return {m["id"]: (m["sender"], m["bbl"]) for m in rest("GET", f"chat_messages?{q}")}
+
+
 def mail_new(dry):
     rows = unhandled()
     try:
@@ -62,12 +73,21 @@ def mail_new(dry):
     if not new:
         print("no new chat reports")
         return
+    real = true_senders(new)
     lines = []
     for r in new:
-        lines.append(f"Report {r['id']} · building {r['bbl']} · {r['created_at'][:16]} · {r['reason']}\n"
-                     f"  message {r['message_id']} from {r['sender']}:\n  \"{(r['plaintext'] or '(no text)')[:800]}\"\n"
+        found = real.get(r["message_id"])
+        if not found:
+            lines.append(f"Report {r['id']} · building {r['bbl']} · message {r['message_id']} is already gone; nothing to do.\n")
+            continue
+        sender, bbl = found
+        warn = "" if (str(r.get("sender") or "").lower(), r["bbl"]) == (sender.lower(), bbl) else \
+            "  WARNING: the report named a different sender or building than the stored message; going by the stored one.\n"
+        lines.append(f"Report {r['id']} · building {bbl} · {r['created_at'][:16]} · {r['reason']}\n{warn}"
+                     f"  message {r['message_id']} from {sender}, text as the reporter's phone sent it\n"
+                     f"  (encrypted chat: we can't check it against the original):\n  \"{(r['plaintext'] or '(no text)')[:800]}\"\n"
                      f"  remove: python3 chat_reports.py --remove {r['message_id']}\n"
-                     f"  ban:    python3 chat_reports.py --ban {r['sender']} --reason \"...\"\n")
+                     f"  ban:    python3 chat_reports.py --ban {sender} --reason \"...\"\n")
     text = ("New building chat reports. Apple expects action within 24 hours.\n"
             "Run the commands on the findacrib droplet in /root/Find-A-Crib.\n\n" + "\n".join(lines))
     if dry or not os.environ.get("ERROR_REPORT_EMAIL"):

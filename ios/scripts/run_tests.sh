@@ -38,10 +38,18 @@ RESULT_FLAGS=(); [[ -n "${RESULT_BUNDLE:-}" ]] && { rm -rf "$RESULT_BUNDLE"; RES
 # is printed after the tail, and the full log stays on disk.
 LOG="build.nosync/test-$SIMULATOR_ID.log"
 mkdir -p build.nosync
+# XCTESTRUN=path (ship.sh sets it after one build-for-testing): run the
+# already-built tests on this simulator, no compile step at all. Without it,
+# build and test as before, with the shared caches in build_flags.sh.
+source scripts/build_flags.sh
+if [[ -n "${XCTESTRUN:-}" ]]; then
+  ACTION=(-xctestrun "$XCTESTRUN" test-without-building)
+else
+  ACTION=(-project FindACrib.xcodeproj -scheme FindACrib -derivedDataPath build.nosync/tests "${FAST_FLAGS[@]}" test)
+fi
 set +e
-xcodebuild -project FindACrib.xcodeproj -scheme FindACrib \
-  -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -derivedDataPath build.nosync/tests \
-  ${ONLY:+-only-testing:"$ONLY"} ${SKIP_FLAGS[@]+"${SKIP_FLAGS[@]}"} ${RESULT_FLAGS[@]+"${RESULT_FLAGS[@]}"} ${RETRY_FLAGS[@]+"${RETRY_FLAGS[@]}"} test 2>&1 | grep -E "Test Suite|Test Case|error:|failed|passed|\*\* TEST" > "$LOG"
+xcodebuild -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
+  ${ONLY:+-only-testing:"$ONLY"} ${SKIP_FLAGS[@]+"${SKIP_FLAGS[@]}"} ${RESULT_FLAGS[@]+"${RESULT_FLAGS[@]}"} ${RETRY_FLAGS[@]+"${RETRY_FLAGS[@]}"} "${ACTION[@]}" 2>&1 | grep -E "Test Suite|Test Case|error:|failed|passed|\*\* TEST" > "$LOG"
 status=${PIPESTATUS[0]}
 set -e
 tail -60 "$LOG"

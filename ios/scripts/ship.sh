@@ -71,6 +71,18 @@ IPHONE_SIM="${SIMULATOR_ID:-$(sim_named 'FAC iPhone')}"; [[ -n "$IPHONE_SIM" ]] 
 # ours mid-test, failing six iPad tests that pass alone.
 IPAD_SIM="${IPAD_SIMULATOR_ID:-$(sim_named 'FAC iPad')}"; [[ -n "$IPAD_SIM" ]] || IPAD_SIM=$(sim_named 'iPad Pro 11-inch'); [[ -n "$IPAD_SIM" ]] || IPAD_SIM=$(sim_named 'iPad')
 MINI_SIM="${MINI_SIMULATOR_ID:-$(sim_named 'iPad mini')}"
+# Build once for every simulator (generic destination), then every pass below
+# runs those same binaries with test-without-building: the iPhone, iPad,
+# iPad mini and performance passes and both smoke launches used to compile
+# five more times between them (owner, 2026-10-18).
+echo "==> building the app and tests once"
+source scripts/build_flags.sh
+rm -rf build.nosync/tests/Build/Products/*.xctestrun
+xcodebuild -project "$PROJECT" -scheme "$SCHEME" -destination "generic/platform=iOS Simulator" \
+  -derivedDataPath build.nosync/tests "${FAST_FLAGS[@]}" build-for-testing > build.nosync/build-for-testing.log 2>&1 \
+  || { echo "error: build-for-testing failed" >&2; grep -E "error:" build.nosync/build-for-testing.log | head -20 >&2; exit 1; }
+XCTESTRUN=$(ls build.nosync/tests/Build/Products/*.xctestrun | head -1); export XCTESTRUN
+SMOKE_APP=$(ls -d build.nosync/tests/Build/Products/Debug-iphonesimulator/FindACrib.app); export SMOKE_APP
 if [[ "${SHIP_UNIT_ONLY:-0}" == "1" ]]; then
   echo "==> SHIP_UNIT_ONLY: unit tests only on iPhone (no XCUITest, no iPad)"
   SIMULATOR_ID="$IPHONE_SIM" ./scripts/run_tests.sh FindACribTests

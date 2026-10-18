@@ -21,12 +21,18 @@ xcrun simctl bootstatus "$SIMULATOR_ID" -b >/dev/null 2>&1 || true
 
 # ENABLE_DEBUG_DYLIB=NO: Xcode 26's debug-dylib layout launches from Xcode but
 # `simctl launch` rejects it ("denied by service delegate") — not a crash.
-echo "==> building"
-xcodebuild -project "$PROJECT" -scheme "$SCHEME" -configuration Debug \
-  -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -derivedDataPath "$DERIVED_DATA" \
-  ENABLE_DEBUG_DYLIB=NO CODE_SIGNING_ALLOWED=NO build >/dev/null
-
-APP=$(find "$DERIVED_DATA/Build/Products" -maxdepth 3 -name 'FindACrib.app' | head -1)
+# SMOKE_APP=path: launch an app that's already built (ship.sh passes the one
+# the tests just ran, built with the same ENABLE_DEBUG_DYLIB=NO).
+if [[ -n "${SMOKE_APP:-}" ]]; then
+  APP="$SMOKE_APP"
+else
+  echo "==> building"
+  source scripts/build_flags.sh
+  xcodebuild -project "$PROJECT" -scheme "$SCHEME" -configuration Debug \
+    -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -derivedDataPath "$DERIVED_DATA" \
+    "${FAST_FLAGS[@]}" CODE_SIGNING_ALLOWED=NO build >/dev/null
+  APP=$(find "$DERIVED_DATA/Build/Products" -maxdepth 3 -name 'FindACrib.app' | head -1)
+fi
 [[ -n "$APP" ]] || { echo "error: FindACrib.app not found" >&2; exit 1; }
 echo "==> installing"
 xcrun simctl uninstall "$SIMULATOR_ID" "$BUNDLE_ID" 2>/dev/null || true

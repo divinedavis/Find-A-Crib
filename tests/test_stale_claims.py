@@ -11,6 +11,7 @@ No pytest in the venv (see tests/run_unit.py), so these are unittest classes
 with real temp directories rather than tmp_path/monkeypatch fixtures.
 """
 import os
+import re
 import sys
 import tempfile
 import unittest
@@ -185,3 +186,221 @@ class TheWiring(Docroot):
                 os.environ.pop("GROWTH_DOCROOT", None)
             else:
                 os.environ["GROWTH_DOCROOT"] = old
+
+
+# ---------------------------------------------------------------------------
+# The referring claim: pages OUTSIDE /section8/ promising that section is
+# rebuilt nightly. Judged on /section8/'s own build age, never on theirs —
+# every one of these tiers reaches the docroot through refresh_seo.sh, whose
+# only live cron is the 1st of each month, so an honest /methodology/ is
+# routinely 30 days old while the voucher build runs faithfully every night.
+HUB = ("<h1>Rent-stabilized buildings in Bushwick, Brooklyn</h1>"
+       "<h2>Renting with a housing voucher?</h2>"
+       "<p>Find A Crib rebuilds a list every night of the DHCR-registered "
+       "rent-stabilized buildings that have an apartment listed for Section 8 and "
+       "other housing vouchers, from the overnight AffordableHousing.com feed — "
+       "<a href='/section8/'>see the current voucher listings</a>.</p>")
+CITY_HUB = ("<h1>Rent-controlled buildings in San Francisco by neighborhood</h1>"
+            "<h2>New York City: apartments listed for housing vouchers</h2>"
+            "<p>Find A Crib's voucher feed covers New York City only — every night it "
+            "rebuilds the list of DHCR-registered rent-stabilized buildings with an "
+            "apartment listed for Section 8 and other housing vouchers, from the "
+            "overnight AffordableHousing.com feed. There is no equivalent feed for "
+            "San Francisco yet.</p>")
+METHODOLOGY = ("<h1>How Find A Crib compiles its rent-regulation data</h1>"
+               "<table class='facts'>"
+               "<tr><td class='k'>Housing-voucher listings (/section8/)</td>"
+               "<td>Rebuilt nightly</td></tr>"
+               "<tr><td class='k'>DC Rent Registry</td>"
+               "<td>The source publishes nightly export files</td></tr></table>")
+# A hub page that carries no promise about the voucher build at all.
+PLAIN_HUB = ("<h1>Rent-stabilized buildings in ZIP 11221</h1>"
+             "<p>ZIP code 11221 in Brooklyn contains 1,204 buildings registered as "
+             "rent stabilized with New York State DHCR.</p>")
+
+REFERRING = "pages citing /section8/"
+
+
+class TheReferringClaim(Docroot):
+    def test_hub_pages_promising_a_frozen_section_are_reported(self):
+        self.write("section8/index.html", body=FRESH, age_h=150.0)
+        self.write("neighborhood/brooklyn/bushwick/index.html", body=HUB, age_h=150.0)
+        self.feed()
+        out = self.run_check()
+        self.assertIn(REFERRING, out)
+        self.assertIn("rebuilds a list every night", out[REFERRING])
+        self.assertIn("/neighborhood/", out[REFERRING])
+        self.assertIn("last rebuilt 6.2 days ago", out[REFERRING])
+
+    def test_it_is_judged_on_section8_and_not_on_the_hubs_own_age(self):
+        """The false positive this design exists to avoid.
+
+        refresh_seo.sh runs on the 1st of the month (deploy/cron-rentmap-seo),
+        so a 30-day-old hub page is the NORMAL state. While /section8/ is
+        rebuilt nightly the sentence on it is simply true, at any age.
+        """
+        self.write("section8/index.html", body=FRESH, age_h=6.0)
+        self.write("neighborhood/brooklyn/bushwick/index.html", body=HUB, age_h=800.0)
+        self.write("methodology/index.html", body=METHODOLOGY, age_h=800.0)
+        self.feed()
+        self.assertEqual(self.run_check(), {})
+
+    def test_a_stale_path_section8_still_reports_the_referring_pages(self):
+        """The case the self claim cannot see, and the reason for this half.
+
+        A /section8/ that froze on its STALE path is honestly dated about
+        itself — and 370 pages elsewhere are still promising it is rebuilt
+        nightly. One finding, not two.
+        """
+        self.write("section8/index.html", body=STALE, age_h=150.0)
+        self.write("buildings/index.html", body=HUB, age_h=150.0)
+        self.feed()
+        out = self.run_check()
+        self.assertNotIn("/section8/", out)
+        self.assertIn(REFERRING, out)
+
+    def test_both_findings_fire_when_both_are_true_and_the_feed_clause_once(self):
+        self.write("section8/index.html", body=FRESH, age_h=150.0)
+        self.write("buildings/index.html", body=HUB, age_h=150.0)
+        self.feed(age_h=6.0)
+        out = self.run_check()
+        self.assertEqual(sorted(out), ["/section8/", REFERRING])
+        self.assertIn("refreshed 6h ago", out["/section8/"])
+        self.assertNotIn("s8.json", out[REFERRING])
+
+    def test_the_feed_clause_appears_when_only_the_referring_finding_fires(self):
+        self.write("section8/index.html", body=STALE, age_h=150.0)
+        self.write("buildings/index.html", body=HUB, age_h=150.0)
+        self.feed(age_h=6.0)
+        self.assertIn("refreshed 6h ago", self.run_check()[REFERRING])
+
+    def test_every_section_is_named_and_every_page_counted(self):
+        self.write("section8/index.html", body=STALE, age_h=150.0)
+        self.write("buildings/index.html", body=HUB, age_h=150.0)
+        self.write("neighborhood/brooklyn/bushwick/index.html", body=HUB, age_h=150.0)
+        self.write("neighborhood/queens/astoria/index.html", body=HUB, age_h=150.0)
+        self.write("zip/11221/index.html", body=HUB, age_h=150.0)
+        self.write("sf/buildings/index.html", body=CITY_HUB, age_h=150.0)
+        self.write("methodology/index.html", body=METHODOLOGY, age_h=150.0)
+        detail = self.run_check()[REFERRING]
+        self.assertIn("6 pages in 5 sections", detail)
+        for where in ("/buildings/", "/neighborhood/", "/zip/", "/sf/buildings/",
+                      "/methodology/"):
+            self.assertIn(where, detail)
+
+    def test_the_methodology_source_row_is_not_mistaken_for_ours(self):
+        """"The source publishes nightly export files" is about DHCD, and true."""
+        self.write("section8/index.html", body=STALE, age_h=150.0)
+        self.write("methodology/index.html", body=METHODOLOGY.replace(
+            "<td>Rebuilt nightly</td>", "<td>Rebuilt on the data build</td>"), age_h=150.0)
+        self.assertEqual(self.run_check(), {})
+
+    def test_a_hub_carrying_no_promise_is_not_counted(self):
+        self.write("section8/index.html", body=STALE, age_h=150.0)
+        self.write("zip/11221/index.html", body=PLAIN_HUB, age_h=150.0)
+        self.assertEqual(self.run_check(), {})
+
+    def test_a_tier_outside_the_list_is_not_walked(self):
+        """The known cost of REFERRING_SECTIONS, pinned so it is not a surprise."""
+        self.write("section8/index.html", body=STALE, age_h=150.0)
+        self.write("building/brooklyn/123-fake-st-3012345/index.html", body=HUB, age_h=150.0)
+        self.assertEqual(self.run_check(), {})
+
+    def test_one_page_reads_in_the_singular(self):
+        self.write("section8/index.html", body=STALE, age_h=150.0)
+        self.write("methodology/index.html", body=METHODOLOGY, age_h=150.0)
+        detail = self.run_check()[REFERRING]
+        self.assertTrue(detail.startswith("1 page in 1 section"), detail)
+        self.assertIn('says "Rebuilt nightly"', detail)
+
+
+class TheReferringBoundary(Docroot):
+    def test_just_under_the_allowance_is_silent(self):
+        self.write("section8/index.html", body=STALE, age_h=47.9)
+        self.write("buildings/index.html", body=HUB, age_h=900.0)
+        self.assertEqual(self.run_check(), {})
+
+    def test_just_over_the_allowance_reports(self):
+        self.write("section8/index.html", body=STALE, age_h=48.1)
+        self.write("buildings/index.html", body=HUB, age_h=900.0)
+        self.assertIn(REFERRING, self.run_check())
+
+    def test_the_freshest_section8_page_sets_the_age(self):
+        """A nightly rebuild that reaches only the hub still keeps the promise."""
+        self.write("section8/index.html", body=STALE, age_h=2.0)
+        self.write("section8/bronx/index.html", body=STALE, age_h=400.0)
+        self.write("buildings/index.html", body=HUB, age_h=900.0)
+        self.assertEqual(self.run_check(), {})
+
+    def test_a_box_without_the_section_judges_neither_claim(self):
+        """No /section8/ at all is a different, larger problem than this one."""
+        self.write("buildings/index.html", body=HUB, age_h=900.0)
+        self.feed()
+        self.assertEqual(self.run_check(), {})
+
+    def test_a_section_directory_with_no_pages_judges_neither_claim(self):
+        (self.root / "section8").mkdir()
+        self.write("buildings/index.html", body=HUB, age_h=900.0)
+        self.assertEqual(self.run_check(), {})
+
+
+class TheReferringPhrasesAreReal(unittest.TestCase):
+    SRC = None
+
+    @classmethod
+    def setUpClass(cls):
+        src = (Path(__file__).resolve().parent.parent / "build_seo.py").read_text()
+        # Adjacent string literals are joined in the rendered HTML but split
+        # across source lines, so close the concatenation seams before looking
+        # for a phrase as a reader of the page would see it.
+        cls.SRC = re.sub(r'"\s*\n\s*"', '', src)
+
+    def test_each_phrase_occurs_exactly_once_in_build_seo(self):
+        """Three phrases, three code sites. Reword one and this fails; reuse
+        one on a fourth tier and this fails too, which is the signal to extend
+        REFERRING_SECTIONS. New wording on a fourth tier it cannot catch."""
+        for phrase in er.REFERRING_PHRASES:
+            self.assertEqual(self.SRC.count(phrase), 1, phrase)
+
+    def test_the_two_phrase_sets_do_not_overlap(self):
+        self.assertEqual(set(er.CADENCE_PHRASES) & set(er.REFERRING_PHRASES), set())
+
+    def test_no_referring_phrase_appears_in_the_section8_template(self):
+        """Otherwise a /section8/ page would be counted as referring to itself."""
+        src = (Path(__file__).resolve().parent.parent / "growth" / "techniques.py").read_text()
+        joined = re.sub(r'"\s*\n\s*"', '', src)
+        for phrase in er.REFERRING_PHRASES:
+            self.assertNotIn(phrase, joined)
+
+    def test_the_walked_sections_exclude_section8_and_the_building_corpus(self):
+        for rel in er.REFERRING_SECTIONS:
+            self.assertNotIn(rel.split("/")[0], ("section8", "building"))
+
+    def test_the_sections_cover_all_three_code_sites(self):
+        for rel in ("buildings", "neighborhood", "zip", "borough",
+                    "sf/buildings", "la/buildings", "dc/buildings", "methodology"):
+            self.assertIn(rel, er.REFERRING_SECTIONS)
+
+
+class TheReferringWiring(Docroot):
+    CLAIMS = {
+        "/section8/":
+            '6 pages still say "Updated daily" but the freshest was built 6.2 days ago',
+        REFERRING:
+            '374 pages in 5 sections (/buildings/, /neighborhood/, /zip/, /sf/buildings/, '
+            '/methodology/) say "rebuilds a list every night" about /section8/, which was '
+            "itself last rebuilt 6.2 days ago",
+    }
+
+    def test_both_rows_reach_both_parts_of_the_email(self):
+        html, text = er.build("last 24 hours", {}, {}, {}, er.Counter(), er.Counter(), {},
+                              set(), claims=self.CLAIMS)
+        for part in (html, text):
+            self.assertIn("Pages promising a refresh that stopped", part)
+            self.assertIn("/section8/", part)
+            self.assertIn("374 pages in 5 sections", part)
+
+    def test_the_column_is_a_place_rather_than_a_published_tier(self):
+        html, _text = er.build("last 24 hours", {}, {}, {}, er.Counter(), er.Counter(), {},
+                               set(), claims=self.CLAIMS)
+        self.assertIn(">Where<", html)

@@ -439,6 +439,18 @@ def stale_feeds():
 
 
 # ---------------------------------------------------------------- stale claims
+# TWO KINDS OF PROMISE, AND THEY ARE FALSIFIED BY DIFFERENT CLOCKS.
+#
+# A page can promise a nightly refresh about ITSELF ("Updated daily." on
+# /section8/), or it can promise one about ANOTHER section ("Find A Crib
+# rebuilds a list every night … see the current voucher listings" on a
+# neighborhood hub). The first is falsified by that page's own build age. The
+# second is not: it is a statement about the voucher build's cadence, and it
+# stays true however old the referring page gets, as long as /section8/ is
+# still being rebuilt. Judging it on the referring page's own age would be
+# wrong in both directions — see the note above REFERRING_PHRASES.
+
+# ---- the self claim: the wording /section8/ uses about /section8/ ----------
 # The wording growth/techniques.py t_fresh_section8 emits ONLY on its fresh
 # path, i.e. only when _feed_freshness() found the voucher feed current. A live
 # page carrying one of these is a page that promised the reader a nightly
@@ -454,12 +466,124 @@ CADENCE_PHRASES = (
     "Rebuilt daily from the overnight feed",
     "rent-stabilized buildings with live listings",
 )
+
+# ---- the referring claim: what other tiers say about /section8/ ------------
+# Three code sites in build_seo.py put a present-tense promise about the
+# voucher build onto pages OUTSIDE /section8/, and between them they reach far
+# more readers than the section itself does:
+#
+#   VOUCHER_XLINK (build_seo.py:151)       — the NYC hub tier: /neighborhood/,
+#       /zip/, /borough/, /buildings/. "Find A Crib rebuilds a list every night
+#       of the DHCR-registered rent-stabilized buildings that have an apartment
+#       listed for Section 8 … from the overnight AffordableHousing.com feed."
+#   CITY_VOUCHER_XLINK (build_seo.py:191)  — the three city browse hubs,
+#       /sf/buildings/, /la/buildings/, /dc/buildings/. "every night it rebuilds
+#       the list of DHCR-registered rent-stabilized buildings …"
+#   the methodology cadence table (build_seo.py:3388) — /methodology/ publishes
+#       a row reading "Housing-voucher listings (/section8/) — Rebuilt nightly".
+#
+# WHY THESE ARE NOT JUDGED ON THEIR OWN AGE, which is the whole design of this
+# half and the reason it is not a copy of the block above. Every one of these
+# pages reaches the docroot through scripts/refresh_seo.sh, and the only live
+# cron that runs it is deploy/cron-rentmap-seo at `10 4 1 * *` — the FIRST OF
+# EACH MONTH. So a perfectly honest /methodology/ is routinely 30 days old
+# while the voucher build runs faithfully every night, and an age check on the
+# page itself would fire on all 370-odd of them on 29 days out of 30. The
+# claim is about /section8/, so /section8/'s own build age is what falsifies
+# it — and that also catches the case the self claim above cannot see: a
+# /section8/ that froze on its STALE path is honestly dated about itself and
+# still has 370 pages promising, elsewhere, that it is rebuilt nightly.
+#
+# Pinned by tests/test_stale_claims.py, which asserts each phrase still occurs
+# in build_seo.py EXACTLY ONCE: reword one of the three and the test fails
+# rather than this list matching nothing forever, and reuse one on a fourth
+# tier and it fails too, which is the signal to extend REFERRING_SECTIONS
+# below. It cannot catch a fourth site that invents NEW wording — nothing
+# short of reading the corpus could, and that is the honest limit of this
+# check rather than a gap to paper over.
+REFERRING_PHRASES = (
+    "rebuilds a list every night",
+    "every night it rebuilds the list",
+    "Rebuilt nightly",
+)
+# Docroot-relative, and deliberately a list rather than a walk of the whole
+# docroot: /building/ alone is 47,165 pages whose template carries none of
+# these, and reading the corpus to find 370 pages is the kind of cost that
+# gets a check turned off. The cost of the list is that a new tier has to be
+# added to it; the test above is what makes that visible.
+REFERRING_SECTIONS = (
+    "buildings",        # VOUCHER_XLINK, NYC citywide hub
+    "neighborhood",     # VOUCHER_XLINK, 198 NYC neighborhood hubs
+    "zip",              # VOUCHER_XLINK, 165 NYC ZIP hubs
+    "borough",          # VOUCHER_XLINK, 5 borough hubs
+    "sf/buildings",     # CITY_VOUCHER_XLINK
+    "la/buildings",     # CITY_VOUCHER_XLINK
+    "dc/buildings",     # CITY_VOUCHER_XLINK
+    "methodology",      # the cadence table
+)
+
 # The same 48h the page itself uses (growth/techniques.py FEED_STALE_HOURS) to
 # decide whether it may say "right now" about the feed at all, and the same
 # allowance stale_feeds() gives s8.json. A page refuses to make a present-tense
 # claim about a feed older than this; a page whose own build is this far behind
 # has no better standing to make one about itself.
 CADENCE_CLAIM_HOURS = 48
+
+
+def _claiming_pages(root, phrases):
+    """[(mtime, phrase)] for every index.html under root carrying a phrase."""
+    out = []
+    if not os.path.isdir(root):
+        return out
+    for dirpath, _dirnames, filenames in os.walk(root):
+        if "index.html" not in filenames:
+            continue
+        page = os.path.join(dirpath, "index.html")
+        try:
+            mtime = os.path.getmtime(page)
+            with open(page, encoding="utf-8", errors="replace") as f:
+                text = f.read()
+        except OSError:
+            continue
+        found = [p for p in phrases if p in text]
+        if found:
+            out.append((mtime, found[0]))
+    return out
+
+
+def _newest_page(root):
+    """mtime of the newest index.html under root, or None if there is none.
+
+    When the voucher build last ran, regardless of which wording it chose —
+    which is what falsifies a promise about that build's cadence.
+    """
+    newest = None
+    for dirpath, _dirnames, filenames in os.walk(root):
+        if "index.html" not in filenames:
+            continue
+        try:
+            mtime = os.path.getmtime(os.path.join(dirpath, "index.html"))
+        except OSError:
+            continue
+        if newest is None or mtime > newest:
+            newest = mtime
+    return newest
+
+
+def _feed_contrast(docroot, now):
+    """The voucher feed's own age, as a clause — contrast, never the verdict.
+
+    A fresh feed behind a frozen page is the informative pair: it says the
+    scrape is doing its job and whatever publishes from it is not.
+    """
+    try:
+        feed_h = (now - os.path.getmtime(os.path.join(docroot, "s8.json"))) / 3600.0
+    except OSError:
+        return ""
+    if feed_h <= CADENCE_CLAIM_HOURS:
+        return (f" — while s8.json, the feed they cite, refreshed {feed_h:.0f}h ago. "
+                f"The scrape is running and the pages built from it are not")
+    return f" — s8.json is {feed_h / 24:.1f} days old too (see Feeds)"
 
 
 def stale_claims(docroot=None, now=None):
@@ -495,9 +619,23 @@ def stale_claims(docroot=None, now=None):
     the diagnosis to the reader. Asserting a cause from one aggregate is how
     this codebase has been wrong before.
 
-    Age is taken from the FRESHEST claiming page: if even the newest one is
-    past the allowance then every one of them is, so the finding cannot be an
-    artifact of one forgotten corner of the tier.
+    TWO FINDINGS, AT MOST ONE EACH:
+
+      "/section8/"              the section's own fresh-path wording, judged on
+                                the freshest page that carries it. If even the
+                                newest one is past the allowance then every one
+                                of them is, so the finding cannot be an
+                                artifact of one forgotten corner of the tier.
+      "pages citing /section8/" the NYC hubs, the three city browse hubs and
+                                /methodology/ promising that section is
+                                rebuilt nightly, judged on /SECTION8/'s build
+                                age and never on their own — see the note
+                                above REFERRING_PHRASES for why.
+
+    Both stand down on a box with no <docroot>/section8 at all: nothing
+    published it, so there is no build age to judge either claim against, and
+    a referring page pointing at a section this box does not serve is a
+    different and larger problem than this check is about.
     """
     out = {}
     if docroot is None:
@@ -510,46 +648,48 @@ def stale_claims(docroot=None, now=None):
     if now is None:
         now = datetime.datetime.now().timestamp()
 
-    claiming = []
-    for dirpath, _dirnames, filenames in os.walk(section):
-        if "index.html" not in filenames:
-            continue
-        page = os.path.join(dirpath, "index.html")
-        try:
-            mtime = os.path.getmtime(page)
-            with open(page, encoding="utf-8", errors="replace") as f:
-                text = f.read()
-        except OSError:
-            continue
-        found = [p for p in CADENCE_PHRASES if p in text]
-        if found:
-            claiming.append((mtime, found[0]))
-    if not claiming:
+    # ---- the section's claim about itself ---------------------------------
+    claiming = _claiming_pages(section, CADENCE_PHRASES)
+    if claiming:
+        newest, phrase = max(claiming)
+        hours = (now - newest) / 3600.0
+        if hours > CADENCE_CLAIM_HOURS:
+            n = len(claiming)
+            detail = (f'{n} page{"" if n == 1 else "s"} still say{"s" if n == 1 else ""} '
+                      f'"{phrase.rstrip(".")}" but {"was" if n == 1 else "the freshest was"} '
+                      f'built {hours / 24:.1f} days ago')
+            out["/section8/"] = detail + _feed_contrast(docroot, now)
+
+    # ---- what the rest of the site claims about the section ---------------
+    built = _newest_page(section)
+    if built is None:
+        return out
+    built_h = (now - built) / 3600.0
+    if built_h <= CADENCE_CLAIM_HOURS:
+        return out
+    referring = []
+    for rel in REFERRING_SECTIONS:
+        hits = _claiming_pages(os.path.join(docroot, rel), REFERRING_PHRASES)
+        if hits:
+            referring.append((rel, hits))
+    if not referring:
         return out
 
-    newest, phrase = max(claiming)
-    hours = (now - newest) / 3600.0
-    if hours <= CADENCE_CLAIM_HOURS:
-        return out
-
-    # The feed's own age, for contrast rather than for the verdict. A fresh
-    # feed behind a frozen page is the informative pair: it says the scrape is
-    # doing its job and whatever publishes from it is not.
-    try:
-        feed_h = (now - os.path.getmtime(os.path.join(docroot, "s8.json"))) / 3600.0
-    except OSError:
-        feed_h = None
-
-    n = len(claiming)
-    detail = (f'{n} page{"" if n == 1 else "s"} still say{"s" if n == 1 else ""} '
-              f'"{phrase.rstrip(".")}" but {"was" if n == 1 else "the freshest was"} '
-              f'built {hours / 24:.1f} days ago')
-    if feed_h is not None and feed_h <= CADENCE_CLAIM_HOURS:
-        detail += (f" — while s8.json, the feed they cite, refreshed {feed_h:.0f}h ago. "
-                   f"The scrape is running and the pages built from it are not")
-    elif feed_h is not None:
-        detail += f" — s8.json is {feed_h / 24:.1f} days old too (see Feeds)"
-    out["/section8/"] = detail
+    pages = sum(len(h) for _rel, h in referring)
+    phrase = referring[0][1][0][1]
+    where = ", ".join("/" + rel.strip("/") + "/" for rel, _h in referring)
+    detail = (f'{pages} page{"" if pages == 1 else "s"} in '
+              f'{len(referring)} section{"" if len(referring) == 1 else "s"} '
+              f'({where}) say{"s" if pages == 1 else ""} "{phrase.rstrip(".")}" about '
+              f'/section8/, which was itself last rebuilt {built_h / 24:.1f} days ago '
+              f"— judged on that section's build age, not on these pages' own, "
+              f"because the promise is about it and not about them")
+    # The feed clause only once per email: the row above already carries it
+    # when both findings fire, and the same sentence twice in one table is how
+    # a reader learns to skim the table.
+    if "/section8/" not in out:
+        detail += _feed_contrast(docroot, now)
+    out["pages citing /section8/"] = detail
     return out
 
 
@@ -690,7 +830,11 @@ def build(window_label, js, crash, app, five, tracebacks, stale, new_msgs, crons
     # Directly under the engine and above the error tables, because this is not
     # something that went wrong for one visitor: it is a sentence every visitor
     # to the section reads, and it is currently false. See stale_claims().
-    parts.append(table("Pages promising a refresh that stopped", ["Section", "State"],
+    #
+    # "Where" rather than "Section": one row is a section's claim about itself
+    # and the other is the rest of the site's claim about that section, so the
+    # column is a location and not always a published tier.
+    parts.append(table("Pages promising a refresh that stopped", ["Where", "State"],
                        [[esc(k), esc(v)] for k, v in (claims or {}).items()]))
     # Browser noise stays out of the email (owner, 2026-10-05: "should i get
     # emails on browser noise?"): it never triggers one, and when something

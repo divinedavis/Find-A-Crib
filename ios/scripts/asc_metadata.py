@@ -105,19 +105,7 @@ Where: Your Crib tab > set an address (e.g. 90 Atlantic Ave, Brooklyn) > "Buildi
 - Leave: the menu in the chat.
 Members see only messages sent after they joined. No new third-party SDKs and no new data collected beyond the encrypted messages.
 
-EARLIER, VERSION 1.2.9 — renter tools, widget, Siri, calendar, Handoff
-
-WHAT CHANGED SINCE 1.2.8
-1. Profile > "Already have a place?": Repairs, Rent increase, Your rights, Renewal coach. Repairs and Rent increase need a free account (the demo account works); Your rights is readable signed out; Renewal coach and the "✨" AI drafts are Find A Crib Plus. All show "General information, not legal advice" and link to NYC's free tenant help.
-2. Widget "Lotteries closing soon" (Home Screen small/medium/large, Lock Screen). It reads our public lottery feed; tapping it opens the Lotteries tab.
-3. Siri / Shortcuts: "Lotteries closing soon in Find A Crib" speaks the next deadlines; "Show lotteries in Find A Crib" and "Open Renewal coach in Find A Crib" open the app.
-4. "Add to Calendar" (lottery cards, Repairs, Renewal coach) opens Apple's own event editor; the app never reads the calendar and asks for no calendar permission.
-5. "Remind me on <date>" (Repairs, Renewal coach) schedules a local notification; if notification permission is undetermined, iOS asks at that tap.
-6. Handoff/Spotlight: building pages and Lotteries advertise an NSUserActivity with the matching findacrib.com page.
-7. New York result cards: the Share button became a rotating "Bedbugs (2)"-style count from HPD records, or "Owner Phone" when there are none (signed out, each opens sign-in; owner phone is Plus).
-8. Broker fee check and Lease review (Profile) — Plus, as on findacrib.com. AI drafts run on Apple's on-device model (Foundation Models) when the device has Apple Intelligence, otherwise on Anthropic's Claude via our server; the renter's name is never sent to a model.
-9. Deep links: findacrib://lotteries, findacrib://building/<id>, findacrib://tool/<name> (used by the widget, Siri and our In-App Event).
-No new third-party SDKs and no new data collected.
+ALSO IN THE APP (unchanged since 1.2.9): renter tools under Profile > "Already have a place?", the "Lotteries closing soon" widget, Siri shortcuts, Add to Calendar (Apple's own editor, no calendar permission), Handoff, Broker fee check and Lease review (Plus; AI runs on-device with Apple Intelligence, otherwise on Anthropic's Claude via our server, never sending the renter's name). Deep links: findacrib://lotteries, findacrib://building/<id>, findacrib://tool/<name>.
 
 TO SEE THE FEATURES
 Sign in with the demo account in App Review Information (Profile > "Continue with email", then the email and password). The demo account has NO subscription, so: tap any PLUS button (e.g. Search > "Or describe it in plain words", or Lotteries > Re-rentals > a card's "Help me apply") — the Plus page opens and "Get Plus — $4.99/month" starts the sandbox purchase. Profile > "Get Find A Crib Plus" opens the same page. After subscribing, the same buttons work. The packet and qualify-check need no subscription.

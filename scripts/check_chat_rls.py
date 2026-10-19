@@ -45,7 +45,28 @@ POST = (f"insert into public.chat_messages(bbl, salt, ciphertext, keys) values "
 CASES = [
     ("join with RETURNING", True, as_user(OWNER, JOIN)),
     ("post after joining", True, as_user(OWNER, JOIN, POST)),
-    ("post without joining", False, as_user(OWNER, POST)),
+    # A building nobody is in: the owner joined BBL's chat for real on 10/18,
+    # so "without joining" there was a member posting (false FAIL 10/19).
+    ("post without joining", False, as_user(OWNER, POST.replace(f"'{BBL}'", "'1000000001'"))),
+    # Web chat (db/0067): a browser registers its own device key, and a
+    # message wrapped only for "<uid>:<device>" is readable by that account.
+    ("register own browser device", True, as_user(OWNER,
+        f"insert into public.chat_devices(user_id, device_id, public_key) values "
+        f"('{OWNER}', 'abcdef0123456789', 'QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE=') returning device_id;")),
+    ("register a device for someone else", False, as_user(OWNER,
+        f"insert into public.chat_devices(user_id, device_id, public_key) values "
+        f"('{STRANGER}', 'abcdef0123456789', 'QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE=') returning device_id;")),
+    ("read a message wrapped only for a browser", True, as_user(OWNER, JOIN,
+        POST.replace(f'{{\"{OWNER}\"', f'{{\"{OWNER}:abcdef0123456789\"')
+            .replace("(bbl, salt", "(sender_device, bbl, salt").replace(f"('{BBL}'", f"('abcdef0123456789', '{BBL}'"))),
+    ("typing on your building's channel", True, as_user(OWNER, JOIN,
+        f"select set_config('realtime.topic', 'chat-typing:{BBL}', true);",
+        "insert into realtime.messages(topic, extension, event, payload, private) values "
+        f"('chat-typing:{BBL}', 'broadcast', 'typing', '{{}}'::jsonb, true) returning id;")),
+    ("typing on a building you're not in", False, as_user(OWNER,
+        "select set_config('realtime.topic', 'chat-typing:1000000001', true);",
+        "insert into realtime.messages(topic, extension, event, payload, private) values "
+        "('chat-typing:1000000001', 'broadcast', 'typing', '{}'::jsonb, true) returning id;")),
     ("join as someone else", False, as_user(OWNER, JOIN.replace(f"'{OWNER}', now()", f"'{STRANGER}', now()"))),
     ("non-member can't list members", True,
      as_user(OWNER, "select count(*) as n from public.chat_members where user_id <> auth.uid();")),

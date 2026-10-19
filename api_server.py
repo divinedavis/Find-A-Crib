@@ -56,7 +56,10 @@ DOCS = "https://findacrib.com/developers/"
 # unknown value never reaches the database at all.
 DASHBOARD_RANGES = {"all", "6m", "3m", "month", "today"}
 # The Find A Crib metric routes the owner dashboard may read with its key.
-DASHBOARD_READ_PATHS = frozenset({"/dashboard-metrics", "/dashboard-users", "/dashboard-visitors", "/dashboard-listings"})
+DASHBOARD_READ_PATHS = frozenset({"/dashboard-metrics", "/dashboard-users", "/dashboard-visitors", "/dashboard-listings",
+                                  "/dashboard-investor"})
+# The investor card's own window picker (db/0065): days, or None for all time.
+DASHBOARD_INVESTOR_DAYS = {"30": 30, "60": 60, "90": 90, "all": None}
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 app = Flask(__name__)
@@ -1936,6 +1939,30 @@ def _fac_conversion_trend():
     except Exception:
         return []
 
+
+
+# The investor card's 30/60/90/all-time picker (owner, 2026-10-19). ~1.5 s of
+# SQL and the owner flips between four windows, so each is kept a minute.
+@_memo(60)
+def _fac_investor_rpc(days, builds):
+    return rpc("dashboard_investor", {"p_days": days,
+                                      "p_ios_builds": list(builds) if builds else None})
+
+
+@app.route("/dashboard-investor")
+def dashboard_investor():
+    if rate_limited("dashboard", 120, 3600):
+        return _too_many()
+    denied = _dashboard_denial(_dashboard_auth(), ("ok",))
+    if denied:
+        return denied
+    # Allowlisted like /dashboard-metrics' range: this reaches a SECURITY
+    # DEFINER function. Anything else is the card's default, 30 days.
+    days = DASHBOARD_INVESTOR_DAYS.get((request.args.get("days") or "30").lower(), 30)
+    try:
+        return jsonify(_fac_investor_rpc(days, _fac_released_builds()))
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
 
 @_memo(300)
 def _fac_signups_series():

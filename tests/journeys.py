@@ -725,11 +725,29 @@ class Runner:
                     and 'HPD · HUD' not in body, 'filters wording not updated', j)
             page.evaluate("document.querySelector('[data-filters=\"close\"]').click()"); time.sleep(0.3)
             first = page.evaluate("document.querySelector('#grid .card[data-bbl]').dataset.bbl")
-            centre = page.evaluate("(()=>{const c=__facMap.getCenter(); return [c.lat, c.lng]})()")
+            # page.hover() scrolls the tile into view first, and on a short
+            # window that scroll re-lays the page: the map shrank 672 -> 582 px
+            # mid-hover and Leaflet re-centred it — ~1 run in 3 failed with no
+            # hover pan at all (trace: moveend | map-resize 582, 2026-10-19).
+            # So scroll first, let the page and map settle, THEN read the
+            # centre and hover.
+            page.locator('#grid .card[data-bbl] >> nth=0').scroll_into_view_if_needed()
+            centre, prev = None, None
+            for _ in range(24):
+                time.sleep(0.25)
+                centre = page.evaluate("(()=>{const c=__facMap.getCenter(), s=__facMap.getSize(); return [c.lat, c.lng, s.x, s.y]})()")
+                if centre == prev:
+                    break
+                prev = centre
+            LAYOUT = "[...document.querySelectorAll('body > *, header.topbar, #map')].filter(e=>e.offsetHeight).map(e=>(e.id||e.className||e.tagName).toString().slice(0,30)+':'+e.offsetHeight+'@'+Math.round(e.getBoundingClientRect().top)).join(' ')"
+            lay0 = page.evaluate(LAYOUT)
             page.hover('#grid .card[data-bbl] >> nth=0'); time.sleep(1.0)
+            lay1 = page.evaluate(LAYOUT)
+            if lay0 != lay1: print('   LAYOUT before:', lay0, '\n   LAYOUT after: ', lay1)
             self.ok(page.evaluate("!!document.querySelector('#map .pin-hover')"), 'hovering a tile should paint its pin blue', j)
             self.ok(page.evaluate("document.querySelector('#grid .card[data-bbl]').dataset.bbl") == first, 'the list must hold still while a tile is hovered', j)
-            self.ok(page.evaluate("(()=>{const c=__facMap.getCenter(); return [c.lat, c.lng]})()") == centre, 'hovering a tile must not move the map (2026-09-08)', j)
+            after = page.evaluate("(()=>{const c=__facMap.getCenter(), s=__facMap.getSize(); return [c.lat, c.lng, s.x, s.y]})()")
+            self.ok(after == centre, f'hovering a tile must not move the map (2026-09-08): {centre} -> {after}', j)
             # Where that pin is, so the street-zoom checks land on real buildings rather than the city centre.
             here = page.evaluate("(()=>{const e=document.querySelector('#map .pin-hover'); if(!e) return null; const r=e.getBoundingClientRect(), m=document.getElementById('map').getBoundingClientRect(); const ll=__facMap.containerPointToLatLng([r.left+r.width/2-m.left, r.top+r.height/2-m.top]); return [ll.lat, ll.lng]})()")
             page.mouse.move(5, 5); time.sleep(0.5)

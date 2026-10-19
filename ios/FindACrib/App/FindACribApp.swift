@@ -43,6 +43,12 @@ struct FindACribApp: App {
                 .environment(auth)
                 .environment(plus)
                 .task {
+                    // Buildings decode while the session restores (owner,
+                    // 2026-10-18). restore() can wait up to 3 s on the network
+                    // when a signed-in user's token has expired, and the load
+                    // used to start only after it. The splash still holds for
+                    // restore (ebaf270d); the data no longer waits behind it.
+                    async let loaded: Void = store.load()
                     await auth.restore()
                     auth.activity = activity
                     plus.auth = auth; auth.plus = plus
@@ -55,7 +61,7 @@ struct FindACribApp: App {
                     Metrics.shared.start()
                     KeyboardDismiss.install()
                     activity.remoteToggle = { [weak auth] bbl, on in auth?.remoteToggle(bbl: bbl, saved: on) }
-                    await store.load()
+                    await loaded
                     Perf.startWatchdog()
                     LaunchArgs.apply(to: nav, store: store)
                     AppNav.current = nav

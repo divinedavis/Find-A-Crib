@@ -351,6 +351,11 @@ class Runner:
                               else 'application/javascript', body=asset.read_text())
                 elif u.startswith(LIVE + '/static/supercluster/'):
                     r.fulfill(status=200, content_type='application/javascript', body=self.sc)
+                elif u.startswith(LIVE + '/static/chat/'):
+                    # Building chat on the web (2026-10-19), shipped by deploy_app.sh.
+                    asset = ROOT / 'static' / 'chat' / u.split('?')[0].rsplit('/', 1)[-1]
+                    r.fulfill(status=200, content_type='text/css' if asset.suffix == '.css' else 'application/javascript',
+                              body=asset.read_text())
                 else:
                     r.continue_()
             page.route(LIVE + '/**', route)

@@ -1198,6 +1198,33 @@ final class FindACribUITests: XCTestCase {
         app.buttons["Close"].tap()
     }
 
+    /// Building chat room (owner, 2026-10-19): day dividers, one header per
+    /// sender run with the time in the trailing slot, a typing bubble, and a
+    /// tap that reveals a message's details in a sheet — never a new page.
+    func testBuildingChatRoomLayoutAndTyping() throws {
+        app.terminate()
+        app.launchArguments = ["--no-launch-prompt", "--no-launch-splash", "--casa-demo", "--chat-demo", "--tab", "casa"]
+        app.launch()
+        let chat = app.buttons["casa-chat"]
+        XCTAssertTrue(chat.waitForExistence(timeout: 20))
+        chat.tap()
+        let typing = app.descendants(matching: .any)["chat-typing"]
+        XCTAssertTrue(typing.waitForExistence(timeout: 5), "someone typing shows a bubble")
+        XCTAssertTrue(typing.label.contains("is typing"), typing.label)
+        let days = app.descendants(matching: .any).matching(identifier: "chat-day")
+        XCTAssertGreaterThanOrEqual(days.count, 2, "Yesterday and Today get dividers")
+        let times = app.descendants(matching: .any).matching(identifier: "chat-time").allElementsBoundByIndex
+        XCTAssertGreaterThanOrEqual(times.count, 3)
+        let right = times.map { $0.frame.maxX }
+        XCTAssertLessThan((right.max() ?? 0) - (right.min() ?? 0), 2, "every time sits in the same trailing slot")
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "building-chat-room"; shot.lifetime = .keepAlways; add(shot)
+        app.descendants(matching: .any).matching(identifier: "chat-message").element(boundBy: 0).tap()
+        let detail = app.descendants(matching: .any)["chat-detail"]
+        XCTAssertTrue(detail.waitForExistence(timeout: 5), "tapping a message reveals its details")
+        XCTAssertTrue(app.buttons["chat-detail-report"].exists, "with Report")
+        XCTAssertTrue(app.buttons["Close"].exists, "in a sheet over the room, not a new page")
+    }
+
     /// Violations & inspections leads and About is the last section (owner,
     /// 2026-09-19): violations are what people tap most on a building page.
     func testViolationsFirstAndAboutLast() throws {

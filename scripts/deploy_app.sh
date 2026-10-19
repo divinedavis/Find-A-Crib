@@ -30,7 +30,7 @@ PY=${PY:-$HOME/.venvs/dhcr-map/bin/python}
 SKIP=${1:-}
 BACKUPS=/var/backups/findacrib-app
 # Everything the copy below replaces, relative to $DOC. Keep in step with it.
-SHIPPED="index.html housing_law_firms.json casa/index.html la/index.html sf/index.html dc/index.html westchester/index.html static/supercluster/supercluster.min.js static/mapillary-preview.js static/apple-street-preview.js static/apple-street-frame.html"
+SHIPPED="index.html housing_law_firms.json casa/index.html la/index.html sf/index.html dc/index.html westchester/index.html static/supercluster/supercluster.min.js static/mapillary-preview.js static/apple-street-preview.js static/apple-street-frame.html static/chat/noble-chacha.js static/chat/chat-crypto.js static/chat/chat-ui.js static/chat/chat.css"
 
 if [ "$SKIP" != "--skip-tests" ]; then
   echo "== unit tests"
@@ -43,6 +43,9 @@ echo "== regenerating city pages from index.html"
 if [ "$SKIP" != "--skip-tests" ]; then
   "$PY" tests/apple_street_preview.py
   "$PY" tests/street_view.py
+  # Building chat: browser <-> iPhone crypto, then two real accounts chatting.
+  python3 tests/chat_crypto_interop.py
+  "$PY" tests/web_chat_e2e.py --engine webkit
   echo "== journeys against the local build"
   # One re-run for a journey that fails, as the live pass already does: four
   # deploys on 2026-10-03 stopped on a different one-off flake each time
@@ -76,8 +79,11 @@ scp -q housing_law_firms.json "$HOST:$DOC/housing_law_firms.json"
 # Your Crib (2026-10-15): 311 calls and crime near your building; Plus alerts.
 ssh "$HOST" "install -d -m 755 $DOC/casa"
 scp -q casa/index.html "$HOST:$DOC/casa/index.html"
+# Building chat on the web (2026-10-19): Your Crib's chat panel + its crypto.
+ssh "$HOST" "install -d -m 755 $DOC/static/chat"
+scp -q static/chat/noble-chacha.js static/chat/chat-crypto.js static/chat/chat-ui.js static/chat/chat.css "$HOST:$DOC/static/chat/"
 for c in la sf dc westchester; do scp -q "$c/index.html" "$HOST:$DOC/$c/index.html"; done
-for u in / /housing_law_firms.json /la/ /sf/ /dc/ /westchester/ /static/supercluster/supercluster.min.js; do
+for u in / /housing_law_firms.json /la/ /sf/ /dc/ /westchester/ /static/supercluster/supercluster.min.js /static/chat/chat-ui.js; do
   printf '%-45s %s\n' "$u" "$(curl -s -o /dev/null -w '%{http_code}' "https://findacrib.com$u")"
 done
 scripts/check_docroot_leaks.sh
@@ -98,4 +104,6 @@ if [ "$SKIP" != "--skip-tests" ]; then
     fi
   fi
   rm -f "$FAILED"
+  echo "== building chat against the live site"
+  "$PY" tests/web_chat_e2e.py --engine webkit --target live || { echo "!! live chat failed — rolling back to $SNAP"; scripts/rollback_app.sh "$SNAP"; exit 1; }
 fi

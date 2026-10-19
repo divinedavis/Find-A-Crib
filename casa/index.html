@@ -19,6 +19,10 @@
 <meta property="og:image" content="https://findacrib.com/og-image.png" />
 <script src="/static/supabase/supabase.js"></script>
 <script src="/config.js?v=2"></script>
+<link rel="stylesheet" href="/static/chat/chat.css?v=1">
+<script defer src="/static/chat/noble-chacha.js?v=1"></script>
+<script defer src="/static/chat/chat-crypto.js?v=1"></script>
+<script defer src="/static/chat/chat-ui.js?v=1"></script>
 <script>
 (function(){
   var t;
@@ -99,6 +103,9 @@
   .legend { display: flex; gap: 14px; font-size: 13px; color: var(--ink-2); margin: 6px 0 8px; }
   .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
   .err { color: var(--bad); font-size: 14px; margin: 8px 0 0; }
+  .chat-btn { display: inline-flex; align-items: center; gap: 6px; margin: -2px 0 14px; padding: 9px 14px; border-radius: 999px;
+    border: 1px solid var(--blue); background: var(--surface); color: var(--blue); font-weight: 700; font-size: 15px; cursor: pointer; }
+  .chat-btn:hover { background: var(--blue-soft); }
   [hidden] { display: none !important; }
   @media (max-width: 480px) { h1 { font-size: 25px; } .top-link.hide-sm { display: none; } }
 </style>
@@ -126,6 +133,8 @@
 
   <div id="out" hidden>
     <div class="place" id="place"></div>
+    <!-- Building chat (owner, 2026-10-17 on iPhone; web 2026-10-19), right under the address like the app. -->
+    <button class="chat-btn" id="chat-btn" type="button" data-testid="casa-chat">💬 Building chat</button>
     <div id="loading" class="card muted">Loading 311 calls…</div>
     <div id="failed" class="card" hidden><b>Couldn't load 311 calls.</b><p class="muted">Check your connection and try again.</p></div>
     <div id="results" hidden>
@@ -177,7 +186,7 @@
   var KINDS = [['shootings','Shootings'],['robbery','Robbery'],['burglary','Burglary'],['assault','Assault'],['theft','Theft'],
                ['car_theft','Car theft'],['weapons','Weapons'],['drugs','Drugs'],['vandalism','Vandalism'],['harassment','Harassment']];
   var PEST = ['PEST','RODENT','RAT ','RATS','MICE','MOUSE','ROACH','BED BUG','BEDBUG','VERMIN'];
-  var place = null, token = null, plus = false, watch = null, places = [], active = -1;
+  var place = null, token = null, plus = false, watch = null, places = [], active = -1, sb = null;
 
   $('theme-btn').addEventListener('click', function () {
     var cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
@@ -411,7 +420,8 @@
   // ---- session (the map's, same origin) and the starting building
   try {
     if (window.supabase && window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
-      window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY).auth.getSession().then(function (r) {
+      sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+      sb.auth.getSession().then(function (r) {
         var sess = r && r.data && r.data.session; if (!sess || !sess.access_token) return;
         token = sess.access_token;
         return api('GET').then(function (j) { plus = !!j.plus; watch = j.watch; renderAlerts(); resetOlder(); });
@@ -419,7 +429,18 @@
     }
   } catch (e) {}
 
+  // ---- building chat (static/chat/chat-ui.js)
+  function openChat() {
+    if (!place || !sb || !window.FacBuildingChat) return;
+    track('chat_open', { bbl: place.bbl, signed_in: !!token, web: true });
+    window.FacBuildingChat.open({ bbl: place.bbl, address: short(place.label), client: sb });
+  }
+  $('chat-btn').addEventListener('click', openChat);
+
   var want = new URLSearchParams(location.search).get('bbl'), saved = null;
+  // Back from signing in to chat (?chat=1): open it once the page is ready.
+  if (new URLSearchParams(location.search).get('chat') === '1')
+    window.addEventListener('load', function () { setTimeout(function () { if (place) openChat(); }, 300); });
   try { saved = JSON.parse(localStorage.getItem('fac.casa') || 'null'); } catch (e) {}
   if (saved && saved.bbl && (!want || want === saved.bbl)) open(saved);
   else if (want && /^[1-5]\d{9}$/.test(want)) {

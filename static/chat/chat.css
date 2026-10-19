@@ -1,0 +1,90 @@
+/* Building chat on findacrib.com (owner, 2026-10-19). Same rules as the app:
+ * RANK who > what > when · STACK a sender's run under one header ·
+ * SLOT the time always in the trailing place · LABEL days and "You", not
+ * the obvious · REVEAL details in a sheet or side panel, never a page ·
+ * BREAKPOINT on the chat's own width (container query), not the window's. */
+.fc-chat-backdrop { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.45); display: flex;
+  align-items: stretch; justify-content: center; }
+.fc-chat { container-type: inline-size; container-name: chat; position: relative; display: flex; flex-direction: column;
+  width: 100%; max-width: 1040px; background: var(--bg); color: var(--ink); }
+@media (min-width: 760px) { .fc-chat-backdrop { padding: 4vh 16px; } .fc-chat { border-radius: 16px; overflow: hidden; height: 92vh; } }
+.fc-chat-head { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--surface);
+  border-bottom: 1px solid var(--line); }
+.fc-chat-head h2 { font-size: 17px; margin: 0; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fc-chat-x { background: none; border: 0; color: var(--blue); font-weight: 700; font-size: 15.5px; cursor: pointer; padding: 6px 2px; }
+.fc-chat-bar { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; background: var(--surface);
+  border-bottom: 1px solid var(--line); font-size: 14px; color: var(--ink-2); }
+.fc-lock { color: var(--good); font-weight: 700; }
+.fc-chat-body { flex: 1 1 auto; display: flex; min-height: 0; }
+.fc-room { flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; }
+.fc-scroll { flex: 1 1 auto; overflow-y: auto; padding: 0 16px 12px; overscroll-behavior: contain; }
+.fc-col { max-width: 720px; margin: 0 auto; }
+.fc-empty { color: var(--ink-2); text-align: center; padding: 48px 0; }
+
+/* LABEL: dates get a divider. */
+.fc-day { display: flex; align-items: center; gap: 10px; margin: 18px 0 4px; color: var(--ink-2); font-size: 13px; font-weight: 700; }
+.fc-day::before, .fc-day::after { content: ""; flex: 1; height: 1px; background: var(--line-strong); }
+
+/* RANK + STACK + SLOT: initials · name ......... time, messages below. */
+.fc-run { padding-top: 12px; }
+.fc-run-head { display: flex; align-items: center; gap: 8px; }
+.fc-av { width: 26px; height: 26px; border-radius: 50%; flex: none; display: grid; place-items: center; font-size: 11.5px; font-weight: 800;
+  background: var(--blue-soft); color: var(--blue); }
+.fc-run.mine .fc-av { background: var(--blue-solid); color: #fff; }
+.fc-name { font-weight: 700; font-size: 15px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fc-time { margin-left: auto; padding-left: 8px; font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fc-msg { display: block; margin: 4px 0 0 34px; max-width: calc(100% - 34px); text-align: left; font: inherit; font-size: 16.5px; line-height: 1.4;
+  color: var(--ink); background: var(--surface); border: 2px solid transparent; border-radius: 14px; padding: 7px 12px;
+  cursor: pointer; white-space: pre-wrap; overflow-wrap: anywhere; }
+.fc-run.mine .fc-msg { background: var(--blue-solid); color: #fff; }
+.fc-msg.locked { font-style: italic; color: var(--ink-2); background: var(--surface); }
+.fc-msg[aria-current="true"] { border-color: var(--blue); }
+.fc-msg:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+/* Typing bubble. */
+.fc-typing { margin: 10px 0 0 34px; }
+.fc-dots { display: inline-flex; gap: 5px; padding: 12px 14px; background: var(--surface); border-radius: 14px; }
+.fc-dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-2); opacity: .45; animation: fc-dot 1.2s infinite ease-in-out; }
+.fc-dots i:nth-child(2) { animation-delay: .15s; } .fc-dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes fc-dot { 0%, 60%, 100% { transform: translateY(0); opacity: .45; } 30% { transform: translateY(-3px); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .fc-dots i { animation: none; opacity: .7; } }
+.fc-typing-line { font-size: 13px; color: var(--ink-2); margin-top: 4px; }
+
+.fc-compose { display: flex; gap: 10px; align-items: flex-end; padding: 10px 12px; background: var(--bg); border-top: 1px solid var(--line); }
+.fc-compose textarea { flex: 1; resize: none; font: inherit; font-size: 16.5px; line-height: 1.35; max-height: 140px; padding: 10px 12px;
+  border-radius: 18px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); }
+.fc-compose textarea:focus { outline: none; border-color: var(--blue); }
+.fc-send { width: 42px; height: 42px; border-radius: 50%; border: 0; background: var(--blue-solid); color: #fff; font-size: 20px; cursor: pointer; flex: none; }
+.fc-send[disabled] { opacity: .45; cursor: default; }
+.fc-err { color: var(--bad); font-size: 14px; padding: 6px 16px 0; }
+
+/* REVEAL: narrow = a sheet over the room; wide = a panel beside it. */
+.fc-detail { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; background: var(--surface); border-top: 1px solid var(--line);
+  border-radius: 16px 16px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,.18); padding: 18px 20px 22px; max-height: 70%; overflow-y: auto; }
+.fc-detail h3 { margin: 0 0 10px; font-size: 19px; }
+.fc-detail .fc-text { font-size: 16.5px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; margin: 0 0 14px; }
+.fc-detail dl { display: grid; grid-template-columns: 80px 1fr; gap: 6px 10px; margin: 0 0 14px; font-size: 14.5px; }
+.fc-detail dt { color: var(--ink-2); font-weight: 700; } .fc-detail dd { margin: 0; color: var(--ink); }
+.fc-actions { display: flex; flex-wrap: wrap; gap: 16px; }
+.fc-actions button { background: none; border: 0; padding: 4px 0; font: inherit; font-weight: 700; font-size: 15px; color: var(--blue); cursor: pointer; }
+.fc-actions .danger { color: var(--bad); }
+.fc-detail-close { position: absolute; top: 12px; right: 14px; }
+.fc-detail-hint { display: none; color: var(--ink-2); font-size: 14.5px; }
+@container chat (min-width: 700px) {
+  .fc-detail { position: static; width: 300px; flex: none; border-radius: 0; border-top: 0; border-left: 1px solid var(--line);
+    box-shadow: none; max-height: none; }
+  .fc-detail[hidden] { display: block !important; }
+  .fc-detail[hidden] > :not(.fc-detail-hint) { display: none; }
+  .fc-detail[hidden] .fc-detail-hint { display: block; }
+  .fc-detail-close { display: none; }
+}
+
+/* Join / sign-in cards. */
+.fc-card { max-width: 560px; margin: 24px auto; padding: 0 16px; }
+.fc-card h3 { font-size: 22px; margin: 6px 0 10px; }
+.fc-card p { color: var(--ink-2); line-height: 1.55; }
+.fc-card label.fc-field { display: block; font-weight: 700; font-size: 14px; color: var(--ink-2); margin: 14px 0 6px; }
+.fc-card input[type=text] { width: 100%; font-size: 17px; padding: 12px; border-radius: 10px; border: 1px solid var(--line-strong);
+  background: var(--surface); color: var(--ink); }
+.fc-card .fc-terms { display: flex; gap: 10px; align-items: flex-start; margin: 14px 0; color: var(--ink-2); font-size: 15px; line-height: 1.5; }
+.fc-card .fc-terms input { margin-top: 4px; width: 18px; height: 18px; flex: none; }

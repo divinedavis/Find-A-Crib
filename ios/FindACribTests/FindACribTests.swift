@@ -1965,3 +1965,57 @@ final class ChatCryptoTests: XCTestCase {
         XCTAssertFalse(ChatFilter.blocks("Is the laundry room open on Sunday?"))
     }
 }
+
+/// Building chat layout + typing (owner, 2026-10-19): the six table rules
+/// applied to the room, and typing bubbles that come and go.
+final class ChatLayoutTests: XCTestCase {
+    private func msg(_ id: Int, _ sender: String, _ at: Date, text: String? = "hi") -> BuildingChat.Message {
+        .init(id: id, sender: sender, name: sender.uppercased(), text: text, at: at, mine: false)
+    }
+
+    func testRunsStackASendersMessagesAndSplitOnDays() {
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "America/New_York")!
+        let now = cal.date(from: DateComponents(year: 2026, month: 10, day: 19, hour: 12))!
+        let y = cal.date(byAdding: .day, value: -1, to: now)!
+        let ms = [msg(1, "a", y), msg(2, "a", y.addingTimeInterval(60)),          // one run
+                  msg(3, "a", y.addingTimeInterval(60 + 301)),                     // > 5 min: new header
+                  msg(4, "b", y.addingTimeInterval(400)),                          // other sender
+                  msg(5, "b", now)]                                                // new day
+        let runs = ChatLayout.runs(ms, calendar: cal, now: now)
+        XCTAssertEqual(runs.map { $0.messages.map(\.id) }, [[1, 2], [3], [4], [5]])
+        XCTAssertEqual(runs.map(\.dayLabel), ["Yesterday", nil, nil, "Today"])
+    }
+
+    func testOlderDaysGetADateNotAWeekdayGuess() {
+        var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "America/New_York")!
+        let now = cal.date(from: DateComponents(year: 2026, month: 10, day: 19, hour: 12))!
+        let old = cal.date(from: DateComponents(year: 2025, month: 12, day: 30, hour: 9))!
+        XCTAssertTrue(ChatLayout.dayLabel(old, calendar: cal, now: now).contains("2025"), "another year names the year")
+    }
+
+    func testInitialsAndTypingLine() {
+        XCTAssertEqual(ChatLayout.initials("Maria, 4B"), "M4")
+        XCTAssertEqual(ChatLayout.initials("devon"), "D")
+        XCTAssertEqual(ChatLayout.initials("  "), "•")
+        XCTAssertEqual(ChatLayout.typingLine(["Maria"]), "Maria is typing…")
+        XCTAssertEqual(ChatLayout.typingLine(["Maria", "Devon"]), "Maria and Devon are typing…")
+        XCTAssertEqual(ChatLayout.typingLine(["a", "b", "c"]), "3 neighbors are typing…")
+    }
+
+    func testABrowserSentMessageNamesItsDeviceKey() {
+        XCTAssertEqual(BuildingChat.senderKeyID(sender: "ABC", device: nil), "abc", "phone key = account id")
+        XCTAssertEqual(BuildingChat.senderKeyID(sender: "ABC", device: "0123456789abcdef"), "abc:0123456789abcdef")
+    }
+
+    @MainActor func testTypingShowsThenExpiresAndStops() {
+        let chat = BuildingChat(bbl: "3001497503")
+        let t0 = Date()
+        chat.startedTyping("x", at: t0)
+        XCTAssertEqual(chat.typing, ["A neighbor"], "an unknown sender reads as a neighbor")
+        chat.stoppedTyping("x")
+        XCTAssertTrue(chat.typing.isEmpty, "a stop clears the bubble at once")
+        chat.startedTyping("x", at: t0.addingTimeInterval(-BuildingChat.typingShownFor - 1))
+        chat.startedTyping("y", at: t0)
+        XCTAssertEqual(chat.typing.count, 1, "a bubble older than the window is gone")
+    }
+}

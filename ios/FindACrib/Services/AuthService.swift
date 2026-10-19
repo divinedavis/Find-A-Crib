@@ -130,6 +130,7 @@ final class AuthService {
             case .signedOut, .userDeleted:
                 ReviewPrompt.shared.signedIn = false
                 session = nil; hasPlus = false; plusKnown = false; contactsCache = [:]; phoneCache = [:]
+                await PushService.shared.sessionEnded()
             default: break
             }
         }

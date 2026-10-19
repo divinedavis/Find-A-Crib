@@ -183,7 +183,8 @@ final class PushService {
     /// session is still valid; the next sign-in files it again.
     func unregister() async {
         pendingToken = nil
-        guard let token = registeredToken, let session = auth?.session else { return }
+        guard let token = registeredToken else { return }
+        guard let session = auth?.session else { await forget(token); return }
         var req = URLRequest(url: URL(string: "https://findacrib.com/api/push/unregister")!, timeoutInterval: 10)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -192,10 +193,35 @@ final class PushService {
         let code = (try? await URLSession.shared.data(for: req)).flatMap { ($0.1 as? HTTPURLResponse)?.statusCode } ?? 0
         registration = .none
         Analytics.shared.track("push_unregistered", ["status": code])
+        if code != 200 { await forget(token) }
+    }
+
+    /// Signed out, by any road (owner, 2026-10-19: "if im not logged into fac
+    /// on the iphone, i shouldnt get rerental/lottery alerts"). unregister()
+    /// needs a live session, so a session that expired, was reset, or ended
+    /// offline left the phone on the account; on 10/19 the owner's phone
+    /// opened signed out with its token still filed. /api/push/forget drops
+    /// the token from whatever account holds it, no session needed.
+    func forget(_ token: String) async {
+        var req = URLRequest(url: URL(string: "https://findacrib.com/api/push/forget")!, timeoutInterval: 10)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try? JSONSerialization.data(withJSONObject: ["token": token])
+        let code = (try? await URLSession.shared.data(for: req)).flatMap { ($0.1 as? HTTPURLResponse)?.statusCode } ?? 0
+        registration = .none
+        Analytics.shared.track("push_forgotten", ["status": code])
+    }
+
+    /// The session ended without the Sign out button (expired, revoked, reset).
+    func sessionEnded() async {
+        pendingToken = nil
+        if let token = registeredToken { await forget(token) }
     }
 
     private func upload(_ token: String) async {
-        guard let session = auth?.session else { pendingToken = token; return }
+        // Signed out: keep the token for the next sign-in, and make sure no
+        // account is still holding it from before.
+        guard let session = auth?.session else { pendingToken = token; await forget(token); return }
         var req = URLRequest(url: URL(string: "https://findacrib.com/api/push/register")!, timeoutInterval: 15)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -301,9 +327,13 @@ final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
     /// An alert that arrives while the app is open still shows as a banner:
     /// the person asked to be told the minute one opens, not only when the
     /// app is closed.
+    /// Signed out, an alert that still slips through (sent before the token
+    /// was dropped) isn't shown while the app is open.
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification,
                                 withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-        completionHandler([.banner, .list, .sound])
+        // UIKit calls this on the main thread; off it, show rather than guess.
+        let signedIn = Thread.isMainThread ? MainActor.assumeIsolated { PushService.shared.auth?.session != nil } : true
+        completionHandler(signedIn ? [.banner, .list, .sound] : [])
     }
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,

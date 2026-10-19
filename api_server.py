@@ -973,6 +973,31 @@ def push_unregister():
     return jsonify(ok=True)
 
 
+@app.route("/push/forget", methods=["POST"])
+def push_forget():
+    """A signed-out phone drops its token from whichever account it was on.
+
+    Owner, 2026-10-19: "if im not logged into fac on the iphone, i shouldnt
+    get rerental/lottery alerts". /push/unregister needs a live session, so a
+    phone whose session expired, was reset, or signed out offline stayed on
+    the account and kept getting its pushes. The app calls this whenever it
+    is signed out and holds a token. No session needed: the 64-hex APNs token
+    is known only to that phone (and Apple), and the only thing it can do is
+    stop pushes to that same phone."""
+    if rate_limited("push_forget", 30, 3600):
+        return _too_many()
+    if not request.is_json:
+        return jsonify(error="json_required"), 415
+    token = str((request.get_json(silent=True) or {}).get("token") or "").strip().lower()
+    if not PUSH_TOKEN_RE.match(token):
+        return jsonify(error="bad_token"), 400
+    try:
+        rpc("device_token_remove", {"p_token": token})
+    except Exception:
+        return jsonify(error="temporarily_unavailable"), 503
+    return jsonify(ok=True)
+
+
 # ---- Your Crib (owner, 2026-10-15) --------------------------------------------
 # Anyone can look up a building's 311 calls (the app and site read NYC Open
 # Data directly). Any account can watch ONE building for crime alerts (free

@@ -1168,11 +1168,13 @@ final class FindACribUITests: XCTestCase {
         // alerts are, like the other sign-in sheets (owner, 2026-10-15).
         let alert = app.buttons["casa-alert"]
         for _ in 0..<4 where !alert.isHittable { app.swipeDown() }
-        XCTAssertTrue(alert.isHittable, "Alert me about new calls shows")
+        XCTAssertTrue(alert.isHittable, "Turn on alerts shows")
         alert.tap()
         XCTAssertTrue(app.descendants(matching: .any)["casa-promise-box"].waitForExistence(timeout: 5),
                       "the sign-in sheet lists what Your Crib alerts include")
         XCTAssertTrue(app.buttons["casa-promise-plus"].exists, "with a Get Plus button")
+        // Crime alerts are free since 10/19; the box says so first.
+        XCTAssertTrue(app.staticTexts["Free: crime alerts within half a mile of your building"].exists, "crime alerts are offered free")
         let sheet = XCTAttachment(screenshot: app.screenshot()); sheet.name = "your-crib-signin"; sheet.lifetime = .keepAlways; add(sheet)
     }
 

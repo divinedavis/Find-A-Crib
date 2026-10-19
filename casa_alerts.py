@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Your Crib alerts: tell a Plus member about each new 311 call on the one
-building they watch (owner, 2026-10-15).
+building they watch (owner, 2026-10-15), and anyone watching about the crime
+kinds they picked (free since 2026-10-19).
 
 Every 30 minutes (deploy/cron-rentmap-casa) this reads casa_watches, asks NYC
 Open Data's 311 dataset (erm2-nwe9) for calls on each watched BBL created
@@ -18,8 +19,10 @@ crime_seen, the watch gets one message counting each chosen kind within half
 a mile over the newly published dates. The first release after a watch
 starts only sets crime_seen — the lookup already showed the chart.
 
-Plus is re-checked here (has_plus) on every run: a watch whose owner has let
-Plus lapse is skipped, not deleted, so it resumes if they come back.
+Crime alerts are free (owner, 2026-10-19: "crime alerts should be free").
+Plus is re-checked here (has_plus) on every run for the 311 part only: a
+watch whose owner has let Plus lapse keeps its crime alerts, and its 311
+alerts resume if they come back.
 
     python3 casa_alerts.py              # the cron run
     python3 casa_alerts.py --dry-run    # print, send and write nothing
@@ -261,7 +264,7 @@ def run_crime(w, key, newest, dry):
             html, text = emailkit.render(
                 title=title, intro=body + ". From the NYPD's newest quarterly release.",
                 cta=("See the chart for your building", f"{SITE}/casa/?bbl={w['bbl']}&src=casa_crime"),
-                footer_note=f"You picked these crime alerts in Your Crib with Find A Crib Plus. Change them any time: {SITE}/casa/")
+                footer_note=f"You picked these crime alerts in Your Crib on Find A Crib. Change them any time: {SITE}/casa/")
             sent = send(w, title, body, key, f"casa-crime-{w['bbl']}", title, html, text, dry)
     if not dry:
         rest(f"casa_watches?user_id=eq.{w['user_id']}", key, "PATCH", {"crime_seen": newest}, prefer="return=minimal")
@@ -291,7 +294,7 @@ def send_test(key, email, bbl, lat, lng, address=""):
         html, text = emailkit.render(
             title=title, intro=body + ". From the NYPD's newest quarterly release.",
             cta=("See the chart for your building", f"{SITE}/casa/?bbl={bbl}&src=casa_crime"),
-            footer_note=f"You picked these crime alerts in Your Crib with Find A Crib Plus. Change them any time: {SITE}/casa/")
+            footer_note=f"You picked these crime alerts in Your Crib on Find A Crib. Change them any time: {SITE}/casa/")
         print("crime:", title, "/", body, "->", send(w, title, body, key, f"casa-crime-{bbl}", title, html, text, False))
 
 
@@ -321,10 +324,8 @@ def main():
     pushed = emailed = 0
     for w in watches:
         try:
-            if not la.rpc("has_plus", {"uid": w["user_id"]}, key):
-                continue
             last_sent = w.get("last_sent")
-            if not last_sent or now - datetime.datetime.fromisoformat(last_sent.replace("Z", "+00:00")) >= MIN_GAP:
+            if la.rpc("has_plus", {"uid": w["user_id"]}, key) and (not last_sent or now - datetime.datetime.fromisoformat(last_sent.replace("Z", "+00:00")) >= MIN_GAP):
                 p, e = run_311(w, key, now, args.dry_run)
                 pushed += p; emailed += e
             p, e = run_crime(w, key, newest, args.dry_run)

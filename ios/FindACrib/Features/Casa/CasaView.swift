@@ -258,9 +258,12 @@ struct CasaView: View {
     @ViewBuilder private func alertCard(_ p: Casa.Place) -> some View {
         let watching = watch.watch?.bbl == p.bbl
         VStack(alignment: .leading, spacing: 8) {
-            Text("Alerts on new 311 calls").font(.se(17, .bold)).foregroundStyle(SE.ink)
+            Text("Alerts for this building").font(.se(17, .bold)).foregroundStyle(SE.ink)
+            // Crime alerts are free for any account (owner, 2026-10-19: "crime
+            // alerts should be free"); 311 alerts stay Plus, server-side.
             if watching {
-                Text("Each morning at 8 you'll get a notification and an email if the City published new 311 calls on this building.")
+                Text(auth.hasPlus ? String(localized: "Each morning at 8 you'll get a notification and an email if the City published new 311 calls on this building.")
+                     : String(localized: "Pick the crime you want to hear about below — free. New 311 calls on this building (pests, heat, leaks) are part of Find A Crib Plus."))
                     .font(.se(15)).foregroundStyle(SE.ink2)
                 crimeChips(p)
                 Button(role: .destructive) {
@@ -268,12 +271,11 @@ struct CasaView: View {
                 } label: { Text("Stop alerts").font(.se(16, .semibold)) }
                     .disabled(watch.busy).accessibilityIdentifier("casa-stop")
             } else {
-                Text(watch.watch.map { String(localized: "Plus watches one building. Switching moves your alerts from \($0.address ?? String(localized: "your other building")) to here.") }
-                     ?? String(localized: "Hear about every new 311 call on this building — pests, heat, leaks, noise. Part of Find A Crib Plus."))
+                Text(watch.watch.map { String(localized: "You can watch one building. Switching moves your alerts from \($0.address ?? String(localized: "your other building")) to here.") }
+                     ?? String(localized: "Free: crime alerts within half a mile. With Find A Crib Plus, also every new 311 call on this building — pests, heat, leaks, noise."))
                     .font(.se(15)).foregroundStyle(SE.ink2)
-                SEPrimaryButton(title: watch.watch == nil ? String(localized: "Alert me about new calls") : String(localized: "Watch this building instead"), icon: "bell.fill") {
+                SEPrimaryButton(title: watch.watch == nil ? String(localized: "Turn on alerts") : String(localized: "Watch this building instead"), icon: "bell.fill") {
                     guard let token = auth.session?.accessToken else { signIn = .alerts; return }
-                    guard auth.hasPlus else { Analytics.shared.track("casa_plus_gate", ["what": "alerts"]); showPlus = true; return }
                     Task {
                         await watch.start(p, crimeKinds: watch.watch?.crime_kinds ?? [], token: token)
                         _ = await PushService.shared.requestAfterAlerts()

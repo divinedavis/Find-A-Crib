@@ -492,5 +492,10 @@
  "your borough": "tu condado",
  "your other building": "tu otro edificio",
  "– bed": "– hab.",
- "– units": "– unidades"
+ "– units": "– unidades",
+ "Pick the crime you want to hear about below — free. New 311 calls on this building (pests, heat, leaks) are part of Find A Crib Plus.": "Elige abajo los delitos sobre los que quieres recibir alertas: es gratis. Las nuevas llamadas al 311 sobre este edificio (plagas, calefacción, fugas) son parte de Find A Crib Plus.",
+ "You can watch one building. Switching moves your alerts from %@ to here.": "Puedes seguir un edificio. Al cambiar, tus alertas pasan de %@ a este.",
+ "Free: crime alerts within half a mile. With Find A Crib Plus, also every new 311 call on this building — pests, heat, leaks, noise.": "Gratis: alertas de delitos a menos de media milla. Con Find A Crib Plus, también cada nueva llamada al 311 sobre este edificio: plagas, calefacción, fugas, ruido.",
+ "A notification and an email for every new 311 call. All part of Plus": "Una notificación y un correo por cada nueva llamada al 311. Todo es parte de Plus",
+ "Every 311 call back to 2010. Part of Plus": "Todas las llamadas al 311 desde 2010. Parte de Plus"
 }

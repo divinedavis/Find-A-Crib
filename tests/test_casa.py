@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Your Crib (owner, 2026-10-15): 311 calls on a building, crime nearby, and
-a Plus watch with alerts.
+a watch with alerts — crime alerts free for any account (10/19), 311 alerts
+Plus.
 
-The watch is written only through /casa/watch, keyed on the verified session
-and gated on has_plus(); the table denies every client write. The alert job's
+The watch is written only through /casa/watch, keyed on the verified session;
+the alert job checks has_plus() before any 311 alert; the table denies every
+client write. The alert job's
 crime kinds, the API's allow-list and the app's chips must agree."""
 import os
 import re
@@ -29,10 +31,17 @@ class CasaWatchRoute(unittest.TestCase):
     def test_account_comes_from_the_session_and_plus_from_the_server(self):
         self.assertIn("_session_user()", self.body)
         self.assertIn('rpc("has_plus", {"uid": u["id"]})', self.body)
-        self.assertIn('error="plus_required"), 402', self.body)
-        self.assertNotRegex(self.body, r'get\("(user_id|email|uid)"\)', "never an account id or email from the body")
-        self.assertLess(self.body.index("if not plus:"), self.body.index('"casa_watches?on_conflict=user_id"'),
-                        "the Plus check comes before the write")
+        self.assertNotRegex(self.body, r'get\("(user_id|email|uid|plus)"\)', "never an account id, email or Plus from the body")
+
+    def test_crime_alerts_are_free_and_311_alerts_are_plus(self):
+        # Owner, 2026-10-19: "crime alerts should be free".
+        self.assertNotIn("plus_required", self.body, "any account can save a watch")
+        import casa_alerts, inspect
+        main = inspect.getsource(casa_alerts.main)
+        gate = main.index('la.rpc("has_plus"')
+        self.assertLess(gate, main.index("run_311("), "311 alerts stay behind has_plus")
+        self.assertNotIn("continue", main[gate - 80:gate + 120], "a lapsed or free account still gets crime alerts")
+        self.assertNotIn("with Find A Crib Plus", inspect.getsource(casa_alerts.run_crime))
 
     def test_bbl_and_kinds_are_validated(self):
         self.assertIn("BBL_RE.match(bbl)", self.body)

@@ -334,8 +334,9 @@ struct AgentPromiseBox: View {
     }
 }
 
-/// What Your Crib's alerts are, before the account: every row is Plus, so
-/// the Get Plus button sits on the last one like the other boxes.
+/// What Your Crib's alerts are, before the account. Crime alerts are free
+/// (2026-10-19) and lead; the rest is Plus, so the Get Plus button sits on
+/// the last row like the other boxes.
 struct CasaPromiseBox: View {
     /// From "See the full history": that feature leads, alerts follow.
     var history = false
@@ -346,15 +347,15 @@ struct CasaPromiseBox: View {
             if history {
                 PromiseRow(icon: "clock.arrow.circlepath", text: String(localized: "Every 311 call on your building back to 2010, not just the past year"))
                 PromiseRow(icon: "ant.fill", text: String(localized: "See whether roaches, mice or rats are a pattern, or a one-off"))
-                PromiseRow(icon: "bell.badge.fill", text: String(localized: "A notification and an email for every new 311 call"))
             } else {
+                PromiseRow(icon: "exclamationmark.shield.fill", text: String(localized: "Free: crime alerts within half a mile of your building"))
                 PromiseRow(icon: "bell.badge.fill", text: String(localized: "A notification and an email for every new 311 call on your building"))
                 PromiseRow(icon: "ant.fill", text: String(localized: "Pests first: roaches, mice and rats called in on your building"))
             }
             HStack(alignment: .center, spacing: 12) {
-                PromiseRow(icon: history ? "exclamationmark.shield.fill" : "clock.arrow.circlepath",
-                           text: history ? String(localized: "Crime alerts within half a mile. All part of Plus")
-                                         : String(localized: "Every 311 call back to 2010, plus crime alerts within half a mile. All part of Plus"))
+                PromiseRow(icon: history ? "bell.badge.fill" : "clock.arrow.circlepath",
+                           text: history ? String(localized: "A notification and an email for every new 311 call. All part of Plus")
+                                         : String(localized: "Every 311 call back to 2010. Part of Plus"))
                 Button {
                     Analytics.shared.track("casa_upsell_click", ["src": "signin_casa"]); openPlus()
                 } label: {

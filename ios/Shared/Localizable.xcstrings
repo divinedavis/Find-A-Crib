@@ -4648,34 +4648,6 @@
         }
       }
     },
-    "A notification and an email for every new 311 call" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Una notificación y un correo electrónico para cada nueva llamada 311"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "새로운 311 통화에 대한 알림과 이메일이 모두 발송됩니다."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "每次新的 311 通话都会收到通知和电子邮件。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "每次新的311通話都會發送通知和電子郵件。"
-          }
-        }
-      }
-    },
     "A notification and an email for every new 311 call on your building" : {
       "localizations" : {
         "es" : {
@@ -4700,6 +4672,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "您的建築物上每一個新的311電話都會收到通知和電子郵件。"
+          }
+        }
+      }
+    },
+    "A notification and an email for every new 311 call. All part of Plus" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una notificación y un correo por cada nueva llamada al 311. Todo es parte de Plus"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "새 311 신고마다 알림과 이메일. 모두 Plus에 포함됩니다"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每条新的311投诉都会发送通知和电子邮件。均属于Plus"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每則新的311投訴都會發送通知和電子郵件。均屬於Plus"
           }
         }
       }
@@ -5486,34 +5486,6 @@
         }
       }
     },
-    "Alert me about new calls" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Avísame sobre nuevas llamadas"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "새로운 전화에 대해 나에게 알림 보내줘"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "提醒我新来电话"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "提醒我新來電話"
-          }
-        }
-      }
-    },
     "Alerts" : {
       "localizations" : {
         "es" : {
@@ -5598,30 +5570,30 @@
         }
       }
     },
-    "Alerts on new 311 calls" : {
+    "Alerts for this building" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Alertas sobre nuevas llamadas 311"
+            "value" : "Alertas para este edificio"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "새로운 311 통화에 대한 알림"
+            "value" : "이 건물에 대한 알림"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "关于新 311 通话的提醒"
+            "state" : "translated",
+            "value" : "这栋楼的提醒"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "關於新311通話的警報"
+            "state" : "translated",
+            "value" : "這棟樓的提醒"
           }
         }
       }
@@ -9892,34 +9864,6 @@
         }
       }
     },
-    "Crime alerts within half a mile. All part of Plus" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Alertas de delitos a menos de un kilómetro. Todo parte de Plus"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "반 마일 이내의 범죄 경보. 모두 Plus의 일부입니다."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "半英里内的犯罪警报。都是Plus的一部分"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "半英里內的犯罪警報。都是Plus的一部分"
-          }
-        }
-      }
-    },
     "Current address" : {
       "localizations" : {
         "es" : {
@@ -11324,30 +11268,30 @@
         }
       }
     },
-    "Every 311 call back to 2010, plus crime alerts within half a mile. All part of Plus" : {
+    "Every 311 call back to 2010. Part of Plus" : {
       "localizations" : {
         "es" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Cada llamada 311 vuelve a 2010, además de alertas de delitos dentro de medio milla. Todo parte de Plus"
+            "state" : "translated",
+            "value" : "Todas las llamadas al 311 desde 2010. Parte de Plus"
           }
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "모든 311는 2010년으로 전화 회신하고, 반 마일 이내의 범죄 경보도 포함됩니다. 모두 Plus의 일부입니다."
+            "state" : "translated",
+            "value" : "2010년부터의 모든 311 신고. Plus에 포함"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "每个311呼叫都会回拨到2010年，以及半英里内的犯罪警报。所有这些都是Plus的一部分"
+            "state" : "translated",
+            "value" : "2010年以来的所有311投诉。属于Plus"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "每一個311呼叫都會回撥到2010年，外加半英里範圍內的犯罪警報。這都是Plus的一部分"
+            "state" : "translated",
+            "value" : "2010年以來的所有311投訴。屬於Plus"
           }
         }
       }
@@ -12321,6 +12265,62 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "免費法律幫助"
+          }
+        }
+      }
+    },
+    "Free: crime alerts within half a mile of your building" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gratis: alertas de delitos dentro de medio milla de su edificio"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "무료: 내 건물 반 마일 이내 범죄 알림"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "免费：你所在楼半英里内的犯罪提醒"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "免費：你所在樓半英里內的犯罪提醒"
+          }
+        }
+      }
+    },
+    "Free: crime alerts within half a mile. With Find A Crib Plus, also every new 311 call on this building — pests, heat, leaks, noise." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gratis: alertas de delitos a menos de media milla. Con Find A Crib Plus, también cada nueva llamada al 311 sobre este edificio: plagas, calefacción, fugas, ruido."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "무료: 반 마일 이내 범죄 알림. Find A Crib Plus에서는 이 건물의 새 311 신고(해충, 난방, 누수, 소음)마다 알림도 받습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "免费：半英里内的犯罪提醒。开通Find A Crib Plus，这栋楼每条新的311投诉（虫害、供暖、漏水、噪音）也会提醒你。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "免費：半英里內的犯罪提醒。開通Find A Crib Plus，這棟樓每則新的311投訴（蟲害、供暖、漏水、噪音）也會提醒你。"
           }
         }
       }
@@ -13525,34 +13525,6 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "衛生部啮齿動物檢查，最新的先進行。「老鼠活動」或「失敗」意味著檢查員發現了老鼠的跡象；通過合規檢查意味著問題已解決。"
-          }
-        }
-      }
-    },
-    "Hear about every new 311 call on this building — pests, heat, leaks, noise. Part of Find A Crib Plus." : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Escuche sobre cada nueva llamada 311 en este edificio: plagas, calor, fugas, ruido. Parte de Find A Crib Plus."
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "이 건물에서 발생하는 모든 새로운 311 콜에 대해 들어보세요 - 해충, 열, 누수, 소음. Find A Crib Plus의 일부입니다."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "了解这座建筑上每个新的311电话——害虫、高温、泄漏、噪音。Find A Crib Plus的一部分。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "在這棟建築裡，您可以隨時聽到每一個新的311電話——害蟲、熱量、洩漏、噪音。這是Find A Crib Plus的一部分。"
           }
         }
       }
@@ -20066,7 +20038,34 @@
         }
       }
     },
-    "OK" : {},
+    "OK" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Vale"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "좋아요"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "好的"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "好"
+          }
+        }
+      }
+    },
     "Off · turn on in Settings" : {
       "localizations" : {
         "es" : {
@@ -21563,6 +21562,34 @@
         }
       }
     },
+    "Pick the crime you want to hear about below — free. New 311 calls on this building (pests, heat, leaks) are part of Find A Crib Plus." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elige abajo los delitos sobre los que quieres recibir alertas: es gratis. Las nuevas llamadas al 311 sobre este edificio (plagas, calefacción, fugas) son parte de Find A Crib Plus."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "아래에서 알림 받을 범죄 유형을 고르세요. 무료입니다. 이 건물의 새 311 신고(해충, 난방, 누수) 알림은 Find A Crib Plus에 포함됩니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在下方选择你想收到提醒的犯罪类型——免费。这栋楼新的311投诉（虫害、供暖、漏水）提醒属于Find A Crib Plus。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在下方選擇你想收到提醒的犯罪類型——免費。這棟樓新的311投訴（蟲害、供暖、漏水）提醒屬於Find A Crib Plus。"
+          }
+        }
+      }
+    },
     "Pick up where you left off:" : {
       "localizations" : {
         "es" : {
@@ -21677,34 +21704,6 @@
     },
     "Plus" : {
       "shouldTranslate" : false
-    },
-    "Plus watches one building. Switching moves your alerts from %@ to here." : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Plus vigila un edificio. Cambiar mueve sus alertas de %@ a aquí."
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Plus은 한 건물을 모니터링합니다. 스위칭을 하면 알림이 %@에서 여기로 이동됩니다."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Plus监控一栋建筑。切换将您的警报从%@切换到这里。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Plus監視一棟建築。切換將您的警報從%@轉移到這裡。"
-          }
-        }
-      }
     },
     "Plus: real-time lottery alerts, the minute one opens" : {
       "localizations" : {
@@ -28420,7 +28419,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "開啓提醒"
+            "value" : "開啟提醒"
           }
         }
       }
@@ -30461,6 +30460,34 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "你"
+          }
+        }
+      }
+    },
+    "You can watch one building. Switching moves your alerts from %@ to here." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Puedes seguir un edificio. Al cambiar, tus alertas pasan de %@ a este."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "건물 한 곳을 지켜볼 수 있습니다. 바꾸면 알림이 %@에서 이곳으로 옮겨집니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你可以关注一栋楼。切换后，提醒会从%@移到这里。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你可以關注一棟樓。切換後，提醒會從%@移到這裡。"
           }
         }
       }

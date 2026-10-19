@@ -133,11 +133,11 @@
         <div id="v-kinds" class="muted" style="margin-top:8px"></div></div>
 
       <div class="card" id="alerts">
-        <h2>Alerts on new 311 calls</h2>
+        <h2>Alerts for this building</h2>
         <p class="muted" id="a-text"></p>
-        <button class="btn" id="a-on" type="button">🔔 Alert me about new calls</button>
+        <button class="btn" id="a-on" type="button">🔔 Turn on alerts</button>
         <div id="a-crime" hidden>
-          <h2 style="font-size:16px;margin-top:14px">Crime alerts within half a mile</h2>
+          <h2 style="font-size:16px;margin-top:14px">Crime alerts within half a mile · free</h2>
           <p class="muted">Pick what you want to hear about. The NYPD publishes every three months, so these come when each new release is out.</p>
           <div class="chips" id="kinds"></div>
           <p style="margin:14px 0 0"><button class="link-btn stop" id="a-off" type="button">Stop alerts</button></p>
@@ -369,10 +369,13 @@
     $('a-err').hidden = true;
     $('a-crime').hidden = !here;
     $('a-on').hidden = here;
-    $('a-text').textContent = here ? "Each morning at 8 you'll get a notification and an email if the City published new 311 calls on this building."
-      : watch ? 'Plus watches one building. Switching moves your alerts from ' + (watch.address || 'your other building') + ' to here.'
-      : 'Hear about every new 311 call on this building — pests, heat, leaks, noise. Part of Find A Crib Plus.';
-    $('a-on').textContent = watch && !here ? '🔔 Watch this building instead' : '🔔 Alert me about new calls';
+    // Crime alerts are free for any account (owner, 2026-10-19); the 311
+    // calls are still Plus, and the server sends them only to members.
+    $('a-text').textContent = here ? (plus ? "Each morning at 8 you'll get a notification and an email if the City published new 311 calls on this building."
+        : 'Pick the crime you want to hear about below — free. New 311 calls on this building (pests, heat, leaks) are part of Find A Crib Plus.')
+      : watch ? 'You can watch one building. Switching moves your alerts from ' + (watch.address || 'your other building') + ' to here.'
+      : 'Free: crime alerts within half a mile. With Find A Crib Plus, also every new 311 call on this building — pests, heat, leaks, noise.';
+    $('a-on').textContent = watch && !here ? '🔔 Watch this building instead' : '🔔 Turn on alerts';
     var on = (here && watch.crime_kinds) || [];
     $('kinds').innerHTML = KINDS.map(function (k) { return '<button type="button" data-k="' + k[0] + '" aria-pressed="' + (on.indexOf(k[0]) >= 0) + '">' + (on.indexOf(k[0]) >= 0 ? '✓ ' : '') + k[1] + '</button>'; }).join('');
   }
@@ -385,13 +388,12 @@
     $('a-on').disabled = true;
     return api('POST', { bbl: place.bbl, address: short(place.label), lat: place.lat, lng: place.lng, crime_kinds: kinds })
       .then(function (j) { watch = j.watch; renderAlerts(); })
-      .catch(function (e) { $('a-err').textContent = e && e.error === 'plus_required' ? 'Alerts are part of Find A Crib Plus.' : "Couldn't save. Try again in a minute."; $('a-err').hidden = false; })
+      .catch(function (e) { $('a-err').textContent = "Couldn't save. Try again in a minute."; $('a-err').hidden = false; })
       .then(function () { $('a-on').disabled = false; });
   }
   $('a-on').addEventListener('click', function () {
     if (!token) return needAccount();
-    if (!plus) return needPlus('alerts');
-    track('casa_watch_on', { bbl: place.bbl, web: true });
+    track('casa_watch_on', { bbl: place.bbl, plus: plus, web: true });
     save((watch && watch.bbl === place.bbl && watch.crime_kinds) || []);
   });
   $('kinds').addEventListener('click', function (e) {

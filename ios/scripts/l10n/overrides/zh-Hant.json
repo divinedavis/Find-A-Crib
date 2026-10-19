@@ -40,7 +40,9 @@
   "Lotteries and re-rentals with any of these sizes. Leave all off for every size." : "含以上任一戶型的抽籤和轉租房源。全部不選則顯示所有戶型。",
   "%lld open, all outside the income range you entered. Change it under Filter." : "%lld 個開放中，均不在你填寫的收入範圍內。可在「篩選」中修改。",
   "%lld open with %@, all outside the income range you entered. Change it under Filter." : "%1$lld 個含%2$@的開放中，均不在你填寫的收入範圍內。可在「篩選」中修改。",
-  "%lld re-rentals here, all outside the income range you entered. Change it under Filter." : {"other": "這裡有 %lld 個轉租房源，均不在你填寫的收入範圍內。可在「篩選」中修改。"},
+  "%lld re-rentals here, all outside the income range you entered. Change it under Filter." : {
+    "other" : "這裡有 %lld 個轉租房源，均不在你填寫的收入範圍內。可在「篩選」中修改。"
+  },
   "iPhone setting" : "iPhone 設定",
   " · %lld class C" : " · %lld 項 C 類",
   " · %lld still open" : " · %lld 項仍未結",
@@ -337,7 +339,7 @@
   "Turn off alerts" : "關閉提醒",
   "Turn off alerts?" : "關閉提醒？",
   "Turn on" : "開啓",
-  "Turn on alerts" : "開啓提醒",
+  "Turn on alerts" : "開啟提醒",
   "Type your address. You'll see every 311 call on your building in the past year — roaches, mice, rats, bed bugs, heat, noise, leaks — and reported crime within half a mile." : "輸入你的地址。你會看到過去一年你所在大樓的每一條 311 投訴——蟑螂、小鼠、大鼠、臭蟲、暖氣、噪音、漏水——以及半英里內報告的犯罪。",
   "Units" : "單位數",
   "Units open now" : "現有空房",
@@ -369,5 +371,12 @@
   "ZIP" : "郵編",
   "ZIP %@" : "郵編 %@",
   "Offline. Showing what you saw %@. Pull down to refresh." : "離線。顯示的是你%@看到的內容。下拉可重新整理。",
-  "NYC's 311 data didn't answer. Showing what you saw %@. Pull down to try again." : "紐約市 311 資料沒有回應。顯示的是你%@看到的內容。下拉可重試。"
+  "NYC's 311 data didn't answer. Showing what you saw %@. Pull down to try again." : "紐約市 311 資料沒有回應。顯示的是你%@看到的內容。下拉可重試。",
+  "Pick the crime you want to hear about below — free. New 311 calls on this building (pests, heat, leaks) are part of Find A Crib Plus." : "在下方選擇你想收到提醒的犯罪類型——免費。這棟樓新的311投訴（蟲害、供暖、漏水）提醒屬於Find A Crib Plus。",
+  "You can watch one building. Switching moves your alerts from %@ to here." : "你可以關注一棟樓。切換後，提醒會從%@移到這裡。",
+  "Free: crime alerts within half a mile. With Find A Crib Plus, also every new 311 call on this building — pests, heat, leaks, noise." : "免費：半英里內的犯罪提醒。開通Find A Crib Plus，這棟樓每則新的311投訴（蟲害、供暖、漏水、噪音）也會提醒你。",
+  "A notification and an email for every new 311 call. All part of Plus" : "每則新的311投訴都會發送通知和電子郵件。均屬於Plus",
+  "Every 311 call back to 2010. Part of Plus" : "2010年以來的所有311投訴。屬於Plus",
+  "Free: crime alerts within half a mile of your building" : "免費：你所在樓半英里內的犯罪提醒",
+  "Alerts for this building" : "這棟樓的提醒"
 }

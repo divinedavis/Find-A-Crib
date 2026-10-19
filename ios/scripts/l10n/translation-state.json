@@ -48,10 +48,6 @@
       "back" : "BD",
       "src" : "bd8b9d26fb9f353a"
     },
-    " Find A Crib is not a broker and does not list apartments." : {
-      "back" : "Find A Crib is not a real estate agent and does not list apartments.",
-      "src" : "19a956439d8da8f6"
-    },
     " We'll alert you when one is posted." : {
       "back" : "We will let you know when one is published.",
       "src" : "2b420c720285e1e3"
@@ -159,10 +155,6 @@
     "%@ and %@ here — see each one" : {
       "back" : "%1$@ and %2$@ here, see each one",
       "src" : "754484d2fe449f4f"
-    },
-    "%@ are %@" : {
-      "back" : "%1$@ are %2$@",
-      "src" : "c6d8e43723634c3d"
     },
     "%@ bd" : {
       "back" : "%@ bd",
@@ -272,14 +264,6 @@
       "back" : "%lld months",
       "src" : "fa25c340244d5a96"
     },
-    "%lld more are outside your income range — show them" : {
-      "back" : "%lld plus they are outside your income range, show them",
-      "src" : "9b6297ac81cdd4b0"
-    },
-    "%lld more don't list bedroom sizes — show them" : {
-      "back" : "%lld more, don't list the sizes of the rooms, show them",
-      "src" : "7672c76c3259a4c8"
-    },
     "%lld of %lld open" : {
       "back" : "%1$lld of %2$lld open",
       "src" : "72137fd6367f6248"
@@ -336,14 +320,6 @@
       "back" : "%lld open violations",
       "src" : "c265951803bbdd00"
     },
-    "%lld open with %@, all outside the income range you entered. Tap above to see them anyway." : {
-      "back" : "%1$lld open with %2$@, everything outside the income range you entered. Tap up to see them anyway.",
-      "src" : "f1d433ac80f1d89c"
-    },
-    "%lld open, all outside the income range you entered. Tap above to see them anyway." : {
-      "back" : "%lld open, everything outside the income range you entered. Press up to see them anyway.",
-      "src" : "8fc105fb5b9fdab6"
-    },
     "%lld opened the minute they were posted. Tap one to see it on the agent's site." : {
       "back" : "%lld opened at the moment they were published. Click one to see it on the agent's website.",
       "src" : "e4654b24255e82e2"
@@ -363,10 +339,6 @@
     "%lld re-infested" : {
       "back" : "%lld refitted",
       "src" : "c2e3f5527bba062d"
-    },
-    "%lld re-rentals here, all outside the income range you entered. Tap above to see them anyway." : {
-      "back" : "%lld sublets here, all outside the income range you entered. Press up to see them anyway.",
-      "src" : "1eeb791299002f07"
     },
     "%lld rooms" : {
       "back" : "%lld rooms",
@@ -444,10 +416,6 @@
       "back" : "1 bed",
       "src" : "6dd0e9c5c10ea5f3"
     },
-    "1 is %@" : {
-      "back" : "1 is %@",
-      "src" : "e0cfea0695b5f3b5"
-    },
     "1 year" : {
       "back" : "1 year",
       "src" : "95c3615aeb2445de"
@@ -512,13 +480,13 @@
       "back" : "A notice of lack of fault, according to the Ellis Law, the owner's move and demolition, means that a tenant may be forced to leave without having done anything.",
       "src" : "d673f82d0430c189"
     },
-    "A notification and an email for every new 311 call" : {
-      "back" : "A notification and an email for each new 311 call",
-      "src" : "599890c6177ae5ab"
-    },
     "A notification and an email for every new 311 call on your building" : {
       "back" : "A notification and an email for each new 311 call in your building",
       "src" : "23e8a4bc27ab2779"
+    },
+    "A notification and an email for every new 311 call. All part of Plus" : {
+      "back" : "A notification and an email for each new 311 call. Everything starts from Plus",
+      "src" : "4fa98cc9170fa69a"
     },
     "A repair letter in your own words, and answers to your questions about your rights as a renter." : {
       "back" : "A repair letter in your own words, and answers to your questions about your rights as a tenant.",
@@ -628,10 +596,6 @@
       "back" : "warning",
       "src" : "fe1817e769b4580e"
     },
-    "Alert me about new calls" : {
-      "back" : "Let me know about new calls",
-      "src" : "3d0767ee61941a81"
-    },
     "Alerts" : {
       "back" : "Alerts",
       "src" : "9a5f507773ad3214"
@@ -644,9 +608,9 @@
       "back" : "The alerts are part of Find A Crib Plus.",
       "src" : "bddf6c5126a2ec3d"
     },
-    "Alerts on new 311 calls" : {
-      "back" : "Alerts about new 311 calls",
-      "src" : "0a8558d144012355"
+    "Alerts for this building" : {
+      "back" : "Alerts for this building",
+      "src" : "a6b060df9cac8ddc"
     },
     "All %lld units are income-restricted" : {
       "back" : "All %lld units are restricted by income",
@@ -927,10 +891,6 @@
     "Built –" : {
       "back" : "Built -",
       "src" : "c9c9e69d72c5c429"
-    },
-    "Built %lld" : {
-      "back" : "Built %lld",
-      "src" : "388990d4407ef402"
     },
     "Burglary" : {
       "back" : "robbery",
@@ -1268,10 +1228,6 @@
       "back" : "Crime alerts within half a mile",
       "src" : "056c2a39dfefbf42"
     },
-    "Crime alerts within half a mile. All part of Plus" : {
-      "back" : "Crime alerts within less than one kilometer. Everything starts from Plus",
-      "src" : "b242c440f4b8d6c8"
-    },
     "Current address" : {
       "back" : "Current address",
       "src" : "20a257fff9b28477"
@@ -1396,10 +1352,6 @@
       "back" : "Every morning at 8 o'clock you will receive a notification and an email if the city has published new 311 calls in this building.",
       "src" : "4473b09b218b84c7"
     },
-    "Edit boroughs" : {
-      "back" : "Edit neighborhoods",
-      "src" : "765ae6127cc44ecc"
-    },
     "Edit details" : {
       "back" : "Edit details",
       "src" : "cb2786a08230a7ec"
@@ -1464,9 +1416,9 @@
       "back" : "Each %1$@ building in %2$@",
       "src" : "3b18402133a18a8d"
     },
-    "Every 311 call back to 2010, plus crime alerts within half a mile. All part of Plus" : {
-      "back" : "Every 311 call goes back to 2010, in addition to alerts of crimes within half a mile. Everything starts from Plus",
-      "src" : "b66dfb66fdfdaf50"
+    "Every 311 call back to 2010. Part of Plus" : {
+      "back" : "Each 311 call goes back to the year 2010. Part of Plus",
+      "src" : "6e3afa771a18ea3f"
     },
     "Every 311 call on this building back to 2010. Part of Find A Crib Plus." : {
       "back" : "Every 311 call in this building since 2010. Part of Find A Crib Plus.",
@@ -1604,6 +1556,14 @@
       "back" : "Free legal help",
       "src" : "7bcc2239f1fd0e42"
     },
+    "Free: crime alerts within half a mile of your building" : {
+      "back" : "Free: crime alerts within half a mile of your building",
+      "src" : "5f48151f384511bd"
+    },
+    "Free: crime alerts within half a mile. With Find A Crib Plus, also every new 311 call on this building — pests, heat, leaks, noise." : {
+      "back" : "Free: crime alerts within half a mile. With Find A Crib Plus, also every new 311 call in this building: pests, heat, leaks, noise.",
+      "src" : "96c2f8f5a0a55fc8"
+    },
     "From " : {
       "back" : "from",
       "src" : "41086e5ed9643729"
@@ -1619,10 +1579,6 @@
     "From NYC Housing Connect, updated every 10 minutes. Eligibility also depends on household size — check each listing." : {
       "back" : "From NYC Housing Connect, updated every 10 minutes. Eligibility also depends on the size of the home, please check each ad.",
       "src" : "31d147a61f541aed"
-    },
-    "From NYC HPD's open data. Class C means the city considers the condition immediately hazardous — heat, hot water, lead, pests. Pest violations are what an HPD inspector confirmed inside an apartment. Bedbug filings are the landlord's own annual report, covering the year to the previous 31 October, so they run about a year behind; rat inspections are the Health Department's, and only exist where the city inspected." : {
-      "back" : "From the open data of NYC HPD. Class C means that the city considers the condition immediately dangerous: heat, hot water, lead, pests. The pest infestations are what a HPD inspector confirmed inside an apartment. Cockroach pest reports are the owner's own annual report, which covers the year up to October 31 of the previous year, so they are about 1 year behind; rat inspections are from the Department of Health and only exist where the city has inspected them.",
-      "src" : "4335afb0c936b2d4"
     },
     "From NYC Open Data: 311 Service Requests and NYPD complaint data." : {
       "back" : "From NYC Open Data: 311 Service Requests and NYPD complaint data.",
@@ -1671,10 +1627,6 @@
     "Get a repair made, check a rent increase, read your rights, or plan a renewal." : {
       "back" : "Get a repair, check a rent increase, read your rights or plan a renewal.",
       "src" : "c329b857298bf7e0"
-    },
-    "Get alerts" : {
-      "back" : "Get alerts",
-      "src" : "6663abc7ec3184c7"
     },
     "Get alerts on this phone?" : {
       "back" : "Get alerts on this phone?",
@@ -1760,10 +1712,6 @@
       "back" : "Rodent inspections by the Department of Health, first the most recent ones. \"Rat activity\" or \"failed\" means that the inspector found signs of rats; an approved compliance visit means that the problem has been solved.",
       "src" : "c151bb91795d69f8"
     },
-    "Hear about every new 311 call on this building — pests, heat, leaks, noise. Part of Find A Crib Plus." : {
-      "back" : "Listen to about each new 311 call in this building: pests, heat, leaks, noise. Part of Find A Crib Plus.",
-      "src" : "11b7a203d57d58f0"
-    },
     "Hear about new rent-stabilized lotteries and re-rentals in your borough. Allow notifications, then pick your boroughs — ten seconds." : {
       "back" : "Hey, about the new stabilized lotteries for rent and the re-leases in your municipality. Allow notifications, then choose your municipalities: ten seconds.",
       "src" : "5020c33836af58a8"
@@ -1783,14 +1731,6 @@
     "Hide replies" : {
       "back" : "Hide answers",
       "src" : "5855a0c676128944"
-    },
-    "Hide the %lld outside your income range" : {
-      "back" : "Hide the %lld outside your income range",
-      "src" : "ddd9f2bed75cee47"
-    },
-    "Hide the %lld that don't list bedroom sizes" : {
-      "back" : "Hide the %lld that does not list the room sizes",
-      "src" : "f5cc9796f28f5bb8"
     },
     "HOLLYWOOD" : {
       "back" : "Hollywood",
@@ -2732,10 +2672,6 @@
       "back" : "The NYC data service did not respond. Check your connection and try again.",
       "src" : "6bc07c82e028e43e"
     },
-    "NYPD complaint reports, %@. The NYPD publishes these every three months; the newest are through %@. Locations are rounded to the block." : {
-      "back" : "NYPD complaint reports, %1$@. The NYPD publishes them every three months; the most recent ones are up to %2$@. The locations are rounded to the block.",
-      "src" : "faba37a4d127cf98"
-    },
     "Off · turn on in Settings" : {
       "back" : "Off · turn it on in Settings",
       "src" : "f794f551238a388e"
@@ -2751,6 +2687,10 @@
     "Offline. Showing what you saw %@. Pull down to refresh." : {
       "back" : "Disconnected. Showing what you have seen %@. Press down to update.",
       "src" : "94cae1e8b0fd27f3"
+    },
+    "OK" : {
+      "back" : "voucher",
+      "src" : "ba998250f7eb791b"
     },
     "Older than a year" : {
       "back" : "More than a year",
@@ -2952,6 +2892,10 @@
       "back" : "Choose at least one borough.",
       "src" : "4ee6cc394bdb8438"
     },
+    "Pick the crime you want to hear about below — free. New 311 calls on this building (pests, heat, leaks) are part of Find A Crib Plus." : {
+      "back" : "Choose the crime you want to hear more about below, it is free. New 311 calls about this building (pests, heat, leaks) are part of Find A Crib Plus.",
+      "src" : "e63cf3b47e8b1b70"
+    },
     "Pick up where you left off:" : {
       "back" : "Continue where you left off:",
       "src" : "6d7fc670efa5437b"
@@ -2971,10 +2915,6 @@
     "PLUS" : {
       "back" : "virtue",
       "src" : "e3ec1117b278eb9b"
-    },
-    "Plus watches one building. Switching moves your alerts from %@ to here." : {
-      "back" : "Plus monitors a building. Change moves its alerts from %@ to here.",
-      "src" : "d23c7d6d10b2d783"
     },
     "Plus: real-time lottery alerts, the minute one opens" : {
       "back" : "Plus: real-time lottery alerts, in the minute it opens",
@@ -3567,10 +3507,6 @@
     "Since –" : {
       "back" : "Since when -",
       "src" : "be97f90995f198ed"
-    },
-    "Since %lld" : {
-      "back" : "From %lld",
-      "src" : "98747da8854b4e71"
     },
     "Some of these charges are likely illegal" : {
       "back" : "It is likely that some of these accusations are illegal",
@@ -4240,6 +4176,10 @@
       "back" : "you",
       "src" : "307c691f42617df7"
     },
+    "You can watch one building. Switching moves your alerts from %@ to here." : {
+      "back" : "You can observe a building. Change moves your alerts from %@ to here.",
+      "src" : "1ede804126f95b66"
+    },
     "You have Plus" : {
       "back" : "You have Plus",
       "src" : "a283e8aaee53f155"
@@ -4422,10 +4362,6 @@
       "back" : "bd",
       "src" : "bd8b9d26fb9f353a"
     },
-    " Find A Crib is not a broker and does not list apartments." : {
-      "back" : "Find A Crib is not an agent and does not list apartments.",
-      "src" : "19a956439d8da8f6"
-    },
     " We'll alert you when one is posted." : {
       "back" : "I'll let you know when it's posted.",
       "src" : "2b420c720285e1e3"
@@ -4533,10 +4469,6 @@
     "%@ and %@ here — see each one" : {
       "back" : "Look at %1$@ and %2$@ here - each one separately.",
       "src" : "754484d2fe449f4f"
-    },
-    "%@ are %@" : {
-      "back" : "%1$@ is %2$@.",
-      "src" : "c6d8e43723634c3d"
     },
     "%@ bd" : {
       "back" : "%@ bed",
@@ -4646,14 +4578,6 @@
       "back" : "%lld months",
       "src" : "fa25c340244d5a96"
     },
-    "%lld more are outside your income range — show them" : {
-      "back" : "%lld items are outside your income range - show them",
-      "src" : "9b6297ac81cdd4b0"
-    },
-    "%lld more don't list bedroom sizes — show them" : {
-      "back" : "%lld Don't list the size of the bedroom anymore - show it to me.",
-      "src" : "7672c76c3259a4c8"
-    },
     "%lld of %lld open" : {
       "back" : "%2$lld's %1$lld is open.",
       "src" : "72137fd6367f6248"
@@ -4710,14 +4634,6 @@
       "back" : "%lld open violation",
       "src" : "c265951803bbdd00"
     },
-    "%lld open with %@, all outside the income range you entered. Tap above to see them anyway." : {
-      "back" : "%1$lld opens with %2$@, and all items outside the entered income range are displayed. Tap above to check anyway.",
-      "src" : "f1d433ac80f1d89c"
-    },
-    "%lld open, all outside the income range you entered. Tap above to see them anyway." : {
-      "back" : "%lld open, all items outside the income range entered. Anyway, tap above to check.",
-      "src" : "8fc105fb5b9fdab6"
-    },
     "%lld opened the minute they were posted. Tap one to see it on the agent's site." : {
       "back" : "%lld has been open since the moment it was posted. Tap one to check it out on the agent's website.",
       "src" : "e4654b24255e82e2"
@@ -4737,10 +4653,6 @@
     "%lld re-infested" : {
       "back" : "%lld reinfection",
       "src" : "c2e3f5527bba062d"
-    },
-    "%lld re-rentals here, all outside the income range you entered. Tap above to see them anyway." : {
-      "back" : "Here %lld re-rental, all of them are outside the income range you entered. Anyway, tap above to check.",
-      "src" : "1eeb791299002f07"
     },
     "%lld rooms" : {
       "back" : "%lld room",
@@ -4818,10 +4730,6 @@
       "back" : "1 bed",
       "src" : "6dd0e9c5c10ea5f3"
     },
-    "1 is %@" : {
-      "back" : "1 is %@.",
-      "src" : "e0cfea0695b5f3b5"
-    },
     "1 year" : {
       "back" : "1 year",
       "src" : "95c3615aeb2445de"
@@ -4886,13 +4794,13 @@
       "back" : "Notice of Freehold Responsibility - Ellis Act, Owner Occupancy, Demolition - means that a tenant may be forced to leave without doing anything.",
       "src" : "d673f82d0430c189"
     },
-    "A notification and an email for every new 311 call" : {
-      "back" : "Notifications and emails about new 311 calls will all be sent.",
-      "src" : "599890c6177ae5ab"
-    },
     "A notification and an email for every new 311 call on your building" : {
       "back" : "Notifications and emails for all new 311 calls generated in your building",
       "src" : "23e8a4bc27ab2779"
+    },
+    "A notification and an email for every new 311 call. All part of Plus" : {
+      "back" : "I have all the notifications and emails for the new 311 calls. They are all part of Plus.",
+      "src" : "4fa98cc9170fa69a"
     },
     "A repair letter in your own words, and answers to your questions about your rights as a renter." : {
       "back" : "Your literal repair letter and answers to your questions about your rights as a landlord.",
@@ -5002,10 +4910,6 @@
       "back" : "warn",
       "src" : "fe1817e769b4580e"
     },
-    "Alert me about new calls" : {
-      "back" : "Send me a notification about the new phone.",
-      "src" : "3d0767ee61941a81"
-    },
     "Alerts" : {
       "back" : "a walking race",
       "src" : "9a5f507773ad3214"
@@ -5018,9 +4922,9 @@
       "back" : "Notifications are part of Find A Crib Plus.",
       "src" : "bddf6c5126a2ec3d"
     },
-    "Alerts on new 311 calls" : {
-      "back" : "Notification for a new 311 call",
-      "src" : "0a8558d144012355"
+    "Alerts for this building" : {
+      "back" : "Notice about this building",
+      "src" : "a6b060df9cac8ddc"
     },
     "All %lld units are income-restricted" : {
       "back" : "All %lld units have income restrictions.",
@@ -5301,10 +5205,6 @@
     "Built –" : {
       "back" : "Built –",
       "src" : "c9c9e69d72c5c429"
-    },
-    "Built %lld" : {
-      "back" : "Manufacturing %lld",
-      "src" : "388990d4407ef402"
     },
     "Burglary" : {
       "back" : "Robbery",
@@ -5642,10 +5542,6 @@
       "back" : "Crime alert within half a mile",
       "src" : "056c2a39dfefbf42"
     },
-    "Crime alerts within half a mile. All part of Plus" : {
-      "back" : "Crime alert within half a mile. All are part of Plus.",
-      "src" : "b242c440f4b8d6c8"
-    },
     "Current address" : {
       "back" : "Current address",
       "src" : "20a257fff9b28477"
@@ -5770,10 +5666,6 @@
       "back" : "If the city posts a new 311 call on this building at 8 a.m. every morning, you will receive a notification and an email.",
       "src" : "4473b09b218b84c7"
     },
-    "Edit boroughs" : {
-      "back" : "Edit the area.",
-      "src" : "765ae6127cc44ecc"
-    },
     "Edit details" : {
       "back" : "Edit details",
       "src" : "cb2786a08230a7ec"
@@ -5838,9 +5730,9 @@
       "back" : "All %1$@ buildings of %2$@",
       "src" : "3b18402133a18a8d"
     },
-    "Every 311 call back to 2010, plus crime alerts within half a mile. All part of Plus" : {
-      "back" : "All 311s return calls to 2010, and crime alerts within half a mile are included. They are all part of Plus.",
-      "src" : "b66dfb66fdfdaf50"
+    "Every 311 call back to 2010. Part of Plus" : {
+      "back" : "All 311s answer calls with 2010. It is part of Plus.",
+      "src" : "6e3afa771a18ea3f"
     },
     "Every 311 call on this building back to 2010. Part of Find A Crib Plus." : {
       "back" : "All 311 calls in this building date back to 2010. It is part of Find A Crib Plus.",
@@ -5978,6 +5870,14 @@
       "back" : "Free legal help",
       "src" : "7bcc2239f1fd0e42"
     },
+    "Free: crime alerts within half a mile of your building" : {
+      "back" : "Free: Crime alert within half a mile of the building",
+      "src" : "5f48151f384511bd"
+    },
+    "Free: crime alerts within half a mile. With Find A Crib Plus, also every new 311 call on this building — pests, heat, leaks, noise." : {
+      "back" : "Free: Crime alert within half a mile. Using Find A Crib Plus also applies to all new 311 phones for this building. Pests, heat, leaks, noise.",
+      "src" : "96c2f8f5a0a55fc8"
+    },
     "From " : {
       "back" : "from",
       "src" : "41086e5ed9643729"
@@ -5993,10 +5893,6 @@
     "From NYC Housing Connect, updated every 10 minutes. Eligibility also depends on household size — check each listing." : {
       "back" : "It is updated every 10 minutes from NYC Housing Connect. Eligibility also depends on the size of the household. Please check each list.",
       "src" : "31d147a61f541aed"
-    },
-    "From NYC HPD's open data. Class C means the city considers the condition immediately hazardous — heat, hot water, lead, pests. Pest violations are what an HPD inspector confirmed inside an apartment. Bedbug filings are the landlord's own annual report, covering the year to the previous 31 October, so they run about a year behind; rat inspections are the Health Department's, and only exist where the city inspected." : {
-      "back" : "From the public data of NYC HPD. Grade C means that the city immediately considers the situation to be dangerous. In other words, it is heat, hot water, lead, and pests. The pest violation was confirmed by HPD inspector in the apartment. Bedding pest reports contain information by year up to the previous October 31, and are the landlord's own annual report, containing information about about a year later. Rat inspection reports are reports from public health authorities and only exist at the places where inspections were conducted in the city.",
-      "src" : "4335afb0c936b2d4"
     },
     "From NYC Open Data: 311 Service Requests and NYPD complaint data." : {
       "back" : "From NYC open data: 311 service request and NYPD complaint data.",
@@ -6045,10 +5941,6 @@
     "Get a repair made, check a rent increase, read your rights, or plan a renewal." : {
       "back" : "Get repairs, check rent increases, read your rights, and plan your renewal.",
       "src" : "c329b857298bf7e0"
-    },
-    "Get alerts" : {
-      "back" : "Receive a notification.",
-      "src" : "6663abc7ec3184c7"
     },
     "Get alerts on this phone?" : {
       "back" : "Do you receive notifications from this phone?",
@@ -6134,10 +6026,6 @@
       "back" : "Inspection of installed animals by the Ministry of Health, in order of latest. \"Mouse activity\" or \"failure\" means that the inspector has found traces of mice, and a passing compliance visit means that the problem has been resolved.",
       "src" : "c151bb91795d69f8"
     },
-    "Hear about every new 311 call on this building — pests, heat, leaks, noise. Part of Find A Crib Plus." : {
-      "back" : "Listen to all the new 311 calls that occur in this building - pests, heat, leaks, noise. It's part of Find A Crib Plus.",
-      "src" : "11b7a203d57d58f0"
-    },
     "Hear about new rent-stabilized lotteries and re-rentals in your borough. Allow notifications, then pick your boroughs — ten seconds." : {
       "back" : "Hear about the new rental stabilization lottery and re-rental for your district. Allow notifications and then select your district - 10 seconds.",
       "src" : "5020c33836af58a8"
@@ -6157,14 +6045,6 @@
     "Hide replies" : {
       "back" : "Hide the answer",
       "src" : "5855a0c676128944"
-    },
-    "Hide the %lld outside your income range" : {
-      "back" : "Hide %lld outside the income range.",
-      "src" : "ddd9f2bed75cee47"
-    },
-    "Hide the %lld that don't list bedroom sizes" : {
-      "back" : "Hide the %lld where the size of the bedroom is not listed.",
-      "src" : "f5cc9796f28f5bb8"
     },
     "HOLLYWOOD" : {
       "back" : "The center of the film industry",
@@ -7106,10 +6986,6 @@
       "back" : "NYC's data service did not respond. Please check your connection status and try again.",
       "src" : "6bc07c82e028e43e"
     },
-    "NYPD complaint reports, %@. The NYPD publishes these every three months; the newest are through %@. Locations are rounded to the block." : {
-      "back" : "NYPD reports complaints, and %1$@ and NYPD post them every 3 months. The latest report is %2$@. The location is rounded to the nearest block.",
-      "src" : "faba37a4d127cf98"
-    },
     "Off · turn on in Settings" : {
       "back" : "Turn off · Turn on in Settings",
       "src" : "f794f551238a388e"
@@ -7125,6 +7001,10 @@
     "Offline. Showing what you saw %@. Pull down to refresh." : {
       "back" : "Offline. Shows what you have seen %@. Scroll down to refresh.",
       "src" : "94cae1e8b0fd27f3"
+    },
+    "OK" : {
+      "back" : "Like it",
+      "src" : "ba998250f7eb791b"
     },
     "Older than a year" : {
       "back" : "More than 1 year",
@@ -7326,6 +7206,10 @@
       "back" : "Please choose at least one autonomous district.",
       "src" : "4ee6cc394bdb8438"
     },
+    "Pick the crime you want to hear about below — free. New 311 calls on this building (pests, heat, leaks) are part of Find A Crib Plus." : {
+      "back" : "Choose the crime you want to hear about below - it's free. New 311 calls (pest, heat, leaks) occurring in this building are part of Find A Crib Plus.",
+      "src" : "e63cf3b47e8b1b70"
+    },
     "Pick up where you left off:" : {
       "back" : "Start again from where you left off:",
       "src" : "6d7fc670efa5437b"
@@ -7345,10 +7229,6 @@
     "PLUS" : {
       "back" : "there",
       "src" : "e3ec1117b278eb9b"
-    },
-    "Plus watches one building. Switching moves your alerts from %@ to here." : {
-      "back" : "Plus monitors one building. When switching, the notification moves from %@ to here.",
-      "src" : "d23c7d6d10b2d783"
     },
     "Plus: real-time lottery alerts, the minute one opens" : {
       "back" : "Plus: We will notify you in real time as soon as the lottery notification opens.",
@@ -7941,10 +7821,6 @@
     "Since –" : {
       "back" : "Since then -",
       "src" : "be97f90995f198ed"
-    },
-    "Since %lld" : {
-      "back" : "From %lld",
-      "src" : "98747da8854b4e71"
     },
     "Some of these charges are likely illegal" : {
       "back" : "Some of these charges are likely illegal.",
@@ -8614,6 +8490,10 @@
       "back" : "you",
       "src" : "307c691f42617df7"
     },
+    "You can watch one building. Switching moves your alerts from %@ to here." : {
+      "back" : "You can see one building. When you switch, the notification will move from %@ to here.",
+      "src" : "1ede804126f95b66"
+    },
     "You have Plus" : {
       "back" : "You have Plus.",
       "src" : "a283e8aaee53f155"
@@ -8796,10 +8676,6 @@
       "back" : "bed",
       "src" : "bd8b9d26fb9f353a"
     },
-    " Find A Crib is not a broker and does not list apartments." : {
-      "back" : "Find A Crib is not an agent and does not list apartments.",
-      "src" : "19a956439d8da8f6"
-    },
     " We'll alert you when one is posted." : {
       "back" : "We will remind you when one is released.",
       "src" : "2b420c720285e1e3"
@@ -8907,10 +8783,6 @@
     "%@ and %@ here — see each one" : {
       "back" : "This is %1$@ and %2$@ - let's take a look at each one.",
       "src" : "754484d2fe449f4f"
-    },
-    "%@ are %@" : {
-      "back" : "%1$@ is %2$@",
-      "src" : "c6d8e43723634c3d"
     },
     "%@ bd" : {
       "back" : "%@ bed",
@@ -9020,14 +8892,6 @@
       "back" : "%lld months",
       "src" : "fa25c340244d5a96"
     },
-    "%lld more are outside your income range — show them" : {
-      "back" : "%lld More than your income range - show them",
-      "src" : "9b6297ac81cdd4b0"
-    },
-    "%lld more don't list bedroom sizes — show them" : {
-      "back" : "%lld Don't list the bedroom sizes anymore - show them.",
-      "src" : "7672c76c3259a4c8"
-    },
     "%lld of %lld open" : {
       "back" : "%2$lld's %1$lld is turned on.",
       "src" : "72137fd6367f6248"
@@ -9084,14 +8948,6 @@
       "back" : "%lld Open violations",
       "src" : "c265951803bbdd00"
     },
-    "%lld open with %@, all outside the income range you entered. Tap above to see them anyway." : {
-      "back" : "%1$lld is turned on with %2$@. Everything outside the range of all income belongs to the range you entered. Anyway, please click above to view them.",
-      "src" : "f1d433ac80f1d89c"
-    },
-    "%lld open, all outside the income range you entered. Tap above to see them anyway." : {
-      "back" : "%lld is turned on, and everything outside the income range is turned on. Anyway, click above to view them.",
-      "src" : "8fc105fb5b9fdab6"
-    },
     "%lld opened the minute they were posted. Tap one to see it on the agent's site." : {
       "back" : "%lld is opened as soon as it is released. Click one to view it on the agent's website.",
       "src" : "e4654b24255e82e2"
@@ -9111,10 +8967,6 @@
     "%lld re-infested" : {
       "back" : "%lld reinfection",
       "src" : "c2e3f5527bba062d"
-    },
-    "%lld re-rentals here, all outside the income range you entered. Tap above to see them anyway." : {
-      "back" : "There are %lld units for re-rental here, all of which exceed the income range you entered. Anyway, please click above to check.",
-      "src" : "1eeb791299002f07"
     },
     "%lld rooms" : {
       "back" : "%lld room",
@@ -9192,10 +9044,6 @@
       "back" : "1 bed",
       "src" : "6dd0e9c5c10ea5f3"
     },
-    "1 is %@" : {
-      "back" : "1 is %@",
-      "src" : "e0cfea0695b5f3b5"
-    },
     "1 year" : {
       "back" : "1 year",
       "src" : "95c3615aeb2445de"
@@ -9260,13 +9108,13 @@
       "back" : "Notice of no fault - Ellis Law, the owner moves in, demolition - means that the tenant can be forced to leave, and he did nothing.",
       "src" : "d673f82d0430c189"
     },
-    "A notification and an email for every new 311 call" : {
-      "back" : "You receive notifications and emails for each new 311 call.",
-      "src" : "599890c6177ae5ab"
-    },
     "A notification and an email for every new 311 call on your building" : {
       "back" : "Whenever there is a new 311 phone in your building, you will receive a notification and an email.",
       "src" : "23e8a4bc27ab2779"
+    },
+    "A notification and an email for every new 311 call. All part of Plus" : {
+      "back" : "You will receive notifications and emails every time you make a new 311 call. All of these are part of Plus.",
+      "src" : "4fa98cc9170fa69a"
     },
     "A repair letter in your own words, and answers to your questions about your rights as a renter." : {
       "back" : "Write a repair letter in your own words and answer your questions about your rights as a tenant.",
@@ -9376,10 +9224,6 @@
       "back" : "be on the alert",
       "src" : "fe1817e769b4580e"
     },
-    "Alert me about new calls" : {
-      "back" : "Remind me of the new incoming call.",
-      "src" : "3d0767ee61941a81"
-    },
     "Alerts" : {
       "back" : "alarm",
       "src" : "9a5f507773ad3214"
@@ -9392,9 +9236,9 @@
       "back" : "The alarm is part of Find A Crib Plus.",
       "src" : "bddf6c5126a2ec3d"
     },
-    "Alerts on new 311 calls" : {
-      "back" : "Reminder about the new 311 call",
-      "src" : "0a8558d144012355"
+    "Alerts for this building" : {
+      "back" : "The alarm of this building",
+      "src" : "a6b060df9cac8ddc"
     },
     "All %lld units are income-restricted" : {
       "back" : "All %lld units are subject to income restrictions.",
@@ -9675,10 +9519,6 @@
     "Built –" : {
       "back" : "Built–",
       "src" : "c9c9e69d72c5c429"
-    },
-    "Built %lld" : {
-      "back" : "Build %lld",
-      "src" : "388990d4407ef402"
     },
     "Burglary" : {
       "back" : "Burglary",
@@ -10016,10 +9856,6 @@
       "back" : "Crime alert within half a mile",
       "src" : "056c2a39dfefbf42"
     },
-    "Crime alerts within half a mile. All part of Plus" : {
-      "back" : "Crime alert within half a mile. All part of Plus.",
-      "src" : "b242c440f4b8d6c8"
-    },
     "Current address" : {
       "back" : "Current address",
       "src" : "20a257fff9b28477"
@@ -10144,10 +9980,6 @@
       "back" : "Every morning at 8 o'clock, if the municipal government issues a new 311 call on this building, you will receive a notification and an email.",
       "src" : "4473b09b218b84c7"
     },
-    "Edit boroughs" : {
-      "back" : "Editing area",
-      "src" : "765ae6127cc44ecc"
-    },
     "Edit details" : {
       "back" : "Edit detailed information",
       "src" : "cb2786a08230a7ec"
@@ -10212,9 +10044,9 @@
       "back" : "Each %1$@ building in %2$@",
       "src" : "3b18402133a18a8d"
     },
-    "Every 311 call back to 2010, plus crime alerts within half a mile. All part of Plus" : {
-      "back" : "Every 311 call will be returned to 2010, as well as crime alerts within half a mile. All of these are part of Plus.",
-      "src" : "b66dfb66fdfdaf50"
+    "Every 311 call back to 2010. Part of Plus" : {
+      "back" : "Each 311 is dialed back to 2010. Part of Plus.",
+      "src" : "6e3afa771a18ea3f"
     },
     "Every 311 call on this building back to 2010. Part of Find A Crib Plus." : {
       "back" : "Since 2010, all 311 phones in the building have been traced back to part of Find A Crib Plus.",
@@ -10352,6 +10184,14 @@
       "back" : "Free legal assistance",
       "src" : "7bcc2239f1fd0e42"
     },
+    "Free: crime alerts within half a mile of your building" : {
+      "back" : "Free: Crime alarm within half a mile of your building",
+      "src" : "5f48151f384511bd"
+    },
+    "Free: crime alerts within half a mile. With Find A Crib Plus, also every new 311 call on this building — pests, heat, leaks, noise." : {
+      "back" : "Free: Crime alarm within half a mile. Through Find A Crib Plus, every new 311 phone in the building will receive alarms - pests, high temperature, leakage, noise.",
+      "src" : "96c2f8f5a0a55fc8"
+    },
     "From " : {
       "back" : "follow",
       "src" : "41086e5ed9643729"
@@ -10367,10 +10207,6 @@
     "From NYC Housing Connect, updated every 10 minutes. Eligibility also depends on household size — check each listing." : {
       "back" : "Starting from NYC Housing Connect, it will be updated every 10 minutes. Eligibility also depends on the size of the family - please check each list.",
       "src" : "31d147a61f541aed"
-    },
-    "From NYC HPD's open data. Class C means the city considers the condition immediately hazardous — heat, hot water, lead, pests. Pest violations are what an HPD inspector confirmed inside an apartment. Bedbug filings are the landlord's own annual report, covering the year to the previous 31 October, so they run about a year behind; rat inspections are the Health Department's, and only exist where the city inspected." : {
-      "back" : "Public data from NYC HPD. Class C means that the city believes that the conditions are immediately hazardous - heat, hot water, lead, pests. HPD inspector confirmed the illegal behavior of pests in the apartment. The flea report is the landlord's own annual report covering the year up to October 31, so they are about a year behind; the rat inspection is carried out by the health department and is only available in places where inspections are carried out in cities.",
-      "src" : "4335afb0c936b2d4"
     },
     "From NYC Open Data: 311 Service Requests and NYPD complaint data." : {
       "back" : "Open data from NYC: 311 service requests and NYPD complaint data.",
@@ -10419,10 +10255,6 @@
     "Get a repair made, check a rent increase, read your rights, or plan a renewal." : {
       "back" : "Perform maintenance, check the increase in rent, understand your rights, or plan to renew the lease.",
       "src" : "c329b857298bf7e0"
-    },
-    "Get alerts" : {
-      "back" : "Get the alarm",
-      "src" : "6663abc7ec3184c7"
     },
     "Get alerts on this phone?" : {
       "back" : "Did you receive a reminder on this mobile phone?",
@@ -10508,10 +10340,6 @@
       "back" : "The latest rodent inspection by the health department is carried out first. \"Mouse activity\" or \"failure\" means that the inspector has found signs of mice; passing compliance inspection means that the problem has been solved.",
       "src" : "c151bb91795d69f8"
     },
-    "Hear about every new 311 call on this building — pests, heat, leaks, noise. Part of Find A Crib Plus." : {
-      "back" : "Learn about each new 311 phone on this building - pests, high temperature, leakage, noise. Part of Find A Crib Plus.",
-      "src" : "11b7a203d57d58f0"
-    },
     "Hear about new rent-stabilized lotteries and re-rentals in your borough. Allow notifications, then pick your boroughs — ten seconds." : {
       "back" : "Learn about the new rent stabilization lottery and re-letting situation in your district. Allow notifications, then select your district - ten seconds.",
       "src" : "5020c33836af58a8"
@@ -10531,14 +10359,6 @@
     "Hide replies" : {
       "back" : "Hide reply",
       "src" : "5855a0c676128944"
-    },
-    "Hide the %lld outside your income range" : {
-      "back" : "Hide %lld outside your income range.",
-      "src" : "ddd9f2bed75cee47"
-    },
-    "Hide the %lld that don't list bedroom sizes" : {
-      "back" : "%lld that hides the bedroom size is not listed.",
-      "src" : "f5cc9796f28f5bb8"
     },
     "HOLLYWOOD" : {
       "back" : "Hollywood movies",
@@ -11480,10 +11300,6 @@
       "back" : "There is no reply from NYC's data service. Please check your connection and try again.",
       "src" : "6bc07c82e028e43e"
     },
-    "NYPD complaint reports, %@. The NYPD publishes these every three months; the newest are through %@. Locations are rounded to the block." : {
-      "back" : "NYPD complaint report, %1$@. NYPD publish these reports once every three months; the latest report is until %2$@. The location is rounded to the block.",
-      "src" : "faba37a4d127cf98"
-    },
     "Off · turn on in Settings" : {
       "back" : "Close · Open in Settings",
       "src" : "f794f551238a388e"
@@ -11499,6 +11315,10 @@
     "Offline. Showing what you saw %@. Pull down to refresh." : {
       "back" : "Offline. The content you see is displayed as %@. Drag down to refresh.",
       "src" : "94cae1e8b0fd27f3"
+    },
+    "OK" : {
+      "back" : "okay",
+      "src" : "ba998250f7eb791b"
     },
     "Older than a year" : {
       "back" : "More than a year",
@@ -11700,6 +11520,10 @@
       "back" : "Choose at least one district.",
       "src" : "4ee6cc394bdb8438"
     },
+    "Pick the crime you want to hear about below — free. New 311 calls on this building (pests, heat, leaks) are part of Find A Crib Plus." : {
+      "back" : "Choose the following crimes you want to listen to - free. The phone calls of the new 311 to this building (pests, high temperature, leakage) are part of Find A Crib Plus.",
+      "src" : "e63cf3b47e8b1b70"
+    },
     "Pick up where you left off:" : {
       "back" : "Continue where you left off:",
       "src" : "6d7fc670efa5437b"
@@ -11719,10 +11543,6 @@
     "PLUS" : {
       "back" : "advantage",
       "src" : "e3ec1117b278eb9b"
-    },
-    "Plus watches one building. Switching moves your alerts from %@ to here." : {
-      "back" : "Plus monitors a building. Switch your alarm from %@ to here.",
-      "src" : "d23c7d6d10b2d783"
     },
     "Plus: real-time lottery alerts, the minute one opens" : {
       "back" : "Plus: Real-time lottery reminder within one minute of the lottery draw",
@@ -12315,10 +12135,6 @@
     "Since –" : {
       "back" : "Since——",
       "src" : "be97f90995f198ed"
-    },
-    "Since %lld" : {
-      "back" : "Since %lld",
-      "src" : "98747da8854b4e71"
     },
     "Some of these charges are likely illegal" : {
       "back" : "Some of these charges may be illegal.",
@@ -12988,6 +12804,10 @@
       "back" : "you",
       "src" : "307c691f42617df7"
     },
+    "You can watch one building. Switching moves your alerts from %@ to here." : {
+      "back" : "You can monitor a building. Switch will switch your alarm from %@ to here.",
+      "src" : "1ede804126f95b66"
+    },
     "You have Plus" : {
       "back" : "You have Plus.",
       "src" : "a283e8aaee53f155"
@@ -13170,10 +12990,6 @@
       "back" : "Bed",
       "src" : "bd8b9d26fb9f353a"
     },
-    " Find A Crib is not a broker and does not list apartments." : {
-      "back" : "Find A Crib is neither a broker nor does it list apartments.",
-      "src" : "19a956439d8da8f6"
-    },
     " We'll alert you when one is posted." : {
       "back" : "We will notify you when one is released.",
       "src" : "2b420c720285e1e3"
@@ -13281,10 +13097,6 @@
     "%@ and %@ here — see each one" : {
       "back" : "This is %1$@ and %2$@ - take a look at each one.",
       "src" : "754484d2fe449f4f"
-    },
-    "%@ are %@" : {
-      "back" : "%1$@ is %2$@",
-      "src" : "c6d8e43723634c3d"
     },
     "%@ bd" : {
       "back" : "%@ bed",
@@ -13394,14 +13206,6 @@
       "back" : "%lld months",
       "src" : "fa25c340244d5a96"
     },
-    "%lld more are outside your income range — show them" : {
-      "back" : "%lld More than your income range - show them",
-      "src" : "9b6297ac81cdd4b0"
-    },
-    "%lld more don't list bedroom sizes — show them" : {
-      "back" : "%lld Stop listing bedroom sizes - show them off",
-      "src" : "7672c76c3259a4c8"
-    },
     "%lld of %lld open" : {
       "back" : "%2$lld's %1$lld is turned on.",
       "src" : "72137fd6367f6248"
@@ -13458,14 +13262,6 @@
       "back" : "%lld opens up illegal behavior",
       "src" : "c265951803bbdd00"
     },
-    "%lld open with %@, all outside the income range you entered. Tap above to see them anyway." : {
-      "back" : "%1$lld is opened together with %2$@, and all income ranges exceed the range you entered. Anyway, please click on them above to view them.",
-      "src" : "f1d433ac80f1d89c"
-    },
-    "%lld open, all outside the income range you entered. Tap above to see them anyway." : {
-      "back" : "%lld is turned on, and all income ranges are beyond the range you entered. Anyway, please click on them above to view them.",
-      "src" : "8fc105fb5b9fdab6"
-    },
     "%lld opened the minute they were posted. Tap one to see it on the agent's site." : {
       "back" : "It will be opened as soon as it is released. Click on one to view it on the agent's website.",
       "src" : "e4654b24255e82e2"
@@ -13485,10 +13281,6 @@
     "%lld re-infested" : {
       "back" : "%lld is being invaded again.",
       "src" : "c2e3f5527bba062d"
-    },
-    "%lld re-rentals here, all outside the income range you entered. Tap above to see them anyway." : {
-      "back" : "The %llds here are re-rented, and none of them fall within the income range you entered. Anyway, please click on them above to view them.",
-      "src" : "1eeb791299002f07"
     },
     "%lld rooms" : {
       "back" : "%lld room",
@@ -13566,10 +13358,6 @@
       "back" : "1 bed",
       "src" : "6dd0e9c5c10ea5f3"
     },
-    "1 is %@" : {
-      "back" : "1 is %@",
-      "src" : "e0cfea0695b5f3b5"
-    },
     "1 year" : {
       "back" : "1 year",
       "src" : "95c3615aeb2445de"
@@ -13634,13 +13422,13 @@
       "back" : "No fault notice - Ellis Law, tenant's move-in, demolition - means that the tenant can be forced to leave, and he did nothing.",
       "src" : "d673f82d0430c189"
     },
-    "A notification and an email for every new 311 call" : {
-      "back" : "Notifications and emails will be sent every time a new 311 call is made.",
-      "src" : "599890c6177ae5ab"
-    },
     "A notification and an email for every new 311 call on your building" : {
       "back" : "Every new 311 phone in your building will receive notifications and emails.",
       "src" : "23e8a4bc27ab2779"
+    },
+    "A notification and an email for every new 311 call. All part of Plus" : {
+      "back" : "Notifications and emails will be sent every time a new 311 call is made. This is part of Plus.",
+      "src" : "4fa98cc9170fa69a"
     },
     "A repair letter in your own words, and answers to your questions about your rights as a renter." : {
       "back" : "Write a maintenance letter in your own words and answer your questions about your rights as a tenant.",
@@ -13750,10 +13538,6 @@
       "back" : "Alert",
       "src" : "fe1817e769b4580e"
     },
-    "Alert me about new calls" : {
-      "back" : "Remind me of the new incoming call.",
-      "src" : "3d0767ee61941a81"
-    },
     "Alerts" : {
       "back" : "Alarm",
       "src" : "9a5f507773ad3214"
@@ -13766,9 +13550,9 @@
       "back" : "The alarm is part of Find A Crib Plus.",
       "src" : "bddf6c5126a2ec3d"
     },
-    "Alerts on new 311 calls" : {
-      "back" : "Alerts about new 311 calls",
-      "src" : "0a8558d144012355"
+    "Alerts for this building" : {
+      "back" : "The alarm of this building",
+      "src" : "a6b060df9cac8ddc"
     },
     "All %lld units are income-restricted" : {
       "back" : "All %lld units are subject to income restrictions.",
@@ -14049,10 +13833,6 @@
     "Built –" : {
       "back" : "Built by–",
       "src" : "c9c9e69d72c5c429"
-    },
-    "Built %lld" : {
-      "back" : "Build %lld",
-      "src" : "388990d4407ef402"
     },
     "Burglary" : {
       "back" : "Robbery",
@@ -14390,10 +14170,6 @@
       "back" : "Crime alerts within half a mile",
       "src" : "056c2a39dfefbf42"
     },
-    "Crime alerts within half a mile. All part of Plus" : {
-      "back" : "Crime alerts within half a mile. All part of Plus.",
-      "src" : "b242c440f4b8d6c8"
-    },
     "Current address" : {
       "back" : "Current address",
       "src" : "20a257fff9b28477"
@@ -14518,10 +14294,6 @@
       "back" : "Every morning at 8 a.m., if the city government issues a new 311 call on the building, you will receive notifications and emails.",
       "src" : "4473b09b218b84c7"
     },
-    "Edit boroughs" : {
-      "back" : "Editing area",
-      "src" : "765ae6127cc44ecc"
-    },
     "Edit details" : {
       "back" : "Edit detailed information",
       "src" : "cb2786a08230a7ec"
@@ -14586,9 +14358,9 @@
       "back" : "Each %1$@ building in %2$@",
       "src" : "3b18402133a18a8d"
     },
-    "Every 311 call back to 2010, plus crime alerts within half a mile. All part of Plus" : {
-      "back" : "Every 311 call will be returned to 2010, plus a crime alert within a half-mile radius. This is all part of Plus.",
-      "src" : "b66dfb66fdfdaf50"
+    "Every 311 call back to 2010. Part of Plus" : {
+      "back" : "Every 311 call back can be traced back to 2010. Part of Plus.",
+      "src" : "6e3afa771a18ea3f"
     },
     "Every 311 call on this building back to 2010. Part of Find A Crib Plus." : {
       "back" : "Every 311 phone in this building can be traced back to 2010. It is part of Find A Crib Plus.",
@@ -14726,6 +14498,14 @@
       "back" : "Free legal help",
       "src" : "7bcc2239f1fd0e42"
     },
+    "Free: crime alerts within half a mile of your building" : {
+      "back" : "Free: Crime alerts within half a mile of your building",
+      "src" : "5f48151f384511bd"
+    },
+    "Free: crime alerts within half a mile. With Find A Crib Plus, also every new 311 call on this building — pests, heat, leaks, noise." : {
+      "back" : "Free: Crime alarm within half a mile. Through Find A Crib Plus, every new 311 phone on this building - pests, heat, leaks, noise.",
+      "src" : "96c2f8f5a0a55fc8"
+    },
     "From " : {
       "back" : "From",
       "src" : "41086e5ed9643729"
@@ -14741,10 +14521,6 @@
     "From NYC Housing Connect, updated every 10 minutes. Eligibility also depends on household size — check each listing." : {
       "back" : "Starting from NYC Housing Connect, it is updated every 10 minutes. Eligibility also depends on the size of the family - please check each list.",
       "src" : "31d147a61f541aed"
-    },
-    "From NYC HPD's open data. Class C means the city considers the condition immediately hazardous — heat, hot water, lead, pests. Pest violations are what an HPD inspector confirmed inside an apartment. Bedbug filings are the landlord's own annual report, covering the year to the previous 31 October, so they run about a year behind; rat inspections are the Health Department's, and only exist where the city inspected." : {
-      "back" : "Open data from NYC HPD. Class C means that the city considers the situation immediately dangerous - heat, hot water, lead, pests. HPD inspector confirmed the pest violation in the apartment. The cockroach report is the landlord's own annual report covering the year up to the 31st of the previous 31 months, so they are about a year behind; the rat inspection is carried out by the health department and only exists in the places inspected by the city.",
-      "src" : "4335afb0c936b2d4"
     },
     "From NYC Open Data: 311 Service Requests and NYPD complaint data." : {
       "back" : "Open data from NYC: 311 service requests and NYPD complaint data.",
@@ -14793,10 +14569,6 @@
     "Get a repair made, check a rent increase, read your rights, or plan a renewal." : {
       "back" : "Perform maintenance, check the increase in rent, read your rights, or plan to renew your lease.",
       "src" : "c329b857298bf7e0"
-    },
-    "Get alerts" : {
-      "back" : "Get alerts",
-      "src" : "6663abc7ec3184c7"
     },
     "Get alerts on this phone?" : {
       "back" : "Did you receive a reminder on this mobile phone?",
@@ -14882,10 +14654,6 @@
       "back" : "The Ministry of Health rodent inspection, the latest first. \"Mouse activity\" or \"failure\" means that the inspector has found signs of mice; passing the compliance inspection means that the problem has been solved.",
       "src" : "c151bb91795d69f8"
     },
-    "Hear about every new 311 call on this building — pests, heat, leaks, noise. Part of Find A Crib Plus." : {
-      "back" : "In this building, you can hear every new 311 phone at any time - pests, heat, leaks, noise. This is part of Find A Crib Plus.",
-      "src" : "11b7a203d57d58f0"
-    },
     "Hear about new rent-stabilized lotteries and re-rentals in your borough. Allow notifications, then pick your boroughs — ten seconds." : {
       "back" : "Find out about the new rent stabilization lottery and re-letting in your area. Allow notifications and then select your area - ten seconds.",
       "src" : "5020c33836af58a8"
@@ -14905,14 +14673,6 @@
     "Hide replies" : {
       "back" : "Hide the reply",
       "src" : "5855a0c676128944"
-    },
-    "Hide the %lld outside your income range" : {
-      "back" : "Hide %lld outside the income range",
-      "src" : "ddd9f2bed75cee47"
-    },
-    "Hide the %lld that don't list bedroom sizes" : {
-      "back" : "Hide %lld that does not list bedroom size",
-      "src" : "f5cc9796f28f5bb8"
     },
     "HOLLYWOOD" : {
       "back" : "Hollywood",
@@ -15854,10 +15614,6 @@
       "back" : "There is no reply from NYC's data service. Please check your connection and try again.",
       "src" : "6bc07c82e028e43e"
     },
-    "NYPD complaint reports, %@. The NYPD publishes these every three months; the newest are through %@. Locations are rounded to the block." : {
-      "back" : "NYPD complaint reports, %1$@. NYPD publish these reports once every three months; the latest reports will be published in %2$@. The location is rounded to the nearest block.",
-      "src" : "faba37a4d127cf98"
-    },
     "Off · turn on in Settings" : {
       "back" : "Close · Open in \"Settings\"",
       "src" : "f794f551238a388e"
@@ -15873,6 +15629,10 @@
     "Offline. Showing what you saw %@. Pull down to refresh." : {
       "back" : "Offline. The content you see is %@. Scroll down to refresh.",
       "src" : "94cae1e8b0fd27f3"
+    },
+    "OK" : {
+      "back" : "Good",
+      "src" : "ba998250f7eb791b"
     },
     "Older than a year" : {
       "back" : "More than one year",
@@ -16074,6 +15834,10 @@
       "back" : "At least choose one district.",
       "src" : "4ee6cc394bdb8438"
     },
+    "Pick the crime you want to hear about below — free. New 311 calls on this building (pests, heat, leaks) are part of Find A Crib Plus." : {
+      "back" : "Choose the following crimes you want to hear about - for free. New 311 calls about this building (pests, heat waves, leaks) are part of Find A Crib Plus.",
+      "src" : "e63cf3b47e8b1b70"
+    },
     "Pick up where you left off:" : {
       "back" : "Continue from where you left off last time:",
       "src" : "6d7fc670efa5437b"
@@ -16093,10 +15857,6 @@
     "PLUS" : {
       "back" : "Add",
       "src" : "e3ec1117b278eb9b"
-    },
-    "Plus watches one building. Switching moves your alerts from %@ to here." : {
-      "back" : "Plus monitors a building. Switch to transfer your alarm from %@ to here.",
-      "src" : "d23c7d6d10b2d783"
     },
     "Plus: real-time lottery alerts, the minute one opens" : {
       "back" : "Plus: Instant lottery alert as soon as it is turned on",
@@ -16689,10 +16449,6 @@
     "Since –" : {
       "back" : "Since——",
       "src" : "be97f90995f198ed"
-    },
-    "Since %lld" : {
-      "back" : "Since %lld",
-      "src" : "98747da8854b4e71"
     },
     "Some of these charges are likely illegal" : {
       "back" : "Some of these charges may be illegal.",
@@ -17361,6 +17117,10 @@
     "You" : {
       "back" : "You",
       "src" : "307c691f42617df7"
+    },
+    "You can watch one building. Switching moves your alerts from %@ to here." : {
+      "back" : "You can monitor a building. Switch will switch your alarm from %@ to here.",
+      "src" : "1ede804126f95b66"
     },
     "You have Plus" : {
       "back" : "You have Plus.",

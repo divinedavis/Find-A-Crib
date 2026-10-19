@@ -975,9 +975,11 @@ def push_unregister():
 
 # ---- Your Crib (owner, 2026-10-15) --------------------------------------------
 # Anyone can look up a building's 311 calls (the app and site read NYC Open
-# Data directly). Plus members can also watch ONE building and hear about each
-# new 311 call on it — casa_alerts.py does the sending. The account comes from
-# the verified session; the Plus check is has_plus(), never the client's word.
+# Data directly). Any account can watch ONE building for crime alerts (free
+# since owner, 2026-10-19: "crime alerts should be free"); Plus members also
+# hear about each new 311 call on it — casa_alerts.py does the sending and
+# re-checks has_plus() for the 311 part. The account comes from the verified
+# session, never the client's word.
 BBL_RE = re.compile(r"^[1-5][0-9]{9}$")
 # Crime kinds a watch can pick; casa_alerts.CRIME_KINDS maps each to NYPD offenses.
 CASA_CRIME_KINDS = {"shootings", "robbery", "burglary", "assault", "theft", "car_theft",
@@ -1003,8 +1005,6 @@ def casa_watch():
         return jsonify(error="temporarily_unavailable"), 503
     if not request.is_json:
         return jsonify(error="json_required"), 415
-    if not plus:
-        return jsonify(error="plus_required"), 402
     body = request.get_json(silent=True) or {}
     bbl = str(body.get("bbl") or "").strip()
     if not BBL_RE.match(bbl):
@@ -1032,7 +1032,7 @@ def casa_watch():
                  prefer="resolution=merge-duplicates,return=minimal")
     except Exception:
         return jsonify(error="temporarily_unavailable"), 503
-    return jsonify(ok=True, watch={"bbl": bbl, "address": address, "crime_kinds": kinds,
+    return jsonify(ok=True, plus=plus, watch={"bbl": bbl, "address": address, "crime_kinds": kinds,
                                    "created_at": (old or {}).get("created_at") if old and old["bbl"] == bbl else now})
 
 

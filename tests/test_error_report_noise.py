@@ -41,3 +41,9 @@ def test_a_wrong_password_is_not_an_app_failure():
 
 def test_other_signin_errors_still_count():
     assert "Sign-in failed (email)" in E.app_failures([signin("The network connection was lost.")])
+
+
+def test_cancel_on_googles_consent_page_is_not_an_app_failure():
+    r = signin("Error in URL with unspecified error_description.")
+    r["props"]["provider"] = "google"
+    assert not E.app_failures([r])

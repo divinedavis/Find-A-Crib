@@ -1590,6 +1590,14 @@ final class SignInMessageTests: XCTestCase {
         let e = NSError(domain: "x", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid login credentials"])
         XCTAssertEqual(AuthService.signInMessage(for: e), "Invalid login credentials")
     }
+
+    /// Cancel on Google's consent page comes back as access_denied (10/19).
+    func testGoogleConsentCancelIsACancel() {
+        XCTAssertTrue(WebAuth.isDeclined(URL(string: "findacrib://auth-callback?error=access_denied&error_code=x")!))
+        XCTAssertTrue(WebAuth.isDeclined(URL(string: "findacrib://auth-callback#error=access_denied")!))
+        XCTAssertFalse(WebAuth.isDeclined(URL(string: "findacrib://auth-callback?code=abc")!))
+        XCTAssertFalse(WebAuth.isDeclined(URL(string: "findacrib://auth-callback?error=server_error")!))
+    }
 }
 
 /// Timings for the hardware work (2026-10-02). Prints BENCH lines; asserts

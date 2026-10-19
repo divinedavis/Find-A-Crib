@@ -341,6 +341,9 @@ def unreleased_rows(rows, live):
 
 # Supabase auth answer for a wrong email/password pair. Not app failures.
 USER_SIGNIN_MISTAKES = re.compile(r"invalid login credentials", re.I)
+# Cancel on Google's consent page: GoTrue gets access_denied with no
+# description and builds before the 10/19 fix showed it as an error.
+GOOGLE_DECLINED = re.compile(r"unspecified error_description", re.I)
 
 
 def app_failures(rows, skip_builds=frozenset()):
@@ -360,6 +363,8 @@ def app_failures(rows, skip_builds=frozenset()):
             # so and offers "Forgot password?" (EmailSignInView). The 10/17
             # digest's only "app failure" was one of these.
             if USER_SIGNIN_MISTAKES.search(p.get("text") or ""):
+                continue
+            if p.get("provider") == "google" and GOOGLE_DECLINED.search(p.get("text") or ""):
                 continue
             label = f"Sign-in failed ({p.get('provider') or '?'})"
         elif ev == "purchase" and p.get("result") in ("error", "unverified"):

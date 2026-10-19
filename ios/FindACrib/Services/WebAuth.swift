@@ -24,6 +24,18 @@ final class WebAuth: NSObject, ASWebAuthenticationPresentationContextProviding {
         return try await w.start(url: url, scheme: callbackScheme)
     }
 
+    /// Tapping Cancel on Google's own consent page isn't the sheet's Cancel:
+    /// Google answers access_denied, GoTrue passes it to the callback, and the
+    /// SDK turned it into "Error in URL with unspecified error_description."
+    /// — shown to a new user who then signed in with Apple 9 s later
+    /// (build 139, 2026-10-19). Read it as the cancel it is.
+    nonisolated static func isDeclined(_ callback: URL) -> Bool {
+        guard let c = URLComponents(url: callback, resolvingAgainstBaseURL: false) else { return false }
+        var items = c.queryItems ?? []
+        if let f = c.fragment { items += URLComponents(string: "?" + f)?.queryItems ?? [] }
+        return items.contains { $0.name == "error" && $0.value == "access_denied" }
+    }
+
     private func start(url: URL, scheme: String) async throws -> URL {
         try await withCheckedThrowingContinuation { cont in
             let s = ASWebAuthenticationSession(url: url, callbackURLScheme: scheme) { cb, err in

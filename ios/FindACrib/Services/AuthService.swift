@@ -158,6 +158,7 @@ final class AuthService {
             var comps = URLComponents(url: url, resolvingAgainstBaseURL: false)!
             comps.scheme = "https"; comps.host = "findacrib.com"; comps.port = nil
             let callback = try await WebAuth.run(url: comps.url!, callbackScheme: "findacrib")
+            if WebAuth.isDeclined(callback) { throw WebAuth.Failure.cancelled }
             _ = try await client.auth.session(from: callback)
         }
     }

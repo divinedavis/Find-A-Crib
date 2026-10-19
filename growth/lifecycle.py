@@ -196,6 +196,32 @@ def due(now=None):
     return out
 
 
+def _record_sent(n):
+    """Write the sent count, from every path run() can return on having LOOKED.
+
+    A helper rather than one call at the end because the "nothing due" path
+    returns early, and that is the path this sequence has taken every night of
+    its life: reports_sold has read 0 since the product launched on 2026-07-27,
+    so no buyer has ever been due. The old early return recorded nothing, which
+    is why the emails_sent series holds exactly two readings, both dated
+    2026-07-27, and then silence — while review.py was judging the technique on
+    a 46-day window inside that silence and reporting "either nothing reaches
+    this technique or nothing it does converts". A hole cannot be told from a
+    job that never ran, so the second disjunct was unfalsifiable.
+
+    Recorded even when zero, the same convention as accounts._record_aged_out
+    and the sent_* series, and for the same reason: a night that was due nobody
+    and a night whose instrument is broken must not read identically.
+
+    Deliberately NOT called on the path where due() raises. That run did not
+    look, so it must not report that it looked and found nobody — a 0 there
+    would be exactly the false zero this helper exists to prevent, one layer
+    down. lifecycle_last's ok=False carries that case, and review.py reads the
+    resulting absence as "unrecorded" rather than as "did not act".
+    """
+    ledger.record_result(ledger.today(), "lifecycle_email", "emails_sent", n)
+
+
 def run(buildings_by_bbl=None, dry_run=False, now=None):
     """Send whatever is due. Returns a summary."""
     try:
@@ -210,6 +236,7 @@ def run(buildings_by_bbl=None, dry_run=False, now=None):
         ledger.set_state("lifecycle_last", {"date": ledger.today(), "ok": True,
                                             "sent": 0, "detail": "nothing due"})
         print("  nothing due")
+        _record_sent(0)
         return {"ok": True, "sent": 0, "detail": "nothing due"}
 
     if buildings_by_bbl is None:
@@ -253,5 +280,5 @@ def run(buildings_by_bbl=None, dry_run=False, now=None):
     ledger.set_state("lifecycle_last", {"date": ledger.today(), "ok": not failed,
                                         "sent": len(sent), "failed": failed[:5],
                                         "detail": detail})
-    ledger.record_result(ledger.today(), "lifecycle_email", "emails_sent", len(sent))
+    _record_sent(len(sent))
     return {"ok": not failed, "sent": len(sent), "failed": failed, "detail": detail}

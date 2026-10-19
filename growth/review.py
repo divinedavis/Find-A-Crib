@@ -131,6 +131,86 @@ MIN_BASELINE_DAYS = 7
 # measured["co_claimants"] either way.
 CO_CLAIMANTS_NAMED = 3
 
+# WHAT COUNTS AS THIS TECHNIQUE HAVING ACTED, for the techniques whose declared
+# metric is a conversion counter they do not themselves move.
+#
+# reports_sold is a GATE, not an attribution. T011 lifecycle_email emails people
+# who have ALREADY bought a Building Report, so it cannot cause the first sale:
+# a flat reports_sold says nothing whatever about those emails until you also
+# know whether any were sent. _judge_stock's flat branch has been handing the
+# reader that unresolved disjunction ("either nothing reaches this technique or
+# nothing it does converts") since 2026-08-26, and the ledger has had to carry
+# the resolution by hand TWICE — T011's own notes on 2026-08-26 ("reports_sold
+# is a GATE, not an attribution") and T008's on 2026-09-24 ("the verdict on it
+# is measuring an outage rather than an idea"). A caveat a human has to rewrite
+# into the notes every revisit belongs in code.
+#
+# It is not a hypothetical distinction. On 2026-10-19 both T011 and T017 carried
+# the identical flat sentence, and the two cases are opposites:
+#
+#   T011 lifecycle_email  -> emails_sent, recorded by growth/lifecycle.py. Two
+#                            readings in its life, both dated 2026-07-27, then
+#                            46 days of silence: it has never sent an email, so
+#                            "nothing it does converts" is not weak evidence,
+#                            it is impossible.
+#   T017 one_time_...     -> sent_saved_paid_ask, recorded by growth/accounts.py
+#                            because the $9 ask is put by the ACCOUNT sequence
+#                            and not by T017 itself. 15 asks across 16 recorded
+#                            days against 0 sales: here the other disjunct is
+#                            the one that is ruled out, and the flat counter IS
+#                            a reading about the offer.
+#   T018 account_lifecycle-> emails_sent, recorded by growth/accounts.py.
+#
+# A module constant rather than a field on the technique record, deliberately:
+# an `executes` field would have to be threaded through ledger.add() AND
+# seed.run()'s sync list, and a seeded technique whose new field is missing from
+# that list reverts silently on the next deploy — the trap the 2026-08-26 entry
+# wrote down as its rule 7. Promote it to a ledger field the first time a
+# technique the scout proposes needs one, and not before.
+EXECUTION_SERIES = {
+    "lifecycle_email": ("lifecycle_email", "emails_sent"),
+    "one_time_building_report_product": ("account_lifecycle", "sent_saved_paid_ask"),
+    "account_lifecycle": ("account_lifecycle", "emails_sent"),
+}
+
+
+def _executions(slug, window):
+    """How many times `slug` acted over `window`, from its execution series.
+
+    `window` is an inclusive (first_date, last_date) pair of ISO strings — the
+    span the verdict itself is about, so the two can never describe different
+    periods. Returns (acted, readings): `readings` is how many days inside the
+    window carry a reading at all, and `acted` is their sum.
+
+    acted is None whenever readings is 0, and THAT IS THE LOAD-BEARING STATE:
+    an unwritten series is not a zero. "We measured the technique acting and it
+    acted nothing" and "we never measured whether it acted" are different
+    findings, and the second one is about the instrument. Same three-state shape
+    as growth_paused() (paused / live / unreadable-and-therefore-unknown) and
+    the same reason accounts._record_aged_out exists at all: a night that was
+    due nobody must not read like a night whose job was broken.
+
+    A technique with no entry in EXECUTION_SERIES returns (None, 0) and so falls
+    through to the unchanged disjunction — the guard needs POSITIVE evidence to
+    say anything, exactly like the MIN_CENSUS_READ guard below.
+    """
+    pair = EXECUTION_SERIES.get(slug)
+    if not pair or not window:
+        return (None, 0)
+    lo, hi = window
+    vals = [v for d, v in ledger.series(pair[0], pair[1]) if lo <= d <= hi]
+    total = 0.0
+    seen = 0
+    for v in vals:
+        try:
+            total += float(v)
+        except (TypeError, ValueError):
+            continue
+        seen += 1
+    if not seen:
+        return (None, 0)
+    return (int(total) if total == int(total) else total, seen)
+
 
 def _span_days(pairs):
     """Calendar days between the first and last reading. 0 for a single point."""
@@ -341,10 +421,39 @@ def _judge_stock(res, metric, after, before, days):
     if a_delta == 0:
         # Flat is a real reading, but it does not say whether the technique
         # failed or whether nothing has entered it yet. That difference is the
-        # whole reason this is not works=False.
+        # whole reason this is not works=False — and where the technique's own
+        # actions are measured, the loop can say WHICH of the two it is instead
+        # of handing the reader a disjunction to resolve by hand every revisit.
+        # See EXECUTION_SERIES for the two live cases and why they are opposites.
+        #
+        # works stays None on all three branches. Resolving the disjunction
+        # changes what the ledger SAYS, never whether the technique is credited:
+        # "it acted 15 times and nothing converted" is a reason to look at the
+        # offer, not a measured success, and promoting it to works=False here
+        # would retire on one flat counter what MIN_BASELINE_DAYS below refuses
+        # to attribute even when the counter moves.
         res["action"] = "flag"
-        res["why"] = (f"{moved} — the counter has not moved at all since activation, so "
-                      f"either nothing reaches this technique or nothing it does converts")
+        window = (after[0][0], after[-1][0]) if after else None
+        acted, readings = _executions(res["slug"], window)
+        res["measured"]["executions"] = acted
+        res["measured"]["execution_readings"] = readings
+        flat = f"{moved} — the counter has not moved at all since activation"
+        if readings and not acted:
+            res["why"] = (f"{flat}, and it acted 0 times on the {readings} day(s) of "
+                          f"those {a_span}d that recorded whether it acted — so this "
+                          f"zero measures its own execution and not its effect, and "
+                          f"there is nothing to judge yet. Re-judge once it has acted "
+                          f"once; if it never does, it is unmeasurable by construction "
+                          f"and not failed")
+        elif acted:
+            res["why"] = (f"{flat}, and it DID act {acted} time(s) across {readings} "
+                          f"day(s) of those {a_span}d — so nothing-reaches-it is ruled "
+                          f"out and this is a reading about what it does, not about "
+                          f"whether it ran")
+        else:
+            res["why"] = (f"{flat}, so either nothing reaches this technique or nothing "
+                          f"it does converts — and its own action count is unrecorded "
+                          f"across those {a_span}d, so the loop cannot say which")
         return res
 
     if b_span < MIN_BASELINE_DAYS:

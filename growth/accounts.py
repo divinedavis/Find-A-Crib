@@ -499,6 +499,40 @@ def aged_out(row):
     return not set(row.get("sent_steps") or []) and (row.get("days_old") or 0) > WELCOME_GRACE_DAYS
 
 
+def _record_sent(by_step, asks):
+    """Write the send counts, from every path run() can return on having LOOKED.
+
+    The three series below were already documented as "recorded even when
+    zero", and on the main path they were. The "nothing due" early return
+    recorded none of them, so the convention held everywhere except the one
+    night it was written for — the same defect _record_aged_out was extracted to
+    fix, in the same function, left behind because only the aged-out count moved
+    with it. emails_sent therefore carried 66 readings across 78 nights, and the
+    holes were exactly the nights nobody was due.
+
+    Not called where due() raises, for the reason in lifecycle._record_sent: a
+    run that could not read the accounts table has not established that nobody
+    was due, and accounts_last's ok=False is what carries that.
+    """
+    ledger.record_result(ledger.today(), "account_lifecycle", "emails_sent",
+                         sum(by_step.values()))
+    # Per-step series, so a later review can ask "how many times was the paid
+    # ask actually made?" instead of inferring it from a total that four
+    # different emails contribute to. Zeros are recorded deliberately: a step
+    # that is due nobody and a step that is broken look identical otherwise.
+    for step in STEPS:
+        ledger.record_result(ledger.today(), "account_lifecycle",
+                             f"sent_{step}", by_step.get(step, 0))
+    # The number T017's revisit actually needs: how many times the $9 ask was
+    # put to somebody. Recorded even when zero, for the reason above — a step
+    # nobody was due and a step whose paid branch never fires look identical
+    # otherwise, and those are opposite findings. review.py reads this series as
+    # T017's execution count (see EXECUTION_SERIES): the $9 ask is put by THIS
+    # sequence, so a hole here is indistinguishable from an ask never made, and
+    # T017's verdict turns on that difference.
+    ledger.record_result(ledger.today(), "account_lifecycle", "sent_saved_paid_ask", asks)
+
+
 def _record_aged_out(missed):
     """Write the aged-out count, from every path run() can return on.
 
@@ -632,6 +666,7 @@ def run(dry_run=False, now=None, voucher_buildings=None, buildings_by_bbl=None):
                                            "welcome_aged_out": missed,
                                            "detail": "nothing due"})
         print("  nothing due")
+        _record_sent({}, 0)
         _record_aged_out(missed)
         return {"ok": True, "sent": 0, "welcome_aged_out": missed, "detail": "nothing due"}
 
@@ -688,19 +723,7 @@ def run(dry_run=False, now=None, voucher_buildings=None, buildings_by_bbl=None):
                                        "sent": len(sent), "by_step": by_step,
                                        "paid_asks": asks, "welcome_aged_out": missed,
                                        "failed": failed[:5], "detail": detail})
-    ledger.record_result(ledger.today(), "account_lifecycle", "emails_sent", len(sent))
-    # Per-step series, so a later review can ask "how many times was the paid
-    # ask actually made?" instead of inferring it from a total that four
-    # different emails contribute to. Zeros are recorded deliberately: a step
-    # that is due nobody and a step that is broken look identical otherwise.
-    for step in STEPS:
-        ledger.record_result(ledger.today(), "account_lifecycle",
-                             f"sent_{step}", by_step.get(step, 0))
-    # The number T017's revisit actually needs: how many times the $9 ask was
-    # put to somebody. Recorded even when zero, for the reason above — a step
-    # nobody was due and a step whose paid branch never fires look identical
-    # otherwise, and those are opposite findings.
-    ledger.record_result(ledger.today(), "account_lifecycle", "sent_saved_paid_ask", asks)
+    _record_sent(by_step, asks)
     _record_aged_out(missed)
     return {"ok": not failed, "sent": len(sent), "by_step": by_step, "paid_asks": asks,
             "welcome_aged_out": missed, "failed": failed, "detail": detail}
